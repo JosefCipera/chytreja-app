@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="cs">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vesmír Desktop 🌌</title>
+
+    <!-- 📦 Knihovny -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vis-network@9.1.9/dist/vis-network.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/vis-network@9.1.9/dist/vis-network.min.js"></script>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+    <!-- 🎨 Styly -->
+    <link rel="stylesheet" href="./css/universe-core.css">
+    <link rel="stylesheet" href="./css/universe-header.css">
+
+    <!-- 🧱 Manifest -->
+    <link rel="manifest" href="./manifest.webmanifest">
+    <meta name="theme-color" content="#101c35">
+
+    <!-- 🧠 Registrace Service-Workera -->
+    <script>
+        if ("serviceWorker" in navigator) {
+            navigator.serviceWorker.register("./service-worker.js")
+                .then(() => console.log("🧠 SW registrován"))
+                .catch(err => console.error("SW chyba:", err));
+        }
+    </script>
+</head>
+
+<body>
+    <!-- 🧭 Horní lišta -->
+    <header id="appHeader" class="app-header">
+        <h1 id="appTitle">🌌 Chytré já</h1>
+
+        <div class="header-controls">
+            <label for="modelSelector">Model:</label>
+            <select id="modelSelector"></select>
+
+            <label for="roleSelect">Režim:</label>
+            <select id="roleSelect">
+                <option value="demo">Demo</option>
+                <option value="free">Free</option>
+                <option value="pro">Pro</option>
+                <option value="user">User</option>
+            </select>
+        </div>
+    </header>
+
+    <!-- 🌌 Plátno sítě -->
+    <div id="network"></div>
+
+    <!-- === 🌌 Postranní panel === -->
+    <aside id="sidePanel">
+        <div class="panel-header">
+            <h2 id="nodeTitle"><i class="fa-solid fa-circle-nodes"></i> Uzlový název</h2>
+            <button class="panel-close" id="closePanel">✖</button>
+        </div>
+
+        <div class="panel-content">
+            <p class="definition" id="nodeDef"></p>
+
+            <hr>
+            <h3>💬 Myšlenky</h3>
+            <ul id="nodeThoughts"></ul>
+
+            <hr>
+            <h3>📘 Dokumenty</h3>
+            <ul id="nodeDocs"></ul>
+
+            <hr>
+            <h3>🎬 Média</h3>
+            <ul id="nodeMedia"></ul>
+
+            <hr>
+            <h3>🧩 Úlohy</h3>
+            <ul id="nodeTasks"></ul>
+
+            <hr class="ai-divider">
+            <h3 class="ai-section-title"><i class="fa-solid fa-brain"></i> Chytré já</h3>
+            <div id="aiPanelSection">
+                <input id="aiPanelInput" type="text" placeholder="Zeptej se Chytrého já…" />
+                <button id="aiPanelSend"><i class="fa-solid fa-paper-plane"></i></button>
+            </div>
+        </div>
+
+        <div id="aiChatOverlay" class="hidden">
+            <div class="ai-chat-header">
+                <h2><i class="fa-solid fa-brain"></i> Chytré já</h2>
+                <button id="aiChatClose">✖</button>
+            </div>
+            <div id="aiChatMessages"></div>
+            <div class="ai-chat-input">
+                <input id="aiChatInput" type="text" placeholder="Zeptej se..." />
+                <button id="aiChatSend"><i class="fa-solid fa-paper-plane"></i></button>
+            </div>
+        </div>
+    </aside>
+
+    <div id="docOverlay">
+        <div id="docViewer">
+            <button id="closeDoc" title="Zavřít">✖</button>
+            <iframe id="docFrame" src=""></iframe>
+        </div>
+    </div>
+
+    <!-- 🔥 Universe moduly -->
+    <script type="module" src="./js/universe/universe-viewers.js"></script>
+    <script type="module" src="./js/universe/universe-access.js"></script>
+    <script type="module" src="./js/universe/universe-panel.js"></script>
+    <script type="module" src="./js/universe/universe-core.js"></script>
+    <script type="module" src="./js/universe/universe-init.js"></script>
+
+</body>
+
+</html>

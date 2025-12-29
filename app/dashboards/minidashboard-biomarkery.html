@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="cs">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dlouhověkost – Biomarkery</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --ink: #e2e8f0;
+            --muted: #94a3b8;
+            --card: #1e293b;
+            --accent: #a8c7ff;
+            /* 💡 světle modrý nadpis */
+            --sub: #a5b4fc;
+            --wrap: 1150px;
+            --gap: 0.6rem;
+        }
+
+        * {
+            box-sizing: border-box
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--ink);
+            font-family: "Inter", system-ui, sans-serif;
+            padding: 2rem 1rem 3rem;
+        }
+
+        .page {
+            max-width: var(--wrap);
+            margin: 0 auto
+        }
+
+        h2 {
+            margin: 0 0 .9rem 0;
+            text-align: center;
+            color: #a8c7ff !important;
+            /* 💡 fixní světle modrá */
+            font-weight: 600;
+            font-size: 1.9rem;
+            letter-spacing: .02em;
+            text-shadow: 0 0 10px rgba(168, 199, 255, 0.15);
+            transition: opacity 1.2s ease;
+            opacity: 0;
+            animation: fadeInTitle 1.2s forwards;
+        }
+
+        @keyframes fadeInTitle {
+            to {
+                opacity: 1;
+            }
+        }
+
+        .summary-count {
+            text-align: center;
+            color: var(--ink);
+            font-size: 1.02rem;
+            margin-bottom: 1.1rem;
+        }
+
+        /* Vitality box */
+        .vitality-box {
+            background: var(--card);
+            border-radius: .8rem;
+            padding: 1.1rem 1.3rem;
+            max-width: 700px;
+            margin: 0 auto 2.2rem;
+        }
+
+        .vitality-header {
+            display: flex;
+            justify-content: space-between;
+            font-weight: 600
+        }
+
+        .vitality-bar {
+            position: relative;
+            height: 14px;
+            border-radius: 999px;
+            background: #475569;
+            overflow: hidden;
+            margin-top: .45rem;
+        }
+
+        #vitalityFill {
+            position: absolute;
+            inset: 0 100% 0 0;
+            background: linear-gradient(90deg, #22c55e, #3b82f6);
+            transition: inset 2s ease;
+        }
+
+        .vitality-text {
+            text-align: center;
+            margin-top: .7rem;
+            color: var(--muted);
+            font-size: .95rem
+        }
+
+        /* Sekce */
+        .section {
+            max-width: var(--wrap);
+            margin: 2rem auto 0
+        }
+
+        .section__head {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: var(--gap);
+            align-items: end;
+            margin-bottom: .5rem
+        }
+
+        .section__title {
+            grid-column: 1/2;
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+            color: var(--sub);
+            font-weight: 600;
+            font-size: 1.25rem
+        }
+
+        .section__title .emoji {
+            font-size: 1.35rem
+        }
+
+        /* Grid 4 karet */
+        .mini-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: var(--gap);
+            max-width: var(--wrap);
+            margin: 0 auto;
+        }
+
+        @media (max-width:1200px) {
+            .mini-grid {
+                grid-template-columns: repeat(3, minmax(0, 1fr))
+            }
+        }
+
+        @media (max-width:900px) {
+            .mini-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr))
+            }
+        }
+
+        @media (max-width:560px) {
+            .mini-grid {
+                grid-template-columns: 1fr
+            }
+
+            .mini-card {
+                width: 95%;
+                margin: 0 auto;
+                max-width: 380px;
+                aspect-ratio: 1/1;
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between;
+            }
+
+            .mini-trend {
+                height: 45px;
+            }
+
+            .mini-value {
+                font-size: 1.4rem;
+            }
+        }
+
+        /* Karta */
+        .mini-card {
+            background: var(--card);
+            border-radius: .8rem;
+            padding: 0.9rem 1rem 1rem;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, .45);
+            transform: scale(0.98);
+            transition: transform .2s ease;
+        }
+
+        .mini-card:hover {
+            transform: scale(1.01)
+        }
+
+        .mini-title {
+            font-size: .95rem;
+            color: #cbd5e1;
+            margin: 0 0 .25rem 0
+        }
+
+        .mini-trend {
+            width: 100%;
+            height: 55px;
+            margin: .25rem 0 .45rem 0;
+            display: block
+        }
+
+        .mini-value {
+            font-size: 1.45rem;
+            font-weight: 600;
+            color: #f1f5f9;
+            margin: .1rem 0 .3rem 0
+        }
+
+        .mini-status {
+            font-size: .9rem;
+            display: flex;
+            align-items: center;
+            gap: .4rem
+        }
+
+        .mini-status .dot {
+            width: .6rem;
+            height: .6rem;
+            border-radius: 999px;
+            display: inline-block
+        }
+
+        .mini-range {
+            font-size: .8rem;
+            color: var(--muted);
+            margin-top: .05rem
+        }
+
+        .mini-comment {
+            font-size: .83rem;
+            color: #cbd5e1;
+            margin-top: .4rem;
+            line-height: 1.35
+        }
+
+        #backToUniverse {
+            display: block;
+            margin: 2.3rem auto 0;
+            background: linear-gradient(90deg, #3b82f6, #2563eb);
+            color: #fff;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: .95rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="page">
+        <h2>🧬 Dlouhověkost – Biomarkery</h2>
+        <div class="summary-count" id="summaryCount">Načítám…</div>
+
+        <div class="vitality-box">
+            <div class="vitality-header">
+                <span>📊 Vitality Score</span>
+                <span id="vitalityValue">0 %</span>
+            </div>
+            <div class="vitality-bar">
+                <div id="vitalityFill"></div>
+            </div>
+            <div class="vitality-text" id="vitalityText">–</div>
+        </div>
+    </div>
+
+    <button id="backToUniverse">⬅️ Zpět do vesmíru</button>
+
+    <script>
+        const DATA_URL = "../assets/models/longevity-biomarkers.json";
+        const cz = v => (typeof v === "number" ? ("" + v).replace(".", ",") : (v ?? "").toString().replace(/\./g, ","));
+
+        function statusVisual(text = "") {
+            const s = (text || "").toLowerCase();
+            if (s.includes("optim") || s.includes("v norm")) return { color: "#22c55e", label: cleanStatus(text) };
+            if (s.includes("mírně") || s.includes("lehce")) return { color: "#f59e0b", label: cleanStatus(text) };
+            if (s.includes("zvýš") || s.includes("vysok") || s.includes("mimo")) return { color: "#ef4444", label: cleanStatus(text) };
+            return { color: "#94a3b8", label: cleanStatus(text) };
+        }
+        function cleanStatus(t = "") { return (t || "").replace(/^[^\p{L}\p{N}]+/u, "").trim(); }
+
+        function drawMiniTrend(ctx, data, color) {
+            if (!ctx || !data || data.length < 2) return;
+            const c = ctx.canvas, w = c.clientWidth, h = c.clientHeight, dpr = window.devicePixelRatio || 1;
+            c.width = w * dpr; c.height = h * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            ctx.clearRect(0, 0, w, h);
+            const mx = 15, my = 10, min = Math.min(...data), max = Math.max(...data), rng = Math.max(1e-6, max - min);
+            const pts = data.map((v, i) => ({ x: mx + (i / (data.length - 1)) * (w - mx * 2), y: h - ((v - min) / rng) * (h - my * 2) - my }));
+            ctx.beginPath(); ctx.lineWidth = 9; ctx.lineJoin = "round"; ctx.lineCap = "round"; ctx.strokeStyle = (color || "#22d3ee") + "e0";
+            ctx.moveTo(pts[0].x, pts[0].y);
+            for (let i = 1; i < pts.length - 2; i++) { const xc = (pts[i].x + pts[i + 1].x) / 2, yc = (pts[i].y + pts[i + 1].y) / 2; ctx.quadraticCurveTo(pts[i].x, pts[i].y, xc, yc); }
+            const last = pts.at(-1), pre = pts.at(-2), endX = pre.x + (last.x - pre.x) * 0.9, endY = pre.y + (last.y - pre.y) * 0.9;
+            ctx.quadraticCurveTo(pre.x, pre.y, endX, endY); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(endX + 6, endY); ctx.lineTo(Math.min(w - 8, endX + 240), endY);
+            ctx.lineWidth = 9; ctx.lineCap = "round"; ctx.strokeStyle = "#94a3b877"; ctx.stroke();
+            ctx.beginPath(); ctx.arc(endX, endY, 10, 0, Math.PI * 2);
+            ctx.fillStyle = color || "#22d3ee"; ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = "#fff"; ctx.stroke();
+        }
+
+        function cardHTML(b) {
+            const vis = statusVisual(b.status || "");
+            const value = b.value != null ? `${cz(b.value)} ${b.unit || ""}`.trim() : "—";
+            const range = b.range ? `Rozmezí: ${cz(b.range)}` : "";
+            const comment = b.comment || b.desc || b.interpretation || "";
+            return `
+        <div class="mini-card">
+          <div class="mini-title">${b.label || b.name || b.id || "—"}</div>
+          <canvas class="mini-trend"></canvas>
+          <div class="mini-value">${value}</div>
+          <div class="mini-status"><span class="dot" style="background:${vis.color}"></span><span>${vis.label || "—"}</span></div>
+          <div class="mini-range">${range}</div>
+          <div class="mini-comment">${comment}</div>
+        </div>
+      `;
+        }
+
+        function renderSection(root, group) {
+            const sec = document.createElement("section");
+            sec.className = "section";
+            sec.innerHTML = `
+        <div class="section__head">
+          <div class="section__title"><span class="emoji">${group.icon || ""}</span>${group.label || group.id}</div>
+        </div>
+        <div class="mini-grid" id="grid-${group.id}"></div>
+      `;
+            root.appendChild(sec);
+            const grid = sec.querySelector(`#grid-${group.id}`);
+            (group.biomarkers || []).forEach(b => {
+                const host = document.createElement("div");
+                host.innerHTML = cardHTML(b);
+                grid.appendChild(host.firstElementChild);
+                const ctx = grid.lastElementChild.querySelector("canvas").getContext("2d");
+                drawMiniTrend(ctx, (b.trend || []).map(Number), b.color);
+            });
+        }
+
+        function updateVitalityScore(groups) {
+            const all = groups.flatMap(g => g.biomarkers || []);
+            const total = all.length;
+            const good = all.filter(m => /(optim|v norm)/i.test(m.status || "")).length;
+            const warn = all.filter(m => /(mírně|lehce)/i.test(m.status || "")).length;
+            const bad = all.filter(m => /(zvýš|vysok|mimo)/i.test(m.status || "")).length;
+            document.getElementById("summaryCount").innerHTML =
+                `<b>Celkem:</b> ${total} • <span style="color:#22c55e">V normě:</span> ${good} • <span style="color:#f59e0b">Ke sledování:</span> ${warn} • <span style="color:#ef4444">Mimo:</span> ${bad}`;
+            const vitality = Math.round((good / Math.max(1, total)) * 100);
+            const fill = document.getElementById("vitalityFill"), val = document.getElementById("vitalityValue"), txt = document.getElementById("vitalityText");
+            requestAnimationFrame(() => { fill.style.inset = `0 ${100 - vitality}% 0 0`; });
+            val.textContent = vitality + " %";
+            txt.textContent = vitality > 80 ? "Výborný stav – tělo v rovnováze."
+                : vitality > 60 ? "Stabilní stav – drobné výkyvy."
+                    : "Zhoršený stav – doporučeno zlepšit regeneraci a spánek.";
+        }
+
+        async function loadData() {
+            try {
+                const r = await fetch(DATA_URL);
+                if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                const j = await r.json();
+                const groups = Array.isArray(j) ? j : (j.groups || []);
+                if (!groups.length) throw new Error("Prázdná data.");
+                updateVitalityScore(groups);
+                const host = document.querySelector(".page");
+                groups.forEach(g => renderSection(host, g));
+            } catch (e) { console.error("❌ Nelze načíst data:", e); }
+        }
+
+        document.getElementById("backToUniverse").onclick = () => {
+            if (window.opener) window.close();
+            else if (window.parent && window.parent !== window) window.parent.postMessage("showUniverse", "*");
+            else window.location.href = "./index.html";
+        };
+
+        window.addEventListener("load", loadData);
+    </script>
+</body>
+
+</html>

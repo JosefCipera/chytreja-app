@@ -1,0 +1,100 @@
+{
+    "onas": {
+        "heading": "🌠 O nás",
+        "paragraphs": [
+            "Začínali jsme v průmyslu, kde jsme dokázali  plánovat výrobu tam, kde na to běžné systémy nestačily.",
+            "Dnes vytváříme Chytré Já – prostor, kde se principy průtokového řízení spojují s moderními technologiemi a AI.",
+            "Pomáháme lidem i firmám vidět celý svůj vesmír jasně, jednoduše a chytře."
+        ]
+    },
+    "reference": {
+        "intro": "Naši první uživatelé testují Chytré já v reálném prostředí. Brzy zde přibudou jejich zkušenosti a výsledky.",
+        "items": [
+            {
+                "text": "„Chytré já nám ukázalo, že řízení může být vizuální, zábavné a přitom naprosto přesné.“",
+                "author": "– Výrobní firma"
+            },
+            {
+                "text": "„Už po prvním týdnu jsme získali přehled, který jsme v ERP nikdy neměli.“",
+                "author": "– Strojírenský podnik"
+            },
+            {
+                "text": "„Spojení hlasových povelů s vizualizací dat je naprosto revoluční. Tohle je budoucnost.“",
+                "author": "– Poradenská společnost"
+            },
+            {
+                "text": "„Konečně systém, který nezahltí, ale pomáhá. Chytré já dává řízení nový rozměr.“",
+                "author": "– IT firma"
+            }
+        ]
+    },
+    "faq": {
+        "items": [
+            {
+                "q": "❓ Co je Chytré já?",
+                "a": "Digitální vědomí propojující tvé nástroje, data a rozhodnutí."
+            },
+            {
+                "q": "💬 Jak funguje?",
+                "a": "Ovládáš ho hlasem, reaguje vizuálně a spouští akce v systému."
+            },
+            {
+                "q": "💰 Kolik stojí?",
+                "a": "Základní verze zdarma, rozšířené funkce od 490 Kč měsíčně."
+            }
+        ]
+    },
+    "cenik": {
+        "plans": [
+            {
+                "icon": "🚀",
+                "name": "Start",
+                "price": "Zdarma",
+                "desc": "Základní přístup k vesmíru Chytrého já, včetně hlasových příkazů a vizualizací."
+            },
+            {
+                "icon": "✨",
+                "name": "Pro",
+                "price": "490 Kč / měsíc",
+                "desc": "Rozšířené moduly, AI analýza, propojení s Tabidoo a přístup ke všem modelům.",
+                "highlight": true
+            },
+            {
+                "icon": "🏢",
+                "name": "Enterprise",
+                "price": "Na dotaz",
+                "desc": "Plně přizpůsobené řešení pro firmy, včetně vlastního hostingu a správy dat."
+            }
+        ]
+    },
+    "kontakt": {
+        "intro": "Zavolejte nám nebo napište. Jsme tu a budeme tu pro vás.",
+        "cards": [
+            {
+                "title": "Technická podpora",
+                "text": "Nefunguje vám aplikace nebo přístup?",
+                "email": "podpora@iting.cz"
+            },
+            {
+                "title": "Obchodní podpora",
+                "text": "Chcete vědět více?",
+                "email": "obchod@iting.cz",
+                "phone": "+420 724 166 988"
+            },
+            {
+                "title": "Administrativa",
+                "text": "Potřebujete poradit s fakturací?",
+                "email": "uctarna@iting.cz",
+                "phone": "+420 723 999 152"
+            }
+        ]
+    },
+    "terms": {
+        "title": "Obchodní podmínky",
+        "termsContent": "<h1 class=\"text-3xl font-bold text-gray-800 mb-6 text-center\">Obchodní podmínky</h1><p> <h2>1. Úvodní ustanovení</h2><p>Tyto obchodní podmínky blíže vymezují a upřesňují práva a povinnosti kupujících a prodávajícího.</p><p>Prodávajícím je společnost ITING s.r.o. se sídlem Vančurova 2710, 544 01 Dvůr Králové nad Labem, zapsaná u Krajského Soudu v Hradci Králové, odd. C, vložka 18164 3, IČO: 25970631, DIČ: CZ25970631, plátce DPH (dále jen „prodávající“).</p><p>Kupujícím se pro účely těchto všeobecných obchodních podmínek rozumí zákazník - fyzická nebo právnická osoba. Tyto obchodní podmínky specifikují kupní smlouvu, jejímž předmětem je prodej on-line kurzů, živých seminářů a workshopů, webinářů, e-booků a individuálních služeb, kterou strany uzavírají prostřednictvím webových stránek www.iting.cz (dále jen předmět koupě).</p><p>Předmět koupě je produktem duševního vlastnictví, a proto je zakázáno jakékoliv šíření nebo poskytování třetím osobám bez souhlasu autora. Uzavřením kupní smlouvy kupující přijímá, že jakékoliv použití informací z předmětu koupě a úspěchy či neúspěchy z toho plynoucí, jsou pouze v rukou kupujícího a autor za ně nenese žádnou odpovědnost. V předmětu koupě může kupující najít informace o produktech nebo službách třetích osob. Tyto informace jsou pouze doporučením a vyjádřením názoru k této tematice.</p><h2>2. Předmět smlouvy</h2><h3>2.1 Předmět a plnění smlouvy</h3><p>Předmětem smlouvy je nákup a prodej on-line kurzů, živých kurzů, webinářů, e-booků a individuálních služeb. Jejich specifikace a jednotlivé varianty, včetně obsahu, jsou uvedeny na webových stránkách www.iting.cz.</p><p>Termíny zahájení on-line programů či kurzů, termíny jednotlivých workshopů včetně živých akcí nebo zpřístupnění videí, budou předem zveřejňovány na stránkách www.iting.cz. Zde jsou také obsaženy veškeré informace, týkající se objednávky. Jakékoliv doplňující informace kupující získá na emailové adrese info@iting.cz.</p><p>V případě on-line kurzů po objednání a plném uhrazení platby, nejpozději v den zahájení kurzu, obdrží kupující emailem přístupové údaje do členské sekce, nebo na stránky kurzu. V případě, že kupující tyto přístupové údaje i přes svou platbu neobdrží, sdělí tuto skutečnost prodávajícímu prostřednictvím emailové adresy podpora@iting.cz. Ten je povinen sjednat neprodleně nápravu.</p><h3>2.2 Objednávka</h3><p>Kupující prohlašuje, že se seznámil se všemi informacemi, týkajícími se objednávky, a to na webové adrese www.iting.cz. Kupující objednává předmět koupě vyplněním elektronického formuláře objednávky prostřednictvím webové stránky na www.iting.cz. Kupující je povinen objednávku před jejím odesláním zkontrolovat a případně opravit. Odeslaná objednávka je právně závazná a kupujícímu a prodávajícímu vznikají vzájemná práva a povinnosti, tj. prodávající se zavazuje poskytnout kupujícímu předmět koupě a kupující se zavazuje uhradit kupní cenu.</p><p>Kupující odesláním objednávky stvrzuje, že se seznámil s obchodními podmínkami pro nákup na webové stránce www.iting.cz/obchodni-podminky, a že s nimi souhlasí. Tyto obchodní podmínky, které jsou zároveň zveřejněné na webových stránkách prodávajícího, jsou nedílnou součástí kupní smlouvy, která je uzavřena vyplněním a odesláním objednávky.</p><p>Na základě odeslané objednávky kupující obdrží na e-mail, uvedený v objednávkovém formuláři:</p><ul><li>daňový doklad - fakturu, nebo</li><li>zálohovou fakturu. Ta obsahuje veškeré platební údaje, potřebné k realizaci platby, včetně doby splatnosti. V případě, že nebude zálohová faktura uhrazena po době splatnosti, obdrží kupující do své e-mailové schránky upomínku a výzvu k platbě. Pokud i přesto nebude faktura do 5 dnů uhrazena, bude objednávka stornována. Veškeré dotazy ohledně objednávek a plateb je možné získat na emailové adrese uctarna@iting.cz.</li></ul><h2>3. Cena a daňový doklad</h2><p>V objednávce nebo na webové adrese www.iting.cz najde kupující všechny ceny služeb. Ohledně plateb, prováděných na základě kupní smlouvy, vystaví prodávající kupujícímu daňový doklad-fakturu, který slouží jako doklad o zakoupení produktů a služeb. Tato faktura bude zaslána na e-mail kupujícího, uvedený v objednávce. Prodávající je plátcem DPH.</p><h2>4. Garance a odstoupení od smlouvy</h2><p>Za své produkty ručí prodávající zárukou spokojenosti a garancí vrácení peněz.</p><h3>a) on-line kurzu</h3><p>U on-line kurzů má kupující právo využít garanční doby. Ta trvá 14 dní a začíná běžet vždy v den zahájení kurzu.</p><h3>b) účasti na živé akci - workshopu či semináři</h3><p>Při zrušení účasti více než 30 dní před konáním, obdrží kupující zpět 100% poplatku. Při zrušení 30 - 10 dní před, obdrží 50%. Při zrušení méně než 10 dní před, nebude poplatek vrácen.</p><h2>5. Zabezpečení a odpovědnost</h2><h3>5.1. Zabezpečení</h3><p>Přístup k uživatelskému účtu on-line kurzu je zabezpečen uživatelským jménem a heslem. Kupující je povinen zachovávat mlčenlivost.</p><h3>5.2. Odpovědnost</h3><p>Webové stránky mohou být aktualizovány bez předchozího upozornění.</p><h2>6. Závěrečná ustanovení</h2><p>Tyto obchodní podmínky nabývají účinnosti dne 1. 1. 2020. Prodávající si vyhrazuje právo na změnu těchto obchodních podmínek.</p><h2>7. Ochrana údajů</h2><p>Prodávající se zavazuje plně respektovat důvěrný charakter osobních a firemních dat kupujícího, která jsou zabezpečena proti neautorizovanému přístupu a chráněna proti zneužití. Údaje, které zadává kupující v přihlášce, jsou nezbytné pro jeho identifikaci. Jsou použity k realizaci celého obchodu, včetně nezbytných účetních operací, vystavení daňových dokladů, identifikaci bezhotovostních plateb a pro komunikaci s kupujícím. Detailní osobní data i údaje o nákupech kupujícího jsou ukládány v databázi s přísným zabezpečením proti zneužití a nejsou poskytovány třetím stranám.</p><h2>8. Závěrečná ustanovení</h2><p>Tyto obchodní podmínky nabývají účinnosti dne 1. 1. 2020. Informace jsou sdělovány prostřednictvím webových stránek www.iting.cz, popřípadě dalšími informačními kanály. Prodávající si vyhrazuje právo na změnu těchto obchodních podmínek.</p>"
+    },
+    "gdpr": {
+        "title": "Ochrana osobních údajů",
+        "privacyContent": "<h1 class=\"text-3xl font-bold text-gray-800 mb-6 text-center\">Zásady ochrany osobních údajů</h1><p class=\"mb-4\">Pokud jste naším zákazníkem, účastníkem webinářů, seminářů či workshopů, odběratelem emailů nebo \"jen\" návštěvníkem těchto stránek, svěřujete nám své osobní údaje. My zodpovídáme za jejich ochranu a zabezpečení. Přečtěte si proto, jak je chráníme, a jaká práva máte vy v souvislosti s GDPR (Nařízení o ochraně osobních údajů). Jestliže vám nebude cokoliv jasné, neváhejte se na nás obrátit.</p><h2>Kdo je správce?</h2><p>Jsme společnost ITING s.r.o., IČO: 25970631, se sídlem Vančurova 2710, 544 01 Dvůr Králové nad Labem, zapsaná u Krajského Soudu v Hradci Králové, odd. C, vložka 18164, která provozuje webové stránky iting.cz. Vaše osobní údaje zpracováváme jako správce, tj. určujeme, jak budou zpracovávány, za jakým účelem a po jak dlouhou dobu a vybíráme případné další zpracovatele, kteří nám se zpracováním budou pomáhat.</p><h2>Kontaktní údaje</h2><p>Pokud se na nás budete chtít v průběhu zpracování obrátit, můžete nás kontaktovat na emailu info@iting.cz.</p><h2>Prohlašujeme</h2><p>Prohlašujeme, že jako správce vašich osobních údajů splňujeme veškeré zákonné povinnosti vyžadované platnou legislativou, zejména zákonem o ochraně osobních údajů a GDPR, a tedy že:</p><ul><li>budeme zpracovávat vaše osobní údaje jen na základě platného právního důvodu, a to především oprávněného zájmu, plnění smlouvy, zákonné povinnosti či uděleného souhlasu,</li><li>plníme dle článku 13 GDPR informační povinnost ještě před zahájením zpracování osobních údajů,</li><li>umožníme vám a budeme vás podporovat v uplatňování a plnění vašich práv podle zákona o ochraně osobních údajů a GDPR.</li></ul><h2>Rozsah osobních údajů a účely zpracování</h2><p>Zpracováváme osobní údaje, které nám svěříte sami, a to z následujících důvodů (pro naplnění těchto účelů):</p><ul><li><strong>Poskytování služeb a plnění smlouvy</strong>, tj. vaše osobní údaje v rozsahu: fakturační údaje, e-mail, telefon, případně korespondenční adresu nezbytně potřebujeme k plnění smlouvy (např. zaslání přístupů do členské sekce online kurzu, zaslání informací o čase a místě konání živého kurzu, dodání knihy či jiného zboží apod.).</li><li><strong>Vedení účetnictví</strong>. Jste-li zákazníky, vaše osobní údaje (fakturační údaje) nezbytně potřebujeme, abychom vyhověli zákonné povinnosti pro vystavování a evidenci daňových dokladů.</li><li><strong>Přímý marketing s využitím e-mailu</strong>. Vaše osobní údaje (e-mail a jméno), jaké stránky na našem webu navštívíte a na co klikáte v e-mailu, a kdy e-maily nejčastěji otevíráte, využíváme za účelem přímého marketingu - zasílání a zobrazování obchodních sdělení. Pokud si objednáte některý z našich webinářů, PDF souborů, MP3 či video tréninků nebo kurzů (ať placených nebo zdarma), vnímáme oprávněný zájem posílat vám informace a novinky s podobnou tématikou a know-how. Budeme to dělat maximálně po dobu 5 let od přihlášení. Pokud zakoupíte některý z našich produktů či služeb, pak jako váženému zákazníkovi vám budeme informace a novinky s podobnou tématikou a know-how na základě oprávněného zájmu správce zasílat po dobu 5 let. V obou případech se můžete ze zasílání informací a novinek kdykoliv odhlásit tlačítkem \"odhlásit se\" v patičce každého našeho e-mailu.</li><li><strong>Pokročilý marketing na základě souhlasu</strong>. Pouze na základě vašeho souhlasu vám můžeme zasílat také inspirující nabídky třetích osob nebo využít e-mailovou adresu např. pro remarketing a cílení reklamy na Facebooku nebo dalších sociálních médiích. Ten lze samozřejmě kdykoli odvolat prostřednictvím našich kontaktních údajů.</li><li><strong>Fotografie a video záznamy ze seminářů</strong>. Na některých našich živých akcích - workshopech, školeních, seminářích, … pořizujeme fotografickou dokumentaci či video záznam. Fotografie používáme v propagačních materiálech, především na webu. Video záznam slouží účastníkům online kurzu ke zhlédnutí. U těchto materiálů nikdy nenajdete jména účastníků, jedině pokud by se jednalo o referenci a to na základě souhlasu. Pokud byste na záznamech nechtěli být, dejte nám vědět na našich kontaktních údajích před pořádáním živé akce. Vaše osobní údaje si ponecháváme po dobu běhu promlčecích lhůt, pokud zákon nestanoví delší dobu k jejich uchování, nebo jsme v konkrétních případech neuvedli jinak.</li></ul><h2>Cookies</h2><p>Při procházení našich webových stránek zaznamenáváme vaši IP adresu, jak dlouho se na stránce zdržíte a ze které stránky přicházíte. Používání cookies pro měření návštěvnosti webu a přizpůsobení zobrazení webových stránek vnímáme jako svůj oprávněný zájem správce, neboť věříme, že díky tomu vám můžeme nabídnout ještě lepší služby.</p><p>Cookies pro cílení reklamy budou zpracovávány jen na základě vašeho souhlasu.</p><p>Naše webové stránky lze procházet také v režimu, který neumožňuje sbírání osobních údajů. Používání cookies můžete na svém počítači v internetovém prohlížeči zakázat.</p><h2>Zabezpečení a ochrana osobních údajů</h2><p>Chráníme osobní údaje v maximální možné míře pomocí moderních technologií, které odpovídají stupni technického rozvoje. Chráníme je jako kdyby byly naše vlastní. Přijali jsme a udržujeme veškerá možná (aktuálně známá) technická a organizační opatření, která zamezují zneužití, poškození nebo zničení vašich osobních údajů.</p><h2>Předání osobních údajů třetím osobám</h2><p>K vašim osobním údajům mají přístup naši zaměstnanci a spolupracovníci, kteří jsou vázáni mlčenlivostí a proškoleni v oblasti bezpečnosti zpracování osobních údajů.</p><p>Většinu zpracovatelských operací zvládáme sami a nepotřebujeme k nim třetí strany.</p><p>Pro zajištění některých konkrétních zpracovatelských operací, které nedokážeme zajistit vlastními silami, využíváme služeb a aplikací zpracovatelů, kteří se na dané zpracování specializují a jsou v souladu s GDPR.</p><p>Jsou to následující poskytovatelé:</p><ul><li>provozovatel aplikace pro komunikaci, web a fakturaci</li><li>provozovatel aplikace pro e-mailovou komunikaci a zákaznickou podporu</li><li>Facebook, Google</li><li>poskytovatelé účetního a daňového poradenství,</li><li>poskytovatelé IT služeb a hostingu včetně cloudových uložišť,</li><li>poskytovatelé asistenčních služeb pro zákaznickou podporu,</li><li>poskytovatelé platebních bran (poskytovatelé platebních karet),</li><li>poskytovatelé právních služeb, advokáti,</li><li>poskytovatelé tiskových a poštovních služeb,</li><li>partneři spolupracující s námi ve speciálních akcích pro klienty</li></ul><p>Je možné, že se v budoucnu rozhodneme využít další aplikace či zpracovatele, pro usnadnění a zkvalitnění zpracování. Slibujeme vám však, že v takovém případě při výběru, budeme na zpracovatele klást minimálně stejné nároky na zabezpečení a kvalitu zpracování jako na sebe.</p><h2>Předávání dat mimo Evropskou unii</h2><p>Data zpracováváme výhradně v Evropské unii nebo v zemích, které zajišťují odpovídající úroveň ochrany na základě rozhodnutí Evropské komise.</p><h2>Vaše práva v souvislosti s ochranou osobních údajů</h2><p>V souvislosti s ochranou osobních údajů máte řadu práv. Pokud budete chtít některého z těchto práv využít, prosím, kontaktujte nás prostřednictvím e-mailu: info@iting.cz.</p><ul><li><strong>Máte právo na informace</strong>, které je plněno již touto informační stránkou se zásadami zpracování osobních údajů.</li><li><strong>Díky právu na přístup</strong> nás můžete kdykoli vyzvat a my vám doložíme ve lhůtě 30 dní, jaké vaše osobní údaje zpracováváme a proč.</li><li><strong>Pokud se u vás něco změní</strong> nebo shledáte své osobní údaje neaktuální nebo neúplné, máte právo na doplnění a změnu osobních údajů.</li><li><strong>Právo na omezení zpracování</strong> můžete využít, pokud se domníváte, že zpracováváme vaše nepřesné údaje, domníváte se, že provádíme zpracování nezákonně, ale nechcete všechny údaje smazat nebo pokud vznesete námitku proti zpracování. Omezit můžete rozsah osobních údajů nebo účelů zpracování. (Např. odhlášením z newsletteru omezujete účel zpracování pro zasílání obchodních sdělení.)</li><li><strong>Právo na přenositelnost</strong>. Pokud byste chtěli své osobní údaje vzít a přenést k někomu jinému, budeme postupovat stejně jako při využití práva na přístup - jen s tím rozdílem, že vám informace dodáme ve strojově čitelné podobě. Tady potřebujeme alespoň 30 dní.</li><li><strong>Právo na výmaz (být zapomenut)</strong>. Veškeré vaše osobní údaje vymažeme ze systému i ze systému všech dílčích zpracovatelů a záloh. Na zajištění práva na výmaz potřebujeme 30 dní.</li><li><strong>V některých případech jsme vázáni zákonnou povinností</strong>, a např. musíme evidovat vystavené daňové doklady po lhůtu stanovenou zákonem. V tomto případě tedy smažeme všechny takové osobní údaje, které nejsou vázány jiným zákonem. O dokončení výmazu vás budeme informovat na e-mail.</li><li><strong>Stížnost u Úřadu na ochranu osobních údajů</strong>. Pokud máte pocit, že s vašimi údaji nezacházíme v souladu se zákonem, máte právo se se svou stížností kdykoli obrátit na Úřad pro ochranu osobních údajů. Budeme moc rádi pokud nejprve budete o tomto podezření informovat nás, abychom s tím mohli něco udělat a případné pochybení napravit.</li><li><strong>Odhlášení ze zasílání newsletterů a obchodních sdělení</strong>. E-maily s inspirací, s články či produkty a službami vám zasíláme na základě našeho oprávněného zájmu. Odhlásit se můžete prostřednictvím odhlašovacího odkazu v každém e-mailu.</li></ul><h2>Mlčenlivost</h2><p>Dovolujeme si Vás ujistit, že naši zaměstnanci i spolupracovníci, kteří budou zpracovávat vaše osobní údaje, jsou povinni zachovávat mlčenlivost o osobních údajích a o bezpečnostních opatřeních, jejichž zveřejnění by ohrozilo zabezpečení vašich osobních údajů. Tato mlčenlivost přitom trvá i po skončení závazkových vztahů s námi. Bez vašeho souhlasu nebudou vaše osobní údaje vydány žádné jiné třetí straně. Tyto zásady zpracování osobních údajů platí od 25. 5. 2018.</p>"
+    }
+}

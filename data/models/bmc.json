@@ -1,0 +1,226 @@
+[
+    {
+        "id": "bmc",
+        "label": "Business Model Canvas",
+        "icon": "📊",
+        "definition": "Business Model Canvas (Osterwalder) je vizuální mapa fungování firmy. Popisuje hodnotu, zákazníky, infrastrukturu a finance.",
+        "color": "#2563eb",
+        "size": 42,
+        "subnodes": [
+            {
+                "id": "bmc_kpi",
+                "label": "Klíčové metriky (KPI)",
+                "icon": "📈",
+                "definition": "KPI určují, jak měřit úspěch modelu – růst, retence, CAC, marže, LTV, profitabilita.",
+                "color": "#3b82f6",
+                "size": 36,
+                "related": [
+                    "bmc_risks",
+                    "bmc_assumptions"
+                ]
+            },
+            {
+                "id": "bmc_risks",
+                "label": "Hlavní rizika",
+                "icon": "⚠️",
+                "definition": "Rizika ohrožující model – trh, konkurence, dodavatelé, technologie, finance.",
+                "color": "#ef4444",
+                "size": 36,
+                "related": [
+                    "bmc_kpi",
+                    "bmc_assumptions"
+                ]
+            },
+            {
+                "id": "bmc_assumptions",
+                "label": "Kritické předpoklady",
+                "icon": "🎯",
+                "definition": "Hypotézy, které musí být pravdivé, aby model fungoval. Nejrizikovější předpoklady.",
+                "color": "#f97316",
+                "size": 36,
+                "related": [
+                    "bmc_kpi",
+                    "bmc_risks"
+                ]
+            }
+        ],
+        "related": [
+            "customer_segments",
+            "value_proposition",
+            "channels",
+            "customer_relationships",
+            "revenue_streams",
+            "key_resources",
+            "key_activities",
+            "key_partners",
+            "cost_structure"
+        ]
+    },
+    {
+        "id": "customer_segments",
+        "label": "Zákaznické segmenty",
+        "icon": "🧑‍🤝‍🧑",
+        "definition": "Kdo jsou zákazníci? Jaké mají potřeby, problémy, starosti, motivace?",
+        "color": "#f43f5e",
+        "size": 30,
+        "parent": "bmc",
+        "related": [
+            "value_proposition",
+            "channels",
+            "customer_relationships"
+        ],
+        "media": [],
+        "docs": []
+    },
+    {
+        "id": "value_proposition",
+        "label": "Hodnotová nabídka",
+        "icon": "🎁",
+        "definition": "Jakou hodnotu přinášíme zákazníkům? Jaké problémy řešíme? Jaké přínosy vytváříme?",
+        "color": "#eab308",
+        "size": 30,
+        "parent": "bmc",
+        "subnodes": [
+            {
+                "id": "vp_jobs",
+                "label": "Zákaznické joby (JTBD)",
+                "icon": "🧠",
+                "definition": "Co se zákazník snaží dosáhnout? Funkční, emoční a sociální joby.",
+                "color": "#facc15",
+                "size": 34,
+                "related": [
+                    "vp_pains",
+                    "vp_gains"
+                ]
+            },
+            {
+                "id": "vp_pains",
+                "label": "Bolesti (Pains)",
+                "icon": "💢",
+                "definition": "Co zákazníka frustruje, brzdí nebo ohrožuje?",
+                "color": "#f59e0b",
+                "size": 34,
+                "related": [
+                    "vp_jobs",
+                    "vp_gains"
+                ]
+            },
+            {
+                "id": "vp_gains",
+                "label": "Přínosy (Gains)",
+                "icon": "✨",
+                "definition": "Pozitivní výsledky, které zákazník očekává nebo si přeje.",
+                "color": "#fde047",
+                "size": 34,
+                "related": [
+                    "vp_jobs",
+                    "vp_pains"
+                ]
+            }
+        ],
+        "related": [
+            "customer_segments",
+            "channels",
+            "revenue_streams"
+        ],
+        "media": [],
+        "docs": []
+    },
+    {
+        "id": "channels",
+        "label": "Distribuční kanály",
+        "icon": "📦",
+        "definition": "Jak doručujeme hodnotu zákazníkům? Jak komunikujeme a prodáváme?",
+        "color": "#22c55e",
+        "parent": "bmc",
+        "related": [
+            "customer_segments",
+            "value_proposition"
+        ],
+        "media": [],
+        "docs": []
+    },
+    {
+        "id": "customer_relationships",
+        "label": "Vztahy se zákazníky",
+        "icon": "🤝",
+        "definition": "Jak budujeme a udržujeme vztahy se zákazníky?",
+        "color": "#0ea5e9",
+        "parent": "bmc",
+        "related": [
+            "customer_segments"
+        ],
+        "media": [],
+        "docs": []
+    },
+    {
+        "id": "revenue_streams",
+        "label": "Příjmové toky",
+        "icon": "💰",
+        "definition": "Za co zákazníci platí? Jak monetizujeme hodnotu?",
+        "color": "#14b8a6",
+        "parent": "bmc",
+        "related": [
+            "value_proposition"
+        ],
+        "media": [],
+        "docs": []
+    },
+    {
+        "id": "key_resources",
+        "label": "Klíčové zdroje",
+        "icon": "🔑",
+        "definition": "Co firma potřebuje, aby mohla dodávat hodnotu?",
+        "color": "#6366f1",
+        "parent": "bmc",
+        "related": [
+            "key_activities",
+            "key_partners",
+            "cost_structure"
+        ],
+        "media": [],
+        "docs": []
+    },
+    {
+        "id": "key_activities",
+        "label": "Klíčové činnosti",
+        "icon": "⚙️",
+        "definition": "Jaké aktivity musíme provádět, aby model fungoval?",
+        "color": "#a855f7",
+        "parent": "bmc",
+        "related": [
+            "key_resources",
+            "key_partners"
+        ],
+        "media": [],
+        "docs": []
+    },
+    {
+        "id": "key_partners",
+        "label": "Klíčoví partneři",
+        "icon": "🤝",
+        "definition": "Kdo nám pomáhá dodávat hodnotu? Dodavatelé, partneři, ekosystém.",
+        "color": "#ec4899",
+        "parent": "bmc",
+        "related": [
+            "key_resources",
+            "key_activities"
+        ],
+        "media": [],
+        "docs": []
+    },
+    {
+        "id": "cost_structure",
+        "label": "Nákladová struktura",
+        "icon": "📉",
+        "definition": "Jaké jsou největší náklady? Co určuje profitabilitu?",
+        "color": "#475569",
+        "parent": "bmc",
+        "related": [
+            "key_resources",
+            "key_activities"
+        ],
+        "media": [],
+        "docs": []
+    }
+]

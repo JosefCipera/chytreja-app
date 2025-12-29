@@ -1,0 +1,66 @@
+{
+    "library": [
+        {
+            "id": "audio-toc-uvod",
+            "title": "Základy TOC (audio)",
+            "type": "audio",
+            "description": "Stručný úvod do Teorie omezení.",
+            "url": "eliska.mp3",
+            "access": "demo",
+            "tags": [
+                "TOC",
+                "audio",
+                "poslech"
+            ]
+        },
+        {
+            "id": "video-001",
+            "title": "Plánovač Karel",
+            "type": "video",
+            "description": "Jak plánovat výrobu v průtokovém světě.",
+            "url": "https://www.youtube.com/embed/LRXSXmQ5kZU",
+            "access": "free",
+            "tags": [
+                "video",
+                "ukázka"
+            ]
+        },
+        {
+            "id": "image-001",
+            "title": "AI specializovaný asistent",
+            "type": "image",
+            "description": "Ukázkový obrázek asistenta vytvořený pomocí AI.",
+            "url": "media/images/kouc-192.png",
+            "access": "free",
+            "tags": [
+                "obrázek",
+                "schéma"
+            ]
+        },
+        {
+            "id": "checklist-pdf-002-kuchta",
+            "title": "Kuchařka skvělých receptů",
+            "type": "pdf",
+            "description": "Kuchařka jako ukázkový PDF dokument.",
+            "url": "media/pdf/kuchta.pdf",
+            "access": "demo",
+            "tags": [
+                "pdf",
+                "TOC"
+            ]
+        },
+        {
+            "id": "test-clanek-001",
+            "title": "Jak funguje Chytré já",
+            "type": "article",
+            "description": "Krátký demo článek pro testování zobrazení obsahu.",
+            "contentUrl": "clanky/firemni-politiky.md",
+            "access": "demo",
+            "tags": [
+                "demo",
+                "článek",
+                "chytré já"
+            ]
+        }
+    ]
+}

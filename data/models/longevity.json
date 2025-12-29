@@ -1,0 +1,651 @@
+[
+    {
+        "id": "dlouhovekost",
+        "label": "Dlouhověkost",
+        "icon": "🧬",
+        "definition": "Dlouhověkost není jen o délce života, ale o jeho kvalitě. Je to strategie, jak řídit zdraví, tělo, mysl a výživu tak, abychom byli funkční, silní a duševně odolní i ve vyšším věku.",
+        "color": "#2563eb",
+        "related": [
+            "zdravi",
+            "telo",
+            "mysl",
+            "vyziva"
+        ],
+        "articles": [
+            {
+                "title": "Jak přemýšlet o dlouhověkosti",
+                "url": "/public/assets/docs/dlouhovekost/uvod.md",
+                "summary": "Peter Attia chápe dlouhověkost jako inženýrský problém – plánuj, měř a optimalizuj. Není to dieta ani cvičení, ale systém řízení života."
+            }
+        ]
+    },
+    {
+        "id": "zdravi",
+        "label": "Zdraví",
+        "icon": "⚕️",
+        "definition": "Zdraví je aktuální stav těla i mysli – to, co lze měřit a sledovat. Ukazuje, jak efektivně fungují návyky, spánek a trénink.",
+        "color": "#22c55e",
+        "parent": "dlouhovekost",
+        "related": [
+            "spanek",
+            "biomarkery",
+            "obnova",
+            "kardiovaskularni",
+            "metabolicke",
+            "imunitni",
+            "nervovy_system"
+        ],
+        "media": [
+            {
+                "type": "video",
+                "title": "Tok, ne vytížení",
+                "url": "https://www.youtube.com/embed/r2xvPjNDaVw",
+                "summary": "Drum–Buffer–Rope: jednoduchý princip, který řídí výrobu podle úzkého místa a vytváří stabilní tok zakázek."
+            },
+            {
+                "type": "audio",
+                "title": "Eliška – ukázka",
+                "summary": "Test přehrávání audia.",
+                "url": "/public/media/audio/eliska.mp3"
+            },
+            {
+                "type": "image",
+                "title": "Kouč – obrázek",
+                "summary": "Ukázka obrázku nebo gifu.",
+                "url": "/public/images/kouc-192.png"
+            }
+        ],
+        "docs": [
+            {
+                "title": "Úvod do zdraví (MD)",
+                "summary": "Markdown testovací dokument.",
+                "url": "/public/assets/docs/dlouhovekost/zdravi/zaklady-zdravi.md"
+            },
+            {
+                "title": "Zdravý spánek – PDF",
+                "summary": "Test PDF dokumentu.",
+                "url": "/public/assets/docs/dlouhovekost/zdravi/spanek/kuchta.pdf"
+            }
+        ],
+        "articles": [
+            {
+                "title": "Zdraví jako zrcadlo tvých návyků",
+                "url": "/assets/docs/dlouhovekost/zdravi/zaklady-zdravi.md",
+                "summary": "Zdraví není dar, ale důsledek. Sleduj biomarkery, spánek, tlak a VO₂max – každý ukazuje, jak tělo zvládá zátěž."
+            }
+        ]
+    },
+    {
+        "id": "metabolicke",
+        "label": "Metabolické zdraví",
+        "icon": "🟩",
+        "definition": "Glukóza, inzulin, lipidy – klíčové ukazatele efektivity metabolismu. Cílem je stabilita, ne extrémy.",
+        "color": "#4ade80",
+        "parent": "zdravi",
+        "related": [
+            "glukoza",
+            "hba1c",
+            "inzulin",
+            "tg",
+            "hdl"
+        ],
+        "articles": [
+            {
+                "title": "Metabolická flexibilita jako základ dlouhověkosti",
+                "url": "../assets/docs/dlouhovekost/zdravi/metabolicke-zdravi.md",
+                "summary": "Metabolické zdraví znamená schopnost těla přepínat mezi spalováním cukrů a tuků bez výkyvů energie."
+            }
+        ]
+    },
+    {
+        "id": "imunitni",
+        "label": "Imunitní rovnováha",
+        "icon": "🛡️",
+        "definition": "Vyvážená imunita chrání před infekcemi i chronickým zánětem. Sleduj CRP, WBC a regeneraci po zátěži.",
+        "color": "#22c55e",
+        "parent": "zdravi"
+    },
+    {
+        "id": "nervovy_system",
+        "label": "Nervový systém",
+        "icon": "🧠",
+        "definition": "Autonomní nervový systém řídí adaptaci – rovnováhu mezi stresem a regenerací. HRV ukazuje, jak efektivně to zvládá.",
+        "color": "#15803d",
+        "parent": "zdravi"
+    },
+    {
+        "id": "spanek",
+        "label": "Spánek",
+        "icon": "🌙",
+        "definition": "Kvalitní spánek je základní pilíř regenerace. Ovlivňuje hormony, imunitu i psychiku.",
+        "color": "#16a34a",
+        "parent": "zdravi",
+        "articles": [
+            {
+                "title": "Proč je spánek základ dlouhověkosti",
+                "url": "../assets/docs/dlouhovekost/zdravi/spanek/spanek.md",
+                "summary": "Spánek není pasivní stav. Je to aktivní proces obnovy těla i mysli, který rozhoduje o zdraví i výkonu."
+            }
+        ],
+        "media": [
+            {
+                "type": "video",
+                "title": "Dr. Peter Attia – Why Sleep Is the Most Powerful Longevity Tool",
+                "url": "https://www.youtube.com/embed/8d5du-Q5a5A",
+                "summary": "Krátký úsek z podcastu The Drive, kde Attia vysvětluje, jak spánek ovlivňuje hormony, metabolismus a dlouhověkost."
+            },
+            {
+                "type": "audio",
+                "title": "Předspánková relaxace (3 minuty)",
+                "url": "../assets/media/dlouhovekost/zdravi/spanek/eliska.mp3",
+                "summary": "Krátká řízená relaxace, která pomáhá zklidnit dech a připravit mozek na spánek."
+            }
+        ],
+        "docs": [
+            {
+                "type": "pdf",
+                "title": "Zásady zdravého spánku – přehled",
+                "url": "../assets/docs/dlouhovekost/zdravi/spanek/kuchta.pdf",
+                "summary": "Jednostránkový přehled doporučení: délka spánku, světlo, teplota, rutina, kofein, obrazovky."
+            }
+        ]
+    },
+    {
+        "id": "biomarkery",
+        "label": "Biomarkery",
+        "icon": "📊",
+        "definition": "Krevní a močové ukazatele odhalují, jak tělo reaguje na výživu, regeneraci a zátěž.",
+        "color": "#15803d",
+        "parent": "zdravi",
+        "related": [
+            "glukoza",
+            "bilirubin",
+            "leukocyty",
+            "erytrocyty",
+            "souhrn_biomarkery"
+        ]
+    },
+    {
+        "id": "glukoza",
+        "label": "S_Glukóza",
+        "icon": "🩸",
+        "definition": "Hladina glukózy v krvi.",
+        "parent": "biomarkery",
+        "value": 5.3,
+        "unit": "mmol/l",
+        "range": "3.6–5.6",
+        "status": "v normě",
+        "color": "#22c55e",
+        "history": [
+            {
+                "date": "2025-09-20",
+                "value": 5.7
+            },
+            {
+                "date": "2025-09-27",
+                "value": 5.4
+            },
+            {
+                "date": "2025-10-10",
+                "value": 5.2
+            },
+            {
+                "date": "2025-10-25",
+                "value": 5.3
+            }
+        ]
+    },
+    {
+        "id": "bilirubin",
+        "label": "S_Bilirubin",
+        "icon": "🧪",
+        "definition": "Ukazatel funkce jater a rozkladu červených krvinek.",
+        "parent": "biomarkery",
+        "value": 30.7,
+        "unit": "µmol/l",
+        "range": "3–20",
+        "status": "nad normu",
+        "color": "#f97316"
+    },
+    {
+        "id": "leukocyty",
+        "label": "B_Leukocyty",
+        "icon": "🧬",
+        "definition": "Počet bílých krvinek – marker zánětu nebo imunitní reakce.",
+        "parent": "biomarkery",
+        "value": 14.1,
+        "unit": "10⁹/l",
+        "range": "4–10",
+        "status": "nad normu",
+        "color": "#f97316"
+    },
+    {
+        "id": "erytrocyty",
+        "label": "U_Erytrocyty",
+        "icon": "🩸",
+        "definition": "Počet červených krvinek v moči – zvýšení může ukazovat na podráždění nebo zánět močových cest.",
+        "parent": "biomarkery",
+        "value": 16,
+        "unit": "počet/µl",
+        "range": "0–10",
+        "status": "nad normu",
+        "color": "#ef4444"
+    },
+    {
+        "id": "souhrn_biomarkery",
+        "label": "Souhrn biomarkerů",
+        "icon": "📘",
+        "definition": "Shrnutí výsledků laboratorních testů – kolik hodnot je v normě a kolik mimo.",
+        "parent": "biomarkery",
+        "color": "#0ea5e9",
+        "evaluation": {
+            "celkem": 4,
+            "v_norme": 1,
+            "mimo_normu": 3,
+            "stav": "Zvýšené odchylky – doporučeno konzultovat životní styl a případně lékaře."
+        },
+        "articles": [
+            {
+                "title": "Jak interpretovat laboratorní výsledky",
+                "url": "../docs/dlouhovekost/zdravi/biomarkery/souhrn.md",
+                "summary": "Souhrn biomarkerů ukazuje, kde tělo reaguje mimo optimální rovnováhu. Klíčem je dlouhodobé sledování trendů, ne jednorázová hodnota."
+            }
+        ]
+    },
+    {
+        "id": "obnova",
+        "label": "Obnova",
+        "icon": "🔄",
+        "definition": "Regenerace po zátěži je klíčová. Bez obnovy není růst ani adaptace.",
+        "color": "#10b981",
+        "parent": "zdravi",
+        "related": [
+            "sila",
+            "vytrvalost",
+            "mobilita",
+            "dychani"
+        ]
+    },
+    {
+        "id": "telo",
+        "label": "Tělo",
+        "icon": "💪",
+        "definition": "Tělo je motor dlouhověkosti. Posiluj sílu, výdrž a stabilitu – tři pilíře, které rozhodují o tom, jak budeš žít po padesátce i déle.",
+        "color": "#f59e0b",
+        "parent": "dlouhovekost",
+        "related": [
+            "sila",
+            "vytrvalost",
+            "mobilita",
+            "stabilita",
+            "rovnovaha",
+            "kardio",
+            "dychani"
+        ],
+        "articles": [
+            {
+                "title": "Centenarian Decathlon: připrav se na stovku",
+                "url": "../assets/docs/dlouhovekost/telo/centenarian-decathlon.md",
+                "summary": "Attia učí, že tělo je třeba trénovat pro soběstačnost – ne pro výkon, ale pro život. Cvič tak, abys mohl žít aktivně i v 90."
+            }
+        ]
+    },
+    {
+        "id": "sila",
+        "label": "Síla",
+        "icon": "🏋️",
+        "definition": "Základní schopnost těla překonávat odpor. Klíčová pro soběstačnost a prevenci pádů. Udržuj svalovou hmotu i po 50. roce života.",
+        "color": "#fbbf24",
+        "parent": "telo",
+        "articles": [
+            {
+                "title": "Proč je síla klíčem k dlouhověkosti",
+                "url": "../assets/docs/dlouhovekost/telo/sila.md",
+                "summary": "Svaly nejsou jen estetika – chrání tělo, podporují metabolismus a stabilizují klouby."
+            }
+        ]
+    },
+    {
+        "id": "vytrvalost",
+        "label": "Výdrž",
+        "icon": "🏃‍♂️",
+        "definition": "Schopnost vykonávat fyzickou aktivitu delší dobu. Cíl: VO₂max v horní třetině věkového rozmezí.",
+        "color": "#f59e0b",
+        "parent": "telo",
+        "articles": [
+            {
+                "title": "Aerobní kapacita jako ukazatel dlouhověkosti",
+                "url": "../assets/docs/dlouhovekost/telo/vytrvalost.md",
+                "summary": "Attia považuje VO₂max za nejdůležitější biomarker dlouhověkosti – trénuj zóny 2 a 5."
+            }
+        ]
+    },
+    {
+        "id": "mobilita",
+        "label": "Mobilita",
+        "icon": "🤸",
+        "definition": "Rozsah pohybu a pružnost těla. Umožňuje bezpečný pohyb, regeneraci a výkon bez zranění.",
+        "color": "#fcd34d",
+        "parent": "telo"
+    },
+    {
+        "id": "stabilita",
+        "label": "Stabilita",
+        "icon": "🧍‍♂️",
+        "definition": "Schopnost kontrolovat pohyb a udržet rovnováhu při zátěži. Klíčová pro koordinaci a prevenci pádů.",
+        "color": "#fbbf24",
+        "parent": "telo"
+    },
+    {
+        "id": "rovnovaha",
+        "label": "Rovnováha",
+        "icon": "⚖️",
+        "definition": "Zahrnuje propriocepci a koordinaci. Trénuj postoj, dech a spojení těla s myslí.",
+        "color": "#fbbf24",
+        "parent": "telo"
+    },
+    {
+        "id": "kardio",
+        "label": "Kardio a oběh",
+        "icon": "❤️",
+        "definition": "Zdraví srdce a cév – základ výdrže i regenerace. Sleduj tlak, tep, HRV a VO₂max.",
+        "color": "#f59e0b",
+        "parent": "telo"
+    },
+    {
+        "id": "dychani",
+        "label": "Dýchání",
+        "icon": "🌬️",
+        "definition": "Způsob, jakým dýcháš, ovlivňuje výkon, spánek i stres. Správné dýchání zlepšuje okysličení, regeneraci i parasympatickou rovnováhu.",
+        "color": "#fbbf24",
+        "parent": "telo",
+        "related": [
+            "nosni_dychani",
+            "dechova_koherence",
+            "butejko"
+        ],
+        "metrics": [
+            {
+                "id": "resp_rate",
+                "label": "Respirační frekvence",
+                "unit": "dechů/min",
+                "range": "8–14",
+                "desc": "Optimální klidová frekvence; méně znamená efektivnější ventilaci."
+            },
+            {
+                "id": "co2_tolerance",
+                "label": "CO₂ tolerance (control pause)",
+                "unit": "s",
+                "range": "20–40",
+                "desc": "Delší výdrž po výdechu značí lepší rovnováhu a odolnost vůči stresu."
+            },
+            {
+                "id": "ei_ratio",
+                "label": "Poměr výdech/nádech",
+                "unit": "–",
+                "range": "≥ 1,2",
+                "desc": "Delší výdech stimuluje parasympatikus a zlepšuje regeneraci."
+            }
+        ],
+        "articles": [
+            {
+                "title": "Dech jako nástroj dlouhověkosti",
+                "url": "../assets/docs/dlouhovekost/telo/dychani/uvod.md",
+                "summary": "Jak vědomé dýchání ovlivňuje regeneraci, stres i kvalitu spánku."
+            }
+        ]
+    },
+    {
+        "id": "nosni_dychani",
+        "label": "Nosní dýchání",
+        "icon": "👃",
+        "definition": "Dýchej nosem – filtruje, ohřívá a zvlhčuje vzduch, zvyšuje hladinu CO₂ a podporuje produkci NO.",
+        "color": "#FDE68A",
+        "parent": "dychani",
+        "articles": [
+            {
+                "title": "Význam nosního dýchání",
+                "url": "../assets/docs/dlouhovekost/telo/dychani/nosni-dychani.md",
+                "summary": "Dýchání nosem zlepšuje okysličení, výkon i regeneraci."
+            }
+        ]
+    },
+    {
+        "id": "dechova_koherence",
+        "label": "Dechová koherence",
+        "icon": "〰️",
+        "definition": "Pomalé rytmické dýchání (cca 6 dechů/min) pro synchronizaci srdeční a mozkové aktivity.",
+        "color": "#FEF3C7",
+        "parent": "dychani",
+        "articles": [
+            {
+                "title": "Koherentní dýchání a HRV",
+                "url": "../assets/docs/dlouhovekost/telo/dychani/dechova-koherence.md",
+                "summary": "Jak koherentní dech stimuluje parasympatikus a zlepšuje HRV."
+            }
+        ]
+    },
+    {
+        "id": "butejko",
+        "label": "Buteyko metoda",
+        "icon": "🫁",
+        "definition": "Technika zaměřená na snížení ventilace a zvýšení tolerance CO₂, která podporuje klid a rovnováhu nervového systému.",
+        "color": "#FEF08A",
+        "parent": "dychani",
+        "articles": [
+            {
+                "title": "Principy Buteyko metody",
+                "url": "../assets/docs/dlouhovekost/telo/dychani/buteyko.md",
+                "summary": "Buteyko metoda učí tělo dýchat jemněji, tišeji a s větším respektem k CO₂."
+            }
+        ]
+    },
+    {
+        "id": "mysl",
+        "label": "Mysl",
+        "icon": "🧘",
+        "definition": "Psychická odolnost, klid a smysl jsou neoddělitelnou součástí dlouhověkosti. Bez zdravé mysli se žádný plán dlouhodobě neudrží.",
+        "color": "#a855f7",
+        "parent": "dlouhovekost",
+        "related": [
+            "stres",
+            "smysl",
+            "soustredeni",
+            "vdecnost",
+            "meditace",
+            "emoce",
+            "klid"
+        ],
+        "articles": [
+            {
+                "title": "Jak trénovat mentální odolnost",
+                "url": "../assets/docs/dlouhovekost/mysl/odolnost.md",
+                "summary": "Odolnost a klid jsou dovednosti – trénuj je jako svaly. Dýchej, piš vděčnost, buď přítomen. Každý den o 1 % lepší."
+            }
+        ]
+    },
+    {
+        "id": "stres",
+        "label": "Stres",
+        "icon": "⚡",
+        "definition": "Zvládání stresu je klíčové. Nejde o jeho odstranění, ale o schopnost adaptace a návratu do rovnováhy.",
+        "color": "#c084fc",
+        "parent": "mysl",
+        "articles": [
+            {
+                "title": "Adaptace místo vyhýbání se stresu",
+                "url": "../assets/docs/dlouhovekost/mysl/stres.md",
+                "summary": "Cílem není život bez stresu, ale rychlejší návrat do klidu – pomocí dechu, pohybu a rituálů."
+            }
+        ]
+    },
+    {
+        "id": "smysl",
+        "label": "Smysl",
+        "icon": "🎯",
+        "definition": "Smysl dává životu směr. Když víš proč, zvládneš jakékoliv jak.",
+        "color": "#d8b4fe",
+        "parent": "mysl",
+        "articles": [
+            {
+                "title": "Proč je smysl největší zdroj energie",
+                "url": "../assets/docs/dlouhovekost/mysl/smysl.md",
+                "summary": "Smysl redukuje stres, zlepšuje regeneraci i imunitu. Je to kompas dlouhověkosti."
+            }
+        ]
+    },
+    {
+        "id": "soustredeni",
+        "label": "Soustředění",
+        "icon": "🎯",
+        "definition": "Schopnost věnovat pozornost jedné věci určuje kvalitu práce i života. Trénuj pozornost jako sval.",
+        "color": "#c084fc",
+        "parent": "mysl"
+    },
+    {
+        "id": "vdecnost",
+        "label": "Vděčnost",
+        "icon": "💜",
+        "definition": "Vděčnost mění biochemii mozku – snižuje úzkost, zlepšuje spánek a posiluje psychickou odolnost.",
+        "color": "#a855f7",
+        "parent": "mysl"
+    },
+    {
+        "id": "meditace",
+        "label": "Meditace",
+        "icon": "🧘‍♂️",
+        "definition": "Trénink klidu a přítomnosti. Podporuje regeneraci mozku, snižuje kortizol a zvyšuje HRV.",
+        "color": "#a855f7",
+        "parent": "mysl",
+        "media": [
+            {
+                "type": "audio",
+                "title": "Krátká meditace 5 minut – Dech a klid",
+                "url": "../assets/media/dlouhovekost/mysl/meditace_5min.mp3",
+                "summary": "Vedená dechová meditace pro zklidnění nervové soustavy a snížení napětí."
+            }
+        ]
+    },
+    {
+        "id": "emoce",
+        "label": "Emoce",
+        "icon": "💖",
+        "definition": "Schopnost rozpoznat a zdravě zpracovat emoce je klíčem k mentální rovnováze. Nepotlačuj, pozoruj.",
+        "color": "#b794f4",
+        "parent": "mysl"
+    },
+    {
+        "id": "klid",
+        "label": "Klid",
+        "icon": "🌿",
+        "definition": "Klid není pasivita. Je to aktivní stav bdělé rovnováhy, ve kterém tělo regeneruje a mysl se čistí.",
+        "color": "#a78bfa",
+        "parent": "mysl"
+    },
+    {
+        "id": "vyziva",
+        "label": "Výživa",
+        "icon": "🥗",
+        "definition": "Jídlo není cíl, ale nástroj. Výživa dlouhověkosti stojí na bílkovinách, stabilní glukóze a chytrých půstech, které podporují metabolickou flexibilitu.",
+        "color": "#ef4444",
+        "parent": "dlouhovekost",
+        "related": [
+            "pust",
+            "bílkoviny",
+            "glukoza_vyziva",
+            "mikronutrienty",
+            "hydratace",
+            "casovani_jidel"
+        ],
+        "articles": [
+            {
+                "title": "Jak jíst pro dlouhověkost",
+                "url": "../assets/docs/dlouhovekost/vyziva/principy-vyzivy.md",
+                "summary": "Jez pro sílu a regeneraci – ne pro uspokojení. Kvalita bílkovin, kontrola cukru, pravidelné půsty a klid při jídle jsou klíčové."
+            }
+        ]
+    },
+    {
+        "id": "pust",
+        "label": "Půst",
+        "icon": "⏳",
+        "definition": "Půst zlepšuje metabolickou flexibilitu, autofagii a citlivost na inzulin. Nejde o hladovění, ale o řízený odpočinek metabolismu.",
+        "color": "#f87171",
+        "parent": "vyziva",
+        "articles": [
+            {
+                "title": "Jak začít s půstem bezpečně",
+                "url": "../assets/docs/dlouhovekost/vyziva/pust.md",
+                "summary": "Od 12hodinového okna po delší protokoly – půst je nástroj, ne soutěž. Důležitá je konzistence a regenerace."
+            }
+        ]
+    },
+    {
+        "id": "bílkoviny",
+        "label": "Bílkoviny",
+        "icon": "🥚",
+        "definition": "Klíčový stavební materiál pro svaly, hormony i enzymy. Cíl: 1.6–2.2 g/kg/den, rozloženo do 3–4 jídel.",
+        "color": "#fca5a5",
+        "parent": "vyziva",
+        "articles": [
+            {
+                "title": "Jak spočítat denní příjem bílkovin",
+                "url": "../assets/docs/dlouhovekost/vyziva/bilkoviny.md",
+                "summary": "Protein je základ regenerace a prevence ztráty svalové hmoty s věkem. Kvalita > kvantita."
+            }
+        ]
+    },
+    {
+        "id": "glukoza_vyziva",
+        "label": "Glukóza (výživa)",
+        "icon": "🍬",
+        "definition": "Stabilní hladina cukru = stabilní energie. Vyhýbej se výkyvům po jídle – sleduj, jak reaguješ na různé potraviny.",
+        "color": "#ef9a9a",
+        "parent": "vyziva",
+        "articles": [
+            {
+                "title": "Glykémie a výživa v praxi",
+                "url": "../assets/docs/dlouhovekost/vyziva/glukoza-vyziva.md",
+                "summary": "Používej glukometr nebo CGM pro zpětnou vazbu – cílem je stabilní energie, ne extrémy."
+            }
+        ]
+    },
+    {
+        "id": "mikronutrienty",
+        "label": "Mikronutrienty",
+        "icon": "💊",
+        "definition": "Vitaminy a minerály jsou klíčem k buněčné rovnováze. Nedostatek hořčíku, zinku či vitamínu D narušuje regeneraci.",
+        "color": "#fb7185",
+        "parent": "vyziva",
+        "articles": [
+            {
+                "title": "Drobnosti s velkým dopadem",
+                "url": "../assets/docs/dlouhovekost/vyziva/mikronutrienty.md",
+                "summary": "Optimalizace mikronutrientů zlepšuje výkon, spánek i imunitu. Suplementuj až po měření."
+            }
+        ]
+    },
+    {
+        "id": "hydratace",
+        "label": "Hydratace",
+        "icon": "💧",
+        "definition": "Voda je médium života. Nedostatek tekutin zhoršuje kognici, regeneraci i detoxikaci. Sleduj barvu moči, ne jen pocit žízně.",
+        "color": "#fca5a5",
+        "parent": "vyziva",
+        "articles": [
+            {
+                "title": "Jak pít chytře",
+                "url": "../assets/docs/dlouhovekost/vyziva/hydratace.md",
+                "summary": "Dbej na rovnováhu elektrolytů. Při zátěži doplň sodík a hořčík, ne jen vodu."
+            }
+        ]
+    },
+    {
+        "id": "casovani_jidel",
+        "label": "Časování jídel",
+        "icon": "⏰",
+        "definition": "Načasování jídla ovlivňuje metabolismus, spánek i regeneraci. Jez větší jídla dříve a nech tělu klid před spaním.",
+        "color": "#f87171",
+        "parent": "vyziva"
+    }
+]

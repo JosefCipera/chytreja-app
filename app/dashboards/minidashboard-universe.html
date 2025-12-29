@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="cs">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MiniDashboard – Mapa uzlů</title>
+    <link rel="stylesheet" href="../assets/styles/dashboard.css">
+    <style>
+        body {
+            background: radial-gradient(circle at top, #0a0f24, #000);
+            color: #e2e8f0;
+            font-family: "Inter", sans-serif;
+            margin: 0;
+            padding: 1.5rem;
+        }
+
+        h1 {
+            text-align: center;
+            color: #93c5fd;
+            margin-bottom: 1rem;
+        }
+
+        #node-legend {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin: 2rem auto;
+            max-width: 900px;
+            padding: 1rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🌌 Mapa uzlů – Dlouhověkost</h1>
+    <div id="node-legend"></div>
+
+    <script type="module">
+        // 🔹 Načtení dat
+        const variants = [
+            `${window.location.origin}/public/assets/models/dlouhovekost.json`,
+            `${window.location.origin}/assets/models/dlouhovekost.json`,
+        ];
+
+        let data = null;
+
+        for (const url of variants) {
+            try {
+                const res = await fetch(url);
+                if (res.ok) {
+                    data = await res.json();
+                    console.log(`✅ Data načtena z: ${url}`);
+                    renderNodeLegend(data);
+                    break;
+                }
+            } catch (err) {
+                console.warn(`❌ Fetch error z ${url}`, err);
+            }
+        }
+
+        if (!data) {
+            console.error("❌ Nepodařilo se načíst žádný model JSON.");
+        }
+
+        // 🌌 Funkce pro vykreslení uzlů
+        function renderNodeLegend(nodes) {
+            const legend = document.getElementById("node-legend");
+
+            legend.innerHTML = nodes
+                .filter(node => node.label && node.access !== "hidden")
+                .map(node => {
+                    const access = node.access || "free";
+                    const icon =
+                        access === "pro" ? "🔒" :
+                            access === "hidden" ? "🚫" :
+                                "✅";
+                    const tooltip = access === "pro"
+                        ? "Pouze pro předplatitele"
+                        : node.definition || "";
+                    const border = node.color || "#999";
+                    const bg = "rgba(255,255,255,0.03)";
+                    const shadow = `0 0 10px ${border}44`;
+                    const opacity = access === "pro" ? 0.5 : 1;
+                    const pointer = access === "pro" ? "not-allowed" : "pointer";
+
+                    return `
+            <div title="${tooltip}" style="
+              display:flex;
+              align-items:center;
+              gap:10px;
+              padding:10px 14px;
+              border:1px solid ${border};
+              border-radius:10px;
+              background:${bg};
+              box-shadow:${shadow};
+              backdrop-filter: blur(4px);
+              transition: transform 0.2s ease;
+              cursor:${pointer};
+              opacity:${opacity};
+            "
+            onmouseover="this.style.transform='scale(1.03)';"
+            onmouseout="this.style.transform='scale(1)';">
+              <div style="
+                width:18px;
+                height:18px;
+                border-radius:50%;
+                background:${border};
+                flex-shrink:0;
+                box-shadow:0 0 8px ${border};
+              "></div>
+              <div style="flex:1;">
+                <strong>${node.label}</strong> 
+                <span style="opacity:0.7;font-size:0.9em;">${icon}</span>
+              </div>
+            </div>
+          `;
+                })
+                .join("");
+        }
+    </script>
+</body>
+
+</html>

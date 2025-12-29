@@ -1,0 +1,46 @@
+[
+  {
+    "id": "dlouhovekost",
+    "access": "visible"
+  },
+  {
+    "id": "zdravi",
+    "access": "visible"
+  },
+  {
+    "id": "spanek",
+    "access": "visible"
+  },
+  {
+    "id": "biomarkery",
+    "access": "visible"
+  },
+  {
+    "id": "telo",
+    "access": "visible"
+  },
+  {
+    "id": "mysl",
+    "access": "visible"
+  },
+  {
+    "id": "vyziva",
+    "access": "visible"
+  },
+  {
+    "id": "dychani",
+    "access": "visible"
+  },
+  {
+    "id": "nosni_dychani",
+    "access": "visible"
+  },
+  {
+    "id": "dechova_koherence",
+    "access": "visible"
+  },
+  {
+    "id": "butejko",
+    "access": "visible"
+  }
+]

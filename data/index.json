@@ -1,0 +1,40 @@
+{
+    "universe": {
+        "longevity": {
+            "label": "Dlouhověkost",
+            "modelFile": "/data/models/longevity.json",
+            "assistantFile": "/data/assistants/assistant-longevity.json",
+            "access": "demo"
+        },
+        "toc": {
+            "label": "Teorie omezení (TOC)",
+            "modelFile": "/data/models/toc.json",
+            "assistantFile": "/data/assistants/assistant-toc.json",
+            "access": "free"
+        },
+        "bmc": {
+            "label": "Plátno byznys modelu (BMC)",
+            "modelFile": "/data/models/bmc.json",
+            "assistantFile": "/data/assistants/assistant-bmc.json",
+            "access": "free"
+        }
+    },
+    "media": [
+        {
+            "id": "audio-toc-uvod",
+            "type": "audio",
+            "title": "Základy TOC (audio)",
+            "description": "Stručný úvod do Teorie omezení.",
+            "url": "audio/eliska.mp3",
+            "access": "demo"
+        },
+        {
+            "id": "video-001",
+            "type": "video",
+            "title": "Plánovač Karel",
+            "description": "Jak plánovat výrobu v průtokovém světě.",
+            "url": "https://www.youtube.com/embed/LRXSXmQ5kZU",
+            "access": "free"
+        }
+    ]
+}

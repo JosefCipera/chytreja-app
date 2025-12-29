@@ -1,0 +1,30 @@
+[
+  {
+    "id": "dlouhovekost",
+    "access": "visible"
+  },
+  {
+    "id": "zdravi",
+    "access": "visible"
+  },
+  {
+    "id": "spanek",
+    "access": "visible"
+  },
+  {
+    "id": "vyziva",
+    "access": "visible"
+  },
+  {
+    "id": "biomarkery",
+    "access": "hidden"
+  },
+  {
+    "id": "telo",
+    "access": "hidden"
+  },
+  {
+    "id": "mysl",
+    "access": "hidden"
+  }
+]

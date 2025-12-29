@@ -1,0 +1,148 @@
+[
+    {
+        "id": "toc",
+        "label": "Teorie omezení (TOC)",
+        "icon": "🔵",
+        "definition": "TOC – Theory of Constraints – je přístup ke zlepšování výkonu firmy tím, že se zaměřuje na jediné místo, které brání celku růst. Neřešíme všechno, ale to, co má největší dopad.",
+        "summary": "Zlepšuj jen to, co opravdu brání růstu – ne všechno. TOC spojuje finance, výrobu, projekty, strategii a marketing do jednoho principu toku.",
+        "color": "#2563eb",
+        "related": [
+            "finance_toc",
+            "vyroba_toc",
+            "ccpm",
+            "strategie_toc",
+            "marketing_toc"
+        ],
+        "articles": [],
+        "media": [
+            {
+                "title": "Úvod do TOC – Eliyahu Goldratt (vysvětleno česky)",
+                "url": "https://www.youtube.com/embed/dhMRdaG7JNA"
+            }
+        ]
+    },
+    {
+        "id": "finance_toc",
+        "label": "Finance (TA)",
+        "icon": "💰",
+        "definition": "Throughput Accounting měří výkon firmy podle rychlosti vydělávání peněz – ne podle nákladů. Finance jsou důsledkem zlepšení toku.",
+        "parent": "toc",
+        "color": "#22c55e",
+        "related": [
+            "vyroba_toc",
+            "strategie_toc"
+        ],
+        "articles": [
+            {
+                "title": "Tři ukazatele výkonu firmy",
+                "url": "https://www.youtube.com/embed/czhTRZUxvGk",
+                "summary": "Throughput, Inventory, Operating Expense – tři jednoduché ukazatele, které mění pohled na řízení firmy."
+            }
+        ],
+        "media": [
+            {
+                "title": "Goldratt – Throughput Accounting Explained",
+                "url": "https://www.youtube.com/embed/yJxk3xDbbAg"
+            }
+        ]
+    },
+    {
+        "id": "vyroba_toc",
+        "label": "Výroba (DBR)",
+        "icon": "🏭",
+        "definition": "Výroba v TOC se zaměřuje na plynulost, ne na vytížení. Drum–Buffer–Rope (DBR) řídí výrobu podle úzkého místa, které určuje rytmus celé továrny.",
+        "parent": "toc",
+        "color": "#f59e0b",
+        "related": [
+            "finance_toc",
+            "ccpm"
+        ],
+        "articles": [
+            {
+                "title": "Tok, ne vytížení",
+                "url": "https://www.youtube.com/embed/r2xvPjNDaVw",
+                "summary": "DBR řídí výrobu podle úzkého místa a vytváří stabilní tok zakázek."
+            }
+        ],
+        "media": [
+            {
+                "title": "DBR – Řízení toku výroby",
+                "url": "https://www.youtube.com/embed/2tFZlRXPGgY"
+            }
+        ]
+    },
+    {
+        "id": "ccpm",
+        "label": "Projekty (CCPM)",
+        "icon": "📦",
+        "definition": "CCPM chrání časové rezervy, odstraňuje multitasking a udržuje projekt v tempu kritického řetězu.",
+        "parent": "toc",
+        "color": "#06b6d4",
+        "related": [
+            "vyroba_toc",
+            "strategie_toc"
+        ],
+        "articles": [
+            {
+                "title": "Kritický řetěz – řízení projektů bez multitaskingu",
+                "url": "https://www.youtube.com/embed/SwVYAM5J0_8",
+                "summary": "CCPM eliminuje multitasking a chrání rezervy projektu."
+            }
+        ],
+        "media": [
+            {
+                "title": "Critical Chain in 5 Minutes",
+                "url": "https://www.youtube.com/embed/GUL3_8e3XxY"
+            }
+        ]
+    },
+    {
+        "id": "strategie_toc",
+        "label": "Strategie (SFS)",
+        "icon": "🎯",
+        "definition": "Strategie v TOC hledá hlavní omezení růstu. SFS – Strategy for Focus and Simplicity – pomáhá určit, co změnit, aby systém mohl expandovat.",
+        "parent": "toc",
+        "color": "#a855f7",
+        "related": [
+            "marketing_toc",
+            "finance_toc"
+        ],
+        "articles": [
+            {
+                "title": "Strategie pro růst",
+                "url": "./assets/docs/toc/strategie/strategie-rust.md",
+                "summary": "SFS se zaměřuje na odstranění hlavních překážek růstu."
+            }
+        ],
+        "media": [
+            {
+                "title": "Goldratt – The Goal (Strategie z pohledu TOC)",
+                "url": "https://www.youtube.com/embed/2u7WrPIiIME"
+            }
+        ]
+    },
+    {
+        "id": "marketing_toc",
+        "label": "Marketing (MA)",
+        "icon": "📣",
+        "definition": "Marketing v TOC hledá omezení na straně trhu – co brání zákazníkovi nakupovat víc?",
+        "parent": "toc",
+        "color": "#ef4444",
+        "related": [
+            "strategie_toc"
+        ],
+        "articles": [
+            {
+                "title": "Úzké místo na trhu",
+                "url": "https://www.youtube.com/embed/2u7WrPIiIME",
+                "summary": "Omezení může být v hlavě zákazníka – najdi ho a odstraň."
+            }
+        ],
+        "media": [
+            {
+                "title": "TOC Marketing – Removing Market Constraints",
+                "url": "https://www.youtube.com/embed/kD2-IkN5_8U"
+            }
+        ]
+    }
+]

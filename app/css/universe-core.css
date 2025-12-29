@@ -1,0 +1,903 @@
+/* === 🌌 ZÁKLAD A HLAVIČKA === */
+html,
+body {
+    height: 100%;
+    margin: 0;
+    background: #0b1220;
+    color: #e2e8f0;
+    font-family: Inter, system-ui, Arial, sans-serif;
+}
+
+#network {
+    position: fixed;
+    top: 56px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+
+/* --- Horní lišta --- */
+.app-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 1rem;
+    background: #0f172a;
+    border-bottom: 1px solid #1e293b;
+    z-index: 1000;
+}
+
+#appTitle {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.model-selector {
+    background: #1e293b;
+    color: #f1f5f9;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    padding: .35rem .6rem;
+}
+
+/* === 🌌 PANEL – společné pro desktop i mobil === */
+#sidePanel {
+    position: fixed;
+    top: 72px;
+    /* ✔ identické odsazení */
+    right: 8px;
+    /* desktop default */
+    left: auto;
+    bottom: 16px;
+    width: 360px;
+    max-width: 88vw;
+    background: rgba(15, 23, 42, .9);
+    border-radius: 14px;
+    transform: translateX(110%);
+    transition: transform 0.4s ease, opacity 0.3s ease;
+    opacity: 0;
+    overflow-y: auto;
+    z-index: 9999;
+}
+
+/* Otevřený panel */
+#sidePanel.visible {
+    transform: translateX(0);
+    opacity: 1;
+}
+
+/* === 📱 Mobil – jen šířku upravíme, ale top zůstává stejné === */
+@media (max-width: 768px) {
+    #sidePanel {
+        right: 8px;
+        left: 8px;
+        /* ✔ vycentrováno */
+        width: auto;
+        max-width: none;
+        bottom: 12px;
+        border-radius: 12px;
+    }
+}
+
+.app-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 1rem;
+    background: #0f172a;
+    border-bottom: 1px solid #1e293b;
+
+    /* ⭐ nový jemný stín */
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.35);
+
+    z-index: 1000;
+}
+
+/* scrollbary MUSÍ být samostatně – mimo #sidePanel */
+#sidePanel::-webkit-scrollbar {
+    width: 8px;
+}
+
+#sidePanel::-webkit-scrollbar-thumb {
+    background-color: #475569;
+    border-radius: 4px;
+}
+
+/* === HLAVIČKA PANELU === */
+.panel-header {
+    position: sticky;
+    top: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    background: rgba(30, 41, 59, .95);
+    border-bottom: 1px solid #334155;
+    border-top-left-radius: 18px;
+    border-top-right-radius: 18px;
+}
+
+.panel-header h2 {
+    margin: 0;
+    font-size: 1.6rem;
+    /* 🆕 větší a dominantnější */
+    font-weight: 700;
+    color: #f1f5f9;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.panel-header h2 i {
+    font-size: 1.2rem;
+    color: #93c5fd;
+    /* jemně modrá ikona */
+    filter: drop-shadow(0 0 4px #3b82f640);
+}
+
+.panel-close {
+    background: none;
+    border: none;
+    color: #f87171;
+    font-size: 1.3rem;
+    cursor: pointer;
+}
+
+.panel-close:hover {
+    transform: scale(1.2);
+}
+
+/* --- Obsah --- */
+/* === OBSAH PANELU === */
+.panel-content {
+    padding: 16px 20px 28px;
+    line-height: 1.55;
+    font-size: .98rem;
+}
+
+/* === ODDĚLOVAČE === */
+.panel-content hr {
+    border: 0;
+    border-top: 1px solid #475569;
+    /* 🆕 decentní šedě-modrý tón */
+    margin: 1rem 0;
+    opacity: 0.7;
+}
+
+/* === NADPISY SEKCE === */
+.panel-content h3 {
+    margin: 14px 0 10px;
+    color: #93c5fd;
+    /* 🆕 světle modrá */
+    font-size: 1.15rem;
+    /* 🆕 zvětšeno */
+    font-weight: 600;
+    letter-spacing: 0.2px;
+}
+
+.panel-content ul {
+    margin: 0 0 0.8rem 1.2rem;
+    padding: 0;
+}
+
+.panel-content li {
+    margin: 0.3rem 0;
+}
+
+.definition {
+    color: #cbd5e1;
+    margin: 0.4rem 0 1.1rem;
+    /* 🆕 menší horní mezera, víc vizuálně přitažené */
+    line-height: 1.5;
+    font-size: 0.98rem;
+}
+
+.doc-link {
+    color: #60a5fa;
+    text-decoration: none;
+}
+
+.doc-link:hover {
+    text-decoration: underline;
+}
+
+/* === 📄 Overlay dokumentů (MD/PDF) === */
+#docOverlay {
+    position: fixed;
+    inset: 0;
+    display: none;
+    /* 🟢 MUSÍ být skryté po načtení */
+    justify-content: center;
+    align-items: center;
+    background: rgba(0, 0, 0, .55);
+    z-index: 10000;
+}
+
+#docOverlay.visible {
+    display: flex;
+    /* zobrazí se jen při otevření */
+}
+
+#docViewer {
+    position: relative;
+    width: 70%;
+    /* 🆕 místo 90% — lépe se čte */
+    max-width: 1000px;
+    /* 🆕 příjemná šířka na velkých monitorech */
+    height: 85%;
+    /* 🆕 trošku nižší, více prostoru */
+    margin: auto;
+    /* středy */
+    background: #0b1220;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    overflow: hidden;
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.55);
+    /* pěkný efekt */
+}
+
+#closeDoc {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    background: none;
+    border: none;
+    color: #f87171;
+    font-size: 1.2rem;
+    cursor: pointer;
+    z-index: 10;
+}
+
+#docFrame {
+    width: 100%;
+    height: 100%;
+    border: 0;
+    background: transparent;
+}
+
+/* === 🧠 CHYTRÉ JÁ – sekce dole === */
+/* === 🧠 CHYTRÉ JÁ – stejný styl jako ostatní sekce === */
+#aiSection {
+    margin-top: 0.6rem;
+    padding-bottom: 0.6rem;
+}
+
+#aiSection hr {
+    border: 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    margin: 1rem 0 0.6rem;
+}
+
+#aiMini {
+    display: flex;
+    align-items: center;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    background: rgba(30, 41, 59, 0.85);
+    padding: 6px 10px;
+    transition: all 0.25s ease;
+}
+
+#aiMini:hover {
+    border-color: rgba(96, 165, 250, 0.5);
+    background: rgba(30, 41, 59, 0.95);
+}
+
+#aiMiniInput {
+    flex: 1;
+    border: none;
+    background: transparent;
+    color: #e2e8f0;
+    font-size: 0.95rem;
+    outline: none;
+}
+
+#aiMiniMic {
+    background: none;
+    border: none;
+    color: #60a5fa;
+    cursor: pointer;
+    font-size: 1rem;
+    margin-left: 6px;
+    transition: color 0.25s ease, transform 0.2s ease;
+}
+
+#aiMiniMic:hover {
+    color: #93c5fd;
+    transform: scale(1.15);
+}
+
+/* === 🧠 Overlay === */
+#aiOverlay {
+    position: fixed;
+    bottom: 0;
+    right: 0;
+    width: 360px;
+    max-width: 90vw;
+    height: 80%;
+    background: rgba(15, 23, 42, 0.98);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px 14px 0 0;
+    box-shadow: 0 -6px 32px rgba(0, 0, 0, 0.6);
+    display: flex;
+    flex-direction: column;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(100%);
+    transition: all .4s ease;
+    z-index: 9999;
+}
+
+#aiOverlay.visible {
+    opacity: 1;
+    pointer-events: all;
+    transform: translateY(0);
+}
+
+.ai-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #2563eb;
+    color: white;
+    padding: 12px 16px;
+    border-radius: 14px 14px 0 0;
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+.ai-header button {
+    background: none;
+    border: none;
+    color: #fca5a5;
+    font-size: 1.3rem;
+    cursor: pointer;
+}
+
+#aiChatWindow {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+    color: #e2e8f0;
+    line-height: 1.5;
+}
+
+.ai-input {
+    display: flex;
+    padding: 10px;
+    background: #0f172a;
+    border-top: 1px solid #334155;
+}
+
+.ai-input input {
+    flex: 1;
+    background: #1e293b;
+    border: none;
+    color: #fff;
+    padding: 8px;
+    border-radius: 8px;
+}
+
+.ai-input button {
+    background: none;
+    border: none;
+    color: #60a5fa;
+    margin-left: 8px;
+    font-size: 1.2rem;
+    cursor: pointer;
+}
+
+.msg {
+    margin-bottom: .8rem;
+}
+
+.msg.user {
+    text-align: right;
+    color: #93c5fd;
+}
+
+.msg.ai {
+    text-align: left;
+    color: #a5f3fc;
+}
+
+/* === 🧠 Chytré Já – sekce v panelu === */
+.ai-divider {
+    border: 0;
+    border-top: 1px solid rgba(37, 99, 235, 0.45);
+    /* jemně modrý tón */
+    margin: 1.2rem 0 0.8rem;
+    opacity: 0.9;
+}
+
+.panel-content h3.ai-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0 0 10px;
+    color: #93c5fd;
+    font-size: 1.15rem;
+    font-weight: 600;
+}
+
+.panel-content h3.ai-title i {
+    color: #60a5fa;
+    font-size: 1.1rem;
+}
+
+/* --- Input řádek --- */
+#aiPanelSection {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(30, 41, 59, 0.88);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    padding: 6px 10px;
+    margin-bottom: 0.6rem;
+    transition: border-color 0.25s ease, background 0.25s ease;
+}
+
+#aiPanelSection:hover {
+    border-color: rgba(96, 165, 250, 0.5);
+    background: rgba(30, 41, 59, 0.95);
+}
+
+#aiPanelInput {
+    flex: 1;
+    border: none;
+    background: transparent;
+    color: #e2e8f0;
+    font-size: 0.95rem;
+    outline: none;
+}
+
+#aiPanelSend {
+    background: none;
+    border: none;
+    color: #60a5fa;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: color 0.25s ease, transform 0.2s ease;
+}
+
+#aiPanelSend:hover {
+    color: #93c5fd;
+    transform: scale(1.15);
+}
+
+/* === 🧠 Rozbalené Chytré já === */
+#aiChatOverlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.96);
+    border-radius: 14px;
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease, transform 0.4s ease;
+    transform: translateY(10px);
+    z-index: 50;
+}
+
+/* === 🧠 Chytré já – rozbalený režim === */
+/* === 🧠 Chytré já – rozbalený režim === */
+#aiChatOverlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.96);
+    border-radius: 14px;
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(10px);
+    transition: all 0.4s ease;
+    z-index: 50;
+}
+
+#aiChatOverlay.visible {
+    opacity: 1;
+    pointer-events: all;
+    transform: translateY(0);
+}
+
+/* === 🧠 Hlavička rozbaleného chatu === */
+.ai-chat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(37, 99, 235, 0.35);
+    border-bottom: 1px solid rgba(96, 165, 250, 0.45);
+    color: #93c5fd;
+    padding: 14px 18px;
+    border-top-left-radius: 14px;
+    border-top-right-radius: 14px;
+    backdrop-filter: blur(4px);
+}
+
+.ai-chat-header h2 {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1.35rem;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+}
+
+.ai-chat-header i {
+    color: #60a5fa;
+    font-size: 1.4rem;
+    filter: drop-shadow(0 0 3px #3b82f640);
+}
+
+.ai-chat-header button {
+    background: none;
+    border: none;
+    color: #f87171;
+    font-size: 1.3rem;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.ai-chat-header button:hover {
+    transform: scale(1.15);
+}
+
+/* === 💬 Obsah chatu === */
+#aiChatMessages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem 1.2rem;
+    font-size: 0.95rem;
+}
+
+#aiChatMessages .msg {
+    margin-bottom: 10px;
+    line-height: 1.5;
+}
+
+#aiChatMessages .msg.user {
+    text-align: right;
+    color: #93c5fd;
+}
+
+#aiChatMessages .msg.ai {
+    text-align: left;
+    color: #a5f3fc;
+}
+
+/* === 🧩 Input zóna === */
+.ai-chat-input {
+    display: flex;
+    padding: 10px;
+    border-top: 1px solid rgba(96, 165, 250, 0.25);
+    background: rgba(15, 23, 42, 0.95);
+    border-radius: 0 0 14px 14px;
+}
+
+.ai-chat-input input {
+    flex: 1;
+    background: #1e293b;
+    border: none;
+    border-radius: 8px;
+    color: #fff;
+    padding: 8px;
+    font-size: 0.9rem;
+}
+
+.ai-chat-input button {
+    background: none;
+    border: none;
+    color: #60a5fa;
+    margin-left: 8px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: color 0.25s ease, transform 0.2s ease;
+}
+
+.ai-chat-input button:hover {
+    color: #93c5fd;
+    transform: scale(1.15);
+}
+
+/* === 🧠 Chytré já – vzhled v panelu jako ostatní sekce === */
+.panel-content h3.ai-section-title {
+    margin: 14px 0 10px;
+    color: #93c5fd;
+    font-size: 1.15rem;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+#aiChatOverlay.visible {
+    outline: 2px solid #60a5fa;
+}
+
+/* === 🧠 PLovoucí Chytré já === */
+.ai-helper {
+    position: fixed;
+    bottom: 0;
+    right: 0;
+    max-width: 380px;
+    width: 100%;
+    background: rgba(15, 23, 42, 0.96);
+    color: #e2e8f0;
+    font-family: "Inter", sans-serif;
+    border-top-left-radius: 16px;
+    border-top-right-radius: 16px;
+    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.5);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    overflow: hidden;
+    transition: all 0.35s ease;
+    z-index: 10000;
+}
+
+.ai-helper.hidden {
+    transform: translateY(100%);
+    opacity: 0;
+    pointer-events: none;
+}
+
+.ai-helper.mini {
+    height: 64px;
+    cursor: text;
+    padding: 0.5rem 1rem;
+}
+
+.ai-helper.expanded {
+    height: 60%;
+    cursor: default;
+}
+
+.aih-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #1e293b;
+    color: #93c5fd;
+    font-weight: 600;
+    padding: 0.6rem 1rem;
+    font-size: 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    user-select: none;
+}
+
+.aih-header button {
+    background: none;
+    border: none;
+    color: #f87171;
+    font-size: 1.2rem;
+    cursor: pointer;
+}
+
+.aih-body {
+    display: none;
+    flex-direction: column;
+    height: calc(100% - 52px);
+}
+
+.ai-helper.expanded .aih-body {
+    display: flex;
+}
+
+.ai-helper.expanded .aih-mini {
+    display: none;
+}
+
+.aih-window {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.8rem 1rem;
+    font-size: 0.95rem;
+}
+
+.aih-msg {
+    margin-bottom: 10px;
+    line-height: 1.45;
+}
+
+.aih-msg.user {
+    text-align: right;
+    color: #93c5fd;
+}
+
+.aih-msg.ai {
+    text-align: left;
+    color: #a5f3fc;
+}
+
+.aih-input {
+    display: flex;
+    padding: 0.6rem 0.8rem;
+    background: #0f172a;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+#aihInput {
+    flex: 1;
+    background: #1e293b;
+    color: #fff;
+    border: none;
+    padding: 0.55rem 0.7rem;
+    border-radius: 8px;
+}
+
+#aihMic,
+#aihSend {
+    background: rgba(37, 99, 235, 0.25);
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    color: #e2e8f0;
+    padding: 0.55rem 0.8rem;
+    margin-left: 8px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+#aihMic:hover,
+#aihSend:hover {
+    background: rgba(59, 130, 246, 0.45);
+    transform: scale(1.05);
+}
+
+.metric-card b {
+    color: #e2e8f0;
+}
+
+.metric-card .metric-bar div {
+    box-shadow: 0 0 6px rgba(255, 255, 255, 0.5);
+}
+
+.lock-message {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(30, 41, 59, 0.9);
+    color: #f8fafc;
+    border: 1px solid #475569;
+    padding: 10px 20px;
+    border-radius: 12px;
+    font-family: "Inter", sans-serif;
+    font-size: 0.95rem;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.4);
+    animation: fadeInOut 2.5s ease forwards;
+    z-index: 9999;
+}
+
+@keyframes fadeInOut {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, 20px);
+    }
+
+    10%,
+    80% {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -20px);
+    }
+}
+
+#modelSelector {
+    background: #1e293b;
+    border: 1px solid #334155;
+    color: #f1f5f9;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    /* zvýšeno */
+    cursor: pointer;
+    transition: background 0.3s, border-color 0.3s;
+}
+
+#modelSelector:hover {
+    background: #334155;
+}
+
+#roleSelect {
+    background: #1e293b;
+    border: 1px solid #334155;
+    color: #f1f5f9;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: background 0.3s, border-color 0.3s, color 0.3s;
+}
+
+#roleSelect:hover {
+    background: #334155;
+}
+
+/* 💡 Barvy podle režimu */
+body.demo #roleSelect {
+    border-color: #3b82f6;
+    background: rgba(59, 130, 246, 0.15);
+    color: #e0f2fe;
+}
+
+body.free #roleSelect {
+    border-color: #22c55e;
+    background: rgba(34, 197, 94, 0.15);
+    color: #dcfce7;
+}
+
+body.pro #roleSelect {
+    border-color: #fbbf24;
+    background: rgba(251, 191, 36, 0.15);
+    color: #fef9c3;
+}
+
+/* === Combo pro výběr modelu i režimu === */
+/* === ✅ Combo pro výběr modelu i režimu – finální styl === */
+#modelSelector,
+#roleSelect {
+    background: #1E293B !important;
+    /* tmavé pozadí */
+    border: 1px solid #334155;
+    color: #bfdbfe;
+    /* světle modrý text */
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    cursor: pointer;
+    appearance: none;
+    /* odstraní systémové pozadí */
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: none !important;
+    transition: background 0.3s, border-color 0.3s, color 0.3s;
+}
+
+#modelSelector:hover,
+#roleSelect:hover {
+    background: #334155;
+}
+
+/* === 💡 Barevné režimy pro přehled === */
+body.demo #roleSelect {
+    border-color: #3b82f6;
+    box-shadow: 0 0 6px rgba(59, 130, 246, 0.4);
+    color: #bfdbfe;
+}
+
+body.free #roleSelect {
+    border-color: #22c55e;
+    box-shadow: 0 0 6px rgba(34, 197, 94, 0.4);
+    color: #bbf7d0;
+}
+
+body.pro #roleSelect {
+    border-color: #fbbf24;
+    box-shadow: 0 0 6px rgba(251, 191, 36, 0.4);
+    color: #fef08a;
+}
+
+#closePanel {
+    position: relative;
+    z-index: 10000;
+}

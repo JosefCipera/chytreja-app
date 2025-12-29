@@ -1,0 +1,300 @@
+{
+    "title": "📈 Ukazatele dlouhověkosti",
+    "subtitle": "Komplexní přehled zdraví, výkonu a regenerace podle principů Medicine 3.0 (Peter Attia)",
+    "groups": [
+        {
+            "id": "regenerace",
+            "label": "Regenerace a spánek",
+            "icon": "🛌",
+            "biomarkers": [
+                {
+                    "id": "sleep_duration",
+                    "label": "Délka spánku",
+                    "value": 7.8,
+                    "unit": "h",
+                    "range": "7–9",
+                    "status": "✅ optimální",
+                    "desc": "Dostatek spánku podporuje regeneraci i hormonální rovnováhu.",
+                    "trend": [
+                        7.1,
+                        7.4,
+                        7.6,
+                        7.8
+                    ],
+                    "color": "#22c55e",
+                    "source": "Oura Ring",
+                    "node_ref": "spanek"
+                },
+                {
+                    "id": "sleep_eff",
+                    "label": "Efektivita spánku",
+                    "value": 92,
+                    "unit": "%",
+                    "range": "≥ 85",
+                    "status": "✅ v normě",
+                    "desc": "Méně probouzení a lepší kvalita spánku.",
+                    "trend": [
+                        88,
+                        90,
+                        92,
+                        92
+                    ],
+                    "color": "#10b981",
+                    "source": "Oura Ring",
+                    "node_ref": "spanek"
+                },
+                {
+                    "id": "hrv",
+                    "label": "HRV",
+                    "value": 82,
+                    "unit": "ms",
+                    "range": "60–100",
+                    "status": "✅ v normě",
+                    "desc": "Vyšší HRV = lepší parasympatická rovnováha.",
+                    "trend": [
+                        75,
+                        80,
+                        83,
+                        82
+                    ],
+                    "color": "#4ade80",
+                    "source": "Oura / Garmin",
+                    "node_ref": "stres"
+                }
+            ]
+        },
+        {
+            "id": "metabolismus",
+            "label": "Metabolismus a energie",
+            "icon": "🔥",
+            "biomarkers": [
+                {
+                    "id": "glukoza",
+                    "label": "Glukóza",
+                    "value": 5.3,
+                    "unit": "mmol/l",
+                    "range": "3.6–5.6",
+                    "status": "✅ v normě",
+                    "desc": "Stabilní glykémie značí dobrou inzulinovou citlivost.",
+                    "trend": [
+                        5.4,
+                        5.3,
+                        5.3,
+                        5.3
+                    ],
+                    "color": "#22d3ee",
+                    "source": "Lab / CGM",
+                    "node_ref": "metabolicke"
+                },
+                {
+                    "id": "inzulin",
+                    "label": "Inzulin",
+                    "value": 6.2,
+                    "unit": "mIU/l",
+                    "range": "2–10",
+                    "status": "✅ v normě",
+                    "desc": "Nižší hladiny = lepší metabolická flexibilita.",
+                    "trend": [
+                        6.9,
+                        6.6,
+                        6.4,
+                        6.2
+                    ],
+                    "color": "#0ea5e9",
+                    "source": "Lab",
+                    "node_ref": "metabolicke"
+                },
+                {
+                    "id": "vo2max",
+                    "label": "VO₂max",
+                    "value": 44.2,
+                    "unit": "ml/kg/min",
+                    "range": "40–50",
+                    "status": "✅ optimální",
+                    "desc": "Silný prediktor dlouhověkosti – kapacita aerobního systému.",
+                    "trend": [
+                        42.5,
+                        43.2,
+                        44.0,
+                        44.2
+                    ],
+                    "color": "#f97316",
+                    "source": "Garmin",
+                    "node_ref": "vytrvalost"
+                }
+            ]
+        },
+        {
+            "id": "stres_nervovy_system",
+            "label": "Stres a nervový systém",
+            "icon": "🧘",
+            "biomarkers": [
+                {
+                    "id": "resp_rate",
+                    "label": "Respirační frekvence",
+                    "value": 12,
+                    "unit": "dechů/min",
+                    "range": "8–14",
+                    "status": "✅ v normě",
+                    "desc": "Optimální dechový rytmus ve spánku a v regeneraci.",
+                    "trend": [
+                        13,
+                        12.8,
+                        12.3,
+                        12
+                    ],
+                    "color": "#fde047",
+                    "source": "Oura / Garmin",
+                    "node_ref": "dychani"
+                },
+                {
+                    "id": "co2_tolerance",
+                    "label": "CO₂ tolerance",
+                    "value": 33,
+                    "unit": "s",
+                    "range": "20–40",
+                    "status": "✅ v normě",
+                    "desc": "Delší výdrž po výdechu = lepší nervová rovnováha.",
+                    "trend": [
+                        28,
+                        30,
+                        32,
+                        33
+                    ],
+                    "color": "#facc15",
+                    "source": "Manual test (Buteyko)",
+                    "node_ref": "butejko"
+                }
+            ]
+        },
+        {
+            "id": "kardiovaskularni",
+            "label": "Kardiovaskulární ukazatele",
+            "icon": "💓",
+            "biomarkers": [
+                {
+                    "id": "rhr",
+                    "label": "Klidová TF",
+                    "value": 58,
+                    "unit": "bpm",
+                    "range": "50–65",
+                    "status": "✅ v normě",
+                    "desc": "Nižší TF značí lepší kondici a regeneraci.",
+                    "trend": [
+                        62,
+                        60,
+                        59,
+                        58
+                    ],
+                    "color": "#16a34a",
+                    "source": "Garmin",
+                    "node_ref": "kardio"
+                },
+                {
+                    "id": "bp_sys",
+                    "label": "Krevní tlak (SYS)",
+                    "value": 122,
+                    "unit": "mmHg",
+                    "range": "110–130",
+                    "status": "✅ v normě",
+                    "desc": "Optimální tlak = zdravý oběh.",
+                    "trend": [
+                        126,
+                        124,
+                        123,
+                        122
+                    ],
+                    "color": "#0ea5e9",
+                    "source": "Omron",
+                    "node_ref": "kardiovaskularni"
+                }
+            ]
+        },
+        {
+            "id": "imunita_zanet",
+            "label": "Imunita a zánět",
+            "icon": "🩸",
+            "biomarkers": [
+                {
+                    "id": "hs_crp",
+                    "label": "hs-CRP",
+                    "value": 0.9,
+                    "unit": "mg/l",
+                    "range": "0–3",
+                    "status": "✅ v normě",
+                    "desc": "Nízké hodnoty značí minimální zánět.",
+                    "trend": [
+                        1.5,
+                        1.2,
+                        1.0,
+                        0.9
+                    ],
+                    "color": "#f87171",
+                    "source": "Lab",
+                    "node_ref": "imunitni"
+                },
+                {
+                    "id": "vitd",
+                    "label": "Vitamin D",
+                    "value": 82,
+                    "unit": "nmol/l",
+                    "range": "75–150",
+                    "status": "✅ v normě",
+                    "desc": "Imunita, regenerace, nálada – v zimě zvaž suplementaci.",
+                    "trend": [
+                        78,
+                        80,
+                        82,
+                        82
+                    ],
+                    "color": "#34d399",
+                    "source": "Lab",
+                    "node_ref": "mikronutrienty"
+                }
+            ]
+        },
+        {
+            "id": "dychani",
+            "label": "Dýchání a okysličení",
+            "icon": "🌬️",
+            "biomarkers": [
+                {
+                    "id": "ei_ratio",
+                    "label": "Poměr výdech/nádech",
+                    "value": 1.3,
+                    "unit": "–",
+                    "range": "≥ 1,2",
+                    "status": "✅ v normě",
+                    "desc": "Delší výdech stimuluje parasympatikus a zlepšuje regeneraci.",
+                    "trend": [
+                        1.2,
+                        1.2,
+                        1.3,
+                        1.3
+                    ],
+                    "color": "#facc15",
+                    "source": "Manual / HRV App",
+                    "node_ref": "dychani"
+                },
+                {
+                    "id": "breath_hold",
+                    "label": "Zadržení dechu",
+                    "value": 33,
+                    "unit": "s",
+                    "range": "20–40",
+                    "status": "✅ v normě",
+                    "desc": "Trénink CO₂ tolerance – klid a odolnost.",
+                    "trend": [
+                        25,
+                        29,
+                        31,
+                        33
+                    ],
+                    "color": "#fde68a",
+                    "source": "Buteyko / Breathe",
+                    "node_ref": "butejko"
+                }
+            ]
+        }
+    ]
+}
