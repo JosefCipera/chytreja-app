@@ -1,52 +1,42 @@
+// =============================================================
 // universe-viewers.js
+// -------------------------------------------------------------
+// Jednotný viewer pro MD / PDF / IMAGE / AUDIO / VIDEO
+// Připravený pro data/universes/*
+// =============================================================
 
-// jednoduchý markdown → HTML parser
-// Načtení knihovny marked z CDN (modulový import)
-// ESM verze marked
 import { marked } from "https://cdn.jsdelivr.net/npm/marked@12.0.2/lib/marked.esm.js";
 
+// -------------------------------------------------------------
+// Markdown → HTML
+// -------------------------------------------------------------
 export function convertMarkdownToHtml(md) {
   return marked.parse(md);
 }
 
-/**
- * Vrací absolutní URL podle typu souboru.
- * Slouží jak pro Universe, tak pro Mediotéku.
- */
-export function resolveMediaPath(path) {
+// -------------------------------------------------------------
+// Open viewer (nový svět)
+// -------------------------------------------------------------
+export function openViewer(url, type = null) {
+  if (!url) return;
 
-  // Pokud už začíná / → necháme jak je
-  if (path.startsWith("/")) return path;
-
-  // Lokální video / audio / obrázky / pdf
-  if (path.endsWith(".mp3")) return `/media/audio/${path}`;
-  if (path.endsWith(".png") || path.endsWith(".jpg") || path.endsWith(".jpeg"))
-    return `/media/images/${path}`;
-  if (path.endsWith(".pdf")) return `/media/pdf/${path}`;
-  if (path.endsWith(".md")) return `/clanky/${path}`;
-
-  // fallback
-  return path;
-}
-// === UNIVERSE VIEWER ===
-// používá stejný viewer.html jako mediotéka
-
-export function openViewer(file, type = null) {
-
-  // Pokud URL obsahuje příponu, detekujeme typ automaticky
+  // === automatická detekce typu ===
   if (!type) {
-    if (file.endsWith(".md")) type = "article";
-    else if (file.endsWith(".pdf")) type = "pdf";
-    else if (file.match(/\.(png|jpg|jpeg|gif)$/)) type = "image";
-    else if (file.endsWith(".mp3")) type = "audio";
+    if (url.endsWith(".md")) type = "md";
+    else if (url.endsWith(".pdf")) type = "pdf";
+    else if (url.match(/\.(png|jpg|jpeg|gif)$/)) type = "image";
+    else if (url.endsWith(".mp3")) type = "audio";
+    else if (url.startsWith("http")) type = "video";
     else type = "other";
   }
 
-  // Oprava nadbytečného "public/"
-  file = file.replace(/^\/?public\//, "/");
+  const params = new URLSearchParams({
+    type,
+    url
+  });
 
-  const target = `/public/viewer.html?type=${type}&file=${encodeURIComponent(file)}`;
+  // viewer.html je vedle index.html
+  const target = `./viewer.html?${params.toString()}`;
 
-  window.open(target, "_blank");
+  window.open(target, "_blank", "noopener");
 }
-

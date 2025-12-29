@@ -1,4 +1,5 @@
 import { renderUniverse } from "./universe-core.js";
+const DATA_BASE = "../data/universes";
 
 // -------------------------------------------------------------
 // 1) LOAD INDEX.JSON (universe registry)
@@ -72,7 +73,8 @@ async function populateModelSelector() {
 // 4) LOAD MODEL + RENDER
 // -------------------------------------------------------------
 async function loadAndRenderModel(modelName, role) {
-
+  // === NEW: current universe ===
+  window.CURRENT_MODEL = modelName;
   const modelPath = window.UNIVERSE_INDEX?.[modelName]?.modelFile;
   if (!modelPath) {
     console.error(`❌ Model "${modelName}" nemá modelFile v index.json`);
@@ -87,7 +89,8 @@ async function loadAndRenderModel(modelName, role) {
 
   window.MAIN_UNIVERSE_DATA = model;
 
-  await applyAccessModel(role, model);
+  await applyAccessModel(role, model, modelName);
+
   const headerModelName = document.getElementById("headerModelName");
 
   if (headerModelName) {
@@ -121,8 +124,8 @@ async function loadModel(urls) {
 // -------------------------------------------------------------
 // 6) Access model (free/demo/pro/user)
 // -------------------------------------------------------------
-async function applyAccessModel(role, model) {
-  const url = `../data/models/access-${role}.json`;
+async function applyAccessModel(role, model, modelName) {
+  const url = `${DATA_BASE}/${modelName}/access/access-${role}.json`;
 
   try {
     const res = await fetch(url);
@@ -201,7 +204,7 @@ function initHeaderControls() {
 
     if (newRole === "user") return location.reload();
 
-    await applyAccessModel(newRole, window.MAIN_UNIVERSE_DATA);
+    await applyAccessModel(newRole, window.MAIN_UNIVERSE_DATA, newModel);
     renderVisibleUniverse(window.MAIN_UNIVERSE_DATA);
   });
 

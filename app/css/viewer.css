@@ -91,3 +91,17 @@ audio {
     width: 100%;
     max-width: 800px;
 }
+
+html,
+body {
+    height: 100%;
+}
+
+#wrapper {
+    height: calc(100vh - 48px);
+    /* výška minus topbar */
+}
+
+#content {
+    height: 100%;
+}

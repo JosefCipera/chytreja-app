@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="cs">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Viewer</title>
+
+    <link rel="stylesheet" href="./css/viewer.css">
+
+    <!-- Marked – ESM -->
+    <!-- <script type="module" src="https://cdn.jsdelivr.net/npm/marked/marked.esm.js"></script> -->
+    <script type="module" src="https://cdn.jsdelivr.net/npm/marked@12.0.2/lib/marked.esm.js"></script>
+</head>
+
+<body>
+
+    <!-- === TOP BAR === -->
+    <div id="topbar">
+        <div class="btn" id="btnBack">← Zpět</div>
+        <div class="btn" id="btnPrint">🖨️ Tisk</div>
+        <div class="btn" id="btnDownload">⬇️ Stáhnout</div>
+    </div>
+
+    <!-- === CONTENT === -->
+    <div id="wrapper">
+        <div id="content">Načítám…</div>
+    </div>
+
+    <script type="module">
+        import { convertMarkdownToHtml } from "./js/universe/universe-viewers.js";
+
+        const params = new URLSearchParams(window.location.search);
+        const type = params.get("type");
+        const url = params.get("url");
+
+        const content = document.getElementById("content");
+
+        // === Ovládání ===
+        document.getElementById("btnBack").onclick = () => window.close();
+        document.getElementById("btnPrint").onclick = () => window.print();
+
+        document.getElementById("btnDownload").onclick = () => {
+            if (!url) return;
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = url.split("/").pop();
+            a.click();
+        };
+
+        if (!url) {
+            content.innerHTML = "<p style='color:#f88'>Chybí URL souboru.</p>";
+            throw new Error("Viewer: chybí URL");
+        }
+
+        // =========================================================
+        // PDF
+        // =========================================================
+        if (type === "pdf") {
+            content.innerHTML = `
+        <iframe src="${url}"
+                style="width:100%;height:100%;border:none;">
+        </iframe>`;
+        }
+
+        // =========================================================
+        // AUDIO
+        // =========================================================
+        else if (type === "audio") {
+            content.innerHTML = `
+        <audio controls style="width:100%;margin-top:24px;">
+          <source src="${url}">
+        </audio>`;
+        }
+
+        // =========================================================
+        // IMAGE
+        // =========================================================
+        else if (type === "image") {
+            content.innerHTML = `
+        <img src="${url}"
+             style="max-width:100%;border-radius:12px;display:block;margin:24px auto;">`;
+        }
+
+        // =========================================================
+        // VIDEO (YouTube / iframe)
+        // =========================================================
+        else if (type === "video") {
+            content.innerHTML = `
+        <iframe width="100%" height="520"
+                src="${url}"
+                frameborder="0"
+                allowfullscreen>
+        </iframe>`;
+        }
+
+        // =========================================================
+        // MARKDOWN
+        // =========================================================
+        else if (type === "md" || type === "article") {
+            fetch(url)
+                .then(r => {
+                    if (!r.ok) throw new Error("Soubor nenalezen");
+                    return r.text();
+                })
+                .then(md => {
+                    content.innerHTML =
+                        `<div class="md-content">${convertMarkdownToHtml(md)}</div>`;
+                })
+                .catch(err => {
+                    content.innerHTML =
+                        `<p style="color:#f88">Nepodařilo se načíst dokument.<br>${err}</p>`;
+                });
+        }
+
+        // =========================================================
+        // FALLBACK
+        // =========================================================
+        else {
+            content.innerHTML =
+                `<p style="color:#f88">Neznámý typ obsahu.</p>`;
+        }
+    </script>
+
+</body>
+
+</html>

@@ -1,6 +1,8 @@
 // === UNIVERSE-PANEL.JS ===
 // Clean verze panelu s podporou viewerů
+
 import { openViewer } from "./universe-viewers.js";
+import { resolveUniverseUrl } from "./universe-paths.js";
 
 // Elementy panelu
 const panelEl = document.getElementById("sidePanel");
@@ -52,38 +54,33 @@ export function showPanel(node) {
   resetPanel();
 
   // --- Titulek ---
-  const icon = node.icon
-    ? `<i class="${node.icon}" style="color:${node.color};margin-right:6px;"></i>`
-    : `<i class="fa-solid fa-circle-nodes" style="color:${node.color};margin-right:6px;"></i>`;
-
-  // === Ikona + nadpis ===
   let iconHTML = "";
   if (node.icon) {
     iconHTML = `
     <span style="
-      font-size: 32px;           /* menší než předtím (původně 40) */
+      font-size: 32px;
       line-height: 1;
       margin-right: 10px;
       display: inline-flex;
       align-items: center;
-      transform: translateY(1px); /* optické zarovnání */
+      transform: translateY(1px);
     ">
       ${node.icon}
     </span>`;
   }
 
   titleEl.innerHTML = `
-  <div style="display:flex;align-items:center;">
-    ${iconHTML}
-    <span style="
-      font-size: 22px;
-      font-weight:600;
-      color:#f1f5f9;
-    ">
-      ${node.label}
-    </span>
-  </div>
-`;
+    <div style="display:flex;align-items:center;">
+      ${iconHTML}
+      <span style="
+        font-size: 22px;
+        font-weight:600;
+        color:#f1f5f9;
+      ">
+        ${node.label}
+      </span>
+    </div>
+  `;
 
   // --- Definice ---
   defEl.textContent = node.definition || "";
@@ -104,7 +101,7 @@ export function showPanel(node) {
 
       li.querySelector("a").onclick = e => {
         e.preventDefault();
-        openViewer(a.url);
+        openViewer(resolveUniverseUrl(a.url, window.CURRENT_MODEL));
       };
 
       docsEl.appendChild(li);
@@ -132,7 +129,7 @@ export function showPanel(node) {
 
       li.querySelector("a").onclick = e => {
         e.preventDefault();
-        openViewer(doc.url);
+        openViewer(resolveUniverseUrl(doc.url, window.CURRENT_MODEL));
       };
 
       docsEl.appendChild(li);
@@ -148,51 +145,45 @@ export function showPanel(node) {
       li.style.listStyle = "none";
       li.style.marginBottom = "20px";
 
+      const mediaUrl = resolveUniverseUrl(m.url, window.CURRENT_MODEL);
+
       let html = `
-  <p style="
-    color:#38bdf8;
-    font-weight:500;
-    margin:0 0 4px 0;
-    text-decoration:none;
-  ">
-    ${m.title}
-  </p>
-
-  <small style="color:#94a3b8">${m.summary || ""}</small>
-  <br>
-`;
-
+        <p style="color:#38bdf8;font-weight:500;margin:0 0 4px 0;">
+          ${m.title}
+        </p>
+        <small style="color:#94a3b8">${m.summary || ""}</small><br>
+      `;
 
       if (m.type === "video") {
         html += `
-        <iframe width="100%" height="220"
-                src="${m.url}"
-                frameborder="0"
-                allowfullscreen
-                style="border-radius:10px;margin-top:8px;">
-        </iframe>`;
+          <iframe width="100%" height="220"
+                  src="${mediaUrl}"
+                  frameborder="0"
+                  allowfullscreen
+                  style="border-radius:10px;margin-top:8px;">
+          </iframe>`;
       }
 
       if (m.type === "audio") {
         html += `
-        <audio controls style="width:100%;margin-top:8px;">
-          <source src="${m.url}">
-        </audio>`;
+          <audio controls style="width:100%;margin-top:8px;">
+            <source src="${mediaUrl}">
+          </audio>`;
       }
 
       if (m.type === "image") {
         html += `
-        <img src="${m.url}"
-             alt="${m.title}"
-             style="
-        display:block;
-        margin:12px auto;
-        width:100%;
-        max-width:180px;
-        border-radius:12px;
-        box-shadow:0 0 8px rgba(0,0,0,0.35);
-      ">
-      `;
+          <img src="${mediaUrl}"
+               alt="${m.title}"
+               style="
+                 display:block;
+                 margin:12px auto;
+                 width:100%;
+                 max-width:180px;
+                 border-radius:12px;
+                 box-shadow:0 0 8px rgba(0,0,0,0.35);
+               ">
+        `;
       }
 
       li.innerHTML = html;
