@@ -87,7 +87,9 @@ async function loadAndRenderModel(modelName, role) {
     return;
   }
 
-  window.MAIN_UNIVERSE_DATA = model;
+  // window.MAIN_UNIVERSE_DATA = model;
+  window.BASE_UNIVERSE_DATA = structuredClone(model);
+  window.MAIN_UNIVERSE_DATA = structuredClone(model);
 
   await applyAccessModel(role, model, modelName);
 
@@ -187,7 +189,6 @@ function initHeaderControls() {
   // USER režim skryje ovládání
   if (role === "user") {
     headerControls.style.display = "none";
-    return;
   }
 
   updateHeaderColor(role);
@@ -204,7 +205,16 @@ function initHeaderControls() {
 
     if (newRole === "user") return location.reload();
 
-    await applyAccessModel(newRole, window.MAIN_UNIVERSE_DATA, newModel);
+    // reset na BASE
+    window.MAIN_UNIVERSE_DATA = structuredClone(window.BASE_UNIVERSE_DATA);
+
+    // ✅ DŮLEŽITÉ – předat model
+    await applyAccessModel(
+      newRole,
+      window.MAIN_UNIVERSE_DATA,
+      window.CURRENT_MODEL
+    );
+
     renderVisibleUniverse(window.MAIN_UNIVERSE_DATA);
   });
 
@@ -216,6 +226,35 @@ function initHeaderControls() {
     const role = localStorage.getItem("userRole") || "demo";
     await loadAndRenderModel(newModel, role);
   });
+  // === DEV / ADMIN ESCAPE FROM USER MODE ===
+  let clickCount = 0;
+  let clickTimer = null;
+
+  const appTitle = document.getElementById("appTitle");
+
+  if (appTitle) {
+    appTitle.addEventListener("click", () => {
+      clickCount++;
+
+      if (!clickTimer) {
+        clickTimer = setTimeout(() => {
+          clickCount = 0;
+          clickTimer = null;
+        }, 800);
+      }
+
+      if (clickCount >= 3) {
+        clickCount = 0;
+        clearTimeout(clickTimer);
+        clickTimer = null;
+
+        console.warn("🔓 Admin escape: návrat z USER režimu");
+
+        localStorage.setItem("userRole", "demo");
+        location.reload();
+      }
+    });
+  }
 }
 
 // -------------------------------------------------------------

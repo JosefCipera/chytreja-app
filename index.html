@@ -13,17 +13,17 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
     <!-- 🎨 Styly -->
-    <link rel="stylesheet" href="./css/universe-core.css">
-    <link rel="stylesheet" href="./css/universe-header.css">
+    <link rel="stylesheet" href="/app/css/universe-core.css">
+    <link rel="stylesheet" href="/app/css/universe-header.css">
 
     <!-- 🧱 Manifest -->
-    <link rel="manifest" href="./manifest.webmanifest">
+    <link rel="manifest" href="/app/manifest.webmanifest">
     <meta name="theme-color" content="#101c35">
 
     <!-- 🧠 Registrace Service-Workera -->
     <script>
         if ("serviceWorker" in navigator) {
-            navigator.serviceWorker.register("./service-worker.js")
+            navigator.serviceWorker.register("/app/service-worker.js")
                 .then(() => console.log("🧠 SW registrován"))
                 .catch(err => console.error("SW chyba:", err));
         }
@@ -107,12 +107,11 @@
     </div>
 
     <!-- 🔥 Universe moduly -->
-    <script type="module" src="./js/universe/universe-viewers.js"></script>
-    <script type="module" src="./js/universe/universe-access.js"></script>
-    <script type="module" src="./js/universe/universe-panel.js"></script>
-    <script type="module" src="./js/universe/universe-core.js"></script>
-    <script type="module" src="./js/universe/universe-init.js"></script>
-
+    <script type="module" src="/app/js/universe/universe-viewers.js"></script>
+    <script type="module" src="/app/js/universe/universe-access.js"></script>
+    <script type="module" src="/app/js/universe/universe-panel.js"></script>
+    <script type="module" src="/app/js/universe/universe-core.js"></script>
+    <script type="module" src="/app/js/universe/universe-init.js"></script>
 </body>
 
 </html>

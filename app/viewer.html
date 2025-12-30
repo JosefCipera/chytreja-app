@@ -32,73 +32,30 @@
 
         const params = new URLSearchParams(window.location.search);
         const type = params.get("type");
-        const url = params.get("url");
+        const file = params.get("file");
+
+        if (!file) {
+            document.body.innerHTML =
+                "<p style='color:#f88;padding:16px'>Viewer: chybí URL souboru</p>";
+            throw new Error("Viewer: chybí URL");
+        }
 
         const content = document.getElementById("content");
 
         // === Ovládání ===
-        document.getElementById("btnBack").onclick = () => window.close();
+        document.getElementById("btnBack").onclick = () => history.back();
         document.getElementById("btnPrint").onclick = () => window.print();
 
         document.getElementById("btnDownload").onclick = () => {
-            if (!url) return;
             const a = document.createElement("a");
-            a.href = url;
-            a.download = url.split("/").pop();
+            a.href = file;
+            a.download = file.split("/").pop();
             a.click();
         };
 
-        if (!url) {
-            content.innerHTML = "<p style='color:#f88'>Chybí URL souboru.</p>";
-            throw new Error("Viewer: chybí URL");
-        }
-
-        // =========================================================
-        // PDF
-        // =========================================================
-        if (type === "pdf") {
-            content.innerHTML = `
-        <iframe src="${url}"
-                style="width:100%;height:100%;border:none;">
-        </iframe>`;
-        }
-
-        // =========================================================
-        // AUDIO
-        // =========================================================
-        else if (type === "audio") {
-            content.innerHTML = `
-        <audio controls style="width:100%;margin-top:24px;">
-          <source src="${url}">
-        </audio>`;
-        }
-
-        // =========================================================
-        // IMAGE
-        // =========================================================
-        else if (type === "image") {
-            content.innerHTML = `
-        <img src="${url}"
-             style="max-width:100%;border-radius:12px;display:block;margin:24px auto;">`;
-        }
-
-        // =========================================================
-        // VIDEO (YouTube / iframe)
-        // =========================================================
-        else if (type === "video") {
-            content.innerHTML = `
-        <iframe width="100%" height="520"
-                src="${url}"
-                frameborder="0"
-                allowfullscreen>
-        </iframe>`;
-        }
-
-        // =========================================================
-        // MARKDOWN
-        // =========================================================
-        else if (type === "md" || type === "article") {
-            fetch(url)
+        // === MARKDOWN ===
+        if (type === "md" || type === "article") {
+            fetch(file)
                 .then(r => {
                     if (!r.ok) throw new Error("Soubor nenalezen");
                     return r.text();
@@ -109,16 +66,38 @@
                 })
                 .catch(err => {
                     content.innerHTML =
-                        `<p style="color:#f88">Nepodařilo se načíst dokument.<br>${err}</p>`;
+                        `<p style="color:#f88">Nelze načíst dokument.<br>${err}</p>`;
                 });
         }
 
-        // =========================================================
-        // FALLBACK
-        // =========================================================
-        else {
-            content.innerHTML =
-                `<p style="color:#f88">Neznámý typ obsahu.</p>`;
+        // === PDF ===
+        else if (type === "pdf") {
+            content.innerHTML = `
+      <iframe src="${file}" style="width:100%;height:100vh;border:none"></iframe>
+    `;
+        }
+
+        // === AUDIO ===
+        else if (type === "audio") {
+            content.innerHTML = `
+      <audio controls autoplay style="width:100%">
+        <source src="${file}">
+      </audio>
+    `;
+        }
+
+        // === IMAGE ===
+        else if (type === "image") {
+            content.innerHTML = `
+      <img src="${file}" style="max-width:100%;border-radius:12px">
+    `;
+        }
+
+        // === VIDEO ===
+        else if (type === "video") {
+            content.innerHTML = `
+      <iframe src="${file}" width="100%" height="520" frameborder="0" allowfullscreen></iframe>
+    `;
         }
     </script>
 

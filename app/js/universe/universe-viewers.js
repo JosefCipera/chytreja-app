@@ -17,26 +17,22 @@ export function convertMarkdownToHtml(md) {
 // -------------------------------------------------------------
 // Open viewer (nový svět)
 // -------------------------------------------------------------
-export function openViewer(url, type = null) {
-  if (!url) return;
-
-  // === automatická detekce typu ===
+export function openViewer(file, type = null) {
   if (!type) {
-    if (url.endsWith(".md")) type = "md";
-    else if (url.endsWith(".pdf")) type = "pdf";
-    else if (url.match(/\.(png|jpg|jpeg|gif)$/)) type = "image";
-    else if (url.endsWith(".mp3")) type = "audio";
-    else if (url.startsWith("http")) type = "video";
+    if (file.endsWith(".md")) type = "md";
+    else if (file.endsWith(".pdf")) type = "pdf";
+    else if (file.match(/\.(png|jpg|jpeg|gif)$/)) type = "image";
+    else if (file.endsWith(".mp3")) type = "audio";
     else type = "other";
   }
 
-  const params = new URLSearchParams({
-    type,
-    url
-  });
+  const url = `./viewer.html?type=${type}&file=${encodeURIComponent(file)}`;
 
-  // viewer.html je vedle index.html
-  const target = `./viewer.html?${params.toString()}`;
+  const isMobile = window.matchMedia("(max-width: 768px)").matches;
 
-  window.open(target, "_blank", "noopener");
+  if (isMobile) {
+    window.location.href = url;
+  } else {
+    window.open(url, "_blank");
+  }
 }
