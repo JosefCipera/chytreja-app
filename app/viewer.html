@@ -43,7 +43,14 @@
         const content = document.getElementById("content");
 
         // === Ovládání ===
-        document.getElementById("btnBack").onclick = () => history.back();
+        document.getElementById("btnBack").onclick = () => {
+            if (window.history.length > 1) {
+                window.history.back();
+            } else {
+                window.location.href = "/app/";
+            }
+        };
+
         document.getElementById("btnPrint").onclick = () => window.print();
 
         document.getElementById("btnDownload").onclick = () => {
