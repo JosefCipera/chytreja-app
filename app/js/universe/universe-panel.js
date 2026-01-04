@@ -3,7 +3,7 @@
 
 import { openViewer } from "./universe-viewers.js";
 import { resolveUniverseUrl } from "./universe-paths.js";
-
+let lastSelectedNode = null; // Globální proměnná pro udržení stavu
 // Elementy panelu
 const panelEl = document.getElementById("sidePanel");
 const titleEl = document.getElementById("nodeTitle");
@@ -12,6 +12,19 @@ const docsEl = document.getElementById("nodeDocs");
 const mediaEl = document.getElementById("nodeMedia");
 const tasksEl = document.getElementById("nodeTasks");
 const closeBtn = document.getElementById("closePanel");
+
+// ⛔ Zabrání zavření panelu při kliku uvnitř panelu
+panelEl.addEventListener("click", e => {
+  e.stopPropagation();
+});
+
+// ⛔ Zavírací tlačítko – cílené zavření panelu
+if (closeBtn) {
+  closeBtn.addEventListener("click", e => {
+    e.stopPropagation();
+    closePanel();
+  });
+}
 
 // === Reset panelu ===
 function resetPanel() {
@@ -51,8 +64,11 @@ document.addEventListener("click", e => {
 export function showPanel(node) {
   console.log("📌 Otevírám panel:", node.id);
 
-  resetPanel();
+  // TENTO ŘÁDEK PŘIDEJ SEM:
+  lastSelectedNode = node;
 
+  resetPanel();
+  // ... zbytek kódu zůstává stejný
   // --- Titulek ---
   let iconHTML = "";
   if (node.icon) {
@@ -104,7 +120,7 @@ export function showPanel(node) {
         openViewer(resolveUniverseUrl(a.url, window.CURRENT_MODEL));
       };
 
-      docsEl.appendChild(li);
+      if (docsEl) docsEl.appendChild(li);
     });
   }
 
@@ -132,7 +148,7 @@ export function showPanel(node) {
         openViewer(resolveUniverseUrl(doc.url, window.CURRENT_MODEL));
       };
 
-      docsEl.appendChild(li);
+      if (docsEl) docsEl.appendChild(li);
     });
   }
 
@@ -187,7 +203,7 @@ export function showPanel(node) {
       }
 
       li.innerHTML = html;
-      mediaEl.appendChild(li);
+      if (mediaEl) mediaEl.appendChild(li);
     });
   }
 
@@ -203,10 +219,29 @@ export function showPanel(node) {
         ? `<a href="${t.url}" target="_blank" style="color:#38bdf8;">🔗 ${t.title}</a>`
         : `• ${t.title}`;
 
-      tasksEl.appendChild(li);
+      if (tasksEl) tasksEl.appendChild(li);
     });
   }
 
   // === Zobrazení panelu ===
   panelEl.classList.add("visible");
+}
+
+// === Funkce pro návrat z dokumentu zpět na detail uzlu ===
+export function handleBackFromDocument() {
+  console.log("🔙 Návrat na uzel:", lastSelectedNode?.id);
+
+  // 1. Zavřeme viewer (tohle většinou řeší universe-viewers.js, ale pro jistotu:)
+  const viewer = document.getElementById('viewerContainer') || document.getElementById('doc-reader');
+  if (viewer) viewer.style.display = 'none';
+
+  // 2. Zobrazíme zpět boční panel
+  if (panelEl) {
+    panelEl.classList.add("visible");
+  }
+
+  // 3. Pokud máme zapamatovaný uzel, znovu ho vykreslíme, aby data nezmizela
+  if (lastSelectedNode) {
+    showPanel(lastSelectedNode);
+  }
 }

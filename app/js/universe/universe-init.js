@@ -1,6 +1,17 @@
+// 1. IMPORTY (Vždy úplně nahoře a každý jen jednou!)
 import { renderUniverse } from "./universe-core.js";
-const DATA_BASE = "../data/universes";
 
+// 2. NASTAVENÍ SUPABASE
+const { createClient } = window.supabase;
+const SUPABASE_URL = 'https://pionxzqtxcughvfbgadi.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_w29DE53nrdGnNEvBn68kzg_ujje7u5Y';
+
+// 3. INICIALIZACE DO GLOBÁLNÍHO OKNA
+window.supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+console.log("✅ Supabase SDK připraveno");
+
+const DATA_BASE = "../data/universes";
 // -------------------------------------------------------------
 // 1) LOAD INDEX.JSON (universe registry)
 // -------------------------------------------------------------
@@ -81,7 +92,7 @@ async function loadAndRenderModel(modelName, role) {
     return;
   }
 
-  const model = await loadModel([modelPath]);
+  const model = await loadModel([modelPath], modelName); // Musíme přidat modelName!
   if (!model) {
     console.error(`❌ Nelze načíst model: ${modelName}`);
     return;
@@ -107,22 +118,55 @@ async function loadAndRenderModel(modelName, role) {
 // -------------------------------------------------------------
 // 5) Silently load JSON (HEAD → fetch)
 // -------------------------------------------------------------
-async function loadModel(urls) {
+async function loadModel(urls, modelName) {
+  const modelConfig = window.UNIVERSE_INDEX?.[modelName];
+
+  if (modelConfig?.useSupabase) {
+    try {
+      const { data, error } = await window.supabaseClient
+        .from(modelConfig.modelFile)
+        .select('*');
+
+      if (error) throw error;
+
+      // Transformace dat na formát, který tvoje apka zná
+      return data.map(node => {
+        const content = node.content || {};
+
+        // Oprava cest v článcích a dokumentech
+        const fixUrl = (item) => ({
+          ...item,
+          // Odstraníme "../" ze začátku, pokud tam je, a zajistíme správný start
+          url: item.url ? item.url.replace(/^(\.\.\/)+/, './') : item.url
+        });
+
+        if (content.articles) content.articles = content.articles.map(fixUrl);
+        if (content.docs) content.docs = content.docs.map(fixUrl);
+
+        return {
+          ...node,
+          parent: node.parent_id || null,
+          related: data.filter(c => c.parent_id === node.id).map(c => c.id),
+          ...content
+        };
+      });
+    } catch (err) {
+      console.error("❌ Chyba při načítání ze Supabase:", err);
+    }
+  }
+
+  // Původní fallback na JSON soubory
   for (const url of urls) {
     try {
-      const head = await fetch(url, { method: "HEAD" });
-      if (!head.ok) continue;
-
+      if (!url.includes('/') && !url.includes('.')) continue;
       const res = await fetch(url);
-      return await res.json();
-
+      if (res.ok) return await res.json();
     } catch (err) {
-      console.warn(`⚠️ Nelze načíst z ${url}`);
+      console.warn(`⚠️ Soubor nenalezen: ${url}`);
     }
   }
   return null;
 }
-
 // -------------------------------------------------------------
 // 6) Access model (free/demo/pro/user)
 // -------------------------------------------------------------
@@ -150,8 +194,12 @@ async function applyAccessModel(role, model, modelName) {
 // -------------------------------------------------------------
 function renderVisibleUniverse(model) {
   const visible = model.filter(n => n.access !== "hidden");
+
+  // 1. Najdeme hlavní uzel (Dlouhověkost)
   const main = visible.find(n => !n.parent) || visible[0];
 
+  // 2. Vyfiltrujeme jen hlavní uzel a jeho PŘÍMÉ potomky (Zdraví)
+  // Spánek (který má parent: "zdravi") v tomto poli NEBUDE
   const firstLevel = visible.filter(
     n => n.id === main.id || n.parent === main.id
   );
@@ -161,9 +209,10 @@ function renderVisibleUniverse(model) {
     window.UNIVERSE_NETWORK = null;
   }
 
+  // 3. Voláme renderUniverse s původním nastavením:
+  // DATA (všechno pro navigaci), subset (jen to, co se má teď vykreslit)
   renderUniverse(visible, firstLevel);
 }
-
 // -------------------------------------------------------------
 // 8) INIT HEADER CONTROLS (role, model switching)
 // -------------------------------------------------------------

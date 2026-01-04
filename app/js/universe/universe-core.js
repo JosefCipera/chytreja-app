@@ -89,6 +89,10 @@ export function renderUniverse(DATA, subset = null) {
   // 🖱️ Klik – otevře panel nebo návrat
   let clickTimer = null;
   network.on("click", params => {
+    if (params.event && params.event.srcEvent) {
+      params.event.srcEvent.stopPropagation();
+    }
+
     if (!params.nodes.length) {
       el.side.classList.remove("visible");
       if (isSubUniverse) {
