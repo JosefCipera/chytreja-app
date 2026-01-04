@@ -111,7 +111,17 @@ async function loadAndRenderModel(modelName, role) {
       window.UNIVERSE_INDEX?.[modelName]?.label || modelName;
   }
 
-  renderVisibleUniverse(model);
+  // renderUniverse(model);
+  // ================================
+  // 🌱 STARTOVACÍ PODMNOŽINA (1. úroveň)
+  // ================================
+  const root = model.find(n => !n.parent);
+  const firstLevel = model.filter(
+    n => n.id === root.id || n.parent === root.id
+  );
+
+  renderUniverse(model, firstLevel);
+
   updateHeaderColor(role);
 }
 
@@ -124,36 +134,97 @@ async function loadModel(urls, modelName) {
   if (modelConfig?.useSupabase) {
     try {
       const { data, error } = await window.supabaseClient
-        .from(modelConfig.modelFile)
-        .select('*');
+        .from("nodes")
+        .select(`
+    id,
+    label,
+    type,
+    definition,
+    parent,
+    color,
+    icon,
+    node_values (
+      type,
+      title,
+      description,
+      source
+    )
+  `);
 
       if (error) throw error;
 
-      // Transformace dat na formát, který tvoje apka zná
-      return data.map(node => {
-        const content = node.content || {};
+      return data.map(n => ({
+        id: n.id,
+        label: n.label,
+        type: n.type,
+        definition: n.definition,
+        parent: n.parent,
 
-        // Oprava cest v článcích a dokumentech
-        const fixUrl = (item) => ({
-          ...item,
-          // Odstraníme "../" ze začátku, pokud tam je, a zajistíme správný start
-          url: item.url ? item.url.replace(/^(\.\.\/)+/, './') : item.url
-        });
+        // ⬇⬇⬇ TOHLE TAM MUSÍ BÝT
+        color: n.color,
+        icon: n.icon,
 
-        if (content.articles) content.articles = content.articles.map(fixUrl);
-        if (content.docs) content.docs = content.docs.map(fixUrl);
+        values: (n.node_values || []).map(v => ({
+          type: v.type,
+          title: v.title,
+          summary: v.description,
+          url: v.source
+        }))
+      }));
 
-        return {
-          ...node,
-          parent: node.parent_id || null,
-          related: data.filter(c => c.parent_id === node.id).map(c => c.id),
-          ...content
-        };
-      });
     } catch (err) {
       console.error("❌ Chyba při načítání ze Supabase:", err);
     }
   }
+  const { data, error } = await window.supabaseClient
+    .from("nodes")
+    .select(`
+    id,
+    label,
+    type,
+    definition,
+    parent,
+    node_values (
+      type,
+      title,
+      description,
+      source
+    )
+  `);
+
+  if (error) throw error;
+
+  // ================================
+  // 🧠 NORMALIZACE UZLŮ
+  // ================================
+  const nodes = data.map(n => ({
+    id: n.id,
+    label: n.label,
+    type: n.type,
+    definition: n.definition,
+    parent: n.parent,
+    related: [],
+    values: (n.node_values || []).map(v => ({
+      type: v.type,
+      title: v.title,
+      summary: v.description,
+      url: v.source
+    }))
+  }));
+
+  // ================================
+  // 🔗 PARENT → RELATED VAZBY
+  // ================================
+  const map = new Map();
+  nodes.forEach(n => map.set(n.id, n));
+
+  nodes.forEach(n => {
+    if (n.parent && map.has(n.parent)) {
+      map.get(n.parent).related.push(n.id);
+    }
+  });
+
+  return nodes;
 
   // Původní fallback na JSON soubory
   for (const url of urls) {

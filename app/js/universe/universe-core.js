@@ -43,18 +43,21 @@ export function renderUniverse(DATA, subset = null) {
     source[0];
   const mainId = preferredRoot?.id;
 
-  // 🔹 Vytvoř uzly + hrany
+  // 🔹 Vytvoř uzly + hrany (parent → child)
   source.forEach(it => {
     const isMain = it.id === mainId;
     nodes.push(makeNode(it, isMain));
 
-    (it.related || []).forEach(r => {
-      const key = [it.id, r].sort().join("::");
-      if (!seen.has(key)) {
-        seen.add(key);
-        edges.push(makeEdge(it.id, r));
+    if (it.parent) {
+      const parentInSource = source.find(n => n.id === it.parent);
+      if (parentInSource) {
+        const key = [it.parent, it.id].sort().join("::");
+        if (!seen.has(key)) {
+          seen.add(key);
+          edges.push(makeEdge(it.parent, it.id));
+        }
       }
-    });
+    }
   });
 
   // 🔸 DataSety
@@ -89,26 +92,25 @@ export function renderUniverse(DATA, subset = null) {
   // 🖱️ Klik – otevře panel nebo návrat
   let clickTimer = null;
   network.on("click", params => {
-    if (params.event && params.event.srcEvent) {
-      params.event.srcEvent.stopPropagation();
-    }
-
     if (!params.nodes.length) {
       el.side.classList.remove("visible");
-      if (isSubUniverse) {
-        smoothReturnToUniverse(DATA);
-        isSubUniverse = false;
-        currentCenter = null;
-      }
       return;
     }
 
-    clearTimeout(clickTimer);
-    clickTimer = setTimeout(() => {
-      const id = params.nodes[0];
-      const node = findNodeById(DATA, id);
-      if (node) showPanel(node);
-    }, 250);
+    const id = params.nodes[0];
+    const node = findNodeById(DATA, id);
+    if (!node) return;
+
+    showPanel(node); // ⬅️ VŽDY panel
+  });
+
+  network.on("doubleClick", params => {
+    if (!params.nodes.length) return;
+    const id = params.nodes[0];
+    const node = findNodeById(DATA, id);
+    if (!node) return;
+
+    openSubUniverse(DATA, node); // ⬅️ DRILL-DOWN
   });
 
   // 👆 Dvojklik = vstup do podsítě

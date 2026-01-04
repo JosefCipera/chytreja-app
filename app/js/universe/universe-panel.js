@@ -12,6 +12,8 @@ const docsEl = document.getElementById("nodeDocs");
 const mediaEl = document.getElementById("nodeMedia");
 const tasksEl = document.getElementById("nodeTasks");
 const closeBtn = document.getElementById("closePanel");
+const valuesEl = document.getElementById("nodeValues");
+
 
 // ⛔ Zabrání zavření panelu při kliku uvnitř panelu
 panelEl.addEventListener("click", e => {
@@ -24,6 +26,146 @@ if (closeBtn) {
     e.stopPropagation();
     closePanel();
   });
+}
+// nahoře v souboru
+export function showPanel(node) {
+  console.log("📌 Otevírám panel:", node.id);
+
+  lastSelectedNode = node;
+  resetPanel();
+
+  // ================================
+  // 🏷️ TITUL (ikona + jemné písmo)
+  // ================================
+  titleEl.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;">
+      ${node.icon ? `
+        <span style="
+          font-size: 22px;
+          line-height: 1;
+          opacity: 0.9;
+        ">
+          ${node.icon}
+        </span>` : ""
+    }
+      <span style="
+        font-size: 20px;
+        font-weight: 500;
+        letter-spacing: 0.2px;
+        color: #f1f5f9;
+      ">
+        ${node.label || ""}
+      </span>
+    </div>
+  `;
+
+  // ================================
+  // 📘 DEFINICE
+  // ================================
+  defEl.textContent = node.definition || "";
+
+  // ================================
+  // 📦 HODNOTY
+  // ================================
+  if (valuesEl) valuesEl.innerHTML = "";
+
+  const seen = new Set();
+
+  if (node.values && node.values.length > 0) {
+    node.values.forEach(v => {
+
+      const key = `${v.type}|${v.title}|${v.url}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+
+      const li = document.createElement("li");
+      li.style.listStyle = "none";
+      li.style.marginBottom = "14px";
+
+      const iconMap = {
+        article: "📝",
+        video: "🎬",
+        audio: "🎧",
+        md: "📄",
+        pdf: "📘",
+        image: "🖼️"
+      };
+
+      const icon = iconMap[v.type] || "📦";
+
+      let contentHTML = "";
+
+      // 🎬 VIDEO
+      if (v.type === "video") {
+        contentHTML = `
+    <iframe
+      src="${v.url}"
+      width="100%"
+      height="200"
+      style="border-radius:12px;margin-top:8px;"
+      frameborder="0"
+      allowfullscreen>
+    </iframe>
+  `;
+      }
+
+      // 🎧 AUDIO
+      else if (v.type === "audio") {
+        contentHTML = `
+    <audio controls style="width:100%;margin-top:8px;">
+      <source src="${v.url}">
+    </audio>
+  `;
+      }
+
+      // 🖼️ IMAGE
+      else if (v.type === "image") {
+        contentHTML = `
+    <img
+      src="${v.url}"
+      style="
+        width:100%;
+        max-width:220px;
+        border-radius:12px;
+        margin-top:8px;
+        box-shadow:0 0 8px rgba(0,0,0,0.35);
+      ">
+  `;
+      }
+
+      // 📦 DEFAULT (md, pdf, article…)
+      else {
+        contentHTML = `
+    <a href="${v.url}" target="_blank" style="color:#38bdf8;">
+      Otevřít →
+    </a>
+  `;
+      }
+
+      li.innerHTML = `
+  <div>
+    <div style="
+  font-weight:500;
+  color:#38bdf8;
+  cursor:default;
+">
+  ${icon} ${v.title}
+</div>
+
+    ${v.summary ? `<small style="color:#94a3b8;">${v.summary}</small>` : ""}
+    ${contentHTML}
+  </div>
+`;
+
+      valuesEl.appendChild(li);
+
+    });
+  }
+
+  // ================================
+  // 👁️ ZOBRAZENÍ PANELU
+  // ================================
+  panelEl.classList.add("visible");
 }
 
 // === Reset panelu ===
@@ -57,175 +199,14 @@ if (closeBtn) {
 // Klik mimo panel zavře panel
 document.addEventListener("click", e => {
   if (!panelEl.classList.contains("visible")) return;
-  if (!panelEl.contains(e.target)) closePanel();
+
+  // ⚠️ DŮLEŽITÉ: klik na síť NEZAVÍRÁ panel
+  if (e.target.closest("#network")) return;
+
+  if (!panelEl.contains(e.target)) {
+    closePanel();
+  }
 });
-
-// === Hlavní funkce: SHOW PANEL ===
-export function showPanel(node) {
-  console.log("📌 Otevírám panel:", node.id);
-
-  // TENTO ŘÁDEK PŘIDEJ SEM:
-  lastSelectedNode = node;
-
-  resetPanel();
-  // ... zbytek kódu zůstává stejný
-  // --- Titulek ---
-  let iconHTML = "";
-  if (node.icon) {
-    iconHTML = `
-    <span style="
-      font-size: 32px;
-      line-height: 1;
-      margin-right: 10px;
-      display: inline-flex;
-      align-items: center;
-      transform: translateY(1px);
-    ">
-      ${node.icon}
-    </span>`;
-  }
-
-  titleEl.innerHTML = `
-    <div style="display:flex;align-items:center;">
-      ${iconHTML}
-      <span style="
-        font-size: 22px;
-        font-weight:600;
-        color:#f1f5f9;
-      ">
-        ${node.label}
-      </span>
-    </div>
-  `;
-
-  // --- Definice ---
-  defEl.textContent = node.definition || "";
-
-  // ================================
-  //  📄 1) ARTICLES (Markdown)
-  // ================================
-  if (node.articles) {
-    node.articles.forEach(a => {
-      const li = document.createElement("li");
-      li.style.listStyle = "none";
-      li.style.marginBottom = "12px";
-
-      li.innerHTML = `
-        <a href="#" style="color:#38bdf8;font-weight:500;">📝 ${a.title}</a>
-        <br><small style="color:#94a3b8">${a.summary || ""}</small>
-      `;
-
-      li.querySelector("a").onclick = e => {
-        e.preventDefault();
-        openViewer(resolveUniverseUrl(a.url, window.CURRENT_MODEL));
-      };
-
-      if (docsEl) docsEl.appendChild(li);
-    });
-  }
-
-  // ================================
-  //  📘 2) DOCS (PDF, MD)
-  // ================================
-  if (node.docs) {
-    node.docs.forEach(doc => {
-      const isMd = doc.url.toLowerCase().endsWith(".md");
-      const icon = isMd ? "📝" : "📄";
-
-      const li = document.createElement("li");
-      li.style.listStyle = "none";
-      li.style.marginBottom = "14px";
-
-      li.innerHTML = `
-        <a href="#" style="color:#38bdf8;font-weight:500;">
-          ${icon} ${doc.title}
-        </a>
-        <br><small style="color:#94a3b8">${doc.summary || ""}</small>
-      `;
-
-      li.querySelector("a").onclick = e => {
-        e.preventDefault();
-        openViewer(resolveUniverseUrl(doc.url, window.CURRENT_MODEL));
-      };
-
-      if (docsEl) docsEl.appendChild(li);
-    });
-  }
-
-  // ================================
-  //  🎬 3) MEDIA (video/audio/image)
-  // ================================
-  if (node.media) {
-    node.media.forEach(m => {
-      const li = document.createElement("li");
-      li.style.listStyle = "none";
-      li.style.marginBottom = "20px";
-
-      const mediaUrl = resolveUniverseUrl(m.url, window.CURRENT_MODEL);
-
-      let html = `
-        <p style="color:#38bdf8;font-weight:500;margin:0 0 4px 0;">
-          ${m.title}
-        </p>
-        <small style="color:#94a3b8">${m.summary || ""}</small><br>
-      `;
-
-      if (m.type === "video") {
-        html += `
-          <iframe width="100%" height="220"
-                  src="${mediaUrl}"
-                  frameborder="0"
-                  allowfullscreen
-                  style="border-radius:10px;margin-top:8px;">
-          </iframe>`;
-      }
-
-      if (m.type === "audio") {
-        html += `
-          <audio controls style="width:100%;margin-top:8px;">
-            <source src="${mediaUrl}">
-          </audio>`;
-      }
-
-      if (m.type === "image") {
-        html += `
-          <img src="${mediaUrl}"
-               alt="${m.title}"
-               style="
-                 display:block;
-                 margin:12px auto;
-                 width:100%;
-                 max-width:180px;
-                 border-radius:12px;
-                 box-shadow:0 0 8px rgba(0,0,0,0.35);
-               ">
-        `;
-      }
-
-      li.innerHTML = html;
-      if (mediaEl) mediaEl.appendChild(li);
-    });
-  }
-
-  // ================================
-  //  🔗 4) TASKS / odkazy
-  // ================================
-  if (node.tasks) {
-    node.tasks.forEach(t => {
-      const li = document.createElement("li");
-      li.style.listStyle = "none";
-
-      li.innerHTML = t.url
-        ? `<a href="${t.url}" target="_blank" style="color:#38bdf8;">🔗 ${t.title}</a>`
-        : `• ${t.title}`;
-
-      if (tasksEl) tasksEl.appendChild(li);
-    });
-  }
-
-  // === Zobrazení panelu ===
-  panelEl.classList.add("visible");
-}
 
 // === Funkce pro návrat z dokumentu zpět na detail uzlu ===
 export function handleBackFromDocument() {

@@ -901,3 +901,14 @@ body.pro #roleSelect {
     position: relative;
     z-index: 10000;
 }
+
+.drill-icon {
+    font-size: 14px;
+    margin-left: 6px;
+    cursor: pointer;
+    opacity: 0.7;
+}
+
+.drill-icon:hover {
+    opacity: 1;
+}
