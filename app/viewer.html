@@ -44,11 +44,7 @@
 
         // === Ovládání ===
         document.getElementById("btnBack").onclick = () => {
-            if (window.history.length > 1) {
-                window.history.back();
-            } else {
-                window.location.href = "/app/";
-            }
+            window.close();
         };
 
         document.getElementById("btnPrint").onclick = () => window.print();
@@ -101,11 +97,37 @@
         }
 
         // === VIDEO ===
+        // === VIDEO ===
         else if (type === "video") {
             content.innerHTML = `
-      <iframe src="${file}" width="100%" height="520" frameborder="0" allowfullscreen></iframe>
-    `;
+    <div style="
+      max-width: 960px;
+      margin: 40px auto;
+      padding: 0 16px;
+    ">
+      <div style="
+        position: relative;
+        padding-top: 56.25%;
+        border-radius: 14px;
+        overflow: hidden;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.45);
+      ">
+        <iframe
+          src="${file}"
+          style="
+            position:absolute;
+            top:0;left:0;
+            width:100%;
+            height:100%;
+            border:none;
+          "
+          allowfullscreen>
+        </iframe>
+      </div>
+    </div>
+  `;
         }
+
     </script>
 
 </body>
