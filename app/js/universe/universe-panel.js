@@ -1,69 +1,39 @@
-// === UNIVERSE-PANEL.JS ===
-// Clean verze panelu s podporou viewerů
-
 import { openViewer } from "./universe-viewers.js";
 import { resolveUniverseUrl } from "./universe-paths.js";
-let lastSelectedNode = null; // Globální proměnná pro udržení stavu
-// Elementy panelu
+
+let lastSelectedNode = null;
 const panelEl = document.getElementById("sidePanel");
 const titleEl = document.getElementById("nodeTitle");
 const defEl = document.getElementById("nodeDef");
-const docsEl = document.getElementById("nodeDocs");
-const mediaEl = document.getElementById("nodeMedia");
 const tasksEl = document.getElementById("nodeTasks");
+console.log("Prověřuji element úloh:", tasksEl); // Přidej tento log
 const closeBtn = document.getElementById("closePanel");
 const valuesEl = document.getElementById("nodeValues");
+const priorityContent = document.getElementById("priorityContent");
 
 function openMdViewer(url) {
-  window.open(
-    `/app/viewer.html?type=md&file=${encodeURIComponent(url)}`,
-    "_blank"
-  );
+  window.open(`/app/viewer.html?type=md&file=${encodeURIComponent(url)}`, "_blank");
 }
 
-// ⛔ Zabrání zavření panelu při kliku uvnitř panelu
-panelEl.addEventListener("click", e => {
-  e.stopPropagation();
-});
+panelEl.addEventListener("click", e => e.stopPropagation());
 
-// ⛔ Zavírací tlačítko – cílené zavření panelu
-if (closeBtn) {
-  closeBtn.addEventListener("click", e => {
-    e.stopPropagation();
-    closePanel();
-  });
-}
-// nahoře v souboru
 export function showPanel(node) {
   console.log("📌 Otevírám panel:", node.id);
+  console.log("Data pro panel:", node);
 
   lastSelectedNode = node;
   resetPanel();
-  // ⛔ vždy odstranit vitality kartu
+
+  // 1. Vyčistit staré metric-karty, aby se nemnožily při překlikávání
   document.querySelectorAll(".metric-card").forEach(el => el.remove());
 
   // ================================
-  // 🏷️ TITUL (ikona + jemné písmo)
+  // 🏷️ TITUL
   // ================================
   titleEl.innerHTML = `
     <div style="display:flex;align-items:center;gap:10px;">
-      ${node.icon ? `
-        <span style="
-          font-size: 22px;
-          line-height: 1;
-          opacity: 0.9;
-        ">
-          ${node.icon}
-        </span>` : ""
-    }
-      <span style="
-        font-size: 20px;
-        font-weight: 500;
-        letter-spacing: 0.2px;
-        color: #f1f5f9;
-      ">
-        ${node.label || ""}
-      </span>
+      ${node.icon ? `<span style="font-size: 22px; opacity: 0.9;">${node.icon}</span>` : ""}
+      <span style="font-size: 20px; font-weight: 500; color: #f1f5f9;">${node.label || ""}</span>
     </div>
   `;
 
@@ -73,285 +43,190 @@ export function showPanel(node) {
   defEl.textContent = node.definition || "";
 
   // ================================
-  // 📦 HODNOTY
+  // 🔋 INDEX KARTA (Index připravenosti)
   // ================================
-  // ================================
-  // 🔋 DEMO – VITALITY / METRIC KARTA
-  // ================================
-  if (node.id === "dlouhovekost") {
+  const val = node.current_index || (node.content && node.content.current_index);
+  const strat = node.strategy_priority || (node.content && node.content.strategy_priority);
 
-    // 🧹 ochrana proti duplicitě
-    const existing = document.querySelector(
-      `.metric-card[data-node="${node.id}"]`
-    );
-    if (existing) existing.remove();
-
+  if (val || node.id === 'dlouhovekost') {
+    const cardVal = val || 72;
     const container = document.createElement("div");
     container.className = "metric-card";
-    container.dataset.node = node.id;
-
-    // 🎨 barva uzlu
-    const baseColor = node.color || "#22c55e";
-    const bgColor = `${baseColor}22`; // průhledný odstín
-
-    // --- DEMO DATA ---
-    const value = 72;
-    const unit = "/ 100";
-    const range = "celkový stav";
-    const status = node.status || "demo";
-
-    // --- HTML ---
     container.innerHTML = `
-    <div style="
-      font-size:14px;
-      opacity:0.85;
-      margin-bottom:4px;
-    ">
-      ${node.label}
-    </div>
-
-    <div style="
-      font-size:22px;
-      margin-bottom:6px;
-    ">
-      ${value} ${unit}
-    </div>
-
-    <div style="
-      font-size:13px;
-      opacity:0.75;
-    ">
-      Rozmezí: ${range}
-    </div>
-
-    <div style="
-      height:8px;
-      background:#334155;
-      border-radius:6px;
-      overflow:hidden;
-      margin-top:8px;
-    ">
-      <div style="
-        width:70%;
-        height:100%;
-        background:${baseColor};
-      "></div>
-    </div>
-  `;
-
-    // --- styl kontejneru ---
-    container.style.background = bgColor;
-    container.style.border = `1px solid ${baseColor}55`;
-    container.style.borderRadius = "14px";
-    container.style.padding = "12px 14px";
-    container.style.marginTop = "12px";
-    container.style.color = "#f1f5f9";
-    container.style.boxShadow = "0 4px 10px rgba(0,0,0,0.25)";
-
-    // 👉 vložení hned POD definici
+        <div style="font-size:14px; opacity:0.85; margin-bottom:4px;">Index připravenosti</div>
+        <div style="font-size:22px; margin-bottom:6px;">${cardVal} / 100</div>
+        <div style="height:8px; background:#334155; border-radius:6px; overflow:hidden; margin-top:8px;">
+            <div style="width:${cardVal}%; height:100%; background:${node.color || '#38bdf8'};"></div>
+        </div>
+        <hr style="margin: 15px 0; border: 0; border-top: 1px solid rgba(255,255,255,0.1);">
+        <div style="display:flex; gap:12px; align-items:flex-start;">
+            <span style="font-size:20px;">⚡</span>
+            <div>
+                <div style="font-size:13px; font-weight:bold; color:#fbbf24; margin-bottom:2px;">Strategie (Parťák):</div>
+                <div style="font-size:13px; line-height:1.4; opacity:0.9;">${strat || "Sleduj trendy a udržuj konzistenci."}</div>
+            </div>
+        </div>
+    `;
+    Object.assign(container.style, {
+      background: `${node.color || '#38bdf8'}22`,
+      border: `1px solid ${node.color || '#38bdf8'}55`,
+      borderRadius: "14px", padding: "12px 14px", marginTop: "12px", color: "#f1f5f9", marginBottom: "20px"
+    });
     defEl.insertAdjacentElement("afterend", container);
   }
 
-  if (valuesEl) valuesEl.innerHTML = "";
+  // ================================
+  // 📦 HODNOTY (Média, PDF, Články)
+  // ================================
+  if (valuesEl) {
+    valuesEl.innerHTML = "";
+    const seen = new Set(); // Ochrana proti duplicitám
 
-  const seen = new Set();
+    if (node.values && node.values.length > 0) {
+      node.values.forEach(v => {
+        const key = `${v.type}|${v.title}|${v.url}`;
+        if (seen.has(key)) return;
+        seen.add(key);
 
-  if (node.values && node.values.length > 0) {
-    node.values.forEach(v => {
+        const li = document.createElement("li");
+        li.style.listStyle = "none";
+        li.style.marginBottom = "18px";
 
-      const key = `${v.type}|${v.title}|${v.url}`;
-      if (seen.has(key)) return;
-      seen.add(key);
+        const iconMap = { article: "📝", video: "🎬", audio: "🎧", md: "📄", pdf: "📘", image: "🖼️" };
+        const icon = iconMap[v.type] || "📦";
 
-      const li = document.createElement("li");
-      li.style.listStyle = "none";
-      li.style.marginBottom = "14px";
-
-      const iconMap = {
-        article: "📝",
-        video: "🎬",
-        audio: "🎧",
-        md: "📄",
-        pdf: "📘",
-        image: "🖼️"
-      };
-
-      const icon = iconMap[v.type] || "📦";
-
-      let contentHTML = "";
-
-      // 🎬 VIDEO
-      // 🎬 VIDEO
-if (v.type === "video") {
-  contentHTML = `
-    <iframe
-      src="${v.url}"
-      width="100%"
-      height="220"
-      style="border-radius:10px;margin-top:8px;"
-      frameborder="0"
-      allowfullscreen>
-    </iframe>
-  `;
-}
-
-      // 🎧 AUDIO
-      else if (v.type === "audio") {
-        contentHTML = `
-    <audio controls style="width:100%;margin-top:8px;">
-      <source src="${v.url}">
-    </audio>
-  `;
-      }
-
-      // 🖼️ IMAGE
-      else if (v.type === "image") {
-        contentHTML = `
-    <div style="
-      display:flex;
-      justify-content:center;
-      margin-top:10px;
-    ">
-      <img
-        src="${v.url}"
-        style="
-          max-width:160px;
-          width:100%;
-          border-radius:12px;
-          box-shadow:0 0 8px rgba(0,0,0,0.35);
-        ">
-    </div>
-  `;
-      }
-      // 📄 MD / ARTICLE → viewer
-      else if (v.type === "md" || v.type === "article") {
-        contentHTML = `
-    <a href="#" style="color:#38bdf8;">
-      Otevřít →
-    </a>
-  `;
-      }
-
-      // 📘 PDF → nový tab
-      else if (v.type === "pdf") {
-        contentHTML = `
-    <a href="#" style="color:#38bdf8;">
-      Otevřít →
-    </a>
-  `;
-      }
-
-      // 📦 FALLBACK
-      else {
-        contentHTML = `
-    <a href="${v.url}" target="_blank" style="color:#38bdf8;">
-      Otevřít →
-    </a>
-  `;
-      }
-
-      li.innerHTML = `
-  <div>
-    <div style="
-  font-weight:500;
-  color:#38bdf8;
-  cursor:default;
-">
-  ${icon} ${v.title}
-</div>
-
-    ${v.summary ? `<small style="color:#94a3b8;">${v.summary}</small>` : ""}
-    ${contentHTML}
-  </div>
-`;
-      // 👉 SEM TO PŘIDEJ
-      li.querySelector("[data-video]")?.addEventListener("click", e => {
-        e.preventDefault();
-        window.open(
-          `/app/viewer.html?type=video&file=${encodeURIComponent(v.url)}`,
-          "_blank"
-        );
-      });
-
-      const link = li.querySelector("a");
-      if (link) {
-        link.addEventListener("click", e => {
-          e.preventDefault();
-
-          if (v.type === "md" || v.type === "article") {
-            openMdViewer(v.url);
-          } else if (v.type === "pdf") {
-            window.open(v.url, "_blank");
+        let contentHTML = "";
+        if (v.type === "video") {
+          contentHTML = `<iframe src="${v.url}" width="100%" height="200" style="border-radius:10px;margin-top:8px;" frameborder="0" allowfullscreen></iframe>`;
+        } // 🎧 AUDIO - modrý nádech místo šedé
+        else if (v.type === "audio") {
+          contentHTML = `
+    <div style="margin-top:8px; filter: sepia(100%) underline; filter: hue-rotate(170deg) saturate(300%) brightness(90%);">
+      <audio controls style="width:100%; height:35px;">
+        <source src="${v.url}">
+      </audio>
+    </div>`;
+        } else // 🖼️ IMAGE - zmenšený a centrovaný
+          if (v.type === "image") {
+            contentHTML = `
+            <div style="display:flex; justify-content:center; margin-top:10px;">
+              <img src="${v.url}" style="
+                max-width: 180px; 
+                width: 100%; 
+                border-radius: 12px; 
+                box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+                border: 1px solid rgba(255,255,255,0.1);
+              ">
+            </div>`;
+          } else {
+            contentHTML = `<a href="#" class="open-link" style="color:#38bdf8; text-decoration:none; display:block; margin-top:4px;">Otevřít ${v.type.toUpperCase()} →</a>`;
           }
-        });
-      }
 
-      valuesEl.appendChild(li);
+        li.innerHTML = `
+          <div>
+            <div style="font-weight:500; color:#38bdf8;">${icon} ${v.title}</div>
+            ${v.summary ? `<small style="color:#94a3b8; display:block; line-height:1.3; margin-top:2px;">${v.summary}</small>` : ""}
+            ${contentHTML}
+          </div>
+        `;
 
-    });
+        // Event listener pro otevírání MD a PDF
+        const link = li.querySelector(".open-link");
+        if (link) {
+          link.addEventListener("click", e => {
+            e.preventDefault();
+            if (v.type === "md" || v.type === "article") openMdViewer(v.url);
+            else window.open(v.url, "_blank");
+          });
+        }
+        valuesEl.appendChild(li);
+      });
+    }
   }
 
   // ================================
-  // 👁️ ZOBRAZENÍ PANELU
+  // 🧩 ÚLOHY (Interaktivní karty)
   // ================================
+  if (tasksEl) {
+    tasksEl.innerHTML = "";
+    if (node.tasks && node.tasks.length > 0) {
+      node.tasks.forEach(task => {
+        const li = document.createElement("li");
+        li.style.listStyle = "none";
+        // V universe-panel.js v části pro vykreslování tasks:
+        li.innerHTML = `
+    <div class="task-card" style="
+        background: rgba(56, 189, 248, 0.1);
+        border: 1px solid rgba(56, 189, 248, 0.3);
+        padding: 12px;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    " onmouseover="this.style.background='rgba(56, 189, 248, 0.2)'; this.style.transform='translateY(-2px)';" 
+      onmouseout="this.style.background='rgba(56, 189, 248, 0.1)'; this.style.transform='translateY(0)';">
+        <div style="font-weight:600; color:#fbbf24;">⚡ ${task.title}</div>
+        <div style="font-size:12px; opacity:0.8; margin-top:4px;">${task.description}</div>
+    </div>
+`;
+        li.onclick = () => {
+          if (task.title.includes("úchopu")) {
+            // Vytvoříme interaktivní formulář přímo v kartě úkolu
+            const card = li.querySelector('.task-card');
+            card.innerHTML = `
+      <div style="font-weight:600; color:#fbbf24; margin-bottom:8px;">⚡ Zadej výsledek (kg)</div>
+      <div style="display:flex; gap:8px;">
+        <input type="number" id="gripValue" placeholder="kg" style="
+          width: 70px; background: rgba(0,0,0,0.3); border: 1px solid #38bdf8; 
+          color: white; border-radius: 5px; padding: 4px 8px;
+        ">
+        <button id="saveGrip" style="
+          background: #38bdf8; border: none; color: white; 
+          border-radius: 5px; padding: 4px 12px; cursor: pointer; font-weight: bold;
+        ">Uložit</button>
+      </div>
+    `;
+
+            // Zabráníme probublávání kliku na kartu
+            card.onclick = (e) => e.stopPropagation();
+
+            document.getElementById("saveGrip").onclick = () => {
+              const val = document.getElementById("gripValue").value;
+              if (val) {
+                // Simulace uložení a aktualizace indexu
+                alert(`Uloženo: ${val} kg. Tvůj Index připravenosti se přepočítává...`);
+
+                // Animace aktualizace indexu na kartě (pro demo)
+                const indexText = document.querySelector(".metric-card div[style*='22px']");
+                if (indexText) {
+                  indexText.style.color = "#22c55e"; // Zelená jako úspěch
+                  indexText.textContent = "75 / 100"; // Zvýšíme index o 3 body
+                }
+              }
+            };
+          } else {
+            alert(`Spouštím: ${task.title}`);
+          }
+        };
+        tasksEl.appendChild(li);
+      });
+    } else {
+      tasksEl.innerHTML = `<li style="opacity:0.5; font-size:13px; list-style:none;">Žádné aktivní úlohy.</li>`;
+    }
+  }
+
+  // Úprava textu pod bleskem
+  if (priorityContent) priorityContent.textContent = "Sleduj své denní cíle níže.";
+
   panelEl.classList.add("visible");
 }
-
-// === Reset panelu ===
 function resetPanel() {
-  [titleEl, defEl, docsEl, mediaEl, tasksEl].forEach(el => {
-    if (el) el.innerHTML = "";
-  });
-
-  document.querySelectorAll(".lab-info").forEach(x => x.remove());
-
-  if (window.bioCards) {
-    window.bioCards.forEach(card => card.remove());
-    window.bioCards.clear();
-  }
-
-  const dashBtn = document.getElementById("openBioDashboard");
-  if (dashBtn) dashBtn.remove();
+  [titleEl, defEl, valuesEl, tasksEl].forEach(el => { if (el) el.innerHTML = ""; });
 }
 
-// === Zavření panelu ===
 export function closePanel() {
   panelEl.classList.remove("visible");
   resetPanel();
-  console.log("🟥 Panel zavřen.");
 }
 
-if (closeBtn) {
-  closeBtn.addEventListener("click", closePanel);
-}
-
-// Klik mimo panel zavře panel
-document.addEventListener("click", e => {
-  if (!panelEl.classList.contains("visible")) return;
-
-  // ⚠️ DŮLEŽITÉ: klik na síť NEZAVÍRÁ panel
-  if (e.target.closest("#network")) return;
-
-  if (!panelEl.contains(e.target)) {
-    closePanel();
-  }
-});
-
-// === Funkce pro návrat z dokumentu zpět na detail uzlu ===
-export function handleBackFromDocument() {
-  console.log("🔙 Návrat na uzel:", lastSelectedNode?.id);
-
-  // 1. Zavřeme viewer (tohle většinou řeší universe-viewers.js, ale pro jistotu:)
-  const viewer = document.getElementById('viewerContainer') || document.getElementById('doc-reader');
-  if (viewer) viewer.style.display = 'none';
-
-  // 2. Zobrazíme zpět boční panel
-  if (panelEl) {
-    panelEl.classList.add("visible");
-  }
-
-  // 3. Pokud máme zapamatovaný uzel, znovu ho vykreslíme, aby data nezmizela
-  if (lastSelectedNode) {
-    showPanel(lastSelectedNode);
-  }
-}
+if (closeBtn) closeBtn.onclick = closePanel;

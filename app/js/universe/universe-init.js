@@ -131,112 +131,67 @@ async function loadAndRenderModel(modelName, role) {
 async function loadModel(urls, modelName) {
   const modelConfig = window.UNIVERSE_INDEX?.[modelName];
 
+  // Pokud model používá Supabase
   if (modelConfig?.useSupabase) {
     try {
+      console.log("📡 Načítám data ze Supabase pro:", modelName);
+
       const { data, error } = await window.supabaseClient
         .from("nodes")
         .select(`
-    id,
-    label,
-    type,
-    definition,
-    parent,
-    color,
-    icon,
-    node_values (
-      type,
-      title,
-      description,
-      source
-    )
-  `);
+          id, label, type, definition, parent, color, icon, 
+          current_index, strategy_priority,
+          node_values ( type, title, description, source ),
+          node_tasks ( title, description )
+        `);
 
       if (error) throw error;
 
-      return data.map(n => ({
+      // 1. Namapujeme data včetně ÚKOLŮ a HODNOT
+      const nodes = data.map(n => ({
         id: n.id,
         label: n.label,
         type: n.type,
         definition: n.definition,
         parent: n.parent,
-
-        // ⬇⬇⬇ TOHLE TAM MUSÍ BÝT
         color: n.color,
         icon: n.icon,
-
+        current_index: n.current_index,
+        strategy_priority: n.strategy_priority,
+        related: [], // Inicializace pole pro vazby
         values: (n.node_values || []).map(v => ({
           type: v.type,
           title: v.title,
           summary: v.description,
           url: v.source
+        })),
+        tasks: (n.node_tasks || []).map(t => ({
+          title: t.title,
+          description: t.description
         }))
       }));
 
+      // 2. Vytvoříme mapu pro rychlé vyhledávání a propojíme "related" (vazby v grafu)
+      const map = new Map();
+      nodes.forEach(n => map.set(n.id, n));
+      nodes.forEach(n => {
+        if (n.parent && map.has(n.parent)) {
+          map.get(n.parent).related.push(n.id);
+        }
+      });
+
+      console.log("✅ Model úspěšně sestaven:", nodes);
+      return nodes;
+
     } catch (err) {
       console.error("❌ Chyba při načítání ze Supabase:", err);
+      return [];
     }
   }
-  const { data, error } = await window.supabaseClient
-    .from("nodes")
-    .select(`
-    id,
-    label,
-    type,
-    definition,
-    parent,
-    node_values (
-      type,
-      title,
-      description,
-      source
-    )
-  `);
 
-  if (error) throw error;
-
-  // ================================
-  // 🧠 NORMALIZACE UZLŮ
-  // ================================
-  const nodes = data.map(n => ({
-    id: n.id,
-    label: n.label,
-    type: n.type,
-    definition: n.definition,
-    parent: n.parent,
-    related: [],
-    values: (n.node_values || []).map(v => ({
-      type: v.type,
-      title: v.title,
-      summary: v.description,
-      url: v.source
-    }))
-  }));
-
-  // ================================
-  // 🔗 PARENT → RELATED VAZBY
-  // ================================
-  const map = new Map();
-  nodes.forEach(n => map.set(n.id, n));
-
-  nodes.forEach(n => {
-    if (n.parent && map.has(n.parent)) {
-      map.get(n.parent).related.push(n.id);
-    }
-  });
-
-  return nodes;
-
-  // Původní fallback na JSON soubory
-  for (const url of urls) {
-    try {
-      if (!url.includes('/') && !url.includes('.')) continue;
-      const res = await fetch(url);
-      if (res.ok) return await res.json();
-    } catch (err) {
-      console.warn(`⚠️ Soubor nenalezen: ${url}`);
-    }
-  }
-  return null;
+  // Fallback pro lokální JSON (pokud bys ho někdy použil)
+  console.warn("⚠️ Model nepoužívá Supabase, vracím prázdné pole.");
+  return [];
 }
 // -------------------------------------------------------------
 // 6) Access model (free/demo/pro/user)
