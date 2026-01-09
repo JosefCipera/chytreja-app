@@ -309,7 +309,7 @@ function showAIChips(options) {
 // --------------------------------------------------
 // 10. ÚKOLY – JEDINÁ DEFINICE (‼️)
 // --------------------------------------------------
-function setTasks(tasks = []) {
+window.setTasks = function (tasks) {
   const list = document.getElementById("tasksList");
   const section = document.getElementById("tasksSection");
 
@@ -330,7 +330,7 @@ function setTasks(tasks = []) {
     list.appendChild(li);
   });
 }
-function setResources(resources = []) {
+window.setResources = function (resources) {
   const list = document.getElementById("resourcesList");
   const section = document.getElementById("resourcesSection");
 
