@@ -139,18 +139,18 @@ async function loadModel(urls, modelName) {
       const { data, error } = await window.supabaseClient
         .from("nodes")
         .select(`
-          id, label, type, definition, parent, color, icon, 
-          current_index, strategy_priority, is_decathlon_discipline,
-          node_values ( type, title, description, source ),
-          node_tasks ( title, description )
-        `);
+    id, label, definition, parent, color, icon, 
+    current_index, strategy_priority,
+    node_values ( type, title, description, source ),
+    node_tasks ( title, description )
+  `); // <-- Tady už není "type"
 
       if (error) throw error;
 
       const nodes = data.map(n => ({
         id: n.id,
         label: n.label,
-        type: n.type,
+        type: n.id === 'stolety-desetibojar' ? 'sun' : (n.parent === 'stolety-desetibojar' ? 'pillar' : 'discipline'),
         definition: n.definition,
         parent: n.parent, // Vis.js tohle použije pro propojení
         color: n.color,
