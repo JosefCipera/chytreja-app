@@ -139,11 +139,11 @@ async function loadModel(urls, modelName) {
       const { data, error } = await window.supabaseClient
         .from("nodes")
         .select(`
-    id, label, definition, parent, color, icon, 
-    current_index, strategy_priority,
-    node_values ( type, title, description, source ),
-    node_tasks ( title, description )
-  `); // <-- Tady už není "type"
+  id, label, definition, parent_id, color, icon, 
+  current_index, strategy_priority,
+  node_values ( type, title, description, source ),
+  node_tasks ( title, description )
+`)
 
       if (error) throw error;
 
@@ -152,7 +152,7 @@ async function loadModel(urls, modelName) {
         label: n.label,
         type: n.id === 'stolety-desetibojar' ? 'sun' : (n.parent === 'stolety-desetibojar' ? 'pillar' : 'discipline'),
         definition: n.definition,
-        parent: n.parent, // Vis.js tohle použije pro propojení
+        parent: n.parent_id, // Tady to mapujeme: n.parent_id z DB -> n.parent pro Vis.js
         color: n.color,
         icon: n.icon,
         is_decathlon: n.is_decathlon_discipline, // Tady to máme pro filtr desetiboje
