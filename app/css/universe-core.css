@@ -1438,3 +1438,343 @@ body.pro #roleSelect {
     line-height: 1;
     opacity: 0.9;
 }
+
+/* === PANEL HEADER – FINÁLNÍ LAYOUT === */
+
+.panel-header {
+    display: block;
+    /* ❗ zruší starý flex */
+    padding: 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* řádek: název uzlu + X */
+.panel-node-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* název uzlu */
+.panel-node-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #f1f5f9;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* mikro-definice */
+.panel-microdef {
+    margin-top: 4px;
+    font-size: 13px;
+    color: #94a3b8;
+    line-height: 1.4;
+}
+
+/* ===============================
+   PANEL HEADER – FINAL POLISH
+   =============================== */
+
+.panel-header {
+    display: block;
+    padding: 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* řádek: název uzlu + zavření */
+.panel-node-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* NÁZEV UZLU – hlavní hrdina */
+.panel-node-title {
+    font-size: 20px;
+    /* ⬅️ VĚTŠÍ */
+    font-weight: 700;
+    color: #f8fafc;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* MIKRO-DEFINICE – klidná, nenápadná */
+.panel-microdef {
+    margin-top: 6px;
+    font-size: 13px;
+    color: rgba(203, 213, 225, 0.75);
+    /* ⬅️ tlumenější */
+    line-height: 1.4;
+}
+
+/* KDYBY BYLA PRÁZDNÁ, AŤ NEZABÍRÁ MÍSTO */
+.panel-microdef:empty {
+    display: none;
+}
+
+/* VERZE PANELU – JEN ŠEPTÁ */
+.panel-version {
+    margin-top: 6px;
+    font-size: 10px;
+    /* ⬅️ MENŠÍ */
+    color: rgba(148, 163, 184, 0.45);
+    /* ⬅️ hodně tlumená */
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+/* NÁZEV UZLU – DOMINANTNÍ, MĚKKÁ MODRÁ */
+.panel-node-title {
+    font-size: 22px;
+    /* ⬅️ větší než doteď */
+    font-weight: 700;
+    color: #7dd3fc;
+    /* ⬅️ měkká modrá jako chat */
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.panel-node-title i {
+    color: rgba(125, 211, 252, 0.75);
+}
+
+/* HODNOTA INDEXU – HLAVNÍ SIGNÁL */
+.metric-card .metric-value,
+.metric-card strong,
+.metric-card div[style*="font-size:22px"] {
+    font-size: 28px;
+    /* ⬅️ větší číslo */
+    font-weight: 700;
+    color: #e0f2fe;
+    /* světlá, ale měkká */
+}
+
+/* NÁZEV UZLU – BÍLÝ, KLIDNÝ */
+.panel-node-title {
+    font-size: 22px;
+    font-weight: 600;
+    /* ⬅️ méně agresivní než 700 */
+    color: rgba(248, 250, 252, 0.92);
+    /* ⬅️ lehce stažená bílá */
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.panel-node-title i {
+    color: rgba(248, 250, 252, 0.65);
+}
+
+/* VERZE PANELU – JEMNĚ ZVÝRAZNĚNÁ */
+.panel-version {
+    margin-top: 6px;
+    font-size: 12px;
+    /* ⬅️ lehce větší */
+    color: rgba(148, 163, 184, 0.65);
+    /* ⬅️ čitelnější, ale klidná */
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+/* INDEX – ZVÝRAZNĚNÍ ČÍSLA */
+.metric-card strong,
+.metric-card .metric-value,
+.metric-card div[style*="font-size"] {
+    font-size: 30px;
+    /* ⬅️ jasně větší */
+    font-weight: 700;
+    color: #f8fafc;
+}
+
+/* ===============================
+   ÚKOLY – PANEL CHYTRÉHO JÁ v1.0
+   =============================== */
+
+.panel-divider {
+    border: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    margin: 20px 0;
+}
+
+.panel-section {
+    margin-bottom: 20px;
+}
+
+.panel-section-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: rgba(248, 250, 252, 0.85);
+    margin-bottom: 10px;
+}
+
+.tasks-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.tasks-list li {
+    padding: 8px 0;
+    font-size: 14px;
+    color: rgba(203, 213, 225, 0.9);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.tasks-list li:last-child {
+    border-bottom: none;
+}
+
+/* ===============================
+   ZDROJE – PANEL CHYTRÉHO JÁ v1.0
+   =============================== */
+
+.resources-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.resources-list li {
+    padding: 10px 0;
+    font-size: 14px;
+    color: rgba(203, 213, 225, 0.9);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+}
+
+.resources-list li:last-child {
+    border-bottom: none;
+}
+
+.resources-list li:hover {
+    color: #f8fafc;
+}
+
+/* ikony typů zdrojů */
+.resource-icon {
+    opacity: 0.7;
+    font-size: 15px;
+}
+
+/* ===============================
+   INDEX 72 / 100 – FINÁLNÍ FIX
+   =============================== */
+
+/* hlavní číslo v kartě měření */
+.metric-card div:nth-child(2) {
+    font-size: 32px !important;
+    /* ⬅️ tady je ta síla */
+    font-weight: 700;
+    color: #f8fafc;
+}
+
+/* volitelně: ztlum /100 */
+.metric-card div:nth-child(2) span,
+.metric-card div:nth-child(2) small {
+    font-size: 16px;
+    opacity: 0.6;
+}
+
+/* ===============================
+   INDEX – JEMNÉ ZVÝRAZNĚNÍ ČÍSLA
+   =============================== */
+
+.metric-card div:nth-child(2) {
+    font-size: 22px;
+    /* základ */
+    font-weight: 500;
+    color: rgba(248, 250, 252, 0.9);
+}
+
+/* zvětšíme jen první číslo (72) */
+.metric-card div:nth-child(2)::first-letter {
+    font-size: 28px;
+    /* ⬅️ jen o trochu větší */
+    font-weight: 600;
+}
+
+/* ===============================
+   INDEX – JEMNÝ, STAVOVÝ
+   =============================== */
+
+.metric-value {
+    font-size: 20px;
+    font-weight: 500;
+    color: rgba(248, 250, 252, 0.9);
+}
+
+.metric-main {
+    font-size: 26px;
+    /* ⬅️ jen „72“ */
+    font-weight: 600;
+}
+
+.metric-max {
+    font-size: 14px;
+    opacity: 0.6;
+    margin-left: 2px;
+}
+
+.metric-value {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    margin: 6px 0 8px 0;
+}
+
+.metric-main {
+    font-size: 36px;
+    /* ⬅️ TADY je hlavní změna */
+    font-weight: 700;
+    color: #f8fafc;
+    line-height: 1;
+}
+
+.metric-unit {
+    font-size: 16px;
+    opacity: 0.55;
+}
+
+/* čára zpět */
+.metric-bar {
+    height: 8px;
+    background: rgba(0, 0, 0, 0.35);
+    border-radius: 6px;
+    margin-top: 10px;
+    padding: 2px;
+    /* ⬅️ OKRAJ */
+}
+
+.metric-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    /* ⬅️ ZAOBLENÍ */
+    background: var(--node-color, #22c55e);
+}
+
+/* ===============================
+   NADPISY SEKCÍ PANELU
+   =============================== */
+
+.panel-section-title,
+.ai-section-title {
+    font-size: 16px;
+    /* ⬅️ zvětšeno (bylo ~14) */
+    font-weight: 600;
+    color: rgba(248, 250, 252, 0.95);
+    margin: 20px 0 10px 0;
+    letter-spacing: 0.02em;
+}
+
+/* lehké odsazení obsahu pod nadpisem */
+.panel-section>ul,
+.panel-section>div {
+    margin-top: 6px;
+}

@@ -36,27 +36,60 @@ let conversationState = {
   lastAction: null
 };
 
-// --------------------------------------------------
-// Voláno z universe-panel.js
-// --------------------------------------------------
-window.setAIContext = function (nodeLabel, nodeIndex) {
+window.setAIContext = async function (nodeLabel, nodeIndex, nodeDefinition) {
   const msgs = document.getElementById("ai-integrated-msgs");
   if (!msgs) return;
 
+  // 1. PŘÍPRAVA: Vyčistíme chat a nastavíme aktuální data
   msgs.innerHTML = "";
-  currentNodeContext.label = nodeLabel;
-  currentNodeContext.index = nodeIndex;
+  currentNodeContext = {
+    label: nodeLabel,
+    index: nodeIndex,
+    definition: nodeDefinition
+  };
 
-  window.showAIDiagnosis(
-    `Podívám se na oblast ${nodeLabel} a na to, co je teď nejdůležitější.`,
-    "bot"
-  );
+  // 2. FEEDBACK: Uživatel vidí, že se něco děje
+  window.showAIDiagnosis(`Analyzuji oblast ${nodeLabel}...`, "bot");
 
-  setTimeout(window.showInitialVerdict, 600);
+  try {
+    // 3. DOTAZ NA VERCEL: Posíláme všechna data z uzlu
+    const response = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        nodeLabel: nodeLabel,
+        nodeIndex: nodeIndex,
+        nodeDefinition: nodeDefinition
+      })
+    });
+
+    if (!response.ok) throw new Error("API na Vercelu neodpovídá");
+
+    const data = await response.json();
+
+    // 4. ZOBRAZENÍ VÝSLEDKŮ: Smažeme analýzu a dáme tam verdikt od AI
+    msgs.innerHTML = "";
+    window.showAIDiagnosis(data.verdict, "bot");
+
+    // 5. AKTUALIZACE PANELU: Naplníme úkoly a zdroje těmi daty, co poslala AI
+    if (data.tasks) window.setTasks(data.tasks);
+    if (data.resources) window.setResources(data.resources);
+
+    // 6. INTERAKCE: Zobrazíme čipy pro rychlé dotazy
+    showAIChips([
+      { label: "Proč?", value: "proč" },
+      { label: "Co s tím?", value: "co mám dělat" }
+    ]);
+
+  } catch (error) {
+    console.error("Chyba Mentora:", error);
+    msgs.innerHTML = "";
+    window.showAIDiagnosis("Momentálně se mi nedaří spojit s mým vědomím na Vercelu. Zkontroluj připojení nebo API klíč.", "bot");
+  }
 };
 
 // --------------------------------------------------
-// 4. ÚVODNÍ VERDIKT AI + NASTAVENÍ PRIORITY
+// 4. ÚVODNÍ VERDIKT AI + ÚKOLY
 // --------------------------------------------------
 window.showInitialVerdict = function () {
   const { index } = currentNodeContext;
@@ -73,6 +106,18 @@ Stačí zůstat konzistentní a nic zbytečně nehrotit.`,
       "bot"
     );
 
+    setTasks([
+      "Udržet stávající denní rytmus",
+      "Nepřidávat dnes další zátěž"
+    ]);
+    setResources([
+      {
+        icon: "📄",
+        title: "Jak udržet stabilní denní rytmus",
+        url: "#"
+      }
+    ]);
+
   } else if (index >= 60) {
     conversationState.priority = "metabolický základ";
     conversationState.lastAction = "klidná chůze";
@@ -85,6 +130,23 @@ Klidná 45minutová chůze udělá víc než jakýkoli tlak na výkon.`,
       "bot"
     );
 
+    setTasks([
+      "Klidná chůze (45 minut)",
+      "Vyhnout se tlaku na výkon"
+    ]);
+    setResources([
+      {
+        icon: "🎧",
+        title: "Pohyb bez výkonu – proč funguje",
+        url: "#"
+      },
+      {
+        icon: "📄",
+        title: "Metabolický základ jednoduše",
+        url: "#"
+      }
+    ]);
+
   } else {
     conversationState.priority = "regenerace";
     conversationState.lastAction = "zklidnit tempo a spánek";
@@ -96,6 +158,23 @@ Největší přínos dnes bude regenerace.
 Zkus jít spát o něco dřív a ubrat tempo.`,
       "bot"
     );
+
+    setTasks([
+      "Jít dnes spát o něco dřív",
+      "Zpomalit tempo dne"
+    ]);
+    setResources([
+      {
+        icon: "📄",
+        title: "Regenerace jako základ výkonu",
+        url: "#"
+      },
+      {
+        icon: "🎧",
+        title: "Spánek a obnova energie",
+        url: "#"
+      }
+    ]);
   }
 
   showAIChips([
@@ -106,7 +185,7 @@ Zkus jít spát o něco dřív a ubrat tempo.`,
 };
 
 // --------------------------------------------------
-// 5. DETEKCE DOTAZU MIMO PRIORITU (DEMO HEURISTIKA)
+// 5. DETEKCE DOTAZU MIMO PRIORITU
 // --------------------------------------------------
 function isOffTopic(text) {
   const t = text.toLowerCase();
@@ -144,7 +223,7 @@ function handleSend() {
 }
 
 // --------------------------------------------------
-// 7. REAKCE AI – VEDENÍ KONVERZACE 🍒
+// 7. REAKCE AI
 // --------------------------------------------------
 window.handleAIReply = function (text) {
   const t = text.toLowerCase();
@@ -157,29 +236,23 @@ window.handleAIReply = function (text) {
 
   } else if (t.includes("úkol")) {
     reply =
-      "Pojďme na jednoduché kroky:\n\n" +
-      "• klidná chůze\n" +
-      "• bez tlaku na výkon\n" +
-      "• jen plynulý pohyb\n\n" +
-      "To úplně stačí.";
+      "Zaměř se dnes jen na ty doporučené kroky níž. Není potřeba přidávat další věci.";
 
   } else if (t.includes("rych")) {
     reply =
-      "Dnes udělej jednu věc:\n" +
-      "projdi se v klidu a bez cíle.";
+      "Jedna věc dnes úplně stačí: klidná chůze nebo víc spánku.";
 
   } else if (isOffTopic(t) && conversationState.lastAction) {
     reply =
       "Můžeme se na to podívat.\n\n" +
       "Teď má ale největší efekt " +
       conversationState.lastAction +
-      ".\n" +
-      "Tam bych se dnes soustředil.";
+      ".";
 
   } else {
     reply =
       "Rozumím.\n\n" +
-      "Z hlediska dneška ale pořád platí, že největší přínos má " +
+      "Pro dnešek ale pořád platí, že největší přínos má " +
       conversationState.lastAction +
       ".";
   }
@@ -188,7 +261,7 @@ window.handleAIReply = function (text) {
 };
 
 // --------------------------------------------------
-// 8. EVENTY – ENTER + KLIK NA ŠIPKU
+// 8. EVENTY – ENTER + KLIK
 // --------------------------------------------------
 document.addEventListener("keydown", (e) => {
   if (e.key === "Enter" && e.target.id === "aiPanelInput") {
@@ -231,4 +304,58 @@ function showAIChips(options) {
 
   msgs.appendChild(wrap);
   msgs.scrollTop = msgs.scrollHeight;
+}
+
+// --------------------------------------------------
+// 10. ÚKOLY – JEDINÁ DEFINICE (‼️)
+// --------------------------------------------------
+function setTasks(tasks = []) {
+  const list = document.getElementById("tasksList");
+  const section = document.getElementById("tasksSection");
+
+  if (!list || !section) return;
+
+  list.innerHTML = "";
+
+  if (!tasks.length) {
+    section.style.display = "none";
+    return;
+  }
+
+  section.style.display = "block";
+
+  tasks.forEach(task => {
+    const li = document.createElement("li");
+    li.textContent = task;
+    list.appendChild(li);
+  });
+}
+function setResources(resources = []) {
+  const list = document.getElementById("resourcesList");
+  const section = document.getElementById("resourcesSection");
+
+  if (!list || !section) return;
+
+  list.innerHTML = "";
+
+  if (!resources.length) {
+    section.style.display = "none";
+    return;
+  }
+
+  section.style.display = "block";
+
+  resources.forEach(res => {
+    const li = document.createElement("li");
+    li.innerHTML = `
+      <span class="resource-icon">${res.icon || "🔗"}</span>
+      <span>${res.title}</span>
+    `;
+
+    li.addEventListener("click", () => {
+      window.open(res.url, "_blank");
+    });
+
+    list.appendChild(li);
+  });
 }

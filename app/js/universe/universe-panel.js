@@ -2,6 +2,7 @@ const panelEl = document.getElementById("sidePanel");
 const titleEl = document.getElementById("nodeTitle");
 const defEl = document.getElementById("nodeDef");
 const tasksEl = document.getElementById("nodeTasks");
+const panelHeader = document.querySelector("#sidePanel .panel-header");
 
 export function closePanel() {
   if (panelEl) {
@@ -11,20 +12,23 @@ export function closePanel() {
   }
 }
 
-// Přidáme globální přístup pro křížek v AI chatu
 window.closePanel = closePanel;
 
 function resetPanel() {
   if (titleEl) titleEl.innerHTML = "";
-  if (defEl) defEl.innerHTML = "";
+  if (defEl) {
+    defEl.innerHTML = "";
+    defEl.style.color = "#f1f5f9"; // Bělejší pro lepší čtení
+    defEl.style.fontSize = "16px";
+  }
   if (tasksEl) {
     tasksEl.innerHTML = "";
     tasksEl.style.display = "block";
   }
-  // Vyčistíme karty indexu
-  document.querySelectorAll(".metric-card").forEach(el => el.remove());
 
-  // KLÍČOVÉ: Vyčistíme i zprávy asistenta, aby mohl "měřit" znovu
+  // Vyčistíme staré karty i statické sekce, které budeme generovat dynamicky
+  document.querySelectorAll(".metric-card, .dynamic-section, hr.dynamic-hr").forEach(el => el.remove());
+
   const msgs = document.getElementById('ai-integrated-msgs');
   if (msgs) msgs.innerHTML = "";
 }
@@ -33,59 +37,64 @@ export function showPanel(node) {
   if (!panelEl) return;
   resetPanel();
 
-  // 1. ZÁKLADNÍ TEXTY
-  if (titleEl) titleEl.innerHTML = `<i class="fa-solid fa-circle-nodes"></i> ${node.label || "Detail"}`;
-  if (defEl) defEl.textContent = node.definition || "";
+  const nodeColor = node.color || '#38bdf8';
 
-  // 2. KARTA MĚŘENÍ (Tady bereme to reálné číslo)
+  // 1. ZÁKLADNÍ TEXTY
+  if (titleEl) titleEl.innerHTML = `<i class="fa-solid fa-circle-nodes" style="color:${nodeColor}"></i> ${node.label || "Detail"}`;
+  if (defEl) {
+    defEl.textContent = node.definition || "";
+    defEl.style.color = "#f1f5f9";
+    defEl.style.fontSize = "16px";
+    defEl.style.marginTop = "10px"; // Menší mezera od nadpisu
+  }
+
+  // 2. KARTA MĚŘENÍ - S podbarvením (glow) podle barvy uzlu
   const val = node.current_index || 72;
   const metricCard = document.createElement("div");
   metricCard.className = "metric-card";
-  metricCard.style.cssText = `background: ${node.color || '#38bdf8'}22; border: 1px solid ${node.color || '#38bdf8'}55; border-radius: 12px; padding: 15px; margin: 15px 0; color: #f1f5f9;`;
+  // Dynamické podbarvení: používáme barvu uzlu s nízkou opacitou (22) a jemný border
+  metricCard.style.cssText = `
+    background: ${nodeColor}15; 
+    border: 1px solid ${nodeColor}33; 
+    border-radius: 12px; 
+    padding: 20px; 
+    margin: 15px 0; 
+    color: #fff;
+    box-shadow: 0 4px 15px ${nodeColor}11;
+  `;
   metricCard.innerHTML = `
-    <div style="font-size:12px; opacity:0.7; margin-bottom:5px;">Index připravenosti</div>
-    <div style="font-size:22px; font-weight:bold;">${val} / 100</div>
-    <div style="height:8px; background:rgba(0,0,0,0.3); border-radius:4px; margin:10px 0; overflow:hidden;">
-        <div style="width:${val}%; height:100%; background:${node.color || '#38bdf8'}; transition: width 0.5s ease;"></div>
+    <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">Index připravenosti</div>
+    <div style="display: flex; align-items: baseline; gap: 5px;">
+      <span style="font-size: 32px; font-weight: 600;">${val}</span>
+      <span style="font-size: 32px; font-weight: 600; opacity: 0.8;">%</span>
+    </div>
+    <div style="height: 6px; background: rgba(0, 0, 0, 0.3); border-radius: 3px; margin-top: 12px; overflow: hidden;">
+      <div style="width: ${val}%; height: 100%; background: ${nodeColor}; box-shadow: 0 0 8px ${nodeColor}aa; transition: width 1s ease;"></div>
     </div>
   `;
-  defEl.after(metricCard);
+  if (panelHeader) panelHeader.after(metricCard);
 
-  // 3. PROPOJENÍ S "CHYTRÉ JÁ" (Bez duplicit)
-  // Najdeme tvůj nadpis "Chytré já", který už v panelu máš
-  const aiTitle = Array.from(panelEl.querySelectorAll('b, h3, .panel-section-title')).find(el => el.textContent.includes("Chytré já"));
-
-  if (aiTitle) {
-    // 3. PROPOJENÍ S "CHYTRÉ JÁ" – pevný kotevní bod
-    let msgsContainer = document.getElementById('ai-integrated-msgs');
-    if (!msgsContainer) {
-      msgsContainer = document.createElement('div');
-      msgsContainer.id = 'ai-integrated-msgs';
-      msgsContainer.style.cssText =
-        "padding: 10px 0; color: #cbd5e1; font-size: 14px; min-height: 40px;";
-
-      const aiSection = document.getElementById('aiPanelSection');
-      if (aiSection) {
-        aiSection.before(msgsContainer);
-      }
+  // 3. ÚPRAVA NADPISŮ - Barva #83B0E3 a menší mezery
+  const existingHeaders = panelEl.querySelectorAll('h3, .panel-section-title, b');
+  existingHeaders.forEach(header => {
+    const text = header.textContent.toLowerCase();
+    if (text.includes("chytré já") || text.includes("úkoly") || text.includes("zdroje") || text.includes("myšlenky") || text.includes("strategie")) {
+      header.style.fontSize = "22px";
+      header.style.fontWeight = "600";
+      header.style.color = "#83B0E3";
+      header.style.display = "flex";
+      header.style.alignItems = "center";
+      header.style.gap = "10px";
+      header.style.marginTop = "20px"; // Zmenšená mezera od oddělovače
+      header.style.marginBottom = "15px";
     }
-  }
+  });
 
-  // 4. SKRYTÍ STARÉHO MODRÉHO BOXU
-  // Pokud v HTML stále straší ten starý overlay, tady ho definitivně vypneme
-  const oldOverlay = document.getElementById('aiChatOverlay');
-  if (oldOverlay) oldOverlay.style.display = 'none';
-
-  // 5. ZOBRAZENÍ PANELU
+  // 4. ZOBRAZENÍ
   panelEl.style.display = "block";
   setTimeout(() => {
     panelEl.classList.add("open", "visible");
     document.body.classList.add("panel-open");
-
-    // 6. SPUŠTĚNÍ ASISTENTA S REÁLNÝMI DATY
-    // Posíláme label (např. "Zdraví") a reálnou hodnotu (např. 72)
-    if (window.setAIContext) {
-      window.setAIContext(node.label || "Detail", val);
-    }
+    if (window.setAIContext) window.setAIContext(node.label || "Detail", val);
   }, 10);
 }

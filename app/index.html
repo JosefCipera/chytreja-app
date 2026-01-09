@@ -57,37 +57,51 @@
     <!-- === 🌌 Postranní panel === -->
     <aside id="sidePanel">
         <div class="panel-header">
-            <h2 id="nodeTitle"><i class="fa-solid fa-circle-nodes"></i> Uzlový název</h2>
-            <button class="panel-close" id="closePanel">✖</button>
+
+            <div class="panel-node-row">
+                <div id="nodeTitle" class="panel-node-title">
+                    <i class="fa-solid fa-circle-nodes"></i> Uzlový název
+                </div>
+                <button class="panel-close" id="closePanel">✖</button>
+            </div>
+
+            <div id="nodeMicroDef" class="panel-microdef">
+                <!-- mikro-definice uzlu -->
+            </div>
+
+            <div class="panel-version">
+                Panel Chytrého já · v1.0
+            </div>
+
         </div>
 
         <div class="panel-content">
-            <p class="definition" id="nodeDef"></p>
+             <hr class="ai-divider">
+            <h3 class="ai-section-title">
+                <i class="fa-solid fa-brain"></i> Chytré já
+            </h3>
 
-            <hr>
-            <h3>💬 Strategie</h3>
-            <ul id="nodeThoughts"></ul>
-            <div id="dailyPriority" class="priority-box">
-                <i class="fas fa-bolt"></i>
-                <div class="priority-text">
-                    <strong>Priorita dne:</strong>
-                    <span id="priorityContent">Metabolický základ. 45 min chůze pro budoucí soběstačnost.</span>
-                </div>
-            </div>
-            <hr>
-            <h3>📘 Hodnoty</h3>
-            <ul id="nodeValues"></ul>
+            <div id="ai-integrated-msgs"></div>
 
-            <hr>
-            <h3>🧩 Úlohy</h3>
-            <ul id="nodeTasks"></ul>
-
-            <hr class="ai-divider">
-            <h3 class="ai-section-title"><i class="fa-solid fa-brain"></i> Chytré já</h3>
             <div id="aiPanelSection">
                 <input id="aiPanelInput" type="text" placeholder="Zeptej se Chytrého já…" />
-                <button id="ai-send"><i class="fa-solid fa-paper-plane"></i></button>
+                <button id="ai-send">
+                    <i class="fa-solid fa-paper-plane"></i>
+                </button>
             </div>
+             <hr class="panel-divider">
+
+            <div id="tasksSection" class="panel-section">
+                <h3 class="panel-section-title">🧩 Úkoly</h3>
+                <ul id="tasksList" class="tasks-list"></ul>
+            </div>
+            <hr class="panel-divider">
+
+            <div id="resourcesSection" class="panel-section">
+                <h3 class="panel-section-title">📄 Zdroje</h3>
+                <ul id="resourcesList" class="resources-list"></ul>
+            </div>
+
         </div>
 
 
