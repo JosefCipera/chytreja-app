@@ -131,34 +131,34 @@ async function loadAndRenderModel(modelName, role) {
 async function loadModel(urls, modelName) {
   const modelConfig = window.UNIVERSE_INDEX?.[modelName];
 
-  // Pokud model používá Supabase
   if (modelConfig?.useSupabase) {
     try {
       console.log("📡 Načítám data ze Supabase pro:", modelName);
 
+      // Úprava: přidali jsme is_decathlon_discipline do selectu
       const { data, error } = await window.supabaseClient
         .from("nodes")
         .select(`
           id, label, type, definition, parent, color, icon, 
-          current_index, strategy_priority,
+          current_index, strategy_priority, is_decathlon_discipline,
           node_values ( type, title, description, source ),
           node_tasks ( title, description )
         `);
 
       if (error) throw error;
 
-      // 1. Namapujeme data včetně ÚKOLŮ a HODNOT
       const nodes = data.map(n => ({
         id: n.id,
         label: n.label,
         type: n.type,
         definition: n.definition,
-        parent: n.parent,
+        parent: n.parent, // Vis.js tohle použije pro propojení
         color: n.color,
         icon: n.icon,
+        is_decathlon: n.is_decathlon_discipline, // Tady to máme pro filtr desetiboje
         current_index: n.current_index,
         strategy_priority: n.strategy_priority,
-        related: [], // Inicializace pole pro vazby
+        related: [],
         values: (n.node_values || []).map(v => ({
           type: v.type,
           title: v.title,
@@ -171,7 +171,7 @@ async function loadModel(urls, modelName) {
         }))
       }));
 
-      // 2. Vytvoříme mapu pro rychlé vyhledávání a propojíme "related" (vazby v grafu)
+      // Propojení "related" zůstává stejné - Vis.js tohle žere automaticky
       const map = new Map();
       nodes.forEach(n => map.set(n.id, n));
       nodes.forEach(n => {
@@ -180,7 +180,7 @@ async function loadModel(urls, modelName) {
         }
       });
 
-      console.log("✅ Model úspěšně sestaven:", nodes);
+      console.log("✅ Model Stoletého desetibojaře sestaven:", nodes);
       return nodes;
 
     } catch (err) {
@@ -188,9 +188,6 @@ async function loadModel(urls, modelName) {
       return [];
     }
   }
-
-  // Fallback pro lokální JSON (pokud bys ho někdy použil)
-  console.warn("⚠️ Model nepoužívá Supabase, vracím prázdné pole.");
   return [];
 }
 // -------------------------------------------------------------
