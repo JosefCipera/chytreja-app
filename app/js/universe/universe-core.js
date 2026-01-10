@@ -159,34 +159,55 @@ export function renderUniverse(DATA, subset = null) {
   }
 
   function makeNode(it, isMain, isExpanded) {
-    const hasChildren = window.MAIN_UNIVERSE_DATA.some(
-      n => n.parent === it.id
-    );
-
-    // ⬇️ šipka jen pokud:
-    // - má děti
-    // - NENÍ rozpadnutý
+    const hasChildren = window.MAIN_UNIVERSE_DATA.some(n => n.parent === it.id);
     const arrow = (hasChildren && !isExpanded) ? " ⤵" : "";
 
-    const baseColor =
-      (typeof it.color === "string"
-        ? it.color
-        : (it.color && it.color.background)) || "#1e293b";
+    // TVOJE POMĚRY (přepočtené na pixely pro obrazovku)
+    // 28mm -> ~48px (Sun)
+    // 25mm -> ~40px (Pillar)
+    // 20mm -> ~30px (Discipline)
+
+    let finalSize = 30;
+    let finalFont = 14;
+
+    switch (it.type) {
+      case 'sun':
+        finalSize = 48; // Největší - tvoje 28mm
+        finalFont = 20;
+        break;
+      case 'pillar':
+        finalSize = 40; // Střední - tvoje 25mm
+        finalFont = 16;
+        break;
+      case 'discipline':
+        finalSize = 30; // Nejmenší - tvoje 20mm
+        finalFont = 16;
+        break;
+      default:
+        // Záchranná brzda pro podsítě
+        if (isMain || isExpanded) {
+          finalSize = 45;
+          finalFont = 17;
+        }
+    }
+
+    const baseColor = (typeof it.color === "string" ? it.color : it.color?.background) || "#1e293b";
 
     return {
       id: it.id,
       label: it.label + arrow,
       shape: "dot",
-      size: isMain ? 42 : 30,
+      size: finalSize,
       color: {
         background: baseColor,
         border: baseColor,
-        highlight: {
-          background: lighten(baseColor, 0.25),
-          border: baseColor
-        }
+        highlight: { background: lighten(baseColor, 0.25), border: baseColor }
       },
-      font: { color: "#fff", size: isMain ? 20 : 17 },
+      font: {
+        color: "#fff",
+        size: finalFont,
+        face: "Inter, sans-serif"
+      },
       borderWidth: 2,
       shadow: true
     };
