@@ -125,9 +125,6 @@ async function loadAndRenderModel(modelName, role) {
   updateHeaderColor(role);
 }
 
-// -------------------------------------------------------------
-// 5) Silently load JSON (HEAD → fetch)
-// -------------------------------------------------------------
 async function loadModel(urls, modelName) {
   const modelConfig = window.UNIVERSE_INDEX?.[modelName];
 
@@ -135,29 +132,37 @@ async function loadModel(urls, modelName) {
     try {
       console.log("📡 Načítám data ze Supabase pro:", modelName);
 
-      // Úprava: přidali jsme is_decathlon_discipline do selectu
       const { data, error } = await window.supabaseClient
         .from("nodes")
         .select(`
-  id, label, definition, parent_id, color, icon, 
-  current_index, strategy_priority,
-  node_values ( type, title, description, source ),
-  node_tasks ( title, description )
-`)
+          id, 
+          label, 
+          type, 
+          definition, 
+          parent, 
+          color, 
+          icon, 
+          current_index, 
+          strategy_priority,
+          is_decathlon_discipline,
+          node_values ( type, title, description, source ),
+          node_tasks ( title, description )
+        `);
 
       if (error) throw error;
 
+      // Mapování dat na formát, který zbytek tvé aplikace očekává
       const nodes = data.map(n => ({
         id: n.id,
         label: n.label,
-        type: n.id === 'stolety-desetibojar' ? 'sun' : (n.parent === 'stolety-desetibojar' ? 'pillar' : 'discipline'),
+        type: n.type,
         definition: n.definition,
-        parent: n.parent_id, // Tady to mapujeme: n.parent_id z DB -> n.parent pro Vis.js
+        parent: n.parent, // Tady používáme 'parent' z tvého výpisu
         color: n.color,
         icon: n.icon,
-        is_decathlon: n.is_decathlon_discipline, // Tady to máme pro filtr desetiboje
         current_index: n.current_index,
         strategy_priority: n.strategy_priority,
+        is_decathlon: n.is_decathlon_discipline,
         related: [],
         values: (n.node_values || []).map(v => ({
           type: v.type,
@@ -171,7 +176,7 @@ async function loadModel(urls, modelName) {
         }))
       }));
 
-      // Propojení "related" zůstává stejné - Vis.js tohle žere automaticky
+      // Propojení vazeb (aby Vis.js věděl, kdo ke komu patří)
       const map = new Map();
       nodes.forEach(n => map.set(n.id, n));
       nodes.forEach(n => {
@@ -180,7 +185,7 @@ async function loadModel(urls, modelName) {
         }
       });
 
-      console.log("✅ Model Stoletého desetibojaře sestaven:", nodes);
+      console.log("✅ Model úspěšně sestaven:", nodes);
       return nodes;
 
     } catch (err) {
