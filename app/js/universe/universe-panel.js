@@ -95,6 +95,8 @@ export function showPanel(node) {
   setTimeout(() => {
     panelEl.classList.add("open", "visible");
     document.body.classList.add("panel-open");
-    if (window.setAIContext) window.setAIContext(node.label || "Detail", val);
+    if (window.setAIContext) {
+      window.setAIContext(node.id);
+    }
   }, 10);
 }

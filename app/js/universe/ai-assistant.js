@@ -36,55 +36,43 @@ let conversationState = {
   lastAction: null
 };
 
-window.setAIContext = async function (nodeLabel, nodeIndex, nodeDefinition) {
+// ======================================
+// AI CONTEXT – napojení panelu na API
+// ======================================
+window.setAIContext = async function (nodeId) {
   const msgs = document.getElementById("ai-integrated-msgs");
-  if (!msgs) return;
+  if (!msgs) {
+    console.warn("AI: #ai-integrated-msgs nenalezen");
+    return;
+  }
 
-  // 1. PŘÍPRAVA: Vyčistíme chat a nastavíme aktuální data
+  // vizuální feedback
   msgs.innerHTML = "";
-  currentNodeContext = {
-    label: nodeLabel,
-    index: nodeIndex,
-    definition: nodeDefinition
-  };
-
-  // 2. FEEDBACK: Uživatel vidí, že se něco děje
-  window.showAIDiagnosis(`Analyzuji oblast ${nodeLabel}...`, "bot");
+  window.showAIDiagnosis("Dívám se na to…", "bot");
 
   try {
-    // 3. DOTAZ NA VERCEL: Posíláme všechna data z uzlu
     const response = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        nodeLabel: nodeLabel,
-        nodeIndex: nodeIndex,
-        nodeDefinition: nodeDefinition
-      })
+      body: JSON.stringify({ nodeId })
     });
 
-    if (!response.ok) throw new Error("API na Vercelu neodpovídá");
+    if (!response.ok) {
+      throw new Error("API neodpovídá");
+    }
 
     const data = await response.json();
 
-    // 4. ZOBRAZENÍ VÝSLEDKŮ: Smažeme analýzu a dáme tam verdikt od AI
     msgs.innerHTML = "";
     window.showAIDiagnosis(data.verdict, "bot");
 
-    // 5. AKTUALIZACE PANELU: Naplníme úkoly a zdroje těmi daty, co poslala AI
-    if (data.tasks) window.setTasks(data.tasks);
-    if (data.resources) window.setResources(data.resources);
-
-    // 6. INTERAKCE: Zobrazíme čipy pro rychlé dotazy
-    showAIChips([
-      { label: "Proč se to děje?", value: "proč" },
-      { label: "Co je teď nejlepší krok?", value: "co mám dělat" }
-    ]);
-
-  } catch (error) {
-    console.error("Chyba Mentora:", error);
+  } catch (err) {
     msgs.innerHTML = "";
-    window.showAIDiagnosis("Momentálně se mi nedaří spojit s mým vědomím na Vercelu. Zkontroluj připojení nebo API klíč.", "bot");
+    window.showAIDiagnosis(
+      "Teď se mi nedaří spojit s mým mozkem. Zkus to za chvíli.",
+      "bot"
+    );
+    console.error("AI error:", err);
   }
 };
 
