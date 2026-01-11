@@ -10,47 +10,49 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
+export default async function (req, res) {
+  try {
+    // 1️⃣ Povolit jen POST (ručně)
+    if (req.method !== "POST") {
+      return res.status(405).json({ error: "Only POST allowed" });
+    }
 
-  const { nodeId, userQuestion } = req.body;
+    const { nodeId, userQuestion } = req.body;
 
-  if (!nodeId) {
-    return res.status(400).json({ error: "nodeId missing" });
-  }
+    if (!nodeId) {
+      return res.status(400).json({ error: "nodeId missing" });
+    }
 
-  // 1️⃣ Načtení uzlu z VIEW
-  const { data: node, error } = await supabase
-    .from("node_ai_context")
-    .select("*")
-    .eq("node_id", nodeId)
-    .single();
+    // 2️⃣ Načtení uzlu z VIEW
+    const { data: node, error } = await supabase
+      .from("node_ai_context")
+      .select("*")
+      .eq("node_id", nodeId)
+      .single();
 
-  if (error || !node) {
-    return res.status(500).json({
-      error: "Failed to load node context",
-      details: error?.message
-    });
-  }
+    if (error || !node) {
+      return res.status(500).json({
+        error: "Failed to load node context",
+        details: error?.message
+      });
+    }
 
-  // 2️⃣ SYSTEM PROMPT
-  const SYSTEM_PROMPT = `
+    // 3️⃣ SYSTEM PROMPT
+    const SYSTEM_PROMPT = `
 Jsi „Chytré já“ – klidný, lidský mentor.
 Tvým cílem není optimalizovat výkon, ale pomoci uživateli
 porozumět stavu těla a snížit zbytečný stres.
 
 Vždy postupuj v tomto pořadí:
-1. STAV – uklidni, řekni zda je stav v pořádku
-2. PROČ – vysvětli jednoduše a lidsky
-3. CO – navrhni maximálně 1–2 konkrétní kroky
-4. Vyhýbej se diagnózám a odborným termínům
-5. Používej krátké odstavce vhodné pro mobil
+STAV – uklidni, řekni zda je stav v pořádku
+PROČ – vysvětli jednoduše a lidsky
+CO – navrhni maximálně 1–2 konkrétní kroky
+Vyhýbej se diagnózám a odborným termínům.
+Používej krátké odstavce vhodné pro mobil.
 `;
 
-  // 3️⃣ USER PROMPT (z DB)
-  const USER_PROMPT = `
+    // 4️⃣ USER PROMPT (z DB)
+    const USER_PROMPT = `
 OBLAST:
 ${node.label}
 
@@ -68,8 +70,7 @@ JAK MÁŠ ODPOVÍDAT:
 ${JSON.stringify(node.ai_hint, null, 2)}
 `;
 
-  try {
-    // 4️⃣ OpenAI
+    // 5️⃣ OpenAI
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
@@ -84,14 +85,15 @@ ${JSON.stringify(node.ai_hint, null, 2)}
 
     const text = completion.choices[0].message.content;
 
-    // 5️⃣ Odpověď frontendům
-    res.status(200).json({
+    // 6️⃣ Odpověď
+    return res.status(200).json({
       verdict: text
     });
 
   } catch (err) {
-    res.status(500).json({
-      error: "OpenAI failed",
+    console.error("API /chat error:", err);
+    return res.status(500).json({
+      error: "Internal server error",
       details: err.message
     });
   }
