@@ -115,6 +115,7 @@ function showRecommendationCard() {
 // 6. AI CHIPS
 // --------------------------------------------------
 function showAIChips(options) {
+  console.log("showAIChips CALLED", options);
   const msgs = document.getElementById("ai-integrated-msgs");
   if (!msgs) return;
 
