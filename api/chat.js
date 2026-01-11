@@ -1,3 +1,6 @@
+console.log("API CHAT HIT");
+console.log("API CHAT POST HIT");
+
 import OpenAI from "openai";
 import { createClient } from "@supabase/supabase-js";
 
@@ -53,6 +56,8 @@ Používej krátké odstavce vhodné pro mobil.
 
     // 4️⃣ USER PROMPT (z DB)
     const USER_PROMPT = `
+!!! TEST_MARKER_123 !!!
+
 OBLAST:
 ${node.label}
 
@@ -75,10 +80,7 @@ ${JSON.stringify(node.ai_hint, null, 2)}
       model: "gpt-4o-mini",
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
-        {
-          role: "user",
-          content: userQuestion || USER_PROMPT
-        }
+        { role: "user", content: USER_PROMPT }
       ],
       temperature: 0.4
     });
