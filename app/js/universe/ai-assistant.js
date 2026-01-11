@@ -137,3 +137,4 @@ function showAIChips(options) {
   msgs.appendChild(wrap);
   msgs.scrollTop = msgs.scrollHeight;
 }
+showInitialVerdict();
