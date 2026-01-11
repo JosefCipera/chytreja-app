@@ -84,99 +84,87 @@ async function populateModelSelector() {
 // 4) LOAD MODEL + RENDER
 // -------------------------------------------------------------
 async function loadAndRenderModel(modelName, role) {
-  // === NEW: current universe ===
   window.CURRENT_MODEL = modelName;
   const modelPath = window.UNIVERSE_INDEX?.[modelName]?.modelFile;
-  if (!modelPath) {
-    console.error(`❌ Model "${modelName}" nemá modelFile v index.json`);
-    return;
-  }
 
-  const model = await loadModel([modelPath], modelName); // Musíme přidat modelName!
-  if (!model) {
-    console.error(`❌ Nelze načíst model: ${modelName}`);
-    return;
-  }
+  // 1. Načteme VŠECHNA data ze Supabase
+  const model = await loadModel([modelPath], modelName);
+  if (!model) return;
 
-  // window.MAIN_UNIVERSE_DATA = model;
   window.BASE_UNIVERSE_DATA = structuredClone(model);
   window.MAIN_UNIVERSE_DATA = structuredClone(model);
 
   await applyAccessModel(role, model, modelName);
 
+  // 2. TADY BYLA CHYBA: Smazali jsme filtr "firstLevel"
+  // Posíláme do renderu VŠECHNO (model, model)
+  console.log("🚀 Vykresluji kompletní strom:", model.length, "uzlů");
+
+  renderUniverse(model, model);
+
+  // 3. Update textu v hlavičce
   const headerModelName = document.getElementById("headerModelName");
-
   if (headerModelName) {
-    headerModelName.textContent =
-      window.UNIVERSE_INDEX?.[modelName]?.label || modelName;
+    headerModelName.textContent = window.UNIVERSE_INDEX?.[modelName]?.label || modelName;
   }
-
-  // renderUniverse(model);
-  // ================================
-  // 🌱 STARTOVACÍ PODMNOŽINA (1. úroveň)
-  // ================================
-  const root = model.find(n => !n.parent);
-  const firstLevel = model.filter(
-    n => n.id === root.id || n.parent === root.id
-  );
-
-  renderUniverse(model, firstLevel);
-
   updateHeaderColor(role);
 }
 
+// -------------------------------------------------------------
+// 5) Silently load JSON (HEAD → fetch)
+// -------------------------------------------------------------
 async function loadModel(urls, modelName) {
   const modelConfig = window.UNIVERSE_INDEX?.[modelName];
 
   if (modelConfig?.useSupabase) {
     try {
-      console.log("📡 Načítám data ze Supabase pro:", modelName);
+      console.log("📡 Načítám data ze Supabase:", modelName);
 
       const { data, error } = await window.supabaseClient
         .from("nodes")
         .select(`
-          id, 
-          label, 
-          type, 
-          definition, 
-          parent, 
-          color, 
-          icon, 
-          current_index, 
-          strategy_priority,
-          is_decathlon_discipline,
+          id, label, type, parent, color, 
           node_values ( type, title, description, source ),
           node_tasks ( title, description )
         `);
 
       if (error) throw error;
 
-      // Mapování dat na formát, který zbytek tvé aplikace očekává
-      const nodes = data.map(n => ({
-        id: n.id,
-        label: n.label,
-        type: n.type,
-        definition: n.definition,
-        parent: n.parent, // Tady používáme 'parent' z tvého výpisu
-        color: n.color,
-        icon: n.icon,
-        current_index: n.current_index,
-        strategy_priority: n.strategy_priority,
-        is_decathlon: n.is_decathlon_discipline,
-        related: [],
-        values: (n.node_values || []).map(v => ({
-          type: v.type,
-          title: v.title,
-          summary: v.description,
-          url: v.source
-        })),
-        tasks: (n.node_tasks || []).map(t => ({
-          title: t.title,
-          description: t.description
-        }))
-      }));
+      // MAPOVÁNÍ DAT + NATVRDO DEFINOVANÝ STYL
+      const nodes = data.map(node => {
+        const isRoot = !node.parent || node.parent === null || node.parent === "";
+        const isPillar = node.parent === 'root';
 
-      // Propojení vazeb (aby Vis.js věděl, kdo ke komu patří)
+        // PRIORITA: Barva z DB -> Bílá pro Root -> Šedá pro zbytek
+        const activeColor = node.color || (isRoot ? '#ffffff' : '#4a5568');
+
+        return {
+          id: node.id,
+          label: node.label || node.id,
+          shape: 'dot',
+          // Velikosti uzlů
+          size: isRoot ? 35 : (isPillar ? 22 : 14),
+          // Barvy (zápis přímo do objektu, aby to Vis.js prioritizoval)
+          color: {
+            background: activeColor,
+            border: isRoot ? '#ffffff' : '#2d3748',
+            highlight: { background: activeColor, border: '#ffffff' }
+          },
+          // Písmo
+          font: {
+            color: '#ffffff',
+            size: isRoot ? 16 : 14,
+            face: 'Arial',
+            strokeWidth: isRoot ? 0 : 3,
+            strokeColor: '#000000'
+          },
+          parent: node.parent,
+          related: [], // Bude naplněno níže
+          rawData: node
+        };
+      });
+
+      // VYTVOŘENÍ RELACÍ (aby fungovalo navigování)
       const map = new Map();
       nodes.forEach(n => map.set(n.id, n));
       nodes.forEach(n => {
@@ -185,11 +173,31 @@ async function loadModel(urls, modelName) {
         }
       });
 
-      console.log("✅ Model úspěšně sestaven:", nodes);
+      // GLOBÁLNÍ NASTAVENÍ GRAFU
+      window.GRAPH_OPTIONS = {
+        layout: {
+          hierarchical: {
+            enabled: true,
+            direction: 'UD',
+            sortMethod: 'directed',
+            levelSeparation: 150,
+            nodeSpacing: 250
+          }
+        },
+        edges: {
+          width: 2,
+          color: { inherit: 'from', opacity: 0.5 },
+          arrows: { to: { enabled: true, scaleFactor: 0.5 } },
+          smooth: { type: 'cubicBezier', forceDirection: 'vertical', roundness: 0.5 }
+        },
+        physics: { enabled: false }
+      };
+
+      console.log("✅ Model sestaven. Uzlů:", nodes.length);
       return nodes;
 
     } catch (err) {
-      console.error("❌ Chyba při načítání ze Supabase:", err);
+      console.error("❌ Kritická chyba při načítání:", err);
       return [];
     }
   }
@@ -354,4 +362,3 @@ function updateHeaderColor(role) {
 // -------------------------------------------------------------
 // END FILE
 // -------------------------------------------------------------
-// force-redeploy-01

@@ -77,24 +77,39 @@ export function renderUniverse(DATA, subset = null) {
   const options = {
     nodes: {
       shadow: true,
-      font: {
-        multi: "html"   // ⬅️ TOTO TAM CHYBÍ
-      }
+      font: { multi: "html" }
     },
     edges: {
-      smooth: { enabled: true, type: "dynamic", roundness: 0.55 },
+      smooth: { 
+        enabled: true, 
+        type: "cubicBezier", 
+        forceDirection: "vertical", // Linky budou čistě padat dolů
+        roundness: 0.5 
+      },
       dashes: true,
-      width: 1,
-      color: { color: "#9ca3af" }
+      width: 1.5,
+      color: { color: "#4a5568", opacity: 0.5 },
+      arrows: { to: { enabled: true, scaleFactor: 0.4 } }
     },
-    physics: {
-      barnesHut: {
-        gravitationalConstant: -20000,
-        springLength: 200,
-        springConstant: 0.04
+    layout: {
+      hierarchical: {
+        enabled: true,
+        direction: "UD",           // Up-Down: Shora dolů
+        sortMethod: "directed",    // Respektuje směr parent -> child
+        levelSeparation: 180,      // Fixní mezera mezi patry
+        nodeSpacing: 250,          // Mezera mezi uzly v jedné řadě
+        blockShifting: true,
+        edgeMinimization: true,
+        parentCentralization: true
       }
     },
-    interaction: { hover: false }
+    physics: {
+      enabled: false // KLÍČOVÉ: Fyzika musí být vypnutá, aby uzly držely v lajně
+    },
+    interaction: { 
+      hover: true,
+      dragNodes: true // Můžeš je posouvat, ale zůstanou ve svém levelu
+    }
   };
 
   // 🌌 Vykreslení nové sítě
@@ -159,39 +174,36 @@ export function renderUniverse(DATA, subset = null) {
   }
 
   function makeNode(it, isMain, isExpanded) {
+    // 1. Zjistíme, jestli má uzel děti (pro šipku)
     const hasChildren = window.MAIN_UNIVERSE_DATA.some(n => n.parent === it.id);
     const arrow = (hasChildren && !isExpanded) ? " ⤵" : "";
 
-    // TVOJE POMĚRY (přepočtené na pixely pro obrazovku)
-    // 28mm -> ~48px (Sun)
-    // 25mm -> ~40px (Pillar)
-    // 20mm -> ~30px (Discipline)
-
-    let finalSize = 30;
-    let finalFont = 14;
-
-    switch (it.type) {
-      case 'sun':
-        finalSize = 48; // Největší - tvoje 28mm
-        finalFont = 20;
-        break;
-      case 'pillar':
-        finalSize = 40; // Střední - tvoje 25mm
-        finalFont = 16;
-        break;
-      case 'discipline':
-        finalSize = 30; // Nejmenší - tvoje 20mm
-        finalFont = 16;
-        break;
-      default:
-        // Záchranná brzda pro podsítě
-        if (isMain || isExpanded) {
-          finalSize = 45;
-          finalFont = 17;
-        }
+    // 2. BARVA: Priorita 1: barva přímo z databáze, Priorita 2: barva z objektu, Fallback: tmavě modrá
+    let baseColor = "#1e293b"; 
+    if (typeof it.color === "string") {
+      baseColor = it.color;
+    } else if (it.color && it.color.background) {
+      baseColor = it.color.background;
+    } else if (it.rawData && it.rawData.color) {
+      baseColor = it.rawData.color;
     }
 
-    const baseColor = (typeof it.color === "string" ? it.color : it.color?.background) || "#1e293b";
+    // 3. VELIKOST: Zachováme tvoje definované rozměry (Sun, Pillar, Discipline)
+    let finalSize = it.size || 30;
+    let finalFont = 14;
+
+    // Pokud už velikost přišla z loadModel, použijeme ji, jinak switch
+    if (!it.size) {
+        switch (it.type) {
+          case 'sun': finalSize = 48; finalFont = 20; break;
+          case 'pillar': finalSize = 40; finalFont = 16; break;
+          case 'discipline': finalSize = 30; finalFont = 16; break;
+          default:
+            if (isMain || isExpanded) { finalSize = 45; finalFont = 17; }
+        }
+    } else {
+        finalFont = it.font?.size || 14;
+    }
 
     return {
       id: it.id,
@@ -200,30 +212,29 @@ export function renderUniverse(DATA, subset = null) {
       size: finalSize,
       color: {
         background: baseColor,
-        border: baseColor,
-        highlight: { background: lighten(baseColor, 0.25), border: baseColor }
+        border: it.id === "desetiboj" ? "#ffffff" : baseColor, // Bílý okraj pro střed
+        highlight: { background: lighten(baseColor, 0.25), border: "#ffffff" }
       },
       font: {
         color: "#fff",
         size: finalFont,
-        face: "Inter, sans-serif"
+        face: "Inter, sans-serif",
+        strokeWidth: 2,
+        strokeColor: "#000000"
       },
       borderWidth: 2,
       shadow: true
     };
   }
-
   function makeEdge(from, to) {
-    const direction = Math.random() > 0.5 ? "curvedCW" : "curvedCCW";
-    const roundness = 0.45 + Math.random() * 0.2;
     return {
       id: [from, to].sort().join("::"),
       from,
       to,
-      color: { color: "#9ca3af" },
+      color: { color: "#4a5568", opacity: 0.5 },
       dashes: true,
       width: 1,
-      smooth: { enabled: true, type: direction, roundness }
+      arrows: { to: { enabled: true, scaleFactor: 0.5 } } // Šipka dolů
     };
   }
 
