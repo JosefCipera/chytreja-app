@@ -20,6 +20,21 @@ Vždy postupuj v tomto pořadí:
 5. Používej krátké odstavce vhodné pro mobil
 `;
 
+  const userPrompt = `
+OBLAST:
+${node.label}
+
+DEFINICE:
+${node.definition ?? "—"}
+
+AKTUÁLNÍ STAV:
+Index: ${score}
+Stav: ${state}
+Shrnutí: ${summary}
+
+POKYNY PRO ODPOVĚĎ:
+${JSON.stringify(node.ai_hint, null, 2)}
+`;
 
   try {
     const completion = await openai.chat.completions.create({

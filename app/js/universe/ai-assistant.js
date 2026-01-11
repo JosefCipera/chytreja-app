@@ -77,8 +77,8 @@ window.setAIContext = async function (nodeLabel, nodeIndex, nodeDefinition) {
 
     // 6. INTERAKCE: Zobrazíme čipy pro rychlé dotazy
     showAIChips([
-      { label: "Proč?", value: "proč" },
-      { label: "Co s tím?", value: "co mám dělat" }
+      { label: "Proč se to děje?", value: "proč" },
+      { label: "Co je teď nejlepší krok?", value: "co mám dělat" }
     ]);
 
   } catch (error) {
