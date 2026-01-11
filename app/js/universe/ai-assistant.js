@@ -1,16 +1,13 @@
 // ======================================
-// AI ASISTENT – PANEL CHAT (MENTOR VERZE)
+// AI ASISTENT – PANEL CHAT (MENTOR DEMO)
 // ======================================
 
 // --------------------------------------------------
-// 1. VÝPIS ZPRÁV (AI + UŽIVATEL)
+// 1. VÝPIS ZPRÁV
 // --------------------------------------------------
 window.showAIDiagnosis = function (text, type = "bot") {
   const msgs = document.getElementById("ai-integrated-msgs");
-  if (!msgs) {
-    console.warn("AI: container #ai-integrated-msgs nenalezen");
-    return;
-  }
+  if (!msgs) return;
 
   const msgDiv = document.createElement("div");
   msgDiv.className = `ai-msg ${type}`;
@@ -21,254 +18,101 @@ window.showAIDiagnosis = function (text, type = "bot") {
 };
 
 // --------------------------------------------------
-// 2. STAV KONTEXTU (UZEL)
-// --------------------------------------------------
-let currentNodeContext = {
-  label: null,
-  index: null
-};
-
-// --------------------------------------------------
-// 3. STAV KONVERZACE (VEDENÍ)
+// 2. STAV KONVERZACE
 // --------------------------------------------------
 let conversationState = {
-  priority: null,
-  lastAction: null
-};
-
-// ======================================
-// AI CONTEXT – napojení panelu na API
-// ======================================
-window.setAIContext = async function (nodeId) {
-  const msgs = document.getElementById("ai-integrated-msgs");
-  if (!msgs) {
-    console.warn("AI: #ai-integrated-msgs nenalezen");
-    return;
-  }
-
-  // vizuální feedback
-  msgs.innerHTML = "";
-  window.showAIDiagnosis("Dívám se na to…", "bot");
-
-  try {
-    const response = await fetch("/api/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ nodeId })
-    });
-
-    if (!response.ok) {
-      throw new Error("API neodpovídá");
-    }
-
-    const data = await response.json();
-
-    msgs.innerHTML = "";
-    window.showAIDiagnosis(data.verdict, "bot");
-
-  } catch (err) {
-    msgs.innerHTML = "";
-    window.showAIDiagnosis(
-      "Teď se mi nedaří spojit s mým mozkem. Zkus to za chvíli.",
-      "bot"
-    );
-    console.error("AI error:", err);
-  }
+  lastAction: "klidná chůze v zóně 2"
 };
 
 // --------------------------------------------------
-// 4. ÚVODNÍ VERDIKT AI + ÚKOLY
+// 3. ÚVODNÍ VERDIKT + CHIPSY
 // --------------------------------------------------
 window.showInitialVerdict = function () {
-  const { index } = currentNodeContext;
-
-  if (index >= 80) {
-    conversationState.priority = "udržení rovnováhy";
-    conversationState.lastAction = "zůstat konzistentní";
-
-    window.showAIDiagnosis(
-      `Celkově je to ve velmi dobrém stavu.
-
-Teď dává největší smysl držet to, co už funguje.
-Stačí zůstat konzistentní a nic zbytečně nehrotit.`,
-      "bot"
-    );
-
-    setTasks([
-      "Udržet stávající denní rytmus",
-      "Nepřidávat dnes další zátěž"
-    ]);
-    setResources([
-      {
-        icon: "📄",
-        title: "Jak udržet stabilní denní rytmus",
-        url: "#"
-      }
-    ]);
-
-  } else if (index >= 60) {
-    conversationState.priority = "metabolický základ";
-    conversationState.lastAction = "klidná chůze";
-
-    window.showAIDiagnosis(
-      `Stav je dobrý, jen tu je jedno slabší místo.
-
-Dnes má největší smysl podpořit metabolický základ.
-Klidná 45minutová chůze udělá víc než jakýkoli tlak na výkon.`,
-      "bot"
-    );
-
-    setTasks([
-      "Klidná chůze (45 minut)",
-      "Vyhnout se tlaku na výkon"
-    ]);
-    setResources([
-      {
-        icon: "🎧",
-        title: "Pohyb bez výkonu – proč funguje",
-        url: "#"
-      },
-      {
-        icon: "📄",
-        title: "Metabolický základ jednoduše",
-        url: "#"
-      }
-    ]);
-
-  } else {
-    conversationState.priority = "regenerace";
-    conversationState.lastAction = "zklidnit tempo a spánek";
-
-    window.showAIDiagnosis(
-      `Tělo teď potřebuje víc klidu a pozornosti.
-
-Největší přínos dnes bude regenerace.
-Zkus jít spát o něco dřív a ubrat tempo.`,
-      "bot"
-    );
-
-    setTasks([
-      "Jít dnes spát o něco dřív",
-      "Zpomalit tempo dne"
-    ]);
-    setResources([
-      {
-        icon: "📄",
-        title: "Regenerace jako základ výkonu",
-        url: "#"
-      },
-      {
-        icon: "🎧",
-        title: "Spánek a obnova energie",
-        url: "#"
-      }
-    ]);
-  }
+  window.showAIDiagnosis(
+    "Metabolická stabilita je na solidní úrovni.\n\n" +
+    "Ranní glykémie kolem 6.8 mmol/l je v keto běžná adaptace. " +
+    "Tělo šetří glukózou a jede hlavně na tucích.",
+    "bot"
+  );
 
   showAIChips([
-    { label: "Proč", value: "proč" },
-    { label: "Úkoly", value: "úkoly" },
-    { label: "Rychlá rada", value: "rychlá rada" }
+    { label: "Proč?", value: "proč" },
+    { label: "Co mám dělat?", value: "co_mam_delat" }
   ]);
 };
 
 // --------------------------------------------------
-// 5. DETEKCE DOTAZU MIMO PRIORITU
-// --------------------------------------------------
-function isOffTopic(text) {
-  const t = text.toLowerCase();
-  const offTopicKeywords = [
-    "suplement",
-    "doplněk",
-    "vitamin",
-    "protein",
-    "technologie",
-    "aplikace",
-    "peníze",
-    "nemám čas",
-    "čas"
-  ];
-
-  return offTopicKeywords.some(k => t.includes(k));
-}
-
-// --------------------------------------------------
-// 6. ZPRACOVÁNÍ VSTUPU UŽIVATELE
-// --------------------------------------------------
-function handleSend() {
-  const input = document.getElementById("aiPanelInput");
-  if (!input) return;
-
-  const text = input.value.trim();
-  if (!text) return;
-
-  input.value = "";
-  window.showAIDiagnosis(text, "user");
-
-  setTimeout(() => {
-    window.handleAIReply(text);
-  }, 300);
-}
-
-// --------------------------------------------------
-// 7. REAKCE AI
+// 4. REAKCE NA CHIPSY / TEXT
 // --------------------------------------------------
 window.handleAIReply = function (text) {
   const t = text.toLowerCase();
-  let reply = "";
 
-  if (t.includes("proč")) {
-    reply =
-      "Protože právě tady se teď nejvíc rozhoduje o tom, jak se budeš cítit dál.\n\n" +
-      "Malá změna v pohybu má v tomhle stavu větší efekt než složité zásahy.";
+  if (t === "proč") {
+    window.showAIDiagnosis(
+      "Protože právě v tomhle stavu má jemné řízení větší efekt " +
+      "než snaha něco lámat přes koleno.",
+      "bot"
+    );
 
-  } else if (t.includes("úkol")) {
-    reply =
-      "Zaměř se dnes jen na ty doporučené kroky níž. Není potřeba přidávat další věci.";
-
-  } else if (t.includes("rych")) {
-    reply =
-      "Jedna věc dnes úplně stačí: klidná chůze nebo víc spánku.";
-
-  } else if (isOffTopic(t) && conversationState.lastAction) {
-    reply =
-      "Můžeme se na to podívat.\n\n" +
-      "Teď má ale největší efekt " +
-      conversationState.lastAction +
-      ".";
-
-  } else {
-    reply =
-      "Rozumím.\n\n" +
-      "Pro dnešek ale pořád platí, že největší přínos má " +
-      conversationState.lastAction +
-      ".";
+    showAIChips([
+      { label: "OK, chápu", value: "ok" },
+      { label: "Co mám dělat?", value: "co_mam_delat" }
+    ]);
+    return;
   }
 
-  window.showAIDiagnosis(reply, "bot");
+  if (t === "co_mam_delat") {
+    showRecommendationCard();
+    return;
+  }
+
+  window.showAIDiagnosis(
+    "Pro dnešek pořád platí, že největší přínos má " +
+    conversationState.lastAction +
+    ".",
+    "bot"
+  );
 };
 
 // --------------------------------------------------
-// 8. EVENTY – ENTER + KLIK
+// 5. INLINE DOPORUČENÍ (KARTA)
 // --------------------------------------------------
-document.addEventListener("keydown", (e) => {
-  if (e.key === "Enter" && e.target.id === "aiPanelInput") {
-    e.preventDefault();
-    handleSend();
-  }
-});
+function showRecommendationCard() {
+  const msgs = document.getElementById("ai-integrated-msgs");
+  if (!msgs) return;
 
-document.addEventListener("click", (e) => {
-  if (
-    e.target.closest(".fa-paper-plane") &&
-    e.target.closest("#sidePanel")
-  ) {
-    handleSend();
-  }
-});
+  const card = document.createElement("div");
+  card.className = "ai-recommendation-card";
+
+  card.innerHTML = `
+    <strong>DOPORUČENÍ</strong><br>
+    <em>Udržet metabolickou stabilitu</em><br><br>
+
+    <b>Největší přínos dnes:</b><br>
+    Klidná chůze v zóně 2 (30–45 min)<br><br>
+
+    <b>Když nemáš čas:</b><br>
+    Krátké dechové cvičení (5–10 min)<br><br>
+
+    <button class="rec-done">Hotovo</button>
+    <button class="rec-later">Později</button>
+  `;
+
+  card.querySelector(".rec-done").onclick = () => {
+    card.remove();
+    window.showAIDiagnosis("OK.", "bot");
+  };
+
+  card.querySelector(".rec-later").onclick = () => {
+    card.remove();
+  };
+
+  msgs.appendChild(card);
+  msgs.scrollTop = msgs.scrollHeight;
+}
 
 // --------------------------------------------------
-// 9. AI CHIPS
+// 6. AI CHIPS
 // --------------------------------------------------
 function showAIChips(options) {
   const msgs = document.getElementById("ai-integrated-msgs");
@@ -283,7 +127,7 @@ function showAIChips(options) {
     chip.innerText = opt.label;
 
     chip.addEventListener("click", () => {
-      window.showAIDiagnosis(opt.value, "user");
+      window.showAIDiagnosis(opt.label, "user");
       window.handleAIReply(opt.value);
     });
 
@@ -292,58 +136,4 @@ function showAIChips(options) {
 
   msgs.appendChild(wrap);
   msgs.scrollTop = msgs.scrollHeight;
-}
-
-// --------------------------------------------------
-// 10. ÚKOLY – JEDINÁ DEFINICE (‼️)
-// --------------------------------------------------
-window.setTasks = function (tasks) {
-  const list = document.getElementById("tasksList");
-  const section = document.getElementById("tasksSection");
-
-  if (!list || !section) return;
-
-  list.innerHTML = "";
-
-  if (!tasks.length) {
-    section.style.display = "none";
-    return;
-  }
-
-  section.style.display = "block";
-
-  tasks.forEach(task => {
-    const li = document.createElement("li");
-    li.textContent = task;
-    list.appendChild(li);
-  });
-}
-window.setResources = function (resources) {
-  const list = document.getElementById("resourcesList");
-  const section = document.getElementById("resourcesSection");
-
-  if (!list || !section) return;
-
-  list.innerHTML = "";
-
-  if (!resources.length) {
-    section.style.display = "none";
-    return;
-  }
-
-  section.style.display = "block";
-
-  resources.forEach(res => {
-    const li = document.createElement("li");
-    li.innerHTML = `
-      <span class="resource-icon">${res.icon || "🔗"}</span>
-      <span>${res.title}</span>
-    `;
-
-    li.addEventListener("click", () => {
-      window.open(res.url, "_blank");
-    });
-
-    list.appendChild(li);
-  });
 }
