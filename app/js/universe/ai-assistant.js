@@ -1,6 +1,9 @@
+console.log("ASSISTANT JS LOADED");
+
 // ======================================
 // AI ASISTENT – PANEL CHAT (MENTOR DEMO)
 // ======================================
+import { showRecommendationCard } from "./universe-panel.js";
 
 // --------------------------------------------------
 // 1. VÝPIS ZPRÁV
@@ -77,7 +80,7 @@ window.handleAIReply = function (text) {
 // --------------------------------------------------
 // 5. INLINE DOPORUČENÍ (KARTA)
 // --------------------------------------------------
-function showRecommendationCard() {
+export function showRecommendationCard() {
   const msgs = document.getElementById("ai-integrated-msgs");
   if (!msgs) return;
 
@@ -130,6 +133,12 @@ function showAIChips(options) {
     chip.addEventListener("click", () => {
       window.showAIDiagnosis(opt.label, "user");
       window.handleAIReply(opt.value);
+      if (value === "co_mam_delat") {
+        console.log("CO MAM DELAT – HIT");
+        showRecommendationCard();
+        return;
+      }
+
     });
 
     wrap.appendChild(chip);

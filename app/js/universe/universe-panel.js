@@ -1,3 +1,5 @@
+console.log("PANEL JS LOADED");
+
 const panelEl = document.getElementById("sidePanel");
 const titleEl = document.getElementById("nodeTitle");
 const defEl = document.getElementById("nodeDef");
