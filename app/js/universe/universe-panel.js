@@ -97,46 +97,15 @@ export function showPanel(node) {
   setTimeout(() => {
     panelEl.classList.add("open", "visible");
     document.body.classList.add("panel-open");
+
+    // 🔽 TADY
+    if (window.showInitialVerdict) {
+      window.showInitialVerdict();
+    }
+
     if (window.setAIContext) {
       window.setAIContext(node.id);
     }
   }, 10);
-}
-// --------------------------------------------------
-// AI – INLINE DOPORUČENÍ (KARTA)
-// --------------------------------------------------
-export function showRecommendationCard() {
-  const msgs = document.getElementById("ai-integrated-msgs");
-  if (!msgs) return;
 
-  const card = document.createElement("div");
-  card.className = "ai-recommendation-card";
-
-  card.innerHTML = `
-    <strong>DOPORUČENÍ</strong><br>
-    <em>Udržet metabolickou stabilitu</em><br><br>
-
-    <b>Největší přínos dnes:</b><br>
-    Klidná chůze v zóně 2 (30–45 min)<br><br>
-
-    <b>Když nemáš čas:</b><br>
-    Krátké dechové cvičení (5–10 min)<br><br>
-
-    <button class="rec-done">Hotovo</button>
-    <button class="rec-later">Později</button>
-  `;
-
-  card.querySelector(".rec-done").onclick = () => {
-    card.remove();
-    if (window.showAIDiagnosis) {
-      window.showAIDiagnosis("OK.", "bot");
-    }
-  };
-
-  card.querySelector(".rec-later").onclick = () => {
-    card.remove();
-  };
-
-  msgs.appendChild(card);
-  msgs.scrollTop = msgs.scrollHeight;
 }
