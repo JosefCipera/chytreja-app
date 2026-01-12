@@ -3,8 +3,7 @@ console.log("ASSISTANT JS LOADED");
 // ======================================
 // AI ASISTENT – PANEL CHAT (MENTOR DEMO)
 // ======================================
-import { showRecommendationCard } from "./universe-panel.js";
-
+g
 // --------------------------------------------------
 // 1. VÝPIS ZPRÁV
 // --------------------------------------------------
