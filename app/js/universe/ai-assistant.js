@@ -3,7 +3,7 @@ console.log("ASSISTANT JS LOADED");
 // ======================================
 // AI ASISTENT – PANEL CHAT (MENTOR DEMO)
 // ======================================
-import { showRecommendationCard } from "./universe-panel.js";
+// import { showRecommendationCard } from "./universe-panel.js";
 
 // --------------------------------------------------
 // 1. VÝPIS ZPRÁV
@@ -50,31 +50,47 @@ window.showInitialVerdict = function () {
 window.handleAIReply = function (text) {
   const t = text.toLowerCase();
 
+  // PROČ
   if (t === "proč") {
     window.showAIDiagnosis(
-      "Protože právě v tomhle stavu má jemné řízení větší efekt " +
-      "než snaha něco lámat přes koleno.",
+      "Protože jsi teď v režimu, kdy tělo funguje stabilně na tucích.\n\n" +
+      "V tomhle stavu mají malé, klidné zásahy větší efekt než snaha něco lámat silou.",
       "bot"
     );
-
-    showAIChips([
-      { label: "OK, chápu", value: "ok" },
-      { label: "Co mám dělat?", value: "co_mam_delat" }
-    ]);
     return;
   }
 
+  // CO MÁM DĚLAT
   if (t === "co_mam_delat") {
-    showRecommendationCard();
+    window.showAIDiagnosis(
+      "👉 Největší přínos dnes:\n" +
+      "Klidná chůze v zóně 2 (30–45 minut).\n\n" +
+      "👉 Když nemáš čas:\n" +
+      "Krátké dechové cvičení (5–10 minut).\n\n" +
+      "Tím podpoříš stabilitu, aniž bys tělo zbytečně stresoval.",
+      "bot"
+    );
+    window.__pendingTasks = [
+      "Klidná chůze v zóně 2 (30–45 min)\nBez tlaku. Jen pohyb, který tě drží stabilního.",
+      "Krátké dechové cvičení (5–10 min)\nKdyž není čas na chůzi, tohle stačí."
+    ];
+
     return;
   }
 
-  window.showAIDiagnosis(
-    "Pro dnešek pořád platí, že největší přínos má " +
-    conversationState.lastAction +
-    ".",
-    "bot"
-  );
+  // MIMO TRASU – mentor vrací fokus
+  if (t.length > 3) {
+    window.showAIDiagnosis(
+      "Tohle teď není podstatné.\n\n" +
+      "Rozhodující je udržet dnešní stabilitu.\n" +
+      "Největší efekt má jedna jednoduchá věc – a tu máš přímo tady.\n\n" +
+      "👉 Klikni na *Co mám dělat*.",
+      "bot"
+    );
+    return;
+  }
+
+  // DEFAULT (krátké vstupy apod.)
 };
 
 // --------------------------------------------------

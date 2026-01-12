@@ -13,6 +13,12 @@ export function closePanel() {
     document.body.classList.remove("panel-open");
   }
 }
+const closeBtn = document.getElementById("closePanel");
+if (closeBtn) {
+  closeBtn.onclick = () => {
+    closePanel();
+  };
+}
 
 window.closePanel = closePanel;
 
@@ -101,11 +107,88 @@ export function showPanel(node) {
     // 🔽 TADY
     if (window.showInitialVerdict) {
       window.showInitialVerdict();
+      const input = document.getElementById("aiPanelInput");
+      const sendBtn = document.getElementById("ai-send");
+
+      const sendMessage = () => {
+        if (!input) return;          // 🔴 DŮLEŽITÉ
+        const value = input.value.trim();
+        if (!value) return;
+
+        window.showAIDiagnosis(value, "user");
+        window.handleAIReply(value);
+        input.value = "";
+      };
+
+      if (input) {
+        input.onkeydown = null;      // 🔴 reset
+        input.onkeydown = (e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            sendMessage();
+          }
+        };
+      }
+
+      if (sendBtn) {
+        sendBtn.onclick = null;      // 🔴 reset
+        sendBtn.onclick = () => {
+          sendMessage();
+        };
+      }
+
     }
 
     if (window.setAIContext) {
       window.setAIContext(node.id);
     }
+
+    window.__pendingTasks = [
+      "Klidná chůze v zóně 2 (30–45 min)\nBez tlaku. Jen pohyb, který tě drží stabilního.",
+      "Krátké dechové cvičení (5–10 min)\nKdyž není čas na chůzi, tohle stačí."
+    ];
+
+    if (window.__pendingTasks && window.setTasks) {
+      window.setTasks(window.__pendingTasks);
+    }
+    if (window.setResources) {
+      window.setResources([
+        "Proč funguje klidná chůze v zóně 2",
+        "Dech a stabilita nervového systému"
+      ]);
+    }
   }, 10);
 
 }
+window.setTasks = function (tasks) {
+  const section = document.getElementById("tasksSection");
+  const list = document.getElementById("tasksList");
+
+  if (!section || !list) return;
+
+  section.style.display = "block";
+  list.innerHTML = "";
+
+  tasks.forEach(task => {
+    const li = document.createElement("li");
+    li.textContent = task;
+    list.appendChild(li);
+  });
+};
+window.setResources = function (resources) {
+  const section = document.getElementById("resourcesSection");
+  const list = document.getElementById("resourcesList");
+
+  if (!section || !list) return;
+
+  section.style.display = "block";
+  list.innerHTML = "";
+
+  resources.forEach(res => {
+    const li = document.createElement("li");
+    li.textContent = res;
+    list.appendChild(li);
+  });
+};
+
+
