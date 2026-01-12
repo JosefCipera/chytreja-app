@@ -3,7 +3,8 @@ console.log("ASSISTANT JS LOADED");
 // ======================================
 // AI ASISTENT – PANEL CHAT (MENTOR DEMO)
 // ======================================
-g
+import { showRecommendationCard } from "./universe-panel.js";
+
 // --------------------------------------------------
 // 1. VÝPIS ZPRÁV
 // --------------------------------------------------
@@ -79,45 +80,11 @@ window.handleAIReply = function (text) {
 // --------------------------------------------------
 // 5. INLINE DOPORUČENÍ (KARTA)
 // --------------------------------------------------
-export function showRecommendationCard() {
-  const msgs = document.getElementById("ai-integrated-msgs");
-  if (!msgs) return;
-
-  const card = document.createElement("div");
-  card.className = "ai-recommendation-card";
-
-  card.innerHTML = `
-    <strong>DOPORUČENÍ</strong><br>
-    <em>Udržet metabolickou stabilitu</em><br><br>
-
-    <b>Největší přínos dnes:</b><br>
-    Klidná chůze v zóně 2 (30–45 min)<br><br>
-
-    <b>Když nemáš čas:</b><br>
-    Krátké dechové cvičení (5–10 min)<br><br>
-
-    <button class="rec-done">Hotovo</button>
-    <button class="rec-later">Později</button>
-  `;
-
-  card.querySelector(".rec-done").onclick = () => {
-    card.remove();
-    window.showAIDiagnosis("OK.", "bot");
-  };
-
-  card.querySelector(".rec-later").onclick = () => {
-    card.remove();
-  };
-
-  msgs.appendChild(card);
-  msgs.scrollTop = msgs.scrollHeight;
-}
 
 // --------------------------------------------------
 // 6. AI CHIPS
 // --------------------------------------------------
 function showAIChips(options) {
-  console.log("showAIChips CALLED", options);
   const msgs = document.getElementById("ai-integrated-msgs");
   if (!msgs) return;
 
@@ -132,12 +99,6 @@ function showAIChips(options) {
     chip.addEventListener("click", () => {
       window.showAIDiagnosis(opt.label, "user");
       window.handleAIReply(opt.value);
-      if (value === "co_mam_delat") {
-        console.log("CO MAM DELAT – HIT");
-        showRecommendationCard();
-        return;
-      }
-
     });
 
     wrap.appendChild(chip);
@@ -146,4 +107,5 @@ function showAIChips(options) {
   msgs.appendChild(wrap);
   msgs.scrollTop = msgs.scrollHeight;
 }
+
 showInitialVerdict();
