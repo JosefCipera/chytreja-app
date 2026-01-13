@@ -80,11 +80,11 @@ export function renderUniverse(DATA, subset = null) {
       font: { multi: "html" }
     },
     edges: {
-      smooth: { 
-        enabled: true, 
-        type: "cubicBezier", 
+      smooth: {
+        enabled: true,
+        type: "cubicBezier",
         forceDirection: "vertical", // Linky budou čistě padat dolů
-        roundness: 0.5 
+        roundness: 0.5
       },
       dashes: true,
       width: 1.5,
@@ -106,9 +106,9 @@ export function renderUniverse(DATA, subset = null) {
     physics: {
       enabled: false // KLÍČOVÉ: Fyzika musí být vypnutá, aby uzly držely v lajně
     },
-    interaction: { 
+    interaction: {
       hover: true,
-      dragNodes: true // Můžeš je posouvat, ale zůstanou ve svém levelu
+      dragNodes: false // Můžeš je posouvat, ale zůstanou ve svém levelu
     }
   };
 
@@ -179,7 +179,7 @@ export function renderUniverse(DATA, subset = null) {
     const arrow = (hasChildren && !isExpanded) ? " ⤵" : "";
 
     // 2. BARVA: Priorita 1: barva přímo z databáze, Priorita 2: barva z objektu, Fallback: tmavě modrá
-    let baseColor = "#1e293b"; 
+    let baseColor = "#1e293b";
     if (typeof it.color === "string") {
       baseColor = it.color;
     } else if (it.color && it.color.background) {
@@ -194,15 +194,15 @@ export function renderUniverse(DATA, subset = null) {
 
     // Pokud už velikost přišla z loadModel, použijeme ji, jinak switch
     if (!it.size) {
-        switch (it.type) {
-          case 'sun': finalSize = 48; finalFont = 20; break;
-          case 'pillar': finalSize = 40; finalFont = 16; break;
-          case 'discipline': finalSize = 30; finalFont = 16; break;
-          default:
-            if (isMain || isExpanded) { finalSize = 45; finalFont = 17; }
-        }
+      switch (it.type) {
+        case 'sun': finalSize = 48; finalFont = 20; break;
+        case 'pillar': finalSize = 40; finalFont = 16; break;
+        case 'discipline': finalSize = 30; finalFont = 16; break;
+        default:
+          if (isMain || isExpanded) { finalSize = 45; finalFont = 17; }
+      }
     } else {
-        finalFont = it.font?.size || 14;
+      finalFont = it.font?.size || 14;
     }
 
     return {
