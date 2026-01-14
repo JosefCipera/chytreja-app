@@ -20,6 +20,17 @@ export default async function (req, res) {
       return res.status(405).json({ error: "Only POST allowed" });
     }
 
+    // 🔌 AI feature flag (JEN JEDNOU)
+    const AI_ENABLED = process.env.AI_ENABLED === "true";
+
+    if (!AI_ENABLED) {
+      console.log("AI disabled – returning mock response");
+
+      return res.status(200).json({
+        verdict: "🤖 AI je dočasně vypnutá (test režim)."
+      });
+    }
+
     const { nodeId, userQuestion } = req.body;
 
     if (!nodeId) {
