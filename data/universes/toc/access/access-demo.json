@@ -1,0 +1,26 @@
+[
+    {
+        "id": "toc",
+        "access": "visible"
+    },
+    {
+        "id": "finance_toc",
+        "access": "visible"
+    },
+    {
+        "id": "vyroba_toc",
+        "access": "visible"
+    },
+    {
+        "id": "ccpm",
+        "access": "visible"
+    },
+    {
+        "id": "strategie_toc",
+        "access": "visible"
+    },
+    {
+        "id": "marketing_toc",
+        "access": "visible"
+    }
+]

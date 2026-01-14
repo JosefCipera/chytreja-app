@@ -7,10 +7,12 @@
         },
         "toc": {
             "label": "TOC",
+            "useSupabase": false,
             "modelFile": "../data/universes/toc/models/toc.json"
         },
         "bmc": {
             "label": "BMC",
+            "useSupabase": false,
             "modelFile": "../data/universes/bmc/models/bmc.json"
         }
     }

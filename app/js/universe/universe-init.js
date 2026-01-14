@@ -89,6 +89,8 @@ async function loadAndRenderModel(modelName, role) {
 
   // 1. Načteme VŠECHNA data ze Supabase
   const model = await loadModel([modelPath], modelName);
+  console.log("MODEL LOADED:", model);
+
   if (!model) return;
 
   window.BASE_UNIVERSE_DATA = structuredClone(model);
@@ -100,7 +102,13 @@ async function loadAndRenderModel(modelName, role) {
   // Posíláme do renderu VŠECHNO (model, model)
   console.log("🚀 Vykresluji kompletní strom:", model.length, "uzlů");
 
-  renderUniverse(model, model);
+  const root = model.find(n => !n.parent);
+
+  const firstLevel = model.filter(n =>
+    n.id === root.id || n.parent === root.id
+  );
+
+  renderUniverse(model, firstLevel);
 
   // 3. Update textu v hlavičce
   const headerModelName = document.getElementById("headerModelName");
@@ -115,94 +123,47 @@ async function loadAndRenderModel(modelName, role) {
 // -------------------------------------------------------------
 async function loadModel(urls, modelName) {
   const modelConfig = window.UNIVERSE_INDEX?.[modelName];
+  if (!modelConfig) return [];
 
-  if (modelConfig?.useSupabase) {
+  // === SUPABASE (Longevity) ===
+  if (modelConfig.useSupabase) {
     try {
       console.log("📡 Načítám data ze Supabase:", modelName);
 
       const { data, error } = await window.supabaseClient
         .from("nodes")
-        .select(`
-          id, label, type, parent, color, 
-          node_values ( type, title, description, source ),
-          node_tasks ( title, description )
-        `);
+        .select("*");
 
       if (error) throw error;
 
-      // MAPOVÁNÍ DAT + NATVRDO DEFINOVANÝ STYL
-      const nodes = data.map(node => {
-        const isRoot = !node.parent || node.parent === null || node.parent === "";
-        const isPillar = node.parent === 'root';
-
-        // PRIORITA: Barva z DB -> Bílá pro Root -> Šedá pro zbytek
-        const activeColor = node.color || (isRoot ? '#ffffff' : '#4a5568');
-
-        return {
-          id: node.id,
-          label: node.label || node.id,
-          shape: 'dot',
-          // Velikosti uzlů
-          size: isRoot ? 35 : (isPillar ? 22 : 14),
-          // Barvy (zápis přímo do objektu, aby to Vis.js prioritizoval)
-          color: {
-            background: activeColor,
-            border: isRoot ? '#ffffff' : '#2d3748',
-            highlight: { background: activeColor, border: '#ffffff' }
-          },
-          // Písmo
-          font: {
-            color: '#ffffff',
-            size: isRoot ? 16 : 14,
-            face: 'Arial',
-            strokeWidth: isRoot ? 0 : 3,
-            strokeColor: '#000000'
-          },
-          parent: node.parent,
-          related: [], // Bude naplněno níže
-          rawData: node
-        };
-      });
-
-      // VYTVOŘENÍ RELACÍ (aby fungovalo navigování)
-      const map = new Map();
-      nodes.forEach(n => map.set(n.id, n));
-      nodes.forEach(n => {
-        if (n.parent && map.has(n.parent)) {
-          map.get(n.parent).related.push(n.id);
-        }
-      });
-
-      // GLOBÁLNÍ NASTAVENÍ GRAFU
-      window.GRAPH_OPTIONS = {
-        layout: {
-          hierarchical: {
-            enabled: true,
-            direction: 'UD',
-            sortMethod: 'directed',
-            levelSeparation: 150,
-            nodeSpacing: 250
-          }
-        },
-        edges: {
-          width: 2,
-          color: { inherit: 'from', opacity: 0.5 },
-          arrows: { to: { enabled: true, scaleFactor: 0.5 } },
-          smooth: { type: 'cubicBezier', forceDirection: 'vertical', roundness: 0.5 }
-        },
-        physics: { enabled: false }
-      };
-
-      console.log("✅ Model sestaven. Uzlů:", nodes.length);
-      return nodes;
+      console.log("✅ Supabase data:", data.length);
+      return data;
 
     } catch (err) {
-      console.error("❌ Kritická chyba při načítání:", err);
+      console.error("❌ Supabase load failed:", err);
       return [];
     }
   }
-  return [];
+
+  // === JSON (TOC / BMC) ===
+  try {
+    const url = modelConfig.modelFile;
+    console.log("📄 Načítám JSON model:", url);
+
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`JSON load failed: ${url}`);
+
+    const data = await res.json();
+    console.log("✅ JSON data:", data.length);
+
+    return data;
+
+  } catch (err) {
+    console.error("❌ JSON load failed:", err);
+    return [];
+  }
 }
+
 // -------------------------------------------------------------
 // 6) Access model (free/demo/pro/user)
 // -------------------------------------------------------------

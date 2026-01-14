@@ -1,5 +1,21 @@
 // === UNIVERSE-CORE.JS ===
+// === VIZUÁLNÍ KONSTANTY UZLŮ ===
+
+const NODE_SIZES = {
+  sun: { size: 44, font: 18 },
+  planet: { size: 30, font: 14 }
+};
+
+const ORBIT_RINGS = [
+  [320, 380],
+  [420, 500],
+  [560, 650]
+];
+
 // Stabilní verze s podporou podsítí, panelu, hlasu a PDF/MD viewerů
+function randomInRange(min, max) {
+  return min + Math.random() * (max - min);
+}
 
 import { showPanel, closePanel } from "./universe-panel.js";
 
@@ -25,10 +41,15 @@ let lastRenderedNodes = [];
 // 🌌 Vykreslení hlavní nebo podsítě
 export function renderUniverse(DATA, subset = null) {
   console.log("🔧 renderUniverse()");
+  const centerId = subset
+  ? subset.find(n => !n.parent)?.id
+  : DATA.find(n => !n.parent)?.id;
+
   const nodes = [];
   const edges = [];
   const seen = new Set();
   const source = subset || DATA;
+  
 
   // 🧼 znič předchozí síť, ať se korektně překreslí
   if (network && typeof network.destroy === "function") {
@@ -50,13 +71,38 @@ export function renderUniverse(DATA, subset = null) {
     }
   });
 
+  const angleStep = (2 * Math.PI) / Math.max(1, source.length - 1);
+  let index = 0;
+
   // 🔹 Vytvoř uzly + hrany (parent → child)
   source.forEach(it => {
-    const isMain = it.id === mainId;
-    nodes.push(
-      makeNode(it, isMain, hasChildrenMap.has(it.id), it.id === currentCenter)
-    );
+    const isMain = it.id === centerId;
+    const node = makeNode(it, isMain, hasChildrenMap.has(it.id), it.id === currentCenter);
 
+    if (isMain) {
+      node.x = 0;
+      node.y = 0;
+      node.fixed = true;
+    } else {
+      // náhodný úhel
+      const angle = randomInRange(0, Math.PI * 2);
+
+      // náhodně vyber pásmo
+      const ring = ORBIT_RINGS[Math.floor(Math.random() * ORBIT_RINGS.length)];
+      const radius = randomInRange(ring[0], ring[1]);
+
+      node.x = Math.cos(angle) * radius;
+      node.y = Math.sin(angle) * radius;
+      node.fixed = true;
+      node.x += randomInRange(-35, 35);
+      node.y += randomInRange(-35, 35);
+
+      index++;
+    }
+
+    nodes.push(node);
+
+    // parent → child hrany (NECHÁME BEZE ZMĚNY)
     if (it.parent) {
       const parentInSource = source.find(n => n.id === it.parent);
       if (parentInSource) {
@@ -82,33 +128,19 @@ export function renderUniverse(DATA, subset = null) {
     edges: {
       smooth: {
         enabled: true,
-        type: "cubicBezier",
-        forceDirection: "vertical", // Linky budou čistě padat dolů
-        roundness: 0.5
+        type: "curvedCW",
+        roundness: 0.4
       },
       dashes: true,
-      width: 1.5,
-      color: { color: "#4a5568", opacity: 0.5 },
-      arrows: { to: { enabled: true, scaleFactor: 0.4 } }
-    },
-    layout: {
-      hierarchical: {
-        enabled: true,
-        direction: "UD",           // Up-Down: Shora dolů
-        sortMethod: "directed",    // Respektuje směr parent -> child
-        levelSeparation: 180,      // Fixní mezera mezi patry
-        nodeSpacing: 250,          // Mezera mezi uzly v jedné řadě
-        blockShifting: true,
-        edgeMinimization: true,
-        parentCentralization: true
-      }
+      width: 1.6,
+      color: { color: "#6b7280", opacity: 0.7 }
     },
     physics: {
-      enabled: false // KLÍČOVÉ: Fyzika musí být vypnutá, aby uzly držely v lajně
+      enabled: false
     },
     interaction: {
       hover: true,
-      dragNodes: false // Můžeš je posouvat, ale zůstanou ve svém levelu
+      dragNodes: false
     }
   };
 
@@ -189,21 +221,9 @@ export function renderUniverse(DATA, subset = null) {
     }
 
     // 3. VELIKOST: Zachováme tvoje definované rozměry (Sun, Pillar, Discipline)
-    let finalSize = it.size || 30;
-    let finalFont = 14;
-
-    // Pokud už velikost přišla z loadModel, použijeme ji, jinak switch
-    if (!it.size) {
-      switch (it.type) {
-        case 'sun': finalSize = 48; finalFont = 20; break;
-        case 'pillar': finalSize = 40; finalFont = 16; break;
-        case 'discipline': finalSize = 30; finalFont = 16; break;
-        default:
-          if (isMain || isExpanded) { finalSize = 45; finalFont = 17; }
-      }
-    } else {
-      finalFont = it.font?.size || 14;
-    }
+    const isSun = isMain;
+    const finalSize = isSun ? NODE_SIZES.sun.size : NODE_SIZES.planet.size;
+    const finalFont = isSun ? NODE_SIZES.sun.font : NODE_SIZES.planet.font;
 
     return {
       id: it.id,
@@ -231,10 +251,14 @@ export function renderUniverse(DATA, subset = null) {
       id: [from, to].sort().join("::"),
       from,
       to,
-      color: { color: "#4a5568", opacity: 0.5 },
+      color: { color: "#6b7280", opacity: 0.7 },
       dashes: true,
-      width: 1,
-      arrows: { to: { enabled: true, scaleFactor: 0.5 } } // Šipka dolů
+      width: 1.6,
+      smooth: {
+        enabled: true,
+        type: "curvedCW",
+        roundness: 0.4
+      }
     };
   }
 
@@ -307,14 +331,6 @@ export function renderUniverse(DATA, subset = null) {
       el.network.classList.add("fade-blur-in");
       isSubUniverse = true;
       currentCenter = centerNode.id;
-
-      const nodes = network.body.data.nodes;
-      const center = nodes.get(centerNode.id);
-      if (center) {
-        center.size = 38; // 💫 větší uzel
-        center.font = { color: "#fff", size: 19 };
-        nodes.update(center);
-      }
 
       // aiSpeak(`Vstupuji do podvesmíru ${centerNode.label}.`);
       setTimeout(() => el.network.classList.remove("fade-blur-in"), 900);
