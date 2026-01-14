@@ -108,7 +108,7 @@ async function loadAndRenderModel(modelName, role) {
     n.id === root.id || n.parent === root.id
   );
 
-  renderUniverse(model, firstLevel);
+  renderUniverse(model, firstLevel, root.id);
 
   // 3. Update textu v hlavičce
   const headerModelName = document.getElementById("headerModelName");

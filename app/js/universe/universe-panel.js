@@ -48,7 +48,15 @@ export function showPanel(node) {
   const nodeColor = node.color || '#38bdf8';
 
   // 1. ZÁKLADNÍ TEXTY
-  if (titleEl) titleEl.innerHTML = `<i class="fa-solid fa-circle-nodes" style="color:${nodeColor}"></i> ${node.label || "Detail"}`;
+  if (titleEl) {
+    const icon = node.icon || "fa-solid fa-circle-nodes";
+    const color = node.color?.background || node.color || "#94a3b8";
+
+    titleEl.innerHTML = `
+    <i class="${icon}" style="color:${color};margin-right:8px;"></i>
+    ${node.label || "Detail"}
+  `;
+  }
   if (defEl) {
     defEl.textContent = node.definition || "";
     defEl.style.color = "#f1f5f9";

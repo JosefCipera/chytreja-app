@@ -1778,3 +1778,13 @@ body.pro #roleSelect {
 .panel-section>div {
     margin-top: 6px;
 }
+
+.panel-title-icon {
+    font-size: 1.3em;
+    margin-right: 0.4em;
+    vertical-align: middle;
+}
+
+.panel-title-text {
+    vertical-align: middle;
+}
