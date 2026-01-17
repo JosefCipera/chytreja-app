@@ -5,7 +5,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Access Editor – Chytré Já</title>
-    <link rel="stylesheet" href="../assets/css/dashboard.css" />
+    <link rel="stylesheet" href="/app/css/dashboard.css" />
     <style>
         /* === Přídavné doladění Access Editoru === */
 
@@ -150,7 +150,7 @@
     <div id="node-legend"></div>
 
     <script type="module">
-        const modelUrl = "../assets/models/dlouhovekost.json";
+        const modelUrl = "/data/universes/longevity/models/longevity.json";
         let data = null;
         let original = null;
         let currentVariant = "demo";
@@ -172,7 +172,7 @@
                     return;
                 }
 
-                const accessUrl = `../assets/models/access-${variant}.json`;
+                const accessUrl = `/data/universes/longevity/access/access-${variant}.json`;
                 const accessRes = await fetch(accessUrl);
                 if (!accessRes.ok) throw new Error(`Access varianta ${variant} nenalezena.`);
                 const accessData = await accessRes.json();

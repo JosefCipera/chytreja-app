@@ -3,7 +3,7 @@
         "longevity": {
             "label": "Dlouhověkost",
             "useSupabase": true,
-            "modelFile": "knowledge_nodes"
+            "modelFile": "../data/universes/longevity/models/longevity.json"
         },
         "toc": {
             "label": "TOC",

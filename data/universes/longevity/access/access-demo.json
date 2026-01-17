@@ -1,30 +1,158 @@
 [
   {
     "id": "dlouhovekost",
-    "access": "visible"
+    "access": "full"
   },
   {
     "id": "zdravi",
-    "access": "visible"
+    "access": "full"
+  },
+  {
+    "id": "metabolicke",
+    "access": "full"
+  },
+  {
+    "id": "imunitni",
+    "access": "full"
+  },
+  {
+    "id": "nervovy_system",
+    "access": "full"
   },
   {
     "id": "spanek",
-    "access": "visible"
+    "access": "full"
   },
   {
     "id": "biomarkery",
-    "access": "hidden"
+    "access": "full"
+  },
+  {
+    "id": "glukoza",
+    "access": "full"
+  },
+  {
+    "id": "bilirubin",
+    "access": "full"
+  },
+  {
+    "id": "leukocyty",
+    "access": "full"
+  },
+  {
+    "id": "erytrocyty",
+    "access": "full"
+  },
+  {
+    "id": "souhrn_biomarkery",
+    "access": "full"
+  },
+  {
+    "id": "obnova",
+    "access": "full"
   },
   {
     "id": "telo",
-    "access": "locked"
+    "access": "full"
+  },
+  {
+    "id": "sila",
+    "access": "full"
+  },
+  {
+    "id": "vytrvalost",
+    "access": "full"
+  },
+  {
+    "id": "mobilita",
+    "access": "full"
+  },
+  {
+    "id": "stabilita",
+    "access": "full"
+  },
+  {
+    "id": "rovnovaha",
+    "access": "full"
+  },
+  {
+    "id": "kardio",
+    "access": "full"
+  },
+  {
+    "id": "dychani",
+    "access": "full"
+  },
+  {
+    "id": "nosni_dychani",
+    "access": "full"
+  },
+  {
+    "id": "dechova_koherence",
+    "access": "full"
+  },
+  {
+    "id": "butejko",
+    "access": "full"
   },
   {
     "id": "mysl",
+    "access": "full"
+  },
+  {
+    "id": "stres",
+    "access": "full"
+  },
+  {
+    "id": "smysl",
+    "access": "full"
+  },
+  {
+    "id": "soustredeni",
+    "access": "full"
+  },
+  {
+    "id": "vdecnost",
     "access": "hidden"
   },
   {
+    "id": "meditace",
+    "access": "locked"
+  },
+  {
+    "id": "emoce",
+    "access": "full"
+  },
+  {
+    "id": "klid",
+    "access": "full"
+  },
+  {
     "id": "vyziva",
-    "access": "hidden"
+    "access": "full"
+  },
+  {
+    "id": "pust",
+    "access": "full"
+  },
+  {
+    "id": "bílkoviny",
+    "access": "full"
+  },
+  {
+    "id": "glukoza_vyziva",
+    "access": "full"
+  },
+  {
+    "id": "mikronutrienty",
+    "access": "full"
+  },
+  {
+    "id": "hydratace",
+    "access": "full"
+  },
+  {
+    "id": "casovani_jidel",
+    "access": "full"
   }
 ]
