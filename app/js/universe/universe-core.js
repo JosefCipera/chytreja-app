@@ -8,11 +8,21 @@ import { showPanel, closePanel } from "./universe-panel.js";
    KONSTANTY VZHLEDU
 ======================= */
 
-const NODE_STYLE = {
-  sun: { size: 62, font: 22 },      // hlavní slunce (level 0)
-  subSun: { size: 52, font: 20 },   // slunce v podsítích (level ≥ 1)
-  planet: { size: 44, font: 18 }
-};
+/* const NODE_STYLE = {
+  sun: { size: 53, font: 22 },       // Polovina původního
+  subSun: { size: 47, font: 20 },
+  planet: { size: 38, font: 18 }
+};*/
+
+function getNodeStyle(modelName) {
+  const multiplier = modelName === 'bmc' ? 1.15 : 0.75;
+
+  return {
+    sun: { size: Math.round(62 * multiplier), font: 22 },
+    subSun: { size: Math.round(58 * multiplier), font: 21 },  // ← 52→58 (+11%)
+    planet: { size: Math.round(44 * multiplier), font: 18 }
+  };
+}
 
 const ORBIT_ZONES = [
   [260, 320],
@@ -81,198 +91,226 @@ function findNodeById(DATA, id) {
 
 export function renderUniverse(DATA, subset = null, forcedMainId = null) {
   console.group("🌞 renderUniverse");
-  console.log("subset ids:", (subset || DATA).map(n => n.id));
-  console.log("forcedMainId:", forcedMainId);
-  console.log("currentCenter:", currentCenter);
-  console.groupEnd();
 
-  const source = subset || DATA;
-
-  if (!source || source.length === 0) return;
-
-  if (network) {
-    network.destroy();
-    network = null;
+  // ⚠️ OCHRANA PROTI ZACYKLENÍ
+  if (window._renderInProgress) {
+    console.warn('⚠️ Render already in progress, skipping...');
+    console.groupEnd();
+    return;
   }
 
-  const nodes = [];
-  const edges = [];
-  const seenEdges = new Set();
+  window._renderInProgress = true;
 
-  let centerNode = null;
+  try {
+    console.log("subset ids:", (subset || DATA).map(n => n.id));
+    console.log("forcedMainId:", forcedMainId);
+    console.log("currentCenter:", currentCenter);
 
-  // 1️⃣ explicitní centrum (podsítě)
-  if (forcedMainId) {
-    centerNode = source.find(n => n.id === forcedMainId);
-  }
+    const source = subset || DATA;
 
-  // 2️⃣ návrat z historie
-  if (!centerNode && currentCenter) {
-    centerNode = source.find(n => n.id === currentCenter);
-  }
-
-  // 3️⃣ pouze pro hlavní vesmír
-  if (!centerNode) {
-    centerNode = source.find(n => !n.parent) || source[0];
-  }
-  const centerId = centerNode.id;
-  console.log("➡️ vybrané centrum:", centerId);
-
-  /* === UZLY === */
-
-  source.forEach(node => {
-    const isSun = node.id === centerId;
-    const isRootSun = isSun && !isSubUniverse;
-
-    const baseColor =
-      typeof node.color === "string"
-        ? node.color
-        : node.color?.background || "#1e293b";
-
-    let style;
-
-    if (isSun) {
-      style = isRootSun ? NODE_STYLE.sun : NODE_STYLE.subSun;
-    } else {
-      style = NODE_STYLE.planet;
+    if (!source || source.length === 0) {
+      window._renderInProgress = false;
+      console.groupEnd();
+      return;
     }
 
-    const visNode = {
-      id: node.id,
-      label: node.label,
-      shape: "dot",
-      size: style.size,
-      font: {
-        color: "#fff",
-        size: style.font + 6,
-        face: "Inter, sans-serif",
-        strokeWidth: 4,
-        strokeColor: "rgba(0,0,0,0.9)"
-      },
-      color: {
-        background: baseColor,
-        border: baseColor,
-        highlight: {
-          background: lighten(baseColor, 0.14),
-          border: baseColor
-        }
-      },
-      borderWidth: 3,
-      borderWidthSelected: 3,
-      shadow: true,
-      fixed: true,
-      chosen: {
-        node: (values, id, selected, hovering) => {
-          if (hovering || selected) {
-            values.color = lighten(baseColor, 0.22);
+    if (network) {
+      network.destroy();
+      network = null;
+    }
+
+    const nodes = [];
+    const edges = [];
+    const seenEdges = new Set();
+
+    let centerNode = null;
+
+    // 1️⃣ explicitní centrum (podsítě)
+    if (forcedMainId) {
+      centerNode = source.find(n => n.id === forcedMainId);
+    }
+
+    // 2️⃣ návrat z historie
+    if (!centerNode && currentCenter) {
+      centerNode = source.find(n => n.id === currentCenter);
+    }
+
+    // 3️⃣ pouze pro hlavní vesmír
+    if (!centerNode) {
+      centerNode = source.find(n => !n.parent) || source[0];
+    }
+    const centerId = centerNode.id;
+    console.log("➡️ vybrané centrum:", centerId);
+
+    /* === UZLY === */
+
+    source.forEach(node => {
+      const isSun = node.id === centerId;
+      const isRootSun = isSun && !isSubUniverse;
+
+      const baseColor =
+        typeof node.color === "string"
+          ? node.color
+          : node.color?.background || "#1e293b";
+
+      const NODE_STYLE = getNodeStyle(window.CURRENT_MODEL || 'longevity');
+      let style;
+      if (isSun) {
+        style = isRootSun ? NODE_STYLE.sun : NODE_STYLE.subSun;
+      } else {
+        style = NODE_STYLE.planet;
+      }
+
+      const visNode = {
+        id: node.id,
+        label: node.label,
+        shape: "dot",
+        size: style.size,
+        font: {
+          color: "#fff",
+          size: style.font + 6,
+          face: "Inter, sans-serif",
+          strokeWidth: 4,
+          strokeColor: "rgba(0,0,0,0.9)"
+        },
+        color: {
+          background: baseColor,
+          border: baseColor,
+          highlight: {
+            background: lighten(baseColor, 0.14),
+            border: baseColor
           }
-        }
-      },
-    };
+        },
+        borderWidth: 3,
+        borderWidthSelected: 3,
+        shadow: true,
+        fixed: true,
+        chosen: {
+          node: (values, id, selected, hovering) => {
+            if (hovering || selected) {
+              values.color = lighten(baseColor, 0.22);
+            }
+          }
+        },
+      };
 
-    if (isSun) {
-      visNode.x = 0;
-      visNode.y = 0;
-    } else {
-      const index = source.findIndex(n => n.id === node.id);
-      const zone = ORBIT_ZONES[index % ORBIT_ZONES.length];
-      const radius = (zone[0] + zone[1]) / 2;
-      const angle = (index / source.length) * Math.PI * 2;
+      if (isSun) {
+        visNode.x = 0;
+        visNode.y = 0;
+      } else {
+        const index = source.findIndex(n => n.id === node.id);
+        const zone = ORBIT_ZONES[index % ORBIT_ZONES.length];
+        const radius = (zone[0] + zone[1]) / 2;
+        const angle = (index / source.length) * Math.PI * 2;
 
-
-      visNode.x = Math.cos(angle) * radius + rand(-30, 30);
-      visNode.y = Math.sin(angle) * radius + rand(-30, 30);
-    }
-
-    nodes.push(visNode);
-  });
-
-  /* === HRANY (parent → child) === */
-
-  source.forEach(n => {
-    if (!n.parent) return;
-
-    const parentExists = source.some(p => p.id === n.parent);
-    if (!parentExists) return;
-
-    const key = [n.parent, n.id].sort().join("::");
-    if (seenEdges.has(key)) return;
-    seenEdges.add(key);
-
-    edges.push({
-      id: key,
-      from: n.parent,
-      to: n.id,
-      color: EDGE_STYLE.color,
-      width: EDGE_STYLE.width,
-      dashes: EDGE_STYLE.dashes,
-      smooth: {
-        enabled: true,
-        type: Math.random() > 0.5 ? "curvedCW" : "curvedCCW",
-        roundness: rand(0.25, 0.45)
+        visNode.x = Math.cos(angle) * radius + rand(-30, 30);
+        visNode.y = Math.sin(angle) * radius + rand(-30, 30);
       }
+
+      nodes.push(visNode);
     });
-  });
 
-  /* === VIS NETWORK === */
+    /* === HRANY (parent → child) === */
 
-  network = new vis.Network(
-    el.network,
-    {
-      nodes: new vis.DataSet(nodes),
-      edges: new vis.DataSet(edges)
-    },
-    {
-      physics: false,
-      interaction: {
-        hover: true,
-        dragNodes: false
-      }
-    }
-  );
+    source.forEach(n => {
+      if (!n.parent) return;
 
-  setTimeout(() => network.fit({ animation: true }), 300);
+      const parentExists = source.some(p => p.id === n.parent);
+      if (!parentExists) return;
 
-  /* =======================
-     INTERAKCE
-  ======================= */
+      const key = [n.parent, n.id].sort().join("::");
+      if (seenEdges.has(key)) return;
+      seenEdges.add(key);
 
-  let clickTimer = null;
-
-  network.on("click", params => {
-    if (clickTimer) clearTimeout(clickTimer);
-
-    clickTimer = setTimeout(() => {
-      if (!params.nodes.length) {
-        closePanel();
-        if (isSubUniverse) {
-          smoothReturn(DATA);
+      edges.push({
+        id: key,
+        from: n.parent,
+        to: n.id,
+        color: EDGE_STYLE.color,
+        width: EDGE_STYLE.width,
+        dashes: EDGE_STYLE.dashes,
+        smooth: {
+          enabled: true,
+          type: Math.random() > 0.5 ? "curvedCW" : "curvedCCW",
+          roundness: rand(0.25, 0.45)
         }
-        return;
+      });
+    });
+
+    /* === VIS NETWORK === */
+
+    network = new vis.Network(
+      el.network,
+      {
+        nodes: new vis.DataSet(nodes),
+        edges: new vis.DataSet(edges)
+      },
+      {
+        physics: false,
+        interaction: {
+          hover: true,
+          dragNodes: false
+        }
       }
+    );
+
+    setTimeout(() => network.fit({ animation: true }), 300);
+
+
+    /* =======================
+   INTERAKCE
+======================= */
+
+    let clickTimer = null;
+
+    network.on("click", params => {
+      if (clickTimer) {
+        clearTimeout(clickTimer);
+        clickTimer = null;
+      }
+
+      clickTimer = setTimeout(() => {
+        clickTimer = null; // ← PŘIDÁNO: reset po exekuci
+
+        if (!params.nodes.length) {
+          closePanel();
+          if (isSubUniverse) {
+            smoothReturn(DATA);
+          }
+          return;
+        }
+
+        const id = params.nodes[0];
+        const node = findNodeById(DATA, id);
+        if (node) showPanel(node);
+      }, 220);
+    });
+
+    network.on("doubleClick", params => {
+      // ✅ CLEAR timer okamžitě při double-click
+      if (clickTimer) {
+        clearTimeout(clickTimer);
+        clickTimer = null;
+      }
+
+      if (!params.nodes.length) return;
 
       const id = params.nodes[0];
       const node = findNodeById(DATA, id);
-      if (node) showPanel(node);
-    }, 220);
-  });
+      if (!node) return;
 
-  network.on("doubleClick", params => {
-    if (clickTimer) {
-      clearTimeout(clickTimer);
-      clickTimer = null;
-    }
+      openSubUniverse(DATA, node);
+    });
 
-    if (!params.nodes.length) return;
+    lastRenderedNodes = [...source];
 
-    const id = params.nodes[0];
-    const node = findNodeById(DATA, id);
-    if (!node) return;
+    lastRenderedNodes = [...source];
 
-    openSubUniverse(DATA, node);
-  });
-
-  lastRenderedNodes = [...source];
+  } finally {
+    // ✅ VŽDY uvolni lock (i při chybě)
+    window._renderInProgress = false;
+    console.groupEnd();
+  }
 }
 
 /* =======================
@@ -283,35 +321,47 @@ function openSubUniverse(DATA, centerNode) {
   const children = DATA.filter(n => n.parent === centerNode.id);
   if (children.length === 0) return;
 
+  // ✅ OPRAVA: Ulož aktuální stav do historie
   if (currentCenter) {
     universeHistory.push({
       centerId: currentCenter,
-      nodes: lastRenderedNodes
+      nodes: [...lastRenderedNodes]  // ← Důležité: kopie pole
     });
   }
 
   currentCenter = centerNode.id;
   isSubUniverse = true;
 
+  console.log('📥 Opening sub-universe:', centerNode.id);
+  console.log('📚 History depth:', universeHistory.length);
+
   renderUniverse(DATA, [centerNode, ...children], centerNode.id);
 }
 
 function smoothReturn(DATA) {
+  console.log('🔙 smoothReturn called');
+  console.log('   currentCenter:', currentCenter);
+  console.log('   history.length:', universeHistory.length);
+  console.log('   history:', universeHistory.map(h => h.centerId));
+  console.log('⬅️ Returning back, history depth:', universeHistory.length);
+
   if (universeHistory.length === 0) {
+    // Vrať se na root
     currentCenter = null;
     isSubUniverse = false;
     const root = DATA.find(n => !n.parent);
-    renderUniverse(
-      DATA,
-      DATA.filter(n => n.id === root.id || n.parent === root.id),
-      root.id
-    );
+    const firstLevel = DATA.filter(n => n.id === root.id || n.parent === root.id);
+    console.log('🏠 Back to root');
+    renderUniverse(DATA, firstLevel, root.id);
     return;
   }
 
+  // Vytáhni předchozí stav z historie
   const prev = universeHistory.pop();
   currentCenter = prev.centerId;
   isSubUniverse = universeHistory.length > 0;
+
+  console.log('📤 Restored state:', currentCenter, '(history depth:', universeHistory.length + ')');
 
   renderUniverse(DATA, prev.nodes, prev.centerId);
 }

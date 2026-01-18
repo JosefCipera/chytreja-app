@@ -1,0 +1,12 @@
+{
+  "name": "supabase-upload",
+  "version": "1.0.0",
+  "description": "Automatický upload souborů do Supabase Storage",
+  "main": "supabase-upload.js",
+  "scripts": {
+    "upload": "node supabase-upload.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0"
+  }
+}

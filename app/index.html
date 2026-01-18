@@ -31,8 +31,17 @@
 <body>
     <!-- 🧭 Horní lišta -->
     <header id="appHeader" class="app-header">
-        <h1 id="appTitle">🌌 Chytré já</h1>
-
+        <!-- <h1 id="appTitle">🌌 Chytré já</h1> -->
+        <h1 id="appTitle">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 48" width="140" height="48"
+                style="vertical-align: middle;">
+                <circle cx="24" cy="24" r="18" fill="none" stroke="#2563eb" stroke-width="4.5" stroke-dasharray="105 13"
+                    stroke-dashoffset="6.5" transform="rotate(-90 24 24)" />
+                <text x="52" y="30" font-family="Inter" font-size="18" font-weight="600" fill="#93c5fd">
+                    SOKRATES
+                </text>
+            </svg>
+        </h1>
         <div class="header-controls">
             <label for="modelSelector">Model:</label>
             <select id="modelSelector"></select>
@@ -110,6 +119,7 @@
 
     <script type="module" src="/app/js/universe/ai-assistant.js"></script>
     <script type="module" src="/app/js/universe/universe-panel.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </body>
 <script>
     console.log("INLINE SCRIPT LOADED");

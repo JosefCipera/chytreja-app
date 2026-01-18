@@ -161,11 +161,35 @@ async function loadModel(modelName) {
       console.log(`   ✓ Docs: ${docs?.length || 0}`);
 
       // 6. MERGE všechno dohromady
+      // 6. MERGE - OPTIMALIZOVANÁ VERZE
+      console.log('⏳ Merging data...');
+
+      // Vytvoř mapy místo opakovaného find/filter
+      const metricsMap = new Map(metrics?.map(m => [m.node_id, m]) || []);
+      const articlesMap = new Map();
+      const mediaMap = new Map();
+      const docsMap = new Map();
+
+      articles?.forEach(a => {
+        if (!articlesMap.has(a.node_id)) articlesMap.set(a.node_id, []);
+        articlesMap.get(a.node_id).push(a);
+      });
+
+      media?.forEach(m => {
+        if (!mediaMap.has(m.node_id)) mediaMap.set(m.node_id, []);
+        mediaMap.get(m.node_id).push(m);
+      });
+
+      docs?.forEach(d => {
+        if (!docsMap.has(d.node_id)) docsMap.set(d.node_id, []);
+        docsMap.get(d.node_id).push(d);
+      });
+
       const merged = nodes.map(node => {
-        const metric = metrics?.find(m => m.node_id === node.id);
-        const nodeArticles = articles?.filter(a => a.node_id === node.id) || [];
-        const nodeMedia = media?.filter(m => m.node_id === node.id) || [];
-        const nodeDocs = docs?.filter(d => d.node_id === node.id) || [];
+        const metric = metricsMap.get(node.id);
+        const nodeArticles = articlesMap.get(node.id) || [];
+        const nodeMedia = mediaMap.get(node.id) || [];
+        const nodeDocs = docsMap.get(node.id) || [];
 
         return {
           id: node.id,
@@ -175,12 +199,10 @@ async function loadModel(modelName) {
           definition: node.definition,
           color: node.color,
 
-          // User metriky
           current_index: metric?.current_index || 0,
           target_index: metric?.target_index || 100,
           priority: metric?.priority || 5,
 
-          // Content
           articles: nodeArticles.map(a => ({
             title: a.title,
             url: a.url,
@@ -200,6 +222,8 @@ async function loadModel(modelName) {
           }))
         };
       });
+
+      console.log('✅ Merge completed:', merged.length, 'nodes');
 
       console.log("✅ Supabase data merged");
       return merged;
