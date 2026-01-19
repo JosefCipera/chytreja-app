@@ -1,9 +1,18 @@
-console.log("ASSISTANT JS LOADED");
+console.log("ASSISTANT JS LOADED - API VERSION");
 
 // ======================================
-// AI ASISTENT – PANEL CHAT (MENTOR DEMO)
+// AI ASISTENT – PANEL CHAT (API VERSION)
 // ======================================
-// import { showRecommendationCard } from "./universe-panel.js";
+
+// --------------------------------------------------
+// GLOBÁLNÍ KONTEXT
+// --------------------------------------------------
+let currentNodeId = null;
+
+window.setAIContext = function (nodeId) {
+  currentNodeId = nodeId;
+  console.log("🎯 AI context set:", nodeId);
+};
 
 // --------------------------------------------------
 // 1. VÝPIS ZPRÁV
@@ -21,81 +30,96 @@ window.showAIDiagnosis = function (text, type = "bot") {
 };
 
 // --------------------------------------------------
-// 2. STAV KONVERZACE
+// THINKING INDIKÁTOR
 // --------------------------------------------------
-let conversationState = {
-  lastAction: "klidná chůze v zóně 2"
-};
+function addThinking() {
+  const msgs = document.getElementById("ai-integrated-msgs");
+  if (!msgs) return null;
+
+  const thinkingDiv = document.createElement("div");
+  thinkingDiv.className = "ai-msg bot thinking";
+  thinkingDiv.innerText = "…";
+
+  msgs.appendChild(thinkingDiv);
+  msgs.scrollTop = msgs.scrollHeight;
+
+  return thinkingDiv;
+}
 
 // --------------------------------------------------
-// 3. ÚVODNÍ VERDIKT + CHIPSY
+// API VOLÁNÍ
 // --------------------------------------------------
-window.showInitialVerdict = function () {
-  window.showAIDiagnosis(
-    "Metabolická stabilita je na solidní úrovni.\n\n" +
-    "Ranní glykémie kolem 6.8 mmol/l je v keto běžná adaptace. " +
-    "Tělo šetří glukózou a jede hlavně na tucích.",
-    "bot"
-  );
+async function callAI(userQuestion = null) {
+  if (!currentNodeId) {
+    console.error("❌ NodeId not set!");
+    return "Chyba: Uzel není nastaven.";
+  }
 
+  try {
+    console.log("📡 Calling /api/chat with:", { nodeId: currentNodeId, userQuestion });
+
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        nodeId: currentNodeId,
+        userQuestion: userQuestion
+      })
+    });
+
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}`);
+    }
+
+    const data = await res.json();
+    console.log("✅ API response:", data);
+
+    return data.verdict || "Nepodařilo se získat odpověď.";
+
+  } catch (err) {
+    console.error("❌ API error:", err);
+    return "Chyba při komunikaci s AI. Zkus to prosím znovu.";
+  }
+}
+
+// --------------------------------------------------
+// 3. ÚVODNÍ VERDIKT (API CALL)
+// --------------------------------------------------
+window.showInitialVerdict = async function () {
+  console.log("🎯 showInitialVerdict called");
+
+  const thinking = addThinking();
+  const verdict = await callAI(null); // null = initial verdict
+
+  if (thinking) thinking.remove();
+
+  window.showAIDiagnosis(verdict, "bot");
+
+  // Chipsy - zatím základní (můžeš upravit podle AI odpovědi)
   showAIChips([
-    { label: "Proč?", value: "proč" },
-    { label: "Co mám dělat?", value: "co_mam_delat" }
+    { label: "Proč?", value: "Proč mám tento stav?" },
+    { label: "Co mám dělat?", value: "Co mám konkrétně dělat?" }
   ]);
 };
 
 // --------------------------------------------------
-// 4. REAKCE NA CHIPSY / TEXT
+// 4. REAKCE NA UŽIVATELSKÝ INPUT (API CALL)
 // --------------------------------------------------
-window.handleAIReply = function (text) {
-  const t = text.toLowerCase();
+window.handleAIReply = async function (text) {
+  if (!text || !text.trim()) return;
 
-  // PROČ
-  if (t === "proč") {
-    window.showAIDiagnosis(
-      "Protože jsi teď v režimu, kdy tělo funguje stabilně na tucích.\n\n" +
-      "V tomhle stavu mají malé, klidné zásahy větší efekt než snaha něco lámat silou.",
-      "bot"
-    );
-    return;
-  }
+  console.log("💬 User question:", text);
 
-  // CO MÁM DĚLAT
-  if (t === "co_mam_delat") {
-    window.showAIDiagnosis(
-      "👉 Největší přínos dnes:\n" +
-      "Klidná chůze v zóně 2 (30–45 minut).\n\n" +
-      "👉 Když nemáš čas:\n" +
-      "Krátké dechové cvičení (5–10 minut).\n\n" +
-      "Tím podpoříš stabilitu, aniž bys tělo zbytečně stresoval.",
-      "bot"
-    );
-    window.__pendingTasks = [
-      "Klidná chůze v zóně 2 (30–45 min)\nBez tlaku. Jen pohyb, který tě drží stabilního.",
-      "Krátké dechové cvičení (5–10 min)\nKdyž není čas na chůzi, tohle stačí."
-    ];
+  const thinking = addThinking();
+  const reply = await callAI(text); // text = user question
 
-    return;
-  }
+  if (thinking) thinking.remove();
 
-  // MIMO TRASU – mentor vrací fokus
-  if (t.length > 3) {
-    window.showAIDiagnosis(
-      "Tohle teď není podstatné.\n\n" +
-      "Rozhodující je udržet dnešní stabilitu.\n" +
-      "Největší efekt má jedna jednoduchá věc – a tu máš přímo tady.\n\n" +
-      "👉 Klikni na *Co mám dělat*.",
-      "bot"
-    );
-    return;
-  }
+  window.showAIDiagnosis(reply, "bot");
 
-  // DEFAULT (krátké vstupy apod.)
+  // Můžeš přidat chipsy podle kontextu
+  // showAIChips([...]);
 };
-
-// --------------------------------------------------
-// 5. INLINE DOPORUČENÍ (KARTA)
-// --------------------------------------------------
 
 // --------------------------------------------------
 // 6. AI CHIPS
@@ -123,4 +147,5 @@ function showAIChips(options) {
   msgs.appendChild(wrap);
   msgs.scrollTop = msgs.scrollHeight;
 }
-// showInitialVerdict();
+
+console.log("✅ AI Assistant ready (API mode)");

@@ -56,29 +56,29 @@ export function showPanel(node) {
 
   // 1. ZÁKLADNÍ TEXTY
   // ========================================
-// IKONA + NÁZEV - OPRAVENO pro emoji i FontAwesome
-// ========================================
-if (titleEl) {
-  const icon = node.icon || "fa-solid fa-circle-nodes";
-  const color = node.color?.background || node.color || "#94a3b8";
-  
-  // Detekuj typ ikony
-  const isEmoji = !icon.includes('fa-') && !icon.includes('icon-');
-  
-  let iconHTML;
-  if (isEmoji) {
-    // Emoji - přímo v span
-    iconHTML = `<span style="font-size:1.4em;margin-right:8px;">${icon}</span>`;
-  } else {
-    // FontAwesome - do class
-    iconHTML = `<i class="${icon}" style="color:${color};margin-right:8px;font-size:1.3em;"></i>`;
-  }
-  
-  titleEl.innerHTML = `
+  // IKONA + NÁZEV - OPRAVENO pro emoji i FontAwesome
+  // ========================================
+  if (titleEl) {
+    const icon = node.icon || "fa-solid fa-circle-nodes";
+    const color = node.color?.background || node.color || "#94a3b8";
+
+    // Detekuj typ ikony
+    const isEmoji = !icon.includes('fa-') && !icon.includes('icon-');
+
+    let iconHTML;
+    if (isEmoji) {
+      // Emoji - přímo v span
+      iconHTML = `<span style="font-size:1.4em;margin-right:8px;">${icon}</span>`;
+    } else {
+      // FontAwesome - do class
+      iconHTML = `<i class="${icon}" style="color:${color};margin-right:8px;font-size:1.3em;"></i>`;
+    }
+
+    titleEl.innerHTML = `
     ${iconHTML}
     ${node.label || "Detail"}
   `;
-}
+  }
   if (defEl) {
     defEl.textContent = node.definition || "";
     defEl.style.color = "#f1f5f9";
@@ -133,6 +133,11 @@ if (titleEl) {
   setTimeout(() => {
     panelEl.classList.add("open", "visible");
     document.body.classList.add("panel-open");
+
+    // ✅ PŘIDAT TOHLE (NOVÉ - 3 řádky):
+    if (window.setAIContext) {
+      window.setAIContext(node.id);
+    }
 
     // 🔽 TADY
     if (window.showInitialVerdict) {
