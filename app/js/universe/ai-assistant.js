@@ -67,11 +67,16 @@ async function callAI(userQuestion = null) {
       })
     });
 
+    console.log("📥 Response status:", res.status);  // ← PŘIDAT
+
+    // ← PŘIDAT TOHLE (načti response i když je error):
+    const data = await res.json();
+    console.log("📦 Response data:", data);  // ← PŘIDAT
+
     if (!res.ok) {
-      throw new Error(`HTTP ${res.status}`);
+      throw new Error(`HTTP ${res.status}: ${JSON.stringify(data)}`);  // ← UPRAVIT (ukaž co API vrátilo)
     }
 
-    const data = await res.json();
     console.log("✅ API response:", data);
 
     return data.verdict || "Nepodařilo se získat odpověď.";
