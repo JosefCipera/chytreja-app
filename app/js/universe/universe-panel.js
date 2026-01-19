@@ -47,21 +47,38 @@ export function showPanel(node) {
   console.log('📄 Articles:', node.articles?.length || 0);
   console.log('📕 Docs:', node.docs?.length || 0);
   console.log('🎥 Media:', node.media?.length || 0);
+  console.log('🎨 Node icon:', node.icon);  // ← PŘIDEJ TOTO
+  console.log('🎨 Icon type:', typeof node.icon);  // ← A TOTO
   if (!panelEl) return;
   resetPanel();
 
   const nodeColor = node.color || '#38bdf8';
 
   // 1. ZÁKLADNÍ TEXTY
-  if (titleEl) {
-    const icon = node.icon || "fa-solid fa-circle-nodes";
-    const color = node.color?.background || node.color || "#94a3b8";
-
-    titleEl.innerHTML = `
-    <i class="${icon}" style="color:${color};margin-right:8px;"></i>
+  // ========================================
+// IKONA + NÁZEV - OPRAVENO pro emoji i FontAwesome
+// ========================================
+if (titleEl) {
+  const icon = node.icon || "fa-solid fa-circle-nodes";
+  const color = node.color?.background || node.color || "#94a3b8";
+  
+  // Detekuj typ ikony
+  const isEmoji = !icon.includes('fa-') && !icon.includes('icon-');
+  
+  let iconHTML;
+  if (isEmoji) {
+    // Emoji - přímo v span
+    iconHTML = `<span style="font-size:1.4em;margin-right:8px;">${icon}</span>`;
+  } else {
+    // FontAwesome - do class
+    iconHTML = `<i class="${icon}" style="color:${color};margin-right:8px;font-size:1.3em;"></i>`;
+  }
+  
+  titleEl.innerHTML = `
+    ${iconHTML}
     ${node.label || "Detail"}
   `;
-  }
+}
   if (defEl) {
     defEl.textContent = node.definition || "";
     defEl.style.color = "#f1f5f9";
@@ -210,7 +227,14 @@ window.setResources = function (resources) {
 // ========================================
 // NAČTENÍ ZDROJŮ Z UZLU (ze Supabase)
 // ========================================
-export function loadNodeResources(node) {
+// =====================================================
+// PANEL ÚPRAVY - universe-panel.js (FINAL UPDATE)
+// =====================================================
+
+// ========================================
+// NAČTENÍ ZDROJŮ Z UZLU (ze Supabase)
+// ========================================
+function loadNodeResources(node) {
   console.log('📚 loadNodeResources called');
   console.log('  → node.articles:', node.articles);
   console.log('  → node.media:', node.media);
@@ -224,6 +248,8 @@ export function loadNodeResources(node) {
     return;
   }
 
+  resourcesList.innerHTML = ""; // Clear
+
   const resources = [];
 
   // Articles (Markdown z node.articles)
@@ -232,7 +258,7 @@ export function loadNodeResources(node) {
       resources.push({
         type: 'markdown',
         title: article.title,
-        url: article.url, // už je Supabase URL po UPDATE
+        url: article.url,
         summary: article.summary
       });
     });
@@ -242,9 +268,9 @@ export function loadNodeResources(node) {
   if (node.media && node.media.length > 0) {
     node.media.forEach(media => {
       resources.push({
-        type: media.type, // 'video', 'audio', 'image'
+        type: media.type,
         title: media.title,
-        url: media.url, // může být Supabase nebo YouTube
+        url: media.url,
         summary: media.summary
       });
     });
@@ -254,9 +280,9 @@ export function loadNodeResources(node) {
   if (node.docs && node.docs.length > 0) {
     node.docs.forEach(doc => {
       resources.push({
-        type: doc.type || 'pdf', // 'pdf', 'markdown'
+        type: doc.type || 'pdf',
         title: doc.title,
-        url: doc.url, // už je Supabase URL
+        url: doc.url,
         summary: doc.summary
       });
     });
@@ -264,17 +290,19 @@ export function loadNodeResources(node) {
 
   // Render resources
   if (resources.length === 0) {
-    resourcesList.innerHTML = '<li style="color: #64748b; font-style: italic;">Žádné zdroje k dispozici</li>';
+    resourcesList.innerHTML = '<li style="color: #64748b; font-style: italic; font-size: 15px; padding: 20px 12px;">Žádné zdroje k dispozici</li>';
     return;
   }
 
   resources.forEach(resource => {
     const li = document.createElement("li");
     li.style.cssText = `
-      padding: 12px;
+      padding: 16px 12px;
       cursor: pointer;
       border-bottom: 1px solid rgba(255,255,255,0.06);
-      transition: background 0.2s;
+      transition: all 0.2s ease;
+      border-radius: 8px;
+      margin-bottom: 4px;
     `;
 
     // Ikona podle typu
@@ -289,11 +317,11 @@ export function loadNodeResources(node) {
     const icon = icons[resource.type] || '📎';
 
     li.innerHTML = `
-      <div style="display: flex; align-items: start; gap: 10px;">
-        <span style="font-size: 20px;">${icon}</span>
+      <div style="display: flex; align-items: start; gap: 12px;">
+        <span style="font-size: 24px;">${icon}</span>
         <div style="flex: 1;">
-          <div style="font-weight: 600; color: #e2e8f0; margin-bottom: 4px;">${resource.title}</div>
-          ${resource.summary ? `<div style="font-size: 12px; color: #94a3b8;">${resource.summary}</div>` : ''}
+          <div style="font-weight: 600; color: #e2e8f0; margin-bottom: 6px; font-size: 15px; line-height: 1.4;">${resource.title}</div>
+          ${resource.summary ? `<div style="font-size: 13px; color: #94a3b8; line-height: 1.5;">${resource.summary}</div>` : ''}
         </div>
       </div>
     `;
@@ -304,11 +332,13 @@ export function loadNodeResources(node) {
     });
 
     li.addEventListener('mouseenter', () => {
-      li.style.background = 'rgba(59, 130, 246, 0.1)';
+      li.style.background = 'rgba(59, 130, 246, 0.15)';
+      li.style.transform = 'translateX(4px)';
     });
 
     li.addEventListener('mouseleave', () => {
       li.style.background = 'transparent';
+      li.style.transform = 'translateX(0)';
     });
 
     resourcesList.appendChild(li);
@@ -352,17 +382,14 @@ function openResource(resource) {
 // ========================================
 async function openMarkdownViewer(url, title) {
   try {
-    // Načti Markdown ze Supabase
     const response = await fetch(url);
     if (!response.ok) throw new Error('Chyba načítání souboru');
 
     const markdown = await response.text();
 
     // Převeď Markdown na HTML (použij marked.js library)
-    // Pokud nemáš marked.js, můžeš zobrazit raw Markdown
-    const html = window.marked ? marked.parse(markdown) : `<pre>${markdown}</pre>`;
+    const html = window.marked ? marked.parse(markdown) : `<pre style="white-space: pre-wrap; line-height: 1.6;">${markdown}</pre>`;
 
-    // Vytvoř modal
     showModal(title, html, 'markdown');
 
   } catch (error) {
@@ -375,8 +402,17 @@ async function openMarkdownViewer(url, title) {
 // PDF VIEWER
 // ========================================
 function openPDFViewer(url, title) {
-  // PDF zobrazíme přes iframe
-  const iframe = `<iframe src="${url}" style="width:100%; height:600px; border:none; border-radius:8px;"></iframe>`;
+  // Detekce mobilního zařízení
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+  if (isMobile) {
+    // Na mobilu otevři PDF přímo v browseru - zobrazí se nativně
+    window.open(url, '_blank');
+    return;
+  }
+
+  // Na desktopu zobraz v modalu
+  const iframe = `<iframe src="${url}" style="width:100%; height:80vh; border:none; border-radius:8px;"></iframe>`;
   showModal(title, iframe, 'pdf');
 }
 
@@ -387,12 +423,11 @@ function openVideoViewer(url, title) {
   let videoEmbed;
 
   if (url.includes('youtube.com/embed/') || url.includes('youtu.be')) {
-    // YouTube embed
     const embedUrl = url.includes('embed') ? url : url.replace('youtu.be/', 'youtube.com/embed/');
     videoEmbed = `
       <iframe 
         width="100%" 
-        height="450" 
+        height="500" 
         src="${embedUrl}" 
         frameborder="0" 
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
@@ -401,7 +436,6 @@ function openVideoViewer(url, title) {
       </iframe>
     `;
   } else {
-    // HTML5 video pro lokální soubory
     videoEmbed = `
       <video controls style="width:100%; max-height:500px; border-radius:8px;">
         <source src="${url}" type="video/mp4">
@@ -418,8 +452,8 @@ function openVideoViewer(url, title) {
 // ========================================
 function openAudioPlayer(url, title) {
   const audioPlayer = `
-    <div style="text-align:center; padding:40px;">
-      <audio controls style="width:100%; max-width:500px;">
+    <div style="text-align:center; padding:30px;">
+      <audio controls style="width:100%; max-width:450px;">
         <source src="${url}" type="audio/mpeg">
         Tvůj prohlížeč nepodporuje audio.
       </audio>
@@ -435,7 +469,7 @@ function openAudioPlayer(url, title) {
 function openImageViewer(url, title) {
   const imageViewer = `
     <div style="text-align:center;">
-      <img src="${url}" alt="${title}" style="max-width:100%; max-height:600px; border-radius:8px;">
+      <img src="${url}" alt="${title}" style="max-width:100%; max-height:70vh; border-radius:8px;">
     </div>
   `;
 
@@ -446,11 +480,20 @@ function openImageViewer(url, title) {
 // UNIVERZÁLNÍ MODAL
 // ========================================
 function showModal(title, content, type) {
-  // Odstraň existující modal
   const existingModal = document.getElementById('resourceModal');
   if (existingModal) existingModal.remove();
 
-  // Vytvoř nový modal
+  // OPRAVENÉ rozměry - image ještě užší
+  const modalSizes = {
+    pdf: { maxWidth: '900px', maxHeight: '90vh' },
+    markdown: { maxWidth: '900px', maxHeight: '85vh' },
+    video: { maxWidth: '1000px', maxHeight: '85vh' },
+    audio: { maxWidth: '550px', maxHeight: '350px' },
+    image: { maxWidth: '700px', maxHeight: '75vh' }  // ✅ Zúženo z 80vw na 700px
+  };
+
+  const size = modalSizes[type] || modalSizes.markdown;
+
   const modal = document.createElement('div');
   modal.id = 'resourceModal';
   modal.style.cssText = `
@@ -459,12 +502,13 @@ function showModal(title, content, type) {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.85);
+    background: rgba(0, 0, 0, 0.9);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 10000;
-    animation: fadeIn 0.2s ease;
+    opacity: 0;
+    transition: opacity 0.15s ease;
   `;
 
   const modalContent = document.createElement('div');
@@ -472,16 +516,17 @@ function showModal(title, content, type) {
     background: #1e293b;
     border-radius: 16px;
     padding: 24px;
-    max-width: 900px;
-    max-height: 85vh;
-    width: 90%;
+    max-width: ${size.maxWidth};
+    max-height: ${size.maxHeight};
+    width: 100%;
     overflow-y: auto;
     box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-    animation: slideUp 0.3s ease;
+    transform: translateY(20px);
+    transition: transform 0.2s ease;
   `;
 
   modalContent.innerHTML = `
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; position: sticky; top: 0; background: #1e293b; z-index: 1; padding-bottom: 12px;">
       <h2 style="color:#f8fafc; margin:0; font-size:1.5em;">${title}</h2>
       <button id="closeModal" style="
         background:transparent; 
@@ -505,24 +550,32 @@ function showModal(title, content, type) {
   modal.appendChild(modalContent);
   document.body.appendChild(modal);
 
-  // Event listeners
-  document.getElementById('closeModal').addEventListener('click', () => {
-    modal.style.animation = 'fadeOut 0.2s ease';
-    setTimeout(() => modal.remove(), 200);
+  // ✅ PLYNULÉ OTEVŘENÍ (bez přebliknutí)
+  requestAnimationFrame(() => {
+    modal.style.opacity = '1';
+    modalContent.style.transform = 'translateY(0)';
   });
+
+  // ✅ FUNKCE PRO ZAVŘENÍ (bez přebliknutí)
+  const closeModalFn = () => {
+    modal.style.opacity = '0';
+    modalContent.style.transform = 'translateY(20px)';
+    setTimeout(() => modal.remove(), 150); // Kratší timeout
+  };
+
+  // Event listeners
+  document.getElementById('closeModal').addEventListener('click', closeModalFn);
 
   modal.addEventListener('click', (e) => {
     if (e.target === modal) {
-      modal.style.animation = 'fadeOut 0.2s ease';
-      setTimeout(() => modal.remove(), 200);
+      closeModalFn();
     }
   });
 
   // Escape key
   const escHandler = (e) => {
     if (e.key === 'Escape') {
-      modal.style.animation = 'fadeOut 0.2s ease';
-      setTimeout(() => modal.remove(), 200);
+      closeModalFn();
       document.removeEventListener('keydown', escHandler);
     }
   };
@@ -541,32 +594,11 @@ function showModal(title, content, type) {
 }
 
 // ========================================
-// CSS ANIMACE (přidej do hlavního CSS)
+// CSS - ODSTRAŇ @keyframes (už nepoužíváme)
 // ========================================
 const styleSheet = document.createElement("style");
 styleSheet.textContent = `
-  @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-  }
-  
-  @keyframes fadeOut {
-    from { opacity: 1; }
-    to { opacity: 0; }
-  }
-  
-  @keyframes slideUp {
-    from { 
-      opacity: 0;
-      transform: translateY(30px);
-    }
-    to { 
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-  
-  /* Styling pro Markdown obsah */
+  /* Markdown obsah styling */
   .modal-body h1, .modal-body h2, .modal-body h3 {
     color: #f8fafc;
     margin-top: 1.5em;
@@ -606,7 +638,62 @@ styleSheet.textContent = `
   .modal-body a:hover {
     text-decoration: underline;
   }
+  
+  /* MOBILNÍ RESPONSIVE */
+  @media (max-width: 768px) {
+    #resourceModal {
+      padding: 10px !important;
+    }
+    
+    #resourceModal > div {
+      max-width: 100% !important;
+      max-height: 95vh !important;
+      padding: 16px !important;
+      border-radius: 12px !important;
+    }
+    
+    #resourceModal h2 {
+      font-size: 1.2em !important;
+    }
+    
+    #resourceModal iframe {
+      height: 60vh !important;
+      min-height: 400px !important;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .resources-list li {
+      padding: 12px 8px !important;
+    }
+    
+    .resources-list li > div {
+      gap: 8px !important;
+    }
+    
+    .resources-list li span {
+      font-size: 20px !important;
+    }
+    
+    .resources-list li div div:first-child {
+      font-size: 14px !important;
+    }
+    
+    .resources-list li div div:last-child {
+      font-size: 12px !important;
+    }
+  }
 `;
 document.head.appendChild(styleSheet);
+
+
+
+
+
+
+
+
+
+
 
 

@@ -1,3 +1,7 @@
+// =====================================================
+// API ENDPOINT: /api/chat.js - SOKRATES (OpenAI)
+// =====================================================
+
 console.log("API CHAT HIT");
 console.log("API CHAT POST HIT");
 
@@ -15,17 +19,16 @@ const supabase = createClient(
 
 export default async function (req, res) {
   try {
-    // 1️⃣ Povolit jen POST (ručně)
+    // 1️⃣ Povolit jen POST
     if (req.method !== "POST") {
       return res.status(405).json({ error: "Only POST allowed" });
     }
 
-    // 🔌 AI feature flag (JEN JEDNOU)
+    // 🔌 AI feature flag
     const AI_ENABLED = process.env.AI_ENABLED === "true";
 
     if (!AI_ENABLED) {
       console.log("AI disabled – returning mock response");
-
       return res.status(200).json({
         verdict: "🤖 AI je dočasně vypnutá (test režim)."
       });
@@ -51,24 +54,57 @@ export default async function (req, res) {
       });
     }
 
-    // 3️⃣ SYSTEM PROMPT
+    // 3️⃣ SYSTEM PROMPT - SOKRATES
     const SYSTEM_PROMPT = `
-Jsi „Chytré já“ – klidný, lidský mentor.
-Tvým cílem není optimalizovat výkon, ale pomoci uživateli
-porozumět stavu těla a snížit zbytečný stres.
+Jsi Sokrates – klidný mentor zaměřený na prevenci 4 jezdců apokalypsy zdraví.
 
-Vždy postupuj v tomto pořadí:
-STAV – uklidni, řekni zda je stav v pořádku
-PROČ – vysvětli jednoduše a lidsky
-CO – navrhni maximálně 1–2 konkrétní kroky
-Vyhýbej se diagnózám a odborným termínům.
-Používej krátké odstavce vhodné pro mobil.
+4 JEZDCI (co nás zabíjí):
+1. Kardiovaskulární choroby (infarkt, mrtvice)
+2. Rakovina
+3. Neurodegenerativní onemocnění (Alzheimer)
+4. Metabolická onemocnění (Diabetes 2. typu, inzulínová rezistence)
+
+TVOJE FILOZOFIE:
+• Dlouhověkost ≠ fitness výkon
+• Cíl: "Baterie života" (healthspan, ne lifespan)
+• 4 pilíře: Cvičení, Výživa, Spánek, Emocionální zdraví
+• Vše směřuje k prevenci jezdců
+
+SOKRATOVSKÁ METODA:
+• NEROZDÁVÁŠ RADY – pokládáš otázky
+• Vedeš k uvědomění, ne k příkazům
+• Respektuješ, že uživatel zná svoje tělo nejlíp
+• Ptáš se: "Co si myslíš, že by mohlo pomoci?"
+
+STRUKTURA ODPOVĚDI:
+1. **Stav** – kde jsi teď (fakta, bez soudů)
+2. **Proč** – souvislosti, jednoduše vysvětlené
+3. **⚠️ Jezdci** – jak to souvisí s prevencí (upřímně, ale bez strachu)
+4. **Otázky** – podněty k zamyšlení (ne příkazy!)
+
+PŘÍKLADY OTÁZEK (místo příkazů):
+❌ "Udělej chůzi 30 minut denně."
+✅ "Co si myslíš, že by mohlo pomoct tvé glykémii? Zkusil jsi už pozorovat, jak reaguje na pohyb?"
+
+❌ "Přestaň jíst 3 hodiny před spaním."
+✅ "Napadá tě, co by mohlo ovlivnit kvalitu tvého spánku? Zkusil jsi sledovat, kdy naposledy jíš?"
+
+TÓN:
+• Klidný, trpělivý, empatický
+• Lidský (ne robot, ne fitness trenér)
+• Nevnucující se, respektující
+• Důraz na "baterii života", ne výkon
+
+KDYŽ SE UŽIVATEL PTÁ MIMO OBLAST:
+Jemně přesměruj a zeptej se:
+"Tohle souvisí víc s [jiná oblast]. Chceš, abychom se zaměřili na [aktuální oblast]? 
+Co tě na ní zajímá nejvíc?"
+
+Odpovídej VŽDY česky. Krátké odstavce vhodné pro mobil (2-3 věty max).
 `;
 
-    // 4️⃣ USER PROMPT (z DB)
+    // 4️⃣ USER PROMPT (kontext z DB)
     const USER_PROMPT = `
-!!! TEST_MARKER_123 !!!
-
 OBLAST:
 ${node.label}
 
@@ -76,31 +112,41 @@ DEFINICE:
 ${node.definition ?? "—"}
 
 AKTUÁLNÍ STAV:
-Skóre: ${node.score}
-Stav: ${node.state}
+Skóre: ${node.score ?? "—"}
+Stav: ${node.state ?? "—"}
+
+SOUVISLOST S 4 JEZDCI:
+${node.riders_impact ?? "Tento uzel pomáhá předcházet jezdcům."}
 
 KONTEXT:
-${node.summary}
+${node.summary ?? "—"}
 
-JAK MÁŠ ODPOVÍDAT:
-${JSON.stringify(node.ai_hint, null, 2)}
-`;
+${node.ai_hint ? `JAK MÁŠ ODPOVÍDAT:\n${JSON.stringify(node.ai_hint, null, 2)}` : ''}
 
-    // 5️⃣ OpenAI
+${userQuestion ? `\n---\nUŽIVATEL SE PTÁ:\n"${userQuestion}"` : ''}
+`.trim();
+
+    // 5️⃣ OpenAI API call
     const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: "gpt-4o-mini", // nebo "gpt-4o" pro lepší kvalitu
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
         { role: "user", content: USER_PROMPT }
       ],
-      temperature: 0.4
+      temperature: 0.5, // Mírně vyšší pro přirozenější otázky
+      max_tokens: 600   // Omezit délku (krátké odstavce)
     });
 
     const text = completion.choices[0].message.content;
 
-    // 6️⃣ Odpověď
+    // 6️⃣ Odpověď + usage tracking
     return res.status(200).json({
-      verdict: text
+      verdict: text,
+      usage: {
+        prompt_tokens: completion.usage.prompt_tokens,
+        completion_tokens: completion.usage.completion_tokens,
+        total_tokens: completion.usage.total_tokens
+      }
     });
 
   } catch (err) {
