@@ -45,7 +45,7 @@ export default async function (req, res) {
       .from("node_ai_context")
       .select("*")
       .eq("node_id", nodeId)
-      .single();
+      .maybeSingle();  // ← ZMĚNĚNO
 
     if (error || !node) {
       return res.status(500).json({
@@ -53,7 +53,11 @@ export default async function (req, res) {
         details: error?.message
       });
     }
-
+    if (!node) {
+      return res.status(200).json({
+        verdict: "Pro tento uzel ještě nemám kontext. Zkus kliknout na konkrétnější oblasti!"
+      });
+    }
     // 3️⃣ SYSTEM PROMPT - SOKRATES
     const SYSTEM_PROMPT = `
 Jsi Sokrates – klidný mentor zaměřený na prevenci 4 jezdců apokalypsy zdraví.
