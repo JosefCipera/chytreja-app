@@ -47,17 +47,21 @@ export default async function (req, res) {
       .eq("node_id", nodeId)
       .maybeSingle();  // ← ZMĚNĚNO
 
-    if (error || !node) {
+    // Nejdřív check na Supabase error
+    if (error) {
       return res.status(500).json({
-        error: "Failed to load node context",
-        details: error?.message
+        error: "Database error",
+        details: error.message
       });
     }
+
+    // Pak check jestli node existuje
     if (!node) {
       return res.status(200).json({
         verdict: "Pro tento uzel ještě nemám kontext. Zkus kliknout na konkrétnější oblasti!"
       });
     }
+
     // 3️⃣ SYSTEM PROMPT - SOKRATES
     const SYSTEM_PROMPT = `
 Jsi Sokrates – klidný mentor zaměřený na prevenci 4 jezdců apokalypsy zdraví.
