@@ -41,26 +41,41 @@ export default async function (req, res) {
     }
 
     // 2️⃣ Načtení uzlu z VIEW
-    const { data: node, error } = await supabase
-      .from("node_ai_context")
+    // Načti node
+    const { data: node, error: nodeError } = await supabase
+      .from("longevity_nodes")
       .select("*")
-      .eq("node_id", nodeId)
-      .maybeSingle();  // ← ZMĚNĚNO
+      .eq("id", nodeId)
+      .maybeSingle();
 
-    // Nejdřív check na Supabase error
-    if (error) {
-      return res.status(500).json({
-        error: "Database error",
-        details: error.message
-      });
+    if (nodeError) {
+      return res.status(500).json({ error: "Database error", details: nodeError.message });
     }
 
-    // Pak check jestli node existuje
     if (!node) {
-      return res.status(200).json({
-        verdict: "Pro tento uzel ještě nemám kontext. Zkus kliknout na konkrétnější oblasti!"
-      });
+      return res.status(200).json({ verdict: "Pro tento uzel ještě nemám kontext." });
     }
+
+    // Načti related data
+    const { data: articles } = await supabase
+      .from("longevity_articles")
+      .select("*")
+      .eq("node_id", nodeId);
+
+    const { data: media } = await supabase
+      .from("longevity_media")
+      .select("*")
+      .eq("node_id", nodeId);
+
+    const { data: docs } = await supabase
+      .from("longevity_docs")
+      .select("*")
+      .eq("node_id", nodeId);
+
+    // Přidej k node
+    node.articles = articles || [];
+    node.media = media || [];
+    node.docs = docs || [];
 
     // 3️⃣ SYSTEM PROMPT - SOKRATES
     const SYSTEM_PROMPT = `
