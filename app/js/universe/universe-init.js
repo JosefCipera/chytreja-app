@@ -1,7 +1,12 @@
 // =====================================================
 // UNIVERSE-INIT.JS - SUPABASE INTEGRATION v2.0
 // =====================================================
-
+const ORBIT_ZONES = [
+  [280, 360],   // větší vzdálenost
+  [380, 480],
+  [500, 600],
+  [620, 740]
+];
 import { renderUniverse } from "./universe-core.js";
 
 // Supabase setup
