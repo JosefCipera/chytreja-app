@@ -26,6 +26,57 @@
     <script>
 
     </script>
+    <style>
+        .battery-section {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin: 32px 0;
+        }
+
+        .battery {
+            width: 30px;
+            height: 140px;
+            border: 2px solid #06b6d4;
+            border-radius: 6px;
+            background: rgba(6, 182, 212, 0.05);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.3);
+        }
+
+        .battery-fill {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 38%;
+            background: linear-gradient(180deg, #22d3ee, #06b6d4);
+            box-shadow: 0 0 30px rgba(6, 182, 212, 0.8);
+        }
+
+        .wave-section {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin: 24px 0;
+            height: 40px;
+            align-items: center;
+        }
+
+        .wave {
+            width: 4px;
+            background: linear-gradient(180deg, #06b6d4, #0891b2);
+            border-radius: 2px;
+        }
+
+        .sokrates-text {
+            text-align: center;
+            color: #06b6d4;
+            font-size: 0.85em;
+            margin: 8px 0 16px;
+        }
+    </style>
 </head>
 
 <body>
@@ -54,6 +105,37 @@
                 <option value="user">User</option>
             </select>
         </div>
+        <div class="user-profile-wrapper">
+            <button id="profileBtn" class="avatar-button">
+                <img src="https://ui-avatars.com/api/?name=Cipera&background=0D8ABC&color=fff" alt="Profil"
+                    class="user-avatar">
+            </button>
+
+            <div id="profileDropdown" class="profile-dropdown hidden">
+                <div class="dropdown-header">
+                    <img src="https://ui-avatars.com/api/?name=Cipera&background=0D8ABC&color=fff" alt="User"
+                        class="avatar-large">
+                    <div class="user-meta">
+                        <span class="email">cipera@iting.cz</span>
+                        <div class="status-row">
+                            <span class="badge-free">Free</span>
+                            <a href="#upgrade" class="upgrade-link">upgrade</a>
+                        </div>
+                    </div>
+                </div>
+                <nav class="dropdown-nav">
+                    <a href="#"><i class="icon">👤</i> Informace o profilu</a>
+                    <a href="#"><i class="icon">💳</i> Platby a fakturační údaje</a>
+                    <!--<a href="#"><i class="icon">🌐</i> Jazyk a nastavení lokalizace</a>
+                    <a href="#"><i class="icon">💻</i> API</a>
+                    <a href="#"><i class="icon">📊</i> Spotřeba dat</a> -->
+                    <div class="divider"></div>
+                    <button onclick="handleLogout()" class="logout-action">
+                        <i class="icon">⭕</i> Odhlásit
+                    </button>
+                </nav>
+            </div>
+        </div>
     </header>
 
     <!-- 🌌 Plátno sítě -->
@@ -62,54 +144,48 @@
     <!-- === 🌌 Postranní panel === -->
     <aside id="sidePanel">
         <div class="panel-header">
-
             <div class="panel-node-row">
                 <div id="nodeTitle" class="panel-node-title">
                     <i class="fa-solid fa-circle-nodes"></i> Uzlový název
                 </div>
                 <button class="panel-close" id="closePanel">✖</button>
             </div>
-
-            <div id="nodeMicroDef" class="panel-microdef">
-                <!-- mikro-definice uzlu -->
-            </div>
-
-            <div class="panel-version">
-
-            </div>
-
         </div>
 
         <div class="panel-content">
-            <hr class="ai-divider">
-            <h3 class="ai-section-title">
-                <i class="fa-solid fa-brain"></i> Chytré já
-            </h3>
+            <div class="ai-intelligence-zone">
+                <h3 class="panel-section-title">
+                    <i class="fa-solid fa-brain"></i> Sokrates
+                </h3>
+                <div id="ai-integrated-msgs" class="ai-prediction-text">
+                </div>
 
-            <div id="ai-integrated-msgs"></div>
-
-            <div id="aiPanelSection">
-                <input id="aiPanelInput" type="text" placeholder="Zeptej se Chytrého já…" />
-                <button id="ai-send">
-                    <i class="fa-solid fa-paper-plane"></i>
-                </button>
+                <div id="aiPanelSection">
+                    <input id="aiPanelInput" type="text" placeholder="Zeptej se Sokrata…" />
+                    <button id="ai-send">
+                        <i class="fa-solid fa-paper-plane"></i>
+                    </button>
+                </div>
             </div>
+
             <hr class="panel-divider">
 
             <div id="tasksSection" class="panel-section">
-                <h3 class="panel-section-title">🧩 Úkoly</h3>
+                <h3 class="panel-section-title">
+                    <i class="fa-solid fa-bolt"></i> Akce
+                </h3>
                 <ul id="tasksList" class="tasks-list"></ul>
             </div>
+
             <hr class="panel-divider">
 
             <div id="resourcesSection" class="panel-section">
-                <h3 class="panel-section-title">📄 Zdroje</h3>
+                <h3 class="panel-section-title">
+                    <i class="fa-solid fa-file-lines"></i> Zdroje
+                </h3>
                 <ul id="resourcesList" class="resources-list"></ul>
             </div>
-
         </div>
-
-
     </aside>
 
     <script type="module" src="/app/js/universe/universe-viewers.js"></script>

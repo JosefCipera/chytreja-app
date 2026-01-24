@@ -78,13 +78,16 @@ export function renderUniverse(DATA, subset = null, forcedMainId = null) {
     physics: {
       enabled: true,
       barnesHut: {
-        gravitationalConstant: -35000,  // ← Ještě silnější
-        springLength: 320,              // ← Ještě delší
-        springConstant: 0.02,           // ← Měkčí pružiny
-        avoidOverlap: 1                 // ← Zabraň překrývání
+        gravitationalConstant: -25000,  // ← Slabší
+        springLength: 220,              // ← Kratší
+        springConstant: 0.03,           // ← Tužší pružiny
+        avoidOverlap: 0.8               // ← Menší buffer
       },
       stabilization: {
-        iterations: 200
+        enabled: true,
+        iterations: 150,
+        fit: true,
+        updateInterval: 5  // ← Rychlejší stabilizace (méně viditelná)
       }
     }
   };
@@ -173,7 +176,7 @@ function makeNode(it, isMain) {
     },
     borderWidth: 3,
     shadow: true,
-    fixed: true
+    fixed: false
   };
 }
 

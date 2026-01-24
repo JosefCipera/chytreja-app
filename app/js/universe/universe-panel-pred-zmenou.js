@@ -5,20 +5,7 @@ const titleEl = document.getElementById("nodeTitle");
 const defEl = document.getElementById("nodeDef");
 const tasksEl = document.getElementById("nodeTasks");
 const panelHeader = document.querySelector("#sidePanel .panel-header");
-async function loadBatteryScore() {
-  try {
-    const { data, error } = await window.supabaseClient.rpc('calculate_battery', {
-      p_user_id: 'demo-user-123',
-      p_universe: 'longevity'
-    });
 
-    if (error) throw error;
-    return data[0]; // { score: 71, gaps: [...] }
-  } catch (err) {
-    console.error('❌ Battery load failed:', err);
-    return { score: 0, gaps: [] };
-  }
-}
 export function closePanel() {
   if (panelEl) {
     panelEl.classList.remove("open", "visible");
@@ -54,7 +41,7 @@ function resetPanel() {
   if (msgs) msgs.innerHTML = "";
 }
 
-export async function showPanel(node) {
+export function showPanel(node) {
   console.log('🎯 showPanel called');
   console.log('📊 Node data:', node);
   console.log('📄 Articles:', node.articles?.length || 0);
@@ -65,13 +52,71 @@ export async function showPanel(node) {
   if (!panelEl) return;
   resetPanel();
 
-  if (node.id === 'dlouhovekost') {
-    console.log('🎮 Hra života detekována!');
-    await showGameOfLife(node); // bez battery parametru
-    return;
-  }
   const nodeColor = node.color || '#38bdf8';
 
+  console.log("🎯 showPanel called");
+
+  // ⭐ MOCK pro Hra života
+  if (node.id === 'dlouhovekost') {
+    const panel = document.getElementById("sidePanel");
+    const def = document.getElementById("nodeDef");
+
+    def.innerHTML = `
+      <style>
+        .battery-section { display:flex; justify-content:center; gap:20px; margin:32px 0; }
+        .battery { width:30px; height:140px; border:2px solid #06b6d4; border-radius:6px; 
+                   background:rgba(6,182,212,0.05); position:relative; overflow:hidden;
+                   box-shadow:0 0 15px rgba(6,182,212,0.3); }
+        .battery-fill { position:absolute; bottom:0; left:0; right:0; height:38%;
+                        background:linear-gradient(180deg, #22d3ee, #06b6d4);
+                        box-shadow:0 0 30px rgba(6,182,212,0.8); }
+        .wave-section { display:flex; justify-content:center; gap:8px; margin:24px 0; height:40px; align-items:center; }
+        .wave { width:4px; background:linear-gradient(180deg, #06b6d4, #0891b2); border-radius:2px; }
+        .sokrates-text { text-align:center; color:#06b6d4; font-size:0.85em; margin:8px 0 16px; }
+      </style>
+      
+      <h3 style="text-align:center; font-weight:400; color:#e2e8f0; margin:0 0 24px;">HRA ŽIVOTA</h3>
+      
+      <div class="battery-section">
+        <div class="battery"><div class="battery-fill"></div></div>
+      </div>
+      
+      <div class="wave-section">
+        <div class="wave" style="height:12px"></div>
+        <div class="wave" style="height:24px"></div>
+        <div class="wave" style="height:36px"></div>
+        <div class="wave" style="height:24px"></div>
+        <div class="wave" style="height:12px"></div>
+      </div>
+      
+      <div class="sokrates-text">Sokrates</div>
+      
+      <div style="background:rgba(59,130,246,0.1); padding:16px; border-radius:8px; margin:24px 0;">
+        <p style="margin:0; font-size:0.95em; color:#cbd5e1;">
+          "Při zachování aktuálního trendu máte v 85 letech 70% šanci na samostatné vyjití schodů."
+        </p>
+      </div>
+      
+      <div style="margin:24px 0;">
+        <div style="font-size:1.1em; margin-bottom:14px; color:#e2e8f0;">AKCE</div>
+        <div style="background:rgba(34,197,94,0.1); padding:10px 12px; border-radius:6px; margin-bottom:8px;">
+          • Trénink schodů 2x týdně
+        </div>
+      </div>
+      
+      <div style="margin:24px 0;">
+        <div style="font-size:1.1em; margin-bottom:14px; color:#e2e8f0;">ZDROJE</div>
+        <div style="background:rgba(139,92,246,0.1); padding:10px 12px; border-radius:6px;">
+          📘 Outlive (Peter Attia)
+        </div>
+      </div>
+    `;
+
+    panel.classList.add("visible");
+    return;
+  }
+
+  // ... zbytek původního kódu
   // 1. ZÁKLADNÍ TEXTY
   // ========================================
   // IKONA + NÁZEV - OPRAVENO pro emoji i FontAwesome
@@ -708,75 +753,6 @@ styleSheet.textContent = `
   }
 `;
 document.head.appendChild(styleSheet);
-
-async function showGameOfLife(node) {
-  console.log('🎮 showGameOfLife called');
-  const battery = await loadBatteryScore();
-  console.log('🔋 Battery loaded:', battery);
-
-  // ⭐ 1. NASTAV NADPIS (ikona + text)
-  const titleEl = document.getElementById('nodeTitle');
-  if (titleEl) {
-    const icon = '🔋'; // nebo node.icon
-    titleEl.innerHTML = `
-      <span style="font-size:1.4em;margin-right:8px;">${icon}</span>
-      Hra života
-    `;
-  }
-
-  // ⭐ 2. VYTVOŘ/AKTUALIZUJ KARTU
-  let metricCard = document.querySelector('.metric-card');
-  if (!metricCard) {
-    metricCard = document.createElement('div');
-    metricCard.className = 'metric-card';
-    metricCard.style.cssText = `
-      background: #06b6d415; 
-      border: 1px solid #06b6d433; 
-      border-radius: 12px; 
-      padding: 20px; 
-      margin: 15px 0; 
-      color: #fff;
-      box-shadow: 0 4px 15px #06b6d411;
-    `;
-    const panelHeader = document.querySelector('.panel-header');
-    if (panelHeader) panelHeader.after(metricCard);
-  }
-
-  metricCard.innerHTML = `
-    <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">
-      Stav baterie
-    </div>
-    <div style="display: flex; align-items: baseline; gap: 5px;">
-      <span style="font-size: 32px; font-weight: 600;">${battery.score}</span>
-      <span style="font-size: 32px; font-weight: 600; opacity: 0.8;">%</span>
-    </div>
-    <div style="height: 6px; background: rgba(0, 0, 0, 0.3); border-radius: 3px; margin-top: 12px; overflow: hidden;">
-      <div style="width: ${battery.score}%; height: 100%; background: #06b6d4; box-shadow: 0 0 8px #06b6d4aa;"></div>
-    </div>
-  `;
-
-  // ⭐ 3. ZOBRAZ PANEL
-  panelEl.style.display = "block";
-  panelEl.classList.add("open", "visible");
-  document.body.classList.add("panel-open");
-
-  // Naplň daty
-  metricCard.innerHTML = `
-    <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">
-      Stav baterie
-    </div>
-    <div style="display: flex; align-items: baseline; gap: 5px;">
-      <span style="font-size: 32px; font-weight: 600;">${battery.score}</span>
-      <span style="font-size: 32px; font-weight: 600; opacity: 0.8;">%</span>
-    </div>
-    <div style="height: 6px; background: rgba(0, 0, 0, 0.3); border-radius: 3px; margin-top: 12px; overflow: hidden;">
-      <div style="width: ${battery.score}%; height: 100%; background: #06b6d4; box-shadow: 0 0 8px #06b6d4aa;"></div>
-    </div>
-  `;
-
-  panelEl.style.display = "block";
-  panelEl.classList.add("open", "visible");
-}
 
 
 
