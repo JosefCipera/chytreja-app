@@ -8,8 +8,8 @@ const tasksEl = document.getElementById("nodeTasks");
 const panelHeader = document.querySelector("#sidePanel .panel-header");
 async function loadBatteryScore() {
   try {
-    const userId = window.currentUserId || 'demo-user-123';
-
+    // Get user from Firebase auth
+    const userId = window.firebaseAuth?.currentUser?.uid || 'demo-user-123';
     const { data, error } = await window.supabaseClient
       .from('v_vitality_dashboard')
       .select('node_id, current_index, contribution, weight')
@@ -107,7 +107,7 @@ export async function showPanel(node) {
     defEl.style.marginTop = "10px";
   }
 
-  const val = node.current_index || 72;
+  const val = node.current_index ?? 0;  // Použij ?? místo || (explicitní 0)
   const metricCard = document.createElement("div");
   metricCard.className = "metric-card";
   metricCard.style.cssText = `

@@ -139,6 +139,12 @@ async function loadModel(modelName) {
       if (metricsError) throw metricsError;
       console.log(`   ✓ Metrics: ${metrics.length}`);
 
+      // Check if user is new (no metrics data)
+      if (!metrics || metrics.length === 0) {
+        console.log("🆕 New user detected - all nodes will have current_index = 0");
+        console.log("💡 User should complete onboarding to populate data");
+      }
+
       const { data: articles, error: articlesError } = await window.supabaseClient
         .from('node_articles')
         .select('*');
@@ -196,9 +202,9 @@ async function loadModel(modelName) {
           definition: node.definition,
           color: node.color,
 
-          current_index: metric?.current_index || 0,
-          target_index: metric?.target_index || 100,
-          priority: metric?.priority || 5,
+          current_index: metric?.current_index ?? 0,  // Use ?? for explicit 0
+          target_index: metric?.target_index ?? 100,
+          priority: metric?.priority ?? 5,
 
           articles: nodeArticles.map(a => ({
             title: a.title,
@@ -255,6 +261,20 @@ async function loadModel(modelName) {
 // 6) GET CURRENT USER ID
 // =====================================================
 async function getCurrentUserId() {
+  // Wait for Firebase auth to be ready (max 3 seconds)
+  let retries = 0;
+  while (!window.firebaseAuth?.currentUser && retries < 30) {
+    await new Promise(resolve => setTimeout(resolve, 100));
+    retries++;
+  }
+
+  if (window.firebaseAuth?.currentUser) {
+    const uid = window.firebaseAuth.currentUser.uid;
+    console.log("✅ Firebase UID:", uid);
+    return uid;
+  }
+
+  console.warn("⚠️ Firebase auth timeout after 3s, using demo user");
   return "demo-user-123";
 }
 

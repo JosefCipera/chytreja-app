@@ -170,6 +170,46 @@
                 if (el) el.style.display = (v === viewName) ? 'flex' : 'none';
             });
         };
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                console.log("✅ User logged in:", user.email, user.uid);
+
+                try {
+                    const { data, error: selectError } = await sb.from('user_profiles').select('*').eq('user_id', user.uid).single();
+
+                    if (selectError) console.log("Profile check:", selectError.message);
+
+                    if (!data) {
+                        console.log("🆕 Creating Supabase profile...");
+                        const { data: insertData, error: insertError } = await sb
+                            .from('user_profiles')
+                            .insert({
+                                user_id: user.uid,
+                                age: 45,
+                                gender: 'male',
+                                primary_goal: 'longevity'
+                            })
+                            .select();
+
+                        if (insertError) {
+                            console.error("❌ Insert failed:", insertError);
+                        } else {
+                            console.log("✅ Profile created!", insertData);
+                        }
+
+                        await new Promise(resolve => setTimeout(resolve, 500));
+                    }
+                } catch (err) {
+                    console.error("❌ Supabase error:", err);
+                }
+
+                console.log("→ Redirecting to /app/");
+                //  debugger;   ← PŘIDEJ TOHLE - zastaví execution
+                window.location.href = "/app/";
+            } else {
+                showView('login');
+            }
+        });
 
         document.getElementById("login-form").addEventListener("submit", (e) => {
             e.preventDefault();

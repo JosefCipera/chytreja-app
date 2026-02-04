@@ -24,9 +24,23 @@
         });
         const auth = getAuth(app);
 
-        // Auth guard — pokud není přihlášen, redirect na root
+        // Auth guard + avatar update
         onAuthStateChanged(auth, (user) => {
-            if (!user) window.location.href = '/';
+            if (!user) {
+                window.location.href = '/';
+            } else {
+                // Update avatar dynamically
+                const email = user.email || 'User';
+                const name = user.displayName || email.split('@')[0];
+                const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=0D8ABC&color=fff`;
+
+                document.querySelectorAll('.user-avatar, .avatar-large').forEach(img => {
+                    img.src = avatarUrl;
+                });
+
+                const emailEl = document.querySelector('.email');
+                if (emailEl) emailEl.textContent = email;
+            }
         });
 
         // Global logout
