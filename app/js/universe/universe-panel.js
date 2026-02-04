@@ -1,3 +1,4 @@
+import { supabase } from './supabaseClient.js';
 console.log("PANEL JS LOADED");
 
 const panelEl = document.getElementById("sidePanel");
@@ -7,16 +8,34 @@ const tasksEl = document.getElementById("nodeTasks");
 const panelHeader = document.querySelector("#sidePanel .panel-header");
 async function loadBatteryScore() {
   try {
-    const { data, error } = await window.supabaseClient.rpc('calculate_battery', {
-      p_user_id: 'demo-user-123',
-      p_universe: 'longevity'
-    });
+    const userId = window.currentUserId || 'demo-user-123';
+
+    const { data, error } = await window.supabaseClient
+      .from('v_vitality_dashboard')
+      .select('node_id, current_index, contribution, weight')
+      .eq('user_id', userId)
+      .eq('universe', 'longevity');
 
     if (error) throw error;
-    return data[0]; // { score: 71, gaps: [...] }
+    if (!data || data.length === 0) return { score: 0, bottleneck: null };
+
+    // vitality_score = SUM(contribution) — rows kde weight = 0 nepočítají se automaticky (contribution = 0)
+    const score = data.reduce((sum, row) => sum + (row.contribution || 0), 0);
+
+    // bottleneck = nejmenší current_index, ale jen kde weight > 0 (aktivní uzly)
+    const weighted = data.filter(row => row.weight > 0);
+    const bottleneck = weighted.length > 0
+      ? weighted.sort((a, b) => a.current_index - b.current_index)[0]
+      : null;
+
+    return {
+      score: Math.round(score * 10) / 10,
+      bottleneck: bottleneck ? bottleneck.node_id : null,
+      bottleneck_index: bottleneck ? bottleneck.current_index : null
+    };
   } catch (err) {
     console.error('❌ Battery load failed:', err);
-    return { score: 0, gaps: [] };
+    return { score: 0, bottleneck: null, bottleneck_index: null };
   }
 }
 export function closePanel() {
@@ -39,7 +58,7 @@ function resetPanel() {
   if (titleEl) titleEl.innerHTML = "";
   if (defEl) {
     defEl.innerHTML = "";
-    defEl.style.color = "#f1f5f9"; // Bělejší pro lepší čtení
+    defEl.style.color = "#f1f5f9";
     defEl.style.fontSize = "16px";
   }
   if (tasksEl) {
@@ -47,7 +66,6 @@ function resetPanel() {
     tasksEl.style.display = "block";
   }
 
-  // Vyčistíme staré karty i statické sekce, které budeme generovat dynamicky
   document.querySelectorAll(".metric-card, .dynamic-section, hr.dynamic-hr").forEach(el => el.remove());
 
   const msgs = document.getElementById('ai-integrated-msgs');
@@ -55,40 +73,25 @@ function resetPanel() {
 }
 
 export async function showPanel(node) {
-  console.log('🎯 showPanel called');
-  console.log('📊 Node data:', node);
-  console.log('📄 Articles:', node.articles?.length || 0);
-  console.log('📕 Docs:', node.docs?.length || 0);
-  console.log('🎥 Media:', node.media?.length || 0);
-  console.log('🎨 Node icon:', node.icon);  // ← PŘIDEJ TOTO
-  console.log('🎨 Icon type:', typeof node.icon);  // ← A TOTO
   if (!panelEl) return;
   resetPanel();
 
   if (node.id === 'dlouhovekost') {
-    console.log('🎮 Hra života detekována!');
-    await showGameOfLife(node); // bez battery parametru
+    await showGameOfLife(node);
     return;
   }
   const nodeColor = node.color || '#38bdf8';
 
-  // 1. ZÁKLADNÍ TEXTY
-  // ========================================
-  // IKONA + NÁZEV - OPRAVENO pro emoji i FontAwesome
-  // ========================================
   if (titleEl) {
     const icon = node.icon || "fa-solid fa-circle-nodes";
     const color = node.color?.background || node.color || "#94a3b8";
 
-    // Detekuj typ ikony
     const isEmoji = !icon.includes('fa-') && !icon.includes('icon-');
 
     let iconHTML;
     if (isEmoji) {
-      // Emoji - přímo v span
       iconHTML = `<span style="font-size:1.4em;margin-right:8px;">${icon}</span>`;
     } else {
-      // FontAwesome - do class
       iconHTML = `<i class="${icon}" style="color:${color};margin-right:8px;font-size:1.3em;"></i>`;
     }
 
@@ -101,14 +104,12 @@ export async function showPanel(node) {
     defEl.textContent = node.definition || "";
     defEl.style.color = "#f1f5f9";
     defEl.style.fontSize = "16px";
-    defEl.style.marginTop = "10px"; // Menší mezera od nadpisu
+    defEl.style.marginTop = "10px";
   }
 
-  // 2. KARTA MĚŘENÍ - S podbarvením (glow) podle barvy uzlu
   const val = node.current_index || 72;
   const metricCard = document.createElement("div");
   metricCard.className = "metric-card";
-  // Dynamické podbarvení: používáme barvu uzlu s nízkou opacitou (22) a jemný border
   metricCard.style.cssText = `
     background: ${nodeColor}15; 
     border: 1px solid ${nodeColor}33; 
@@ -130,7 +131,6 @@ export async function showPanel(node) {
   `;
   if (panelHeader) panelHeader.after(metricCard);
 
-  // 3. ÚPRAVA NADPISŮ - Barva #83B0E3 a menší mezery
   const existingHeaders = panelEl.querySelectorAll('h3, .panel-section-title, b');
   existingHeaders.forEach(header => {
     const text = header.textContent.toLowerCase();
@@ -141,30 +141,27 @@ export async function showPanel(node) {
       header.style.display = "flex";
       header.style.alignItems = "center";
       header.style.gap = "10px";
-      header.style.marginTop = "20px"; // Zmenšená mezera od oddělovače
+      header.style.marginTop = "20px";
       header.style.marginBottom = "15px";
     }
   });
 
-  // 4. ZOBRAZENÍ
   panelEl.style.display = "block";
   setTimeout(() => {
     panelEl.classList.add("open", "visible");
     document.body.classList.add("panel-open");
 
-    // ✅ PŘIDAT TOHLE (NOVÉ - 3 řádky):
     if (window.setAIContext) {
       window.setAIContext(node.id);
     }
 
-    // 🔽 TADY
     if (window.showInitialVerdict) {
       window.showInitialVerdict();
       const input = document.getElementById("aiPanelInput");
       const sendBtn = document.getElementById("ai-send");
 
       const sendMessage = () => {
-        if (!input) return;          // 🔴 DŮLEŽITÉ
+        if (!input) return;
         const value = input.value.trim();
         if (!value) return;
 
@@ -174,7 +171,7 @@ export async function showPanel(node) {
       };
 
       if (input) {
-        input.onkeydown = null;      // 🔴 reset
+        input.onkeydown = null;
         input.onkeydown = (e) => {
           if (e.key === "Enter") {
             e.preventDefault();
@@ -184,16 +181,12 @@ export async function showPanel(node) {
       }
 
       if (sendBtn) {
-        sendBtn.onclick = null;      // 🔴 reset
+        sendBtn.onclick = null;
         sendBtn.onclick = () => {
           sendMessage();
         };
       }
 
-    }
-
-    if (window.setAIContext) {
-      window.setAIContext(node.id);
     }
 
     window.__pendingTasks = [
@@ -243,39 +236,15 @@ window.setResources = function (resources) {
     list.appendChild(li);
   });
 };
-// =====================================================
-// PANEL ÚPRAVY - universe-panel.js (UPDATED)
-// =====================================================
 
-// ========================================
-// NAČTENÍ ZDROJŮ Z UZLU (ze Supabase)
-// ========================================
-// =====================================================
-// PANEL ÚPRAVY - universe-panel.js (FINAL UPDATE)
-// =====================================================
-
-// ========================================
-// NAČTENÍ ZDROJŮ Z UZLU (ze Supabase)
-// ========================================
 function loadNodeResources(node) {
-  console.log('📚 loadNodeResources called');
-  console.log('  → node.articles:', node.articles);
-  console.log('  → node.media:', node.media);
-  console.log('  → node.docs:', node.docs);
-
   const resourcesList = document.getElementById("resourcesList");
-  console.log('  → resourcesList element:', resourcesList);
+  if (!resourcesList) return;
 
-  if (!resourcesList) {
-    console.error('❌ Element resourcesList not found!');
-    return;
-  }
-
-  resourcesList.innerHTML = ""; // Clear
+  resourcesList.innerHTML = "";
 
   const resources = [];
 
-  // Articles (Markdown z node.articles)
   if (node.articles && node.articles.length > 0) {
     node.articles.forEach(article => {
       resources.push({
@@ -287,7 +256,6 @@ function loadNodeResources(node) {
     });
   }
 
-  // Media (video, audio, image)
   if (node.media && node.media.length > 0) {
     node.media.forEach(media => {
       resources.push({
@@ -299,7 +267,6 @@ function loadNodeResources(node) {
     });
   }
 
-  // Docs (PDF, Markdown)
   if (node.docs && node.docs.length > 0) {
     node.docs.forEach(doc => {
       resources.push({
@@ -311,7 +278,6 @@ function loadNodeResources(node) {
     });
   }
 
-  // Render resources
   if (resources.length === 0) {
     resourcesList.innerHTML = '<li style="color: #64748b; font-style: italic; font-size: 15px; padding: 20px 12px;">Žádné zdroje k dispozici</li>';
     return;
@@ -328,7 +294,6 @@ function loadNodeResources(node) {
       margin-bottom: 4px;
     `;
 
-    // Ikona podle typu
     const icons = {
       'markdown': '📄',
       'video': '🎥',
@@ -349,7 +314,6 @@ function loadNodeResources(node) {
       </div>
     `;
 
-    // Click handler
     li.addEventListener('click', () => {
       openResource(resource);
     });
@@ -368,12 +332,7 @@ function loadNodeResources(node) {
   });
 }
 
-// ========================================
-// OTEVŘENÍ ZDROJE
-// ========================================
 function openResource(resource) {
-  console.log('📖 Opening resource:', resource);
-
   switch (resource.type) {
     case 'markdown':
       openMarkdownViewer(resource.url, resource.title);
@@ -400,9 +359,6 @@ function openResource(resource) {
   }
 }
 
-// ========================================
-// MARKDOWN VIEWER
-// ========================================
 async function openMarkdownViewer(url, title) {
   try {
     const response = await fetch(url);
@@ -410,7 +366,6 @@ async function openMarkdownViewer(url, title) {
 
     const markdown = await response.text();
 
-    // Převeď Markdown na HTML (použij marked.js library)
     const html = window.marked ? marked.parse(markdown) : `<pre style="white-space: pre-wrap; line-height: 1.6;">${markdown}</pre>`;
 
     showModal(title, html, 'markdown');
@@ -421,27 +376,18 @@ async function openMarkdownViewer(url, title) {
   }
 }
 
-// ========================================
-// PDF VIEWER
-// ========================================
 function openPDFViewer(url, title) {
-  // Detekce mobilního zařízení
   const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
   if (isMobile) {
-    // Na mobilu otevři PDF přímo v browseru - zobrazí se nativně
     window.open(url, '_blank');
     return;
   }
 
-  // Na desktopu zobraz v modalu
   const iframe = `<iframe src="${url}" style="width:100%; height:80vh; border:none; border-radius:8px;"></iframe>`;
   showModal(title, iframe, 'pdf');
 }
 
-// ========================================
-// VIDEO VIEWER
-// ========================================
 function openVideoViewer(url, title) {
   let videoEmbed;
 
@@ -470,9 +416,6 @@ function openVideoViewer(url, title) {
   showModal(title, videoEmbed, 'video');
 }
 
-// ========================================
-// AUDIO PLAYER
-// ========================================
 function openAudioPlayer(url, title) {
   const audioPlayer = `
     <div style="text-align:center; padding:30px;">
@@ -486,9 +429,6 @@ function openAudioPlayer(url, title) {
   showModal(title, audioPlayer, 'audio');
 }
 
-// ========================================
-// IMAGE VIEWER
-// ========================================
 function openImageViewer(url, title) {
   const imageViewer = `
     <div style="text-align:center;">
@@ -499,20 +439,16 @@ function openImageViewer(url, title) {
   showModal(title, imageViewer, 'image');
 }
 
-// ========================================
-// UNIVERZÁLNÍ MODAL
-// ========================================
 function showModal(title, content, type) {
   const existingModal = document.getElementById('resourceModal');
   if (existingModal) existingModal.remove();
 
-  // OPRAVENÉ rozměry - image ještě užší
   const modalSizes = {
     pdf: { maxWidth: '900px', maxHeight: '90vh' },
     markdown: { maxWidth: '900px', maxHeight: '85vh' },
     video: { maxWidth: '1000px', maxHeight: '85vh' },
     audio: { maxWidth: '550px', maxHeight: '350px' },
-    image: { maxWidth: '700px', maxHeight: '75vh' }  // ✅ Zúženo z 80vw na 700px
+    image: { maxWidth: '700px', maxHeight: '75vh' }
   };
 
   const size = modalSizes[type] || modalSizes.markdown;
@@ -573,20 +509,17 @@ function showModal(title, content, type) {
   modal.appendChild(modalContent);
   document.body.appendChild(modal);
 
-  // ✅ PLYNULÉ OTEVŘENÍ (bez přebliknutí)
   requestAnimationFrame(() => {
     modal.style.opacity = '1';
     modalContent.style.transform = 'translateY(0)';
   });
 
-  // ✅ FUNKCE PRO ZAVŘENÍ (bez přebliknutí)
   const closeModalFn = () => {
     modal.style.opacity = '0';
     modalContent.style.transform = 'translateY(20px)';
-    setTimeout(() => modal.remove(), 150); // Kratší timeout
+    setTimeout(() => modal.remove(), 150);
   };
 
-  // Event listeners
   document.getElementById('closeModal').addEventListener('click', closeModalFn);
 
   modal.addEventListener('click', (e) => {
@@ -595,7 +528,6 @@ function showModal(title, content, type) {
     }
   });
 
-  // Escape key
   const escHandler = (e) => {
     if (e.key === 'Escape') {
       closeModalFn();
@@ -604,7 +536,6 @@ function showModal(title, content, type) {
   };
   document.addEventListener('keydown', escHandler);
 
-  // Hover efekt na close button
   const closeBtn = document.getElementById('closeModal');
   closeBtn.addEventListener('mouseenter', () => {
     closeBtn.style.background = 'rgba(239, 68, 68, 0.2)';
@@ -616,12 +547,8 @@ function showModal(title, content, type) {
   });
 }
 
-// ========================================
-// CSS - ODSTRAŇ @keyframes (už nepoužíváme)
-// ========================================
 const styleSheet = document.createElement("style");
 styleSheet.textContent = `
-  /* Markdown obsah styling */
   .modal-body h1, .modal-body h2, .modal-body h3 {
     color: #f8fafc;
     margin-top: 1.5em;
@@ -662,7 +589,6 @@ styleSheet.textContent = `
     text-decoration: underline;
   }
   
-  /* MOBILNÍ RESPONSIVE */
   @media (max-width: 768px) {
     #resourceModal {
       padding: 10px !important;
@@ -710,21 +636,15 @@ styleSheet.textContent = `
 document.head.appendChild(styleSheet);
 
 async function showGameOfLife(node) {
-  console.log('🎮 showGameOfLife called');
   const battery = await loadBatteryScore();
-  console.log('🔋 Battery loaded:', battery);
 
-  // ⭐ 1. NASTAV NADPIS (ikona + text)
+  // 1. Nadpis
   const titleEl = document.getElementById('nodeTitle');
   if (titleEl) {
-    const icon = '🔋'; // nebo node.icon
-    titleEl.innerHTML = `
-      <span style="font-size:1.4em;margin-right:8px;">${icon}</span>
-      Hra života
-    `;
+    titleEl.innerHTML = `<span style="font-size:1.4em;margin-right:8px;">🔋</span>Stoletý desetibojař`;
   }
 
-  // ⭐ 2. VYTVOŘ/AKTUALIZUJ KARTU
+  // 2. Karta baterie
   let metricCard = document.querySelector('.metric-card');
   if (!metricCard) {
     metricCard = document.createElement('div');
@@ -743,49 +663,81 @@ async function showGameOfLife(node) {
   }
 
   metricCard.innerHTML = `
-    <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">
-      Stav baterie
+    <div style="font-size:11px; color:#94a3b8; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">Stav baterie</div>
+    <div style="display:flex; align-items:baseline; gap:5px;">
+      <span style="font-size:32px; font-weight:600;">${String(battery.score).replace('.', ',')}</span>
+      <span style="font-size:32px; font-weight:600; opacity:0.8;">%</span>
     </div>
-    <div style="display: flex; align-items: baseline; gap: 5px;">
-      <span style="font-size: 32px; font-weight: 600;">${battery.score}</span>
-      <span style="font-size: 32px; font-weight: 600; opacity: 0.8;">%</span>
+    <div style="height:6px; background:rgba(0,0,0,0.3); border-radius:3px; margin-top:12px; overflow:hidden;">
+      <div style="width:${battery.score}%; height:100%; background:#06b6d4; box-shadow:0 0 8px #06b6d4aa; transition:width 0.8s ease;"></div>
     </div>
-    <div style="height: 6px; background: rgba(0, 0, 0, 0.3); border-radius: 3px; margin-top: 12px; overflow: hidden;">
-      <div style="width: ${battery.score}%; height: 100%; background: #06b6d4; box-shadow: 0 0 8px #06b6d4aa;"></div>
-    </div>
+    
   `;
 
-  // ⭐ 3. ZOBRAZ PANEL
+  // 3. Zobraz panel
   panelEl.style.display = "block";
   panelEl.classList.add("open", "visible");
   document.body.classList.add("panel-open");
+}
+export async function updateRecommendations() {
+  const valuesContainer = document.querySelector('#resourcesList'); // Používáme tvé ID
+  if (!valuesContainer) return;
 
-  // Naplň daty
-  metricCard.innerHTML = `
-    <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">
-      Stav baterie
-    </div>
-    <div style="display: flex; align-items: baseline; gap: 5px;">
-      <span style="font-size: 32px; font-weight: 600;">${battery.score}</span>
-      <span style="font-size: 32px; font-weight: 600; opacity: 0.8;">%</span>
-    </div>
-    <div style="height: 6px; background: rgba(0, 0, 0, 0.3); border-radius: 3px; margin-top: 12px; overflow: hidden;">
-      <div style="width: ${battery.score}%; height: 100%; background: #06b6d4; box-shadow: 0 0 8px #06b6d4aa;"></div>
-    </div>
-  `;
+  // 1. Zjistíme aktuální bottleneck
+  const { data: dashboard, error } = await supabase
+    .from('v_vitality_dashboard')
+    .select('*')
+    .eq('is_bottleneck', true)
+    .single();
 
-  panelEl.style.display = "block";
-  panelEl.classList.add("open", "visible");
+  // Ošetření stavu, kdy uživatel nemá test (Chyba 400 nebo prázdná data)
+  if (error || !dashboard) {
+    valuesContainer.innerHTML = `
+      <div class="onboarding-prompt" style="padding: 15px; text-align: center;">
+        <p style="font-size: 13px; color: #9ba1a6;">Zatím nemáš žádná data. Změř si svou vitalitu, aby Sokrates věděl, co ti doporučit.</p>
+        <button onclick="startOnboarding()" class="btn-primary" style="margin-top: 10px;">Spustit měření</button>
+      </div>`;
+    return;
+  }
+
+  // 2. Najdeme odpovídající materiály (např. pro 'spanek')
+  const { data: recommendations } = await supabase
+    .from('node_media')
+    .select('*')
+    .eq('node_id', dashboard.node_id)
+    .limit(2);
+
+  if (!recommendations || recommendations.length === 0) return;
+
+  // 3. Vykreslíme je
+  valuesContainer.innerHTML = recommendations.map(item => `
+        <li class="hodnoty-item" onclick="window.location.href='medioteka.html?id=${item.id}'">
+            <div class="icon">${item.type === 'video' ? '🎥' : '🎧'}</div>
+            <div class="content">
+                <strong>${item.title}</strong>
+                <p>${item.summary}</p>
+            </div>
+        </li>
+    `).join('');
 }
 
+// Uvnitř tvého scriptu (app.js nebo v index.html)
+export function startOnboarding() {
+  const modal = document.getElementById('mediaModal');
+  const content = document.getElementById('modalContent');
 
+  if (modal) {
+    modal.classList.remove('hidden');
+    modal.style.display = 'block';
 
+    // Důležité: spustíme první krok dotazníku
+    if (typeof renderOnboardingStep === "function") {
+      renderOnboardingStep(0);
+    } else {
+      console.error("Chyba: Funkce renderOnboardingStep nebyla nalezena!");
+    }
+  }
+}
 
-
-
-
-
-
-
-
-
+// TÍMTO JI ZPŘÍSTUPNÍŠ PRO HTML ONCLICK
+window.startOnboarding = startOnboarding;

@@ -67,7 +67,22 @@
 </head>
 
 <body>
-    <script src="/app/js/universe/splash.js"></script>
+
+    <!-- SPLASH -->
+    <div id="splash-view"
+        style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; position: relative;">
+        <img src="/app/assets/images/logo-512.png" alt="Logo"
+            style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 128px; height: 128px; animation: fadeIn 0.6s ease-out;">
+
+        <div style="position: absolute; bottom: 48px; width: 100%; text-align: center;">
+            <div
+                style="font-size: 1.5rem; color: #93c5fd; margin-bottom: 8px; animation: fadeIn 0.6s ease-out 0.2s both;">
+                Chytré já</div>
+            <div
+                style="font-size: 0.75rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.1em; animation: fadeIn 0.6s ease-out 0.4s both;">
+                MEDICÍNA 3.0</div>
+        </div>
+    </div>
 
     <!-- LOGIN -->
     <div id="login-view"
@@ -75,7 +90,7 @@
         <div class="w-full max-w-md glass-panel p-8 rounded-2xl">
             <div class="text-center mb-8">
                 <h1 class="text-3xl font-bold text-blue-500 mb-2">Chytré já</h1>
-                <p class="text-slate-400 text-sm italic">Medicína 3.0</p>
+                <p class="text-slate-400 text-sm italic">MEDICÍNA 3.0</p>
             </div>
             <form id="login-form" class="space-y-4">
                 <input id="email-address" type="email" placeholder="E-mail" required
@@ -143,10 +158,6 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script type="module">
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/service-worker.js')
-                .then(() => console.log("PWA připravena k použití offline."));
-        }
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js';
         import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js';
 
@@ -163,13 +174,33 @@
 
         // View switcher - SINGLE definition
         window.showView = (viewName) => {
-            // Definujeme existující sekce v HTML
-            const views = ['login', 'register'];
-            views.forEach(v => {
+            ['splash', 'login', 'register'].forEach(v => {
                 const el = document.getElementById(`${v}-view`);
                 if (el) el.style.display = (v === viewName) ? 'flex' : 'none';
             });
         };
+
+        let firstCheck = true;
+        onAuthStateChanged(auth, async (user) => {
+            if (firstCheck) {
+                setTimeout(() => {
+                    if (user) {
+                        sb.from('user_profiles').select('*').eq('user_id', user.uid).single().then(({ data }) => {
+                            if (!data) sb.from('user_profiles').insert([{ user_id: user.uid, age: 45, gender: 'male', primary_goal: 'longevity' }]);
+                            window.location.href = "/app/";
+                        });
+                    } else {
+                        showView('login');
+                    }
+                    firstCheck = false;
+                }, 5000);
+            } else if (user) {
+                sb.from('user_profiles').select('*').eq('user_id', user.uid).single().then(({ data }) => {
+                    if (!data) sb.from('user_profiles').insert([{ user_id: user.uid, age: 45, gender: 'male', primary_goal: 'longevity' }]);
+                    window.location.href = "/app/";
+                });
+            }
+        });
 
         document.getElementById("login-form").addEventListener("submit", (e) => {
             e.preventDefault();
@@ -195,26 +226,6 @@
 
         document.getElementById("show-register-link").addEventListener("click", (e) => { e.preventDefault(); showView('register'); });
         document.getElementById("show-login-link").addEventListener("click", (e) => { e.preventDefault(); showView('login'); });
-    </script>
-    <script>
-        window.addEventListener('load', () => {
-            setTimeout(() => {
-                const splash = document.getElementById('app-splash');
-                if (splash) {
-                    splash.style.opacity = '0';
-                    setTimeout(() => {
-                        splash.remove();
-                        // ZDE JE TA ZMĚNA: Po odstranění splashe ukaž login
-                        if (typeof window.showView === 'function') {
-                            window.showView('login');
-                        } else {
-                            // Pojistka, pokud by modul ještě nebyl načten
-                            document.getElementById('login-view').style.display = 'flex';
-                        }
-                    }, 500);
-                }
-            }, 2500);
-        });
     </script>
 </body>
 

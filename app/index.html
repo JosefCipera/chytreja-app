@@ -5,27 +5,54 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vesmír Desktop 🌌</title>
+
     <!-- Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-    <!-- 📦 Knihovny -->
+    <!-- Firebase Auth -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js';
+        import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js';
+
+        const app = initializeApp({
+            apiKey: "AIzaSyAKREZsoBZkA1xOQ5ff3XDmiJ88nwSjeOk",
+            authDomain: "chytre-ja-app.firebaseapp.com",
+            projectId: "chytre-ja-app",
+            storageBucket: "chytre-ja-app.firebasestorage.app",
+            messagingSenderId: "65882611642",
+            appId: "1:65882611642:web:53d82914aa07d6677d4783"
+        });
+        const auth = getAuth(app);
+
+        // Auth guard — pokud není přihlášen, redirect na root
+        onAuthStateChanged(auth, (user) => {
+            if (!user) window.location.href = '/';
+        });
+
+        // Global logout
+        window.handleLogout = () => {
+            signOut(auth).then(() => window.location.href = '/').catch(console.error);
+        };
+
+        // Expose auth for other scripts
+        window.firebaseAuth = auth;
+    </script>
+
+    <script type="module" src="./js/universe/onboarding.js"></script>
+
+    <!-- Knihovny -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vis-network@9.1.9/dist/vis-network.min.css">
     <script src="https://cdn.jsdelivr.net/npm/vis-network@9.1.9/dist/vis-network.min.js"></script>
-
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
-    <!-- 🎨 Styly -->
+    <!-- Styly -->
     <link rel="stylesheet" href="/app/css/universe-core.css">
     <link rel="stylesheet" href="/app/css/universe-header.css">
 
-    <!-- 🧱 Manifest -->
-    <link rel="manifest" href="/app/manifest.webmanifest">
+    <!-- Manifest -->
+    <link rel="manifest" href="./manifest.webmanifest">
     <meta name="theme-color" content="#101c35">
 
-    <!-- 🧠 Registrace Service-Workera -->
-    <script>
-
-    </script>
     <style>
         .battery-section {
             display: flex;
@@ -80,30 +107,29 @@
 </head>
 
 <body>
-    <!-- 🧭 Horní lišta -->
+    <script src="/app/js/universe/splash.js"></script>
+
+    <!-- Horní lišta -->
     <header id="appHeader" class="app-header">
-        <!-- <h1 id="appTitle">🌌 Chytré já</h1> -->
         <h1 id="appTitle">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 48" width="140" height="48"
                 style="vertical-align: middle;">
                 <circle cx="24" cy="24" r="18" fill="none" stroke="#2563eb" stroke-width="4.5" stroke-dasharray="105 13"
                     stroke-dashoffset="6.5" transform="rotate(-90 24 24)" />
-                <text x="52" y="30" font-family="Inter" font-size="18" font-weight="600" fill="#93c5fd">
-                    SOKRATES
-                </text>
             </svg>
         </h1>
-        <div class="header-controls">
-            <label for="modelSelector">Model:</label>
-            <select id="modelSelector"></select>
-
-            <label for="roleSelect">Režim:</label>
-            <select id="roleSelect">
-                <option value="demo">Demo</option>
-                <option value="free">Free</option>
-                <option value="pro">Pro</option>
-                <option value="user">User</option>
-            </select>
+        <div class="header-right">
+            <div class="header-controls">
+                <label for="modelSelector">Model:</label>
+                <select id="modelSelector"></select>
+                <label for="roleSelect">Režim:</label>
+                <select id="roleSelect">
+                    <option value="demo">Demo</option>
+                    <option value="free">Free</option>
+                    <option value="pro">Pro</option>
+                    <option value="user">User</option>
+                </select>
+            </div>
         </div>
         <div class="user-profile-wrapper">
             <button id="profileBtn" class="avatar-button">
@@ -125,10 +151,9 @@
                 </div>
                 <nav class="dropdown-nav">
                     <a href="#"><i class="icon">👤</i> Informace o profilu</a>
+                    <a href="#" onclick="startOnboarding(); return false;"><i class="icon">⚡</i> Přeměřit
+                        Vitalitu</a>
                     <a href="#"><i class="icon">💳</i> Platby a fakturační údaje</a>
-                    <!--<a href="#"><i class="icon">🌐</i> Jazyk a nastavení lokalizace</a>
-                    <a href="#"><i class="icon">💻</i> API</a>
-                    <a href="#"><i class="icon">📊</i> Spotřeba dat</a> -->
                     <div class="divider"></div>
                     <button onclick="handleLogout()" class="logout-action">
                         <i class="icon">⭕</i> Odhlásit
@@ -138,10 +163,10 @@
         </div>
     </header>
 
-    <!-- 🌌 Plátno sítě -->
+    <!-- Plátno sítě -->
     <div id="network"></div>
 
-    <!-- === 🌌 Postranní panel === -->
+    <!-- Postranní panel -->
     <aside id="sidePanel">
         <div class="panel-header">
             <div class="panel-node-row">
@@ -154,51 +179,66 @@
 
         <div class="panel-content">
             <div class="ai-intelligence-zone">
-                <h3 class="panel-section-title">
-                    <i class="fa-solid fa-brain"></i> Sokrates
-                </h3>
-                <div id="ai-integrated-msgs" class="ai-prediction-text">
-                </div>
-
+                <h3 class="panel-section-title"><i class="fa-solid fa-brain"></i> Chytré já</h3>
+                <div id="ai-integrated-msgs" class="ai-prediction-text"></div>
                 <div id="aiPanelSection">
-                    <input id="aiPanelInput" type="text" placeholder="Zeptej se Sokrata…" />
-                    <button id="ai-send">
-                        <i class="fa-solid fa-paper-plane"></i>
-                    </button>
+                    <input id="aiPanelInput" type="text" placeholder="Zeptej se Chytrého já…" />
+                    <button id="ai-send"><i class="fa-solid fa-paper-plane"></i></button>
                 </div>
             </div>
 
             <hr class="panel-divider">
 
             <div id="tasksSection" class="panel-section">
-                <h3 class="panel-section-title">
-                    <i class="fa-solid fa-bolt"></i> Akce
-                </h3>
+                <h3 class="panel-section-title"><i class="fa-solid fa-bolt"></i> Akce</h3>
                 <ul id="tasksList" class="tasks-list"></ul>
             </div>
 
             <hr class="panel-divider">
 
             <div id="resourcesSection" class="panel-section">
-                <h3 class="panel-section-title">
-                    <i class="fa-solid fa-file-lines"></i> Hodnoty
-                </h3>
+                <h3 class="panel-section-title"><i class="fa-solid fa-file-lines"></i> Hodnoty</h3>
                 <ul id="resourcesList" class="resources-list"></ul>
             </div>
         </div>
     </aside>
 
+    <script type="module">
+        import { supabase } from './js/universe/supabaseClient.js';
+        import { updateRecommendations } from './js/universe/universe-panel.js';
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            supabase.auth.onAuthStateChange((event, session) => {
+                if (session) {
+                    console.log("Uživatel přihlášen, aktualizuji doporučení...");
+                    updateRecommendations();
+                }
+            });
+        });
+    </script>
+
     <script type="module" src="/app/js/universe/universe-viewers.js"></script>
     <script type="module" src="/app/js/universe/universe-access.js"></script>
     <script type="module" src="/app/js/universe/universe-core.js"></script>
     <script type="module" src="/app/js/universe/universe-init.js"></script>
-
     <script type="module" src="/app/js/universe/ai-assistant.js"></script>
     <script type="module" src="/app/js/universe/universe-panel.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const splash = document.getElementById('app-splash');
+                if (splash) {
+                    splash.style.opacity = '0';
+                    setTimeout(() => {
+                        splash.remove();
+                        // V /app/index.html tady nemusíš nic showView, 
+                        // jen se ujisti, že dashboard pod tím už běží.
+                    }, 500);
+                }
+            }, 2500);
+        });
+    </script>
 </body>
-<script>
-    console.log("INLINE SCRIPT LOADED");
-</script>
 
 </html>

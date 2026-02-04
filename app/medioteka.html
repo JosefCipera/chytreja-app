@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="cs">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mediotéka Chytrého já</title>
+
+    <!-- Ikony -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="./css/medioteka.css">
+
+    <!-- Markdown parser -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+
+<body class="medioteka-body">
+
+    <div class="medioteka-container">
+
+        <!-- Nadpis -->
+        <h1 class="medioteka-title">Mediotéka Chytrého já</h1>
+        <p class="medioteka-subtitle">Videa, články, obrázky, audio a PDF — přehledně na jednom místě.</p>
+
+        <!-- Vyhledávání -->
+        <input id="searchInput" class="medioteka-search" type="text" placeholder="Hledat materiály…">
+
+        <!-- Grid -->
+        <div id="mediaGrid" class="medioteka-grid"></div>
+
+    </div>
+
+    <!-- MODÁL -->
+    <div id="mediaModal" class="medioteka-modal hidden">
+        <div class="medioteka-modal-content">
+            <span class="medioteka-modal-close" onclick="closeMediaModal()">✖</span>
+            <div id="modalContent"></div>
+        </div>
+    </div>
+
+    <!-- Zpět -->
+    <div class="medioteka-back">
+        <a href="index.html" class="medioteka-back-btn">← Zpět na hlavní stránku</a>
+    </div>
+
+    <!-- JS -->
+    <script type="module" src="./js/universe/medioteka.js"></script>
+
+</body>
+
+</html>

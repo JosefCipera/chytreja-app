@@ -43,7 +43,7 @@ function getAllFiles(dirPath, arrayOfFiles = []) {
 
   files.forEach(file => {
     const fullPath = path.join(dirPath, file);
-    
+
     if (fs.statSync(fullPath).isDirectory()) {
       arrayOfFiles = getAllFiles(fullPath, arrayOfFiles);
     } else {
@@ -61,7 +61,7 @@ async function uploadFile(localPath, remotePath) {
   try {
     const fileBuffer = fs.readFileSync(localPath);
     const fileName = path.basename(localPath);
-    
+
     // Určení MIME typu
     const ext = path.extname(localPath).toLowerCase();
     const mimeTypes = {
@@ -76,9 +76,9 @@ async function uploadFile(localPath, remotePath) {
       '.mp4': 'video/mp4',
       '.webm': 'video/webm'
     };
-    
+
     const contentType = mimeTypes[ext] || 'application/octet-stream';
-    
+
     // Upload do Supabase
     const { data, error } = await supabase.storage
       .from(BUCKET_NAME)
@@ -94,7 +94,7 @@ async function uploadFile(localPath, remotePath) {
 
     console.log(`✅ Nahráno: ${remotePath}`);
     return true;
-    
+
   } catch (error) {
     console.error(`❌ Chyba při čtení souboru ${localPath}:`, error.message);
     return false;
@@ -106,7 +106,7 @@ async function uploadFile(localPath, remotePath) {
 // =====================================================
 async function main() {
   console.log('🚀 Začínám upload do Supabase Storage...\n');
-  
+
   let totalFiles = 0;
   let uploadedFiles = 0;
   let failedFiles = 0;
@@ -134,7 +134,7 @@ async function main() {
       const remotePath = path.join(source.remote, relativePath).replace(/\\/g, '/');
 
       const success = await uploadFile(filePath, remotePath);
-      
+
       if (success) {
         uploadedFiles++;
       } else {

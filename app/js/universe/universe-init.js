@@ -12,7 +12,7 @@ import { renderUniverse } from "./universe-core.js";
 // Supabase setup
 const { createClient } = window.supabase;
 const SUPABASE_URL = 'https://pionxzqtxcughvfbgadi.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_w29DE53nrdGnNEvBn68kzg_ujje7u5Y';  // ← Tvůj původní
+const SUPABASE_KEY = 'sb_publishable_w29DE53nrdGnNEvBn68kzg_ujje7u5Y';
 
 window.supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
 console.log("✅ Supabase SDK připraveno");
@@ -123,7 +123,6 @@ async function loadModel(modelName) {
     try {
       const userId = await getCurrentUserId();
 
-      // 1. Načti strukturu uzlů
       const { data: nodes, error: nodesError } = await window.supabaseClient
         .from('longevity_nodes')
         .select('*');
@@ -131,7 +130,6 @@ async function loadModel(modelName) {
       if (nodesError) throw nodesError;
       console.log(`   ✓ Nodes: ${nodes.length}`);
 
-      // 2. Načti user metriky
       const { data: metrics, error: metricsError } = await window.supabaseClient
         .from('user_metrics')
         .select('*')
@@ -141,7 +139,6 @@ async function loadModel(modelName) {
       if (metricsError) throw metricsError;
       console.log(`   ✓ Metrics: ${metrics.length}`);
 
-      // 3. Načti články
       const { data: articles, error: articlesError } = await window.supabaseClient
         .from('node_articles')
         .select('*');
@@ -149,7 +146,6 @@ async function loadModel(modelName) {
       if (articlesError) console.warn("⚠️ Articles error:", articlesError);
       console.log(`   ✓ Articles: ${articles?.length || 0}`);
 
-      // 4. Načti media
       const { data: media, error: mediaError } = await window.supabaseClient
         .from('node_media')
         .select('*');
@@ -157,7 +153,6 @@ async function loadModel(modelName) {
       if (mediaError) console.warn("⚠️ Media error:", mediaError);
       console.log(`   ✓ Media: ${media?.length || 0}`);
 
-      // 5. Načti docs
       const { data: docs, error: docsError } = await window.supabaseClient
         .from('node_docs')
         .select('*');
@@ -165,11 +160,8 @@ async function loadModel(modelName) {
       if (docsError) console.warn("⚠️ Docs error:", docsError);
       console.log(`   ✓ Docs: ${docs?.length || 0}`);
 
-      // 6. MERGE všechno dohromady
-      // 6. MERGE - OPTIMALIZOVANÁ VERZE
       console.log('⏳ Merging data...');
 
-      // Vytvoř mapy místo opakovaného find/filter
       const metricsMap = new Map(metrics?.map(m => [m.node_id, m]) || []);
       const articlesMap = new Map();
       const mediaMap = new Map();
@@ -229,7 +221,6 @@ async function loadModel(modelName) {
       });
 
       console.log('✅ Merge completed:', merged.length, 'nodes');
-
       console.log("✅ Supabase data merged");
       return merged;
 
@@ -264,12 +255,7 @@ async function loadModel(modelName) {
 // 6) GET CURRENT USER ID
 // =====================================================
 async function getCurrentUserId() {
-  // Pro demo vracíme hardcoded ID
   return "demo-user-123";
-
-  // V produkci:
-  // const { data: { user } } = await window.supabaseClient.auth.getUser();
-  // return user?.id;
 }
 
 // =====================================================
@@ -318,6 +304,24 @@ function renderVisibleUniverse(model) {
 // 9) HEADER CONTROLS
 // =====================================================
 function initHeaderControls() {
+  // ─── Profile dropdown ───
+  const profileBtn = document.getElementById("profileBtn");
+  const profileDropdown = document.getElementById("profileDropdown");
+
+  if (profileBtn && profileDropdown) {
+    profileBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      profileDropdown.classList.toggle("hidden");
+    });
+
+    document.addEventListener("click", (e) => {
+      if (!profileBtn.contains(e.target) && !profileDropdown.contains(e.target)) {
+        profileDropdown.classList.add("hidden");
+      }
+    });
+  }
+
+  // ─── Role + model selectors ───
   const roleSelect = document.getElementById("roleSelect");
   const modelSelect = document.getElementById("modelSelector");
   const headerControls = document.querySelector(".header-controls");
@@ -339,7 +343,6 @@ function initHeaderControls() {
 
   updateHeaderColor(role);
 
-  // Přepínání role
   roleSelect.addEventListener("change", async (e) => {
     const newRole = e.target.value;
     localStorage.setItem("userRole", newRole);
@@ -355,7 +358,6 @@ function initHeaderControls() {
     renderVisibleUniverse(window.MAIN_UNIVERSE_DATA);
   });
 
-  // Přepínání modelu
   modelSelect.addEventListener("change", async (e) => {
     const newModel = e.target.value;
     localStorage.setItem("currentModel", newModel);
@@ -364,7 +366,6 @@ function initHeaderControls() {
     await loadAndRenderModel(newModel, role);
   });
 
-  // Admin escape
   let clickCount = 0;
   let clickTimer = null;
 

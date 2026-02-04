@@ -1,5 +1,5 @@
 // =====================================================
-// API ENDPOINT: /api/chat.js - SOKRATES (OpenAI)
+// API ENDPOINT: /api/chat.js - Chytré já (OpenAI)
 // =====================================================
 
 console.log("API CHAT HIT");
@@ -77,9 +77,9 @@ export default async function (req, res) {
     node.media = media || [];
     node.docs = docs || [];
 
-    // 3️⃣ SYSTEM PROMPT - SOKRATES
+    // 3️⃣ SYSTEM PROMPT - Chytré já
     const SYSTEM_PROMPT = `
-Jsi Sokrates – klidný mentor zaměřený na prevenci 4 jezdců apokalypsy zdraví.
+Jsi Chytré já – klidný mentor zaměřený na prevenci 4 jezdců apokalypsy zdraví.
 
 4 JEZDCI (co nás zabíjí):
 1. Kardiovaskulární choroby (infarkt, mrtvice)
@@ -138,13 +138,13 @@ AKTUÁLNÍ STAV:
 Skóre: ${node.score ?? "—"}
 Stav: ${node.state ?? "—"}
 
+SYSTÉMOVÝ NÁVRH (TOC - Úzké hrdlo):
+Tento uzel je momentálně identifikován jako tvůj BOTTLENECK. 
+Navržená intervence z databáze: ${action.label} 
+(Poznámka pro tebe: Tuto akci nepříkazuj, ale použij ji jako základ pro svou otázku).
+
 SOUVISLOST S 4 JEZDCI:
-${node.riders_impact ?? "Tento uzel pomáhá předcházet jezdcům."}
-
-KONTEXT:
-${node.summary ?? "—"}
-
-${node.ai_hint ? `JAK MÁŠ ODPOVÍDAT:\n${JSON.stringify(node.ai_hint, null, 2)}` : ''}
+${node.riders_impact} - ${action.rider_defense}
 
 ${userQuestion ? `\n---\nUŽIVATEL SE PTÁ:\n"${userQuestion}"` : ''}
 `.trim();

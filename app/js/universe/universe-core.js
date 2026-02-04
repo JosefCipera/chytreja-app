@@ -1,5 +1,4 @@
 // === UNIVERSE-CORE.JS ===
-// Stabilní verze z chytreja-universe + 2 kritické opravy pro Sokrates
 
 import { showPanel, closePanel } from "./universe-panel.js";
 

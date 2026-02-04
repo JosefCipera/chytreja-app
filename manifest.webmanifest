@@ -1,24 +1,25 @@
 {
-    "name": "Chytré já – Universe",
+    "name": "Chytré já – Medicína 3.0",
     "short_name": "Chytré já",
     "description": "Univerzální pracovní prostor Chytrého já",
-    "start_url": "/",
+    "start_url": "/app/index.html",
     "scope": "/",
     "display": "standalone",
     "background_color": "#101c35",
     "theme_color": "#101c35",
     "orientation": "any",
-    "icons": [
+    "_icons_disabled": [
         {
-            "src": "./assets/images/kouc-512.png",
+            "src": "/app/assets/images/logo-512.png",
             "sizes": "512x512",
             "type": "image/png",
             "purpose": "any maskable"
         },
         {
-            "src": "./assets/images/kouc-192.png",
+            "src": "/app/assets/images/logo-192.png",
             "sizes": "192x192",
-            "type": "image/png"
+            "type": "image/png",
+            "purpose": "any maskable"
         }
     ]
 }
