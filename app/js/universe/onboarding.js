@@ -43,28 +43,53 @@ export function renderOnboarding() {
 }
 
 async function saveResults() {
-  const { data, error } = await supabase.rpc('process_onboarding_test', {
-    p_user_id: (await supabase.auth.getUser()).data.user.id,
-    p_answers: userAnswers
-  });
+  try {
+    console.log("💾 Saving results...", userAnswers);
 
-  if (!error) {
-    location.reload(); // Refresh pro aktualizaci dashboardu
+    // Get Firebase user ID instead of Supabase
+    const userId = window.firebaseAuth?.currentUser?.uid;
+    if (!userId) {
+      throw new Error("User not authenticated");
+    }
+
+    console.log("👤 User ID:", userId);
+
+    const { data, error } = await supabase.rpc('process_onboarding_test', {
+      p_user_id: userId,
+      p_answers: userAnswers
+    });
+
+    console.log("✅ RPC result:", { data, error });
+
+    if (error) {
+      console.error("❌ RPC failed:", error);
+      alert("Chyba při ukládání: " + error.message);
+      return;
+    }
+
+    console.log("✅ Data saved:", data);
+    // alert("✅ Dotazník uložen!");  ← SMAZAT tento řádek
+    location.reload();
+
+  } catch (err) {
+    console.error("❌ Save error:", err);
+    alert("Chyba: " + err.message);
   }
 }
-// assets/js/onboarding.js
 
 // Tato funkce otevře modál a spustí první otázku
 export function startOnboarding() {
   const modal = document.getElementById('mediaModal');
   if (modal) {
-    modal.classList.remove('hidden');
-    modal.style.display = 'block';
-    currentStep = 0; // Resetujeme krok, kdyby to pouštěli podruhé
+    modal.style.display = 'flex';
+    currentStep = 0;
     userAnswers = {};
     renderOnboarding();
   }
 }
 
-// Zpřístupnění pro HTML onclick
 window.startOnboarding = startOnboarding;
+
+if (typeof window !== 'undefined') {
+  window.startOnboarding = startOnboarding;
+}

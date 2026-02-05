@@ -8,36 +8,44 @@ const tasksEl = document.getElementById("nodeTasks");
 const panelHeader = document.querySelector("#sidePanel .panel-header");
 async function loadBatteryScore() {
   try {
-    // Get user from Firebase auth
     const userId = window.firebaseAuth?.currentUser?.uid || 'demo-user-123';
+    console.log("🔋 Loading battery for user:", userId);  // ← PŘIDEJ
+
     const { data, error } = await window.supabaseClient
       .from('v_vitality_dashboard')
       .select('node_id, current_index, contribution, weight')
       .eq('user_id', userId)
       .eq('universe', 'longevity');
 
+    console.log("🔋 Dashboard data:", { data, error, count: data?.length });  // ← PŘIDEJ
+
     if (error) throw error;
-    if (!data || data.length === 0) return { score: 0, bottleneck: null };
+    if (!data || data.length === 0) {
+      console.log("⚠️ No dashboard data found");  // ← PŘIDEJ
+      return { score: 0, bottleneck: null };
+    }
 
-    // vitality_score = SUM(contribution) — rows kde weight = 0 nepočítají se automaticky (contribution = 0)
     const score = data.reduce((sum, row) => sum + (row.contribution || 0), 0);
-
-    // bottleneck = nejmenší current_index, ale jen kde weight > 0 (aktivní uzly)
     const weighted = data.filter(row => row.weight > 0);
     const bottleneck = weighted.length > 0
       ? weighted.sort((a, b) => a.current_index - b.current_index)[0]
       : null;
 
-    return {
+    const result = {
       score: Math.round(score * 10) / 10,
       bottleneck: bottleneck ? bottleneck.node_id : null,
       bottleneck_index: bottleneck ? bottleneck.current_index : null
     };
+
+    console.log("🔋 Battery result:", result);  // ← PŘIDEJ
+    return result;
+
   } catch (err) {
     console.error('❌ Battery load failed:', err);
     return { score: 0, bottleneck: null, bottleneck_index: null };
   }
 }
+
 export function closePanel() {
   if (panelEl) {
     panelEl.classList.remove("open", "visible");
@@ -665,13 +673,12 @@ async function showGameOfLife(node) {
   metricCard.innerHTML = `
     <div style="font-size:11px; color:#94a3b8; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">Stav baterie</div>
     <div style="display:flex; align-items:baseline; gap:5px;">
-      <span style="font-size:32px; font-weight:600;">${String(battery.score).replace('.', ',')}</span>
+      <span style="font-size:32px; font-weight:600;">${String(battery.score / 10).replace('.', ',')}</span>
       <span style="font-size:32px; font-weight:600; opacity:0.8;">%</span>
     </div>
     <div style="height:6px; background:rgba(0,0,0,0.3); border-radius:3px; margin-top:12px; overflow:hidden;">
-      <div style="width:${battery.score}%; height:100%; background:#06b6d4; box-shadow:0 0 8px #06b6d4aa; transition:width 0.8s ease;"></div>
+      <div style="width:${battery.score / 10}%; height:100%; background:#06b6d4; box-shadow:0 0 8px #06b6d4aa; transition:width 0.8s ease;"></div>
     </div>
-    
   `;
 
   // 3. Zobraz panel
@@ -720,24 +727,3 @@ export async function updateRecommendations() {
         </li>
     `).join('');
 }
-
-// Uvnitř tvého scriptu (app.js nebo v index.html)
-export function startOnboarding() {
-  const modal = document.getElementById('mediaModal');
-  const content = document.getElementById('modalContent');
-
-  if (modal) {
-    modal.classList.remove('hidden');
-    modal.style.display = 'block';
-
-    // Důležité: spustíme první krok dotazníku
-    if (typeof renderOnboardingStep === "function") {
-      renderOnboardingStep(0);
-    } else {
-      console.error("Chyba: Funkce renderOnboardingStep nebyla nalezena!");
-    }
-  }
-}
-
-// TÍMTO JI ZPŘÍSTUPNÍŠ PRO HTML ONCLICK
-window.startOnboarding = startOnboarding;
