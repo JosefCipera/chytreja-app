@@ -9,35 +9,48 @@ const panelHeader = document.querySelector("#sidePanel .panel-header");
 async function loadBatteryScore() {
   try {
     const userId = window.firebaseAuth?.currentUser?.uid || 'demo-user-123';
-    console.log("🔋 Loading battery for user:", userId);  // ← PŘIDEJ
+    console.log("🔋 Loading battery for user:", userId);
 
-    const { data, error } = await window.supabaseClient
-      .from('v_vitality_dashboard')
-      .select('node_id, current_index, contribution, weight')
+    // Get dlouhovekost (root) node value directly
+    const { data: rootNode, error } = await window.supabaseClient
+      .from('user_metrics')
+      .select('current_index')
       .eq('user_id', userId)
-      .eq('universe', 'longevity');
+      .eq('universe', 'longevity')
+      .eq('node_id', 'dlouhovekost')
+      .single();
 
-    console.log("🔋 Dashboard data:", { data, error, count: data?.length });  // ← PŘIDEJ
+    console.log("🔋 Root node data:", { rootNode, error });
 
     if (error) throw error;
-    if (!data || data.length === 0) {
-      console.log("⚠️ No dashboard data found");  // ← PŘIDEJ
+    if (!rootNode) {
+      console.log("⚠️ No root node found");
       return { score: 0, bottleneck: null };
     }
 
-    const score = data.reduce((sum, row) => sum + (row.contribution || 0), 0);
-    const weighted = data.filter(row => row.weight > 0);
-    const bottleneck = weighted.length > 0
-      ? weighted.sort((a, b) => a.current_index - b.current_index)[0]
+    // Get bottleneck from decathlon nodes
+    const { data: decathlonNodes } = await window.supabaseClient
+      .from('user_metrics')
+      .select('node_id, current_index')
+      .eq('user_id', userId)
+      .eq('universe', 'longevity')
+      .in('node_id', [
+        'stabilita', 'sila', 'vytrvalost', 'mobilita',
+        'spanek', 'nervovy_system', 'metabolicke',
+        'bílkoviny', 'klid', 'smysl', 'vo2max'
+      ]);
+
+    const bottleneck = decathlonNodes && decathlonNodes.length > 0
+      ? decathlonNodes.sort((a, b) => a.current_index - b.current_index)[0]
       : null;
 
     const result = {
-      score: Math.round(score * 10) / 10,
+      score: Math.round(rootNode.current_index * 10) / 10,
       bottleneck: bottleneck ? bottleneck.node_id : null,
       bottleneck_index: bottleneck ? bottleneck.current_index : null
     };
 
-    console.log("🔋 Battery result:", result);  // ← PŘIDEJ
+    console.log("🔋 Battery result:", result);
     return result;
 
   } catch (err) {
@@ -673,11 +686,11 @@ async function showGameOfLife(node) {
   metricCard.innerHTML = `
     <div style="font-size:11px; color:#94a3b8; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">Stav baterie</div>
     <div style="display:flex; align-items:baseline; gap:5px;">
-      <span style="font-size:32px; font-weight:600;">${String(battery.score / 10).replace('.', ',')}</span>
+      <span style="font-size:32px; font-weight:600;">${String(battery.score).replace('.', ',')}</span>
       <span style="font-size:32px; font-weight:600; opacity:0.8;">%</span>
     </div>
     <div style="height:6px; background:rgba(0,0,0,0.3); border-radius:3px; margin-top:12px; overflow:hidden;">
-      <div style="width:${battery.score / 10}%; height:100%; background:#06b6d4; box-shadow:0 0 8px #06b6d4aa; transition:width 0.8s ease;"></div>
+      <div style="width:${battery.score}%; height:100%; background:#06b6d4; box-shadow:0 0 8px #06b6d4aa; transition:width 0.8s ease;"></div>
     </div>
   `;
 

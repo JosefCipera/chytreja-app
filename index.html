@@ -172,40 +172,49 @@
         };
         onAuthStateChanged(auth, async (user) => {
             if (user) {
-                console.log("✅ User logged in:", user.email, user.uid);
+                console.log("✅ Firebase User:", user.email);
 
                 try {
-                    const { data, error: selectError } = await sb.from('user_profiles').select('*').eq('user_id', user.uid).single();
-
-                    if (selectError) console.log("Profile check:", selectError.message);
+                    // Kontrola profilu v Supabase
+                    const { data, error: selectError } = await sb
+                        .from('user_profiles')
+                        .select('*')
+                        .eq('user_id', user.uid)
+                        .maybeSingle();
 
                     if (!data) {
-                        console.log("🆕 Creating Supabase profile...");
-                        const { data: insertData, error: insertError } = await sb
+                        console.log("🆕 Profil nenalezen, zkouším INSERT...");
+                        const { error: insertError } = await sb
                             .from('user_profiles')
-                            .insert({
+                            .insert([{
                                 user_id: user.uid,
                                 age: 45,
                                 gender: 'male',
                                 primary_goal: 'longevity'
-                            })
-                            .select();
+                            }]);
 
                         if (insertError) {
-                            console.error("❌ Insert failed:", insertError);
+                            console.error("❌ INSERT CHYBA:", insertError.message);
                         } else {
-                            console.log("✅ Profile created!", insertData);
+                            console.log("✅ INSERT OK!");
                         }
-
-                        await new Promise(resolve => setTimeout(resolve, 500));
+                    } else {
+                        console.log("👋 Profil už existuje.");
                     }
                 } catch (err) {
-                    console.error("❌ Supabase error:", err);
+                    console.error("❌ Kritická chyba:", err);
                 }
 
-                console.log("→ Redirecting to /app/");
-                //  debugger;   ← PŘIDEJ TOHLE - zastaví execution
+
+                console.log("🛑 ZASTAVENO DEBUGGEREM. Zkontroluj konzoli a Supabase tabulku.");
+                console.log("Pro pokračování stiskni F8 nebo tlačítko Play v záložce Sources.");
+
+                // debugger; // Tady se prohlížeč úplně zastaví
+
+                // --- PŘESMĚROVÁNÍ ---
+                console.log("🚀 Pokračuji v přesměrování...");
                 window.location.href = "/app/";
+
             } else {
                 showView('login');
             }

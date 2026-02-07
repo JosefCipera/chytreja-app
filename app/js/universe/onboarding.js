@@ -10,7 +10,8 @@ export const onboardingQuestions = [
   { id: 'klid', q: 'Jak zvládáte stresové situace (1-10)?', desc: 'Kortizol ničí imunitu.', weight: 1 },
   { id: 'mobilita', q: 'Dotknete se s nataženýma nohama dlaněmi země?', desc: 'Pružnost těla = pružnost cév.', weight: 1 },
   { id: 'nervovy_system', q: 'Jak vnímáte svou paměť a soustředění?', desc: 'Kognitivní rezerva proti Alzheimeru.', weight: 1 },
-  { id: 'smysl', q: 'Máte jasný důvod, proč ráno vstát z postele?', desc: 'Psychologie přímo ovlivňuje zánět v těle.', weight: 1 }
+  { id: 'smysl', q: 'Máte jasný důvod, proč ráno vstát z postele?', desc: 'Psychologie přímo ovlivňuje zánět v těle.', weight: 1 },
+  { id: 'vo2max', q: 'Jak se cítíte po 4 patrech schodů?', desc: 'VO2 Max je klíč k délce života.', weight: 1 }
 ];
 
 let currentStep = 0;
