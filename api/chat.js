@@ -129,14 +129,15 @@ OBLAST:
 ${node.label}
 
 STAV:
-${node.state}
+${node.state || context?.state || 'UNKNOWN'}
 
-TREND:
-${node.trend}
-
-KONTEXT:
-Součást hodnocení dlouhodobé funkčnosti a soběstačnosti.
-
+${context ? `
+CELKOVÝ ZDRAVOTNÍ PROFIL:
+- ${context.redCount} oblastí potřebuje pozornost (RED)
+- ${context.yellowCount} oblastí je na hraně (YELLOW)
+- ${context.greenCount} oblastí je v pořádku (GREEN)
+${context.bottleneck ? `- Největší riziko: ${context.bottleneck}` : ''}
+` : ''}
 ${userQuestion ? `DOTAZ UŽIVATELE:\n"${userQuestion}"` : ""}
 
 ${userQuestion ? `\n---\nUŽIVATEL SE PTÁ:\n"${userQuestion}"` : ''}

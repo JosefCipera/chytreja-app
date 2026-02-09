@@ -587,6 +587,61 @@ async function renderTrendSparkline(userId, nodeId) {
 
   return `<svg width="100%" height="50" viewBox="0 0 100 100" preserveAspectRatio="none" style="display:block;"><rect x="0" y="0" width="100" height="33" fill="#22c55e" opacity="0.05"/><rect x="0" y="33" width="100" height="34" fill="#eab308" opacity="0.05"/><rect x="0" y="67" width="100" height="33" fill="#ef4444" opacity="0.05"/><polyline points="${points.join(' ')}" fill="none" stroke="${trendColor}" stroke-width="6" opacity="0.2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="${points.join(' ')}" fill="none" stroke="${trendColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="${points[points.length - 1].split(',')[0]}" cy="${points[points.length - 1].split(',')[1]}" r="2" fill="${trendColor}"/></svg><div style="display:flex;align-items:center;gap:8px;margin-top:8px;"><span style="font-size:18px;">${arrow}</span><span style="color:${trendColor};font-size:13px;font-weight:500;">${trendText}</span><span style="color:#64748b;font-size:12px;margin-left:auto;">${data.length} dní</span></div>`;
 }
+// =====================================================
+// CHJ VERDICT GENERATION (OpenAI)
+// =====================================================
+
+async function generateVerdict(node, userId) {
+  try {
+    console.log("🤖 Calling CHJ API for node:", node.id);
+
+    const { data: metrics } = await window.supabaseClient
+      .from('user_metrics')
+      .select('node_id, state, current_index')
+      .eq('user_id', userId)
+      .eq('universe', 'longevity');
+
+    console.log("📊 Metrics loaded:", metrics?.length);
+
+    if (!metrics || metrics.length === 0) {
+      return { text: 'Zatím nemám dost dat.' };
+    }
+
+    const bottleneck = metrics.filter(m => m.state === 'RED').sort((a, b) => a.current_index - b.current_index)[0];
+    const redCount = metrics.filter(m => m.state === 'RED').length;
+    const yellowCount = metrics.filter(m => m.state === 'YELLOW').length;
+    const greenCount = metrics.filter(m => m.state === 'GREEN').length;
+
+    const payload = {
+      nodeId: node.id,
+      userQuestion: null,
+      context: { state: node.state, redCount, yellowCount, greenCount, bottleneck: bottleneck?.node_id }
+    };
+
+    console.log("📤 API request:", payload);
+
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    console.log("📥 API response status:", response.status);
+
+    const data = await response.json();
+    console.log("📥 API response data:", data);
+
+    if (data.verdict) {
+      return { text: data.verdict };
+    } else {
+      throw new Error('No verdict in response');
+    }
+
+  } catch (err) {
+    console.error('❌ CHJ verdict failed:', err);
+    return { text: 'Chyba při komunikaci s AI.' };
+  }
+}
 
 async function showGameOfLife(node) {
   const userId = window.firebaseAuth?.currentUser?.uid || 'demo-user-123';
