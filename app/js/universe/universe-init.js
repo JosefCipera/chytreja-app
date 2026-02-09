@@ -47,12 +47,14 @@ async function populateModelSelector() {
   const index = window.UNIVERSE_INDEX;
   if (!index) return;
 
-  Object.entries(index).forEach(([key, cfg]) => {
-    const opt = document.createElement("option");
-    opt.value = key;
-    opt.textContent = cfg.label || key;
-    select.appendChild(opt);
-  });
+  Object.entries(index)
+    .filter(([key]) => key === 'longevity') // ← PŘIDEJ (jen longevity)
+    .forEach(([key, cfg]) => {
+      const opt = document.createElement("option");
+      opt.value = key;
+      opt.textContent = cfg.label || key;
+      select.appendChild(opt);
+    });
 }
 
 // =====================================================
@@ -80,6 +82,11 @@ async function populateModelSelector() {
 // 4) LOAD MODEL + RENDER
 // =====================================================
 async function loadAndRenderModel(modelName, role) {
+  // ✅ PŘIDEJ guard:
+  if (modelName !== 'longevity') {
+    console.warn(`⚠️ Model ${modelName} není podporován, fallback na longevity`);
+    modelName = 'longevity';
+  }
   window.CURRENT_MODEL = modelName;
 
   console.log(`🔄 Loading model: ${modelName}`);
@@ -324,6 +331,11 @@ async function applyAccessModel(role, model, modelName) {
 // 8) RENDER VISIBLE UNIVERSE
 // =====================================================
 function renderVisibleUniverse(model) {
+  if (!model || !Array.isArray(model)) {
+    console.error("❌ Invalid model data");
+    return;
+  }
+
   const visible = model.filter(n => n.access !== "hidden");
 
   console.log("🔍 Visible nodes with state:", visible.filter(n => n.state).length); // ← PŘIDEJ
