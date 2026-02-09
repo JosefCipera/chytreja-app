@@ -668,7 +668,6 @@ async function showGameOfLife(node) {
     box-shadow: 0 4px 15px #06b6d411;
   `;
 
-  // Skeleton placeholder
   metricCard.innerHTML = `
     <div style="font-size:11px; color:#94a3b8; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">Trend (30 dní)</div>
     <div style="height:80px; background:rgba(255,255,255,0.05); border-radius:8px; animation:pulse 1.5s ease-in-out infinite;"></div>
@@ -689,6 +688,36 @@ async function showGameOfLife(node) {
       <div style="font-size:11px; color:#94a3b8; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">Trend (30 dní)</div>
       ${sparkline}
     `;
+  });
+
+  // ✅ 4. CHJ KARTA (NOVÉ)
+  const chjCard = document.createElement('div');
+  chjCard.className = 'chj-card';
+  chjCard.style.cssText = `
+    background: #0f172a;
+    border: 1px solid #1e293b;
+    border-radius: 12px;
+    padding: 20px;
+    margin: 15px 0;
+    color: #fff;
+  `;
+
+  chjCard.innerHTML = `
+    <h3 style="display:flex; align-items:center; gap:10px; margin:0 0 15px 0; color:#83B0E3; font-size:18px;">
+      🧠 Chytré já
+    </h3>
+    <div class="chj-message" style="color:#cbd5e1; font-size:15px; line-height:1.6; margin-bottom:15px;">
+      Načítám diagnózu...
+    </div>
+  `;
+
+  metricCard.after(chjCard);
+
+  // 5. Generate verdict
+  console.log("🤖 Calling generateVerdict for:", node.id);
+  generateVerdict(node, userId).then(verdict => {
+    console.log("✅ Verdict received:", verdict);
+    chjCard.querySelector('.chj-message').innerHTML = verdict.text;
   });
 }
 
