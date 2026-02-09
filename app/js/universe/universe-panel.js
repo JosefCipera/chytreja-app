@@ -95,138 +95,27 @@ function resetPanel() {
 
 export async function showPanel(node) {
   if (!panelEl) return;
+
+  // Disable transitions
+  panelEl.style.transition = "none";
+  panelEl.style.visibility = "hidden";
+  panelEl.classList.remove("open", "visible");
+
   resetPanel();
+  showGameOfLife(node);
 
-  if (node.id === 'dlouhovekost') {
-    await showGameOfLife(node);
-    return;
-  }
-  const nodeColor = node.color || '#38bdf8';
-
-  if (titleEl) {
-    const icon = node.icon || "fa-solid fa-circle-nodes";
-    const color = node.color?.background || node.color || "#94a3b8";
-
-    const isEmoji = !icon.includes('fa-') && !icon.includes('icon-');
-
-    let iconHTML;
-    if (isEmoji) {
-      iconHTML = `<span style="font-size:1.4em;margin-right:8px;">${icon}</span>`;
-    } else {
-      iconHTML = `<i class="${icon}" style="color:${color};margin-right:8px;font-size:1.3em;"></i>`;
-    }
-
-    titleEl.innerHTML = `
-    ${iconHTML}
-    ${node.label || "Detail"}
-  `;
-  }
-  if (defEl) {
-    defEl.textContent = node.definition || "";
-    defEl.style.color = "#f1f5f9";
-    defEl.style.fontSize = "16px";
-    defEl.style.marginTop = "10px";
-  }
-
-  const val = node.current_index ?? 0;  // Použij ?? místo || (explicitní 0)
-  const metricCard = document.createElement("div");
-  metricCard.className = "metric-card";
-  metricCard.style.cssText = `
-    background: ${nodeColor}15; 
-    border: 1px solid ${nodeColor}33; 
-    border-radius: 12px; 
-    padding: 20px; 
-    margin: 15px 0; 
-    color: #fff;
-    box-shadow: 0 4px 15px ${nodeColor}11;
-  `;
-  metricCard.innerHTML = `
-    <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">Index připravenosti</div>
-    <div style="display: flex; align-items: baseline; gap: 5px;">
-      <span style="font-size: 32px; font-weight: 600;">${val}</span>
-      <span style="font-size: 32px; font-weight: 600; opacity: 0.8;">%</span>
-    </div>
-    <div style="height: 6px; background: rgba(0, 0, 0, 0.3); border-radius: 3px; margin-top: 12px; overflow: hidden;">
-      <div style="width: ${val}%; height: 100%; background: ${nodeColor}; box-shadow: 0 0 8px ${nodeColor}aa; transition: width 1s ease;"></div>
-    </div>
-  `;
-  if (panelHeader) panelHeader.after(metricCard);
-
-  const existingHeaders = panelEl.querySelectorAll('h3, .panel-section-title, b');
-  existingHeaders.forEach(header => {
-    const text = header.textContent.toLowerCase();
-    if (text.includes("chytré já") || text.includes("úkoly") || text.includes("zdroje") || text.includes("myšlenky") || text.includes("strategie")) {
-      header.style.fontSize = "22px";
-      header.style.fontWeight = "600";
-      header.style.color = "#83B0E3";
-      header.style.display = "flex";
-      header.style.alignItems = "center";
-      header.style.gap = "10px";
-      header.style.marginTop = "20px";
-      header.style.marginBottom = "15px";
-    }
-  });
-
+  // Show instantly (bez slide)
   panelEl.style.display = "block";
-  setTimeout(() => {
-    panelEl.classList.add("open", "visible");
-    document.body.classList.add("panel-open");
+  panelEl.style.visibility = "visible";
+  panelEl.classList.add("open", "visible");
+  document.body.classList.add("panel-open");
 
-    if (window.setAIContext) {
-      window.setAIContext(node.id);
-    }
-
-    if (window.showInitialVerdict) {
-      window.showInitialVerdict();
-      const input = document.getElementById("aiPanelInput");
-      const sendBtn = document.getElementById("ai-send");
-
-      const sendMessage = () => {
-        if (!input) return;
-        const value = input.value.trim();
-        if (!value) return;
-
-        window.showAIDiagnosis(value, "user");
-        window.handleAIReply(value);
-        input.value = "";
-      };
-
-      if (input) {
-        input.onkeydown = null;
-        input.onkeydown = (e) => {
-          if (e.key === "Enter") {
-            e.preventDefault();
-            sendMessage();
-          }
-        };
-      }
-
-      if (sendBtn) {
-        sendBtn.onclick = null;
-        sendBtn.onclick = () => {
-          sendMessage();
-        };
-      }
-
-    }
-
-    window.__pendingTasks = [
-      "Klidná chůze v zóně 2 (30–45 min)\nBez tlaku. Jen pohyb, který tě drží stabilního.",
-      "Krátké dechové cvičení (5–10 min)\nKdyž není čas na chůzi, tohle stačí."
-    ];
-
-    if (window.__pendingTasks && window.setTasks) {
-      window.setTasks(window.__pendingTasks);
-    }
-    if (window.setResources) {
-      window.setResources([
-        "Proč funguje klidná chůze v zóně 2",
-        "Dech a stabilita nervového systému"
-      ]);
-    }
-    loadNodeResources(node);
-  }, 10);
+  // Re-enable transitions (pro close animaci)
+  requestAnimationFrame(() => {
+    panelEl.style.transition = "";
+  });
 }
+
 window.setTasks = function (tasks) {
   const section = document.getElementById("tasksSection");
   const list = document.getElementById("tasksList");
@@ -656,49 +545,98 @@ styleSheet.textContent = `
 `;
 document.head.appendChild(styleSheet);
 
+
+// =====================================================
+// TREND SPARKLINE - SVG LINE CHART
+// =====================================================
+
+async function renderTrendSparkline(userId, nodeId) {
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  const dateFilter = thirtyDaysAgo.toISOString().split('T')[0];
+
+  const { data, error } = await window.supabaseClient
+    .from('node_state_history')
+    .select('date, state')
+    .eq('user_id', userId)
+    .eq('node_id', nodeId)
+    .gte('date', dateFilter)
+    .order('date', { ascending: true });
+
+  if (error) console.error('Trend error:', error);
+  if (!data || data.length === 0) {
+    return '<div style="color:#64748b; font-size:13px; padding:20px 0;">Zatím není trend</div>';
+  }
+
+  const points = data.map((d, i) => {
+    const x = (i / (data.length - 1)) * 100;
+    const y = d.state === 'GREEN' ? 20 : d.state === 'YELLOW' ? 50 : 80;
+    return `${x},${y}`;
+  });
+
+  const recent = data.slice(-7);
+  const recentGreen = recent.filter(d => d.state === 'GREEN').length;
+  const recentRed = recent.filter(d => d.state === 'RED').length;
+
+  let arrow = '→', trendText = 'Stabilní', trendColor = '#eab308';
+  if (recentGreen > recentRed + 2) {
+    arrow = '↗️'; trendText = 'Zlepšení'; trendColor = '#22c55e';
+  } else if (recentRed > recentGreen + 2) {
+    arrow = '↘️'; trendText = 'Zhoršení'; trendColor = '#ef4444';
+  }
+
+  return `<svg width="100%" height="50" viewBox="0 0 100 100" preserveAspectRatio="none" style="display:block;"><rect x="0" y="0" width="100" height="33" fill="#22c55e" opacity="0.05"/><rect x="0" y="33" width="100" height="34" fill="#eab308" opacity="0.05"/><rect x="0" y="67" width="100" height="33" fill="#ef4444" opacity="0.05"/><polyline points="${points.join(' ')}" fill="none" stroke="${trendColor}" stroke-width="6" opacity="0.2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="${points.join(' ')}" fill="none" stroke="${trendColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="${points[points.length - 1].split(',')[0]}" cy="${points[points.length - 1].split(',')[1]}" r="2" fill="${trendColor}"/></svg><div style="display:flex;align-items:center;gap:8px;margin-top:8px;"><span style="font-size:18px;">${arrow}</span><span style="color:${trendColor};font-size:13px;font-weight:500;">${trendText}</span><span style="color:#64748b;font-size:12px;margin-left:auto;">${data.length} dní</span></div>`;
+}
+
 async function showGameOfLife(node) {
-  const battery = await loadBatteryScore();
+  const userId = window.firebaseAuth?.currentUser?.uid || 'demo-user-123';
 
   // 1. Nadpis
   const titleEl = document.getElementById('nodeTitle');
   if (titleEl) {
-    titleEl.innerHTML = `<span style="font-size:1.4em;margin-right:8px;">🔋</span>Stoletý desetibojař`;
+    titleEl.innerHTML = `<span style="font-size:1.4em;margin-right:8px;">🏋️</span>${node.label || 'Stoletý desetibojař'}`;
   }
 
-  // 2. Karta baterie
+  // 2. Vytvoř kartu s skeleton loader
   let metricCard = document.querySelector('.metric-card');
-  if (!metricCard) {
-    metricCard = document.createElement('div');
-    metricCard.className = 'metric-card';
-    metricCard.style.cssText = `
-      background: #06b6d415; 
-      border: 1px solid #06b6d433; 
-      border-radius: 12px; 
-      padding: 20px; 
-      margin: 15px 0; 
-      color: #fff;
-      box-shadow: 0 4px 15px #06b6d411;
-    `;
-    const panelHeader = document.querySelector('.panel-header');
-    if (panelHeader) panelHeader.after(metricCard);
-  }
+  if (metricCard) metricCard.remove();
 
-  metricCard.innerHTML = `
-    <div style="font-size:11px; color:#94a3b8; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">Stav baterie</div>
-    <div style="display:flex; align-items:baseline; gap:5px;">
-      <span style="font-size:32px; font-weight:600;">${String(battery.score).replace('.', ',')}</span>
-      <span style="font-size:32px; font-weight:600; opacity:0.8;">%</span>
-    </div>
-    <div style="height:6px; background:rgba(0,0,0,0.3); border-radius:3px; margin-top:12px; overflow:hidden;">
-      <div style="width:${battery.score}%; height:100%; background:#06b6d4; box-shadow:0 0 8px #06b6d4aa; transition:width 0.8s ease;"></div>
-    </div>
+  metricCard = document.createElement('div');
+  metricCard.className = 'metric-card';
+  metricCard.style.cssText = `
+    background: #06b6d415; 
+    border: 1px solid #06b6d433; 
+    border-radius: 12px; 
+    padding: 20px; 
+    margin: 15px 0; 
+    color: #fff;
+    box-shadow: 0 4px 15px #06b6d411;
   `;
 
-  // 3. Zobraz panel
-  panelEl.style.display = "block";
-  panelEl.classList.add("open", "visible");
-  document.body.classList.add("panel-open");
+  // Skeleton placeholder
+  metricCard.innerHTML = `
+    <div style="font-size:11px; color:#94a3b8; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">Trend (30 dní)</div>
+    <div style="height:80px; background:rgba(255,255,255,0.05); border-radius:8px; animation:pulse 1.5s ease-in-out infinite;"></div>
+    <style>
+      @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.4; }
+      }
+    </style>
+  `;
+
+  const panelHeader = document.querySelector('.panel-header');
+  if (panelHeader) panelHeader.after(metricCard);
+
+  // 3. Načti sparkline async
+  renderTrendSparkline(userId, node.id).then(sparkline => {
+    metricCard.innerHTML = `
+      <div style="font-size:11px; color:#94a3b8; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">Trend (30 dní)</div>
+      ${sparkline}
+    `;
+  });
 }
+
 export async function updateRecommendations() {
   const valuesContainer = document.querySelector('#resourcesList'); // Používáme tvé ID
   if (!valuesContainer) return;

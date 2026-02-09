@@ -16,14 +16,12 @@ let lastRenderedNodes = [];
 
 // 🌌 Vykreslení hlavní nebo podsítě
 export function renderUniverse(DATA, subset = null, forcedMainId = null) {
-
+  console.log("🔧 renderUniverse()");
   const nodes = [];
   const edges = [];
   const seen = new Set();
   const source = subset || DATA;
-  console.log("🔧 renderUniverse()"); // ← OK tady
-  console.log("Received nodes:", source.length); // ← OK tady
-  console.log("First node:", source[0]); // ← OK tady
+
   // 🧼 znič předchozí síť
   if (network && typeof network.destroy === "function") {
     network.destroy();
@@ -145,19 +143,10 @@ export function renderUniverse(DATA, subset = null, forcedMainId = null) {
 // === Pomocné funkce ===
 
 function makeNode(it, isMain) {
-  console.log(`🎨 makeNode: ${it.id}, state: ${it.state}`); // ← PŘIDEJ
-  // Semafor barvy podle state
-  const stateColors = {
-    'GREEN': '#22c55e',
-    'YELLOW': '#eab308',
-    'RED': '#ef4444',
-    'GRAY': '#64748b'
-  };
-
-  // Použij state color pokud existuje, jinak fallback
-  const baseColor = stateColors[it.state] ||
-    (typeof it.color === "string" ? it.color : (it.color && it.color.background)) ||
-    "#1e293b";
+  const baseColor =
+    (typeof it.color === "string"
+      ? it.color
+      : (it.color && it.color.background)) || "#1e293b";
 
   const borderColor =
     (typeof it.color === "object" && it.color && it.color.border)

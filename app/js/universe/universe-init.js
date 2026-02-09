@@ -138,7 +138,25 @@ async function loadModel(modelName) {
 
       if (metricsError) throw metricsError;
       console.log(`   ✓ Metrics: ${metrics.length}`);
+      // ✅ PŘIDEJ — vytvoř mapu node_id → state
+      const metricsMap = new Map(metrics.map(m => [m.node_id, m]));
+      console.log("📊 Metrics map:", metricsMap); // ← PŘIDEJ
 
+      // ✅ PŘIDEJ — merge state do nodes
+      nodes.forEach(node => {
+        const metric = metricsMap.get(node.id);
+        node.state = metric?.state || 'GRAY'; // ← TOHLE PŘIDÁ STATE!
+        node.current_index = metric?.current_index ?? 0;
+        node.target_index = metric?.target_index ?? 100;
+      });
+
+      console.log("✅ Merged state into nodes");
+
+      window.MAIN_UNIVERSE_DATA = nodes; // ← PŘESUŇ SEM (dovnitř try bloku)
+      console.log("🔍 CHECK MERGE:");
+      console.log("Total nodes:", window.MAIN_UNIVERSE_DATA.length);
+      console.log("Nodes with state:", window.MAIN_UNIVERSE_DATA.filter(n => n.state).length);
+      console.log("Sample node:", window.MAIN_UNIVERSE_DATA.find(n => n.id === 'mysl'));
       // Check if user is new (no metrics data)
       if (!metrics || metrics.length === 0) {
         console.log("🆕 New user detected - all nodes will have current_index = 0");
@@ -168,7 +186,7 @@ async function loadModel(modelName) {
 
       console.log('⏳ Merging data...');
 
-      const metricsMap = new Map(metrics?.map(m => [m.node_id, m]) || []);
+      // const metricsMap = new Map(metrics?.map(m => [m.node_id, m]) || []);
       const articlesMap = new Map();
       const mediaMap = new Map();
       const docsMap = new Map();
@@ -201,6 +219,8 @@ async function loadModel(modelName) {
           icon: node.icon,
           definition: node.definition,
           color: node.color,
+
+          state: node.state, // ← PŘIDEJ TOHLE!
 
           current_index: metric?.current_index ?? 0,  // Use ?? for explicit 0
           target_index: metric?.target_index ?? 100,
@@ -235,7 +255,7 @@ async function loadModel(modelName) {
       return [];
     }
   }
-
+  renderVisibleUniverse(window.MAIN_UNIVERSE_DATA);
   // ========================================
   // B) JSON MODE (fallback)
   // ========================================
@@ -306,17 +326,14 @@ async function applyAccessModel(role, model, modelName) {
 function renderVisibleUniverse(model) {
   const visible = model.filter(n => n.access !== "hidden");
 
+  console.log("🔍 Visible nodes with state:", visible.filter(n => n.state).length); // ← PŘIDEJ
+  console.log("Sample visible:", visible[0]); // ← PŘIDEJ
+
   const main = visible.find(n => !n.parent) || visible[0];
-  const firstLevel = visible.filter(
-    n => n.id === main.id || n.parent === main.id
-  );
+  const firstLevel = visible.filter(n => n.id === main.id || n.parent === main.id);
 
-  if (window.UNIVERSE_NETWORK) {
-    window.UNIVERSE_NETWORK.destroy();
-    window.UNIVERSE_NETWORK = null;
-  }
+  console.log("First level sample:", firstLevel[0]); // ← PŘIDEJ
 
-  console.log("🚀 Rendering:", firstLevel.length, "nodes (first level)");
   renderUniverse(visible, firstLevel, main.id);
 }
 
