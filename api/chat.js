@@ -24,6 +24,12 @@ export default async function (req, res) {
       return res.status(405).json({ error: "Only POST allowed" });
     }
 
+    const { nodeId, userQuestion } = req.body;
+
+    if (!nodeId) {
+      return res.status(400).json({ error: "nodeId missing" });
+    }
+
     // 🔌 AI feature flag
     const AI_ENABLED = process.env.AI_ENABLED === "true";
 
@@ -32,12 +38,6 @@ export default async function (req, res) {
       return res.status(200).json({
         verdict: "🤖 AI je dočasně vypnutá (test režim)."
       });
-    }
-
-    const { nodeId, userQuestion } = req.body;
-
-    if (!nodeId) {
-      return res.status(400).json({ error: "nodeId missing" });
     }
 
     // 2️⃣ Načtení uzlu z VIEW
