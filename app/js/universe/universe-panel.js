@@ -591,7 +591,7 @@ async function renderTrendSparkline(userId, nodeId) {
 // CHJ VERDICT GENERATION (OpenAI)
 // =====================================================
 
-async function generateVerdict(node, userId) {
+async function generateVerdictV2(node, userId) {
   try {
     console.log("🤖 Calling CHJ API for node:", node.id);
 
@@ -604,6 +604,7 @@ async function generateVerdict(node, userId) {
     console.log("📊 Metrics loaded:", metrics?.length);
 
     if (!metrics || metrics.length === 0) {
+      console.log("⚠️ Returning: No data"); // ← LOG
       return { text: 'Zatím nemám dost dat.' };
     }
 
@@ -626,21 +627,22 @@ async function generateVerdict(node, userId) {
       body: JSON.stringify(payload)
     });
 
-    console.log("📥 API response status:", response.status);
-
-    // ✅ PŘIDEJ debug
     const text = await response.text();
     console.log("📥 Raw response:", text);
 
     if (!response.ok) {
-      throw new Error(`API error ${response.status}: ${text}`);
+      return { text: `API error ${response.status}` };
     }
 
-    const data = JSON.parse(text); // ← místo response.json()
-    console.log("📥 API response data:", data);
+    const data = JSON.parse(text);
+
+    // ✅ INLINE RETURN (bez if)
+    const verdict = data?.verdict || 'API nevrátilo platnou odpověď.';
+    console.log("✅ Returning:", verdict);
+    return { text: verdict };
 
   } catch (err) {
-    console.error('❌ CHJ verdict failed:', err);
+    console.error('❌ Error:', err);
     return { text: 'Chyba při komunikaci s AI.' };
   }
 }
@@ -716,10 +718,23 @@ async function showGameOfLife(node) {
   metricCard.after(chjCard);
 
   // 5. Generate verdict
-  console.log("🤖 Calling generateVerdict for:", node.id);
-  generateVerdict(node, userId).then(verdict => {
+  console.log("🤖 Calling generateVerdictV2 for:", node.id);
+  generateVerdictV2(node, userId).then(verdict => {
     console.log("✅ Verdict received:", verdict);
-    chjCard.querySelector('.chj-message').innerHTML = verdict.text;
+
+    const messageEl = chjCard.querySelector('.chj-message');
+    if (verdict && verdict.text) {
+      messageEl.innerHTML = verdict.text;
+    } else {
+      console.error("Invalid verdict:", verdict);
+      messageEl.innerHTML = 'Chyba: Nepodařilo se načíst diagnózu.';
+    }
+  }).catch(err => {
+    console.error("Generate verdict error:", err);
+    const messageEl = chjCard.querySelector('.chj-message');
+    if (messageEl) {
+      messageEl.innerHTML = 'Chyba při komunikaci s AI.';
+    }
   });
 }
 
