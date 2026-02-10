@@ -24,7 +24,7 @@ export default async function (req, res) {
       return res.status(405).json({ error: "Only POST allowed" });
     }
 
-    const { nodeId, userQuestion } = req.body;
+    const { nodeId, userQuestion, context } = req.body; // ← PŘIDEJ context
 
     if (!nodeId) {
       return res.status(400).json({ error: "nodeId missing" });
