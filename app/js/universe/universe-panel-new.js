@@ -588,6 +588,7 @@ async function renderTrendSparkline(userId, nodeId) {
   return `<svg width="100%" height="50" viewBox="0 0 100 100" preserveAspectRatio="none" style="display:block;"><rect x="0" y="0" width="100" height="33" fill="#22c55e" opacity="0.05"/><rect x="0" y="33" width="100" height="34" fill="#eab308" opacity="0.05"/><rect x="0" y="67" width="100" height="33" fill="#ef4444" opacity="0.05"/><polyline points="${points.join(' ')}" fill="none" stroke="${trendColor}" stroke-width="6" opacity="0.2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="${points.join(' ')}" fill="none" stroke="${trendColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="${points[points.length - 1].split(',')[0]}" cy="${points[points.length - 1].split(',')[1]}" r="2" fill="${trendColor}"/></svg><div style="display:flex;align-items:center;gap:8px;margin-top:8px;"><span style="font-size:18px;">${arrow}</span><span style="color:${trendColor};font-size:13px;font-weight:500;">${trendText}</span><span style="color:#64748b;font-size:12px;margin-left:auto;">${data.length} dní</span></div>`;
 }
 // =====================================================
+// =====================================================
 // CHJ VERDICT GENERATION (OpenAI)
 // =====================================================
 
@@ -628,7 +629,7 @@ async function generateVerdict(node, userId) {
 
     console.log("📥 API response status:", response.status);
 
-    // ✅ PŘIDEJ debug
+    // ✅ PŘIDEJ .text() debug
     const text = await response.text();
     console.log("📥 Raw response:", text);
 
@@ -636,14 +637,24 @@ async function generateVerdict(node, userId) {
       throw new Error(`API error ${response.status}: ${text}`);
     }
 
-    const data = JSON.parse(text); // ← místo response.json()
+    const data = JSON.parse(text);
     console.log("📥 API response data:", data);
+
+    if (data.verdict) {
+      return { text: data.verdict };
+    } else {
+      throw new Error('No verdict in response');
+    }
 
   } catch (err) {
     console.error('❌ CHJ verdict failed:', err);
     return { text: 'Chyba při komunikaci s AI.' };
   }
 }
+
+// =====================================================
+// SHOW GAME OF LIFE
+// =====================================================
 
 async function showGameOfLife(node) {
   const userId = window.firebaseAuth?.currentUser?.uid || 'demo-user-123';
@@ -692,7 +703,7 @@ async function showGameOfLife(node) {
     `;
   });
 
-  // ✅ 4. CHJ KARTA (NOVÉ)
+  // 4. CHJ KARTA
   const chjCard = document.createElement('div');
   chjCard.className = 'chj-card';
   chjCard.style.cssText = `
@@ -723,18 +734,20 @@ async function showGameOfLife(node) {
   });
 }
 
+// =====================================================
+// UPDATE RECOMMENDATIONS (tvůj starý kód)
+// =====================================================
+
 export async function updateRecommendations() {
-  const valuesContainer = document.querySelector('#resourcesList'); // Používáme tvé ID
+  const valuesContainer = document.querySelector('#resourcesList');
   if (!valuesContainer) return;
 
-  // 1. Zjistíme aktuální bottleneck
-  const { data: dashboard, error } = await supabase
+  const { data: dashboard, error } = await window.supabaseClient
     .from('v_vitality_dashboard')
     .select('*')
     .eq('is_bottleneck', true)
     .single();
 
-  // Ošetření stavu, kdy uživatel nemá test (Chyba 400 nebo prázdná data)
   if (error || !dashboard) {
     valuesContainer.innerHTML = `
       <div class="onboarding-prompt" style="padding: 15px; text-align: center;">
@@ -744,8 +757,7 @@ export async function updateRecommendations() {
     return;
   }
 
-  // 2. Najdeme odpovídající materiály (např. pro 'spanek')
-  const { data: recommendations } = await supabase
+  const { data: recommendations } = await window.supabaseClient
     .from('node_media')
     .select('*')
     .eq('node_id', dashboard.node_id)
@@ -753,14 +765,13 @@ export async function updateRecommendations() {
 
   if (!recommendations || recommendations.length === 0) return;
 
-  // 3. Vykreslíme je
   valuesContainer.innerHTML = recommendations.map(item => `
-        <li class="hodnoty-item" onclick="window.location.href='medioteka.html?id=${item.id}'">
-            <div class="icon">${item.type === 'video' ? '🎥' : '🎧'}</div>
-            <div class="content">
-                <strong>${item.title}</strong>
-                <p>${item.summary}</p>
-            </div>
-        </li>
-    `).join('');
+    <li class="hodnoty-item" onclick="window.location.href='medioteka.html?id=${item.id}'">
+      <div class="icon">${item.type === 'video' ? '🎥' : '🎧'}</div>
+      <div class="content">
+        <strong>${item.title}</strong>
+        <p>${item.summary}</p>
+      </div>
+    </li>
+  `).join('');
 }
