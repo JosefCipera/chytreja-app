@@ -127,20 +127,17 @@ CÍL ODPOVĚDI:
     const USER_PROMPT = `
 OBLAST:
 ${node.label}
-const { nodeId, userQuestion, context } = req.body; // ← PŘIDEJ context destructure
+
 STAV:
 ${node.state || context?.state || 'UNKNOWN'}
 
-${context ? `
-CELKOVÝ ZDRAVOTNÍ PROFIL:
-- ${context?.redCount || 0} RED
-- ${context?.yellowCount || 0} YELLOW
-- ${context?.greenCount || 0} GREEN
-${context?.bottleneck ? `- Bottleneck: ${context.bottleneck}` : ''}
+${context ? `CELKOVÝ PROFIL:
+- ${context.redCount || 0} RED
+- ${context.yellowCount || 0} YELLOW  
+- ${context.greenCount || 0} GREEN
+${context.bottleneck ? `- Bottleneck: ${context.bottleneck}` : ''}` : ''}
 
-${userQuestion ? `DOTAZ UŽIVATELE:\n"${userQuestion}"` : ""}
-
-${userQuestion ? `\n---\nUŽIVATEL SE PTÁ:\n"${userQuestion}"` : ''}
+${userQuestion ? `DOTAZ: "${userQuestion}"` : ''}
 `.trim();
 
     // 5️⃣ OpenAI API call
