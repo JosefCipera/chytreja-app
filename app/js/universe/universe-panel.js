@@ -616,7 +616,7 @@ async function generateVerdictV2(node, userId) {
     const payload = {
       nodeId: node.id,
       userQuestion: null,
-      context: { state: node.state, redCount, yellowCount, greenCount, bottleneck: bottleneck?.node_id }
+      context: { state: node.state, userId: userId, redCount, yellowCount, greenCount, bottleneck: bottleneck?.node_id }
     };
 
     console.log("📤 API request:", payload);
@@ -695,16 +695,19 @@ async function showGameOfLife(node) {
   });
 
   // ✅ 4. CHJ KARTA (NOVÉ)
-  const chjCard = document.createElement('div');
+  let chjCard = document.querySelector('.chj-card');
+  if (chjCard) chjCard.remove();
+
+  chjCard = document.createElement('div');
   chjCard.className = 'chj-card';
   chjCard.style.cssText = `
-    background: #0f172a;
-    border: 1px solid #1e293b;
-    border-radius: 12px;
-    padding: 20px;
-    margin: 15px 0;
-    color: #fff;
-  `;
+  background: #0f172a;
+  border: 1px solid #1e293b;
+  border-radius: 12px;
+  padding: 20px;
+  margin: 15px 0;
+  color: #fff;
+`;
 
   chjCard.innerHTML = `
     <h3 style="display:flex; align-items:center; gap:10px; margin:0 0 15px 0; color:#83B0E3; font-size:18px;">

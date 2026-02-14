@@ -25,6 +25,14 @@ export default async function (req, res) {
     }
 
     const { nodeId, userQuestion, context } = req.body; // ← PŘIDEJ context
+    // ✅ PŘIDEJ bottleneck fetch
+    const { data: bottleneck } = await supabase
+      .from('user_bottlenecks')
+      .select('node_label, gap, bottleneck_score, aspiration_label')
+      .eq('user_id', context?.userId || 'demo-user-123')
+      .order('bottleneck_score', { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
     if (!nodeId) {
       return res.status(400).json({ error: "nodeId missing" });
@@ -125,9 +133,12 @@ MAX DÉLKA: 40 slov.
     // 4️⃣ USER PROMPT (kontext z DB)
     const USER_PROMPT = `
 OBLAST: ${node.label}
-STAV: ${node.state || context?.state || 'UNKNOWN'}
+STAV: ${node.state}
 ${context ? `PROFIL: ${context.redCount} RED, ${context.yellowCount} YELLOW, ${context.greenCount} GREEN` : ''}
-${context?.bottleneck ? `BOTTLENECK: ${context.bottleneck}` : ''}
+${bottleneck ? `
+CÍL: ${bottleneck.aspiration_label}
+KRITICKÝ BOD: ${bottleneck.node_label} (chybí ${(bottleneck.gap * 100).toFixed(0)}%)
+` : ''}
 ${userQuestion ? `\nDOTAZ: "${userQuestion}"` : ''}
 
 FORMÁT ODPOVĚDI:
@@ -151,9 +162,12 @@ FORMÁT ODPOVĚDI:
 
     const text = completion.choices[0].message.content;
 
+    // ✅ Formátování: přidej prázdné řádky mezi věty
+    const formatted = text.replace(/\.\s+/g, '.\n\n').trim();
+
     // 6️⃣ Odpověď + usage tracking
     return res.status(200).json({
-      verdict: text,
+      verdict: formatted,
       usage: {
         prompt_tokens: completion.usage.prompt_tokens,
         completion_tokens: completion.usage.completion_tokens,
