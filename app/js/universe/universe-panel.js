@@ -741,18 +741,18 @@ async function showGameOfLife(node) {
   metricCard.after(disciplinesCard);
 
   // Fetch disciplines
-  fetch('/api/disciplines?userId=' + userId) // ← vytvořit endpoint
+  fetch(`/api/disciplines?userId=${userId}&nodeId=${node.id}`)
     .then(r => r.json())
     .then(data => {
       const list = data.slice(0, 3).map(d => `
-      <div style="display:flex; align-items:center; gap:12px; padding:12px; background:rgba(255,255,255,0.03); border-radius:8px; margin-bottom:8px;">
-        <span style="font-size:24px;">${d.state === 'GREEN' ? '🟢' : d.state === 'YELLOW' ? '🟡' : '🔴'}</span>
-        <div>
-          <div style="font-weight:500;">${d.name}</div>
-          <div style="font-size:13px; color:#94a3b8;">${d.description}</div>
+        <div style="display:flex; align-items:center; gap:12px; padding:12px; background:rgba(255,255,255,0.03); border-radius:8px; margin-bottom:8px;">
+          <span style="font-size:24px;">${d.state === 'GREEN' ? '🟢' : d.state === 'YELLOW' ? '🟡' : '🔴'}</span>
+          <div>
+            <div style="font-weight:500;">${d.name}</div>
+            <div style="font-size:13px; color:#94a3b8;">${d.description}</div>
+          </div>
         </div>
-      </div>
-    `).join('');
+      `).join('');
       document.getElementById('disciplines-list').innerHTML = list || 'Žádné disciplíny';
     });
 
