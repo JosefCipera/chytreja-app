@@ -718,6 +718,74 @@ async function showGameOfLife(node) {
     </div>
   `;
 
+  // Po CHJ kartě, PŘED metricCard.after(chjCard):
+
+  // ✅ DISCIPLÍNY
+  const disciplinesCard = document.createElement('div');
+  disciplinesCard.className = 'disciplines-card';
+  disciplinesCard.style.cssText = `
+  background: #0f172a;
+  border: 1px solid #1e293b;
+  border-radius: 12px;
+  padding: 20px;
+  margin: 15px 0;
+`;
+
+  disciplinesCard.innerHTML = `
+  <h3 style="color:#83B0E3; font-size:18px; margin:0 0 15px 0; display:flex; align-items:center; gap:10px;">
+    🎯 Disciplíny
+  </h3>
+  <div id="disciplines-list" style="color:#cbd5e1;">Načítám...</div>
+`;
+
+  metricCard.after(disciplinesCard);
+
+  // Fetch disciplines
+  fetch('/api/disciplines?userId=' + userId) // ← vytvořit endpoint
+    .then(r => r.json())
+    .then(data => {
+      const list = data.slice(0, 3).map(d => `
+      <div style="display:flex; align-items:center; gap:12px; padding:12px; background:rgba(255,255,255,0.03); border-radius:8px; margin-bottom:8px;">
+        <span style="font-size:24px;">${d.state === 'GREEN' ? '🟢' : d.state === 'YELLOW' ? '🟡' : '🔴'}</span>
+        <div>
+          <div style="font-weight:500;">${d.name}</div>
+          <div style="font-size:13px; color:#94a3b8;">${d.description}</div>
+        </div>
+      </div>
+    `).join('');
+      document.getElementById('disciplines-list').innerHTML = list || 'Žádné disciplíny';
+    });
+
+  // ✅ AKCE
+  const actionsCard = document.createElement('div');
+  actionsCard.style.cssText = disciplinesCard.style.cssText;
+  actionsCard.innerHTML = `
+  <h3 style="color:#83B0E3; font-size:18px; margin:0 0 15px 0; display:flex; align-items:center; gap:10px;">
+    ⚡ Akce
+  </h3>
+  <ul style="list-style:none; padding:0; margin:0; color:#cbd5e1;">
+    <li style="padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.05);">• Klidná chůze 30 min denně</li>
+    <li style="padding:8px 0;">• Měř srdeční tep po schodech</li>
+  </ul>
+`;
+
+  disciplinesCard.after(actionsCard);
+
+  // ✅ HODNOTY
+  const valuesCard = document.createElement('div');
+  valuesCard.style.cssText = disciplinesCard.style.cssText;
+  valuesCard.innerHTML = `
+  <h3 style="color:#83B0E3; font-size:18px; margin:0 0 15px 0; display:flex; align-items:center; gap:10px;">
+    📚 Hodnoty
+  </h3>
+  <div style="color:#cbd5e1;">
+    <a href="#" style="color:#06b6d4; text-decoration:none; display:block; padding:8px 0;">→ Attia: Zone 2 cardio</a>
+    <a href="#" style="color:#06b6d4; text-decoration:none; display:block; padding:8px 0;">→ Huberman: Sleep toolkit</a>
+  </div>
+`;
+
+  actionsCard.after(valuesCard);
+
   metricCard.after(chjCard);
 
   // 5. Generate verdict
