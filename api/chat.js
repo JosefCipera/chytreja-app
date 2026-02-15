@@ -178,8 +178,24 @@ ODPOVĚZ:
 
     const text = completion.choices[0].message.content;
 
-    // ✅ Formátování: přidej prázdné řádky mezi věty
+    console.log("=== RAW TEXT ===");
+    console.log(text);
+    console.log("=== RAW TEXT END ===");
+
     const formatted = text.replace(/\.\s+/g, '.\n\n').trim();
+
+    console.log("=== FORMATTED ===");
+    console.log(formatted);
+    console.log("=== FORMATTED END ===");
+
+    return res.json({
+      verdict: formatted,
+      usage: {
+        prompt_tokens: completion.usage.prompt_tokens,
+        completion_tokens: completion.usage.completion_tokens,
+        total_tokens: completion.usage.total_tokens
+      }
+    });
 
     // 6️⃣ Odpověď + usage tracking
     return res.status(200).json({
