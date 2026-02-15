@@ -107,23 +107,17 @@ PRAVIDLA:
 ZAKÁZANÁ SLOVA: "metabolická rezerva", "jezdec", "brnění", "musíš", "pádový".
 `;
 
-    // 4️⃣ USER PROMPT (kontext z DB)
+    // 4️⃣ USER PROMPT (obohatíme o ASPIRACI)
     const USER_PROMPT = `
-OBLAST: ${node.label}
-STAV: ${node.state}
-${context ? `PROFIL: ${context.redCount} RED, ${context.yellowCount} YELLOW, ${context.greenCount} GREEN` : ''}
-${bottleneck ? `
-CÍL: ${bottleneck.aspiration_label}
-KRITICKÝ BOD: ${bottleneck.node_label} (chybí ${(bottleneck.gap * 100).toFixed(0)}%)
-` : ''}
-${userQuestion ? `\nDOTAZ: "${userQuestion}"` : ''}
+VIZE/SEN: ${user.aspiration_label || 'Aktivní stáří'}
+BOTTLENECK: ${node.label} (${context.bottleneck_score})
+STAV: ${node.state} (Index: ${um.current_index})
+OMEZENÍ: ${user_vault.health_notes} (např. bolavé koleno)
 
-FORMÁT ODPOVĚDI:
-[Stav]
+FORMÁT:
+[Analýza: Sen vs. Bottleneck]
 
-[Dopad]
-
-[Akce]
+[Vedení: Cesta úleva vs. Odolnost]
 `.trim();
 
     // 5️⃣ OpenAI API call
