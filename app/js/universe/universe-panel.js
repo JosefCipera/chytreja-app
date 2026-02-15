@@ -764,6 +764,19 @@ async function showGameOfLife(node) {
     });
 
   // ✅ AKCE
+  const actionMap = {
+    'kardio': ['Klidná chůze 30 min denně', 'Měř srdeční tep po schodech'],
+    'vo2max': ['Začni běhat/chodit rychle 2× týdně', 'Test: 4 patra bez dechu'],
+    'sila': ['Posiluj 3× týdně — zaměř se na nohy', 'Zkus dřepy a kliky denně'],
+    'stabilita': ['Cvič balanc ráno — 30s na každé noze', 'Jóga nebo tai-chi 2× týdně'],
+    'spanek': ['Spi 7-8h pravidelně', 'Vypni obrazovky 1h před spaním'],
+    'klid': ['Dechová cvičení 10 min denně', 'Meditace nebo procházka v klidu'],
+    'smysl': ['Napiš si 3 věci, za co jsi vděčný', 'Plánuj budoucí aktivity s vnoučaty'],
+    'metabolicke': ['Omez cukr a rafinované sacharidy', 'Zkontroluj hladinu glukózy'],
+    'mobilita': ['Protahuj se 10 min denně', 'Zkus dotknout se země nataženýma nohama']
+  };
+
+  const actions = actionMap[node.id] || ['Pokračuj v tom, co děláš', 'Konzultuj s lékařem'];
   const actionsCard = document.createElement('div');
   actionsCard.style.cssText = disciplinesCard.style.cssText;
   actionsCard.innerHTML = `
@@ -779,15 +792,45 @@ async function showGameOfLife(node) {
   disciplinesCard.after(actionsCard);
 
   // ✅ HODNOTY
+  const resourceMap = {
+    'kardio': [
+      { title: 'Attia: Zone 2 cardio', url: 'https://peterattiamd.com/zone-2-training' },
+      { title: 'Huberman: Cardiovascular health', url: 'https://hubermanlab.com/cardio' }
+    ],
+    'vo2max': [
+      { title: 'Attia: VO2 Max importance', url: 'https://peterattiamd.com/vo2max' },
+      { title: 'Cooper test', url: '#' }
+    ],
+    'sila': [
+      { title: 'Huberman: Strength training', url: 'https://hubermanlab.com/strength' },
+      { title: 'Attia: Muscle longevity', url: '#' }
+    ],
+    'spanek': [
+      { title: 'Huberman: Sleep toolkit', url: 'https://hubermanlab.com/sleep' },
+      { title: 'Walker: Why We Sleep', url: '#' }
+    ],
+    'klid': [
+      { title: 'Huberman: Stress control', url: 'https://hubermanlab.com/stress' },
+      { title: 'Attia: HRV recovery', url: '#' }
+    ]
+  };
+
+  const resources = resourceMap[node.id] || [
+    { title: 'Attia: Longevity basics', url: 'https://peterattiamd.com' },
+    { title: 'Huberman Lab', url: 'https://hubermanlab.com' }
+  ];
+
   const valuesCard = document.createElement('div');
+  valuesCard.className = 'values-card';
   valuesCard.style.cssText = disciplinesCard.style.cssText;
   valuesCard.innerHTML = `
-  <h3 style="color:#83B0E3; font-size:18px; margin:0 0 15px 0; display:flex; align-items:center; gap:10px;">
-    📚 Hodnoty
-  </h3>
+  <h3 style="color:#83B0E3; font-size:18px; margin:0 0 15px 0;">📚 Hodnoty</h3>
   <div style="color:#cbd5e1;">
-    <a href="#" style="color:#06b6d4; text-decoration:none; display:block; padding:8px 0;">→ Attia: Zone 2 cardio</a>
-    <a href="#" style="color:#06b6d4; text-decoration:none; display:block; padding:8px 0;">→ Huberman: Sleep toolkit</a>
+    ${resources.map(r => `
+      <a href="${r.url}" target="_blank" style="color:#06b6d4; text-decoration:none; display:block; padding:8px 0;">
+        → ${r.title}
+      </a>
+    `).join('')}
   </div>
 `;
 
