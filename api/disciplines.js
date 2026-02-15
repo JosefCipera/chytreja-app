@@ -6,13 +6,25 @@ const supabase = createClient(
 );
 
 export default async function (req, res) {
-  const { userId, nodeId } = req.query; // ← PŘIDEJ nodeId
+  const { userId, nodeId } = req.query;
 
+  // ✅ Najdi children nodes (pokud je parent)
+  const { data: children } = await supabase
+    .from('longevity_nodes')
+    .select('id')
+    .eq('parent', nodeId);
+
+  // Pokud má children → použij je, jinak sám node
+  const nodeIds = children && children.length > 0
+    ? children.map(c => c.id)
+    : [nodeId];
+
+  // Fetch disciplíny pro node(s)
   const { data } = await supabase
     .from('v_discipline_states')
     .select('discipline_id, name, icon, state, description')
     .eq('user_id', userId)
-    .eq('node_id', nodeId) // ← FILTER podle node
+    .in('node_id', nodeIds) // ← children OR self
     .order('state', { ascending: false })
     .limit(3);
 
