@@ -604,7 +604,6 @@ async function generateVerdictV2(node, userId) {
     console.log("📊 Metrics loaded:", metrics?.length);
 
     if (!metrics || metrics.length === 0) {
-      console.log("⚠️ Returning: No data"); // ← LOG
       return { text: 'Zatím nemám dost dat.' };
     }
 
@@ -616,7 +615,14 @@ async function generateVerdictV2(node, userId) {
     const payload = {
       nodeId: node.id,
       userQuestion: null,
-      context: { state: node.state, userId: userId, redCount, yellowCount, greenCount, bottleneck: bottleneck?.node_id }
+      context: {
+        state: node.state,
+        userId: userId,
+        redCount,
+        yellowCount,
+        greenCount,
+        bottleneck: bottleneck?.node_id
+      }
     };
 
     console.log("📤 API request:", payload);
@@ -635,11 +641,12 @@ async function generateVerdictV2(node, userId) {
     }
 
     const data = JSON.parse(text);
-
-    // ✅ INLINE RETURN (bez if)
     const verdict = data?.verdict || 'API nevrátilo platnou odpověď.';
+
     console.log("✅ Returning:", verdict);
-    return { text: verdict };
+
+    // ✅ Přeměň \n na <br> pro HTML
+    return { text: verdict.replace(/\n/g, '<br>') };
 
   } catch (err) {
     console.error('❌ Error:', err);
