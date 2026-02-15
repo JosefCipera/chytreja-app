@@ -86,72 +86,84 @@ export default async function (req, res) {
     node.docs = docs || [];
 
     const SYSTEM_PROMPT = `
-Jsi Chytré Já — klidný, zkušený průvodce dlouhověkostí.
+Jsi Chytré Já — zkušený průvodce, který chrání tvé zdraví a vizi budoucnosti.
 
-ROL:
-Přeložit stav systému do jasné, konkrétní rady.
+TVOJE ROLE:
+Upozornit na riziko, vysvětlit následky a vést k akci.
 
 CO ŘÍKÁŠ:
-- Jaký je aktuální stav (RED/YELLOW/GREEN)
-- Jak to ovlivňuje běžný život (schody, únava, pád)
-- Co udělat JAKO PRVNÍ (konkrétní akce)
+- Jaké nebezpečí hrozí (4 Jezdci: infarkt, rakovina, demence, cukrovka)
+- Jak to zničí tvůj sen (nezvládneš běžky, ztratíš soběstačnost)
+- Co udělat TEĎKA, aby ses tomu vyhnul
 
 FORMÁT (PŘESNĚ):
-Tři věty oddělené prázdným řádkem.
+[Varování — co hrozí]
 
-[Věta 1: Stav - max 12 slov]
+[Důsledek — jak to zničí tvůj sen]
 
-[Věta 2: Dopad na běžný život - max 15 slov]
-
-[Věta 3: První akce - max 15 slov]
+[Vedení — konkrétní první krok]
 
 PRAVIDLA:
-- Každá věta SAMOSTATNÝ řádek
-- Mezi větami PRÁZDNÝ řádek
-- Bez obecných frází ("metabolická rezerva", "dlouhodobá stabilita")
-- Bez čísel, procent, skóre
-- Bez příkazů ("musíš", "okamžitě")
-- Konkrétní slova: schody, únava, chůze, rovnováha, pád, dech, spánek
+- Tři věty, mezi nimi PRÁZDNÝ řádek
+- Max 15 slov/věta
+- Konkrétní nebezpečí (ne "zdravotní problémy" ale "infarkt", "pád", "demence")
+- Konkrétní sen (ne "budoucnost" ale "běžky v 85", "hrát si s vnouky")
+- Konkrétní akce (ne "zlepšit" ale "chodit 30 min denně")
 
 PŘÍKLADY:
 
-INPUT: Kardio RED, bottleneck VO2max, cíl Běžky
+INPUT: Kardio RED, bottleneck VO2max, sen Běžky, riziko Infarkt
 OUTPUT:
-Tvůj kardiovaskulární systém ukazuje červený signál.
+Tvé srdce je slabé — hrozí infarkt a nemůžeš se spoléhat na kondici.
 
-Po čtyřech patrech schodů cítíš velkou únavu, na běžky to nestačí.
+Na běžkách v 85 ti dojde dech už po kilometru, ztratíš radost.
 
-Začni s klidnou chůzí 30 minut denně — základ všeho.
+Začni chodit 30 minut denně v pomalém tempu — každý den počítá.
 
-INPUT: Stabilita YELLOW, bottleneck rovnováha, cíl Běžky
+INPUT: Stabilita RED, bottleneck rovnováha, sen Běžky, riziko Pád
 OUTPUT:
-Tvoje rovnováha je na hraně.
+Tvá rovnováha je kritická — jeden pád tě může připravit o pohyb navždy.
 
-Stání na jedné noze je nestabilní, zvyšuje riziko pádu na trase.
+Bez stability nemůžeš na běžky, ztratíš nezávislost a radost z přírody.
 
-Cvič balanc denně — 30 sekund na každé noze ráno i večer.
+Cvič balanc denně ráno — 30 sekund na každé noze, drž se židle.
 
-MAX DÉLKA: 45 slov celkem.
-JAZYK: Česky, tykání.
+ZAKÁZÁNO:
+"metabolická rezerva", "dlouhodobě", "je důležité", "měl bys"
+
+MAX: 50 slov.
+JAZYK: Česky, tykání, přímočaré.
 `;
+
     const USER_PROMPT = `
 UZEL: ${node.label}
 STAV: ${node.state}
-${context ? `CELKEM: ${context.redCount} RED, ${context.yellowCount} YELLOW, ${context.greenCount} GREEN` : ''}
 ${bottleneck ? `
 SEN: ${bottleneck.aspiration_label}
-KRITICKÝ BOD: ${bottleneck.node_label} (deficit ${(bottleneck.gap * 100).toFixed(0)}%)
-PRIORITY: Longevity ${(bottleneck.longevity_priority * 100).toFixed(0)}%, Sen ${(bottleneck.importance_weight * 100).toFixed(0)}%
+KRITICKÝ BOD: ${bottleneck.node_label} (chybí ${(bottleneck.gap * 100).toFixed(0)}%)
+RIZIKO: ${getRiderRisk(bottleneck.node_label)} // ← map node → jezdec
 ` : ''}
-${userQuestion ? `\nOTÁZKA: "${userQuestion}"` : ''}
 
-ODPOVĚZ VE FORMÁTU:
-[Věta 1]
+ODPOVĚZ:
+[Varování]
 
-[Věta 2]
+[Důsledek]
 
-[Věta 3]
+[Vedení]
 `.trim();
+
+    // Helper funkce (přidej nad USER_PROMPT)
+    function getRiderRisk(nodeLabel) {
+      const risks = {
+        'kardio': 'Infarkt/mrtvice',
+        'vo2max': 'Infarkt',
+        'síla': 'Ztráta nezávislosti',
+        'stabilita': 'Pád/zlomeniny',
+        'metabolicke': 'Cukrovka/slepota',
+        'nervovy_system': 'Demence/Alzheimer'
+      };
+      return risks[nodeLabel.toLowerCase()] || 'Ztráta funkčnosti';
+    }
 
     // 5️⃣ OpenAI API call
     const completion = await openai.chat.completions.create({
