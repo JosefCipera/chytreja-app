@@ -718,16 +718,15 @@ async function showGameOfLife(node) {
 
   chjCard.innerHTML = `
     <h3 style="display:flex; align-items:center; gap:10px; margin:0 0 15px 0; color:#83B0E3; font-size:18px;">
-      🧠 Chytré já
+       Chytré já říká:
     </h3>
     <div class="chj-message" style="color:#cbd5e1; font-size:15px; line-height:1.6; margin-bottom:15px;">
-      Načítám diagnózu...
+      Načítám...
     </div>
   `;
 
-  // Po CHJ kartě, PŘED metricCard.after(chjCard):
-
   // ✅ DISCIPLÍNY
+  /* 
   const disciplinesCard = document.createElement('div');
   disciplinesCard.className = 'disciplines-card';
   disciplinesCard.style.cssText = `
@@ -736,32 +735,32 @@ async function showGameOfLife(node) {
   border-radius: 12px;
   padding: 20px;
   margin: 15px 0;
-`;
+  `;
 
   disciplinesCard.innerHTML = `
   <h3 style="color:#83B0E3; font-size:18px; margin:0 0 15px 0; display:flex; align-items:center; gap:10px;">
-    🎯 Disciplíny
+      Omezení
   </h3>
   <div id="disciplines-list" style="color:#cbd5e1;">Načítám...</div>
-`;
+  `;
 
-  metricCard.after(disciplinesCard);
+  metricCard.after(disciplinesCard); 
 
   // Fetch disciplines
   fetch(`/api/disciplines?userId=${userId}&nodeId=${node.id}`)
     .then(r => r.json())
     .then(data => {
       const list = data.slice(0, 3).map(d => `
-        <div style="display:flex; align-items:center; gap:12px; padding:12px; background:rgba(255,255,255,0.03); border-radius:8px; margin-bottom:8px;">
-          <span style="font-size:24px;">${d.state === 'GREEN' ? '🟢' : d.state === 'YELLOW' ? '🟡' : '🔴'}</span>
-          <div>
-            <div style="font-weight:500;">${d.name}</div>
-            <div style="font-size:13px; color:#94a3b8;">${d.description}</div>
-          </div>
+      <div style="display:flex; align-items:center; gap:12px; padding:12px; background:rgba(255,255,255,0.03); border-radius:8px; margin-bottom:8px;">
+        <span style="font-size:24px;">${d.state === 'GREEN' ? '🟢' : d.state === 'YELLOW' ? '🟡' : '🔴'}</span>
+        <div>
+          <div style="font-weight:500;">${d.name}</div>
+          <div style="font-size:13px; color:#94a3b8;">${d.description}</div>
         </div>
-      `).join('');
+      </div>
+    `).join('');
       document.getElementById('disciplines-list').innerHTML = list || 'Žádné disciplíny';
-    });
+    }); */
 
   // ✅ AKCE
   const actionMap = {
@@ -778,7 +777,14 @@ async function showGameOfLife(node) {
 
   const actions = actionMap[node.id] || ['Pokračuj v tom, co děláš', 'Konzultuj s lékařem'];
   const actionsCard = document.createElement('div');
-  actionsCard.style.cssText = disciplinesCard.style.cssText;
+  actionsCard.style.cssText = `
+  background: #0f172a;
+  border: 1px solid #1e293b;
+  border-radius: 12px;
+  padding: 20px;
+  margin: 15px 0;
+`; // ← ZMĚŇ (ne disciplinesCard.style)
+
   actionsCard.innerHTML = `
   <h3 style="color:#83B0E3; font-size:18px; margin:0 0 15px 0; display:flex; align-items:center; gap:10px;">
     ⚡ Akce
@@ -789,7 +795,7 @@ async function showGameOfLife(node) {
   </ul>
 `;
 
-  disciplinesCard.after(actionsCard);
+  chjCard.after(actionsCard); // ← ZMĚŇ (ne disciplinesCard)
 
   // ✅ HODNOTY
   const resourceMap = {
@@ -814,7 +820,6 @@ async function showGameOfLife(node) {
       { title: 'Attia: HRV recovery', url: '#' }
     ]
   };
-
   const resources = resourceMap[node.id] || [
     { title: 'Attia: Longevity basics', url: 'https://peterattiamd.com' },
     { title: 'Huberman Lab', url: 'https://hubermanlab.com' }
@@ -822,7 +827,14 @@ async function showGameOfLife(node) {
 
   const valuesCard = document.createElement('div');
   valuesCard.className = 'values-card';
-  valuesCard.style.cssText = disciplinesCard.style.cssText;
+  valuesCard.style.cssText = `
+  background: #0f172a;
+  border: 1px solid #1e293b;
+  border-radius: 12px;
+  padding: 20px;
+  margin: 15px 0;
+`; // ← ZMĚŇ
+
   valuesCard.innerHTML = `
   <h3 style="color:#83B0E3; font-size:18px; margin:0 0 15px 0;">📚 Hodnoty</h3>
   <div style="color:#cbd5e1;">
@@ -834,7 +846,7 @@ async function showGameOfLife(node) {
   </div>
 `;
 
-  actionsCard.after(valuesCard);
+  actionsCard.after(valuesCard); // ← PŘIDEJ (připoj za Akce)
 
   metricCard.after(chjCard);
 
@@ -873,10 +885,10 @@ export async function updateRecommendations() {
   // Ošetření stavu, kdy uživatel nemá test (Chyba 400 nebo prázdná data)
   if (error || !dashboard) {
     valuesContainer.innerHTML = `
-      <div class="onboarding-prompt" style="padding: 15px; text-align: center;">
-        <p style="font-size: 13px; color: #9ba1a6;">Zatím nemáš žádná data. Změř si svou vitalitu, aby Sokrates věděl, co ti doporučit.</p>
-        <button onclick="startOnboarding()" class="btn-primary" style="margin-top: 10px;">Spustit měření</button>
-      </div>`;
+    <div class="onboarding-prompt" style="padding: 15px; text-align: center;">
+      <p style="font-size: 13px; color: #9ba1a6;">Zatím nemáš žádná data. Změř si svou vitalitu, aby Sokrates věděl, co ti doporučit.</p>
+      <button onclick="startOnboarding()" class="btn-primary" style="margin-top: 10px;">Spustit měření</button>
+    </div>`;
     return;
   }
 
@@ -891,12 +903,12 @@ export async function updateRecommendations() {
 
   // 3. Vykreslíme je
   valuesContainer.innerHTML = recommendations.map(item => `
-        <li class="hodnoty-item" onclick="window.location.href='medioteka.html?id=${item.id}'">
-            <div class="icon">${item.type === 'video' ? '🎥' : '🎧'}</div>
-            <div class="content">
-                <strong>${item.title}</strong>
-                <p>${item.summary}</p>
-            </div>
-        </li>
-    `).join('');
+      <li class="hodnoty-item" onclick="window.location.href='medioteka.html?id=${item.id}'">
+          <div class="icon">${item.type === 'video' ? '🎥' : '🎧'}</div>
+          <div class="content">
+              <strong>${item.title}</strong>
+              <p>${item.summary}</p>
+          </div>
+      </li>
+  `).join('');
 }
