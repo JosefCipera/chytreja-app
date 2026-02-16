@@ -591,70 +591,8 @@ async function renderTrendSparkline(userId, nodeId) {
 // CHJ VERDICT GENERATION (OpenAI)
 // =====================================================
 
-async function generateVerdictV2(node, userId) {
-  try {
-    console.log("🤖 Calling CHJ API for node:", node.id);
-
-    const { data: metrics } = await window.supabaseClient
-      .from('user_metrics')
-      .select('node_id, state, current_index')
-      .eq('user_id', userId)
-      .eq('universe', 'longevity');
-
-    console.log("📊 Metrics loaded:", metrics?.length);
-
-    if (!metrics || metrics.length === 0) {
-      return { text: 'Zatím nemám dost dat.' };
-    }
-
-    const bottleneck = metrics.filter(m => m.state === 'RED').sort((a, b) => a.current_index - b.current_index)[0];
-    const redCount = metrics.filter(m => m.state === 'RED').length;
-    const yellowCount = metrics.filter(m => m.state === 'YELLOW').length;
-    const greenCount = metrics.filter(m => m.state === 'GREEN').length;
-
-    const payload = {
-      nodeId: node.id,
-      userQuestion: null,
-      context: {
-        state: node.state,
-        userId: userId,
-        redCount,
-        yellowCount,
-        greenCount,
-        bottleneck: bottleneck?.node_id
-      }
-    };
-
-    console.log("📤 API request:", payload);
-
-    const response = await fetch('/api/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-
-    const text = await response.text();
-    console.log("📥 Raw response:", text);
-
-    if (!response.ok) {
-      return { text: `API error ${response.status}` };
-    }
-
-    const data = JSON.parse(text);
-    const verdict = data?.verdict || 'API nevrátilo platnou odpověď.';
-
-    console.log("✅ Returning:", verdict);
-
-    // ✅ Přeměň \n na <br> pro HTML
-    return { text: verdict.replace(/\n/g, '<br>') };
-
-  } catch (err) {
-    console.error('❌ Error:', err);
-    return { text: 'Chyba při komunikaci s AI.' };
-  }
-}
-
 async function showGameOfLife(node) {
+  console.log("🎮 showGameOfLife called with node:", node); // ← PŘIDEJ
   const userId = window.firebaseAuth?.currentUser?.uid || 'demo-user-123';
 
   // 1. Nadpis
@@ -701,68 +639,50 @@ async function showGameOfLife(node) {
     `;
   });
 
-  // ✅ 4. CHJ KARTA (NOVÉ)
+  // 4. CHJ KARTA
   let chjCard = document.querySelector('.chj-card');
   if (chjCard) chjCard.remove();
 
   chjCard = document.createElement('div');
   chjCard.className = 'chj-card';
   chjCard.style.cssText = `
-  background: #0f172a;
-  border: 1px solid #1e293b;
-  border-radius: 12px;
-  padding: 20px;
-  margin: 15px 0;
-  color: #fff;
-`;
+    background: #0f172a;
+    border: 1px solid #1e293b;
+    border-radius: 12px;
+    padding: 20px;
+    margin: 15px 0;
+    color: #fff;
+  `;
 
   chjCard.innerHTML = `
-    <h3 style="display:flex; align-items:center; gap:10px; margin:0 0 15px 0; color:#83B0E3; font-size:18px;">
-       Chytré já říká:
-    </h3>
-    <div class="chj-message" style="color:#cbd5e1; font-size:15px; line-height:1.6; margin-bottom:15px;">
-      Načítám...
-    </div>
-  `;
-
-  // ✅ DISCIPLÍNY
-  /* 
-  const disciplinesCard = document.createElement('div');
-  disciplinesCard.className = 'disciplines-card';
-  disciplinesCard.style.cssText = `
-  background: #0f172a;
-  border: 1px solid #1e293b;
-  border-radius: 12px;
-  padding: 20px;
-  margin: 15px 0;
-  `;
-
-  disciplinesCard.innerHTML = `
-  <h3 style="color:#83B0E3; font-size:18px; margin:0 0 15px 0; display:flex; align-items:center; gap:10px;">
-      Omezení
+  <h3 style="display:flex; align-items:center; gap:10px; margin:0 0 15px 0; color:#83B0E3; font-size:18px;">
+    🧠 Chytré já říká:
   </h3>
-  <div id="disciplines-list" style="color:#cbd5e1;">Načítám...</div>
-  `;
+  <div class="chj-message" style="color:#cbd5e1; font-size:15px; line-height:1.6; margin-bottom:15px;">
+    Načítám...
+  </div>
+  
+  <!-- TTS Controls -->
+  <div class="tts-controls" style="display:flex; gap:10px; margin-top:15px;">
+    <button id="tts-play" style="background:#06b6d4; color:#fff; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-size:14px;">
+      🔊 Přehrát
+    </button>
+    <button id="tts-stop" style="background:#64748b; color:#fff; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-size:14px; display:none;">
+      ⏹ Stop
+    </button>
+  </div>
+`;
 
-  metricCard.after(disciplinesCard); 
+  metricCard.after(chjCard);
+  console.log("✅ CHJ karta vytvořena");
 
-  // Fetch disciplines
-  fetch(`/api/disciplines?userId=${userId}&nodeId=${node.id}`)
-    .then(r => r.json())
-    .then(data => {
-      const list = data.slice(0, 3).map(d => `
-      <div style="display:flex; align-items:center; gap:12px; padding:12px; background:rgba(255,255,255,0.03); border-radius:8px; margin-bottom:8px;">
-        <span style="font-size:24px;">${d.state === 'GREEN' ? '🟢' : d.state === 'YELLOW' ? '🟡' : '🔴'}</span>
-        <div>
-          <div style="font-weight:500;">${d.name}</div>
-          <div style="font-size:13px; color:#94a3b8;">${d.description}</div>
-        </div>
-      </div>
-    `).join('');
-      document.getElementById('disciplines-list').innerHTML = list || 'Žádné disciplíny';
-    }); */
+  // 5. AKCE KARTA
+  let actionsCard = document.querySelector('.actions-card');
+  if (actionsCard) {
+    console.log("🗑️ Removing old actions card");
+    actionsCard.remove();
+  }
 
-  // ✅ AKCE
   const actionMap = {
     'kardio': ['Klidná chůze 30 min denně', 'Měř srdeční tep po schodech'],
     'vo2max': ['Začni běhat/chodit rychle 2× týdně', 'Test: 4 patra bez dechu'],
@@ -776,28 +696,32 @@ async function showGameOfLife(node) {
   };
 
   const actions = actionMap[node.id] || ['Pokračuj v tom, co děláš', 'Konzultuj s lékařem'];
-  const actionsCard = document.createElement('div');
+
+  console.log("✅ Akce karta vytváření...");
+  actionsCard = document.createElement('div');
+  actionsCard.className = 'actions-card'; // ← PŘIDEJ TENHLE ŘÁDEK!
   actionsCard.style.cssText = `
   background: #0f172a;
   border: 1px solid #1e293b;
   border-radius: 12px;
   padding: 20px;
   margin: 15px 0;
-`; // ← ZMĚŇ (ne disciplinesCard.style)
+`;
 
   actionsCard.innerHTML = `
-  <h3 style="color:#83B0E3; font-size:18px; margin:0 0 15px 0; display:flex; align-items:center; gap:10px;">
-    ⚡ Akce
-  </h3>
+  <h3 style="color:#83B0E3; font-size:18px; margin:0 0 15px 0;">⚡ Akce</h3>
   <ul style="list-style:none; padding:0; margin:0; color:#cbd5e1;">
-    <li style="padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.05);">• Klidná chůze 30 min denně</li>
-    <li style="padding:8px 0;">• Měř srdeční tep po schodech</li>
+    ${actions.map(a => `<li style="padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.05);">• ${a}</li>`).join('')}
   </ul>
 `;
 
-  chjCard.after(actionsCard); // ← ZMĚŇ (ne disciplinesCard)
+  chjCard.after(actionsCard);
+  console.log("✅ Akce karta přidána");
 
-  // ✅ HODNOTY
+  // 6. HODNOTY KARTA
+  let valuesCard = document.querySelector('.values-card');
+  if (valuesCard) valuesCard.remove();
+
   const resourceMap = {
     'kardio': [
       { title: 'Attia: Zone 2 cardio', url: 'https://peterattiamd.com/zone-2-training' },
@@ -820,12 +744,14 @@ async function showGameOfLife(node) {
       { title: 'Attia: HRV recovery', url: '#' }
     ]
   };
+
   const resources = resourceMap[node.id] || [
     { title: 'Attia: Longevity basics', url: 'https://peterattiamd.com' },
     { title: 'Huberman Lab', url: 'https://hubermanlab.com' }
   ];
 
-  const valuesCard = document.createElement('div');
+  console.log("✅ Hodnoty karta vytváření...");
+  valuesCard = document.createElement('div');
   valuesCard.className = 'values-card';
   valuesCard.style.cssText = `
   background: #0f172a;
@@ -833,7 +759,7 @@ async function showGameOfLife(node) {
   border-radius: 12px;
   padding: 20px;
   margin: 15px 0;
-`; // ← ZMĚŇ
+`;
 
   valuesCard.innerHTML = `
   <h3 style="color:#83B0E3; font-size:18px; margin:0 0 15px 0;">📚 Hodnoty</h3>
@@ -846,11 +772,9 @@ async function showGameOfLife(node) {
   </div>
 `;
 
-  actionsCard.after(valuesCard); // ← PŘIDEJ (připoj za Akce)
-
-  metricCard.after(chjCard);
-
-  // 5. Generate verdict
+  actionsCard.after(valuesCard);
+  console.log("✅ Hodnoty karta přidána");
+  // 7. Generate verdict
   console.log("🤖 Calling generateVerdictV2 for:", node.id);
   generateVerdictV2(node, userId).then(verdict => {
     console.log("✅ Verdict received:", verdict);
@@ -872,27 +796,24 @@ async function showGameOfLife(node) {
 }
 
 export async function updateRecommendations() {
-  const valuesContainer = document.querySelector('#resourcesList'); // Používáme tvé ID
+  const valuesContainer = document.querySelector('#resourcesList');
   if (!valuesContainer) return;
 
-  // 1. Zjistíme aktuální bottleneck
   const { data: dashboard, error } = await supabase
     .from('v_vitality_dashboard')
     .select('*')
     .eq('is_bottleneck', true)
     .single();
 
-  // Ošetření stavu, kdy uživatel nemá test (Chyba 400 nebo prázdná data)
   if (error || !dashboard) {
     valuesContainer.innerHTML = `
-    <div class="onboarding-prompt" style="padding: 15px; text-align: center;">
-      <p style="font-size: 13px; color: #9ba1a6;">Zatím nemáš žádná data. Změř si svou vitalitu, aby Sokrates věděl, co ti doporučit.</p>
-      <button onclick="startOnboarding()" class="btn-primary" style="margin-top: 10px;">Spustit měření</button>
-    </div>`;
+      <div class="onboarding-prompt" style="padding: 15px; text-align: center;">
+        <p style="font-size: 13px; color: #9ba1a6;">Zatím nemáš žádná data.</p>
+        <button onclick="startOnboarding()" class="btn-primary" style="margin-top: 10px;">Spustit měření</button>
+      </div>`;
     return;
   }
 
-  // 2. Najdeme odpovídající materiály (např. pro 'spanek')
   const { data: recommendations } = await supabase
     .from('node_media')
     .select('*')
@@ -901,14 +822,13 @@ export async function updateRecommendations() {
 
   if (!recommendations || recommendations.length === 0) return;
 
-  // 3. Vykreslíme je
   valuesContainer.innerHTML = recommendations.map(item => `
-      <li class="hodnoty-item" onclick="window.location.href='medioteka.html?id=${item.id}'">
-          <div class="icon">${item.type === 'video' ? '🎥' : '🎧'}</div>
-          <div class="content">
-              <strong>${item.title}</strong>
-              <p>${item.summary}</p>
-          </div>
-      </li>
+    <li class="hodnoty-item" onclick="window.location.href='medioteka.html?id=${item.id}'">
+      <div class="icon">${item.type === 'video' ? '🎥' : '🎧'}</div>
+      <div class="content">
+        <strong>${item.title}</strong>
+        <p>${item.summary}</p>
+      </div>
+    </li>
   `).join('');
 }
