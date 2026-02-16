@@ -846,6 +846,29 @@ async function showGameOfLife(node) {
     console.log("✅ Verdict received:", verdict);
 
     const messageEl = chjCard.querySelector('.chj-message');
+    // ✅ TTS Setup ← TOHLE JE TEN KÓD
+    const plainText = verdict.text.replace(/<br>/g, ' ');
+    const playBtn = document.getElementById('tts-play');
+    const stopBtn = document.getElementById('tts-stop');
+    if (playBtn && stopBtn) {
+      console.log("🎤 TTS buttons found, setting up handlers");
+
+      playBtn.onclick = () => {
+        console.log("🔊 Play button clicked!");
+
+        if (speechSynthesis.speaking) {
+          console.log("⏹ Stopping previous speech");
+          speechSynthesis.cancel();
+        }
+
+        console.log("📢 Speaking:", plainText.substring(0, 50) + "...");
+
+        const utterance = new SpeechSynthesisUtterance(plainText);
+        utterance.lang = 'cs-CZ';
+        utterance.rate = 0.9;
+        utterance.pitch = 1.0;
+      };
+    }
     if (verdict && verdict.text) {
       messageEl.innerHTML = verdict.text;
     } else {
