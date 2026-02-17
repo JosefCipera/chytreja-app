@@ -842,32 +842,44 @@ async function showGameOfLife(node) {
 
   actionsCard.after(valuesCard);
   console.log("✅ Hodnoty karta přidána");
-  // 7. Generate verdict
+
+  // 7. GENERATE VERDICT
   console.log("🤖 Calling generateVerdictV2 for:", node.id);
   generateVerdictV2(node, userId).then(verdict => {
     console.log("✅ Verdict received:", verdict);
 
     const messageEl = chjCard.querySelector('.chj-message');
-    // ✅ TTS Setup ← TOHLE JE TEN KÓD
-    const plainText = verdict.text.replace(/<br>/g, ' ');
-    const playBtn = document.getElementById('tts-play');
-    const stopBtn = document.getElementById('tts-stop');
-    if (playBtn && stopBtn) {
-      console.log("🎤 TTS buttons found, setting up handlers");
 
-      playBtn.onclick = () => {
-        console.log("🔊 Play button clicked!");
+    if (verdict && verdict.text) {
+      const plainText = verdict.text.replace(/<br>/g, ' ');
 
-        if (speechSynthesis.speaking) {
-          console.log("⏹ Stopping previous speech");
-          speechSynthesis.cancel();
+      // ✅ TYPEWRITER EFEKT
+      messageEl.innerHTML = '';
+      let i = 0;
+      const typingInterval = setInterval(() => {
+        if (i < plainText.length) {
+          messageEl.innerHTML += plainText.charAt(i);
+          i++;
+        } else {
+          clearInterval(typingInterval);
         }
-        // ✅ HACK: Malá pauza aby browser zpracoval user gesture
-        setTimeout(() => {
+      }, 45);
+
+      // ✅ TTS
+      const playBtn = document.getElementById('tts-play');
+      const stopBtn = document.getElementById('tts-stop');
+
+      if (playBtn && stopBtn) {
+        console.log("🎤 TTS buttons found, setting up handlers");
+
+        playBtn.onclick = () => {
+          console.log("🔊 Play button clicked!");
+          speechSynthesis.cancel();
+
           const utterance = new SpeechSynthesisUtterance(plainText);
           utterance.lang = 'cs-CZ';
-          utterance.rate = 0.9;
-          utterance.pitch = 1.0;
+          utterance.pitch = 1.2;
+          utterance.rate = 1.1;
 
           utterance.onstart = () => {
             console.log("🎙 Speech started");
@@ -886,18 +898,16 @@ async function showGameOfLife(node) {
           };
 
           console.log("📢 Speaking:", plainText.substring(0, 50) + "...");
-          speechSynthesis.speak(utterance);
-        }, 100);
-        console.log("📢 Speaking:", plainText.substring(0, 50) + "...");
+          window.speechSynthesis.speak(utterance);
+        };
 
-        const utterance = new SpeechSynthesisUtterance(plainText);
-        utterance.lang = 'cs-CZ';
-        utterance.rate = 0.9;
-        utterance.pitch = 1.0;
-      };
-    }
-    if (verdict && verdict.text) {
-      messageEl.innerHTML = verdict.text;
+        stopBtn.onclick = () => {
+          speechSynthesis.cancel();
+          playBtn.style.display = 'block';
+          stopBtn.style.display = 'none';
+        };
+      }
+
     } else {
       console.error("Invalid verdict:", verdict);
       messageEl.innerHTML = 'Chyba: Nepodařilo se načíst diagnózu.';

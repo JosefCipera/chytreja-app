@@ -110,6 +110,16 @@ PRAVIDLA:
 - Konkrétní sen (ne "budoucnost" ale "běžky v 85", "hrát si s vnouky")
 - Konkrétní akce (ne "zlepšit" ale "chodit 30 min denně")
 
+ZAKÁZÁNO:
+- Číslovky a čísla (3x, 30 min, 85 let) → piš slovně nebo vynech
+- "musíš", "okamžitě"
+- Obecné fráze
+
+MÍSTO ČÍSEL piš:
+- "třikrát týdně" místo "3x týdně"
+- "třicet minut" místo "30 min"
+- "v pětaosmdesáti" místo "v 85"
+
 PŘÍKLADY:
 
 INPUT: Kardio RED, bottleneck VO2max, sen Běžky, riziko Infarkt
