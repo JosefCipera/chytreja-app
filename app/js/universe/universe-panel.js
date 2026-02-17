@@ -550,7 +550,7 @@ document.head.appendChild(styleSheet);
 // TREND SPARKLINE - SVG LINE CHART
 // =====================================================
 
-async function renderTrendSparkline(userId, nodeId) {
+async function renderTrendSparkline(userId, nodeId, nodeState) {
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
   const dateFilter = thirtyDaysAgo.toISOString().split('T')[0];
@@ -585,7 +585,12 @@ async function renderTrendSparkline(userId, nodeId) {
     arrow = '↘️'; trendText = 'Zhoršení'; trendColor = '#ef4444';
   }
 
-  return `<svg width="100%" height="50" viewBox="0 0 100 100" preserveAspectRatio="none" style="display:block;"><rect x="0" y="0" width="100" height="33" fill="#22c55e" opacity="0.05"/><rect x="0" y="33" width="100" height="34" fill="#eab308" opacity="0.05"/><rect x="0" y="67" width="100" height="33" fill="#ef4444" opacity="0.05"/><polyline points="${points.join(' ')}" fill="none" stroke="${trendColor}" stroke-width="6" opacity="0.2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="${points.join(' ')}" fill="none" stroke="${trendColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="${points[points.length - 1].split(',')[0]}" cy="${points[points.length - 1].split(',')[1]}" r="2" fill="${trendColor}"/></svg><div style="display:flex;align-items:center;gap:8px;margin-top:8px;"><span style="font-size:18px;">${arrow}</span><span style="color:${trendColor};font-size:13px;font-weight:500;">${trendText}</span><span style="color:#64748b;font-size:12px;margin-left:auto;">${data.length} dní</span></div>`;
+  const stateColor = nodeState === 'GREEN' ? '#22c55e'
+    : nodeState === 'YELLOW' ? '#eab308'
+      : nodeState === 'RED' ? '#ef4444'
+        : '#64748b';
+
+  return `<svg width="100%" height="50" viewBox="0 0 100 100" preserveAspectRatio="none" style="display:block;"><rect x="0" y="0" width="100" height="33" fill="#22c55e" opacity="0.05"/><rect x="0" y="33" width="100" height="34" fill="#eab308" opacity="0.05"/><rect x="0" y="67" width="100" height="33" fill="#ef4444" opacity="0.05"/><polyline points="${points.join(' ')}" fill="none" stroke="${trendColor}" stroke-width="6" opacity="0.2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="${points.join(' ')}" fill="none" stroke="${stateColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="${points[points.length - 1].split(',')[0]}" cy="${points[points.length - 1].split(',')[1]}" r="2" fill="${trendColor}"/></svg><div style="display:flex;align-items:center;gap:8px;margin-top:8px;"><span style="font-size:18px;">${arrow}</span><span style="color:${trendColor};font-size:13px;font-weight:500;">${trendText}</span><span style="color:#64748b;font-size:12px;margin-left:auto;">${data.length} dní</span></div>`;
 }
 // =====================================================
 // CHJ VERDICT GENERATION (OpenAI)
@@ -700,7 +705,7 @@ async function showGameOfLife(node) {
   if (panelHeader) panelHeader.after(metricCard);
 
   // 3. Načti sparkline async
-  renderTrendSparkline(userId, node.id).then(sparkline => {
+  renderTrendSparkline(userId, node.id, node.state).then(sparkline => {
     metricCard.innerHTML = `
       <div style="font-size:11px; color:#94a3b8; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">Trend (30 dní)</div>
       ${sparkline}
@@ -890,12 +895,17 @@ async function showGameOfLife(node) {
         window.speechSynthesis.speak(utterance);
 
         // TYPEWRITER (souběžně)
+        messageEl.innerHTML = '';
+        const span = document.createElement('span');
+        messageEl.appendChild(span);
+
         let i = 0;
         typingInterval = setInterval(() => {
-          if (i < htmlText.length) {
-            messageEl.innerHTML = htmlText.substring(0, i + 1);
+          if (i < plainText.length) {
+            span.textContent += plainText.charAt(i);
             i++;
           } else {
+            messageEl.innerHTML = htmlText; // ← na konci zobraz s <br>
             clearInterval(typingInterval);
           }
         }, 45);
