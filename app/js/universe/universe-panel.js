@@ -591,67 +591,75 @@ async function renderTrendSparkline(userId, nodeId) {
 // CHJ VERDICT GENERATION (OpenAI)
 // =====================================================
 
-async function generateVerdictV2(node, userId) {
-  try {
-    console.log("🤖 Calling CHJ API for node:", node.id);
+generateVerdictV2(node, userId).then(verdict => {
+  console.log("✅ Verdict received:", verdict);
 
-    const { data: metrics } = await window.supabaseClient
-      .from('user_metrics')
-      .select('node_id, state, current_index')
-      .eq('user_id', userId)
-      .eq('universe', 'longevity');
+  const messageEl = chjCard.querySelector('.chj-message');
+  if (verdict && verdict.text) {
 
-    console.log("📊 Metrics loaded:", metrics?.length);
+    const plainText = verdict.text.replace(/<br>/g, ' ');
 
-    if (!metrics || metrics.length === 0) {
-      return { text: 'Zatím nemám dost dat.' };
-    }
-
-    const bottleneck = metrics.filter(m => m.state === 'RED').sort((a, b) => a.current_index - b.current_index)[0];
-    const redCount = metrics.filter(m => m.state === 'RED').length;
-    const yellowCount = metrics.filter(m => m.state === 'YELLOW').length;
-    const greenCount = metrics.filter(m => m.state === 'GREEN').length;
-
-    const payload = {
-      nodeId: node.id,
-      userQuestion: null,
-      context: {
-        state: node.state,
-        userId: userId,
-        redCount,
-        yellowCount,
-        greenCount,
-        bottleneck: bottleneck?.node_id
+    // ✅ TYPEWRITER EFEKT (z hlas2.html)
+    messageEl.innerHTML = ''; // Vyčisti
+    let i = 0;
+    const typingSpeed = 45;
+    const typingInterval = setInterval(() => {
+      if (i < plainText.length) {
+        messageEl.innerHTML += plainText.charAt(i);
+        i++;
+      } else {
+        clearInterval(typingInterval);
       }
-    };
+    }, typingSpeed);
 
-    console.log("📤 API request:", payload);
+    // ✅ TTS (z hlas2.html)
+    const playBtn = document.getElementById('tts-play');
+    const stopBtn = document.getElementById('tts-stop');
 
-    const response = await fetch('/api/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
+    if (playBtn && stopBtn) {
+      console.log("🎤 TTS buttons found");
 
-    const text = await response.text();
-    console.log("📥 Raw response:", text);
+      playBtn.onclick = () => {
+        console.log("🔊 Play clicked!");
 
-    if (!response.ok) {
-      return { text: `API error ${response.status}` };
+        speechSynthesis.cancel();
+
+        const utterance = new SpeechSynthesisUtterance(plainText);
+        utterance.lang = 'cs-CZ';
+        utterance.pitch = 1.2;
+        utterance.rate = 1.1;
+
+        utterance.onstart = () => {
+          playBtn.style.display = 'none';
+          stopBtn.style.display = 'block';
+        };
+
+        utterance.onend = () => {
+          playBtn.style.display = 'block';
+          stopBtn.style.display = 'none';
+        };
+
+        window.speechSynthesis.speak(utterance); // ← window.speechSynthesis (z hlas2.html)
+      };
+
+      stopBtn.onclick = () => {
+        speechSynthesis.cancel();
+        playBtn.style.display = 'block';
+        stopBtn.style.display = 'none';
+      };
     }
 
-    const data = JSON.parse(text);
-    const verdict = data?.verdict || 'API nevrátilo platnou odpověď.';
-
-    console.log("✅ Returning:", verdict);
-
-    return { text: verdict.replace(/\n/g, '<br>') };
-
-  } catch (err) {
-    console.error('❌ Error:', err);
-    return { text: 'Chyba při komunikaci s AI.' };
+  } else {
+    console.error("Invalid verdict:", verdict);
+    messageEl.innerHTML = 'Chyba: Nepodařilo se načíst diagnózu.';
   }
-}
+}).catch(err => {
+  console.error("Generate verdict error:", err);
+  const messageEl = chjCard.querySelector('.chj-message');
+  if (messageEl) {
+    messageEl.innerHTML = 'Chyba při komunikaci s AI.';
+  }
+});
 
 // =====================================================
 // SHOW GAME OF LIFE
@@ -860,7 +868,32 @@ async function showGameOfLife(node) {
           console.log("⏹ Stopping previous speech");
           speechSynthesis.cancel();
         }
+        // ✅ HACK: Malá pauza aby browser zpracoval user gesture
+        setTimeout(() => {
+          const utterance = new SpeechSynthesisUtterance(plainText);
+          utterance.lang = 'cs-CZ';
+          utterance.rate = 0.9;
+          utterance.pitch = 1.0;
 
+          utterance.onstart = () => {
+            console.log("🎙 Speech started");
+            playBtn.style.display = 'none';
+            stopBtn.style.display = 'block';
+          };
+
+          utterance.onend = () => {
+            console.log("🎙 Speech ended");
+            playBtn.style.display = 'block';
+            stopBtn.style.display = 'none';
+          };
+
+          utterance.onerror = (e) => {
+            console.error("🎙 Speech error:", e);
+          };
+
+          console.log("📢 Speaking:", plainText.substring(0, 50) + "...");
+          speechSynthesis.speak(utterance);
+        }, 100);
         console.log("📢 Speaking:", plainText.substring(0, 50) + "...");
 
         const utterance = new SpeechSynthesisUtterance(plainText);
