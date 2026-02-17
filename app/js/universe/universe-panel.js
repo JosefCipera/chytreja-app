@@ -852,59 +852,75 @@ async function showGameOfLife(node) {
 
     if (verdict && verdict.text) {
       const plainText = verdict.text.replace(/<br>/g, ' ');
+      const htmlText = verdict.text; // ← s <br> pro zobrazení
 
-      // ✅ TYPEWRITER EFEKT
-      messageEl.innerHTML = '';
-      let i = 0;
-      const typingInterval = setInterval(() => {
-        if (i < plainText.length) {
-          messageEl.innerHTML += plainText.charAt(i);
-          i++;
-        } else {
-          clearInterval(typingInterval);
-        }
-      }, 45);
-
-      // ✅ TTS
       const playBtn = document.getElementById('tts-play');
       const stopBtn = document.getElementById('tts-stop');
 
-      if (playBtn && stopBtn) {
-        console.log("🎤 TTS buttons found, setting up handlers");
+      let typingInterval = null;
 
-        playBtn.onclick = () => {
-          console.log("🔊 Play button clicked!");
-          speechSynthesis.cancel();
+      // ✅ FUNKCE: Spusť oboje zároveň
+      function startExperience() {
+        speechSynthesis.cancel();
+        messageEl.innerHTML = '';
 
-          const utterance = new SpeechSynthesisUtterance(plainText);
-          utterance.lang = 'cs-CZ';
-          utterance.pitch = 1.2;
-          utterance.rate = 1.1;
+        // TTS
+        const utterance = new SpeechSynthesisUtterance(plainText);
+        utterance.lang = 'cs-CZ';
+        utterance.pitch = 1.2;
+        utterance.rate = 1.1;
 
-          utterance.onstart = () => {
-            console.log("🎙 Speech started");
-            playBtn.style.display = 'none';
-            stopBtn.style.display = 'block';
-          };
-
-          utterance.onend = () => {
-            console.log("🎙 Speech ended");
-            playBtn.style.display = 'block';
-            stopBtn.style.display = 'none';
-          };
-
-          utterance.onerror = (e) => {
-            console.error("🎙 Speech error:", e);
-          };
-
-          console.log("📢 Speaking:", plainText.substring(0, 50) + "...");
-          window.speechSynthesis.speak(utterance);
+        utterance.onstart = () => {
+          console.log("🎙 Speech started");
+          if (playBtn) playBtn.style.display = 'none';
+          if (stopBtn) stopBtn.style.display = 'block';
         };
+
+        utterance.onend = () => {
+          console.log("🎙 Speech ended");
+          if (playBtn) playBtn.style.display = 'block';
+          if (stopBtn) stopBtn.style.display = 'none';
+          clearInterval(typingInterval);
+        };
+
+        utterance.onerror = (e) => {
+          console.error("🎙 Speech error:", e);
+        };
+
+        window.speechSynthesis.speak(utterance);
+
+        // TYPEWRITER (souběžně)
+        let i = 0;
+        typingInterval = setInterval(() => {
+          if (i < htmlText.length) {
+            messageEl.innerHTML = htmlText.substring(0, i + 1);
+            i++;
+          } else {
+            clearInterval(typingInterval);
+          }
+        }, 45);
+      }
+
+      // ✅ AUTO-START
+      startExperience();
+
+      // ✅ STOP BUTTON
+      if (playBtn && stopBtn) {
+        stopBtn.style.display = 'block';
+        playBtn.style.display = 'none';
 
         stopBtn.onclick = () => {
           speechSynthesis.cancel();
-          playBtn.style.display = 'block';
+          clearInterval(typingInterval);
+          // Zobraz celý text ihned
+          messageEl.innerHTML = htmlText;
           stopBtn.style.display = 'none';
+          playBtn.style.display = 'block';
+        };
+
+        // ✅ REPLAY
+        playBtn.onclick = () => {
+          startExperience();
         };
       }
 
