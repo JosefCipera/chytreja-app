@@ -98,6 +98,7 @@ export default async function (req, res) {
       return risks[nodeLabel.toLowerCase()] || 'Ztráta funkčnosti';
     }
     const aspiration = null; // TODO: načíst z user_aspirations až bude onboarding hotový
+
     const SYSTEM_PROMPT = `
 Jsi Chytré Já — průvodce zdravím a dlouhověkostí.
 
@@ -137,12 +138,14 @@ ZAKÁZÁNO:
 JAZYK: Česky, tykání, přímočaré. Max třicet slov celkem.
 `;
 
+    const bottleneckLabel = context?.bottleneck || null;
+
     const USER_PROMPT = `
-REŽIM: ${node.id === 'centenarian-decathlete' ? 'HLAVNÍ UZEL' : 'PODŘÍZENÝ UZEL'}
+REŽIM: ${node.id === 'dlouhovekost' ? 'HLAVNÍ UZEL' : 'PODŘÍZENÝ UZEL'}
 UZEL: ${node.label}
 STAV: ${node.state}
-${bottleneck ? `BOTTLENECK: ${bottleneck.node_label}
-HROZBA: ${getRiderRisk(bottleneck.node_label)}` : ''}
+${bottleneckLabel ? `BOTTLENECK: ${bottleneckLabel}
+HROZBA: ${getRiderRisk(bottleneckLabel)}` : ''}
 ${aspiration ? `SEN: ${aspiration}` : ''}
 
 Odpověz jedním odstavcem.
