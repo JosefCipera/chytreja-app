@@ -88,14 +88,14 @@ export default async function (req, res) {
     // 1. Helper funkce
     function getRiderRisk(nodeLabel) {
       const risks = {
-        'kardio': 'Infarkt/mrtvice',
-        'vo2max': 'Infarkt',
-        'síla': 'Ztráta nezávislosti',
-        'stabilita': 'Pád/zlomeniny',
-        'metabolicke': 'Cukrovka/slepota',
-        'nervovy_system': 'Demence/Alzheimer'
+        'kardio': 'srdce',
+        'vo2max': 'kondice a srdce',
+        'síla': 'samostatnost',
+        'stabilita': 'rovnováha a samostatnost',
+        'metabolicke': 'energii a tělo',
+        'nervovy_system': 'mozek a hlava'
       };
-      return risks[nodeLabel.toLowerCase()] || 'Ztráta funkčnosti';
+      return risks[nodeLabel.toLowerCase()] || 'tělo';
     }
     const aspiration = null; // TODO: načíst z user_aspirations až bude onboarding hotový
 
