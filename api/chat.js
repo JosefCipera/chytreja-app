@@ -117,9 +117,9 @@ Příklad: "Síla ti v pětaosmdesáti nebude stačit a ztratíš samostatnost."
 Příklad: "Spánek nestačí a mozek na to doplácí."
 
 FORMÁT:
-- Jeden odstavec, dvě věty
+- PŘESNĚ JEDNA VĚTA. Nic víc. Žádná druhá věta.
 - Žádné nadpisy, odrážky, formátování
-- Žádná akce — ta je v jiné sekci
+- Žádná akce
 
 PRAVIDLA:
 - Max patnáct slov na větu
@@ -147,7 +147,7 @@ ${bottleneckLabel ? `SLABÝ ČLÁNEK: ${bottleneckLabel}
 OHROŽENÍ: ${getRiderRisk(bottleneckLabel)}` : ''}
 ${aspiration ? `SEN: ${aspiration}` : ''}
 
-Odpověz jedním odstavcem, dvě věty.
+Odpověz JEDNOU větou. Napiš jednu větu a skonči.
 `.trim();
 
     // 5️⃣ OpenAI API call
