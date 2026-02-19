@@ -143,6 +143,7 @@ UZEL: ${node.label}
 STAV: ${node.state}
 ${bottleneck ? `BOTTLENECK: ${bottleneck.node_label}
 HROZBA: ${getRiderRisk(bottleneck.node_label)}` : ''}
+const aspiration = null; 
 ${aspiration ? `SEN: ${aspiration}` : ''}
 
 Odpověz jedním odstavcem.
