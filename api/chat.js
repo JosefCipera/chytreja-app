@@ -2,20 +2,11 @@
 // API ENDPOINT: /api/chat.js - Chytré já (OpenAI)
 // =====================================================
 
-console.log("API CHAT HIT");
-console.log("API CHAT POST HIT");
+import dotenv from "dotenv";
+dotenv.config({ path: '.env.local' });
 
 import OpenAI from "openai";
 import { createClient } from "@supabase/supabase-js";
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-});
-
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
 
 export default async function (req, res) {
   try {
@@ -24,8 +15,24 @@ export default async function (req, res) {
       return res.status(405).json({ error: "Only POST allowed" });
     }
 
-    const { nodeId, userQuestion, context } = req.body; // ← PŘIDEJ context
-    // ✅ PŘIDEJ bottleneck fetch
+    console.log('ENV CHECK:', {
+      url: process.env.SUPABASE_URL,
+      key: process.env.SUPABASE_SERVICE_ROLE_KEY ? 'EXISTS' : 'MISSING',
+      ai: process.env.AI_ENABLED
+    });
+
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY
+    });
+
+    const supabase = createClient(
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY
+    );
+
+    const { nodeId, userQuestion, context } = req.body;
+
+    // ✅ Bottleneck fetch
     const { data: bottleneck } = await supabase
       .from('user_bottlenecks')
       .select('node_label, gap, bottleneck_score, aspiration_label')
@@ -49,7 +56,6 @@ export default async function (req, res) {
     }
 
     // 2️⃣ Načtení uzlu z VIEW
-    // Načti node
     const { data: node, error: nodeError } = await supabase
       .from("longevity_nodes")
       .select("*")
@@ -85,7 +91,11 @@ export default async function (req, res) {
     node.media = media || [];
     node.docs = docs || [];
 
-    // 1. Helper funkce
+    // Helper funkce
+
+    const aspiration = null;
+
+    // Helper funkce
     function getRiderRisk(nodeLabel) {
       const risks = {
         'kardio': 'srdce',
@@ -97,42 +107,45 @@ export default async function (req, res) {
       };
       return risks[nodeLabel.toLowerCase()] || 'tělo';
     }
-    const aspiration = null; // TODO: načíst z user_aspirations až bude onboarding hotový
+
+    function getNodeContext(nodeId) {
+      const contexts = {
+        'telo': 'síla a svaly',
+        'mysl': 'pozornost a paměť',
+        'vyziva': 'strava a energie',
+        'zdravi': 'prevence a odolnost',
+        'metabolicke': 'metabolismus a rovnováha těla'
+      };
+      return contexts[nodeId] || '';
+    }
+
+    function getNodeLabel(nodeId) {
+      const labels = {
+        'telo': 'tělo',
+        'mysl': 'hlava',
+        'vyziva': 'strava',
+        'zdravi': 'zdraví',
+        'metabolicke': 'metabolismus'
+      };
+      return labels[nodeId] || nodeId;
+    }
 
     const SYSTEM_PROMPT = `
 Jsi Chytré Já — průvodce zdravím a dlouhověkostí.
 
-DVA REŽIMY:
+ODPOVÍDEJ PŘESNĚ PODLE ŠABLONY:
 
-1) HLAVNÍ UZEL (Stoletý desetibojař):
-Klidný přehled. Řekni stav a kam směřuje ohrožení, bez názvů nemocí.
-Příklad: "Jsi na tom slušně, ale metabolismus tě brzdí — a to ohrožuje srdce."
-Příklad: "Celkově dobré, ale tělo zaostává a hlava na to doplatí."
+HLAVNÍ UZEL:
+Když stav špatný: "Nejvíc tě brzdí [slabý článek], bez změny to půjde dolů."
+Když stav střední: "Celkově ok, ale [slabý článek] zaostává."
+Když stav dobrý: "Jsi v dobré kondici, drž to takhle."
 
-2) PODŘÍZENÝ UZEL (Tělo, Mysl, Výživa, Zdraví):
-Konkrétní stav uzlu. 
-Mírný tón — ne strašení, ale upřímnost.
-Řekni co nestačí a co je v ohrožení.
-Příklad: "Síla ti v pětaosmdesáti nebude stačit a ztratíš samostatnost."
-Příklad: "Spánek nestačí a mozek na to doplácí."
+PODŘÍZENÝ UZEL:
+Když stav špatný: "Tvoje [oblast] nestačí — [co to znamená pro tělo]."
+Když stav střední: "Tvoje [oblast] není špatná, ale [co konkrétně slábne]."
+Když stav dobrý: "Tvoje [oblast] je v pořádku."
 
-FORMÁT:
-- PŘESNĚ JEDNA VĚTA. Nic víc. Žádná druhá věta.
-- Žádné nadpisy, odrážky, formátování
-- Žádná akce
-
-PRAVIDLA:
-- Max patnáct slov na větu
-- Mluv o důsledcích, ne o diagnózách (ne "hrozí cukrovka" ale "metabolismus tě brzdí")
-- Žádné číslovky — piš slovně
-- Směruj na budoucnost, ne na strach
-
-ZAKÁZÁNO:
-- Čísla a číslice
-- Konkrétní názvy nemocí (ne "cukrovka", "infarkt" — piš "srdce", "mozek", "samostatnost")
-- "musíš", "okamžitě", "je důležité", "měl bys", "hrozí"
-- Akční kroky
-- "Dobrá zpráva je"
+Doplň jen to co je v hranatých závorkách. Neměň strukturu věty. Nepřidávej nic navíc.
 
 JAZYK: Česky, tykání, přímočaré. Max třicet slov celkem.
 `;
@@ -142,10 +155,10 @@ JAZYK: Česky, tykání, přímočaré. Max třicet slov celkem.
     const USER_PROMPT = `
 REŽIM: ${node.id === 'dlouhovekost' ? 'HLAVNÍ UZEL' : 'PODŘÍZENÝ UZEL'}
 UZEL: ${node.label}
-STAV: ${node.state}
-${bottleneckLabel ? `SLABÝ ČLÁNEK: ${bottleneckLabel}
+STAV: ${node.state || context?.state || 'UNKNOWN'}
+${node.id === 'dlouhovekost' && bottleneckLabel ? `SLABÝ ČLÁNEK: ${getNodeLabel(bottleneckLabel)}
 OHROŽENÍ: ${getRiderRisk(bottleneckLabel)}` : ''}
-${aspiration ? `SEN: ${aspiration}` : ''}
+${node.id !== 'dlouhovekost' ? `OBLAST: ${getNodeContext(node.id)}` : ''}
 
 Odpověz JEDNOU větou. Napiš jednu větu a skonči.
 `.trim();
