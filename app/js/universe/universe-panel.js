@@ -1,63 +1,37 @@
-import { supabase } from './supabaseClient.js';
+// === UNIVERSE-PANEL.JS ===
+// Pravý panel – Chytré já brífink + smart chips + živý chat
 console.log("PANEL JS LOADED");
 
-const panelEl = document.getElementById("sidePanel");
-const titleEl = document.getElementById("nodeTitle");
-const defEl = document.getElementById("nodeDef");
-const tasksEl = document.getElementById("nodeTasks");
-const panelHeader = document.querySelector("#sidePanel .panel-header");
-async function loadBatteryScore() {
-  try {
-    const userId = window.firebaseAuth?.currentUser?.uid || 'demo-user-123';
-    console.log("🔋 Loading battery for user:", userId);
+// =====================================================
+// STYLES  (injektujeme jednou při načtení modulu)
+// =====================================================
 
-    // Get dlouhovekost (root) node value directly
-    const { data: rootNode, error } = await window.supabaseClient
-      .from('user_metrics')
-      .select('current_index')
-      .eq('user_id', userId)
-      .eq('universe', 'longevity')
-      .eq('node_id', 'dlouhovekost')
-      .single();
-
-    console.log("🔋 Root node data:", { rootNode, error });
-
-    if (error) throw error;
-    if (!rootNode) {
-      console.log("⚠️ No root node found");
-      return { score: 0, bottleneck: null };
+if (!document.getElementById('chj-panel-styles')) {
+  const s = document.createElement('style');
+  s.id = 'chj-panel-styles';
+  s.textContent = `
+    .chj-dots {
+      display: inline-block;
+      color: #64748b;
+      font-size: 22px;
+      letter-spacing: 8px;
+      animation: chj-breathe 1.2s ease-in-out infinite;
     }
-
-    // Get bottleneck from decathlon nodes
-    const { data: decathlonNodes } = await window.supabaseClient
-      .from('user_metrics')
-      .select('node_id, current_index')
-      .eq('user_id', userId)
-      .eq('universe', 'longevity')
-      .in('node_id', [
-        'stabilita', 'sila', 'vytrvalost', 'mobilita',
-        'spanek', 'nervovy_system', 'metabolicke',
-        'bílkoviny', 'klid', 'smysl', 'vo2max'
-      ]);
-
-    const bottleneck = decathlonNodes && decathlonNodes.length > 0
-      ? decathlonNodes.sort((a, b) => a.current_index - b.current_index)[0]
-      : null;
-
-    const result = {
-      score: Math.round(rootNode.current_index * 10) / 10,
-      bottleneck: bottleneck ? bottleneck.node_id : null,
-      bottleneck_index: bottleneck ? bottleneck.current_index : null
-    };
-
-    console.log("🔋 Battery result:", result);
-    return result;
-
-  } catch (err) {
-    console.error('❌ Battery load failed:', err);
-    return { score: 0, bottleneck: null, bottleneck_index: null };
-  }
+    @keyframes chj-breathe {
+      0%, 100% { opacity: 0.15; }
+      50%       { opacity: 0.9;  }
+    }
+    #aiPanelInput:disabled,
+    #ai-send:disabled { opacity: 0.4; cursor: not-allowed; }
+  `;
+  document.head.appendChild(s);
 }
+
+// =====================================================
+// PANEL CORE
+// =====================================================
+
+const panelEl = document.getElementById("sidePanel");
 
 export function closePanel() {
   if (panelEl) {
@@ -66,29 +40,15 @@ export function closePanel() {
     document.body.classList.remove("panel-open");
   }
 }
-const closeBtn = document.getElementById("closePanel");
-if (closeBtn) {
-  closeBtn.onclick = () => {
-    closePanel();
-  };
-}
 
+const closeBtn = document.getElementById("closePanel");
+if (closeBtn) closeBtn.onclick = () => closePanel();
 window.closePanel = closePanel;
 
 function resetPanel() {
+  const titleEl = document.getElementById('nodeTitle');
   if (titleEl) titleEl.innerHTML = "";
-  if (defEl) {
-    defEl.innerHTML = "";
-    defEl.style.color = "#f1f5f9";
-    defEl.style.fontSize = "16px";
-  }
-  if (tasksEl) {
-    tasksEl.innerHTML = "";
-    tasksEl.style.display = "block";
-  }
-
-  document.querySelectorAll(".metric-card, .dynamic-section, hr.dynamic-hr").forEach(el => el.remove());
-
+  document.querySelectorAll(".metric-card, .chj-card, .dynamic-section, hr.dynamic-hr").forEach(el => el.remove());
   const msgs = document.getElementById('ai-integrated-msgs');
   if (msgs) msgs.innerHTML = "";
 }
@@ -96,7 +56,6 @@ function resetPanel() {
 export async function showPanel(node) {
   if (!panelEl) return;
 
-  // Disable transitions
   panelEl.style.transition = "none";
   panelEl.style.visibility = "hidden";
   panelEl.classList.remove("open", "visible");
@@ -104,453 +63,39 @@ export async function showPanel(node) {
   resetPanel();
   showGameOfLife(node);
 
-  // Show instantly (bez slide)
   panelEl.style.display = "block";
   panelEl.style.visibility = "visible";
   panelEl.classList.add("open", "visible");
   document.body.classList.add("panel-open");
 
-  // Re-enable transitions (pro close animaci)
-  requestAnimationFrame(() => {
-    panelEl.style.transition = "";
-  });
+  requestAnimationFrame(() => { panelEl.style.transition = ""; });
 }
 
-window.setTasks = function (tasks) {
-  const section = document.getElementById("tasksSection");
-  const list = document.getElementById("tasksList");
+// =====================================================
+// DATA FETCHING
+// =====================================================
 
-  if (!section || !list) return;
-
-  section.style.display = "block";
-  list.innerHTML = "";
-
-  tasks.forEach(task => {
-    const li = document.createElement("li");
-    li.textContent = task;
-    list.appendChild(li);
-  });
-};
-window.setResources = function (resources) {
-  const section = document.getElementById("resourcesSection");
-  const list = document.getElementById("resourcesList");
-
-  if (!section || !list) return;
-
-  section.style.display = "block";
-  list.innerHTML = "";
-
-  resources.forEach(res => {
-    const li = document.createElement("li");
-    li.textContent = res;
-    list.appendChild(li);
-  });
-};
-
-function loadNodeResources(node) {
-  const resourcesList = document.getElementById("resourcesList");
-  if (!resourcesList) return;
-
-  resourcesList.innerHTML = "";
-
-  const resources = [];
-
-  if (node.articles && node.articles.length > 0) {
-    node.articles.forEach(article => {
-      resources.push({
-        type: 'markdown',
-        title: article.title,
-        url: article.url,
-        summary: article.summary
-      });
-    });
-  }
-
-  if (node.media && node.media.length > 0) {
-    node.media.forEach(media => {
-      resources.push({
-        type: media.type,
-        title: media.title,
-        url: media.url,
-        summary: media.summary
-      });
-    });
-  }
-
-  if (node.docs && node.docs.length > 0) {
-    node.docs.forEach(doc => {
-      resources.push({
-        type: doc.type || 'pdf',
-        title: doc.title,
-        url: doc.url,
-        summary: doc.summary
-      });
-    });
-  }
-
-  if (resources.length === 0) {
-    resourcesList.innerHTML = '<li style="color: #64748b; font-style: italic; font-size: 15px; padding: 20px 12px;">Žádné zdroje k dispozici</li>';
-    return;
-  }
-
-  resources.forEach(resource => {
-    const li = document.createElement("li");
-    li.style.cssText = `
-      padding: 16px 12px;
-      cursor: pointer;
-      border-bottom: 1px solid rgba(255,255,255,0.06);
-      transition: all 0.2s ease;
-      border-radius: 8px;
-      margin-bottom: 4px;
-    `;
-
-    const icons = {
-      'markdown': '📄',
-      'video': '🎥',
-      'audio': '🎵',
-      'image': '🖼️',
-      'pdf': '📕'
-    };
-
-    const icon = icons[resource.type] || '📎';
-
-    li.innerHTML = `
-      <div style="display: flex; align-items: start; gap: 12px;">
-        <span style="font-size: 24px;">${icon}</span>
-        <div style="flex: 1;">
-          <div style="font-weight: 600; color: #e2e8f0; margin-bottom: 6px; font-size: 15px; line-height: 1.4;">${resource.title}</div>
-          ${resource.summary ? `<div style="font-size: 13px; color: #94a3b8; line-height: 1.5;">${resource.summary}</div>` : ''}
-        </div>
-      </div>
-    `;
-
-    li.addEventListener('click', () => {
-      openResource(resource);
-    });
-
-    li.addEventListener('mouseenter', () => {
-      li.style.background = 'rgba(59, 130, 246, 0.15)';
-      li.style.transform = 'translateX(4px)';
-    });
-
-    li.addEventListener('mouseleave', () => {
-      li.style.background = 'transparent';
-      li.style.transform = 'translateX(0)';
-    });
-
-    resourcesList.appendChild(li);
-  });
-}
-
-function openResource(resource) {
-  switch (resource.type) {
-    case 'markdown':
-      openMarkdownViewer(resource.url, resource.title);
-      break;
-
-    case 'pdf':
-      openPDFViewer(resource.url, resource.title);
-      break;
-
-    case 'video':
-      openVideoViewer(resource.url, resource.title);
-      break;
-
-    case 'audio':
-      openAudioPlayer(resource.url, resource.title);
-      break;
-
-    case 'image':
-      openImageViewer(resource.url, resource.title);
-      break;
-
-    default:
-      window.open(resource.url, '_blank');
-  }
-}
-
-async function openMarkdownViewer(url, title) {
+async function fetchLearningSteps(nodeId) {
   try {
-    const response = await fetch(url);
-    if (!response.ok) throw new Error('Chyba načítání souboru');
+    const { data, error } = await window.supabaseClient
+      .from('universe_nodes')
+      .select('*')
+      .eq('id', nodeId)
+      .eq('universe_id', 'longevity')
+      .maybeSingle();
 
-    const markdown = await response.text();
-
-    const html = window.marked ? marked.parse(markdown) : `<pre style="white-space: pre-wrap; line-height: 1.6;">${markdown}</pre>`;
-
-    showModal(title, html, 'markdown');
-
-  } catch (error) {
-    console.error('Chyba načítání Markdown:', error);
-    alert(`Nepodařilo se načíst dokument: ${error.message}`);
+    if (error) {
+      console.warn(`⚠️ fetchLearningSteps(${nodeId}):`, error.message);
+      return null;
+    }
+    return data;
+  } catch (err) {
+    console.warn('⚠️ fetchLearningSteps exception:', err);
+    return null;
   }
 }
 
-function openPDFViewer(url, title) {
-  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-
-  if (isMobile) {
-    window.open(url, '_blank');
-    return;
-  }
-
-  const iframe = `<iframe src="${url}" style="width:100%; height:80vh; border:none; border-radius:8px;"></iframe>`;
-  showModal(title, iframe, 'pdf');
-}
-
-function openVideoViewer(url, title) {
-  let videoEmbed;
-
-  if (url.includes('youtube.com/embed/') || url.includes('youtu.be')) {
-    const embedUrl = url.includes('embed') ? url : url.replace('youtu.be/', 'youtube.com/embed/');
-    videoEmbed = `
-      <iframe 
-        width="100%" 
-        height="500" 
-        src="${embedUrl}" 
-        frameborder="0" 
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-        allowfullscreen
-        style="border-radius:8px;">
-      </iframe>
-    `;
-  } else {
-    videoEmbed = `
-      <video controls style="width:100%; max-height:500px; border-radius:8px;">
-        <source src="${url}" type="video/mp4">
-        Tvůj prohlížeč nepodporuje video.
-      </video>
-    `;
-  }
-
-  showModal(title, videoEmbed, 'video');
-}
-
-function openAudioPlayer(url, title) {
-  const audioPlayer = `
-    <div style="text-align:center; padding:30px;">
-      <audio controls style="width:100%; max-width:450px;">
-        <source src="${url}" type="audio/mpeg">
-        Tvůj prohlížeč nepodporuje audio.
-      </audio>
-    </div>
-  `;
-
-  showModal(title, audioPlayer, 'audio');
-}
-
-function openImageViewer(url, title) {
-  const imageViewer = `
-    <div style="text-align:center;">
-      <img src="${url}" alt="${title}" style="max-width:100%; max-height:70vh; border-radius:8px;">
-    </div>
-  `;
-
-  showModal(title, imageViewer, 'image');
-}
-
-function showModal(title, content, type) {
-  const existingModal = document.getElementById('resourceModal');
-  if (existingModal) existingModal.remove();
-
-  const modalSizes = {
-    pdf: { maxWidth: '900px', maxHeight: '90vh' },
-    markdown: { maxWidth: '900px', maxHeight: '85vh' },
-    video: { maxWidth: '1000px', maxHeight: '85vh' },
-    audio: { maxWidth: '550px', maxHeight: '350px' },
-    image: { maxWidth: '700px', maxHeight: '75vh' }
-  };
-
-  const size = modalSizes[type] || modalSizes.markdown;
-
-  const modal = document.createElement('div');
-  modal.id = 'resourceModal';
-  modal.style.cssText = `
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.9);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 10000;
-    opacity: 0;
-    transition: opacity 0.15s ease;
-  `;
-
-  const modalContent = document.createElement('div');
-  modalContent.style.cssText = `
-    background: #1e293b;
-    border-radius: 16px;
-    padding: 24px;
-    max-width: ${size.maxWidth};
-    max-height: ${size.maxHeight};
-    width: 100%;
-    overflow-y: auto;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-    transform: translateY(20px);
-    transition: transform 0.2s ease;
-  `;
-
-  modalContent.innerHTML = `
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; position: sticky; top: 0; background: #1e293b; z-index: 1; padding-bottom: 12px;">
-      <h2 style="color:#f8fafc; margin:0; font-size:1.5em;">${title}</h2>
-      <button id="closeModal" style="
-        background:transparent; 
-        border:none; 
-        color:#94a3b8; 
-        font-size:28px; 
-        cursor:pointer;
-        line-height:1;
-        padding:0;
-        width:32px;
-        height:32px;
-        border-radius:50%;
-        transition:all 0.2s;
-      ">&times;</button>
-    </div>
-    <div class="modal-body" style="color:#e2e8f0;">
-      ${content}
-    </div>
-  `;
-
-  modal.appendChild(modalContent);
-  document.body.appendChild(modal);
-
-  requestAnimationFrame(() => {
-    modal.style.opacity = '1';
-    modalContent.style.transform = 'translateY(0)';
-  });
-
-  const closeModalFn = () => {
-    modal.style.opacity = '0';
-    modalContent.style.transform = 'translateY(20px)';
-    setTimeout(() => modal.remove(), 150);
-  };
-
-  document.getElementById('closeModal').addEventListener('click', closeModalFn);
-
-  modal.addEventListener('click', (e) => {
-    if (e.target === modal) {
-      closeModalFn();
-    }
-  });
-
-  const escHandler = (e) => {
-    if (e.key === 'Escape') {
-      closeModalFn();
-      document.removeEventListener('keydown', escHandler);
-    }
-  };
-  document.addEventListener('keydown', escHandler);
-
-  const closeBtn = document.getElementById('closeModal');
-  closeBtn.addEventListener('mouseenter', () => {
-    closeBtn.style.background = 'rgba(239, 68, 68, 0.2)';
-    closeBtn.style.color = '#ef4444';
-  });
-  closeBtn.addEventListener('mouseleave', () => {
-    closeBtn.style.background = 'transparent';
-    closeBtn.style.color = '#94a3b8';
-  });
-}
-
-const styleSheet = document.createElement("style");
-styleSheet.textContent = `
-  .modal-body h1, .modal-body h2, .modal-body h3 {
-    color: #f8fafc;
-    margin-top: 1.5em;
-    margin-bottom: 0.5em;
-  }
-  
-  .modal-body p {
-    line-height: 1.6;
-    margin-bottom: 1em;
-  }
-  
-  .modal-body code {
-    background: rgba(0,0,0,0.3);
-    padding: 2px 6px;
-    border-radius: 4px;
-    color: #38bdf8;
-  }
-  
-  .modal-body pre {
-    background: rgba(0,0,0,0.3);
-    padding: 16px;
-    border-radius: 8px;
-    overflow-x: auto;
-    margin: 1em 0;
-  }
-  
-  .modal-body ul, .modal-body ol {
-    margin-left: 1.5em;
-    line-height: 1.8;
-  }
-  
-  .modal-body a {
-    color: #38bdf8;
-    text-decoration: none;
-  }
-  
-  .modal-body a:hover {
-    text-decoration: underline;
-  }
-  
-  @media (max-width: 768px) {
-    #resourceModal {
-      padding: 10px !important;
-    }
-    
-    #resourceModal > div {
-      max-width: 100% !important;
-      max-height: 95vh !important;
-      padding: 16px !important;
-      border-radius: 12px !important;
-    }
-    
-    #resourceModal h2 {
-      font-size: 1.2em !important;
-    }
-    
-    #resourceModal iframe {
-      height: 60vh !important;
-      min-height: 400px !important;
-    }
-  }
-  
-  @media (max-width: 480px) {
-    .resources-list li {
-      padding: 12px 8px !important;
-    }
-    
-    .resources-list li > div {
-      gap: 8px !important;
-    }
-    
-    .resources-list li span {
-      font-size: 20px !important;
-    }
-    
-    .resources-list li div div:first-child {
-      font-size: 14px !important;
-    }
-    
-    .resources-list li div div:last-child {
-      font-size: 12px !important;
-    }
-  }
-`;
-document.head.appendChild(styleSheet);
-
-
-// =====================================================
-// TREND SPARKLINE - SVG LINE CHART
-// =====================================================
-
-async function renderTrendSparkline(userId, nodeId, nodeState) {
+async function fetchTrend(userId, nodeId, nodeState) {
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
   const dateFilter = thirtyDaysAgo.toISOString().split('T')[0];
@@ -564,8 +109,12 @@ async function renderTrendSparkline(userId, nodeId, nodeState) {
     .order('date', { ascending: true });
 
   if (error) console.error('Trend error:', error);
+
   if (!data || data.length === 0) {
-    return '<div style="color:#64748b; font-size:13px; padding:20px 0;">Zatím není trend</div>';
+    return {
+      html: '<div style="color:#64748b; font-size:13px; padding:16px 0;">Zatím není trend</div>',
+      text: 'Stabilní'
+    };
   }
 
   const points = data.map((d, i) => {
@@ -576,92 +125,64 @@ async function renderTrendSparkline(userId, nodeId, nodeState) {
 
   const recent = data.slice(-7);
   const recentGreen = recent.filter(d => d.state === 'GREEN').length;
-  const recentRed = recent.filter(d => d.state === 'RED').length;
+  const recentRed   = recent.filter(d => d.state === 'RED').length;
 
   let arrow = '→', trendText = 'Stabilní', trendColor = '#eab308';
-  if (recentGreen > recentRed + 2) {
-    arrow = '↗️'; trendText = 'Zlepšení'; trendColor = '#22c55e';
-  } else if (recentRed > recentGreen + 2) {
-    arrow = '↘️'; trendText = 'Zhoršení'; trendColor = '#ef4444';
-  }
+  if (recentGreen > recentRed + 2)      { arrow = '↗️'; trendText = 'Zlepšení'; trendColor = '#22c55e'; }
+  else if (recentRed > recentGreen + 2) { arrow = '↘️'; trendText = 'Zhoršení'; trendColor = '#ef4444'; }
 
   const stateColor = nodeState === 'GREEN' ? '#22c55e'
     : nodeState === 'YELLOW' ? '#eab308'
-      : nodeState === 'RED' ? '#ef4444'
-        : '#64748b';
+    : nodeState === 'RED'    ? '#ef4444'
+    : '#64748b';
 
-  return `<svg width="100%" height="50" viewBox="0 0 100 100" preserveAspectRatio="none" style="display:block;"><rect x="0" y="0" width="100" height="33" fill="#22c55e" opacity="0.05"/><rect x="0" y="33" width="100" height="34" fill="#eab308" opacity="0.05"/><rect x="0" y="67" width="100" height="33" fill="#ef4444" opacity="0.05"/><polyline points="${points.join(' ')}" fill="none" stroke="${trendColor}" stroke-width="6" opacity="0.2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="${points.join(' ')}" fill="none" stroke="${stateColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="${points[points.length - 1].split(',')[0]}" cy="${points[points.length - 1].split(',')[1]}" r="2" fill="${trendColor}"/></svg><div style="display:flex;align-items:center;gap:8px;margin-top:8px;"><span style="font-size:18px;">${arrow}</span><span style="color:${trendColor};font-size:13px;font-weight:500;">${trendText}</span><span style="color:#64748b;font-size:12px;margin-left:auto;">${data.length} dní</span></div>`;
+  const last = points[points.length - 1].split(',');
+
+  const html = `
+    <svg width="100%" height="50" viewBox="0 0 100 100" preserveAspectRatio="none" style="display:block;">
+      <rect x="0" y="0"  width="100" height="33" fill="#22c55e" opacity="0.05"/>
+      <rect x="0" y="33" width="100" height="34" fill="#eab308" opacity="0.05"/>
+      <rect x="0" y="67" width="100" height="33" fill="#ef4444" opacity="0.05"/>
+      <polyline points="${points.join(' ')}" fill="none" stroke="${trendColor}" stroke-width="6" opacity="0.2" stroke-linecap="round" stroke-linejoin="round"/>
+      <polyline points="${points.join(' ')}" fill="none" stroke="${stateColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="${last[0]}" cy="${last[1]}" r="2" fill="${trendColor}"/>
+    </svg>
+    <div style="display:flex; align-items:center; gap:8px; margin-top:8px;">
+      <span style="font-size:18px;">${arrow}</span>
+      <span style="color:${trendColor}; font-size:13px; font-weight:500;">${trendText}</span>
+      <span style="color:#64748b; font-size:12px; margin-left:auto;">${data.length} dní</span>
+    </div>
+  `;
+
+  return { html, text: trendText };
 }
-// =====================================================
-// LEARNING STEPS FETCH (universe_nodes)
-// =====================================================
-
-// Note: node IDs jsou UTF-8 strings (např. 'bílkoviny' s diakritikou).
-// Supabase .eq() porovnává byte-to-byte – neprovádíme žádnou normalizaci.
-async function fetchLearningSteps(nodeId) {
-  try {
-    const { data, error } = await window.supabaseClient
-      .from('universe_nodes')
-      .select('step_provocation, step_action, step_reflection, step_integration')
-      .eq('id', nodeId)
-      .eq('universe_id', 'longevity')
-      .maybeSingle();
-
-    if (error) {
-      console.warn(`⚠️ fetchLearningSteps(${nodeId}):`, error.message);
-      return null;
-    }
-    if (!data) {
-      console.warn(`⚠️ Žádné learning steps pro uzel: ${nodeId}`);
-    }
-    return data;
-  } catch (err) {
-    console.warn('⚠️ fetchLearningSteps exception:', err);
-    return null;
-  }
-}
-
-// =====================================================
-// CHJ VERDICT GENERATION (OpenAI)
-// =====================================================
 
 async function generateVerdictV2(node, userId) {
   try {
-    console.log("🤖 Calling CHJ API for node:", node.id);
-
     const { data: metrics } = await window.supabaseClient
       .from('user_metrics')
       .select('node_id, state, current_index')
       .eq('user_id', userId)
       .eq('universe', 'longevity');
 
-    console.log("📊 Metrics loaded:", metrics?.length);
-
-    if (!metrics || metrics.length === 0) {
-      return { text: 'Zatím nemám dost dat.' };
-    }
+    if (!metrics || metrics.length === 0) return { text: 'Zatím nemám dost dat.' };
 
     const bottleneck = metrics
       .filter(m => m.state === 'RED')
       .sort((a, b) => a.current_index - b.current_index)[0];
-    const redCount = metrics.filter(m => m.state === 'RED').length;
-    const yellowCount = metrics.filter(m => m.state === 'YELLOW').length;
-    const greenCount = metrics.filter(m => m.state === 'GREEN').length;
 
     const payload = {
       nodeId: node.id,
       userQuestion: null,
       context: {
-        state: node.state,
-        userId: userId,
-        redCount,
-        yellowCount,
-        greenCount,
-        bottleneck: bottleneck?.node_id
+        state:       node.state,
+        userId,
+        redCount:    metrics.filter(m => m.state === 'RED').length,
+        yellowCount: metrics.filter(m => m.state === 'YELLOW').length,
+        greenCount:  metrics.filter(m => m.state === 'GREEN').length,
+        bottleneck:  bottleneck?.node_id
       }
     };
-
-    console.log("📤 API request:", payload);
 
     const response = await fetch('/api/chat', {
       method: 'POST',
@@ -669,287 +190,481 @@ async function generateVerdictV2(node, userId) {
       body: JSON.stringify(payload)
     });
 
-    const text = await response.text();
-    console.log("📥 Raw response:", text);
+    if (!response.ok) return { text: `API error ${response.status}` };
 
-    if (!response.ok) {
-      return { text: `API error ${response.status}` };
-    }
-
-    const data = JSON.parse(text);
-    const verdict = data?.verdict || 'API nevrátilo platnou odpověď.';
-
-    console.log("✅ Returning:", verdict);
-
-    return { text: verdict.replace(/\n/g, '<br>') };
+    const data = JSON.parse(await response.text());
+    return { text: (data?.verdict || 'API nevrátilo platnou odpověď.').replace(/\n/g, ' ') };
 
   } catch (err) {
-    console.error('❌ Error:', err);
+    console.error('❌ generateVerdictV2:', err);
     return { text: 'Chyba při komunikaci s AI.' };
   }
 }
 
 // =====================================================
-// SHOW GAME OF LIFE
+// VIEWER MODAL  (iFrame → /app/viewer.html)
+// =====================================================
+
+const TYPE_MAP = { markdown: 'md', pdf: 'pdf', video: 'video', audio: 'audio', image: 'image', gif: 'image' };
+
+function detectType(url) {
+  if (!url) return 'md';
+  if (url.endsWith('.md'))                               return 'md';
+  if (url.endsWith('.pdf'))                              return 'pdf';
+  if (url.match(/\.(mp4|webm|mov)$/i))                  return 'video';
+  if (url.match(/\.(mp3|ogg|wav|m4a)$/i))               return 'audio';
+  if (url.match(/\.(png|jpg|jpeg|gif|webp|svg)$/i))     return 'image';
+  if (url.includes('youtube.com') || url.includes('youtu.be')) return 'video';
+  return 'md';
+}
+
+let _currentViewerClose = null;
+
+window.addEventListener('message', e => {
+  if (e.data === 'closeViewer' && _currentViewerClose) {
+    _currentViewerClose();
+  }
+});
+
+function openViewerModal(fileUrl, type, title) {
+  document.getElementById('viewerModal')?.remove();
+
+  const isAudio  = type === 'audio';
+  const viewerSrc = `/app/viewer.html?type=${encodeURIComponent(type)}&file=${encodeURIComponent(fileUrl)}`;
+
+  const modal = document.createElement('div');
+  modal.id = 'viewerModal';
+
+  if (isAudio) {
+    modal.style.cssText = `
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.85);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 10000;
+      opacity: 0; transition: opacity 0.2s ease;
+    `;
+    modal.innerHTML = `
+      <div style="
+        background:#1e293b; border-radius:16px; overflow:hidden;
+        width:90%; max-width:480px;
+        box-shadow:0 20px 60px rgba(0,0,0,0.7);
+        display:flex; flex-direction:column;
+      ">
+        <div style="
+          display:flex; align-items:center; justify-content:space-between;
+          padding:12px 16px; background:#0f172a; border-bottom:1px solid #1e293b; flex-shrink:0;
+        ">
+          <span style="color:#94a3b8; font-size:14px; font-weight:500;">🎵 ${title || 'Audio'}</span>
+          <button id="closeViewerModal" style="
+            background:transparent;border:none;color:#94a3b8;
+            font-size:22px;cursor:pointer;padding:4px 8px;
+            border-radius:6px;line-height:1;transition:all 0.2s;
+          ">&times;</button>
+        </div>
+        <iframe src="${viewerSrc}" style="width:100%;height:130px;border:none;background:#0f172a;" allow="autoplay"></iframe>
+      </div>
+    `;
+  } else {
+    modal.style.cssText = `
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.92);
+      display: flex; flex-direction: column;
+      z-index: 10000;
+      opacity: 0; transition: opacity 0.2s ease;
+    `;
+    modal.innerHTML = `
+      <div style="
+        display:flex; align-items:center; justify-content:space-between;
+        padding:12px 20px; background:#0f172a; border-bottom:1px solid #1e293b; flex-shrink:0;
+      ">
+        <span style="color:#94a3b8; font-size:14px; font-weight:500;">${title || ''}</span>
+        <button id="closeViewerModal" style="
+          background:transparent;border:none;color:#94a3b8;
+          font-size:24px;cursor:pointer;padding:4px 8px;
+          border-radius:6px;line-height:1;transition:all 0.2s;
+        ">&times;</button>
+      </div>
+      <iframe src="${viewerSrc}" style="flex:1;width:100%;border:none;background:#0a0f1e;" allow="fullscreen"></iframe>
+    `;
+  }
+
+  document.body.appendChild(modal);
+  requestAnimationFrame(() => { modal.style.opacity = '1'; });
+
+  const closeViewer = () => {
+    _currentViewerClose = null;
+    modal.style.opacity = '0';
+    setTimeout(() => modal.remove(), 200);
+  };
+
+  _currentViewerClose = closeViewer;
+
+  const btn = document.getElementById('closeViewerModal');
+  btn.onclick = closeViewer;
+  btn.onmouseenter = () => { btn.style.background='rgba(239,68,68,0.2)'; btn.style.color='#ef4444'; };
+  btn.onmouseleave = () => { btn.style.background='transparent'; btn.style.color='#94a3b8'; };
+
+  modal.addEventListener('click', e => { if (e.target === modal) closeViewer(); });
+
+  const escHandler = e => {
+    if (e.key === 'Escape') { closeViewer(); document.removeEventListener('keydown', escHandler); }
+  };
+  document.addEventListener('keydown', escHandler);
+}
+
+function openTextAsViewer(markdownText, title) {
+  if (!markdownText) { showToast('Obsah není k dispozici.'); return; }
+  const blob    = new Blob([markdownText], { type: 'text/plain; charset=utf-8' });
+  const blobUrl = URL.createObjectURL(blob);
+  openViewerModal(blobUrl, 'md', title);
+}
+
+function openResourcesViewer(node) {
+  const all = [
+    ...(node.articles || []).map(a => ({ title: a.title, url: a.url, summary: a.summary, type: detectType(a.url) })),
+    ...(node.media    || []).map(m => ({ title: m.title, url: m.url, summary: m.summary, type: TYPE_MAP[m.type] || detectType(m.url) })),
+    ...(node.docs     || []).map(d => ({ title: d.title, url: d.url, summary: d.summary, type: TYPE_MAP[d.type] || detectType(d.url) }))
+  ].filter(r => r.url);
+
+  if (all.length === 0) { showToast('Žádné zdroje k dispozici.'); return; }
+  if (all.length === 1) { openViewerModal(all[0].url, all[0].type, all[0].title); return; }
+
+  document.getElementById('viewerModal')?.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'viewerModal';
+  modal.style.cssText = `
+    position:fixed; inset:0;
+    background:rgba(0,0,0,0.85);
+    display:flex; align-items:center; justify-content:center;
+    z-index:10000;
+    opacity:0; transition:opacity 0.2s ease;
+  `;
+
+  const icons = { md:'📄', pdf:'📕', video:'🎥', audio:'🎵', image:'🖼️' };
+
+  modal.innerHTML = `
+    <div style="
+      background:#1e293b; border-radius:16px; padding:24px;
+      max-width:460px; width:90%; max-height:80vh; overflow-y:auto;
+      box-shadow:0 20px 60px rgba(0,0,0,0.7);
+    ">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+        <h2 style="color:#f8fafc; margin:0; font-size:1.15em;">📚 Zdroje</h2>
+        <button id="closeViewerModal" style="background:transparent;border:none;color:#94a3b8;font-size:24px;cursor:pointer;line-height:1;">&times;</button>
+      </div>
+      ${all.map((r, i) => `
+        <div data-idx="${i}" class="res-pick" style="
+          display:flex; align-items:center; gap:12px;
+          padding:14px 16px; border-radius:10px; cursor:pointer;
+          border:1px solid #1e293b; margin-bottom:8px;
+          background:#0f172a; transition:all 0.15s ease;
+        ">
+          <span style="font-size:22px;">${icons[r.type] || '📎'}</span>
+          <div>
+            <div style="font-weight:600; color:#e2e8f0; font-size:14px;">${r.title || 'Bez názvu'}</div>
+            ${r.summary ? `<div style="font-size:12px; color:#64748b; margin-top:2px;">${r.summary}</div>` : ''}
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+  requestAnimationFrame(() => { modal.style.opacity = '1'; });
+
+  const closeViewer = () => {
+    modal.style.opacity = '0';
+    setTimeout(() => modal.remove(), 200);
+  };
+
+  document.getElementById('closeViewerModal').onclick = closeViewer;
+  modal.addEventListener('click', e => { if (e.target === modal) closeViewer(); });
+
+  const escHandler = e => {
+    if (e.key === 'Escape') { closeViewer(); document.removeEventListener('keydown', escHandler); }
+  };
+  document.addEventListener('keydown', escHandler);
+
+  modal.querySelectorAll('.res-pick').forEach(el => {
+    const idx = parseInt(el.dataset.idx);
+    el.addEventListener('click', () => {
+      closeViewer();
+      setTimeout(() => openViewerModal(all[idx].url, all[idx].type, all[idx].title), 250);
+    });
+    el.addEventListener('mouseenter', () => {
+      el.style.background = 'rgba(59,130,246,0.12)';
+      el.style.borderColor = 'rgba(59,130,246,0.3)';
+    });
+    el.addEventListener('mouseleave', () => {
+      el.style.background = '#0f172a';
+      el.style.borderColor = '#1e293b';
+    });
+  });
+}
+
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.textContent = msg;
+  t.style.cssText = `
+    position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
+    background:#1e293b; color:#94a3b8; padding:10px 20px;
+    border-radius:8px; font-size:14px; z-index:99999;
+    opacity:0; transition:opacity 0.2s ease; white-space:nowrap;
+  `;
+  document.body.appendChild(t);
+  requestAnimationFrame(() => { t.style.opacity = '1'; });
+  setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 200); }, 2500);
+}
+
+// =====================================================
+// SHOW GAME OF LIFE  (hlavní builder panelu)
 // =====================================================
 
 async function showGameOfLife(node) {
-  console.log("🎮 showGameOfLife called with node:", node);
+  console.log("🎮 showGameOfLife:", node.id);
   const userId = window.firebaseAuth?.currentUser?.uid || 'demo-user-123';
-
-  // Fetch 4-krokový obsah z universe_nodes (Learning by Doing)
-  const steps = await fetchLearningSteps(node.id);
-  const provocationText = steps?.step_provocation ?? null;
-  const actionText      = steps?.step_action      ?? null;
-  const reflectionText  = steps?.step_reflection  ?? null;
-  console.log(`📖 Learning steps pro ${node.id}:`, { provocationText, actionText, reflectionText });
 
   // 1. Nadpis
   const titleEl = document.getElementById('nodeTitle');
   if (titleEl) {
-    titleEl.innerHTML = `<span style="font-size:1.4em;margin-right:8px;">🏋️</span>${node.label || 'Stoletý desetibojař'}`;
+    titleEl.innerHTML = `<span style="font-size:1.15em; margin-right:6px;">${node.icon || '🏋️'}</span>${node.label || 'Stoletý desetibojař'}`;
   }
 
-  // 2. Vytvoř kartu s skeleton loader
+  // 2. Trend karta – skeleton
   let metricCard = document.querySelector('.metric-card');
   if (metricCard) metricCard.remove();
 
   metricCard = document.createElement('div');
   metricCard.className = 'metric-card';
   metricCard.style.cssText = `
-    background: #06b6d415; 
-    border: 1px solid #06b6d433; 
-    border-radius: 12px; 
-    padding: 20px; 
-    margin: 15px 0; 
-    color: #fff;
-    box-shadow: 0 4px 15px #06b6d411;
+    background:#06b6d415; border:1px solid #06b6d433;
+    border-radius:12px; padding:20px; margin:15px 0;
   `;
-
   metricCard.innerHTML = `
-    <div style="font-size:11px; color:#94a3b8; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">Trend (30 dní)</div>
-    <div style="height:80px; background:rgba(255,255,255,0.05); border-radius:8px; animation:pulse 1.5s ease-in-out infinite;"></div>
-    <style>
-      @keyframes pulse {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.4; }
-      }
-    </style>
+    <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Trend (30 dní)</div>
+    <div style="height:80px;background:rgba(255,255,255,0.05);border-radius:8px;animation:pulse 1.5s ease-in-out infinite;"></div>
+    <style>@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}</style>
   `;
 
   const panelHeader = document.querySelector('.panel-header');
   if (panelHeader) panelHeader.after(metricCard);
 
-  // 3. Načti sparkline async
-  renderTrendSparkline(userId, node.id, node.state).then(sparkline => {
-    metricCard.innerHTML = `
-      <div style="font-size:11px; color:#94a3b8; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">Trend (30 dní)</div>
-      ${sparkline}
-    `;
-  });
-
-  // 4. CHJ KARTA
+  // 3. CHJ karta – skeleton
   let chjCard = document.querySelector('.chj-card');
   if (chjCard) chjCard.remove();
 
   chjCard = document.createElement('div');
   chjCard.className = 'chj-card';
   chjCard.style.cssText = `
-    background: #0f172a;
-    border: 1px solid #1e293b;
-    border-radius: 12px;
-    padding: 20px;
-    margin: 15px 0;
-    color: #fff;
+    background:#0f172a; border:1px solid #1e293b;
+    border-radius:12px; padding:20px; margin:15px 0; color:#fff;
+  `;
+  chjCard.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <h3 style="margin:0;color:#83B0E3;font-size:18px;">🧠 Chytré já říká:</h3>
+    </div>
+    <div style="height:60px;background:rgba(255,255,255,0.04);border-radius:8px;animation:pulse 1.5s ease-in-out infinite;"></div>
+  `;
+  metricCard.after(chjCard);
+
+  // 4. Paralelní načtení dat
+  const [steps, trend] = await Promise.all([
+    fetchLearningSteps(node.id),
+    fetchTrend(userId, node.id, node.state)
+  ]);
+
+  const provocationText = steps?.step_provocation   ?? null;
+  const actionText      = steps?.step_action        ?? null;
+  const actionTitle     = steps?.step_action_title  ?? steps?.step_action_label  ?? null;
+  const reflectionText  = steps?.step_reflection    ?? null;
+  const reflectionTitle = steps?.step_reflection_title ?? steps?.step_reflection_label ?? null;
+
+  // 5. Sparkline
+  metricCard.innerHTML = `
+    <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Trend (30 dní)</div>
+    ${trend.html}
   `;
 
-  chjCard.innerHTML = `
-  <h3 style="display:flex; align-items:center; gap:10px; margin:0 0 15px 0; color:#83B0E3; font-size:18px;">
-    🧠 Chytré já říká:
-  </h3>
-  <div class="chj-message" style="color:#cbd5e1; font-size:15px; line-height:1.6; margin-bottom:15px;">
-    Načítám...
-  </div>
-  
-  <!-- TTS Controls -->
-  <div class="tts-controls" style="display:flex; gap:10px; margin-top:15px;">
-    <button id="tts-play" style="background:#06b6d4; color:#fff; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-size:14px;">
-      🔊 Přehrát
-    </button>
-    <button id="tts-stop" style="background:#64748b; color:#fff; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-size:14px; display:none;">
-      ⏹ Stop
-    </button>
-  </div>
-`;
-
-  metricCard.after(chjCard);
-  console.log("✅ CHJ karta vytvořena");
-
-  // 5. AKCE KARTA
-  let actionsCard = document.querySelector('.actions-card');
-  if (actionsCard) {
-    console.log("🗑️ Removing old actions card");
-    actionsCard.remove();
+  // 6. Hlavní text brífinku
+  let initialText;
+  if (provocationText) {
+    initialText = provocationText;
+  } else {
+    console.warn("⚠️ Žádná provokace v DB, fallback na AI:", node.id);
+    const verdict = await generateVerdictV2(node, userId);
+    initialText = verdict?.text || 'Nepodařilo se načíst diagnózu.';
   }
 
-  console.log("✅ Akce karta vytváření...");
-  actionsCard = document.createElement('div');
-  actionsCard.className = 'actions-card';
-  actionsCard.style.cssText = `
-  background: #0f172a;
-  border: 1px solid #1e293b;
-  border-radius: 12px;
-  padding: 20px;
-  margin: 15px 0;
-`;
+  // 7. Chip labely
+  const chip1Label    = actionTitle     || 'Spustit cvičení';
+  const chip2Label    = reflectionTitle || 'Detailní rozbor';
+  const hasResources  = ((node.articles?.length || 0) + (node.media?.length || 0) + (node.docs?.length || 0)) > 0;
 
-  actionsCard.innerHTML = `
-  <h3 style="color:#83B0E3; font-size:18px; margin:0 0 15px 0;">⚡ Akce</h3>
-  <p style="color:#cbd5e1; font-size:15px; line-height:1.7; margin:0;">
-    ${actionText || 'Žádná akce k dispozici.'}
-  </p>
-`;
+  // 8. Sestavení CHJ karty
+  chjCard.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <h3 style="margin:0;color:#83B0E3;font-size:18px;display:flex;align-items:center;gap:8px;">
+        🧠 Chytré já říká:
+      </h3>
+      <button id="tts-play" title="Přehrát" style="
+        background:rgba(6,182,212,0.15); border:1px solid rgba(6,182,212,0.35);
+        color:#22d3ee; font-size:18px; width:36px; height:36px;
+        border-radius:50%; cursor:pointer;
+        display:flex; align-items:center; justify-content:center;
+        transition:all 0.2s; flex-shrink:0;
+      ">🔊</button>
+    </div>
 
-  chjCard.after(actionsCard);
-  console.log("✅ Akce karta přidána");
+    <div class="chj-message" style="
+      color:#e2e8f0; font-size:16px; line-height:1.7;
+      white-space:pre-line; margin-bottom:24px;
+    ">${initialText}</div>
 
-  // 6. HODNOTY KARTA
-  let valuesCard = document.querySelector('.values-card');
-  if (valuesCard) valuesCard.remove();
+    <div class="smart-chips" style="display:flex;flex-direction:column;gap:10px;">
+      ${actionText ? `
+        <button id="chip-action" style="
+          display:flex;align-items:center;gap:10px;
+          background:rgba(234,179,8,0.1);border:1px solid rgba(234,179,8,0.4);
+          color:#fde68a;padding:12px 18px;border-radius:10px;
+          cursor:pointer;font-size:14px;font-weight:600;
+          text-align:left;transition:all 0.2s;width:100%;
+        "><span style="font-size:18px;">⚡</span>${chip1Label}</button>
+      ` : ''}
+      ${reflectionText ? `
+        <button id="chip-reflection" style="
+          display:flex;align-items:center;gap:10px;
+          background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.4);
+          color:#a5b4fc;padding:12px 18px;border-radius:10px;
+          cursor:pointer;font-size:14px;font-weight:600;
+          text-align:left;transition:all 0.2s;width:100%;
+        "><span style="font-size:18px;">🧠</span>${chip2Label}</button>
+      ` : ''}
+      ${(hasResources || actionText || reflectionText) ? `
+        <button id="chip-resources" style="
+          display:flex;align-items:center;gap:10px;
+          background:transparent;border:1px solid #1e293b;
+          color:#64748b;padding:10px 18px;border-radius:10px;
+          cursor:pointer;font-size:13px;font-weight:500;
+          text-align:left;transition:all 0.2s;width:100%;
+          margin-top:4px;
+        "><span style="font-size:16px;">📚</span>Další zdroje</button>
+      ` : ''}
+    </div>
+  `;
 
-  console.log("✅ Reflexe karta vytváření...");
-  valuesCard = document.createElement('div');
-  valuesCard.className = 'values-card';
-  valuesCard.style.cssText = `
-  background: #0f172a;
-  border: 1px solid #1e293b;
-  border-radius: 12px;
-  padding: 20px;
-  margin: 15px 0;
-`;
+  // 9. Hover efekty čipů
+  chjCard.querySelectorAll('.smart-chips button').forEach(btn => {
+    btn.addEventListener('mouseenter', () => { btn.style.opacity='0.78'; btn.style.transform='translateX(3px)'; });
+    btn.addEventListener('mouseleave', () => { btn.style.opacity='1';    btn.style.transform='none'; });
+  });
 
-  valuesCard.innerHTML = `
-  <h3 style="color:#83B0E3; font-size:18px; margin:0 0 15px 0;">🔍 Reflexe</h3>
-  <p style="color:#94a3b8; font-size:15px; line-height:1.7; font-style:italic; margin:0;">
-    ${reflectionText || ''}
-  </p>
-`;
+  // 10. TTS – megafon button
+  //     Čte vždy aktuálně zobrazený text (currentText – mutable)
+  const messageEl  = chjCard.querySelector('.chj-message');
+  const playBtn    = chjCard.querySelector('#tts-play');
+  let   currentText = initialText;   // <-- toto proměnná sdílená s chat handlerem
+  let   ttsPlaying  = false;
 
-  actionsCard.after(valuesCard);
-  console.log("✅ Hodnoty karta přidána");
-
-  // 7. CHJ TEXT: step_provocation z universe_nodes, fallback na AI verdict
-  const messageEl = chjCard.querySelector('.chj-message');
-  const playBtn   = document.getElementById('tts-play');
-  const stopBtn   = document.getElementById('tts-stop');
-  let typingInterval = null;
-
-  function startExperience(text) {
+  function startTTS() {
     speechSynthesis.cancel();
-    clearInterval(typingInterval);
-    messageEl.innerHTML = '';
-
-    const utterance = new SpeechSynthesisUtterance(text);
+    const utterance = new SpeechSynthesisUtterance(currentText);
     utterance.lang  = 'cs-CZ';
     utterance.pitch = 1.2;
     utterance.rate  = 1.1;
-
     utterance.onstart = () => {
-      if (playBtn) playBtn.style.display = 'none';
-      if (stopBtn) stopBtn.style.display = 'block';
+      ttsPlaying = true;
+      playBtn.textContent = '⏹';
+      playBtn.title = 'Zastavit';
+      playBtn.style.background    = 'rgba(239,68,68,0.2)';
+      playBtn.style.borderColor   = 'rgba(239,68,68,0.4)';
+      playBtn.style.color         = '#f87171';
     };
-    utterance.onend = () => {
-      if (playBtn) playBtn.style.display = 'block';
-      if (stopBtn) stopBtn.style.display = 'none';
-      clearInterval(typingInterval);
+    utterance.onend = utterance.onerror = () => {
+      ttsPlaying = false;
+      playBtn.textContent = '🔊';
+      playBtn.title = 'Přehrát';
+      playBtn.style.background    = 'rgba(6,182,212,0.15)';
+      playBtn.style.borderColor   = 'rgba(6,182,212,0.35)';
+      playBtn.style.color         = '#22d3ee';
     };
-    utterance.onerror = (e) => console.error('🎙 TTS error:', e);
-
     window.speechSynthesis.speak(utterance);
-
-    const span = document.createElement('span');
-    messageEl.appendChild(span);
-    let i = 0;
-    typingInterval = setInterval(() => {
-      if (i < text.length) {
-        span.textContent += text.charAt(i++);
-      } else {
-        messageEl.textContent = text;
-        clearInterval(typingInterval);
-      }
-    }, 45);
   }
 
-  function bindTTSButtons(text) {
-    if (!playBtn || !stopBtn) return;
-    stopBtn.style.display = 'block';
-    playBtn.style.display = 'none';
-    stopBtn.onclick = () => {
-      speechSynthesis.cancel();
-      clearInterval(typingInterval);
-      messageEl.textContent = text;
-      stopBtn.style.display = 'none';
-      playBtn.style.display = 'block';
+  if (playBtn) {
+    playBtn.onmouseenter = () => { playBtn.style.background='rgba(6,182,212,0.3)'; playBtn.style.transform='scale(1.1)'; };
+    playBtn.onmouseleave = () => {
+      playBtn.style.background = ttsPlaying ? 'rgba(239,68,68,0.2)' : 'rgba(6,182,212,0.15)';
+      playBtn.style.transform  = 'none';
     };
-    playBtn.onclick = () => startExperience(text);
+    playBtn.onclick = () => { ttsPlaying ? speechSynthesis.cancel() : startTTS(); };
   }
 
-  if (provocationText) {
-    // ✅ Primární cesta: text z universe_nodes.step_provocation
-    console.log("✅ Zobrazuji step_provocation pro:", node.id);
-    startExperience(provocationText);
-    bindTTSButtons(provocationText);
-  } else {
-    // Fallback: AI verdict pro uzly bez záznamu v universe_nodes
-    console.log("⚠️ Žádná provokace v DB, fallback na AI pro:", node.id);
-    generateVerdictV2(node, userId).then(verdict => {
-      if (verdict?.text) {
-        const plain = verdict.text.replace(/<br>/g, ' ');
-        startExperience(plain);
-        bindTTSButtons(plain);
-      } else {
-        messageEl.innerHTML = 'Chyba: Nepodařilo se načíst diagnózu.';
-      }
-    }).catch(() => {
-      if (messageEl) messageEl.innerHTML = 'Chyba při komunikaci s AI.';
-    });
+  // 11. Chip handlery
+  const chipAction     = document.getElementById('chip-action');
+  const chipReflection = document.getElementById('chip-reflection');
+  const chipResources  = document.getElementById('chip-resources');
+
+  if (chipAction)     chipAction.onclick     = () => openTextAsViewer(actionText,     `⚡ ${chip1Label}`);
+  if (chipReflection) chipReflection.onclick = () => openTextAsViewer(reflectionText, `🧠 ${chip2Label}`);
+  if (chipResources)  chipResources.onclick  = () => openResourcesViewer(node);
+
+  // 12. Živý chat – přepisování brífinku
+  const chatInput = document.getElementById('aiPanelInput');
+  const sendBtn   = document.getElementById('ai-send');
+  let   chatBusy  = false;
+
+  async function submitChat(question) {
+    question = (question || '').trim();
+    if (!question || chatBusy) return;
+
+    chatBusy = true;
+    if (chatInput) { chatInput.value = ''; chatInput.disabled = true; }
+    if (sendBtn)   sendBtn.disabled  = true;
+    speechSynthesis.cancel();
+
+    // Animace tři tečky v místě brífinku
+    messageEl.innerHTML = '<span class="chj-dots">· · ·</span>';
+
+    try {
+      const response = await fetch('/api/chat', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nodeId:       node.id,
+          userQuestion: question,
+          context: {
+            state:  node.state,
+            userId,
+            nodeLabel: node.label
+          }
+        })
+      });
+
+      const data   = await response.json();
+      const answer = (data?.verdict || 'Chyba při zpracování odpovědi.').trim();
+
+      // Přepis textu – bez nové bubliny
+      currentText        = answer;
+      messageEl.textContent = answer;
+
+    } catch (err) {
+      console.error('❌ chat submit:', err);
+      messageEl.textContent = 'Chyba při komunikaci s AI.';
+    } finally {
+      chatBusy = false;
+      if (chatInput) { chatInput.disabled = false; chatInput.focus(); }
+      if (sendBtn)   sendBtn.disabled     = false;
+    }
   }
+
+  if (chatInput) chatInput.onkeydown = e => { if (e.key === 'Enter') submitChat(chatInput.value); };
+  if (sendBtn)   sendBtn.onclick     = () => submitChat(chatInput?.value || '');
 }
 
+// =====================================================
+// LEGACY EXPORT (kompatibilita s app/index.html)
+// =====================================================
 export async function updateRecommendations() {
-  const valuesContainer = document.querySelector('#resourcesList');
-  if (!valuesContainer) return;
-
-  const { data: dashboard, error } = await supabase
-    .from('v_vitality_dashboard')
-    .select('*')
-    .eq('is_bottleneck', true)
-    .single();
-
-  if (error || !dashboard) {
-    valuesContainer.innerHTML = `
-      <div class="onboarding-prompt" style="padding: 15px; text-align: center;">
-        <p style="font-size: 13px; color: #9ba1a6;">Zatím nemáš žádná data.</p>
-        <button onclick="startOnboarding()" class="btn-primary" style="margin-top: 10px;">Spustit měření</button>
-      </div>`;
-    return;
-  }
-
-  const { data: recommendations } = await supabase
-    .from('node_media')
-    .select('*')
-    .eq('node_id', dashboard.node_id)
-    .limit(2);
-
-  if (!recommendations || recommendations.length === 0) return;
-
-  valuesContainer.innerHTML = recommendations.map(item => `
-    <li class="hodnoty-item" onclick="window.location.href='medioteka.html?id=${item.id}'">
-      <div class="icon">${item.type === 'video' ? '🎥' : '🎧'}</div>
-      <div class="content">
-        <strong>${item.title}</strong>
-        <p>${item.summary}</p>
-      </div>
-    </li>
-  `).join('');
+  // Doporučení jsou nyní přístupná přes smart chips v CHJ kartě.
 }

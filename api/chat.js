@@ -101,11 +101,38 @@ export default async function (req, res) {
 
     const stepProvocation = nodeSteps?.step_provocation || null;
 
-    // Helper funkce
+    // ─── CONVERSATION MODE (userQuestion je vyplněna) ───────────────────────
+    if (userQuestion) {
+      const CONVO_SYSTEM = `Jsi Chytré Já — osobní kouč pro dlouhověkost.
+
+Uživatel se tě může ptát na cokoliv, ale ty si vybíráš, jak odpovíš.
+Vždy směřuj hovor k dlouhověkosti, aktuálnímu uzlu a uživatelovu snu: běžky v 85 letech.
+Odpovídej česky, tykej, buď přímý a konkrétní. Max dvě věty.
+Nezačínaj větou "Rozumím" ani "Samozřejmě". Nepřidávej rady nesouvisející s uzlem.
+Zakázaná slova: "musíš", "je důležité", "měl bys", "hrozí", "ohrožuje".`;
+
+      const CONVO_USER = `Uzel: ${node.label} (stav: ${node.state || context?.state || 'neznámý'})
+${stepProvocation ? `Kontext: "${stepProvocation}"` : ''}
+Dotaz uživatele: ${userQuestion}`;
+
+      const convoCompletion = await openai.chat.completions.create({
+        model:       "gpt-4o-mini",
+        messages:    [
+          { role: "system", content: CONVO_SYSTEM },
+          { role: "user",   content: CONVO_USER   }
+        ],
+        temperature: 0.7,
+        max_tokens:  160
+      });
+
+      return res.json({
+        verdict: convoCompletion.choices[0].message.content.trim()
+      });
+    }
+    // ────────────────────────────────────────────────────────────────────────
 
     const aspiration = null;
 
-    // Helper funkce
     function getRiderRisk(nodeLabel) {
       const risks = {
         'kardio': 'srdce',

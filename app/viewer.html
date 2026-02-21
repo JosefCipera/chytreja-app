@@ -44,7 +44,12 @@
 
         // === Ovládání ===
         document.getElementById("btnBack").onclick = () => {
-            window.close();
+            if (window.self !== window.top) {
+                // Jsme v iFrame – pošli signál parent stránce
+                window.parent.postMessage('closeViewer', '*');
+            } else {
+                window.close();
+            }
         };
 
         document.getElementById("btnPrint").onclick = () => window.print();
