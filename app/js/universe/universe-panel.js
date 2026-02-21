@@ -593,6 +593,35 @@ async function renderTrendSparkline(userId, nodeId, nodeState) {
   return `<svg width="100%" height="50" viewBox="0 0 100 100" preserveAspectRatio="none" style="display:block;"><rect x="0" y="0" width="100" height="33" fill="#22c55e" opacity="0.05"/><rect x="0" y="33" width="100" height="34" fill="#eab308" opacity="0.05"/><rect x="0" y="67" width="100" height="33" fill="#ef4444" opacity="0.05"/><polyline points="${points.join(' ')}" fill="none" stroke="${trendColor}" stroke-width="6" opacity="0.2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="${points.join(' ')}" fill="none" stroke="${stateColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="${points[points.length - 1].split(',')[0]}" cy="${points[points.length - 1].split(',')[1]}" r="2" fill="${trendColor}"/></svg><div style="display:flex;align-items:center;gap:8px;margin-top:8px;"><span style="font-size:18px;">${arrow}</span><span style="color:${trendColor};font-size:13px;font-weight:500;">${trendText}</span><span style="color:#64748b;font-size:12px;margin-left:auto;">${data.length} dní</span></div>`;
 }
 // =====================================================
+// LEARNING STEPS FETCH (universe_nodes)
+// =====================================================
+
+// Note: node IDs jsou UTF-8 strings (např. 'bílkoviny' s diakritikou).
+// Supabase .eq() porovnává byte-to-byte – neprovádíme žádnou normalizaci.
+async function fetchLearningSteps(nodeId) {
+  try {
+    const { data, error } = await window.supabaseClient
+      .from('universe_nodes')
+      .select('step_provocation, step_action, step_reflection, step_integration')
+      .eq('id', nodeId)
+      .eq('universe_id', 'longevity')
+      .maybeSingle();
+
+    if (error) {
+      console.warn(`⚠️ fetchLearningSteps(${nodeId}):`, error.message);
+      return null;
+    }
+    if (!data) {
+      console.warn(`⚠️ Žádné learning steps pro uzel: ${nodeId}`);
+    }
+    return data;
+  } catch (err) {
+    console.warn('⚠️ fetchLearningSteps exception:', err);
+    return null;
+  }
+}
+
+// =====================================================
 // CHJ VERDICT GENERATION (OpenAI)
 // =====================================================
 
@@ -665,8 +694,15 @@ async function generateVerdictV2(node, userId) {
 // =====================================================
 
 async function showGameOfLife(node) {
-  console.log("🎮 showGameOfLife called with node:", node); // ← PŘIDEJ
+  console.log("🎮 showGameOfLife called with node:", node);
   const userId = window.firebaseAuth?.currentUser?.uid || 'demo-user-123';
+
+  // Fetch 4-krokový obsah z universe_nodes (Learning by Doing)
+  const steps = await fetchLearningSteps(node.id);
+  const provocationText = steps?.step_provocation ?? null;
+  const actionText      = steps?.step_action      ?? null;
+  const reflectionText  = steps?.step_reflection  ?? null;
+  console.log(`📖 Learning steps pro ${node.id}:`, { provocationText, actionText, reflectionText });
 
   // 1. Nadpis
   const titleEl = document.getElementById('nodeTitle');
@@ -756,23 +792,9 @@ async function showGameOfLife(node) {
     actionsCard.remove();
   }
 
-  const actionMap = {
-    'kardio': ['Klidná chůze 30 min denně', 'Měř srdeční tep po schodech'],
-    'vo2max': ['Začni běhat/chodit rychle 2× týdně', 'Test: 4 patra bez dechu'],
-    'sila': ['Posiluj 3× týdně — zaměř se na nohy', 'Zkus dřepy a kliky denně'],
-    'stabilita': ['Cvič balanc ráno — 30s na každé noze', 'Jóga nebo tai-chi 2× týdně'],
-    'spanek': ['Spi 7-8h pravidelně', 'Vypni obrazovky 1h před spaním'],
-    'klid': ['Dechová cvičení 10 min denně', 'Meditace nebo procházka v klidu'],
-    'smysl': ['Napiš si 3 věci, za co jsi vděčný', 'Plánuj budoucí aktivity s vnoučaty'],
-    'metabolicke': ['Omez cukr a rafinované sacharidy', 'Zkontroluj hladinu glukózy'],
-    'mobilita': ['Protahuj se 10 min denně', 'Zkus dotknout se země nataženýma nohama']
-  };
-
-  const actions = actionMap[node.id] || ['Pokračuj v tom, co děláš', 'Konzultuj s lékařem'];
-
   console.log("✅ Akce karta vytváření...");
   actionsCard = document.createElement('div');
-  actionsCard.className = 'actions-card'; // ← PŘIDEJ TENHLE ŘÁDEK!
+  actionsCard.className = 'actions-card';
   actionsCard.style.cssText = `
   background: #0f172a;
   border: 1px solid #1e293b;
@@ -783,9 +805,9 @@ async function showGameOfLife(node) {
 
   actionsCard.innerHTML = `
   <h3 style="color:#83B0E3; font-size:18px; margin:0 0 15px 0;">⚡ Akce</h3>
-  <ul style="list-style:none; padding:0; margin:0; color:#cbd5e1;">
-    ${actions.map(a => `<li style="padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.05);">• ${a}</li>`).join('')}
-  </ul>
+  <p style="color:#cbd5e1; font-size:15px; line-height:1.7; margin:0;">
+    ${actionText || 'Žádná akce k dispozici.'}
+  </p>
 `;
 
   chjCard.after(actionsCard);
@@ -795,35 +817,7 @@ async function showGameOfLife(node) {
   let valuesCard = document.querySelector('.values-card');
   if (valuesCard) valuesCard.remove();
 
-  const resourceMap = {
-    'kardio': [
-      { title: 'Attia: Zone 2 cardio', url: 'https://peterattiamd.com/zone-2-training' },
-      { title: 'Huberman: Cardiovascular health', url: 'https://hubermanlab.com/cardio' }
-    ],
-    'vo2max': [
-      { title: 'Attia: VO2 Max importance', url: 'https://peterattiamd.com/vo2max' },
-      { title: 'Cooper test', url: '#' }
-    ],
-    'sila': [
-      { title: 'Huberman: Strength training', url: 'https://hubermanlab.com/strength' },
-      { title: 'Attia: Muscle longevity', url: '#' }
-    ],
-    'spanek': [
-      { title: 'Huberman: Sleep toolkit', url: 'https://hubermanlab.com/sleep' },
-      { title: 'Walker: Why We Sleep', url: '#' }
-    ],
-    'klid': [
-      { title: 'Huberman: Stress control', url: 'https://hubermanlab.com/stress' },
-      { title: 'Attia: HRV recovery', url: '#' }
-    ]
-  };
-
-  const resources = resourceMap[node.id] || [
-    { title: 'Attia: Longevity basics', url: 'https://peterattiamd.com' },
-    { title: 'Huberman Lab', url: 'https://hubermanlab.com' }
-  ];
-
-  console.log("✅ Hodnoty karta vytváření...");
+  console.log("✅ Reflexe karta vytváření...");
   valuesCard = document.createElement('div');
   valuesCard.className = 'values-card';
   valuesCard.style.cssText = `
@@ -835,116 +829,91 @@ async function showGameOfLife(node) {
 `;
 
   valuesCard.innerHTML = `
-  <h3 style="color:#83B0E3; font-size:18px; margin:0 0 15px 0;">📚 Hodnoty</h3>
-  <div style="color:#cbd5e1;">
-    ${resources.map(r => `
-      <a href="${r.url}" target="_blank" style="color:#06b6d4; text-decoration:none; display:block; padding:8px 0;">
-        → ${r.title}
-      </a>
-    `).join('')}
-  </div>
+  <h3 style="color:#83B0E3; font-size:18px; margin:0 0 15px 0;">🔍 Reflexe</h3>
+  <p style="color:#94a3b8; font-size:15px; line-height:1.7; font-style:italic; margin:0;">
+    ${reflectionText || ''}
+  </p>
 `;
 
   actionsCard.after(valuesCard);
   console.log("✅ Hodnoty karta přidána");
 
-  // 7. GENERATE VERDICT
-  console.log("🤖 Calling generateVerdictV2 for:", node.id);
-  generateVerdictV2(node, userId).then(verdict => {
-    console.log("✅ Verdict received:", verdict);
+  // 7. CHJ TEXT: step_provocation z universe_nodes, fallback na AI verdict
+  const messageEl = chjCard.querySelector('.chj-message');
+  const playBtn   = document.getElementById('tts-play');
+  const stopBtn   = document.getElementById('tts-stop');
+  let typingInterval = null;
 
-    const messageEl = chjCard.querySelector('.chj-message');
+  function startExperience(text) {
+    speechSynthesis.cancel();
+    clearInterval(typingInterval);
+    messageEl.innerHTML = '';
 
-    if (verdict && verdict.text) {
-      const plainText = verdict.text.replace(/<br>/g, ' ');
-      const htmlText = verdict.text; // ← s <br> pro zobrazení
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang  = 'cs-CZ';
+    utterance.pitch = 1.2;
+    utterance.rate  = 1.1;
 
-      const playBtn = document.getElementById('tts-play');
-      const stopBtn = document.getElementById('tts-stop');
+    utterance.onstart = () => {
+      if (playBtn) playBtn.style.display = 'none';
+      if (stopBtn) stopBtn.style.display = 'block';
+    };
+    utterance.onend = () => {
+      if (playBtn) playBtn.style.display = 'block';
+      if (stopBtn) stopBtn.style.display = 'none';
+      clearInterval(typingInterval);
+    };
+    utterance.onerror = (e) => console.error('🎙 TTS error:', e);
 
-      let typingInterval = null;
+    window.speechSynthesis.speak(utterance);
 
-      // ✅ FUNKCE: Spusť oboje zároveň
-      function startExperience() {
-        speechSynthesis.cancel();
-        messageEl.innerHTML = '';
-
-        // TTS
-        const utterance = new SpeechSynthesisUtterance(plainText);
-        utterance.lang = 'cs-CZ';
-        utterance.pitch = 1.2;
-        utterance.rate = 1.1;
-
-        utterance.onstart = () => {
-          console.log("🎙 Speech started");
-          if (playBtn) playBtn.style.display = 'none';
-          if (stopBtn) stopBtn.style.display = 'block';
-        };
-
-        utterance.onend = () => {
-          console.log("🎙 Speech ended");
-          if (playBtn) playBtn.style.display = 'block';
-          if (stopBtn) stopBtn.style.display = 'none';
-          clearInterval(typingInterval);
-        };
-
-        utterance.onerror = (e) => {
-          console.error("🎙 Speech error:", e);
-        };
-
-        window.speechSynthesis.speak(utterance);
-
-        // TYPEWRITER (souběžně)
-        messageEl.innerHTML = '';
-        const span = document.createElement('span');
-        messageEl.appendChild(span);
-
-        let i = 0;
-        typingInterval = setInterval(() => {
-          if (i < plainText.length) {
-            span.textContent += plainText.charAt(i);
-            i++;
-          } else {
-            messageEl.innerHTML = htmlText; // ← na konci zobraz s <br>
-            clearInterval(typingInterval);
-          }
-        }, 45);
+    const span = document.createElement('span');
+    messageEl.appendChild(span);
+    let i = 0;
+    typingInterval = setInterval(() => {
+      if (i < text.length) {
+        span.textContent += text.charAt(i++);
+      } else {
+        messageEl.textContent = text;
+        clearInterval(typingInterval);
       }
+    }, 45);
+  }
 
-      // ✅ AUTO-START
-      startExperience();
+  function bindTTSButtons(text) {
+    if (!playBtn || !stopBtn) return;
+    stopBtn.style.display = 'block';
+    playBtn.style.display = 'none';
+    stopBtn.onclick = () => {
+      speechSynthesis.cancel();
+      clearInterval(typingInterval);
+      messageEl.textContent = text;
+      stopBtn.style.display = 'none';
+      playBtn.style.display = 'block';
+    };
+    playBtn.onclick = () => startExperience(text);
+  }
 
-      // ✅ STOP BUTTON
-      if (playBtn && stopBtn) {
-        stopBtn.style.display = 'block';
-        playBtn.style.display = 'none';
-
-        stopBtn.onclick = () => {
-          speechSynthesis.cancel();
-          clearInterval(typingInterval);
-          // Zobraz celý text ihned
-          messageEl.innerHTML = htmlText;
-          stopBtn.style.display = 'none';
-          playBtn.style.display = 'block';
-        };
-
-        // ✅ REPLAY
-        playBtn.onclick = () => {
-          startExperience();
-        };
+  if (provocationText) {
+    // ✅ Primární cesta: text z universe_nodes.step_provocation
+    console.log("✅ Zobrazuji step_provocation pro:", node.id);
+    startExperience(provocationText);
+    bindTTSButtons(provocationText);
+  } else {
+    // Fallback: AI verdict pro uzly bez záznamu v universe_nodes
+    console.log("⚠️ Žádná provokace v DB, fallback na AI pro:", node.id);
+    generateVerdictV2(node, userId).then(verdict => {
+      if (verdict?.text) {
+        const plain = verdict.text.replace(/<br>/g, ' ');
+        startExperience(plain);
+        bindTTSButtons(plain);
+      } else {
+        messageEl.innerHTML = 'Chyba: Nepodařilo se načíst diagnózu.';
       }
-
-    } else {
-      console.error("Invalid verdict:", verdict);
-      messageEl.innerHTML = 'Chyba: Nepodařilo se načíst diagnózu.';
-    }
-  }).catch(err => {
-    console.error("Generate verdict error:", err);
-    const messageEl = chjCard.querySelector('.chj-message');
-    if (messageEl) {
-      messageEl.innerHTML = 'Chyba při komunikaci s AI.';
-    }
-  });
+    }).catch(() => {
+      if (messageEl) messageEl.innerHTML = 'Chyba při komunikaci s AI.';
+    });
+  }
 }
 
 export async function updateRecommendations() {

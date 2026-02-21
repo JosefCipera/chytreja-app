@@ -91,6 +91,16 @@ export default async function (req, res) {
     node.media = media || [];
     node.docs = docs || [];
 
+    // Načti step_provocation z universe_nodes (Learning by Doing kontext)
+    const { data: nodeSteps } = await supabase
+      .from('universe_nodes')
+      .select('step_provocation')
+      .eq('id', nodeId)
+      .eq('universe_id', 'longevity')
+      .maybeSingle();
+
+    const stepProvocation = nodeSteps?.step_provocation || null;
+
     // Helper funkce
 
     const aspiration = null;
@@ -147,6 +157,8 @@ Když stav dobrý: "Tvoje [oblast] je v pořádku."
 
 Doplň jen to co je v hranatých závorkách. Neměň strukturu věty. Nepřidávej nic navíc.
 
+Pokud je k dispozici KONTEXT PROVOKACE, zachovej jeho přímý a faktický tón — žádné cukrování, žádné rady navíc.
+
 JAZYK: Česky, tykání, přímočaré. Max třicet slov celkem.
 `;
 
@@ -156,6 +168,7 @@ JAZYK: Česky, tykání, přímočaré. Max třicet slov celkem.
 REŽIM: ${node.id === 'dlouhovekost' ? 'HLAVNÍ UZEL' : 'PODŘÍZENÝ UZEL'}
 UZEL: ${node.label}
 STAV: ${node.state || context?.state || 'UNKNOWN'}
+${stepProvocation ? `KONTEXT PROVOKACE: "${stepProvocation}"` : ''}
 ${node.id === 'dlouhovekost' && bottleneckLabel ? `SLABÝ ČLÁNEK: ${getNodeLabel(bottleneckLabel)}
 OHROŽENÍ: ${getRiderRisk(bottleneckLabel)}` : ''}
 ${node.id !== 'dlouhovekost' ? `OBLAST: ${getNodeContext(node.id)}` : ''}
