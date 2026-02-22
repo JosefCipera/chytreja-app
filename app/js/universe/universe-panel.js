@@ -623,23 +623,33 @@ async function showGameOfLife(node) {
     if (sendBtn)   sendBtn.disabled  = true;
     speechSynthesis.cancel();
 
-    // Animace tři tečky v místě brífinku
-    messageEl.innerHTML = '<span class="chj-dots">· · ·</span>';
+    // Zobrazení stavu čekání
+    messageEl.innerHTML = '<span style="color:#64748b;font-style:italic;">Chytré já přemýšlí...</span>';
 
     try {
-      const response = await fetch('/api/chat', {
+      const url = '/api/chat';
+      const payload = {
+        nodeId:       node.id,
+        userQuestion: question,
+        context: {
+          state:  node.state,
+          userId,
+          nodeLabel: node.label
+        }
+      };
+      console.log('Sending to:', url, payload);
+
+      const response = await fetch(url, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          nodeId:       node.id,
-          userQuestion: question,
-          context: {
-            state:  node.state,
-            userId,
-            nodeLabel: node.label
-          }
-        })
+        body: JSON.stringify(payload)
       });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Server error:', errorText);
+        throw new Error('Server neodpovídá správně');
+      }
 
       const data   = await response.json();
       const answer = (data?.verdict || 'Chyba při zpracování odpovědi.').trim();
