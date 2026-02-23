@@ -75,6 +75,18 @@ export async function showPanel(node) {
 // DATA FETCHING
 // =====================================================
 
+async function fetchAspiration(userId, nodeId) {
+  if (nodeId === 'dlouhovekost') return null;
+  try {
+    const res = await fetch(`/api/aspiration?userId=${encodeURIComponent(userId)}&nodeId=${encodeURIComponent(nodeId)}`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.aspiration || null;
+  } catch {
+    return null;
+  }
+}
+
 async function fetchLearningSteps(nodeId) {
   try {
     const { data, error } = await window.supabaseClient
@@ -469,9 +481,10 @@ async function showGameOfLife(node) {
   metricCard.after(chjCard);
 
   // 4. Paralelní načtení dat
-  const [steps, trend] = await Promise.all([
+  const [steps, trend, aspiration] = await Promise.all([
     fetchLearningSteps(node.id),
-    fetchTrend(userId, node.id, node.state)
+    fetchTrend(userId, node.id, node.state),
+    fetchAspiration(userId, node.id)
   ]);
 
   const provocationText = steps?.step_provocation   ?? null;
@@ -480,10 +493,27 @@ async function showGameOfLife(node) {
   const reflectionText  = steps?.step_reflection    ?? null;
   const reflectionTitle = steps?.step_reflection_title ?? steps?.step_reflection_label ?? null;
 
-  // 5. Sparkline
+  // 5. Sparkline + aspiration indicator
+  const aspirationHtml = aspiration ? `
+    <div style="
+      margin-top:10px; padding:8px 12px;
+      background:${aspiration.achieved ? 'rgba(34,197,94,0.08)' : 'rgba(251,191,36,0.08)'};
+      border:1px solid ${aspiration.achieved ? 'rgba(34,197,94,0.25)' : 'rgba(251,191,36,0.25)'};
+      border-radius:8px; font-size:12px;
+      display:flex; align-items:center; gap:8px;
+    ">
+      <span>🎯</span>
+      <span style="color:#94a3b8;">${aspiration.label}:</span>
+      <span style="color:${aspiration.achieved ? '#22c55e' : '#fbbf24'}; font-weight:500;">
+        ${aspiration.achieved ? 'splněno' : 'zaostávám'}
+      </span>
+    </div>
+  ` : '';
+
   metricCard.innerHTML = `
     <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Trend (30 dní)</div>
     ${trend.html}
+    ${aspirationHtml}
   `;
 
   // 6. Hlavní text brífinku
