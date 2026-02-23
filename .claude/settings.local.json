@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(echo gh api failed:*)",
+      "Bash(head:*)",
+      "Bash(cd /c/projekty/chytreja-app && vercel link --project chytreja-app-develop --scope josef-ciperas-projects --yes 2>&1)",
+      "Bash(cd /c/projekty/chytreja-app && vercel domains ls 2>&1)",
+      "Bash(curl:*)",
+      "Bash(grep:*)"
+    ]
+  }
+}
