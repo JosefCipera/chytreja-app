@@ -137,16 +137,16 @@ async function fetchTrend(userId, nodeId, nodeState) {
 
   const recent = data.slice(-7);
   const recentGreen = recent.filter(d => d.state === 'GREEN').length;
-  const recentRed   = recent.filter(d => d.state === 'RED').length;
+  const recentRed = recent.filter(d => d.state === 'RED').length;
 
   let arrow = '→', trendText = 'Stabilní', trendColor = '#eab308';
-  if (recentGreen > recentRed + 2)      { arrow = '↗️'; trendText = 'Zlepšení'; trendColor = '#22c55e'; }
+  if (recentGreen > recentRed + 2) { arrow = '↗️'; trendText = 'Zlepšení'; trendColor = '#22c55e'; }
   else if (recentRed > recentGreen + 2) { arrow = '↘️'; trendText = 'Zhoršení'; trendColor = '#ef4444'; }
 
   const stateColor = nodeState === 'GREEN' ? '#22c55e'
     : nodeState === 'YELLOW' ? '#eab308'
-    : nodeState === 'RED'    ? '#ef4444'
-    : '#64748b';
+      : nodeState === 'RED' ? '#ef4444'
+        : '#64748b';
 
   const last = points[points.length - 1].split(',');
 
@@ -187,12 +187,12 @@ async function generateVerdictV2(node, userId) {
       nodeId: node.id,
       userQuestion: null,
       context: {
-        state:       node.state,
+        state: node.state,
         userId,
-        redCount:    metrics.filter(m => m.state === 'RED').length,
+        redCount: metrics.filter(m => m.state === 'RED').length,
         yellowCount: metrics.filter(m => m.state === 'YELLOW').length,
-        greenCount:  metrics.filter(m => m.state === 'GREEN').length,
-        bottleneck:  bottleneck?.node_id
+        greenCount: metrics.filter(m => m.state === 'GREEN').length,
+        bottleneck: bottleneck?.node_id
       }
     };
 
@@ -221,11 +221,11 @@ const TYPE_MAP = { markdown: 'md', pdf: 'pdf', video: 'video', audio: 'audio', i
 
 function detectType(url) {
   if (!url) return 'md';
-  if (url.endsWith('.md'))                               return 'md';
-  if (url.endsWith('.pdf'))                              return 'pdf';
-  if (url.match(/\.(mp4|webm|mov)$/i))                  return 'video';
-  if (url.match(/\.(mp3|ogg|wav|m4a)$/i))               return 'audio';
-  if (url.match(/\.(png|jpg|jpeg|gif|webp|svg)$/i))     return 'image';
+  if (url.endsWith('.md')) return 'md';
+  if (url.endsWith('.pdf')) return 'pdf';
+  if (url.match(/\.(mp4|webm|mov)$/i)) return 'video';
+  if (url.match(/\.(mp3|ogg|wav|m4a)$/i)) return 'audio';
+  if (url.match(/\.(png|jpg|jpeg|gif|webp|svg)$/i)) return 'image';
   if (url.includes('youtube.com') || url.includes('youtu.be')) return 'video';
   return 'md';
 }
@@ -241,7 +241,7 @@ window.addEventListener('message', e => {
 function openViewerModal(fileUrl, type, title) {
   document.getElementById('viewerModal')?.remove();
 
-  const isAudio  = type === 'audio';
+  const isAudio = type === 'audio';
   const viewerSrc = `/app/viewer.html?type=${encodeURIComponent(type)}&file=${encodeURIComponent(fileUrl)}`;
 
   const modal = document.createElement('div');
@@ -313,8 +313,8 @@ function openViewerModal(fileUrl, type, title) {
 
   const btn = document.getElementById('closeViewerModal');
   btn.onclick = closeViewer;
-  btn.onmouseenter = () => { btn.style.background='rgba(239,68,68,0.2)'; btn.style.color='#ef4444'; };
-  btn.onmouseleave = () => { btn.style.background='transparent'; btn.style.color='#94a3b8'; };
+  btn.onmouseenter = () => { btn.style.background = 'rgba(239,68,68,0.2)'; btn.style.color = '#ef4444'; };
+  btn.onmouseleave = () => { btn.style.background = 'transparent'; btn.style.color = '#94a3b8'; };
 
   modal.addEventListener('click', e => { if (e.target === modal) closeViewer(); });
 
@@ -326,7 +326,7 @@ function openViewerModal(fileUrl, type, title) {
 
 function openTextAsViewer(markdownText, title) {
   if (!markdownText) { showToast('Obsah není k dispozici.'); return; }
-  const blob    = new Blob([markdownText], { type: 'text/plain; charset=utf-8' });
+  const blob = new Blob([markdownText], { type: 'text/plain; charset=utf-8' });
   const blobUrl = URL.createObjectURL(blob);
   openViewerModal(blobUrl, 'md', title);
 }
@@ -334,8 +334,8 @@ function openTextAsViewer(markdownText, title) {
 function openResourcesViewer(node) {
   const all = [
     ...(node.articles || []).map(a => ({ title: a.title, url: a.url, summary: a.summary, type: detectType(a.url) })),
-    ...(node.media    || []).map(m => ({ title: m.title, url: m.url, summary: m.summary, type: TYPE_MAP[m.type] || detectType(m.url) })),
-    ...(node.docs     || []).map(d => ({ title: d.title, url: d.url, summary: d.summary, type: TYPE_MAP[d.type] || detectType(d.url) }))
+    ...(node.media || []).map(m => ({ title: m.title, url: m.url, summary: m.summary, type: TYPE_MAP[m.type] || detectType(m.url) })),
+    ...(node.docs || []).map(d => ({ title: d.title, url: d.url, summary: d.summary, type: TYPE_MAP[d.type] || detectType(d.url) }))
   ].filter(r => r.url);
 
   if (all.length === 0) { showToast('Žádné zdroje k dispozici.'); return; }
@@ -353,7 +353,7 @@ function openResourcesViewer(node) {
     opacity:0; transition:opacity 0.2s ease;
   `;
 
-  const icons = { md:'📄', pdf:'📕', video:'🎥', audio:'🎵', image:'🖼️' };
+  const icons = { md: '📄', pdf: '📕', video: '🎥', audio: '🎵', image: '🖼️' };
 
   modal.innerHTML = `
     <div style="
@@ -480,17 +480,18 @@ async function showGameOfLife(node) {
   `;
   metricCard.after(chjCard);
 
-  // 4. Paralelní načtení dat
-  const [steps, trend, aspiration] = await Promise.all([
+  // 4. Paralelní načtení dat (AI běží souběžně s DB dotazy)
+  const [steps, trend, aspiration, verdict] = await Promise.all([
     fetchLearningSteps(node.id),
     fetchTrend(userId, node.id, node.state),
-    fetchAspiration(userId, node.id)
+    fetchAspiration(userId, node.id),
+    generateVerdictV2(node, userId)
   ]);
 
-  const provocationText = steps?.step_provocation   ?? null;
-  const actionText      = steps?.step_action        ?? null;
-  const actionTitle     = steps?.step_action_title  ?? steps?.step_action_label  ?? null;
-  const reflectionText  = steps?.step_reflection    ?? null;
+  const provocationText = steps?.step_provocation ?? null;
+  const actionText = steps?.step_action ?? null;
+  const actionTitle = steps?.step_action_title ?? steps?.step_action_label ?? null;
+  const reflectionText = steps?.step_reflection ?? null;
   const reflectionTitle = steps?.step_reflection_title ?? steps?.step_reflection_label ?? null;
 
   // 5. Sparkline + aspiration indicator
@@ -516,20 +517,24 @@ async function showGameOfLife(node) {
     ${aspirationHtml}
   `;
 
-  // 6. Hlavní text brífinku
+  // 6. Hlavní text brífinku – AI primární, provocationText fallback
+  const aiErrorTexts = ['Chyba při komunikaci s AI.', 'Zatím nemám dost dat.', 'API nevrátilo platnou odpověď.'];
+  const isAiValid = verdict?.text && !verdict.text.startsWith('API error') && !aiErrorTexts.includes(verdict.text);
+
   let initialText;
-  if (provocationText) {
+  if (isAiValid) {
+    initialText = verdict.text;
+  } else if (provocationText) {
+    console.warn("⚠️ AI selhalo, fallback na provokaci z DB:", node.id);
     initialText = provocationText;
   } else {
-    console.warn("⚠️ Žádná provokace v DB, fallback na AI:", node.id);
-    const verdict = await generateVerdictV2(node, userId);
-    initialText = verdict?.text || 'Nepodařilo se načíst diagnózu.';
+    initialText = 'Nepodařilo se načíst diagnózu.';
   }
 
   // 7. Chip labely
-  const chip1Label    = actionTitle     || 'Spustit cvičení';
-  const chip2Label    = reflectionTitle || 'Detailní rozbor';
-  const hasResources  = ((node.articles?.length || 0) + (node.media?.length || 0) + (node.docs?.length || 0)) > 0;
+  const chip1Label = actionTitle || 'Spustit cvičení';
+  const chip2Label = reflectionTitle || 'Detailní rozbor';
+  const hasResources = ((node.articles?.length || 0) + (node.media?.length || 0) + (node.docs?.length || 0)) > 0;
 
   // 8. Sestavení CHJ karty
   chjCard.innerHTML = `
@@ -585,64 +590,64 @@ async function showGameOfLife(node) {
 
   // 9. Hover efekty čipů
   chjCard.querySelectorAll('.smart-chips button').forEach(btn => {
-    btn.addEventListener('mouseenter', () => { btn.style.opacity='0.78'; btn.style.transform='translateX(3px)'; });
-    btn.addEventListener('mouseleave', () => { btn.style.opacity='1';    btn.style.transform='none'; });
+    btn.addEventListener('mouseenter', () => { btn.style.opacity = '0.78'; btn.style.transform = 'translateX(3px)'; });
+    btn.addEventListener('mouseleave', () => { btn.style.opacity = '1'; btn.style.transform = 'none'; });
   });
 
   // 10. TTS – megafon button
   //     Čte vždy aktuálně zobrazený text (currentText – mutable)
-  const messageEl  = chjCard.querySelector('.chj-message');
-  const playBtn    = chjCard.querySelector('#tts-play');
-  let   currentText = initialText;   // <-- toto proměnná sdílená s chat handlerem
-  let   ttsPlaying  = false;
+  const messageEl = chjCard.querySelector('.chj-message');
+  const playBtn = chjCard.querySelector('#tts-play');
+  let currentText = initialText;   // <-- toto proměnná sdílená s chat handlerem
+  let ttsPlaying = false;
 
   function startTTS() {
     speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(currentText);
-    utterance.lang  = 'cs-CZ';
+    utterance.lang = 'cs-CZ';
     utterance.pitch = 1.2;
-    utterance.rate  = 1.1;
+    utterance.rate = 1.1;
     utterance.onstart = () => {
       ttsPlaying = true;
       playBtn.textContent = '⏹';
       playBtn.title = 'Zastavit';
-      playBtn.style.background    = 'rgba(239,68,68,0.2)';
-      playBtn.style.borderColor   = 'rgba(239,68,68,0.4)';
-      playBtn.style.color         = '#f87171';
+      playBtn.style.background = 'rgba(239,68,68,0.2)';
+      playBtn.style.borderColor = 'rgba(239,68,68,0.4)';
+      playBtn.style.color = '#f87171';
     };
     utterance.onend = utterance.onerror = () => {
       ttsPlaying = false;
       playBtn.textContent = '🔊';
       playBtn.title = 'Přehrát';
-      playBtn.style.background    = 'rgba(6,182,212,0.15)';
-      playBtn.style.borderColor   = 'rgba(6,182,212,0.35)';
-      playBtn.style.color         = '#22d3ee';
+      playBtn.style.background = 'rgba(6,182,212,0.15)';
+      playBtn.style.borderColor = 'rgba(6,182,212,0.35)';
+      playBtn.style.color = '#22d3ee';
     };
     window.speechSynthesis.speak(utterance);
   }
 
   if (playBtn) {
-    playBtn.onmouseenter = () => { playBtn.style.background='rgba(6,182,212,0.3)'; playBtn.style.transform='scale(1.1)'; };
+    playBtn.onmouseenter = () => { playBtn.style.background = 'rgba(6,182,212,0.3)'; playBtn.style.transform = 'scale(1.1)'; };
     playBtn.onmouseleave = () => {
       playBtn.style.background = ttsPlaying ? 'rgba(239,68,68,0.2)' : 'rgba(6,182,212,0.15)';
-      playBtn.style.transform  = 'none';
+      playBtn.style.transform = 'none';
     };
     playBtn.onclick = () => { ttsPlaying ? speechSynthesis.cancel() : startTTS(); };
   }
 
   // 11. Chip handlery
-  const chipAction     = document.getElementById('chip-action');
+  const chipAction = document.getElementById('chip-action');
   const chipReflection = document.getElementById('chip-reflection');
-  const chipResources  = document.getElementById('chip-resources');
+  const chipResources = document.getElementById('chip-resources');
 
-  if (chipAction)     chipAction.onclick     = () => openTextAsViewer(actionText,     `⚡ ${chip1Label}`);
+  if (chipAction) chipAction.onclick = () => openTextAsViewer(actionText, `⚡ ${chip1Label}`);
   if (chipReflection) chipReflection.onclick = () => openTextAsViewer(reflectionText, `🧠 ${chip2Label}`);
-  if (chipResources)  chipResources.onclick  = () => openResourcesViewer(node);
+  if (chipResources) chipResources.onclick = () => openResourcesViewer(node);
 
   // 12. Živý chat – přepisování brífinku
   const chatInput = document.getElementById('aiPanelInput');
-  const sendBtn   = document.getElementById('ai-send');
-  let   chatBusy  = false;
+  const sendBtn = document.getElementById('ai-send');
+  let chatBusy = false;
 
   async function submitChat(question) {
     question = (question || '').trim();
@@ -650,7 +655,7 @@ async function showGameOfLife(node) {
 
     chatBusy = true;
     if (chatInput) { chatInput.value = ''; chatInput.disabled = true; }
-    if (sendBtn)   sendBtn.disabled  = true;
+    if (sendBtn) sendBtn.disabled = true;
     speechSynthesis.cancel();
 
     // Zobrazení stavu čekání
@@ -659,10 +664,10 @@ async function showGameOfLife(node) {
     try {
       const url = '/api/chat';
       const payload = {
-        nodeId:       node.id,
+        nodeId: node.id,
         userQuestion: question,
         context: {
-          state:  node.state,
+          state: node.state,
           userId,
           nodeLabel: node.label
         }
@@ -670,7 +675,7 @@ async function showGameOfLife(node) {
       console.log('Sending to:', url, payload);
 
       const response = await fetch(url, {
-        method:  'POST',
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
@@ -681,11 +686,11 @@ async function showGameOfLife(node) {
         throw new Error('Server neodpovídá správně');
       }
 
-      const data   = await response.json();
+      const data = await response.json();
       const answer = (data?.verdict || 'Chyba při zpracování odpovědi.').trim();
 
       // Přepis textu – bez nové bubliny
-      currentText        = answer;
+      currentText = answer;
       messageEl.textContent = answer;
 
     } catch (err) {
@@ -694,12 +699,12 @@ async function showGameOfLife(node) {
     } finally {
       chatBusy = false;
       if (chatInput) { chatInput.disabled = false; chatInput.focus(); }
-      if (sendBtn)   sendBtn.disabled     = false;
+      if (sendBtn) sendBtn.disabled = false;
     }
   }
 
   if (chatInput) chatInput.onkeydown = e => { if (e.key === 'Enter') submitChat(chatInput.value); };
-  if (sendBtn)   sendBtn.onclick     = () => submitChat(chatInput?.value || '');
+  if (sendBtn) sendBtn.onclick = () => submitChat(chatInput?.value || '');
 }
 
 // =====================================================

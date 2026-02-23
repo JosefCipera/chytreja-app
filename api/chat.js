@@ -13,14 +13,14 @@ const BEZKY_V_85 = {
   type: 'bezky_v_85',
   label: 'Běžky v 85',
   requirements: {
-    stabilita:   { required_level: 0.85, importance_weight: 0.9 },
-    sila:        { required_level: 0.75, importance_weight: 0.8 },
-    telo:        { required_level: 0.70, importance_weight: 0.75 },
-    kardio:      { required_level: 0.80, importance_weight: 0.85 },
-    vo2max:      { required_level: 0.75, importance_weight: 0.85 },
-    mysl:        { required_level: 0.70, importance_weight: 0.65 },
-    vyziva:      { required_level: 0.75, importance_weight: 0.70 },
-    zdravi:      { required_level: 0.70, importance_weight: 0.70 },
+    stabilita: { required_level: 0.85, importance_weight: 0.9 },
+    sila: { required_level: 0.75, importance_weight: 0.8 },
+    telo: { required_level: 0.70, importance_weight: 0.75 },
+    kardio: { required_level: 0.80, importance_weight: 0.85 },
+    vo2max: { required_level: 0.75, importance_weight: 0.85 },
+    mysl: { required_level: 0.70, importance_weight: 0.65 },
+    vyziva: { required_level: 0.75, importance_weight: 0.70 },
+    zdravi: { required_level: 0.70, importance_weight: 0.70 },
     metabolicke: { required_level: 0.65, importance_weight: 0.60 },
   }
 };
@@ -49,12 +49,12 @@ async function fetchAspirationData(supabase, userId, nodeId) {
       .maybeSingle();
 
     if (requirement) {
-      requiredLevel    = Number(requirement.required_level);
+      requiredLevel = Number(requirement.required_level);
       importanceWeight = Number(requirement.importance_weight);
     } else {
       const fallback = BEZKY_V_85.requirements[nodeId];
       if (!fallback) return null;
-      requiredLevel    = fallback.required_level;
+      requiredLevel = fallback.required_level;
       importanceWeight = fallback.importance_weight;
     }
 
@@ -71,12 +71,12 @@ async function fetchAspirationData(supabase, userId, nodeId) {
     const gap = currentLevel !== null ? Math.max(0, requiredLevel - currentLevel) : null;
 
     return {
-      label:            aspirationLabel,
+      label: aspirationLabel,
       requiredLevel,
       importanceWeight,
       currentLevel,
       gap,
-      achieved:         gap !== null ? gap <= 0.02 : null
+      achieved: gap !== null ? gap <= 0.02 : null
     };
   } catch (err) {
     console.warn('fetchAspirationData error:', err.message);
@@ -201,13 +201,13 @@ ${stepProvocation ? `Kontext: "${stepProvocation}"` : ''}
 Dotaz uživatele: ${userQuestion}`;
 
       const convoCompletion = await openai.chat.completions.create({
-        model:       "gpt-4o-mini",
-        messages:    [
+        model: "gpt-4o-mini",
+        messages: [
           { role: "system", content: CONVO_SYSTEM },
-          { role: "user",   content: CONVO_USER   }
+          { role: "user", content: CONVO_USER }
         ],
         temperature: 0.7,
-        max_tokens:  160
+        max_tokens: 160
       });
 
       return res.json({
@@ -218,11 +218,11 @@ Dotaz uživatele: ${userQuestion}`;
 
     function getRiderRisk(nodeLabel) {
       const risks = {
-        'kardio':         'srdce',
-        'vo2max':         'kondice a srdce',
-        'síla':           'pohyb a síla',
-        'stabilita':      'rovnováha a pohyb',
-        'metabolicke':    'energii a tělo',
+        'kardio': 'srdce',
+        'vo2max': 'kondice a srdce',
+        'síla': 'pohyb a síla',
+        'stabilita': 'rovnováha a pohyb',
+        'metabolicke': 'energii a tělo',
         'nervovy_system': 'mozek a hlava'
       };
       return risks[nodeLabel.toLowerCase()] || 'tělo';
@@ -230,10 +230,10 @@ Dotaz uživatele: ${userQuestion}`;
 
     function getNodeContext(nodeId) {
       const contexts = {
-        'telo':        'síla a svaly',
-        'mysl':        'pozornost a paměť',
-        'vyziva':      'strava a energie',
-        'zdravi':      'prevence a odolnost',
+        'telo': 'síla a svaly',
+        'mysl': 'pozornost a paměť',
+        'vyziva': 'strava a energie',
+        'zdravi': 'prevence a odolnost',
         'metabolicke': 'metabolismus a rovnováha těla'
       };
       return contexts[nodeId] || '';
@@ -241,10 +241,10 @@ Dotaz uživatele: ${userQuestion}`;
 
     function getNodeLabel(nodeId) {
       const labels = {
-        'telo':        'tělo',
-        'mysl':        'hlava',
-        'vyziva':      'strava',
-        'zdravi':      'zdraví',
+        'telo': 'tělo',
+        'mysl': 'hlava',
+        'vyziva': 'strava',
+        'zdravi': 'zdraví',
         'metabolicke': 'metabolismus'
       };
       return labels[nodeId] || nodeId;
@@ -290,7 +290,7 @@ MEZERA_K_SENU: ano`;
 SEN_SPLNEN: ano`;
       }
     }
-
+    console.log('ASPIRATION BLOCK:', aspirationBlock);
     const USER_PROMPT = `
 REŽIM: ${isSubNode ? 'PODŘÍZENÝ UZEL' : 'HLAVNÍ UZEL'}
 UZEL: ${node.label}
@@ -326,9 +326,9 @@ Odpověz JEDNOU větou. Napiš jednu větu a skonči.
     return res.json({
       verdict: formatted,
       usage: {
-        prompt_tokens:      completion.usage.prompt_tokens,
-        completion_tokens:  completion.usage.completion_tokens,
-        total_tokens:       completion.usage.total_tokens
+        prompt_tokens: completion.usage.prompt_tokens,
+        completion_tokens: completion.usage.completion_tokens,
+        total_tokens: completion.usage.total_tokens
       }
     });
 
