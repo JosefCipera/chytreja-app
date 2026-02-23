@@ -66,7 +66,8 @@ async function fetchAspirationData(supabase, userId, nodeId) {
       .eq('universe', 'longevity')
       .maybeSingle();
 
-    const currentLevel = metric?.current_index != null ? Number(metric.current_index) : null;
+    // current_index is stored on 0–100 scale; normalize to 0–1 to match requiredLevel
+    const currentLevel = metric?.current_index != null ? Number(metric.current_index) / 100 : null;
     const gap = currentLevel !== null ? Math.max(0, requiredLevel - currentLevel) : null;
 
     return {
