@@ -564,15 +564,13 @@ async function showGameOfLife(node) {
         cursor:pointer;font-size:14px;font-weight:600;
         text-align:left;transition:all 0.2s;width:100%;
       "><span style="font-size:18px;">⚡</span>${chip1Label}</button>
-      ${reflectionText ? `
-        <button id="chip-reflection" style="
-          display:flex;align-items:center;gap:10px;
-          background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.4);
-          color:#a5b4fc;padding:12px 18px;border-radius:10px;
-          cursor:pointer;font-size:14px;font-weight:600;
-          text-align:left;transition:all 0.2s;width:100%;
-        "><span style="font-size:18px;">🧠</span>${chip2Label}</button>
-      ` : ''}
+      <button id="chip-reflection" style="
+        display:flex;align-items:center;gap:10px;
+        background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.4);
+        color:#a5b4fc;padding:12px 18px;border-radius:10px;
+        cursor:pointer;font-size:14px;font-weight:600;
+        text-align:left;transition:all 0.2s;width:100%;
+      "><span style="font-size:18px;">🧠</span>Detailní rozbor</button>
       ${(hasResources || actionText || reflectionText) ? `
         <button id="chip-resources" style="
           display:flex;align-items:center;gap:10px;
@@ -690,7 +688,58 @@ async function showGameOfLife(node) {
       if (contentEl) contentEl.textContent = 'Chyba při načítání doporučení.';
     }
   };
-  if (chipReflection) chipReflection.onclick = () => openTextAsViewer(reflectionText, `🧠 ${chip2Label}`);
+  if (chipReflection) chipReflection.onclick = async () => {
+    document.getElementById('reflectionModal')?.remove();
+    const refModal = document.createElement('div');
+    refModal.id = 'reflectionModal';
+    refModal.style.cssText = `
+      position:fixed; inset:0;
+      background:rgba(0,0,0,0.85);
+      display:flex; align-items:center; justify-content:center;
+      z-index:10000;
+      opacity:0; transition:opacity 0.2s ease;
+    `;
+    refModal.innerHTML = `
+      <div style="
+        background:#1e293b; border-radius:16px; padding:24px;
+        max-width:400px; width:90%;
+        box-shadow:0 20px 60px rgba(0,0,0,0.7);
+      ">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+          <h2 style="color:#a5b4fc; margin:0; font-size:1em; display:flex; align-items:center; gap:8px;">🧠 Detailní rozbor</h2>
+          <button id="closeRefModal" style="background:transparent;border:none;color:#94a3b8;font-size:24px;cursor:pointer;line-height:1;">×</button>
+        </div>
+        <div id="refModalContent" style="color:#cbd5e1; font-size:15px; line-height:1.8;">
+          <div style="height:60px;background:rgba(255,255,255,0.05);border-radius:8px;animation:pulse 1.5s ease-in-out infinite;"></div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(refModal);
+    requestAnimationFrame(() => { refModal.style.opacity = '1'; });
+    const closeRef = () => { refModal.style.opacity = '0'; setTimeout(() => refModal.remove(), 200); };
+    document.getElementById('closeRefModal').onclick = closeRef;
+    refModal.addEventListener('click', e => { if (e.target === refModal) closeRef(); });
+    document.addEventListener('keydown', function escRef(e) {
+      if (e.key === 'Escape') { closeRef(); document.removeEventListener('keydown', escRef); }
+    });
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nodeId: node.id,
+          userQuestion: 'Proč jsi to řekl a proč jsou navrhované akce správné? Napiš 2-3 věty stručného vysvětlení, přesvědčivě a bez strašení.',
+          context: { state: node.state, userId }
+        })
+      });
+      const data = await res.json();
+      const contentEl = document.getElementById('refModalContent');
+      if (contentEl) contentEl.innerHTML = (data.verdict || 'Nepodařilo se načíst vysvětlení.').replace(/\n/g, '<br>');
+    } catch (err) {
+      const contentEl = document.getElementById('refModalContent');
+      if (contentEl) contentEl.textContent = 'Chyba při načítání vysvětlení.';
+    }
+  };
   if (chipResources) chipResources.onclick = () => openResourcesViewer(node);
 
   // 12. Živý chat – přepisování brífinku
