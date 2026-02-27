@@ -118,8 +118,55 @@ export default async function (req, res) {
       .limit(1)
       .maybeSingle();
 
+    // ✅ Stavy 4 hlavních dětí pro Desetibojař (jezdci)
+    const RIDER_MAP = {
+      'telo':    'srdce',
+      'mysl':    'mozku',
+      'vyziva':  'metabolismu',
+      'zdravi':  'rakoviny'
+    };
+
+    let ridersText = '';
+    if (nodeId === 'dlouhovekost') {
+      const { data: childMetrics } = await supabase
+        .from('user_metrics')
+        .select('node_id, state')
+        .eq('user_id', userId)
+        .eq('universe', 'longevity')
+        .in('node_id', ['telo', 'mysl', 'vyziva', 'zdravi']);
+
+      const stateMap = Object.fromEntries((childMetrics || []).map(m => [m.node_id, m.state]));
+
+      // 1. RED děti → jezdci, max 2
+      let candidates = Object.keys(RIDER_MAP).filter(id => stateMap[id] === 'RED');
+      // 2. Pokud žádné RED → YELLOW
+      if (candidates.length === 0) {
+        candidates = Object.keys(RIDER_MAP).filter(id => stateMap[id] === 'YELLOW');
+      }
+      // 3. Fallback → bottleneck node
+      if (candidates.length === 0 && context?.bottleneck) {
+        candidates = [context.bottleneck];
+      }
+
+      const riders = candidates.slice(0, 2).map(id => RIDER_MAP[id] || id);
+      ridersText = riders.length === 2
+        ? `${riders[0]} a ${riders[1]}`
+        : riders[0] || '';
+    }
+
     // ✅ Aspiration fetch (null for main node)
     const aspirationData = await fetchAspirationData(supabase, userId, nodeId);
+
+    // ✅ Aspirace label pro hlavní uzel (jen label, bez gap výpočtu)
+    let mainNodeAspirationLabel = null;
+    if (nodeId === 'dlouhovekost') {
+      const { data: userAsp } = await supabase
+        .from('user_aspirations')
+        .select('aspiration_label')
+        .eq('user_id', userId)
+        .maybeSingle();
+      mainNodeAspirationLabel = userAsp?.aspiration_label || BEZKY_V_85.label;
+    }
 
     if (!nodeId) {
       return res.status(400).json({ error: "nodeId missing" });
@@ -188,15 +235,33 @@ export default async function (req, res) {
         ? `\nUživatelův sen: ${aspirationData.label}. U tohoto uzlu zaostává — připomeň to přirozeně v odpovědi.`
         : '';
 
+      // Fetch user profile (age, gender)
+      const { data: userProfile } = await supabase
+        .from('user_profiles')
+        .select('age, gender')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      const genderLabel = userProfile?.gender === 'male' ? 'muž'
+        : userProfile?.gender === 'female' ? 'žena'
+        : null;
+      const profileLine = [
+        userProfile?.age ? `věk ${userProfile.age} let` : null,
+        genderLabel
+      ].filter(Boolean).join(', ');
+
       const CONVO_SYSTEM = `Jsi Chytré Já — osobní kouč pro dlouhověkost.
 
 Uživatel se tě může ptát na cokoliv, ale ty si vybíráš, jak odpovíš.
 Vždy směřuj hovor k dlouhověkosti a aktuálnímu uzlu.${aspirationContext}
-Odpovídej česky, tykej, buď přímý a konkrétní. Max dvě věty.
+Odpovídej česky, tykej, buď přímý a konkrétní.
+Pokud se ptají na akce nebo cvičení: napiš přesně 2-3 konkrétní kroky jako číslovaný seznam, každý max 10 slov.
+Jinak max dvě věty.
 Nezačínaj větou "Rozumím" ani "Samozřejmě". Nepřidávej rady nesouvisející s uzlem.
 Zakázaná slova: "musíš", "je důležité", "měl bys", "hrozí", "ohrožuje", "samostatnost".`;
 
       const CONVO_USER = `Uzel: ${node.label} (stav: ${node.state || context?.state || 'neznámý'})
+${profileLine ? `Profil: ${profileLine}` : ''}
 ${stepProvocation ? `Kontext: "${stepProvocation}"` : ''}
 Dotaz uživatele: ${userQuestion}`;
 
@@ -207,7 +272,7 @@ Dotaz uživatele: ${userQuestion}`;
           { role: "user", content: CONVO_USER }
         ],
         temperature: 0.7,
-        max_tokens: 160
+        max_tokens: 200
       });
 
       return res.json({
@@ -253,12 +318,31 @@ Dotaz uživatele: ${userQuestion}`;
     const SYSTEM_PROMPT = `
 Jsi Chytré Já — průvodce zdravím a dlouhověkostí.
 
-ODPOVÍDEJ PŘESNĚ PODLE ŠABLONY. Jedna věta. Max třicet slov celkem. Čísla piš slovně.
+ODPOVÍDEJ PŘESNĚ PODLE ŠABLONY. Čísla piš slovně.
 
-HLAVNÍ UZEL:
-- RED: "Nejvíc tě brzdí [slabý článek], bez změny to půjde dolů."
-- YELLOW: "Celkově ok, ale [slabý článek] zaostává."
-- GREEN: "Jsi v dobré kondici, drž to takhle."
+HLAVNÍ UZEL (DESETIBOJAŘ):
+Napiš DVĚ věty. Max čtyřicet pět slov celkem.
+
+Věta 1 — baterie + jezdci:
+Pokud je JEZDCI vyplněno:
+- RED: "Tvoje baterie je skoro vybitá — to nahrává onemocněním [jezdci]."
+- YELLOW: "Tvoje baterie není plně nabitá — nahrává to onemocněním [jezdci]."
+- GREEN: "Tvoje baterie je nabitá, drž to takhle."
+Pokud JEZDCI chybí:
+- RED: "Tvoje baterie je skoro vybitá, bez změny to půjde dolů."
+- YELLOW: "Tvoje baterie není plně nabitá, ale celkově to jde správným směrem."
+- GREEN: "Tvoje baterie je nabitá, drž to takhle."
+Hodnota [jezdci] = obsah pole JEZDCI — dosaď přesně tak jak je, neskloňuj, neměň.
+
+Věta 2 — sen:
+Pokud je SEN vyplněno:
+- RED: "Na [sen] se takhle nepostavíš a ztratíš [co tím přijdeš o]."
+- YELLOW: "K [snu] ti ještě kus schází, ale je čas to změnit."
+- GREEN: "[Sen] si splníš."
+Pokud SEN chybí:
+- RED nebo YELLOW: "A přijdeš o to, nač se těšíš."
+- GREEN: (druhou větu vynech)
+Hodnota [sen] = obsah pole SEN, čísla piš slovně, použij vhodný pád.
 
 PODŘÍZENÝ UZEL (bez aspirace nebo SEN_SPLNEN):
 - RED: "Tvoje [oblast] nestačí — [co to znamená pro tělo]."
@@ -296,12 +380,10 @@ REŽIM: ${isSubNode ? 'PODŘÍZENÝ UZEL' : 'HLAVNÍ UZEL'}
 UZEL: ${node.label}
 STAV: ${node.state || context?.state || 'UNKNOWN'}
 ${stepProvocation ? `KONTEXT PROVOKACE: "${stepProvocation}"` : ''}
-${!isSubNode && bottleneckLabel ? `SLABÝ ČLÁNEK: ${getNodeLabel(bottleneckLabel)}
-OHROŽENÍ: ${getRiderRisk(bottleneckLabel)}` : ''}
+${!isSubNode && ridersText ? `JEZDCI: ${ridersText}` : ''}
+${!isSubNode && mainNodeAspirationLabel ? `SEN: ${mainNodeAspirationLabel}` : ''}
 ${isSubNode ? `OBLAST: ${getNodeContext(nodeId)}` : ''}
 ${aspirationBlock}
-
-Odpověz JEDNOU větou. Napiš jednu větu a skonči.
 `.trim();
 
     // 5️⃣ OpenAI API call
@@ -312,7 +394,7 @@ Odpověz JEDNOU větou. Napiš jednu větu a skonči.
         { role: "user", content: USER_PROMPT }
       ],
       temperature: 0.3,
-      max_tokens: 100
+      max_tokens: 130
     });
 
     const text = completion.choices[0].message.content;

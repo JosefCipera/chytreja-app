@@ -132,6 +132,8 @@ export function renderUniverse(DATA, subset = null, forcedMainId = null) {
       clickTimer = null;
     }
 
+    closePanel();
+
     if (!params.nodes.length) return;
     const id = params.nodes[0];
     const node = findNodeById(DATA, id);
