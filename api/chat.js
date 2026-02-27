@@ -250,18 +250,79 @@ export default async function (req, res) {
         genderLabel
       ].filter(Boolean).join(', ');
 
+      // Fetch user constraints (injuries + body limits)
+      const { data: constraints } = await supabase
+        .from('user_constraints')
+        .select('constraint_type, constraint_key, constraint_value, severity')
+        .eq('user_id', userId);
+
+      const INJURY_SUBS = {
+        knee: {
+          label:  'koleno',
+          avoid:  'dřepy, výpady, kliky na kolenou, běh',
+          use:    'plávání nebo rotoped 3x týdně po 30 minutách; stroj na nohy (tlak nohama)',
+        },
+        back_lower: {
+          label:  'záda',
+          avoid:  'mrtvé tahy, předklony s váhou, sed-lehy',
+          use:    'každý den 10 minut: prkno (statická výdrž) a střídavé zvedání paže a nohy vleže',
+        },
+        shoulder: {
+          label:  'rameno',
+          avoid:  'tlaky nad hlavu, shyby, tlak na lavičce',
+          use:    'odporová gumička 3x týdně: kroužení ramenem a protahování, 2x10 opakování',
+        },
+        hip: {
+          label:  'kyčel',
+          avoid:  'hluboké dřepy, výpady, kopání',
+          use:    'plávání nebo rotoped 3x týdně po 30 minutách; protahování kyčlí vleže každý den',
+        },
+      };
+      const SEVERITY_LABELS = { mild: 'mírně', moderate: 'středně', severe: 'závažně' };
+
+      const injuryLines = (constraints || [])
+        .filter(c => c.constraint_type === 'injury')
+        .map(c => {
+          const sub = INJURY_SUBS[c.constraint_key];
+          if (!sub) return null;
+          const sev = SEVERITY_LABELS[c.severity] || c.severity;
+          return `${sub.label} (${sev}): vyhni se — ${sub.avoid}; místo toho — ${sub.use}`;
+        })
+        .filter(Boolean);
+
+      const WAIST_LIMIT = userProfile?.gender === 'female' ? 80 : 94;
+      const bodyLimits = (constraints || [])
+        .filter(c => c.constraint_type === 'body')
+        .map(c => {
+          if (c.constraint_key === 'waist_cm') {
+            const val = parseInt(c.constraint_value);
+            const over = val - WAIST_LIMIT;
+            return over > 0
+              ? `obvod pasu ${val} cm (o ${over} cm nad zdravou hranicí ${WAIST_LIMIT} cm) → snižuj kalorický příjem o 300 kcal denně`
+              : `obvod pasu ${val} cm (v normě)`;
+          }
+          return `${c.constraint_key}: ${c.constraint_value}`;
+        });
+
+      const constraintsLine = [
+        ...injuryLines,
+        ...bodyLimits,
+      ].filter(Boolean).join('\n');
+
       const CONVO_SYSTEM = `Jsi Chytré Já — osobní kouč pro dlouhověkost.
 
 Uživatel se tě může ptát na cokoliv, ale ty si vybíráš, jak odpovíš.
 Vždy směřuj hovor k dlouhověkosti a aktuálnímu uzlu.${aspirationContext}
 Odpovídej česky, tykej, buď přímý a konkrétní.
-Pokud se ptají na akce nebo cvičení: napiš přesně 2-3 konkrétní kroky jako číslovaný seznam, každý max 10 slov.
+Pokud se ptají na akce nebo cvičení: napiš přesně 2-3 konkrétní kroky jako číslovaný seznam, každý max 10 slov. U každého kroku uveď konkrétní číslo (minuty, počet týdně, kcal).
 Jinak max dvě věty.
 Nezačínaj větou "Rozumím" ani "Samozřejmě". Nepřidávej rady nesouvisející s uzlem.
-Zakázaná slova: "musíš", "je důležité", "měl bys", "hrozí", "ohrožuje", "samostatnost".`;
+Zakázaná slova: "musíš", "je důležité", "měl bys", "hrozí", "ohrožuje", "samostatnost".
+${constraintsLine ? `OMEZENÍ — striktně respektuj, navrhuj jen konkrétní náhrady:\n${constraintsLine}` : ''}`.trim();
 
       const CONVO_USER = `Uzel: ${node.label} (stav: ${node.state || context?.state || 'neznámý'})
 ${profileLine ? `Profil: ${profileLine}` : ''}
+${constraintsLine ? `Omezení:\n${constraintsLine}` : ''}
 ${stepProvocation ? `Kontext: "${stepProvocation}"` : ''}
 Dotaz uživatele: ${userQuestion}`;
 
