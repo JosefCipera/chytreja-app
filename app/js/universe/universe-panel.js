@@ -532,7 +532,7 @@ async function showGameOfLife(node) {
   }
 
   // 7. Chip labely
-  const chip1Label = actionTitle || 'Spustit cvičení';
+  const chip1Label = actionTitle || 'Co mám dělat?';
   const chip2Label = reflectionTitle || 'Detailní rozbor';
   const hasResources = ((node.articles?.length || 0) + (node.media?.length || 0) + (node.docs?.length || 0)) > 0;
 
@@ -557,15 +557,13 @@ async function showGameOfLife(node) {
     ">${initialText}</div>
 
     <div class="smart-chips" style="display:flex;flex-direction:column;gap:10px;">
-      ${actionText ? `
-        <button id="chip-action" style="
-          display:flex;align-items:center;gap:10px;
-          background:rgba(234,179,8,0.1);border:1px solid rgba(234,179,8,0.4);
-          color:#fde68a;padding:12px 18px;border-radius:10px;
-          cursor:pointer;font-size:14px;font-weight:600;
-          text-align:left;transition:all 0.2s;width:100%;
-        "><span style="font-size:18px;">⚡</span>${chip1Label}</button>
-      ` : ''}
+      <button id="chip-action" style="
+        display:flex;align-items:center;gap:10px;
+        background:rgba(234,179,8,0.1);border:1px solid rgba(234,179,8,0.4);
+        color:#fde68a;padding:12px 18px;border-radius:10px;
+        cursor:pointer;font-size:14px;font-weight:600;
+        text-align:left;transition:all 0.2s;width:100%;
+      "><span style="font-size:18px;">⚡</span>${chip1Label}</button>
       ${reflectionText ? `
         <button id="chip-reflection" style="
           display:flex;align-items:center;gap:10px;
@@ -640,7 +638,58 @@ async function showGameOfLife(node) {
   const chipReflection = document.getElementById('chip-reflection');
   const chipResources = document.getElementById('chip-resources');
 
-  if (chipAction) chipAction.onclick = () => openTextAsViewer(actionText, `⚡ ${chip1Label}`);
+  if (chipAction) chipAction.onclick = async () => {
+    document.getElementById('actionsModal')?.remove();
+    const actModal = document.createElement('div');
+    actModal.id = 'actionsModal';
+    actModal.style.cssText = `
+      position:fixed; inset:0;
+      background:rgba(0,0,0,0.85);
+      display:flex; align-items:center; justify-content:center;
+      z-index:10000;
+      opacity:0; transition:opacity 0.2s ease;
+    `;
+    actModal.innerHTML = `
+      <div style="
+        background:#1e293b; border-radius:16px; padding:24px;
+        max-width:400px; width:90%;
+        box-shadow:0 20px 60px rgba(0,0,0,0.7);
+      ">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+          <h2 style="color:#fde68a; margin:0; font-size:1em; display:flex; align-items:center; gap:8px;">⚡ Co mám dělat?</h2>
+          <button id="closeActModal" style="background:transparent;border:none;color:#94a3b8;font-size:24px;cursor:pointer;line-height:1;">×</button>
+        </div>
+        <div id="actModalContent" style="color:#cbd5e1; font-size:15px; line-height:1.8;">
+          <div style="height:60px;background:rgba(255,255,255,0.05);border-radius:8px;animation:pulse 1.5s ease-in-out infinite;"></div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(actModal);
+    requestAnimationFrame(() => { actModal.style.opacity = '1'; });
+    const closeAct = () => { actModal.style.opacity = '0'; setTimeout(() => actModal.remove(), 200); };
+    document.getElementById('closeActModal').onclick = closeAct;
+    actModal.addEventListener('click', e => { if (e.target === actModal) closeAct(); });
+    document.addEventListener('keydown', function escAct(e) {
+      if (e.key === 'Escape') { closeAct(); document.removeEventListener('keydown', escAct); }
+    });
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nodeId: node.id,
+          userQuestion: 'Co mám konkrétně dělat? Napiš 2-3 konkrétní kroky.',
+          context: { state: node.state, userId }
+        })
+      });
+      const data = await res.json();
+      const contentEl = document.getElementById('actModalContent');
+      if (contentEl) contentEl.innerHTML = (data.verdict || 'Nepodařilo se načíst doporučení.').replace(/\n/g, '<br>');
+    } catch (err) {
+      const contentEl = document.getElementById('actModalContent');
+      if (contentEl) contentEl.textContent = 'Chyba při načítání doporučení.';
+    }
+  };
   if (chipReflection) chipReflection.onclick = () => openTextAsViewer(reflectionText, `🧠 ${chip2Label}`);
   if (chipResources) chipResources.onclick = () => openResourcesViewer(node);
 
