@@ -107,6 +107,60 @@ async function fetchLearningSteps(nodeId) {
   }
 }
 
+function renderBattery(pct = 33, color = '#ef4444', glow = true) {
+  const W = 70, H = 196;
+  // Terminal (čudlík) – malý, centrovaný
+  const termW = 24, termH = 10, termRx = 4;
+  const termX = (W - termW) / 2;
+  const termY = 0;
+  // Body – výrazně zaoblené rohy jako na prototypu
+  const bodyX = 4, bodyY = termH + 2, bodyW = W - 8, bodyH = H - termH - 6, bodyRx = 16;
+  // Fill – zaoblené horní rohy, rovné dolní (přiléhají ke dnu baterie)
+  const fillH = Math.round(bodyH * pct / 100);
+  const fillY = bodyY + bodyH - fillH;
+  const fillRx = 9;
+
+  const glowFilter = glow ? `
+    <filter id="bat-glow" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="7" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>` : '';
+
+  const glowLayer = (glow && fillH > 0) ? `
+    <rect x="${bodyX}" y="${fillY}" width="${bodyW}" height="${fillH}" rx="${fillRx}"
+          fill="${color}" filter="url(#bat-glow)" opacity="0.5"/>` : '';
+
+  return `
+    <div style="display:flex; justify-content:center; padding:14px 0 10px;">
+      <svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"
+           xmlns="http://www.w3.org/2000/svg" style="overflow:visible;">
+        <defs>
+          <clipPath id="bat-clip">
+            <rect x="${bodyX}" y="${bodyY}" width="${bodyW}" height="${bodyH}" rx="${bodyRx}"/>
+          </clipPath>
+          ${glowFilter}
+        </defs>
+        <!-- Čudlík -->
+        <rect x="${termX}" y="${termY}" width="${termW}" height="${termH}" rx="${termRx}"
+              fill="#1e293b" stroke="#475569" stroke-width="1.5"/>
+        <!-- Tělo baterie – subtilní šedý border jako na prototypu -->
+        <rect x="${bodyX}" y="${bodyY}" width="${bodyW}" height="${bodyH}" rx="${bodyRx}"
+              fill="#0d1525" stroke="#334155" stroke-width="1.5"/>
+        <!-- Glow vrstva (unclipped – září ven) -->
+        ${glowLayer}
+        <!-- Solid fill (clipped, zaoblené horní rohy) -->
+        ${fillH > 0 ? `
+        <rect x="${bodyX}" y="${fillY}" width="${bodyW}" height="${fillH}" rx="${fillRx}"
+              fill="${color}" clip-path="url(#bat-clip)" opacity="0.92"/>` : ''}
+      </svg>
+    </div>
+  `;
+}
+
 async function fetchTrend(userId, nodeId, nodeState) {
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -443,7 +497,9 @@ async function showGameOfLife(node) {
     titleEl.innerHTML = `<span style="font-size:1.15em; margin-right:6px;">${node.icon || '🏋️'}</span>${node.label || 'Stoletý desetibojař'}`;
   }
 
-  // 2. Trend karta – skeleton
+  const isMainNode = node.id === 'dlouhovekost';
+
+  // 2. Trend karta – okamžité vykreslení pro hlavní uzel, skeleton pro ostatní
   let metricCard = document.querySelector('.metric-card');
   if (metricCard) metricCard.remove();
 
@@ -453,11 +509,23 @@ async function showGameOfLife(node) {
     background:#06b6d415; border:1px solid #06b6d433;
     border-radius:12px; padding:20px; margin:15px 0;
   `;
-  metricCard.innerHTML = `
-    <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Trend (30 dní)</div>
-    <div style="height:80px;background:rgba(255,255,255,0.05);border-radius:8px;animation:pulse 1.5s ease-in-out infinite;"></div>
-    <style>@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}</style>
-  `;
+
+  if (isMainNode) {
+    const batteryState = node.state === 'RED'    ? { pct: 33, color: '#ef4444', glow: true  }
+                       : node.state === 'YELLOW' ? { pct: 50, color: '#eab308', glow: false }
+                       : node.state === 'GREEN'  ? { pct: 66, color: '#22c55e', glow: false }
+                       :                           { pct: 33, color: '#64748b', glow: false };
+    metricCard.innerHTML = `
+      <div style="font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:2px;font-weight:700;margin-bottom:4px;">BATERIE ŽIVOTA</div>
+      ${renderBattery(batteryState.pct, batteryState.color, batteryState.glow)}
+    `;
+  } else {
+    metricCard.innerHTML = `
+      <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Trend (30 dní)</div>
+      <div style="height:80px;background:rgba(255,255,255,0.05);border-radius:8px;animation:pulse 1.5s ease-in-out infinite;"></div>
+      <style>@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}</style>
+    `;
+  }
 
   const panelHeader = document.querySelector('.panel-header');
   if (panelHeader) panelHeader.after(metricCard);
@@ -511,11 +579,14 @@ async function showGameOfLife(node) {
     </div>
   ` : '';
 
-  metricCard.innerHTML = `
-    <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Trend (30 dní)</div>
-    ${trend.html}
-    ${aspirationHtml}
-  `;
+  // Hlavní uzel: baterie je již vykreslena, nepřepisovat
+  if (!isMainNode) {
+    metricCard.innerHTML = `
+      <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Trend (30 dní)</div>
+      ${trend.html}
+      ${aspirationHtml}
+    `;
+  }
 
   // 6. Hlavní text brífinku – AI primární, provocationText fallback
   const aiErrorTexts = ['Chyba při komunikaci s AI.', 'Zatím nemám dost dat.', 'API nevrátilo platnou odpověď.'];
