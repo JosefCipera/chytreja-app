@@ -171,21 +171,21 @@ async function loadModel(modelName) {
       }
 
       const { data: articles, error: articlesError } = await window.supabaseClient
-        .from('node_articles')
+        .from('longevity_articles')
         .select('*');
 
       if (articlesError) console.warn("⚠️ Articles error:", articlesError);
       console.log(`   ✓ Articles: ${articles?.length || 0}`);
 
       const { data: media, error: mediaError } = await window.supabaseClient
-        .from('node_media')
+        .from('longevity_media')
         .select('*');
 
       if (mediaError) console.warn("⚠️ Media error:", mediaError);
       console.log(`   ✓ Media: ${media?.length || 0}`);
 
       const { data: docs, error: docsError } = await window.supabaseClient
-        .from('node_docs')
+        .from('longevity_docs')
         .select('*');
 
       if (docsError) console.warn("⚠️ Docs error:", docsError);

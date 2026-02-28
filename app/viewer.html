@@ -17,7 +17,6 @@
 
     <!-- === TOP BAR === -->
     <div id="topbar">
-        <div class="btn" id="btnBack">← Zpět</div>
         <div class="btn" id="btnPrint">🖨️ Tisk</div>
         <div class="btn" id="btnDownload">⬇️ Stáhnout</div>
     </div>
@@ -43,23 +42,43 @@
         const content = document.getElementById("content");
 
         // === Ovládání ===
-        document.getElementById("btnBack").onclick = () => {
-            if (window.self !== window.top) {
-                // Jsme v iFrame – pošli signál parent stránce
-                window.parent.postMessage('closeViewer', '*');
-            } else {
-                window.close();
-            }
-        };
-
         document.getElementById("btnPrint").onclick = () => window.print();
 
         document.getElementById("btnDownload").onclick = () => {
-            const a = document.createElement("a");
-            a.href = file;
-            a.download = file.split("/").pop();
-            a.click();
+            const filename = file.split("/").pop().split("?")[0];
+            fetch(file)
+                .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.blob(); })
+                .then(blob => {
+                    const u = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = u;
+                    a.download = filename;
+                    a.style.display = "none";
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    setTimeout(() => URL.revokeObjectURL(u), 2000);
+                })
+                .catch(() => {
+                    // fallback: přímý odkaz
+                    const a = document.createElement("a");
+                    a.href = file;
+                    a.download = filename;
+                    a.style.display = "none";
+                    document.body.appendChild(a);
+                    a.click();
+                    setTimeout(() => document.body.removeChild(a), 100);
+                });
         };
+
+        // Pro audio a video skryjeme Tisk a Stáhnout
+        if (type === 'audio' || type === 'video') {
+            document.getElementById('btnPrint').style.display = 'none';
+            document.getElementById('btnDownload').style.display = 'none';
+            document.getElementById('topbar').style.display = 'none';
+            document.body.style.overflow = 'hidden';
+            document.body.style.margin = '0';
+        }
 
         // === MARKDOWN ===
         if (type === "md" || type === "article") {
@@ -80,9 +99,19 @@
 
         // === PDF ===
         else if (type === "pdf") {
-            content.innerHTML = `
-      <iframe src="${file}" style="width:100%;height:100vh;border:none"></iframe>
-    `;
+            content.innerHTML = `<div style="color:#64748b;padding:24px;text-align:center;font-size:14px;">Načítám PDF…</div>`;
+            fetch(file)
+                .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.blob(); })
+                .then(blob => {
+                    const u = URL.createObjectURL(blob);
+                    content.innerHTML = `<iframe src="${u}" style="width:100%;height:100vh;border:none" allow="fullscreen"></iframe>`;
+                    setTimeout(() => URL.revokeObjectURL(u), 120000);
+                })
+                .catch(() => {
+                    // Fallback: Google Docs Viewer
+                    const gdocUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(file)}&embedded=true`;
+                    content.innerHTML = `<iframe src="${gdocUrl}" style="width:100%;height:100vh;border:none" allow="fullscreen"></iframe>`;
+                });
         }
 
         // === AUDIO ===
@@ -125,7 +154,9 @@
             height:100%;
             border:none;
           "
-          allowfullscreen>
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowfullscreen
+          referrerpolicy="strict-origin-when-cross-origin">
         </iframe>
       </div>
     </div>

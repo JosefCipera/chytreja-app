@@ -309,6 +309,63 @@ export default async function (req, res) {
         ...bodyLimits,
       ].filter(Boolean).join('\n');
 
+      // Evidence block — jen pro vysvětlení (když přichází chjVerdict)
+      let evidenceBlock = '';
+      if (context?.chjVerdict) {
+        const NODE_LABELS = {
+          telo: 'Tělo', mysl: 'Mysl', vyziva: 'Výživa',
+          zdravi: 'Zdraví', metabolicke: 'Metabolismus'
+        };
+        const MAIN_CHILDREN = ['telo', 'mysl', 'vyziva', 'zdravi', 'metabolicke'];
+
+        const { data: allMetrics } = await supabase
+          .from('user_metrics')
+          .select('node_id, state, current_index')
+          .eq('user_id', userId)
+          .eq('universe', 'longevity')
+          .in('node_id', MAIN_CHILDREN);
+
+        if (allMetrics?.length) {
+          const redNodes    = allMetrics.filter(m => m.state === 'RED')
+            .sort((a, b) => a.current_index - b.current_index);
+          const yellowNodes = allMetrics.filter(m => m.state === 'YELLOW')
+            .sort((a, b) => a.current_index - b.current_index);
+
+          const stateLines = MAIN_CHILDREN
+            .map(id => {
+              const m = allMetrics.find(m => m.node_id === id);
+              return m ? `${NODE_LABELS[id]}: ${m.state}` : null;
+            })
+            .filter(Boolean);
+
+          const bottleneckNodes = redNodes.length ? redNodes : yellowNodes;
+          const bottleneckLabel = bottleneckNodes.slice(0, 2)
+            .map(m => NODE_LABELS[m.node_id]).join(' a ');
+
+          evidenceBlock += `Stav oblastí: ${stateLines.join(', ')}.`;
+          if (bottleneckLabel) evidenceBlock += ` Největší problém: ${bottleneckLabel}.`;
+        }
+
+        if (injuryLines.length) {
+          const injuryRationale = injuryLines.map(l => {
+            // "koleno (závažně): vyhni se — X; místo toho — Y" → "kvůli kolenu místo X → Y"
+            const match = l.match(/^(.+?) \(.+?\): vyhni se — (.+?); místo toho — (.+)$/);
+            return match ? `Kvůli ${match[1]} vynecháváme ${match[2].split(',')[0]} a nahrazujeme ${match[3].split(';')[0]}` : l;
+          }).join('. ');
+          evidenceBlock += ` ${injuryRationale}.`;
+        }
+
+        if (bodyLimits.length) {
+          evidenceBlock += ` ${bodyLimits.join(', ')}.`;
+        }
+
+        const asp = aspirationData || (nodeId === 'dlouhovekost' && mainNodeAspirationLabel
+          ? { label: mainNodeAspirationLabel } : null);
+        if (asp?.label) {
+          evidenceBlock += ` Cíl: ${asp.label}${asp.gap > 0.05 ? ' — zatím mimo dosah' : ''}.`;
+        }
+      }
+
       const CONVO_SYSTEM = `Jsi Chytré Já — osobní kouč pro dlouhověkost.
 
 Uživatel se tě může ptát na cokoliv, ale ty si vybíráš, jak odpovíš.
@@ -322,7 +379,8 @@ ${constraintsLine ? `OMEZENÍ — striktně respektuj, navrhuj jen konkrétní n
 
       const CONVO_USER = `Uzel: ${node.label} (stav: ${node.state || context?.state || 'neznámý'})
 ${profileLine ? `Profil: ${profileLine}` : ''}
-${constraintsLine ? `Omezení:\n${constraintsLine}` : ''}
+${context?.chjVerdict ? `Hodnocení CHJ: "${context.chjVerdict}"` : ''}
+${evidenceBlock ? `Evidence:\n${evidenceBlock}` : constraintsLine ? `Omezení:\n${constraintsLine}` : ''}
 ${stepProvocation ? `Kontext: "${stepProvocation}"` : ''}
 Dotaz uživatele: ${userQuestion}`;
 
@@ -333,7 +391,7 @@ Dotaz uživatele: ${userQuestion}`;
           { role: "user", content: CONVO_USER }
         ],
         temperature: 0.7,
-        max_tokens: 200
+        max_tokens: 280
       });
 
       return res.json({
