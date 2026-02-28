@@ -29,7 +29,7 @@ body {
     padding: 0 1rem;
     background: #0f172a;
     border-bottom: 1px solid #1e293b;
-    z-index: 1000;
+    z-index: 10000;
 }
 
 #appTitle {
@@ -101,7 +101,7 @@ body {
     /* ⭐ nový jemný stín */
     box-shadow: 0 3px 10px rgba(0, 0, 0, 0.35);
 
-    z-index: 1000;
+    z-index: 10000;
 }
 
 /* scrollbary MUSÍ být samostatně – mimo #sidePanel */

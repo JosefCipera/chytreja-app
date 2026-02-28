@@ -63,9 +63,14 @@
     <link rel="stylesheet" href="/app/css/universe-core.css">
     <link rel="stylesheet" href="/app/css/universe-header.css">
 
-    <!-- Manifest -->
-    <link rel="manifest" href="./manifest.webmanifest">
-    <meta name="theme-color" content="#101c35">
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.webmanifest">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Chytré já">
+    <link rel="apple-touch-icon" href="/app/assets/images/logo-192.png">
 
     <style>
         .battery-section {
@@ -256,6 +261,17 @@
                 }
             }, 2500);
         });
+    </script>
+
+    <!-- Service Worker -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/service-worker.js', { scope: '/' })
+                    .then(reg => console.log('✅ Service Worker zaregistrován, scope:', reg.scope))
+                    .catch(err => console.warn('⚠️ SW registrace selhala:', err));
+            });
+        }
     </script>
 
     <!-- Onboarding Modal -->
