@@ -182,6 +182,38 @@ const FILES = [
     node_id: 'dlouhovekost',
     addToDB: false,
   },
+
+  // ── NOVÉ ČESKÉ ČLÁNKY (Attia framework) ───────────────────────────────────
+  {
+    local:   `${BASE}/clanky/dlouhovekost/stolety-desetibojar.md`,
+    storage: 'longevity/dlouhovekost/stolety-desetibojar.md',
+    node_id: 'dlouhovekost',
+    addToDB: true,
+  },
+  {
+    local:   `${BASE}/clanky/telo/sila-a-svaly-jako-pojistka.md`,
+    storage: 'longevity/telo/sila-a-svaly-jako-pojistka.md',
+    node_id: 'telo',
+    addToDB: true,
+  },
+  {
+    local:   `${BASE}/clanky/mysl/mozek-na-dlouhou-trat.md`,
+    storage: 'longevity/mysl/mozek-na-dlouhou-trat.md',
+    node_id: 'mysl',
+    addToDB: true,
+  },
+  {
+    local:   `${BASE}/clanky/vyziva/jist-pro-sto-let.md`,
+    storage: 'longevity/vyziva/jist-pro-sto-let.md',
+    node_id: 'vyziva',
+    addToDB: true,
+  },
+  {
+    local:   `${BASE}/clanky/zdravi/prevence-metabolismus-markery.md`,
+    storage: 'longevity/zdravi/prevence-metabolismus-markery.md',
+    node_id: 'zdravi',
+    addToDB: true,
+  },
 ];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
