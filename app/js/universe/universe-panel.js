@@ -56,9 +56,14 @@ function resetPanel() {
 export async function showPanel(node) {
   if (!panelEl) return;
 
+  const wasOpen = panelEl.classList.contains('open');
+
   panelEl.style.transition = "none";
-  panelEl.style.visibility = "hidden";
-  panelEl.classList.remove("open", "visible");
+  if (!wasOpen) {
+    // Fresh open – hide first so slide-in animation works
+    panelEl.style.visibility = "hidden";
+    panelEl.classList.remove("open", "visible");
+  }
 
   resetPanel();
   showGameOfLife(node);
@@ -292,8 +297,96 @@ window.addEventListener('message', e => {
   }
 });
 
-function openViewerModal(fileUrl, type, title) {
+function openViewerModal(fileUrl, type, title, onBack = null) {
   document.getElementById('viewerModal')?.remove();
+
+  // PDF → fetch+blob do modálu (blob: URL obchází X-Frame-Options a CORS)
+  if (type === 'pdf') {
+    const modal = document.createElement('div');
+    modal.id = 'viewerModal';
+    // opacity: 1 hned – žádný fade-in (zabraňuje záblesku panelu)
+    modal.style.cssText = `
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.92);
+      display: flex; flex-direction: column;
+      z-index: 10000;
+      transition: opacity 0.2s ease;
+    `;
+    modal.innerHTML = `
+      <div style="
+        display:flex; align-items:center; justify-content:space-between;
+        padding:12px 20px; background:#0f172a; border-bottom:1px solid #1e293b; flex-shrink:0;
+      ">
+        <div style="display:flex;align-items:center;gap:16px;">
+          <span style="color:#94a3b8; font-size:14px; font-weight:500;">📕 ${title || 'PDF'}</span>
+          <a href="${fileUrl}" target="_blank" style="
+            color:#60a5fa;font-size:13px;text-decoration:none;
+            padding:4px 10px;border:1px solid rgba(96,165,250,0.3);border-radius:6px;
+            background:rgba(96,165,250,0.08);transition:all 0.15s;
+          " onmouseover="this.style.background='rgba(96,165,250,0.18)'" onmouseout="this.style.background='rgba(96,165,250,0.08)'">↗ Otevřít</a>
+        </div>
+        <button id="closeViewerModal" style="
+          background:transparent;border:none;color:#94a3b8;
+          font-size:24px;cursor:pointer;padding:4px 8px;
+          border-radius:6px;line-height:1;transition:all 0.2s;
+        ">&times;</button>
+      </div>
+      <div id="pdfContainer" style="flex:1;width:100%;background:#0a0f1e;display:flex;align-items:center;justify-content:center;">
+        <div style="color:#64748b;font-size:14px;">Načítám PDF…</div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+
+    const closeViewer = () => {
+      _currentViewerClose = null;
+      modal.style.opacity = '0';
+      setTimeout(() => modal.remove(), 200);
+    };
+    _currentViewerClose = closeViewer;
+    // Přechod zpět: okamžité odebrání (bez fade) aby mezi modály nebyl záblesk panelu
+  const closeAndBack = () => {
+    if (onBack) {
+      _currentViewerClose = null;
+      modal.remove();
+      onBack();
+    } else {
+      closeViewer();
+    }
+  };
+
+    const btn = document.getElementById('closeViewerModal');
+    btn.onclick = closeAndBack;
+    btn.onmouseenter = () => { btn.style.background = 'rgba(239,68,68,0.2)'; btn.style.color = '#ef4444'; };
+    btn.onmouseleave = () => { btn.style.background = 'transparent'; btn.style.color = '#94a3b8'; };
+    modal.addEventListener('click', e => { if (e.target === modal) closeAndBack(); });
+    const escHandler = e => {
+      if (e.key === 'Escape') { closeAndBack(); document.removeEventListener('keydown', escHandler); }
+    };
+    document.addEventListener('keydown', escHandler);
+
+    // 1. Pokus: fetch+blob → <object type="application/pdf"> (nejlépe funguje v prohlížeči)
+    // 2. Fallback: Google Docs Viewer (veřejné PDF přes Google servery)
+    // 3. Vždy je v hlavičce záložní odkaz "Otevřít ↗"
+    fetch(fileUrl)
+      .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.blob(); })
+      .then(blob => {
+        const pdfBlob = new Blob([blob], { type: 'application/pdf' });
+        const blobUrl = URL.createObjectURL(pdfBlob);
+        const container = document.getElementById('pdfContainer');
+        if (container) {
+          container.innerHTML = `<object data="${blobUrl}" type="application/pdf" style="width:100%;height:100%;border:none;"><p style="color:#94a3b8;padding:16px;text-align:center;">PDF viewer není dostupný.<br>Použij tlačítko <em>Otevřít</em> v záhlaví.</p></object>`;
+          setTimeout(() => URL.revokeObjectURL(blobUrl), 120000);
+        }
+      })
+      .catch(() => {
+        const container = document.getElementById('pdfContainer');
+        if (container) {
+          const gdocUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(fileUrl)}&embedded=true`;
+          container.innerHTML = `<iframe src="${gdocUrl}" style="width:100%;height:100%;border:none;" allow="fullscreen"></iframe>`;
+        }
+      });
+    return;
+  }
 
   const isAudio = type === 'audio';
   const viewerSrc = `/app/viewer.html?type=${encodeURIComponent(type)}&file=${encodeURIComponent(fileUrl)}`;
@@ -307,7 +400,7 @@ function openViewerModal(fileUrl, type, title) {
       background: rgba(0,0,0,0.85);
       display: flex; align-items: center; justify-content: center;
       z-index: 10000;
-      opacity: 0; transition: opacity 0.2s ease;
+      transition: opacity 0.2s ease;
     `;
     modal.innerHTML = `
       <div style="
@@ -327,7 +420,7 @@ function openViewerModal(fileUrl, type, title) {
             border-radius:6px;line-height:1;transition:all 0.2s;
           ">&times;</button>
         </div>
-        <iframe src="${viewerSrc}" style="width:100%;height:130px;border:none;background:#0f172a;" allow="autoplay"></iframe>
+        <iframe src="${viewerSrc}" style="width:100%;height:220px;border:none;background:#0f172a;overflow:hidden;" allow="autoplay"></iframe>
       </div>
     `;
   } else {
@@ -336,7 +429,7 @@ function openViewerModal(fileUrl, type, title) {
       background: rgba(0,0,0,0.92);
       display: flex; flex-direction: column;
       z-index: 10000;
-      opacity: 0; transition: opacity 0.2s ease;
+      transition: opacity 0.2s ease;
     `;
     modal.innerHTML = `
       <div style="
@@ -355,7 +448,7 @@ function openViewerModal(fileUrl, type, title) {
   }
 
   document.body.appendChild(modal);
-  requestAnimationFrame(() => { modal.style.opacity = '1'; });
+  // žádný fade-in (modal se zobrazí okamžitě, bez záblesku panelu)
 
   const closeViewer = () => {
     _currentViewerClose = null;
@@ -365,15 +458,26 @@ function openViewerModal(fileUrl, type, title) {
 
   _currentViewerClose = closeViewer;
 
+  // Přechod zpět: okamžité odebrání (bez fade) aby mezi modály nebyl záblesk panelu
+  const closeAndBack = () => {
+    if (onBack) {
+      _currentViewerClose = null;
+      modal.remove();
+      onBack();
+    } else {
+      closeViewer();
+    }
+  };
+
   const btn = document.getElementById('closeViewerModal');
-  btn.onclick = closeViewer;
+  btn.onclick = closeAndBack;
   btn.onmouseenter = () => { btn.style.background = 'rgba(239,68,68,0.2)'; btn.style.color = '#ef4444'; };
   btn.onmouseleave = () => { btn.style.background = 'transparent'; btn.style.color = '#94a3b8'; };
 
-  modal.addEventListener('click', e => { if (e.target === modal) closeViewer(); });
+  modal.addEventListener('click', e => { if (e.target === modal) closeAndBack(); });
 
   const escHandler = e => {
-    if (e.key === 'Escape') { closeViewer(); document.removeEventListener('keydown', escHandler); }
+    if (e.key === 'Escape') { closeAndBack(); document.removeEventListener('keydown', escHandler); }
   };
   document.addEventListener('keydown', escHandler);
 }
@@ -404,7 +508,7 @@ function openResourcesViewer(node) {
     background:rgba(0,0,0,0.85);
     display:flex; align-items:center; justify-content:center;
     z-index:10000;
-    opacity:0; transition:opacity 0.2s ease;
+    transition:opacity 0.2s ease;
   `;
 
   const icons = { md: '📄', pdf: '📕', video: '🎥', audio: '🎵', image: '🖼️' };
@@ -437,7 +541,7 @@ function openResourcesViewer(node) {
   `;
 
   document.body.appendChild(modal);
-  requestAnimationFrame(() => { modal.style.opacity = '1'; });
+  // žádný fade-in – modal se zobrazí okamžitě
 
   const closeViewer = () => {
     modal.style.opacity = '0';
@@ -455,8 +559,9 @@ function openResourcesViewer(node) {
   modal.querySelectorAll('.res-pick').forEach(el => {
     const idx = parseInt(el.dataset.idx);
     el.addEventListener('click', () => {
-      closeViewer();
-      setTimeout(() => openViewerModal(all[idx].url, all[idx].type, all[idx].title), 250);
+      // Okamžité odebrání – bez fade – aby nebyl záblesk panelu mezi modály
+      modal.remove();
+      openViewerModal(all[idx].url, all[idx].type, all[idx].title, () => openResourcesViewer(node));
     });
     el.addEventListener('mouseenter', () => {
       el.style.background = 'rgba(59,130,246,0.12)';
@@ -645,12 +750,11 @@ async function showGameOfLife(node) {
       ${(hasResources || actionText || reflectionText) ? `
         <button id="chip-resources" style="
           display:flex;align-items:center;gap:10px;
-          background:transparent;border:1px solid #1e293b;
-          color:#64748b;padding:10px 18px;border-radius:10px;
-          cursor:pointer;font-size:13px;font-weight:500;
+          background:rgba(20,184,166,0.1);border:1px solid rgba(20,184,166,0.4);
+          color:#5eead4;padding:12px 18px;border-radius:10px;
+          cursor:pointer;font-size:14px;font-weight:600;
           text-align:left;transition:all 0.2s;width:100%;
-          margin-top:4px;
-        "><span style="font-size:16px;">📚</span>Další zdroje</button>
+        "><span style="font-size:18px;">📚</span>Další zdroje</button>
       ` : ''}
     </div>
   `;
@@ -799,8 +903,8 @@ async function showGameOfLife(node) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           nodeId: node.id,
-          userQuestion: 'Proč jsi to řekl a proč jsou navrhované akce správné? Napiš 2-3 věty stručného vysvětlení, přesvědčivě a bez strašení.',
-          context: { state: node.state, userId }
+          userQuestion: 'Napiš 3 věty: 1) které oblasti jsou nejhorší a proč je baterie vybitá, 2) proč jsou navrhované akce právě takové — kvůli jakým omezením, 3) jak to souvisí s cílem. Jen fakta, bez obecných frází.',
+          context: { state: node.state, userId, chjVerdict: initialText }
         })
       });
       const data = await res.json();
