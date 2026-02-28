@@ -756,13 +756,6 @@ async function showGameOfLife(node) {
           text-align:left;transition:all 0.2s;width:100%;
         "><span style="font-size:18px;">📚</span>Další zdroje</button>
       ` : ''}
-      <button id="chip-ask" style="
-        display:flex;align-items:center;gap:10px;
-        background:rgba(148,163,184,0.07);border:1px solid rgba(148,163,184,0.2);
-        color:#94a3b8;padding:10px 18px;border-radius:10px;
-        cursor:pointer;font-size:13px;font-weight:500;
-        text-align:left;transition:all 0.2s;width:100%;
-      "><span style="font-size:16px;">💬</span>Zeptat se na cokoliv</button>
     </div>
   `;
 
@@ -924,25 +917,6 @@ async function showGameOfLife(node) {
   };
   if (chipResources) chipResources.onclick = () => openResourcesViewer(node);
 
-  // "Zeptat se" chip – toggle vstupního pole
-  const chipAsk = document.getElementById('chip-ask');
-  const chatSection = document.getElementById('aiPanelSection');
-  if (chipAsk && chatSection) {
-    chipAsk.onclick = () => {
-      const isOpen = chatSection.style.display !== 'none';
-      if (isOpen) {
-        chatSection.style.display = 'none';
-        chipAsk.style.color = '#94a3b8';
-        chipAsk.style.borderColor = 'rgba(148,163,184,0.2)';
-      } else {
-        chatSection.style.display = 'flex';
-        chipAsk.style.color = '#e2e8f0';
-        chipAsk.style.borderColor = 'rgba(148,163,184,0.5)';
-        document.getElementById('aiPanelInput')?.focus();
-      }
-    };
-  }
-
   // 12. Živý chat – přepisování brífinku
   const chatInput = document.getElementById('aiPanelInput');
   const sendBtn = document.getElementById('ai-send');
@@ -991,10 +965,6 @@ async function showGameOfLife(node) {
       // Přepis textu – bez nové bubliny
       currentText = answer;
       messageEl.textContent = answer;
-
-      // Schovat vstupní pole po odeslání
-      if (chatSection) chatSection.style.display = 'none';
-      if (chipAsk) { chipAsk.style.color = '#94a3b8'; chipAsk.style.borderColor = 'rgba(148,163,184,0.2)'; }
 
     } catch (err) {
       console.error('❌ chat submit:', err);
