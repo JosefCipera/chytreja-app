@@ -1,33 +1,65 @@
 /* ================================================
-   MEDIOTÉKA – FINÁLNÍ VERZE PRO iting.cz
+   MEDIOTÉKA – data ze Supabase (longevity_media + longevity_articles)
    ================================================ */
 console.log("🔥 medioteka.js NAČTEN");
 
+const SUPABASE_URL = 'https://pionxzqtxcughvfbgadi.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_w29DE53nrdGnNEvBn68kzg_ujje7u5Y';
+const { createClient } = window.supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+
 /* ------------------------------------------------
-   1) LOAD LIBRARY (JSON)
+   1) LOAD LIBRARY – ze Supabase
    ------------------------------------------------ */
 async function loadLibrary() {
   try {
-    const res = await fetch("../data/medioteka.json");
-    if (!res.ok) throw new Error("Soubor medioteka.json nenalezen");
+    const [mediaRes, articlesRes] = await Promise.all([
+      sb.from('longevity_media').select('*').order('node_id'),
+      sb.from('longevity_articles').select('*').order('node_id'),
+    ]);
 
-    const data = await res.json();
-    console.log("📦 Načteno:", data.library);
+    if (mediaRes.error) throw mediaRes.error;
+    if (articlesRes.error) throw articlesRes.error;
 
-    return data.library || [];
+    const mediaItems = (mediaRes.data || []).map(r => ({
+      id:          String(r.id),
+      type:        r.type,
+      title:       r.title,
+      description: r.summary || r.source || '',
+      url:         r.url,
+      node_id:     r.node_id,
+      source:      r.source || '',
+      duration_min: r.duration_min,
+    }));
+
+    const articleItems = (articlesRes.data || []).map(r => ({
+      id:         String(r.id),
+      type:       'article',
+      title:      r.title,
+      description: r.source || '',
+      url:        r.url,
+      contentUrl: r.url,
+      node_id:    r.node_id,
+      source:     r.source || '',
+    }));
+
+    const all = [...mediaItems, ...articleItems];
+    console.log(`📦 Načteno: ${all.length} položek (${mediaItems.length} media, ${articleItems.length} článků)`);
+    return all;
+
   } catch (err) {
-    console.error("❌ Nelze načíst mediotéku:", err);
+    console.error("❌ Nelze načíst mediotéku ze Supabase:", err);
     return [];
   }
 }
 
 /* ------------------------------------------------
-   2) RESOLVE URL – BEZ MAGIE
+   2) YOUTUBE URL → embed
    ------------------------------------------------ */
-function resolveMediaUrl(item) {
-  if (item.type === "video") return item.url;
-  if (item.type === "article") return item.contentUrl;
-  return item.url;
+function toEmbedUrl(url) {
+  const match = url?.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  if (match) return `https://www.youtube-nocookie.com/embed/${match[1]}?rel=0`;
+  return url;
 }
 
 /* ------------------------------------------------
@@ -37,12 +69,17 @@ function renderMediaGrid(items) {
   const grid = document.getElementById("mediaGrid");
   grid.innerHTML = "";
 
+  if (!items.length) {
+    grid.innerHTML = `<p style="color:#888;text-align:center;grid-column:1/-1;">Žádné položky k zobrazení.</p>`;
+    return;
+  }
+
   const icons = {
-    audio: `<i class="fa-solid fa-headphones fa-2xl" style="color:#a855f7"></i>`,
-    video: `<i class="fa-solid fa-video fa-2xl" style="color:#ef4444"></i>`,
-    image: `<i class="fa-solid fa-image fa-2xl" style="color:#4ade80"></i>`,
-    pdf: `<i class="fa-solid fa-file-pdf fa-2xl" style="color:#fbbf24"></i>`,
-    article: `<i class="fa-solid fa-book-open fa-2xl" style="color:#a78bfa"></i>`
+    audio:   `<i class="fa-solid fa-headphones fa-2xl" style="color:#a855f7"></i>`,
+    video:   `<i class="fa-solid fa-video fa-2xl" style="color:#ef4444"></i>`,
+    image:   `<i class="fa-solid fa-image fa-2xl" style="color:#4ade80"></i>`,
+    pdf:     `<i class="fa-solid fa-file-pdf fa-2xl" style="color:#fbbf24"></i>`,
+    article: `<i class="fa-solid fa-book-open fa-2xl" style="color:#a78bfa"></i>`,
   };
 
   grid.innerHTML = items.map(item => `
@@ -62,44 +99,64 @@ window.openMediaModal = function (id) {
   const item = window.MEDIA_ITEMS.find(x => x.id === id);
   if (!item) return;
 
-  const url = resolveMediaUrl(item);
   let content = "";
 
   switch (item.type) {
 
     case "audio":
       content = `
+        <h3 style="color:#fff;margin:0 0 12px">${item.title}</h3>
+        ${item.source ? `<p style="color:#888;font-size:13px;margin:0 0 16px">${item.source}</p>` : ''}
         <audio controls class="medioteka-audio">
-          <source src="${url}" type="audio/mpeg">
+          <source src="${item.url}" type="audio/mpeg">
         </audio>`;
       break;
 
-    case "video":
+    case "video": {
+      const embedUrl = toEmbedUrl(item.url);
       content = `
+        <h3 style="color:#fff;margin:0 0 12px">${item.title}</h3>
         <div class="video-wrapper">
-          <iframe src="${url}" frameborder="0"
+          <iframe src="${embedUrl}" frameborder="0"
             allowfullscreen
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture">
           </iframe>
+        </div>
+        <div style="text-align:center;margin-top:12px;">
+          <a href="${item.url}" target="_blank"
+             style="color:#a855f7;font-size:13px;text-decoration:none;">
+            ↗ Otevřít na YouTube
+          </a>
         </div>`;
       break;
+    }
 
     case "image":
-      content = `<img src="${url}" alt="${item.title}">`;
+      content = `<img src="${item.url}" alt="${item.title}" style="max-width:100%">`;
       break;
 
     case "pdf":
-      content = `<iframe class="pdf-frame" src="${url}"></iframe>`;
+      content = `<iframe class="pdf-frame" src="${item.url}"></iframe>`;
       break;
 
     case "article":
+      document.getElementById("modalContent").innerHTML =
+        `<p style="color:#888">Načítám článek…</p>`;
+      document.getElementById("mediaModal").classList.remove("hidden");
       fetch(item.contentUrl)
-        .then(res => res.text())
+        .then(res => {
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          return res.text();
+        })
         .then(txt => {
           document.getElementById("modalContent").innerHTML =
             `<div class="article-body">${marked.parse(txt)}</div>`;
+        })
+        .catch(err => {
+          document.getElementById("modalContent").innerHTML =
+            `<p style="color:#ef4444">Chyba načítání článku: ${err.message}</p>`;
         });
-      break;
+      return;
   }
 
   document.getElementById("modalContent").innerHTML = content;
@@ -111,7 +168,10 @@ window.openMediaModal = function (id) {
    ------------------------------------------------ */
 function closeMediaModal() {
   document.getElementById("mediaModal").classList.add("hidden");
+  document.getElementById("modalContent").innerHTML = "";
 }
+
+window.closeMediaModal = closeMediaModal;
 
 document.addEventListener("click", (e) => {
   const modal = document.getElementById("mediaModal");
@@ -129,7 +189,9 @@ const searchInput = document.getElementById("searchInput");
 searchInput.addEventListener("input", () => {
   const q = searchInput.value.toLowerCase().trim();
   const filtered = window.MEDIA_ITEMS.filter(item =>
-    item.title.toLowerCase().includes(q)
+    item.title.toLowerCase().includes(q) ||
+    (item.description || '').toLowerCase().includes(q) ||
+    (item.node_id || '').toLowerCase().includes(q)
   );
   renderMediaGrid(filtered);
 });
