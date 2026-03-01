@@ -182,17 +182,33 @@ document.addEventListener("click", (e) => {
 });
 
 /* ------------------------------------------------
-   6) VYHLEDÁVÁNÍ
+   6) VYHLEDÁVÁNÍ – s normalizací diakritiky
    ------------------------------------------------ */
+
+// "Čtyři" → "ctyri", "špatně" → "spatne"
+function stripDia(str) {
+  return (str || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
+
 const searchInput = document.getElementById("searchInput");
 
 searchInput.addEventListener("input", () => {
-  const q = searchInput.value.toLowerCase().trim();
-  const filtered = window.MEDIA_ITEMS.filter(item =>
-    item.title.toLowerCase().includes(q) ||
-    (item.description || '').toLowerCase().includes(q) ||
-    (item.node_id || '').toLowerCase().includes(q)
-  );
+  const q = stripDia(searchInput.value.trim());
+  if (!q) { renderMediaGrid(window.MEDIA_ITEMS); return; }
+
+  const filtered = window.MEDIA_ITEMS.filter(item => {
+    // primárně title (vždy)
+    if (stripDia(item.title).includes(q)) return true;
+    // sekundárně description + node_id – jen při delším dotazu
+    if (q.length > 2) {
+      if (stripDia(item.description).includes(q)) return true;
+      if (stripDia(item.node_id).includes(q)) return true;
+    }
+    return false;
+  });
   renderMediaGrid(filtered);
 });
 
