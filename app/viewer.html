@@ -132,33 +132,41 @@
 
         // === VIDEO ===
         else if (type === "video") {
+            // Detect YouTube and convert watch URL → embed URL
+            const ytMatch = file.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+            const youtubeId = ytMatch ? ytMatch[1] : null;
+            const embedUrl = youtubeId
+                ? `https://www.youtube-nocookie.com/embed/${youtubeId}?rel=0`
+                : file;
+
             content.innerHTML = `
-    <div style="
-      max-width: 960px;
-      margin: 40px auto;
-      padding: 0 16px;
-    ">
+    <div style="max-width:960px;margin:40px auto;padding:0 16px;">
       <div style="
-        position: relative;
-        padding-top: 56.25%;
-        border-radius: 14px;
-        overflow: hidden;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.45);
+        position:relative;padding-top:56.25%;
+        border-radius:14px;overflow:hidden;
+        box-shadow:0 10px 30px rgba(0,0,0,0.45);background:#000;
       ">
         <iframe
-          src="${file}"
-          style="
-            position:absolute;
-            top:0;left:0;
-            width:100%;
-            height:100%;
-            border:none;
-          "
+          src="${embedUrl}"
+          style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           allowfullscreen
           referrerpolicy="strict-origin-when-cross-origin">
         </iframe>
       </div>
+      ${youtubeId ? `
+      <div style="text-align:center;margin-top:16px;">
+        <a href="${file}" target="_blank" style="
+          display:inline-flex;align-items:center;gap:8px;
+          background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);
+          color:#94a3b8;padding:10px 20px;border-radius:8px;
+          font-size:14px;text-decoration:none;transition:all 0.2s;
+        " onmouseover="this.style.background='rgba(255,255,255,0.12)'"
+           onmouseout="this.style.background='rgba(255,255,255,0.07)'">
+          ↗ Otevřít na YouTube
+        </a>
+      </div>
+      ` : ''}
     </div>
   `;
         }
