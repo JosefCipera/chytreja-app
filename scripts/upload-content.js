@@ -214,6 +214,50 @@ const FILES = [
     node_id: 'zdravi',
     addToDB: true,
   },
+
+  // ── DECATHLON UZLY – SÍLA ────────────────────────────────────────────────
+  { local: `${BASE}/clanky/sila/sila-jako-pojistka-dlouhovekosti.md`,   storage: 'longevity/sila/sila-jako-pojistka-dlouhovekosti.md',   node_id: 'sila',   addToDB: true },
+  { local: `${BASE}/clanky/sila/sarkopenie-tichy-zlodej.md`,            storage: 'longevity/sila/sarkopenie-tichy-zlodej.md',            node_id: 'sila',   addToDB: true },
+
+  // ── VÝDRŽ ────────────────────────────────────────────────────────────────
+  { local: `${BASE}/clanky/vytrvalost/vo2max-cislo-ktere-rozhoduje.md`,      storage: 'longevity/vytrvalost/vo2max-cislo-ktere-rozhoduje.md',      node_id: 'vytrvalost', addToDB: true },
+  { local: `${BASE}/clanky/vytrvalost/zona2-zaklad-aerobniho-zdravi.md`,     storage: 'longevity/vytrvalost/zona2-zaklad-aerobniho-zdravi.md',     node_id: 'vytrvalost', addToDB: true },
+
+  // ── MOBILITA ─────────────────────────────────────────────────────────────
+  { local: `${BASE}/clanky/mobilita/mobilita-neznamena-jen-strecink.md`,  storage: 'longevity/mobilita/mobilita-neznamena-jen-strecink.md',  node_id: 'mobilita', addToDB: true },
+  { local: `${BASE}/clanky/mobilita/klouby-a-chrupavky-jak-je-udrzet.md`, storage: 'longevity/mobilita/klouby-a-chrupavky-jak-je-udrzet.md', node_id: 'mobilita', addToDB: true },
+
+  // ── STABILITA ────────────────────────────────────────────────────────────
+  { local: `${BASE}/clanky/stabilita/stabilita-zaklad-ktery-vsechno-drzi.md`, storage: 'longevity/stabilita/stabilita-zaklad-ktery-vsechno-drzi.md', node_id: 'stabilita', addToDB: true },
+  { local: `${BASE}/clanky/stabilita/bolesti-zad-a-jak-jim-predchazet.md`,    storage: 'longevity/stabilita/bolesti-zad-a-jak-jim-predchazet.md',    node_id: 'stabilita', addToDB: true },
+
+  // ── ROVNOVÁHA ────────────────────────────────────────────────────────────
+  { local: `${BASE}/clanky/rovnovaha/rovnovaha-a-pad-nejvetsi-riziko-stari.md`,    storage: 'longevity/rovnovaha/rovnovaha-a-pad-nejvetsi-riziko-stari.md',    node_id: 'rovnovaha', addToDB: true },
+  { local: `${BASE}/clanky/rovnovaha/propriocepce-smysl-ktery-zachranuje-zivot.md`, storage: 'longevity/rovnovaha/propriocepce-smysl-ktery-zachranuje-zivot.md', node_id: 'rovnovaha', addToDB: true },
+
+  // ── KARDIO ───────────────────────────────────────────────────────────────
+  { local: `${BASE}/clanky/kardio/srdce-jako-sval-ktery-trenujes.md`,          storage: 'longevity/kardio/srdce-jako-sval-ktery-trenujes.md',          node_id: 'kardio', addToDB: true },
+  { local: `${BASE}/clanky/kardio/apob-a-ateroskleroze-co-opravdu-skodi-cevam.md`, storage: 'longevity/kardio/apob-a-ateroskleroze-co-opravdu-skodi-cevam.md', node_id: 'kardio', addToDB: true },
+
+  // ── SPÁNEK ───────────────────────────────────────────────────────────────
+  { local: `${BASE}/clanky/spanek/proc-spanek-neni-lenistvim.md`,               storage: 'longevity/spanek/proc-spanek-neni-lenistvim.md',               node_id: 'spanek', addToDB: true },
+  { local: `${BASE}/clanky/spanek/spanek-a-mozek-glymfatika-a-alzheimer.md`,    storage: 'longevity/spanek/spanek-a-mozek-glymfatika-a-alzheimer.md',    node_id: 'spanek', addToDB: true },
+
+  // ── STRES ────────────────────────────────────────────────────────────────
+  { local: `${BASE}/clanky/stres/kortizol-pritel-i-nepritel.md`,          storage: 'longevity/stres/kortizol-pritel-i-nepritel.md',          node_id: 'stres', addToDB: true },
+  { local: `${BASE}/clanky/stres/chronicky-stres-a-co-dela-s-telem.md`,   storage: 'longevity/stres/chronicky-stres-a-co-dela-s-telem.md',   node_id: 'stres', addToDB: true },
+
+  // ── METABOLICKÉ ──────────────────────────────────────────────────────────
+  { local: `${BASE}/clanky/metabolicke/insulinova-rezistence-koren-problemu.md`, storage: 'longevity/metabolicke/insulinova-rezistence-koren-problemu.md', node_id: 'metabolicke', addToDB: true },
+  { local: `${BASE}/clanky/metabolicke/metabolicky-syndrom-pet-signalu.md`,      storage: 'longevity/metabolicke/metabolicky-syndrom-pet-signalu.md',      node_id: 'metabolicke', addToDB: true },
+
+  // ── NERVOVÝ SYSTÉM ───────────────────────────────────────────────────────
+  { local: `${BASE}/clanky/nervovy_system/neuroplasticita-mozek-ktery-se-meni.md`,  storage: 'longevity/nervovy_system/neuroplasticita-mozek-ktery-se-meni.md',  node_id: 'nervovy_system', addToDB: true },
+  { local: `${BASE}/clanky/nervovy_system/autonomni-nervovy-system-jak-ho-treovat.md`, storage: 'longevity/nervovy_system/autonomni-nervovy-system-jak-ho-treovat.md', node_id: 'nervovy_system', addToDB: true },
+
+  // ── IMUNITNÍ ─────────────────────────────────────────────────────────────
+  { local: `${BASE}/clanky/imunitni/imunita-a-starnuti-inflammaging.md`,    storage: 'longevity/imunitni/imunita-a-starnuti-inflammaging.md',    node_id: 'imunitni', addToDB: true },
+  { local: `${BASE}/clanky/imunitni/jak-pohyb-a-spanek-siliji-imunitu.md`,  storage: 'longevity/imunitni/jak-pohyb-a-spanek-siliji-imunitu.md',  node_id: 'imunitni', addToDB: true },
 ];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
