@@ -219,7 +219,7 @@ async function initMedioteka() {
   console.log("🚀 initMedioteka()");
   const items = await loadLibrary();
   window.MEDIA_ITEMS = items;
-  renderMediaGrid(items);
+  renderMediaGrid(items.slice(0, 8));  // úvodní obrazovka: max 8
 }
 
 initMedioteka();
