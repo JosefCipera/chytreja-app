@@ -45,3 +45,6 @@ Attia doporučuje vědět o svém těle víc, než je standard. Nestačí vědě
 **hsCRP** – vysoce senzitivní C-reaktivní protein. Marker chronického zánětu s nízkou intenzitou, který standardní CRP nezachytí.
 
 **Viscerální tuk** – tuk uložený v dutině břišní kolem orgánů. Metabolicky aktivní, prozánětlivý, úzce spojený s inzulínovou rezistencí.
+
+---
+*Tento text je originální vzdělávací shrnutí pro aplikaci Chytré já. Koncepty vycházejí z veřejně dostupné práce Petera Attii (kniha Outlive, podcast The Drive), Andrewa Hubermana (Huberman Lab) a dalších výzkumníků zmíněných v textu. Nejde o lékařskou radu.*

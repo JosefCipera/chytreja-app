@@ -48,3 +48,6 @@ Tyto schopnosti se neobjeví samy. Jsou výsledkem toho, co děláš teď.
 **Zóna 2** – intenzita aerobního tréninku, při níž ještě dokážeš vést rozhovor. Buduje mitochondriální kapacitu a metabolickou flexibilitu.
 
 **Grip strength** – síla stisku ruky. Jednoduchý, levný ukazatel celkové funkční zdatnosti a svalového zdraví.
+
+---
+*Tento text je originální vzdělávací shrnutí pro aplikaci Chytré já. Koncepty vycházejí z veřejně dostupné práce Petera Attii (kniha Outlive, podcast The Drive), Andrewa Hubermana (Huberman Lab) a dalších výzkumníků zmíněných v textu. Nejde o lékařskou radu.*

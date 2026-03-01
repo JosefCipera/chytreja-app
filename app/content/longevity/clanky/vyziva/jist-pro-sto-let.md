@@ -43,3 +43,6 @@ Druhý krok: **zkontroluj příjem bílkovin**. Pokud jíš méně než gram na 
 **Inzulínová rezistence** – stav, kdy buňky přestávají citlivě reagovat na inzulín. Předchůdce metabolického syndromu a cukrovky 2. typu.
 
 **Energetická bilance** – rozdíl mezi příjmem a výdejem kalorií. Základ tělesné kompozice, ale není jediným faktorem ovlivňujícím zdraví.
+
+---
+*Tento text je originální vzdělávací shrnutí pro aplikaci Chytré já. Koncepty vycházejí z veřejně dostupné práce Petera Attii (kniha Outlive, podcast The Drive), Andrewa Hubermana (Huberman Lab) a dalších výzkumníků zmíněných v textu. Nejde o lékařskou radu.*
