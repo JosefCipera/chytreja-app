@@ -53,3 +53,6 @@ Tělo reaguje na trénink v každém věku. Svaly rostou osmdesátníkům. VO2ma
 **Healthspan vs. lifespan** – délka zdravého života vs. celková délka života. Cíl není jen žít déle, ale žít déle *dobře*.
 
 **Medicine 3.0** – Attiaův termín pro přístup k medicíně zaměřený na prevenci a optimalizaci, ne jen na léčbu nemocí.
+
+---
+*Tento text je originální vzdělávací shrnutí pro aplikaci Chytré já. Koncepty vycházejí z veřejně dostupné práce Petera Attii (kniha Outlive, podcast The Drive), Andrewa Hubermana (Huberman Lab) a dalších výzkumníků zmíněných v textu. Nejde o lékařskou radu.*

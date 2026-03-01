@@ -41,3 +41,6 @@ Nejúčinnější věci, které pro mozek můžeš udělat, nejsou kognitivní c
 **Kognitivní rezerva** – funkční zásoby mozku vybudované celoživotním učením, sociálními vazbami a fyzickou aktivitou. Chrání před klinickými projevy neurodegenerace.
 
 **Hipokampus** – oblast mozku zodpovědná za tvorbu nových vzpomínek a prostorovou orientaci. Citlivá na chronický stres a nedostatek pohybu, ale také schopná regenerace.
+
+---
+*Tento text je originální vzdělávací shrnutí pro aplikaci Chytré já. Koncepty vycházejí z veřejně dostupné práce Petera Attii (kniha Outlive, podcast The Drive), Andrewa Hubermana (Huberman Lab) a dalších výzkumníků zmíněných v textu. Nejde o lékařskou radu.*
