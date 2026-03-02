@@ -543,7 +543,7 @@ function openResourcesViewer(node) {
         </div>
       `).join('')}
       ${hasMore ? `
-        <a href="/app/medioteka.html" style="
+        <a href="/app/medioteka.html?node=${encodeURIComponent(node.id)}" style="
           display:block; text-align:center; margin-top:12px;
           padding:10px; border-radius:8px;
           background:rgba(59,130,246,0.08); border:1px solid rgba(59,130,246,0.2);

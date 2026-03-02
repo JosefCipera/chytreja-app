@@ -312,8 +312,16 @@ async function initMedioteka() {
   console.log("🚀 initMedioteka()");
   const items = await loadLibrary();
   window.MEDIA_ITEMS = items;
+
+  // Předfiltrování podle ?node= z URL (odkaz z panelu)
+  const nodeParam = new URLSearchParams(window.location.search).get('node');
+  if (nodeParam) {
+    activeOblast = getOblast(nodeParam);
+    console.log(`🔍 Předfiltrováno z panelu: node=${nodeParam} → oblast=${activeOblast}`);
+  }
+
   renderChips(items);
-  renderMediaGrid(items.slice(0, 8));  // úvodní obrazovka: max 8
+  applyFilters();
 }
 
 initMedioteka();
