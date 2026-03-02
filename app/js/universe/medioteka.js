@@ -9,6 +9,46 @@ const { createClient } = window.supabase;
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 /* ------------------------------------------------
+   Oblast + Autor mapping
+   ------------------------------------------------ */
+const OBLAST_MAP = {
+  sila:           'Pohyb',
+  vytrvalost:     'Pohyb',
+  mobilita:       'Pohyb',
+  stabilita:      'Pohyb',
+  rovnovaha:      'Pohyb',
+  telo:           'Pohyb',
+  kardio:         'Srdce & cévy',
+  spanek:         'Spánek',
+  stres:          'Stres & imunita',
+  imunitni:       'Stres & imunita',
+  mysl:           'Mozek',
+  nervovy_system: 'Mozek',
+  vyziva:         'Výživa',
+  metabolicke:    'Metabolismus',
+  zdravi:         'Dlouhověkost',
+  dlouhovekost:   'Dlouhověkost',
+};
+
+function getOblast(node_id) {
+  return OBLAST_MAP[node_id] || 'Ostatní';
+}
+
+function getAutor(source) {
+  const s = (source || '').toLowerCase();
+  if (s.includes('huberman')) return 'Huberman';
+  if (s.includes('attia') || s.includes('chytré') || s.includes('chytrej')) return 'Attia';
+  if (s.includes('walker')) return 'Walker';
+  if (s.includes('galpin')) return 'Galpin';
+  if (s.includes('patrick') || s.includes('rhonda')) return 'Patrick';
+  return 'Ostatní';
+}
+
+/* filter state */
+let activeOblast = null;
+let activeAutor  = null;
+
+/* ------------------------------------------------
    1) LOAD LIBRARY – ze Supabase
    ------------------------------------------------ */
 async function loadLibrary() {
@@ -22,25 +62,29 @@ async function loadLibrary() {
     if (articlesRes.error) throw articlesRes.error;
 
     const mediaItems = (mediaRes.data || []).map(r => ({
-      id:          String(r.id),
-      type:        r.type,
-      title:       r.title,
-      description: r.summary || r.source || '',
-      url:         r.url,
-      node_id:     r.node_id,
-      source:      r.source || '',
+      id:           String(r.id),
+      type:         r.type,
+      title:        r.title,
+      description:  r.summary || r.source || '',
+      url:          r.url,
+      node_id:      r.node_id,
+      source:       r.source || '',
       duration_min: r.duration_min,
+      oblast:       getOblast(r.node_id),
+      autor:        getAutor(r.source),
     }));
 
     const articleItems = (articlesRes.data || []).map(r => ({
-      id:         String(r.id),
-      type:       'article',
-      title:      r.title,
+      id:          String(r.id),
+      type:        'article',
+      title:       r.title,
       description: r.source || '',
-      url:        r.url,
-      contentUrl: r.url,
-      node_id:    r.node_id,
-      source:     r.source || '',
+      url:         r.url,
+      contentUrl:  r.url,
+      node_id:     r.node_id,
+      source:      r.source || '',
+      oblast:      getOblast(r.node_id),
+      autor:       getAutor(r.source),
     }));
 
     const all = [...mediaItems, ...articleItems];
@@ -63,7 +107,7 @@ function toEmbedUrl(url) {
 }
 
 /* ------------------------------------------------
-   3) RENDER GRID – KARTY
+   3) RENDER GRID – KARTY (bez type tagu, s oblastí)
    ------------------------------------------------ */
 function renderMediaGrid(items) {
   const grid = document.getElementById("mediaGrid");
@@ -87,13 +131,84 @@ function renderMediaGrid(items) {
       <div class="medioteka-card-icon">${icons[item.type] || "📄"}</div>
       <div class="medioteka-card-title">${item.title}</div>
       <div class="medioteka-card-desc">${item.description || ""}</div>
-      <div class="medioteka-card-tag">${item.type.toUpperCase()}</div>
+      <div class="medioteka-card-oblast">${item.oblast}</div>
     </div>
   `).join("");
 }
 
 /* ------------------------------------------------
-   4) VIEWER – MODÁL
+   4) CHIPS – render Oblast + Autor
+   ------------------------------------------------ */
+function renderChips(items) {
+  // Oblast chips
+  const oblasts = [...new Set(items.map(i => i.oblast))].sort();
+  const oblastEl = document.getElementById("oblastChips");
+  if (oblastEl) {
+    oblastEl.innerHTML = oblasts.map(o => `
+      <button class="medioteka-chip${activeOblast === o ? ' active' : ''}"
+              onclick="toggleOblast('${o}')">${o}</button>
+    `).join("");
+  }
+
+  // Autor chips
+  const autors = [...new Set(items.map(i => i.autor))].sort();
+  const autorEl = document.getElementById("autorChips");
+  if (autorEl) {
+    autorEl.innerHTML = autors.map(a => `
+      <button class="medioteka-chip medioteka-chip--autor${activeAutor === a ? ' active' : ''}"
+              onclick="toggleAutor('${a}')">${a}</button>
+    `).join("");
+  }
+}
+
+/* ------------------------------------------------
+   5) FILTRY – vyhledávání + oblast + autor
+   ------------------------------------------------ */
+function stripDia(str) {
+  return (str || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
+
+function applyFilters() {
+  const q = stripDia(document.getElementById("searchInput").value.trim());
+  let items = window.MEDIA_ITEMS;
+
+  // Oblast filter
+  if (activeOblast) {
+    items = items.filter(i => i.oblast === activeOblast);
+  }
+
+  // Autor filter
+  if (activeAutor) {
+    items = items.filter(i => i.autor === activeAutor);
+  }
+
+  // Search filter – prefix od začátku titulu
+  if (q) {
+    items = items.filter(item => stripDia(item.title).startsWith(q));
+  }
+
+  // Limit 8 jen když nejsou žádné filtry aktivní
+  const noFilter = !q && !activeOblast && !activeAutor;
+  renderMediaGrid(noFilter ? items.slice(0, 8) : items);
+}
+
+window.toggleOblast = function(o) {
+  activeOblast = (activeOblast === o) ? null : o;
+  renderChips(window.MEDIA_ITEMS);
+  applyFilters();
+};
+
+window.toggleAutor = function(a) {
+  activeAutor = (activeAutor === a) ? null : a;
+  renderChips(window.MEDIA_ITEMS);
+  applyFilters();
+};
+
+/* ------------------------------------------------
+   6) VIEWER – MODÁL
    ------------------------------------------------ */
 window.openMediaModal = function (id) {
   const item = window.MEDIA_ITEMS.find(x => x.id === id);
@@ -164,7 +279,7 @@ window.openMediaModal = function (id) {
 };
 
 /* ------------------------------------------------
-   5) ZAVŘENÍ MODÁLU
+   7) ZAVŘENÍ MODÁLU
    ------------------------------------------------ */
 function closeMediaModal() {
   document.getElementById("mediaModal").classList.add("hidden");
@@ -182,43 +297,18 @@ document.addEventListener("click", (e) => {
 });
 
 /* ------------------------------------------------
-   6) VYHLEDÁVÁNÍ – s normalizací diakritiky
+   8) VYHLEDÁVÁNÍ
    ------------------------------------------------ */
-
-// "Čtyři" → "ctyri", "špatně" → "spatne"
-function stripDia(str) {
-  return (str || '')
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '');
-}
-
-const searchInput = document.getElementById("searchInput");
-
-searchInput.addEventListener("input", () => {
-  const q = stripDia(searchInput.value.trim());
-  if (!q) { renderMediaGrid(window.MEDIA_ITEMS); return; }
-
-  const filtered = window.MEDIA_ITEMS.filter(item => {
-    // primárně title (vždy)
-    if (stripDia(item.title).includes(q)) return true;
-    // sekundárně description + node_id – jen při delším dotazu
-    if (q.length > 2) {
-      if (stripDia(item.description).includes(q)) return true;
-      if (stripDia(item.node_id).includes(q)) return true;
-    }
-    return false;
-  });
-  renderMediaGrid(filtered);
-});
+document.getElementById("searchInput").addEventListener("input", () => applyFilters());
 
 /* ------------------------------------------------
-   7) INIT
+   9) INIT
    ------------------------------------------------ */
 async function initMedioteka() {
   console.log("🚀 initMedioteka()");
   const items = await loadLibrary();
   window.MEDIA_ITEMS = items;
+  renderChips(items);
   renderMediaGrid(items.slice(0, 8));  // úvodní obrazovka: max 8
 }
 
