@@ -15,8 +15,8 @@ const splashHTML = `
         <img src="/app/assets/images/logo-192.png" style="width: 96px; height: auto;">
     </div>
     <div style="padding-bottom: 2.5rem; text-align: center;">
-        <h1 style="color: #94a3b8; font-family: sans-serif; margin: 0; font-size: 18px; font-weight: 500; letter-spacing: 0.5px;">Chytré já</h1>
-        <p style="color: #475569; font-family: sans-serif; margin: 2px 0 0 0; font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px;">Medicína 3.0</p>
+        <h1 style="color: #94a3b8; font-family: sans-serif; margin: 0; font-size: 26px; font-weight: 500; letter-spacing: 0.5px;">Chytré já</h1>
+        <p style="color: #475569; font-family: sans-serif; margin: 4px 0 0 0; font-size: 13px; text-transform: uppercase; letter-spacing: 1.5px;">Medicína 3.0</p>
     </div>
 </div>`;
 
