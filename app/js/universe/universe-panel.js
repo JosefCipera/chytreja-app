@@ -499,6 +499,11 @@ function openResourcesViewer(node) {
   if (all.length === 0) { showToast('Žádné zdroje k dispozici.'); return; }
   if (all.length === 1) { openViewerModal(all[0].url, all[0].type, all[0].title); return; }
 
+  // Panel zobrazuje max 3 položky – zbytek je k nalezení v Mediátéce
+  const PANEL_LIMIT = 3;
+  const shown = all.slice(0, PANEL_LIMIT);
+  const hasMore = all.length > PANEL_LIMIT;
+
   document.getElementById('viewerModal')?.remove();
 
   const modal = document.createElement('div');
@@ -523,7 +528,7 @@ function openResourcesViewer(node) {
         <h2 style="color:#f8fafc; margin:0; font-size:1.15em;">📚 Zdroje</h2>
         <button id="closeViewerModal" style="background:transparent;border:none;color:#94a3b8;font-size:24px;cursor:pointer;line-height:1;">&times;</button>
       </div>
-      ${all.map((r, i) => `
+      ${shown.map((r, i) => `
         <div data-idx="${i}" class="res-pick" style="
           display:flex; align-items:center; gap:12px;
           padding:14px 16px; border-radius:10px; cursor:pointer;
@@ -537,6 +542,17 @@ function openResourcesViewer(node) {
           </div>
         </div>
       `).join('')}
+      ${hasMore ? `
+        <a href="/app/medioteka.html" style="
+          display:block; text-align:center; margin-top:12px;
+          padding:10px; border-radius:8px;
+          background:rgba(59,130,246,0.08); border:1px solid rgba(59,130,246,0.2);
+          color:#60a5fa; font-size:13px; text-decoration:none;
+          transition:background 0.15s;
+        ">
+          📚 Zobrazit vše v Mediátéce (${all.length - PANEL_LIMIT} dalších)
+        </a>
+      ` : ''}
     </div>
   `;
 
@@ -561,7 +577,7 @@ function openResourcesViewer(node) {
     el.addEventListener('click', () => {
       // Okamžité odebrání – bez fade – aby nebyl záblesk panelu mezi modály
       modal.remove();
-      openViewerModal(all[idx].url, all[idx].type, all[idx].title, () => openResourcesViewer(node));
+      openViewerModal(shown[idx].url, shown[idx].type, shown[idx].title, () => openResourcesViewer(node));
     });
     el.addEventListener('mouseenter', () => {
       el.style.background = 'rgba(59,130,246,0.12)';
