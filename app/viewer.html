@@ -135,8 +135,10 @@
             // Detect YouTube and convert watch URL → embed URL
             const ytMatch = file.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
             const youtubeId = ytMatch ? ytMatch[1] : null;
+            const tMatch = file.match(/[?&]t=(\d+)s?/);
+            const startSec = tMatch ? tMatch[1] : null;
             const embedUrl = youtubeId
-                ? `https://www.youtube-nocookie.com/embed/${youtubeId}?rel=0`
+                ? `https://www.youtube-nocookie.com/embed/${youtubeId}?rel=0${startSec ? '&start=' + startSec : ''}`
                 : file;
 
             content.innerHTML = `
