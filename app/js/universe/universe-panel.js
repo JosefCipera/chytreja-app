@@ -558,6 +558,14 @@ function openResourcesViewer(node) {
           + ${restCount} ${restCount === 1 ? 'další' : 'dalších'}
         </button>
       ` : ''}
+      <div style="text-align:center; margin-top:14px;">
+        <a href="/app/medioteka.html?node=${encodeURIComponent(node.id)}" style="
+          color:#475569; font-size:12px; text-decoration:none;
+          transition:color 0.15s;
+        " onmouseover="this.style.color='#94a3b8'" onmouseout="this.style.color='#475569'">
+          Procházet mediótéku →
+        </a>
+      </div>
     </div>
   `;
 
