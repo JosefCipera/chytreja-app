@@ -47,7 +47,7 @@
 .medioteka-search {
     width: 100%;
     max-width: 420px;
-    margin: 0 auto 38px auto;
+    margin: 0 auto 22px auto;
     display: block;
     padding: 12px 18px;
     border-radius: 10px;
@@ -59,6 +59,52 @@
 
 .medioteka-search::placeholder {
     color: #64748b;
+}
+
+/* ------------------------------- */
+/* FILTER CHIPY */
+/* ------------------------------- */
+
+.medioteka-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    margin-bottom: 12px;
+}
+
+.medioteka-chips--second {
+    margin-bottom: 28px;
+}
+
+.medioteka-chip {
+    padding: 5px 14px;
+    border-radius: 20px;
+    border: 1px solid #2c3440;
+    background: #1a1f27;
+    color: #94a3b8;
+    cursor: pointer;
+    font-size: 0.82rem;
+    font-family: inherit;
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.medioteka-chip:hover {
+    border-color: #4dabf7;
+    color: #e5e7eb;
+}
+
+.medioteka-chip.active {
+    background: #1e3a5f;
+    border-color: #4dabf7;
+    color: #4dabf7;
+    font-weight: 600;
+}
+
+.medioteka-chip--autor.active {
+    background: #2d1b4e;
+    border-color: #a855f7;
+    color: #a855f7;
 }
 
 /* ------------------------------- */
@@ -108,10 +154,10 @@
     margin-bottom: 12px;
 }
 
-.medioteka-card-tag {
+.medioteka-card-oblast {
     font-size: 0.75rem;
-    color: #4dabf7;
-    font-weight: bold;
+    color: #475569;
+    margin-top: 4px;
 }
 
 /* ===================================================== */
