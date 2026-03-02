@@ -102,7 +102,11 @@ async function loadLibrary() {
    ------------------------------------------------ */
 function toEmbedUrl(url) {
   const match = url?.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-  if (match) return `https://www.youtube-nocookie.com/embed/${match[1]}?rel=0`;
+  if (match) {
+    const tMatch = url.match(/[?&]t=(\d+)s?/);
+    const start = tMatch ? `&start=${tMatch[1]}` : '';
+    return `https://www.youtube-nocookie.com/embed/${match[1]}?rel=0${start}`;
+  }
   return url;
 }
 
