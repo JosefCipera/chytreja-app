@@ -11,7 +11,7 @@ const splashHTML = `
     justify-content: center;
     transition: opacity 0.5s ease-out;
 ">
-    <img src="/app/assets/images/logo-192.png" style="width: 56px; height: auto; opacity: 0.85;">
+    <img src="/app/assets/images/logo-192.png" style="width: 96px; height: auto; opacity: 0.9;">
 </div>`;
 
 document.body.insertAdjacentHTML('afterbegin', splashHTML);
