@@ -499,10 +499,12 @@ function openResourcesViewer(node) {
   if (all.length === 0) { showToast('Žádné zdroje k dispozici.'); return; }
   if (all.length === 1) { openViewerModal(all[0].url, all[0].type, all[0].title); return; }
 
-  // Panel zobrazuje max 3 položky – zbytek je k nalezení v Mediátéce
+  // Panel zobrazuje max 3 položky – zbytek se rozbalí inline tlačítkem
   const PANEL_LIMIT = 3;
   const shown = all.slice(0, PANEL_LIMIT);
-  const hasMore = all.length > PANEL_LIMIT;
+  const rest  = all.slice(PANEL_LIMIT);
+  const hasMore = rest.length > 0;
+  const restCount = rest.length;
 
   document.getElementById('viewerModal')?.remove();
 
@@ -513,51 +515,53 @@ function openResourcesViewer(node) {
     background:rgba(0,0,0,0.85);
     display:flex; align-items:center; justify-content:center;
     z-index:10000;
-    transition:opacity 0.2s ease;
   `;
 
   const icons = { md: '📄', pdf: '📕', video: '🎥', audio: '🎵', image: '🖼️' };
 
+  function itemHtml(r, i) {
+    return `
+      <div data-idx="${i}" class="res-pick" style="
+        display:flex; align-items:center; gap:12px;
+        padding:14px 16px; border-radius:10px; cursor:pointer;
+        border:1px solid #1e293b; margin-bottom:8px;
+        background:#0f172a; transition:all 0.15s ease;
+      ">
+        <span style="font-size:22px;">${icons[r.type] || '📎'}</span>
+        <div>
+          <div style="font-weight:600; color:#e2e8f0; font-size:14px;">${r.title || 'Bez názvu'}</div>
+          ${r.summary ? `<div style="font-size:12px; color:#64748b; margin-top:2px;">${r.summary}</div>` : ''}
+        </div>
+      </div>`;
+  }
+
   modal.innerHTML = `
     <div style="
       background:#1e293b; border-radius:16px; padding:24px;
-      max-width:460px; width:90%; max-height:80vh; overflow-y:auto;
+      max-width:560px; width:90%; max-height:90vh; overflow-y:auto;
       box-shadow:0 20px 60px rgba(0,0,0,0.7);
     ">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
         <h2 style="color:#f8fafc; margin:0; font-size:1.15em;">📚 Zdroje</h2>
         <button id="closeViewerModal" style="background:transparent;border:none;color:#94a3b8;font-size:24px;cursor:pointer;line-height:1;">&times;</button>
       </div>
-      ${shown.map((r, i) => `
-        <div data-idx="${i}" class="res-pick" style="
-          display:flex; align-items:center; gap:12px;
-          padding:14px 16px; border-radius:10px; cursor:pointer;
-          border:1px solid #1e293b; margin-bottom:8px;
-          background:#0f172a; transition:all 0.15s ease;
-        ">
-          <span style="font-size:22px;">${icons[r.type] || '📎'}</span>
-          <div>
-            <div style="font-weight:600; color:#e2e8f0; font-size:14px;">${r.title || 'Bez názvu'}</div>
-            ${r.summary ? `<div style="font-size:12px; color:#64748b; margin-top:2px;">${r.summary}</div>` : ''}
-          </div>
-        </div>
-      `).join('')}
+      <div id="resList">
+        ${shown.map((r, i) => itemHtml(r, i)).join('')}
+      </div>
       ${hasMore ? `
-        <a href="/app/medioteka.html?node=${encodeURIComponent(node.id)}" style="
-          display:block; text-align:center; margin-top:12px;
-          padding:10px; border-radius:8px;
+        <button id="showMoreBtn" style="
+          display:block; width:100%; text-align:center; margin-top:8px;
+          padding:10px; border-radius:8px; cursor:pointer;
           background:rgba(59,130,246,0.08); border:1px solid rgba(59,130,246,0.2);
-          color:#60a5fa; font-size:13px; text-decoration:none;
-          transition:background 0.15s;
+          color:#60a5fa; font-size:13px; transition:background 0.15s;
         ">
-          📚 Zobrazit vše v Mediátéce (${all.length - PANEL_LIMIT} dalších)
-        </a>
+          + ${restCount} ${restCount === 1 ? 'další' : 'dalších'}
+        </button>
       ` : ''}
     </div>
   `;
 
   document.body.appendChild(modal);
-  // žádný fade-in – modal se zobrazí okamžitě
 
   const closeViewer = () => {
     modal.style.opacity = '0';
@@ -572,12 +576,11 @@ function openResourcesViewer(node) {
   };
   document.addEventListener('keydown', escHandler);
 
-  modal.querySelectorAll('.res-pick').forEach(el => {
-    const idx = parseInt(el.dataset.idx);
+  // Helper: přidá click + hover na .res-pick element
+  function bindItem(el, item) {
     el.addEventListener('click', () => {
-      // Okamžité odebrání – bez fade – aby nebyl záblesk panelu mezi modály
       modal.remove();
-      openViewerModal(shown[idx].url, shown[idx].type, shown[idx].title, () => openResourcesViewer(node));
+      openViewerModal(item.url, item.type, item.title, () => openResourcesViewer(node));
     });
     el.addEventListener('mouseenter', () => {
       el.style.background = 'rgba(59,130,246,0.12)';
@@ -587,7 +590,27 @@ function openResourcesViewer(node) {
       el.style.background = '#0f172a';
       el.style.borderColor = '#1e293b';
     });
+  }
+
+  // Bind shown items
+  modal.querySelectorAll('.res-pick').forEach(el => {
+    bindItem(el, shown[parseInt(el.dataset.idx)]);
   });
+
+  // Rozbal zbývající inline
+  if (hasMore) {
+    document.getElementById('showMoreBtn').onclick = () => {
+      const list = document.getElementById('resList');
+      rest.forEach((r, i) => {
+        const tmp = document.createElement('div');
+        tmp.innerHTML = itemHtml(r, PANEL_LIMIT + i);
+        const el = tmp.firstElementChild;
+        bindItem(el, r);
+        list.appendChild(el);
+      });
+      document.getElementById('showMoreBtn').remove();
+    };
+  }
 }
 
 function showToast(msg) {
