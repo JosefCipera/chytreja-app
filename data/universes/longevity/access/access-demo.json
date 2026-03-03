@@ -1,158 +1,41 @@
 [
-  {
-    "id": "dlouhovekost",
-    "access": "full"
-  },
-  {
-    "id": "zdravi",
-    "access": "full"
-  },
-  {
-    "id": "metabolicke",
-    "access": "full"
-  },
-  {
-    "id": "imunitni",
-    "access": "full"
-  },
-  {
-    "id": "nervovy_system",
-    "access": "full"
-  },
-  {
-    "id": "spanek",
-    "access": "full"
-  },
-  {
-    "id": "biomarkery",
-    "access": "full"
-  },
-  {
-    "id": "glukoza",
-    "access": "full"
-  },
-  {
-    "id": "bilirubin",
-    "access": "full"
-  },
-  {
-    "id": "leukocyty",
-    "access": "full"
-  },
-  {
-    "id": "erytrocyty",
-    "access": "full"
-  },
-  {
-    "id": "souhrn_biomarkery",
-    "access": "full"
-  },
-  {
-    "id": "obnova",
-    "access": "full"
-  },
-  {
-    "id": "telo",
-    "access": "full"
-  },
-  {
-    "id": "sila",
-    "access": "full"
-  },
-  {
-    "id": "vytrvalost",
-    "access": "full"
-  },
-  {
-    "id": "mobilita",
-    "access": "full"
-  },
-  {
-    "id": "stabilita",
-    "access": "full"
-  },
-  {
-    "id": "rovnovaha",
-    "access": "full"
-  },
-  {
-    "id": "kardio",
-    "access": "full"
-  },
-  {
-    "id": "dychani",
-    "access": "full"
-  },
-  {
-    "id": "nosni_dychani",
-    "access": "full"
-  },
-  {
-    "id": "dechova_koherence",
-    "access": "full"
-  },
-  {
-    "id": "butejko",
-    "access": "full"
-  },
-  {
-    "id": "mysl",
-    "access": "full"
-  },
-  {
-    "id": "stres",
-    "access": "full"
-  },
-  {
-    "id": "smysl",
-    "access": "full"
-  },
-  {
-    "id": "soustredeni",
-    "access": "full"
-  },
-  {
-    "id": "vdecnost",
-    "access": "hidden"
-  },
-  {
-    "id": "meditace",
-    "access": "locked"
-  },
-  {
-    "id": "emoce",
-    "access": "full"
-  },
-  {
-    "id": "klid",
-    "access": "full"
-  },
-  {
-    "id": "vyziva",
-    "access": "full"
-  },
-  {
-    "id": "pust",
-    "access": "full"
-  },
-  {
-    "id": "bílkoviny",
-    "access": "full"
-  },
-  {
-    "id": "glukoza_vyziva",
-    "access": "full"
-  },
-  {
-    "id": "mikronutrienty",
-    "access": "full"
-  },
-  {
-    "id": "hydratace",
-    "access": "full"
-  },
-  {
-    "id": "casovani_jidel",
-    "access": "full"
-  }
+  { "id": "dlouhovekost",      "access": "full"   },
+  { "id": "zdravi",            "access": "full"   },
+  { "id": "metabolicke",       "access": "full"   },
+  { "id": "imunitni",          "access": "full"   },
+  { "id": "nervovy_system",    "access": "full"   },
+  { "id": "spanek",            "access": "full"   },
+  { "id": "biomarkery",        "access": "full"   },
+  { "id": "glukoza",           "access": "full"   },
+  { "id": "bilirubin",         "access": "locked" },
+  { "id": "leukocyty",         "access": "locked" },
+  { "id": "erytrocyty",        "access": "locked" },
+  { "id": "souhrn_biomarkery", "access": "full"   },
+  { "id": "obnova",            "access": "full"   },
+  { "id": "telo",              "access": "full"   },
+  { "id": "sila",              "access": "full"   },
+  { "id": "vytrvalost",        "access": "full"   },
+  { "id": "mobilita",          "access": "full"   },
+  { "id": "stabilita",         "access": "full"   },
+  { "id": "rovnovaha",         "access": "locked" },
+  { "id": "kardio",            "access": "full"   },
+  { "id": "dychani",           "access": "full"   },
+  { "id": "nosni_dychani",     "access": "locked" },
+  { "id": "dechova_koherence", "access": "locked" },
+  { "id": "butejko",           "access": "locked" },
+  { "id": "mysl",              "access": "full"   },
+  { "id": "stres",             "access": "full"   },
+  { "id": "smysl",             "access": "full"   },
+  { "id": "soustredeni",       "access": "full"   },
+  { "id": "vdecnost",          "access": "locked" },
+  { "id": "meditace",          "access": "locked" },
+  { "id": "emoce",             "access": "full"   },
+  { "id": "klid",              "access": "full"   },
+  { "id": "vyziva",            "access": "full"   },
+  { "id": "pust",              "access": "full"   },
+  { "id": "bílkoviny",         "access": "full"   },
+  { "id": "glukoza_vyziva",    "access": "full"   },
+  { "id": "mikronutrienty",    "access": "full"   },
+  { "id": "hydratace",         "access": "full"   },
+  { "id": "casovani_jidel",    "access": "locked" }
 ]

@@ -3,6 +3,110 @@
 console.log("PANEL JS LOADED");
 
 // =====================================================
+// DEMO PREVIEWS – non-black-box texty pro locked uzly
+// =====================================================
+
+const DEMO_PREVIEWS = {
+  rovnovaha: {
+    text: 'Sledujeme stabilitu stoje, propriocepci a reakční čas — klíčové pro prevenci pádů.',
+    tracks: ['Stoj na jedné noze (sekundy)', 'Reakční čas', 'Balance test skóre'],
+    sensors: ['Smartphone gyroskop', 'Wearable', 'Manuální test'],
+  },
+  nosni_dychani: {
+    text: 'Sledujeme poměr nosního vs. ústního dýchání přes den i ve spánku.',
+    tracks: ['Denní zvyk nosního dýchání', 'BOLT skóre', 'Spánkové dýchání'],
+    sensors: ['Oura Ring', 'Spánkový monitor', 'Manuální záznam'],
+  },
+  dechova_koherence: {
+    text: 'Měříme synchronizaci srdečního rytmu s dechem — přímý ukazatel parasympatiku.',
+    tracks: ['HRV při koherentním dýchání', 'Délka koherentní praxe', 'Stav ANS'],
+    sensors: ['Polar H10', 'HeartMath', 'Oura Ring'],
+  },
+  butejko: {
+    text: 'Sledujeme CO₂ toleranci a efektivitu dýchání pomocí Buteyko protokolů.',
+    tracks: ['Control pause (sekundy)', 'Klidová dechová frekvence', 'BOLT skóre'],
+    sensors: ['Manuální měření', 'Stopky'],
+  },
+  bilirubin: {
+    text: 'Ukazatel funkce jater — importujeme z krevního testu a sledujeme roční trend.',
+    tracks: ['Hodnota z odběru (µmol/l)', 'Trend za 12 měsíců', 'Korelace s výživou'],
+    sensors: ['Krevní test', 'Lab import', 'Apple Health'],
+  },
+  leukocyty: {
+    text: 'Počet bílých krvinek sledujeme jako marker zánětu nebo imunitní aktivity.',
+    tracks: ['Hodnota z odběru (10⁹/l)', 'Trend zánětu', 'Korelace se spánkem'],
+    sensors: ['Krevní test', 'Lab import'],
+  },
+  erytrocyty: {
+    text: 'Erytrocyty v moči sledujeme jako časný marker zánětu močových cest.',
+    tracks: ['Hodnota z rozboru moče (počet/µl)', 'Trend za půl roku'],
+    sensors: ['Rozbor moče', 'Lab import'],
+  },
+  meditace: {
+    text: 'Sledujeme pravidelnost praxe a vliv meditace na HRV a ranní kortizol.',
+    tracks: ['Délka sezení', 'Regularita (dny v týdnu)', 'HRV ráno vs. po meditaci'],
+    sensors: ['Apple Health', 'Calm / Headspace', 'Oura Ring'],
+  },
+  vdecnost: {
+    text: 'Vděčnost mění biochemii mozku — sledujeme jak denní praxe ovlivňuje náladu a spánek.',
+    tracks: ['Denní záznam (3 věci)', 'Nálada skóre', 'Korelace se spánkem'],
+    sensors: ['CHJ deník', 'Manuální záznam'],
+  },
+  casovani_jidel: {
+    text: 'Sledujeme jídelní okno a přestávky mezi jídly pro podporu metabolické flexibility.',
+    tracks: ['Jídelní okno (hodin/den)', 'Čas posledního jídla před spaním', 'Frekvence jídel'],
+    sensors: ['Manuální záznam', 'CGM monitor', 'CHJ deník'],
+  },
+};
+
+function getDemoPreview(nodeId) {
+  return DEMO_PREVIEWS[nodeId] || {
+    text: 'Tento uzel budeme brzy sledovat jako součást systému.',
+    tracks: [],
+    sensors: [],
+  };
+}
+
+function showLockedPanel(node) {
+  const { text, tracks, sensors } = getDemoPreview(node.id);
+
+  const titleEl = document.getElementById('nodeTitle');
+  if (titleEl) {
+    titleEl.innerHTML = `<span style="opacity:0.5;margin-right:4px;">🔒</span>${node.icon || ''} ${node.label || ''}`;
+  }
+
+  const card = document.createElement('div');
+  card.className = 'chj-card dynamic-section';
+  card.style.cssText = 'background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:20px;margin:15px 0;color:#fff;';
+  card.innerHTML = `
+    <div style="text-align:center;padding:6px 0 18px;">
+      <span style="font-size:11px;text-transform:uppercase;letter-spacing:2px;
+                   color:#94a3b8;background:#1e293b;padding:4px 12px;border-radius:20px;">
+        ⏳ Brzy dostupné
+      </span>
+    </div>
+    <p style="color:#94a3b8;font-size:14px;line-height:1.6;margin:0 0 ${tracks.length ? 18 : 0}px;">${text}</p>
+    ${tracks.length ? `
+    <div style="margin-bottom:${sensors.length ? 16 : 0}px;">
+      <div style="font-size:11px;color:#475569;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">
+        Co budeme sledovat
+      </div>
+      ${tracks.map(t => `<div style="color:#e2e8f0;font-size:13px;padding:3px 0;">• ${t}</div>`).join('')}
+    </div>` : ''}
+    ${sensors.length ? `
+    <div>
+      <div style="font-size:11px;color:#475569;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">
+        Propojíme s
+      </div>
+      ${sensors.map(s => `<div style="color:#64748b;font-size:13px;padding:3px 0;">📡 ${s}</div>`).join('')}
+    </div>` : ''}
+  `;
+
+  const panelHeader = document.querySelector('.panel-header');
+  if (panelHeader) panelHeader.after(card);
+}
+
+// =====================================================
 // STYLES  (injektujeme jednou při načtení modulu)
 // =====================================================
 
@@ -66,7 +170,12 @@ export async function showPanel(node) {
   }
 
   resetPanel();
-  showGameOfLife(node);
+
+  if (node.access === 'locked') {
+    showLockedPanel(node);
+  } else {
+    showGameOfLife(node);
+  }
 
   panelEl.style.display = "block";
   panelEl.style.visibility = "visible";
