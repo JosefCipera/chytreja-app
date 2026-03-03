@@ -493,14 +493,14 @@ function openResourcesViewer(node) {
           background:rgba(59,130,246,0.08); border:1px solid rgba(59,130,246,0.2);
           color:#60a5fa; font-size:13px; text-decoration:none;
         ">
-          Mediótéka →
+          Mediotéka →
         </a>
       ` : `
         <div style="text-align:center; margin-top:14px;">
           <a href="/app/medioteka.html?node=${encodeURIComponent(node.id)}" style="
             color:#475569; font-size:12px; text-decoration:none;
           " onmouseover="this.style.color='#94a3b8'" onmouseout="this.style.color='#475569'">
-            Mediótéka →
+            Mediotéka →
           </a>
         </div>
       `}
