@@ -228,7 +228,7 @@
     aspect-ratio: 16 / 9;
 }
 
-.video-wrapper iframe {
+.medioteka-modal .video-wrapper iframe {
     position: absolute;
     inset: 0;
     width: 100%;
