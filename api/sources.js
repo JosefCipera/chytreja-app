@@ -89,9 +89,10 @@ Vrať POUZE JSON pole číselných indexů, např. [0, 2, 4]. Preferuj konkrétn
 
 function fmt(r) {
   return {
-    title:   r.title,
-    url:     r.url,
-    type:    r.itemType || "article",
-    summary: r.summary || "",
+    title:     r.title,
+    url:       r.url,
+    type:      r.itemType || "article",
+    summary:   r.summary || "",
+    script_cz: r.script_cz || null,
   };
 }
