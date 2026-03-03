@@ -17,7 +17,7 @@ export default async function handler(req, res) {
 
   // 1. Kandidáti pro daný uzel
   const [{ data: media }, { data: articles }, { data: docs }] = await Promise.all([
-    supabase.from("longevity_media").select("id, title, type, url, summary, tags").eq("node_id", nodeId),
+    supabase.from("longevity_media").select("id, title, type, url, summary, tags, script_cz").eq("node_id", nodeId),
     supabase.from("longevity_articles").select("id, title, url, summary, tags").eq("node_id", nodeId),
     supabase.from("longevity_docs").select("id, title, type, url, summary").eq("node_id", nodeId),
   ]);
