@@ -435,12 +435,49 @@ function openTextAsViewer(markdownText, title) {
   openViewerModal(blobUrl, 'md', title);
 }
 
-function openResourcesViewer(node) {
-  const all = [
-    ...(node.articles || []).map(a => ({ title: a.title, url: a.url, summary: a.summary, type: detectType(a.url) })),
-    ...(node.media || []).map(m => ({ title: m.title, url: m.url, summary: m.summary, type: TYPE_MAP[m.type] || detectType(m.url) })),
-    ...(node.docs || []).map(d => ({ title: d.title, url: d.url, summary: d.summary, type: TYPE_MAP[d.type] || detectType(d.url) }))
-  ].filter(r => r.url);
+async function openResourcesViewer(node) {
+  // Loading modal
+  document.getElementById('viewerModal')?.remove();
+  const loadingModal = document.createElement('div');
+  loadingModal.id = 'viewerModal';
+  loadingModal.style.cssText = `position:fixed;inset:0;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;z-index:10000;`;
+  loadingModal.innerHTML = `<div style="color:#94a3b8;font-size:14px;display:flex;align-items:center;gap:10px;">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2.5" stroke-linecap="round">
+      <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83">
+        <animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="1s" repeatCount="indefinite"/>
+      </path>
+    </svg>
+    Vybírám nejlepší zdroje…
+  </div>`;
+  document.body.appendChild(loadingModal);
+
+  // AI výběr zdrojů
+  const userId = window.firebaseAuth?.currentUser?.uid || null;
+  let all = [];
+  try {
+    const resp = await fetch('/api/sources', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nodeId: node.id, state: node.state, userId }),
+    });
+    if (resp.ok) {
+      const data = await resp.json();
+      all = data.sources || [];
+    }
+  } catch (e) {
+    console.warn('sources API failed, fallback to node data:', e);
+  }
+
+  // Fallback na pre-načtená data pokud API selže
+  if (all.length === 0) {
+    all = [
+      ...(node.articles || []).map(a => ({ title: a.title, url: a.url, summary: a.summary, type: detectType(a.url) })),
+      ...(node.media || []).map(m => ({ title: m.title, url: m.url, summary: m.summary, type: TYPE_MAP[m.type] || detectType(m.url) })),
+      ...(node.docs || []).map(d => ({ title: d.title, url: d.url, summary: d.summary, type: TYPE_MAP[d.type] || detectType(d.url) })),
+    ].filter(r => r.url);
+  }
+
+  loadingModal.remove();
 
   if (all.length === 0) { showToast('Žádné zdroje k dispozici.'); return; }
   if (all.length === 1) { openViewerModal(all[0].url, all[0].type, all[0].title); return; }
