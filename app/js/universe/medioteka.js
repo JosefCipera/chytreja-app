@@ -72,6 +72,7 @@ async function loadLibrary() {
       duration_min: r.duration_min,
       oblast:       getOblast(r.node_id),
       autor:        getAutor(r.source),
+      script_cz:    r.script_cz || null,
     }));
 
     const articleItems = (articlesRes.data || []).map(r => ({
@@ -100,12 +101,13 @@ async function loadLibrary() {
 /* ------------------------------------------------
    2) YOUTUBE URL → embed
    ------------------------------------------------ */
-function toEmbedUrl(url) {
+function toEmbedUrl(url, mute = false) {
   const match = url?.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
   if (match) {
     const tMatch = url.match(/[?&]t=(\d+)s?/);
     const start = tMatch ? `&start=${tMatch[1]}` : '';
-    return `https://www.youtube-nocookie.com/embed/${match[1]}?rel=0${start}`;
+    const muteParam = mute ? '&mute=1' : '';
+    return `https://www.youtube-nocookie.com/embed/${match[1]}?rel=0${start}${muteParam}`;
   }
   return url;
 }
@@ -232,7 +234,26 @@ window.openMediaModal = function (id) {
       break;
 
     case "video": {
-      const embedUrl = toEmbedUrl(item.url);
+      // Má-li cvik český koučovací text, ztlumíme originální zvuk
+      const hasCzScript = !!item.script_cz;
+      const embedUrl = toEmbedUrl(item.url, hasCzScript);
+
+      const scriptPanel = hasCzScript ? `
+        <div style="
+          margin-top:16px;
+          background:rgba(168,85,247,0.12);
+          border:1px solid rgba(168,85,247,0.3);
+          border-radius:12px;
+          padding:14px 18px;
+          display:flex;gap:12px;align-items:flex-start;
+        ">
+          <span style="font-size:22px;line-height:1.3">🐢</span>
+          <p style="
+            margin:0;color:#e2d9f3;font-size:14px;line-height:1.6;
+            font-style:italic;
+          ">${item.script_cz}</p>
+        </div>` : '';
+
       content = `
         <h3 style="color:#fff;margin:0 0 12px">${item.title}</h3>
         <div class="video-wrapper">
@@ -241,6 +262,7 @@ window.openMediaModal = function (id) {
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture">
           </iframe>
         </div>
+        ${scriptPanel}
         <div style="text-align:center;margin-top:12px;">
           <a href="${item.url}" target="_blank"
              style="color:#a855f7;font-size:13px;text-decoration:none;">
