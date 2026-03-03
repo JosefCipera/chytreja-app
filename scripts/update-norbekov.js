@@ -167,7 +167,7 @@ const CVIKY = [
   {
     id: 'NB_12', uzel: 'POHYB', timing: '22:38 – 23:25',
     nazev: 'Krční páteř – Želva',
-    script_cz: 'Brada klouže po hrudníku dolů. Představte si, že jste želva, která schovává hlavu do krunýře. Žádný spěch, nejste na závodech! Cítíte to jemné protažení? Usmívejte se na své obratle, zaslouží si to.',
+    script_cz: 'Bradu do krunýře! 🐢 Nerotujte hlavou, jen ji plynule zasouvejte k hrudníku. Norbekov: „Nebuďte mramorová socha, usmívejte se na své obratle!"',
   },
   {
     id: 'NB_13', uzel: 'POHYB', timing: '23:28 – 23:45',
