@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mediotéka Chytrého já</title>
+    <title>Mediótéka Chytrého já</title>
 
     <!-- Ikony -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -24,7 +24,7 @@
     <div class="medioteka-container">
 
         <!-- Nadpis -->
-        <h1 class="medioteka-title">Mediotéka Chytrého já</h1>
+        <h1 class="medioteka-title">Mediótéka Chytrého já</h1>
         <p class="medioteka-subtitle">Videa, články, obrázky, audio a PDF — přehledně na jednom místě.</p>
 
         <!-- Vyhledávání -->
@@ -51,8 +51,17 @@
 
     <!-- Zpět -->
     <div class="medioteka-back">
-        <a href="index.html" class="medioteka-back-btn">← Zpět na hlavní stránku</a>
+        <a id="backBtn" href="index.html" class="medioteka-back-btn">← Zpět na hlavní stránku</a>
     </div>
+    <script>
+        // Pokud přišel z panelu (?node=), tlačítko Zpět zavře stránku (vrátí do panelu)
+        if (new URLSearchParams(window.location.search).get('node')) {
+            const btn = document.getElementById('backBtn');
+            btn.textContent = '← Zpět do panelu';
+            btn.href = '#';
+            btn.onclick = e => { e.preventDefault(); window.history.back(); };
+        }
+    </script>
 
     <!-- JS -->
     <script type="module" src="./js/universe/medioteka.js"></script>
