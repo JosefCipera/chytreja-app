@@ -137,9 +137,28 @@
             const youtubeId = ytMatch ? ytMatch[1] : null;
             const tMatch = file.match(/[?&]t=(\d+)s?/);
             const startSec = tMatch ? tMatch[1] : null;
+
+            // script_cz → ztlumit originální zvuk + zobrazit koučovací panel
+            const scriptCz = params.get('script_cz');
+            const muteParam = scriptCz ? '&mute=1' : '';
+
             const embedUrl = youtubeId
-                ? `https://www.youtube-nocookie.com/embed/${youtubeId}?rel=0${startSec ? '&start=' + startSec : ''}`
+                ? `https://www.youtube-nocookie.com/embed/${youtubeId}?rel=0${startSec ? '&start=' + startSec : ''}${muteParam}`
                 : file;
+
+            const scriptPanel = scriptCz ? `
+      <div style="
+        margin-top:16px;
+        background:rgba(168,85,247,0.12);
+        border:1px solid rgba(168,85,247,0.3);
+        border-radius:12px;
+        padding:14px 18px;
+        display:flex;gap:12px;align-items:flex-start;
+        max-width:960px;margin-left:auto;margin-right:auto;margin-top:16px;
+      ">
+        <span style="font-size:22px;line-height:1.4;flex-shrink:0;">🐢</span>
+        <p style="margin:0;color:#e2d9f3;font-size:14px;line-height:1.6;font-style:italic;">${scriptCz}</p>
+      </div>` : '';
 
             content.innerHTML = `
     <div style="max-width:960px;margin:40px auto;padding:0 16px;">
@@ -156,6 +175,7 @@
           referrerpolicy="strict-origin-when-cross-origin">
         </iframe>
       </div>
+      ${scriptPanel}
       ${youtubeId ? `
       <div style="text-align:center;margin-top:16px;">
         <a href="${file}" target="_blank" style="

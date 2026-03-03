@@ -243,7 +243,7 @@ window.addEventListener('message', e => {
   }
 });
 
-function openViewerModal(fileUrl, type, title, onBack = null) {
+function openViewerModal(fileUrl, type, title, onBack = null, scriptCz = null) {
   document.getElementById('viewerModal')?.remove();
 
   // PDF → fetch+blob do modálu (blob: URL obchází X-Frame-Options a CORS)
@@ -335,7 +335,8 @@ function openViewerModal(fileUrl, type, title, onBack = null) {
   }
 
   const isAudio = type === 'audio';
-  const viewerSrc = `/app/viewer.html?type=${encodeURIComponent(type)}&file=${encodeURIComponent(fileUrl)}`;
+  const scriptCzParam = scriptCz ? `&script_cz=${encodeURIComponent(scriptCz)}` : '';
+  const viewerSrc = `/app/viewer.html?type=${encodeURIComponent(type)}&file=${encodeURIComponent(fileUrl)}${scriptCzParam}`;
 
   const modal = document.createElement('div');
   modal.id = 'viewerModal';
@@ -480,7 +481,7 @@ async function openResourcesViewer(node) {
   loadingModal.remove();
 
   if (all.length === 0) { showToast('Žádné zdroje k dispozici.'); return; }
-  if (all.length === 1) { openViewerModal(all[0].url, all[0].type, all[0].title); return; }
+  if (all.length === 1) { openViewerModal(all[0].url, all[0].type, all[0].title, null, all[0].script_cz); return; }
 
   const PANEL_LIMIT = 5;
   const shown   = all.slice(0, PANEL_LIMIT);
@@ -563,7 +564,7 @@ async function openResourcesViewer(node) {
     const item = shown[parseInt(el.dataset.idx)];
     el.addEventListener('click', () => {
       modal.remove();
-      openViewerModal(item.url, item.type, item.title, () => openResourcesViewer(node));
+      openViewerModal(item.url, item.type, item.title, () => openResourcesViewer(node), item.script_cz);
     });
     el.addEventListener('mouseenter', () => {
       el.style.background = 'rgba(59,130,246,0.12)';
