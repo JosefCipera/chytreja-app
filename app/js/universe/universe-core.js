@@ -104,7 +104,7 @@ export function renderUniverse(DATA, subset = null, forcedMainId = null) {
       ctx.save();
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.font = "13px serif";
+      ctx.font = "20px serif";
       lockedIds.forEach(id => {
         const pos = positions[id];
         if (pos) ctx.fillText("🔒", pos.x, pos.y);
