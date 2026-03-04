@@ -183,8 +183,8 @@ if (!document.getElementById('chj-panel-styles')) {
 
     /* ── Node motto (barevné uzly) ── */
     .node-motto {
-      font-size: 13px;
-      color: #64748b;
+      font-size: 14px;
+      color: #94a3b8;
       font-style: italic;
       line-height: 1.55;
       padding: 8px 4px 2px;
@@ -317,7 +317,7 @@ export async function showPanel(node) {
 
   resetPanel();
 
-  if (node.access === 'locked' || node.state === 'GRAY') {
+  if (node.state === 'GRAY') {
     showLockedPanel(node);
   } else {
     showGameOfLife(node);
