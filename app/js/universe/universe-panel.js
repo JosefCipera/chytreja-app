@@ -57,44 +57,103 @@ const DEMO_PREVIEWS = {
     tracks: ['Jídelní okno (hodin/den)', 'Čas posledního jídla před spaním', 'Frekvence jídel'],
     sensors: ['Manuální záznam', 'CGM monitor', 'CHJ deník'],
   },
+  // — Gray nodes (nový formát: vhled / doplneni / napojeni) —
+  kardio: {
+    vhled_1: 'Rozproudění krve v kapilárách je ta nejrychlejší detoxikace, kterou můžeš svému srdci dopřát.',
+    vhled_2: 'Každý vědomý nádech do hrudníku šetří tvému srdci tisíce úderů za den.',
+    doplneni: 'Sledujeme tepovou variabilitu (HRV), abychom věděli, jak rychle se tvé tělo vrací do klidu.',
+    napojeni: '📡 Wearables (Apple/Garmin/Oura)',
+  },
+  glukoza: {
+    vhled_1: 'Pohyb páteře masíruje vnitřní orgány a učí tělo lépe pálit palivo z jídla.',
+    vhled_2: 'Stabilní hladina energie je klíčem k tomu, abys odpoledne neusínal nad prací.',
+    doplneni: 'Sledujeme vliv tvé ranní disciplíny na stabilitu krevního cukru po celý den.',
+    napojeni: '📡 CGM senzor',
+  },
+  dychani: {
+    vhled_1: 'Dech je jediný most k tvému autonomnímu nervovému systému, který můžeš vědomě ovládat.',
+    vhled_2: 'Zpomalením dechu dáváš mozku signál, že svět je v bezpečí a může začít oprava.',
+    doplneni: 'Trénujeme dechovou koherenci pro okamžité snížení stresového hormonu kortizolu.',
+    napojeni: '📡 Mobilní mikrofon / Hrudní pás',
+  },
+};
+
+// =====================================================
+// ACTIVE MOTTOS – motto pod nadpisem pro barevné uzly
+// =====================================================
+
+const ACTIVE_MOTTOS = {
+  mysl:     'Postoj vítěze není póza, je to příkaz tvým buňkám, aby začaly regenerovat.',
+  spanek:   'Hluboký spánek není pauza, je to tvá soukromá továrna na opravu buněk a paměti.',
+  mobilita: 'Ranní rozhýbání páteře probudí tvůj nervový systém dřív než první kafe.',
+  stabilita:'Rovnováha těla je kotvou pro tvou mysl; kdo pevně stojí, ten se jen tak nezhroutí.',
 };
 
 function getDemoPreview(nodeId) {
-  return DEMO_PREVIEWS[nodeId] || {
-    text: 'Tento uzel budeme brzy sledovat jako součást systému.',
-    tracks: [],
-    sensors: [],
-  };
+  return DEMO_PREVIEWS[nodeId] || {};
 }
 
 function showLockedPanel(node) {
-  const { text, tracks, sensors } = getDemoPreview(node.id);
+  const preview = getDemoPreview(node.id);
 
+  // Nadpis
   const titleEl = document.getElementById('nodeTitle');
   if (titleEl) {
     titleEl.innerHTML = `${node.icon || ''} ${node.label || ''}`;
   }
 
+  // Skryj chat input – gray uzly nemají AI chat
+  const aiSection = document.getElementById('aiPanelSection');
+  if (aiSection) aiSection.style.display = 'none';
+
   const card = document.createElement('div');
   card.className = 'chj-card dynamic-section';
-  card.innerHTML = `
-    <div class="locked-panel-inner">
-      <div class="locked-badge">🔒 Připravujeme pro tebe</div>
-      <h3 class="locked-hook">Tohle tě čeká?</h3>
-      <p class="locked-desc">${text}</p>
-      ${tracks.length ? `
-      <div class="locked-section">
-        <div class="locked-section-label">Co budeme sledovat</div>
-        ${tracks.map(t => `<div class="locked-track-item">• ${t}</div>`).join('')}
-      </div>` : ''}
-      ${sensors.length ? `
-      <div class="locked-section">
-        <div class="locked-section-label">Propojíme s</div>
-        ${sensors.map(s => `<div class="locked-sensor-item">📡 ${s}</div>`).join('')}
-      </div>` : ''}
-      <button class="locked-cta-btn" onclick="alert('Pro verze přijde brzy! 🚀')">Odemknout v Pro →</button>
-    </div>
-  `;
+
+  if (preview.vhled_1 || preview.vhled_2 || preview.doplneni) {
+    // ── Nový formát: vhled / doplneni / napojeni ──
+    card.innerHTML = `
+      <div class="locked-panel-inner">
+        <div class="locked-badge">🔒 Připravujeme pro tebe</div>
+        ${(preview.vhled_1 || preview.vhled_2) ? `
+        <div class="locked-section">
+          <div class="locked-section-label">Vhled</div>
+          ${preview.vhled_1 ? `<p class="locked-insight">${preview.vhled_1}</p>` : ''}
+          ${preview.vhled_2 ? `<p class="locked-insight">${preview.vhled_2}</p>` : ''}
+        </div>` : ''}
+        ${preview.doplneni ? `
+        <div class="locked-section">
+          <div class="locked-section-label">Co budeme sledovat</div>
+          <p class="locked-desc">${preview.doplneni}</p>
+        </div>` : ''}
+        ${preview.napojeni ? `
+        <div class="locked-section">
+          <div class="locked-section-label">Propojíme s</div>
+          <div class="locked-sensor-item">${preview.napojeni}</div>
+        </div>` : ''}
+      </div>
+    `;
+  } else {
+    // ── Starý formát: text / tracks / sensors (původní locked uzly) ──
+    const { text = '', tracks = [], sensors = [] } = preview;
+    card.innerHTML = `
+      <div class="locked-panel-inner">
+        <div class="locked-badge">🔒 Připravujeme pro tebe</div>
+        <h3 class="locked-hook">Tohle tě čeká?</h3>
+        ${text ? `<p class="locked-desc">${text}</p>` : ''}
+        ${tracks.length ? `
+        <div class="locked-section">
+          <div class="locked-section-label">Co budeme sledovat</div>
+          ${tracks.map(t => `<div class="locked-track-item">• ${t}</div>`).join('')}
+        </div>` : ''}
+        ${sensors.length ? `
+        <div class="locked-section">
+          <div class="locked-section-label">Propojíme s</div>
+          ${sensors.map(s => `<div class="locked-sensor-item">📡 ${s}</div>`).join('')}
+        </div>` : ''}
+        <button class="locked-cta-btn" onclick="alert('Pro verze přijde brzy! 🚀')">Odemknout v Pro →</button>
+      </div>
+    `;
+  }
 
   const panelHeader = document.querySelector('.panel-header');
   if (panelHeader) panelHeader.after(card);
@@ -121,6 +180,18 @@ if (!document.getElementById('chj-panel-styles')) {
     }
     #aiPanelInput:disabled,
     #ai-send:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* ── Node motto (barevné uzly) ── */
+    .node-motto {
+      font-size: 13px;
+      color: #64748b;
+      font-style: italic;
+      line-height: 1.55;
+      padding: 8px 4px 2px;
+      border-left: 2px solid #1e293b;
+      padding-left: 12px;
+      margin: 6px 0 0;
+    }
 
     /* ── Locked panel ── */
     .locked-panel-inner {
@@ -166,6 +237,12 @@ if (!document.getElementById('chj-panel-styles')) {
       letter-spacing: 1.5px;
       color: #60a5fa;
       margin-bottom: 8px;
+    }
+    .locked-insight {
+      font-size: 14px;
+      color: #cbd5e1;
+      line-height: 1.65;
+      margin: 0 0 10px;
     }
     .locked-track-item {
       font-size: 14px;
@@ -777,10 +854,24 @@ async function showGameOfLife(node) {
   console.log("🎮 showGameOfLife:", node.id);
   const userId = window.firebaseAuth?.currentUser?.uid || 'demo-user-123';
 
+  // Ukáže chat input (pro barevné uzly)
+  const aiSection = document.getElementById('aiPanelSection');
+  if (aiSection) aiSection.style.display = 'flex';
+
   // 1. Nadpis
   const titleEl = document.getElementById('nodeTitle');
   if (titleEl) {
     titleEl.innerHTML = `<span style="font-size:1.15em; margin-right:6px;">${node.icon || '🏋️'}</span>${node.label || 'Stoletý desetibojař'}`;
+  }
+
+  // 1b. Motto – italická věta pod nadpisem (pokud existuje)
+  const motto = ACTIVE_MOTTOS[node.id];
+  if (motto) {
+    const mottoEl = document.createElement('div');
+    mottoEl.className = 'node-motto dynamic-section';
+    mottoEl.textContent = `„${motto}"`;
+    const panelHeader = document.querySelector('.panel-header');
+    if (panelHeader) panelHeader.after(mottoEl);
   }
 
   // 2. Trend karta – skeleton
@@ -799,8 +890,10 @@ async function showGameOfLife(node) {
     <style>@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}</style>
   `;
 
+  // Vlož metricCard za motto (pokud existuje), jinak za panelHeader
   const panelHeader = document.querySelector('.panel-header');
-  if (panelHeader) panelHeader.after(metricCard);
+  const insertAfterEl = document.querySelector('.node-motto') || panelHeader;
+  if (insertAfterEl) insertAfterEl.after(metricCard);
 
   // 3. CHJ karta – skeleton
   let chjCard = document.querySelector('.chj-card');
