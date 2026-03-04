@@ -151,7 +151,10 @@
     <div id="node-legend"></div>
 
     <script type="module">
-        const modelUrl = "/data/universes/longevity/models/longevity.json";
+        // Supabase – stejné credentials jako v supabaseClient.js
+        const SB_URL = 'https://pionxzqtxcughvfbgadi.supabase.co';
+        const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBpb254enF0eGN1Z2h2ZmJnYWRpIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NzMxOTk2NiwiZXhwIjoyMDgyODk1OTY2fQ.lFAHdBtREF7TfM5UHuzbBkQQN3fdU_ac9Y-MJxCvmFI';
+
         let data = null;
         let original = null;
         let currentVariant = "demo";
@@ -160,11 +163,20 @@
             await loadVariant(currentVariant);
         });
 
+        async function loadNodesFromSupabase() {
+            const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm');
+            const sb = createClient(SB_URL, SB_KEY);
+            const { data: nodes, error } = await sb
+                .from('longevity_nodes')
+                .select('id, label, color, parent, icon, definition')
+                .order('label');
+            if (error) throw new Error('Supabase error: ' + error.message);
+            return nodes;
+        }
+
         async function loadVariant(variant) {
             try {
-                const modelRes = await fetch(modelUrl);
-                if (!modelRes.ok) throw new Error("Nelze načíst základní model.");
-                data = await modelRes.json();
+                data = await loadNodesFromSupabase();
                 original = structuredClone(data);
 
                 if (variant === "reset") {
