@@ -38,10 +38,22 @@ const DEMO_PREVIEWS = {
 // =====================================================
 
 const ACTIVE_MOTTOS = {
-  mysl:     'Postoj vítěze není póza, je to příkaz tvým buňkám, aby začaly regenerovat.',
-  spanek:   'Hluboký spánek není pauza, je to tvá soukromá továrna na opravu buněk a paměti.',
-  mobilita: 'Ranní rozhýbání páteře probudí tvůj nervový systém dřív než první kafe.',
-  stabilita:'Rovnováha těla je kotvou pro tvou mysl; kdo pevně stojí, ten se jen tak nezhroutí.',
+  dlouhovekost:  '„Dlouhověkost není o dožívání se věku, ale o síle do posledního dne."',
+  telo:          '„Tvé tělo je jediný domov, ve kterém musíš vydržet celý život."',
+  zdravi:        '„Zdraví není absence nemoci, ale přítomnost vitality."',
+  metabolicke:   '„Stabilní cukr znamená stabilní emoce a výkon bez odpoledních pádů."',
+  sila:          '„Síla je schopnost nést své vlastní tělo s naprostou lehkostí."',
+  vytrvalost:    '„Tvá vytrvalost je schopnost zůstat v pohybu, i když ostatní zastaví."',
+  vo2max:        '„Kapacita plic určuje, kolik života dokážeš vdechnout do každého dne."',
+  mysl:          '„Postoj vítěze není póza, je to příkaz tvým buňkám k regeneraci."',
+  vyziva:        '„Jídlo je informace pro tvé buňky, jak se mají dnes opravit."',
+  spanek:        '„Hluboký spánek není pauza, je to tvá soukromá továrna na opravu."',
+  klid:          '„Ticho v hlavě je nejvyšší forma vnitřní hygieny."',
+  mobilita:      '„Rozhýbání páteře probudí tvůj nervový systém dřív než kofein."',
+  bilkoviny:     '„Svaly jsou tvé brnění; bílkoviny jsou materiál pro jeho opravu."',
+  stabilita:     '„Kdo pevně stojí v sobě, toho vnější svět nerozhází."',
+  nervovy_system:'„Tvé nervy jsou dálnice pro signály života; udržuj je průjezdné."',
+  smysl:         '„Vědět PROČ je důležitější než vědět JAK."',
 };
 
 function getDemoPreview(nodeId) {
