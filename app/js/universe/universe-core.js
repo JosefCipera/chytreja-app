@@ -97,7 +97,7 @@ export function renderUniverse(DATA, subset = null, forcedMainId = null) {
   network = new vis.Network(el.network, { nodes: nodesDS, edges: edgesDS }, options);
 
   // 🔒 Overlay zamečků na locked uzlech (canvas drawing)
-  const lockedIds = source.filter(n => n.access === 'locked').map(n => n.id);
+  const lockedIds = source.filter(n => n.access === 'locked' || n.state === 'GRAY').map(n => n.id);
   if (lockedIds.length) {
     network.on("afterDrawing", (ctx) => {
       const positions = network.getPositions(lockedIds);
@@ -183,7 +183,7 @@ function makeNode(it, isMain) {
       ? it.color.border
       : baseColor;
 
-  const isLocked = it.access === 'locked';
+  const isLocked = it.access === 'locked' || it.state === 'GRAY';
 
   return {
     id: it.id,

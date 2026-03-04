@@ -240,7 +240,7 @@ export async function showPanel(node) {
 
   resetPanel();
 
-  if (node.access === 'locked') {
+  if (node.access === 'locked' || node.state === 'GRAY') {
     showLockedPanel(node);
   } else {
     showGameOfLife(node);
