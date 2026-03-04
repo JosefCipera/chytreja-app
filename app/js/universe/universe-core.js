@@ -188,7 +188,6 @@ function makeNode(it, isMain) {
   return {
     id: it.id,
     label: it.label,
-    opacity: isLocked ? 0.4 : 1,
     color: {
       background: baseColor,
       border: borderColor,
@@ -198,16 +197,16 @@ function makeNode(it, isMain) {
       }
     },
     shape: "dot",
-    size: isMain ? 46 : (isLocked ? 26 : 34),
+    size: isMain ? 46 : 34,
     font: {
-      color: isLocked ? "#64748b" : "#fff",
-      size: isMain ? 22 : (isLocked ? 14 : 18),
+      color: "#fff",
+      size: isMain ? 22 : 18,
       face: "Inter, sans-serif",
-      strokeWidth: isLocked ? 2 : 4,
+      strokeWidth: 4,
       strokeColor: "rgba(0,0,0,0.9)"
     },
-    borderWidth: isLocked ? 1 : 3,
-    shadow: !isLocked,
+    borderWidth: 3,
+    shadow: true,
     fixed: false
   };
 }
