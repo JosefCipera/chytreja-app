@@ -50,7 +50,7 @@ const ACTIVE_MOTTOS = {
   spanek:        '„Hluboký spánek není pauza, je to tvá soukromá továrna na opravu."',
   klid:          '„Ticho v hlavě je nejvyšší forma vnitřní hygieny."',
   mobilita:      '„Rozhýbání páteře probudí tvůj nervový systém dřív než kofein."',
-  bilkoviny:     '„Svaly jsou tvé brnění; bílkoviny jsou materiál pro jeho opravu."',
+  bílkoviny:     '„Svaly jsou tvé brnění; bílkoviny jsou materiál pro jeho opravu."',
   stabilita:     '„Kdo pevně stojí v sobě, toho vnější svět nerozhází."',
   nervovy_system:'„Tvé nervy jsou dálnice pro signály života; udržuj je průjezdné."',
   smysl:         '„Vědět PROČ je důležitější než vědět JAK."',
@@ -150,14 +150,12 @@ if (!document.getElementById('chj-panel-styles')) {
 
     /* ── Node motto (barevné uzly) ── */
     .node-motto {
-      font-size: 14px;
-      color: #94a3b8;
+      font-size: 15px;
+      color: #e2e8f0;
       font-style: italic;
-      line-height: 1.55;
-      padding: 8px 4px 2px;
-      border-left: 2px solid #1e293b;
-      padding-left: 12px;
-      margin: 6px 0 0;
+      line-height: 1.65;
+      padding: 8px 0 2px;
+      margin: 4px 0 0;
     }
 
     /* ── Locked panel ── */
@@ -836,7 +834,7 @@ async function showGameOfLife(node) {
   if (motto) {
     const mottoEl = document.createElement('div');
     mottoEl.className = 'node-motto dynamic-section';
-    mottoEl.textContent = `„${motto}"`;
+    mottoEl.textContent = motto;
     const panelHeader = document.querySelector('.panel-header');
     if (panelHeader) panelHeader.after(mottoEl);
   }
