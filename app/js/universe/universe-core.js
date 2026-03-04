@@ -128,9 +128,10 @@ export function renderUniverse(DATA, subset = null, forcedMainId = null) {
       clickTimer = null;
 
       if (!params.nodes.length) {
+        const panelWasOpen = document.getElementById("sidePanel")?.classList.contains("open");
         closePanel();
-        // ⭐ OPRAVA 1: použij currentCenter místo isSubUniverse
-        if (currentCenter) {
+        // Návrat o úroveň výš jen pokud panel byl už zavřený
+        if (!panelWasOpen && currentCenter) {
           smoothReturnToUniverse(DATA);
         }
         return;
