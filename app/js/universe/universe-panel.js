@@ -72,34 +72,28 @@ function showLockedPanel(node) {
 
   const titleEl = document.getElementById('nodeTitle');
   if (titleEl) {
-    titleEl.innerHTML = `<span style="opacity:0.5;margin-right:4px;">🔒</span>${node.icon || ''} ${node.label || ''}`;
+    titleEl.innerHTML = `${node.icon || ''} ${node.label || ''}`;
   }
 
   const card = document.createElement('div');
   card.className = 'chj-card dynamic-section';
-  card.style.cssText = 'background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:20px;margin:15px 0;color:#fff;';
   card.innerHTML = `
-    <div style="text-align:center;padding:6px 0 18px;">
-      <span style="font-size:11px;text-transform:uppercase;letter-spacing:2px;
-                   color:#94a3b8;background:#1e293b;padding:4px 12px;border-radius:20px;">
-        ⏳ Brzy dostupné
-      </span>
+    <div class="locked-panel-inner">
+      <div class="locked-badge">🔒 Připravujeme pro tebe</div>
+      <h3 class="locked-hook">Tohle tě čeká?</h3>
+      <p class="locked-desc">${text}</p>
+      ${tracks.length ? `
+      <div class="locked-section">
+        <div class="locked-section-label">Co budeme sledovat</div>
+        ${tracks.map(t => `<div class="locked-track-item">• ${t}</div>`).join('')}
+      </div>` : ''}
+      ${sensors.length ? `
+      <div class="locked-section">
+        <div class="locked-section-label">Propojíme s</div>
+        ${sensors.map(s => `<div class="locked-sensor-item">📡 ${s}</div>`).join('')}
+      </div>` : ''}
+      <button class="locked-cta-btn" onclick="alert('Pro verze přijde brzy! 🚀')">Odemknout v Pro →</button>
     </div>
-    <p style="color:#94a3b8;font-size:14px;line-height:1.6;margin:0 0 ${tracks.length ? 18 : 0}px;">${text}</p>
-    ${tracks.length ? `
-    <div style="margin-bottom:${sensors.length ? 16 : 0}px;">
-      <div style="font-size:11px;color:#475569;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">
-        Co budeme sledovat
-      </div>
-      ${tracks.map(t => `<div style="color:#e2e8f0;font-size:13px;padding:3px 0;">• ${t}</div>`).join('')}
-    </div>` : ''}
-    ${sensors.length ? `
-    <div>
-      <div style="font-size:11px;color:#475569;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">
-        Propojíme s
-      </div>
-      ${sensors.map(s => `<div style="color:#64748b;font-size:13px;padding:3px 0;">📡 ${s}</div>`).join('')}
-    </div>` : ''}
   `;
 
   const panelHeader = document.querySelector('.panel-header');
@@ -127,6 +121,81 @@ if (!document.getElementById('chj-panel-styles')) {
     }
     #aiPanelInput:disabled,
     #ai-send:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* ── Locked panel ── */
+    .locked-panel-inner {
+      background: linear-gradient(145deg, #0f172a 0%, #1e1b4b 100%);
+      border: 1px solid #312e81;
+      border-radius: 14px;
+      padding: 22px 20px 20px;
+      margin: 15px 0;
+    }
+    .locked-badge {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: #fbbf24;
+      background: rgba(251,191,36,0.12);
+      border: 1px solid rgba(251,191,36,0.35);
+      padding: 4px 12px;
+      border-radius: 20px;
+      margin-bottom: 14px;
+    }
+    .locked-hook {
+      font-size: 21px;
+      font-weight: 700;
+      color: #fff;
+      margin: 0 0 10px;
+      line-height: 1.25;
+    }
+    .locked-desc {
+      font-size: 14px;
+      color: #cbd5e1;
+      line-height: 1.65;
+      margin: 0 0 20px;
+    }
+    .locked-section {
+      margin-bottom: 16px;
+    }
+    .locked-section-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: #60a5fa;
+      margin-bottom: 8px;
+    }
+    .locked-track-item {
+      font-size: 14px;
+      color: #f1f5f9;
+      padding: 4px 0;
+      font-weight: 500;
+      line-height: 1.4;
+    }
+    .locked-sensor-item {
+      font-size: 13px;
+      color: #94a3b8;
+      padding: 3px 0;
+    }
+    .locked-cta-btn {
+      display: block;
+      width: 100%;
+      margin-top: 20px;
+      padding: 13px 16px;
+      background: linear-gradient(90deg, #3b82f6 0%, #6366f1 100%);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 700;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      letter-spacing: 0.4px;
+      transition: opacity 0.18s;
+      box-shadow: 0 4px 14px rgba(99,102,241,0.4);
+    }
+    .locked-cta-btn:hover { opacity: 0.82; }
   `;
   document.head.appendChild(s);
 }
