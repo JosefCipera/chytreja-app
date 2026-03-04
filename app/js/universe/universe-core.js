@@ -166,9 +166,12 @@ function makeNode(it, isMain) {
       ? it.color.border
       : baseColor;
 
+  const isLocked = it.access === 'locked';
+
   return {
     id: it.id,
-    label: it.label,
+    label: isLocked ? `🔒 ${it.label}` : it.label,
+    opacity: isLocked ? 0.5 : 1,
     color: {
       background: baseColor,
       border: borderColor,
@@ -178,16 +181,16 @@ function makeNode(it, isMain) {
       }
     },
     shape: "dot",
-    size: isMain ? 46 : 34,
+    size: isMain ? 46 : (isLocked ? 26 : 34),
     font: {
-      color: "#fff",
-      size: isMain ? 22 : 18,
+      color: isLocked ? "#64748b" : "#fff",
+      size: isMain ? 22 : (isLocked ? 14 : 18),
       face: "Inter, sans-serif",
-      strokeWidth: 4,
+      strokeWidth: isLocked ? 2 : 4,
       strokeColor: "rgba(0,0,0,0.9)"
     },
-    borderWidth: 3,
-    shadow: true,
+    borderWidth: isLocked ? 1 : 3,
+    shadow: !isLocked,
     fixed: false
   };
 }

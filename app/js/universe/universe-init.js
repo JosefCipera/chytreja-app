@@ -318,8 +318,9 @@ async function applyAccessModel(role, model, modelName) {
     const accessData = await res.json();
     const accessMap = new Map(accessData.map(n => [n.id, n.access]));
 
+    const defaultAccess = (role === 'demo' || role === 'free') ? 'locked' : 'visible';
     model.forEach(n => {
-      n.access = accessMap.get(n.id) || "visible";
+      n.access = accessMap.get(n.id) || defaultAccess;
     });
 
   } catch (err) {
