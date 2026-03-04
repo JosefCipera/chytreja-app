@@ -96,6 +96,23 @@ export function renderUniverse(DATA, subset = null, forcedMainId = null) {
   // 🌌 Vykreslení nové sítě
   network = new vis.Network(el.network, { nodes: nodesDS, edges: edgesDS }, options);
 
+  // 🔒 Overlay zamečků na locked uzlech (canvas drawing)
+  const lockedIds = source.filter(n => n.access === 'locked').map(n => n.id);
+  if (lockedIds.length) {
+    network.on("afterDrawing", (ctx) => {
+      const positions = network.getPositions(lockedIds);
+      ctx.save();
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.font = "13px serif";
+      lockedIds.forEach(id => {
+        const pos = positions[id];
+        if (pos) ctx.fillText("🔒", pos.x, pos.y);
+      });
+      ctx.restore();
+    });
+  }
+
   // ✨ Vycentrování s animací
   setTimeout(() => network.fit({ animation: true }), 300);
 
@@ -170,8 +187,8 @@ function makeNode(it, isMain) {
 
   return {
     id: it.id,
-    label: isLocked ? `🔒 ${it.label}` : it.label,
-    opacity: isLocked ? 0.5 : 1,
+    label: it.label,
+    opacity: isLocked ? 0.4 : 1,
     color: {
       background: baseColor,
       border: borderColor,
