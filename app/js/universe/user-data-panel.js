@@ -288,26 +288,33 @@ async function saveAspirations() {
   const milestone  = document.getElementById('asp-milestone').value.trim();
 
   try {
-    // user_aspirations
+    // user_aspirations – delete existing, then insert
     if (aspType || aspLabel) {
-      const { error } = await supabase.from('user_aspirations').upsert({
-        user_id: userId,
+      await supabase.from('user_aspirations').delete().eq('user_id', userId);
+      const { error } = await supabase.from('user_aspirations').insert({
+        user_id:          userId,
         aspiration_type:  aspType  || 'custom',
         aspiration_label: aspLabel || aspType
-      }, { onConflict: 'user_id' });
+      });
       if (error) throw error;
     }
 
-    // Aspiration extras → user_constraints
+    // Aspiration extras (target_age, milestone) → user_constraints
+    // Delete old ones first, then insert
+    await supabase.from('user_constraints')
+      .delete()
+      .eq('user_id', userId)
+      .eq('constraint_type', 'aspiration');
+
     for (const [key, val] of [['target_age', targetAge], ['milestone', milestone]]) {
       if (val) {
-        const { error } = await supabase.from('user_constraints').upsert({
-          user_id: userId,
+        const { error } = await supabase.from('user_constraints').insert({
+          user_id:          userId,
           constraint_type:  'aspiration',
           constraint_key:    key,
           constraint_value:  val,
           severity: null
-        }, { onConflict: 'user_id,constraint_key' });
+        });
         if (error) throw error;
       }
     }
