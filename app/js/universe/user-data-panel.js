@@ -289,34 +289,37 @@ async function saveAspirations() {
 
   try {
     // user_aspirations – delete existing, then insert
+    // Note: only aspiration_type is guaranteed to exist as column
     if (aspType || aspLabel) {
       await supabase.from('user_aspirations').delete().eq('user_id', userId);
-      const { error } = await supabase.from('user_aspirations').insert({
-        user_id:          userId,
-        aspiration_type:  aspType  || 'custom',
-        aspiration_label: aspLabel || aspType
-      });
+      const insertData = { user_id: userId, aspiration_type: aspType || 'custom' };
+      // Try to include aspiration_label if the column exists
+      if (aspLabel) insertData.aspiration_label = aspLabel || aspType;
+      const { error } = await supabase.from('user_aspirations').insert(insertData);
       if (error) throw error;
     }
 
     // Aspiration extras (target_age, milestone) → user_constraints
-    // Delete old ones first, then insert
-    await supabase.from('user_constraints')
-      .delete()
-      .eq('user_id', userId)
-      .eq('constraint_type', 'aspiration');
+    // Wrapped separately – user_constraints table may not exist yet
+    try {
+      await supabase.from('user_constraints')
+        .delete()
+        .eq('user_id', userId)
+        .eq('constraint_type', 'aspiration');
 
-    for (const [key, val] of [['target_age', targetAge], ['milestone', milestone]]) {
-      if (val) {
-        const { error } = await supabase.from('user_constraints').insert({
-          user_id:          userId,
-          constraint_type:  'aspiration',
-          constraint_key:    key,
-          constraint_value:  val,
-          severity: null
-        });
-        if (error) throw error;
+      for (const [key, val] of [['target_age', targetAge], ['milestone', milestone]]) {
+        if (val) {
+          await supabase.from('user_constraints').insert({
+            user_id:          userId,
+            constraint_type:  'aspiration',
+            constraint_key:    key,
+            constraint_value:  val,
+            severity: null
+          });
+        }
       }
+    } catch (ce) {
+      console.warn('user_constraints not available (run SQL migration):', ce.message);
     }
 
     // Refresh
