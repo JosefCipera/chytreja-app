@@ -34,7 +34,7 @@ async function loadAndRender() {
   const [profileRes, constraintsRes, aspirationRes, aspOptionsRes] = await Promise.all([
     supabase.from('user_profiles').select('age, gender, height, weight').eq('user_id', userId).maybeSingle(),
     supabase.from('user_constraints').select('constraint_type, constraint_key, constraint_value, severity').eq('user_id', userId),
-    supabase.from('user_aspirations').select('aspiration_type, aspiration_label').eq('user_id', userId).maybeSingle(),
+    supabase.from('user_aspirations').select('aspiration_type').eq('user_id', userId).maybeSingle(),
     supabase.from('aspiration_requirements').select('aspiration_type, aspiration_label')
   ]);
 
@@ -292,10 +292,10 @@ async function saveAspirations() {
     // Note: only aspiration_type is guaranteed to exist as column
     if (aspType || aspLabel) {
       await supabase.from('user_aspirations').delete().eq('user_id', userId);
-      const insertData = { user_id: userId, aspiration_type: aspType || 'custom' };
-      // Try to include aspiration_label if the column exists
-      if (aspLabel) insertData.aspiration_label = aspLabel || aspType;
-      const { error } = await supabase.from('user_aspirations').insert(insertData);
+      const { error } = await supabase.from('user_aspirations').insert({
+        user_id:         userId,
+        aspiration_type: aspType || 'custom'
+      });
       if (error) throw error;
     }
 
@@ -324,7 +324,7 @@ async function saveAspirations() {
 
     // Refresh
     const [aspRes, conRes] = await Promise.all([
-      supabase.from('user_aspirations').select('aspiration_type, aspiration_label').eq('user_id', userId).maybeSingle(),
+      supabase.from('user_aspirations').select('aspiration_type').eq('user_id', userId).maybeSingle(),
       supabase.from('user_constraints').select('*').eq('user_id', userId)
     ]);
     cachedData.aspiration   = aspRes.data ?? {};
