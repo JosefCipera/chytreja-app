@@ -543,26 +543,26 @@ export function initUserDataPanel() {
     }
     .udp-tab {
       background: none; border: none; border-bottom: 2px solid transparent;
-      color: #64748b; font-size: 13px; font-weight: 600; padding: 8px 14px 12px;
+      color: #64748b; font-size: 14px; font-weight: 600; padding: 10px 18px 13px;
       cursor: pointer; white-space: nowrap; letter-spacing: 0.3px;
       transition: color 0.15s, border-color 0.15s;
     }
     .udp-tab:hover { color: #94a3b8; }
-    #udp-body { flex: 1; overflow-y: auto; padding: 24px; }
-    .udp-section { margin-bottom: 24px; }
+    #udp-body { flex: 1; overflow-y: auto; padding: 28px; }
+    .udp-section { margin-bottom: 28px; }
     .udp-section-label {
-      color: #475569; font-size: 11px; font-weight: 600; letter-spacing: 1px;
-      text-transform: uppercase; margin-bottom: 10px;
+      color: #64748b; font-size: 12px; font-weight: 700; letter-spacing: 0.8px;
+      text-transform: uppercase; margin-bottom: 12px;
     }
-    .udp-field-label { color: #475569; font-size: 12px; margin-bottom: 6px; }
+    .udp-field-label { color: #64748b; font-size: 13px; margin-bottom: 7px; font-weight: 500; }
     .udp-input {
-      background: rgba(255,255,255,0.05); border: 1px solid #1e293b;
-      border-radius: 8px; color: #e2e8f0; font-size: 14px;
-      padding: 10px 12px; outline: none; box-sizing: border-box;
+      background: rgba(255,255,255,0.06); border: 1px solid #1e293b;
+      border-radius: 8px; color: #e2e8f0; font-size: 15px;
+      padding: 11px 14px; outline: none; box-sizing: border-box;
       transition: border-color 0.15s;
     }
     .udp-input:focus { border-color: #06b6d4; }
-    .udp-select { padding: 10px 8px; font-size: 13px; cursor: pointer; }
+    .udp-select { padding: 10px 8px; font-size: 14px; cursor: pointer; }
     .udp-select-full { width: 100%; }
     .udp-mini { width: 100%; }
     .udp-injury-row {
@@ -598,7 +598,7 @@ export function initUserDataPanel() {
       padding: 12px 0; border-bottom: 1px solid #1e293b;
     }
     .udp-conn-row:last-child { border-bottom: none; }
-    .udp-conn-label { color: #94a3b8; font-size: 14px; }
+    .udp-conn-label { color: #94a3b8; font-size: 15px; font-weight: 500; }
     .udp-toggle {
       width: 44px; height: 24px; border-radius: 12px; background: #1e293b;
       border: none; cursor: pointer; position: relative; transition: background 0.2s;
@@ -636,9 +636,9 @@ export function initUserDataPanel() {
         <button id="udp-close" class="udp-close-btn">✕</button>
       </div>
       <div class="udp-tabs">
-        <button class="udp-tab" data-tab="constraints">🦴 Fyzické limity</button>
-        <button class="udp-tab" data-tab="aspirations">🎯 Biologický cíl</button>
-        <button class="udp-tab" data-tab="profile">👤 Pas</button>
+        <button class="udp-tab" data-tab="constraints">Omezení</button>
+        <button class="udp-tab" data-tab="aspirations">Cíl (sen)</button>
+        <button class="udp-tab" data-tab="profile">Biometrický pas</button>
       </div>
       <div id="udp-body"></div>
     </div>`;
