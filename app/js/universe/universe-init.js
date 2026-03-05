@@ -8,6 +8,7 @@ const ORBIT_ZONES = [
   [620, 740]
 ];
 import { renderUniverse } from "./universe-core.js";
+import { initUserDataPanel } from "./user-data-panel.js";
 
 // Supabase setup
 const { createClient } = window.supabase;
@@ -76,6 +77,7 @@ async function populateModelSelector() {
 
   await loadAndRenderModel(modelName, role);
   initHeaderControls();
+  initUserDataPanel();
 })();
 
 // =====================================================

@@ -169,7 +169,7 @@
                     </div>
                 </div>
                 <nav class="dropdown-nav">
-                    <a href="#"><i class="icon">👤</i> Informace o profilu</a>
+                    <a href="#" onclick="openUserDataPanel(); return false;"><i class="icon">📋</i> Vstupní data</a>
                     <a href="#" onclick="startOnboarding(); return false;"><i class="icon">⚡</i> Přeměřit
                         Vitalitu</a>
                     <a href="#"><i class="icon">💳</i> Platby a fakturační údaje</a>
@@ -244,6 +244,7 @@
     <script type="module" src="/app/js/universe/universe-access.js"></script>
     <script type="module" src="/app/js/universe/universe-core.js"></script>
     <script type="module" src="/app/js/universe/universe-init.js"></script>
+    <script type="module" src="/app/js/universe/user-data-panel.js"></script>
     <script type="module" src="/app/js/universe/ai-assistant.js"></script>
     <script type="module" src="/app/js/universe/universe-panel.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
