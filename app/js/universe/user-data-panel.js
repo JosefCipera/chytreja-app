@@ -34,7 +34,7 @@ async function loadAndRender() {
   const [profileRes, constraintsRes, aspirationRes, aspOptionsRes] = await Promise.all([
     supabase.from('user_profiles').select('age, gender, height, weight').eq('user_id', userId).maybeSingle(),
     supabase.from('user_constraints').select('constraint_type, constraint_key, constraint_value, severity').eq('user_id', userId),
-    supabase.from('user_aspirations').select('aspiration_type').eq('user_id', userId).maybeSingle(),
+    supabase.from('user_aspirations').select('aspiration_type, label').eq('user_id', userId).maybeSingle(),
     supabase.from('aspiration_requirements').select('aspiration_type, aspiration_label')
   ]);
 
@@ -219,8 +219,8 @@ function getAspirationConstraint(key) {
 }
 
 function renderAspirationsTab() {
-  const curType  = cachedData.aspiration?.aspiration_type  ?? '';
-  const curLabel = cachedData.aspiration?.aspiration_label ?? '';
+  const curType  = cachedData.aspiration?.aspiration_type ?? '';
+  const curLabel = cachedData.aspiration?.label           ?? '';
   const targetAge = getAspirationConstraint('target_age');
   const milestone = getAspirationConstraint('milestone');
 
@@ -294,7 +294,8 @@ async function saveAspirations() {
       await supabase.from('user_aspirations').delete().eq('user_id', userId);
       const { error } = await supabase.from('user_aspirations').insert({
         user_id:         userId,
-        aspiration_type: aspType || 'custom'
+        aspiration_type: aspType || 'custom',
+        label:           aspLabel || aspType || 'custom'
       });
       if (error) throw error;
     }
@@ -324,7 +325,7 @@ async function saveAspirations() {
 
     // Refresh
     const [aspRes, conRes] = await Promise.all([
-      supabase.from('user_aspirations').select('aspiration_type').eq('user_id', userId).maybeSingle(),
+      supabase.from('user_aspirations').select('aspiration_type, label').eq('user_id', userId).maybeSingle(),
       supabase.from('user_constraints').select('*').eq('user_id', userId)
     ]);
     cachedData.aspiration   = aspRes.data ?? {};
