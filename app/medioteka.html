@@ -21,6 +21,9 @@
 
 <body class="medioteka-body">
 
+    <!-- Zpět – vždy vlevo nahoře -->
+    <button class="medioteka-back-top" onclick="history.back()">← Zpět</button>
+
     <div class="medioteka-container">
 
         <!-- Nadpis -->
@@ -52,19 +55,6 @@
         </div>
     </div>
 
-    <!-- Zpět -->
-    <div class="medioteka-back">
-        <a id="backBtn" href="index.html" class="medioteka-back-btn">← Zpět na hlavní stránku</a>
-    </div>
-    <script>
-        // Pokud přišel z panelu (?node=), tlačítko Zpět zavře stránku (vrátí do panelu)
-        if (new URLSearchParams(window.location.search).get('node')) {
-            const btn = document.getElementById('backBtn');
-            btn.textContent = '← Zpět do panelu';
-            btn.href = '#';
-            btn.onclick = e => { e.preventDefault(); window.history.back(); };
-        }
-    </script>
 
     <!-- JS -->
     <script type="module" src="./js/universe/medioteka.js"></script>
