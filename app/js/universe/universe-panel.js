@@ -992,26 +992,21 @@ async function showGameOfLife(node) {
           "></div>
         </div>
         <div style="margin-top:16px; font-size:13px; color:#64748b;">${stateLabel}</div>
-        ${aspirationHtml}
       </div>
     `;
   } else {
-    const hasData = trend.numeric?.length >= 2;
+    const hasData  = trend.numeric?.length >= 2;
+    const descText = provocationText || node.definition || '';
+
     metricCard.innerHTML = `
       <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">Trend (30 dní)</div>
       ${hasData
         ? `<canvas class="weather-trend-canvas" style="width:100%;height:55px;display:block;border-radius:6px;"></canvas>`
-        : `<div style="color:#64748b;font-size:13px;padding:12px 0;">Zatím není trend</div>`
+        : `<div style="color:#64748b;font-size:13px;padding:14px 0;">Zatím není trend</div>`
       }
-      <div style="display:flex;align-items:center;gap:8px;margin-top:10px;">
-        <span style="font-size:16px;">${trend.arrow || '→'}</span>
-        <span style="color:${trend.trendColor};font-size:13px;font-weight:500;">${trend.text}</span>
-        <span style="color:#475569;font-size:12px;margin-left:auto;">${trend.dataLength} dní</span>
-      </div>
-      ${aspirationHtml}
+      ${descText ? `<div style="font-size:13px;color:#94a3b8;line-height:1.55;margin-top:12px;">${descText}</div>` : ''}
     `;
 
-    // Nakresli weather graf po layoutu
     if (hasData) {
       requestAnimationFrame(() => {
         const canvas = metricCard.querySelector('.weather-trend-canvas');
