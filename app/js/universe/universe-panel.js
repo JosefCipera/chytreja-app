@@ -332,6 +332,61 @@ async function fetchLearningSteps(nodeId) {
   }
 }
 
+// =====================================================
+// WEATHER-STYLE MINI TREND (canvas, adapted from biomarkery)
+// =====================================================
+function drawMiniTrend(ctx, data, color) {
+  if (!ctx || !data || data.length < 2) return;
+  const c   = ctx.canvas;
+  const w   = c.clientWidth  || c.offsetWidth  || 240;
+  const h   = c.clientHeight || c.offsetHeight || 55;
+  const dpr = window.devicePixelRatio || 1;
+  c.width   = w * dpr;
+  c.height  = h * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, w, h);
+
+  const mx = 15, my = 10;
+  const min = Math.min(...data), max = Math.max(...data);
+  const rng = Math.max(1e-6, max - min);
+  const pts = data.map((v, i) => ({
+    x: mx + (i / (data.length - 1)) * (w - mx * 2),
+    y: h - ((v - min) / rng) * (h - my * 2) - my
+  }));
+
+  // Barevná křivka trendu
+  ctx.beginPath();
+  ctx.lineWidth = 9; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  ctx.strokeStyle = (color || '#22d3ee') + 'e0';
+  ctx.moveTo(pts[0].x, pts[0].y);
+  for (let i = 1; i < pts.length - 2; i++) {
+    const xc = (pts[i].x + pts[i + 1].x) / 2;
+    const yc = (pts[i].y + pts[i + 1].y) / 2;
+    ctx.quadraticCurveTo(pts[i].x, pts[i].y, xc, yc);
+  }
+  const last = pts.at(-1), pre = pts.at(-2);
+  const endX = pre.x + (last.x - pre.x) * 0.9;
+  const endY = pre.y + (last.y - pre.y) * 0.9;
+  ctx.quadraticCurveTo(pre.x, pre.y, endX, endY);
+  ctx.stroke();
+
+  // Šedý "forecast" ocas
+  ctx.beginPath();
+  ctx.moveTo(endX + 6, endY);
+  ctx.lineTo(Math.min(w - 8, endX + 220), endY);
+  ctx.lineWidth = 9; ctx.lineCap = 'round';
+  ctx.strokeStyle = '#94a3b844';
+  ctx.stroke();
+
+  // Tečka na konci křivky
+  ctx.beginPath();
+  ctx.arc(endX, endY, 9, 0, Math.PI * 2);
+  ctx.fillStyle = color || '#22d3ee';
+  ctx.fill();
+  ctx.lineWidth = 2.5; ctx.strokeStyle = '#fff';
+  ctx.stroke();
+}
+
 async function fetchTrend(userId, nodeId, nodeState) {
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -350,48 +405,28 @@ async function fetchTrend(userId, nodeId, nodeState) {
   if (!data || data.length === 0) {
     return {
       html: '<div style="color:#64748b; font-size:13px; padding:16px 0;">Zatím není trend</div>',
-      text: 'Stabilní'
+      text: 'Stabilní', numeric: [], lineColor: '#64748b',
+      trendColor: '#64748b', arrow: '→', dataLength: 0
     };
   }
 
-  const points = data.map((d, i) => {
-    const x = (i / (data.length - 1)) * 100;
-    const y = d.state === 'GREEN' ? 20 : d.state === 'YELLOW' ? 50 : 80;
-    return `${x},${y}`;
-  });
+  // Numerická data pro canvas (GREEN=3, YELLOW=2, RED=1)
+  const numeric = data.map(d => d.state === 'GREEN' ? 3 : d.state === 'YELLOW' ? 2 : 1);
 
   const recent = data.slice(-7);
   const recentGreen = recent.filter(d => d.state === 'GREEN').length;
-  const recentRed = recent.filter(d => d.state === 'RED').length;
+  const recentRed   = recent.filter(d => d.state === 'RED').length;
 
   let arrow = '→', trendText = 'Stabilní', trendColor = '#eab308';
-  if (recentGreen > recentRed + 2) { arrow = '↗️'; trendText = 'Zlepšení'; trendColor = '#22c55e'; }
+  if (recentGreen > recentRed + 2)  { arrow = '↗️'; trendText = 'Zlepšení'; trendColor = '#22c55e'; }
   else if (recentRed > recentGreen + 2) { arrow = '↘️'; trendText = 'Zhoršení'; trendColor = '#ef4444'; }
 
-  const stateColor = nodeState === 'GREEN' ? '#22c55e'
+  const lineColor = nodeState === 'GREEN' ? '#22c55e'
     : nodeState === 'YELLOW' ? '#eab308'
-      : nodeState === 'RED' ? '#ef4444'
-        : '#64748b';
+    : nodeState === 'RED'    ? '#ef4444'
+    : '#64748b';
 
-  const last = points[points.length - 1].split(',');
-
-  const html = `
-    <svg width="100%" height="50" viewBox="0 0 100 100" preserveAspectRatio="none" style="display:block;">
-      <rect x="0" y="0"  width="100" height="33" fill="#22c55e" opacity="0.05"/>
-      <rect x="0" y="33" width="100" height="34" fill="#eab308" opacity="0.05"/>
-      <rect x="0" y="67" width="100" height="33" fill="#ef4444" opacity="0.05"/>
-      <polyline points="${points.join(' ')}" fill="none" stroke="${trendColor}" stroke-width="6" opacity="0.2" stroke-linecap="round" stroke-linejoin="round"/>
-      <polyline points="${points.join(' ')}" fill="none" stroke="${stateColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      <circle cx="${last[0]}" cy="${last[1]}" r="2" fill="${trendColor}"/>
-    </svg>
-    <div style="display:flex; align-items:center; gap:8px; margin-top:8px;">
-      <span style="font-size:18px;">${arrow}</span>
-      <span style="color:${trendColor}; font-size:13px; font-weight:500;">${trendText}</span>
-      <span style="color:#64748b; font-size:12px; margin-left:auto;">${data.length} dní</span>
-    </div>
-  `;
-
-  return { html, text: trendText };
+  return { text: trendText, numeric, lineColor, trendColor, arrow, dataLength: data.length };
 }
 
 async function generateVerdictV2(node, userId) {
@@ -857,7 +892,7 @@ async function showGameOfLife(node) {
   if (isMainNode) {
     metricCard.innerHTML = `
       <div style="text-align:center; padding:12px 0 4px;">
-        <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:24px;">Baterie dlouhověkosti</div>
+        <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:24px;">Stav baterie života</div>
         <div style="
           display:inline-block; width:40px; height:160px;
           border:2px solid rgba(255,255,255,0.08); border-radius:8px;
@@ -939,7 +974,7 @@ async function showGameOfLife(node) {
 
     metricCard.innerHTML = `
       <div style="text-align:center; padding:12px 0 4px;">
-        <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:24px;">Baterie dlouhověkosti</div>
+        <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:24px;">Stav baterie života</div>
         <div style="
           display:inline-block;
           width:40px; height:160px;
@@ -961,11 +996,28 @@ async function showGameOfLife(node) {
       </div>
     `;
   } else {
+    const hasData = trend.numeric?.length >= 2;
     metricCard.innerHTML = `
-      <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Trend (30 dní)</div>
-      ${trend.html}
+      <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">Trend (30 dní)</div>
+      ${hasData
+        ? `<canvas class="weather-trend-canvas" style="width:100%;height:55px;display:block;border-radius:6px;"></canvas>`
+        : `<div style="color:#64748b;font-size:13px;padding:12px 0;">Zatím není trend</div>`
+      }
+      <div style="display:flex;align-items:center;gap:8px;margin-top:10px;">
+        <span style="font-size:16px;">${trend.arrow || '→'}</span>
+        <span style="color:${trend.trendColor};font-size:13px;font-weight:500;">${trend.text}</span>
+        <span style="color:#475569;font-size:12px;margin-left:auto;">${trend.dataLength} dní</span>
+      </div>
       ${aspirationHtml}
     `;
+
+    // Nakresli weather graf po layoutu
+    if (hasData) {
+      requestAnimationFrame(() => {
+        const canvas = metricCard.querySelector('.weather-trend-canvas');
+        if (canvas) drawMiniTrend(canvas.getContext('2d'), trend.numeric, trend.lineColor);
+      });
+    }
   }
 
   // 6. Hlavní text brífinku – AI primární, provocationText fallback
