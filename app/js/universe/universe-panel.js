@@ -60,6 +60,50 @@ function getDemoPreview(nodeId) {
   return DEMO_PREVIEWS[nodeId] || {};
 }
 
+// =====================================================
+// ČERNÍ JEZDCI – mapování uzlů na smrtelné hrozby
+// =====================================================
+const NODE_RIDERS = {
+  dlouhovekost:  [],             // počítá se dynamicky z dětí
+  telo:          ['srdce'],
+  mysl:          ['mozek'],
+  vyziva:        ['metabolismus'],
+  zdravi:        ['rakovina'],
+  metabolicke:   ['metabolismus'],
+  spanek:        ['mozek', 'srdce'],
+  sila:          ['srdce'],
+  vo2max:        ['srdce'],
+  stabilita:     ['pohyb'],
+  mobilita:      ['pohyb'],
+  nervovy_system:['mozek'],
+  kardio:        ['srdce'],
+  glukoza:       ['metabolismus'],
+  bilirubin:     ['rakovina'],
+  leukocyty:     ['rakovina'],
+  erytrocyty:    ['srdce'],
+};
+
+const RIDER_ICONS = {
+  srdce:        '❤️',
+  mozek:        '🧠',
+  metabolismus: '⚡',
+  rakovina:     '🎗️',
+  pohyb:        '🦵',
+};
+
+function getRiders(node) {
+  if (node.id === 'dlouhovekost') {
+    // Hlavní uzel: jezdci ze všech RED/YELLOW dětí
+    const allData = window.MAIN_UNIVERSE_DATA || [];
+    const riderSet = new Set();
+    allData
+      .filter(n => n.parent === 'dlouhovekost' && (n.state === 'RED' || n.state === 'YELLOW'))
+      .forEach(c => (NODE_RIDERS[c.id] || []).forEach(r => riderSet.add(r)));
+    return [...riderSet].slice(0, 4);
+  }
+  return NODE_RIDERS[node.id] || [];
+}
+
 function showLockedPanel(node) {
   const preview = getDemoPreview(node.id);
 
@@ -995,8 +1039,7 @@ async function showGameOfLife(node) {
       </div>
     `;
   } else {
-    const hasData  = trend.numeric?.length >= 2;
-    const descText = provocationText || node.definition || '';
+    const hasData = trend.numeric?.length >= 2;
 
     metricCard.innerHTML = `
       <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">Trend (30 dní)</div>
@@ -1004,7 +1047,6 @@ async function showGameOfLife(node) {
         ? `<canvas class="weather-trend-canvas" style="width:100%;height:55px;display:block;border-radius:6px;"></canvas>`
         : `<div style="color:#64748b;font-size:13px;padding:14px 0;">Zatím není trend</div>`
       }
-      ${descText ? `<div style="font-size:13px;color:#94a3b8;line-height:1.55;margin-top:12px;">${descText}</div>` : ''}
     `;
 
     if (hasData) {
@@ -1034,6 +1076,22 @@ async function showGameOfLife(node) {
   const chip2Label = reflectionTitle || 'Detailní rozbor';
   const hasResources = ((node.articles?.length || 0) + (node.media?.length || 0) + (node.docs?.length || 0)) > 0;
 
+  // 7b. Černí jezdci – jen pro RED/YELLOW
+  const riders = (node.state === 'RED' || node.state === 'YELLOW') ? getRiders(node) : [];
+  const ridersHtml = riders.length > 0 ? `
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin:0 0 20px 0;padding-top:4px;">
+      ${riders.map(r => `
+        <span style="
+          display:inline-flex;align-items:center;gap:5px;
+          background:rgba(239,68,68,0.07);
+          border:1px solid rgba(239,68,68,0.2);
+          border-radius:20px;padding:4px 11px;
+          font-size:12px;color:#fca5a5;letter-spacing:0.3px;
+        ">${RIDER_ICONS[r] || '⚠️'} ${r}</span>
+      `).join('')}
+    </div>
+  ` : '';
+
   // 8. Sestavení CHJ karty
   chjCard.innerHTML = `
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
@@ -1051,8 +1109,10 @@ async function showGameOfLife(node) {
 
     <div class="chj-message" style="
       color:#e2e8f0; font-size:16px; line-height:1.7;
-      white-space:pre-line; margin-bottom:24px;
+      white-space:pre-line; margin-bottom:16px;
     ">${initialText}</div>
+
+    ${ridersHtml}
 
     <div class="smart-chips" style="display:flex;flex-direction:column;gap:10px;">
       <button id="chip-action" style="
