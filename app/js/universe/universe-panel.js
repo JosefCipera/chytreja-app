@@ -38,7 +38,7 @@ const DEMO_PREVIEWS = {
 // =====================================================
 
 const ACTIVE_MOTTOS = {
-  dlouhovekost:  '„Dlouhověkost není o dožívání se věku, ale o síle do posledního dne."',
+  dlouhovekost:  '„Hra o život se nevyhrává v cíli — vyhrává se každým dnem, který prožiješ naplno."',
   telo:          '„Tvé tělo je jediný domov, ve kterém musíš vydržet celý život."',
   zdravi:        '„Zdraví není absence nemoci, ale přítomnost vitality."',
   metabolicke:   '„Stabilní cukr znamená stabilní emoce a výkon bez odpoledních pádů."',
@@ -826,7 +826,7 @@ async function showGameOfLife(node) {
   // 1. Nadpis
   const titleEl = document.getElementById('nodeTitle');
   if (titleEl) {
-    titleEl.innerHTML = `<span style="font-size:1.15em; margin-right:6px;">${node.icon || '🏋️'}</span>${node.label || 'Stoletý desetibojař'}`;
+    titleEl.innerHTML = `<span style="font-size:1.15em; margin-right:6px;">${node.icon || '🎮'}</span>${node.label || 'Hra o život'}`;
   }
 
   // 1b. Motto – italická věta pod nadpisem (pokud existuje)
@@ -839,7 +839,10 @@ async function showGameOfLife(node) {
     if (panelHeader) panelHeader.after(mottoEl);
   }
 
-  // 2. Trend karta – skeleton
+  // 2. Metric karta – skeleton (baterie pro hlavní uzel, sparkline pro ostatní)
+  console.log("🎮 showGameOfLife node.id:", node.id, "state:", node.state);
+  const isMainNode = node.id === 'dlouhovekost';
+
   let metricCard = document.querySelector('.metric-card');
   if (metricCard) metricCard.remove();
 
@@ -849,11 +852,28 @@ async function showGameOfLife(node) {
     background:#06b6d415; border:1px solid #06b6d433;
     border-radius:12px; padding:20px; margin:15px 0;
   `;
-  metricCard.innerHTML = `
-    <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Trend (30 dní)</div>
-    <div style="height:80px;background:rgba(255,255,255,0.05);border-radius:8px;animation:pulse 1.5s ease-in-out infinite;"></div>
-    <style>@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}</style>
-  `;
+
+  // Skeleton se liší podle typu uzlu
+  if (isMainNode) {
+    metricCard.innerHTML = `
+      <div style="text-align:center; padding:12px 0 4px;">
+        <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:24px;">Baterie dlouhověkosti</div>
+        <div style="
+          display:inline-block; width:40px; height:160px;
+          border:2px solid rgba(255,255,255,0.08); border-radius:8px;
+          background:rgba(255,255,255,0.03); position:relative; overflow:hidden;
+          animation:pulse 1.5s ease-in-out infinite;
+        "></div>
+      </div>
+      <style>@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}</style>
+    `;
+  } else {
+    metricCard.innerHTML = `
+      <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Trend (30 dní)</div>
+      <div style="height:80px;background:rgba(255,255,255,0.05);border-radius:8px;animation:pulse 1.5s ease-in-out infinite;"></div>
+      <style>@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}</style>
+    `;
+  }
 
   // Vlož metricCard za motto (pokud existuje), jinak za panelHeader
   const panelHeader = document.querySelector('.panel-header');
@@ -909,11 +929,44 @@ async function showGameOfLife(node) {
     </div>
   ` : '';
 
-  metricCard.innerHTML = `
-    <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Trend (30 dní)</div>
-    ${trend.html}
-    ${aspirationHtml}
-  `;
+  // 5b. Hlavní uzel → baterie; ostatní uzly → sparkline
+  if (isMainNode) {
+    const fillPct   = node.state === 'GREEN' ? 80 : node.state === 'YELLOW' ? 50 : 20;
+    const battColor = node.state === 'GREEN' ? '#22c55e' : node.state === 'YELLOW' ? '#eab308' : '#ef4444';
+    const battBorder= node.state === 'GREEN' ? 'rgba(34,197,94,0.35)'   : node.state === 'YELLOW' ? 'rgba(234,179,8,0.35)'  : 'rgba(239,68,68,0.35)';
+    const battGlow  = node.state === 'GREEN' ? 'rgba(34,197,94,0.7)'    : node.state === 'YELLOW' ? 'rgba(234,179,8,0.7)'   : 'rgba(239,68,68,0.7)';
+    const stateLabel= node.state === 'GREEN' ? 'Nabito'                 : node.state === 'YELLOW' ? 'Dobíjení'               : 'Slabá baterie';
+
+    metricCard.innerHTML = `
+      <div style="text-align:center; padding:12px 0 4px;">
+        <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:24px;">Baterie dlouhověkosti</div>
+        <div style="
+          display:inline-block;
+          width:40px; height:160px;
+          border:2px solid ${battBorder};
+          border-radius:8px;
+          background:rgba(255,255,255,0.03);
+          position:relative; overflow:hidden;
+          box-shadow:0 0 18px ${battBorder};
+        ">
+          <div style="
+            position:absolute; bottom:0; left:0; right:0;
+            height:${fillPct}%;
+            background:linear-gradient(180deg, ${battColor}99, ${battColor});
+            box-shadow:0 0 28px ${battGlow};
+          "></div>
+        </div>
+        <div style="margin-top:16px; font-size:13px; color:#64748b;">${stateLabel}</div>
+        ${aspirationHtml}
+      </div>
+    `;
+  } else {
+    metricCard.innerHTML = `
+      <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Trend (30 dní)</div>
+      ${trend.html}
+      ${aspirationHtml}
+    `;
+  }
 
   // 6. Hlavní text brífinku – AI primární, provocationText fallback
   const aiErrorTexts = ['Chyba při komunikaci s AI.', 'Zatím nemám dost dat.', 'API nevrátilo platnou odpověď.'];

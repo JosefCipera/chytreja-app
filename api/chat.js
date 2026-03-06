@@ -118,7 +118,7 @@ export default async function (req, res) {
       .limit(1)
       .maybeSingle();
 
-    // ✅ Stavy 4 hlavních dětí pro Desetibojař (jezdci)
+    // ✅ Stavy 4 hlavních dětí pro Hra o život (jezdci)
     const RIDER_MAP = {
       'telo':    'srdce',
       'mysl':    'mozku',
@@ -439,7 +439,7 @@ Jsi Chytré Já — průvodce zdravím a dlouhověkostí.
 
 ODPOVÍDEJ PŘESNĚ PODLE ŠABLONY. Čísla piš slovně.
 
-HLAVNÍ UZEL (DESETIBOJAŘ):
+HLAVNÍ UZEL (HRA O ŽIVOT):
 Napiš DVĚ věty. Max čtyřicet pět slov celkem.
 
 Věta 1 — baterie + jezdci:
