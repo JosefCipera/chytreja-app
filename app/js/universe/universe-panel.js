@@ -1018,24 +1018,47 @@ async function showGameOfLife(node) {
 
     metricCard.innerHTML = `
       <div style="text-align:center; padding:12px 0 4px;">
-        <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:24px;">Stav baterie života</div>
-        <div style="
-          display:inline-block;
-          width:40px; height:160px;
-          border:2px solid ${battBorder};
-          border-radius:8px;
-          background:rgba(255,255,255,0.03);
-          position:relative; overflow:hidden;
-          box-shadow:0 0 18px ${battBorder};
-        ">
+        <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:20px;">Stav baterie života</div>
+        <div style="display:inline-flex; flex-direction:column; align-items:center;">
+          <!-- Výstupek (kladný pól) -->
           <div style="
-            position:absolute; bottom:0; left:0; right:0;
-            height:${fillPct}%;
-            background:linear-gradient(180deg, ${battColor}99, ${battColor});
-            box-shadow:0 0 28px ${battGlow};
+            width:22px; height:11px;
+            border:2px solid ${battBorder};
+            border-bottom:none;
+            border-radius:5px 5px 0 0;
+            background:linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04));
           "></div>
+          <!-- Tělo baterie -->
+          <div style="
+            width:62px; height:140px;
+            border:2px solid ${battBorder};
+            border-radius:5px 5px 8px 8px;
+            background:rgba(8,8,18,0.6);
+            position:relative; overflow:hidden;
+            box-shadow:0 0 22px ${battBorder}, inset 0 0 12px rgba(0,0,0,0.4);
+          ">
+            <!-- Výplň -->
+            <div style="
+              position:absolute; bottom:0; left:0; right:0;
+              height:${fillPct}%;
+              background:linear-gradient(180deg, ${battColor}88, ${battColor}ee);
+              box-shadow:0 0 30px ${battGlow};
+              transition:height 1.5s ease;
+            "></div>
+            <!-- Lesk (gloss) vlevo -->
+            <div style="
+              position:absolute; top:0; bottom:0; left:6px; width:9px;
+              background:linear-gradient(90deg, rgba(255,255,255,0.09), transparent);
+              border-radius:4px;
+              pointer-events:none;
+            "></div>
+            <!-- Dělítka kapacity -->
+            <div style="position:absolute;inset:0;display:flex;flex-direction:column;justify-content:space-evenly;padding:10px 0;pointer-events:none;">
+              ${[0,1,2].map(() => `<div style="height:1px;background:rgba(255,255,255,0.06);margin:0 8px;"></div>`).join('')}
+            </div>
+          </div>
         </div>
-        <div style="margin-top:16px; font-size:13px; color:#64748b;">${stateLabel}</div>
+        <div style="margin-top:14px; font-size:13px; color:#64748b; letter-spacing:0.5px;">${stateLabel}</div>
       </div>
     `;
   } else {
