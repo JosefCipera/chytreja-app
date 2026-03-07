@@ -102,6 +102,15 @@ async function syncNode(nodeId, dir) {
     const tags    = Array.isArray(meta.tags) ? meta.tags
                     : meta.tags ? [meta.tags] : [];
 
+    // source: frontmatter > auto-detekce z názvu souboru > výchozí
+    const slugLower = slug.toLowerCase();
+    const source  = meta.source
+                    || (slugLower.includes('attia')   ? 'Peter Attia'
+                      : slugLower.includes('huberman') ? 'Andrew Huberman'
+                      : slugLower.includes('sinclair') ? 'David Sinclair'
+                      : slugLower.includes('walker')   ? 'Matthew Walker'
+                      : 'Vlastní obsah – CHJ');
+
     // Smaž případný starý záznam se stejným title+node_id (jiné UUID = Storage/ruční import)
     await supabase
       .from('longevity_articles')
@@ -112,7 +121,7 @@ async function syncNode(nodeId, dir) {
 
     const { error } = await supabase
       .from('longevity_articles')
-      .upsert({ id, node_id: nodeId, title, url, summary, tags }, { onConflict: 'id' });
+      .upsert({ id, node_id: nodeId, title, url, summary, tags, source }, { onConflict: 'id' });
 
     if (error) {
       console.error(`  ❌ ${file}: ${error.message}`);
