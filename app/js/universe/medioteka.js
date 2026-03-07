@@ -81,7 +81,7 @@ async function loadLibrary() {
       id:          String(r.id),
       type:        'article',
       title:       r.title,
-      description: r.source || '',
+      description: r.summary || r.source || '',
       url:         r.url,
       contentUrl:  r.url,
       node_id:     r.node_id,
