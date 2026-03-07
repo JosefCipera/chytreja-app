@@ -21,6 +21,7 @@
 
 import { readFileSync, readdirSync, statSync } from 'fs';
 import { join, basename, extname } from 'path';
+import { createHash } from 'crypto';
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 
@@ -33,6 +34,21 @@ const supabase = createClient(
 
 const CLANKY_DIR  = join(process.cwd(), 'app/content/longevity/clanky');
 const STATIC_BASE = '/content/longevity/clanky'; // Vercel static path
+
+// ── UUID v5 (deterministické z názvu souboru, bez externích deps) ────
+const UUID_NS = Buffer.from('6ba7b8109dad11d180b400c04fd430c8', 'hex');
+function slugToUuid(slug) {
+  const hash = createHash('sha1').update(UUID_NS).update(slug).digest();
+  hash[6] = (hash[6] & 0x0f) | 0x50; // version 5
+  hash[8] = (hash[8] & 0x3f) | 0x80; // variant
+  return [
+    hash.slice(0, 4).toString('hex'),
+    hash.slice(4, 6).toString('hex'),
+    hash.slice(6, 8).toString('hex'),
+    hash.slice(8, 10).toString('hex'),
+    hash.slice(10, 16).toString('hex'),
+  ].join('-');
+}
 
 // ── Parsování frontmatteru ────────────────────────────────────
 function parseFrontmatter(content) {
@@ -79,7 +95,7 @@ async function syncNode(nodeId, dir) {
     const { meta, body } = parseFrontmatter(content);
 
     const slug    = basename(file, '.md');
-    const id      = `${nodeId}-${slug}`;
+    const id      = slugToUuid(`${nodeId}/${slug}`);
     const title   = meta.title   || extractTitle(body) || slug.replace(/-/g, ' ');
     const summary = meta.summary || extractSummary(body);
     const url     = meta.url     || `${STATIC_BASE}/${nodeId}/${file}`;
