@@ -102,6 +102,14 @@ async function syncNode(nodeId, dir) {
     const tags    = Array.isArray(meta.tags) ? meta.tags
                     : meta.tags ? [meta.tags] : [];
 
+    // Smaž případný starý záznam se stejným title+node_id (jiné UUID = Storage/ruční import)
+    await supabase
+      .from('longevity_articles')
+      .delete()
+      .eq('node_id', nodeId)
+      .eq('title', title)
+      .neq('id', id);
+
     const { error } = await supabase
       .from('longevity_articles')
       .upsert({ id, node_id: nodeId, title, url, summary, tags }, { onConflict: 'id' });
