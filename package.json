@@ -3,6 +3,9 @@
     "version": "1.0.0",
     "private": true,
     "type": "module",
+    "scripts": {
+        "sync-content": "node scripts/sync-content.js"
+    },
     "dependencies": {
         "@supabase/supabase-js": "^2.39.0",
         "dotenv": "^17.3.1",
