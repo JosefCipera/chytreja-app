@@ -520,7 +520,7 @@ async function generateVerdictV2(node, userId) {
     if (!response.ok) return { text: `API error ${response.status}` };
 
     const data = JSON.parse(await response.text());
-    return { text: (data?.verdict || 'API nevrátilo platnou odpověď.').replace(/\n/g, ' ') };
+    return { text: data?.verdict || 'API nevrátilo platnou odpověď.' };
 
   } catch (err) {
     console.error('❌ generateVerdictV2:', err);
