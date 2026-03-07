@@ -104,6 +104,17 @@ function getRiders(node) {
   return NODE_RIDERS[node.id] || [];
 }
 
+// Formátování CHJ textu: 1. věta tight, každá další věta s půlřádkovým odsazením dolů
+function formatChjText(text) {
+  const parts = (text || '').split(/\n+/).map(s => s.trim()).filter(Boolean);
+  if (parts.length <= 1) return text || '';
+  return parts.map((p, i) =>
+    i === 0
+      ? `<span style="display:block;">${p}</span>`
+      : `<span style="display:block; margin-top:0.55em;">${p}</span>`
+  ).join('');
+}
+
 function showLockedPanel(node) {
   const preview = getDemoPreview(node.id);
 
@@ -1099,14 +1110,7 @@ async function showGameOfLife(node) {
   const chip2Label = reflectionTitle || 'Detailní rozbor';
   const hasResources = ((node.articles?.length || 0) + (node.media?.length || 0) + (node.docs?.length || 0)) > 0;
 
-  // 7b. Vize – aspiration jako druhá věta pod CHJ textem (jen podřízené uzly)
-  const visionHtml = (!isMainNode && aspiration?.label) ? `
-    <div style="
-      margin-top:7px; padding-top:7px;
-      border-top:1px solid rgba(255,255,255,0.06);
-      font-size:13px; color:#94a3b8; font-style:italic; line-height:1.4;
-    ">🎯 ${aspiration.label}: ${aspiration.achieved ? 'splněno ✓' : 'zaostávám'}</div>
-  ` : '';
+  // (visionHtml odstraněno)
 
   // 8. Sestavení CHJ karty
   chjCard.innerHTML = `
@@ -1124,9 +1128,9 @@ async function showGameOfLife(node) {
     </div>
 
     <div class="chj-message" style="
-      color:#e2e8f0; font-size:16px; line-height:1.45;
-      white-space:pre-line; margin-bottom:16px;
-    ">${initialText}${visionHtml}</div>
+      color:#e2e8f0; font-size:16px; line-height:1.3;
+      margin-bottom:16px;
+    ">${formatChjText(initialText)}</div>
 
     <div class="smart-chips" style="display:flex;flex-direction:column;gap:10px;">
       <button id="chip-action" style="
