@@ -1014,8 +1014,6 @@ async function showGameOfLife(node) {
     const battColor = node.state === 'GREEN' ? '#22c55e' : node.state === 'YELLOW' ? '#eab308' : '#ef4444';
     const battBorder= node.state === 'GREEN' ? 'rgba(34,197,94,0.35)'   : node.state === 'YELLOW' ? 'rgba(234,179,8,0.35)'  : 'rgba(239,68,68,0.35)';
     const battGlow  = node.state === 'GREEN' ? 'rgba(34,197,94,0.7)'    : node.state === 'YELLOW' ? 'rgba(234,179,8,0.7)'   : 'rgba(239,68,68,0.7)';
-    const stateLabel= node.state === 'GREEN' ? 'Nabito'                 : node.state === 'YELLOW' ? 'Dobíjení'               : 'Slabá baterie';
-
     metricCard.innerHTML = `
       <div style="text-align:center; padding:12px 0 4px;">
         <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:24px;">Stav baterie života</div>
@@ -1035,7 +1033,12 @@ async function showGameOfLife(node) {
             box-shadow:0 0 28px ${battGlow};
           "></div>
         </div>
-        <div style="margin-top:16px; font-size:13px; color:#64748b;">${stateLabel}</div>
+        <div style="
+          margin-top:20px;
+          font-size:14px; font-style:italic;
+          color:#94a3b8; line-height:1.6;
+          letter-spacing:0.01em;
+        ">„Hra o život se nevyhrává v cíli —<br>vyhrává se každým dnem,<br>který prožiješ naplno."</div>
       </div>
     `;
   } else {
