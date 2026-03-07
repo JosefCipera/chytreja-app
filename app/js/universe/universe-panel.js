@@ -1099,20 +1099,13 @@ async function showGameOfLife(node) {
   const chip2Label = reflectionTitle || 'Detailní rozbor';
   const hasResources = ((node.articles?.length || 0) + (node.media?.length || 0) + (node.docs?.length || 0)) > 0;
 
-  // 7b. Černí jezdci – jen pro RED/YELLOW
-  const riders = (node.state === 'RED' || node.state === 'YELLOW') ? getRiders(node) : [];
-  const ridersHtml = riders.length > 0 ? `
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin:0 0 20px 0;padding-top:4px;">
-      ${riders.map(r => `
-        <span style="
-          display:inline-flex;align-items:center;gap:5px;
-          background:rgba(239,68,68,0.07);
-          border:1px solid rgba(239,68,68,0.2);
-          border-radius:20px;padding:4px 11px;
-          font-size:12px;color:#fca5a5;letter-spacing:0.3px;
-        ">${RIDER_ICONS[r] || '⚠️'} ${r}</span>
-      `).join('')}
-    </div>
+  // 7b. Vize – aspiration jako druhá věta pod CHJ textem (jen podřízené uzly)
+  const visionHtml = (!isMainNode && aspiration?.label) ? `
+    <div style="
+      margin-top:7px; padding-top:7px;
+      border-top:1px solid rgba(255,255,255,0.06);
+      font-size:13px; color:#94a3b8; font-style:italic; line-height:1.4;
+    ">🎯 ${aspiration.label}: ${aspiration.achieved ? 'splněno ✓' : 'zaostávám'}</div>
   ` : '';
 
   // 8. Sestavení CHJ karty
@@ -1131,11 +1124,9 @@ async function showGameOfLife(node) {
     </div>
 
     <div class="chj-message" style="
-      color:#e2e8f0; font-size:16px; line-height:1.7;
+      color:#e2e8f0; font-size:16px; line-height:1.45;
       white-space:pre-line; margin-bottom:16px;
-    ">${initialText}</div>
-
-    ${ridersHtml}
+    ">${initialText}${visionHtml}</div>
 
     <div class="smart-chips" style="display:flex;flex-direction:column;gap:10px;">
       <button id="chip-action" style="
