@@ -250,11 +250,21 @@ export default async function (req, res) {
         genderLabel
       ].filter(Boolean).join(', ');
 
-      // Fetch user constraints (injuries + body limits)
-      const { data: constraints } = await supabase
-        .from('user_constraints')
-        .select('constraint_type, constraint_key, constraint_value, severity')
-        .eq('user_id', userId);
+      // Fetch user constraints (pouze injury) + nejnovější biometrie (waist)
+      const [{ data: constraints }, { data: latestBio }] = await Promise.all([
+        supabase
+          .from('user_constraints')
+          .select('constraint_type, constraint_key, constraint_value, severity')
+          .eq('user_id', userId)
+          .eq('constraint_type', 'injury'),
+        supabase
+          .from('user_biometrics')
+          .select('waist_cm, weight_kg, body_fat_pct')
+          .eq('user_id', userId)
+          .order('measured_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+      ]);
 
       const INJURY_SUBS = {
         knee: {
@@ -281,7 +291,6 @@ export default async function (req, res) {
       const SEVERITY_LABELS = { mild: 'mírně', moderate: 'středně', severe: 'závažně' };
 
       const injuryLines = (constraints || [])
-        .filter(c => c.constraint_type === 'injury')
         .map(c => {
           const sub = INJURY_SUBS[c.constraint_key];
           if (!sub) return null;
@@ -290,19 +299,18 @@ export default async function (req, res) {
         })
         .filter(Boolean);
 
-      const WAIST_LIMIT = userProfile?.gender === 'female' ? 80 : 94;
-      const bodyLimits = (constraints || [])
-        .filter(c => c.constraint_type === 'body')
-        .map(c => {
-          if (c.constraint_key === 'waist_cm') {
-            const val = parseInt(c.constraint_value);
-            const over = val - WAIST_LIMIT;
-            return over > 0
-              ? `obvod pasu ${val} cm (o ${over} cm nad zdravou hranicí ${WAIST_LIMIT} cm) → snižuj kalorický příjem o 300 kcal denně`
-              : `obvod pasu ${val} cm (v normě)`;
-          }
-          return `${c.constraint_key}: ${c.constraint_value}`;
-        });
+      // Waist z user_biometrics (nejnovější záznam)
+      const bodyLimits = [];
+      if (latestBio?.waist_cm) {
+        const WAIST_LIMIT = userProfile?.gender === 'female' ? 80 : 94;
+        const val  = latestBio.waist_cm;
+        const over = val - WAIST_LIMIT;
+        bodyLimits.push(
+          over > 0
+            ? `obvod pasu ${val} cm (o ${over} cm nad zdravou hranicí ${WAIST_LIMIT} cm) → snižuj kalorický příjem o 300 kcal denně`
+            : `obvod pasu ${val} cm (v normě)`
+        );
+      }
 
       const constraintsLine = [
         ...injuryLines,

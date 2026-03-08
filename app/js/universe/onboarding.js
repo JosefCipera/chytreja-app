@@ -487,25 +487,29 @@ async function saveOnboarding() {
       if (error) throw error;
     }
 
-    // 2. Demographics → user_constraints
-    for (const key of ['age', 'sex']) {
-      const val = userAnswers[key];
-      if (val === undefined) continue;
-      console.log(`  → constraint demographic/${key}: ${val}`);
-      const { error } = await supabase.from('user_constraints').upsert({
+    // 2. Demographics → user_profile (age, gender)
+    const age    = userAnswers['age'];
+    const gender = userAnswers['sex'];
+    if (age !== undefined || gender !== undefined) {
+      const profilePatch = {};
+      if (age    !== undefined) profilePatch.age    = Number(age);
+      if (gender !== undefined) profilePatch.gender = gender;
+      console.log('  → user_profile demographics:', profilePatch);
+      const { error } = await supabase.from('user_profiles').upsert({
         user_id: userId,
-        constraint_type: 'demographic',
-        constraint_key: key,
-        constraint_value: String(val),
-        severity: null
-      }, { onConflict: 'user_id,constraint_key' });
-      if (error) console.warn(`⚠️ constraint ${key}:`, error.message);
+        ...profilePatch
+      }, { onConflict: 'user_id' });
+      if (error) console.warn('⚠️ user_profile demographics:', error.message);
     }
 
-    // 3. Injuries → user_constraints
-    const injuries = (userAnswers['injuries'] ?? []).filter(i => i !== 'none');
+    // 3. Injuries → user_constraints (pouze injury typ)
+    // Normalizace: 'back' → 'back_lower' (sjednocení s chat.js INJURY_SUBS)
+    const INJURY_KEY_MAP = { back: 'back_lower' };
+    const injuries = (userAnswers['injuries'] ?? [])
+      .filter(i => i !== 'none')
+      .map(i => INJURY_KEY_MAP[i] ?? i);
     if (injuries.length > 0) {
-      // Remove old injuries first
+      // Smaž staré záznamy
       await supabase.from('user_constraints')
         .delete()
         .eq('user_id', userId)

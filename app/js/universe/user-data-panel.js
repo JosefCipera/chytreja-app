@@ -31,11 +31,12 @@ window.openUserDataPanel = openUserDataPanel;
 async function loadAndRender() {
   renderSkeleton();
 
-  const [profileRes, constraintsRes, aspirationRes, aspOptionsRes] = await Promise.all([
+  const [profileRes, constraintsRes, aspirationRes, aspOptionsRes, integrationsRes] = await Promise.all([
     supabase.from('user_profiles').select('age, gender, height, weight').eq('user_id', userId).maybeSingle(),
     supabase.from('user_constraints').select('constraint_type, constraint_key, constraint_value, severity').eq('user_id', userId),
-    supabase.from('user_aspirations').select('aspiration_type, label').eq('user_id', userId).maybeSingle(),
-    supabase.from('aspiration_requirements').select('aspiration_type, aspiration_label')
+    supabase.from('user_aspirations').select('aspiration_type, label, target_age, milestone').eq('user_id', userId).maybeSingle(),
+    supabase.from('aspiration_requirements').select('aspiration_type, aspiration_label'),
+    supabase.from('user_integrations').select('service, enabled').eq('user_id', userId)
   ]);
 
   // Distinct aspiration options from aspiration_requirements
@@ -49,10 +50,11 @@ async function loadAndRender() {
   }
 
   cachedData = {
-    profile:           profileRes.data   ?? {},
-    constraints:       constraintsRes.data ?? [],
-    aspiration:        aspirationRes.data  ?? {},
-    aspirationOptions: aspOptions
+    profile:           profileRes.data      ?? {},
+    constraints:       constraintsRes.data  ?? [],
+    aspiration:        aspirationRes.data   ?? {},
+    aspirationOptions: aspOptions,
+    integrations:      integrationsRes.data ?? []
   };
 
   renderTab(activeTab);
@@ -300,36 +302,22 @@ async function saveAspirations() {
       if (error) throw error;
     }
 
-    // Aspiration extras (target_age, milestone) → user_constraints
-    // Wrapped separately – user_constraints table may not exist yet
-    try {
-      await supabase.from('user_constraints')
-        .delete()
-        .eq('user_id', userId)
-        .eq('constraint_type', 'aspiration');
-
-      for (const [key, val] of [['target_age', targetAge], ['milestone', milestone]]) {
-        if (val) {
-          await supabase.from('user_constraints').insert({
-            user_id:          userId,
-            constraint_type:  'aspiration',
-            constraint_key:    key,
-            constraint_value:  val,
-            severity: null
-          });
-        }
-      }
-    } catch (ce) {
-      console.warn('user_constraints not available (run SQL migration):', ce.message);
+    // Aspiration extras (target_age, milestone) → user_aspirations
+    if (targetAge || milestone) {
+      const patch = {};
+      if (targetAge) patch.target_age = parseInt(targetAge) || null;
+      if (milestone) patch.milestone  = milestone;
+      const { error: ae } = await supabase.from('user_aspirations')
+        .update(patch)
+        .eq('user_id', userId);
+      if (ae) console.warn('aspiration extras:', ae.message);
     }
 
     // Refresh
-    const [aspRes, conRes] = await Promise.all([
-      supabase.from('user_aspirations').select('aspiration_type, label').eq('user_id', userId).maybeSingle(),
-      supabase.from('user_constraints').select('*').eq('user_id', userId)
+    const [aspRes] = await Promise.all([
+      supabase.from('user_aspirations').select('aspiration_type, label, target_age, milestone').eq('user_id', userId).maybeSingle()
     ]);
-    cachedData.aspiration   = aspRes.data ?? {};
-    cachedData.constraints  = conRes.data ?? [];
+    cachedData.aspiration = aspRes.data ?? {};
     setStatus('udp-status-2', 'ok');
   } catch (e) {
     console.error(e);
@@ -351,9 +339,7 @@ const CONNECTORS = [
 ];
 
 function getConnectivity(key) {
-  return (cachedData.constraints ?? []).find(
-    c => c.constraint_type === 'connectivity' && c.constraint_key === key
-  )?.constraint_value === 'true';
+  return (cachedData.integrations ?? []).find(i => i.service === key)?.enabled === true;
 }
 
 function renderProfileTab() {
@@ -453,27 +439,26 @@ async function saveProfile() {
       .upsert(profileData, { onConflict: 'user_id' });
     if (pe) console.warn('profile upsert:', pe.message); // height/weight may not exist yet
 
-    // Connectivity → user_constraints
+    // Connectivity → user_integrations
     for (const toggle of document.querySelectorAll('.udp-toggle')) {
-      const key = toggle.dataset.key;
-      const val = toggle.dataset.on === 'true' ? 'true' : 'false';
-      const { error } = await supabase.from('user_constraints').upsert({
-        user_id:          userId,
-        constraint_type:  'connectivity',
-        constraint_key:    key,
-        constraint_value:  val,
-        severity: null
-      }, { onConflict: 'user_id,constraint_key' });
-      if (error) console.warn(`conn ${key}:`, error.message);
+      const service = toggle.dataset.key;
+      const enabled = toggle.dataset.on === 'true';
+      const { error } = await supabase.from('user_integrations').upsert({
+        user_id:    userId,
+        service,
+        enabled,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'user_id,service' });
+      if (error) console.warn(`integration ${service}:`, error.message);
     }
 
     // Refresh cache
-    const [profRes, conRes] = await Promise.all([
+    const [profRes, intRes] = await Promise.all([
       supabase.from('user_profiles').select('age, gender, height, weight').eq('user_id', userId).maybeSingle(),
-      supabase.from('user_constraints').select('*').eq('user_id', userId)
+      supabase.from('user_integrations').select('service, enabled').eq('user_id', userId)
     ]);
-    cachedData.profile     = profRes.data ?? {};
-    cachedData.constraints = conRes.data  ?? [];
+    cachedData.profile      = profRes.data ?? {};
+    cachedData.integrations = intRes.data  ?? [];
     setStatus('udp-status-3', 'ok');
   } catch (e) {
     console.error(e);
