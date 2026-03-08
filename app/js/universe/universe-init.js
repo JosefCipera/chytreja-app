@@ -9,6 +9,7 @@ const ORBIT_ZONES = [
 ];
 import { renderUniverse } from "./universe-core.js";
 import { initUserDataPanel } from "./user-data-panel.js";
+import { listenOnce, handleVoiceInput, proactiveGreeting } from "./universe-voice.js";
 
 // Supabase setup
 const { createClient } = window.supabase;
@@ -78,7 +79,30 @@ async function populateModelSelector() {
   await loadAndRenderModel(modelName, role);
   initHeaderControls();
   initUserDataPanel();
+  initVoiceButton();
 })();
+
+// =====================================================
+// VOICE BUTTON – mic tlačítko
+// =====================================================
+function initVoiceButton() {
+  const btn = document.getElementById('voice-mic-btn');
+  if (!btn) return;
+
+  let greeted = false;
+
+  btn.addEventListener('click', async () => {
+    // První stisk → proaktivní pozdrav (browser potřebuje gesto pro audio)
+    if (!greeted) {
+      greeted = true;
+      proactiveGreeting();
+      return;
+    }
+    // Další stisky → hlasový vstup
+    const text = await listenOnce();
+    if (text) await handleVoiceInput(text);
+  });
+}
 
 // =====================================================
 // 4) LOAD MODEL + RENDER

@@ -122,6 +122,46 @@
             font-size: 0.85em;
             margin: 8px 0 16px;
         }
+        /* === Mic tlačítko === */
+        #voice-mic-btn {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: rgba(15, 23, 42, 0.92);
+            border: 1.5px solid rgba(80, 120, 200, 0.4);
+            box-shadow: 0 0 18px rgba(80, 120, 255, 0.2);
+            cursor: pointer;
+            z-index: 500;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.15s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+        }
+        #voice-mic-btn:hover {
+            transform: scale(1.08);
+            box-shadow: 0 0 28px rgba(80, 140, 255, 0.4);
+        }
+        #voice-mic-btn[data-state="listening"] {
+            border-color: rgba(239, 68, 68, 0.7);
+            box-shadow: 0 0 24px rgba(239, 68, 68, 0.35);
+            animation: mic-pulse 1s ease-in-out infinite;
+        }
+        #voice-mic-btn[data-state="thinking"] {
+            border-color: rgba(147, 197, 253, 0.5);
+            box-shadow: 0 0 24px rgba(147, 197, 253, 0.3);
+        }
+        .mic-icon { font-size: 22px; line-height: 1; }
+        @keyframes mic-pulse {
+            0%, 100% { box-shadow: 0 0 24px rgba(239, 68, 68, 0.35); }
+            50%       { box-shadow: 0 0 38px rgba(239, 68, 68, 0.6); }
+        }
+        /* Posunout mic btn nahoru když je panel otevřený */
+        body.panel-open #voice-mic-btn {
+            bottom: 80px;
+        }
     </style>
 </head>
 
@@ -187,6 +227,11 @@
     <!-- Plátno sítě -->
     <div id="network"></div>
 
+    <!-- Hlasové tlačítko -->
+    <button id="voice-mic-btn" title="Říct CHJ" aria-label="Hlasový vstup">
+        <span class="mic-icon">🎤</span>
+    </button>
+
     <!-- Postranní panel -->
     <aside id="sidePanel">
         <div class="panel-header">
@@ -245,7 +290,7 @@
     <script type="module" src="/app/js/universe/universe-viewers.js?v=20260306f"></script>
     <script type="module" src="/app/js/universe/universe-access.js?v=20260306f"></script>
     <script type="module" src="/app/js/universe/universe-core.js?v=20260306f"></script>
-    <script type="module" src="/app/js/universe/universe-init.js?v=20260306f"></script>
+    <script type="module" src="/app/js/universe/universe-init.js?v=20260308a"></script>
     <script type="module" src="/app/js/universe/user-data-panel.js?v=20260306f"></script>
     <script type="module" src="/app/js/universe/ai-assistant.js?v=20260306f"></script>
     <script type="module" src="/app/js/universe/universe-panel.js?v=20260306j"></script>
