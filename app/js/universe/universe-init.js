@@ -92,13 +92,12 @@ function initVoiceButton() {
   let greeted = false;
 
   btn.addEventListener('click', async () => {
-    // První stisk → proaktivní pozdrav (browser potřebuje gesto pro audio)
+    // První stisk → pozdrav (browser potřebuje gesto pro audio) + rovnou poslouchej
     if (!greeted) {
       greeted = true;
       proactiveGreeting();
-      return;
+      // Pokračuje dál – ihned spustí mic, nečeká na druhý klik
     }
-    // Další stisky → hlasový vstup
     const text = await listenOnce();
     if (text) await handleVoiceInput(text);
   });
@@ -347,6 +346,8 @@ async function applyAccessModel(role, model, modelName) {
     const defaultAccess = (role === 'demo' || role === 'free') ? 'locked' : 'visible';
     model.forEach(n => {
       n.access = accessMap.get(n.id) || defaultAccess;
+      // Locked uzly vždy zobrazit šedě bez ohledu na metriky z DB
+      if (n.access === 'locked') n.state = 'GRAY';
     });
 
   } catch (err) {

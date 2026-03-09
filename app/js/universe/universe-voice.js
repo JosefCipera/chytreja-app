@@ -67,25 +67,31 @@ export function listenOnce() {
     isListening  = true;
     setMicState('listening');
 
+    // Guard: Promise se splní jen jednou (onresult NEBO onend/onerror)
+    let settled = false;
+    const done = (val) => {
+      if (settled) return;
+      settled = true;
+      isListening = false;
+      setMicState('idle');
+      resolve(val);
+    };
+
     recognition.onresult = (e) => {
       const text = e.results[0]?.[0]?.transcript || '';
       console.log('🎤 STT:', text);
-      isListening = false;
-      setMicState('idle');
-      resolve(text.trim());
+      done(text.trim());
     };
 
     recognition.onerror = (e) => {
       console.warn('STT error:', e.error);
-      isListening = false;
-      setMicState('idle');
       if (e.error === 'not-allowed') aiSpeak('Povol přístup k mikrofonu.');
-      resolve(null);
+      done(null);
     };
 
     recognition.onend = () => {
-      isListening = false;
-      setMicState('idle');
+      // Zajistí resolve i pokud onresult/onerror nenastal (prázdný výsledek, timeout)
+      done(null);
     };
 
     recognition.start();
@@ -99,6 +105,98 @@ export function stopListening() {
 }
 
 
+// ── Klient-side SHOW_NODE detekce (bez API, nulová latence) ──
+// Matchuje přímo labely uzlů z window.MAIN_UNIVERSE_DATA (z DB).
+// Synonyma jen pro mluvené výrazy lišící se od labelu uzlu.
+const _SYNONYMS = {
+  'srdce':        'kardio',
+  'hlava':        'mysl',
+  'mozek':        'mysl',
+  'strava':       'vyziva',
+  'jídlo':        'vyziva',
+  'protein':      'bilkoviny',
+  'krev':         'biomarkery',
+  'kondice':      'vo2max',
+  'dech':         'dychani',
+  'pohyblivost':  'mobilita',
+  'svaly':        'telo',
+  'svalů':        'telo',
+  'dlouhověkost': 'dlouhovekost',
+  'hosszověkost': 'dlouhovekost',
+};
+
+// Slova signalizující záměr "zobrazit uzel"
+const _SHOW_WORDS = new Set([
+  'zobraz','zobrazit','otevři','otevřít','otevřit',
+  'ukaz','ukazuj','ukaž','uzel','najdi',
+]);
+
+// Odstraní diakritiku – fallback pro ručně zadaný text bez háčků
+function _strip(s) {
+  return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+// Pomocné porovnání: slovo vs. jeden token (s pádem a diakritikou fallback)
+function _wordMatches(word, token) {
+  if (token === word) return true;
+  if (word.endsWith('u') && token === word.slice(0, -1) + 'a') return true;
+  if (word.endsWith('i') && token === word.slice(0, -1) + 'a') return true;
+  const sw = _strip(word), st = _strip(token);
+  if (sw === st) return true;
+  if (word.endsWith('u') && st === _strip(word.slice(0, -1) + 'a')) return true;
+  if (word.endsWith('i') && st === _strip(word.slice(0, -1) + 'a')) return true;
+  return false;
+}
+
+// Přesný match: slovo odpovídá CELÉMU labelu (jeden normalizovaný řetězec).
+// Priorita 1 – zabraňuje záměně "rovnováha" → "Imunitní rovnováha".
+function _matchesExact(word, node) {
+  const label = node.label.toLowerCase().normalize('NFC').replace(/[.,!?;:()-]+/g, '').trim();
+  return _wordMatches(word, label);
+}
+
+// Částečný match: slovo odpovídá JEDNOMU slovu ve víceslovném labelu.
+// Priorita 2 – pro uzly jako "Imunitní rovnováha", "Nervový systém".
+function _matchesWordInLabel(word, node) {
+  const labelWords = node.label.toLowerCase().normalize('NFC').split(/\s+/);
+  for (let lw of labelWords) {
+    lw = lw.replace(/[.,!?;:()-]+/g, '');
+    if (lw && _wordMatches(word, lw)) return true;
+  }
+  return false;
+}
+
+function _tryShowNode(text) {
+  const s = text.toLowerCase().normalize('NFC').trim();
+  const words = s.split(/\s+/).map(w => w.replace(/[.,!?;:]+$/, ''));
+
+  const hasShowIntent = words.some(w => _SHOW_WORDS.has(w));
+  // Pokračuj jen pokud je "show" záměr nebo jde o jednoslovný přímý povel
+  if (!hasShowIntent && words.length > 1) return null;
+
+  const nodes = window.MAIN_UNIVERSE_DATA || [];
+  // Odfiltruj navigační slova a příliš krátká slova – zbytek je název uzlu
+  const contentWords = words.filter(w => !_SHOW_WORDS.has(w) && w.length >= 3);
+
+  console.log('🔎 _tryShowNode contentWords:', contentWords, '| nodes loaded:', nodes.length);
+
+  for (const word of contentWords) {
+    // 1. Synonyma (srdce→kardio, hlava→mysl…)
+    if (_SYNONYMS[word]) { console.log('🔎 synonym:', word, '→', _SYNONYMS[word]); return _SYNONYMS[word]; }
+
+    // 2. Přesný match celého labelu (vyšší priorita – např. "rovnováha" → "Rovnováha")
+    for (const node of nodes) {
+      if (_matchesExact(word, node)) { console.log('🔎 exact:', word, '→', node.id, `(${node.label})`); return node.id; }
+    }
+
+    // 3. Slovo uvnitř víceslovného labelu (nižší priorita – "imunitní" → "Imunitní rovnováha")
+    for (const node of nodes) {
+      if (_matchesWordInLabel(word, node)) { console.log('🔎 partial:', word, '→', node.id, `(${node.label})`); return node.id; }
+    }
+  }
+  return null;
+}
+
 // ── Intent routing ────────────────────────────────────────────
 // Zavolá /api/voice, vrátí parsed intent objekt
 async function callVoiceApi(text) {
@@ -111,16 +209,42 @@ async function callVoiceApi(text) {
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify({ text, userId })
     });
+    if (!res.ok) {
+      // 404 = Live Server bez backendu, jinak obecná chyba
+      const msg = res.status === 404
+        ? 'Zápis funguje jen přes vercel dev, ne Live Server.'
+        : `Chyba serveru (${res.status}).`;
+      return { intent: 'CHAT', response: msg };
+    }
     return await res.json();
   } catch (e) {
+    // fetch selhal úplně (CORS, síť, Live Server na jiném portu)
     console.error('Voice API error:', e);
-    return { intent: 'CHAT', response: 'Problém s připojením.' };
+    return { intent: 'CHAT', response: 'Zápis funguje jen přes vercel dev, ne Live Server.' };
   }
+}
+
+// Pomocná funkce: otevře panel pro uzel podle ID
+async function _openNodeById(nodeId) {
+  const node = window.MAIN_UNIVERSE_DATA?.find(n => n.id === nodeId);
+  if (!node) { aiSpeakWhenReady('Tento uzel jsem nenašel.'); return false; }
+  const { showPanel } = await import('./universe-panel.js');
+  playWhoosh();
+  await showPanel(node);
+  return true;
 }
 
 // Hlavní handler – zavolej po obdržení STT textu
 export async function handleVoiceInput(text) {
   if (!text) return;
+
+  // ── Okamžitá klient-side detekce uzlu (bez API) ──────────
+  const localNodeId = _tryShowNode(text);
+  if (localNodeId) {
+    console.log('🎯 Local SHOW_NODE:', localNodeId);
+    await _openNodeById(localNodeId);
+    return;
+  }
 
   setMicState('thinking');
   const result = await callVoiceApi(text);
@@ -130,17 +254,8 @@ export async function handleVoiceInput(text) {
 
   switch (result.intent) {
     case 'SHOW_NODE': {
-      const nodeId = result.node_id;
-      const node   = window.MAIN_UNIVERSE_DATA?.find(n => n.id === nodeId);
-      if (node) {
-        // Dynamický import aby se předešlo cirkulárnímu importu
-        const { showPanel } = await import('./universe-panel.js');
-        playWhoosh();
-        await showPanel(node);
-        if (result.response) aiSpeakWhenReady(result.response);
-      } else {
-        aiSpeakWhenReady('Tento uzel jsem nenašel.');
-      }
+      await _openNodeById(result.node_id);
+      if (result.response) aiSpeakWhenReady(result.response);
       break;
     }
 
@@ -161,8 +276,11 @@ export async function handleVoiceInput(text) {
     }
 
     default: {
-      // CHAT nebo neznámý intent
-      if (result.response) aiSpeakWhenReady(result.response);
+      // CHAT nebo neznámý intent – zobraz toast i mluv, aby bylo vidět i slyšet
+      if (result.response) {
+        aiSpeakWhenReady(result.response);
+        showVoiceToast(result.response);
+      }
     }
   }
 }

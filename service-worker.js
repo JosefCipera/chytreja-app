@@ -71,8 +71,11 @@ self.addEventListener('fetch', event => {
     caches.match(event.request).then(cached => {
       const network = fetch(event.request).then(response => {
         if (response.ok) {
+          // Clone ihned – response.clone() musí proběhnout před tím, než
+          // ktokoliv začne číst body (caches.open je async, bylo by pozdě)
+          const toCache = response.clone();
           caches.open(CACHE_NAME)
-            .then(cache => cache.put(event.request, response.clone()));
+            .then(cache => cache.put(event.request, toCache));
         }
         return response;
       }).catch(() => null);

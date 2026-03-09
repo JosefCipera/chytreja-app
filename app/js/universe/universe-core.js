@@ -21,9 +21,6 @@ export function renderUniverse(DATA, subset = null, forcedMainId = null) {
   const edges = [];
   const seen = new Set();
   const source = subset || DATA;
-  console.log("🔧 renderUniverse()"); // ← OK tady
-  console.log("Received nodes:", source.length); // ← OK tady
-  console.log("First node:", source[0]); // ← OK tady
   // 🧼 znič předchozí síť
   if (network && typeof network.destroy === "function") {
     network.destroy();
@@ -79,16 +76,16 @@ export function renderUniverse(DATA, subset = null, forcedMainId = null) {
     physics: {
       enabled: true,
       barnesHut: {
-        gravitationalConstant: -25000,  // ← Slabší
-        springLength: 220,              // ← Kratší
-        springConstant: 0.03,           // ← Tužší pružiny
-        avoidOverlap: 0.8               // ← Menší buffer
+        gravitationalConstant: -40000,  // Silnější odpuzování = uzly dál od sebe
+        springLength: 280,              // Delší pružiny = více prostoru
+        springConstant: 0.03,
+        avoidOverlap: 1.0               // Plné zabránění překrytí klikatelné plochy
       },
       stabilization: {
         enabled: true,
-        iterations: 150,
+        iterations: 300,                // Více iterací = lepší rozmístění
         fit: true,
-        updateInterval: 5  // ← Rychlejší stabilizace (méně viditelná)
+        updateInterval: 10
       }
     }
   };
@@ -165,7 +162,6 @@ export function renderUniverse(DATA, subset = null, forcedMainId = null) {
 // === Pomocné funkce ===
 
 function makeNode(it, isMain) {
-  console.log(`🎨 makeNode: ${it.id}, state: ${it.state}`); // ← PŘIDEJ
   // Semafor barvy podle state
   const stateColors = {
     'GREEN': '#22c55e',
