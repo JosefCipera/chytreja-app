@@ -370,17 +370,32 @@ export function proactiveGreeting() {
 
 // ── UI helpers ────────────────────────────────────────────────
 function setMicState(state) {
+  // Floor mic (#voice-mic-btn)
   const btn = document.getElementById('voice-mic-btn');
-  if (!btn) return;
+  if (btn) {
+    btn.dataset.state = state;
+    const icon = btn.querySelector('.mic-icon');
+    if (icon) {
+      switch (state) {
+        case 'listening': icon.textContent = '🔴'; btn.title = 'Poslouchám…';  break;
+        case 'thinking':  icon.textContent = '💭'; btn.title = 'Zpracovávám…'; break;
+        default:          icon.textContent = '🎤'; btn.title = 'Říct CHJ';     break;
+      }
+    }
+  }
 
-  btn.dataset.state = state;
-  const icon = btn.querySelector('.mic-icon');
-  if (!icon) return;
-
-  switch (state) {
-    case 'listening': icon.textContent = '🔴'; btn.title = 'Poslouchám…';  break;
-    case 'thinking':  icon.textContent = '💭'; btn.title = 'Zpracovávám…'; break;
-    default:          icon.textContent = '🎤'; btn.title = 'Říct CHJ';     break;
+  // Header mic (#header-mic-btn)
+  const headerBtn = document.getElementById('header-mic-btn');
+  if (headerBtn) {
+    headerBtn.dataset.state = state;
+    const icon = headerBtn.querySelector('.header-mic-icon');
+    if (icon) {
+      switch (state) {
+        case 'listening': icon.textContent = '🔴'; break;
+        case 'thinking':  icon.textContent = '💭'; break;
+        default:          icon.textContent = '🎤'; break;
+      }
+    }
   }
 }
 

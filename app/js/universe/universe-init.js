@@ -80,27 +80,36 @@ async function populateModelSelector() {
   initHeaderControls();
   initUserDataPanel();
   initVoiceButton();
+  initHeaderMic();
 })();
 
 // =====================================================
-// VOICE BUTTON – mic tlačítko
+// VOICE BUTTON – mic tlačítka (floor + header)
 // =====================================================
+
+// Sdílený flag – pozdrav se přehraje jen jednou bez ohledu na to, které mic stlačíš
+let _voiceGreeted = false;
+
+async function handleMicClick() {
+  if (!_voiceGreeted) {
+    _voiceGreeted = true;
+    proactiveGreeting();
+    // Pokračuje dál – ihned spustí mic, nečeká na druhý klik
+  }
+  const text = await listenOnce();
+  if (text) await handleVoiceInput(text);
+}
+
 function initVoiceButton() {
   const btn = document.getElementById('voice-mic-btn');
   if (!btn) return;
+  btn.addEventListener('click', handleMicClick);
+}
 
-  let greeted = false;
-
-  btn.addEventListener('click', async () => {
-    // První stisk → pozdrav (browser potřebuje gesto pro audio) + rovnou poslouchej
-    if (!greeted) {
-      greeted = true;
-      proactiveGreeting();
-      // Pokračuje dál – ihned spustí mic, nečeká na druhý klik
-    }
-    const text = await listenOnce();
-    if (text) await handleVoiceInput(text);
-  });
+function initHeaderMic() {
+  const btn = document.getElementById('header-mic-btn');
+  if (!btn) return;
+  btn.addEventListener('click', handleMicClick);
 }
 
 // =====================================================

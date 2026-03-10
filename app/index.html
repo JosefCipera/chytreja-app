@@ -162,6 +162,31 @@
         body.panel-open #voice-mic-btn {
             bottom: 80px;
         }
+        /* === Header mic tlačítko === */
+        #header-mic-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1.5px solid rgba(80, 120, 200, 0.3);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 15px;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+        #header-mic-btn:hover {
+            background: rgba(80, 120, 200, 0.15);
+            border-color: rgba(80, 120, 200, 0.6);
+        }
+        #header-mic-btn[data-state="listening"] {
+            border-color: rgba(239, 68, 68, 0.6);
+        }
+        #header-mic-btn[data-state="thinking"] {
+            border-color: rgba(147, 197, 253, 0.5);
+        }
     </style>
 </head>
 
@@ -191,6 +216,9 @@
             </div>
         </div>
         <div class="user-profile-wrapper">
+            <button id="header-mic-btn" title="Říct CHJ" aria-label="Hlasový vstup">
+                <span class="header-mic-icon">🎤</span>
+            </button>
             <button id="profileBtn" class="avatar-button">
                 <img src="https://ui-avatars.com/api/?name=Cipera&background=0D8ABC&color=fff" alt="Profil"
                     class="user-avatar">
@@ -275,7 +303,7 @@
 
     <script type="module">
         import { supabase } from './js/universe/supabaseClient.js?v=20260306f';
-        import { updateRecommendations } from './js/universe/universe-panel.js?v=20260309a';
+        import { updateRecommendations } from './js/universe/universe-panel.js?v=20260310a';
 
         window.addEventListener('DOMContentLoaded', async () => {
             supabase.auth.onAuthStateChange((event, session) => {
@@ -290,10 +318,10 @@
     <script type="module" src="/app/js/universe/universe-viewers.js?v=20260306f"></script>
     <script type="module" src="/app/js/universe/universe-access.js?v=20260306f"></script>
     <script type="module" src="/app/js/universe/universe-core.js?v=20260306f"></script>
-    <script type="module" src="/app/js/universe/universe-init.js?v=20260308a"></script>
+    <script type="module" src="/app/js/universe/universe-init.js?v=20260310a"></script>
     <script type="module" src="/app/js/universe/user-data-panel.js?v=20260306f"></script>
     <script type="module" src="/app/js/universe/ai-assistant.js?v=20260306f"></script>
-    <script type="module" src="/app/js/universe/universe-panel.js?v=20260309a"></script>
+    <script type="module" src="/app/js/universe/universe-panel.js?v=20260310a"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script>
         window.addEventListener('load', () => {

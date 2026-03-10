@@ -1218,6 +1218,9 @@ async function showGameOfLife(node) {
     playBtn.onclick = () => { ttsPlaying ? speechSynthesis.cancel() : startTTS(); };
   }
 
+  // Auto-TTS: přečti brífink automaticky po otevření panelu
+  setTimeout(() => { if (!ttsPlaying) startTTS(); }, 400);
+
   // 11. Chip handlery
   const chipAction = document.getElementById('chip-action');
   const chipReflection = document.getElementById('chip-reflection');
