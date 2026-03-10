@@ -993,9 +993,6 @@ async function showGameOfLife(node) {
     border-radius:12px; padding:20px; margin:15px 0; color:#fff;
   `;
   chjCard.innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-      <h3 style="margin:0;color:#83B0E3;font-size:18px;">🧠 Chytré já říká:</h3>
-    </div>
     <div style="height:60px;background:rgba(255,255,255,0.04);border-radius:8px;animation:pulse 1.5s ease-in-out infinite;"></div>
   `;
   metricCard.after(chjCard);
@@ -1126,19 +1123,6 @@ async function showGameOfLife(node) {
 
   // 8. Sestavení CHJ karty
   chjCard.innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-      <h3 style="margin:0;color:#83B0E3;font-size:18px;display:flex;align-items:center;gap:8px;">
-        🧠 Chytré já říká:
-      </h3>
-      <button id="tts-play" title="Přehrát" style="
-        background:rgba(6,182,212,0.15); border:1px solid rgba(6,182,212,0.35);
-        color:#22d3ee; font-size:18px; width:36px; height:36px;
-        border-radius:50%; cursor:pointer;
-        display:flex; align-items:center; justify-content:center;
-        transition:all 0.2s; flex-shrink:0;
-      ">🔊</button>
-    </div>
-
     <div class="chj-message" style="
       color:#e2e8f0; font-size:16px; line-height:1.3;
       margin-bottom:16px;
@@ -1152,13 +1136,7 @@ async function showGameOfLife(node) {
         cursor:pointer;font-size:14px;font-weight:600;
         text-align:left;transition:all 0.2s;width:100%;
       "><span style="font-size:18px;">⚡</span>${chip1Label}</button>
-      <button id="chip-reflection" style="
-        display:flex;align-items:center;gap:10px;
-        background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.4);
-        color:#a5b4fc;padding:12px 18px;border-radius:10px;
-        cursor:pointer;font-size:14px;font-weight:600;
-        text-align:left;transition:all 0.2s;width:100%;
-      "><span style="font-size:18px;">🧠</span>Detailní rozbor</button>
+      <!-- chip-reflection skryt: <button id="chip-reflection" ...>🧠 Detailní rozbor</button> -->
       ${(hasResources || actionText || reflectionText) ? `
         <button id="chip-resources" style="
           display:flex;align-items:center;gap:10px;
@@ -1177,11 +1155,10 @@ async function showGameOfLife(node) {
     btn.addEventListener('mouseleave', () => { btn.style.opacity = '1'; btn.style.transform = 'none'; });
   });
 
-  // 10. TTS – megafon button
-  //     Čte vždy aktuálně zobrazený text (currentText – mutable)
+  // 10. TTS – čte aktuálně zobrazený text; tlačítko odstraněno, řídí se mic ikony
   const messageEl = chjCard.querySelector('.chj-message');
-  const playBtn = chjCard.querySelector('#tts-play');
-  let currentText = initialText;   // <-- toto proměnná sdílená s chat handlerem
+  const playBtn = null; // tlačítko odstraněno – zachováno kvůli if (playBtn) guardu níže
+  let currentText = initialText;   // sdílená proměnná s chat handlerem
   let ttsPlaying = false;
 
   function startTTS() {
@@ -1192,32 +1169,36 @@ async function showGameOfLife(node) {
     utterance.rate = 1.1;
     utterance.onstart = () => {
       ttsPlaying = true;
-      playBtn.textContent = '⏹';
-      playBtn.title = 'Zastavit';
-      playBtn.style.background = 'rgba(239,68,68,0.2)';
-      playBtn.style.borderColor = 'rgba(239,68,68,0.4)';
-      playBtn.style.color = '#f87171';
-      // Header mic → SPEAKING: modré vlnky ven (( 🔊 ))
+      // Header mic → SPEAKING
       const hm = document.getElementById('header-mic-btn');
       if (hm) {
         hm.dataset.state = 'speaking';
         const hi = hm.querySelector('.header-mic-icon');
         if (hi) hi.innerHTML = '<span style="color:#60a5fa;font-weight:700">((</span> 🔊 <span style="color:#60a5fa;font-weight:700">))</span>';
       }
+      // Floor mic → SPEAKING
+      const fm = document.getElementById('voice-mic-btn');
+      if (fm) {
+        fm.dataset.state = 'speaking';
+        const fi = fm.querySelector('.mic-icon');
+        if (fi) fi.textContent = '🔊';
+      }
     };
     utterance.onend = utterance.onerror = () => {
       ttsPlaying = false;
-      playBtn.textContent = '🔊';
-      playBtn.title = 'Přehrát';
-      playBtn.style.background = 'rgba(6,182,212,0.15)';
-      playBtn.style.borderColor = 'rgba(6,182,212,0.35)';
-      playBtn.style.color = '#22d3ee';
       // Header mic → IDLE
       const hm = document.getElementById('header-mic-btn');
       if (hm) {
         hm.dataset.state = 'idle';
         const hi = hm.querySelector('.header-mic-icon');
         if (hi) hi.textContent = '🎤';
+      }
+      // Floor mic → IDLE
+      const fm = document.getElementById('voice-mic-btn');
+      if (fm) {
+        fm.dataset.state = 'idle';
+        const fi = fm.querySelector('.mic-icon');
+        if (fi) fi.textContent = '🎤';
       }
     };
     window.speechSynthesis.speak(utterance);
@@ -1232,8 +1213,12 @@ async function showGameOfLife(node) {
     playBtn.onclick = () => { ttsPlaying ? speechSynthesis.cancel() : startTTS(); };
   }
 
-  // Auto-TTS: přečti brífink automaticky po otevření panelu
-  setTimeout(() => { if (!ttsPlaying) startTTS(); }, 400);
+  // Auto-TTS: přečti brífink automaticky – ale jen pokud je panel skutečně otevřený
+  // (zabraňuje přehrání při double-click na parent uzel, kde panel zůstane zavřený)
+  setTimeout(() => {
+    const panelOpen = document.getElementById('sidePanel')?.classList.contains('open');
+    if (!ttsPlaying && panelOpen) startTTS();
+  }, 400);
 
   // 11. Chip handlery
   const chipAction = document.getElementById('chip-action');

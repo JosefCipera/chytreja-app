@@ -18,6 +18,11 @@ export function aiSpeak(text) {
                  || voices.find(v => /czech/i.test(v.lang));
   if (czVoice) msg.voice = czVoice;
 
+  // Mic stav: SPEAKING → po skončení zpět IDLE
+  msg.onstart = () => setMicState('speaking');
+  msg.onend   = () => setMicState('idle');
+  msg.onerror = () => setMicState('idle');
+
   window.speechSynthesis.speak(msg);
 }
 
@@ -269,17 +274,19 @@ export async function handleVoiceInput(text) {
 
     case 'LOG_ACTIVITY':
     case 'LOG_BIOMETRIC': {
-      // Data jsou uložena v /api/voice – tady jen potvrdíme hlasem
-      if (result.response) aiSpeakWhenReady(result.response);
-      showVoiceToast(result.response || 'Zaznamenáno.');
+      // Data jsou uložena v /api/voice – tady jen potvrdíme hlasem + zobrazíme text
+      if (result.response) {
+        aiSpeakWhenReady(result.response);
+        showResponseInPanel(result.response || 'Zaznamenáno.');
+      }
       break;
     }
 
     default: {
-      // CHAT nebo neznámý intent – zobraz toast i mluv, aby bylo vidět i slyšet
+      // CHAT nebo neznámý intent – mluv + zobraz text v panelu
       if (result.response) {
         aiSpeakWhenReady(result.response);
-        showVoiceToast(result.response);
+        showResponseInPanel(result.response);
       }
     }
   }
@@ -379,6 +386,7 @@ function setMicState(state) {
       switch (state) {
         case 'listening': icon.textContent = '🔴'; btn.title = 'Poslouchám…';  break;
         case 'thinking':  icon.textContent = '💭'; btn.title = 'Zpracovávám…'; break;
+        case 'speaking':  icon.textContent = '🔊'; btn.title = 'Mluvím…';      break;
         default:          icon.textContent = '🎤'; btn.title = 'Říct CHJ';     break;
       }
     }
@@ -397,6 +405,10 @@ function setMicState(state) {
           break;
         case 'thinking':
           icon.textContent = '💭';
+          break;
+        case 'speaking':
+          // modré vlnky ven: (( 🔊 ))
+          icon.innerHTML = '<span style="color:#60a5fa;font-weight:700">((</span> 🔊 <span style="color:#60a5fa;font-weight:700">))</span>';
           break;
         default:
           icon.textContent = '🎤';
@@ -421,6 +433,16 @@ export function setHeaderMicSpeaking(active) {
     headerBtn.dataset.state = 'idle';
     if (icon) icon.textContent = '🎤';
   }
+}
+
+// Zobrazí hlasovou odpověď do otevřeného panelu CHJ, jinak toast
+function showResponseInPanel(message) {
+  const messageEl = document.querySelector('#sidePanel .chj-message');
+  if (messageEl) {
+    messageEl.textContent = message;
+    return;
+  }
+  showVoiceToast(message);
 }
 
 function showVoiceToast(message) {

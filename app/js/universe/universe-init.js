@@ -91,6 +91,11 @@ async function populateModelSelector() {
 let _voiceGreeted = false;
 
 async function handleMicClick() {
+  // Klik na mic zruší případné probíhající TTS
+  if (window.speechSynthesis?.speaking) {
+    window.speechSynthesis.cancel();
+    return;
+  }
   if (!_voiceGreeted) {
     _voiceGreeted = true;
     proactiveGreeting();

@@ -153,10 +153,18 @@
             border-color: rgba(147, 197, 253, 0.5);
             box-shadow: 0 0 24px rgba(147, 197, 253, 0.3);
         }
+        #voice-mic-btn[data-state="speaking"] {
+            border-color: rgba(59, 130, 246, 0.8);
+            animation: mic-pulse-blue 1.1s ease-in-out infinite;
+        }
         .mic-icon { font-size: 22px; line-height: 1; }
         @keyframes mic-pulse {
             0%, 100% { box-shadow: 0 0 24px rgba(239, 68, 68, 0.35); }
             50%       { box-shadow: 0 0 38px rgba(239, 68, 68, 0.6); }
+        }
+        @keyframes mic-pulse-blue {
+            0%, 100% { box-shadow: 0 0 18px rgba(59, 130, 246, 0.3); }
+            50%       { box-shadow: 0 0 32px rgba(59, 130, 246, 0.7); }
         }
         /* Posunout mic btn nahoru když je panel otevřený */
         body.panel-open #voice-mic-btn {
@@ -273,11 +281,6 @@
 
     <!-- Plátno sítě -->
     <div id="network"></div>
-
-    <!-- Hlasové tlačítko -->
-    <button id="voice-mic-btn" title="Říct CHJ" aria-label="Hlasový vstup">
-        <span class="mic-icon">🎤</span>
-    </button>
 
     <!-- Postranní panel -->
     <aside id="sidePanel">
