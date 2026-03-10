@@ -1197,12 +1197,12 @@ async function showGameOfLife(node) {
       playBtn.style.background = 'rgba(239,68,68,0.2)';
       playBtn.style.borderColor = 'rgba(239,68,68,0.4)';
       playBtn.style.color = '#f87171';
-      // Header mic → SPEAKING (modrý reproduktor)
+      // Header mic → SPEAKING: modré vlnky ven (( 🔊 ))
       const hm = document.getElementById('header-mic-btn');
       if (hm) {
         hm.dataset.state = 'speaking';
         const hi = hm.querySelector('.header-mic-icon');
-        if (hi) hi.textContent = '🔊';
+        if (hi) hi.innerHTML = '<span style="color:#60a5fa;font-weight:700">((</span> 🔊 <span style="color:#60a5fa;font-weight:700">))</span>';
       }
     };
     utterance.onend = utterance.onerror = () => {

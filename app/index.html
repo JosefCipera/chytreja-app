@@ -164,42 +164,38 @@
         }
         /* === Header mic tlačítko === */
         #header-mic-btn {
-            height: 32px;
-            min-width: 32px;
-            padding: 0 7px;
-            border-radius: 16px;        /* pill – roztáhne se při )) 🎤 (( */
-            background: rgba(15, 23, 42, 0.6);
-            border: 1.5px solid rgba(80, 120, 200, 0.25);
+            height: 38px;               /* stejná výška jako avatar */
+            min-width: 38px;            /* idle = kolečko; text = pill */
+            padding: 0 8px;
+            border-radius: 9999px;      /* vždy pill, začíná jako kruh */
+            background: rgba(51, 65, 85, 0.3);   /* jemnější než černá, blíž avatarovi */
+            border: 1.5px solid #334155;          /* stejný odstín jako avatar border */
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 14px;
+            font-size: 15px;
             white-space: nowrap;
             transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
             flex-shrink: 0;
-            color: #94a3b8;
         }
         #header-mic-btn:hover {
-            background: rgba(80, 120, 200, 0.12);
-            border-color: rgba(80, 120, 200, 0.5);
+            background: rgba(51, 65, 85, 0.55);
+            border-color: #475569;
         }
-        /* LISTENING – zelená + vlny */
+        /* LISTENING – zelená border (vlnky obarveny v JS) */
         #header-mic-btn[data-state="listening"] {
-            border-color: rgba(34, 197, 94, 0.65);
+            border-color: rgba(34, 197, 94, 0.7);
             box-shadow: 0 0 10px rgba(34, 197, 94, 0.25);
-            color: #22c55e;
         }
-        /* THINKING – oblak, modro-šedá */
+        /* THINKING – modro-šedá */
         #header-mic-btn[data-state="thinking"] {
-            border-color: rgba(147, 197, 253, 0.45);
-            color: #93c5fd;
+            border-color: rgba(147, 197, 253, 0.5);
         }
-        /* SPEAKING – modrý reproduktor */
+        /* SPEAKING – modrá border (vlnky obarveny v JS) */
         #header-mic-btn[data-state="speaking"] {
-            border-color: rgba(59, 130, 246, 0.65);
+            border-color: rgba(59, 130, 246, 0.7);
             box-shadow: 0 0 10px rgba(59, 130, 246, 0.25);
-            color: #60a5fa;
         }
     </style>
 </head>
@@ -317,7 +313,7 @@
 
     <script type="module">
         import { supabase } from './js/universe/supabaseClient.js?v=20260306f';
-        import { updateRecommendations } from './js/universe/universe-panel.js?v=20260310b';
+        import { updateRecommendations } from './js/universe/universe-panel.js?v=20260310c';
 
         window.addEventListener('DOMContentLoaded', async () => {
             supabase.auth.onAuthStateChange((event, session) => {
@@ -335,7 +331,7 @@
     <script type="module" src="/app/js/universe/universe-init.js?v=20260310a"></script>
     <script type="module" src="/app/js/universe/user-data-panel.js?v=20260306f"></script>
     <script type="module" src="/app/js/universe/ai-assistant.js?v=20260306f"></script>
-    <script type="module" src="/app/js/universe/universe-panel.js?v=20260310b"></script>
+    <script type="module" src="/app/js/universe/universe-panel.js?v=20260310c"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script>
         window.addEventListener('load', () => {

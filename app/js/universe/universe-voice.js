@@ -384,16 +384,23 @@ function setMicState(state) {
     }
   }
 
-  // Header mic (#header-mic-btn)
+  // Header mic (#header-mic-btn) – vlnky obarveny přes innerHTML span
   const headerBtn = document.getElementById('header-mic-btn');
   if (headerBtn) {
     headerBtn.dataset.state = state;
     const icon = headerBtn.querySelector('.header-mic-icon');
     if (icon) {
       switch (state) {
-        case 'listening': icon.textContent = ')) 🎤 (('; break;
-        case 'thinking':  icon.textContent = '💭';       break;
-        default:          icon.textContent = '🎤';        break;
+        case 'listening':
+          // zelené vlnky dovnitř: )) 🎤 ((
+          icon.innerHTML = '<span style="color:#22c55e;font-weight:700">))</span> 🎤 <span style="color:#22c55e;font-weight:700">((</span>';
+          break;
+        case 'thinking':
+          icon.textContent = '💭';
+          break;
+        default:
+          icon.textContent = '🎤';
+          break;
       }
     }
   }
@@ -406,7 +413,10 @@ export function setHeaderMicSpeaking(active) {
   const icon = headerBtn.querySelector('.header-mic-icon');
   if (active) {
     headerBtn.dataset.state = 'speaking';
-    if (icon) icon.textContent = '🔊';
+    if (icon) {
+      // modré vlnky ven: (( 🔊 ))
+      icon.innerHTML = '<span style="color:#60a5fa;font-weight:700">((</span> 🔊 <span style="color:#60a5fa;font-weight:700">))</span>';
+    }
   } else {
     headerBtn.dataset.state = 'idle';
     if (icon) icon.textContent = '🎤';
