@@ -471,7 +471,8 @@ async function saveOnboarding() {
 
     console.log('💾 Saving onboarding for user:', userId);
 
-    // 1. Health metrics → node_inputs
+    // 1. Health metrics → node_inputs + node_state_history (snapshot)
+    const today = new Date().toISOString().split('T')[0];
     for (const q of onboardingQuestions.filter(q => q.category === 'health')) {
       const value = userAnswers[q.id];
       if (value === undefined) continue;
@@ -485,6 +486,17 @@ async function saveOnboarding() {
         value_numeric: value
       });
       if (error) throw error;
+
+      // Snapshot do node_state_history pro sparkline trend
+      if (state !== 'GRAY') {
+        const { error: histError } = await supabase.from('node_state_history').insert({
+          user_id: userId,
+          node_id: q.id,
+          date: today,
+          state
+        });
+        if (histError) console.warn(`⚠️ node_state_history(${q.id}):`, histError.message);
+      }
     }
 
     // 2. Demographics → user_profile (age, gender)
