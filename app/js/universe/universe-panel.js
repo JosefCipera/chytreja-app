@@ -1360,6 +1360,14 @@ async function showGameOfLife(node) {
     if (sendBtn) sendBtn.disabled = true;
     speechSynthesis.cancel();
 
+    // Header mic → THINKING s reproduktorem (AI generuje)
+    const _hm = document.getElementById('header-mic-btn');
+    if (_hm) {
+      _hm.dataset.state = 'thinking';
+      const _hi = _hm.querySelector('.header-mic-icon');
+      if (_hi) _hi.textContent = '🔊';
+    }
+
     // Zobrazení stavu čekání
     messageEl.innerHTML = '<span style="color:#64748b;font-style:italic;">Chytré já přemýšlí...</span>';
 
@@ -1401,6 +1409,13 @@ async function showGameOfLife(node) {
     } catch (err) {
       console.error('❌ chat submit:', err);
       messageEl.textContent = 'Chyba při komunikaci s AI.';
+      // Reset header mic při chybě (TTS nikdy nenastartuje)
+      const _hmErr = document.getElementById('header-mic-btn');
+      if (_hmErr) {
+        _hmErr.dataset.state = 'idle';
+        const _hiErr = _hmErr.querySelector('.header-mic-icon');
+        if (_hiErr) _hiErr.textContent = '🎤';
+      }
     } finally {
       chatBusy = false;
       if (chatInput) { chatInput.disabled = false; chatInput.value = ''; }
