@@ -1395,6 +1395,9 @@ async function showGameOfLife(node) {
       currentText = answer;
       messageEl.textContent = answer;
 
+      // Auto-TTS: přečti odpověď (header mic → 🔊 přes startTTS.onstart)
+      startTTS();
+
     } catch (err) {
       console.error('❌ chat submit:', err);
       messageEl.textContent = 'Chyba při komunikaci s AI.';

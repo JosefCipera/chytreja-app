@@ -82,8 +82,8 @@ Vrať POUZE validní JSON (bez markdown, bez komentářů):
   "node_id": "telo|mysl|vyziva|zdravi|metabolicke|spanek|sila|vytrvalost|kardio|vo2max|dychani|stabilita|rovnovaha|mobilita|stres|klid|soustredeni|bilkoviny|pust|biomarkery|dlouhovekost|...",
   "activity": {
     "type": "swimming|running|cycling|strength|walking|yoga|breathing|other",
-    "value": 500,
-    "unit": "m|km|min|s|reps|sets|steps",
+    "value": null,
+    "unit": null,
     "node_id": "vytrvalost|sila|kardio|dychani|stabilita|mobilita"
   },
   "biometric": {
@@ -107,7 +107,14 @@ Pravidla:
 - response: co CHJ řekne nahlas — krátce, přátelsky, tykání
 - Jednotky: sekundy → "s", minuty → "min", metry → "m", kilometry → "km"
 - Mapování aktivit na uzly: plavání/běh/kolo → vytrvalost, dřepy/posilování → sila, chůze/jóga → mobilita, dýchání/Buteyko/kontrolní pauza/pranajama → dychani (type="breathing")
-- DŮLEŽITÉ: rovnováha = node_id "rovnovaha" (NIKDY "stabilita"). Jsou to různé uzly.`;
+- DŮLEŽITÉ: rovnováha = node_id "rovnovaha" (NIKDY "stabilita"). Jsou to různé uzly.
+
+KRITICKÁ PRAVIDLA PRO value A unit:
+- value a unit nastav POUZE pokud uživatel EXPLICITNĚ vyslovil číslo a jednotku.
+- Příklady SE hodnotou: "plaval jsem 500 metrů" → value:500, unit:"m" | "běžel jsem 30 minut" → value:30, unit:"min"
+- Příklady BEZ hodnoty: "vyběhl jsem do druhého patra" → value:null, unit:null | "šel jsem na procházku" → value:null, unit:null | "udělal jsem dřepy" → value:null, unit:null
+- NIKDY nevymýšlej čísla. Pokud věta neobsahuje explicitní číslo, value MUSÍ být null.
+- Ordinal čísla (druhý, třetí, první) NEJSOU hodnoty aktivity — ignoruj je.`;
 
 // Deterministická extrakce jednotky z českého textu
 // Dvojí pokrytí: s diakritikou i bez (různé STT/encoding výstupy)
@@ -211,13 +218,27 @@ export default async function handler(req, res) {
       const activityNodeId = parsed.activity.node_id
         || ACTIVITY_NODE_MAP[parsed.activity.type]
         || null;
+
+      // Jednotka: preferuj deterministickou extrakci z textu, pak AI výstup
       const activityUnit = extractUnit(text) || normalizeUnit(parsed.activity.unit) || null;
-      console.log('💾 LOG_ACTIVITY:', { extractUnit: extractUnit(text), aiUnit: parsed.activity.unit, finalUnit: activityUnit, type: parsed.activity.type, value: parsed.activity.value, node_id: activityNodeId });
+
+      // Validační guard: AI může halucinovat hodnotu, pokud věta neobsahuje číslo.
+      // Pokud text neobsahuje žádnou číslici, hodnotu vynulujeme.
+      const textHasNumber = /\d/.test(text);
+      const safeValue = textHasNumber ? (parsed.activity.value ?? null) : null;
+      const safeUnit  = (safeValue !== null) ? activityUnit : null;
+
+      console.log('💾 LOG_ACTIVITY:', {
+        extractUnit: extractUnit(text), aiUnit: parsed.activity.unit,
+        finalUnit: safeUnit, type: parsed.activity.type,
+        aiValue: parsed.activity.value, safeValue, textHasNumber,
+        node_id: activityNodeId
+      });
       const { error: dbError } = await supabase.from('user_fitness_tests').insert({
         user_id:   userId,
         test_type: parsed.activity.type,
-        value:     parsed.activity.value,
-        unit:      activityUnit,
+        value:     safeValue,
+        unit:      safeUnit,
         node_id:   activityNodeId,
         source:    'voice',
         notes:     text

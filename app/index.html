@@ -168,8 +168,8 @@
             min-width: 38px;            /* idle = kolečko; text = pill */
             padding: 0 8px;
             border-radius: 9999px;      /* vždy pill, začíná jako kruh */
-            background: rgba(51, 65, 85, 0.3);   /* jemnější než černá, blíž avatarovi */
-            border: 1.5px solid #334155;          /* stejný odstín jako avatar border */
+            background: rgba(51, 65, 85, 0.65);  /* viditelný, ale ne černý */
+            border: 2px solid #475569;            /* výraznější border, stejný styl jako avatar */
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -180,8 +180,8 @@
             flex-shrink: 0;
         }
         #header-mic-btn:hover {
-            background: rgba(51, 65, 85, 0.55);
-            border-color: #475569;
+            background: rgba(71, 85, 105, 0.85);
+            border-color: #64748b;
         }
         /* LISTENING – zelená border (vlnky obarveny v JS) */
         #header-mic-btn[data-state="listening"] {
@@ -313,7 +313,7 @@
 
     <script type="module">
         import { supabase } from './js/universe/supabaseClient.js?v=20260306f';
-        import { updateRecommendations } from './js/universe/universe-panel.js?v=20260310c';
+        import { updateRecommendations } from './js/universe/universe-panel.js?v=20260310d';
 
         window.addEventListener('DOMContentLoaded', async () => {
             supabase.auth.onAuthStateChange((event, session) => {
@@ -331,7 +331,7 @@
     <script type="module" src="/app/js/universe/universe-init.js?v=20260310a"></script>
     <script type="module" src="/app/js/universe/user-data-panel.js?v=20260306f"></script>
     <script type="module" src="/app/js/universe/ai-assistant.js?v=20260306f"></script>
-    <script type="module" src="/app/js/universe/universe-panel.js?v=20260310c"></script>
+    <script type="module" src="/app/js/universe/universe-panel.js?v=20260310d"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script>
         window.addEventListener('load', () => {
