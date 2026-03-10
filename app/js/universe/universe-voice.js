@@ -391,11 +391,25 @@ function setMicState(state) {
     const icon = headerBtn.querySelector('.header-mic-icon');
     if (icon) {
       switch (state) {
-        case 'listening': icon.textContent = '🔴'; break;
-        case 'thinking':  icon.textContent = '💭'; break;
-        default:          icon.textContent = '🎤'; break;
+        case 'listening': icon.textContent = ')) 🎤 (('; break;
+        case 'thinking':  icon.textContent = '💭';       break;
+        default:          icon.textContent = '🎤';        break;
       }
     }
+  }
+}
+
+// Nastavení SPEAKING stavu z panelu (volá startTTS / onend)
+export function setHeaderMicSpeaking(active) {
+  const headerBtn = document.getElementById('header-mic-btn');
+  if (!headerBtn) return;
+  const icon = headerBtn.querySelector('.header-mic-icon');
+  if (active) {
+    headerBtn.dataset.state = 'speaking';
+    if (icon) icon.textContent = '🔊';
+  } else {
+    headerBtn.dataset.state = 'idle';
+    if (icon) icon.textContent = '🎤';
   }
 }
 

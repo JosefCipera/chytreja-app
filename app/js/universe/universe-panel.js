@@ -1197,6 +1197,13 @@ async function showGameOfLife(node) {
       playBtn.style.background = 'rgba(239,68,68,0.2)';
       playBtn.style.borderColor = 'rgba(239,68,68,0.4)';
       playBtn.style.color = '#f87171';
+      // Header mic → SPEAKING (modrý reproduktor)
+      const hm = document.getElementById('header-mic-btn');
+      if (hm) {
+        hm.dataset.state = 'speaking';
+        const hi = hm.querySelector('.header-mic-icon');
+        if (hi) hi.textContent = '🔊';
+      }
     };
     utterance.onend = utterance.onerror = () => {
       ttsPlaying = false;
@@ -1205,6 +1212,13 @@ async function showGameOfLife(node) {
       playBtn.style.background = 'rgba(6,182,212,0.15)';
       playBtn.style.borderColor = 'rgba(6,182,212,0.35)';
       playBtn.style.color = '#22d3ee';
+      // Header mic → IDLE
+      const hm = document.getElementById('header-mic-btn');
+      if (hm) {
+        hm.dataset.state = 'idle';
+        const hi = hm.querySelector('.header-mic-icon');
+        if (hi) hi.textContent = '🎤';
+      }
     };
     window.speechSynthesis.speak(utterance);
   }

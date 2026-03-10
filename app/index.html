@@ -164,28 +164,42 @@
         }
         /* === Header mic tlačítko === */
         #header-mic-btn {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
+            height: 32px;
+            min-width: 32px;
+            padding: 0 7px;
+            border-radius: 16px;        /* pill – roztáhne se při )) 🎤 (( */
             background: rgba(15, 23, 42, 0.6);
-            border: 1.5px solid rgba(80, 120, 200, 0.3);
+            border: 1.5px solid rgba(80, 120, 200, 0.25);
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 15px;
-            transition: all 0.2s ease;
+            font-size: 14px;
+            white-space: nowrap;
+            transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
             flex-shrink: 0;
+            color: #94a3b8;
         }
         #header-mic-btn:hover {
-            background: rgba(80, 120, 200, 0.15);
-            border-color: rgba(80, 120, 200, 0.6);
+            background: rgba(80, 120, 200, 0.12);
+            border-color: rgba(80, 120, 200, 0.5);
         }
+        /* LISTENING – zelená + vlny */
         #header-mic-btn[data-state="listening"] {
-            border-color: rgba(239, 68, 68, 0.6);
+            border-color: rgba(34, 197, 94, 0.65);
+            box-shadow: 0 0 10px rgba(34, 197, 94, 0.25);
+            color: #22c55e;
         }
+        /* THINKING – oblak, modro-šedá */
         #header-mic-btn[data-state="thinking"] {
-            border-color: rgba(147, 197, 253, 0.5);
+            border-color: rgba(147, 197, 253, 0.45);
+            color: #93c5fd;
+        }
+        /* SPEAKING – modrý reproduktor */
+        #header-mic-btn[data-state="speaking"] {
+            border-color: rgba(59, 130, 246, 0.65);
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.25);
+            color: #60a5fa;
         }
     </style>
 </head>
@@ -303,7 +317,7 @@
 
     <script type="module">
         import { supabase } from './js/universe/supabaseClient.js?v=20260306f';
-        import { updateRecommendations } from './js/universe/universe-panel.js?v=20260310a';
+        import { updateRecommendations } from './js/universe/universe-panel.js?v=20260310b';
 
         window.addEventListener('DOMContentLoaded', async () => {
             supabase.auth.onAuthStateChange((event, session) => {
@@ -321,7 +335,7 @@
     <script type="module" src="/app/js/universe/universe-init.js?v=20260310a"></script>
     <script type="module" src="/app/js/universe/user-data-panel.js?v=20260306f"></script>
     <script type="module" src="/app/js/universe/ai-assistant.js?v=20260306f"></script>
-    <script type="module" src="/app/js/universe/universe-panel.js?v=20260310a"></script>
+    <script type="module" src="/app/js/universe/universe-panel.js?v=20260310b"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script>
         window.addEventListener('load', () => {
