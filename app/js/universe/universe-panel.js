@@ -447,6 +447,16 @@ async function fetchTrend(userId, nodeId, nodeState) {
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
   const dateFilter = thirtyDaysAgo.toISOString().split('T')[0];
 
+  // 🔍 DIAGNOSTIKA – odstraň až bude trend fungovat
+  console.log('📈 fetchTrend params:', { userId, nodeId, dateFilter, clientOk: !!window.supabaseClient });
+
+  // Test: vůbec přístupná tabulka? (bez filtrů, limit 3)
+  const { data: testData, error: testError } = await window.supabaseClient
+    .from('node_state_history')
+    .select('user_id, node_id, date, state')
+    .limit(3);
+  console.log('📈 test (no filter):', { testData, testError });
+
   const { data, error } = await window.supabaseClient
     .from('node_state_history')
     .select('date, state')
@@ -454,6 +464,8 @@ async function fetchTrend(userId, nodeId, nodeState) {
     .eq('node_id', nodeId)
     .gte('date', dateFilter)
     .order('date', { ascending: true });
+
+  console.log('📈 filtered result:', { data, error, rowCount: data?.length });
 
   if (error) console.error('Trend error:', error);
 
