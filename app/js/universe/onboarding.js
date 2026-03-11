@@ -384,7 +384,13 @@ export function renderOnboarding() {
   }
 
   modalContent.innerHTML = `
-    <div class="onboarding-container" style="max-width:500px;padding:30px;">
+    <div class="onboarding-container" style="max-width:500px;padding:30px;position:relative;">
+
+      <!-- Zavřít -->
+      <button id="btn-close-onboarding" title="Zavřít"
+        style="position:absolute;top:0;right:0;background:none;border:none;
+               color:#475569;font-size:22px;cursor:pointer;line-height:1;padding:4px 8px;"
+        >✕</button>
 
       <!-- Progress -->
       <div style="margin-bottom:28px;">
@@ -424,6 +430,9 @@ export function renderOnboarding() {
 
   // Bind input-specific events
   bindInputEvents(q);
+
+  // Close (✕)
+  document.getElementById('btn-close-onboarding')?.addEventListener('click', closeOnboarding);
 
   // Back
   document.getElementById('btn-back')?.addEventListener('click', () => {
@@ -598,6 +607,23 @@ function getState(nodeId, value) {
 }
 
 // =====================================================
+// CLOSE ONBOARDING
+// =====================================================
+
+function closeOnboarding() {
+  const modal = document.getElementById('mediaModal');
+  if (!modal) return;
+  modal.style.display = 'none';
+  modal.classList.add('hidden');
+  // Odstraní Escape listener, aby nezůstal viset
+  document.removeEventListener('keydown', _onboardingEscHandler);
+}
+
+function _onboardingEscHandler(e) {
+  if (e.key === 'Escape') closeOnboarding();
+}
+
+// =====================================================
 // START ONBOARDING
 // =====================================================
 
@@ -608,6 +634,16 @@ export function startOnboarding() {
   userAnswers = {};
   modal.style.display = 'flex';
   modal.classList.remove('hidden');
+
+  // Escape key → zavřít
+  document.removeEventListener('keydown', _onboardingEscHandler); // guard double-attach
+  document.addEventListener('keydown', _onboardingEscHandler);
+
+  // Klik na pozadí (mimo modalContent) → zavřít
+  modal.onclick = (e) => {
+    if (e.target === modal) closeOnboarding();
+  };
+
   renderOnboarding();
 }
 

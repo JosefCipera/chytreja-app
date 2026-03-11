@@ -926,7 +926,7 @@ function _buildBatteryHTML(state) {
   const stateLabel = state === 'GREEN' ? 'Nabito' : state === 'YELLOW' ? 'Dobíjení' : 'Slabá baterie';
   return `
     <div style="text-align:center; padding:12px 0 4px;">
-      <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:20px;">Stav baterie života</div>
+      <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:20px;">Tvoje životní energie</div>
       <div style="display:inline-flex; flex-direction:column; align-items:center;">
         <div style="
           width:22px; height:11px;
