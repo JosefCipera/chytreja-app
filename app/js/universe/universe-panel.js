@@ -498,13 +498,13 @@ async function fetchTrend(userId, nodeId, nodeState) {
 
 async function generateVerdictV2(node, userId) {
   try {
-    const { data: metrics } = await window.supabaseClient
-      .from('user_metrics')
-      .select('node_id, state, current_index')
-      .eq('user_id', userId)
-      .eq('universe', 'longevity');
+    // Použij data z window.MAIN_UNIVERSE_DATA – jsou již načtena při startu,
+    // není potřeba extra Supabase round-trip (ušetříme 100–300 ms latence).
+    const metrics = (window.MAIN_UNIVERSE_DATA || [])
+      .filter(n => n.state && ['GREEN', 'YELLOW', 'RED'].includes(n.state))
+      .map(n => ({ node_id: n.id, state: n.state, current_index: n.current_index ?? 0 }));
 
-    if (!metrics || metrics.length === 0) return { text: 'Zatím nemám dost dat.' };
+    if (metrics.length === 0) return { text: 'Zatím nemám dost dat.' };
 
     const bottleneck = metrics
       .filter(m => m.state === 'RED')
@@ -917,6 +917,54 @@ function showToast(msg) {
 // SHOW GAME OF LIFE  (hlavní builder panelu)
 // =====================================================
 
+/** Generuje HTML baterie pro hlavní uzel (state = GREEN / YELLOW / RED / jiný). */
+function _buildBatteryHTML(state) {
+  const fillPct    = state === 'GREEN' ? 80 : state === 'YELLOW' ? 50 : 20;
+  const battColor  = state === 'GREEN' ? '#22c55e' : state === 'YELLOW' ? '#eab308' : '#ef4444';
+  const battBorder = state === 'GREEN' ? 'rgba(34,197,94,0.35)'  : state === 'YELLOW' ? 'rgba(234,179,8,0.35)'  : 'rgba(239,68,68,0.35)';
+  const battGlow   = state === 'GREEN' ? 'rgba(34,197,94,0.7)'   : state === 'YELLOW' ? 'rgba(234,179,8,0.7)'   : 'rgba(239,68,68,0.7)';
+  const stateLabel = state === 'GREEN' ? 'Nabito' : state === 'YELLOW' ? 'Dobíjení' : 'Slabá baterie';
+  return `
+    <div style="text-align:center; padding:12px 0 4px;">
+      <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:20px;">Stav baterie života</div>
+      <div style="display:inline-flex; flex-direction:column; align-items:center;">
+        <div style="
+          width:22px; height:11px;
+          border:2px solid ${battBorder};
+          border-bottom:none;
+          border-radius:5px 5px 0 0;
+          background:linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04));
+        "></div>
+        <div style="
+          width:62px; height:140px;
+          border:2px solid ${battBorder};
+          border-radius:5px 5px 8px 8px;
+          background:rgba(8,8,18,0.6);
+          position:relative; overflow:hidden;
+          box-shadow:0 0 22px ${battBorder}, inset 0 0 12px rgba(0,0,0,0.4);
+        ">
+          <div style="
+            position:absolute; bottom:0; left:0; right:0;
+            height:${fillPct}%;
+            background:linear-gradient(180deg, ${battColor}88, ${battColor}ee);
+            box-shadow:0 0 30px ${battGlow};
+            transition:height 1.5s ease;
+          "></div>
+          <div style="
+            position:absolute; top:0; bottom:0; left:6px; width:9px;
+            background:linear-gradient(90deg, rgba(255,255,255,0.09), transparent);
+            border-radius:4px; pointer-events:none;
+          "></div>
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;justify-content:space-evenly;padding:10px 0;pointer-events:none;">
+            ${[0,1,2].map(() => `<div style="height:1px;background:rgba(255,255,255,0.06);margin:0 8px;"></div>`).join('')}
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:14px; font-size:13px; color:#64748b; letter-spacing:0.5px;">${stateLabel}</div>
+    </div>
+  `;
+}
+
 async function showGameOfLife(node) {
   console.log("🎮 showGameOfLife:", node.id);
   const userId = window.firebaseAuth?.currentUser?.uid || 'demo-user-123';
@@ -957,18 +1005,9 @@ async function showGameOfLife(node) {
 
   // Skeleton se liší podle typu uzlu
   if (isMainNode) {
-    metricCard.innerHTML = `
-      <div style="text-align:center; padding:12px 0 4px;">
-        <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:24px;">Stav baterie života</div>
-        <div style="
-          display:inline-block; width:40px; height:160px;
-          border:2px solid rgba(255,255,255,0.08); border-radius:8px;
-          background:rgba(255,255,255,0.03); position:relative; overflow:hidden;
-          animation:pulse 1.5s ease-in-out infinite;
-        "></div>
-      </div>
-      <style>@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}</style>
-    `;
+    // Stav (node.state) je znám okamžitě → vykreslíme reálnou baterii hned,
+    // bez šedého placeholderu s jinými rozměry (eliminuje flicker při překreslení).
+    metricCard.innerHTML = _buildBatteryHTML(node.state);
   } else {
     metricCard.innerHTML = `
       <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Trend (30 dní)</div>
@@ -1030,57 +1069,9 @@ async function showGameOfLife(node) {
 
   // 5b. Hlavní uzel → baterie; ostatní uzly → sparkline
   if (isMainNode) {
-    const fillPct   = node.state === 'GREEN' ? 80 : node.state === 'YELLOW' ? 50 : 20;
-    const battColor = node.state === 'GREEN' ? '#22c55e' : node.state === 'YELLOW' ? '#eab308' : '#ef4444';
-    const battBorder= node.state === 'GREEN' ? 'rgba(34,197,94,0.35)'   : node.state === 'YELLOW' ? 'rgba(234,179,8,0.35)'  : 'rgba(239,68,68,0.35)';
-    const battGlow  = node.state === 'GREEN' ? 'rgba(34,197,94,0.7)'    : node.state === 'YELLOW' ? 'rgba(234,179,8,0.7)'   : 'rgba(239,68,68,0.7)';
-    const stateLabel = node.state === 'GREEN' ? 'Nabito' : node.state === 'YELLOW' ? 'Dobíjení' : 'Slabá baterie';
-
-    metricCard.innerHTML = `
-      <div style="text-align:center; padding:12px 0 4px;">
-        <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:20px;">Stav baterie života</div>
-        <div style="display:inline-flex; flex-direction:column; align-items:center;">
-          <!-- Výstupek (kladný pól) -->
-          <div style="
-            width:22px; height:11px;
-            border:2px solid ${battBorder};
-            border-bottom:none;
-            border-radius:5px 5px 0 0;
-            background:linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04));
-          "></div>
-          <!-- Tělo baterie -->
-          <div style="
-            width:62px; height:140px;
-            border:2px solid ${battBorder};
-            border-radius:5px 5px 8px 8px;
-            background:rgba(8,8,18,0.6);
-            position:relative; overflow:hidden;
-            box-shadow:0 0 22px ${battBorder}, inset 0 0 12px rgba(0,0,0,0.4);
-          ">
-            <!-- Výplň -->
-            <div style="
-              position:absolute; bottom:0; left:0; right:0;
-              height:${fillPct}%;
-              background:linear-gradient(180deg, ${battColor}88, ${battColor}ee);
-              box-shadow:0 0 30px ${battGlow};
-              transition:height 1.5s ease;
-            "></div>
-            <!-- Lesk (gloss) vlevo -->
-            <div style="
-              position:absolute; top:0; bottom:0; left:6px; width:9px;
-              background:linear-gradient(90deg, rgba(255,255,255,0.09), transparent);
-              border-radius:4px;
-              pointer-events:none;
-            "></div>
-            <!-- Dělítka kapacity -->
-            <div style="position:absolute;inset:0;display:flex;flex-direction:column;justify-content:space-evenly;padding:10px 0;pointer-events:none;">
-              ${[0,1,2].map(() => `<div style="height:1px;background:rgba(255,255,255,0.06);margin:0 8px;"></div>`).join('')}
-            </div>
-          </div>
-        </div>
-        <div style="margin-top:14px; font-size:13px; color:#64748b; letter-spacing:0.5px;">${stateLabel}</div>
-      </div>
-    `;
+    // Baterie je již správně vykreslena v skeleton fázi (node.state je znám okamžitě).
+    // Re-renderujeme přes helper aby bylo garantovaně konzistentní (bez flickeru).
+    metricCard.innerHTML = _buildBatteryHTML(node.state);
   } else {
     // 1 bod stačí – zduplikujeme ho aby drawMiniTrend měl co nakreslit (plochá čára = stabilní)
     const hasData = trend.numeric?.length >= 1;
