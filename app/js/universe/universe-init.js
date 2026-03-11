@@ -81,7 +81,38 @@ async function populateModelSelector() {
   initUserDataPanel();
   initVoiceButton();
   initHeaderMic();
+  writeDailySnapshot();   // snapshot stavů uzlů → sparkline trend
 })();
+
+// =====================================================
+// DAILY SNAPSHOT – zapiš dnešní stavy do node_state_history
+// Zavolá se jednou za den; vybuduje historii pro sparkline trend
+// =====================================================
+async function writeDailySnapshot() {
+  const TODAY_KEY = 'chj_snapshot_' + new Date().toISOString().slice(0, 10); // 'chj_snapshot_2026-03-11'
+  if (localStorage.getItem(TODAY_KEY)) return; // dnes už zapsáno
+
+  const userId = await getCurrentUserId();
+  if (!userId || userId === 'demo-user-123') return; // jen přihlášení uživatelé
+
+  const nodes = window.MAIN_UNIVERSE_DATA || [];
+  const rows = nodes
+    .filter(n => n.state && ['GREEN', 'YELLOW', 'RED'].includes(n.state))
+    .map(n => ({ user_id: userId, node_id: n.id, date: new Date().toISOString().slice(0, 10), state: n.state }));
+
+  if (rows.length === 0) return;
+
+  const { error } = await window.supabaseClient
+    .from('node_state_history')
+    .upsert(rows, { onConflict: 'user_id,node_id,date', ignoreDuplicates: true });
+
+  if (error) {
+    console.warn('⚠️ writeDailySnapshot:', error.message);
+  } else {
+    localStorage.setItem(TODAY_KEY, '1');
+    console.log(`✅ Daily snapshot: ${rows.length} uzlů`);
+  }
+}
 
 // =====================================================
 // VOICE BUTTON – mic tlačítka (floor + header)

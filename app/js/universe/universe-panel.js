@@ -1082,7 +1082,11 @@ async function showGameOfLife(node) {
       </div>
     `;
   } else {
-    const hasData = trend.numeric?.length >= 2;
+    // 1 bod stačí – zduplikujeme ho aby drawMiniTrend měl co nakreslit (plochá čára = stabilní)
+    const hasData = trend.numeric?.length >= 1;
+    const chartData = hasData && trend.numeric.length === 1
+      ? [trend.numeric[0], trend.numeric[0]]
+      : trend.numeric;
 
     metricCard.innerHTML = `
       <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">Trend (30 dní)</div>
@@ -1095,7 +1099,7 @@ async function showGameOfLife(node) {
     if (hasData) {
       requestAnimationFrame(() => {
         const canvas = metricCard.querySelector('.weather-trend-canvas');
-        if (canvas) drawMiniTrend(canvas.getContext('2d'), trend.numeric, trend.lineColor);
+        if (canvas) drawMiniTrend(canvas.getContext('2d'), chartData, trend.lineColor);
       });
     }
   }
