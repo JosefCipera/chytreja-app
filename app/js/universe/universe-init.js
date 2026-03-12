@@ -10,6 +10,7 @@ const ORBIT_ZONES = [
 import { renderUniverse } from "./universe-core.js";
 import { initUserDataPanel } from "./user-data-panel.js";
 import { listenOnce, handleVoiceInput, proactiveGreeting } from "./universe-voice.js";
+import { requestCHJPermission } from "./notifications.js";
 
 // Supabase setup
 const { createClient } = window.supabase;
@@ -96,6 +97,9 @@ async function populateModelSelector() {
   initVoiceButton();
   initHeaderMic();
   writeDailySnapshot();   // snapshot stavů uzlů → sparkline trend
+
+  // Žádost o notifikační oprávnění – po 3s, nenásilně
+  setTimeout(() => requestCHJPermission(), 3000);
 })();
 
 // =====================================================
