@@ -1244,12 +1244,18 @@ async function showGameOfLife(node) {
     playBtn.onclick = () => { ttsPlaying ? speechSynthesis.cancel() : startTTS(); };
   }
 
-  // TTS: stejný delay jako před bublinami (400ms fungovalo, 2200ms ne)
-  // Bubliny se animují vizuálně, TTS čte souběžně – jako voiceover
-  setTimeout(() => {
-    const panelOpen = document.getElementById('sidePanel')?.classList.contains('open');
-    if (!ttsPlaying && panelOpen) startTTS();
-  }, 400);
+  // Auto-TTS: čeká na první dotyk (primer), pak spustí po 400ms
+  const _doAutoTTS = () => {
+    setTimeout(() => {
+      const panelOpen = document.getElementById('sidePanel')?.classList.contains('open');
+      if (!ttsPlaying && panelOpen) startTTS();
+    }, 400);
+  };
+  if (window._chjTTSPrimed) {
+    _doAutoTTS(); // engine already unlocked (user touched before data loaded)
+  } else {
+    window._chjPendingTTS = _doAutoTTS; // queue until first touch
+  }
 
   // 11. Chip handlery
   const chipAction = document.getElementById('chip-action');
