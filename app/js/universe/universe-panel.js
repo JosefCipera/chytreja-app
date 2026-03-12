@@ -430,7 +430,26 @@ async function generateVerdictV2(node, userId) {
     if (!response.ok) return { text: `API error ${response.status}` };
 
     const data = JSON.parse(await response.text());
-    return { text: (data?.verdict || 'API nevrátilo platnou odpověď.').replace(/\n/g, ' ') };
+    const rawText = data?.verdict || 'API nevrátilo platnou odpověď.';
+
+    // Pro hlavní uzel: vrátit pole vět (verdictLines z API), nebo parsovat z |
+    if (node.id === 'dlouhovekost') {
+      let lines = null;
+      if (Array.isArray(data?.verdictLines) && data.verdictLines.length >= 2) {
+        lines = data.verdictLines;
+      } else if (rawText.includes('|')) {
+        lines = rawText.split('|').map(s => s.trim()).filter(Boolean);
+      }
+      if (lines && lines.length >= 2) {
+        return {
+          text: lines.join(' '),
+          lines,
+          bottleneckNodeId: data?.bottleneckNodeId || null
+        };
+      }
+    }
+
+    return { text: rawText.replace(/\n/g, ' ') };
 
   } catch (err) {
     console.error('❌ generateVerdictV2:', err);
@@ -929,10 +948,39 @@ async function showGameOfLife(node) {
     initialText = 'Nepodařilo se načíst diagnózu.';
   }
 
+  // Bubliny pro hlavní uzel (verdictLines = pole 2–3 vět)
+  const isMainNode = node.id === 'dlouhovekost';
+  const verdictLines = (isMainNode && Array.isArray(verdict?.lines) && verdict.lines.length >= 2)
+    ? verdict.lines : null;
+
   // 7. Chip labely
   const chip1Label = actionTitle || 'Co mám dělat?';
   const chip2Label = reflectionTitle || 'Detailní rozbor';
   const hasResources = ((node.articles?.length || 0) + (node.media?.length || 0) + (node.docs?.length || 0)) > 0;
+
+  // 8. Sestavení obsahu CHJ karty
+  const BUBBLE_STYLES = [
+    { bg: 'rgba(255,255,255,0.05)', border: 'rgba(255,255,255,0.12)', color: '#e2e8f0' },
+    { bg: 'rgba(234,179,8,0.07)',   border: 'rgba(234,179,8,0.28)',   color: '#fde68a' },
+    { bg: 'rgba(139,92,246,0.07)',  border: 'rgba(139,92,246,0.28)',  color: '#c4b5fd' },
+  ];
+  const chjContentHtml = verdictLines
+    ? `<div style="display:flex;flex-direction:column;gap:10px;margin-bottom:24px;">
+        ${verdictLines.map((line, i) => {
+          const s = BUBBLE_STYLES[i] || BUBBLE_STYLES[0];
+          return `<div style="
+            background:${s.bg}; border:1px solid ${s.border};
+            border-radius:10px; padding:13px 16px;
+            color:${s.color}; font-size:15px; line-height:1.45;
+            opacity:0; animation:chjFadeIn 0.55s ease forwards;
+            animation-delay:${i * 850}ms; animation-fill-mode:both;
+          ">${line}</div>`;
+        }).join('')}
+      </div>`
+    : `<div class="chj-message" style="
+        color:#e2e8f0; font-size:16px; line-height:1.7;
+        white-space:pre-line; margin-bottom:24px;
+      ">${initialText}</div>`;
 
   // 8. Sestavení CHJ karty
   chjCard.innerHTML = `
@@ -949,10 +997,7 @@ async function showGameOfLife(node) {
       ">🔊</button>
     </div>
 
-    <div class="chj-message" style="
-      color:#e2e8f0; font-size:16px; line-height:1.7;
-      white-space:pre-line; margin-bottom:24px;
-    ">${initialText}</div>
+    ${chjContentHtml}
 
     <div class="smart-chips" style="display:flex;flex-direction:column;gap:10px;">
       <button id="chip-action" style="
@@ -991,7 +1036,8 @@ async function showGameOfLife(node) {
   //     Čte vždy aktuálně zobrazený text (currentText – mutable)
   const messageEl = chjCard.querySelector('.chj-message');
   const playBtn = chjCard.querySelector('#tts-play');
-  let currentText = initialText;   // <-- toto proměnná sdílená s chat handlerem
+  // Pro hlavní uzel: TTS čte všechny 3 věty za sebou
+  let currentText = verdictLines ? verdictLines.join(' ') : initialText;
   let ttsPlaying = false;
 
   function startTTS() {
