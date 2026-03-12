@@ -1238,20 +1238,16 @@ async function showGameOfLife(node) {
     playBtn.onclick = () => { ttsPlaying ? speechSynthesis.cancel() : startTTS(); };
   }
 
-  // Auto-TTS: dvě možnosti jak spustit čtení
-  // Attempt 1 (auto): po dokončení animací – funguje pokud engine není blokovaný
-  // Attempt 2 (fallback): první dotyk na panel – browser vždy povolí po gesta
-  const ttsDelay = verdictLines ? 2200 : 400;
-
-  setTimeout(() => {
-    const panelOpen = document.getElementById('sidePanel')?.classList.contains('open');
-    if (!ttsPlaying && panelOpen) startTTS();
-  }, ttsDelay);
-
-  // Fallback: první pointerdown na side panel spustí TTS (user gesture = vždy projde)
+  // TTS: spustit při prvním dotyku na panel
+  // speechSynthesis.speak() MUSÍ být voláno přímo v gesture handleru (ne v setTimeout)
+  // – jinak Chrome/Safari gesture context zruší a blokuje zvuk
+  let ttsTriggered = false;
   const sidePanelEl = document.getElementById('sidePanel');
   sidePanelEl?.addEventListener('pointerdown', function _ttsOnFirstTouch() {
-    if (!ttsPlaying) setTimeout(() => startTTS(), 50);
+    if (!ttsTriggered && !ttsPlaying) {
+      ttsTriggered = true;
+      startTTS();   // přímé volání – gesture context zachován
+    }
   }, { once: true });
 
   // 11. Chip handlery
