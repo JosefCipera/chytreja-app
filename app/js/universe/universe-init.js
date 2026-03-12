@@ -19,21 +19,6 @@ const SUPABASE_KEY = 'sb_publishable_w29DE53nrdGnNEvBn68kzg_ujje7u5Y';
 window.supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
 console.log("✅ Supabase SDK připraveno");
 
-// Web Speech API: browser vyžaduje user gesture před prvním speak().
-// Engine se odemkne OKAMŽITĚ voláním speak() uvnitř gesture handleru (ne až onend).
-window._chjTTSPrimed = false;
-document.addEventListener('pointerdown', function _primeTTS() {
-  const primer = new SpeechSynthesisUtterance(' ');
-  primer.volume = 0;
-  window.speechSynthesis.speak(primer);
-  // Odemčeno – speak() bylo voláno synchronně uvnitř gesture handleru
-  window._chjTTSPrimed = true;
-  console.log('🔊 TTS primed');
-  if (window._chjPendingTTS) {
-    window._chjPendingTTS();
-    window._chjPendingTTS = null;
-  }
-}, { once: true });
 
 const DATA_BASE = "../data/universes";
 

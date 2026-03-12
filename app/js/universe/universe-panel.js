@@ -532,9 +532,7 @@ async function generateVerdictV2(node, userId) {
     if (!response.ok) return { text: `API error ${response.status}` };
 
     const rawText = await response.text();
-    console.log('🤖 verdict raw:', rawText.substring(0, 200));
     const data = JSON.parse(rawText);
-    console.log('🤖 verdict lines:', data?.verdictLines, '| verdict:', data?.verdict?.substring(0, 60));
     return {
       text: data?.verdict || 'API nevrátilo platnou odpověď.',
       lines: data?.verdictLines || null
@@ -1187,9 +1185,6 @@ async function showGameOfLife(node) {
   let ttsPlaying = false;
 
   function startTTS() {
-    console.log('🔊 startTTS: text=', currentText?.substring(0, 60),
-      '| speaking=', speechSynthesis.speaking,
-      '| pending=', speechSynthesis.pending);
     speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(currentText);
     utterance.lang = 'cs-CZ';
@@ -1249,30 +1244,12 @@ async function showGameOfLife(node) {
     playBtn.onclick = () => { ttsPlaying ? speechSynthesis.cancel() : startTTS(); };
   }
 
-  // TTS: browser vyžaduje user gesture před prvním speak() (not-allowed policy).
-  // universe-init.js zaregistruje _primeTTS na první document pointerdown,
-  // který odemkne engine a pak zavolá _chjPendingTTS.
-  //
-  // Scénáře:
-  //   A) Engine už odemčen (uživatel se dotkl před AI odpovědí)
-  //      → setTimeout(startTTS, ttsDelay) přímo funguje
-  //   B) Engine ještě není odemčen
-  //      → uložíme doSpeak do _chjPendingTTS
-  //      → první dotyk kdekoli → primer → engine odemčen → doSpeak() → setTimeout(startTTS)
-  const ttsDelay = verdictLines ? 2200 : 400;
-
-  const doSpeak = () => {
-    setTimeout(() => {
-      const panelOpen = document.getElementById('sidePanel')?.classList.contains('open');
-      if (!ttsPlaying && panelOpen) startTTS();
-    }, ttsDelay);
-  };
-
-  if (window._chjTTSPrimed) {
-    doSpeak();                        // engine odemčen → jedeme normálně
-  } else {
-    window._chjPendingTTS = doSpeak;  // čeká na první dotyk kdekoliv
-  }
+  // TTS: stejný delay jako před bublinami (400ms fungovalo, 2200ms ne)
+  // Bubliny se animují vizuálně, TTS čte souběžně – jako voiceover
+  setTimeout(() => {
+    const panelOpen = document.getElementById('sidePanel')?.classList.contains('open');
+    if (!ttsPlaying && panelOpen) startTTS();
+  }, 400);
 
   // 11. Chip handlery
   const chipAction = document.getElementById('chip-action');
