@@ -118,40 +118,47 @@ export default async function (req, res) {
       .limit(1)
       .maybeSingle();
 
-    // ✅ Stavy 4 hlavních dětí pro Hra o život (jezdci)
-    const RIDER_MAP = {
-      'telo':    'srdce',
-      'mysl':    'mozku',
-      'vyziva':  'metabolismu',
-      'zdravi':  'rakoviny'
+    // ✅ Dynamický jezdec podle skutečného bottlenecku (ne fixní pořadí)
+    const ALL_NODE_RIDERS = {
+      // hlavní děti
+      'telo':           'srdce',
+      'mysl':           'mozku',
+      'vyziva':         'metabolismu',
+      'zdravi':         'rakoviny',
+      'metabolicke':    'metabolismu',
+      // leaf uzly
+      'sila':           'srdce',
+      'stabilita':      'pohybu',
+      'kardio':         'srdce',
+      'vo2max':         'srdce',
+      'spanek':         'mozku',
+      'stres':          'mozku',
+      'protein':        'metabolismu',
+      'prevence':       'rakoviny',
+      'nervovy_system': 'mozku',
     };
 
-    let ridersText = '';
+    let riderText = '';
     if (nodeId === 'dlouhovekost') {
-      const { data: childMetrics } = await supabase
-        .from('user_metrics')
-        .select('node_id, state')
-        .eq('user_id', userId)
-        .eq('universe', 'longevity')
-        .in('node_id', ['telo', 'mysl', 'vyziva', 'zdravi']);
+      const bottleneckId = context?.bottleneck;
+      if (bottleneckId && ALL_NODE_RIDERS[bottleneckId]) {
+        // Primární: rider skutečného bottlenecku
+        riderText = ALL_NODE_RIDERS[bottleneckId];
+      } else {
+        // Záloha: nejhorší hlavní dítě z DB
+        const { data: childMetrics } = await supabase
+          .from('user_metrics')
+          .select('node_id, state')
+          .eq('user_id', userId)
+          .eq('universe', 'longevity')
+          .in('node_id', ['telo', 'mysl', 'vyziva', 'zdravi', 'metabolicke']);
 
-      const stateMap = Object.fromEntries((childMetrics || []).map(m => [m.node_id, m.state]));
-
-      // 1. RED děti → jezdci, max 2
-      let candidates = Object.keys(RIDER_MAP).filter(id => stateMap[id] === 'RED');
-      // 2. Pokud žádné RED → YELLOW
-      if (candidates.length === 0) {
-        candidates = Object.keys(RIDER_MAP).filter(id => stateMap[id] === 'YELLOW');
+        const stateMap = Object.fromEntries((childMetrics || []).map(m => [m.node_id, m.state]));
+        const CHILD_ORDER = ['telo', 'mysl', 'vyziva', 'zdravi', 'metabolicke'];
+        const worst = CHILD_ORDER.find(id => stateMap[id] === 'RED')
+                   || CHILD_ORDER.find(id => stateMap[id] === 'YELLOW');
+        riderText = worst ? (ALL_NODE_RIDERS[worst] || '') : '';
       }
-      // 3. Fallback → bottleneck node
-      if (candidates.length === 0 && context?.bottleneck) {
-        candidates = [context.bottleneck];
-      }
-
-      const riders = candidates.slice(0, 2).map(id => RIDER_MAP[id] || id);
-      ridersText = riders.length === 2
-        ? `${riders[0]} a ${riders[1]}`
-        : riders[0] || '';
     }
 
     // ✅ Aspiration fetch (null for main node)
@@ -451,15 +458,15 @@ HLAVNÍ UZEL (HRA O ŽIVOT):
 Napiš PŘESNĚ 3 věty oddělené znakem |. Max patnáct slov na větu.
 
 Věta 1 — stav baterie:
-- RED: "Baterie je skoro vybitá — hodně oblastí zaostává."
-- YELLOW: "Baterie není plně nabitá — některé oblasti zaostávají."
-- GREEN: "Baterie je nabitá, všechny oblasti jsou v pořádku."
+- RED: "Baterie je skoro vybitá."
+- YELLOW: "Baterie není plně nabitá."
+- GREEN: "Baterie je nabitá."
 
 Věta 2 — bottleneck + jezdec (lidsky, bez názvů nemocí):
 Pokud je BOTTLENECK vyplněno: "Nejvíc tě brzdí [bottleneck], to ohrožuje [jezdec]."
-Pokud BOTTLENECK chybí a JEZDCI vyplněno: "Tvoje slabiny ohrožují [jezdec]."
+Pokud BOTTLENECK chybí a JEZDEC vyplněno: "Tvoje slabiny ohrožují [jezdec]."
 Pokud obojí chybí: "Žádná oblast není kritická — drž směr."
-[bottleneck] = obsah pole BOTTLENECK, vhodný pád. [jezdec] = obsah JEZDCI — dosaď přesně.
+[bottleneck] = obsah pole BOTTLENECK, vhodný pád. [jezdec] = obsah JEZDEC — dosaď přesně.
 
 Věta 3 — sen:
 SEN vyplněno + RED/YELLOW: "Bez změny se na [sen] nedostaneš."
@@ -507,7 +514,7 @@ UZEL: ${node.label}
 STAV: ${node.state || context?.state || 'UNKNOWN'}
 ${stepProvocation ? `KONTEXT PROVOKACE: "${stepProvocation}"` : ''}
 ${!isSubNode && bottleneck?.node_label ? `BOTTLENECK: ${bottleneck.node_label}` : ''}
-${!isSubNode && ridersText ? `JEZDCI: ${ridersText}` : ''}
+${!isSubNode && riderText ? `JEZDEC: ${riderText}` : ''}
 ${!isSubNode && mainNodeAspirationLabel ? `SEN: ${mainNodeAspirationLabel}` : ''}
 ${isSubNode ? `OBLAST: ${getNodeContext(nodeId)}` : ''}
 ${aspirationBlock}
