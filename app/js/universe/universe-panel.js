@@ -1187,6 +1187,9 @@ async function showGameOfLife(node) {
   let ttsPlaying = false;
 
   function startTTS() {
+    console.log('🔊 startTTS: text=', currentText?.substring(0, 60),
+      '| speaking=', speechSynthesis.speaking,
+      '| pending=', speechSynthesis.pending);
     speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(currentText);
     utterance.lang = 'cs-CZ';
@@ -1209,7 +1212,15 @@ async function showGameOfLife(node) {
         if (fi) fi.textContent = '🔊';
       }
     };
-    utterance.onend = utterance.onerror = () => {
+    utterance.onerror = (e) => {
+      console.error('🔊 TTS error:', e.error, e);
+      ttsPlaying = false;
+      const hm = document.getElementById('header-mic-btn');
+      if (hm) { hm.dataset.state = 'idle'; const hi = hm.querySelector('.header-mic-icon'); if (hi) hi.textContent = '🎤'; }
+      const fm = document.getElementById('voice-mic-btn');
+      if (fm) { fm.dataset.state = 'idle'; const fi = fm.querySelector('.mic-icon'); if (fi) fi.textContent = '🎤'; }
+    };
+    utterance.onend = () => {
       ttsPlaying = false;
       // Header mic → IDLE
       const hm = document.getElementById('header-mic-btn');
