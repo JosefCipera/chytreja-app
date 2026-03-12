@@ -17,6 +17,20 @@ const SUPABASE_KEY = 'sb_publishable_w29DE53nrdGnNEvBn68kzg_ujje7u5Y';
 window.supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
 console.log("✅ Supabase SDK připraveno");
 
+// ─── TTS primer (unlock Web Speech API on first user touch) ───
+window._chjTTSPrimed = false;
+document.addEventListener('pointerdown', function _primeTTS() {
+  const primer = new SpeechSynthesisUtterance('\u00a0');
+  primer.volume = 0;
+  window.speechSynthesis.speak(primer); // synchronous inside gesture = engine unlocked
+  window._chjTTSPrimed = true;
+  console.log('🔊 TTS engine primed');
+  if (typeof window._chjPendingTTS === 'function') {
+    window._chjPendingTTS();
+    window._chjPendingTTS = null;
+  }
+}, { once: true });
+
 const DATA_BASE = "../data/universes";
 
 // =====================================================

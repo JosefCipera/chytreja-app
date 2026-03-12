@@ -7,30 +7,30 @@ console.log("PANEL JS LOADED");
 // =====================================================
 
 const DEMO_PREVIEWS = {
-  dychani:          { vhled_1: '„Dech je jediný most k tvému nervovému systému, který můžeš ovládat."',                              doplneni: 'Trénink dechové koherence pro okamžité snížení stresu.',                                      napojeni: '📡 Mobilní mikrofon / Hrudní pás' },
-  kardio:           { vhled_1: '„Rozproudění krve je ta nejrychlejší detoxikace pro tvé srdce."',                                    doplneni: 'Jak rychle se tvůj tep vrací do klidu po ranním cvičení.',                                    napojeni: '📡 Apple Health / Garmin' },
-  rovnovaha:        { vhled_1: '„Kdo pevně stojí, ten se jen tak nezhroutí."',                                                       doplneni: 'Test tvé vnitřní stability a reakčního času pro jistý krok.',                                 napojeni: '📡 Gyroskop v mobilu' },
-  nosni_dychani:    { vhled_1: '„Nos je pro dýchání, ústa pro mluvení; filtruj život správnou cestou."',                             doplneni: 'Podíl dýchání nosem během dne i v noci pro lepší okysličení.',                                napojeni: '📡 Oura (SpO2) / Audio analýza' },
-  dechova_koherence:{ vhled_1: '„Synchronizuj svůj dech se srdcem a najdi vnitřní rytmus klidu."',                                  doplneni: 'Variabilita srdečního tepu (HRV) v přímé vazbě na rytmus dechu.',                             napojeni: '📡 Hrudní pás (BLE)' },
-  butejko:          { vhled_1: '„Méně dechu znamená více života; nauč se hospodařit s kyslíkem."',                                   doplneni: 'Kontrolní pauza a efektivita tvého buněčného dýchání.',                                      napojeni: '📡 Manuální test / Časovač' },
-  stres:            { vhled_1: '„Stres je palivo, pokud ho umíš zkrotit, jinak je to tvůj spalovač."',                               doplneni: 'Hladina kortizolu a reakce autonomního systému na zátěž.',                                    napojeni: '📡 HRV trendy / Wearables' },
-  soustredeni:      { vhled_1: '„Tvá pozornost je nejcennější měna; investuj ji vědomě."',                                           doplneni: 'Schopnost udržet fokus na jeden úkol bez digitálního vyrušení.',                              napojeni: '📡 Screen Time / EEG čelenka' },
-  vdecnost:         { vhled_1: '„Vděčnost přepíná mozek z režimu \'přežít\' do režimu \'tvořit\'."',                                doplneni: 'Pravidelnost reflexe pozitivních momentů tvého dne.',                                         napojeni: '📡 Deníkový modul (AI analýza)' },
-  meditace:         { vhled_1: '„Ticho v hlavě není prázdnota, je to nejvyšší forma regenerace."',                                   doplneni: 'Dosažení stavu hlubokého klidu a alfa vln v mozku.',                                          napojeni: '📡 Meditační aplikace / EEG' },
-  emoce:            { vhled_1: '„Emoce jsou barvy tvého života; nauč se je vnímat, ne jimi být."',                                   doplneni: 'Mapa tvých nálad a jejich vliv na fyzickou výkonnost.',                                      napojeni: '📡 Face-scanning AI' },
-  pust:             { vhled_1: '„Občasný hlad je pozvánka pro tvé buňky k velkému úklidu (autofagii)."',                             doplneni: 'Časová okna mezi jídly a jejich vliv na tvou regeneraci.',                                    napojeni: '📡 Časovač půstu / CGM' },
-  glukoza_vyziva:   { vhled_1: '„Stabilní cukr znamená stabilní emoce a výkon bez odpoledních pádů."',                              doplneni: 'Reakce tvého těla na konkrétní jídla a kombinace surovin.',                                   napojeni: '📡 CGM senzor' },
-  mikronutrienty:   { vhled_1: '„Mikro detaily tvoří makro zdraví; doplň palivo pro své enzymy."',                                   doplneni: 'Hladiny vitamínů a minerálů klíčových pro tvou energii.',                                    napojeni: '📡 Krevní testy (Import)' },
-  hydratace:        { vhled_1: '„Voda je médium, ve kterém probíhá veškerá tvá vnitřní magie."',                                     doplneni: 'Objem a načasování příjmu tekutin vzhledem k aktivitě.',                                      napojeni: '📡 Chytrá láhev / Manuální log' },
-  casovani_jidel:   { vhled_1: '„Kdy jíš, je stejně důležité jako co jíš; sjednoť se s biorytmem."',                                doplneni: 'Soulad stravování s tvými vnitřními hodinami (cirkadiánní rytmus).',                           napojeni: '📡 Oura / Apple Health' },
-  imunitni:         { vhled_1: '„Tvá imunita je armáda, která nikdy nespí; krm ji klidem a pohybem."',                               doplneni: 'Pohotovost tvého systému reagovat na vnější hrozby.',                                         napojeni: '📡 Klidový tep / Teplota' },
-  obnova:           { vhled_1: '„Oprava těla probíhá v klidu, ne v boji; dej regeneraci prostor."',                                  doplneni: 'Celkové skóre připravenosti těla na další zátěž.',                                            napojeni: '📡 Readiness skóre (Oura/Garmin)' },
-  biomarkery:       { vhled_1: '„Krev je vnitřní mapa, která ukazuje stav motoru dříve než kontrolka."',                             doplneni: 'Trendy v tvém krevním obraze z dlouhodobého hlediska.',                                      napojeni: '📡 Laboratorní API / PDF' },
-  glukoza:          { vhled_1: '„Sleduj svou glykémii jako zrcadlo svého metabolického zdraví."',                                    doplneni: 'Dlouhodobý průměr hladiny cukru v krvi (HbA1c).',                                             napojeni: '📡 Laboratoř / CGM' },
-  bilirubin:        { vhled_1: '„Čistá játra jsou filtrem tvé vitality; sleduj barvu své energie."',                                 doplneni: 'Ukazatel stavu tvých jater a efektivity zpracování látek.',                                   napojeni: '📡 Krevní testy' },
-  leukocyty:        { vhled_1: '„Bílé krvinky jsou tví strážci; měj přehled o jejich počtu a síle."',                               doplneni: 'Indikace skrytých zánětů nebo přetížení organismu.',                                          napojeni: '📡 Krevní testy' },
-  erytrocyty:       { vhled_1: '„Červené krvinky jsou nosiči tvého dechu; starej se o své doručovatele."',                           doplneni: 'Schopnost krve přenášet kyslík k pracujícím svalům.',                                         napojeni: '📡 Krevní testy' },
-  souhrn_biomarkery:{ vhled_1: '„Celkový obraz tvého zdraví složený z tisíce drobných indicií."',                                   doplneni: 'Komplexní Longevity skóre založené na hloubkové diagnostice.',                                 napojeni: '📡 AI Diagnostika' },
+  dychani: { vhled_1: '„Dech je jediný most k tvému nervovému systému, který můžeš ovládat."', doplneni: 'Trénink dechové koherence pro okamžité snížení stresu.', napojeni: '📡 Mobilní mikrofon / Hrudní pás' },
+  kardio: { vhled_1: '„Rozproudění krve je ta nejrychlejší detoxikace pro tvé srdce."', doplneni: 'Jak rychle se tvůj tep vrací do klidu po ranním cvičení.', napojeni: '📡 Apple Health / Garmin' },
+  rovnovaha: { vhled_1: '„Kdo pevně stojí, ten se jen tak nezhroutí."', doplneni: 'Test tvé vnitřní stability a reakčního času pro jistý krok.', napojeni: '📡 Gyroskop v mobilu' },
+  nosni_dychani: { vhled_1: '„Nos je pro dýchání, ústa pro mluvení; filtruj život správnou cestou."', doplneni: 'Podíl dýchání nosem během dne i v noci pro lepší okysličení.', napojeni: '📡 Oura (SpO2) / Audio analýza' },
+  dechova_koherence: { vhled_1: '„Synchronizuj svůj dech se srdcem a najdi vnitřní rytmus klidu."', doplneni: 'Variabilita srdečního tepu (HRV) v přímé vazbě na rytmus dechu.', napojeni: '📡 Hrudní pás (BLE)' },
+  butejko: { vhled_1: '„Méně dechu znamená více života; nauč se hospodařit s kyslíkem."', doplneni: 'Kontrolní pauza a efektivita tvého buněčného dýchání.', napojeni: '📡 Manuální test / Časovač' },
+  stres: { vhled_1: '„Stres je palivo, pokud ho umíš zkrotit, jinak je to tvůj spalovač."', doplneni: 'Hladina kortizolu a reakce autonomního systému na zátěž.', napojeni: '📡 HRV trendy / Wearables' },
+  soustredeni: { vhled_1: '„Tvá pozornost je nejcennější měna; investuj ji vědomě."', doplneni: 'Schopnost udržet fokus na jeden úkol bez digitálního vyrušení.', napojeni: '📡 Screen Time / EEG čelenka' },
+  vdecnost: { vhled_1: '„Vděčnost přepíná mozek z režimu \'přežít\' do režimu \'tvořit\'."', doplneni: 'Pravidelnost reflexe pozitivních momentů tvého dne.', napojeni: '📡 Deníkový modul (AI analýza)' },
+  meditace: { vhled_1: '„Ticho v hlavě není prázdnota, je to nejvyšší forma regenerace."', doplneni: 'Dosažení stavu hlubokého klidu a alfa vln v mozku.', napojeni: '📡 Meditační aplikace / EEG' },
+  emoce: { vhled_1: '„Emoce jsou barvy tvého života; nauč se je vnímat, ne jimi být."', doplneni: 'Mapa tvých nálad a jejich vliv na fyzickou výkonnost.', napojeni: '📡 Face-scanning AI' },
+  pust: { vhled_1: '„Občasný hlad je pozvánka pro tvé buňky k velkému úklidu (autofagii)."', doplneni: 'Časová okna mezi jídly a jejich vliv na tvou regeneraci.', napojeni: '📡 Časovač půstu / CGM' },
+  glukoza_vyziva: { vhled_1: '„Stabilní cukr znamená stabilní emoce a výkon bez odpoledních pádů."', doplneni: 'Reakce tvého těla na konkrétní jídla a kombinace surovin.', napojeni: '📡 CGM senzor' },
+  mikronutrienty: { vhled_1: '„Mikro detaily tvoří makro zdraví; doplň palivo pro své enzymy."', doplneni: 'Hladiny vitamínů a minerálů klíčových pro tvou energii.', napojeni: '📡 Krevní testy (Import)' },
+  hydratace: { vhled_1: '„Voda je médium, ve kterém probíhá veškerá tvá vnitřní magie."', doplneni: 'Objem a načasování příjmu tekutin vzhledem k aktivitě.', napojeni: '📡 Chytrá láhev / Manuální log' },
+  casovani_jidel: { vhled_1: '„Kdy jíš, je stejně důležité jako co jíš; sjednoť se s biorytmem."', doplneni: 'Soulad stravování s tvými vnitřními hodinami (cirkadiánní rytmus).', napojeni: '📡 Oura / Apple Health' },
+  imunitni: { vhled_1: '„Tvá imunita je armáda, která nikdy nespí; krm ji klidem a pohybem."', doplneni: 'Pohotovost tvého systému reagovat na vnější hrozby.', napojeni: '📡 Klidový tep / Teplota' },
+  obnova: { vhled_1: '„Oprava těla probíhá v klidu, ne v boji; dej regeneraci prostor."', doplneni: 'Celkové skóre připravenosti těla na další zátěž.', napojeni: '📡 Readiness skóre (Oura/Garmin)' },
+  biomarkery: { vhled_1: '„Krev je vnitřní mapa, která ukazuje stav motoru dříve než kontrolka."', doplneni: 'Trendy v tvém krevním obraze z dlouhodobého hlediska.', napojeni: '📡 Laboratorní API / PDF' },
+  glukoza: { vhled_1: '„Sleduj svou glykémii jako zrcadlo svého metabolického zdraví."', doplneni: 'Dlouhodobý průměr hladiny cukru v krvi (HbA1c).', napojeni: '📡 Laboratoř / CGM' },
+  bilirubin: { vhled_1: '„Čistá játra jsou filtrem tvé vitality; sleduj barvu své energie."', doplneni: 'Ukazatel stavu tvých jater a efektivity zpracování látek.', napojeni: '📡 Krevní testy' },
+  leukocyty: { vhled_1: '„Bílé krvinky jsou tví strážci; měj přehled o jejich počtu a síle."', doplneni: 'Indikace skrytých zánětů nebo přetížení organismu.', napojeni: '📡 Krevní testy' },
+  erytrocyty: { vhled_1: '„Červené krvinky jsou nosiči tvého dechu; starej se o své doručovatele."', doplneni: 'Schopnost krve přenášet kyslík k pracujícím svalům.', napojeni: '📡 Krevní testy' },
+  souhrn_biomarkery: { vhled_1: '„Celkový obraz tvého zdraví složený z tisíce drobných indicií."', doplneni: 'Komplexní Longevity skóre založené na hloubkové diagnostice.', napojeni: '📡 AI Diagnostika' },
 };
 
 // =====================================================
@@ -38,22 +38,22 @@ const DEMO_PREVIEWS = {
 // =====================================================
 
 const ACTIVE_MOTTOS = {
-  dlouhovekost:  '„Dlouhověkost není o dožívání se věku, ale o síle do posledního dne."',
-  telo:          '„Tvé tělo je jediný domov, ve kterém musíš vydržet celý život."',
-  zdravi:        '„Zdraví není absence nemoci, ale přítomnost vitality."',
-  metabolicke:   '„Stabilní cukr znamená stabilní emoce a výkon bez odpoledních pádů."',
-  sila:          '„Síla je schopnost nést své vlastní tělo s naprostou lehkostí."',
-  vytrvalost:    '„Tvá vytrvalost je schopnost zůstat v pohybu, i když ostatní zastaví."',
-  vo2max:        '„Kapacita plic určuje, kolik života dokážeš vdechnout do každého dne."',
-  mysl:          '„Postoj vítěze není póza, je to příkaz tvým buňkám k regeneraci."',
-  vyziva:        '„Jídlo je informace pro tvé buňky, jak se mají dnes opravit."',
-  spanek:        '„Hluboký spánek není pauza, je to tvá soukromá továrna na opravu."',
-  klid:          '„Ticho v hlavě je nejvyšší forma vnitřní hygieny."',
-  mobilita:      '„Rozhýbání páteře probudí tvůj nervový systém dřív než kofein."',
-  bílkoviny:     '„Svaly jsou tvé brnění; bílkoviny jsou materiál pro jeho opravu."',
-  stabilita:     '„Kdo pevně stojí v sobě, toho vnější svět nerozhází."',
-  nervovy_system:'„Tvé nervy jsou dálnice pro signály života; udržuj je průjezdné."',
-  smysl:         '„Vědět PROČ je důležitější než vědět JAK."',
+  dlouhovekost: '„Dlouhověkost není o dožívání se věku, ale o síle do posledního dne."',
+  telo: '„Tvé tělo je jediný domov, ve kterém musíš vydržet celý život."',
+  zdravi: '„Zdraví není absence nemoci, ale přítomnost vitality."',
+  metabolicke: '„Stabilní cukr znamená stabilní emoce a výkon bez odpoledních pádů."',
+  sila: '„Síla je schopnost nést své vlastní tělo s naprostou lehkostí."',
+  vytrvalost: '„Tvá vytrvalost je schopnost zůstat v pohybu, i když ostatní zastaví."',
+  vo2max: '„Kapacita plic určuje, kolik života dokážeš vdechnout do každého dne."',
+  mysl: '„Postoj vítěze není póza, je to příkaz tvým buňkám k regeneraci."',
+  vyziva: '„Jídlo je informace pro tvé buňky, jak se mají dnes opravit."',
+  spanek: '„Hluboký spánek není pauza, je to tvá soukromá továrna na opravu."',
+  klid: '„Ticho v hlavě je nejvyšší forma vnitřní hygieny."',
+  mobilita: '„Rozhýbání páteře probudí tvůj nervový systém dřív než kofein."',
+  bílkoviny: '„Svaly jsou tvé brnění; bílkoviny jsou materiál pro jeho opravu."',
+  stabilita: '„Kdo pevně stojí v sobě, toho vnější svět nerozhází."',
+  nervovy_system: '„Tvé nervy jsou dálnice pro signály života; udržuj je průjezdné."',
+  smysl: '„Vědět PROČ je důležitější než vědět JAK."',
 };
 
 function getDemoPreview(nodeId) {
@@ -510,15 +510,15 @@ function openViewerModal(fileUrl, type, title, onBack = null, scriptCz = null) {
     };
     _currentViewerClose = closeViewer;
     // Přechod zpět: okamžité odebrání (bez fade) aby mezi modály nebyl záblesk panelu
-  const closeAndBack = () => {
-    if (onBack) {
-      _currentViewerClose = null;
-      modal.remove();
-      onBack();
-    } else {
-      closeViewer();
-    }
-  };
+    const closeAndBack = () => {
+      if (onBack) {
+        _currentViewerClose = null;
+        modal.remove();
+        onBack();
+      } else {
+        closeViewer();
+      }
+    };
 
     const btn = document.getElementById('closeViewerModal');
     btn.onclick = closeAndBack;
@@ -704,7 +704,7 @@ async function openResourcesViewer(node) {
   if (all.length === 1) { openViewerModal(all[0].url, all[0].type, all[0].title, null, all[0].script_cz); return; }
 
   const PANEL_LIMIT = 5;
-  const shown   = all.slice(0, PANEL_LIMIT);
+  const shown = all.slice(0, PANEL_LIMIT);
   const hasMore = all.length > PANEL_LIMIT;
 
   document.getElementById('viewerModal')?.remove();
@@ -1026,6 +1026,19 @@ async function showGameOfLife(node) {
       playBtn.style.transform = 'none';
     };
     playBtn.onclick = () => { ttsPlaying ? speechSynthesis.cancel() : startTTS(); };
+  }
+
+  // 10b. Auto-TTS: queue until user's first touch primes the engine
+  const _doAutoTTS = () => {
+    setTimeout(() => {
+      const panelOpen = document.getElementById('sidePanel')?.classList.contains('open');
+      if (!ttsPlaying && panelOpen) startTTS();
+    }, 400);
+  };
+  if (window._chjTTSPrimed) {
+    _doAutoTTS();
+  } else {
+    window._chjPendingTTS = _doAutoTTS;
   }
 
   // 11. Chip handlery
