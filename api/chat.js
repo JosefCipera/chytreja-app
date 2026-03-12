@@ -448,28 +448,27 @@ Jsi Chytré Já — průvodce zdravím a dlouhověkostí.
 ODPOVÍDEJ PŘESNĚ PODLE ŠABLONY. Čísla piš slovně.
 
 HLAVNÍ UZEL (HRA O ŽIVOT):
-Napiš DVĚ věty. Max čtyřicet pět slov celkem.
+Napiš PŘESNĚ 3 věty oddělené znakem |. Max patnáct slov na větu.
 
-Věta 1 — baterie + jezdci:
-Pokud je JEZDCI vyplněno:
-- RED: "Tvoje baterie je skoro vybitá — to nahrává onemocněním [jezdci]."
-- YELLOW: "Tvoje baterie není plně nabitá — nahrává to onemocněním [jezdci]."
-- GREEN: "Tvoje baterie je nabitá, drž to takhle."
-Pokud JEZDCI chybí:
-- RED: "Tvoje baterie je skoro vybitá, bez změny to půjde dolů."
-- YELLOW: "Tvoje baterie není plně nabitá, ale celkově to jde správným směrem."
-- GREEN: "Tvoje baterie je nabitá, drž to takhle."
-Hodnota [jezdci] = obsah pole JEZDCI — dosaď přesně tak jak je, neskloňuj, neměň.
+Věta 1 — stav baterie:
+- RED: "Baterie je skoro vybitá — hodně oblastí zaostává."
+- YELLOW: "Baterie není plně nabitá — některé oblasti zaostávají."
+- GREEN: "Baterie je nabitá, všechny oblasti jsou v pořádku."
 
-Věta 2 — sen:
-Pokud je SEN vyplněno:
-- RED: "Na [sen] se takhle nepostavíš a ztratíš [co tím přijdeš o]."
-- YELLOW: "K [snu] ti ještě kus schází, ale je čas to změnit."
-- GREEN: "[Sen] si splníš."
-Pokud SEN chybí:
-- RED nebo YELLOW: "A přijdeš o to, nač se těšíš."
-- GREEN: (druhou větu vynech)
-Hodnota [sen] = obsah pole SEN, čísla piš slovně, použij vhodný pád.
+Věta 2 — bottleneck + jezdec (lidsky, bez názvů nemocí):
+Pokud je BOTTLENECK vyplněno: "Nejvíc tě brzdí [bottleneck], to ohrožuje [jezdec]."
+Pokud BOTTLENECK chybí a JEZDCI vyplněno: "Tvoje slabiny ohrožují [jezdec]."
+Pokud obojí chybí: "Žádná oblast není kritická — drž směr."
+[bottleneck] = obsah pole BOTTLENECK, vhodný pád. [jezdec] = obsah JEZDCI — dosaď přesně.
+
+Věta 3 — sen:
+SEN vyplněno + RED/YELLOW: "Bez změny se na [sen] nedostaneš."
+SEN vyplněno + GREEN: "[Sen] si splníš, drž to takhle."
+SEN chybí + RED/YELLOW: "Změň to dřív, než bude příliš pozdě."
+SEN chybí + GREEN: "Takhle si dlouhověkost opravdu užiješ."
+[sen] = obsah pole SEN, vhodný pád, čísla slovně.
+
+Výstup: přesně 3 věty oddělené |, nic jiného.
 
 PODŘÍZENÝ UZEL (bez aspirace nebo SEN_SPLNEN):
 - RED: "Tvoje [oblast] nestačí — [co to znamená pro tělo]."
@@ -507,6 +506,7 @@ REŽIM: ${isSubNode ? 'PODŘÍZENÝ UZEL' : 'HLAVNÍ UZEL'}
 UZEL: ${node.label}
 STAV: ${node.state || context?.state || 'UNKNOWN'}
 ${stepProvocation ? `KONTEXT PROVOKACE: "${stepProvocation}"` : ''}
+${!isSubNode && bottleneck?.node_label ? `BOTTLENECK: ${bottleneck.node_label}` : ''}
 ${!isSubNode && ridersText ? `JEZDCI: ${ridersText}` : ''}
 ${!isSubNode && mainNodeAspirationLabel ? `SEN: ${mainNodeAspirationLabel}` : ''}
 ${isSubNode ? `OBLAST: ${getNodeContext(nodeId)}` : ''}
@@ -521,7 +521,7 @@ ${aspirationBlock}
         { role: "user", content: USER_PROMPT }
       ],
       temperature: 0.3,
-      max_tokens: 130
+      max_tokens: 200  // zvýšeno pro 3-větový výstup hlavního uzlu
     });
 
     const text = completion.choices[0].message.content;
@@ -530,10 +530,22 @@ ${aspirationBlock}
     console.log(text);
     console.log("=== RAW TEXT END ===");
 
-    const formatted = text.replace(/\.\s+/g, '.\n\n').trim();
+    // Hlavní uzel: parse 3 vět oddělených | → verdictLines
+    let verdictLines = null;
+    let formatted = text.replace(/\.\s+/g, '.\n\n').trim();
+
+    if (nodeId === 'dlouhovekost') {
+      const parts = text.split('|').map(s => s.trim()).filter(Boolean);
+      if (parts.length >= 2) {
+        verdictLines = parts;
+        formatted = parts[0]; // první věta jako fallback pro zpětnou kompatibilitu
+      }
+    }
 
     return res.json({
       verdict: formatted,
+      ...(verdictLines ? { verdictLines } : {}),
+      ...(nodeId === 'dlouhovekost' ? { bottleneckNodeId: context?.bottleneck || null } : {}),
       usage: {
         prompt_tokens: completion.usage.prompt_tokens,
         completion_tokens: completion.usage.completion_tokens,

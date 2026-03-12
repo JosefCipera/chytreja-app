@@ -177,6 +177,29 @@ async function loadAndRenderModel(modelName, role) {
 
   renderVisibleUniverse(window.MAIN_UNIVERSE_DATA);
 
+  // Auto-open Hra o život – panel se otevře hned po načtení univerza
+  // (700ms čeká na inicializaci vis.js sítě)
+  setTimeout(async () => {
+    const mainNode = window.MAIN_UNIVERSE_DATA?.find(n => n.id === 'dlouhovekost');
+    if (mainNode && mainNode.state && mainNode.state !== 'GRAY') {
+      const { showPanel } = await import('./universe-panel.js');
+      showPanel(mainNode);
+    }
+  }, 700);
+
+  // Načti user constraints do window.USER_CONSTRAINTS (pro discipline offer)
+  (async () => {
+    const uid = window.firebaseAuth?.currentUser?.uid;
+    if (!uid || uid === 'demo-user-123') return;
+    const { data } = await window.supabaseClient
+      .from('user_constraints')
+      .select('constraint_key, severity')
+      .eq('user_id', uid)
+      .eq('constraint_type', 'injury');
+    window.USER_CONSTRAINTS = data || [];
+    console.log(`✅ USER_CONSTRAINTS: ${window.USER_CONSTRAINTS.length} záznamů`);
+  })();
+
   const headerModelName = document.getElementById("headerModelName");
   if (headerModelName) {
     headerModelName.textContent = window.UNIVERSE_INDEX?.[modelName]?.label || modelName;

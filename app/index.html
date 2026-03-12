@@ -166,6 +166,11 @@
             0%, 100% { box-shadow: 0 0 18px rgba(59, 130, 246, 0.3); }
             50%       { box-shadow: 0 0 32px rgba(59, 130, 246, 0.7); }
         }
+        /* CHJ bubliny – fade-in + slide-up pro animované 3-větový briefing */
+        @keyframes chjFadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
         /* Posunout mic btn nahoru když je panel otevřený */
         body.panel-open #voice-mic-btn {
             bottom: 80px;
