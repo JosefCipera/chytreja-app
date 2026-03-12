@@ -532,6 +532,7 @@ async function generateVerdictV2(node, userId) {
     if (!response.ok) return { text: `API error ${response.status}` };
 
     const data = JSON.parse(await response.text());
+    console.log('🤖 verdict API response:', { verdict: data?.verdict, verdictLines: data?.verdictLines });
     return {
       text: data?.verdict || 'API nevrátilo platnou odpověď.',
       lines: data?.verdictLines || null
@@ -1113,7 +1114,7 @@ async function showGameOfLife(node) {
   }
 
   // Animované bubliny pro hlavní uzel (3 věty z AI)
-  const verdictLines = isMainNode && verdict?.lines?.length >= 3 ? verdict.lines : null;
+  const verdictLines = isMainNode && verdict?.lines?.length >= 2 ? verdict.lines : null;
 
   // 7. Chip labely
   const chip1Label = actionTitle || 'Co mám dělat?';
@@ -1235,13 +1236,21 @@ async function showGameOfLife(node) {
     playBtn.onclick = () => { ttsPlaying ? speechSynthesis.cancel() : startTTS(); };
   }
 
-  // Auto-TTS: přečti brífink automaticky – ale jen pokud je panel skutečně otevřený
-  // Pro bubliny: počkáme až se všechny zobrazí (3. bublina nastoupí v 1700ms)
+  // Auto-TTS: dvě možnosti jak spustit čtení
+  // Attempt 1 (auto): po dokončení animací – funguje pokud engine není blokovaný
+  // Attempt 2 (fallback): první dotyk na panel – browser vždy povolí po gesta
   const ttsDelay = verdictLines ? 2200 : 400;
+
   setTimeout(() => {
     const panelOpen = document.getElementById('sidePanel')?.classList.contains('open');
     if (!ttsPlaying && panelOpen) startTTS();
   }, ttsDelay);
+
+  // Fallback: první pointerdown na side panel spustí TTS (user gesture = vždy projde)
+  const sidePanelEl = document.getElementById('sidePanel');
+  sidePanelEl?.addEventListener('pointerdown', function _ttsOnFirstTouch() {
+    if (!ttsPlaying) setTimeout(() => startTTS(), 50);
+  }, { once: true });
 
   // 11. Chip handlery
   const chipAction = document.getElementById('chip-action');
