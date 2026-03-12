@@ -531,8 +531,10 @@ async function generateVerdictV2(node, userId) {
 
     if (!response.ok) return { text: `API error ${response.status}` };
 
-    const data = JSON.parse(await response.text());
-    console.log('🤖 verdict API response:', { verdict: data?.verdict, verdictLines: data?.verdictLines });
+    const rawText = await response.text();
+    console.log('🤖 verdict raw:', rawText.substring(0, 200));
+    const data = JSON.parse(rawText);
+    console.log('🤖 verdict lines:', data?.verdictLines, '| verdict:', data?.verdict?.substring(0, 60));
     return {
       text: data?.verdict || 'API nevrátilo platnou odpověď.',
       lines: data?.verdictLines || null
