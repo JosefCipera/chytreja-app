@@ -1236,22 +1236,12 @@ async function showGameOfLife(node) {
   }
 
   // Auto-TTS: přečti brífink automaticky – ale jen pokud je panel skutečně otevřený
-  // Pro bubliny: počkáme až se všechny zobrazí (3. bublina: delay 1700ms + animace 550ms)
-  // Browser policy: speechSynthesis.speak() vyžaduje předchozí user gesture.
-  // Pokud engine není odemčený, uložíme do fronty a spustíme po prvním dotyku.
+  // Pro bubliny: počkáme až se všechny zobrazí (3. bublina nastoupí v 1700ms)
   const ttsDelay = verdictLines ? 2200 : 400;
-  const fireTTS = () => {
-    setTimeout(() => {
-      const panelOpen = document.getElementById('sidePanel')?.classList.contains('open');
-      if (!ttsPlaying && panelOpen) startTTS();
-    }, ttsDelay);
-  };
-
-  if (window._chjTTSUnlocked) {
-    fireTTS();                           // engine odemčen → spusť normálně
-  } else {
-    window._chjPendingTTS = fireTTS;     // čeká na první pointerdown (viz universe-init.js)
-  }
+  setTimeout(() => {
+    const panelOpen = document.getElementById('sidePanel')?.classList.contains('open');
+    if (!ttsPlaying && panelOpen) startTTS();
+  }, ttsDelay);
 
   // 11. Chip handlery
   const chipAction = document.getElementById('chip-action');
