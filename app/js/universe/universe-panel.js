@@ -1131,16 +1131,17 @@ async function showGameOfLife(node) {
     { bg: 'rgba(139,92,246,0.07)',  border: 'rgba(139,92,246,0.28)',  color: '#c4b5fd' },   // věta 3: sen
   ];
 
+  // Bubliny: použít transition + JS setTimeout (spolehlivější než CSS animation v innerHTML)
   const chjContentHtml = verdictLines
-    ? `<div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
+    ? `<div id="chj-bubbles" style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
         ${verdictLines.map((line, i) => {
           const s = BUBBLE_STYLES[i] || BUBBLE_STYLES[0];
-          return `<div style="
+          return `<div data-bubble="${i}" style="
             background:${s.bg}; border:1px solid ${s.border};
             border-radius:10px; padding:13px 16px;
             color:${s.color}; font-size:15px; line-height:1.45;
-            opacity:0; animation:chjFadeIn 0.55s ease forwards;
-            animation-delay:${i * 850}ms; animation-fill-mode:both;
+            opacity:0; transform:translateY(8px);
+            transition: opacity 0.55s ease, transform 0.55s ease;
           ">${formatChjText(line)}</div>`;
         }).join('')}
       </div>`
@@ -1170,6 +1171,17 @@ async function showGameOfLife(node) {
       ` : ''}
     </div>
   `;
+
+  // 9a. Spustit animaci bublin přes JS transition (CSS @keyframes v innerHTML je nespolehlivé)
+  if (verdictLines) {
+    chjCard.querySelectorAll('[data-bubble]').forEach(el => {
+      const i = parseInt(el.dataset.bubble) || 0;
+      setTimeout(() => {
+        el.style.opacity = '1';
+        el.style.transform = 'translateY(0)';
+      }, i * 850 + 50); // +50ms aby měl browser čas vyrenderovat opacity:0
+    });
+  }
 
   // 9. Hover efekty čipů
   chjCard.querySelectorAll('.smart-chips button').forEach(btn => {
