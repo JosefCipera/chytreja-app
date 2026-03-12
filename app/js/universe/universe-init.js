@@ -19,6 +19,24 @@ const SUPABASE_KEY = 'sb_publishable_w29DE53nrdGnNEvBn68kzg_ujje7u5Y';
 window.supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
 console.log("✅ Supabase SDK připraveno");
 
+// Web Speech API: browser vyžaduje user gesture před prvním speak().
+// Při prvním dotyku kdekoliv přehrajeme tichý utterance → engine odemčen pro celou session.
+// Pak zavoláme window._chjPendingTTS pokud TTS čekalo, nebo nastavíme _chjTTSPrimed = true.
+window._chjTTSPrimed = false;
+document.addEventListener('pointerdown', function _primeTTS() {
+  const primer = new SpeechSynthesisUtterance('\u00a0');
+  primer.volume = 0;
+  primer.onend = () => {
+    window._chjTTSPrimed = true;
+    console.log('🔊 TTS engine primed');
+    if (window._chjPendingTTS) {
+      window._chjPendingTTS();
+      window._chjPendingTTS = null;
+    }
+  };
+  primer.onerror = () => console.warn('🔊 TTS primer error');
+  window.speechSynthesis.speak(primer);
+}, { once: true });
 
 const DATA_BASE = "../data/universes";
 

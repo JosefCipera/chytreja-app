@@ -1249,21 +1249,30 @@ async function showGameOfLife(node) {
     playBtn.onclick = () => { ttsPlaying ? speechSynthesis.cancel() : startTTS(); };
   }
 
-  // TTS – dvě cesty:
-  // 1. Auto (setTimeout) – funguje pokud browser povoluje speech bez gesta (desktop, PWA)
-  // 2. Pointerdown fallback – přímé volání v gesture handleru, funguje vždy
-  //    Pokud auto-TTS uspělo (ttsPlaying=true), fallback se přeskočí.
+  // TTS: browser vyžaduje user gesture před prvním speak() (not-allowed policy).
+  // universe-init.js zaregistruje _primeTTS na první document pointerdown,
+  // který odemkne engine a pak zavolá _chjPendingTTS.
+  //
+  // Scénáře:
+  //   A) Engine už odemčen (uživatel se dotkl před AI odpovědí)
+  //      → setTimeout(startTTS, ttsDelay) přímo funguje
+  //   B) Engine ještě není odemčen
+  //      → uložíme doSpeak do _chjPendingTTS
+  //      → první dotyk kdekoli → primer → engine odemčen → doSpeak() → setTimeout(startTTS)
   const ttsDelay = verdictLines ? 2200 : 400;
 
-  setTimeout(() => {
-    const panelOpen = document.getElementById('sidePanel')?.classList.contains('open');
-    if (!ttsPlaying && panelOpen) startTTS();
-  }, ttsDelay);
+  const doSpeak = () => {
+    setTimeout(() => {
+      const panelOpen = document.getElementById('sidePanel')?.classList.contains('open');
+      if (!ttsPlaying && panelOpen) startTTS();
+    }, ttsDelay);
+  };
 
-  const sidePanelEl = document.getElementById('sidePanel');
-  sidePanelEl?.addEventListener('pointerdown', function _ttsOnFirstTouch() {
-    if (!ttsPlaying) startTTS();   // přímé volání – gesture context zachován
-  }, { once: true });
+  if (window._chjTTSPrimed) {
+    doSpeak();                        // engine odemčen → jedeme normálně
+  } else {
+    window._chjPendingTTS = doSpeak;  // čeká na první dotyk kdekoliv
+  }
 
   // 11. Chip handlery
   const chipAction = document.getElementById('chip-action');
