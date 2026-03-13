@@ -455,48 +455,38 @@ Jsi Chytré Já — průvodce zdravím a dlouhověkostí.
 ODPOVÍDEJ PŘESNĚ PODLE ŠABLONY. Čísla piš slovně.
 
 HLAVNÍ UZEL (HRA O ŽIVOT):
-Napiš PŘESNĚ 3 věty oddělené znakem |. Max patnáct slov na větu.
+Napiš 1 až 3 věty oddělené znakem |. Max patnáct slov na větu.
 
-Věta 1 — stav baterie:
+Věta 1 — stav baterie (vždy):
 - RED: "Baterie je skoro vybitá."
 - YELLOW: "Baterie není plně nabitá."
 - GREEN: "Baterie je nabitá."
 
-Věta 2 — bottleneck + jezdec (lidsky, bez názvů nemocí):
-Pokud je BOTTLENECK vyplněno: "Nejvíc tě brzdí [bottleneck], to ohrožuje [jezdec]."
-Pokud BOTTLENECK chybí a JEZDEC vyplněno: "Tvoje slabiny ohrožují [jezdec]."
-Pokud obojí chybí: "Žádná oblast není kritická — drž směr."
-[bottleneck] = obsah pole BOTTLENECK, vhodný pád. [jezdec] = obsah JEZDEC — dosaď přesně.
+Věta 2 — bottleneck + jezdec — piš jen pokud BOTTLENECK nebo JEZDEC vyplněno:
+"Nejvíc tě brzdí [bottleneck], to ohrožuje [jezdec]."
+Pokud jen JEZDEC: "Tvoje slabiny ohrožují [jezdec]."
 
-Věta 3 — sen:
-SEN vyplněno + RED/YELLOW: "Bez změny se na [sen] nedostaneš."
-SEN vyplněno + GREEN: "[Sen] si splníš, drž to takhle."
-SEN chybí + RED/YELLOW: "Změň to dřív, než bude příliš pozdě."
-SEN chybí + GREEN: "Takhle si dlouhověkost opravdu užiješ."
+Věta 3 — sen — piš jen pokud SEN vyplněno:
+RED/YELLOW: "Bez změny se na [sen] nedostaneš."
+GREEN: "[Sen] si splníš, drž to takhle."
 [sen] = obsah pole SEN, vhodný pád, čísla slovně.
 
-Výstup: přesně 3 věty oddělené |, nic jiného.
+Výstup: věty oddělené |, nic jiného.
 
 PODŘÍZENÝ UZEL:
-Napiš PŘESNĚ 3 věty oddělené znakem |. Max patnáct slov na větu.
+Napiš 1 až 2 věty oddělené znakem |. Max patnáct slov na větu.
 
-Věta 1 — stav oblasti:
+Věta 1 — stav oblasti (vždy):
 - RED: "Tvoje [oblast] nestačí — [co to znamená pro tělo]."
 - YELLOW: "Tvoje [oblast] není špatná, ale [co konkrétně slábne]."
 - GREEN: "Tvoje [oblast] je v pořádku."
 
-Věta 2 — konkrétní důsledek pro tělo nebo pohyb (bez názvů nemocí):
-RED/YELLOW: napiš co konkrétně slábne nebo co přijde, pokud se nic nezmění.
-GREEN: napiš co to dává do budoucna (pozitivně, fakticky).
-
-Věta 3 — sen nebo směr:
-MEZERA_K_SENU + RED/YELLOW: "[Oblast] nestačí — na [sen] se takhle nepostavíš."
-MEZERA_K_SENU + GREEN: "[Sen] je s tímhle základem reálný."
-Bez senu + RED/YELLOW: "Změna teď je jednodušší než náprava za rok."
-Bez senu + GREEN: "Drž to takhle a tělo ti to vrátí."
+Věta 2 — piš jen pokud MEZERA_K_SENU:
+RED/YELLOW: "[Oblast] nestačí — na [sen] se takhle nepostavíš."
+GREEN: "[Sen] je s tímhle základem reálný."
 [sen] = obsah pole SEN, čísla slovně, vhodný pád.
 
-Výstup: přesně 3 věty oddělené |, nic jiného.
+Výstup: věty oddělené |, nic jiného.
 
 Doplň jen obsah v hranatých závorkách. Neměň strukturu věty. Nepřidávej nic navíc.
 
@@ -552,15 +542,10 @@ ${aspirationBlock}
     let verdictLines = null;
     let formatted = text.replace(/\.\s+/g, '.\n\n').trim();
 
-    // Všechny uzly generují 3 věty oddělené | → verdictLines pro bubliny
+    // Parsuj věty oddělené | → verdictLines pro bubliny (1–3)
     {
       let parts = text.split('|').map(s => s.trim()).filter(Boolean);
-      if (parts.length < 2) {
-        // Fallback: rozděl na věty podle ". " nebo ".\n"
-        parts = text.split(/\.(?:\s+|\n)/).map(s => s.trim()).filter(Boolean)
-                    .map(s => s.endsWith('.') ? s : s + '.');
-      }
-      if (parts.length >= 2) {
+      if (parts.length >= 1) {
         verdictLines = parts.slice(0, 3);
         formatted = parts[0];
       }

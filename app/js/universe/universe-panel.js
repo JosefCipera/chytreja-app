@@ -1116,8 +1116,8 @@ async function showGameOfLife(node) {
     initialText = 'Nepodařilo se načíst diagnózu.';
   }
 
-  // Animované bubliny pro všechny uzly (3 věty z AI)
-  const verdictLines = verdict?.lines?.length >= 2 ? verdict.lines : null;
+  // Animované bubliny pro všechny uzly (1–3 věty z AI)
+  const verdictLines = verdict?.lines?.length >= 1 ? verdict.lines : null;
 
   // 7. Chip labely
   const chip1Label = actionTitle || 'Co mám dělat?';
