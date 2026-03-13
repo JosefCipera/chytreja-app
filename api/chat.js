@@ -495,7 +495,18 @@ ZAKÁZANÁ SLOVA: musíš, okamžitě, je důležité, měl bys, hrozí, ohrožu
 JAZYK: Česky, tykej, přímočaře.
 `.trim();
 
-    const bottleneckLabel = context?.bottleneck || null;
+    // Lidské labely uzlů pro BOTTLENECK pole v promptu (nominativ)
+    const NODE_LABELS_CZ = {
+      'telo': 'Tělo', 'mysl': 'Mysl', 'vyziva': 'Výživa',
+      'zdravi': 'Zdraví', 'metabolicke': 'Metabolismus',
+      'sila': 'Síla', 'stabilita': 'Stabilita', 'kardio': 'Kardio',
+      'vo2max': 'VO2max', 'spanek': 'Spánek', 'stres': 'Stres',
+      'protein': 'Bílkoviny', 'prevence': 'Prevence',
+      'nervovy_system': 'Nervový systém',
+    };
+    const bottleneckNodeLabel = bottleneck?.node_label
+      || (context?.bottleneck ? NODE_LABELS_CZ[context.bottleneck] : null)
+      || null;
 
     // Build aspiration block for sub-nodes only
     let aspirationBlock = '';
@@ -514,7 +525,7 @@ REŽIM: ${isSubNode ? 'PODŘÍZENÝ UZEL' : 'HLAVNÍ UZEL'}
 UZEL: ${node.label}
 STAV: ${node.state || context?.state || 'UNKNOWN'}
 ${stepProvocation ? `KONTEXT PROVOKACE: "${stepProvocation}"` : ''}
-${!isSubNode && bottleneck?.node_label ? `BOTTLENECK: ${bottleneck.node_label}` : ''}
+${!isSubNode && bottleneckNodeLabel ? `BOTTLENECK: ${bottleneckNodeLabel}` : ''}
 ${!isSubNode && riderText ? `JEZDEC: ${riderText}` : ''}
 ${!isSubNode && mainNodeAspirationLabel ? `SEN: ${mainNodeAspirationLabel}` : ''}
 ${isSubNode ? `OBLAST: ${getNodeContext(nodeId)}` : ''}
