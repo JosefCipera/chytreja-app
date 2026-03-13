@@ -176,6 +176,21 @@
             bottom: 80px;
         }
         /* === Header mic tlačítko === */
+        #start-game-btn {
+            height: 38px;
+            padding: 0 14px;
+            border-radius: 9999px;
+            background: linear-gradient(135deg, rgba(99,102,241,0.85), rgba(139,92,246,0.85));
+            border: none;
+            color: #fff;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            white-space: nowrap;
+            flex-shrink: 0;
+            transition: opacity 0.2s, transform 0.15s;
+        }
+        #start-game-btn:hover { opacity: 0.88; transform: scale(1.04); }
         #header-mic-btn {
             height: 38px;               /* stejná výška jako avatar */
             min-width: 38px;            /* idle = kolečko; text = pill */
@@ -248,6 +263,7 @@
             </div>
         </div>
         <div class="user-profile-wrapper">
+            <button id="start-game-btn" title="Spustit hru" aria-label="Spustit hru">🎮 Spustit hru!</button>
             <button id="header-mic-btn" title="Říct CHJ" aria-label="Hlasový vstup">
                 <span class="header-mic-icon">🎤</span>
             </button>

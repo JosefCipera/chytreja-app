@@ -96,11 +96,38 @@ async function populateModelSelector() {
   initUserDataPanel();
   initVoiceButton();
   initHeaderMic();
+  initStartGameBtn();
   writeDailySnapshot();   // snapshot stavů uzlů → sparkline trend
 
   // Žádost o notifikační oprávnění – po 3s, nenásilně
   setTimeout(() => requestCHJPermission(), 3000);
 })();
+
+// ── Spustit hru! tlačítko ─────────────────────────────────────
+function initStartGameBtn() {
+  const btn = document.getElementById('start-game-btn');
+  if (!btn) return;
+
+  btn.addEventListener('pointerdown', async () => {
+    // 1. Primer – odemkne TTS engine synchronně v gesture kontextu
+    const primer = new SpeechSynthesisUtterance('\u00a0');
+    primer.volume = 0;
+    window.speechSynthesis.speak(primer);
+    window._chjTTSPrimed = true;
+
+    // 2. Zahraj pozdrav (jednou denně)
+    proactiveGreeting();
+
+    // 3. Po pozdravu spusť panel briefing (čekej až TTS domlčí)
+    const firePanelTTS = () => {
+      if (window.speechSynthesis.speaking) { setTimeout(firePanelTTS, 400); return; }
+      const pending = window._chjPendingTTS;
+      window._chjPendingTTS = null;
+      if (typeof pending === 'function') pending();
+    };
+    setTimeout(firePanelTTS, 1200);
+  });
+}
 
 // =====================================================
 // DAILY SNAPSHOT – zapiš dnešní stavy do node_state_history

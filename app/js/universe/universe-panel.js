@@ -1042,49 +1042,6 @@ async function showGameOfLife(node) {
   `;
   metricCard.after(chjCard);
 
-  // 3b. "Ahoj CHJ!" hlas CTA – zobraz jen pokud TTS ještě není odemčen
-  if (!window._chjTTSPrimed && !sessionStorage.getItem('chj_voice_on')) {
-    const cta = document.createElement('button');
-    cta.id = 'chj-voice-cta';
-    cta.innerHTML = '👋 Ahoj CHJ!';
-    cta.style.cssText = `
-      position:fixed; bottom:90px; left:50%; transform:translateX(-50%);
-      background:linear-gradient(135deg,rgba(99,102,241,0.95),rgba(139,92,246,0.95));
-      color:#fff; border:none; padding:14px 32px; border-radius:30px;
-      font-size:16px; font-weight:700; cursor:pointer; z-index:9000;
-      box-shadow:0 4px 24px rgba(99,102,241,0.5);
-      animation:pulse 2s ease-in-out infinite; letter-spacing:0.3px;
-    `;
-    document.body.appendChild(cta);
-
-    cta.addEventListener('pointerdown', async () => {
-      // 1. Primer – odemkne TTS engine synchronně v gesture kontextu
-      const primer = new SpeechSynthesisUtterance('\u00a0');
-      primer.volume = 0;
-      window.speechSynthesis.speak(primer);
-      window._chjTTSPrimed = true;
-
-      // 2. Odstraň tlačítko
-      cta.remove();
-      sessionStorage.setItem('chj_voice_on', '1');
-
-      // 3. Zahraj pozdrav (jednou denně)
-      const { proactiveGreeting } = await import('./universe-voice.js');
-      proactiveGreeting();
-
-      // 4. Po pozdravu spusť panel briefing (čekej až TTS domlčí)
-      const firePanelTTS = () => {
-        if (window.speechSynthesis.speaking) {
-          setTimeout(firePanelTTS, 400);
-          return;
-        }
-        const pending = window._chjPendingTTS;
-        window._chjPendingTTS = null;
-        if (typeof pending === 'function') pending();
-      };
-      setTimeout(firePanelTTS, 1200); // dej pozdravu čas nastartovat
-    }, { once: true });
-  }
 
   // 4. Paralelní načtení dat (AI běží souběžně s DB dotazy)
   const [steps, trend, aspiration, verdict] = await Promise.all([
