@@ -477,16 +477,26 @@ SEN chybí + GREEN: "Takhle si dlouhověkost opravdu užiješ."
 
 Výstup: přesně 3 věty oddělené |, nic jiného.
 
-PODŘÍZENÝ UZEL (bez aspirace nebo SEN_SPLNEN):
+PODŘÍZENÝ UZEL:
+Napiš PŘESNĚ 3 věty oddělené znakem |. Max patnáct slov na větu.
+
+Věta 1 — stav oblasti:
 - RED: "Tvoje [oblast] nestačí — [co to znamená pro tělo]."
 - YELLOW: "Tvoje [oblast] není špatná, ale [co konkrétně slábne]."
 - GREEN: "Tvoje [oblast] je v pořádku."
 
-PODŘÍZENÝ UZEL S MEZERA_K_SENU:
-- RED: "[Oblast] nestačí — na [sen] se takhle nepostavíš."
-- YELLOW: "[Oblast] zaostává — k [snu] ti ještě kus schází."
-Příklad RED pro oblast "síla a svaly" a sen "Běžky v 85": "Síla a svaly nestačí — na běžky v pětaosmdesáti se takhle nepostavíš."
-Hodnota [sen] = obsah pole SEN, čísla piš slovně, použij vhodný pád.
+Věta 2 — konkrétní důsledek pro tělo nebo pohyb (bez názvů nemocí):
+RED/YELLOW: napiš co konkrétně slábne nebo co přijde, pokud se nic nezmění.
+GREEN: napiš co to dává do budoucna (pozitivně, fakticky).
+
+Věta 3 — sen nebo směr:
+MEZERA_K_SENU + RED/YELLOW: "[Oblast] nestačí — na [sen] se takhle nepostavíš."
+MEZERA_K_SENU + GREEN: "[Sen] je s tímhle základem reálný."
+Bez senu + RED/YELLOW: "Změna teď je jednodušší než náprava za rok."
+Bez senu + GREEN: "Drž to takhle a tělo ti to vrátí."
+[sen] = obsah pole SEN, čísla slovně, vhodný pád.
+
+Výstup: přesně 3 věty oddělené |, nic jiného.
 
 Doplň jen obsah v hranatých závorkách. Neměň strukturu věty. Nepřidávej nic navíc.
 
@@ -542,7 +552,8 @@ ${aspirationBlock}
     let verdictLines = null;
     let formatted = text.replace(/\.\s+/g, '.\n\n').trim();
 
-    if (nodeId === 'dlouhovekost') {
+    // Všechny uzly generují 3 věty oddělené | → verdictLines pro bubliny
+    {
       let parts = text.split('|').map(s => s.trim()).filter(Boolean);
       if (parts.length < 2) {
         // Fallback: rozděl na věty podle ". " nebo ".\n"
