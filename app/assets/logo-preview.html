@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+<head><style>
+  body { background: #0a0f1e; display: flex; flex-direction: column;
+         align-items: center; justify-content: center; gap: 56px;
+         min-height: 100vh; margin: 0; font-family: Inter, sans-serif; padding: 48px 0; box-sizing: border-box; }
+  .row { display: flex; align-items: center; gap: 56px; flex-wrap: wrap; justify-content: center; }
+  .item { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .label { color: #475569; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; }
+  .section-title { color: #334155; font-size: 11px; letter-spacing: 2px; text-transform: uppercase;
+                   border-bottom: 1px solid #1e293b; padding-bottom: 8px; width: 100%; text-align: center; min-width: 400px; }
+  .tag { font-size: 10px; letter-spacing: 1px; text-transform: uppercase; padding: 2px 8px;
+         border-radius: 10px; margin-top: 2px; }
+  .tag-original { color: #f59e0b; border: 1px solid #f59e0b44; background: #f59e0b11; }
+  .tag-blue    { color: #2563eb; border: 1px solid #2563eb44; background: #2563eb11; }
+  .tag-current { color: #64748b; border: 1px solid #33415544; background: #1e293b; }
+</style></head>
+<body>
+
+  <!-- ═══════════════ REFERENCE ═══════════════ -->
+  <div class="section-title">Stávající logo (reference)</div>
+  <div class="item">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="56" height="56">
+      <circle cx="24" cy="24" r="18" fill="none" stroke="#2563eb" stroke-width="4.5"
+              stroke-dasharray="105 13" stroke-dashoffset="6.5" transform="rotate(-90 24 24)" />
+    </svg>
+    <div class="label">Neuzavřené kolečko</div>
+    <div class="tag tag-current">Aktuální</div>
+  </div>
+
+  <!-- ═══════════════ PŮVODNÍ NÁVRH Δ10 ═══════════════ -->
+  <div class="section-title">Původní návrh Δ10 — zlatý</div>
+  <div class="row">
+
+    <!-- Zlatý trojúhelník + 10 (logo-delta10.svg) -->
+    <div class="item">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 80" width="200" height="100">
+        <polygon points="52,8 8,72 96,72" fill="none" stroke="#f59e0b"
+                 stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+        <text x="107" y="68" font-family="Inter,system-ui,sans-serif" font-size="58"
+              font-weight="800" fill="#f8fafc" letter-spacing="-2">10</text>
+      </svg>
+      <div class="label">Δ + 10 (plný trojúhelník)</div>
+      <div class="tag tag-original">Zlatá varianta</div>
+    </div>
+
+    <!-- Zlatý trojúhelník unclosed + 10 -->
+    <div class="item">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 80" width="200" height="100">
+        <polyline points="52,8 8,72 96,72" fill="none" stroke="#f59e0b"
+                  stroke-width="5" stroke-linecap="round" stroke-linejoin="round"
+                  stroke-dasharray="145 12" stroke-dashoffset="6"/>
+        <text x="107" y="68" font-family="Inter,system-ui,sans-serif" font-size="58"
+              font-weight="800" fill="#f8fafc" letter-spacing="-2">10</text>
+      </svg>
+      <div class="label">Δ unclosed + 10</div>
+      <div class="tag tag-original">Zlatá varianta</div>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════ MODRÝ Δ10 (bez kolečka) ═══════════════ -->
+  <div class="section-title">Δ10 modrý — bez kolečka</div>
+  <div class="row">
+
+    <!-- Modrý plný Δ + 10 -->
+    <div class="item">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 56" width="220" height="75">
+        <polygon points="30,6 4,50 56,50" fill="none" stroke="#2563eb"
+                 stroke-width="4.5" stroke-linejoin="round" stroke-linecap="round"/>
+        <text x="68" y="46" font-family="Inter,system-ui,sans-serif" font-size="44"
+              font-weight="800" fill="#2563eb" letter-spacing="-2">10</text>
+      </svg>
+      <div class="label">Δ plný + 10</div>
+      <div class="tag tag-blue">Modrá varianta</div>
+    </div>
+
+    <!-- Modrý Δ unclosed + 10 -->
+    <div class="item">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 56" width="220" height="75">
+        <polyline points="30,6 4,50 56,50" fill="none" stroke="#2563eb"
+                  stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"
+                  stroke-dasharray="100 10" stroke-dashoffset="5"/>
+        <text x="68" y="46" font-family="Inter,system-ui,sans-serif" font-size="44"
+              font-weight="800" fill="#2563eb" letter-spacing="-2">10</text>
+      </svg>
+      <div class="label">Δ unclosed + 10</div>
+      <div class="tag tag-blue">Modrá varianta</div>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════ KOLEČKO + VARIACE ═══════════════ -->
+  <div class="section-title">Kolečko — varianty s číslem</div>
+  <div class="row">
+
+    <!-- Circle + Δ10 vedle (nav logo) -->
+    <div class="item">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 48" width="220" height="65">
+        <circle cx="24" cy="24" r="18" fill="none" stroke="#2563eb" stroke-width="4.5"
+                stroke-dasharray="105 13" stroke-dashoffset="6.5" transform="rotate(-90 24 24)" />
+        <text x="52" y="33" font-family="Inter,system-ui,sans-serif" font-size="26"
+              font-weight="800" fill="#2563eb" letter-spacing="-1">Δ10</text>
+      </svg>
+      <div class="label">Kolečko + Δ10 text</div>
+      <div class="tag tag-blue">Modrá varianta</div>
+    </div>
+
+    <!-- Circle s 10 uvnitř -->
+    <div class="item">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="72" height="72">
+        <circle cx="24" cy="24" r="20" fill="none" stroke="#2563eb" stroke-width="4.5"
+                stroke-dasharray="115 11" stroke-dashoffset="6.5" transform="rotate(-90 24 24)" />
+        <text x="24" y="30" font-family="Inter,system-ui,sans-serif" font-size="16"
+              font-weight="800" fill="#2563eb" text-anchor="middle">10</text>
+      </svg>
+      <div class="label">Kolečko s 10 uvnitř</div>
+      <div class="tag tag-blue">Modrá varianta</div>
+    </div>
+
+    <!-- Circle s Δ uvnitř -->
+    <div class="item">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="72" height="72">
+        <circle cx="24" cy="24" r="20" fill="none" stroke="#2563eb" stroke-width="4.5"
+                stroke-dasharray="115 11" stroke-dashoffset="6.5" transform="rotate(-90 24 24)" />
+        <text x="24" y="32" font-family="Inter,system-ui,sans-serif" font-size="20"
+              font-weight="800" fill="#2563eb" text-anchor="middle">Δ</text>
+      </svg>
+      <div class="label">Kolečko s Δ uvnitř</div>
+      <div class="tag tag-blue">Modrá varianta</div>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════ MALÉ VERZE ═══════════════ -->
+  <div class="section-title">Malé verze (nav bar / favicon)</div>
+  <div class="row">
+
+    <div class="item">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 48" width="120" height="36">
+        <circle cx="24" cy="24" r="18" fill="none" stroke="#2563eb" stroke-width="4.5"
+                stroke-dasharray="105 13" stroke-dashoffset="6.5" transform="rotate(-90 24 24)" />
+        <text x="52" y="33" font-family="Inter,system-ui,sans-serif" font-size="26"
+              font-weight="800" fill="#2563eb" letter-spacing="-1">Δ10</text>
+      </svg>
+      <div class="label">Nav bar – kolečko + Δ10</div>
+    </div>
+
+    <div class="item">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="32" height="32">
+        <circle cx="24" cy="24" r="20" fill="none" stroke="#2563eb" stroke-width="5"
+                stroke-dasharray="115 11" stroke-dashoffset="6.5" transform="rotate(-90 24 24)" />
+        <text x="24" y="30" font-family="Inter,system-ui,sans-serif" font-size="16"
+              font-weight="800" fill="#2563eb" text-anchor="middle">10</text>
+      </svg>
+      <div class="label">Favicon – kolečko + 10</div>
+    </div>
+
+    <div class="item">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 48" width="60" height="36">
+        <polyline points="20,4 4,40 36,40" fill="none" stroke="#2563eb"
+                  stroke-width="4" stroke-linecap="round" stroke-linejoin="round"
+                  stroke-dasharray="86 8" stroke-dashoffset="4"/>
+        <text x="44" y="38" font-family="Inter,system-ui,sans-serif" font-size="34"
+              font-weight="800" fill="#2563eb" letter-spacing="-1">10</text>
+      </svg>
+      <div class="label">Nav bar – Δ + 10</div>
+    </div>
+
+    <div class="item">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+        <polyline points="16,3 30,29 2,29" fill="none" stroke="#2563eb"
+                  stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"
+                  stroke-dasharray="60 6" stroke-dashoffset="3"/>
+      </svg>
+      <div class="label">Favicon – jen Δ</div>
+    </div>
+
+  </div>
+
+</body>
+</html>

@@ -47,6 +47,8 @@ function getAutor(source) {
 /* filter state */
 let activeOblast = null;
 let activeAutor  = null;
+let currentPage  = 0;
+const PAGE_SIZE  = 12;
 
 /* ------------------------------------------------
    1) LOAD LIBRARY – ze Supabase
@@ -79,7 +81,7 @@ async function loadLibrary() {
       id:          String(r.id),
       type:        'article',
       title:       r.title,
-      description: r.source || '',
+      description: r.summary || r.source || '',
       url:         r.url,
       contentUrl:  r.url,
       node_id:     r.node_id,
@@ -181,25 +183,46 @@ function applyFilters() {
   const q = stripDia(document.getElementById("searchInput").value.trim());
   let items = window.MEDIA_ITEMS;
 
-  // Oblast filter
-  if (activeOblast) {
-    items = items.filter(i => i.oblast === activeOblast);
-  }
+  if (activeOblast) items = items.filter(i => i.oblast === activeOblast);
+  if (activeAutor)  items = items.filter(i => i.autor  === activeAutor);
+  if (q)            items = items.filter(i => stripDia(i.title).startsWith(q));
 
-  // Autor filter
-  if (activeAutor) {
-    items = items.filter(i => i.autor === activeAutor);
-  }
-
-  // Search filter – prefix od začátku titulu
-  if (q) {
-    items = items.filter(item => stripDia(item.title).startsWith(q));
-  }
-
-  // Limit 8 jen když nejsou žádné filtry aktivní
-  const noFilter = !q && !activeOblast && !activeAutor;
-  renderMediaGrid(noFilter ? items.slice(0, 8) : items);
+  window.FILTERED_ITEMS = items;
+  currentPage = 0;
+  renderPage();
 }
+
+function renderPage() {
+  const items = window.FILTERED_ITEMS ?? [];
+  const from  = currentPage * PAGE_SIZE;
+  renderMediaGrid(items.slice(from, from + PAGE_SIZE));
+  renderPagination(items.length);
+}
+
+function renderPagination(total) {
+  const el = document.getElementById("pagination");
+  if (!el) return;
+
+  const totalPages = Math.ceil(total / PAGE_SIZE);
+  if (totalPages <= 1) { el.innerHTML = ''; return; }
+
+  const from = currentPage * PAGE_SIZE + 1;
+  const to   = Math.min((currentPage + 1) * PAGE_SIZE, total);
+
+  el.innerHTML = `
+    <button onclick="changePage(-1)" class="medioteka-page-btn" ${currentPage === 0 ? 'disabled' : ''}>← Předchozí</button>
+    <span class="medioteka-page-info">${from}–${to} z ${total}</span>
+    <button onclick="changePage(1)"  class="medioteka-page-btn" ${currentPage >= totalPages - 1 ? 'disabled' : ''}>Další →</button>
+  `;
+}
+
+window.changePage = function(dir) {
+  const total      = window.FILTERED_ITEMS?.length ?? 0;
+  const totalPages = Math.ceil(total / PAGE_SIZE);
+  currentPage = Math.max(0, Math.min(currentPage + dir, totalPages - 1));
+  renderPage();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+};
 
 window.toggleOblast = function(o) {
   activeOblast = (activeOblast === o) ? null : o;

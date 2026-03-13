@@ -19,6 +19,7 @@
     <div id="topbar">
         <div class="btn" id="btnPrint">🖨️ Tisk</div>
         <div class="btn" id="btnDownload">⬇️ Stáhnout</div>
+        <div class="btn" id="btnPlay">🔊 Přehrát</div>
     </div>
 
     <!-- === CONTENT === -->
@@ -43,6 +44,66 @@
 
         // === Ovládání ===
         document.getElementById("btnPrint").onclick = () => window.print();
+
+        // === PŘEHRÁT – TTS (jen pro md/article) ===
+        const btnPlay = document.getElementById("btnPlay");
+        let _ttsActive = false;
+
+        // Skryj pro typy kde TTS nedává smysl
+        if (type !== "md" && type !== "article") {
+            if (btnPlay) btnPlay.style.display = "none";
+        }
+
+        function _getTTSText() {
+            const mdEl = document.querySelector("#content .md-content");
+            if (mdEl) return mdEl.innerText || mdEl.textContent || "";
+            return document.getElementById("content")?.innerText || "";
+        }
+
+        function _startViewerTTS() {
+            const text = _getTTSText().trim();
+            if (!text) return;
+
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang  = "cs-CZ";
+            utterance.rate  = 1.05;
+            utterance.pitch = 1.1;
+
+            const voices  = speechSynthesis.getVoices();
+            const czVoice = voices.find(v => /cs[-_]CZ/i.test(v.lang))
+                         || voices.find(v => /czech/i.test(v.lang));
+            if (czVoice) utterance.voice = czVoice;
+
+            utterance.onstart = () => {
+                _ttsActive = true;
+                if (btnPlay) { btnPlay.textContent = "⏹ Stop"; btnPlay.classList.add("playing"); }
+            };
+            utterance.onend = utterance.onerror = () => {
+                _ttsActive = false;
+                if (btnPlay) { btnPlay.textContent = "🔊 Přehrát"; btnPlay.classList.remove("playing"); }
+            };
+
+            window.speechSynthesis.speak(utterance);
+        }
+
+        if (btnPlay) {
+            btnPlay.onclick = () => {
+                if (_ttsActive || window.speechSynthesis.speaking) {
+                    window.speechSynthesis.cancel();
+                    _ttsActive = false;
+                    btnPlay.textContent = "🔊 Přehrát";
+                    btnPlay.classList.remove("playing");
+                    return;
+                }
+                // V Chrome jsou hlasy async – počkej pokud ještě nejsou načteny
+                if (speechSynthesis.getVoices().length === 0) {
+                    speechSynthesis.addEventListener("voiceschanged", _startViewerTTS, { once: true });
+                } else {
+                    _startViewerTTS();
+                }
+            };
+        }
 
         document.getElementById("btnDownload").onclick = () => {
             const filename = file.split("/").pop().split("?")[0];

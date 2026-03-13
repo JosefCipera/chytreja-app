@@ -8,6 +8,9 @@ const ORBIT_ZONES = [
   [620, 740]
 ];
 import { renderUniverse } from "./universe-core.js";
+import { initUserDataPanel } from "./user-data-panel.js";
+import { listenOnce, handleVoiceInput, proactiveGreeting } from "./universe-voice.js";
+import { requestCHJPermission } from "./notifications.js";
 
 // Supabase setup
 const { createClient } = window.supabase;
@@ -22,7 +25,7 @@ window._chjTTSPrimed = false;
 document.addEventListener('pointerdown', function _primeTTS() {
   const primer = new SpeechSynthesisUtterance('\u00a0');
   primer.volume = 0;
-  window.speechSynthesis.speak(primer); // synchronous inside gesture = engine unlocked
+  window.speechSynthesis.speak(primer); // synchronous inside gesture = unlocks engine for session
   window._chjTTSPrimed = true;
   console.log('🔊 TTS engine primed');
   if (typeof window._chjPendingTTS === 'function') {
@@ -90,7 +93,105 @@ async function populateModelSelector() {
 
   await loadAndRenderModel(modelName, role);
   initHeaderControls();
+  initUserDataPanel();
+  initVoiceButton();
+  initHeaderMic();
+  initStartGameBtn();
+  writeDailySnapshot();   // snapshot stavů uzlů → sparkline trend
+
+  // Žádost o notifikační oprávnění – po 3s, nenásilně
+  setTimeout(() => requestCHJPermission(), 3000);
 })();
+
+// ── Spustit hru! tlačítko ─────────────────────────────────────
+function initStartGameBtn() {
+  const btn = document.getElementById('start-game-btn');
+  if (!btn) return;
+
+  btn.addEventListener('pointerdown', async () => {
+    // 1. Primer – odemkne TTS engine synchronně v gesture kontextu
+    const primer = new SpeechSynthesisUtterance('\u00a0');
+    primer.volume = 0;
+    window.speechSynthesis.speak(primer);
+    window._chjTTSPrimed = true;
+
+    // 2. Zahraj pozdrav (jednou denně)
+    proactiveGreeting();
+
+    // 3. Po pozdravu spusť panel briefing (čekej až TTS domlčí)
+    const firePanelTTS = () => {
+      if (window.speechSynthesis.speaking) { setTimeout(firePanelTTS, 400); return; }
+      const pending = window._chjPendingTTS;
+      window._chjPendingTTS = null;
+      if (typeof pending === 'function') pending();
+    };
+    setTimeout(firePanelTTS, 1200);
+  });
+}
+
+// =====================================================
+// DAILY SNAPSHOT – zapiš dnešní stavy do node_state_history
+// Zavolá se jednou za den; vybuduje historii pro sparkline trend
+// =====================================================
+async function writeDailySnapshot() {
+  const TODAY_KEY = 'chj_snapshot_' + new Date().toISOString().slice(0, 10); // 'chj_snapshot_2026-03-11'
+  if (localStorage.getItem(TODAY_KEY)) return; // dnes už zapsáno
+
+  const userId = await getCurrentUserId();
+  if (!userId || userId === 'demo-user-123') return; // jen přihlášení uživatelé
+
+  const nodes = window.MAIN_UNIVERSE_DATA || [];
+  const rows = nodes
+    .filter(n => n.state && ['GREEN', 'YELLOW', 'RED'].includes(n.state))
+    .map(n => ({ user_id: userId, node_id: n.id, date: new Date().toISOString().slice(0, 10), state: n.state }));
+
+  if (rows.length === 0) return;
+
+  const { error } = await window.supabaseClient
+    .from('node_state_history')
+    .upsert(rows, { onConflict: 'user_id,node_id,date', ignoreDuplicates: true });
+
+  if (error) {
+    console.warn('⚠️ writeDailySnapshot:', error.message);
+  } else {
+    localStorage.setItem(TODAY_KEY, '1');
+    console.log(`✅ Daily snapshot: ${rows.length} uzlů`);
+  }
+}
+
+// =====================================================
+// VOICE BUTTON – mic tlačítka (floor + header)
+// =====================================================
+
+// Sdílený flag – pozdrav se přehraje jen jednou bez ohledu na to, které mic stlačíš
+let _voiceGreeted = false;
+
+async function handleMicClick() {
+  // Klik na mic zruší případné probíhající TTS
+  if (window.speechSynthesis?.speaking) {
+    window.speechSynthesis.cancel();
+    return;
+  }
+  if (!_voiceGreeted) {
+    _voiceGreeted = true;
+    proactiveGreeting();
+    // Pokračuje dál – ihned spustí mic, nečeká na druhý klik
+  }
+  const text = await listenOnce();
+  if (text) await handleVoiceInput(text);
+}
+
+function initVoiceButton() {
+  const btn = document.getElementById('voice-mic-btn');
+  if (!btn) return;
+  btn.addEventListener('click', handleMicClick);
+}
+
+function initHeaderMic() {
+  const btn = document.getElementById('header-mic-btn');
+  if (!btn) return;
+  btn.addEventListener('click', handleMicClick);
+}
 
 // =====================================================
 // 4) LOAD MODEL + RENDER
@@ -120,6 +221,29 @@ async function loadAndRenderModel(modelName, role) {
   await applyAccessModel(role, window.MAIN_UNIVERSE_DATA, modelName);
 
   renderVisibleUniverse(window.MAIN_UNIVERSE_DATA);
+
+  // Auto-open Hra o život – panel se otevře hned po načtení univerza
+  // (700ms čeká na inicializaci vis.js sítě)
+  setTimeout(async () => {
+    const mainNode = window.MAIN_UNIVERSE_DATA?.find(n => n.id === 'dlouhovekost');
+    if (mainNode && mainNode.state && mainNode.state !== 'GRAY') {
+      const { showPanel } = await import('./universe-panel.js');
+      showPanel(mainNode);
+    }
+  }, 700);
+
+  // Načti user constraints do window.USER_CONSTRAINTS (pro discipline offer)
+  (async () => {
+    const uid = window.firebaseAuth?.currentUser?.uid;
+    if (!uid || uid === 'demo-user-123') return;
+    const { data } = await window.supabaseClient
+      .from('user_constraints')
+      .select('constraint_key, severity')
+      .eq('user_id', uid)
+      .eq('constraint_type', 'injury');
+    window.USER_CONSTRAINTS = data || [];
+    console.log(`✅ USER_CONSTRAINTS: ${window.USER_CONSTRAINTS.length} záznamů`);
+  })();
 
   const headerModelName = document.getElementById("headerModelName");
   if (headerModelName) {
@@ -335,6 +459,8 @@ async function applyAccessModel(role, model, modelName) {
     const defaultAccess = (role === 'demo' || role === 'free') ? 'locked' : 'visible';
     model.forEach(n => {
       n.access = accessMap.get(n.id) || defaultAccess;
+      // Locked uzly vždy zobrazit šedě bez ohledu na metriky z DB
+      if (n.access === 'locked') n.state = 'GRAY';
     });
 
   } catch (err) {

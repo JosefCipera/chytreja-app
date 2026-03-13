@@ -7,30 +7,30 @@ console.log("PANEL JS LOADED");
 // =====================================================
 
 const DEMO_PREVIEWS = {
-  dychani: { vhled_1: '„Dech je jediný most k tvému nervovému systému, který můžeš ovládat."', doplneni: 'Trénink dechové koherence pro okamžité snížení stresu.', napojeni: '📡 Mobilní mikrofon / Hrudní pás' },
-  kardio: { vhled_1: '„Rozproudění krve je ta nejrychlejší detoxikace pro tvé srdce."', doplneni: 'Jak rychle se tvůj tep vrací do klidu po ranním cvičení.', napojeni: '📡 Apple Health / Garmin' },
-  rovnovaha: { vhled_1: '„Kdo pevně stojí, ten se jen tak nezhroutí."', doplneni: 'Test tvé vnitřní stability a reakčního času pro jistý krok.', napojeni: '📡 Gyroskop v mobilu' },
-  nosni_dychani: { vhled_1: '„Nos je pro dýchání, ústa pro mluvení; filtruj život správnou cestou."', doplneni: 'Podíl dýchání nosem během dne i v noci pro lepší okysličení.', napojeni: '📡 Oura (SpO2) / Audio analýza' },
-  dechova_koherence: { vhled_1: '„Synchronizuj svůj dech se srdcem a najdi vnitřní rytmus klidu."', doplneni: 'Variabilita srdečního tepu (HRV) v přímé vazbě na rytmus dechu.', napojeni: '📡 Hrudní pás (BLE)' },
-  butejko: { vhled_1: '„Méně dechu znamená více života; nauč se hospodařit s kyslíkem."', doplneni: 'Kontrolní pauza a efektivita tvého buněčného dýchání.', napojeni: '📡 Manuální test / Časovač' },
-  stres: { vhled_1: '„Stres je palivo, pokud ho umíš zkrotit, jinak je to tvůj spalovač."', doplneni: 'Hladina kortizolu a reakce autonomního systému na zátěž.', napojeni: '📡 HRV trendy / Wearables' },
-  soustredeni: { vhled_1: '„Tvá pozornost je nejcennější měna; investuj ji vědomě."', doplneni: 'Schopnost udržet fokus na jeden úkol bez digitálního vyrušení.', napojeni: '📡 Screen Time / EEG čelenka' },
-  vdecnost: { vhled_1: '„Vděčnost přepíná mozek z režimu \'přežít\' do režimu \'tvořit\'."', doplneni: 'Pravidelnost reflexe pozitivních momentů tvého dne.', napojeni: '📡 Deníkový modul (AI analýza)' },
-  meditace: { vhled_1: '„Ticho v hlavě není prázdnota, je to nejvyšší forma regenerace."', doplneni: 'Dosažení stavu hlubokého klidu a alfa vln v mozku.', napojeni: '📡 Meditační aplikace / EEG' },
-  emoce: { vhled_1: '„Emoce jsou barvy tvého života; nauč se je vnímat, ne jimi být."', doplneni: 'Mapa tvých nálad a jejich vliv na fyzickou výkonnost.', napojeni: '📡 Face-scanning AI' },
-  pust: { vhled_1: '„Občasný hlad je pozvánka pro tvé buňky k velkému úklidu (autofagii)."', doplneni: 'Časová okna mezi jídly a jejich vliv na tvou regeneraci.', napojeni: '📡 Časovač půstu / CGM' },
-  glukoza_vyziva: { vhled_1: '„Stabilní cukr znamená stabilní emoce a výkon bez odpoledních pádů."', doplneni: 'Reakce tvého těla na konkrétní jídla a kombinace surovin.', napojeni: '📡 CGM senzor' },
-  mikronutrienty: { vhled_1: '„Mikro detaily tvoří makro zdraví; doplň palivo pro své enzymy."', doplneni: 'Hladiny vitamínů a minerálů klíčových pro tvou energii.', napojeni: '📡 Krevní testy (Import)' },
-  hydratace: { vhled_1: '„Voda je médium, ve kterém probíhá veškerá tvá vnitřní magie."', doplneni: 'Objem a načasování příjmu tekutin vzhledem k aktivitě.', napojeni: '📡 Chytrá láhev / Manuální log' },
-  casovani_jidel: { vhled_1: '„Kdy jíš, je stejně důležité jako co jíš; sjednoť se s biorytmem."', doplneni: 'Soulad stravování s tvými vnitřními hodinami (cirkadiánní rytmus).', napojeni: '📡 Oura / Apple Health' },
-  imunitni: { vhled_1: '„Tvá imunita je armáda, která nikdy nespí; krm ji klidem a pohybem."', doplneni: 'Pohotovost tvého systému reagovat na vnější hrozby.', napojeni: '📡 Klidový tep / Teplota' },
-  obnova: { vhled_1: '„Oprava těla probíhá v klidu, ne v boji; dej regeneraci prostor."', doplneni: 'Celkové skóre připravenosti těla na další zátěž.', napojeni: '📡 Readiness skóre (Oura/Garmin)' },
-  biomarkery: { vhled_1: '„Krev je vnitřní mapa, která ukazuje stav motoru dříve než kontrolka."', doplneni: 'Trendy v tvém krevním obraze z dlouhodobého hlediska.', napojeni: '📡 Laboratorní API / PDF' },
-  glukoza: { vhled_1: '„Sleduj svou glykémii jako zrcadlo svého metabolického zdraví."', doplneni: 'Dlouhodobý průměr hladiny cukru v krvi (HbA1c).', napojeni: '📡 Laboratoř / CGM' },
-  bilirubin: { vhled_1: '„Čistá játra jsou filtrem tvé vitality; sleduj barvu své energie."', doplneni: 'Ukazatel stavu tvých jater a efektivity zpracování látek.', napojeni: '📡 Krevní testy' },
-  leukocyty: { vhled_1: '„Bílé krvinky jsou tví strážci; měj přehled o jejich počtu a síle."', doplneni: 'Indikace skrytých zánětů nebo přetížení organismu.', napojeni: '📡 Krevní testy' },
-  erytrocyty: { vhled_1: '„Červené krvinky jsou nosiči tvého dechu; starej se o své doručovatele."', doplneni: 'Schopnost krve přenášet kyslík k pracujícím svalům.', napojeni: '📡 Krevní testy' },
-  souhrn_biomarkery: { vhled_1: '„Celkový obraz tvého zdraví složený z tisíce drobných indicií."', doplneni: 'Komplexní Longevity skóre založené na hloubkové diagnostice.', napojeni: '📡 AI Diagnostika' },
+  dychani:          { vhled_1: '„Dech je jediný most k tvému nervovému systému, který můžeš ovládat."',                              doplneni: 'Trénink dechové koherence pro okamžité snížení stresu.',                                      napojeni: '📡 Mobilní mikrofon / Hrudní pás' },
+  kardio:           { vhled_1: '„Rozproudění krve je ta nejrychlejší detoxikace pro tvé srdce."',                                    doplneni: 'Jak rychle se tvůj tep vrací do klidu po ranním cvičení.',                                    napojeni: '📡 Apple Health / Garmin' },
+  rovnovaha:        { vhled_1: '„Kdo pevně stojí, ten se jen tak nezhroutí."',                                                       doplneni: 'Test tvé vnitřní stability a reakčního času pro jistý krok.',                                 napojeni: '📡 Gyroskop v mobilu' },
+  nosni_dychani:    { vhled_1: '„Nos je pro dýchání, ústa pro mluvení; filtruj život správnou cestou."',                             doplneni: 'Podíl dýchání nosem během dne i v noci pro lepší okysličení.',                                napojeni: '📡 Oura (SpO2) / Audio analýza' },
+  dechova_koherence:{ vhled_1: '„Synchronizuj svůj dech se srdcem a najdi vnitřní rytmus klidu."',                                  doplneni: 'Variabilita srdečního tepu (HRV) v přímé vazbě na rytmus dechu.',                             napojeni: '📡 Hrudní pás (BLE)' },
+  butejko:          { vhled_1: '„Méně dechu znamená více života; nauč se hospodařit s kyslíkem."',                                   doplneni: 'Kontrolní pauza a efektivita tvého buněčného dýchání.',                                      napojeni: '📡 Manuální test / Časovač' },
+  stres:            { vhled_1: '„Stres je palivo, pokud ho umíš zkrotit, jinak je to tvůj spalovač."',                               doplneni: 'Hladina kortizolu a reakce autonomního systému na zátěž.',                                    napojeni: '📡 HRV trendy / Wearables' },
+  soustredeni:      { vhled_1: '„Tvá pozornost je nejcennější měna; investuj ji vědomě."',                                           doplneni: 'Schopnost udržet fokus na jeden úkol bez digitálního vyrušení.',                              napojeni: '📡 Screen Time / EEG čelenka' },
+  vdecnost:         { vhled_1: '„Vděčnost přepíná mozek z režimu \'přežít\' do režimu \'tvořit\'."',                                doplneni: 'Pravidelnost reflexe pozitivních momentů tvého dne.',                                         napojeni: '📡 Deníkový modul (AI analýza)' },
+  meditace:         { vhled_1: '„Ticho v hlavě není prázdnota, je to nejvyšší forma regenerace."',                                   doplneni: 'Dosažení stavu hlubokého klidu a alfa vln v mozku.',                                          napojeni: '📡 Meditační aplikace / EEG' },
+  emoce:            { vhled_1: '„Emoce jsou barvy tvého života; nauč se je vnímat, ne jimi být."',                                   doplneni: 'Mapa tvých nálad a jejich vliv na fyzickou výkonnost.',                                      napojeni: '📡 Face-scanning AI' },
+  pust:             { vhled_1: '„Občasný hlad je pozvánka pro tvé buňky k velkému úklidu (autofagii)."',                             doplneni: 'Časová okna mezi jídly a jejich vliv na tvou regeneraci.',                                    napojeni: '📡 Časovač půstu / CGM' },
+  glukoza_vyziva:   { vhled_1: '„Stabilní cukr znamená stabilní emoce a výkon bez odpoledních pádů."',                              doplneni: 'Reakce tvého těla na konkrétní jídla a kombinace surovin.',                                   napojeni: '📡 CGM senzor' },
+  mikronutrienty:   { vhled_1: '„Mikro detaily tvoří makro zdraví; doplň palivo pro své enzymy."',                                   doplneni: 'Hladiny vitamínů a minerálů klíčových pro tvou energii.',                                    napojeni: '📡 Krevní testy (Import)' },
+  hydratace:        { vhled_1: '„Voda je médium, ve kterém probíhá veškerá tvá vnitřní magie."',                                     doplneni: 'Objem a načasování příjmu tekutin vzhledem k aktivitě.',                                      napojeni: '📡 Chytrá láhev / Manuální log' },
+  casovani_jidel:   { vhled_1: '„Kdy jíš, je stejně důležité jako co jíš; sjednoť se s biorytmem."',                                doplneni: 'Soulad stravování s tvými vnitřními hodinami (cirkadiánní rytmus).',                           napojeni: '📡 Oura / Apple Health' },
+  imunitni:         { vhled_1: '„Tvá imunita je armáda, která nikdy nespí; krm ji klidem a pohybem."',                               doplneni: 'Pohotovost tvého systému reagovat na vnější hrozby.',                                         napojeni: '📡 Klidový tep / Teplota' },
+  obnova:           { vhled_1: '„Oprava těla probíhá v klidu, ne v boji; dej regeneraci prostor."',                                  doplneni: 'Celkové skóre připravenosti těla na další zátěž.',                                            napojeni: '📡 Readiness skóre (Oura/Garmin)' },
+  biomarkery:       { vhled_1: '„Krev je vnitřní mapa, která ukazuje stav motoru dříve než kontrolka."',                             doplneni: 'Trendy v tvém krevním obraze z dlouhodobého hlediska.',                                      napojeni: '📡 Laboratorní API / PDF' },
+  glukoza:          { vhled_1: '„Sleduj svou glykémii jako zrcadlo svého metabolického zdraví."',                                    doplneni: 'Dlouhodobý průměr hladiny cukru v krvi (HbA1c).',                                             napojeni: '📡 Laboratoř / CGM' },
+  bilirubin:        { vhled_1: '„Čistá játra jsou filtrem tvé vitality; sleduj barvu své energie."',                                 doplneni: 'Ukazatel stavu tvých jater a efektivity zpracování látek.',                                   napojeni: '📡 Krevní testy' },
+  leukocyty:        { vhled_1: '„Bílé krvinky jsou tví strážci; měj přehled o jejich počtu a síle."',                               doplneni: 'Indikace skrytých zánětů nebo přetížení organismu.',                                          napojeni: '📡 Krevní testy' },
+  erytrocyty:       { vhled_1: '„Červené krvinky jsou nosiči tvého dechu; starej se o své doručovatele."',                           doplneni: 'Schopnost krve přenášet kyslík k pracujícím svalům.',                                         napojeni: '📡 Krevní testy' },
+  souhrn_biomarkery:{ vhled_1: '„Celkový obraz tvého zdraví složený z tisíce drobných indicií."',                                   doplneni: 'Komplexní Longevity skóre založené na hloubkové diagnostice.',                                 napojeni: '📡 AI Diagnostika' },
 };
 
 // =====================================================
@@ -38,26 +38,81 @@ const DEMO_PREVIEWS = {
 // =====================================================
 
 const ACTIVE_MOTTOS = {
-  dlouhovekost: '„Dlouhověkost není o dožívání se věku, ale o síle do posledního dne."',
-  telo: '„Tvé tělo je jediný domov, ve kterém musíš vydržet celý život."',
-  zdravi: '„Zdraví není absence nemoci, ale přítomnost vitality."',
-  metabolicke: '„Stabilní cukr znamená stabilní emoce a výkon bez odpoledních pádů."',
-  sila: '„Síla je schopnost nést své vlastní tělo s naprostou lehkostí."',
-  vytrvalost: '„Tvá vytrvalost je schopnost zůstat v pohybu, i když ostatní zastaví."',
-  vo2max: '„Kapacita plic určuje, kolik života dokážeš vdechnout do každého dne."',
-  mysl: '„Postoj vítěze není póza, je to příkaz tvým buňkám k regeneraci."',
-  vyziva: '„Jídlo je informace pro tvé buňky, jak se mají dnes opravit."',
-  spanek: '„Hluboký spánek není pauza, je to tvá soukromá továrna na opravu."',
-  klid: '„Ticho v hlavě je nejvyšší forma vnitřní hygieny."',
-  mobilita: '„Rozhýbání páteře probudí tvůj nervový systém dřív než kofein."',
-  bílkoviny: '„Svaly jsou tvé brnění; bílkoviny jsou materiál pro jeho opravu."',
-  stabilita: '„Kdo pevně stojí v sobě, toho vnější svět nerozhází."',
-  nervovy_system: '„Tvé nervy jsou dálnice pro signály života; udržuj je průjezdné."',
-  smysl: '„Vědět PROČ je důležitější než vědět JAK."',
+  dlouhovekost:  '„Hra o život se nevyhrává v cíli — vyhrává se každým dnem, který prožiješ naplno."',
+  telo:          '„Tvé tělo je jediný domov, ve kterém musíš vydržet celý život."',
+  zdravi:        '„Zdraví není absence nemoci, ale přítomnost vitality."',
+  metabolicke:   '„Stabilní cukr znamená stabilní emoce a výkon bez odpoledních pádů."',
+  sila:          '„Síla je schopnost nést své vlastní tělo s naprostou lehkostí."',
+  vytrvalost:    '„Tvá vytrvalost je schopnost zůstat v pohybu, i když ostatní zastaví."',
+  vo2max:        '„Kapacita plic určuje, kolik života dokážeš vdechnout do každého dne."',
+  mysl:          '„Postoj vítěze není póza, je to příkaz tvým buňkám k regeneraci."',
+  vyziva:        '„Jídlo je informace pro tvé buňky, jak se mají dnes opravit."',
+  spanek:        '„Hluboký spánek není pauza, je to tvá soukromá továrna na opravu."',
+  klid:          '„Ticho v hlavě je nejvyšší forma vnitřní hygieny."',
+  mobilita:      '„Rozhýbání páteře probudí tvůj nervový systém dřív než kofein."',
+  bílkoviny:     '„Svaly jsou tvé brnění; bílkoviny jsou materiál pro jeho opravu."',
+  stabilita:     '„Kdo pevně stojí v sobě, toho vnější svět nerozhází."',
+  nervovy_system:'„Tvé nervy jsou dálnice pro signály života; udržuj je průjezdné."',
+  smysl:         '„Vědět PROČ je důležitější než vědět JAK."',
 };
 
 function getDemoPreview(nodeId) {
   return DEMO_PREVIEWS[nodeId] || {};
+}
+
+// =====================================================
+// ČERNÍ JEZDCI – mapování uzlů na smrtelné hrozby
+// =====================================================
+const NODE_RIDERS = {
+  dlouhovekost:  [],             // počítá se dynamicky z dětí
+  telo:          ['srdce'],
+  mysl:          ['mozek'],
+  vyziva:        ['metabolismus'],
+  zdravi:        ['rakovina'],
+  metabolicke:   ['metabolismus'],
+  spanek:        ['mozek', 'srdce'],
+  sila:          ['srdce'],
+  vo2max:        ['srdce'],
+  stabilita:     ['pohyb'],
+  mobilita:      ['pohyb'],
+  nervovy_system:['mozek'],
+  kardio:        ['srdce'],
+  glukoza:       ['metabolismus'],
+  bilirubin:     ['rakovina'],
+  leukocyty:     ['rakovina'],
+  erytrocyty:    ['srdce'],
+};
+
+const RIDER_ICONS = {
+  srdce:        '❤️',
+  mozek:        '🧠',
+  metabolismus: '⚡',
+  rakovina:     '🎗️',
+  pohyb:        '🦵',
+};
+
+function getRiders(node) {
+  if (node.id === 'dlouhovekost') {
+    // Hlavní uzel: jezdci ze všech RED/YELLOW dětí
+    const allData = window.MAIN_UNIVERSE_DATA || [];
+    const riderSet = new Set();
+    allData
+      .filter(n => n.parent === 'dlouhovekost' && (n.state === 'RED' || n.state === 'YELLOW'))
+      .forEach(c => (NODE_RIDERS[c.id] || []).forEach(r => riderSet.add(r)));
+    return [...riderSet].slice(0, 4);
+  }
+  return NODE_RIDERS[node.id] || [];
+}
+
+// Formátování CHJ textu: 1. věta tight, každá další věta s půlřádkovým odsazením dolů
+function formatChjText(text) {
+  const parts = (text || '').split(/\n+/).map(s => s.trim()).filter(Boolean);
+  if (parts.length <= 1) return text || '';
+  return parts.map((p, i) =>
+    i === 0
+      ? `<span style="display:block;">${p}</span>`
+      : `<span style="display:block; margin-top:0.55em;">${p}</span>`
+  ).join('');
 }
 
 function showLockedPanel(node) {
@@ -154,7 +209,7 @@ if (!document.getElementById('chj-panel-styles')) {
       color: #e2e8f0;
       font-style: italic;
       line-height: 1.65;
-      padding: 8px 0 2px;
+      padding: 8px 20px 2px;
       margin: 4px 0 0;
     }
 
@@ -266,6 +321,8 @@ function resetPanel() {
   document.querySelectorAll(".metric-card, .chj-card, .dynamic-section, hr.dynamic-hr").forEach(el => el.remove());
   const msgs = document.getElementById('ai-integrated-msgs');
   if (msgs) msgs.innerHTML = "";
+  const panel = document.getElementById('sidePanel');
+  if (panel) panel.scrollTop = 0;
 }
 
 export async function showPanel(node) {
@@ -332,10 +389,75 @@ async function fetchLearningSteps(nodeId) {
   }
 }
 
+// =====================================================
+// WEATHER-STYLE MINI TREND (canvas, adapted from biomarkery)
+// =====================================================
+function drawMiniTrend(ctx, data, color) {
+  if (!ctx || !data || data.length < 2) return;
+  const c   = ctx.canvas;
+  const w   = c.clientWidth  || c.offsetWidth  || 240;
+  const h   = c.clientHeight || c.offsetHeight || 55;
+  const dpr = window.devicePixelRatio || 1;
+  c.width   = w * dpr;
+  c.height  = h * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, w, h);
+
+  const mx = 15, my = 10;
+  const min = Math.min(...data), max = Math.max(...data);
+  const rng = Math.max(1e-6, max - min);
+  const pts = data.map((v, i) => ({
+    x: mx + (i / (data.length - 1)) * (w - mx * 2),
+    y: h - ((v - min) / rng) * (h - my * 2) - my
+  }));
+
+  // Barevná křivka trendu
+  ctx.beginPath();
+  ctx.lineWidth = 9; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  ctx.strokeStyle = (color || '#22d3ee') + 'e0';
+  ctx.moveTo(pts[0].x, pts[0].y);
+  for (let i = 1; i < pts.length - 2; i++) {
+    const xc = (pts[i].x + pts[i + 1].x) / 2;
+    const yc = (pts[i].y + pts[i + 1].y) / 2;
+    ctx.quadraticCurveTo(pts[i].x, pts[i].y, xc, yc);
+  }
+  const last = pts.at(-1), pre = pts.at(-2);
+  const endX = pre.x + (last.x - pre.x) * 0.9;
+  const endY = pre.y + (last.y - pre.y) * 0.9;
+  ctx.quadraticCurveTo(pre.x, pre.y, endX, endY);
+  ctx.stroke();
+
+  // Šedý "forecast" ocas
+  ctx.beginPath();
+  ctx.moveTo(endX + 6, endY);
+  ctx.lineTo(Math.min(w - 8, endX + 220), endY);
+  ctx.lineWidth = 9; ctx.lineCap = 'round';
+  ctx.strokeStyle = '#94a3b844';
+  ctx.stroke();
+
+  // Tečka na konci křivky
+  ctx.beginPath();
+  ctx.arc(endX, endY, 9, 0, Math.PI * 2);
+  ctx.fillStyle = color || '#22d3ee';
+  ctx.fill();
+  ctx.lineWidth = 2.5; ctx.strokeStyle = '#fff';
+  ctx.stroke();
+}
+
 async function fetchTrend(userId, nodeId, nodeState) {
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
   const dateFilter = thirtyDaysAgo.toISOString().split('T')[0];
+
+  // 🔍 DIAGNOSTIKA – odstraň až bude trend fungovat
+  console.log('📈 fetchTrend params:', { userId, nodeId, dateFilter, clientOk: !!window.supabaseClient });
+
+  // Test: vůbec přístupná tabulka? (bez filtrů, limit 3)
+  const { data: testData, error: testError } = await window.supabaseClient
+    .from('node_state_history')
+    .select('user_id, node_id, date, state')
+    .limit(3);
+  console.log('📈 test (no filter):', { testData, testError });
 
   const { data, error } = await window.supabaseClient
     .from('node_state_history')
@@ -345,64 +467,46 @@ async function fetchTrend(userId, nodeId, nodeState) {
     .gte('date', dateFilter)
     .order('date', { ascending: true });
 
+  console.log('📈 filtered result:', { data, error, rowCount: data?.length });
+
   if (error) console.error('Trend error:', error);
 
   if (!data || data.length === 0) {
     return {
       html: '<div style="color:#64748b; font-size:13px; padding:16px 0;">Zatím není trend</div>',
-      text: 'Stabilní'
+      text: 'Stabilní', numeric: [], lineColor: '#64748b',
+      trendColor: '#64748b', arrow: '→', dataLength: 0
     };
   }
 
-  const points = data.map((d, i) => {
-    const x = (i / (data.length - 1)) * 100;
-    const y = d.state === 'GREEN' ? 20 : d.state === 'YELLOW' ? 50 : 80;
-    return `${x},${y}`;
-  });
+  // Numerická data pro canvas (GREEN=3, YELLOW=2, RED=1)
+  const numeric = data.map(d => d.state === 'GREEN' ? 3 : d.state === 'YELLOW' ? 2 : 1);
 
   const recent = data.slice(-7);
   const recentGreen = recent.filter(d => d.state === 'GREEN').length;
-  const recentRed = recent.filter(d => d.state === 'RED').length;
+  const recentRed   = recent.filter(d => d.state === 'RED').length;
 
   let arrow = '→', trendText = 'Stabilní', trendColor = '#eab308';
-  if (recentGreen > recentRed + 2) { arrow = '↗️'; trendText = 'Zlepšení'; trendColor = '#22c55e'; }
+  if (recentGreen > recentRed + 2)  { arrow = '↗️'; trendText = 'Zlepšení'; trendColor = '#22c55e'; }
   else if (recentRed > recentGreen + 2) { arrow = '↘️'; trendText = 'Zhoršení'; trendColor = '#ef4444'; }
 
-  const stateColor = nodeState === 'GREEN' ? '#22c55e'
+  const lineColor = nodeState === 'GREEN' ? '#22c55e'
     : nodeState === 'YELLOW' ? '#eab308'
-      : nodeState === 'RED' ? '#ef4444'
-        : '#64748b';
+    : nodeState === 'RED'    ? '#ef4444'
+    : '#64748b';
 
-  const last = points[points.length - 1].split(',');
-
-  const html = `
-    <svg width="100%" height="50" viewBox="0 0 100 100" preserveAspectRatio="none" style="display:block;">
-      <rect x="0" y="0"  width="100" height="33" fill="#22c55e" opacity="0.05"/>
-      <rect x="0" y="33" width="100" height="34" fill="#eab308" opacity="0.05"/>
-      <rect x="0" y="67" width="100" height="33" fill="#ef4444" opacity="0.05"/>
-      <polyline points="${points.join(' ')}" fill="none" stroke="${trendColor}" stroke-width="6" opacity="0.2" stroke-linecap="round" stroke-linejoin="round"/>
-      <polyline points="${points.join(' ')}" fill="none" stroke="${stateColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      <circle cx="${last[0]}" cy="${last[1]}" r="2" fill="${trendColor}"/>
-    </svg>
-    <div style="display:flex; align-items:center; gap:8px; margin-top:8px;">
-      <span style="font-size:18px;">${arrow}</span>
-      <span style="color:${trendColor}; font-size:13px; font-weight:500;">${trendText}</span>
-      <span style="color:#64748b; font-size:12px; margin-left:auto;">${data.length} dní</span>
-    </div>
-  `;
-
-  return { html, text: trendText };
+  return { text: trendText, numeric, lineColor, trendColor, arrow, dataLength: data.length };
 }
 
 async function generateVerdictV2(node, userId) {
   try {
-    const { data: metrics } = await window.supabaseClient
-      .from('user_metrics')
-      .select('node_id, state, current_index')
-      .eq('user_id', userId)
-      .eq('universe', 'longevity');
+    // Použij data z window.MAIN_UNIVERSE_DATA – jsou již načtena při startu,
+    // není potřeba extra Supabase round-trip (ušetříme 100–300 ms latence).
+    const metrics = (window.MAIN_UNIVERSE_DATA || [])
+      .filter(n => n.state && ['GREEN', 'YELLOW', 'RED'].includes(n.state))
+      .map(n => ({ node_id: n.id, state: n.state, current_index: n.current_index ?? 0 }));
 
-    if (!metrics || metrics.length === 0) return { text: 'Zatím nemám dost dat.' };
+    if (metrics.length === 0) return { text: 'Zatím nemám dost dat.' };
 
     const bottleneck = metrics
       .filter(m => m.state === 'RED')
@@ -429,27 +533,12 @@ async function generateVerdictV2(node, userId) {
 
     if (!response.ok) return { text: `API error ${response.status}` };
 
-    const data = JSON.parse(await response.text());
-    const rawText = data?.verdict || 'API nevrátilo platnou odpověď.';
-
-    // Pro hlavní uzel: vrátit pole vět (verdictLines z API), nebo parsovat z |
-    if (node.id === 'dlouhovekost') {
-      let lines = null;
-      if (Array.isArray(data?.verdictLines) && data.verdictLines.length >= 2) {
-        lines = data.verdictLines;
-      } else if (rawText.includes('|')) {
-        lines = rawText.split('|').map(s => s.trim()).filter(Boolean);
-      }
-      if (lines && lines.length >= 2) {
-        return {
-          text: lines.join(' '),
-          lines,
-          bottleneckNodeId: data?.bottleneckNodeId || null
-        };
-      }
-    }
-
-    return { text: rawText.replace(/\n/g, ' ') };
+    const rawText = await response.text();
+    const data = JSON.parse(rawText);
+    return {
+      text: data?.verdict || 'API nevrátilo platnou odpověď.',
+      lines: data?.verdictLines || null
+    };
 
   } catch (err) {
     console.error('❌ generateVerdictV2:', err);
@@ -529,15 +618,15 @@ function openViewerModal(fileUrl, type, title, onBack = null, scriptCz = null) {
     };
     _currentViewerClose = closeViewer;
     // Přechod zpět: okamžité odebrání (bez fade) aby mezi modály nebyl záblesk panelu
-    const closeAndBack = () => {
-      if (onBack) {
-        _currentViewerClose = null;
-        modal.remove();
-        onBack();
-      } else {
-        closeViewer();
-      }
-    };
+  const closeAndBack = () => {
+    if (onBack) {
+      _currentViewerClose = null;
+      modal.remove();
+      onBack();
+    } else {
+      closeViewer();
+    }
+  };
 
     const btn = document.getElementById('closeViewerModal');
     btn.onclick = closeAndBack;
@@ -723,7 +812,7 @@ async function openResourcesViewer(node) {
   if (all.length === 1) { openViewerModal(all[0].url, all[0].type, all[0].title, null, all[0].script_cz); return; }
 
   const PANEL_LIMIT = 5;
-  const shown = all.slice(0, PANEL_LIMIT);
+  const shown   = all.slice(0, PANEL_LIMIT);
   const hasMore = all.length > PANEL_LIMIT;
 
   document.getElementById('viewerModal')?.remove();
@@ -834,6 +923,54 @@ function showToast(msg) {
 // SHOW GAME OF LIFE  (hlavní builder panelu)
 // =====================================================
 
+/** Generuje HTML baterie pro hlavní uzel (state = GREEN / YELLOW / RED / jiný). */
+function _buildBatteryHTML(state) {
+  const fillPct    = state === 'GREEN' ? 80 : state === 'YELLOW' ? 50 : 20;
+  const battColor  = state === 'GREEN' ? '#22c55e' : state === 'YELLOW' ? '#eab308' : '#ef4444';
+  const battBorder = state === 'GREEN' ? 'rgba(34,197,94,0.35)'  : state === 'YELLOW' ? 'rgba(234,179,8,0.35)'  : 'rgba(239,68,68,0.35)';
+  const battGlow   = state === 'GREEN' ? 'rgba(34,197,94,0.7)'   : state === 'YELLOW' ? 'rgba(234,179,8,0.7)'   : 'rgba(239,68,68,0.7)';
+  const stateLabel = state === 'GREEN' ? 'Nabito' : state === 'YELLOW' ? 'Dobíjení' : 'Slabá baterie';
+  return `
+    <div style="text-align:center; padding:12px 0 4px;">
+      <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:20px;">Tvoje životní energie</div>
+      <div style="display:inline-flex; flex-direction:column; align-items:center;">
+        <div style="
+          width:22px; height:11px;
+          border:2px solid ${battBorder};
+          border-bottom:none;
+          border-radius:5px 5px 0 0;
+          background:linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04));
+        "></div>
+        <div style="
+          width:62px; height:140px;
+          border:2px solid ${battBorder};
+          border-radius:5px 5px 8px 8px;
+          background:rgba(8,8,18,0.6);
+          position:relative; overflow:hidden;
+          box-shadow:0 0 22px ${battBorder}, inset 0 0 12px rgba(0,0,0,0.4);
+        ">
+          <div style="
+            position:absolute; bottom:0; left:0; right:0;
+            height:${fillPct}%;
+            background:linear-gradient(180deg, ${battColor}88, ${battColor}ee);
+            box-shadow:0 0 30px ${battGlow};
+            transition:height 1.5s ease;
+          "></div>
+          <div style="
+            position:absolute; top:0; bottom:0; left:6px; width:9px;
+            background:linear-gradient(90deg, rgba(255,255,255,0.09), transparent);
+            border-radius:4px; pointer-events:none;
+          "></div>
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;justify-content:space-evenly;padding:10px 0;pointer-events:none;">
+            ${[0,1,2].map(() => `<div style="height:1px;background:rgba(255,255,255,0.06);margin:0 8px;"></div>`).join('')}
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:14px; font-size:13px; color:#64748b; letter-spacing:0.5px;">${stateLabel}</div>
+    </div>
+  `;
+}
+
 async function showGameOfLife(node) {
   console.log("🎮 showGameOfLife:", node.id);
   const userId = window.firebaseAuth?.currentUser?.uid || 'demo-user-123';
@@ -845,7 +982,7 @@ async function showGameOfLife(node) {
   // 1. Nadpis
   const titleEl = document.getElementById('nodeTitle');
   if (titleEl) {
-    titleEl.innerHTML = `<span style="font-size:1.15em; margin-right:6px;">${node.icon || '🏋️'}</span>${node.label || 'Stoletý desetibojař'}`;
+    titleEl.innerHTML = `<span style="font-size:1.15em; margin-right:6px;">${node.icon || '🎮'}</span>${node.label || 'Hra o život'}`;
   }
 
   // 1b. Motto – italická věta pod nadpisem (pokud existuje)
@@ -858,7 +995,10 @@ async function showGameOfLife(node) {
     if (panelHeader) panelHeader.after(mottoEl);
   }
 
-  // 2. Trend karta – skeleton
+  // 2. Metric karta – skeleton (baterie pro hlavní uzel, sparkline pro ostatní)
+  console.log("🎮 showGameOfLife node.id:", node.id, "state:", node.state);
+  const isMainNode = node.id === 'dlouhovekost';
+
   let metricCard = document.querySelector('.metric-card');
   if (metricCard) metricCard.remove();
 
@@ -868,11 +1008,19 @@ async function showGameOfLife(node) {
     background:#06b6d415; border:1px solid #06b6d433;
     border-radius:12px; padding:20px; margin:15px 0;
   `;
-  metricCard.innerHTML = `
-    <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Trend (30 dní)</div>
-    <div style="height:80px;background:rgba(255,255,255,0.05);border-radius:8px;animation:pulse 1.5s ease-in-out infinite;"></div>
-    <style>@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}</style>
-  `;
+
+  // Skeleton se liší podle typu uzlu
+  if (isMainNode) {
+    // Stav (node.state) je znám okamžitě → vykreslíme reálnou baterii hned,
+    // bez šedého placeholderu s jinými rozměry (eliminuje flicker při překreslení).
+    metricCard.innerHTML = _buildBatteryHTML(node.state);
+  } else {
+    metricCard.innerHTML = `
+      <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Trend (30 dní)</div>
+      <div style="height:80px;background:rgba(255,255,255,0.05);border-radius:8px;animation:pulse 1.5s ease-in-out infinite;"></div>
+      <style>@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}</style>
+    `;
+  }
 
   // Vlož metricCard za motto (pokud existuje), jinak za panelHeader
   const panelHeader = document.querySelector('.panel-header');
@@ -890,12 +1038,10 @@ async function showGameOfLife(node) {
     border-radius:12px; padding:20px; margin:15px 0; color:#fff;
   `;
   chjCard.innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-      <h3 style="margin:0;color:#83B0E3;font-size:18px;">🧠 Chytré já říká:</h3>
-    </div>
     <div style="height:60px;background:rgba(255,255,255,0.04);border-radius:8px;animation:pulse 1.5s ease-in-out infinite;"></div>
   `;
   metricCard.after(chjCard);
+
 
   // 4. Paralelní načtení dat (AI běží souběžně s DB dotazy)
   const [steps, trend, aspiration, verdict] = await Promise.all([
@@ -928,11 +1074,33 @@ async function showGameOfLife(node) {
     </div>
   ` : '';
 
-  metricCard.innerHTML = `
-    <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Trend (30 dní)</div>
-    ${trend.html}
-    ${aspirationHtml}
-  `;
+  // 5b. Hlavní uzel → baterie; ostatní uzly → sparkline
+  if (isMainNode) {
+    // Baterie je již správně vykreslena v skeleton fázi (node.state je znám okamžitě).
+    // Re-renderujeme přes helper aby bylo garantovaně konzistentní (bez flickeru).
+    metricCard.innerHTML = _buildBatteryHTML(node.state);
+  } else {
+    // 1 bod stačí – zduplikujeme ho aby drawMiniTrend měl co nakreslit (plochá čára = stabilní)
+    const hasData = trend.numeric?.length >= 1;
+    const chartData = hasData && trend.numeric.length === 1
+      ? [trend.numeric[0], trend.numeric[0]]
+      : trend.numeric;
+
+    metricCard.innerHTML = `
+      <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">Trend (30 dní)</div>
+      ${hasData
+        ? `<canvas class="weather-trend-canvas" style="width:100%;height:55px;display:block;border-radius:6px;"></canvas>`
+        : `<div style="color:#64748b;font-size:13px;padding:14px 0;">Zatím není trend</div>`
+      }
+    `;
+
+    if (hasData) {
+      requestAnimationFrame(() => {
+        const canvas = metricCard.querySelector('.weather-trend-canvas');
+        if (canvas) drawMiniTrend(canvas.getContext('2d'), chartData, trend.lineColor);
+      });
+    }
+  }
 
   // 6. Hlavní text brífinku – AI primární, provocationText fallback
   const aiErrorTexts = ['Chyba při komunikaci s AI.', 'Zatím nemám dost dat.', 'API nevrátilo platnou odpověď.'];
@@ -948,57 +1116,44 @@ async function showGameOfLife(node) {
     initialText = 'Nepodařilo se načíst diagnózu.';
   }
 
-  // Bubliny pro hlavní uzel (verdictLines = pole 2–3 vět)
-  const isMainNode = node.id === 'dlouhovekost';
-  const verdictLines = (isMainNode && Array.isArray(verdict?.lines) && verdict.lines.length >= 2)
-    ? verdict.lines : null;
+  // Animované bubliny pro hlavní uzel (3 věty z AI)
+  const verdictLines = isMainNode && verdict?.lines?.length >= 2 ? verdict.lines : null;
 
   // 7. Chip labely
   const chip1Label = actionTitle || 'Co mám dělat?';
   const chip2Label = reflectionTitle || 'Detailní rozbor';
   const hasResources = ((node.articles?.length || 0) + (node.media?.length || 0) + (node.docs?.length || 0)) > 0;
 
-  // 8. Sestavení obsahu CHJ karty
+  // (visionHtml odstraněno)
+
+  // 8. Sestavení CHJ karty
+  // Hlavní uzel s 3 větami → animované bubliny; ostatní → jeden text
   const BUBBLE_STYLES = [
-    { bg: 'rgba(255,255,255,0.05)', border: 'rgba(255,255,255,0.12)', color: '#e2e8f0' },
-    { bg: 'rgba(234,179,8,0.07)',   border: 'rgba(234,179,8,0.28)',   color: '#fde68a' },
-    { bg: 'rgba(139,92,246,0.07)',  border: 'rgba(139,92,246,0.28)',  color: '#c4b5fd' },
+    { bg: 'rgba(255,255,255,0.05)', border: 'rgba(255,255,255,0.11)', color: '#e2e8f0' },   // věta 1: stav baterie
+    { bg: 'rgba(234,179,8,0.07)',   border: 'rgba(234,179,8,0.28)',   color: '#fde68a' },   // věta 2: bottleneck + jezdec
+    { bg: 'rgba(139,92,246,0.07)',  border: 'rgba(139,92,246,0.28)',  color: '#c4b5fd' },   // věta 3: sen
   ];
+
+  // Bubliny: použít transition + JS setTimeout (spolehlivější než CSS animation v innerHTML)
   const chjContentHtml = verdictLines
-    ? `<div style="display:flex;flex-direction:column;gap:10px;margin-bottom:24px;">
+    ? `<div id="chj-bubbles" style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
         ${verdictLines.map((line, i) => {
           const s = BUBBLE_STYLES[i] || BUBBLE_STYLES[0];
-          return `<div style="
+          return `<div data-bubble="${i}" style="
             background:${s.bg}; border:1px solid ${s.border};
             border-radius:10px; padding:13px 16px;
             color:${s.color}; font-size:15px; line-height:1.45;
-            opacity:0; animation:chjFadeIn 0.55s ease forwards;
-            animation-delay:${i * 850}ms; animation-fill-mode:both;
-          ">${line}</div>`;
+            opacity:0; transform:translateY(8px);
+            transition: opacity 0.55s ease, transform 0.55s ease;
+          ">${formatChjText(line)}</div>`;
         }).join('')}
       </div>`
     : `<div class="chj-message" style="
-        color:#e2e8f0; font-size:16px; line-height:1.7;
-        white-space:pre-line; margin-bottom:24px;
-      ">${initialText}</div>`;
+        color:#e2e8f0; font-size:16px; line-height:1.3; margin-bottom:16px;
+      ">${formatChjText(initialText)}</div>`;
 
-  // 8. Sestavení CHJ karty
   chjCard.innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-      <h3 style="margin:0;color:#83B0E3;font-size:18px;display:flex;align-items:center;gap:8px;">
-        🧠 Chytré já říká:
-      </h3>
-      <button id="tts-play" title="Přehrát" style="
-        background:rgba(6,182,212,0.15); border:1px solid rgba(6,182,212,0.35);
-        color:#22d3ee; font-size:18px; width:36px; height:36px;
-        border-radius:50%; cursor:pointer;
-        display:flex; align-items:center; justify-content:center;
-        transition:all 0.2s; flex-shrink:0;
-      ">🔊</button>
-    </div>
-
     ${chjContentHtml}
-
     <div class="smart-chips" style="display:flex;flex-direction:column;gap:10px;">
       <button id="chip-action" style="
         display:flex;align-items:center;gap:10px;
@@ -1007,13 +1162,7 @@ async function showGameOfLife(node) {
         cursor:pointer;font-size:14px;font-weight:600;
         text-align:left;transition:all 0.2s;width:100%;
       "><span style="font-size:18px;">⚡</span>${chip1Label}</button>
-      <button id="chip-reflection" style="
-        display:flex;align-items:center;gap:10px;
-        background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.4);
-        color:#a5b4fc;padding:12px 18px;border-radius:10px;
-        cursor:pointer;font-size:14px;font-weight:600;
-        text-align:left;transition:all 0.2s;width:100%;
-      "><span style="font-size:18px;">🧠</span>Detailní rozbor</button>
+      <!-- chip-reflection skryt: <button id="chip-reflection" ...>🧠 Detailní rozbor</button> -->
       ${(hasResources || actionText || reflectionText) ? `
         <button id="chip-resources" style="
           display:flex;align-items:center;gap:10px;
@@ -1026,17 +1175,27 @@ async function showGameOfLife(node) {
     </div>
   `;
 
+  // 9a. Spustit animaci bublin přes JS transition (CSS @keyframes v innerHTML je nespolehlivé)
+  if (verdictLines) {
+    chjCard.querySelectorAll('[data-bubble]').forEach(el => {
+      const i = parseInt(el.dataset.bubble) || 0;
+      setTimeout(() => {
+        el.style.opacity = '1';
+        el.style.transform = 'translateY(0)';
+      }, i * 850 + 50); // +50ms aby měl browser čas vyrenderovat opacity:0
+    });
+  }
+
   // 9. Hover efekty čipů
   chjCard.querySelectorAll('.smart-chips button').forEach(btn => {
     btn.addEventListener('mouseenter', () => { btn.style.opacity = '0.78'; btn.style.transform = 'translateX(3px)'; });
     btn.addEventListener('mouseleave', () => { btn.style.opacity = '1'; btn.style.transform = 'none'; });
   });
 
-  // 10. TTS – megafon button
-  //     Čte vždy aktuálně zobrazený text (currentText – mutable)
+  // 10. TTS – čte aktuálně zobrazený text; tlačítko odstraněno, řídí se mic ikony
   const messageEl = chjCard.querySelector('.chj-message');
-  const playBtn = chjCard.querySelector('#tts-play');
-  // Pro hlavní uzel: TTS čte všechny 3 věty za sebou
+  const playBtn = null; // tlačítko odstraněno – zachováno kvůli if (playBtn) guardu níže
+  // Pokud jsou 3 bubliny → TTS přečte všechny věty za sebou
   let currentText = verdictLines ? verdictLines.join(' ') : initialText;
   let ttsPlaying = false;
 
@@ -1048,19 +1207,45 @@ async function showGameOfLife(node) {
     utterance.rate = 1.1;
     utterance.onstart = () => {
       ttsPlaying = true;
-      playBtn.textContent = '⏹';
-      playBtn.title = 'Zastavit';
-      playBtn.style.background = 'rgba(239,68,68,0.2)';
-      playBtn.style.borderColor = 'rgba(239,68,68,0.4)';
-      playBtn.style.color = '#f87171';
+      // Header mic → SPEAKING
+      const hm = document.getElementById('header-mic-btn');
+      if (hm) {
+        hm.dataset.state = 'speaking';
+        const hi = hm.querySelector('.header-mic-icon');
+        if (hi) hi.innerHTML = '<span style="color:#60a5fa;font-weight:700">((</span> 🔊 <span style="color:#60a5fa;font-weight:700">))</span>';
+      }
+      // Floor mic → SPEAKING
+      const fm = document.getElementById('voice-mic-btn');
+      if (fm) {
+        fm.dataset.state = 'speaking';
+        const fi = fm.querySelector('.mic-icon');
+        if (fi) fi.textContent = '🔊';
+      }
     };
-    utterance.onend = utterance.onerror = () => {
+    utterance.onerror = (e) => {
+      console.error('🔊 TTS error:', e.error, e);
       ttsPlaying = false;
-      playBtn.textContent = '🔊';
-      playBtn.title = 'Přehrát';
-      playBtn.style.background = 'rgba(6,182,212,0.15)';
-      playBtn.style.borderColor = 'rgba(6,182,212,0.35)';
-      playBtn.style.color = '#22d3ee';
+      const hm = document.getElementById('header-mic-btn');
+      if (hm) { hm.dataset.state = 'idle'; const hi = hm.querySelector('.header-mic-icon'); if (hi) hi.textContent = '🎤'; }
+      const fm = document.getElementById('voice-mic-btn');
+      if (fm) { fm.dataset.state = 'idle'; const fi = fm.querySelector('.mic-icon'); if (fi) fi.textContent = '🎤'; }
+    };
+    utterance.onend = () => {
+      ttsPlaying = false;
+      // Header mic → IDLE
+      const hm = document.getElementById('header-mic-btn');
+      if (hm) {
+        hm.dataset.state = 'idle';
+        const hi = hm.querySelector('.header-mic-icon');
+        if (hi) hi.textContent = '🎤';
+      }
+      // Floor mic → IDLE
+      const fm = document.getElementById('voice-mic-btn');
+      if (fm) {
+        fm.dataset.state = 'idle';
+        const fi = fm.querySelector('.mic-icon');
+        if (fi) fi.textContent = '🎤';
+      }
     };
     window.speechSynthesis.speak(utterance);
   }
@@ -1074,17 +1259,23 @@ async function showGameOfLife(node) {
     playBtn.onclick = () => { ttsPlaying ? speechSynthesis.cancel() : startTTS(); };
   }
 
-  // 10b. Auto-TTS: queue until user's first touch primes the engine
+  // Auto-TTS: počká až domlčí pozdrav, pak spustí briefing
   const _doAutoTTS = () => {
-    setTimeout(() => {
+    const attempt = () => {
       const panelOpen = document.getElementById('sidePanel')?.classList.contains('open');
-      if (!ttsPlaying && panelOpen) startTTS();
-    }, 400);
+      if (!panelOpen) return; // panel byl mezitím zavřen
+      if (window.speechSynthesis.speaking) {
+        setTimeout(attempt, 400); // pozdrav ještě hraje, počkej
+        return;
+      }
+      if (!ttsPlaying) startTTS();
+    };
+    setTimeout(attempt, 400);
   };
   if (window._chjTTSPrimed) {
-    _doAutoTTS();
+    _doAutoTTS(); // engine already unlocked (user touched before data loaded)
   } else {
-    window._chjPendingTTS = _doAutoTTS;
+    window._chjPendingTTS = _doAutoTTS; // queue until first touch
   }
 
   // 11. Chip handlery
@@ -1212,6 +1403,14 @@ async function showGameOfLife(node) {
     if (sendBtn) sendBtn.disabled = true;
     speechSynthesis.cancel();
 
+    // Header mic → THINKING s reproduktorem (AI generuje)
+    const _hm = document.getElementById('header-mic-btn');
+    if (_hm) {
+      _hm.dataset.state = 'thinking';
+      const _hi = _hm.querySelector('.header-mic-icon');
+      if (_hi) _hi.textContent = '🔊';
+    }
+
     // Zobrazení stavu čekání
     messageEl.innerHTML = '<span style="color:#64748b;font-style:italic;">Chytré já přemýšlí...</span>';
 
@@ -1247,9 +1446,19 @@ async function showGameOfLife(node) {
       currentText = answer;
       messageEl.textContent = answer;
 
+      // Auto-TTS: přečti odpověď (header mic → 🔊 přes startTTS.onstart)
+      startTTS();
+
     } catch (err) {
       console.error('❌ chat submit:', err);
       messageEl.textContent = 'Chyba při komunikaci s AI.';
+      // Reset header mic při chybě (TTS nikdy nenastartuje)
+      const _hmErr = document.getElementById('header-mic-btn');
+      if (_hmErr) {
+        _hmErr.dataset.state = 'idle';
+        const _hiErr = _hmErr.querySelector('.header-mic-icon');
+        if (_hiErr) _hiErr.textContent = '🎤';
+      }
     } finally {
       chatBusy = false;
       if (chatInput) { chatInput.disabled = false; chatInput.value = ''; }

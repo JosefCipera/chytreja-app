@@ -122,6 +122,118 @@
             font-size: 0.85em;
             margin: 8px 0 16px;
         }
+        /* === Mic tlačítko === */
+        #voice-mic-btn {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: rgba(15, 23, 42, 0.92);
+            border: 1.5px solid rgba(80, 120, 200, 0.4);
+            box-shadow: 0 0 18px rgba(80, 120, 255, 0.2);
+            cursor: pointer;
+            z-index: 500;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.15s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+        }
+        #voice-mic-btn:hover {
+            transform: scale(1.08);
+            box-shadow: 0 0 28px rgba(80, 140, 255, 0.4);
+        }
+        #voice-mic-btn[data-state="listening"] {
+            border-color: rgba(239, 68, 68, 0.7);
+            box-shadow: 0 0 24px rgba(239, 68, 68, 0.35);
+            animation: mic-pulse 1s ease-in-out infinite;
+        }
+        #voice-mic-btn[data-state="thinking"] {
+            border-color: rgba(147, 197, 253, 0.5);
+            box-shadow: 0 0 24px rgba(147, 197, 253, 0.3);
+        }
+        #voice-mic-btn[data-state="speaking"] {
+            border-color: rgba(59, 130, 246, 0.8);
+            animation: mic-pulse-blue 1.1s ease-in-out infinite;
+        }
+        .mic-icon { font-size: 22px; line-height: 1; }
+        @keyframes mic-pulse {
+            0%, 100% { box-shadow: 0 0 24px rgba(239, 68, 68, 0.35); }
+            50%       { box-shadow: 0 0 38px rgba(239, 68, 68, 0.6); }
+        }
+        @keyframes mic-pulse-blue {
+            0%, 100% { box-shadow: 0 0 18px rgba(59, 130, 246, 0.3); }
+            50%       { box-shadow: 0 0 32px rgba(59, 130, 246, 0.7); }
+        }
+        /* CHJ bubliny – fade-in + slide-up pro animované 3-větový briefing */
+        @keyframes chjFadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        /* Posunout mic btn nahoru když je panel otevřený */
+        body.panel-open #voice-mic-btn {
+            bottom: 80px;
+        }
+        /* === Header mic tlačítko === */
+        #start-game-btn {
+            height: 38px;
+            padding: 0 14px;
+            border-radius: 9999px;
+            background: linear-gradient(135deg, rgba(99,102,241,0.85), rgba(139,92,246,0.85));
+            border: none;
+            color: #fff;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            white-space: nowrap;
+            flex-shrink: 0;
+            transition: opacity 0.2s, transform 0.15s;
+        }
+        #start-game-btn:hover { opacity: 0.88; transform: scale(1.04); }
+        #header-mic-btn {
+            height: 38px;               /* stejná výška jako avatar */
+            min-width: 38px;            /* idle = kolečko; text = pill */
+            padding: 0 8px;
+            border-radius: 9999px;      /* vždy pill, začíná jako kruh */
+            background: rgba(51, 65, 85, 0.65);  /* viditelný, ale ne černý */
+            border: 2px solid #475569;            /* výraznější border, stejný styl jako avatar */
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 15px;
+            white-space: nowrap;
+            transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+            flex-shrink: 0;
+        }
+        #header-mic-btn:hover {
+            background: rgba(71, 85, 105, 0.85);
+            border-color: #64748b;
+        }
+        /* LISTENING – zelená pulsující záře jako podlahový mic */
+        #header-mic-btn[data-state="listening"] {
+            border-color: rgba(34, 197, 94, 0.75);
+            animation: header-pulse-green 1.1s ease-in-out infinite;
+        }
+        /* THINKING – modro-šedá (AI generuje odpověď) */
+        #header-mic-btn[data-state="thinking"] {
+            border-color: rgba(147, 197, 253, 0.55);
+            box-shadow: 0 0 8px rgba(147, 197, 253, 0.2);
+        }
+        /* SPEAKING – modrá pulsující záře (TTS čte) */
+        #header-mic-btn[data-state="speaking"] {
+            border-color: rgba(59, 130, 246, 0.8);
+            animation: header-pulse-blue 1.1s ease-in-out infinite;
+        }
+        @keyframes header-pulse-green {
+            0%, 100% { box-shadow: 0 0 8px rgba(34, 197, 94, 0.3); }
+            50%       { box-shadow: 0 0 20px rgba(34, 197, 94, 0.7); }
+        }
+        @keyframes header-pulse-blue {
+            0%, 100% { box-shadow: 0 0 8px rgba(59, 130, 246, 0.3); }
+            50%       { box-shadow: 0 0 20px rgba(59, 130, 246, 0.7); }
+        }
     </style>
 </head>
 
@@ -151,6 +263,10 @@
             </div>
         </div>
         <div class="user-profile-wrapper">
+            <button id="start-game-btn" title="Spustit hru" aria-label="Spustit hru">🎮 Spustit hru!</button>
+            <button id="header-mic-btn" title="Říct CHJ" aria-label="Hlasový vstup">
+                <span class="header-mic-icon">🎤</span>
+            </button>
             <button id="profileBtn" class="avatar-button">
                 <img src="https://ui-avatars.com/api/?name=Cipera&background=0D8ABC&color=fff" alt="Profil"
                     class="user-avatar">
@@ -170,6 +286,8 @@
                 </div>
                 <nav class="dropdown-nav">
                     <a href="#"><i class="icon">👤</i> Informace o profilu</a>
+                    <a href="#" onclick="openUserDataPanel(); return false;"><i class="icon">📋</i> Vstupní data</a>
+                    <a href="/app/medioteka.html"><i class="icon">📚</i> Mediotéka</a>
                     <a href="#" onclick="startOnboarding(); return false;"><i class="icon">⚡</i> Přeměřit
                         Vitalitu</a>
                     <a href="#"><i class="icon">💳</i> Platby a fakturační údaje</a>
@@ -227,8 +345,8 @@
     </aside>
 
     <script type="module">
-        import { supabase } from './js/universe/supabaseClient.js';
-        import { updateRecommendations } from './js/universe/universe-panel.js';
+        import { supabase } from './js/universe/supabaseClient.js?v=20260306f';
+        import { updateRecommendations } from './js/universe/universe-panel.js?v=20260310e';
 
         window.addEventListener('DOMContentLoaded', async () => {
             supabase.auth.onAuthStateChange((event, session) => {
@@ -240,12 +358,13 @@
         });
     </script>
 
-    <script type="module" src="/app/js/universe/universe-viewers.js"></script>
-    <script type="module" src="/app/js/universe/universe-access.js"></script>
-    <script type="module" src="/app/js/universe/universe-core.js"></script>
-    <script type="module" src="/app/js/universe/universe-init.js"></script>
-    <script type="module" src="/app/js/universe/ai-assistant.js"></script>
-    <script type="module" src="/app/js/universe/universe-panel.js"></script>
+    <script type="module" src="/app/js/universe/universe-viewers.js?v=20260306f"></script>
+    <script type="module" src="/app/js/universe/universe-access.js?v=20260306f"></script>
+    <script type="module" src="/app/js/universe/universe-core.js?v=20260306f"></script>
+    <script type="module" src="/app/js/universe/universe-init.js?v=20260310a"></script>
+    <script type="module" src="/app/js/universe/user-data-panel.js?v=20260306f"></script>
+    <script type="module" src="/app/js/universe/ai-assistant.js?v=20260306f"></script>
+    <script type="module" src="/app/js/universe/universe-panel.js?v=20260310e"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script>
         window.addEventListener('load', () => {

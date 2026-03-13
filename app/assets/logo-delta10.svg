@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 80" width="160" height="80">
+  <!-- Delta trojúhelník – outline, zlatá -->
+  <polygon
+    points="52,8 8,72 96,72"
+    fill="none"
+    stroke="#f59e0b"
+    stroke-width="5"
+    stroke-linejoin="round"
+    stroke-linecap="round"
+  />
+  <!-- 10 – bílé, zarovnané na střed trojúhelníku -->
+  <text
+    x="107"
+    y="68"
+    font-family="Inter, system-ui, sans-serif"
+    font-size="58"
+    font-weight="800"
+    fill="#f8fafc"
+    letter-spacing="-2"
+  >10</text>
+</svg>

@@ -74,6 +74,9 @@
 /* === User Profile === */
 .user-profile-wrapper {
     position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .avatar-button {

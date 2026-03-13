@@ -118,40 +118,47 @@ export default async function (req, res) {
       .limit(1)
       .maybeSingle();
 
-    // ✅ Stavy 4 hlavních dětí pro Desetibojař (jezdci)
-    const RIDER_MAP = {
-      'telo':    'srdce',
-      'mysl':    'mozku',
-      'vyziva':  'metabolismu',
-      'zdravi':  'rakoviny'
+    // ✅ Dynamický jezdec podle skutečného bottlenecku (ne fixní pořadí)
+    const ALL_NODE_RIDERS = {
+      // hlavní děti
+      'telo':           'srdce',
+      'mysl':           'mozku',
+      'vyziva':         'metabolismu',
+      'zdravi':         'rakoviny',
+      'metabolicke':    'metabolismu',
+      // leaf uzly
+      'sila':           'srdce',
+      'stabilita':      'pohybu',
+      'kardio':         'srdce',
+      'vo2max':         'srdce',
+      'spanek':         'mozku',
+      'stres':          'mozku',
+      'protein':        'metabolismu',
+      'prevence':       'rakoviny',
+      'nervovy_system': 'mozku',
     };
 
-    let ridersText = '';
+    let riderText = '';
     if (nodeId === 'dlouhovekost') {
-      const { data: childMetrics } = await supabase
-        .from('user_metrics')
-        .select('node_id, state')
-        .eq('user_id', userId)
-        .eq('universe', 'longevity')
-        .in('node_id', ['telo', 'mysl', 'vyziva', 'zdravi']);
+      const bottleneckId = context?.bottleneck;
+      if (bottleneckId && ALL_NODE_RIDERS[bottleneckId]) {
+        // Primární: rider skutečného bottlenecku
+        riderText = ALL_NODE_RIDERS[bottleneckId];
+      } else {
+        // Záloha: nejhorší hlavní dítě z DB
+        const { data: childMetrics } = await supabase
+          .from('user_metrics')
+          .select('node_id, state')
+          .eq('user_id', userId)
+          .eq('universe', 'longevity')
+          .in('node_id', ['telo', 'mysl', 'vyziva', 'zdravi', 'metabolicke']);
 
-      const stateMap = Object.fromEntries((childMetrics || []).map(m => [m.node_id, m.state]));
-
-      // 1. RED děti → jezdci, max 2
-      let candidates = Object.keys(RIDER_MAP).filter(id => stateMap[id] === 'RED');
-      // 2. Pokud žádné RED → YELLOW
-      if (candidates.length === 0) {
-        candidates = Object.keys(RIDER_MAP).filter(id => stateMap[id] === 'YELLOW');
+        const stateMap = Object.fromEntries((childMetrics || []).map(m => [m.node_id, m.state]));
+        const CHILD_ORDER = ['telo', 'mysl', 'vyziva', 'zdravi', 'metabolicke'];
+        const worst = CHILD_ORDER.find(id => stateMap[id] === 'RED')
+                   || CHILD_ORDER.find(id => stateMap[id] === 'YELLOW');
+        riderText = worst ? (ALL_NODE_RIDERS[worst] || '') : '';
       }
-      // 3. Fallback → bottleneck node
-      if (candidates.length === 0 && context?.bottleneck) {
-        candidates = [context.bottleneck];
-      }
-
-      const riders = candidates.slice(0, 2).map(id => RIDER_MAP[id] || id);
-      ridersText = riders.length === 2
-        ? `${riders[0]} a ${riders[1]}`
-        : riders[0] || '';
     }
 
     // ✅ Aspiration fetch (null for main node)
@@ -250,11 +257,21 @@ export default async function (req, res) {
         genderLabel
       ].filter(Boolean).join(', ');
 
-      // Fetch user constraints (injuries + body limits)
-      const { data: constraints } = await supabase
-        .from('user_constraints')
-        .select('constraint_type, constraint_key, constraint_value, severity')
-        .eq('user_id', userId);
+      // Fetch user constraints (pouze injury) + nejnovější biometrie (waist)
+      const [{ data: constraints }, { data: latestBio }] = await Promise.all([
+        supabase
+          .from('user_constraints')
+          .select('constraint_type, constraint_key, constraint_value, severity')
+          .eq('user_id', userId)
+          .eq('constraint_type', 'injury'),
+        supabase
+          .from('user_biometrics')
+          .select('waist_cm, weight_kg, body_fat_pct')
+          .eq('user_id', userId)
+          .order('measured_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+      ]);
 
       const INJURY_SUBS = {
         knee: {
@@ -281,7 +298,6 @@ export default async function (req, res) {
       const SEVERITY_LABELS = { mild: 'mírně', moderate: 'středně', severe: 'závažně' };
 
       const injuryLines = (constraints || [])
-        .filter(c => c.constraint_type === 'injury')
         .map(c => {
           const sub = INJURY_SUBS[c.constraint_key];
           if (!sub) return null;
@@ -290,19 +306,18 @@ export default async function (req, res) {
         })
         .filter(Boolean);
 
-      const WAIST_LIMIT = userProfile?.gender === 'female' ? 80 : 94;
-      const bodyLimits = (constraints || [])
-        .filter(c => c.constraint_type === 'body')
-        .map(c => {
-          if (c.constraint_key === 'waist_cm') {
-            const val = parseInt(c.constraint_value);
-            const over = val - WAIST_LIMIT;
-            return over > 0
-              ? `obvod pasu ${val} cm (o ${over} cm nad zdravou hranicí ${WAIST_LIMIT} cm) → snižuj kalorický příjem o 300 kcal denně`
-              : `obvod pasu ${val} cm (v normě)`;
-          }
-          return `${c.constraint_key}: ${c.constraint_value}`;
-        });
+      // Waist z user_biometrics (nejnovější záznam)
+      const bodyLimits = [];
+      if (latestBio?.waist_cm) {
+        const WAIST_LIMIT = userProfile?.gender === 'female' ? 80 : 94;
+        const val  = latestBio.waist_cm;
+        const over = val - WAIST_LIMIT;
+        bodyLimits.push(
+          over > 0
+            ? `obvod pasu ${val} cm (o ${over} cm nad zdravou hranicí ${WAIST_LIMIT} cm) → snižuj kalorický příjem o 300 kcal denně`
+            : `obvod pasu ${val} cm (v normě)`
+        );
+      }
 
       const constraintsLine = [
         ...injuryLines,
@@ -439,29 +454,28 @@ Jsi Chytré Já — průvodce zdravím a dlouhověkostí.
 
 ODPOVÍDEJ PŘESNĚ PODLE ŠABLONY. Čísla piš slovně.
 
-HLAVNÍ UZEL (DESETIBOJAŘ):
-Napiš DVĚ věty. Max čtyřicet pět slov celkem.
+HLAVNÍ UZEL (HRA O ŽIVOT):
+Napiš PŘESNĚ 3 věty oddělené znakem |. Max patnáct slov na větu.
 
-Věta 1 — baterie + jezdci:
-Pokud je JEZDCI vyplněno:
-- RED: "Tvoje baterie je skoro vybitá — to nahrává onemocněním [jezdci]."
-- YELLOW: "Tvoje baterie není plně nabitá — nahrává to onemocněním [jezdci]."
-- GREEN: "Tvoje baterie je nabitá, drž to takhle."
-Pokud JEZDCI chybí:
-- RED: "Tvoje baterie je skoro vybitá, bez změny to půjde dolů."
-- YELLOW: "Tvoje baterie není plně nabitá, ale celkově to jde správným směrem."
-- GREEN: "Tvoje baterie je nabitá, drž to takhle."
-Hodnota [jezdci] = obsah pole JEZDCI — dosaď přesně tak jak je, neskloňuj, neměň.
+Věta 1 — stav baterie:
+- RED: "Baterie je skoro vybitá."
+- YELLOW: "Baterie není plně nabitá."
+- GREEN: "Baterie je nabitá."
 
-Věta 2 — sen:
-Pokud je SEN vyplněno:
-- RED: "Na [sen] se takhle nepostavíš a ztratíš [co tím přijdeš o]."
-- YELLOW: "K [snu] ti ještě kus schází, ale je čas to změnit."
-- GREEN: "[Sen] si splníš."
-Pokud SEN chybí:
-- RED nebo YELLOW: "A přijdeš o to, nač se těšíš."
-- GREEN: (druhou větu vynech)
-Hodnota [sen] = obsah pole SEN, čísla piš slovně, použij vhodný pád.
+Věta 2 — bottleneck + jezdec (lidsky, bez názvů nemocí):
+Pokud je BOTTLENECK vyplněno: "Nejvíc tě brzdí [bottleneck], to ohrožuje [jezdec]."
+Pokud BOTTLENECK chybí a JEZDEC vyplněno: "Tvoje slabiny ohrožují [jezdec]."
+Pokud obojí chybí: "Žádná oblast není kritická — drž směr."
+[bottleneck] = obsah pole BOTTLENECK, vhodný pád. [jezdec] = obsah JEZDEC — dosaď přesně.
+
+Věta 3 — sen:
+SEN vyplněno + RED/YELLOW: "Bez změny se na [sen] nedostaneš."
+SEN vyplněno + GREEN: "[Sen] si splníš, drž to takhle."
+SEN chybí + RED/YELLOW: "Změň to dřív, než bude příliš pozdě."
+SEN chybí + GREEN: "Takhle si dlouhověkost opravdu užiješ."
+[sen] = obsah pole SEN, vhodný pád, čísla slovně.
+
+Výstup: přesně 3 věty oddělené |, nic jiného.
 
 PODŘÍZENÝ UZEL (bez aspirace nebo SEN_SPLNEN):
 - RED: "Tvoje [oblast] nestačí — [co to znamená pro tělo]."
@@ -499,7 +513,8 @@ REŽIM: ${isSubNode ? 'PODŘÍZENÝ UZEL' : 'HLAVNÍ UZEL'}
 UZEL: ${node.label}
 STAV: ${node.state || context?.state || 'UNKNOWN'}
 ${stepProvocation ? `KONTEXT PROVOKACE: "${stepProvocation}"` : ''}
-${!isSubNode && ridersText ? `JEZDCI: ${ridersText}` : ''}
+${!isSubNode && bottleneck?.node_label ? `BOTTLENECK: ${bottleneck.node_label}` : ''}
+${!isSubNode && riderText ? `JEZDEC: ${riderText}` : ''}
 ${!isSubNode && mainNodeAspirationLabel ? `SEN: ${mainNodeAspirationLabel}` : ''}
 ${isSubNode ? `OBLAST: ${getNodeContext(nodeId)}` : ''}
 ${aspirationBlock}
@@ -513,7 +528,7 @@ ${aspirationBlock}
         { role: "user", content: USER_PROMPT }
       ],
       temperature: 0.3,
-      max_tokens: 130
+      max_tokens: 200  // zvýšeno pro 3-větový výstup hlavního uzlu
     });
 
     const text = completion.choices[0].message.content;
@@ -522,10 +537,22 @@ ${aspirationBlock}
     console.log(text);
     console.log("=== RAW TEXT END ===");
 
-    const formatted = text.replace(/\.\s+/g, '.\n\n').trim();
+    // Hlavní uzel: parse 3 vět oddělených | → verdictLines
+    let verdictLines = null;
+    let formatted = text.replace(/\.\s+/g, '.\n\n').trim();
+
+    if (nodeId === 'dlouhovekost') {
+      const parts = text.split('|').map(s => s.trim()).filter(Boolean);
+      if (parts.length >= 2) {
+        verdictLines = parts;
+        formatted = parts[0]; // první věta jako fallback pro zpětnou kompatibilitu
+      }
+    }
 
     return res.json({
       verdict: formatted,
+      ...(verdictLines ? { verdictLines } : {}),
+      ...(nodeId === 'dlouhovekost' ? { bottleneckNodeId: context?.bottleneck || null } : {}),
       usage: {
         prompt_tokens: completion.usage.prompt_tokens,
         completion_tokens: completion.usage.completion_tokens,

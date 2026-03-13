@@ -1,4 +1,4 @@
-const CACHE_NAME = 'chytre-ja-v2';
+const CACHE_NAME = 'chytre-ja-v3';
 
 const ASSETS = [
   '/',
@@ -44,6 +44,38 @@ self.addEventListener('activate', event => {
   );
 });
 
+// Notifikace – klik otevře nebo fokusuje apku
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  const target = event.notification.data?.url || '/app/';
+
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+      .then(clientList => {
+        // Pokud je apka otevřená → jen ji fokusuj
+        const existing = clientList.find(c => c.url.includes('/app/'));
+        if (existing) return existing.focus();
+        // Jinak otevři nové okno
+        return self.clients.openWindow(target);
+      })
+  );
+});
+
+// Push notifikace (Web Push API) – zobrazí notifikaci
+self.addEventListener('push', event => {
+  const data = event.data?.json() || {};
+  const title = data.title || 'Chytré já';
+  const options = {
+    body: data.body || 'Máš novou zprávu od CHJ.',
+    icon: '/app/assets/images/logo-192.png',
+    badge: '/app/assets/images/logo-192.png',
+    data: { url: data.url || '/app/' },
+    vibrate: [200, 100, 200],
+    requireInteraction: false,
+  };
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
 // Fetch – strategie podle typu requestu
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
@@ -71,8 +103,11 @@ self.addEventListener('fetch', event => {
     caches.match(event.request).then(cached => {
       const network = fetch(event.request).then(response => {
         if (response.ok) {
+          // Clone ihned – response.clone() musí proběhnout před tím, než
+          // ktokoliv začne číst body (caches.open je async, bylo by pozdě)
+          const toCache = response.clone();
           caches.open(CACHE_NAME)
-            .then(cache => cache.put(event.request, response.clone()));
+            .then(cache => cache.put(event.request, toCache));
         }
         return response;
       }).catch(() => null);
