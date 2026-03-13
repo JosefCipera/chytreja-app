@@ -1119,6 +1119,13 @@ async function showGameOfLife(node) {
   // Animované bubliny pro všechny uzly (1–3 věty z AI)
   const verdictLines = verdict?.lines?.length >= 1 ? verdict.lines : null;
 
+  // Hlavní uzel: hardcoded 1. bublina (bio-věk) + 2 AI věty (bottleneck + sen)
+  // Sub-uzly: jen AI věty
+  const BIO_AGE_TEXT = 'Tvé tělo se dnes cítí na 52 let, i když ti je 45. Ta vybitá baterie ti zbytečně přidává roky.';
+  const displayLines = isMainNode
+    ? [BIO_AGE_TEXT, ...(verdictLines || [])]
+    : (verdictLines || null);
+
   // 7. Chip labely
   const chip1Label = actionTitle || 'Co mám dělat?';
   const chip2Label = reflectionTitle || 'Detailní rozbor';
@@ -1127,17 +1134,16 @@ async function showGameOfLife(node) {
   // (visionHtml odstraněno)
 
   // 8. Sestavení CHJ karty
-  // Hlavní uzel s 3 větami → animované bubliny; ostatní → jeden text
   const BUBBLE_STYLES = [
-    { bg: 'rgba(255,255,255,0.05)', border: 'rgba(255,255,255,0.11)', color: '#e2e8f0' },   // věta 1: stav baterie
-    { bg: 'rgba(234,179,8,0.07)',   border: 'rgba(234,179,8,0.28)',   color: '#fde68a' },   // věta 2: bottleneck + jezdec
-    { bg: 'rgba(139,92,246,0.07)',  border: 'rgba(139,92,246,0.28)',  color: '#c4b5fd' },   // věta 3: sen
+    { bg: 'rgba(6,182,212,0.08)',   border: 'rgba(6,182,212,0.25)',   color: '#e2e8f0' },   // bublina 0: hardcoded bio-věk (teal)
+    { bg: 'rgba(234,179,8,0.07)',   border: 'rgba(234,179,8,0.28)',   color: '#fde68a' },   // bublina 1: bottleneck + jezdec (žlutá)
+    { bg: 'rgba(139,92,246,0.07)',  border: 'rgba(139,92,246,0.28)',  color: '#c4b5fd' },   // bublina 2: sen (fialová)
   ];
 
   // Bubliny: použít transition + JS setTimeout (spolehlivější než CSS animation v innerHTML)
-  const chjContentHtml = verdictLines
+  const chjContentHtml = displayLines
     ? `<div id="chj-bubbles" style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
-        ${verdictLines.map((line, i) => {
+        ${displayLines.map((line, i) => {
           const s = BUBBLE_STYLES[i] || BUBBLE_STYLES[0];
           return `<div data-bubble="${i}" style="
             background:${s.bg}; border:1px solid ${s.border};
@@ -1179,7 +1185,7 @@ async function showGameOfLife(node) {
   */
 
   // 9a. Spustit animaci bublin přes JS transition (CSS @keyframes v innerHTML je nespolehlivé)
-  if (verdictLines) {
+  if (displayLines) {
     chjCard.querySelectorAll('[data-bubble]').forEach(el => {
       const i = parseInt(el.dataset.bubble) || 0;
       setTimeout(() => {
@@ -1198,8 +1204,8 @@ async function showGameOfLife(node) {
   // 10. TTS – čte aktuálně zobrazený text; tlačítko odstraněno, řídí se mic ikony
   const messageEl = chjCard.querySelector('.chj-message');
   const playBtn = null; // tlačítko odstraněno – zachováno kvůli if (playBtn) guardu níže
-  // Pokud jsou 3 bubliny → TTS přečte všechny věty za sebou
-  let currentText = verdictLines ? verdictLines.join(' ') : initialText;
+  // TTS přečte všechny věty za sebou
+  let currentText = displayLines ? displayLines.join(' ') : initialText;
   let ttsPlaying = false;
 
   function startTTS() {
