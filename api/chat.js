@@ -502,25 +502,25 @@ SEN chybí + GREEN: "Takhle si dlouhověkost opravdu užiješ."
 Výstup: přesně 3 věty oddělené |, nic jiného.
 
 PODŘÍZENÝ UZEL:
-Napiš PŘESNĚ 3 věty oddělené znakem |. Max patnáct slov na větu.
+Napiš 1 až 3 věty oddělené znakem |. Max patnáct slov na větu.
 
-Věta 1 — stav oblasti:
+Věta 1 — stav oblasti (vždy):
 - RED: "Tvoje [oblast] nestačí — [co to znamená pro tělo]."
 - YELLOW: "Tvoje [oblast] není špatná, ale [co konkrétně slábne]."
 - GREEN: "Tvoje [oblast] je v pořádku."
 
-Věta 2 — konkrétní důsledek pro tělo nebo pohyb (bez názvů nemocí):
-RED/YELLOW: napiš co konkrétně slábne nebo co přijde, pokud se nic nezmění.
-GREEN: napiš co to dává do budoucna (pozitivně, fakticky).
+Věta 2 — důsledek (jen RED nebo YELLOW):
+Napiš co konkrétně slábne nebo co přijde, pokud se nic nezmění.
+GREEN: větu 2 vynech.
 
-Věta 3 — sen nebo směr:
+Věta 3 — sen (jen pokud je vyplněno MEZERA_K_SENU nebo SEN_SPLNEN):
 MEZERA_K_SENU + RED/YELLOW: "[Oblast] nestačí — na [sen] se takhle nepostavíš."
 MEZERA_K_SENU + GREEN: "Takhle na [sen] máš reálnou šanci."
-Bez senu + RED/YELLOW: "Změna teď je jednodušší než náprava za rok."
-Bez senu + GREEN: "Drž to takhle a tělo ti to vrátí."
+SEN_SPLNEN: "[Sen] si splníš, drž to takhle."
+Bez senu: větu 3 vynech.
 [sen] = obsah pole SEN, čísla slovně, vhodný pád.
 
-Výstup: přesně 3 věty oddělené |, nic jiného.
+Výstup: 1 až 3 věty oddělené |, nic jiného.
 
 Doplň jen obsah v hranatých závorkách. Neměň strukturu věty. Nepřidávej nic navíc.
 
@@ -574,15 +574,10 @@ ${aspirationBlock}
     let verdictLines = null;
     let formatted = text.replace(/\.\s+/g, '.\n\n').trim();
 
-    // Všechny uzly generují 3 věty oddělené | → verdictLines pro bubliny
+    // Všechny uzly: parse bubliny oddělené |, 1–3 vět
     {
-      let parts = text.split('|').map(s => s.trim()).filter(Boolean);
-      if (parts.length < 2) {
-        // Fallback: rozděl na věty podle ". " nebo ".\n"
-        parts = text.split(/\.(?:\s+|\n)/).map(s => s.trim()).filter(Boolean)
-                    .map(s => s.endsWith('.') ? s : s + '.');
-      }
-      if (parts.length >= 2) {
+      const parts = text.split('|').map(s => s.trim()).filter(Boolean);
+      if (parts.length >= 1) {
         verdictLines = parts.slice(0, 3);
         formatted = parts[0];
       }
