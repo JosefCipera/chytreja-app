@@ -537,15 +537,21 @@ ${aspirationBlock}
     console.log(text);
     console.log("=== RAW TEXT END ===");
 
-    // Hlavní uzel: parse 3 vět oddělených | → verdictLines
+    // Hlavní uzel: parse 3 vět → verdictLines
+    // Primárně oddělené |, fallback na věty (. + mezera)
     let verdictLines = null;
     let formatted = text.replace(/\.\s+/g, '.\n\n').trim();
 
     if (nodeId === 'dlouhovekost') {
-      const parts = text.split('|').map(s => s.trim()).filter(Boolean);
+      let parts = text.split('|').map(s => s.trim()).filter(Boolean);
+      if (parts.length < 2) {
+        // Fallback: rozděl na věty podle ". " nebo ".\n"
+        parts = text.split(/\.(?:\s+|\n)/).map(s => s.trim()).filter(Boolean)
+                    .map(s => s.endsWith('.') ? s : s + '.');
+      }
       if (parts.length >= 2) {
-        verdictLines = parts;
-        formatted = parts[0]; // první věta jako fallback pro zpětnou kompatibilitu
+        verdictLines = parts.slice(0, 3);
+        formatted = parts[0];
       }
     }
 
