@@ -1116,8 +1116,8 @@ async function showGameOfLife(node) {
     initialText = 'Nepodařilo se načíst diagnózu.';
   }
 
-  // Animované bubliny pro hlavní uzel (3 věty z AI)
-  const verdictLines = isMainNode && verdict?.lines?.length >= 2 ? verdict.lines : null;
+  // Animované bubliny pro všechny uzly (3 věty z AI)
+  const verdictLines = verdict?.lines?.length >= 2 ? verdict.lines : null;
 
   // 7. Chip labely
   const chip1Label = actionTitle || 'Co mám dělat?';
@@ -1246,6 +1246,11 @@ async function showGameOfLife(node) {
         const fi = fm.querySelector('.mic-icon');
         if (fi) fi.textContent = '🎤';
       }
+      // Skryj tlačítko "Spusť hru!" po dočtení
+      if (typeof window._chjOnTTSEnd === 'function') {
+        window._chjOnTTSEnd();
+        window._chjOnTTSEnd = null;
+      }
     };
     window.speechSynthesis.speak(utterance);
   }
@@ -1272,6 +1277,9 @@ async function showGameOfLife(node) {
     };
     setTimeout(attempt, 400);
   };
+  // Exponuj startTTS globálně – tlačítko "Spustit hru!" ho může zavolat přímo
+  window._chjStartTTS = () => { if (!ttsPlaying) startTTS(); };
+
   if (window._chjTTSPrimed) {
     _doAutoTTS(); // engine already unlocked (user touched before data loaded)
   } else {
