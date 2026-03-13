@@ -1154,6 +1154,9 @@ async function showGameOfLife(node) {
 
   chjCard.innerHTML = `
     ${chjContentHtml}
+  `;
+  /* CHIPY DOČASNĚ SKRYTY – odkomentovat až bude akční engine + mediáteka napojeny
+  chjCard.innerHTML += `
     <div class="smart-chips" style="display:flex;flex-direction:column;gap:10px;">
       <button id="chip-action" style="
         display:flex;align-items:center;gap:10px;
@@ -1162,7 +1165,6 @@ async function showGameOfLife(node) {
         cursor:pointer;font-size:14px;font-weight:600;
         text-align:left;transition:all 0.2s;width:100%;
       "><span style="font-size:18px;">⚡</span>${chip1Label}</button>
-      <!-- chip-reflection skryt: <button id="chip-reflection" ...>🧠 Detailní rozbor</button> -->
       ${(hasResources || actionText || reflectionText) ? `
         <button id="chip-resources" style="
           display:flex;align-items:center;gap:10px;
@@ -1174,6 +1176,7 @@ async function showGameOfLife(node) {
       ` : ''}
     </div>
   `;
+  */
 
   // 9a. Spustit animaci bublin přes JS transition (CSS @keyframes v innerHTML je nespolehlivé)
   if (verdictLines) {
