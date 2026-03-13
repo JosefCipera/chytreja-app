@@ -118,24 +118,25 @@ export default async function (req, res) {
       .limit(1)
       .maybeSingle();
 
-    // ✅ Dynamický jezdec podle skutečného bottlenecku (ne fixní pořadí)
+    // Čtyři jezdci apokalypsy podle Attii – uzel → primární jezdec
+    // Kardiovaskulární | Rakovina | Neurodegenerace | Metabolické nemoci
     const ALL_NODE_RIDERS = {
       // hlavní děti
-      'telo':           'srdce',
-      'mysl':           'mozku',
-      'vyziva':         'metabolismu',
-      'zdravi':         'rakoviny',
-      'metabolicke':    'metabolismu',
+      'telo':           'metabolického jezdce',
+      'mysl':           'neurodegenerativního jezdce',
+      'vyziva':         'metabolického a onkologického jezdce',
+      'zdravi':         'kardiovaskulárního a onkologického jezdce',
+      'metabolicke':    'metabolického jezdce',
       // leaf uzly
-      'sila':           'srdce',
-      'stabilita':      'pohybu',
-      'kardio':         'srdce',
-      'vo2max':         'srdce',
-      'spanek':         'mozku',
-      'stres':          'mozku',
-      'protein':        'metabolismu',
-      'prevence':       'rakoviny',
-      'nervovy_system': 'mozku',
+      'sila':           'metabolického jezdce',
+      'stabilita':      'neurodegenerativního jezdce',
+      'kardio':         'kardiovaskulárního jezdce',
+      'vo2max':         'kardiovaskulárního jezdce',
+      'spanek':         'neurodegenerativního jezdce',
+      'stres':          'neurodegenerativního jezdce',
+      'protein':        'metabolického jezdce',
+      'prevence':       'onkologického jezdce',
+      'nervovy_system': 'neurodegenerativního jezdce',
     };
 
     let riderText = '';
