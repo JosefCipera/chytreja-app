@@ -575,8 +575,14 @@ ${aspirationBlock}
     let formatted = text.replace(/\.\s+/g, '.\n\n').trim();
 
     // Všechny uzly: parse bubliny oddělené |, 1–3 vět
+    // Pokud AI nepoužije |, zkusíme rozdělit po větách (fallback)
     {
-      const parts = text.split('|').map(s => s.trim()).filter(Boolean);
+      let parts = text.split('|').map(s => s.trim()).filter(Boolean);
+      if (parts.length <= 1) {
+        const sentParts = text.split(/\.(?:\s+|\n)/).map(s => s.trim()).filter(Boolean)
+                              .map(s => s.endsWith('.') ? s : s + '.');
+        if (sentParts.length > 1) parts = sentParts;
+      }
       if (parts.length >= 1) {
         verdictLines = parts.slice(0, 3);
         formatted = parts[0];
