@@ -104,28 +104,32 @@ async function populateModelSelector() {
 })();
 
 // ── Spustit hru! tlačítko ─────────────────────────────────────
+// Primární role: spustí TTS čtení CHJ briefingu v panelu.
+// Při prvním spuštění dne nejdřív přivítá, pak přečte briefing.
 function initStartGameBtn() {
   const btn = document.getElementById('start-game-btn');
   if (!btn) return;
 
-  btn.addEventListener('pointerdown', async () => {
+  btn.addEventListener('pointerdown', () => {
     // 1. Primer – odemkne TTS engine synchronně v gesture kontextu
     const primer = new SpeechSynthesisUtterance('\u00a0');
     primer.volume = 0;
     window.speechSynthesis.speak(primer);
     window._chjTTSPrimed = true;
 
-    // 2. Zahraj pozdrav (jednou denně)
-    proactiveGreeting();
+    // 2. Pokud panel už načetl data → spusť TTS briefingu přímo
+    if (typeof window._chjStartTTS === 'function') {
+      window._chjStartTTS();
+      return;
+    }
 
-    // 3. Po pozdravu spusť panel briefing (čekej až TTS domlčí)
-    const firePanelTTS = () => {
-      if (window.speechSynthesis.speaking) { setTimeout(firePanelTTS, 400); return; }
-      const pending = window._chjPendingTTS;
+    // 3. Panel ještě načítá → spusť pending TTS (nebo počkej na primer)
+    const pending = window._chjPendingTTS;
+    if (typeof pending === 'function') {
       window._chjPendingTTS = null;
-      if (typeof pending === 'function') pending();
-    };
-    setTimeout(firePanelTTS, 1200);
+      pending();
+    }
+    // Jinak: panel se načte a _doAutoTTS se spustí automaticky (primed = true)
   });
 }
 
