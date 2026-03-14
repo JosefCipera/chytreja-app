@@ -448,9 +448,29 @@ Dotaz uživatele: ${userQuestion}`;
       return risks[nodeLabel.toLowerCase()] || 'tělo';
     }
 
+    // Nominativ — podmět: "Tvoje [oblast] nestačí / není špatná / je v pořádku"
+    function getNodeContextNom(nodeId) {
+      const n = {
+        'telo':          'síla a svaly',
+        'mysl':          'pozornost a paměť',
+        'vyziva':        'strava a energie',
+        'zdravi':        'odolnost a prevence',
+        'metabolicke':   'metabolismus',
+        'sila':          'síla',
+        'stabilita':     'rovnováha a pohyblivost',
+        'kardio':        'kondice a srdce',
+        'vo2max':        'aerobní kapacita',
+        'spanek':        'spánek',
+        'stres':         'zvládání stresu',
+        'protein':       'příjem bílkovin',
+        'nervovy_system':'nervový systém',
+      };
+      return n[nodeId] || nodeId;
+    }
+
+    // Akuzativ — předmět: "brzdí [oblast]"
     function getNodeContext(nodeId) {
-      // Accusativ — pro větu "brzdí [oblast]" i pro "Tvoje [oblast] nestačí"
-      const contexts = {
+      const a = {
         'telo':          'sílu a svaly',
         'mysl':          'pozornost a paměť',
         'vyziva':        'stravu a energii',
@@ -465,7 +485,7 @@ Dotaz uživatele: ${userQuestion}`;
         'protein':       'příjem bílkovin',
         'nervovy_system':'nervový systém',
       };
-      return contexts[nodeId] || nodeId;
+      return a[nodeId] || nodeId;
     }
 
     function getNodeLabel(nodeId) {
@@ -488,29 +508,29 @@ HLAVNÍ UZEL (HRA O ŽIVOT):
 Napiš PŘESNĚ 1 větu. Max patnáct slov.
 
 Věta 1 — největší killer:
-Pokud KILLER vyplněno: "Největší hrozbou je pro tebe [killer], protože brzdí [oblast]."
+Pokud KILLER vyplněno: "Největší hrozbou je pro tebe [killer], protože brzdí [oblast_aku]."
 Pokud KILLER chybí: "Tvoje zdraví je zatím v rovnováze — drž směr."
 [killer] = obsah pole KILLER — dosaď přesně, bez úprav.
-[oblast] = obsah pole OBLAST — dosaď přesně, bez úprav.
+[oblast_aku] = obsah pole OBLAST_AKU — dosaď přesně, bez úprav.
 
 Výstup: přesně 1 věta, nic jiného.
 
 PODŘÍZENÝ UZEL:
-Napiš PŘESNĚ 2 věty oddělené znakem |. Max patnáct slov na větu.
+Max patnáct slov na větu.
 
-Věta 1 — stav oblasti:
-- RED: "Tvoje [oblast] nestačí — [co to znamená pro tělo]."
-- YELLOW: "Tvoje [oblast] není špatná, ale [co konkrétně slábne]."
-- GREEN: "Tvoje [oblast] je v pořádku."
-[oblast] = obsah pole OBLAST — dosaď přesně, bez úprav.
+Věta 1 — stav oblasti (vždy):
+- RED: "Tvoje [oblast_nom] nestačí — [co to znamená pro tělo]."
+- YELLOW: "Tvoje [oblast_nom] není špatná, ale [co konkrétně slábne]."
+- GREEN: "Tvoje [oblast_nom] je v pořádku."
+[oblast_nom] = obsah pole OBLAST_NOM — dosaď přesně, bez úprav.
 
-Věta 2 — největší killer:
-Pokud KILLER vyplněno: "Největší hrozbou je pro tebe [killer], protože brzdí [oblast]."
-Pokud KILLER chybí: "Bez změny to půjde postupně dolů."
+Věta 2 — killer (jen pokud je KILLER vyplněno):
+"Největší hrozbou je pro tebe [killer], protože brzdí [oblast_aku]."
 [killer] = obsah pole KILLER — dosaď přesně, bez úprav.
-[oblast] = obsah pole OBLAST — dosaď přesně, bez úprav.
+[oblast_aku] = obsah pole OBLAST_AKU — dosaď přesně, bez úprav.
+Pokud KILLER chybí: napiš jen větu 1, větu 2 vynech.
 
-Výstup: přesně 2 věty oddělené |, nic jiného.
+Výstup: 1 nebo 2 věty oddělené |, nic jiného.
 
 Doplň jen obsah v hranatých závorkách. Neměň strukturu věty. Nepřidávej nic navíc.
 
@@ -529,17 +549,21 @@ MEZERA_K_SENU: ano`;
 SEN_SPLNEN: ano`;
       }
     }
-    // Oblast: sub-uzel = vlastní oblast; hlavní uzel = oblast bottleneck uzlu
-    const oblast = isSubNode
+    // Oblast akuzativ (pro killer větu) — sub-uzel = vlastní, hlavní = bottleneck
+    const oblastAku = isSubNode
       ? getNodeContext(nodeId)
       : getNodeContext(killerSourceNodeId || nodeId);
 
-    console.log('KILLER:', killerText, '| OBLAST:', oblast);
+    // Oblast nominativ (pro stav větu) — vždy vlastní uzel
+    const oblastNom = getNodeContextNom(nodeId);
+
+    console.log('KILLER:', killerText, '| OBLAST_NOM:', oblastNom, '| OBLAST_AKU:', oblastAku);
     const USER_PROMPT = `
 REŽIM: ${isSubNode ? 'PODŘÍZENÝ UZEL' : 'HLAVNÍ UZEL'}
 UZEL: ${node.label}
 STAV: ${node.state || context?.state || 'UNKNOWN'}
-OBLAST: ${oblast}
+${isSubNode ? `OBLAST_NOM: ${oblastNom}` : ''}
+${killerText ? `OBLAST_AKU: ${oblastAku}` : ''}
 ${killerText ? `KILLER: ${killerText}` : ''}
 `.trim();
 
