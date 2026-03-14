@@ -929,10 +929,11 @@ function _buildBatteryHTML(state) {
   const battColor  = state === 'GREEN' ? '#22c55e' : state === 'YELLOW' ? '#eab308' : '#ef4444';
   const battBorder = state === 'GREEN' ? 'rgba(34,197,94,0.35)'  : state === 'YELLOW' ? 'rgba(234,179,8,0.35)'  : 'rgba(239,68,68,0.35)';
   const battGlow   = state === 'GREEN' ? 'rgba(34,197,94,0.7)'   : state === 'YELLOW' ? 'rgba(234,179,8,0.7)'   : 'rgba(239,68,68,0.7)';
-  const stateLabel = state === 'GREEN' ? 'Životní energie — dobrá' : state === 'YELLOW' ? 'Životní energie — průměrná' : 'Životní energie — slabá';
+  const stateLabel = state === 'GREEN' ? 'Nabito' : state === 'YELLOW' ? 'Dobíjení' : 'Slabá baterie';
+  const stateLabelColor = state === 'RED' ? '#ef4444' : '#64748b';
   return `
     <div style="text-align:center; padding:12px 0 4px;">
-      <div style="font-size:13px;color:#e2e8f0;font-weight:600;letter-spacing:0.3px;margin-bottom:18px;">Tvůj biologický věk: 52 let</div>
+      <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:20px;">Tvůj biologický věk - 52 let</div>
       <div style="display:inline-flex; flex-direction:column; align-items:center;">
         <div style="
           width:22px; height:11px;
@@ -966,7 +967,7 @@ function _buildBatteryHTML(state) {
           </div>
         </div>
       </div>
-      <div style="margin-top:14px; font-size:13px; color:${battColor}; letter-spacing:0.3px; font-weight:500;">${stateLabel}</div>
+      <div style="margin-top:14px; font-size:13px; color:${stateLabelColor}; letter-spacing:0.5px;">${stateLabel}</div>
     </div>
   `;
 }
