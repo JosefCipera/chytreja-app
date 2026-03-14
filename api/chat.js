@@ -532,18 +532,26 @@ PRAVIDLA:
 - Česky, tykej, přímočaře
 - Čísla piš slovně
 - ZAKÁZANÁ SLOVA: musíš, okamžitě, je důležité, měl bys, hrozí, ohrožuje, samostatnost, závislý, pomoc druhých, trpí, Dobrá zpráva je
+
+VĚTA 3 — aspirace (jen pro podřízený uzel, jen pokud je SEN vyplněno):
+Jednou větou řekni, jak aktuální stav oblasti ovlivňuje sen (SEN). Vyjdi z SEN_GAP.
+SEN_GAP "daleko":   "Na [sen] se ani nepostavíš."        — přímé, bez omluv
+SEN_GAP "blízko":   "Na [sen] ti takhle nestačí."        — varování
+SEN_GAP "v dosahu": "Na [sen] jsi na dobré cestě."       — povzbuzení
+SEN_GAP "splněno":  "Na [sen] máš solidní základnu."     — uznání
+Pokud SEN chybí: větu 3 vynech.
+Výstup podřízený uzel: 1–3 věty oddělené |, nic víc.
 `.trim();
 
     // Build aspiration block for sub-nodes only
     let aspirationBlock = '';
     if (isSubNode && aspirationData) {
-      if (aspirationData.gap > 0.05) {
-        aspirationBlock = `SEN: ${aspirationData.label}
-MEZERA_K_SENU: ano`;
-      } else {
-        aspirationBlock = `SEN: ${aspirationData.label}
-SEN_SPLNEN: ano`;
-      }
+      const gap = aspirationData.gap ?? 0;
+      const gapLabel = aspirationData.achieved ? 'splněno'
+        : gap > 0.3 ? 'daleko'
+        : gap > 0.1 ? 'blízko'
+        : 'v dosahu';
+      aspirationBlock = `SEN: ${aspirationData.label}\nSEN_GAP: ${gapLabel}`;
     }
     // Oblast akuzativ (pro killer větu) — sub-uzel = vlastní, hlavní = bottleneck
     const oblastAku = isSubNode
@@ -553,14 +561,19 @@ SEN_SPLNEN: ano`;
     // Oblast nominativ (pro stav větu) — vždy vlastní uzel
     const oblastNom = getNodeContextNom(nodeId);
 
-    console.log('KILLER:', killerText, '| OBLAST_NOM:', oblastNom, '| OBLAST_AKU:', oblastAku);
+    const nodeState = node.state || context?.state || 'UNKNOWN';
+    // Killer se neposílá pro GREEN — tam není co varovat
+    const showKiller = killerText && nodeState !== 'GREEN';
+
+    console.log('KILLER:', killerText, '| SHOW_KILLER:', showKiller, '| OBLAST_NOM:', oblastNom, '| SEN:', aspirationData?.label);
     const USER_PROMPT = `
 REŽIM: ${isSubNode ? 'PODŘÍZENÝ UZEL' : 'HLAVNÍ UZEL'}
 UZEL: ${node.label}
-STAV: ${node.state || context?.state || 'UNKNOWN'}
+STAV: ${nodeState}
 ${isSubNode ? `OBLAST_NOM: ${oblastNom}` : ''}
-${killerText ? `OBLAST_AKU: ${oblastAku}` : ''}
-${killerText ? `KILLER: ${killerText}` : ''}
+${showKiller ? `OBLAST_AKU: ${oblastAku}` : ''}
+${showKiller ? `KILLER: ${killerText}` : ''}
+${aspirationBlock}
 `.trim();
 
     // 5️⃣ OpenAI API call
