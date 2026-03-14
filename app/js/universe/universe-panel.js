@@ -930,9 +930,10 @@ function _buildBatteryHTML(state) {
   const battBorder = state === 'GREEN' ? 'rgba(34,197,94,0.35)'  : state === 'YELLOW' ? 'rgba(234,179,8,0.35)'  : 'rgba(239,68,68,0.35)';
   const battGlow   = state === 'GREEN' ? 'rgba(34,197,94,0.7)'   : state === 'YELLOW' ? 'rgba(234,179,8,0.7)'   : 'rgba(239,68,68,0.7)';
   const stateLabel = state === 'GREEN' ? 'Nabito' : state === 'YELLOW' ? 'Dobíjení' : 'Slabá baterie';
+  const stateLabelColor = state === 'RED' ? '#ef4444' : '#64748b';
   return `
     <div style="text-align:center; padding:12px 0 4px;">
-      <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:20px;">Tvoje životní energie</div>
+      <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:20px;">Tvůj biologický věk - 52 let</div>
       <div style="display:inline-flex; flex-direction:column; align-items:center;">
         <div style="
           width:22px; height:11px;
@@ -966,7 +967,7 @@ function _buildBatteryHTML(state) {
           </div>
         </div>
       </div>
-      <div style="margin-top:14px; font-size:13px; color:#64748b; letter-spacing:0.5px;">${stateLabel}</div>
+      <div style="margin-top:14px; font-size:13px; color:${stateLabelColor}; letter-spacing:0.5px;">${stateLabel}</div>
     </div>
   `;
 }
@@ -1116,8 +1117,15 @@ async function showGameOfLife(node) {
     initialText = 'Nepodařilo se načíst diagnózu.';
   }
 
-  // Animované bubliny pro hlavní uzel (3 věty z AI)
-  const verdictLines = isMainNode && verdict?.lines?.length >= 2 ? verdict.lines : null;
+  // Animované bubliny pro všechny uzly (1–3 věty z AI)
+  const verdictLines = verdict?.lines?.length >= 1 ? verdict.lines : null;
+
+  // Hlavní uzel: hardcoded 1. bublina (bio-věk) + 2 AI věty (bottleneck + sen)
+  // Sub-uzly: jen AI věty
+  const BIO_AGE_TEXT = 'Tvé tělo se dnes cítí na 52 let, i když ti je 45. Ta vybitá baterie ti zbytečně přidává roky.';
+  const displayLines = isMainNode
+    ? [BIO_AGE_TEXT, ...(verdictLines || [])]
+    : (verdictLines || null);
 
   // 7. Chip labely
   const chip1Label = actionTitle || 'Co mám dělat?';
@@ -1127,17 +1135,16 @@ async function showGameOfLife(node) {
   // (visionHtml odstraněno)
 
   // 8. Sestavení CHJ karty
-  // Hlavní uzel s 3 větami → animované bubliny; ostatní → jeden text
   const BUBBLE_STYLES = [
-    { bg: 'rgba(255,255,255,0.05)', border: 'rgba(255,255,255,0.11)', color: '#e2e8f0' },   // věta 1: stav baterie
-    { bg: 'rgba(234,179,8,0.07)',   border: 'rgba(234,179,8,0.28)',   color: '#fde68a' },   // věta 2: bottleneck + jezdec
-    { bg: 'rgba(139,92,246,0.07)',  border: 'rgba(139,92,246,0.28)',  color: '#c4b5fd' },   // věta 3: sen
+    { bg: 'rgba(6,182,212,0.08)',   border: 'rgba(6,182,212,0.25)',   color: '#e2e8f0' },   // bublina 0: hardcoded bio-věk (teal)
+    { bg: 'rgba(234,179,8,0.07)',   border: 'rgba(234,179,8,0.28)',   color: '#fde68a' },   // bublina 1: bottleneck + jezdec (žlutá)
+    { bg: 'rgba(139,92,246,0.07)',  border: 'rgba(139,92,246,0.28)',  color: '#c4b5fd' },   // bublina 2: sen (fialová)
   ];
 
   // Bubliny: použít transition + JS setTimeout (spolehlivější než CSS animation v innerHTML)
-  const chjContentHtml = verdictLines
+  const chjContentHtml = displayLines
     ? `<div id="chj-bubbles" style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
-        ${verdictLines.map((line, i) => {
+        ${displayLines.map((line, i) => {
           const s = BUBBLE_STYLES[i] || BUBBLE_STYLES[0];
           return `<div data-bubble="${i}" style="
             background:${s.bg}; border:1px solid ${s.border};
@@ -1154,6 +1161,9 @@ async function showGameOfLife(node) {
 
   chjCard.innerHTML = `
     ${chjContentHtml}
+  `;
+  /* CHIPY DOČASNĚ SKRYTY – odkomentovat až bude akční engine + mediáteka napojeny
+  chjCard.innerHTML += `
     <div class="smart-chips" style="display:flex;flex-direction:column;gap:10px;">
       <button id="chip-action" style="
         display:flex;align-items:center;gap:10px;
@@ -1162,7 +1172,6 @@ async function showGameOfLife(node) {
         cursor:pointer;font-size:14px;font-weight:600;
         text-align:left;transition:all 0.2s;width:100%;
       "><span style="font-size:18px;">⚡</span>${chip1Label}</button>
-      <!-- chip-reflection skryt: <button id="chip-reflection" ...>🧠 Detailní rozbor</button> -->
       ${(hasResources || actionText || reflectionText) ? `
         <button id="chip-resources" style="
           display:flex;align-items:center;gap:10px;
@@ -1174,9 +1183,10 @@ async function showGameOfLife(node) {
       ` : ''}
     </div>
   `;
+  */
 
   // 9a. Spustit animaci bublin přes JS transition (CSS @keyframes v innerHTML je nespolehlivé)
-  if (verdictLines) {
+  if (displayLines) {
     chjCard.querySelectorAll('[data-bubble]').forEach(el => {
       const i = parseInt(el.dataset.bubble) || 0;
       setTimeout(() => {
@@ -1195,8 +1205,8 @@ async function showGameOfLife(node) {
   // 10. TTS – čte aktuálně zobrazený text; tlačítko odstraněno, řídí se mic ikony
   const messageEl = chjCard.querySelector('.chj-message');
   const playBtn = null; // tlačítko odstraněno – zachováno kvůli if (playBtn) guardu níže
-  // Pokud jsou 3 bubliny → TTS přečte všechny věty za sebou
-  let currentText = verdictLines ? verdictLines.join(' ') : initialText;
+  // TTS přečte všechny věty za sebou
+  let currentText = displayLines ? displayLines.join(' ') : initialText;
   let ttsPlaying = false;
 
   function startTTS() {
@@ -1246,6 +1256,11 @@ async function showGameOfLife(node) {
         const fi = fm.querySelector('.mic-icon');
         if (fi) fi.textContent = '🎤';
       }
+      // Skryj tlačítko "Spusť hru!" po dočtení
+      if (typeof window._chjOnTTSEnd === 'function') {
+        window._chjOnTTSEnd();
+        window._chjOnTTSEnd = null;
+      }
     };
     window.speechSynthesis.speak(utterance);
   }
@@ -1272,6 +1287,9 @@ async function showGameOfLife(node) {
     };
     setTimeout(attempt, 400);
   };
+  // Exponuj startTTS globálně – tlačítko "Spustit hru!" ho může zavolat přímo
+  window._chjStartTTS = () => { if (!ttsPlaying) startTTS(); };
+
   if (window._chjTTSPrimed) {
     _doAutoTTS(); // engine already unlocked (user touched before data loaded)
   } else {
