@@ -108,6 +108,7 @@ export default async function (req, res) {
     const { nodeId, userQuestion, context } = req.body;
 
     const userId = context?.userId || 'demo-user-123';
+    const isSubNode = nodeId !== 'dlouhovekost';
 
     // ✅ Bottleneck fetch
     const { data: bottleneck } = await supabase
@@ -255,8 +256,6 @@ export default async function (req, res) {
       .maybeSingle();
 
     const stepProvocation = nodeSteps?.step_provocation || null;
-
-    const isSubNode = nodeId !== 'dlouhovekost';
 
     // ─── CONVERSATION MODE ───────────────────────────────────────────────────
     if (userQuestion) {
