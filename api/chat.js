@@ -118,29 +118,7 @@ export default async function (req, res) {
       .limit(1)
       .maybeSingle();
 
-    // ✅ Dynamický jezdec podle skutečného bottlenecku (ne fixní pořadí)
-    // Hodnoty jsou v 4. pádě (akuzativ) — pro větu "to ohrožuje [jezdec]"
-    const ALL_NODE_RIDERS = {
-      // hlavní děti
-      'telo':           'srdce',          // neuter: nom = akuz
-      'mysl':           'mozek',          // mask neanimat: akuz = nom
-      'vyziva':         'metabolismus',   // mask neanimat
-      'zdravi':         'rakovinu',       // fem: akuz -u
-      'metabolicke':    'metabolismus',
-      // leaf uzly
-      'sila':           'srdce',
-      'stabilita':      'pohyb',          // mask neanimat
-      'kardio':         'srdce',
-      'vo2max':         'srdce',
-      'spanek':         'mozek',
-      'stres':          'mozek',
-      'protein':        'metabolismus',
-      'prevence':       'rakovinu',
-      'nervovy_system': 'mozek',
-    };
-
     // Záloha pro BOTTLENECK pole — pokud DB vrátí null node_label
-    // Nominativ (AI sám skloňuje do správného pádu dle šablony)
     const NODE_LABELS_CZ = {
       'telo':           'Tělo',
       'mysl':           'Mysl',
@@ -154,7 +132,6 @@ export default async function (req, res) {
       'spanek':         'Spánek',
       'stres':          'Stres',
       'protein':        'Bílkoviny',
-      'prevence':       'Prevence',
       'nervovy_system': 'Nervová soustava',
     };
 
@@ -162,27 +139,48 @@ export default async function (req, res) {
       || (context?.bottleneck ? NODE_LABELS_CZ[context.bottleneck] : null)
       || null;
 
-    let riderText = '';
-    if (nodeId === 'dlouhovekost') {
-      const bottleneckId = context?.bottleneck;
-      if (bottleneckId && ALL_NODE_RIDERS[bottleneckId]) {
-        // Primární: rider skutečného bottlenecku
-        riderText = ALL_NODE_RIDERS[bottleneckId];
-      } else {
-        // Záloha: nejhorší hlavní dítě z DB
+    // Zobrazovací jméno killera (nominativ)
+    const KILLER_LABELS = {
+      'infarkt_a_mrtvice': 'infarkt a mrtvice',
+      'cukrovka':          'cukrovka',
+      'demence':           'demence',
+      'rakovina':          'rakovina',
+    };
+
+    // Načti primárního killera z node_riders (priority = 1)
+    // Sub-uzel → killer vlastního uzlu; hlavní uzel → killer bottleneck uzlu
+    let killerText = null;
+    let killerSourceNodeId = null;
+
+    if (isSubNode) {
+      killerSourceNodeId = nodeId;
+    } else {
+      // Hlavní uzel: zdroj = bottleneck uzel (z contextu nebo nejhorší dítě)
+      killerSourceNodeId = context?.bottleneck || null;
+      if (!killerSourceNodeId) {
         const { data: childMetrics } = await supabase
           .from('user_metrics')
           .select('node_id, state')
           .eq('user_id', userId)
           .eq('universe', 'longevity')
           .in('node_id', ['telo', 'mysl', 'vyziva', 'zdravi', 'metabolicke']);
-
         const stateMap = Object.fromEntries((childMetrics || []).map(m => [m.node_id, m.state]));
         const CHILD_ORDER = ['telo', 'mysl', 'vyziva', 'zdravi', 'metabolicke'];
-        const worst = CHILD_ORDER.find(id => stateMap[id] === 'RED')
-                   || CHILD_ORDER.find(id => stateMap[id] === 'YELLOW');
-        riderText = worst ? (ALL_NODE_RIDERS[worst] || '') : '';
+        killerSourceNodeId = CHILD_ORDER.find(id => stateMap[id] === 'RED')
+                          || CHILD_ORDER.find(id => stateMap[id] === 'YELLOW')
+                          || null;
       }
+    }
+
+    if (killerSourceNodeId) {
+      const { data: killerRow } = await supabase
+        .from('node_riders')
+        .select('rider')
+        .eq('node_id', killerSourceNodeId)
+        .order('priority', { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      killerText = killerRow?.rider ? KILLER_LABELS[killerRow.rider] : null;
     }
 
     // ✅ Aspiration fetch (null for main node)
@@ -452,14 +450,23 @@ Dotaz uživatele: ${userQuestion}`;
     }
 
     function getNodeContext(nodeId) {
+      // Accusativ — pro větu "brzdí [oblast]" i pro "Tvoje [oblast] nestačí"
       const contexts = {
-        'telo': 'síla a svaly',
-        'mysl': 'pozornost a paměť',
-        'vyziva': 'strava a energie',
-        'zdravi': 'prevence a odolnost',
-        'metabolicke': 'metabolismus a rovnováha těla'
+        'telo':          'sílu a svaly',
+        'mysl':          'pozornost a paměť',
+        'vyziva':        'stravu a energii',
+        'zdravi':        'odolnost a prevenci',
+        'metabolicke':   'metabolismus',
+        'sila':          'sílu',
+        'stabilita':     'rovnováhu a pohyblivost',
+        'kardio':        'kondici a srdce',
+        'vo2max':        'aerobní kapacitu',
+        'spanek':        'spánek',
+        'stres':         'zvládání stresu',
+        'protein':       'příjem bílkovin',
+        'nervovy_system':'nervový systém',
       };
-      return contexts[nodeId] || '';
+      return contexts[nodeId] || nodeId;
     }
 
     function getNodeLabel(nodeId) {
@@ -479,43 +486,32 @@ Jsi Chytré Já — průvodce zdravím a dlouhověkostí.
 ODPOVÍDEJ PŘESNĚ PODLE ŠABLONY. Čísla piš slovně.
 
 HLAVNÍ UZEL (HRA O ŽIVOT):
-Napiš PŘESNĚ 2 věty oddělené znakem |. Max patnáct slov na větu.
+Napiš PŘESNĚ 1 větu. Max patnáct slov.
 
-Věta 1 — bottleneck + jezdec (lidsky, bez názvů nemocí):
-Pokud je BOTTLENECK vyplněno: "Nejvíc tě brzdí [bottleneck], to ohrožuje [jezdec]."
-Pokud BOTTLENECK chybí a JEZDEC vyplněno: "Tvoje slabiny ohrožují [jezdec]."
-Pokud obojí chybí: "Žádná oblast není kritická — drž směr."
-[bottleneck] = obsah pole BOTTLENECK, vhodný pád. [jezdec] = obsah JEZDEC — dosaď přesně.
+Věta 1 — největší killer:
+Pokud KILLER vyplněno: "Největší hrozbou je pro tebe [killer], protože brzdí [oblast]."
+Pokud KILLER chybí: "Tvoje zdraví je zatím v rovnováze — drž směr."
+[killer] = obsah pole KILLER — dosaď přesně, bez úprav.
+[oblast] = obsah pole OBLAST — dosaď přesně, bez úprav.
 
-Věta 2 — sen:
-SEN vyplněno + RED/YELLOW: "Bez změny se na [sen] nedostaneš."
-SEN vyplněno + GREEN: "[Sen] si splníš, drž to takhle."
-SEN chybí + RED/YELLOW: "Změň to dřív, než bude příliš pozdě."
-SEN chybí + GREEN: "Takhle si dlouhověkost opravdu užiješ."
-[sen] = obsah pole SEN, vhodný pád, čísla slovně.
-
-Výstup: přesně 2 věty oddělené |, nic jiného.
+Výstup: přesně 1 věta, nic jiného.
 
 PODŘÍZENÝ UZEL:
-Napiš 1 až 3 věty oddělené znakem |. Max patnáct slov na větu.
+Napiš PŘESNĚ 2 věty oddělené znakem |. Max patnáct slov na větu.
 
-Věta 1 — stav oblasti (vždy):
+Věta 1 — stav oblasti:
 - RED: "Tvoje [oblast] nestačí — [co to znamená pro tělo]."
 - YELLOW: "Tvoje [oblast] není špatná, ale [co konkrétně slábne]."
 - GREEN: "Tvoje [oblast] je v pořádku."
+[oblast] = obsah pole OBLAST — dosaď přesně, bez úprav.
 
-Věta 2 — důsledek (jen RED nebo YELLOW):
-Napiš co konkrétně slábne nebo co přijde, pokud se nic nezmění.
-GREEN: větu 2 vynech.
+Věta 2 — největší killer:
+Pokud KILLER vyplněno: "Největší hrozbou je pro tebe [killer], protože brzdí [oblast]."
+Pokud KILLER chybí: "Bez změny to půjde postupně dolů."
+[killer] = obsah pole KILLER — dosaď přesně, bez úprav.
+[oblast] = obsah pole OBLAST — dosaď přesně, bez úprav.
 
-Věta 3 — sen (jen pokud je vyplněno MEZERA_K_SENU nebo SEN_SPLNEN):
-MEZERA_K_SENU + RED/YELLOW: "[Oblast] nestačí — na [sen] se takhle nepostavíš."
-MEZERA_K_SENU + GREEN: "Takhle na [sen] máš reálnou šanci."
-SEN_SPLNEN: "[Sen] si splníš, drž to takhle."
-Bez senu: větu 3 vynech.
-[sen] = obsah pole SEN, čísla slovně, vhodný pád.
-
-Výstup: 1 až 3 věty oddělené |, nic jiného.
+Výstup: přesně 2 věty oddělené |, nic jiného.
 
 Doplň jen obsah v hranatých závorkách. Neměň strukturu věty. Nepřidávej nic navíc.
 
@@ -534,17 +530,18 @@ MEZERA_K_SENU: ano`;
 SEN_SPLNEN: ano`;
       }
     }
-    console.log('ASPIRATION BLOCK:', aspirationBlock);
+    // Oblast: sub-uzel = vlastní oblast; hlavní uzel = oblast bottleneck uzlu
+    const oblast = isSubNode
+      ? getNodeContext(nodeId)
+      : getNodeContext(killerSourceNodeId || nodeId);
+
+    console.log('KILLER:', killerText, '| OBLAST:', oblast);
     const USER_PROMPT = `
 REŽIM: ${isSubNode ? 'PODŘÍZENÝ UZEL' : 'HLAVNÍ UZEL'}
 UZEL: ${node.label}
 STAV: ${node.state || context?.state || 'UNKNOWN'}
-${stepProvocation ? `KONTEXT PROVOKACE: "${stepProvocation}"` : ''}
-${!isSubNode && bottleneckNodeLabel ? `BOTTLENECK: ${bottleneckNodeLabel}` : ''}
-${!isSubNode && riderText ? `JEZDEC: ${riderText}` : ''}
-${!isSubNode && mainNodeAspirationLabel ? `SEN: ${mainNodeAspirationLabel}` : ''}
-${isSubNode ? `OBLAST: ${getNodeContext(nodeId)}` : ''}
-${aspirationBlock}
+OBLAST: ${oblast}
+${killerText ? `KILLER: ${killerText}` : ''}
 `.trim();
 
     // 5️⃣ OpenAI API call
