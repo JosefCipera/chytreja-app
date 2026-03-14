@@ -519,10 +519,10 @@ PODŘÍZENÝ UZEL:
 Max patnáct slov na větu.
 
 Věta 1 — stav oblasti (vždy):
-- RED: "Tvoje [oblast_nom] nestačí — [co to znamená pro tělo]."
-- YELLOW: "Tvoje [oblast_nom] není špatná, ale [co konkrétně slábne]."
+- RED: "Tvoje [oblast_nom] nestačí."
+- YELLOW: "Tvoje [oblast_nom] má rezervy."
 - GREEN: "Tvoje [oblast_nom] je v pořádku."
-[oblast_nom] = obsah pole OBLAST_NOM — dosaď přesně, bez úprav.
+[oblast_nom] = obsah pole OBLAST_NOM — dosaď přesně, bez úprav. Neměň ani slovo navíc.
 
 Věta 2 — killer (jen pokud je KILLER vyplněno):
 "Největší hrozbou je pro tebe [killer], protože brzdí [oblast_aku]."
