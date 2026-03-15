@@ -503,14 +503,20 @@ Dotaz uživatele: ${userQuestion}`;
 Jsi Chytré Já — parťák a mentor pro dlouhověkost. Mluvíš přímo, drsně ale lidsky. Říkáš věci tak, jak jsou — bez omluv a bez cukrování.
 
 HLAVNÍ UZEL:
-Napiš PŘESNĚ 1 větu. O killeru (KILLER) a co dělá s oblastí (OBLAST_AKU). Volně, razantně.
+Napiš PŘESNĚ 1 větu. Spoj killer (KILLER), co dělá s oblastí (OBLAST_AKU), a jak to ohrožuje sen (SEN). Vše v jedné razantní větě.
+Pokud SEN chybí: jen killer + oblast, bez aspirace.
 Pokud KILLER chybí: "Zatím jedete dobře — ale někde se trhlina teprve tvoří."
-Výstup: 1 věta, nic víc. Druhá věta je přísně zakázána.
+Výstup: 1 věta, nic víc.
 
 PŘÍKLADY hlavní uzel:
-metabolicke + cukrovka → "Kde metabolismus ztrácí rytmus, cukrovka přebírá vládu."
-telo + infarkt → "Svaly slábnou a srdce to odnáší jako první."
-mysl + demence → "Mozek bez tréninku stárne — a demence to ví líp než ty."
+metabolicke + cukrovka + běžky v 85:
+Kde metabolismus ztrácí rytmus, cukrovka přebírá vládu — a ty běžky v 85 se s ní nepoběží.
+
+telo + infarkt + běžky v 85:
+Svaly slábnou, srdce to odnáší — a bez silného těla ty běžky v 85 zůstanou jen snem.
+
+mysl + demence + běžky v 85:
+Mozek bez tréninku stárne a demence nerespektuje plány na běžky v 85.
 
 PODŘÍZENÝ UZEL:
 Napiš 2 bubliny oddělené |.
@@ -530,8 +536,8 @@ Prevence ti nefunguje — tělo se nestíhá bránit. | Rakovina se živí tam, 
 telo RED + infarkt + běžky v 85:
 Síla a svaly nestačí na nic, co od těla čekáš. | Slabé svaly dřou srdce víc, než si myslíš. Infarkt si nehledá oběti mezi silnými — a ty běžky v 85 si zaslouží silné tělo.
 
-vyziva YELLOW + cukrovka + běžky v 85:
-Strava kolísá — metabolismus to zvládá, ale jen tak tak. | Každý výkyv cukru je cihla navíc pro cukrovku. Na běžky v 85 potřebuješ metabolismus, který funguje — ne přežívá.
+vyziva YELLOW + cukrovka (bez SEN):
+Strava kolísá — metabolismus to zvládá, ale jen tak tak. | Každý výkyv cukru je cihla navíc pro cukrovku.
 
 mysl RED + demence + běžky v 85:
 Pozornost a paměť se ztrácejí dřív, než to sám vnímáš. | Demence si neříká — prostě přichází tam, kde mozek přestal pracovat. Na běžky v 85 potřebuješ hlavu, ne jen nohy.
@@ -542,16 +548,8 @@ PRAVIDLA:
 - ZAKÁZANÁ SLOVA: musíš, okamžitě, je důležité, měl bys, hrozí, ohrožuje, samostatnost, závislý, pomoc druhých, trpí, Dobrá zpráva je
 `.trim();
 
-    // Build aspiration block for sub-nodes only
-    let aspirationBlock = '';
-    if (isSubNode && aspirationData) {
-      const gap = aspirationData.gap ?? 0;
-      const gapLabel = aspirationData.achieved ? 'splněno'
-        : gap > 0.3 ? 'daleko'
-        : gap > 0.1 ? 'blízko'
-        : 'v dosahu';
-      aspirationBlock = `SEN: ${aspirationData.label}\nSEN_GAP: ${gapLabel}`;
-    }
+    const nodeState = node.state || context?.state || 'UNKNOWN';
+
     // Oblast akuzativ (pro killer větu) — sub-uzel = vlastní, hlavní = bottleneck
     const oblastAku = isSubNode
       ? getNodeContext(nodeId)
@@ -560,7 +558,15 @@ PRAVIDLA:
     // Oblast nominativ (pro stav větu) — vždy vlastní uzel
     const oblastNom = getNodeContextNom(nodeId);
 
-    const nodeState = node.state || context?.state || 'UNKNOWN';
+    // SEN: hlavní uzel vždy, sub-uzel jen RED (YELLOW bez aspirace)
+    let aspirationBlock = '';
+    const senLabel = isSubNode
+      ? (aspirationData?.label || null)
+      : (mainNodeAspirationLabel || null);
+
+    if (senLabel && (!isSubNode || nodeState === 'RED')) {
+      aspirationBlock = `SEN: ${senLabel}`;
+    }
     // Killer se neposílá pro GREEN — tam není co varovat
     const showKiller = killerText && nodeState !== 'GREEN';
 
