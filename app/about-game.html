@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="cs">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>O hře — Chytré Já</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: #0d1117;
+            color: #e2e8f0;
+            font-family: system-ui, -apple-system, sans-serif;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .back-btn {
+            position: fixed;
+            top: 14px;
+            left: 14px;
+            z-index: 100;
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px solid #334155;
+            color: #94a3b8;
+            font-size: 15px;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            backdrop-filter: blur(8px);
+            transition: color 0.2s, border-color 0.2s;
+        }
+
+        .back-btn:hover {
+            color: #e2e8f0;
+            border-color: #475569;
+        }
+
+        .container {
+            max-width: 640px;
+            margin: 0 auto;
+            padding: 60px 20px 80px;
+        }
+
+        .hero {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+
+        .hero-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+
+        .hero h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #a8c7ff;
+            margin-bottom: 12px;
+            text-shadow: 0 0 20px rgba(150, 180, 255, 0.12);
+        }
+
+        .hero p {
+            color: #94a3b8;
+            font-size: 15px;
+            max-width: 420px;
+            margin: 0 auto;
+        }
+
+        /* Accordion */
+        .section {
+            border: 1px solid #1e293b;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            overflow: hidden;
+            background: #0f172a;
+            transition: border-color 0.3s;
+        }
+
+        .section.open {
+            border-color: #334155;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px 20px;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.2s;
+        }
+
+        .section-header:hover {
+            background: rgba(30, 41, 59, 0.5);
+        }
+
+        .section-icon {
+            font-size: 22px;
+            flex-shrink: 0;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #e2e8f0;
+            flex: 1;
+        }
+
+        .section-arrow {
+            color: #475569;
+            font-size: 13px;
+            transition: transform 0.3s;
+            flex-shrink: 0;
+        }
+
+        .section.open .section-arrow {
+            transform: rotate(180deg);
+        }
+
+        .section-body {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease;
+        }
+
+        .section.open .section-body {
+            max-height: 800px;
+        }
+
+        .section-content {
+            padding: 0 20px 20px;
+            color: #94a3b8;
+            font-size: 15px;
+            line-height: 1.7;
+        }
+
+        .section-content p {
+            margin-bottom: 12px;
+        }
+
+        .section-content p:last-child {
+            margin-bottom: 0;
+        }
+
+        /* Killer cards */
+        .killer-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin: 12px 0;
+        }
+
+        .killer-card {
+            background: rgba(239, 68, 68, 0.06);
+            border: 1px solid rgba(239, 68, 68, 0.15);
+            border-radius: 10px;
+            padding: 14px;
+        }
+
+        .killer-card .name {
+            font-weight: 600;
+            color: #f87171;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        .killer-card .desc {
+            font-size: 13px;
+            color: #94a3b8;
+            line-height: 1.5;
+        }
+
+        /* State indicators */
+        .state-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin: 12px 0;
+        }
+
+        .state-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            font-size: 14px;
+        }
+
+        .state-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            margin-top: 3px;
+        }
+
+        .state-dot.green { background: #22c55e; }
+        .state-dot.yellow { background: #eab308; }
+        .state-dot.red { background: #ef4444; }
+
+        .state-label {
+            color: #e2e8f0;
+            font-weight: 500;
+        }
+
+        .state-desc {
+            color: #94a3b8;
+        }
+
+        /* Gameplay steps */
+        .step {
+            margin-bottom: 16px;
+            padding-left: 16px;
+            border-left: 2px solid #1e293b;
+        }
+
+        .step-title {
+            font-weight: 600;
+            color: #60a5fa;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        .step p {
+            font-size: 14px;
+        }
+
+        .quote {
+            background: rgba(6, 182, 212, 0.06);
+            border-left: 3px solid rgba(6, 182, 212, 0.3);
+            padding: 10px 14px;
+            border-radius: 0 8px 8px 0;
+            margin: 10px 0;
+            font-style: italic;
+            font-size: 14px;
+            color: #a5f3fc;
+        }
+
+        /* Benefits */
+        .benefit-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin: 8px 0;
+        }
+
+        .benefit-item {
+            display: flex;
+            gap: 10px;
+            font-size: 14px;
+            align-items: flex-start;
+        }
+
+        .benefit-num {
+            background: rgba(37, 99, 235, 0.15);
+            color: #60a5fa;
+            font-weight: 700;
+            font-size: 12px;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+
+        /* Philosophy */
+        .philosophy-note {
+            background: rgba(139, 92, 246, 0.06);
+            border: 1px solid rgba(139, 92, 246, 0.15);
+            border-radius: 10px;
+            padding: 16px;
+            margin-top: 12px;
+            font-size: 14px;
+            color: #c4b5fd;
+            line-height: 1.6;
+        }
+
+        .bold { color: #e2e8f0; font-weight: 600; }
+    </style>
+</head>
+
+<body>
+
+    <button class="back-btn" onclick="history.back()">← Zpět</button>
+
+    <div class="container">
+
+        <div class="hero">
+            <div class="hero-icon">🎯</div>
+            <h1>Skutečná hra o život</h1>
+            <p>Hraješ sám za sebe. Cíl je jediný — dožít se svého snu v plné síle.</p>
+        </div>
+
+        <!-- 1. Čtyři protivníci -->
+        <div class="section open" data-section>
+            <div class="section-header" onclick="toggleSection(this)">
+                <span class="section-icon">⚔️</span>
+                <span class="section-title">Čtyři protivníci</span>
+                <span class="section-arrow">▼</span>
+            </div>
+            <div class="section-body">
+                <div class="section-content">
+                    <p>Proti tobě stojí čtyři protivníci. Jsou tiší, trpěliví a hrají na čas. Nevidíš je, necítíš je — dokud není pozdě.</p>
+                    <div class="killer-grid">
+                        <div class="killer-card">
+                            <div class="name">Cukrovka</div>
+                            <div class="desc">Rozkládá tělo zevnitř, tiše, roky předtím než se projeví.</div>
+                        </div>
+                        <div class="killer-card">
+                            <div class="name">Infarkt a mrtvice</div>
+                            <div class="desc">Čeká na slabé srdce a ucpané cévy.</div>
+                        </div>
+                        <div class="killer-card">
+                            <div class="name">Rakovina</div>
+                            <div class="desc">Využívá každou slabinu v obraně těla.</div>
+                        </div>
+                        <div class="killer-card">
+                            <div class="name">Demence</div>
+                            <div class="desc">Maže paměť, osobnost, schopnost žít samostatně.</div>
+                        </div>
+                    </div>
+                    <p>Nemusíš je všechny porazit. Musíš vědět, který útočí na tebe — a tam zasáhnout.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Tvoje území -->
+        <div class="section" data-section>
+            <div class="section-header" onclick="toggleSection(this)">
+                <span class="section-icon">🗺️</span>
+                <span class="section-title">Tvoje území</span>
+                <span class="section-arrow">▼</span>
+            </div>
+            <div class="section-body">
+                <div class="section-content">
+                    <p>Tvé tělo a hlava jsou rozdělené do oblastí. Každá má svůj stav:</p>
+                    <div class="state-list">
+                        <div class="state-item">
+                            <div class="state-dot green"></div>
+                            <div>
+                                <span class="state-label">Zelená</span> —
+                                <span class="state-desc">držíš to, protivník nemá šanci</span>
+                            </div>
+                        </div>
+                        <div class="state-item">
+                            <div class="state-dot yellow"></div>
+                            <div>
+                                <span class="state-label">Žlutá</span> —
+                                <span class="state-desc">máš rezervy, ale protivník cítí slabinu</span>
+                            </div>
+                        </div>
+                        <div class="state-item">
+                            <div class="state-dot red"></div>
+                            <div>
+                                <span class="state-label">Červená</span> —
+                                <span class="state-desc">tady prohrávás, protivník postupuje</span>
+                            </div>
+                        </div>
+                    </div>
+                    <p>Stav se mění podle toho, co děláš. Každý den. Každé rozhodnutí.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Jak se hraje -->
+        <div class="section" data-section>
+            <div class="section-header" onclick="toggleSection(this)">
+                <span class="section-icon">🎮</span>
+                <span class="section-title">Jak se hraje</span>
+                <span class="section-arrow">▼</span>
+            </div>
+            <div class="section-body">
+                <div class="section-content">
+                    <div class="step">
+                        <div class="step-title">Ráno</div>
+                        <p>Otevřeš appku. CHJ ti řekne, kde jsi nejslabší a kdo na tebe útočí. Žádné grafy, žádné tabulky — jedna věta, přímo.</p>
+                        <div class="quote">Svaly slábnou, srdce to odnáší — a bez silného těla ty běžky v 85 zůstanou jen snem.</div>
+                    </div>
+                    <div class="step">
+                        <div class="step-title">Mise dne</div>
+                        <p>Dostaneš jednu konkrétní věc na dnes. Ne seznam, ne plán na měsíc. Jeden krok.</p>
+                        <div class="quote">Dnešní mise: 30 minut chůze po obědě. Útočíš na cukrovku.</div>
+                    </div>
+                    <div class="step">
+                        <div class="step-title">Splnění</div>
+                        <p>Splníš — série roste. Nesplníš — série se přeruší a CHJ to komentuje. Žádné tresty, žádné body — jen pravda.</p>
+                        <div class="quote">3 dny v řadě. Cukrovka ztrácí půdu.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. Co tě posouvá -->
+        <div class="section" data-section>
+            <div class="section-header" onclick="toggleSection(this)">
+                <span class="section-icon">📈</span>
+                <span class="section-title">Co tě posouvá</span>
+                <span class="section-arrow">▼</span>
+            </div>
+            <div class="section-body">
+                <div class="section-content">
+                    <div class="step">
+                        <div class="step-title">Série</div>
+                        <p>Čím déle držíš sérii, tím víc protivníka tlačíš zpátky. Přerušení není konec — je to restart. Ale každý restart stojí víc síly než pokračování.</p>
+                    </div>
+                    <div class="step">
+                        <div class="step-title">Posun barvy</div>
+                        <p>Když oblast přejde z červené do žluté nebo ze žluté do zelené — to je průlom. CHJ to oslaví. Protivník ztratil pozici.</p>
+                    </div>
+                    <div class="step">
+                        <div class="step-title">Sen na obzoru</div>
+                        <p>Tvůj sen je vždy viditelný. CHJ ti připomíná, jak daleko nebo blízko jsi. Ne čísly — slovy.</p>
+                        <div class="quote">Na ty běžky v 85 to takhle stačit nebude.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. Co z toho máš -->
+        <div class="section" data-section>
+            <div class="section-header" onclick="toggleSection(this)">
+                <span class="section-icon">💎</span>
+                <span class="section-title">Co z toho máš</span>
+                <span class="section-arrow">▼</span>
+            </div>
+            <div class="section-body">
+                <div class="section-content">
+                    <div class="benefit-list">
+                        <div class="benefit-item">
+                            <div class="benefit-num">1</div>
+                            <div><span class="bold">Víš, kde jsi nejslabší</span> — ne obecně, ale konkrétně, dnes</div>
+                        </div>
+                        <div class="benefit-item">
+                            <div class="benefit-num">2</div>
+                            <div><span class="bold">Víš, kdo na tebe útočí</span> — který z protivníků má nejblíž k výhře</div>
+                        </div>
+                        <div class="benefit-item">
+                            <div class="benefit-num">3</div>
+                            <div><span class="bold">Víš, co udělat</span> — jedna věc, ne dvacet rad z internetu</div>
+                        </div>
+                        <div class="benefit-item">
+                            <div class="benefit-num">4</div>
+                            <div><span class="bold">Vidíš posun</span> — série, barvy, slova CHJ se mění podle tvých činů</div>
+                        </div>
+                        <div class="benefit-item">
+                            <div class="benefit-num">5</div>
+                            <div><span class="bold">Hraješ o svůj sen</span> — ne o body, ne o odznaky — o svůj vlastní život</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 6. Filosofie -->
+        <div class="section" data-section>
+            <div class="section-header" onclick="toggleSection(this)">
+                <span class="section-icon">🧬</span>
+                <span class="section-title">Filosofie</span>
+                <span class="section-arrow">▼</span>
+            </div>
+            <div class="section-body">
+                <div class="section-content">
+                    <p>Vychází z Medicine 3.0 (Peter Attia, <em>Outlive</em>). Nejde o to žít déle. Jde o to žít déle <span class="bold">dobře</span> — v síle, s jasnou hlavou, se schopností dělat to, co milujete.</p>
+                    <p>Čtyři protivníci zabíjejí 80 % lidí. Většinu z toho jde odvrátit. Ne zítra. Dnes.</p>
+                    <div class="philosophy-note">
+                        CHJ ti neříká, co máš dělat. Říká ti, co se stane, když to neuděláš.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        function toggleSection(header) {
+            const section = header.parentElement;
+            const wasOpen = section.classList.contains('open');
+            // Close all
+            document.querySelectorAll('[data-section]').forEach(s => s.classList.remove('open'));
+            // Open clicked (if it was closed)
+            if (!wasOpen) section.classList.add('open');
+        }
+    </script>
+
+</body>
+</html>
