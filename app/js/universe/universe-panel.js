@@ -505,7 +505,7 @@ async function fetchTrend(userId, nodeId, nodeState) {
 const VERDICT_TEXTS = {
   telo:        { RED: 'Tělo slábne. Síla odchází.',            YELLOW: 'Tělo drží. Ale sotva.',            GREEN: 'Tělo je v kondici.' },
   mysl:        { RED: 'Hlava ztrácí ostrost.',                 YELLOW: 'Hlava funguje. Zpomaluje.',        GREEN: 'Hlava je v pohodě.' },
-  vyziva:      { RED: 'Strava selhává. Tělo to ví.',          YELLOW: 'Strava ujde. Nekrmíš se dobře.',   GREEN: 'Strava je v normě.' },
+  vyziva:      { RED: 'Strava selhává. Tělo to ví.',          YELLOW: 'Strava není špatná. Ale nestačí.', GREEN: 'Strava je v normě.' },
   zdravi:      { RED: 'Obrana padá. Tělo je otevřené.',       YELLOW: 'Obrana drží. Má trhliny.',         GREEN: 'Obrana funguje.' },
   metabolicke: { RED: 'Metabolismus padá. Ztrácíš kontrolu.', YELLOW: 'Metabolismus kolísá. Zatím drží.', GREEN: 'Metabolismus v normě.' },
 };
@@ -519,7 +519,7 @@ const KILLER_TEXTS = {
 
 // Primary killer per node (priority=1 from node_riders)
 const NODE_KILLERS = {
-  telo: 'cukrovka',  mysl: 'demence',  vyziva: 'cukrovka',
+  telo: 'infarkt_a_mrtvice',  mysl: 'demence',  vyziva: 'cukrovka',
   zdravi: 'rakovina',  metabolicke: 'cukrovka',
   sila: 'infarkt_a_mrtvice',  stabilita: 'demence',  kardio: 'infarkt_a_mrtvice',
   vo2max: 'infarkt_a_mrtvice',  spanek: 'demence',  stres: 'infarkt_a_mrtvice',
