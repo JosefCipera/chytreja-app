@@ -498,52 +498,79 @@ async function fetchTrend(userId, nodeId, nodeState) {
   return { text: trendText, numeric, lineColor, trendColor, arrow, dataLength: data.length };
 }
 
-async function generateVerdictV2(node, userId) {
-  try {
-    // Použij data z window.MAIN_UNIVERSE_DATA – jsou již načtena při startu,
-    // není potřeba extra Supabase round-trip (ušetříme 100–300 ms latence).
+// ─── HARDCODED VERDICT ─────────────────────────────────────────────────────
+// Žádný API call pro brífinky → nulová latence, konzistentní tón.
+// AI se volá jen pro konverzaci (chipy, volný chat).
+
+const VERDICT_TEXTS = {
+  telo:        { RED: 'Tělo slábne. Síla odchází.',            YELLOW: 'Tělo drží. Ale sotva.',            GREEN: 'Tělo je v kondici.' },
+  mysl:        { RED: 'Hlava ztrácí ostrost.',                 YELLOW: 'Hlava funguje. Zpomaluje.',        GREEN: 'Hlava je v pohodě.' },
+  vyziva:      { RED: 'Strava selhává. Tělo to ví.',          YELLOW: 'Strava ujde. Nekrmíš se dobře.',   GREEN: 'Strava je v normě.' },
+  zdravi:      { RED: 'Obrana padá. Tělo je otevřené.',       YELLOW: 'Obrana drží. Má trhliny.',         GREEN: 'Obrana funguje.' },
+  metabolicke: { RED: 'Metabolismus padá. Ztrácíš kontrolu.', YELLOW: 'Metabolismus kolísá. Zatím drží.', GREEN: 'Metabolismus v normě.' },
+};
+
+const KILLER_TEXTS = {
+  cukrovka:          'Cukrovka tiše postupuje.',
+  infarkt_a_mrtvice: 'Infarkt čeká na slabinu.',
+  demence:           'Demence maže stopy.',
+  rakovina:          'Rakovina hledá skulinu.',
+};
+
+// Primary killer per node (priority=1 from node_riders)
+const NODE_KILLERS = {
+  telo: 'cukrovka',  mysl: 'demence',  vyziva: 'cukrovka',
+  zdravi: 'rakovina',  metabolicke: 'cukrovka',
+  sila: 'infarkt_a_mrtvice',  stabilita: 'demence',  kardio: 'infarkt_a_mrtvice',
+  vo2max: 'infarkt_a_mrtvice',  spanek: 'demence',  stres: 'infarkt_a_mrtvice',
+  nervovy_system: 'demence',  protein: 'cukrovka',
+};
+
+function generateVerdict(node, aspiration) {
+  const state = node.state || 'UNKNOWN';
+  const isMainNode = node.id === 'dlouhovekost';
+  const lines = [];
+
+  if (isMainNode) {
+    // Hlavní uzel: najdi bottleneck (nejhorší dítě) → killer + aspirace
     const metrics = (window.MAIN_UNIVERSE_DATA || [])
-      .filter(n => n.state && ['GREEN', 'YELLOW', 'RED'].includes(n.state))
-      .map(n => ({ node_id: n.id, state: n.state, current_index: n.current_index ?? 0 }));
+      .filter(n => n.state && ['GREEN', 'YELLOW', 'RED'].includes(n.state) && n.id !== 'dlouhovekost');
+    const bottleneck = metrics.filter(m => m.state === 'RED').sort((a, b) => (a.current_index ?? 0) - (b.current_index ?? 0))[0]
+                    || metrics.filter(m => m.state === 'YELLOW').sort((a, b) => (a.current_index ?? 0) - (b.current_index ?? 0))[0];
 
-    if (metrics.length === 0) return { text: 'Zatím nemám dost dat.' };
-
-    const bottleneck = metrics
-      .filter(m => m.state === 'RED')
-      .sort((a, b) => a.current_index - b.current_index)[0];
-
-    const payload = {
-      nodeId: node.id,
-      userQuestion: null,
-      context: {
-        state: node.state,
-        userId,
-        redCount: metrics.filter(m => m.state === 'RED').length,
-        yellowCount: metrics.filter(m => m.state === 'YELLOW').length,
-        greenCount: metrics.filter(m => m.state === 'GREEN').length,
-        bottleneck: bottleneck?.node_id
+    if (bottleneck) {
+      const killer = NODE_KILLERS[bottleneck.id];
+      const killerLabel = killer ? KILLER_TEXTS[killer] : null;
+      const bnText = VERDICT_TEXTS[bottleneck.id]?.[bottleneck.state];
+      // Hlavní uzel = 1 věta: stav bottlenecku + killer
+      if (bnText && killerLabel) {
+        lines.push(`${bnText} ${killerLabel}`);
+      } else if (bnText) {
+        lines.push(bnText);
       }
-    };
-
-    const response = await fetch('/api/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-
-    if (!response.ok) return { text: `API error ${response.status}` };
-
-    const rawText = await response.text();
-    const data = JSON.parse(rawText);
-    return {
-      text: data?.verdict || 'API nevrátilo platnou odpověď.',
-      lines: data?.verdictLines || null
-    };
-
-  } catch (err) {
-    console.error('❌ generateVerdictV2:', err);
-    return { text: 'Chyba při komunikaci s AI.' };
+    } else {
+      lines.push('Všechno drží. Ale nezdržuj se.');
+    }
+    return { text: lines[0] || '', lines };
   }
+
+  // Sub-uzel: Věta 1 = stav
+  const verdictText = VERDICT_TEXTS[node.id]?.[state];
+  if (verdictText) lines.push(verdictText);
+
+  // Věta 2 = killer (jen RED/YELLOW)
+  if (state !== 'GREEN') {
+    const killer = NODE_KILLERS[node.id];
+    const killerText = killer ? KILLER_TEXTS[killer] : null;
+    if (killerText) lines.push(killerText);
+  }
+
+  // Věta 3 = aspirace (jen RED)
+  if (state === 'RED' && aspiration?.label && aspiration?.gap > 0.05) {
+    lines.push(`Na ${aspiration.label} takhle zapomeň.`);
+  }
+
+  return { text: lines[0] || '', lines: lines.length ? lines : null };
 }
 
 // =====================================================
@@ -1044,13 +1071,15 @@ async function showGameOfLife(node) {
   metricCard.after(chjCard);
 
 
-  // 4. Paralelní načtení dat (AI běží souběžně s DB dotazy)
-  const [steps, trend, aspiration, verdict] = await Promise.all([
+  // 4. Paralelní načtení dat (verdict je hardcoded → žádný API call)
+  const [steps, trend, aspiration] = await Promise.all([
     fetchLearningSteps(node.id),
     fetchTrend(userId, node.id, node.state),
     fetchAspiration(userId, node.id),
-    generateVerdictV2(node, userId)
   ]);
+
+  // Verdict z hardcoded map — synchronní, nulová latence
+  const verdict = generateVerdict(node, aspiration);
 
   const provocationText = steps?.step_provocation ?? null;
   const actionText = steps?.step_action ?? null;
