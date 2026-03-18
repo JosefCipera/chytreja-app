@@ -767,10 +767,13 @@ async function showGameOfLife(node) {
 
 
   // 4. Paralelní načtení dat (verdict je hardcoded → žádný API call)
-  const [steps, trend, aspiration] = await Promise.all([
+  const [steps, trend, aspiration, missionStatus] = await Promise.all([
     fetchLearningSteps(node.id),
     fetchTrend(userId, node.id, node.state),
     fetchAspiration(userId, node.id),
+    fetch(`/api/mission-log?userId=${encodeURIComponent(userId)}`)
+      .then(r => r.ok ? r.json() : { streak: 0, todayMissions: [] })
+      .catch(() => ({ streak: 0, todayMissions: [] })),
   ]);
 
   // Verdict z hardcoded map — synchronní, nulová latence
@@ -885,6 +888,15 @@ async function showGameOfLife(node) {
 
   // 8b. Mise dne — pick mission for this node
   const mission = !isMainNode ? pickMission(node.id, node.state || 'YELLOW') : null;
+  const alreadyDone = mission && missionStatus.todayMissions?.some(m => m.mission_id === mission.id);
+  const streakCount = missionStatus.streak || 0;
+  const streakBadge = streakCount > 0
+    ? `<div style="text-align:center;margin-top:10px;padding:8px 14px;
+        background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.25);
+        border-radius:8px;font-size:14px;color:#fde68a;">
+        🔥 ${streakCount} ${streakCount === 1 ? 'den' : streakCount < 5 ? 'dny' : 'dní'} v řadě</div>`
+    : '';
+
   const missionHtml = mission ? `
     <div id="mission-card" style="
       background:rgba(234,179,8,0.06); border:1px solid rgba(234,179,8,0.25);
@@ -905,6 +917,7 @@ async function showGameOfLife(node) {
         <span style="color:#94a3b8;font-size:16px;"> / ${mission.target || ''}</span>
       </div>
       <button id="mission-start" style="
+        ${alreadyDone ? 'display:none;' : ''}
         width:100%; padding:14px; border-radius:10px; border:none;
         background:linear-gradient(135deg, #eab308, #f59e0b);
         color:#1e293b; font-size:15px; font-weight:700; cursor:pointer;
@@ -917,10 +930,11 @@ async function showGameOfLife(node) {
         transition:transform 0.15s;
       ">✓ HOTOVO</button>
       <button id="mission-completed" style="
-        display:none; width:100%; padding:14px; border-radius:10px;
+        ${alreadyDone ? '' : 'display:none;'} width:100%; padding:14px; border-radius:10px;
         border:1px solid rgba(34,197,94,0.3); background:rgba(34,197,94,0.08);
         color:#22c55e; font-size:15px; font-weight:600; cursor:default;
       ">✓ Splněno!</button>
+      ${alreadyDone ? streakBadge : ''}
     </div>
   ` : '';
 
@@ -966,14 +980,44 @@ async function showGameOfLife(node) {
       return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
     }
 
-    function missionComplete() {
+    async function missionComplete() {
       releaseWakeLock();
       doneBtn.style.display = 'none';
       completedBtn.style.display = 'block';
-      // Vibrate on completion
       if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
-      // TODO: save to mission_log
-      console.log('✅ Mission completed:', mission.id, node.id);
+
+      // Save to mission_log + get streak
+      try {
+        const resp = await fetch('/api/mission-log', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId,
+            nodeId: node.id,
+            missionId: mission.id,
+            actionType: mission.action_type,
+          }),
+        });
+        const result = await resp.json();
+        console.log('✅ Mission saved:', mission.id, 'streak:', result.streak);
+
+        // Show streak badge if > 0
+        if (result.streak > 0) {
+          const streakEl = document.createElement('div');
+          streakEl.style.cssText = `
+            text-align:center; margin-top:10px; padding:8px 14px;
+            background:rgba(251,191,36,0.08); border:1px solid rgba(251,191,36,0.25);
+            border-radius:8px; font-size:14px; color:#fde68a;
+            opacity:0; transition: opacity 0.5s ease;
+          `;
+          streakEl.innerHTML = `🔥 ${result.streak} ${result.streak === 1 ? 'den' : result.streak < 5 ? 'dny' : 'dní'} v řadě`;
+          const missionCard = chjCard.querySelector('#mission-card');
+          if (missionCard) missionCard.appendChild(streakEl);
+          requestAnimationFrame(() => streakEl.style.opacity = '1');
+        }
+      } catch (e) {
+        console.warn('Mission save failed:', e.message);
+      }
     }
 
     startBtn.addEventListener('click', () => {
