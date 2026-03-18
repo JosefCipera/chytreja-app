@@ -176,3 +176,86 @@ export function generateVerdict(node, aspiration) {
 
   return { text: lines[0] || '', lines: lines.length ? lines : null };
 }
+
+// =====================================================
+// DAILY MISSIONS — šablony akcí pro každý uzel × stav
+// =====================================================
+// action_type: 'timed' (stopky), 'count' (počítadlo), 'habit' (checkbox), 'photo' (kamera)
+// duration_sec: délka pro timed akce
+// target: cílový počet pro count akce
+
+export const DAILY_MISSIONS = {
+  telo: {
+    RED:    [
+      { id: 'telo_r1', label: '10 dřepů',             action_type: 'count',  target: 10,  icon: '🦵' },
+      { id: 'telo_r2', label: '1 min plank',           action_type: 'timed',  duration_sec: 60,  icon: '💪' },
+    ],
+    YELLOW: [
+      { id: 'telo_y1', label: '20 dřepů',             action_type: 'count',  target: 20,  icon: '🦵' },
+      { id: 'telo_y2', label: '2 min plank',           action_type: 'timed',  duration_sec: 120, icon: '💪' },
+    ],
+    GREEN:  [
+      { id: 'telo_g1', label: '30 dřepů + 10 kliků',  action_type: 'count',  target: 40,  icon: '🏋️' },
+    ],
+  },
+  mysl: {
+    RED:    [
+      { id: 'mysl_r1', label: '2 min dýchání',        action_type: 'timed',  duration_sec: 120, icon: '🧘' },
+      { id: 'mysl_r2', label: '5 min bez telefonu',    action_type: 'timed',  duration_sec: 300, icon: '📵' },
+    ],
+    YELLOW: [
+      { id: 'mysl_y1', label: '3 min meditace',        action_type: 'timed',  duration_sec: 180, icon: '🧘' },
+    ],
+    GREEN:  [
+      { id: 'mysl_g1', label: '5 min meditace',        action_type: 'timed',  duration_sec: 300, icon: '🧘' },
+    ],
+  },
+  vyziva: {
+    RED:    [
+      { id: 'vyz_r1',  label: 'Vyfoť svůj oběd',      action_type: 'photo',  icon: '📸' },
+      { id: 'vyz_r2',  label: 'Vypij sklenici vody',   action_type: 'habit',  icon: '💧' },
+    ],
+    YELLOW: [
+      { id: 'vyz_y1',  label: 'Vyfoť svůj oběd',      action_type: 'photo',  icon: '📸' },
+      { id: 'vyz_y2',  label: 'Žádný cukr dnes',       action_type: 'habit',  icon: '🚫' },
+    ],
+    GREEN:  [
+      { id: 'vyz_g1',  label: 'Zapiš 3 jídla dne',    action_type: 'count',  target: 3,   icon: '📝' },
+    ],
+  },
+  zdravi: {
+    RED:    [
+      { id: 'zdr_r1',  label: '10 min procházka',      action_type: 'timed',  duration_sec: 600, icon: '🚶' },
+      { id: 'zdr_r2',  label: 'Studenou sprchu 30s',   action_type: 'timed',  duration_sec: 30,  icon: '🚿' },
+    ],
+    YELLOW: [
+      { id: 'zdr_y1',  label: '15 min procházka',      action_type: 'timed',  duration_sec: 900, icon: '🚶' },
+    ],
+    GREEN:  [
+      { id: 'zdr_g1',  label: 'Studená sprcha 1 min',  action_type: 'timed',  duration_sec: 60,  icon: '🚿' },
+    ],
+  },
+  metabolicke: {
+    RED:    [
+      { id: 'met_r1',  label: '2 min chůze po jídle',  action_type: 'timed',  duration_sec: 120, icon: '🚶' },
+      { id: 'met_r2',  label: 'Žádný cukr dnes',       action_type: 'habit',  icon: '🚫' },
+    ],
+    YELLOW: [
+      { id: 'met_y1',  label: '5 min chůze po jídle',  action_type: 'timed',  duration_sec: 300, icon: '🚶' },
+    ],
+    GREEN:  [
+      { id: 'met_g1',  label: '10 min chůze po jídle', action_type: 'timed',  duration_sec: 600, icon: '🚶' },
+    ],
+  },
+};
+
+/**
+ * Pick today's mission for a node.
+ * Rotates based on day-of-year so user doesn't get the same one every day.
+ */
+export function pickMission(nodeId, state) {
+  const missions = DAILY_MISSIONS[nodeId]?.[state];
+  if (!missions || missions.length === 0) return null;
+  const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
+  return missions[dayOfYear % missions.length];
+}

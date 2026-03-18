@@ -6,7 +6,8 @@ console.log("PANEL JS LOADED");
 import {
   DEMO_PREVIEWS, ACTIVE_MOTTOS, getDemoPreview,
   NODE_RIDERS, RIDER_ICONS, getRiders,
-  VERDICT_TEXTS, KILLER_TEXTS, NODE_KILLERS, generateVerdict
+  VERDICT_TEXTS, KILLER_TEXTS, NODE_KILLERS, generateVerdict,
+  pickMission
 } from './game-engine.js';
 
 import {
@@ -882,31 +883,51 @@ async function showGameOfLife(node) {
         color:#e2e8f0; font-size:16px; line-height:1.3; margin-bottom:16px;
       ">${formatChjText(initialText)}</div>`;
 
+  // 8b. Mise dne — pick mission for this node
+  const mission = !isMainNode ? pickMission(node.id, node.state || 'YELLOW') : null;
+  const missionHtml = mission ? `
+    <div id="mission-card" style="
+      background:rgba(234,179,8,0.06); border:1px solid rgba(234,179,8,0.25);
+      border-radius:12px; padding:16px; margin-top:4px;
+    ">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+        <span style="font-size:20px;">🎯</span>
+        <span style="color:#fde68a;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Dnešní mise</span>
+      </div>
+      <div style="color:#e2e8f0;font-size:16px;font-weight:600;margin-bottom:14px;">
+        ${mission.icon} ${mission.label}
+      </div>
+      <div id="mission-timer" style="display:none;text-align:center;margin-bottom:12px;">
+        <span id="mission-time" style="font-size:36px;font-weight:700;color:#fde68a;font-variant-numeric:tabular-nums;">00:00</span>
+      </div>
+      <div id="mission-progress" style="display:none;text-align:center;margin-bottom:12px;">
+        <span id="mission-count" style="font-size:36px;font-weight:700;color:#fde68a;">0</span>
+        <span style="color:#94a3b8;font-size:16px;"> / ${mission.target || ''}</span>
+      </div>
+      <button id="mission-start" style="
+        width:100%; padding:14px; border-radius:10px; border:none;
+        background:linear-gradient(135deg, #eab308, #f59e0b);
+        color:#1e293b; font-size:15px; font-weight:700; cursor:pointer;
+        transition:transform 0.15s;
+      ">▶ ZAČÍT</button>
+      <button id="mission-done" style="
+        display:none; width:100%; padding:14px; border-radius:10px; border:none;
+        background:linear-gradient(135deg, #22c55e, #16a34a);
+        color:#fff; font-size:15px; font-weight:700; cursor:pointer;
+        transition:transform 0.15s;
+      ">✓ HOTOVO</button>
+      <button id="mission-completed" style="
+        display:none; width:100%; padding:14px; border-radius:10px;
+        border:1px solid rgba(34,197,94,0.3); background:rgba(34,197,94,0.08);
+        color:#22c55e; font-size:15px; font-weight:600; cursor:default;
+      ">✓ Splněno!</button>
+    </div>
+  ` : '';
+
   chjCard.innerHTML = `
     ${chjContentHtml}
+    ${missionHtml}
   `;
-  /* CHIPY DOČASNĚ SKRYTY – odkomentovat až bude akční engine + mediáteka napojeny
-  chjCard.innerHTML += `
-    <div class="smart-chips" style="display:flex;flex-direction:column;gap:10px;">
-      <button id="chip-action" style="
-        display:flex;align-items:center;gap:10px;
-        background:rgba(234,179,8,0.1);border:1px solid rgba(234,179,8,0.4);
-        color:#fde68a;padding:12px 18px;border-radius:10px;
-        cursor:pointer;font-size:14px;font-weight:600;
-        text-align:left;transition:all 0.2s;width:100%;
-      "><span style="font-size:18px;">⚡</span>${chip1Label}</button>
-      ${(hasResources || actionText || reflectionText) ? `
-        <button id="chip-resources" style="
-          display:flex;align-items:center;gap:10px;
-          background:rgba(20,184,166,0.1);border:1px solid rgba(20,184,166,0.4);
-          color:#5eead4;padding:12px 18px;border-radius:10px;
-          cursor:pointer;font-size:14px;font-weight:600;
-          text-align:left;transition:all 0.2s;width:100%;
-        "><span style="font-size:18px;">📚</span>Další zdroje</button>
-      ` : ''}
-    </div>
-  `;
-  */
 
   // 9a. Spustit animaci bublin přes JS transition (CSS @keyframes v innerHTML je nespolehlivé)
   if (displayLines) {
@@ -919,11 +940,93 @@ async function showGameOfLife(node) {
     });
   }
 
-  // 9. Hover efekty čipů
-  chjCard.querySelectorAll('.smart-chips button').forEach(btn => {
-    btn.addEventListener('mouseenter', () => { btn.style.opacity = '0.78'; btn.style.transform = 'translateX(3px)'; });
-    btn.addEventListener('mouseleave', () => { btn.style.opacity = '1'; btn.style.transform = 'none'; });
-  });
+  // 9. Mission interaction — timer, counter, habit
+  if (mission) {
+    const startBtn = chjCard.querySelector('#mission-start');
+    const doneBtn = chjCard.querySelector('#mission-done');
+    const completedBtn = chjCard.querySelector('#mission-completed');
+    const timerEl = chjCard.querySelector('#mission-timer');
+    const timeDisplay = chjCard.querySelector('#mission-time');
+    const progressEl = chjCard.querySelector('#mission-progress');
+    const countDisplay = chjCard.querySelector('#mission-count');
+    let timerInterval = null;
+    let wakeLock = null;
+
+    // Request wake lock during mission (screen stays on)
+    async function requestWakeLock() {
+      try { wakeLock = await navigator.wakeLock?.request('screen'); } catch { /* not supported */ }
+    }
+    function releaseWakeLock() {
+      wakeLock?.release(); wakeLock = null;
+    }
+
+    function formatTime(sec) {
+      const m = Math.floor(sec / 60);
+      const s = sec % 60;
+      return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    }
+
+    function missionComplete() {
+      releaseWakeLock();
+      doneBtn.style.display = 'none';
+      completedBtn.style.display = 'block';
+      // Vibrate on completion
+      if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+      // TODO: save to mission_log
+      console.log('✅ Mission completed:', mission.id, node.id);
+    }
+
+    startBtn.addEventListener('click', () => {
+      startBtn.style.display = 'none';
+      requestWakeLock();
+
+      if (mission.action_type === 'timed') {
+        // Countdown timer
+        let remaining = mission.duration_sec;
+        timerEl.style.display = 'block';
+        timeDisplay.textContent = formatTime(remaining);
+        timerInterval = setInterval(() => {
+          remaining--;
+          timeDisplay.textContent = formatTime(remaining);
+          if (remaining <= 0) {
+            clearInterval(timerInterval);
+            timerEl.style.display = 'none';
+            missionComplete();
+          }
+        }, 1000);
+        doneBtn.style.display = 'block';
+        doneBtn.textContent = '⏹ ZASTAVIT';
+        doneBtn.onclick = () => {
+          clearInterval(timerInterval);
+          missionComplete();
+        };
+
+      } else if (mission.action_type === 'count') {
+        // Counter
+        let count = 0;
+        progressEl.style.display = 'block';
+        countDisplay.textContent = '0';
+        doneBtn.style.display = 'block';
+        doneBtn.textContent = `+1`;
+        doneBtn.onclick = () => {
+          count++;
+          countDisplay.textContent = String(count);
+          if (navigator.vibrate) navigator.vibrate(50);
+          if (count >= (mission.target || Infinity)) {
+            progressEl.style.display = 'none';
+            doneBtn.style.display = 'none';
+            missionComplete();
+          }
+        };
+
+      } else {
+        // habit / photo — just show DONE button
+        doneBtn.style.display = 'block';
+        doneBtn.textContent = '✓ HOTOVO';
+        doneBtn.onclick = () => missionComplete();
+      }
+    });
+  }
 
   // 10. TTS – čte aktuálně zobrazený text; tlačítko odstraněno, řídí se mic ikony
   const messageEl = chjCard.querySelector('.chj-message');
