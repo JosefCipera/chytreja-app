@@ -1309,13 +1309,13 @@ async function showGameOfLife(node) {
       if (e.key === 'Escape') { closeAct(); document.removeEventListener('keydown', escAct); }
     });
     try {
-      const res = await fetch('/api/chat', {
+      const res = await fetch('/api/orchestrator', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          message: 'Co mám konkrétně dělat? Napiš 2-3 konkrétní kroky.',
           nodeId: node.id,
-          userQuestion: 'Co mám konkrétně dělat? Napiš 2-3 konkrétní kroky.',
-          context: { state: node.state, userId }
+          userId,
         })
       });
       const data = await res.json();
@@ -1361,13 +1361,13 @@ async function showGameOfLife(node) {
       if (e.key === 'Escape') { closeRef(); document.removeEventListener('keydown', escRef); }
     });
     try {
-      const res = await fetch('/api/chat', {
+      const res = await fetch('/api/orchestrator', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          message: 'Napiš 3 věty: 1) které oblasti jsou nejhorší a proč je baterie vybitá, 2) proč jsou navrhované akce právě takové — kvůli jakým omezením, 3) jak to souvisí s cílem. Jen fakta, bez obecných frází.',
           nodeId: node.id,
-          userQuestion: 'Napiš 3 věty: 1) které oblasti jsou nejhorší a proč je baterie vybitá, 2) proč jsou navrhované akce právě takové — kvůli jakým omezením, 3) jak to souvisí s cílem. Jen fakta, bez obecných frází.',
-          context: { state: node.state, userId, chjVerdict: initialText }
+          userId,
         })
       });
       const data = await res.json();
@@ -1406,15 +1406,11 @@ async function showGameOfLife(node) {
     messageEl.innerHTML = '<span style="color:#64748b;font-style:italic;">Chytré já přemýšlí...</span>';
 
     try {
-      const url = '/api/chat';
+      const url = '/api/orchestrator';
       const payload = {
+        message: question,
         nodeId: node.id,
-        userQuestion: question,
-        context: {
-          state: node.state,
-          userId,
-          nodeLabel: node.label
-        }
+        userId,
       };
       console.log('Sending to:', url, payload);
 
