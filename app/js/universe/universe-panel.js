@@ -1041,6 +1041,50 @@ async function showGameOfLife(node) {
           if (missionCard) missionCard.appendChild(streakEl);
           requestAnimationFrame(() => streakEl.style.opacity = '1');
         }
+
+        // 🔄 GAME LOOP — check if node improved
+        try {
+          const glResp = await fetch('/api/mission-complete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId, nodeId: node.id }),
+          });
+          const glResult = await glResp.json();
+          console.log('🎮 Game loop:', glResult);
+
+          const missionCard = chjCard.querySelector('#mission-card');
+          if (missionCard) {
+            // Show progress info
+            const progressEl = document.createElement('div');
+            progressEl.style.cssText = `
+              text-align:center; margin-top:8px; padding:6px 12px;
+              border-radius:8px; font-size:13px;
+              opacity:0; transition: opacity 0.5s ease 0.3s;
+            `;
+
+            if (glResult.stateChanged) {
+              // 🎉 STATE CHANGED — big deal!
+              progressEl.style.background = 'rgba(34,197,94,0.12)';
+              progressEl.style.border = '1px solid rgba(34,197,94,0.3)';
+              progressEl.style.color = '#22c55e';
+              progressEl.innerHTML = `🎉 ${glResult.oldState} → ${glResult.newState}! Uzel se zlepšil!`;
+              if (navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 300]);
+            } else if (glResult.improved) {
+              progressEl.style.background = 'rgba(96,165,250,0.08)';
+              progressEl.style.border = '1px solid rgba(96,165,250,0.2)';
+              progressEl.style.color = '#60a5fa';
+              progressEl.innerHTML = `📈 Posun: ${glResult.oldIndex} → ${glResult.newIndex}`;
+            } else if (glResult.missionCount !== undefined) {
+              progressEl.style.color = '#94a3b8';
+              progressEl.innerHTML = `${glResult.missionCount}/${glResult.needed} misí tento týden`;
+            }
+
+            missionCard.appendChild(progressEl);
+            requestAnimationFrame(() => progressEl.style.opacity = '1');
+          }
+        } catch (glErr) {
+          console.warn('Game loop check failed:', glErr.message);
+        }
       } catch (e) {
         console.warn('Mission save failed:', e.message);
       }

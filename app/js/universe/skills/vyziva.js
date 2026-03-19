@@ -5,26 +5,26 @@
 
 const EXERCISES = {
   // === SLEDOVÁNÍ STRAVY ===
-  fotObeda:     { id: 'fot_obed',     label: 'Vyfoť svůj oběd',         icon: '📸', area: 'vyziva',    avoid: [], tier: 1, type: 'photo' },
-  zapisJidla:   { id: 'zapis_jidla',  label: 'Zapiš 3 jídla dne',       icon: '📝', area: 'vyziva',    avoid: [], tier: 1, type: 'count' },
-  zelenina:     { id: 'zelenina',     label: 'Porce zeleniny ke každému jídlu', icon: '🥦', area: 'vyziva', avoid: [], tier: 2, type: 'count' },
+  fotObeda:     { id: 'fot_obed',     label: 'Vyfoť si dnešní oběd',    icon: '📸', area: 'vyziva',    avoid: [], tier: 1, type: 'photo' },
+  zapisJidla:   { id: 'zapis_jidla',  label: 'Zapiš si co jsi dnes snědl — 3 jídla', icon: '📝', area: 'vyziva', avoid: [], tier: 1, type: 'count' },
+  zelenina:     { id: 'zelenina',     label: 'Ke každému jídlu přidej porci zeleniny', icon: '🥦', area: 'vyziva', avoid: [], tier: 2, type: 'count' },
 
   // === PROTEIN ===
-  proteinSnid:  { id: 'protein_sn',   label: 'Protein ke snídani',       icon: '🥚', area: 'protein',   avoid: [], tier: 1, type: 'habit' },
-  protein30:    { id: 'protein_30',   label: 'Tři dávky proteinu dnes',  icon: '🍗', area: 'protein',   avoid: [], tier: 2, type: 'count' },
+  proteinSnid:  { id: 'protein_sn',   label: 'Dej si ke snídani vajíčka, tvaroh nebo jogurt', icon: '🥚', area: 'protein', avoid: [], tier: 1, type: 'habit' },
+  protein30:    { id: 'protein_30',   label: 'Sněz 3 dávky bílkovin dnes (snídaně, oběd, večeře)', icon: '🍗', area: 'protein', avoid: [], tier: 2, type: 'count' },
 
   // === HYDRATACE ===
-  voda1:        { id: 'voda_1',       label: 'Vypij sklenici vody',      icon: '💧', area: 'hydratace', avoid: [], tier: 1, type: 'habit' },
-  voda8:        { id: 'voda_8',       label: 'Osm sklenic vody dnes',    icon: '💧', area: 'hydratace', avoid: [], tier: 2, type: 'count' },
-  vodaRano:     { id: 'voda_rano',    label: 'Sklenice vody hned po probuzení', icon: '🌅', area: 'hydratace', avoid: [], tier: 1, type: 'habit' },
+  voda1:        { id: 'voda_1',       label: 'Teď hned si dej sklenici vody', icon: '💧', area: 'hydratace', avoid: [], tier: 1, type: 'habit' },
+  voda8:        { id: 'voda_8',       label: 'Vypij dnes aspoň 8 sklenic vody', icon: '💧', area: 'hydratace', avoid: [], tier: 2, type: 'count' },
+  vodaRano:     { id: 'voda_rano',    label: 'Hned po probuzení vypij sklenici vody', icon: '🌅', area: 'hydratace', avoid: [], tier: 1, type: 'habit' },
 
   // === CUKR / ZPRACOVANÉ ===
-  zadnyCukr:    { id: 'zadny_cukr',   label: 'Žádný přidaný cukr dnes', icon: '🚫', area: 'vyziva',    avoid: [], tier: 1, type: 'habit' },
-  bezUltra:     { id: 'bez_ultra',    label: 'Žádné ultra-zpracované jídlo', icon: '🏭', area: 'vyziva', avoid: [], tier: 2, type: 'habit' },
+  zadnyCukr:    { id: 'zadny_cukr',   label: 'Dnes nejez nic s přidaným cukrem', icon: '🚫', area: 'vyziva', avoid: [], tier: 1, type: 'habit' },
+  bezUltra:     { id: 'bez_ultra',    label: 'Dnes nejez nic z krabice nebo sáčku', icon: '🏭', area: 'vyziva', avoid: [], tier: 2, type: 'habit' },
 
   // === ČASOVÁNÍ ===
-  oknoJidla:    { id: 'okno_jidla',   label: 'Jez v 10h okně',          icon: '⏰', area: 'casovani',  avoid: [], tier: 2, type: 'habit' },
-  poslednJidlo: { id: 'posl_jidlo',   label: 'Poslední jídlo 3h před spaním', icon: '🌙', area: 'casovani', avoid: [], tier: 1, type: 'habit' },
+  oknoJidla:    { id: 'okno_jidla',   label: 'Jez jen mezi 9:00 a 19:00',  icon: '⏰', area: 'casovani', avoid: [], tier: 2, type: 'habit' },
+  poslednJidlo: { id: 'posl_jidlo',   label: 'Poslední jídlo aspoň 3 hodiny před spaním', icon: '🌙', area: 'casovani', avoid: [], tier: 1, type: 'habit' },
 };
 
 const BASE_VALUES = {
