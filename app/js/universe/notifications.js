@@ -211,33 +211,40 @@ function _showToast(message, color = 'blue') {
   const toast = document.createElement('div');
   toast.id = 'chj-toast';
   toast.style.cssText = `
-    position:fixed; top:70px; left:50%; transform:translateX(-50%) translateY(-20px);
-    z-index:9999; padding:12px 20px; border-radius:12px;
+    padding:12px 20px; border-radius:12px; margin:8px 12px;
     background:${c.bg}; border:1px solid ${c.border}; color:${c.text};
-    font-size:14px; font-weight:600; text-align:center;
+    font-size:15px; font-weight:400; text-align:center;
     backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
     box-shadow:0 4px 20px rgba(0,0,0,0.3);
-    opacity:0; transition:opacity 0.4s ease, transform 0.4s ease;
-    max-width:90vw; pointer-events:auto; cursor:pointer;
+    opacity:0; transition:opacity 0.4s ease;
+    pointer-events:auto; cursor:pointer;
   `;
   toast.textContent = message;
   toast.onclick = () => {
     toast.style.opacity = '0';
-    toast.style.transform = 'translateX(-50%) translateY(-20px)';
     setTimeout(() => toast.remove(), 400);
   };
 
-  document.body.appendChild(toast);
+  // Insert into panel (visible on mobile) or fallback to body
+  const panel = document.getElementById('sidePanel');
+  const panelHeader = panel?.querySelector('.panel-header');
+  if (panelHeader) {
+    panelHeader.after(toast);
+  } else if (panel) {
+    panel.prepend(toast);
+  } else {
+    // Fallback: fixed on screen
+    toast.style.cssText += 'position:fixed; top:70px; left:50%; transform:translateX(-50%); z-index:9999; max-width:90vw;';
+    document.body.appendChild(toast);
+  }
   requestAnimationFrame(() => {
     toast.style.opacity = '1';
-    toast.style.transform = 'translateX(-50%) translateY(0)';
   });
 
   // Auto-dismiss after 6 seconds
   setTimeout(() => {
     if (toast.parentNode) {
       toast.style.opacity = '0';
-      toast.style.transform = 'translateX(-50%) translateY(-20px)';
       setTimeout(() => toast.remove(), 400);
     }
   }, 6000);
