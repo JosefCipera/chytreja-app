@@ -5,25 +5,25 @@
 
 const EXERCISES = {
   // === DÝCHÁNÍ / MEDITACE ===
-  dychani2:     { id: 'dychani_2',    label: 'Dýchání 4-7-8',        icon: '🫁', area: 'dychani',    avoid: [], tier: 1, type: 'timed' },
-  meditace3:    { id: 'meditace_3',   label: 'Tichá meditace',       icon: '🧘', area: 'meditace',   avoid: [], tier: 1, type: 'timed' },
-  meditace5:    { id: 'meditace_5',   label: 'Řízená meditace',      icon: '🧘', area: 'meditace',   avoid: [], tier: 2, type: 'timed' },
-  bodyScan:     { id: 'body_scan',    label: 'Body scan',            icon: '🔍', area: 'meditace',   avoid: [], tier: 2, type: 'timed' },
+  dychani2:     { id: 'dychani_2',    label: 'Nadechni na 4, zadrž na 7, vydechni na 8', icon: '🫁', area: 'dychani', avoid: [], tier: 1, type: 'timed' },
+  meditace3:    { id: 'meditace_3',   label: 'Zavři oči a jen dýchej', icon: '🧘', area: 'meditace',   avoid: [], tier: 1, type: 'timed' },
+  meditace5:    { id: 'meditace_5',   label: 'Pusť si řízenou meditaci a poslouchej', icon: '🧘', area: 'meditace', avoid: [], tier: 2, type: 'timed' },
+  bodyScan:     { id: 'body_scan',    label: 'Zavři oči a projdi pozorností celé tělo od hlavy k nohám', icon: '🔍', area: 'meditace', avoid: [], tier: 2, type: 'timed' },
 
   // === FOCUS ===
-  bezTelefonu:  { id: 'bez_tel',      label: 'Bez telefonu',         icon: '📵', area: 'soustredeni', avoid: [], tier: 1, type: 'timed' },
-  deepWork:     { id: 'deep_work',    label: 'Deep work blok',       icon: '🎯', area: 'soustredeni', avoid: [], tier: 2, type: 'timed' },
-  jednaVec:     { id: 'jedna_vec',    label: 'Jedna věc naplno',     icon: '🔬', area: 'soustredeni', avoid: [], tier: 1, type: 'habit' },
+  bezTelefonu:  { id: 'bez_tel',      label: 'Odlož telefon a nedotýkej se ho', icon: '📵', area: 'soustredeni', avoid: [], tier: 1, type: 'timed' },
+  deepWork:     { id: 'deep_work',    label: 'Vyber si jednu věc a pracuj na ní bez přerušení', icon: '🎯', area: 'soustredeni', avoid: [], tier: 2, type: 'timed' },
+  jednaVec:     { id: 'jedna_vec',    label: 'Dokonči jednu věc, než začneš další', icon: '🔬', area: 'soustredeni', avoid: [], tier: 1, type: 'habit' },
 
   // === EMOCE / VDĚČNOST ===
-  vdecnost3:    { id: 'vdecnost_3',   label: 'Zapiš 3 věci za které jsi vděčný', icon: '🙏', area: 'vdecnost', avoid: [], tier: 1, type: 'count' },
-  reflexe:      { id: 'reflexe',      label: 'Večerní reflexe dne',  icon: '📝', area: 'emoce',      avoid: [], tier: 1, type: 'habit' },
-  nalada:       { id: 'nalada',       label: 'Zaznamenej svou náladu', icon: '🎭', area: 'emoce',     avoid: [], tier: 1, type: 'habit' },
+  vdecnost3:    { id: 'vdecnost_3',   label: 'Napiš 3 věci, za které jsi dnes vděčný', icon: '🙏', area: 'vdecnost', avoid: [], tier: 1, type: 'count' },
+  reflexe:      { id: 'reflexe',      label: 'Před spaním si řekni: co se dnes povedlo?', icon: '📝', area: 'emoce', avoid: [], tier: 1, type: 'habit' },
+  nalada:       { id: 'nalada',       label: 'Zapiš si jedním slovem, jak se teď cítíš', icon: '🎭', area: 'emoce', avoid: [], tier: 1, type: 'habit' },
 
   // === STRES ===
-  coldExposure: { id: 'cold_face',    label: 'Studená voda na obličej', icon: '🧊', area: 'stres',   avoid: [], tier: 1, type: 'habit' },
-  boxBreath:    { id: 'box_breath',   label: 'Box breathing 4×4',    icon: '📦', area: 'stres',      avoid: [], tier: 2, type: 'timed' },
-  smich:        { id: 'smich',        label: 'Najdi něco k smíchu',  icon: '😄', area: 'stres',      avoid: [], tier: 1, type: 'habit' },
+  coldExposure: { id: 'cold_face',    label: 'Opláchni si obličej studenou vodou', icon: '🧊', area: 'stres', avoid: [], tier: 1, type: 'habit' },
+  boxBreath:    { id: 'box_breath',   label: 'Dýchej do čtverce: nádech 4s, pauza 4s, výdech 4s, pauza 4s', icon: '📦', area: 'stres', avoid: [], tier: 2, type: 'timed' },
+  smich:        { id: 'smich',        label: 'Najdi video nebo vzpomínku, která tě rozesměje', icon: '😄', area: 'stres', avoid: [], tier: 1, type: 'habit' },
 };
 
 const BASE_VALUES = {

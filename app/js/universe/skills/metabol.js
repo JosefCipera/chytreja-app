@@ -5,25 +5,25 @@
 
 const EXERCISES = {
   // === CHŮZE PO JÍDLE ===
-  chuze2:       { id: 'chuze_2',     label: 'Chůze po jídle',          icon: '🚶', area: 'metabolicke', avoid: [], tier: 1, type: 'timed' },
-  chuze5:       { id: 'chuze_5',     label: 'Svižná chůze po jídle',   icon: '🚶', area: 'metabolicke', avoid: [], tier: 2, type: 'timed' },
+  chuze2:       { id: 'chuze_2',     label: 'Po jídle se projdi aspoň 2 minuty', icon: '🚶', area: 'metabolicke', avoid: [], tier: 1, type: 'timed' },
+  chuze5:       { id: 'chuze_5',     label: 'Po jídle se projdi svižně 5 minut', icon: '🚶', area: 'metabolicke', avoid: [], tier: 2, type: 'timed' },
 
   // === CUKR / INZULÍN ===
-  zadnyCukr:    { id: 'met_cukr',    label: 'Žádný přidaný cukr dnes', icon: '🚫', area: 'metabolicke', avoid: [], tier: 1, type: 'habit' },
-  zeleninaFirst:{ id: 'zel_first',   label: 'Zelenina jako první chod', icon: '🥗', area: 'glukoza',   avoid: [], tier: 1, type: 'habit' },
-  ocet:         { id: 'ocet',        label: 'Lžíce octa před jídlem',  icon: '🍶', area: 'glukoza',    avoid: [], tier: 2, type: 'habit' },
+  zadnyCukr:    { id: 'met_cukr',    label: 'Dnes nejez nic s přidaným cukrem', icon: '🚫', area: 'metabolicke', avoid: [], tier: 1, type: 'habit' },
+  zeleninaFirst:{ id: 'zel_first',   label: 'Začni jídlo zeleninou, pak zbytek', icon: '🥗', area: 'glukoza', avoid: [], tier: 1, type: 'habit' },
+  ocet:         { id: 'ocet',        label: 'Před jídlem vypij lžíci octa ve vodě', icon: '🍶', area: 'glukoza', avoid: [], tier: 2, type: 'habit' },
 
   // === PŮST ===
-  okno12:       { id: 'okno_12',     label: 'Jez jen v 12h okně',      icon: '⏰', area: 'pust',       avoid: [], tier: 1, type: 'habit' },
-  okno10:       { id: 'okno_10',     label: 'Jez jen v 10h okně',      icon: '⏰', area: 'pust',       avoid: [], tier: 2, type: 'habit' },
-  ranniPust:    { id: 'ranni_pust',  label: 'Odlož snídani o 1 hodinu', icon: '🌅', area: 'pust',      avoid: [], tier: 1, type: 'habit' },
+  okno12:       { id: 'okno_12',     label: 'Jez jen mezi 8:00 a 20:00', icon: '⏰', area: 'pust', avoid: [], tier: 1, type: 'habit' },
+  okno10:       { id: 'okno_10',     label: 'Jez jen mezi 9:00 a 19:00', icon: '⏰', area: 'pust', avoid: [], tier: 2, type: 'habit' },
+  ranniPust:    { id: 'ranni_pust',  label: 'Posuň snídani o hodinu později než obvykle', icon: '🌅', area: 'pust', avoid: [], tier: 1, type: 'habit' },
 
   // === POHYB PRO METABOLISMUS ===
-  dreySaJidlem: { id: 'drep_jidlo',  label: 'Dřepy po jídle',          icon: '🦵', area: 'metabolicke', avoid: ['koleno'], tier: 2, type: 'count' },
-  schody:       { id: 'met_schody',  label: 'Schody místo výtahu',     icon: '🪜', area: 'metabolicke', avoid: ['koleno'], tier: 1, type: 'habit' },
+  dreySaJidlem: { id: 'drep_jidlo',  label: 'Po jídle udělej dřepy', icon: '🦵', area: 'metabolicke', avoid: ['koleno'], tier: 2, type: 'count' },
+  schody:       { id: 'met_schody',  label: 'Dnes vezmi schody místo výtahu', icon: '🪜', area: 'metabolicke', avoid: ['koleno'], tier: 1, type: 'habit' },
 
   // === MONITORING ===
-  tepPoJidle:   { id: 'tep_jidlo',   label: 'Změř tep 30 min po jídle', icon: '❤️', area: 'glukoza',  avoid: [], tier: 2, type: 'habit' },
+  tepPoJidle:   { id: 'tep_jidlo',   label: 'Půl hodiny po jídle si změř tep', icon: '❤️', area: 'glukoza', avoid: [], tier: 2, type: 'habit' },
 };
 
 const BASE_VALUES = {

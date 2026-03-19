@@ -5,23 +5,23 @@
 
 const EXERCISES = {
   // === POHYB / IMUNITA ===
-  prochazka10:  { id: 'proch_10',    label: 'Procházka venku',          icon: '🚶', area: 'imunitni', avoid: [], tier: 1, type: 'timed' },
-  prochazka20:  { id: 'proch_20',    label: 'Svižná procházka',         icon: '🚶', area: 'imunitni', avoid: [], tier: 2, type: 'timed' },
-  slunce:       { id: 'slunce',      label: 'Ranní světlo — 10 min venku', icon: '☀️', area: 'imunitni', avoid: [], tier: 1, type: 'timed' },
+  prochazka10:  { id: 'proch_10',    label: 'Vyjdi ven a projdi se aspoň 10 minut', icon: '🚶', area: 'imunitni', avoid: [], tier: 1, type: 'timed' },
+  prochazka20:  { id: 'proch_20',    label: 'Vyjdi ven a jdi svižně 20 minut', icon: '🚶', area: 'imunitni', avoid: [], tier: 2, type: 'timed' },
+  slunce:       { id: 'slunce',      label: 'Hned ráno jdi ven na denní světlo', icon: '☀️', area: 'imunitni', avoid: [], tier: 1, type: 'timed' },
 
   // === STUDENÁ EXPOZICE ===
-  studenaSprcha:{ id: 'cold_30',     label: 'Studená sprcha 30s',       icon: '🚿', area: 'imunitni', avoid: [], tier: 1, type: 'timed' },
-  studenaSprcha2:{ id: 'cold_60',    label: 'Studená sprcha 1 min',     icon: '🚿', area: 'imunitni', avoid: [], tier: 2, type: 'timed' },
+  studenaSprcha:{ id: 'cold_30',     label: 'Na konci sprchyotoč na studenou a vydrž', icon: '🚿', area: 'imunitni', avoid: [], tier: 1, type: 'timed' },
+  studenaSprcha2:{ id: 'cold_60',    label: 'Celou minutu pod studenou sprchou', icon: '🚿', area: 'imunitni', avoid: [], tier: 2, type: 'timed' },
 
   // === REGENERACE ===
-  spanekCas:    { id: 'spanek_cas',  label: 'Lehni si před 23:00',      icon: '🛏️', area: 'obnova',   avoid: [], tier: 1, type: 'habit' },
-  zadneModre:   { id: 'no_blue',     label: 'Žádná obrazovka 1h před spaním', icon: '📵', area: 'obnova', avoid: [], tier: 1, type: 'habit' },
-  power_nap:    { id: 'power_nap',   label: 'Power nap 20 min',        icon: '😴', area: 'obnova',   avoid: [], tier: 2, type: 'timed' },
+  spanekCas:    { id: 'spanek_cas',  label: 'Dnes si lehni před 23:00', icon: '🛏️', area: 'obnova',   avoid: [], tier: 1, type: 'habit' },
+  zadneModre:   { id: 'no_blue',     label: 'Hodinu před spaním odlož telefon a vypni TV', icon: '📵', area: 'obnova', avoid: [], tier: 1, type: 'habit' },
+  power_nap:    { id: 'power_nap',   label: 'Dej si 20 minut spánku přes den', icon: '😴', area: 'obnova', avoid: [], tier: 2, type: 'timed' },
 
   // === PREVENCE ===
-  kontrolaTepu: { id: 'tep_check',   label: 'Změř klidový tep',        icon: '❤️', area: 'biomarkery', avoid: [], tier: 1, type: 'habit' },
-  teplotaRano:  { id: 'teplota',     label: 'Ranní teplota',           icon: '🌡️', area: 'biomarkery', avoid: [], tier: 2, type: 'habit' },
-  hygienaDychani:{ id: 'hyg_dych',   label: 'Vědomé dýchání nosem celý den', icon: '👃', area: 'imunitni', avoid: [], tier: 2, type: 'habit' },
+  kontrolaTepu: { id: 'tep_check',   label: 'Sedni si, zklidni se a změř si tep', icon: '❤️', area: 'biomarkery', avoid: [], tier: 1, type: 'habit' },
+  teplotaRano:  { id: 'teplota',     label: 'Hned po probuzení si změř teplotu', icon: '🌡️', area: 'biomarkery', avoid: [], tier: 2, type: 'habit' },
+  hygienaDychani:{ id: 'hyg_dych',   label: 'Celý den dýchej jen nosem, ne ústy', icon: '👃', area: 'imunitni', avoid: [], tier: 2, type: 'habit' },
 };
 
 const BASE_VALUES = {

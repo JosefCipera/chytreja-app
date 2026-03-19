@@ -11,32 +11,32 @@
 
 const EXERCISES = {
   // === SÍLA (strength) ===
-  drepy:       { id: 'drepy',       label: 'Dřepy',              icon: '🦵', area: 'sila',      avoid: ['koleno'], tier: 1, type: 'count' },
-  kliky:       { id: 'kliky',       label: 'Kliky',              icon: '💪', area: 'sila',      avoid: ['rameno', 'zapesti'], tier: 2, type: 'count' },
-  plank:       { id: 'plank',       label: 'Plank',              icon: '💪', area: 'sila',      avoid: ['zada_akutni'], tier: 1, type: 'timed' },
-  výpady:      { id: 'vypady',      label: 'Výpady',             icon: '🦵', area: 'sila',      avoid: ['koleno'], tier: 2, type: 'count' },
-  mrtvyTah:    { id: 'mrtvy_tah',   label: 'Mrtvý tah (vlastní váha)', icon: '🏋️', area: 'sila', avoid: ['zada_akutni'], tier: 3, type: 'count' },
-  sedyNaZidli: { id: 'sedy_zidli',  label: 'Sedy na židli',      icon: '🪑', area: 'sila',      avoid: [], tier: 1, type: 'count' },
+  drepy:       { id: 'drepy',       label: 'Udělej dřepy',       icon: '🦵', area: 'sila',      avoid: ['koleno'], tier: 1, type: 'count' },
+  kliky:       { id: 'kliky',       label: 'Udělej kliky',       icon: '💪', area: 'sila',      avoid: ['rameno', 'zapesti'], tier: 2, type: 'count' },
+  plank:       { id: 'plank',       label: 'Drž plank — nehýbej se',  icon: '💪', area: 'sila',  avoid: ['zada_akutni'], tier: 1, type: 'timed' },
+  výpady:      { id: 'vypady',      label: 'Střídavé výpady vpřed',   icon: '🦵', area: 'sila',  avoid: ['koleno'], tier: 2, type: 'count' },
+  mrtvyTah:    { id: 'mrtvy_tah',   label: 'Předklon a zpět s rovnými zády', icon: '🏋️', area: 'sila', avoid: ['zada_akutni'], tier: 3, type: 'count' },
+  sedyNaZidli: { id: 'sedy_zidli',  label: 'Sedni si a vstaň ze židle', icon: '🪑', area: 'sila', avoid: [], tier: 1, type: 'count' },
 
   // === STABILITA (balance) ===
-  stojNaJedne: { id: 'stoj_1noha', label: 'Stoj na jedné noze',  icon: '🦩', area: 'stabilita', avoid: ['kotnik'], tier: 1, type: 'timed' },
-  tandemStoj:  { id: 'tandem',     label: 'Tandemový stoj',      icon: '🦩', area: 'stabilita', avoid: [], tier: 2, type: 'timed' },
-  dreySBalance:{ id: 'drep_bal',   label: 'Dřep s výdrží',       icon: '🧘', area: 'stabilita', avoid: ['koleno'], tier: 2, type: 'timed' },
+  stojNaJedne: { id: 'stoj_1noha', label: 'Stůj na jedné noze, druhou zvedni', icon: '🦩', area: 'stabilita', avoid: ['kotnik'], tier: 1, type: 'timed' },
+  tandemStoj:  { id: 'tandem',     label: 'Postav patu těsně před špičku a drž rovnováhu', icon: '🦩', area: 'stabilita', avoid: [], tier: 2, type: 'timed' },
+  dreySBalance:{ id: 'drep_bal',   label: 'Dřep dolů a vydrž dole',  icon: '🧘', area: 'stabilita', avoid: ['koleno'], tier: 2, type: 'timed' },
 
   // === KARDIO (cardio) ===
-  rychlaChůze: { id: 'rychla_chuze', label: 'Rychlá chůze',     icon: '🚶', area: 'kardio',    avoid: [], tier: 1, type: 'timed' },
-  schody:      { id: 'schody',       label: 'Schody nahoru/dolů', icon: '🪜', area: 'kardio',    avoid: ['koleno'], tier: 2, type: 'timed' },
-  jumpingJack: { id: 'jumping',      label: 'Jumping Jacks',     icon: '⭐', area: 'kardio',    avoid: ['koleno', 'kotnik'], tier: 2, type: 'count' },
-  burpees:     { id: 'burpees',      label: 'Burpees',           icon: '🔥', area: 'kardio',    avoid: ['koleno', 'zada_akutni', 'rameno'], tier: 3, type: 'count' },
+  rychlaChůze: { id: 'rychla_chuze', label: 'Vyjdi ven a jdi svižně', icon: '🚶', area: 'kardio', avoid: [], tier: 1, type: 'timed' },
+  schody:      { id: 'schody',       label: 'Najdi schody a běž nahoru/dolů', icon: '🪜', area: 'kardio', avoid: ['koleno'], tier: 2, type: 'timed' },
+  jumpingJack: { id: 'jumping',      label: 'Skákej s rozpažením a spažením', icon: '⭐', area: 'kardio', avoid: ['koleno', 'kotnik'], tier: 2, type: 'count' },
+  burpees:     { id: 'burpees',      label: 'Dřep → plank → výskok', icon: '🔥', area: 'kardio', avoid: ['koleno', 'zada_akutni', 'rameno'], tier: 3, type: 'count' },
 
   // === VO2MAX (endurance) ===
-  beh3min:     { id: 'beh_3',       label: 'Běh na místě',       icon: '🏃', area: 'vo2max',    avoid: ['koleno', 'kotnik'], tier: 1, type: 'timed' },
-  intervaly:   { id: 'intervaly',   label: 'Intervaly 30/30',    icon: '⏱️', area: 'vo2max',    avoid: ['koleno'], tier: 3, type: 'timed' },
+  beh3min:     { id: 'beh_3',       label: 'Běž na místě, zvedej kolena', icon: '🏃', area: 'vo2max', avoid: ['koleno', 'kotnik'], tier: 1, type: 'timed' },
+  intervaly:   { id: 'intervaly',   label: 'Sprint 30s → odpočinek 30s, opakuj', icon: '⏱️', area: 'vo2max', avoid: ['koleno'], tier: 3, type: 'timed' },
 
   // === MOBILITA (mobility) ===
-  protazeniZad:{ id: 'protaz_zada', label: 'Protažení zad',      icon: '🧘', area: 'mobilita',  avoid: [], tier: 1, type: 'timed' },
-  kycelRotace: { id: 'kycel_rot',   label: 'Rotace kyčlí',       icon: '🔄', area: 'mobilita',  avoid: [], tier: 1, type: 'timed' },
-  hrudnikOpen: { id: 'hrudnik',     label: 'Otevření hrudníku',  icon: '🫁', area: 'mobilita',  avoid: [], tier: 1, type: 'timed' },
+  protazeniZad:{ id: 'protaz_zada', label: 'Lehni si a protáhni záda do oblouku', icon: '🧘', area: 'mobilita', avoid: [], tier: 1, type: 'timed' },
+  kycelRotace: { id: 'kycel_rot',   label: 'Kruhy kyčlemi — pomalu na obě strany', icon: '🔄', area: 'mobilita', avoid: [], tier: 1, type: 'timed' },
+  hrudnikOpen: { id: 'hrudnik',     label: 'Rozpaž ruce a otevři hrudník dozadu', icon: '🫁', area: 'mobilita', avoid: [], tier: 1, type: 'timed' },
 };
 
 // ── DIFFICULTY SCALING ─────────────────────────────────
