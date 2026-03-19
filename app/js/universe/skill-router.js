@@ -9,14 +9,18 @@
 //   3. Hotovo — router namapuje automaticky z SKILL_META.covers
 
 import * as cviceni from './skills/cviceni.js';
-// import * as vyziva from './skills/vyziva.js';     // TODO: fáze 2
-// import * as mindset from './skills/mindset.js';    // TODO: fáze 2
-// import * as prevence from './skills/prevence.js';  // TODO: fáze 2
-// import * as metabol from './skills/metabol.js';    // TODO: fáze 2
+import * as mindset from './skills/mindset.js';
+import * as vyziva from './skills/vyziva.js';
+import * as prevence from './skills/prevence.js';
+import * as metabol from './skills/metabol.js';
 
 // ── Registered skills ──────────────────────────────────
 const SKILLS = [
   cviceni,
+  mindset,
+  vyziva,
+  prevence,
+  metabol,
 ];
 
 // ── Auto-build NODE → SKILL map from SKILL_META.covers ─
