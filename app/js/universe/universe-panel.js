@@ -657,11 +657,7 @@ function _buildBatteryHTML(state, bioAgeResult) {
   const stateLabelColor = state === 'RED' ? '#ef4444' : '#64748b';
   return `
     <div style="text-align:center; padding:12px 0 4px;">
-      <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:20px;">${
-        bioAgeResult
-          ? `Tvůj biologický věk — <span style="color:${bioAgeResult.offset > 0 ? '#ef4444' : bioAgeResult.offset < 0 ? '#22c55e' : '#94a3b8'};font-weight:600;">${bioAgeResult.bioAge} let</span>`
-          : 'Biologický věk se počítá…'
-      }</div>
+      ${bioAgeResult ? `<div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:20px;">Tvůj biologický věk — <span style="color:${bioAgeResult.offset > 0 ? '#ef4444' : bioAgeResult.offset < 0 ? '#22c55e' : '#94a3b8'};font-weight:600;">${bioAgeResult.bioAge} let</span></div>` : ''}
       <div style="display:inline-flex; flex-direction:column; align-items:center;">
         <div style="
           width:22px; height:11px;
@@ -830,9 +826,9 @@ async function showGameOfLife(node) {
 
   // 5b. Hlavní uzel → baterie; ostatní uzly → sparkline
   if (isMainNode) {
-    // Baterie je již správně vykreslena v skeleton fázi (node.state je znám okamžitě).
-    // Re-renderujeme přes helper aby bylo garantovaně konzistentní (bez flickeru).
-    metricCard.innerHTML = _buildBatteryHTML(node.state);
+    // Baterie s bio-age je již vykreslena v skeleton fázi (bioAgeResult + node.state).
+    // Re-render jen pokud trend data to vyžadují — jinak zachovat bio-age.
+    // metricCard already has correct battery from skeleton phase
   } else {
     // 1 bod stačí – zduplikujeme ho aby drawMiniTrend měl co nakreslit (plochá čára = stabilní)
     const hasData = trend.numeric?.length >= 1;
@@ -888,10 +884,10 @@ async function showGameOfLife(node) {
       BIO_AGE_TEXT = `Tělo je na ${bioAge} let, i když ti je ${chronologicalAge}. Jsi mladší než říká občanka.`;
     }
   } else {
-    BIO_AGE_TEXT = 'Biologický věk se zatím počítá…';
+    BIO_AGE_TEXT = null;
   }
   const displayLines = isMainNode
-    ? [BIO_AGE_TEXT, ...(verdictLines || [])]
+    ? [BIO_AGE_TEXT, ...(verdictLines || [])].filter(Boolean)
     : (verdictLines || null);
 
   // 7. Chip labely
@@ -965,13 +961,12 @@ async function showGameOfLife(node) {
       border-radius:12px; padding:16px; margin-top:4px;
     ">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-        <span style="font-size:20px;">🎯</span>
-        <span style="color:#fde68a;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Dnešní mise</span>
+        <span style="color:#fde68a;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">DNEŠNÍ MISE</span>
         ${skillLevel ? `<span style="margin-left:auto;font-size:11px;color:#94a3b8;background:rgba(148,163,184,0.1);padding:2px 8px;border-radius:10px;">${skillLevel.name}</span>` : ''}
       </div>
       ${skillMotivation ? `<div style="color:#94a3b8;font-size:13px;font-style:italic;margin-bottom:10px;">${skillMotivation}</div>` : ''}
       <div style="color:#e2e8f0;font-size:16px;font-weight:600;margin-bottom:14px;">
-        ${mission.icon} ${mission.label}${mission.target ? ` × ${mission.target}` : ''}${mission.duration_sec ? ` (${Math.floor(mission.duration_sec/60)}:${String(mission.duration_sec%60).padStart(2,'0')})` : ''}
+        ${mission.icon} ${mission.label}${mission.target ? ` × ${mission.target}` : ''}
       </div>
       <div id="mission-timer" style="display:none;text-align:center;margin-bottom:12px;">
         <span id="mission-time" style="font-size:36px;font-weight:700;color:#fde68a;font-variant-numeric:tabular-nums;">00:00</span>
