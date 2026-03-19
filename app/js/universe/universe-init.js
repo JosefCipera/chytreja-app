@@ -11,6 +11,7 @@ import { renderUniverse } from "./universe-core.js";
 import { initUserDataPanel } from "./user-data-panel.js";
 import { listenOnce, handleVoiceInput, proactiveGreeting } from "./universe-voice.js";
 import { requestCHJPermission, checkAndRemind } from "./notifications.js";
+import { initHUD, hideHUD, showHUD } from "./hud.js?v=20260319a";
 
 // Supabase setup
 const { createClient } = window.supabase;
@@ -243,15 +244,9 @@ async function loadAndRenderModel(modelName, role) {
 
   renderVisibleUniverse(window.MAIN_UNIVERSE_DATA);
 
-  // Auto-open Hra o život – panel se otevře hned po načtení univerza
+  // HUD init — bio-age, streak, mission overlay on main screen
   // (700ms čeká na inicializaci vis.js sítě)
-  setTimeout(async () => {
-    const mainNode = window.MAIN_UNIVERSE_DATA?.find(n => n.id === 'dlouhovekost');
-    if (mainNode && mainNode.state && mainNode.state !== 'GRAY') {
-      const { showPanel } = await import('./universe-panel.js');
-      showPanel(mainNode);
-    }
-  }, 700);
+  setTimeout(() => initHUD(), 700);
 
   // Načti user constraints do window.USER_CONSTRAINTS (pro discipline offer)
   (async () => {
