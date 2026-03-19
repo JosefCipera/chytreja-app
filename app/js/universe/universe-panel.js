@@ -223,6 +223,8 @@ export function closePanel() {
     setTimeout(() => { panelEl.style.display = "none"; }, 300);
     document.body.classList.remove("panel-open");
   }
+  // Show HUD when panel closes
+  import('./hud.js').then(m => m.showHUD()).catch(() => {});
 }
 
 const closeBtn = document.getElementById("closePanel");
@@ -263,6 +265,8 @@ export async function showPanel(node) {
   panelEl.style.visibility = "visible";
   panelEl.classList.add("open", "visible");
   document.body.classList.add("panel-open");
+  // Hide HUD when panel opens
+  import('./hud.js').then(m => m.hideHUD()).catch(() => {});
 
   requestAnimationFrame(() => { panelEl.style.transition = ""; });
 }
