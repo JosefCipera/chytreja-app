@@ -10,7 +10,7 @@ const ORBIT_ZONES = [
 import { renderUniverse } from "./universe-core.js";
 import { initUserDataPanel } from "./user-data-panel.js";
 import { listenOnce, handleVoiceInput, proactiveGreeting } from "./universe-voice.js";
-import { requestCHJPermission } from "./notifications.js";
+import { requestCHJPermission, checkAndRemind } from "./notifications.js";
 
 // Supabase setup
 const { createClient } = window.supabase;
@@ -101,6 +101,12 @@ async function populateModelSelector() {
 
   // Žádost o notifikační oprávnění – po 3s, nenásilně
   setTimeout(() => requestCHJPermission(), 3000);
+
+  // In-app reminder – po 2s zkontroluj misi + streak a ukaž toast
+  const userId = window.firebaseAuth?.currentUser?.uid;
+  if (userId) {
+    setTimeout(() => checkAndRemind(userId), 2000);
+  }
 })();
 
 // ── Spusť hru! tlačítko ───────────────────────────────────────
