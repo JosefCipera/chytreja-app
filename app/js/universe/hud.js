@@ -3,7 +3,7 @@
 // Voice-first: CHJ speaks, HUD shows key info at a glance
 // =====================================================
 
-import { calcBioAge } from './game-engine.js';
+import { calcBioAge, KILLER_TEXTS, NODE_KILLERS } from './game-engine.js';
 import { runSkill } from './skill-router.js';
 
 // ── ELEMENTS ────────────────────────────────────────────
@@ -15,6 +15,7 @@ function getEls() {
     hud: document.getElementById('chj-hud'),
     bioAge: document.getElementById('chj-bio-age'),
     streak: document.getElementById('chj-streak-badge'),
+    killer: document.getElementById('chj-hud-killer'),
     subtitle: document.getElementById('chj-subtitle'),
     missionBox: document.getElementById('chj-hud-mission'),
     missionText: document.getElementById('chj-hud-mission-text'),
@@ -52,10 +53,21 @@ export async function initHUD() {
       e.streak.style.display = 'inline';
     }
 
-    // 3. Find bottleneck node → get its mission
+    // 3. Find bottleneck node → show killer + get mission
     const bottleneck = findBottleneck();
     let missionLabel = null;
     if (bottleneck) {
+      // Killer text for bottleneck node
+      const killerId = NODE_KILLERS[bottleneck.id];
+      const killerText = killerId ? KILLER_TEXTS[killerId] : null;
+      if (killerText && e.killer && (bottleneck.state === 'RED' || bottleneck.state === 'YELLOW')) {
+        e.killer.textContent = killerText;
+        e.killer.style.display = 'block';
+        // RED = red, YELLOW = amber
+        e.killer.style.color = bottleneck.state === 'RED' ? '#f87171' : '#fbbf24';
+      }
+
+      // Mission
       const skillResult = await getMission(bottleneck);
       const mission = skillResult?.mission || skillResult;
       if (mission?.label) {
