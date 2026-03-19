@@ -259,3 +259,70 @@ export function pickMission(nodeId, state) {
   const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
   return missions[dayOfYear % missions.length];
 }
+
+// =====================================================
+// BIO-AGE CALCULATION (Attia: Medicine 3.0)
+// =====================================================
+// 4 fitness markers weighted by mortality prediction power.
+// Each marker's current_index (0–100) maps to a year offset.
+// Bio-age = chronological age + weighted sum of offsets.
+
+const BIO_MARKERS = [
+  { nodeId: 'vo2max',    weight: 0.40 },  // strongest mortality predictor
+  { nodeId: 'sila',      weight: 0.25 },  // functional independence
+  { nodeId: 'stabilita', weight: 0.20 },  // fall prevention
+  { nodeId: 'mobilita',  weight: 0.15 },  // movement quality
+];
+
+// current_index → year offset (how many years this marker adds/subtracts)
+// Based on Attia's age-performance tables
+function indexToYearOffset(index) {
+  if (index <= 20) return +20;   // critical — body aging 20 years faster
+  if (index <= 40) return +10;   // poor
+  if (index <= 60) return +4;    // below average
+  if (index <= 75) return  0;    // population average
+  if (index <= 90) return -5;    // good
+  return -12;                    // elite
+}
+
+/**
+ * Calculate biological age from fitness markers.
+ * @param {number} chronologicalAge - user's real age
+ * @param {Object} metricsMap - { nodeId: { current_index } }
+ * @returns {{ bioAge: number, offset: number, markers: Array, chronologicalAge: number }}
+ */
+export function calcBioAge(chronologicalAge, metricsMap) {
+  if (!chronologicalAge || !metricsMap) return null;
+
+  let totalWeight = 0;
+  let weightedOffset = 0;
+  const markers = [];
+
+  for (const { nodeId, weight } of BIO_MARKERS) {
+    const m = metricsMap[nodeId];
+    // Skip GRAY/missing markers — don't penalize unmeasured nodes
+    if (!m || m.state === 'GRAY' || m.current_index === undefined) continue;
+
+    const offset = indexToYearOffset(m.current_index);
+    weightedOffset += offset * weight;
+    totalWeight += weight;
+    markers.push({ nodeId, index: m.current_index, offset, weight });
+  }
+
+  // If no markers measured yet, can't calculate
+  if (totalWeight === 0) return null;
+
+  // Normalize weights to sum to 1 (in case some markers are missing)
+  const normalizedOffset = weightedOffset / totalWeight;
+  const bioAge = Math.round(chronologicalAge + normalizedOffset);
+
+  // Clamp to reasonable range
+  const clamped = Math.max(chronologicalAge - 20, Math.min(chronologicalAge + 25, bioAge));
+
+  return {
+    bioAge: clamped,
+    offset: clamped - chronologicalAge,
+    chronologicalAge,
+    markers,
+  };
+}

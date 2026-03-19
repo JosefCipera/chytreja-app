@@ -7,7 +7,7 @@ import {
   DEMO_PREVIEWS, ACTIVE_MOTTOS, getDemoPreview,
   NODE_RIDERS, RIDER_ICONS, getRiders,
   VERDICT_TEXTS, KILLER_TEXTS, NODE_KILLERS, generateVerdict,
-  pickMission
+  pickMission, calcBioAge
 } from './game-engine.js';
 
 import {
@@ -648,7 +648,7 @@ function showToast(msg) {
 // =====================================================
 
 /** Generuje HTML baterie pro hlavní uzel (state = GREEN / YELLOW / RED / jiný). */
-function _buildBatteryHTML(state) {
+function _buildBatteryHTML(state, bioAgeResult) {
   const fillPct    = state === 'GREEN' ? 80 : state === 'YELLOW' ? 50 : 20;
   const battColor  = state === 'GREEN' ? '#22c55e' : state === 'YELLOW' ? '#eab308' : '#ef4444';
   const battBorder = state === 'GREEN' ? 'rgba(34,197,94,0.35)'  : state === 'YELLOW' ? 'rgba(234,179,8,0.35)'  : 'rgba(239,68,68,0.35)';
@@ -657,7 +657,11 @@ function _buildBatteryHTML(state) {
   const stateLabelColor = state === 'RED' ? '#ef4444' : '#64748b';
   return `
     <div style="text-align:center; padding:12px 0 4px;">
-      <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:20px;">Tvůj biologický věk - 52 let</div>
+      <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:20px;">${
+        bioAgeResult
+          ? `Tvůj biologický věk — <span style="color:${bioAgeResult.offset > 0 ? '#ef4444' : bioAgeResult.offset < 0 ? '#22c55e' : '#94a3b8'};font-weight:600;">${bioAgeResult.bioAge} let</span>`
+          : 'Biologický věk se počítá…'
+      }</div>
       <div style="display:inline-flex; flex-direction:column; align-items:center;">
         <div style="
           width:22px; height:11px;
@@ -734,11 +738,31 @@ async function showGameOfLife(node) {
     border-radius:12px; padding:20px; margin:15px 0;
   `;
 
+  // Bio-age: fetch profile + metrics for 4 fitness markers
+  let bioAgeResult = null;
+  if (isMainNode && userId !== 'demo-user-123' && window.supabaseClient) {
+    try {
+      const sb = window.supabaseClient;
+      const [{ data: profile }, { data: metrics }] = await Promise.all([
+        sb.from('user_profiles').select('age').eq('user_id', userId).maybeSingle(),
+        sb.from('user_metrics').select('node_id, current_index, state').eq('user_id', userId).eq('universe', 'longevity').in('node_id', ['vo2max', 'sila', 'stabilita', 'mobilita']),
+      ]);
+      if (profile?.age && metrics?.length) {
+        const metricsMap = {};
+        for (const m of metrics) metricsMap[m.node_id] = m;
+        bioAgeResult = calcBioAge(profile.age, metricsMap);
+        console.log('🧬 Bio-age:', bioAgeResult);
+      }
+    } catch (e) {
+      console.warn('Bio-age calc failed:', e.message);
+    }
+  }
+
   // Skeleton se liší podle typu uzlu
   if (isMainNode) {
     // Stav (node.state) je znám okamžitě → vykreslíme reálnou baterii hned,
     // bez šedého placeholderu s jinými rozměry (eliminuje flicker při překreslení).
-    metricCard.innerHTML = _buildBatteryHTML(node.state);
+    metricCard.innerHTML = _buildBatteryHTML(node.state, bioAgeResult);
   } else {
     metricCard.innerHTML = `
       <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Trend (30 dní)</div>
@@ -849,9 +873,23 @@ async function showGameOfLife(node) {
   // Animované bubliny pro všechny uzly (1–3 věty z AI)
   const verdictLines = verdict?.lines?.length >= 1 ? verdict.lines : null;
 
-  // Hlavní uzel: hardcoded 1. bublina (bio-věk) + 2 AI věty (bottleneck + sen)
+  // Hlavní uzel: 1. bublina (bio-věk) + 2 AI věty (bottleneck + sen)
   // Sub-uzly: jen AI věty
-  const BIO_AGE_TEXT = 'Tvé tělo se dnes cítí na 52 let, i když ti je 45. Ta vybitá baterie ti zbytečně přidává roky.';
+  let BIO_AGE_TEXT;
+  if (bioAgeResult) {
+    const { bioAge, chronologicalAge, offset } = bioAgeResult;
+    if (offset > 5) {
+      BIO_AGE_TEXT = `Tělo se cítí na ${bioAge} let, i když ti je ${chronologicalAge}. Baterie ti zbytečně přidává roky.`;
+    } else if (offset > 0) {
+      BIO_AGE_TEXT = `Tělo je na ${bioAge} let — mírně nad tvých ${chronologicalAge}. Je co zlepšovat.`;
+    } else if (offset === 0) {
+      BIO_AGE_TEXT = `Biologicky jsi přesně na svůj věk — ${bioAge} let. Držíš tempo.`;
+    } else {
+      BIO_AGE_TEXT = `Tělo je na ${bioAge} let, i když ti je ${chronologicalAge}. Jsi mladší než říká občanka.`;
+    }
+  } else {
+    BIO_AGE_TEXT = 'Biologický věk se zatím počítá…';
+  }
   const displayLines = isMainNode
     ? [BIO_AGE_TEXT, ...(verdictLines || [])]
     : (verdictLines || null);
