@@ -1402,8 +1402,12 @@ async function showGameOfLife(node) {
       if (_hi) _hi.textContent = '🔊';
     }
 
+    // Fresh reference — messageEl may have been replaced by mission UI
+    const _msgEl = () => chjCard?.querySelector('.chj-message') || document.querySelector('.chj-message');
+
     // Zobrazení stavu čekání
-    messageEl.innerHTML = '<span style="color:#64748b;font-style:italic;">Chytré já přemýšlí...</span>';
+    const msgTarget = _msgEl();
+    if (msgTarget) msgTarget.innerHTML = '<span style="color:#64748b;font-style:italic;">Chytré já přemýšlí...</span>';
 
     try {
       const url = '/api/orchestrator';
@@ -1431,14 +1435,16 @@ async function showGameOfLife(node) {
 
       // Přepis textu – bez nové bubliny
       currentText = answer;
-      messageEl.textContent = answer;
+      const msgDone = _msgEl();
+      if (msgDone) msgDone.textContent = answer;
 
       // Auto-TTS: přečti odpověď (header mic → 🔊 přes startTTS.onstart)
       startTTS();
 
     } catch (err) {
       console.error('❌ chat submit:', err);
-      messageEl.textContent = 'Chyba při komunikaci s AI.';
+      const msgErr = _msgEl();
+      if (msgErr) msgErr.textContent = 'Chyba při komunikaci s AI.';
       // Reset header mic při chybě (TTS nikdy nenastartuje)
       const _hmErr = document.getElementById('header-mic-btn');
       if (_hmErr) {
