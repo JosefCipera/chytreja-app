@@ -14,6 +14,8 @@ import {
   fetchAspiration, fetchLearningSteps, drawMiniTrend, fetchTrend
 } from './data-layer.js';
 
+import { runSkill, hasSkill } from './skill-router.js';
+
 // Game constants + data fetching imported from modules (see imports above)
 
 // Formátování CHJ textu: 1. věta tight, každá další věta s půlřádkovým odsazením dolů
@@ -886,10 +888,32 @@ async function showGameOfLife(node) {
         color:#e2e8f0; font-size:16px; line-height:1.3; margin-bottom:16px;
       ">${formatChjText(initialText)}</div>`;
 
-  // 8b. Mise dne — pick mission for this node
-  const mission = !isMainNode ? pickMission(node.id, node.state || 'YELLOW') : null;
-  const alreadyDone = mission && missionStatus.todayMissions?.some(m => m.mission_id === mission.id);
+  // 8b. Mise dne — skill router (progressive) → fallback na statický pickMission
   const streakCount = missionStatus.streak || 0;
+  let mission = null;
+  let skillMotivation = null;
+  let skillLevel = null;
+
+  if (!isMainNode) {
+    // Try skill router first (progressive difficulty, constraint-aware)
+    const skillResult = runSkill({
+      nodeId: node.id,
+      state: node.state || 'YELLOW',
+      streak: streakCount,
+      constraints: [],  // TODO: load from user_constraints table
+    });
+
+    if (skillResult) {
+      mission = skillResult.mission;
+      skillMotivation = skillResult.motivation;
+      skillLevel = skillResult.level;
+    } else {
+      // Fallback: static mission from game-engine
+      mission = pickMission(node.id, node.state || 'YELLOW');
+    }
+  }
+
+  const alreadyDone = mission && missionStatus.todayMissions?.some(m => m.mission_id === mission.id);
   const streakBadge = streakCount > 0
     ? `<div style="text-align:center;margin-top:10px;padding:8px 14px;
         background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.25);
@@ -902,12 +926,14 @@ async function showGameOfLife(node) {
       background:rgba(234,179,8,0.06); border:1px solid rgba(234,179,8,0.25);
       border-radius:12px; padding:16px; margin-top:4px;
     ">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
         <span style="font-size:20px;">🎯</span>
         <span style="color:#fde68a;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Dnešní mise</span>
+        ${skillLevel ? `<span style="margin-left:auto;font-size:11px;color:#94a3b8;background:rgba(148,163,184,0.1);padding:2px 8px;border-radius:10px;">${skillLevel.name}</span>` : ''}
       </div>
+      ${skillMotivation ? `<div style="color:#94a3b8;font-size:13px;font-style:italic;margin-bottom:10px;">${skillMotivation}</div>` : ''}
       <div style="color:#e2e8f0;font-size:16px;font-weight:600;margin-bottom:14px;">
-        ${mission.icon} ${mission.label}
+        ${mission.icon} ${mission.label}${mission.target ? ` × ${mission.target}` : ''}${mission.duration_sec ? ` (${Math.floor(mission.duration_sec/60)}:${String(mission.duration_sec%60).padStart(2,'0')})` : ''}
       </div>
       <div id="mission-timer" style="display:none;text-align:center;margin-bottom:12px;">
         <span id="mission-time" style="font-size:36px;font-weight:700;color:#fde68a;font-variant-numeric:tabular-nums;">00:00</span>
