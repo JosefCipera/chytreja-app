@@ -158,18 +158,18 @@ export function generateVerdict(node, aspiration) {
     return { text: lines[0] || '', lines };
   }
 
-  // Sub-uzel: Věta 1 = stav
+  // Sub-uzel: Chip 1 = stav + killer (sloučené)
   const verdictText = VERDICT_TEXTS[node.id]?.[state];
-  if (verdictText) lines.push(verdictText);
+  const killer = NODE_KILLERS[node.id];
+  const killerText = (state !== 'GREEN' && killer) ? KILLER_TEXTS[killer] : null;
 
-  // Věta 2 = killer (jen RED/YELLOW)
-  if (state !== 'GREEN') {
-    const killer = NODE_KILLERS[node.id];
-    const killerText = killer ? KILLER_TEXTS[killer] : null;
-    if (killerText) lines.push(killerText);
+  if (verdictText && killerText) {
+    lines.push(`${verdictText} ${killerText}`);
+  } else if (verdictText) {
+    lines.push(verdictText);
   }
 
-  // Věta 3 = aspirace (jen RED)
+  // Chip 2 = aspirace (jen RED)
   if (state === 'RED' && aspiration?.label && aspiration?.gap > 0.05) {
     lines.push(`Na ${aspiration.label} takhle zapomeň.`);
   }
