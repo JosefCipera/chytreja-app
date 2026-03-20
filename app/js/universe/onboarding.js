@@ -81,11 +81,11 @@ export const onboardingQuestions = [
 
   // ── Demographics ──────────────────────────────────
   {
-    id: 'age', type: 'number', category: 'demographic',
-    q: 'Kolik ti je let?',
-    desc: 'Věk ovlivňuje referenční hodnoty a doporučení.',
-    placeholder: 'Např. 45',
-    min: 18, max: 99
+    id: 'birth_year', type: 'number', category: 'demographic',
+    q: 'Rok tvého narození?',
+    desc: 'Pro výpočet bio-věku potřebujeme znát tvůj skutečný věk.',
+    placeholder: 'Např. 1975',
+    min: 1930, max: 2010
   },
   {
     id: 'sex', type: 'buttons', category: 'demographic',
@@ -95,41 +95,10 @@ export const onboardingQuestions = [
       { value: 'male',   label: 'Muž' },
       { value: 'female', label: 'Žena' }
     ]
-  },
-
-  // ── Injuries ──────────────────────────────────────
-  {
-    id: 'injuries', type: 'multiselect', category: 'injury',
-    q: 'Máš nějaká fyzická omezení nebo zranění?',
-    desc: 'CHJ přizpůsobí doporučené aktivity.',
-    options: [
-      { value: 'knee',     label: '🦵 Koleno' },
-      { value: 'back',     label: '🔙 Záda' },
-      { value: 'shoulder', label: '💪 Rameno' },
-      { value: 'hip',      label: '🦴 Kyčel' },
-      { value: 'none',     label: '✅ Žádné omezení' }
-    ]
-  },
-
-  // ── Aspiration ────────────────────────────────────
-  {
-    id: 'aspiration', type: 'cards', category: 'aspiration',
-    q: 'Co chceš v životě zvládnout?',
-    desc: 'Tvůj sen ovlivní, co ti CHJ doporučí jako prioritu.',
-    options: [
-      { value: 'active_senior', icon: '🏔️', label: 'Aktivní senior',
-        desc: 'Turistika, běžky a hry s vnouky v osmdesátce' },
-      { value: 'athlete',       icon: '🏃', label: 'Výkonnostní sport',
-        desc: 'Ironman, maraton nebo horská turistika' },
-      { value: 'vitality',      icon: '⚡', label: 'Energie a vitalita',
-        desc: 'Soustředění, síla a dobrá nálada každý den' },
-      { value: 'prevention',    icon: '🛡️', label: 'Zdraví a prevence',
-        desc: 'Vyhýbat se nemocem a udržet si zdraví co nejdéle' }
-    ]
   }
 ];
 
-const TOTAL_STEPS = onboardingQuestions.length; // 15
+const TOTAL_STEPS = onboardingQuestions.length; // 13
 
 // =====================================================
 // THRESHOLDY (health slider → semafor)
@@ -186,7 +155,7 @@ function renderNumberHTML(q) {
         style="width:100%;padding:16px;font-size:22px;text-align:center;
                background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);
                border-radius:10px;color:#f8fafc;outline:none;box-sizing:border-box;">
-      <p style="color:#475569;font-size:12px;margin-top:8px;text-align:center;">${q.min}–${q.max} let</p>
+      <p style="color:#475569;font-size:12px;margin-top:8px;text-align:center;">${q.min}–${q.max}</p>
     </div>`;
 }
 
@@ -366,9 +335,7 @@ export function renderOnboarding() {
   // Section label for context switch
   const sectionLabels = {
     health: '',
-    demographic: '📋 O tobě',
-    injury: '📋 O tobě',
-    aspiration: '🎯 Tvůj sen'
+    demographic: '📋 O tobě'
   };
   const sectionLabel = sectionLabels[q.category] || '';
   const isLastStep = currentStep === TOTAL_STEPS - 1;
@@ -613,12 +580,15 @@ async function saveOnboarding() {
     }
     console.log(`  → ${grayNodes.length} nodes set to GRAY`);
 
-    // 2. Demographics → user_profile (age, gender)
-    const age    = userAnswers['age'];
-    const gender = userAnswers['sex'];
-    if (age !== undefined || gender !== undefined) {
+    // 2. Demographics → user_profile (birth_year, gender, age calculated)
+    const birthYear = userAnswers['birth_year'];
+    const gender    = userAnswers['sex'];
+    if (birthYear !== undefined || gender !== undefined) {
       const profilePatch = {};
-      if (age    !== undefined) profilePatch.age    = Number(age);
+      if (birthYear !== undefined) {
+        profilePatch.birth_year = Number(birthYear);
+        profilePatch.age = new Date().getFullYear() - Number(birthYear);
+      }
       if (gender !== undefined) profilePatch.gender = gender;
       console.log('  → user_profile demographics:', profilePatch);
       const { error } = await supabase.from('user_profiles').upsert({
@@ -628,43 +598,7 @@ async function saveOnboarding() {
       if (error) console.warn('⚠️ user_profile demographics:', error.message);
     }
 
-    // 3. Injuries → user_constraints (pouze injury typ)
-    // Normalizace: 'back' → 'back_lower' (sjednocení s chat.js INJURY_SUBS)
-    const INJURY_KEY_MAP = { back: 'back_lower' };
-    const injuries = (userAnswers['injuries'] ?? [])
-      .filter(i => i !== 'none')
-      .map(i => INJURY_KEY_MAP[i] ?? i);
-    if (injuries.length > 0) {
-      // Smaž staré záznamy
-      await supabase.from('user_constraints')
-        .delete()
-        .eq('user_id', userId)
-        .eq('constraint_type', 'injury');
-
-      for (const injury of injuries) {
-        console.log(`  → injury: ${injury}`);
-        const { error } = await supabase.from('user_constraints').insert({
-          user_id: userId,
-          constraint_type: 'injury',
-          constraint_key: injury,
-          constraint_value: 'true',
-          severity: 'moderate'
-        });
-        if (error) console.warn(`⚠️ injury ${injury}:`, error.message);
-      }
-    }
-
-    // 4. Aspiration → user_aspirations
-    const aspiration = userAnswers['aspiration'];
-    if (aspiration) {
-      console.log(`  → aspiration: ${aspiration}`);
-      // Try upsert, fall back to insert
-      const { error } = await supabase.from('user_aspirations').upsert({
-        user_id: userId,
-        aspiration_type: aspiration
-      }, { onConflict: 'user_id' });
-      if (error) console.warn('⚠️ aspiration:', error.message);
-    }
+    // Injuries + Aspiration: handled in Nastavení (user-data-panel.js), not onboarding
 
     console.log('✅ Onboarding saved');
 
