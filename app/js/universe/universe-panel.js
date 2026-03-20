@@ -14,6 +14,8 @@ import {
   fetchAspiration, fetchLearningSteps, drawMiniTrend, fetchTrend
 } from './data-layer.js';
 
+import { aiSpeak } from './universe-voice.js';
+
 import { runSkill, hasSkill } from './skill-router.js';
 
 // Game constants + data fetching imported from modules (see imports above)
@@ -1187,62 +1189,21 @@ async function showGameOfLife(node) {
   let ttsPlaying = false;
 
   function startTTS() {
-    speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(currentText);
-    utterance.lang = 'cs-CZ';
-    utterance.pitch = 1.1;
-    utterance.rate = 1.05;
+    if (!currentText) return;
+    ttsPlaying = true;
 
-    // Use Czech voice if available (same as greeting voice)
-    const voices = speechSynthesis.getVoices();
-    const czVoice = voices.find(v => /cs[-_]CZ/i.test(v.lang))
-                 || voices.find(v => /czech/i.test(v.lang));
-    if (czVoice) utterance.voice = czVoice;
-    utterance.onstart = () => {
-      ttsPlaying = true;
-      // Header mic → SPEAKING
-      const hm = document.getElementById('header-mic-btn');
-      if (hm) {
-        hm.dataset.state = 'speaking';
-        const hi = hm.querySelector('.header-mic-icon');
-        if (hi) hi.innerHTML = '<span style="color:#60a5fa;font-weight:700">((</span> 🔊 <span style="color:#60a5fa;font-weight:700">))</span>';
+    // Use aiSpeak from universe-voice.js — single voice source
+    // aiSpeak handles voice selection, rate, pitch, mic state
+    aiSpeak(currentText);
+
+    // Track TTS end to update local state + remove banner
+    const checkEnd = setInterval(() => {
+      if (!window.speechSynthesis.speaking) {
+        clearInterval(checkEnd);
+        ttsPlaying = false;
+        document.getElementById('tts-tap-banner')?.remove();
       }
-      // Floor mic → SPEAKING
-      const fm = document.getElementById('voice-mic-btn');
-      if (fm) {
-        fm.dataset.state = 'speaking';
-        const fi = fm.querySelector('.mic-icon');
-        if (fi) fi.textContent = '🔊';
-      }
-    };
-    utterance.onerror = (e) => {
-      console.error('🔊 TTS error:', e.error, e);
-      ttsPlaying = false;
-      const hm = document.getElementById('header-mic-btn');
-      if (hm) { hm.dataset.state = 'idle'; const hi = hm.querySelector('.header-mic-icon'); if (hi) hi.textContent = '🎤'; }
-      const fm = document.getElementById('voice-mic-btn');
-      if (fm) { fm.dataset.state = 'idle'; const fi = fm.querySelector('.mic-icon'); if (fi) fi.textContent = '🎤'; }
-    };
-    utterance.onend = () => {
-      ttsPlaying = false;
-      // Header mic → IDLE
-      const hm = document.getElementById('header-mic-btn');
-      if (hm) {
-        hm.dataset.state = 'idle';
-        const hi = hm.querySelector('.header-mic-icon');
-        if (hi) hi.textContent = '🎤';
-      }
-      // Floor mic → IDLE
-      const fm = document.getElementById('voice-mic-btn');
-      if (fm) {
-        fm.dataset.state = 'idle';
-        const fi = fm.querySelector('.mic-icon');
-        if (fi) fi.textContent = '🎤';
-      }
-      // Remove tap-to-hear banner after TTS finishes
-      document.getElementById('tts-tap-banner')?.remove();
-    };
-    window.speechSynthesis.speak(utterance);
+    }, 300);
   }
 
   if (playBtn) {
@@ -1273,6 +1234,17 @@ async function showGameOfLife(node) {
   if (window._chjTTSPrimed) {
     _doAutoTTS(); // engine already unlocked (user touched before data loaded)
   } else {
+    // Try auto-speak first — if it works, hide banner
+    try {
+      const test = new SpeechSynthesisUtterance(' ');
+      test.volume = 0;
+      test.onend = () => {
+        window._chjTTSPrimed = true;
+        document.getElementById('tts-tap-banner')?.remove();
+        _doAutoTTS();
+      };
+      window.speechSynthesis.speak(test);
+    } catch(e) { /* fallback to banner below */ }
     // Queue TTS until first touch — but wrap to also remove banner
     window._chjPendingTTS = () => {
       // Remove banner when TTS starts (from any touch, not just banner click)
