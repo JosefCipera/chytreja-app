@@ -904,11 +904,15 @@ async function showGameOfLife(node) {
   // (visionHtml odstraněno)
 
   // 8. Sestavení CHJ karty
-  const BUBBLE_STYLES = [
-    { bg: 'rgba(6,182,212,0.08)',   border: 'rgba(6,182,212,0.25)',   color: '#e2e8f0' },   // bublina 0: hardcoded bio-věk (teal)
-    { bg: 'rgba(234,179,8,0.07)',   border: 'rgba(234,179,8,0.28)',   color: '#fde68a' },   // bublina 1: bottleneck + jezdec (žlutá)
-    { bg: 'rgba(139,92,246,0.07)',  border: 'rgba(139,92,246,0.28)',  color: '#c4b5fd' },   // bublina 2: sen (fialová)
-  ];
+  const BUBBLE_STYLES = isMainNode
+    ? [
+        { bg: 'rgba(6,182,212,0.08)',   border: 'rgba(6,182,212,0.25)',   color: '#e2e8f0' },   // bublina 0: bio-věk (teal)
+        { bg: 'rgba(234,179,8,0.07)',   border: 'rgba(234,179,8,0.28)',   color: '#fde68a' },   // bublina 1: stav+killer+sen (žlutá)
+      ]
+    : [
+        { bg: 'rgba(234,179,8,0.07)',   border: 'rgba(234,179,8,0.28)',   color: '#fde68a' },   // chip 1: stav + killer (žlutá)
+        { bg: 'rgba(139,92,246,0.07)',  border: 'rgba(139,92,246,0.28)',  color: '#c4b5fd' },   // chip 2: aspirace (fialová)
+      ];
 
   // Bubliny: použít transition + JS setTimeout (spolehlivější než CSS animation v innerHTML)
   const chjContentHtml = displayLines
