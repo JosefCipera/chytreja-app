@@ -1191,7 +1191,13 @@ async function showGameOfLife(node) {
     const utterance = new SpeechSynthesisUtterance(currentText);
     utterance.lang = 'cs-CZ';
     utterance.pitch = 1.1;
-    utterance.rate = 0.95;
+    utterance.rate = 1.05;
+
+    // Use Czech voice if available (same as greeting voice)
+    const voices = speechSynthesis.getVoices();
+    const czVoice = voices.find(v => /cs[-_]CZ/i.test(v.lang))
+                 || voices.find(v => /czech/i.test(v.lang));
+    if (czVoice) utterance.voice = czVoice;
     utterance.onstart = () => {
       ttsPlaying = true;
       // Header mic → SPEAKING
@@ -1267,7 +1273,13 @@ async function showGameOfLife(node) {
   if (window._chjTTSPrimed) {
     _doAutoTTS(); // engine already unlocked (user touched before data loaded)
   } else {
-    window._chjPendingTTS = _doAutoTTS; // queue until first touch
+    // Queue TTS until first touch — but wrap to also remove banner
+    window._chjPendingTTS = () => {
+      // Remove banner when TTS starts (from any touch, not just banner click)
+      const b = document.getElementById('tts-tap-banner');
+      if (b) { b.style.opacity = '0'; setTimeout(() => b.remove(), 300); }
+      _doAutoTTS();
+    };
 
     // Mobile: show "tap to hear" banner inside panel
     const panel = document.getElementById('sidePanel');
@@ -1281,18 +1293,6 @@ async function showGameOfLife(node) {
         cursor:pointer; transition:opacity 0.3s ease;
       `;
       banner.textContent = '🔊 Klepni a uslyšíš';
-      banner.onclick = () => {
-        // Prime TTS with user gesture
-        const primer = new SpeechSynthesisUtterance('\u00a0');
-        primer.volume = 0;
-        window.speechSynthesis.speak(primer);
-        window._chjTTSPrimed = true;
-        // Fade out banner
-        banner.style.opacity = '0';
-        setTimeout(() => banner.remove(), 300);
-        // Start speaking
-        setTimeout(() => { if (!ttsPlaying) startTTS(); }, 200);
-      };
       // Insert after panel header
       const header = panel.querySelector('.panel-header');
       if (header) {
