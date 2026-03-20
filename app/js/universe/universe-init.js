@@ -21,14 +21,37 @@ const SUPABASE_KEY = 'sb_publishable_w29DE53nrdGnNEvBn68kzg_ujje7u5Y';
 window.supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
 console.log("✅ Supabase SDK připraveno");
 
-// ─── TTS primer (unlock Web Speech API on first user touch) ───
+// ─── TTS primer — try auto, fallback to first touch ───
 window._chjTTSPrimed = false;
-document.addEventListener('pointerdown', function _primeTTS() {
+
+(function tryAutoTTS() {
+  // Try speaking silently — if browser allows, TTS is primed immediately
   const primer = new SpeechSynthesisUtterance('\u00a0');
   primer.volume = 0;
-  window.speechSynthesis.speak(primer); // synchronous inside gesture = unlocks engine for session
+  primer.onend = () => {
+    if (!window._chjTTSPrimed) {
+      window._chjTTSPrimed = true;
+      console.log('🔊 TTS auto-primed (no click needed)');
+      if (typeof window._chjPendingTTS === 'function') {
+        window._chjPendingTTS();
+        window._chjPendingTTS = null;
+      }
+    }
+  };
+  primer.onerror = () => {
+    console.log('🔇 TTS auto-prime blocked, waiting for touch');
+  };
+  window.speechSynthesis.speak(primer);
+})();
+
+// Fallback: first touch unlocks TTS
+document.addEventListener('pointerdown', function _primeTTS() {
+  if (window._chjTTSPrimed) return; // already primed
+  const primer = new SpeechSynthesisUtterance('\u00a0');
+  primer.volume = 0;
+  window.speechSynthesis.speak(primer);
   window._chjTTSPrimed = true;
-  console.log('🔊 TTS engine primed');
+  console.log('🔊 TTS primed by touch');
   if (typeof window._chjPendingTTS === 'function') {
     window._chjPendingTTS();
     window._chjPendingTTS = null;
