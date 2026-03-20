@@ -180,7 +180,7 @@ async function handleMicClick() {
   }
   if (!_voiceGreeted) {
     _voiceGreeted = true;
-    proactiveGreeting();
+    // proactiveGreeting() disabled — panel TTS handles all voice output
     // Pokračuje dál – ihned spustí mic, nečeká na druhý klik
   }
   const text = await listenOnce();
