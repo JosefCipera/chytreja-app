@@ -480,13 +480,18 @@ async function saveOnboarding() {
 
     console.log('💾 Saving onboarding for user:', userId);
 
-    // 1. Health metrics → node_inputs + node_state_history (snapshot)
+    // 1. Health metrics → node_inputs + user_metrics + node_state_history
     const today = new Date().toISOString().split('T')[0];
+    const nodeStates = {}; // track states for parent calculation
+
     for (const q of onboardingQuestions.filter(q => q.category === 'health')) {
       const value = userAnswers[q.id];
       if (value === undefined) continue;
       const state = getState(q.id, value);
-      console.log(`  → ${q.id}: ${value} → ${state}`);
+      const currentIndex = value * 10; // slider 1-10 → index 0-100
+      console.log(`  → ${q.id}: ${value} → ${state} (index: ${currentIndex})`);
+
+      // node_inputs
       const { error } = await supabase.from('node_inputs').insert({
         user_id: userId,
         node_id: q.id,
@@ -495,6 +500,18 @@ async function saveOnboarding() {
         value_numeric: value
       });
       if (error) throw error;
+
+      // user_metrics (the key table for universe colors!)
+      const { error: metErr } = await supabase.from('user_metrics').upsert({
+        user_id: userId,
+        node_id: q.id,
+        universe: 'longevity',
+        current_index: currentIndex,
+        state
+      }, { onConflict: 'user_id,node_id,universe' });
+      if (metErr) console.warn(`⚠️ user_metrics(${q.id}):`, metErr.message);
+
+      nodeStates[q.id] = state;
 
       // Snapshot do node_state_history pro sparkline trend
       if (state !== 'GRAY') {
@@ -507,6 +524,94 @@ async function saveOnboarding() {
         if (histError) console.warn(`⚠️ node_state_history(${q.id}):`, histError.message);
       }
     }
+
+    // 1b. Calculate parent node states (worst child rule)
+    const parentMap = {
+      telo:         ['sila', 'vytrvalost', 'stabilita', 'mobilita', 'vo2max'],
+      mysl:         ['nervovy_system', 'klid', 'smysl'],
+      vyziva:       ['bílkoviny'],
+      zdravi:       ['metabolicke', 'spanek'],
+      dlouhovekost: ['telo', 'mysl', 'vyziva', 'zdravi'],
+    };
+
+    const stateOrder = { RED: 3, YELLOW: 2, GREEN: 1, GRAY: 0 };
+
+    // First pass: immediate parents
+    for (const [parent, children] of Object.entries(parentMap)) {
+      if (parent === 'dlouhovekost') continue; // do last
+      let worstState = 'GREEN';
+      for (const child of children) {
+        const cs = nodeStates[child];
+        if (cs && (stateOrder[cs] || 0) > (stateOrder[worstState] || 0)) {
+          worstState = cs;
+        }
+      }
+      nodeStates[parent] = worstState;
+
+      // Average index from children for parent
+      const childIndices = children
+        .map(c => userAnswers[c] !== undefined ? userAnswers[c] * 10 : null)
+        .filter(v => v !== null);
+      const avgIndex = childIndices.length > 0
+        ? Math.round(childIndices.reduce((a, b) => a + b, 0) / childIndices.length)
+        : 50;
+
+      const { error: pErr } = await supabase.from('user_metrics').upsert({
+        user_id: userId,
+        node_id: parent,
+        universe: 'longevity',
+        current_index: avgIndex,
+        state: worstState
+      }, { onConflict: 'user_id,node_id,universe' });
+      if (pErr) console.warn(`⚠️ parent user_metrics(${parent}):`, pErr.message);
+      console.log(`  → parent ${parent}: worst=${worstState}, avgIndex=${avgIndex}`);
+    }
+
+    // Second pass: hlavní uzel (dlouhovekost)
+    {
+      let worstState = 'GREEN';
+      for (const child of parentMap.dlouhovekost) {
+        const cs = nodeStates[child];
+        if (cs && (stateOrder[cs] || 0) > (stateOrder[worstState] || 0)) {
+          worstState = cs;
+        }
+      }
+      const parentIndices = parentMap.dlouhovekost
+        .map(c => nodeStates[c] ? (stateOrder[nodeStates[c]] === 3 ? 25 : stateOrder[nodeStates[c]] === 2 ? 55 : 85) : 50);
+      const avgIndex = Math.round(parentIndices.reduce((a, b) => a + b, 0) / parentIndices.length);
+
+      const { error: mErr } = await supabase.from('user_metrics').upsert({
+        user_id: userId,
+        node_id: 'dlouhovekost',
+        universe: 'longevity',
+        current_index: avgIndex,
+        state: worstState
+      }, { onConflict: 'user_id,node_id,universe' });
+      if (mErr) console.warn(`⚠️ user_metrics(dlouhovekost):`, mErr.message);
+      console.log(`  → hlavní uzel: worst=${worstState}, avgIndex=${avgIndex}`);
+    }
+
+    // 1c. Set remaining nodes to GRAY (locked)
+    const { data: allNodes } = await supabase
+      .from('longevity_nodes')
+      .select('id')
+      .neq('id', 'dlouhovekost');
+
+    const setNodes = new Set(Object.keys(nodeStates));
+    setNodes.add('dlouhovekost');
+    const grayNodes = (allNodes || []).filter(n => !setNodes.has(n.id));
+
+    for (const n of grayNodes) {
+      const { error: gErr } = await supabase.from('user_metrics').upsert({
+        user_id: userId,
+        node_id: n.id,
+        universe: 'longevity',
+        current_index: 0,
+        state: 'GRAY'
+      }, { onConflict: 'user_id,node_id,universe' });
+      if (gErr) console.warn(`⚠️ gray(${n.id}):`, gErr.message);
+    }
+    console.log(`  → ${grayNodes.length} nodes set to GRAY`);
 
     // 2. Demographics → user_profile (age, gender)
     const age    = userAnswers['age'];
