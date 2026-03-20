@@ -32,7 +32,7 @@ async function loadAndRender() {
   renderSkeleton();
 
   const [profileRes, constraintsRes, aspirationRes, aspOptionsRes, integrationsRes] = await Promise.all([
-    supabase.from('user_profiles').select('age, gender, height, weight').eq('user_id', userId).maybeSingle(),
+    supabase.from('user_profiles').select('age, gender, height, weight, birth_year').eq('user_id', userId).maybeSingle(),
     supabase.from('user_constraints').select('constraint_type, constraint_key, constraint_value, severity').eq('user_id', userId),
     supabase.from('user_aspirations').select('aspiration_type, label, target_age, milestone').eq('user_id', userId).maybeSingle(),
     supabase.from('aspiration_requirements').select('aspiration_type, aspiration_label'),
@@ -82,9 +82,10 @@ function renderTab(tab) {
   const body = document.getElementById('udp-body');
   if (!body || !cachedData) return;
   switch (tab) {
-    case 'constraints': body.innerHTML = renderConstraintsTab(); break;
-    case 'aspirations': body.innerHTML = renderAspirationsTab(); break;
-    case 'profile':     body.innerHTML = renderProfileTab();     break;
+    case 'profile':     body.innerHTML = renderProfileMainTab(); break;
+    case 'constraints': body.innerHTML = renderConstraintsTab();  break;
+    case 'aspirations': body.innerHTML = renderAspirationsTab();  break;
+    case 'vitality':    body.innerHTML = renderVitalityTab();     break;
   }
   bindTabEvents(tab);
 }
@@ -342,31 +343,22 @@ function getConnectivity(key) {
   return (cachedData.integrations ?? []).find(i => i.service === key)?.enabled === true;
 }
 
-function renderProfileTab() {
+function renderProfileMainTab() {
   const p = cachedData.profile ?? {};
   const genderM = (p.gender === 'male');
   const genderF = (p.gender === 'female');
-
-  const connToggles = CONNECTORS.map(c => {
-    const on = getConnectivity(c.key);
-    return `
-      <div class="udp-conn-row">
-        <span class="udp-conn-label">${c.label}</span>
-        <button class="udp-toggle ${on ? 'udp-toggle-on' : ''}"
-                data-key="${c.key}" data-on="${on}">
-          <span class="udp-toggle-thumb"></span>
-        </button>
-      </div>`;
-  }).join('');
+  const birthYear = p.birth_year ?? '';
+  const calcAge = birthYear ? (new Date().getFullYear() - birthYear) : '';
 
   return `
     <div class="udp-section">
-      <div class="udp-section-label">Biometrie</div>
+      <div class="udp-section-label">Základní údaje</div>
       <div class="udp-row-4">
         <div>
-          <div class="udp-field-label">Věk</div>
-          <input id="prof-age" type="number" class="udp-input udp-mini" placeholder="45"
-                 min="18" max="99" value="${esc(p.age ?? '')}">
+          <div class="udp-field-label">Rok narození</div>
+          <input id="prof-birth-year" type="number" class="udp-input udp-mini" placeholder="1957"
+                 min="1920" max="2010" value="${esc(birthYear)}">
+          ${calcAge ? `<div style="color:#94a3b8;font-size:12px;margin-top:4px;">${calcAge} let</div>` : ''}
         </div>
         <div>
           <div class="udp-field-label">Výška (cm)</div>
@@ -388,18 +380,31 @@ function renderProfileTab() {
       </div>
     </div>
 
-    <div class="udp-section">
-      <div class="udp-section-label">📡 Konektivita</div>
-      <div id="conn-toggles">${connToggles}</div>
-    </div>
-
     <div class="udp-save-row">
       <span id="udp-status-3" class="udp-status"></span>
       <button id="btn-save-profile" class="udp-save-btn">Uložit</button>
     </div>`;
 }
 
-function bindProfileEvents() {
+// ═══════════════════════════════════════════════════
+// TAB 4 – Vitalita (spustí přeměření)
+// ═══════════════════════════════════════════════════
+function renderVitalityTab() {
+  return `
+    <div class="udp-section" style="text-align:center; padding:30px 20px;">
+      <div style="font-size:40px; margin-bottom:16px;">⚡</div>
+      <div style="color:#e2e8f0; font-size:16px; margin-bottom:8px;">Přeměř svou vitalitu</div>
+      <div style="color:#94a3b8; font-size:14px; margin-bottom:24px; line-height:1.6;">
+        Projdeš 11 otázek o svém zdraví a kondici.<br>
+        Výsledek přepočítá barvy uzlů a bio-věk.
+      </div>
+      <button id="btn-start-vitality" class="udp-save-btn" style="font-size:16px; padding:14px 32px;">
+        Začít měření
+      </button>
+    </div>`;
+}
+
+function bindProfileMainEvents() {
   // Gender buttons
   document.querySelectorAll('.udp-gender-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -408,28 +413,32 @@ function bindProfileEvents() {
     });
   });
 
-  // Connectivity toggles
-  document.querySelectorAll('.udp-toggle').forEach(toggle => {
-    toggle.addEventListener('click', () => {
-      const on = toggle.dataset.on === 'true';
-      toggle.dataset.on = !on;
-      toggle.classList.toggle('udp-toggle-on', !on);
-    });
-  });
-
   document.getElementById('btn-save-profile')?.addEventListener('click', saveProfile);
+}
+
+function bindVitalityEvents() {
+  document.getElementById('btn-start-vitality')?.addEventListener('click', () => {
+    closePanel();
+    if (typeof window.startOnboarding === 'function') {
+      window.startOnboarding();
+    }
+  });
 }
 
 async function saveProfile() {
   setStatus('udp-status-3', 'saving');
-  const age    = parseInt(document.getElementById('prof-age').value)    || null;
+  const birthYear = parseInt(document.getElementById('prof-birth-year')?.value) || null;
   const height = parseInt(document.getElementById('prof-height').value) || null;
   const weight = parseInt(document.getElementById('prof-weight').value) || null;
   const gender = document.querySelector('.udp-gender-btn.active')?.dataset.gender ?? null;
 
+  // Calculate age from birth_year
+  const age = birthYear ? (new Date().getFullYear() - birthYear) : null;
+
   try {
     // user_profiles upsert
     const profileData = { user_id: userId };
+    if (birthYear !== null) profileData.birth_year = birthYear;
     if (age !== null)    profileData.age    = age;
     if (gender)          profileData.gender = gender;
     if (height !== null) profileData.height = height;
@@ -437,28 +446,15 @@ async function saveProfile() {
 
     const { error: pe } = await supabase.from('user_profiles')
       .upsert(profileData, { onConflict: 'user_id' });
-    if (pe) console.warn('profile upsert:', pe.message); // height/weight may not exist yet
-
-    // Connectivity → user_integrations
-    for (const toggle of document.querySelectorAll('.udp-toggle')) {
-      const service = toggle.dataset.key;
-      const enabled = toggle.dataset.on === 'true';
-      const { error } = await supabase.from('user_integrations').upsert({
-        user_id:    userId,
-        service,
-        enabled,
-        updated_at: new Date().toISOString()
-      }, { onConflict: 'user_id,service' });
-      if (error) console.warn(`integration ${service}:`, error.message);
-    }
+    if (pe) console.warn('profile upsert:', pe.message);
 
     // Refresh cache
-    const [profRes, intRes] = await Promise.all([
-      supabase.from('user_profiles').select('age, gender, height, weight').eq('user_id', userId).maybeSingle(),
-      supabase.from('user_integrations').select('service, enabled').eq('user_id', userId)
-    ]);
-    cachedData.profile      = profRes.data ?? {};
-    cachedData.integrations = intRes.data  ?? [];
+    const { data: freshProfile } = await supabase
+      .from('user_profiles')
+      .select('age, gender, height, weight, birth_year')
+      .eq('user_id', userId)
+      .maybeSingle();
+    cachedData.profile = freshProfile ?? {};
     setStatus('udp-status-3', 'ok');
   } catch (e) {
     console.error(e);
@@ -479,9 +475,10 @@ function bindTabEvents(tab) {
   });
   // Tab-specific
   switch (tab) {
-    case 'constraints': bindConstraintsEvents(); break;
-    case 'aspirations': bindAspirationsEvents(); break;
-    case 'profile':     bindProfileEvents();     break;
+    case 'profile':     bindProfileMainEvents();  break;
+    case 'constraints': bindConstraintsEvents();  break;
+    case 'aspirations': bindAspirationsEvents();  break;
+    case 'vitality':    bindVitalityEvents();     break;
   }
 }
 
@@ -628,19 +625,20 @@ export function initUserDataPanel() {
   modal.innerHTML = `
     <div class="udp-panel">
       <div class="udp-header">
-        <h2 class="udp-title">📋 Vstupní data</h2>
+        <h2 class="udp-title">⚙️ Nastavení</h2>
         <button id="udp-close" class="udp-close-btn">✕</button>
       </div>
       <div class="udp-tabs">
+        <button class="udp-tab" data-tab="profile">Profil</button>
         <button class="udp-tab" data-tab="constraints">Omezení</button>
-        <button class="udp-tab" data-tab="aspirations">Cíl (sen)</button>
-        <button class="udp-tab" data-tab="profile">Biometrický pas</button>
+        <button class="udp-tab" data-tab="aspirations">Sen</button>
+        <button class="udp-tab" data-tab="vitality">Vitalita</button>
       </div>
       <div id="udp-body"></div>
     </div>`;
   document.body.appendChild(modal);
 
   // Set initial active tab style
-  activeTab = 'constraints';
+  activeTab = 'profile';
   setTimeout(() => switchTab(activeTab), 0);
 }
