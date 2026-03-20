@@ -120,7 +120,6 @@ async function populateModelSelector() {
   initUserDataPanel();
   initVoiceButton();
   initHeaderMic();
-  initStartGameBtn();
   writeDailySnapshot();   // snapshot stavů uzlů → sparkline trend
 
   // Žádost o notifikační oprávnění – po 3s, nenásilně
@@ -132,47 +131,6 @@ async function populateModelSelector() {
     setTimeout(() => checkAndRemind(userId), 2000);
   }
 })();
-
-// ── Spusť hru! tlačítko ───────────────────────────────────────
-// Primární role: spustí TTS čtení CHJ briefingu v panelu.
-// Po kliknutí (nebo po dočtení) se tlačítko skryje – účel splněn.
-function initStartGameBtn() {
-  const btn = document.getElementById('start-game-btn');
-  if (!btn) return;
-
-  const hideBtn = () => {
-    btn.style.transition = 'opacity 0.4s';
-    btn.style.opacity = '0';
-    setTimeout(() => { btn.style.display = 'none'; }, 400);
-  };
-
-  // Schovat také po dočtení TTS (pokud uživatel nekliknul sám)
-  window._chjOnTTSEnd = hideBtn;
-
-  btn.addEventListener('pointerdown', () => {
-    hideBtn();
-
-    // Primer – odemkne TTS engine synchronně v gesture kontextu
-    const primer = new SpeechSynthesisUtterance('\u00a0');
-    primer.volume = 0;
-    window.speechSynthesis.speak(primer);
-    window._chjTTSPrimed = true;
-
-    // Pokud panel už načetl data → spusť TTS briefingu přímo
-    if (typeof window._chjStartTTS === 'function') {
-      window._chjStartTTS();
-      return;
-    }
-
-    // Panel ještě načítá → spusť pending TTS (nebo počkej na primer)
-    const pending = window._chjPendingTTS;
-    if (typeof pending === 'function') {
-      window._chjPendingTTS = null;
-      pending();
-    }
-    // Jinak: _doAutoTTS se spustí automaticky když panel načte (primed = true)
-  }, { once: true });
-}
 
 // =====================================================
 // DAILY SNAPSHOT – zapiš dnešní stavy do node_state_history
