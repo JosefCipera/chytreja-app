@@ -8,6 +8,7 @@ const ORBIT_ZONES = [
   [620, 740]
 ];
 import { renderUniverse } from "./universe-core.js";
+import { showPanel } from "./universe-panel.js";
 import { initUserDataPanel } from "./user-data-panel.js";
 import { listenOnce, handleVoiceInput, proactiveGreeting } from "./universe-voice.js";
 import { requestCHJPermission, checkAndRemind } from "./notifications.js";
@@ -487,6 +488,13 @@ function renderVisibleUniverse(model) {
   console.log("First level sample:", firstLevel[0]); // ← PŘIDEJ
 
   renderUniverse(visible, firstLevel, main.id);
+
+  // Auto-open main node panel on app start
+  window.MAIN_UNIVERSE_DATA = visible;
+  const mainNode = visible.find(n => n.id === main.id);
+  if (mainNode) {
+    setTimeout(() => showPanel(mainNode), 500);
+  }
 }
 
 // =====================================================
