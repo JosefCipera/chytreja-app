@@ -117,8 +117,8 @@ export const VERDICT_TEXTS = {
 export const KILLER_TEXTS = {
   cukrovka:          'Cukrovka číhá. Tvůj tah.',
   infarkt_a_mrtvice: 'Srdce čeká na posilu.',
-  demence:           'Hlava potřebuje trénink.',
-  rakovina:          'Obrana se buduje denně.',
+  demence:           'Mozek potřebuje trénink.',
+  rakovina:          'Imunita rozhodne. Posilni ji.',
 };
 
 // Primary killer per node (priority=1 from node_riders)
