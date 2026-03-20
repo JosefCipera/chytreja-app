@@ -5,148 +5,466 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#101c35">
-    <title>Chytré já</title>
+    <title>Chytré já — Kolik let má tvoje tělo?</title>
     <link rel="manifest" href="/manifest.webmanifest">
-    <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
             background: linear-gradient(180deg, #0f172a, #1e293b);
             min-height: 100vh;
-            margin: 0;
             font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
+            color: #e2e8f0;
+            overflow-x: hidden;
         }
 
-        .glass-panel {
-            background: rgba(15, 23, 42, 0.85);
+        /* ── Views ─────────────────────────────── */
+        .view { display:none; min-height:100vh; padding:1rem; }
+        .view.active { display:flex; align-items:center; justify-content:center; }
+        .view-card {
+            width:100%; max-width:420px;
+            background: rgba(15,23,42,0.85);
             backdrop-filter: blur(12px);
-            border: 1px solid rgba(59, 130, 246, 0.2);
-            box-shadow: 0 0 40px rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(59,130,246,0.15);
+            border-radius: 20px;
+            padding: 2.5rem 2rem;
+            box-shadow: 0 0 60px rgba(0,0,0,0.5);
         }
 
-        input {
-            background-color: #020617 !important;
-            color: #f1f5f9 !important;
-            border: 1px solid #334155 !important;
+        /* ── Typography ────────────────────────── */
+        h1 { font-size:2rem; font-weight:700; line-height:1.2; margin-bottom:0.5rem; }
+        h2 { font-size:1.5rem; font-weight:600; margin-bottom:0.5rem; }
+        .subtitle { color:#94a3b8; font-size:1rem; line-height:1.5; margin-bottom:2rem; }
+        .small-text { color:#64748b; font-size:0.85rem; text-align:center; margin-top:1.5rem; }
+
+        /* ── Buttons ───────────────────────────── */
+        .btn-primary {
+            display:block; width:100%; padding:14px 20px;
+            background:#3b82f6; color:#fff; font-size:1rem; font-weight:600;
+            border:none; border-radius:12px; cursor:pointer;
+            transition: background 0.2s, transform 0.1s;
+        }
+        .btn-primary:hover { background:#2563eb; }
+        .btn-primary:active { transform:scale(0.98); }
+        .btn-secondary {
+            display:block; width:100%; padding:14px 20px;
+            background:rgba(51,65,85,0.5); color:#e2e8f0; font-size:1rem; font-weight:500;
+            border:1px solid #334155; border-radius:12px; cursor:pointer;
+            transition: background 0.2s;
+        }
+        .btn-secondary:hover { background:rgba(51,65,85,0.8); }
+        .btn-ghost {
+            background:none; border:none; color:#60a5fa; font-size:0.9rem;
+            cursor:pointer; padding:8px 0;
+        }
+        .btn-ghost:hover { color:#93c5fd; text-decoration:underline; }
+
+        /* ── Inputs ────────────────────────────── */
+        .input-field {
+            width:100%; padding:14px 16px;
+            background:#020617; color:#f1f5f9;
+            border:1px solid #334155; border-radius:12px;
+            font-size:1rem; outline:none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .input-field:focus {
+            border-color:#3b82f6;
+            box-shadow: 0 0 12px rgba(59,130,246,0.3);
+        }
+        .input-field::placeholder { color:#475569; }
+
+        /* ── Option buttons (quiz) ─────────────── */
+        .option-grid { display:flex; flex-direction:column; gap:10px; margin:1.5rem 0; }
+        .option-btn {
+            padding:14px 18px; text-align:left;
+            background:rgba(30,41,59,0.6); color:#cbd5e1;
+            border:1px solid #334155; border-radius:12px;
+            font-size:1rem; cursor:pointer;
+            transition: all 0.2s;
+        }
+        .option-btn:hover { border-color:#3b82f6; color:#e2e8f0; background:rgba(59,130,246,0.08); }
+        .option-btn.selected { border-color:#3b82f6; color:#fff; background:rgba(59,130,246,0.15); }
+
+        /* ── Progress bar ──────────────────────── */
+        .progress-bar {
+            width:100%; height:4px; background:#1e293b;
+            border-radius:2px; margin-bottom:2rem; overflow:hidden;
+        }
+        .progress-fill {
+            height:100%; background:#3b82f6; border-radius:2px;
+            transition: width 0.4s ease;
         }
 
-        input:focus {
-            border-color: #3b82f6 !important;
-            box-shadow: 0 0 10px rgba(59, 130, 246, 0.4);
-            outline: none;
+        /* ── Bio-age result ────────────────────── */
+        .bio-age-number {
+            font-size:5rem; font-weight:800; text-align:center;
+            line-height:1; margin:1.5rem 0 0.5rem;
+            background: linear-gradient(135deg, #ef4444, #f97316);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .bio-age-number.good {
+            background: linear-gradient(135deg, #22c55e, #3b82f6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .bio-age-label { text-align:center; color:#94a3b8; font-size:1rem; margin-bottom:0.25rem; }
+        .bio-age-diff {
+            text-align:center; font-size:1.1rem; font-weight:600;
+            margin-bottom:2rem; padding:8px 16px;
+            border-radius:8px;
+        }
+        .bio-age-diff.worse { color:#fca5a5; background:rgba(239,68,68,0.1); }
+        .bio-age-diff.better { color:#86efac; background:rgba(34,197,94,0.1); }
+
+        /* ── Killers ───────────────────────────── */
+        .killer-list {
+            margin:1.5rem 0; padding:0; list-style:none;
+        }
+        .killer-item {
+            display:flex; align-items:center; gap:12px;
+            padding:10px 0; border-bottom:1px solid rgba(51,65,85,0.3);
+            font-size:0.95rem; color:#cbd5e1;
+        }
+        .killer-item:last-child { border-bottom:none; }
+        .killer-dot {
+            width:10px; height:10px; border-radius:50%;
+            flex-shrink:0;
         }
 
-        .legal-text {
-            color: #94a3b8;
-            font-size: 0.85rem;
-            line-height: 1.5;
-            margin-top: 1.5rem;
-            text-align: center;
+        /* ── Separator ─────────────────────────── */
+        .separator {
+            display:flex; align-items:center; gap:12px;
+            margin:1.5rem 0; color:#475569; font-size:0.8rem; text-transform:uppercase;
+        }
+        .separator::before, .separator::after {
+            content:''; flex:1; height:1px; background:#334155;
         }
 
-        .legal-link {
-            color: #60a5fa;
-            text-decoration: underline;
+        /* ── Google btn ────────────────────────── */
+        .btn-google {
+            display:flex; align-items:center; justify-content:center; gap:10px;
+            width:100%; padding:14px 20px;
+            background:rgba(51,65,85,0.4); color:#e2e8f0;
+            border:1px solid #475569; border-radius:12px;
+            font-size:1rem; cursor:pointer;
+            transition: background 0.2s;
         }
+        .btn-google:hover { background:rgba(51,65,85,0.7); }
+        .btn-google img { width:20px; height:20px; }
 
-        .legal-link:hover {
-            color: #93c5fd;
+        /* ── Error ─────────────────────────────── */
+        .error-msg { color:#f87171; font-size:0.85rem; min-height:1.2rem; margin-top:0.25rem; }
+
+        /* ── Animations ────────────────────────── */
+        @keyframes fadeUp {
+            from { opacity:0; transform:translateY(20px); }
+            to { opacity:1; transform:translateY(0); }
         }
+        .fade-up { animation: fadeUp 0.5s ease forwards; }
+        .fade-up-delay { animation: fadeUp 0.5s ease 0.2s forwards; opacity:0; }
 
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
+        /* ── Legal ─────────────────────────────── */
+        .legal { color:#64748b; font-size:0.8rem; text-align:center; margin-top:1.5rem; line-height:1.5; }
+        .legal a { color:#60a5fa; text-decoration:underline; }
     </style>
 </head>
 
 <body>
     <script src="/app/js/universe/splash.js"></script>
 
-    <!-- LOGIN -->
-    <div id="login-view"
-        style="display: none; min-height: 100vh; align-items: center; justify-content: center; padding: 1rem;">
-        <div class="w-full max-w-md glass-panel p-8 rounded-2xl">
-            <div class="text-center mb-8">
-                <img src="/app/assets/images/logo-192.png" style="width:96px;height:96px;margin:0 auto 20px auto;display:block;">
-                <h1 class="text-5xl font-bold text-blue-500 mb-3">Chytré já</h1>
-                <p class="text-slate-400 text-base italic">Medicína 3.0</p>
-            </div>
-            <form id="login-form" class="space-y-4">
-                <input id="email-address" type="email" placeholder="E-mail" required
-                    class="w-full px-4 py-3 rounded-lg border">
-                <input id="password" type="password" placeholder="Heslo (min. 6 znaků)" required minlength="6"
-                    class="w-full px-4 py-3 rounded-lg border">
-                <div id="error-message" class="text-red-400 text-xs min-h-[1rem]"></div>
-                <button type="submit"
-                    class="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-3 rounded-lg">Vstoupit</button>
-            </form>
-            <div class="relative my-6">
-                <div class="absolute inset-0 flex items-center"><span class="w-full border-t border-slate-700"></span>
-                </div>
-                <div class="relative flex justify-center text-xs uppercase"><span
-                        class="bg-transparent px-2 text-slate-500">Nebo</span></div>
-            </div>
-            <button id="google-login-btn"
-                class="w-full flex items-center justify-center gap-3 bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium py-3 rounded-lg border border-slate-600">
-                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-5 h-5"> Google
+    <!-- ══════════════════════════════════════════
+         VIEW 1: LANDING (hook)
+         ══════════════════════════════════════════ -->
+    <div id="landing-view" class="view">
+        <div class="view-card" style="text-align:center;">
+            <img src="/app/assets/images/logo-192.png" style="width:72px;height:72px;margin:0 auto 1.5rem;" class="fade-up">
+            <h1 class="fade-up">Co když ti zbývá míň,<br>než si myslíš?</h1>
+            <p class="subtitle fade-up-delay">
+                Tvůj občanský průkaz říká jedno číslo.<br>
+                Tvoje tělo říká jiné.
+            </p>
+            <button class="btn-primary fade-up-delay" onclick="showView('quiz-1')">
+                Zjisti svůj bio-věk
             </button>
-            <div class="mt-8 text-center text-sm">
-                <p class="text-slate-500">Nemáte účet? <a href="#" id="show-register-link"
-                        class="text-blue-400 hover:underline">Registrace</a></p>
+            <p class="small-text fade-up-delay">
+                3 otázky. 30 sekund. Bez registrace.
+            </p>
+            <div style="margin-top:2rem;">
+                <button class="btn-ghost" onclick="showView('login')">Už mám účet</button>
             </div>
         </div>
     </div>
 
-    <!-- REGISTER -->
-    <div id="register-view"
-        style="display: none; min-height: 100vh; align-items: center; justify-content: center; padding: 1rem;">
-        <div class="w-full max-w-md glass-panel p-8 rounded-2xl">
-            <div class="text-center mb-8">
-                <h1 class="text-3xl font-bold text-blue-500 mb-2">Registrace</h1>
+    <!-- ══════════════════════════════════════════
+         VIEW 2a: QUIZ — Věk
+         ══════════════════════════════════════════ -->
+    <div id="quiz-1-view" class="view">
+        <div class="view-card">
+            <div class="progress-bar"><div class="progress-fill" style="width:33%"></div></div>
+            <h2>Kolik ti je let?</h2>
+            <p class="subtitle">Kalendářní věk. Zbytek zjistíme.</p>
+            <input type="number" id="q-age" class="input-field" placeholder="např. 52" min="18" max="110" inputmode="numeric">
+            <div style="margin-top:1.5rem;">
+                <button class="btn-primary" id="quiz-1-next" onclick="quizNext1()">Další</button>
             </div>
-            <form id="register-form" class="space-y-4">
-                <input id="register-email" type="email" placeholder="E-mail" required
-                    class="w-full px-4 py-3 rounded-lg border">
-                <input id="register-password" type="password" placeholder="Heslo (min. 6 znaků)" required minlength="6"
-                    class="w-full px-4 py-3 rounded-lg border">
-                <input id="password-confirm" type="password" placeholder="Potvrzení hesla" required minlength="6"
-                    class="w-full px-4 py-3 rounded-lg border">
-                <div id="register-error-message" class="text-red-400 text-xs min-h-[1rem]"></div>
-                <button type="submit"
-                    class="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-3 rounded-lg">Vytvořit
-                    účet</button>
-                <div class="legal-text">
-                    Souhlasíte s <a href="obchodni-podminky.html" target="_blank" class="legal-link">podmínkami</a>
-                    a <a href="ochrana-osobnich-udaju.html" target="_blank" class="legal-link">zpracováním údajů</a>.
-                </div>
-            </form>
-            <div class="relative my-6">
-                <div class="absolute inset-0 flex items-center"><span class="w-full border-t border-slate-700"></span>
-                </div>
-                <div class="relative flex justify-center text-xs uppercase"><span
-                        class="bg-transparent px-2 text-slate-500">Nebo</span></div>
-            </div>
-            <button id="google-register-btn"
-                class="w-full flex items-center justify-center gap-3 bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium py-3 rounded-lg border border-slate-600">
-                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-5 h-5"> Google
-            </button>
-            <p class="mt-8 text-center text-sm text-slate-500">Máte účet? <a href="#" id="show-login-link"
-                    class="text-blue-400 hover:underline">Přihlásit</a></p>
         </div>
     </div>
 
+    <!-- ══════════════════════════════════════════
+         VIEW 2b: QUIZ — Pohyb
+         ══════════════════════════════════════════ -->
+    <div id="quiz-2-view" class="view">
+        <div class="view-card">
+            <div class="progress-bar"><div class="progress-fill" style="width:66%"></div></div>
+            <h2>Jak moc se hýbeš?</h2>
+            <p class="subtitle">Počítá se cokoliv — chůze, cvičení, práce na zahradě.</p>
+            <div class="option-grid" id="q-movement">
+                <button class="option-btn" data-value="none" onclick="selectOption(this)">Skoro vůbec</button>
+                <button class="option-btn" data-value="light" onclick="selectOption(this)">Občas se projdu</button>
+                <button class="option-btn" data-value="moderate" onclick="selectOption(this)">Pravidelně cvičím 2–3× týdně</button>
+                <button class="option-btn" data-value="active" onclick="selectOption(this)">Aktivně, 4× a víc</button>
+            </div>
+            <button class="btn-primary" id="quiz-2-next" onclick="quizNext2()" style="opacity:0.4; pointer-events:none;">Další</button>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         VIEW 2c: QUIZ — Rovnováha
+         ══════════════════════════════════════════ -->
+    <div id="quiz-3-view" class="view">
+        <div class="view-card">
+            <div class="progress-bar"><div class="progress-fill" style="width:100%"></div></div>
+            <h2>Stůj na jedné noze.</h2>
+            <p class="subtitle">Zavři oči a zkus to. Vydržíš aspoň 10 sekund?</p>
+            <div class="option-grid" id="q-balance">
+                <button class="option-btn" data-value="yes" onclick="selectOption(this)">Ano, v pohodě</button>
+                <button class="option-btn" data-value="barely" onclick="selectOption(this)">Tak tak, kýval jsem se</button>
+                <button class="option-btn" data-value="no" onclick="selectOption(this)">Ne, spadl jsem</button>
+                <button class="option-btn" data-value="skip" onclick="selectOption(this)">Nechci zkoušet</button>
+            </div>
+            <button class="btn-primary" id="quiz-3-next" onclick="quizNext3()" style="opacity:0.4; pointer-events:none;">Zjistit bio-věk</button>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         VIEW 3: RESULT
+         ══════════════════════════════════════════ -->
+    <div id="result-view" class="view">
+        <div class="view-card">
+            <p class="bio-age-label">Odhad tvého bio-věku</p>
+            <div class="bio-age-number" id="result-age">—</div>
+            <p class="bio-age-label">let</p>
+            <div class="bio-age-diff" id="result-diff"></div>
+
+            <p style="color:#94a3b8; font-size:0.95rem; line-height:1.6; margin-bottom:0.5rem;">
+                Čtyři soupeři hrají proti tobě:
+            </p>
+            <ul class="killer-list" id="result-killers">
+                <li class="killer-item"><span class="killer-dot" style="background:#ef4444;"></span> Infarkt a mrtvice</li>
+                <li class="killer-item"><span class="killer-dot" style="background:#f97316;"></span> Cukrovka</li>
+                <li class="killer-item"><span class="killer-dot" style="background:#a855f7;"></span> Demence</li>
+                <li class="killer-item"><span class="killer-dot" style="background:#64748b;"></span> Rakovina</li>
+            </ul>
+
+            <p style="color:#cbd5e1; font-size:0.95rem; line-height:1.6; margin-bottom:2rem;" id="result-message">
+                <!-- filled by JS -->
+            </p>
+
+            <button class="btn-primary" onclick="showView('register')">
+                Chci to změnit
+            </button>
+            <p class="small-text">
+                Zaregistruj se a Chytré Já ti řekne,<br>
+                co každý den udělat.
+            </p>
+            <div style="margin-top:1rem; text-align:center;">
+                <button class="btn-ghost" onclick="showView('login')">Už mám účet</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         VIEW 4: LOGIN
+         ══════════════════════════════════════════ -->
+    <div id="login-view" class="view">
+        <div class="view-card">
+            <div style="text-align:center; margin-bottom:2rem;">
+                <img src="/app/assets/images/logo-192.png" style="width:64px;height:64px;margin:0 auto 1rem;">
+                <h2>Přihlášení</h2>
+            </div>
+            <form id="login-form" style="display:flex; flex-direction:column; gap:12px;">
+                <input id="email-address" type="email" placeholder="E-mail" required class="input-field">
+                <input id="password" type="password" placeholder="Heslo" required minlength="6" class="input-field">
+                <div id="error-message" class="error-msg"></div>
+                <button type="submit" class="btn-primary">Vstoupit</button>
+            </form>
+            <div class="separator">nebo</div>
+            <button id="google-login-btn" class="btn-google">
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"> Google
+            </button>
+            <p class="small-text">
+                Nemáš účet? <button class="btn-ghost" onclick="showView('register')">Registrace</button>
+            </p>
+            <div style="text-align:center; margin-top:0.5rem;">
+                <button class="btn-ghost" onclick="showView('landing')">Zpět na úvod</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         VIEW 5: REGISTER
+         ══════════════════════════════════════════ -->
+    <div id="register-view" class="view">
+        <div class="view-card">
+            <div style="text-align:center; margin-bottom:2rem;">
+                <h2>Registrace</h2>
+                <p class="subtitle" style="margin-bottom:0;">Začni hru o svůj život.</p>
+            </div>
+            <form id="register-form" style="display:flex; flex-direction:column; gap:12px;">
+                <input id="register-email" type="email" placeholder="E-mail" required class="input-field">
+                <input id="register-password" type="password" placeholder="Heslo (min. 6 znaků)" required minlength="6" class="input-field">
+                <input id="password-confirm" type="password" placeholder="Potvrzení hesla" required minlength="6" class="input-field">
+                <div id="register-error-message" class="error-msg"></div>
+                <button type="submit" class="btn-primary">Vytvořit účet</button>
+            </form>
+            <div class="separator">nebo</div>
+            <button id="google-register-btn" class="btn-google">
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"> Google
+            </button>
+            <div class="legal">
+                Registrací souhlasíš s <a href="obchodni-podminky.html" target="_blank">podmínkami</a>
+                a <a href="ochrana-osobnich-udaju.html" target="_blank">zpracováním údajů</a>.
+            </div>
+            <p class="small-text">
+                Máš účet? <button class="btn-ghost" onclick="showView('login')">Přihlásit</button>
+            </p>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         SCRIPTS
+         ══════════════════════════════════════════ -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        // ── View switcher ─────────────────────────
+        const ALL_VIEWS = ['landing', 'quiz-1', 'quiz-2', 'quiz-3', 'result', 'login', 'register'];
+        window.showView = (name) => {
+            ALL_VIEWS.forEach(v => {
+                const el = document.getElementById(v + '-view');
+                if (el) el.classList.toggle('active', v === name);
+            });
+        };
+
+        // ── Quiz state ────────────────────────────
+        const quiz = { age: null, movement: null, balance: null };
+
+        window.selectOption = (btn) => {
+            const grid = btn.parentElement;
+            grid.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            // Enable next button
+            const nextBtn = grid.parentElement.querySelector('.btn-primary');
+            if (nextBtn) { nextBtn.style.opacity = '1'; nextBtn.style.pointerEvents = 'auto'; }
+        };
+
+        window.quizNext1 = () => {
+            const age = parseInt(document.getElementById('q-age').value);
+            if (!age || age < 18 || age > 110) {
+                document.getElementById('q-age').style.borderColor = '#ef4444';
+                return;
+            }
+            quiz.age = age;
+            showView('quiz-2');
+        };
+        // Enter key on age input
+        document.getElementById('q-age')?.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') { e.preventDefault(); quizNext1(); }
+        });
+
+        window.quizNext2 = () => {
+            const sel = document.querySelector('#q-movement .option-btn.selected');
+            if (!sel) return;
+            quiz.movement = sel.dataset.value;
+            showView('quiz-3');
+        };
+
+        window.quizNext3 = () => {
+            const sel = document.querySelector('#q-balance .option-btn.selected');
+            if (!sel) return;
+            quiz.balance = sel.dataset.value;
+            calculateBioAge();
+        };
+
+        // ── Bio-age calculation (quick estimate) ──
+        function calculateBioAge() {
+            const age = quiz.age;
+            let offset = 0;
+
+            // Movement impact (VO2max proxy — biggest factor per Attia)
+            const moveOffset = { none: +12, light: +5, moderate: -2, active: -7 };
+            offset += moveOffset[quiz.movement] || 0;
+
+            // Balance impact (stability + neuro proxy)
+            const balOffset = { yes: -3, barely: +2, no: +6, skip: +3 };
+            offset += balOffset[quiz.balance] || 0;
+
+            // Scale: offset is for ideal full assessment. Quick estimate = 60% of full
+            offset = Math.round(offset * 0.6);
+
+            const bioAge = age + offset;
+            const diff = bioAge - age;
+
+            // Show result
+            const numEl = document.getElementById('result-age');
+            numEl.textContent = bioAge;
+            numEl.className = 'bio-age-number' + (diff <= 0 ? ' good' : '');
+
+            const diffEl = document.getElementById('result-diff');
+            if (diff > 0) {
+                diffEl.textContent = `+ ${diff} let oproti kalendáři`;
+                diffEl.className = 'bio-age-diff worse';
+            } else if (diff < 0) {
+                diffEl.textContent = `${diff} let oproti kalendáři`;
+                diffEl.className = 'bio-age-diff better';
+            } else {
+                diffEl.textContent = 'Na hraně. Ani nahoru, ani dolů.';
+                diffEl.className = 'bio-age-diff worse';
+            }
+
+            // Highlight relevant killers based on answers
+            const killers = document.querySelectorAll('#result-killers .killer-item');
+            if (quiz.movement === 'none' || quiz.movement === 'light') {
+                killers[0].style.color = '#fca5a5'; // infarkt — highlight
+                killers[1].style.color = '#fdba74'; // cukrovka
+            }
+            if (quiz.balance === 'no' || quiz.balance === 'barely') {
+                killers[2].style.color = '#c4b5fd'; // demence
+            }
+
+            // Message
+            const msgEl = document.getElementById('result-message');
+            if (diff >= 5) {
+                msgEl.textContent = 'Tvoje tělo stárne výrazně rychleji, než musí. Ale dá se to změnit. Každý den se počítá.';
+            } else if (diff > 0) {
+                msgEl.textContent = 'Tělo je o kus napřed. Malé změny ho vrátí zpátky. Stačí začít.';
+            } else if (diff === 0) {
+                msgEl.textContent = 'Jsi na hraně. Krok správným směrem a budeš mladší, než říká občanka.';
+            } else {
+                msgEl.textContent = 'Tvoje tělo je mladší, než kalendář. Drž to — ale i ty máš soupeře, kteří nespí.';
+            }
+
+            // Store for registration
+            window._quizData = { age, bioAge, movement: quiz.movement, balance: quiz.balance };
+
+            showView('result');
+        }
+    </script>
+
     <script type="module">
+        // ── Firebase + Supabase ───────────────────
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('/service-worker.js')
-                .then(() => console.log("PWA připravena k použití offline."));
+                .then(() => console.log("PWA ready."));
         }
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js';
         import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js';
@@ -162,71 +480,47 @@
         const auth = getAuth(app);
         const sb = supabase.createClient('https://pionxzqtxcughvfbgadi.supabase.co', 'sb_publishable_w29DE53nrdGnNEvBn68kzg_ujje7u5Y');
 
-        // View switcher - SINGLE definition
-        window.showView = (viewName) => {
-            // Definujeme existující sekce v HTML
-            const views = ['login', 'register'];
-            views.forEach(v => {
-                const el = document.getElementById(`${v}-view`);
-                if (el) el.style.display = (v === viewName) ? 'flex' : 'none';
-            });
-        };
         onAuthStateChanged(auth, async (user) => {
             if (user) {
-                console.log("✅ Firebase User:", user.email);
-
+                console.log("Firebase User:", user.email);
                 try {
-                    // Kontrola profilu v Supabase
-                    const { data, error: selectError } = await sb
+                    const { data } = await sb
                         .from('user_profiles')
                         .select('*')
                         .eq('user_id', user.uid)
                         .maybeSingle();
 
                     if (!data) {
-                        console.log("🆕 Profil nenalezen, zkouším INSERT...");
-                        const { error: insertError } = await sb
-                            .from('user_profiles')
-                            .insert([{
-                                user_id: user.uid,
-                                age: 45,
-                                gender: 'male',
-                                primary_goal: 'longevity'
-                            }]);
-
-                        if (insertError) {
-                            console.error("❌ INSERT CHYBA:", insertError.message);
-                        } else {
-                            console.log("✅ INSERT OK!");
-                        }
-                    } else {
-                        console.log("👋 Profil už existuje.");
+                        // New user — save quiz data if available
+                        const q = window._quizData || {};
+                        await sb.from('user_profiles').insert([{
+                            user_id: user.uid,
+                            age: q.age || 45,
+                            gender: 'male',
+                            primary_goal: 'longevity'
+                        }]);
                     }
                 } catch (err) {
-                    console.error("❌ Kritická chyba:", err);
+                    console.error("Profile error:", err);
                 }
-
-
-                console.log("🛑 ZASTAVENO DEBUGGEREM. Zkontroluj konzoli a Supabase tabulku.");
-                console.log("Pro pokračování stiskni F8 nebo tlačítko Play v záložce Sources.");
-
-                // debugger; // Tady se prohlížeč úplně zastaví
-
-                // --- PŘESMĚROVÁNÍ ---
-                console.log("🚀 Pokračuji v přesměrování...");
                 window.location.href = "/app/";
-
             } else {
-                showView('login');
+                // Not logged in — show landing (unless already on quiz/result)
+                const current = document.querySelector('.view.active');
+                if (!current) showView('landing');
             }
         });
 
+        // Login
         document.getElementById("login-form").addEventListener("submit", (e) => {
             e.preventDefault();
-            signInWithEmailAndPassword(auth, document.getElementById("email-address").value, document.getElementById("password").value)
-                .catch(err => document.getElementById("error-message").innerText = err.message);
+            signInWithEmailAndPassword(auth,
+                document.getElementById("email-address").value,
+                document.getElementById("password").value
+            ).catch(err => document.getElementById("error-message").innerText = err.message);
         });
 
+        // Register
         document.getElementById("register-form").addEventListener("submit", (e) => {
             e.preventDefault();
             const pass = document.getElementById("register-password").value;
@@ -235,17 +529,18 @@
                 document.getElementById("register-error-message").innerText = "Hesla nesouhlasí.";
                 return;
             }
-            createUserWithEmailAndPassword(auth, document.getElementById("register-email").value, pass)
-                .catch(err => document.getElementById("register-error-message").innerText = err.message);
+            createUserWithEmailAndPassword(auth,
+                document.getElementById("register-email").value, pass
+            ).catch(err => document.getElementById("register-error-message").innerText = err.message);
         });
 
+        // Google auth
         const googleAuth = () => signInWithPopup(auth, new GoogleAuthProvider()).catch(console.error);
         document.getElementById("google-login-btn").addEventListener("click", googleAuth);
         document.getElementById("google-register-btn").addEventListener("click", googleAuth);
-
-        document.getElementById("show-register-link").addEventListener("click", (e) => { e.preventDefault(); showView('register'); });
-        document.getElementById("show-login-link").addEventListener("click", (e) => { e.preventDefault(); showView('login'); });
     </script>
+
+    <!-- Splash handler -->
     <script>
         window.addEventListener('load', () => {
             setTimeout(() => {
@@ -254,18 +549,12 @@
                     splash.style.opacity = '0';
                     setTimeout(() => {
                         splash.remove();
-                        // ZDE JE TA ZMĚNA: Po odstranění splashe ukaž login
-                        if (typeof window.showView === 'function') {
-                            window.showView('login');
-                        } else {
-                            // Pojistka, pokud by modul ještě nebyl načten
-                            document.getElementById('login-view').style.display = 'flex';
-                        }
+                        const current = document.querySelector('.view.active');
+                        if (!current) showView('landing');
                     }, 500);
                 }
             }, 2500);
         });
     </script>
 </body>
-
 </html>
