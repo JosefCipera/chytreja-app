@@ -55,8 +55,13 @@ export default async function handler(req, res) {
     .eq('user_id', userId)
     .maybeSingle();
 
-  const aspirationType = userAspiration?.aspiration_type || BEZKY_V_85.type;
-  const aspirationLabel = userAspiration?.aspiration_label || BEZKY_V_85.label;
+  // No fallback — if user has no aspiration, return null
+  const aspirationType = userAspiration?.aspiration_type;
+  const aspirationLabel = userAspiration?.aspiration_label;
+
+  if (!aspirationType) {
+    return res.json({ aspiration: null });
+  }
 
   // 2. Fetch requirement for this node from DB, fallback to hardcoded
   let requiredLevel = null;
