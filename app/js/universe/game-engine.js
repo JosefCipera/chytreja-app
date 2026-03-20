@@ -115,10 +115,10 @@ export const VERDICT_TEXTS = {
 };
 
 export const KILLER_TEXTS = {
-  cukrovka:          'Cukrovka tiše postupuje.',
-  infarkt_a_mrtvice: 'Infarkt čeká na slabinu.',
-  demence:           'Demence maže stopy.',
-  rakovina:          'Rakovina hledá skulinu.',
+  cukrovka:          'Cukrovka číhá. Tvůj tah.',
+  infarkt_a_mrtvice: 'Srdce čeká na posilu.',
+  demence:           'Hlava potřebuje trénink.',
+  rakovina:          'Obrana se buduje denně.',
 };
 
 // Primary killer per node (priority=1 from node_riders)
