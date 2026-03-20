@@ -35,8 +35,10 @@ async function fetchAspirationData(supabase, userId, nodeId) {
       .eq('user_id', userId)
       .maybeSingle();
 
-    const aspirationType = userAspiration?.aspiration_type || BEZKY_V_85.type;
-    const aspirationLabel = userAspiration?.aspiration_label || BEZKY_V_85.label;
+    const aspirationType = userAspiration?.aspiration_type;
+    const aspirationLabel = userAspiration?.aspiration_label;
+
+    if (!aspirationType) return null; // no aspiration set → skip
 
     let requiredLevel = null;
     let importanceWeight = 1;
@@ -195,7 +197,7 @@ export default async function (req, res) {
         .select('aspiration_label')
         .eq('user_id', userId)
         .maybeSingle();
-      mainNodeAspirationLabel = userAsp?.aspiration_label || BEZKY_V_85.label;
+      mainNodeAspirationLabel = userAsp?.aspiration_label || null;
     }
 
     if (!nodeId) {

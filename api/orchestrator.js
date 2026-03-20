@@ -271,15 +271,18 @@ async function executeTool(name, args, supabase, userId) {
     }
 
     case 'get_aspiration': {
-      const BEZKY = { type: 'bezky_v_85', label: 'Běžky v 85' };
       const { data: asp } = await supabase
         .from('user_aspirations')
         .select('aspiration_type, aspiration_label')
         .eq('user_id', userId)
         .maybeSingle();
 
-      const label = asp?.aspiration_label || BEZKY.label;
-      const type = asp?.aspiration_type || BEZKY.type;
+      if (!asp?.aspiration_type) {
+        return { aspiration: null, message: 'Uživatel nemá nastavený sen.' };
+      }
+
+      const label = asp.aspiration_label;
+      const type = asp.aspiration_type;
 
       // Get gaps for all nodes
       const { data: reqs } = await supabase
