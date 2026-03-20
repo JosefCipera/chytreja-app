@@ -21,32 +21,34 @@ const SUPABASE_KEY = 'sb_publishable_w29DE53nrdGnNEvBn68kzg_ujje7u5Y';
 window.supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
 console.log("✅ Supabase SDK připraveno");
 
-// ─── TTS primer — try auto, fallback to first touch ───
+// ─── TTS primer — desktop auto, mobile needs touch ───
 window._chjTTSPrimed = false;
 
-(function tryAutoTTS() {
-  // Try speaking silently — if browser allows, TTS is primed immediately
+// Detect if likely mobile (no auto-TTS possible)
+const _isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+
+if (!_isMobile) {
+  // Desktop: try auto-prime
   const primer = new SpeechSynthesisUtterance('\u00a0');
   primer.volume = 0;
   primer.onend = () => {
     if (!window._chjTTSPrimed) {
       window._chjTTSPrimed = true;
-      console.log('🔊 TTS auto-primed (no click needed)');
+      console.log('🔊 TTS auto-primed (desktop)');
       if (typeof window._chjPendingTTS === 'function') {
         window._chjPendingTTS();
         window._chjPendingTTS = null;
       }
     }
   };
-  primer.onerror = () => {
-    console.log('🔇 TTS auto-prime blocked, waiting for touch');
-  };
   window.speechSynthesis.speak(primer);
-})();
+} else {
+  console.log('📱 Mobile detected — TTS needs user touch');
+}
 
-// Fallback: first touch unlocks TTS
+// Touch unlocks TTS (mobile essential, desktop backup)
 document.addEventListener('pointerdown', function _primeTTS() {
-  if (window._chjTTSPrimed) return; // already primed
+  if (window._chjTTSPrimed) return;
   const primer = new SpeechSynthesisUtterance('\u00a0');
   primer.volume = 0;
   window.speechSynthesis.speak(primer);
