@@ -1233,11 +1233,8 @@ async function showGameOfLife(node) {
         const fi = fm.querySelector('.mic-icon');
         if (fi) fi.textContent = '🎤';
       }
-      // Skryj tlačítko "Spusť hru!" po dočtení
-      if (typeof window._chjOnTTSEnd === 'function') {
-        window._chjOnTTSEnd();
-        window._chjOnTTSEnd = null;
-      }
+      // Remove tap-to-hear banner after TTS finishes
+      document.getElementById('tts-tap-banner')?.remove();
     };
     window.speechSynthesis.speak(utterance);
   }
@@ -1271,6 +1268,39 @@ async function showGameOfLife(node) {
     _doAutoTTS(); // engine already unlocked (user touched before data loaded)
   } else {
     window._chjPendingTTS = _doAutoTTS; // queue until first touch
+
+    // Mobile: show "tap to hear" banner inside panel
+    const panel = document.getElementById('sidePanel');
+    if (panel && !document.getElementById('tts-tap-banner')) {
+      const banner = document.createElement('div');
+      banner.id = 'tts-tap-banner';
+      banner.style.cssText = `
+        margin:8px 12px; padding:12px 16px; border-radius:10px;
+        background:rgba(6,182,212,0.08); border:1px solid rgba(6,182,212,0.2);
+        color:#67e8f9; font-size:15px; text-align:center;
+        cursor:pointer; transition:opacity 0.3s ease;
+      `;
+      banner.textContent = '🔊 Klepni a uslyšíš';
+      banner.onclick = () => {
+        // Prime TTS with user gesture
+        const primer = new SpeechSynthesisUtterance('\u00a0');
+        primer.volume = 0;
+        window.speechSynthesis.speak(primer);
+        window._chjTTSPrimed = true;
+        // Fade out banner
+        banner.style.opacity = '0';
+        setTimeout(() => banner.remove(), 300);
+        // Start speaking
+        setTimeout(() => { if (!ttsPlaying) startTTS(); }, 200);
+      };
+      // Insert after panel header
+      const header = panel.querySelector('.panel-header');
+      if (header) {
+        header.after(banner);
+      } else {
+        panel.prepend(banner);
+      }
+    }
   }
 
   // 11. Chip handlery
