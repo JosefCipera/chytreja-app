@@ -230,7 +230,8 @@ async function loadAndRenderModel(modelName, role) {
 
   // HUD init — bio-age, streak, mission overlay on main screen
   // (700ms čeká na inicializaci vis.js sítě)
-  setTimeout(() => initHUD(), 700);
+  // HUD disabled — panel is primary UI now
+  // setTimeout(() => initHUD(), 700);
 
   // Načti user constraints do window.USER_CONSTRAINTS (pro discipline offer)
   (async () => {

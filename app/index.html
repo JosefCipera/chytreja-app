@@ -288,49 +288,6 @@
     <!-- Plátno sítě -->
     <div id="network"></div>
 
-    <!-- HUD overlay — top-left: bio-věk, killer, streak, mise -->
-    <div id="chj-hud" style="
-      position:fixed; top:100px; left:24px;
-      z-index:400; max-width:280px;
-      display:flex; flex-direction:column; gap:6px;
-      pointer-events:none;
-    ">
-      <!-- Bio-věk velký -->
-      <div style="pointer-events:auto;">
-        <span id="chj-bio-age" style="font-size:32px; font-weight:700; color:#e2e8f0;">—</span>
-        <span style="font-size:13px; color:#64748b; margin-left:6px;">bio-věk</span>
-        <span id="chj-streak-badge" style="
-          font-size:13px; color:#fbbf24; margin-left:8px;
-          display:none;
-        "></span>
-      </div>
-
-      <!-- Killer / hrozba -->
-      <div id="chj-hud-killer" style="
-        font-size:13px; color:#f87171; font-weight:400;
-        padding:0; display:none;
-      "></div>
-
-      <!-- Dnešní mise -->
-      <div id="chj-hud-mission" style="
-        padding:8px 14px; border-radius:10px;
-        background:rgba(15,23,42,0.75); border:1px solid rgba(251,191,36,0.2);
-        backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
-        pointer-events:auto; cursor:pointer;
-        display:none; margin-top:4px;
-      ">
-        <span id="chj-hud-mission-text" style="font-size:13px; color:#e2e8f0;"></span>
-        <span style="font-size:14px; margin-left:8px;">▶</span>
-      </div>
-
-      <!-- Hidden subtitle for TTS sync -->
-      <div id="chj-subtitle" style="
-        font-size:13px; color:#94a3b8;
-        opacity:0; transition:opacity 0.5s ease;
-        max-width:260px; margin-top:4px;
-      "></div>
-    </div>
-
     <!-- Postranní panel -->
     <aside id="sidePanel">
         <div class="panel-header">

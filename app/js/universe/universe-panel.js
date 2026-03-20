@@ -1190,8 +1190,8 @@ async function showGameOfLife(node) {
     speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(currentText);
     utterance.lang = 'cs-CZ';
-    utterance.pitch = 1.2;
-    utterance.rate = 1.1;
+    utterance.pitch = 1.1;
+    utterance.rate = 0.95;
     utterance.onstart = () => {
       ttsPlaying = true;
       // Header mic → SPEAKING
