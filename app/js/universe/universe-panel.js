@@ -951,6 +951,7 @@ async function showGameOfLife(node) {
       .map(loc => {
         // Map Czech constraint locations to exercise avoid tags
         if (loc.includes('kolen')) return 'koleno';
+        if (loc.includes('kyčl') || loc.includes('kycl')) return 'koleno'; // hip issues → no squats/lunges
         if (loc.includes('kotník') || loc.includes('kotnik')) return 'kotnik';
         if (loc.includes('záda') || loc.includes('zada') || loc.includes('záď')) return 'zada_akutni';
         if (loc.includes('ramen')) return 'rameno';
