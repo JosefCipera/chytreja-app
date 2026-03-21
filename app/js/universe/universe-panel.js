@@ -666,9 +666,7 @@ function _buildBatteryHTML(vitalityPct, goalLabel) {
   const battBorder = isGreen ? 'rgba(34,197,94,0.35)' : isYellow ? 'rgba(234,179,8,0.35)' : isRed ? 'rgba(239,68,68,0.35)' : 'rgba(107,114,128,0.35)';
   const battGlow   = isGreen ? 'rgba(34,197,94,0.7)'  : isYellow ? 'rgba(234,179,8,0.7)'  : isRed ? 'rgba(239,68,68,0.7)'  : 'rgba(107,114,128,0.4)';
 
-  // Jitter: small noise to make % feel alive
-  const jitter = [0, 2, -1, 1, -2, 1][Math.floor(Date.now() / 1000) % 6];
-  const displayPct = Math.max(0, Math.min(100, pct + jitter));
+  // displayPct = static value, pulse handles "alive" feel via opacity
 
   return `
     <div style="padding:12px 0 4px;">
@@ -711,7 +709,7 @@ function _buildBatteryHTML(vitalityPct, goalLabel) {
             </div>
           </div>
           <!-- % next to battery, vertically centered -->
-          <span id="battery-pct" style="font-size:38px; font-weight:800; color:${battColor}; font-variant-numeric:tabular-nums; line-height:1;">${displayPct} %</span>
+          <span id="battery-pct" style="font-size:38px; font-weight:500; color:${battColor}; font-variant-numeric:tabular-nums; line-height:1; transition:opacity 1.5s ease;">${pct} %</span>
         </div>
       </div>
     </div>
@@ -787,17 +785,15 @@ async function showGameOfLife(node) {
       } catch (e) { /* ignore */ }
     }
 
-    // Start jitter interval for battery percentage
+    // Subtle opacity pulse — number "breathes"
     setTimeout(() => {
       const el = document.getElementById('battery-pct');
       if (!el) return;
-      const base = Math.round(vitalityPct);
-      let idx = 0;
-      const jitters = [0, 2, -1, 1, -2, 1];
+      let dim = false;
       setInterval(() => {
-        idx = (idx + 1) % jitters.length;
-        el.textContent = `${Math.max(0, Math.min(100, base + jitters[idx]))} %`;
-      }, 3000);
+        dim = !dim;
+        el.style.opacity = dim ? '0.55' : '1';
+      }, 2500);
     }, 2000);
   }
 
