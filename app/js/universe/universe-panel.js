@@ -654,80 +654,73 @@ function showToast(msg) {
 // =====================================================
 
 /** Generuje HTML baterie pro hlavní uzel (state = GREEN / YELLOW / RED / jiný). */
-function _buildBatteryHTML(vitality, neededForGoal, goalLabel) {
-  // Battery: fill = current vitality, color = ready for goal or not
-  // neededForGoal = how much vitality (0–100) you need for your aspiration
-  const fillPct = Math.max(3, Math.min(100, Math.round(vitality ?? 0)));
-  const needed = Math.round(neededForGoal ?? 70);
-  const gap = needed - fillPct;
+function _buildBatteryHTML(vitalityPct, goalLabel, bottleneckLabel) {
+  // Color by vitality %: >=85 GREEN, >=70 YELLOW, >=50 RED, <50 GRAY
+  const pct = Math.round(vitalityPct ?? 60);
+  const fillPct = Math.max(3, Math.min(100, pct));
+  const isGreen  = pct >= 85;
+  const isYellow = pct >= 70 && pct < 85;
+  const isRed    = pct >= 50 && pct < 70;
+  // <50 = GRAY (unknown/caution)
 
-  // Color based on readiness for goal
-  const ready = gap <= 0;
-  const close = gap > 0 && gap <= 20;
-  const battColor  = ready ? '#22c55e' : close ? '#eab308' : '#ef4444';
-  const battBorder = ready ? 'rgba(34,197,94,0.35)' : close ? 'rgba(234,179,8,0.35)' : 'rgba(239,68,68,0.35)';
-  const battGlow   = ready ? 'rgba(34,197,94,0.7)'  : close ? 'rgba(234,179,8,0.7)'  : 'rgba(239,68,68,0.7)';
+  const battColor  = isGreen ? '#22c55e' : isYellow ? '#eab308' : isRed ? '#ef4444' : '#6b7280';
+  const battBorder = isGreen ? 'rgba(34,197,94,0.35)' : isYellow ? 'rgba(234,179,8,0.35)' : isRed ? 'rgba(239,68,68,0.35)' : 'rgba(107,114,128,0.35)';
+  const battGlow   = isGreen ? 'rgba(34,197,94,0.7)'  : isYellow ? 'rgba(234,179,8,0.7)'  : isRed ? 'rgba(239,68,68,0.7)'  : 'rgba(107,114,128,0.4)';
 
-  const stateLabel = ready ? 'Na cíl připraven' : close ? 'Přidej energii' : 'Daleko od cíle';
-  const stateLabelColor = ready ? '#22c55e' : close ? '#eab308' : '#ef4444';
+  // Bottleneck text
+  const line1 = pct >= 85 ? 'Baterie nabita.' : pct >= 70 ? 'Baterie drží.' : 'Baterie klesla.';
+  const line2 = bottleneckLabel ? `Brzdí tě ${bottleneckLabel}.` : '';
 
-  // "Need" marker position on battery (percentage from bottom)
-  const needPct = Math.max(5, Math.min(95, needed));
+  // Jitter: add small noise to make it feel alive
+  const jitter = [0, 2, -1, 1, -2, 1][Math.floor(Date.now() / 1000) % 6];
+  const displayPct = Math.max(0, Math.min(100, pct + jitter));
 
   return `
-    <div style="text-align:center; padding:12px 0 4px;">
-      ${goalLabel ? `<div style="font-size:12px;color:#64748b;margin-bottom:16px;">Cíl: <span style="color:#94a3b8;font-weight:600;">${goalLabel}</span></div>` : ''}
-      <div style="display:inline-flex; flex-direction:column; align-items:center;">
-        <div style="
-          width:22px; height:11px;
-          border:2px solid ${battBorder};
-          border-bottom:none;
-          border-radius:5px 5px 0 0;
-          background:linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04));
-        "></div>
-        <div style="
-          width:62px; height:140px;
-          border:2px solid ${battBorder};
-          border-radius:5px 5px 8px 8px;
-          background:rgba(8,8,18,0.6);
-          position:relative; overflow:hidden;
-          box-shadow:0 0 22px ${battBorder}, inset 0 0 12px rgba(0,0,0,0.4);
-        ">
-          <!-- Fill = current vitality -->
+    <div style="padding:12px 0 4px;">
+      ${goalLabel ? `<div style="font-size:13px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:16px;">Cíl: držet nad 80 % <span style="color:#64748b;">· ${goalLabel}</span></div>` : `<div style="font-size:13px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:16px;">Cíl: držet nad 80 %</div>`}
+      <div style="display:flex; align-items:center; gap:20px; justify-content:center;">
+        <!-- Battery -->
+        <div style="display:inline-flex; flex-direction:column; align-items:center;">
           <div style="
-            position:absolute; bottom:0; left:0; right:0;
-            height:${fillPct}%;
-            background:linear-gradient(180deg, ${battColor}88, ${battColor}ee);
-            box-shadow:0 0 30px ${battGlow};
-            transition:height 1.5s ease;
-          "></div>
-          <!-- Need marker = what goal requires -->
-          <div style="
-            position:absolute; left:0; right:0;
-            bottom:${needPct}%;
-            height:2px;
-            background:rgba(255,255,255,0.5);
-            box-shadow:0 0 4px rgba(255,255,255,0.3);
+            width:22px; height:11px;
+            border:2px solid ${battBorder};
+            border-bottom:none;
+            border-radius:5px 5px 0 0;
+            background:linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04));
           "></div>
           <div style="
-            position:absolute; right:-30px;
-            bottom:calc(${needPct}% - 7px);
-            font-size:9px; color:rgba(255,255,255,0.5);
-            white-space:nowrap;
-          ">potřeba</div>
-          <!-- Glass reflection -->
-          <div style="
-            position:absolute; top:0; bottom:0; left:6px; width:9px;
-            background:linear-gradient(90deg, rgba(255,255,255,0.09), transparent);
-            border-radius:4px; pointer-events:none;
-          "></div>
-          <!-- Grid lines -->
-          <div style="position:absolute;inset:0;display:flex;flex-direction:column;justify-content:space-evenly;padding:10px 0;pointer-events:none;">
-            ${[0,1,2].map(() => `<div style="height:1px;background:rgba(255,255,255,0.06);margin:0 8px;"></div>`).join('')}
+            width:62px; height:140px;
+            border:2px solid ${battBorder};
+            border-radius:5px 5px 8px 8px;
+            background:rgba(8,8,18,0.6);
+            position:relative; overflow:hidden;
+            box-shadow:0 0 22px ${battBorder}, inset 0 0 12px rgba(0,0,0,0.4);
+          ">
+            <div style="
+              position:absolute; bottom:0; left:0; right:0;
+              height:${fillPct}%;
+              background:linear-gradient(180deg, ${battColor}88, ${battColor}ee);
+              box-shadow:0 0 30px ${battGlow};
+              transition:height 1.5s ease;
+            "></div>
+            <div style="
+              position:absolute; top:0; bottom:0; left:6px; width:9px;
+              background:linear-gradient(90deg, rgba(255,255,255,0.09), transparent);
+              border-radius:4px; pointer-events:none;
+            "></div>
+            <div style="position:absolute;inset:0;display:flex;flex-direction:column;justify-content:space-evenly;padding:10px 0;pointer-events:none;">
+              ${[0,1,2].map(() => `<div style="height:1px;background:rgba(255,255,255,0.06);margin:0 8px;"></div>`).join('')}
+            </div>
+          </div>
+        </div>
+        <!-- Percentage next to battery -->
+        <div style="display:flex; flex-direction:column; align-items:flex-start;">
+          <span id="battery-pct" style="font-size:38px; font-weight:800; color:${battColor}; line-height:1; font-variant-numeric:tabular-nums;">${displayPct} %</span>
+          <div style="margin-top:10px; font-size:13px; color:#94a3b8; line-height:1.5;">
+            ${line1}${line2 ? `<br>${line2}` : ''}
           </div>
         </div>
       </div>
-      <div style="margin-top:14px; font-size:13px; color:${stateLabelColor}; letter-spacing:0.5px; font-weight:600;">${stateLabel}</div>
     </div>
   `;
 }
@@ -770,51 +763,54 @@ async function showGameOfLife(node) {
     border-radius:12px; padding:20px; margin:15px 0;
   `;
 
-  // Vitality: avg current_index of colored child nodes
-  let vitalityIndex = 0;
-  let neededForGoal = 70; // default
+  // Vitality: avg current_index of colored child nodes → percentage
+  let vitalityPct = 60; // default (cautious gray)
   let goalLabel = null;
+  let bottleneckLabel = null;
   if (isMainNode) {
     const allNodes = window.MAIN_UNIVERSE_DATA || [];
     const children = allNodes.filter(n => n.parent === 'dlouhovekost' && n.state && n.state !== 'GRAY');
     if (children.length > 0) {
       const sum = children.reduce((s, n) => s + (n.current_index ?? 50), 0);
-      vitalityIndex = sum / children.length;
+      vitalityPct = sum / children.length;
     }
-    // Fetch age + aspiration for goal-based need
+    // Bottleneck = worst child node
+    const NODE_LABELS = { telo: 'tělo', mysl: 'hlava', vyziva: 'strava', zdravi: 'zdraví', metabolicke: 'metabolismus' };
+    const worst = children
+      .filter(n => n.current_index != null)
+      .sort((a, b) => (a.current_index ?? 100) - (b.current_index ?? 100))[0];
+    if (worst) bottleneckLabel = NODE_LABELS[worst.id] || worst.label || worst.id;
+
+    // Fetch aspiration label
     if (userId !== 'demo-user-123' && window.supabaseClient) {
       try {
-        const sb = window.supabaseClient;
-        const [{ data: profile }, { data: aspRow }] = await Promise.all([
-          sb.from('user_profiles').select('age').eq('user_id', userId).maybeSingle(),
-          sb.from('user_aspirations').select('aspiration_type').eq('user_id', userId).maybeSingle(),
-        ]);
-        const currentAge = profile?.age || 36;
-        // Goal labels
+        const { data: aspRow } = await window.supabaseClient
+          .from('user_aspirations').select('aspiration_type').eq('user_id', userId).maybeSingle();
         const GOAL_LABELS = {
-          bezky_v_85: 'Běžky v 85',
-          ironman_v_70: 'Ironman v 70',
-          vnouci: 'Hrát si s vnouky',
-          samostatnost_v_90: 'Samostatnost v 90',
-          default: 'Aktivní dlouhověkost',
+          bezky_v_85: 'Běžky v 85', ironman_v_70: 'Ironman v 70',
+          vnouci: 'Hrát si s vnouky', samostatnost_v_90: 'Samostatnost v 90',
         };
-        const aspType = aspRow?.aspiration_type || 'default';
-        goalLabel = GOAL_LABELS[aspType] || GOAL_LABELS.default;
-        // Need calculation: base + age factor + goal ambition
-        // Higher age → more effort needed (sarcopenia, declining VO2max)
-        // More ambitious goal → higher bar
-        const GOAL_AMBITION = { bezky_v_85: 75, ironman_v_70: 85, vnouci: 60, samostatnost_v_90: 70, default: 65 };
-        const baseNeed = GOAL_AMBITION[aspType] || 65;
-        // Age modifier: after 40, need increases ~0.5 per year
-        const ageBoost = Math.max(0, (currentAge - 40) * 0.5);
-        neededForGoal = Math.min(95, Math.round(baseNeed + ageBoost));
-      } catch (e) { /* ignore, use defaults */ }
+        if (aspRow?.aspiration_type) goalLabel = GOAL_LABELS[aspRow.aspiration_type] || null;
+      } catch (e) { /* ignore */ }
     }
+
+    // Start jitter interval for battery percentage
+    setTimeout(() => {
+      const el = document.getElementById('battery-pct');
+      if (!el) return;
+      const base = Math.round(vitalityPct);
+      let idx = 0;
+      const jitters = [0, 2, -1, 1, -2, 1];
+      setInterval(() => {
+        idx = (idx + 1) % jitters.length;
+        el.textContent = `${Math.max(0, Math.min(100, base + jitters[idx]))} %`;
+      }, 3000);
+    }, 2000);
   }
 
   // Skeleton se liší podle typu uzlu
   if (isMainNode) {
-    metricCard.innerHTML = _buildBatteryHTML(vitalityIndex, neededForGoal, goalLabel);
+    metricCard.innerHTML = _buildBatteryHTML(vitalityPct, goalLabel, bottleneckLabel);
   } else {
     metricCard.innerHTML = `
       <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Trend (30 dní)</div>
@@ -880,29 +876,9 @@ async function showGameOfLife(node) {
     </div>
   ` : '';
 
-  // 5b. Hlavní uzel → HUD + sparkline; ostatní uzly → sparkline
+  // 5b. Hlavní uzel → battery already rendered; ostatní uzly → sparkline
   if (isMainNode) {
-    // HUD is rendered in skeleton phase; add sparkline below it if trend data exists
-    const hasMainTrend = trend.numeric?.length >= 1;
-    if (hasMainTrend) {
-      const mainChartData = trend.numeric.length === 1
-        ? [trend.numeric[0], trend.numeric[0]]
-        : trend.numeric;
-      const trendDiv = document.createElement('div');
-      trendDiv.innerHTML = `
-        <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin:12px 0 8px;">Trend vitality</div>
-        <canvas class="weather-trend-canvas" style="width:100%;height:55px;display:block;border-radius:6px;"></canvas>
-      `;
-      metricCard.appendChild(trendDiv);
-      requestAnimationFrame(() => {
-        const canvas = trendDiv.querySelector('.weather-trend-canvas');
-        if (canvas) {
-          const ctx = canvas.getContext('2d');
-          const hudColor = node.state === 'GREEN' ? '#22c55e' : node.state === 'YELLOW' ? '#eab308' : '#ef4444';
-          drawMiniTrend(ctx, mainChartData, hudColor);
-        }
-      });
-    }
+    // Battery is rendered in skeleton phase, no sparkline for main node
   } else {
     // 1 bod stačí – zduplikujeme ho aby drawMiniTrend měl co nakreslit (plochá čára = stabilní)
     const hasData = trend.numeric?.length >= 1;
