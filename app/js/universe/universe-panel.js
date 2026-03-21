@@ -718,17 +718,15 @@ function _buildBatteryHTML(vitalityPct, goalLabel, bottleneckLabel) {
           <!-- % next to battery, vertically centered -->
           <span id="battery-pct" style="font-size:38px; font-weight:800; color:${battColor}; font-variant-numeric:tabular-nums; line-height:1;">${displayPct} %</span>
         </div>
-        <!-- Label under battery -->
-        <div style="margin-top:14px; font-size:13px; color:${battColor}; letter-spacing:0.5px;">${line1}</div>
       </div>
-      <!-- Bottleneck chip below -->
-      ${line2 ? `<div style="
-        margin-top:12px; padding:10px 16px;
+      <!-- Chip below with both lines -->
+      <div style="
+        margin-top:14px; padding:10px 16px;
         background:rgba(255,255,255,0.03);
         border:1px solid rgba(255,255,255,0.08);
         border-radius:10px;
         font-size:13px; color:#94a3b8;
-      ">${line2}</div>` : ''}
+      ">${line1}${line2 ? ` ${line2}` : ''}</div>
     </div>
   `;
 }
