@@ -500,13 +500,14 @@ async function saveOnboarding() {
 
       nodeStates[q.id] = state;
 
-      // Snapshot do node_state_history pro sparkline trend
+      // Snapshot do node_state_history pro sparkline trend (with current_index)
       if (state !== 'GRAY') {
         const { error: histError } = await supabase.from('node_state_history').insert({
           user_id: userId,
           node_id: q.id,
           date: today,
-          state
+          state,
+          current_index: currentIndex
         });
         if (histError) console.warn(`⚠️ node_state_history(${q.id}):`, histError.message);
       }

@@ -11,7 +11,7 @@ import {
 } from './game-engine.js';
 
 import {
-  fetchAspiration, fetchLearningSteps, drawMiniTrend, fetchTrend
+  fetchAspiration, fetchLearningSteps, drawMiniTrend, drawIndexLabel, fetchTrend
 } from './data-layer.js';
 
 import { aiSpeak } from './universe-voice.js';
@@ -853,7 +853,14 @@ async function showGameOfLife(node) {
     if (hasData) {
       requestAnimationFrame(() => {
         const canvas = metricCard.querySelector('.weather-trend-canvas');
-        if (canvas) drawMiniTrend(canvas.getContext('2d'), chartData, trend.lineColor);
+        if (canvas) {
+          const ctx = canvas.getContext('2d');
+          drawMiniTrend(ctx, chartData, trend.lineColor);
+          // Show current_index value (e.g. "30") in top-right corner of sparkline
+          if (node.current_index != null) {
+            drawIndexLabel(ctx, node.current_index, trend.lineColor);
+          }
+        }
       });
     }
   }
@@ -992,7 +999,7 @@ async function showGameOfLife(node) {
       border-radius:12px; padding:16px; margin-top:4px;
     ">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-        <span style="color:#fde68a;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">DNEŠNÍ MISE</span>
+        <span style="color:#fde68a;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">CO DNES UDĚLAT</span>
         ${skillLevel ? `<span style="margin-left:auto;font-size:11px;color:#94a3b8;background:rgba(148,163,184,0.1);padding:2px 8px;border-radius:10px;">${skillLevel.name}</span>` : ''}
       </div>
       ${skillMotivation ? `<div style="color:#94a3b8;font-size:13px;font-style:italic;margin-bottom:10px;">${skillMotivation}</div>` : ''}
@@ -1140,7 +1147,7 @@ async function showGameOfLife(node) {
               progressEl.innerHTML = `📈 Posun: ${glResult.oldIndex} → ${glResult.newIndex}`;
             } else if (glResult.missionCount !== undefined) {
               progressEl.style.color = '#94a3b8';
-              progressEl.innerHTML = `${glResult.missionCount}/${glResult.needed} misí tento týden`;
+              progressEl.innerHTML = `${glResult.missionCount}/${glResult.needed} kroků tento týden`;
             }
 
             missionCard.appendChild(progressEl);

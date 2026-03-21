@@ -108,12 +108,12 @@ export default async function (req, res) {
       return res.json({ improved: false, error: updateErr.message });
     }
 
-    // 5. Log state change to history
+    // 5. Log state change to history (with current_index for sparkline)
     await supabase.from('node_state_history').insert({
       user_id: userId,
       node_id: nodeId,
       state: newState,
-      index_value: newIndex,
+      current_index: newIndex,
     }).catch(() => {}); // non-critical
 
     // 6. Recalc parent state (worst child rule)

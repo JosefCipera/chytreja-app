@@ -128,11 +128,11 @@ async function populateModelSelector() {
   // Žádost o notifikační oprávnění – po 3s, nenásilně
   setTimeout(() => requestCHJPermission(), 3000);
 
-  // In-app reminder – po 2s zkontroluj misi + streak a ukaž toast
-  const userId = window.firebaseAuth?.currentUser?.uid;
-  if (userId) {
-    setTimeout(() => checkAndRemind(userId), 2000);
-  }
+  // In-app reminder – disabled (toast removed)
+  // const userId = window.firebaseAuth?.currentUser?.uid;
+  // if (userId) {
+  //   setTimeout(() => checkAndRemind(userId), 2000);
+  // }
 })();
 
 // =====================================================
