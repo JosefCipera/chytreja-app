@@ -7,7 +7,7 @@ import {
   DEMO_PREVIEWS, ACTIVE_MOTTOS, getDemoPreview,
   NODE_RIDERS, RIDER_ICONS, getRiders,
   VERDICT_TEXTS, KILLER_TEXTS, NODE_KILLERS, generateVerdict,
-  pickMission, calcBioAge
+  pickMission
 } from './game-engine.js';
 
 import {
@@ -654,50 +654,57 @@ function showToast(msg) {
 // =====================================================
 
 /** Generuje HTML baterie pro hlavní uzel (state = GREEN / YELLOW / RED / jiný). */
-function _buildBatteryHTML(state, bioAgeResult) {
-  const fillPct    = state === 'GREEN' ? 80 : state === 'YELLOW' ? 50 : 20;
-  const battColor  = state === 'GREEN' ? '#22c55e' : state === 'YELLOW' ? '#eab308' : '#ef4444';
-  const battBorder = state === 'GREEN' ? 'rgba(34,197,94,0.35)'  : state === 'YELLOW' ? 'rgba(234,179,8,0.35)'  : 'rgba(239,68,68,0.35)';
-  const battGlow   = state === 'GREEN' ? 'rgba(34,197,94,0.7)'   : state === 'YELLOW' ? 'rgba(234,179,8,0.7)'   : 'rgba(239,68,68,0.7)';
-  const stateLabel = state === 'GREEN' ? 'Nabito' : state === 'YELLOW' ? 'Dobíjení' : 'Slabá baterie';
-  const stateLabelColor = state === 'RED' ? '#ef4444' : '#64748b';
+function _buildMainNodeHTML(state, vitalityIndex, targetAge, currentAge) {
+  // HUD health bar — game style "remaining life"
+  const color  = state === 'GREEN' ? '#22c55e' : state === 'YELLOW' ? '#eab308' : '#ef4444';
+  const glow   = state === 'GREEN' ? 'rgba(34,197,94,0.5)' : state === 'YELLOW' ? 'rgba(234,179,8,0.5)' : 'rgba(239,68,68,0.5)';
+  const bgDark = state === 'GREEN' ? 'rgba(34,197,94,0.08)' : state === 'YELLOW' ? 'rgba(234,179,8,0.08)' : 'rgba(239,68,68,0.08)';
+
+  // Vitality = avg current_index of child nodes (0–100)
+  const vitality = Math.round(vitalityIndex ?? 0);
+  const fillPct = Math.max(3, Math.min(100, vitality));
+
+  // Remaining life estimate
+  const remaining = (targetAge && currentAge) ? targetAge - currentAge : null;
+  const vitalityLabel = vitality >= 70 ? 'Silná vitalita' : vitality >= 40 ? 'Vitalita drží' : 'Vitalita klesá';
+
   return `
-    <div style="text-align:center; padding:12px 0 4px;">
-      <!-- bio-age removed from battery -->
-      <div style="display:inline-flex; flex-direction:column; align-items:center;">
+    <div style="padding:16px 0 8px;">
+      <!-- Vitality number -->
+      <div style="display:flex; align-items:baseline; gap:8px; margin-bottom:14px;">
+        <span style="font-size:42px; font-weight:800; color:${color}; line-height:1; font-variant-numeric:tabular-nums;">${vitality}</span>
+        <span style="font-size:14px; color:#64748b; font-weight:500;">/ 100</span>
+        <span style="font-size:12px; color:${color}; margin-left:auto; text-transform:uppercase; letter-spacing:0.5px; font-weight:600;">${vitalityLabel}</span>
+      </div>
+      <!-- Health bar -->
+      <div style="
+        width:100%; height:18px;
+        background:rgba(255,255,255,0.06);
+        border-radius:9px;
+        overflow:hidden;
+        position:relative;
+        border:1px solid rgba(255,255,255,0.08);
+      ">
         <div style="
-          width:22px; height:11px;
-          border:2px solid ${battBorder};
-          border-bottom:none;
-          border-radius:5px 5px 0 0;
-          background:linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04));
-        "></div>
-        <div style="
-          width:62px; height:140px;
-          border:2px solid ${battBorder};
-          border-radius:5px 5px 8px 8px;
-          background:rgba(8,8,18,0.6);
-          position:relative; overflow:hidden;
-          box-shadow:0 0 22px ${battBorder}, inset 0 0 12px rgba(0,0,0,0.4);
+          height:100%; width:${fillPct}%;
+          background:linear-gradient(90deg, ${color}cc, ${color});
+          box-shadow:0 0 16px ${glow};
+          border-radius:9px;
+          transition:width 1.2s ease;
+          position:relative;
         ">
           <div style="
-            position:absolute; bottom:0; left:0; right:0;
-            height:${fillPct}%;
-            background:linear-gradient(180deg, ${battColor}88, ${battColor}ee);
-            box-shadow:0 0 30px ${battGlow};
-            transition:height 1.5s ease;
+            position:absolute; top:2px; left:4px; right:4px; height:5px;
+            background:linear-gradient(180deg, rgba(255,255,255,0.25), transparent);
+            border-radius:4px;
           "></div>
-          <div style="
-            position:absolute; top:0; bottom:0; left:6px; width:9px;
-            background:linear-gradient(90deg, rgba(255,255,255,0.09), transparent);
-            border-radius:4px; pointer-events:none;
-          "></div>
-          <div style="position:absolute;inset:0;display:flex;flex-direction:column;justify-content:space-evenly;padding:10px 0;pointer-events:none;">
-            ${[0,1,2].map(() => `<div style="height:1px;background:rgba(255,255,255,0.06);margin:0 8px;"></div>`).join('')}
-          </div>
         </div>
       </div>
-      <div style="margin-top:14px; font-size:13px; color:${stateLabelColor}; letter-spacing:0.5px;">${stateLabel}</div>
+      ${remaining ? `
+      <div style="display:flex; justify-content:space-between; margin-top:10px; font-size:12px; color:#64748b;">
+        <span>Cíl: <strong style="color:#94a3b8;">${targetAge} let</strong></span>
+        <span>Zbývá <strong style="color:${color};">${remaining} let</strong></span>
+      </div>` : ''}
     </div>
   `;
 }
@@ -740,31 +747,30 @@ async function showGameOfLife(node) {
     border-radius:12px; padding:20px; margin:15px 0;
   `;
 
-  // Bio-age: fetch profile + metrics for 4 fitness markers
-  let bioAgeResult = null;
-  if (isMainNode && userId !== 'demo-user-123' && window.supabaseClient) {
-    try {
-      const sb = window.supabaseClient;
-      const [{ data: profile }, { data: metrics }] = await Promise.all([
-        sb.from('user_profiles').select('age').eq('user_id', userId).maybeSingle(),
-        sb.from('user_metrics').select('node_id, current_index, state').eq('user_id', userId).eq('universe', 'longevity').in('node_id', ['vo2max', 'sila', 'stabilita', 'mobilita']),
-      ]);
-      if (profile?.age && metrics?.length) {
-        const metricsMap = {};
-        for (const m of metrics) metricsMap[m.node_id] = m;
-        bioAgeResult = calcBioAge(profile.age, metricsMap);
-        console.log('🧬 Bio-age:', bioAgeResult);
-      }
-    } catch (e) {
-      console.warn('Bio-age calc failed:', e.message);
+  // Vitality: avg current_index of colored child nodes
+  let vitalityIndex = null;
+  let targetAge = 100; // default, later from aspirations
+  let currentAge = null;
+  if (isMainNode) {
+    const allNodes = window.MAIN_UNIVERSE_DATA || [];
+    const children = allNodes.filter(n => n.parent === 'dlouhovekost' && n.state && n.state !== 'GRAY');
+    if (children.length > 0) {
+      const sum = children.reduce((s, n) => s + (n.current_index ?? 50), 0);
+      vitalityIndex = sum / children.length;
+    }
+    // Fetch age for "remaining life"
+    if (userId !== 'demo-user-123' && window.supabaseClient) {
+      try {
+        const { data: profile } = await window.supabaseClient
+          .from('user_profiles').select('age').eq('user_id', userId).maybeSingle();
+        if (profile?.age) currentAge = profile.age;
+      } catch (e) { /* ignore */ }
     }
   }
 
   // Skeleton se liší podle typu uzlu
   if (isMainNode) {
-    // Stav (node.state) je znám okamžitě → vykreslíme reálnou baterii hned,
-    // bez šedého placeholderu s jinými rozměry (eliminuje flicker při překreslení).
-    metricCard.innerHTML = _buildBatteryHTML(node.state, bioAgeResult);
+    metricCard.innerHTML = _buildMainNodeHTML(node.state, vitalityIndex, targetAge, currentAge);
   } else {
     metricCard.innerHTML = `
       <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Trend (30 dní)</div>
@@ -830,11 +836,29 @@ async function showGameOfLife(node) {
     </div>
   ` : '';
 
-  // 5b. Hlavní uzel → baterie; ostatní uzly → sparkline
+  // 5b. Hlavní uzel → HUD + sparkline; ostatní uzly → sparkline
   if (isMainNode) {
-    // Baterie s bio-age je již vykreslena v skeleton fázi (bioAgeResult + node.state).
-    // Re-render jen pokud trend data to vyžadují — jinak zachovat bio-age.
-    // metricCard already has correct battery from skeleton phase
+    // HUD is rendered in skeleton phase; add sparkline below it if trend data exists
+    const hasMainTrend = trend.numeric?.length >= 1;
+    if (hasMainTrend) {
+      const mainChartData = trend.numeric.length === 1
+        ? [trend.numeric[0], trend.numeric[0]]
+        : trend.numeric;
+      const trendDiv = document.createElement('div');
+      trendDiv.innerHTML = `
+        <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin:12px 0 8px;">Trend vitality</div>
+        <canvas class="weather-trend-canvas" style="width:100%;height:55px;display:block;border-radius:6px;"></canvas>
+      `;
+      metricCard.appendChild(trendDiv);
+      requestAnimationFrame(() => {
+        const canvas = trendDiv.querySelector('.weather-trend-canvas');
+        if (canvas) {
+          const ctx = canvas.getContext('2d');
+          const hudColor = node.state === 'GREEN' ? '#22c55e' : node.state === 'YELLOW' ? '#eab308' : '#ef4444';
+          drawMiniTrend(ctx, mainChartData, hudColor);
+        }
+      });
+    }
   } else {
     // 1 bod stačí – zduplikujeme ho aby drawMiniTrend měl co nakreslit (plochá čára = stabilní)
     const hasData = trend.numeric?.length >= 1;
