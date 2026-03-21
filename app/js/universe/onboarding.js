@@ -98,6 +98,18 @@ export const onboardingQuestions = [
     desc: 'Test funkční síly celého těla.',
     help: 'Nezvládnu=1, s obtížemi=5, lehce=10'
   },
+  {
+    id: 'farmer_carry', type: 'slider', category: 'health',
+    q: 'Uneseš dvě těžké tašky z obchodu bez přestávky?',
+    desc: 'Farmer carry = celotělová síla a stabilita.',
+    help: 'Hned položím=1, 50m=5, bez problému=10'
+  },
+  {
+    id: 'hip_hinge', type: 'slider', category: 'health',
+    q: 'Zvládneš předklon s rovnými zády a zpět?',
+    desc: 'Hip hinge chrání záda a posiluje zadní řetězec.',
+    help: 'Bolí záda=1, s obtížemi=5, čistě=10'
+  },
 
   // ── Demographics + body ─────────────────────────────
   {
@@ -153,6 +165,8 @@ const thresholds = {
   'grip':           { red: [1,2,3],     yellow: [4,5,6],   green: [7,8,9,10] },
   'dead_hang':      { red: [1,2,3],     yellow: [4,5,6,7], green: [8,9,10] },
   'floor_get_up':   { red: [1,2,3],     yellow: [4,5,6],   green: [7,8,9,10] },
+  'farmer_carry':   { red: [1,2,3],     yellow: [4,5,6],   green: [7,8,9,10] },
+  'hip_hinge':      { red: [1,2,3],     yellow: [4,5,6,7], green: [8,9,10] },
 };
 
 // =====================================================
@@ -531,7 +545,7 @@ async function saveOnboarding() {
 
     // 1b. Calculate parent node states (worst child rule)
     const parentMap = {
-      sila:         ['grip', 'dead_hang'],
+      sila:         ['grip', 'dead_hang', 'farmer_carry', 'hip_hinge'],
       stabilita:    ['floor_get_up'],
       telo:         ['sila', 'vytrvalost', 'stabilita', 'mobilita', 'vo2max'],
       mysl:         ['nervovy_system', 'klid', 'smysl'],
