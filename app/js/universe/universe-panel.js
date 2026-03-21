@@ -678,9 +678,9 @@ function _buildBatteryHTML(vitalityPct, goalLabel, bottleneckLabel) {
   return `
     <div style="padding:12px 0 4px;">
       ${goalLabel ? `<div style="font-size:13px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:16px;">Cíl: držet nad 80 % <span style="color:#64748b;">· ${goalLabel}</span></div>` : `<div style="font-size:13px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:16px;">Cíl: držet nad 80 %</div>`}
-      <div style="display:flex; align-items:center; gap:20px; justify-content:center;">
-        <!-- Battery -->
-        <div style="display:inline-flex; flex-direction:column; align-items:center;">
+      <!-- Battery with % centered -->
+      <div style="display:flex; align-items:center; justify-content:center; position:relative;">
+        <div style="display:inline-flex; flex-direction:column; align-items:center; position:relative;">
           <div style="
             width:22px; height:11px;
             border:2px solid ${battBorder};
@@ -711,16 +711,21 @@ function _buildBatteryHTML(vitalityPct, goalLabel, bottleneckLabel) {
             <div style="position:absolute;inset:0;display:flex;flex-direction:column;justify-content:space-evenly;padding:10px 0;pointer-events:none;">
               ${[0,1,2].map(() => `<div style="height:1px;background:rgba(255,255,255,0.06);margin:0 8px;"></div>`).join('')}
             </div>
-          </div>
-        </div>
-        <!-- Percentage next to battery -->
-        <div style="display:flex; flex-direction:column; align-items:flex-start;">
-          <span id="battery-pct" style="font-size:38px; font-weight:800; color:${battColor}; line-height:1; font-variant-numeric:tabular-nums;">${displayPct} %</span>
-          <div style="margin-top:10px; font-size:13px; color:#94a3b8; line-height:1.5;">
-            ${line1}${line2 ? `<br>${line2}` : ''}
+            <!-- % centered vertically inside battery -->
+            <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:2;">
+              <span id="battery-pct" style="font-size:16px; font-weight:800; color:#fff; text-shadow:0 1px 4px rgba(0,0,0,0.7); font-variant-numeric:tabular-nums;">${displayPct}%</span>
+            </div>
           </div>
         </div>
       </div>
+      <!-- Bottleneck chip below battery -->
+      <div style="
+        margin-top:14px; padding:10px 14px;
+        background:${battColor}12;
+        border:1px solid ${battColor}30;
+        border-radius:10px;
+        font-size:13px; color:#94a3b8; text-align:center;
+      ">${line1}${line2 ? ` ${line2}` : ''}</div>
     </div>
   `;
 }
