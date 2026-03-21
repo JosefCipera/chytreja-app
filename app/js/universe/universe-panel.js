@@ -654,19 +654,25 @@ function showToast(msg) {
 // =====================================================
 
 /** Generuje HTML baterie pro hlavní uzel (state = GREEN / YELLOW / RED / jiný). */
-function _buildBatteryHTML(vitalityPct, goalLabel) {
-  // Color by vitality %: >=85 GREEN, >=70 YELLOW, >=50 RED, <50 GRAY
+function _buildBatteryHTML(vitalityPct, goalLabel, trendDir) {
+  // Color thresholds adjusted by trend direction
+  // trendDir: 'up' | 'stable' | 'down'
+  const THRESHOLDS = {
+    up:     { green: 90, yellow: 75, red: 55 },
+    stable: { green: 85, yellow: 70, red: 50 },
+    down:   { green: 80, yellow: 65, red: 45 },
+  };
+  const t = THRESHOLDS[trendDir] || THRESHOLDS.stable;
+
   const pct = Math.round(vitalityPct ?? 60);
   const fillPct = Math.max(3, Math.min(100, pct));
-  const isGreen  = pct >= 85;
-  const isYellow = pct >= 70 && pct < 85;
-  const isRed    = pct >= 50 && pct < 70;
+  const isGreen  = pct >= t.green;
+  const isYellow = !isGreen && pct >= t.yellow;
+  const isRed    = !isGreen && !isYellow && pct >= t.red;
 
   const battColor  = isGreen ? '#22c55e' : isYellow ? '#eab308' : isRed ? '#ef4444' : '#6b7280';
   const battBorder = isGreen ? 'rgba(34,197,94,0.35)' : isYellow ? 'rgba(234,179,8,0.35)' : isRed ? 'rgba(239,68,68,0.35)' : 'rgba(107,114,128,0.35)';
   const battGlow   = isGreen ? 'rgba(34,197,94,0.7)'  : isYellow ? 'rgba(234,179,8,0.7)'  : isRed ? 'rgba(239,68,68,0.7)'  : 'rgba(107,114,128,0.4)';
-
-  // displayPct = static value, pulse handles "alive" feel via opacity
 
   return `
     <div style="padding:12px 0 4px;">
@@ -709,7 +715,7 @@ function _buildBatteryHTML(vitalityPct, goalLabel) {
             </div>
           </div>
           <!-- % next to battery, vertically centered -->
-          <span id="battery-pct" style="font-size:38px; font-weight:500; color:${battColor}; font-variant-numeric:tabular-nums; line-height:1; transition:opacity 1.5s ease;">${pct} %</span>
+          <span id="battery-pct" style="font-size:38px; font-weight:500; color:${battColor}; font-variant-numeric:tabular-nums; line-height:1;">${pct} %</span>
         </div>
       </div>
     </div>
@@ -785,21 +791,12 @@ async function showGameOfLife(node) {
       } catch (e) { /* ignore */ }
     }
 
-    // Subtle opacity pulse — number "breathes"
-    setTimeout(() => {
-      const el = document.getElementById('battery-pct');
-      if (!el) return;
-      let dim = false;
-      setInterval(() => {
-        dim = !dim;
-        el.style.opacity = dim ? '0.55' : '1';
-      }, 2500);
-    }, 2000);
+    // No animation — static number, trend adjusts color thresholds
   }
 
   // Skeleton se liší podle typu uzlu
   if (isMainNode) {
-    metricCard.innerHTML = _buildBatteryHTML(vitalityPct, goalLabel);
+    metricCard.innerHTML = _buildBatteryHTML(vitalityPct, goalLabel, 'stable');
   } else {
     metricCard.innerHTML = `
       <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Trend (30 dní)</div>
@@ -865,9 +862,11 @@ async function showGameOfLife(node) {
     </div>
   ` : '';
 
-  // 5b. Hlavní uzel → battery already rendered; ostatní uzly → sparkline
+  // 5b. Hlavní uzel → re-render battery with trend; ostatní uzly → sparkline
   if (isMainNode) {
-    // Battery is rendered in skeleton phase, no sparkline for main node
+    // Re-render battery now that trend data is available
+    const trendDir = trend.arrow === '↗️' ? 'up' : trend.arrow === '↘️' ? 'down' : 'stable';
+    metricCard.innerHTML = _buildBatteryHTML(vitalityPct, goalLabel, trendDir);
   } else {
     // 1 bod stačí – zduplikujeme ho aby drawMiniTrend měl co nakreslit (plochá čára = stabilní)
     const hasData = trend.numeric?.length >= 1;
