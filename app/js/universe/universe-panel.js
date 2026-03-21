@@ -939,12 +939,32 @@ async function showGameOfLife(node) {
   let skillLevel = null;
 
   if (!isMainNode) {
+    // Load user constraints for filtering (e.g. knee → no squats)
+    const userConstraints = (window.USER_CONSTRAINTS || [])
+      .map(c => {
+        try {
+          const val = typeof c.constraint_value === 'string' ? JSON.parse(c.constraint_value) : c.constraint_value;
+          return val?.location?.toLowerCase() || '';
+        } catch { return ''; }
+      })
+      .filter(Boolean)
+      .map(loc => {
+        // Map Czech constraint locations to exercise avoid tags
+        if (loc.includes('kolen')) return 'koleno';
+        if (loc.includes('kotník') || loc.includes('kotnik')) return 'kotnik';
+        if (loc.includes('záda') || loc.includes('zada') || loc.includes('záď')) return 'zada_akutni';
+        if (loc.includes('ramen')) return 'rameno';
+        if (loc.includes('zápěst') || loc.includes('zapest')) return 'zapesti';
+        if (loc.includes('loket') || loc.includes('lokt')) return 'rameno'; // elbow → treat as upper body
+        return loc;
+      });
+
     // Try skill router first (progressive difficulty, constraint-aware)
     const skillResult = runSkill({
       nodeId: node.id,
       state: node.state || 'YELLOW',
       streak: streakCount,
-      constraints: [],  // TODO: load from user_constraints table
+      constraints: userConstraints,
     });
 
     if (skillResult) {

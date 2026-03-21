@@ -239,7 +239,7 @@ async function loadAndRenderModel(modelName, role) {
     if (!uid || uid === 'demo-user-123') return;
     const { data } = await window.supabaseClient
       .from('user_constraints')
-      .select('constraint_key, severity')
+      .select('constraint_key, constraint_value, severity')
       .eq('user_id', uid)
       .eq('constraint_type', 'injury');
     window.USER_CONSTRAINTS = data || [];
