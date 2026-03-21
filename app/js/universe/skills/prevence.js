@@ -10,7 +10,7 @@ const EXERCISES = {
   slunce:       { id: 'slunce',      label: 'Hned ráno jdi ven na denní světlo', icon: '☀️', area: 'imunitni', avoid: [], tier: 1, type: 'timed' },
 
   // === STUDENÁ EXPOZICE ===
-  studenaSprcha:{ id: 'cold_30',     label: 'Na konci sprchyotoč na studenou a vydrž', icon: '🚿', area: 'imunitni', avoid: [], tier: 1, type: 'timed' },
+  studenaSprcha:{ id: 'cold_30',     label: 'Na konci sprchy otoč na studenou a vydrž', icon: '🚿', area: 'imunitni', avoid: [], tier: 1, type: 'timed' },
   studenaSprcha2:{ id: 'cold_60',    label: 'Celou minutu pod studenou sprchou', icon: '🚿', area: 'imunitni', avoid: [], tier: 2, type: 'timed' },
 
   // === REGENERACE ===
