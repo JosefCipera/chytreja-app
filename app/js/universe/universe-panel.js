@@ -663,7 +663,7 @@ function _buildBatteryHTML(state, bioAgeResult) {
   const stateLabelColor = state === 'RED' ? '#ef4444' : '#64748b';
   return `
     <div style="text-align:center; padding:12px 0 4px;">
-      ${bioAgeResult ? `<div style="font-size:13px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:20px;">Tvůj biologický věk — <span style="color:${bioAgeResult.offset > 0 ? '#ef4444' : bioAgeResult.offset < 0 ? '#22c55e' : '#94a3b8'};font-weight:800;font-size:16px;">${bioAgeResult.bioAge} let</span></div>` : ''}
+      <!-- bio-age removed from battery -->
       <div style="display:inline-flex; flex-direction:column; align-items:center;">
         <div style="
           width:22px; height:11px;
