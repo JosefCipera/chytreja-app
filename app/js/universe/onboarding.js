@@ -79,7 +79,27 @@ export const onboardingQuestions = [
     help: 'Vyčerpaný=1, lehce unavený=5, čerstvý=10'
   },
 
-  // ── Demographics ──────────────────────────────────
+  // ── Dekathlon (Attia) ─────────────────────────────
+  {
+    id: 'grip', type: 'slider', category: 'health',
+    q: 'Jak silný je tvůj stisk ruky?',
+    desc: 'Síla stisku predikuje dlouhověkost.',
+    help: 'Neudržíš tašku=1, normální=5, drtivý stisk=10'
+  },
+  {
+    id: 'dead_hang', type: 'slider', category: 'health',
+    q: 'Jak dlouho vydrží viset na hrazdě?',
+    desc: 'Dead hang = síla horní části těla.',
+    help: '0s=1, 10s=3, 30s=6, 60s+=10'
+  },
+  {
+    id: 'floor_get_up', type: 'slider', category: 'health',
+    q: 'Jak lehce vstaneš ze země bez pomoci rukou?',
+    desc: 'Test funkční síly celého těla.',
+    help: 'Nezvládnu=1, s obtížemi=5, lehce=10'
+  },
+
+  // ── Demographics + body ─────────────────────────────
   {
     id: 'birth_year', type: 'number', category: 'demographic',
     q: 'Rok tvého narození?',
@@ -95,27 +115,44 @@ export const onboardingQuestions = [
       { value: 'male',   label: 'Muž' },
       { value: 'female', label: 'Žena' }
     ]
+  },
+  {
+    id: 'height', type: 'number', category: 'demographic',
+    q: 'Kolik měříš? (cm)',
+    desc: 'Pro výpočet BMI a referenčních hodnot.',
+    placeholder: 'Např. 178',
+    min: 140, max: 220
+  },
+  {
+    id: 'weight', type: 'number', category: 'demographic',
+    q: 'Kolik vážíš? (kg)',
+    desc: 'Váha v kombinaci s výškou ovlivňuje metabolické zdraví.',
+    placeholder: 'Např. 82',
+    min: 35, max: 200
   }
 ];
 
-const TOTAL_STEPS = onboardingQuestions.length; // 13
+const TOTAL_STEPS = onboardingQuestions.length; // 18 (14 health + 4 demographic)
 
 // =====================================================
 // THRESHOLDY (health slider → semafor)
 // =====================================================
 
 const thresholds = {
-  'stabilita':     { red: [1,2,3],     yellow: [4,5,6],   green: [7,8,9,10] },
-  'sila':          { red: [1,2,3],     yellow: [4,5,6,7], green: [8,9,10] },
-  'vytrvalost':    { red: [1,2,3,4],   yellow: [5,6,7],   green: [8,9,10] },
-  'spanek':        { red: [1,2,3,4],   yellow: [5,6,7],   green: [8,9,10] },
-  'metabolicke':   { red: [1,2,3],     yellow: [4,5,6],   green: [7,8,9,10] },
-  'bílkoviny':     { red: [1,2,3,4],   yellow: [5,6,7],   green: [8,9,10] },
-  'klid':          { red: [1,2,3,4],   yellow: [5,6,7],   green: [8,9,10] },
-  'mobilita':      { red: [1,2,3],     yellow: [4,5,6],   green: [7,8,9,10] },
-  'nervovy_system':{ red: [1,2,3,4],   yellow: [5,6,7],   green: [8,9,10] },
-  'smysl':         { red: [1,2,3,4,5], yellow: [6,7,8],   green: [9,10] },
-  'vo2max':        { red: [1,2,3,4],   yellow: [5,6,7],   green: [8,9,10] }
+  'stabilita':      { red: [1,2,3],     yellow: [4,5,6],   green: [7,8,9,10] },
+  'sila':           { red: [1,2,3],     yellow: [4,5,6,7], green: [8,9,10] },
+  'vytrvalost':     { red: [1,2,3,4],   yellow: [5,6,7],   green: [8,9,10] },
+  'spanek':         { red: [1,2,3,4],   yellow: [5,6,7],   green: [8,9,10] },
+  'metabolicke':    { red: [1,2,3],     yellow: [4,5,6],   green: [7,8,9,10] },
+  'bílkoviny':      { red: [1,2,3,4],   yellow: [5,6,7],   green: [8,9,10] },
+  'klid':           { red: [1,2,3,4],   yellow: [5,6,7],   green: [8,9,10] },
+  'mobilita':       { red: [1,2,3],     yellow: [4,5,6],   green: [7,8,9,10] },
+  'nervovy_system': { red: [1,2,3,4],   yellow: [5,6,7],   green: [8,9,10] },
+  'smysl':          { red: [1,2,3,4,5], yellow: [6,7,8],   green: [9,10] },
+  'vo2max':         { red: [1,2,3,4],   yellow: [5,6,7],   green: [8,9,10] },
+  'grip':           { red: [1,2,3],     yellow: [4,5,6],   green: [7,8,9,10] },
+  'dead_hang':      { red: [1,2,3],     yellow: [4,5,6,7], green: [8,9,10] },
+  'floor_get_up':   { red: [1,2,3],     yellow: [4,5,6],   green: [7,8,9,10] },
 };
 
 // =====================================================
@@ -494,6 +531,8 @@ async function saveOnboarding() {
 
     // 1b. Calculate parent node states (worst child rule)
     const parentMap = {
+      sila:         ['grip', 'dead_hang'],
+      stabilita:    ['floor_get_up'],
       telo:         ['sila', 'vytrvalost', 'stabilita', 'mobilita', 'vo2max'],
       mysl:         ['nervovy_system', 'klid', 'smysl'],
       vyziva:       ['bílkoviny'],
@@ -580,16 +619,20 @@ async function saveOnboarding() {
     }
     console.log(`  → ${grayNodes.length} nodes set to GRAY`);
 
-    // 2. Demographics → user_profile (birth_year, gender, age calculated)
+    // 2. Demographics → user_profile (birth_year, gender, height, weight)
     const birthYear = userAnswers['birth_year'];
     const gender    = userAnswers['sex'];
-    if (birthYear !== undefined || gender !== undefined) {
+    const height    = userAnswers['height'];
+    const weight    = userAnswers['weight'];
+    if (birthYear !== undefined || gender !== undefined || height !== undefined || weight !== undefined) {
       const profilePatch = {};
       if (birthYear !== undefined) {
         profilePatch.birth_year = Number(birthYear);
         profilePatch.age = new Date().getFullYear() - Number(birthYear);
       }
       if (gender !== undefined) profilePatch.gender = gender;
+      if (height !== undefined) profilePatch.height = Number(height);
+      if (weight !== undefined) profilePatch.weight = Number(weight);
       console.log('  → user_profile demographics:', profilePatch);
       const { error } = await supabase.from('user_profiles').upsert({
         user_id: userId,
