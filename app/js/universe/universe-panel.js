@@ -654,57 +654,80 @@ function showToast(msg) {
 // =====================================================
 
 /** Generuje HTML baterie pro hlavní uzel (state = GREEN / YELLOW / RED / jiný). */
-function _buildMainNodeHTML(state, vitalityIndex, targetAge, currentAge) {
-  // HUD health bar — game style "remaining life"
-  const color  = state === 'GREEN' ? '#22c55e' : state === 'YELLOW' ? '#eab308' : '#ef4444';
-  const glow   = state === 'GREEN' ? 'rgba(34,197,94,0.5)' : state === 'YELLOW' ? 'rgba(234,179,8,0.5)' : 'rgba(239,68,68,0.5)';
-  const bgDark = state === 'GREEN' ? 'rgba(34,197,94,0.08)' : state === 'YELLOW' ? 'rgba(234,179,8,0.08)' : 'rgba(239,68,68,0.08)';
+function _buildBatteryHTML(vitality, neededForGoal, goalLabel) {
+  // Battery: fill = current vitality, color = ready for goal or not
+  // neededForGoal = how much vitality (0–100) you need for your aspiration
+  const fillPct = Math.max(3, Math.min(100, Math.round(vitality ?? 0)));
+  const needed = Math.round(neededForGoal ?? 70);
+  const gap = needed - fillPct;
 
-  // Vitality = avg current_index of child nodes (0–100)
-  const vitality = Math.round(vitalityIndex ?? 0);
-  const fillPct = Math.max(3, Math.min(100, vitality));
+  // Color based on readiness for goal
+  const ready = gap <= 0;
+  const close = gap > 0 && gap <= 20;
+  const battColor  = ready ? '#22c55e' : close ? '#eab308' : '#ef4444';
+  const battBorder = ready ? 'rgba(34,197,94,0.35)' : close ? 'rgba(234,179,8,0.35)' : 'rgba(239,68,68,0.35)';
+  const battGlow   = ready ? 'rgba(34,197,94,0.7)'  : close ? 'rgba(234,179,8,0.7)'  : 'rgba(239,68,68,0.7)';
 
-  // Remaining life estimate
-  const remaining = (targetAge && currentAge) ? targetAge - currentAge : null;
-  const vitalityLabel = vitality >= 70 ? 'Silná vitalita' : vitality >= 40 ? 'Vitalita drží' : 'Vitalita klesá';
+  const stateLabel = ready ? 'Na cíl připraven' : close ? 'Přidej energii' : 'Daleko od cíle';
+  const stateLabelColor = ready ? '#22c55e' : close ? '#eab308' : '#ef4444';
+
+  // "Need" marker position on battery (percentage from bottom)
+  const needPct = Math.max(5, Math.min(95, needed));
 
   return `
-    <div style="padding:16px 0 8px;">
-      <!-- Vitality number -->
-      <div style="display:flex; align-items:baseline; gap:8px; margin-bottom:14px;">
-        <span style="font-size:42px; font-weight:800; color:${color}; line-height:1; font-variant-numeric:tabular-nums;">${vitality}</span>
-        <span style="font-size:14px; color:#64748b; font-weight:500;">/ 100</span>
-        <span style="font-size:12px; color:${color}; margin-left:auto; text-transform:uppercase; letter-spacing:0.5px; font-weight:600;">${vitalityLabel}</span>
-      </div>
-      <!-- Health bar -->
-      <div style="
-        width:100%; height:18px;
-        background:rgba(255,255,255,0.06);
-        border-radius:9px;
-        overflow:hidden;
-        position:relative;
-        border:1px solid rgba(255,255,255,0.08);
-      ">
+    <div style="text-align:center; padding:12px 0 4px;">
+      ${goalLabel ? `<div style="font-size:12px;color:#64748b;margin-bottom:16px;">Cíl: <span style="color:#94a3b8;font-weight:600;">${goalLabel}</span></div>` : ''}
+      <div style="display:inline-flex; flex-direction:column; align-items:center;">
         <div style="
-          height:100%; width:${fillPct}%;
-          background:linear-gradient(90deg, ${color}cc, ${color});
-          box-shadow:0 0 16px ${glow};
-          border-radius:9px;
-          transition:width 1.2s ease;
-          position:relative;
+          width:22px; height:11px;
+          border:2px solid ${battBorder};
+          border-bottom:none;
+          border-radius:5px 5px 0 0;
+          background:linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04));
+        "></div>
+        <div style="
+          width:62px; height:140px;
+          border:2px solid ${battBorder};
+          border-radius:5px 5px 8px 8px;
+          background:rgba(8,8,18,0.6);
+          position:relative; overflow:hidden;
+          box-shadow:0 0 22px ${battBorder}, inset 0 0 12px rgba(0,0,0,0.4);
         ">
+          <!-- Fill = current vitality -->
           <div style="
-            position:absolute; top:2px; left:4px; right:4px; height:5px;
-            background:linear-gradient(180deg, rgba(255,255,255,0.25), transparent);
-            border-radius:4px;
+            position:absolute; bottom:0; left:0; right:0;
+            height:${fillPct}%;
+            background:linear-gradient(180deg, ${battColor}88, ${battColor}ee);
+            box-shadow:0 0 30px ${battGlow};
+            transition:height 1.5s ease;
           "></div>
+          <!-- Need marker = what goal requires -->
+          <div style="
+            position:absolute; left:0; right:0;
+            bottom:${needPct}%;
+            height:2px;
+            background:rgba(255,255,255,0.5);
+            box-shadow:0 0 4px rgba(255,255,255,0.3);
+          "></div>
+          <div style="
+            position:absolute; right:-30px;
+            bottom:calc(${needPct}% - 7px);
+            font-size:9px; color:rgba(255,255,255,0.5);
+            white-space:nowrap;
+          ">potřeba</div>
+          <!-- Glass reflection -->
+          <div style="
+            position:absolute; top:0; bottom:0; left:6px; width:9px;
+            background:linear-gradient(90deg, rgba(255,255,255,0.09), transparent);
+            border-radius:4px; pointer-events:none;
+          "></div>
+          <!-- Grid lines -->
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;justify-content:space-evenly;padding:10px 0;pointer-events:none;">
+            ${[0,1,2].map(() => `<div style="height:1px;background:rgba(255,255,255,0.06);margin:0 8px;"></div>`).join('')}
+          </div>
         </div>
       </div>
-      ${remaining ? `
-      <div style="display:flex; justify-content:space-between; margin-top:10px; font-size:12px; color:#64748b;">
-        <span>Cíl: <strong style="color:#94a3b8;">${targetAge} let</strong></span>
-        <span>Zbývá <strong style="color:${color};">${remaining} let</strong></span>
-      </div>` : ''}
+      <div style="margin-top:14px; font-size:13px; color:${stateLabelColor}; letter-spacing:0.5px; font-weight:600;">${stateLabel}</div>
     </div>
   `;
 }
@@ -748,9 +771,9 @@ async function showGameOfLife(node) {
   `;
 
   // Vitality: avg current_index of colored child nodes
-  let vitalityIndex = null;
-  let targetAge = 100; // default, later from aspirations
-  let currentAge = null;
+  let vitalityIndex = 0;
+  let neededForGoal = 70; // default
+  let goalLabel = null;
   if (isMainNode) {
     const allNodes = window.MAIN_UNIVERSE_DATA || [];
     const children = allNodes.filter(n => n.parent === 'dlouhovekost' && n.state && n.state !== 'GRAY');
@@ -758,19 +781,40 @@ async function showGameOfLife(node) {
       const sum = children.reduce((s, n) => s + (n.current_index ?? 50), 0);
       vitalityIndex = sum / children.length;
     }
-    // Fetch age for "remaining life"
+    // Fetch age + aspiration for goal-based need
     if (userId !== 'demo-user-123' && window.supabaseClient) {
       try {
-        const { data: profile } = await window.supabaseClient
-          .from('user_profiles').select('age').eq('user_id', userId).maybeSingle();
-        if (profile?.age) currentAge = profile.age;
-      } catch (e) { /* ignore */ }
+        const sb = window.supabaseClient;
+        const [{ data: profile }, { data: aspRow }] = await Promise.all([
+          sb.from('user_profiles').select('age').eq('user_id', userId).maybeSingle(),
+          sb.from('user_aspirations').select('aspiration_type').eq('user_id', userId).maybeSingle(),
+        ]);
+        const currentAge = profile?.age || 36;
+        // Goal labels
+        const GOAL_LABELS = {
+          bezky_v_85: 'Běžky v 85',
+          ironman_v_70: 'Ironman v 70',
+          vnouci: 'Hrát si s vnouky',
+          samostatnost_v_90: 'Samostatnost v 90',
+          default: 'Aktivní dlouhověkost',
+        };
+        const aspType = aspRow?.aspiration_type || 'default';
+        goalLabel = GOAL_LABELS[aspType] || GOAL_LABELS.default;
+        // Need calculation: base + age factor + goal ambition
+        // Higher age → more effort needed (sarcopenia, declining VO2max)
+        // More ambitious goal → higher bar
+        const GOAL_AMBITION = { bezky_v_85: 75, ironman_v_70: 85, vnouci: 60, samostatnost_v_90: 70, default: 65 };
+        const baseNeed = GOAL_AMBITION[aspType] || 65;
+        // Age modifier: after 40, need increases ~0.5 per year
+        const ageBoost = Math.max(0, (currentAge - 40) * 0.5);
+        neededForGoal = Math.min(95, Math.round(baseNeed + ageBoost));
+      } catch (e) { /* ignore, use defaults */ }
     }
   }
 
   // Skeleton se liší podle typu uzlu
   if (isMainNode) {
-    metricCard.innerHTML = _buildMainNodeHTML(node.state, vitalityIndex, targetAge, currentAge);
+    metricCard.innerHTML = _buildBatteryHTML(vitalityIndex, neededForGoal, goalLabel);
   } else {
     metricCard.innerHTML = `
       <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Trend (30 dní)</div>
