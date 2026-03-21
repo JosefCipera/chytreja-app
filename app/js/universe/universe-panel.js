@@ -654,24 +654,19 @@ function showToast(msg) {
 // =====================================================
 
 /** Generuje HTML baterie pro hlavní uzel (state = GREEN / YELLOW / RED / jiný). */
-function _buildBatteryHTML(vitalityPct, goalLabel, bottleneckLabel) {
+function _buildBatteryHTML(vitalityPct, goalLabel) {
   // Color by vitality %: >=85 GREEN, >=70 YELLOW, >=50 RED, <50 GRAY
   const pct = Math.round(vitalityPct ?? 60);
   const fillPct = Math.max(3, Math.min(100, pct));
   const isGreen  = pct >= 85;
   const isYellow = pct >= 70 && pct < 85;
   const isRed    = pct >= 50 && pct < 70;
-  // <50 = GRAY (unknown/caution)
 
   const battColor  = isGreen ? '#22c55e' : isYellow ? '#eab308' : isRed ? '#ef4444' : '#6b7280';
   const battBorder = isGreen ? 'rgba(34,197,94,0.35)' : isYellow ? 'rgba(234,179,8,0.35)' : isRed ? 'rgba(239,68,68,0.35)' : 'rgba(107,114,128,0.35)';
   const battGlow   = isGreen ? 'rgba(34,197,94,0.7)'  : isYellow ? 'rgba(234,179,8,0.7)'  : isRed ? 'rgba(239,68,68,0.7)'  : 'rgba(107,114,128,0.4)';
 
-  // Bottleneck text
-  const line1 = pct >= 85 ? 'Baterie nabita.' : pct >= 70 ? 'Baterie drží.' : 'Baterie klesla.';
-  const line2 = bottleneckLabel ? `Brzdí tě ${bottleneckLabel}.` : '';
-
-  // Jitter: add small noise to make it feel alive
+  // Jitter: small noise to make % feel alive
   const jitter = [0, 2, -1, 1, -2, 1][Math.floor(Date.now() / 1000) % 6];
   const displayPct = Math.max(0, Math.min(100, pct + jitter));
 
@@ -719,14 +714,6 @@ function _buildBatteryHTML(vitalityPct, goalLabel, bottleneckLabel) {
           <span id="battery-pct" style="font-size:38px; font-weight:800; color:${battColor}; font-variant-numeric:tabular-nums; line-height:1;">${displayPct} %</span>
         </div>
       </div>
-      <!-- Chip below with both lines -->
-      <div style="
-        margin-top:14px; padding:10px 16px;
-        background:rgba(255,255,255,0.03);
-        border:1px solid rgba(255,255,255,0.08);
-        border-radius:10px;
-        font-size:13px; color:#94a3b8;
-      ">${line1}${line2 ? ` ${line2}` : ''}</div>
     </div>
   `;
 }
@@ -816,7 +803,7 @@ async function showGameOfLife(node) {
 
   // Skeleton se liší podle typu uzlu
   if (isMainNode) {
-    metricCard.innerHTML = _buildBatteryHTML(vitalityPct, goalLabel, bottleneckLabel);
+    metricCard.innerHTML = _buildBatteryHTML(vitalityPct, goalLabel);
   } else {
     metricCard.innerHTML = `
       <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Trend (30 dní)</div>
@@ -932,25 +919,23 @@ async function showGameOfLife(node) {
   // Animované bubliny pro všechny uzly (1–3 věty z AI)
   const verdictLines = verdict?.lines?.length >= 1 ? verdict.lines : null;
 
-  // Hlavní uzel: 1. bublina (bio-věk) + 2 AI věty (bottleneck + sen)
-  // Sub-uzly: jen AI věty
-  let BIO_AGE_TEXT;
-  if (bioAgeResult) {
-    const { bioAge, chronologicalAge, offset } = bioAgeResult;
-    if (offset > 5) {
-      BIO_AGE_TEXT = `Tělo se cítí na ${bioAge} let, i když ti je ${chronologicalAge}. Baterie ti zbytečně přidává roky.`;
-    } else if (offset > 0) {
-      BIO_AGE_TEXT = `Tělo je na ${bioAge} let — mírně nad tvých ${chronologicalAge}. Je co zlepšovat.`;
-    } else if (offset === 0) {
-      BIO_AGE_TEXT = `Biologicky jsi přesně na svůj věk — ${bioAge} let. Držíš tempo.`;
-    } else {
-      BIO_AGE_TEXT = `Tělo je na ${bioAge} let, i když ti je ${chronologicalAge}. Jsi mladší než říká občanka.`;
-    }
-  } else {
-    BIO_AGE_TEXT = null;
+  // Hlavní uzel: 1. chip = stav baterie + bottleneck (z _buildBatteryHTML logiky)
+  // Sub-uzly: jen AI věty (verdict)
+  let BATTERY_STATUS_TEXT = null;
+  if (isMainNode) {
+    const pct = Math.round(vitalityPct ?? 60);
+    const statusLine = pct >= 85 ? 'Baterie nabita.' : pct >= 70 ? 'Baterie drží.' : 'Baterie klesla.';
+    const NODE_LABELS_CHJ = { telo: 'tělo', mysl: 'hlava', vyziva: 'strava', zdravi: 'zdraví', metabolicke: 'metabolismus' };
+    const allNodes = window.MAIN_UNIVERSE_DATA || [];
+    const children = allNodes.filter(n => n.parent === 'dlouhovekost' && n.state && n.state !== 'GRAY');
+    const worst = children
+      .filter(n => n.current_index != null)
+      .sort((a, b) => (a.current_index ?? 100) - (b.current_index ?? 100))[0];
+    const bnLabel = worst ? (NODE_LABELS_CHJ[worst.id] || worst.label || worst.id) : null;
+    BATTERY_STATUS_TEXT = bnLabel ? `${statusLine} Brzdí tě ${bnLabel}.` : statusLine;
   }
   const displayLines = isMainNode
-    ? [BIO_AGE_TEXT, ...(verdictLines || [])].filter(Boolean)
+    ? [BATTERY_STATUS_TEXT, ...(verdictLines || [])].filter(Boolean)
     : (verdictLines || null);
 
   // 7. Chip labely
