@@ -510,15 +510,15 @@ Pokud SEN chybí: jen killer + oblast, bez aspirace.
 Pokud KILLER chybí: "Zatím jedete dobře — ale někde se trhlina teprve tvoří."
 Výstup: 1 věta, nic víc.
 
-PŘÍKLADY hlavní uzel:
-metabolicke + cukrovka + běžky v 85:
-Kde metabolismus ztrácí rytmus, cukrovka přebírá vládu — a ty běžky v 85 se s ní nepoběží.
+PŘÍKLADY hlavní uzel (SEN dosadíš z kontextu):
+metabolicke + cukrovka + SEN:
+Kde metabolismus ztrácí rytmus, cukrovka přebírá vládu — a tvůj sen se s ní neplní.
 
-telo + infarkt + běžky v 85:
-Svaly slábnou, srdce to odnáší — a bez silného těla ty běžky v 85 zůstanou jen snem.
+telo + infarkt + SEN:
+Svaly slábnou, srdce to odnáší — a bez silného těla tvůj sen zůstane jen snem.
 
-mysl + demence + běžky v 85:
-Mozek bez tréninku stárne a demence nerespektuje plány na běžky v 85.
+mysl + demence (bez SEN):
+Mozek bez tréninku stárne a demence nerespektuje žádné plány.
 
 PODŘÍZENÝ UZEL:
 Napiš 2 bubliny oddělené |.
@@ -529,20 +529,20 @@ Pokud ani KILLER ani SEN: jen bublina 1.
 Výstup: 1–2 bubliny oddělené |, nic víc.
 
 PŘÍKLADY — výstup musí vypadat přesně takto (bez uvozovek, odděleno |):
-metabolicke RED + cukrovka + běžky v 85:
-Metabolismus glukózy je v chaosu. Pálíš vlastní budoucnost místo paliva. | Cukrovka neničí jen krev a orgány — vypíná nervy v nohách. Pokud ji nezastavíš, v 85 letech ty běžky ani neucítíš.
+metabolicke RED + cukrovka + SEN:
+Metabolismus glukózy je v chaosu. Pálíš vlastní budoucnost místo paliva. | Cukrovka neničí jen krev a orgány — vypíná nervy v nohách. Pokud ji nezastavíš, tvůj sen zůstane nedosažitelný.
 
-zdravi RED + rakovina + běžky v 85:
-Prevence ti nefunguje — tělo se nestíhá bránit. | Rakovina se živí tam, kde obranyschopnost chybí. Bez prevence ji necháš vyrůst v klidu — a v 85 nebudeš na běžkách, budeš někde úplně jinde.
+zdravi RED + rakovina + SEN:
+Prevence ti nefunguje — tělo se nestíhá bránit. | Rakovina se živí tam, kde obranyschopnost chybí. Bez prevence ji necháš vyrůst v klidu.
 
-telo RED + infarkt + běžky v 85:
-Síla a svaly nestačí na nic, co od těla čekáš. | Slabé svaly dřou srdce víc, než si myslíš. Infarkt si nehledá oběti mezi silnými — a ty běžky v 85 si zaslouží silné tělo.
+telo RED + infarkt + SEN:
+Síla a svaly nestačí na nic, co od těla čekáš. | Slabé svaly dřou srdce víc, než si myslíš. Infarkt si nehledá oběti mezi silnými.
 
 vyziva YELLOW + cukrovka (bez SEN):
 Strava kolísá — metabolismus to zvládá, ale jen tak tak. | Každý výkyv cukru je cihla navíc pro cukrovku.
 
-mysl RED + demence + běžky v 85:
-Pozornost a paměť se ztrácejí dřív, než to sám vnímáš. | Demence si neříká — prostě přichází tam, kde mozek přestal pracovat. Na běžky v 85 potřebuješ hlavu, ne jen nohy.
+mysl RED + demence + SEN:
+Pozornost a paměť se ztrácejí dřív, než to sám vnímáš. | Demence si neříká — prostě přichází tam, kde mozek přestal pracovat.
 
 PRAVIDLA:
 - Česky, tykej, přímočaře

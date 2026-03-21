@@ -6,7 +6,7 @@
 import { supabase } from './supabaseClient.js';
 
 // ─── State ────────────────────────────────────────
-let activeTab   = 'constraints';
+let activeTab   = 'profile';
 let cachedData  = null;   // { profile, constraints, aspiration, aspirationOptions }
 let userId      = null;
 
