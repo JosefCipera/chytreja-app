@@ -678,54 +678,57 @@ function _buildBatteryHTML(vitalityPct, goalLabel, bottleneckLabel) {
   return `
     <div style="padding:12px 0 4px;">
       ${goalLabel ? `<div style="font-size:13px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:16px;">Cíl: držet nad 80 % <span style="color:#64748b;">· ${goalLabel}</span></div>` : `<div style="font-size:13px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:16px;">Cíl: držet nad 80 %</div>`}
-      <!-- Battery with % centered -->
-      <div style="display:flex; align-items:center; justify-content:center; position:relative;">
-        <div style="display:inline-flex; flex-direction:column; align-items:center; position:relative;">
-          <div style="
-            width:22px; height:11px;
-            border:2px solid ${battBorder};
-            border-bottom:none;
-            border-radius:5px 5px 0 0;
-            background:linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04));
-          "></div>
-          <div style="
-            width:62px; height:140px;
-            border:2px solid ${battBorder};
-            border-radius:5px 5px 8px 8px;
-            background:rgba(8,8,18,0.6);
-            position:relative; overflow:hidden;
-            box-shadow:0 0 22px ${battBorder}, inset 0 0 12px rgba(0,0,0,0.4);
-          ">
+      <div style="text-align:center;">
+        <!-- Battery + % side by side -->
+        <div style="display:inline-flex; align-items:center; gap:18px;">
+          <!-- Battery -->
+          <div style="display:inline-flex; flex-direction:column; align-items:center;">
             <div style="
-              position:absolute; bottom:0; left:0; right:0;
-              height:${fillPct}%;
-              background:linear-gradient(180deg, ${battColor}88, ${battColor}ee);
-              box-shadow:0 0 30px ${battGlow};
-              transition:height 1.5s ease;
+              width:22px; height:11px;
+              border:2px solid ${battBorder};
+              border-bottom:none;
+              border-radius:5px 5px 0 0;
+              background:linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04));
             "></div>
             <div style="
-              position:absolute; top:0; bottom:0; left:6px; width:9px;
-              background:linear-gradient(90deg, rgba(255,255,255,0.09), transparent);
-              border-radius:4px; pointer-events:none;
-            "></div>
-            <div style="position:absolute;inset:0;display:flex;flex-direction:column;justify-content:space-evenly;padding:10px 0;pointer-events:none;">
-              ${[0,1,2].map(() => `<div style="height:1px;background:rgba(255,255,255,0.06);margin:0 8px;"></div>`).join('')}
-            </div>
-            <!-- % centered vertically inside battery -->
-            <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:2;">
-              <span id="battery-pct" style="font-size:16px; font-weight:800; color:#fff; text-shadow:0 1px 4px rgba(0,0,0,0.7); font-variant-numeric:tabular-nums;">${displayPct}%</span>
+              width:62px; height:140px;
+              border:2px solid ${battBorder};
+              border-radius:5px 5px 8px 8px;
+              background:rgba(8,8,18,0.6);
+              position:relative; overflow:hidden;
+              box-shadow:0 0 22px ${battBorder}, inset 0 0 12px rgba(0,0,0,0.4);
+            ">
+              <div style="
+                position:absolute; bottom:0; left:0; right:0;
+                height:${fillPct}%;
+                background:linear-gradient(180deg, ${battColor}88, ${battColor}ee);
+                box-shadow:0 0 30px ${battGlow};
+                transition:height 1.5s ease;
+              "></div>
+              <div style="
+                position:absolute; top:0; bottom:0; left:6px; width:9px;
+                background:linear-gradient(90deg, rgba(255,255,255,0.09), transparent);
+                border-radius:4px; pointer-events:none;
+              "></div>
+              <div style="position:absolute;inset:0;display:flex;flex-direction:column;justify-content:space-evenly;padding:10px 0;pointer-events:none;">
+                ${[0,1,2].map(() => `<div style="height:1px;background:rgba(255,255,255,0.06);margin:0 8px;"></div>`).join('')}
+              </div>
             </div>
           </div>
+          <!-- % next to battery, vertically centered -->
+          <span id="battery-pct" style="font-size:38px; font-weight:800; color:${battColor}; font-variant-numeric:tabular-nums; line-height:1;">${displayPct} %</span>
         </div>
+        <!-- Label under battery -->
+        <div style="margin-top:14px; font-size:13px; color:${battColor}; letter-spacing:0.5px;">${line1}</div>
       </div>
-      <!-- Bottleneck chip below battery -->
-      <div style="
-        margin-top:14px; padding:10px 14px;
-        background:${battColor}12;
-        border:1px solid ${battColor}30;
+      <!-- Bottleneck chip below -->
+      ${line2 ? `<div style="
+        margin-top:12px; padding:10px 16px;
+        background:rgba(255,255,255,0.03);
+        border:1px solid rgba(255,255,255,0.08);
         border-radius:10px;
-        font-size:13px; color:#94a3b8; text-align:center;
-      ">${line1}${line2 ? ` ${line2}` : ''}</div>
+        font-size:13px; color:#94a3b8;
+      ">${line2}</div>` : ''}
     </div>
   `;
 }
