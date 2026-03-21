@@ -111,40 +111,10 @@ export const onboardingQuestions = [
     help: 'Bolí záda=1, s obtížemi=5, čistě=10'
   },
 
-  // ── Demographics + body ─────────────────────────────
-  {
-    id: 'birth_year', type: 'number', category: 'demographic',
-    q: 'Rok tvého narození?',
-    desc: 'Pro výpočet bio-věku potřebujeme znát tvůj skutečný věk.',
-    placeholder: 'Např. 1975',
-    min: 1930, max: 2010
-  },
-  {
-    id: 'sex', type: 'buttons', category: 'demographic',
-    q: 'Jaké máš pohlaví?',
-    desc: 'Referenční hodnoty se liší podle pohlaví.',
-    options: [
-      { value: 'male',   label: 'Muž' },
-      { value: 'female', label: 'Žena' }
-    ]
-  },
-  {
-    id: 'height', type: 'number', category: 'demographic',
-    q: 'Kolik měříš? (cm)',
-    desc: 'Pro výpočet BMI a referenčních hodnot.',
-    placeholder: 'Např. 178',
-    min: 140, max: 220
-  },
-  {
-    id: 'weight', type: 'number', category: 'demographic',
-    q: 'Kolik vážíš? (kg)',
-    desc: 'Váha v kombinaci s výškou ovlivňuje metabolické zdraví.',
-    placeholder: 'Např. 82',
-    min: 35, max: 200
-  }
+  // Demographics (birth_year, sex, height, weight) are in Profile settings — no duplicates here
 ];
 
-const TOTAL_STEPS = onboardingQuestions.length; // 18 (14 health + 4 demographic)
+const TOTAL_STEPS = onboardingQuestions.length; // 14 health questions only
 
 // =====================================================
 // THRESHOLDY (health slider → semafor)
@@ -385,8 +355,7 @@ export function renderOnboarding() {
 
   // Section label for context switch
   const sectionLabels = {
-    health: '',
-    demographic: '📋 O tobě'
+    health: ''
   };
   const sectionLabel = sectionLabels[q.category] || '';
   const isLastStep = currentStep === TOTAL_STEPS - 1;
@@ -633,29 +602,13 @@ async function saveOnboarding() {
     }
     console.log(`  → ${grayNodes.length} nodes set to GRAY`);
 
-    // 2. Demographics → user_profile (birth_year, gender, height, weight)
-    const birthYear = userAnswers['birth_year'];
-    const gender    = userAnswers['sex'];
-    const height    = userAnswers['height'];
-    const weight    = userAnswers['weight'];
-    if (birthYear !== undefined || gender !== undefined || height !== undefined || weight !== undefined) {
-      const profilePatch = {};
-      if (birthYear !== undefined) {
-        profilePatch.birth_year = Number(birthYear);
-        profilePatch.age = new Date().getFullYear() - Number(birthYear);
-      }
-      if (gender !== undefined) profilePatch.gender = gender;
-      if (height !== undefined) profilePatch.height = Number(height);
-      if (weight !== undefined) profilePatch.weight = Number(weight);
-      console.log('  → user_profile demographics:', profilePatch);
-      const { error } = await supabase.from('user_profiles').upsert({
-        user_id: userId,
-        ...profilePatch
-      }, { onConflict: 'user_id' });
-      if (error) console.warn('⚠️ user_profile demographics:', error.message);
-    }
-
-    // Injuries + Aspiration: handled in Nastavení (user-data-panel.js), not onboarding
+    // Demographics (birth_year, sex, height, weight) → managed in Nastavení (Profile tab)
+    // Injuries + Aspiration → managed in Nastavení (other tabs)
+    // Create empty user_profiles row if not exists (so bio-age calc doesn't fail)
+    await supabase.from('user_profiles').upsert({
+      user_id: userId,
+      primary_goal: 'longevity',
+    }, { onConflict: 'user_id' }).catch(() => {});
 
     console.log('✅ Onboarding saved');
 
