@@ -1201,9 +1201,12 @@ async function showGameOfLife(node) {
           requestAnimationFrame(() => feedbackEl.style.opacity = '1');
 
           // 3. SECOND ACTION — fade-in after 1.5s (different node)
+          console.log('🎯 offerMore:', glResult.offerMore, 'todayCount:', glResult.todayCount, 'canDoMore:', glResult.canDoMore);
           if (glResult.offerMore) {
             // 20% chance: "Dnes stačí." (trust builder)
-            if (Math.random() < 0.2) {
+            const rng = Math.random();
+            console.log('🎲 RNG:', rng, rng < 0.2 ? '→ Dnes stačí' : '→ second action');
+            if (rng < 0.2) {
               setTimeout(() => {
                 const restEl = document.createElement('div');
                 restEl.style.cssText = `
@@ -1218,9 +1221,14 @@ async function showGameOfLife(node) {
               // Find second weakest node that has missions defined (different from current)
               const MISSION_NODES = new Set(Object.keys(DAILY_MISSIONS));
               const allNodes = window.MAIN_UNIVERSE_DATA || [];
-              const secondNode = allNodes
-                .filter(n => n.id !== node.id && MISSION_NODES.has(n.id) && n.state && n.state !== 'GRAY' && n.current_index != null)
+              console.log('🔍 MISSION_NODES:', [...MISSION_NODES]);
+              console.log('🔍 allNodes count:', allNodes.length, 'with state:', allNodes.filter(n => n.state && n.state !== 'GRAY').length);
+              const candidates = allNodes
+                .filter(n => n.id !== node.id && MISSION_NODES.has(n.id) && n.state && n.state !== 'GRAY' && n.current_index != null);
+              console.log('🔍 candidates:', candidates.map(n => `${n.id}(${n.state},idx=${n.current_index})`));
+              const secondNode = candidates
                 .sort((a, b) => (a.current_index ?? 100) - (b.current_index ?? 100))[0];
+              console.log('🔍 secondNode:', secondNode?.id, secondNode?.state);
 
               if (secondNode) {
                 const secondSkill = runSkill({
