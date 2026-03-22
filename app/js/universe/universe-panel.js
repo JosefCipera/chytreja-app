@@ -658,17 +658,17 @@ function _buildBatteryHTML(vitalityPct, goalLabel, trendDir) {
   // Color thresholds adjusted by trend direction
   // trendDir: 'up' | 'stable' | 'down'
   const THRESHOLDS = {
-    up:     { green: 90, yellow: 75, red: 55 },
-    stable: { green: 85, yellow: 70, red: 50 },
-    down:   { green: 80, yellow: 65, red: 45 },
+    up:     { green: 85, yellow: 75, red: 55 },
+    stable: { green: 80, yellow: 65, red: 50 },
+    down:   { green: 75, yellow: 60, red: 40 },
   };
   const t = THRESHOLDS[trendDir] || THRESHOLDS.stable;
 
   const pct = Math.round(vitalityPct ?? 60);
   const fillPct = Math.max(3, Math.min(100, pct));
   const isGreen  = pct >= t.green;
-  const isYellow = !isGreen && pct >= t.yellow;
-  const isRed    = !isGreen && !isYellow && pct >= t.red;
+  const isYellow = !isGreen && pct >= t.red;
+  const isRed    = !isGreen && !isYellow && pct > 0;
 
   const battColor  = isGreen ? '#22c55e' : isYellow ? '#eab308' : isRed ? '#ef4444' : '#6b7280';
   const battBorder = isGreen ? 'rgba(34,197,94,0.35)' : isYellow ? 'rgba(234,179,8,0.35)' : isRed ? 'rgba(239,68,68,0.35)' : 'rgba(107,114,128,0.35)';
@@ -679,7 +679,7 @@ function _buildBatteryHTML(vitalityPct, goalLabel, trendDir) {
       ${goalLabel ? `<div style="font-size:13px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:16px;">Cíl: držet nad 80 % <span style="color:#64748b;">· ${goalLabel}</span></div>` : `<div style="font-size:13px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:16px;">Cíl: držet nad 80 %</div>`}
       <div style="text-align:center;">
         <!-- Battery + % side by side -->
-        <div style="display:inline-flex; align-items:center; gap:8px;">
+        <div style="display:inline-flex; align-items:center; gap:16px;">
           <!-- Battery -->
           <div style="display:inline-flex; flex-direction:column; align-items:center;">
             <div style="
@@ -715,7 +715,7 @@ function _buildBatteryHTML(vitalityPct, goalLabel, trendDir) {
             </div>
           </div>
           <!-- % next to battery, vertically centered -->
-          <span id="battery-pct" style="font-size:38px; font-weight:500; color:${battColor}; font-variant-numeric:tabular-nums; line-height:1;">${pct} %</span>
+          <span id="battery-pct" style="font-size:38px; font-weight:500; color:${battColor}; font-variant-numeric:tabular-nums; line-height:1;">${pct}<span style="font-size:22px;margin-left:2px;">%</span></span>
         </div>
       </div>
     </div>
