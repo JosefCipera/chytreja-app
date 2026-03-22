@@ -7,7 +7,7 @@ import {
   DEMO_PREVIEWS, ACTIVE_MOTTOS, getDemoPreview,
   NODE_RIDERS, RIDER_ICONS, getRiders,
   VERDICT_TEXTS, KILLER_TEXTS, NODE_KILLERS, generateVerdict,
-  pickMission
+  DAILY_MISSIONS, pickMission
 } from './game-engine.js';
 
 import {
@@ -1215,10 +1215,11 @@ async function showGameOfLife(node) {
                 requestAnimationFrame(() => restEl.style.opacity = '1');
               }, 1500);
             } else {
-              // Find second weakest node (different from current)
+              // Find second weakest node that has missions defined (different from current)
+              const MISSION_NODES = new Set(Object.keys(DAILY_MISSIONS));
               const allNodes = window.MAIN_UNIVERSE_DATA || [];
               const secondNode = allNodes
-                .filter(n => n.id !== node.id && n.parent === 'dlouhovekost' && n.state && n.state !== 'GRAY' && n.current_index != null)
+                .filter(n => n.id !== node.id && MISSION_NODES.has(n.id) && n.state && n.state !== 'GRAY' && n.current_index != null)
                 .sort((a, b) => (a.current_index ?? 100) - (b.current_index ?? 100))[0];
 
               if (secondNode) {
