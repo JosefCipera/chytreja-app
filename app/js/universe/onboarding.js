@@ -474,8 +474,9 @@ async function saveOnboarding() {
     for (const q of onboardingQuestions.filter(q => q.category === 'health')) {
       const value = userAnswers[q.id];
       if (value === undefined) continue;
-      const state = getState(q.id, value);
       const currentIndex = value * 10; // slider 1-10 → index 0-100
+      // State always derived from index — single source of truth
+      const state = currentIndex <= 40 ? 'RED' : currentIndex <= 70 ? 'YELLOW' : 'GREEN';
       console.log(`  → ${q.id}: ${value} → ${state} (index: ${currentIndex})`);
 
       // node_inputs
@@ -536,8 +537,6 @@ async function saveOnboarding() {
           worstState = cs;
         }
       }
-      nodeStates[parent] = worstState;
-
       // Average index from children for parent
       const childIndices = children
         .map(c => userAnswers[c] !== undefined ? userAnswers[c] * 10 : null)
@@ -546,15 +545,22 @@ async function saveOnboarding() {
         ? Math.round(childIndices.reduce((a, b) => a + b, 0) / childIndices.length)
         : 50;
 
+      // State from worst child, but validate against index
+      const indexState = avgIndex <= 40 ? 'RED' : avgIndex <= 70 ? 'YELLOW' : 'GREEN';
+      // Use worse of worst-child and index-based state
+      const stateOrderMap = { RED: 3, YELLOW: 2, GREEN: 1 };
+      const parentState = (stateOrderMap[worstState] || 0) >= (stateOrderMap[indexState] || 0) ? worstState : indexState;
+      nodeStates[parent] = parentState;
+
       const { error: pErr } = await supabase.from('user_metrics').upsert({
         user_id: userId,
         node_id: parent,
         universe: 'longevity',
         current_index: avgIndex,
-        state: worstState
+        state: parentState
       }, { onConflict: 'user_id,node_id,universe' });
       if (pErr) console.warn(`⚠️ parent user_metrics(${parent}):`, pErr.message);
-      console.log(`  → parent ${parent}: worst=${worstState}, avgIndex=${avgIndex}`);
+      console.log(`  → parent ${parent}: state=${parentState}, avgIndex=${avgIndex}`);
     }
 
     // Second pass: hlavní uzel (dlouhovekost)
@@ -569,13 +575,16 @@ async function saveOnboarding() {
       const parentIndices = parentMap.dlouhovekost
         .map(c => nodeStates[c] ? (stateOrder[nodeStates[c]] === 3 ? 25 : stateOrder[nodeStates[c]] === 2 ? 55 : 85) : 50);
       const avgIndex = Math.round(parentIndices.reduce((a, b) => a + b, 0) / parentIndices.length);
+      // Validate state against index
+      const dlIndexState = avgIndex <= 40 ? 'RED' : avgIndex <= 70 ? 'YELLOW' : 'GREEN';
+      const dlState = (stateOrder[worstState] || 0) >= (stateOrder[dlIndexState] || 0) ? worstState : dlIndexState;
 
       const { error: mErr } = await supabase.from('user_metrics').upsert({
         user_id: userId,
         node_id: 'dlouhovekost',
         universe: 'longevity',
         current_index: avgIndex,
-        state: worstState
+        state: dlState
       }, { onConflict: 'user_id,node_id,universe' });
       if (mErr) console.warn(`⚠️ user_metrics(dlouhovekost):`, mErr.message);
       console.log(`  → hlavní uzel: worst=${worstState}, avgIndex=${avgIndex}`);
