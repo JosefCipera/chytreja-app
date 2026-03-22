@@ -1162,14 +1162,7 @@ async function showGameOfLife(node, options = {}) {
         const result = await resp.json();
         console.log('✅ Mission saved:', mission.id, 'streak:', result.streak);
 
-        // 1. TOAST — mikro-odměna (okamžitě)
-        const toastTexts = ['✔ Zásah.', '✔ Stabilizováno.', '✔ Držíš směr.', '✔ Dobrá volba.'];
-        const toastMsg = result.streak >= 3
-          ? `🔥 ${result.streak} ${result.streak < 5 ? 'dny' : 'dní'} držíš. Pokračuješ.`
-          : toastTexts[Math.floor(Math.random() * toastTexts.length)];
-        _showMissionToast(toastMsg, chjCard);
-
-        // 2. GAME LOOP — check impact
+        // GAME LOOP — check impact
         try {
           const glResp = await fetch('/api/mission-complete', {
             method: 'POST',
@@ -1219,7 +1212,7 @@ async function showGameOfLife(node, options = {}) {
                 restEl.textContent = 'Dnes stačí. 👍';
                 missionCard.appendChild(restEl);
                 requestAnimationFrame(() => restEl.style.opacity = '1');
-              }, 1500);
+              }, 3000);
             } else {
               // Find second weakest node that has missions defined (different from current)
               const MISSION_NODES = new Set(Object.keys(DAILY_MISSIONS));
@@ -1275,7 +1268,7 @@ async function showGameOfLife(node, options = {}) {
                         setTimeout(() => missionCard.remove(), 400);
                       });
                     }, 400);
-                  }, 1500);
+                  }, 3000);
                 }
               }
             }
