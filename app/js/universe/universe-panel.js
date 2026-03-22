@@ -1060,11 +1060,11 @@ async function showGameOfLife(node) {
 
   const missionHtml = mission ? `
     <div id="mission-card" style="
-      background:#0f172a; border:1px solid #1e293b;
+      background:#0f172a; border:1px solid #334155;
       border-radius:12px; padding:16px; margin-top:8px;
     ">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
-        <span style="color:#f8fafc;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Co dnes udělat</span>
+        <span style="color:#94a3b8;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Co dnes udělat</span>
         ${skillLevel ? `<span style="margin-left:auto;font-size:11px;color:#94a3b8;background:rgba(148,163,184,0.1);padding:2px 8px;border-radius:10px;">${skillLevel.name}</span>` : ''}
       </div>
       ${skillMotivation ? `<div style="color:#94a3b8;font-size:13px;font-style:italic;margin-bottom:10px;">${skillMotivation}</div>` : ''}
@@ -1244,31 +1244,29 @@ async function showGameOfLife(node) {
                   setTimeout(() => {
                     const NODE_LABELS_2 = { telo: 'tělo', mysl: 'hlavu', vyziva: 'stravu', zdravi: 'zdraví', metabolicke: 'metabolismus' };
                     const secondLabel = NODE_LABELS_2[secondNode.id] || secondNode.label || secondNode.id;
-                    const offerEl = document.createElement('div');
-                    offerEl.style.cssText = `
-                      margin-top:14px; padding:14px;
-                      background:#0f172a; border:1px solid #1e293b;
-                      border-radius:10px;
-                      opacity:0; transition: opacity 0.6s ease;
-                    `;
-                    offerEl.innerHTML = `
-                      <div style="color:#94a3b8;font-size:12px;margin-bottom:8px;">Chceš posílit ${secondLabel}?</div>
-                      <div style="color:#e2e8f0;font-size:14px;font-weight:500;margin-bottom:12px;">
-                        ${secondMission.icon} ${secondMission.label}${secondMission.target ? ` <span style="color:#64748b;">× ${secondMission.target}</span>` : ''}
-                      </div>
-                      <button id="second-action-btn" style="
-                        width:100%; padding:10px; border-radius:8px;
-                        border:1px solid rgba(96,165,250,0.3); background:rgba(96,165,250,0.08);
-                        color:#60a5fa; font-size:13px; font-weight:600; cursor:pointer;
-                      ">Pojďme na to</button>
-                    `;
-                    missionCard.appendChild(offerEl);
-                    requestAnimationFrame(() => offerEl.style.opacity = '1');
-
-                    offerEl.querySelector('#second-action-btn')?.addEventListener('click', () => {
-                      // Switch to second node's panel
-                      showPanel(secondNode);
-                    });
+                    const secondMotivation = secondSkill?.motivation || '';
+                    // Replace mission card content with second action
+                    missionCard.style.opacity = '0';
+                    setTimeout(() => {
+                      missionCard.innerHTML = `
+                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+                          <span style="color:#94a3b8;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Co dnes udělat</span>
+                        </div>
+                        <div style="color:#94a3b8;font-size:13px;font-style:italic;margin-bottom:10px;">Chceš posílit ${secondLabel}?</div>
+                        <div style="color:#e2e8f0;font-size:15px;font-weight:500;margin-bottom:16px;">
+                          ${secondMission.icon} ${secondMission.label}${secondMission.target ? ` <span style="color:#64748b;">× ${secondMission.target}</span>` : ''}
+                        </div>
+                        <button id="second-action-btn" style="
+                          width:100%; padding:12px; border-radius:10px;
+                          border:1px solid rgba(96,165,250,0.3); background:rgba(96,165,250,0.1);
+                          color:#60a5fa; font-size:14px; font-weight:600; cursor:pointer;
+                        ">Pojďme na to</button>
+                      `;
+                      missionCard.style.opacity = '1';
+                      document.getElementById('second-action-btn')?.addEventListener('click', () => {
+                        showPanel(secondNode);
+                      });
+                    }, 400);
                   }, 1500);
                 }
               }
