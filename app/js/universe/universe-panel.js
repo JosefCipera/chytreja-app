@@ -635,6 +635,38 @@ async function openResourcesViewer(node) {
   });
 }
 
+/** Mission completion toast — mikro-odměna inside panel */
+function _showMissionToast(msg, parentEl) {
+  const existing = document.getElementById('mission-toast');
+  if (existing) existing.remove();
+
+  const toast = document.createElement('div');
+  toast.id = 'mission-toast';
+  toast.style.cssText = `
+    text-align:center; padding:10px 16px; margin:8px 0;
+    background:rgba(34,197,94,0.1); border:1px solid rgba(34,197,94,0.25);
+    border-radius:10px; color:#86efac; font-size:14px; font-weight:500;
+    opacity:0; transition: opacity 0.4s ease;
+  `;
+  toast.textContent = msg;
+
+  const missionCard = parentEl?.querySelector('#mission-card');
+  if (missionCard) {
+    missionCard.prepend(toast);
+  } else {
+    parentEl?.prepend(toast);
+  }
+  requestAnimationFrame(() => toast.style.opacity = '1');
+
+  // Fade out after 4s
+  setTimeout(() => {
+    if (toast.parentNode) {
+      toast.style.opacity = '0';
+      setTimeout(() => toast.remove(), 400);
+    }
+  }, 4000);
+}
+
 function showToast(msg) {
   const t = document.createElement('div');
   t.textContent = msg;
@@ -1128,22 +1160,14 @@ async function showGameOfLife(node) {
         const result = await resp.json();
         console.log('✅ Mission saved:', mission.id, 'streak:', result.streak);
 
-        // Show streak badge if > 0
-        if (result.streak > 0) {
-          const streakEl = document.createElement('div');
-          streakEl.style.cssText = `
-            text-align:center; margin-top:10px; padding:8px 14px;
-            background:rgba(251,191,36,0.08); border:1px solid rgba(251,191,36,0.25);
-            border-radius:8px; font-size:14px; color:#fde68a;
-            opacity:0; transition: opacity 0.5s ease;
-          `;
-          streakEl.innerHTML = `🔥 ${result.streak} ${result.streak === 1 ? 'den' : result.streak < 5 ? 'dny po sobě' : 'dní po sobě'}`;
-          const missionCard = chjCard.querySelector('#mission-card');
-          if (missionCard) missionCard.appendChild(streakEl);
-          requestAnimationFrame(() => streakEl.style.opacity = '1');
-        }
+        // 1. TOAST — mikro-odměna (okamžitě)
+        const toastTexts = ['✔ Zásah.', '✔ Stabilizováno.', '✔ Držíš směr.', '✔ Dobrá volba.'];
+        const toastMsg = result.streak >= 3
+          ? `🔥 ${result.streak} ${result.streak < 5 ? 'dny' : 'dní'} držíš. Pokračuješ.`
+          : toastTexts[Math.floor(Math.random() * toastTexts.length)];
+        _showMissionToast(toastMsg, chjCard);
 
-        // 🔄 GAME LOOP — check impact
+        // 2. GAME LOOP — check impact
         try {
           const glResp = await fetch('/api/mission-complete', {
             method: 'POST',
@@ -1154,64 +1178,92 @@ async function showGameOfLife(node) {
           console.log('🎮 Game loop:', glResult);
 
           const missionCard = chjCard.querySelector('#mission-card');
-          if (missionCard) {
-            // Show impact feedback
-            const feedbackEl = document.createElement('div');
-            feedbackEl.style.cssText = `
-              text-align:center; margin-top:8px; padding:6px 12px;
-              border-radius:8px; font-size:13px;
-              opacity:0; transition: opacity 0.5s ease 0.3s;
-            `;
+          if (!missionCard) return;
 
-            if (glResult.stateChanged) {
-              feedbackEl.style.background = 'rgba(34,197,94,0.12)';
-              feedbackEl.style.border = '1px solid rgba(34,197,94,0.3)';
-              feedbackEl.style.color = '#22c55e';
-              feedbackEl.innerHTML = `🎉 ${glResult.oldState} → ${glResult.newState}! Posun!`;
-              if (navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 300]);
-            } else if (glResult.impact === 'improved') {
-              feedbackEl.style.background = 'rgba(96,165,250,0.08)';
-              feedbackEl.style.border = '1px solid rgba(96,165,250,0.2)';
-              feedbackEl.style.color = '#60a5fa';
-              feedbackEl.innerHTML = `📈 ${glResult.message}`;
+          // Show stabilized/improved text
+          const feedbackEl = document.createElement('div');
+          feedbackEl.style.cssText = `
+            text-align:center; margin-top:8px; font-size:13px; color:#94a3b8;
+            opacity:0; transition: opacity 0.5s ease 0.3s;
+          `;
+
+          if (glResult.stateChanged) {
+            feedbackEl.style.color = '#22c55e';
+            feedbackEl.innerHTML = `🎉 Posun! ${glResult.oldState} → ${glResult.newState}`;
+            if (navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 300]);
+          } else if (glResult.impact === 'improved') {
+            feedbackEl.style.color = '#60a5fa';
+            feedbackEl.innerHTML = `📈 ${glResult.message}`;
+          } else {
+            feedbackEl.innerHTML = `✔ ${glResult.message || 'Stabilizováno.'}`;
+          }
+          missionCard.appendChild(feedbackEl);
+          requestAnimationFrame(() => feedbackEl.style.opacity = '1');
+
+          // 3. SECOND ACTION — fade-in after 1.5s (different node)
+          if (glResult.offerMore) {
+            // 20% chance: "Dnes stačí." (trust builder)
+            if (Math.random() < 0.2) {
+              setTimeout(() => {
+                const restEl = document.createElement('div');
+                restEl.style.cssText = `
+                  text-align:center; margin-top:14px; font-size:13px; color:#64748b;
+                  opacity:0; transition: opacity 0.6s ease;
+                `;
+                restEl.textContent = 'Dnes stačí. 👍';
+                missionCard.appendChild(restEl);
+                requestAnimationFrame(() => restEl.style.opacity = '1');
+              }, 1500);
             } else {
-              feedbackEl.style.color = '#94a3b8';
-              feedbackEl.innerHTML = glResult.message || 'Stabilizováno.';
-            }
+              // Find second weakest node (different from current)
+              const allNodes = window.MAIN_UNIVERSE_DATA || [];
+              const secondNode = allNodes
+                .filter(n => n.id !== node.id && n.parent === 'dlouhovekost' && n.state && n.state !== 'GRAY' && n.current_index != null)
+                .sort((a, b) => (a.current_index ?? 100) - (b.current_index ?? 100))[0];
 
-            missionCard.appendChild(feedbackEl);
-            requestAnimationFrame(() => feedbackEl.style.opacity = '1');
+              if (secondNode) {
+                const secondSkill = runSkill({
+                  nodeId: secondNode.id,
+                  state: secondNode.state || 'YELLOW',
+                  streak: 0,
+                  constraints: userConstraints,
+                });
+                const secondMission = secondSkill?.mission || pickMission(secondNode.id, secondNode.state || 'YELLOW');
 
-            // "Chceš ještě jeden krok?" — only if first step today
-            if (glResult.offerMore) {
-              const moreEl = document.createElement('div');
-              moreEl.style.cssText = `
-                text-align:center; margin-top:12px;
-                opacity:0; transition: opacity 0.5s ease 0.6s;
-              `;
-              moreEl.innerHTML = `
-                <div style="color:#94a3b8;font-size:13px;margin-bottom:8px;">Ještě jednou a upevníš to.</div>
-                <button id="mission-more" style="
-                  padding:10px 24px; border-radius:10px; border:1px solid rgba(234,179,8,0.3);
-                  background:rgba(234,179,8,0.08); color:#fde68a;
-                  font-size:14px; font-weight:600; cursor:pointer;
-                ">Ještě jeden krok</button>
-              `;
-              missionCard.appendChild(moreEl);
-              requestAnimationFrame(() => moreEl.style.opacity = '1');
+                if (secondMission) {
+                  setTimeout(() => {
+                    const NODE_LABELS_2 = { telo: 'tělo', mysl: 'hlavu', vyziva: 'stravu', zdravi: 'zdraví', metabolicke: 'metabolismus' };
+                    const secondLabel = NODE_LABELS_2[secondNode.id] || secondNode.label || secondNode.id;
+                    const offerEl = document.createElement('div');
+                    offerEl.style.cssText = `
+                      margin-top:14px; padding:14px;
+                      background:#0f172a; border:1px solid #1e293b;
+                      border-radius:10px;
+                      opacity:0; transition: opacity 0.6s ease;
+                    `;
+                    offerEl.innerHTML = `
+                      <div style="color:#94a3b8;font-size:12px;margin-bottom:8px;">Chceš posílit ${secondLabel}?</div>
+                      <div style="color:#e2e8f0;font-size:14px;font-weight:500;margin-bottom:12px;">
+                        ${secondMission.icon} ${secondMission.label}${secondMission.target ? ` <span style="color:#64748b;">× ${secondMission.target}</span>` : ''}
+                      </div>
+                      <button id="second-action-btn" style="
+                        width:100%; padding:10px; border-radius:8px;
+                        border:1px solid rgba(96,165,250,0.3); background:rgba(96,165,250,0.08);
+                        color:#60a5fa; font-size:13px; font-weight:600; cursor:pointer;
+                      ">Pojďme na to</button>
+                    `;
+                    missionCard.appendChild(offerEl);
+                    requestAnimationFrame(() => offerEl.style.opacity = '1');
 
-              moreEl.querySelector('#mission-more')?.addEventListener('click', () => {
-                // Reset mission card for second attempt
-                moreEl.remove();
-                feedbackEl.remove();
-                completedBtn.style.display = 'none';
-                startBtn.style.display = 'block';
-              });
+                    offerEl.querySelector('#second-action-btn')?.addEventListener('click', () => {
+                      // Switch to second node's panel
+                      showPanel(secondNode);
+                    });
+                  }, 1500);
+                }
+              }
             }
           }
-        } catch (glErr) {
-          console.warn('Game loop check failed:', glErr.message);
-        }
       } catch (e) {
         console.warn('Mission save failed:', e.message);
       }
