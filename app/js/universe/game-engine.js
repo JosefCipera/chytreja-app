@@ -107,18 +107,18 @@ export function getRiders(node) {
 // AI se volá jen pro konverzaci (chipy, volný chat).
 
 export const VERDICT_TEXTS = {
-  telo:        { RED: 'Tělo slábne. Síla odchází.',            YELLOW: 'Tělo drží. Ale sotva.',            GREEN: 'Tělo je v kondici.' },
-  mysl:        { RED: 'Hlava ztrácí ostrost.',                 YELLOW: 'Hlava funguje. Zpomaluje.',        GREEN: 'Hlava je v pohodě.' },
-  vyziva:      { RED: 'Strava selhává. Tělo to ví.',          YELLOW: 'Strava není špatná. Ale nestačí.', GREEN: 'Strava je v normě.' },
-  zdravi:      { RED: 'Prevence selhává. Tělo je nechráněné.', YELLOW: 'Prevence drží. Ale má mezery.',     GREEN: 'Prevence funguje.' },
-  metabolicke: { RED: 'Metabolismus padá. Ztrácíš kontrolu.', YELLOW: 'Metabolismus kolísá. Zatím drží.', GREEN: 'Metabolismus v normě.' },
+  telo:        { RED: 'Tělo ztrácí sílu.',              YELLOW: 'Tělo drží, ale sotva.',        GREEN: 'Tělo je v kondici.' },
+  mysl:        { RED: 'Hlava zpomaluje.',                YELLOW: 'Hlava drží, přidej.',          GREEN: 'Hlava je v pohodě.' },
+  vyziva:      { RED: 'Strava nestačí.',                 YELLOW: 'Strava ujde, dá se líp.',      GREEN: 'Strava je v pořádku.' },
+  zdravi:      { RED: 'Prevence chybí.',                 YELLOW: 'Prevence má mezery.',           GREEN: 'Prevence funguje.' },
+  metabolicke: { RED: 'Metabolismus klesá.',             YELLOW: 'Metabolismus kolísá.',          GREEN: 'Metabolismus v normě.' },
 };
 
 export const KILLER_TEXTS = {
-  cukrovka:          'Cukrovka číhá. Tvůj tah.',
-  infarkt_a_mrtvice: 'Srdce čeká na posilu.',
-  demence:           'Mozek potřebuje trénink.',
-  rakovina:          'Imunita rozhodne. Posilni ji.',
+  cukrovka:          'Tělo ztrácí rovnováhu.',
+  infarkt_a_mrtvice: 'Srdce potřebuje pohyb.',
+  demence:           'Hlava potřebuje trénink.',
+  rakovina:          'Imunita potřebuje posilu.',
 };
 
 // Primary killer per node (priority=1 from node_riders)

@@ -1027,42 +1027,38 @@ async function showGameOfLife(node) {
 
   const missionHtml = mission ? `
     <div id="mission-card" style="
-      background:rgba(234,179,8,0.06); border:1px solid rgba(234,179,8,0.25);
-      border-radius:12px; padding:16px; margin-top:4px;
+      background:#0f172a; border:1px solid #1e293b;
+      border-radius:12px; padding:16px; margin-top:8px;
     ">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-        <span style="color:#fde68a;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">CO DNES UDĚLAT</span>
-        ${skillLevel ? `<span style="margin-left:auto;font-size:11px;color:#94a3b8;background:rgba(148,163,184,0.1);padding:2px 8px;border-radius:10px;">${skillLevel.name}</span>` : ''}
+      <div style="font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;">
+        Co dnes udělat${skillLevel ? ` · <span style="color:#94a3b8;">${skillLevel.name}</span>` : ''}
       </div>
-      ${skillMotivation ? `<div style="color:#94a3b8;font-size:13px;font-style:italic;margin-bottom:10px;">${skillMotivation}</div>` : ''}
-      <div style="color:#e2e8f0;font-size:16px;font-weight:600;margin-bottom:14px;">
-        ${mission.icon} ${mission.label}${mission.target ? ` × ${mission.target}` : ''}
+      <div style="color:#e2e8f0;font-size:15px;font-weight:500;margin-bottom:16px;">
+        ${mission.icon} ${mission.label}${mission.target ? ` <span style="color:#64748b;">× ${mission.target}</span>` : ''}
       </div>
       <div id="mission-timer" style="display:none;text-align:center;margin-bottom:12px;">
-        <span id="mission-time" style="font-size:36px;font-weight:700;color:#fde68a;font-variant-numeric:tabular-nums;">00:00</span>
+        <span id="mission-time" style="font-size:32px;font-weight:600;color:#e2e8f0;font-variant-numeric:tabular-nums;">00:00</span>
       </div>
       <div id="mission-progress" style="display:none;text-align:center;margin-bottom:12px;">
-        <span id="mission-count" style="font-size:36px;font-weight:700;color:#fde68a;">0</span>
-        <span style="color:#94a3b8;font-size:16px;"> / ${mission.target || ''}</span>
+        <span id="mission-count" style="font-size:32px;font-weight:600;color:#e2e8f0;">0</span>
+        <span style="color:#64748b;font-size:14px;"> / ${mission.target || ''}</span>
       </div>
       <button id="mission-start" style="
         ${alreadyDone ? 'display:none;' : ''}
-        width:100%; padding:14px; border-radius:10px; border:none;
-        background:linear-gradient(135deg, #eab308, #f59e0b);
-        color:#1e293b; font-size:15px; font-weight:700; cursor:pointer;
-        transition:transform 0.15s;
-      ">▶ ZAČÍT</button>
+        width:100%; padding:12px; border-radius:10px; border:1px solid rgba(96,165,250,0.3);
+        background:rgba(96,165,250,0.1);
+        color:#60a5fa; font-size:14px; font-weight:600; cursor:pointer;
+      ">Začít</button>
       <button id="mission-done" style="
-        display:none; width:100%; padding:14px; border-radius:10px; border:none;
-        background:linear-gradient(135deg, #22c55e, #16a34a);
-        color:#fff; font-size:15px; font-weight:700; cursor:pointer;
-        transition:transform 0.15s;
-      ">✓ HOTOVO</button>
+        display:none; width:100%; padding:12px; border-radius:10px; border:1px solid rgba(34,197,94,0.3);
+        background:rgba(34,197,94,0.1);
+        color:#22c55e; font-size:14px; font-weight:600; cursor:pointer;
+      ">Hotovo</button>
       <button id="mission-completed" style="
-        ${alreadyDone ? '' : 'display:none;'} width:100%; padding:14px; border-radius:10px;
-        border:1px solid rgba(34,197,94,0.3); background:rgba(34,197,94,0.08);
-        color:#22c55e; font-size:15px; font-weight:600; cursor:default;
-      ">✓ Splněno!</button>
+        ${alreadyDone ? '' : 'display:none;'} width:100%; padding:12px; border-radius:10px;
+        border:1px solid rgba(34,197,94,0.2); background:rgba(34,197,94,0.05);
+        color:#22c55e; font-size:14px; font-weight:500; cursor:default;
+      ">✓ Splněno</button>
       ${alreadyDone ? streakBadge : ''}
     </div>
   ` : '';
