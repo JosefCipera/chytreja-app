@@ -108,7 +108,7 @@ export function getRiders(node) {
 
 export const VERDICT_TEXTS = {
   telo:        { RED: 'Tělo ztrácí sílu.',              YELLOW: 'Tělo drží, ale sotva.',        GREEN: 'Tělo je v kondici.' },
-  mysl:        { RED: 'Hlava zpomaluje.',                YELLOW: 'Hlava drží, přidej.',          GREEN: 'Hlava je v pohodě.' },
+  mysl:        { RED: 'Hlava zpomaluje, potřebuje trénink.', YELLOW: 'Hlava drží, přidej.',       GREEN: 'Hlava je v pohodě.' },
   vyziva:      { RED: 'Strava nestačí.',                 YELLOW: 'Strava ujde, dá se líp.',      GREEN: 'Strava je v pořádku.' },
   zdravi:      { RED: 'Prevence chybí.',                 YELLOW: 'Prevence má mezery.',           GREEN: 'Prevence funguje.' },
   metabolicke: { RED: 'Metabolismus klesá.',             YELLOW: 'Metabolismus kolísá.',          GREEN: 'Metabolismus v normě.' },
@@ -117,7 +117,7 @@ export const VERDICT_TEXTS = {
 export const KILLER_TEXTS = {
   cukrovka:          'Tělo ztrácí rovnováhu.',
   infarkt_a_mrtvice: 'Srdce potřebuje pohyb.',
-  demence:           'Hlava potřebuje trénink.',
+  demence:           'Myšlení slábne bez zátěže.',
   rakovina:          'Imunita potřebuje posilu.',
 };
 
