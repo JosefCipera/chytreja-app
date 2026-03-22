@@ -1264,6 +1264,9 @@ async function showGameOfLife(node) {
               }
             }
           }
+        } catch (glErr) {
+          console.warn('Game loop check failed:', glErr.message);
+        }
       } catch (e) {
         console.warn('Mission save failed:', e.message);
       }
