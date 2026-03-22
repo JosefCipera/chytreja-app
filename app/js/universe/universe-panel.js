@@ -1015,7 +1015,9 @@ async function showGameOfLife(node) {
     }
   }
 
-  const alreadyDone = mission && missionStatus.todayMissions?.some(m => m.mission_id === mission.id);
+  // Max 2× per day per mission
+  const todayThisMission = missionStatus.todayMissions?.filter(m => m.mission_id === mission?.id)?.length || 0;
+  const alreadyDone = mission && todayThisMission >= 2;
   const streakBadge = streakCount > 0
     ? `<div style="text-align:center;margin-top:10px;padding:8px 14px;
         background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.25);
@@ -1143,7 +1145,7 @@ async function showGameOfLife(node) {
           requestAnimationFrame(() => streakEl.style.opacity = '1');
         }
 
-        // 🔄 GAME LOOP — check if node improved
+        // 🔄 GAME LOOP — check impact
         try {
           const glResp = await fetch('/api/mission-complete', {
             method: 'POST',
@@ -1155,33 +1157,59 @@ async function showGameOfLife(node) {
 
           const missionCard = chjCard.querySelector('#mission-card');
           if (missionCard) {
-            // Show progress info
-            const progressEl = document.createElement('div');
-            progressEl.style.cssText = `
+            // Show impact feedback
+            const feedbackEl = document.createElement('div');
+            feedbackEl.style.cssText = `
               text-align:center; margin-top:8px; padding:6px 12px;
               border-radius:8px; font-size:13px;
               opacity:0; transition: opacity 0.5s ease 0.3s;
             `;
 
             if (glResult.stateChanged) {
-              // 🎉 STATE CHANGED — big deal!
-              progressEl.style.background = 'rgba(34,197,94,0.12)';
-              progressEl.style.border = '1px solid rgba(34,197,94,0.3)';
-              progressEl.style.color = '#22c55e';
-              progressEl.innerHTML = `🎉 ${glResult.oldState} → ${glResult.newState}! Uzel se zlepšil!`;
+              feedbackEl.style.background = 'rgba(34,197,94,0.12)';
+              feedbackEl.style.border = '1px solid rgba(34,197,94,0.3)';
+              feedbackEl.style.color = '#22c55e';
+              feedbackEl.innerHTML = `🎉 ${glResult.oldState} → ${glResult.newState}! Posun!`;
               if (navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 300]);
-            } else if (glResult.improved) {
-              progressEl.style.background = 'rgba(96,165,250,0.08)';
-              progressEl.style.border = '1px solid rgba(96,165,250,0.2)';
-              progressEl.style.color = '#60a5fa';
-              progressEl.innerHTML = `📈 Posun: ${glResult.oldIndex} → ${glResult.newIndex}`;
-            } else if (glResult.missionCount !== undefined) {
-              progressEl.style.color = '#94a3b8';
-              progressEl.innerHTML = `${glResult.missionCount}/${glResult.needed} kroků tento týden`;
+            } else if (glResult.impact === 'improved') {
+              feedbackEl.style.background = 'rgba(96,165,250,0.08)';
+              feedbackEl.style.border = '1px solid rgba(96,165,250,0.2)';
+              feedbackEl.style.color = '#60a5fa';
+              feedbackEl.innerHTML = `📈 ${glResult.message}`;
+            } else {
+              feedbackEl.style.color = '#94a3b8';
+              feedbackEl.innerHTML = glResult.message || 'Stabilizováno.';
             }
 
-            missionCard.appendChild(progressEl);
-            requestAnimationFrame(() => progressEl.style.opacity = '1');
+            missionCard.appendChild(feedbackEl);
+            requestAnimationFrame(() => feedbackEl.style.opacity = '1');
+
+            // "Chceš ještě jeden krok?" — only if first step today
+            if (glResult.offerMore) {
+              const moreEl = document.createElement('div');
+              moreEl.style.cssText = `
+                text-align:center; margin-top:12px;
+                opacity:0; transition: opacity 0.5s ease 0.6s;
+              `;
+              moreEl.innerHTML = `
+                <div style="color:#94a3b8;font-size:13px;margin-bottom:8px;">Ještě jednou a upevníš to.</div>
+                <button id="mission-more" style="
+                  padding:10px 24px; border-radius:10px; border:1px solid rgba(234,179,8,0.3);
+                  background:rgba(234,179,8,0.08); color:#fde68a;
+                  font-size:14px; font-weight:600; cursor:pointer;
+                ">Ještě jeden krok</button>
+              `;
+              missionCard.appendChild(moreEl);
+              requestAnimationFrame(() => moreEl.style.opacity = '1');
+
+              moreEl.querySelector('#mission-more')?.addEventListener('click', () => {
+                // Reset mission card for second attempt
+                moreEl.remove();
+                feedbackEl.remove();
+                completedBtn.style.display = 'none';
+                startBtn.style.display = 'block';
+              });
+            }
           }
         } catch (glErr) {
           console.warn('Game loop check failed:', glErr.message);
