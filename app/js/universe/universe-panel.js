@@ -667,8 +667,8 @@ function _buildBatteryHTML(vitalityPct, goalLabel, trendDir) {
   const pct = Math.round(vitalityPct ?? 60);
   const fillPct = Math.max(3, Math.min(100, pct));
   const isGreen  = pct >= t.green;
-  const isYellow = !isGreen && pct >= t.red;
-  const isRed    = !isGreen && !isYellow && pct > 0;
+  const isYellow = !isGreen && pct >= t.yellow;
+  const isRed    = !isGreen && !isYellow; // everything below yellow = red
 
   const battColor  = isGreen ? '#22c55e' : isYellow ? '#eab308' : isRed ? '#ef4444' : '#6b7280';
   const battBorder = isGreen ? 'rgba(34,197,94,0.35)' : isYellow ? 'rgba(234,179,8,0.35)' : isRed ? 'rgba(239,68,68,0.35)' : 'rgba(107,114,128,0.35)';
@@ -761,14 +761,14 @@ async function showGameOfLife(node) {
   `;
 
   // Vitality: avg current_index of colored child nodes → percentage
-  let vitalityPct = 60; // default (cautious gray)
+  let vitalityPct = 0; // default: no data = 0
   let goalLabel = null;
   let bottleneckLabel = null;
   if (isMainNode) {
     const allNodes = window.MAIN_UNIVERSE_DATA || [];
-    const children = allNodes.filter(n => n.parent === 'dlouhovekost' && n.state && n.state !== 'GRAY');
+    const children = allNodes.filter(n => n.parent === 'dlouhovekost' && n.state && n.state !== 'GRAY' && n.current_index != null);
     if (children.length > 0) {
-      const sum = children.reduce((s, n) => s + (n.current_index ?? 50), 0);
+      const sum = children.reduce((s, n) => s + n.current_index, 0);
       vitalityPct = sum / children.length;
     }
     // Bottleneck = worst child node
@@ -918,8 +918,8 @@ async function showGameOfLife(node) {
   // Sub-uzly: jen AI věty (verdict)
   let BATTERY_STATUS_TEXT = null;
   if (isMainNode) {
-    const pct = Math.round(vitalityPct ?? 60);
-    const statusLine = pct >= 85 ? 'Baterie nabita.' : pct >= 70 ? 'Baterie drží.' : 'Baterie klesla.';
+    const pct = Math.round(vitalityPct ?? 0);
+    const statusLine = pct >= 80 ? 'Baterie nabita.' : pct >= 65 ? 'Baterie drží.' : 'Baterie klesla.';
     const NODE_LABELS_CHJ = { telo: 'tělo', mysl: 'hlava', vyziva: 'strava', zdravi: 'zdraví', metabolicke: 'metabolismus' };
     const allNodes = window.MAIN_UNIVERSE_DATA || [];
     const children = allNodes.filter(n => n.parent === 'dlouhovekost' && n.state && n.state !== 'GRAY');
