@@ -243,7 +243,7 @@ function resetPanel() {
   if (panel) panel.scrollTop = 0;
 }
 
-export async function showPanel(node) {
+export async function showPanel(node, options = {}) {
   if (!panelEl) return;
 
   const wasOpen = panelEl.classList.contains('open');
@@ -260,7 +260,7 @@ export async function showPanel(node) {
   if (node.state === 'GRAY') {
     showLockedPanel(node);
   } else {
-    showGameOfLife(node);
+    showGameOfLife(node, options);
   }
 
   panelEl.style.display = "block";
@@ -754,7 +754,8 @@ function _buildBatteryHTML(vitalityPct, goalLabel, trendDir) {
   `;
 }
 
-async function showGameOfLife(node) {
+async function showGameOfLife(node, options = {}) {
+  const isSecondAction = options.isSecondAction || false;
   console.log("🎮 showGameOfLife:", node.id);
   const userId = window.firebaseAuth?.currentUser?.uid || 'demo-user-123';
 
@@ -1202,8 +1203,9 @@ async function showGameOfLife(node) {
           requestAnimationFrame(() => feedbackEl.style.opacity = '1');
 
           // 3. SECOND ACTION — fade-in after 1.5s (different node)
-          console.log('🎯 offerMore:', glResult.offerMore, 'todayCount:', glResult.todayCount, 'canDoMore:', glResult.canDoMore);
-          if (glResult.offerMore) {
+          // Skip if this panel was already opened as a second action (no 3rd step)
+          console.log('🎯 offerMore:', glResult.offerMore, 'isSecondAction:', isSecondAction);
+          if (glResult.offerMore && !isSecondAction) {
             // 20% chance: "Dnes stačí." (trust builder)
             const rng = Math.random();
             console.log('🎲 RNG:', rng, rng < 0.2 ? '→ Dnes stačí' : '→ second action');
@@ -1244,27 +1246,33 @@ async function showGameOfLife(node) {
                   setTimeout(() => {
                     const NODE_LABELS_2 = { telo: 'tělo', mysl: 'hlavu', vyziva: 'stravu', zdravi: 'zdraví', metabolicke: 'metabolismus' };
                     const secondLabel = NODE_LABELS_2[secondNode.id] || secondNode.label || secondNode.id;
-                    const secondMotivation = secondSkill?.motivation || '';
-                    // Replace mission card content with second action
+                    // Gentle question — replace mission card content
                     missionCard.style.opacity = '0';
                     setTimeout(() => {
                       missionCard.innerHTML = `
-                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
-                          <span style="color:#94a3b8;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Co dnes udělat</span>
+                        <div style="color:#94a3b8;font-size:13px;font-style:italic;margin-bottom:14px;">
+                          Chceš ještě jeden krok pro ${secondLabel}?
                         </div>
-                        <div style="color:#94a3b8;font-size:13px;font-style:italic;margin-bottom:10px;">Chceš posílit ${secondLabel}?</div>
-                        <div style="color:#e2e8f0;font-size:15px;font-weight:500;margin-bottom:16px;">
-                          ${secondMission.icon} ${secondMission.label}${secondMission.target ? ` <span style="color:#64748b;">× ${secondMission.target}</span>` : ''}
+                        <div style="display:flex;gap:10px;">
+                          <button id="second-yes" style="
+                            flex:1; padding:11px; border-radius:8px;
+                            border:1px solid rgba(96,165,250,0.3); background:rgba(96,165,250,0.1);
+                            color:#60a5fa; font-size:14px; font-weight:600; cursor:pointer;
+                          ">Pojďme na to</button>
+                          <button id="second-no" style="
+                            padding:11px 18px; border-radius:8px;
+                            border:1px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.03);
+                            color:#64748b; font-size:14px; cursor:pointer;
+                          ">Ne</button>
                         </div>
-                        <button id="second-action-btn" style="
-                          width:100%; padding:12px; border-radius:10px;
-                          border:1px solid rgba(96,165,250,0.3); background:rgba(96,165,250,0.1);
-                          color:#60a5fa; font-size:14px; font-weight:600; cursor:pointer;
-                        ">Pojďme na to</button>
                       `;
                       missionCard.style.opacity = '1';
-                      document.getElementById('second-action-btn')?.addEventListener('click', () => {
-                        showPanel(secondNode);
+                      document.getElementById('second-yes')?.addEventListener('click', () => {
+                        showPanel(secondNode, { isSecondAction: true });
+                      });
+                      document.getElementById('second-no')?.addEventListener('click', () => {
+                        missionCard.style.opacity = '0';
+                        setTimeout(() => missionCard.remove(), 400);
                       });
                     }, 400);
                   }, 1500);
