@@ -1007,9 +1007,9 @@ async function showGameOfLife(node) {
   let skillMotivation = null;
   let skillLevel = null;
 
-  if (!isMainNode) {
-    // Load user constraints for filtering (e.g. knee → no squats)
-    const userConstraints = (window.USER_CONSTRAINTS || [])
+  // Load user constraints for filtering (e.g. knee → no squats)
+  // Defined outside if-block so missionComplete() closure can access it
+  const userConstraints = (window.USER_CONSTRAINTS || [])
       .map(c => {
         try {
           const val = typeof c.constraint_value === 'string' ? JSON.parse(c.constraint_value) : c.constraint_value;
@@ -1029,6 +1029,7 @@ async function showGameOfLife(node) {
         return loc;
       });
 
+  if (!isMainNode) {
     // Try skill router first (progressive difficulty, constraint-aware)
     const skillResult = runSkill({
       nodeId: node.id,
