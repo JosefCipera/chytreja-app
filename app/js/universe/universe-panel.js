@@ -679,7 +679,7 @@ function _buildBatteryHTML(vitalityPct, goalLabel, trendDir) {
       ${goalLabel ? `<div style="font-size:13px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:16px;">Cíl: držet nad 80 % <span style="color:#64748b;">· ${goalLabel}</span></div>` : `<div style="font-size:13px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:16px;">Cíl: držet nad 80 %</div>`}
       <div style="text-align:center;">
         <!-- Battery + % side by side -->
-        <div style="display:inline-flex; align-items:center; gap:18px;">
+        <div style="display:inline-flex; align-items:center; gap:8px;">
           <!-- Battery -->
           <div style="display:inline-flex; flex-direction:column; align-items:center;">
             <div style="
@@ -1022,7 +1022,7 @@ async function showGameOfLife(node) {
     ? `<div style="text-align:center;margin-top:10px;padding:8px 14px;
         background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.25);
         border-radius:8px;font-size:14px;color:#fde68a;">
-        🔥 ${streakCount} ${streakCount === 1 ? 'den' : streakCount < 5 ? 'dny' : 'dní'} v řadě</div>`
+        🔥 ${streakCount} ${streakCount === 1 ? 'den' : streakCount < 5 ? 'dny po sobě' : 'dní po sobě'}</div>`
     : '';
 
   const missionHtml = mission ? `
@@ -1139,7 +1139,7 @@ async function showGameOfLife(node) {
             border-radius:8px; font-size:14px; color:#fde68a;
             opacity:0; transition: opacity 0.5s ease;
           `;
-          streakEl.innerHTML = `🔥 ${result.streak} ${result.streak === 1 ? 'den' : result.streak < 5 ? 'dny' : 'dní'} v řadě`;
+          streakEl.innerHTML = `🔥 ${result.streak} ${result.streak === 1 ? 'den' : result.streak < 5 ? 'dny po sobě' : 'dní po sobě'}`;
           const missionCard = chjCard.querySelector('#mission-card');
           if (missionCard) missionCard.appendChild(streakEl);
           requestAnimationFrame(() => streakEl.style.opacity = '1');
