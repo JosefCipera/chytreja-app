@@ -141,12 +141,14 @@ export default async function (req, res) {
     }
 
     // 7. Log to history (for sparkline)
-    await supabase.from('node_state_history').insert({
-      user_id: userId,
-      node_id: nodeId,
-      state: newState,
-      current_index: newIndex,
-    }).catch(() => {});
+    try {
+      await supabase.from('node_state_history').insert({
+        user_id: userId,
+        node_id: nodeId,
+        state: newState,
+        current_index: newIndex,
+      });
+    } catch (_) { /* ignore history errors */ }
 
     // 8. Recalc parents (worst child rule)
     const parentUpdates = await recalcParents(supabase, userId, nodeId);
