@@ -179,10 +179,10 @@ export default async function (req, res) {
       parentUpdates,
       // Feedback messages
       message: impact === 'improved'
-        ? 'Posun! Index stoupá.'
+        ? 'Dvojitý zásah. Jdeš nahoru.'
         : inactiveDays > 0
-          ? `Stabilizováno po ${inactiveDays} ${inactiveDays === 1 ? 'dni' : 'dnech'} pauzy.`
-          : 'Stabilizováno.',
+          ? `Zpátky v sedle po ${inactiveDays} ${inactiveDays === 1 ? 'dni' : 'dnech'}.`
+          : 'Držíš tempo.',
       // Can do more?
       canDoMore: todayCount < 2,
       offerMore: todayCount === 1, // "Chceš ještě jeden krok?"

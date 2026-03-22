@@ -1190,7 +1190,7 @@ async function showGameOfLife(node) {
 
           if (glResult.stateChanged) {
             feedbackEl.style.color = '#22c55e';
-            feedbackEl.innerHTML = `🎉 Posun! ${glResult.oldState} → ${glResult.newState}`;
+            feedbackEl.innerHTML = '🎉 Level up! Viditelné zlepšení.';
             if (navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 300]);
           } else if (glResult.impact === 'improved') {
             feedbackEl.style.color = '#60a5fa';

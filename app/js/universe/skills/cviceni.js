@@ -90,7 +90,7 @@ const NODE_AREAS = {
 const MOTIVATIONS = {
   RED: [
     'Každý pohyb se počítá. Začni teď.',
-    'Dneska jenom tohle. Nic víc.',
+    'Stačí tohle. Nic složitého.',
     'Malý krok. Ale tvůj.',
     'Tohle zvládneš. Jdi do toho.',
   ],
