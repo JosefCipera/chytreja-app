@@ -97,7 +97,32 @@ export default async function (req, res) {
     }
     // todayCount === 1 → stabilize (no change beyond decline recovery)
 
-    const newState = indexToState(newIndex);
+    let newState = indexToState(newIndex);
+
+    // 5b. If this node has children, enforce worst-child rule
+    const { data: nodeChildren } = await supabase
+      .from('longevity_nodes')
+      .select('id')
+      .eq('parent', nodeId);
+
+    if (nodeChildren && nodeChildren.length > 0) {
+      const childIds = nodeChildren.map(c => c.id);
+      const { data: childMetrics } = await supabase
+        .from('user_metrics')
+        .select('state')
+        .eq('user_id', userId)
+        .eq('universe', 'longevity')
+        .in('node_id', childIds);
+
+      const stateOrder = { RED: 3, YELLOW: 2, GREEN: 1 };
+      let worstChild = newState;
+      for (const cm of (childMetrics || [])) {
+        if ((stateOrder[cm.state] || 0) > (stateOrder[worstChild] || 0)) {
+          worstChild = cm.state;
+        }
+      }
+      newState = worstChild;
+    }
 
     // 6. Update user_metrics
     const { error: updateErr } = await supabase
