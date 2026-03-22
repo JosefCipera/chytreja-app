@@ -1030,11 +1030,11 @@ async function showGameOfLife(node) {
       background:#0f172a; border:1px solid #1e293b;
       border-radius:12px; padding:16px; margin-top:8px;
     ">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-        <span style="color:#94a3b8;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Co dnes udělat</span>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+        <span style="color:#f8fafc;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Co dnes udělat</span>
         ${skillLevel ? `<span style="margin-left:auto;font-size:11px;color:#94a3b8;background:rgba(148,163,184,0.1);padding:2px 8px;border-radius:10px;">${skillLevel.name}</span>` : ''}
       </div>
-      ${skillMotivation ? `<div style="color:#64748b;font-size:12px;margin-bottom:10px;">${skillMotivation}</div>` : ''}
+      ${skillMotivation ? `<div style="color:#94a3b8;font-size:13px;font-style:italic;margin-bottom:10px;">${skillMotivation}</div>` : ''}
       <div style="color:#e2e8f0;font-size:15px;font-weight:500;margin-bottom:16px;">
         ${mission.icon} ${mission.label}${mission.target ? ` <span style="color:#64748b;">× ${mission.target}</span>` : ''}
       </div>
