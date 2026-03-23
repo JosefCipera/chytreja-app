@@ -1274,16 +1274,16 @@ async function showGameOfLife(node, options = {}) {
                           ${secondMission.icon || '💪'} ${secondMission.label}${secondMission.target ? ` <span style="color:#64748b;">× ${secondMission.target}</span>` : ''}
                         </div>
                         <div style="display:flex;gap:10px;align-items:center;">
+                          <button id="second-yes" style="
+                            padding:10px 16px; border-radius:8px;
+                            border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.03);
+                            color:#94a3b8; font-size:14px; cursor:pointer;
+                          ">Ano</button>
                           <button id="second-no" style="
                             padding:10px 16px; border-radius:8px;
-                            border:1px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.03);
-                            color:#64748b; font-size:14px; cursor:pointer;
+                            border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.03);
+                            color:#94a3b8; font-size:14px; cursor:pointer;
                           ">Ne</button>
-                          <button id="second-yes" style="
-                            flex:1; padding:10px 14px; border-radius:8px;
-                            border:1px solid rgba(96,165,250,0.3); background:rgba(96,165,250,0.1);
-                            color:#60a5fa; font-size:14px; font-weight:600; cursor:pointer;
-                          ">Ano</button>
                         </div>
                       </div>
                     `;
