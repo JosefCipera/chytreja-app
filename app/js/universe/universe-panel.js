@@ -1146,7 +1146,19 @@ async function showGameOfLife(node, options = {}) {
 
       const missionCard = chjCard.querySelector('#mission-card');
 
-      // Save to mission_log + get streak
+      // Instant feedback — show immediately, don't wait for API
+      if (missionCard) {
+        const btnArea = missionCard.querySelector('#mission-done, #mission-start');
+        if (btnArea) btnArea.remove();
+        completedBtn.style.display = 'none';
+        const feedbackEl = document.createElement('div');
+        feedbackEl.style.cssText = 'opacity:0; transition: opacity 0.5s ease;';
+        feedbackEl.innerHTML = '<div style="text-align:center;padding:12px;color:#e2e8f0;font-size:14px;font-weight:500;">✔ Hotovo. Držíš tempo.</div>';
+        missionCard.appendChild(feedbackEl);
+        requestAnimationFrame(() => feedbackEl.style.opacity = '1');
+      }
+
+      // Save to mission_log + game loop (background — UI already updated)
       try {
         const resp = await fetch('/api/mission-log', {
           method: 'POST',
@@ -1161,7 +1173,7 @@ async function showGameOfLife(node, options = {}) {
         const result = await resp.json();
         console.log('✅ Mission saved:', mission.id, 'streak:', result.streak);
 
-        // GAME LOOP — check impact
+        // GAME LOOP — check impact (update feedback if state changed)
         try {
           const glResp = await fetch('/api/mission-complete', {
             method: 'POST',
@@ -1173,26 +1185,16 @@ async function showGameOfLife(node, options = {}) {
 
           if (!missionCard) return;
 
-          // Show feedback — replace buttons with result text
-          let feedbackHtml = '';
-          if (glResult.stateChanged) {
-            feedbackHtml = '<div style="text-align:center;padding:12px;color:#e2e8f0;font-size:14px;font-weight:500;">🎉 Level up! Viditelné zlepšení.</div>';
-            if (navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 300]);
-          } else if (glResult.impact === 'improved') {
-            feedbackHtml = `<div style="text-align:center;padding:12px;color:#e2e8f0;font-size:14px;font-weight:500;">📈 Posun! Jdeš nahoru.</div>`;
-          } else {
-            feedbackHtml = `<div style="text-align:center;padding:12px;color:#e2e8f0;font-size:14px;font-weight:500;">✔ Hotovo. Držíš tempo.</div>`;
+          // Upgrade feedback if state changed or improved
+          const existingFeedback = missionCard.querySelector('div[style*="text-align:center"]');
+          if (existingFeedback) {
+            if (glResult.stateChanged) {
+              existingFeedback.innerHTML = '<div style="text-align:center;padding:12px;color:#e2e8f0;font-size:14px;font-weight:500;">🎉 Level up! Viditelné zlepšení.</div>';
+              if (navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 300]);
+            } else if (glResult.impact === 'improved') {
+              existingFeedback.innerHTML = '<div style="text-align:center;padding:12px;color:#e2e8f0;font-size:14px;font-weight:500;">📈 Posun! Jdeš nahoru.</div>';
+            }
           }
-
-          // Replace done button area with feedback
-          const btnArea = missionCard.querySelector('#mission-done, #mission-start');
-          if (btnArea) btnArea.remove();
-          completedBtn.style.display = 'none';
-          const feedbackEl = document.createElement('div');
-          feedbackEl.style.cssText = 'opacity:0; transition: opacity 0.5s ease;';
-          feedbackEl.innerHTML = feedbackHtml;
-          missionCard.appendChild(feedbackEl);
-          requestAnimationFrame(() => feedbackEl.style.opacity = '1');
 
           // SECOND ACTION — same node, different mission
           // Skip if: already a second action, or 2+ actions done today (any node)
@@ -1428,7 +1430,7 @@ async function showGameOfLife(node, options = {}) {
                 }, 3000);
               }
             }
-          }
+          // --- end second action ---
         } catch (glErr) {
           console.warn('Game loop check failed:', glErr.message);
         }
