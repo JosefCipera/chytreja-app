@@ -1194,74 +1194,110 @@ async function showGameOfLife(node, options = {}) {
           missionCard.appendChild(feedbackEl);
           requestAnimationFrame(() => feedbackEl.style.opacity = '1');
 
-          // SECOND ACTION — inline after 3s
+          // SECOND ACTION — smart offer based on state/trend/streak
           // Skip if this panel was already opened as a second action (no 3rd step)
           console.log('🎯 offerMore:', glResult.offerMore, 'isSecondAction:', isSecondAction);
           if (glResult.offerMore && !isSecondAction) {
-            const rng = Math.random();
-            console.log('🎲 RNG:', rng, rng < 0.2 ? '→ Dnes stačí' : '→ second action');
-            if (rng < 0.2) {
-              setTimeout(() => {
-                const restEl = document.createElement('div');
-                restEl.style.cssText = 'text-align:center; margin-top:8px; font-size:13px; color:#64748b; opacity:0; transition: opacity 0.6s ease;';
-                restEl.textContent = 'Dnes stačí. 👍';
-                missionCard.appendChild(restEl);
-                requestAnimationFrame(() => restEl.style.opacity = '1');
-              }, 3000);
-            } else {
-              // Find second weakest node with missions
-              const MISSION_NODES = new Set(Object.keys(DAILY_MISSIONS));
-              const allNodes = window.MAIN_UNIVERSE_DATA || [];
-              const candidates = allNodes
-                .filter(n => n.id !== node.id && MISSION_NODES.has(n.id) && n.state && n.state !== 'GRAY' && n.current_index != null);
-              const secondNode = candidates
-                .sort((a, b) => (a.current_index ?? 100) - (b.current_index ?? 100))[0];
-              console.log('🔍 secondNode:', secondNode?.id, secondNode?.state);
+            // Find second weakest node (biggest problem) with missions
+            const MISSION_NODES = new Set(Object.keys(DAILY_MISSIONS));
+            const allNodes = window.MAIN_UNIVERSE_DATA || [];
+            const candidates = allNodes
+              .filter(n => n.id !== node.id && MISSION_NODES.has(n.id) && n.state && n.state !== 'GRAY' && n.current_index != null);
+            const secondNode = candidates
+              .sort((a, b) => (a.current_index ?? 100) - (b.current_index ?? 100))[0];
+            console.log('🔍 secondNode:', secondNode?.id, secondNode?.state);
 
-              if (secondNode) {
-                const secondSkill = runSkill({
-                  nodeId: secondNode.id,
-                  state: secondNode.state || 'YELLOW',
-                  streak: 0,
-                  constraints: window._userConstraints || [],
-                });
-                const secondMission = secondSkill?.mission || pickMission(secondNode.id, secondNode.state || 'YELLOW');
+            if (secondNode) {
+              const secondSkill = runSkill({
+                nodeId: secondNode.id,
+                state: secondNode.state || 'YELLOW',
+                streak: 0,
+                constraints: window._userConstraints || [],
+              });
+              const secondMission = secondSkill?.mission || pickMission(secondNode.id, secondNode.state || 'YELLOW');
 
-                if (secondMission) {
-                  setTimeout(() => {
-                    // "Chceš jít dál?" with Ano / Ne
-                    const offerEl = document.createElement('div');
-                    offerEl.style.cssText = 'margin-top:14px; opacity:0; transition: opacity 0.6s ease;';
+              if (secondMission) {
+                // Decide: offer or rest? Based on secondNode state + trend + streak
+                const sState = secondNode.state || 'YELLOW';
+                const sTrend = secondNode.trend || 'stable';
+                const sStreak = result.streak || 0;
+                let shouldOffer = false;
+                let offerText = '';
+
+                if (sState === 'RED' || sTrend === 'down') {
+                  // CASE 1: problém — vždy nabídni
+                  shouldOffer = true;
+                  offerText = 'Můžeš to ještě posílit.';
+                } else if (sState === 'GREEN' && sTrend === 'up') {
+                  // CASE 3: dobrý stav — netlačit
+                  shouldOffer = false;
+                  offerText = 'Držíš to. Dnes stačí.';
+                } else if (sStreak >= 3 && Math.random() < 0.5) {
+                  // CASE 4: streak boost — občas nabídni
+                  shouldOffer = true;
+                  offerText = 'Jedeš dobře. Přidáš krok?';
+                } else {
+                  // CASE 2: střed — 50/50
+                  shouldOffer = Math.random() < 0.5;
+                  offerText = shouldOffer ? 'Chceš jít dál?' : 'Dnes stačí.';
+                }
+
+                console.log('🎲 2nd action logic:', { sState, sTrend, sStreak, shouldOffer, offerText });
+
+                setTimeout(() => {
+                  const offerEl = document.createElement('div');
+                  offerEl.style.cssText = 'margin-top:14px; opacity:0; transition: opacity 0.6s ease;';
+
+                  if (!shouldOffer) {
+                    // Rest message
+                    offerEl.innerHTML = `<div style="
+                      background:rgba(34,197,94,0.06); border:1px solid rgba(34,197,94,0.2);
+                      border-radius:10px; padding:13px 16px; text-align:center;
+                      color:#86efac; font-size:14px;
+                    ">${offerText} 👍</div>`;
+                    missionCard.appendChild(offerEl);
+                    requestAnimationFrame(() => offerEl.style.opacity = '1');
+                  } else {
+                    // Offer second action
+                    const NODE_LABELS_2 = { telo: 'tělo', mysl: 'hlavu', vyziva: 'stravu', zdravi: 'zdraví', metabolicke: 'metabolismus' };
+                    const secondLabel = NODE_LABELS_2[secondNode.id] || secondNode.label || secondNode.id;
+
                     offerEl.innerHTML = `
-                      <div style="color:#94a3b8;font-size:13px;font-style:italic;margin-bottom:10px;">
-                        Chceš jít dál?
-                      </div>
-                      <div style="display:flex;gap:10px;">
-                        <button id="second-yes" style="
-                          flex:1; padding:11px; border-radius:8px;
-                          border:1px solid rgba(96,165,250,0.3); background:rgba(96,165,250,0.1);
-                          color:#60a5fa; font-size:14px; font-weight:600; cursor:pointer;
-                        ">Ano</button>
-                        <button id="second-no" style="
-                          padding:11px 18px; border-radius:8px;
-                          border:1px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.03);
-                          color:#64748b; font-size:14px; cursor:pointer;
-                        ">Ne</button>
+                      <div style="
+                        background:rgba(96,165,250,0.06); border:1px solid rgba(96,165,250,0.2);
+                        border-radius:10px; padding:14px 16px;
+                      ">
+                        <div style="color:#94a3b8;font-size:13px;margin-bottom:12px;">
+                          ${offerText}
+                        </div>
+                        <div style="display:flex;gap:10px;align-items:center;">
+                          <button id="second-no" style="
+                            padding:10px 16px; border-radius:8px;
+                            border:1px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.03);
+                            color:#64748b; font-size:14px; cursor:pointer; white-space:nowrap;
+                          ">Ne</button>
+                          <button id="second-yes" style="
+                            flex:1; padding:10px 14px; border-radius:8px;
+                            border:1px solid rgba(96,165,250,0.3); background:rgba(96,165,250,0.08);
+                            color:#60a5fa; font-size:14px; cursor:pointer; text-align:left;
+                          ">${secondMission.icon || '💪'} ${secondMission.label}</button>
+                        </div>
                       </div>
                     `;
                     missionCard.appendChild(offerEl);
                     requestAnimationFrame(() => offerEl.style.opacity = '1');
 
-                    // Ne = leave everything as is
+                    // Ne = leave everything as is, just replace offer with 👍
                     document.getElementById('second-no')?.addEventListener('click', () => {
-                      offerEl.innerHTML = '<div style="text-align:center;margin-top:4px;font-size:13px;color:#64748b;">👍</div>';
+                      offerEl.innerHTML = `<div style="
+                        background:rgba(34,197,94,0.06); border:1px solid rgba(34,197,94,0.2);
+                        border-radius:10px; padding:13px 16px; text-align:center;
+                        color:#86efac; font-size:14px;
+                      ">Dnes stačí. 👍</div>`;
                     });
 
                     // Ano = expand second action inline
                     document.getElementById('second-yes')?.addEventListener('click', () => {
-                      const NODE_LABELS_2 = { telo: 'tělo', mysl: 'hlavu', vyziva: 'stravu', zdravi: 'zdraví', metabolicke: 'metabolismus' };
-                      const secondLabel = NODE_LABELS_2[secondNode.id] || secondNode.label || secondNode.id;
-
                       offerEl.style.opacity = '0';
                       setTimeout(() => {
                         offerEl.innerHTML = `
@@ -1326,7 +1362,6 @@ async function showGameOfLife(node, options = {}) {
                               body: JSON.stringify({ userId, nodeId: secondNode.id }),
                             });
                             const glResult2 = await glResp2.json();
-                            // Show result + streak (persistent, don't remove)
                             let resultHtml = '';
                             if (glResult2.stateChanged) {
                               resultHtml = '<div style="text-align:center;padding:10px;color:#22c55e;font-size:14px;">🎉 Level up!</div>';
@@ -1335,7 +1370,6 @@ async function showGameOfLife(node, options = {}) {
                             } else {
                               resultHtml = '<div style="text-align:center;padding:10px;color:#22c55e;font-size:14px;">✔ Hotovo. Držíš tempo.</div>';
                             }
-                            // Streak badge
                             const secStreak = glResult2.weekCount || 0;
                             if (secStreak > 0) {
                               resultHtml += `<div style="text-align:center;margin-top:8px;padding:8px 14px;
@@ -1377,7 +1411,6 @@ async function showGameOfLife(node, options = {}) {
                               if (count >= target) { secDone.style.display = 'none'; secondComplete(); }
                             };
                           } else {
-                            // habit — just mark done
                             secDone.style.display = 'block';
                             secDone.textContent = '✓ HOTOVO';
                             secDone.onclick = () => secondComplete();
@@ -1385,8 +1418,8 @@ async function showGameOfLife(node, options = {}) {
                         });
                       }, 400);
                     });
-                  }, 3000);
-                }
+                  }
+                }, 3000);
               }
             }
           }
