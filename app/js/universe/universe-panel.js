@@ -1089,12 +1089,11 @@ async function showGameOfLife(node, options = {}) {
         display:none; width:100%; padding:12px; border-radius:10px; border:1px solid rgba(34,197,94,0.3);
         background:rgba(34,197,94,0.1);
         color:#22c55e; font-size:14px; font-weight:600; cursor:pointer;
-      ">Hotovo</button>
-      <button id="mission-completed" style="
-        ${alreadyDone ? '' : 'display:none;'} width:100%; padding:12px; border-radius:10px;
-        border:1px solid rgba(34,197,94,0.2); background:rgba(34,197,94,0.05);
-        color:#22c55e; font-size:14px; font-weight:500; cursor:default;
-      ">✓ Splněno</button>
+      ">✓ Hotovo</button>
+      <div id="mission-completed" style="
+        ${alreadyDone ? '' : 'display:none;'} width:100%; text-align:center; padding:12px;
+        color:#22c55e; font-size:14px; font-weight:500;
+      ">✓ Splněno</div>
       ${alreadyDone ? streakBadge : ''}
     </div>
   ` : '';
@@ -1144,8 +1143,9 @@ async function showGameOfLife(node, options = {}) {
     async function missionComplete() {
       releaseWakeLock();
       doneBtn.style.display = 'none';
-      completedBtn.style.display = 'block';
       if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+
+      const missionCard = chjCard.querySelector('#mission-card');
 
       // Save to mission_log + get streak
       try {
@@ -1172,56 +1172,49 @@ async function showGameOfLife(node, options = {}) {
           const glResult = await glResp.json();
           console.log('🎮 Game loop:', glResult);
 
-          const missionCard = chjCard.querySelector('#mission-card');
           if (!missionCard) return;
 
-          // Show stabilized/improved text
-          const feedbackEl = document.createElement('div');
-          feedbackEl.style.cssText = `
-            text-align:center; margin-top:8px; font-size:13px; color:#94a3b8;
-            opacity:0; transition: opacity 0.5s ease 0.3s;
-          `;
-
+          // Show feedback — replace buttons with result text
+          let feedbackHtml = '';
           if (glResult.stateChanged) {
-            feedbackEl.style.color = '#22c55e';
-            feedbackEl.innerHTML = '🎉 Level up! Viditelné zlepšení.';
+            feedbackHtml = '<div style="text-align:center;padding:12px;color:#22c55e;font-size:14px;font-weight:500;">🎉 Level up! Viditelné zlepšení.</div>';
             if (navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 300]);
           } else if (glResult.impact === 'improved') {
-            feedbackEl.style.color = '#60a5fa';
-            feedbackEl.innerHTML = `📈 ${glResult.message}`;
+            feedbackHtml = `<div style="text-align:center;padding:12px;color:#60a5fa;font-size:14px;font-weight:500;">📈 Posun! Jdeš nahoru.</div>`;
           } else {
-            feedbackEl.innerHTML = `✔ ${glResult.message || 'Stabilizováno.'}`;
+            feedbackHtml = `<div style="text-align:center;padding:12px;color:#22c55e;font-size:14px;font-weight:500;">✔ Hotovo. Držíš tempo.</div>`;
           }
+
+          // Replace done button area with feedback
+          const btnArea = missionCard.querySelector('#mission-done, #mission-start');
+          if (btnArea) btnArea.remove();
+          completedBtn.style.display = 'none';
+          const feedbackEl = document.createElement('div');
+          feedbackEl.style.cssText = 'opacity:0; transition: opacity 0.5s ease;';
+          feedbackEl.innerHTML = feedbackHtml;
           missionCard.appendChild(feedbackEl);
           requestAnimationFrame(() => feedbackEl.style.opacity = '1');
 
-          // 3. SECOND ACTION — fade-in after 1.5s (different node)
+          // SECOND ACTION — inline after 3s (no extra click needed)
           // Skip if this panel was already opened as a second action (no 3rd step)
           console.log('🎯 offerMore:', glResult.offerMore, 'isSecondAction:', isSecondAction);
           if (glResult.offerMore && !isSecondAction) {
-            // 20% chance: "Dnes stačí." (trust builder)
             const rng = Math.random();
             console.log('🎲 RNG:', rng, rng < 0.2 ? '→ Dnes stačí' : '→ second action');
             if (rng < 0.2) {
               setTimeout(() => {
                 const restEl = document.createElement('div');
-                restEl.style.cssText = `
-                  text-align:center; margin-top:14px; font-size:13px; color:#64748b;
-                  opacity:0; transition: opacity 0.6s ease;
-                `;
+                restEl.style.cssText = 'text-align:center; margin-top:8px; font-size:13px; color:#64748b; opacity:0; transition: opacity 0.6s ease;';
                 restEl.textContent = 'Dnes stačí. 👍';
                 missionCard.appendChild(restEl);
                 requestAnimationFrame(() => restEl.style.opacity = '1');
               }, 3000);
             } else {
-              // Find second weakest node that has missions defined (different from current)
+              // Find second weakest node with missions
               const MISSION_NODES = new Set(Object.keys(DAILY_MISSIONS));
               const allNodes = window.MAIN_UNIVERSE_DATA || [];
-              console.log('🔍 MISSION_NODES:', [...MISSION_NODES]);
-              console.log('🔍 allNodes count:', allNodes.length, 'with state:', allNodes.filter(n => n.state && n.state !== 'GRAY').length);
               const candidates = allNodes
                 .filter(n => n.id !== node.id && MISSION_NODES.has(n.id) && n.state && n.state !== 'GRAY' && n.current_index != null);
-              console.log('🔍 candidates:', candidates.map(n => `${n.id}(${n.state},idx=${n.current_index})`));
               const secondNode = candidates
                 .sort((a, b) => (a.current_index ?? 100) - (b.current_index ?? 100))[0];
               console.log('🔍 secondNode:', secondNode?.id, secondNode?.state);
@@ -1231,7 +1224,7 @@ async function showGameOfLife(node, options = {}) {
                   nodeId: secondNode.id,
                   state: secondNode.state || 'YELLOW',
                   streak: 0,
-                  constraints: userConstraints,
+                  constraints: window._userConstraints || [],
                 });
                 const secondMission = secondSkill?.mission || pickMission(secondNode.id, secondNode.state || 'YELLOW');
 
@@ -1239,35 +1232,37 @@ async function showGameOfLife(node, options = {}) {
                   setTimeout(() => {
                     const NODE_LABELS_2 = { telo: 'tělo', mysl: 'hlavu', vyziva: 'stravu', zdravi: 'zdraví', metabolicke: 'metabolismus' };
                     const secondLabel = NODE_LABELS_2[secondNode.id] || secondNode.label || secondNode.id;
-                    // Gentle question — replace mission card content
-                    missionCard.style.opacity = '0';
-                    setTimeout(() => {
-                      missionCard.innerHTML = `
-                        <div style="color:#94a3b8;font-size:13px;font-style:italic;margin-bottom:14px;">
-                          Chceš ještě jeden krok pro ${secondLabel}?
-                        </div>
-                        <div style="display:flex;gap:10px;">
-                          <button id="second-yes" style="
-                            flex:1; padding:11px; border-radius:8px;
-                            border:1px solid rgba(96,165,250,0.3); background:rgba(96,165,250,0.1);
-                            color:#60a5fa; font-size:14px; font-weight:600; cursor:pointer;
-                          ">Pojďme na to</button>
-                          <button id="second-no" style="
-                            padding:11px 18px; border-radius:8px;
-                            border:1px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.03);
-                            color:#64748b; font-size:14px; cursor:pointer;
-                          ">Ne</button>
-                        </div>
-                      `;
-                      missionCard.style.opacity = '1';
-                      document.getElementById('second-yes')?.addEventListener('click', () => {
-                        showPanel(secondNode, { isSecondAction: true });
-                      });
-                      document.getElementById('second-no')?.addEventListener('click', () => {
-                        missionCard.style.opacity = '0';
-                        setTimeout(() => missionCard.remove(), 400);
-                      });
-                    }, 400);
+                    // Inline offer — "Chceš jít dál?" + action button + Ne
+                    const offerEl = document.createElement('div');
+                    offerEl.style.cssText = 'margin-top:14px; opacity:0; transition: opacity 0.6s ease;';
+                    offerEl.innerHTML = `
+                      <div style="color:#94a3b8;font-size:13px;font-style:italic;margin-bottom:10px;">
+                        Chceš jít dál?
+                      </div>
+                      <div style="display:flex;gap:10px;">
+                        <button id="second-yes" style="
+                          flex:1; padding:11px; border-radius:8px;
+                          border:1px solid rgba(96,165,250,0.3); background:rgba(96,165,250,0.1);
+                          color:#60a5fa; font-size:14px; font-weight:600; cursor:pointer;
+                          text-align:left;
+                        ">➡ ${secondMission.icon || '💪'} ${secondMission.label}</button>
+                        <button id="second-no" style="
+                          padding:11px 18px; border-radius:8px;
+                          border:1px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.03);
+                          color:#64748b; font-size:14px; cursor:pointer;
+                        ">Ne</button>
+                      </div>
+                    `;
+                    missionCard.appendChild(offerEl);
+                    requestAnimationFrame(() => offerEl.style.opacity = '1');
+
+                    document.getElementById('second-yes')?.addEventListener('click', () => {
+                      showPanel(secondNode, { isSecondAction: true });
+                    });
+                    document.getElementById('second-no')?.addEventListener('click', () => {
+                      offerEl.style.opacity = '0';
+                      setTimeout(() => offerEl.remove(), 400);
+                    });
                   }, 3000);
                 }
               }

@@ -14,7 +14,7 @@ const EXERCISES = {
   studenaSprcha2:{ id: 'cold_60',    label: 'Celou minutu pod studenou sprchou', icon: '🚿', area: 'imunitni', avoid: [], tier: 2, type: 'timed' },
 
   // === REGENERACE ===
-  spanekCas:    { id: 'spanek_cas',  label: 'Dnes si lehni před 23:00', icon: '🛏️', area: 'obnova',   avoid: [], tier: 1, type: 'habit' },
+  spanekCas:    { id: 'spanek_cas',  label: 'Dnes běž spát před 23:00', icon: '🛏️', area: 'obnova',   avoid: [], tier: 1, type: 'habit' },
   zadneModre:   { id: 'no_blue',     label: 'Hodinu před spaním odlož telefon a vypni TV', icon: '📵', area: 'obnova', avoid: [], tier: 1, type: 'habit' },
   power_nap:    { id: 'power_nap',   label: 'Dej si 20 minut spánku přes den', icon: '😴', area: 'obnova', avoid: [], tier: 2, type: 'timed' },
 
