@@ -1060,17 +1060,16 @@ async function showGameOfLife(node, options = {}) {
     : '';
 
   const missionHtml = mission ? `
-    <div id="mission-card" style="
-      background:#0f172a; border:1px solid #334155;
-      border-radius:12px; padding:16px; margin-top:8px;
-    ">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
-        <span style="color:#94a3b8;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Co dnes udělat</span>
-        ${skillLevel ? `<span style="margin-left:auto;font-size:11px;color:#94a3b8;background:rgba(148,163,184,0.1);padding:2px 8px;border-radius:10px;">${skillLevel.name}</span>` : ''}
-      </div>
-      ${skillMotivation ? `<div style="color:#94a3b8;font-size:13px;font-style:italic;margin-bottom:10px;">${skillMotivation}</div>` : ''}
-      <div style="color:#e2e8f0;font-size:15px;font-weight:500;margin-bottom:16px;">
-        ${mission.icon} ${mission.label}${mission.target ? ` <span style="color:#64748b;">× ${mission.target}</span>` : ''}
+    <div id="mission-card" style="margin-top:8px;">
+      <div style="
+        background:rgba(96,165,250,0.07); border:1px solid rgba(96,165,250,0.25);
+        border-radius:10px; padding:13px 16px; margin-bottom:10px;
+        display:flex; align-items:center; gap:8px;
+      ">
+        <span style="color:#e2e8f0;font-size:15px;line-height:1.45;">
+          ${mission.icon} ${mission.label}${mission.target ? ` <span style="color:#64748b;">× ${mission.target}</span>` : ''}
+        </span>
+        ${skillLevel ? `<span style="margin-left:auto;font-size:11px;color:#94a3b8;background:rgba(148,163,184,0.1);padding:2px 8px;border-radius:10px;white-space:nowrap;">${skillLevel.name}</span>` : ''}
       </div>
       <div id="mission-timer" style="display:none;text-align:center;margin-bottom:12px;">
         <span id="mission-time" style="font-size:32px;font-weight:600;color:#e2e8f0;font-variant-numeric:tabular-nums;">00:00</span>
@@ -1195,7 +1194,7 @@ async function showGameOfLife(node, options = {}) {
           missionCard.appendChild(feedbackEl);
           requestAnimationFrame(() => feedbackEl.style.opacity = '1');
 
-          // SECOND ACTION — inline after 3s (no extra click needed)
+          // SECOND ACTION — inline after 3s
           // Skip if this panel was already opened as a second action (no 3rd step)
           console.log('🎯 offerMore:', glResult.offerMore, 'isSecondAction:', isSecondAction);
           if (glResult.offerMore && !isSecondAction) {
@@ -1230,9 +1229,7 @@ async function showGameOfLife(node, options = {}) {
 
                 if (secondMission) {
                   setTimeout(() => {
-                    const NODE_LABELS_2 = { telo: 'tělo', mysl: 'hlavu', vyziva: 'stravu', zdravi: 'zdraví', metabolicke: 'metabolismus' };
-                    const secondLabel = NODE_LABELS_2[secondNode.id] || secondNode.label || secondNode.id;
-                    // Inline offer — "Chceš jít dál?" + action button + Ne
+                    // "Chceš jít dál?" with Ano / Ne
                     const offerEl = document.createElement('div');
                     offerEl.style.cssText = 'margin-top:14px; opacity:0; transition: opacity 0.6s ease;';
                     offerEl.innerHTML = `
@@ -1244,8 +1241,7 @@ async function showGameOfLife(node, options = {}) {
                           flex:1; padding:11px; border-radius:8px;
                           border:1px solid rgba(96,165,250,0.3); background:rgba(96,165,250,0.1);
                           color:#60a5fa; font-size:14px; font-weight:600; cursor:pointer;
-                          text-align:left;
-                        ">➡ ${secondMission.icon || '💪'} ${secondMission.label}</button>
+                        ">Ano</button>
                         <button id="second-no" style="
                           padding:11px 18px; border-radius:8px;
                           border:1px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.03);
@@ -1256,12 +1252,138 @@ async function showGameOfLife(node, options = {}) {
                     missionCard.appendChild(offerEl);
                     requestAnimationFrame(() => offerEl.style.opacity = '1');
 
-                    document.getElementById('second-yes')?.addEventListener('click', () => {
-                      showPanel(secondNode, { isSecondAction: true });
-                    });
+                    // Ne = leave everything as is
                     document.getElementById('second-no')?.addEventListener('click', () => {
+                      offerEl.innerHTML = '<div style="text-align:center;margin-top:4px;font-size:13px;color:#64748b;">👍</div>';
+                    });
+
+                    // Ano = expand second action inline
+                    document.getElementById('second-yes')?.addEventListener('click', () => {
+                      const NODE_LABELS_2 = { telo: 'tělo', mysl: 'hlavu', vyziva: 'stravu', zdravi: 'zdraví', metabolicke: 'metabolismus' };
+                      const secondLabel = NODE_LABELS_2[secondNode.id] || secondNode.label || secondNode.id;
+
                       offerEl.style.opacity = '0';
-                      setTimeout(() => offerEl.remove(), 400);
+                      setTimeout(() => {
+                        offerEl.innerHTML = `
+                          <div style="
+                            background:rgba(96,165,250,0.07); border:1px solid rgba(96,165,250,0.25);
+                            border-radius:10px; padding:13px 16px; margin-bottom:10px;
+                          ">
+                            <span style="color:#e2e8f0;font-size:15px;line-height:1.45;">
+                              ${secondMission.icon || '💪'} ${secondMission.label}${secondMission.target ? ` <span style="color:#64748b;">× ${secondMission.target}</span>` : ''}
+                            </span>
+                          </div>
+                          <div id="second-timer" style="display:none;text-align:center;margin-bottom:12px;">
+                            <span id="second-time" style="font-size:32px;font-weight:600;color:#e2e8f0;font-variant-numeric:tabular-nums;">00:00</span>
+                          </div>
+                          <div id="second-progress" style="display:none;text-align:center;margin-bottom:12px;">
+                            <span id="second-count" style="font-size:32px;font-weight:600;color:#e2e8f0;">0</span>
+                            <span style="color:#64748b;font-size:14px;"> / ${secondMission.target || ''}</span>
+                          </div>
+                          <button id="second-start" style="
+                            width:100%; padding:12px; border-radius:10px; border:1px solid rgba(96,165,250,0.3);
+                            background:rgba(96,165,250,0.1);
+                            color:#60a5fa; font-size:14px; font-weight:600; cursor:pointer;
+                          ">Začít</button>
+                          <button id="second-done" style="
+                            display:none; width:100%; padding:12px; border-radius:10px; border:1px solid rgba(34,197,94,0.3);
+                            background:rgba(34,197,94,0.1);
+                            color:#22c55e; font-size:14px; font-weight:600; cursor:pointer;
+                          ">✓ Hotovo</button>
+                        `;
+                        offerEl.style.opacity = '1';
+
+                        // Wire up second mission interaction
+                        const secStart = document.getElementById('second-start');
+                        const secDone = document.getElementById('second-done');
+                        const secTimer = document.getElementById('second-timer');
+                        const secTime = document.getElementById('second-time');
+                        const secProgress = document.getElementById('second-progress');
+                        const secCount = document.getElementById('second-count');
+
+                        function fmtTime(sec) {
+                          const m = Math.floor(sec / 60), s = sec % 60;
+                          return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+                        }
+
+                        async function secondComplete() {
+                          secDone.style.display = 'none';
+                          if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+                          try {
+                            await fetch('/api/mission-log', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                userId,
+                                nodeId: secondNode.id,
+                                missionId: secondMission.id,
+                                actionType: secondMission.action_type || secondMission.type,
+                              }),
+                            });
+                            const glResp2 = await fetch('/api/mission-complete', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ userId, nodeId: secondNode.id }),
+                            });
+                            const glResult2 = await glResp2.json();
+                            // Show result + streak (persistent, don't remove)
+                            let resultHtml = '';
+                            if (glResult2.stateChanged) {
+                              resultHtml = '<div style="text-align:center;padding:10px;color:#22c55e;font-size:14px;">🎉 Level up!</div>';
+                            } else if (glResult2.impact === 'improved') {
+                              resultHtml = '<div style="text-align:center;padding:10px;color:#60a5fa;font-size:14px;">📈 Posun! Jdeš nahoru.</div>';
+                            } else {
+                              resultHtml = '<div style="text-align:center;padding:10px;color:#22c55e;font-size:14px;">✔ Hotovo. Držíš tempo.</div>';
+                            }
+                            // Streak badge
+                            const secStreak = glResult2.weekCount || 0;
+                            if (secStreak > 0) {
+                              resultHtml += `<div style="text-align:center;margin-top:8px;padding:8px 14px;
+                                background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.25);
+                                border-radius:8px;font-size:14px;color:#fde68a;">
+                                🔥 ${secStreak} ${secStreak === 1 ? 'den' : secStreak < 5 ? 'dny po sobě' : 'dní po sobě'}</div>`;
+                            }
+                            offerEl.innerHTML += resultHtml;
+                          } catch (e2) {
+                            console.warn('Second mission save failed:', e2.message);
+                            offerEl.innerHTML += '<div style="text-align:center;padding:10px;color:#22c55e;font-size:14px;">✔ Hotovo.</div>';
+                          }
+                        }
+
+                        secStart?.addEventListener('click', () => {
+                          secStart.style.display = 'none';
+                          if (secondMission.action_type === 'timed' || secondMission.type === 'timed') {
+                            let secs = secondMission.duration || 60;
+                            secTimer.style.display = 'block';
+                            secTime.textContent = fmtTime(secs);
+                            const iv = setInterval(() => {
+                              secs--;
+                              secTime.textContent = fmtTime(secs);
+                              if (secs <= 0) { clearInterval(iv); secondComplete(); }
+                            }, 1000);
+                            secDone.style.display = 'block';
+                            secDone.textContent = '⏹ ZASTAVIT';
+                            secDone.onclick = () => { clearInterval(iv); secondComplete(); };
+                          } else if (secondMission.action_type === 'reps' || secondMission.type === 'reps') {
+                            let count = 0;
+                            const target = secondMission.target || 10;
+                            secProgress.style.display = 'block';
+                            secCount.textContent = '0';
+                            secDone.style.display = 'block';
+                            secDone.textContent = '+1';
+                            secDone.onclick = () => {
+                              count++;
+                              secCount.textContent = count;
+                              if (count >= target) { secDone.style.display = 'none'; secondComplete(); }
+                            };
+                          } else {
+                            // habit — just mark done
+                            secDone.style.display = 'block';
+                            secDone.textContent = '✓ HOTOVO';
+                            secDone.onclick = () => secondComplete();
+                          }
+                        });
+                      }, 400);
                     });
                   }, 3000);
                 }
