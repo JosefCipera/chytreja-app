@@ -1267,20 +1267,20 @@ async function showGameOfLife(node, options = {}) {
                         background:rgba(96,165,250,0.06); border:1px solid rgba(96,165,250,0.2);
                         border-radius:10px; padding:14px 16px;
                       ">
-                        <div style="color:#94a3b8;font-size:13px;margin-bottom:12px;">
+                        <div style="color:#e2e8f0;font-size:14px;margin-bottom:12px;">
                           ${offerText}
                         </div>
                         <div style="display:flex;gap:10px;align-items:center;">
+                          <button id="second-yes" style="
+                            flex:1; padding:10px 14px; border-radius:8px;
+                            border:1px solid rgba(96,165,250,0.3); background:rgba(96,165,250,0.1);
+                            color:#60a5fa; font-size:14px; font-weight:600; cursor:pointer;
+                          ">Ano</button>
                           <button id="second-no" style="
                             padding:10px 16px; border-radius:8px;
                             border:1px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.03);
-                            color:#64748b; font-size:14px; cursor:pointer; white-space:nowrap;
+                            color:#64748b; font-size:14px; cursor:pointer;
                           ">Ne</button>
-                          <button id="second-yes" style="
-                            flex:1; padding:10px 14px; border-radius:8px;
-                            border:1px solid rgba(96,165,250,0.3); background:rgba(96,165,250,0.08);
-                            color:#60a5fa; font-size:14px; cursor:pointer; text-align:left;
-                          ">${secondMission.icon || '💪'} ${secondMission.label}</button>
                         </div>
                       </div>
                     `;
