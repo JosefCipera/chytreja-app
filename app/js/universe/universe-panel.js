@@ -1054,8 +1054,8 @@ async function showGameOfLife(node, options = {}) {
   const alreadyDone = mission && todayThisMission >= 2;
   const streakBadge = streakCount > 0
     ? `<div style="text-align:center;margin-top:10px;padding:8px 14px;
-        background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.25);
-        border-radius:8px;font-size:14px;color:#fde68a;">
+        background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);
+        border-radius:8px;font-size:14px;color:#e2e8f0;">
         🔥 ${streakCount} ${streakCount === 1 ? 'den' : streakCount < 5 ? 'dny po sobě' : 'dní po sobě'}</div>`
     : '';
 
@@ -1085,13 +1085,13 @@ async function showGameOfLife(node, options = {}) {
         color:#60a5fa; font-size:14px; font-weight:600; cursor:pointer;
       ">Začít</button>
       <button id="mission-done" style="
-        display:none; width:100%; padding:12px; border-radius:10px; border:1px solid rgba(34,197,94,0.3);
-        background:rgba(34,197,94,0.1);
-        color:#22c55e; font-size:14px; font-weight:600; cursor:pointer;
+        display:none; width:100%; padding:12px; border-radius:10px; border:1px solid rgba(96,165,250,0.3);
+        background:rgba(96,165,250,0.1);
+        color:#60a5fa; font-size:14px; font-weight:600; cursor:pointer;
       ">✓ Hotovo</button>
       <div id="mission-completed" style="
         ${alreadyDone ? '' : 'display:none;'} width:100%; text-align:center; padding:12px;
-        color:#22c55e; font-size:14px; font-weight:500;
+        color:#e2e8f0; font-size:14px; font-weight:500;
       ">✓ Splněno</div>
       ${alreadyDone ? streakBadge : ''}
     </div>
@@ -1176,12 +1176,12 @@ async function showGameOfLife(node, options = {}) {
           // Show feedback — replace buttons with result text
           let feedbackHtml = '';
           if (glResult.stateChanged) {
-            feedbackHtml = '<div style="text-align:center;padding:12px;color:#22c55e;font-size:14px;font-weight:500;">🎉 Level up! Viditelné zlepšení.</div>';
+            feedbackHtml = '<div style="text-align:center;padding:12px;color:#e2e8f0;font-size:14px;font-weight:500;">🎉 Level up! Viditelné zlepšení.</div>';
             if (navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 300]);
           } else if (glResult.impact === 'improved') {
-            feedbackHtml = `<div style="text-align:center;padding:12px;color:#60a5fa;font-size:14px;font-weight:500;">📈 Posun! Jdeš nahoru.</div>`;
+            feedbackHtml = `<div style="text-align:center;padding:12px;color:#e2e8f0;font-size:14px;font-weight:500;">📈 Posun! Jdeš nahoru.</div>`;
           } else {
-            feedbackHtml = `<div style="text-align:center;padding:12px;color:#22c55e;font-size:14px;font-weight:500;">✔ Hotovo. Držíš tempo.</div>`;
+            feedbackHtml = `<div style="text-align:center;padding:12px;color:#e2e8f0;font-size:14px;font-weight:500;">✔ Hotovo. Držíš tempo.</div>`;
           }
 
           // Replace done button area with feedback
@@ -1251,9 +1251,9 @@ async function showGameOfLife(node, options = {}) {
                   if (!shouldOffer) {
                     // Rest message
                     offerEl.innerHTML = `<div style="
-                      background:rgba(34,197,94,0.06); border:1px solid rgba(34,197,94,0.2);
+                      background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1);
                       border-radius:10px; padding:13px 16px; text-align:center;
-                      color:#86efac; font-size:14px;
+                      color:#e2e8f0; font-size:14px;
                     ">${offerText} 👍</div>`;
                     missionCard.appendChild(offerEl);
                     requestAnimationFrame(() => offerEl.style.opacity = '1');
@@ -1293,9 +1293,9 @@ async function showGameOfLife(node, options = {}) {
                     // Ne = leave everything as is, just replace offer with 👍
                     document.getElementById('second-no')?.addEventListener('click', () => {
                       offerEl.innerHTML = `<div style="
-                        background:rgba(34,197,94,0.06); border:1px solid rgba(34,197,94,0.2);
+                        background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1);
                         border-radius:10px; padding:13px 16px; text-align:center;
-                        color:#86efac; font-size:14px;
+                        color:#e2e8f0; font-size:14px;
                       ">Dnes stačí. 👍</div>`;
                     });
 
@@ -1325,9 +1325,9 @@ async function showGameOfLife(node, options = {}) {
                             color:#60a5fa; font-size:14px; font-weight:600; cursor:pointer;
                           ">Začít</button>
                           <button id="second-done" style="
-                            display:none; width:100%; padding:12px; border-radius:10px; border:1px solid rgba(34,197,94,0.3);
-                            background:rgba(34,197,94,0.1);
-                            color:#22c55e; font-size:14px; font-weight:600; cursor:pointer;
+                            display:none; width:100%; padding:12px; border-radius:10px; border:1px solid rgba(96,165,250,0.3);
+                            background:rgba(96,165,250,0.1);
+                            color:#60a5fa; font-size:14px; font-weight:600; cursor:pointer;
                           ">✓ Hotovo</button>
                         `;
                         offerEl.style.opacity = '1';
@@ -1367,23 +1367,23 @@ async function showGameOfLife(node, options = {}) {
                             const glResult2 = await glResp2.json();
                             let resultHtml = '';
                             if (glResult2.stateChanged) {
-                              resultHtml = '<div style="text-align:center;padding:10px;color:#22c55e;font-size:14px;">🎉 Level up!</div>';
+                              resultHtml = '<div style="text-align:center;padding:10px;color:#e2e8f0;font-size:14px;">🎉 Level up! Viditelné zlepšení.</div>';
                             } else if (glResult2.impact === 'improved') {
-                              resultHtml = '<div style="text-align:center;padding:10px;color:#60a5fa;font-size:14px;">📈 Posun! Jdeš nahoru.</div>';
+                              resultHtml = '<div style="text-align:center;padding:10px;color:#e2e8f0;font-size:14px;">📈 Posun! Jdeš nahoru.</div>';
                             } else {
-                              resultHtml = '<div style="text-align:center;padding:10px;color:#22c55e;font-size:14px;">✔ Hotovo. Držíš tempo.</div>';
+                              resultHtml = '<div style="text-align:center;padding:10px;color:#e2e8f0;font-size:14px;">✔ Hotovo. Držíš tempo.</div>';
                             }
                             const secStreak = glResult2.weekCount || 0;
                             if (secStreak > 0) {
                               resultHtml += `<div style="text-align:center;margin-top:8px;padding:8px 14px;
-                                background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.25);
-                                border-radius:8px;font-size:14px;color:#fde68a;">
+                                background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);
+                                border-radius:8px;font-size:14px;color:#e2e8f0;">
                                 🔥 ${secStreak} ${secStreak === 1 ? 'den' : secStreak < 5 ? 'dny po sobě' : 'dní po sobě'}</div>`;
                             }
                             offerEl.innerHTML += resultHtml;
                           } catch (e2) {
                             console.warn('Second mission save failed:', e2.message);
-                            offerEl.innerHTML += '<div style="text-align:center;padding:10px;color:#22c55e;font-size:14px;">✔ Hotovo.</div>';
+                            offerEl.innerHTML += '<div style="text-align:center;padding:10px;color:#e2e8f0;font-size:14px;">✔ Hotovo.</div>';
                           }
                         }
 
