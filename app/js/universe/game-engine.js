@@ -253,11 +253,16 @@ export const DAILY_MISSIONS = {
  * Pick today's mission for a node.
  * Rotates based on day-of-year so user doesn't get the same one every day.
  */
-export function pickMission(nodeId, state) {
+export function pickMission(nodeId, state, excludeId = null) {
   const missions = DAILY_MISSIONS[nodeId]?.[state];
   if (!missions || missions.length === 0) return null;
   const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
-  return missions[dayOfYear % missions.length];
+  const primary = missions[dayOfYear % missions.length];
+  if (!excludeId || primary.id !== excludeId) return primary;
+  // Return a different mission if available
+  const alt = missions.filter(m => m.id !== excludeId);
+  if (alt.length === 0) return null;
+  return alt[(dayOfYear + 1) % alt.length];
 }
 
 // =====================================================

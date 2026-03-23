@@ -1194,55 +1194,58 @@ async function showGameOfLife(node, options = {}) {
           missionCard.appendChild(feedbackEl);
           requestAnimationFrame(() => feedbackEl.style.opacity = '1');
 
-          // SECOND ACTION — smart offer based on state/trend/streak
-          // Skip if this panel was already opened as a second action (no 3rd step)
-          console.log('🎯 offerMore:', glResult.offerMore, 'isSecondAction:', isSecondAction);
-          if (glResult.offerMore && !isSecondAction) {
-            // Find second weakest node (biggest problem) with missions
-            const MISSION_NODES = new Set(Object.keys(DAILY_MISSIONS));
-            const allNodes = window.MAIN_UNIVERSE_DATA || [];
-            const candidates = allNodes
-              .filter(n => n.id !== node.id && MISSION_NODES.has(n.id) && n.state && n.state !== 'GRAY' && n.current_index != null);
-            const secondNode = candidates
-              .sort((a, b) => (a.current_index ?? 100) - (b.current_index ?? 100))[0];
-            console.log('🔍 secondNode:', secondNode?.id, secondNode?.state);
+          // SECOND ACTION — same node, different mission
+          // Skip if: already a second action, or 2+ actions done today (any node)
+          const todayTotal = glResult.todayTotalCount || glResult.todayCount || 0;
+          console.log('🎯 offerMore:', glResult.offerMore, 'isSecondAction:', isSecondAction, 'todayTotal:', todayTotal);
 
-            if (secondNode) {
-              const secondSkill = runSkill({
-                nodeId: secondNode.id,
-                state: secondNode.state || 'YELLOW',
-                streak: 0,
-                constraints: window._userConstraints || [],
-              });
-              const secondMission = secondSkill?.mission || pickMission(secondNode.id, secondNode.state || 'YELLOW');
+          // 2 actions today = always rest
+          if (todayTotal >= 2 || isSecondAction) {
+            if (todayTotal >= 2 && !isSecondAction) {
+              setTimeout(() => {
+                const restEl = document.createElement('div');
+                restEl.style.cssText = 'margin-top:14px; opacity:0; transition: opacity 0.6s ease;';
+                restEl.innerHTML = `<div style="
+                  background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1);
+                  border-radius:10px; padding:13px 16px; text-align:center;
+                  color:#e2e8f0; font-size:14px;
+                ">Dnes stačí. 👍</div>`;
+                missionCard.appendChild(restEl);
+                requestAnimationFrame(() => restEl.style.opacity = '1');
+              }, 3000);
+            }
+          } else if (glResult.offerMore) {
+            // Find different mission for SAME node
+            const secondMission = pickMission(node.id, node.state || 'YELLOW', mission.id);
+            console.log('🔍 secondMission (same node):', secondMission?.id, '(excluded:', mission.id, ')');
 
-              if (secondMission) {
-                // Decide: offer or rest? Based on secondNode state + trend + streak
-                const sState = secondNode.state || 'YELLOW';
-                const sTrend = secondNode.trend || 'stable';
-                const sStreak = result.streak || 0;
-                let shouldOffer = false;
-                let offerText = '';
+            if (secondMission) {
+              // Decide: offer or rest? Based on current node state + trend + streak
+              const sState = node.state || 'YELLOW';
+              const sTrend = node.trend || 'stable';
+              const sStreak = result.streak || 0;
+              let shouldOffer = false;
+              let offerText = '';
 
-                if (sState === 'RED' || sTrend === 'down') {
-                  // CASE 1: problém — vždy nabídni
-                  shouldOffer = true;
-                  offerText = 'Můžeš to ještě posílit.';
-                } else if (sState === 'GREEN' && sTrend === 'up') {
-                  // CASE 3: dobrý stav — netlačit
-                  shouldOffer = false;
-                  offerText = 'Držíš to. Dnes stačí.';
-                } else if (sStreak >= 3 && Math.random() < 0.5) {
-                  // CASE 4: streak boost — občas nabídni
-                  shouldOffer = true;
-                  offerText = 'Jedeš dobře. Přidáš krok?';
-                } else {
-                  // CASE 2: střed — 50/50
-                  shouldOffer = Math.random() < 0.5;
-                  offerText = shouldOffer ? 'Chceš jít dál?' : 'Dnes stačí.';
-                }
+              if (sState === 'RED' || sTrend === 'down') {
+                // CASE 1: problém — vždy nabídni
+                shouldOffer = true;
+                offerText = 'Můžeš to ještě posílit.';
+              } else if (sState === 'GREEN' && sTrend === 'up') {
+                // CASE 3: dobrý stav — netlačit
+                shouldOffer = false;
+                offerText = 'Držíš to. Dnes stačí.';
+              } else if (sStreak >= 3 && Math.random() < 0.5) {
+                // CASE 4: streak boost — občas nabídni
+                shouldOffer = true;
+                offerText = 'Jedeš dobře. Přidáš krok?';
+              } else {
+                // CASE 2: střed — 50/50
+                shouldOffer = Math.random() < 0.5;
+                offerText = shouldOffer ? 'Chceš jít dál?' : 'Dnes stačí.';
+              }
 
-                console.log('🎲 2nd action logic:', { sState, sTrend, sStreak, shouldOffer, offerText });
+              console.log('🎲 2nd action logic:', { sState, sTrend, sStreak, shouldOffer, offerText });
 
                 setTimeout(() => {
                   const offerEl = document.createElement('div');
@@ -1354,7 +1357,7 @@ async function showGameOfLife(node, options = {}) {
                               headers: { 'Content-Type': 'application/json' },
                               body: JSON.stringify({
                                 userId,
-                                nodeId: secondNode.id,
+                                nodeId: node.id,
                                 missionId: secondMission.id,
                                 actionType: secondMission.action_type || secondMission.type,
                               }),

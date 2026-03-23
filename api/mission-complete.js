@@ -40,7 +40,7 @@ export default async function (req, res) {
 
     const today = new Date().toISOString().split('T')[0];
 
-    // 1. Count today's steps for this node
+    // 1. Count today's steps for this node + total across all nodes
     const { data: todayMissions } = await supabase
       .from('mission_log')
       .select('id')
@@ -49,6 +49,14 @@ export default async function (req, res) {
       .eq('date', today);
 
     const todayCount = todayMissions?.length || 0;
+
+    const { data: todayAllMissions } = await supabase
+      .from('mission_log')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('date', today);
+
+    const todayTotalCount = todayAllMissions?.length || 0;
 
     // 2. Get current node metrics
     const { data: metric } = await supabase
@@ -168,6 +176,7 @@ export default async function (req, res) {
     return res.json({
       impact,
       todayCount,
+      todayTotalCount,
       weekCount,
       nodeId,
       oldIndex,
