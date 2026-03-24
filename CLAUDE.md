@@ -1,4 +1,4 @@
-# CLAUDE.md – CHJ (Chytré Já) v0.1.0
+# CLAUDE.md – CHJ (Chytré Já) v0.2.0
 
 ## Co je CHJ
 
@@ -14,7 +14,7 @@ Tón: kombinace lidského kouče + systémového HUD terminálu
 
 ### Tři vrstvy
 
-1. **Klient (PWA, mobile first)** – vesmír uzlů + Longevity HUD panel + hlas + notifikace
+1. **Klient (PWA, mobile first)** – vesmír uzlů (canvas) + Longevity HUD panel (Svelte) + hlas + notifikace
 2. **Orchestrátor (backend)** – CHJ Master Agent, rozhoduje co říct a koho zavolat
 3. **Skills + Agents + Tools** – deterministická logika, AI agenti, utility funkce
 
@@ -22,13 +22,54 @@ Tón: kombinace lidského kouče + systémového HUD terminálu
 
 | Vrstva | Technologie | Poznámka |
 |--------|-------------|----------|
-| **Frontend** | Svelte (plán v0.2.0), aktuálně Vanilla JS | Přechod na komponenty |
-| **Styling** | Tailwind CSS (plán v0.2.0), aktuálně inline | HUD vyžaduje komponentový přístup |
+| **Frontend** | Svelte 4 + Vite | Komponenty, reaktivita |
+| **Styling** | Tailwind CSS 3 | Utility-first, HUD design tokens |
+| **Vesmír** | Canvas (vanilla JS) | Obalený ve Svelte wrapperu `<Universe>` |
 | **Backend** | Vercel serverless functions (Node.js, ESM) | |
 | **AI** | OpenAI GPT-4o-mini (plán: Claude Sonnet/Haiku) | |
 | **DB** | Supabase (PostgreSQL) | |
 | **Auth** | Firebase | |
 | **TTS** | Browser Web Speech API (plán: ElevenLabs) | |
+
+### Svelte komponenty
+
+```
+src/
+├── App.svelte                  ← hlavní layout
+├── lib/
+│   ├── components/
+│   │   ├── Universe.svelte     ← canvas wrapper (stávající logika)
+│   │   ├── HudPanel.svelte     ← hlavní HUD panel
+│   │   ├── hud/
+│   │   │   ├── NodeHeader.svelte    ← LONGEVITY NODE [TĚLO_v0.1] ✕
+│   │   │   ├── LifeBattery.svelte   ← baterie + REPAIR_RATE + CELL_VITALITY
+│   │   │   ├── KillerCard.svelte    ← KILLER: SRDCE + energy drain
+│   │   │   ├── ActionProtocol.svelte ← ACTION + timer/counter + Hotovo
+│   │   │   ├── SecondAction.svelte  ← Chceš jít dál? Ano/Ne + expand
+│   │   │   ├── SourceCards.svelte   ← SOURCE_VALIDATION karty
+│   │   │   └── TrendChart.svelte    ← sparkline s regresí
+│   │   ├── Splash.svelte
+│   │   └── ChatBar.svelte
+│   ├── stores/
+│   │   ├── universe.js         ← nodes, metrics, user data
+│   │   ├── mission.js          ← aktuální mise, streak, game loop
+│   │   └── user.js             ← auth, constraints, aspirace
+│   ├── skills/                 ← deterministická logika (bez AI)
+│   │   ├── kroky/
+│   │   │   ├── cviceni.js      ← cviky pro Tělo
+│   │   │   ├── metabol.js      ← metabolické akce
+│   │   │   └── prevence.js     ← prevence, spánek
+│   │   ├── verdikt/
+│   │   │   └── game-engine.js  ← verdikty + killer texty
+│   │   └── media/
+│   │       └── media-picker.js ← výběr zdrojů z DB
+│   ├── utils/
+│   │   ├── supabase.js
+│   │   ├── firebase.js
+│   │   └── api.js              ← fetch wrappery
+│   └── styles/
+│       └── hud.css             ← scan lines, glow, animace
+```
 
 ### Prostředí
 
@@ -51,7 +92,7 @@ Tón: kombinace lidského kouče + systémového HUD terminálu
 ### Filosofie
 
 Dva režimy pohledu:
-1. **Vesmír** — mapa uzlů (planety), kliknutím otevři detail
+1. **Vesmír** — mapa uzlů (planety na canvas), kliknutím otevři detail
 2. **HUD Panel** — detail uzlu ve stylu sci-fi/gaming HUD (cyber-med estetika)
 
 ### HUD Panel — struktura (mobile stack)
@@ -142,6 +183,44 @@ Dva režimy pohledu:
 - **Monospace font**: pro systémové popisky (KILLER, ACTION, STABLE)
 - **Sans-serif**: pro český obsah
 - **Animace**: pulse na baterii, glow na aktivní akci, scan line efekt
+
+### Tailwind HUD design tokens
+
+```js
+// tailwind.config.js
+module.exports = {
+  theme: {
+    extend: {
+      colors: {
+        hud: {
+          bg: '#0f172a',
+          panel: 'rgba(15, 23, 42, 0.85)',
+          border: 'rgba(6, 182, 212, 0.2)',
+          glow: '#06b6d4',
+          green: '#22c55e',
+          yellow: '#eab308',
+          red: '#ef4444',
+          cyan: '#06b6d4',
+          text: '#e2e8f0',
+          muted: '#94a3b8',
+          dim: '#64748b',
+        }
+      },
+      fontFamily: {
+        mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
+        sans: ['Inter', 'system-ui', 'sans-serif'],
+      },
+      backdropBlur: {
+        hud: '12px',
+      },
+      boxShadow: {
+        'hud-glow': '0 0 15px rgba(6, 182, 212, 0.15)',
+        'hud-neon': '0 0 20px rgba(6, 182, 212, 0.3)',
+      }
+    }
+  }
+}
+```
 
 ---
 
@@ -244,52 +323,89 @@ Druhá akce = jiná mise ze STEJNÉHO uzlu. Ne z jiného.
 | **Agents** | Backend (API → Claude) | Ano | Personalizovaný verdikt, nutriční analýza |
 | **Tools** | Backend (API) | Různé | Food Camera (Vision), TTS, DB lookup |
 
-### Adresářová struktura
+### Adresářová struktura (v0.2.0+)
 
 ```
-app/
-├── js/universe/
-│   ├── skills/              ← deterministická logika
-│   │   ├── kroky/           ← denní akce
-│   │   │   ├── cviceni.js   ← cviky pro Tělo
-│   │   │   ├── metabol.js   ← metabolické akce
-│   │   │   └── prevence.js  ← prevence, spánek
-│   │   ├── verdikt/         ← texty podle stavu
-│   │   │   └── game-engine.js
-│   │   └── media/           ← výběr zdrojů
-│   │       └── media-picker.js
-│   ├── universe-panel.js    ← HUD panel renderer
-│   ├── universe-init.js     ← data loading + merge
-│   ├── universe-core.js     ← vesmír (planety, klikání)
-│   ├── data-layer.js        ← sparkline, trendy
-│   ├── onboarding.js        ← 11 otázek
-│   └── splash.js            ← splash screen
+src/
+├── lib/
+│   ├── skills/                 ← deterministická logika (frontend)
+│   │   ├── kroky/
+│   │   │   ├── cviceni.js      ← cviky pro Tělo
+│   │   │   ├── metabol.js      ← metabolické akce
+│   │   │   └── prevence.js     ← prevence, spánek
+│   │   ├── verdikt/
+│   │   │   └── game-engine.js  ← verdict + killer texty
+│   │   └── media/
+│   │       └── media-picker.js ← výběr zdrojů z DB
 │
 api/
-├── agents/                  ← AI agenti (plán v0.3.0+)
-│   ├── master.js            ← CHJ orchestrátor
-│   ├── telo.js              ← specializovaný
-│   └── vyziva.js
-├── tools/                   ← utility pro agenty (plán v0.4.0+)
-│   ├── food-camera.js       ← foto → popis jídla
-│   ├── calorie-calc.js      ← popis → kalorie
-│   └── trend-engine.js      ← predikce
-├── chat.js                  ← CHJ AI (aktuálně GPT-4o-mini)
-├── mission-complete.js      ← game loop
-├── mission-log.js           ← záznam kroků
-└── disciplines.js           ← disciplíny
+├── agents/                     ← AI agenti (plán v0.3.0+)
+│   ├── master.js               ← CHJ orchestrátor (Claude Sonnet)
+│   ├── telo.js                 ← specializovaný agent Tělo
+│   ├── vyziva.js               ← specializovaný agent Výživa
+│   ├── mysl.js                 ← specializovaný agent Mysl
+│   ├── zdravi.js               ← specializovaný agent Zdraví
+│   └── metabol.js              ← specializovaný agent Metabolismus
+├── tools/                      ← utility pro agenty (plán v0.4.0+)
+│   ├── food-camera.js          ← foto → popis jídla (Vision API)
+│   ├── calorie-calc.js         ← popis → kalorie/makra
+│   ├── trend-engine.js         ← predikce (lineární regrese)
+│   └── media-lookup.js         ← DB lookup zdrojů
+├── chat.js                     ← CHJ AI (aktuálně GPT-4o-mini)
+├── mission-complete.js         ← game loop
+├── mission-log.js              ← záznam kroků
+└── disciplines.js              ← disciplíny
 ```
 
-### Budoucí flow (v0.5.0+)
+### Vertikální architektura (cíl v0.5.0+)
 
 ```
-Uživatel → klikne na uzel
-  → Frontend: skills/kroky → vybere akci deterministicky
-  → Frontend: skills/media → vybere zdroje z DB
-  → API: agents/master → Claude Sonnet orchestruje
-    → agents/telo → personalizovaný verdikt
-    → tools/trend-engine → predikce
-  → HUD Panel: zobrazí vše
+┌─────────────────────────────────┐
+│       CHJ Master Agent          │
+│   (orchestrátor, Claude Sonnet) │
+│   — rozhoduje CO říct a komu    │
+│     zavolat                     │
+└───────────┬─────────────────────┘
+            │
+  ┌─────────┼─────────────┐
+  │         │             │
+  ▼         ▼             ▼
+┌──────┐ ┌──────┐   ┌──────────┐
+│Agents│ │Tools │   │ Sensors  │
+└──────┘ └──────┘   └──────────┘
+
+AGENTS (Claude Haiku — rychlý, levný):
+├── Tělo Agent      — cviky, progrese, zranění
+├── Výživa Agent    — jídlo, kalorie, makra
+├── Mysl Agent      — mindfulness, spánek, stres
+├── Zdraví Agent    — prevence, markery, léky
+└── Metabol Agent   — glukóza, půst, kompozice
+
+TOOLS (API/funkce):
+├── 📷 Food Camera  — foto jídla → popis (Vision)
+├── 🔢 Calorie Calc — popis → kalorie/makra
+├── 📚 Media Lookup — zdroje podle uzlu z DB
+├── 🔊 TTS          — ElevenLabs hlas
+├── 📊 Trend Engine — sparkline + predikce
+└── 🔔 Push Engine  — proaktivní notifikace
+
+SENSORS (vstup od uživatele):
+├── Onboarding      — první data
+├── Kroky (mise)    — denní akce
+├── Foto jídel      — strava tracker
+├── Ruční vstup     — váha, spánek, nálada
+└── Wearables       — (budoucnost) Apple Health
+```
+
+### Příklad flow — focení jídla (v0.4.0+)
+
+```
+Uživatel → vyfotí oběd
+  → Food Camera tool → "kuřecí prsa, rýže, salát"
+  → Calorie Calc → 550 kcal, 45g protein
+  → Výživa Agent → "Protein ok. Přidej zeleninu."
+  → CHJ Master → uloží, updatne index výživy
+  → HUD Panel → sparkline se posune
 ```
 
 ---
@@ -342,8 +458,8 @@ Uživatel si vybere sen (běžky v 85, Ironman, hrát s vnouky...).
 
 | Verze | Obsah | Status |
 |-------|-------|--------|
-| **v0.1.0** | Semafor, kroky, baterie, sparkline, onboarding | ✅ Hotovo |
-| **v0.2.0** | Longevity HUD panel, Svelte + Tailwind, zdroje v panelu | 🔄 Plán |
+| **v0.1.0** | Semafor, kroky, baterie, sparkline, onboarding (vanilla JS) | ✅ Hotovo |
+| **v0.2.0** | Longevity HUD panel, Svelte + Tailwind, zdroje v panelu | 🔄 Aktivní |
 | **v0.3.0** | Claude Haiku pro výběr kroků (místo deterministického) | 📋 |
 | **v0.4.0** | Foto jídel → kalorie (Vision API) | 📋 |
 | **v0.5.0** | CHJ Master Agent + MCP orchestrace | 📋 |
@@ -355,7 +471,10 @@ Uživatel si vybere sen (běžky v 85, Ironman, hrát s vnouky...).
 ## Konvence kódu
 
 - ESM moduly (`"type": "module"`)
-- Vercel serverless v `/api/`, frontend v `/app/`
+- Svelte komponenty v `src/lib/components/`
+- Svelte stores v `src/lib/stores/`
+- Skills (deterministická logika) v `src/lib/skills/`
+- Vercel serverless v `/api/`, frontend v `/src/`
 - Supabase klient UVNITŘ handler funkce (ne top level)
 - `dotenv` na začátku serverless functions
 - Systémové UI labels: angličtina (KILLER, ACTION, LIFE-BATTERY)
@@ -363,6 +482,7 @@ Uživatel si vybere sen (běžky v 85, Ironman, hrát s vnouky...).
 - Kód a komentáře: angličtina
 - Git: develop na `main`, test na `test`, produkce na `production`
 - Max 2 barvy v mission kartě: bílá (#e2e8f0) + modrá (#60a5fa)
+- HUD komponenty: neonové barvy podle stavu (green/yellow/red/cyan)
 
 ---
 
@@ -375,3 +495,4 @@ Uživatel si vybere sen (běžky v 85, Ironman, hrát s vnouky...).
 - Nepracujeme s čísly v UI — jen barvy, HUD metriky, přehled
 - Claude Code smí vytvářet nové tabulky v Supabase
 - Splash screen zobrazuje verzi při startu
+- v0.1.0 = vanilla JS (zachováno v git tagu), v0.2.0+ = Svelte
