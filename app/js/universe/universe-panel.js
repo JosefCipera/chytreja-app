@@ -1203,26 +1203,12 @@ async function showGameOfLife(node, options = {}) {
             }
           }
 
-          // SECOND ACTION — same node, different mission
-          // Skip if: already a second action, or 2+ actions done today (any node)
-          const todayTotal = glResult.todayTotalCount || glResult.todayCount || 0;
-          console.log('🎯 offerMore:', glResult.offerMore, 'isSecondAction:', isSecondAction, 'todayTotal:', todayTotal);
+          // SECOND ACTION — sibling/child node
+          // Skip if this panel was already opened as a second action (no 3rd step)
+          console.log('🎯 offerMore:', glResult.offerMore, 'isSecondAction:', isSecondAction);
 
-          // 2 actions today = always rest
-          if (todayTotal >= 2 || isSecondAction) {
-            if (todayTotal >= 2 && !isSecondAction) {
-              setTimeout(() => {
-                const restEl = document.createElement('div');
-                restEl.style.cssText = 'margin-top:14px; opacity:0; transition: opacity 0.6s ease;';
-                restEl.innerHTML = `<div style="
-                  background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1);
-                  border-radius:10px; padding:13px 16px; text-align:center;
-                  color:#e2e8f0; font-size:14px;
-                ">Dnes stačí. 👍</div>`;
-                missionCard.appendChild(restEl);
-                requestAnimationFrame(() => restEl.style.opacity = '1');
-              }, 3000);
-            }
+          if (isSecondAction) {
+            // No 3rd step — done for today
           } else if (glResult.offerMore) {
             // Find mission from a DIFFERENT CHILD of same parent (or child of current node)
             const allNodes = window.MAIN_UNIVERSE_DATA || [];
