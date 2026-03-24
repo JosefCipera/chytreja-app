@@ -1217,9 +1217,18 @@ async function showGameOfLife(node, options = {}) {
               }, 3000);
             }
           } else if (glResult.offerMore) {
-            // Find different mission for SAME node
-            const secondMission = pickMission(node.id, node.state || 'YELLOW', mission.id);
-            console.log('🔍 secondMission (same node):', secondMission?.id, '(excluded:', mission.id, ')');
+            // Find different mission for SAME node (dayOffset=1 picks next exercise in rotation)
+            const secondSkillResult = runSkill({
+              nodeId: node.id,
+              state: node.state || 'YELLOW',
+              streak: result.streak || 0,
+              constraints: window._userConstraints || [],
+              dayOffset: 1,
+            });
+            let secondMission = secondSkillResult?.mission || pickMission(node.id, node.state || 'YELLOW', mission.id);
+            // Don't offer same exercise again
+            if (secondMission && secondMission.id === mission.id) secondMission = null;
+            console.log('🔍 secondMission (same node):', secondMission?.id, '(first was:', mission.id, ')');
 
             if (secondMission) {
               // Decide: offer or rest? Based on current node state + trend + streak
