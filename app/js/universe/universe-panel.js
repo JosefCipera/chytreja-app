@@ -801,7 +801,11 @@ async function showGameOfLife(node, options = {}) {
     const allNodes = window.MAIN_UNIVERSE_DATA || [];
     const children = allNodes.filter(n => n.parent === 'dlouhovekost' && n.state && n.state !== 'GRAY' && n.current_index != null);
     if (children.length > 0) {
-      const sum = children.reduce((s, n) => s + n.current_index, 0);
+      // Penalize RED nodes — average alone is too optimistic
+      const sum = children.reduce((s, n) => {
+        const penalty = n.state === 'RED' ? 0.5 : n.state === 'YELLOW' ? 0.8 : 1.0;
+        return s + (n.current_index * penalty);
+      }, 0);
       vitalityPct = sum / children.length;
     }
     // Bottleneck = worst child node
@@ -1153,7 +1157,10 @@ async function showGameOfLife(node, options = {}) {
         completedBtn.style.display = 'none';
         const feedbackEl = document.createElement('div');
         feedbackEl.style.cssText = 'opacity:0; transition: opacity 0.5s ease;';
-        feedbackEl.innerHTML = '<div style="text-align:center;padding:12px;color:#e2e8f0;font-size:14px;font-weight:500;">✔ Hotovo. Držíš tempo.</div>';
+        const feedbackText = node.state === 'RED' ? '✔ Krok hotový.'
+          : node.state === 'GREEN' ? '✔ Hotovo. Forma drží.'
+          : '✔ Hotovo. Držíš tempo.';
+        feedbackEl.innerHTML = `<div style="text-align:center;padding:12px;color:#e2e8f0;font-size:14px;font-weight:500;">${feedbackText}</div>`;
         missionCard.appendChild(feedbackEl);
         requestAnimationFrame(() => feedbackEl.style.opacity = '1');
       }
