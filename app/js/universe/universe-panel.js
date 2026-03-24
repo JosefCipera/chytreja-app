@@ -1245,9 +1245,9 @@ async function showGameOfLife(node, options = {}) {
             console.log('🔍 secondMission (sibling/child):', secondMission?.id, 'from:', secondChild?.id, '(current:', node.id, ')');
 
             if (secondMission) {
-              // Decide: offer or rest? Based on secondChild state + trend + streak
-              const sState = secondChild.state || 'YELLOW';
-              const sTrend = secondChild.trend || 'stable';
+              // Decide: offer or rest? Based on CURRENT node state (the one user just worked on)
+              const sState = node.state || 'YELLOW';
+              const sTrend = node.trend || 'stable';
               const sStreak = result.streak || 0;
               let shouldOffer = false;
               let offerText = '';
