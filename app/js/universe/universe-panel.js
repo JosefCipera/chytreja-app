@@ -7,11 +7,11 @@ import {
   DEMO_PREVIEWS, ACTIVE_MOTTOS, getDemoPreview,
   NODE_RIDERS, RIDER_ICONS, getRiders,
   VERDICT_TEXTS, KILLER_TEXTS, NODE_KILLERS, generateVerdict,
-  pickMission, calcBioAge
+  DAILY_MISSIONS, pickMission
 } from './game-engine.js';
 
 import {
-  fetchAspiration, fetchLearningSteps, drawMiniTrend, fetchTrend
+  fetchAspiration, fetchLearningSteps, drawMiniTrend, drawIndexLabel, fetchTrend
 } from './data-layer.js';
 
 import { aiSpeak } from './universe-voice.js';
@@ -243,7 +243,7 @@ function resetPanel() {
   if (panel) panel.scrollTop = 0;
 }
 
-export async function showPanel(node) {
+export async function showPanel(node, options = {}) {
   if (!panelEl) return;
 
   const wasOpen = panelEl.classList.contains('open');
@@ -260,7 +260,7 @@ export async function showPanel(node) {
   if (node.state === 'GRAY') {
     showLockedPanel(node);
   } else {
-    showGameOfLife(node);
+    showGameOfLife(node, options);
   }
 
   panelEl.style.display = "block";
@@ -635,6 +635,38 @@ async function openResourcesViewer(node) {
   });
 }
 
+/** Mission completion toast — mikro-odměna inside panel */
+function _showMissionToast(msg, parentEl) {
+  const existing = document.getElementById('mission-toast');
+  if (existing) existing.remove();
+
+  const toast = document.createElement('div');
+  toast.id = 'mission-toast';
+  toast.style.cssText = `
+    text-align:center; padding:10px 16px; margin:8px 0;
+    background:rgba(34,197,94,0.1); border:1px solid rgba(34,197,94,0.25);
+    border-radius:10px; color:#86efac; font-size:14px; font-weight:500;
+    opacity:0; transition: opacity 0.4s ease;
+  `;
+  toast.textContent = msg;
+
+  const missionCard = parentEl?.querySelector('#mission-card');
+  if (missionCard) {
+    missionCard.prepend(toast);
+  } else {
+    parentEl?.prepend(toast);
+  }
+  requestAnimationFrame(() => toast.style.opacity = '1');
+
+  // Fade out after 4s
+  setTimeout(() => {
+    if (toast.parentNode) {
+      toast.style.opacity = '0';
+      setTimeout(() => toast.remove(), 400);
+    }
+  }, 4000);
+}
+
 function showToast(msg) {
   const t = document.createElement('div');
   t.textContent = msg;
@@ -654,55 +686,76 @@ function showToast(msg) {
 // =====================================================
 
 /** Generuje HTML baterie pro hlavní uzel (state = GREEN / YELLOW / RED / jiný). */
-function _buildBatteryHTML(state, bioAgeResult) {
-  const fillPct    = state === 'GREEN' ? 80 : state === 'YELLOW' ? 50 : 20;
-  const battColor  = state === 'GREEN' ? '#22c55e' : state === 'YELLOW' ? '#eab308' : '#ef4444';
-  const battBorder = state === 'GREEN' ? 'rgba(34,197,94,0.35)'  : state === 'YELLOW' ? 'rgba(234,179,8,0.35)'  : 'rgba(239,68,68,0.35)';
-  const battGlow   = state === 'GREEN' ? 'rgba(34,197,94,0.7)'   : state === 'YELLOW' ? 'rgba(234,179,8,0.7)'   : 'rgba(239,68,68,0.7)';
-  const stateLabel = state === 'GREEN' ? 'Nabito' : state === 'YELLOW' ? 'Dobíjení' : 'Slabá baterie';
-  const stateLabelColor = state === 'RED' ? '#ef4444' : '#64748b';
+function _buildBatteryHTML(vitalityPct, goalLabel, trendDir) {
+  // Color thresholds adjusted by trend direction
+  // trendDir: 'up' | 'stable' | 'down'
+  const THRESHOLDS = {
+    up:     { green: 85, yellow: 75, red: 55 },
+    stable: { green: 80, yellow: 65, red: 50 },
+    down:   { green: 75, yellow: 60, red: 40 },
+  };
+  const t = THRESHOLDS[trendDir] || THRESHOLDS.stable;
+
+  const pct = Math.round(vitalityPct ?? 60);
+  const fillPct = Math.max(3, Math.min(100, pct));
+  const isGreen  = pct >= t.green;
+  const isYellow = !isGreen && pct >= t.yellow;
+  const isRed    = !isGreen && !isYellow; // everything below yellow = red
+
+  const battColor  = isGreen ? '#22c55e' : isYellow ? '#eab308' : isRed ? '#ef4444' : '#6b7280';
+  const battBorder = isGreen ? 'rgba(34,197,94,0.35)' : isYellow ? 'rgba(234,179,8,0.35)' : isRed ? 'rgba(239,68,68,0.35)' : 'rgba(107,114,128,0.35)';
+  const battGlow   = isGreen ? 'rgba(34,197,94,0.7)'  : isYellow ? 'rgba(234,179,8,0.7)'  : isRed ? 'rgba(239,68,68,0.7)'  : 'rgba(107,114,128,0.4)';
+
   return `
-    <div style="text-align:center; padding:12px 0 4px;">
-      ${bioAgeResult ? `<div style="font-size:13px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:20px;">Tvůj biologický věk — <span style="color:${bioAgeResult.offset > 0 ? '#ef4444' : bioAgeResult.offset < 0 ? '#22c55e' : '#94a3b8'};font-weight:800;font-size:16px;">${bioAgeResult.bioAge} let</span></div>` : ''}
-      <div style="display:inline-flex; flex-direction:column; align-items:center;">
-        <div style="
-          width:22px; height:11px;
-          border:2px solid ${battBorder};
-          border-bottom:none;
-          border-radius:5px 5px 0 0;
-          background:linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04));
-        "></div>
-        <div style="
-          width:62px; height:140px;
-          border:2px solid ${battBorder};
-          border-radius:5px 5px 8px 8px;
-          background:rgba(8,8,18,0.6);
-          position:relative; overflow:hidden;
-          box-shadow:0 0 22px ${battBorder}, inset 0 0 12px rgba(0,0,0,0.4);
-        ">
-          <div style="
-            position:absolute; bottom:0; left:0; right:0;
-            height:${fillPct}%;
-            background:linear-gradient(180deg, ${battColor}88, ${battColor}ee);
-            box-shadow:0 0 30px ${battGlow};
-            transition:height 1.5s ease;
-          "></div>
-          <div style="
-            position:absolute; top:0; bottom:0; left:6px; width:9px;
-            background:linear-gradient(90deg, rgba(255,255,255,0.09), transparent);
-            border-radius:4px; pointer-events:none;
-          "></div>
-          <div style="position:absolute;inset:0;display:flex;flex-direction:column;justify-content:space-evenly;padding:10px 0;pointer-events:none;">
-            ${[0,1,2].map(() => `<div style="height:1px;background:rgba(255,255,255,0.06);margin:0 8px;"></div>`).join('')}
+    <div style="padding:12px 0 4px;">
+      ${goalLabel ? `<div style="font-size:13px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:16px;">Cíl: držet nad 80 % <span style="color:#64748b;">· ${goalLabel}</span></div>` : `<div style="font-size:13px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:16px;">Cíl: držet nad 80 %</div>`}
+      <div style="text-align:center;">
+        <!-- Battery + % side by side -->
+        <div style="display:inline-flex; align-items:center; gap:16px;">
+          <!-- Battery -->
+          <div style="display:inline-flex; flex-direction:column; align-items:center;">
+            <div style="
+              width:22px; height:11px;
+              border:2px solid ${battBorder};
+              border-bottom:none;
+              border-radius:5px 5px 0 0;
+              background:linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04));
+            "></div>
+            <div style="
+              width:62px; height:140px;
+              border:2px solid ${battBorder};
+              border-radius:5px 5px 8px 8px;
+              background:rgba(8,8,18,0.6);
+              position:relative; overflow:hidden;
+              box-shadow:0 0 22px ${battBorder}, inset 0 0 12px rgba(0,0,0,0.4);
+            ">
+              <div style="
+                position:absolute; bottom:0; left:0; right:0;
+                height:${fillPct}%;
+                background:linear-gradient(180deg, ${battColor}88, ${battColor}ee);
+                box-shadow:0 0 30px ${battGlow};
+                transition:height 1.5s ease;
+              "></div>
+              <div style="
+                position:absolute; top:0; bottom:0; left:6px; width:9px;
+                background:linear-gradient(90deg, rgba(255,255,255,0.09), transparent);
+                border-radius:4px; pointer-events:none;
+              "></div>
+              <div style="position:absolute;inset:0;display:flex;flex-direction:column;justify-content:space-evenly;padding:10px 0;pointer-events:none;">
+                ${[0,1,2].map(() => `<div style="height:1px;background:rgba(255,255,255,0.06);margin:0 8px;"></div>`).join('')}
+              </div>
+            </div>
           </div>
+          <!-- % next to battery, vertically centered -->
+          <span id="battery-pct" style="font-size:38px; font-weight:500; color:${battColor}; font-variant-numeric:tabular-nums; line-height:1;">${pct}<span style="font-size:22px;margin-left:2px;">%</span></span>
         </div>
       </div>
-      <div style="margin-top:14px; font-size:13px; color:${stateLabelColor}; letter-spacing:0.5px;">${stateLabel}</div>
     </div>
   `;
 }
 
-async function showGameOfLife(node) {
+async function showGameOfLife(node, options = {}) {
+  const isSecondAction = options.isSecondAction || false;
   console.log("🎮 showGameOfLife:", node.id);
   const userId = window.firebaseAuth?.currentUser?.uid || 'demo-user-123';
 
@@ -740,31 +793,47 @@ async function showGameOfLife(node) {
     border-radius:12px; padding:20px; margin:15px 0;
   `;
 
-  // Bio-age: fetch profile + metrics for 4 fitness markers
-  let bioAgeResult = null;
-  if (isMainNode && userId !== 'demo-user-123' && window.supabaseClient) {
-    try {
-      const sb = window.supabaseClient;
-      const [{ data: profile }, { data: metrics }] = await Promise.all([
-        sb.from('user_profiles').select('age').eq('user_id', userId).maybeSingle(),
-        sb.from('user_metrics').select('node_id, current_index, state').eq('user_id', userId).eq('universe', 'longevity').in('node_id', ['vo2max', 'sila', 'stabilita', 'mobilita']),
-      ]);
-      if (profile?.age && metrics?.length) {
-        const metricsMap = {};
-        for (const m of metrics) metricsMap[m.node_id] = m;
-        bioAgeResult = calcBioAge(profile.age, metricsMap);
-        console.log('🧬 Bio-age:', bioAgeResult);
-      }
-    } catch (e) {
-      console.warn('Bio-age calc failed:', e.message);
+  // Vitality: avg current_index of colored child nodes → percentage
+  let vitalityPct = 0; // default: no data = 0
+  let goalLabel = null;
+  let bottleneckLabel = null;
+  if (isMainNode) {
+    const allNodes = window.MAIN_UNIVERSE_DATA || [];
+    const children = allNodes.filter(n => n.parent === 'dlouhovekost' && n.state && n.state !== 'GRAY' && n.current_index != null);
+    if (children.length > 0) {
+      // Penalize RED nodes — average alone is too optimistic
+      const sum = children.reduce((s, n) => {
+        const penalty = n.state === 'RED' ? 0.5 : n.state === 'YELLOW' ? 0.8 : 1.0;
+        return s + (n.current_index * penalty);
+      }, 0);
+      vitalityPct = sum / children.length;
     }
+    // Bottleneck = worst child node
+    const NODE_LABELS = { telo: 'tělo', mysl: 'hlava', vyziva: 'strava', zdravi: 'zdraví', metabolicke: 'metabolismus' };
+    const worst = children
+      .filter(n => n.current_index != null)
+      .sort((a, b) => (a.current_index ?? 100) - (b.current_index ?? 100))[0];
+    if (worst) bottleneckLabel = NODE_LABELS[worst.id] || worst.label || worst.id;
+
+    // Fetch aspiration label
+    if (userId !== 'demo-user-123' && window.supabaseClient) {
+      try {
+        const { data: aspRow } = await window.supabaseClient
+          .from('user_aspirations').select('aspiration_type').eq('user_id', userId).maybeSingle();
+        const GOAL_LABELS = {
+          bezky_v_85: 'Běžky v 85', ironman_v_70: 'Ironman v 70',
+          vnouci: 'Hrát si s vnouky', samostatnost_v_90: 'Samostatnost v 90',
+        };
+        if (aspRow?.aspiration_type) goalLabel = GOAL_LABELS[aspRow.aspiration_type] || null;
+      } catch (e) { /* ignore */ }
+    }
+
+    // No animation — static number, trend adjusts color thresholds
   }
 
   // Skeleton se liší podle typu uzlu
   if (isMainNode) {
-    // Stav (node.state) je znám okamžitě → vykreslíme reálnou baterii hned,
-    // bez šedého placeholderu s jinými rozměry (eliminuje flicker při překreslení).
-    metricCard.innerHTML = _buildBatteryHTML(node.state, bioAgeResult);
+    metricCard.innerHTML = _buildBatteryHTML(vitalityPct, goalLabel, 'stable');
   } else {
     metricCard.innerHTML = `
       <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Trend (30 dní)</div>
@@ -830,11 +899,11 @@ async function showGameOfLife(node) {
     </div>
   ` : '';
 
-  // 5b. Hlavní uzel → baterie; ostatní uzly → sparkline
+  // 5b. Hlavní uzel → re-render battery with trend; ostatní uzly → sparkline
   if (isMainNode) {
-    // Baterie s bio-age je již vykreslena v skeleton fázi (bioAgeResult + node.state).
-    // Re-render jen pokud trend data to vyžadují — jinak zachovat bio-age.
-    // metricCard already has correct battery from skeleton phase
+    // Re-render battery now that trend data is available
+    const trendDir = trend.arrow === '↗️' ? 'up' : trend.arrow === '↘️' ? 'down' : 'stable';
+    metricCard.innerHTML = _buildBatteryHTML(vitalityPct, goalLabel, trendDir);
   } else {
     // 1 bod stačí – zduplikujeme ho aby drawMiniTrend měl co nakreslit (plochá čára = stabilní)
     const hasData = trend.numeric?.length >= 1;
@@ -853,7 +922,14 @@ async function showGameOfLife(node) {
     if (hasData) {
       requestAnimationFrame(() => {
         const canvas = metricCard.querySelector('.weather-trend-canvas');
-        if (canvas) drawMiniTrend(canvas.getContext('2d'), chartData, trend.lineColor);
+        if (canvas) {
+          const ctx = canvas.getContext('2d');
+          drawMiniTrend(ctx, chartData, trend.lineColor);
+          // Show current_index value (e.g. "30") in top-right corner of sparkline
+          if (node.current_index != null) {
+            drawIndexLabel(ctx, node.current_index, trend.lineColor);
+          }
+        }
       });
     }
   }
@@ -875,25 +951,23 @@ async function showGameOfLife(node) {
   // Animované bubliny pro všechny uzly (1–3 věty z AI)
   const verdictLines = verdict?.lines?.length >= 1 ? verdict.lines : null;
 
-  // Hlavní uzel: 1. bublina (bio-věk) + 2 AI věty (bottleneck + sen)
-  // Sub-uzly: jen AI věty
-  let BIO_AGE_TEXT;
-  if (bioAgeResult) {
-    const { bioAge, chronologicalAge, offset } = bioAgeResult;
-    if (offset > 5) {
-      BIO_AGE_TEXT = `Tělo se cítí na ${bioAge} let, i když ti je ${chronologicalAge}. Baterie ti zbytečně přidává roky.`;
-    } else if (offset > 0) {
-      BIO_AGE_TEXT = `Tělo je na ${bioAge} let — mírně nad tvých ${chronologicalAge}. Je co zlepšovat.`;
-    } else if (offset === 0) {
-      BIO_AGE_TEXT = `Biologicky jsi přesně na svůj věk — ${bioAge} let. Držíš tempo.`;
-    } else {
-      BIO_AGE_TEXT = `Tělo je na ${bioAge} let, i když ti je ${chronologicalAge}. Jsi mladší než říká občanka.`;
-    }
-  } else {
-    BIO_AGE_TEXT = null;
+  // Hlavní uzel: 1. chip = stav baterie + bottleneck (z _buildBatteryHTML logiky)
+  // Sub-uzly: jen AI věty (verdict)
+  let BATTERY_STATUS_TEXT = null;
+  if (isMainNode) {
+    const pct = Math.round(vitalityPct ?? 0);
+    const statusLine = pct >= 80 ? 'Baterie nabita.' : pct >= 65 ? 'Baterie drží.' : 'Baterie klesla.';
+    const NODE_LABELS_CHJ = { telo: 'tělo', mysl: 'hlava', vyziva: 'strava', zdravi: 'zdraví', metabolicke: 'metabolismus' };
+    const allNodes = window.MAIN_UNIVERSE_DATA || [];
+    const children = allNodes.filter(n => n.parent === 'dlouhovekost' && n.state && n.state !== 'GRAY');
+    const worst = children
+      .filter(n => n.current_index != null)
+      .sort((a, b) => (a.current_index ?? 100) - (b.current_index ?? 100))[0];
+    const bnLabel = worst ? (NODE_LABELS_CHJ[worst.id] || worst.label || worst.id) : null;
+    BATTERY_STATUS_TEXT = bnLabel ? `${statusLine} Brzdí tě ${bnLabel}.` : statusLine;
   }
   const displayLines = isMainNode
-    ? [BIO_AGE_TEXT, ...(verdictLines || [])].filter(Boolean)
+    ? [BATTERY_STATUS_TEXT, ...(verdictLines || [])].filter(Boolean)
     : (verdictLines || null);
 
   // 7. Chip labely
@@ -938,9 +1012,9 @@ async function showGameOfLife(node) {
   let skillMotivation = null;
   let skillLevel = null;
 
-  if (!isMainNode) {
-    // Load user constraints for filtering (e.g. knee → no squats)
-    const userConstraints = (window.USER_CONSTRAINTS || [])
+  // Load user constraints for filtering (e.g. knee → no squats)
+  // Defined outside if-block so missionComplete() closure can access it
+  const userConstraints = (window.USER_CONSTRAINTS || [])
       .map(c => {
         try {
           const val = typeof c.constraint_value === 'string' ? JSON.parse(c.constraint_value) : c.constraint_value;
@@ -960,6 +1034,7 @@ async function showGameOfLife(node) {
         return loc;
       });
 
+  if (!isMainNode) {
     // Try skill router first (progressive difficulty, constraint-aware)
     const skillResult = runSkill({
       nodeId: node.id,
@@ -978,52 +1053,50 @@ async function showGameOfLife(node) {
     }
   }
 
-  const alreadyDone = mission && missionStatus.todayMissions?.some(m => m.mission_id === mission.id);
+  // Max 2× per day per mission
+  const todayThisMission = missionStatus.todayMissions?.filter(m => m.mission_id === mission?.id)?.length || 0;
+  const alreadyDone = mission && todayThisMission >= 2;
   const streakBadge = streakCount > 0
     ? `<div style="text-align:center;margin-top:10px;padding:8px 14px;
-        background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.25);
-        border-radius:8px;font-size:14px;color:#fde68a;">
-        🔥 ${streakCount} ${streakCount === 1 ? 'den' : streakCount < 5 ? 'dny' : 'dní'} v řadě</div>`
+        background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);
+        border-radius:8px;font-size:14px;color:#e2e8f0;">
+        🔥 ${streakCount} ${streakCount === 1 ? 'den' : streakCount < 5 ? 'dny po sobě' : 'dní po sobě'}</div>`
     : '';
 
   const missionHtml = mission ? `
-    <div id="mission-card" style="
-      background:rgba(234,179,8,0.06); border:1px solid rgba(234,179,8,0.25);
-      border-radius:12px; padding:16px; margin-top:4px;
-    ">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-        <span style="color:#fde68a;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">DNEŠNÍ MISE</span>
-        ${skillLevel ? `<span style="margin-left:auto;font-size:11px;color:#94a3b8;background:rgba(148,163,184,0.1);padding:2px 8px;border-radius:10px;">${skillLevel.name}</span>` : ''}
-      </div>
-      ${skillMotivation ? `<div style="color:#94a3b8;font-size:13px;font-style:italic;margin-bottom:10px;">${skillMotivation}</div>` : ''}
-      <div style="color:#e2e8f0;font-size:16px;font-weight:600;margin-bottom:14px;">
-        ${mission.icon} ${mission.label}${mission.target ? ` × ${mission.target}` : ''}
+    <div id="mission-card" style="margin-top:8px;">
+      <div style="
+        background:rgba(96,165,250,0.07); border:1px solid rgba(96,165,250,0.25);
+        border-radius:10px; padding:13px 16px; margin-bottom:10px;
+        display:flex; align-items:center; gap:8px;
+      ">
+        <span style="color:#e2e8f0;font-size:15px;line-height:1.45;">
+          ${mission.icon} ${mission.label}${mission.target ? ` <span style="color:#64748b;">× ${mission.target}</span>` : ''}
+        </span>
+        ${skillLevel ? `<span style="margin-left:auto;font-size:11px;color:#94a3b8;background:rgba(148,163,184,0.1);padding:2px 8px;border-radius:10px;white-space:nowrap;">${skillLevel.name}</span>` : ''}
       </div>
       <div id="mission-timer" style="display:none;text-align:center;margin-bottom:12px;">
-        <span id="mission-time" style="font-size:36px;font-weight:700;color:#fde68a;font-variant-numeric:tabular-nums;">00:00</span>
+        <span id="mission-time" style="font-size:32px;font-weight:600;color:#e2e8f0;font-variant-numeric:tabular-nums;">00:00</span>
       </div>
       <div id="mission-progress" style="display:none;text-align:center;margin-bottom:12px;">
-        <span id="mission-count" style="font-size:36px;font-weight:700;color:#fde68a;">0</span>
-        <span style="color:#94a3b8;font-size:16px;"> / ${mission.target || ''}</span>
+        <span id="mission-count" style="font-size:32px;font-weight:600;color:#e2e8f0;">0</span>
+        <span style="color:#64748b;font-size:14px;"> / ${mission.target || ''}</span>
       </div>
       <button id="mission-start" style="
         ${alreadyDone ? 'display:none;' : ''}
-        width:100%; padding:14px; border-radius:10px; border:none;
-        background:linear-gradient(135deg, #eab308, #f59e0b);
-        color:#1e293b; font-size:15px; font-weight:700; cursor:pointer;
-        transition:transform 0.15s;
-      ">▶ ZAČÍT</button>
+        width:100%; padding:12px; border-radius:10px; border:1px solid rgba(96,165,250,0.3);
+        background:rgba(96,165,250,0.1);
+        color:#60a5fa; font-size:14px; font-weight:600; cursor:pointer;
+      ">Začít</button>
       <button id="mission-done" style="
-        display:none; width:100%; padding:14px; border-radius:10px; border:none;
-        background:linear-gradient(135deg, #22c55e, #16a34a);
-        color:#fff; font-size:15px; font-weight:700; cursor:pointer;
-        transition:transform 0.15s;
-      ">✓ HOTOVO</button>
-      <button id="mission-completed" style="
-        ${alreadyDone ? '' : 'display:none;'} width:100%; padding:14px; border-radius:10px;
-        border:1px solid rgba(34,197,94,0.3); background:rgba(34,197,94,0.08);
-        color:#22c55e; font-size:15px; font-weight:600; cursor:default;
-      ">✓ Splněno!</button>
+        display:none; width:100%; padding:12px; border-radius:10px; border:1px solid rgba(96,165,250,0.3);
+        background:rgba(96,165,250,0.1);
+        color:#60a5fa; font-size:14px; font-weight:600; cursor:pointer;
+      ">✓ Hotovo</button>
+      <div id="mission-completed" style="
+        ${alreadyDone ? '' : 'display:none;'} width:100%; text-align:center; padding:12px;
+        color:#e2e8f0; font-size:14px; font-weight:500;
+      ">✓ Splněno</div>
       ${alreadyDone ? streakBadge : ''}
     </div>
   ` : '';
@@ -1073,10 +1146,26 @@ async function showGameOfLife(node) {
     async function missionComplete() {
       releaseWakeLock();
       doneBtn.style.display = 'none';
-      completedBtn.style.display = 'block';
       if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
 
-      // Save to mission_log + get streak
+      const missionCard = chjCard.querySelector('#mission-card');
+
+      // Instant feedback — show immediately, don't wait for API
+      if (missionCard) {
+        const btnArea = missionCard.querySelector('#mission-done, #mission-start');
+        if (btnArea) btnArea.remove();
+        completedBtn.style.display = 'none';
+        const feedbackEl = document.createElement('div');
+        feedbackEl.style.cssText = 'opacity:0; transition: opacity 0.5s ease;';
+        const feedbackText = node.state === 'RED' ? '✔ Krok hotový.'
+          : node.state === 'GREEN' ? '✔ Hotovo. Forma drží.'
+          : '✔ Hotovo. Držíš tempo.';
+        feedbackEl.innerHTML = `<div style="text-align:center;padding:12px;color:#e2e8f0;font-size:14px;font-weight:500;">${feedbackText}</div>`;
+        missionCard.appendChild(feedbackEl);
+        requestAnimationFrame(() => feedbackEl.style.opacity = '1');
+      }
+
+      // Save to mission_log + game loop (background — UI already updated)
       try {
         const resp = await fetch('/api/mission-log', {
           method: 'POST',
@@ -1091,22 +1180,7 @@ async function showGameOfLife(node) {
         const result = await resp.json();
         console.log('✅ Mission saved:', mission.id, 'streak:', result.streak);
 
-        // Show streak badge if > 0
-        if (result.streak > 0) {
-          const streakEl = document.createElement('div');
-          streakEl.style.cssText = `
-            text-align:center; margin-top:10px; padding:8px 14px;
-            background:rgba(251,191,36,0.08); border:1px solid rgba(251,191,36,0.25);
-            border-radius:8px; font-size:14px; color:#fde68a;
-            opacity:0; transition: opacity 0.5s ease;
-          `;
-          streakEl.innerHTML = `🔥 ${result.streak} ${result.streak === 1 ? 'den' : result.streak < 5 ? 'dny' : 'dní'} v řadě`;
-          const missionCard = chjCard.querySelector('#mission-card');
-          if (missionCard) missionCard.appendChild(streakEl);
-          requestAnimationFrame(() => streakEl.style.opacity = '1');
-        }
-
-        // 🔄 GAME LOOP — check if node improved
+        // GAME LOOP — check impact (update feedback if state changed)
         try {
           const glResp = await fetch('/api/mission-complete', {
             method: 'POST',
@@ -1116,36 +1190,263 @@ async function showGameOfLife(node) {
           const glResult = await glResp.json();
           console.log('🎮 Game loop:', glResult);
 
-          const missionCard = chjCard.querySelector('#mission-card');
-          if (missionCard) {
-            // Show progress info
-            const progressEl = document.createElement('div');
-            progressEl.style.cssText = `
-              text-align:center; margin-top:8px; padding:6px 12px;
-              border-radius:8px; font-size:13px;
-              opacity:0; transition: opacity 0.5s ease 0.3s;
-            `;
+          if (!missionCard) return;
 
+          // Upgrade feedback if state changed or improved
+          const existingFeedback = missionCard.querySelector('div[style*="text-align:center"]');
+          if (existingFeedback) {
             if (glResult.stateChanged) {
-              // 🎉 STATE CHANGED — big deal!
-              progressEl.style.background = 'rgba(34,197,94,0.12)';
-              progressEl.style.border = '1px solid rgba(34,197,94,0.3)';
-              progressEl.style.color = '#22c55e';
-              progressEl.innerHTML = `🎉 ${glResult.oldState} → ${glResult.newState}! Uzel se zlepšil!`;
+              existingFeedback.innerHTML = '<div style="text-align:center;padding:12px;color:#e2e8f0;font-size:14px;font-weight:500;">🎉 Level up! Viditelné zlepšení.</div>';
               if (navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 300]);
-            } else if (glResult.improved) {
-              progressEl.style.background = 'rgba(96,165,250,0.08)';
-              progressEl.style.border = '1px solid rgba(96,165,250,0.2)';
-              progressEl.style.color = '#60a5fa';
-              progressEl.innerHTML = `📈 Posun: ${glResult.oldIndex} → ${glResult.newIndex}`;
-            } else if (glResult.missionCount !== undefined) {
-              progressEl.style.color = '#94a3b8';
-              progressEl.innerHTML = `${glResult.missionCount}/${glResult.needed} misí tento týden`;
+            } else if (glResult.impact === 'improved') {
+              existingFeedback.innerHTML = '<div style="text-align:center;padding:12px;color:#e2e8f0;font-size:14px;font-weight:500;">📈 Posun! Jdeš nahoru.</div>';
             }
-
-            missionCard.appendChild(progressEl);
-            requestAnimationFrame(() => progressEl.style.opacity = '1');
           }
+
+          // SECOND ACTION — sibling/child node
+          // Skip if this panel was already opened as a second action (no 3rd step)
+          console.log('🎯 offerMore:', glResult.offerMore, 'isSecondAction:', isSecondAction);
+
+          if (isSecondAction) {
+            // No 3rd step — done for today
+          } else if (glResult.offerMore) {
+            // Find mission from a DIFFERENT CHILD of same parent (or child of current node)
+            const allNodes = window.MAIN_UNIVERSE_DATA || [];
+            // Children of current node, or siblings (same parent), excluding self
+            const parentId = node.parent || 'dlouhovekost';
+            const children = allNodes.filter(n =>
+              n.id !== node.id &&
+              (n.parent === node.id || n.parent === parentId) &&
+              n.state && n.state !== 'GRAY' && n.current_index != null
+            );
+            // Pick weakest child that has a skill or mission
+            const secondChild = children
+              .filter(n => hasSkill(n.id) || DAILY_MISSIONS[n.id])
+              .sort((a, b) => (a.current_index ?? 100) - (b.current_index ?? 100))[0];
+
+            let secondMission = null;
+            let secondNodeForOffer = secondChild;
+            if (secondChild) {
+              const secondSkillResult = runSkill({
+                nodeId: secondChild.id,
+                state: secondChild.state || 'YELLOW',
+                streak: result.streak || 0,
+                constraints: window._userConstraints || [],
+              });
+              secondMission = secondSkillResult?.mission || pickMission(secondChild.id, secondChild.state || 'YELLOW');
+            }
+            console.log('🔍 secondMission (sibling/child):', secondMission?.id, 'from:', secondChild?.id, '(current:', node.id, ')');
+
+            if (secondMission) {
+              // Decide: offer or rest? Based on CURRENT node state (the one user just worked on)
+              const sState = node.state || 'YELLOW';
+              const sTrend = node.trend || 'stable';
+              const sStreak = result.streak || 0;
+              let shouldOffer = false;
+              let offerText = '';
+
+              if (sState === 'RED' || sTrend === 'down') {
+                // CASE 1: problém — vždy nabídni
+                shouldOffer = true;
+                offerText = 'Můžeš to ještě posílit.';
+              } else if (sState === 'GREEN' && sTrend === 'up') {
+                // CASE 3: dobrý stav — netlačit
+                shouldOffer = false;
+                offerText = 'Držíš to. Dnes stačí.';
+              } else if (sStreak >= 3 && Math.random() < 0.5) {
+                // CASE 4: streak boost — občas nabídni
+                shouldOffer = true;
+                offerText = 'Jedeš dobře. Přidáš krok?';
+              } else {
+                // CASE 2: střed — 50/50
+                shouldOffer = Math.random() < 0.5;
+                offerText = shouldOffer ? 'Chceš jít dál?' : 'Dnes stačí.';
+              }
+
+              console.log('🎲 2nd action logic:', { sState, sTrend, sStreak, shouldOffer, offerText });
+
+                setTimeout(() => {
+                  const offerEl = document.createElement('div');
+                  offerEl.style.cssText = 'margin-top:14px; opacity:0; transition: opacity 0.6s ease;';
+
+                  if (!shouldOffer) {
+                    // Rest message
+                    offerEl.innerHTML = `<div style="
+                      background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1);
+                      border-radius:10px; padding:13px 16px; text-align:center;
+                      color:#e2e8f0; font-size:14px;
+                    ">${offerText} 👍</div>`;
+                    missionCard.appendChild(offerEl);
+                    requestAnimationFrame(() => offerEl.style.opacity = '1');
+                  } else {
+                    // Offer second action
+                    const NODE_LABELS_2 = { telo: 'tělo', mysl: 'hlavu', vyziva: 'stravu', zdravi: 'zdraví', metabolicke: 'metabolismus' };
+                    const secondLabel = NODE_LABELS_2[secondChild.id] || secondChild.label || secondChild.id;
+
+                    offerEl.innerHTML = `
+                      <div style="
+                        background:rgba(96,165,250,0.06); border:1px solid rgba(96,165,250,0.2);
+                        border-radius:10px; padding:14px 16px;
+                      ">
+                        <div style="color:#94a3b8;font-size:13px;margin-bottom:6px;">
+                          ${offerText}
+                        </div>
+                        <div style="color:#e2e8f0;font-size:15px;margin-bottom:14px;line-height:1.4;">
+                          ${secondMission.icon || '💪'} ${secondMission.label}${secondMission.target ? ` <span style="color:#64748b;">× ${secondMission.target}</span>` : ''}
+                        </div>
+                        <div style="display:flex;gap:10px;align-items:center;">
+                          <button id="second-yes" style="
+                            padding:10px 16px; border-radius:8px;
+                            border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.03);
+                            color:#94a3b8; font-size:14px; cursor:pointer;
+                          ">Ano</button>
+                          <button id="second-no" style="
+                            padding:10px 16px; border-radius:8px;
+                            border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.03);
+                            color:#94a3b8; font-size:14px; cursor:pointer;
+                          ">Ne</button>
+                        </div>
+                      </div>
+                    `;
+                    missionCard.appendChild(offerEl);
+                    requestAnimationFrame(() => offerEl.style.opacity = '1');
+
+                    // Ne = leave everything as is, just replace offer with 👍
+                    document.getElementById('second-no')?.addEventListener('click', () => {
+                      offerEl.innerHTML = `<div style="
+                        background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1);
+                        border-radius:10px; padding:13px 16px; text-align:center;
+                        color:#e2e8f0; font-size:14px;
+                      ">Dnes stačí. 👍</div>`;
+                    });
+
+                    // Ano = expand second action inline
+                    document.getElementById('second-yes')?.addEventListener('click', () => {
+                      offerEl.style.opacity = '0';
+                      setTimeout(() => {
+                        offerEl.innerHTML = `
+                          <div style="
+                            background:rgba(96,165,250,0.07); border:1px solid rgba(96,165,250,0.25);
+                            border-radius:10px; padding:13px 16px; margin-bottom:10px;
+                          ">
+                            <span style="color:#e2e8f0;font-size:15px;line-height:1.45;">
+                              ${secondMission.icon || '💪'} ${secondMission.label}${secondMission.target ? ` <span style="color:#64748b;">× ${secondMission.target}</span>` : ''}
+                            </span>
+                          </div>
+                          <div id="second-timer" style="display:none;text-align:center;margin-bottom:12px;">
+                            <span id="second-time" style="font-size:32px;font-weight:600;color:#e2e8f0;font-variant-numeric:tabular-nums;">00:00</span>
+                          </div>
+                          <div id="second-progress" style="display:none;text-align:center;margin-bottom:12px;">
+                            <span id="second-count" style="font-size:32px;font-weight:600;color:#e2e8f0;">0</span>
+                            <span style="color:#64748b;font-size:14px;"> / ${secondMission.target || ''}</span>
+                          </div>
+                          <button id="second-start" style="
+                            width:100%; padding:12px; border-radius:10px; border:1px solid rgba(96,165,250,0.3);
+                            background:rgba(96,165,250,0.1);
+                            color:#60a5fa; font-size:14px; font-weight:600; cursor:pointer;
+                          ">Začít</button>
+                          <button id="second-done" style="
+                            display:none; width:100%; padding:12px; border-radius:10px; border:1px solid rgba(96,165,250,0.3);
+                            background:rgba(96,165,250,0.1);
+                            color:#60a5fa; font-size:14px; font-weight:600; cursor:pointer;
+                          ">✓ Hotovo</button>
+                        `;
+                        offerEl.style.opacity = '1';
+
+                        // Wire up second mission interaction
+                        const secStart = document.getElementById('second-start');
+                        const secDone = document.getElementById('second-done');
+                        const secTimer = document.getElementById('second-timer');
+                        const secTime = document.getElementById('second-time');
+                        const secProgress = document.getElementById('second-progress');
+                        const secCount = document.getElementById('second-count');
+
+                        function fmtTime(sec) {
+                          const m = Math.floor(sec / 60), s = sec % 60;
+                          return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+                        }
+
+                        async function secondComplete() {
+                          secDone.style.display = 'none';
+                          if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+                          try {
+                            await fetch('/api/mission-log', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                userId,
+                                nodeId: node.id,
+                                missionId: secondMission.id,
+                                actionType: secondMission.action_type || secondMission.type,
+                              }),
+                            });
+                            const glResp2 = await fetch('/api/mission-complete', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ userId, nodeId: secondChild.id }),
+                            });
+                            const glResult2 = await glResp2.json();
+                            let resultHtml = '';
+                            if (glResult2.stateChanged) {
+                              resultHtml = '<div style="text-align:center;padding:10px;color:#e2e8f0;font-size:14px;">🎉 Level up! Viditelné zlepšení.</div>';
+                            } else if (glResult2.impact === 'improved') {
+                              resultHtml = '<div style="text-align:center;padding:10px;color:#e2e8f0;font-size:14px;">📈 Posun! Jdeš nahoru.</div>';
+                            } else {
+                              resultHtml = '<div style="text-align:center;padding:10px;color:#e2e8f0;font-size:14px;">✔ Hotovo. Držíš tempo.</div>';
+                            }
+                            const secStreak = glResult2.weekCount || 0;
+                            if (secStreak > 0) {
+                              resultHtml += `<div style="text-align:center;margin-top:8px;padding:8px 14px;
+                                background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);
+                                border-radius:8px;font-size:14px;color:#e2e8f0;">
+                                🔥 ${secStreak} ${secStreak === 1 ? 'den' : secStreak < 5 ? 'dny po sobě' : 'dní po sobě'}</div>`;
+                            }
+                            offerEl.innerHTML += resultHtml;
+                          } catch (e2) {
+                            console.warn('Second mission save failed:', e2.message);
+                            offerEl.innerHTML += '<div style="text-align:center;padding:10px;color:#e2e8f0;font-size:14px;">✔ Hotovo.</div>';
+                          }
+                        }
+
+                        secStart?.addEventListener('click', () => {
+                          secStart.style.display = 'none';
+                          if (secondMission.action_type === 'timed' || secondMission.type === 'timed') {
+                            let secs = secondMission.duration || 60;
+                            secTimer.style.display = 'block';
+                            secTime.textContent = fmtTime(secs);
+                            const iv = setInterval(() => {
+                              secs--;
+                              secTime.textContent = fmtTime(secs);
+                              if (secs <= 0) { clearInterval(iv); secondComplete(); }
+                            }, 1000);
+                            secDone.style.display = 'block';
+                            secDone.textContent = '⏹ ZASTAVIT';
+                            secDone.onclick = () => { clearInterval(iv); secondComplete(); };
+                          } else if (secondMission.action_type === 'reps' || secondMission.type === 'reps') {
+                            let count = 0;
+                            const target = secondMission.target || 10;
+                            secProgress.style.display = 'block';
+                            secCount.textContent = '0';
+                            secDone.style.display = 'block';
+                            secDone.textContent = '+1';
+                            secDone.onclick = () => {
+                              count++;
+                              secCount.textContent = count;
+                              if (count >= target) { secDone.style.display = 'none'; secondComplete(); }
+                            };
+                          } else {
+                            secDone.style.display = 'block';
+                            secDone.textContent = '✓ HOTOVO';
+                            secDone.onclick = () => secondComplete();
+                          }
+                        });
+                      }, 400);
+                    });
+                  }
+                }, 3000);
+              }
+            }
+          // --- end second action ---
         } catch (glErr) {
           console.warn('Game loop check failed:', glErr.message);
         }

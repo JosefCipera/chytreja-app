@@ -78,7 +78,7 @@ const BASE_VALUES = {
 
 // ── NODE → preferred exercise areas ────────────────────
 const NODE_AREAS = {
-  telo:      ['sila', 'kardio', 'stabilita'],
+  telo:      ['sila', 'kardio'],
   sila:      ['sila'],
   stabilita: ['stabilita'],
   kardio:    ['kardio'],
@@ -90,7 +90,7 @@ const NODE_AREAS = {
 const MOTIVATIONS = {
   RED: [
     'Každý pohyb se počítá. Začni teď.',
-    'Dneska jenom tohle. Nic víc.',
+    'Stačí tohle. Nic složitého.',
     'Malý krok. Ale tvůj.',
     'Tohle zvládneš. Jdi do toho.',
   ],
@@ -123,7 +123,7 @@ function pickMotivation(state, dayOfYear) {
  * @returns {{ mission: Object, motivation: string, level: Object } | null}
  */
 export function execute(ctx) {
-  const { nodeId, state = 'YELLOW', streak = 0, constraints = [] } = ctx;
+  const { nodeId, state = 'YELLOW', streak = 0, constraints = [], dayOffset = 0 } = ctx;
 
   const level = getLevel(streak);
   const areas = NODE_AREAS[nodeId] || ['sila'];
@@ -138,9 +138,9 @@ export function execute(ctx) {
 
   if (candidates.length === 0) return null;
 
-  // Pick exercise based on day rotation
+  // Pick exercise based on day rotation (+offset for 2nd action)
   const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
-  const exercise = candidates[dayOfYear % candidates.length];
+  const exercise = candidates[(dayOfYear + dayOffset) % candidates.length];
 
   // Calculate target values
   const base = BASE_VALUES[exercise.id] || {};

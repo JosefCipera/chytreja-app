@@ -2,6 +2,12 @@
   "version": "0.0.1",
   "configurations": [
     {
+      "name": "vite-hud",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", "npx", "vite", "--port", "5173"],
+      "port": 5173
+    },
+    {
       "name": "vercel-dev",
       "runtimeExecutable": "cmd",
       "runtimeArgs": ["/c", "vercel", "dev", "--yes"],

@@ -1,24 +1,20 @@
 // POST /api/mission-complete
-// Called after mission is saved to mission_log.
-// Checks if user earned enough missions → improves node current_index → recalcs state.
+// New game loop logic:
+//   1 step/day = stabilize (stop decline)
+//   2 steps/day = improve (+5 index)
+//   0 steps = decline (-3 index per day of inactivity)
 //
-// Game loop:
-//   mission completed → mission_log
-//   → enough missions for this node? → bump current_index
-//   → recalc state (GREEN/YELLOW/RED)
-//   → recalc parent state (worst child rule)
-//   → return new states
+// Rolling 7-day window, no Monday reset.
+// After improving: recalc state → recalc parents (worst child rule)
+// Also logs to node_state_history for sparkline.
 
 import dotenv from "dotenv";
 dotenv.config({ path: '.env.local' });
 import { createClient } from "@supabase/supabase-js";
 
-// ── THRESHOLDS ─────────────────────────────────────────
-// How many missions (in last 7 days) needed to improve a node
-const MISSIONS_TO_IMPROVE = 3;
-// How much current_index improves per step (0–100 scale)
-const INDEX_BUMP = 5;
-// State boundaries (current_index thresholds)
+// ── CONFIG ───────────────────────────────────────────
+const INDEX_IMPROVE = 5;   // +5 for 2 steps in a day
+const INDEX_DECLINE = 3;   // -3 per inactive day (applied on next action)
 const RED_MAX = 40;
 const YELLOW_MAX = 70;
 
@@ -42,37 +38,20 @@ export default async function (req, res) {
       return res.status(400).json({ error: 'Missing userId or nodeId' });
     }
 
-    // 1. Count missions for this node in last 7 days
-    const weekAgo = new Date();
-    weekAgo.setDate(weekAgo.getDate() - 7);
-    const weekAgoStr = weekAgo.toISOString().split('T')[0];
+    const today = new Date().toISOString().split('T')[0];
 
-    const { data: recentMissions, error: missErr } = await supabase
+    // 1. Count today's steps — one query for all nodes, then filter
+    const { data: todayAllMissions } = await supabase
       .from('mission_log')
-      .select('id')
+      .select('id, node_id')
       .eq('user_id', userId)
-      .eq('node_id', nodeId)
-      .gte('date', weekAgoStr);
+      .eq('date', today);
 
-    if (missErr) {
-      console.error('mission-complete: count error', missErr);
-      return res.json({ improved: false, error: missErr.message });
-    }
-
-    const missionCount = recentMissions?.length || 0;
-
-    // Not enough missions yet — no improvement
-    if (missionCount < MISSIONS_TO_IMPROVE) {
-      return res.json({
-        improved: false,
-        missionCount,
-        needed: MISSIONS_TO_IMPROVE,
-        message: `${missionCount}/${MISSIONS_TO_IMPROVE} misí tento týden`,
-      });
-    }
+    const todayTotalCount = todayAllMissions?.length || 0;
+    const todayCount = todayAllMissions?.filter(m => m.node_id === nodeId).length || 0;
 
     // 2. Get current node metrics
-    const { data: metric, error: metErr } = await supabase
+    const { data: metric } = await supabase
       .from('user_metrics')
       .select('current_index, state')
       .eq('user_id', userId)
@@ -80,19 +59,72 @@ export default async function (req, res) {
       .eq('universe', 'longevity')
       .maybeSingle();
 
-    if (metErr) {
-      console.error('mission-complete: metric read error', metErr);
-      return res.json({ improved: false, error: metErr.message });
-    }
-
     const oldIndex = metric?.current_index ?? 30;
     const oldState = metric?.state || indexToState(oldIndex);
 
-    // 3. Bump index (cap at 100)
-    const newIndex = Math.min(100, oldIndex + INDEX_BUMP);
-    const newState = indexToState(newIndex);
+    // 3. Calculate inactive days (days since last step, excluding today)
+    let inactiveDays = 0;
+    const { data: lastMission } = await supabase
+      .from('mission_log')
+      .select('date')
+      .eq('user_id', userId)
+      .eq('node_id', nodeId)
+      .lt('date', today)
+      .order('date', { ascending: false })
+      .limit(1);
 
-    // 4. Update user_metrics
+    if (lastMission?.length) {
+      const lastDate = new Date(lastMission[0].date);
+      const todayDate = new Date(today);
+      const diffMs = todayDate - lastDate;
+      inactiveDays = Math.max(0, Math.floor(diffMs / 86400000) - 1); // -1 because 1 day gap is normal
+    }
+
+    // 4. Apply decline for inactive days first
+    let adjustedIndex = oldIndex;
+    if (inactiveDays > 0) {
+      adjustedIndex = Math.max(0, oldIndex - (inactiveDays * INDEX_DECLINE));
+    }
+
+    // 5. Apply today's impact
+    let newIndex = adjustedIndex;
+    let impact = 'stabilized'; // default: 1 step = stabilize
+
+    if (todayCount >= 2) {
+      // 2+ steps today → improve
+      newIndex = Math.min(100, adjustedIndex + INDEX_IMPROVE);
+      impact = 'improved';
+    }
+    // todayCount === 1 → stabilize (no change beyond decline recovery)
+
+    let newState = indexToState(newIndex);
+
+    // 5b. If this node has children, enforce worst-child rule
+    const { data: nodeChildren } = await supabase
+      .from('longevity_nodes')
+      .select('id')
+      .eq('parent', nodeId);
+
+    if (nodeChildren && nodeChildren.length > 0) {
+      const childIds = nodeChildren.map(c => c.id);
+      const { data: childMetrics } = await supabase
+        .from('user_metrics')
+        .select('state')
+        .eq('user_id', userId)
+        .eq('universe', 'longevity')
+        .in('node_id', childIds);
+
+      const stateOrder = { RED: 3, YELLOW: 2, GREEN: 1 };
+      let worstChild = newState;
+      for (const cm of (childMetrics || [])) {
+        if ((stateOrder[cm.state] || 0) > (stateOrder[worstChild] || 0)) {
+          worstChild = cm.state;
+        }
+      }
+      newState = worstChild;
+    }
+
+    // 6. Update user_metrics
     const { error: updateErr } = await supabase
       .from('user_metrics')
       .upsert({
@@ -108,30 +140,53 @@ export default async function (req, res) {
       return res.json({ improved: false, error: updateErr.message });
     }
 
-    // 5. Log state change to history
-    await supabase.from('node_state_history').insert({
-      user_id: userId,
-      node_id: nodeId,
-      state: newState,
-      index_value: newIndex,
-    }).catch(() => {}); // non-critical
+    // 7. Log to history (for sparkline)
+    try {
+      await supabase.from('node_state_history').insert({
+        user_id: userId,
+        node_id: nodeId,
+        state: newState,
+        current_index: newIndex,
+      });
+    } catch (_) { /* ignore history errors */ }
 
-    // 6. Recalc parent state (worst child rule)
+    // 8. Recalc parents (worst child rule)
     const parentUpdates = await recalcParents(supabase, userId, nodeId);
 
+    // 9. Rolling 7-day stats
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    const { data: weekMissions } = await supabase
+      .from('mission_log')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('node_id', nodeId)
+      .gte('date', weekAgo.toISOString().split('T')[0]);
+
+    const weekCount = weekMissions?.length || 0;
+
     return res.json({
-      improved: true,
+      impact,
+      todayCount,
+      todayTotalCount,
+      weekCount,
       nodeId,
       oldIndex,
       newIndex,
       oldState,
       newState,
       stateChanged: oldState !== newState,
-      missionCount,
+      inactiveDays,
       parentUpdates,
-      message: oldState !== newState
-        ? `${oldState} → ${newState}!`
-        : `Index: ${oldIndex} → ${newIndex}`,
+      // Feedback messages
+      message: impact === 'improved'
+        ? 'Dvojitý zásah. Jdeš nahoru.'
+        : inactiveDays > 0
+          ? `Zpátky v sedle po ${inactiveDays} ${inactiveDays === 1 ? 'dni' : 'dnech'}.`
+          : 'Držíš tempo.',
+      // Can do more?
+      canDoMore: todayCount < 2,
+      offerMore: todayCount === 1, // "Chceš ještě jeden krok?"
     });
 
   } catch (e) {
@@ -144,7 +199,6 @@ export default async function (req, res) {
 async function recalcParents(supabase, userId, nodeId) {
   const updates = [];
 
-  // Get node's parent from longevity_nodes
   const { data: nodeRow } = await supabase
     .from('longevity_nodes')
     .select('parent')
@@ -155,9 +209,7 @@ async function recalcParents(supabase, userId, nodeId) {
 
   let currentParent = nodeRow.parent;
 
-  // Walk up the tree (max 5 levels to prevent infinite loop)
   for (let depth = 0; depth < 5 && currentParent; depth++) {
-    // Get all children of this parent
     const { data: children } = await supabase
       .from('longevity_nodes')
       .select('id')
@@ -167,7 +219,6 @@ async function recalcParents(supabase, userId, nodeId) {
 
     const childIds = children.map(c => c.id);
 
-    // Get states of all children
     const { data: childMetrics } = await supabase
       .from('user_metrics')
       .select('node_id, state')
@@ -175,7 +226,6 @@ async function recalcParents(supabase, userId, nodeId) {
       .eq('universe', 'longevity')
       .in('node_id', childIds);
 
-    // Worst child rule: RED > YELLOW > GREEN
     const stateOrder = { RED: 3, YELLOW: 2, GREEN: 1 };
     let worstState = 'GREEN';
 
@@ -185,7 +235,6 @@ async function recalcParents(supabase, userId, nodeId) {
       }
     }
 
-    // Update parent
     const { error } = await supabase
       .from('user_metrics')
       .upsert({
@@ -199,7 +248,6 @@ async function recalcParents(supabase, userId, nodeId) {
       updates.push({ nodeId: currentParent, state: worstState });
     }
 
-    // Go up one more level
     const { data: parentRow } = await supabase
       .from('longevity_nodes')
       .select('parent')

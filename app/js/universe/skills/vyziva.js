@@ -79,7 +79,7 @@ const MOTIVATIONS = {
 };
 
 export function execute(ctx) {
-  const { nodeId, state = 'YELLOW', streak = 0, constraints = [] } = ctx;
+  const { nodeId, state = 'YELLOW', streak = 0, constraints = [], dayOffset = 0 } = ctx;
   const level = getLevel(streak);
   const areas = NODE_AREAS[nodeId] || ['vyziva', 'protein', 'hydratace'];
 
@@ -92,7 +92,7 @@ export function execute(ctx) {
   if (candidates.length === 0) return null;
 
   const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
-  const exercise = candidates[dayOfYear % candidates.length];
+  const exercise = candidates[(dayOfYear + dayOffset) % candidates.length];
 
   const base = BASE_VALUES[exercise.id] || {};
   const mission = {

@@ -108,11 +108,11 @@ function urlBase64ToUint8Array(base64String) {
 
 const REMINDER_TEXTS = {
   noMission:    streak => streak > 0
-    ? `🔥 Máš ${streak} ${streak === 1 ? 'den' : streak < 5 ? 'dny' : 'dní'} v řadě. Dnešní mise čeká!`
-    : '🎯 Dnešní mise čeká. Jeden krok stačí.',
-  streakRisk:   streak => `🔥 ${streak} dní v řadě! Nepřeruš to — splň dnešní misi.`,
-  allDone:      '✅ Dnešní mise splněna. Jsi ve hře.',
-  welcome:      'Ahoj. Otevři uzel a splň první misi.',
+    ? `🔥 Máš ${streak} ${streak === 1 ? 'den' : streak < 5 ? 'dny' : 'dní'} v řadě. Pokračuj!`
+    : '👋 Klepni na uzel a začni.',
+  streakRisk:   streak => `🔥 ${streak} dní v řadě! Nepřeruš to.`,
+  allDone:      '✅ Hotovo. Jsi ve hře.',
+  welcome:      '👋 Ahoj. Klepni na uzel a začni.',
 };
 
 /**
