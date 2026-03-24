@@ -1217,23 +1217,37 @@ async function showGameOfLife(node, options = {}) {
               }, 3000);
             }
           } else if (glResult.offerMore) {
-            // Find different mission for SAME node (dayOffset=1 picks next exercise in rotation)
-            const secondSkillResult = runSkill({
-              nodeId: node.id,
-              state: node.state || 'YELLOW',
-              streak: result.streak || 0,
-              constraints: window._userConstraints || [],
-              dayOffset: 1,
-            });
-            let secondMission = secondSkillResult?.mission || pickMission(node.id, node.state || 'YELLOW', mission.id);
-            // Don't offer same exercise again
-            if (secondMission && secondMission.id === mission.id) secondMission = null;
-            console.log('🔍 secondMission (same node):', secondMission?.id, '(first was:', mission.id, ')');
+            // Find mission from a DIFFERENT CHILD of same parent (or child of current node)
+            const allNodes = window.MAIN_UNIVERSE_DATA || [];
+            // Children of current node, or siblings (same parent), excluding self
+            const parentId = node.parent || 'dlouhovekost';
+            const children = allNodes.filter(n =>
+              n.id !== node.id &&
+              (n.parent === node.id || n.parent === parentId) &&
+              n.state && n.state !== 'GRAY' && n.current_index != null
+            );
+            // Pick weakest child that has a skill or mission
+            const secondChild = children
+              .filter(n => hasSkill(n.id) || DAILY_MISSIONS[n.id])
+              .sort((a, b) => (a.current_index ?? 100) - (b.current_index ?? 100))[0];
+
+            let secondMission = null;
+            let secondNodeForOffer = secondChild;
+            if (secondChild) {
+              const secondSkillResult = runSkill({
+                nodeId: secondChild.id,
+                state: secondChild.state || 'YELLOW',
+                streak: result.streak || 0,
+                constraints: window._userConstraints || [],
+              });
+              secondMission = secondSkillResult?.mission || pickMission(secondChild.id, secondChild.state || 'YELLOW');
+            }
+            console.log('🔍 secondMission (sibling/child):', secondMission?.id, 'from:', secondChild?.id, '(current:', node.id, ')');
 
             if (secondMission) {
-              // Decide: offer or rest? Based on current node state + trend + streak
-              const sState = node.state || 'YELLOW';
-              const sTrend = node.trend || 'stable';
+              // Decide: offer or rest? Based on secondChild state + trend + streak
+              const sState = secondChild.state || 'YELLOW';
+              const sTrend = secondChild.trend || 'stable';
               const sStreak = result.streak || 0;
               let shouldOffer = false;
               let offerText = '';
@@ -1274,7 +1288,7 @@ async function showGameOfLife(node, options = {}) {
                   } else {
                     // Offer second action
                     const NODE_LABELS_2 = { telo: 'tělo', mysl: 'hlavu', vyziva: 'stravu', zdravi: 'zdraví', metabolicke: 'metabolismus' };
-                    const secondLabel = NODE_LABELS_2[secondNode.id] || secondNode.label || secondNode.id;
+                    const secondLabel = NODE_LABELS_2[secondChild.id] || secondChild.label || secondChild.id;
 
                     offerEl.innerHTML = `
                       <div style="
@@ -1376,7 +1390,7 @@ async function showGameOfLife(node, options = {}) {
                             const glResp2 = await fetch('/api/mission-complete', {
                               method: 'POST',
                               headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ userId, nodeId: secondNode.id }),
+                              body: JSON.stringify({ userId, nodeId: secondChild.id }),
                             });
                             const glResult2 = await glResp2.json();
                             let resultHtml = '';
