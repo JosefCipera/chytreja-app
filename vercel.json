@@ -14,7 +14,7 @@
         },
         {
             "source": "/",
-            "destination": "/app/index.html"
+            "destination": "/app/landing.html"
         },
         {
             "source": "/(.*)",
