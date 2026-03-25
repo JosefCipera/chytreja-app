@@ -137,7 +137,7 @@
   </div>
 
   <!-- Sub-metrics row -->
-  <div class="flex items-baseline justify-end">
+  <div class="flex items-baseline justify-between">
     <div class="flex gap-4">
       <span class="hud-mono" style="font-size: 13px; color: #475569;">
         REPAIR_RATE: <span style="color: #94a3b8;">{repairRate}x</span>
