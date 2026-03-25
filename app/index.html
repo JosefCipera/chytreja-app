@@ -326,8 +326,8 @@
     </aside>
 
     <script type="module">
-        import { supabase } from './js/universe/supabaseClient.js?v=20260306f';
-        import { updateRecommendations } from './js/universe/universe-panel.js?v=20260310e';
+        import { supabase } from './js/universe/supabaseClient.js?v=20260325a';
+        import { updateRecommendations } from './js/universe/universe-panel.js?v=20260325a';
 
         window.addEventListener('DOMContentLoaded', async () => {
             supabase.auth.onAuthStateChange((event, session) => {
@@ -339,13 +339,13 @@
         });
     </script>
 
-    <script type="module" src="/app/js/universe/universe-viewers.js?v=20260306f"></script>
-    <script type="module" src="/app/js/universe/universe-access.js?v=20260306f"></script>
-    <script type="module" src="/app/js/universe/universe-core.js?v=20260306f"></script>
-    <script type="module" src="/app/js/universe/universe-init.js?v=20260310a"></script>
-    <script type="module" src="/app/js/universe/user-data-panel.js?v=20260306f"></script>
-    <script type="module" src="/app/js/universe/ai-assistant.js?v=20260306f"></script>
-    <script type="module" src="/app/js/universe/universe-panel.js?v=20260310e"></script>
+    <script type="module" src="/app/js/universe/universe-viewers.js?v=20260325a"></script>
+    <script type="module" src="/app/js/universe/universe-access.js?v=20260325a"></script>
+    <script type="module" src="/app/js/universe/universe-core.js?v=20260325a"></script>
+    <script type="module" src="/app/js/universe/universe-init.js?v=20260325a"></script>
+    <script type="module" src="/app/js/universe/user-data-panel.js?v=20260325a"></script>
+    <script type="module" src="/app/js/universe/ai-assistant.js?v=20260325a"></script>
+    <script type="module" src="/app/js/universe/universe-panel.js?v=20260325a"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script>
         window.addEventListener('load', () => {
@@ -378,18 +378,15 @@
     <div id="hud-overlay" style="
         display: none;
         position: fixed; inset: 0; z-index: 5000;
-        background-color: rgba(2,6,18,0.78);
-        background-image:
-            linear-gradient(rgba(6,182,212,0.04) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(6,182,212,0.04) 1px, transparent 1px);
-        background-size: 24px 24px;
-        backdrop-filter: blur(3px);
-        -webkit-backdrop-filter: blur(3px);
+        background: rgba(2,6,18,0.60);
+        backdrop-filter: blur(2px);
+        -webkit-backdrop-filter: blur(2px);
         align-items: stretch; justify-content: flex-end;
     ">
         <div id="hud-panel-wrap" style="
             width: 100%; max-width: 420px;
-            height: 100%;
+            height: calc(100dvh - 20px);
+            margin: 10px 0;
             transform: translateX(100%);
             transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1);
             overflow: hidden;
