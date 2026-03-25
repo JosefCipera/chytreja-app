@@ -374,27 +374,31 @@
         }
     </script>
 
-    <!-- HUD Overlay — Svelte HUD panel over universe canvas -->
+    <!-- HUD Overlay — Svelte HUD panel, slides in from right -->
     <div id="hud-overlay" style="
         display: none;
         position: fixed; inset: 0; z-index: 5000;
-        background: rgba(0,0,0,0.55);
-        backdrop-filter: blur(2px);
-        -webkit-backdrop-filter: blur(2px);
-        align-items: flex-end; justify-content: center;
+        background-color: rgba(2,6,18,0.78);
+        background-image:
+            linear-gradient(rgba(6,182,212,0.04) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(6,182,212,0.04) 1px, transparent 1px);
+        background-size: 24px 24px;
+        backdrop-filter: blur(3px);
+        -webkit-backdrop-filter: blur(3px);
+        align-items: stretch; justify-content: flex-end;
     ">
         <div id="hud-panel-wrap" style="
-            width: 100%; max-width: 480px;
-            height: 92dvh;
-            transform: translateY(100%);
-            transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+            width: 100%; max-width: 420px;
+            height: 100%;
+            transform: translateX(100%);
+            transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1);
             overflow: hidden;
+            border-radius: 20px 0 0 20px;
         ">
             <iframe
                 id="hud-iframe"
                 src=""
-                allowtransparency="true"
-                style="width:100%; height:100%; border:none; background:transparent;"
+                style="width:100%; height:100%; border:none;"
                 allow="microphone"
             ></iframe>
         </div>
@@ -413,7 +417,7 @@
             overlay.style.display = 'flex';
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
-                    wrap.style.transform = 'translateY(0)';
+                    wrap.style.transform = 'translateX(0)';
                 });
             });
             window._hudOpen = true;
@@ -424,7 +428,7 @@
             const wrap    = document.getElementById('hud-panel-wrap');
             const iframe  = document.getElementById('hud-iframe');
 
-            wrap.style.transform = 'translateY(100%)';
+            wrap.style.transform = 'translateX(100%)';
             setTimeout(() => {
                 overlay.style.display = 'none';
                 iframe.src = '';
@@ -432,7 +436,7 @@
             }, 360);
         };
 
-        // Close on backdrop click
+        // Close on backdrop click (left side)
         document.getElementById('hud-overlay').addEventListener('click', function(e) {
             if (e.target === this) window.closeHudOverlay();
         });

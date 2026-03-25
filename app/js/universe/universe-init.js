@@ -490,12 +490,17 @@ function renderVisibleUniverse(model) {
 
   renderUniverse(visible, firstLevel, main.id);
 
-  // Auto-open main node panel on app start
   window.MAIN_UNIVERSE_DATA = visible;
+
+  // Auto-open main node HUD on startup (right-side panel)
   const mainNode = visible.find(n => n.id === main.id);
-  if (mainNode) {
-    // skipHud: auto-open stays in vanilla panel, HUD only on explicit node click
-    setTimeout(() => showPanel(mainNode, { skipHud: true }), 500);
+  if (mainNode && mainNode.state && mainNode.state !== 'GRAY') {
+    setTimeout(() => {
+      const uid = window.firebaseAuth?.currentUser?.uid;
+      if (uid && window.openHudOverlay) {
+        window.openHudOverlay(uid, mainNode.id);
+      }
+    }, 700);
   }
 }
 

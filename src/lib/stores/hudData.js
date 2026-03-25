@@ -30,8 +30,8 @@ export const nodeData = derived(rawData, ($raw) => {
     },
 
     killer:  $raw.killer,
-    action:  $raw.action,
-    sources: $raw.sources,
+    action:  $raw.action || null,
+    sources: ($raw.sources || []).filter(Boolean),
     verdict: $raw.verdict,
 
     today_count: $raw.today_count,
