@@ -17,7 +17,7 @@
     <NodeHeader
       label={data.node_label}
       version={data.node_version}
-      onClose={() => window.history.length > 1 ? window.history.back() : window.location.href = '/'}
+      onClose={() => window.parent !== window ? window.parent.postMessage('chj:hud:close', '*') : window.history.back()}
     />
 
     <div class="p-4 space-y-3">
