@@ -89,7 +89,7 @@
 
 <div class="hud-glass rounded-lg p-4 hud-corners">
   <div class="flex items-center justify-between mb-2">
-    <span class="hud-mono tracking-wider" style="font-size: 15px; color: rgba(34,211,238,0.7);">LIFE-BATTERY</span>
+    <span class="hud-mono tracking-wider" style="font-size: 15px; color: rgba(148,163,184,0.55);">LIFE-BATTERY</span>
     <div class="flex items-center gap-0">
       <span class="hud-mono {textColor}" style="font-size: 15px;">{percent}%</span>
       <span class="hud-mono mx-1.5" style="font-size: 15px; color: #475569;">|</span>
