@@ -374,6 +374,74 @@
         }
     </script>
 
+    <!-- HUD Overlay — Svelte HUD panel over universe canvas -->
+    <div id="hud-overlay" style="
+        display: none;
+        position: fixed; inset: 0; z-index: 5000;
+        background: rgba(0,0,0,0.55);
+        backdrop-filter: blur(2px);
+        -webkit-backdrop-filter: blur(2px);
+        align-items: flex-end; justify-content: center;
+    ">
+        <div id="hud-panel-wrap" style="
+            width: 100%; max-width: 480px;
+            height: 92dvh;
+            transform: translateY(100%);
+            transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+            overflow: hidden;
+        ">
+            <iframe
+                id="hud-iframe"
+                src=""
+                style="width:100%; height:100%; border:none; background:transparent;"
+                allow="microphone"
+            ></iframe>
+        </div>
+    </div>
+
+    <script>
+        // HUD overlay control
+        window._hudOpen = false;
+
+        window.openHudOverlay = function(userId, nodeId) {
+            const overlay = document.getElementById('hud-overlay');
+            const wrap    = document.getElementById('hud-panel-wrap');
+            const iframe  = document.getElementById('hud-iframe');
+
+            iframe.src = `/hud?userId=${encodeURIComponent(userId)}&nodeId=${encodeURIComponent(nodeId)}`;
+            overlay.style.display = 'flex';
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    wrap.style.transform = 'translateY(0)';
+                });
+            });
+            window._hudOpen = true;
+        };
+
+        window.closeHudOverlay = function() {
+            const overlay = document.getElementById('hud-overlay');
+            const wrap    = document.getElementById('hud-panel-wrap');
+            const iframe  = document.getElementById('hud-iframe');
+
+            wrap.style.transform = 'translateY(100%)';
+            setTimeout(() => {
+                overlay.style.display = 'none';
+                iframe.src = '';
+                window._hudOpen = false;
+            }, 360);
+        };
+
+        // Close on backdrop click
+        document.getElementById('hud-overlay').addEventListener('click', function(e) {
+            if (e.target === this) window.closeHudOverlay();
+        });
+
+        // Close via postMessage from HUD iframe (✕ button)
+        window.addEventListener('message', function(e) {
+            if (e.data === 'chj:hud:close') window.closeHudOverlay();
+        });
+    </script>
+
     <!-- Onboarding Modal -->
     <div id="mediaModal"
         style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 10000; display: none; align-items: center; justify-content: center;">
