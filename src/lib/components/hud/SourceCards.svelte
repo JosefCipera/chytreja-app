@@ -17,22 +17,22 @@
 
 {#if safeSources.length > 0}
   <div>
-    <span class="hud-mono text-[10px] text-slate-600 tracking-[2px] mb-2 block px-1">
+    <span class="hud-mono tracking-[2px] mb-2 block px-1" style="font-size: 13px; color: #475569;">
       SOURCE_VALIDATION
     </span>
     <div class="grid grid-cols-2 gap-2">
       {#each safeSources as source, i}
-        <div class="hud-glass rounded-lg p-3 text-xs hud-fade-in" style="animation-delay: {0.5 + i * 0.1}s">
-          <div class="hud-mono text-cyan-500/50 mb-1 text-[10px]">
+        <div class="hud-glass rounded-lg p-3 hud-fade-in" style="animation-delay: {0.5 + i * 0.1}s">
+          <div class="hud-mono mb-1" style="font-size: 13px; color: rgba(6,182,212,0.5);">
             [MED_ID: {source.med_id}]
           </div>
-          <div class="hud-mono text-slate-500 mb-1.5 uppercase text-[9px] leading-relaxed">
+          <div class="hud-mono mb-1.5 uppercase leading-relaxed" style="font-size: 12px; color: #64748b;">
             {source.type}: {source.title.length > 35 ? source.title.slice(0, 35) + '...' : source.title}
           </div>
-          <div class="text-slate-500 font-sans text-[10px] italic mb-2">
+          <div class="font-sans italic mb-2" style="font-size: 13px; color: #64748b;">
             {source.journal}, {source.year}
           </div>
-          <span class="hud-mono text-[9px] px-2 py-0.5 rounded border {statusColor(source.status)} {statusNeon(source.status)}">
+          <span class="hud-mono px-2 py-0.5 rounded border {statusColor(source.status)} {statusNeon(source.status)}" style="font-size: 12px;">
             [{source.status}]
           </span>
         </div>

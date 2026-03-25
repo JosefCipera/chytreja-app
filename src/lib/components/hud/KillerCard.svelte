@@ -11,14 +11,14 @@
   box-shadow: inset 3px 0 20px rgba(239, 68, 68, 0.04), 0 0 20px rgba(239, 68, 68, 0.05);
 ">
   <div class="flex items-center justify-between">
-    <span class="hud-mono text-xs text-slate-500 tracking-wider">
-      KILLER: <span class="text-red-400 font-bold" style="text-shadow: 0 0 12px rgba(239,68,68,0.8), 0 0 24px rgba(239,68,68,0.4);">{label}</span>
+    <span class="hud-mono tracking-wider" style="font-size: 15px; color: #64748b;">
+      KILLER: <span class="font-bold" style="color: #f87171; text-shadow: 0 0 12px rgba(239,68,68,0.8), 0 0 24px rgba(239,68,68,0.4);">{label}</span>
     </span>
-    <span class="hud-mono text-[9px] text-red-900/60 tracking-widest">THREAT_ACTIVE</span>
+    <span class="hud-mono tracking-widest" style="font-size: 12px; color: rgba(127,29,29,0.6);">THREAT_ACTIVE</span>
   </div>
   <div class="mt-2 flex items-center gap-2">
-    <span class="text-red-400 text-sm" style="text-shadow: 0 0 8px rgba(239,68,68,0.9);">⚠</span>
-    <span class="hud-mono text-xs font-bold" style="color: rgba(239,68,68,0.85); text-shadow: 0 0 8px rgba(239,68,68,0.5);">{energyDrain}% ENERGY DRAIN</span>
+    <span style="font-size: 18px; color: #f87171; text-shadow: 0 0 8px rgba(239,68,68,0.9);">⚠</span>
+    <span class="hud-mono font-bold" style="font-size: 15px; color: rgba(239,68,68,0.85); text-shadow: 0 0 8px rgba(239,68,68,0.5);">{energyDrain}% ENERGY DRAIN</span>
   </div>
-  <p class="mt-2 text-sm text-slate-400 font-sans">{description}</p>
+  <p class="mt-2 font-sans" style="font-size: 16px; color: #94a3b8;">{description}</p>
 </div>
