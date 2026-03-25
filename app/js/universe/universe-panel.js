@@ -244,8 +244,8 @@ function resetPanel() {
 }
 
 export async function showPanel(node, options = {}) {
-  // v0.2+: non-GRAY nodes open in Svelte HUD
-  if (node.state !== 'GRAY') {
+  // v0.2+: non-GRAY nodes open in Svelte HUD (only explicit click, not auto-open)
+  if (node.state !== 'GRAY' && !options.skipHud) {
     const uid = window.firebaseAuth?.currentUser?.uid;
     if (uid) {
       window.location.href = `/hud?userId=${encodeURIComponent(uid)}&nodeId=${encodeURIComponent(node.id)}`;

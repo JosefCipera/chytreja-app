@@ -494,7 +494,8 @@ function renderVisibleUniverse(model) {
   window.MAIN_UNIVERSE_DATA = visible;
   const mainNode = visible.find(n => n.id === main.id);
   if (mainNode) {
-    setTimeout(() => showPanel(mainNode), 500);
+    // skipHud: auto-open stays in vanilla panel, HUD only on explicit node click
+    setTimeout(() => showPanel(mainNode, { skipHud: true }), 500);
   }
 }
 
