@@ -3,9 +3,10 @@
 </script>
 
 <div class="flex items-center justify-between px-4 py-3" style="
-  border-bottom: 1px solid rgba(6,182,212,0.35);
-  background: rgba(6,182,212,0.12);
-  box-shadow: 0 1px 0 rgba(6,182,212,0.12);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  background: rgba(6, 12, 28, 0.4);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
 ">
   <h2 class="hud-mono tracking-widest" style="font-size: 14px;">
     <span style="color: #e2e8f0;">LONGEVITY NODE</span>
