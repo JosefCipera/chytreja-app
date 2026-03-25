@@ -105,11 +105,22 @@ export default async function handler(req, res) {
 
   // 1. Fetch all relevant metrics in one query
   const nodesToFetch = [...new Set([nodeId, ...CHILD_NODES, 'spanek'])];
-  const { data: metricsRaw } = await supabase
+  // Try longevity universe first, fall back to any universe
+  let { data: metricsRaw } = await supabase
     .from('user_metrics')
     .select('node_id, current_index, state')
     .eq('user_id', userId)
+    .eq('universe', 'longevity')
     .in('node_id', nodesToFetch);
+
+  if (!metricsRaw || metricsRaw.length === 0) {
+    const { data: fallback } = await supabase
+      .from('user_metrics')
+      .select('node_id, current_index, state')
+      .eq('user_id', userId)
+      .in('node_id', nodesToFetch);
+    metricsRaw = fallback;
+  }
 
   const metrics = metricsRaw || [];
 
