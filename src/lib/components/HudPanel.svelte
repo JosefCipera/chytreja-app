@@ -41,13 +41,27 @@
         />
       </div>
 
-      {#if data.action}
       <div class="hud-fade-in" style="animation-delay: 0.3s">
-        <ActionProtocol
-          action={data.action}
-        />
+        {#if data.action}
+          <ActionProtocol action={data.action} />
+        {:else}
+          <div style="
+            background: rgba(34,197,94,0.07);
+            border: 1px solid rgba(34,197,94,0.25);
+            border-radius: 10px;
+            padding: 14px 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+          ">
+            <span style="color: #4ade80; font-size: 1.1rem;">✔</span>
+            <div>
+              <div class="hud-mono" style="font-size: 10px; letter-spacing: 0.1em; color: #4ade80; margin-bottom: 2px;">MISSIONS_COMPLETE</div>
+              <div style="font-size: 13px; color: #94a3b8;">Splněno na dnes. Vrať se zítra.</div>
+            </div>
+          </div>
+        {/if}
       </div>
-      {/if}
 
       <div class="hud-fade-in" style="animation-delay: 0.4s">
         <SourceCards
