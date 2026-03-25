@@ -51,9 +51,9 @@
   -webkit-backdrop-filter: blur(20px);
 ">
   <!-- ACTION: [PROTOKOL] [STATUS] -->
-  <div class="hud-mono mb-3" style="font-size: 16px; letter-spacing: 0.03em; color: #94a3b8; line-height: 1.3;">
-    ACTION: <span style="color: #94a3b8;">[{protocolLabel}]</span>
-    <span class="{statusNeon}" style="color: {statusColor};"> [{status}]</span>
+  <div class="hud-mono mb-3" style="font-size: 16px; letter-spacing: 0.03em; color: #94a3b8; line-height: 1.3; font-weight: 400;">
+    ACTION: <span style="color: #94a3b8; font-weight: 400;">[{protocolLabel}]</span>
+    <span style="color: {statusColor}; font-weight: 400;"> [{status}]</span>
   </div>
 
   <!-- Action description -->
