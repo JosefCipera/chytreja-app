@@ -90,7 +90,9 @@
 <div class="hud-glass rounded-lg p-4 hud-corners">
   <div class="flex items-center justify-between mb-2">
     <span class="hud-mono text-xs text-cyan-400/70 tracking-wider">LIFE-BATTERY</span>
-    <div class="flex items-center gap-3">
+    <div class="flex items-center gap-0">
+      <span class="hud-mono text-xs {textColor}">{percent}%</span>
+      <span class="hud-mono text-xs text-slate-600 mx-1.5">|</span>
       <span class="hud-mono text-xs {trendColor}">{trend}</span>
     </div>
   </div>
@@ -134,9 +136,8 @@
     ></div>
   </div>
 
-  <!-- Percent + sub-metrics row -->
-  <div class="flex items-baseline justify-between">
-    <span class="hud-mono text-2xl font-bold {textColor} {textNeon}">{percent}<span class="text-base ml-0.5 opacity-60">%</span></span>
+  <!-- Sub-metrics row -->
+  <div class="flex items-baseline justify-end">
     <div class="flex gap-4">
       <span class="hud-mono text-[10px] text-slate-600">
         REPAIR_RATE: <span class="text-slate-400">{repairRate}x</span>
