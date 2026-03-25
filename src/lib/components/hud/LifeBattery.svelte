@@ -83,7 +83,7 @@
 <div class="hud-glass rounded-lg p-4 hud-corners">
   <!-- Header row: LIFE-BATTERY + percent + trend -->
   <div class="flex items-center justify-between mb-3">
-    <span class="hud-mono font-bold" style="font-size: 17px; letter-spacing: 0.12em; color: #e2e8f0;">LIFE-BATTERY</span>
+    <span class="hud-mono font-bold" style="font-size: 17px; letter-spacing: 0.04em; color: #e2e8f0;">LIFE-BATTERY</span>
     <div class="flex items-center gap-0">
       <span class="hud-mono font-bold" style="font-size: 17px; color: {textColor};">{percent}%</span>
       <span class="hud-mono mx-2" style="font-size: 17px; color: #334155;">|</span>
@@ -123,7 +123,15 @@
       >
         <span
           class="hud-mono font-black uppercase"
-          style="font-size: 26px; letter-spacing: 0.35em; color: {watermarkColor}; text-shadow: 0 0 16px {watermarkColor}, 0 0 35px {watermarkColor};"
+          style="
+            font-size: 26px;
+            letter-spacing: 0.12em;
+            color: {watermarkColor};
+            text-shadow: 0 0 16px {watermarkColor}, 0 0 35px {watermarkColor};
+            background: rgba(0,0,0,0.45);
+            padding: 4px 14px;
+            border-radius: 4px;
+          "
         >{watermark}</span>
       </div>
     </div>
@@ -135,28 +143,13 @@
     ></div>
   </div>
 
-  <!-- Sub-metrics row -->
+  <!-- Sub-metrics row — single line -->
   <div class="flex items-center justify-between">
-    <span class="hud-mono" style="font-size: 14px; color: #475569;">
+    <span class="hud-mono" style="font-size: 13px; color: #475569;">
       REPAIR_RATE: <span style="color: #94a3b8;">{repairRate}x</span>
     </span>
-    <div class="flex flex-col items-end gap-0.5">
-      <span class="hud-mono" style="font-size: 14px; color: #475569;">
-        {bioAge.label.key}: <span style="color: {bioAgeColor}; font-weight: 700;">{bioAgeSign}{bioAge.delta} YRS</span>
-      </span>
-      <div class="flex items-center gap-1">
-        <div class="w-14 h-[3px] rounded-full bg-white/[0.06] overflow-hidden">
-          <div
-            class="h-full rounded-full transition-all duration-700"
-            style="width: {confidencePct}%; background: {
-              bioAge.label.color === 'green'  ? 'rgba(34,197,94,0.7)' :
-              bioAge.label.color === 'yellow' ? 'rgba(234,179,8,0.7)' :
-              'rgba(100,116,139,0.5)'
-            };"
-          ></div>
-        </div>
-        <span class="hud-mono" style="font-size: 11px; color: #334155;">{bioAge.label.shortLabel} {confidencePct}%</span>
-      </div>
-    </div>
+    <span class="hud-mono" style="font-size: 13px; color: #475569;">
+      {bioAge.label.key}: <span style="color: {bioAgeColor}; font-weight: 700;">{bioAgeSign}{bioAge.delta} YRS</span>
+    </span>
   </div>
 </div>
