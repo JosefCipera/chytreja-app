@@ -21,7 +21,7 @@
       onClose={() => window.parent !== window ? window.parent.postMessage('chj:hud:close', '*') : window.history.back()}
     />
 
-    <div class="p-4 space-y-3">
+    <div class="p-4 space-y-4">
       <div class="hud-fade-in" style="animation-delay: 0.1s">
         <LifeBattery
           percent={data.life_battery.percent}

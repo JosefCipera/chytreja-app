@@ -27,64 +27,61 @@
     status = 'COMPLETE';
   }
 
-  let statusNeon = $derived(
-    status === 'READY' ? 'neon-cyan' :
-    status === 'ACTIVE' ? 'neon-yellow' :
-    'neon-green'
-  );
-
   let statusColor = $derived(
-    status === 'READY' ? 'text-cyan-400' :
-    status === 'ACTIVE' ? 'text-yellow-400' :
-    'text-green-400'
+    status === 'READY'    ? '#22d3ee' :
+    status === 'ACTIVE'   ? '#facc15' :
+    '#4ade80'
+  );
+  let statusNeon = $derived(
+    status === 'READY'    ? 'neon-cyan' :
+    status === 'ACTIVE'   ? 'neon-yellow' :
+    'neon-green'
   );
 </script>
 
 <div class="rounded-lg p-4 {status === 'ACTIVE' ? 'glow-pulse' : ''}" style="
-  background: rgba(6, 182, 212, 0.03);
-  border: 1px solid rgba(255,255,255,0.06);
+  background: rgba(6, 182, 212, 0.04);
+  border: 1px solid rgba(255,255,255,0.07);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  box-shadow: 0 0 30px rgba(6,182,212,0.04);
+  box-shadow: 0 0 30px rgba(6,182,212,0.05);
 ">
+  <!-- Label row -->
   <div class="flex items-center justify-between mb-3">
-    <span class="hud-mono tracking-wider" style="font-size: 15px; color: #64748b;">
+    <span class="hud-mono tracking-wider font-bold" style="font-size: 17px; color: #94a3b8;">
       ACTION: <span style="color: #22d3ee;">{action.id?.toUpperCase()}</span>
     </span>
-    <span class="hud-mono {statusColor} {statusNeon} tracking-wider" style="font-size: 15px;">[{status}]</span>
+    <span class="hud-mono {statusNeon} tracking-wider font-bold" style="font-size: 17px; color: {statusColor};">[{status}]</span>
   </div>
 
-  <div class="font-sans mb-4" style="font-size: 20px; color: #e2e8f0;">
+  <!-- Action description -->
+  <div class="font-sans mb-4" style="font-size: 22px; color: #e2e8f0; line-height: 1.3;">
     {action.icon} {action.label}
   </div>
 
   {#if status === 'ACTIVE'}
     <div class="text-center mb-4">
-      <span class="hud-mono text-4xl font-semibold text-slate-100 tabular-nums neon-cyan"
-        style="text-shadow: 0 0 20px rgba(6, 182, 212, 0.4), 0 0 40px rgba(6, 182, 212, 0.2);">
+      <span class="hud-mono font-semibold tabular-nums neon-cyan"
+        style="font-size: 3rem; color: #e2e8f0; text-shadow: 0 0 20px rgba(6,182,212,0.5), 0 0 40px rgba(6,182,212,0.2);">
         {formatTime(timer)}
       </span>
     </div>
     <button
       onclick={stop}
-      class="w-full rounded-lg border border-yellow-500/20 bg-yellow-500/[0.07] text-yellow-400 hud-mono tracking-wider hover:bg-yellow-500/[0.12] hover:border-yellow-500/30 transition-all cursor-pointer neon-yellow"
-      style="padding: 14px; font-size: 16px;"
-    >
-      ⏹ STOP
-    </button>
+      class="w-full rounded-lg border border-yellow-500/20 bg-yellow-500/[0.07] hud-mono tracking-wider hover:bg-yellow-500/[0.12] hover:border-yellow-500/30 transition-all cursor-pointer neon-yellow"
+      style="padding: 16px; font-size: 17px; color: #facc15;"
+    >⏹ STOP</button>
 
   {:else if status === 'COMPLETE'}
-    <div class="text-center py-3">
-      <span class="hud-mono tracking-wider neon-green" style="font-size: 16px; color: #4ade80;">✔ PROTOCOL COMPLETE</span>
+    <div class="text-center py-4">
+      <span class="hud-mono tracking-wider neon-green font-bold" style="font-size: 18px; color: #4ade80;">✔ PROTOCOL COMPLETE</span>
     </div>
 
   {:else}
     <button
       onclick={start}
-      class="w-full rounded-lg border border-cyan-500/20 bg-cyan-500/[0.07] text-cyan-400 hud-mono tracking-wider hover:bg-cyan-500/[0.12] hover:border-cyan-500/30 hover:shadow-[0_0_15px_rgba(6,182,212,0.15)] transition-all cursor-pointer"
-      style="padding: 14px; font-size: 16px;"
-    >
-      ▶ START PROTOCOL
-    </button>
+      class="w-full rounded-lg border border-cyan-500/20 bg-cyan-500/[0.07] hud-mono tracking-wider hover:bg-cyan-500/[0.12] hover:border-cyan-500/30 hover:shadow-[0_0_20px_rgba(6,182,212,0.2)] transition-all cursor-pointer"
+      style="padding: 16px; font-size: 17px; color: #22d3ee;"
+    >▶ START PROTOCOL</button>
   {/if}
 </div>
