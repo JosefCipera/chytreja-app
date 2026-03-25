@@ -38,7 +38,6 @@
         <KillerCard
           label={data.killer.label}
           energyDrain={data.killer.energy_drain}
-          description={data.killer.description}
         />
       </div>
 

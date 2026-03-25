@@ -125,7 +125,7 @@
           class="hud-mono font-black uppercase"
           style="
             font-size: 26px;
-            letter-spacing: 0.12em;
+            letter-spacing: 0.04em;
             color: {watermarkColor};
             text-shadow: 0 0 16px {watermarkColor}, 0 0 35px {watermarkColor};
             background: rgba(0,0,0,0.45);
