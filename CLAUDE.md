@@ -451,6 +451,94 @@ Uživatel si vybere sen (běžky v 85, Ironman, hrát s vnouky...).
 | `/api/mission-log` | POST | Uložit splněný krok |
 | `/api/mission-complete` | POST | Game loop (stabilize/improve/decline) |
 | `/api/disciplines` | GET | Disciplíny podle node |
+| `/api/tools/health-parse` | POST | Analýza zdravotních dokumentů (PDF) |
+
+---
+
+## Health Document Parser (Tool)
+
+Univerzální nástroj pro analýzu zdravotních dokumentů. Typ: **Tool** (backend API, Claude Vision).
+
+### Podporované dokumenty
+
+| Dokument | Co extrahuje | Cílový uzel |
+|----------|-------------|-------------|
+| Krevní výsledky | markery (CRP, LDL, HbA1c, Vitamin D...) | `zdravi`, `metabolicke`, `telo` |
+| Zpráva od lékaře | diagnózy, chronická onemocnění, léky | `user_constraints` |
+| EKG report | srdeční rytmus, anomálie | `zdravi` (SRDCE killer) |
+| DEXA scan | % tuku, svalová hmota, kostní denzita | `telo` |
+| Spánková studie | AHI, fáze spánku | `mysl` |
+| Apple Health XML | kroky, HRV, VO2max, spánek (průběžně) | `telo`, `mysl` |
+
+### Vstupy
+
+```
+POST /api/tools/health-parse
+Multipart form:
+  - file      PDF nebo obrázek (JPG/PNG skenu)
+  - userId    string
+  - date?     ISO date (volitelné, Claude odhadne z dokumentu)
+```
+
+### Výstupy — tři vrstvy
+
+```json
+{
+  "doc_type": "blood_test | ekg | doctor_report | dexa | sleep_study | other",
+  "doc_date": "2026-01-10",
+
+  "metrics": [
+    {
+      "node_id": "zdravi",
+      "index_delta": -12,
+      "confidence": "high | medium | low",
+      "reason": "CRP 8.2 mg/L (ref <5)"
+    }
+  ],
+
+  "constraints": [
+    {
+      "type": "respiratory | cardiac | musculoskeletal | metabolic",
+      "description": "Prodělal zápal plic, 2024-03",
+      "active": false,
+      "affects_skills": ["kardio_vysoke_intenzity"]
+    }
+  ],
+
+  "markers": [
+    { "name": "CRP", "value": 8.2, "unit": "mg/L", "status": "HIGH" }
+  ],
+
+  "flags": ["CONSULT_DOCTOR"]
+}
+```
+
+### Co se uloží kam
+
+| Výstup | Tabulka |
+|--------|---------|
+| `metrics.index_delta` | `user_metrics` (aplikován na current_index) |
+| snapshot | `node_state_history` (source: 'health_doc') |
+| `constraints` | `user_constraints` |
+| celý JSON | `node_inputs` (audit + budoucí re-parse) |
+
+### Pravidla
+
+- Tool **nestanoví diagnózu** — jen extrahuje a mapuje
+- `flags: CONSULT_DOCTOR` = upozornění pro uživatele, ne blokace
+- Zdravotní data dávají **reálný baseline** — game loop (akce) ho posouvá dál normálně
+- Nový dokument = re-kalibrace kotvy sparkline, ne reset hry
+- Starší dokumenty (zápal plic apod.) ukládáme s `active: false` — historický kontext pro constraints
+
+### Priorita implementace
+
+```
+1. Krevní výsledky     ← první, máme testovací data
+2. Zpráva od lékaře    ← high value, minimální práce navíc
+3. EKG report          ← specifický vstup pro SRDCE killer
+4. Apple Health XML    ← průběžná data, vyšší technická složitost
+5. DEXA scan           ← zlatý standard pro Tělo, pokud uživatel má
+```
 
 ---
 
@@ -461,7 +549,7 @@ Uživatel si vybere sen (běžky v 85, Ironman, hrát s vnouky...).
 | **v0.1.0** | Semafor, kroky, baterie, sparkline, onboarding (vanilla JS) | ✅ Hotovo |
 | **v0.2.0** | Longevity HUD panel, Svelte + Tailwind, zdroje v panelu | 🔄 Aktivní |
 | **v0.3.0** | Claude Haiku pro výběr kroků (místo deterministického) | 📋 |
-| **v0.4.0** | Foto jídel → kalorie (Vision API) | 📋 |
+| **v0.4.0** | Foto jídel → kalorie (Vision API) + Health Document Parser | 📋 |
 | **v0.5.0** | CHJ Master Agent + MCP orchestrace | 📋 |
 | **v0.6.0** | Push notifikace + ranní briefing | 📋 |
 | **v1.0.0** | SaaS launch — platební brána + landing | 📋 |
