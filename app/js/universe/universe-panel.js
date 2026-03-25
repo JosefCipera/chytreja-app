@@ -244,13 +244,22 @@ function resetPanel() {
 }
 
 export async function showPanel(node, options = {}) {
+  // v0.2+: non-GRAY nodes open in Svelte HUD
+  if (node.state !== 'GRAY') {
+    const uid = window.firebaseAuth?.currentUser?.uid;
+    if (uid) {
+      window.location.href = `/hud?userId=${encodeURIComponent(uid)}&nodeId=${encodeURIComponent(node.id)}`;
+      return;
+    }
+  }
+
+  // Fallback: GRAY (locked) nodes or no auth → vanilla panel
   if (!panelEl) return;
 
   const wasOpen = panelEl.classList.contains('open');
 
   panelEl.style.transition = "none";
   if (!wasOpen) {
-    // Fresh open – hide first so slide-in animation works
     panelEl.style.visibility = "hidden";
     panelEl.classList.remove("open", "visible");
   }
@@ -267,7 +276,6 @@ export async function showPanel(node, options = {}) {
   panelEl.style.visibility = "visible";
   panelEl.classList.add("open", "visible");
   document.body.classList.add("panel-open");
-  // Hide HUD when panel opens
   import('./hud.js').then(m => m.hideHUD()).catch(() => {});
 
   requestAnimationFrame(() => { panelEl.style.transition = ""; });

@@ -17,6 +17,7 @@
     <NodeHeader
       label={data.node_label}
       version={data.node_version}
+      onClose={() => window.history.length > 1 ? window.history.back() : window.location.href = '/'}
     />
 
     <div class="p-4 space-y-3">
