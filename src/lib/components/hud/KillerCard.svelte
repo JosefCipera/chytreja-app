@@ -14,6 +14,6 @@
   </div>
   <div class="flex items-center gap-2" style="line-height: 1.3;">
     <span style="font-size: 17px; color: #f87171;">⚠</span>
-    <span class="hud-mono" style="font-size: 16px; letter-spacing: 0.03em; color: #f87171;">{energyDrain}% ENERGY DRAIN</span>
+    <span class="hud-mono" style="font-size: 16px; letter-spacing: 0.03em; color: #f87171; font-weight: 400;">{energyDrain}% ENERGY DRAIN</span>
   </div>
 </div>
