@@ -490,8 +490,18 @@ function renderVisibleUniverse(model) {
 
   renderUniverse(visible, firstLevel, main.id);
 
-  // Auto-open disabled — HUD opens only on explicit node click
   window.MAIN_UNIVERSE_DATA = visible;
+
+  // Auto-open main node HUD on startup (right-side panel)
+  const mainNode = visible.find(n => n.id === main.id);
+  if (mainNode && mainNode.state && mainNode.state !== 'GRAY') {
+    setTimeout(() => {
+      const uid = window.firebaseAuth?.currentUser?.uid;
+      if (uid && window.openHudOverlay) {
+        window.openHudOverlay(uid, mainNode.id);
+      }
+    }, 700);
+  }
 }
 
 // =====================================================

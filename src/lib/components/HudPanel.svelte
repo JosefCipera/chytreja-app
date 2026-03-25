@@ -8,7 +8,7 @@
   let { data, children } = $props();
 </script>
 
-<div class="hud-shell hud-glow hud-corners hud-scanline rounded-xl w-full max-w-md relative overflow-hidden hud-fade-in">
+<div class="hud-shell hud-glow hud-corners hud-scanline rounded-2xl w-full relative overflow-hidden hud-fade-in" style="min-height: 100dvh; border-radius: 20px 0 0 20px;">
   <!-- Grid background visible through glass -->
   <div class="absolute inset-0 hud-grid opacity-50"></div>
 
@@ -41,11 +41,13 @@
         />
       </div>
 
+      {#if data.action}
       <div class="hud-fade-in" style="animation-delay: 0.3s">
         <ActionProtocol
           action={data.action}
         />
       </div>
+      {/if}
 
       <div class="hud-fade-in" style="animation-delay: 0.4s">
         <SourceCards
