@@ -8,7 +8,7 @@
   let { data, children } = $props();
 </script>
 
-<div class="hud-shell hud-glow hud-scanline w-full relative overflow-hidden hud-fade-in" style="min-height: 100dvh; border-radius: 20px 0 0 20px; overflow-y: auto;">
+<div class="hud-shell hud-glow hud-scanline relative overflow-hidden hud-fade-in" style="width: 420px; min-height: 100dvh; border-radius: 20px 0 0 20px; overflow-y: auto;">
   <!-- Grid background visible through glass -->
   <div class="absolute inset-0 hud-grid opacity-50"></div>
 
