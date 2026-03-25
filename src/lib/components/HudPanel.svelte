@@ -6,9 +6,15 @@
   import SourceCards from './hud/SourceCards.svelte';
 
   let { data, children } = $props();
+
+  let stateColor = $derived(
+    data.life_battery.percent > 70 ? '#22c55e' :
+    data.life_battery.percent > 40 ? '#eab308' :
+    '#ef4444'
+  );
 </script>
 
-<div class="hud-shell hud-glow hud-scanline relative overflow-hidden hud-fade-in" style="width: 420px; min-height: 100dvh; border-radius: 20px 0 0 20px; overflow-y: auto; padding-top: 40px;">
+<div class="hud-shell hud-glow hud-scanline relative overflow-hidden hud-fade-in" style="width: 420px; min-height: 100dvh; border-radius: 20px 0 0 20px; overflow-y: auto;">
   <!-- Grid background visible through glass -->
   <div class="absolute inset-0 hud-grid opacity-50"></div>
 
@@ -17,6 +23,7 @@
     <NodeHeader
       label={data.node_label}
       version={data.node_version}
+      stateColor={stateColor}
       onClose={() => window.parent !== window ? window.parent.postMessage('chj:hud:close', '*') : window.history.back()}
     />
 
