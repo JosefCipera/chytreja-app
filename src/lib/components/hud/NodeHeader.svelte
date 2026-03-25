@@ -20,7 +20,7 @@
   </div>
   <div class="hud-mono font-bold" style="
     font-size: 22px;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.02em;
     color: #22d3ee;
     text-shadow: 0 0 18px rgba(34,211,238,0.6), 0 0 40px rgba(34,211,238,0.2);
     margin-top: 4px;
