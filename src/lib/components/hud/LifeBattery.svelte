@@ -21,9 +21,9 @@
   let filledSegments = $derived(Math.round((percent / 100) * TOTAL_SEGMENTS));
 
   let fillColor = $derived(
-    percent > 70 ? 'rgba(34, 197, 94, 0.9)' :
-    percent > 40 ? 'rgba(234, 179, 8, 0.9)' :
-    'rgba(239, 68, 68, 0.9)'
+    percent > 70 ? 'rgba(34, 197, 94, 0.55)' :
+    percent > 40 ? 'rgba(234, 179, 8, 0.55)' :
+    'rgba(239, 68, 68, 0.55)'
   );
 
   let glowColor = $derived(
@@ -57,9 +57,9 @@
   );
 
   let watermarkColor = $derived(
-    percent <= 40 ? 'rgba(239,68,68,0.25)' :
-    percent <= 70 ? 'rgba(234,179,8,0.22)' :
-    'rgba(34,197,94,0.22)'
+    percent <= 40 ? 'rgba(239,68,68,0.55)' :
+    percent <= 70 ? 'rgba(234,179,8,0.50)' :
+    'rgba(34,197,94,0.50)'
   );
 
   let trendColor = $derived(
@@ -104,19 +104,8 @@
       class="relative flex-1 rounded-l-md rounded-r-none {percent <= 40 ? 'battery-pulse' : ''}"
       style="background: rgba(0, 0, 0, 0.5); border: 2px solid rgba(255,255,255,0.06); border-right: none; box-shadow: {barGlow}, inset 0 2px 10px rgba(0,0,0,0.6); padding: 5px;"
     >
-      <!-- Watermark -->
-      <div
-        class="absolute inset-0 flex items-center justify-center pointer-events-none select-none"
-        style="z-index: 1;"
-      >
-        <span
-          class="hud-mono font-black uppercase"
-          style="font-size: 15px; letter-spacing: 0.4em; color: {watermarkColor}; text-shadow: 0 0 20px {watermarkColor};"
-        >{watermark}</span>
-      </div>
-
       <!-- Segments -->
-      <div class="relative flex gap-[4px]" style="z-index: 2;">
+      <div class="relative flex gap-[4px]" style="z-index: 1;">
         {#each Array(TOTAL_SEGMENTS) as _, i}
           <div
             class="flex-1 rounded-[2px] transition-all duration-500"
@@ -125,6 +114,17 @@
               : 'background: rgba(255, 255, 255, 0.025); border: 1px solid rgba(255, 255, 255, 0.015);'}"
           ></div>
         {/each}
+      </div>
+
+      <!-- Watermark — on top of segments -->
+      <div
+        class="absolute inset-0 flex items-center justify-center pointer-events-none select-none"
+        style="z-index: 3;"
+      >
+        <span
+          class="hud-mono font-black uppercase"
+          style="font-size: 16px; letter-spacing: 0.4em; color: {watermarkColor}; text-shadow: 0 0 12px {watermarkColor}, 0 0 30px {watermarkColor};"
+        >{watermark}</span>
       </div>
 
     </div>
