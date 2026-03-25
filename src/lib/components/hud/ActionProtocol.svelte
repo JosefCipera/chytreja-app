@@ -50,10 +50,10 @@
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
 ">
-  <!-- Protocol name + status tags -->
-  <div class="flex items-center gap-2 mb-3">
-    <span class="hud-mono" style="font-size: 14px; letter-spacing: 0.05em; color: #64748b;">[{protocolLabel}]</span>
-    <span class="hud-mono font-bold {statusNeon}" style="font-size: 14px; letter-spacing: 0.05em; color: {statusColor};">[{status}]</span>
+  <!-- ACTION: [PROTOKOL] [STATUS] -->
+  <div class="hud-mono mb-3" style="font-size: 16px; letter-spacing: 0.03em; color: #94a3b8; line-height: 1.3;">
+    ACTION: <span style="color: #94a3b8;">[{protocolLabel}]</span>
+    <span class="{statusNeon}" style="color: {statusColor};"> [{status}]</span>
   </div>
 
   <!-- Action description -->
