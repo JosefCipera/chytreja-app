@@ -15,10 +15,7 @@
     status = 'ACTIVE';
     interval = setInterval(() => {
       timer--;
-      if (timer <= 0) {
-        clearInterval(interval);
-        status = 'COMPLETE';
-      }
+      if (timer <= 0) { clearInterval(interval); status = 'COMPLETE'; }
     }, 1000);
   }
 
@@ -28,60 +25,63 @@
   }
 
   let statusColor = $derived(
-    status === 'READY'    ? '#22d3ee' :
-    status === 'ACTIVE'   ? '#facc15' :
+    status === 'READY'  ? '#22d3ee' :
+    status === 'ACTIVE' ? '#facc15' :
     '#4ade80'
   );
   let statusNeon = $derived(
-    status === 'READY'    ? 'neon-cyan' :
-    status === 'ACTIVE'   ? 'neon-yellow' :
+    status === 'READY'  ? 'neon-cyan' :
+    status === 'ACTIVE' ? 'neon-yellow' :
     'neon-green'
+  );
+
+  // Protocol type label from action type
+  let protocolLabel = $derived(
+    action.type === 'timed'   ? 'TIMING_PROTOKOL' :
+    action.type === 'reps'    ? 'TRAINING_PROTOKOL' :
+    action.type === 'counter' ? 'TRAINING_PROTOKOL' :
+    'TRAINING_PROTOKOL'
   );
 </script>
 
-<div class="rounded-lg p-4 {status === 'ACTIVE' ? 'glow-pulse' : ''}" style="
-  background: rgba(6, 182, 212, 0.04);
+<div class="rounded-lg px-4 py-3 {status === 'ACTIVE' ? 'glow-pulse' : ''}" style="
+  background: rgba(6, 182, 212, 0.03);
   border: 1px solid rgba(255,255,255,0.07);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  box-shadow: 0 0 30px rgba(6,182,212,0.05);
 ">
-  <!-- Label row -->
-  <div class="flex items-center justify-between mb-3">
-    <span class="hud-mono tracking-wider font-bold" style="font-size: 17px; color: #94a3b8;">
-      ACTION: <span style="color: #22d3ee;">{action.id?.toUpperCase()}</span>
-    </span>
-    <span class="hud-mono {statusNeon} tracking-wider font-bold" style="font-size: 17px; color: {statusColor};">[{status}]</span>
+  <!-- Protocol name + status tags -->
+  <div class="flex items-center gap-2 mb-3">
+    <span class="hud-mono" style="font-size: 14px; letter-spacing: 0.05em; color: #64748b;">[{protocolLabel}]</span>
+    <span class="hud-mono font-bold {statusNeon}" style="font-size: 14px; letter-spacing: 0.05em; color: {statusColor};">[{status}]</span>
   </div>
 
   <!-- Action description -->
-  <div class="font-sans mb-4" style="font-size: 22px; color: #e2e8f0; line-height: 1.3;">
+  <div class="font-sans mb-3" style="font-size: 20px; color: #e2e8f0; line-height: 1.3;">
     {action.icon} {action.label}
   </div>
 
   {#if status === 'ACTIVE'}
-    <div class="text-center mb-4">
+    <div class="text-center mb-3">
       <span class="hud-mono font-semibold tabular-nums neon-cyan"
-        style="font-size: 3rem; color: #e2e8f0; text-shadow: 0 0 20px rgba(6,182,212,0.5), 0 0 40px rgba(6,182,212,0.2);">
+        style="font-size: 2.8rem; color: #e2e8f0; text-shadow: 0 0 20px rgba(6,182,212,0.5);">
         {formatTime(timer)}
       </span>
     </div>
-    <button
-      onclick={stop}
-      class="w-full rounded-lg border border-yellow-500/20 bg-yellow-500/[0.07] hud-mono tracking-wider hover:bg-yellow-500/[0.12] hover:border-yellow-500/30 transition-all cursor-pointer neon-yellow"
-      style="padding: 16px; font-size: 17px; color: #facc15;"
-    >⏹ STOP</button>
+    <button onclick={stop} class="w-full rounded-lg border border-yellow-500/20 bg-yellow-500/[0.07] hud-mono tracking-wider hover:bg-yellow-500/[0.12] transition-all cursor-pointer neon-yellow"
+      style="padding: 14px; font-size: 16px; color: #facc15;">
+      ⏹ STOP
+    </button>
 
   {:else if status === 'COMPLETE'}
-    <div class="text-center py-4">
-      <span class="hud-mono tracking-wider neon-green font-bold" style="font-size: 18px; color: #4ade80;">✔ PROTOCOL COMPLETE</span>
+    <div class="text-center py-3">
+      <span class="hud-mono tracking-wider neon-green font-bold" style="font-size: 17px; color: #4ade80;">✔ PROTOCOL COMPLETE</span>
     </div>
 
   {:else}
-    <button
-      onclick={start}
-      class="w-full rounded-lg border border-cyan-500/20 bg-cyan-500/[0.07] hud-mono tracking-wider hover:bg-cyan-500/[0.12] hover:border-cyan-500/30 hover:shadow-[0_0_20px_rgba(6,182,212,0.2)] transition-all cursor-pointer"
-      style="padding: 16px; font-size: 17px; color: #22d3ee;"
-    >▶ START PROTOCOL</button>
+    <button onclick={start} class="w-full rounded-lg border border-cyan-500/20 bg-cyan-500/[0.07] hud-mono tracking-wider hover:bg-cyan-500/[0.12] hover:shadow-[0_0_20px_rgba(6,182,212,0.2)] transition-all cursor-pointer"
+      style="padding: 14px; font-size: 16px; color: #22d3ee;">
+      ▶ START PROTOCOL
+    </button>
   {/if}
 </div>

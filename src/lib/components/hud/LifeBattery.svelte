@@ -83,11 +83,11 @@
 <div class="hud-glass rounded-lg p-4 hud-corners">
   <!-- Header row: LIFE-BATTERY + percent + trend -->
   <div class="flex items-center justify-between mb-3">
-    <span class="hud-mono font-bold" style="font-size: 17px; letter-spacing: 0.04em; color: #e2e8f0;">LIFE-BATTERY</span>
+    <span class="hud-mono" style="font-size: 16px; letter-spacing: 0.04em; color: #e2e8f0;">LIFE-BATTERY</span>
     <div class="flex items-center gap-0">
-      <span class="hud-mono font-bold" style="font-size: 17px; color: {textColor};">{percent}%</span>
-      <span class="hud-mono mx-2" style="font-size: 17px; color: #334155;">|</span>
-      <span class="hud-mono font-bold {textNeon}" style="font-size: 17px; color: {textColor};">{trendLabel}</span>
+      <span class="hud-mono font-bold" style="font-size: 16px; color: {textColor};">{percent}%</span>
+      <span class="hud-mono mx-2" style="font-size: 16px; color: #334155;">|</span>
+      <span class="hud-mono font-bold {textNeon}" style="font-size: 16px; color: {textColor};">{trendLabel}</span>
     </div>
   </div>
 
