@@ -410,7 +410,7 @@
             const wrap    = document.getElementById('hud-panel-wrap');
             const iframe  = document.getElementById('hud-iframe');
 
-            iframe.src = `/hud?userId=${encodeURIComponent(userId)}&nodeId=${encodeURIComponent(nodeId)}`;
+            iframe.src = `/app/hud.html?userId=${encodeURIComponent(userId)}&nodeId=${encodeURIComponent(nodeId)}`;
             overlay.style.display = 'flex';
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
