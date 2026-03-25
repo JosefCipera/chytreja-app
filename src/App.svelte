@@ -50,7 +50,7 @@
   );
 </script>
 
-<div class="min-h-screen flex flex-col items-stretch justify-start" style="background: transparent;">
+<div class="min-h-screen" style="background: transparent; display: flex; justify-content: flex-end;">
   <!-- Ambient glow — only when standalone (not overlay) -->
   <div class="fixed top-1/3 left-1/2 -translate-x-1/2 w-96 h-96 bg-cyan-500/[0.02] rounded-full blur-3xl pointer-events-none"></div>
 
