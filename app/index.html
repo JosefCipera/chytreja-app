@@ -374,14 +374,13 @@
         }
     </script>
 
-    <!-- HUD Overlay — Svelte HUD panel, slides in from right -->
+    <!-- HUD Overlay — Svelte HUD panel, slides in from right, universe visible behind -->
     <div id="hud-overlay" style="
         display: none;
         position: fixed; inset: 0; z-index: 5000;
-        background: rgba(2,6,18,0.60);
-        backdrop-filter: blur(2px);
-        -webkit-backdrop-filter: blur(2px);
+        background: transparent;
         align-items: stretch; justify-content: flex-end;
+        pointer-events: none;
     ">
         <div id="hud-panel-wrap" style="
             width: 100%; max-width: 420px;
@@ -391,6 +390,7 @@
             transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1);
             overflow: hidden;
             border-radius: 20px 0 0 20px;
+            pointer-events: auto;
         ">
             <iframe
                 id="hud-iframe"
@@ -432,11 +432,6 @@
                 window._hudOpen = false;
             }, 360);
         };
-
-        // Close on backdrop click (left side)
-        document.getElementById('hud-overlay').addEventListener('click', function(e) {
-            if (e.target === this) window.closeHudOverlay();
-        });
 
         // Close via postMessage from HUD iframe (✕ button)
         window.addEventListener('message', function(e) {
