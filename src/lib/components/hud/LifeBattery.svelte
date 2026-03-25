@@ -89,11 +89,11 @@
 
 <div class="hud-glass rounded-lg p-4 hud-corners">
   <div class="flex items-center justify-between mb-2">
-    <span class="hud-mono text-xs text-cyan-400/70 tracking-wider">LIFE-BATTERY</span>
+    <span class="hud-mono tracking-wider" style="font-size: 15px; color: rgba(34,211,238,0.7);">LIFE-BATTERY</span>
     <div class="flex items-center gap-0">
-      <span class="hud-mono text-xs {textColor}">{percent}%</span>
-      <span class="hud-mono text-xs text-slate-600 mx-1.5">|</span>
-      <span class="hud-mono text-xs {trendColor}">{trend}</span>
+      <span class="hud-mono {textColor}" style="font-size: 15px;">{percent}%</span>
+      <span class="hud-mono mx-1.5" style="font-size: 15px; color: #475569;">|</span>
+      <span class="hud-mono {trendColor}" style="font-size: 15px;">{trend}</span>
     </div>
   </div>
 
@@ -123,7 +123,7 @@
       >
         <span
           class="hud-mono font-black uppercase"
-          style="font-size: 16px; letter-spacing: 0.4em; color: {watermarkColor}; text-shadow: 0 0 12px {watermarkColor}, 0 0 30px {watermarkColor};"
+          style="font-size: 20px; letter-spacing: 0.4em; color: {watermarkColor}; text-shadow: 0 0 12px {watermarkColor}, 0 0 30px {watermarkColor};"
         >{watermark}</span>
       </div>
 
@@ -139,13 +139,13 @@
   <!-- Sub-metrics row -->
   <div class="flex items-baseline justify-end">
     <div class="flex gap-4">
-      <span class="hud-mono text-[10px] text-slate-600">
-        REPAIR_RATE: <span class="text-slate-400">{repairRate}x</span>
+      <span class="hud-mono" style="font-size: 13px; color: #475569;">
+        REPAIR_RATE: <span style="color: #94a3b8;">{repairRate}x</span>
       </span>
 
       <!-- BIO_AGE block -->
       <div class="flex flex-col items-end gap-0.5">
-        <span class="hud-mono text-[10px] text-slate-600">
+        <span class="hud-mono" style="font-size: 13px; color: #475569;">
           {bioAge.label.key}:
           <span class="font-bold {bioAgeColor} {bioAgeNeon}">
             {bioAgeSign}{bioAge.delta} YRS
@@ -153,7 +153,7 @@
         </span>
         <!-- Confidence bar -->
         <div class="flex items-center gap-1">
-          <div class="w-14 h-[3px] rounded-full bg-white/[0.06] overflow-hidden">
+          <div class="w-16 h-[4px] rounded-full bg-white/[0.06] overflow-hidden">
             <div
               class="h-full rounded-full transition-all duration-700"
               style="width: {confidencePct}%; background: {
@@ -163,7 +163,7 @@
               };"
             ></div>
           </div>
-          <span class="hud-mono text-[9px] text-slate-700">{bioAge.label.shortLabel} {confidencePct}%</span>
+          <span class="hud-mono" style="font-size: 12px; color: #334155;">{bioAge.label.shortLabel} {confidencePct}%</span>
         </div>
       </div>
     </div>

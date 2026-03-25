@@ -8,7 +8,7 @@
   let { data, children } = $props();
 </script>
 
-<div class="hud-shell hud-glow hud-scanline relative overflow-hidden hud-fade-in" style="width: 420px; min-height: 100dvh; border-radius: 20px 0 0 20px; overflow-y: auto;">
+<div class="hud-shell hud-glow hud-scanline relative overflow-hidden hud-fade-in" style="width: 420px; min-height: 100dvh; border-radius: 20px 0 0 20px; overflow-y: auto; padding-top: 10px;">
   <!-- Grid background visible through glass -->
   <div class="absolute inset-0 hud-grid opacity-50"></div>
 
@@ -56,8 +56,8 @@
           ">
             <span style="color: #4ade80; font-size: 1.1rem;">✔</span>
             <div>
-              <div class="hud-mono" style="font-size: 10px; letter-spacing: 0.1em; color: #4ade80; margin-bottom: 2px;">MISSIONS_COMPLETE</div>
-              <div style="font-size: 13px; color: #94a3b8;">Splněno na dnes. Vrať se zítra.</div>
+              <div class="hud-mono" style="font-size: 14px; letter-spacing: 0.1em; color: #4ade80; margin-bottom: 2px;">MISSIONS_COMPLETE</div>
+              <div style="font-size: 16px; color: #94a3b8;">Splněno na dnes. Vrať se zítra.</div>
             </div>
           </div>
         {/if}
@@ -77,10 +77,10 @@
       <div class="flex items-center justify-between px-3 py-2 rounded border border-white/[0.04] bg-black/20" style="backdrop-filter: blur(8px);">
         <div class="flex items-center gap-2">
           <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" style="box-shadow: 0 0 6px rgba(34,197,94,0.8);"></span>
-          <span class="hud-mono text-[10px] text-slate-600 tracking-widest">SYSTEM_ONLINE</span>
+          <span class="hud-mono tracking-widest" style="font-size: 12px; color: #475569;">SYSTEM_ONLINE</span>
         </div>
-        <span class="hud-mono text-[10px] text-slate-700 tracking-widest">// DATA_ENCRYPTED</span>
-        <span class="hud-mono text-[10px] text-slate-700">CHJ_v0.1</span>
+        <span class="hud-mono tracking-widest" style="font-size: 12px; color: #334155;">// DATA_ENCRYPTED</span>
+        <span class="hud-mono" style="font-size: 12px; color: #334155;">CHJ_v0.1</span>
       </div>
     </div>
   </div>

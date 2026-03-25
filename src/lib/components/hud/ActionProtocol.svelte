@@ -48,13 +48,13 @@
   box-shadow: 0 0 30px rgba(6,182,212,0.04);
 ">
   <div class="flex items-center justify-between mb-3">
-    <span class="hud-mono text-xs text-slate-500 tracking-wider">
-      ACTION: <span class="text-cyan-400">{action.id?.toUpperCase()}</span>
+    <span class="hud-mono tracking-wider" style="font-size: 15px; color: #64748b;">
+      ACTION: <span style="color: #22d3ee;">{action.id?.toUpperCase()}</span>
     </span>
-    <span class="hud-mono text-xs {statusColor} {statusNeon} tracking-wider">[{status}]</span>
+    <span class="hud-mono {statusColor} {statusNeon} tracking-wider" style="font-size: 15px;">[{status}]</span>
   </div>
 
-  <div class="text-base text-slate-200 font-sans mb-4">
+  <div class="font-sans mb-4" style="font-size: 20px; color: #e2e8f0;">
     {action.icon} {action.label}
   </div>
 
@@ -67,20 +67,22 @@
     </div>
     <button
       onclick={stop}
-      class="w-full py-3 rounded-lg border border-yellow-500/20 bg-yellow-500/[0.07] text-yellow-400 hud-mono text-sm tracking-wider hover:bg-yellow-500/[0.12] hover:border-yellow-500/30 transition-all cursor-pointer neon-yellow"
+      class="w-full rounded-lg border border-yellow-500/20 bg-yellow-500/[0.07] text-yellow-400 hud-mono tracking-wider hover:bg-yellow-500/[0.12] hover:border-yellow-500/30 transition-all cursor-pointer neon-yellow"
+      style="padding: 14px; font-size: 16px;"
     >
       ⏹ STOP
     </button>
 
   {:else if status === 'COMPLETE'}
     <div class="text-center py-3">
-      <span class="text-green-400 hud-mono text-sm tracking-wider neon-green">✔ PROTOCOL COMPLETE</span>
+      <span class="hud-mono tracking-wider neon-green" style="font-size: 16px; color: #4ade80;">✔ PROTOCOL COMPLETE</span>
     </div>
 
   {:else}
     <button
       onclick={start}
-      class="w-full py-3 rounded-lg border border-cyan-500/20 bg-cyan-500/[0.07] text-cyan-400 hud-mono text-sm tracking-wider hover:bg-cyan-500/[0.12] hover:border-cyan-500/30 hover:shadow-[0_0_15px_rgba(6,182,212,0.15)] transition-all cursor-pointer"
+      class="w-full rounded-lg border border-cyan-500/20 bg-cyan-500/[0.07] text-cyan-400 hud-mono tracking-wider hover:bg-cyan-500/[0.12] hover:border-cyan-500/30 hover:shadow-[0_0_15px_rgba(6,182,212,0.15)] transition-all cursor-pointer"
+      style="padding: 14px; font-size: 16px;"
     >
       ▶ START PROTOCOL
     </button>
