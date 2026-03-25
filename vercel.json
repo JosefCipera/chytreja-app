@@ -5,6 +5,14 @@
             "destination": "/app/hud.html"
         },
         {
+            "source": "/app",
+            "destination": "/app/app.html"
+        },
+        {
+            "source": "/app/",
+            "destination": "/app/app.html"
+        },
+        {
             "source": "/",
             "destination": "/app/index.html"
         },
