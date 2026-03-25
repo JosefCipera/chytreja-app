@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="cs">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vesmír Desktop 🌌</title>
+
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <!-- Firebase Auth -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js';
+        import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js';
+
+        const app = initializeApp({
+            apiKey: "AIzaSyAKREZsoBZkA1xOQ5ff3XDmiJ88nwSjeOk",
+            authDomain: "chytre-ja-app.firebaseapp.com",
+            projectId: "chytre-ja-app",
+            storageBucket: "chytre-ja-app.firebasestorage.app",
+            messagingSenderId: "65882611642",
+            appId: "1:65882611642:web:53d82914aa07d6677d4783"
+        });
+        const auth = getAuth(app);
+
+        // Auth guard + avatar update
+        onAuthStateChanged(auth, (user) => {
+            if (!user) {
+                window.location.href = '/';
+            } else {
+                // Update avatar dynamically
+                const email = user.email || 'User';
+                const name = user.displayName || email.split('@')[0];
+                const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=0D8ABC&color=fff`;
+
+                document.querySelectorAll('.user-avatar, .avatar-large').forEach(img => {
+                    img.src = avatarUrl;
+                });
+
+                const emailEl = document.querySelector('.email');
+                if (emailEl) emailEl.textContent = email;
+            }
+        });
+
+        // Global logout
+        window.handleLogout = () => {
+            signOut(auth).then(() => window.location.href = '/').catch(console.error);
+        };
+
+        // Expose auth for other scripts
+        window.firebaseAuth = auth;
+    </script>
+
+    <script type="module" src="./js/universe/onboarding.js"></script>
+
+    <!-- Knihovny -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vis-network@9.1.9/dist/vis-network.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/vis-network@9.1.9/dist/vis-network.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+    <!-- Styly -->
+    <link rel="stylesheet" href="/app/css/universe-core.css">
+    <link rel="stylesheet" href="/app/css/universe-header.css">
+
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.webmanifest">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Chytré já">
+    <link rel="apple-touch-icon" href="/app/assets/images/logo-192.png">
+
+    <style>
+        .battery-section {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin: 32px 0;
+        }
+
+        .battery {
+            width: 30px;
+            height: 140px;
+            border: 2px solid #06b6d4;
+            border-radius: 6px;
+            background: rgba(6, 182, 212, 0.05);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.3);
+        }
+
+        .battery-fill {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 38%;
+            background: linear-gradient(180deg, #22d3ee, #06b6d4);
+            box-shadow: 0 0 30px rgba(6, 182, 212, 0.8);
+        }
+
+        .wave-section {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin: 24px 0;
+            height: 40px;
+            align-items: center;
+        }
+
+        .wave {
+            width: 4px;
+            background: linear-gradient(180deg, #06b6d4, #0891b2);
+            border-radius: 2px;
+        }
+
+        .sokrates-text {
+            text-align: center;
+            color: #06b6d4;
+            font-size: 0.85em;
+            margin: 8px 0 16px;
+        }
+        /* === Mic tlačítko === */
+        #voice-mic-btn {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: rgba(15, 23, 42, 0.92);
+            border: 1.5px solid rgba(80, 120, 200, 0.4);
+            box-shadow: 0 0 18px rgba(80, 120, 255, 0.2);
+            cursor: pointer;
+            z-index: 500;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.15s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+        }
+        #voice-mic-btn:hover {
+            transform: scale(1.08);
+            box-shadow: 0 0 28px rgba(80, 140, 255, 0.4);
+        }
+        #voice-mic-btn[data-state="listening"] {
+            border-color: rgba(239, 68, 68, 0.7);
+            box-shadow: 0 0 24px rgba(239, 68, 68, 0.35);
+            animation: mic-pulse 1s ease-in-out infinite;
+        }
+        #voice-mic-btn[data-state="thinking"] {
+            border-color: rgba(147, 197, 253, 0.5);
+            box-shadow: 0 0 24px rgba(147, 197, 253, 0.3);
+        }
+        #voice-mic-btn[data-state="speaking"] {
+            border-color: rgba(59, 130, 246, 0.8);
+            animation: mic-pulse-blue 1.1s ease-in-out infinite;
+        }
+        .mic-icon { font-size: 22px; line-height: 1; }
+        @keyframes mic-pulse {
+            0%, 100% { box-shadow: 0 0 24px rgba(239, 68, 68, 0.35); }
+            50%       { box-shadow: 0 0 38px rgba(239, 68, 68, 0.6); }
+        }
+        @keyframes mic-pulse-blue {
+            0%, 100% { box-shadow: 0 0 18px rgba(59, 130, 246, 0.3); }
+            50%       { box-shadow: 0 0 32px rgba(59, 130, 246, 0.7); }
+        }
+        /* CHJ bubliny – fade-in + slide-up pro animované 3-větový briefing */
+        @keyframes chjFadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        /* Posunout mic btn nahoru když je panel otevřený */
+        body.panel-open #voice-mic-btn {
+            bottom: 80px;
+        }
+        /* === Header mic tlačítko === */
+        #header-mic-btn {
+            height: 38px;               /* stejná výška jako avatar */
+            min-width: 38px;            /* idle = kolečko; text = pill */
+            padding: 0 8px;
+            border-radius: 9999px;      /* vždy pill, začíná jako kruh */
+            background: rgba(51, 65, 85, 0.65);  /* viditelný, ale ne černý */
+            border: 2px solid #475569;            /* výraznější border, stejný styl jako avatar */
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 15px;
+            white-space: nowrap;
+            transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+            flex-shrink: 0;
+        }
+        #header-mic-btn:hover {
+            background: rgba(71, 85, 105, 0.85);
+            border-color: #64748b;
+        }
+        /* LISTENING – zelená pulsující záře jako podlahový mic */
+        #header-mic-btn[data-state="listening"] {
+            border-color: rgba(34, 197, 94, 0.75);
+            animation: header-pulse-green 1.1s ease-in-out infinite;
+        }
+        /* THINKING – modro-šedá (AI generuje odpověď) */
+        #header-mic-btn[data-state="thinking"] {
+            border-color: rgba(147, 197, 253, 0.55);
+            box-shadow: 0 0 8px rgba(147, 197, 253, 0.2);
+        }
+        /* SPEAKING – modrá pulsující záře (TTS čte) */
+        #header-mic-btn[data-state="speaking"] {
+            border-color: rgba(59, 130, 246, 0.8);
+            animation: header-pulse-blue 1.1s ease-in-out infinite;
+        }
+        @keyframes header-pulse-green {
+            0%, 100% { box-shadow: 0 0 8px rgba(34, 197, 94, 0.3); }
+            50%       { box-shadow: 0 0 20px rgba(34, 197, 94, 0.7); }
+        }
+        @keyframes header-pulse-blue {
+            0%, 100% { box-shadow: 0 0 8px rgba(59, 130, 246, 0.3); }
+            50%       { box-shadow: 0 0 20px rgba(59, 130, 246, 0.7); }
+        }
+    </style>
+</head>
+
+<body>
+    <script src="/app/js/universe/splash.js"></script>
+
+    <!-- Horní lišta -->
+    <header id="appHeader" class="app-header">
+        <h1 id="appTitle">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 48" width="140" height="48"
+                style="vertical-align: middle;">
+                <circle cx="24" cy="24" r="18" fill="none" stroke="#2563eb" stroke-width="4.5" stroke-dasharray="105 13"
+                    stroke-dashoffset="6.5" transform="rotate(-90 24 24)" />
+            </svg>
+        </h1>
+        <div class="header-right">
+            <div class="header-controls" style="display:none;">
+                <label for="modelSelector">Model:</label>
+                <select id="modelSelector"></select>
+                <label for="roleSelect">Režim:</label>
+                <select id="roleSelect">
+                    <option value="demo">Demo</option>
+                    <option value="free">Free</option>
+                    <option value="pro">Pro</option>
+                    <option value="user">User</option>
+                </select>
+            </div>
+        </div>
+        <div class="user-profile-wrapper">
+            <button id="header-mic-btn" title="Říct CHJ" aria-label="Hlasový vstup">
+                <span class="header-mic-icon">🎤</span>
+            </button>
+            <button id="profileBtn" class="avatar-button">
+                <img src="https://ui-avatars.com/api/?name=Cipera&background=0D8ABC&color=fff" alt="Profil"
+                    class="user-avatar">
+            </button>
+
+            <div id="profileDropdown" class="profile-dropdown hidden">
+                <div class="dropdown-header">
+                    <img src="https://ui-avatars.com/api/?name=Cipera&background=0D8ABC&color=fff" alt="User"
+                        class="avatar-large">
+                    <div class="user-meta">
+                        <span class="email">cipera@iting.cz</span>
+                        <div class="status-row">
+                            <span class="badge-free">Free</span>
+                            <a href="#upgrade" class="upgrade-link">upgrade</a>
+                        </div>
+                    </div>
+                </div>
+                <nav class="dropdown-nav">
+                    <a href="#" onclick="openUserDataPanel(); return false;"><i class="icon">⚙️</i> Nastavení</a>
+                    <a href="/app/medioteka.html"><i class="icon">📚</i> Mediotéka</a>
+                    <a href="/app/about-game.html"><i class="icon">🎯</i> Hra o tvůj život</a>
+                    <div class="divider"></div>
+                    <button onclick="handleLogout()" class="logout-action">
+                        <i class="icon">⭕</i> Odhlásit
+                    </button>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Plátno sítě -->
+    <div id="network"></div>
+
+    <!-- Postranní panel -->
+    <aside id="sidePanel">
+        <div class="panel-header">
+            <div class="panel-node-row">
+                <div id="nodeTitle" class="panel-node-title">
+                    <i class="fa-solid fa-circle-nodes"></i> Uzlový název
+                </div>
+                <button class="panel-close" id="closePanel">✖</button>
+            </div>
+        </div>
+
+        <div class="panel-content">
+            <div class="ai-intelligence-zone">
+                <!-- <h3
+                    style="color:#83B0E3; font-size:18px; margin:0 0 15px 0; display:flex; align-items:center; gap:10px;">
+                    ⚡ Zeptejte se
+                </h3>
+               <h3 class="panel-section-title"><i class="fa-solid fa-brain"></i> Chytré já</h3> -->
+                <div id="ai-integrated-msgs" class="ai-prediction-text"></div>
+                <div id="aiPanelSection" style="display:flex; margin-top:20px;">
+                    <input id="aiPanelInput" type="text" placeholder="Zeptej se Chytrého já…" />
+                    <button id="ai-send"><i class="fa-solid fa-paper-plane"></i></button>
+                </div>
+            </div>
+            <!--
+            <hr class="panel-divider">
+
+            <div id="tasksSection" class="panel-section">
+                <h3 class="panel-section-title"><i class="fa-solid fa-bolt"></i> Akce</h3>
+                <ul id="tasksList" class="tasks-list"></ul>
+            </div>
+
+            <hr class="panel-divider">
+
+            <div id="resourcesSection" class="panel-section">
+                <h3 class="panel-section-title"><i class="fa-solid fa-file-lines"></i> Hodnoty</h3>
+                <ul id="resourcesList" class="resources-list"></ul>
+            </div>-->
+        </div>
+    </aside>
+
+    <script type="module">
+        import { supabase } from './js/universe/supabaseClient.js?v=20260306f';
+        import { updateRecommendations } from './js/universe/universe-panel.js?v=20260310e';
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            supabase.auth.onAuthStateChange((event, session) => {
+                if (session) {
+                    console.log("Uživatel přihlášen, aktualizuji doporučení...");
+                    updateRecommendations();
+                }
+            });
+        });
+    </script>
+
+    <script type="module" src="/app/js/universe/universe-viewers.js?v=20260306f"></script>
+    <script type="module" src="/app/js/universe/universe-access.js?v=20260306f"></script>
+    <script type="module" src="/app/js/universe/universe-core.js?v=20260306f"></script>
+    <script type="module" src="/app/js/universe/universe-init.js?v=20260310a"></script>
+    <script type="module" src="/app/js/universe/user-data-panel.js?v=20260306f"></script>
+    <script type="module" src="/app/js/universe/ai-assistant.js?v=20260306f"></script>
+    <script type="module" src="/app/js/universe/universe-panel.js?v=20260310e"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const splash = document.getElementById('app-splash');
+                if (splash) {
+                    splash.style.opacity = '0';
+                    setTimeout(() => {
+                        splash.remove();
+                        // V /app/index.html tady nemusíš nic showView, 
+                        // jen se ujisti, že dashboard pod tím už běží.
+                    }, 500);
+                }
+            }, 2500);
+        });
+    </script>
+
+    <!-- Service Worker -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/service-worker.js', { scope: '/' })
+                    .then(reg => console.log('✅ Service Worker zaregistrován, scope:', reg.scope))
+                    .catch(err => console.warn('⚠️ SW registrace selhala:', err));
+            });
+        }
+    </script>
+
+    <!-- Onboarding Modal -->
+    <div id="mediaModal"
+        style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 10000; display: none; align-items: center; justify-content: center;">
+        <div id="modalContent"
+            style="background: #1e293b; padding: 40px; border-radius: 16px; max-width: 600px; width: 90%; color: #fff;">
+        </div>
+    </div>
+</body>
+
+</html>
