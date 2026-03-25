@@ -9,7 +9,8 @@ export default defineConfig({
   ],
   root: '.', // project root
   build: {
-    outDir: 'dist',
+    outDir: 'app',
+    emptyOutDir: false, // don't delete app/ — vanilla JS lives there
     rollupOptions: {
       input: 'hud.html',
     },

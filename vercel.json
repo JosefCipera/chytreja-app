@@ -1,13 +1,8 @@
 {
-    "buildCommand": "npm run build:hud",
     "rewrites": [
         {
             "source": "/hud",
-            "destination": "/dist/hud.html"
-        },
-        {
-            "source": "/hud/(.*)",
-            "destination": "/dist/$1"
+            "destination": "/app/hud.html"
         },
         {
             "source": "/",
