@@ -9,7 +9,7 @@
 ">
   <h2 class="hud-mono text-xs tracking-widest">
     <span style="color: #e2e8f0;">LONGEVITY NODE</span>
-    <span style="color: #22d3ee; text-shadow: 0 0 8px rgba(34,211,238,0.6);" class="ml-1">[{label}_{version}]</span>
+    <span style="color: #22d3ee; text-shadow: 0 0 8px rgba(34,211,238,0.6);" class="ml-1">[{label}]</span>
   </h2>
   <button
     onclick={onClose}
