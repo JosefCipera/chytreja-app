@@ -33,12 +33,12 @@
         -webkit-backdrop-filter: blur(12px);
       ">
         <!-- SOURCE_VALIDATION_0N -->
-        <div class="hud-mono mb-1" style="font-size: 11px; letter-spacing: 0.08em; color: #e2e8f0;">
+        <div class="hud-mono" style="font-size: 12px; letter-spacing: 0.08em; color: #94a3b8; padding-bottom: 5px; margin-bottom: 5px; border-bottom: 1px solid rgba(255,255,255,0.07);">
           SOURCE_VALIDATION_{String(i + 1).padStart(2, '0')}
         </div>
 
         <!-- MED_ID short -->
-        <div class="hud-mono mb-1" style="font-size: 12px; color: rgba(6,182,212,0.7);">
+        <div class="hud-mono mb-1" style="font-size: 13px; color: rgba(6,182,212,0.8);">
           [MED_ID: {shortId(source.med_id)}]
         </div>
 
