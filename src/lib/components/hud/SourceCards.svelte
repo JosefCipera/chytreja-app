@@ -20,6 +20,27 @@
     return status === 'VERIFIED'      ? 'rgba(74,222,128,0.25)' :
            status === 'AUTHENTICATED' ? 'rgba(34,211,238,0.25)' : 'rgba(148,163,184,0.15)';
   }
+
+  // Detect media type from URL
+  function mediaType(url) {
+    if (!url) return 'link';
+    const u = url.toLowerCase();
+    if (u.includes('youtube.com') || u.includes('youtu.be')) return 'youtube';
+    if (u.match(/\.(mp4|webm|mov)(\?|$)/)) return 'video';
+    if (u.match(/\.(mp3|ogg|wav|m4a)(\?|$)/)) return 'audio';
+    if (u.match(/\.(pdf)(\?|$)/)) return 'pdf';
+    if (u.match(/\.(md|markdown)(\?|$)/)) return 'md';
+    return 'iframe';
+  }
+
+  function youtubeEmbed(url) {
+    const m = url.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+    return m ? `https://www.youtube.com/embed/${m[1]}?autoplay=1` : url;
+  }
+
+  function pdfEmbed(url) {
+    return `https://docs.google.com/gviewer?embedded=true&url=${encodeURIComponent(url)}`;
+  }
 </script>
 
 {#if safeSources.length > 0}
@@ -42,14 +63,11 @@
         onmouseenter={e => e.currentTarget.style.background = 'rgba(6,182,212,0.07)'}
         onmouseleave={e => e.currentTarget.style.background = 'rgba(6,182,212,0.03)'}
       >
-        <!-- SOURCE_VALIDATION_0N -->
         <div style="padding: 7px 10px 6px; border-bottom: 1px solid rgba(6,182,212,0.22);">
           <span class="hud-mono" style="font-size: 12px; letter-spacing: 0.08em; color: #94a3b8;">
             SOURCE_VALIDATION_{String(i + 1).padStart(2, '0')}
           </span>
         </div>
-
-        <!-- Content block -->
         <div style="padding: 7px 10px;">
           <div class="hud-mono mb-1" style="font-size: 13px; color: rgba(6,182,212,0.85);">
             [MED_ID: {shortId(source.med_id)}]
@@ -61,15 +79,12 @@
             {source.journal}, {source.year}
           </div>
         </div>
-
-        <!-- Status badge -->
         <div style="padding: 6px 10px 8px; border-top: 1px solid rgba(6,182,212,0.22);">
           <span class="hud-mono" style="
             font-size: 11px;
             color: {statusColor(source.status)};
             border: 1px solid {statusBorder(source.status)};
-            padding: 1px 6px;
-            border-radius: 3px;
+            padding: 1px 6px; border-radius: 3px;
           ">[{source.status}]</span>
         </div>
       </button>
@@ -77,85 +92,101 @@
   </div>
 {/if}
 
-<!-- Source detail modal -->
+<!-- Viewer modal -->
 {#if activeSource}
-  <!-- backdrop -->
   <div
     onclick={() => activeSource = null}
     style="
       position: fixed; inset: 0; z-index: 200;
-      background: rgba(2,6,14,0.75);
-      backdrop-filter: blur(4px);
-      -webkit-backdrop-filter: blur(4px);
+      background: rgba(2,6,14,0.85);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
     "
   ></div>
 
-  <!-- modal -->
   <div style="
     position: fixed; inset: 0; z-index: 201;
     display: flex; align-items: center; justify-content: center;
-    padding: 24px;
+    padding: 16px;
     pointer-events: none;
   ">
     <div style="
-      width: 100%; max-width: 380px;
-      background: rgba(2,6,14,0.97);
+      width: 100%; max-width: 560px;
+      max-height: 80dvh;
+      background: rgba(2,6,14,0.98);
       border: 1px solid rgba(6,182,212,0.3);
       border-top: 2px solid {statusBorder(activeSource.status)};
       border-radius: 12px;
       overflow: hidden;
       pointer-events: auto;
-      box-shadow: 0 0 40px rgba(6,182,212,0.1);
+      display: flex; flex-direction: column;
+      box-shadow: 0 0 40px rgba(6,182,212,0.12);
     ">
-      <!-- Header -->
-      <div style="padding: 10px 14px; border-bottom: 1px solid rgba(6,182,212,0.18); display: flex; justify-content: space-between; align-items: center;">
-        <span class="hud-mono" style="font-size: 11px; letter-spacing: 0.1em; color: #94a3b8;">
-          SOURCE_VALIDATION / [MED_ID: {shortId(activeSource.med_id)}]
+      <!-- Header row -->
+      <div style="
+        padding: 9px 14px;
+        border-bottom: 1px solid rgba(6,182,212,0.18);
+        display: flex; justify-content: space-between; align-items: center;
+        flex-shrink: 0;
+      ">
+        <span class="hud-mono" style="font-size: 11px; letter-spacing: 0.08em; color: #64748b;">
+          [MED_ID: {shortId(activeSource.med_id)}] · {activeSource.journal}, {activeSource.year}
         </span>
-        <button onclick={() => activeSource = null} style="color: #475569; font-size: 16px; background: none; border: none; cursor: pointer; line-height: 1;">✕</button>
+        <button
+          onclick={() => activeSource = null}
+          style="color: #475569; font-size: 18px; background: none; border: none; cursor: pointer; line-height: 1; padding: 0 0 0 12px;"
+        >✕</button>
       </div>
 
-      <!-- Body -->
-      <div style="padding: 14px;">
-        <div class="hud-mono mb-2" style="font-size: 10px; letter-spacing: 0.12em; color: #475569; text-transform: uppercase;">
-          {activeSource.type}
-        </div>
-        <p style="font-size: 14px; color: #e2e8f0; line-height: 1.5; margin: 0 0 10px;">
-          {activeSource.title}
-        </p>
-        <div class="font-sans italic mb-3" style="font-size: 12px; color: #64748b;">
-          {activeSource.journal}, {activeSource.year}
-        </div>
-        <span class="hud-mono" style="
-          font-size: 11px;
-          color: {statusColor(activeSource.status)};
-          border: 1px solid {statusBorder(activeSource.status)};
-          padding: 2px 8px; border-radius: 3px;
-        ">[{activeSource.status}]</span>
-      </div>
+      <!-- Viewer body -->
+      <div style="flex: 1; overflow: hidden; min-height: 0;">
+        {#if mediaType(activeSource.url) === 'youtube'}
+          <iframe
+            src={youtubeEmbed(activeSource.url)}
+            style="width: 100%; height: 100%; min-height: 300px; border: none;"
+            allow="autoplay; encrypted-media"
+            allowfullscreen
+          ></iframe>
 
-      <!-- Open source button -->
-      {#if activeSource.url}
-        <div style="padding: 0 14px 14px;">
-          <a
-            href={activeSource.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            style="
-              display: block; text-align: center;
-              padding: 9px;
-              background: rgba(6,182,212,0.08);
-              border: 1px solid rgba(6,182,212,0.25);
-              border-radius: 8px;
-              color: #22d3ee;
-              font-size: 12px;
-              letter-spacing: 0.08em;
-              text-decoration: none;
-            "
-            class="hud-mono"
-          >▶ OTEVŘÍT ZDROJ</a>
-        </div>
-      {/if}
+        {:else if mediaType(activeSource.url) === 'video'}
+          <video
+            src={activeSource.url}
+            controls
+            style="width: 100%; max-height: 360px; background: #000;"
+          ></video>
+
+        {:else if mediaType(activeSource.url) === 'audio'}
+          <div style="padding: 24px 16px; display: flex; flex-direction: column; gap: 12px;">
+            <p style="color: #e2e8f0; font-size: 14px; line-height: 1.5; margin: 0;">{activeSource.title}</p>
+            <audio src={activeSource.url} controls style="width: 100%;"></audio>
+          </div>
+
+        {:else if mediaType(activeSource.url) === 'pdf'}
+          <iframe
+            src={pdfEmbed(activeSource.url)}
+            style="width: 100%; height: 100%; min-height: 420px; border: none;"
+            title={activeSource.title}
+          ></iframe>
+
+        {:else if activeSource.url}
+          <!-- Fallback: iframe attempt, pokud selže → link -->
+          <iframe
+            src={activeSource.url}
+            style="width: 100%; height: 100%; min-height: 420px; border: none;"
+            title={activeSource.title}
+            sandbox="allow-scripts allow-same-origin allow-popups"
+          ></iframe>
+
+        {:else}
+          <!-- Žádné URL -->
+          <div style="padding: 24px 16px;">
+            <p style="color: #e2e8f0; font-size: 14px; line-height: 1.5;">{activeSource.title}</p>
+            <p class="font-sans italic" style="color: #475569; font-size: 12px; margin-top: 8px;">
+              {activeSource.journal}, {activeSource.year}
+            </p>
+          </div>
+        {/if}
+      </div>
     </div>
   </div>
 {/if}
