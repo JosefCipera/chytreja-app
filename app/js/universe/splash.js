@@ -17,7 +17,7 @@ const splashHTML = `
     <div style="padding-bottom: 2.5rem; text-align: center;">
         <h1 style="color: #e2e8f0; font-family: sans-serif; margin: 0; font-size: 28px; font-weight: 500; letter-spacing: 0.5px;">Chytré já</h1>
         <p style="color: #94a3b8; font-family: sans-serif; margin: 8px 0 0 0; font-size: 15px; text-transform: uppercase; letter-spacing: 2px;">Medicína 3.0</p>
-        <p style="color: #64748b; font-family: sans-serif; margin: 14px 0 0 0; font-size: 12px; letter-spacing: 0.5px;">v0.1.0</p>
+        <p style="color: #64748b; font-family: sans-serif; margin: 14px 0 0 0; font-size: 12px; letter-spacing: 0.5px;">v0.2.0</p>
     </div>
 </div>`;
 

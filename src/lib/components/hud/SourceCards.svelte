@@ -62,21 +62,15 @@
           </div>
         </div>
 
-        <!-- Status badge with inline top separator -->
-        <div style="padding: 6px 10px 8px;">
+        <!-- Status badge with full-width top separator -->
+        <div style="padding: 6px 10px 8px; border-top: 1px solid rgba(6,182,212,0.22);">
           <span class="hud-mono" style="
-            display: inline-block;
-            border-top: 1px solid rgba(6,182,212,0.22);
-            padding-top: 5px;
-          ">
-            <span class="hud-mono" style="
-              font-size: 11px;
-              color: {statusColor(source.status)};
-              border: 1px solid {statusBorder(source.status)};
-              padding: 1px 6px;
-              border-radius: 3px;
-            ">[{source.status}]</span>
-          </span>
+            font-size: 11px;
+            color: {statusColor(source.status)};
+            border: 1px solid {statusBorder(source.status)};
+            padding: 1px 6px;
+            border-radius: 3px;
+          ">[{source.status}]</span>
         </div>
       </div>
     {/each}

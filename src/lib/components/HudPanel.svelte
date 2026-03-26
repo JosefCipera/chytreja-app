@@ -80,7 +80,7 @@
           <span class="hud-mono tracking-widest" style="font-size: 12px; color: #475569;">SYSTEM_ONLINE</span>
         </div>
         <span class="hud-mono tracking-widest" style="font-size: 12px; color: #334155;">// DATA_ENCRYPTED</span>
-        <span class="hud-mono" style="font-size: 12px; color: #334155;">CHJ_v0.1</span>
+        <span class="hud-mono" style="font-size: 12px; color: #334155;">CHJ_v0.2</span>
       </div>
     </div>
   </div>
