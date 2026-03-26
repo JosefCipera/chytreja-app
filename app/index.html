@@ -447,6 +447,7 @@
             if (u.match(/\.(mp4|webm|mov)(\?|$)/)) return 'video';
             if (u.match(/\.(mp3|ogg|wav|m4a)(\?|$)/)) return 'audio';
             if (u.match(/\.pdf(\?|$)/)) return 'pdf';
+            if (u.match(/\.(md|markdown)(\?|$)/)) return 'md';
             return 'iframe';
         }
         function youtubeEmbed(url) {
@@ -459,8 +460,8 @@
 
         window.openSourceViewer = function(source) {
             closeSourceViewer();
-            // Externe URL (blokují iframe) → rovnou nový tab, bez panelu
             const t = source.url ? mediaTypeOf(source.url) : 'none';
+            // Externe HTML weby (blokují iframe) → rovnou nový tab, bez panelu
             if (t === 'iframe') { if (source.url) window.open(source.url, '_blank'); return; }
             if (t === 'none')   { return; }
 
@@ -508,8 +509,9 @@
                         const t = source.url ? mediaTypeOf(source.url) : 'none';
                         if (t === 'youtube') return `<iframe src="${youtubeEmbed(source.url)}" style="width:100%;height:100%;border:none;" allow="autoplay;encrypted-media" allowfullscreen></iframe>`;
                         if (t === 'video')   return `<video src="${source.url}" controls style="width:100%;height:100%;background:#000;"></video>`;
-                        if (t === 'audio')   return `<div style="padding:32px 20px;"><p style="color:#e2e8f0;font-size:15px;margin:0 0 20px;">${source.title}</p><audio src="${source.url}" controls style="width:100%;"></audio></div>`;
+                        if (t === 'audio')   return `<iframe src="/app/viewer.html?type=audio&file=${encodeURIComponent(source.url)}" style="width:100%;height:220px;border:none;background:#0f172a;" allow="autoplay"></iframe>`;
                         if (t === 'pdf')     return `<iframe src="${pdfEmbed(source.url)}" style="width:100%;height:100%;border:none;" title="${source.title}"></iframe>`;
+                        if (t === 'md')      return `<iframe src="/app/viewer.html?type=md&file=${encodeURIComponent(source.url)}" style="width:100%;height:100%;border:none;background:#0a0f1e;"></iframe>`;
                         // Sem se nikdy nedostaneme — 'iframe' typ je zachycen výše
                         return '';
                     })()}
