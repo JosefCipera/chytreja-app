@@ -465,16 +465,19 @@
             if (t === 'iframe') { if (source.url) window.open(source.url, '_blank'); return; }
             if (t === 'none')   { return; }
 
+            const isMobile = window.innerWidth < 700;
             const hudW = 420;
             const margin = 16;
-            const maxW = Math.min(window.innerWidth - hudW - margin * 3, 840);
-            const isMobile = maxW < 280;
+            const viewerW = Math.min(window.innerWidth - hudW - margin * 3, 840);
+            // Vycentruj viewer v prostoru vlevo od HUD panelu
+            const availLeft = window.innerWidth - hudW - margin;
+            const leftPos = Math.max(margin, Math.round((availLeft - viewerW) / 2));
 
             const wrap = document.createElement('div');
             wrap.id = 'source-viewer';
 
             if (isMobile) {
-                // Mobil: full-screen modal
+                // Mobil: full-screen modal nad vším
                 wrap.style.cssText = `
                     position: fixed; inset: 0;
                     background: rgba(2,6,14,0.98);
@@ -485,12 +488,12 @@
                     transition: opacity 0.22s;
                 `;
             } else {
-                // Desktop: panel vlevo od HUD, mírně odsazený
+                // Desktop: vycentrovaný v prostoru vlevo od HUD
                 wrap.style.cssText = `
                     position: fixed;
                     top: 72px; bottom: 32px;
-                    right: ${hudW + margin}px;
-                    width: ${maxW}px;
+                    left: ${leftPos}px;
+                    width: ${viewerW}px;
                     background: rgba(2,6,14,0.97);
                     border: 1px solid rgba(6,182,212,0.25);
                     border-radius: 16px;
