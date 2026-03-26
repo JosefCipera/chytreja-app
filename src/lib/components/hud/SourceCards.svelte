@@ -44,8 +44,8 @@
         onmouseenter={e => e.currentTarget.style.background = 'rgba(6,182,212,0.07)'}
         onmouseleave={e => e.currentTarget.style.background = 'rgba(6,182,212,0.03)'}
       >
-        <div style="padding: 7px 10px 6px; border-bottom: 1px solid rgba(6,182,212,0.22);">
-          <span class="hud-mono" style="font-size: 12px; letter-spacing: 0.08em; color: #94a3b8;">
+        <div style="padding: 7px 10px 6px;">
+          <span class="hud-mono" style="font-size: 12px; letter-spacing: 0.08em; color: #94a3b8; display: inline-block; border-bottom: 1px solid rgba(6,182,212,0.22); padding-bottom: 4px;">
             SOURCE_VALIDATION_{String(i + 1).padStart(2, '0')}
           </span>
         </div>
@@ -60,13 +60,18 @@
             {source.journal}, {source.year}
           </div>
         </div>
-        <div style="padding: 6px 10px 8px; border-top: 1px solid rgba(6,182,212,0.22);">
+        <div style="padding: 6px 10px 8px;">
           <span class="hud-mono" style="
-            font-size: 11px;
-            color: {statusColor(source.status)};
-            border: 1px solid {statusBorder(source.status)};
-            padding: 1px 6px; border-radius: 3px;
-          ">[{source.status}]</span>
+            font-size: 11px; display: inline-block;
+            border-top: 1px solid rgba(6,182,212,0.22); padding-top: 4px;
+          ">
+            <span class="hud-mono" style="
+              font-size: 11px;
+              color: {statusColor(source.status)};
+              border: 1px solid {statusBorder(source.status)};
+              padding: 1px 6px; border-radius: 3px;
+            ">[{source.status}]</span>
+          </span>
         </div>
       </button>
     {/each}

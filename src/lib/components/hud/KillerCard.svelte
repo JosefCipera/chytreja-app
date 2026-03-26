@@ -10,7 +10,7 @@
   -webkit-backdrop-filter: blur(16px);
 ">
   <div class="hud-mono" style="font-size: 16px; font-weight: 300; letter-spacing: 0.04em; color: #c8d4df; line-height: 1.3; margin-bottom: 6px;">
-    THREAT_ACTIVE: <span style="color: #c8d4df;">{label}</span>
+    KILLER: <span style="color: #c8d4df;">{label}</span>
   </div>
   <div class="flex items-center gap-2" style="line-height: 1.3;">
     <span style="font-size: 15px; color: #ef4444;">{@html '\u26A0\uFE0E'}</span>
