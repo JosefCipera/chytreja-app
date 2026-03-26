@@ -13,7 +13,7 @@
     THREAT_ACTIVE: <span style="color: #94a3b8;">{label}</span>
   </div>
   <div class="flex items-center gap-2" style="line-height: 1.3;">
-    <span style="font-size: 15px; color: #ef4444; font-variant-emoji: text;">⚠</span>
+    <span style="font-size: 15px; color: #ef4444;">{@html '\u26A0\uFE0E'}</span>
     <span class="hud-mono" style="font-size: 14px; font-weight: 300; letter-spacing: 0.03em; color: #f87171;">{energyDrain}% ENERGY DRAIN</span>
   </div>
 </div>
