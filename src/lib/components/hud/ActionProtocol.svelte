@@ -73,11 +73,6 @@
       ⏹ STOP
     </button>
 
-  {:else if status === 'COMPLETE'}
-    <div class="text-center py-3">
-      <span class="hud-mono tracking-wider neon-green font-bold" style="font-size: 17px; color: #4ade80;">✔ PROTOCOL COMPLETE</span>
-    </div>
-
   {:else}
     <button onclick={start} class="w-full rounded-lg border border-cyan-500/20 bg-cyan-500/[0.07] hud-mono tracking-wider hover:bg-cyan-500/[0.12] hover:shadow-[0_0_20px_rgba(6,182,212,0.2)] transition-all cursor-pointer"
       style="padding: 14px; font-size: 16px; color: #22d3ee;">

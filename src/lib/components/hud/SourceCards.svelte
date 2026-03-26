@@ -35,11 +35,14 @@
         overflow: hidden;
       ">
         <!-- SOURCE_VALIDATION_0N -->
-        <div class="hud-mono" style="
-          font-size: 12px; letter-spacing: 0.08em; color: #94a3b8;
-          padding: 7px 10px 6px;
-          {SEP}
-        ">SOURCE_VALIDATION_{String(i + 1).padStart(2, '0')}</div>
+        <div style="padding: 7px 10px 6px;">
+          <span class="hud-mono" style="
+            font-size: 12px; letter-spacing: 0.08em; color: #94a3b8;
+            display: inline-block;
+            border-bottom: 1px solid rgba(6,182,212,0.22);
+            padding-bottom: 5px;
+          ">SOURCE_VALIDATION_{String(i + 1).padStart(2, '0')}</span>
+        </div>
 
         <!-- Content block -->
         <div style="padding: 7px 10px;">
