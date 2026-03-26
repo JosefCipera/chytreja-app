@@ -18,8 +18,9 @@
       onmouseleave={(e) => e.target.style.color = '#475569'}
     >✕</button>
   </div>
-  <div class="hud-mono font-bold" style="
+  <div class="hud-mono" style="
     font-size: 22px;
+    font-weight: 300;
     letter-spacing: 0.02em;
     color: #22d3ee;
     text-shadow: 0 0 18px rgba(34,211,238,0.6), 0 0 40px rgba(34,211,238,0.2);
