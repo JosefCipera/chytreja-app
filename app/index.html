@@ -459,6 +459,11 @@
 
         window.openSourceViewer = function(source) {
             closeSourceViewer();
+            // Externe URL (blokují iframe) → rovnou nový tab, bez panelu
+            const t = source.url ? mediaTypeOf(source.url) : 'none';
+            if (t === 'iframe') { if (source.url) window.open(source.url, '_blank'); return; }
+            if (t === 'none')   { return; }
+
             const hudW = 420;
             const margin = 16;
             const maxW = Math.min(window.innerWidth - hudW - margin * 3, 840);
@@ -505,9 +510,7 @@
                         if (t === 'video')   return `<video src="${source.url}" controls style="width:100%;height:100%;background:#000;"></video>`;
                         if (t === 'audio')   return `<div style="padding:32px 20px;"><p style="color:#e2e8f0;font-size:15px;margin:0 0 20px;">${source.title}</p><audio src="${source.url}" controls style="width:100%;"></audio></div>`;
                         if (t === 'pdf')     return `<iframe src="${pdfEmbed(source.url)}" style="width:100%;height:100%;border:none;" title="${source.title}"></iframe>`;
-                        // Fallback pro externí weby — otevřít přímo v novém tabu, panel zavřít
-                        if (source.url) window.open(source.url, '_blank');
-                        closeSourceViewer();
+                        // Sem se nikdy nedostaneme — 'iframe' typ je zachycen výše
                         return '';
                     })()}
                 </div>
