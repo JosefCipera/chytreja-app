@@ -8,7 +8,7 @@
   background: rgba(6,182,212,0.05);
 ">
   <div class="flex items-start justify-between gap-3">
-    <h2 class="hud-mono leading-tight" style="font-size: 11px; letter-spacing: 0.18em; color: rgba(148,163,184,0.5);">
+    <h2 class="hud-mono leading-tight" style="font-size: 11px; letter-spacing: 0.18em; color: #94a3b8;">
       LONGEVITY NODE
     </h2>
     <button

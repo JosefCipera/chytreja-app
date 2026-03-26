@@ -37,7 +37,7 @@
 
   // Protocol type label from action type
   let protocolLabel = $derived(
-    action.type === 'timed'   ? 'TIMING_PROTOKOL' :
+    action.type === 'timed'   ? 'TRAINING_PROTOKOL' :
     action.type === 'reps'    ? 'TRAINING_PROTOKOL' :
     action.type === 'counter' ? 'TRAINING_PROTOKOL' :
     'TRAINING_PROTOKOL'
