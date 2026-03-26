@@ -35,12 +35,9 @@
     'neon-green'
   );
 
-  // Protocol type label from action type
+  // Protocol label from DB field, fallback to type-based default
   let protocolLabel = $derived(
-    action.type === 'timed'   ? 'TRAINING_PROTOKOL' :
-    action.type === 'reps'    ? 'TRAINING_PROTOKOL' :
-    action.type === 'counter' ? 'TRAINING_PROTOKOL' :
-    'TRAINING_PROTOKOL'
+    action.protocol_type || 'TRAINING_PROTOKOL'
   );
 </script>
 

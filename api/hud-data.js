@@ -5,11 +5,7 @@ import dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' });
 import { createClient } from '@supabase/supabase-js';
 
-import { execute as cviceni }  from '../app/js/universe/skills/cviceni.js';
-import { execute as prevence } from '../app/js/universe/skills/prevence.js';
-import { execute as metabol }  from '../app/js/universe/skills/metabol.js';
-import { execute as vyziva }   from '../app/js/universe/skills/vyziva.js';
-import { execute as mindset }  from '../app/js/universe/skills/mindset.js';
+// Actions now loaded from longevity_actions table in Supabase
 
 // ── CONSTANTS ─────────────────────────────────────────
 
@@ -46,15 +42,12 @@ const VERDICT_TEXTS = {
   dlouhovekost:{ RED: 'Tělo a zdraví brzdí.',         YELLOW: 'Potenciál čeká.',             GREEN: 'Na správné cestě.' },
 };
 
-// ── SKILL ROUTING ──────────────────────────────────────
+// ── TIER SELECTION ─────────────────────────────────────
 
-function getSkill(nodeId) {
-  if (['telo','sila','stabilita','kardio','vo2max','mobilita'].includes(nodeId)) return cviceni;
-  if (['zdravi','imunitni','obnova','spanek'].includes(nodeId)) return prevence;
-  if (['metabolicke','glukoza','pust'].includes(nodeId)) return metabol;
-  if (['vyziva','protein','hydratace','casovani_jidel','mikronutrienty'].includes(nodeId)) return vyziva;
-  if (['mysl','meditace','soustredeni','emoce','vdecnost','stres'].includes(nodeId)) return mindset;
-  return cviceni; // fallback
+function pickTier(state, streak) {
+  let tier = state === 'GREEN' ? 2 : 1;
+  if (streak >= 3) tier = Math.min(tier + 1, 3);
+  return tier;
 }
 
 // ── HELPERS ────────────────────────────────────────────
@@ -188,22 +181,49 @@ export default async function handler(req, res) {
 
   const constraints = constraintRows?.map(r => r.constraint_type) ?? [];
 
-  // 6. Action via skill
+  // 6. Action from longevity_actions DB
   let action = null;
   if (todayCount < 2) {
-    const skill = getSkill(nodeId);
-    const result = skill({ nodeId, state, streak, constraints, dayOffset: todayCount });
-    if (result) {
+    const tier = pickTier(state, streak);
+
+    // Get already-done action IDs today to avoid repeats
+    const doneIds = (todayMissions || []).map(m => m.action_id).filter(Boolean);
+
+    // Try preferred tier first, fall back to tier 1
+    let { data: candidates } = await supabase
+      .from('longevity_actions')
+      .select('*')
+      .eq('node_id', nodeId)
+      .eq('active', true)
+      .eq('tier', tier);
+
+    if (!candidates || candidates.length === 0) {
+      const { data: fallback } = await supabase
+        .from('longevity_actions')
+        .select('*')
+        .eq('node_id', nodeId)
+        .eq('active', true)
+        .order('tier')
+        .limit(10);
+      candidates = fallback || [];
+    }
+
+    // Exclude already done today
+    const available = candidates.filter(a => !doneIds.includes(a.id));
+    const pool = available.length > 0 ? available : candidates;
+    const picked = pool[Math.floor(Math.random() * pool.length)];
+
+    if (picked) {
       action = {
-        id: result.mission.id,
-        label: result.mission.label,
-        icon: result.mission.icon,
-        type: result.mission.action_type,
-        duration: result.mission.duration_sec,
-        target: result.mission.target,
-        status: 'READY',
-        tier: result.level.tier,
-        motivation: result.motivation,
+        id:            picked.id,
+        label:         picked.label,
+        icon:          picked.icon || '🏋️',
+        type:          picked.type,
+        duration:      picked.duration,
+        reps:          picked.reps,
+        protocol_type: picked.protocol_type,
+        status:        'READY',
+        tier:          picked.tier,
       };
     }
   }
