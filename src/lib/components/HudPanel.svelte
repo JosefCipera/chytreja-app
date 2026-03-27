@@ -36,15 +36,8 @@
       </div>
 
       <div class="hud-fade-in" style="animation-delay: 0.2s">
-        <KillerCard
-          label={data.killer.label}
-          energyDrain={data.killer.energy_drain}
-        />
-      </div>
-
-      <div class="hud-fade-in" style="animation-delay: 0.3s">
         {#if data.action}
-          <ActionProtocol action={data.action} />
+          <ActionProtocol action={data.action} killer={data.killer} />
         {:else}
           <div style="
             background: rgba(34,197,94,0.07);
