@@ -47,17 +47,17 @@
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
 ">
-  <!-- ACTION: [PROTOKOL]   [STATUS] vpravo -->
-  <div class="hud-mono mb-2 flex items-baseline justify-between" style="letter-spacing: 0.04em; font-weight: 300; line-height: 1.4;">
-    <span style="font-size: 20px; color: #c8d4df;">
-      ACTION: <span style="color: #94a3b8; font-size: 20px;">[{protocolLabel}]</span>
-    </span>
-    <span style="color: {statusColor}; font-size: 13px;">[{status}]</span>
+  <!-- ACTION: PROTOKOL (bez závorek), READY pod tím -->
+  <div class="hud-mono mb-2" style="letter-spacing: 0.04em; font-weight: 300; line-height: 1.5;">
+    <div style="font-size: 20px; color: #c8d4df;">
+      ACTION: <span style="color: #94a3b8;">{protocolLabel}</span>
+    </div>
+    <div style="color: {statusColor}; font-size: 13px;">{status}</div>
   </div>
 
-  <!-- Action description: [ ] prefix + smaller -->
+  <!-- Action description: [ ] prefix, bez ikony -->
   <div class="font-sans mb-3" style="font-size: 17px; color: #e2e8f0; line-height: 1.3;">
-    [ ] {action.icon} {action.label}
+    [ ] {action.label}
   </div>
 
   {#if status === 'ACTIVE'}
