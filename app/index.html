@@ -600,23 +600,62 @@
             }
 
             const shortId = id => { if (!id) return '???'; const s = String(id), d = s.indexOf('-'); return d > 0 ? s.slice(0,d).toUpperCase() : s; };
+            const isMdType = (t === 'md' || t === 'article');
 
             const innerContent = (() => {
                 if (t === 'youtube') return `<iframe src="${youtubeEmbed(source.url)}" style="width:100%;height:100%;border:none;" allow="autoplay;encrypted-media" allowfullscreen></iframe>`;
                 if (t === 'video')   return `<video src="${source.url}" controls autoplay style="width:100%;height:100%;background:#000;"></video>`;
                 if (t === 'audio')   return `<iframe src="/app/viewer.html?type=audio&file=${encodeURIComponent(source.url)}" style="width:100%;height:100%;border:none;background:#0f172a;" allow="autoplay"></iframe>`;
                 if (t === 'pdf')     return `<iframe src="${pdfEmbed(source.url)}" style="width:100%;height:100%;border:none;" title="${source.title}"></iframe>`;
-                if (t === 'md')      return `<iframe src="/app/viewer.html?type=md&file=${encodeURIComponent(source.url)}" style="width:100%;height:100%;border:none;background:#0a0f1e;"></iframe>`;
+                if (isMdType)        return '<div style="color:#64748b;padding:24px;text-align:center;font-size:14px;">Načítám…</div>';
                 return '';
             })();
 
             // Header
             const header = document.createElement('div');
-            header.style.cssText = 'padding:10px 16px;border-bottom:1px solid rgba(6,182,212,0.18);display:flex;justify-content:space-between;align-items:center;flex-shrink:0;';
-            header.innerHTML = `<span style="font-family:monospace;font-size:11px;letter-spacing:0.08em;color:#64748b;">[MED_ID:&nbsp;${shortId(source.med_id)}]&nbsp;&nbsp;·&nbsp;&nbsp;${source.journal || ''}, ${source.year || ''}</span>`;
+            header.style.cssText = 'padding:10px 16px;border-bottom:1px solid rgba(6,182,212,0.18);display:flex;align-items:center;flex-shrink:0;gap:4px;';
+
+            const headerInfo = document.createElement('span');
+            headerInfo.style.cssText = 'font-family:monospace;font-size:11px;letter-spacing:0.08em;color:#64748b;flex:1;';
+            headerInfo.innerHTML = `[MED_ID:&nbsp;${shortId(source.med_id)}]&nbsp;&nbsp;·&nbsp;&nbsp;${source.journal || ''}, ${source.year || ''}`;
+            header.appendChild(headerInfo);
+
+            // TTS button for MD — runs in parent frame (user-gesture context) — works on iOS
+            let _modalTtsActive = false;
+            if (isMdType) {
+                const ttsBtn = document.createElement('button');
+                ttsBtn.textContent = '🔊';
+                ttsBtn.style.cssText = 'background:none;border:none;font-size:20px;cursor:pointer;padding:8px 10px;-webkit-tap-highlight-color:transparent;line-height:1;flex-shrink:0;';
+                const _doTTS = () => {
+                    if (_modalTtsActive) {
+                        speechSynthesis.cancel();
+                        _modalTtsActive = false;
+                        ttsBtn.textContent = '🔊';
+                        return;
+                    }
+                    const mdDiv = contentDiv.querySelector('.md-inline-content');
+                    if (!mdDiv) return;
+                    const raw = mdDiv.innerText.replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, '').trim();
+                    if (!raw) return;
+                    _modalTtsActive = true;
+                    ttsBtn.textContent = '⏹';
+                    speechSynthesis.cancel();
+                    const utt = new SpeechSynthesisUtterance(raw);
+                    utt.lang = 'cs-CZ'; utt.rate = 1.05; utt.pitch = 1.1;
+                    const setVoice = () => { const cz = speechSynthesis.getVoices().find(v => /cs[-_]CZ/i.test(v.lang)) || speechSynthesis.getVoices().find(v => /czech/i.test(v.lang)); if (cz) utt.voice = cz; };
+                    setVoice();
+                    if (!utt.voice) speechSynthesis.addEventListener('voiceschanged', setVoice, { once: true });
+                    utt.onend = utt.onerror = () => { _modalTtsActive = false; ttsBtn.textContent = '🔊'; };
+                    speechSynthesis.speak(utt);
+                };
+                ttsBtn.addEventListener('click', _doTTS);
+                ttsBtn.addEventListener('touchend', (e) => { e.preventDefault(); _doTTS(); });
+                header.appendChild(ttsBtn);
+            }
+
             const closeBtn = document.createElement('button');
             closeBtn.textContent = '✕';
-            closeBtn.style.cssText = 'color:#64748b;font-size:22px;background:none;border:none;cursor:pointer;padding:8px 4px 8px 16px;line-height:1;-webkit-tap-highlight-color:transparent;min-width:44px;min-height:44px;';
+            closeBtn.style.cssText = 'color:#64748b;font-size:22px;background:none;border:none;cursor:pointer;padding:8px 4px 8px 12px;line-height:1;-webkit-tap-highlight-color:transparent;min-width:44px;min-height:44px;flex-shrink:0;';
             closeBtn.addEventListener('click', () => window.closeSourceViewer());
             closeBtn.addEventListener('touchend', (e) => { e.preventDefault(); e.stopPropagation(); window.closeSourceViewer(); });
             header.appendChild(closeBtn);
@@ -628,37 +667,30 @@
             contentDiv.innerHTML = innerContent;
             wrap.appendChild(contentDiv);
 
-            // Mobile: close button přímo v document.body (z-index 9999)
-            // — iframe focus trap na iOS blokuje touch eventy uvnitř wrappers
-            if (isMobile) {
+            // MD: fetch and render inline — eliminates iframe (no iOS focus trap, TTS in parent frame)
+            if (isMdType) {
+                contentDiv.style.overflowY = 'auto';
+                (async () => {
+                    const [{ convertMarkdownToHtml }, res] = await Promise.all([
+                        import('/app/js/universe/universe-viewers.js'),
+                        fetch(source.url)
+                    ]);
+                    if (!res.ok) throw new Error(res.status);
+                    const mdText = await res.text();
+                    contentDiv.innerHTML = `<div class="md-inline-content md-content" style="padding:16px 20px;box-sizing:border-box;color:#e2e8f0;line-height:1.7;font-size:15px;font-family:system-ui,sans-serif;">${convertMarkdownToHtml(mdText)}</div>`;
+                })().catch(() => {
+                    contentDiv.innerHTML = '<div style="color:#f88;padding:24px;">Nelze načíst dokument.</div>';
+                });
+            }
+
+            // Mobile + non-MD (PDF/audio/video): body-level close as backup
+            if (isMobile && !isMdType) {
                 const mobileClose = document.createElement('button');
                 mobileClose.id = 'mobile-viewer-close';
                 mobileClose.textContent = '✕';
-                mobileClose.style.cssText = [
-                    'position:fixed',
-                    'top:calc(env(safe-area-inset-top, 0px) + 14px)',
-                    'right:16px',
-                    'z-index:9999',
-                    'width:44px',
-                    'height:44px',
-                    'border-radius:50%',
-                    'background:rgba(10,20,40,0.92)',
-                    'border:1.5px solid rgba(6,182,212,0.55)',
-                    'color:#e2e8f0',
-                    'font-size:20px',
-                    'display:flex',
-                    'align-items:center',
-                    'justify-content:center',
-                    'cursor:pointer',
-                    '-webkit-tap-highlight-color:transparent',
-                    'box-shadow:0 2px 14px rgba(0,0,0,0.5)',
-                ].join(';');
+                mobileClose.style.cssText = 'position:fixed;top:64px;right:16px;z-index:9999;width:48px;height:48px;border-radius:50%;background:rgba(10,20,40,0.95);border:1.5px solid rgba(6,182,212,0.55);color:#e2e8f0;font-size:20px;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;box-shadow:0 2px 14px rgba(0,0,0,0.5);';
                 mobileClose.addEventListener('click', () => window.closeSourceViewer());
-                mobileClose.addEventListener('touchend', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    window.closeSourceViewer();
-                });
+                mobileClose.addEventListener('touchend', (e) => { e.preventDefault(); e.stopPropagation(); window.closeSourceViewer(); });
                 document.body.appendChild(mobileClose);
             }
 
