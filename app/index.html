@@ -301,8 +301,16 @@
       const rnd = (a, b) => a + Math.random() * (b - a);
       // XL anchor positions (near typical node locations, with jitter)
       const xlAnchors = [[48,52],[51,16],[29,57],[71,63],[49,88],[22,32],[75,28],[38,72],[60,42]];
-      const layers = [
-        // [count, minSz, maxSz, minOp, maxOp, glowLevel]
+      const mob = window.innerWidth < 700;
+      const layers = mob ? [
+        // mobile: méně hvězd, žádné XL (pletly by se s uzly)
+        [30, 1,  2,   0.12, 0.22, 0],
+        [20, 2,  4,   0.18, 0.32, 1],
+        [10, 4,  7,   0.22, 0.40, 2],
+        [5,  7,  11,  0.35, 0.52, 3],
+        [3,  11, 15,  0.30, 0.44, 4],
+      ] : [
+        // desktop: plný vesmír
         [65, 1,  2.5, 0.12, 0.28, 0],
         [45, 2.5,5,   0.20, 0.38, 1],
         [25, 5,  10,  0.28, 0.52, 2],
@@ -568,7 +576,7 @@
                     transition:transform 0.28s cubic-bezier(0.32,0.72,0,1), opacity 0.28s;
                 `;
             } else {
-                wrap.style.cssText = 'position:fixed;inset:0;background:rgba(2,6,14,0.98);z-index:6000;display:flex;flex-direction:column;overflow:hidden;opacity:0;transition:opacity 0.22s;';
+                wrap.style.cssText = 'position:fixed;inset:0;background:rgba(2,6,14,0.98);z-index:6000;display:flex;flex-direction:column;overflow:hidden;opacity:0;transition:opacity 0.22s;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);';
             }
 
             const shortId = id => { if (!id) return '???'; const s = String(id), d = s.indexOf('-'); return d > 0 ? s.slice(0,d).toUpperCase() : s; };
