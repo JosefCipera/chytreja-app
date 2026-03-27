@@ -83,8 +83,7 @@ body {
    ============================================================ */
 
 .md-content {
-    color: #c7d2fe;
-    /* klidnější než „svítící zuby“ */
+    color: #8b9fc4;
     font-size: 16.5px;
     line-height: 1.7;
 
@@ -99,20 +98,20 @@ body {
 /* === NADPISY === */
 
 .md-content h1 {
-    color: #e2e8f0;
+    color: #7aa8c8;
     font-size: 1.9rem;
     line-height: 1.25;
     margin: 0 0 1rem 0;
 }
 
 .md-content h2 {
-    color: #e5e7eb;
+    color: #6b96b8;
     font-size: 1.45rem;
     margin: 2.2rem 0 0.8rem;
 }
 
 .md-content h3 {
-    color: #cbd5e1;
+    color: #5e87a8;
     font-size: 1.15rem;
     margin: 1.6rem 0 0.6rem;
 }

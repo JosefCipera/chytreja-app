@@ -56,8 +56,9 @@
 
         function _getTTSText() {
             const mdEl = document.querySelector("#content .md-content");
-            if (mdEl) return mdEl.innerText || mdEl.textContent || "";
-            return document.getElementById("content")?.innerText || "";
+            const raw = (mdEl ? mdEl.innerText : document.getElementById("content")?.innerText) || "";
+            // Strip emoji/icons so TTS doesn't read them
+            return raw.replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, '').trim();
         }
 
         function _startViewerTTS() {
