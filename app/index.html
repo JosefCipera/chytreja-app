@@ -628,15 +628,38 @@
             contentDiv.innerHTML = innerContent;
             wrap.appendChild(contentDiv);
 
-            // Mobile: přidej výrazný close overlay button v top-right rohu
+            // Mobile: close button přímo v document.body (z-index 9999)
+            // — iframe focus trap na iOS blokuje touch eventy uvnitř wrappers
             if (isMobile) {
-                const floatClose = document.createElement('button');
-                floatClose.textContent = '✕';
-                floatClose.style.cssText = 'position:absolute;top:10px;right:12px;z-index:10;width:40px;height:40px;border-radius:50%;background:rgba(6,182,212,0.18);border:1px solid rgba(6,182,212,0.4);color:#e2e8f0;font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;';
-                floatClose.addEventListener('click', () => window.closeSourceViewer());
-                floatClose.addEventListener('touchend', (e) => { e.preventDefault(); e.stopPropagation(); window.closeSourceViewer(); });
-                wrap.style.position = 'fixed';
-                wrap.appendChild(floatClose);
+                const mobileClose = document.createElement('button');
+                mobileClose.id = 'mobile-viewer-close';
+                mobileClose.textContent = '✕';
+                mobileClose.style.cssText = [
+                    'position:fixed',
+                    'top:calc(env(safe-area-inset-top, 0px) + 14px)',
+                    'right:16px',
+                    'z-index:9999',
+                    'width:44px',
+                    'height:44px',
+                    'border-radius:50%',
+                    'background:rgba(10,20,40,0.92)',
+                    'border:1.5px solid rgba(6,182,212,0.55)',
+                    'color:#e2e8f0',
+                    'font-size:20px',
+                    'display:flex',
+                    'align-items:center',
+                    'justify-content:center',
+                    'cursor:pointer',
+                    '-webkit-tap-highlight-color:transparent',
+                    'box-shadow:0 2px 14px rgba(0,0,0,0.5)',
+                ].join(';');
+                mobileClose.addEventListener('click', () => window.closeSourceViewer());
+                mobileClose.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    window.closeSourceViewer();
+                });
+                document.body.appendChild(mobileClose);
             }
 
             document.body.appendChild(wrap);
@@ -652,6 +675,7 @@
             if (v._closeT) v.style.transform = v._closeT;
             v.style.opacity = '0';
             document.getElementById('source-backdrop')?.remove();
+            document.getElementById('mobile-viewer-close')?.remove();
             setTimeout(() => v.remove(), 300);
         };
     </script>

@@ -65,21 +65,28 @@
             const text = _getTTSText().trim();
             if (!text) return;
 
+            // Set state immediately so double-click is safe
+            _ttsActive = true;
+            if (btnPlay) { btnPlay.textContent = "⏹ Stop"; btnPlay.classList.add("playing"); }
+
             window.speechSynthesis.cancel();
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.lang  = "cs-CZ";
             utterance.rate  = 1.05;
             utterance.pitch = 1.1;
 
-            const voices  = speechSynthesis.getVoices();
-            const czVoice = voices.find(v => /cs[-_]CZ/i.test(v.lang))
-                         || voices.find(v => /czech/i.test(v.lang));
-            if (czVoice) utterance.voice = czVoice;
-
-            utterance.onstart = () => {
-                _ttsActive = true;
-                if (btnPlay) { btnPlay.textContent = "⏹ Stop"; btnPlay.classList.add("playing"); }
+            // Voices may not be loaded yet on first call — retry once after voiceschanged
+            const setVoice = () => {
+                const voices  = speechSynthesis.getVoices();
+                const czVoice = voices.find(v => /cs[-_]CZ/i.test(v.lang))
+                             || voices.find(v => /czech/i.test(v.lang));
+                if (czVoice) utterance.voice = czVoice;
             };
+            setVoice();
+            if (!utterance.voice) {
+                speechSynthesis.addEventListener('voiceschanged', setVoice, { once: true });
+            }
+
             utterance.onend = utterance.onerror = () => {
                 _ttsActive = false;
                 if (btnPlay) { btnPlay.textContent = "🔊 Přehrát"; btnPlay.classList.remove("playing"); }
@@ -88,10 +95,14 @@
             window.speechSynthesis.speak(utterance);
         }
 
+        // iOS Safari blocks speechSynthesis inside iframes — detect and delegate to top frame
+        const _isIOS = /iP(hone|ad|od)/.test(navigator.userAgent) ||
+                       (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
         if (btnPlay) {
             btnPlay.addEventListener('click', () => {
                 if (_ttsActive) {
-                    // Stop: oznám parentovi i lokálně
+                    // Stop both locally and in parent (covers iOS path)
                     window.parent.postMessage({ type: 'chj:tts:stop' }, '*');
                     if ('speechSynthesis' in window) window.speechSynthesis.cancel();
                     _ttsActive = false;
@@ -101,11 +112,17 @@
                 }
                 const text = _getTTSText();
                 if (!text) return;
-                _ttsActive = true;
-                btnPlay.textContent = "⏹ Stop";
-                btnPlay.classList.add("playing");
-                // Pošli text parentovi — iOS TTS funguje jen z top-level frame
-                window.parent.postMessage({ type: 'chj:tts:speak', text, lang: 'cs-CZ' }, '*');
+
+                if (_isIOS) {
+                    // iOS: delegate to parent top frame (parent has user-gesture context)
+                    _ttsActive = true;
+                    btnPlay.textContent = "⏹ Stop";
+                    btnPlay.classList.add("playing");
+                    window.parent.postMessage({ type: 'chj:tts:speak', text, lang: 'cs-CZ' }, '*');
+                } else {
+                    // Desktop / Android: run locally (parent message handler has no user-gesture)
+                    _startViewerTTS();
+                }
             });
             btnPlay.addEventListener('touchend', (e) => { e.preventDefault(); btnPlay.click(); });
         }
