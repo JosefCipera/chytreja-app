@@ -9,6 +9,12 @@
     box-sizing: border-box;
 }
 
+/* Scrollbar */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(148,163,184,0.25); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(148,163,184,0.45); }
+
 html,
 body {
     margin: 0;
@@ -98,22 +104,25 @@ body {
 /* === NADPISY === */
 
 .md-content h1 {
-    color: #7aa8c8;
+    color: #b8c8d8;
     font-size: 1.9rem;
     line-height: 1.25;
     margin: 0 0 1rem 0;
+    font-weight: 600;
 }
 
 .md-content h2 {
-    color: #6b96b8;
+    color: #7a9ab4;
     font-size: 1.45rem;
     margin: 2.2rem 0 0.8rem;
+    font-weight: 500;
 }
 
 .md-content h3 {
-    color: #5e87a8;
+    color: #5c7a94;
     font-size: 1.15rem;
     margin: 1.6rem 0 0.6rem;
+    font-weight: 500;
 }
 
 /* === ODSTAVCE === */

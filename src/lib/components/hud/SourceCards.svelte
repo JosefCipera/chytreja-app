@@ -45,7 +45,7 @@
         onmouseleave={e => e.currentTarget.style.background = 'rgba(6,182,212,0.03)'}
       >
         <div style="padding: 9px 10px 0;">
-          <div class="hud-mono" style="font-size: 12px; letter-spacing: 0.08em; color: #94a3b8; border-bottom: 1px solid rgba(6,182,212,0.22); padding-bottom: 6px;">
+          <div class="hud-mono" style="font-size: 12px; letter-spacing: 0.08em; color: #94a3b8; border-bottom: 1px solid rgba(6,182,212,0.22); padding-bottom: 6px; margin: 0; line-height: 1.2;">
             SOURCE_VALIDATION_{String(i + 1).padStart(2, '0')}
           </div>
         </div>
