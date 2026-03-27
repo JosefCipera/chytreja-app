@@ -414,15 +414,24 @@
             const wrap    = document.getElementById('hud-panel-wrap');
             const iframe  = document.getElementById('hud-iframe');
 
-            iframe.src = `/app/hud.html?userId=${encodeURIComponent(userId)}&nodeId=${encodeURIComponent(nodeId)}&_v=${Date.now()}`;
-            overlay.style.display = 'flex';
-            document.getElementById('hud-backdrop').style.display = 'block';
-            requestAnimationFrame(() => {
-                requestAnimationFrame(() => {
+            const doOpen = () => {
+                iframe.src = `/app/hud.html?userId=${encodeURIComponent(userId)}&nodeId=${encodeURIComponent(nodeId)}&_v=${Date.now()}`;
+                overlay.style.display = 'flex';
+                document.getElementById('hud-backdrop').style.display = 'block';
+                requestAnimationFrame(() => requestAnimationFrame(() => {
                     wrap.style.transform = 'translateX(0)';
-                });
-            });
-            window._hudOpen = true;
+                }));
+                window._hudOpen = true;
+            };
+
+            if (window._hudOpen) {
+                // Slide out, swap content, slide back in
+                wrap.style.transform = 'translateX(100%)';
+                iframe.src = '';
+                setTimeout(doOpen, 200);
+            } else {
+                doOpen();
+            }
         };
 
         window.closeHudOverlay = function() {

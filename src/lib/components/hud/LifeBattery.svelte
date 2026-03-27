@@ -20,33 +20,29 @@
   let filledSegments = $derived(Math.round((percent / 100) * TOTAL_SEGMENTS));
 
   let fillColor = $derived(
-    percent > 70 ? 'rgba(34, 197, 94, 0.75)' :
-    percent > 40 ? 'rgba(234, 179, 8, 0.75)' :
-    'rgba(239, 68, 68, 0.75)'
+    percent > 70 ? 'rgba(34, 197, 94, 0.42)' :
+    percent > 40 ? 'rgba(234, 179, 8, 0.42)' :
+    'rgba(239, 68, 68, 0.42)'
   );
 
   let glowColor = $derived(
-    percent > 70 ? 'rgba(34, 197, 94, 0.6)' :
-    percent > 40 ? 'rgba(234, 179, 8, 0.6)' :
-    'rgba(239, 68, 68, 0.6)'
+    percent > 70 ? 'rgba(34, 197, 94, 0.22)' :
+    percent > 40 ? 'rgba(234, 179, 8, 0.22)' :
+    'rgba(239, 68, 68, 0.22)'
   );
 
   let barGlow = $derived(
-    percent > 70 ? '0 0 30px rgba(34, 197, 94, 0.35), 0 0 60px rgba(34, 197, 94, 0.12)' :
-    percent > 40 ? '0 0 30px rgba(234, 179, 8, 0.35), 0 0 60px rgba(234, 179, 8, 0.12)' :
-    '0 0 30px rgba(239, 68, 68, 0.35), 0 0 60px rgba(239, 68, 68, 0.12)'
+    percent > 70 ? '0 0 20px rgba(34, 197, 94, 0.14), 0 0 40px rgba(34, 197, 94, 0.05)' :
+    percent > 40 ? '0 0 20px rgba(234, 179, 8, 0.14), 0 0 40px rgba(234, 179, 8, 0.05)' :
+    '0 0 20px rgba(239, 68, 68, 0.18), 0 0 40px rgba(239, 68, 68, 0.07)'
   );
 
-  let textNeon = $derived(
-    percent > 70 ? 'neon-green' :
-    percent > 40 ? 'neon-yellow' :
-    'neon-red'
-  );
+  let textNeon = $derived('');
 
   let textColor = $derived(
-    percent > 70 ? '#4ade80' :
-    percent > 40 ? '#facc15' :
-    '#f87171'
+    percent > 70 ? '#86efac' :
+    percent > 40 ? '#fde68a' :
+    '#fca5a5'
   );
 
   let watermark = $derived(
@@ -56,9 +52,9 @@
   );
 
   let watermarkColor = $derived(
-    percent <= 40 ? 'rgba(239,68,68,0.65)' :
-    percent <= 70 ? 'rgba(234,179,8,0.60)' :
-    'rgba(34,197,94,0.60)'
+    percent <= 40 ? 'rgba(239,68,68,0.38)' :
+    percent <= 70 ? 'rgba(234,179,8,0.34)' :
+    'rgba(34,197,94,0.34)'
   );
 
   let trendLabel = $derived(
