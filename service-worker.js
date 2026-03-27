@@ -1,4 +1,4 @@
-const CACHE_NAME = 'chytre-ja-v5';
+const CACHE_NAME = 'chytre-ja-v6';
 
 const ASSETS = [
   '/',
@@ -97,28 +97,15 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // HTML soubory: vždy ze sítě (nikdy nechceme stale HTML)
-  if (url.pathname.endsWith('.html') || url.pathname === '/' ||
-      url.pathname === '/app' || url.pathname === '/app/') {
-    event.respondWith(fetch(event.request));
-    return;
-  }
-
-  // Statické soubory (JS, CSS, assets): Stale-While-Revalidate
-  // → okamžitě z cache, na pozadí aktualizuje pro příští návštěvu
+  // Všechny /app/ soubory: network-first, cache jen jako offline fallback
+  // Tím se eliminuje stale JS (inter-module importy bez version querystringu)
   event.respondWith(
-    caches.match(event.request).then(cached => {
-      const network = fetch(event.request).then(response => {
-        if (response.ok) {
-          // Clone ihned – response.clone() musí proběhnout před tím, než
-          // ktokoliv začne číst body (caches.open je async, bylo by pozdě)
-          const toCache = response.clone();
-          caches.open(CACHE_NAME)
-            .then(cache => cache.put(event.request, toCache));
-        }
-        return response;
-      }).catch(() => null);
-      return cached || network;
-    })
+    fetch(event.request).then(response => {
+      if (response.ok) {
+        const toCache = response.clone();
+        caches.open(CACHE_NAME).then(cache => cache.put(event.request, toCache));
+      }
+      return response;
+    }).catch(() => caches.match(event.request))
   );
 });
