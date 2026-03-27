@@ -88,8 +88,11 @@
             window.speechSynthesis.speak(utterance);
         }
 
+        // Načti hlasy ihned při startu (iOS potřebuje early call)
+        if ('speechSynthesis' in window) speechSynthesis.getVoices();
+
         if (btnPlay) {
-            btnPlay.onclick = () => {
+            btnPlay.addEventListener('click', () => {
                 if (_ttsActive || window.speechSynthesis.speaking) {
                     window.speechSynthesis.cancel();
                     _ttsActive = false;
@@ -97,13 +100,18 @@
                     btnPlay.classList.remove("playing");
                     return;
                 }
-                // V Chrome jsou hlasy async – počkej pokud ještě nejsou načteny
-                if (speechSynthesis.getVoices().length === 0) {
-                    speechSynthesis.addEventListener("voiceschanged", _startViewerTTS, { once: true });
-                } else {
+                const voices = speechSynthesis.getVoices();
+                if (voices.length > 0) {
                     _startViewerTTS();
+                } else {
+                    // iOS: voiceschanged nemusí dorazit — použij timeout fallback
+                    let fired = false;
+                    const handler = () => { if (!fired) { fired = true; _startViewerTTS(); } };
+                    speechSynthesis.addEventListener("voiceschanged", handler, { once: true });
+                    setTimeout(() => { if (!fired) { fired = true; _startViewerTTS(); } }, 500);
                 }
-            };
+            });
+            btnPlay.addEventListener('touchend', (e) => { e.preventDefault(); btnPlay.click(); });
         }
 
         document.getElementById("btnDownload").onclick = () => {
