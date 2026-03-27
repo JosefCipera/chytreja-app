@@ -5,8 +5,8 @@ body {
     margin: 0;
     background-color: #0b1220;
     background-image:
-        linear-gradient(rgba(6, 182, 212, 0.04) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(6, 182, 212, 0.04) 1px, transparent 1px);
+        linear-gradient(rgba(6, 182, 212, 0.18) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(6, 182, 212, 0.18) 1px, transparent 1px);
     background-size: 96px 96px;
     color: #e2e8f0;
     font-family: Inter, system-ui, Arial, sans-serif;

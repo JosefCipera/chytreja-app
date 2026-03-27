@@ -13,18 +13,18 @@
   <!-- Grid background visible through glass -->
   <div class="absolute inset-0 hud-grid opacity-50"></div>
 
-  <!-- Scattered sparkle stars -->
+  <!-- Scattered sparkle stars — subtle on panel, larger ones glow -->
   <div class="absolute inset-0 pointer-events-none" style="overflow: hidden; z-index: 1;">
-    <span style="position:absolute;left:7%;top:32%;font-size:5px;color:rgba(6,182,212,0.45);line-height:1;user-select:none;">✦</span>
-    <span style="position:absolute;left:87%;top:19%;font-size:4px;color:rgba(255,255,255,0.18);line-height:1;user-select:none;">✦</span>
-    <span style="position:absolute;left:91%;top:38%;font-size:10px;color:rgba(6,182,212,0.16);line-height:1;user-select:none;">✦</span>
-    <span style="position:absolute;left:4%;top:52%;font-size:6px;color:rgba(6,182,212,0.32);line-height:1;user-select:none;">✦</span>
-    <span style="position:absolute;right:8%;top:56%;font-size:4px;color:rgba(255,255,255,0.14);line-height:1;user-select:none;">✦</span>
-    <span style="position:absolute;left:14%;top:68%;font-size:9px;color:rgba(6,182,212,0.18);line-height:1;user-select:none;">✦</span>
-    <span style="position:absolute;right:5%;top:72%;font-size:4px;color:rgba(6,182,212,0.3);line-height:1;user-select:none;">✦</span>
-    <span style="position:absolute;left:6%;top:82%;font-size:3px;color:rgba(255,255,255,0.12);line-height:1;user-select:none;">✦</span>
-    <span style="position:absolute;right:7%;top:88%;font-size:11px;color:rgba(6,182,212,0.13);line-height:1;user-select:none;">✦</span>
-    <span style="position:absolute;left:85%;top:82%;font-size:5px;color:rgba(6,182,212,0.28);line-height:1;user-select:none;">✦</span>
+    <span style="position:absolute;left:7%;top:32%;font-size:4px;color:rgba(6,182,212,0.22);line-height:1;user-select:none;">✦</span>
+    <span style="position:absolute;left:87%;top:19%;font-size:3px;color:rgba(255,255,255,0.12);line-height:1;user-select:none;">✦</span>
+    <span style="position:absolute;left:4%;top:52%;font-size:4px;color:rgba(6,182,212,0.18);line-height:1;user-select:none;">✦</span>
+    <span style="position:absolute;right:8%;top:56%;font-size:3px;color:rgba(255,255,255,0.10);line-height:1;user-select:none;">✦</span>
+    <span style="position:absolute;left:6%;top:82%;font-size:3px;color:rgba(255,255,255,0.10);line-height:1;user-select:none;">✦</span>
+    <span style="position:absolute;left:85%;top:82%;font-size:4px;color:rgba(6,182,212,0.18);line-height:1;user-select:none;">✦</span>
+    <!-- Larger glowing stars — výraznější -->
+    <span style="position:absolute;left:91%;top:38%;font-size:12px;color:rgba(6,182,212,0.42);text-shadow:0 0 10px rgba(6,182,212,0.7),0 0 22px rgba(6,182,212,0.3);line-height:1;user-select:none;">✦</span>
+    <span style="position:absolute;left:14%;top:68%;font-size:11px;color:rgba(6,182,212,0.36);text-shadow:0 0 8px rgba(6,182,212,0.65),0 0 18px rgba(6,182,212,0.25);line-height:1;user-select:none;">✦</span>
+    <span style="position:absolute;right:7%;top:88%;font-size:13px;color:rgba(6,182,212,0.38);text-shadow:0 0 12px rgba(6,182,212,0.75),0 0 26px rgba(6,182,212,0.28),0 0 44px rgba(6,182,212,0.10);line-height:1;user-select:none;">✦</span>
   </div>
 
   <!-- Content above grid -->
