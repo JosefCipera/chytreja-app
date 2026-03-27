@@ -60,10 +60,10 @@
             {source.journal}, {source.year}
           </div>
         </div>
-        <div style="padding: 6px 10px 8px;">
+        <div style="padding: 10px 10px 8px;">
           <span class="hud-mono" style="
             font-size: 11px; display: inline-block;
-            border-top: 1px solid rgba(6,182,212,0.22); padding-top: 4px;
+            border-top: 1px solid rgba(6,182,212,0.22); padding-top: 6px;
           ">
             <span class="hud-mono" style="
               font-size: 11px;

@@ -375,6 +375,10 @@
     </script>
 
     <!-- HUD Overlay — Svelte HUD panel, slides in from right, universe visible behind -->
+    <!-- HUD backdrop: click outside panel → close HUD -->
+    <div id="hud-backdrop" style="display:none; position:fixed; inset:0; z-index:4997; cursor:pointer;"
+         onclick="window.closeHudOverlay()"></div>
+
     <div id="hud-overlay" style="
         display: none;
         position: fixed; inset: 0; z-index: 5000;
@@ -412,6 +416,7 @@
 
             iframe.src = `/app/hud.html?userId=${encodeURIComponent(userId)}&nodeId=${encodeURIComponent(nodeId)}&_v=${Date.now()}`;
             overlay.style.display = 'flex';
+            document.getElementById('hud-backdrop').style.display = 'block';
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
                     wrap.style.transform = 'translateX(0)';
@@ -426,6 +431,7 @@
             const iframe  = document.getElementById('hud-iframe');
 
             wrap.style.transform = 'translateX(100%)';
+            document.getElementById('hud-backdrop').style.display = 'none';
             setTimeout(() => {
                 overlay.style.display = 'none';
                 iframe.src = '';
@@ -466,18 +472,19 @@
             if (t === 'none')   { return; }
 
             const isMobile = window.innerWidth < 700;
-            const hudW = 420;
-            const margin = 16;
-            const viewerW = Math.min(window.innerWidth - hudW - margin * 3, 840);
-            // Vycentruj viewer v prostoru vlevo od HUD panelu
-            const availLeft = window.innerWidth - hudW - margin;
-            const leftPos = Math.max(margin, Math.round((availLeft - viewerW) / 2));
+            const viewerW = isMobile ? window.innerWidth : Math.min(window.innerWidth * 0.72, 920);
+
+            // Backdrop — click outside → close viewer
+            const backdrop = document.createElement('div');
+            backdrop.id = 'source-backdrop';
+            backdrop.style.cssText = 'position:fixed;inset:0;z-index:4998;cursor:pointer;';
+            backdrop.onclick = () => window.closeSourceViewer();
+            document.body.appendChild(backdrop);
 
             const wrap = document.createElement('div');
             wrap.id = 'source-viewer';
 
             if (isMobile) {
-                // Mobil: full-screen modal nad vším
                 wrap.style.cssText = `
                     position: fixed; inset: 0;
                     background: rgba(2,6,14,0.98);
@@ -488,11 +495,10 @@
                     transition: opacity 0.22s;
                 `;
             } else {
-                // Desktop: vycentrovaný v prostoru vlevo od HUD
                 wrap.style.cssText = `
                     position: fixed;
                     top: 72px; bottom: 32px;
-                    left: ${leftPos}px;
+                    left: 50%; transform: translateX(-50%) translateY(8px);
                     width: ${viewerW}px;
                     background: rgba(2,6,14,0.97);
                     border: 1px solid rgba(6,182,212,0.25);
@@ -501,7 +507,7 @@
                     display: flex; flex-direction: column;
                     overflow: hidden;
                     box-shadow: 0 0 40px rgba(6,182,212,0.1);
-                    transform: translateX(-20px); opacity: 0;
+                    opacity: 0;
                     transition: transform 0.28s cubic-bezier(0.32,0.72,0,1), opacity 0.28s;
                 `;
             }
@@ -538,7 +544,7 @@
 
             document.body.appendChild(wrap);
             requestAnimationFrame(() => requestAnimationFrame(() => {
-                if (!isMobile) wrap.style.transform = 'translateX(0)';
+                if (!isMobile) wrap.style.transform = 'translateX(-50%) translateY(0)';
                 wrap.style.opacity = '1';
             }));
         };
@@ -546,8 +552,9 @@
         window.closeSourceViewer = function() {
             const v = document.getElementById('source-viewer');
             if (!v) return;
-            if (v.style.borderRadius !== '0px') v.style.transform = 'translateX(-20px)';
+            if (v.style.borderRadius !== '0px') v.style.transform = 'translateX(-50%) translateY(8px)';
             v.style.opacity = '0';
+            document.getElementById('source-backdrop')?.remove();
             setTimeout(() => v.remove(), 300);
         };
     </script>
