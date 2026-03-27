@@ -27,7 +27,7 @@
   let statusColor = $derived(
     status === 'READY'  ? '#22d3ee' :
     status === 'ACTIVE' ? '#BED255' :
-    '#4ade80'
+    '#86C46A'
   );
   let statusNeon = $derived(
     status === 'READY'  ? 'neon-cyan' :
@@ -47,25 +47,23 @@
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
 ">
-  <!-- ACTION: [PROTOKOL] / [STATUS] vpravo na dalším řádku -->
-  <div class="hud-mono mb-3" style="letter-spacing: 0.04em; color: #c8d4df; font-weight: 300; line-height: 1.4;">
-    <div style="font-size: 20px;">
-      ACTION: <span style="color: #94a3b8; font-weight: 300; font-size: 20px;">[{protocolLabel}]</span>
-    </div>
-    <div class="flex justify-end">
-      <span style="color: {statusColor}; font-weight: 300; font-size: 20px;">[{status}]</span>
-    </div>
+  <!-- ACTION: [PROTOKOL]   [STATUS] vpravo -->
+  <div class="hud-mono mb-2 flex items-baseline justify-between" style="letter-spacing: 0.04em; font-weight: 300; line-height: 1.4;">
+    <span style="font-size: 20px; color: #c8d4df;">
+      ACTION: <span style="color: #94a3b8; font-size: 20px;">[{protocolLabel}]</span>
+    </span>
+    <span style="color: {statusColor}; font-size: 13px;">[{status}]</span>
   </div>
 
-  <!-- Action description -->
-  <div class="font-sans mb-3" style="font-size: 20px; color: #e2e8f0; line-height: 1.3;">
-    {action.icon} {action.label}
+  <!-- Action description: [ ] prefix + smaller -->
+  <div class="font-sans mb-3" style="font-size: 17px; color: #e2e8f0; line-height: 1.3;">
+    [ ] {action.icon} {action.label}
   </div>
 
   {#if status === 'ACTIVE'}
     <div class="text-center mb-3">
-      <span class="hud-mono font-semibold tabular-nums neon-cyan"
-        style="font-size: 2.8rem; color: #e2e8f0; text-shadow: 0 0 20px rgba(6,182,212,0.5);">
+      <span class="hud-mono tabular-nums neon-cyan"
+        style="font-size: 2.2rem; font-weight: 400; color: #e2e8f0; text-shadow: 0 0 16px rgba(6,182,212,0.45);">
         {formatTime(timer)}
       </span>
     </div>

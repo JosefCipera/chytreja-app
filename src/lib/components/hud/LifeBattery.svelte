@@ -20,29 +20,29 @@
   let filledSegments = $derived(Math.round((percent / 100) * TOTAL_SEGMENTS));
 
   let fillColor = $derived(
-    percent > 70 ? 'rgba(34, 197, 94, 0.72)' :
+    percent > 70 ? 'rgba(134, 196, 106, 0.72)' :
     percent > 40 ? 'rgba(190, 210, 85, 0.72)' :
-    'rgba(239, 68, 68, 0.72)'
+    'rgba(201, 114, 114, 0.72)'
   );
 
   let glowColor = $derived(
-    percent > 70 ? 'rgba(34, 197, 94, 0.45)' :
+    percent > 70 ? 'rgba(134, 196, 106, 0.45)' :
     percent > 40 ? 'rgba(190, 210, 85, 0.45)' :
-    'rgba(239, 68, 68, 0.45)'
+    'rgba(201, 114, 114, 0.45)'
   );
 
   let barGlow = $derived(
-    percent > 70 ? '0 0 28px rgba(34, 197, 94, 0.28), 0 0 55px rgba(34, 197, 94, 0.10)' :
+    percent > 70 ? '0 0 28px rgba(134, 196, 106, 0.28), 0 0 55px rgba(134, 196, 106, 0.10)' :
     percent > 40 ? '0 0 28px rgba(190, 210, 85, 0.28), 0 0 55px rgba(190, 210, 85, 0.10)' :
-    '0 0 28px rgba(239, 68, 68, 0.32), 0 0 55px rgba(239, 68, 68, 0.12)'
+    '0 0 28px rgba(201, 114, 114, 0.32), 0 0 55px rgba(201, 114, 114, 0.12)'
   );
 
   let textNeon = $derived('');
 
   let textColor = $derived(
-    percent > 70 ? '#4ade80' :
+    percent > 70 ? '#86C46A' :
     percent > 40 ? '#BED255' :
-    '#f87171'
+    '#C97272'
   );
 
   let watermark = $derived(
@@ -66,7 +66,7 @@
   );
   let bioAgeSign    = $derived(bioAge.delta <= 0 ? '' : '+');
   let bioAgeColor   = $derived(
-    bioAge.label.color === 'green'  ? '#4ade80' :
+    bioAge.label.color === 'green'  ? '#86C46A' :
     bioAge.label.color === 'yellow' ? '#BED255' :
     '#94a3b8'
   );
