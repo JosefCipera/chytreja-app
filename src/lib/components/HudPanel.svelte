@@ -13,6 +13,20 @@
   <!-- Grid background visible through glass -->
   <div class="absolute inset-0 hud-grid opacity-50"></div>
 
+  <!-- Scattered sparkle stars -->
+  <div class="absolute inset-0 pointer-events-none" style="overflow: hidden; z-index: 1;">
+    <span style="position:absolute;left:7%;top:32%;font-size:5px;color:rgba(6,182,212,0.45);line-height:1;user-select:none;">✦</span>
+    <span style="position:absolute;left:87%;top:19%;font-size:4px;color:rgba(255,255,255,0.18);line-height:1;user-select:none;">✦</span>
+    <span style="position:absolute;left:91%;top:38%;font-size:10px;color:rgba(6,182,212,0.16);line-height:1;user-select:none;">✦</span>
+    <span style="position:absolute;left:4%;top:52%;font-size:6px;color:rgba(6,182,212,0.32);line-height:1;user-select:none;">✦</span>
+    <span style="position:absolute;right:8%;top:56%;font-size:4px;color:rgba(255,255,255,0.14);line-height:1;user-select:none;">✦</span>
+    <span style="position:absolute;left:14%;top:68%;font-size:9px;color:rgba(6,182,212,0.18);line-height:1;user-select:none;">✦</span>
+    <span style="position:absolute;right:5%;top:72%;font-size:4px;color:rgba(6,182,212,0.3);line-height:1;user-select:none;">✦</span>
+    <span style="position:absolute;left:6%;top:82%;font-size:3px;color:rgba(255,255,255,0.12);line-height:1;user-select:none;">✦</span>
+    <span style="position:absolute;right:7%;top:88%;font-size:11px;color:rgba(6,182,212,0.13);line-height:1;user-select:none;">✦</span>
+    <span style="position:absolute;left:85%;top:82%;font-size:5px;color:rgba(6,182,212,0.28);line-height:1;user-select:none;">✦</span>
+  </div>
+
   <!-- Content above grid -->
   <div class="relative z-10">
     <NodeHeader
@@ -61,6 +75,36 @@
             </div>
           </div>
         {/if}
+      </div>
+
+      <!-- Connector line: ACTION → SOURCE_VALIDATION -->
+      <div style="position: relative; height: 38px; margin: -6px 0 -2px;">
+        <div style="
+          position: absolute;
+          left: 50%;
+          top: 0;
+          bottom: 0;
+          width: 1px;
+          transform: translateX(-50%);
+          background: linear-gradient(to bottom, transparent, rgba(6,182,212,0.38) 45%, rgba(6,182,212,0.12));
+        "></div>
+        <!-- mini stars on connector -->
+        <span style="position:absolute;left:20%;top:18%;font-size:5px;color:rgba(6,182,212,0.5);line-height:1;user-select:none;">✦</span>
+        <span style="position:absolute;left:68%;top:44%;font-size:4px;color:rgba(255,255,255,0.22);line-height:1;user-select:none;">✦</span>
+        <span style="position:absolute;right:18%;top:20%;font-size:8px;color:rgba(6,182,212,0.2);line-height:1;user-select:none;">✦</span>
+        <span style="position:absolute;left:30%;top:68%;font-size:3px;color:rgba(6,182,212,0.38);line-height:1;user-select:none;">✦</span>
+        <!-- glowing dot at bottom -->
+        <div style="
+          position:absolute;
+          left:50%;
+          bottom:0;
+          transform:translateX(-50%);
+          width:5px;
+          height:5px;
+          border-radius:50%;
+          background:rgba(6,182,212,0.65);
+          box-shadow:0 0 8px rgba(6,182,212,0.5), 0 0 16px rgba(6,182,212,0.2);
+        "></div>
       </div>
 
       <div class="hud-fade-in" style="animation-delay: 0.4s">
