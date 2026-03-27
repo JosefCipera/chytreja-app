@@ -26,7 +26,7 @@
 
   let statusColor = $derived(
     status === 'READY'  ? '#22d3ee' :
-    status === 'ACTIVE' ? '#facc15' :
+    status === 'ACTIVE' ? '#BED255' :
     '#4ade80'
   );
   let statusNeon = $derived(
@@ -50,10 +50,10 @@
   <!-- ACTION: [PROTOKOL] / [STATUS] vpravo na dalším řádku -->
   <div class="hud-mono mb-3" style="letter-spacing: 0.04em; color: #c8d4df; font-weight: 300; line-height: 1.4;">
     <div style="font-size: 20px;">
-      ACTION: <span style="color: #94a3b8; font-weight: 300; font-size: 14px;">[{protocolLabel}]</span>
+      ACTION: <span style="color: #94a3b8; font-weight: 300; font-size: 20px;">[{protocolLabel}]</span>
     </div>
     <div class="flex justify-end">
-      <span style="color: {statusColor}; font-weight: 300; font-size: 14px;">[{status}]</span>
+      <span style="color: {statusColor}; font-weight: 300; font-size: 20px;">[{status}]</span>
     </div>
   </div>
 
@@ -70,7 +70,7 @@
       </span>
     </div>
     <button onclick={stop} class="w-full rounded-lg border border-yellow-500/20 bg-yellow-500/[0.07] hud-mono tracking-wider hover:bg-yellow-500/[0.12] transition-all cursor-pointer neon-yellow"
-      style="padding: 14px; font-size: 16px; color: #facc15;">
+      style="padding: 14px; font-size: 16px; color: #BED255;">
       ⏹ STOP
     </button>
 

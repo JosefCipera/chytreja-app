@@ -21,19 +21,19 @@
 
   let fillColor = $derived(
     percent > 70 ? 'rgba(34, 197, 94, 0.72)' :
-    percent > 40 ? 'rgba(234, 179, 8, 0.72)' :
+    percent > 40 ? 'rgba(190, 210, 85, 0.72)' :
     'rgba(239, 68, 68, 0.72)'
   );
 
   let glowColor = $derived(
     percent > 70 ? 'rgba(34, 197, 94, 0.45)' :
-    percent > 40 ? 'rgba(234, 179, 8, 0.45)' :
+    percent > 40 ? 'rgba(190, 210, 85, 0.45)' :
     'rgba(239, 68, 68, 0.45)'
   );
 
   let barGlow = $derived(
     percent > 70 ? '0 0 28px rgba(34, 197, 94, 0.28), 0 0 55px rgba(34, 197, 94, 0.10)' :
-    percent > 40 ? '0 0 28px rgba(234, 179, 8, 0.28), 0 0 55px rgba(234, 179, 8, 0.10)' :
+    percent > 40 ? '0 0 28px rgba(190, 210, 85, 0.28), 0 0 55px rgba(190, 210, 85, 0.10)' :
     '0 0 28px rgba(239, 68, 68, 0.32), 0 0 55px rgba(239, 68, 68, 0.12)'
   );
 
@@ -41,7 +41,7 @@
 
   let textColor = $derived(
     percent > 70 ? '#4ade80' :
-    percent > 40 ? '#facc15' :
+    percent > 40 ? '#BED255' :
     '#f87171'
   );
 
@@ -67,7 +67,7 @@
   let bioAgeSign    = $derived(bioAge.delta <= 0 ? '' : '+');
   let bioAgeColor   = $derived(
     bioAge.label.color === 'green'  ? '#4ade80' :
-    bioAge.label.color === 'yellow' ? '#facc15' :
+    bioAge.label.color === 'yellow' ? '#BED255' :
     '#94a3b8'
   );
   let confidencePct = $derived(Math.round(bioAge.confidence * 100));
