@@ -33,7 +33,7 @@
         style="
           animation-delay: {0.5 + i * 0.1}s;
           background: rgba(6,182,212,0.03);
-          border: 1px solid rgba(255,255,255,0.07);
+          border: 1px solid rgba(255,255,255,0.18);
           border-top: 2px solid {statusBorder(source.status)};
           backdrop-filter: blur(12px);
           -webkit-backdrop-filter: blur(12px);
@@ -44,10 +44,10 @@
         onmouseenter={e => e.currentTarget.style.background = 'rgba(6,182,212,0.07)'}
         onmouseleave={e => e.currentTarget.style.background = 'rgba(6,182,212,0.03)'}
       >
-        <div style="padding: 7px 10px 6px;">
-          <span class="hud-mono" style="font-size: 12px; letter-spacing: 0.08em; color: #94a3b8; display: inline-block; border-bottom: 1px solid rgba(6,182,212,0.22); padding-bottom: 4px;">
+        <div style="padding: 9px 10px 0;">
+          <div class="hud-mono" style="font-size: 12px; letter-spacing: 0.08em; color: #94a3b8; border-bottom: 1px solid rgba(6,182,212,0.22); padding-bottom: 6px;">
             SOURCE_VALIDATION_{String(i + 1).padStart(2, '0')}
-          </span>
+          </div>
         </div>
         <div style="padding: 7px 10px;">
           <div class="hud-mono mb-1" style="font-size: 13px; color: rgba(6,182,212,0.85);">
@@ -60,18 +60,15 @@
             {source.journal}, {source.year}
           </div>
         </div>
-        <div style="padding: 10px 10px 8px;">
-          <span class="hud-mono" style="
-            font-size: 11px; display: inline-block;
-            border-top: 1px solid rgba(6,182,212,0.22); padding-top: 6px;
-          ">
+        <div style="padding: 0 10px 9px;">
+          <div style="border-top: 1px solid rgba(6,182,212,0.22); padding-top: 8px;">
             <span class="hud-mono" style="
               font-size: 11px;
               color: {statusColor(source.status)};
               border: 1px solid {statusBorder(source.status)};
               padding: 1px 6px; border-radius: 3px;
             ">[{source.status}]</span>
-          </span>
+          </div>
         </div>
       </button>
     {/each}
