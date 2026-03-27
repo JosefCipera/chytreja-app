@@ -20,29 +20,29 @@
   let filledSegments = $derived(Math.round((percent / 100) * TOTAL_SEGMENTS));
 
   let fillColor = $derived(
-    percent > 70 ? 'rgba(34, 197, 94, 0.42)' :
-    percent > 40 ? 'rgba(234, 179, 8, 0.42)' :
-    'rgba(239, 68, 68, 0.42)'
+    percent > 70 ? 'rgba(34, 197, 94, 0.72)' :
+    percent > 40 ? 'rgba(234, 179, 8, 0.72)' :
+    'rgba(239, 68, 68, 0.72)'
   );
 
   let glowColor = $derived(
-    percent > 70 ? 'rgba(34, 197, 94, 0.22)' :
-    percent > 40 ? 'rgba(234, 179, 8, 0.22)' :
-    'rgba(239, 68, 68, 0.22)'
+    percent > 70 ? 'rgba(34, 197, 94, 0.45)' :
+    percent > 40 ? 'rgba(234, 179, 8, 0.45)' :
+    'rgba(239, 68, 68, 0.45)'
   );
 
   let barGlow = $derived(
-    percent > 70 ? '0 0 20px rgba(34, 197, 94, 0.14), 0 0 40px rgba(34, 197, 94, 0.05)' :
-    percent > 40 ? '0 0 20px rgba(234, 179, 8, 0.14), 0 0 40px rgba(234, 179, 8, 0.05)' :
-    '0 0 20px rgba(239, 68, 68, 0.18), 0 0 40px rgba(239, 68, 68, 0.07)'
+    percent > 70 ? '0 0 28px rgba(34, 197, 94, 0.28), 0 0 55px rgba(34, 197, 94, 0.10)' :
+    percent > 40 ? '0 0 28px rgba(234, 179, 8, 0.28), 0 0 55px rgba(234, 179, 8, 0.10)' :
+    '0 0 28px rgba(239, 68, 68, 0.32), 0 0 55px rgba(239, 68, 68, 0.12)'
   );
 
   let textNeon = $derived('');
 
   let textColor = $derived(
-    percent > 70 ? '#86efac' :
-    percent > 40 ? '#fde68a' :
-    '#fca5a5'
+    percent > 70 ? '#4ade80' :
+    percent > 40 ? '#facc15' :
+    '#f87171'
   );
 
   let watermark = $derived(
@@ -51,11 +51,8 @@
     'CELL_OPTIMAL'
   );
 
-  let watermarkColor = $derived(
-    percent <= 40 ? 'rgba(239,68,68,0.38)' :
-    percent <= 70 ? 'rgba(234,179,8,0.34)' :
-    'rgba(34,197,94,0.34)'
-  );
+  // Watermark always white — contrasts with any segment color
+  const watermarkColor = 'rgba(255,255,255,0.88)';
 
   let trendLabel = $derived(
     trend === 'UP' ? 'UP' :
@@ -121,11 +118,11 @@
           class="hud-mono font-black uppercase"
           style="
             font-size: 26px;
-            letter-spacing: 0.04em;
+            letter-spacing: 0.06em;
             color: {watermarkColor};
-            text-shadow: 0 0 16px {watermarkColor}, 0 0 35px {watermarkColor};
-            background: rgba(0,0,0,0.45);
-            padding: 4px 14px;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+            background: rgba(0,0,0,0.62);
+            padding: 4px 16px;
             border-radius: 4px;
           "
         >{watermark}</span>
