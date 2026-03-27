@@ -35,10 +35,9 @@
   );
 </script>
 
-<div class="rounded-lg {status === 'ACTIVE' ? 'glow-pulse' : ''}" style="
+<div class="rounded-lg hud-corners {status === 'ACTIVE' ? 'glow-pulse' : ''}" style="
   background: rgba(6, 182, 212, 0.03);
   border: 1px solid rgba(255,255,255,0.07);
-  border-left: 3px solid rgba(201, 114, 114, 0.50);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   overflow: hidden;
@@ -55,7 +54,7 @@
       </div>
     </div>
     <!-- Tenký oddělovač — odsazený od krajů (šířka textu) -->
-    <div style="margin: 0 16px; border-top: 1px solid rgba(255,255,255,0.18);"></div>
+    <div style="margin: 0 16px; border-top: 1px solid rgba(6,182,212,0.30);"></div>
   {/if}
 
   <!-- ACTION sekce -->
@@ -70,8 +69,9 @@
     </div>
 
     <!-- Action description: [ ] prefix s mezerou -->
-    <div class="font-sans mb-3" style="font-size: 17px; color: #e2e8f0; line-height: 1.3;">
-      [&nbsp;]&nbsp;&nbsp;{action.label}
+    <div class="font-sans mb-3 flex items-baseline gap-2" style="font-size: 17px; line-height: 1.3;">
+      <span class="hud-mono" style="color: #475569; flex-shrink: 0; font-size: 15px;">[ ]</span>
+      <span style="color: #e2e8f0;">{action.label}</span>
     </div>
 
     {#if status === 'ACTIVE'}
