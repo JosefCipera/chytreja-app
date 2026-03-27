@@ -29,6 +29,9 @@
             if (!user) {
                 window.location.href = '/';
             } else {
+                // Store UID globally for immediate use
+                window.CHJ_UID = user.uid;
+
                 // Update avatar dynamically
                 const email = user.email || 'User';
                 const name = user.displayName || email.split('@')[0];

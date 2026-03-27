@@ -246,7 +246,7 @@ function resetPanel() {
 export async function showPanel(node, options = {}) {
   // v0.2+: non-GRAY nodes open in Svelte HUD overlay (only explicit click)
   if (node.state !== 'GRAY' && !options.skipHud) {
-    const uid = window.firebaseAuth?.currentUser?.uid;
+    const uid = window.CHJ_UID || window.firebaseAuth?.currentUser?.uid;
     if (uid && window.openHudOverlay) {
       window.openHudOverlay(uid, node.id);
       return;

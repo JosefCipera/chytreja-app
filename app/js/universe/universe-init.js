@@ -496,7 +496,7 @@ function renderVisibleUniverse(model) {
   const mainNode = visible.find(n => n.id === main.id);
   if (mainNode && mainNode.state && mainNode.state !== 'GRAY') {
     setTimeout(() => {
-      const uid = window.firebaseAuth?.currentUser?.uid;
+      const uid = window.CHJ_UID || window.firebaseAuth?.currentUser?.uid;
       if (uid && window.openHudOverlay) {
         window.openHudOverlay(uid, mainNode.id);
       }
