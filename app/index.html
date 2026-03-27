@@ -466,24 +466,19 @@
             const wrap    = document.getElementById('hud-panel-wrap');
             const iframe  = document.getElementById('hud-iframe');
 
-            const doOpen = () => {
-                iframe.src = `/app/hud.html?userId=${encodeURIComponent(userId)}&nodeId=${encodeURIComponent(nodeId)}&_v=${Date.now()}`;
-                overlay.style.display = 'flex';
-                document.getElementById('hud-backdrop').style.display = 'block';
-                requestAnimationFrame(() => requestAnimationFrame(() => {
-                    wrap.style.transform = 'translateX(0)';
-                }));
-                window._hudOpen = true;
-            };
-
             if (window._hudOpen) {
-                // Slide out, swap content, slide back in
-                wrap.style.transform = 'translateX(100%)';
-                iframe.src = '';
-                setTimeout(doOpen, 200);
-            } else {
-                doOpen();
+                // Panel already open — just swap content, no animation
+                iframe.src = `/app/hud.html?userId=${encodeURIComponent(userId)}&nodeId=${encodeURIComponent(nodeId)}&_v=${Date.now()}`;
+                return;
             }
+
+            iframe.src = `/app/hud.html?userId=${encodeURIComponent(userId)}&nodeId=${encodeURIComponent(nodeId)}&_v=${Date.now()}`;
+            overlay.style.display = 'flex';
+            document.getElementById('hud-backdrop').style.display = 'block';
+            requestAnimationFrame(() => requestAnimationFrame(() => {
+                wrap.style.transform = 'translateX(0)';
+            }));
+            window._hudOpen = true;
         };
 
         window.closeHudOverlay = function() {
@@ -526,16 +521,15 @@
         }
 
         window.openSourceViewer = function(source) {
-            closeSourceViewer();
+            window.closeSourceViewer();
             const t = source.url ? mediaTypeOf(source.url) : 'none';
-            // Externe HTML weby (blokují iframe) → rovnou nový tab, bez panelu
             if (t === 'iframe') { if (source.url) window.open(source.url, '_blank'); return; }
-            if (t === 'none')   { return; }
+            if (t === 'none') return;
 
             const isMobile = window.innerWidth < 700;
-            const viewerW = isMobile ? window.innerWidth : Math.min(window.innerWidth * 0.72, 920);
+            const vw = window.innerWidth;
+            const vh = window.innerHeight;
 
-            // Backdrop — click outside → close viewer
             const backdrop = document.createElement('div');
             backdrop.id = 'source-backdrop';
             backdrop.style.cssText = 'position:fixed;inset:0;z-index:4998;cursor:pointer;';
@@ -545,67 +539,64 @@
             const wrap = document.createElement('div');
             wrap.id = 'source-viewer';
 
-            if (isMobile) {
+            // Content-aware dimensions
+            let dims = {};
+            if (!isMobile) {
+                if (t === 'youtube' || t === 'video') {
+                    const w = Math.min(vw * 0.82, 960);
+                    const h = Math.min(Math.round(w * 9 / 16) + 48, vh * 0.9);
+                    dims = { w, h, top: '50%', openT: 'translateX(-50%) translateY(-50%)', closeT: 'translateX(-50%) translateY(calc(-50% + 10px))' };
+                } else if (t === 'audio') {
+                    dims = { w: Math.min(vw * 0.55, 520), h: 148, top: '50%', openT: 'translateX(-50%) translateY(-50%)', closeT: 'translateX(-50%) translateY(calc(-50% + 10px))' };
+                } else if (t === 'pdf') {
+                    dims = { w: Math.min(vw * 0.75, 920), h: Math.round(vh * 0.85), top: '7%', openT: 'translateX(-50%) translateY(0)', closeT: 'translateX(-50%) translateY(10px)' };
+                } else { // md / article
+                    dims = { w: Math.min(vw * 0.68, 760), h: Math.round(vh * 0.82), top: '7%', openT: 'translateX(-50%) translateY(0)', closeT: 'translateX(-50%) translateY(10px)' };
+                }
+                wrap._openT  = dims.openT;
+                wrap._closeT = dims.closeT;
+
                 wrap.style.cssText = `
-                    position: fixed; inset: 0;
-                    background: rgba(2,6,14,0.98);
-                    z-index: 6000;
-                    display: flex; flex-direction: column;
-                    overflow: hidden;
-                    opacity: 0;
-                    transition: opacity 0.22s;
+                    position:fixed; top:${dims.top}; left:50%;
+                    transform:${dims.closeT};
+                    width:${dims.w}px; height:${dims.h}px;
+                    background:rgba(2,6,14,0.97);
+                    border:1px solid rgba(6,182,212,0.25);
+                    border-radius:16px; z-index:4999;
+                    display:flex; flex-direction:column; overflow:hidden;
+                    box-shadow:0 0 40px rgba(6,182,212,0.1);
+                    opacity:0;
+                    transition:transform 0.28s cubic-bezier(0.32,0.72,0,1), opacity 0.28s;
                 `;
             } else {
-                wrap.style.cssText = `
-                    position: fixed;
-                    top: 72px; bottom: 32px;
-                    left: 50%; transform: translateX(-50%) translateY(8px);
-                    width: ${viewerW}px;
-                    background: rgba(2,6,14,0.97);
-                    border: 1px solid rgba(6,182,212,0.25);
-                    border-radius: 16px;
-                    z-index: 4999;
-                    display: flex; flex-direction: column;
-                    overflow: hidden;
-                    box-shadow: 0 0 40px rgba(6,182,212,0.1);
-                    opacity: 0;
-                    transition: transform 0.28s cubic-bezier(0.32,0.72,0,1), opacity 0.28s;
-                `;
+                wrap.style.cssText = 'position:fixed;inset:0;background:rgba(2,6,14,0.98);z-index:6000;display:flex;flex-direction:column;overflow:hidden;opacity:0;transition:opacity 0.22s;';
             }
 
-            const shortId = (id) => {
-                if (!id) return '???';
-                const s = String(id); const d = s.indexOf('-');
-                return d > 0 ? s.slice(0, d).toUpperCase() : s;
-            };
-            const statusColor = s => s === 'VERIFIED' ? '#4ade80' : s === 'AUTHENTICATED' ? '#22d3ee' : '#94a3b8';
-            const statusBorderC = s => s === 'VERIFIED' ? 'rgba(74,222,128,0.3)' : s === 'AUTHENTICATED' ? 'rgba(34,211,238,0.3)' : 'rgba(148,163,184,0.2)';
+            const shortId = id => { if (!id) return '???'; const s = String(id), d = s.indexOf('-'); return d > 0 ? s.slice(0,d).toUpperCase() : s; };
+
+            const innerContent = (() => {
+                if (t === 'youtube') return `<iframe src="${youtubeEmbed(source.url)}" style="width:100%;height:100%;border:none;" allow="autoplay;encrypted-media" allowfullscreen></iframe>`;
+                if (t === 'video')   return `<video src="${source.url}" controls autoplay style="width:100%;height:100%;background:#000;"></video>`;
+                if (t === 'audio')   return `<iframe src="/app/viewer.html?type=audio&file=${encodeURIComponent(source.url)}" style="width:100%;height:100%;border:none;background:#0f172a;" allow="autoplay"></iframe>`;
+                if (t === 'pdf')     return `<iframe src="${pdfEmbed(source.url)}" style="width:100%;height:100%;border:none;" title="${source.title}"></iframe>`;
+                if (t === 'md')      return `<iframe src="/app/viewer.html?type=md&file=${encodeURIComponent(source.url)}" style="width:100%;height:100%;border:none;background:#0a0f1e;"></iframe>`;
+                return '';
+            })();
 
             wrap.innerHTML = `
-                <div style="padding:10px 16px; border-bottom:1px solid rgba(6,182,212,0.18); display:flex; justify-content:space-between; align-items:center; flex-shrink:0;">
-                    <span style="font-family:monospace; font-size:11px; letter-spacing:0.08em; color:#64748b;">
-                        [MED_ID: ${shortId(source.med_id)}] &nbsp;·&nbsp; ${source.journal || ''}, ${source.year || ''}
+                <div style="padding:10px 16px;border-bottom:1px solid rgba(6,182,212,0.18);display:flex;justify-content:space-between;align-items:center;flex-shrink:0;">
+                    <span style="font-family:monospace;font-size:11px;letter-spacing:0.08em;color:#64748b;">
+                        [MED_ID:&nbsp;${shortId(source.med_id)}]&nbsp;&nbsp;·&nbsp;&nbsp;${source.journal || ''}, ${source.year || ''}
                     </span>
-                    <button onclick="window.closeSourceViewer()" style="color:#475569; font-size:20px; background:none; border:none; cursor:pointer; padding:0 0 0 12px; line-height:1; transition:color .15s;"
+                    <button onclick="window.closeSourceViewer()" style="color:#475569;font-size:20px;background:none;border:none;cursor:pointer;padding:0 0 0 12px;line-height:1;transition:color .15s;"
                         onmouseover="this.style.color='#22d3ee'" onmouseout="this.style.color='#475569'">✕</button>
                 </div>
-                <div style="flex:1; overflow:hidden; min-height:0;">
-                    ${(() => {
-                        const t = source.url ? mediaTypeOf(source.url) : 'none';
-                        if (t === 'youtube') return `<iframe src="${youtubeEmbed(source.url)}" style="width:100%;height:100%;border:none;" allow="autoplay;encrypted-media" allowfullscreen></iframe>`;
-                        if (t === 'video')   return `<video src="${source.url}" controls style="width:100%;height:100%;background:#000;"></video>`;
-                        if (t === 'audio')   return `<iframe src="/app/viewer.html?type=audio&file=${encodeURIComponent(source.url)}" style="width:100%;height:220px;border:none;background:#0f172a;" allow="autoplay"></iframe>`;
-                        if (t === 'pdf')     return `<iframe src="${pdfEmbed(source.url)}" style="width:100%;height:100%;border:none;" title="${source.title}"></iframe>`;
-                        if (t === 'md')      return `<iframe src="/app/viewer.html?type=md&file=${encodeURIComponent(source.url)}" style="width:100%;height:100%;border:none;background:#0a0f1e;"></iframe>`;
-                        // Sem se nikdy nedostaneme — 'iframe' typ je zachycen výše
-                        return '';
-                    })()}
-                </div>
+                <div style="flex:1;overflow:hidden;min-height:0;">${innerContent}</div>
             `;
 
             document.body.appendChild(wrap);
             requestAnimationFrame(() => requestAnimationFrame(() => {
-                if (!isMobile) wrap.style.transform = 'translateX(-50%) translateY(0)';
+                if (!isMobile) wrap.style.transform = wrap._openT;
                 wrap.style.opacity = '1';
             }));
         };
@@ -613,7 +604,7 @@
         window.closeSourceViewer = function() {
             const v = document.getElementById('source-viewer');
             if (!v) return;
-            if (v.style.borderRadius !== '0px') v.style.transform = 'translateX(-50%) translateY(8px)';
+            if (v._closeT) v.style.transform = v._closeT;
             v.style.opacity = '0';
             document.getElementById('source-backdrop')?.remove();
             setTimeout(() => v.remove(), 300);
