@@ -33,7 +33,7 @@
         style="
           animation-delay: {0.5 + i * 0.1}s;
           background: rgba(6,182,212,0.03);
-          border: 1px solid rgba(255,255,255,0.30);
+          border: 1px solid rgba(255,255,255,0.52);
           border-top: 2px solid {statusBorder(source.status)};
           backdrop-filter: blur(12px);
           -webkit-backdrop-filter: blur(12px);
