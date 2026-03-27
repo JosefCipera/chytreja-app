@@ -416,9 +416,11 @@
         });
     </script>
 
-    <!-- Service Worker -->
+    <!-- Service Worker — registrace záměrně vypnutá na dev větvi (caching problémy) -->
+    <!-- Pro produkci: znovu zapnout a otestovat na app.iting.cz -->
     <script>
-        if ('serviceWorker' in navigator) {
+        // SW registration disabled
+        if (false && 'serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/service-worker.js', { scope: '/' })
                     .then(reg => console.log('✅ Service Worker zaregistrován, scope:', reg.scope))
