@@ -38,6 +38,7 @@
 <div class="rounded-lg {status === 'ACTIVE' ? 'glow-pulse' : ''}" style="
   background: rgba(6, 182, 212, 0.03);
   border: 1px solid rgba(255,255,255,0.07);
+  border-left: 3px solid rgba(201, 114, 114, 0.50);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   overflow: hidden;
@@ -50,11 +51,11 @@
       </div>
       <div class="flex items-center gap-2">
         <span style="font-size: 17px; color: #C97272;">{@html '\u26A0\uFE0E'}</span>
-        <span class="hud-mono" style="font-size: 17px; font-weight: 300; letter-spacing: 0.03em; color: #C97272;">{killer.energy_drain}% ENERGY DRAIN</span>
+        <span class="hud-mono" style="font-size: 17px; font-weight: 300; letter-spacing: 0; word-spacing: 0; color: #C97272;">{killer.energy_drain}% ENERGY DRAIN</span>
       </div>
     </div>
     <!-- Tenký oddělovač — odsazený od krajů (šířka textu) -->
-    <div style="margin: 0 16px; border-top: 1px solid rgba(255,255,255,0.09);"></div>
+    <div style="margin: 0 16px; border-top: 1px solid rgba(255,255,255,0.18);"></div>
   {/if}
 
   <!-- ACTION sekce -->
@@ -68,9 +69,9 @@
       <div style="font-size: 20px; color: #94a3b8;">{protocolLabel}</div>
     </div>
 
-    <!-- Action description: [ ] prefix, bez ikony -->
+    <!-- Action description: [ ] prefix s mezerou -->
     <div class="font-sans mb-3" style="font-size: 17px; color: #e2e8f0; line-height: 1.3;">
-      [ ] {action.label}
+      [&nbsp;]&nbsp;&nbsp;{action.label}
     </div>
 
     {#if status === 'ACTIVE'}
