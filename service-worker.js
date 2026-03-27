@@ -1,4 +1,4 @@
-const CACHE_NAME = 'chytre-ja-v4';
+const CACHE_NAME = 'chytre-ja-v5';
 
 const ASSETS = [
   '/',
@@ -97,7 +97,14 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // Statické soubory: Stale-While-Revalidate
+  // HTML soubory: vždy ze sítě (nikdy nechceme stale HTML)
+  if (url.pathname.endsWith('.html') || url.pathname === '/' ||
+      url.pathname === '/app' || url.pathname === '/app/') {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
+  // Statické soubory (JS, CSS, assets): Stale-While-Revalidate
   // → okamžitě z cache, na pozadí aktualizuje pro příští návštěvu
   event.respondWith(
     caches.match(event.request).then(cached => {
