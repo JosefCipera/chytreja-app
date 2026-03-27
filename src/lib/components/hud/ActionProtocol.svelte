@@ -36,9 +36,8 @@
 </script>
 
 <div class="rounded-lg {status === 'ACTIVE' ? 'glow-pulse' : ''}" style="
-  background: rgba(201, 114, 114, 0.05);
-  border: 1px solid rgba(201, 114, 114, 0.20);
-  border-left: 3px solid rgba(201, 114, 114, 0.55);
+  background: rgba(6, 182, 212, 0.03);
+  border: 1px solid rgba(255,255,255,0.07);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   overflow: hidden;
