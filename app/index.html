@@ -281,80 +281,46 @@
         </div>
     </header>
 
-    <!-- Universe starfield — scattered behind nodes -->
-    <div id="universe-stars" style="position:fixed;inset:0;pointer-events:none;z-index:2;overflow:hidden;">
-      <!-- === VRSTVA 1: hvězdný prach — daleko, 2–3px === -->
-      <span style="position:absolute;left:7%;top:13%;font-size:2px;color:rgba(200,230,255,0.32);line-height:1;">✦</span>
-      <span style="position:absolute;left:15%;top:28%;font-size:2px;color:rgba(255,255,255,0.28);line-height:1;">✦</span>
-      <span style="position:absolute;left:24%;top:17%;font-size:2px;color:rgba(6,182,212,0.25);line-height:1;">✦</span>
-      <span style="position:absolute;left:29%;top:42%;font-size:2px;color:rgba(200,230,255,0.22);line-height:1;">✦</span>
-      <span style="position:absolute;left:38%;top:31%;font-size:2px;color:rgba(255,255,255,0.26);line-height:1;">✦</span>
-      <span style="position:absolute;left:43%;top:55%;font-size:2px;color:rgba(6,182,212,0.22);line-height:1;">✦</span>
-      <span style="position:absolute;left:51%;top:22%;font-size:2px;color:rgba(255,255,255,0.24);line-height:1;">✦</span>
-      <span style="position:absolute;left:57%;top:47%;font-size:2px;color:rgba(200,230,255,0.28);line-height:1;">✦</span>
-      <span style="position:absolute;left:63%;top:35%;font-size:2px;color:rgba(255,255,255,0.2);line-height:1;">✦</span>
-      <span style="position:absolute;left:69%;top:61%;font-size:2px;color:rgba(6,182,212,0.24);line-height:1;">✦</span>
-      <span style="position:absolute;left:74%;top:19%;font-size:2px;color:rgba(200,230,255,0.3);line-height:1;">✦</span>
-      <span style="position:absolute;left:81%;top:44%;font-size:2px;color:rgba(255,255,255,0.22);line-height:1;">✦</span>
-      <span style="position:absolute;left:88%;top:28%;font-size:2px;color:rgba(6,182,212,0.26);line-height:1;">✦</span>
-      <span style="position:absolute;left:11%;top:52%;font-size:2px;color:rgba(255,255,255,0.25);line-height:1;">✦</span>
-      <span style="position:absolute;left:20%;top:66%;font-size:2px;color:rgba(6,182,212,0.22);line-height:1;">✦</span>
-      <span style="position:absolute;left:34%;top:74%;font-size:2px;color:rgba(200,230,255,0.24);line-height:1;">✦</span>
-      <span style="position:absolute;left:46%;top:83%;font-size:2px;color:rgba(255,255,255,0.2);line-height:1;">✦</span>
-      <span style="position:absolute;left:59%;top:78%;font-size:2px;color:rgba(6,182,212,0.26);line-height:1;">✦</span>
-      <span style="position:absolute;left:77%;top:87%;font-size:2px;color:rgba(255,255,255,0.22);line-height:1;">✦</span>
-      <span style="position:absolute;left:91%;top:66%;font-size:2px;color:rgba(200,230,255,0.25);line-height:1;">✦</span>
-      <span style="position:absolute;left:3%;top:77%;font-size:2px;color:rgba(255,255,255,0.2);line-height:1;">✦</span>
-      <span style="position:absolute;left:52%;top:91%;font-size:2px;color:rgba(6,182,212,0.22);line-height:1;">✦</span>
-      <!-- === VRSTVA 2: malé hvězdy — střední vzdálenost, 4–6px === -->
-      <span style="position:absolute;left:5%;top:20%;font-size:5px;color:rgba(6,182,212,0.4);line-height:1;">✦</span>
-      <span style="position:absolute;left:13%;top:37%;font-size:4px;color:rgba(255,255,255,0.28);line-height:1;">✦</span>
-      <span style="position:absolute;left:19%;top:15%;font-size:5px;color:rgba(6,182,212,0.36);line-height:1;">✦</span>
-      <span style="position:absolute;left:27%;top:58%;font-size:4px;color:rgba(200,230,255,0.3);line-height:1;">✦</span>
-      <span style="position:absolute;left:35%;top:25%;font-size:6px;color:rgba(6,182,212,0.38);line-height:1;">✦</span>
-      <span style="position:absolute;left:41%;top:68%;font-size:5px;color:rgba(255,255,255,0.26);line-height:1;">✦</span>
-      <span style="position:absolute;left:48%;top:38%;font-size:4px;color:rgba(6,182,212,0.34);line-height:1;">✦</span>
-      <span style="position:absolute;left:55%;top:62%;font-size:6px;color:rgba(255,255,255,0.24);line-height:1;">✦</span>
-      <span style="position:absolute;left:61%;top:18%;font-size:5px;color:rgba(6,182,212,0.4);line-height:1;">✦</span>
-      <span style="position:absolute;left:66%;top:52%;font-size:4px;color:rgba(200,230,255,0.32);line-height:1;">✦</span>
-      <span style="position:absolute;left:73%;top:33%;font-size:5px;color:rgba(6,182,212,0.36);line-height:1;">✦</span>
-      <span style="position:absolute;left:79%;top:71%;font-size:6px;color:rgba(255,255,255,0.26);line-height:1;">✦</span>
-      <span style="position:absolute;left:85%;top:48%;font-size:5px;color:rgba(6,182,212,0.38);line-height:1;">✦</span>
-      <span style="position:absolute;left:93%;top:18%;font-size:4px;color:rgba(255,255,255,0.24);line-height:1;">✦</span>
-      <span style="position:absolute;left:9%;top:85%;font-size:5px;color:rgba(6,182,212,0.34);line-height:1;">✦</span>
-      <span style="position:absolute;left:31%;top:89%;font-size:4px;color:rgba(200,230,255,0.28);line-height:1;">✦</span>
-      <span style="position:absolute;left:50%;top:77%;font-size:6px;color:rgba(6,182,212,0.36);line-height:1;">✦</span>
-      <span style="position:absolute;left:68%;top:93%;font-size:5px;color:rgba(255,255,255,0.22);line-height:1;">✦</span>
-      <span style="position:absolute;left:88%;top:83%;font-size:4px;color:rgba(6,182,212,0.32);line-height:1;">✦</span>
-      <!-- === VRSTVA 3: střední hvězdy — blízko, glow, 8–12px === -->
-      <span style="position:absolute;left:8%;top:30%;font-size:9px;color:rgba(6,182,212,0.48);text-shadow:0 0 7px rgba(6,182,212,0.55),0 0 16px rgba(6,182,212,0.2);line-height:1;">✦</span>
-      <span style="position:absolute;left:22%;top:46%;font-size:10px;color:rgba(255,255,255,0.34);text-shadow:0 0 6px rgba(255,255,255,0.5),0 0 14px rgba(6,182,212,0.22);line-height:1;">✦</span>
-      <span style="position:absolute;left:36%;top:15%;font-size:8px;color:rgba(6,182,212,0.45);text-shadow:0 0 7px rgba(6,182,212,0.5),0 0 15px rgba(6,182,212,0.18);line-height:1;">✦</span>
-      <span style="position:absolute;left:44%;top:48%;font-size:11px;color:rgba(6,182,212,0.42);text-shadow:0 0 8px rgba(6,182,212,0.6),0 0 18px rgba(6,182,212,0.22);line-height:1;">✦</span>
-      <span style="position:absolute;left:53%;top:32%;font-size:9px;color:rgba(200,230,255,0.4);text-shadow:0 0 7px rgba(200,230,255,0.55),0 0 16px rgba(6,182,212,0.2);line-height:1;">✦</span>
-      <span style="position:absolute;left:62%;top:70%;font-size:10px;color:rgba(6,182,212,0.44);text-shadow:0 0 8px rgba(6,182,212,0.58),0 0 18px rgba(6,182,212,0.2);line-height:1;">✦</span>
-      <span style="position:absolute;left:71%;top:22%;font-size:12px;color:rgba(255,255,255,0.36);text-shadow:0 0 9px rgba(255,255,255,0.55),0 0 20px rgba(6,182,212,0.25);line-height:1;">✦</span>
-      <span style="position:absolute;left:80%;top:58%;font-size:9px;color:rgba(6,182,212,0.46);text-shadow:0 0 7px rgba(6,182,212,0.6),0 0 16px rgba(6,182,212,0.22);line-height:1;">✦</span>
-      <span style="position:absolute;left:90%;top:40%;font-size:11px;color:rgba(6,182,212,0.42);text-shadow:0 0 8px rgba(6,182,212,0.58),0 0 18px rgba(6,182,212,0.2);line-height:1;">✦</span>
-      <span style="position:absolute;left:16%;top:78%;font-size:10px;color:rgba(255,255,255,0.32);text-shadow:0 0 7px rgba(255,255,255,0.48),0 0 16px rgba(6,182,212,0.2);line-height:1;">✦</span>
-      <span style="position:absolute;left:39%;top:84%;font-size:8px;color:rgba(6,182,212,0.44);text-shadow:0 0 6px rgba(6,182,212,0.52),0 0 14px rgba(6,182,212,0.18);line-height:1;">✦</span>
-      <span style="position:absolute;left:75%;top:88%;font-size:9px;color:rgba(6,182,212,0.4);text-shadow:0 0 7px rgba(6,182,212,0.55),0 0 16px rgba(6,182,212,0.18);line-height:1;">✦</span>
-      <!-- === VRSTVA 4: velké hvězdy — popředí, silný glow, 14–18px === -->
-      <span style="position:absolute;left:4%;top:22%;font-size:15px;color:rgba(6,182,212,0.58);text-shadow:0 0 12px rgba(6,182,212,0.9),0 0 28px rgba(6,182,212,0.4),0 0 55px rgba(6,182,212,0.14);line-height:1;">✦</span>
-      <span style="position:absolute;left:26%;top:34%;font-size:14px;color:rgba(255,255,255,0.42);text-shadow:0 0 10px rgba(255,255,255,0.72),0 0 24px rgba(6,182,212,0.32),0 0 45px rgba(6,182,212,0.12);line-height:1;">✦</span>
-      <span style="position:absolute;left:47%;top:22%;font-size:16px;color:rgba(6,182,212,0.54);text-shadow:0 0 13px rgba(6,182,212,0.88),0 0 30px rgba(6,182,212,0.38),0 0 58px rgba(6,182,212,0.12);line-height:1;">✦</span>
-      <span style="position:absolute;left:58%;top:55%;font-size:14px;color:rgba(6,182,212,0.5);text-shadow:0 0 11px rgba(6,182,212,0.82),0 0 26px rgba(6,182,212,0.35),0 0 50px rgba(6,182,212,0.12);line-height:1;">✦</span>
-      <span style="position:absolute;left:77%;top:38%;font-size:15px;color:rgba(255,255,255,0.38);text-shadow:0 0 11px rgba(255,255,255,0.7),0 0 26px rgba(6,182,212,0.35),0 0 48px rgba(6,182,212,0.12);line-height:1;">✦</span>
-      <span style="position:absolute;left:11%;top:65%;font-size:14px;color:rgba(6,182,212,0.52);text-shadow:0 0 11px rgba(6,182,212,0.85),0 0 26px rgba(6,182,212,0.36),0 0 50px rgba(6,182,212,0.12);line-height:1;">✦</span>
-      <span style="position:absolute;left:68%;top:78%;font-size:16px;color:rgba(6,182,212,0.48);text-shadow:0 0 12px rgba(6,182,212,0.86),0 0 28px rgba(6,182,212,0.38),0 0 54px rgba(6,182,212,0.13);line-height:1;">✦</span>
-      <!-- === VRSTVA 5: XL dominantní, 20–26px === -->
-      <span style="position:absolute;left:1%;top:48%;font-size:22px;color:rgba(6,182,212,0.48);text-shadow:0 0 16px rgba(6,182,212,0.95),0 0 36px rgba(6,182,212,0.48),0 0 70px rgba(6,182,212,0.2),0 0 110px rgba(6,182,212,0.07);line-height:1;">✦</span>
-      <span style="position:absolute;left:33%;top:58%;font-size:20px;color:rgba(6,182,212,0.44);text-shadow:0 0 14px rgba(6,182,212,0.9),0 0 32px rgba(6,182,212,0.44),0 0 62px rgba(6,182,212,0.16),0 0 95px rgba(6,182,212,0.06);line-height:1;">✦</span>
-      <span style="position:absolute;left:86%;top:18%;font-size:23px;color:rgba(6,182,212,0.42);text-shadow:0 0 16px rgba(6,182,212,0.92),0 0 36px rgba(6,182,212,0.45),0 0 68px rgba(6,182,212,0.18),0 0 105px rgba(6,182,212,0.06);line-height:1;">✦</span>
-      <span style="position:absolute;left:18%;top:90%;font-size:24px;color:rgba(6,182,212,0.4);text-shadow:0 0 17px rgba(6,182,212,0.92),0 0 38px rgba(6,182,212,0.46),0 0 72px rgba(6,182,212,0.18),0 0 115px rgba(6,182,212,0.06);line-height:1;">✦</span>
-      <span style="position:absolute;left:62%;top:12%;font-size:21px;color:rgba(255,255,255,0.36);text-shadow:0 0 14px rgba(255,255,255,0.8),0 0 32px rgba(6,182,212,0.48),0 0 62px rgba(6,182,212,0.18),0 0 95px rgba(6,182,212,0.06);line-height:1;">✦</span>
-      <span style="position:absolute;left:91%;top:85%;font-size:20px;color:rgba(6,182,212,0.42);text-shadow:0 0 15px rgba(6,182,212,0.9),0 0 34px rgba(6,182,212,0.44),0 0 65px rgba(6,182,212,0.16);line-height:1;">✦</span>
-    </div>
+    <!-- Universe starfield — JS-generated, 5 depth layers -->
+    <div id="universe-stars" style="position:fixed;inset:0;pointer-events:none;z-index:2;overflow:hidden;"></div>
+    <script>
+    (function() {
+      const c = document.getElementById('universe-stars');
+      const rnd = (a, b) => a + Math.random() * (b - a);
+      // XL anchor positions (near typical node locations, with jitter)
+      const xlAnchors = [[48,52],[51,16],[29,57],[71,63],[49,88],[22,32],[75,28],[38,72],[60,42]];
+      const layers = [
+        // [count, minSz, maxSz, minOp, maxOp, glowLevel]
+        [65, 1,  2.5, 0.12, 0.28, 0],
+        [45, 2.5,5,   0.20, 0.38, 1],
+        [25, 5,  10,  0.28, 0.52, 2],
+        [14, 11, 20,  0.42, 0.65, 3],
+        [9,  24, 40,  0.38, 0.58, 4],
+      ];
+      layers.forEach(([count, minS, maxS, minO, maxO, gl], li) => {
+        for (let i = 0; i < count; i++) {
+          const sz = rnd(minS, maxS), op = rnd(minO, maxO);
+          let lx, ly;
+          if (li === 4) {
+            const a = xlAnchors[i % xlAnchors.length];
+            lx = a[0] + rnd(-12, 12); ly = a[1] + rnd(-12, 12);
+          } else {
+            lx = rnd(0.5, 97); ly = rnd(0.5, 97);
+          }
+          const r = Math.random();
+          const [cr, cg, cb] = r < 0.55 ? [6,182,212] : r < 0.82 ? [180,220,255] : [255,255,255];
+          let shadow = '';
+          if (gl === 1) shadow = `0 0 ${(sz*2).toFixed(0)}px rgba(${cr},${cg},${cb},0.6)`;
+          else if (gl === 2) shadow = `0 0 ${(sz*1.5).toFixed(0)}px rgba(${cr},${cg},${cb},0.8),0 0 ${(sz*5).toFixed(0)}px rgba(${cr},${cg},${cb},0.3)`;
+          else if (gl === 3) shadow = `0 0 ${(sz).toFixed(0)}px rgba(${cr},${cg},${cb},1),0 0 ${(sz*3).toFixed(0)}px rgba(${cr},${cg},${cb},0.55),0 0 ${(sz*7).toFixed(0)}px rgba(${cr},${cg},${cb},0.2),0 0 ${(sz*14).toFixed(0)}px rgba(${cr},${cg},${cb},0.07)`;
+          else if (gl === 4) shadow = `0 0 ${(sz*0.6).toFixed(0)}px rgba(${cr},${cg},${cb},1),0 0 ${(sz*2).toFixed(0)}px rgba(${cr},${cg},${cb},0.85),0 0 ${(sz*5).toFixed(0)}px rgba(${cr},${cg},${cb},0.45),0 0 ${(sz*12).toFixed(0)}px rgba(${cr},${cg},${cb},0.18),0 0 ${(sz*25).toFixed(0)}px rgba(${cr},${cg},${cb},0.06)`;
+          const el = document.createElement('div');
+          el.style.cssText = `position:absolute;left:${lx.toFixed(1)}%;top:${ly.toFixed(1)}%;width:${sz.toFixed(1)}px;height:${sz.toFixed(1)}px;border-radius:50%;background:rgba(${cr},${cg},${cb},${op.toFixed(2)});transform:translate(-50%,-50%);${shadow?'box-shadow:'+shadow+';':''}`;
+          c.appendChild(el);
+        }
+      });
+    })();
+    </script>
 
     <!-- Plátno sítě -->
     <div id="network"></div>
@@ -450,9 +416,7 @@
     </script>
 
     <!-- HUD Overlay — Svelte HUD panel, slides in from right, universe visible behind -->
-    <!-- HUD backdrop: click outside panel → close HUD -->
-    <div id="hud-backdrop" style="display:none; position:fixed; inset:0; z-index:4997; cursor:pointer;"
-         onclick="window.closeHudOverlay()"></div>
+    <!-- Backdrop removed: clicks pass through to vis-network canvas; empty-space click closes panel via universe-core.js -->
 
     <div id="hud-overlay" style="
         display: none;
@@ -497,7 +461,6 @@
 
             iframe.src = `/app/hud.html?userId=${encodeURIComponent(userId)}&nodeId=${encodeURIComponent(nodeId)}&_v=${Date.now()}`;
             overlay.style.display = 'flex';
-            document.getElementById('hud-backdrop').style.display = 'block';
             requestAnimationFrame(() => requestAnimationFrame(() => {
                 wrap.style.transform = 'translateX(0)';
             }));
@@ -510,7 +473,6 @@
             const iframe  = document.getElementById('hud-iframe');
 
             wrap.style.transform = 'translateX(100%)';
-            document.getElementById('hud-backdrop').style.display = 'none';
             setTimeout(() => {
                 overlay.style.display = 'none';
                 iframe.src = '';

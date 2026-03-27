@@ -127,6 +127,7 @@ export function renderUniverse(DATA, subset = null, forcedMainId = null) {
       if (!params.nodes.length) {
         const panelWasOpen = document.getElementById("sidePanel")?.classList.contains("open");
         closePanel();
+        window.closeHudOverlay?.();
         // Návrat o úroveň výš jen pokud panel byl už zavřený
         if (!panelWasOpen && currentCenter) {
           smoothReturnToUniverse(DATA);
