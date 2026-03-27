@@ -542,6 +542,41 @@ Multipart form:
 
 ---
 
+## Strategie externích zdravotních dat
+
+### Pozice CHJ vs. Claude (AI)
+
+| Vlastnost | Claude (chat) | CHJ (HUD) |
+|-----------|--------------|-----------|
+| Přístup | Musíš se ptát | Vidíš hned |
+| Emoce | Textový výpis | Vizuální HUD, blikající baterie |
+| Pravidla | Obecná AI | Medicine 3.0 hierarchie |
+| Akce | Poradí ti | Spustí timer, zapíše splnění |
+| Persistence | Žádná | Game loop, sparkline, streak |
+
+**Claude = backend procesor. CHJ = operační systém.**
+
+### Realistické zdroje dat (v0.4.0+)
+
+1. **PDF upload (krev, EKG, zpráva od lékaře)** — uživatel nahraje → `/api/tools/health-parse` zavolá Claude API → JSON → CHJ aktualizuje metriky. **Žádný mezikrok pro uživatele.**
+
+2. **Apple Health XML** — uživatel exportuje z iPhone → nahraje → preprocessing na serveru (jen posledních 30 dní) → Claude extrahuje klíčové metriky → HUD.
+
+3. **Foto jídla** — Food Camera tool, Vision API (v0.4.0).
+
+4. **Claude Connectors / HealthEx** — zatím US-only beta, nespoléhat. Sledovat.
+
+### Anti-pattern (nevhodné)
+
+- Uživatel generuje JSON v claude.ai a ručně vkládá do CHJ — nerealistické, nevhodné pro produkt.
+- Přímý iframe claude.ai uvnitř CHJ — nemá smysl, jiný UX.
+
+### Klíčový princip
+
+CHJ volá Claude API **transparentně na pozadí** — uživatel nahraje dokument jedním klikem a CHJ se samo postará o zbytek. Claude je neviditelný engine, HUD je viditelný výstup.
+
+---
+
 ## Verzování
 
 | Verze | Obsah | Status |
@@ -584,3 +619,4 @@ Multipart form:
 - Claude Code smí vytvářet nové tabulky v Supabase
 - Splash screen zobrazuje verzi při startu
 - v0.1.0 = vanilla JS (zachováno v git tagu), v0.2.0+ = Svelte
+- **Preview verifikace**: appka vyžaduje Supabase + Firebase backend → lokální dev server ji neuplatní → vždy přeskočit `<verification_workflow>`, testovat na `dev.iting.cz`
