@@ -503,9 +503,28 @@
         };
 
         // postMessage handler
+        // TTS engine běží v top frame (iOS blokuje TTS z iframe)
+        let _topTTS = null;
+        function _runTopTTS(text, lang) {
+            if (!('speechSynthesis' in window)) return;
+            window.speechSynthesis.cancel();
+            const utt = new SpeechSynthesisUtterance(text);
+            utt.lang = lang || 'cs-CZ'; utt.rate = 1.05; utt.pitch = 1.1;
+            const voices = speechSynthesis.getVoices();
+            const cz = voices.find(v => /cs[-_]CZ/i.test(v.lang)) || voices.find(v => /czech/i.test(v.lang));
+            if (cz) utt.voice = cz;
+            utt.onend = utt.onerror = () => {
+                // Oznám vieweru že skončilo
+                document.querySelectorAll('iframe').forEach(f => f.contentWindow?.postMessage({ type: 'chj:tts:ended' }, '*'));
+            };
+            window.speechSynthesis.speak(utt);
+        }
+
         window.addEventListener('message', function(e) {
             if (e.data === 'chj:hud:close') window.closeHudOverlay();
             if (e.data?.type === 'chj:source:open') openSourceViewer(e.data.source);
+            if (e.data?.type === 'chj:tts:speak') _runTopTTS(e.data.text, e.data.lang);
+            if (e.data?.type === 'chj:tts:stop') { if ('speechSynthesis' in window) window.speechSynthesis.cancel(); }
         });
 
         // Source viewer — vlevo od HUD panelu
@@ -609,17 +628,15 @@
             contentDiv.innerHTML = innerContent;
             wrap.appendChild(contentDiv);
 
-            // Mobile: extra ZAVŘÍT bar na spodu (záloha)
+            // Mobile: přidej výrazný close overlay button v top-right rohu
             if (isMobile) {
-                const closeBar = document.createElement('div');
-                closeBar.style.cssText = 'flex-shrink:0;padding:10px 16px;border-top:1px solid rgba(6,182,212,0.15);';
-                const closeBarBtn = document.createElement('button');
-                closeBarBtn.textContent = '✕  ZAVŘÍT';
-                closeBarBtn.style.cssText = 'width:100%;background:rgba(6,182,212,0.08);border:1px solid rgba(6,182,212,0.25);border-radius:8px;color:#94a3b8;font-family:monospace;font-size:14px;letter-spacing:0.1em;padding:12px;cursor:pointer;-webkit-tap-highlight-color:transparent;';
-                closeBarBtn.addEventListener('click', () => window.closeSourceViewer());
-                closeBarBtn.addEventListener('touchend', (e) => { e.preventDefault(); e.stopPropagation(); window.closeSourceViewer(); });
-                closeBar.appendChild(closeBarBtn);
-                wrap.appendChild(closeBar);
+                const floatClose = document.createElement('button');
+                floatClose.textContent = '✕';
+                floatClose.style.cssText = 'position:absolute;top:10px;right:12px;z-index:10;width:40px;height:40px;border-radius:50%;background:rgba(6,182,212,0.18);border:1px solid rgba(6,182,212,0.4);color:#e2e8f0;font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;';
+                floatClose.addEventListener('click', () => window.closeSourceViewer());
+                floatClose.addEventListener('touchend', (e) => { e.preventDefault(); e.stopPropagation(); window.closeSourceViewer(); });
+                wrap.style.position = 'fixed';
+                wrap.appendChild(floatClose);
             }
 
             document.body.appendChild(wrap);

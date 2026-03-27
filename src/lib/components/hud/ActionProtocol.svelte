@@ -52,7 +52,7 @@
     <div style="font-size: 20px; color: #c8d4df;">
       ACTION: <span style="color: #94a3b8;">{protocolLabel}</span>
     </div>
-    <div style="color: {statusColor}; font-size: 13px;">{status}</div>
+    <div class="flex justify-end" style="color: {statusColor}; font-size: 15px;">[{status}]</div>
   </div>
 
   <!-- Action description: [ ] prefix, bez ikony -->
