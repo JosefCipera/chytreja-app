@@ -47,12 +47,13 @@
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
 ">
-  <!-- ACTION: PROTOKOL (bez závorek), READY pod tím -->
+  <!-- ACTION: + [STATUS] na stejném řádku, PROTOKOL pod -->
   <div class="hud-mono mb-2" style="letter-spacing: 0.04em; font-weight: 300; line-height: 1.5;">
-    <div style="font-size: 20px; color: #c8d4df;">
-      ACTION: <span style="color: #94a3b8;">{protocolLabel}</span>
+    <div class="flex items-center justify-between" style="font-size: 20px;">
+      <span style="color: #c8d4df;">ACTION:</span>
+      <span style="color: {statusColor};">[{status}]</span>
     </div>
-    <div class="flex justify-end" style="color: {statusColor}; font-size: 15px;">[{status}]</div>
+    <div style="font-size: 20px; color: #94a3b8;">{protocolLabel}</div>
   </div>
 
   <!-- Action description: [ ] prefix, bez ikony -->
