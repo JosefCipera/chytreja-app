@@ -384,9 +384,9 @@ function setMicState(state) {
     const icon = btn.querySelector('.mic-icon');
     if (icon) {
       switch (state) {
-        case 'listening': icon.innerHTML = '<span style="color:#ef4444">⏺</span>'; btn.title = 'Poslouchám…';  break;
-        case 'thinking':  icon.innerHTML = '<span style="color:#22d3ee;font-size:22px;letter-spacing:-2px">···</span>'; btn.title = 'Zpracovávám…'; break;
-        case 'speaking':  icon.innerHTML = '<span style="color:#60a5fa">🔊</span>'; btn.title = 'Mluvím…';      break;
+        case 'listening': icon.innerHTML = '<span style="color:#22c55e;font-weight:700;font-size:16px">))</span>&thinsp;🎤&thinsp;<span style="color:#22c55e;font-weight:700;font-size:16px">((</span>'; btn.title = 'Poslouchám…';  break;
+        case 'thinking':  icon.textContent = '💭'; btn.title = 'Zpracovávám…'; break;
+        case 'speaking':  icon.innerHTML = '<span style="color:#60a5fa;font-weight:700;font-size:16px">((</span>&thinsp;🔊&thinsp;<span style="color:#60a5fa;font-weight:700;font-size:16px">))</span>'; btn.title = 'Mluvím…'; break;
         default:          icon.textContent = '🎤'; btn.title = 'Říct CHJ';     break;
       }
     }
@@ -400,13 +400,13 @@ function setMicState(state) {
     if (icon) {
       switch (state) {
         case 'listening':
-          icon.innerHTML = '<span style="color:#ef4444;font-size:13px">⏺</span>&thinsp;🎤';
+          icon.innerHTML = '<span style="color:#22c55e;font-weight:700">))</span> 🎤 <span style="color:#22c55e;font-weight:700">((</span>';
           break;
         case 'thinking':
-          icon.innerHTML = '<span style="color:#22d3ee;font-size:20px;letter-spacing:-2px">···</span>';
+          icon.textContent = '💭';
           break;
         case 'speaking':
-          icon.innerHTML = '<span style="color:#60a5fa">🔊</span>';
+          icon.innerHTML = '<span style="color:#60a5fa;font-weight:700">((</span> 🔊 <span style="color:#60a5fa;font-weight:700">))</span>';
           break;
         default:
           icon.textContent = '🎤';
@@ -424,7 +424,7 @@ export function setHeaderMicSpeaking(active) {
   if (active) {
     headerBtn.dataset.state = 'speaking';
     if (icon) {
-      icon.innerHTML = '<span style="color:#60a5fa">🔊</span>';
+      icon.innerHTML = '<span style="color:#60a5fa;font-weight:700">((</span> 🔊 <span style="color:#60a5fa;font-weight:700">))</span>';
     }
   } else {
     headerBtn.dataset.state = 'idle';
