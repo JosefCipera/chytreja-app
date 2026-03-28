@@ -1071,6 +1071,10 @@ async function showGameOfLife(node, options = {}) {
         🔥 ${streakCount} ${streakCount === 1 ? 'den' : streakCount < 5 ? 'dny po sobě' : 'dní po sobě'}</div>`
     : '';
 
+  // Simple action types don't need a "Začít" step — show final button directly
+  const isSimpleAction = mission && (mission.action_type === 'habit' || mission.action_type === 'photo');
+  const simpleBtnLabel = mission?.action_type === 'photo' ? '📸 VYFOTIT' : '✓ HOTOVO';
+
   const missionHtml = mission ? `
     <div id="mission-card" style="margin-top:8px;">
       <div style="
@@ -1091,16 +1095,17 @@ async function showGameOfLife(node, options = {}) {
         <span style="color:#64748b;font-size:14px;"> / ${mission.target || ''}</span>
       </div>
       <button id="mission-start" style="
-        ${alreadyDone ? 'display:none;' : ''}
+        ${alreadyDone || isSimpleAction ? 'display:none;' : ''}
         width:100%; padding:12px; border-radius:10px; border:1px solid rgba(96,165,250,0.3);
         background:rgba(96,165,250,0.1);
         color:#60a5fa; font-size:14px; font-weight:600; cursor:pointer;
-      ">Začít</button>
+      ">▶ Začít</button>
       <button id="mission-done" style="
-        display:none; width:100%; padding:12px; border-radius:10px; border:1px solid rgba(96,165,250,0.3);
+        ${alreadyDone || !isSimpleAction ? 'display:none;' : ''}
+        width:100%; padding:12px; border-radius:10px; border:1px solid rgba(96,165,250,0.3);
         background:rgba(96,165,250,0.1);
         color:#60a5fa; font-size:14px; font-weight:600; cursor:pointer;
-      ">✓ Hotovo</button>
+      ">${simpleBtnLabel}</button>
       <div id="mission-completed" style="
         ${alreadyDone ? '' : 'display:none;'} width:100%; text-align:center; padding:12px;
         color:#e2e8f0; font-size:14px; font-weight:500;
@@ -1463,56 +1468,56 @@ async function showGameOfLife(node, options = {}) {
       }
     }
 
-    startBtn.addEventListener('click', () => {
-      startBtn.style.display = 'none';
-      requestWakeLock();
+    // habit / photo — doneBtn already visible, wire directly (no Začít step)
+    if (isSimpleAction) {
+      doneBtn.onclick = () => missionComplete();
 
-      if (mission.action_type === 'timed') {
-        // Countdown timer
-        let remaining = mission.duration_sec;
-        timerEl.style.display = 'block';
-        timeDisplay.textContent = formatTime(remaining);
-        timerInterval = setInterval(() => {
-          remaining--;
+    } else {
+      startBtn.addEventListener('click', () => {
+        startBtn.style.display = 'none';
+        requestWakeLock();
+
+        if (mission.action_type === 'timed') {
+          // Countdown timer
+          let remaining = mission.duration_sec;
+          timerEl.style.display = 'block';
           timeDisplay.textContent = formatTime(remaining);
-          if (remaining <= 0) {
+          timerInterval = setInterval(() => {
+            remaining--;
+            timeDisplay.textContent = formatTime(remaining);
+            if (remaining <= 0) {
+              clearInterval(timerInterval);
+              timerEl.style.display = 'none';
+              missionComplete();
+            }
+          }, 1000);
+          doneBtn.style.display = 'block';
+          doneBtn.textContent = '⏹ ZASTAVIT';
+          doneBtn.onclick = () => {
             clearInterval(timerInterval);
-            timerEl.style.display = 'none';
             missionComplete();
-          }
-        }, 1000);
-        doneBtn.style.display = 'block';
-        doneBtn.textContent = '⏹ ZASTAVIT';
-        doneBtn.onclick = () => {
-          clearInterval(timerInterval);
-          missionComplete();
-        };
+          };
 
-      } else if (mission.action_type === 'count') {
-        // Counter
-        let count = 0;
-        progressEl.style.display = 'block';
-        countDisplay.textContent = '0';
-        doneBtn.style.display = 'block';
-        doneBtn.textContent = `+1`;
-        doneBtn.onclick = () => {
-          count++;
-          countDisplay.textContent = String(count);
-          if (navigator.vibrate) navigator.vibrate(50);
-          if (count >= (mission.target || Infinity)) {
-            progressEl.style.display = 'none';
-            doneBtn.style.display = 'none';
-            missionComplete();
-          }
-        };
-
-      } else {
-        // habit / photo — just show DONE button
-        doneBtn.style.display = 'block';
-        doneBtn.textContent = '✓ HOTOVO';
-        doneBtn.onclick = () => missionComplete();
-      }
-    });
+        } else if (mission.action_type === 'count') {
+          // Counter: show +/- buttons and current/target display
+          let count = 0;
+          progressEl.style.display = 'block';
+          countDisplay.textContent = '0';
+          doneBtn.style.display = 'block';
+          doneBtn.textContent = `+1`;
+          doneBtn.onclick = () => {
+            count++;
+            countDisplay.textContent = String(count);
+            if (navigator.vibrate) navigator.vibrate(50);
+            if (count >= (mission.target || Infinity)) {
+              progressEl.style.display = 'none';
+              doneBtn.style.display = 'none';
+              missionComplete();
+            }
+          };
+        }
+      });
+    }
   }
 
   // 10. TTS – čte aktuálně zobrazený text; tlačítko odstraněno, řídí se mic ikony

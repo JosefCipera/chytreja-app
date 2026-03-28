@@ -18,6 +18,9 @@ const EXERCISES = {
   zadneModre:   { id: 'no_blue',     label: 'Hodinu před spaním odlož telefon a vypni TV', icon: '📵', area: 'obnova', avoid: [], tier: 1, type: 'habit' },
   power_nap:    { id: 'power_nap',   label: 'Dej si 20 minut spánku přes den', icon: '😴', area: 'obnova', avoid: [], tier: 2, type: 'timed' },
 
+  // === SUPLEMENTY ===
+  vitaminD:     { id: 'vit_d',       label: 'Vezmi si vitamin D', icon: '🌤️', area: 'imunitni', avoid: [], tier: 1, type: 'habit' },
+
   // === PREVENCE ===
   kontrolaTepu: { id: 'tep_check',   label: 'Sedni si, zklidni se a změř si tep', icon: '❤️', area: 'biomarkery', avoid: [], tier: 1, type: 'habit' },
   teplotaRano:  { id: 'teplota',     label: 'Hned po probuzení si změř teplotu', icon: '🌡️', area: 'biomarkery', avoid: [], tier: 2, type: 'habit' },
@@ -30,6 +33,7 @@ const BASE_VALUES = {
   slunce:     { sec: 600 },
   cold_30:    { sec: 30 },
   cold_60:    { sec: 60 },
+  vit_d:      {},
   spanek_cas: {},
   no_blue:    {},
   power_nap:  { sec: 1200 },
