@@ -1244,7 +1244,7 @@ async function showGameOfLife(node, options = {}) {
                 nodeId: secondChild.id,
                 state: secondChild.state || 'YELLOW',
                 streak: result.streak || 0,
-                constraints: window._userConstraints || [],
+                constraints: userConstraints,
               });
               secondMission = secondSkillResult?.mission || pickMission(secondChild.id, secondChild.state || 'YELLOW');
             }
