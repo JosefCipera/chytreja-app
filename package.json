@@ -9,6 +9,7 @@
         "sync-content": "node scripts/sync-content.js"
     },
     "dependencies": {
+        "@anthropic-ai/sdk": "^0.80.0",
         "@supabase/supabase-js": "^2.39.0",
         "dotenv": "^17.3.1",
         "openai": "^4.0.0"
