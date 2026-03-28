@@ -40,7 +40,6 @@
   border: 1px solid rgba(255,255,255,0.07);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  overflow: hidden;
 ">
   <span class="hc hc-tl"></span><span class="hc hc-tr"></span>
   <span class="hc hc-bl"></span><span class="hc hc-br"></span>
