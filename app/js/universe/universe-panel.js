@@ -312,12 +312,6 @@ window.addEventListener('message', e => {
 function openViewerModal(fileUrl, type, title, onBack = null, scriptCz = null) {
   document.getElementById('viewerModal')?.remove();
 
-  // MD / article → inline renderer v index.html (tlačítka, iOS fix)
-  if ((type === 'md' || type === 'article') && typeof window.openSourceViewer === 'function') {
-    window.openSourceViewer({ url: fileUrl, type: 'md', title: title || '', med_id: null, journal: '', year: '' });
-    return;
-  }
-
   // PDF → fetch+blob do modálu (blob: URL obchází X-Frame-Options a CORS)
   if (type === 'pdf') {
     const modal = document.createElement('div');
