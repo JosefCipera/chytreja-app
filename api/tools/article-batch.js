@@ -66,10 +66,11 @@ export default async function handler(req, res) {
       const { data, error } = await supabase
         .from('longevity_articles')
         .insert({
-          node_id: article.node_id || node_id,
+          node_id: node_id,  // always use caller-supplied node_id, GPT can return wrong value
           title: article.title,
           url: `chj://articles/${node_id}/${topic.toLowerCase().replace(/\s+/g, '-')}`,
           summary: article.perex,
+          content: article.content || null,
           tags: article.tags || [],
           lang: 'cs',
           source: 'gpt4o-mini-generated',
