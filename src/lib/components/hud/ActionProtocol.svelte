@@ -41,7 +41,6 @@
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
 ">
-  <span class="hc hc-tl"></span><span class="hc hc-tr"></span>
   <span class="hc hc-bl"></span><span class="hc hc-br"></span>
   <!-- KILLER sekce -->
   {#if killer}
