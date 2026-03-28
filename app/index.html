@@ -639,39 +639,25 @@
                 const doPrint = () => {
                     const el = document.querySelector('.md-il');
                     if (!el) return;
-                    const printDiv = document.createElement('div');
-                    printDiv.id = '_chj-print-tmp';
-                    printDiv.innerHTML = el.innerHTML;
-                    document.body.appendChild(printDiv);
-                    const printStyle = document.createElement('style');
-                    printStyle.id = '_chj-print-style';
-                    printStyle.textContent = `@media print{body>*{display:none!important}#_chj-print-tmp{display:block!important;font-family:system-ui,sans-serif;color:#1e293b;line-height:1.7;font-size:15px;max-width:780px;margin:0 auto;padding:24px}#_chj-print-tmp h1,#_chj-print-tmp h2,#_chj-print-tmp h3{color:#1e293b;font-weight:600}#_chj-print-tmp code{background:#f1f5f9;padding:2px 4px;border-radius:3px;font-size:.88em}#_chj-print-tmp pre{background:#f1f5f9;padding:12px;border-radius:6px;overflow-x:auto}#_chj-print-tmp hr{border:none;border-top:1px solid #e2e8f0}}`;
-                    document.head.appendChild(printStyle);
-                    const cleanup = () => { document.getElementById('_chj-print-tmp')?.remove(); document.getElementById('_chj-print-style')?.remove(); window.onafterprint = null; };
-                    window.onafterprint = cleanup;
-                    window.print();
-                    setTimeout(cleanup, 60000);
+                    const pw = window.open('', '_blank');
+                    pw.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${source.title||'Dokument'}</title><style>body{font-family:system-ui,sans-serif;padding:24px 32px;max-width:780px;margin:0 auto;color:#1e293b;line-height:1.7;font-size:15px}h1{font-size:1.7rem;margin:0 0 1rem;font-weight:700}h2{font-size:1.3rem;margin:1.8rem 0 .6rem;border-bottom:1px solid #e2e8f0;padding-bottom:4px}h3{font-size:1.1rem;margin:1.4rem 0 .5rem}p,li{margin-bottom:.8rem}a{color:#2563eb}code{background:#f1f5f9;padding:2px 4px;border-radius:3px;font-size:.88em}pre{background:#f1f5f9;padding:12px;border-radius:6px;overflow-x:auto}hr{border:none;border-top:1px solid #e2e8f0;margin:1.5rem 0}blockquote{border-left:3px solid #cbd5e1;margin:0 0 1rem;padding:6px 14px;background:#f8fafc}</style></head><body>${el.innerHTML}<script>window.onafterprint=function(){window.close()};window.print();<\/script></body></html>`);
+                    pw.document.close();
                 };
                 printBtn.addEventListener('click', doPrint);
                 printBtn.addEventListener('touchend', (e) => { e.preventDefault(); doPrint(); });
                 header.appendChild(printBtn);
 
-                // ⬇ Download — stáhne původní .md soubor
+                // ⬇️ Download — stáhne původní .md soubor
                 const dlBtn = document.createElement('button');
-                dlBtn.title = 'Stáhnout';
-                dlBtn.style.cssText = 'background:none;border:none;cursor:pointer;padding:5px 6px;-webkit-tap-highlight-color:transparent;flex-shrink:0;line-height:1;color:#64748b;text-align:center;display:flex;flex-direction:column;align-items:center;gap:1px;';
-                dlBtn.innerHTML = '<span style="font-size:15px;line-height:1">⬇</span><span style="font-size:9px;letter-spacing:0.04em;opacity:0.7">.md</span>';
+                dlBtn.textContent = '⬇️'; dlBtn.title = 'Stáhnout';
+                dlBtn.style.cssText = btnStyle;
                 const doDownload = async () => {
                     const fname = (source.url||'').split('/').pop() || 'dokument.md';
-                    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-                    if (isIOS) { window.open(source.url, '_blank'); return; }
-                    try {
-                        const blob = await fetch(source.url).then(r => r.blob());
-                        const burl = URL.createObjectURL(blob);
-                        const a = Object.assign(document.createElement('a'), {href: burl, download: fname});
-                        document.body.appendChild(a); a.click(); document.body.removeChild(a);
-                        setTimeout(() => URL.revokeObjectURL(burl), 3000);
-                    } catch(e) { window.open(source.url, '_blank'); }
+                    const blob = await fetch(source.url).then(r => r.blob());
+                    const burl = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = burl; a.download = fname; a.click();
+                    setTimeout(() => URL.revokeObjectURL(burl), 2000);
                 };
                 dlBtn.addEventListener('click', doDownload);
                 dlBtn.addEventListener('touchend', (e) => { e.preventDefault(); doDownload(); });
