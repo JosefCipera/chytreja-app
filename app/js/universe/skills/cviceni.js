@@ -37,6 +37,27 @@ const EXERCISES = {
   protazeniZad:{ id: 'protaz_zada', label: 'Lehni si a protáhni záda do oblouku', icon: '🧘', area: 'mobilita', avoid: [], tier: 1, type: 'timed' },
   kycelRotace: { id: 'kycel_rot',   label: 'Kruhy kyčlemi — pomalu na obě strany', icon: '🔄', area: 'mobilita', avoid: [], tier: 1, type: 'timed' },
   hrudnikOpen: { id: 'hrudnik',     label: 'Rozpaž ruce a otevři hrudník dozadu', icon: '🫁', area: 'mobilita', avoid: [], tier: 1, type: 'timed' },
+
+  // === ZONE 2 — Attia: nízká intenzita, nosem dýcháš, udržíš rozhovor ===
+  zona2Chuze:  { id: 'zona2_chuze', label: 'Jdi svižně — tempo, při kterém ještě udržíš rozhovor', icon: '🚶', area: 'kardio', avoid: [], tier: 1, type: 'timed' },
+  zona2Kolo:   { id: 'zona2_kolo',  label: 'Jeď na kole nízkou intenzitou — dýcháš nosem po celou dobu', icon: '🚴', area: 'kardio', avoid: ['koleno'], tier: 2, type: 'timed' },
+
+  // === VO2MAX — Attia: norský 4×4 protokol + tabata ===
+  vo2_4x4:    { id: 'vo2_4x4',    label: 'Sprint 4 minuty naplno, pak 4 minuty klus — opakuj 4×', icon: '🏃', area: 'vo2max', avoid: ['koleno', 'kotnik'], tier: 3, type: 'timed' },
+  tabata:     { id: 'tabata',     label: '20 sekund naplno, 10 sekund odpočinek — 8 kol', icon: '⚡', area: 'vo2max', avoid: [], tier: 2, type: 'timed' },
+
+  // === SÍLA — Attia specifics ===
+  farmarskeNesty:{ id: 'farmer_carry', label: 'Vezmi těžká závaží do každé ruky a projdi s nimi', icon: '🏋️', area: 'sila', avoid: ['rameno'], tier: 2, type: 'timed' },
+  mrtvyVis:    { id: 'mrtvy_vis',  label: 'Visej na hrazdě — drž co nejdéle', icon: '🪝', area: 'sila', avoid: ['rameno', 'zapesti'], tier: 1, type: 'timed' },
+  shyby:       { id: 'shyby',      label: 'Udělej shyby — co nejvíc zvládneš', icon: '🏋️', area: 'sila', avoid: ['rameno'], tier: 2, type: 'count' },
+  rdl:         { id: 'rdl',        label: 'Rumunský mrtvý tah — rovná záda, cítíš zadní stranu stehna', icon: '🏋️', area: 'sila', avoid: ['zada_akutni'], tier: 2, type: 'count' },
+  gobletDrep:  { id: 'goblet',     label: 'Goblet dřep — závaží u hrudi, sedni hluboko', icon: '🦵', area: 'sila', avoid: ['koleno'], tier: 2, type: 'count' },
+
+  // === STABILITA — Attia: Zone 0 ===
+  deadBug:     { id: 'dead_bug',   label: 'Dead bug — záda na podlaze, střídej ruku a nohu pomalu', icon: '🐛', area: 'stabilita', avoid: [], tier: 1, type: 'timed' },
+  birdDog:     { id: 'bird_dog',   label: 'Bird dog — ruka vpřed, noha vzad, 10× na každou stranu', icon: '🐦', area: 'stabilita', avoid: [], tier: 1, type: 'count' },
+  copenhPlank: { id: 'coph_plank', label: 'Copenhagen plank — noha na lavičce, drž tělo rovně', icon: '💪', area: 'stabilita', avoid: ['koleno'], tier: 2, type: 'timed' },
+  vstaniZPodlahy:{ id: 'vstani',   label: 'Sedni si na podlahu a vstaň bez pomoci rukou', icon: '🧘', area: 'stabilita', avoid: [], tier: 1, type: 'count' },
 };
 
 // ── DIFFICULTY SCALING ─────────────────────────────────
@@ -74,6 +95,23 @@ const BASE_VALUES = {
   protaz_zada:  { sec: 120  },
   kycel_rot:    { sec: 60   },
   hrudnik:      { sec: 60   },
+  // Zone 2
+  zona2_chuze:  { sec: 2700 }, // 45 min base
+  zona2_kolo:   { sec: 2700 },
+  // VO2max
+  vo2_4x4:      { sec: 3200 }, // 4×(4+4) min ≈ 32 min
+  tabata:       { sec: 240  }, // 8×(20+10)s = 4 min
+  // Síla — Attia
+  farmer_carry: { sec: 60   },
+  mrtvy_vis:    { sec: 20   },
+  shyby:        { count: 5  },
+  rdl:          { count: 8  },
+  goblet:       { count: 10 },
+  // Stabilita — Attia Zone 0
+  dead_bug:     { sec: 60   },
+  bird_dog:     { count: 10 }, // 10× each side
+  coph_plank:   { sec: 20   },
+  vstani:       { count: 5  },
 };
 
 // ── NODE → preferred exercise areas ────────────────────
