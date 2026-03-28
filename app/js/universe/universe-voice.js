@@ -384,9 +384,9 @@ function setMicState(state) {
     const icon = btn.querySelector('.mic-icon');
     if (icon) {
       switch (state) {
-        case 'listening': icon.textContent = '🔴'; btn.title = 'Poslouchám…';  break;
-        case 'thinking':  icon.textContent = '💭'; btn.title = 'Zpracovávám…'; break;
-        case 'speaking':  icon.textContent = '🔊'; btn.title = 'Mluvím…';      break;
+        case 'listening': icon.textContent = '🎙️'; btn.title = 'Poslouchám…';  break;
+        case 'thinking':  icon.textContent = '🎙️'; btn.title = 'Zpracovávám…'; break;
+        case 'speaking':  icon.textContent = '🎙️'; btn.title = 'Mluvím…';      break;
         default:          icon.textContent = '🎤'; btn.title = 'Říct CHJ';     break;
       }
     }
