@@ -55,9 +55,9 @@
   let watermarkColor = $derived(textColor);
 
   let trendLabel = $derived(
-    trend === 'UP' ? 'UP' :
-    trend === 'STABLE' ? 'STABLE' :
-    'DOWN'
+    trend === 'UP'     ? '↗ ROSTE' :
+    trend === 'STABLE' ? '→ STABILNÍ' :
+    '↘ KLESÁ'
   );
 
   // BIO_AGE
