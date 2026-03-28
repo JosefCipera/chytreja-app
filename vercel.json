@@ -2,6 +2,7 @@
     "buildCommand": "",
     "outputDirectory": ".",
     "framework": null,
+    "alias": ["dev.iting.cz"],
     "headers": [
         {
             "source": "/(.*\\.html)",
