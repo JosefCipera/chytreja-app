@@ -1,4 +1,4 @@
-// === UNIVERSE-VOICE.JS ===
+// === UNIVERSE-VOICE.JS === v20260328
 // Hlasový vstup (STT) + výstup (TTS) + intent routing
 // ─────────────────────────────────────────────────────
 
