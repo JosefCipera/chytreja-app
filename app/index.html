@@ -627,42 +627,63 @@
             headerInfo.innerHTML = `[MED_ID:&nbsp;${shortId(source.med_id)}]&nbsp;&nbsp;·&nbsp;&nbsp;${source.journal || ''}, ${source.year || ''}`;
             header.appendChild(headerInfo);
 
-            // MD: Print + TTS buttons in parent frame (user-gesture context → iOS TTS works)
+            // MD: Print + Download + TTS buttons (all in parent frame → user-gesture OK on iOS)
             let _mdTtsOn = false;
             if (isMdType) {
+                const btnStyle = 'background:none;border:none;font-size:17px;cursor:pointer;padding:7px 5px;-webkit-tap-highlight-color:transparent;flex-shrink:0;line-height:1;color:#64748b;';
+
+                // 🖨️ Print — closes window automatically after dialog
                 const printBtn = document.createElement('button');
-                printBtn.textContent = '🖨️';
-                printBtn.title = 'Tisk';
-                printBtn.style.cssText = 'background:none;border:none;font-size:18px;cursor:pointer;padding:8px 6px;-webkit-tap-highlight-color:transparent;flex-shrink:0;line-height:1;';
+                printBtn.textContent = '🖨️'; printBtn.title = 'Tisk';
+                printBtn.style.cssText = btnStyle;
                 const doPrint = () => {
                     const el = document.querySelector('.md-il');
                     if (!el) return;
                     const pw = window.open('', '_blank');
-                    pw.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${source.title || 'Dokument'}</title><style>body{font-family:system-ui,sans-serif;padding:24px 32px;max-width:780px;margin:0 auto;color:#1e293b;line-height:1.7;font-size:15px}h1{font-size:1.7rem;margin:0 0 1rem;font-weight:700}h2{font-size:1.3rem;margin:1.8rem 0 .6rem;border-bottom:1px solid #e2e8f0;padding-bottom:4px}h3{font-size:1.1rem;margin:1.4rem 0 .5rem}p,li{margin-bottom:.8rem}a{color:#2563eb}code{background:#f1f5f9;padding:2px 4px;border-radius:3px;font-size:.88em}pre{background:#f1f5f9;padding:12px;border-radius:6px;overflow-x:auto}hr{border:none;border-top:1px solid #e2e8f0;margin:1.5rem 0}blockquote{border-left:3px solid #cbd5e1;margin:0 0 1rem;padding:6px 14px;background:#f8fafc}</style></head><body>${el.innerHTML}</body></html>`);
+                    pw.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${source.title||'Dokument'}</title><style>body{font-family:system-ui,sans-serif;padding:24px 32px;max-width:780px;margin:0 auto;color:#1e293b;line-height:1.7;font-size:15px}h1{font-size:1.7rem;margin:0 0 1rem;font-weight:700}h2{font-size:1.3rem;margin:1.8rem 0 .6rem;border-bottom:1px solid #e2e8f0;padding-bottom:4px}h3{font-size:1.1rem;margin:1.4rem 0 .5rem}p,li{margin-bottom:.8rem}a{color:#2563eb}code{background:#f1f5f9;padding:2px 4px;border-radius:3px;font-size:.88em}pre{background:#f1f5f9;padding:12px;border-radius:6px;overflow-x:auto}hr{border:none;border-top:1px solid #e2e8f0;margin:1.5rem 0}blockquote{border-left:3px solid #cbd5e1;margin:0 0 1rem;padding:6px 14px;background:#f8fafc}</style></head><body>${el.innerHTML}</body></html>`);
                     pw.document.close();
-                    pw.print();
+                    pw.onafterprint = () => pw.close();
+                    pw.focus(); pw.print();
                 };
                 printBtn.addEventListener('click', doPrint);
                 printBtn.addEventListener('touchend', (e) => { e.preventDefault(); doPrint(); });
                 header.appendChild(printBtn);
 
+                // ⬇️ Download — stáhne původní .md soubor
+                const dlBtn = document.createElement('button');
+                dlBtn.textContent = '⬇️'; dlBtn.title = 'Stáhnout';
+                dlBtn.style.cssText = btnStyle;
+                const doDownload = () => {
+                    const fname = (source.url||'').split('/').pop() || 'dokument.md';
+                    const a = document.createElement('a');
+                    a.href = source.url; a.download = fname; a.click();
+                };
+                dlBtn.addEventListener('click', doDownload);
+                dlBtn.addEventListener('touchend', (e) => { e.preventDefault(); doDownload(); });
+                header.appendChild(dlBtn);
+
+                // 🔊 TTS — spustí/zastaví čtení, běží v parent frame (iOS user-gesture OK)
                 const ttsBtn = document.createElement('button');
-                ttsBtn.textContent = '🔊';
-                ttsBtn.title = 'Přehrát';
-                ttsBtn.style.cssText = 'background:none;border:none;font-size:18px;cursor:pointer;padding:8px 6px;-webkit-tap-highlight-color:transparent;flex-shrink:0;line-height:1;';
+                ttsBtn.textContent = '🔊'; ttsBtn.title = 'Přehrát';
+                ttsBtn.style.cssText = btnStyle;
                 const doTTS = () => {
-                    if (_mdTtsOn) { speechSynthesis.cancel(); _mdTtsOn = false; ttsBtn.textContent = '🔊'; return; }
+                    if (_mdTtsOn) {
+                        speechSynthesis.cancel(); _mdTtsOn = false;
+                        ttsBtn.textContent = '🔊'; ttsBtn.style.color = '#64748b';
+                        return;
+                    }
                     const el = document.querySelector('.md-il');
                     if (!el) return;
                     const txt = el.innerText.replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu,'').trim();
                     if (!txt) return;
-                    _mdTtsOn = true; ttsBtn.textContent = '⏹';
+                    _mdTtsOn = true;
+                    ttsBtn.textContent = '⏹'; ttsBtn.style.color = '#C97272';
                     speechSynthesis.cancel();
                     const u = new SpeechSynthesisUtterance(txt);
                     u.lang = 'cs-CZ'; u.rate = 1.05; u.pitch = 1.1;
                     const sv = () => { const cz = speechSynthesis.getVoices().find(v => /cs[-_]CZ/i.test(v.lang)); if (cz) u.voice = cz; };
                     sv(); if (!u.voice) speechSynthesis.addEventListener('voiceschanged', sv, {once:true});
-                    u.onend = u.onerror = () => { _mdTtsOn = false; ttsBtn.textContent = '🔊'; };
+                    u.onend = u.onerror = () => { _mdTtsOn = false; ttsBtn.textContent = '🔊'; ttsBtn.style.color = '#64748b'; };
                     speechSynthesis.speak(u);
                 };
                 ttsBtn.addEventListener('click', doTTS);
@@ -685,17 +706,17 @@
             wrap.appendChild(contentDiv);
 
             // MD: fetch + render inline (no iframe → no iOS viewport-shift, no touch trap)
+            // Uses window.CHJ_convertMd exposed by already-loaded universe-viewers.js module
             if (isMdType) {
                 contentDiv.style.overflowY = 'auto';
                 contentDiv.style.webkitOverflowScrolling = 'touch';
                 (async () => {
-                    const [{ convertMarkdownToHtml }, res] = await Promise.all([
-                        import('/app/js/universe/universe-viewers.js'),
-                        fetch(source.url)
-                    ]);
+                    const res = await fetch(source.url);
                     if (!res.ok) throw new Error(res.status);
-                    const html = convertMarkdownToHtml(await res.text());
-                    contentDiv.innerHTML = `<div class="md-il">${html}</div>`;
+                    const md = await res.text();
+                    // CHJ_convertMd is set by universe-viewers.js on load — no re-import needed
+                    const convert = window.CHJ_convertMd || (s => `<p>${s.replace(/\n/g,'<br>')}</p>`);
+                    contentDiv.innerHTML = `<div class="md-il">${convert(md)}</div>`;
                 })().catch(err => {
                     contentDiv.innerHTML = `<div style="color:#f87171;padding:24px;font-family:monospace;font-size:13px;">CHYBA: ${err.message}</div>`;
                 });

@@ -14,6 +14,9 @@ export function convertMarkdownToHtml(md) {
   return marked.parse(md);
 }
 
+// Expose globally so index.html can use it without a second dynamic import
+window.CHJ_convertMd = convertMarkdownToHtml;
+
 // -------------------------------------------------------------
 // Open viewer (nový svět)
 // -------------------------------------------------------------
