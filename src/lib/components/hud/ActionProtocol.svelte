@@ -31,7 +31,7 @@
   );
 
   let protocolLabel = $derived(
-    action.protocol_type || 'TRAINING_PROTOKOL'
+    (action.protocol_type || 'TRAINING_PROTOKOL').replace(/_PROTOKOL$/i, '')
   );
 </script>
 
