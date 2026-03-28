@@ -63,10 +63,9 @@
     <!-- ACTION: + [STATUS] na stejném řádku vpravo, PROTOKOL pod -->
     <div class="hud-mono mb-2" style="letter-spacing: 0.04em; font-weight: 300; line-height: 1.5;">
       <div class="flex items-center justify-between" style="font-size: 20px;">
-        <span style="color: #c8d4df;">ACTION:</span>
+        <span style="color: #c8d4df;">ACTION: <span style="color: #94a3b8;">{protocolLabel}</span></span>
         <span style="color: {statusColor};">[{status}]</span>
       </div>
-      <div style="font-size: 20px; color: #94a3b8;">{protocolLabel}</div>
     </div>
 
     <!-- Action description: [ ] prefix s mezerou -->
