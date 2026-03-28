@@ -1,6 +1,6 @@
 ---
-name: chj-marketing
-description: Vytvoří český MD článek pro CHJ Longevity ze zdrojů Attia/Huberman/Galpin/Sinclair. Spusť frázemi jako "napiš článek o X", "udělej digest", "přidej obsah pro uzel X", "marketing skill", "longevity artikel".
+name: cj-article
+description: Vytvoří český MD článek pro CHJ Longevity ze zdrojů Attia/Huberman/Galpin/Sinclair. Spusť frázemi jako "napiš článek o X", "/cj-article", "přidej obsah pro uzel X", "longevity článek", "udělej vycuc".
 ---
 
 # CHJ Content Strategist
