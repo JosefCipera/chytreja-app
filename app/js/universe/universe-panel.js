@@ -400,6 +400,13 @@ function openViewerModal(fileUrl, type, title, onBack = null, scriptCz = null) {
     return;
   }
 
+  // MD: delegate to openSourceViewer (inline render with print/download/TTS buttons)
+  // This works on both desktop and mobile — no iframe, no missing buttons
+  if (type === 'md' && typeof window.openSourceViewer === 'function') {
+    window.openSourceViewer({ url: fileUrl, title, type: 'md' });
+    return;
+  }
+
   const isAudio = type === 'audio';
   const scriptCzParam = scriptCz ? `&script_cz=${encodeURIComponent(scriptCz)}` : '';
   const viewerSrc = `/app/viewer.html?type=${encodeURIComponent(type)}&file=${encodeURIComponent(fileUrl)}${scriptCzParam}`;
