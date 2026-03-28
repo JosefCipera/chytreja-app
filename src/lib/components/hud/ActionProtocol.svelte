@@ -35,14 +35,16 @@
   );
 </script>
 
-<div class="rounded-lg hud-corners {status === 'ACTIVE' ? 'glow-pulse' : ''}" style="
+<div class="rounded-lg hud-c4 {status === 'ACTIVE' ? 'glow-pulse' : ''}" style="
   background: rgba(6, 182, 212, 0.03);
   border: 1px solid rgba(255,255,255,0.07);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   overflow: hidden;
 ">
-  <!-- KILLER sekce (červená) -->
+  <span class="hc hc-tl"></span><span class="hc hc-tr"></span>
+  <span class="hc hc-bl"></span><span class="hc hc-br"></span>
+  <!-- KILLER sekce -->
   {#if killer}
     <div class="px-4 pt-3 pb-2">
       <div class="hud-mono" style="font-size: 20px; font-weight: 300; letter-spacing: 0.04em; color: #c8d4df; margin-bottom: 4px;">

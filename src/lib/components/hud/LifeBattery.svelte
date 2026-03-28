@@ -73,7 +73,9 @@
   let confidencePct = $derived(Math.round(bioAge.confidence * 100));
 </script>
 
-<div class="hud-glass rounded-lg p-4 hud-corners">
+<div class="hud-glass rounded-lg p-4 hud-c4">
+  <span class="hc hc-tl"></span><span class="hc hc-tr"></span>
+  <span class="hc hc-bl"></span><span class="hc hc-br"></span>
   <!-- Header row: LIFE-BATTERY + percent + trend -->
   <div class="flex items-center justify-between mb-1">
     <span class="hud-mono" style="font-size: 20px; letter-spacing: 0.04em; color: #c8d4df; font-weight: 300;">LIFE-BATTERY</span>
