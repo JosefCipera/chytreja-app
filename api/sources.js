@@ -15,25 +15,26 @@ export default async function handler(req, res) {
     process.env.SUPABASE_SERVICE_ROLE_KEY
   );
 
-  // 1. Kandidáti pro daný uzel
-  const [{ data: media }, { data: articles }, { data: docs }] = await Promise.all([
-    supabase.from("longevity_media").select("id, title, type, url, summary, tags, script_cz").eq("node_id", nodeId),
-    supabase.from("longevity_articles").select("id, title, url, summary, tags").eq("node_id", nodeId),
-    supabase.from("longevity_docs").select("id, title, type, url, summary").eq("node_id", nodeId),
-  ]);
+  // 1. Load candidates from unified table
+  const { data: candidates, error } = await supabase
+    .from("longevity_sources")
+    .select("id, node_id, type, title, url, summary, tags, script_cz, journal, year, med_id")
+    .eq("node_id", nodeId)
+    .eq("active", true);
 
-  const candidates = [
-    ...(media    || []).map(r => ({ ...r, itemType: r.type || "video" })),
-    ...(articles || []).map(r => ({ ...r, itemType: "article" })),
-    ...(docs     || []).map(r => ({ ...r, itemType: r.type || "pdf" })),
-  ].filter(r => r.url);
-
-  // 2. Pokud ≤ 5 zdrojů, vrátíme vše bez AI
-  if (candidates.length <= 5) {
-    return res.json({ sources: candidates.map(fmt), ai: false });
+  if (error) {
+    console.warn("longevity_sources query failed:", error.message);
+    return res.status(500).json({ error: "DB error" });
   }
 
-  // 3. Uživatelský kontext (bottleneck + sen)
+  const pool = (candidates || []).filter(r => r.url);
+
+  // 2. ≤ 5 sources — return all without AI
+  if (pool.length <= 5) {
+    return res.json({ sources: pool.map(fmt), ai: false });
+  }
+
+  // 3. User context (bottleneck + aspiration) for AI ranking
   let bottleneck = null, aspiration = null;
   if (userId) {
     const [{ data: btData }, { data: aspData }] = await Promise.all([
@@ -44,16 +45,16 @@ export default async function handler(req, res) {
     aspiration = aspData?.[0]?.aspiration_type || null;
   }
 
-  // 4. AI ranking – GPT vybere top 3–5 indexů
+  // 4. AI ranking — GPT picks top 3–5 indices
   const aiEnabled = process.env.AI_ENABLED !== "false";
   if (!aiEnabled) {
-    return res.json({ sources: candidates.slice(0, 5).map(fmt), ai: false });
+    return res.json({ sources: pool.slice(0, 5).map(fmt), ai: false });
   }
 
   const oai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-  const list = candidates
-    .map((c, i) => `${i}. ${c.title}${c.tags?.length ? " [" + c.tags.join(", ") + "]" : ""}`)
+  const list = pool
+    .map((c, i) => `${i}. [${c.type}] ${c.title}${c.tags?.length ? " [" + c.tags.join(", ") + "]" : ""}`)
     .join("\n");
 
   const prompt = `Jsi AI kouč dlouhověkosti (Medicine 3.0). Vyber 3–5 nejrelevantnějších zdrojů.
@@ -68,7 +69,7 @@ ${list}
 
 Vrať POUZE JSON pole číselných indexů, např. [0, 2, 4]. Preferuj konkrétní a akční obsah.`;
 
-  let selected = candidates.slice(0, 5);
+  let selected = pool.slice(0, 5);
   try {
     const completion = await oai.chat.completions.create({
       model: "gpt-4o-mini",
@@ -78,7 +79,7 @@ Vrať POUZE JSON pole číselných indexů, např. [0, 2, 4]. Preferuj konkrétn
     });
     const raw = completion.choices[0].message.content.trim();
     const indices = JSON.parse(raw);
-    const picked = indices.map(i => candidates[i]).filter(Boolean);
+    const picked = indices.map(i => pool[i]).filter(Boolean);
     if (picked.length > 0) selected = picked;
   } catch (e) {
     console.warn("AI sources ranking failed, fallback to slice:", e.message);
@@ -89,10 +90,14 @@ Vrať POUZE JSON pole číselných indexů, např. [0, 2, 4]. Preferuj konkrétn
 
 function fmt(r) {
   return {
+    id:        r.id,
     title:     r.title,
     url:       r.url,
-    type:      r.itemType || "article",
+    type:      r.type,
     summary:   r.summary || "",
     script_cz: r.script_cz || null,
+    journal:   r.journal || null,
+    year:      r.year || null,
+    med_id:    r.med_id || null,
   };
 }

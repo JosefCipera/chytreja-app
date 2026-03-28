@@ -228,21 +228,22 @@ export default async function handler(req, res) {
     }
   }
 
-  // 7. Sources (up to 2)
-  const { data: articles } = await supabase
-    .from('longevity_articles')
-    .select('id, title, url, summary')
+  // 7. Sources (up to 2) from unified table
+  const { data: sourcesRaw } = await supabase
+    .from('longevity_sources')
+    .select('id, title, url, type, summary, journal, year, med_id')
     .eq('node_id', nodeId)
+    .eq('active', true)
     .limit(2);
 
-  const sources = (articles || []).map((a, i) => ({
-    med_id: a.id,
-    type: i === 0 ? 'STUDY' : 'REVIEW',
-    title: a.title,
-    journal: 'PubMed',
-    year: 2024,
-    status: i === 0 ? 'VERIFIED' : 'AUTHENTICATED',
-    url: a.url,
+  const sources = (sourcesRaw || []).map((s, i) => ({
+    med_id:  s.med_id || s.id,
+    type:    i === 0 ? 'STUDY' : 'REVIEW',
+    title:   s.title,
+    journal: s.journal || null,
+    year:    s.year || null,
+    status:  i === 0 ? 'VERIFIED' : 'AUTHENTICATED',
+    url:     s.url,
   }));
 
   // 8. Killer + verdict
