@@ -56,7 +56,7 @@
 
   let trendArrow = $derived(
     trend === 'UP'     ? '▲' :
-    trend === 'STABLE' ? '●' :
+    trend === 'STABLE' ? '–' :
     '▼'
   );
   let trendWord = $derived(
@@ -148,7 +148,7 @@
       REPAIR_RATE: <span style="color: #ca8a04;">{repairRate}x</span>
     </span>
     <span class="hud-mono" style="font-size: 13px; color: #475569;">
-      {bioAge.label.key}: <span style="color: {bioAgeColor};">{bioAgeSign}{bioAge.delta} YRS</span>
+      {bioAge.label.key}: <span style="color: {textColor};">{bioAgeSign}{bioAge.delta} YRS</span>
     </span>
   </div>
 </div>
