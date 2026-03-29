@@ -253,6 +253,9 @@ export async function showPanel(node, options = {}) {
     }
   }
 
+  // Zavři HUD overlay pokud je otevřený (šedé uzly jdou do vanilla panelu)
+  if (typeof window.closeHudOverlay === 'function') window.closeHudOverlay();
+
   // Fallback: GRAY (locked) nodes or no auth → vanilla panel
   if (!panelEl) return;
 
