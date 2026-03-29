@@ -310,6 +310,13 @@ window.addEventListener('message', e => {
   if (e.data === 'closeViewer' && _currentViewerClose) {
     _currentViewerClose();
   }
+  // Handle source card clicks from HUD iframe (app/app.html has no openSourceViewer)
+  if (e.data?.type === 'chj:source:open') {
+    const src = e.data.source;
+    if (src?.url) {
+      openViewerModal(src.url, src.type || 'md', src.title || '');
+    }
+  }
 });
 
 function openViewerModal(fileUrl, type, title, onBack = null, scriptCz = null) {
