@@ -81,7 +81,7 @@
     <div class="flex items-center gap-0">
       <span class="hud-mono" style="font-size: 14px; font-weight: 300; color: {textColor};">{percent}%</span>
       <span class="hud-mono mx-1" style="font-size: 14px; color: #334155;">|</span>
-      <span class="hud-mono {textNeon}" style="font-size: 14px; font-weight: 600; color: {textColor};">{trendLabel}</span>
+      <span class="hud-mono" style="font-size: 15px; font-weight: 700; color: #e2e8f0; letter-spacing: 0.02em;">{trendLabel}</span>
     </div>
   </div>
 
@@ -139,11 +139,11 @@
 
   <!-- Sub-metrics row — single line -->
   <div class="flex items-center justify-between">
-    <span class="hud-mono" style="font-size: 13px; color: #475569;">
-      REPAIR_RATE: <span style="color: #94a3b8;">{repairRate}x</span>
+    <span class="hud-mono" style="font-size: 13px; color: #94a3b8;">
+      REPAIR_RATE: {repairRate}x
     </span>
-    <span class="hud-mono" style="font-size: 13px; color: #475569;">
-      {bioAge.label.key}: <span style="color: {bioAgeColor}; font-weight: 700;">{bioAgeSign}{bioAge.delta} YRS</span>
+    <span class="hud-mono" style="font-size: 13px; color: {bioAgeColor}; font-weight: 700;">
+      {bioAge.label.key}: {bioAgeSign}{bioAge.delta} YRS
     </span>
   </div>
 </div>

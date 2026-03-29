@@ -645,11 +645,15 @@
                 const doPrint = () => {
                     const el = document.querySelector('.md-il');
                     if (!el) return;
-                    _ignoreBackdrop = true;
-                    setTimeout(() => { _ignoreBackdrop = false; }, 2000);
-                    const pw = window.open('', '_blank');
-                    pw.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${source.title||'Dokument'}</title><style>body{font-family:system-ui,sans-serif;padding:24px 32px;max-width:780px;margin:0 auto;color:#1e293b;line-height:1.7;font-size:15px}h1{font-size:1.7rem;margin:0 0 1rem;font-weight:700}h2{font-size:1.3rem;margin:1.8rem 0 .6rem;border-bottom:1px solid #e2e8f0;padding-bottom:4px}h3{font-size:1.1rem;margin:1.4rem 0 .5rem}p,li{margin-bottom:.8rem}a{color:#2563eb}code{background:#f1f5f9;padding:2px 4px;border-radius:3px;font-size:.88em}pre{background:#f1f5f9;padding:12px;border-radius:6px;overflow-x:auto}hr{border:none;border-top:1px solid #e2e8f0;margin:1.5rem 0}blockquote{border-left:3px solid #cbd5e1;margin:0 0 1rem;padding:6px 14px;background:#f8fafc}</style></head><body>${el.innerHTML}<script>window.onafterprint=function(){window.close()};window.print();<\/script></body></html>`);
-                    pw.document.close();
+                    const iframe = document.createElement('iframe');
+                    iframe.style.cssText = 'position:fixed;width:0;height:0;border:none;top:-9999px;';
+                    document.body.appendChild(iframe);
+                    const doc = iframe.contentDocument;
+                    doc.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${source.title||'Dokument'}</title><style>body{font-family:system-ui,sans-serif;padding:24px 32px;max-width:780px;margin:0 auto;color:#1e293b;line-height:1.7;font-size:15px}h1{font-size:1.7rem;margin:0 0 1rem;font-weight:700}h2{font-size:1.3rem;margin:1.8rem 0 .6rem;border-bottom:1px solid #e2e8f0;padding-bottom:4px}h3{font-size:1.1rem;margin:1.4rem 0 .5rem}p,li{margin-bottom:.8rem}a{color:#2563eb}code{background:#f1f5f9;padding:2px 4px;border-radius:3px;font-size:.88em}pre{background:#f1f5f9;padding:12px;border-radius:6px;overflow-x:auto}hr{border:none;border-top:1px solid #e2e8f0;margin:1.5rem 0}blockquote{border-left:3px solid #cbd5e1;margin:0 0 1rem;padding:6px 14px;background:#f8fafc}</style></head><body>${el.innerHTML}</body></html>`);
+                    doc.close();
+                    iframe.contentWindow.focus();
+                    iframe.contentWindow.print();
+                    setTimeout(() => document.body.removeChild(iframe), 1000);
                 };
                 printBtn.addEventListener('click', doPrint);
                 printBtn.addEventListener('touchend', (e) => { e.preventDefault(); doPrint(); });
