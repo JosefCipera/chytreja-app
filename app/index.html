@@ -628,13 +628,18 @@
             header.appendChild(headerInfo);
 
             // MD: Print + Download + TTS buttons (all in parent frame → user-gesture OK on iOS)
+            const svgIcon = (path, vb='0 0 24 24') => `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="${vb}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${path}</svg>`;
+            const SVG_PRINT = svgIcon('<polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>');
+            const SVG_DOWNLOAD = svgIcon('<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>');
+            const SVG_PLAY = svgIcon('<polygon points="5 3 19 12 5 21 5 3"/>');
+            const SVG_STOP = svgIcon('<rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>');
             let _mdTtsOn = false;
             if (isMdType) {
-                const btnStyle = 'background:none;border:none;font-size:17px;cursor:pointer;padding:7px 5px;-webkit-tap-highlight-color:transparent;flex-shrink:0;line-height:1;color:#64748b;';
+                const btnStyle = 'background:none;border:none;cursor:pointer;padding:7px 5px;-webkit-tap-highlight-color:transparent;flex-shrink:0;line-height:1;color:#64748b;display:flex;align-items:center;';
 
-                // 🖨️ Print — closes window automatically after dialog
+                // Print
                 const printBtn = document.createElement('button');
-                printBtn.textContent = '🖨️'; printBtn.title = 'Tisk';
+                printBtn.innerHTML = SVG_PRINT; printBtn.title = 'Tisk';
                 printBtn.style.cssText = btnStyle;
                 const doPrint = () => {
                     const el = document.querySelector('.md-il');
@@ -647,9 +652,9 @@
                 printBtn.addEventListener('touchend', (e) => { e.preventDefault(); doPrint(); });
                 header.appendChild(printBtn);
 
-                // ⬇️ Download — stáhne původní .md soubor
+                // Download
                 const dlBtn = document.createElement('button');
-                dlBtn.textContent = '⬇️'; dlBtn.title = 'Stáhnout';
+                dlBtn.innerHTML = SVG_DOWNLOAD; dlBtn.title = 'Stáhnout';
                 dlBtn.style.cssText = btnStyle;
                 const doDownload = async () => {
                     const fname = (source.url||'').split('/').pop() || 'dokument.md';
@@ -663,14 +668,14 @@
                 dlBtn.addEventListener('touchend', (e) => { e.preventDefault(); doDownload(); });
                 header.appendChild(dlBtn);
 
-                // 🔊 TTS — spustí/zastaví čtení, běží v parent frame (iOS user-gesture OK)
+                // TTS — spustí/zastaví čtení, běží v parent frame (iOS user-gesture OK)
                 const ttsBtn = document.createElement('button');
-                ttsBtn.textContent = '🔊'; ttsBtn.title = 'Přehrát';
+                ttsBtn.innerHTML = SVG_PLAY; ttsBtn.title = 'Přehrát';
                 ttsBtn.style.cssText = btnStyle;
                 const doTTS = () => {
                     if (_mdTtsOn) {
                         speechSynthesis.cancel(); _mdTtsOn = false;
-                        ttsBtn.textContent = '🔊'; ttsBtn.style.color = '#64748b';
+                        ttsBtn.innerHTML = SVG_PLAY; ttsBtn.style.color = '#64748b';
                         return;
                     }
                     const el = document.querySelector('.md-il');
@@ -678,13 +683,13 @@
                     const txt = el.innerText.replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu,'').trim();
                     if (!txt) return;
                     _mdTtsOn = true;
-                    ttsBtn.textContent = '⏹'; ttsBtn.style.color = '#C97272';
+                    ttsBtn.innerHTML = SVG_STOP; ttsBtn.style.color = '#C97272';
                     speechSynthesis.cancel();
                     const u = new SpeechSynthesisUtterance(txt);
                     u.lang = 'cs-CZ'; u.rate = 1.05; u.pitch = 1.1;
                     const sv = () => { const cz = speechSynthesis.getVoices().find(v => /cs[-_]CZ/i.test(v.lang)); if (cz) u.voice = cz; };
                     sv(); if (!u.voice) speechSynthesis.addEventListener('voiceschanged', sv, {once:true});
-                    u.onend = u.onerror = () => { _mdTtsOn = false; ttsBtn.textContent = '🔊'; ttsBtn.style.color = '#64748b'; };
+                    u.onend = u.onerror = () => { _mdTtsOn = false; ttsBtn.innerHTML = SVG_PLAY; ttsBtn.style.color = '#64748b'; };
                     speechSynthesis.speak(u);
                 };
                 ttsBtn.addEventListener('click', doTTS);
@@ -693,8 +698,8 @@
             }
 
             const closeBtn = document.createElement('button');
-            closeBtn.textContent = '✕';
-            closeBtn.style.cssText = 'color:#94a3b8;font-size:20px;background:none;border:none;cursor:pointer;padding:8px 4px 8px 10px;line-height:1;-webkit-tap-highlight-color:transparent;min-width:44px;min-height:44px;flex-shrink:0;';
+            closeBtn.innerHTML = svgIcon('<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>');
+            closeBtn.style.cssText = 'color:#94a3b8;background:none;border:none;cursor:pointer;padding:8px 4px 8px 10px;line-height:1;-webkit-tap-highlight-color:transparent;min-width:44px;min-height:44px;flex-shrink:0;display:flex;align-items:center;';
             closeBtn.addEventListener('click', () => window.closeSourceViewer());
             closeBtn.addEventListener('touchend', (e) => { e.preventDefault(); e.stopPropagation(); window.closeSourceViewer(); });
             header.appendChild(closeBtn);

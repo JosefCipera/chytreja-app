@@ -59,12 +59,12 @@ function indexToState(i) {
 }
 
 function calcTrend(history) {
-  if (!history || history.length < 2) return { label: 'STABLE', direction: 'stable' };
+  if (!history || history.length < 2) return { label: '→', direction: 'stable' };
   const recent = history.slice(-3).map(h => h.current_index);
   const delta = recent[recent.length - 1] - recent[0];
-  if (delta > 3)  return { label: 'UP',     direction: 'up' };
-  if (delta < -3) return { label: 'DOWN',   direction: 'down' };
-  return             { label: 'STABLE', direction: 'stable' };
+  if (delta > 3)  return { label: '↑', direction: 'up' };
+  if (delta < -3) return { label: '↓', direction: 'down' };
+  return             { label: '→', direction: 'stable' };
 }
 
 function calcParentBattery(metrics) {
