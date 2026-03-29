@@ -145,7 +145,7 @@
   <!-- Sub-metrics row — single line -->
   <div class="flex items-center justify-between">
     <span class="hud-mono" style="font-size: 13px; color: #475569;">
-      REPAIR_RATE: <span style="color: #ca8a04;">{repairRate}x</span>
+      REPAIR_RATE: <span style="color: {textColor};">{repairRate}x</span>
     </span>
     <span class="hud-mono" style="font-size: 13px; color: #475569;">
       {bioAge.label.key}: <span style="color: {textColor};">{bioAgeSign}{bioAge.delta} YRS</span>
