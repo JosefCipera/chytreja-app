@@ -59,12 +59,12 @@ function indexToState(i) {
 }
 
 function calcTrend(history) {
-  if (!history || history.length < 2) return { label: '→ STABILNÍ', direction: 'stable' };
+  if (!history || history.length < 2) return { label: 'STABLE', direction: 'stable' };
   const recent = history.slice(-3).map(h => h.current_index);
   const delta = recent[recent.length - 1] - recent[0];
-  if (delta > 3)  return { label: '↗ ROSTE',   direction: 'up' };
-  if (delta < -3) return { label: '↘ KLESÁ',   direction: 'down' };
-  return             { label: '→ STABILNÍ', direction: 'stable' };
+  if (delta > 3)  return { label: 'UP',     direction: 'up' };
+  if (delta < -3) return { label: 'DOWN',   direction: 'down' };
+  return             { label: 'STABLE', direction: 'stable' };
 }
 
 function calcParentBattery(metrics) {
