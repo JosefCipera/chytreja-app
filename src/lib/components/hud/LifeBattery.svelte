@@ -81,7 +81,7 @@
     <div class="flex items-center gap-0">
       <span class="hud-mono" style="font-size: 14px; font-weight: 300; color: {textColor};">{percent}%</span>
       <span class="hud-mono mx-1" style="font-size: 14px; color: #334155;">|</span>
-      <span class="hud-mono {textNeon}" style="font-size: 14px; font-weight: 300; color: {textColor};">{trendLabel}</span>
+      <span class="hud-mono {textNeon}" style="font-size: 14px; font-weight: 600; color: {textColor};">{trendLabel}</span>
     </div>
   </div>
 
