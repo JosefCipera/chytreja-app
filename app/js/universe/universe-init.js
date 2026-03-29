@@ -202,11 +202,6 @@ function initHeaderMic() {
 // 4) LOAD MODEL + RENDER
 // =====================================================
 async function loadAndRenderModel(modelName, role) {
-  // ✅ PŘIDEJ guard:
-  if (modelName !== 'longevity') {
-    console.warn(`⚠️ Model ${modelName} není podporován, fallback na longevity`);
-    modelName = 'longevity';
-  }
   window.CURRENT_MODEL = modelName;
 
   console.log(`🔄 Loading model: ${modelName}`);
@@ -227,13 +222,15 @@ async function loadAndRenderModel(modelName, role) {
 
   renderVisibleUniverse(window.MAIN_UNIVERSE_DATA);
 
-  // Auto-open: Hra o život panel se otevře 700ms po načtení vesmíru
-  setTimeout(() => {
-    const mainNode = window.MAIN_UNIVERSE_DATA?.find(n => n.id === 'dlouhovekost');
-    if (mainNode && mainNode.state && mainNode.state !== 'GRAY') {
-      showPanel(mainNode);
-    }
-  }, 700);
+  // Auto-open: Hra o život panel se otevře 700ms po načtení vesmíru (jen longevity)
+  if (modelName === 'longevity') {
+    setTimeout(() => {
+      const mainNode = window.MAIN_UNIVERSE_DATA?.find(n => n.id === 'dlouhovekost');
+      if (mainNode && mainNode.state && mainNode.state !== 'GRAY') {
+        showPanel(mainNode);
+      }
+    }, 700);
+  }
 
   // HUD init — bio-age, streak, mission overlay on main screen
   // (700ms čeká na inicializaci vis.js sítě)
@@ -408,9 +405,9 @@ async function loadModel(modelName) {
       return [];
     }
   }
-  renderVisibleUniverse(window.MAIN_UNIVERSE_DATA);
+
   // ========================================
-  // B) JSON MODE (fallback)
+  // B) JSON MODE (TOC, BMC, ...)
   // ========================================
   try {
     const url = modelConfig.modelFile;
