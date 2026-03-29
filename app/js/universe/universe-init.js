@@ -92,7 +92,6 @@ async function populateModelSelector() {
   if (!index) return;
 
   Object.entries(index)
-    .filter(([key]) => key === 'longevity') // ← PŘIDEJ (jen longevity)
     .forEach(([key, cfg]) => {
       const opt = document.createElement("option");
       opt.value = key;
