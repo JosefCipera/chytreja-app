@@ -10,10 +10,11 @@
 }
 
 /* Scrollbar */
-::-webkit-scrollbar { width: 5px; height: 5px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(148,163,184,0.25); border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(148,163,184,0.45); }
+* { scrollbar-width: thin; scrollbar-color: #1e40af rgba(0,0,0,0.15); }
+::-webkit-scrollbar { width: 3px; height: 3px; }
+::-webkit-scrollbar-track { background: rgba(0,0,0,0.15); }
+::-webkit-scrollbar-thumb { background: #1e40af; border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: #2563eb; }
 
 html,
 body {

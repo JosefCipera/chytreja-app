@@ -315,16 +315,75 @@ window.addEventListener('message', e => {
     const src = e.data.source;
     if (!src?.url) return;
     const u = src.url.toLowerCase();
-    // Derive viewer type from URL (src.type is DB category like STUDY/REVIEW, not viewer type)
-    let viewerType;
-    if (u.includes('youtube.com') || u.includes('youtu.be')) viewerType = 'video';
-    else if (u.match(/\.pdf(\?|$)/)) viewerType = 'pdf';
-    else if (u.match(/\.(mp3|ogg|wav|m4a)(\?|$)/)) viewerType = 'audio';
-    else if (u.match(/\.(md|markdown)(\?|$)/)) viewerType = 'md';
-    else { window.open(src.url, '_blank'); return; }
-    openViewerModal(src.url, viewerType, src.title || '');
+    if (u.includes('youtube.com') || u.includes('youtu.be')) { openViewerModal(src.url, 'video', src.title || ''); return; }
+    if (u.match(/\.pdf(\?|$)/)) { openViewerModal(src.url, 'pdf', src.title || ''); return; }
+    if (u.match(/\.(mp3|ogg|wav|m4a)(\?|$)/)) { openViewerModal(src.url, 'audio', src.title || ''); return; }
+    if (u.match(/\.(md|markdown)(\?|$)/)) { _openArticleModal(src.url, src.title || ''); return; }
+    window.open(src.url, '_blank');
   }
 });
+
+// Inline MD article modal — no iframe, SVG buttons always render on mobile
+function _openArticleModal(url, title) {
+  document.getElementById('viewerModal')?.remove();
+  const modal = document.createElement('div');
+  modal.id = 'viewerModal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(2,6,14,0.97);display:flex;flex-direction:column;z-index:10000;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);';
+  modal.innerHTML = `
+    <div style="padding:10px 14px;border-bottom:1px solid rgba(6,182,212,0.18);display:flex;align-items:center;gap:8px;flex-shrink:0;min-height:48px;">
+      <span style="font-family:monospace;font-size:11px;color:#64748b;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${title || ''}</span>
+      <button id="vm-tts" title="Přehrát" style="background:transparent;border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:#94a3b8;cursor:pointer;padding:6px 8px;line-height:0;flex-shrink:0;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+      </button>
+      <button id="vm-close" title="Zavřít" style="background:transparent;border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:#94a3b8;cursor:pointer;padding:4px 9px;font-size:20px;line-height:1;flex-shrink:0;">&times;</button>
+    </div>
+    <div id="vm-body" style="flex:1;overflow-y:auto;padding:22px 18px 40px;scrollbar-width:thin;scrollbar-color:#1e40af rgba(0,0,0,0.2);">
+      <style>#vm-body::-webkit-scrollbar{width:3px}#vm-body::-webkit-scrollbar-thumb{background:#1e40af;border-radius:2px}</style>
+      <div style="color:#475569;font-size:13px;font-family:monospace;text-align:center;padding-top:40px;">NAČÍTÁM…</div>
+    </div>`;
+  document.body.appendChild(modal);
+
+  const closeModal = () => { modal.style.opacity = '0'; modal.style.transition = 'opacity 0.18s'; setTimeout(() => modal.remove(), 180); };
+  _currentViewerClose = closeModal;
+  document.getElementById('vm-close').onclick = closeModal;
+  modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+  const escHandler = e => { if (e.key === 'Escape') { closeModal(); document.removeEventListener('keydown', escHandler); } };
+  document.addEventListener('keydown', escHandler);
+
+  let _ttsActive = false;
+  const ttsBtn = document.getElementById('vm-tts');
+  ttsBtn.onclick = () => {
+    if (_ttsActive) {
+      window.speechSynthesis?.cancel();
+      _ttsActive = false;
+      ttsBtn.style.color = '#94a3b8';
+      return;
+    }
+    const text = (document.getElementById('vm-body')?.innerText || '').replace(/[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}]/gu, '').trim();
+    if (!text) return;
+    _ttsActive = true;
+    ttsBtn.style.color = '#f87171';
+    const utt = new SpeechSynthesisUtterance(text);
+    utt.lang = 'cs-CZ'; utt.rate = 1.05; utt.pitch = 1.1;
+    const voices = window.speechSynthesis.getVoices();
+    const cz = voices.find(v => /cs[-_]CZ/i.test(v.lang));
+    if (cz) utt.voice = cz;
+    utt.onend = utt.onerror = () => { _ttsActive = false; ttsBtn.style.color = '#94a3b8'; };
+    window.speechSynthesis.speak(utt);
+  };
+
+  fetch(url)
+    .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.text(); })
+    .then(md => {
+      const html = window.CHJ_convertMd ? window.CHJ_convertMd(md) : `<pre style="white-space:pre-wrap;color:#8b9fc4;font-size:14px;">${md}</pre>`;
+      const body = document.getElementById('vm-body');
+      if (body) body.innerHTML = `<div style="max-width:720px;margin:0 auto;color:#8b9fc4;font-size:15.5px;line-height:1.7;font-family:system-ui,sans-serif;">${html}</div>`;
+    })
+    .catch(err => {
+      const body = document.getElementById('vm-body');
+      if (body) body.innerHTML = `<p style="color:#f87171;padding:16px;font-family:monospace;font-size:13px;">Nelze načíst dokument.<br><small style="color:#64748b;">${err.message}</small></p>`;
+    });
+}
 
 function openViewerModal(fileUrl, type, title, onBack = null, scriptCz = null) {
   document.getElementById('viewerModal')?.remove();
