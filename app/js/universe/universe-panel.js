@@ -310,8 +310,8 @@ window.addEventListener('message', e => {
   if (e.data === 'closeViewer' && _currentViewerClose) {
     _currentViewerClose();
   }
-  // Handle source card clicks from HUD iframe (app/app.html has no openSourceViewer)
-  if (e.data?.type === 'chj:source:open') {
+  // Handle source card clicks from HUD iframe (only on app/app.html — index.html has its own openSourceViewer)
+  if (e.data?.type === 'chj:source:open' && typeof window.openSourceViewer !== 'function') {
     const src = e.data.source;
     if (!src?.url) return;
     const u = src.url.toLowerCase();

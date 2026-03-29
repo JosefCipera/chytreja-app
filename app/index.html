@@ -723,6 +723,14 @@
             if (isMdType) {
                 contentDiv.style.overflowY = 'auto';
                 contentDiv.style.webkitOverflowScrolling = 'touch';
+                contentDiv.style.scrollbarWidth = 'thin';
+                contentDiv.style.scrollbarColor = '#1e40af rgba(0,0,0,0.2)';
+                if (!document.getElementById('_sv-scroll-css')) {
+                    const s = document.createElement('style');
+                    s.id = '_sv-scroll-css';
+                    s.textContent = '#source-viewer div[style*="overflow"]::-webkit-scrollbar{width:3px}#source-viewer div[style*="overflow"]::-webkit-scrollbar-thumb{background:#1e40af;border-radius:2px}';
+                    document.head.appendChild(s);
+                }
                 (async () => {
                     const res = await fetch(source.url);
                     if (!res.ok) throw new Error(res.status);
