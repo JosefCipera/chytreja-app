@@ -313,9 +313,16 @@ window.addEventListener('message', e => {
   // Handle source card clicks from HUD iframe (app/app.html has no openSourceViewer)
   if (e.data?.type === 'chj:source:open') {
     const src = e.data.source;
-    if (src?.url) {
-      openViewerModal(src.url, src.type || 'md', src.title || '');
-    }
+    if (!src?.url) return;
+    const u = src.url.toLowerCase();
+    // Derive viewer type from URL (src.type is DB category like STUDY/REVIEW, not viewer type)
+    let viewerType;
+    if (u.includes('youtube.com') || u.includes('youtu.be')) viewerType = 'video';
+    else if (u.match(/\.pdf(\?|$)/)) viewerType = 'pdf';
+    else if (u.match(/\.(mp3|ogg|wav|m4a)(\?|$)/)) viewerType = 'audio';
+    else if (u.match(/\.(md|markdown)(\?|$)/)) viewerType = 'md';
+    else { window.open(src.url, '_blank'); return; }
+    openViewerModal(src.url, viewerType, src.title || '');
   }
 });
 
