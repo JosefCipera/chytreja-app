@@ -227,6 +227,14 @@ async function loadAndRenderModel(modelName, role) {
 
   renderVisibleUniverse(window.MAIN_UNIVERSE_DATA);
 
+  // Auto-open: Hra o život panel se otevře 700ms po načtení vesmíru
+  setTimeout(() => {
+    const mainNode = window.MAIN_UNIVERSE_DATA?.find(n => n.id === 'dlouhovekost');
+    if (mainNode && mainNode.state && mainNode.state !== 'GRAY') {
+      showPanel(mainNode);
+    }
+  }, 700);
+
   // HUD init — bio-age, streak, mission overlay on main screen
   // (700ms čeká na inicializaci vis.js sítě)
   // HUD disabled — panel is primary UI now
