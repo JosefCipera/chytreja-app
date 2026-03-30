@@ -386,6 +386,10 @@ function _openArticleModal(url, title) {
 function openViewerModal(fileUrl, type, title, onBack = null, scriptCz = null) {
   document.getElementById('viewerModal')?.remove();
 
+  // Normalize type — API sources use 'STUDY'/'REVIEW', detect actual media type from URL
+  const KNOWN_TYPES = ['pdf', 'md', 'audio', 'video', 'image'];
+  if (!KNOWN_TYPES.includes(type)) type = detectType(fileUrl);
+
   // PDF → fetch+blob do modálu (blob: URL obchází X-Frame-Options a CORS)
   if (type === 'pdf') {
     const modal = document.createElement('div');
