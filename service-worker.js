@@ -1,4 +1,4 @@
-const CACHE_NAME = 'chytre-ja-v7';
+const CACHE_NAME = 'chytre-ja-v8';
 
 const ASSETS = [
   '/',
@@ -10,15 +10,6 @@ const ASSETS = [
   // JS – core
   '/app/js/universe/splash.js',
   '/app/js/universe/supabaseClient.js',
-  '/app/js/universe/universe-core.js',
-  '/app/js/universe/universe-init.js',
-  '/app/js/universe/universe-panel.js',
-  '/app/js/universe/universe-ui.js',
-  '/app/js/universe/universe-voice.js',
-  '/app/js/universe/universe-viewers.js',
-  '/app/js/universe/universe-access.js',
-  '/app/js/universe/onboarding.js',
-  '/app/js/universe/ai-assistant.js',
   // Ikony
   '/app/assets/images/logo-192.png',
   '/app/assets/images/logo-512.png',
@@ -33,7 +24,7 @@ self.addEventListener('install', event => {
   );
 });
 
-// Aktivace – smaže staré cache verze
+// Aktivace – smaže staré cache verze + oznámí klientům aby se reload
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys()
@@ -41,6 +32,8 @@ self.addEventListener('activate', event => {
         keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))
       ))
       .then(() => self.clients.claim())
+      .then(() => self.clients.matchAll({ type: 'window' }))
+      .then(clients => clients.forEach(c => c.postMessage({ type: 'SW_UPDATED' })))
   );
 });
 
