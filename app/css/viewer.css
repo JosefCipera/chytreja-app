@@ -32,8 +32,10 @@ body {
    ============================================================ */
 
 #topbar {
-    position: sticky;
+    position: fixed;
     top: 0;
+    left: 0;
+    right: 0;
     z-index: 20;
 
     display: flex;
@@ -79,6 +81,7 @@ body {
 
 #wrapper {
     padding: 22px 18px 40px;
+    padding-top: 62px; /* fixed topbar height + spacing */
 }
 
 #content {
