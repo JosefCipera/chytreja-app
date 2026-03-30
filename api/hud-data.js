@@ -17,6 +17,9 @@ const NODE_LABELS = {
   vyziva: 'Výživa', zdravi: 'Zdraví', metabolicke: 'Metabolismus',
   sila: 'Síla', stabilita: 'Stabilita', kardio: 'Kardio',
   vo2max: 'VO₂max', mobilita: 'Mobilita', spanek: 'Spánek',
+  imunitni: 'Imunita', nervovy_system: 'Nervový systém',
+  rovnovaha: 'Rovnováha', obnova: 'Obnova', vytrvalost: 'Výdrž',
+  dychani: 'Dýchání', stres: 'Stres', mysl_emoce: 'Emoce',
 };
 
 const NODE_KILLERS = {
