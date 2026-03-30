@@ -363,6 +363,28 @@
         });
     </script>
 
+    <!-- Hide app header when any modal opens — works regardless of JS cache version -->
+    <script>
+        new MutationObserver(mutations => {
+            for (const m of mutations) {
+                for (const node of m.addedNodes) {
+                    if (node.id === 'viewerModal') {
+                        const h = document.getElementById('appHeader');
+                        if (h) h.style.display = 'none';
+                        const obs = new MutationObserver(() => {
+                            if (!document.getElementById('viewerModal')) {
+                                const h2 = document.getElementById('appHeader');
+                                if (h2) h2.style.display = '';
+                                obs.disconnect();
+                            }
+                        });
+                        obs.observe(document.body, { childList: true });
+                    }
+                }
+            }
+        }).observe(document.body, { childList: true });
+    </script>
+
     <!-- Service Worker -->
     <script>
         if ('serviceWorker' in navigator) {
