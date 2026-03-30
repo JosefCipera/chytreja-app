@@ -343,15 +343,24 @@ function _openArticleModal(url, title) {
     </div>`;
   document.body.appendChild(modal);
 
+  // Floating close button — always visible, impossible to hide (z-index:30000, separate from modal)
+  const _floatBtn = document.createElement('button');
+  _floatBtn.id = 'vm-float-close';
+  _floatBtn.textContent = '✕ Zavřít';
+  _floatBtn.style.cssText = 'position:fixed;bottom:28px;left:50%;transform:translateX(-50%);z-index:30000;background:#ef4444;color:#fff;border:none;border-radius:28px;padding:14px 32px;font-size:17px;font-weight:700;cursor:pointer;box-shadow:0 4px 24px rgba(239,68,68,0.5);letter-spacing:0.02em;touch-action:manipulation;';
+  document.body.appendChild(_floatBtn);
+
   // Hide app header so it doesn't overlap modal topbar (z-index conflict on cached mobile)
   const _appHeader = document.getElementById('appHeader');
   if (_appHeader) _appHeader.style.display = 'none';
 
   const closeModal = () => {
+    _floatBtn.remove();
     if (_appHeader) _appHeader.style.display = '';
     modal.style.opacity = '0'; modal.style.transition = 'opacity 0.18s'; setTimeout(() => modal.remove(), 180);
   };
   _currentViewerClose = closeModal;
+  _floatBtn.onclick = closeModal;
   document.getElementById('vm-close').onclick = closeModal;
   modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
   const escHandler = e => { if (e.key === 'Escape') { closeModal(); document.removeEventListener('keydown', escHandler); } };
