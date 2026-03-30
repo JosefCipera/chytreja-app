@@ -343,7 +343,14 @@ function _openArticleModal(url, title) {
     </div>`;
   document.body.appendChild(modal);
 
-  const closeModal = () => { modal.style.opacity = '0'; modal.style.transition = 'opacity 0.18s'; setTimeout(() => modal.remove(), 180); };
+  // Hide app header so it doesn't overlap modal topbar (z-index conflict on cached mobile)
+  const _appHeader = document.getElementById('appHeader');
+  if (_appHeader) _appHeader.style.display = 'none';
+
+  const closeModal = () => {
+    if (_appHeader) _appHeader.style.display = '';
+    modal.style.opacity = '0'; modal.style.transition = 'opacity 0.18s'; setTimeout(() => modal.remove(), 180);
+  };
   _currentViewerClose = closeModal;
   document.getElementById('vm-close').onclick = closeModal;
   modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
@@ -441,9 +448,12 @@ function openViewerModal(fileUrl, type, title, onBack = null, scriptCz = null) {
       </div>
     `;
     document.body.appendChild(modal);
+    const _hdr = document.getElementById('appHeader');
+    if (_hdr) _hdr.style.display = 'none';
 
     const closeViewer = () => {
       _currentViewerClose = null;
+      if (_hdr) _hdr.style.display = '';
       modal.style.opacity = '0';
       setTimeout(() => modal.remove(), 200);
     };
@@ -565,9 +575,12 @@ function openViewerModal(fileUrl, type, title, onBack = null, scriptCz = null) {
 
   document.body.appendChild(modal);
   // žádný fade-in (modal se zobrazí okamžitě, bez záblesku panelu)
+  const _hdr2 = document.getElementById('appHeader');
+  if (_hdr2) _hdr2.style.display = 'none';
 
   const closeViewer = () => {
     _currentViewerClose = null;
+    if (_hdr2) _hdr2.style.display = '';
     modal.style.opacity = '0';
     setTimeout(() => modal.remove(), 200);
   };
@@ -578,6 +591,7 @@ function openViewerModal(fileUrl, type, title, onBack = null, scriptCz = null) {
   const closeAndBack = () => {
     if (onBack) {
       _currentViewerClose = null;
+      if (_hdr2) _hdr2.style.display = '';
       modal.remove();
       onBack();
     } else {
