@@ -375,6 +375,68 @@
     </script>
 
     <!-- Onboarding Modal -->
+    <!-- HUD Overlay — Svelte HUD panel (same as index.html) -->
+    <div id="hud-overlay" style="
+        display: none; position: fixed; inset: 0; z-index: 5000;
+        background: transparent; align-items: stretch; justify-content: flex-end;
+        pointer-events: none;
+    ">
+        <div id="hud-panel-wrap" style="
+            width: 100%; max-width: 420px;
+            height: calc(100dvh - 72px);
+            margin-top: 56px; margin-bottom: 16px; margin-right: 0;
+            transform: translateX(100%);
+            transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+            overflow: hidden; border-radius: 20px 0 0 20px; pointer-events: auto;
+        ">
+            <iframe id="hud-iframe" src="" style="width:100%; height:100%; border:none;" allow="microphone"></iframe>
+        </div>
+    </div>
+    <script>
+        window._hudOpen = false;
+        window.openHudOverlay = function(userId, nodeId) {
+            const overlay = document.getElementById('hud-overlay');
+            const wrap    = document.getElementById('hud-panel-wrap');
+            const iframe  = document.getElementById('hud-iframe');
+            if (window._hudOpen) {
+                iframe.src = `/app/hud.html?userId=${encodeURIComponent(userId)}&nodeId=${encodeURIComponent(nodeId)}&_v=${Date.now()}`;
+                return;
+            }
+            iframe.src = `/app/hud.html?userId=${encodeURIComponent(userId)}&nodeId=${encodeURIComponent(nodeId)}&_v=${Date.now()}`;
+            overlay.style.display = 'flex';
+            requestAnimationFrame(() => requestAnimationFrame(() => {
+                wrap.style.transform = 'translateX(0)';
+            }));
+            window._hudOpen = true;
+        };
+        window.closeHudOverlay = function() {
+            const overlay = document.getElementById('hud-overlay');
+            const wrap    = document.getElementById('hud-panel-wrap');
+            const iframe  = document.getElementById('hud-iframe');
+            wrap.style.transform = 'translateX(100%)';
+            setTimeout(() => { overlay.style.display = 'none'; iframe.src = ''; window._hudOpen = false; }, 360);
+        };
+        let _topTTS = null;
+        function _runTopTTS(text, lang) {
+            if (!('speechSynthesis' in window)) return;
+            window.speechSynthesis.cancel();
+            const utt = new SpeechSynthesisUtterance(text);
+            utt.lang = lang || 'cs-CZ'; utt.rate = 1.05; utt.pitch = 1.1;
+            const voices = speechSynthesis.getVoices();
+            const cz = voices.find(v => /cs[-_]CZ/i.test(v.lang)) || voices.find(v => /czech/i.test(v.lang));
+            if (cz) utt.voice = cz;
+            utt.onend = utt.onerror = () => {
+                document.querySelectorAll('iframe').forEach(f => f.contentWindow?.postMessage({ type: 'chj:tts:ended' }, '*'));
+            };
+            window.speechSynthesis.speak(utt);
+        }
+        window.addEventListener('message', function(e) {
+            if (e.data === 'chj:hud:close') window.closeHudOverlay();
+            if (e.data?.type === 'chj:tts:speak') _runTopTTS(e.data.text, e.data.lang);
+            if (e.data?.type === 'chj:tts:stop') { if ('speechSynthesis' in window) window.speechSynthesis.cancel(); }
+        });
+    </script>
+
     <div id="mediaModal"
         style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 10000; display: none; align-items: center; justify-content: center;">
         <div id="modalContent"
