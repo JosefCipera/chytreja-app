@@ -331,7 +331,9 @@ function _openArticleModal(url, title) {
   modal.style.cssText = 'position:fixed;inset:0;background:rgba(2,6,14,0.97);display:flex;flex-direction:column;z-index:20000;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);';
   modal.innerHTML = `
     <div style="padding:10px 14px;border-bottom:1px solid rgba(6,182,212,0.18);display:flex;align-items:center;gap:8px;flex-shrink:0;min-height:48px;">
-      <span style="font-family:monospace;font-size:11px;color:#64748b;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${title || ''}</span>
+      <span style="font-family:monospace;font-size:11px;color:#64748b;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;">${title || ''}</span>
+      <button id="vm-print" title="Tisk" style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);border-radius:6px;color:#e2e8f0;cursor:pointer;padding:5px 9px;font-size:15px;line-height:1;flex-shrink:0;min-width:32px;min-height:32px;">🖨</button>
+      <button id="vm-dl" title="Stáhnout" style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);border-radius:6px;color:#e2e8f0;cursor:pointer;padding:5px 9px;font-size:15px;line-height:1;flex-shrink:0;min-width:32px;min-height:32px;">⬇</button>
       <button id="vm-tts" title="Přehrát" style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);border-radius:6px;color:#e2e8f0;cursor:pointer;padding:5px 9px;font-size:15px;line-height:1;flex-shrink:0;min-width:32px;min-height:32px;">🔊</button>
       <button id="vm-close" title="Zavřít" style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);border-radius:6px;color:#e2e8f0;cursor:pointer;padding:5px 9px;font-size:15px;line-height:1;flex-shrink:0;min-width:32px;min-height:32px;">✕</button>
     </div>
@@ -347,6 +349,19 @@ function _openArticleModal(url, title) {
   modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
   const escHandler = e => { if (e.key === 'Escape') { closeModal(); document.removeEventListener('keydown', escHandler); } };
   document.addEventListener('keydown', escHandler);
+
+  document.getElementById('vm-print').onclick = () => {
+    const w = window.open('', '_blank');
+    const body = document.getElementById('vm-body')?.innerHTML || '';
+    w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title||''}</title><style>body{font-family:system-ui,sans-serif;max-width:800px;margin:40px auto;padding:0 20px;color:#111;}</style></head><body>${body}</body></html>`);
+    w.document.close(); w.focus(); w.print();
+  };
+  document.getElementById('vm-dl').onclick = () => {
+    const body = document.getElementById('vm-body')?.innerText || '';
+    const a = document.createElement('a');
+    a.href = url; a.download = (title || 'dokument').replace(/[^a-z0-9áčďéěíňóřšťúůýž ]/gi, '_') + '.md';
+    document.body.appendChild(a); a.click(); setTimeout(() => a.remove(), 100);
+  };
 
   let _ttsActive = false;
   const ttsBtn = document.getElementById('vm-tts');
