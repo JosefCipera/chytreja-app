@@ -328,7 +328,7 @@ function _openArticleModal(url, title) {
   document.getElementById('viewerModal')?.remove();
   const modal = document.createElement('div');
   modal.id = 'viewerModal';
-  modal.style.cssText = 'position:fixed;inset:0;background:rgba(2,6,14,0.97);display:flex;flex-direction:column;z-index:10000;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(2,6,14,0.97);display:flex;flex-direction:column;z-index:20000;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);';
   modal.innerHTML = `
     <div style="padding:10px 14px;border-bottom:1px solid rgba(6,182,212,0.18);display:flex;align-items:center;gap:8px;flex-shrink:0;min-height:48px;">
       <span style="font-family:monospace;font-size:11px;color:#64748b;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${title || ''}</span>
@@ -399,7 +399,7 @@ function openViewerModal(fileUrl, type, title, onBack = null, scriptCz = null) {
       position: fixed; inset: 0;
       background: rgba(0,0,0,0.92);
       display: flex; flex-direction: column;
-      z-index: 10000;
+      z-index: 20000;
       transition: opacity 0.2s ease;
     `;
     modal.innerHTML = `
@@ -500,7 +500,7 @@ function openViewerModal(fileUrl, type, title, onBack = null, scriptCz = null) {
       position: fixed; inset: 0;
       background: rgba(0,0,0,0.85);
       display: flex; align-items: center; justify-content: center;
-      z-index: 10000;
+      z-index: 20000;
       transition: opacity 0.2s ease;
     `;
     modal.innerHTML = `
@@ -529,7 +529,7 @@ function openViewerModal(fileUrl, type, title, onBack = null, scriptCz = null) {
       position: fixed; inset: 0;
       background: rgba(0,0,0,0.92);
       display: flex; flex-direction: column;
-      z-index: 10000;
+      z-index: 20000;
       transition: opacity 0.2s ease;
     `;
     modal.innerHTML = `
@@ -595,7 +595,7 @@ async function openResourcesViewer(node) {
   document.getElementById('viewerModal')?.remove();
   const loadingModal = document.createElement('div');
   loadingModal.id = 'viewerModal';
-  loadingModal.style.cssText = `position:fixed;inset:0;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;z-index:10000;`;
+  loadingModal.style.cssText = `position:fixed;inset:0;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;z-index:20000;`;
   loadingModal.innerHTML = `<div style="color:#94a3b8;font-size:14px;display:flex;align-items:center;gap:10px;">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2.5" stroke-linecap="round">
       <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83">
@@ -649,7 +649,7 @@ async function openResourcesViewer(node) {
     position:fixed; inset:0;
     background:rgba(0,0,0,0.85);
     display:flex; align-items:center; justify-content:center;
-    z-index:10000;
+    z-index:20000;
   `;
 
   const icons = { md: '📄', pdf: '📕', video: '🎥', audio: '🎵', image: '🖼️' };
@@ -1715,7 +1715,7 @@ async function showGameOfLife(node, options = {}) {
       position:fixed; inset:0;
       background:rgba(0,0,0,0.85);
       display:flex; align-items:center; justify-content:center;
-      z-index:10000;
+      z-index:20000;
       opacity:0; transition:opacity 0.2s ease;
     `;
     actModal.innerHTML = `
@@ -1767,7 +1767,7 @@ async function showGameOfLife(node, options = {}) {
       position:fixed; inset:0;
       background:rgba(0,0,0,0.85);
       display:flex; align-items:center; justify-content:center;
-      z-index:10000;
+      z-index:20000;
       opacity:0; transition:opacity 0.2s ease;
     `;
     refModal.innerHTML = `
