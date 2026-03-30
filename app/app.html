@@ -326,8 +326,8 @@
     </aside>
 
     <script type="module">
-        import { supabase } from './js/universe/supabaseClient.js?v=20260306f';
-        import { updateRecommendations } from './js/universe/universe-panel.js?v=20260310e';
+        import { supabase } from './js/universe/supabaseClient.js?v=20260330a';
+        import { updateRecommendations } from './js/universe/universe-panel.js?v=20260330a';
 
         window.addEventListener('DOMContentLoaded', async () => {
             supabase.auth.onAuthStateChange((event, session) => {
@@ -339,13 +339,13 @@
         });
     </script>
 
-    <script type="module" src="/app/js/universe/universe-viewers.js?v=20260306f"></script>
-    <script type="module" src="/app/js/universe/universe-access.js?v=20260306f"></script>
-    <script type="module" src="/app/js/universe/universe-core.js?v=20260306f"></script>
-    <script type="module" src="/app/js/universe/universe-init.js?v=20260329a"></script>
-    <script type="module" src="/app/js/universe/user-data-panel.js?v=20260306f"></script>
-    <script type="module" src="/app/js/universe/ai-assistant.js?v=20260306f"></script>
-    <script type="module" src="/app/js/universe/universe-panel.js?v=20260329a"></script>
+    <script type="module" src="/app/js/universe/universe-viewers.js?v=20260330a"></script>
+    <script type="module" src="/app/js/universe/universe-access.js?v=20260330a"></script>
+    <script type="module" src="/app/js/universe/universe-core.js?v=20260330a"></script>
+    <script type="module" src="/app/js/universe/universe-init.js?v=20260330a"></script>
+    <script type="module" src="/app/js/universe/user-data-panel.js?v=20260330a"></script>
+    <script type="module" src="/app/js/universe/ai-assistant.js?v=20260330a"></script>
+    <script type="module" src="/app/js/universe/universe-panel.js?v=20260330a"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script>
         window.addEventListener('load', () => {
@@ -370,6 +370,9 @@
                 navigator.serviceWorker.register('/service-worker.js', { scope: '/' })
                     .then(reg => console.log('✅ Service Worker zaregistrován, scope:', reg.scope))
                     .catch(err => console.warn('⚠️ SW registrace selhala:', err));
+            });
+            navigator.serviceWorker.addEventListener('message', e => {
+                if (e.data?.type === 'SW_UPDATED') window.location.reload();
             });
         }
     </script>
