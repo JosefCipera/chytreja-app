@@ -332,10 +332,8 @@ function _openArticleModal(url, title) {
   modal.innerHTML = `
     <div style="padding:10px 14px;border-bottom:1px solid rgba(6,182,212,0.18);display:flex;align-items:center;gap:8px;flex-shrink:0;min-height:48px;">
       <span style="font-family:monospace;font-size:11px;color:#64748b;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${title || ''}</span>
-      <button id="vm-tts" title="Přehrát" style="background:transparent;border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:#94a3b8;cursor:pointer;padding:6px 8px;line-height:0;flex-shrink:0;">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
-      </button>
-      <button id="vm-close" title="Zavřít" style="background:transparent;border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:#94a3b8;cursor:pointer;padding:4px 9px;font-size:20px;line-height:1;flex-shrink:0;">&times;</button>
+      <button id="vm-tts" title="Přehrát" style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);border-radius:6px;color:#e2e8f0;cursor:pointer;padding:5px 9px;font-size:15px;line-height:1;flex-shrink:0;min-width:32px;min-height:32px;">🔊</button>
+      <button id="vm-close" title="Zavřít" style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);border-radius:6px;color:#e2e8f0;cursor:pointer;padding:5px 9px;font-size:15px;line-height:1;flex-shrink:0;min-width:32px;min-height:32px;">✕</button>
     </div>
     <div id="vm-body" style="flex:1;overflow-y:auto;padding:22px 18px 40px;scrollbar-width:thin;scrollbar-color:#1e40af rgba(0,0,0,0.2);">
       <style>#vm-body::-webkit-scrollbar{width:3px}#vm-body::-webkit-scrollbar-thumb{background:#1e40af;border-radius:2px}</style>
@@ -362,13 +360,13 @@ function _openArticleModal(url, title) {
     const text = (document.getElementById('vm-body')?.innerText || '').replace(/[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}]/gu, '').trim();
     if (!text) return;
     _ttsActive = true;
-    ttsBtn.style.color = '#f87171';
+    ttsBtn.textContent = '⏹';
     const utt = new SpeechSynthesisUtterance(text);
     utt.lang = 'cs-CZ'; utt.rate = 1.05; utt.pitch = 1.1;
     const voices = window.speechSynthesis.getVoices();
     const cz = voices.find(v => /cs[-_]CZ/i.test(v.lang));
     if (cz) utt.voice = cz;
-    utt.onend = utt.onerror = () => { _ttsActive = false; ttsBtn.style.color = '#94a3b8'; };
+    utt.onend = utt.onerror = () => { _ttsActive = false; ttsBtn.textContent = '🔊'; };
     window.speechSynthesis.speak(utt);
   };
 

@@ -629,18 +629,13 @@
             header.appendChild(headerInfo);
 
             // MD: Print + Download + TTS buttons (all in parent frame → user-gesture OK on iOS)
-            const svgIcon = (path, vb='0 0 24 24') => `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="${vb}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${path}</svg>`;
-            const SVG_PRINT = svgIcon('<polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>');
-            const SVG_DOWNLOAD = svgIcon('<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>');
-            const SVG_PLAY = svgIcon('<polygon points="5 3 19 12 5 21 5 3"/>');
-            const SVG_STOP = svgIcon('<rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>');
             let _mdTtsOn = false;
             if (isMdType) {
-                const btnStyle = 'background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:6px;cursor:pointer;padding:6px 8px;-webkit-tap-highlight-color:transparent;flex-shrink:0;line-height:0;color:#94a3b8;display:flex;align-items:center;margin-left:4px;';
+                const btnStyle = 'background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);border-radius:6px;cursor:pointer;padding:5px 9px;-webkit-tap-highlight-color:transparent;flex-shrink:0;font-size:15px;line-height:1;color:#e2e8f0;margin-left:4px;min-width:32px;min-height:32px;';
 
                 // Print
                 const printBtn = document.createElement('button');
-                printBtn.innerHTML = SVG_PRINT; printBtn.title = 'Tisk';
+                printBtn.textContent = '🖨'; printBtn.title = 'Tisk';
                 printBtn.style.cssText = btnStyle;
                 const doPrint = () => {
                     const el = document.querySelector('.md-il');
@@ -661,7 +656,7 @@
 
                 // Download
                 const dlBtn = document.createElement('button');
-                dlBtn.innerHTML = SVG_DOWNLOAD; dlBtn.title = 'Stáhnout';
+                dlBtn.textContent = '⬇'; dlBtn.title = 'Stáhnout';
                 dlBtn.style.cssText = btnStyle;
                 const doDownload = async () => {
                     const fname = (source.url||'').split('/').pop() || 'dokument.md';
@@ -677,12 +672,12 @@
 
                 // TTS — spustí/zastaví čtení, běží v parent frame (iOS user-gesture OK)
                 const ttsBtn = document.createElement('button');
-                ttsBtn.innerHTML = SVG_PLAY; ttsBtn.title = 'Přehrát';
+                ttsBtn.textContent = '🔊'; ttsBtn.title = 'Přehrát';
                 ttsBtn.style.cssText = btnStyle;
                 const doTTS = () => {
                     if (_mdTtsOn) {
                         speechSynthesis.cancel(); _mdTtsOn = false;
-                        ttsBtn.innerHTML = SVG_PLAY; ttsBtn.style.color = '#64748b';
+                        ttsBtn.textContent = '🔊';
                         return;
                     }
                     const el = document.querySelector('.md-il');
@@ -690,13 +685,13 @@
                     const txt = el.innerText.replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu,'').trim();
                     if (!txt) return;
                     _mdTtsOn = true;
-                    ttsBtn.innerHTML = SVG_STOP; ttsBtn.style.color = '#C97272';
+                    ttsBtn.textContent = '⏹';
                     speechSynthesis.cancel();
                     const u = new SpeechSynthesisUtterance(txt);
                     u.lang = 'cs-CZ'; u.rate = 1.05; u.pitch = 1.1;
                     const sv = () => { const cz = speechSynthesis.getVoices().find(v => /cs[-_]CZ/i.test(v.lang)); if (cz) u.voice = cz; };
                     sv(); if (!u.voice) speechSynthesis.addEventListener('voiceschanged', sv, {once:true});
-                    u.onend = u.onerror = () => { _mdTtsOn = false; ttsBtn.innerHTML = SVG_PLAY; ttsBtn.style.color = '#64748b'; };
+                    u.onend = u.onerror = () => { _mdTtsOn = false; ttsBtn.textContent = '🔊'; };
                     speechSynthesis.speak(u);
                 };
                 ttsBtn.addEventListener('click', doTTS);
@@ -705,8 +700,8 @@
             }
 
             const closeBtn = document.createElement('button');
-            closeBtn.innerHTML = svgIcon('<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>');
-            closeBtn.style.cssText = 'color:#94a3b8;background:none;border:none;cursor:pointer;padding:8px 4px 8px 10px;line-height:1;-webkit-tap-highlight-color:transparent;min-width:44px;min-height:44px;flex-shrink:0;display:flex;align-items:center;';
+            closeBtn.textContent = '✕';
+            closeBtn.style.cssText = 'color:#94a3b8;background:none;border:none;cursor:pointer;padding:8px 4px 8px 10px;font-size:18px;line-height:1;-webkit-tap-highlight-color:transparent;min-width:44px;min-height:44px;flex-shrink:0;';
             closeBtn.addEventListener('click', () => window.closeSourceViewer());
             closeBtn.addEventListener('touchend', (e) => { e.preventDefault(); e.stopPropagation(); window.closeSourceViewer(); });
             header.appendChild(closeBtn);
