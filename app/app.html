@@ -482,6 +482,8 @@
 
         function openSourceViewer(source) {
             window.closeSourceViewer();
+            const _hdr = document.getElementById('appHeader');
+            if (_hdr) _hdr.style.display = 'none';
             const t = source.url ? mediaTypeOf(source.url) : 'none';
             if (t === 'iframe') { if (source.url) window.open(source.url, '_blank'); return; }
             if (t === 'none') return;
@@ -600,6 +602,8 @@
         window.closeSourceViewer = function() {
             const v = document.getElementById('source-viewer');
             if (!v) return;
+            const _hdr = document.getElementById('appHeader');
+            if (_hdr) _hdr.style.display = '';
             if (v._closeT) v.style.transform = v._closeT;
             v.style.opacity = '0';
             document.getElementById('source-backdrop')?.remove();
