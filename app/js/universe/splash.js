@@ -12,7 +12,7 @@ const splashHTML = `
     transition: opacity 0.5s ease-out;
 ">
     <div style="flex-grow: 1; display: flex; align-items: center; justify-content: center;">
-        <img src="/app/assets/images/logo-192.png" style="width: 96px; height: auto;">
+        <img src="/app/assets/images/pwa-icon-192.png" style="width: 96px; height: auto; border-radius: 22px;">
     </div>
     <div style="padding-bottom: 2.5rem; text-align: center;">
         <h1 style="color: #e2e8f0; font-family: sans-serif; margin: 0; font-size: 28px; font-weight: 500; letter-spacing: 0.5px;">Chytré já</h1>
