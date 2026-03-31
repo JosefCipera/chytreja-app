@@ -457,9 +457,154 @@
         }
         window.addEventListener('message', function(e) {
             if (e.data === 'chj:hud:close') window.closeHudOverlay();
+            if (e.data?.type === 'chj:source:open') openSourceViewer(e.data.source);
             if (e.data?.type === 'chj:tts:speak') _runTopTTS(e.data.text, e.data.lang);
             if (e.data?.type === 'chj:tts:stop') { if ('speechSynthesis' in window) window.speechSynthesis.cancel(); }
         });
+
+        function mediaTypeOf(url) {
+            if (!url) return 'none';
+            const u = url.toLowerCase();
+            if (u.includes('youtube.com') || u.includes('youtu.be')) return 'youtube';
+            if (u.match(/\.(mp4|webm|mov)(\?|$)/)) return 'video';
+            if (u.match(/\.(mp3|ogg|wav|m4a)(\?|$)/)) return 'audio';
+            if (u.match(/\.pdf(\?|$)/)) return 'pdf';
+            if (u.match(/\.(md|markdown)(\?|$)/)) return 'md';
+            return 'iframe';
+        }
+        function youtubeEmbed(url) {
+            const m = url.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+            return m ? `https://www.youtube.com/embed/${m[1]}?autoplay=1` : url;
+        }
+        function pdfEmbed(url) {
+            return `https://docs.google.com/gviewer?embedded=true&url=${encodeURIComponent(url)}`;
+        }
+
+        function openSourceViewer(source) {
+            window.closeSourceViewer();
+            const t = source.url ? mediaTypeOf(source.url) : 'none';
+            if (t === 'iframe') { if (source.url) window.open(source.url, '_blank'); return; }
+            if (t === 'none') return;
+
+            const isMobile = window.innerWidth < 700;
+            const vw = window.innerWidth;
+            const vh = window.innerHeight;
+
+            const backdrop = document.createElement('div');
+            backdrop.id = 'source-backdrop';
+            backdrop.style.cssText = 'position:fixed;inset:0;z-index:25000;cursor:pointer;';
+            backdrop.onclick = () => window.closeSourceViewer();
+            backdrop.addEventListener('touchend', (e) => { e.preventDefault(); window.closeSourceViewer(); });
+            document.body.appendChild(backdrop);
+
+            const wrap = document.createElement('div');
+            wrap.id = 'source-viewer';
+
+            if (!isMobile) {
+                const isMdType = (t === 'md' || t === 'article');
+                let dims = {};
+                if (t === 'youtube' || t === 'video') {
+                    const w = Math.min(vw * 0.82, 960);
+                    const h = Math.min(Math.round(w * 9 / 16) + 48, vh * 0.9);
+                    dims = { w, h, top: '50%', openT: 'translateX(-50%) translateY(-50%)', closeT: 'translateX(-50%) translateY(calc(-50% + 10px))' };
+                } else if (t === 'audio') {
+                    dims = { w: Math.min(vw * 0.55, 520), h: 148, top: '50%', openT: 'translateX(-50%) translateY(-50%)', closeT: 'translateX(-50%) translateY(calc(-50% + 10px))' };
+                } else if (t === 'pdf') {
+                    dims = { w: Math.min(vw * 0.75, 920), h: Math.round(vh * 0.85), top: '7%', openT: 'translateX(-50%) translateY(0)', closeT: 'translateX(-50%) translateY(10px)' };
+                } else {
+                    dims = { w: Math.min(vw * 0.68, 760), h: Math.round(vh * 0.82), top: '7%', openT: 'translateX(-50%) translateY(0)', closeT: 'translateX(-50%) translateY(10px)' };
+                }
+                wrap._openT = dims.openT; wrap._closeT = dims.closeT;
+                wrap.style.cssText = `position:fixed;top:${dims.top};left:50%;transform:${dims.closeT};width:${dims.w}px;height:${dims.h}px;background:rgba(2,6,14,0.97);border:1px solid rgba(6,182,212,0.25);border-radius:16px;z-index:26000;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 0 40px rgba(6,182,212,0.1);opacity:0;transition:transform 0.28s cubic-bezier(0.32,0.72,0,1),opacity 0.28s;`;
+            } else {
+                wrap.style.cssText = 'position:fixed;inset:0;background:rgba(2,6,14,0.98);z-index:26000;display:flex;flex-direction:column;overflow:hidden;opacity:0;transition:opacity 0.22s;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);';
+            }
+
+            const shortId = id => { if (!id) return '???'; const s = String(id), d = s.indexOf('-'); return d > 0 ? s.slice(0,d).toUpperCase() : s; };
+            const isMdType = (t === 'md' || t === 'article');
+
+            if (isMdType && !document.getElementById('_chj-md-css')) {
+                const s = document.createElement('style');
+                s.id = '_chj-md-css';
+                s.textContent = `.md-il{color:#8b9fc4;font-size:15.5px;line-height:1.72;max-width:700px;margin:0 auto;padding:16px 20px 80px;box-sizing:border-box;}.md-il h1{color:#b8c8d8;font-size:1.65rem;line-height:1.25;margin:0 0 1rem;font-weight:600}.md-il h2{color:#7a9ab4;font-size:1.3rem;margin:2rem 0 .7rem;font-weight:500;border-bottom:1px solid rgba(6,182,212,.15);padding-bottom:4px}.md-il h3{color:#5c7a94;font-size:1.1rem;margin:1.4rem 0 .5rem;font-weight:500}.md-il p{margin:0 0 1.1rem}.md-il ul,.md-il ol{padding-left:1.4rem;margin:0 0 1.2rem}.md-il li{margin-bottom:.4rem}.md-il a{color:#7aa2ff;text-decoration:none;border-bottom:1px dashed rgba(122,162,255,.35)}.md-il strong{color:#c8d4df;font-weight:600}.md-il em{color:#94a3b8}.md-il code{background:rgba(6,182,212,.08);color:#7dd3fc;padding:2px 5px;border-radius:3px;font-size:.88em;font-family:monospace}.md-il pre{background:rgba(6,182,212,.05);border:1px solid rgba(6,182,212,.15);border-radius:6px;padding:12px 16px;overflow-x:auto;margin:0 0 1.2rem}.md-il pre code{background:none;padding:0}.md-il hr{border:none;height:1px;background:linear-gradient(to right,transparent,rgba(148,163,184,.4),transparent);margin:2rem 0}.md-il blockquote{border-left:2px solid rgba(6,182,212,.4);margin:0 0 1.2rem;padding:8px 16px;background:rgba(6,182,212,.04)}`;
+                document.head.appendChild(s);
+            }
+
+            // Header
+            const header = document.createElement('div');
+            header.style.cssText = 'padding:10px 14px;border-bottom:1px solid rgba(6,182,212,0.18);display:flex;align-items:center;gap:2px;flex-shrink:0;min-height:48px;background:rgba(2,6,14,0.97);position:sticky;top:0;z-index:1;';
+            const headerInfo = document.createElement('span');
+            headerInfo.style.cssText = 'font-family:monospace;font-size:11px;letter-spacing:0.08em;color:#64748b;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+            headerInfo.innerHTML = `[MED_ID:&nbsp;${shortId(source.med_id)}]&nbsp;&nbsp;·&nbsp;&nbsp;${source.journal || ''}, ${source.year || ''}`;
+            header.appendChild(headerInfo);
+
+            let _mdTtsOn = false;
+            if (isMdType) {
+                const btnStyle = 'background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);border-radius:6px;cursor:pointer;padding:5px 9px;-webkit-tap-highlight-color:transparent;flex-shrink:0;font-size:15px;line-height:1;color:#e2e8f0;margin-left:4px;min-width:44px;min-height:44px;';
+                const printBtn = document.createElement('button');
+                printBtn.textContent = '🖨'; printBtn.title = 'Tisk'; printBtn.style.cssText = btnStyle;
+                const doPrint = () => { const el = document.querySelector('.md-il'); if (!el) return; const iframe = document.createElement('iframe'); iframe.style.cssText = 'position:fixed;width:0;height:0;border:none;top:-9999px;'; document.body.appendChild(iframe); const doc = iframe.contentDocument; doc.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${source.title||''}</title><style>body{font-family:system-ui,sans-serif;padding:24px;max-width:780px;margin:0 auto;color:#1e293b;line-height:1.7;font-size:15px}</style></head><body>${el.innerHTML}</body></html>`); doc.close(); iframe.contentWindow.focus(); iframe.contentWindow.print(); setTimeout(() => document.body.removeChild(iframe), 1000); };
+                printBtn.addEventListener('click', doPrint);
+                printBtn.addEventListener('touchend', (e) => { e.preventDefault(); doPrint(); });
+                header.appendChild(printBtn);
+
+                const dlBtn = document.createElement('button');
+                dlBtn.textContent = '⬇'; dlBtn.title = 'Stáhnout'; dlBtn.style.cssText = btnStyle;
+                const doDownload = async () => { const fname = (source.url||'').split('/').pop() || 'dokument.md'; const blob = await fetch(source.url).then(r => r.blob()); const burl = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = burl; a.download = fname; a.click(); setTimeout(() => URL.revokeObjectURL(burl), 2000); };
+                dlBtn.addEventListener('click', doDownload);
+                dlBtn.addEventListener('touchend', (e) => { e.preventDefault(); doDownload(); });
+                header.appendChild(dlBtn);
+
+                const ttsBtn = document.createElement('button');
+                ttsBtn.textContent = '🔊'; ttsBtn.title = 'Přehrát'; ttsBtn.style.cssText = btnStyle;
+                const doTTS = () => { if (_mdTtsOn) { speechSynthesis.cancel(); _mdTtsOn = false; ttsBtn.textContent = '🔊'; return; } const el = document.querySelector('.md-il'); if (!el) return; const txt = el.innerText.replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu,'').trim(); if (!txt) return; _mdTtsOn = true; ttsBtn.textContent = '⏹'; speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(txt); u.lang = 'cs-CZ'; u.rate = 1.05; u.pitch = 1.1; const sv = () => { const cz = speechSynthesis.getVoices().find(v => /cs[-_]CZ/i.test(v.lang)); if (cz) u.voice = cz; }; sv(); if (!u.voice) speechSynthesis.addEventListener('voiceschanged', sv, {once:true}); u.onend = u.onerror = () => { _mdTtsOn = false; ttsBtn.textContent = '🔊'; }; speechSynthesis.speak(u); };
+                ttsBtn.addEventListener('click', doTTS);
+                ttsBtn.addEventListener('touchend', (e) => { e.preventDefault(); doTTS(); });
+                header.appendChild(ttsBtn);
+            }
+
+            const closeBtn = document.createElement('button');
+            closeBtn.textContent = '✕'; closeBtn.title = 'Zavřít';
+            closeBtn.style.cssText = 'color:#94a3b8;background:none;border:none;cursor:pointer;padding:8px 4px 8px 10px;font-size:20px;line-height:1;-webkit-tap-highlight-color:transparent;min-width:44px;min-height:44px;flex-shrink:0;';
+            closeBtn.addEventListener('click', () => window.closeSourceViewer());
+            closeBtn.addEventListener('touchend', (e) => { e.preventDefault(); e.stopPropagation(); window.closeSourceViewer(); });
+            header.appendChild(closeBtn);
+            wrap.appendChild(header);
+
+            const contentDiv = document.createElement('div');
+            contentDiv.style.cssText = 'flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;min-height:0;';
+            if (!isMdType) {
+                if (t === 'youtube') contentDiv.innerHTML = `<iframe src="${youtubeEmbed(source.url)}" style="width:100%;height:100%;border:none;" allow="autoplay;encrypted-media" allowfullscreen></iframe>`;
+                else if (t === 'video') contentDiv.innerHTML = `<video src="${source.url}" controls autoplay style="width:100%;height:100%;background:#000;"></video>`;
+                else if (t === 'audio') contentDiv.innerHTML = `<iframe src="/app/viewer.html?type=audio&file=${encodeURIComponent(source.url)}" style="width:100%;height:100%;border:none;background:#0f172a;" allow="autoplay"></iframe>`;
+                else if (t === 'pdf') contentDiv.innerHTML = `<iframe src="${pdfEmbed(source.url)}" style="width:100%;height:100%;border:none;" title="${source.title||''}"></iframe>`;
+            } else {
+                contentDiv.innerHTML = '<div style="color:#475569;padding:24px;text-align:center;font-size:13px;font-family:monospace;">NAČÍTÁM…</div>';
+                (async () => {
+                    const res = await fetch(source.url);
+                    if (!res.ok) throw new Error(res.status);
+                    const md = await res.text();
+                    const convert = window.CHJ_convertMd || (s => `<p>${s.replace(/\n/g,'<br>')}</p>`);
+                    contentDiv.innerHTML = `<div class="md-il">${convert(md)}</div>`;
+                })().catch(err => { contentDiv.innerHTML = `<div style="color:#f87171;padding:24px;font-family:monospace;font-size:13px;">CHYBA: ${err.message}</div>`; });
+            }
+            wrap.appendChild(contentDiv);
+
+            document.body.appendChild(wrap);
+            requestAnimationFrame(() => requestAnimationFrame(() => {
+                if (!isMobile) wrap.style.transform = wrap._openT;
+                wrap.style.opacity = '1';
+            }));
+        }
+
+        window.closeSourceViewer = function() {
+            const v = document.getElementById('source-viewer');
+            if (!v) return;
+            if (v._closeT) v.style.transform = v._closeT;
+            v.style.opacity = '0';
+            document.getElementById('source-backdrop')?.remove();
+            setTimeout(() => v.remove(), 300);
+        };
     </script>
 
     <div id="mediaModal"
