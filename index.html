@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#101c35">
     <title>Chytré já — Kolik let má tvoje tělo?</title>
-    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="manifest" href="/assets/manifest-kndRCBLC.webmanifest">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
@@ -72,29 +72,7 @@
         }
         .input-field::placeholder { color:#475569; }
 
-        /* ── Option buttons (quiz) ─────────────── */
-        .option-grid { display:flex; flex-direction:column; gap:10px; margin:1.5rem 0; }
-        .option-btn {
-            padding:14px 18px; text-align:left;
-            background:rgba(30,41,59,0.6); color:#cbd5e1;
-            border:1px solid #334155; border-radius:12px;
-            font-size:1rem; cursor:pointer;
-            transition: all 0.2s;
-        }
-        .option-btn:hover { border-color:#3b82f6; color:#e2e8f0; background:rgba(59,130,246,0.08); }
-        .option-btn.selected { border-color:#3b82f6; color:#fff; background:rgba(59,130,246,0.15); }
-
-        /* ── Progress bar ──────────────────────── */
-        .progress-bar {
-            width:100%; height:4px; background:#1e293b;
-            border-radius:2px; margin-bottom:2rem; overflow:hidden;
-        }
-        .progress-fill {
-            height:100%; background:#3b82f6; border-radius:2px;
-            transition: width 0.4s ease;
-        }
-
-        /* ── Bio-age result ────────────────────── */
+        /* ── Bio-age result (unused, kept for safety) ────────────────────── */
         .bio-age-number {
             font-size:5rem; font-weight:800; text-align:center;
             line-height:1; margin:1.5rem 0 0.5rem;
@@ -167,121 +145,13 @@
         .legal { color:#64748b; font-size:0.8rem; text-align:center; margin-top:1.5rem; line-height:1.5; }
         .legal a { color:#60a5fa; text-decoration:underline; }
     </style>
+  <script type="module" crossorigin src="/assets/index-a16ydBJ_.js"></script>
 </head>
 
 <body>
     <script src="/app/js/universe/splash.js"></script>
 
-    <!-- ══════════════════════════════════════════
-         VIEW 1: LANDING (hook)
-         ══════════════════════════════════════════ -->
-    <div id="landing-view" class="view">
-        <div class="view-card" style="text-align:center;">
-            <img src="/app/assets/images/logo-192.png" style="width:72px;height:72px;margin:0 auto 1.5rem;" class="fade-up">
-            <h1 class="fade-up">Co když ti zbývá míň,<br>než si myslíš?</h1>
-            <p class="subtitle fade-up-delay">
-                Tvůj občanský průkaz říká jedno číslo.<br>
-                Tvoje tělo říká jiné.
-            </p>
-            <button class="btn-primary fade-up-delay" onclick="showView('quiz-1')">
-                Zjisti svůj bio-věk
-            </button>
-            <p class="small-text fade-up-delay">
-                3 otázky. 30 sekund. Bez registrace.
-            </p>
-            <div style="margin-top:2rem;">
-                <button class="btn-ghost" onclick="showView('login')">Už mám účet</button>
-            </div>
-        </div>
-    </div>
 
-    <!-- ══════════════════════════════════════════
-         VIEW 2a: QUIZ — Věk
-         ══════════════════════════════════════════ -->
-    <div id="quiz-1-view" class="view">
-        <div class="view-card">
-            <div class="progress-bar"><div class="progress-fill" style="width:33%"></div></div>
-            <h2>Kolik ti je let?</h2>
-            <p class="subtitle">Kalendářní věk. Zbytek zjistíme.</p>
-            <input type="number" id="q-age" class="input-field" placeholder="např. 52" min="18" max="110" inputmode="numeric">
-            <div style="margin-top:1.5rem;">
-                <button class="btn-primary" id="quiz-1-next" onclick="quizNext1()">Další</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- ══════════════════════════════════════════
-         VIEW 2b: QUIZ — Pohyb
-         ══════════════════════════════════════════ -->
-    <div id="quiz-2-view" class="view">
-        <div class="view-card">
-            <div class="progress-bar"><div class="progress-fill" style="width:66%"></div></div>
-            <h2>Jak moc se hýbeš?</h2>
-            <p class="subtitle">Počítá se cokoliv — chůze, cvičení, práce na zahradě.</p>
-            <div class="option-grid" id="q-movement">
-                <button class="option-btn" data-value="none" onclick="selectOption(this)">Skoro vůbec</button>
-                <button class="option-btn" data-value="light" onclick="selectOption(this)">Občas se projdu</button>
-                <button class="option-btn" data-value="moderate" onclick="selectOption(this)">Pravidelně cvičím 2–3× týdně</button>
-                <button class="option-btn" data-value="active" onclick="selectOption(this)">Aktivně, 4× a víc</button>
-            </div>
-            <button class="btn-primary" id="quiz-2-next" onclick="quizNext2()" style="opacity:0.4; pointer-events:none;">Další</button>
-        </div>
-    </div>
-
-    <!-- ══════════════════════════════════════════
-         VIEW 2c: QUIZ — Rovnováha
-         ══════════════════════════════════════════ -->
-    <div id="quiz-3-view" class="view">
-        <div class="view-card">
-            <div class="progress-bar"><div class="progress-fill" style="width:100%"></div></div>
-            <h2>Stůj na jedné noze.</h2>
-            <p class="subtitle">Zavři oči a zkus to. Vydržíš aspoň 10 sekund?</p>
-            <div class="option-grid" id="q-balance">
-                <button class="option-btn" data-value="yes" onclick="selectOption(this)">Ano, v pohodě</button>
-                <button class="option-btn" data-value="barely" onclick="selectOption(this)">Tak tak, kýval jsem se</button>
-                <button class="option-btn" data-value="no" onclick="selectOption(this)">Ne, spadl jsem</button>
-                <button class="option-btn" data-value="skip" onclick="selectOption(this)">Nechci zkoušet</button>
-            </div>
-            <button class="btn-primary" id="quiz-3-next" onclick="quizNext3()" style="opacity:0.4; pointer-events:none;">Zjistit bio-věk</button>
-        </div>
-    </div>
-
-    <!-- ══════════════════════════════════════════
-         VIEW 3: RESULT
-         ══════════════════════════════════════════ -->
-    <div id="result-view" class="view">
-        <div class="view-card">
-            <p class="bio-age-label">Odhad tvého bio-věku</p>
-            <div class="bio-age-number" id="result-age">—</div>
-            <p class="bio-age-label">let</p>
-            <div class="bio-age-diff" id="result-diff"></div>
-
-            <p style="color:#94a3b8; font-size:0.95rem; line-height:1.6; margin-bottom:0.5rem;">
-                Čtyři soupeři hrají proti tobě:
-            </p>
-            <ul class="killer-list" id="result-killers">
-                <li class="killer-item"><span class="killer-dot" style="background:#ef4444;"></span> Infarkt a mrtvice</li>
-                <li class="killer-item"><span class="killer-dot" style="background:#f97316;"></span> Cukrovka</li>
-                <li class="killer-item"><span class="killer-dot" style="background:#a855f7;"></span> Demence</li>
-                <li class="killer-item"><span class="killer-dot" style="background:#64748b;"></span> Rakovina</li>
-            </ul>
-
-            <p style="color:#cbd5e1; font-size:0.95rem; line-height:1.6; margin-bottom:2rem;" id="result-message">
-                <!-- filled by JS -->
-            </p>
-
-            <button class="btn-primary" onclick="showView('register')">
-                Chci to změnit
-            </button>
-            <p class="small-text">
-                Zaregistruj se a Chytré Já ti řekne,<br>
-                co každý den udělat.
-            </p>
-            <div style="margin-top:1rem; text-align:center;">
-                <button class="btn-ghost" onclick="showView('login')">Už mám účet</button>
-            </div>
-        </div>
-    </div>
 
     <!-- ══════════════════════════════════════════
          VIEW 4: LOGIN
@@ -289,7 +159,6 @@
     <div id="login-view" class="view">
         <div class="view-card">
             <div style="text-align:center; margin-bottom:2rem;">
-                <img src="/app/assets/images/logo-192.png" style="width:64px;height:64px;margin:0 auto 1rem;">
                 <h2>Přihlášení</h2>
             </div>
             <form id="login-form" style="display:flex; flex-direction:column; gap:12px;">
@@ -305,9 +174,6 @@
             <p class="small-text">
                 Nemáš účet? <button class="btn-ghost" onclick="showView('register')">Registrace</button>
             </p>
-            <div style="text-align:center; margin-top:0.5rem;">
-                <button class="btn-ghost" onclick="showView('landing')">Zpět na úvod</button>
-            </div>
         </div>
     </div>
 
@@ -347,7 +213,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
         // ── View switcher ─────────────────────────
-        const ALL_VIEWS = ['landing', 'quiz-1', 'quiz-2', 'quiz-3', 'result', 'login', 'register'];
+        const ALL_VIEWS = ['login', 'register'];
         window.showView = (name) => {
             ALL_VIEWS.forEach(v => {
                 const el = document.getElementById(v + '-view');
@@ -355,190 +221,8 @@
             });
         };
 
-        // ── Quiz state ────────────────────────────
-        const quiz = { age: null, movement: null, balance: null };
-
-        window.selectOption = (btn) => {
-            const grid = btn.parentElement;
-            grid.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
-            btn.classList.add('selected');
-            // Enable next button
-            const nextBtn = grid.parentElement.querySelector('.btn-primary');
-            if (nextBtn) { nextBtn.style.opacity = '1'; nextBtn.style.pointerEvents = 'auto'; }
-        };
-
-        window.quizNext1 = () => {
-            const age = parseInt(document.getElementById('q-age').value);
-            if (!age || age < 18 || age > 110) {
-                document.getElementById('q-age').style.borderColor = '#ef4444';
-                return;
-            }
-            quiz.age = age;
-            showView('quiz-2');
-        };
-        // Enter key on age input
-        document.getElementById('q-age')?.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') { e.preventDefault(); quizNext1(); }
-        });
-
-        window.quizNext2 = () => {
-            const sel = document.querySelector('#q-movement .option-btn.selected');
-            if (!sel) return;
-            quiz.movement = sel.dataset.value;
-            showView('quiz-3');
-        };
-
-        window.quizNext3 = () => {
-            const sel = document.querySelector('#q-balance .option-btn.selected');
-            if (!sel) return;
-            quiz.balance = sel.dataset.value;
-            calculateBioAge();
-        };
-
-        // ── Bio-age calculation (quick estimate) ──
-        function calculateBioAge() {
-            const age = quiz.age;
-            let offset = 0;
-
-            // Movement impact (VO2max proxy — biggest factor per Attia)
-            const moveOffset = { none: +12, light: +5, moderate: -2, active: -7 };
-            offset += moveOffset[quiz.movement] || 0;
-
-            // Balance impact (stability + neuro proxy)
-            const balOffset = { yes: -3, barely: +2, no: +6, skip: +3 };
-            offset += balOffset[quiz.balance] || 0;
-
-            // Scale: offset is for ideal full assessment. Quick estimate = 60% of full
-            offset = Math.round(offset * 0.6);
-
-            const bioAge = age + offset;
-            const diff = bioAge - age;
-
-            // Show result
-            const numEl = document.getElementById('result-age');
-            numEl.textContent = bioAge;
-            numEl.className = 'bio-age-number' + (diff <= 0 ? ' good' : '');
-
-            const diffEl = document.getElementById('result-diff');
-            if (diff > 0) {
-                diffEl.textContent = `+ ${diff} let oproti kalendáři`;
-                diffEl.className = 'bio-age-diff worse';
-            } else if (diff < 0) {
-                diffEl.textContent = `${diff} let oproti kalendáři`;
-                diffEl.className = 'bio-age-diff better';
-            } else {
-                diffEl.textContent = 'Na hraně. Ani nahoru, ani dolů.';
-                diffEl.className = 'bio-age-diff worse';
-            }
-
-            // Highlight relevant killers based on answers
-            const killers = document.querySelectorAll('#result-killers .killer-item');
-            if (quiz.movement === 'none' || quiz.movement === 'light') {
-                killers[0].style.color = '#fca5a5'; // infarkt — highlight
-                killers[1].style.color = '#fdba74'; // cukrovka
-            }
-            if (quiz.balance === 'no' || quiz.balance === 'barely') {
-                killers[2].style.color = '#c4b5fd'; // demence
-            }
-
-            // Message
-            const msgEl = document.getElementById('result-message');
-            if (diff >= 5) {
-                msgEl.textContent = 'Tvoje tělo stárne výrazně rychleji, než musí. Ale dá se to změnit. Každý den se počítá.';
-            } else if (diff > 0) {
-                msgEl.textContent = 'Tělo je o kus napřed. Malé změny ho vrátí zpátky. Stačí začít.';
-            } else if (diff === 0) {
-                msgEl.textContent = 'Jsi na hraně. Krok správným směrem a budeš mladší, než říká občanka.';
-            } else {
-                msgEl.textContent = 'Tvoje tělo je mladší, než kalendář. Drž to — ale i ty máš soupeře, kteří nespí.';
-            }
-
-            // Store for registration
-            window._quizData = { age, bioAge, movement: quiz.movement, balance: quiz.balance };
-
-            showView('result');
-        }
     </script>
 
-    <script type="module">
-        // ── Firebase + Supabase ───────────────────
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/service-worker.js')
-                .then(() => console.log("PWA ready."));
-        }
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js';
-        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js';
-
-        const app = initializeApp({
-            apiKey: "AIzaSyAKREZsoBZkA1xOQ5ff3XDmiJ88nwSjeOk",
-            authDomain: "chytre-ja-app.firebaseapp.com",
-            projectId: "chytre-ja-app",
-            storageBucket: "chytre-ja-app.firebasestorage.app",
-            messagingSenderId: "65882611642",
-            appId: "1:65882611642:web:53d82914aa07d6677d4783"
-        });
-        const auth = getAuth(app);
-        const sb = supabase.createClient('https://pionxzqtxcughvfbgadi.supabase.co', 'sb_publishable_w29DE53nrdGnNEvBn68kzg_ujje7u5Y');
-
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                console.log("Firebase User:", user.email);
-                try {
-                    const { data } = await sb
-                        .from('user_profiles')
-                        .select('*')
-                        .eq('user_id', user.uid)
-                        .maybeSingle();
-
-                    if (!data) {
-                        // New user — save quiz data if available
-                        const q = window._quizData || {};
-                        await sb.from('user_profiles').insert([{
-                            user_id: user.uid,
-                            age: q.age || 45,
-                            gender: 'male',
-                            primary_goal: 'longevity'
-                        }]);
-                    }
-                } catch (err) {
-                    console.error("Profile error:", err);
-                }
-                window.location.href = "/app/";
-            } else {
-                // Not logged in — show landing (unless already on quiz/result)
-                const current = document.querySelector('.view.active');
-                if (!current) showView('landing');
-            }
-        });
-
-        // Login
-        document.getElementById("login-form").addEventListener("submit", (e) => {
-            e.preventDefault();
-            signInWithEmailAndPassword(auth,
-                document.getElementById("email-address").value,
-                document.getElementById("password").value
-            ).catch(err => document.getElementById("error-message").innerText = err.message);
-        });
-
-        // Register
-        document.getElementById("register-form").addEventListener("submit", (e) => {
-            e.preventDefault();
-            const pass = document.getElementById("register-password").value;
-            const pass2 = document.getElementById("password-confirm").value;
-            if (pass !== pass2) {
-                document.getElementById("register-error-message").innerText = "Hesla nesouhlasí.";
-                return;
-            }
-            createUserWithEmailAndPassword(auth,
-                document.getElementById("register-email").value, pass
-            ).catch(err => document.getElementById("register-error-message").innerText = err.message);
-        });
-
-        // Google auth
-        const googleAuth = () => signInWithPopup(auth, new GoogleAuthProvider()).catch(console.error);
-        document.getElementById("google-login-btn").addEventListener("click", googleAuth);
-        document.getElementById("google-register-btn").addEventListener("click", googleAuth);
-    </script>
 
     <!-- Splash handler -->
     <script>
@@ -550,7 +234,7 @@
                     setTimeout(() => {
                         splash.remove();
                         const current = document.querySelector('.view.active');
-                        if (!current) showView('landing');
+                        if (!current) showView('login');
                     }, 500);
                 }
             }, 2500);
