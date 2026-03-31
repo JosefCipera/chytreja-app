@@ -147,8 +147,5 @@
     <span class="hud-mono" style="font-size: 13px; color: #475569;">
       REPAIR_RATE: <span style="color: {textColor};">{repairRate}x</span>
     </span>
-    <span class="hud-mono" style="font-size: 13px; color: #475569;">
-      {bioAge.label.key}: <span style="color: {textColor};">{bioAgeSign}{bioAge.delta} YRS</span>
-    </span>
   </div>
 </div>
