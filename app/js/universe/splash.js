@@ -13,7 +13,7 @@ const splashHTML = `
 ">
     <div style="flex-grow: 1; display: flex; align-items: center; justify-content: center;">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="80" height="80">
-            <circle cx="24" cy="24" r="18" fill="none" stroke="#2563eb" stroke-width="4.5" stroke-dasharray="105 13" stroke-dashoffset="6.5" transform="rotate(-90 24 24)" />
+            <circle cx="24" cy="24" r="18" fill="none" stroke="#2563eb" stroke-width="4.5" stroke-dasharray="105 13" stroke-dashoffset="97" transform="rotate(-90 24 24)" />
         </svg>
     </div>
     <div style="padding-bottom: 2.5rem; text-align: center;">
