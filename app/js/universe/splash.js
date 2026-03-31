@@ -12,7 +12,9 @@ const splashHTML = `
     transition: opacity 0.5s ease-out;
 ">
     <div style="flex-grow: 1; display: flex; align-items: center; justify-content: center;">
-        <img src="/app/assets/images/pwa-icon-192.png" style="width: 96px; height: auto; border-radius: 22px;">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="80" height="80">
+            <circle cx="24" cy="24" r="18" fill="none" stroke="#2563eb" stroke-width="4.5" stroke-dasharray="105 13" stroke-dashoffset="6.5" transform="rotate(-90 24 24)" />
+        </svg>
     </div>
     <div style="padding-bottom: 2.5rem; text-align: center;">
         <h1 style="color: #e2e8f0; font-family: sans-serif; margin: 0; font-size: 28px; font-weight: 500; letter-spacing: 0.5px;">Chytré já</h1>
