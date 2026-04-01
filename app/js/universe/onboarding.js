@@ -576,10 +576,12 @@ async function saveOnboarding() {
     // Demographics (birth_year, sex, height, weight) → managed in Nastavení (Profile tab)
     // Injuries + Aspiration → managed in Nastavení (other tabs)
     // Create empty user_profiles row if not exists (so bio-age calc doesn't fail)
-    await supabase.from('user_profiles').upsert({
-      user_id: userId,
-      primary_goal: 'longevity',
-    }, { onConflict: 'user_id' }).catch(() => {});
+    try {
+      await supabase.from('user_profiles').upsert({
+        user_id: userId,
+        primary_goal: 'longevity',
+      }, { onConflict: 'user_id' });
+    } catch (e) { /* table may not exist yet */ }
 
     console.log('✅ Onboarding saved');
 
