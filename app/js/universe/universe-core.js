@@ -77,7 +77,7 @@ export function renderUniverse(DATA, subset = null, forcedMainId = null) {
       enabled: true,
       barnesHut: {
         gravitationalConstant: -40000,  // Silnější odpuzování = uzly dál od sebe
-        springLength: 380,              // Delší pružiny = více prostoru
+        springLength: 320,              // Delší pružiny = více prostoru
         springConstant: 0.03,
         avoidOverlap: 1.0               // Plné zabránění překrytí klikatelné plochy
       },
@@ -163,6 +163,7 @@ export function renderUniverse(DATA, subset = null, forcedMainId = null) {
 // === Pomocné funkce ===
 
 function makeNode(it, isMain) {
+  const isMobile = window.innerWidth < 768;
   // Semafor barvy podle state
   const stateColors = {
     'GREEN': '#22c55e',
@@ -195,10 +196,10 @@ function makeNode(it, isMain) {
       }
     },
     shape: "dot",
-    size: isMain ? 80 : 60,
+    size: isMain ? 62 : 46,
     font: {
       color: "#fff",
-      size: isMain ? 36 : 28,
+      size: isMain ? (isMobile ? 34 : 28) : (isMobile ? 26 : 22),
       face: "Inter, sans-serif",
       strokeWidth: 4,
       strokeColor: "rgba(0,0,0,0.9)"
