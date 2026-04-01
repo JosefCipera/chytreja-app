@@ -43,7 +43,7 @@ export const onboardingQuestions = [
     help: 'Nevím nebo >6.0=1, 5.5-6.0=5, <5.0=10'
   },
   {
-    id: 'bílkoviny', type: 'slider', category: 'health',
+    id: 'bilkoviny', type: 'slider', category: 'health',
     q: 'Máte v každém jídle zdroj bílkovin?',
     desc: 'Stavební kámen pro dlouhověkost.',
     help: 'Nikdy=1, občas=5, vždy=10'
@@ -79,42 +79,10 @@ export const onboardingQuestions = [
     help: 'Vyčerpaný=1, lehce unavený=5, čerstvý=10'
   },
 
-  // ── Dekathlon (Attia) ─────────────────────────────
-  {
-    id: 'grip', type: 'slider', category: 'health',
-    q: 'Jak silný je tvůj stisk ruky?',
-    desc: 'Síla stisku predikuje dlouhověkost.',
-    help: 'Neudržíš tašku=1, normální=5, drtivý stisk=10'
-  },
-  {
-    id: 'dead_hang', type: 'slider', category: 'health',
-    q: 'Jak dlouho vydrží viset na hrazdě?',
-    desc: 'Dead hang = síla horní části těla.',
-    help: '0s=1, 10s=3, 30s=6, 60s+=10'
-  },
-  {
-    id: 'floor_get_up', type: 'slider', category: 'health',
-    q: 'Jak lehce vstaneš ze země bez pomoci rukou?',
-    desc: 'Test funkční síly celého těla.',
-    help: 'Nezvládnu=1, s obtížemi=5, lehce=10'
-  },
-  {
-    id: 'farmer_carry', type: 'slider', category: 'health',
-    q: 'Uneseš dvě těžké tašky z obchodu bez přestávky?',
-    desc: 'Farmer carry = celotělová síla a stabilita.',
-    help: 'Hned položím=1, 50m=5, bez problému=10'
-  },
-  {
-    id: 'hip_hinge', type: 'slider', category: 'health',
-    q: 'Zvládneš předklon s rovnými zády a zpět?',
-    desc: 'Hip hinge chrání záda a posiluje zadní řetězec.',
-    help: 'Bolí záda=1, s obtížemi=5, čistě=10'
-  },
-
   // Demographics (birth_year, sex, height, weight) are in Profile settings — no duplicates here
 ];
 
-const TOTAL_STEPS = onboardingQuestions.length; // 14 health questions only
+const TOTAL_STEPS = onboardingQuestions.length; // 11 health questions
 
 // =====================================================
 // THRESHOLDY (health slider → semafor)
@@ -126,17 +94,12 @@ const thresholds = {
   'vytrvalost':     { red: [1,2,3,4],   yellow: [5,6,7],   green: [8,9,10] },
   'spanek':         { red: [1,2,3,4],   yellow: [5,6,7],   green: [8,9,10] },
   'metabolicke':    { red: [1,2,3],     yellow: [4,5,6],   green: [7,8,9,10] },
-  'bílkoviny':      { red: [1,2,3,4],   yellow: [5,6,7],   green: [8,9,10] },
+  'bilkoviny':      { red: [1,2,3,4],   yellow: [5,6,7],   green: [8,9,10] },
   'klid':           { red: [1,2,3,4],   yellow: [5,6,7],   green: [8,9,10] },
   'mobilita':       { red: [1,2,3],     yellow: [4,5,6],   green: [7,8,9,10] },
   'nervovy_system': { red: [1,2,3,4],   yellow: [5,6,7],   green: [8,9,10] },
   'smysl':          { red: [1,2,3,4,5], yellow: [6,7,8],   green: [9,10] },
   'vo2max':         { red: [1,2,3,4],   yellow: [5,6,7],   green: [8,9,10] },
-  'grip':           { red: [1,2,3],     yellow: [4,5,6],   green: [7,8,9,10] },
-  'dead_hang':      { red: [1,2,3],     yellow: [4,5,6,7], green: [8,9,10] },
-  'floor_get_up':   { red: [1,2,3],     yellow: [4,5,6],   green: [7,8,9,10] },
-  'farmer_carry':   { red: [1,2,3],     yellow: [4,5,6],   green: [7,8,9,10] },
-  'hip_hinge':      { red: [1,2,3],     yellow: [4,5,6,7], green: [8,9,10] },
 };
 
 // =====================================================
@@ -516,11 +479,9 @@ async function saveOnboarding() {
 
     // 1b. Calculate parent node states (worst child rule)
     const parentMap = {
-      sila:         ['grip', 'dead_hang', 'farmer_carry', 'hip_hinge'],
-      stabilita:    ['floor_get_up'],
       telo:         ['sila', 'vytrvalost', 'stabilita', 'mobilita', 'vo2max'],
       mysl:         ['nervovy_system', 'klid', 'smysl'],
-      vyziva:       ['bílkoviny'],
+      vyziva:       ['bilkoviny'],
       zdravi:       ['metabolicke', 'spanek'],
       dlouhovekost: ['telo', 'mysl', 'vyziva', 'zdravi'],
     };
