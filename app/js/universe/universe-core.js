@@ -77,7 +77,7 @@ export function renderUniverse(DATA, subset = null, forcedMainId = null) {
       enabled: true,
       barnesHut: {
         gravitationalConstant: -40000,  // Silnější odpuzování = uzly dál od sebe
-        springLength: 320,              // Delší pružiny = více prostoru
+        springLength: 380,              // Delší pružiny = více prostoru
         springConstant: 0.03,
         avoidOverlap: 1.0               // Plné zabránění překrytí klikatelné plochy
       },
@@ -195,10 +195,10 @@ function makeNode(it, isMain) {
       }
     },
     shape: "dot",
-    size: isMain ? 62 : 46,
+    size: isMain ? 80 : 60,
     font: {
       color: "#fff",
-      size: isMain ? 28 : 22,
+      size: isMain ? 36 : 28,
       face: "Inter, sans-serif",
       strokeWidth: 4,
       strokeColor: "rgba(0,0,0,0.9)"
