@@ -44,13 +44,15 @@ export function playWhoosh() {
 
 
 // ── STT – Speech Recognition ──────────────────────────────────
-const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+// NOTE: checked fresh inside buildRecognition() – iOS PWA initializes API lazily
 let recognition = null;
 let isListening  = false;
 
 function buildRecognition() {
-  if (!SpeechRecognition) return null;
-  const r = new SpeechRecognition();
+  // Re-check at call time so iOS PWA / lazy browser inits are picked up
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return null;
+  const r = new SR();
   r.lang          = 'cs-CZ';
   r.interimResults = false;
   r.maxAlternatives = 1;
@@ -61,7 +63,8 @@ function buildRecognition() {
 // Vrátí Promise<string> – transkript nebo null při chybě
 export function listenOnce() {
   return new Promise((resolve) => {
-    if (!SpeechRecognition) {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) {
       aiSpeak('Tvůj prohlížeč nepodporuje rozpoznávání řeči.');
       resolve(null);
       return;

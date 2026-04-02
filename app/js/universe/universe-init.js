@@ -190,12 +190,14 @@ function initVoiceButton() {
   const btn = document.getElementById('voice-mic-btn');
   if (!btn) return;
   btn.addEventListener('click', handleMicClick);
+  btn.addEventListener('touchend', (e) => { e.preventDefault(); handleMicClick(); });
 }
 
 function initHeaderMic() {
   const btn = document.getElementById('header-mic-btn');
   if (!btn) return;
   btn.addEventListener('click', handleMicClick);
+  btn.addEventListener('touchend', (e) => { e.preventDefault(); handleMicClick(); });
 }
 
 // =====================================================

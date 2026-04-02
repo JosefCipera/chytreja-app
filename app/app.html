@@ -552,7 +552,7 @@
                 header.appendChild(printBtn);
 
                 const dlBtn = document.createElement('button');
-                dlBtn.textContent = '⬇'; dlBtn.title = 'Stáhnout'; dlBtn.style.cssText = btnStyle;
+                dlBtn.textContent = '📥'; dlBtn.title = 'Stáhnout'; dlBtn.style.cssText = btnStyle;
                 const doDownload = async () => { const fname = (source.url||'').split('/').pop() || 'dokument.md'; const blob = await fetch(source.url).then(r => r.blob()); const burl = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = burl; a.download = fname; a.click(); setTimeout(() => URL.revokeObjectURL(burl), 2000); };
                 dlBtn.addEventListener('click', doDownload);
                 dlBtn.addEventListener('touchend', (e) => { e.preventDefault(); doDownload(); });
