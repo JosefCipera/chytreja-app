@@ -3,17 +3,9 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Vesmír Desktop 🌌</title>
-
-    <!-- Okamžitě smaž stale SW registrace — zabraňuje servírování zastaralých JS souborů -->
-    <script>
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.getRegistrations().then(regs => {
-                regs.forEach(reg => reg.unregister());
-            });
-        }
-    </script>
+    <!-- build: 20260402a -->
 
     <!-- Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -38,9 +30,6 @@
             if (!user) {
                 window.location.href = '/';
             } else {
-                // Store UID globally for immediate use
-                window.CHJ_UID = user.uid;
-
                 // Update avatar dynamically
                 const email = user.email || 'User';
                 const name = user.displayName || email.split('@')[0];
@@ -240,14 +229,14 @@
     <!-- Horní lišta -->
     <header id="appHeader" class="app-header">
         <h1 id="appTitle">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 48" width="140" height="48"
-                style="vertical-align: middle;">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="36" height="36">
                 <circle cx="24" cy="24" r="18" fill="none" stroke="#2563eb" stroke-width="4.5" stroke-dasharray="105 13"
                     stroke-dashoffset="6.5" transform="rotate(-90 24 24)" />
             </svg>
+            <span style="color:#93c5fd;font-size:1.1rem;font-weight:600;letter-spacing:0.01em;">Chytré já</span>
         </h1>
         <div class="header-right">
-            <div class="header-controls">
+            <div class="header-controls" style="display:none;">
                 <label for="modelSelector">Model:</label>
                 <select id="modelSelector"></select>
                 <label for="roleSelect">Režim:</label>
@@ -292,55 +281,6 @@
             </div>
         </div>
     </header>
-
-    <!-- Universe starfield — JS-generated, 5 depth layers -->
-    <div id="universe-stars" style="position:fixed;inset:0;pointer-events:none;z-index:2;overflow:hidden;"></div>
-    <script>
-    (function() {
-      const c = document.getElementById('universe-stars');
-      const rnd = (a, b) => a + Math.random() * (b - a);
-      // XL anchor positions (near typical node locations, with jitter)
-      const xlAnchors = [[48,52],[51,16],[29,57],[71,63],[49,88],[22,32],[75,28],[38,72],[60,42]];
-      const mob = window.innerWidth < 700;
-      const layers = mob ? [
-        // mobile: méně hvězd, žádné XL (pletly by se s uzly)
-        [30, 1,  2,   0.12, 0.22, 0],
-        [20, 2,  4,   0.18, 0.32, 1],
-        [10, 4,  7,   0.22, 0.40, 2],
-        [5,  7,  11,  0.35, 0.52, 3],
-        [3,  11, 15,  0.30, 0.44, 4],
-      ] : [
-        // desktop: plný vesmír
-        [65, 1,  2.5, 0.12, 0.28, 0],
-        [45, 2.5,5,   0.20, 0.38, 1],
-        [25, 5,  10,  0.28, 0.52, 2],
-        [14, 11, 20,  0.42, 0.65, 3],
-        [9,  24, 40,  0.38, 0.58, 4],
-      ];
-      layers.forEach(([count, minS, maxS, minO, maxO, gl], li) => {
-        for (let i = 0; i < count; i++) {
-          const sz = rnd(minS, maxS), op = rnd(minO, maxO);
-          let lx, ly;
-          if (li === 4) {
-            const a = xlAnchors[i % xlAnchors.length];
-            lx = a[0] + rnd(-12, 12); ly = a[1] + rnd(-12, 12);
-          } else {
-            lx = rnd(0.5, 97); ly = rnd(0.5, 97);
-          }
-          const r = Math.random();
-          const [cr, cg, cb] = r < 0.55 ? [6,182,212] : r < 0.82 ? [180,220,255] : [255,255,255];
-          let shadow = '';
-          if (gl === 1) shadow = `0 0 ${(sz*2).toFixed(0)}px rgba(${cr},${cg},${cb},0.6)`;
-          else if (gl === 2) shadow = `0 0 ${(sz*1.5).toFixed(0)}px rgba(${cr},${cg},${cb},0.8),0 0 ${(sz*5).toFixed(0)}px rgba(${cr},${cg},${cb},0.3)`;
-          else if (gl === 3) shadow = `0 0 ${(sz).toFixed(0)}px rgba(${cr},${cg},${cb},1),0 0 ${(sz*3).toFixed(0)}px rgba(${cr},${cg},${cb},0.55),0 0 ${(sz*7).toFixed(0)}px rgba(${cr},${cg},${cb},0.2),0 0 ${(sz*14).toFixed(0)}px rgba(${cr},${cg},${cb},0.07)`;
-          else if (gl === 4) shadow = `0 0 ${(sz*0.6).toFixed(0)}px rgba(${cr},${cg},${cb},1),0 0 ${(sz*2).toFixed(0)}px rgba(${cr},${cg},${cb},0.85),0 0 ${(sz*5).toFixed(0)}px rgba(${cr},${cg},${cb},0.45),0 0 ${(sz*12).toFixed(0)}px rgba(${cr},${cg},${cb},0.18),0 0 ${(sz*25).toFixed(0)}px rgba(${cr},${cg},${cb},0.06)`;
-          const el = document.createElement('div');
-          el.style.cssText = `position:absolute;left:${lx.toFixed(1)}%;top:${ly.toFixed(1)}%;width:${sz.toFixed(1)}px;height:${sz.toFixed(1)}px;border-radius:50%;background:rgba(${cr},${cg},${cb},${op.toFixed(2)});transform:translate(-50%,-50%);${shadow?'box-shadow:'+shadow+';':''}`;
-          c.appendChild(el);
-        }
-      });
-    })();
-    </script>
 
     <!-- Plátno sítě -->
     <div id="network"></div>
@@ -387,8 +327,8 @@
     </aside>
 
     <script type="module">
-        import { supabase } from './js/universe/supabaseClient.js?v=20260329b';
-        import { updateRecommendations } from './js/universe/universe-panel.js?v=20260330b';
+        import { supabase } from './js/universe/supabaseClient.js?v=20260401b';
+        import { updateRecommendations } from './js/universe/universe-panel.js?v=20260401b';
 
         window.addEventListener('DOMContentLoaded', async () => {
             supabase.auth.onAuthStateChange((event, session) => {
@@ -400,13 +340,13 @@
         });
     </script>
 
-    <script type="module" src="/app/js/universe/universe-viewers.js?v=20260329b"></script>
-    <script type="module" src="/app/js/universe/universe-access.js?v=20260329b"></script>
-    <script type="module" src="/app/js/universe/universe-core.js?v=20260329b"></script>
-    <script type="module" src="/app/js/universe/universe-init.js?v=20260329b"></script>
-    <script type="module" src="/app/js/universe/user-data-panel.js?v=20260329b"></script>
-    <script type="module" src="/app/js/universe/ai-assistant.js?v=20260329b"></script>
-    <script type="module" src="/app/js/universe/universe-panel.js?v=20260330b"></script>
+    <script type="module" src="/app/js/universe/universe-viewers.js?v=20260401b"></script>
+    <script type="module" src="/app/js/universe/universe-access.js?v=20260401b"></script>
+    <script type="module" src="/app/js/universe/universe-core.js?v=20260401b"></script>
+    <script type="module" src="/app/js/universe/universe-init.js?v=20260401b"></script>
+    <script type="module" src="/app/js/universe/user-data-panel.js?v=20260401b"></script>
+    <script type="module" src="/app/js/universe/ai-assistant.js?v=20260401b"></script>
+    <script type="module" src="/app/js/universe/universe-panel.js?v=20260401b"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script>
         window.addEventListener('load', () => {
@@ -424,63 +364,70 @@
         });
     </script>
 
-    <!-- Service Worker — registrace záměrně vypnutá na dev větvi (caching problémy) -->
-    <!-- Pro produkci: znovu zapnout a otestovat na app.iting.cz -->
+    <!-- Hide app header when any modal opens — works regardless of JS cache version -->
     <script>
-        // SW registration disabled
-        if (false && 'serviceWorker' in navigator) {
+        new MutationObserver(mutations => {
+            for (const m of mutations) {
+                for (const node of m.addedNodes) {
+                    if (node.id === 'viewerModal') {
+                        const h = document.getElementById('appHeader');
+                        if (h) h.style.display = 'none';
+                        const obs = new MutationObserver(() => {
+                            if (!document.getElementById('viewerModal')) {
+                                const h2 = document.getElementById('appHeader');
+                                if (h2) h2.style.display = '';
+                                obs.disconnect();
+                            }
+                        });
+                        obs.observe(document.body, { childList: true });
+                    }
+                }
+            }
+        }).observe(document.body, { childList: true });
+    </script>
+
+    <!-- Service Worker -->
+    <script>
+        if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/service-worker.js', { scope: '/' })
                     .then(reg => console.log('✅ Service Worker zaregistrován, scope:', reg.scope))
                     .catch(err => console.warn('⚠️ SW registrace selhala:', err));
             });
+            navigator.serviceWorker.addEventListener('message', e => {
+                if (e.data?.type === 'SW_UPDATED') window.location.reload();
+            });
         }
     </script>
 
-    <!-- HUD Overlay — Svelte HUD panel, slides in from right, universe visible behind -->
-    <!-- Backdrop removed: clicks pass through to vis-network canvas; empty-space click closes panel via universe-core.js -->
-
+    <!-- Onboarding Modal -->
+    <!-- HUD Overlay — Svelte HUD panel (same as index.html) -->
     <div id="hud-overlay" style="
-        display: none;
-        position: fixed; inset: 0; z-index: 5000;
-        background: transparent;
-        align-items: stretch; justify-content: flex-end;
+        display: none; position: fixed; inset: 0; z-index: 5000;
+        background: transparent; align-items: stretch; justify-content: flex-end;
         pointer-events: none;
     ">
         <div id="hud-panel-wrap" style="
             width: 100%; max-width: 420px;
-            height: calc(100dvh - 72px);
-            margin-top: 56px; margin-bottom: 16px; margin-right: 0;
+            height: calc(100dvh - 84px - env(safe-area-inset-top, 0px));
+            margin-top: calc(56px + env(safe-area-inset-top, 0px) + 12px); margin-bottom: 16px; margin-right: 0;
             transform: translateX(100%);
             transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1);
-            overflow: hidden;
-            border-radius: 20px 0 0 20px;
-            pointer-events: auto;
+            overflow: hidden; border-radius: 20px 0 0 20px; pointer-events: auto;
         ">
-            <iframe
-                id="hud-iframe"
-                src=""
-                style="width:100%; height:100%; border:none;"
-                allow="microphone"
-            ></iframe>
+            <iframe id="hud-iframe" src="" style="width:100%; height:100%; border:none;" allow="microphone"></iframe>
         </div>
     </div>
-
     <script>
-        // HUD overlay control
         window._hudOpen = false;
-
         window.openHudOverlay = function(userId, nodeId) {
             const overlay = document.getElementById('hud-overlay');
             const wrap    = document.getElementById('hud-panel-wrap');
             const iframe  = document.getElementById('hud-iframe');
-
             if (window._hudOpen) {
-                // Panel already open — just swap content, no animation
                 iframe.src = `/app/hud.html?userId=${encodeURIComponent(userId)}&nodeId=${encodeURIComponent(nodeId)}&_v=${Date.now()}`;
                 return;
             }
-
             iframe.src = `/app/hud.html?userId=${encodeURIComponent(userId)}&nodeId=${encodeURIComponent(nodeId)}&_v=${Date.now()}`;
             overlay.style.display = 'flex';
             requestAnimationFrame(() => requestAnimationFrame(() => {
@@ -488,22 +435,13 @@
             }));
             window._hudOpen = true;
         };
-
         window.closeHudOverlay = function() {
             const overlay = document.getElementById('hud-overlay');
             const wrap    = document.getElementById('hud-panel-wrap');
             const iframe  = document.getElementById('hud-iframe');
-
             wrap.style.transform = 'translateX(100%)';
-            setTimeout(() => {
-                overlay.style.display = 'none';
-                iframe.src = '';
-                window._hudOpen = false;
-            }, 360);
+            setTimeout(() => { overlay.style.display = 'none'; iframe.src = ''; window._hudOpen = false; }, 360);
         };
-
-        // postMessage handler
-        // TTS engine běží v top frame (iOS blokuje TTS z iframe)
         let _topTTS = null;
         function _runTopTTS(text, lang) {
             if (!('speechSynthesis' in window)) return;
@@ -514,12 +452,10 @@
             const cz = voices.find(v => /cs[-_]CZ/i.test(v.lang)) || voices.find(v => /czech/i.test(v.lang));
             if (cz) utt.voice = cz;
             utt.onend = utt.onerror = () => {
-                // Oznám vieweru že skončilo
                 document.querySelectorAll('iframe').forEach(f => f.contentWindow?.postMessage({ type: 'chj:tts:ended' }, '*'));
             };
             window.speechSynthesis.speak(utt);
         }
-
         window.addEventListener('message', function(e) {
             if (e.data === 'chj:hud:close') window.closeHudOverlay();
             if (e.data?.type === 'chj:source:open') openSourceViewer(e.data.source);
@@ -527,7 +463,6 @@
             if (e.data?.type === 'chj:tts:stop') { if ('speechSynthesis' in window) window.speechSynthesis.cancel(); }
         });
 
-        // Source viewer — vlevo od HUD panelu
         function mediaTypeOf(url) {
             if (!url) return 'none';
             const u = url.toLowerCase();
@@ -546,8 +481,10 @@
             return `https://docs.google.com/gviewer?embedded=true&url=${encodeURIComponent(url)}`;
         }
 
-        window.openSourceViewer = function(source) {
+        function openSourceViewer(source) {
             window.closeSourceViewer();
+            const _hdr = document.getElementById('appHeader');
+            if (_hdr) _hdr.style.display = 'none';
             const t = source.url ? mediaTypeOf(source.url) : 'none';
             if (t === 'iframe') { if (source.url) window.open(source.url, '_blank'); return; }
             if (t === 'none') return;
@@ -558,18 +495,17 @@
 
             const backdrop = document.createElement('div');
             backdrop.id = 'source-backdrop';
-            backdrop.style.cssText = 'position:fixed;inset:0;z-index:4998;cursor:pointer;';
-            let _ignoreBackdrop = false;
-            backdrop.onclick = () => { if (!_ignoreBackdrop) window.closeSourceViewer(); };
+            backdrop.style.cssText = 'position:fixed;inset:0;z-index:25000;cursor:pointer;';
+            backdrop.onclick = () => window.closeSourceViewer();
             backdrop.addEventListener('touchend', (e) => { e.preventDefault(); window.closeSourceViewer(); });
             document.body.appendChild(backdrop);
 
             const wrap = document.createElement('div');
             wrap.id = 'source-viewer';
 
-            // Content-aware dimensions
-            let dims = {};
             if (!isMobile) {
+                const isMdType = (t === 'md' || t === 'article');
+                let dims = {};
                 if (t === 'youtube' || t === 'video') {
                     const w = Math.min(vw * 0.82, 960);
                     const h = Math.min(Math.round(w * 9 / 16) + 48, vh * 0.9);
@@ -578,32 +514,18 @@
                     dims = { w: Math.min(vw * 0.55, 520), h: 148, top: '50%', openT: 'translateX(-50%) translateY(-50%)', closeT: 'translateX(-50%) translateY(calc(-50% + 10px))' };
                 } else if (t === 'pdf') {
                     dims = { w: Math.min(vw * 0.75, 920), h: Math.round(vh * 0.85), top: '7%', openT: 'translateX(-50%) translateY(0)', closeT: 'translateX(-50%) translateY(10px)' };
-                } else { // md / article
+                } else {
                     dims = { w: Math.min(vw * 0.68, 760), h: Math.round(vh * 0.82), top: '7%', openT: 'translateX(-50%) translateY(0)', closeT: 'translateX(-50%) translateY(10px)' };
                 }
-                wrap._openT  = dims.openT;
-                wrap._closeT = dims.closeT;
-
-                wrap.style.cssText = `
-                    position:fixed; top:${dims.top}; left:50%;
-                    transform:${dims.closeT};
-                    width:${dims.w}px; height:${dims.h}px;
-                    background:rgba(2,6,14,0.97);
-                    border:1px solid rgba(6,182,212,0.25);
-                    border-radius:16px; z-index:4999;
-                    display:flex; flex-direction:column; overflow:hidden;
-                    box-shadow:0 0 40px rgba(6,182,212,0.1);
-                    opacity:0;
-                    transition:transform 0.28s cubic-bezier(0.32,0.72,0,1), opacity 0.28s;
-                `;
+                wrap._openT = dims.openT; wrap._closeT = dims.closeT;
+                wrap.style.cssText = `position:fixed;top:${dims.top};left:50%;transform:${dims.closeT};width:${dims.w}px;height:${dims.h}px;background:rgba(2,6,14,0.97);border:1px solid rgba(6,182,212,0.25);border-radius:16px;z-index:26000;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 0 40px rgba(6,182,212,0.1);opacity:0;transition:transform 0.28s cubic-bezier(0.32,0.72,0,1),opacity 0.28s;`;
             } else {
-                wrap.style.cssText = 'position:fixed;inset:0;background:rgba(2,6,14,0.98);z-index:6000;display:flex;flex-direction:column;overflow:hidden;opacity:0;transition:opacity 0.22s;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);';
+                wrap.style.cssText = 'position:fixed;inset:0;background:rgba(2,6,14,0.98);z-index:26000;display:flex;flex-direction:column;overflow:hidden;opacity:0;transition:opacity 0.22s;padding-top:max(env(safe-area-inset-top,0px),8px);padding-bottom:max(env(safe-area-inset-bottom,0px),8px);';
             }
 
             const shortId = id => { if (!id) return '???'; const s = String(id), d = s.indexOf('-'); return d > 0 ? s.slice(0,d).toUpperCase() : s; };
             const isMdType = (t === 'md' || t === 'article');
 
-            // Inject MD reading styles once — mirrors viewer.css without white bg
             if (isMdType && !document.getElementById('_chj-md-css')) {
                 const s = document.createElement('style');
                 s.id = '_chj-md-css';
@@ -611,152 +533,90 @@
                 document.head.appendChild(s);
             }
 
-            const innerContent = (() => {
-                if (t === 'youtube') return `<iframe src="${youtubeEmbed(source.url)}" style="width:100%;height:100%;border:none;" allow="autoplay;encrypted-media" allowfullscreen></iframe>`;
-                if (t === 'video')   return `<video src="${source.url}" controls autoplay style="width:100%;height:100%;background:#000;"></video>`;
-                if (t === 'audio')   return `<iframe src="/app/viewer.html?type=audio&file=${encodeURIComponent(source.url)}" style="width:100%;height:100%;border:none;background:#0f172a;" allow="autoplay"></iframe>`;
-                if (t === 'pdf')     return `<iframe src="${pdfEmbed(source.url)}" style="width:100%;height:100%;border:none;" title="${source.title}"></iframe>`;
-                if (isMdType)        return '<div style="color:#475569;padding:24px;text-align:center;font-size:13px;font-family:monospace;">NAČÍTÁM…</div>';
-                return '';
-            })();
-
             // Header
             const header = document.createElement('div');
-            header.style.cssText = 'padding:10px 14px;border-bottom:1px solid rgba(6,182,212,0.18);display:flex;align-items:center;gap:2px;flex-shrink:0;min-height:48px;';
+            header.style.cssText = 'padding:10px 14px;border-bottom:1px solid rgba(6,182,212,0.18);display:flex;align-items:center;gap:2px;flex-shrink:0;min-height:48px;background:rgba(2,6,14,0.97);position:sticky;top:0;z-index:1;';
             const headerInfo = document.createElement('span');
             headerInfo.style.cssText = 'font-family:monospace;font-size:11px;letter-spacing:0.08em;color:#64748b;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
             headerInfo.innerHTML = `[MED_ID:&nbsp;${shortId(source.med_id)}]&nbsp;&nbsp;·&nbsp;&nbsp;${source.journal || ''}, ${source.year || ''}`;
             header.appendChild(headerInfo);
 
-            // MD: Print + Download + TTS buttons (all in parent frame → user-gesture OK on iOS)
             let _mdTtsOn = false;
             if (isMdType) {
-                const btnStyle = 'background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);border-radius:6px;cursor:pointer;padding:5px 9px;-webkit-tap-highlight-color:transparent;flex-shrink:0;font-size:15px;line-height:1;color:#e2e8f0;margin-left:4px;min-width:32px;min-height:32px;';
-
-                // Print
+                const btnStyle = 'background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);border-radius:6px;cursor:pointer;padding:5px 9px;-webkit-tap-highlight-color:transparent;flex-shrink:0;font-size:15px;line-height:1;color:#e2e8f0;margin-left:4px;min-width:44px;min-height:44px;';
                 const printBtn = document.createElement('button');
-                printBtn.textContent = '🖨'; printBtn.title = 'Tisk';
-                printBtn.style.cssText = btnStyle;
-                const doPrint = () => {
-                    const el = document.querySelector('.md-il');
-                    if (!el) return;
-                    const iframe = document.createElement('iframe');
-                    iframe.style.cssText = 'position:fixed;width:0;height:0;border:none;top:-9999px;';
-                    document.body.appendChild(iframe);
-                    const doc = iframe.contentDocument;
-                    doc.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${source.title||'Dokument'}</title><style>body{font-family:system-ui,sans-serif;padding:24px 32px;max-width:780px;margin:0 auto;color:#1e293b;line-height:1.7;font-size:15px}h1{font-size:1.7rem;margin:0 0 1rem;font-weight:700}h2{font-size:1.3rem;margin:1.8rem 0 .6rem;border-bottom:1px solid #e2e8f0;padding-bottom:4px}h3{font-size:1.1rem;margin:1.4rem 0 .5rem}p,li{margin-bottom:.8rem}a{color:#2563eb}code{background:#f1f5f9;padding:2px 4px;border-radius:3px;font-size:.88em}pre{background:#f1f5f9;padding:12px;border-radius:6px;overflow-x:auto}hr{border:none;border-top:1px solid #e2e8f0;margin:1.5rem 0}blockquote{border-left:3px solid #cbd5e1;margin:0 0 1rem;padding:6px 14px;background:#f8fafc}</style></head><body>${el.innerHTML}</body></html>`);
-                    doc.close();
-                    iframe.contentWindow.focus();
-                    iframe.contentWindow.print();
-                    setTimeout(() => document.body.removeChild(iframe), 1000);
-                };
+                printBtn.textContent = '🖨'; printBtn.title = 'Tisk'; printBtn.style.cssText = btnStyle;
+                const doPrint = () => { const el = document.querySelector('.md-il'); if (!el) return; const iframe = document.createElement('iframe'); iframe.style.cssText = 'position:fixed;width:0;height:0;border:none;top:-9999px;'; document.body.appendChild(iframe); const doc = iframe.contentDocument; doc.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${source.title||''}</title><style>body{font-family:system-ui,sans-serif;padding:24px;max-width:780px;margin:0 auto;color:#1e293b;line-height:1.7;font-size:15px}</style></head><body>${el.innerHTML}</body></html>`); doc.close(); iframe.contentWindow.focus(); iframe.contentWindow.print(); setTimeout(() => document.body.removeChild(iframe), 1000); };
                 printBtn.addEventListener('click', doPrint);
                 printBtn.addEventListener('touchend', (e) => { e.preventDefault(); doPrint(); });
                 header.appendChild(printBtn);
 
-                // Download
                 const dlBtn = document.createElement('button');
-                dlBtn.textContent = '⬇'; dlBtn.title = 'Stáhnout';
-                dlBtn.style.cssText = btnStyle;
-                const doDownload = async () => {
-                    const fname = (source.url||'').split('/').pop() || 'dokument.md';
-                    const blob = await fetch(source.url).then(r => r.blob());
-                    const burl = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = burl; a.download = fname; a.click();
-                    setTimeout(() => URL.revokeObjectURL(burl), 2000);
-                };
+                dlBtn.textContent = '⬇'; dlBtn.title = 'Stáhnout'; dlBtn.style.cssText = btnStyle;
+                const doDownload = async () => { const fname = (source.url||'').split('/').pop() || 'dokument.md'; const blob = await fetch(source.url).then(r => r.blob()); const burl = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = burl; a.download = fname; a.click(); setTimeout(() => URL.revokeObjectURL(burl), 2000); };
                 dlBtn.addEventListener('click', doDownload);
                 dlBtn.addEventListener('touchend', (e) => { e.preventDefault(); doDownload(); });
                 header.appendChild(dlBtn);
 
-                // TTS — spustí/zastaví čtení, běží v parent frame (iOS user-gesture OK)
                 const ttsBtn = document.createElement('button');
-                ttsBtn.textContent = '🔊'; ttsBtn.title = 'Přehrát';
-                ttsBtn.style.cssText = btnStyle;
-                const doTTS = () => {
-                    if (_mdTtsOn) {
-                        speechSynthesis.cancel(); _mdTtsOn = false;
-                        ttsBtn.textContent = '🔊';
-                        return;
-                    }
-                    const el = document.querySelector('.md-il');
-                    if (!el) return;
-                    const txt = el.innerText.replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu,'').trim();
-                    if (!txt) return;
-                    _mdTtsOn = true;
-                    ttsBtn.textContent = '⏹';
-                    speechSynthesis.cancel();
-                    const u = new SpeechSynthesisUtterance(txt);
-                    u.lang = 'cs-CZ'; u.rate = 1.05; u.pitch = 1.1;
-                    const sv = () => { const cz = speechSynthesis.getVoices().find(v => /cs[-_]CZ/i.test(v.lang)); if (cz) u.voice = cz; };
-                    sv(); if (!u.voice) speechSynthesis.addEventListener('voiceschanged', sv, {once:true});
-                    u.onend = u.onerror = () => { _mdTtsOn = false; ttsBtn.textContent = '🔊'; };
-                    speechSynthesis.speak(u);
-                };
+                ttsBtn.textContent = '🔊'; ttsBtn.title = 'Přehrát'; ttsBtn.style.cssText = btnStyle;
+                const doTTS = () => { if (_mdTtsOn) { speechSynthesis.cancel(); _mdTtsOn = false; ttsBtn.textContent = '🔊'; return; } const el = document.querySelector('.md-il'); if (!el) return; const txt = el.innerText.replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu,'').trim(); if (!txt) return; _mdTtsOn = true; ttsBtn.textContent = '⏹'; speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(txt); u.lang = 'cs-CZ'; u.rate = 1.05; u.pitch = 1.1; const sv = () => { const cz = speechSynthesis.getVoices().find(v => /cs[-_]CZ/i.test(v.lang)); if (cz) u.voice = cz; }; sv(); if (!u.voice) speechSynthesis.addEventListener('voiceschanged', sv, {once:true}); u.onend = u.onerror = () => { _mdTtsOn = false; ttsBtn.textContent = '🔊'; }; speechSynthesis.speak(u); };
                 ttsBtn.addEventListener('click', doTTS);
                 ttsBtn.addEventListener('touchend', (e) => { e.preventDefault(); doTTS(); });
                 header.appendChild(ttsBtn);
             }
 
             const closeBtn = document.createElement('button');
-            closeBtn.textContent = '✕';
-            closeBtn.style.cssText = 'color:#94a3b8;background:none;border:none;cursor:pointer;padding:8px 4px 8px 10px;font-size:18px;line-height:1;-webkit-tap-highlight-color:transparent;min-width:44px;min-height:44px;flex-shrink:0;';
+            closeBtn.textContent = '✕'; closeBtn.title = 'Zavřít';
+            closeBtn.style.cssText = 'color:#94a3b8;background:none;border:none;cursor:pointer;padding:8px 4px 8px 10px;font-size:20px;line-height:1;-webkit-tap-highlight-color:transparent;min-width:44px;min-height:44px;flex-shrink:0;';
             closeBtn.addEventListener('click', () => window.closeSourceViewer());
             closeBtn.addEventListener('touchend', (e) => { e.preventDefault(); e.stopPropagation(); window.closeSourceViewer(); });
             header.appendChild(closeBtn);
             wrap.appendChild(header);
 
-            // Content
             const contentDiv = document.createElement('div');
-            contentDiv.style.cssText = 'flex:1;overflow:hidden;min-height:0;';
-            contentDiv.innerHTML = innerContent;
-            wrap.appendChild(contentDiv);
-
-            // MD: fetch + render inline (no iframe → no iOS viewport-shift, no touch trap)
-            // Uses window.CHJ_convertMd exposed by already-loaded universe-viewers.js module
-            if (isMdType) {
-                contentDiv.style.overflowY = 'auto';
-                contentDiv.style.webkitOverflowScrolling = 'touch';
-                contentDiv.style.scrollbarWidth = 'thin';
-                contentDiv.style.scrollbarColor = '#1e40af rgba(0,0,0,0.2)';
-                if (!document.getElementById('_sv-scroll-css')) {
-                    const s = document.createElement('style');
-                    s.id = '_sv-scroll-css';
-                    s.textContent = '#source-viewer div[style*="overflow"]::-webkit-scrollbar{width:3px}#source-viewer div[style*="overflow"]::-webkit-scrollbar-thumb{background:#1e40af;border-radius:2px}';
-                    document.head.appendChild(s);
-                }
+            contentDiv.style.cssText = 'flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;min-height:0;';
+            if (!isMdType) {
+                if (t === 'youtube') contentDiv.innerHTML = `<iframe src="${youtubeEmbed(source.url)}" style="width:100%;height:100%;border:none;" allow="autoplay;encrypted-media" allowfullscreen></iframe>`;
+                else if (t === 'video') contentDiv.innerHTML = `<video src="${source.url}" controls autoplay style="width:100%;height:100%;background:#000;"></video>`;
+                else if (t === 'audio') contentDiv.innerHTML = `<iframe src="/app/viewer.html?type=audio&file=${encodeURIComponent(source.url)}" style="width:100%;height:100%;border:none;background:#0f172a;" allow="autoplay"></iframe>`;
+                else if (t === 'pdf') contentDiv.innerHTML = `<iframe src="${pdfEmbed(source.url)}" style="width:100%;height:100%;border:none;" title="${source.title||''}"></iframe>`;
+            } else {
+                contentDiv.innerHTML = '<div style="color:#475569;padding:24px;text-align:center;font-size:13px;font-family:monospace;">NAČÍTÁM…</div>';
                 (async () => {
                     const res = await fetch(source.url);
                     if (!res.ok) throw new Error(res.status);
                     const md = await res.text();
-                    // CHJ_convertMd is set by universe-viewers.js on load — no re-import needed
                     const convert = window.CHJ_convertMd || (s => `<p>${s.replace(/\n/g,'<br>')}</p>`);
                     contentDiv.innerHTML = `<div class="md-il">${convert(md)}</div>`;
-                })().catch(err => {
-                    contentDiv.innerHTML = `<div style="color:#f87171;padding:24px;font-family:monospace;font-size:13px;">CHYBA: ${err.message}</div>`;
-                });
+                })().catch(err => { contentDiv.innerHTML = `<div style="color:#f87171;padding:24px;font-family:monospace;font-size:13px;">CHYBA: ${err.message}</div>`; });
             }
+            wrap.appendChild(contentDiv);
 
+            // Hide app header on mobile so modal header (close btn, MED_ID) is visible
+            if (isMobile) {
+                const _hdr = document.getElementById('appHeader');
+                if (_hdr) _hdr.style.display = 'none';
+            }
             document.body.appendChild(wrap);
             requestAnimationFrame(() => requestAnimationFrame(() => {
                 if (!isMobile) wrap.style.transform = wrap._openT;
                 wrap.style.opacity = '1';
             }));
-        };
+        }
 
         window.closeSourceViewer = function() {
             const v = document.getElementById('source-viewer');
             if (!v) return;
+            const _hdr = document.getElementById('appHeader');
+            if (_hdr) _hdr.style.display = '';
             if (v._closeT) v.style.transform = v._closeT;
             v.style.opacity = '0';
             document.getElementById('source-backdrop')?.remove();
-            document.getElementById('mobile-viewer-close')?.remove();
             setTimeout(() => v.remove(), 300);
         };
     </script>
 
-    <!-- Onboarding Modal -->
     <div id="mediaModal"
         style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 10000; display: none; align-items: center; justify-content: center;">
         <div id="modalContent"

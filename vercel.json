@@ -65,11 +65,11 @@
         },
         {
             "source": "/app",
-            "destination": "/app/app.html?b=20260402a"
+            "destination": "/app/index.html"
         },
         {
             "source": "/app/",
-            "destination": "/app/app.html?b=20260402a"
+            "destination": "/app/index.html"
         },
         {
             "source": "/",
