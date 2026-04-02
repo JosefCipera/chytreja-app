@@ -50,8 +50,7 @@ body {
 /* === 🌌 PANEL – společné pro desktop i mobil === */
 #sidePanel {
     position: fixed;
-    top: 72px;
-    /* ✔ identické odsazení */
+    top: calc(72px + env(safe-area-inset-top, 0px));
     right: 8px;
     /* desktop default */
     left: auto;
@@ -91,11 +90,11 @@ body {
     top: 0;
     left: 0;
     right: 0;
-    height: 56px;
+    height: calc(56px + env(safe-area-inset-top, 0px));
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 1rem;
+    padding: env(safe-area-inset-top, 0px) 1rem 0;
     background: #0f172a;
     border-bottom: 1px solid #1e293b;
 
