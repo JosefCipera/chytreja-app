@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chytré Já — Tvůj osobní operační systém</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #070d1a;
+      --bg2: #0f172a;
+      --cyan: #06b6d4;
+      --cyan-dim: rgba(6,182,212,0.15);
+      --cyan-border: rgba(6,182,212,0.25);
+      --green: #22c55e;
+      --yellow: #eab308;
+      --red: #ef4444;
+      --purple: #a78bfa;
+      --orange: #fb923c;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --dim: #475569;
+      --panel: rgba(15,23,42,0.8);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', system-ui, sans-serif;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 2rem;
+      height: 60px;
+      background: rgba(7,13,26,0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--cyan-border);
+    }
+    .nav-logo {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1rem; font-weight: 700;
+      color: var(--cyan);
+      letter-spacing: 0.05em;
+      text-decoration: none;
+    }
+    .nav-logo span { color: var(--muted); font-weight: 400; }
+    .nav-links { display: flex; gap: 2rem; list-style: none; }
+    .nav-links a {
+      color: var(--muted); text-decoration: none; font-size: 0.875rem;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--text); }
+    .nav-cta {
+      background: var(--cyan); color: #000; border: none;
+      padding: 0.45rem 1.1rem; border-radius: 6px;
+      font-size: 0.875rem; font-weight: 600; cursor: pointer;
+      text-decoration: none;
+      transition: opacity 0.2s;
+    }
+    .nav-cta:hover { opacity: 0.85; }
+    @media (max-width: 640px) {
+      .nav-links { display: none; }
+    }
+
+    /* ── HERO ── */
+    #hero {
+      position: relative;
+      min-height: 100vh;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      text-align: center;
+      padding: 80px 1.5rem 4rem;
+      overflow: hidden;
+    }
+
+    /* Animated universe background */
+    .universe-bg {
+      position: absolute; inset: 0;
+      pointer-events: none;
+    }
+    .universe-bg svg {
+      width: 100%; height: 100%;
+      opacity: 0.35;
+    }
+
+    /* Orbit rings */
+    @keyframes orbit-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    @keyframes orbit-rev  { from { transform: rotate(0deg); } to { transform: rotate(-360deg); } }
+    @keyframes pulse-node { 0%,100% { opacity:0.6; r:8; } 50% { opacity:1; r:10; } }
+    @keyframes pulse-core { 0%,100% { r:22; } 50% { r:26; } }
+
+    .orbit-1 { animation: orbit-slow 28s linear infinite; transform-origin: 50% 50%; }
+    .orbit-2 { animation: orbit-rev  42s linear infinite; transform-origin: 50% 50%; }
+    .orbit-3 { animation: orbit-slow 60s linear infinite; transform-origin: 50% 50%; }
+    .node-pulse { animation: pulse-node 3s ease-in-out infinite; }
+    .core-pulse { animation: pulse-core 4s ease-in-out infinite; }
+
+    /* Scanline overlay */
+    #hero::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 3px,
+        rgba(6,182,212,0.015) 3px,
+        rgba(6,182,212,0.015) 4px
+      );
+      pointer-events: none;
+    }
+
+    .hero-tag {
+      font-family: monospace;
+      font-size: 0.75rem; letter-spacing: 0.15em;
+      color: var(--cyan); text-transform: uppercase;
+      border: 1px solid var(--cyan-border);
+      padding: 4px 12px; border-radius: 20px;
+      background: var(--cyan-dim);
+      margin-bottom: 1.5rem;
+      display: inline-block;
+    }
+
+    h1 {
+      font-size: clamp(2.2rem, 6vw, 4.5rem);
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      margin-bottom: 1rem;
+      max-width: 800px;
+    }
+    h1 em {
+      font-style: normal;
+      background: linear-gradient(135deg, var(--cyan) 0%, var(--purple) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-sub {
+      font-size: clamp(1rem, 2.5vw, 1.2rem);
+      color: var(--muted);
+      max-width: 560px;
+      margin: 0 auto 2.5rem;
+      line-height: 1.7;
+    }
+
+    .hero-btns {
+      display: flex; gap: 1rem; flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 3rem;
+    }
+    .btn-primary {
+      background: var(--cyan); color: #000;
+      border: none; padding: 0.8rem 2rem;
+      border-radius: 8px; font-size: 1rem; font-weight: 700;
+      cursor: pointer; text-decoration: none;
+      transition: transform 0.15s, opacity 0.2s;
+      box-shadow: 0 0 24px rgba(6,182,212,0.35);
+    }
+    .btn-primary:hover { transform: translateY(-2px); opacity: 0.9; }
+    .btn-ghost {
+      background: transparent; color: var(--text);
+      border: 1px solid var(--cyan-border);
+      padding: 0.8rem 2rem; border-radius: 8px;
+      font-size: 1rem; cursor: pointer; text-decoration: none;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .btn-ghost:hover { border-color: var(--cyan); color: var(--cyan); }
+
+    .hero-scroll {
+      font-family: monospace; font-size: 0.75rem;
+      color: var(--dim); letter-spacing: 0.1em;
+      animation: float 2.5s ease-in-out infinite;
+    }
+    @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(6px); } }
+
+    /* ── SECTION BASE ── */
+    section { padding: 6rem 1.5rem; }
+    .container { max-width: 1100px; margin: 0 auto; }
+    .section-tag {
+      font-family: monospace; font-size: 0.7rem;
+      letter-spacing: 0.2em; text-transform: uppercase;
+      color: var(--cyan); margin-bottom: 0.75rem;
+    }
+    h2 {
+      font-size: clamp(1.8rem, 4vw, 2.8rem);
+      font-weight: 700; line-height: 1.2;
+      margin-bottom: 1rem;
+    }
+    .lead {
+      font-size: 1.1rem; color: var(--muted);
+      max-width: 600px; line-height: 1.7;
+    }
+
+    /* ── HOW IT WORKS ── */
+    #how { background: var(--bg2); }
+
+    .orchestrator-wrap {
+      display: flex; flex-direction: column;
+      align-items: center; gap: 0;
+      margin: 3rem 0 0;
+    }
+
+    .orch-box {
+      background: var(--panel);
+      border: 1px solid var(--cyan-border);
+      border-radius: 12px;
+      padding: 1.25rem 2rem;
+      text-align: center;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 0 40px rgba(6,182,212,0.1);
+      max-width: 380px; width: 100%;
+    }
+    .orch-label {
+      font-family: monospace; font-size: 0.7rem;
+      letter-spacing: 0.15em; color: var(--cyan);
+      text-transform: uppercase; margin-bottom: 0.4rem;
+    }
+    .orch-title {
+      font-size: 1.2rem; font-weight: 700; margin-bottom: 0.3rem;
+    }
+    .orch-desc { font-size: 0.85rem; color: var(--muted); }
+
+    .orch-line {
+      width: 2px; height: 40px;
+      background: linear-gradient(to bottom, var(--cyan), transparent);
+    }
+
+    .agents-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 1px;
+      width: 100%;
+      max-width: 800px;
+      border: 1px solid var(--cyan-border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .agent-card {
+      background: var(--panel);
+      padding: 1.1rem;
+      text-align: center;
+      backdrop-filter: blur(8px);
+      transition: background 0.2s;
+      cursor: default;
+    }
+    .agent-card:hover { background: rgba(6,182,212,0.08); }
+    .agent-icon { font-size: 1.6rem; margin-bottom: 0.4rem; }
+    .agent-name {
+      font-family: monospace; font-size: 0.7rem;
+      letter-spacing: 0.1em; color: var(--cyan);
+      text-transform: uppercase; margin-bottom: 0.2rem;
+    }
+    .agent-desc { font-size: 0.78rem; color: var(--muted); }
+
+    .how-insight {
+      margin-top: 2.5rem;
+      background: rgba(6,182,212,0.06);
+      border: 1px solid var(--cyan-border);
+      border-left: 3px solid var(--cyan);
+      border-radius: 8px;
+      padding: 1rem 1.5rem;
+      font-size: 0.9rem; color: var(--muted);
+      max-width: 700px;
+    }
+    .how-insight strong { color: var(--text); }
+
+    /* ── WORLDS ── */
+    #worlds { background: var(--bg); }
+
+    .worlds-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.5rem;
+      margin-top: 3rem;
+    }
+
+    .world-card {
+      background: var(--panel);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 16px;
+      padding: 1.75rem;
+      backdrop-filter: blur(12px);
+      transition: border-color 0.25s, transform 0.2s, box-shadow 0.25s;
+      cursor: default;
+      position: relative;
+      overflow: hidden;
+    }
+    .world-card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0;
+      height: 2px;
+      background: var(--card-color, var(--cyan));
+      opacity: 0.6;
+      transition: opacity 0.25s;
+    }
+    .world-card:hover {
+      border-color: var(--card-color, var(--cyan));
+      transform: translateY(-4px);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+    .world-card:hover::before { opacity: 1; }
+
+    .world-card.live { --card-color: var(--cyan); }
+    .world-card.soon { --card-color: var(--purple); }
+    .world-card.planned { --card-color: var(--dim); }
+
+    .world-badge {
+      font-family: monospace; font-size: 0.65rem;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      padding: 2px 8px; border-radius: 4px;
+      display: inline-block; margin-bottom: 1rem;
+    }
+    .live .world-badge   { background: rgba(6,182,212,0.15); color: var(--cyan); }
+    .soon .world-badge   { background: rgba(167,139,250,0.15); color: var(--purple); }
+    .planned .world-badge { background: rgba(71,85,105,0.3); color: var(--dim); }
+
+    .world-icon { font-size: 2rem; margin-bottom: 0.75rem; display: block; }
+
+    .world-title {
+      font-size: 1.2rem; font-weight: 700;
+      margin-bottom: 0.25rem;
+    }
+    .world-subtitle {
+      font-family: monospace; font-size: 0.7rem;
+      color: var(--dim); letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 0.75rem;
+    }
+    .world-desc {
+      font-size: 0.875rem; color: var(--muted);
+      line-height: 1.6; margin-bottom: 1rem;
+    }
+    .world-quote {
+      font-size: 0.8rem; color: var(--text);
+      font-style: italic;
+      border-left: 2px solid var(--card-color, var(--cyan));
+      padding-left: 0.75rem;
+      opacity: 0.7;
+    }
+
+    /* ── WHY DIFFERENT ── */
+    #why { background: var(--bg2); }
+
+    .why-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+      margin-top: 3rem;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--cyan-border);
+    }
+    @media (max-width: 640px) {
+      .why-grid { grid-template-columns: 1fr; }
+    }
+
+    .why-col { background: var(--panel); backdrop-filter: blur(8px); }
+    .why-col-header {
+      padding: 1rem 1.5rem;
+      font-family: monospace; font-size: 0.72rem;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .why-col:first-child .why-col-header { color: var(--dim); }
+    .why-col:last-child  .why-col-header { color: var(--cyan); border-left: 1px solid var(--cyan-border); }
+    .why-col:last-child  .why-item { border-left: 1px solid rgba(6,182,212,0.1); }
+
+    .why-item {
+      display: flex; align-items: flex-start; gap: 0.75rem;
+      padding: 0.9rem 1.5rem;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      font-size: 0.875rem;
+    }
+    .why-item:last-child { border-bottom: none; }
+    .why-item .icon { font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+    .why-col:first-child .why-item { color: var(--dim); }
+    .why-col:last-child  .why-item { color: var(--text); }
+
+    /* ── TECH ── */
+    #tech { background: var(--bg); }
+
+    .tech-diagram {
+      margin-top: 3rem;
+      background: var(--panel);
+      border: 1px solid var(--cyan-border);
+      border-radius: 16px;
+      padding: 2rem;
+      backdrop-filter: blur(12px);
+      font-family: monospace;
+      font-size: 0.82rem;
+      line-height: 1.8;
+      max-width: 680px;
+    }
+    .tech-diagram .cyan  { color: var(--cyan); }
+    .tech-diagram .green { color: var(--green); }
+    .tech-diagram .muted { color: var(--dim); }
+    .tech-diagram .arrow { color: var(--dim); }
+    .tech-diagram .indent { padding-left: 1.5rem; }
+    .tech-diagram .indent2 { padding-left: 3rem; }
+
+    .tech-features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+    .tech-feat {
+      background: rgba(6,182,212,0.05);
+      border: 1px solid var(--cyan-border);
+      border-radius: 10px;
+      padding: 1rem 1.25rem;
+    }
+    .tech-feat-icon { font-size: 1.3rem; margin-bottom: 0.5rem; }
+    .tech-feat-title { font-size: 0.85rem; font-weight: 600; margin-bottom: 0.25rem; }
+    .tech-feat-desc { font-size: 0.78rem; color: var(--muted); }
+
+    /* ── CTA ── */
+    #cta {
+      background: linear-gradient(180deg, var(--bg2) 0%, var(--bg) 100%);
+      text-align: center;
+      padding: 7rem 1.5rem;
+    }
+    #cta h2 { margin-bottom: 1rem; }
+    #cta .lead { margin: 0 auto 2.5rem; }
+
+    .cta-worlds {
+      display: flex; gap: 0.6rem; flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 2.5rem;
+    }
+    .cta-world-chip {
+      font-family: monospace; font-size: 0.7rem;
+      padding: 4px 12px; border-radius: 20px;
+      border: 1px solid var(--cyan-border);
+      color: var(--muted);
+      letter-spacing: 0.08em;
+    }
+    .cta-world-chip.active {
+      background: var(--cyan-dim);
+      color: var(--cyan);
+      border-color: var(--cyan);
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid rgba(255,255,255,0.06);
+      padding: 2rem 1.5rem;
+      display: flex; justify-content: space-between; align-items: center;
+      flex-wrap: wrap; gap: 1rem;
+    }
+    .footer-brand {
+      font-family: monospace; font-size: 0.85rem;
+      color: var(--dim);
+    }
+    .footer-brand strong { color: var(--cyan); }
+    .footer-links { display: flex; gap: 1.5rem; }
+    .footer-links a {
+      font-size: 0.8rem; color: var(--dim);
+      text-decoration: none;
+    }
+    .footer-links a:hover { color: var(--muted); }
+
+    /* ── GLOW DOTS ── */
+    .glow {
+      position: absolute; border-radius: 50%;
+      filter: blur(80px); pointer-events: none; z-index: 0;
+    }
+    .glow-cyan  { background: rgba(6,182,212,0.12); }
+    .glow-purple{ background: rgba(167,139,250,0.08); }
+
+    /* z-index reset for children */
+    #hero > *:not(.universe-bg):not(#hero::after) { position: relative; z-index: 1; }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a class="nav-logo" href="#">CHJ <span>/ Chytré Já</span></a>
+  <ul class="nav-links">
+    <li><a href="#worlds">Světy</a></li>
+    <li><a href="#how">Jak to funguje</a></li>
+    <li><a href="#why">Proč jinak</a></li>
+    <li><a href="#tech">Technologie</a></li>
+  </ul>
+  <a class="nav-cta" href="/app/">Otevřít app</a>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <!-- Universe background -->
+  <div class="universe-bg">
+    <svg viewBox="0 0 1200 700" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="core-glow" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#06b6d4" stop-opacity="0.4"/>
+          <stop offset="100%" stop-color="#06b6d4" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+
+      <!-- Core glow -->
+      <circle cx="600" cy="350" r="80" fill="url(#core-glow)"/>
+
+      <!-- Orbit 1 -->
+      <g class="orbit-1">
+        <ellipse cx="600" cy="350" rx="180" ry="100" fill="none" stroke="#06b6d4" stroke-width="0.5" stroke-dasharray="4 8"/>
+        <circle cx="780" cy="350" r="8" fill="#22c55e" class="node-pulse"/>
+        <circle cx="420" cy="350" r="7" fill="#ef4444" class="node-pulse" style="animation-delay:1s"/>
+      </g>
+
+      <!-- Orbit 2 -->
+      <g class="orbit-2">
+        <ellipse cx="600" cy="350" rx="290" ry="155" fill="none" stroke="rgba(167,139,250,0.3)" stroke-width="0.5" stroke-dasharray="3 10"/>
+        <circle cx="890" cy="350" r="7" fill="#a78bfa" class="node-pulse" style="animation-delay:.5s"/>
+        <circle cx="315" cy="295" r="6" fill="#eab308" class="node-pulse" style="animation-delay:2s"/>
+        <circle cx="600" cy="195" r="6" fill="#fb923c" class="node-pulse" style="animation-delay:1.5s"/>
+      </g>
+
+      <!-- Orbit 3 -->
+      <g class="orbit-3">
+        <ellipse cx="600" cy="350" rx="420" ry="200" fill="none" stroke="rgba(6,182,212,0.12)" stroke-width="0.5" stroke-dasharray="2 14"/>
+        <circle cx="1020" cy="350" r="5" fill="#06b6d4" class="node-pulse" style="animation-delay:3s"/>
+        <circle cx="200" cy="400" r="5" fill="#22c55e" class="node-pulse" style="animation-delay:2.5s"/>
+      </g>
+
+      <!-- Core node -->
+      <circle cx="600" cy="350" r="22" fill="none" stroke="#06b6d4" stroke-width="1.5" class="core-pulse"/>
+      <circle cx="600" cy="350" r="10" fill="#06b6d4" opacity="0.9"/>
+
+      <!-- Connection lines -->
+      <line x1="600" y1="350" x2="780" y2="350" stroke="#22c55e" stroke-width="0.5" opacity="0.4"/>
+      <line x1="600" y1="350" x2="890" y2="350" stroke="#a78bfa" stroke-width="0.5" opacity="0.3"/>
+      <line x1="600" y1="350" x2="315" y2="295" stroke="#eab308" stroke-width="0.5" opacity="0.3"/>
+    </svg>
+  </div>
+
+  <!-- Glow blobs -->
+  <div class="glow glow-cyan" style="width:500px;height:400px;top:-100px;left:50%;transform:translateX(-50%);"></div>
+  <div class="glow glow-purple" style="width:400px;height:300px;bottom:-50px;right:10%;"></div>
+
+  <div class="hero-tag">CHJ // PERSONAL OS // v0.2</div>
+
+  <h1>Neplánuješ.<br>Nerozhoduješ.<br><em>Jenom žiješ.</em></h1>
+
+  <p class="hero-sub">
+    AI, který zná tvůj cíl, vidí tvoje omezení
+    a říká ti — dnes, teď — jeden konkrétní krok.
+    Longevity. Výkon. Jazyk. Vše propojené jedním orchestrátorem.
+  </p>
+
+  <div class="hero-btns">
+    <a class="btn-primary" href="/app/">Začít zdarma</a>
+    <a class="btn-ghost" href="#worlds">Prohlédnout světy</a>
+  </div>
+
+  <div class="hero-scroll">↓ &nbsp; scroll</div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section id="how">
+  <div class="container">
+    <div class="section-tag">// ARCHITEKTURA</div>
+    <h2>Jeden mozek, více světů</h2>
+    <p class="lead">
+      Orchestrátor zná celý kontext — tvé zdraví, výkon, jazyk, energii.
+      Koordinuje specializované agenty. Ty vidíš jediné: další krok.
+    </p>
+
+    <div class="orchestrator-wrap">
+      <div class="orch-box">
+        <div class="orch-label">Master Agent</div>
+        <div class="orch-title">CHJ Orchestrátor</div>
+        <div class="orch-desc">Zná tě. Rozhoduje kdy, co a komu předat. Koordinuje všechny světy.</div>
+      </div>
+
+      <div class="orch-line"></div>
+
+      <div class="agents-grid">
+        <div class="agent-card">
+          <div class="agent-icon">🫀</div>
+          <div class="agent-name">Longevity</div>
+          <div class="agent-desc">Tělo, mysl,<br>výživa, spánek</div>
+        </div>
+        <div class="agent-card">
+          <div class="agent-icon">🔄</div>
+          <div class="agent-name">Průtok</div>
+          <div class="agent-desc">Flow, bottleneck,<br>kapacita</div>
+        </div>
+        <div class="agent-card">
+          <div class="agent-icon">📐</div>
+          <div class="agent-name">TOC</div>
+          <div class="agent-desc">Teorie omezení,<br>systém</div>
+        </div>
+        <div class="agent-card">
+          <div class="agent-icon">🇬🇧</div>
+          <div class="agent-name">Angličtina</div>
+          <div class="agent-desc">Situační učení,<br>speaking</div>
+        </div>
+        <div class="agent-card" style="opacity:0.45;">
+          <div class="agent-icon">💰</div>
+          <div class="agent-name">Finance</div>
+          <div class="agent-desc">Cashflow,<br>cashflow bott.</div>
+        </div>
+        <div class="agent-card" style="opacity:0.45;">
+          <div class="agent-icon">🧠</div>
+          <div class="agent-name">Myšlení</div>
+          <div class="agent-desc">Mentální modely,<br>rozhodování</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="how-insight">
+      <strong>Příklad:</strong> Dnes máš málo energie (Longevity data) → Orchestrátor přesouvá silový trénink na zítra,
+      navrhuje dechové cvičení a zařadí 3 anglická slovíčka ke kávě — protože kapacita mozku je teď nejvyšší.
+    </div>
+  </div>
+</section>
+
+<!-- WORLDS -->
+<section id="worlds">
+  <div class="container">
+    <div class="section-tag">// SVĚTY</div>
+    <h2>Vyber si svůj první svět</h2>
+    <p class="lead">
+      Každý svět má vlastního AI agenta, vlastní logiku a vlastní HUD panel.
+      Orchestrátor je propojuje.
+    </p>
+
+    <div class="worlds-grid">
+
+      <div class="world-card live">
+        <span class="world-badge">Live</span>
+        <span class="world-icon">🫀</span>
+        <div class="world-title">Longevity — Hra o život</div>
+        <div class="world-subtitle">Medicine 3.0 · Peter Attia · Outlive</div>
+        <p class="world-desc">
+          Tělo, mysl, výživa, spánek, metabolismus. Semafor uzlů ti ukáže
+          kde jsi nejslabší. Denní mise tě posunou. Baterie ukazuje kam míříš.
+        </p>
+        <div class="world-quote">"Bez pohybu nemáš šanci na Ironman v 70."</div>
+      </div>
+
+      <div class="world-card soon">
+        <span class="world-badge">Brzy</span>
+        <span class="world-icon">🔄</span>
+        <div class="world-title">Průtokové řízení</div>
+        <div class="world-subtitle">Flow · Goldratt · Omezení</div>
+        <p class="world-desc">
+          Identifikuje kde se tvůj život nebo práce zadrhává.
+          Ukazuje kde přidat kapacitu, kde přibrzdit. Bez tabulek, bez plánů.
+        </p>
+        <div class="world-quote">"Tvoje bottleneck není čas. Je to tohle rozhodnutí."</div>
+      </div>
+
+      <div class="world-card soon">
+        <span class="world-badge">Brzy</span>
+        <span class="world-icon">📐</span>
+        <div class="world-title">TOC — Teorie omezení</div>
+        <div class="world-subtitle">Theory of Constraints · Goldratt</div>
+        <p class="world-desc">
+          Osobní i týmový nástroj. Kde je tvůj systém nejslabší?
+          Najdi → Využij → Podřiď → Zvedni → Opakuj.
+        </p>
+        <div class="world-quote">"Zrychlení začíná tam, kde to nejvíc vázne."</div>
+      </div>
+
+      <div class="world-card soon">
+        <span class="world-badge">Brzy</span>
+        <span class="world-icon">🇬🇧</span>
+        <div class="world-title">Angličtina — Learn by Doing</div>
+        <div class="world-subtitle">Spaced repetition · Speaking · Context</div>
+        <p class="world-desc">
+          Ne kurz, ne slovníček. Reálné situace, přesně na tvé úrovni,
+          ve chvílích kdy máš kapacitu. Orchestrátor ví kdy tě vyzvat.
+        </p>
+        <div class="world-quote">"Dnes ráno: 3 výrazy z včerejší schůzky."</div>
+      </div>
+
+      <div class="world-card planned">
+        <span class="world-badge">V plánu</span>
+        <span class="world-icon">💰</span>
+        <div class="world-title">Finance</div>
+        <div class="world-subtitle">Cashflow · Bottleneck · Rozhodnutí</div>
+        <p class="world-desc">
+          Osobní finance jako systém. Kde uniká cashflow?
+          Co nejvíc brzdí finanční svobodu?
+        </p>
+        <div class="world-quote">"Problém není kolik vyděláš."</div>
+      </div>
+
+      <div class="world-card planned">
+        <span class="world-badge">V plánu</span>
+        <span class="world-icon">🧠</span>
+        <div class="world-title">Myšlení</div>
+        <div class="world-subtitle">Mentální modely · Rozhodování · Kognitivní zkreslení</div>
+        <p class="world-desc">
+          Lepší rozhodnutí, méně chyb z autopilota.
+          Konkrétní modely na konkrétní situace.
+        </p>
+        <div class="world-quote">"Nejsilnější nástroj: vědět, jak přemýšlíš."</div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- WHY DIFFERENT -->
+<section id="why">
+  <div class="container">
+    <div class="section-tag">// PROČ JINAK</div>
+    <h2>Appky ti říkají co sledovat.<br>CHJ ti říká co udělat.</h2>
+
+    <div class="why-grid">
+      <div class="why-col">
+        <div class="why-col-header">❌ &nbsp; Klasické appky</div>
+        <div class="why-item"><span class="icon">😶</span>Musíš se ptát sám</div>
+        <div class="why-item"><span class="icon">📱</span>Každá appka zvlášť</div>
+        <div class="why-item"><span class="icon">📋</span>Plány, kurzy, dashboardy</div>
+        <div class="why-item"><span class="icon">🌍</span>Generická rada pro všechny</div>
+        <div class="why-item"><span class="icon">🔕</span>Zapomeneš, nevrátíš se</div>
+        <div class="why-item"><span class="icon">🤷</span>Nevíš kde začít</div>
+      </div>
+      <div class="why-col">
+        <div class="why-col-header">✅ &nbsp; Chytré Já</div>
+        <div class="why-item"><span class="icon">🎯</span>Říká ti samo, co dělat</div>
+        <div class="why-item"><span class="icon">🔗</span>Jeden orchestrátor, vše propojené</div>
+        <div class="why-item"><span class="icon">⚡</span>Jeden krok. Dnes. Teď.</div>
+        <div class="why-item"><span class="icon">🧬</span>Zná tvoje omezení a cíle</div>
+        <div class="why-item"><span class="icon">🔔</span>Proaktivně tě vyzve ve správný čas</div>
+        <div class="why-item"><span class="icon">🧭</span>Bottleneck vidí za tebe</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TECH -->
+<section id="tech">
+  <div class="container">
+    <div class="section-tag">// TECHNOLOGIE</div>
+    <h2>Claude jako neviditelný engine</h2>
+    <p class="lead">
+      Nepracuješ s AI. AI pracuje pro tebe.
+      Na pozadí. Transparentně. Bez otázek.
+    </p>
+
+    <div class="tech-diagram">
+      <div><span class="cyan">CHJ Orchestrátor</span> <span class="muted">// Claude Sonnet</span></div>
+      <div class="indent"><span class="muted">→ rozhoduje CO, KDY, KOMU předat</span></div>
+      <div class="indent"><span class="muted">→ zná celý kontext (zdraví + výkon + jazyk)</span></div>
+      <br>
+      <div><span class="green">Specializovaní agenti</span> <span class="muted">// Claude Haiku</span></div>
+      <div class="indent"><span class="muted">→ Longevity · Průtok · TOC · Angličtina</span></div>
+      <div class="indent"><span class="muted">→ rychlí, levní, zaměřeni na jeden svět</span></div>
+      <br>
+      <div><span class="cyan">Nástroje</span></div>
+      <div class="indent"><span class="muted">→ 📷 Vision (foto jídla → kalorie)</span></div>
+      <div class="indent"><span class="muted">→ 📄 Health Parser (krev, EKG, DEXA)</span></div>
+      <div class="indent"><span class="muted">→ 🔊 TTS (hlas) · 📊 Trend Engine</span></div>
+      <br>
+      <div><span class="green">Ty</span></div>
+      <div class="indent"><span class="muted">→ vidíš HUD · slyšíš krok · uděláš ho</span></div>
+    </div>
+
+    <div class="tech-features">
+      <div class="tech-feat">
+        <div class="tech-feat-icon">🔒</div>
+        <div class="tech-feat-title">Tvoje data, tvoje</div>
+        <div class="tech-feat-desc">Zdravotní záznamy, metriky a aktivity zůstávají v tvém účtu. Nikde jinde.</div>
+      </div>
+      <div class="tech-feat">
+        <div class="tech-feat-icon">📱</div>
+        <div class="tech-feat-title">PWA — žádná instalace</div>
+        <div class="tech-feat-desc">Funguje v Safari, Chrome i jako instalovaná app. Offline mise dostupné vždy.</div>
+      </div>
+      <div class="tech-feat">
+        <div class="tech-feat-icon">⚡</div>
+        <div class="tech-feat-title">Real-time HUD</div>
+        <div class="tech-feat-desc">Baterie, sparkline, semafor — aktualizuje se okamžitě po každém kroku.</div>
+      </div>
+      <div class="tech-feat">
+        <div class="tech-feat-icon">🎙️</div>
+        <div class="tech-feat-title">Hlasové ovládání</div>
+        <div class="tech-feat-desc">Řekni CHJ co cítíš. Zbytek zařídí orchestrátor. Bez psaní.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section id="cta">
+  <div class="container">
+    <div class="section-tag">// ZAČNI</div>
+    <h2>Začni jedním světem.<br>Orchestrátor propojí zbytek.</h2>
+    <p class="lead">
+      Žádná kreditní karta. Žádné plány. Zaregistruješ se,
+      odpoví na 11 otázek a dostaneš první krok do 60 sekund.
+    </p>
+
+    <div class="cta-worlds">
+      <span class="cta-world-chip active">🫀 Longevity</span>
+      <span class="cta-world-chip">🔄 Průtok</span>
+      <span class="cta-world-chip">📐 TOC</span>
+      <span class="cta-world-chip">🇬🇧 Angličtina</span>
+      <span class="cta-world-chip">+ další</span>
+    </div>
+
+    <div class="hero-btns">
+      <a class="btn-primary" href="/app/">Vyzkoušet Longevity — zdarma</a>
+      <a class="btn-ghost" href="#worlds">Prohlédnout všechny světy</a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="container">
+  <div class="footer-brand">
+    <strong>CHJ</strong> / Chytré Já &nbsp;·&nbsp; v0.2.0 &nbsp;·&nbsp;
+    <span style="color:var(--dim)">Powered by Claude · Supabase · Vercel</span>
+  </div>
+  <div class="footer-links">
+    <a href="/app/">App</a>
+    <a href="#">Ochrana dat</a>
+    <a href="#">Kontakt</a>
+  </div>
+</footer>
+
+</body>
+</html>
