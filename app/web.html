@@ -134,22 +134,26 @@
     }
 
     h1 {
-      font-size: clamp(2rem, 5.5vw, 4rem);
+      font-size: clamp(2.8rem, 6.5vw, 4.8rem);
       font-weight: 900;
-      line-height: 1.05;
-      letter-spacing: 0.03em;
+      line-height: 1.0;
+      letter-spacing: 0.02em;
       text-transform: uppercase;
       color: #fff;
-      margin-bottom: 0.2rem;
+      margin-bottom: 0.15rem;
+      white-space: nowrap;
     }
+    @media (max-width: 700px) { h1 { white-space: normal; font-size: clamp(2rem, 8vw, 3rem); } }
     .h1-sub {
-      font-size: clamp(1.3rem, 3.5vw, 2.5rem);
+      font-size: clamp(1.1rem, 2.8vw, 2rem);
       font-weight: 700;
       letter-spacing: 0.04em;
       text-transform: uppercase;
-      color: rgba(255,255,255,0.75);
+      color: rgba(255,255,255,0.72);
       margin-bottom: 1.6rem;
+      white-space: nowrap;
     }
+    @media (max-width: 700px) { .h1-sub { white-space: normal; font-size: clamp(0.95rem, 4vw, 1.4rem); } }
 
     .hero-sub {
       font-family: monospace; font-size: clamp(0.78rem, 1.5vw, 0.92rem);
@@ -179,49 +183,48 @@
 
     /* Card 1: EST_BIO_VEK — top right */
     .hud-card-1 {
-      top: -20px; right: -110px;
-      padding: 1rem 1.2rem;
-      border: 1px solid rgba(6,182,212,0.35);
-      width: 170px;
+      top: 10px; right: -155px;
+      padding: 0.9rem 1.1rem;
+      border: 1px solid rgba(6,182,212,0.4);
+      width: 158px;
       animation: float 5s ease-in-out infinite;
     }
-    .hud-card-1 .hc-label { font-size: 0.6rem; letter-spacing: 0.15em; color: var(--cyan); margin-bottom: 0.3rem; }
-    .hud-card-1 .hc-value { font-size: 1.2rem; font-weight: 700; color: #fff; margin-bottom: 0.5rem; }
+    .hud-card-1 .hc-label { font-size: 0.58rem; letter-spacing: 0.12em; color: var(--cyan); }
 
     /* Card 2: LIFE_BATTERY — right middle, vertical */
     .hud-card-2 {
-      right: -70px; top: 50%; transform: translateY(-50%);
+      right: -52px; top: 50%; transform: translateY(-50%);
       writing-mode: vertical-rl; text-orientation: mixed;
-      padding: 1rem 0.6rem;
-      border: 1px solid rgba(34,197,94,0.4);
-      font-size: 0.6rem; letter-spacing: 0.15em;
+      padding: 0.85rem 0.55rem;
+      border: 1px solid rgba(34,197,94,0.45);
+      font-size: 0.58rem; letter-spacing: 0.14em;
       color: var(--green); white-space: nowrap;
       animation: float2 6s ease-in-out infinite;
     }
-    .hud-card-2 .hc-pct { font-size: 1rem; font-weight: 700; color: var(--green); display: block; margin-bottom: 0.4rem; }
+    .hud-card-2 .hc-pct { font-size: 0.95rem; font-weight: 700; color: var(--green); display: block; margin-bottom: 0.35rem; }
 
     /* Card 3: DAILY_MISSION — bottom right */
     .hud-card-3 {
-      bottom: -10px; right: -100px;
-      padding: 0.9rem 1.1rem;
-      border: 1px solid rgba(251,146,60,0.4);
-      width: 175px;
+      bottom: 10px; right: -148px;
+      padding: 0.85rem 1rem;
+      border: 1px solid rgba(251,146,60,0.45);
+      width: 168px;
       animation: float 7s ease-in-out infinite 1s;
     }
-    .hud-card-3 .hc-label { font-size: 0.6rem; letter-spacing: 0.15em; color: var(--orange); margin-bottom: 0.5rem; }
-    .hud-card-3 .hc-bar-wrap { background: rgba(255,255,255,0.08); border-radius: 3px; height: 6px; margin-bottom: 0.4rem; overflow: hidden; }
+    .hud-card-3 .hc-label { font-size: 0.58rem; letter-spacing: 0.12em; color: var(--orange); margin-bottom: 0.45rem; display: flex; justify-content: space-between; }
+    .hud-card-3 .hc-bar-wrap { background: rgba(255,255,255,0.08); border-radius: 3px; height: 5px; margin-bottom: 0.4rem; overflow: hidden; }
     .hud-card-3 .hc-bar { height: 100%; width: 70%; background: var(--orange); border-radius: 3px; }
-    .hud-card-3 .hc-mission { font-size: 0.68rem; color: var(--muted); }
-    .hud-card-3 .hc-pct { font-size: 0.75rem; color: var(--orange); float: right; }
+    .hud-card-3 .hc-mission { font-size: 0.65rem; color: var(--muted); }
+    .hud-card-3 .hc-pct { color: var(--orange); }
 
-    @media (max-width: 900px) {
-      .hud-card-1 { right: -10px; top: -60px; }
+    @media (max-width: 1020px) {
+      .hud-card-1 { right: -10px; top: -70px; }
       .hud-card-2 { display: none; }
-      .hud-card-3 { right: -10px; bottom: -60px; }
+      .hud-card-3 { right: -10px; bottom: -70px; }
     }
-    @media (max-width: 600px) {
+    @media (max-width: 640px) {
       .hud-card-1, .hud-card-2, .hud-card-3 { display: none; }
-      .hero-frame { padding: 2rem 1.5rem; }
+      .hero-frame { padding: 2rem 1.25rem; }
     }
 
     /* ── TERMINAL CTA ── */
