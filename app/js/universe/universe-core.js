@@ -65,35 +65,10 @@ let lastRenderedNodes = [];
   window.addEventListener('resize', resize);
 })();
 
-// ── 🖱️ Mouse parallax tilt ───────────────────────────────────────────────────
-(function initParallax() {
+// ── 🌌 Subtle breathing animation only (no tilt) ─────────────────────────────
+(function initBreathing() {
   const net = document.getElementById('network');
-  if (!net) return;
-
-  let breathTimer = null;
-  net.classList.add('breathing');
-
-  document.addEventListener('mousemove', (e) => {
-    // Ignore if HUD overlay is open (mouse inside panel area)
-    const sidePanelOpen = document.getElementById('sidePanel')?.classList.contains('open');
-    const panelW = sidePanelOpen ? 320 : 0;
-    const availW = window.innerWidth - panelW;
-
-    const cx   = availW / 2;
-    const cy   = (window.innerHeight - 56) / 2 + 56;
-    const dx   = (e.clientX - cx) / cx;        // –1 … +1
-    const dy   = (e.clientY - cy) / cy;
-    const maxT = 4;                              // max tilt in degrees
-
-    net.classList.remove('breathing');
-    net.style.transform = `perspective(1400px) rotateX(${(-dy * maxT).toFixed(2)}deg) rotateY(${(dx * maxT).toFixed(2)}deg)`;
-
-    clearTimeout(breathTimer);
-    breathTimer = setTimeout(() => {
-      net.style.transform = '';
-      net.classList.add('breathing');
-    }, 3000);
-  });
+  if (net) net.classList.add('breathing');
 })();
 
 // 🌌 Vykreslení hlavní nebo podsítě
