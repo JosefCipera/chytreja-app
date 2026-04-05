@@ -217,6 +217,9 @@ export function renderUniverse(DATA, subset = null, forcedMainId = null) {
   // 🔮 Sphere shading + 🔒 lock emojis — single afterDrawing pass
   const lockedIds = source.filter(n => n.state === 'GRAY').map(n => n.id);
 
+  // Fixed node radii matching makeNode() — avoids bbox including label text width
+  const NODE_RADIUS = { main: 62, child: 46 };
+
   network.on("afterDrawing", (ctx) => {
     const positions = network.getPositions(allIds);
 
@@ -225,21 +228,25 @@ export function renderUniverse(DATA, subset = null, forcedMainId = null) {
       const pos = positions[node.id];
       if (!pos) return;
 
-      const isMain = node.id === mainId;
-      const bb     = network.getBoundingBox(node.id);
-      const radius = Math.max((bb.right - bb.left) / 2, 4);
+      const isMain  = node.id === mainId;
+      const radius  = isMain ? NODE_RADIUS.main : NODE_RADIUS.child;
+      const isGray  = node.state === 'GRAY';
 
       const [r, g, b] = (colorMap[node.state] || '148,163,184').split(',').map(Number);
 
-      // Light source: top-left quadrant
-      const lx = pos.x - radius * 0.30;
-      const ly = pos.y - radius * 0.32;
+      // Gray nodes: subtle shading only (avoid "lead ball" look)
+      const hiBoost  = isGray ? 35  : 70;
+      const shBoost  = isGray ? 30  : 60;
 
-      // Sphere gradient: bright highlight → base → deep shadow
-      const sph = ctx.createRadialGradient(lx, ly, 0, pos.x, pos.y, radius * 1.05);
-      sph.addColorStop(0,    `rgb(${Math.min(255,r+95)},${Math.min(255,g+95)},${Math.min(255,b+95)})`);
-      sph.addColorStop(0.40, `rgb(${r},${g},${b})`);
-      sph.addColorStop(1,    `rgb(${Math.max(0,r-70)},${Math.max(0,g-70)},${Math.max(0,b-70)})`);
+      // Light source: small offset top-left
+      const lx = pos.x - radius * 0.28;
+      const ly = pos.y - radius * 0.30;
+
+      // Sphere gradient
+      const sph = ctx.createRadialGradient(lx, ly, 0, pos.x, pos.y, radius * 1.02);
+      sph.addColorStop(0,    `rgb(${Math.min(255,r+hiBoost)},${Math.min(255,g+hiBoost)},${Math.min(255,b+hiBoost)})`);
+      sph.addColorStop(0.45, `rgb(${r},${g},${b})`);
+      sph.addColorStop(1,    `rgb(${Math.max(0,r-shBoost)},${Math.max(0,g-shBoost)},${Math.max(0,b-shBoost)})`);
 
       ctx.save();
       ctx.beginPath();
@@ -247,19 +254,21 @@ export function renderUniverse(DATA, subset = null, forcedMainId = null) {
       ctx.fillStyle = sph;
       ctx.fill();
 
-      // Specular highlight — glossy spot top-left (reuses same arc path)
-      const sx   = pos.x - radius * 0.28;
-      const sy   = pos.y - radius * 0.30;
-      const spec = ctx.createRadialGradient(sx, sy, 0, sx, sy, radius * 0.50);
-      spec.addColorStop(0,   'rgba(255,255,255,0.58)');
-      spec.addColorStop(0.5, 'rgba(255,255,255,0.10)');
-      spec.addColorStop(1,   'rgba(255,255,255,0)');
-      ctx.fillStyle = spec;
-      ctx.fill();
+      // Specular highlight — smaller, softer
+      if (!isGray) {
+        const sx   = pos.x - radius * 0.30;
+        const sy   = pos.y - radius * 0.32;
+        const spec = ctx.createRadialGradient(sx, sy, 0, sx, sy, radius * 0.30);
+        spec.addColorStop(0,   'rgba(255,255,255,0.42)');
+        spec.addColorStop(0.6, 'rgba(255,255,255,0.06)');
+        spec.addColorStop(1,   'rgba(255,255,255,0)');
+        ctx.fillStyle = spec;
+        ctx.fill();
+      }
 
       // Thin rim
-      ctx.strokeStyle = `rgba(${Math.min(255,r+50)},${Math.min(255,g+50)},${Math.min(255,b+50)},0.45)`;
-      ctx.lineWidth   = isMain ? 2.5 : 1.8;
+      ctx.strokeStyle = `rgba(${Math.min(255,r+40)},${Math.min(255,g+40)},${Math.min(255,b+40)},0.40)`;
+      ctx.lineWidth   = isMain ? 2 : 1.5;
       ctx.stroke();
 
       ctx.restore();
