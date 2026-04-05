@@ -549,6 +549,8 @@ function initHeaderControls() {
 
   if (role === "user") {
     headerControls.style.display = "none";
+  } else {
+    headerControls.style.display = "flex";
   }
 
   updateHeaderColor(role);
