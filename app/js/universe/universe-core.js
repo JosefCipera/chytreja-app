@@ -14,6 +14,88 @@ let currentCenter = null;
 const universeHistory = [];
 let lastRenderedNodes = [];
 
+// ── 🌌 Star field + nebula (drawn once on load) ──────────────────────────────
+(function initStarField() {
+  const canvas = document.createElement('canvas');
+  canvas.id = 'star-field';
+  document.body.appendChild(canvas);
+
+  function resize() {
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight - 56;
+    draw();
+  }
+
+  function draw() {
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Stars
+    for (let i = 0; i < 180; i++) {
+      const x  = Math.random() * canvas.width;
+      const y  = Math.random() * canvas.height;
+      const r  = Math.random() * 1.3;
+      const op = 0.15 + Math.random() * 0.55;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255,255,255,${op})`;
+      ctx.fill();
+    }
+
+    // Nebula blobs
+    [
+      { x: 0.20, y: 0.30, r: 220, c: '6,182,212',   o: 0.07 },
+      { x: 0.80, y: 0.72, r: 260, c: '139,92,246',  o: 0.08 },
+      { x: 0.58, y: 0.08, r: 180, c: '34,197,94',   o: 0.05 },
+      { x: 0.08, y: 0.82, r: 160, c: '99,102,241',  o: 0.06 },
+    ].forEach(n => {
+      const nx = n.x * canvas.width;
+      const ny = n.y * canvas.height;
+      const g  = ctx.createRadialGradient(nx, ny, 0, nx, ny, n.r);
+      g.addColorStop(0, `rgba(${n.c},${n.o})`);
+      g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(nx, ny, n.r, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }
+
+  resize();
+  window.addEventListener('resize', resize);
+})();
+
+// ── 🖱️ Mouse parallax tilt ───────────────────────────────────────────────────
+(function initParallax() {
+  const net = document.getElementById('network');
+  if (!net) return;
+
+  let breathTimer = null;
+  net.classList.add('breathing');
+
+  document.addEventListener('mousemove', (e) => {
+    // Ignore if HUD overlay is open (mouse inside panel area)
+    const sidePanelOpen = document.getElementById('sidePanel')?.classList.contains('open');
+    const panelW = sidePanelOpen ? 320 : 0;
+    const availW = window.innerWidth - panelW;
+
+    const cx   = availW / 2;
+    const cy   = (window.innerHeight - 56) / 2 + 56;
+    const dx   = (e.clientX - cx) / cx;        // –1 … +1
+    const dy   = (e.clientY - cy) / cy;
+    const maxT = 4;                              // max tilt in degrees
+
+    net.classList.remove('breathing');
+    net.style.transform = `perspective(1400px) rotateX(${(-dy * maxT).toFixed(2)}deg) rotateY(${(dx * maxT).toFixed(2)}deg)`;
+
+    clearTimeout(breathTimer);
+    breathTimer = setTimeout(() => {
+      net.style.transform = '';
+      net.classList.add('breathing');
+    }, 3000);
+  });
+})();
+
 // 🌌 Vykreslení hlavní nebo podsítě
 export function renderUniverse(DATA, subset = null, forcedMainId = null) {
 
@@ -92,6 +174,45 @@ export function renderUniverse(DATA, subset = null, forcedMainId = null) {
 
   // 🌌 Vykreslení nové sítě
   network = new vis.Network(el.network, { nodes: nodesDS, edges: edgesDS }, options);
+
+  // 🌠 Depth glow halos – drawn BEFORE vis.js nodes (behind them)
+  const allIds    = source.map(n => n.id);
+  const colorMap  = { GREEN: '34,197,94', YELLOW: '234,179,8', RED: '239,68,68', GRAY: '100,116,139' };
+
+  network.on("beforeDrawing", (ctx) => {
+    const positions  = network.getPositions(allIds);
+    const centerPos  = positions[mainId];
+    if (!centerPos) return;
+
+    source.forEach(node => {
+      const pos = positions[node.id];
+      if (!pos) return;
+
+      const isMain = node.id === mainId;
+      const dist   = Math.sqrt(
+        Math.pow(pos.x - centerPos.x, 2) +
+        Math.pow(pos.y - centerPos.y, 2)
+      );
+
+      // Closer to center = depthFactor closer to 1 (brighter, bigger halo)
+      const depthFactor = isMain ? 1.0 : Math.max(0.3, 1 - dist / 480);
+      const rgb         = colorMap[node.state] || '148,163,184';
+      const baseR       = isMain ? 120 : 80;
+      const glowR       = baseR * (0.45 + 0.55 * depthFactor);
+
+      const g = ctx.createRadialGradient(pos.x, pos.y, 0, pos.x, pos.y, glowR);
+      g.addColorStop(0,   `rgba(${rgb},${(0.22 * depthFactor).toFixed(3)})`);
+      g.addColorStop(0.5, `rgba(${rgb},${(0.09 * depthFactor).toFixed(3)})`);
+      g.addColorStop(1,   'rgba(0,0,0,0)');
+
+      ctx.save();
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(pos.x, pos.y, glowR, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    });
+  });
 
   // 🔒 Overlay zamečků na locked uzlech (canvas drawing)
   const lockedIds = source.filter(n => n.state === 'GRAY').map(n => n.id);
