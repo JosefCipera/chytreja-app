@@ -214,22 +214,71 @@ export function renderUniverse(DATA, subset = null, forcedMainId = null) {
     });
   });
 
-  // 🔒 Overlay zamečků na locked uzlech (canvas drawing)
+  // 🔮 Sphere shading + 🔒 lock emojis — single afterDrawing pass
   const lockedIds = source.filter(n => n.state === 'GRAY').map(n => n.id);
-  if (lockedIds.length) {
-    network.on("afterDrawing", (ctx) => {
-      const positions = network.getPositions(lockedIds);
+
+  network.on("afterDrawing", (ctx) => {
+    const positions = network.getPositions(allIds);
+
+    // ── Sphere shading over each vis.js flat circle ──
+    source.forEach(node => {
+      const pos = positions[node.id];
+      if (!pos) return;
+
+      const isMain = node.id === mainId;
+      const bb     = network.getBoundingBox(node.id);
+      const radius = Math.max((bb.right - bb.left) / 2, 4);
+
+      const [r, g, b] = (colorMap[node.state] || '148,163,184').split(',').map(Number);
+
+      // Light source: top-left quadrant
+      const lx = pos.x - radius * 0.30;
+      const ly = pos.y - radius * 0.32;
+
+      // Sphere gradient: bright highlight → base → deep shadow
+      const sph = ctx.createRadialGradient(lx, ly, 0, pos.x, pos.y, radius * 1.05);
+      sph.addColorStop(0,    `rgb(${Math.min(255,r+95)},${Math.min(255,g+95)},${Math.min(255,b+95)})`);
+      sph.addColorStop(0.40, `rgb(${r},${g},${b})`);
+      sph.addColorStop(1,    `rgb(${Math.max(0,r-70)},${Math.max(0,g-70)},${Math.max(0,b-70)})`);
+
       ctx.save();
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.font = "20px serif";
-      lockedIds.forEach(id => {
-        const pos = positions[id];
-        if (pos) ctx.fillText("🔒", pos.x, pos.y);
-      });
+      ctx.beginPath();
+      ctx.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
+      ctx.fillStyle = sph;
+      ctx.fill();
+
+      // Specular highlight — glossy spot top-left (reuses same arc path)
+      const sx   = pos.x - radius * 0.28;
+      const sy   = pos.y - radius * 0.30;
+      const spec = ctx.createRadialGradient(sx, sy, 0, sx, sy, radius * 0.50);
+      spec.addColorStop(0,   'rgba(255,255,255,0.58)');
+      spec.addColorStop(0.5, 'rgba(255,255,255,0.10)');
+      spec.addColorStop(1,   'rgba(255,255,255,0)');
+      ctx.fillStyle = spec;
+      ctx.fill();
+
+      // Thin rim
+      ctx.strokeStyle = `rgba(${Math.min(255,r+50)},${Math.min(255,g+50)},${Math.min(255,b+50)},0.45)`;
+      ctx.lineWidth   = isMain ? 2.5 : 1.8;
+      ctx.stroke();
+
       ctx.restore();
     });
-  }
+
+    // ── Lock emojis on GRAY nodes ──
+    if (lockedIds.length) {
+      const lockPos = network.getPositions(lockedIds);
+      ctx.save();
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.font = '20px serif';
+      lockedIds.forEach(id => {
+        const pos = lockPos[id];
+        if (pos) ctx.fillText('🔒', pos.x, pos.y);
+      });
+      ctx.restore();
+    }
+  });
 
   // ✨ Vycentrování s animací
   setTimeout(() => network.fit({ animation: true }), 300);
