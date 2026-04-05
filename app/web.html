@@ -175,10 +175,14 @@
     }
 
     .hero-chj-label {
-      font-family: monospace; font-size: 0.72rem;
-      letter-spacing: 0.3em; color: var(--cyan);
+      display: inline-flex; align-items: center; gap: 0.5rem;
       margin-bottom: 1.6rem;
-      opacity: 0.85;
+    }
+    .hero-chj-label span {
+      font-family: 'Inter', system-ui, sans-serif;
+      font-size: 1.05rem; font-weight: 600;
+      letter-spacing: 0.01em;
+      color: #93c5fd;
     }
 
     h1 {
@@ -713,7 +717,13 @@
   <div class="hero-frame-wrap">
     <div class="hero-frame">
 
-      <div class="hero-chj-label">[ CHYTRÉ JÁ ]</div>
+      <div class="hero-chj-label">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="32" height="32">
+          <circle cx="24" cy="24" r="18" fill="none" stroke="#2563eb" stroke-width="4.5"
+            stroke-dasharray="105 13" stroke-dashoffset="6.5" transform="rotate(-90 24 24)"/>
+        </svg>
+        <span>Chytré já</span>
+      </div>
       <h1>JEDEN ORCHESTRÁTOR.</h1>
       <div class="h1-sub">VŠE PODSTATNÉ NA JEDNOM DISPLEJI.</div>
 
