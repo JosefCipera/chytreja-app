@@ -174,39 +174,25 @@
       background: linear-gradient(90deg, transparent, rgba(6,182,212,0.5), transparent);
     }
 
-    .hero-chj-label {
-      display: inline-flex; align-items: center; gap: 0.5rem;
-      margin-bottom: 1.6rem;
-    }
-    .hero-chj-label span {
-      font-family: 'Inter', system-ui, sans-serif;
-      font-size: 1.05rem; font-weight: 600;
-      letter-spacing: 0.01em;
-      color: #93c5fd;
-    }
-
     h1 {
-      font-size: clamp(2rem, 4.2vw, 3.4rem);
-      font-weight: 500;
+      font-size: clamp(2.8rem, 6vw, 4.8rem);
+      font-weight: 700;
       line-height: 0.95;
-      letter-spacing: 0.04em;
+      letter-spacing: 0.06em;
       text-transform: uppercase;
       color: #fff;
-      margin-bottom: 0.6rem;
-      white-space: nowrap;
-      text-shadow: 0 0 60px rgba(6,182,212,0.15);
+      margin-bottom: 0.75rem;
+      text-shadow: 0 0 80px rgba(6,182,212,0.2), 0 0 160px rgba(6,182,212,0.08);
     }
-    @media (max-width: 760px) { h1 { white-space: normal; font-size: clamp(2.2rem, 8vw, 3rem); } }
+    @media (max-width: 760px) { h1 { font-size: clamp(2.6rem, 10vw, 3.8rem); } }
     .h1-sub {
-      font-size: clamp(0.85rem, 2.2vw, 1.45rem);
-      font-weight: 600;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      color: rgba(255,255,255,0.45);
+      font-size: clamp(0.9rem, 2vw, 1.2rem);
+      font-weight: 400;
+      letter-spacing: 0.06em;
+      color: rgba(255,255,255,0.42);
       margin-bottom: 1.8rem;
-      white-space: nowrap;
     }
-    @media (max-width: 760px) { .h1-sub { white-space: normal; font-size: clamp(0.75rem, 3.5vw, 1rem); letter-spacing: 0.1em; } }
+    @media (max-width: 760px) { .h1-sub { font-size: clamp(0.85rem, 3.5vw, 1rem); } }
 
     .hero-sub {
       font-family: monospace; font-size: clamp(0.68rem, 1.2vw, 0.8rem);
@@ -717,15 +703,8 @@
   <div class="hero-frame-wrap">
     <div class="hero-frame">
 
-      <div class="hero-chj-label">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="32" height="32">
-          <circle cx="24" cy="24" r="18" fill="none" stroke="#2563eb" stroke-width="4.5"
-            stroke-dasharray="105 13" stroke-dashoffset="6.5" transform="rotate(-90 24 24)"/>
-        </svg>
-        <span>Chytré já</span>
-      </div>
-      <h1>JEDEN ORCHESTRÁTOR.</h1>
-      <div class="h1-sub">VŠE PODSTATNÉ NA JEDNOM DISPLEJI.</div>
+      <h1>CHYTRÉ JÁ</h1>
+      <div class="h1-sub">Jeden orchestrátor. Všechno podstatné.</div>
 
       <!-- Sparkline wave -->
       <svg class="hero-sparkline" viewBox="0 0 600 48" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
@@ -834,11 +813,11 @@
 <!-- WORLDS -->
 <section id="worlds">
   <div class="container">
-    <div class="section-tag">// SVĚTY</div>
-    <h2>Vyber si svůj první svět</h2>
+    <div class="section-tag">// MODULY</div>
+    <h2>Vyber si svůj první modul</h2>
     <p class="lead">
-      Každý svět má vlastního AI agenta, vlastní logiku a vlastní HUD panel.
-      Orchestrátor je propojuje.
+      Každý modul má vlastního AI agenta a vlastní HUD panel.
+      Chytré já je propojuje pod jedním orchestrátorem.
     </p>
 
     <div class="worlds-grid">
