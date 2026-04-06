@@ -708,7 +708,7 @@
       margin-top: 3rem;
       border-radius: 12px;
       overflow: hidden;
-      box-shadow: 0 0 60px rgba(6,182,212,0.1), 0 20px 60px rgba(0,0,0,0.5);
+      box-shadow: 0 0 0 1px rgba(6,182,212,0.25), 0 0 60px rgba(6,182,212,0.15), 0 20px 60px rgba(0,0,0,0.5);
     }
     .terminal-header {
       background: rgba(15,23,42,0.95);
@@ -738,17 +738,17 @@
     .t-block { transition: opacity 0.4s ease; }
     .t-block.done { opacity: 0.35; }
     .t-sys {
-      color: #555; font-size: 0.82rem; margin-bottom: 0.15rem;
+      color: #888; font-size: 0.85rem; margin-bottom: 0.15rem;
     }
     .t-user {
       color: #00f2ff; font-weight: 700; margin-bottom: 0.2rem;
     }
-    .t-error { color: #ef4444; font-size: 0.82rem; margin-bottom: 0.15rem; }
-    .t-success { color: #22c55e; font-weight: 600; margin-top: 0.5rem; }
+    .t-error { color: #ef4444; font-size: 0.85rem; margin-bottom: 0.15rem; }
+    .t-success { color: rgba(6,182,212,0.65); margin-top: 0.5rem; }
     .t-input-row {
       display: flex; align-items: center; margin-top: 0.1rem;
     }
-    .t-prompt { color: #555; font-size: 0.82rem; margin-right: 0.4rem; flex-shrink: 0; }
+    .t-prompt { color: #888; font-size: 0.85rem; margin-right: 0.3rem; flex-shrink: 0; }
     #t-input {
       background: transparent; border: none; outline: none;
       color: #00f2ff; font-family: inherit; font-size: inherit;
@@ -756,9 +756,13 @@
     }
     @keyframes t-blink { 0%,100%{opacity:1} 50%{opacity:0} }
     .t-cursor {
-      display: inline-block; color: #06b6d4;
+      display: inline-block; color: #00f2ff;
       animation: t-blink 1s step-end infinite;
-      font-weight: bold; margin-left: 1px;
+      font-weight: bold;
+    }
+    @media (max-width: 640px) {
+      .terminal-body { font-size: 0.92rem; padding: 1.2rem; min-height: 200px; }
+      .t-sys, .t-error { font-size: 0.88rem; }
     }
     @keyframes t-glitch {
       0%   { opacity:1; transform:translate(0);   filter:none; }
@@ -1052,9 +1056,9 @@
         <div id="t-history"></div>
         <div class="t-input-row" id="t-input-row" style="display:none;">
           <span class="t-prompt">&gt;</span>
+          <span class="t-cursor" id="t-cur">_</span>
           <input id="t-input" type="text" autocomplete="off" autocorrect="off"
                  autocapitalize="off" spellcheck="false" inputmode="text"/>
-          <span class="t-cursor">_</span>
         </div>
       </div>
     </div>
@@ -1229,7 +1233,7 @@
       inputRow.style.display = 'none';
       step = 3;
       const finalBlock = newBlock();
-      typeInBlock(finalBlock, '> [ STATUS: Odesláno. Připojení ukončeno. ]', 't-success', () => {
+      typeInBlock(finalBlock, '> [ STATUS: DATA_ODESLÁNA_DO_JÁDRA // SPOJENÍ_UKONČENO ]', 't-success', () => {
         setTimeout(glitch, 150);
       });
     }
@@ -1237,6 +1241,10 @@
 
   input.addEventListener('keydown', e => {
     if (e.key === 'Enter') { e.preventDefault(); handleEnter(); }
+  });
+  input.addEventListener('input', () => {
+    const cur = document.getElementById('t-cur');
+    if (cur) cur.style.display = input.value ? 'none' : 'inline-block';
   });
   body.addEventListener('click', () => { if (step < 3) input.focus(); });
 
