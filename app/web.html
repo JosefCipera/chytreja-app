@@ -88,15 +88,29 @@
     @media (max-width: 640px) {
       nav {
         grid-template-columns: 1fr 1fr;
-        padding: 0 1.25rem;
-        height: 60px;
+        grid-template-rows: auto auto;
+        padding: 0.6rem 1.25rem 0.5rem;
+        height: auto;
+        gap: 0.5rem 0;
       }
-      .nav-links-wrap { display: none; }
+      .nav-logo { grid-column: 1; grid-row: 1; }
       .nav-cta {
+        grid-column: 2; grid-row: 1;
         justify-self: end;
         font-size: 0.78rem;
         color: var(--cyan);
       }
+      .nav-links-wrap {
+        grid-column: 1 / -1; grid-row: 2;
+        justify-content: flex-start;
+        border-radius: 5px;
+      }
+      .nav-links-wrap li a {
+        font-size: 0.72rem;
+        padding: 0.45rem 0.9rem;
+        letter-spacing: 0.1em;
+      }
+      #hero { padding-top: 120px; }
     }
 
     /* ── HERO ── */
@@ -105,7 +119,7 @@
       min-height: 100vh;
       display: flex; flex-direction: column;
       align-items: center; justify-content: center;
-      padding: 80px 1.5rem 5rem;
+      padding: 90px 1.5rem 5rem;
       overflow: hidden;
     }
 
