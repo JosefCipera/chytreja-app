@@ -632,22 +632,60 @@
 
     /* ── FOOTER ── */
     footer {
-      border-top: 1px solid rgba(255,255,255,0.06);
-      padding: 2rem 1.5rem;
-      display: flex; justify-content: space-between; align-items: center;
-      flex-wrap: wrap; gap: 1rem;
+      border-top: 1px solid rgba(255,255,255,0.07);
+      background: rgba(4,9,22,0.6);
     }
-    .footer-brand {
-      font-family: monospace; font-size: 0.85rem;
-      color: var(--dim);
+    .footer-inner {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 2.5rem;
+      padding: 3rem 1.5rem 2rem;
     }
-    .footer-brand strong { color: var(--cyan); }
-    .footer-links { display: flex; gap: 1.5rem; }
-    .footer-links a {
-      font-size: 0.8rem; color: var(--dim);
-      text-decoration: none;
+    @media (max-width: 768px) {
+      .footer-inner {
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+      }
+      .footer-brand-col { grid-column: 1 / -1; }
     }
-    .footer-links a:hover { color: var(--muted); }
+    @media (max-width: 480px) {
+      .footer-inner { grid-template-columns: 1fr; }
+    }
+    .footer-logo {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      text-decoration: none; margin-bottom: 1rem;
+    }
+    .footer-logo span {
+      font-family: 'Inter', system-ui, sans-serif;
+      font-size: 1rem; font-weight: 600; color: #e2e8f0;
+    }
+    .footer-tagline {
+      font-size: 0.85rem; color: var(--muted);
+      line-height: 1.6; margin-bottom: 0.75rem;
+    }
+    .footer-version {
+      font-family: monospace; font-size: 0.7rem;
+      color: var(--dim); letter-spacing: 0.1em;
+    }
+    .footer-col-label {
+      font-family: monospace; font-size: 0.65rem;
+      letter-spacing: 0.18em; text-transform: uppercase;
+      color: var(--cyan); margin-bottom: 0.9rem;
+    }
+    .footer-nav-col {
+      display: flex; flex-direction: column; gap: 0.55rem;
+    }
+    .footer-nav-col a {
+      font-size: 0.85rem; color: var(--dim);
+      text-decoration: none; transition: color 0.2s;
+    }
+    .footer-nav-col a:hover { color: var(--text); }
+    .footer-bottom {
+      display: flex; justify-content: space-between;
+      padding: 1.25rem 1.5rem;
+      border-top: 1px solid rgba(255,255,255,0.05);
+      font-size: 0.78rem; color: var(--dim);
+    }
 
     /* ── GLOW DOTS ── */
     .glow {
@@ -879,20 +917,20 @@
 <section id="tech">
   <div class="container">
     <div class="section-tag">// TECHNOLOGIE</div>
-    <h2>Claude jako neviditelný engine</h2>
+    <h2>Orchestrátor jako neviditelný engine</h2>
     <p class="lead">
       Nepracuješ s AI. AI pracuje pro tebe.
       Na pozadí. Transparentně. Bez otázek.
     </p>
 
     <div class="tech-diagram">
-      <div><span class="cyan">CHJ Orchestrátor</span> <span class="muted">// Claude Sonnet</span></div>
+      <div><span class="cyan">CHJ Orchestrátor</span> <span class="muted">// hlavní mozek</span></div>
       <div class="indent"><span class="muted">→ rozhoduje CO, KDY, KOMU předat</span></div>
       <div class="indent"><span class="muted">→ zná celý kontext (zdraví + výkon + jazyk)</span></div>
       <br>
-      <div><span class="green">Specializovaní agenti</span> <span class="muted">// Claude Haiku</span></div>
+      <div><span class="green">Specializovaní agenti</span> <span class="muted">// jeden na každý svět</span></div>
       <div class="indent"><span class="muted">→ Longevity · BMC · TOC · Angličtina</span></div>
-      <div class="indent"><span class="muted">→ rychlí, levní, zaměřeni na jeden svět</span></div>
+      <div class="indent"><span class="muted">→ rychlí, přesní, zaměřeni na jeden svět</span></div>
       <br>
       <div><span class="cyan">Nástroje</span></div>
       <div class="indent"><span class="muted">→ 📷 Vision (foto jídla → kalorie)</span></div>
@@ -953,15 +991,48 @@
 </section>
 
 <!-- FOOTER -->
-<footer class="container">
-  <div class="footer-brand">
-    <strong>CHJ</strong> / Chytré Já &nbsp;·&nbsp; v0.2.0 &nbsp;·&nbsp;
-    <span style="color:var(--dim)">Powered by Claude · Supabase · Vercel</span>
+<footer>
+  <div class="footer-inner container">
+
+    <div class="footer-brand-col">
+      <a class="footer-logo" href="#">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="28" height="28">
+          <circle cx="24" cy="24" r="18" fill="none" stroke="#2563eb" stroke-width="4.5"
+            stroke-dasharray="105 13" stroke-dashoffset="6.5" transform="rotate(-90 24 24)"/>
+        </svg>
+        <span>Chytré já</span>
+      </a>
+      <p class="footer-tagline">Pomáhá vám řídit sebe –<br>ne se sebou bojovat.</p>
+      <div class="footer-version">v0.2.0 &nbsp;·&nbsp; beta</div>
+    </div>
+
+    <div class="footer-nav-col">
+      <div class="footer-col-label">Světy</div>
+      <a href="#worlds">🫀 Longevity</a>
+      <a href="#worlds">🗺️ BMC</a>
+      <a href="#worlds">📐 TOC</a>
+      <a href="#worlds">🇬🇧 Angličtina</a>
+    </div>
+
+    <div class="footer-nav-col">
+      <div class="footer-col-label">Sekce</div>
+      <a href="#worlds">Metoda</a>
+      <a href="#how">HUD</a>
+      <a href="#tech">Technologie</a>
+      <a href="/app/">Přihlášení</a>
+    </div>
+
+    <div class="footer-nav-col">
+      <div class="footer-col-label">Info</div>
+      <a href="#">Ochrana dat</a>
+      <a href="#">Podmínky užití</a>
+      <a href="#">Kontakt</a>
+    </div>
+
   </div>
-  <div class="footer-links">
-    <a href="/app/">App</a>
-    <a href="#">Ochrana dat</a>
-    <a href="#">Kontakt</a>
+  <div class="footer-bottom">
+    <span>© 2025 Chytré já</span>
+    <span>Vyrobeno v Česku 🇨🇿</span>
   </div>
 </footer>
 
