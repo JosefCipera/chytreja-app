@@ -1233,6 +1233,13 @@
       inputRow.style.display = 'none';
       step = 3;
       const finalBlock = newBlock();
+      // Send to API
+      fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      }).catch(() => {}); // fire and forget — UI already shows success
+
       typeInBlock(finalBlock, '> [ STATUS: DATA_ODESLÁNA_DO_JÁDRA // SPOJENÍ_UKONČENO ]', 't-success', () => {
         setTimeout(glitch, 150);
       });
