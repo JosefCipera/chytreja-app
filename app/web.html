@@ -735,21 +735,24 @@
       min-height: 260px;
       cursor: text;
     }
-    .t-line { color: #06b6d4; }
-    .t-history-line { color: #475569; margin-bottom: 0.1rem; }
-    .t-history-line.user { color: #94a3b8; }
-    .t-history-line.system { color: #06b6d4; }
-    .t-history-line.error { color: #ef4444; }
-    .t-history-line.success { color: #22c55e; }
-    .t-input-row {
-      display: flex; align-items: center; gap: 0; margin-top: 0.2rem;
+    .t-block { transition: opacity 0.4s ease; }
+    .t-block.done { opacity: 0.35; }
+    .t-sys {
+      color: #555; font-size: 0.82rem; margin-bottom: 0.15rem;
     }
-    .t-prompt { color: #06b6d4; margin-right: 0.5rem; flex-shrink: 0; }
+    .t-user {
+      color: #00f2ff; font-weight: 700; margin-bottom: 0.2rem;
+    }
+    .t-error { color: #ef4444; font-size: 0.82rem; margin-bottom: 0.15rem; }
+    .t-success { color: #22c55e; font-weight: 600; margin-top: 0.5rem; }
+    .t-input-row {
+      display: flex; align-items: center; margin-top: 0.1rem;
+    }
+    .t-prompt { color: #555; font-size: 0.82rem; margin-right: 0.4rem; flex-shrink: 0; }
     #t-input {
       background: transparent; border: none; outline: none;
-      color: #e2e8f0; font-family: inherit; font-size: inherit;
-      flex: 1; caret-color: transparent;
-      width: 100%;
+      color: #00f2ff; font-family: inherit; font-size: inherit;
+      font-weight: 700; flex: 1; caret-color: transparent; width: 100%;
     }
     @keyframes t-blink { 0%,100%{opacity:1} 50%{opacity:0} }
     .t-cursor {
@@ -1130,43 +1133,50 @@
 
 <script>
 (function() {
-  const history = document.getElementById('t-history');
+  const hist     = document.getElementById('t-history');
   const inputRow = document.getElementById('t-input-row');
   const input    = document.getElementById('t-input');
   const body     = document.getElementById('t-body');
 
-  let step = 0;
-  let data = {};
-
-  const SPEED = 28;
-
+  const SPEED = 15;
   const PROMPTS = [
-    '> IDENTIFIKUJTE SE (JMÉNO):',
-    '> ZADEJTE KOMUNIKAČNÍ KANÁL (E-MAIL):',
-    '> DEFINUJTE MISI (ZPRÁVA):'
+    '> Identifikace (Jméno):',
+    '> Spojení (E-mail):',
+    '> Mise (Zpráva):'
   ];
 
-  function addLine(text, cls) {
-    const d = document.createElement('div');
-    d.className = 't-history-line ' + (cls || '');
-    d.textContent = text;
-    history.appendChild(d);
-    body.scrollTop = body.scrollHeight;
+  let step = 0, data = {}, currentBlock = null;
+
+  function newBlock() {
+    currentBlock = document.createElement('div');
+    currentBlock.className = 't-block';
+    hist.appendChild(currentBlock);
+    return currentBlock;
   }
 
-  function typeWrite(text, cls, cb) {
+  function fadeBlock(block) {
+    if (block) block.classList.add('done');
+  }
+
+  function addToBlock(block, text, cls) {
+    const d = document.createElement('div');
+    d.className = cls;
+    d.textContent = text;
+    block.appendChild(d);
+    body.scrollTop = body.scrollHeight;
+    return d;
+  }
+
+  function typeInBlock(block, text, cls, cb) {
     inputRow.style.display = 'none';
     const d = document.createElement('div');
-    d.className = 't-history-line ' + (cls || 'system');
-    history.appendChild(d);
+    d.className = cls;
+    block.appendChild(d);
     let i = 0;
     const iv = setInterval(() => {
       d.textContent += text[i++];
       body.scrollTop = body.scrollHeight;
-      if (i >= text.length) {
-        clearInterval(iv);
-        if (cb) setTimeout(cb, 180);
-      }
+      if (i >= text.length) { clearInterval(iv); if (cb) setTimeout(cb, 80); }
     }, SPEED);
   }
 
@@ -1176,10 +1186,9 @@
     body.scrollTop = body.scrollHeight;
   }
 
-  function nextStep() {
-    if (step < PROMPTS.length) {
-      typeWrite(PROMPTS[step], 'system', showInput);
-    }
+  function askStep() {
+    currentBlock = newBlock();
+    typeInBlock(currentBlock, PROMPTS[step], 't-sys', showInput);
   }
 
   function glitch() {
@@ -1190,59 +1199,50 @@
   function handleEnter() {
     const val = input.value.trim();
     if (!val) return;
+    input.value = '';
 
     if (step === 0) {
+      addToBlock(currentBlock, val, 't-user');
       data.name = val;
-      addLine('> ' + val, 'user');
-      input.value = '';
-      step = 1;
-      typeWrite('> ' + data.name.toUpperCase() + ' PŘIJATO. PROPOJUJI...', 'system', () => {
-        typeWrite(PROMPTS[step], 'system', showInput);
-      });
+      fadeBlock(currentBlock);
+      step = 1; askStep();
 
     } else if (step === 1) {
       if (!val.includes('@') || !val.includes('.')) {
-        addLine('> ' + val, 'user');
-        input.value = '';
-        typeWrite('> [ CHYBA: NEPLATNÝ PROTOKOL. OPAKUJTE ZADÁNÍ: ]', 'error', showInput);
+        addToBlock(currentBlock, val, 't-user');
+        const errBlock = newBlock();
+        typeInBlock(errBlock, '> [ CHYBA: neplatný formát. Opakuj: ]', 't-error', () => {
+          currentBlock = errBlock;
+          showInput();
+        });
         return;
       }
+      addToBlock(currentBlock, val, 't-user');
       data.email = val;
-      addLine('> ' + val, 'user');
-      input.value = '';
-      step = 2;
-      typeWrite(PROMPTS[step], 'system', showInput);
+      fadeBlock(currentBlock);
+      step = 2; askStep();
 
     } else if (step === 2) {
+      addToBlock(currentBlock, val, 't-user');
       data.message = val;
-      addLine('> ' + val, 'user');
-      input.value = '';
+      fadeBlock(currentBlock);
       inputRow.style.display = 'none';
       step = 3;
-      setTimeout(() => {
-        typeWrite('> [ STATUS: DATA ODESLÁNA DO JÁDRA. PŘIPOJENÍ UKONČENO. ]', 'success', () => {
-          setTimeout(glitch, 200);
-        });
-        // optional: send data somewhere
-        // fetch('/api/contact', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data) });
-      }, 300);
+      const finalBlock = newBlock();
+      typeInBlock(finalBlock, '> [ STATUS: Odesláno. Připojení ukončeno. ]', 't-success', () => {
+        setTimeout(glitch, 150);
+      });
     }
   }
 
-  input.addEventListener('keydown', (e) => {
+  input.addEventListener('keydown', e => {
     if (e.key === 'Enter') { e.preventDefault(); handleEnter(); }
   });
-
   body.addEventListener('click', () => { if (step < 3) input.focus(); });
 
-  // Auto-start
-  setTimeout(() => {
-    typeWrite('> INICIALIZUJI KONTAKTNÍ PROTOKOL...', 'system', () => {
-      typeWrite('> ZABEZPEČENÉ SPOJENÍ NAVÁZÁNO.', 'system', () => {
-        nextStep();
-      });
-    });
-  }, 400);
+  // Start immediately with first question
+  askStep();
+  setTimeout(() => input.focus(), 100);
 })();
 </script>
 </body>
