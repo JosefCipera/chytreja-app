@@ -61,13 +61,11 @@
     .nav-cta {
       font-family: monospace; font-size: 0.78rem;
       letter-spacing: 0.1em; text-transform: uppercase;
-      color: var(--cyan); background: transparent;
-      border: 1px solid var(--cyan); border-radius: 4px;
-      padding: 0.4rem 1rem; cursor: pointer; text-decoration: none;
-      transition: background 0.2s, color 0.2s;
-      box-shadow: 0 0 12px rgba(6,182,212,0.2);
+      color: var(--muted); background: transparent;
+      border: none; padding: 0; cursor: pointer; text-decoration: none;
+      transition: color 0.2s;
     }
-    .nav-cta:hover { background: var(--cyan-dim); }
+    .nav-cta:hover { color: var(--text); }
     @media (max-width: 640px) { .nav-links { display: none; } }
 
     /* ── HERO ── */
@@ -153,25 +151,12 @@
       margin: 0 auto 2.5rem;
     }
     .hero-frame {
-      background: rgba(4,9,22,0.22);
-      border: 1px solid rgba(6,182,212,0.18);
-      border-radius: 20px;
+      background: none;
+      border: none;
       padding: 2.8rem 3rem 2.8rem;
-      backdrop-filter: blur(8px) saturate(120%);
-      -webkit-backdrop-filter: blur(8px) saturate(120%);
-      box-shadow:
-        0 0 0 1px rgba(6,182,212,0.08) inset,
-        0 0 60px rgba(6,182,212,0.04),
-        0 20px 60px rgba(0,0,0,0.3);
       text-align: center;
       position: relative;
       overflow: visible;
-    }
-    /* top accent line */
-    .hero-frame::before {
-      content: '';
-      position: absolute; top: 0; left: 15%; right: 15%; height: 1px;
-      background: linear-gradient(90deg, transparent, rgba(6,182,212,0.5), transparent);
     }
 
     h1 {
@@ -703,7 +688,7 @@
     <div class="hero-frame">
 
       <h1>Chytré já</h1>
-      <div class="h1-sub"><span style="color:rgba(255,255,255,0.38)">Jeden orchestrátor.</span> &nbsp;Jedna akce. Dnes. Teď.</div>
+      <div class="h1-sub">Jedna akce. Dnes. Teď.</div>
 
       <!-- Sparkline wave -->
       <svg class="hero-sparkline" viewBox="0 0 600 48" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
