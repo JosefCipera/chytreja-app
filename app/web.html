@@ -38,35 +38,55 @@
     nav {
       position: fixed; top: 0; left: 0; right: 0; z-index: 100;
       display: flex; align-items: center; justify-content: space-between;
-      padding: 0 2.5rem;
+      padding: 0 2rem;
       height: 58px;
-      background: rgba(7,13,26,0.92);
+      background: rgba(7,13,26,0.88);
       backdrop-filter: blur(16px);
-      border-bottom: 1px solid rgba(6,182,212,0.18);
+      border-bottom: 1px solid rgba(6,182,212,0.12);
     }
     .nav-logo {
-      font-family: monospace;
-      font-size: 0.95rem; font-weight: 700;
-      color: var(--cyan); letter-spacing: 0.12em;
-      text-decoration: none; text-transform: uppercase;
+      display: flex; align-items: center; gap: 0.5rem;
+      text-decoration: none; flex-shrink: 0;
     }
-    .nav-links { display: flex; gap: 2.5rem; list-style: none; }
-    .nav-links a {
-      font-family: monospace; font-size: 0.75rem;
-      letter-spacing: 0.15em; text-transform: uppercase;
+    .nav-logo span {
+      font-family: 'Inter', system-ui, sans-serif;
+      font-size: 1rem; font-weight: 600;
+      color: #e2e8f0; letter-spacing: 0.01em;
+    }
+    .nav-links-wrap {
+      display: flex; align-items: center;
+      border: 1px solid rgba(6,182,212,0.22);
+      border-radius: 6px;
+      overflow: hidden;
+      list-style: none;
+    }
+    .nav-links-wrap li a {
+      display: block;
+      font-family: monospace; font-size: 0.72rem;
+      letter-spacing: 0.14em; text-transform: uppercase;
       color: var(--muted); text-decoration: none;
-      transition: color 0.2s;
+      padding: 0.45rem 1.1rem;
+      transition: color 0.2s, background 0.2s;
+      border-right: 1px solid rgba(6,182,212,0.15);
     }
-    .nav-links a:hover { color: var(--cyan); }
+    .nav-links-wrap li:last-child a { border-right: none; }
+    .nav-links-wrap li a:hover { color: var(--cyan); background: rgba(6,182,212,0.07); }
     .nav-cta {
-      font-family: monospace; font-size: 0.78rem;
-      letter-spacing: 0.1em; text-transform: uppercase;
-      color: var(--muted); background: transparent;
-      border: none; padding: 0; cursor: pointer; text-decoration: none;
-      transition: color 0.2s;
+      font-family: monospace; font-size: 0.75rem;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--cyan); background: rgba(6,182,212,0.06);
+      border: 1px solid rgba(6,182,212,0.55); border-radius: 5px;
+      padding: 0.42rem 1.1rem; cursor: pointer; text-decoration: none;
+      transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+      box-shadow: 0 0 14px rgba(6,182,212,0.25), inset 0 0 10px rgba(6,182,212,0.04);
+      flex-shrink: 0;
     }
-    .nav-cta:hover { color: var(--text); }
-    @media (max-width: 640px) { .nav-links { display: none; } }
+    .nav-cta:hover {
+      background: rgba(6,182,212,0.12);
+      border-color: var(--cyan);
+      box-shadow: 0 0 24px rgba(6,182,212,0.45), inset 0 0 16px rgba(6,182,212,0.08);
+    }
+    @media (max-width: 640px) { .nav-links-wrap { display: none; } }
 
     /* ── HERO ── */
     #hero {
@@ -627,13 +647,19 @@
 
 <!-- NAV -->
 <nav>
-  <a class="nav-logo" href="#">CHJ</a>
-  <ul class="nav-links">
-    <li><a href="#worlds">METODA</a></li>
+  <a class="nav-logo" href="#">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="28" height="28">
+      <circle cx="24" cy="24" r="18" fill="none" stroke="#2563eb" stroke-width="4.5"
+        stroke-dasharray="105 13" stroke-dashoffset="6.5" transform="rotate(-90 24 24)"/>
+    </svg>
+    <span>Chytré já</span>
+  </a>
+  <ul class="nav-links-wrap">
+    <li><a href="#worlds">Metoda</a></li>
     <li><a href="#how">HUD</a></li>
-    <li><a href="#why">TESTEŘI</a></li>
+    <li><a href="#why">Testeři</a></li>
   </ul>
-  <a class="nav-cta" href="/app/">[ PŘIHLÁŠENÍ ]</a>
+  <a class="nav-cta" href="/app/">[ Přihlášení ]</a>
 </nav>
 
 <!-- HERO -->
