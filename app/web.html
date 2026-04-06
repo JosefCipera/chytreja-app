@@ -1194,7 +1194,7 @@
 
   function showInput() {
     inputRow.style.display = 'flex';
-    input.focus();
+    input.focus({ preventScroll: true });
     body.scrollTop = body.scrollHeight;
   }
 
