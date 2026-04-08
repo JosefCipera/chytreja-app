@@ -173,7 +173,16 @@
     @keyframes pulse-core { 0%,100% { r:22; } 50% { r:26; } }
     @keyframes float      { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
     @keyframes float2     { 0%,100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-6px) rotate(2deg); } }
-    @keyframes sparkline-draw { from { stroke-dashoffset: 400; } to { stroke-dashoffset: 0; } }
+    @keyframes sparkline-draw { from { stroke-dashoffset: 640; } to { stroke-dashoffset: 0; } }
+    @keyframes star-pulse {
+      0%,100% { transform: scale(0.7); opacity: 0.55; }
+      50%      { transform: scale(1.35); opacity: 1; }
+    }
+    .hero-star {
+      animation: star-pulse 2.8s ease-in-out infinite;
+      transform-origin: 578px 20px;
+      filter: drop-shadow(0 0 5px #06b6d4) drop-shadow(0 0 10px rgba(6,182,212,0.5));
+    }
     @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
 
     .orbit-1 { animation: orbit-slow 28s linear infinite; transform-origin: 50% 50%; }
@@ -228,12 +237,22 @@
     }
 
     /* Sparkline wave */
+    .hero-sparkline-wrap {
+      position: relative; width: 100%; margin-bottom: 0.5rem;
+    }
     .hero-sparkline {
-      width: 100%; height: 48px; margin-bottom: 0.5rem;
+      width: 100%; height: 48px; display: block;
     }
     .hero-sparkline path {
       stroke-dasharray: 400;
       animation: sparkline-draw 2.5s ease-out forwards;
+    }
+    .hero-star-el {
+      position: absolute; right: 2%; top: 50%; transform: translateY(-50%);
+      font-size: 1.1rem; color: #06b6d4; line-height: 1;
+      animation: star-pulse 2.8s ease-in-out infinite;
+      filter: drop-shadow(0 0 6px #06b6d4) drop-shadow(0 0 12px rgba(6,182,212,0.5));
+      pointer-events: none;
     }
 
     /* ── FLOATING HUD CARDS ── */
@@ -952,6 +971,7 @@
       <div class="h1-sub">Pomáhá vám řídit sebe – ne se sebou bojovat.</div>
 
       <!-- Sparkline wave -->
+      <div class="hero-sparkline-wrap">
       <svg class="hero-sparkline" viewBox="0 0 600 48" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <linearGradient id="spark-grad" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -964,11 +984,12 @@
             <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
           </filter>
         </defs>
-        <path d="M0,32 C40,32 65,20 110,22 C155,24 185,36 230,30 C275,25 310,12 365,15 C415,18 455,28 500,22 C535,17 558,14 575,20 L596,20"
+        <path d="M0,32 C40,32 65,20 110,22 C155,24 185,36 230,30 C275,25 310,12 365,15 C415,18 455,28 500,22 C535,17 552,15 558,16"
               fill="none" stroke="url(#spark-grad)" stroke-width="2" filter="url(#spark-glow)"
-              stroke-dasharray="450" class="hero-sparkline-path"/>
-        <circle cx="575" cy="20" r="4" fill="#06b6d4" opacity="0.9"/>
+              stroke-dasharray="640" class="hero-sparkline-path"/>
       </svg>
+      <span class="hero-star-el">✦</span>
+      </div>
 
       <!-- HUD Cards (desktop: absolute float; mobile: horizontal strip) -->
       <div class="hud-mobile-strip">
