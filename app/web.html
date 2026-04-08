@@ -698,6 +698,28 @@
     /* z-index reset for children — planets and glow blobs stay absolute */
     #hero > *:not(.universe-bg):not(.planet):not(.glow):not(#hero::after) { position: relative; z-index: 1; }
 
+    /* ── VALUE / WHY ── */
+    #value { background: var(--bg); }
+    .why-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 1.5rem; margin-top: 2.5rem; max-width: 640px; margin-left: auto; margin-right: auto;
+    }
+    .why-col {
+      background: rgba(15,23,42,0.6);
+      border: 1px solid rgba(6,182,212,0.12);
+      border-radius: 12px; padding: 1.5rem;
+    }
+    .why-col-header {
+      font-family: monospace; font-size: 0.7rem; letter-spacing: 0.1em;
+      color: #06b6d4; text-transform: uppercase; margin-bottom: 1rem;
+    }
+    .why-item {
+      font-size: 0.95rem; color: #cbd5e1; padding: 0.45rem 0;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+    .why-item:last-child { border-bottom: none; }
+    @media (max-width: 560px) { .why-grid { grid-template-columns: 1fr; } }
+
     /* ── PRICING ── */
     #pricing { background: var(--bg); }
 
@@ -960,7 +982,12 @@
     <div class="hero-frame">
 
       <h1>Chytré já</h1>
-      <div class="h1-sub">Pomáhá vám řídit sebe – ne se sebou bojovat.</div>
+      <div class="h1-sub">Získáte jasno v tom, co dělat – ve firmě, zdraví i životě.</div>
+
+      <p class="hero-sub">
+        Chytré já sbírá data, chápe kontext a vede vás k dalším krokům.<br>
+        Neřešíte co dělat. Prostě víte.
+      </p>
 
       <!-- Sparkline wave -->
       <div class="hero-sparkline-wrap">
@@ -1027,8 +1054,31 @@
   </div><!-- /hero-frame-wrap -->
 
   <!-- Terminal CTA -->
-  <a class="btn-terminal" href="/app/">[ &gt;_ AKTIVOVAT MŮJ HUD<span class="cursor">_</span> ]</a>
+  <a class="btn-terminal" href="/app/">[ &gt;_ VYZKOUŠET CHYTRÉ JÁ<span class="cursor">_</span> ]</a>
 
+</section>
+
+<!-- VALUE / WHY -->
+<section id="value">
+  <div class="container">
+    <div class="section-tag">// PROČ TO CHCETE</div>
+    <h2>Když máte jasno, všechno se zrychlí</h2>
+
+    <div class="why-grid">
+      <div class="why-col">
+        <div class="why-col-header">Bez Chytrého já</div>
+        <div class="why-item">❌ Přemýšlíte, co dělat</div>
+        <div class="why-item">❌ Přeskakujete mezi věcmi</div>
+        <div class="why-item">❌ Rozhodnutí vás stojí energii</div>
+      </div>
+      <div class="why-col">
+        <div class="why-col-header">S Chytrým já</div>
+        <div class="why-item">✅ Máte jasno v dalším kroku</div>
+        <div class="why-item">✅ Jedete podle kontextu</div>
+        <div class="why-item">✅ Šetříte energii i čas</div>
+      </div>
+    </div>
+  </div>
 </section>
 
 <!-- HOW IT WORKS -->
@@ -1037,8 +1087,11 @@
     <div class="section-tag">// ARCHITEKTURA</div>
     <h2>Jeden mozek, více světů</h2>
     <p class="lead">
-      Orchestrátor zná celý kontext — zdraví, výkon, jazyk, energii, omezení.
-      Koordinuje specializované agenty a dává ti každý den jeden konkrétní krok.
+      Chytré já spojuje vaše data – zdraví, práci i návyky –
+      a dává vám jasný směr pro každý den. Nezahlcuje vás. Vybere to nejdůležitější.
+    </p>
+    <p class="lead" style="margin-top:1rem; color:#e2e8f0;">
+      Každý den víte, co udělat jako další krok.
     </p>
 
     <div class="orchestrator-wrap">
@@ -1075,9 +1128,11 @@
     </div>
 
     <div class="how-insight">
-      <strong>Příklad:</strong> Dnes máš náročný den plný rozhodnutí (meeting, deal, team). Orchestrátor to ví —
-      ráno zařadí 5minutové dechové cvičení místo siláckého tréninku, večer připomene 3 anglická slovíčka.
-      Žádná extra práce. Systém se přizpůsobil za tebe.
+      <strong>Jak to funguje v praxi:</strong><br><br>
+      Máte náročný den → systém upraví váš režim.<br>
+      Méně energie → doporučí lehčí aktivitu.<br>
+      Potřebujete výkon → zaměří vás na klíčové rozhodnutí.<br><br>
+      <strong>Nemusíte přemýšlet co dělat. Systém vás vede.</strong>
     </div>
   </div>
 </section>
@@ -1142,6 +1197,7 @@
   <div class="container">
     <div class="section-tag">// ACCESS_LEVEL</div>
     <h2>Vyber si úroveň přístupu</h2>
+    <p class="lead" style="margin-bottom:0.5rem;">Za cenu jednoho špatného rozhodnutí měsíčně získáte systém, který vás vede každý den.</p>
     <p class="lead">Začni zdarma. Upgraduj až bude systém dávat smysl.</p>
 
     <div class="pricing-grid">
