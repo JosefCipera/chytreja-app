@@ -920,8 +920,8 @@
       <svg class="hero-sparkline" viewBox="0 0 600 48" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <linearGradient id="spark-grad" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="44%" stop-color="#06b6d4" stop-opacity="0"/>
-            <stop offset="72%" stop-color="#06b6d4" stop-opacity="0.8"/>
+            <stop offset="0%" stop-color="#06b6d4" stop-opacity="0"/>
+            <stop offset="18%" stop-color="#06b6d4" stop-opacity="0.65"/>
             <stop offset="100%" stop-color="#06b6d4" stop-opacity="1"/>
           </linearGradient>
           <filter id="spark-glow">
@@ -929,10 +929,10 @@
             <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
           </filter>
         </defs>
-        <path d="M280,30 C320,30 345,18 385,20 C425,22 450,34 485,28 C512,22 536,14 570,16 L590,16"
+        <path d="M0,30 C60,30 80,18 130,20 C180,22 210,36 260,32 C310,28 340,12 390,16 C440,20 470,28 520,22 C545,18 562,14 573,16 L590,16"
               fill="none" stroke="url(#spark-grad)" stroke-width="2" filter="url(#spark-glow)"
-              stroke-dasharray="330" class="hero-sparkline-path"/>
-        <circle cx="570" cy="16" r="4" fill="#06b6d4" opacity="0.9"/>
+              stroke-dasharray="650" class="hero-sparkline-path"/>
+        <circle cx="573" cy="16" r="4" fill="#06b6d4" opacity="0.9"/>
       </svg>
 
       <!-- HUD Cards (desktop: absolute float; mobile: horizontal strip) -->

@@ -5,7 +5,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 // Team notification email
 const TEAM_EMAIL = process.env.CONTACT_TEAM_EMAIL || 'info@iting.cz';
-const FROM_EMAIL = process.env.CONTACT_FROM_EMAIL || 'CHJ Terminal <noreply@iting.cz>';
+const FROM_EMAIL = process.env.CONTACT_FROM_EMAIL || 'CHJ Terminal <onboarding@resend.dev>';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
