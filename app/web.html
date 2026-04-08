@@ -175,13 +175,8 @@
     @keyframes float2     { 0%,100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-6px) rotate(2deg); } }
     @keyframes sparkline-draw { from { stroke-dashoffset: 640; } to { stroke-dashoffset: 0; } }
     @keyframes star-pulse {
-      0%,100% { transform: scale(0.7); opacity: 0.55; }
-      50%      { transform: scale(1.35); opacity: 1; }
-    }
-    .hero-star {
-      animation: star-pulse 2.8s ease-in-out infinite;
-      transform-origin: 578px 20px;
-      filter: drop-shadow(0 0 5px #06b6d4) drop-shadow(0 0 10px rgba(6,182,212,0.5));
+      0%,100% { opacity: 0.35; box-shadow: 0 0 4px 1px #06b6d4, 0 0 8px 2px rgba(6,182,212,0.25); }
+      50%      { opacity: 1;   box-shadow: 0 0 8px 3px #06b6d4, 0 0 20px 7px rgba(6,182,212,0.5); }
     }
     @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
 
@@ -249,9 +244,10 @@
     }
     .hero-star-el {
       position: absolute; right: 2%; top: 50%; transform: translateY(-50%);
-      font-size: 1.1rem; color: #06b6d4; line-height: 1;
+      width: 7px; height: 7px;
+      background: #06b6d4;
+      border-radius: 50%;
       animation: star-pulse 2.8s ease-in-out infinite;
-      filter: drop-shadow(0 0 6px #06b6d4) drop-shadow(0 0 12px rgba(6,182,212,0.5));
       pointer-events: none;
     }
 
@@ -984,11 +980,11 @@
             <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
           </filter>
         </defs>
-        <path d="M0,32 C40,32 65,20 110,22 C155,24 185,36 230,30 C275,25 310,12 365,15 C415,18 455,28 500,22 C535,17 552,15 558,16"
+        <path d="M0,32 C40,32 65,20 110,22 C155,24 185,36 230,30 C275,25 310,12 365,15 C415,18 455,28 500,22 C535,17 552,15 572,16 L596,16"
               fill="none" stroke="url(#spark-grad)" stroke-width="2" filter="url(#spark-glow)"
-              stroke-dasharray="640" class="hero-sparkline-path"/>
+              stroke-dasharray="680" class="hero-sparkline-path"/>
       </svg>
-      <span class="hero-star-el">✦</span>
+      <span class="hero-star-el"></span>
       </div>
 
       <!-- HUD Cards (desktop: absolute float; mobile: horizontal strip) -->
