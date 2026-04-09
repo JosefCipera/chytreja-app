@@ -39,7 +39,7 @@
 </script>
 
 {#if safeSources.length > 0}
-  <div class="grid grid-cols-2 gap-2">
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-items: stretch;">
     {#each safeSources as source, i}
       {@const meta = typeMeta(source.type)}
       {@const isCzech = source.lang === 'cs'}
@@ -56,29 +56,29 @@
           overflow: hidden;
           cursor: pointer;
           transition: background 0.15s;
+          display: flex; flex-direction: column;
         "
         onmouseenter={e => e.currentTarget.style.background = 'rgba(6,182,212,0.07)'}
         onmouseleave={e => e.currentTarget.style.background = 'rgba(6,182,212,0.03)'}
       >
-        <!-- Header row: SOURCE_VALIDATION_01 + type badge -->
-        <div style="padding: 9px 10px 0;">
+        <!-- Header: SOURCE_01 + type badge -->
+        <div style="padding: 9px 10px 0; flex-shrink: 0;">
           <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(6,182,212,0.22); padding-bottom: 6px;">
             <span class="hud-mono" style="font-size: 11px; letter-spacing: 0.08em; color: #94a3b8; line-height: 1.2;">
               SOURCE_{String(i + 1).padStart(2, '0')}
             </span>
-            <!-- Media type pill -->
             <span class="hud-mono" style="
               font-size: 10px;
               color: {meta.color};
               border: 1px solid {meta.border};
               padding: 1px 5px; border-radius: 3px;
-              letter-spacing: 0.06em;
+              letter-spacing: 0.06em; flex-shrink: 0;
             ">{meta.icon} {meta.label}</span>
           </div>
         </div>
 
-        <!-- Body -->
-        <div style="padding: 7px 10px;">
+        <!-- Body — grows to fill space -->
+        <div style="padding: 7px 10px; flex: 1;">
           <div class="hud-mono mb-1" style="font-size: 13px; color: rgba(6,182,212,0.85);">
             [ID: {shortId(source.med_id)}]
           </div>
@@ -92,8 +92,8 @@
           {/if}
         </div>
 
-        <!-- Footer: status + CZ flag -->
-        <div style="padding: 0 10px 9px;">
+        <!-- Footer — vždy na spodku karty -->
+        <div style="padding: 0 10px 9px; flex-shrink: 0;">
           <div style="border-top: 1px solid rgba(6,182,212,0.22); padding-top: 8px; display: flex; align-items: center; gap: 6px;">
             <span class="hud-mono" style="
               font-size: 11px;

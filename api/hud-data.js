@@ -240,6 +240,13 @@ export default async function handler(req, res) {
 
   let sourcesRaw = null;
 
+  // Helper: sort candidates — Czech sources (script_cz) first, then shuffle the rest
+  function sortSources(arr) {
+    const cz = arr.filter(s => s.script_cz);
+    const en = arr.filter(s => !s.script_cz).sort(() => Math.random() - 0.5);
+    return [...cz, ...en];
+  }
+
   if (actionTags) {
     // Primary: articles whose tags overlap with the action's tags
     const { data: tagMatched } = await supabase
@@ -247,14 +254,10 @@ export default async function handler(req, res) {
       .select('id, title, url, type, summary, journal, year, med_id, script_cz')
       .eq('active', true)
       .overlaps('tags', actionTags)
-      .limit(6);
+      .limit(8);
 
-    if (tagMatched && tagMatched.length >= 2) {
-      // Shuffle and take 2 for variety
-      const shuffled = tagMatched.sort(() => Math.random() - 0.5);
-      sourcesRaw = shuffled.slice(0, 2);
-    } else if (tagMatched && tagMatched.length === 1) {
-      sourcesRaw = tagMatched;
+    if (tagMatched && tagMatched.length > 0) {
+      sourcesRaw = sortSources(tagMatched).slice(0, 2);
     }
   }
 
@@ -265,10 +268,10 @@ export default async function handler(req, res) {
       .select('id, title, url, type, summary, journal, year, med_id, script_cz')
       .eq('node_id', nodeId)
       .eq('active', true)
-      .limit(6);
+      .limit(8);
 
-    const shuffled = (nodeFallback || []).sort(() => Math.random() - 0.5);
-    const extra = shuffled.filter(s => !sourcesRaw?.some(r => r.id === s.id));
+    const sorted = sortSources(nodeFallback || []);
+    const extra = sorted.filter(s => !sourcesRaw?.some(r => r.id === s.id));
     sourcesRaw = [...(sourcesRaw || []), ...extra].slice(0, 2);
   }
 

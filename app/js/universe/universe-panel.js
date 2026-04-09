@@ -535,27 +535,40 @@ function openViewerModal(fileUrl, type, title, onBack = null, scriptCz = null) {
       background: rgba(0,0,0,0.85);
       display: flex; align-items: center; justify-content: center;
       z-index: 20000;
-      transition: opacity 0.2s ease;
     `;
     modal.innerHTML = `
       <div style="
-        background:#1e293b; border-radius:16px; overflow:hidden;
-        width:90%; max-width:480px;
+        background:#0f172a; border-radius:16px; overflow:hidden;
+        width:92%; max-width:480px;
+        border:1px solid rgba(6,182,212,0.2);
         box-shadow:0 20px 60px rgba(0,0,0,0.7);
         display:flex; flex-direction:column;
       ">
         <div style="
           display:flex; align-items:center; justify-content:space-between;
-          padding:12px 16px; background:#0f172a; border-bottom:1px solid #1e293b; flex-shrink:0;
+          padding:14px 16px; border-bottom:1px solid rgba(6,182,212,0.15); flex-shrink:0;
         ">
-          <span style="color:#94a3b8; font-size:14px; font-weight:500;">🎵 ${title || 'Audio'}</span>
+          <span style="
+            font-family:monospace; font-size:11px; letter-spacing:0.08em;
+            color:#06b6d4; text-transform:uppercase; overflow:hidden;
+            text-overflow:ellipsis; white-space:nowrap; flex:1; min-width:0; padding-right:12px;
+          ">◉ AUDIO // ${title || 'Audio'}</span>
           <button id="closeViewerModal" style="
-            background:transparent;border:none;color:#94a3b8;
-            font-size:22px;cursor:pointer;padding:4px 8px;
-            border-radius:6px;line-height:1;transition:all 0.2s;
+            background:transparent;border:none;color:#64748b;
+            font-size:22px;cursor:pointer;padding:2px 6px;
+            border-radius:6px;line-height:1;flex-shrink:0;
           ">&times;</button>
         </div>
-        <iframe src="${viewerSrc}" style="width:100%;height:220px;border:none;background:#0f172a;overflow:hidden;" allow="autoplay"></iframe>
+        <div style="padding:20px 16px 24px;">
+          <audio controls autoplay style="
+            width:100%; height:48px;
+            accent-color:#06b6d4;
+            border-radius:8px;
+            background:transparent;
+          ">
+            <source src="${fileUrl}">
+          </audio>
+        </div>
       </div>
     `;
   } else {
