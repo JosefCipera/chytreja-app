@@ -244,7 +244,7 @@ export default async function handler(req, res) {
     // Primary: articles whose tags overlap with the action's tags
     const { data: tagMatched } = await supabase
       .from('longevity_sources')
-      .select('id, title, url, type, summary, journal, year, med_id')
+      .select('id, title, url, type, summary, journal, year, med_id, script_cz')
       .eq('active', true)
       .overlaps('tags', actionTags)
       .limit(6);
@@ -262,7 +262,7 @@ export default async function handler(req, res) {
   if (!sourcesRaw || sourcesRaw.length < 2) {
     const { data: nodeFallback } = await supabase
       .from('longevity_sources')
-      .select('id, title, url, type, summary, journal, year, med_id')
+      .select('id, title, url, type, summary, journal, year, med_id, script_cz')
       .eq('node_id', nodeId)
       .eq('active', true)
       .limit(6);
@@ -274,12 +274,13 @@ export default async function handler(req, res) {
 
   const sources = (sourcesRaw || []).map((s, i) => ({
     med_id:  s.med_id || s.id,
-    type:    i === 0 ? 'STUDY' : 'REVIEW',
+    type:    s.type || 'article',           // real DB type: article|video|audio|pdf|md|image
     title:   s.title,
     journal: s.journal || null,
     year:    s.year || null,
     status:  i === 0 ? 'VERIFIED' : 'AUTHENTICATED',
     url:     s.url,
+    lang:    s.script_cz ? 'cs' : 'en',    // Czech if script_cz is present
   }));
 
   // 8. Killer + verdict
