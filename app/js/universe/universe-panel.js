@@ -523,13 +523,65 @@ function openViewerModal(fileUrl, type, title, onBack = null, scriptCz = null) {
   }
 
   const isAudio = type === 'audio';
+  const isVideo = type === 'video';
   const scriptCzParam = scriptCz ? `&script_cz=${encodeURIComponent(scriptCz)}` : '';
   const viewerSrc = `/app/viewer.html?type=${encodeURIComponent(type)}&file=${encodeURIComponent(fileUrl)}${scriptCzParam}`;
+
+  // YouTube embed helpers
+  function _ytId(url) {
+    const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+    return m ? m[1] : null;
+  }
+  function _ytStart(url) {
+    const m = url.match(/[?&]t=(\d+)s?/);
+    return m ? m[1] : null;
+  }
 
   const modal = document.createElement('div');
   modal.id = 'viewerModal';
 
-  if (isAudio) {
+  if (isVideo) {
+    const ytId = _ytId(fileUrl);
+    const ytStart = _ytStart(fileUrl);
+    const embedUrl = ytId
+      ? `https://www.youtube-nocookie.com/embed/${ytId}?rel=0&autoplay=1${ytStart ? '&start=' + ytStart : ''}`
+      : fileUrl;
+    modal.style.cssText = `
+      position: fixed; inset: 0;
+      background: #000;
+      display: flex; flex-direction: column;
+      z-index: 20000;
+    `;
+    modal.innerHTML = `
+      <div style="
+        display:flex; align-items:center; justify-content:space-between;
+        padding:10px 16px; background:rgba(15,23,42,0.95);
+        border-bottom:1px solid rgba(6,182,212,0.15); flex-shrink:0;
+      ">
+        <span style="
+          font-family:monospace; font-size:11px; letter-spacing:0.07em;
+          color:#06b6d4; text-transform:uppercase;
+          overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+          flex:1; min-width:0; padding-right:12px;
+        ">▶ VIDEO // ${title || ''}</span>
+        <button id="closeViewerModal" style="
+          background:transparent;border:none;color:#64748b;
+          font-size:22px;cursor:pointer;padding:2px 8px;
+          border-radius:6px;line-height:1;flex-shrink:0;
+        ">&times;</button>
+      </div>
+      <div style="flex:1; display:flex; align-items:center; justify-content:center; background:#000; overflow:hidden;">
+        <div style="width:100%;max-height:100%;aspect-ratio:16/9;">
+          <iframe
+            src="${embedUrl}"
+            style="width:100%;height:100%;border:none;"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowfullscreen referrerpolicy="strict-origin-when-cross-origin">
+          </iframe>
+        </div>
+      </div>
+    `;
+  } else if (isAudio) {
     modal.style.cssText = `
       position: fixed; inset: 0;
       background: rgba(0,0,0,0.85);

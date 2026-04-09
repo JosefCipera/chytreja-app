@@ -57,6 +57,7 @@
           cursor: pointer;
           transition: background 0.15s;
           display: flex; flex-direction: column;
+          height: 100%;
         "
         onmouseenter={e => e.currentTarget.style.background = 'rgba(6,182,212,0.07)'}
         onmouseleave={e => e.currentTarget.style.background = 'rgba(6,182,212,0.03)'}
