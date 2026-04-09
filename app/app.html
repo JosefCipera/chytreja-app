@@ -511,7 +511,7 @@
                     const h = Math.min(Math.round(w * 9 / 16) + 48, vh * 0.9);
                     dims = { w, h, top: '50%', openT: 'translateX(-50%) translateY(-50%)', closeT: 'translateX(-50%) translateY(calc(-50% + 10px))' };
                 } else if (t === 'audio') {
-                    dims = { w: Math.min(vw * 0.55, 520), h: 148, top: '50%', openT: 'translateX(-50%) translateY(-50%)', closeT: 'translateX(-50%) translateY(calc(-50% + 10px))' };
+                    dims = { w: Math.min(vw * 0.55, 520), h: 164, top: '50%', openT: 'translateX(-50%) translateY(-50%)', closeT: 'translateX(-50%) translateY(calc(-50% + 10px))' };
                 } else if (t === 'pdf') {
                     dims = { w: Math.min(vw * 0.75, 920), h: Math.round(vh * 0.85), top: '7%', openT: 'translateX(-50%) translateY(0)', closeT: 'translateX(-50%) translateY(10px)' };
                 } else {
@@ -575,11 +575,14 @@
             wrap.appendChild(header);
 
             const contentDiv = document.createElement('div');
-            contentDiv.style.cssText = 'flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;min-height:0;';
+            // MD/article needs scroll; video/audio/iframe must not scroll (causes visible scrollbar)
+            contentDiv.style.cssText = isMdType
+                ? 'flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;min-height:0;'
+                : 'flex:1;overflow:hidden;min-height:0;display:flex;align-items:center;justify-content:center;';
             if (!isMdType) {
                 if (t === 'youtube') contentDiv.innerHTML = `<iframe src="${youtubeEmbed(source.url)}" style="width:100%;height:100%;border:none;" allow="autoplay;encrypted-media" allowfullscreen></iframe>`;
                 else if (t === 'video') contentDiv.innerHTML = `<video src="${source.url}" controls autoplay style="width:100%;height:100%;background:#000;"></video>`;
-                else if (t === 'audio') contentDiv.innerHTML = `<iframe src="/app/viewer.html?type=audio&file=${encodeURIComponent(source.url)}" style="width:100%;height:100%;border:none;background:#0f172a;" allow="autoplay"></iframe>`;
+                else if (t === 'audio') contentDiv.innerHTML = `<audio controls autoplay style="width:90%;accent-color:#06b6d4;"><source src="${source.url}"></audio>`;
                 else if (t === 'pdf') contentDiv.innerHTML = `<iframe src="${pdfEmbed(source.url)}" style="width:100%;height:100%;border:none;" title="${source.title||''}"></iframe>`;
             } else {
                 contentDiv.innerHTML = '<div style="color:#475569;padding:24px;text-align:center;font-size:13px;font-family:monospace;">NAČÍTÁM…</div>';
