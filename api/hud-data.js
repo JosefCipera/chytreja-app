@@ -186,6 +186,7 @@ export default async function handler(req, res) {
 
   // 6. Action from longevity_actions DB
   let action = null;
+  let actionTags = null; // used by step 7 for source matching
   if (todayCount < 2) {
     const tier = pickTier(state, streak);
 
@@ -228,16 +229,48 @@ export default async function handler(req, res) {
         status:        'READY',
         tier:          picked.tier,
       };
+      // Capture tags for source matching (step 7)
+      if (Array.isArray(picked.tags) && picked.tags.length > 0) {
+        actionTags = picked.tags;
+      }
     }
   }
 
-  // 7. Sources (up to 2) from unified table
-  const { data: sourcesRaw } = await supabase
-    .from('longevity_sources')
-    .select('id, title, url, type, summary, journal, year, med_id')
-    .eq('node_id', nodeId)
-    .eq('active', true)
-    .limit(2);
+  // 7. Sources (up to 2) — prefer tag-based match for current action, fallback to node_id
+
+  let sourcesRaw = null;
+
+  if (actionTags) {
+    // Primary: articles whose tags overlap with the action's tags
+    const { data: tagMatched } = await supabase
+      .from('longevity_sources')
+      .select('id, title, url, type, summary, journal, year, med_id')
+      .eq('active', true)
+      .overlaps('tags', actionTags)
+      .limit(6);
+
+    if (tagMatched && tagMatched.length >= 2) {
+      // Shuffle and take 2 for variety
+      const shuffled = tagMatched.sort(() => Math.random() - 0.5);
+      sourcesRaw = shuffled.slice(0, 2);
+    } else if (tagMatched && tagMatched.length === 1) {
+      sourcesRaw = tagMatched;
+    }
+  }
+
+  // Fallback: node_id based (original behaviour)
+  if (!sourcesRaw || sourcesRaw.length < 2) {
+    const { data: nodeFallback } = await supabase
+      .from('longevity_sources')
+      .select('id, title, url, type, summary, journal, year, med_id')
+      .eq('node_id', nodeId)
+      .eq('active', true)
+      .limit(6);
+
+    const shuffled = (nodeFallback || []).sort(() => Math.random() - 0.5);
+    const extra = shuffled.filter(s => !sourcesRaw?.some(r => r.id === s.id));
+    sourcesRaw = [...(sourcesRaw || []), ...extra].slice(0, 2);
+  }
 
   const sources = (sourcesRaw || []).map((s, i) => ({
     med_id:  s.med_id || s.id,
