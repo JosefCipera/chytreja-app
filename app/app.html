@@ -228,11 +228,11 @@
     <!-- Horní lišta -->
     <header id="appHeader" class="app-header">
         <h1 id="appTitle">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 48" width="140" height="48"
-                style="vertical-align: middle;">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="36" height="36">
                 <circle cx="24" cy="24" r="18" fill="none" stroke="#2563eb" stroke-width="4.5" stroke-dasharray="105 13"
                     stroke-dashoffset="6.5" transform="rotate(-90 24 24)" />
             </svg>
+            <span>Chytré já</span>
         </h1>
         <div class="header-right">
             <div class="header-controls" style="display:none;">
@@ -484,8 +484,11 @@
             window.closeSourceViewer();
             const _hdr = document.getElementById('appHeader');
             if (_hdr) _hdr.style.display = 'none';
-            const t = source.url ? mediaTypeOf(source.url) : 'none';
-            if (t === 'iframe') { if (source.url) window.open(source.url, '_blank'); return; }
+            const urlType = source.url ? mediaTypeOf(source.url) : 'none';
+            const KNOWN_TYPES = ['md','article','video','audio','pdf','image'];
+            const t = (urlType === 'iframe' && source.type && KNOWN_TYPES.includes(source.type))
+                ? source.type : urlType;
+            if (t === 'iframe') { if (source.url && source.url !== '#') window.open(source.url, '_blank'); return; }
             if (t === 'none') return;
 
             const isMobile = window.innerWidth < 700;
@@ -581,14 +584,27 @@
                 else if (t === 'audio') contentDiv.innerHTML = `<iframe src="/app/viewer.html?type=audio&file=${encodeURIComponent(source.url)}" style="width:100%;height:100%;border:none;background:#0f172a;" allow="autoplay"></iframe>`;
                 else if (t === 'pdf') contentDiv.innerHTML = `<iframe src="${pdfEmbed(source.url)}" style="width:100%;height:100%;border:none;" title="${source.title||''}"></iframe>`;
             } else {
-                contentDiv.innerHTML = '<div style="color:#475569;padding:24px;text-align:center;font-size:13px;font-family:monospace;">NAČÍTÁM…</div>';
-                (async () => {
-                    const res = await fetch(source.url);
-                    if (!res.ok) throw new Error(res.status);
-                    const md = await res.text();
-                    const convert = window.CHJ_convertMd || (s => `<p>${s.replace(/\n/g,'<br>')}</p>`);
-                    contentDiv.innerHTML = `<div class="md-il">${convert(md)}</div>`;
-                })().catch(err => { contentDiv.innerHTML = `<div style="color:#f87171;padding:24px;font-family:monospace;font-size:13px;">CHYBA: ${err.message}</div>`; });
+                contentDiv.style.cssText = 'flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;min-height:0;';
+                const isExternal = source.url && /^https?:\/\//i.test(source.url);
+                const noUrl = !source.url || source.url === '#';
+                const convert = window.CHJ_convertMd || (s => `<p>${s.replace(/\n/g,'<br>')}</p>`);
+                if (noUrl || isExternal) {
+                    const text = source.script_cz || source.summary || '';
+                    const linkHtml = isExternal
+                        ? `<div style="margin-top:20px;padding-top:16px;border-top:1px solid rgba(6,182,212,0.15);"><a href="${source.url}" target="_blank" rel="noopener" style="color:#7aa2ff;font-size:13px;font-family:monospace;text-decoration:none;">↗ PŘEČÍST STUDII</a></div>`
+                        : '';
+                    contentDiv.innerHTML = text
+                        ? `<div class="md-il">${convert(text)}${linkHtml}</div>`
+                        : `<div style="color:#475569;padding:24px;text-align:center;font-size:13px;font-family:monospace;">OBSAH PŘIPRAVUJEME</div>${linkHtml}`;
+                } else {
+                    contentDiv.innerHTML = '<div style="color:#475569;padding:24px;text-align:center;font-size:13px;font-family:monospace;">NAČÍTÁM…</div>';
+                    (async () => {
+                        const res = await fetch(source.url);
+                        if (!res.ok) throw new Error(res.status);
+                        const md = await res.text();
+                        contentDiv.innerHTML = `<div class="md-il">${convert(md)}</div>`;
+                    })().catch(err => { contentDiv.innerHTML = `<div style="color:#f87171;padding:24px;font-family:monospace;font-size:13px;">CHYBA: ${err.message}</div>`; });
+                }
             }
             wrap.appendChild(contentDiv);
 
