@@ -590,6 +590,17 @@
                 else if (t === 'pdf') contentDiv.innerHTML = `<iframe src="${pdfEmbed(source.url)}" style="width:100%;height:100%;border:none;" title="${source.title||''}"></iframe>`;
             } else {
                 const convert = window.CHJ_convertMd || (s => `<p>${s.replace(/\n/g,'<br>')}</p>`);
+                // Split plain text into paragraphs — each sentence on its own line
+                function renderPlain(text) {
+                    if (!text) return '';
+                    // Split on '. ' followed by uppercase Czech/Latin letter
+                    const sentences = text.split(/\.\s+(?=[A-ZÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ])/);
+                    return sentences.map((s, i) => {
+                        const line = s.trimEnd();
+                        const dot = line.endsWith('.') || line.endsWith(')') ? '' : '.';
+                        return `<p style="margin:0 0 0.9rem;line-height:1.65;">${line}${i < sentences.length - 1 ? dot : ''}</p>`;
+                    }).join('');
+                }
                 const isExternal = source.url && /^https?:\/\//i.test(source.url);
                 const noUrl = !source.url || source.url === '#';
                 if (noUrl || isExternal) {
@@ -603,7 +614,7 @@
                              </a>
                            </div>` : '';
                     contentDiv.innerHTML = text
-                        ? `<div class="md-il">${convert(text)}${linkHtml}</div>`
+                        ? `<div class="md-il" style="padding:20px 24px 80px;">${renderPlain(text)}${linkHtml}</div>`
                         : `<div style="color:#475569;padding:24px;text-align:center;font-size:13px;font-family:monospace;">OBSAH PŘIPRAVUJEME</div>${linkHtml}`;
                 } else {
                     // Local URL — fetch as markdown
