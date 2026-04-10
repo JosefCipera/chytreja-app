@@ -589,40 +589,16 @@
                 else if (t === 'audio') contentDiv.innerHTML = `<audio controls autoplay style="width:90%;accent-color:#06b6d4;"><source src="${source.url}"></audio>`;
                 else if (t === 'pdf') contentDiv.innerHTML = `<iframe src="${pdfEmbed(source.url)}" style="width:100%;height:100%;border:none;" title="${source.title||''}"></iframe>`;
             } else {
-                const convert = window.CHJ_convertMd || (s => `<p>${s.replace(/\n/g,'<br>')}</p>`);
-                // Split plain text into paragraphs — each sentence on its own line
-                function renderPlain(text) {
-                    if (!text) return '';
-                    // Split on '. ' followed by uppercase Czech/Latin letter
-                    const sentences = text.split(/\.\s+(?=[A-ZÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ])/);
-                    return sentences.map((s, i) => {
-                        const line = s.trimEnd();
-                        const dot = line.endsWith('.') || line.endsWith(')') ? '' : '.';
-                        return `<p style="margin:0 0 0.9rem;line-height:1.65;">${line}${i < sentences.length - 1 ? dot : ''}</p>`;
-                    }).join('');
-                }
-                const isExternal = source.url && /^https?:\/\//i.test(source.url);
                 const noUrl = !source.url || source.url === '#';
-                if (noUrl || isExternal) {
-                    // No fetchable URL — render script_cz or summary inline
-                    const text = source.script_cz || source.summary || '';
-                    const linkHtml = isExternal
-                        ? `<div style="margin-top:20px;padding-top:16px;border-top:1px solid rgba(6,182,212,0.15);">
-                             <a href="${source.url}" target="_blank" rel="noopener"
-                                style="font-family:monospace;font-size:12px;color:#06b6d4;text-decoration:none;letter-spacing:0.06em;">
-                               ↗ PŘEČÍST STUDII
-                             </a>
-                           </div>` : '';
-                    contentDiv.innerHTML = text
-                        ? `<div class="md-il" style="padding:20px 24px 80px;">${renderPlain(text)}${linkHtml}</div>`
-                        : `<div style="color:#475569;padding:24px;text-align:center;font-size:13px;font-family:monospace;">OBSAH PŘIPRAVUJEME</div>${linkHtml}`;
+                if (noUrl) {
+                    contentDiv.innerHTML = '<div style="color:#475569;padding:24px;text-align:center;font-size:13px;font-family:monospace;">OBSAH PŘIPRAVUJEME</div>';
                 } else {
-                    // Local URL — fetch as markdown
                     contentDiv.innerHTML = '<div style="color:#475569;padding:24px;text-align:center;font-size:13px;font-family:monospace;">NAČÍTÁM…</div>';
                     (async () => {
                         const res = await fetch(source.url);
                         if (!res.ok) throw new Error(res.status);
                         const md = await res.text();
+                        const convert = window.CHJ_convertMd || (s => `<p>${s.replace(/\n/g,'<br>')}</p>`);
                         contentDiv.innerHTML = `<div class="md-il">${convert(md)}</div>`;
                     })().catch(err => { contentDiv.innerHTML = `<div style="color:#f87171;padding:24px;font-family:monospace;font-size:13px;">CHYBA: ${err.message}</div>`; });
                 }
