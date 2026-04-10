@@ -276,14 +276,16 @@ export default async function handler(req, res) {
   }
 
   const sources = (sourcesRaw || []).map((s, i) => ({
-    med_id:  s.med_id || s.id,
-    type:    s.type || 'article',           // real DB type: article|video|audio|pdf|md|image
-    title:   s.title,
-    journal: s.journal || null,
-    year:    s.year || null,
-    status:  i === 0 ? 'VERIFIED' : 'AUTHENTICATED',
-    url:     s.url,
-    lang:    s.script_cz ? 'cs' : 'en',    // Czech if script_cz is present
+    med_id:    s.med_id || s.id,
+    type:      s.type || 'article',
+    title:     s.title,
+    journal:   s.journal || null,
+    year:      s.year || null,
+    status:    i === 0 ? 'VERIFIED' : 'AUTHENTICATED',
+    url:       s.url,
+    lang:      s.script_cz ? 'cs' : 'en',
+    script_cz: s.script_cz || null,
+    summary:   s.summary || null,
   }));
 
   // 8. Killer + verdict
