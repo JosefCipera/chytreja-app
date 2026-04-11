@@ -40,7 +40,7 @@
           <ActionProtocol
             action={data.action}
             killer={data.killer}
-            onComplete={() => onActionComplete?.(data.action.id, data.action.type)}
+            onComplete={() => onActionComplete?.(data.action.id, data.action.type, data.action.node_id)}
           />
         {:else if data.all_done_today}
           <div style="background:rgba(34,197,94,0.07);border:1px solid rgba(34,197,94,0.25);border-radius:10px;padding:14px 16px;display:flex;align-items:center;gap:10px;">

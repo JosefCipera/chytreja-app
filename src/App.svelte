@@ -50,20 +50,23 @@
   );
 
   // ── GAME LOOP: called when user completes an action ──────
-  async function handleActionComplete(actionId, actionType) {
+  async function handleActionComplete(actionId, actionType, actionNodeId) {
     if (!userId || devMode) return;
+
+    // Use actionNodeId when action comes from bottleneck (e.g. dlouhovekost panel)
+    const effectiveNodeId = actionNodeId || nodeId;
 
     try {
       await fetch('/api/mission-log', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, nodeId, missionId: actionId, actionType }),
+        body: JSON.stringify({ userId, nodeId: effectiveNodeId, missionId: actionId, actionType }),
       });
 
       await fetch('/api/mission-complete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, nodeId }),
+        body: JSON.stringify({ userId, nodeId: effectiveNodeId }),
       });
 
       // Small delay so user sees ✔ HOTOVO before reload

@@ -130,6 +130,18 @@ export default async function handler(req, res) {
   const batteryPercent = isParent ? calcParentBattery(metrics) : current_index;
   const batteryState   = isParent ? worstChildState(metrics) : state;
 
+  // For parent node: find bottleneck child (weakest) to source actions from
+  let actionNodeId = nodeId;
+  if (isParent) {
+    const childMetrics = metrics.filter(m => CHILD_NODES.includes(m.node_id));
+    if (childMetrics.length > 0) {
+      const weakest = childMetrics.reduce((a, b) =>
+        (a.current_index ?? 50) <= (b.current_index ?? 50) ? a : b
+      );
+      actionNodeId = weakest.node_id;
+    }
+  }
+
   // REPAIR_RATE inputs
   const spanekIndex  = metrics.find(m => m.node_id === 'spanek')?.current_index ?? 50;
   const vyzivaIndex  = metrics.find(m => m.node_id === 'vyziva')?.current_index ?? 50;
@@ -146,13 +158,13 @@ export default async function handler(req, res) {
 
   const trend = calcTrend(historyRaw);
 
-  // 3. Today's mission count
+  // 3. Today's mission count (for actionNodeId — bottleneck child if parent)
   const today = new Date().toISOString().slice(0, 10);
   const { data: todayMissions } = await supabase
     .from('mission_log')
     .select('id, mission_id')
     .eq('user_id', userId)
-    .eq('node_id', nodeId)
+    .eq('node_id', actionNodeId)
     .eq('date', today);
 
   const todayCount = todayMissions?.length ?? 0;
@@ -162,7 +174,7 @@ export default async function handler(req, res) {
     .from('mission_log')
     .select('date')
     .eq('user_id', userId)
-    .eq('node_id', nodeId)
+    .eq('node_id', actionNodeId)
     .order('date', { ascending: false })
     .limit(30);
 
@@ -197,7 +209,7 @@ export default async function handler(req, res) {
     let { data: candidates } = await supabase
       .from('longevity_actions')
       .select('*')
-      .eq('node_id', nodeId)
+      .eq('node_id', actionNodeId)
       .eq('active', true)
       .eq('tier', tier);
 
@@ -205,7 +217,7 @@ export default async function handler(req, res) {
       const { data: fallback } = await supabase
         .from('longevity_actions')
         .select('*')
-        .eq('node_id', nodeId)
+        .eq('node_id', actionNodeId)
         .eq('active', true)
         .order('tier')
         .limit(10);
@@ -228,6 +240,7 @@ export default async function handler(req, res) {
         protocol_type: picked.protocol_type,
         status:        'READY',
         tier:          picked.tier,
+        node_id:       actionNodeId, // bottleneck node — used for mission logging
       };
       // Capture tags for source matching (step 7)
       if (Array.isArray(picked.tags) && picked.tags.length > 0) {
