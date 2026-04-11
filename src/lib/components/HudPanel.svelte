@@ -5,7 +5,7 @@
   import ActionProtocol from './hud/ActionProtocol.svelte';
   import SourceCards from './hud/SourceCards.svelte';
 
-  let { data, children } = $props();
+  let { data, onActionComplete = null } = $props();
 
 </script>
 
@@ -37,7 +37,11 @@
 
       <div class="hud-fade-in" style="animation-delay: 0.2s">
         {#if data.action}
-          <ActionProtocol action={data.action} killer={data.killer} />
+          <ActionProtocol
+            action={data.action}
+            killer={data.killer}
+            onComplete={() => onActionComplete?.(data.action.id, data.action.type)}
+          />
         {:else}
           <div style="
             background: rgba(34,197,94,0.07);
@@ -50,8 +54,8 @@
           ">
             <span style="color: #4ade80; font-size: 1.1rem;">✔</span>
             <div>
-              <div class="hud-mono" style="font-size: 14px; letter-spacing: 0.1em; color: #4ade80; margin-bottom: 2px;">INDEX STOUPÁ</div>
-              <div style="font-size: 16px; color: #94a3b8;">Segment se dnes posunul. Vrať se zítra.</div>
+              <div class="hud-mono" style="font-size: 14px; letter-spacing: 0.1em; color: #4ade80; margin-bottom: 2px;">MISSION_COMPLETE</div>
+              <div style="font-size: 16px; color: #94a3b8;">{data.today_count >= 2 ? 'Pokrok na uzlu.' : 'Pro pokrok na uzlu pokračuj zítra.'}</div>
             </div>
           </div>
         {/if}

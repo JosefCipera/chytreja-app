@@ -48,6 +48,30 @@
   let displayData = $derived(
     (userId && !devMode && $nodeData) ? $nodeData : testNode
   );
+
+  // ── GAME LOOP: called when user completes an action ──────
+  async function handleActionComplete(actionId, actionType) {
+    if (!userId || devMode) return;
+
+    try {
+      await fetch('/api/mission-log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, nodeId, missionId: actionId, actionType }),
+      });
+
+      await fetch('/api/mission-complete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, nodeId }),
+      });
+
+      // Small delay so user sees ✔ HOTOVO before reload
+      setTimeout(() => loadHudData(userId, nodeId), 1200);
+    } catch (e) {
+      console.error('[CHJ] game loop error:', e);
+    }
+  }
 </script>
 
 <div class="min-h-screen" style="background: transparent; display: flex; justify-content: flex-end;">
@@ -67,7 +91,7 @@
     </div>
 
   {:else}
-    <HudPanel data={displayData} />
+    <HudPanel data={displayData} onActionComplete={handleActionComplete} />
 
     {#if devMode}
       <!-- Dev mode badge -->
