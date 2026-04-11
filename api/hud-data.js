@@ -212,9 +212,13 @@ export default async function handler(req, res) {
       candidates = fallback || [];
     }
 
-    // Exclude already done today
+    // Exclude already done today — if nothing fresh, show nothing (avoid repeat)
     const available = candidates.filter(a => !doneIds.includes(a.id));
-    const pool = available.length > 0 ? available : candidates;
+    if (available.length === 0) {
+      // All actions for this tier already done today → no action, show MISSION_COMPLETE
+      action = null;
+    }
+    const pool = available;
     const picked = pool[Math.floor(Math.random() * pool.length)];
 
     if (picked) {
