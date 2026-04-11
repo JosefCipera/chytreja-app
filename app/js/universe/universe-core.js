@@ -249,6 +249,51 @@ export function renderUniverse(DATA, subset = null, forcedMainId = null) {
       ctx.restore();
     });
 
+    // ── Progress potentiometer under each node ──
+    source.forEach(node => {
+      const pos = positions[node.id];
+      if (!pos || node.state === 'GRAY') return;
+
+      const isMain = node.id === mainId;
+      const radius = isMain ? NODE_RADIUS.main : NODE_RADIUS.child;
+      const idx    = node.current_index ?? 0;
+
+      // Progress within current band toward next threshold
+      // RED 0–40, YELLOW 41–70, GREEN 71–100
+      let progress;
+      if (idx <= 40)      progress = idx / 40;
+      else if (idx <= 70) progress = (idx - 40) / 30;
+      else                progress = (idx - 70) / 30;
+      progress = Math.max(0, Math.min(1, progress));
+
+      const barW  = radius * 1.6;
+      const barH  = isMain ? 5 : 4;
+      const barX  = pos.x - barW / 2;
+      const barY  = pos.y + radius + (isMain ? 10 : 8);
+      const cr    = barH / 2; // corner radius
+
+      const [r, g, b] = (colorMap[node.state] || '148,163,184').split(',').map(Number);
+
+      ctx.save();
+
+      // Track (dark background)
+      ctx.beginPath();
+      ctx.roundRect(barX, barY, barW, barH, cr);
+      ctx.fillStyle = `rgba(${r},${g},${b},0.15)`;
+      ctx.fill();
+
+      // Fill
+      if (progress > 0) {
+        const fillW = barW * progress;
+        ctx.beginPath();
+        ctx.roundRect(barX, barY, fillW, barH, cr);
+        ctx.fillStyle = `rgba(${r},${g},${b},0.75)`;
+        ctx.fill();
+      }
+
+      ctx.restore();
+    });
+
     // ── Lock emojis on GRAY nodes ──
     if (lockedIds.length) {
       const lockPos = network.getPositions(lockedIds);
