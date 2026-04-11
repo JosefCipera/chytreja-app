@@ -42,21 +42,18 @@
             killer={data.killer}
             onComplete={() => onActionComplete?.(data.action.id, data.action.type)}
           />
-        {:else}
-          <div style="
-            background: rgba(34,197,94,0.07);
-            border: 1px solid rgba(34,197,94,0.25);
-            border-radius: 10px;
-            padding: 14px 16px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-          ">
-            <span style="color: #4ade80; font-size: 1.1rem;">✔</span>
+        {:else if data.all_done_today}
+          <div style="background:rgba(34,197,94,0.07);border:1px solid rgba(34,197,94,0.25);border-radius:10px;padding:14px 16px;display:flex;align-items:center;gap:10px;">
+            <span style="color:#4ade80;font-size:1.1rem;">✔</span>
             <div>
-              <div class="hud-mono" style="font-size: 14px; letter-spacing: 0.1em; color: #4ade80; margin-bottom: 2px;">MISSION_COMPLETE</div>
-              <div style="font-size: 16px; color: #94a3b8;">{data.today_count >= 2 ? 'Pokrok na uzlu.' : 'Pro pokrok na uzlu pokračuj zítra.'}</div>
+              <div class="hud-mono" style="font-size:14px;letter-spacing:0.1em;color:#4ade80;margin-bottom:2px;">MISSION_COMPLETE</div>
+              <div style="font-size:16px;color:#94a3b8;">{data.today_count >= 2 ? 'Pokrok na uzlu.' : 'Pro pokrok na uzlu pokračuj zítra.'}</div>
             </div>
+          </div>
+        {:else}
+          <div style="background:rgba(6,182,212,0.05);border:1px solid rgba(6,182,212,0.15);border-radius:10px;padding:14px 16px;">
+            <div class="hud-mono" style="font-size:13px;letter-spacing:0.1em;color:#475569;">NO_ACTION_AVAILABLE</div>
+            <div style="font-size:15px;color:#64748b;margin-top:4px;">Pro tento uzel zatím nejsou akce.</div>
           </div>
         {/if}
       </div>

@@ -313,6 +313,7 @@ export default async function handler(req, res) {
     sources,
     verdict,
     today_count: todayCount,
+    all_done_today: todayCount >= 2,
     streak,
   });
 }
