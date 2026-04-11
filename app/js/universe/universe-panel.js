@@ -310,6 +310,10 @@ window.addEventListener('message', e => {
   if (e.data === 'closeViewer' && _currentViewerClose) {
     _currentViewerClose();
   }
+  // HUD completed an action → refresh canvas data
+  if (e.data?.type === 'chj:universe:refresh') {
+    window.refreshUniverseData?.();
+  }
   // Handle source card clicks from HUD iframe (only on app/app.html — index.html has its own openSourceViewer)
   if (e.data?.type === 'chj:source:open' && typeof window.openSourceViewer !== 'function') {
     const src = e.data.source;

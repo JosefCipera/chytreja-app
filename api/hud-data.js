@@ -123,7 +123,7 @@ export default async function handler(req, res) {
   // Find current node metric
   const nodeMeta = metrics.find(m => m.node_id === nodeId) || { current_index: 50, state: 'YELLOW' };
   const current_index = nodeMeta.current_index ?? 50;
-  const state = nodeMeta.state || indexToState(current_index);
+  const state = indexToState(current_index); // always derive from index, never trust stored state
 
   // Battery: parent uses weighted avg + worst-child color; leaf uses own index
   const isParent = nodeId === 'dlouhovekost';

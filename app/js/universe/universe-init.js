@@ -100,6 +100,13 @@ async function populateModelSelector() {
     });
 }
 
+// ── Global refresh — called from HUD after completing action ──────
+window.refreshUniverseData = async function() {
+  const model = window.CURRENT_MODEL || 'longevity';
+  const role  = window.CURRENT_ROLE  || 'user';
+  await loadAndRenderModel(model, role);
+};
+
 // =====================================================
 // 3) INIT UNIVERSE
 // =====================================================

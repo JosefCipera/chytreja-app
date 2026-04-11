@@ -67,7 +67,13 @@
       });
 
       // Small delay so user sees ✔ HOTOVO before reload
-      setTimeout(() => loadHudData(userId, nodeId), 1200);
+      setTimeout(() => {
+        loadHudData(userId, nodeId);
+        // Notify parent canvas to refresh potentiometers
+        if (window.parent !== window) {
+          window.parent.postMessage({ type: 'chj:universe:refresh' }, '*');
+        }
+      }, 1200);
     } catch (e) {
       console.error('[CHJ] game loop error:', e);
     }

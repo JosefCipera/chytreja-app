@@ -80,10 +80,10 @@ export default async function (req, res) {
       inactiveDays = Math.max(0, Math.floor(diffMs / 86400000) - 1); // -1 because 1 day gap is normal
     }
 
-    // 4. Apply decline for inactive days first
+    // 4. Apply decline for inactive days (max 1 step per session to avoid shocking drops)
     let adjustedIndex = oldIndex;
     if (inactiveDays > 0) {
-      adjustedIndex = Math.max(0, oldIndex - (inactiveDays * INDEX_DECLINE));
+      adjustedIndex = Math.max(0, oldIndex - INDEX_DECLINE);
     }
 
     // 5. Apply today's impact
