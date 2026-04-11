@@ -26,21 +26,6 @@ async function handlePost(req, res) {
 
     const today = new Date().toISOString().split('T')[0];
 
-    // Check if already logged today (prevent duplicate within same session)
-    const { data: existing } = await supabase
-      .from('mission_log')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('mission_id', missionId)
-      .eq('date', today)
-      .limit(1);
-
-    if (existing && existing.length > 0) {
-      // Already logged this exact action today — still return ok
-      const streak = await computeStreak(userId);
-      return res.json({ ok: true, streak, saved: existing[0], duplicate: true });
-    }
-
     const { data, error } = await supabase
       .from('mission_log')
       .insert({
