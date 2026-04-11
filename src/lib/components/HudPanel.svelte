@@ -5,7 +5,7 @@
   import ActionProtocol from './hud/ActionProtocol.svelte';
   import SourceCards from './hud/SourceCards.svelte';
 
-  let { data, onActionComplete = null } = $props();
+  let { data, children, onActionComplete = null } = $props();
 
 </script>
 
