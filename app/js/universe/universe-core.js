@@ -268,8 +268,8 @@ export function renderUniverse(DATA, subset = null, forcedMainId = null) {
 
       // Vertical segments (rotated 90°) — like an equalizer
       const numSegs = 10;
-      const segW    = 18;
-      const segH    = isMain ? 7 : 5;
+      const segW    = 7;
+      const segH    = isMain ? 18 : 13;
       const gap     = 2;
       const totalW  = numSegs * segW + (numSegs - 1) * gap;
       const segBarX = pos.x - totalW / 2;
