@@ -249,14 +249,15 @@ export function renderUniverse(DATA, subset = null, forcedMainId = null) {
       ctx.restore();
     });
 
-    // ── Progress potentiometer under each node ──
+    // ── Progress potentiometer under each node label ──
     source.forEach(node => {
       const pos = positions[node.id];
       if (!pos || node.state === 'GRAY') return;
 
-      const isMain = node.id === mainId;
-      const radius = isMain ? NODE_RADIUS.main : NODE_RADIUS.child;
-      const idx    = node.current_index ?? 0;
+      const isMain   = node.id === mainId;
+      const radius   = isMain ? NODE_RADIUS.main : NODE_RADIUS.child;
+      const fontSize = isMain ? 28 : 22;
+      const idx      = node.current_index ?? 0;
 
       // Progress within current band toward next threshold
       // RED 0–40, YELLOW 41–70, GREEN 71–100
@@ -266,28 +267,26 @@ export function renderUniverse(DATA, subset = null, forcedMainId = null) {
       else                progress = (idx - 70) / 30;
       progress = Math.max(0, Math.min(1, progress));
 
-      const barW  = radius * 1.6;
-      const barH  = isMain ? 5 : 4;
-      const barX  = pos.x - barW / 2;
-      const barY  = pos.y + radius + (isMain ? 10 : 8);
-      const cr    = barH / 2; // corner radius
-
-      const [r, g, b] = (colorMap[node.state] || '148,163,184').split(',').map(Number);
+      // Position: below circle + label text
+      const barW = radius * 3.2;
+      const barH = isMain ? 6 : 5;
+      const barX = pos.x - barW / 2;
+      const barY = pos.y + radius + fontSize + (isMain ? 14 : 10);
+      const cr   = barH / 2;
 
       ctx.save();
 
-      // Track (dark background)
+      // Track — light gray
       ctx.beginPath();
       ctx.roundRect(barX, barY, barW, barH, cr);
-      ctx.fillStyle = `rgba(${r},${g},${b},0.15)`;
+      ctx.fillStyle = 'rgba(200,210,220,0.22)';
       ctx.fill();
 
-      // Fill
+      // Fill — darker gray where progress already made
       if (progress > 0) {
-        const fillW = barW * progress;
         ctx.beginPath();
-        ctx.roundRect(barX, barY, fillW, barH, cr);
-        ctx.fillStyle = `rgba(${r},${g},${b},0.75)`;
+        ctx.roundRect(barX, barY, barW * progress, barH, cr);
+        ctx.fillStyle = 'rgba(180,195,210,0.65)';
         ctx.fill();
       }
 
