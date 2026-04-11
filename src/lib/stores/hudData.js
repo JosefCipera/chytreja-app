@@ -34,8 +34,9 @@ export const nodeData = derived(rawData, ($raw) => {
     sources: ($raw.sources || []).filter(Boolean),
     verdict: $raw.verdict,
 
-    today_count: $raw.today_count,
-    streak:      $raw.streak,
+    today_count:    $raw.today_count,
+    all_done_today: $raw.all_done_today,
+    streak:         $raw.streak,
   };
 });
 
