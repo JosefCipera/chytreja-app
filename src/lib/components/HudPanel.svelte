@@ -50,8 +50,8 @@
           ">
             <span style="color: #4ade80; font-size: 1.1rem;">✔</span>
             <div>
-              <div class="hud-mono" style="font-size: 14px; letter-spacing: 0.1em; color: #4ade80; margin-bottom: 2px;">MISSIONS_COMPLETE</div>
-              <div style="font-size: 16px; color: #94a3b8;">Splněno na dnes. Vrať se zítra.</div>
+              <div class="hud-mono" style="font-size: 14px; letter-spacing: 0.1em; color: #4ade80; margin-bottom: 2px;">INDEX STOUPÁ</div>
+              <div style="font-size: 16px; color: #94a3b8;">Segment se dnes posunul. Vrať se zítra.</div>
             </div>
           </div>
         {/if}
