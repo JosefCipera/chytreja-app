@@ -263,29 +263,25 @@ export function renderUniverse(DATA, subset = null, forcedMainId = null) {
 
       const isMob = window.innerWidth < 768;
       const fontSize = isMain ? (isMob ? 34 : 28) : (isMob ? 26 : 22);
-      // label top ≈ pos.y + radius + 14 (vis.js margin), bottom ≈ top + fontSize * 1.3
       const labelBottom = pos.y + radius + 14 + fontSize * 1.3;
-      const barW = radius * 1.8;
+      const barW = radius * 3.6;
       const barH = isMain ? 6 : 5;
       const barX = pos.x - barW / 2;
       const barY = labelBottom + 6;
       const cr   = barH / 2;
 
-      const [r, g, b] = (colorMap[node.state] || '148,163,184').split(',').map(Number);
-
       ctx.save();
 
-      // Track
-      ctx.beginPath();
-      ctx.roundRect(barX, barY, barW, barH, cr);
-      ctx.fillStyle = `rgba(${r},${g},${b},0.15)`;
-      ctx.fill();
-
-      // Fill
-      if (progress > 0) {
+      // Segmented bar — 10 segments = 0–100
+      const numSegs = 10;
+      const gap = 2;
+      const segW = (barW - (numSegs - 1) * gap) / numSegs;
+      for (let i = 0; i < numSegs; i++) {
+        const segX = barX + i * (segW + gap);
+        const filled = (i + 1) * 10 <= idx;
         ctx.beginPath();
-        ctx.roundRect(barX, barY, barW * progress, barH, cr);
-        ctx.fillStyle = `rgba(${r},${g},${b},0.75)`;
+        ctx.roundRect(segX, barY, segW, barH, cr);
+        ctx.fillStyle = filled ? 'rgba(148,163,184,0.65)' : 'rgba(148,163,184,0.15)';
         ctx.fill();
       }
 
