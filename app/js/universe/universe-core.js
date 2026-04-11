@@ -261,12 +261,14 @@ export function renderUniverse(DATA, subset = null, forcedMainId = null) {
       // Full 0–100 progress
       const progress = Math.max(0, Math.min(1, idx / 100));
 
-      const barW = radius * 1.6;
-      const barH = isMain ? 5 : 4;
+      const isMob = window.innerWidth < 768;
+      const fontSize = isMain ? (isMob ? 34 : 28) : (isMob ? 26 : 22);
+      // label top ≈ pos.y + radius + 14 (vis.js margin), bottom ≈ top + fontSize * 1.3
+      const labelBottom = pos.y + radius + 14 + fontSize * 1.3;
+      const barW = radius * 1.8;
+      const barH = isMain ? 6 : 5;
       const barX = pos.x - barW / 2;
-      // Position below the label text using bounding box
-      const bbox = network.getBoundingBox(node.id);
-      const barY = bbox.bottom + 6;
+      const barY = labelBottom + 6;
       const cr   = barH / 2;
 
       const [r, g, b] = (colorMap[node.state] || '148,163,184').split(',').map(Number);
