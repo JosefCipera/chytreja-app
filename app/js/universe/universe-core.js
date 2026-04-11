@@ -268,14 +268,15 @@ export function renderUniverse(DATA, subset = null, forcedMainId = null) {
 
       // Vertical segments (rotated 90°) — like an equalizer
       const numSegs = 10;
-      const segW    = 9;
-      const segH    = isMain ? 14 : 10;
-      const gap     = 1;
+      const segW    = isMain ? 16 : 13;
+      const segH    = isMain ? 6  : 5;
+      const gap     = 2;
       const totalW  = numSegs * segW + (numSegs - 1) * gap;
       const segBarX = pos.x - totalW / 2;
-      const cr2     = 2;
+      const cr2     = 1;
 
       ctx.save();
+      ctx.lineWidth = 0.5;
       for (let i = 0; i < numSegs; i++) {
         const segX   = segBarX + i * (segW + gap);
         const filled = (i + 1) * 10 <= idx;
@@ -283,6 +284,8 @@ export function renderUniverse(DATA, subset = null, forcedMainId = null) {
         ctx.roundRect(segX, barY, segW, segH, cr2);
         ctx.fillStyle = filled ? 'rgba(148,163,184,0.42)' : 'rgba(148,163,184,0.10)';
         ctx.fill();
+        ctx.strokeStyle = 'rgba(148,163,184,0.18)';
+        ctx.stroke();
       }
       ctx.restore();
     });
