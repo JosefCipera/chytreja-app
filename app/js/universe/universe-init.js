@@ -7,7 +7,7 @@ const ORBIT_ZONES = [
   [500, 600],
   [620, 740]
 ];
-import { renderUniverse, getViewState } from "./universe-core.js";
+import { renderUniverse, getViewState, updateMetricsAndRedraw } from "./universe-core.js";
 import { showPanel } from "./universe-panel.js";
 import { initUserDataPanel } from "./user-data-panel.js";
 import { listenOnce, handleVoiceInput, proactiveGreeting } from "./universe-voice.js";
@@ -101,12 +101,9 @@ async function populateModelSelector() {
 }
 
 // ── Global refresh — called from HUD after completing action ──────
-// Fetches fresh metrics only, re-renders current view without resetting navigation
+// Updates metrics in-place + redraws without destroying/recreating the network
 window.refreshUniverseData = async function() {
   if (!window.MAIN_UNIVERSE_DATA) return;
-
-  // Save where user currently is
-  const view = getViewState();
 
   try {
     const userId = await getCurrentUserId();
@@ -118,7 +115,7 @@ window.refreshUniverseData = async function() {
 
     if (!metrics) return;
 
-    // Update MAIN_UNIVERSE_DATA in place — derive state from index
+    // Update MAIN_UNIVERSE_DATA in place
     const metricsMap = new Map(metrics.map(m => [m.node_id, m]));
     window.MAIN_UNIVERSE_DATA.forEach(node => {
       const metric = metricsMap.get(node.id);
@@ -129,16 +126,9 @@ window.refreshUniverseData = async function() {
       }
     });
 
-    // Re-render current view (sub-universe or top level)
-    if (view.centerId && view.nodes.length > 0) {
-      // Map saved nodes to fresh data
-      const freshNodes = view.nodes.map(n =>
-        window.MAIN_UNIVERSE_DATA.find(m => m.id === n.id) || n
-      );
-      renderUniverse(window.MAIN_UNIVERSE_DATA, freshNodes, view.centerId);
-    } else {
-      renderVisibleUniverse(window.MAIN_UNIVERSE_DATA);
-    }
+    // Update visible nodes + redraw (no network destroy)
+    updateMetricsAndRedraw(metricsMap);
+
   } catch (e) {
     console.warn('[CHJ] refreshUniverseData error:', e);
   }

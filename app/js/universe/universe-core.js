@@ -76,6 +76,36 @@ export function getViewState() {
   return { centerId: currentCenter, nodes: [...lastRenderedNodes] };
 }
 
+// Update metrics in-place + force redraw — no network destroy/recreate
+export function updateMetricsAndRedraw(metricsMap) {
+  if (!network || !lastRenderedNodes.length) return;
+
+  const colors = { GREEN: '#22c55e', YELLOW: '#eab308', RED: '#ef4444', GRAY: '#64748b' };
+  const nodeUpdates = [];
+
+  lastRenderedNodes.forEach(node => {
+    const metric = metricsMap.get(node.id);
+    if (!metric) return;
+    node.current_index = metric.current_index ?? node.current_index;
+    const idx = node.current_index;
+    node.state = idx <= 40 ? 'RED' : idx <= 70 ? 'YELLOW' : 'GREEN';
+    const col = colors[node.state];
+    nodeUpdates.push({
+      id: node.id,
+      color: {
+        background: col,
+        border: col,
+        highlight: { background: lighten(col, 0.25), border: col }
+      }
+    });
+  });
+
+  if (nodeUpdates.length) {
+    network.body.data.nodes.update(nodeUpdates);
+  }
+  network.redraw(); // triggers afterDrawing with updated current_index
+}
+
 export function renderUniverse(DATA, subset = null, forcedMainId = null) {
 
   const nodes = [];
