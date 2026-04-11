@@ -331,9 +331,11 @@ async function loadModel(modelName) {
       // ✅ PŘIDEJ — merge state do nodes
       nodes.forEach(node => {
         const metric = metricsMap.get(node.id);
-        node.state = metric?.state || 'GRAY'; // ← TOHLE PŘIDÁ STATE!
-        node.current_index = metric?.current_index ?? 0;
+        const idx = metric?.current_index ?? 0;
+        node.current_index = idx;
         node.target_index = metric?.target_index ?? 100;
+        // Always derive state from current_index, never trust stored state column
+        node.state = !metric ? 'GRAY' : idx <= 40 ? 'RED' : idx <= 70 ? 'YELLOW' : 'GREEN';
       });
 
       console.log("✅ Merged state into nodes");
