@@ -291,40 +291,7 @@ export function renderUniverse(DATA, subset = null, forcedMainId = null) {
       const pos = positions[node.id];
       if (!pos || node.state === 'GRAY') return;
 
-      const isMain = node.id === mainId;
-      const radius = isMain ? NODE_RADIUS.main : NODE_RADIUS.child;
-      const idx    = node.current_index ?? 0;
-
-      // Full 0–100 progress
-      const progress = Math.max(0, Math.min(1, idx / 100));
-
-      const isMob = window.innerWidth < 768;
-      const fontSize = isMain ? (isMob ? 34 : 28) : (isMob ? 26 : 22);
-      const labelBottom = pos.y + radius + 14 + fontSize * 1.3;
-      const barY = labelBottom + 6;
-
-      // Vertical segments (rotated 90°) — like an equalizer
-      const numSegs = 10;
-      const segW    = 7;
-      const segH    = isMain ? 18 : 13;
-      const gap     = 2;
-      const totalW  = numSegs * segW + (numSegs - 1) * gap;
-      const segBarX = pos.x - totalW / 2;
-      const cr2     = 1;
-
-      ctx.save();
-      ctx.lineWidth = 0.5;
-      for (let i = 0; i < numSegs; i++) {
-        const segX   = segBarX + i * (segW + gap);
-        const filled = (i + 1) * 10 <= idx;
-        ctx.beginPath();
-        ctx.roundRect(segX, barY, segW, segH, cr2);
-        ctx.fillStyle = filled ? 'rgba(148,163,184,0.42)' : 'rgba(148,163,184,0.10)';
-        ctx.fill();
-        ctx.strokeStyle = 'rgba(148,163,184,0.18)';
-        ctx.stroke();
-      }
-      ctx.restore();
+      // potentiometer removed — battery in HUD panel is the single source
     });
 
     // ── Lock emojis on GRAY nodes — recomputed each frame ──
