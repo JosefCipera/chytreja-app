@@ -7,7 +7,7 @@ const ORBIT_ZONES = [
   [500, 600],
   [620, 740]
 ];
-import { renderUniverse } from "./universe-core.js";
+import { renderUniverse, getViewState } from "./universe-core.js";
 import { showPanel } from "./universe-panel.js";
 import { initUserDataPanel } from "./user-data-panel.js";
 import { listenOnce, handleVoiceInput, proactiveGreeting } from "./universe-voice.js";
@@ -101,10 +101,47 @@ async function populateModelSelector() {
 }
 
 // ── Global refresh — called from HUD after completing action ──────
+// Fetches fresh metrics only, re-renders current view without resetting navigation
 window.refreshUniverseData = async function() {
-  const model = window.CURRENT_MODEL || 'longevity';
-  const role  = window.CURRENT_ROLE  || 'user';
-  await loadAndRenderModel(model, role);
+  if (!window.MAIN_UNIVERSE_DATA) return;
+
+  // Save where user currently is
+  const view = getViewState();
+
+  try {
+    const userId = await getCurrentUserId();
+    const { data: metrics } = await window.supabaseClient
+      .from('user_metrics')
+      .select('node_id, current_index, state')
+      .eq('user_id', userId)
+      .eq('universe', window.CURRENT_MODEL || 'longevity');
+
+    if (!metrics) return;
+
+    // Update MAIN_UNIVERSE_DATA in place — derive state from index
+    const metricsMap = new Map(metrics.map(m => [m.node_id, m]));
+    window.MAIN_UNIVERSE_DATA.forEach(node => {
+      const metric = metricsMap.get(node.id);
+      if (metric) {
+        node.current_index = metric.current_index ?? node.current_index;
+        const idx = node.current_index;
+        node.state = idx <= 40 ? 'RED' : idx <= 70 ? 'YELLOW' : 'GREEN';
+      }
+    });
+
+    // Re-render current view (sub-universe or top level)
+    if (view.centerId && view.nodes.length > 0) {
+      // Map saved nodes to fresh data
+      const freshNodes = view.nodes.map(n =>
+        window.MAIN_UNIVERSE_DATA.find(m => m.id === n.id) || n
+      );
+      renderUniverse(window.MAIN_UNIVERSE_DATA, freshNodes, view.centerId);
+    } else {
+      renderVisibleUniverse(window.MAIN_UNIVERSE_DATA);
+    }
+  } catch (e) {
+    console.warn('[CHJ] refreshUniverseData error:', e);
+  }
 };
 
 // =====================================================

@@ -72,6 +72,10 @@ let lastRenderedNodes = [];
 })();
 
 // 🌌 Vykreslení hlavní nebo podsítě
+export function getViewState() {
+  return { centerId: currentCenter, nodes: [...lastRenderedNodes] };
+}
+
 export function renderUniverse(DATA, subset = null, forcedMainId = null) {
 
   const nodes = [];
