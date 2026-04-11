@@ -88,7 +88,10 @@ export function updateMetricsAndRedraw(metricsMap) {
     if (!metric) return;
     node.current_index = metric.current_index ?? node.current_index;
     const idx = node.current_index;
-    node.state = idx <= 40 ? 'RED' : idx <= 70 ? 'YELLOW' : 'GREEN';
+    // Preserve GRAY (locked) for untouched nodes — only update if user has activity
+    if (idx > 0 || node.state !== 'GRAY') {
+      node.state = idx <= 40 ? 'RED' : idx <= 70 ? 'YELLOW' : 'GREEN';
+    }
     const col = colors[node.state];
     nodeUpdates.push({
       id: node.id,
@@ -324,14 +327,15 @@ export function renderUniverse(DATA, subset = null, forcedMainId = null) {
       ctx.restore();
     });
 
-    // ── Lock emojis on GRAY nodes ──
-    if (lockedIds.length) {
-      const lockPos = network.getPositions(lockedIds);
+    // ── Lock emojis on GRAY nodes — recomputed each frame ──
+    const currentLocked = source.filter(n => n.state === 'GRAY').map(n => n.id);
+    if (currentLocked.length) {
+      const lockPos = network.getPositions(currentLocked);
       ctx.save();
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.font = '20px serif';
-      lockedIds.forEach(id => {
+      currentLocked.forEach(id => {
         const pos = lockPos[id];
         if (pos) ctx.fillText('🔒', pos.x, pos.y);
       });

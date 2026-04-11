@@ -150,7 +150,7 @@ export default async function handler(req, res) {
   const today = new Date().toISOString().slice(0, 10);
   const { data: todayMissions } = await supabase
     .from('mission_log')
-    .select('id')
+    .select('id, mission_id')
     .eq('user_id', userId)
     .eq('node_id', nodeId)
     .eq('date', today);
@@ -191,7 +191,7 @@ export default async function handler(req, res) {
     const tier = pickTier(state, streak);
 
     // Get already-done action IDs today to avoid repeats
-    const doneIds = (todayMissions || []).map(m => m.action_id).filter(Boolean);
+    const doneIds = (todayMissions || []).map(m => m.mission_id).filter(Boolean);
 
     // Try preferred tier first, fall back to tier 1
     let { data: candidates } = await supabase
