@@ -117,6 +117,26 @@ window.refreshUniverseData = async function() {
 
     // Update MAIN_UNIVERSE_DATA in place
     const metricsMap = new Map(metrics.map(m => [m.node_id, m]));
+
+    // TOC: re-derive parent states from worst child (same as loadModel)
+    const DECATHLON = ['vo2max','sila','kardio','stabilita','rovnovaha','vytrvalost','mobilita','dychani'];
+    const CANVAS_CHILDREN = {
+      telo:         DECATHLON,
+      zdravi:       ['imunitni','metabolicke','nervovy_system','obnova','spanek'],
+      mysl:         ['emoce','klid','meditace','smysl','soustredeni','stres','vdecnost'],
+      vyziva:       ['bilkoviny','casovani_jidel','glukoza_vyziva','hydratace','mikronutrienty','pust'],
+      dlouhovekost: ['telo','zdravi','mysl','vyziva'],
+    };
+    for (const parentId of ['telo','zdravi','mysl','vyziva','dlouhovekost']) {
+      const childIds = CANVAS_CHILDREN[parentId];
+      const childMetrics = childIds.map(id => metricsMap.get(id)).filter(m => m && m.current_index != null);
+      if (!childMetrics.length) continue;
+      const worst = childMetrics.reduce((a, b) =>
+        (a.current_index ?? 50) < (b.current_index ?? 50) ? a : b
+      );
+      metricsMap.set(parentId, { node_id: parentId, current_index: worst.current_index, state: worst.state });
+    }
+
     window.MAIN_UNIVERSE_DATA.forEach(node => {
       const metric = metricsMap.get(node.id);
       if (metric) {
@@ -327,6 +347,28 @@ async function loadModel(modelName) {
       // ✅ PŘIDEJ — vytvoř mapu node_id → state
       const metricsMap = new Map(metrics.map(m => [m.node_id, m]));
       console.log("📊 Metrics map:", metricsMap); // ← PŘIDEJ
+
+      // ── TOC: derive parent node values from worst child ───────────
+      // Same logic as hud-data.js — ensures canvas matches HUD battery
+      const DECATHLON = ['vo2max','sila','kardio','stabilita','rovnovaha','vytrvalost','mobilita','dychani'];
+      const CANVAS_CHILDREN = {
+        telo:         DECATHLON,
+        zdravi:       ['imunitni','metabolicke','nervovy_system','obnova','spanek'],
+        mysl:         ['emoce','klid','meditace','smysl','soustredeni','stres','vdecnost'],
+        vyziva:       ['bilkoviny','casovani_jidel','glukoza_vyziva','hydratace','mikronutrienty','pust'],
+        dlouhovekost: ['telo','zdravi','mysl','vyziva'],
+      };
+      // Process bottom-up so telo is resolved before dlouhovekost reads it
+      for (const parentId of ['telo','zdravi','mysl','vyziva','dlouhovekost']) {
+        const childIds = CANVAS_CHILDREN[parentId];
+        const childMetrics = childIds.map(id => metricsMap.get(id)).filter(m => m && m.current_index != null);
+        if (!childMetrics.length) continue;
+        const worst = childMetrics.reduce((a, b) =>
+          (a.current_index ?? 50) < (b.current_index ?? 50) ? a : b
+        );
+        metricsMap.set(parentId, { node_id: parentId, current_index: worst.current_index, state: worst.state });
+      }
+      // ─────────────────────────────────────────────────────────────
 
       // ✅ PŘIDEJ — merge state do nodes
       nodes.forEach(node => {
