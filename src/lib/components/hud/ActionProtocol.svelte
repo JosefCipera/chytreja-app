@@ -69,15 +69,15 @@
   <!-- KILLER sekce -->
   {#if killer}
     <div class="px-4 pt-3 pb-2">
-      <div class="hud-mono" style="font-size: 20px; font-weight: 300; letter-spacing: 0.04em; color: #c8d4df; margin-bottom: 4px;">
-        KILLER: <span style="color: #94a3b8;">{killer.label}</span>
+      <div class="hud-mono" style="font-size: 20px; font-weight: 300; letter-spacing: 0.04em; color: #c8d4df; margin-bottom: 6px;">
+        KILLER: <span style="color: #ef4444; text-shadow: 0 0 12px rgba(239,68,68,0.5);">{killer.label}</span>
       </div>
-      <div class="flex items-center gap-2">
-        <span style="font-size: 17px; color: #C97272;">{@html '\u26A0\uFE0E'}</span>
-        <span style="font-size: 15px; color: #C97272;">{killer.description}</span>
+      <div class="flex items-start gap-2">
+        <span style="font-size: 18px; color: #ef4444; text-shadow: 0 0 10px rgba(239,68,68,0.6); flex-shrink: 0; margin-top: 1px;">{@html '\u26A0\uFE0E'}</span>
+        <span style="font-size: 16px; font-weight: 500; color: #fca5a5; line-height: 1.4;">{killer.description}</span>
       </div>
     </div>
-    <div style="margin: 0 16px; border-top: 1px solid rgba(6,182,212,0.30);"></div>
+    <div style="margin: 0 16px; border-top: 1px solid rgba(239,68,68,0.20);"></div>
   {/if}
 
   <!-- ACTION sekce -->
