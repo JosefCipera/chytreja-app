@@ -18,12 +18,6 @@ const INDEX_DECLINE = 3;   // -3 per inactive day (applied on next action)
 const RED_MAX = 40;
 const YELLOW_MAX = 70;
 
-// Attia weights — must match hud-data.js
-const ATTIA_WEIGHTS = { telo: 0.50, zdravi: 0.25, mysl: 0.15, vyziva: 0.10 };
-const DECATHLON_WEIGHTS = {
-  vo2max: 0.22, sila: 0.22, kardio: 0.15, stabilita: 0.12,
-  rovnovaha: 0.10, vytrvalost: 0.10, mobilita: 0.06, dychani: 0.03,
-};
 
 function indexToState(index) {
   if (index <= RED_MAX) return 'RED';
@@ -233,35 +227,25 @@ async function recalcParents(supabase, userId, nodeId) {
       .eq('universe', 'longevity')
       .in('node_id', childIds);
 
+    // TOC: parent state + index = worst child (weakest link)
     const stateOrder = { RED: 3, YELLOW: 2, GREEN: 1 };
     let worstState = 'GREEN';
+    let worstIndex = 100;
     for (const cm of (childMetrics || [])) {
-      if ((stateOrder[cm.state] || 0) > (stateOrder[worstState] || 0)) {
-        worstState = cm.state;
-      }
+      if ((stateOrder[cm.state] || 0) > (stateOrder[worstState] || 0)) worstState = cm.state;
+      if ((cm.current_index ?? 50) < worstIndex) worstIndex = cm.current_index ?? 50;
     }
 
-    // Weighted current_index for known parent nodes
-    const weights = currentParent === 'telo'        ? DECATHLON_WEIGHTS
-                  : currentParent === 'dlouhovekost' ? ATTIA_WEIGHTS
-                  : null;
-
-    let upsertData = { user_id: userId, node_id: currentParent, universe: 'longevity', state: worstState };
-
-    if (weights) {
-      let total = 0, weightSum = 0;
-      for (const cm of (childMetrics || [])) {
-        const w = weights[cm.node_id];
-        if (w) { total += (cm.current_index ?? 50) * w; weightSum += w; }
-      }
-      if (weightSum > 0) upsertData.current_index = Math.round(total / weightSum);
-    }
+    const upsertData = {
+      user_id: userId, node_id: currentParent, universe: 'longevity',
+      state: worstState, current_index: worstIndex,
+    };
 
     const { error } = await supabase
       .from('user_metrics')
       .upsert(upsertData, { onConflict: 'user_id,node_id,universe' });
 
-    if (!error) updates.push({ nodeId: currentParent, ...upsertData });
+    if (!error) updates.push({ nodeId: currentParent, state: worstState, current_index: worstIndex });
 
     const { data: parentRow } = await supabase
       .from('longevity_nodes')

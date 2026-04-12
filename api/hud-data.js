@@ -9,22 +9,19 @@ import { createClient } from '@supabase/supabase-js';
 
 // ── CONSTANTS ─────────────────────────────────────────
 
-const ATTIA_WEIGHTS = { telo: 0.50, zdravi: 0.25, mysl: 0.15, vyziva: 0.10 };
 const CHILD_NODES   = ['telo', 'zdravi', 'mysl', 'vyziva'];
+const DECATHLON_NODES = ['vo2max','sila','kardio','stabilita','rovnovaha','vytrvalost','mobilita','dychani'];
 
-// Attia decathlon weights for telo sub-nodes
-// VO2max + síla = dominantní prediktory dlouhověkosti
-const DECATHLON_WEIGHTS = {
-  vo2max:     0.22,
-  sila:       0.22,
-  kardio:     0.15,
-  stabilita:  0.12,
-  rovnovaha:  0.10,
-  vytrvalost: 0.10,
-  mobilita:   0.06,
-  dychani:    0.03,
+// Node hierarchy — children of each parent (for cascade bottleneck + TOC battery)
+const CHILDREN = {
+  dlouhovekost: ['telo','zdravi','mysl','vyziva'],
+  telo:         DECATHLON_NODES,
+  zdravi:       ['imunitni','metabolicke','nervovy_system','obnova','spanek'],
+  mysl:         ['emoce','klid','meditace','smysl','soustredeni','stres','vdecnost'],
+  vyziva:       ['bilkoviny','casovani_jidel','glukoza_vyziva','hydratace','mikronutrienty','pust'],
+  sila:         ['dead_hang','farmer_carry','grip','hip_hinge'],
+  stabilita:    ['floor_get_up'],
 };
-const DECATHLON_NODES = Object.keys(DECATHLON_WEIGHTS);
 
 const NODE_LABELS = {
   dlouhovekost: 'Hra o život', telo: 'Tělo', mysl: 'Mysl',
@@ -84,26 +81,27 @@ function calcTrend(history) {
   return             { label: 'STABLE', direction: 'stable' };
 }
 
-function calcParentBattery(metrics, weights = ATTIA_WEIGHTS) {
-  let total = 0, weightSum = 0;
-  for (const [nodeId, weight] of Object.entries(weights)) {
-    const m = metrics.find(m => m.node_id === nodeId);
-    if (m) { total += m.current_index * weight; weightSum += weight; }
-  }
-  return weightSum > 0 ? Math.round(total / weightSum) : 50;
+// TOC: battery + color = worst child (system is as strong as its weakest link)
+function worstChild(parentId, metricsMap) {
+  const children = CHILDREN[parentId] || [];
+  const childMetrics = children.map(id => metricsMap.get(id)).filter(Boolean);
+  if (!childMetrics.length) return null;
+  return childMetrics.reduce((worst, m) =>
+    (m.current_index ?? 50) < (worst.current_index ?? 50) ? m : worst
+  );
 }
 
-function calcDecathlonBattery(metrics) {
-  return calcParentBattery(metrics, DECATHLON_WEIGHTS);
-}
-
-function worstChildState(metrics) {
-  const states = metrics
-    .filter(m => CHILD_NODES.includes(m.node_id))
-    .map(m => m.state || indexToState(m.current_index));
-  if (states.includes('RED'))    return 'RED';
-  if (states.includes('YELLOW')) return 'YELLOW';
-  return 'GREEN';
+// Cascade bottleneck: go down hierarchy until leaf node with actions
+function cascadeBottleneck(nodeId, metricsMap, depth = 0) {
+  if (depth > 5) return nodeId;
+  const children = CHILDREN[nodeId];
+  if (!children?.length) return nodeId;
+  const childMetrics = children.map(id => metricsMap.get(id)).filter(Boolean);
+  if (!childMetrics.length) return nodeId;
+  const worst = childMetrics.reduce((a, b) =>
+    (a.current_index ?? 50) <= (b.current_index ?? 50) ? a : b
+  );
+  return cascadeBottleneck(worst.node_id, metricsMap, depth + 1);
 }
 
 // ── HANDLER ────────────────────────────────────────────
@@ -117,77 +115,39 @@ export default async function handler(req, res) {
     process.env.SUPABASE_SERVICE_ROLE_KEY,
   );
 
-  // 1. Fetch all relevant metrics in one query
-  const nodesToFetch = [...new Set([nodeId, ...CHILD_NODES, ...DECATHLON_NODES, 'spanek'])];
-  // Try longevity universe first, fall back to any universe
+  // 1. Fetch ALL user metrics — needed for cascade bottleneck across full hierarchy
   let { data: metricsRaw } = await supabase
     .from('user_metrics')
     .select('node_id, current_index, state')
     .eq('user_id', userId)
-    .eq('universe', 'longevity')
-    .in('node_id', nodesToFetch);
+    .eq('universe', 'longevity');
 
   if (!metricsRaw || metricsRaw.length === 0) {
     const { data: fallback } = await supabase
       .from('user_metrics')
       .select('node_id, current_index, state')
-      .eq('user_id', userId)
-      .in('node_id', nodesToFetch);
+      .eq('user_id', userId);
     metricsRaw = fallback;
   }
 
   const metrics = metricsRaw || [];
+  const metricsMap = new Map(metrics.map(m => [m.node_id, m]));
 
   // Find current node metric
-  const nodeMeta = metrics.find(m => m.node_id === nodeId) || { current_index: 50, state: 'YELLOW' };
+  const nodeMeta = metricsMap.get(nodeId) || { current_index: 50, state: 'YELLOW' };
   const current_index = nodeMeta.current_index ?? 50;
-  const state = indexToState(current_index); // always derive from index, never trust stored state
+  const state = indexToState(current_index);
 
-  // Battery: parent nodes use weighted avg of children; leaf uses own index
-  const isParent   = nodeId === 'dlouhovekost';
-  const isTelo     = nodeId === 'telo';
-  // Battery: dlouhovekost = weighted avg of 4 domains
-  // telo + others = own current_index (kept accurate by bubble-up in mission-complete)
-  const batteryPercent = isParent ? calcParentBattery(metrics) : current_index;
-  const batteryState   = isParent ? worstChildState(metrics)
-                       : isTelo   ? worstChildState(metrics.filter(m => DECATHLON_NODES.includes(m.node_id)))
-                       : state;
+  // TOC battery + color: worst child for any parent, own index for leaves
+  const hasChildren = !!CHILDREN[nodeId]?.length;
+  const worst = hasChildren ? worstChild(nodeId, metricsMap) : null;
+  const batteryPercent = worst ? (worst.current_index ?? 50) : current_index;
+  const batteryState   = worst ? indexToState(worst.current_index ?? 50) : state;
 
-  // Bottleneck: highest priority = gap × weight
-  // gap = (100 - current_index), priority = gap × weight → biggest impact to fix
-  function bottleneck(metricsSubset, weights) {
-    return metricsSubset.reduce((best, m) => {
-      const gap = 100 - (m.current_index ?? 50);
-      const w   = weights[m.node_id] || 0.01;
-      const priorityM    = gap * w;
-      const gap2  = 100 - (best.current_index ?? 50);
-      const w2    = weights[best.node_id] || 0.01;
-      const priorityBest = gap2 * w2;
-      return priorityM > priorityBest ? m : best;
-    });
-  }
-
-  let actionNodeId = nodeId;
-  if (isParent) {
-    // Step 1: weakest top-level child by gap×weight
-    const childMetrics = metrics.filter(m => CHILD_NODES.includes(m.node_id));
-    if (childMetrics.length > 0) {
-      const weakestChild = bottleneck(childMetrics, ATTIA_WEIGHTS);
-      actionNodeId = weakestChild.node_id;
-      // Step 2: cascade — if telo is bottleneck, go deeper into decathlon disciplines
-      if (actionNodeId === 'telo') {
-        const decathlonMetrics = metrics.filter(m => DECATHLON_NODES.includes(m.node_id));
-        if (decathlonMetrics.length > 0) {
-          actionNodeId = bottleneck(decathlonMetrics, DECATHLON_WEIGHTS).node_id;
-        }
-      }
-    }
-  } else if (isTelo) {
-    const decathlonMetrics = metrics.filter(m => DECATHLON_NODES.includes(m.node_id));
-    if (decathlonMetrics.length > 0) {
-      actionNodeId = bottleneck(decathlonMetrics, DECATHLON_WEIGHTS).node_id;
-    }
-  }
+  // Cascade bottleneck: for any parent, go down to deepest weak leaf with actions
+  const actionNodeId = hasChildren
+    ? cascadeBottleneck(nodeId, metricsMap)
+    : nodeId;
 
   // REPAIR_RATE inputs
   const spanekIndex  = metrics.find(m => m.node_id === 'spanek')?.current_index ?? 50;
