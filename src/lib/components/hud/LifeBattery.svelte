@@ -11,10 +11,6 @@
     biomarkers = {},
   } = $props();
 
-  // REPAIR_RATE: anabolism from sleep + nutrition (Attia)
-  let repairRate = $derived(
-    Math.round((spanekIndex * 0.6 + vyzivaIndex * 0.4) / 100 * 10 + 5) / 10
-  );
 
   const TOTAL_SEGMENTS = 12;
   let filledSegments = $derived(Math.round((percent / 100) * TOTAL_SEGMENTS));
@@ -140,6 +136,13 @@
       class="rounded-r-sm"
       style="width: 12px; height: 58px; background: rgba(255,255,255,0.06); border: 2px solid rgba(255,255,255,0.06); border-left: none; box-shadow: 0 0 8px {glowColor};"
     ></div>
+  </div>
+
+  <!-- EST_BIO_AGE — placeholder, data v0.4+ -->
+  <div class="flex items-center justify-between mt-3">
+    <span class="hud-mono" style="font-size: 13px; color: #475569;">
+      EST_BIO_AGE: <span style="color: #334155;">—</span>
+    </span>
   </div>
 
 </div>
