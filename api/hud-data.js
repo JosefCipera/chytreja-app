@@ -12,6 +12,20 @@ import { createClient } from '@supabase/supabase-js';
 const ATTIA_WEIGHTS = { telo: 0.50, zdravi: 0.25, mysl: 0.15, vyziva: 0.10 };
 const CHILD_NODES   = ['telo', 'zdravi', 'mysl', 'vyziva'];
 
+// Attia decathlon weights for telo sub-nodes
+// VO2max + síla = dominantní prediktory dlouhověkosti
+const DECATHLON_WEIGHTS = {
+  vo2max:     0.22,
+  sila:       0.22,
+  kardio:     0.15,
+  stabilita:  0.12,
+  rovnovaha:  0.10,
+  vytrvalost: 0.10,
+  mobilita:   0.06,
+  dychani:    0.03,
+};
+const DECATHLON_NODES = Object.keys(DECATHLON_WEIGHTS);
+
 const NODE_LABELS = {
   dlouhovekost: 'Hra o život', telo: 'Tělo', mysl: 'Mysl',
   vyziva: 'Výživa', zdravi: 'Zdraví', metabolicke: 'Metabolismus',
@@ -70,13 +84,17 @@ function calcTrend(history) {
   return             { label: 'STABLE', direction: 'stable' };
 }
 
-function calcParentBattery(metrics) {
+function calcParentBattery(metrics, weights = ATTIA_WEIGHTS) {
   let total = 0, weightSum = 0;
-  for (const [nodeId, weight] of Object.entries(ATTIA_WEIGHTS)) {
+  for (const [nodeId, weight] of Object.entries(weights)) {
     const m = metrics.find(m => m.node_id === nodeId);
     if (m) { total += m.current_index * weight; weightSum += weight; }
   }
   return weightSum > 0 ? Math.round(total / weightSum) : 50;
+}
+
+function calcDecathlonBattery(metrics) {
+  return calcParentBattery(metrics, DECATHLON_WEIGHTS);
 }
 
 function worstChildState(metrics) {
@@ -100,7 +118,7 @@ export default async function handler(req, res) {
   );
 
   // 1. Fetch all relevant metrics in one query
-  const nodesToFetch = [...new Set([nodeId, ...CHILD_NODES, 'spanek'])];
+  const nodesToFetch = [...new Set([nodeId, ...CHILD_NODES, ...DECATHLON_NODES, 'spanek'])];
   // Try longevity universe first, fall back to any universe
   let { data: metricsRaw } = await supabase
     .from('user_metrics')
@@ -125,12 +143,17 @@ export default async function handler(req, res) {
   const current_index = nodeMeta.current_index ?? 50;
   const state = indexToState(current_index); // always derive from index, never trust stored state
 
-  // Battery: parent uses weighted avg + worst-child color; leaf uses own index
-  const isParent = nodeId === 'dlouhovekost';
-  const batteryPercent = isParent ? calcParentBattery(metrics) : current_index;
-  const batteryState   = isParent ? worstChildState(metrics) : state;
+  // Battery: parent nodes use weighted avg of children; leaf uses own index
+  const isParent   = nodeId === 'dlouhovekost';
+  const isTelo     = nodeId === 'telo';
+  const batteryPercent = isParent ? calcParentBattery(metrics)
+                       : isTelo   ? calcDecathlonBattery(metrics)
+                       : current_index;
+  const batteryState   = isParent ? worstChildState(metrics)
+                       : isTelo   ? worstChildState(metrics.filter(m => DECATHLON_NODES.includes(m.node_id)))
+                       : state;
 
-  // For parent node: find bottleneck child (weakest) to source actions from
+  // For parent nodes: find bottleneck child (weakest weighted score) to source actions from
   let actionNodeId = nodeId;
   if (isParent) {
     const childMetrics = metrics.filter(m => CHILD_NODES.includes(m.node_id));
@@ -138,6 +161,17 @@ export default async function handler(req, res) {
       const weakest = childMetrics.reduce((a, b) =>
         (a.current_index ?? 50) <= (b.current_index ?? 50) ? a : b
       );
+      actionNodeId = weakest.node_id;
+    }
+  } else if (isTelo) {
+    // Telo: bottleneck = weakest decathlon discipline weighted by Attia priority
+    const decathlonMetrics = metrics.filter(m => DECATHLON_NODES.includes(m.node_id));
+    if (decathlonMetrics.length > 0) {
+      const weakest = decathlonMetrics.reduce((a, b) => {
+        const scoreA = (a.current_index ?? 50) / (DECATHLON_WEIGHTS[a.node_id] || 0.1);
+        const scoreB = (b.current_index ?? 50) / (DECATHLON_WEIGHTS[b.node_id] || 0.1);
+        return scoreA <= scoreB ? a : b;
+      });
       actionNodeId = weakest.node_id;
     }
   }
