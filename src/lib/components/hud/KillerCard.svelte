@@ -1,5 +1,5 @@
 <script>
-  let { label, energyDrain } = $props();
+  let { label, description } = $props();
 </script>
 
 <div class="rounded-lg px-4 py-3" style="
@@ -14,6 +14,6 @@
   </div>
   <div class="flex items-center gap-2" style="line-height: 1.3;">
     <span style="font-size: 15px; color: #ef4444;">{@html '\u26A0\uFE0E'}</span>
-    <span class="hud-mono" style="font-size: 14px; font-weight: 300; letter-spacing: 0.03em; color: #f87171;">{energyDrain}% ENERGY DRAIN</span>
+    <span style="font-size: 14px; color: #f87171;">{description}</span>
   </div>
 </div>

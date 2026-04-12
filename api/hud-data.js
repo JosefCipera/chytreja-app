@@ -41,17 +41,17 @@ const NODE_LABELS = {
 };
 
 const NODE_KILLERS = {
-  telo: { label: 'SRDCE', energy_drain: -8, description: 'Srdce potřebuje pohyb.' },
-  mysl: { label: 'MOZEK', energy_drain: -7, description: 'Myšlení slábne bez zátěže.' },
-  vyziva: { label: 'METABOLISMUS', energy_drain: -6, description: 'Tělo ztrácí rovnováhu.' },
-  zdravi: { label: 'IMUNITA', energy_drain: -7, description: 'Imunita potřebuje posilu.' },
-  metabolicke: { label: 'METABOLISMUS', energy_drain: -6, description: 'Tělo ztrácí rovnováhu.' },
-  sila: { label: 'SRDCE', energy_drain: -8, description: 'Srdce potřebuje pohyb.' },
-  stabilita: { label: 'MOZEK', energy_drain: -5, description: 'Rovnováha chrání mozek.' },
-  kardio: { label: 'SRDCE', energy_drain: -9, description: 'Srdce potřebuje pohyb.' },
-  vo2max: { label: 'SRDCE', energy_drain: -8, description: 'Kondice chrání srdce.' },
-  spanek: { label: 'MOZEK', energy_drain: -7, description: 'Spánek opravuje mozek.' },
-  dlouhovekost: { label: 'SRDCE', energy_drain: -8, description: 'Srdce potřebuje pohyb.' },
+  telo:         { label: 'SRDCE',        description: 'Bez pohybu srdce slábne rok od roku.' },
+  mysl:         { label: 'MOZEK',        description: 'Mozek bez výzev zpomaluje.' },
+  vyziva:       { label: 'METABOLISMUS', description: 'Strava bez řádu rozkládá energii.' },
+  zdravi:       { label: 'IMUNITA',      description: 'Imunita bez posily nepostaví obranu.' },
+  metabolicke:  { label: 'METABOLISMUS', description: 'Metabolismus bez rytmu ztrácí kontrolu.' },
+  sila:         { label: 'SRDCE',        description: 'Svaly drží srdce naživu.' },
+  stabilita:    { label: 'MOZEK',        description: 'Pád je první signál z mozku.' },
+  kardio:       { label: 'SRDCE',        description: 'Srdce bez zátěže ztrácí dvacet let.' },
+  vo2max:       { label: 'SRDCE',        description: 'VO₂max rozhoduje o každé dekádě.' },
+  spanek:       { label: 'MOZEK',        description: 'Mozek se čistí jen ve spánku.' },
+  dlouhovekost: { label: 'SRDCE',        description: 'Bez pohybu srdce slábne rok od roku.' },
 };
 
 const VERDICT_TEXTS = {

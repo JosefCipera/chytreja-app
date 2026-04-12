@@ -74,7 +74,7 @@
       </div>
       <div class="flex items-center gap-2">
         <span style="font-size: 17px; color: #C97272;">{@html '\u26A0\uFE0E'}</span>
-        <span class="hud-mono" style="font-size: 17px; font-weight: 300; letter-spacing: 0; word-spacing: 0; color: #C97272;">{killer.energy_drain}% ENERGY DRAIN</span>
+        <span style="font-size: 15px; color: #C97272;">{killer.description}</span>
       </div>
     </div>
     <div style="margin: 0 16px; border-top: 1px solid rgba(6,182,212,0.30);"></div>

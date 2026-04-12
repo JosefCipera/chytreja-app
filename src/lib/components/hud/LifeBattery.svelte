@@ -142,10 +142,4 @@
     ></div>
   </div>
 
-  <!-- Sub-metrics row — single line -->
-  <div class="flex items-center justify-between">
-    <span class="hud-mono" style="font-size: 13px; color: #475569;">
-      REPAIR_RATE: <span style="color: {textColor};">{repairRate}x</span>
-    </span>
-  </div>
 </div>
