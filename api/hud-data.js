@@ -41,17 +41,17 @@ const NODE_LABELS = {
 };
 
 const NODE_KILLERS = {
-  telo:         { label: 'SRDCE',        description: 'Bez pohybu srdce slábne rok od roku.' },
-  mysl:         { label: 'MOZEK',        description: 'Mozek bez výzev zpomaluje.' },
-  vyziva:       { label: 'METABOLISMUS', description: 'Strava bez řádu rozkládá energii.' },
-  zdravi:       { label: 'IMUNITA',      description: 'Imunita bez posily nepostaví obranu.' },
-  metabolicke:  { label: 'METABOLISMUS', description: 'Metabolismus bez rytmu ztrácí kontrolu.' },
-  sila:         { label: 'SRDCE',        description: 'Svaly drží srdce naživu.' },
-  stabilita:    { label: 'MOZEK',        description: 'Pád je první signál z mozku.' },
-  kardio:       { label: 'SRDCE',        description: 'Srdce bez zátěže ztrácí dvacet let.' },
-  vo2max:       { label: 'SRDCE',        description: 'VO₂max rozhoduje o každé dekádě.' },
-  spanek:       { label: 'MOZEK',        description: 'Mozek se čistí jen ve spánku.' },
-  dlouhovekost: { label: 'SRDCE',        description: 'Bez pohybu srdce slábne rok od roku.' },
+  telo:         { label: 'SRDCE',        description: 'Každý rok bez pohybu ti bere roky života.' },
+  mysl:         { label: 'MOZEK',        description: 'Mozek, který se nezatěžuje, odumírá.' },
+  vyziva:       { label: 'METABOLISMUS', description: 'Co jíš dnes, rozhoduje kdo přežije zítra.' },
+  zdravi:       { label: 'IMUNITA',      description: 'Tělo bez obrany prohrává tiše a pomalu.' },
+  metabolicke:  { label: 'METABOLISMUS', description: 'Metabolismus bez rytmu tě ničí zevnitř.' },
+  sila:         { label: 'SRDCE',        description: 'Bez svalů srdce nemá co pohánět.' },
+  stabilita:    { label: 'MOZEK',        description: 'První pád. Pak druhý. Pak konec pohybu.' },
+  kardio:       { label: 'SRDCE',        description: 'Srdce bez zátěže odejde dřív než čekáš.' },
+  vo2max:       { label: 'SRDCE',        description: 'Nízký VO₂max zkracuje život měřitelně.' },
+  spanek:       { label: 'MOZEK',        description: 'Bez spánku mozek ničí sám sebe.' },
+  dlouhovekost: { label: 'SRDCE',        description: 'Každý rok bez pohybu ti bere roky života.' },
 };
 
 const VERDICT_TEXTS = {
