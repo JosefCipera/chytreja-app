@@ -9,8 +9,15 @@ import { createClient } from '@supabase/supabase-js';
 
 // ── CONSTANTS ─────────────────────────────────────────
 
-const CHILD_NODES   = ['telo', 'zdravi', 'mysl', 'vyziva'];
+const CHILD_NODES     = ['telo', 'zdravi', 'mysl', 'vyziva'];
 const DECATHLON_NODES = ['vo2max','sila','kardio','stabilita','rovnovaha','vytrvalost','mobilita','dychani'];
+
+// Attia priority weights — tiebreaker when two nodes have equal index
+const NODE_WEIGHTS = {
+  telo: 0.50, zdravi: 0.25, mysl: 0.15, vyziva: 0.10,
+  vo2max: 0.22, sila: 0.22, kardio: 0.15, stabilita: 0.12,
+  rovnovaha: 0.10, vytrvalost: 0.10, mobilita: 0.06, dychani: 0.03,
+};
 
 // Node hierarchy — children of each parent (for cascade bottleneck + TOC battery)
 const CHILDREN = {
@@ -98,9 +105,13 @@ function cascadeBottleneck(nodeId, metricsMap, depth = 0) {
   if (!children?.length) return nodeId;
   const childMetrics = children.map(id => metricsMap.get(id)).filter(Boolean);
   if (!childMetrics.length) return nodeId;
-  const worst = childMetrics.reduce((a, b) =>
-    (a.current_index ?? 50) <= (b.current_index ?? 50) ? a : b
-  );
+  const worst = childMetrics.reduce((a, b) => {
+    const idxA = a.current_index ?? 50;
+    const idxB = b.current_index ?? 50;
+    if (idxA !== idxB) return idxA < idxB ? a : b;
+    // Tiebreaker: higher Attia weight = higher priority (more impactful bottleneck)
+    return (NODE_WEIGHTS[a.node_id] || 0.01) >= (NODE_WEIGHTS[b.node_id] || 0.01) ? a : b;
+  });
   return cascadeBottleneck(worst.node_id, metricsMap, depth + 1);
 }
 
