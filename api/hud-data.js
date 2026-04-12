@@ -153,26 +153,30 @@ export default async function handler(req, res) {
                        : isTelo   ? worstChildState(metrics.filter(m => DECATHLON_NODES.includes(m.node_id)))
                        : state;
 
-  // For parent nodes: find bottleneck child (weakest weighted score) to source actions from
+  // Bottleneck: highest priority = gap × weight
+  // gap = (100 - current_index), priority = gap × weight → biggest impact to fix
+  function bottleneck(metricsSubset, weights) {
+    return metricsSubset.reduce((best, m) => {
+      const gap = 100 - (m.current_index ?? 50);
+      const w   = weights[m.node_id] || 0.01;
+      const priorityM    = gap * w;
+      const gap2  = 100 - (best.current_index ?? 50);
+      const w2    = weights[best.node_id] || 0.01;
+      const priorityBest = gap2 * w2;
+      return priorityM > priorityBest ? m : best;
+    });
+  }
+
   let actionNodeId = nodeId;
   if (isParent) {
     const childMetrics = metrics.filter(m => CHILD_NODES.includes(m.node_id));
     if (childMetrics.length > 0) {
-      const weakest = childMetrics.reduce((a, b) =>
-        (a.current_index ?? 50) <= (b.current_index ?? 50) ? a : b
-      );
-      actionNodeId = weakest.node_id;
+      actionNodeId = bottleneck(childMetrics, ATTIA_WEIGHTS).node_id;
     }
   } else if (isTelo) {
-    // Telo: bottleneck = weakest decathlon discipline weighted by Attia priority
     const decathlonMetrics = metrics.filter(m => DECATHLON_NODES.includes(m.node_id));
     if (decathlonMetrics.length > 0) {
-      const weakest = decathlonMetrics.reduce((a, b) => {
-        const scoreA = (a.current_index ?? 50) / (DECATHLON_WEIGHTS[a.node_id] || 0.1);
-        const scoreB = (b.current_index ?? 50) / (DECATHLON_WEIGHTS[b.node_id] || 0.1);
-        return scoreA <= scoreB ? a : b;
-      });
-      actionNodeId = weakest.node_id;
+      actionNodeId = bottleneck(decathlonMetrics, DECATHLON_WEIGHTS).node_id;
     }
   }
 
