@@ -129,7 +129,7 @@ window.refreshUniverseData = async function() {
     };
     for (const parentId of ['telo','zdravi','mysl','vyziva','dlouhovekost']) {
       const childIds = CANVAS_CHILDREN[parentId];
-      const childMetrics = childIds.map(id => metricsMap.get(id)).filter(m => m && m.current_index != null);
+      const childMetrics = childIds.map(id => metricsMap.get(id)).filter(m => m && m.current_index != null && m.state !== 'GRAY');
       if (!childMetrics.length) continue;
       const worst = childMetrics.reduce((a, b) =>
         (a.current_index ?? 50) < (b.current_index ?? 50) ? a : b
@@ -361,7 +361,7 @@ async function loadModel(modelName) {
       // Process bottom-up so telo is resolved before dlouhovekost reads it
       for (const parentId of ['telo','zdravi','mysl','vyziva','dlouhovekost']) {
         const childIds = CANVAS_CHILDREN[parentId];
-        const childMetrics = childIds.map(id => metricsMap.get(id)).filter(m => m && m.current_index != null);
+        const childMetrics = childIds.map(id => metricsMap.get(id)).filter(m => m && m.current_index != null && m.state !== 'GRAY');
         if (!childMetrics.length) continue;
         const worst = childMetrics.reduce((a, b) =>
           (a.current_index ?? 50) < (b.current_index ?? 50) ? a : b

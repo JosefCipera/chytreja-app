@@ -91,7 +91,8 @@ function calcTrend(history) {
 // TOC: battery + color = worst child (system is as strong as its weakest link)
 function worstChild(parentId, metricsMap) {
   const children = CHILDREN[parentId] || [];
-  const childMetrics = children.map(id => metricsMap.get(id)).filter(Boolean);
+  // Skip GRAY nodes (no real data) — keep parent's onboarding value instead
+  const childMetrics = children.map(id => metricsMap.get(id)).filter(m => m && m.state !== 'GRAY');
   if (!childMetrics.length) return null;
   return childMetrics.reduce((worst, m) =>
     (m.current_index ?? 50) < (worst.current_index ?? 50) ? m : worst
@@ -103,7 +104,7 @@ function cascadeBottleneck(nodeId, metricsMap, depth = 0) {
   if (depth > 5) return nodeId;
   const children = CHILDREN[nodeId];
   if (!children?.length) return nodeId;
-  const childMetrics = children.map(id => metricsMap.get(id)).filter(Boolean);
+  const childMetrics = children.map(id => metricsMap.get(id)).filter(m => m && m.state !== 'GRAY');
   if (!childMetrics.length) return nodeId;
   const worst = childMetrics.reduce((a, b) => {
     const idxA = a.current_index ?? 50;
