@@ -146,9 +146,9 @@ export default async function handler(req, res) {
   // Battery: parent nodes use weighted avg of children; leaf uses own index
   const isParent   = nodeId === 'dlouhovekost';
   const isTelo     = nodeId === 'telo';
-  const batteryPercent = isParent ? calcParentBattery(metrics)
-                       : isTelo   ? calcDecathlonBattery(metrics)
-                       : current_index;
+  // Battery: dlouhovekost = weighted avg of 4 domains
+  // telo + others = own current_index (kept accurate by bubble-up in mission-complete)
+  const batteryPercent = isParent ? calcParentBattery(metrics) : current_index;
   const batteryState   = isParent ? worstChildState(metrics)
                        : isTelo   ? worstChildState(metrics.filter(m => DECATHLON_NODES.includes(m.node_id)))
                        : state;
@@ -169,9 +169,18 @@ export default async function handler(req, res) {
 
   let actionNodeId = nodeId;
   if (isParent) {
+    // Step 1: weakest top-level child by gap×weight
     const childMetrics = metrics.filter(m => CHILD_NODES.includes(m.node_id));
     if (childMetrics.length > 0) {
-      actionNodeId = bottleneck(childMetrics, ATTIA_WEIGHTS).node_id;
+      const weakestChild = bottleneck(childMetrics, ATTIA_WEIGHTS);
+      actionNodeId = weakestChild.node_id;
+      // Step 2: cascade — if telo is bottleneck, go deeper into decathlon disciplines
+      if (actionNodeId === 'telo') {
+        const decathlonMetrics = metrics.filter(m => DECATHLON_NODES.includes(m.node_id));
+        if (decathlonMetrics.length > 0) {
+          actionNodeId = bottleneck(decathlonMetrics, DECATHLON_WEIGHTS).node_id;
+        }
+      }
     }
   } else if (isTelo) {
     const decathlonMetrics = metrics.filter(m => DECATHLON_NODES.includes(m.node_id));

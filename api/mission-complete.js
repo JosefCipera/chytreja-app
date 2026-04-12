@@ -18,6 +18,13 @@ const INDEX_DECLINE = 3;   // -3 per inactive day (applied on next action)
 const RED_MAX = 40;
 const YELLOW_MAX = 70;
 
+// Attia weights — must match hud-data.js
+const ATTIA_WEIGHTS = { telo: 0.50, zdravi: 0.25, mysl: 0.15, vyziva: 0.10 };
+const DECATHLON_WEIGHTS = {
+  vo2max: 0.22, sila: 0.22, kardio: 0.15, stabilita: 0.12,
+  rovnovaha: 0.10, vytrvalost: 0.10, mobilita: 0.06, dychani: 0.03,
+};
+
 function indexToState(index) {
   if (index <= RED_MAX) return 'RED';
   if (index <= YELLOW_MAX) return 'YELLOW';
@@ -195,7 +202,7 @@ export default async function (req, res) {
   }
 }
 
-// ── PARENT RECALC (worst child rule) ───────────────────
+// ── PARENT RECALC — bubble up state + weighted current_index ───────────────
 async function recalcParents(supabase, userId, nodeId) {
   const updates = [];
 
@@ -221,32 +228,40 @@ async function recalcParents(supabase, userId, nodeId) {
 
     const { data: childMetrics } = await supabase
       .from('user_metrics')
-      .select('node_id, state')
+      .select('node_id, current_index, state')
       .eq('user_id', userId)
       .eq('universe', 'longevity')
       .in('node_id', childIds);
 
     const stateOrder = { RED: 3, YELLOW: 2, GREEN: 1 };
     let worstState = 'GREEN';
-
     for (const cm of (childMetrics || [])) {
       if ((stateOrder[cm.state] || 0) > (stateOrder[worstState] || 0)) {
         worstState = cm.state;
       }
     }
 
+    // Weighted current_index for known parent nodes
+    const weights = currentParent === 'telo'        ? DECATHLON_WEIGHTS
+                  : currentParent === 'dlouhovekost' ? ATTIA_WEIGHTS
+                  : null;
+
+    let upsertData = { user_id: userId, node_id: currentParent, universe: 'longevity', state: worstState };
+
+    if (weights) {
+      let total = 0, weightSum = 0;
+      for (const cm of (childMetrics || [])) {
+        const w = weights[cm.node_id];
+        if (w) { total += (cm.current_index ?? 50) * w; weightSum += w; }
+      }
+      if (weightSum > 0) upsertData.current_index = Math.round(total / weightSum);
+    }
+
     const { error } = await supabase
       .from('user_metrics')
-      .upsert({
-        user_id: userId,
-        node_id: currentParent,
-        universe: 'longevity',
-        state: worstState,
-      }, { onConflict: 'user_id,node_id,universe' });
+      .upsert(upsertData, { onConflict: 'user_id,node_id,universe' });
 
-    if (!error) {
-      updates.push({ nodeId: currentParent, state: worstState });
-    }
+    if (!error) updates.push({ nodeId: currentParent, ...upsertData });
 
     const { data: parentRow } = await supabase
       .from('longevity_nodes')
