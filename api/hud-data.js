@@ -188,13 +188,34 @@ export default async function handler(req, res) {
     }
   }
 
-  // 5. Constraints
+  // 5. Constraints — parse JSON location → normalized category tags
   const { data: constraintRows } = await supabase
     .from('user_constraints')
-    .select('constraint_type')
-    .eq('user_id', userId);
+    .select('constraint_key, constraint_value')
+    .eq('user_id', userId)
+    .eq('constraint_type', 'injury');
 
-  const constraints = constraintRows?.map(r => r.constraint_type) ?? [];
+  const CONSTRAINT_KEYWORDS = {
+    knee:       ['koleno', 'kolena', 'kolenní'],
+    hip:        ['kyčle', 'kyčel', 'kyčelní'],
+    ankle_foot: ['nárt', 'kotník', 'chodidlo'],
+    lower_back: ['záda', 'kříž', 'bederní'],
+    elbow:      ['loket', 'loketní'],
+    shoulder:   ['rameno', 'ramenní'],
+  };
+
+  const constraints = [];
+  for (const row of constraintRows || []) {
+    try {
+      const val = JSON.parse(row.constraint_value);
+      const loc = (val.location || '').toLowerCase();
+      for (const [category, keywords] of Object.entries(CONSTRAINT_KEYWORDS)) {
+        if (keywords.some(k => loc.includes(k)) && !constraints.includes(category)) {
+          constraints.push(category);
+        }
+      }
+    } catch { /* ignore unparseable rows */ }
+  }
 
   // 6. Action from longevity_actions DB
   let action = null;
@@ -224,9 +245,15 @@ export default async function handler(req, res) {
       candidates = fallback || [];
     }
 
-    // Exclude already done today — fall back to any candidate if all done
-    const available = candidates.filter(a => !doneIds.includes(a.id));
-    const pool = available.length > 0 ? available : candidates;
+    // Exclude actions incompatible with user constraints
+    const safe = candidates.filter(a =>
+      !a.constraint_exclude?.some(c => constraints.includes(c))
+    );
+    const safeCandidates = safe.length > 0 ? safe : candidates; // fallback if all excluded
+
+    // Exclude already done today — fall back to any safe candidate if all done
+    const available = safeCandidates.filter(a => !doneIds.includes(a.id));
+    const pool = available.length > 0 ? available : safeCandidates;
     const picked = pool[Math.floor(Math.random() * pool.length)];
 
     if (picked) {
