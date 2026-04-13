@@ -43,7 +43,7 @@ const NODE_LABELS = {
 const NODE_KILLERS = {
   telo:         { label: 'SRDCE',        description: 'Každý rok bez pohybu ti bere roky života.' },
   mysl:         { label: 'MOZEK',        description: 'Mozek, který se nezatěžuje, odumírá.' },
-  vyziva:       { label: 'METABOLISMUS', description: 'Co jíš dnes, rozhoduje kdo přežije zítra.' },
+  vyziva:       { label: 'METABOLISMUS', description: 'Špatná strava ničí tělo dřív než ho stačíš opravit.' },
   zdravi:       { label: 'IMUNITA',      description: 'Tělo bez obrany prohrává tiše a pomalu.' },
   metabolicke:  { label: 'METABOLISMUS', description: 'Metabolismus bez rytmu tě ničí zevnitř.' },
   sila:         { label: 'SRDCE',        description: 'Bez svalů srdce nemá co pohánět.' },
