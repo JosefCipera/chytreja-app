@@ -51,6 +51,9 @@ const NODE_KILLERS = {
   kardio:       { label: 'SRDCE',        description: 'Srdce bez zátěže odejde dřív než čekáš.' },
   vo2max:       { label: 'SRDCE',        description: 'Nízký VO₂max zkracuje život měřitelně.' },
   spanek:       { label: 'MOZEK',        description: 'Bez spánku mozek ničí sám sebe.' },
+  dychani:      { label: 'MOZEK',        description: 'Plytké dýchání drží tělo ve stresu.' },
+  rovnovaha:    { label: 'MOZEK',        description: 'První pád. Pak druhý. Pak konec pohybu.' },
+  vytrvalost:   { label: 'SRDCE',        description: 'Bez výdrže srdce vzdá dřív než ty.' },
   dlouhovekost: { label: 'SRDCE',        description: 'Každý rok bez pohybu ti bere roky života.' },
 };
 
