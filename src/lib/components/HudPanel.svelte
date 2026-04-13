@@ -40,6 +40,7 @@
           <ActionProtocol
             action={data.action}
             killer={data.killer}
+            dayType={data.day_type}
             onComplete={() => onActionComplete?.(data.action.id, data.action.type, data.action.node_id)}
           />
         {:else if data.all_done_today}

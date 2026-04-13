@@ -1,5 +1,5 @@
 <script>
-  let { action, killer = null, onComplete = null } = $props();
+  let { action, killer = null, dayType = 'STIMUL', onComplete = null } = $props();
 
   // Determine action UI mode from type
   // timed → countdown timer
@@ -53,9 +53,7 @@
     '#86C46A'
   );
 
-  let protocolLabel = $derived(
-    (action.protocol_type || 'TRAINING_PROTOKOL').replace(/_PROTOKOL$/i, '')
-  );
+  let protocolLabel = $derived(dayType);
 </script>
 
 <div class="rounded-lg hud-c4 {status === 'ACTIVE' ? 'glow-pulse' : ''}" style="

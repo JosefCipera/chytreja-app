@@ -406,6 +406,7 @@ export default async function handler(req, res) {
     },
     killer,
     action,
+    day_type: dayType,
     sources,
     verdict,
     today_count: todayCount,
