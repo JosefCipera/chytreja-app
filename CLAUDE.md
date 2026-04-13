@@ -311,6 +311,33 @@ Druhá akce = jiná mise ze STEJNÉHO uzlu. Ne z jiného.
 - Zlepšení: "📈 Posun! Jdeš nahoru."
 - Level up: "🎉 Level up! Viditelné zlepšení."
 
+### Typ dne (DAY_TYPE)
+
+Tři typy: **STIMUL** (útočíš) / **PODPORA** (udržuješ) / **REGENERACE** (odpočíváš)
+
+**Teď (v0.2):** pevná 7denní rotace `S-P-S-P-S-P-R`
+- Ovlivňuje výběr akcí (tier, typ) — ne zobrazení v HUD
+- DAY_TYPE se v HUD nezobrazuje — vyplyne z charakteru akce
+- Výpočet: `dayIndex = daysSinceEpoch % 7` → 0,2,4 = STIMUL / 1,3,5 = PODPORA / 6 = REGENERACE
+
+**Budoucnost (v0.4+):** nahradí rotaci real-time vstupy:
+- Hlasový vstup ("cítím se unavený")
+- Wearables (prsten, hodinky) — HRV, spánek, tepová frekvence
+- Quick check-in (3 tlačítka při otevření HUD)
+
+**Dopad na akce podle typu dne:**
+
+| DAY_TYPE | Tier | Typy akcí | 2. akce |
+|----------|------|-----------|---------|
+| STIMUL | 2–3 | timed + reps, bottleneck | ano |
+| PODPORA | 1 | habit + lehké timed | ano, lehká |
+| REGENERACE | 1 | habit only (dech, mobilita) | ne |
+
+**Decay podle barvy uzlu (zelená drží sama):**
+- 🔴 RED: -3/den bez akce
+- 🟡 YELLOW: -2/den bez akce
+- 🟢 GREEN: 0/den — uzel se drží bez akcí
+
 ---
 
 ## Skills / Agents / Tools — Architektura
