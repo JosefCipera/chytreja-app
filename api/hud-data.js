@@ -63,9 +63,24 @@ const VERDICT_TEXTS = {
   dlouhovekost:{ RED: 'Tělo a zdraví brzdí.',         YELLOW: 'Potenciál čeká.',             GREEN: 'Na správné cestě.' },
 };
 
+// ── DAY TYPE — SPSPSPR 7-day rotation ─────────────────
+// S=STIMUL, P=PODPORA, R=REGENERACE
+// Internal only — not shown in HUD, implied by action character
+// v0.4+: replace with real-time inputs (wearables, voice, check-in)
+
+const DAY_ROTATION = ['STIMUL','PODPORA','STIMUL','PODPORA','STIMUL','PODPORA','REGENERACE'];
+
+function getDayType() {
+  const daysSinceEpoch = Math.floor(Date.now() / 86400000);
+  return DAY_ROTATION[daysSinceEpoch % 7];
+}
+
 // ── TIER SELECTION ─────────────────────────────────────
 
-function pickTier(state, streak) {
+function pickTier(state, streak, dayType) {
+  if (dayType === 'REGENERACE') return 1;
+  if (dayType === 'PODPORA')    return 1;
+  // STIMUL: push harder
   let tier = state === 'GREEN' ? 2 : 1;
   if (streak >= 3) tier = Math.min(tier + 1, 3);
   return tier;
@@ -237,31 +252,53 @@ export default async function handler(req, res) {
   }
 
   // 6. Action from longevity_actions DB
+  const dayType = getDayType();
   let action = null;
   let actionTags = null; // used by step 7 for source matching
   if (todayCount < 2) {
-    const tier = pickTier(state, streak);
+    const tier = pickTier(state, streak, dayType);
+
+    // REGENERACE: habit-only actions (dech, mobilita, light movement)
+    // PODPORA: tier 1, any type
+    // STIMUL: tier 2-3, any type (default)
 
     // Get already-done action IDs today to avoid repeats
     const doneIds = (todayMissions || []).map(m => m.mission_id).filter(Boolean);
 
     // Try preferred tier first, fall back to tier 1
-    let { data: candidates } = await supabase
+    let query = supabase
       .from('longevity_actions')
       .select('*')
       .eq('node_id', actionNodeId)
       .eq('active', true)
       .eq('tier', tier);
+    // REGENERACE: only habit-type actions (light, no strain)
+    if (dayType === 'REGENERACE') query = query.eq('type', 'habit');
+    let { data: candidates } = await query;
 
     if (!candidates || candidates.length === 0) {
-      const { data: fallback } = await supabase
+      let fbQuery = supabase
         .from('longevity_actions')
         .select('*')
         .eq('node_id', actionNodeId)
         .eq('active', true)
         .order('tier')
         .limit(10);
+      if (dayType === 'REGENERACE') fbQuery = fbQuery.eq('type', 'habit');
+      const { data: fallback } = await fbQuery;
       candidates = fallback || [];
+    }
+
+    // Last resort for REGENERACE: drop type filter if no habits found
+    if (dayType === 'REGENERACE' && (!candidates || candidates.length === 0)) {
+      const { data: anyFallback } = await supabase
+        .from('longevity_actions')
+        .select('*')
+        .eq('node_id', actionNodeId)
+        .eq('active', true)
+        .eq('tier', 1)
+        .limit(5);
+      candidates = anyFallback || [];
     }
 
     // Exclude actions incompatible with user constraints
