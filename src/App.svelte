@@ -69,14 +69,16 @@
         body: JSON.stringify({ userId, nodeId: effectiveNodeId }),
       });
 
-      // Small delay so user sees ✔ HOTOVO before reload
+      // Prefetch new HUD data immediately in background (parallel with HOTOVO display)
+      // Panel updates as soon as data arrives — no artificial wait
+      loadHudData(userId, nodeId);
+
+      // Notify canvas after short delay (user sees ✔ HOTOVO)
       setTimeout(() => {
-        loadHudData(userId, nodeId);
-        // Notify parent canvas to refresh potentiometers
         if (window.parent !== window) {
           window.parent.postMessage({ type: 'chj:universe:refresh' }, '*');
         }
-      }, 1200);
+      }, 400);
     } catch (e) {
       console.error('[CHJ] game loop error:', e);
     }
