@@ -48,7 +48,12 @@
             <span style="color:#4ade80;font-size:1.1rem;">✔</span>
             <div>
               <div class="hud-mono" style="font-size:14px;letter-spacing:0.1em;color:#4ade80;margin-bottom:2px;">MISSION_COMPLETE</div>
-              <div style="font-size:16px;color:#94a3b8;">{data.today_count >= 2 ? 'Pokrok na uzlu.' : 'Pro pokrok na uzlu pokračuj zítra.'}</div>
+              <div style="font-size:16px;color:#94a3b8;">
+                {data.completion_feedback || (data.today_count >= 2 ? 'Pokrok na uzlu.' : 'Pro pokrok na uzlu pokračuj zítra.')}
+              </div>
+              {#if data.weekly_hint}
+                <div style="font-size:13px;color:#475569;margin-top:6px;">{data.weekly_hint}</div>
+              {/if}
             </div>
           </div>
         {:else}

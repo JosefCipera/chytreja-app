@@ -41,8 +41,25 @@
   onMount(() => {
     if (userId && !devMode) {
       loadHudData(userId, nodeId);
+      triggerOrchestrator(userId, nodeId);
     }
   });
+
+  // Volá orchestrátor na pozadí — uloží rozhodnutí do orchestrator_log.
+  // Při příštím loadHudData ho hud-data.js najde a použije verdikt.
+  async function triggerOrchestrator(uid, nid) {
+    try {
+      await fetch('/api/orchestrator', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: 'Co mám dnes dělat?', nodeId: nid, userId: uid }),
+      });
+      // Refresh HUD data so new verdict from orchestrator_log is picked up
+      loadHudData(uid, nid);
+    } catch (e) {
+      console.warn('[CHJ] orchestrator background call failed:', e);
+    }
+  }
 
   // Active data: real store or test fallback
   let displayData = $derived(

@@ -387,12 +387,27 @@ export default async function handler(req, res) {
     summary:   s.summary || null,
   }));
 
-  // 8. Killer + verdict
+  // 8. Killer + verdict (deterministic fallback)
   const killer = NODE_KILLERS[nodeId] || NODE_KILLERS.telo;
   const verdictMap = VERDICT_TEXTS[nodeId] || VERDICT_TEXTS.telo;
-  const verdict = verdictMap[batteryState] || verdictMap.YELLOW;
+  const deterministicVerdict = verdictMap[batteryState] || verdictMap.YELLOW;
 
-  // 9. Build response
+  // 9. Read today's orchestrator decision from log (if available)
+  let orchestratorDecision = null;
+  const { data: orchLog } = await supabase
+    .from('orchestrator_log')
+    .select('pillar, verdict, completion_feedback, weekly_hint')
+    .eq('user_id', userId)
+    .eq('date', today)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (orchLog?.verdict) {
+    orchestratorDecision = orchLog;
+  }
+
+  // 10. Build response
   res.json({
     node: {
       id: nodeId,
@@ -409,9 +424,11 @@ export default async function handler(req, res) {
     },
     killer,
     action,
-    day_type: dayType,
+    day_type: orchestratorDecision?.pillar || dayType,
     sources,
-    verdict,
+    verdict: orchestratorDecision?.verdict || deterministicVerdict,
+    completion_feedback: orchestratorDecision?.completion_feedback || null,
+    weekly_hint: orchestratorDecision?.weekly_hint || null,
     today_count: todayCount,
     all_done_today: todayCount >= 2,
     streak,
