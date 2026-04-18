@@ -1,5 +1,5 @@
 <script>
-  let { action, killer = null, dayType = 'STIMUL', onComplete = null } = $props();
+  let { action, killer = null, verdict = null, dayType = 'STIMUL', onComplete = null } = $props();
 
   // Determine action UI mode from type
   // timed → countdown timer
@@ -74,6 +74,9 @@
         <span style="font-size: 17px; color: #C97272;">{@html '\u26A0\uFE0E'}</span>
         <span style="font-size: 15px; color: #C97272;">{killer.description}</span>
       </div>
+      {#if verdict}
+        <div style="margin-top: 8px; font-size: 14px; color: #64748b; line-height: 1.4;">{verdict}</div>
+      {/if}
     </div>
     <div style="margin: 0 16px; border-top: 1px solid rgba(6,182,212,0.30);"></div>
   {/if}

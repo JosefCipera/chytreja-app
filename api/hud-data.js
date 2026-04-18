@@ -393,11 +393,13 @@ export default async function handler(req, res) {
   const deterministicVerdict = verdictMap[batteryState] || verdictMap.YELLOW;
 
   // 9. Read today's orchestrator decision from log (if available)
+  // Filter by node_id so verdict matches the current panel
   let orchestratorDecision = null;
   const { data: orchLog } = await supabase
     .from('orchestrator_log')
     .select('pillar, verdict, completion_feedback, weekly_hint')
     .eq('user_id', userId)
+    .eq('node_id', nodeId)
     .eq('date', today)
     .order('created_at', { ascending: false })
     .limit(1)
