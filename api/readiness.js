@@ -23,12 +23,12 @@ async function handlePost(req, res) {
     const { error } = await sb
       .from('user_readiness')
       .upsert({
-        user_id:    userId,
-        date:       today,
-        energie:    Number(energie),
-        spanek_hod: Number(spanek_hod),
-        hrv:        hrv != null ? Number(hrv) : null,
-        source:     'manual',
+        user_id:      userId,
+        date:         today,
+        energy_level: Number(energie),
+        sleep_hours:  Number(spanek_hod),
+        hrv_ms:       hrv != null ? Number(hrv) : null,
+        source:       'manual',
       }, { onConflict: 'user_id,date' });
 
     if (error) {
@@ -53,7 +53,7 @@ async function handleGet(req, res) {
 
     const { data } = await sb
       .from('user_readiness')
-      .select('energie, spanek_hod, hrv, source')
+      .select('energy_level, sleep_hours, hrv_ms, source')
       .eq('user_id', userId)
       .eq('date', today)
       .maybeSingle();
