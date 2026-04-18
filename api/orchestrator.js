@@ -417,13 +417,14 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'Orchestrátor nedokončil rozhodnutí.' });
     }
 
-    // Save to orchestrator_log
+    // Save to orchestrator_log — indexed by requested nodeId (panel), not bottleneck
     await sb.from('orchestrator_log').insert({
       user_id: userId,
-      node_id: decision.node_id || null,
+      node_id: nodeId || decision.node_id || null,
       pillar: decision.pillar,
       verdict: decision.verdict,
       completion_feedback: decision.completion_feedback,
+      weekly_hint: decision.weekly_hint || null,
       reasoning: decision.reasoning,
       signals: toolTrace.find(t => t.name === 'get_readiness')?.result || {},
     }).then(({ error }) => { if (error) console.warn('orchestrator_log insert failed:', error.message); });
