@@ -1,219 +1,252 @@
 // =====================================================
 // API: /api/orchestrator.js — CHJ Master Agent
-// AI orchestrátor s tool_use (function calling)
-// AI samo rozhodne jaké nástroje zavolat.
+// Claude Sonnet + tool_use — přemýšlí, pak rozhodne
 // =====================================================
 
-import dotenv from "dotenv";
-dotenv.config({ path: '.env.local' });
+import dotenv from 'dotenv';
+dotenv.config({ path: '.env.local', override: true });
 
-import OpenAI from "openai";
-import { createClient } from "@supabase/supabase-js";
+import Anthropic from '@anthropic-ai/sdk';
+import { createClient } from '@supabase/supabase-js';
 
-// ── TOOLS DEFINITION ──────────────────────────────────
+const MODEL = 'claude-sonnet-4-6';
+const MAX_ROUNDS = 5;
+
+// ── SYSTEM PROMPT ─────────────────────────────────────
+const SYSTEM_PROMPT = `Jsi CHJ Master Agent — orchestrátor osobního koučování pro dlouhověkost (Medicine 3.0, Peter Attia).
+
+TVOJE ROLE:
+Sbíráš data o uživateli pomocí nástrojů, analyzuješ situaci a rozhoduješ:
+1. Který pilíř dnes (ZONE2 / SILA / VO2MAX / STABILITA / REGENERACE)
+2. Proč právě tento (bottleneck + readiness + continuita)
+3. Jak to říct uživateli (verdikt + feedback po splnění)
+
+PRAVIDLA:
+- Česky, tykej, přímočaře
+- Nikdy názvy nemocí (ne "infarkt" → "srdce", ne "cukrovka" → "hladina cukru")
+- Žádné: "musíš", "je důležité", "měl bys", "hrozí"
+- Verdikt: max 1 věta, max 15 slov
+- Completion feedback: max 1 věta, osobní, s kontextem proč to má smysl
+
+PILÍŘE (Attia framework):
+- ZONE2: aerobní základ, mitochondrie — min 3× týdně
+- SILA: sval, kost, metabolismus — max 2× za sebou
+- VO2MAX: kardio strop — max 1× týdně
+- STABILITA: klouby, mobilita, prevence — bezpečné kdykoliv
+- REGENERACE: spánek protokol, dech — při nízké readiness
+
+READINESS → PILÍŘ:
+- HRV delta < -20%: vynechej VO2MAX a SILA → ZONE2 nebo STABILITA
+- Spánek < 6h: snižuj intenzitu o jeden stupeň
+- Včerejší pilíř = SILA → dnes ne SILA
+
+Na konci VŽDY zavolej nástroj submit_decision s výsledkem.`;
+
+// ── TOOLS ─────────────────────────────────────────────
 const TOOLS = [
   {
-    type: 'function',
-    function: {
-      name: 'get_node_state',
-      description: 'Zjistí aktuální stav uzlu (GREEN/YELLOW/RED) a current_index (0-100). Volej pro konkrétní uzel nebo pro přehled všech hlavních uzlů.',
-      parameters: {
-        type: 'object',
-        properties: {
-          node_id: { type: 'string', description: 'ID uzlu (telo, mysl, vyziva, zdravi, metabolicke) nebo "all" pro přehled' },
+    name: 'get_user_profile',
+    description: 'Profil uživatele: věk, pohlaví, výška, váha, zranění a omezení pilířů.',
+    input_schema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'get_readiness',
+    description: 'Dnešní signály připravenosti: HRV, spánek, klidový tep, energie. Klíčové pro volbu pilíře a intenzity.',
+    input_schema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'get_medications',
+    description: 'Aktivní léky uživatele a jejich vliv na rozhodování (např. beta-blokátory → HR nespolehlivý).',
+    input_schema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'get_decathlon',
+    description: 'Desetiboj uživatele — cíle pro věk 85 s prioritami. Ukazuje které pilíře jsou pro cíle nejdůležitější.',
+    input_schema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'get_bottleneck',
+    description: 'Nejslabší uzel (bottleneck) — ten, který nejvíc brzdí dlouhověkost. Vrací node_id, stav a index.',
+    input_schema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'get_node_state',
+    description: 'Aktuální stav uzlu (GREEN/YELLOW/RED) a index 0–100.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        node_id: { type: 'string', description: 'ID uzlu nebo "all" pro přehled hlavních uzlů' },
+      },
+      required: ['node_id'],
+    },
+  },
+  {
+    name: 'get_killer',
+    description: 'Hlavní černý jezdec (smrtelná hrozba) pro daný uzel.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        node_id: { type: 'string' },
+      },
+      required: ['node_id'],
+    },
+  },
+  {
+    name: 'get_streak',
+    description: 'Streak (dny v řadě se splněnou misí) a co bylo splněno dnes.',
+    input_schema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'get_aspiration',
+    description: 'Sen uživatele a jak daleko od něj je na každém uzlu.',
+    input_schema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'get_recent_decisions',
+    description: 'Posledních 7 rozhodnutí orchestrátoru — jaké pilíře byly, co bylo splněno. Pro kontinuitu a střídání.',
+    input_schema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'submit_decision',
+    description: 'Odešli finální rozhodnutí orchestrátoru. VŽDY zavolej jako poslední nástroj.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        pillar: {
+          type: 'string',
+          enum: ['ZONE2', 'SILA', 'VO2MAX', 'STABILITA', 'REGENERACE'],
+          description: 'Pilíř pro dnešní akci',
         },
-        required: ['node_id'],
-      },
-    },
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'get_bio_age',
-      description: 'Spočítá biologický věk uživatele z fitness markerů (VO2max, síla, stabilita, mobilita). Vrací chronologický věk, bio-věk a rozdíl.',
-      parameters: {
-        type: 'object',
-        properties: {},
-      },
-    },
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'get_bottleneck',
-      description: 'Najde nejslabší uzel (bottleneck) — ten, který nejvíc brzdí dlouhověkost. Vrací node_id, stav a skóre.',
-      parameters: {
-        type: 'object',
-        properties: {},
-      },
-    },
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'get_streak',
-      description: 'Zjistí streak (počet po sobě jdoucích dní se splněnou misí) a zda je dnešní mise splněná.',
-      parameters: {
-        type: 'object',
-        properties: {},
-      },
-    },
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'get_aspiration',
-      description: 'Vrátí sen uživatele (aspiraci) a jak daleko od něj je. Např. "Běžky v 85 — zaostává v síle a kardiu".',
-      parameters: {
-        type: 'object',
-        properties: {},
-      },
-    },
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'get_killer',
-      description: 'Vrátí hlavního "černého jezdce" (smrtelné ohrožení) pro daný uzel — infarkt, cukrovka, demence nebo rakovina.',
-      parameters: {
-        type: 'object',
-        properties: {
-          node_id: { type: 'string', description: 'ID uzlu' },
+        node_id: {
+          type: 'string',
+          description: 'Cílový uzel (telo, mysl, vyziva, zdravi, metabolicke)',
         },
-        required: ['node_id'],
-      },
-    },
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'get_mission',
-      description: 'Vrátí dnešní misi pro uzel — konkrétní cvičení/úkol s typem akce (timer, counter, habit).',
-      parameters: {
-        type: 'object',
-        properties: {
-          node_id: { type: 'string', description: 'ID uzlu' },
+        verdict: {
+          type: 'string',
+          description: 'Verdikt pro uživatele — max 1 věta, max 15 slov, česky',
         },
-        required: ['node_id'],
+        completion_feedback: {
+          type: 'string',
+          description: 'Feedback po splnění akce — max 1 věta, osobní, s kontextem proč to má smysl pro cíl uživatele',
+        },
+        reasoning: {
+          type: 'string',
+          description: 'Interní zdůvodnění rozhodnutí (pro debug a kontinuitu) — anglicky, stručně',
+        },
+        weekly_hint: {
+          type: 'string',
+          description: 'Volitelný hint co přijde zítra nebo tento týden — max 1 věta',
+        },
       },
-    },
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'get_user_profile',
-      description: 'Vrátí profil uživatele — věk, pohlaví, výška, váha, omezení (zranění).',
-      parameters: {
-        type: 'object',
-        properties: {},
-      },
+      required: ['pillar', 'node_id', 'verdict', 'completion_feedback', 'reasoning'],
     },
   },
 ];
 
-// ── SYSTEM PROMPT ─────────────────────────────────────
-const SYSTEM_PROMPT = `Jsi Chytré Já (CHJ) — osobní AI kouč pro dlouhověkost. Tvůj přístup je Medicine 3.0 (Peter Attia, Outlive).
-
-ROLE: Jsi mentor, parťák, průvodce. Ne lékař, ne strašák.
-
-PRAVIDLA:
-- Česky, tykej, buď přímý
-- Mluv lidsky — ne "musíš", ne "je důležité", ne "měl bys"
-- Nikdy nepiš názvy nemocí přímo (ne "cukrovka" ale "hladina cukru", ne "infarkt" ale "srdce")
-- Použij nástroje k získání dat — NIKDY si nevymýšlej čísla ani stavy
-- Odpovídej max 3 větami, pokud se uživatel neptá na detail
-- Když navrhuješ akci, buď extrémně konkrétní (kolik, jak často, jak dlouho)
-- Zohledni omezení uživatele (zranění) — vždy nabídni alternativu
-
-MÁŠ K DISPOZICI NÁSTROJE — použij je k získání aktuálních dat.
-Nevolej všechny najednou. Zavolej jen ty, které potřebuješ pro odpověď.
-
-Příklady rozhodování:
-- "Jak na tom jsem?" → get_bio_age + get_bottleneck
-- "Co mám dnes dělat?" → get_streak + get_mission(bottleneck_node)
-- "Proč je tělo červené?" → get_node_state("telo") + get_killer("telo")
-- "Jaký mám streak?" → get_streak
-- "Co je můj sen?" → get_aspiration`;
-
 // ── TOOL IMPLEMENTATIONS ──────────────────────────────
-async function executeTool(name, args, supabase, userId) {
+async function executeTool(name, input, sb, userId) {
   switch (name) {
 
-    case 'get_node_state': {
-      const nodeId = args.node_id;
-      if (nodeId === 'all') {
-        const MAIN = ['telo', 'mysl', 'vyziva', 'zdravi', 'metabolicke'];
-        const { data } = await supabase
-          .from('user_metrics')
-          .select('node_id, state, current_index')
-          .eq('user_id', userId)
-          .eq('universe', 'longevity')
-          .in('node_id', MAIN);
-        const map = {};
-        for (const m of (data || [])) {
-          map[m.node_id] = { state: m.state, index: m.current_index };
-        }
-        return map;
-      }
-      const { data } = await supabase
-        .from('user_metrics')
-        .select('state, current_index')
-        .eq('user_id', userId)
-        .eq('node_id', nodeId)
-        .eq('universe', 'longevity')
-        .maybeSingle();
-      return data || { state: 'UNKNOWN', index: null };
+    case 'get_user_profile': {
+      const [{ data: profile }, { data: constraints }] = await Promise.all([
+        sb.from('user_profiles').select('age, gender, height, weight').eq('user_id', userId).maybeSingle(),
+        sb.from('user_constraints').select('constraint_key, severity, affects_pillars').eq('user_id', userId),
+      ]);
+      return {
+        age: profile?.age,
+        gender: profile?.gender,
+        height_cm: profile?.height,
+        weight_kg: profile?.weight,
+        injuries: (constraints || [])
+          .filter(c => c.constraint_key)
+          .map(c => ({
+            key: c.constraint_key,
+            severity: c.severity,
+            affects_pillars: c.affects_pillars || [],
+          })),
+      };
     }
 
-    case 'get_bio_age': {
-      const { data: profile } = await supabase
-        .from('user_profiles')
-        .select('age')
+    case 'get_readiness': {
+      const today = new Date().toISOString().split('T')[0];
+      const { data } = await sb
+        .from('user_readiness')
+        .select('*')
         .eq('user_id', userId)
+        .eq('date', today)
         .maybeSingle();
 
-      const MARKERS = ['vo2max', 'sila', 'stabilita', 'mobilita'];
-      const WEIGHTS = { vo2max: 0.40, sila: 0.25, stabilita: 0.20, mobilita: 0.15 };
-      const { data: metrics } = await supabase
-        .from('user_metrics')
-        .select('node_id, current_index')
-        .eq('user_id', userId)
-        .eq('universe', 'longevity')
-        .in('node_id', MARKERS);
+      if (!data) return { available: false, message: 'Žádná data připravenosti pro dnešek.' };
 
-      function indexToOffset(idx) {
-        if (idx <= 20) return 20;
-        if (idx <= 40) return 10;
-        if (idx <= 60) return 4;
-        if (idx <= 75) return 0;
-        if (idx <= 90) return -5;
-        return -12;
-      }
+      const hrvDelta = data.hrv_ms && data.hrv_baseline_ms
+        ? Math.round(((data.hrv_ms - data.hrv_baseline_ms) / data.hrv_baseline_ms) * 100)
+        : null;
 
-      const chronAge = profile?.age || 50;
-      let weightedOffset = 0;
-      for (const m of (metrics || [])) {
-        const w = WEIGHTS[m.node_id] || 0;
-        weightedOffset += indexToOffset(m.current_index) * w;
-      }
-
-      const bioAge = Math.round(chronAge + weightedOffset);
       return {
-        chronological: chronAge,
-        biological: bioAge,
-        difference: bioAge - chronAge,
-        interpretation: bioAge > chronAge
-          ? `Tělo stárne o ${bioAge - chronAge} let rychleji`
-          : bioAge < chronAge
-            ? `Tělo je o ${chronAge - bioAge} let mladší`
-            : 'Tělo odpovídá věku',
+        available: true,
+        hrv_ms: data.hrv_ms,
+        hrv_baseline_ms: data.hrv_baseline_ms,
+        hrv_delta_pct: hrvDelta,
+        resting_hr: data.resting_hr,
+        sleep_hours: data.sleep_hours,
+        sleep_quality: data.sleep_quality,
+        energy_level: data.energy_level,
+        source: data.source,
+        readiness_summary: hrvDelta !== null
+          ? hrvDelta < -20 ? 'LOW — snižuj intenzitu'
+          : hrvDelta < -10 ? 'MODERATE — opatrně'
+          : 'GOOD — normální zátěž'
+          : 'UNKNOWN — chybí HRV data',
+      };
+    }
+
+    case 'get_medications': {
+      const { data } = await sb
+        .from('user_medications')
+        .select('name, affects')
+        .eq('user_id', userId)
+        .eq('active', true);
+
+      if (!data?.length) return { medications: [], notes: [] };
+
+      const notes = [];
+      const allAffects = data.flatMap(m => m.affects || []);
+      if (allAffects.includes('hr_unreliable')) notes.push('HR nespolehlivý → používej RPE místo tepu');
+      if (allAffects.includes('fatigue')) notes.push('Léky způsobují únavu → snižuj intenzitu');
+      if (allAffects.includes('glucose_masked')) notes.push('Hladina cukru nemusí odrážet skutečný stav');
+      if (allAffects.includes('bp_lowered')) notes.push('BP snížený léky → pozor na ortostatiku');
+
+      return { medications: data.map(m => m.name), notes };
+    }
+
+    case 'get_decathlon': {
+      const { data } = await sb
+        .from('user_decathlon')
+        .select('goal_key, label, target_age, priority, pillar_weights')
+        .eq('user_id', userId)
+        .eq('active', true)
+        .order('priority', { ascending: false });
+
+      if (!data?.length) return { goals: [], message: 'Desetiboj není nastaven.' };
+
+      // Aggregate pillar importance across all goals weighted by priority
+      const pillarScore = {};
+      for (const goal of data) {
+        for (const [pillar, weight] of Object.entries(goal.pillar_weights || {})) {
+          pillarScore[pillar] = (pillarScore[pillar] || 0) + weight * goal.priority;
+        }
+      }
+
+      return {
+        goals: data.map(g => ({ key: g.goal_key, label: g.label, priority: g.priority })),
+        pillar_importance: pillarScore,
       };
     }
 
     case 'get_bottleneck': {
       const MAIN = ['telo', 'mysl', 'vyziva', 'zdravi', 'metabolicke'];
       const LABELS = { telo: 'Tělo', mysl: 'Mysl', vyziva: 'Výživa', zdravi: 'Zdraví', metabolicke: 'Metabolismus' };
-      const { data } = await supabase
+      const { data } = await sb
         .from('user_metrics')
         .select('node_id, state, current_index')
         .eq('user_id', userId)
@@ -221,161 +254,90 @@ async function executeTool(name, args, supabase, userId) {
         .in('node_id', MAIN)
         .order('current_index', { ascending: true });
 
-      if (!data?.length) return { node_id: null, message: 'Žádná data' };
-
+      if (!data?.length) return { node_id: null, message: 'Žádná data.' };
       const worst = data[0];
-      return {
-        node_id: worst.node_id,
-        label: LABELS[worst.node_id] || worst.node_id,
-        state: worst.state,
-        index: worst.current_index,
+      return { node_id: worst.node_id, label: LABELS[worst.node_id] || worst.node_id, state: worst.state, index: worst.current_index };
+    }
+
+    case 'get_node_state': {
+      const nodeId = input.node_id;
+      if (nodeId === 'all') {
+        const MAIN = ['telo', 'mysl', 'vyziva', 'zdravi', 'metabolicke'];
+        const { data } = await sb.from('user_metrics').select('node_id, state, current_index')
+          .eq('user_id', userId).eq('universe', 'longevity').in('node_id', MAIN);
+        const map = {};
+        for (const m of (data || [])) map[m.node_id] = { state: m.state, index: m.current_index };
+        return map;
+      }
+      const { data } = await sb.from('user_metrics').select('state, current_index')
+        .eq('user_id', userId).eq('node_id', nodeId).eq('universe', 'longevity').maybeSingle();
+      return data || { state: 'UNKNOWN', index: null };
+    }
+
+    case 'get_killer': {
+      const LABELS = {
+        infarkt_a_mrtvice: 'srdce a cévy',
+        cukrovka: 'hladina cukru a metabolismus',
+        demence: 'mozek a paměť',
+        rakovina: 'buněčná odolnost',
       };
+      const { data } = await sb.from('node_riders').select('rider')
+        .eq('node_id', input.node_id).order('priority', { ascending: true }).limit(1).maybeSingle();
+      return { node_id: input.node_id, killer: data?.rider || 'unknown', label: LABELS[data?.rider] || 'neznámé ohrožení' };
     }
 
     case 'get_streak': {
       const today = new Date().toISOString().split('T')[0];
-      const { data } = await supabase
-        .from('mission_log')
-        .select('date')
-        .eq('user_id', userId)
-        .order('date', { ascending: false })
-        .limit(30);
+      const { data } = await sb.from('mission_log').select('date')
+        .eq('user_id', userId).order('date', { ascending: false }).limit(30);
 
-      const dates = (data || []).map(r => r.date);
-      const todayDone = dates.includes(today);
+      const dates = [...new Set((data || []).map(r => r.date))].sort().reverse();
+      const todayDone = dates[0] === today;
 
-      // Count consecutive days
-      const unique = [...new Set(dates)].sort().reverse();
       let streak = 0;
-      const expected = new Date(today);
-      if (unique[0] === today) {
-        streak = 1;
-        expected.setDate(expected.getDate() - 1);
-        for (let i = 1; i < unique.length; i++) {
-          if (unique[i] === expected.toISOString().split('T')[0]) {
-            streak++;
-            expected.setDate(expected.getDate() - 1);
-          } else break;
-        }
-      } else {
-        expected.setDate(expected.getDate() - 1);
-        for (const d of unique) {
-          if (d === expected.toISOString().split('T')[0]) {
-            streak++;
-            expected.setDate(expected.getDate() - 1);
-          } else break;
-        }
+      const ref = new Date(today);
+      for (const d of dates) {
+        if (d === ref.toISOString().split('T')[0]) { streak++; ref.setDate(ref.getDate() - 1); }
+        else if (!todayDone && streak === 0) { ref.setDate(ref.getDate() - 1); if (d === ref.toISOString().split('T')[0]) { streak++; ref.setDate(ref.getDate() - 1); } else break; }
+        else break;
       }
 
-      return { streak, todayDone, totalMissions: dates.length };
+      return { streak, today_done: todayDone };
     }
 
     case 'get_aspiration': {
-      const { data: asp } = await supabase
-        .from('user_aspirations')
-        .select('aspiration_type, aspiration_label')
-        .eq('user_id', userId)
-        .maybeSingle();
+      const { data: asp } = await sb.from('user_aspirations')
+        .select('aspiration_type, aspiration_label').eq('user_id', userId).maybeSingle();
+      if (!asp?.aspiration_type) return { aspiration: null };
 
-      if (!asp?.aspiration_type) {
-        return { aspiration: null, message: 'Uživatel nemá nastavený sen.' };
-      }
+      const { data: reqs } = await sb.from('aspiration_requirements')
+        .select('node_id, required_level, importance_weight').eq('aspiration_type', asp.aspiration_type);
+      if (!reqs?.length) return { label: asp.aspiration_label, gaps: [] };
 
-      const label = asp.aspiration_label;
-      const type = asp.aspiration_type;
+      const { data: metrics } = await sb.from('user_metrics').select('node_id, current_index')
+        .eq('user_id', userId).eq('universe', 'longevity').in('node_id', reqs.map(r => r.node_id));
 
-      // Get gaps for all nodes
-      const { data: reqs } = await supabase
-        .from('aspiration_requirements')
-        .select('node_id, required_level, importance_weight')
-        .eq('aspiration_type', type);
-
-      if (!reqs?.length) return { label, gaps: [] };
-
-      const nodeIds = reqs.map(r => r.node_id);
-      const { data: metrics } = await supabase
-        .from('user_metrics')
-        .select('node_id, current_index')
-        .eq('user_id', userId)
-        .eq('universe', 'longevity')
-        .in('node_id', nodeIds);
-
-      const LABELS = { telo: 'Tělo', mysl: 'Mysl', vyziva: 'Výživa', zdravi: 'Zdraví', metabolicke: 'Metabolismus', sila: 'Síla', stabilita: 'Stabilita', kardio: 'Kardio', vo2max: 'VO2max' };
       const gaps = reqs.map(r => {
         const m = (metrics || []).find(m => m.node_id === r.node_id);
-        const current = m ? m.current_index / 100 : 0;
-        const gap = Math.max(0, r.required_level - current);
-        return { node_id: r.node_id, label: LABELS[r.node_id] || r.node_id, gap: Math.round(gap * 100) / 100, achieved: gap <= 0.02 };
-      }).filter(g => g.gap > 0.02).sort((a, b) => b.gap - a.gap);
+        const gap = Math.max(0, r.required_level - (m ? m.current_index / 100 : 0));
+        return { node_id: r.node_id, gap: Math.round(gap * 100) };
+      }).filter(g => g.gap > 2).sort((a, b) => b.gap - a.gap);
 
-      return { label, gaps };
+      return { label: asp.aspiration_label, gaps };
     }
 
-    case 'get_killer': {
-      const KILLER_LABELS = {
-        infarkt_a_mrtvice: 'infarkt a mrtvice (srdce a cévy)',
-        cukrovka: 'cukrovka (metabolický syndrom)',
-        demence: 'demence (neurodegenerace)',
-        rakovina: 'rakovina (onkologie)',
-      };
-      const { data } = await supabase
-        .from('node_riders')
-        .select('rider')
-        .eq('node_id', args.node_id)
-        .order('priority', { ascending: true })
-        .limit(1)
-        .maybeSingle();
-
-      return {
-        node_id: args.node_id,
-        killer: data?.rider || 'unknown',
-        description: KILLER_LABELS[data?.rider] || 'neznámé ohrožení',
-      };
-    }
-
-    case 'get_mission': {
-      const { data: metric } = await supabase
-        .from('user_metrics')
-        .select('state')
+    case 'get_recent_decisions': {
+      const { data } = await sb.from('orchestrator_log')
+        .select('date, pillar, node_id, completed, verdict, reasoning')
         .eq('user_id', userId)
-        .eq('node_id', args.node_id)
-        .eq('universe', 'longevity')
-        .maybeSingle();
-
-      const state = metric?.state || 'YELLOW';
-
-      // Dynamic import of skill
-      // Note: In serverless, we inline a simple mission picker
-      const NODE_SKILL = {
-        telo: 'cviceni', sila: 'cviceni', stabilita: 'cviceni', kardio: 'cviceni', vo2max: 'cviceni',
-        mysl: 'mindset', meditace: 'mindset', soustredeni: 'mindset', emoce: 'mindset', stres: 'mindset',
-        vyziva: 'vyziva', protein: 'vyziva', hydratace: 'vyziva',
-        zdravi: 'prevence', imunitni: 'prevence', obnova: 'prevence',
-        metabolicke: 'metabol', glukoza: 'metabol', pust: 'metabol',
-      };
-
-      return {
-        node_id: args.node_id,
-        state,
-        skill: NODE_SKILL[args.node_id] || 'unknown',
-        hint: `Mise se generuje na frontendu přes skill-router.js pro uzel ${args.node_id} ve stavu ${state}`,
-      };
+        .order('date', { ascending: false })
+        .limit(7);
+      return { recent: data || [] };
     }
 
-    case 'get_user_profile': {
-      const [{ data: profile }, { data: constraints }] = await Promise.all([
-        supabase.from('user_profiles').select('age, gender, height, weight').eq('user_id', userId).maybeSingle(),
-        supabase.from('user_constraints').select('constraint_key, severity').eq('user_id', userId).eq('constraint_type', 'injury'),
-      ]);
-
-      return {
-        age: profile?.age,
-        gender: profile?.gender,
-        height: profile?.height,
-        weight: profile?.weight,
-        injuries: (constraints || []).map(c => `${c.constraint_key} (${c.severity})`),
-      };
-    }
+    case 'submit_decision':
+      // Handled by caller — just return the input as-is
+      return input;
 
     default:
       return { error: `Unknown tool: ${name}` };
@@ -383,81 +345,94 @@ async function executeTool(name, args, supabase, userId) {
 }
 
 // ── MAIN HANDLER ──────────────────────────────────────
-export default async function (req, res) {
+export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
   try {
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-    const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+    const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
-    const { message, nodeId, userId: bodyUserId, context } = req.body || {};
-    const userId = bodyUserId || context?.userId || 'demo-user-123';
+    const { message, nodeId, userId: bodyUserId } = req.body || {};
+    const userId = bodyUserId || 'demo-user-123';
 
-    if (!message) {
-      return res.status(400).json({ error: 'Missing message' });
-    }
+    if (!message) return res.status(400).json({ error: 'Missing message' });
 
-    // Build initial user message with context hint
-    let userContent = message;
-    if (nodeId) {
-      userContent = `[Uživatel je na uzlu: ${nodeId}] ${message}`;
-    }
+    const userContent = nodeId
+      ? `[Uživatel je na uzlu: ${nodeId}] ${message}`
+      : message;
 
-    const messages = [
-      { role: 'system', content: SYSTEM_PROMPT },
-      { role: 'user', content: userContent },
-    ];
+    const messages = [{ role: 'user', content: userContent }];
 
-    // ── TOOL LOOP (max 3 rounds) ───────────────────────
-    let finalResponse = null;
-    const toolCalls = [];
+    // ── TOOL LOOP ─────────────────────────────────────
+    let decision = null;
+    const toolTrace = [];
 
-    for (let round = 0; round < 3; round++) {
-      const completion = await openai.chat.completions.create({
-        model: 'gpt-4o-mini',
-        messages,
+    for (let round = 0; round < MAX_ROUNDS; round++) {
+      const response = await client.messages.create({
+        model: MODEL,
+        max_tokens: 1024,
+        system: SYSTEM_PROMPT,
         tools: TOOLS,
-        tool_choice: round === 0 ? 'auto' : 'auto',
-        temperature: 0.7,
-        max_tokens: 400,
+        messages,
       });
 
-      const choice = completion.choices[0];
+      // Collect tool calls from this response
+      const toolUseBlocks = response.content.filter(b => b.type === 'tool_use');
 
-      // If AI wants to call tools
-      if (choice.finish_reason === 'tool_calls' || choice.message.tool_calls?.length) {
-        messages.push(choice.message);
-
-        for (const tc of choice.message.tool_calls) {
-          const args = JSON.parse(tc.function.arguments || '{}');
-          console.log(`🔧 Tool call [${round}]: ${tc.function.name}(${JSON.stringify(args)})`);
-
-          const result = await executeTool(tc.function.name, args, supabase, userId);
-          toolCalls.push({ name: tc.function.name, args, result });
-
-          messages.push({
-            role: 'tool',
-            tool_call_id: tc.id,
-            content: JSON.stringify(result),
-          });
-        }
-        // Continue loop — AI will process tool results
-        continue;
+      if (!toolUseBlocks.length || response.stop_reason === 'end_turn') {
+        // No more tool calls — extract text if any
+        break;
       }
 
-      // AI gave a final text response
-      finalResponse = choice.message.content;
-      break;
+      // Add assistant response to messages
+      messages.push({ role: 'assistant', content: response.content });
+
+      // Execute all tool calls in parallel
+      const toolResults = await Promise.all(
+        toolUseBlocks.map(async (block) => {
+          console.log(`🔧 [${round}] ${block.name}(${JSON.stringify(block.input)})`);
+
+          if (block.name === 'submit_decision') {
+            decision = block.input;
+            return { type: 'tool_result', tool_use_id: block.id, content: JSON.stringify({ ok: true }) };
+          }
+
+          const result = await executeTool(block.name, block.input, sb, userId);
+          toolTrace.push({ name: block.name, input: block.input, result });
+          return { type: 'tool_result', tool_use_id: block.id, content: JSON.stringify(result) };
+        })
+      );
+
+      // If decision was submitted, we're done
+      if (decision) break;
+
+      messages.push({ role: 'user', content: toolResults });
     }
 
-    if (!finalResponse) {
-      finalResponse = 'Omlouvám se, něco se nepovedlo. Zkus to znovu.';
+    if (!decision) {
+      return res.status(500).json({ error: 'Orchestrátor nedokončil rozhodnutí.' });
     }
+
+    // Save to orchestrator_log
+    await sb.from('orchestrator_log').insert({
+      user_id: userId,
+      node_id: decision.node_id || null,
+      pillar: decision.pillar,
+      verdict: decision.verdict,
+      completion_feedback: decision.completion_feedback,
+      reasoning: decision.reasoning,
+      signals: toolTrace.find(t => t.name === 'get_readiness')?.result || {},
+    }).then(({ error }) => { if (error) console.warn('orchestrator_log insert failed:', error.message); });
 
     return res.json({
-      verdict: finalResponse,
-      toolsUsed: toolCalls.map(t => t.name),
-      debug: process.env.NODE_ENV === 'development' ? toolCalls : undefined,
+      pillar: decision.pillar,
+      node_id: decision.node_id,
+      verdict: decision.verdict,
+      completion_feedback: decision.completion_feedback,
+      weekly_hint: decision.weekly_hint || null,
+      debug: process.env.NODE_ENV === 'development'
+        ? { reasoning: decision.reasoning, tools: toolTrace.map(t => t.name) }
+        : undefined,
     });
 
   } catch (e) {
