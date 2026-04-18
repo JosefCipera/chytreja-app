@@ -67,6 +67,9 @@
 
   function onCheckInComplete() {
     needsCheckIn = false;
+    // Refresh HUD data + re-run orchestrator with fresh readiness
+    loadHudData(userId, nodeId);
+    triggerOrchestrator(userId, nodeId);
   }
 
   // Volá orchestrátor na pozadí — uloží rozhodnutí do orchestrator_log.
@@ -130,10 +133,7 @@
   <!-- Ambient glow — only when standalone (not overlay) -->
   <div class="fixed top-1/3 left-1/2 -translate-x-1/2 w-96 h-96 bg-cyan-500/[0.02] rounded-full blur-3xl pointer-events-none"></div>
 
-  {#if userId && !devMode && needsCheckIn && readinessChecked}
-    <CheckIn {userId} onComplete={onCheckInComplete} />
-
-  {:else if userId && !devMode && $loading}
+  {#if userId && !devMode && $loading}
     <!-- Loading state -->
     <div class="hud-mono text-cyan-400/60 text-xs tracking-widest animate-pulse">
       LOADING_NODE_DATA…
@@ -154,5 +154,10 @@
         DEV_MODE · test data · ?userId=xxx to connect
       </div>
     {/if}
+  {/if}
+
+  <!-- Check-in modal overlay — shown when today's readiness is missing -->
+  {#if userId && !devMode && needsCheckIn && readinessChecked}
+    <CheckIn {userId} onComplete={onCheckInComplete} />
   {/if}
 </div>
