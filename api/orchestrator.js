@@ -28,6 +28,10 @@ PRAVIDLA:
 - Verdikt: max 1 věta, max 15 slov
 - Completion feedback: max 1 věta, osobní, s kontextem proč to má smysl
 
+VERDIKT PODLE STAVU UZLU:
+- RED/YELLOW: pojmenuj problém — co se děje a proč na tom záleží
+- GREEN: potvrď a motivuj — "Držíš to.", "Takhle se dělá základ.", "Tohle je přesně ono." + co to přináší pro cíl v 85
+
 PILÍŘE (Attia framework):
 - ZONE2: aerobní základ, mitochondrie — min 3× týdně
 - SILA: sval, kost, metabolismus — max 2× za sebou
