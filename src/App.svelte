@@ -1,14 +1,19 @@
 <script>
   import { onMount } from 'svelte';
   import HudPanel from './lib/components/HudPanel.svelte';
+  import CheckIn from './lib/components/CheckIn.svelte';
   import { loadHudData, nodeData, loading, error } from './lib/stores/hudData.js';
   import { calcVitality } from './lib/utils/vitality.js';
 
   // ── URL PARAMS ─────────────────────────────────────────
   const params   = new URLSearchParams(window.location.search);
   const userId   = params.get('userId');
-  const nodeId   = params.get('nodeId') || 'telo';
+  const nodeId   = params.get('nodeId') || 'dlouhovekost';
   const devMode  = params.get('dev') === '1';   // ?dev=1 → test data
+
+  // ── CHECK-IN GATE ──────────────────────────────────────
+  let readinessChecked = $state(false);   // has the check completed?
+  let needsCheckIn     = $state(false);   // should we show check-in screen?
 
   // ── FALLBACK TEST DATA (dev=1 or no userId) ───────────
   const childIndices = { telo: 27, zdravi: 35, mysl: 90, vyziva: 90 };
@@ -38,12 +43,31 @@
   };
 
   // ── LOAD REAL DATA ─────────────────────────────────────
-  onMount(() => {
+  onMount(async () => {
     if (userId && !devMode) {
+      await checkReadiness();
       loadHudData(userId, nodeId);
       triggerOrchestrator(userId, nodeId);
+    } else {
+      readinessChecked = true;
     }
   });
+
+  async function checkReadiness() {
+    try {
+      const res  = await fetch(`/api/readiness?userId=${userId}`);
+      const json = await res.json();
+      needsCheckIn = !json.exists;
+    } catch {
+      needsCheckIn = false;
+    } finally {
+      readinessChecked = true;
+    }
+  }
+
+  function onCheckInComplete() {
+    needsCheckIn = false;
+  }
 
   // Volá orchestrátor na pozadí — uloží rozhodnutí do orchestrator_log.
   // Při příštím loadHudData ho hud-data.js najde a použije verdikt.
@@ -106,7 +130,10 @@
   <!-- Ambient glow — only when standalone (not overlay) -->
   <div class="fixed top-1/3 left-1/2 -translate-x-1/2 w-96 h-96 bg-cyan-500/[0.02] rounded-full blur-3xl pointer-events-none"></div>
 
-  {#if userId && !devMode && $loading}
+  {#if userId && !devMode && needsCheckIn && readinessChecked}
+    <CheckIn {userId} onComplete={onCheckInComplete} />
+
+  {:else if userId && !devMode && $loading}
     <!-- Loading state -->
     <div class="hud-mono text-cyan-400/60 text-xs tracking-widest animate-pulse">
       LOADING_NODE_DATA…
