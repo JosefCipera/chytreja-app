@@ -35,6 +35,12 @@
         />
       </div>
 
+      {#if data.verdict}
+        <div class="hud-fade-in" style="animation-delay: 0.15s; padding: 0 2px;">
+          <p style="font-size:15px; color:#94a3b8; line-height:1.5; margin:0;">{data.verdict}</p>
+        </div>
+      {/if}
+
       <div class="hud-fade-in" style="animation-delay: 0.2s">
         {#if data.action}
           <ActionProtocol
