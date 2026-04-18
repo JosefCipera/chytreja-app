@@ -368,6 +368,108 @@
         });
     </script>
 
+    <!-- ── MORNING CHECK-IN MODAL ─────────────────────────────────────── -->
+    <script>
+        async function openCheckIn() {
+            const uid = window.firebaseAuth?.currentUser?.uid;
+            if (!uid || uid === 'demo-user-123') return;
+
+            // Check if today's readiness already exists
+            try {
+                const r = await fetch(`/api/readiness?userId=${encodeURIComponent(uid)}`);
+                const j = await r.json();
+                if (j.exists) return; // already done today
+            } catch { return; }
+
+            // Build modal
+            const backdrop = document.createElement('div');
+            backdrop.id = 'checkin-backdrop';
+            backdrop.style.cssText = 'position:fixed;inset:0;z-index:29000;background:rgba(6,10,20,0.82);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:24px;';
+            document.body.appendChild(backdrop);
+
+            const card = document.createElement('div');
+            card.style.cssText = 'width:100%;max-width:380px;background:rgba(6,10,22,0.97);border:1px solid rgba(6,182,212,0.22);border-radius:16px;padding:28px 24px 24px;box-shadow:0 0 40px rgba(6,182,212,0.08),0 20px 60px rgba(0,0,0,0.6);font-family:system-ui,sans-serif;';
+            backdrop.appendChild(card);
+
+            let energie = 3;
+
+            card.innerHTML = `
+              <div style="font-family:monospace;font-size:11px;letter-spacing:.12em;color:#475569;margin-bottom:4px;">MORNING_CHECK-IN</div>
+              <div style="font-size:20px;font-weight:300;color:#e2e8f0;margin-bottom:24px;">Jak se dnes cítíš?</div>
+
+              <div style="font-family:monospace;font-size:12px;letter-spacing:.08em;color:#64748b;margin-bottom:8px;">ENERGIE</div>
+              <div id="chk-energie" style="display:flex;gap:8px;margin-bottom:4px;">
+                ${[1,2,3,4,5].map(n => `<button data-n="${n}" style="flex:1;padding:12px 0;font-size:16px;font-family:monospace;border-radius:8px;cursor:pointer;transition:all .15s;border:1px solid ${n<=3?'rgba(6,182,212,.55)':'rgba(255,255,255,.06)'};background:${n<=3?'rgba(6,182,212,.1)':'transparent'};color:${n<=3?'#22d3ee':'#334155'};">${n}</button>`).join('')}
+              </div>
+              <div style="display:flex;justify-content:space-between;font-family:monospace;font-size:10px;color:#1e293b;letter-spacing:.05em;margin-bottom:20px;"><span>vyčerpaný</span><span>nabitý</span></div>
+
+              <label style="font-family:monospace;font-size:12px;letter-spacing:.08em;color:#64748b;display:block;margin-bottom:8px;">SPÁNEK <span style="color:#334155;">(hodiny)</span></label>
+              <input id="chk-spanek" type="number" min="0" max="24" step="0.5" placeholder="7.5"
+                style="width:100%;box-sizing:border-box;background:rgba(6,182,212,.04);border:1px solid rgba(6,182,212,.18);border-radius:8px;color:#e2e8f0;font-size:22px;font-family:monospace;padding:12px;text-align:center;outline:none;margin-bottom:16px;">
+
+              <label style="font-family:monospace;font-size:12px;letter-spacing:.08em;color:#2d3f52;display:block;margin-bottom:8px;">HRV <span style="color:#1e2d3d;">(ms · volitelné)</span></label>
+              <input id="chk-hrv" type="number" min="0" max="300" placeholder="—"
+                style="width:100%;box-sizing:border-box;background:transparent;border:1px solid rgba(255,255,255,.04);border-radius:8px;color:#334155;font-size:18px;font-family:monospace;padding:10px;text-align:center;outline:none;margin-bottom:20px;">
+
+              <div id="chk-err" style="font-family:monospace;font-size:12px;color:#ef4444;min-height:16px;margin-bottom:8px;"></div>
+              <button id="chk-submit" style="width:100%;padding:14px;font-size:15px;font-family:monospace;letter-spacing:.08em;border-radius:8px;border:1px solid rgba(6,182,212,.28);background:rgba(6,182,212,.07);color:#22d3ee;cursor:pointer;transition:all .15s;">POTVRDIT</button>
+              <div style="text-align:center;margin-top:12px;font-family:monospace;font-size:10px;color:#1a2535;letter-spacing:.06em;">wearable · Apple Health doplní automaticky</div>
+            `;
+
+            // Energie buttons
+            const energieWrap = card.querySelector('#chk-energie');
+            energieWrap.addEventListener('click', e => {
+                const btn = e.target.closest('button[data-n]');
+                if (!btn) return;
+                energie = Number(btn.dataset.n);
+                energieWrap.querySelectorAll('button').forEach(b => {
+                    const n = Number(b.dataset.n);
+                    b.style.borderColor = n <= energie ? 'rgba(6,182,212,.55)' : 'rgba(255,255,255,.06)';
+                    b.style.background  = n <= energie ? 'rgba(6,182,212,.1)'  : 'transparent';
+                    b.style.color       = n <= energie ? '#22d3ee'              : '#334155';
+                });
+            });
+
+            // Submit
+            card.querySelector('#chk-submit').addEventListener('click', async () => {
+                const spanek = parseFloat(card.querySelector('#chk-spanek').value);
+                const hrv    = card.querySelector('#chk-hrv').value;
+                const errEl  = card.querySelector('#chk-err');
+                const btn    = card.querySelector('#chk-submit');
+
+                if (isNaN(spanek) || spanek < 0 || spanek > 24) {
+                    errEl.textContent = 'Zadej počet hodin spánku (0–24).'; return;
+                }
+                errEl.textContent = '';
+                btn.textContent = 'UKLÁDÁM…'; btn.style.color = '#334155';
+
+                try {
+                    const res = await fetch('/api/readiness', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            userId: uid, energie, spanek_hod: spanek,
+                            hrv: hrv !== '' ? Number(hrv) : null,
+                        }),
+                    });
+                    const j = await res.json();
+                    if (!j.ok) throw new Error(j.error || 'Chyba.');
+                    backdrop.style.opacity = '0';
+                    backdrop.style.transition = 'opacity .25s';
+                    setTimeout(() => backdrop.remove(), 260);
+                } catch (err) {
+                    errEl.textContent = err.message;
+                    btn.textContent = 'POTVRDIT'; btn.style.color = '#22d3ee';
+                }
+            });
+        }
+
+        // Run after splash + Firebase auth settles
+        window.addEventListener('load', () => {
+            setTimeout(openCheckIn, 3000);
+        });
+    </script>
+
     <!-- Hide app header when any modal opens — works regardless of JS cache version -->
     <script>
         new MutationObserver(mutations => {
