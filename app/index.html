@@ -464,10 +464,17 @@
             });
         }
 
-        // Run after splash + Firebase auth settles
-        window.addEventListener('load', () => {
-            setTimeout(openCheckIn, 3000);
-        });
+        // Wait for Firebase uid, then run (max 10s)
+        function waitForUidThenCheckIn() {
+            const start = Date.now();
+            (function poll() {
+                const uid = window.firebaseAuth?.currentUser?.uid;
+                if (uid && uid !== 'demo-user-123') { openCheckIn(); return; }
+                if (Date.now() - start > 10000) return;
+                setTimeout(poll, 300);
+            })();
+        }
+        window.addEventListener('load', waitForUidThenCheckIn);
     </script>
 
     <!-- Hide app header when any modal opens — works regardless of JS cache version -->
