@@ -10,76 +10,113 @@ import { supabase } from './supabaseClient.js';
 // category: 'health' | 'demographic' | 'injury' | 'aspiration'
 // =====================================================
 
-export const onboardingQuestions = [
-  // ── Health metrics (slider 1–10) ──────────────────
-  {
-    id: 'stabilita', type: 'slider', category: 'health',
-    q: 'Jak dlouho vydržíte na jedné noze (zavřené oči)?',
-    desc: 'Prevence pádů a neurodegenerace.',
-    help: 'Sekundy: <5=1, 5-10=3, 10-20=6, >30=10'
-  },
-  {
-    id: 'sila', type: 'slider', category: 'health',
-    q: 'Kolik uděláte kliků/dřepů bez přestávky?',
-    desc: 'Svaly jsou tvůj metabolický motor.',
-    help: '1-3=slabé, 4-7=průměr, 8-10=skvělé'
-  },
-  {
-    id: 'vytrvalost', type: 'slider', category: 'health',
-    q: 'Jak se cítíte po vyjití 4 pater schodů?',
-    desc: 'VO2 Max je klíč k délce života.',
-    help: 'Vyčerpaný=1, lehce unavený=5, čerstvý=10'
-  },
-  {
-    id: 'spanek', type: 'slider', category: 'health',
-    q: 'Budíte se ráno odpočatí?',
-    desc: 'Spánek čistí mozek od toxinů.',
-    help: 'Nikdy=1, občas=5, vždy=10'
-  },
-  {
-    id: 'metabolicke', type: 'slider', category: 'health',
-    q: 'Jaká je vaše glykémie nalačno (pokud víte)?',
-    desc: 'Cukr koroduje cévy.',
-    help: 'Nevím nebo >6.0=1, 5.5-6.0=5, <5.0=10'
-  },
-  {
-    id: 'bilkoviny', type: 'slider', category: 'health',
-    q: 'Máte v každém jídle zdroj bílkovin?',
-    desc: 'Stavební kámen pro dlouhověkost.',
-    help: 'Nikdy=1, občas=5, vždy=10'
-  },
-  {
-    id: 'klid', type: 'slider', category: 'health',
-    q: 'Jak zvládáte stresové situace (1-10)?',
-    desc: 'Kortizol ničí imunitu.',
-    help: 'Velmi špatně=1, klidně=10'
-  },
-  {
-    id: 'mobilita', type: 'slider', category: 'health',
-    q: 'Dotknete se s nataženýma nohama dlaněmi země?',
-    desc: 'Pružnost těla = pružnost cév.',
-    help: 'Vůbec ne=1, s obtížemi=5, snadno=10'
-  },
-  {
-    id: 'nervovy_system', type: 'slider', category: 'health',
-    q: 'Jak vnímáte svou paměť a soustředění?',
-    desc: 'Kognitivní rezerva proti Alzheimeru.',
-    help: 'Problémy denně=1, občas=5, výborné=10'
-  },
-  {
-    id: 'smysl', type: 'slider', category: 'health',
-    q: 'Máte jasný důvod, proč ráno vstát z postele?',
-    desc: 'Psychologie přímo ovlivňuje zánět v těle.',
-    help: 'Ne=1, částečně=5, silný účel=10'
-  },
-  {
-    id: 'vo2max', type: 'slider', category: 'health',
-    q: 'Jak se cítíte po běhu na 100 metrů?',
-    desc: 'Kardiovaskulární kapacita.',
-    help: 'Vyčerpaný=1, lehce unavený=5, čerstvý=10'
-  },
+// ── Decathlon disciplines ──────────────────────────
+// id:   unique discipline key (stored in userAnswers)
+// node: aggregated node_id saved to user_metrics (multiple disciplines → average)
+// type: 'buttons' — 3 concrete options from the Decathlon PDF
+// options: value 9 = GREEN, 5 = YELLOW, 2 = RED (×10 = index)
 
-  // Demographics (birth_year, sex, height, weight) are in Profile settings — no duplicates here
+export const onboardingQuestions = [
+  {
+    id: 'vstat_ze_zeme', node: 'stabilita', type: 'buttons', category: 'health',
+    q: 'Lehněte si na zem. Zvládnete vstát bez opory rukou?',
+    desc: 'Prevence pádů a ztráty samostatnosti.',
+    options: [
+      { label: 'Snadno, bez opory', value: 9 },
+      { label: 'S obtížemi nebo s oporou', value: 5 },
+      { label: 'Potřebuji pomoc', value: 2 },
+    ]
+  },
+  {
+    id: 'vynest_nakup', node: 'sila', type: 'buttons', category: 'health',
+    q: 'Unesete dvě plné tašky (~5 kg každá) do 2. patra schodů?',
+    desc: 'Funkční síla — základ samostatnosti.',
+    options: [
+      { label: 'Bez problémů, obě tašky', value: 9 },
+      { label: 'Zvládnu, ale cítím námahu', value: 5 },
+      { label: 'Jednu tašku nebo vůbec', value: 2 },
+    ]
+  },
+  {
+    id: 'zvednout_vnouce', node: 'sila', type: 'buttons', category: 'health',
+    q: 'Zvednete 15 kg ze země do náruče — dítě, pytel, krabici?',
+    desc: 'Síla zad a nohou chrání před závislostí na pomoci druhých.',
+    options: [
+      { label: 'Bez problémů', value: 9 },
+      { label: 'Zvládnu, ale s námahou', value: 5 },
+      { label: 'Nedokážu nebo mě to bolí', value: 2 },
+    ]
+  },
+  {
+    id: 'kufr_do_police', node: 'mobilita', type: 'buttons', category: 'health',
+    q: 'Zvednete 10–15 kg nad hlavu — kufr do police v letadle?',
+    desc: 'Mobilita ramen a síla horní části těla.',
+    options: [
+      { label: 'Bez problémů', value: 9 },
+      { label: 'S námahou nebo s pomocí', value: 5 },
+      { label: 'Nedokážu', value: 2 },
+    ]
+  },
+  {
+    id: 'vyjit_4_patra', node: 'vo2max', type: 'buttons', category: 'health',
+    q: 'Vyjdete 4 patra schodů bez zastavení a bez zadýchání?',
+    desc: 'Srdeční rezerva — jeden z nejsilnějších prediktorů délky života.',
+    options: [
+      { label: 'Bez problémů, klidný dech', value: 9 },
+      { label: 'Musím zpomalit nebo se zastavit', value: 5 },
+      { label: 'Nedokážu bez větší námahy', value: 2 },
+    ]
+  },
+  {
+    id: 'balanc_jedna_noha', node: 'stabilita', type: 'buttons', category: 'health',
+    q: 'Vydržíte 30 sekund na jedné noze se zavřenýma očima?',
+    desc: 'Prevence zlomenin krčku a pádů.',
+    options: [
+      { label: '30 sekund snadno', value: 9 },
+      { label: '10–20 sekund', value: 5 },
+      { label: 'Méně než 10 sekund', value: 2 },
+    ]
+  },
+  {
+    id: 'rychla_chuze', node: 'vytrvalost', type: 'buttons', category: 'health',
+    q: 'Ujdete 1 km svižným tempem nebo jedete 20 min na kole bez zadýchání?',
+    desc: 'Aerobní základ — udržení kondice a mobility.',
+    options: [
+      { label: 'Snadno, pohodový dech', value: 9 },
+      { label: 'Zvládnu, ale zadýchám se', value: 5 },
+      { label: 'Nezvládnu toto tempo', value: 2 },
+    ]
+  },
+  {
+    id: 'otevrit_zavarovacku', node: 'sila', type: 'buttons', category: 'health',
+    q: 'Otevřete tuhý zavařovací víček bez pomoci nástroje nebo druhého člověka?',
+    desc: 'Síla úchopu silně koreluje s délkou a kvalitou života.',
+    options: [
+      { label: 'Bez problémů', value: 9 },
+      { label: 'S námahou', value: 5 },
+      { label: 'Potřebuji pomoc', value: 2 },
+    ]
+  },
+  {
+    id: 'vstat_ze_zidle', node: 'sila', type: 'buttons', category: 'health',
+    q: 'Vstanete z nízké pohovky nebo ze země bez opory rukou?',
+    desc: 'Síla kvadricepsů — základ pohyblivosti ve stáří.',
+    options: [
+      { label: 'Snadno, bez opory', value: 9 },
+      { label: 'S námahou nebo s oporou', value: 5 },
+      { label: 'Potřebuji pomoc', value: 2 },
+    ]
+  },
+  {
+    id: 'skocit_dopadnout', node: 'stabilita', type: 'buttons', category: 'health',
+    q: 'Seskočíte z obrubníku (20 cm) a ustojíte dopad na jedné noze?',
+    desc: 'Hustota kostí a rychlost reakce — ochrana před zlomeninami.',
+    options: [
+      { label: 'Snadno, dopad ustojím', value: 9 },
+      { label: 'Zvládnu, ale nejistě', value: 5 },
+      { label: 'Nedokážu nebo se bojím', value: 2 },
+    ]
+  },
 ];
 
 const TOTAL_STEPS = onboardingQuestions.length; // 11 health questions
@@ -88,19 +125,10 @@ const TOTAL_STEPS = onboardingQuestions.length; // 11 health questions
 // THRESHOLDY (health slider → semafor)
 // =====================================================
 
-const thresholds = {
-  'stabilita':      { red: [1,2,3],     yellow: [4,5,6],   green: [7,8,9,10] },
-  'sila':           { red: [1,2,3],     yellow: [4,5,6,7], green: [8,9,10] },
-  'vytrvalost':     { red: [1,2,3,4],   yellow: [5,6,7],   green: [8,9,10] },
-  'spanek':         { red: [1,2,3,4],   yellow: [5,6,7],   green: [8,9,10] },
-  'metabolicke':    { red: [1,2,3],     yellow: [4,5,6],   green: [7,8,9,10] },
-  'bilkoviny':      { red: [1,2,3,4],   yellow: [5,6,7],   green: [8,9,10] },
-  'klid':           { red: [1,2,3,4],   yellow: [5,6,7],   green: [8,9,10] },
-  'mobilita':       { red: [1,2,3],     yellow: [4,5,6],   green: [7,8,9,10] },
-  'nervovy_system': { red: [1,2,3,4],   yellow: [5,6,7],   green: [8,9,10] },
-  'smysl':          { red: [1,2,3,4,5], yellow: [6,7,8],   green: [9,10] },
-  'vo2max':         { red: [1,2,3,4],   yellow: [5,6,7],   green: [8,9,10] },
-};
+// Thresholds now derived from index (value × 10), not from slider position.
+// Button values: 9→90 (GREEN), 5→50 (YELLOW), 2→20 (RED)
+// State single source of truth: index ≤40=RED, ≤70=YELLOW, >70=GREEN
+const thresholds = {}; // unused — state derived from index in saveOnboarding
 
 // =====================================================
 // STATE
@@ -430,60 +458,59 @@ async function saveOnboarding() {
 
     console.log('💾 Saving onboarding for user:', userId);
 
-    // 1. Health metrics → node_inputs + user_metrics + node_state_history
+    // 1. Health metrics → aggregate by node, then save to user_metrics
+    // Multiple disciplines per node → averaged into one index
     const today = new Date().toISOString().split('T')[0];
-    const nodeStates = {}; // track states for parent calculation
+    const nodeStates    = {}; // nodeId → state
+    const nodeIndexMap  = {}; // nodeId → computed average index
 
+    // Group discipline answers by node
+    const nodeRawIndices = {}; // nodeId → [index, ...]
     for (const q of onboardingQuestions.filter(q => q.category === 'health')) {
       const value = userAnswers[q.id];
-      if (value === undefined) continue;
-      const currentIndex = value * 10; // slider 1-10 → index 0-100
-      // State always derived from index — single source of truth
-      const state = currentIndex <= 40 ? 'RED' : currentIndex <= 70 ? 'YELLOW' : 'GREEN';
-      console.log(`  → ${q.id}: ${value} → ${state} (index: ${currentIndex})`);
-
-      // node_inputs
-      const { error } = await supabase.from('node_inputs').insert({
-        user_id: userId,
-        node_id: q.id,
-        source: 'onboarding',
-        state,
-        value_numeric: value
-      });
-      if (error) throw error;
-
-      // user_metrics (the key table for universe colors!)
-      const { error: metErr } = await supabase.from('user_metrics').upsert({
-        user_id: userId,
-        node_id: q.id,
-        universe: 'longevity',
-        current_index: currentIndex,
-        state
-      }, { onConflict: 'user_id,node_id,universe' });
-      if (metErr) console.warn(`⚠️ user_metrics(${q.id}):`, metErr.message);
-
-      nodeStates[q.id] = state;
-
-      // Snapshot do node_state_history pro sparkline trend (with current_index)
-      if (state !== 'GRAY') {
-        const { error: histError } = await supabase.from('node_state_history').insert({
-          user_id: userId,
-          node_id: q.id,
-          date: today,
-          state,
-          current_index: currentIndex
-        });
-        if (histError) console.warn(`⚠️ node_state_history(${q.id}):`, histError.message);
-      }
+      if (value === undefined || value === null) continue;
+      const index = Number(value) * 10; // button value 9/5/2 → 90/50/20
+      if (!nodeRawIndices[q.node]) nodeRawIndices[q.node] = [];
+      nodeRawIndices[q.node].push(index);
     }
 
-    // 1b. Calculate parent node states (worst child rule)
+    for (const [nodeId, indices] of Object.entries(nodeRawIndices)) {
+      const currentIndex = Math.round(indices.reduce((a, b) => a + b, 0) / indices.length);
+      const state = currentIndex <= 40 ? 'RED' : currentIndex <= 70 ? 'YELLOW' : 'GREEN';
+      console.log(`  → ${nodeId}: avg=${currentIndex} → ${state} (from ${indices.length} disciplines)`);
+
+      // node_inputs
+      await supabase.from('node_inputs').insert({
+        user_id: userId, node_id: nodeId,
+        source: 'onboarding', state, value_numeric: currentIndex
+      });
+
+      // user_metrics (key table for universe colors)
+      const { error: metErr } = await supabase.from('user_metrics').upsert({
+        user_id: userId, node_id: nodeId,
+        universe: 'longevity', current_index: currentIndex, state
+      }, { onConflict: 'user_id,node_id,universe' });
+      if (metErr) console.warn(`⚠️ user_metrics(${nodeId}):`, metErr.message);
+
+      // node_state_history (sparkline)
+      await supabase.from('node_state_history').insert({
+        user_id: userId, node_id: nodeId,
+        date: today, state, current_index: currentIndex
+      }).then(({ error }) => { if (error) console.warn(`⚠️ history(${nodeId}):`, error.message); });
+
+      nodeStates[nodeId]   = state;
+      nodeIndexMap[nodeId] = currentIndex;
+    }
+
+    // 1b. Calculate parent node states
+    // Decathlon model: Tělo (síla, stabilita, mobilita) + Zdraví (vo2max, vytrvalost)
+    // Mysl + Výživa grey for now (Longevity v2)
     const parentMap = {
-      telo:         ['sila', 'vytrvalost', 'stabilita', 'mobilita', 'vo2max'],
-      mysl:         ['nervovy_system', 'klid', 'smysl'],
-      vyziva:       ['bilkoviny'],
-      zdravi:       ['metabolicke', 'spanek'],
-      dlouhovekost: ['telo', 'mysl', 'vyziva', 'zdravi'],
+      telo:         ['sila', 'stabilita', 'mobilita'],
+      zdravi:       ['vo2max', 'vytrvalost'],
+      mysl:         [],
+      vyziva:       [],
+      dlouhovekost: ['telo', 'zdravi', 'mysl', 'vyziva'],
     };
 
     const stateOrder = { RED: 3, YELLOW: 2, GREEN: 1, GRAY: 0 };
@@ -498,9 +525,9 @@ async function saveOnboarding() {
           worstState = cs;
         }
       }
-      // Average index from children for parent
+      // Average index from children
       const childIndices = children
-        .map(c => userAnswers[c] !== undefined ? userAnswers[c] * 10 : null)
+        .map(c => nodeIndexMap[c] ?? null)
         .filter(v => v !== null);
       const avgIndex = childIndices.length > 0
         ? Math.round(childIndices.reduce((a, b) => a + b, 0) / childIndices.length)
