@@ -118,6 +118,7 @@ export default async function (req, res) {
       const stateOrder = { RED: 3, YELLOW: 2, GREEN: 1 };
       let worstChild = newState;
       for (const cm of (childMetrics || [])) {
+        if (cm.state === 'GRAY') continue; // GRAY = not yet assessed, skip
         if ((stateOrder[cm.state] || 0) > (stateOrder[worstChild] || 0)) {
           worstChild = cm.state;
         }
@@ -227,11 +228,14 @@ async function recalcParents(supabase, userId, nodeId) {
       .eq('universe', 'longevity')
       .in('node_id', childIds);
 
-    // TOC: parent state + index = worst child (weakest link)
+    // TOC: parent state + index = worst non-GRAY child (weakest link)
+    // GRAY = not yet assessed → excluded from parent calculation
     const stateOrder = { RED: 3, YELLOW: 2, GREEN: 1 };
     let worstState = 'GREEN';
     let worstIndex = 100;
-    for (const cm of (childMetrics || [])) {
+    const nonGrayChildren = (childMetrics || []).filter(cm => cm.state !== 'GRAY');
+    if (nonGrayChildren.length === 0) continue; // all children GRAY → skip parent update
+    for (const cm of nonGrayChildren) {
       if ((stateOrder[cm.state] || 0) > (stateOrder[worstState] || 0)) worstState = cm.state;
       if ((cm.current_index ?? 50) < worstIndex) worstIndex = cm.current_index ?? 50;
     }
