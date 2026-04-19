@@ -59,10 +59,6 @@
     ],
     "rewrites": [
         {
-            "source": "/web",
-            "destination": "/app/web.html"
-        },
-        {
             "source": "/hud",
             "destination": "/app/hud.html"
         },
@@ -80,7 +76,7 @@
         },
         {
             "source": "/",
-            "destination": "/app/landing.html"
+            "destination": "/app/index.html"
         },
         {
             "source": "/(.*)",
