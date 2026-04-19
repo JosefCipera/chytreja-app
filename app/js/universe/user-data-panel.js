@@ -86,6 +86,7 @@ function renderTab(tab) {
     case 'constraints': body.innerHTML = renderConstraintsTab();  break;
     case 'aspirations': body.innerHTML = renderAspirationsTab();  break;
     case 'vitality':    body.innerHTML = renderVitalityTab();     break;
+    case 'checkin':     body.innerHTML = renderCheckInTab();      break;
   }
   bindTabEvents(tab);
 }
@@ -387,6 +388,92 @@ function renderProfileMainTab() {
 }
 
 // ═══════════════════════════════════════════════════
+// TAB 5 – Ranní check-in (energie, spánek, HRV)
+// ═══════════════════════════════════════════════════
+
+function renderCheckInTab() {
+  return `
+    <div class="udp-section">
+      <div class="udp-section-label">Energie</div>
+      <div id="chk-energie-row" style="display:flex;gap:8px;margin-bottom:4px;">
+        ${[1,2,3,4,5].map(n => `
+          <button data-n="${n}" class="chk-e-btn" style="
+            flex:1;padding:12px 0;font-size:16px;font-family:monospace;
+            border-radius:8px;cursor:pointer;transition:all .15s;
+            border:1px solid ${n<=3?'rgba(6,182,212,.55)':'rgba(255,255,255,.06)'};
+            background:${n<=3?'rgba(6,182,212,.1)':'transparent'};
+            color:${n<=3?'#22d3ee':'#64748b'};">${n}</button>`).join('')}
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:#334155;font-family:monospace;letter-spacing:.05em;margin-bottom:24px;">
+        <span>vyčerpaný</span><span>nabitý</span>
+      </div>
+
+      <div class="udp-section-label">Spánek (hodiny)</div>
+      <input id="chk-spanek" type="number" min="0" max="24" step="0.5" placeholder="7.5"
+        class="udp-input" style="width:100%;font-size:20px;text-align:center;margin-bottom:20px;">
+
+      <div class="udp-section-label" style="color:#334155;">HRV (ms · volitelné)</div>
+      <input id="chk-hrv" type="number" min="0" max="300" placeholder="—"
+        class="udp-input" style="width:100%;font-size:18px;text-align:center;background:transparent;border-color:rgba(255,255,255,.05);color:#475569;">
+    </div>
+
+    <div class="udp-save-row">
+      <span id="chk-status" class="udp-status"></span>
+      <button id="btn-save-checkin" class="udp-save-btn">Uložit a zavřít</button>
+    </div>`;
+}
+
+function bindCheckInEvents() {
+  let energie = 3;
+
+  const energieRow = document.getElementById('chk-energie-row');
+  if (energieRow) {
+    energieRow.addEventListener('click', e => {
+      const btn = e.target.closest('.chk-e-btn');
+      if (!btn) return;
+      energie = Number(btn.dataset.n);
+      energieRow.querySelectorAll('.chk-e-btn').forEach(b => {
+        const n = Number(b.dataset.n);
+        b.style.borderColor = n <= energie ? 'rgba(6,182,212,.55)' : 'rgba(255,255,255,.06)';
+        b.style.background  = n <= energie ? 'rgba(6,182,212,.1)'  : 'transparent';
+        b.style.color       = n <= energie ? '#22d3ee'              : '#64748b';
+      });
+    });
+  }
+
+  document.getElementById('btn-save-checkin')?.addEventListener('click', async () => {
+    const spanek = parseFloat(document.getElementById('chk-spanek').value);
+    const hrv    = document.getElementById('chk-hrv').value;
+    const status = document.getElementById('chk-status');
+
+    if (isNaN(spanek) || spanek < 0 || spanek > 24) {
+      status.textContent = 'Zadej hodiny spánku (0–24)';
+      status.style.color = '#ef4444';
+      return;
+    }
+
+    setStatus('chk-status', 'saving');
+    try {
+      const res = await fetch('/api/readiness', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: userId, energie, spanek_hod: spanek,
+          hrv: hrv !== '' ? Number(hrv) : null,
+        }),
+      });
+      const j = await res.json();
+      if (!j.ok) throw new Error(j.error || 'Chyba.');
+      setStatus('chk-status', 'ok');
+      setTimeout(() => closePanel(), 1200);
+    } catch (err) {
+      status.textContent = err.message;
+      status.style.color = '#ef4444';
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════════
 // TAB 4 – Vitalita (spustí přeměření)
 // ═══════════════════════════════════════════════════
 function renderVitalityTab() {
@@ -479,6 +566,7 @@ function bindTabEvents(tab) {
     case 'constraints': bindConstraintsEvents();  break;
     case 'aspirations': bindAspirationsEvents();  break;
     case 'vitality':    bindVitalityEvents();     break;
+    case 'checkin':     bindCheckInEvents();      break;
   }
 }
 
@@ -629,6 +717,7 @@ export function initUserDataPanel() {
         <button id="udp-close" class="udp-close-btn">✕</button>
       </div>
       <div class="udp-tabs">
+        <button class="udp-tab" data-tab="checkin">Check-in</button>
         <button class="udp-tab" data-tab="profile">Profil</button>
         <button class="udp-tab" data-tab="constraints">Omezení</button>
         <button class="udp-tab" data-tab="aspirations">Sen</button>
@@ -642,3 +731,17 @@ export function initUserDataPanel() {
   activeTab = 'profile';
   setTimeout(() => switchTab(activeTab), 0);
 }
+
+// ─── Open directly on check-in tab ─────────────────
+// Called automatically in the morning when readiness is missing
+export function openCheckInTab() {
+  userId = window.firebaseAuth?.currentUser?.uid;
+  if (!userId) return;
+  const modal = document.getElementById('userDataModal');
+  if (!modal) return;
+  modal.classList.remove('udp-hidden');
+  activeTab = 'checkin';
+  loadAndRender();
+}
+
+window.openCheckInTab = openCheckInTab;
