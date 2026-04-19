@@ -9,7 +9,7 @@ const ORBIT_ZONES = [
 ];
 import { renderUniverse, getViewState, updateMetricsAndRedraw } from "./universe-core.js";
 import { showPanel } from "./universe-panel.js";
-import { initUserDataPanel } from "./user-data-panel.js";
+import { initUserDataPanel } from "./user-data-panel.js?v=20260419c";
 import { listenOnce, handleVoiceInput, proactiveGreeting } from "./universe-voice.js";
 import { requestCHJPermission, checkAndRemind } from "./notifications.js";
 import { initHUD, hideHUD, showHUD } from "./hud.js?v=20260319a";
