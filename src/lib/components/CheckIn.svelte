@@ -99,7 +99,7 @@
         min="0"
         max="24"
         step="0.5"
-        placeholder="7.5"
+        placeholder="7,5"
         bind:value={spanek}
         class="w-full rounded-lg hud-mono text-center"
         style="
