@@ -5,7 +5,7 @@
   import ActionProtocol from './hud/ActionProtocol.svelte';
   import SourceCards from './hud/SourceCards.svelte';
 
-  let { data, children, onActionComplete = null } = $props();
+  let { data, children, onActionComplete = null, secondOffer = null } = $props();
 
 </script>
 
@@ -36,7 +36,9 @@
       </div>
 
       <div class="hud-fade-in" style="animation-delay: 0.2s">
-        {#if data.action}
+        {#if secondOffer === 'pending'}
+          <!-- Offer in progress — SecondAction card rendered via slot below -->
+        {:else if data.action && !data.all_done_today}
           <ActionProtocol
             action={data.action}
             killer={data.killer}
@@ -44,7 +46,7 @@
             dayType={data.day_type}
             onComplete={() => onActionComplete?.(data.action.id, data.action.type, data.action.node_id)}
           />
-        {:else if data.all_done_today}
+        {:else if secondOffer === 'declined' || data.all_done_today}
           <div style="background:rgba(34,197,94,0.07);border:1px solid rgba(34,197,94,0.25);border-radius:10px;padding:14px 16px;display:flex;align-items:center;gap:10px;">
             <span style="color:#4ade80;font-size:1.1rem;">✔</span>
             <div>

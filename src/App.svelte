@@ -4,6 +4,7 @@
   import CheckIn from './lib/components/CheckIn.svelte';
   import { loadHudData, nodeData, loading, error } from './lib/stores/hudData.js';
   import { calcVitality } from './lib/utils/vitality.js';
+  import SecondAction from './lib/components/hud/SecondAction.svelte';
 
   // ── URL PARAMS ─────────────────────────────────────────
   const params   = new URLSearchParams(window.location.search);
@@ -14,6 +15,24 @@
   // ── CHECK-IN GATE ──────────────────────────────────────
   let readinessChecked = $state(false);   // has the check completed?
   let needsCheckIn     = $state(false);   // should we show check-in screen?
+
+  // ── SECOND ACTION OFFER ────────────────────────────────
+  // null = no offer, 'pending' = showing offer, 'declined' = user said Ne
+  let secondOffer     = $state(null);
+  let secondOfferText = $state('Chceš jít dál?');
+
+  function shouldOfferSecond(data) {
+    const percent = data?.life_battery?.percent ?? 50;
+    const trend   = data?.life_battery?.trend ?? 'stable';   // 'up' | 'down' | 'stable'
+    const streak  = data?.streak ?? 0;
+
+    const state = percent <= 40 ? 'RED' : percent <= 70 ? 'YELLOW' : 'GREEN';
+
+    if (streak >= 3)                              return { offer: true, text: 'Jedeš dobře. Přidáš krok?' };
+    if (state === 'RED'   && trend === 'down')    return { offer: true, text: 'Můžeš to ještě posílit.' };
+    if (state === 'YELLOW' && trend === 'stable') return { offer: Math.random() < 0.5, text: 'Chceš jít dál?' };
+    return { offer: false };
+  }
 
   // ── FALLBACK TEST DATA (dev=1 or no userId) ───────────
   const childIndices = { telo: 27, zdravi: 35, mysl: 90, vyziva: 90 };
@@ -97,8 +116,10 @@
   async function handleActionComplete(actionId, actionType, actionNodeId) {
     if (!userId || devMode) return;
 
-    // Use actionNodeId when action comes from bottleneck (e.g. dlouhovekost panel)
     const effectiveNodeId = actionNodeId || nodeId;
+
+    // Snapshot current data BEFORE game loop changes today_count
+    const snapshot = $nodeData;
 
     try {
       await fetch('/api/mission-log', {
@@ -113,11 +134,25 @@
         body: JSON.stringify({ userId, nodeId: effectiveNodeId }),
       });
 
-      // Prefetch new HUD data immediately in background (parallel with HOTOVO display)
-      // Panel updates as soon as data arrives — no artificial wait
-      loadHudData(userId, nodeId);
+      // Check if already did 2 actions today — no offer if both done
+      const todayCount = snapshot?.today_count ?? 0;
+      if (todayCount < 1) {
+        // First action just completed — check if we should offer second
+        const result = shouldOfferSecond(snapshot);
+        if (result.offer) {
+          secondOffer     = 'pending';
+          secondOfferText = result.text;
+          loadHudData(userId, nodeId); // load in background — second action ready
+        } else {
+          secondOffer = null;
+          loadHudData(userId, nodeId);
+        }
+      } else {
+        // Second action just completed
+        secondOffer = null;
+        loadHudData(userId, nodeId);
+      }
 
-      // Notify canvas after short delay (user sees ✔ HOTOVO)
       setTimeout(() => {
         if (window.parent !== window) {
           window.parent.postMessage({ type: 'chj:universe:refresh' }, '*');
@@ -126,6 +161,14 @@
     } catch (e) {
       console.error('[CHJ] game loop error:', e);
     }
+  }
+
+  function acceptSecondAction() {
+    secondOffer = null; // HUD data already loaded, second action shows
+  }
+
+  function declineSecondAction() {
+    secondOffer = 'declined'; // Show completion state instead
   }
 </script>
 
@@ -146,7 +189,21 @@
     </div>
 
   {:else}
-    <HudPanel data={displayData} onActionComplete={handleActionComplete} />
+    <HudPanel
+      data={displayData}
+      onActionComplete={handleActionComplete}
+      secondOffer={secondOffer}
+    >
+      {#if secondOffer === 'pending'}
+        <div class="px-4 pb-2">
+          <SecondAction
+            offerText={secondOfferText}
+            onAccept={acceptSecondAction}
+            onDecline={declineSecondAction}
+          />
+        </div>
+      {/if}
+    </HudPanel>
 
     {#if devMode}
       <!-- Dev mode badge -->
