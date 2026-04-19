@@ -717,7 +717,6 @@ export function initUserDataPanel() {
         <button id="udp-close" class="udp-close-btn">✕</button>
       </div>
       <div class="udp-tabs">
-        <button class="udp-tab" data-tab="checkin">Forma</button>
         <button class="udp-tab" data-tab="profile">Profil</button>
         <button class="udp-tab" data-tab="constraints">Omezení</button>
         <button class="udp-tab" data-tab="aspirations">Sen</button>
@@ -740,7 +739,7 @@ export function openCheckInTab() {
   const modal = document.getElementById('userDataModal');
   if (!modal) return;
   modal.classList.remove('udp-hidden');
-  activeTab = 'checkin';
+  activeTab = 'profile';
   loadAndRender();
 }
 
