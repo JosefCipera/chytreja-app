@@ -12,6 +12,12 @@
       "runtimeExecutable": "cmd",
       "runtimeArgs": ["/c", "vercel", "dev", "--yes"],
       "port": 3000
+    },
+    {
+      "name": "static-web",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", "npx", "serve", ".", "-p", "4200", "--no-clipboard"],
+      "port": 4200
     }
   ]
 }
