@@ -717,7 +717,7 @@ export function initUserDataPanel() {
         <button id="udp-close" class="udp-close-btn">✕</button>
       </div>
       <div class="udp-tabs">
-        <button class="udp-tab" data-tab="checkin">Check-in</button>
+        <button class="udp-tab" data-tab="checkin">Forma</button>
         <button class="udp-tab" data-tab="profile">Profil</button>
         <button class="udp-tab" data-tab="constraints">Omezení</button>
         <button class="udp-tab" data-tab="aspirations">Sen</button>
