@@ -211,6 +211,80 @@
          SCRIPTS
          ══════════════════════════════════════════ -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <!-- Firebase Auth -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js';
+        import { getAuth, onAuthStateChanged, signInWithPopup, signInWithEmailAndPassword,
+                 createUserWithEmailAndPassword, GoogleAuthProvider }
+            from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js';
+
+        const app = initializeApp({
+            apiKey:        'AIzaSyAKREZsoBZkA1xOQ5ff3XDmiJ88nwSjeOk',
+            authDomain:    'chytre-ja-app.firebaseapp.com',
+            projectId:     'chytre-ja-app',
+            storageBucket: 'chytre-ja-app.firebasestorage.app',
+            appId:         '1:65882611642:web:53d82914aa07d6677d4783',
+        });
+
+        const auth     = getAuth(app);
+        const provider = new GoogleAuthProvider();
+
+        // Already logged in → go to app
+        onAuthStateChanged(auth, (user) => {
+            if (user) window.location.href = '/app';
+        });
+
+        function showErr(id, msg) {
+            const el = document.getElementById(id);
+            if (el) el.textContent = msg;
+        }
+
+        // ── Google sign-in (both views) ───────────
+        async function googleSignIn() {
+            try {
+                await signInWithPopup(auth, provider);
+                // onAuthStateChanged redirects
+            } catch (e) {
+                showErr('error-message', 'Google přihlášení selhalo: ' + e.message);
+                showErr('register-error-message', 'Google přihlášení selhalo: ' + e.message);
+            }
+        }
+        document.getElementById('google-login-btn')?.addEventListener('click', googleSignIn);
+        document.getElementById('google-register-btn')?.addEventListener('click', googleSignIn);
+
+        // ── Email / heslo — přihlášení ────────────
+        document.getElementById('login-form')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            showErr('error-message', '');
+            const email = document.getElementById('email-address').value;
+            const pass  = document.getElementById('password').value;
+            try {
+                await signInWithEmailAndPassword(auth, email, pass);
+            } catch (e) {
+                showErr('error-message', 'Chyba: ' + e.message);
+            }
+        });
+
+        // ── Email / heslo — registrace ────────────
+        document.getElementById('register-form')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            showErr('register-error-message', '');
+            const email   = document.getElementById('register-email').value;
+            const pass    = document.getElementById('register-password').value;
+            const confirm = document.getElementById('password-confirm').value;
+            if (pass !== confirm) {
+                showErr('register-error-message', 'Hesla se neshodují.');
+                return;
+            }
+            try {
+                await createUserWithEmailAndPassword(auth, email, pass);
+            } catch (e) {
+                showErr('register-error-message', 'Chyba: ' + e.message);
+            }
+        });
+    </script>
+
     <script>
         // ── View switcher ─────────────────────────
         const ALL_VIEWS = ['login', 'register'];
@@ -220,7 +294,6 @@
                 if (el) el.classList.toggle('active', v === name);
             });
         };
-
     </script>
 
 
