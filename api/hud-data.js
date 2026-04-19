@@ -355,10 +355,11 @@ export default async function handler(req, res) {
     );
     const safeCandidates = safe.length > 0 ? safe : candidates; // fallback if all excluded
 
-    // Exclude already done today — fall back to any safe candidate if all done
+    // Exclude already done today — NO fallback to done actions (avoids repeat)
     const available = safeCandidates.filter(a => !doneIds.includes(a.id));
-    const pool = available.length > 0 ? available : safeCandidates;
-    const picked = pool[Math.floor(Math.random() * pool.length)];
+    const picked = available.length > 0
+      ? available[Math.floor(Math.random() * available.length)]
+      : null;
 
     if (picked) {
       action = {

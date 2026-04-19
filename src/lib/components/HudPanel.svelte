@@ -5,7 +5,17 @@
   import ActionProtocol from './hud/ActionProtocol.svelte';
   import SourceCards from './hud/SourceCards.svelte';
 
-  let { data, children, onActionComplete = null, secondOffer = null } = $props();
+  import SecondAction from './hud/SecondAction.svelte';
+
+  let {
+    data,
+    children,
+    onActionComplete   = null,
+    secondOffer        = null,
+    secondOfferText    = 'Chceš jít dál?',
+    onAcceptSecond     = null,
+    onDeclineSecond    = null,
+  } = $props();
 
 </script>
 
@@ -37,8 +47,12 @@
 
       <div class="hud-fade-in" style="animation-delay: 0.2s">
         {#if secondOffer === 'pending'}
-          <!-- Offer in progress — SecondAction card rendered via slot below -->
-        {:else if data.action && !data.all_done_today}
+          <SecondAction
+            offerText={secondOfferText}
+            onAccept={onAcceptSecond}
+            onDecline={onDeclineSecond}
+          />
+        {:else if data.action && !data.all_done_today && data.today_count < 2}
           <ActionProtocol
             action={data.action}
             killer={data.killer}
@@ -46,7 +60,7 @@
             dayType={data.day_type}
             onComplete={() => onActionComplete?.(data.action.id, data.action.type, data.action.node_id)}
           />
-        {:else if secondOffer === 'declined' || data.all_done_today}
+        {:else if secondOffer === 'declined' || data.all_done_today || (data.today_count > 0 && !data.action)}
           <div style="background:rgba(34,197,94,0.07);border:1px solid rgba(34,197,94,0.25);border-radius:10px;padding:14px 16px;display:flex;align-items:center;gap:10px;">
             <span style="color:#4ade80;font-size:1.1rem;">✔</span>
             <div>

@@ -4,7 +4,6 @@
   import CheckIn from './lib/components/CheckIn.svelte';
   import { loadHudData, nodeData, loading, error } from './lib/stores/hudData.js';
   import { calcVitality } from './lib/utils/vitality.js';
-  import SecondAction from './lib/components/hud/SecondAction.svelte';
 
   // ── URL PARAMS ─────────────────────────────────────────
   const params   = new URLSearchParams(window.location.search);
@@ -118,8 +117,9 @@
 
     const effectiveNodeId = actionNodeId || nodeId;
 
-    // Snapshot current data BEFORE game loop changes today_count
-    const snapshot = $nodeData;
+    // Snapshot today_count BEFORE game loop (0 = first action, 1 = second action)
+    const wasCount = $nodeData?.today_count ?? 0;
+    const snapData = $nodeData;
 
     try {
       await fetch('/api/mission-log', {
@@ -134,11 +134,9 @@
         body: JSON.stringify({ userId, nodeId: effectiveNodeId }),
       });
 
-      // Check if already did 2 actions today — no offer if both done
-      const todayCount = snapshot?.today_count ?? 0;
-      if (todayCount < 1) {
+      if (wasCount === 0) {
         // First action just completed — check if we should offer second
-        const result = shouldOfferSecond(snapshot);
+        const result = shouldOfferSecond(snapData);
         if (result.offer) {
           secondOffer     = 'pending';
           secondOfferText = result.text;
@@ -148,7 +146,7 @@
           loadHudData(userId, nodeId);
         }
       } else {
-        // Second action just completed
+        // Second (or more) action just completed — no more offers
         secondOffer = null;
         loadHudData(userId, nodeId);
       }
@@ -193,17 +191,10 @@
       data={displayData}
       onActionComplete={handleActionComplete}
       secondOffer={secondOffer}
-    >
-      {#if secondOffer === 'pending'}
-        <div class="px-4 pb-2">
-          <SecondAction
-            offerText={secondOfferText}
-            onAccept={acceptSecondAction}
-            onDecline={declineSecondAction}
-          />
-        </div>
-      {/if}
-    </HudPanel>
+      secondOfferText={secondOfferText}
+      onAcceptSecond={acceptSecondAction}
+      onDeclineSecond={declineSecondAction}
+    />
 
     {#if devMode}
       <!-- Dev mode badge -->
