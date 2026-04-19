@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chytré Já</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400&family=Inter:wght@300;400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100dvh;
+      background: #060a14;
+      color: #e2e8f0;
+      font-family: 'Inter', sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 360px;
+      background: rgba(6, 10, 22, 0.96);
+      border: 1px solid rgba(6,182,212,0.18);
+      border-radius: 18px;
+      padding: 40px 28px 32px;
+      text-align: center;
+      box-shadow: 0 0 60px rgba(6,182,212,0.06), 0 20px 60px rgba(0,0,0,0.5);
+    }
+
+    .mono { font-family: 'JetBrains Mono', monospace; }
+
+    .label {
+      font-size: 10px;
+      letter-spacing: 0.16em;
+      color: #334155;
+      margin-bottom: 20px;
+    }
+
+    .title {
+      font-size: 28px;
+      font-weight: 300;
+      color: #e2e8f0;
+      margin-bottom: 6px;
+      letter-spacing: -0.01em;
+    }
+
+    .subtitle {
+      font-size: 14px;
+      color: #475569;
+      margin-bottom: 40px;
+      line-height: 1.5;
+    }
+
+    .btn-google {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 14px 20px;
+      border-radius: 12px;
+      border: 1px solid rgba(6,182,212,0.25);
+      background: rgba(6,182,212,0.06);
+      color: #22d3ee;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      letter-spacing: 0.08em;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s;
+    }
+
+    .btn-google:hover {
+      background: rgba(6,182,212,0.12);
+      border-color: rgba(6,182,212,0.45);
+    }
+
+    .btn-google:disabled {
+      opacity: 0.4;
+      cursor: default;
+    }
+
+    .btn-google svg {
+      flex-shrink: 0;
+    }
+
+    .error {
+      margin-top: 16px;
+      font-size: 12px;
+      color: #ef4444;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .footer {
+      margin-top: 32px;
+      font-size: 10px;
+      color: #1e293b;
+      letter-spacing: 0.06em;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Ambient glow */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 30%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle, rgba(6,182,212,0.04) 0%, transparent 70%);
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="label mono">CHJ_v0.2 // LONGEVITY_OS</div>
+    <div class="title">Chytré Já</div>
+    <p class="subtitle">Osobní kouč pro dlouhý a zdravý život.<br>Přihlás se a pokračuj.</p>
+
+    <button class="btn-google" id="googleBtn" onclick="signInGoogle()">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+        <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
+        <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" fill="#34A853"/>
+        <path d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
+        <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
+      </svg>
+      PŘIHLÁSIT SE PŘES GOOGLE
+    </button>
+
+    <div class="error" id="errMsg"></div>
+
+    <div class="footer mono">Medicine 3.0 · Peter Attia · CHJ</div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js';
+    import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider }
+      from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js';
+
+    const app = initializeApp({
+      apiKey:        "AIzaSyAKREZsoBZkA1xOQ5ff3XDmiJ88nwSjeOk",
+      authDomain:    "chytre-ja-app.firebaseapp.com",
+      projectId:     "chytre-ja-app",
+      storageBucket: "chytre-ja-app.firebasestorage.app",
+      appId:         "1:65882611642:web:53d82914aa07d6677d4783",
+    });
+
+    const auth     = getAuth(app);
+    const provider = new GoogleAuthProvider();
+
+    // Already logged in → go straight to app
+    onAuthStateChanged(auth, (user) => {
+      if (user) window.location.href = '/app';
+    });
+
+    window.signInGoogle = async () => {
+      const btn = document.getElementById('googleBtn');
+      const err = document.getElementById('errMsg');
+      btn.disabled = true;
+      err.textContent = '';
+      try {
+        await signInWithPopup(auth, provider);
+        // onAuthStateChanged will redirect
+      } catch (e) {
+        err.textContent = 'Přihlášení selhalo: ' + e.message;
+        btn.disabled = false;
+      }
+    };
+  </script>
+</body>
+</html>

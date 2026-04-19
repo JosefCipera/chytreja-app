@@ -76,7 +76,11 @@
         },
         {
             "source": "/",
-            "destination": "/app/index.html"
+            "destination": "/app/login.html"
+        },
+        {
+            "source": "/login",
+            "destination": "/app/login.html"
         },
         {
             "source": "/(.*)",
