@@ -30,9 +30,12 @@
             ]
         },
         {
-            "source": "/app/js/universe/(.*)",
+            "source": "/app/js/(.*)",
             "headers": [
-                { "key": "Cache-Control", "value": "no-cache, must-revalidate, max-age=0" }
+                { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate, max-age=0" },
+                { "key": "Pragma", "value": "no-cache" },
+                { "key": "Surrogate-Control", "value": "no-store" },
+                { "key": "CDN-Cache-Control", "value": "no-store" }
             ]
         },
         {
