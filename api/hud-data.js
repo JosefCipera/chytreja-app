@@ -7,6 +7,21 @@ import { createClient } from '@supabase/supabase-js';
 
 // Actions now loaded from longevity_actions table in Supabase
 
+// ── DISCIPLINE → PROTOCOL_TYPE MAPPING ───────────────
+// Maps 10 Decathlon disciplines to longevity_actions.protocol_type values
+const DISCIPLINE_PROTOCOLS = {
+  sila:         ['SILOVY_PROTOKOL', 'TRAINING_PROTOKOL'],
+  kardio:       ['KARDIO_PROTOKOL', 'VYTRVALOST_PROTOKOL'],
+  stabilita:    ['STABILITY_PROTOKOL', 'MOBILITY_PROTOKOL', 'BALANCE_PROTOKOL'],
+  spanek:       ['SLEEP_PROTOKOL'],
+  vyziva:       ['NUTRITION_PROTOKOL'],
+  metabolismus: ['METABOL_PROTOKOL', 'PREVENTION_PROTOKOL'],
+  kognitivni:   ['NEURO_PROTOKOL', 'MEDITATION_PROTOKOL'],
+  emocni:       ['MEDITATION_PROTOKOL', 'STRESS_PROTOKOL'],
+  prevence:     ['PREVENTION_PROTOKOL'],
+  smysl:        ['MEDITATION_PROTOKOL'],
+};
+
 // ── CONSTANTS ─────────────────────────────────────────
 
 const CHILD_NODES     = ['telo', 'zdravi', 'mysl', 'vyziva'];
@@ -268,14 +283,20 @@ export default async function handler(req, res) {
     // Get already-done action IDs today to avoid repeats
     const doneIds = (todayMissions || []).map(m => m.mission_id).filter(Boolean);
 
-    // Try preferred tier first, fall back to tier 1
+    // Try preferred tier first — filter by discipline protocol_type if orchestrator decided
     let query = supabase
       .from('longevity_actions')
       .select('*')
-      .eq('node_id', actionNodeId)
       .eq('active', true)
       .eq('tier', tier);
-    // REGENERACE: only habit-type actions (light, no strain)
+
+    if (disciplineProtocols) {
+      // Orchestrator decided discipline → filter by protocol_type across all nodes
+      query = query.in('protocol_type', disciplineProtocols);
+    } else {
+      // No orchestrator decision → original node-based selection
+      query = query.eq('node_id', actionNodeId);
+    }
     if (dayType === 'REGENERACE') query = query.eq('type', 'habit');
     let { data: candidates } = await query;
 
@@ -283,10 +304,14 @@ export default async function handler(req, res) {
       let fbQuery = supabase
         .from('longevity_actions')
         .select('*')
-        .eq('node_id', actionNodeId)
         .eq('active', true)
         .order('tier')
         .limit(10);
+      if (disciplineProtocols) {
+        fbQuery = fbQuery.in('protocol_type', disciplineProtocols);
+      } else {
+        fbQuery = fbQuery.eq('node_id', actionNodeId);
+      }
       if (dayType === 'REGENERACE') fbQuery = fbQuery.eq('type', 'habit');
       const { data: fallback } = await fbQuery;
       candidates = fallback || [];
@@ -393,7 +418,7 @@ export default async function handler(req, res) {
   const deterministicVerdict = verdictMap[batteryState] || verdictMap.YELLOW;
 
   // 9. Read today's orchestrator decision from log (if available)
-  // Filter by node_id so verdict matches the current panel
+  // pillar column stores discipline_id (sila, kardio, stabilita...)
   let orchestratorDecision = null;
   const { data: orchLog } = await supabase
     .from('orchestrator_log')
@@ -408,6 +433,10 @@ export default async function handler(req, res) {
   if (orchLog?.verdict) {
     orchestratorDecision = orchLog;
   }
+
+  // Re-pick action using discipline if orchestrator has decided and action not yet picked
+  const disciplineId = orchestratorDecision?.pillar;
+  const disciplineProtocols = disciplineId ? DISCIPLINE_PROTOCOLS[disciplineId] : null;
 
   // 10. Build response
   res.json({
@@ -426,7 +455,7 @@ export default async function handler(req, res) {
     },
     killer,
     action,
-    day_type: orchestratorDecision?.pillar || dayType,
+    day_type: disciplineId || dayType,
     sources,
     verdict: orchestratorDecision?.verdict || deterministicVerdict,
     completion_feedback: orchestratorDecision?.completion_feedback || null,

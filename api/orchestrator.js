@@ -17,32 +17,38 @@ const SYSTEM_PROMPT = `Jsi CHJ Master Agent — orchestrátor osobního koučov�
 
 TVOJE ROLE:
 Sbíráš data o uživateli pomocí nástrojů, analyzuješ situaci a rozhoduješ:
-1. Který pilíř dnes (ZONE2 / SILA / VO2MAX / STABILITA / REGENERACE)
-2. Proč právě tento (bottleneck + readiness + continuita)
+1. Která disciplína Dekatlonu dnes (viz níže)
+2. Proč právě tato (bottleneck + readiness + kontinuita)
 3. Jak to říct uživateli (verdikt + feedback po splnění)
 
 PRAVIDLA:
 - Česky, tykej, přímočaře
-- Nikdy názvy nemocí (ne "infarkt" → "srdce", ne "cukrovka" → "hladina cukru")
-- Žádné: "musíš", "je důležité", "měl bys", "hrozí"
+- Nikdy celý název nemoci — používej HUD label: SRDCE, MOZEK, METABOLISMUS, IMUNITA
+- Smíš být přímý: "Bez tohohle tě SRDCE dostane dřív než čekáš."
+- Žádné: "musíš", "je důležité", "měl bys"
 - Verdikt: max 1 věta, max 15 slov
-- Completion feedback: max 1 věta, osobní, s kontextem proč to má smysl
+- Completion feedback: max 1 věta, osobní, proč to má smysl pro cíl v 85
 
 VERDIKT PODLE STAVU UZLU:
-- RED/YELLOW: pojmenuj problém — co se děje a proč na tom záleží
-- GREEN: potvrď a motivuj — "Držíš to.", "Takhle se dělá základ.", "Tohle je přesně ono." + co to přináší pro cíl v 85
+- RED/YELLOW: řekni co se děje a co to znamená — klidně s odkazem na killera
+- GREEN: potvrď a motivuj — "Držíš to.", "Tohle je přesně ono." + co to přináší pro cíl
 
-PILÍŘE (Attia framework):
-- ZONE2: aerobní základ, mitochondrie — min 3× týdně
-- SILA: sval, kost, metabolismus — max 2× za sebou
-- VO2MAX: kardio strop — max 1× týdně
-- STABILITA: klouby, mobilita, prevence — bezpečné kdykoliv
-- REGENERACE: spánek protokol, dech — při nízké readiness
+10 DISCIPLÍN DEKATLONU a jejich killer:
+- sila:        sval, kost, síla — METABOLISMUS + SRDCE — max 2 dny za sebou
+- kardio:      aerobní základ, mitochondrie, VO2max — SRDCE — min 3× týdně
+- stabilita:   klouby, mobilita, rovnováha — prevence pádu — bezpečné kdykoliv
+- spanek:      spánek protokol, regenerace — MOZEK — při nízké readiness priorita
+- vyziva:      protein, makra, timing — METABOLISMUS
+- metabolismus: inzulín, glukóza, půst — METABOLISMUS + SRDCE
+- kognitivni:  mozek, paměť, focus — MOZEK
+- emocni:      stres, vztahy, dech — MOZEK
+- prevence:    screeningy, imunita, markery — IMUNITA
+- smysl:       purpose, vděčnost, záměr — MOZEK
 
-READINESS → PILÍŘ:
-- HRV delta < -20%: vynechej VO2MAX a SILA → ZONE2 nebo STABILITA
-- Spánek < 6h: snižuj intenzitu o jeden stupeň
-- Včerejší pilíř = SILA → dnes ne SILA
+READINESS → DISCIPLÍNA:
+- HRV delta < -20%: vynechej kardio (vysoká intenzita) a sila → spanek nebo stabilita
+- Spánek < 6h: snižuj intenzitu — preferuj stabilita, emocni, smysl
+- Včerejší disciplína = sila → dnes ne sila
 
 Na konci VŽDY zavolej nástroj submit_decision s výsledkem.`;
 
@@ -107,7 +113,7 @@ const TOOLS = [
   },
   {
     name: 'get_recent_decisions',
-    description: 'Posledních 7 rozhodnutí orchestrátoru — jaké pilíře byly, co bylo splněno. Pro kontinuitu a střídání.',
+    description: 'Posledních 7 rozhodnutí orchestrátoru — jaké disciplíny byly, co bylo splněno. Pro kontinuitu a střídání.',
     input_schema: { type: 'object', properties: {} },
   },
   {
@@ -116,10 +122,10 @@ const TOOLS = [
     input_schema: {
       type: 'object',
       properties: {
-        pillar: {
+        discipline_id: {
           type: 'string',
-          enum: ['ZONE2', 'SILA', 'VO2MAX', 'STABILITA', 'REGENERACE'],
-          description: 'Pilíř pro dnešní akci',
+          enum: ['sila', 'kardio', 'stabilita', 'spanek', 'vyziva', 'metabolismus', 'kognitivni', 'emocni', 'prevence', 'smysl'],
+          description: 'Disciplína Dekatlonu pro dnešní akci',
         },
         node_id: {
           type: 'string',
@@ -131,7 +137,7 @@ const TOOLS = [
         },
         completion_feedback: {
           type: 'string',
-          description: 'Feedback po splnění akce — max 1 věta, osobní, s kontextem proč to má smysl pro cíl uživatele',
+          description: 'Feedback po splnění akce — max 1 věta, osobní, s kontextem proč to má smysl pro cíl uživatele v 85',
         },
         reasoning: {
           type: 'string',
@@ -142,7 +148,7 @@ const TOOLS = [
           description: 'Volitelný hint co přijde zítra nebo tento týden — max 1 věta',
         },
       },
-      required: ['pillar', 'node_id', 'verdict', 'completion_feedback', 'reasoning'],
+      required: ['discipline_id', 'node_id', 'verdict', 'completion_feedback', 'reasoning'],
     },
   },
 ];
@@ -417,11 +423,11 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'Orchestrátor nedokončil rozhodnutí.' });
     }
 
-    // Save to orchestrator_log — indexed by requested nodeId (panel), not bottleneck
+    // Save to orchestrator_log — pillar column stores discipline_id
     await sb.from('orchestrator_log').insert({
       user_id: userId,
       node_id: nodeId || decision.node_id || null,
-      pillar: decision.pillar,
+      pillar: decision.discipline_id,          // reuse existing column
       verdict: decision.verdict,
       completion_feedback: decision.completion_feedback,
       weekly_hint: decision.weekly_hint || null,
@@ -430,7 +436,7 @@ export default async function handler(req, res) {
     }).then(({ error }) => { if (error) console.warn('orchestrator_log insert failed:', error.message); });
 
     return res.json({
-      pillar: decision.pillar,
+      discipline_id: decision.discipline_id,
       node_id: decision.node_id,
       verdict: decision.verdict,
       completion_feedback: decision.completion_feedback,
