@@ -269,6 +269,26 @@ export default async function handler(req, res) {
     } catch { /* ignore unparseable rows */ }
   }
 
+  // 6a. Read today's orchestrator decision FIRST — needed for discipline-based action selection
+  // pillar column stores discipline_id (sila, kardio, stabilita...)
+  let orchestratorDecision = null;
+  const { data: orchLog } = await supabase
+    .from('orchestrator_log')
+    .select('pillar, verdict, completion_feedback, weekly_hint')
+    .eq('user_id', userId)
+    .eq('node_id', nodeId)
+    .eq('date', today)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (orchLog?.verdict) {
+    orchestratorDecision = orchLog;
+  }
+
+  const disciplineId = orchestratorDecision?.pillar;
+  const disciplineProtocols = disciplineId ? DISCIPLINE_PROTOCOLS[disciplineId] : null;
+
   // 6. Action from longevity_actions DB
   const dayType = getDayType();
   let action = null;
@@ -416,27 +436,6 @@ export default async function handler(req, res) {
   const killer = NODE_KILLERS[nodeId] || NODE_KILLERS.telo;
   const verdictMap = VERDICT_TEXTS[nodeId] || VERDICT_TEXTS.telo;
   const deterministicVerdict = verdictMap[batteryState] || verdictMap.YELLOW;
-
-  // 9. Read today's orchestrator decision from log (if available)
-  // pillar column stores discipline_id (sila, kardio, stabilita...)
-  let orchestratorDecision = null;
-  const { data: orchLog } = await supabase
-    .from('orchestrator_log')
-    .select('pillar, verdict, completion_feedback, weekly_hint')
-    .eq('user_id', userId)
-    .eq('node_id', nodeId)
-    .eq('date', today)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (orchLog?.verdict) {
-    orchestratorDecision = orchLog;
-  }
-
-  // Re-pick action using discipline if orchestrator has decided and action not yet picked
-  const disciplineId = orchestratorDecision?.pillar;
-  const disciplineProtocols = disciplineId ? DISCIPLINE_PROTOCOLS[disciplineId] : null;
 
   // 10. Build response
   res.json({
