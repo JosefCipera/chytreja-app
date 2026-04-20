@@ -84,7 +84,7 @@
 
     <!-- Spánek -->
     <div class="mb-6">
-      <h3 style="color:#f8fafc;font-size:18px;margin-bottom:6px;">Kolik hodin jsi spal?</h3>
+      <div class="hud-mono" style="font-size:12px;letter-spacing:0.08em;color:#64748b;margin-bottom:6px;">SPÁNEK</div>
       <p style="color:#64748b;font-size:13px;margin-bottom:16px;font-style:italic;">Méně než 5 h=nízko, 7–8 h=ideál, 10+ h=přespáno</p>
       <input
         type="range"

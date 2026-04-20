@@ -235,19 +235,16 @@ function renderAspirationsTab() {
 
   return `
     <div class="udp-section">
-      <h3 style="color:#f8fafc;font-size:18px;margin-bottom:6px;">Jaký je tvůj sen na 85. narozeniny?</h3>
+      <h3 style="color:#f8fafc;font-size:18px;margin-bottom:6px;line-height:1.5;">
+        Jaký je tvůj sen k
+        <input id="asp-target-age" type="number" min="50" max="105" value="${cachedData.decathlon?.target_age ?? 85}"
+          style="width:52px;font-size:18px;font-weight:700;text-align:center;
+                 background:transparent;border:none;border-bottom:2px solid #06b6d4;
+                 color:#06b6d4;outline:none;padding:0 2px;">. narozeninám?
+      </h3>
       <p style="color:#64748b;font-size:13px;margin-bottom:20px;font-style:italic;">CHJ přizpůsobí plán tak, aby ses k němu dostal.</p>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
         ${cards}
-      </div>
-    </div>
-
-    <div class="udp-section" style="margin-top:20px;">
-      <div class="udp-section-label">Ve věku</div>
-      <div style="display:flex;align-items:center;gap:12px;">
-        <input id="asp-target-age" type="number" min="50" max="105" value="${cachedData.decathlon?.target_age ?? 85}"
-          class="udp-input" style="width:90px;font-size:22px;text-align:center;">
-        <span style="color:#64748b;font-size:14px;">let</span>
       </div>
     </div>
 
@@ -394,7 +391,7 @@ function renderCheckInTab() {
       </div>
 
       <!-- SPÁNEK slider -->
-      <h3 style="color:#f8fafc;font-size:18px;margin-bottom:6px;">Kolik hodin jsi spal?</h3>
+      <div style="font-family:monospace;font-size:12px;letter-spacing:0.08em;color:#64748b;margin-bottom:6px;">SPÁNEK</div>
       <p style="color:#64748b;font-size:13px;margin-bottom:16px;font-style:italic;">Méně než 5 h=nízko, 7–8 h=ideál, 10+ h=přespáno</p>
       <div style="margin-bottom:32px;">
         <input id="chk-spanek" type="range" min="0" max="12" step="0.5" value="7"
