@@ -126,10 +126,10 @@
       // If body discipline → call Tělo Agent for concrete action
       if (BODY_DISCIPLINES.includes(orchData.discipline_id)) {
         try {
-          const agentRes = await fetch('/api/agents/telo', {
+          const agentRes = await fetch('/api/agents', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId: uid, discipline: orchData.discipline_id, nodeId: nid }),
+            body: JSON.stringify({ type: 'telo', userId: uid, discipline: orchData.discipline_id, nodeId: nid }),
           });
           const agentData = await agentRes.json();
           if (agentData.action_id) {
