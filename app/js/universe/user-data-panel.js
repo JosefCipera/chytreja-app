@@ -242,6 +242,15 @@ function renderAspirationsTab() {
       </div>
     </div>
 
+    <div class="udp-section" style="margin-top:20px;">
+      <div class="udp-section-label">Ve věku</div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <input id="asp-target-age" type="number" min="50" max="105" value="${cachedData.decathlon?.target_age ?? 85}"
+          class="udp-input" style="width:90px;font-size:22px;text-align:center;">
+        <span style="color:#64748b;font-size:14px;">let</span>
+      </div>
+    </div>
+
     <div class="udp-save-row">
       <span id="udp-status-2" class="udp-status"></span>
       <button id="btn-save-aspirations" class="udp-save-btn">Uložit</button>
@@ -277,22 +286,24 @@ async function saveAspirations() {
   const goal = DECATHLON_GOALS.find(g => g.key === goalKey);
   if (!goal) return;
 
+  const targetAge = parseInt(document.getElementById('asp-target-age')?.value) || 85;
+
   setStatus('udp-status-2', 'saving');
   try {
-    // Deactivate existing, then upsert new
+    // Deactivate existing, then insert new
     await supabase.from('user_decathlon').update({ active: false }).eq('user_id', userId);
     const { error } = await supabase.from('user_decathlon').insert({
       user_id:        userId,
       goal_key:       goal.key,
       label:          goal.label,
-      target_age:     85,
+      target_age:     targetAge,
       priority:       5,
       pillar_weights: goal.pillar_weights,
       active:         true,
     });
     if (error) throw error;
 
-    cachedData.decathlon = { goal_key: goal.key, label: goal.label };
+    cachedData.decathlon = { goal_key: goal.key, label: goal.label, target_age: targetAge };
     setStatus('udp-status-2', 'ok');
   } catch (e) {
     console.error(e);
