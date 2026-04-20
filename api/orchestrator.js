@@ -1,6 +1,7 @@
 // =====================================================
-// API: /api/orchestrator.js — CHJ Master Agent
-// Claude Sonnet + tool_use — přemýšlí, pak rozhodne
+// API: /api/orchestrator.js — CHJ Master Agent (fast)
+// Architecture: pre-fetch all data → single Haiku call → save
+// Target: 5-8s total (fits Vercel Hobby 10s limit)
 // =====================================================
 
 import dotenv from 'dotenv';
@@ -9,379 +10,116 @@ dotenv.config({ path: '.env.local', override: true });
 import Anthropic from '@anthropic-ai/sdk';
 import { createClient } from '@supabase/supabase-js';
 
-const MODEL = 'claude-sonnet-4-6';
-const MAX_ROUNDS = 5;
+const MODEL = 'claude-haiku-4-5';
 
-// ── SYSTEM PROMPT ─────────────────────────────────────
-const SYSTEM_PROMPT = `Jsi CHJ Master Agent — orchestrátor osobního koučování pro dlouhověkost (Medicine 3.0, Peter Attia).
-
-TVOJE ROLE:
-Sbíráš data o uživateli pomocí nástrojů, analyzuješ situaci a rozhoduješ:
-1. Která disciplína Dekatlonu dnes (viz níže)
-2. Proč právě tato (bottleneck + readiness + kontinuita)
-3. Jak to říct uživateli (verdikt + feedback po splnění)
+// ── SYSTEM PROMPT ──────────────────────────────────────
+const SYSTEM_PROMPT = `Jsi CHJ rozhodovatel — vybíráš disciplínu Dekatlonu pro dnešní den.
 
 PRAVIDLA:
 - Česky, tykej, přímočaře
-- Nikdy celý název nemoci — používej HUD label: SRDCE, MOZEK, METABOLISMUS, IMUNITA
-- Smíš být přímý: "Bez tohohle tě SRDCE dostane dřív než čekáš."
-- Žádné: "musíš", "je důležité", "měl bys"
-- Verdikt: max 1 věta, max 15 slov
-- Completion feedback: max 1 věta, hovorová čeština, přirozená — jako by to řekl trenér, ne robot
-  VŽDY zahrň konkrétní odkaz na sen uživatele (získáš ho z get_aspiration nebo get_decathlon).
-  Příklady tónu (ne kopírovat):
-  "Bez tohohle ten kilometr v bazénu neuplavat."
-  "Tohle je přesně to, co tě na té hoře udrží."
-  "Svaly si to pamatují — i za dvacet let."
-  "Dneska jsi přidal krok k těm osmdesátpěti."
-  Vyhni se: infinitivům jako "dostat se", "vstát" — radši "budeš stát", "zvládneš"
-  Pokud sen není nastaven: feedback bez odkazu na sen, obecně motivační.
-
-VERDIKT PODLE STAVU UZLU:
-- RED/YELLOW: řekni co se děje a co to znamená — klidně s odkazem na killera
-- GREEN: potvrď a motivuj — "Držíš to.", "Tohle je přesně ono." + co to přináší pro cíl
-
-10 DISCIPLÍN DEKATLONU a jejich killer:
-- sila:        sval, kost, síla — METABOLISMUS + SRDCE — max 2 dny za sebou
-- kardio:      aerobní základ, mitochondrie, VO2max — SRDCE — min 3× týdně
-- stabilita:   klouby, mobilita, rovnováha — prevence pádu — bezpečné kdykoliv
-- spanek:      spánek protokol, regenerace — MOZEK — při nízké readiness priorita
-- vyziva:      protein, makra, timing — METABOLISMUS
-- metabolismus: inzulín, glukóza, půst — METABOLISMUS + SRDCE
-- kognitivni:  mozek, paměť, focus — MOZEK
-- emocni:      stres, vztahy, dech — MOZEK
-- prevence:    screeningy, imunita, markery — IMUNITA
-- smysl:       purpose, vděčnost, záměr — MOZEK
-
-READINESS → DISCIPLÍNA:
-- HRV delta < -20%: vynechej kardio (vysoká intenzita) a sila → spanek nebo stabilita
-- Spánek < 6h: snižuj intenzitu — preferuj stabilita, emocni, smysl
+- Nikdy název nemoci — HUD label: SRDCE, MOZEK, METABOLISMUS, IMUNITA
+- HRV delta < -20% → vynechej kardio a sila, preferuj spanek nebo stabilita
+- Spánek < 6h → snižuj intenzitu, preferuj emocni, smysl, stabilita
 - Včerejší disciplína = sila → dnes ne sila
+- Bottleneck (nejnižší index) má nejvyšší prioritu
+- Sen uživatele → zmiň ho vždy v completion_feedback, konkrétně
 
-Na konci VŽDY zavolej nástroj submit_decision s výsledkem.`;
+10 DISCIPLÍN:
+sila | kardio | stabilita | spanek | vyziva | metabolismus | kognitivni | emocni | prevence | smysl
 
-// ── TOOLS ─────────────────────────────────────────────
-const TOOLS = [
-  {
-    name: 'get_user_profile',
-    description: 'Profil uživatele: věk, pohlaví, výška, váha, zranění a omezení pilířů.',
-    input_schema: { type: 'object', properties: {} },
-  },
-  {
-    name: 'get_readiness',
-    description: 'Dnešní signály připravenosti: HRV, spánek, klidový tep, energie. Klíčové pro volbu pilíře a intenzity.',
-    input_schema: { type: 'object', properties: {} },
-  },
-  {
-    name: 'get_medications',
-    description: 'Aktivní léky uživatele a jejich vliv na rozhodování (např. beta-blokátory → HR nespolehlivý).',
-    input_schema: { type: 'object', properties: {} },
-  },
-  {
-    name: 'get_decathlon',
-    description: 'Desetiboj uživatele — cíle pro věk 85 s prioritami. Ukazuje které pilíře jsou pro cíle nejdůležitější.',
-    input_schema: { type: 'object', properties: {} },
-  },
-  {
-    name: 'get_bottleneck',
-    description: 'Nejslabší uzel (bottleneck) — ten, který nejvíc brzdí dlouhověkost. Vrací node_id, stav a index.',
-    input_schema: { type: 'object', properties: {} },
-  },
-  {
-    name: 'get_node_state',
-    description: 'Aktuální stav uzlu (GREEN/YELLOW/RED) a index 0–100.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        node_id: { type: 'string', description: 'ID uzlu nebo "all" pro přehled hlavních uzlů' },
-      },
-      required: ['node_id'],
-    },
-  },
-  {
-    name: 'get_killer',
-    description: 'Hlavní černý jezdec (smrtelná hrozba) pro daný uzel.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        node_id: { type: 'string' },
-      },
-      required: ['node_id'],
-    },
-  },
-  {
-    name: 'get_streak',
-    description: 'Streak (dny v řadě se splněnou misí) a co bylo splněno dnes.',
-    input_schema: { type: 'object', properties: {} },
-  },
-  {
-    name: 'get_aspiration',
-    description: 'Sen uživatele a jak daleko od něj je na každém uzlu.',
-    input_schema: { type: 'object', properties: {} },
-  },
-  {
-    name: 'get_recent_decisions',
-    description: 'Posledních 7 rozhodnutí orchestrátoru — jaké disciplíny byly, co bylo splněno. Pro kontinuitu a střídání.',
-    input_schema: { type: 'object', properties: {} },
-  },
-  {
-    name: 'submit_decision',
-    description: 'Odešli finální rozhodnutí orchestrátoru. VŽDY zavolej jako poslední nástroj.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        discipline_id: {
-          type: 'string',
-          enum: ['sila', 'kardio', 'stabilita', 'spanek', 'vyziva', 'metabolismus', 'kognitivni', 'emocni', 'prevence', 'smysl'],
-          description: 'Disciplína Dekatlonu pro dnešní akci',
-        },
-        node_id: {
-          type: 'string',
-          description: 'Cílový uzel (telo, mysl, vyziva, zdravi, metabolicke)',
-        },
-        verdict: {
-          type: 'string',
-          description: 'Verdikt pro uživatele — max 1 věta, max 15 slov, česky',
-        },
-        completion_feedback: {
-          type: 'string',
-          description: 'Feedback po splnění akce — max 1 věta, osobní, s kontextem proč to má smysl pro cíl uživatele v 85',
-        },
-        reasoning: {
-          type: 'string',
-          description: 'Interní zdůvodnění rozhodnutí (pro debug a kontinuitu) — anglicky, stručně',
-        },
-        weekly_hint: {
-          type: 'string',
-          description: 'Volitelný hint co přijde zítra nebo tento týden — max 1 věta',
-        },
-      },
-      required: ['discipline_id', 'node_id', 'verdict', 'completion_feedback', 'reasoning'],
-    },
-  },
-];
+VÝSTUPY:
+- verdict: max 15 slov, přímé, bez caveat
+- completion_feedback: max 1 věta, hovorová čeština jako trenér, VŽDY s konkrétním odkazem na sen uživatele
+  Příklady tónu: "Svaly si to pamatují — v osmdesáti pěti ti to vrátí v bazénu."
+                 "Bez tohohle základu ten kilometr ve vodě neuplavat."
+  Vyhni se infinitivům jako "dostat se" — radši "budeš", "zvládneš"
+- weekly_hint: volitelně, max 1 věta co přijde zítra/tento týden
 
-// ── TOOL IMPLEMENTATIONS ──────────────────────────────
-async function executeTool(name, input, sb, userId) {
-  switch (name) {
+ODPOVĚZ POUZE JSON (bez markdown):
+{"discipline_id":"...","node_id":"...","verdict":"...","completion_feedback":"...","reasoning":"...","weekly_hint":"..."}`;
 
-    case 'get_user_profile': {
-      const [{ data: profile }, { data: constraints }] = await Promise.all([
-        sb.from('user_profiles').select('age, gender, height, weight').eq('user_id', userId).maybeSingle(),
-        sb.from('user_constraints').select('constraint_key, severity, affects_pillars').eq('user_id', userId),
-      ]);
-      return {
-        age: profile?.age,
-        gender: profile?.gender,
-        height_cm: profile?.height,
-        weight_kg: profile?.weight,
-        injuries: (constraints || [])
-          .filter(c => c.constraint_key)
-          .map(c => ({
-            key: c.constraint_key,
-            severity: c.severity,
-            affects_pillars: c.affects_pillars || [],
-          })),
-      };
-    }
+// ── PRE-FETCH ALL USER CONTEXT ─────────────────────────
+async function fetchUserContext(sb, userId) {
+  const today = new Date().toISOString().split('T')[0];
+  const weekAgo = new Date();
+  weekAgo.setDate(weekAgo.getDate() - 7);
+  const weekAgoStr = weekAgo.toISOString().split('T')[0];
 
-    case 'get_readiness': {
-      const today = new Date().toISOString().split('T')[0];
-      const { data } = await sb
-        .from('user_readiness')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('date', today)
-        .maybeSingle();
+  const [
+    profileRes, readinessRes, medsRes, decathlonRes,
+    metricsRes, constraintsRes, recentRes,
+  ] = await Promise.all([
+    sb.from('user_profiles').select('age, gender, height, weight').eq('user_id', userId).maybeSingle(),
+    sb.from('user_readiness').select('hrv_ms, hrv_baseline_ms, resting_hr, sleep_hours, energy_level').eq('user_id', userId).eq('date', today).maybeSingle(),
+    sb.from('user_medications').select('name, affects').eq('user_id', userId).eq('active', true),
+    sb.from('user_decathlon').select('goal_key, label, target_age, pillar_weights').eq('user_id', userId).eq('active', true).maybeSingle(),
+    sb.from('user_metrics').select('node_id, state, current_index').eq('user_id', userId).eq('universe', 'longevity').in('node_id', ['telo','zdravi','mysl','vyziva','metabolicke']),
+    sb.from('user_constraints').select('constraint_key, severity').eq('user_id', userId),
+    sb.from('orchestrator_log').select('date, pillar, verdict').eq('user_id', userId).gte('date', weekAgoStr).order('date', { ascending: false }).limit(7),
+  ]);
 
-      if (!data) return { available: false, message: 'Žádná data připravenosti pro dnešek.' };
+  // Compute HRV delta
+  const r = readinessRes.data;
+  const hrvDelta = r?.hrv_ms && r?.hrv_baseline_ms
+    ? Math.round(((r.hrv_ms - r.hrv_baseline_ms) / r.hrv_baseline_ms) * 100)
+    : null;
 
-      const hrvDelta = data.hrv_ms && data.hrv_baseline_ms
-        ? Math.round(((data.hrv_ms - data.hrv_baseline_ms) / data.hrv_baseline_ms) * 100)
-        : null;
+  // Find bottleneck (lowest index among main nodes)
+  const metrics = metricsRes.data || [];
+  const nonGray = metrics.filter(m => m.state !== 'GRAY');
+  const bottleneck = nonGray.sort((a, b) => a.current_index - b.current_index)[0] || null;
 
-      return {
-        available: true,
-        hrv_ms: data.hrv_ms,
-        hrv_baseline_ms: data.hrv_baseline_ms,
-        hrv_delta_pct: hrvDelta,
-        resting_hr: data.resting_hr,
-        sleep_hours: data.sleep_hours,
-        sleep_quality: data.sleep_quality,
-        energy_level: data.energy_level,
-        source: data.source,
-        readiness_summary: hrvDelta !== null
-          ? hrvDelta < -20 ? 'LOW — snižuj intenzitu'
-          : hrvDelta < -10 ? 'MODERATE — opatrně'
-          : 'GOOD — normální zátěž'
-          : 'UNKNOWN — chybí HRV data',
-      };
-    }
+  // Yesterday's discipline
+  const yesterday = recentRes.data?.[0];
+  const yesterdayDiscipline = yesterday?.date === new Date(Date.now() - 86400000).toISOString().split('T')[0]
+    ? yesterday.pillar : null;
 
-    case 'get_medications': {
-      const { data } = await sb
-        .from('user_medications')
-        .select('name, affects')
-        .eq('user_id', userId)
-        .eq('active', true);
+  return {
+    today,
+    profile: profileRes.data,
+    readiness: r ? {
+      hrv_delta_pct: hrvDelta,
+      sleep_hours: r.sleep_hours,
+      energy_level: r.energy_level,
+      resting_hr: r.resting_hr,
+      summary: hrvDelta !== null
+        ? (hrvDelta < -20 ? 'LOW — snižuj intenzitu' : hrvDelta < -10 ? 'MODERATE' : 'GOOD')
+        : 'UNKNOWN',
+    } : null,
+    medications: (medsRes.data || []).map(m => m.name),
+    dream: decathlonRes.data ? {
+      goal: decathlonRes.data.label,
+      target_age: decathlonRes.data.target_age,
+      key: decathlonRes.data.goal_key,
+    } : null,
+    bottleneck: bottleneck ? { node_id: bottleneck.node_id, state: bottleneck.state, index: bottleneck.current_index } : null,
+    nodes: metrics.map(m => ({ node_id: m.node_id, state: m.state, index: m.current_index })),
+    injuries: (constraintsRes.data || []).map(c => c.constraint_key),
+    yesterday_discipline: yesterdayDiscipline,
+    recent_disciplines: (recentRes.data || []).map(r => r.pillar).filter(Boolean),
+  };
+}
 
-      if (!data?.length) return { medications: [], notes: [] };
+// ── DETERMINISTIC FALLBACK ─────────────────────────────
+function fallbackDecision(ctx) {
+  const discipline = ctx.readiness?.hrv_delta_pct < -20 ? 'spanek'
+    : ctx.readiness?.sleep_hours < 6 ? 'emocni'
+    : ctx.yesterday_discipline === 'sila' ? 'kardio'
+    : ctx.bottleneck?.node_id === 'telo' ? 'sila'
+    : ctx.bottleneck?.node_id === 'zdravi' ? 'kardio'
+    : ctx.bottleneck?.node_id === 'mysl' ? 'kognitivni'
+    : 'stabilita';
 
-      const notes = [];
-      const allAffects = data.flatMap(m => m.affects || []);
-      if (allAffects.includes('hr_unreliable')) notes.push('HR nespolehlivý → používej RPE místo tepu');
-      if (allAffects.includes('fatigue')) notes.push('Léky způsobují únavu → snižuj intenzitu');
-      if (allAffects.includes('glucose_masked')) notes.push('Hladina cukru nemusí odrážet skutečný stav');
-      if (allAffects.includes('bp_lowered')) notes.push('BP snížený léky → pozor na ortostatiku');
+  const nodeMap = { sila: 'telo', kardio: 'zdravi', stabilita: 'telo', spanek: 'mysl', kognitivni: 'mysl', emocni: 'mysl', vyziva: 'vyziva', metabolismus: 'metabolicke', prevence: 'zdravi', smysl: 'mysl' };
 
-      return { medications: data.map(m => m.name), notes };
-    }
-
-    case 'get_decathlon': {
-      const { data } = await sb
-        .from('user_decathlon')
-        .select('goal_key, label, target_age, priority, pillar_weights')
-        .eq('user_id', userId)
-        .eq('active', true)
-        .order('priority', { ascending: false });
-
-      if (!data?.length) return { goals: [], message: 'Desetiboj není nastaven.' };
-
-      // Aggregate pillar importance across all goals weighted by priority
-      const pillarScore = {};
-      for (const goal of data) {
-        for (const [pillar, weight] of Object.entries(goal.pillar_weights || {})) {
-          pillarScore[pillar] = (pillarScore[pillar] || 0) + weight * goal.priority;
-        }
-      }
-
-      return {
-        goals: data.map(g => ({ key: g.goal_key, label: g.label, priority: g.priority })),
-        pillar_importance: pillarScore,
-      };
-    }
-
-    case 'get_bottleneck': {
-      const MAIN = ['telo', 'mysl', 'vyziva', 'zdravi', 'metabolicke'];
-      const LABELS = { telo: 'Tělo', mysl: 'Mysl', vyziva: 'Výživa', zdravi: 'Zdraví', metabolicke: 'Metabolismus' };
-      const { data } = await sb
-        .from('user_metrics')
-        .select('node_id, state, current_index')
-        .eq('user_id', userId)
-        .eq('universe', 'longevity')
-        .in('node_id', MAIN)
-        .order('current_index', { ascending: true });
-
-      if (!data?.length) return { node_id: null, message: 'Žádná data.' };
-      const worst = data[0];
-      return { node_id: worst.node_id, label: LABELS[worst.node_id] || worst.node_id, state: worst.state, index: worst.current_index };
-    }
-
-    case 'get_node_state': {
-      const nodeId = input.node_id;
-      if (nodeId === 'all') {
-        const MAIN = ['telo', 'mysl', 'vyziva', 'zdravi', 'metabolicke'];
-        const { data } = await sb.from('user_metrics').select('node_id, state, current_index')
-          .eq('user_id', userId).eq('universe', 'longevity').in('node_id', MAIN);
-        const map = {};
-        for (const m of (data || [])) map[m.node_id] = { state: m.state, index: m.current_index };
-        return map;
-      }
-      const { data } = await sb.from('user_metrics').select('state, current_index')
-        .eq('user_id', userId).eq('node_id', nodeId).eq('universe', 'longevity').maybeSingle();
-      return data || { state: 'UNKNOWN', index: null };
-    }
-
-    case 'get_killer': {
-      const LABELS = {
-        infarkt_a_mrtvice: 'srdce a cévy',
-        cukrovka: 'hladina cukru a metabolismus',
-        demence: 'mozek a paměť',
-        rakovina: 'buněčná odolnost',
-      };
-      const { data } = await sb.from('node_riders').select('rider')
-        .eq('node_id', input.node_id).order('priority', { ascending: true }).limit(1).maybeSingle();
-      return { node_id: input.node_id, killer: data?.rider || 'unknown', label: LABELS[data?.rider] || 'neznámé ohrožení' };
-    }
-
-    case 'get_streak': {
-      const today = new Date().toISOString().split('T')[0];
-      const { data } = await sb.from('mission_log').select('date')
-        .eq('user_id', userId).order('date', { ascending: false }).limit(30);
-
-      const dates = [...new Set((data || []).map(r => r.date))].sort().reverse();
-      const todayDone = dates[0] === today;
-
-      let streak = 0;
-      const ref = new Date(today);
-      for (const d of dates) {
-        if (d === ref.toISOString().split('T')[0]) { streak++; ref.setDate(ref.getDate() - 1); }
-        else if (!todayDone && streak === 0) { ref.setDate(ref.getDate() - 1); if (d === ref.toISOString().split('T')[0]) { streak++; ref.setDate(ref.getDate() - 1); } else break; }
-        else break;
-      }
-
-      return { streak, today_done: todayDone };
-    }
-
-    case 'get_aspiration': {
-      const { data } = await sb.from('user_decathlon')
-        .select('goal_key, label, target_age, pillar_weights')
-        .eq('user_id', userId)
-        .eq('active', true)
-        .maybeSingle();
-
-      if (!data) return { aspiration: null, message: 'Sen není nastaven.' };
-
-      // Calculate gap per pillar: how far is current node state from what the goal needs
-      const pillarNodeMap = {
-        kardio:      'zdravi',
-        sila:        'telo',
-        stabilita:   'telo',
-        mobilita:    'telo',
-        vo2max:      'zdravi',
-        vytrvalost:  'zdravi',
-      };
-      const relevantNodes = [...new Set(Object.keys(data.pillar_weights || {}).map(p => pillarNodeMap[p]).filter(Boolean))];
-      const { data: metrics } = await sb.from('user_metrics')
-        .select('node_id, current_index')
-        .eq('user_id', userId)
-        .eq('universe', 'longevity')
-        .in('node_id', relevantNodes);
-
-      const gaps = Object.entries(data.pillar_weights || {}).map(([pillar, weight]) => {
-        const nodeId = pillarNodeMap[pillar];
-        const m = (metrics || []).find(m => m.node_id === nodeId);
-        const index = m?.current_index ?? 50;
-        const needed = weight * 100;
-        const gap = Math.max(0, needed - index);
-        return { pillar, node_id: nodeId, gap: Math.round(gap), weight };
-      }).filter(g => g.gap > 5).sort((a, b) => b.gap - a.gap);
-
-      return {
-        goal: data.label,
-        goal_key: data.goal_key,
-        target_age: data.target_age,
-        top_gaps: gaps.slice(0, 3),
-        message: `Sen: "${data.label}" ve věku ${data.target_age} let.`,
-      };
-    }
-
-    case 'get_recent_decisions': {
-      const { data } = await sb.from('orchestrator_log')
-        .select('date, pillar, node_id, completed, verdict, reasoning')
-        .eq('user_id', userId)
-        .order('date', { ascending: false })
-        .limit(7);
-      return { recent: data || [] };
-    }
-
-    case 'submit_decision':
-      // Handled by caller — just return the input as-is
-      return input;
-
-    default:
-      return { error: `Unknown tool: ${name}` };
-  }
+  return {
+    discipline_id: discipline,
+    node_id: nodeMap[discipline] || 'telo',
+    verdict: 'Dnes jdeme na ' + discipline + '.',
+    completion_feedback: ctx.dream ? `Každý krok tě přibližuje k cíli — ${ctx.dream.goal} v ${ctx.dream.target_age}.` : 'Dobrá práce, pokračuj.',
+    reasoning: 'fallback: deterministic',
+    weekly_hint: null,
+  };
 }
 
 // ── MAIN HANDLER ──────────────────────────────────────
@@ -392,78 +130,90 @@ export default async function handler(req, res) {
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
     const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
-    const { message, nodeId, userId: bodyUserId } = req.body || {};
+    const { nodeId, userId: bodyUserId } = req.body || {};
     const userId = bodyUserId || 'demo-user-123';
 
-    if (!message) return res.status(400).json({ error: 'Missing message' });
+    // 1. Check cache — if already decided today for this node, return cached
+    const today = new Date().toISOString().split('T')[0];
+    const { data: cached } = await sb.from('orchestrator_log')
+      .select('pillar, verdict, completion_feedback, weekly_hint')
+      .eq('user_id', userId)
+      .eq('node_id', nodeId || null)
+      .eq('date', today)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
-    const userContent = nodeId
-      ? `[Uživatel je na uzlu: ${nodeId}] ${message}`
-      : message;
+    if (cached?.verdict) {
+      return res.json({
+        discipline_id: cached.pillar,
+        verdict: cached.verdict,
+        completion_feedback: cached.completion_feedback,
+        weekly_hint: cached.weekly_hint || null,
+        cached: true,
+      });
+    }
 
-    const messages = [{ role: 'user', content: userContent }];
+    // 2. Pre-fetch all context in parallel
+    const ctx = await fetchUserContext(sb, userId);
 
-    // ── TOOL LOOP ─────────────────────────────────────
+    // 3. Build context message for Haiku
+    const contextMsg = `
+UŽIVATEL: věk ${ctx.profile?.age ?? '?'}, pohlaví ${ctx.profile?.gender ?? '?'}
+READINESS: ${ctx.readiness ? `HRV delta ${ctx.readiness.hrv_delta_pct ?? 'N/A'}%, spánek ${ctx.readiness.sleep_hours ?? 'N/A'}h, energie ${ctx.readiness.energy_level ?? 'N/A'}/5 → ${ctx.readiness.summary}` : 'Bez dat'}
+LÉKY: ${ctx.medications.length ? ctx.medications.join(', ') : 'žádné'}
+OMEZENÍ: ${ctx.injuries.length ? ctx.injuries.join(', ') : 'žádná'}
+BOTTLENECK: ${ctx.bottleneck ? `${ctx.bottleneck.node_id} (${ctx.bottleneck.state}, index ${ctx.bottleneck.index})` : 'nezjištěn'}
+UZLY: ${ctx.nodes.map(n => `${n.node_id}:${n.state}(${n.index})`).join(', ')}
+VČERA: ${ctx.yesterday_discipline ?? 'nic'}
+POSLEDNÍ DISCIPLÍNY: ${ctx.recent_disciplines.slice(0, 5).join(', ') || 'žádné'}
+SEN: ${ctx.dream ? `"${ctx.dream.goal}" ve věku ${ctx.dream.target_age} let` : 'není nastaven'}
+UZEL: ${nodeId ?? 'obecně'}
+
+Rozhodni které disciplíně dát dnes prioritu.`.trim();
+
+    // 4. Call Haiku — single turn, JSON response
     let decision = null;
-    const toolTrace = [];
-
-    for (let round = 0; round < MAX_ROUNDS; round++) {
+    try {
       const response = await client.messages.create({
         model: MODEL,
-        max_tokens: 1024,
+        max_tokens: 600,
         system: SYSTEM_PROMPT,
-        tools: TOOLS,
-        messages,
+        messages: [{ role: 'user', content: contextMsg }],
       });
 
-      // Collect tool calls from this response
-      const toolUseBlocks = response.content.filter(b => b.type === 'tool_use');
-
-      if (!toolUseBlocks.length || response.stop_reason === 'end_turn') {
-        // No more tool calls — extract text if any
-        break;
+      const text = response.content.find(b => b.type === 'text')?.text || '';
+      // Extract JSON (handle possible markdown code blocks)
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        decision = JSON.parse(jsonMatch[0]);
+      } else {
+        console.warn('Haiku: no JSON found in response');
       }
-
-      // Add assistant response to messages
-      messages.push({ role: 'assistant', content: response.content });
-
-      // Execute all tool calls in parallel
-      const toolResults = await Promise.all(
-        toolUseBlocks.map(async (block) => {
-          console.log(`🔧 [${round}] ${block.name}(${JSON.stringify(block.input)})`);
-
-          if (block.name === 'submit_decision') {
-            decision = block.input;
-            return { type: 'tool_result', tool_use_id: block.id, content: JSON.stringify({ ok: true }) };
-          }
-
-          const result = await executeTool(block.name, block.input, sb, userId);
-          toolTrace.push({ name: block.name, input: block.input, result });
-          return { type: 'tool_result', tool_use_id: block.id, content: JSON.stringify(result) };
-        })
-      );
-
-      // If decision was submitted, we're done
-      if (decision) break;
-
-      messages.push({ role: 'user', content: toolResults });
+    } catch (e) {
+      console.warn('Haiku call failed:', e.message);
     }
 
-    if (!decision) {
-      return res.status(500).json({ error: 'Orchestrátor nedokončil rozhodnutí.' });
+    // 5. Fallback if Haiku failed or returned invalid response
+    const VALID_DISCIPLINES = ['sila','kardio','stabilita','spanek','vyziva','metabolismus','kognitivni','emocni','prevence','smysl'];
+    if (!decision || !VALID_DISCIPLINES.includes(decision.discipline_id)) {
+      console.warn('Using deterministic fallback');
+      decision = fallbackDecision(ctx);
     }
 
-    // Save to orchestrator_log — pillar column stores discipline_id
+    // 6. Save to orchestrator_log
     await sb.from('orchestrator_log').insert({
       user_id: userId,
       node_id: nodeId || decision.node_id || null,
-      pillar: decision.discipline_id,          // reuse existing column
+      pillar: decision.discipline_id,
       verdict: decision.verdict,
       completion_feedback: decision.completion_feedback,
       weekly_hint: decision.weekly_hint || null,
       reasoning: decision.reasoning,
-      signals: toolTrace.find(t => t.name === 'get_readiness')?.result || {},
-    }).then(({ error }) => { if (error) console.warn('orchestrator_log insert failed:', error.message); });
+      signals: ctx.readiness || {},
+    }).then(({ error }) => {
+      if (error) console.warn('orchestrator_log insert failed:', error.message);
+    });
 
     return res.json({
       discipline_id: decision.discipline_id,
@@ -471,9 +221,6 @@ export default async function handler(req, res) {
       verdict: decision.verdict,
       completion_feedback: decision.completion_feedback,
       weekly_hint: decision.weekly_hint || null,
-      debug: process.env.NODE_ENV === 'development'
-        ? { reasoning: decision.reasoning, tools: toolTrace.map(t => t.name) }
-        : undefined,
     });
 
   } catch (e) {
