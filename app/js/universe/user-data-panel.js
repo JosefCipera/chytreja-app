@@ -31,30 +31,18 @@ window.openUserDataPanel = openUserDataPanel;
 async function loadAndRender() {
   renderSkeleton();
 
-  const [profileRes, constraintsRes, aspirationRes, aspOptionsRes, integrationsRes] = await Promise.all([
+  const [profileRes, constraintsRes, decathlonRes, integrationsRes] = await Promise.all([
     supabase.from('user_profiles').select('age, gender, height, weight, birth_year').eq('user_id', userId).maybeSingle(),
     supabase.from('user_constraints').select('constraint_type, constraint_key, constraint_value, severity').eq('user_id', userId),
-    supabase.from('user_aspirations').select('aspiration_type, label, target_age, milestone').eq('user_id', userId).maybeSingle(),
-    supabase.from('aspiration_requirements').select('aspiration_type, aspiration_label'),
+    supabase.from('user_decathlon').select('goal_key, label').eq('user_id', userId).eq('active', true).maybeSingle(),
     supabase.from('user_integrations').select('service, enabled').eq('user_id', userId)
   ]);
 
-  // Distinct aspiration options from aspiration_requirements
-  const aspOptions = [];
-  const seen = new Set();
-  for (const row of (aspOptionsRes.data ?? [])) {
-    if (!seen.has(row.aspiration_type)) {
-      seen.add(row.aspiration_type);
-      aspOptions.push({ type: row.aspiration_type, label: row.aspiration_label });
-    }
-  }
-
   cachedData = {
-    profile:           profileRes.data      ?? {},
-    constraints:       constraintsRes.data  ?? [],
-    aspiration:        aspirationRes.data   ?? {},
-    aspirationOptions: aspOptions,
-    integrations:      integrationsRes.data ?? []
+    profile:      profileRes.data      ?? {},
+    constraints:  constraintsRes.data  ?? [],
+    decathlon:    decathlonRes.data    ?? {},
+    integrations: integrationsRes.data ?? []
   };
 
   renderTab(activeTab);
@@ -212,58 +200,45 @@ async function saveConstraints() {
 
 // ═══════════════════════════════════════════════════
 // TAB 2 – Biologický cíl
-// aspiration_type/label → user_aspirations
-// target_age, milestone → user_constraints type='aspiration'
+// ── Decathlon goals definition ─────────────────────
+const DECATHLON_GOALS = [
+  { key: 'plavani',  icon: '🏊', label: 'Uplavat 0,5 km',         desc: 'V bazénu nebo v jezeře, bez přestávky.',        pillar_weights: { kardio: 0.4, sila: 0.3, stabilita: 0.2, vo2max: 0.1 } },
+  { key: 'bezky',    icon: '🎿', label: 'Projet na běžkách 5 km',  desc: 'Klasicky nebo bruslením, vlastním tempem.',     pillar_weights: { vo2max: 0.4, vytrvalost: 0.3, sila: 0.2, stabilita: 0.1 } },
+  { key: 'kolo',     icon: '🚴', label: 'Jet 2 hodiny na kole',    desc: 'Silnice nebo les, bez nutnosti zastavit.',      pillar_weights: { vo2max: 0.35, vytrvalost: 0.35, sila: 0.2, stabilita: 0.1 } },
+  { key: 'hora',     icon: '🏔️', label: 'Vyjít na horu',           desc: '800+ m převýšení, vlastními nohami.',           pillar_weights: { vytrvalost: 0.35, sila: 0.35, stabilita: 0.2, vo2max: 0.1 } },
+  { key: 'tenis',    icon: '🎾', label: 'Zahrát tenis',            desc: 'Celý set, reagovat a pohybovat se po kurtu.',   pillar_weights: { stabilita: 0.3, sila: 0.3, vo2max: 0.2, vytrvalost: 0.2 } },
+  { key: 'vnoucata', icon: '👶', label: 'Hrát si s vnoučaty',      desc: 'Sedat na zem, vstávat, nosit, honit se.',       pillar_weights: { stabilita: 0.35, sila: 0.3, mobilita: 0.25, vo2max: 0.1 } },
+  { key: 'chuze',    icon: '🚶', label: 'Ujít 5 km v pohodě',      desc: 'Procházka přírodou, bez únavy a bolesti.',      pillar_weights: { stabilita: 0.35, vytrvalost: 0.35, sila: 0.2, vo2max: 0.1 } },
+  { key: 'sila',     icon: '💪', label: 'Ovládat vlastní tělo',    desc: 'Dřep, shyb, klik — silné a mobilní tělo.',     pillar_weights: { sila: 0.5, stabilita: 0.3, mobilita: 0.2 } },
+];
+
+// ═══════════════════════════════════════════════════
+// TAB 2 – Sen (user_decathlon)
 // ═══════════════════════════════════════════════════
 
-function getAspirationConstraint(key) {
-  return (cachedData.constraints ?? []).find(
-    c => c.constraint_type === 'aspiration' && c.constraint_key === key
-  )?.constraint_value ?? '';
-}
-
 function renderAspirationsTab() {
-  const curType  = cachedData.aspiration?.aspiration_type ?? '';
-  const curLabel = cachedData.aspiration?.label           ?? '';
-  const targetAge = getAspirationConstraint('target_age');
-  const milestone = getAspirationConstraint('milestone');
+  const current = cachedData.decathlon?.goal_key ?? '';
 
-  const options = cachedData.aspirationOptions ?? [];
-  // If current aspiration not in DB options, add it as custom option
-  const hasCustom = curType && !options.find(o => o.type === curType);
-
-  const optionsHTML = [
-    `<option value="">— vyber nebo napiš vlastní —</option>`,
-    ...options.map(o =>
-      `<option value="${esc(o.type)}" data-label="${esc(o.label)}" ${curType === o.type ? 'selected' : ''}>${o.label}</option>`
-    ),
-    hasCustom ? `<option value="${esc(curType)}" selected>${esc(curLabel)}</option>` : ''
-  ].join('');
+  const cards = DECATHLON_GOALS.map(g => {
+    const selected = g.key === current;
+    return `
+      <div class="asp-card${selected ? ' asp-card-selected' : ''}" data-key="${g.key}"
+        style="padding:16px;border-radius:12px;cursor:pointer;
+               border:2px solid ${selected ? '#06b6d4' : 'rgba(255,255,255,0.1)'};
+               background:${selected ? 'rgba(6,182,212,0.1)' : 'rgba(255,255,255,0.03)'};
+               transition:all 0.2s;">
+        <div style="font-size:26px;margin-bottom:6px;">${g.icon}</div>
+        <div style="color:${selected ? '#06b6d4' : '#e2e8f0'};font-size:15px;font-weight:600;margin-bottom:4px;">${g.label}</div>
+        <div style="color:#64748b;font-size:12px;line-height:1.5;">${g.desc}</div>
+      </div>`;
+  }).join('');
 
   return `
     <div class="udp-section">
-      <div class="udp-section-label">Předdefinovaný cíl</div>
-      <select id="asp-type" class="udp-input udp-select-full">
-        ${optionsHTML}
-      </select>
-    </div>
-
-    <div class="udp-section">
-      <div class="udp-section-label">Vlastní cíl (volný text)</div>
-      <input id="asp-label" class="udp-input" placeholder="Např. Být plně mobilní v 90 letech"
-             value="${esc(curLabel)}" style="width:100%;">
-    </div>
-
-    <div class="udp-section udp-row-2">
-      <div>
-        <div class="udp-section-label">Cílový věk funkčnosti</div>
-        <input id="asp-age" type="number" class="udp-input" placeholder="Např. 90" min="50" max="120"
-               value="${esc(targetAge)}" style="width:100px;">
-      </div>
-      <div style="flex:1;">
-        <div class="udp-section-label">Konkrétní milník</div>
-        <input id="asp-milestone" class="udp-input" placeholder="Např. Uběhnout 5 km pod 25 minut"
-               value="${esc(milestone)}" style="width:100%;">
+      <h3 style="color:#f8fafc;font-size:18px;margin-bottom:6px;">Jaký je tvůj sen na 85. narozeniny?</h3>
+      <p style="color:#64748b;font-size:13px;margin-bottom:20px;font-style:italic;">CHJ přizpůsobí plán tak, aby ses k němu dostal.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        ${cards}
       </div>
     </div>
 
@@ -274,52 +249,50 @@ function renderAspirationsTab() {
 }
 
 function bindAspirationsEvents() {
-  // Auto-fill label when predefined option selected
-  document.getElementById('asp-type')?.addEventListener('change', (e) => {
-    const opt = e.target.selectedOptions[0];
-    const label = opt?.dataset.label ?? '';
-    if (label) document.getElementById('asp-label').value = label;
+  document.querySelectorAll('.asp-card').forEach(card => {
+    card.addEventListener('click', () => {
+      document.querySelectorAll('.asp-card').forEach(c => {
+        c.style.border = '2px solid rgba(255,255,255,0.1)';
+        c.style.background = 'rgba(255,255,255,0.03)';
+        c.querySelector('div:nth-child(2)').style.color = '#e2e8f0';
+        c.classList.remove('asp-card-selected');
+      });
+      card.style.border = '2px solid #06b6d4';
+      card.style.background = 'rgba(6,182,212,0.1)';
+      card.querySelector('div:nth-child(2)').style.color = '#06b6d4';
+      card.classList.add('asp-card-selected');
+    });
   });
 
   document.getElementById('btn-save-aspirations')?.addEventListener('click', saveAspirations);
 }
 
 async function saveAspirations() {
+  const selected = document.querySelector('.asp-card-selected');
+  if (!selected) {
+    setStatus('udp-status-2', 'error');
+    return;
+  }
+  const goalKey = selected.dataset.key;
+  const goal = DECATHLON_GOALS.find(g => g.key === goalKey);
+  if (!goal) return;
+
   setStatus('udp-status-2', 'saving');
-  const aspType    = document.getElementById('asp-type').value.trim();
-  const aspLabel   = document.getElementById('asp-label').value.trim();
-  const targetAge  = document.getElementById('asp-age').value.trim();
-  const milestone  = document.getElementById('asp-milestone').value.trim();
-
   try {
-    // user_aspirations – delete existing, then insert
-    // Note: only aspiration_type is guaranteed to exist as column
-    if (aspType || aspLabel) {
-      await supabase.from('user_aspirations').delete().eq('user_id', userId);
-      const { error } = await supabase.from('user_aspirations').insert({
-        user_id:         userId,
-        aspiration_type: aspType || 'custom',
-        label:           aspLabel || aspType || 'custom'
-      });
-      if (error) throw error;
-    }
+    // Deactivate existing, then upsert new
+    await supabase.from('user_decathlon').update({ active: false }).eq('user_id', userId);
+    const { error } = await supabase.from('user_decathlon').insert({
+      user_id:        userId,
+      goal_key:       goal.key,
+      label:          goal.label,
+      target_age:     85,
+      priority:       5,
+      pillar_weights: goal.pillar_weights,
+      active:         true,
+    });
+    if (error) throw error;
 
-    // Aspiration extras (target_age, milestone) → user_aspirations
-    if (targetAge || milestone) {
-      const patch = {};
-      if (targetAge) patch.target_age = parseInt(targetAge) || null;
-      if (milestone) patch.milestone  = milestone;
-      const { error: ae } = await supabase.from('user_aspirations')
-        .update(patch)
-        .eq('user_id', userId);
-      if (ae) console.warn('aspiration extras:', ae.message);
-    }
-
-    // Refresh
-    const [aspRes] = await Promise.all([
-      supabase.from('user_aspirations').select('aspiration_type, label, target_age, milestone').eq('user_id', userId).maybeSingle()
-    ]);
-    cachedData.aspiration = aspRes.data ?? {};
+    cachedData.decathlon = { goal_key: goal.key, label: goal.label };
     setStatus('udp-status-2', 'ok');
   } catch (e) {
     console.error(e);
