@@ -28,11 +28,14 @@ PRAVIDLA:
 - Žádné: "musíš", "je důležité", "měl bys"
 - Verdikt: max 1 věta, max 15 slov
 - Completion feedback: max 1 věta, hovorová čeština, přirozená — jako by to řekl trenér, ne robot
-  Příklady (tón, ne kopírovat):
+  VŽDY zahrň konkrétní odkaz na sen uživatele (získáš ho z get_aspiration nebo get_decathlon).
+  Příklady tónu (ne kopírovat):
+  "Bez tohohle ten kilometr v bazénu neuplavat."
   "Tohle je přesně to, co tě na té hoře udrží."
-  "Dneska jsi přidal, a to se počítá."
   "Svaly si to pamatují — i za dvacet let."
+  "Dneska jsi přidal krok k těm osmdesátpěti."
   Vyhni se: infinitivům jako "dostat se", "vstát" — radši "budeš stát", "zvládneš"
+  Pokud sen není nastaven: feedback bez odkazu na sen, obecně motivační.
 
 VERDIKT PODLE STAVU UZLU:
 - RED/YELLOW: řekni co se děje a co to znamená — klidně s odkazem na killera
@@ -321,24 +324,46 @@ async function executeTool(name, input, sb, userId) {
     }
 
     case 'get_aspiration': {
-      const { data: asp } = await sb.from('user_aspirations')
-        .select('aspiration_type, aspiration_label').eq('user_id', userId).maybeSingle();
-      if (!asp?.aspiration_type) return { aspiration: null };
+      const { data } = await sb.from('user_decathlon')
+        .select('goal_key, label, target_age, pillar_weights')
+        .eq('user_id', userId)
+        .eq('active', true)
+        .maybeSingle();
 
-      const { data: reqs } = await sb.from('aspiration_requirements')
-        .select('node_id, required_level, importance_weight').eq('aspiration_type', asp.aspiration_type);
-      if (!reqs?.length) return { label: asp.aspiration_label, gaps: [] };
+      if (!data) return { aspiration: null, message: 'Sen není nastaven.' };
 
-      const { data: metrics } = await sb.from('user_metrics').select('node_id, current_index')
-        .eq('user_id', userId).eq('universe', 'longevity').in('node_id', reqs.map(r => r.node_id));
+      // Calculate gap per pillar: how far is current node state from what the goal needs
+      const pillarNodeMap = {
+        kardio:      'zdravi',
+        sila:        'telo',
+        stabilita:   'telo',
+        mobilita:    'telo',
+        vo2max:      'zdravi',
+        vytrvalost:  'zdravi',
+      };
+      const relevantNodes = [...new Set(Object.keys(data.pillar_weights || {}).map(p => pillarNodeMap[p]).filter(Boolean))];
+      const { data: metrics } = await sb.from('user_metrics')
+        .select('node_id, current_index')
+        .eq('user_id', userId)
+        .eq('universe', 'longevity')
+        .in('node_id', relevantNodes);
 
-      const gaps = reqs.map(r => {
-        const m = (metrics || []).find(m => m.node_id === r.node_id);
-        const gap = Math.max(0, r.required_level - (m ? m.current_index / 100 : 0));
-        return { node_id: r.node_id, gap: Math.round(gap * 100) };
-      }).filter(g => g.gap > 2).sort((a, b) => b.gap - a.gap);
+      const gaps = Object.entries(data.pillar_weights || {}).map(([pillar, weight]) => {
+        const nodeId = pillarNodeMap[pillar];
+        const m = (metrics || []).find(m => m.node_id === nodeId);
+        const index = m?.current_index ?? 50;
+        const needed = weight * 100;
+        const gap = Math.max(0, needed - index);
+        return { pillar, node_id: nodeId, gap: Math.round(gap), weight };
+      }).filter(g => g.gap > 5).sort((a, b) => b.gap - a.gap);
 
-      return { label: asp.aspiration_label, gaps };
+      return {
+        goal: data.label,
+        goal_key: data.goal_key,
+        target_age: data.target_age,
+        top_gaps: gaps.slice(0, 3),
+        message: `Sen: "${data.label}" ve věku ${data.target_age} let.`,
+      };
     }
 
     case 'get_recent_decisions': {
