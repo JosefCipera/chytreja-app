@@ -394,27 +394,41 @@ function renderProfileMainTab() {
 function renderCheckInTab() {
   return `
     <div class="udp-section">
-      <div class="udp-section-label">Energie</div>
-      <div id="chk-energie-row" style="display:flex;gap:8px;margin-bottom:4px;">
-        ${[1,2,3,4,5].map(n => `
-          <button data-n="${n}" class="chk-e-btn" style="
-            flex:1;padding:12px 0;font-size:16px;font-family:monospace;
-            border-radius:8px;cursor:pointer;transition:all .15s;
-            border:1px solid ${n<=3?'rgba(6,182,212,.55)':'rgba(255,255,255,.06)'};
-            background:${n<=3?'rgba(6,182,212,.1)':'transparent'};
-            color:${n<=3?'#22d3ee':'#64748b'};">${n}</button>`).join('')}
+
+      <!-- ENERGIE slider -->
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;">
+        <div class="udp-section-label" style="margin-bottom:0;">Energie</div>
+        <div id="chk-energie-label" style="font-family:monospace;font-size:13px;color:#22d3ee;">ujde</div>
       </div>
-      <div style="display:flex;justify-content:space-between;font-size:11px;color:#334155;font-family:monospace;letter-spacing:.05em;margin-bottom:24px;">
-        <span>vyčerpaný</span><span>nabitý</span>
+      <input id="chk-energie" type="range" min="1" max="5" step="1" value="3"
+        style="width:100%;accent-color:#06b6d4;height:4px;cursor:pointer;margin-bottom:4px;">
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:#334155;font-family:monospace;margin-bottom:24px;">
+        <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span>
       </div>
 
-      <div class="udp-section-label">Spánek (hodiny)</div>
-      <input id="chk-spanek" type="number" min="0" max="24" step="0.5" placeholder="7.5"
-        class="udp-input" style="width:100%;font-size:20px;text-align:center;margin-bottom:20px;">
+      <!-- SPÁNEK slider -->
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;">
+        <div class="udp-section-label" style="margin-bottom:0;">Spánek</div>
+        <div id="chk-spanek-label" style="font-family:monospace;font-size:13px;color:#22d3ee;">7 h</div>
+      </div>
+      <input id="chk-spanek" type="range" min="0" max="12" step="0.5" value="7"
+        style="width:100%;accent-color:#06b6d4;height:4px;cursor:pointer;margin-bottom:4px;">
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:#334155;font-family:monospace;margin-bottom:24px;">
+        <span>0</span><span>4</span><span>8</span><span>12</span>
+      </div>
 
-      <div class="udp-section-label" style="color:#334155;">HRV (ms · volitelné)</div>
-      <input id="chk-hrv" type="number" min="0" max="300" placeholder="—"
-        class="udp-input" style="width:100%;font-size:18px;text-align:center;background:transparent;border-color:rgba(255,255,255,.05);color:#475569;">
+      <!-- HRV slider (volitelné) -->
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;">
+        <div class="udp-section-label" style="margin-bottom:0;color:#2d3f52;">HRV <span style="color:#1e2d3d;font-size:11px;">(ms · volitelné)</span></div>
+        <div id="chk-hrv-label" style="font-family:monospace;font-size:13px;color:#475569;"></div>
+      </div>
+      <input id="chk-hrv" type="range" min="0" max="120" step="1" value="0"
+        style="width:100%;accent-color:#334155;height:4px;cursor:pointer;opacity:0.45;margin-bottom:4px;">
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:#1e293b;font-family:monospace;margin-bottom:8px;">
+        <span>0</span><span>40</span><span>80</span><span>120</span>
+      </div>
+      <div style="font-size:11px;color:#1e293b;font-family:monospace;margin-bottom:20px;">← vlevo = nevyplněno</div>
+
     </div>
 
     <div class="udp-save-row">
@@ -424,33 +438,42 @@ function renderCheckInTab() {
 }
 
 function bindCheckInEvents() {
-  let energie = 3;
+  const energieLabels = ['', 'vyčerpaný', 'unavený', 'ujde', 'dobrý', 'nabitý'];
 
-  const energieRow = document.getElementById('chk-energie-row');
-  if (energieRow) {
-    energieRow.addEventListener('click', e => {
-      const btn = e.target.closest('.chk-e-btn');
-      if (!btn) return;
-      energie = Number(btn.dataset.n);
-      energieRow.querySelectorAll('.chk-e-btn').forEach(b => {
-        const n = Number(b.dataset.n);
-        b.style.borderColor = n <= energie ? 'rgba(6,182,212,.55)' : 'rgba(255,255,255,.06)';
-        b.style.background  = n <= energie ? 'rgba(6,182,212,.1)'  : 'transparent';
-        b.style.color       = n <= energie ? '#22d3ee'              : '#64748b';
-      });
+  // Energie slider
+  const energieSlider = document.getElementById('chk-energie');
+  const energieLabel  = document.getElementById('chk-energie-label');
+  if (energieSlider && energieLabel) {
+    energieLabel.textContent = energieLabels[energieSlider.value] || '';
+    energieSlider.addEventListener('input', () => {
+      energieLabel.textContent = energieLabels[energieSlider.value] || '';
+    });
+  }
+
+  // Spánek slider
+  const spanekSlider = document.getElementById('chk-spanek');
+  const spanekLabel  = document.getElementById('chk-spanek-label');
+  if (spanekSlider && spanekLabel) {
+    spanekLabel.textContent = spanekSlider.value + ' h';
+    spanekSlider.addEventListener('input', () => {
+      spanekLabel.textContent = spanekSlider.value + ' h';
+    });
+  }
+
+  // HRV slider (0 = not set)
+  const hrvSlider = document.getElementById('chk-hrv');
+  const hrvLabel  = document.getElementById('chk-hrv-label');
+  if (hrvSlider && hrvLabel) {
+    hrvLabel.textContent = '';
+    hrvSlider.addEventListener('input', () => {
+      hrvLabel.textContent = hrvSlider.value > 0 ? hrvSlider.value + ' ms' : '';
     });
   }
 
   document.getElementById('btn-save-checkin')?.addEventListener('click', async () => {
-    const spanek = parseFloat(document.getElementById('chk-spanek').value);
-    const hrv    = document.getElementById('chk-hrv').value;
-    const status = document.getElementById('chk-status');
-
-    if (isNaN(spanek) || spanek < 0 || spanek > 24) {
-      status.textContent = 'Zadej hodiny spánku (0–24)';
-      status.style.color = '#ef4444';
-      return;
-    }
+    const energie = parseInt(energieSlider?.value ?? 3);
+    const spanek  = parseFloat(spanekSlider?.value ?? 7);
+    const hrv     = parseInt(hrvSlider?.value ?? 0);
 
     setStatus('chk-status', 'saving');
     try {
@@ -458,8 +481,10 @@ function bindCheckInEvents() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          userId: userId, energie, spanek_hod: spanek,
-          hrv: hrv !== '' ? Number(hrv) : null,
+          userId: userId,
+          energie,
+          spanek_hod: spanek,
+          hrv: hrv > 0 ? hrv : null,
         }),
       });
       const j = await res.json();
@@ -467,8 +492,8 @@ function bindCheckInEvents() {
       setStatus('chk-status', 'ok');
       setTimeout(() => closePanel(), 1200);
     } catch (err) {
-      status.textContent = err.message;
-      status.style.color = '#ef4444';
+      const status = document.getElementById('chk-status');
+      if (status) { status.textContent = err.message; status.style.color = '#ef4444'; }
     }
   });
 }
