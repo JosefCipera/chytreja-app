@@ -65,72 +65,58 @@
 
     <!-- Energie -->
     <div class="mb-6">
-      <div class="flex justify-between items-baseline mb-3">
-        <div class="hud-mono" style="font-size: 12px; letter-spacing: 0.08em; color: #64748b;">ENERGIE</div>
-        <div class="hud-mono" style="font-size: 14px; color: #22d3ee;">{energieLabels[energie]}</div>
-      </div>
+      <h3 style="color:#f8fafc;font-size:18px;margin-bottom:6px;">Jak se dnes cítíš?</h3>
+      <p style="color:#64748b;font-size:13px;margin-bottom:16px;font-style:italic;">Vyčerpaný=1, Ujde=3, Nabitý=5</p>
       <input
         type="range"
         min="1" max="5" step="1"
         bind:value={energie}
         class="w-full"
-        style="
-          accent-color: #06b6d4;
-          height: 4px;
-          cursor: pointer;
-        "
+        style="height:8px;border-radius:4px;outline:none;-webkit-appearance:none;cursor:pointer;
+               background:linear-gradient(to right,#ef4444 0%,#eab308 50%,#22c55e 100%);"
       />
-      <div class="flex justify-between mt-1 hud-mono" style="font-size: 10px; color: #334155;">
-        <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span>
+      <div class="flex justify-between items-center mt-2">
+        <span style="color:#64748b;font-size:13px;">Vyčerpaný</span>
+        <span style="color:#06b6d4;font-size:22px;font-weight:600;">{energieLabels[energie]}</span>
+        <span style="color:#64748b;font-size:13px;">Nabitý</span>
       </div>
     </div>
 
     <!-- Spánek -->
     <div class="mb-6">
-      <div class="flex justify-between items-baseline mb-3">
-        <div class="hud-mono" style="font-size: 12px; letter-spacing: 0.08em; color: #64748b;">SPÁNEK</div>
-        <div class="hud-mono" style="font-size: 14px; color: #22d3ee;">{spanek} h</div>
-      </div>
+      <h3 style="color:#f8fafc;font-size:18px;margin-bottom:6px;">Kolik hodin jsi spal?</h3>
+      <p style="color:#64748b;font-size:13px;margin-bottom:16px;font-style:italic;">Méně než 5 h=nízko, 7–8 h=ideál, 10+ h=přespáno</p>
       <input
         type="range"
         min="0" max="12" step="0.5"
         bind:value={spanek}
         class="w-full"
-        style="
-          accent-color: #06b6d4;
-          height: 4px;
-          cursor: pointer;
-        "
+        style="height:8px;border-radius:4px;outline:none;-webkit-appearance:none;cursor:pointer;
+               background:linear-gradient(to right,#1e3a5f 0%,#06b6d4 58%,#0e7490 100%);"
       />
-      <div class="flex justify-between mt-1 hud-mono" style="font-size: 10px; color: #334155;">
-        <span>0</span><span>4</span><span>8</span><span>12</span>
+      <div class="flex justify-between items-center mt-2">
+        <span style="color:#64748b;font-size:13px;">0 h</span>
+        <span style="color:#06b6d4;font-size:22px;font-weight:600;">{spanek} h</span>
+        <span style="color:#64748b;font-size:13px;">12 h</span>
       </div>
     </div>
 
     <!-- HRV optional -->
     <div class="mb-6">
-      <div class="flex justify-between items-baseline mb-3">
-        <div class="hud-mono" style="font-size: 12px; letter-spacing: 0.08em; color: #2d3f52;">
-          HRV <span style="color:#1e2d3d;">(ms · volitelné)</span>
-        </div>
-        {#if hrv !== ''}
-          <div class="hud-mono" style="font-size: 14px; color: #475569;">{hrv} ms</div>
-        {/if}
-      </div>
+      <h3 style="color:#2d3f52;font-size:16px;margin-bottom:6px;">HRV <span style="font-size:13px;font-weight:400;">(ms · volitelné)</span></h3>
+      <p style="color:#1e2d3d;font-size:13px;margin-bottom:16px;font-style:italic;">Nech vlevo pokud nemáš wearable</p>
       <input
         type="range"
         min="0" max="120" step="1"
         bind:value={hrv}
         class="w-full"
-        style="
-          accent-color: #334155;
-          height: 4px;
-          cursor: pointer;
-          opacity: 0.4;
-        "
+        style="height:8px;border-radius:4px;outline:none;-webkit-appearance:none;cursor:pointer;
+               background:linear-gradient(to right,#1e293b 0%,#334155 100%);opacity:0.5;"
       />
-      <div class="flex justify-between mt-1 hud-mono" style="font-size: 10px; color: #1e293b;">
-        <span>0</span><span>40</span><span>80</span><span>120</span>
+      <div class="flex justify-between items-center mt-2">
+        <span style="color:#334155;font-size:13px;">—</span>
+        <span style="color:#475569;font-size:22px;font-weight:600;">{hrv > 0 ? hrv + ' ms' : ''}</span>
+        <span style="color:#334155;font-size:13px;">120 ms</span>
       </div>
     </div>
 

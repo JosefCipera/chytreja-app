@@ -396,38 +396,46 @@ function renderCheckInTab() {
     <div class="udp-section">
 
       <!-- ENERGIE slider -->
-      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;">
-        <div class="udp-section-label" style="margin-bottom:0;">Energie</div>
-        <div id="chk-energie-label" style="font-family:monospace;font-size:13px;color:#22d3ee;">ujde</div>
-      </div>
-      <input id="chk-energie" type="range" min="1" max="5" step="1" value="3"
-        style="width:100%;accent-color:#06b6d4;height:4px;cursor:pointer;margin-bottom:4px;">
-      <div style="display:flex;justify-content:space-between;font-size:10px;color:#334155;font-family:monospace;margin-bottom:24px;">
-        <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span>
+      <h3 style="color:#f8fafc;font-size:18px;margin-bottom:6px;">Jak se dnes cítíš?</h3>
+      <p style="color:#64748b;font-size:13px;margin-bottom:16px;font-style:italic;">Vyčerpaný=1, Ujde=3, Nabitý=5</p>
+      <div style="margin-bottom:32px;">
+        <input id="chk-energie" type="range" min="1" max="5" step="1" value="3"
+          style="width:100%;height:8px;border-radius:4px;outline:none;-webkit-appearance:none;cursor:pointer;
+                 background:linear-gradient(to right,#ef4444 0%,#eab308 50%,#22c55e 100%);">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;">
+          <span style="color:#64748b;font-size:13px;">Vyčerpaný</span>
+          <span id="chk-energie-label" style="color:#06b6d4;font-size:22px;font-weight:600;">ujde</span>
+          <span style="color:#64748b;font-size:13px;">Nabitý</span>
+        </div>
       </div>
 
       <!-- SPÁNEK slider -->
-      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;">
-        <div class="udp-section-label" style="margin-bottom:0;">Spánek</div>
-        <div id="chk-spanek-label" style="font-family:monospace;font-size:13px;color:#22d3ee;">7 h</div>
-      </div>
-      <input id="chk-spanek" type="range" min="0" max="12" step="0.5" value="7"
-        style="width:100%;accent-color:#06b6d4;height:4px;cursor:pointer;margin-bottom:4px;">
-      <div style="display:flex;justify-content:space-between;font-size:10px;color:#334155;font-family:monospace;margin-bottom:24px;">
-        <span>0</span><span>4</span><span>8</span><span>12</span>
+      <h3 style="color:#f8fafc;font-size:18px;margin-bottom:6px;">Kolik hodin jsi spal?</h3>
+      <p style="color:#64748b;font-size:13px;margin-bottom:16px;font-style:italic;">Méně než 5 h=nízko, 7–8 h=ideál, 10+ h=přespáno</p>
+      <div style="margin-bottom:32px;">
+        <input id="chk-spanek" type="range" min="0" max="12" step="0.5" value="7"
+          style="width:100%;height:8px;border-radius:4px;outline:none;-webkit-appearance:none;cursor:pointer;
+                 background:linear-gradient(to right,#1e3a5f 0%,#06b6d4 58%,#0e7490 100%);">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;">
+          <span style="color:#64748b;font-size:13px;">0 h</span>
+          <span id="chk-spanek-label" style="color:#06b6d4;font-size:22px;font-weight:600;">7 h</span>
+          <span style="color:#64748b;font-size:13px;">12 h</span>
+        </div>
       </div>
 
       <!-- HRV slider (volitelné) -->
-      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;">
-        <div class="udp-section-label" style="margin-bottom:0;color:#2d3f52;">HRV <span style="color:#1e2d3d;font-size:11px;">(ms · volitelné)</span></div>
-        <div id="chk-hrv-label" style="font-family:monospace;font-size:13px;color:#475569;"></div>
+      <h3 style="color:#2d3f52;font-size:16px;margin-bottom:6px;">HRV <span style="font-size:13px;font-weight:400;">(ms · volitelné)</span></h3>
+      <p style="color:#1e2d3d;font-size:13px;margin-bottom:16px;font-style:italic;">Nech vlevo pokud nemáš wearable</p>
+      <div style="margin-bottom:16px;">
+        <input id="chk-hrv" type="range" min="0" max="120" step="1" value="0"
+          style="width:100%;height:8px;border-radius:4px;outline:none;-webkit-appearance:none;cursor:pointer;
+                 background:linear-gradient(to right,#1e293b 0%,#334155 100%);opacity:0.5;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;">
+          <span style="color:#334155;font-size:13px;">—</span>
+          <span id="chk-hrv-label" style="color:#475569;font-size:22px;font-weight:600;"></span>
+          <span style="color:#334155;font-size:13px;">120 ms</span>
+        </div>
       </div>
-      <input id="chk-hrv" type="range" min="0" max="120" step="1" value="0"
-        style="width:100%;accent-color:#334155;height:4px;cursor:pointer;opacity:0.45;margin-bottom:4px;">
-      <div style="display:flex;justify-content:space-between;font-size:10px;color:#1e293b;font-family:monospace;margin-bottom:8px;">
-        <span>0</span><span>40</span><span>80</span><span>120</span>
-      </div>
-      <div style="font-size:11px;color:#1e293b;font-family:monospace;margin-bottom:20px;">← vlevo = nevyplněno</div>
 
     </div>
 
