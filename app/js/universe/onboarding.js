@@ -18,104 +18,58 @@ import { supabase } from './supabaseClient.js';
 
 export const onboardingQuestions = [
   {
-    id: 'vstat_ze_zeme', node: 'stabilita', type: 'buttons', category: 'health',
+    id: 'vstat_ze_zeme', node: 'stabilita', type: 'slider', category: 'health',
     q: 'Lehněte si na zem. Zvládnete vstát bez opory rukou?',
     desc: 'Prevence pádů a ztráty samostatnosti.',
-    options: [
-      { label: 'Snadno, bez opory', value: 9 },
-      { label: 'S obtížemi nebo s oporou', value: 5 },
-      { label: 'Potřebuji pomoc', value: 2 },
-    ]
+    help: 'Potřebuji pomoc=1, S obtížemi=5, Snadno bez opory=10'
   },
   {
-    id: 'vynest_nakup', node: 'sila', type: 'buttons', category: 'health',
+    id: 'vynest_nakup', node: 'sila', type: 'slider', category: 'health',
     q: 'Unesete dvě plné tašky (~5 kg každá) do 2. patra schodů?',
     desc: 'Funkční síla — základ samostatnosti.',
-    options: [
-      { label: 'Bez problémů, obě tašky', value: 9 },
-      { label: 'Zvládnu, ale cítím námahu', value: 5 },
-      { label: 'Jednu tašku nebo vůbec', value: 2 },
-    ]
+    help: 'Jednu nebo vůbec=1, S námahou=5, Obě bez problémů=10'
   },
   {
-    id: 'zvednout_vnouce', node: 'sila', type: 'buttons', category: 'health',
+    id: 'zvednout_vnouce', node: 'sila', type: 'slider', category: 'health',
     q: 'Zvednete 15 kg ze země do náruče — dítě, pytel, krabici?',
     desc: 'Síla zad a nohou chrání před závislostí na pomoci druhých.',
-    options: [
-      { label: 'Bez problémů', value: 9 },
-      { label: 'Zvládnu, ale s námahou', value: 5 },
-      { label: 'Nedokážu nebo mě to bolí', value: 2 },
-    ]
+    help: 'Bolí nebo nedokážu=1, S námahou=5, Bez problémů=10'
   },
   {
-    id: 'kufr_do_police', node: 'mobilita', type: 'buttons', category: 'health',
+    id: 'kufr_do_police', node: 'mobilita', type: 'slider', category: 'health',
     q: 'Zvednete 10–15 kg nad hlavu — kufr do police v letadle?',
     desc: 'Mobilita ramen a síla horní části těla.',
-    options: [
-      { label: 'Bez problémů', value: 9 },
-      { label: 'S námahou nebo s pomocí', value: 5 },
-      { label: 'Nedokážu', value: 2 },
-    ]
+    help: 'Nedokážu=1, S pomocí=5, Bez problémů=10'
   },
   {
-    id: 'vyjit_4_patra', node: 'vo2max', type: 'buttons', category: 'health',
+    id: 'vyjit_4_patra', node: 'vo2max', type: 'slider', category: 'health',
     q: 'Vyjdete 4 patra schodů bez zastavení a bez zadýchání?',
     desc: 'Srdeční rezerva — jeden z nejsilnějších prediktorů délky života.',
-    options: [
-      { label: 'Bez problémů, klidný dech', value: 9 },
-      { label: 'Musím zpomalit nebo se zastavit', value: 5 },
-      { label: 'Nedokážu bez větší námahy', value: 2 },
-    ]
+    help: 'Velká námaha=1, Musím zpomalit=5, Klidný dech=10'
   },
   {
-    id: 'balanc_jedna_noha', node: 'stabilita', type: 'buttons', category: 'health',
+    id: 'balanc_jedna_noha', node: 'stabilita', type: 'slider', category: 'health',
     q: 'Vydržíte 30 sekund na jedné noze se zavřenýma očima?',
     desc: 'Prevence zlomenin krčku a pádů.',
-    options: [
-      { label: '30 sekund snadno', value: 9 },
-      { label: '10–20 sekund', value: 5 },
-      { label: 'Méně než 10 sekund', value: 2 },
-    ]
+    help: 'Méně než 5 s=1, 10–20 s=5, 30 s snadno=10'
   },
   {
-    id: 'rychla_chuze', node: 'vytrvalost', type: 'buttons', category: 'health',
+    id: 'rychla_chuze', node: 'vytrvalost', type: 'slider', category: 'health',
     q: 'Ujdete 1 km svižným tempem nebo jedete 20 min na kole bez zadýchání?',
     desc: 'Aerobní základ — udržení kondice a mobility.',
-    options: [
-      { label: 'Snadno, pohodový dech', value: 9 },
-      { label: 'Zvládnu, ale zadýchám se', value: 5 },
-      { label: 'Nezvládnu toto tempo', value: 2 },
-    ]
+    help: 'Nezvládnu=1, Zadýchám se=5, Pohodový dech=10'
   },
   {
-    id: 'otevrit_zavarovacku', node: 'sila', type: 'buttons', category: 'health',
+    id: 'otevrit_zavarovacku', node: 'sila', type: 'slider', category: 'health',
     q: 'Otevřete tuhý zavařovací víček bez pomoci nástroje nebo druhého člověka?',
     desc: 'Síla úchopu silně koreluje s délkou a kvalitou života.',
-    options: [
-      { label: 'Bez problémů', value: 9 },
-      { label: 'S námahou', value: 5 },
-      { label: 'Potřebuji pomoc', value: 2 },
-    ]
+    help: 'Potřebuji pomoc=1, S námahou=5, Bez problémů=10'
   },
   {
-    id: 'vstat_ze_zidle', node: 'sila', type: 'buttons', category: 'health',
-    q: 'Vstanete z nízké pohovky nebo ze země bez opory rukou?',
-    desc: 'Síla kvadricepsů — základ pohyblivosti ve stáří.',
-    options: [
-      { label: 'Snadno, bez opory', value: 9 },
-      { label: 'S námahou nebo s oporou', value: 5 },
-      { label: 'Potřebuji pomoc', value: 2 },
-    ]
-  },
-  {
-    id: 'skocit_dopadnout', node: 'stabilita', type: 'buttons', category: 'health',
+    id: 'skocit_dopadnout', node: 'stabilita', type: 'slider', category: 'health',
     q: 'Seskočíte z obrubníku (20 cm) a ustojíte dopad na jedné noze?',
     desc: 'Hustota kostí a rychlost reakce — ochrana před zlomeninami.',
-    options: [
-      { label: 'Snadno, dopad ustojím', value: 9 },
-      { label: 'Zvládnu, ale nejistě', value: 5 },
-      { label: 'Nedokážu nebo se bojím', value: 2 },
-    ]
+    help: 'Bojím se nebo nedokážu=1, Nejistě=5, Snadno ustojím=10'
   },
 ];
 
