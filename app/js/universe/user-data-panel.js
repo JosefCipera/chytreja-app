@@ -396,8 +396,8 @@ function renderCheckInTab() {
     <div class="udp-section">
 
       <!-- ENERGIE slider -->
-      <h3 style="color:#f8fafc;font-size:18px;margin-bottom:6px;">Jak se dnes cítíš?</h3>
-      <p style="color:#64748b;font-size:13px;margin-bottom:16px;font-style:italic;">Vyčerpaný=1, Ujde=3, Nabitý=5</p>
+      <div style="font-family:monospace;font-size:12px;letter-spacing:0.08em;color:#64748b;margin-bottom:6px;">ENERGIE</div>
+      <p style="color:#64748b;font-size:13px;margin-bottom:16px;font-style:italic;">Vyčerpaný=1, Ujde to=3, Nabitý=5</p>
       <div style="margin-bottom:32px;">
         <input id="chk-energie" type="range" min="1" max="5" step="1" value="3"
           style="width:100%;height:8px;border-radius:4px;outline:none;-webkit-appearance:none;cursor:pointer;
@@ -446,7 +446,7 @@ function renderCheckInTab() {
 }
 
 function bindCheckInEvents() {
-  const energieLabels = ['', 'vyčerpaný', 'unavený', 'ujde', 'dobrý', 'nabitý'];
+  const energieLabels = ['', 'vyčerpaný', 'unavený', 'ujde to', 'dobrý', 'nabitý'];
 
   // Energie slider
   const energieSlider = document.getElementById('chk-energie');

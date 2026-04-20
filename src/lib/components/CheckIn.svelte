@@ -7,7 +7,7 @@
   let saving    = $state(false);
   let error     = $state(null);
 
-  const energieLabels = ['', 'vyčerpaný', 'unavený', 'ujde', 'dobrý', 'nabitý'];
+  const energieLabels = ['', 'vyčerpaný', 'unavený', 'ujde to', 'dobrý', 'nabitý'];
 
   async function submit() {
     saving = true;
@@ -65,8 +65,8 @@
 
     <!-- Energie -->
     <div class="mb-6">
-      <h3 style="color:#f8fafc;font-size:18px;margin-bottom:6px;">Jak se dnes cítíš?</h3>
-      <p style="color:#64748b;font-size:13px;margin-bottom:16px;font-style:italic;">Vyčerpaný=1, Ujde=3, Nabitý=5</p>
+      <div class="hud-mono" style="font-size:12px;letter-spacing:0.08em;color:#64748b;margin-bottom:6px;">ENERGIE</div>
+      <p style="color:#64748b;font-size:13px;margin-bottom:16px;font-style:italic;">Vyčerpaný=1, Ujde to=3, Nabitý=5</p>
       <input
         type="range"
         min="1" max="5" step="1"
