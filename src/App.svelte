@@ -20,6 +20,28 @@
   let secondOffer     = $state(null);
   let secondOfferText = $state('Chceš jít dál?');
 
+  // ── AGENT ACTION (overrides DB action when available) ──
+  let agentAction = $state(null);
+
+  const BODY_DISCIPLINES = ['sila', 'kardio', 'stabilita'];
+
+  function normalizeAgentAction(a, nid) {
+    return {
+      id:       a.action_id,
+      label:    a.label,
+      // 'counter' → 'habit' (label already encodes sets×reps, single HOTOVO button)
+      // 'distance' → 'habit' (user marks done when finished)
+      type:     a.type === 'timed' ? 'timed' : 'habit',
+      duration: a.duration_s ?? 60,
+      reps:     a.reps ?? null,
+      sets:     a.sets ?? null,
+      status:   'READY',
+      tier:     a.tier ?? 1,
+      node_id:  nid,
+      coaching_note: a.coaching_note ?? null,
+    };
+  }
+
   function shouldOfferSecond(data) {
     const percent = data?.life_battery?.percent ?? 50;
     const trend   = data?.life_battery?.trend ?? 'stable';   // 'up' | 'down' | 'stable'
@@ -90,15 +112,34 @@
     triggerOrchestrator(userId, nodeId);
   }
 
-  // Volá orchestrátor na pozadí — uloží rozhodnutí do orchestrator_log.
-  // Při příštím loadHudData ho hud-data.js najde a použije verdikt.
+  // Volá orchestrátor → uloží rozhodnutí do orchestrator_log.
+  // Pokud je disciplína tělesná → zavolá Tělo Agenta pro konkrétní akci.
   async function triggerOrchestrator(uid, nid) {
     try {
-      await fetch('/api/orchestrator', {
+      const orchRes = await fetch('/api/orchestrator', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: 'Co mám dnes dělat?', nodeId: nid, userId: uid }),
       });
+      const orchData = await orchRes.json();
+
+      // If body discipline → call Tělo Agent for concrete action
+      if (BODY_DISCIPLINES.includes(orchData.discipline_id)) {
+        try {
+          const agentRes = await fetch('/api/agents/telo', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: uid, discipline: orchData.discipline_id, nodeId: nid }),
+          });
+          const agentData = await agentRes.json();
+          if (agentData.action_id) {
+            agentAction = normalizeAgentAction(agentData, nid);
+          }
+        } catch (e) {
+          console.warn('[CHJ] Tělo Agent call failed:', e);
+        }
+      }
+
       // Refresh HUD data so new verdict from orchestrator_log is picked up
       loadHudData(uid, nid);
     } catch (e) {
@@ -106,10 +147,14 @@
     }
   }
 
-  // Active data: real store or test fallback
-  let displayData = $derived(
-    (userId && !devMode && $nodeData) ? $nodeData : testNode
-  );
+  // Active data: real store or test fallback + agent action override
+  let displayData = $derived((() => {
+    const base = (userId && !devMode && $nodeData) ? $nodeData : testNode;
+    if (agentAction && userId && !devMode) {
+      return { ...base, action: agentAction };
+    }
+    return base;
+  })());
 
   // ── GAME LOOP: called when user completes an action ──────
   async function handleActionComplete(actionId, actionType, actionNodeId) {

@@ -90,10 +90,16 @@
       </div>
     </div>
 
-    <div class="font-sans mb-3 flex items-baseline gap-2" style="font-size: 17px; line-height: 1.3;">
+    <div class="font-sans mb-1 flex items-baseline gap-2" style="font-size: 17px; line-height: 1.3;">
       <span class="hud-mono" style="color: #475569; flex-shrink: 0; font-size: 15px;">[ ]</span>
       <span style="color: #e2e8f0;">{action.label}</span>
     </div>
+
+    {#if action.coaching_note}
+      <div class="font-sans mb-3" style="font-size: 13px; color: #64748b; line-height: 1.5; padding-left: 24px;">
+        {action.coaching_note}
+      </div>
+    {/if}
 
     <!-- ── TIMED ── -->
     {#if actionMode === 'timed'}
