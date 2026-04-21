@@ -70,8 +70,8 @@
               {data.completion_feedback || (data.today_count >= 2 ? 'Pokrok na uzlu.' : 'Pro pokrok na uzlu pokračuj zítra.')}
             </div>
             {#if data.weekly_hint}
-              <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(34,197,94,0.15);font-size:13px;color:#64748b;line-height:1.5;">
-                {data.weekly_hint}
+              <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(34,197,94,0.15);font-size:15px;color:#94a3b8;line-height:1.5;">
+                → {data.weekly_hint}
               </div>
             {/if}
           </div>

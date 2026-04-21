@@ -101,7 +101,7 @@
     </div>
 
     {#if action.coaching_note}
-      <div class="font-sans mb-3" style="font-size: 13px; color: #64748b; line-height: 1.5; padding-left: 24px;">
+      <div class="font-sans mb-3" style="font-size: 15px; color: #94a3b8; line-height: 1.5; padding-left: 24px;">
         {action.coaching_note}
       </div>
     {/if}
