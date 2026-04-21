@@ -171,19 +171,27 @@ export default async function handler(req, res) {
     // 2. Pre-fetch all context in parallel
     const ctx = await fetchUserContext(sb, userId);
 
-    // 3. Build context message for Haiku
-    // Map sub-node IDs to their Decathlon discipline (orchestrator sees discipline hint)
-    const NODE_TO_DISCIPLINE = {
-      vo2max: 'kardio', rovnovaha: 'stabilita', vytrvalost: 'kardio',
-      mobilita: 'stabilita', dychani: 'stabilita',
-      emoce: 'emocni', klid: 'emocni', meditace: 'kognitivni',
-      soustredeni: 'kognitivni', stres: 'emocni', vdecnost: 'smysl',
-      imunitni: 'prevence', metabolicke: 'metabolismus',
-      nervovy_system: 'kognitivni', obnova: 'prevence',
-      bilkoviny: 'vyziva', casovani_jidel: 'vyziva', hydratace: 'vyziva',
-      mikronutrienty: 'vyziva', glukoza_vyziva: 'metabolismus', pust: 'metabolismus',
-    };
-    const nodeDisciplineHint = nodeId ? NODE_TO_DISCIPLINE[nodeId] : null;
+    // 3. Resolve node discipline from DB (single source of truth)
+    let nodeDisciplineHint = null;
+    if (nodeId) {
+      const { data: nodeInfo } = await sb
+        .from('longevity_nodes')
+        .select('discipline, parent')
+        .eq('id', nodeId)
+        .maybeSingle();
+
+      nodeDisciplineHint = nodeInfo?.discipline ?? null;
+
+      // Parent traversal: new nodes without discipline set inherit from parent
+      if (!nodeDisciplineHint && nodeInfo?.parent) {
+        const { data: parentInfo } = await sb
+          .from('longevity_nodes')
+          .select('discipline')
+          .eq('id', nodeInfo.parent)
+          .maybeSingle();
+        nodeDisciplineHint = parentInfo?.discipline ?? null;
+      }
+    }
 
     const contextMsg = `
 UŽIVATEL: věk ${ctx.profile?.age ?? '?'}, pohlaví ${ctx.profile?.gender ?? '?'}

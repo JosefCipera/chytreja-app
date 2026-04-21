@@ -39,23 +39,6 @@
     'prevence','metabolismus','vyziva',
   ];
 
-  // Maps 3rd-level node IDs to their Decathlon discipline
-  // Used when orchestrator returns raw node ID instead of discipline
-  const NODE_TO_DISCIPLINE = {
-    // Tělo sub-nodes
-    vo2max: 'kardio', rovnovaha: 'stabilita', vytrvalost: 'kardio',
-    mobilita: 'stabilita', dychani: 'stabilita',
-    // Mysl sub-nodes
-    emoce: 'emocni', klid: 'emocni', meditace: 'kognitivni',
-    soustredeni: 'kognitivni', stres: 'emocni', vdecnost: 'smysl',
-    // Zdraví sub-nodes
-    imunitni: 'prevence', metabolicke: 'metabolismus',
-    nervovy_system: 'kognitivni', obnova: 'prevence',
-    // Výživa sub-nodes
-    bilkoviny: 'vyziva', casovani_jidel: 'vyziva', hydratace: 'vyziva',
-    mikronutrienty: 'vyziva', glukoza_vyziva: 'metabolismus', pust: 'metabolismus',
-  };
-
   function normalizeAgentAction(a, nid) {
     return {
       id:       a.action_id,
@@ -156,11 +139,12 @@
       });
       const orchData = await orchRes.json();
 
-      // Resolve discipline — orchestrator may return raw node ID for sub-nodes
+      // Orchestrator resolves discipline from DB (longevity_nodes.discipline)
+      // including parent traversal — no hardcoded map needed here
       const rawDiscipline = orchData.discipline_id;
       const discipline = VALID_DISCIPLINES.includes(rawDiscipline)
         ? rawDiscipline
-        : NODE_TO_DISCIPLINE[rawDiscipline] || NODE_TO_DISCIPLINE[nid] || rawDiscipline;
+        : rawDiscipline; // pass through — orchestrator already resolved via DB
 
       const agentType = BODY_DISCIPLINES.includes(discipline)   ? 'telo'
                       : MYSL_DISCIPLINES.includes(discipline)   ? 'mysl'
