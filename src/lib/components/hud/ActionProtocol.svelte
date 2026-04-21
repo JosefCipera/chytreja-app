@@ -80,7 +80,7 @@
         <span style="font-size: 15px; color: #C97272;">{killer.description}</span>
       </div>
       {#if verdict}
-        <div style="margin-top: 8px; font-size: 14px; color: #64748b; line-height: 1.4;">{verdict}</div>
+        <div style="margin-top: 8px; font-size: 15px; color: #94a3b8; line-height: 1.4;">{verdict}</div>
       {/if}
     </div>
     <div style="margin: 0 16px; border-top: 1px solid rgba(6,182,212,0.30);"></div>
@@ -101,7 +101,7 @@
     </div>
 
     {#if action.coaching_note}
-      <div class="font-sans mb-3" style="font-size: 15px; color: #94a3b8; line-height: 1.5; padding-left: 24px;">
+      <div class="font-sans mb-3" style="font-size: 16px; color: #cbd5e1; line-height: 1.5; padding-left: 24px;">
         {action.coaching_note}
       </div>
     {/if}
