@@ -10,6 +10,7 @@
   let {
     data,
     children,
+    agentLoading       = false,
     onActionComplete   = null,
     secondOffer        = null,
     secondOfferText    = 'Chceš jít dál?',
@@ -46,7 +47,16 @@
       </div>
 
       <div class="hud-fade-in" style="animation-delay: 0.2s">
-        {#if secondOffer === 'pending'}
+        {#if agentLoading}
+          <div style="background:rgba(6,182,212,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:20px 16px;">
+            <div class="hud-mono animate-pulse" style="font-size:13px;letter-spacing:0.1em;color:#06b6d4;margin-bottom:8px;">
+              ACTION: PREPARING…
+            </div>
+            <div style="height:6px;border-radius:3px;background:rgba(6,182,212,0.12);overflow:hidden;">
+              <div class="animate-pulse" style="height:100%;width:60%;background:rgba(6,182,212,0.35);border-radius:3px;"></div>
+            </div>
+          </div>
+        {:else if secondOffer === 'pending'}
           <SecondAction
             offerText={secondOfferText}
             onAccept={onAcceptSecond}

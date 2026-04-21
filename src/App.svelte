@@ -21,7 +21,8 @@
   let secondOfferText = $state('Chceš jít dál?');
 
   // ── AGENT ACTION (overrides DB action when available) ──
-  let agentAction = $state(null);
+  let agentAction    = $state(null);
+  let agentLoading   = $state(false); // true while orchestrator+agent is running
 
   const BODY_DISCIPLINES = ['sila', 'kardio', 'stabilita'];
   const MYSL_DISCIPLINES = ['spanek', 'kognitivni', 'emocni', 'smysl'];
@@ -117,6 +118,7 @@
   // Volá orchestrátor → uloží rozhodnutí do orchestrator_log.
   // Pokud je disciplína tělesná → zavolá Tělo Agenta pro konkrétní akci.
   async function triggerOrchestrator(uid, nid) {
+    agentLoading = true;
     try {
       const orchRes = await fetch('/api/orchestrator', {
         method: 'POST',
@@ -151,6 +153,8 @@
       loadHudData(uid, nid);
     } catch (e) {
       console.warn('[CHJ] orchestrator background call failed:', e);
+    } finally {
+      agentLoading = false;
     }
   }
 
@@ -241,6 +245,7 @@
   {:else}
     <HudPanel
       data={displayData}
+      agentLoading={agentLoading && userId && !devMode}
       onActionComplete={handleActionComplete}
       secondOffer={secondOffer}
       secondOfferText={secondOfferText}
