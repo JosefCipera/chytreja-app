@@ -53,7 +53,12 @@
     '#86C46A'
   );
 
-  let protocolLabel = $derived(dayType);
+  const DISCIPLINE_LABELS = {
+    sila: 'SÍLA', kardio: 'KARDIO', stabilita: 'STABILITA',
+    spanek: 'SPÁNEK', kognitivni: 'KOGNICE', emocni: 'EMOCE',
+    vyziva: 'VÝŽIVA', metabolismus: 'METABOLISMUS', prevence: 'PREVENCE', smysl: 'SMYSL',
+  };
+  let protocolLabel = $derived(DISCIPLINE_LABELS[dayType] ?? dayType);
 </script>
 
 <div class="rounded-lg hud-c4 {status === 'ACTIVE' ? 'glow-pulse' : ''}" style="
