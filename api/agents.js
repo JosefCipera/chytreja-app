@@ -136,6 +136,112 @@ Vyber jedno konkrétní cvičení pro dnešek.`;
   return action;
 }
 
+// ── MYSL AGENT ─────────────────────────────────────────
+const MYSL_SYSTEM = `Jsi Mysl Agent CHJ — vybíráš konkrétní mentální nebo emoční cvičení pro dnešní disciplínu.
+
+DISCIPLÍNY: spanek | kognitivni | emocni | smysl
+
+TIER systém (dle stavu uzlu Mysl):
+- tier 1 (index 0–40): jednoduché, nízká bariéra vstupu
+- tier 2 (index 41–70): střední náročnost, vyžaduje soustředění
+- tier 3 (index 71+): hluboká práce, náročnější rutiny
+
+CVIČENÍ — SPÁNEK:
+Tier 1: 4-7-8 dýchání před spánkem (4 min), Choď spát ve stejnou dobu 7 dní, Bez obrazovky 30 min před spaním
+Tier 2: Box breathing 5 min + relaxace svalů, Chladná místnost 18°C + tma, Ranní světlo 10 min po probuzení
+Tier 3: Kompletní spánková rutina (teplota, tma, čas, bez alkoholu), Sleduj spánek 7 dní a vyhodnoť
+
+CVIČENÍ — KOGNITIVNÍ:
+Tier 1: Čti 20 minut (kniha, ne zprávy), Křížovka nebo sudoku 15 min, Napiš 3 věci co ses dnes naučil
+Tier 2: Meditace 10 minut (soustředění na dech), Nauč se 10 nových slov cizího jazyka, Čti náročnější text 30 min
+Tier 3: Hluboká práce bez přerušení 45 min, Napiš shrnutí kapitoly vlastními slovy, Nauč se novou dovednost 30 min
+
+CVIČENÍ — EMOČNÍ:
+Tier 1: Napiš 3 věci za které jsi dnes vděčný, 5 minut box breathing, Krátká procházka v přírodě 15 min
+Tier 2: Zavolej nebo napiš blízkému člověku, Deník emocí — co cítíš a proč (10 min), Vycházka v přírodě 30 min
+Tier 3: Hluboký rozhovor s blízkým, Reflexe hodnot — co je pro tebe důležité (20 min), Odpusť si nebo druhému
+
+CVIČENÍ — SMYSL:
+Tier 1: Přečti si svůj sen a zamysli se co ti k němu dnes přiblíží, Udělej něco pro druhého (malá laskavost)
+Tier 2: Pracuj 30 min na projektu který tě naplňuje, Napiš proč chceš dosáhnout svého snu
+Tier 3: Mentoruj nebo pomoz někomu s dovedností kterou máš, Kreativní tvorba 45 min (psaní, hudba, kreslení)
+
+PRAVIDLA:
+- Nikdy neopakuj yesterdayAction
+- coaching_note: max 1 věta, konkrétní odkaz na sen uživatele (plavání, běžky, vnuci, hrát tenis...)
+- Česky, tykej, klidný ale motivující tón
+- type: "timed" (s dobou v sekundách) | "habit" (jednorázové HOTOVO)
+
+ODPOVĚZ POUZE JSON (bez markdown):
+{"action_id":"...","label":"...","type":"timed|habit","duration_s":null,"coaching_note":"..."}`;
+
+const MYSL_FALLBACKS = {
+  spanek:     { action_id: 'dychani_478', label: '4-7-8 dýchání před spánkem', type: 'timed', duration_s: 240, coaching_note: 'Kvalitní spánek je základ — bez něj žádný cíl nedotáhneš.' },
+  kognitivni: { action_id: 'cti_20min', label: 'Čti 20 minut', type: 'timed', duration_s: 1200, coaching_note: 'Mozek co čte, stárne pomaleji — a lépe plánuje.' },
+  emocni:     { action_id: 'vdecnost_3', label: 'Napiš 3 věci za které jsi vděčný', type: 'habit', duration_s: null, coaching_note: 'Vděčnost mění perspektivu — a ta určuje jak daleko dojdeš.' },
+  smysl:      { action_id: 'reflexe_snu', label: 'Zamysli se nad svým snem — co ti k němu dnes přiblíží', type: 'habit', duration_s: null, coaching_note: 'Každý den s jasným záměrem se počítá.' },
+};
+
+async function myslAgent(client, sb, { userId, discipline, nodeId }) {
+  if (!['spanek', 'kognitivni', 'emocni', 'smysl'].includes(discipline)) {
+    return { error: `Invalid discipline for mysl: ${discipline}` };
+  }
+
+  const today = new Date().toISOString().split('T')[0];
+
+  // Cache check
+  const { data: cached } = await sb.from('agent_log')
+    .select('action_id, label, type, duration_s, coaching_note')
+    .eq('user_id', userId).eq('node_id', nodeId).eq('discipline', discipline).eq('date', today)
+    .maybeSingle();
+  if (cached?.action_id) return { ...cached, cached: true };
+
+  // Fetch context
+  const [metricsRes, decathlonRes, missionRes] = await Promise.all([
+    sb.from('user_metrics').select('current_index').eq('user_id', userId).eq('node_id', nodeId).eq('universe', 'longevity').maybeSingle(),
+    sb.from('user_decathlon').select('label, target_age, goal_key').eq('user_id', userId).eq('active', true).maybeSingle(),
+    sb.from('mission_log').select('action_id').eq('user_id', userId).eq('node_id', nodeId)
+      .gte('date', new Date(Date.now() - 86400000).toISOString().split('T')[0])
+      .order('date', { ascending: false }).limit(1).maybeSingle(),
+  ]);
+
+  const nodeIndex = metricsRes.data?.current_index ?? 50;
+  const tier = getTier(nodeIndex);
+  const dream = decathlonRes.data;
+  const yesterdayAction = missionRes.data?.action_id ?? null;
+
+  const contextMsg = `DISCIPLÍNA: ${discipline}
+TIER: ${tier} (index uzlu Mysl: ${nodeIndex})
+VČEREJŠÍ AKCE: ${yesterdayAction ?? 'žádná'}
+SEN: ${dream ? `"${dream.label}" ve věku ${dream.target_age} let` : 'není nastaven'}
+
+Vyber jedno konkrétní cvičení pro dnešek.`;
+
+  let action = null;
+  try {
+    const response = await client.messages.create({
+      model: MODEL, max_tokens: 300,
+      system: MYSL_SYSTEM,
+      messages: [{ role: 'user', content: contextMsg }],
+    });
+    const text = response.content.find(b => b.type === 'text')?.text || '';
+    const match = text.match(/\{[\s\S]*\}/);
+    if (match) action = JSON.parse(match[0]);
+  } catch (e) {
+    console.warn('Mysl Agent Haiku failed:', e.message);
+  }
+
+  if (!action?.action_id) {
+    console.warn('Mysl Agent: fallback for', discipline);
+    action = MYSL_FALLBACKS[discipline];
+  }
+
+  sb.from('agent_log').insert({ user_id: userId, node_id: nodeId, discipline, date: today, tier, ...action })
+    .then(({ error }) => { if (error) console.warn('agent_log insert failed:', error.message); });
+
+  return action;
+}
+
 // ── MAIN HANDLER ──────────────────────────────────────
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
@@ -149,9 +255,10 @@ export default async function handler(req, res) {
     switch (type) {
       case 'telo':
         return res.json(await teloAgent(client, sb, { userId, ...params }));
+      case 'mysl':
+        return res.json(await myslAgent(client, sb, { userId, ...params }));
 
       // Future agents:
-      // case 'mysl':   return res.json(await myslAgent(client, sb, { userId, ...params }));
       // case 'vyziva': return res.json(await vyzivaAgent(client, sb, { userId, ...params }));
       // case 'zdravi': return res.json(await zdraviAgent(client, sb, { userId, ...params }));
 

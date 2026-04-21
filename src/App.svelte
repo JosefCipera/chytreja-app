@@ -24,6 +24,7 @@
   let agentAction = $state(null);
 
   const BODY_DISCIPLINES = ['sila', 'kardio', 'stabilita'];
+  const MYSL_DISCIPLINES = ['spanek', 'kognitivni', 'emocni', 'smysl'];
 
   function normalizeAgentAction(a, nid) {
     return {
@@ -124,20 +125,25 @@
       });
       const orchData = await orchRes.json();
 
-      // If body discipline → call Tělo Agent for concrete action
-      if (BODY_DISCIPLINES.includes(orchData.discipline_id)) {
+      // Call specialized agent based on discipline
+      const discipline = orchData.discipline_id;
+      const agentType = BODY_DISCIPLINES.includes(discipline) ? 'telo'
+                      : MYSL_DISCIPLINES.includes(discipline) ? 'mysl'
+                      : null;
+
+      if (agentType) {
         try {
           const agentRes = await fetch('/api/agents', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ type: 'telo', userId: uid, discipline: orchData.discipline_id, nodeId: nid }),
+            body: JSON.stringify({ type: agentType, userId: uid, discipline, nodeId: nid }),
           });
           const agentData = await agentRes.json();
           if (agentData.action_id) {
             agentAction = normalizeAgentAction(agentData, nid);
           }
         } catch (e) {
-          console.warn('[CHJ] Tělo Agent call failed:', e);
+          console.warn(`[CHJ] ${agentType} Agent call failed:`, e);
         }
       }
 
