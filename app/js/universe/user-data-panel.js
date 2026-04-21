@@ -885,7 +885,8 @@ function bindDocumentsEvents() {
       const data = await res.json();
 
       if (!res.ok) {
-        showError(`[${res.status}] ${data.error || data.detail || JSON.stringify(data)}`);
+        const detail = data.raw ? `\n\nClaude raw: ${data.raw}` : '';
+        showError(`[${res.status}] ${data.error || JSON.stringify(data)}${detail}`);
         uploadBtn.disabled = false;
         uploadBtn.textContent = 'Analyzovat dokument';
         return;

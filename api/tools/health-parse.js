@@ -158,16 +158,12 @@ Extrahuj všechny markery, namapuj na CHJ uzly a vrať přesně JSON dle instruk
     let parsed = null;
     let rawText = '';
 
-    const requestOptions = mediaType === 'application/pdf'
-      ? { headers: { 'anthropic-beta': 'pdfs-2024-09-25' } }
-      : {};
-
     const response = await client.messages.create({
       model: MODEL,
       max_tokens: 2000,
       system: SYSTEM_PROMPT,
       messages: [{ role: 'user', content: [contentBlock, { type: 'text', text: userMsg }] }],
-    }, requestOptions);
+    });
 
     rawText = response.content.find(b => b.type === 'text')?.text || '';
     const jsonMatch = rawText.match(/\{[\s\S]*\}/);
