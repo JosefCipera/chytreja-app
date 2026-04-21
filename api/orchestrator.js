@@ -170,6 +170,19 @@ export default async function handler(req, res) {
     const ctx = await fetchUserContext(sb, userId);
 
     // 3. Build context message for Haiku
+    // Map sub-node IDs to their Decathlon discipline (orchestrator sees discipline hint)
+    const NODE_TO_DISCIPLINE = {
+      vo2max: 'kardio', rovnovaha: 'stabilita', vytrvalost: 'kardio',
+      mobilita: 'stabilita', dychani: 'stabilita',
+      emoce: 'emocni', klid: 'emocni', meditace: 'kognitivni',
+      soustredeni: 'kognitivni', stres: 'emocni', vdecnost: 'smysl',
+      imunitni: 'prevence', metabolicke: 'metabolismus',
+      nervovy_system: 'kognitivni', obnova: 'prevence',
+      bilkoviny: 'vyziva', casovani_jidel: 'vyziva', hydratace: 'vyziva',
+      mikronutrienty: 'vyziva', glukoza_vyziva: 'metabolismus', pust: 'metabolismus',
+    };
+    const nodeDisciplineHint = nodeId ? NODE_TO_DISCIPLINE[nodeId] : null;
+
     const contextMsg = `
 UŽIVATEL: věk ${ctx.profile?.age ?? '?'}, pohlaví ${ctx.profile?.gender ?? '?'}
 READINESS: ${ctx.readiness ? `HRV delta ${ctx.readiness.hrv_delta_pct ?? 'N/A'}%, spánek ${ctx.readiness.sleep_hours ?? 'N/A'}h, energie ${ctx.readiness.energy_level ?? 'N/A'}/5 → ${ctx.readiness.summary}` : 'Bez dat'}
@@ -180,7 +193,7 @@ UZLY: ${ctx.nodes.map(n => `${n.node_id}:${n.state}(${n.index})`).join(', ')}
 VČERA: ${ctx.yesterday_discipline ?? 'nic'}
 POSLEDNÍ DISCIPLÍNY: ${ctx.recent_disciplines.slice(0, 5).join(', ') || 'žádné'}
 SEN: ${ctx.dream ? `"${ctx.dream.goal}" ve věku ${ctx.dream.target_age} let` : 'není nastaven'}
-UZEL: ${nodeId ?? 'obecně'}
+UZEL: ${nodeId ?? 'obecně'}${nodeDisciplineHint ? ` → disciplína: ${nodeDisciplineHint}` : ''}
 
 Rozhodni které disciplíně dát dnes prioritu.`.trim();
 
