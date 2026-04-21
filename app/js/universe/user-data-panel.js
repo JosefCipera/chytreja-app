@@ -70,11 +70,12 @@ function renderTab(tab) {
   const body = document.getElementById('udp-body');
   if (!body || !cachedData) return;
   switch (tab) {
-    case 'profile':     body.innerHTML = renderProfileMainTab(); break;
+    case 'profile':     body.innerHTML = renderProfileMainTab();  break;
     case 'constraints': body.innerHTML = renderConstraintsTab();  break;
     case 'aspirations': body.innerHTML = renderAspirationsTab();  break;
     case 'vitality':    body.innerHTML = renderVitalityTab();     break;
     case 'checkin':     body.innerHTML = renderCheckInTab();      break;
+    case 'documents':   body.innerHTML = renderDocumentsTab();    break;
   }
   bindTabEvents(tab);
 }
@@ -581,6 +582,7 @@ function bindTabEvents(tab) {
     case 'aspirations': bindAspirationsEvents();  break;
     case 'vitality':    bindVitalityEvents();     break;
     case 'checkin':     bindCheckInEvents();      break;
+    case 'documents':   bindDocumentsEvents();    break;
   }
 }
 
@@ -735,6 +737,7 @@ export function initUserDataPanel() {
         <button class="udp-tab" data-tab="constraints">Omezení</button>
         <button class="udp-tab" data-tab="aspirations">Sen</button>
         <button class="udp-tab" data-tab="vitality">Vitalita</button>
+        <button class="udp-tab" data-tab="documents">Dokumenty</button>
       </div>
       <div id="udp-body"></div>
     </div>`;
@@ -758,3 +761,193 @@ export function openCheckInTab() {
 }
 
 window.openCheckInTab = openCheckInTab;
+
+// ═══════════════════════════════════════════════════
+// TAB: Dokumenty — Health Document Parser
+// ═══════════════════════════════════════════════════
+
+function renderDocumentsTab() {
+  return `
+    <div class="udp-section">
+      <div class="udp-section-label">Nahrát zdravotní dokument</div>
+      <p style="color:#64748b;font-size:13px;line-height:1.6;margin:0 0 16px;">
+        Krevní výsledky, Holter, EKG, zpráva od lékaře nebo DEXA scan.<br>
+        Claude dokument analyzuje a výsledky se promítnou do tvých uzlů.
+      </p>
+
+      <div id="doc-dropzone" style="
+        border: 2px dashed #334155; border-radius: 12px; padding: 28px 16px;
+        text-align: center; cursor: pointer; transition: border-color 0.2s;
+      ">
+        <div style="font-size: 28px; margin-bottom: 8px;">🔬</div>
+        <div style="color: #94a3b8; font-size: 14px;">Přetáhni nebo klikni pro výběr</div>
+        <div style="color: #475569; font-size: 12px; margin-top: 4px;">JPG, PNG, PDF · max 3,5 MB</div>
+        <input id="doc-file-input" type="file" accept=".jpg,.jpeg,.png,.webp,.pdf" style="display:none;">
+      </div>
+
+      <div id="doc-file-info" style="display:none; margin-top:12px; padding:10px 14px;
+        background:rgba(6,182,212,0.05); border:1px solid rgba(6,182,212,0.2);
+        border-radius:8px; color:#94a3b8; font-size:13px;"></div>
+
+      <div id="doc-error" style="display:none; margin-top:10px; padding:10px 14px;
+        background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.25);
+        border-radius:8px; color:#fca5a5; font-size:13px;"></div>
+
+      <button id="doc-upload-btn" disabled style="
+        margin-top: 14px; width: 100%; padding: 12px;
+        border-radius: 10px; border: 1px solid #334155;
+        background: transparent; color: #475569;
+        font-size: 14px; cursor: not-allowed; transition: all 0.2s;
+      ">Analyzovat dokument</button>
+    </div>
+
+    <div id="doc-result" style="display:none;" class="udp-section">
+      <div class="udp-section-label">Výsledek analýzy</div>
+      <div id="doc-result-body"></div>
+    </div>`;
+}
+
+function bindDocumentsEvents() {
+  const dropzone = document.getElementById('doc-dropzone');
+  const fileInput = document.getElementById('doc-file-input');
+  const uploadBtn = document.getElementById('doc-upload-btn');
+  const fileInfo  = document.getElementById('doc-file-info');
+  const errorBox  = document.getElementById('doc-error');
+  let selectedFile = null;
+
+  const MAX_MB = 3.5;
+  const ACCEPTED = ['image/jpeg','image/png','image/webp','application/pdf'];
+
+  function selectFile(f) {
+    errorBox.style.display = 'none';
+    if (!ACCEPTED.includes(f.type)) {
+      showError('Nepodporovaný formát. Nahraj JPG, PNG nebo PDF.');
+      return;
+    }
+    if (f.size > MAX_MB * 1024 * 1024) {
+      showError(`Soubor je příliš velký (${(f.size/1024/1024).toFixed(1)} MB). Maximum je ${MAX_MB} MB.`);
+      return;
+    }
+    selectedFile = f;
+    fileInfo.style.display = 'block';
+    fileInfo.textContent = `📄 ${f.name} · ${(f.size/1024).toFixed(0)} KB`;
+    dropzone.style.borderColor = '#06b6d4';
+    uploadBtn.disabled = false;
+    uploadBtn.style.cssText = `margin-top:14px;width:100%;padding:12px;border-radius:10px;
+      border:1px solid rgba(6,182,212,0.4);background:rgba(6,182,212,0.08);
+      color:#67e8f9;font-size:14px;cursor:pointer;transition:all 0.2s;`;
+  }
+
+  function showError(msg) {
+    errorBox.style.display = 'block';
+    errorBox.textContent = msg;
+    selectedFile = null;
+    fileInfo.style.display = 'none';
+    uploadBtn.disabled = true;
+    uploadBtn.style.cssText = `margin-top:14px;width:100%;padding:12px;border-radius:10px;
+      border:1px solid #334155;background:transparent;color:#475569;
+      font-size:14px;cursor:not-allowed;`;
+  }
+
+  dropzone.addEventListener('click', () => fileInput.click());
+  dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.style.borderColor = '#06b6d4'; });
+  dropzone.addEventListener('dragleave', () => { dropzone.style.borderColor = selectedFile ? '#06b6d4' : '#334155'; });
+  dropzone.addEventListener('drop', (e) => { e.preventDefault(); const f = e.dataTransfer.files?.[0]; if (f) selectFile(f); });
+  fileInput.addEventListener('change', (e) => { const f = e.target.files?.[0]; if (f) selectFile(f); });
+
+  uploadBtn.addEventListener('click', async () => {
+    if (!selectedFile || !userId) return;
+
+    uploadBtn.disabled = true;
+    uploadBtn.textContent = 'Analyzuji…';
+    uploadBtn.style.color = '#94a3b8';
+    errorBox.style.display = 'none';
+
+    try {
+      const base64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(selectedFile);
+      });
+
+      const res = await fetch('/api/tools/health-parse', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId,
+          fileBase64: base64,
+          mediaType: selectedFile.type,
+          fileName: selectedFile.name,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        showError(data.error || 'Analýza selhala. Zkus znovu.');
+        uploadBtn.disabled = false;
+        uploadBtn.textContent = 'Analyzovat dokument';
+        return;
+      }
+
+      // Show result
+      renderDocResult(data);
+
+    } catch (e) {
+      showError('Chyba připojení. Zkontroluj internet a zkus znovu.');
+      uploadBtn.disabled = false;
+      uploadBtn.textContent = 'Analyzovat dokument';
+    }
+  });
+
+  function renderDocResult(data) {
+    const resultBox = document.getElementById('doc-result');
+    const resultBody = document.getElementById('doc-result-body');
+    resultBox.style.display = 'block';
+
+    const stateColor = s => s === 'RED' ? '#f87171' : s === 'YELLOW' ? '#fbbf24' : '#4ade80';
+    const deltaLabel = d => d > 0 ? `+${d}` : String(d);
+
+    const flagHtml = data.flags?.includes('CONSULT_DOCTOR') ? `
+      <div style="margin-bottom:12px;padding:10px 14px;background:rgba(239,68,68,0.08);
+        border:1px solid rgba(239,68,68,0.25);border-radius:8px;color:#fca5a5;font-size:13px;">
+        ⚠ Konzultuj výsledky s lékařem.
+      </div>` : '';
+
+    const nodesHtml = data.node_updates?.length ? data.node_updates.map(n => `
+      <div style="display:flex;justify-content:space-between;align-items:center;
+        padding:8px 12px;background:rgba(255,255,255,0.03);border-radius:6px;margin-bottom:4px;">
+        <span style="color:#94a3b8;font-size:12px;font-family:monospace;text-transform:uppercase;">${n.node_id}</span>
+        <span style="color:#475569;font-size:12px;">${n.previous_index} → <strong style="color:${stateColor(n.state)}">${n.new_index}</strong>
+          <span style="color:${n.delta < 0 ? '#f87171' : '#4ade80'};font-size:11px;margin-left:4px;">${deltaLabel(n.delta)}</span>
+        </span>
+      </div>`).join('') : '<div style="color:#475569;font-size:13px;">Žádné uzly nebyly aktualizovány.</div>';
+
+    resultBody.innerHTML = `
+      ${flagHtml}
+      <div style="color:#cbd5e1;font-size:14px;line-height:1.6;margin-bottom:14px;">${data.summary || ''}</div>
+      <div style="color:#475569;font-size:11px;font-family:monospace;margin-bottom:8px;">
+        AKTUALIZOVANÉ UZLY · ${data.markers_found ?? 0} markerů
+      </div>
+      ${nodesHtml}
+      <button id="doc-upload-another" style="margin-top:14px;width:100%;padding:10px;
+        border-radius:10px;border:1px solid #334155;background:transparent;
+        color:#64748b;font-size:13px;cursor:pointer;">
+        Nahrát další dokument
+      </button>`;
+
+    document.getElementById('doc-upload-another')?.addEventListener('click', () => {
+      resultBox.style.display = 'none';
+      fileInfo.style.display = 'none';
+      dropzone.style.borderColor = '#334155';
+      selectedFile = null;
+      uploadBtn.disabled = true;
+      uploadBtn.textContent = 'Analyzovat dokument';
+      fileInput.value = '';
+    });
+
+    uploadBtn.disabled = false;
+    uploadBtn.textContent = 'Analyzovat dokument';
+  }
+}

@@ -301,12 +301,14 @@
   {:else}
     <HudPanel
       data={displayData}
+      userId={userId && !devMode ? userId : null}
       agentLoading={agentLoading && userId && !devMode}
       onActionComplete={handleActionComplete}
       secondOffer={secondOffer}
       secondOfferText={secondOfferText}
       onAcceptSecond={acceptSecondAction}
       onDeclineSecond={declineSecondAction}
+      onDataRefresh={() => { loadHudData(userId, nodeId); triggerOrchestrator(userId, nodeId); }}
     />
 
     {#if devMode}

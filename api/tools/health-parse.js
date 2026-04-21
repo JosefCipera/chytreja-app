@@ -1,0 +1,305 @@
+// =====================================================
+// API: /api/tools/health-parse.js — Health Document Parser
+// Runtime: Vercel Edge (30s timeout, works on Hobby plan)
+//
+// POST /api/tools/health-parse
+// Body (JSON):
+//   userId       string
+//   fileBase64   string  — base64-encoded file content (max ~3.5 MB)
+//   mediaType    string  — "image/jpeg" | "image/png" | "application/pdf"
+//   fileName     string  — original filename (for audit)
+//   date?        string  — ISO date (Claude extracts from doc if missing)
+//
+// Supports: blood tests, Holter/ECG, doctor reports, DEXA, sleep studies
+// =====================================================
+
+// Edge runtime — no dotenv, no Node.js built-ins. Env vars from process.env directly.
+import Anthropic from '@anthropic-ai/sdk';
+import { createClient } from '@supabase/supabase-js';
+
+export const config = { runtime: 'edge' };
+
+const MODEL = 'claude-sonnet-4-5';
+
+// ── SYSTEM PROMPT ─────────────────────────────────────
+const SYSTEM_PROMPT = `Jsi Health Document Parser pro CHJ (Chytré Já) — analyzuješ zdravotní dokumenty.
+
+ÚKOL:
+1. Identifikuj typ dokumentu
+2. Extrahuj všechny markery s hodnotami, jednotkami a referenčními rozsahy
+3. Urči stav každého markeru (normal/borderline/high/low/critical)
+4. Namapuj na longevity uzly CHJ a navrhni index_delta
+
+TYPY DOKUMENTŮ:
+blood_test | holter | ecg | doctor_report | dexa | sleep_study | other
+
+LONGEVITY UZLY CHJ (pro mapování):
+- zdravi — obecné zdraví, prevence
+- metabolicke — metabolismus, inzulín, glukóza
+- telo — síla, výkon, složení těla
+- mysl — mentální zdraví, stres, spánek
+
+MAPOVÁNÍ MARKERŮ → UZLY:
+Kardiovaskulární (→ zdravi):
+  LDL cholesterol: > 3.4 = borderline, > 4.1 = high, > 4.9 = critical
+  HDL cholesterol: < 1.0 (muži) / < 1.2 (ženy) = low
+  Triglyceridy: > 1.7 = borderline, > 5.6 = critical
+  CRP: > 3 = borderline, > 10 = high
+  Krevní tlak (systolický): > 130 = borderline, > 140 = high
+
+Metabolické (→ metabolicke):
+  Glukóza nalačno (mmol/L): < 5.6 = normal, 5.6–6.9 = borderline, > 7.0 = high
+  HbA1c (%): < 5.7 = normal, 5.7–6.4 = borderline, ≥ 6.5 = high
+  Inzulín nalačno: > 10 mU/L = borderline, > 15 = high
+  Kyselina močová: > 360 (ženy) / > 420 (muži) μmol/L = high
+
+Výkon a tělo (→ telo):
+  Hemoglobin: pod dolní ref = low
+  Ferritin: < 30 = low, < 15 = critical
+  Vitamin B12: < 200 pmol/L = low
+  Testosterone (muži): < 12 nmol/L = low
+
+Imunita / obecné zdraví (→ zdravi):
+  Vitamin D: < 50 nmol/L = low, < 25 = critical
+  TSH: < 0.4 = low, > 4.0 = high
+  ALT: > 40 U/L (muži) / > 35 (ženy) = high
+  Kreatinin: nad referenční = high
+
+Holter / EKG (→ zdravi):
+  HRV (SDNN ms): < 20 = critical, < 50 = low, > 100 = normal
+  Klidový HR: < 50 = low (atleti OK), > 80 = borderline, > 100 = high
+  Arytmie: žádné = normal, ojedinělé = borderline, časté/závažné = critical
+
+VÝPOČET INDEX_DELTA:
+  normal: 0 (nebo +3 pokud optimální)
+  borderline: -10 až -15
+  high/low: -15 až -25
+  critical: -25 až -40
+  HDL: inverzní logika (čím vyšší tím lepší)
+  Kombinace markerů ve stejném uzlu: max -40
+
+VÝSTUPNÍ FORMÁT (přesně tento JSON, bez markdown):
+{
+  "doc_type": "blood_test",
+  "doc_date": "2026-04-14",
+  "summary": "Stručný popis česky (1-2 věty)",
+  "markers": [
+    {
+      "name": "LDL cholesterol",
+      "value": 3.8,
+      "unit": "mmol/L",
+      "reference_low": null,
+      "reference_high": 3.4,
+      "status": "borderline",
+      "note": "Mírně nad hranicí"
+    }
+  ],
+  "node_impacts": [
+    {
+      "node_id": "zdravi",
+      "index_delta": -12,
+      "confidence": "high",
+      "reasoning": "LDL 3.8 mmol/L (ref <3.4), CRP v normě"
+    }
+  ],
+  "constraints": [
+    {
+      "constraint_key": "hypertenze",
+      "description": "TK 145/90",
+      "active": true,
+      "affects_skills": ["kardio_vysoke_intenzity"]
+    }
+  ],
+  "flags": []
+}
+
+FLAGS: přidej "CONSULT_DOCTOR" při kritických hodnotách nebo arytmiích.
+Nestanoví diagnózu — jen extrahuj fakta a mapuj na uzly.
+Piš česky.`;
+
+// ── INDEX UPDATE ─────────────────────────────────────
+function applyDelta(current, delta) {
+  return Math.max(0, Math.min(100, Math.round((current ?? 50) + delta)));
+}
+
+function jsonResponse(data, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
+
+// ── MAIN HANDLER (Edge Web API) ────────────────────────
+export default async function handler(request) {
+  if (request.method !== 'POST') {
+    return jsonResponse({ error: 'POST only' }, 405);
+  }
+
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return jsonResponse({ error: 'Invalid JSON body' }, 400);
+  }
+
+  const { userId, fileBase64, mediaType, fileName, date } = body;
+
+  if (!userId)     return jsonResponse({ error: 'userId required' }, 400);
+  if (!fileBase64) return jsonResponse({ error: 'fileBase64 required' }, 400);
+  if (!mediaType)  return jsonResponse({ error: 'mediaType required' }, 400);
+
+  // Size guard — Edge body limit ~4MB; base64 of 3.5MB file ≈ 4.7MB string
+  if (fileBase64.length > 4_800_000) {
+    return jsonResponse({ error: 'Soubor je příliš velký. Maximum je ~3,5 MB. Komprimuj obrázek nebo rozděl PDF.' }, 413);
+  }
+
+  try {
+    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+    const sb = createClient(
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY,
+    );
+
+    // ── BUILD CONTENT BLOCK ──────────────────────────
+    const contentBlock = mediaType === 'application/pdf'
+      ? { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: fileBase64 } }
+      : { type: 'image',    source: { type: 'base64', media_type: mediaType, data: fileBase64 } };
+
+    const userMsg = `Analyzuj tento zdravotní dokument.
+Datum nahrání: ${date || new Date().toISOString().split('T')[0]}
+Název souboru: ${fileName || 'neznámý'}
+
+Extrahuj všechny markery, namapuj na CHJ uzly a vrať přesně JSON dle instrukcí.`;
+
+    // ── CLAUDE VISION CALL ────────────────────────────
+    let parsed = null;
+    let rawText = '';
+
+    const requestOptions = mediaType === 'application/pdf'
+      ? { headers: { 'anthropic-beta': 'pdfs-2024-09-25' } }
+      : {};
+
+    const response = await client.messages.create({
+      model: MODEL,
+      max_tokens: 2000,
+      system: SYSTEM_PROMPT,
+      messages: [{ role: 'user', content: [contentBlock, { type: 'text', text: userMsg }] }],
+    }, requestOptions);
+
+    rawText = response.content.find(b => b.type === 'text')?.text || '';
+    const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      try { parsed = JSON.parse(jsonMatch[0]); } catch { /* fall through */ }
+    }
+
+    if (!parsed?.markers || !parsed?.node_impacts) {
+      return jsonResponse({
+        error: 'Dokument se nepodařilo analyzovat. Ujisti se, že jde o čitelný zdravotní dokument.',
+        raw: rawText.slice(0, 500),
+      }, 422);
+    }
+
+    // ── SAVE RAW RESULT (audit trail) ─────────────────
+    const docDate = parsed.doc_date || date || new Date().toISOString().split('T')[0];
+
+    // fire-and-forget — don't await to save time
+    sb.from('node_inputs').insert({
+      user_id: userId,
+      node_id: 'zdravi',
+      input_type: 'health_doc',
+      source: parsed.doc_type,
+      doc_date: docDate,
+      data: {
+        doc_type: parsed.doc_type, doc_date: docDate,
+        file_name: fileName || null, summary: parsed.summary,
+        markers: parsed.markers, node_impacts: parsed.node_impacts,
+        constraints: parsed.constraints || [], flags: parsed.flags || [],
+      },
+    }).then(({ error }) => { if (error) console.warn('node_inputs insert failed:', error.message); });
+
+    // ── SAVE MARKERS → user_lab_results ──────────────
+    // user_lab_results already exists with correct schema
+    for (const m of parsed.markers) {
+      if (m.value == null) continue;
+      sb.from('user_lab_results').insert({
+        user_id: userId,
+        tested_at: docDate,
+        marker: m.name,
+        value: m.value,
+        unit: m.unit || null,
+        reference_min: m.reference_low ?? null,
+        reference_max: m.reference_high ?? null,
+        source: 'lab_pdf',
+        notes: m.note || null,
+      }).then(({ error }) => {
+        if (error) console.warn('user_lab_results insert failed:', error.message);
+      });
+    }
+
+    // ── APPLY NODE IMPACTS → user_metrics ────────────
+    const updatedNodes = [];
+
+    for (const impact of parsed.node_impacts) {
+      if (!impact.node_id || !impact.index_delta) continue;
+
+      const { data: current } = await sb
+        .from('user_metrics')
+        .select('current_index')
+        .eq('user_id', userId).eq('node_id', impact.node_id).eq('universe', 'longevity')
+        .maybeSingle();
+
+      const currentIndex = current?.current_index ?? 50;
+      const newIndex = applyDelta(currentIndex, impact.index_delta);
+      const newState = newIndex <= 40 ? 'RED' : newIndex <= 70 ? 'YELLOW' : 'GREEN';
+
+      await sb.from('user_metrics').upsert({
+        user_id: userId, node_id: impact.node_id, universe: 'longevity',
+        current_index: newIndex, state: newState, updated_at: new Date().toISOString(),
+      }, { onConflict: 'user_id,node_id,universe' });
+
+      // node_state_history — insert only columns that exist (user_id, node_id, date, state, current_index)
+      sb.from('node_state_history').insert({
+        user_id: userId,
+        node_id: impact.node_id,
+        date: docDate,
+        state: newState,
+        current_index: newIndex,
+      }).then(({ error }) => {
+        if (error && !error.message?.includes('duplicate')) console.warn('history insert failed:', error.message);
+      });
+
+      updatedNodes.push({ node_id: impact.node_id, previous_index: currentIndex, new_index: newIndex, delta: impact.index_delta, state: newState });
+    }
+
+    // ── SAVE CONSTRAINTS → user_constraints ──────────
+    // user_constraints uses: constraint_type, constraint_key, constraint_value
+    const savedConstraints = [];
+    for (const c of (parsed.constraints || [])) {
+      if (!c.constraint_key) continue;
+      const { error } = await sb.from('user_constraints').upsert({
+        user_id: userId,
+        constraint_type: 'injury',
+        constraint_key: c.constraint_key,
+        constraint_value: c.description || c.constraint_key,
+      }, { onConflict: 'user_id,constraint_key' });
+      if (!error) savedConstraints.push(c.constraint_key);
+    }
+
+    return jsonResponse({
+      success: true,
+      doc_type: parsed.doc_type,
+      doc_date: docDate,
+      summary: parsed.summary,
+      markers_found: parsed.markers.length,
+      markers: parsed.markers,
+      node_updates: updatedNodes,
+      constraints_saved: savedConstraints,
+      flags: parsed.flags || [],
+      node_impacts: parsed.node_impacts,
+    });
+
+  } catch (e) {
+    console.error('health-parse error:', e);
+    return jsonResponse({ error: e.message }, 500);
+  }
+}

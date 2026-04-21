@@ -4,11 +4,12 @@
   import KillerCard from './hud/KillerCard.svelte';
   import ActionProtocol from './hud/ActionProtocol.svelte';
   import SourceCards from './hud/SourceCards.svelte';
-
   import SecondAction from './hud/SecondAction.svelte';
+  import HealthUpload from './HealthUpload.svelte';
 
   let {
     data,
+    userId             = null,
     children,
     agentLoading       = false,
     onActionComplete   = null,
@@ -16,8 +17,15 @@
     secondOfferText    = 'Chceš jít dál?',
     onAcceptSecond     = null,
     onDeclineSecond    = null,
+    onDataRefresh      = null,   // called after health doc parsed → refresh HUD
   } = $props();
 
+  let showHealthUpload = $state(false);
+
+  function handleDocParsed(result) {
+    showHealthUpload = false;
+    if (onDataRefresh) onDataRefresh();
+  }
 </script>
 
 <div class="hud-shell hud-glow hud-scanline relative overflow-hidden hud-fade-in" style="width: 420px; min-height: 100dvh; border-radius: 20px 0 0 20px; overflow-y: auto;">
@@ -145,3 +153,12 @@
     </div>
   </div>
 </div>
+
+<!-- Health Document Upload modal -->
+{#if showHealthUpload && userId}
+  <HealthUpload
+    {userId}
+    onComplete={handleDocParsed}
+    onClose={() => showHealthUpload = false}
+  />
+{/if}
