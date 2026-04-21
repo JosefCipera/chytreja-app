@@ -392,13 +392,6 @@ async function loadModel(modelName) {
       // ── TOC: derive parent node values from worst child ───────────
       // Dynamic cascade from actual node.parent fields — no hardcoded lists.
       applyTocCascade(nodes, metricsMap);
-      // Debug: log parent states after cascade
-      console.group('🎨 TOC cascade result');
-      ['telo','mysl','vyziva','zdravi','dlouhovekost'].forEach(id => {
-        const m = metricsMap.get(id);
-        console.log(id, '→', m ? `${m.state} (${m.current_index})` : 'no metric');
-      });
-      console.groupEnd();
       // ─────────────────────────────────────────────────────────────
 
       // ✅ PŘIDEJ — merge state do nodes
