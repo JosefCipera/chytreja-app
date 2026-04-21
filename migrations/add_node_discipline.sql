@@ -23,7 +23,7 @@ UPDATE longevity_nodes SET discipline = 'kognitivni' WHERE id IN ('soustredeni',
 UPDATE longevity_nodes SET discipline = 'smysl'     WHERE id IN ('vdecnost');
 
 -- Zdraví 3rd level
-UPDATE longevity_nodes SET discipline = 'prevence'     WHERE id IN ('imunitni','obnova');
+UPDATE longevity_nodes SET discipline = 'prevence'     WHERE id IN ('imunitni','obnova','biomarkery');
 UPDATE longevity_nodes SET discipline = 'metabolismus' WHERE id IN ('metabolicke');
 
 -- Výživa 3rd level
