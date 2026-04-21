@@ -5,7 +5,7 @@
 // =====================================================
 
 import dotenv from 'dotenv';
-dotenv.config({ path: '.env.local', override: true });
+dotenv.config({ path: '.env.local' });
 
 import Anthropic from '@anthropic-ai/sdk';
 import { createClient } from '@supabase/supabase-js';
@@ -33,6 +33,7 @@ VÝSTUPY:
   Příklady tónu: "Svaly si to pamatují — v osmdesáti pěti ti to vrátí v bazénu."
                  "Bez tohohle základu ten kilometr ve vodě neuplavat."
   Vyhni se infinitivům jako "dostat se" — radši "budeš", "zvládneš"
+  POZOR na časování: "budeš" ne "buješ", "připravuješ" ne "připravuješ si buješ"
 - weekly_hint: volitelně, max 1 věta co přijde zítra/tento týden
 
 ODPOVĚZ POUZE JSON (bez markdown):

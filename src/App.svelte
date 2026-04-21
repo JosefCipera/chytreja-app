@@ -49,10 +49,11 @@
 
     const state = percent <= 40 ? 'RED' : percent <= 70 ? 'YELLOW' : 'GREEN';
 
-    if (streak >= 3)                              return { offer: true, text: 'Jedeš dobře. Přidáš krok?' };
-    if (state === 'RED'   && trend === 'down')    return { offer: true, text: 'Můžeš to ještě posílit.' };
-    if (state === 'YELLOW' && trend === 'stable') return { offer: Math.random() < 0.5, text: 'Chceš jít dál?' };
-    return { offer: false };
+    // Always offer — text varies by state
+    if (streak >= 3)                           return { offer: true, text: 'Jedeš dobře. Přidáš krok?' };
+    if (state === 'RED'   && trend === 'down') return { offer: true, text: 'Můžeš to ještě posílit.' };
+    if (state === 'GREEN' && trend === 'up')   return { offer: true, text: 'Držíš to. Dnes stačí, nebo přidáš?' };
+    return { offer: true, text: 'Chceš jít dál?' };
   }
 
   // ── FALLBACK TEST DATA (dev=1 or no userId) ───────────
