@@ -175,7 +175,12 @@
   let displayData = $derived((() => {
     const base = (userId && !devMode && $nodeData) ? $nodeData : testNode;
     if (agentAction && userId && !devMode) {
-      return { ...base, action: agentAction };
+      return {
+        ...base,
+        action: agentAction,
+        // Agent coaching_note fills in when orchestrator hasn't generated feedback yet
+        completion_feedback: base.completion_feedback || agentAction.coaching_note || null,
+      };
     }
     return base;
   })());
