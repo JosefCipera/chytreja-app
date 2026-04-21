@@ -100,6 +100,57 @@ async function populateModelSelector() {
     });
 }
 
+// ── TOC cascade helper — derive parent colors from worst child ────
+// Built dynamically from node.parent fields — no hardcoded lists.
+// Works bottom-up via recursion so intermediate parents are resolved first.
+function applyTocCascade(nodes, metricsMap) {
+  // Build childrenMap from actual parent fields
+  const childrenMap = new Map();
+  nodes.forEach(node => {
+    if (node.parent) {
+      if (!childrenMap.has(node.parent)) childrenMap.set(node.parent, []);
+      childrenMap.get(node.parent).push(node.id);
+    }
+  });
+
+  const processed = new Set();
+
+  function cascadeNode(parentId) {
+    if (processed.has(parentId)) return;
+    processed.add(parentId);
+
+    const childIds = childrenMap.get(parentId) || [];
+
+    // Recurse into children that are also parents first (bottom-up)
+    childIds.forEach(id => {
+      if (childrenMap.has(id)) cascadeNode(id);
+    });
+
+    // Find worst non-GRAY child
+    const childMetrics = childIds
+      .map(id => metricsMap.get(id))
+      .filter(m => m && m.current_index != null && m.state !== 'GRAY');
+
+    if (!childMetrics.length) return;
+
+    const worst = childMetrics.reduce((a, b) =>
+      (a.current_index ?? 50) < (b.current_index ?? 50) ? a : b
+    );
+
+    // Override parent metric with worst child — canvas color follows TOC
+    metricsMap.set(parentId, {
+      node_id: parentId,
+      current_index: worst.current_index,
+      state: worst.state,
+    });
+  }
+
+  // Cascade all parent nodes
+  childrenMap.forEach((_, parentId) => cascadeNode(parentId));
+
+  return metricsMap;
+}
+
 // ── Global refresh — called from HUD after completing action ──────
 // Updates metrics in-place + redraws without destroying/recreating the network
 window.refreshUniverseData = async function() {
@@ -115,27 +166,10 @@ window.refreshUniverseData = async function() {
 
     if (!metrics) return;
 
-    // Update MAIN_UNIVERSE_DATA in place
     const metricsMap = new Map(metrics.map(m => [m.node_id, m]));
 
-    // TOC: re-derive parent states from worst child (same as loadModel)
-    const DECATHLON = ['vo2max','sila','kardio','stabilita','rovnovaha','vytrvalost','mobilita','dychani'];
-    const CANVAS_CHILDREN = {
-      telo:         DECATHLON,
-      zdravi:       ['imunitni','metabolicke','nervovy_system','obnova','spanek'],
-      mysl:         ['emoce','klid','meditace','smysl','soustredeni','stres','vdecnost'],
-      vyziva:       ['bilkoviny','casovani_jidel','glukoza_vyziva','hydratace','mikronutrienty','pust'],
-      dlouhovekost: ['telo','zdravi','mysl','vyziva'],
-    };
-    for (const parentId of ['telo','zdravi','mysl','vyziva','dlouhovekost']) {
-      const childIds = CANVAS_CHILDREN[parentId];
-      const childMetrics = childIds.map(id => metricsMap.get(id)).filter(m => m && m.current_index != null && m.state !== 'GRAY');
-      if (!childMetrics.length) continue;
-      const worst = childMetrics.reduce((a, b) =>
-        (a.current_index ?? 50) < (b.current_index ?? 50) ? a : b
-      );
-      metricsMap.set(parentId, { node_id: parentId, current_index: worst.current_index, state: worst.state });
-    }
+    // TOC: cascade parent colors from actual node.parent relationships
+    applyTocCascade(window.MAIN_UNIVERSE_DATA, metricsMap);
 
     window.MAIN_UNIVERSE_DATA.forEach(node => {
       const metric = metricsMap.get(node.id);
@@ -349,25 +383,8 @@ async function loadModel(modelName) {
       console.log("📊 Metrics map:", metricsMap); // ← PŘIDEJ
 
       // ── TOC: derive parent node values from worst child ───────────
-      // Same logic as hud-data.js — ensures canvas matches HUD battery
-      const DECATHLON = ['vo2max','sila','kardio','stabilita','rovnovaha','vytrvalost','mobilita','dychani'];
-      const CANVAS_CHILDREN = {
-        telo:         DECATHLON,
-        zdravi:       ['imunitni','metabolicke','nervovy_system','obnova','spanek'],
-        mysl:         ['emoce','klid','meditace','smysl','soustredeni','stres','vdecnost'],
-        vyziva:       ['bilkoviny','casovani_jidel','glukoza_vyziva','hydratace','mikronutrienty','pust'],
-        dlouhovekost: ['telo','zdravi','mysl','vyziva'],
-      };
-      // Process bottom-up so telo is resolved before dlouhovekost reads it
-      for (const parentId of ['telo','zdravi','mysl','vyziva','dlouhovekost']) {
-        const childIds = CANVAS_CHILDREN[parentId];
-        const childMetrics = childIds.map(id => metricsMap.get(id)).filter(m => m && m.current_index != null && m.state !== 'GRAY');
-        if (!childMetrics.length) continue;
-        const worst = childMetrics.reduce((a, b) =>
-          (a.current_index ?? 50) < (b.current_index ?? 50) ? a : b
-        );
-        metricsMap.set(parentId, { node_id: parentId, current_index: worst.current_index, state: worst.state });
-      }
+      // Dynamic cascade from actual node.parent fields — no hardcoded lists.
+      applyTocCascade(nodes, metricsMap);
       // ─────────────────────────────────────────────────────────────
 
       // ✅ PŘIDEJ — merge state do nodes
