@@ -113,6 +113,11 @@ function applyTocCascade(nodes, metricsMap) {
     }
   });
 
+  // Re-derive state from index — never trust stale DB state column
+  function idxToState(idx) {
+    return idx <= 40 ? 'RED' : idx <= 70 ? 'YELLOW' : 'GREEN';
+  }
+
   const processed = new Set();
 
   function cascadeNode(parentId) {
@@ -126,10 +131,10 @@ function applyTocCascade(nodes, metricsMap) {
       if (childrenMap.has(id)) cascadeNode(id);
     });
 
-    // Find worst non-GRAY child
+    // Include any child that has a real current_index (ignore DB state column)
     const childMetrics = childIds
       .map(id => metricsMap.get(id))
-      .filter(m => m && m.current_index != null && m.state !== 'GRAY');
+      .filter(m => m != null && m.current_index != null);
 
     if (!childMetrics.length) return;
 
@@ -137,11 +142,13 @@ function applyTocCascade(nodes, metricsMap) {
       (a.current_index ?? 50) < (b.current_index ?? 50) ? a : b
     );
 
+    const worstIdx = worst.current_index;
+
     // Override parent metric with worst child — canvas color follows TOC
     metricsMap.set(parentId, {
       node_id: parentId,
-      current_index: worst.current_index,
-      state: worst.state,
+      current_index: worstIdx,
+      state: idxToState(worstIdx),
     });
   }
 
@@ -385,6 +392,13 @@ async function loadModel(modelName) {
       // ── TOC: derive parent node values from worst child ───────────
       // Dynamic cascade from actual node.parent fields — no hardcoded lists.
       applyTocCascade(nodes, metricsMap);
+      // Debug: log parent states after cascade
+      console.group('🎨 TOC cascade result');
+      ['telo','mysl','vyziva','zdravi','dlouhovekost'].forEach(id => {
+        const m = metricsMap.get(id);
+        console.log(id, '→', m ? `${m.state} (${m.current_index})` : 'no metric');
+      });
+      console.groupEnd();
       // ─────────────────────────────────────────────────────────────
 
       // ✅ PŘIDEJ — merge state do nodes
