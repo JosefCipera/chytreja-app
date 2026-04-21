@@ -885,7 +885,7 @@ function bindDocumentsEvents() {
       const data = await res.json();
 
       if (!res.ok) {
-        showError(data.error || 'Analýza selhala. Zkus znovu.');
+        showError(`[${res.status}] ${data.error || data.detail || JSON.stringify(data)}`);
         uploadBtn.disabled = false;
         uploadBtn.textContent = 'Analyzovat dokument';
         return;
@@ -895,7 +895,7 @@ function bindDocumentsEvents() {
       renderDocResult(data);
 
     } catch (e) {
-      showError('Chyba připojení. Zkontroluj internet a zkus znovu.');
+      showError('Chyba: ' + (e?.message || String(e)));
       uploadBtn.disabled = false;
       uploadBtn.textContent = 'Analyzovat dokument';
     }

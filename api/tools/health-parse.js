@@ -13,13 +13,13 @@
 // Supports: blood tests, Holter/ECG, doctor reports, DEXA, sleep studies
 // =====================================================
 
-// Edge runtime — no dotenv, no Node.js built-ins. Env vars from process.env directly.
+import dotenv from 'dotenv';
+dotenv.config({ path: '.env.local' });
+
 import Anthropic from '@anthropic-ai/sdk';
 import { createClient } from '@supabase/supabase-js';
 
-export const config = { runtime: 'edge' };
-
-const MODEL = 'claude-sonnet-4-5';
+const MODEL = 'claude-haiku-4-5';  // Haiku: 3-5s, stačí na strukturované lab PDF; pokud nestačí přepni na sonnet
 
 // ── SYSTEM PROMPT ─────────────────────────────────────
 const SYSTEM_PROMPT = `Jsi Health Document Parser pro CHJ (Chytré Já) — analyzuješ zdravotní dokumenty.
@@ -122,35 +122,18 @@ function applyDelta(current, delta) {
   return Math.max(0, Math.min(100, Math.round((current ?? 50) + delta)));
 }
 
-function jsonResponse(data, status = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { 'Content-Type': 'application/json' },
-  });
-}
+// ── MAIN HANDLER (Node.js serverless) ─────────────────
+export default async function handler(req, res) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
-// ── MAIN HANDLER (Edge Web API) ────────────────────────
-export default async function handler(request) {
-  if (request.method !== 'POST') {
-    return jsonResponse({ error: 'POST only' }, 405);
-  }
+  const { userId, fileBase64, mediaType, fileName, date } = req.body || {};
 
-  let body;
-  try {
-    body = await request.json();
-  } catch {
-    return jsonResponse({ error: 'Invalid JSON body' }, 400);
-  }
+  if (!userId)     return res.status(400).json({ error: 'userId required' });
+  if (!fileBase64) return res.status(400).json({ error: 'fileBase64 required' });
+  if (!mediaType)  return res.status(400).json({ error: 'mediaType required' });
 
-  const { userId, fileBase64, mediaType, fileName, date } = body;
-
-  if (!userId)     return jsonResponse({ error: 'userId required' }, 400);
-  if (!fileBase64) return jsonResponse({ error: 'fileBase64 required' }, 400);
-  if (!mediaType)  return jsonResponse({ error: 'mediaType required' }, 400);
-
-  // Size guard — Edge body limit ~4MB; base64 of 3.5MB file ≈ 4.7MB string
   if (fileBase64.length > 4_800_000) {
-    return jsonResponse({ error: 'Soubor je příliš velký. Maximum je ~3,5 MB. Komprimuj obrázek nebo rozděl PDF.' }, 413);
+    return res.status(413).json({ error: 'Soubor je příliš velký. Maximum je ~3,5 MB.' });
   }
 
   try {
@@ -193,10 +176,10 @@ Extrahuj všechny markery, namapuj na CHJ uzly a vrať přesně JSON dle instruk
     }
 
     if (!parsed?.markers || !parsed?.node_impacts) {
-      return jsonResponse({
+      return res.status(422).json({
         error: 'Dokument se nepodařilo analyzovat. Ujisti se, že jde o čitelný zdravotní dokument.',
         raw: rawText.slice(0, 500),
-      }, 422);
+      });
     }
 
     // ── SAVE RAW RESULT (audit trail) ─────────────────
@@ -285,7 +268,7 @@ Extrahuj všechny markery, namapuj na CHJ uzly a vrať přesně JSON dle instruk
       if (!error) savedConstraints.push(c.constraint_key);
     }
 
-    return jsonResponse({
+    return res.json({
       success: true,
       doc_type: parsed.doc_type,
       doc_date: docDate,
@@ -300,6 +283,6 @@ Extrahuj všechny markery, namapuj na CHJ uzly a vrať přesně JSON dle instruk
 
   } catch (e) {
     console.error('health-parse error:', e);
-    return jsonResponse({ error: e.message }, 500);
+    return res.status(500).json({ error: e.message });
   }
 }
