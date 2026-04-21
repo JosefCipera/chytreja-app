@@ -24,8 +24,9 @@
   let agentAction    = $state(null);
   let agentLoading   = $state(false); // true while orchestrator+agent is running
 
-  const BODY_DISCIPLINES = ['sila', 'kardio', 'stabilita'];
-  const MYSL_DISCIPLINES = ['spanek', 'kognitivni', 'emocni', 'smysl'];
+  const BODY_DISCIPLINES  = ['sila', 'kardio', 'stabilita'];
+  const MYSL_DISCIPLINES  = ['spanek', 'kognitivni', 'emocni', 'smysl'];
+  const ZDRAVI_DISCIPLINES = ['prevence', 'metabolismus'];
 
   function normalizeAgentAction(a, nid) {
     return {
@@ -129,8 +130,9 @@
 
       // Call specialized agent based on discipline
       const discipline = orchData.discipline_id;
-      const agentType = BODY_DISCIPLINES.includes(discipline) ? 'telo'
-                      : MYSL_DISCIPLINES.includes(discipline) ? 'mysl'
+      const agentType = BODY_DISCIPLINES.includes(discipline)   ? 'telo'
+                      : MYSL_DISCIPLINES.includes(discipline)   ? 'mysl'
+                      : ZDRAVI_DISCIPLINES.includes(discipline) ? 'zdravi'
                       : null;
 
       if (agentType) {

@@ -242,6 +242,114 @@ Vyber jedno konkrétní cvičení pro dnešek.`;
   return action;
 }
 
+// ── ZDRAVÍ AGENT ───────────────────────────────────────
+const ZDRAVI_SYSTEM = `Jsi Zdraví Agent CHJ — vybíráš konkrétní preventivní nebo metabolickou akci pro dnešní den.
+
+DISCIPLÍNY: prevence | metabolismus
+
+TIER systém (dle stavu uzlu Zdraví/Metabolismus):
+- tier 1 (index 0–40): základní návyky, nízká bariéra
+- tier 2 (index 41–70): střední náročnost, vyžaduje plánování
+- tier 3 (index 71+): pokročilé protokoly
+
+CVIČENÍ — PREVENCE:
+Tier 1: Zaznamenej co jsi dnes jedl (foto nebo text), Vypij 2,5l vody — nastav připomínky, Změř si TK ráno nalačno
+Tier 2: Naplánuj preventivní prohlídku (zubař, oční, praktik), Omega-3 doplněk + vitamin D dnes, Přečti si jeden výsledek z posledních krevních testů
+Tier 3: Projdi si výsledky krevních testů a zapiš trendy, CGM sledování — nasaď senzor, Konzultuj výsledky s lékařem
+
+CVIČENÍ — METABOLISMUS:
+Tier 1: Projdi se 10 minut po největším jídle dnes, Vynechej sladké nápoje celý den, Snídaně s 30g proteinu — vejce, tvaroh nebo jogurt
+Tier 2: Přerušovaný půst 14:10 — první jídlo až v 10h, Vynechej škroby k večeři, Chůze 20 minut do 30 minut po obědě
+Tier 3: Přerušovaný půst 16:8 — okno 12:00–20:00, Proteinový den (2g/kg těl. hmotnosti), Intervalová chůze 30 min (2 min rychle, 1 min pomalu)
+
+GLUKÓZA — pokud uživatel zmíní hraniční glukózu (5,8–7,0):
+- Prioritizuj: chůze po jídle, protein na snídani, vynechání rafinovaných sacharidů
+- Vyhni se: půstu > 16h (může stresovat), extrémním doporučením
+- coaching_note: zmiň konkrétní dopad na výkon při plavání nebo snu
+
+PRAVIDLA:
+- Nikdy neopakuj yesterdayAction
+- coaching_note: max 1 věta, konkrétní odkaz na sen uživatele
+- Česky, tykej, klidný ale přímý tón
+- type: "timed" (s dobou v sekundách) | "habit" (jednorázové HOTOVO)
+
+ODPOVĚZ POUZE JSON (bez markdown):
+{"action_id":"...","label":"...","type":"timed|habit","duration_s":null,"coaching_note":"..."}`;
+
+const ZDRAVI_FALLBACKS = {
+  prevence:     { action_id: 'voda_25l', label: 'Vypij 2,5l vody — nastav připomínky', type: 'habit', duration_s: null, coaching_note: 'Hydratace je základ — bez ní výkon v bazénu ani na suchu nefunguje.' },
+  metabolismus: { action_id: 'chůze_po_jidle', label: 'Projdi se 10 minut po největším jídle', type: 'timed', duration_s: 600, coaching_note: 'Chůze po jídle snižuje glukózu — přímá investice do výkonu v osmdesáti pěti.' },
+};
+
+async function zdraviAgent(client, sb, { userId, discipline, nodeId }) {
+  if (!['prevence', 'metabolismus'].includes(discipline)) {
+    return { error: `Invalid discipline for zdravi: ${discipline}` };
+  }
+
+  const today = new Date().toISOString().split('T')[0];
+
+  // Cache check
+  const { data: cached } = await sb.from('agent_log')
+    .select('action_id, label, type, duration_s, coaching_note')
+    .eq('user_id', userId).eq('node_id', nodeId).eq('discipline', discipline).eq('date', today)
+    .maybeSingle();
+  if (cached?.action_id) return { ...cached, cached: true };
+
+  // Fetch context
+  const [metricsRes, decathlonRes, missionRes, constraintsRes] = await Promise.all([
+    sb.from('user_metrics').select('current_index').eq('user_id', userId).eq('node_id', nodeId).eq('universe', 'longevity').maybeSingle(),
+    sb.from('user_decathlon').select('label, target_age, goal_key').eq('user_id', userId).eq('active', true).maybeSingle(),
+    sb.from('mission_log').select('action_id').eq('user_id', userId).eq('node_id', nodeId)
+      .gte('date', new Date(Date.now() - 86400000).toISOString().split('T')[0])
+      .order('date', { ascending: false }).limit(1).maybeSingle(),
+    sb.from('user_constraints').select('constraint_key, constraint_value').eq('user_id', userId),
+  ]);
+
+  const nodeIndex = metricsRes.data?.current_index ?? 50;
+  const tier = getTier(nodeIndex);
+  const dream = decathlonRes.data;
+  const yesterdayAction = missionRes.data?.action_id ?? null;
+
+  // Check for glucose constraint
+  const constraints = constraintsRes.data || [];
+  const glucoseNote = constraints.some(c =>
+    c.constraint_key?.includes('glukoz') ||
+    (c.constraint_value && JSON.stringify(c.constraint_value).includes('glukoz'))
+  ) ? 'Uživatel má hraniční glukózu — prioritizuj chůzi po jídle a protein.' : '';
+
+  const contextMsg = `DISCIPLÍNA: ${discipline}
+TIER: ${tier} (index uzlu: ${nodeIndex})
+VČEREJŠÍ AKCE: ${yesterdayAction ?? 'žádná'}
+SEN: ${dream ? `"${dream.label}" ve věku ${dream.target_age} let` : 'není nastaven'}
+${glucoseNote}
+
+Vyber jedno konkrétní cvičení pro dnešek.`;
+
+  let action = null;
+  try {
+    const response = await client.messages.create({
+      model: MODEL, max_tokens: 300,
+      system: ZDRAVI_SYSTEM,
+      messages: [{ role: 'user', content: contextMsg }],
+    });
+    const text = response.content.find(b => b.type === 'text')?.text || '';
+    const match = text.match(/\{[\s\S]*\}/);
+    if (match) action = JSON.parse(match[0]);
+  } catch (e) {
+    console.warn('Zdraví Agent Haiku failed:', e.message);
+  }
+
+  if (!action?.action_id) {
+    console.warn('Zdraví Agent: fallback for', discipline);
+    action = ZDRAVI_FALLBACKS[discipline];
+  }
+
+  sb.from('agent_log').insert({ user_id: userId, node_id: nodeId, discipline, date: today, tier, ...action })
+    .then(({ error }) => { if (error) console.warn('agent_log insert failed:', error.message); });
+
+  return action;
+}
+
 // ── MAIN HANDLER ──────────────────────────────────────
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
@@ -257,10 +365,11 @@ export default async function handler(req, res) {
         return res.json(await teloAgent(client, sb, { userId, ...params }));
       case 'mysl':
         return res.json(await myslAgent(client, sb, { userId, ...params }));
+      case 'zdravi':
+        return res.json(await zdraviAgent(client, sb, { userId, ...params }));
 
       // Future agents:
       // case 'vyziva': return res.json(await vyzivaAgent(client, sb, { userId, ...params }));
-      // case 'zdravi': return res.json(await zdraviAgent(client, sb, { userId, ...params }));
 
       default:
         return res.status(400).json({ error: `Unknown agent type: ${type}` });
