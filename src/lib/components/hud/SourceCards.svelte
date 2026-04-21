@@ -83,11 +83,11 @@
           <div class="hud-mono mb-1" style="font-size: 13px; color: rgba(6,182,212,0.85);">
             [ID: {shortId(source.med_id)}]
           </div>
-          <div class="hud-mono leading-snug mb-1" style="font-size: 11px; color: #64748b; text-transform: uppercase;">
+          <div class="hud-mono leading-snug mb-1" style="font-size: 13px; color: #94a3b8; text-transform: uppercase;">
             {source.title.length > 38 ? source.title.slice(0, 38) + '...' : source.title}
           </div>
           {#if source.journal || source.year}
-            <div class="font-sans italic" style="font-size: 11px; color: #475569;">
+            <div class="font-sans italic" style="font-size: 12px; color: #64748b;">
               {[source.journal, source.year].filter(Boolean).join(', ')}
             </div>
           {/if}

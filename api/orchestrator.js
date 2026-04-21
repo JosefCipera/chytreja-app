@@ -31,13 +31,13 @@ VÝSTUPY:
 - verdict: max 15 slov, přímé, bez caveat
 - completion_feedback: max 1 věta, hovorová čeština jako trenér, VŽDY s konkrétním odkazem na sen uživatele
   Příklady tónu:
-    "Srdce, které v osmdesáti pěti dotáhne ten půlkilometr — stavíš ho dnes."
-    "Každý záběr ve vodě začíná tady — kardio, které se počítá."
-    "Bez tahle základny ten půlkilometr v pětaosmdesáti neuplaváš."
+    "Každý záběr ve vodě začíná tady — kardio dnes, bazén v osmdesáti pěti."
+    "Bez tohohle základu ten půlkilometr v pětaosmdesáti neuplaváš."
     "Svaly si to pamatují — v osmdesáti pěti ti to vrátí v bazénu."
-  Zakázané konstrukce: "si tělo" (špatně) → "tělo" (správně)
+    "Plíce a nohy co tě v osmdesáti pěti dotáhnou na druhý konec — trénuješ je dnes."
+  Zakázané konstrukce: "stavíš srdce" (srdce se nestaví), "si tělo" → správně "tělo"
   Zakázané tvary: "buješ", "polovikilometr" → správně "budeš", "půlkilometr"
-  Vyhni se infinitivům — radši "budeš", "zvládneš", "dotáhneš"
+  Vyhni se infinitivům — radši "budeš", "zvládneš", "dotáhneš", "trénuješ"
 - weekly_hint: volitelně, max 1 věta co přijde zítra/tento týden
 
 ODPOVĚZ POUZE JSON (bez markdown):
