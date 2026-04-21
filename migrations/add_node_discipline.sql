@@ -26,6 +26,9 @@ UPDATE longevity_nodes SET discipline = 'smysl'     WHERE id IN ('vdecnost');
 UPDATE longevity_nodes SET discipline = 'prevence'     WHERE id IN ('imunitni','obnova','biomarkery');
 UPDATE longevity_nodes SET discipline = 'metabolismus' WHERE id IN ('metabolicke');
 
+-- Biomarkery 4th level (explicit overrides — rest inherits prevence via parent traversal)
+UPDATE longevity_nodes SET discipline = 'metabolismus' WHERE id IN ('glukoza');
+
 -- Výživa 3rd level
 UPDATE longevity_nodes SET discipline = 'vyziva'       WHERE id IN ('bilkoviny','casovani_jidel','hydratace','mikronutrienty');
 UPDATE longevity_nodes SET discipline = 'metabolismus' WHERE id IN ('glukoza_vyziva','pust');
