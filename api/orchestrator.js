@@ -42,6 +42,7 @@ VÝSTUPY:
     "kardio a sílu si odpočine" → správně "kardio a síla si odpočinou" (shoda čísla)
     "to budou tvé nejlepší pomocníci" (marketingová fráze, ne trenér)
   Zakázané tvary: "buješ", "polovikilometr" → správně "budeš", "půlkilometr"
+  Zakázané tvary: "uplavou", "dosáhnou", "uplaví", "dotáhnou" → správně "uplavíš", "dosáhneš", "dotáhneš" (vždy 2. osoba j.č.)
   Věk uživatele piš VŽDY číslicí: "v 69" nebo "v 69 letech" — NIKDY slovně ("v jednašedesáti devíti" = špatně)
   Vyhni se infinitivům — radši "budeš", "zvládneš", "dotáhneš", "trénuješ"
   Vždy zkontroluj shodu podmětu a přísudku v čísle (kardio a síla = plurál → odpočinou)

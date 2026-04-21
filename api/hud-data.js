@@ -7,6 +7,29 @@ import { createClient } from '@supabase/supabase-js';
 
 // Actions now loaded from longevity_actions table in Supabase
 
+// ── NODE → DISCIPLINE MAPPING ─────────────────────────
+// Maps sub-node IDs (3rd/4th level) to their Decathlon discipline.
+// Used when orchestrator hasn't decided yet — ensures correct action
+// protocol_type even on first load or after orchestrator failure.
+// 4th-level nodes inherit their parent's discipline automatically.
+const NODE_TO_DISCIPLINE = {
+  // Tělo 3rd level
+  vo2max: 'kardio', rovnovaha: 'stabilita', vytrvalost: 'kardio',
+  mobilita: 'stabilita', dychani: 'stabilita',
+  // Tělo 4th level (under sila / stabilita)
+  dead_hang: 'sila', farmer_carry: 'sila', grip: 'sila', hip_hinge: 'sila',
+  floor_get_up: 'stabilita',
+  // Mysl 3rd level
+  emoce: 'emocni', klid: 'emocni', meditace: 'kognitivni',
+  soustredeni: 'kognitivni', stres: 'emocni', vdecnost: 'smysl',
+  // Zdraví 3rd level
+  imunitni: 'prevence', metabolicke: 'metabolismus',
+  nervovy_system: 'kognitivni', obnova: 'prevence',
+  // Výživa 3rd level
+  bilkoviny: 'vyziva', casovani_jidel: 'vyziva', hydratace: 'vyziva',
+  mikronutrienty: 'vyziva', glukoza_vyziva: 'metabolismus', pust: 'metabolismus',
+};
+
 // ── DISCIPLINE → PROTOCOL_TYPE MAPPING ───────────────
 // Maps 10 Decathlon disciplines to longevity_actions.protocol_type values
 const DISCIPLINE_PROTOCOLS = {
@@ -286,7 +309,11 @@ export default async function handler(req, res) {
     orchestratorDecision = orchLog;
   }
 
-  const disciplineId = orchestratorDecision?.pillar;
+  // Resolve discipline: orchestrator decision → node mapping → null
+  const rawDisciplineId = orchestratorDecision?.pillar;
+  const disciplineId = rawDisciplineId
+    || NODE_TO_DISCIPLINE[nodeId]   // sub-node opened directly (no orch decision yet)
+    || null;
   const disciplineProtocols = disciplineId ? DISCIPLINE_PROTOCOLS[disciplineId] : null;
 
   // 6. Action from longevity_actions DB
