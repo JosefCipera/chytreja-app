@@ -73,19 +73,21 @@ const TELO_FALLBACKS = {
   stabilita: { action_id: 'plank_3x30', label: 'Plank 3×30s', type: 'timed', duration_s: 90, sets: 3, reps: null, distance_m: null, coaching_note: 'Core pevný jako skála — bez toho se daleko nedojde.' },
 };
 
-async function teloAgent(client, sb, { userId, discipline, nodeId }) {
+async function teloAgent(client, sb, { userId, discipline, nodeId, force = false, excludeActionId = null }) {
   if (!['sila', 'kardio', 'stabilita'].includes(discipline)) {
     return { error: `Invalid discipline: ${discipline}` };
   }
 
   const today = new Date().toISOString().split('T')[0];
 
-  // Cache check
-  const { data: cached } = await sb.from('agent_log')
-    .select('action_id, label, type, duration_s, sets, reps, distance_m, coaching_note')
-    .eq('user_id', userId).eq('node_id', nodeId).eq('discipline', discipline).eq('date', today)
-    .maybeSingle();
-  if (cached?.action_id) return { ...cached, cached: true };
+  // Cache check — skip when force=true (second action request)
+  if (!force) {
+    const { data: cached } = await sb.from('agent_log')
+      .select('action_id, label, type, duration_s, sets, reps, distance_m, coaching_note')
+      .eq('user_id', userId).eq('node_id', nodeId).eq('discipline', discipline).eq('date', today)
+      .maybeSingle();
+    if (cached?.action_id) return { ...cached, cached: true };
+  }
 
   // Fetch context
   const [metricsRes, constraintsRes, decathlonRes, missionRes] = await Promise.all([
@@ -107,7 +109,9 @@ async function teloAgent(client, sb, { userId, discipline, nodeId }) {
 TIER: ${tier} (index uzlu Tělo: ${nodeIndex})
 OMEZENÍ: ${constraints.length ? constraints.join(', ') : 'žádná'}
 VČEREJŠÍ AKCE: ${yesterdayAction ?? 'žádná'}
+${excludeActionId ? `VYHNOUT SE (právě splněno): ${excludeActionId}` : ''}
 SEN: ${dream ? `"${dream.label}" ve věku ${dream.target_age} let` : 'není nastaven'}
+${force ? 'DRUHÁ AKCE: Vyber jinou variantu cvičení než je VYHNOUT SE.' : ''}
 
 Vyber jedno konkrétní cvičení pro dnešek.`;
 
@@ -184,19 +188,21 @@ const MYSL_FALLBACKS = {
   smysl:      { action_id: 'reflexe_snu', label: 'Zamysli se nad svým snem — co ti k němu dnes přiblíží', type: 'habit', duration_s: null, coaching_note: 'Každý den s jasným záměrem se počítá.' },
 };
 
-async function myslAgent(client, sb, { userId, discipline, nodeId }) {
+async function myslAgent(client, sb, { userId, discipline, nodeId, force = false, excludeActionId = null }) {
   if (!['spanek', 'kognitivni', 'emocni', 'smysl'].includes(discipline)) {
     return { error: `Invalid discipline for mysl: ${discipline}` };
   }
 
   const today = new Date().toISOString().split('T')[0];
 
-  // Cache check
-  const { data: cached } = await sb.from('agent_log')
-    .select('action_id, label, type, duration_s, coaching_note')
-    .eq('user_id', userId).eq('node_id', nodeId).eq('discipline', discipline).eq('date', today)
-    .maybeSingle();
-  if (cached?.action_id) return { ...cached, cached: true };
+  // Cache check — skip when force=true (second action request)
+  if (!force) {
+    const { data: cached } = await sb.from('agent_log')
+      .select('action_id, label, type, duration_s, coaching_note')
+      .eq('user_id', userId).eq('node_id', nodeId).eq('discipline', discipline).eq('date', today)
+      .maybeSingle();
+    if (cached?.action_id) return { ...cached, cached: true };
+  }
 
   // Fetch context
   const [metricsRes, decathlonRes, missionRes] = await Promise.all([
@@ -215,7 +221,9 @@ async function myslAgent(client, sb, { userId, discipline, nodeId }) {
   const contextMsg = `DISCIPLÍNA: ${discipline}
 TIER: ${tier} (index uzlu Mysl: ${nodeIndex})
 VČEREJŠÍ AKCE: ${yesterdayAction ?? 'žádná'}
+${excludeActionId ? `VYHNOUT SE (právě splněno): ${excludeActionId}` : ''}
 SEN: ${dream ? `"${dream.label}" ve věku ${dream.target_age} let` : 'není nastaven'}
+${force ? 'DRUHÁ AKCE: Vyber jinou variantu než je VYHNOUT SE.' : ''}
 
 Vyber jedno konkrétní cvičení pro dnešek.`;
 
@@ -283,19 +291,21 @@ const ZDRAVI_FALLBACKS = {
   metabolismus: { action_id: 'chůze_po_jidle', label: 'Projdi se 10 minut po největším jídle', type: 'timed', duration_s: 600, coaching_note: 'Chůze po jídle snižuje glukózu — přímá investice do výkonu v osmdesáti pěti.' },
 };
 
-async function zdraviAgent(client, sb, { userId, discipline, nodeId }) {
+async function zdraviAgent(client, sb, { userId, discipline, nodeId, force = false, excludeActionId = null }) {
   if (!['prevence', 'metabolismus'].includes(discipline)) {
     return { error: `Invalid discipline for zdravi: ${discipline}` };
   }
 
   const today = new Date().toISOString().split('T')[0];
 
-  // Cache check
-  const { data: cached } = await sb.from('agent_log')
-    .select('action_id, label, type, duration_s, coaching_note')
-    .eq('user_id', userId).eq('node_id', nodeId).eq('discipline', discipline).eq('date', today)
-    .maybeSingle();
-  if (cached?.action_id) return { ...cached, cached: true };
+  // Cache check — skip when force=true (second action request)
+  if (!force) {
+    const { data: cached } = await sb.from('agent_log')
+      .select('action_id, label, type, duration_s, coaching_note')
+      .eq('user_id', userId).eq('node_id', nodeId).eq('discipline', discipline).eq('date', today)
+      .maybeSingle();
+    if (cached?.action_id) return { ...cached, cached: true };
+  }
 
   // Fetch context
   const [metricsRes, decathlonRes, missionRes, constraintsRes] = await Promise.all([
@@ -322,8 +332,10 @@ async function zdraviAgent(client, sb, { userId, discipline, nodeId }) {
   const contextMsg = `DISCIPLÍNA: ${discipline}
 TIER: ${tier} (index uzlu: ${nodeIndex})
 VČEREJŠÍ AKCE: ${yesterdayAction ?? 'žádná'}
+${excludeActionId ? `VYHNOUT SE (právě splněno): ${excludeActionId}` : ''}
 SEN: ${dream ? `"${dream.label}" ve věku ${dream.target_age} let` : 'není nastaven'}
 ${glucoseNote}
+${force ? 'DRUHÁ AKCE: Vyber jinou variantu než je VYHNOUT SE.' : ''}
 
 Vyber jedno konkrétní cvičení pro dnešek.`;
 
@@ -395,15 +407,17 @@ const VYZIVA_FALLBACKS = {
   vyziva: { action_id: 'protein_snidane', label: 'Snídaně se 30g proteinu — vejce, tvaroh nebo jogurt', type: 'habit', duration_s: null, coaching_note: 'Protein ráno nastaví celý den — svaly i výkon v bazénu to poznají.' },
 };
 
-async function vyzivaAgent(client, sb, { userId, discipline, nodeId }) {
+async function vyzivaAgent(client, sb, { userId, discipline, nodeId, force = false, excludeActionId = null }) {
   const today = new Date().toISOString().split('T')[0];
 
-  // Cache check
-  const { data: cached } = await sb.from('agent_log')
-    .select('action_id, label, type, duration_s, coaching_note')
-    .eq('user_id', userId).eq('node_id', nodeId).eq('discipline', discipline).eq('date', today)
-    .maybeSingle();
-  if (cached?.action_id) return { ...cached, cached: true };
+  // Cache check — skip when force=true (second action request)
+  if (!force) {
+    const { data: cached } = await sb.from('agent_log')
+      .select('action_id, label, type, duration_s, coaching_note')
+      .eq('user_id', userId).eq('node_id', nodeId).eq('discipline', discipline).eq('date', today)
+      .maybeSingle();
+    if (cached?.action_id) return { ...cached, cached: true };
+  }
 
   // Fetch context
   const [metricsRes, decathlonRes, missionRes, profileRes] = await Promise.all([
@@ -424,8 +438,10 @@ async function vyzivaAgent(client, sb, { userId, discipline, nodeId }) {
   const contextMsg = `DISCIPLÍNA: vyziva
 TIER: ${tier} (index uzlu Výživa: ${nodeIndex})
 VČEREJŠÍ AKCE: ${yesterdayAction ?? 'žádná'}
+${excludeActionId ? `VYHNOUT SE (právě splněno): ${excludeActionId}` : ''}
 ${weight ? `VÁHA UŽIVATELE: ${weight} kg` : ''}
 SEN: ${dream ? `"${dream.label}" ve věku ${dream.target_age} let` : 'není nastaven'}
+${force ? 'DRUHÁ AKCE: Vyber jinou výživovou akci než je VYHNOUT SE.' : ''}
 
 Vyber jednu konkrétní výživovou akci pro dnešek.`;
 

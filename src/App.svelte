@@ -24,6 +24,11 @@
   let agentAction    = $state(null);
   let agentLoading   = $state(false); // true while orchestrator+agent is running
 
+  // ── SECOND ACTION STATE ────────────────────────────────
+  let currentDiscipline = $state(null);  // discipline chosen by orchestrator
+  let currentAgentType  = $state(null);  // agent type for current discipline
+  let lastCompletedId   = $state(null);  // action_id of just-completed action
+
   const BODY_DISCIPLINES   = ['sila', 'kardio', 'stabilita'];
   const MYSL_DISCIPLINES   = ['spanek', 'kognitivni', 'emocni', 'smysl'];
   const ZDRAVI_DISCIPLINES = ['prevence', 'metabolismus'];
@@ -137,6 +142,10 @@
                       : VYZIVA_DISCIPLINES.includes(discipline) ? 'vyziva'
                       : null;
 
+      // Store for second action reuse
+      currentDiscipline = discipline;
+      currentAgentType  = agentType;
+
       if (agentType) {
         try {
           const agentRes = await fetch('/api/agents', {
@@ -195,12 +204,13 @@
       });
 
       if (wasCount === 0) {
-        // First action just completed — check if we should offer second
+        // First action just completed — remember it, offer second
+        lastCompletedId = actionId;
         const result = shouldOfferSecond(snapData);
         if (result.offer) {
           secondOffer     = 'pending';
           secondOfferText = result.text;
-          loadHudData(userId, nodeId); // load in background — second action ready
+          loadHudData(userId, nodeId); // refresh HUD in background
         } else {
           secondOffer = null;
           loadHudData(userId, nodeId);
@@ -221,8 +231,35 @@
     }
   }
 
-  function acceptSecondAction() {
-    secondOffer = null; // HUD data already loaded, second action shows
+  async function acceptSecondAction() {
+    secondOffer = null;
+
+    // If we know the discipline + agent type, fetch a fresh second action
+    if (!userId || devMode || !currentAgentType || !currentDiscipline) return;
+
+    agentLoading = true;
+    try {
+      const agentRes = await fetch('/api/agents', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: currentAgentType,
+          userId,
+          discipline: currentDiscipline,
+          nodeId,
+          force: true,                        // bypass cache
+          excludeActionId: lastCompletedId,   // avoid repeating first action
+        }),
+      });
+      const agentData = await agentRes.json();
+      if (agentData.action_id) {
+        agentAction = normalizeAgentAction(agentData, nodeId);
+      }
+    } catch (e) {
+      console.warn('[CHJ] second action agent call failed:', e);
+    } finally {
+      agentLoading = false;
+    }
   }
 
   function declineSecondAction() {
