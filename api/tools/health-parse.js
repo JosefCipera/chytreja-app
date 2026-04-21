@@ -160,7 +160,7 @@ Extrahuj všechny markery, namapuj na CHJ uzly a vrať přesně JSON dle instruk
 
     const response = await client.messages.create({
       model: MODEL,
-      max_tokens: 2000,
+      max_tokens: 4096,
       system: SYSTEM_PROMPT,
       messages: [{ role: 'user', content: [contentBlock, { type: 'text', text: userMsg }] }],
     });
@@ -174,7 +174,10 @@ Extrahuj všechny markery, namapuj na CHJ uzly a vrať přesně JSON dle instruk
     if (!parsed?.markers || !parsed?.node_impacts) {
       return res.status(422).json({
         error: 'Dokument se nepodařilo analyzovat. Ujisti se, že jde o čitelný zdravotní dokument.',
-        raw: rawText.slice(0, 500),
+        raw: rawText.slice(-800), // last 800 chars — shows where JSON broke off
+        raw_length: rawText.length,
+        has_markers: !!parsed?.markers,
+        has_node_impacts: !!parsed?.node_impacts,
       });
     }
 
