@@ -35,7 +35,7 @@ VÝSTUPY:
     "Bez tohohle základu ten půlkilometr v pětaosmdesáti neuplaváš."
     "Svaly si to pamatují — v osmdesáti pěti ti to vrátí v bazénu."
     "Plíce a nohy co tě v osmdesáti pěti dotáhnou na druhý konec — trénuješ je dnes."
-  Zakázané konstrukce: "stavíš srdce" (srdce se nestaví), "si tělo" → správně "tělo"
+  Zakázané konstrukce: "stavíš srdce", "srdce musí na to", "si tělo" — všechno špatně
   Zakázané tvary: "buješ", "polovikilometr" → správně "budeš", "půlkilometr"
   Vyhni se infinitivům — radši "budeš", "zvládneš", "dotáhneš", "trénuješ"
 - weekly_hint: volitelně, max 1 věta co přijde zítra/tento týden
