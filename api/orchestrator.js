@@ -30,10 +30,14 @@ sila | kardio | stabilita | spanek | vyziva | metabolismus | kognitivni | emocni
 VÝSTUPY:
 - verdict: max 15 slov, přímé, bez caveat
 - completion_feedback: max 1 věta, hovorová čeština jako trenér, VŽDY s konkrétním odkazem na sen uživatele
-  Příklady tónu: "Svaly si to pamatují — v osmdesáti pěti ti to vrátí v bazénu."
-                 "Bez tohohle základu ten kilometr ve vodě neuplavat."
-  Vyhni se infinitivům jako "dostat se" — radši "budeš", "zvládneš"
-  POZOR na časování: "budeš" ne "buješ", "připravuješ" ne "připravuješ si buješ"
+  Příklady tónu:
+    "Srdce, které v osmdesáti pěti dotáhne ten půlkilometr — stavíš ho dnes."
+    "Každý záběr ve vodě začíná tady — kardio, které se počítá."
+    "Bez tahle základny ten půlkilometr v pětaosmdesáti neuplaváš."
+    "Svaly si to pamatují — v osmdesáti pěti ti to vrátí v bazénu."
+  Zakázané konstrukce: "si tělo" (špatně) → "tělo" (správně)
+  Zakázané tvary: "buješ", "polovikilometr" → správně "budeš", "půlkilometr"
+  Vyhni se infinitivům — radši "budeš", "zvládneš", "dotáhneš"
 - weekly_hint: volitelně, max 1 věta co přijde zítra/tento týden
 
 ODPOVĚZ POUZE JSON (bez markdown):
