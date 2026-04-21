@@ -6,8 +6,10 @@
 // Body: { type: 'telo', userId, discipline, nodeId }
 //
 // Agents:
-//   telo  — sila | kardio | stabilita
-//   (mysl, vyziva, zdravi — coming in v0.3+)
+//   telo   — sila | kardio | stabilita
+//   mysl   — spanek | kognitivni | emocni | smysl
+//   zdravi — prevence | metabolismus
+//   vyziva — vyziva
 // =====================================================
 
 import dotenv from 'dotenv';
@@ -350,6 +352,108 @@ Vyber jedno konkrétní cvičení pro dnešek.`;
   return action;
 }
 
+// ── VÝŽIVA AGENT ──────────────────────────────────────
+const VYZIVA_SYSTEM = `Jsi Výživa Agent CHJ — vybíráš konkrétní výživovou akci pro dnešní den.
+
+DISCIPLÍNA: vyziva
+
+TIER systém (dle stavu uzlu Výživa):
+- tier 1 (index 0–40): základní návyky, malá změna, žádná váha potravin
+- tier 2 (index 41–70): vědomé stravování, cílený příjem proteinu
+- tier 3 (index 71+): optimalizace — makra, timing, kvalita potravin
+
+AKCE — VÝŽIVA:
+Tier 1:
+- Snídaně se 30g proteinu — vejce, tvaroh nebo řecký jogurt
+- Zelenina na každém talíři dnes (aspoň hrst)
+- Vynechej sladké nápoje celý den — jen voda, čaj nebo káva bez cukru
+- Záznamu co jíš dnes — foto nebo poznámka do telefonu
+
+Tier 2:
+- Připrav si oběd doma (ne fast food) — maso/ryba + zelenina + příloha
+- Proteinový cíl: spočítej co jsi jedl a dojdi na 1,5g/kg těl. hmotnosti
+- Večeře bez škrobů — ryba nebo kuře + zelenina nebo salát
+- Přidej omega-3 zdroj k jídlu — tučná ryba, vlašské ořechy nebo doplněk
+
+Tier 3:
+- Proteinový den: 2g/kg těl. hmotnosti — plánuj jídla ráno
+- Monosaturated fats focus — olivový olej, avokádo, ořechy k obědu i večeři
+- Výživa okolo tréninku — protein do 30 min po cvičení
+- Celý den bez ultra-processed potravin — jen přirozené zdroje
+
+PRAVIDLA:
+- Nikdy neopakuj yesterdayAction
+- coaching_note: max 1 věta, konkrétní odkaz na sen uživatele (plavání, běžky, výkon, vnuci...)
+- Česky, tykej, přímý trenérský tón
+- type: "habit" (jednorázové HOTOVO) | "timed" (s dobou v sekundách pro tracking)
+- Protein je priority — zmiň ho pokud je tier 1 nebo 2
+
+ODPOVĚZ POUZE JSON (bez markdown):
+{"action_id":"...","label":"...","type":"habit|timed","duration_s":null,"coaching_note":"..."}`;
+
+const VYZIVA_FALLBACKS = {
+  vyziva: { action_id: 'protein_snidane', label: 'Snídaně se 30g proteinu — vejce, tvaroh nebo jogurt', type: 'habit', duration_s: null, coaching_note: 'Protein ráno nastaví celý den — svaly i výkon v bazénu to poznají.' },
+};
+
+async function vyzivaAgent(client, sb, { userId, discipline, nodeId }) {
+  const today = new Date().toISOString().split('T')[0];
+
+  // Cache check
+  const { data: cached } = await sb.from('agent_log')
+    .select('action_id, label, type, duration_s, coaching_note')
+    .eq('user_id', userId).eq('node_id', nodeId).eq('discipline', discipline).eq('date', today)
+    .maybeSingle();
+  if (cached?.action_id) return { ...cached, cached: true };
+
+  // Fetch context
+  const [metricsRes, decathlonRes, missionRes, profileRes] = await Promise.all([
+    sb.from('user_metrics').select('current_index').eq('user_id', userId).eq('node_id', 'vyziva').eq('universe', 'longevity').maybeSingle(),
+    sb.from('user_decathlon').select('label, target_age, goal_key').eq('user_id', userId).eq('active', true).maybeSingle(),
+    sb.from('mission_log').select('action_id').eq('user_id', userId).eq('node_id', nodeId)
+      .gte('date', new Date(Date.now() - 86400000).toISOString().split('T')[0])
+      .order('date', { ascending: false }).limit(1).maybeSingle(),
+    sb.from('user_profiles').select('weight').eq('user_id', userId).maybeSingle(),
+  ]);
+
+  const nodeIndex = metricsRes.data?.current_index ?? 50;
+  const tier = getTier(nodeIndex);
+  const dream = decathlonRes.data;
+  const yesterdayAction = missionRes.data?.action_id ?? null;
+  const weight = profileRes.data?.weight ?? null;
+
+  const contextMsg = `DISCIPLÍNA: vyziva
+TIER: ${tier} (index uzlu Výživa: ${nodeIndex})
+VČEREJŠÍ AKCE: ${yesterdayAction ?? 'žádná'}
+${weight ? `VÁHA UŽIVATELE: ${weight} kg` : ''}
+SEN: ${dream ? `"${dream.label}" ve věku ${dream.target_age} let` : 'není nastaven'}
+
+Vyber jednu konkrétní výživovou akci pro dnešek.`;
+
+  let action = null;
+  try {
+    const response = await client.messages.create({
+      model: MODEL, max_tokens: 300,
+      system: VYZIVA_SYSTEM,
+      messages: [{ role: 'user', content: contextMsg }],
+    });
+    const text = response.content.find(b => b.type === 'text')?.text || '';
+    const match = text.match(/\{[\s\S]*\}/);
+    if (match) action = JSON.parse(match[0]);
+  } catch (e) {
+    console.warn('Výživa Agent Haiku failed:', e.message);
+  }
+
+  if (!action?.action_id) {
+    console.warn('Výživa Agent: using fallback');
+    action = VYZIVA_FALLBACKS.vyziva;
+  }
+
+  sb.from('agent_log').insert({ user_id: userId, node_id: nodeId, discipline, date: today, tier, ...action })
+    .then(({ error }) => { if (error) console.warn('agent_log insert failed:', error.message); });
+
+  return action;
+}
+
 // ── MAIN HANDLER ──────────────────────────────────────
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
@@ -368,8 +472,8 @@ export default async function handler(req, res) {
       case 'zdravi':
         return res.json(await zdraviAgent(client, sb, { userId, ...params }));
 
-      // Future agents:
-      // case 'vyziva': return res.json(await vyzivaAgent(client, sb, { userId, ...params }));
+      case 'vyziva':
+        return res.json(await vyzivaAgent(client, sb, { userId, ...params }));
 
       default:
         return res.status(400).json({ error: `Unknown agent type: ${type}` });

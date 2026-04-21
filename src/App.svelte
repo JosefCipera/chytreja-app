@@ -24,9 +24,10 @@
   let agentAction    = $state(null);
   let agentLoading   = $state(false); // true while orchestrator+agent is running
 
-  const BODY_DISCIPLINES  = ['sila', 'kardio', 'stabilita'];
-  const MYSL_DISCIPLINES  = ['spanek', 'kognitivni', 'emocni', 'smysl'];
+  const BODY_DISCIPLINES   = ['sila', 'kardio', 'stabilita'];
+  const MYSL_DISCIPLINES   = ['spanek', 'kognitivni', 'emocni', 'smysl'];
   const ZDRAVI_DISCIPLINES = ['prevence', 'metabolismus'];
+  const VYZIVA_DISCIPLINES = ['vyziva'];
 
   function normalizeAgentAction(a, nid) {
     return {
@@ -133,6 +134,7 @@
       const agentType = BODY_DISCIPLINES.includes(discipline)   ? 'telo'
                       : MYSL_DISCIPLINES.includes(discipline)   ? 'mysl'
                       : ZDRAVI_DISCIPLINES.includes(discipline) ? 'zdravi'
+                      : VYZIVA_DISCIPLINES.includes(discipline) ? 'vyziva'
                       : null;
 
       if (agentType) {
