@@ -301,44 +301,40 @@
   }
 </script>
 
-<div class="min-h-screen" style="background: transparent; display: flex; justify-content: flex-end;">
-  <!-- Ambient glow — only when standalone (not overlay) -->
-  <div class="fixed top-1/3 left-1/2 -translate-x-1/2 w-96 h-96 bg-cyan-500/[0.02] rounded-full blur-3xl pointer-events-none"></div>
+{#if panelReady || !userId || devMode}
+  <!-- Panel wrapper — only mounted when data is ready; universe shows through until then -->
+  <div class="min-h-screen" style="background: transparent; display: flex; justify-content: flex-end;">
+    <div class="fixed top-1/3 left-1/2 -translate-x-1/2 w-96 h-96 bg-cyan-500/[0.02] rounded-full blur-3xl pointer-events-none"></div>
 
-  {#if !panelReady && userId && !devMode}
-    <!-- Panel not mounted yet — universe canvas shows through, no loading text -->
-
-  {:else if userId && !devMode && $error && !$rawData}
-    <!-- Error state — only when there is no data at all -->
-    <div class="hud-mono text-red-400/60 text-xs tracking-widest">
-      ERR: {$error}
-    </div>
-
-  {:else if panelReady || !userId || devMode}
-    <div class="hud-panel-enter">
-      <HudPanel
-        data={displayData}
-        userId={userId && !devMode ? userId : null}
-        agentLoading={agentLoading && userId && !devMode}
-        onActionComplete={handleActionComplete}
-        secondOffer={secondOffer}
-        secondOfferText={secondOfferText}
-        onAcceptSecond={acceptSecondAction}
-        onDeclineSecond={declineSecondAction}
-        onDataRefresh={() => { loadHudData(userId, nodeId); triggerOrchestrator(userId, nodeId); }}
-      />
-    </div>
+    {#if userId && !devMode && $error && !$rawData}
+      <div class="hud-mono text-red-400/60 text-xs tracking-widest">
+        ERR: {$error}
+      </div>
+    {:else}
+      <div class="hud-panel-enter">
+        <HudPanel
+          data={displayData}
+          userId={userId && !devMode ? userId : null}
+          agentLoading={agentLoading && userId && !devMode}
+          onActionComplete={handleActionComplete}
+          secondOffer={secondOffer}
+          secondOfferText={secondOfferText}
+          onAcceptSecond={acceptSecondAction}
+          onDeclineSecond={declineSecondAction}
+          onDataRefresh={() => { loadHudData(userId, nodeId); triggerOrchestrator(userId, nodeId); }}
+        />
+      </div>
+    {/if}
 
     {#if devMode}
-      <!-- Dev mode badge -->
       <div class="hud-mono text-[9px] text-slate-700 tracking-widest">
         DEV_MODE · test data · ?userId=xxx to connect
       </div>
     {/if}
-  {/if}
+  </div>
+{/if}
 
-  <!-- Check-in modal overlay — shown when today's readiness is missing -->
-  {#if userId && !devMode && needsCheckIn && readinessChecked}
-    <CheckIn {userId} onComplete={onCheckInComplete} />
-  {/if}
-</div>
+<!-- Check-in modal — independent of panel, always available after readiness check -->
+{#if userId && !devMode && needsCheckIn && readinessChecked}
+  <CheckIn {userId} onComplete={onCheckInComplete} />
+{/if}
