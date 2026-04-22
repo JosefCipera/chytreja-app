@@ -907,60 +907,49 @@ function bindDocumentsEvents() {
     const resultBody = document.getElementById('doc-result-body');
     resultBox.style.display = 'block';
 
-    // Node labels in Czech
     const NODE_LABEL = { zdravi: 'Zdraví', telo: 'Tělo', mysl: 'Mysl', metabolicke: 'Metabolismus', vyziva: 'Výživa' };
-    const stateColor = s => s === 'RED' ? '#f87171' : s === 'YELLOW' ? '#fbbf24' : '#4ade80';
-    const stateLabel = s => s === 'RED' ? 'špatně' : s === 'YELLOW' ? 'průměrně' : 'dobře';
-    const trendLabel = d => d <= -20 ? '↓↓ výrazně dolů' : d < 0 ? '↓ mírně dolů' : d > 0 ? '↑ zlepšení' : '→ beze změny';
-    const trendColor = d => d < 0 ? '#f87171' : d > 0 ? '#4ade80' : '#64748b';
+    const stateDot   = s => s === 'RED' ? '🔴' : s === 'YELLOW' ? '🟡' : '🟢';
+    const deltaColor = d => d < 0 ? '#f87171' : d > 0 ? '#4ade80' : '#64748b';
+    const deltaStr   = d => d > 0 ? `+${d}` : String(d);
 
-    // Build lookup: node_id → reasoning from node_impacts
-    const reasoningMap = {};
-    for (const impact of (data.node_impacts || [])) {
-      if (impact.node_id) reasoningMap[impact.node_id] = impact.reasoning;
-    }
+    const nodesHtml = data.node_updates?.length
+      ? data.node_updates.map(n => `
+          <div style="display:flex;align-items:center;justify-content:space-between;
+            padding:10px 14px;background:rgba(255,255,255,0.03);border-radius:8px;margin-bottom:6px;">
+            <span style="font-size:14px;color:#e2e8f0;">
+              ${stateDot(n.state)} ${NODE_LABEL[n.node_id] || n.node_id}
+            </span>
+            <span style="font-size:14px;color:#64748b;">
+              ${n.previous_index} → <strong style="color:#e2e8f0;">${n.new_index}</strong>
+              &nbsp;<span style="color:${deltaColor(n.delta)};">${deltaStr(n.delta)}</span>
+            </span>
+          </div>`).join('')
+      : '<div style="color:#475569;font-size:13px;padding:8px 0;">Žádné uzly nebyly aktualizovány.</div>';
 
-    // Node cards — human-readable
-    const nodesHtml = data.node_updates?.length ? data.node_updates.map(n => `
-      <div style="padding:12px 14px;background:rgba(255,255,255,0.03);border-radius:8px;margin-bottom:8px;
-        border-left:3px solid ${stateColor(n.state)};">
-        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;">
-          <span style="color:#e2e8f0;font-size:15px;font-weight:500;">${NODE_LABEL[n.node_id] || n.node_id}</span>
-          <span style="color:${trendColor(n.delta)};font-size:13px;">${trendLabel(n.delta)}</span>
-        </div>
-        <div style="color:#94a3b8;font-size:13px;line-height:1.5;">
-          ${reasoningMap[n.node_id] || ''}
-        </div>
-        <div style="margin-top:6px;font-size:12px;color:${stateColor(n.state)};">
-          Stav uzlu: ${stateLabel(n.state)}
-        </div>
-      </div>`).join('')
-      : '<div style="color:#475569;font-size:13px;">Žádné uzly nebyly aktualizovány.</div>';
-
-    // Flags
     const consultHtml = data.flags?.includes('CONSULT_DOCTOR') ? `
-      <div style="margin-bottom:10px;padding:10px 14px;background:rgba(239,68,68,0.08);
+      <div style="margin-top:12px;padding:10px 14px;background:rgba(239,68,68,0.08);
         border:1px solid rgba(239,68,68,0.25);border-radius:8px;color:#fca5a5;font-size:13px;">
         ⚠ Konzultuj výsledky s lékařem.
       </div>` : '';
 
     const strokeHtml = data.flags?.includes('HIGH_STROKE_RISK') ? `
-      <div style="margin-bottom:10px;padding:10px 14px;background:rgba(251,191,36,0.08);
+      <div style="margin-top:8px;padding:10px 14px;background:rgba(251,191,36,0.08);
         border:1px solid rgba(251,191,36,0.25);border-radius:8px;color:#fde68a;font-size:13px;">
         ⚠ Vysoké riziko CMP — pokračuj v antikoagulaci dle kardiologa.
       </div>` : '';
 
     resultBody.innerHTML = `
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;padding:10px 14px;
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;padding:10px 14px;
         background:rgba(34,197,94,0.07);border:1px solid rgba(34,197,94,0.25);border-radius:8px;">
         <span style="color:#4ade80;font-size:15px;">✔</span>
         <span style="color:#4ade80;font-size:13px;">Dokument uložen a zpracován</span>
       </div>
+      <div style="color:#cbd5e1;font-size:15px;line-height:1.6;margin-bottom:16px;">${data.summary || ''}</div>
+      <div style="color:#475569;font-size:11px;font-family:monospace;letter-spacing:0.08em;margin-bottom:8px;">OVLIVNĚNÉ UZLY</div>
+      ${nodesHtml}
       ${consultHtml}
       ${strokeHtml}
-      <div style="color:#cbd5e1;font-size:15px;line-height:1.6;margin-bottom:16px;">${data.summary || ''}</div>
-      ${nodesHtml}
-      <button id="doc-upload-another" style="margin-top:14px;width:100%;padding:10px;
+      <button id="doc-upload-another" style="margin-top:16px;width:100%;padding:10px;
         border-radius:10px;border:1px solid #334155;background:transparent;
         color:#64748b;font-size:13px;cursor:pointer;">
         Nahrát další dokument
