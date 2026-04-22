@@ -30,12 +30,13 @@ sila | kardio | stabilita | spanek | vyziva | metabolismus | kognitivni | emocni
 VÝSTUPY:
 - verdict: max 15 slov, přímé, bez caveat
 - completion_feedback: max 1 věta, hovorová čeština jako trenér, VŽDY s konkrétním odkazem na sen uživatele
-  Příklady tónu:
-    "Každý záběr ve vodě začíná tady — kardio dnes, bazén v osmdesáti pěti."
-    "Bez tohohle základu ten půlkilometr v pětaosmdesáti neuplaváš."
+  Příklady tónu (AKTUÁLNÍ věk = číslice, věk snu = slovy):
+    "Kardio dnes. Bazén v osmdesáti pěti začíná tady, v 69."
+    "Každý záběr ve vodě začíná tady — v 69 se to staví, v osmdesáti pěti se to plave."
+    "Bez tohohle základu ten půlkilometr v osmdesáti pěti neuplaváš."
     "Svaly si to pamatují — v osmdesáti pěti ti to vrátí v bazénu."
-    "Plíce a nohy co tě v osmdesáti pěti dotáhnou na druhý konec — trénuješ je dnes."
   Zakázané konstrukce:
+    "v jednašedesáti devíti", "v šedesáti devíti" → správně "v 69" (aktuální věk VŽDY číslicí)
     "stavíš srdce" (srdce se nestaví)
     "srdce musí na to" (nedává smysl)
     "si tělo" → správně "tělo"
@@ -44,7 +45,7 @@ VÝSTUPY:
   Zakázané tvary: "buješ", "polovikilometr" → správně "budeš", "půlkilometr"
   Zakázané tvary: "uplavou", "dosáhnou", "uplaví", "dotáhnou" → správně "uplaveš", "dosáhneš", "dotáhneš" (vždy 2. osoba j.č.)
   Sloveso "plavat": "plaveš", "uplavíš" → špatně, správně "uplaveš"
-  Věk uživatele piš VŽDY číslicí: "v 69" nebo "v 69 letech" — NIKDY slovně ("v jednašedesáti devíti" = špatně)
+  VĚK PRAVIDLO: aktuální věk uživatele VŽDY číslicí ("v 69"), věk snu smí být slovy ("v osmdesáti pěti")
   Vyhni se infinitivům — radši "budeš", "zvládneš", "dotáhneš", "trénuješ"
   Vždy zkontroluj shodu podmětu a přísudku v čísle (kardio a síla = plurál → odpočinou)
 - weekly_hint: volitelně, max 1 věta co přijde zítra/tento týden
