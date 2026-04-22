@@ -1,5 +1,5 @@
 {
-    "buildCommand": "",
+    "buildCommand": "npm run build:hud",
     "outputDirectory": ".",
     "framework": null,
     "alias": ["dev.iting.cz"],

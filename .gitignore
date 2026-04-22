@@ -4,3 +4,7 @@ node_modules/
 .DS_Store
 .vercel
 .env*.local
+
+# Svelte build output — Vercel builds from source
+app/assets/hud-*.js
+app/assets/hud-*.css
