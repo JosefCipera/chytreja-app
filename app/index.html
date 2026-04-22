@@ -471,35 +471,31 @@
             // Lazy-prefetch children of this node in background
             window.prefetchHudChildren(userId, nodeId);
 
-            const sendNavigate = () => {
+            if (!window._hudOpen) {
+                // First open: nodeId in URL — Svelte reads it directly, no timing dance
+                iframe.src = `/app/hud.html?userId=${encodeURIComponent(userId)}&nodeId=${encodeURIComponent(nodeId)}`;
+                window._hudOpen = true;
+            } else {
+                // Already loaded: switch node via postMessage; use prefetch cache if warm
                 const data = window._hudCache[nodeId] || null;
                 iframe.contentWindow?.postMessage(
                     { type: 'chj:navigate', nodeId, userId, data },
                     '*'
                 );
-            };
-
-            if (!window._hudOpen) {
-                // First open: boot iframe once (no nodeId, no _v reload)
-                window._pendingNavigate = sendNavigate; // fired on chj:hud:ready
-                iframe.src = `/app/hud.html?userId=${encodeURIComponent(userId)}`;
-                overlay.style.display = 'flex';
-                requestAnimationFrame(() => requestAnimationFrame(() => {
-                    wrap.style.transform = 'translateX(0)';
-                }));
-                window._hudOpen = true;
-            } else {
-                // Already open: postMessage instantly (listener already set up)
-                sendNavigate();
             }
+
+            overlay.style.display = 'flex';
+            requestAnimationFrame(() => requestAnimationFrame(() => {
+                wrap.style.transform = 'translateX(0)';
+            }));
         };
 
         window.closeHudOverlay = function() {
             const overlay = document.getElementById('hud-overlay');
             const wrap    = document.getElementById('hud-panel-wrap');
             wrap.style.transform = 'translateX(100%)';
-            // Keep iframe alive — just hide overlay, don't destroy src
-            setTimeout(() => { overlay.style.display = 'none'; window._hudOpen = false; }, 360);
+            // Keep iframe alive — just hide overlay; _hudOpen stays true so no reload on reopen
+            setTimeout(() => { overlay.style.display = 'none'; }, 360);
         };
         let _topTTS = null;
         function _runTopTTS(text, lang) {
@@ -520,11 +516,6 @@
             if (e.data?.type === 'chj:source:open') openSourceViewer(e.data.source);
             if (e.data?.type === 'chj:tts:speak') _runTopTTS(e.data.text, e.data.lang);
             if (e.data?.type === 'chj:tts:stop') { if ('speechSynthesis' in window) window.speechSynthesis.cancel(); }
-            // HUD iframe signalled it's ready — fire pending navigation
-            if (e.data?.type === 'chj:hud:ready' && window._pendingNavigate) {
-                window._pendingNavigate();
-                window._pendingNavigate = null;
-            }
         });
 
         function mediaTypeOf(url) {

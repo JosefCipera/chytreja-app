@@ -126,21 +126,15 @@
 
   onMount(async () => {
     if (userId && !devMode) {
-      // Listen for navigation from Universe (postMessage — no iframe reload)
+      // Listen for node-switch navigation from Universe (postMessage)
       window.addEventListener('message', (e) => {
         if (e.data?.type === 'chj:navigate' && e.data.nodeId) {
           navigateTo(e.data.nodeId, e.data.data || null);
         }
       });
 
-      // Signal to parent that HUD is ready to receive navigation
-      window.parent?.postMessage({ type: 'chj:hud:ready' }, '*');
-
-      // Fallback: if nodeId in URL (direct load / dev), init from URL
-      if (params.get('nodeId')) {
-        await navigateTo(nodeId, null);
-      }
-      // Otherwise wait for chj:navigate from Universe
+      // nodeId always present in URL on first open — load directly, no handshake needed
+      await navigateTo(nodeId, null);
     } else {
       panelReady = true;
       readinessChecked = true;
