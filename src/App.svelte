@@ -1,5 +1,6 @@
 <script>
   import { onMount } from 'svelte';
+  import { get } from 'svelte/store';
   import HudPanel from './lib/components/HudPanel.svelte';
   import CheckIn from './lib/components/CheckIn.svelte';
   import { loadHudData, patchHudData, nodeData, rawData, loading, error } from './lib/stores/hudData.js';
@@ -101,8 +102,15 @@
   onMount(async () => {
     if (userId && !devMode) {
       await checkReadiness();
-      loadHudData(userId, nodeId);
-      triggerOrchestrator(userId, nodeId);
+      await loadHudData(userId, nodeId);
+
+      // Only run orchestrator if verdict or action is missing (first load of the day)
+      // If hud-data already returned from_agent_cache, data is complete — skip orchestrator
+      const currentData = get(nodeData);
+      if (!currentData?.verdict || !currentData?.action || currentData?.action?.from_agent_cache === false) {
+        triggerOrchestrator(userId, nodeId);
+      }
+      // else: data from cache, show immediately without orchestrator call
     } else {
       readinessChecked = true;
     }

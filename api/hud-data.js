@@ -314,11 +314,39 @@ export default async function handler(req, res) {
   const disciplineId = orchestratorDecision?.pillar || nodeDiscipline || null;
   const disciplineProtocols = disciplineId ? DISCIPLINE_PROTOCOLS[disciplineId] : null;
 
-  // 6. Action from longevity_actions DB
+  // 6. Action from longevity_actions DB (or agent_log cache)
   const dayType = getDayType();
   let action = null;
   let actionTags = null; // used by step 7 for source matching
-  if (todayCount < 2) {
+
+  // 6b. Check agent_log for today's cached agent action (avoids re-running orchestrator+agents)
+  const { data: cachedAgent } = await supabase
+    .from('agent_log')
+    .select('action_id, label, type, duration_s, sets, reps, distance_m, coaching_note')
+    .eq('user_id', userId)
+    .eq('node_id', actionNodeId)
+    .eq('date', today)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (cachedAgent?.action_id) {
+    action = {
+      id:            cachedAgent.action_id,
+      label:         cachedAgent.label,
+      icon:          '🏋️',
+      type:          cachedAgent.type === 'timed' ? 'timed' : 'habit',
+      duration:      cachedAgent.duration_s ?? null,
+      reps:          cachedAgent.reps ?? null,
+      protocol_type: null,
+      status:        'READY',
+      tier:          1,
+      node_id:       actionNodeId,
+      from_agent_cache: true,
+    };
+  }
+
+  if (!action && todayCount < 2) {
     const tier = pickTier(state, streak, dayType);
 
     // REGENERACE: habit-only actions (dech, mobilita, light movement)
