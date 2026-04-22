@@ -55,7 +55,8 @@
       </div>
 
       <div class="hud-fade-in" style="animation-delay: 0.2s">
-        {#if agentLoading}
+        {#if agentLoading && !data.action}
+          <!-- PREPARING only when there is truly no action yet (new node, no DB fallback) -->
           <div style="background:rgba(6,182,212,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:20px 16px;">
             <div class="hud-mono animate-pulse" style="font-size:13px;letter-spacing:0.1em;color:#06b6d4;margin-bottom:8px;">
               ACTION: PREPARING…
