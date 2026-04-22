@@ -53,6 +53,16 @@
     '#86C46A'
   );
 
+  // Strip leading discipline name if orchestrator prefixed verdict with it
+  // e.g. "Metabolismus. Budeš stavět..." → "Budeš stavět..."
+  const DISCIPLINE_NAMES = ['Síla','Kardio','Stabilita','Spánek','Výživa','Metabolismus','Kognice','Emoce','Prevence','Smysl'];
+  function stripDisciplinePrefix(text) {
+    if (!text) return text;
+    const match = text.match(/^([A-ZŠŽČŘÝÁÍÉŮÚ][a-zšžčřýáíéůú]+)\.\s*/);
+    if (match && DISCIPLINE_NAMES.includes(match[1])) return text.slice(match[0].length);
+    return text;
+  }
+
   const DISCIPLINE_LABELS = {
     sila: 'SÍLA', kardio: 'KARDIO', stabilita: 'STABILITA',
     spanek: 'SPÁNEK', kognitivni: 'KOGNICE', emocni: 'EMOCE',
@@ -79,6 +89,11 @@
         <span style="font-size: 17px; color: #C97272;">{@html '\u26A0\uFE0E'}</span>
         <span style="font-size: 15px; color: #C97272;">{killer.description}</span>
       </div>
+      {#if verdict}
+        <div style="margin-top: 8px; font-size: 15px; color: #94a3b8; line-height: 1.4;">
+          {stripDisciplinePrefix(verdict)}
+        </div>
+      {/if}
     </div>
     <div style="margin: 0 16px; border-top: 1px solid rgba(6,182,212,0.30);"></div>
   {/if}
