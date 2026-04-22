@@ -54,12 +54,16 @@
   );
 
   // Strip leading discipline name if orchestrator prefixed verdict with it
-  // e.g. "Metabolismus. Budeš stavět..." → "Budeš stavět..."
+  // e.g. "Metabolismus. Budeš..." → "Budeš..."  "Stabilita — záda..." → "záda..."
   const DISCIPLINE_NAMES = ['Síla','Kardio','Stabilita','Spánek','Výživa','Metabolismus','Kognice','Emoce','Prevence','Smysl'];
   function stripDisciplinePrefix(text) {
     if (!text) return text;
-    const match = text.match(/^([A-ZŠŽČŘÝÁÍÉŮÚ][a-zšžčřýáíéůú]+)\.\s*/);
-    if (match && DISCIPLINE_NAMES.includes(match[1])) return text.slice(match[0].length);
+    for (const name of DISCIPLINE_NAMES) {
+      if (text.startsWith(name)) {
+        const rest = text.slice(name.length).replace(/^[.,:;—–\s]+/, '');
+        if (rest.length > 0) return rest;
+      }
+    }
     return text;
   }
 

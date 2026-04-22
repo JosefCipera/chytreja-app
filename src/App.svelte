@@ -22,8 +22,9 @@
   let secondOfferText = $state('Chceš jít dál?');
 
   // ── AGENT ACTION (overrides DB action when available) ──
-  let agentAction    = $state(null);
-  let agentLoading   = $state(false); // true while orchestrator+agent is running
+  let agentAction      = $state(null);
+  let agentLoading     = $state(false); // true while orchestrator+agent is running
+  let initialLoadDone  = $state(false); // gates HudPanel — set only after agentLoading is determined
 
   // ── SECOND ACTION STATE ────────────────────────────────
   let currentDiscipline = $state(null);  // discipline chosen by orchestrator
@@ -110,8 +111,13 @@
       const hasCache = currentData?.action?.from_agent_cache === true && currentData?.verdict;
       if (!hasCache) {
         triggerOrchestrator(userId, nodeId);
+        // triggerOrchestrator sets agentLoading synchronously (before its first await)
+        // so initialLoadDone below is batched with agentLoading in the same render tick
       }
+      // Gate: reveal HudPanel only after agentLoading is determined — eliminates flicker
+      initialLoadDone = true;
     } else {
+      initialLoadDone = true;
       readinessChecked = true;
     }
   });
@@ -301,14 +307,14 @@
   <!-- Ambient glow — only when standalone (not overlay) -->
   <div class="fixed top-1/3 left-1/2 -translate-x-1/2 w-96 h-96 bg-cyan-500/[0.02] rounded-full blur-3xl pointer-events-none"></div>
 
-  {#if userId && !devMode && $loading && !$rawData}
-    <!-- Loading state -->
+  {#if userId && !devMode && !initialLoadDone}
+    <!-- Loading state — shown until rawData loaded AND agentLoading determined (prevents flicker) -->
     <div class="hud-mono text-cyan-400/60 text-xs tracking-widest animate-pulse">
       LOADING_NODE_DATA…
     </div>
 
-  {:else if userId && !devMode && $error}
-    <!-- Error state -->
+  {:else if userId && !devMode && $error && !$rawData}
+    <!-- Error state (only if no data at all) -->
     <div class="hud-mono text-red-400/60 text-xs tracking-widest">
       ERR: {$error}
     </div>
