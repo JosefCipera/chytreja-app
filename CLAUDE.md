@@ -540,6 +540,34 @@ Multipart form:
 5. DEXA scan           ← zlatý standard pro Tělo, pokud uživatel má
 ```
 
+### Plán: Robustní pipeline pro různé formáty (TODO v0.4+)
+
+Dokumenty přicházejí v různých formátech — current `health-parse.js` posílá vše jako jeden blob.
+Potřebujeme dvoustupňový pipeline:
+
+**Stage 1 — Format Router (deterministický Node.js):**
+- PDF s textem → `pdf-parse` → čistý text → Claude (levnější, přesnější než Vision)
+- PDF skenovaný → render stránky na obrázek → Claude Vision
+- Foto (JPG/PNG) → přímo Claude Vision
+- Word/RTF → `mammoth.js` → čistý text → Claude
+
+**Stage 2 — Claude Sonnet (ne Haiku):**
+- Zprávy od lékaře jsou komplexní a v češtině — Haiku dělá chyby (viz "zápalební stav")
+- System prompt s českými referenčními hodnotami a medicínskými zkratkami
+- Výstup: markers, constraints, node_updates (stejná struktura jako dnes)
+
+**Stage 3 — Validace (deterministická):**
+- Křížová kontrola extrahovaných hodnot s biologicky možnými rozsahy
+- Porovnání s předchozími výsledky uživatele (trend, ne izolovaná hodnota)
+
+**Priorita detekce formátu:**
+```
+pdf-parse → pokud text > 100 znaků → textový PDF
+         → jinak → skenovaný → Vision
+image/*  → Vision
+.doc/.docx → mammoth.js → text
+```
+
 ---
 
 ## Strategie externích zdravotních dat
