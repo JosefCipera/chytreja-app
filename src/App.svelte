@@ -22,8 +22,9 @@
   let secondOfferText = $state('Chceš jít dál?');
 
   // ── AGENT ACTION (overrides DB action when available) ──
-  let agentAction    = $state(null);
-  let agentLoading   = $state(false); // true while orchestrator+agent is running — PREPARING shown only when data.action is also null
+  let agentAction      = $state(null);
+  let agentLoading     = $state(false); // PREPARING shown only when data.action is also null
+  let panelReady       = $state(false); // panel mounts only when we have data + agentLoading state — universe shows through until then
 
   // ── SECOND ACTION STATE ────────────────────────────────
   let currentDiscipline = $state(null);  // discipline chosen by orchestrator
@@ -104,14 +105,17 @@
       // Run readiness check + hud-data in parallel — both independent
       await Promise.all([checkReadiness(), loadHudData(userId, nodeId)]);
 
-      // Skip orchestrator if we have complete data from cache
       // Use rawData (writable source) — derived nodeData may not have propagated yet
       const currentData = get(rawData);
       const hasCache = currentData?.action?.from_agent_cache === true && currentData?.verdict;
       if (!hasCache) {
+        // triggerOrchestrator sets agentLoading synchronously (before its first await)
+        // so panelReady below is batched with agentLoading in the same render tick → no flicker
         triggerOrchestrator(userId, nodeId);
       }
+      panelReady = true;  // reveal panel — agentLoading already determined in same sync block
     } else {
+      panelReady = true;
       readinessChecked = true;
     }
   });
@@ -301,11 +305,8 @@
   <!-- Ambient glow — only when standalone (not overlay) -->
   <div class="fixed top-1/3 left-1/2 -translate-x-1/2 w-96 h-96 bg-cyan-500/[0.02] rounded-full blur-3xl pointer-events-none"></div>
 
-  {#if userId && !devMode && $loading && !$rawData}
-    <!-- Loading state — only while rawData is absent (first fetch) -->
-    <div class="hud-mono text-cyan-400/60 text-xs tracking-widest animate-pulse">
-      LOADING_NODE_DATA…
-    </div>
+  {#if !panelReady && userId && !devMode}
+    <!-- Panel not mounted yet — universe canvas shows through, no loading text -->
 
   {:else if userId && !devMode && $error && !$rawData}
     <!-- Error state — only when there is no data at all -->
@@ -313,18 +314,20 @@
       ERR: {$error}
     </div>
 
-  {:else}
-    <HudPanel
-      data={displayData}
-      userId={userId && !devMode ? userId : null}
-      agentLoading={agentLoading && userId && !devMode}
-      onActionComplete={handleActionComplete}
-      secondOffer={secondOffer}
-      secondOfferText={secondOfferText}
-      onAcceptSecond={acceptSecondAction}
-      onDeclineSecond={declineSecondAction}
-      onDataRefresh={() => { loadHudData(userId, nodeId); triggerOrchestrator(userId, nodeId); }}
-    />
+  {:else if panelReady || !userId || devMode}
+    <div class="hud-panel-enter">
+      <HudPanel
+        data={displayData}
+        userId={userId && !devMode ? userId : null}
+        agentLoading={agentLoading && userId && !devMode}
+        onActionComplete={handleActionComplete}
+        secondOffer={secondOffer}
+        secondOfferText={secondOfferText}
+        onAcceptSecond={acceptSecondAction}
+        onDeclineSecond={declineSecondAction}
+        onDataRefresh={() => { loadHudData(userId, nodeId); triggerOrchestrator(userId, nodeId); }}
+      />
+    </div>
 
     {#if devMode}
       <!-- Dev mode badge -->
