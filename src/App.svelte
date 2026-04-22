@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import HudPanel from './lib/components/HudPanel.svelte';
   import CheckIn from './lib/components/CheckIn.svelte';
-  import { loadHudData, nodeData, loading, error } from './lib/stores/hudData.js';
+  import { loadHudData, patchHudData, nodeData, loading, error } from './lib/stores/hudData.js';
   import { calcVitality } from './lib/utils/vitality.js';
 
   // ── URL PARAMS ─────────────────────────────────────────
@@ -172,8 +172,12 @@
         }
       }
 
-      // Refresh HUD data so new verdict from orchestrator_log is picked up
-      loadHudData(uid, nid);
+      // Patch verdict/feedback in-place — no reload flicker
+      patchHudData({
+        verdict:             orchData.verdict             || null,
+        completion_feedback: orchData.completion_feedback || null,
+        weekly_hint:         orchData.weekly_hint         || null,
+      });
     } catch (e) {
       console.warn('[CHJ] orchestrator background call failed:', e);
     } finally {

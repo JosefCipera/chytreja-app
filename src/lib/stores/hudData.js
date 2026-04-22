@@ -44,6 +44,11 @@ export const nodeData = derived(rawData, ($raw) => {
   };
 });
 
+// ── PATCH — update specific fields without reload flicker ─────────────────
+export function patchHudData(patch) {
+  rawData.update(raw => raw ? { ...raw, ...patch } : raw);
+}
+
 // ── FETCH ──────────────────────────────────────────────
 export async function loadHudData(userId, nodeId) {
   loading.set(true);
