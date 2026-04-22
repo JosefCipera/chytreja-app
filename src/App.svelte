@@ -9,8 +9,10 @@
   // ── URL PARAMS ─────────────────────────────────────────
   const params   = new URLSearchParams(window.location.search);
   const userId   = params.get('userId');
-  const nodeId   = params.get('nodeId') || 'dlouhovekost';
   const devMode  = params.get('dev') === '1';   // ?dev=1 → test data
+
+  // nodeId is reactive — updated via postMessage chj:navigate (no iframe reload)
+  let nodeId = $state(params.get('nodeId') || 'dlouhovekost');
 
   // ── CHECK-IN GATE ──────────────────────────────────────
   let readinessChecked = $state(false);   // has the check completed?
@@ -100,20 +102,42 @@
   };
 
   // ── LOAD REAL DATA ─────────────────────────────────────
-  onMount(async () => {
-    if (userId && !devMode) {
-      // Run readiness check + hud-data in parallel — both independent
-      await Promise.all([checkReadiness(), loadHudData(userId, nodeId)]);
+  // ── NAVIGATE to a new node (called on postMessage or initial load) ──────────
+  async function navigateTo(nid, prefetchedData = null) {
+    nodeId = nid;
+    agentAction = null;
+    secondOffer = null;
+    panelReady  = false;
 
-      // Use rawData (writable source) — derived nodeData may not have propagated yet
+    if (prefetchedData) {
+      // Universe already fetched this — apply directly, no HTTP call needed
+      rawData.set(prefetchedData);
+      const hasCache = prefetchedData?.action?.from_agent_cache === true && prefetchedData?.verdict;
+      if (!hasCache) triggerOrchestrator(userId, nid);
+      panelReady = true;
+    } else {
+      await Promise.all([checkReadiness(), loadHudData(userId, nid)]);
       const currentData = get(rawData);
       const hasCache = currentData?.action?.from_agent_cache === true && currentData?.verdict;
-      if (!hasCache) {
-        // triggerOrchestrator sets agentLoading synchronously (before its first await)
-        // so panelReady below is batched with agentLoading in the same render tick → no flicker
-        triggerOrchestrator(userId, nodeId);
+      if (!hasCache) triggerOrchestrator(userId, nid);
+      panelReady = true;
+    }
+  }
+
+  onMount(async () => {
+    if (userId && !devMode) {
+      // Listen for navigation from Universe (postMessage — no iframe reload)
+      window.addEventListener('message', (e) => {
+        if (e.data?.type === 'chj:navigate' && e.data.nodeId) {
+          navigateTo(e.data.nodeId, e.data.data || null);
+        }
+      });
+
+      // If nodeId already in URL (legacy / direct load) — init normally
+      if (params.get('nodeId')) {
+        await navigateTo(nodeId, null);
       }
-      panelReady = true;  // reveal panel — agentLoading already determined in same sync block
+      // Otherwise wait for chj:navigate postMessage from Universe
     } else {
       panelReady = true;
       readinessChecked = true;

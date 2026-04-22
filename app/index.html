@@ -423,28 +423,84 @@
         </div>
     </div>
     <script>
-        window._hudOpen = false;
+        // ── HUD node data cache — prefetched on login ──────────────────────────
+        window._hudCache   = {};   // { nodeId: data }
+        window._hudPending = {};   // { nodeId: Promise } — in-flight fetches
+        window._hudOpen    = false;
+        window._hudUserId  = null;
+
+        // Prefetch data for a list of nodes into cache
+        window.prefetchHudNodes = async function(userId, nodeIds) {
+            if (!userId || !nodeIds.length) return;
+            window._hudUserId = userId;
+            const missing = nodeIds.filter(id => !window._hudCache[id] && !window._hudPending[id]);
+            if (!missing.length) return;
+            const bulk = `/api/hud-data-bulk?userId=${encodeURIComponent(userId)}&nodes=${missing.join(',')}`;
+            const p = fetch(bulk).then(r => r.json()).then(data => {
+                Object.assign(window._hudCache, data);
+                // Resolve individual pending promises
+                missing.forEach(id => { delete window._hudPending[id]; });
+                return data;
+            }).catch(err => {
+                console.warn('[CHJ] prefetch failed:', err);
+                missing.forEach(id => { delete window._hudPending[id]; });
+            });
+            // Store same promise for all missing nodes (dedup parallel calls)
+            missing.forEach(id => { window._hudPending[id] = p; });
+            return p;
+        };
+
+        // Prefetch children of a node one level down (lazy, on node open)
+        window.prefetchHudChildren = function(userId, parentNodeId) {
+            const CHILDREN = {
+                dlouhovekost: ['telo','mysl','zdravi','vyziva'],
+                telo:   ['sila','kardio','stabilita','vo2max','mobilita','vytrvalost'],
+                zdravi: ['metabolicke','spanek','imunitni'],
+                mysl:   ['emoce','smysl','stres','kognitivni'],
+                vyziva: ['bilkoviny','glukoza_vyziva','hydratace'],
+            };
+            const children = CHILDREN[parentNodeId] || [];
+            if (children.length) window.prefetchHudNodes(userId, children);
+        };
+
         window.openHudOverlay = function(userId, nodeId) {
             const overlay = document.getElementById('hud-overlay');
             const wrap    = document.getElementById('hud-panel-wrap');
             const iframe  = document.getElementById('hud-iframe');
-            if (window._hudOpen) {
-                iframe.src = `/app/hud.html?userId=${encodeURIComponent(userId)}&nodeId=${encodeURIComponent(nodeId)}&_v=${Date.now()}`;
-                return;
+
+            // Lazy-prefetch children of this node in background
+            window.prefetchHudChildren(userId, nodeId);
+
+            const sendNavigate = () => {
+                const data = window._hudCache[nodeId] || null;
+                iframe.contentWindow?.postMessage(
+                    { type: 'chj:navigate', nodeId, userId, data },
+                    '*'
+                );
+            };
+
+            if (!window._hudOpen) {
+                // First open: boot iframe once with userId only (no nodeId, no _v reload)
+                iframe.src = `/app/hud.html?userId=${encodeURIComponent(userId)}`;
+                overlay.style.display = 'flex';
+                requestAnimationFrame(() => requestAnimationFrame(() => {
+                    wrap.style.transform = 'translateX(0)';
+                }));
+                window._hudOpen = true;
+                // Wait for iframe to boot, then send navigate
+                iframe.addEventListener('load', sendNavigate, { once: true });
+            } else {
+                // Already open: just postMessage new node (instant, no reload)
+                sendNavigate();
             }
-            iframe.src = `/app/hud.html?userId=${encodeURIComponent(userId)}&nodeId=${encodeURIComponent(nodeId)}&_v=${Date.now()}`;
-            overlay.style.display = 'flex';
-            requestAnimationFrame(() => requestAnimationFrame(() => {
-                wrap.style.transform = 'translateX(0)';
-            }));
-            window._hudOpen = true;
         };
+
         window.closeHudOverlay = function() {
             const overlay = document.getElementById('hud-overlay');
             const wrap    = document.getElementById('hud-panel-wrap');
-            const iframe  = document.getElementById('hud-iframe');
             wrap.style.transform = 'translateX(100%)';
-            setTimeout(() => { overlay.style.display = 'none'; iframe.src = ''; window._hudOpen = false; }, 360);
+            // Keep iframe alive — just hide overlay, don't destroy src
+            setTimeout(() => { overlay.style.display = 'none'; window._hudOpen = false; }, 360);
         };
         let _topTTS = null;
         function _runTopTTS(text, lang) {

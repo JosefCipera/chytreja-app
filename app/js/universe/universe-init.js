@@ -600,6 +600,12 @@ function renderVisibleUniverse(model) {
 
   window.MAIN_UNIVERSE_DATA = visible;
 
+  // Prefetch level-2 nodes immediately — needed for dlouhovekost battery + instant panel open
+  const uid0 = window.CHJ_UID || window.firebaseAuth?.currentUser?.uid;
+  if (uid0 && window.prefetchHudNodes) {
+    window.prefetchHudNodes(uid0, ['telo', 'mysl', 'zdravi', 'vyziva']);
+  }
+
   // Auto-open main node HUD on startup (right-side panel)
   const mainNode = visible.find(n => n.id === main.id);
   if (mainNode && mainNode.state && mainNode.state !== 'GRAY') {
