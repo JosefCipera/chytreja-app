@@ -133,11 +133,14 @@
         }
       });
 
-      // If nodeId already in URL (legacy / direct load) — init normally
+      // Signal to parent that HUD is ready to receive navigation
+      window.parent?.postMessage({ type: 'chj:hud:ready' }, '*');
+
+      // Fallback: if nodeId in URL (direct load / dev), init from URL
       if (params.get('nodeId')) {
         await navigateTo(nodeId, null);
       }
-      // Otherwise wait for chj:navigate postMessage from Universe
+      // Otherwise wait for chj:navigate from Universe
     } else {
       panelReady = true;
       readinessChecked = true;
