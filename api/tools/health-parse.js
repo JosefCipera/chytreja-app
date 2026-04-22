@@ -190,56 +190,73 @@ function topMarkerDesc(markers) {
   return null; // no known marker found
 }
 
-// ── PROGRAMMATIC SUMMARY ─────────────────────────────────────────────────
-function buildSummary(markers, docType) {
-  const DOC_SENTENCE = {
-    blood_test:    'Krevní výsledky jsou zpracované.',
-    holter:        'Holter zaznamenal tvůj srdeční rytmus za 24 hodin.',
-    ecg:           'EKG zaznamenalo srdeční aktivitu.',
-    doctor_report: 'Zpráva od lékaře je uložená.',
-    dexa:          'DEXA scan změřil složení tvého těla.',
-    sleep_study:   'Spánková studie je zpracovaná.',
-    other:         'Dokument je zpracovaný.',
-  };
+// ── DISCIPLINE MAPPING ───────────────────────────────────────────────────
+const MARKER_TO_DISCIPLINE = {
+  'ldl': 'kardio', 'hdl': 'kardio', 'triglyceridy': 'kardio',
+  'crp': 'kardio', 'krevní tlak': 'kardio',
+  'ves': 'kardio', 'qtc': 'kardio', 'hrv': 'kardio',
+  'vitamin d': 'prevence', 'tsh': 'prevence', 'alt': 'prevence', 'kreatinin': 'prevence',
+  'glukóza': 'metabolismus', 'hba1c': 'metabolismus', 'inzulín': 'metabolismus', 'kyselina močová': 'metabolismus',
+  'hemoglobin': 'sila', 'ferritin': 'sila', 'testosterone': 'sila', 'vitamin b12': 'sila',
+};
 
-  const docSentence = DOC_SENTENCE[docType] || 'Dokument je zpracovaný.';
-  const desc = topMarkerDesc(markers);
+// Default discipline per node when no marker matches
+const NODE_DEFAULT_DISCIPLINE = {
+  zdravi: 'kardio', telo: 'sila', mysl: 'spanek', metabolicke: 'metabolismus', vyziva: 'vyziva',
+};
 
-  if (!desc) return `${docSentence} Výsledky jsou v pořádku.`;
-  return `${docSentence} ${desc.charAt(0).toUpperCase() + desc.slice(1)}.`;
-}
+const DISCIPLINE_LABEL  = {
+  kardio: 'Kardio', prevence: 'Prevence', sila: 'Síla', stabilita: 'Stabilita',
+  spanek: 'Spánek', kognitivni: 'Mozek', metabolismus: 'Metabolismus', vyziva: 'Výživa',
+};
 
-// ── CONCLUSION SENTENCE ───────────────────────────────────────────────────
-function buildConclusion(nodeUpdates, markers) {
-  const NODE_LABEL = { zdravi: 'Zdraví', telo: 'Tělo', mysl: 'Mysl', metabolicke: 'Metabolismus', vyziva: 'Výživa' };
-  const NODE_REASON = {
-    zdravi:      'srdce potřebuje pravidelný pohyb',
-    telo:        'síla a pohyb jsou teď priorita',
-    mysl:        'spánek a klid jsou teď důležité',
-    metabolicke: 'pomůže pravidelná aktivita a méně cukru',
-    vyziva:      'zaměř se na jídelníček',
-  };
+const DISCIPLINE_REASON = {
+  kardio:      'srdce potřebuje pravidelný pohyb',
+  prevence:    'pravidelné kontroly a životní styl',
+  sila:        'výkonnost potřebuje trénink',
+  stabilita:   'pohyb a rovnováha jsou priorita',
+  spanek:      'odpočinek je teď priorita',
+  kognitivni:  'mentální cvičení pomáhá',
+  metabolismus:'aktivita a strava pomohou',
+  vyziva:      'zaměř se na jídelníček',
+};
 
-  const down = nodeUpdates.filter(n => n.delta < 0).sort((a, b) => a.delta - b.delta);
-  const up   = nodeUpdates.filter(n => n.delta > 0);
+// ── BUILD DISPLAY DATA ───────────────────────────────────────────────────
+function buildDisplay(nodeUpdates, markers, flags) {
+  // Intro — reassuring unless critical flags
+  const intro = flags?.includes('CONSULT_DOCTOR')
+    ? 'Výsledky stojí za pozornost.'
+    : 'Kontrola proběhla v pořádku.';
 
-  if (!down.length && !up.length) return '';
+  // Find discipline per node going down
+  const down = nodeUpdates.filter(n => n.delta < 0);
+  const disciplines = [];
+  const seen = new Set();
 
-  if (!down.length) {
-    const labels = up.map(n => NODE_LABEL[n.node_id] || n.node_id).join(' a ');
-    return `${labels} roste — výsledky jdou správným směrem.`;
+  for (const node of down) {
+    // Find top abnormal marker for this node → discipline
+    const abnormal = (markers || [])
+      .filter(m => m.status && m.status !== 'normal')
+      .sort((a, b) => (MARKER_PRIORITY[b.status] || 0) - (MARKER_PRIORITY[a.status] || 0));
+
+    let discipline = NODE_DEFAULT_DISCIPLINE[node.node_id];
+    for (const m of abnormal) {
+      const key = (m.name || '').toLowerCase();
+      const matchKey = Object.keys(MARKER_TO_DISCIPLINE).find(k => key.includes(k));
+      if (matchKey) { discipline = MARKER_TO_DISCIPLINE[matchKey]; break; }
+    }
+
+    if (discipline && !seen.has(discipline)) {
+      seen.add(discipline);
+      disciplines.push({
+        discipline,
+        label:  DISCIPLINE_LABEL[discipline]  || discipline,
+        reason: DISCIPLINE_REASON[discipline] || 'zaměř se na tento uzel',
+      });
+    }
   }
 
-  const labels  = down.map(n => NODE_LABEL[n.node_id] || n.node_id).join(' a ');
-  const verb    = down.length > 1 ? 'klesají' : 'klesá';
-  const markerDesc = topMarkerDesc(markers);
-  const reason  = NODE_REASON[down[0].node_id] || 'zaměř se na tento uzel';
-
-  // If we know what caused it: "kvůli X, Y"  else just the activity message
-  if (markerDesc) {
-    return `${labels} ${verb} — ${markerDesc}, ${reason}.`;
-  }
-  return `${labels} ${verb} — ${reason}.`;
+  return { intro, disciplines };
 }
 
 // ── MAIN HANDLER (Node.js serverless) ─────────────────
@@ -418,16 +435,16 @@ Extrahuj všechny markery, namapuj na CHJ uzly a vrať přesně JSON dle instruk
       else console.warn('user_medications upsert failed:', error.message);
     }
 
-    // ── BUILD SUMMARY from data (programmatic, consistent) ───────────────
-    const conclusion  = buildConclusion(updatedNodes, parsed.markers);
-    const baseSummary = buildSummary(parsed.markers, parsed.doc_type);
-    const fullSummary = conclusion ? `${baseSummary} ${conclusion}` : baseSummary;
+    // ── BUILD DISPLAY from data (programmatic, consistent) ───────────────
+    const { intro, disciplines } = buildDisplay(updatedNodes, parsed.markers, parsed.flags);
 
     return res.json({
       success: true,
       doc_type: parsed.doc_type,
       doc_date: docDate,
-      summary: fullSummary,
+      intro,
+      disciplines,
+      summary: intro, // kept for backwards compat
       markers_found: parsed.markers.length,
       markers: parsed.markers,
       node_updates: updatedNodes,

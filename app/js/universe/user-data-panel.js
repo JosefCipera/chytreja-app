@@ -907,15 +907,24 @@ function bindDocumentsEvents() {
     const resultBody = document.getElementById('doc-result-body');
     resultBox.style.display = 'block';
 
-    const NODE_LABEL = { zdravi: 'Zdraví', telo: 'Tělo', mysl: 'Mysl', metabolicke: 'Metabolismus', vyziva: 'Výživa' };
     const stateDot   = s => s === 'RED' ? '🔴' : s === 'YELLOW' ? '🟡' : '🟢';
     const deltaColor = d => d < 0 ? '#f87171' : d > 0 ? '#4ade80' : '#64748b';
     const deltaStr   = d => d > 0 ? `+${d}` : String(d);
+    const NODE_LABEL = { zdravi: 'Zdraví', telo: 'Tělo', mysl: 'Mysl', metabolicke: 'Metabolismus', vyziva: 'Výživa' };
 
+    // Discipline lines
+    const disciplinesHtml = (data.disciplines?.length)
+      ? data.disciplines.map(d => `
+          <div style="padding:6px 0;color:#cbd5e1;font-size:15px;">
+            <strong>${d.label}</strong> — ${d.reason}
+          </div>`).join('')
+      : '';
+
+    // Node cards
     const nodesHtml = data.node_updates?.length
       ? data.node_updates.map(n => `
           <div style="display:flex;align-items:center;justify-content:space-between;
-            padding:10px 14px;background:rgba(255,255,255,0.03);border-radius:8px;margin-bottom:6px;">
+            padding:8px 12px;background:rgba(255,255,255,0.03);border-radius:8px;margin-bottom:6px;">
             <span style="font-size:14px;color:#e2e8f0;">
               ${stateDot(n.state)} ${NODE_LABEL[n.node_id] || n.node_id}
             </span>
@@ -924,7 +933,7 @@ function bindDocumentsEvents() {
               &nbsp;<span style="color:${deltaColor(n.delta)};">${deltaStr(n.delta)}</span>
             </span>
           </div>`).join('')
-      : '<div style="color:#475569;font-size:13px;padding:8px 0;">Žádné uzly nebyly aktualizovány.</div>';
+      : '';
 
     const consultHtml = data.flags?.includes('CONSULT_DOCTOR') ? `
       <div style="margin-top:12px;padding:10px 14px;background:rgba(239,68,68,0.08);
@@ -932,19 +941,19 @@ function bindDocumentsEvents() {
         ⚠ Konzultuj výsledky s lékařem.
       </div>` : '';
 
-    const strokeHtml = ''; // HIGH_STROKE_RISK stored in system, not shown to user
-
     resultBody.innerHTML = `
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;padding:10px 14px;
         background:rgba(34,197,94,0.07);border:1px solid rgba(34,197,94,0.25);border-radius:8px;">
         <span style="color:#4ade80;font-size:15px;">✔</span>
-        <span style="color:#4ade80;font-size:13px;">Dokument uložen a zpracován</span>
+        <span style="color:#4ade80;font-size:13px;">${data.intro || 'Dokument uložen a zpracován'}</span>
       </div>
-      <div style="color:#cbd5e1;font-size:15px;line-height:1.6;margin-bottom:16px;">${data.summary || ''}</div>
-      <div style="color:#475569;font-size:11px;font-family:monospace;letter-spacing:0.08em;margin-bottom:8px;">OVLIVNĚNÉ UZLY</div>
-      ${nodesHtml}
+      ${disciplinesHtml
+        ? `<div style="margin-bottom:16px;">${disciplinesHtml}</div>`
+        : ''}
+      ${nodesHtml
+        ? `<div style="margin-bottom:4px;">${nodesHtml}</div>`
+        : ''}
       ${consultHtml}
-      ${strokeHtml}
       <button id="doc-upload-another" style="margin-top:16px;width:100%;padding:10px;
         border-radius:10px;border:1px solid #334155;background:transparent;
         color:#64748b;font-size:13px;cursor:pointer;">
