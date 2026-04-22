@@ -29,6 +29,7 @@ const SYSTEM_PROMPT = `Jsi Health Document Parser pro CHJ (Chytré Já) — anal
 2. Extrahuj všechny markery s hodnotami, jednotkami a referenčními rozsahy
 3. Urči stav každého markeru (normal/borderline/high/low/critical)
 4. Namapuj na longevity uzly CHJ a navrhni index_delta
+5. Extrahuj léky a omezení
 
 TYPY DOKUMENTŮ:
 blood_test | holter | ecg | doctor_report | dexa | sleep_study | other
@@ -67,8 +68,23 @@ Imunita / obecné zdraví (→ zdravi):
 
 Holter / EKG (→ zdravi):
   HRV (SDNN ms): < 20 = critical, < 50 = low, > 100 = normal
-  Klidový HR: < 50 = low (atleti OK), > 80 = borderline, > 100 = high
-  Arytmie: žádné = normal, ojedinělé = borderline, časté/závažné = critical
+  Průměrný SF (bpm):
+    KONTEXT: Pacient na betablockeru (metoprolol, bisoprolol, atenolol, Kalnormin) nebo po ablaci fibrilace/flutteru síní → brady <50 bpm je očekávaná, hodnoť jako borderline max (ne critical)
+    Jinak: < 40 = critical, 40–50 = low, 50–60 = borderline (sportovcům OK), > 80 = borderline, > 100 = high
+  VES / komorové ektopické stahy (%):
+    < 1% = normal, 1–5% = borderline (delta -10 až -15), > 5% = high (delta -20 až -25), > 10% = critical
+  QTc (ms):
+    < 440 = normal, 440–460 = borderline (delta -10), 460–500 = high (delta -20), > 500 = critical → CONSULT_DOCTOR
+  Supraventrikulární ektopie (SES): ojedinělé = normal, časté = borderline
+  Arytmie (AFib/AFL epizody v záznamu): žádné = normal, ojedinělé = borderline, časté/závažné = critical → CONSULT_DOCTOR
+  AFib v ANAMNÉZE (ne aktivní v záznamu): zaznamenej jako constraint, nezhoršuj index_delta jako "critical" — pacient může být úspěšně po ablaci a v sinusovém rytmu
+
+HODNOCENÍ KARDIOLOGICKÝCH ZPRÁV:
+  - Pokud je pacient po ablaci AFib/flutteru a aktuálně v sinusovém rytmu → stav NENÍ critical, maximálně borderline
+  - CHADSVASc score > 2 → přidej flag "HIGH_STROKE_RISK" a constraint antikoagulace
+  - "Pacient bez symptomů, cítí se dobře" → nezhoršuj index_delta
+  - Anamnestické záznamy (předchozí příhody, staré diagnózy) hodnoť jako historical_context, ne aktuální stav
+  - Aktivní antikoagulace (warfarin, Pradaxa/dabigatran, Xarelto/rivaroxaban, Eliquis/apixaban) → constraint kontaktní_sporty
 
 VÝPOČET INDEX_DELTA:
   normal: 0 (nebo +3 pokud optimální)
@@ -110,11 +126,20 @@ VÝSTUPNÍ FORMÁT (přesně tento JSON, bez markdown):
       "affects_skills": ["kardio_vysoke_intenzity"]
     }
   ],
+  "medications": [
+    {
+      "name": "Pradaxa",
+      "dose": "2x150mg",
+      "affects": "antikoagulace"
+    }
+  ],
   "flags": []
 }
 
-FLAGS: přidej "CONSULT_DOCTOR" při kritických hodnotách nebo arytmiích.
+FLAGS: přidej "CONSULT_DOCTOR" při kritických hodnotách, QTc > 500ms nebo aktivních arytmiích.
+         přidej "HIGH_STROKE_RISK" při CHADSVASc > 2.
 Nestanoví diagnózu — jen extrahuj fakta a mapuj na uzly.
+Medications: extrahuj všechny léky zmíněné v dokumentu (aktuální medikace pacienta).
 Piš česky.`;
 
 // ── INDEX UPDATE ─────────────────────────────────────
@@ -267,6 +292,37 @@ Extrahuj všechny markery, namapuj na CHJ uzly a vrať přesně JSON dle instruk
       if (!error) savedConstraints.push(c.constraint_key);
     }
 
+    // ── SAVE MEDICATIONS → user_medications ──────────
+    const savedMedications = [];
+    for (const med of (parsed.medications || [])) {
+      if (!med.name) continue;
+      // affects[] — map string hint to known enum values
+      const affectsMap = {
+        'antikoagulace': [],         // informational, no training effect
+        'betablocker': ['hr_unreliable'],
+        'rate-control': ['hr_unreliable'],
+        'statin': [],
+        'lipidy': [],
+        'diuretikum': ['hydration'],
+        'inzulín': ['glucose_masked'],
+        'metformin': ['glucose_masked'],
+        'kortikosteroidy': ['muscle_loss', 'bone_density'],
+        'hypnotikum': ['fatigue'],
+      };
+      const affectsKey = (med.affects || '').toLowerCase();
+      const affectsArr = affectsMap[affectsKey] ?? [];
+
+      const { error } = await sb.from('user_medications').upsert({
+        user_id: userId,
+        name: med.name,
+        dose: med.dose || null,
+        affects: affectsArr,
+        active: true,
+      }, { onConflict: 'user_id,name' });
+      if (!error) savedMedications.push(med.name);
+      else console.warn('user_medications upsert failed:', error.message);
+    }
+
     return res.json({
       success: true,
       doc_type: parsed.doc_type,
@@ -276,6 +332,7 @@ Extrahuj všechny markery, namapuj na CHJ uzly a vrať přesně JSON dle instruk
       markers: parsed.markers,
       node_updates: updatedNodes,
       constraints_saved: savedConstraints,
+      medications_saved: savedMedications,
       flags: parsed.flags || [],
       node_impacts: parsed.node_impacts,
     });
