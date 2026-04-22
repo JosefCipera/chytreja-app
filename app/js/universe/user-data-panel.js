@@ -798,7 +798,7 @@ function renderDocumentsTab() {
         border-radius: 10px; border: 1px solid #334155;
         background: transparent; color: #475569;
         font-size: 14px; cursor: not-allowed; transition: all 0.2s;
-      ">Analyzovat dokument</button>
+      ">Analyzovat a uložit</button>
     </div>
 
     <div id="doc-result" style="display:none;" class="udp-section">
@@ -859,7 +859,7 @@ function bindDocumentsEvents() {
     if (!selectedFile || !userId) return;
 
     uploadBtn.disabled = true;
-    uploadBtn.textContent = 'Analyzuji…';
+    uploadBtn.textContent = 'Analyzuji a ukládám…';
     uploadBtn.style.color = '#94a3b8';
     errorBox.style.display = 'none';
 
@@ -888,7 +888,7 @@ function bindDocumentsEvents() {
         const detail = data.raw ? `\n\nClaude raw: ${data.raw}` : '';
         showError(`[${res.status}] ${data.error || JSON.stringify(data)}${detail}`);
         uploadBtn.disabled = false;
-        uploadBtn.textContent = 'Analyzovat dokument';
+        uploadBtn.textContent = 'Analyzovat a uložit';
         return;
       }
 
@@ -925,11 +925,27 @@ function bindDocumentsEvents() {
         </span>
       </div>`).join('') : '<div style="color:#475569;font-size:13px;">Žádné uzly nebyly aktualizovány.</div>';
 
+    const savedHtml = `
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;padding:10px 14px;
+        background:rgba(34,197,94,0.07);border:1px solid rgba(34,197,94,0.25);border-radius:8px;">
+        <span style="color:#4ade80;font-size:15px;">✔</span>
+        <span style="color:#4ade80;font-size:13px;font-family:monospace;letter-spacing:0.05em;">ULOŽENO DO SYSTÉMU</span>
+        <span style="color:#475569;font-size:12px;margin-left:auto;">${data.markers_found ?? 0} markerů · ${(data.medications_saved?.length ?? 0)} léků</span>
+      </div>`;
+
+    const flagsHtml2 = data.flags?.includes('HIGH_STROKE_RISK') ? `
+      <div style="margin-bottom:10px;padding:10px 14px;background:rgba(251,191,36,0.08);
+        border:1px solid rgba(251,191,36,0.25);border-radius:8px;color:#fde68a;font-size:13px;">
+        ⚠ Vysoké riziko CMP (CHADSVASc > 2) — pokračuj v antikoagulaci dle kardiologa.
+      </div>` : '';
+
     resultBody.innerHTML = `
+      ${savedHtml}
       ${flagHtml}
+      ${flagsHtml2}
       <div style="color:#cbd5e1;font-size:14px;line-height:1.6;margin-bottom:14px;">${data.summary || ''}</div>
       <div style="color:#475569;font-size:11px;font-family:monospace;margin-bottom:8px;">
-        AKTUALIZOVANÉ UZLY · ${data.markers_found ?? 0} markerů
+        AKTUALIZOVANÉ UZLY
       </div>
       ${nodesHtml}
       <button id="doc-upload-another" style="margin-top:14px;width:100%;padding:10px;

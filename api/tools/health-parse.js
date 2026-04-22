@@ -98,7 +98,7 @@ VÝSTUPNÍ FORMÁT (přesně tento JSON, bez markdown):
 {
   "doc_type": "blood_test",
   "doc_date": "2026-04-14",
-  "summary": "Stručný popis česky (1-2 věty)",
+  "summary": "Vlastní syntéza klíčových nálezů (1-2 věty, NE kopie textu z dokumentu). Uveď nejdůležitější odchylky nebo potvrzení normálu.",
   "markers": [
     {
       "name": "LDL cholesterol",
