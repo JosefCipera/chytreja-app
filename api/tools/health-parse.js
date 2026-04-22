@@ -98,7 +98,7 @@ VÝSTUPNÍ FORMÁT (přesně tento JSON, bez markdown):
 {
   "doc_type": "blood_test",
   "doc_date": "2026-04-14",
-  "summary": "2-3 věty pro laika. Pravidla: žádné zkratky (ne QTc, VES, HbA1c), žádné latinské termíny, žádné 'pacient/záznam/dominantní'. Uveď konkrétní naměřenou hodnotu kde to dává smysl. Poslední věta řekne PROČ daný uzel klesá nebo stoupá. Vzor: 'Srdce tepe pravidelně, naměřeno 906 stahů mimo rytmus — není kritické. Elektrický impulz trvá déle než má — proto Zdraví klesá.' Nebo: 'Cukr nalačno 6,5 mmol — na horní hranici. Při dalším zvýšení hrozí cukrovka — proto Metabolismus klesá.'",
+  "summary": "3 věty pro laika, tykání (ty/bereš/tvůj), NE 'pacient'. Žádné zkratky (ne QTc, VES, HbA1c), žádné latinské termíny, žádná rekapitulace historie. Věta 1-2: co bylo zjištěno + konkrétní hodnota kde dává smysl. Věta 3: proč uzel klesá/stoupá — vždy sváže s pohybem nebo aktivitou. Vzory: 'Srdce jede pravidelně, ablace drží. Léky na ředění krve bereš správně. Zdraví klesá — srdce potřebuje pravidelný pohyb.' nebo 'Cukr nalačno 6,5 mmol — na horní hranici normy. Zatím bez rizika, ale pozor na stravu. Metabolismus klesá — pomůže pravidelná aktivita a méně cukru.'",
   "markers": [
     {
       "name": "LDL cholesterol",

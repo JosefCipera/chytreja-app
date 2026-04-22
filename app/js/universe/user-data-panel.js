@@ -932,11 +932,7 @@ function bindDocumentsEvents() {
         ⚠ Konzultuj výsledky s lékařem.
       </div>` : '';
 
-    const strokeHtml = data.flags?.includes('HIGH_STROKE_RISK') ? `
-      <div style="margin-top:8px;padding:10px 14px;background:rgba(251,191,36,0.08);
-        border:1px solid rgba(251,191,36,0.25);border-radius:8px;color:#fde68a;font-size:13px;">
-        ⚠ Vysoké riziko CMP — pokračuj v antikoagulaci dle kardiologa.
-      </div>` : '';
+    const strokeHtml = ''; // HIGH_STROKE_RISK stored in system, not shown to user
 
     resultBody.innerHTML = `
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;padding:10px 14px;
