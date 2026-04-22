@@ -62,6 +62,7 @@ PRAVIDLA:
 - Nikdy neopakuj yesterdayAction
 - coaching_note: max 1 věta, konkrétní odkaz na sen uživatele (plavání, běžky, vnuci...)
 - Česky, tykej, trenérský tón
+- Správně: "svaly zad" (NE "záďě" — neexistuje), "svaly nohou" (NE "nožní svaly")
 - type: "timed" (s dobou v sekundách) | "counter" (sety×repy) | "distance" (metry)
 
 ODPOVĚZ POUZE JSON (bez markdown):

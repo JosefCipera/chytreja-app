@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import HudPanel from './lib/components/HudPanel.svelte';
   import CheckIn from './lib/components/CheckIn.svelte';
-  import { loadHudData, patchHudData, nodeData, loading, error } from './lib/stores/hudData.js';
+  import { loadHudData, patchHudData, nodeData, rawData, loading, error } from './lib/stores/hudData.js';
   import { calcVitality } from './lib/utils/vitality.js';
 
   // ── URL PARAMS ─────────────────────────────────────────
@@ -290,7 +290,7 @@
   <!-- Ambient glow — only when standalone (not overlay) -->
   <div class="fixed top-1/3 left-1/2 -translate-x-1/2 w-96 h-96 bg-cyan-500/[0.02] rounded-full blur-3xl pointer-events-none"></div>
 
-  {#if userId && !devMode && $loading}
+  {#if userId && !devMode && $loading && !$rawData}
     <!-- Loading state -->
     <div class="hud-mono text-cyan-400/60 text-xs tracking-widest animate-pulse">
       LOADING_NODE_DATA…
