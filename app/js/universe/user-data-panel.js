@@ -912,12 +912,8 @@ function bindDocumentsEvents() {
     const deltaStr   = d => d > 0 ? `+${d}` : String(d);
     const NODE_LABEL = { zdravi: 'Zdraví', telo: 'Tělo', mysl: 'Mysl', metabolicke: 'Metabolismus', vyziva: 'Výživa' };
 
-    // Discipline lines
-    const disciplinesHtml = (data.disciplines?.length)
-      ? data.disciplines.map(d => `
-          <div style="padding:6px 0;color:#cbd5e1;font-size:15px;">
-            <strong>${d.label}</strong> — ${d.reason}
-          </div>`).join('')
+    const conclusionHtml = data.conclusion
+      ? `<div style="color:#cbd5e1;font-size:15px;line-height:1.6;margin-bottom:16px;">${data.conclusion}</div>`
       : '';
 
     // Node cards
@@ -947,9 +943,7 @@ function bindDocumentsEvents() {
         <span style="color:#4ade80;font-size:15px;">✔</span>
         <span style="color:#4ade80;font-size:13px;">${data.intro || 'Dokument uložen a zpracován'}</span>
       </div>
-      ${disciplinesHtml
-        ? `<div style="margin-bottom:16px;">${disciplinesHtml}</div>`
-        : ''}
+      ${conclusionHtml}
       ${nodesHtml
         ? `<div style="margin-bottom:4px;">${nodesHtml}</div>`
         : ''}

@@ -222,41 +222,35 @@ const DISCIPLINE_REASON = {
 };
 
 // ── BUILD DISPLAY DATA ───────────────────────────────────────────────────
-function buildDisplay(nodeUpdates, markers, flags) {
-  // Intro — reassuring unless critical flags
+function buildDisplay(nodeUpdates, flags) {
+  const NODE_LABEL = { zdravi: 'Zdraví', telo: 'Tělo', mysl: 'Mysl', metabolicke: 'Metabolismus', vyziva: 'Výživa' };
+  const NODE_REASON = {
+    zdravi:      'pohyb je teď pro srdce priorita',
+    telo:        'síla a pohyb jsou teď priorita',
+    mysl:        'spánek je teď pro hlavu priorita',
+    metabolicke: 'aktivita a strava jsou teď priorita',
+    vyziva:      'jídelníček je teď priorita',
+  };
+
   const intro = flags?.includes('CONSULT_DOCTOR')
     ? 'Výsledky stojí za pozornost.'
     : 'Kontrola proběhla v pořádku.';
 
-  // Find discipline per node going down
-  const down = nodeUpdates.filter(n => n.delta < 0);
-  const disciplines = [];
-  const seen = new Set();
+  const down = nodeUpdates.filter(n => n.delta < 0).sort((a, b) => a.delta - b.delta);
+  const up   = nodeUpdates.filter(n => n.delta > 0);
 
-  for (const node of down) {
-    // Find top abnormal marker for this node → discipline
-    const abnormal = (markers || [])
-      .filter(m => m.status && m.status !== 'normal')
-      .sort((a, b) => (MARKER_PRIORITY[b.status] || 0) - (MARKER_PRIORITY[a.status] || 0));
-
-    let discipline = NODE_DEFAULT_DISCIPLINE[node.node_id];
-    for (const m of abnormal) {
-      const key = (m.name || '').toLowerCase();
-      const matchKey = Object.keys(MARKER_TO_DISCIPLINE).find(k => key.includes(k));
-      if (matchKey) { discipline = MARKER_TO_DISCIPLINE[matchKey]; break; }
-    }
-
-    if (discipline && !seen.has(discipline)) {
-      seen.add(discipline);
-      disciplines.push({
-        discipline,
-        label:  DISCIPLINE_LABEL[discipline]  || discipline,
-        reason: DISCIPLINE_REASON[discipline] || 'zaměř se na tento uzel',
-      });
-    }
+  let conclusion = '';
+  if (down.length) {
+    const labels = down.map(n => NODE_LABEL[n.node_id] || n.node_id).join(' a ');
+    const verb   = down.length > 1 ? 'klesají' : 'klesá';
+    const reason = NODE_REASON[down[0].node_id] || 'pohyb je teď priorita';
+    conclusion = `${labels} ${verb} — ${reason}.`;
+  } else if (up.length) {
+    const labels = up.map(n => NODE_LABEL[n.node_id] || n.node_id).join(' a ');
+    conclusion = `${labels} roste — výsledky jdou správným směrem.`;
   }
 
-  return { intro, disciplines };
+  return { intro, conclusion };
 }
 
 // ── MAIN HANDLER (Node.js serverless) ─────────────────
@@ -436,15 +430,14 @@ Extrahuj všechny markery, namapuj na CHJ uzly a vrať přesně JSON dle instruk
     }
 
     // ── BUILD DISPLAY from data (programmatic, consistent) ───────────────
-    const { intro, disciplines } = buildDisplay(updatedNodes, parsed.markers, parsed.flags);
+    const { intro, conclusion } = buildDisplay(updatedNodes, parsed.flags);
 
     return res.json({
       success: true,
       doc_type: parsed.doc_type,
       doc_date: docDate,
       intro,
-      disciplines,
-      summary: intro, // kept for backwards compat
+      conclusion,
       markers_found: parsed.markers.length,
       markers: parsed.markers,
       node_updates: updatedNodes,
