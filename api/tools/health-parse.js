@@ -78,6 +78,7 @@ Holter / EKG (→ zdravi):
   Supraventrikulární ektopie (SES): ojedinělé = normal, časté = borderline
   Arytmie (AFib/AFL epizody v záznamu): žádné = normal, ojedinělé = borderline, časté/závažné = critical → CONSULT_DOCTOR
   AFib v ANAMNÉZE (ne aktivní v záznamu): zaznamenej jako constraint, nezhoršuj index_delta jako "critical" — pacient může být úspěšně po ablaci a v sinusovém rytmu
+  Holter/EKG s negativními nálezy → přidej VŽDY i uzel telo (delta -5 až -10): kardiovaskulární omezení snižuje toleranci zátěže a výkonnost
 
 HODNOCENÍ KARDIOLOGICKÝCH ZPRÁV:
   - Pokud je pacient po ablaci AFib/flutteru a aktuálně v sinusovém rytmu → stav NENÍ critical, maximálně borderline
@@ -98,7 +99,7 @@ VÝSTUPNÍ FORMÁT (přesně tento JSON, bez markdown):
 {
   "doc_type": "blood_test",
   "doc_date": "2026-04-14",
-  "summary": "3 věty pro laika, tykání (ty/bereš/tvůj), NE 'pacient'. Žádné zkratky (ne QTc, VES, HbA1c), žádné latinské termíny, žádná rekapitulace historie. Věta 1-2: co bylo zjištěno + konkrétní hodnota kde dává smysl. Věta 3: proč uzel klesá/stoupá — vždy sváže s pohybem nebo aktivitou. Vzory: 'Srdce jede pravidelně, ablace drží. Léky na ředění krve bereš správně. Zdraví klesá — srdce potřebuje pravidelný pohyb.' nebo 'Cukr nalačno 6,5 mmol — na horní hranici normy. Zatím bez rizika, ale pozor na stravu. Metabolismus klesá — pomůže pravidelná aktivita a méně cukru.'",
+  "summary": "1-2 věty pro laika — pouze co bylo zjištěno. Tykání (ty/bereš/tvůj), NE 'pacient'. Žádné zkratky (QTc, VES, HbA1c), žádné latinské termíny, žádná rekapitulace historie. BEZ závěrečné věty o uzlech — tu doplní systém automaticky. Vzory: 'Srdce jede pravidelně, ablace drží. Léky na ředění krve bereš správně.' nebo 'Cukr nalačno 6,5 mmol — na horní hranici normy. Zatím bez rizika, ale pozor na stravu.'",
   "markers": [
     {
       "name": "LDL cholesterol",
@@ -145,6 +146,39 @@ Piš česky.`;
 // ── INDEX UPDATE ─────────────────────────────────────
 function applyDelta(current, delta) {
   return Math.max(0, Math.min(100, Math.round((current ?? 50) + delta)));
+}
+
+// ── CONCLUSION SENTENCE (generated from actual node data) ─────────────────
+function buildConclusion(nodeUpdates) {
+  const NODE_LABEL = { zdravi: 'Zdraví', telo: 'Tělo', mysl: 'Mysl', metabolicke: 'Metabolismus', vyziva: 'Výživa' };
+  const NODE_REASON = {
+    zdravi:      'srdce potřebuje pravidelný pohyb',
+    telo:        'síla a pohyb jsou teď priorita',
+    mysl:        'spánek a klid jsou teď důležité',
+    metabolicke: 'pomůže pravidelná aktivita a méně cukru',
+    vyziva:      'zaměř se na jídelníček',
+  };
+
+  const down = nodeUpdates.filter(n => n.delta < 0).sort((a, b) => a.delta - b.delta);
+  const up   = nodeUpdates.filter(n => n.delta > 0);
+
+  if (!down.length && !up.length) return '';
+
+  if (!down.length && up.length) {
+    const labels = up.map(n => NODE_LABEL[n.node_id] || n.node_id).join(' a ');
+    return `${labels} roste — výsledky jdou správným směrem.`;
+  }
+
+  if (down.length === 1) {
+    const n = down[0];
+    const label  = NODE_LABEL[n.node_id] || n.node_id;
+    const reason = NODE_REASON[n.node_id] || 'zaměř se na tento uzel';
+    return `${label} klesá — ${reason}.`;
+  }
+
+  // Multiple nodes down — use labels + shared activity message
+  const labels = down.map(n => NODE_LABEL[n.node_id] || n.node_id).join(' a ');
+  return `${labels} klesají — pohyb a životní styl jsou teď priorita.`;
 }
 
 // ── MAIN HANDLER (Node.js serverless) ─────────────────
@@ -323,11 +357,17 @@ Extrahuj všechny markery, namapuj na CHJ uzly a vrať přesně JSON dle instruk
       else console.warn('user_medications upsert failed:', error.message);
     }
 
+    // ── APPEND CONCLUSION to summary (always matches node data) ──────────
+    const conclusion = buildConclusion(updatedNodes);
+    const fullSummary = conclusion
+      ? `${parsed.summary} ${conclusion}`
+      : parsed.summary;
+
     return res.json({
       success: true,
       doc_type: parsed.doc_type,
       doc_date: docDate,
-      summary: parsed.summary,
+      summary: fullSummary,
       markers_found: parsed.markers.length,
       markers: parsed.markers,
       node_updates: updatedNodes,
