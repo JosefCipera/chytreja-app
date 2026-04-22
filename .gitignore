@@ -5,6 +5,7 @@ node_modules/
 .vercel
 .env*.local
 
-# Svelte build output — Vercel builds from source
-app/assets/hud-*.js
-app/assets/hud-*.css
+# Svelte build output — commit manually after: npm run build:hud
+# (vercel.json buildCommand unreliable — always build+commit before push)
+# app/assets/hud-*.js   ← DO NOT IGNORE — must be committed
+# app/assets/hud-*.css  ← DO NOT IGNORE — must be committed
