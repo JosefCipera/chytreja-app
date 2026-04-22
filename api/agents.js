@@ -63,6 +63,7 @@ PRAVIDLA:
 - coaching_note: max 1 věta, konkrétní odkaz na sen uživatele (plavání, běžky, vnuci...)
 - Česky, tykej, trenérský tón
 - Správně: "svaly zad" (NE "záďě" — neexistuje), "svaly nohou" (NE "nožní svaly")
+- Správně: "zánětlivý stav" (NE "zápalební stav" — neexistuje)
 - type: "timed" (s dobou v sekundách) | "counter" (sety×repy) | "distance" (metry)
 
 ODPOVĚZ POUZE JSON (bez markdown):
@@ -177,6 +178,7 @@ PRAVIDLA:
 - Nikdy neopakuj yesterdayAction
 - coaching_note: max 1 věta, konkrétní odkaz na sen uživatele (plavání, běžky, vnuci, hrát tenis...)
 - Česky, tykej, klidný ale motivující tón
+- Správně: "zánětlivý stav" (NE "zápalební stav" — neexistuje)
 - type: "timed" (s dobou v sekundách) | "habit" (jednorázové HOTOVO)
 
 ODPOVĚZ POUZE JSON (bez markdown):
@@ -282,6 +284,7 @@ PRAVIDLA:
 - Nikdy neopakuj yesterdayAction
 - coaching_note: max 1 věta, konkrétní odkaz na sen uživatele
 - Česky, tykej, klidný ale přímý tón
+- Správně: "zánětlivý stav" (NE "zápalební stav" — neexistuje)
 - type: "timed" (s dobou v sekundách) | "habit" (jednorázové HOTOVO)
 
 ODPOVĚZ POUZE JSON (bez markdown):
@@ -398,6 +401,7 @@ PRAVIDLA:
 - Nikdy neopakuj yesterdayAction
 - coaching_note: max 1 věta, konkrétní odkaz na sen uživatele (plavání, běžky, výkon, vnuci...)
 - Česky, tykej, přímý trenérský tón
+- Správně: "zánětlivý stav" (NE "zápalební stav" — neexistuje)
 - type: "habit" (jednorázové HOTOVO) | "timed" (s dobou v sekundách pro tracking)
 - Protein je priority — zmiň ho pokud je tier 1 nebo 2
 
