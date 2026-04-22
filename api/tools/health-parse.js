@@ -148,6 +148,68 @@ function applyDelta(current, delta) {
   return Math.max(0, Math.min(100, Math.round((current ?? 50) + delta)));
 }
 
+// ── PROGRAMMATIC SUMMARY (no AI, consistent language) ────────────────────
+function buildSummary(markers, docType) {
+  const DOC_SENTENCE = {
+    blood_test:    'Krevní výsledky jsou zpracované.',
+    holter:        'Holter zaznamenal tvůj srdeční rytmus za 24 hodin.',
+    ecg:           'EKG zaznamenalo srdeční aktivitu.',
+    doctor_report: 'Zpráva od lékaře je uložená.',
+    dexa:          'DEXA scan změřil složení tvého těla.',
+    sleep_study:   'Spánková studie je zpracovaná.',
+    other:         'Dokument je zpracovaný.',
+  };
+
+  // Plain Czech for known markers — no scary numbers, no abbreviations
+  const MARKER_PLAIN = {
+    'ldl':             { high: 'špatný cholesterol nad normou', critical: 'špatný cholesterol výrazně nad normou' },
+    'hdl':             { low: 'hodný cholesterol pod normou' },
+    'triglyceridy':    { high: 'tuky v krvi nad normou', critical: 'tuky v krvi výrazně nad normou' },
+    'glukóza':         { high: 'cukr v krvi nad normou', borderline: 'cukr v krvi na horní hranici', low: 'cukr v krvi pod normou' },
+    'hba1c':           { high: 'dlouhodobý cukr nad normou', borderline: 'dlouhodobý cukr na horní hranici' },
+    'inzulín':         { high: 'inzulín nad normou' },
+    'crp':             { high: 'zánětlivý marker nad normou' },
+    'vitamin d':       { low: 'vitamín D pod normou', critical: 'vitamín D výrazně pod normou' },
+    'tsh':             { high: 'štítná žláza mimo normu', low: 'štítná žláza mimo normu' },
+    'ferritin':        { low: 'zásoby železa pod normou', critical: 'zásoby železa kriticky nízké' },
+    'hemoglobin':      { low: 'hemoglobin pod normou' },
+    'testosterone':    { low: 'testosteron pod normou' },
+    'vitamin b12':     { low: 'vitamín B12 pod normou' },
+    'ves':             { high: 'srdeční rytmus s nepravidelnými stahy', borderline: 'srdeční rytmus s nepravidelnými stahy' },
+    'qtc':             { high: 'elektrický impulz srdce trvá déle', critical: 'elektrický impulz srdce výrazně prodloužen' },
+    'hrv':             { low: 'variabilita srdečního rytmu nízká', critical: 'variabilita srdečního rytmu kriticky nízká' },
+    'alt':             { high: 'jaterní marker nad normou' },
+    'kreatinin':       { high: 'ledvinový marker nad normou' },
+    'kyselina močová': { high: 'kyselina močová nad normou' },
+    'krevní tlak':     { high: 'krevní tlak nad normou', borderline: 'krevní tlak na horní hranici' },
+  };
+
+  const docSentence = DOC_SENTENCE[docType] || 'Dokument je zpracovaný.';
+
+  const priority = { critical: 4, high: 3, low: 3, borderline: 2 };
+  const abnormal = (markers || [])
+    .filter(m => m.status && m.status !== 'normal')
+    .sort((a, b) => (priority[b.status] || 0) - (priority[a.status] || 0));
+
+  if (!abnormal.length) {
+    return `${docSentence} Výsledky jsou v pořádku.`;
+  }
+
+  const descriptions = [];
+  for (const m of abnormal.slice(0, 2)) {
+    const key = (m.name || '').toLowerCase();
+    const matchKey = Object.keys(MARKER_PLAIN).find(k => key.includes(k));
+    const translation = matchKey
+      ? (MARKER_PLAIN[matchKey][m.status] || MARKER_PLAIN[matchKey]['high'] || MARKER_PLAIN[matchKey]['low'])
+      : null;
+    const text = translation || 'nalezena odchylka';
+    if (!descriptions.includes(text)) descriptions.push(text);
+  }
+
+  const desc = descriptions.join(', ');
+  return `${docSentence} ${desc.charAt(0).toUpperCase() + desc.slice(1)}.`;
+}
+
 // ── CONCLUSION SENTENCE (generated from actual node data) ─────────────────
 function buildConclusion(nodeUpdates) {
   const NODE_LABEL = { zdravi: 'Zdraví', telo: 'Tělo', mysl: 'Mysl', metabolicke: 'Metabolismus', vyziva: 'Výživa' };
@@ -357,11 +419,10 @@ Extrahuj všechny markery, namapuj na CHJ uzly a vrať přesně JSON dle instruk
       else console.warn('user_medications upsert failed:', error.message);
     }
 
-    // ── APPEND CONCLUSION to summary (always matches node data) ──────────
-    const conclusion = buildConclusion(updatedNodes);
-    const fullSummary = conclusion
-      ? `${parsed.summary} ${conclusion}`
-      : parsed.summary;
+    // ── BUILD SUMMARY from data (programmatic, consistent) ───────────────
+    const conclusion  = buildConclusion(updatedNodes);
+    const baseSummary = buildSummary(parsed.markers, parsed.doc_type);
+    const fullSummary = conclusion ? `${baseSummary} ${conclusion}` : baseSummary;
 
     return res.json({
       success: true,
