@@ -105,7 +105,8 @@
       await Promise.all([checkReadiness(), loadHudData(userId, nodeId)]);
 
       // Skip orchestrator if we have complete data from cache
-      const currentData = get(nodeData);
+      // Use rawData (writable source) — derived nodeData may not have propagated yet
+      const currentData = get(rawData);
       const hasCache = currentData?.action?.from_agent_cache === true && currentData?.verdict;
       if (!hasCache) {
         triggerOrchestrator(userId, nodeId);
@@ -138,7 +139,8 @@
   // Pokud je disciplína tělesná → zavolá Tělo Agenta pro konkrétní akci.
   async function triggerOrchestrator(uid, nid) {
     // Only show PREPARING if we have no action yet — otherwise update silently
-    const hasAction = !!get(nodeData)?.action;
+    // Use rawData (writable source) — get(nodeData) may be stale right after loadHudData resolves
+    const hasAction = !!get(rawData)?.action;
     agentLoading = !hasAction;
     try {
       const orchRes = await fetch('/api/orchestrator', {
