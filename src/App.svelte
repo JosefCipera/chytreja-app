@@ -101,16 +101,15 @@
   // ── LOAD REAL DATA ─────────────────────────────────────
   onMount(async () => {
     if (userId && !devMode) {
-      await checkReadiness();
-      await loadHudData(userId, nodeId);
+      // Run readiness check + hud-data in parallel — both independent
+      await Promise.all([checkReadiness(), loadHudData(userId, nodeId)]);
 
-      // Only run orchestrator if verdict or action is missing (first load of the day)
-      // If hud-data already returned from_agent_cache, data is complete — skip orchestrator
+      // Skip orchestrator if we have complete data from cache
       const currentData = get(nodeData);
-      if (!currentData?.verdict || !currentData?.action || currentData?.action?.from_agent_cache === false) {
+      const hasCache = currentData?.action?.from_agent_cache === true && currentData?.verdict;
+      if (!hasCache) {
         triggerOrchestrator(userId, nodeId);
       }
-      // else: data from cache, show immediately without orchestrator call
     } else {
       readinessChecked = true;
     }
@@ -138,7 +137,9 @@
   // Volá orchestrátor → uloží rozhodnutí do orchestrator_log.
   // Pokud je disciplína tělesná → zavolá Tělo Agenta pro konkrétní akci.
   async function triggerOrchestrator(uid, nid) {
-    agentLoading = true;
+    // Only show PREPARING if we have no action yet — otherwise update silently
+    const hasAction = !!get(nodeData)?.action;
+    agentLoading = !hasAction;
     try {
       const orchRes = await fetch('/api/orchestrator', {
         method: 'POST',
