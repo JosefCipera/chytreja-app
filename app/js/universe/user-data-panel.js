@@ -1157,5 +1157,10 @@ function bindIntegrationsEvents() {
       importBtn.textContent = 'Importovat data';
       fileInput.value = '';
     });
+
+    // Refresh universe nodes automatically — no F5 needed
+    if (typeof window.refreshUniverseData === 'function') {
+      window.refreshUniverseData();
+    }
   }
 }
