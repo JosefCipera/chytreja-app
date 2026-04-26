@@ -122,7 +122,9 @@ export default async function handler(req, res) {
   if (histErr) return res.status(500).json({ error: histErr.message });
 
   // ── Compute 7-day average → update user_metrics ───────────
-  const since7 = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
+  // Use last date in CSV (not today) — works correctly for historical exports too
+  const lastDate = historyRows.map(r => r.date).sort().at(-1);
+  const since7 = new Date(new Date(lastDate).getTime() - 6 * 86400000).toISOString().slice(0, 10);
   const nodeIds = ['zdravi', 'spanek', 'telo'];
   const metricsUpsert = [];
 
