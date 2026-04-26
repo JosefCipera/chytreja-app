@@ -874,7 +874,7 @@ function bindDocumentsEvents() {
         reader.readAsDataURL(selectedFile);
       });
 
-      const res = await fetch('/api/tools/health-parse', {
+      const res = await fetch('/api/tools/parse', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1094,10 +1094,10 @@ function bindIntegrationsEvents() {
     try {
       const csvText = await selectedFile.text();
 
-      const res = await fetch('/api/tools/ultrahuman-parse', {
+      const res = await fetch('/api/tools/parse', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, csvText }),
+        body: JSON.stringify({ userId, csvText, source: 'ultrahuman' }),
       });
 
       const data = await res.json();

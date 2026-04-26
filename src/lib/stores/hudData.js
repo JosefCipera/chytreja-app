@@ -50,14 +50,17 @@ export function patchHudData(patch) {
 }
 
 // ── FETCH ──────────────────────────────────────────────
+// Uses hud-data-bulk (single-node mode) — saves one serverless function slot
 export async function loadHudData(userId, nodeId) {
   loading.set(true);
   error.set(null);
 
   try {
-    const res = await fetch(`/api/hud-data?userId=${encodeURIComponent(userId)}&nodeId=${encodeURIComponent(nodeId)}`);
+    const res = await fetch(`/api/hud-data-bulk?userId=${encodeURIComponent(userId)}&nodes=${encodeURIComponent(nodeId)}`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
+    const bulk = await res.json();
+    const data = bulk[nodeId];
+    if (!data) throw new Error(`No data for node ${nodeId}`);
     rawData.set(data);
   } catch (err) {
     console.error('[HUD] fetch failed:', err);

@@ -5,7 +5,7 @@
     "alias": ["dev.iting.cz"],
     "functions": {
         "api/orchestrator.js":         { "maxDuration": 60 },
-        "api/tools/health-parse.js":   { "maxDuration": 60 }
+        "api/tools/parse.js":          { "maxDuration": 60 }
     },
     "headers": [
         {
