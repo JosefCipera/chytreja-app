@@ -405,6 +405,32 @@
     </script>
 
     <!-- Onboarding Modal -->
+
+    <!-- HUD fetch loader — thin bar at the right edge while data is being fetched -->
+    <style>
+        #hud-fetch-loader {
+            position: fixed;
+            top: 0; right: 0;
+            width: 3px;
+            height: 100%;
+            background: linear-gradient(180deg, #06b6d4 0%, #22c55e 60%, #06b6d4 100%);
+            background-size: 100% 200%;
+            opacity: 0;
+            z-index: 6000;
+            pointer-events: none;
+            transition: opacity 0.15s ease;
+        }
+        #hud-fetch-loader.active {
+            opacity: 1;
+            animation: hud-loader-pulse 0.8s ease-in-out infinite alternate;
+        }
+        @keyframes hud-loader-pulse {
+            from { opacity: 0.5; box-shadow: 0 0 6px rgba(6,182,212,0.4); }
+            to   { opacity: 1;   box-shadow: 0 0 14px rgba(6,182,212,0.9); }
+        }
+    </style>
+    <div id="hud-fetch-loader"></div>
+
     <!-- HUD Overlay — Svelte HUD panel (same as index.html) -->
     <div id="hud-overlay" style="
         display: none; position: fixed; inset: 0; z-index: 5000;
@@ -463,27 +489,52 @@
             if (children.length) window.prefetchHudNodes(userId, children);
         };
 
-        window.openHudOverlay = function(userId, nodeId) {
+        window.openHudOverlay = async function(userId, nodeId) {
             const overlay = document.getElementById('hud-overlay');
             const wrap    = document.getElementById('hud-panel-wrap');
             const iframe  = document.getElementById('hud-iframe');
+            const loader  = document.getElementById('hud-fetch-loader');
 
             // Lazy-prefetch children of this node in background
             window.prefetchHudChildren(userId, nodeId);
 
             if (!window._hudOpen) {
-                // First open: nodeId in URL — Svelte reads it directly, no timing dance
+                // ── First open this session ─────────────────────────────────────
+                // Iframe hasn't loaded yet — let Svelte read nodeId from URL.
+                // Also kick off a background prefetch so the cache is warm if user
+                // closes and reopens before the iframe fetches on its own.
                 iframe.src = `/app/hud.html?userId=${encodeURIComponent(userId)}&nodeId=${encodeURIComponent(nodeId)}`;
                 window._hudOpen = true;
+                window.prefetchHudNodes(userId, [nodeId]); // warm cache in parallel
+
             } else {
-                // Already loaded: switch node via postMessage; use prefetch cache if warm
-                const data = window._hudCache[nodeId] || null;
+                // ── Subsequent opens — DATA FIRST, then show ────────────────────
+                // Check cache first (synchronous, zero latency)
+                let data = window._hudCache[nodeId] || null;
+
+                if (!data) {
+                    // Cache cold — show right-edge loader and fetch
+                    if (loader) loader.classList.add('active');
+                    try {
+                        const url = `/api/hud-data-bulk?userId=${encodeURIComponent(userId)}&nodes=${encodeURIComponent(nodeId)}`;
+                        const res  = await fetch(url);
+                        const bulk = await res.json();
+                        data = bulk[nodeId] || null;
+                        if (data) window._hudCache[nodeId] = data; // warm cache for next open
+                    } catch (e) {
+                        console.warn('[CHJ] openHudOverlay fetch failed:', e);
+                    }
+                    if (loader) loader.classList.remove('active');
+                }
+
+                // Send data to already-loaded iframe — it renders before panel is visible
                 iframe.contentWindow?.postMessage(
                     { type: 'chj:navigate', nodeId, userId, data },
                     '*'
                 );
             }
 
+            // Open panel — on subsequent opens data is already in iframe, no flicker
             overlay.style.display = 'flex';
             requestAnimationFrame(() => requestAnimationFrame(() => {
                 wrap.style.transform = 'translateX(0)';

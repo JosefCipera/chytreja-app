@@ -133,8 +133,32 @@
         }
       });
 
-      // nodeId always present in URL on first open — load directly, no handshake needed
-      await navigateTo(nodeId, null);
+      // ── First-open optimisation ────────────────────────────────────────────
+      // The parent window calls prefetchHudNodes(userId, [nodeId]) just before
+      // setting iframe.src, so the API fetch races against our own JS load.
+      // We wait up to 600 ms for the parent cache to fill before falling back
+      // to our own fetch — in most cases it's already there and we skip the
+      // duplicate request entirely.
+      let prefetchedData = null;
+      try {
+        const parentCache = (window.parent !== window) ? window.parent._hudCache : null;
+        if (parentCache) {
+          if (parentCache[nodeId]) {
+            prefetchedData = parentCache[nodeId];          // already warm
+          } else {
+            const deadline = Date.now() + 600;
+            while (Date.now() < deadline) {
+              await new Promise(r => requestAnimationFrame(r)); // ~16 ms ticks
+              if (parentCache[nodeId]) {
+                prefetchedData = parentCache[nodeId];
+                break;
+              }
+            }
+          }
+        }
+      } catch { /* cross-origin guard — fall through to own fetch */ }
+
+      await navigateTo(nodeId, prefetchedData);
     } else {
       panelReady = true;
       readinessChecked = true;
