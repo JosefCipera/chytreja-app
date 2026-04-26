@@ -131,10 +131,13 @@ function applyTocCascade(nodes, metricsMap) {
       if (childrenMap.has(id)) cascadeNode(id);
     });
 
-    // Include any child that has a real current_index (ignore DB state column)
+    // Include any child that has a real current_index > 0.
+    // current_index === 0 means "no data yet" (onboarding default) — treat it as GRAY, not RED.
+    // Without this filter, zero-default leaf nodes drag parent nodes to RED even after
+    // a wearable import correctly set the parent to a higher value.
     const childMetrics = childIds
       .map(id => metricsMap.get(id))
-      .filter(m => m != null && m.current_index != null);
+      .filter(m => m != null && m.current_index != null && m.current_index > 0);
 
     if (!childMetrics.length) return;
 
