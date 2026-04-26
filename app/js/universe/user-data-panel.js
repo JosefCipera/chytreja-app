@@ -70,12 +70,13 @@ function renderTab(tab) {
   const body = document.getElementById('udp-body');
   if (!body || !cachedData) return;
   switch (tab) {
-    case 'profile':     body.innerHTML = renderProfileMainTab();  break;
-    case 'constraints': body.innerHTML = renderConstraintsTab();  break;
-    case 'aspirations': body.innerHTML = renderAspirationsTab();  break;
-    case 'vitality':    body.innerHTML = renderVitalityTab();     break;
-    case 'checkin':     body.innerHTML = renderCheckInTab();      break;
-    case 'documents':   body.innerHTML = renderDocumentsTab();    break;
+    case 'profile':      body.innerHTML = renderProfileMainTab();   break;
+    case 'constraints':  body.innerHTML = renderConstraintsTab();   break;
+    case 'aspirations':  body.innerHTML = renderAspirationsTab();   break;
+    case 'vitality':     body.innerHTML = renderVitalityTab();      break;
+    case 'checkin':      body.innerHTML = renderCheckInTab();       break;
+    case 'documents':    body.innerHTML = renderDocumentsTab();     break;
+    case 'integrations': body.innerHTML = renderIntegrationsTab();  break;
   }
   bindTabEvents(tab);
 }
@@ -577,12 +578,13 @@ function bindTabEvents(tab) {
   });
   // Tab-specific
   switch (tab) {
-    case 'profile':     bindProfileMainEvents();  break;
-    case 'constraints': bindConstraintsEvents();  break;
-    case 'aspirations': bindAspirationsEvents();  break;
-    case 'vitality':    bindVitalityEvents();     break;
-    case 'checkin':     bindCheckInEvents();      break;
-    case 'documents':   bindDocumentsEvents();    break;
+    case 'profile':      bindProfileMainEvents();    break;
+    case 'constraints':  bindConstraintsEvents();    break;
+    case 'aspirations':  bindAspirationsEvents();    break;
+    case 'vitality':     bindVitalityEvents();       break;
+    case 'checkin':      bindCheckInEvents();        break;
+    case 'documents':    bindDocumentsEvents();      break;
+    case 'integrations': bindIntegrationsEvents();   break;
   }
 }
 
@@ -738,6 +740,7 @@ export function initUserDataPanel() {
         <button class="udp-tab" data-tab="aspirations">Sen</button>
         <button class="udp-tab" data-tab="vitality">Vitalita</button>
         <button class="udp-tab" data-tab="documents">Dokumenty</button>
+        <button class="udp-tab" data-tab="integrations">Integrace</button>
       </div>
       <div id="udp-body"></div>
     </div>`;
@@ -966,5 +969,193 @@ function bindDocumentsEvents() {
 
     uploadBtn.disabled = false;
     uploadBtn.textContent = 'Analyzovat dokument';
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// TAB: Integrace — Ultrahuman Ring CSV import
+// ═══════════════════════════════════════════════════
+
+function renderIntegrationsTab() {
+  return `
+    <div class="udp-section">
+      <div class="udp-section-label">Wearable data</div>
+      <p style="color:#64748b;font-size:13px;line-height:1.6;margin:0 0 20px;">
+        Nahraj export z Ultrahuman Ring. CHJ načte HRV, spánek a kroky<br>
+        a aktualizuje uzly Zdraví, Spánek a Tělo.
+      </p>
+
+      <!-- How to export hint -->
+      <div style="background:rgba(6,182,212,0.04);border:1px solid rgba(6,182,212,0.15);
+        border-radius:10px;padding:12px 16px;margin-bottom:20px;">
+        <div style="color:#67e8f9;font-size:12px;font-weight:700;letter-spacing:0.06em;
+          text-transform:uppercase;margin-bottom:6px;">Jak exportovat z Ultrahuman</div>
+        <div style="color:#64748b;font-size:13px;line-height:1.7;">
+          Appka → Profil → <strong style="color:#94a3b8;">Data Export</strong> →
+          zvolíš rozsah → CSV přijde emailem → nahraj sem.
+        </div>
+      </div>
+
+      <!-- Drop zone -->
+      <div id="uh-dropzone" style="
+        border: 2px dashed #334155; border-radius: 12px; padding: 28px 16px;
+        text-align: center; cursor: pointer; transition: border-color 0.2s;
+      ">
+        <div style="font-size: 28px; margin-bottom: 8px;">💍</div>
+        <div style="color: #94a3b8; font-size: 14px;">Přetáhni nebo klikni pro výběr</div>
+        <div style="color: #475569; font-size: 12px; margin-top: 4px;">CSV export z Ultrahuman Ring</div>
+        <input id="uh-file-input" type="file" accept=".csv,text/csv" style="display:none;">
+      </div>
+
+      <div id="uh-file-info" style="display:none; margin-top:12px; padding:10px 14px;
+        background:rgba(6,182,212,0.05); border:1px solid rgba(6,182,212,0.2);
+        border-radius:8px; color:#94a3b8; font-size:13px;"></div>
+
+      <div id="uh-error" style="display:none; margin-top:10px; padding:10px 14px;
+        background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.25);
+        border-radius:8px; color:#fca5a5; font-size:13px;"></div>
+
+      <button id="uh-import-btn" disabled style="
+        margin-top: 14px; width: 100%; padding: 12px;
+        border-radius: 10px; border: 1px solid #334155;
+        background: transparent; color: #475569;
+        font-size: 14px; cursor: not-allowed; transition: all 0.2s;
+      ">Importovat data</button>
+    </div>
+
+    <div id="uh-result" style="display:none;" class="udp-section">
+      <div class="udp-section-label">Výsledek importu</div>
+      <div id="uh-result-body"></div>
+    </div>`;
+}
+
+function bindIntegrationsEvents() {
+  const dropzone  = document.getElementById('uh-dropzone');
+  const fileInput = document.getElementById('uh-file-input');
+  const importBtn = document.getElementById('uh-import-btn');
+  const fileInfo  = document.getElementById('uh-file-info');
+  const errorBox  = document.getElementById('uh-error');
+  let selectedFile = null;
+
+  function enableBtn() {
+    importBtn.disabled = false;
+    importBtn.style.cssText = `margin-top:14px;width:100%;padding:12px;border-radius:10px;
+      border:1px solid rgba(6,182,212,0.4);background:rgba(6,182,212,0.08);
+      color:#67e8f9;font-size:14px;cursor:pointer;transition:all 0.2s;`;
+  }
+
+  function disableBtn() {
+    importBtn.disabled = true;
+    importBtn.style.cssText = `margin-top:14px;width:100%;padding:12px;border-radius:10px;
+      border:1px solid #334155;background:transparent;color:#475569;
+      font-size:14px;cursor:not-allowed;`;
+  }
+
+  function showError(msg) {
+    errorBox.style.display = 'block';
+    errorBox.textContent = msg;
+    selectedFile = null;
+    fileInfo.style.display = 'none';
+    dropzone.style.borderColor = '#334155';
+    disableBtn();
+  }
+
+  function selectFile(f) {
+    errorBox.style.display = 'none';
+    if (!f.name.toLowerCase().endsWith('.csv') && f.type !== 'text/csv') {
+      showError('Nahraj CSV soubor z Ultrahuman appky.');
+      return;
+    }
+    if (f.size > 5 * 1024 * 1024) {
+      showError('Soubor je příliš velký (max 5 MB).');
+      return;
+    }
+    selectedFile = f;
+    fileInfo.style.display = 'block';
+    fileInfo.textContent = `📄 ${f.name} · ${(f.size / 1024).toFixed(0)} KB`;
+    dropzone.style.borderColor = '#06b6d4';
+    enableBtn();
+  }
+
+  dropzone.addEventListener('click', () => fileInput.click());
+  dropzone.addEventListener('dragover',  (e) => { e.preventDefault(); dropzone.style.borderColor = '#06b6d4'; });
+  dropzone.addEventListener('dragleave', ()  => { dropzone.style.borderColor = selectedFile ? '#06b6d4' : '#334155'; });
+  dropzone.addEventListener('drop', (e) => { e.preventDefault(); const f = e.dataTransfer.files?.[0]; if (f) selectFile(f); });
+  fileInput.addEventListener('change', (e) => { const f = e.target.files?.[0]; if (f) selectFile(f); });
+
+  importBtn.addEventListener('click', async () => {
+    if (!selectedFile || !userId) return;
+
+    importBtn.disabled = true;
+    importBtn.textContent = 'Importuji…';
+    importBtn.style.color = '#94a3b8';
+    errorBox.style.display = 'none';
+
+    try {
+      const csvText = await selectedFile.text();
+
+      const res = await fetch('/api/tools/ultrahuman-parse', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, csvText }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        showError(`Chyba: ${data.error || JSON.stringify(data)}`);
+        enableBtn();
+        importBtn.textContent = 'Importovat data';
+        return;
+      }
+
+      renderImportResult(data);
+
+    } catch (e) {
+      showError('Chyba: ' + (e?.message || String(e)));
+      enableBtn();
+      importBtn.textContent = 'Importovat data';
+    }
+  });
+
+  function renderImportResult(data) {
+    const resultBox  = document.getElementById('uh-result');
+    const resultBody = document.getElementById('uh-result-body');
+    resultBox.style.display = 'block';
+
+    const stateDot   = s => s === 'RED' ? '🔴' : s === 'YELLOW' ? '🟡' : '🟢';
+    const stateColor = s => s === 'RED' ? '#f87171' : s === 'YELLOW' ? '#fbbf24' : '#4ade80';
+
+    const nodesHtml = (data.nodes_updated || []).map(n => `
+      <div style="display:flex;align-items:center;justify-content:space-between;
+        padding:8px 12px;background:rgba(255,255,255,0.03);border-radius:8px;margin-bottom:6px;">
+        <span style="font-size:14px;color:#e2e8f0;">${stateDot(n.state)} ${n.label}</span>
+        <span style="font-size:14px;color:${stateColor(n.state)};font-weight:600;">${n.index}</span>
+      </div>`).join('');
+
+    resultBody.innerHTML = `
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;padding:10px 14px;
+        background:rgba(34,197,94,0.07);border:1px solid rgba(34,197,94,0.25);border-radius:8px;">
+        <span style="color:#4ade80;font-size:15px;">✔</span>
+        <span style="color:#4ade80;font-size:13px;">
+          Importováno ${data.days_imported} dní · uzly aktualizovány
+        </span>
+      </div>
+      ${nodesHtml}
+      <button id="uh-import-another" style="margin-top:16px;width:100%;padding:10px;
+        border-radius:10px;border:1px solid #334155;background:transparent;
+        color:#64748b;font-size:13px;cursor:pointer;">
+        Nahrát nový export
+      </button>`;
+
+    document.getElementById('uh-import-another')?.addEventListener('click', () => {
+      resultBox.style.display = 'none';
+      fileInfo.style.display = 'none';
+      dropzone.style.borderColor = '#334155';
+      selectedFile = null;
+      disableBtn();
+      importBtn.textContent = 'Importovat data';
+      fileInput.value = '';
+    });
   }
 }
