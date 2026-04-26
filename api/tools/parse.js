@@ -90,7 +90,8 @@ async function handleUltrahuman(req, res, sb) {
     const indices = computeDayIndices(row);
     for (const [nodeId, idx] of Object.entries(indices)) {
       if (idx === null) continue;
-      historyRows.push({ user_id: userId, node_id: nodeId, current_index: idx, date });
+      const state = idx <= 40 ? 'RED' : idx <= 70 ? 'YELLOW' : 'GREEN';
+      historyRows.push({ user_id: userId, node_id: nodeId, current_index: idx, state, date });
     }
   }
 
