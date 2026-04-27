@@ -101,7 +101,7 @@
   <div class="px-4 pt-2 pb-3">
     <div class="hud-mono mb-2" style="letter-spacing: 0.04em; font-weight: 300; line-height: 1.5;">
       <div class="flex items-center justify-between" style="font-size: 20px;">
-        <span style="color: #c8d4df;">ACTION: <span style="color: #64748b; font-size: 16px;">{protocolLabel}</span></span>
+        <span style="color: #c8d4df;">ACTION:</span>
         <span style="color: {statusColor};">[{status}]</span>
       </div>
     </div>
@@ -111,20 +111,7 @@
       <span style="color: #e2e8f0;">{action.label}</span>
     </div>
 
-    <!-- Guide link — only when agent provides a search query -->
-    {#if action.guide_search && status === 'READY'}
-      {@const guideUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(action.guide_search)}`}
-      <a href={guideUrl} target="_blank" rel="noopener"
-        class="hud-mono"
-        style="display: inline-flex; align-items: center; gap: 5px; margin-bottom: 10px;
-               font-size: 12px; color: #475569; text-decoration: none; letter-spacing: 0.06em;
-               border: 1px solid rgba(71,85,105,0.4); border-radius: 5px; padding: 3px 8px;
-               transition: color 0.15s, border-color 0.15s;"
-        onmouseenter={(e) => { e.currentTarget.style.color='#94a3b8'; e.currentTarget.style.borderColor='rgba(148,163,184,0.4)'; }}
-        onmouseleave={(e) => { e.currentTarget.style.color='#475569'; e.currentTarget.style.borderColor='rgba(71,85,105,0.4)'; }}>
-        ▶ {action.guide_label || 'Jak na to'}
-      </a>
-    {/if}
+    <!-- Guide link — reserved for curated content, hidden until filled per model -->
 
     <!-- ── TIMED ── -->
     {#if actionMode === 'timed'}

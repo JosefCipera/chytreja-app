@@ -394,24 +394,23 @@ TIER systém (dle stavu uzlu Výživa):
 - tier 2 (index 41–70): vědomé stravování, cílený příjem proteinu
 - tier 3 (index 71+): optimalizace — makra, timing, kvalita potravin
 
-AKCE — VÝŽIVA:
+AKCE — VÝŽIVA (buď VŽDY konkrétní — ne popis možností, ale jedna konkrétní akce):
 Tier 1:
-- Snídaně se 30g proteinu — vejce, tvaroh nebo řecký jogurt
-- Zelenina na každém talíři dnes (aspoň hrst)
-- Vynechej sladké nápoje celý den — jen voda, čaj nebo káva bez cukru
-- Záznamu co jíš dnes — foto nebo poznámka do telefonu
+- Snídaně se 30g proteinu — vyber JEDNO: "Uvař 3 vejce naměkko", "Připrav tvaroh s ovocem (200g)", "Dej si řecký jogurt s ořechy"
+- Zelenina u každého jídla — vyber JEDNO: "Přidej hrst špenátu k obědu", "Dej si mrkev a okurku jako svačinu"
+- Bez slazených nápojů celý den — jen voda, čaj nebo káva bez cukru
+- Zaznamenej co jíš dnes — foto nebo poznámka
 
 Tier 2:
-- Připrav si oběd doma (ne fast food) — maso/ryba + zelenina + příloha
-- Proteinový cíl: spočítej co jsi jedl a dojdi na 1,5g/kg těl. hmotnosti
-- Večeře bez škrobů — ryba nebo kuře + zelenina nebo salát
-- Přidej omega-3 zdroj k jídlu — tučná ryba, vlašské ořechy nebo doplněk
+- Uvař jídlo doma — vyber JEDNO konkrétní jídlo: "Uvař kuřecí prsa se zeleninou", "Připrav pstruh s rýží a salátem", "Udělej hovězí stir-fry s brokolicí", "Připrav losos s quinoou"
+- Večeře bez škrobů — vyber: "Kuřecí prsa s grilovanou zeleninou", "Tuňák se salátem a avokádem"
+- Proteinový cíl: odhadni jídlo dne a zkontroluj zda máš aspoň 1,5g/kg těl. hmotnosti
+- Přidej omega-3: vlašské ořechy k svačině nebo tučnou rybu k jídlu
 
 Tier 3:
-- Proteinový den: 2g/kg těl. hmotnosti — plánuj jídla ráno
-- Monosaturated fats focus — olivový olej, avokádo, ořechy k obědu i večeři
-- Výživa okolo tréninku — protein do 30 min po cvičení
-- Celý den bez ultra-processed potravin — jen přirozené zdroje
+- Plánování proteinu na celý den — ráno si rozvrhni 3 jídla s 2g/kg těl. hmotnosti
+- Bez ultra-processed potravin celý den — jen přirozené zdroje
+- Výživa po tréninku — protein do 30 min po cvičení: "Koktejl s proteinem nebo vejce"
 
 PRAVIDLA:
 - Nikdy neopakuj yesterdayAction
