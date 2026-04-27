@@ -209,15 +209,10 @@ async function warmAgentCache() {
   const userId = await getCurrentUserId();
   if (!userId || userId === 'demo-user-123') return;
 
-  // Skip if already warmed this calendar day (localStorage guard)
-  const today = new Date().toISOString().slice(0, 10);
-  const key = `chj_warm_${today}_${userId}`;
-  if (localStorage.getItem(key)) {
-    console.log('[CHJ] Agent cache already warm for today');
-    return;
-  }
-
-  const MAIN_NODES = ['telo', 'mysl', 'zdravi', 'vyziva'];
+  // All nodes the user can open — orchestrator + agent have internal cache,
+  // so repeated calls on same day return instantly (<500ms). No localStorage
+  // guard needed — it caused stale-cache bugs after agent_log resets.
+  const MAIN_NODES = ['dlouhovekost', 'telo', 'mysl', 'zdravi', 'vyziva'];
 
   // Discipline → agent type mapping (mirrors App.svelte)
   const AGENT_TYPE = {
@@ -229,7 +224,7 @@ async function warmAgentCache() {
 
   console.log('[CHJ] Starting agent warm-up for', MAIN_NODES);
 
-  // Run all 4 nodes in parallel — total time = slowest single call (~6-8 s)
+  // Run all nodes in parallel — total time = slowest single call (~6-8 s)
   await Promise.all(MAIN_NODES.map(async (nid) => {
     try {
       const orchRes = await fetch('/api/orchestrator', {
@@ -252,11 +247,9 @@ async function warmAgentCache() {
     }
   }));
 
-  // Mark done — next opens of Universe today will skip warm-up
-  localStorage.setItem(key, '1');
   console.log('[CHJ] Agent cache warmed');
 
-  // Refresh HUD cache — stale entries (without from_agent_cache) replaced
+  // Refresh HUD cache — entries now have from_agent_cache:true
   if (window.prefetchHudNodes) {
     MAIN_NODES.forEach(id => { delete window._hudCache[id]; });
     window.prefetchHudNodes(userId, MAIN_NODES);
