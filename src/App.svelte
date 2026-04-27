@@ -28,6 +28,11 @@
   let agentLoading     = $state(false); // PREPARING shown only when data.action is also null
   let panelReady       = $state(false); // panel mounts only when we have data + agentLoading state — universe shows through until then
 
+  // ── ORCHESTRATOR LOCK ──────────────────────────────────
+  // Prevents multiple concurrent orchestrator calls for the same node.
+  // Universe may send several chj:navigate messages before the first call completes.
+  let _orchRunningFor  = null; // nodeId currently being processed
+
   // ── SECOND ACTION STATE ────────────────────────────────
   let currentDiscipline = $state(null);  // discipline chosen by orchestrator
   let currentAgentType  = $state(null);  // agent type for current discipline
@@ -113,14 +118,11 @@
     if (prefetchedData) {
       // Universe already fetched this — apply directly, no HTTP call needed
       rawData.set(prefetchedData);
-      const hasCache = prefetchedData?.action?.from_agent_cache === true && prefetchedData?.verdict;
-      if (!hasCache) triggerOrchestrator(userId, nid);
+      triggerOrchestrator(userId, nid); // lock inside prevents duplicate runs
       panelReady = true;
     } else {
       await Promise.all([checkReadiness(), loadHudData(userId, nid)]);
-      const currentData = get(rawData);
-      const hasCache = currentData?.action?.from_agent_cache === true && currentData?.verdict;
-      if (!hasCache) triggerOrchestrator(userId, nid);
+      triggerOrchestrator(userId, nid); // lock inside prevents duplicate runs
       panelReady = true;
     }
   }
@@ -201,8 +203,13 @@
   // Volá orchestrátor → uloží rozhodnutí do orchestrator_log.
   // Pokud je disciplína tělesná → zavolá Tělo Agenta pro konkrétní akci.
   async function triggerOrchestrator(uid, nid) {
-    // Only show PREPARING if we have no action yet — otherwise update silently
-    // Use rawData (writable source) — get(nodeData) may be stale right after loadHudData resolves
+    // ── Lock: skip if already running for this node ───────
+    // Universe may send multiple chj:navigate messages before the first call completes.
+    // Without this guard, each concurrent call sees from_agent_cache=false and
+    // starts its own agent → multiple actions replace each other in sequence.
+    if (_orchRunningFor === nid) return;
+    _orchRunningFor = nid;
+
     const currentRaw = get(rawData);
     // If agent already cached an action today, don't replace it — only fetch verdict
     const hasCachedAction = currentRaw?.action?.from_agent_cache === true;
@@ -263,6 +270,8 @@
     } catch (e) {
       console.warn('[CHJ] orchestrator background call failed:', e);
     } finally {
+      // Release lock — allow new call when user navigates to a different node
+      if (_orchRunningFor === nid) _orchRunningFor = null;
       agentLoading = false;
     }
   }
