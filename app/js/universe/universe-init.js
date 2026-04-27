@@ -287,11 +287,10 @@ async function warmAgentCache() {
   initHeaderMic();
   writeDailySnapshot();   // snapshot stavů uzlů → sparkline trend
 
-  // ── Agent warm-up — fire NOW, before user clicks anything ─────────────
-  // Orchestrator + agent run here in background. By the time user opens a panel
-  // (typically 5-15 s later), agent_log is already populated → from_agent_cache=true
-  // → panel shows data instantly without any replacement flicker.
-  warmAgentCache(); // fire and forget
+  // ── Agent warm-up — tracked Promise so openHudOverlay can gate on it ──
+  // openHudOverlay waits for this before opening the panel → panel always
+  // opens with complete data, PREPARING never shown.
+  window._warmupPromise = warmAgentCache();
 
   // Žádost o notifikační oprávnění – po 3s, nenásilně
   setTimeout(() => requestCHJPermission(), 3000);

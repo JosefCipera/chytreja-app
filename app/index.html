@@ -495,6 +495,17 @@
             const iframe  = document.getElementById('hud-iframe');
             const loader  = document.getElementById('hud-fetch-loader');
 
+            // ── Gate on warm-up: wait until agent cache is ready ───────────────
+            // This ensures the panel ALWAYS opens with from_agent_cache=true data.
+            // The right-edge loader shows during the wait (typically only on first
+            // open of the day, lasts ~6-8s while AI computes actions).
+            if (window._warmupPromise) {
+                if (loader) loader.classList.add('active');
+                await window._warmupPromise;
+                if (loader) loader.classList.remove('active');
+                window._warmupPromise = null; // resolved — never wait again this session
+            }
+
             // Lazy-prefetch children of this node in background
             window.prefetchHudChildren(userId, nodeId);
 
