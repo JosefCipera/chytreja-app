@@ -203,7 +203,10 @@
   async function triggerOrchestrator(uid, nid) {
     // Only show PREPARING if we have no action yet — otherwise update silently
     // Use rawData (writable source) — get(nodeData) may be stale right after loadHudData resolves
-    const hasAction = !!get(rawData)?.action;
+    const currentRaw = get(rawData);
+    const hasAction = !!currentRaw?.action;
+    // If agent already cached an action today, don't replace it — only fetch verdict
+    const hasCachedAction = currentRaw?.action?.from_agent_cache === true;
     agentLoading = !hasAction;
     try {
       const orchRes = await fetch('/api/orchestrator', {
@@ -230,7 +233,10 @@
       currentDiscipline = discipline;
       currentAgentType  = agentType;
 
-      if (agentType) {
+      // Only call agent if we don't already have a cached action for today.
+      // A cached action (from_agent_cache) means agent already ran today → keep it,
+      // just refresh verdict/feedback without replacing the action the user sees.
+      if (agentType && !hasCachedAction) {
         try {
           const agentRes = await fetch('/api/agents', {
             method: 'POST',
