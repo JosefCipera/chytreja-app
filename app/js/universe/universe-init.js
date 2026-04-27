@@ -186,7 +186,8 @@ window.refreshUniverseData = async function() {
       if (metric) {
         node.current_index = metric.current_index ?? node.current_index;
         const idx = node.current_index;
-        node.state = idx <= 40 ? 'RED' : idx <= 70 ? 'YELLOW' : 'GREEN';
+        // idx === 0 means no real data — show GRAY, not RED
+        node.state = (idx === 0) ? 'GRAY' : idx <= 40 ? 'RED' : idx <= 70 ? 'YELLOW' : 'GREEN';
       }
     });
 
@@ -403,8 +404,10 @@ async function loadModel(modelName) {
         const idx = metric?.current_index ?? 0;
         node.current_index = idx;
         node.target_index = metric?.target_index ?? 100;
-        // Always derive state from current_index, never trust stored state column
-        node.state = !metric ? 'GRAY' : idx <= 40 ? 'RED' : idx <= 70 ? 'YELLOW' : 'GREEN';
+        // Always derive state from current_index, never trust stored state column.
+        // idx === 0 means "no data yet" (default) — show as GRAY, not RED.
+        // Genuine RED nodes have idx > 0 and <= 40 from real measurements.
+        node.state = (!metric || idx === 0) ? 'GRAY' : idx <= 40 ? 'RED' : idx <= 70 ? 'YELLOW' : 'GREEN';
       });
 
       console.log("✅ Merged state into nodes");
