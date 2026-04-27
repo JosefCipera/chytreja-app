@@ -111,7 +111,7 @@ async function fetchOneNode(sb, userId, nodeId, shared) {
     sb.from('mission_log').select('id, mission_id').eq('user_id', userId)
       .eq('node_id', actionNodeId).eq('date', today),
     sb.from('agent_log').select('action_id, label, type, duration_s, reps, sets, guide_search, guide_label')
-      .eq('user_id', userId).eq('node_id', actionNodeId).eq('date', today)
+      .eq('user_id', userId).eq('node_id', nodeId).eq('date', today)
       .order('created_at', { ascending: false }).limit(1).maybeSingle(),
     sb.from('mission_log').select('date').eq('user_id', userId)
       .eq('node_id', actionNodeId).order('date', { ascending: false }).limit(30),
