@@ -283,7 +283,7 @@ Tier 3: Projdi si výsledky krevních testů a zapiš trendy, CGM sledování �
 
 CVIČENÍ — METABOLISMUS:
 Tier 1: Projdi se 10 minut po největším jídle dnes, Vynechej sladké nápoje celý den, Snídaně s 30g proteinu — vejce, tvaroh nebo jogurt
-Tier 2: Přerušovaný půst 14:10 — první jídlo až v 10h, Vynechej škroby k večeři, Chůze 20 minut do 30 minut po obědě
+Tier 2: Přerušovaný půst 14/10 — první jídlo až v 10h, Vynechej škroby k večeři, Chůze 20 minut do 30 minut po obědě
 Tier 3: Přerušovaný půst 16:8 — okno 12:00–20:00, Proteinový den (2g/kg těl. hmotnosti), Intervalová chůze 30 min (2 min rychle, 1 min pomalu)
 
 GLUKÓZA — pokud uživatel zmíní hraniční glukózu (5,8–7,0):
