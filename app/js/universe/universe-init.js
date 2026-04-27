@@ -200,6 +200,70 @@ window.refreshUniverseData = async function() {
 };
 
 // =====================================================
+// 2b) AGENT WARM-UP
+// Pre-compute orchestrator + agent for the 4 main nodes while the user
+// browses the Universe. When they click a node the data is already in
+// agent_log → hud-data-bulk returns from_agent_cache:true → no flicker.
+// =====================================================
+async function warmAgentCache() {
+  const userId = await getCurrentUserId();
+  if (!userId || userId === 'demo-user-123') return;
+
+  // Skip if already warmed this calendar day (localStorage guard)
+  const today = new Date().toISOString().slice(0, 10);
+  const key = `chj_warm_${today}_${userId}`;
+  if (localStorage.getItem(key)) {
+    console.log('[CHJ] Agent cache already warm for today');
+    return;
+  }
+
+  const MAIN_NODES = ['telo', 'mysl', 'zdravi', 'vyziva'];
+
+  // Discipline → agent type mapping (mirrors App.svelte)
+  const AGENT_TYPE = {
+    sila: 'telo', kardio: 'telo', stabilita: 'telo',
+    spanek: 'mysl', kognitivni: 'mysl', emocni: 'mysl', smysl: 'mysl',
+    prevence: 'zdravi', metabolismus: 'zdravi',
+    vyziva: 'vyziva',
+  };
+
+  console.log('[CHJ] Starting agent warm-up for', MAIN_NODES);
+
+  // Run all 4 nodes in parallel — total time = slowest single call (~6-8 s)
+  await Promise.all(MAIN_NODES.map(async (nid) => {
+    try {
+      const orchRes = await fetch('/api/orchestrator', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: 'Co mám dnes dělat?', nodeId: nid, userId }),
+      });
+      const orchData = await orchRes.json();
+
+      const agentType = AGENT_TYPE[orchData.discipline_id];
+      if (!agentType) return;
+
+      await fetch('/api/agents', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: agentType, userId, discipline: orchData.discipline_id, nodeId: nid }),
+      });
+    } catch (e) {
+      console.warn('[CHJ] warm-up failed for', nid, e);
+    }
+  }));
+
+  // Mark done — next opens of Universe today will skip warm-up
+  localStorage.setItem(key, '1');
+  console.log('[CHJ] Agent cache warmed');
+
+  // Refresh HUD cache — stale entries (without from_agent_cache) replaced
+  if (window.prefetchHudNodes) {
+    MAIN_NODES.forEach(id => { delete window._hudCache[id]; });
+    window.prefetchHudNodes(userId, MAIN_NODES);
+  }
+}
+
+// =====================================================
 // 3) INIT UNIVERSE
 // =====================================================
 (async function initUniverse() {
@@ -223,14 +287,14 @@ window.refreshUniverseData = async function() {
   initHeaderMic();
   writeDailySnapshot();   // snapshot stavů uzlů → sparkline trend
 
+  // ── Agent warm-up — fire NOW, before user clicks anything ─────────────
+  // Orchestrator + agent run here in background. By the time user opens a panel
+  // (typically 5-15 s later), agent_log is already populated → from_agent_cache=true
+  // → panel shows data instantly without any replacement flicker.
+  warmAgentCache(); // fire and forget
+
   // Žádost o notifikační oprávnění – po 3s, nenásilně
   setTimeout(() => requestCHJPermission(), 3000);
-
-  // In-app reminder – disabled (toast removed)
-  // const userId = window.firebaseAuth?.currentUser?.uid;
-  // if (userId) {
-  //   setTimeout(() => checkAndRemind(userId), 2000);
-  // }
 })();
 
 // =====================================================
