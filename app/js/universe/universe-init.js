@@ -287,10 +287,16 @@ async function warmAgentCache() {
   initHeaderMic();
   writeDailySnapshot();   // snapshot stavů uzlů → sparkline trend
 
-  // ── Agent warm-up — tracked Promise so openHudOverlay can gate on it ──
-  // openHudOverlay waits for this before opening the panel → panel always
-  // opens with complete data, PREPARING never shown.
-  window._warmupPromise = warmAgentCache();
+  // ── Agent warm-up — show loader on Universe, open panel freely ────────
+  // Loader appears on right edge while AI computes (6-8s on first open of day).
+  // Panel can be opened at any time — if warm-up is done, instant; if still
+  // running, only the action section shows PREPARING briefly.
+  const loader = document.getElementById('hud-fetch-loader');
+  if (loader) loader.classList.add('active');
+  window._warmupPromise = warmAgentCache().finally(() => {
+    if (loader) loader.classList.remove('active');
+    window._warmupPromise = null;
+  });
 
   // Žádost o notifikační oprávnění – po 3s, nenásilně
   setTimeout(() => requestCHJPermission(), 3000);
