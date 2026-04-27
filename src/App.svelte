@@ -116,15 +116,20 @@
     panelReady  = false;
 
     if (prefetchedData) {
-      // Universe already fetched this — apply directly, no HTTP call needed
       rawData.set(prefetchedData);
-      triggerOrchestrator(userId, nid); // lock inside prevents duplicate runs
-      panelReady = true;
     } else {
       await Promise.all([checkReadiness(), loadHudData(userId, nid)]);
-      triggerOrchestrator(userId, nid); // lock inside prevents duplicate runs
-      panelReady = true;
     }
+
+    // Only call orchestrator if warm-up didn't already provide complete data.
+    // Complete = agent action cached today AND verdict exists.
+    // If warm-up ran (typical case), we have both → render once, nothing changes.
+    // If warm-up missed (user opened panel in first ~8s), orchestrator runs as fallback.
+    const d = get(rawData);
+    const isComplete = d?.action?.from_agent_cache === true && !!d?.verdict;
+    if (!isComplete) triggerOrchestrator(userId, nid);
+
+    panelReady = true;
   }
 
   onMount(async () => {
