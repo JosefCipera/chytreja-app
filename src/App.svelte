@@ -133,6 +133,19 @@
         }
       });
 
+      // ── Day-boundary detection ─────────────────────────────────────────────
+      // PWA users rarely close the app — re-check readiness whenever the app
+      // returns to the foreground on a new calendar day.
+      let _lastCheckedDate = new Date().toISOString().slice(0, 10);
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState !== 'visible') return;
+        const today = new Date().toISOString().slice(0, 10);
+        if (today !== _lastCheckedDate) {
+          _lastCheckedDate = today;
+          checkReadiness();
+        }
+      });
+
       // ── First-open optimisation ────────────────────────────────────────────
       // The parent window calls prefetchHudNodes(userId, [nodeId]) just before
       // setting iframe.src, so the API fetch races against our own JS load.
