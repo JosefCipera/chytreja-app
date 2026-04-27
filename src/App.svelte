@@ -204,10 +204,12 @@
     // Only show PREPARING if we have no action yet — otherwise update silently
     // Use rawData (writable source) — get(nodeData) may be stale right after loadHudData resolves
     const currentRaw = get(rawData);
-    const hasAction = !!currentRaw?.action;
     // If agent already cached an action today, don't replace it — only fetch verdict
     const hasCachedAction = currentRaw?.action?.from_agent_cache === true;
-    agentLoading = !hasAction;
+    // Show PREPARING whenever we'll be calling the agent:
+    // - no cached action → agent will run and replace the DB fallback anyway
+    // - fallback from longevity_actions is unrelated to discipline → don't show it
+    agentLoading = !hasCachedAction;
     try {
       const orchRes = await fetch('/api/orchestrator', {
         method: 'POST',
