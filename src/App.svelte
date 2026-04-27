@@ -291,6 +291,11 @@
         completion_feedback: base.completion_feedback || null,
       };
     }
+    // While agent is loading, hide the DB fallback action so it can't flash
+    // before the real agent action arrives. HudPanel shows PREPARING instead.
+    if (agentLoading && userId && !devMode) {
+      return { ...base, action: null };
+    }
     return base;
   })());
 
