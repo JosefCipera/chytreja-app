@@ -110,7 +110,7 @@ async function fetchOneNode(sb, userId, nodeId, shared) {
       .order('date', { ascending: true }),
     sb.from('mission_log').select('id, mission_id').eq('user_id', userId)
       .eq('node_id', actionNodeId).eq('date', today),
-    sb.from('agent_log').select('action_id, label, type, duration_s, reps, sets, coaching_note')
+    sb.from('agent_log').select('action_id, label, type, duration_s, reps, sets, guide_search, guide_label')
       .eq('user_id', userId).eq('node_id', actionNodeId).eq('date', today)
       .order('created_at', { ascending: false }).limit(1).maybeSingle(),
     sb.from('mission_log').select('date').eq('user_id', userId)
@@ -141,7 +141,8 @@ async function fetchOneNode(sb, userId, nodeId, shared) {
       duration: a.duration_s ?? null, reps: a.reps ?? null,
       status: 'READY', tier: 1, node_id: actionNodeId,
       from_agent_cache: true,
-      coaching_note: a.coaching_note ?? null,
+      guide_search: a.guide_search ?? null,
+      guide_label:  a.guide_label  ?? null,
     };
   }
 

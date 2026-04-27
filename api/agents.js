@@ -60,19 +60,20 @@ CONSTRAINTS — VŽDY respektuj:
 
 PRAVIDLA:
 - Nikdy neopakuj yesterdayAction
-- coaching_note: max 1 věta, konkrétní odkaz na sen uživatele (plavání, běžky, vnuci...)
+- guide_search: krátký YouTube dotaz v češtině (max 6 slov) pokud akce vyžaduje techniku/návod (cvičení, dýchání). null pro chůzi, vodu, záznamy.
+- guide_label: "Jak cvičit" | "Jak dýchat" | "Jak na to" | null (dle guide_search)
 - Česky, tykej, trenérský tón
 - Správně: "svaly zad" (NE "záďě" — neexistuje), "svaly nohou" (NE "nožní svaly")
 - Správně: "zánětlivý stav" (NE "zápalební stav" — neexistuje)
 - type: "timed" (s dobou v sekundách) | "counter" (sety×repy) | "distance" (metry)
 
 ODPOVĚZ POUZE JSON (bez markdown):
-{"action_id":"...","label":"...","type":"timed|counter|distance","duration_s":null,"sets":null,"reps":null,"distance_m":null,"coaching_note":"..."}`;
+{"action_id":"...","label":"...","type":"timed|counter|distance","duration_s":null,"sets":null,"reps":null,"distance_m":null,"guide_search":null,"guide_label":null}`;
 
 const TELO_FALLBACKS = {
-  sila: { action_id: 'drep_u_steny', label: 'Dřep u stěny 3×30s', type: 'timed', duration_s: 90, sets: 3, reps: null, distance_m: null, coaching_note: 'Nohama tlač do podlahy — základ síly, která tě unese.' },
-  kardio: { action_id: 'chůze_20min', label: 'Chůze 20 minut', type: 'timed', duration_s: 1200, sets: null, reps: null, distance_m: null, coaching_note: 'Svižně, ramena uvolněná — srdce si to žádá.' },
-  stabilita: { action_id: 'plank_3x30', label: 'Plank 3×30s', type: 'timed', duration_s: 90, sets: 3, reps: null, distance_m: null, coaching_note: 'Core pevný jako skála — bez toho se daleko nedojde.' },
+  sila:      { action_id: 'drep_u_steny', label: 'Dřep u stěny 3×30s',  type: 'timed', duration_s: 90,   sets: 3, reps: null, distance_m: null, guide_search: 'dřep u stěny správná technika', guide_label: 'Jak cvičit' },
+  kardio:    { action_id: 'chuze_20min',  label: 'Chůze 20 minut',       type: 'timed', duration_s: 1200, sets: null, reps: null, distance_m: null, guide_search: null, guide_label: null },
+  stabilita: { action_id: 'plank_3x30',  label: 'Plank 3×30s',           type: 'timed', duration_s: 90,   sets: 3, reps: null, distance_m: null, guide_search: 'plank správná technika core', guide_label: 'Jak cvičit' },
 };
 
 async function teloAgent(client, sb, { userId, discipline, nodeId, force = false, excludeActionId = null }) {
@@ -85,7 +86,7 @@ async function teloAgent(client, sb, { userId, discipline, nodeId, force = false
   // Cache check — skip when force=true (second action request)
   if (!force) {
     const { data: cached } = await sb.from('agent_log')
-      .select('action_id, label, type, duration_s, sets, reps, distance_m, coaching_note')
+      .select('action_id, label, type, duration_s, sets, reps, distance_m, guide_search, guide_label')
       .eq('user_id', userId).eq('node_id', nodeId).eq('discipline', discipline).eq('date', today)
       .maybeSingle();
     if (cached?.action_id) return { ...cached, cached: true };
@@ -137,9 +138,14 @@ Vyber jedno konkrétní cvičení pro dnešek.`;
     action = TELO_FALLBACKS[discipline];
   }
 
-  // Save to agent_log (fire and forget)
-  sb.from('agent_log').insert({ user_id: userId, node_id: nodeId, discipline, date: today, tier, ...action })
-    .then(({ error }) => { if (error) console.warn('agent_log insert failed:', error.message); });
+  // Save to agent_log (fire and forget) — explicit columns to avoid schema mismatch
+  sb.from('agent_log').insert({
+    user_id: userId, node_id: nodeId, discipline, date: today, tier,
+    action_id: action.action_id, label: action.label, type: action.type,
+    duration_s: action.duration_s ?? null, sets: action.sets ?? null,
+    reps: action.reps ?? null, distance_m: action.distance_m ?? null,
+    guide_search: action.guide_search ?? null, guide_label: action.guide_label ?? null,
+  }).then(({ error }) => { if (error) console.warn('agent_log insert failed:', error.message); });
 
   return action;
 }
@@ -176,19 +182,20 @@ Tier 3: Mentoruj nebo pomoz někomu s dovedností kterou máš, Kreativní tvorb
 
 PRAVIDLA:
 - Nikdy neopakuj yesterdayAction
-- coaching_note: max 1 věta, konkrétní odkaz na sen uživatele (plavání, běžky, vnuci, hrát tenis...)
+- guide_search: krátký YouTube dotaz v češtině (max 6 slov) pokud akce vyžaduje návod (dýchání, meditace). null pro čtení, záznamy, procházky.
+- guide_label: "Jak dýchat" | "Průvodce meditací" | "Jak na to" | null
 - Česky, tykej, klidný ale motivující tón
 - Správně: "zánětlivý stav" (NE "zápalební stav" — neexistuje)
 - type: "timed" (s dobou v sekundách) | "habit" (jednorázové HOTOVO)
 
 ODPOVĚZ POUZE JSON (bez markdown):
-{"action_id":"...","label":"...","type":"timed|habit","duration_s":null,"coaching_note":"..."}`;
+{"action_id":"...","label":"...","type":"timed|habit","duration_s":null,"guide_search":null,"guide_label":null}`;
 
 const MYSL_FALLBACKS = {
-  spanek:     { action_id: 'dychani_478', label: '4-7-8 dýchání před spánkem', type: 'timed', duration_s: 240, coaching_note: 'Kvalitní spánek je základ — bez něj žádný cíl nedotáhneš.' },
-  kognitivni: { action_id: 'cti_20min', label: 'Čti 20 minut', type: 'timed', duration_s: 1200, coaching_note: 'Mozek co čte, stárne pomaleji — a lépe plánuje.' },
-  emocni:     { action_id: 'vdecnost_3', label: 'Napiš 3 věci za které jsi vděčný', type: 'habit', duration_s: null, coaching_note: 'Vděčnost mění perspektivu — a ta určuje jak daleko dojdeš.' },
-  smysl:      { action_id: 'reflexe_snu', label: 'Zamysli se nad svým snem — co ti k němu dnes přiblíží', type: 'habit', duration_s: null, coaching_note: 'Každý den s jasným záměrem se počítá.' },
+  spanek:     { action_id: 'dychani_478',  label: '4-7-8 dýchání před spánkem',                        type: 'timed', duration_s: 240,  guide_search: '4-7-8 dýchání technika návod', guide_label: 'Jak dýchat' },
+  kognitivni: { action_id: 'cti_20min',    label: 'Čti 20 minut',                                      type: 'timed', duration_s: 1200, guide_search: null, guide_label: null },
+  emocni:     { action_id: 'vdecnost_3',   label: 'Napiš 3 věci za které jsi vděčný',                  type: 'habit', duration_s: null, guide_search: null, guide_label: null },
+  smysl:      { action_id: 'reflexe_snu',  label: 'Zamysli se nad svým snem — co ti k němu dnes přiblíží', type: 'habit', duration_s: null, guide_search: null, guide_label: null },
 };
 
 async function myslAgent(client, sb, { userId, discipline, nodeId, force = false, excludeActionId = null }) {
@@ -201,7 +208,7 @@ async function myslAgent(client, sb, { userId, discipline, nodeId, force = false
   // Cache check — skip when force=true (second action request)
   if (!force) {
     const { data: cached } = await sb.from('agent_log')
-      .select('action_id, label, type, duration_s, coaching_note')
+      .select('action_id, label, type, duration_s, guide_search, guide_label')
       .eq('user_id', userId).eq('node_id', nodeId).eq('discipline', discipline).eq('date', today)
       .maybeSingle();
     if (cached?.action_id) return { ...cached, cached: true };
@@ -249,8 +256,12 @@ Vyber jedno konkrétní cvičení pro dnešek.`;
     action = MYSL_FALLBACKS[discipline];
   }
 
-  sb.from('agent_log').insert({ user_id: userId, node_id: nodeId, discipline, date: today, tier, ...action })
-    .then(({ error }) => { if (error) console.warn('agent_log insert failed:', error.message); });
+  sb.from('agent_log').insert({
+    user_id: userId, node_id: nodeId, discipline, date: today, tier,
+    action_id: action.action_id, label: action.label, type: action.type,
+    duration_s: action.duration_s ?? null,
+    guide_search: action.guide_search ?? null, guide_label: action.guide_label ?? null,
+  }).then(({ error }) => { if (error) console.warn('agent_log insert failed:', error.message); });
 
   return action;
 }
@@ -282,17 +293,18 @@ GLUKÓZA — pokud uživatel zmíní hraniční glukózu (5,8–7,0):
 
 PRAVIDLA:
 - Nikdy neopakuj yesterdayAction
-- coaching_note: max 1 věta, konkrétní odkaz na sen uživatele
+- guide_search: krátký YouTube dotaz v češtině (max 6 slov) jen pokud akce vyžaduje návod (CGM, krevní testy). null pro chůzi, vodu, záznamy.
+- guide_label: "Návod" | "Jak na to" | null
 - Česky, tykej, klidný ale přímý tón
 - Správně: "zánětlivý stav" (NE "zápalební stav" — neexistuje)
 - type: "timed" (s dobou v sekundách) | "habit" (jednorázové HOTOVO)
 
 ODPOVĚZ POUZE JSON (bez markdown):
-{"action_id":"...","label":"...","type":"timed|habit","duration_s":null,"coaching_note":"..."}`;
+{"action_id":"...","label":"...","type":"timed|habit","duration_s":null,"guide_search":null,"guide_label":null}`;
 
 const ZDRAVI_FALLBACKS = {
-  prevence:     { action_id: 'voda_25l', label: 'Vypij 2,5l vody — nastav připomínky', type: 'habit', duration_s: null, coaching_note: 'Hydratace je základ — bez ní výkon v bazénu ani na suchu nefunguje.' },
-  metabolismus: { action_id: 'chůze_po_jidle', label: 'Projdi se 10 minut po největším jídle', type: 'timed', duration_s: 600, coaching_note: 'Chůze po jídle snižuje glukózu — přímá investice do výkonu v osmdesáti pěti.' },
+  prevence:     { action_id: 'voda_25l',        label: 'Vypij 2,5l vody — nastav připomínky',         type: 'habit', duration_s: null, guide_search: null, guide_label: null },
+  metabolismus: { action_id: 'chuze_po_jidle',  label: 'Projdi se 10 minut po největším jídle',       type: 'timed', duration_s: 600,  guide_search: null, guide_label: null },
 };
 
 async function zdraviAgent(client, sb, { userId, discipline, nodeId, force = false, excludeActionId = null }) {
@@ -305,7 +317,7 @@ async function zdraviAgent(client, sb, { userId, discipline, nodeId, force = fal
   // Cache check — skip when force=true (second action request)
   if (!force) {
     const { data: cached } = await sb.from('agent_log')
-      .select('action_id, label, type, duration_s, coaching_note')
+      .select('action_id, label, type, duration_s, guide_search, guide_label')
       .eq('user_id', userId).eq('node_id', nodeId).eq('discipline', discipline).eq('date', today)
       .maybeSingle();
     if (cached?.action_id) return { ...cached, cached: true };
@@ -362,8 +374,12 @@ Vyber jedno konkrétní cvičení pro dnešek.`;
     action = ZDRAVI_FALLBACKS[discipline];
   }
 
-  sb.from('agent_log').insert({ user_id: userId, node_id: nodeId, discipline, date: today, tier, ...action })
-    .then(({ error }) => { if (error) console.warn('agent_log insert failed:', error.message); });
+  sb.from('agent_log').insert({
+    user_id: userId, node_id: nodeId, discipline, date: today, tier,
+    action_id: action.action_id, label: action.label, type: action.type,
+    duration_s: action.duration_s ?? null,
+    guide_search: action.guide_search ?? null, guide_label: action.guide_label ?? null,
+  }).then(({ error }) => { if (error) console.warn('agent_log insert failed:', error.message); });
 
   return action;
 }
@@ -399,17 +415,18 @@ Tier 3:
 
 PRAVIDLA:
 - Nikdy neopakuj yesterdayAction
-- coaching_note: max 1 věta, konkrétní odkaz na sen uživatele (plavání, běžky, výkon, vnuci...)
+- guide_search: krátký YouTube dotaz v češtině (max 6 slov) pokud akce vyžaduje recept nebo návod. null pro vynechání sladkého, záznamy, doplňky.
+- guide_label: "Recept" | "Jak připravit" | null
 - Česky, tykej, přímý trenérský tón
 - Správně: "zánětlivý stav" (NE "zápalební stav" — neexistuje)
 - type: "habit" (jednorázové HOTOVO) | "timed" (s dobou v sekundách pro tracking)
 - Protein je priority — zmiň ho pokud je tier 1 nebo 2
 
 ODPOVĚZ POUZE JSON (bez markdown):
-{"action_id":"...","label":"...","type":"habit|timed","duration_s":null,"coaching_note":"..."}`;
+{"action_id":"...","label":"...","type":"habit|timed","duration_s":null,"guide_search":null,"guide_label":null}`;
 
 const VYZIVA_FALLBACKS = {
-  vyziva: { action_id: 'protein_snidane', label: 'Snídaně se 30g proteinu — vejce, tvaroh nebo jogurt', type: 'habit', duration_s: null, coaching_note: 'Protein ráno nastaví celý den — svaly i výkon v bazénu to poznají.' },
+  vyziva: { action_id: 'protein_snidane', label: 'Snídaně se 30g proteinu — vejce, tvaroh nebo jogurt', type: 'habit', duration_s: null, guide_search: 'snídaně 30g proteinu rychlý recept', guide_label: 'Recept' },
 };
 
 async function vyzivaAgent(client, sb, { userId, discipline, nodeId, force = false, excludeActionId = null }) {
@@ -418,7 +435,7 @@ async function vyzivaAgent(client, sb, { userId, discipline, nodeId, force = fal
   // Cache check — skip when force=true (second action request)
   if (!force) {
     const { data: cached } = await sb.from('agent_log')
-      .select('action_id, label, type, duration_s, coaching_note')
+      .select('action_id, label, type, duration_s, guide_search, guide_label')
       .eq('user_id', userId).eq('node_id', nodeId).eq('discipline', discipline).eq('date', today)
       .maybeSingle();
     if (cached?.action_id) return { ...cached, cached: true };
@@ -469,8 +486,12 @@ Vyber jednu konkrétní výživovou akci pro dnešek.`;
     action = VYZIVA_FALLBACKS.vyziva;
   }
 
-  sb.from('agent_log').insert({ user_id: userId, node_id: nodeId, discipline, date: today, tier, ...action })
-    .then(({ error }) => { if (error) console.warn('agent_log insert failed:', error.message); });
+  sb.from('agent_log').insert({
+    user_id: userId, node_id: nodeId, discipline, date: today, tier,
+    action_id: action.action_id, label: action.label, type: action.type,
+    duration_s: action.duration_s ?? null,
+    guide_search: action.guide_search ?? null, guide_label: action.guide_label ?? null,
+  }).then(({ error }) => { if (error) console.warn('agent_log insert failed:', error.message); });
 
   return action;
 }

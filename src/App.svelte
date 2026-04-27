@@ -56,7 +56,8 @@
       status:   'READY',
       tier:     a.tier ?? 1,
       node_id:  nid,
-      coaching_note: a.coaching_note ?? null,
+      guide_search: a.guide_search ?? null,
+      guide_label:  a.guide_label  ?? null,
     };
   }
 
@@ -265,8 +266,7 @@
       return {
         ...base,
         action: agentAction,
-        // Agent coaching_note fills in when orchestrator hasn't generated feedback yet
-        completion_feedback: base.completion_feedback || agentAction.coaching_note || null,
+        completion_feedback: base.completion_feedback || null,
       };
     }
     return base;
