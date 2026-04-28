@@ -515,6 +515,9 @@
             const iframe  = document.getElementById('hud-iframe');
             const loader  = document.getElementById('hud-fetch-loader');
 
+            // Close vanilla panel if open (e.g. after clicking a gray node)
+            if (typeof window.closePanel === 'function') window.closePanel();
+
             // Update header node label
             const nodeData = window.MAIN_UNIVERSE_DATA?.find(n => n.id === nodeId);
             if (window._setHeaderNodeLabel && nodeData?.label) {
