@@ -557,10 +557,14 @@ async function saveOnboarding() {
     // Demographics (birth_year, sex, height, weight) → managed in Nastavení (Profile tab)
     // Injuries + Aspiration → managed in Nastavení (other tabs)
     // Create empty user_profiles row if not exists (so bio-age calc doesn't fail)
+    // Mode is determined by ?mode= URL param set by the landing page.
+    // app.iting.cz?mode=dekatlon → dekatlon, otherwise → longevity (default).
+    const urlMode = new URLSearchParams(window.location.search).get('mode');
+    const primaryGoal = urlMode === 'dekatlon' ? 'dekatlon' : 'longevity';
     try {
       await supabase.from('user_profiles').upsert({
         user_id: userId,
-        primary_goal: 'longevity',
+        primary_goal: primaryGoal,
       }, { onConflict: 'user_id' });
     } catch (e) { /* table may not exist yet */ }
 

@@ -34,6 +34,9 @@
             if (!user) {
                 window.location.href = '/login';
             } else {
+                // Always clear cached role on auth — getUserMode() reads fresh from DB each load
+                localStorage.removeItem('userRole');
+                localStorage.setItem('chj_uid', user.uid);
                 // Update avatar dynamically
                 const email = user.email || 'User';
                 const name = user.displayName || email.split('@')[0];
@@ -248,6 +251,8 @@
                     <option value="demo">Demo</option>
                     <option value="free">Free</option>
                     <option value="pro">Pro</option>
+                    <option value="dekatlon">Dekatlon</option>
+                    <option value="longevity">Longevity</option>
                     <option value="user">User</option>
                 </select>
             </div>

@@ -271,7 +271,7 @@ async function warmAgentCache() {
 
   const stored = localStorage.getItem("currentModel");
   const modelName = stored || keys[0];
-  const role = localStorage.getItem("userRole") || "demo";
+  const role = await getUserMode();
 
   await loadAndRenderModel(modelName, role);
   initHeaderControls();
@@ -367,7 +367,13 @@ function initHeaderMic() {
 async function loadAndRenderModel(modelName, role) {
   window.CURRENT_MODEL = modelName;
 
-  console.log(`🔄 Loading model: ${modelName}`);
+  // Model může mít pevně daný accessRole (např. dekatlon sdílí data longevity)
+  const modelConfig = window.UNIVERSE_INDEX?.[modelName];
+  const effectiveRole = modelConfig?.accessRole || role;
+  // Access JSON se vždy hledá v longevity složce — dekatlon nemá vlastní model
+  const accessModelName = modelConfig?.accessRole ? 'longevity' : modelName;
+
+  console.log(`🔄 Loading model: ${modelName} (access: ${effectiveRole})`);
 
   const model = await loadModel(modelName);
 
@@ -381,12 +387,12 @@ async function loadAndRenderModel(modelName, role) {
   window.BASE_UNIVERSE_DATA = structuredClone(model);
   window.MAIN_UNIVERSE_DATA = structuredClone(model);
 
-  await applyAccessModel(role, window.MAIN_UNIVERSE_DATA, modelName);
+  await applyAccessModel(effectiveRole, window.MAIN_UNIVERSE_DATA, accessModelName);
 
   renderVisibleUniverse(window.MAIN_UNIVERSE_DATA);
 
-  // Auto-open: Hra o život panel se otevře 700ms po načtení vesmíru (jen longevity)
-  if (modelName === 'longevity') {
+  // Auto-open: Hra o život panel se otevře 700ms po načtení vesmíru
+  if (modelName === 'longevity' || modelName === 'dekatlon') {
     setTimeout(() => {
       const mainNode = window.MAIN_UNIVERSE_DATA?.find(n => n.id === 'dlouhovekost');
       if (mainNode && mainNode.state && mainNode.state !== 'GRAY') {
@@ -621,6 +627,75 @@ async function getCurrentUserId() {
 }
 
 // =====================================================
+// 6b) GET USER MODE (dekatlon | longevity)
+// ─────────────────────────────────────────────────────
+// Zdroj pravdy: user_profiles.primary_goal v Supabase.
+// localStorage = cache (fast path na refresh).
+// Demo / nepřihlášený → localStorage (admin roleSelect) || 'demo'.
+// Uživatel bez profilu v DB → fallback 'longevity'.
+// =====================================================
+async function getUserMode() {
+  const uid = await getCurrentUserId();
+
+  // Demo / nepřihlášený → admin roleSelect nebo 'demo'
+  if (!uid || uid === 'demo-user-123') {
+    return localStorage.getItem('userRole') || 'demo';
+  }
+
+  // Admin override (roleSelect v headeru) — přepisuje DB
+  const adminOverride = localStorage.getItem('userRoleOverride');
+  if (adminOverride) return adminOverride;
+
+  // Přihlášený uživatel: vždy čti z DB — primary_goal je zdroj pravdy
+  try {
+    const { data, error } = await window.supabaseClient
+      .from('user_profiles')
+      .select('primary_goal')
+      .eq('user_id', uid)
+      .maybeSingle();
+
+    if (error || !data) {
+      console.warn('⚠️ getUserMode: fallback → longevity', error?.message);
+      localStorage.setItem('userRole', 'longevity');
+      return 'longevity';
+    }
+
+    const mode = data.primary_goal || 'longevity';
+    localStorage.setItem('userRole', mode);
+    console.log(`✅ User mode (primary_goal): ${mode}`);
+    return mode;
+
+  } catch (err) {
+    console.warn('⚠️ getUserMode: výjimka, fallback → longevity', err);
+    localStorage.setItem('userRole', 'longevity');
+    return 'longevity';
+  }
+}
+
+// Upgrade: primary_goal = 'longevity' → plný přístup, re-render bez reloadu
+window.upgradeToLongevity = async function () {
+  const uid = await getCurrentUserId();
+  if (!uid || uid === 'demo-user-123') return;
+
+  const { error } = await window.supabaseClient
+    .from('user_profiles')
+    .upsert({ user_id: uid, primary_goal: 'longevity' }, { onConflict: 'user_id' });
+
+  if (error) {
+    console.error('❌ upgradeToLongevity failed:', error.message);
+    return;
+  }
+
+  // Aktualizuj cache + re-render vesmíru bez reloadu
+  localStorage.setItem('userRole', 'longevity');
+  localStorage.removeItem('userRoleOverride');
+  window.MAIN_UNIVERSE_DATA = structuredClone(window.BASE_UNIVERSE_DATA);
+  await applyAccessModel('longevity', window.MAIN_UNIVERSE_DATA, window.CURRENT_MODEL);
+  renderVisibleUniverse(window.MAIN_UNIVERSE_DATA);
+  console.log('✅ Upgrade → longevity dokončen');
+};
+
+// =====================================================
 // 7) ACCESS MODEL
 // =====================================================
 async function applyAccessModel(role, model, modelName) {
@@ -633,7 +708,7 @@ async function applyAccessModel(role, model, modelName) {
     const accessData = await res.json();
     const accessMap = new Map(accessData.map(n => [n.id, n.access]));
 
-    const defaultAccess = (role === 'demo' || role === 'free') ? 'locked' : 'visible';
+    const defaultAccess = (role === 'demo' || role === 'free' || role === 'dekatlon') ? 'locked' : 'visible';
     model.forEach(n => {
       n.access = accessMap.get(n.id) || defaultAccess;
       // Locked uzly vždy zobrazit šedě bez ohledu na metriky z DB
@@ -714,28 +789,31 @@ function initHeaderControls() {
 
   if (!roleSelect || !modelSelect) return;
 
-  const role = localStorage.getItem("userRole") || "demo";
+  // roleSelect = admin override (testování), přepisuje DB mode
+  const currentRole = localStorage.getItem("userRole") || "demo";
   const stored = localStorage.getItem("currentModel");
   const modelKeys = Object.keys(window.UNIVERSE_INDEX);
   const defaultModel = stored || modelKeys[0];
 
-  roleSelect.value = role;
+  roleSelect.value = currentRole;
   modelSelect.value = defaultModel;
-  document.body.classList.add(role);
+  document.body.classList.add(currentRole);
 
-  if (role === "user") {
+  if (currentRole === "user") {
     headerControls.style.display = "none";
   } else {
     headerControls.style.display = "flex";
   }
 
-  updateHeaderColor(role);
+  updateHeaderColor(currentRole);
 
   roleSelect.addEventListener("change", async (e) => {
     const newRole = e.target.value;
+    // Admin override — uloží do obou klíčů (getUserMode čte userRole jako fast path)
     localStorage.setItem("userRole", newRole);
+    localStorage.setItem("userRoleOverride", newRole);
 
-    document.body.classList.remove("demo", "free", "pro", "user");
+    document.body.classList.remove("demo", "free", "pro", "dekatlon", "longevity", "user");
     document.body.classList.add(newRole);
     updateHeaderColor(newRole);
 
@@ -789,10 +867,12 @@ function updateHeaderColor(role) {
   if (!header) return;
 
   const colors = {
-    demo: "rgba(59,130,246,0.25)",
-    free: "rgba(34,197,94,0.25)",
-    pro: "rgba(251,191,36,0.25)",
-    user: "rgba(15,23,42,0.9)"
+    demo:      "rgba(59,130,246,0.25)",
+    free:      "rgba(34,197,94,0.25)",
+    pro:       "rgba(251,191,36,0.25)",
+    dekatlon:  "rgba(168,85,247,0.25)",
+    longevity: "rgba(6,182,212,0.20)",
+    user:      "rgba(15,23,42,0.9)"
   };
 
   header.style.background = colors[role] || "rgba(15,23,42,0.9)";

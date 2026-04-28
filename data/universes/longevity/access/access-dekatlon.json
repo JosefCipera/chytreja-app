@@ -1,0 +1,12 @@
+[
+  { "id": "dlouhovekost", "access": "full" },
+  { "id": "telo",         "access": "full" },
+  { "id": "vo2max",       "access": "full" },
+  { "id": "sila",         "access": "full" },
+  { "id": "stabilita",    "access": "full" },
+  { "id": "kardio",       "access": "full" },
+  { "id": "mobilita",     "access": "full" },
+  { "id": "vytrvalost",   "access": "full" },
+  { "id": "rovnovaha",    "access": "full" },
+  { "id": "dychani",      "access": "full" }
+]
