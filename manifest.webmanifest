@@ -10,12 +10,6 @@
     "orientation": "portrait-primary",
     "icons": [
         {
-            "src": "/app/assets/images/chj-icon.svg",
-            "sizes": "any",
-            "type": "image/svg+xml",
-            "purpose": "any maskable"
-        },
-        {
             "src": "/app/assets/images/logo-192.png",
             "sizes": "192x192",
             "type": "image/png",
