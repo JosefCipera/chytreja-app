@@ -96,7 +96,20 @@ async function fetchOneNode(sb, userId, nodeId, shared) {
 
   // Orchestrator decision for this node (from shared pre-fetch)
   const orchLog = orchLogs.find(r => r.node_id === nodeId);
-  const disciplineId = orchLog?.pillar || null;
+
+  // Only use orchLog pillar for action selection if it belongs to this node's domain.
+  // Otherwise the orchestrator might assign e.g. kognitivni to telo (wrong actions).
+  const NODE_VALID_DISCIPLINES = {
+    telo:         ['sila','kardio','stabilita'],
+    zdravi:       ['prevence','metabolismus'],
+    mysl:         ['kognitivni','emocni','smysl','spanek'],
+    vyziva:       ['vyziva'],
+    metabolicke:  ['metabolismus'],
+    dlouhovekost: ['sila','kardio','stabilita','kognitivni','prevence','vyziva'],
+  };
+  const validForNode = NODE_VALID_DISCIPLINES[nodeId];
+  const disciplineId = (orchLog?.pillar && (!validForNode || validForNode.includes(orchLog.pillar)))
+    ? orchLog.pillar : null;
   const disciplineProtocols = disciplineId ? DISCIPLINE_PROTOCOLS[disciplineId] : null;
 
   // actionNodeId — for parent nodes, use first child as action target
