@@ -728,7 +728,10 @@ function renderVisibleUniverse(model) {
     return;
   }
 
-  const visible = model.filter(n => n.access !== "hidden");
+  const visible = model.filter(n =>
+    n.access !== "hidden" &&
+    !(window._hideGrayNodes && n.state === 'GRAY')
+  );
 
   console.log("🔍 Visible nodes with state:", visible.filter(n => n.state).length); // ← PŘIDEJ
   console.log("Sample visible:", visible[0]); // ← PŘIDEJ
@@ -806,6 +809,21 @@ function initHeaderControls() {
 
   updateHeaderColor(currentRole);
 
+  // "Skrýt šedé" toggle — visible only when role has locked nodes
+  const hideGrayLabel = document.getElementById('hideGrayLabel');
+  const hideGrayToggle = document.getElementById('hideGrayToggle');
+  const ROLES_WITH_GRAY = ['demo', 'free', 'dekatlon'];
+  function _syncHideGrayVisibility(role) {
+    if (hideGrayLabel) hideGrayLabel.style.display = ROLES_WITH_GRAY.includes(role) ? 'flex' : 'none';
+  }
+  _syncHideGrayVisibility(currentRole);
+  if (hideGrayToggle) {
+    hideGrayToggle.addEventListener('change', () => {
+      window._hideGrayNodes = hideGrayToggle.checked;
+      renderVisibleUniverse(window.MAIN_UNIVERSE_DATA || window.BASE_UNIVERSE_DATA);
+    });
+  }
+
   roleSelect.addEventListener("change", async (e) => {
     const newRole = e.target.value;
     // Admin override — uloží do obou klíčů (getUserMode čte userRole jako fast path)
@@ -815,6 +833,11 @@ function initHeaderControls() {
     document.body.classList.remove("demo", "free", "pro", "dekatlon", "longevity", "user");
     document.body.classList.add(newRole);
     updateHeaderColor(newRole);
+
+    // Reset hide-gray toggle on role change
+    if (hideGrayToggle) hideGrayToggle.checked = false;
+    window._hideGrayNodes = false;
+    _syncHideGrayVisibility(newRole);
 
     if (newRole === "user") return location.reload();
 
