@@ -5,12 +5,6 @@
             "useSupabase": true,
             "modelFile": "../data/universes/longevity/models/longevity.json"
         },
-        "dekatlon": {
-            "label": "Dekatlon",
-            "useSupabase": true,
-            "modelFile": "../data/universes/longevity/models/longevity.json",
-            "accessRole": "dekatlon"
-        },
         "toc": {
             "label": "TOC",
             "useSupabase": false,

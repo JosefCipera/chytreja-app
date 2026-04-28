@@ -172,7 +172,7 @@ window.refreshUniverseData = async function() {
       .from('user_metrics')
       .select('node_id, current_index, state')
       .eq('user_id', userId)
-      .eq('universe', window.UNIVERSE_INDEX?.[window.CURRENT_MODEL]?.accessRole ? 'longevity' : (window.CURRENT_MODEL || 'longevity'));
+      .eq('universe', window.CURRENT_MODEL || 'longevity');
 
     if (!metrics) return;
 
@@ -367,13 +367,7 @@ function initHeaderMic() {
 async function loadAndRenderModel(modelName, role) {
   window.CURRENT_MODEL = modelName;
 
-  // Model může mít pevně daný accessRole (např. dekatlon sdílí data longevity)
-  const modelConfig = window.UNIVERSE_INDEX?.[modelName];
-  const effectiveRole = modelConfig?.accessRole || role;
-  // Access JSON se vždy hledá v longevity složce — dekatlon nemá vlastní model
-  const accessModelName = modelConfig?.accessRole ? 'longevity' : modelName;
-
-  console.log(`🔄 Loading model: ${modelName} (access: ${effectiveRole})`);
+  console.log(`🔄 Loading model: ${modelName} (access: ${role})`);
 
   const model = await loadModel(modelName);
 
@@ -387,12 +381,12 @@ async function loadAndRenderModel(modelName, role) {
   window.BASE_UNIVERSE_DATA = structuredClone(model);
   window.MAIN_UNIVERSE_DATA = structuredClone(model);
 
-  await applyAccessModel(effectiveRole, window.MAIN_UNIVERSE_DATA, accessModelName);
+  await applyAccessModel(role, window.MAIN_UNIVERSE_DATA, modelName);
 
   renderVisibleUniverse(window.MAIN_UNIVERSE_DATA);
 
   // Auto-open: Hra o život panel se otevře 700ms po načtení vesmíru
-  if (modelName === 'longevity' || modelName === 'dekatlon') {
+  if (modelName === 'longevity') {
     setTimeout(() => {
       const mainNode = window.MAIN_UNIVERSE_DATA?.find(n => n.id === 'dlouhovekost');
       if (mainNode && mainNode.state && mainNode.state !== 'GRAY') {
@@ -453,7 +447,7 @@ async function loadModel(modelName) {
         .from('user_metrics')
         .select('*')
         .eq('user_id', userId)
-        .eq('universe', window.UNIVERSE_INDEX?.[modelName]?.accessRole ? 'longevity' : modelName);
+        .eq('universe', modelName);
 
       if (metricsError) throw metricsError;
       console.log(`   ✓ Metrics: ${metrics.length}`);
@@ -660,9 +654,11 @@ async function getUserMode() {
       return 'longevity';
     }
 
-    const mode = data.primary_goal || 'longevity';
+    // primary_goal 'dekatlon' → role 'dekatlon' (filtered access)
+    // anything else ('longevity') → role 'pro' (full access, no JSON needed)
+    const mode = data.primary_goal === 'dekatlon' ? 'dekatlon' : 'pro';
     localStorage.setItem('userRole', mode);
-    console.log(`✅ User mode (primary_goal): ${mode}`);
+    console.log(`✅ User mode (primary_goal: ${data.primary_goal} → role: ${mode})`);
     return mode;
 
   } catch (err) {
