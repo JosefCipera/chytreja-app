@@ -9,9 +9,18 @@
     --lh: calc(var(--fs) * 2);
     display: flex;
     flex-direction: row;
-    align-items: flex-start;
-    gap: 7px;
+    align-items: center;
+    gap: 10px;
     color: #e2e8f0;
+}
+
+/* Prsten / ring varianta */
+.chj-logo__ring {
+    flex-shrink: 0;
+    width: calc(var(--lh) * 0.78);
+    height: calc(var(--lh) * 0.78);
+    border-radius: 50%;
+    border: 2.5px solid currentColor;
 }
 
 .chj-logo__cursor {
