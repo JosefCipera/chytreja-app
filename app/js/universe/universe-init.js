@@ -172,7 +172,7 @@ window.refreshUniverseData = async function() {
       .from('user_metrics')
       .select('node_id, current_index, state')
       .eq('user_id', userId)
-      .eq('universe', window.CURRENT_MODEL || 'longevity');
+      .eq('universe', window.UNIVERSE_INDEX?.[window.CURRENT_MODEL]?.accessRole ? 'longevity' : (window.CURRENT_MODEL || 'longevity'));
 
     if (!metrics) return;
 
@@ -453,7 +453,7 @@ async function loadModel(modelName) {
         .from('user_metrics')
         .select('*')
         .eq('user_id', userId)
-        .eq('universe', modelName);
+        .eq('universe', window.UNIVERSE_INDEX?.[modelName]?.accessRole ? 'longevity' : modelName);
 
       if (metricsError) throw metricsError;
       console.log(`   ✓ Metrics: ${metrics.length}`);
