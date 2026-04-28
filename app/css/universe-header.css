@@ -83,6 +83,13 @@
 }
 
 /* === LEFT: Logo === */
+.chj-header-logo {
+    height: 32px;
+    width: 32px;
+    object-fit: contain;
+    display: block;
+}
+
 #appTitle {
     display: flex;
     align-items: center;
@@ -96,22 +103,6 @@
 
 #appTitle:hover {
     opacity: 0.85;
-}
-
-/* === ACTIVE NODE LABEL === */
-#headerNodeLabel {
-    font-family: 'JetBrains Mono', 'Fira Code', monospace;
-    font-size: 0.78rem;
-    font-weight: 400;
-    letter-spacing: 0.08em;
-    color: #22d3ee;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    white-space: nowrap;
-    pointer-events: none;
-}
-#headerNodeLabel.visible {
-    opacity: 1;
 }
 
 /* === RIGHT: Controls + Avatar (grouped together) === */
