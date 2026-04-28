@@ -357,7 +357,7 @@
     <script type="module" src="/app/js/universe/universe-viewers.js?v=20260401b"></script>
     <script type="module" src="/app/js/universe/universe-access.js?v=20260401b"></script>
     <script type="module" src="/app/js/universe/universe-core.js?v=20260401b"></script>
-    <script type="module" src="/app/js/universe/universe-init.js?v=20260428b"></script>
+    <script type="module" src="/app/js/universe/universe-init.js?v=20260428c"></script>
     <script type="module" src="/app/js/universe/user-data-panel.js?v=20260426a"></script>
     <script type="module" src="/app/js/universe/ai-assistant.js?v=20260401b"></script>
     <script type="module" src="/app/js/universe/universe-panel.js?v=20260401b"></script>
@@ -474,6 +474,15 @@
             const _role = localStorage.getItem('userRole') || 'pro';
             const bulk = `/api/hud-data-bulk?userId=${encodeURIComponent(userId)}&nodes=${missing.join(',')}&role=${encodeURIComponent(_role)}`;
             const p = fetch(bulk).then(r => r.json()).then(data => {
+                // Apply local label overrides before caching
+                if (window.MAIN_UNIVERSE_DATA) {
+                    Object.keys(data).forEach(id => {
+                        const localNode = window.MAIN_UNIVERSE_DATA.find(n => n.id === id);
+                        if (localNode?.label && data[id]?.node) {
+                            data[id] = { ...data[id], node: { ...data[id].node, label: localNode.label } };
+                        }
+                    });
+                }
                 Object.assign(window._hudCache, data);
                 // Resolve individual pending promises
                 missing.forEach(id => { delete window._hudPending[id]; });
@@ -543,6 +552,12 @@
                         console.warn('[CHJ] openHudOverlay fetch failed:', e);
                     }
                     if (loader) loader.classList.remove('active');
+                }
+
+                // Override node label from local universe data (access model may rename it)
+                if (data?.node && window.MAIN_UNIVERSE_DATA) {
+                    const localNode = window.MAIN_UNIVERSE_DATA.find(n => n.id === nodeId);
+                    if (localNode?.label) data = { ...data, node: { ...data.node, label: localNode.label } };
                 }
 
                 // Send data to already-loaded iframe — it renders before panel is visible
