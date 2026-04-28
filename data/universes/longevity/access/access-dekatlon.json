@@ -1,5 +1,5 @@
 [
-  { "id": "dlouhovekost", "access": "full" },
+  { "id": "dlouhovekost", "access": "full", "label": "Stoletý desetibojař" },
   { "id": "telo",         "access": "full" },
   { "id": "vo2max",       "access": "full" },
   { "id": "sila",         "access": "full" },

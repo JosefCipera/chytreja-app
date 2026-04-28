@@ -194,9 +194,8 @@
 
   function onCheckInComplete() {
     needsCheckIn = false;
-    // Refresh HUD data + re-run orchestrator with fresh readiness
+    // Refresh HUD data only — warm-up already ran the orchestrator
     loadHudData(userId, nodeId);
-    triggerOrchestrator(userId, nodeId);
   }
 
   // Volá orchestrátor → uloží rozhodnutí do orchestrator_log.

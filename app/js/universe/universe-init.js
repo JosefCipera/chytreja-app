@@ -702,13 +702,16 @@ async function applyAccessModel(role, model, modelName) {
     if (!res.ok) return;
 
     const accessData = await res.json();
-    const accessMap = new Map(accessData.map(n => [n.id, n.access]));
+    const accessMap = new Map(accessData.map(n => [n.id, n]));
 
     const defaultAccess = (role === 'demo' || role === 'free' || role === 'dekatlon') ? 'locked' : 'visible';
     model.forEach(n => {
-      n.access = accessMap.get(n.id) || defaultAccess;
-      // Locked uzly vždy zobrazit šedě bez ohledu na metriky z DB
+      const entry = accessMap.get(n.id);
+      n.access = (typeof entry === 'object' ? entry?.access : entry) || defaultAccess;
       if (n.access === 'locked') n.state = 'GRAY';
+      // Optional label override (e.g. dekatlon renames dlouhovekost)
+      const labelOverride = typeof entry === 'object' ? entry?.label : null;
+      if (labelOverride) n.label = labelOverride;
     });
 
   } catch (err) {
