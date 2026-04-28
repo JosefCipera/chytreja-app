@@ -1,4 +1,4 @@
-const CACHE_NAME = 'chytre-ja-v16';
+const CACHE_NAME = 'chytre-ja-v17';
 
 const ASSETS = [
   '/',
