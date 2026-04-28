@@ -3,6 +3,20 @@
 // Refactored: game logic in game-engine.js, data queries in data-layer.js
 console.log("PANEL JS LOADED");
 
+// ── Header node label helper ──────────────────────────
+function _setHeaderNodeLabel(label) {
+  const el = document.getElementById('headerNodeLabel');
+  if (!el) return;
+  if (label) {
+    el.textContent = `[${label.toUpperCase()}]`;
+    el.classList.add('visible');
+  } else {
+    el.classList.remove('visible');
+  }
+}
+// Expose so HUD overlay (App.svelte via index.html) can also update it
+window._setHeaderNodeLabel = _setHeaderNodeLabel;
+
 import {
   DEMO_PREVIEWS, ACTIVE_MOTTOS, getDemoPreview,
   NODE_RIDERS, RIDER_ICONS, getRiders,
@@ -244,6 +258,9 @@ function resetPanel() {
 }
 
 export async function showPanel(node, options = {}) {
+  // Update header node label
+  _setHeaderNodeLabel(node.label);
+
   // v0.2+: non-GRAY nodes open in Svelte HUD overlay (only explicit click)
   if (node.state !== 'GRAY' && !options.skipHud) {
     const uid = window.CHJ_UID || window.firebaseAuth?.currentUser?.uid;

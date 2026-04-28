@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Vesmír Desktop 🌌</title>
+    <title>Chytré já</title>
     <!-- build: 20260402a -->
 
     <!-- Fonts -->
@@ -244,6 +244,7 @@
                 </div>
             </div>
         </h1>
+        <span id="headerNodeLabel"></span>
         <div class="header-right">
             <div class="header-controls" style="display:none;">
                 <label for="modelSelector">Model:</label>
@@ -500,6 +501,12 @@
             const wrap    = document.getElementById('hud-panel-wrap');
             const iframe  = document.getElementById('hud-iframe');
             const loader  = document.getElementById('hud-fetch-loader');
+
+            // Update header node label
+            const nodeData = window.MAIN_UNIVERSE_DATA?.find(n => n.id === nodeId);
+            if (window._setHeaderNodeLabel && nodeData?.label) {
+                window._setHeaderNodeLabel(nodeData.label);
+            }
 
             // Lazy-prefetch children of this node in background
             window.prefetchHudChildren(userId, nodeId);
