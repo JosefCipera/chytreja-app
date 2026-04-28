@@ -834,9 +834,10 @@ function initHeaderControls() {
     document.body.classList.add(newRole);
     updateHeaderColor(newRole);
 
-    // Reset hide-gray toggle on role change
+    // Reset hide-gray toggle + HUD cache on role change
     if (hideGrayToggle) hideGrayToggle.checked = false;
     window._hideGrayNodes = false;
+    window._hudCache = {};  // force fresh fetch with new role
     _syncHideGrayVisibility(newRole);
 
     if (newRole === "user") return location.reload();
