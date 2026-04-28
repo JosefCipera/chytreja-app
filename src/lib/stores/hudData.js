@@ -56,13 +56,17 @@ export async function loadHudData(userId, nodeId) {
   error.set(null);
 
   try {
-    const _urlRole = new URLSearchParams(window.location.search).get('role');
+    const _params = new URLSearchParams(window.location.search);
+    const _urlRole = _params.get('role');
     const _role = _urlRole || (typeof localStorage !== 'undefined' ? localStorage.getItem('userRole') : null) || 'pro';
     const res = await fetch(`/api/hud-data-bulk?userId=${encodeURIComponent(userId)}&nodes=${encodeURIComponent(nodeId)}&role=${encodeURIComponent(_role)}`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const bulk = await res.json();
-    const data = bulk[nodeId];
+    let data = bulk[nodeId];
     if (!data) throw new Error(`No data for node ${nodeId}`);
+    // Apply local label override passed via URL param (fixes mismatch between canvas label and API label)
+    const _nodeLabel = _params.get('nodeLabel');
+    if (_nodeLabel && data.node) data = { ...data, node: { ...data.node, label: _nodeLabel } };
     rawData.set(data);
   } catch (err) {
     console.error('[HUD] fetch failed:', err);

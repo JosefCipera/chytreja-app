@@ -76,11 +76,7 @@ body::before {
     z-index: 10000;
 }
 
-#appTitle {
-    margin: 0;
-    font-size: 1.1rem;
-    font-weight: 600;
-}
+/* #appTitle visual styles moved to .chj-logo */
 
 .model-selector {
     background: #1e293b;

@@ -529,7 +529,10 @@
                 // Also kick off a background prefetch so the cache is warm if user
                 // closes and reopens before the iframe fetches on its own.
                 const _role0 = localStorage.getItem('userRole') || 'pro';
-                iframe.src = `/app/hud.html?userId=${encodeURIComponent(userId)}&nodeId=${encodeURIComponent(nodeId)}&role=${encodeURIComponent(_role0)}`;
+                // Pass local label override so Svelte can fix API label (e.g. dekatlon vs demo)
+                const _localNode0 = window.MAIN_UNIVERSE_DATA?.find(n => n.id === nodeId);
+                const _labelParam = _localNode0?.label ? `&nodeLabel=${encodeURIComponent(_localNode0.label)}` : '';
+                iframe.src = `/app/hud.html?userId=${encodeURIComponent(userId)}&nodeId=${encodeURIComponent(nodeId)}&role=${encodeURIComponent(_role0)}${_labelParam}`;
                 window._hudOpen = true;
                 window.prefetchHudNodes(userId, [nodeId]); // warm cache in parallel
 
