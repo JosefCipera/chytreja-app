@@ -530,7 +530,8 @@
                 // Iframe hasn't loaded yet — let Svelte read nodeId from URL.
                 // Also kick off a background prefetch so the cache is warm if user
                 // closes and reopens before the iframe fetches on its own.
-                iframe.src = `/app/hud.html?userId=${encodeURIComponent(userId)}&nodeId=${encodeURIComponent(nodeId)}`;
+                const _role0 = localStorage.getItem('userRole') || 'pro';
+                iframe.src = `/app/hud.html?userId=${encodeURIComponent(userId)}&nodeId=${encodeURIComponent(nodeId)}&role=${encodeURIComponent(_role0)}`;
                 window._hudOpen = true;
                 window.prefetchHudNodes(userId, [nodeId]); // warm cache in parallel
 
