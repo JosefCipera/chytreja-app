@@ -83,7 +83,7 @@ function getDayType() {
 
 // ── Per-node data fetch (runs in parallel for all requested nodes) ──
 async function fetchOneNode(sb, userId, nodeId, shared) {
-  const { metricsMap, orchLogs, today, constraints, spanekIndex, vyzivaIndex } = shared;
+  const { metricsMap, orchLogs, today, constraints, spanekIndex, vyzivaIndex, isDekatlon } = shared;
   const dayType = getDayType();
 
   const nodeMeta    = metricsMap.get(nodeId) || { current_index: 50, state: 'YELLOW' };
@@ -185,8 +185,12 @@ async function fetchOneNode(sb, userId, nodeId, shared) {
   const verdictMap = VERDICT_TEXTS[nodeId] || VERDICT_TEXTS.telo;
   const deterministicVerdict = verdictMap[batteryState] || verdictMap.YELLOW;
 
+  const nodeLabel = (nodeId === 'dlouhovekost' && isDekatlon)
+    ? 'Stoletý desetibojař'
+    : (NODE_LABELS[nodeId] || nodeId);
+
   return {
-    node: { id: nodeId, label: NODE_LABELS[nodeId] || nodeId, version: 'v0.2' },
+    node: { id: nodeId, label: nodeLabel, version: 'v0.2' },
     battery: {
       percent: batteryPercent, state: batteryState,
       trend_label: trend.label, trend_direction: trend.direction,
@@ -215,7 +219,7 @@ export default async function handler(req, res) {
   const today = new Date().toISOString().slice(0, 10);
 
   // ── Shared queries — run once for all nodes ──────────
-  const [metricsRes, orchRes, constraintsRes] = await Promise.all([
+  const [metricsRes, orchRes, constraintsRes, profileRes] = await Promise.all([
     sb.from('user_metrics').select('node_id, current_index, state')
       .eq('user_id', userId).eq('universe', 'longevity'),
     sb.from('orchestrator_log')
@@ -223,7 +227,11 @@ export default async function handler(req, res) {
       .eq('user_id', userId).eq('date', today).in('node_id', nodeIds),
     sb.from('user_constraints').select('constraint_key, constraint_value')
       .eq('user_id', userId).eq('constraint_type', 'injury'),
+    sb.from('user_profiles').select('primary_goal')
+      .eq('user_id', userId).maybeSingle(),
   ]);
+
+  const isDekatlon = profileRes.data?.primary_goal === 'dekatlon';
 
   const metricsMap = new Map((metricsRes.data || []).map(m => [m.node_id, m]));
   const orchLogs   = orchRes.data || [];
@@ -248,7 +256,7 @@ export default async function handler(req, res) {
     } catch { /* ignore */ }
   }
 
-  const shared = { metricsMap, orchLogs, today, constraints, spanekIndex, vyzivaIndex };
+  const shared = { metricsMap, orchLogs, today, constraints, spanekIndex, vyzivaIndex, isDekatlon };
 
   // ── Per-node in parallel ─────────────────────────────
   const results = await Promise.all(
