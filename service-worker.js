@@ -1,4 +1,4 @@
-const CACHE_NAME = 'chytre-ja-v15';
+const CACHE_NAME = 'chytre-ja-v16';
 
 const ASSETS = [
   '/',
@@ -73,8 +73,10 @@ self.addEventListener('push', event => {
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
 
-  // API volání: vždy ze sítě, nikdy z cache
-  if (url.pathname.startsWith('/api/')) {
+  // API volání + HTML soubory: vždy ze sítě, nikdy z cache
+  if (url.pathname.startsWith('/api/') ||
+      url.pathname.endsWith('.html') ||
+      url.pathname === '/app' || url.pathname === '/') {
     event.respondWith(fetch(event.request));
     return;
   }
