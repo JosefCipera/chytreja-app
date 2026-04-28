@@ -69,7 +69,7 @@
 
   const DISCIPLINE_LABELS = {
     sila: 'SÍLA', kardio: 'KARDIO', stabilita: 'STABILITA',
-    spanek: 'SPÁNEK', kognitivni: 'KOGNICE', emocni: 'EMOCE',
+    spanek: 'SPÁNEK', kognitivni: 'MYŠLENÍ', emocni: 'EMOCE',
     vyziva: 'VÝŽIVA', metabolismus: 'METABOLISMUS', prevence: 'PREVENCE', smysl: 'SMYSL',
   };
   let protocolLabel = $derived(DISCIPLINE_LABELS[dayType] ?? dayType);
