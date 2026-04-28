@@ -56,7 +56,8 @@ export async function loadHudData(userId, nodeId) {
   error.set(null);
 
   try {
-    const res = await fetch(`/api/hud-data-bulk?userId=${encodeURIComponent(userId)}&nodes=${encodeURIComponent(nodeId)}`);
+    const _role = (typeof localStorage !== 'undefined' ? localStorage.getItem('userRole') : null) || 'pro';
+    const res = await fetch(`/api/hud-data-bulk?userId=${encodeURIComponent(userId)}&nodes=${encodeURIComponent(nodeId)}&role=${encodeURIComponent(_role)}`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const bulk = await res.json();
     const data = bulk[nodeId];

@@ -210,7 +210,7 @@ async function fetchOneNode(sb, userId, nodeId, shared) {
 
 // ── HANDLER ───────────────────────────────────────────
 export default async function handler(req, res) {
-  const { userId, nodes: nodesParam = 'telo,mysl,zdravi,vyziva' } = req.query;
+  const { userId, nodes: nodesParam = 'telo,mysl,zdravi,vyziva', role } = req.query;
   if (!userId) return res.status(400).json({ error: 'userId required' });
 
   const nodeIds = nodesParam.split(',').map(n => n.trim()).filter(Boolean).slice(0, 8);
@@ -231,7 +231,7 @@ export default async function handler(req, res) {
       .eq('user_id', userId).maybeSingle(),
   ]);
 
-  const isDekatlon = profileRes.data?.primary_goal === 'dekatlon';
+  const isDekatlon = profileRes.data?.primary_goal === 'dekatlon' || role === 'dekatlon';
 
   const metricsMap = new Map((metricsRes.data || []).map(m => [m.node_id, m]));
   const orchLogs   = orchRes.data || [];

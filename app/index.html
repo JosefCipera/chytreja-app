@@ -467,7 +467,8 @@
             window._hudUserId = userId;
             const missing = nodeIds.filter(id => !window._hudCache[id] && !window._hudPending[id]);
             if (!missing.length) return;
-            const bulk = `/api/hud-data-bulk?userId=${encodeURIComponent(userId)}&nodes=${missing.join(',')}`;
+            const _role = localStorage.getItem('userRole') || 'pro';
+            const bulk = `/api/hud-data-bulk?userId=${encodeURIComponent(userId)}&nodes=${missing.join(',')}&role=${encodeURIComponent(_role)}`;
             const p = fetch(bulk).then(r => r.json()).then(data => {
                 Object.assign(window._hudCache, data);
                 // Resolve individual pending promises
@@ -528,7 +529,8 @@
                     // Cache cold — show right-edge loader and fetch
                     if (loader) loader.classList.add('active');
                     try {
-                        const url = `/api/hud-data-bulk?userId=${encodeURIComponent(userId)}&nodes=${encodeURIComponent(nodeId)}`;
+                        const _r = localStorage.getItem('userRole') || 'pro';
+                        const url = `/api/hud-data-bulk?userId=${encodeURIComponent(userId)}&nodes=${encodeURIComponent(nodeId)}&role=${encodeURIComponent(_r)}`;
                         const res  = await fetch(url);
                         const bulk = await res.json();
                         data = bulk[nodeId] || null;
