@@ -313,12 +313,15 @@ async function writeDailySnapshot() {
 
   if (rows.length === 0) return;
 
-  const { error } = await window.supabaseClient
-    .from('node_state_history')
-    .upsert(rows, { onConflict: 'user_id,node_id,date', ignoreDuplicates: true });
+  // Server-side write — anon key cannot INSERT (RLS blocks it)
+  const snapRes = await fetch('/api/snapshot-nodes', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId, rows }),
+  });
 
-  if (error) {
-    console.warn('⚠️ writeDailySnapshot:', error.message);
+  if (!snapRes.ok) {
+    console.warn('⚠️ writeDailySnapshot:', await snapRes.text());
   } else {
     localStorage.setItem(TODAY_KEY, '1');
     console.log(`✅ Daily snapshot: ${rows.length} uzlů`);
@@ -673,12 +676,15 @@ window.upgradeToLongevity = async function () {
   const uid = await getCurrentUserId();
   if (!uid || uid === 'demo-user-123') return;
 
-  const { error } = await window.supabaseClient
-    .from('user_profiles')
-    .upsert({ user_id: uid, primary_goal: 'longevity' }, { onConflict: 'user_id' });
+  // Server-side write — anon key cannot UPSERT (RLS blocks it)
+  const profileRes = await fetch('/api/user-profile', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId: uid, primaryGoal: 'longevity' }),
+  });
 
-  if (error) {
-    console.error('❌ upgradeToLongevity failed:', error.message);
+  if (!profileRes.ok) {
+    console.error('❌ upgradeToLongevity failed:', await profileRes.text());
     return;
   }
 

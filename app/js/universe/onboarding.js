@@ -428,37 +428,20 @@ async function saveOnboarding() {
       nodeRawIndices[q.node].push(index);
     }
 
+    // ── Calculate all metrics in memory first, then save via API ──────────────
+    // (anon key cannot write — all DB writes go through /api/onboarding-save)
+    const stateOrder    = { RED: 3, YELLOW: 2, GREEN: 1, GRAY: 0 };
+    const stateOrderMap = { RED: 3, YELLOW: 2, GREEN: 1 };
+
     for (const [nodeId, indices] of Object.entries(nodeRawIndices)) {
       const currentIndex = Math.round(indices.reduce((a, b) => a + b, 0) / indices.length);
       const state = currentIndex <= 40 ? 'RED' : currentIndex <= 70 ? 'YELLOW' : 'GREEN';
       console.log(`  → ${nodeId}: avg=${currentIndex} → ${state} (from ${indices.length} disciplines)`);
-
-      // node_inputs
-      await supabase.from('node_inputs').insert({
-        user_id: userId, node_id: nodeId,
-        source: 'onboarding', state, value_numeric: currentIndex
-      });
-
-      // user_metrics (key table for universe colors)
-      const { error: metErr } = await supabase.from('user_metrics').upsert({
-        user_id: userId, node_id: nodeId,
-        universe: 'longevity', current_index: currentIndex, state
-      }, { onConflict: 'user_id,node_id,universe' });
-      if (metErr) console.warn(`⚠️ user_metrics(${nodeId}):`, metErr.message);
-
-      // node_state_history (sparkline)
-      await supabase.from('node_state_history').insert({
-        user_id: userId, node_id: nodeId,
-        date: today, state, current_index: currentIndex
-      }).then(({ error }) => { if (error) console.warn(`⚠️ history(${nodeId}):`, error.message); });
-
       nodeStates[nodeId]   = state;
       nodeIndexMap[nodeId] = currentIndex;
     }
 
-    // 1b. Calculate parent node states
-    // Decathlon model: Tělo (síla, stabilita, mobilita) + Zdraví (vo2max, vytrvalost)
-    // Mysl + Výživa grey for now (Longevity v2)
+    // 1b. Calculate parent node states (in memory)
     const parentMap = {
       telo:         ['sila', 'stabilita', 'mobilita'],
       zdravi:       ['vo2max', 'vytrvalost'],
@@ -467,106 +450,64 @@ async function saveOnboarding() {
       dlouhovekost: ['telo', 'zdravi', 'mysl', 'vyziva'],
     };
 
-    const stateOrder = { RED: 3, YELLOW: 2, GREEN: 1, GRAY: 0 };
-
-    // First pass: immediate parents
     for (const [parent, children] of Object.entries(parentMap)) {
-      if (parent === 'dlouhovekost') continue; // do last
+      if (parent === 'dlouhovekost') continue;
       let worstState = 'GREEN';
       for (const child of children) {
         const cs = nodeStates[child];
-        if (cs && (stateOrder[cs] || 0) > (stateOrder[worstState] || 0)) {
-          worstState = cs;
-        }
+        if (cs && (stateOrder[cs] || 0) > (stateOrder[worstState] || 0)) worstState = cs;
       }
-      // Average index from children
-      const childIndices = children
-        .map(c => nodeIndexMap[c] ?? null)
-        .filter(v => v !== null);
+      const childIndices = children.map(c => nodeIndexMap[c] ?? null).filter(v => v !== null);
       const avgIndex = childIndices.length > 0
-        ? Math.round(childIndices.reduce((a, b) => a + b, 0) / childIndices.length)
-        : 50;
-
-      // State from worst child, but validate against index
-      const indexState = avgIndex <= 40 ? 'RED' : avgIndex <= 70 ? 'YELLOW' : 'GREEN';
-      // Use worse of worst-child and index-based state
-      const stateOrderMap = { RED: 3, YELLOW: 2, GREEN: 1 };
+        ? Math.round(childIndices.reduce((a, b) => a + b, 0) / childIndices.length) : 50;
+      const indexState  = avgIndex <= 40 ? 'RED' : avgIndex <= 70 ? 'YELLOW' : 'GREEN';
       const parentState = (stateOrderMap[worstState] || 0) >= (stateOrderMap[indexState] || 0) ? worstState : indexState;
-      nodeStates[parent] = parentState;
-
-      const { error: pErr } = await supabase.from('user_metrics').upsert({
-        user_id: userId,
-        node_id: parent,
-        universe: 'longevity',
-        current_index: avgIndex,
-        state: parentState
-      }, { onConflict: 'user_id,node_id,universe' });
-      if (pErr) console.warn(`⚠️ parent user_metrics(${parent}):`, pErr.message);
+      nodeStates[parent]   = parentState;
+      nodeIndexMap[parent] = avgIndex;
       console.log(`  → parent ${parent}: state=${parentState}, avgIndex=${avgIndex}`);
     }
 
-    // Second pass: hlavní uzel (dlouhovekost)
+    // Second pass: dlouhovekost
     {
       let worstState = 'GREEN';
       for (const child of parentMap.dlouhovekost) {
         const cs = nodeStates[child];
-        if (cs && (stateOrder[cs] || 0) > (stateOrder[worstState] || 0)) {
-          worstState = cs;
-        }
+        if (cs && (stateOrder[cs] || 0) > (stateOrder[worstState] || 0)) worstState = cs;
       }
       const parentIndices = parentMap.dlouhovekost
         .map(c => nodeStates[c] ? (stateOrder[nodeStates[c]] === 3 ? 25 : stateOrder[nodeStates[c]] === 2 ? 55 : 85) : 50);
-      const avgIndex = Math.round(parentIndices.reduce((a, b) => a + b, 0) / parentIndices.length);
-      // Validate state against index
+      const avgIndex    = Math.round(parentIndices.reduce((a, b) => a + b, 0) / parentIndices.length);
       const dlIndexState = avgIndex <= 40 ? 'RED' : avgIndex <= 70 ? 'YELLOW' : 'GREEN';
-      const dlState = (stateOrder[worstState] || 0) >= (stateOrder[dlIndexState] || 0) ? worstState : dlIndexState;
-
-      const { error: mErr } = await supabase.from('user_metrics').upsert({
-        user_id: userId,
-        node_id: 'dlouhovekost',
-        universe: 'longevity',
-        current_index: avgIndex,
-        state: dlState
-      }, { onConflict: 'user_id,node_id,universe' });
-      if (mErr) console.warn(`⚠️ user_metrics(dlouhovekost):`, mErr.message);
+      const dlState     = (stateOrder[worstState] || 0) >= (stateOrder[dlIndexState] || 0) ? worstState : dlIndexState;
+      nodeStates['dlouhovekost']   = dlState;
+      nodeIndexMap['dlouhovekost'] = avgIndex;
       console.log(`  → hlavní uzel: worst=${worstState}, avgIndex=${avgIndex}`);
     }
 
-    // 1c. Set remaining nodes to GRAY (locked)
-    const { data: allNodes } = await supabase
-      .from('longevity_nodes')
-      .select('id')
-      .neq('id', 'dlouhovekost');
-
+    // 1c. Get gray nodes (longevity_nodes is public — anon can SELECT)
+    const { data: allNodes } = await supabase.from('longevity_nodes').select('id').neq('id', 'dlouhovekost');
     const setNodes = new Set(Object.keys(nodeStates));
-    setNodes.add('dlouhovekost');
     const grayNodes = (allNodes || []).filter(n => !setNodes.has(n.id));
-
     for (const n of grayNodes) {
-      const { error: gErr } = await supabase.from('user_metrics').upsert({
-        user_id: userId,
-        node_id: n.id,
-        universe: 'longevity',
-        current_index: 0,
-        state: 'GRAY'
-      }, { onConflict: 'user_id,node_id,universe' });
-      if (gErr) console.warn(`⚠️ gray(${n.id}):`, gErr.message);
+      nodeStates[n.id]   = 'GRAY';
+      nodeIndexMap[n.id] = 0;
     }
     console.log(`  → ${grayNodes.length} nodes set to GRAY`);
 
-    // Demographics (birth_year, sex, height, weight) → managed in Nastavení (Profile tab)
-    // Injuries + Aspiration → managed in Nastavení (other tabs)
-    // Create empty user_profiles row if not exists (so bio-age calc doesn't fail)
-    // Mode is determined by ?mode= URL param set by the landing page.
-    // app.iting.cz?mode=dekatlon → dekatlon, otherwise → longevity (default).
-    const urlMode = new URLSearchParams(window.location.search).get('mode');
+    // ── Single API call — server writes everything with service_role ──────────
+    const urlMode    = new URLSearchParams(window.location.search).get('mode');
     const primaryGoal = urlMode === 'dekatlon' ? 'dekatlon' : 'longevity';
-    try {
-      await supabase.from('user_profiles').upsert({
-        user_id: userId,
-        primary_goal: primaryGoal,
-      }, { onConflict: 'user_id' });
-    } catch (e) { /* table may not exist yet */ }
+
+    const allNodeEntries = Object.entries(nodeStates).map(([nodeId, state]) => ({
+      nodeId, state, currentIndex: nodeIndexMap[nodeId] ?? 0,
+    }));
+
+    const saveRes = await fetch('/api/onboarding-save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, nodes: allNodeEntries, primaryGoal }),
+    });
+    if (!saveRes.ok) console.warn('⚠️ onboarding-save:', await saveRes.text());
 
     console.log('✅ Onboarding saved');
 

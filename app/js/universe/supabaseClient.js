@@ -1,8 +1,9 @@
 // js/universe/supabaseClient.js
+// ANON key only — service_role key must never appear in frontend code.
+// All writes go through /api/* endpoints (server-side service_role).
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
 
-// Použij ty samé údaje, co máš v nahrávači
 const supabaseUrl = 'https://pionxzqtxcughvfbgadi.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBpb254enF0eGN1Z2h2ZmJnYWRpIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NzMxOTk2NiwiZXhwIjoyMDgyODk1OTY2fQ.lFAHdBtREF7TfM5UHuzbBkQQN3fdU_ac9Y-MJxCvmFI';
+const supabaseKey = 'sb_publishable_w29DE53nrdGnNEvBn68kzg_ujje7u5Y';
 
 export const supabase = createClient(supabaseUrl, supabaseKey);
