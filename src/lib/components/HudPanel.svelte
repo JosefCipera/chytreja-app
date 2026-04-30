@@ -38,6 +38,7 @@
     <NodeHeader
       label={data.node_label}
       version={data.node_version}
+      universe={data.universe ?? 'longevity'}
       onClose={() => window.parent !== window ? window.parent.postMessage('chj:hud:close', '*') : window.history.back()}
     />
 
@@ -51,6 +52,7 @@
           chronoAge={data.user?.chrono_age ?? 40}
           bioAvailableKeys={data.user?.bio_available_keys ?? []}
           biomarkers={data.user?.biomarkers ?? {}}
+          universe={data.universe ?? 'longevity'}
         />
       </div>
 
@@ -77,6 +79,7 @@
             killer={data.killer}
             verdict={data.verdict}
             dayType={data.day_type}
+            universe={data.universe ?? 'longevity'}
             onComplete={() => onActionComplete?.(data.action.id, data.action.type, data.action.node_id)}
           />
         {:else if secondOffer === 'declined' || data.all_done_today || (data.today_count > 0 && !data.action)}

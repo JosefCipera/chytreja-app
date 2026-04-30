@@ -1,5 +1,7 @@
 <script>
-  let { action, killer = null, verdict = null, dayType = 'STIMUL', onComplete = null } = $props();
+  let { action, killer = null, verdict = null, dayType = 'STIMUL', universe = 'longevity', onComplete = null } = $props();
+
+  let killerSectionLabel = $derived(universe === 'toc' ? 'CONSTRAINT:' : 'KILLER:');
 
   // Determine action UI mode from type
   // timed → countdown timer
@@ -87,7 +89,7 @@
   {#if killer}
     <div class="px-4 pt-3 pb-2">
       <div class="hud-mono" style="font-size: 20px; font-weight: 300; letter-spacing: 0.04em; color: #c8d4df; margin-bottom: 4px;">
-        KILLER: <span style="color: #94a3b8;">{killer.label}</span>
+        {killerSectionLabel} <span style="color: #94a3b8;">{killer.label}</span>
       </div>
       <div class="flex items-center gap-2">
         <span style="font-size: 17px; color: #C97272;">{@html '\u26A0\uFE0E'}</span>

@@ -7,14 +7,22 @@ export const loading  = writable(true);
 export const error    = writable(null);
 export const rawData  = writable(null);
 
+// TOC node IDs — used to derive universe without API change
+const TOC_NODE_IDS = new Set([
+  'toc', 'finance_toc', 'vyroba_toc', 'ccpm', 'strategie_toc', 'marketing_toc',
+]);
+
 // ── DERIVED: HudPanel-compatible nodeData ──────────────
 export const nodeData = derived(rawData, ($raw) => {
   if (!$raw) return null;
+
+  const universe = TOC_NODE_IDS.has($raw.node.id) ? 'toc' : 'longevity';
 
   return {
     node_id:      $raw.node.id,
     node_label:   $raw.node.label,
     node_version: $raw.node.version,
+    universe,
 
     life_battery: {
       percent:      $raw.battery.percent,
