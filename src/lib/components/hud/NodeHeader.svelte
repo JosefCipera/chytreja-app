@@ -1,6 +1,6 @@
 <script>
   let { label, version, universe = 'longevity', onClose } = $props();
-  let nodeTypeLabel = $derived(universe === 'toc' ? 'TOC NODE' : 'LONGEVITY NODE');
+  let nodeTypeLabel = $derived(universe === 'toc' ? 'FLOW NODE' : 'LONGEVITY NODE');
 </script>
 
 <div style="
