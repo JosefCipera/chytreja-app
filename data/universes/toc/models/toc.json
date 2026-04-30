@@ -23,7 +23,7 @@
     },
     {
         "id": "finance_toc",
-        "label": "Finance",
+        "label": "Finance (TA)",
         "icon": "💰",
         "definition": "Throughput Accounting měří výkon firmy podle rychlosti vydělávání peněz – ne podle nákladů. Finance jsou důsledkem zlepšení toku.",
         "parent": "toc",
@@ -48,7 +48,7 @@
     },
     {
         "id": "vyroba_toc",
-        "label": "Výroba",
+        "label": "Výroba (DBR)",
         "icon": "🏭",
         "definition": "Výroba v TOC se zaměřuje na plynulost, ne na vytížení. Drum–Buffer–Rope (DBR) řídí výrobu podle úzkého místa, které určuje rytmus celé továrny.",
         "parent": "toc",
@@ -73,7 +73,7 @@
     },
     {
         "id": "ccpm",
-        "label": "Projekty",
+        "label": "Projekty (CCPM)",
         "icon": "📦",
         "definition": "CCPM chrání časové rezervy, odstraňuje multitasking a udržuje projekt v tempu kritického řetězu.",
         "parent": "toc",
@@ -98,7 +98,7 @@
     },
     {
         "id": "strategie_toc",
-        "label": "Strategie",
+        "label": "Strategie (SFS)",
         "icon": "🎯",
         "definition": "Strategie v TOC hledá hlavní omezení růstu. SFS – Strategy for Focus and Simplicity – pomáhá určit, co změnit, aby systém mohl expandovat.",
         "parent": "toc",
@@ -123,7 +123,7 @@
     },
     {
         "id": "marketing_toc",
-        "label": "Marketing",
+        "label": "Marketing (MA)",
         "icon": "📣",
         "definition": "Marketing v TOC hledá omezení na straně trhu – co brání zákazníkovi nakupovat víc?",
         "parent": "toc",
