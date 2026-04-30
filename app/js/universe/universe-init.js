@@ -537,7 +537,7 @@ async function loadModel(modelName) {
         docsMap.get(d.node_id).push(d);
       });
 
-      const merged = nodes.map(node => {
+      const merged = filteredNodes.map(node => {
         const metric = metricsMap.get(node.id);
         const nodeArticles = articlesMap.get(node.id) || [];
         const nodeMedia = mediaMap.get(node.id) || [];
