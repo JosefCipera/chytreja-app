@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Urbanist:wght@300;800&display=swap');
+body { background: #0f172a; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+
+.chj-logo {
+    --fs: 21px;
+    --lh: calc(var(--fs) * 2);
+    display: flex; flex-direction: row; align-items: center; gap: 10px; color: #e2e8f0;
+}
+.chj-logo__cursor {
+    flex-shrink: 0; width: 2px; height: var(--lh); margin-top: 3px;
+    background: currentColor;
+    clip-path: polygon(38% 0%, 62% 0%, 100% 12%, 100% 80%, 62% 100%, 38% 100%, 0% 80%, 0% 12%);
+    animation: none;
+    opacity: 1;
+}
+.chj-logo__text { display: flex; flex-direction: column; font-family: 'Urbanist', sans-serif; font-size: var(--fs); line-height: 0.85; letter-spacing: -0.5px; }
+.chj-logo__row1 { font-weight: 300; }
+.chj-logo__row2 { font-weight: 800; }
+.chj-logo__ac { position: relative; display: inline-block; line-height: 1; }
+.chj-logo__ac::after { content: ""; position: absolute; left: 50%; transform: translateX(-50%); width: 0.38em; height: 0.055em; background: currentColor; top: 0.14em; }
+</style>
+</head>
+<body>
+<div class="chj-logo">
+    <div class="chj-logo__cursor"></div>
+    <div class="chj-logo__text">
+        <span class="chj-logo__row1">chytr<span class="chj-logo__ac">e</span></span>
+        <span class="chj-logo__row2">j<span class="chj-logo__ac">a</span></span>
+    </div>
+</div>
+</body>
+</html>

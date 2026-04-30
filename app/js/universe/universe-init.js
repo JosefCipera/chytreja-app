@@ -269,9 +269,8 @@ async function warmAgentCache() {
     return;
   }
 
-  // Always start with longevity — TOC localStorage preference cleared (TOC still in dev)
-  const modelName = keys[0]; // 'longevity'
-  localStorage.setItem("currentModel", modelName);
+  const stored = localStorage.getItem("currentModel");
+  const modelName = stored || keys[0];
   const role = await getUserMode();
 
   await loadAndRenderModel(modelName, role);
@@ -440,18 +439,17 @@ async function loadModel(modelName) {
     try {
       const userId = await getCurrentUserId();
 
-      const { data: allNodes, error: nodesError } = await window.supabaseClient
+      const { data: nodes, error: nodesError } = await window.supabaseClient
         .from('longevity_nodes')
         .select('*');
 
-      // Filter by universe client-side (DB values may not be set yet)
-      const TOC_IDS = new Set(['toc','finance_toc','vyroba_toc','ccpm','strategie_toc','marketing_toc']);
-      const nodes = modelName === 'longevity'
-        ? allNodes.filter(n => !TOC_IDS.has(n.id))
-        : allNodes.filter(n => TOC_IDS.has(n.id));
-
       if (nodesError) throw nodesError;
-      console.log(`   ✓ Nodes: ${nodes.length}`);
+
+      // Exclude nodes from other universes (TOC nodes are in the same table but must not show in longevity canvas)
+      const TOC_IDS = new Set(['toc','finance_toc','vyroba_toc','ccpm','strategie_toc','marketing_toc']);
+      const filteredNodes = modelName === 'longevity' ? nodes.filter(n => !TOC_IDS.has(n.id)) : nodes;
+
+      console.log(`   ✓ Nodes: ${filteredNodes.length}`);
 
       const { data: metrics, error: metricsError } = await window.supabaseClient
         .from('user_metrics')
@@ -467,11 +465,11 @@ async function loadModel(modelName) {
 
       // ── TOC: derive parent node values from worst child ───────────
       // Dynamic cascade from actual node.parent fields — no hardcoded lists.
-      applyTocCascade(nodes, metricsMap);
+      applyTocCascade(filteredNodes, metricsMap);
       // ─────────────────────────────────────────────────────────────
 
       // ✅ PŘIDEJ — merge state do nodes
-      nodes.forEach(node => {
+      filteredNodes.forEach(node => {
         const metric = metricsMap.get(node.id);
         const idx = metric?.current_index ?? 0;
         node.current_index = idx;
@@ -484,7 +482,7 @@ async function loadModel(modelName) {
 
       console.log("✅ Merged state into nodes");
 
-      window.MAIN_UNIVERSE_DATA = nodes; // ← PŘESUŇ SEM (dovnitř try bloku)
+      window.MAIN_UNIVERSE_DATA = filteredNodes; // ← PŘESUŇ SEM (dovnitř try bloku)
       console.log("🔍 CHECK MERGE:");
       console.log("Total nodes:", window.MAIN_UNIVERSE_DATA.length);
       console.log("Nodes with state:", window.MAIN_UNIVERSE_DATA.filter(n => n.state).length);
@@ -806,10 +804,9 @@ function initHeaderControls() {
 
   // roleSelect = admin override (testování), přepisuje DB mode
   const currentRole = localStorage.getItem("userRole") || "demo";
+  const stored = localStorage.getItem("currentModel");
   const modelKeys = Object.keys(window.UNIVERSE_INDEX);
-  // Always default to longevity — TOC is in development, localStorage preference ignored for now
-  const defaultModel = modelKeys[0]; // 'longevity' is always first in index.json
-  localStorage.setItem("currentModel", defaultModel); // reset stale stored value
+  const defaultModel = stored || modelKeys[0];
 
   roleSelect.value = currentRole;
   modelSelect.value = defaultModel;

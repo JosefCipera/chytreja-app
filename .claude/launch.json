@@ -15,9 +15,15 @@
     },
     {
       "name": "static-web",
-      "runtimeExecutable": "cmd",
-      "runtimeArgs": ["/c", "npx", "serve", ".", "-p", "4200", "--no-clipboard"],
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["scripts/preview-server.mjs"],
       "port": 4200
+    }
+  ,{
+      "name": "logo-preview",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", "npx", "serve", "-l", "4202", "-s", "."],
+      "port": 4202
     }
   ]
 }
