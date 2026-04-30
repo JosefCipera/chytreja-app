@@ -94,14 +94,6 @@
         {
             "source": "/login",
             "destination": "/app/login.html"
-        },
-        {
-            "source": "/api/(.*)",
-            "destination": "/api/$1"
-        },
-        {
-            "source": "/(.*)",
-            "destination": "/app/$1"
         }
     ]
 }
