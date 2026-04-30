@@ -441,7 +441,8 @@ async function loadModel(modelName) {
 
       const { data: nodes, error: nodesError } = await window.supabaseClient
         .from('longevity_nodes')
-        .select('*');
+        .select('*')
+        .eq('universe', modelName);
 
       if (nodesError) throw nodesError;
       console.log(`   ✓ Nodes: ${nodes.length}`);
