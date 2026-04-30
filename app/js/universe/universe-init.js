@@ -390,10 +390,11 @@ async function loadAndRenderModel(modelName, role) {
   renderVisibleUniverse(window.MAIN_UNIVERSE_DATA);
 
   // Auto-open: Hra o život panel se otevře 700ms po načtení vesmíru
+  // GRAY state means no data yet — still open HUD (not locked)
   if (modelName === 'longevity') {
     setTimeout(() => {
       const mainNode = window.MAIN_UNIVERSE_DATA?.find(n => n.id === 'dlouhovekost');
-      if (mainNode && mainNode.state && mainNode.state !== 'GRAY') {
+      if (mainNode) {
         showPanel(mainNode);
       }
     }, 700);
@@ -764,8 +765,9 @@ function renderVisibleUniverse(model) {
   }
 
   // Auto-open main node HUD on startup (right-side panel)
+  // GRAY state = no data yet, not locked — still open HUD
   const mainNode = visible.find(n => n.id === main.id);
-  if (mainNode && mainNode.state && mainNode.state !== 'GRAY') {
+  if (mainNode && mainNode.access !== 'locked') {
     setTimeout(() => {
       const uid = window.CHJ_UID || window.firebaseAuth?.currentUser?.uid;
       if (uid && window.openHudOverlay) {

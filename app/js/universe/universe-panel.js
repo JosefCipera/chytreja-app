@@ -261,8 +261,10 @@ export async function showPanel(node, options = {}) {
   // Update header node label
   _setHeaderNodeLabel(node.label);
 
-  // v0.2+: non-GRAY nodes open in Svelte HUD overlay (only explicit click)
-  if (node.state !== 'GRAY' && !options.skipHud) {
+  // v0.2+: non-locked nodes open in Svelte HUD overlay
+  // Note: access:'locked' → GRAY (locked screen in vanilla panel)
+  //       state:'GRAY' with access:'full' = no data yet → still open HUD
+  if (node.access !== 'locked' && !options.skipHud) {
     const uid = window.CHJ_UID || window.firebaseAuth?.currentUser?.uid;
     if (uid && window.openHudOverlay) {
       window.openHudOverlay(uid, node.id);
@@ -270,7 +272,7 @@ export async function showPanel(node, options = {}) {
     }
   }
 
-  // Zavři HUD overlay pokud je otevřený (šedé uzly jdou do vanilla panelu)
+  // Zavři HUD overlay pokud je otevřený (locked uzly jdou do vanilla panelu)
   if (typeof window.closeHudOverlay === 'function') window.closeHudOverlay();
 
   // Fallback: GRAY (locked) nodes or no auth → vanilla panel

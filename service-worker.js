@@ -1,4 +1,4 @@
-const CACHE_NAME = 'chytre-ja-v19';
+const CACHE_NAME = 'chytre-ja-v20';
 
 const ASSETS = [
   '/',
@@ -72,6 +72,11 @@ self.addEventListener('push', event => {
 // Fetch – strategie podle typu requestu
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
+
+  // Navigační requesty (stránky, iframe) — SW je nepřebírá, browser je
+  // zpracuje sám přes Vercel routing. fetch(navigate) uvnitř SW vyhazuje
+  // TypeError v Chrome/Edge.
+  if (event.request.mode === 'navigate') return;
 
   // API volání + HTML soubory: vždy ze sítě, nikdy z cache
   if (url.pathname.startsWith('/api/') ||
