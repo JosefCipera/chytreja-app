@@ -269,8 +269,9 @@ async function warmAgentCache() {
     return;
   }
 
-  const stored = localStorage.getItem("currentModel");
-  const modelName = stored || keys[0];
+  // Always start with longevity — TOC localStorage preference cleared (TOC still in dev)
+  const modelName = keys[0]; // 'longevity'
+  localStorage.setItem("currentModel", modelName);
   const role = await getUserMode();
 
   await loadAndRenderModel(modelName, role);
@@ -805,9 +806,10 @@ function initHeaderControls() {
 
   // roleSelect = admin override (testování), přepisuje DB mode
   const currentRole = localStorage.getItem("userRole") || "demo";
-  const stored = localStorage.getItem("currentModel");
   const modelKeys = Object.keys(window.UNIVERSE_INDEX);
-  const defaultModel = stored || modelKeys[0];
+  // Always default to longevity — TOC is in development, localStorage preference ignored for now
+  const defaultModel = modelKeys[0]; // 'longevity' is always first in index.json
+  localStorage.setItem("currentModel", defaultModel); // reset stale stored value
 
   roleSelect.value = currentRole;
   modelSelect.value = defaultModel;
