@@ -39,6 +39,7 @@
     <NodeHeader
       label={data.node_label}
       version={data.node_version}
+      universe={universe}
       onClose={() => window.parent !== window ? window.parent.postMessage('chj:hud:close', '*') : window.history.back()}
     />
 
