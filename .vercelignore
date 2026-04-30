@@ -1,0 +1,4 @@
+# Excluded from Vercel deployment to stay under 12 serverless function limit (Hobby plan)
+api/hud-data-bulk.js
+api/readiness.js
+api/voice.js
