@@ -1,6 +1,5 @@
 <script>
-  let { label, version, universe = 'longevity', onClose } = $props();
-  let nodeTypeLabel = $derived(universe === 'toc' ? 'FLOW NODE' : 'LONGEVITY NODE');
+  let { label, version, onClose } = $props();
 </script>
 
 <div style="
@@ -10,7 +9,7 @@
 ">
   <div class="flex items-start justify-between gap-3">
     <h2 class="hud-mono leading-tight" style="font-size: 11px; letter-spacing: 0.18em; color: #94a3b8;">
-      {nodeTypeLabel}
+      LONGEVITY NODE
     </h2>
     <button
       onclick={onClose}
