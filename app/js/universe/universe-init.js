@@ -439,10 +439,15 @@ async function loadModel(modelName) {
     try {
       const userId = await getCurrentUserId();
 
-      const { data: nodes, error: nodesError } = await window.supabaseClient
+      const { data: allNodes, error: nodesError } = await window.supabaseClient
         .from('longevity_nodes')
-        .select('*')
-        .eq('universe', modelName);
+        .select('*');
+
+      // Filter by universe client-side (DB values may not be set yet)
+      const TOC_IDS = new Set(['toc','finance_toc','vyroba_toc','ccpm','strategie_toc','marketing_toc']);
+      const nodes = modelName === 'longevity'
+        ? allNodes.filter(n => !TOC_IDS.has(n.id))
+        : allNodes.filter(n => TOC_IDS.has(n.id));
 
       if (nodesError) throw nodesError;
       console.log(`   ✓ Nodes: ${nodes.length}`);
