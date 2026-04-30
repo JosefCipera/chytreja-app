@@ -9,6 +9,7 @@
     chronoAge = 40,
     bioAvailableKeys = [],
     biomarkers = {},
+    universe = 'longevity',
   } = $props();
 
 
@@ -42,9 +43,9 @@
   );
 
   let watermark = $derived(
-    percent <= 40 ? 'CELL_DECAY' :
-    percent <= 70 ? 'CELL_STABLE' :
-    'CELL_OPTIMAL'
+    universe === 'toc'
+      ? (percent <= 40 ? 'FLOW_DECAY' : percent <= 70 ? 'FLOW_STABLE' : 'FLOW_OPTIMAL')
+      : (percent <= 40 ? 'CELL_DECAY' : percent <= 70 ? 'CELL_STABLE' : 'CELL_OPTIMAL')
   );
 
   // Watermark uses semafor color — matches battery state
@@ -78,7 +79,7 @@
   <span class="hc hc-tl"></span><span class="hc hc-tr"></span>
   <!-- Header row: LIFE-BATTERY + percent + trend -->
   <div class="flex items-center justify-between mb-1">
-    <span class="hud-mono" style="font-size: 20px; letter-spacing: 0.04em; color: #c8d4df; font-weight: 300;">LIFE-BATTERY</span>
+    <span class="hud-mono" style="font-size: 20px; letter-spacing: 0.04em; color: #c8d4df; font-weight: 300;">{universe === 'toc' ? 'FLOW-RATE' : 'LIFE-BATTERY'}</span>
     <div class="flex items-center gap-0">
       <span class="hud-mono" style="font-size: 14px; font-weight: 300; color: {textColor};">{percent}%</span>
       <span class="hud-mono mx-1" style="font-size: 14px; color: #334155;">|</span>

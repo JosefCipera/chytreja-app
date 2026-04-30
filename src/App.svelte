@@ -14,6 +14,10 @@
   // nodeId is reactive — updated via postMessage chj:navigate (no iframe reload)
   let nodeId = $state(params.get('nodeId') || 'dlouhovekost');
 
+  // Derive universe from nodeId — used for conditional HUD labels
+  const TOC_NODE_IDS = new Set(['toc','finance_toc','vyroba_toc','ccpm','strategie_toc','marketing_toc']);
+  let universe = $derived(TOC_NODE_IDS.has(nodeId) ? 'toc' : 'longevity');
+
   // ── CHECK-IN GATE ──────────────────────────────────────
   let readinessChecked = $state(false);   // has the check completed?
   let needsCheckIn     = $state(false);   // should we show check-in screen?
@@ -388,6 +392,7 @@
         <HudPanel
           data={displayData}
           userId={userId && !devMode ? userId : null}
+          universe={universe}
           agentLoading={agentLoading && userId && !devMode}
           onActionComplete={handleActionComplete}
           secondOffer={secondOffer}

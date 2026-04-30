@@ -10,6 +10,7 @@
   let {
     data,
     userId             = null,
+    universe           = 'longevity',
     children,
     agentLoading       = false,
     onActionComplete   = null,
@@ -51,6 +52,7 @@
           chronoAge={data.user?.chrono_age ?? 40}
           bioAvailableKeys={data.user?.bio_available_keys ?? []}
           biomarkers={data.user?.biomarkers ?? {}}
+          universe={universe}
         />
       </div>
 
@@ -77,6 +79,7 @@
             killer={data.killer}
             verdict={data.verdict}
             dayType={data.day_type}
+            universe={universe}
             onComplete={() => onActionComplete?.(data.action.id, data.action.type, data.action.node_id)}
           />
         {:else if secondOffer === 'declined' || data.all_done_today || (data.today_count > 0 && !data.action)}
