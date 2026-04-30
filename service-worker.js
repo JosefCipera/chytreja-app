@@ -106,6 +106,11 @@ self.addEventListener('fetch', event => {
         caches.open(CACHE_NAME).then(cache => cache.put(event.request, toCache));
       }
       return response;
-    }).catch(() => caches.match(event.request))
+    }).catch(() =>
+      // caches.match() může vrátit undefined → Response s 503
+      caches.match(event.request).then(cached =>
+        cached || new Response('Offline – resource not cached', { status: 503 })
+      )
+    )
   );
 });

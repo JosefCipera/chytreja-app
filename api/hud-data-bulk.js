@@ -223,10 +223,20 @@ async function fetchOneNode(sb, userId, nodeId, shared) {
 
 // ── HANDLER ───────────────────────────────────────────
 export default async function handler(req, res) {
+  // Always return JSON — never let Vercel's HTML error page reach the client
+  res.setHeader('Content-Type', 'application/json');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+
+  try {
   const { userId, nodes: nodesParam = 'telo,mysl,zdravi,vyziva', role } = req.query;
   if (!userId) return res.status(400).json({ error: 'userId required' });
 
   const nodeIds = nodesParam.split(',').map(n => n.trim()).filter(Boolean).slice(0, 8);
+
+  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    console.error('[hud-data-bulk] Missing Supabase env vars');
+    return res.status(500).json({ error: 'Server misconfiguration', details: 'Missing env vars' });
+  }
 
   const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
   const today = new Date().toISOString().slice(0, 10);
@@ -280,4 +290,9 @@ export default async function handler(req, res) {
   nodeIds.forEach((nodeId, i) => { response[nodeId] = results[i]; });
 
   return res.json(response);
+
+  } catch (err) {
+    console.error('[hud-data-bulk] Unhandled error:', err);
+    return res.status(500).json({ error: 'Internal error', message: err.message, stack: err.stack });
+  }
 }
