@@ -269,8 +269,9 @@ async function warmAgentCache() {
     return;
   }
 
-  const stored = localStorage.getItem("currentModel");
-  const modelName = stored || keys[0];
+  // Always start with longevity — reset any stale 'toc' stored in localStorage
+  const modelName = keys[0]; // 'longevity' is first in index.json
+  localStorage.setItem("currentModel", modelName);
   const role = await getUserMode();
 
   await loadAndRenderModel(modelName, role);
