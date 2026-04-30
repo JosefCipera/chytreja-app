@@ -96,7 +96,7 @@
             "destination": "/app/login.html"
         },
         {
-            "source": "/(.*)",
+            "source": "/((?!api/).*)",
             "destination": "/app/$1"
         }
     ]
