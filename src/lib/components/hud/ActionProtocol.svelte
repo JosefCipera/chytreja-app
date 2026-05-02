@@ -93,7 +93,7 @@
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;">
       <button
-        onclick={() => { const u = userId ? `?userId=${userId}` : ''; (window.top || window).location.href = `/app/toc-vyroba.html${u}`; }}
+        onclick={() => { const u = userId ? `?userId=${userId}` : ''; window.open(`/app/toc-vyroba.html${u}`, '_top'); }}
         style="padding:6px 14px;border-radius:999px;font-size:13px;cursor:pointer;user-select:none;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:#cbd5e1;transition:background 0.2s,border-color 0.2s,transform 0.1s;font-family:inherit;"
         onmouseenter={(e)=>{e.target.style.background='rgba(6,182,212,0.18)';e.target.style.borderColor='rgba(6,182,212,0.4)';e.target.style.transform='translateY(-1px)'}}
         onmouseleave={(e)=>{e.target.style.background='rgba(255,255,255,0.06)';e.target.style.borderColor='rgba(255,255,255,0.12)';e.target.style.transform='none'}}>

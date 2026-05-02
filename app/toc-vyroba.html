@@ -175,6 +175,12 @@ const params  = new URLSearchParams(location.search);
 const userId  = params.get('userId') || 'qE09cLyXXGRBRxOBCGNZqTM2XRW2';
 const today   = new Date().toISOString().slice(0, 10);
 
+// When opened from Live Server (port 5500) the API doesn't exist locally —
+// proxy to vercel dev or production.
+const API_BASE = (location.port === '5500' || location.port === '5501')
+  ? 'https://dev.iting.cz'
+  : '';
+
 let allData = [];
 let sortCol = 'termin_dodani';
 let sortDir = 1;
@@ -275,7 +281,7 @@ async function load() {
     return;
   }
   try {
-    const res  = await fetch(`/api/toc-zakazky?userId=${userId}`);
+    const res  = await fetch(`${API_BASE}/api/toc-zakazky?userId=${userId}`);
     const json = await res.json();
     if (json.error) throw new Error(json.error);
     allData = json.zakazky || [];
