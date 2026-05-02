@@ -600,6 +600,7 @@
         }
         window.addEventListener('message', function(e) {
             if (e.data === 'chj:hud:close') window.closeHudOverlay();
+            if (e.data?.type === 'chj:navigate') window.location.href = e.data.url;
             if (e.data?.type === 'chj:source:open') openSourceViewer(e.data.source);
             if (e.data?.type === 'chj:tts:speak') _runTopTTS(e.data.text, e.data.lang);
             if (e.data?.type === 'chj:tts:stop') { if ('speechSynthesis' in window) window.speechSynthesis.cancel(); }
