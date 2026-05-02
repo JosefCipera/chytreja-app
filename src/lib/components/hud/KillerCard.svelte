@@ -3,9 +3,7 @@
 </script>
 
 <div class="rounded-lg px-4 py-3" style="
-  background: rgba(239, 68, 68, 0.05);
-  border: 1px solid rgba(239, 68, 68, 0.15);
-  border-left: 3px solid rgba(239, 68, 68, 0.6);
+  background: transparent;
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
 ">
