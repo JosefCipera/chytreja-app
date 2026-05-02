@@ -75,6 +75,44 @@
   let protocolLabel = $derived(DISCIPLINE_LABELS[dayType] ?? dayType);
 </script>
 
+{#if universe === 'toc'}
+<!-- ── TOC ACTION: PLÁNOVÁNÍ ── -->
+<div class="rounded-lg hud-c4" style="
+  background: rgba(6, 182, 212, 0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+">
+  <span class="hc hc-bl"></span><span class="hc hc-br"></span>
+  <div class="px-4 pt-3 pb-3">
+    <div class="hud-mono mb-3" style="letter-spacing: 0.04em; font-weight: 300;">
+      <div class="flex items-center justify-between" style="font-size: 20px;">
+        <span style="color: #c8d4df;">ACTION: <span style="color: #94a3b8;">PLÁNOVÁNÍ</span></span>
+        <span style="color: {statusColor};">[{status}]</span>
+      </div>
+    </div>
+    <div class="flex flex-col gap-2">
+      <button
+        onclick={() => { status = 'ACTIVE'; setTimeout(() => status = 'COMPLETE', 1500); }}
+        class="w-full rounded-lg border border-cyan-500/20 bg-cyan-500/[0.07] hud-mono tracking-wider hover:bg-cyan-500/[0.12] transition-all cursor-pointer text-left"
+        style="padding: 11px 14px; font-size: 14px; color: #22d3ee;">
+        ▶ Plán výroby
+      </button>
+      <button
+        class="w-full rounded-lg border border-cyan-500/20 bg-cyan-500/[0.07] hud-mono tracking-wider hover:bg-cyan-500/[0.12] transition-all cursor-pointer text-left"
+        style="padding: 11px 14px; font-size: 14px; color: #22d3ee;">
+        ▶ Kapacitní plán
+      </button>
+      <button
+        class="w-full rounded-lg border border-cyan-500/20 bg-cyan-500/[0.07] hud-mono tracking-wider hover:bg-cyan-500/[0.12] transition-all cursor-pointer text-left"
+        style="padding: 11px 14px; font-size: 14px; color: #22d3ee;">
+        ▶ Plán kooperací
+      </button>
+    </div>
+  </div>
+</div>
+{:else}
+<!-- ── LONGEVITY ACTION ── -->
 <div class="rounded-lg hud-c4 {status === 'ACTIVE' ? 'glow-pulse' : ''}" style="
   background: rgba(6, 182, 212, 0.03);
   border: 1px solid rgba(255,255,255,0.07);
@@ -165,3 +203,4 @@
     {/if}
   </div>
 </div>
+{/if}
