@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Plán výroby · CHJ</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #080e1a;
+      color: #e2e8f0;
+      font-family: 'Inter', system-ui, sans-serif;
+      min-height: 100dvh;
+      overflow-x: hidden;
+    }
+
+    /* ── Header ── */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 24px;
+      border-bottom: 1px solid rgba(6,182,212,0.2);
+      background: rgba(6,182,212,0.04);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .header-left { display: flex; align-items: center; gap: 16px; }
+    .badge {
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      color: #475569;
+    }
+    .title {
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 20px;
+      font-weight: 300;
+      color: #22d3ee;
+      text-shadow: 0 0 18px rgba(34,211,238,0.5);
+      letter-spacing: 0.02em;
+    }
+    .btn-close {
+      background: none;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      color: #64748b;
+      cursor: pointer;
+      font-size: 18px;
+      padding: 6px 12px;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .btn-close:hover { color: #22d3ee; border-color: rgba(34,211,238,0.4); }
+
+    /* ── Stats bar ── */
+    .stats {
+      display: flex;
+      gap: 24px;
+      padding: 12px 24px;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      flex-wrap: wrap;
+    }
+    .stat {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: #475569;
+    }
+    .stat span { color: #94a3b8; font-weight: 500; }
+    .stat .red  { color: #ef4444; }
+    .stat .yellow { color: #eab308; }
+    .stat .green  { color: #22c55e; }
+
+    /* ── Table ── */
+    .table-wrap {
+      overflow-x: auto;
+      padding: 16px 24px 40px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      min-width: 900px;
+    }
+    thead th {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      color: #475569;
+      text-align: left;
+      padding: 8px 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+      white-space: nowrap;
+      cursor: pointer;
+      user-select: none;
+    }
+    thead th:hover { color: #94a3b8; }
+    thead th.sorted { color: #22d3ee; }
+
+    tbody tr {
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      transition: background 0.15s;
+    }
+    tbody tr:hover { background: rgba(6,182,212,0.04); }
+
+    td {
+      padding: 9px 12px;
+      color: #cbd5e1;
+      white-space: nowrap;
+    }
+    td.nazev { color: #e2e8f0; font-weight: 400; max-width: 200px; overflow: hidden; text-overflow: ellipsis; }
+    td.mono  { font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+    td.cas   { color: #64748b; font-size: 12px; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    .badge-stav {
+      display: inline-block;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid;
+    }
+    .stav-planovaná  { color: #94a3b8; border-color: rgba(148,163,184,0.3); background: rgba(148,163,184,0.06); }
+    .stav-probíhá    { color: #22d3ee; border-color: rgba(34,211,238,0.3);  background: rgba(34,211,238,0.06);  }
+    .stav-dokončená  { color: #22c55e; border-color: rgba(34,197,94,0.3);   background: rgba(34,197,94,0.06);   }
+
+    .zpozdeni {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .zpozdeni.red    { color: #ef4444; }
+    .zpozdeni.yellow { color: #eab308; }
+    .zpozdeni.ok     { color: #475569; }
+
+    /* ── Loading / Error ── */
+    .center {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 60vh;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      letter-spacing: 0.1em;
+      color: #475569;
+    }
+    .pulse { animation: pulse 1.5s ease-in-out infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <div>
+      <div class="badge">FLOW NODE // VÝROBA (DBR)</div>
+      <div class="title">[PLÁN VÝROBY]</div>
+    </div>
+  </div>
+  <button class="btn-close" onclick="history.back()">✕ Zavřít</button>
+</div>
+
+<div class="stats" id="stats">
+  <div class="stat pulse">NAČÍTÁM DATA…</div>
+</div>
+
+<div id="main">
+  <div class="center pulse">NAČÍTÁM ZAKÁZKY…</div>
+</div>
+
+<script>
+const params  = new URLSearchParams(location.search);
+const userId  = params.get('userId');
+const today   = new Date().toISOString().slice(0, 10);
+
+let allData = [];
+let sortCol = 'termin_dodani';
+let sortDir = 1;
+
+function fmt(dateStr) {
+  if (!dateStr) return '—';
+  return dateStr.slice(0, 10).split('-').reverse().join('.');
+}
+
+function stavClass(z) {
+  if (z.odvedeno_ks >= z.vyrobit_ks) return 'dokončená';
+  if (z.planovane_zahajeni && z.planovane_zahajeni <= today) return 'probíhá';
+  return 'plánovaná';
+}
+
+function render(data) {
+  // Stats
+  const total    = data.length;
+  const po_term  = data.filter(z => z.zpozdeni_dny > 0).length;
+  const probiha  = data.filter(z => stavClass(z) === 'probíhá').length;
+  const celkem_ks = data.reduce((s, z) => s + (z.zbyvа_ks || 0), 0);
+
+  document.getElementById('stats').innerHTML = `
+    <div class="stat">ZAKÁZKY: <span>${total}</span></div>
+    <div class="stat">PROBÍHÁ: <span class="yellow">${probiha}</span></div>
+    <div class="stat">PO TERMÍNU: <span class="red">${po_term}</span></div>
+    <div class="stat">ZBÝVÁ VYROBIT: <span>${celkem_ks.toLocaleString('cs')} ks</span></div>
+  `;
+
+  // Sort
+  const sorted = [...data].sort((a, b) => {
+    let va = a[sortCol] ?? '', vb = b[sortCol] ?? '';
+    if (typeof va === 'string') return va.localeCompare(vb) * sortDir;
+    return (va - vb) * sortDir;
+  });
+
+  const cols = [
+    { key: 'nazev_zakazky',      label: 'ZAKÁZKA' },
+    { key: 'typ_zakazky',        label: 'TYP' },
+    { key: 'vyrobit_ks',         label: 'VYROBIT' },
+    { key: 'odvedeno_ks',        label: 'ODVEDENO' },
+    { key: 'zbyvа_ks',           label: 'ZBÝVÁ' },
+    { key: 'planovane_zahajeni', label: 'ZAHÁJENÍ' },
+    { key: 'planovane_ukonceni', label: 'UKONČENÍ' },
+    { key: 'termin_dodani',      label: 'TERMÍN' },
+    { key: 'prubeznа_doba',      label: 'PRŮM. DOBA' },
+    { key: 'zpozdeni_dny',       label: 'ZPOŽDĚNÍ' },
+    { key: 'stav',               label: 'STAV' },
+    { key: 'cas_pracoviste_txt', label: 'PRACOVIŠTĚ (min)' },
+  ];
+
+  const thead = cols.map(c =>
+    `<th class="${sortCol === c.key ? 'sorted' : ''}" data-key="${c.key}">${c.label}${sortCol === c.key ? (sortDir === 1 ? ' ▲' : ' ▼') : ''}</th>`
+  ).join('');
+
+  const tbody = sorted.map(z => {
+    const stav = stavClass(z);
+    const zCls = z.zpozdeni_dny > 14 ? 'red' : z.zpozdeni_dny > 0 ? 'yellow' : 'ok';
+    return `<tr>
+      <td class="nazev" title="${z.nazev_zakazky}">${z.nazev_zakazky}</td>
+      <td class="mono">${z.typ_zakazky}</td>
+      <td class="mono" style="text-align:right">${z.vyrobit_ks.toLocaleString('cs')}</td>
+      <td class="mono" style="text-align:right">${z.odvedeno_ks.toLocaleString('cs')}</td>
+      <td class="mono" style="text-align:right;color:${z.zbyvа_ks > 0 ? '#e2e8f0' : '#22c55e'}">${(z.zbyvа_ks||0).toLocaleString('cs')}</td>
+      <td class="mono">${fmt(z.planovane_zahajeni)}</td>
+      <td class="mono">${fmt(z.planovane_ukonceni)}</td>
+      <td class="mono" style="color:${z.zpozdeni_dny > 0 ? '#ef4444' : '#22d3ee'};font-weight:500">${fmt(z.termin_dodani)}</td>
+      <td class="mono" style="text-align:right">${z.prubeznа_doba ?? '—'} d</td>
+      <td><span class="zpozdeni ${zCls}">${z.zpozdeni_dny > 0 ? '+' + z.zpozdeni_dny + ' d' : '—'}</span></td>
+      <td><span class="badge-stav stav-${stav}">${stav}</span></td>
+      <td class="cas" title="${z.cas_pracoviste_txt}">${z.cas_pracoviste_txt || '—'}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('main').innerHTML = `
+    <div class="table-wrap">
+      <table>
+        <thead><tr>${thead}</tr></thead>
+        <tbody>${tbody}</tbody>
+      </table>
+    </div>
+  `;
+
+  // Sort click
+  document.querySelectorAll('thead th').forEach(th => {
+    th.addEventListener('click', () => {
+      const key = th.dataset.key;
+      if (sortCol === key) sortDir *= -1;
+      else { sortCol = key; sortDir = 1; }
+      render(allData);
+    });
+  });
+}
+
+async function load() {
+  if (!userId) {
+    document.getElementById('main').innerHTML = '<div class="center">ERR: chybí userId</div>';
+    return;
+  }
+  try {
+    const res  = await fetch(`/api/toc-zakazky?userId=${userId}`);
+    const json = await res.json();
+    if (json.error) throw new Error(json.error);
+    allData = json.zakazky || [];
+    render(allData);
+  } catch (e) {
+    document.getElementById('main').innerHTML = `<div class="center" style="color:#ef4444">ERR: ${e.message}</div>`;
+  }
+}
+
+load();
+</script>
+</body>
+</html>

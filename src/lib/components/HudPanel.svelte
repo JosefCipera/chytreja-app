@@ -77,6 +77,7 @@
             verdict={data.verdict}
             dayType={data.day_type}
             universe={universe}
+            userId={userId}
             onComplete={null}
           />
         {:else if agentLoading && !data.action}
