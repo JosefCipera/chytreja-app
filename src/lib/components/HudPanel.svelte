@@ -59,10 +59,23 @@
 
       <div class="hud-fade-in" style="animation-delay: 0.2s">
         {#if universe === 'toc'}
-          <!-- TOC: always show planning buttons, no game loop -->
+          <!-- TOC: PROBLÉM + PLÁNOVÁNÍ, no game loop -->
+          {#if data.killer?.description || data.verdict}
+            <div class="rounded-lg px-4 py-3" style="
+              background: rgba(239,68,68,0.05);
+              border: 1px solid rgba(239,68,68,0.15);
+              border-left: 3px solid rgba(239,68,68,0.6);
+            ">
+              <div class="hud-mono" style="font-size:20px;font-weight:300;letter-spacing:0.04em;color:#c8d4df;margin-bottom:6px;">PROBLÉM</div>
+              <div class="flex items-start gap-2">
+                <span style="color:#ef4444;flex-shrink:0;">⚠︎</span>
+                <span style="font-size:14px;color:#f87171;line-height:1.4;">{data.killer?.description || data.verdict}</span>
+              </div>
+            </div>
+          {/if}
           <ActionProtocol
             action={data.action ?? { id: 'toc_plan', label: '', type: 'habit', status: 'READY' }}
-            killer={data.killer}
+            killer={null}
             verdict={data.verdict}
             dayType={data.day_type}
             universe={universe}

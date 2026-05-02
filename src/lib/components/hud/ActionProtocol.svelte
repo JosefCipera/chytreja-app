@@ -91,22 +91,25 @@
         <span style="color: {statusColor};">[{status}]</span>
       </div>
     </div>
-    <div class="flex flex-col gap-2">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;">
       <button
         onclick={() => { status = 'ACTIVE'; setTimeout(() => status = 'COMPLETE', 1500); }}
-        class="w-full rounded-lg border border-cyan-500/20 bg-cyan-500/[0.07] hud-mono tracking-wider hover:bg-cyan-500/[0.12] transition-all cursor-pointer text-left"
-        style="padding: 11px 14px; font-size: 14px; color: #22d3ee;">
-        ▶ Plán výroby
+        style="padding:6px 14px;border-radius:999px;font-size:13px;cursor:pointer;user-select:none;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:#cbd5e1;transition:background 0.2s,border-color 0.2s,transform 0.1s;font-family:inherit;"
+        onmouseenter={(e)=>{e.target.style.background='rgba(6,182,212,0.18)';e.target.style.borderColor='rgba(6,182,212,0.4)';e.target.style.transform='translateY(-1px)'}}
+        onmouseleave={(e)=>{e.target.style.background='rgba(255,255,255,0.06)';e.target.style.borderColor='rgba(255,255,255,0.12)';e.target.style.transform='none'}}>
+        Plán výroby
       </button>
       <button
-        class="w-full rounded-lg border border-cyan-500/20 bg-cyan-500/[0.07] hud-mono tracking-wider hover:bg-cyan-500/[0.12] transition-all cursor-pointer text-left"
-        style="padding: 11px 14px; font-size: 14px; color: #22d3ee;">
-        ▶ Kapacitní plán
+        style="padding:6px 14px;border-radius:999px;font-size:13px;cursor:pointer;user-select:none;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:#cbd5e1;transition:background 0.2s,border-color 0.2s,transform 0.1s;font-family:inherit;"
+        onmouseenter={(e)=>{e.target.style.background='rgba(6,182,212,0.18)';e.target.style.borderColor='rgba(6,182,212,0.4)';e.target.style.transform='translateY(-1px)'}}
+        onmouseleave={(e)=>{e.target.style.background='rgba(255,255,255,0.06)';e.target.style.borderColor='rgba(255,255,255,0.12)';e.target.style.transform='none'}}>
+        Kapacitní plán
       </button>
       <button
-        class="w-full rounded-lg border border-cyan-500/20 bg-cyan-500/[0.07] hud-mono tracking-wider hover:bg-cyan-500/[0.12] transition-all cursor-pointer text-left"
-        style="padding: 11px 14px; font-size: 14px; color: #22d3ee;">
-        ▶ Plán kooperací
+        style="padding:6px 14px;border-radius:999px;font-size:13px;cursor:pointer;user-select:none;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:#cbd5e1;transition:background 0.2s,border-color 0.2s,transform 0.1s;font-family:inherit;"
+        onmouseenter={(e)=>{e.target.style.background='rgba(6,182,212,0.18)';e.target.style.borderColor='rgba(6,182,212,0.4)';e.target.style.transform='translateY(-1px)'}}
+        onmouseleave={(e)=>{e.target.style.background='rgba(255,255,255,0.06)';e.target.style.borderColor='rgba(255,255,255,0.12)';e.target.style.transform='none'}}>
+        Plán kooperací
       </button>
     </div>
   </div>
