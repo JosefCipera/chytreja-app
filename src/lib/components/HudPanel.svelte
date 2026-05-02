@@ -62,9 +62,7 @@
           <!-- TOC: PROBLÉM + PLÁNOVÁNÍ, no game loop -->
           {#if data.killer?.description || data.verdict}
             <div class="rounded-lg px-4 py-3" style="
-              background: rgba(239,68,68,0.05);
-              border: 1px solid rgba(239,68,68,0.15);
-              border-left: 3px solid rgba(239,68,68,0.6);
+              background: transparent;
             ">
               <div class="hud-mono" style="font-size:20px;font-weight:300;letter-spacing:0.04em;color:#c8d4df;margin-bottom:6px;">PROBLÉM</div>
               <div class="flex items-start gap-2">
