@@ -1,4 +1,4 @@
-const CACHE_NAME = 'chytre-ja-v20';
+const CACHE_NAME = 'chytre-ja-v21';
 
 const ASSETS = [
   '/',
@@ -73,14 +73,13 @@ self.addEventListener('push', event => {
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
 
-  // Navigační requesty (stránky, iframe) — SW je nepřebírá, browser je
-  // zpracuje sám přes Vercel routing. fetch(navigate) uvnitř SW vyhazuje
-  // TypeError v Chrome/Edge.
-  if (event.request.mode === 'navigate') return;
+  // Navigační requesty (stránky, iframe) a HTML soubory — SW je nepřebírá.
+  // fetch(navigate) uvnitř SW vyhazuje TypeError v Chrome/Edge.
+  // HTML soubory nikdy z cache — mají no-cache hlavičky a vercel routing je řeší.
+  if (event.request.mode === 'navigate' || url.pathname.endsWith('.html')) return;
 
-  // API volání + HTML soubory: vždy ze sítě, nikdy z cache
+  // API volání: vždy ze sítě, nikdy z cache
   if (url.pathname.startsWith('/api/') ||
-      url.pathname.endsWith('.html') ||
       url.pathname === '/app' || url.pathname === '/') {
     event.respondWith(fetch(event.request));
     return;
