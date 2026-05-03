@@ -5,6 +5,9 @@ node_modules/
 .vercel
 .env*.local
 
+# Claude Code worktrees — never commit these (break Vercel submodule resolution)
+.claude/worktrees/
+
 # Svelte build output — commit manually after: npm run build:hud
 # (vercel.json buildCommand unreliable — always build+commit before push)
 # app/assets/hud-*.js   ← DO NOT IGNORE — must be committed
