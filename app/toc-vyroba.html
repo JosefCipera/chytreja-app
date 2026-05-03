@@ -484,9 +484,8 @@ async function runKontrola() {
       banner.style.cssText = 'padding:10px 24px;background:rgba(239,68,68,0.07);border-bottom:1px solid rgba(239,68,68,0.2);font-family:JetBrains Mono,monospace;font-size:13px;color:#f87171;';
       banner.textContent = `⚠ ${json.err_count} zakázek má chybějící data: ${json.errors.slice(0,3).map(e => e.id + ' (' + e.chyby + ')').join(' · ')}${json.err_count > 3 ? ` · +${json.err_count - 3} dalších` : ''}`;
     }
-    // Vlož banner za header, odstraní se při dalším načtení
+    // Vlož banner za header — zmizí až při obnovení stránky
     document.querySelector('.header').insertAdjacentElement('afterend', banner);
-    setTimeout(() => banner.remove(), 8000);
 
   } catch (e) {
     alert('Kontrola selhala: ' + e.message);
