@@ -269,15 +269,15 @@ export default async function handler(req, res) {
       const ONE_DAY = 86400000;
       const limit = req.body.limit ? Number(req.body.limit) : null;
 
-      // 1) Načti zaplánované zakázky s kapacitními daty
+      // 1) Načti zakázky s kapacitními daty — nepotřebujeme planovane_zahajeni/ukonceni,
+      //    kapacita si sama spočítá okno z termin_dodani a prubeznа_doba
       const { data: zakazky, error: zErr } = await sb
         .from('toc_zakazky')
-        .select('id_zakazky, nazev_zakazky, planovane_zahajeni, planovane_ukonceni, prubeznа_doba, cas_pracoviste, vyrobit_ks, odvedeno_ks')
+        .select('id_zakazky, nazev_zakazky, termin_dodani, prubeznа_doba, cas_pracoviste, vyrobit_ks, odvedeno_ks')
         .eq('user_id', userId)
         .eq('kontrola_dat', 'ok')
         .in('stav', ['plánovaná', 'rozpracovaná'])
-        .not('planovane_zahajeni', 'is', null)
-        .not('planovane_ukonceni', 'is', null);
+        .gt('termin_dodani', today.toISOString().slice(0, 10)); // jen budoucí termíny
 
       if (zErr) throw zErr;
 
@@ -287,7 +287,7 @@ export default async function handler(req, res) {
       );
       if (limit) zakazkyKap = zakazkyKap.slice(0, limit);
 
-      if (!zakazkyKap.length) return res.json({ ok: true, rows: [], pracoviste: [], message: 'Žádné zakázky s kapacitními daty.' });
+      if (!zakazkyKap.length) return res.json({ ok: true, rows: [], pracoviste: [], message: 'Žádné zakázky s budoucím termínem a kapacitními daty.' });
 
       // 2) Načti pracoviště (kapacita = smena_hod × pocet_smen × pocet_zdroju)
       const { data: pracoviste } = await sb
@@ -299,10 +299,10 @@ export default async function handler(req, res) {
 
       if (!pracoviste?.length) return res.json({ ok: true, rows: [], pracoviste: [], message: 'Žádná pracoviště.' });
 
-      // 3) Rozsah datumů: od zítřka do nejzazšího ukončení + 10 dní
+      // 3) Rozsah datumů: od zítřka do nejzazšího termin_dodani + 10 dní
       const tomorrow = new Date(today.getTime() + ONE_DAY);
       const maxEnd = zakazkyKap.reduce((mx, z) => {
-        const t = new Date(z.planovane_ukonceni).getTime();
+        const t = new Date(z.termin_dodani).getTime();
         return t > mx ? t : mx;
       }, tomorrow.getTime());
 
@@ -329,11 +329,10 @@ export default async function handler(req, res) {
           );
           if (totalMin <= 0) continue;
 
-          const zahajeni = new Date(z.planovane_zahajeni); zahajeni.setHours(0,0,0,0);
-          const ukonceni = new Date(z.planovane_ukonceni); ukonceni.setHours(0,0,0,0);
-          if (today >= ukonceni) continue; // zakázka po termínu
-
-          // Okno = od dneška (nebo zahájení, pokud ještě nezačalo) do ukončení
+          // Okno: ukonceni = termin_dodani, zahajeni = termin - prubeznа_doba prac. dní
+          const ukonceni = new Date(z.termin_dodani); ukonceni.setHours(0,0,0,0);
+          const zahajeni = subtractWorkingDays(ukonceni, z.prubeznа_doba || 1);
+          // winStart = od dneška nebo zahájení (pokud ještě nezačalo)
           const winStart = today > zahajeni ? today : zahajeni;
 
           // Zbývající pracovní dny v okně
