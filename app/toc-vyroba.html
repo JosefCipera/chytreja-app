@@ -7,33 +7,31 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+    html, body {
+      height: 100%;
+      overflow: hidden;
+    }
+
     body {
       background: #080e1a;
       color: #e2e8f0;
       font-family: 'Inter', system-ui, sans-serif;
-      min-height: 100dvh;
-      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
     }
 
     /* ── Header ── */
     .header {
+      flex-shrink: 0;
       display: flex;
       align-items: center;
       justify-content: space-between;
       padding: 16px 24px;
       border-bottom: 1px solid rgba(6,182,212,0.2);
       background: rgba(6,182,212,0.04);
-      position: sticky;
-      top: 0;
       z-index: 10;
     }
     .header-left { display: flex; align-items: center; gap: 16px; }
-    .badge {
-      font-family: 'JetBrains Mono', 'Fira Code', monospace;
-      font-size: 10px;
-      letter-spacing: 0.15em;
-      color: #475569;
-    }
     .title {
       font-family: 'JetBrains Mono', 'Fira Code', monospace;
       font-size: 20px;
@@ -56,10 +54,12 @@
 
     /* ── Stats bar ── */
     .stats {
+      flex-shrink: 0;
       display: flex;
       gap: 24px;
-      padding: 12px 24px;
+      padding: 10px 24px;
       border-bottom: 1px solid rgba(255,255,255,0.05);
+      background: #080e1a;
       flex-wrap: wrap;
     }
     .stat {
@@ -68,14 +68,21 @@
       color: #475569;
     }
     .stat span { color: #94a3b8; font-weight: 500; }
-    .stat .red  { color: #ef4444; }
+    .stat .red    { color: #ef4444; }
     .stat .yellow { color: #eab308; }
     .stat .green  { color: #22c55e; }
 
+    /* ── Scroll area ── */
+    #main {
+      flex: 1;
+      overflow: auto;
+      position: relative;
+    }
+
     /* ── Table ── */
     .table-wrap {
-      overflow-x: auto;
-      padding: 16px 24px 40px;
+      padding: 0 24px 16px;
+      min-width: fit-content;
     }
     table {
       width: 100%;
@@ -84,16 +91,20 @@
       min-width: 900px;
     }
     thead th {
+      position: sticky;
+      top: 0;
       font-family: 'JetBrains Mono', monospace;
       font-size: 15px;
       letter-spacing: 0.08em;
       color: #475569;
       text-align: left;
       padding: 10px 14px;
-      border-bottom: 1px solid rgba(255,255,255,0.07);
+      background: #0a1322;
+      border-bottom: 1px solid rgba(6,182,212,0.2);
       white-space: nowrap;
       cursor: pointer;
       user-select: none;
+      z-index: 3;
     }
     thead th:hover { color: #94a3b8; }
     thead th.sorted { color: #22d3ee; }
@@ -135,12 +146,68 @@
     .zpozdeni.yellow { color: #eab308; }
     .zpozdeni.ok     { color: #475569; }
 
+    /* ── Pagination bar ── */
+    .pagination-bar {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 24px;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      background: #080e1a;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .pag-info {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: #475569;
+      white-space: nowrap;
+    }
+    .pag-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .pag-select {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 6px;
+      color: #94a3b8;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      padding: 4px 8px;
+      cursor: pointer;
+    }
+    .pag-select:focus { outline: none; border-color: rgba(34,211,238,0.4); }
+    .pag-btn {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 6px;
+      color: #64748b;
+      cursor: pointer;
+      font-size: 14px;
+      padding: 4px 10px;
+      line-height: 1.4;
+      transition: color 0.15s, border-color 0.15s, background 0.15s;
+    }
+    .pag-btn:hover:not(:disabled) { color: #22d3ee; border-color: rgba(34,211,238,0.4); background: rgba(34,211,238,0.06); }
+    .pag-btn:disabled { opacity: 0.25; cursor: default; }
+    .pag-page {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: #94a3b8;
+      white-space: nowrap;
+      min-width: 60px;
+      text-align: center;
+    }
+
     /* ── Loading / Error ── */
     .center {
       display: flex;
       align-items: center;
       justify-content: center;
-      min-height: 60vh;
+      min-height: 40vh;
       font-family: 'JetBrains Mono', monospace;
       font-size: 13px;
       letter-spacing: 0.1em;
@@ -154,9 +221,7 @@
 
 <div class="header">
   <div class="header-left">
-    <div>
-      <div class="title">[PLÁN VÝROBY]</div>
-    </div>
+    <div class="title">[PLÁN VÝROBY]</div>
   </div>
   <button class="btn-close" onclick="window.location.href='/app/'">✕ Zavřít</button>
 </div>
@@ -169,6 +234,8 @@
   <div class="center pulse">NAČÍTÁM ZAKÁZKY…</div>
 </div>
 
+<div class="pagination-bar" id="pagination" style="display:none"></div>
+
 <script>
 const params  = new URLSearchParams(location.search);
 const userId  = params.get('userId') || 'qE09cLyXXGRBRxOBCGNZqTM2XRW2';
@@ -177,9 +244,26 @@ const today   = new Date().toISOString().slice(0, 10);
 const LOCAL_DEV = location.port === '5500' || location.port === '5501';
 const API_BASE  = LOCAL_DEV ? 'https://dev.iting.cz' : '';
 
-let allData = [];
-let sortCol = 'termin_dodani';
-let sortDir = 1;
+let allData  = [];
+let sortCol  = 'termin_dodani';
+let sortDir  = 1;
+let pageSize = 25;
+let page     = 0;
+
+const cols = [
+  { key: 'nazev_zakazky',      label: 'ZAKÁZKA' },
+  { key: 'typ_zakazky',        label: 'TYP' },
+  { key: 'vyrobit_ks',         label: 'VYROBIT' },
+  { key: 'odvedeno_ks',        label: 'ODVEDENO' },
+  { key: 'zbyvа_ks',           label: 'ZBÝVÁ' },
+  { key: 'planovane_zahajeni', label: 'ZAHÁJENÍ' },
+  { key: 'planovane_ukonceni', label: 'UKONČENÍ' },
+  { key: 'termin_dodani',      label: 'TERMÍN' },
+  { key: 'prubeznа_doba',      label: 'PRŮB. DOBA' },
+  { key: 'zpozdeni_dny',       label: 'ZPOŽDĚNÍ' },
+  { key: 'stav',               label: 'STAV' },
+  { key: 'cas_pracoviste_txt', label: 'PRACOVIŠTĚ (min)' },
+];
 
 function fmt(dateStr) {
   if (!dateStr) return '—';
@@ -192,11 +276,23 @@ function stavClass(z) {
   return 'plánovaná';
 }
 
+function goPage(p) {
+  page = p;
+  render(allData);
+  document.getElementById('main').scrollTop = 0;
+}
+
+function changePageSize(n) {
+  pageSize = n;
+  page = 0;
+  render(allData);
+}
+
 function render(data) {
   // Stats
-  const total    = data.length;
-  const po_term  = data.filter(z => z.zpozdeni_dny > 0).length;
-  const probiha  = data.filter(z => stavClass(z) === 'probíhá').length;
+  const total     = data.length;
+  const po_term   = data.filter(z => z.zpozdeni_dny > 0).length;
+  const probiha   = data.filter(z => stavClass(z) === 'probíhá').length;
   const celkem_ks = data.reduce((s, z) => s + (z.zbyvа_ks || 0), 0);
 
   document.getElementById('stats').innerHTML = `
@@ -213,26 +309,17 @@ function render(data) {
     return (va - vb) * sortDir;
   });
 
-  const cols = [
-    { key: 'nazev_zakazky',      label: 'ZAKÁZKA' },
-    { key: 'typ_zakazky',        label: 'TYP' },
-    { key: 'vyrobit_ks',         label: 'VYROBIT' },
-    { key: 'odvedeno_ks',        label: 'ODVEDENO' },
-    { key: 'zbyvа_ks',           label: 'ZBÝVÁ' },
-    { key: 'planovane_zahajeni', label: 'ZAHÁJENÍ' },
-    { key: 'planovane_ukonceni', label: 'UKONČENÍ' },
-    { key: 'termin_dodani',      label: 'TERMÍN' },
-    { key: 'prubeznа_doba',      label: 'PRŮM. DOBA' },
-    { key: 'zpozdeni_dny',       label: 'ZPOŽDĚNÍ' },
-    { key: 'stav',               label: 'STAV' },
-    { key: 'cas_pracoviste_txt', label: 'PRACOVIŠTĚ (min)' },
-  ];
+  // Pagination slice
+  const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize));
+  page = Math.min(page, totalPages - 1);
+  const start = page * pageSize;
+  const slice = sorted.slice(start, start + pageSize);
 
   const thead = cols.map(c =>
     `<th class="${sortCol === c.key ? 'sorted' : ''}" data-key="${c.key}">${c.label}${sortCol === c.key ? (sortDir === 1 ? ' ▲' : ' ▼') : ''}</th>`
   ).join('');
 
-  const tbody = sorted.map(z => {
+  const tbody = slice.map(z => {
     const stav = stavClass(z);
     const zCls = z.zpozdeni_dny > 14 ? 'red' : z.zpozdeni_dny > 0 ? 'yellow' : 'ok';
     return `<tr>
@@ -266,9 +353,33 @@ function render(data) {
       const key = th.dataset.key;
       if (sortCol === key) sortDir *= -1;
       else { sortCol = key; sortDir = 1; }
+      page = 0;
       render(allData);
     });
   });
+
+  // Pagination bar
+  const pagEl = document.getElementById('pagination');
+  if (sorted.length > 0) {
+    const from = start + 1;
+    const to   = Math.min(start + pageSize, sorted.length);
+    pagEl.style.display = 'flex';
+    pagEl.innerHTML = `
+      <div class="pag-info">${from}–${to} z ${sorted.length}</div>
+      <div class="pag-controls">
+        <select class="pag-select" onchange="changePageSize(+this.value)">
+          ${[10,25,50,100].map(n => `<option value="${n}"${n===pageSize?' selected':''}>${n} řádků</option>`).join('')}
+        </select>
+        <button class="pag-btn" onclick="goPage(0)" ${page===0?'disabled':''}>«</button>
+        <button class="pag-btn" onclick="goPage(${page-1})" ${page===0?'disabled':''}>‹</button>
+        <span class="pag-page">${page+1} / ${totalPages}</span>
+        <button class="pag-btn" onclick="goPage(${page+1})" ${page>=totalPages-1?'disabled':''}>›</button>
+        <button class="pag-btn" onclick="goPage(${totalPages-1})" ${page>=totalPages-1?'disabled':''}>»</button>
+      </div>
+    `;
+  } else {
+    pagEl.style.display = 'none';
+  }
 }
 
 function buildDemo() {
@@ -286,19 +397,47 @@ function buildDemo() {
     { id_zakazky:'Z008', nazev_zakazky:'Konzola nosná typ 77',         typ_zakazky:'výroba',    vyrobit_ks:60,  odvedeno_ks:0,   planovane_zahajeni:d(12),  planovane_ukonceni:d(40),  termin_dodani:d(-5),  prubeznа_doba:22 },
     { id_zakazky:'Z009', nazev_zakazky:'Hřídel pohonná D40',          typ_zakazky:'kooperace', vyrobit_ks:24,  odvedeno_ks:10,  planovane_zahajeni:d(-5),  planovane_ukonceni:d(15),  termin_dodani:d(20),  prubeznа_doba:18 },
     { id_zakazky:'Z010', nazev_zakazky:'Výpalky plech 3mm — sada K2', typ_zakazky:'výroba',    vyrobit_ks:300, odvedeno_ks:300, planovane_zahajeni:d(-60), planovane_ukonceni:d(-20), termin_dodani:d(-18), prubeznа_doba:40 },
+    { id_zakazky:'Z011', nazev_zakazky:'Ložiskový domek B22',          typ_zakazky:'výroba',    vyrobit_ks:45,  odvedeno_ks:10,  planovane_zahajeni:d(-3),  planovane_ukonceni:d(18),  termin_dodani:d(12),  prubeznа_doba:21 },
+    { id_zakazky:'Z012', nazev_zakazky:'Svařenec základový R7',        typ_zakazky:'výroba',    vyrobit_ks:15,  odvedeno_ks:0,   planovane_zahajeni:d(8),   planovane_ukonceni:d(38),  termin_dodani:d(45),  prubeznа_doba:30 },
+    { id_zakazky:'Z013', nazev_zakazky:'Řetězové kolo Z48',            typ_zakazky:'kooperace', vyrobit_ks:100, odvedeno_ks:60,  planovane_zahajeni:d(-15), planovane_ukonceni:d(5),   termin_dodani:d(-2),  prubeznа_doba:20 },
+    { id_zakazky:'Z014', nazev_zakazky:'Převodový hřídel P6',          typ_zakazky:'výroba',    vyrobit_ks:30,  odvedeno_ks:0,   planovane_zahajeni:d(2),   planovane_ukonceni:d(32),  termin_dodani:d(35),  prubeznа_doba:30 },
+    { id_zakazky:'Z015', nazev_zakazky:'Trubky spojovací DN80 — sada', typ_zakazky:'kooperace', vyrobit_ks:60,  odvedeno_ks:60,  planovane_zahajeni:d(-22), planovane_ukonceni:d(-8),  termin_dodani:d(-6),  prubeznа_doba:14 },
+    { id_zakazky:'Z016', nazev_zakazky:'Nosník jeřábový NJ-120',       typ_zakazky:'výroba',    vyrobit_ks:4,   odvedeno_ks:0,   planovane_zahajeni:d(6),   planovane_ukonceni:d(50),  termin_dodani:d(55),  prubeznа_doba:44 },
+    { id_zakazky:'Z017', nazev_zakazky:'Kluzné pouzdro KP-18',         typ_zakazky:'výroba',    vyrobit_ks:250, odvedeno_ks:180, planovane_zahajeni:d(-6),  planovane_ukonceni:d(10),  termin_dodani:d(8),   prubeznа_doba:16 },
+    { id_zakazky:'Z018', nazev_zakazky:'Svařenec příruby série M',     typ_zakazky:'výroba',    vyrobit_ks:70,  odvedeno_ks:0,   planovane_zahajeni:d(4),   planovane_ukonceni:d(34),  termin_dodani:d(-10), prubeznа_doba:30 },
+    { id_zakazky:'Z019', nazev_zakazky:'Ozubené kolo Z32 modul 2',     typ_zakazky:'kooperace', vyrobit_ks:80,  odvedeno_ks:40,  planovane_zahajeni:d(-12), planovane_ukonceni:d(8),   termin_dodani:d(15),  prubeznа_doba:20 },
+    { id_zakazky:'Z020', nazev_zakazky:'Konzola věžového jeřábu',      typ_zakazky:'výroba',    vyrobit_ks:12,  odvedeno_ks:4,   planovane_zahajeni:d(-4),  planovane_ukonceni:d(26),  termin_dodani:d(20),  prubeznа_doba:30 },
+    { id_zakazky:'Z021', nazev_zakazky:'Plech děrovaný 2×1500',        typ_zakazky:'kooperace', vyrobit_ks:500, odvedeno_ks:500, planovane_zahajeni:d(-40), planovane_ukonceni:d(-15), termin_dodani:d(-12), prubeznа_doba:25 },
+    { id_zakazky:'Z022', nazev_zakazky:'Výkyvná deska VD-55',          typ_zakazky:'výroba',    vyrobit_ks:20,  odvedeno_ks:5,   planovane_zahajeni:d(-7),  planovane_ukonceni:d(13),  termin_dodani:d(10),  prubeznа_doba:20 },
+    { id_zakazky:'Z023', nazev_zakazky:'Vložky segmentové S-40',       typ_zakazky:'výroba',    vyrobit_ks:160, odvedeno_ks:0,   planovane_zahajeni:d(10),  planovane_ukonceni:d(40),  termin_dodani:d(42),  prubeznа_doba:30 },
+    { id_zakazky:'Z024', nazev_zakazky:'Spojovací hřídel SH-200',      typ_zakazky:'výroba',    vyrobit_ks:8,   odvedeno_ks:2,   planovane_zahajeni:d(-9),  planovane_ukonceni:d(11),  termin_dodani:d(-4),  prubeznа_doba:20 },
+    { id_zakazky:'Z025', nazev_zakazky:'Základová deska ZD-600',       typ_zakazky:'výroba',    vyrobit_ks:6,   odvedeno_ks:0,   planovane_zahajeni:d(1),   planovane_ukonceni:d(31),  termin_dodani:d(35),  prubeznа_doba:30 },
+    { id_zakazky:'Z026', nazev_zakazky:'Montážní sada MS-12 komplet',  typ_zakazky:'kooperace', vyrobit_ks:40,  odvedeno_ks:40,  planovane_zahajeni:d(-35), planovane_ukonceni:d(-12), termin_dodani:d(-9),  prubeznа_doba:23 },
+    { id_zakazky:'Z027', nazev_zakazky:'Svařovací přípravek SP-77',    typ_zakazky:'výroba',    vyrobit_ks:3,   odvedeno_ks:0,   planovane_zahajeni:d(5),   planovane_ukonceni:d(45),  termin_dodani:d(50),  prubeznа_doba:40 },
+    { id_zakazky:'Z028', nazev_zakazky:'Těsnění kruhové TK-88 sada',   typ_zakazky:'kooperace', vyrobit_ks:600, odvedeno_ks:350, planovane_zahajeni:d(-18), planovane_ukonceni:d(2),   termin_dodani:d(-8),  prubeznа_doba:20 },
+    { id_zakazky:'Z029', nazev_zakazky:'Přírubový spoj PS-32',         typ_zakazky:'výroba',    vyrobit_ks:55,  odvedeno_ks:20,  planovane_zahajeni:d(-11), planovane_ukonceni:d(9),   termin_dodani:d(5),   prubeznа_doba:20 },
+    { id_zakazky:'Z030', nazev_zakazky:'Paletový vozík rám PVR',       typ_zakazky:'výroba',    vyrobit_ks:10,  odvedeno_ks:0,   planovane_zahajeni:d(7),   planovane_ukonceni:d(37),  termin_dodani:d(40),  prubeznа_doba:30 },
   ];
-  const pracoviste = { 1:'Brusky', 2:'Soustruhy', 3:'Ohyb', 4:'Laser', 5:'Svařování' };
   const casSamples = [
-    'Svařování: 240 min, Brusky: 60 min', 'Laser: 180 min', 'Ohyb: 320 min, Soustruhy: 90 min',
-    'Soustruhy: 450 min', 'Svařování: 600 min, Laser: 120 min', 'Laser: 90 min, Brusky: 30 min',
-    'Soustruhy: 280 min, Ohyb: 150 min', 'Brusky: 80 min, Svařování: 400 min',
-    'Soustruhy: 180 min', 'Laser: 250 min, Ohyb: 80 min',
+    'Svařování: 240 min, Brusky: 60 min','Laser: 180 min','Ohyb: 320 min, Soustruhy: 90 min',
+    'Soustruhy: 450 min','Svařování: 600 min, Laser: 120 min','Laser: 90 min, Brusky: 30 min',
+    'Soustruhy: 280 min, Ohyb: 150 min','Brusky: 80 min, Svařování: 400 min','Soustruhy: 180 min',
+    'Laser: 250 min, Ohyb: 80 min','Svařování: 300 min, Brusky: 45 min','Laser: 200 min, Ohyb: 100 min',
+    'Soustruhy: 360 min','Svařování: 480 min, Soustruhy: 120 min','Laser: 130 min',
+    'Svařování: 1200 min, Brusky: 200 min','Soustruhy: 220 min, Ohyb: 60 min','Svařování: 540 min',
+    'Soustruhy: 400 min, Laser: 90 min','Svařování: 360 min, Brusky: 90 min',
+    'Laser: 160 min','Ohyb: 240 min, Soustruhy: 80 min','Soustruhy: 500 min',
+    'Svařování: 280 min, Ohyb: 120 min','Svařování: 420 min, Laser: 80 min',
+    'Laser: 110 min, Brusky: 40 min','Svařování: 900 min, Brusky: 150 min',
+    'Ohyb: 180 min, Soustruhy: 60 min','Soustruhy: 320 min, Brusky: 70 min',
+    'Svařování: 660 min, Laser: 100 min',
   ];
+  const zp = (termin) => termin < today ? Math.round((new Date(today) - new Date(termin)) / 86400000) : 0;
   return rows.map((z, i) => ({
     ...z,
     zbyvа_ks: z.vyrobit_ks - z.odvedeno_ks,
     zpozdeni_dny: zp(z.termin_dodani),
-    cas_pracoviste_txt: casSamples[i],
+    cas_pracoviste_txt: casSamples[i] || '—',
   }));
 }
 
