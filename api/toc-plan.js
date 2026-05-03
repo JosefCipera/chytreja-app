@@ -175,8 +175,8 @@ export default async function handler(req, res) {
       const results = zakazky.map(z => {
         const zbyva_ks = Math.max(0, (z.vyrobit_ks || 0) - (z.odvedeno_ks || 0));
 
-        // Plánované ukončení = termin_dodani pokud není vyplněno
-        const ukonceni = z.planovane_ukonceni || z.termin_dodani;
+        // Plánované ukončení = vždy termin_dodani (planovane_ukonceni je výstup, ne vstup)
+        const ukonceni = z.termin_dodani;
 
         // Plánované zahájení — couvej od ukončení o prubeznа_doba pracovních dní
         // Zahájení může být v minulosti (zakázka je zpožděná) — to je správně
