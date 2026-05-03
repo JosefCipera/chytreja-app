@@ -1,4 +1,4 @@
-const CACHE_NAME = 'chytre-ja-v21';
+const CACHE_NAME = 'chytre-ja-v22';
 
 const ASSETS = [
   '/',
@@ -15,11 +15,11 @@ const ASSETS = [
   '/app/assets/images/logo-512.png',
 ];
 
-// Instalace – uloží statické soubory do cache
+// Instalace – uloží statické soubory do cache (chyby ignorujeme, skipWaiting vždy)
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(ASSETS))
+      .then(cache => cache.addAll(ASSETS).catch(() => {}))
       .then(() => self.skipWaiting())
   );
 });

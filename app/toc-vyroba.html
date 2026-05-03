@@ -276,19 +276,43 @@ function render(data) {
 }
 
 async function load() {
-  if (!userId) {
-    document.getElementById('main').innerHTML = '<div class="center">ERR: chybí userId</div>';
-    return;
-  }
+  const url = `${API_BASE}/api/toc-zakazky?userId=${userId}`;
   try {
-    const res  = await fetch(`${API_BASE}/api/toc-zakazky?userId=${userId}`);
+    const res  = await fetch(url, { cache: 'no-store' });
+    if (!res.ok) {
+      const body = await res.text().catch(() => '');
+      throw new Error(`HTTP ${res.status} — ${body.slice(0, 120)}`);
+    }
     const json = await res.json();
     if (json.error) throw new Error(json.error);
     allData = json.zakazky || [];
+    if (allData.length === 0) {
+      document.getElementById('stats').innerHTML = '<div class="stat" style="color:#eab308">⚠ Žádné zakázky pro userId: ' + userId + '</div>';
+    }
     render(allData);
   } catch (e) {
-    document.getElementById('main').innerHTML = `<div class="center" style="color:#ef4444">ERR: ${e.message}</div>`;
+    document.getElementById('stats').innerHTML = '';
+    document.getElementById('main').innerHTML = `
+      <div class="center" style="flex-direction:column;gap:12px;">
+        <div style="color:#ef4444;font-size:13px;">ERR: ${e.message}</div>
+        <div style="color:#475569;font-size:11px;max-width:480px;text-align:center;">URL: ${url}</div>
+        <button onclick="loadDemo()" style="margin-top:8px;padding:8px 20px;border-radius:8px;border:1px solid rgba(34,211,238,0.3);background:rgba(34,211,238,0.07);color:#22d3ee;cursor:pointer;font-family:inherit;font-size:12px;">
+          ZOBRAZIT DEMO DATA
+        </button>
+      </div>`;
   }
+}
+
+function loadDemo() {
+  const today = new Date();
+  const d = (offset) => new Date(today.getTime() + offset * 86400000).toISOString().slice(0,10);
+  allData = [
+    { id_zakazky:'Z001', nazev_zakazky:'Svařovací rám XL-200', typ_zakazky:'výroba', vyrobit_ks:50, odvedeno_ks:12, zbyvа_ks:38, planovane_zahajeni:d(-10), planovane_ukonceni:d(20), termin_dodani:d(25), prubeznа_doba:30, zpozdeni_dny:0, cas_pracoviste_txt:'Svařování: 240 min, Brusky: 60 min', stav:'probíhá' },
+    { id_zakazky:'Z002', nazev_zakazky:'Laserový výpalek A3', typ_zakazky:'kooperace', vyrobit_ks:200, odvedeno_ks:200, zbyvа_ks:0, planovane_zahajeni:d(-30), planovane_ukonceni:d(-5), termin_dodani:d(-3), prubeznа_doba:25, zpozdeni_dny:0, cas_pracoviste_txt:'Laser: 180 min', stav:'dokončená' },
+    { id_zakazky:'Z003', nazev_zakazky:'Ohýbané profily série B', typ_zakazky:'výroba', vyrobit_ks:80, odvedeno_ks:0, zbyvа_ks:80, planovane_zahajeni:d(5), planovane_ukonceni:d(35), termin_dodani:d(10), prubeznа_doba:28, zpozdeni_dny:0, cas_pracoviste_txt:'Ohyb: 320 min, Soustruhy: 90 min', stav:'plánovaná' },
+    { id_zakazky:'Z004', nazev_zakazky:'Příruba typ 44C', typ_zakazky:'výroba', vyrobit_ks:120, odvedeno_ks:30, zbyvа_ks:90, planovane_zahajeni:d(-20), planovane_ukonceni:d(-2), termin_dodani:d(-15), prubeznа_doba:20, zpozdeni_dny:15, cas_pracoviste_txt:'Soustruhy: 450 min', stav:'probíhá' },
+  ];
+  render(allData);
 }
 
 load();
