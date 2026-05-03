@@ -508,17 +508,7 @@
             if (children.length) window.prefetchHudNodes(userId, children);
         };
 
-        // TOC uzly s vlastní fullscreen stránkou — přesměruj přímo, bez HUD iframu
-        const TOC_DIRECT_PAGES = {
-            vyroba_toc: '/app/toc-vyroba.html',
-        };
-
         window.openHudOverlay = async function(userId, nodeId) {
-            if (TOC_DIRECT_PAGES[nodeId]) {
-                window.location.href = TOC_DIRECT_PAGES[nodeId] + '?userId=' + encodeURIComponent(userId);
-                return;
-            }
-
             const overlay = document.getElementById('hud-overlay');
             const wrap    = document.getElementById('hud-panel-wrap');
             const iframe  = document.getElementById('hud-iframe');
