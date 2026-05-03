@@ -289,10 +289,10 @@ export default async function handler(req, res) {
 
       if (!zakazkyKap.length) return res.json({ ok: true, rows: [], pracoviste: [], message: 'Žádné zakázky s kapacitními daty.' });
 
-      // 2) Načti pracoviště
+      // 2) Načti pracoviště (kapacita = smena_hod × pocet_smen × pocet_zdroju)
       const { data: pracoviste } = await sb
         .from('toc_pracoviste')
-        .select('id_pracoviste, nazev_pracoviste, poradi, kapacita_hod')
+        .select('id_pracoviste, nazev_pracoviste, poradi, smena_hod, pocet_smen, pocet_zdroju, kapacita_hod')
         .eq('user_id', userId)
         .eq('aktivni', true)
         .order('poradi');
@@ -315,7 +315,9 @@ export default async function handler(req, res) {
       // 4) Pro každé pracoviště spočítej denní vytížení v minutách, pak převeď na %
       const wplaceResults = pracoviste.map(p => {
         const poradi  = String(p.poradi);
-        const kapHod  = p.kapacita_hod || 8;
+        // kapacita = smena_hod × pocet_smen × pocet_zdroju (fallback 8 hod)
+        const kapHod  = p.kapacita_hod
+          || ((p.smena_hod || 8) * (p.pocet_smen || 1) * (p.pocet_zdroju || 1));
         const kapMin  = kapHod * 60;
         const loadMin = new Array(dates.length).fill(0);
 
