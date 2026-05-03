@@ -175,11 +175,8 @@ const params  = new URLSearchParams(location.search);
 const userId  = params.get('userId') || 'qE09cLyXXGRBRxOBCGNZqTM2XRW2';
 const today   = new Date().toISOString().slice(0, 10);
 
-// When opened from Live Server (port 5500) the API doesn't exist locally —
-// proxy to vercel dev or production.
-const API_BASE = (location.port === '5500' || location.port === '5501')
-  ? 'https://dev.iting.cz'
-  : '';
+const LOCAL_DEV = location.port === '5500' || location.port === '5501';
+const API_BASE  = LOCAL_DEV ? 'https://dev.iting.cz' : '';
 
 let allData = [];
 let sortCol = 'termin_dodani';
@@ -275,7 +272,39 @@ function render(data) {
   });
 }
 
+function buildDemo() {
+  const t = new Date();
+  const d = o => new Date(t.getTime() + o * 86400000).toISOString().slice(0,10);
+  const zp = (termin) => termin < today ? Math.round((new Date(today) - new Date(termin)) / 86400000) : 0;
+  const rows = [
+    { id_zakazky:'Z001', nazev_zakazky:'Svařovací rám XL-200',        typ_zakazky:'výroba',    vyrobit_ks:50,  odvedeno_ks:12,  planovane_zahajeni:d(-10), planovane_ukonceni:d(20),  termin_dodani:d(25),  prubeznа_doba:30 },
+    { id_zakazky:'Z002', nazev_zakazky:'Laserový výpalek A3 série',    typ_zakazky:'kooperace', vyrobit_ks:200, odvedeno_ks:200, planovane_zahajeni:d(-30), planovane_ukonceni:d(-5),  termin_dodani:d(-3),  prubeznа_doba:25 },
+    { id_zakazky:'Z003', nazev_zakazky:'Ohýbané profily B-44',         typ_zakazky:'výroba',    vyrobit_ks:80,  odvedeno_ks:0,   planovane_zahajeni:d(5),   planovane_ukonceni:d(35),  termin_dodani:d(10),  prubeznа_doba:28 },
+    { id_zakazky:'Z004', nazev_zakazky:'Příruba 44C pro zákazníka K',  typ_zakazky:'výroba',    vyrobit_ks:120, odvedeno_ks:30,  planovane_zahajeni:d(-20), planovane_ukonceni:d(-2),  termin_dodani:d(-15), prubeznа_doba:20 },
+    { id_zakazky:'Z005', nazev_zakazky:'Skříň rozvodná 2kV',           typ_zakazky:'výroba',    vyrobit_ks:8,   odvedeno_ks:0,   planovane_zahajeni:d(3),   planovane_ukonceni:d(28),  termin_dodani:d(30),  prubeznа_doba:25 },
+    { id_zakazky:'Z006', nazev_zakazky:'Trubkový rám T-série',         typ_zakazky:'kooperace', vyrobit_ks:35,  odvedeno_ks:35,  planovane_zahajeni:d(-45), planovane_ukonceni:d(-10), termin_dodani:d(-8),  prubeznа_doba:35 },
+    { id_zakazky:'Z007', nazev_zakazky:'Díly pro linku Müller',        typ_zakazky:'výroba',    vyrobit_ks:500, odvedeno_ks:210, planovane_zahajeni:d(-8),  planovane_ukonceni:d(22),  termin_dodani:d(5),   prubeznа_doba:30 },
+    { id_zakazky:'Z008', nazev_zakazky:'Konzola nosná typ 77',         typ_zakazky:'výroba',    vyrobit_ks:60,  odvedeno_ks:0,   planovane_zahajeni:d(12),  planovane_ukonceni:d(40),  termin_dodani:d(-5),  prubeznа_doba:22 },
+    { id_zakazky:'Z009', nazev_zakazky:'Hřídel pohonná D40',          typ_zakazky:'kooperace', vyrobit_ks:24,  odvedeno_ks:10,  planovane_zahajeni:d(-5),  planovane_ukonceni:d(15),  termin_dodani:d(20),  prubeznа_doba:18 },
+    { id_zakazky:'Z010', nazev_zakazky:'Výpalky plech 3mm — sada K2', typ_zakazky:'výroba',    vyrobit_ks:300, odvedeno_ks:300, planovane_zahajeni:d(-60), planovane_ukonceni:d(-20), termin_dodani:d(-18), prubeznа_doba:40 },
+  ];
+  const pracoviste = { 1:'Brusky', 2:'Soustruhy', 3:'Ohyb', 4:'Laser', 5:'Svařování' };
+  const casSamples = [
+    'Svařování: 240 min, Brusky: 60 min', 'Laser: 180 min', 'Ohyb: 320 min, Soustruhy: 90 min',
+    'Soustruhy: 450 min', 'Svařování: 600 min, Laser: 120 min', 'Laser: 90 min, Brusky: 30 min',
+    'Soustruhy: 280 min, Ohyb: 150 min', 'Brusky: 80 min, Svařování: 400 min',
+    'Soustruhy: 180 min', 'Laser: 250 min, Ohyb: 80 min',
+  ];
+  return rows.map((z, i) => ({
+    ...z,
+    zbyvа_ks: z.vyrobit_ks - z.odvedeno_ks,
+    zpozdeni_dny: zp(z.termin_dodani),
+    cas_pracoviste_txt: casSamples[i],
+  }));
+}
+
 async function load() {
+  if (LOCAL_DEV) { allData = buildDemo(); render(allData); return; }
   const url = `${API_BASE}/api/toc-zakazky?userId=${userId}`;
   try {
     const res  = await fetch(url, { cache: 'no-store' });
@@ -296,23 +325,11 @@ async function load() {
       <div class="center" style="flex-direction:column;gap:12px;">
         <div style="color:#ef4444;font-size:13px;">ERR: ${e.message}</div>
         <div style="color:#475569;font-size:11px;max-width:480px;text-align:center;">URL: ${url}</div>
-        <button onclick="loadDemo()" style="margin-top:8px;padding:8px 20px;border-radius:8px;border:1px solid rgba(34,211,238,0.3);background:rgba(34,211,238,0.07);color:#22d3ee;cursor:pointer;font-family:inherit;font-size:12px;">
+        <button onclick="allData=buildDemo();render(allData)" style="margin-top:8px;padding:8px 20px;border-radius:8px;border:1px solid rgba(34,211,238,0.3);background:rgba(34,211,238,0.07);color:#22d3ee;cursor:pointer;font-family:inherit;font-size:12px;">
           ZOBRAZIT DEMO DATA
         </button>
       </div>`;
   }
-}
-
-function loadDemo() {
-  const today = new Date();
-  const d = (offset) => new Date(today.getTime() + offset * 86400000).toISOString().slice(0,10);
-  allData = [
-    { id_zakazky:'Z001', nazev_zakazky:'Svařovací rám XL-200', typ_zakazky:'výroba', vyrobit_ks:50, odvedeno_ks:12, zbyvа_ks:38, planovane_zahajeni:d(-10), planovane_ukonceni:d(20), termin_dodani:d(25), prubeznа_doba:30, zpozdeni_dny:0, cas_pracoviste_txt:'Svařování: 240 min, Brusky: 60 min', stav:'probíhá' },
-    { id_zakazky:'Z002', nazev_zakazky:'Laserový výpalek A3', typ_zakazky:'kooperace', vyrobit_ks:200, odvedeno_ks:200, zbyvа_ks:0, planovane_zahajeni:d(-30), planovane_ukonceni:d(-5), termin_dodani:d(-3), prubeznа_doba:25, zpozdeni_dny:0, cas_pracoviste_txt:'Laser: 180 min', stav:'dokončená' },
-    { id_zakazky:'Z003', nazev_zakazky:'Ohýbané profily série B', typ_zakazky:'výroba', vyrobit_ks:80, odvedeno_ks:0, zbyvа_ks:80, planovane_zahajeni:d(5), planovane_ukonceni:d(35), termin_dodani:d(10), prubeznа_doba:28, zpozdeni_dny:0, cas_pracoviste_txt:'Ohyb: 320 min, Soustruhy: 90 min', stav:'plánovaná' },
-    { id_zakazky:'Z004', nazev_zakazky:'Příruba typ 44C', typ_zakazky:'výroba', vyrobit_ks:120, odvedeno_ks:30, zbyvа_ks:90, planovane_zahajeni:d(-20), planovane_ukonceni:d(-2), termin_dodani:d(-15), prubeznа_doba:20, zpozdeni_dny:15, cas_pracoviste_txt:'Soustruhy: 450 min', stav:'probíhá' },
-  ];
-  render(allData);
 }
 
 load();

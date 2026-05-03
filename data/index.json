@@ -1,14 +1,14 @@
 {
     "universe": {
-        "longevity": {
-            "label": "Dlouhověkost",
-            "useSupabase": true,
-            "modelFile": "../data/universes/longevity/models/longevity.json"
-        },
         "toc": {
             "label": "TOC",
             "useSupabase": false,
             "modelFile": "../data/universes/toc/models/toc.json"
+        },
+        "longevity": {
+            "label": "Dlouhověkost",
+            "useSupabase": true,
+            "modelFile": "../data/universes/longevity/models/longevity.json"
         },
         "bmc": {
             "label": "BMC",
