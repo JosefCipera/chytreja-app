@@ -191,8 +191,9 @@ export default async function handler(req, res) {
           ? Math.round(zpozdeni_dny / z.prubeznа_doba * 100)
           : null;
 
-        // Průběžná doba v kalendářních dnech (pro zobrazení v plánu)
-        const prubeznа_doba_kal = calendarDays(zahajeni, ukonceni);
+        // Průběžná doba — konstanta ze zakázky, nezměníme ji
+        // (pro zobrazení přepočteme na kal. dny z ideálního zahájení, ne z clampnutého)
+        const prubeznа_doba_kal = calendarDays(zahajeniIdeal, ukonceni);
 
         // Pracovní zátěž na pracoviště: zbývající ks × min/ks
         const cas = z.cas_pracoviste || {};
