@@ -521,10 +521,10 @@ async function runPlan() {
       return;
     }
 
-    // Zobraz plan data v tabulce (stejná struktura jako vstupní data)
+    // Zobraz plan data v tabulce — vzestupně podle zahájení (co začínám dřív = nahoře)
     allData  = json.plan;
     sortCol  = 'planovane_zahajeni';
-    sortDir  = -1;  // sestupně
+    sortDir  = 1;  // vzestupně
     page     = 0;
     render(allData);
 
