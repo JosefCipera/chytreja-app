@@ -179,9 +179,11 @@ export default async function handler(req, res) {
         const ukonceni = z.planovane_ukonceni || z.termin_dodani;
 
         // Plánované zahájení — couvej od ukončení o prubeznа_doba pracovních dní
-        const zahajeni = subtractWorkingDays(ukonceni, z.prubeznа_doba);
+        // Pokud vychází v minulosti, zahaj od dneška (zakázka je zpožděná)
+        const zahajeniIdeal = subtractWorkingDays(ukonceni, z.prubeznа_doba);
+        const zahajeni = zahajeniIdeal < today ? new Date(today) : zahajeniIdeal;
 
-        // Zpoždění oproti dnešku
+        // Zpoždění oproti dnešku (podle termínu dodání, ne zahájení)
         const endDate = new Date(ukonceni); endDate.setHours(0,0,0,0);
         const zpozdeniMs   = today.getTime() - endDate.getTime();
         const zpozdeni_dny = zpozdeniMs > 0 ? Math.ceil(zpozdeniMs / 86400000) : null;
