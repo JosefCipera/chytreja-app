@@ -432,7 +432,6 @@ function buildDemo() {
     'Ohyb: 180 min, Soustruhy: 60 min','Soustruhy: 320 min, Brusky: 70 min',
     'Svařování: 660 min, Laser: 100 min',
   ];
-  const zp = (termin) => termin < today ? Math.round((new Date(today) - new Date(termin)) / 86400000) : 0;
   return rows.map((z, i) => ({
     ...z,
     zbyvа_ks: z.vyrobit_ks - z.odvedeno_ks,
