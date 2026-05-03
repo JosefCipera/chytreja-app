@@ -399,22 +399,23 @@
     <!-- Service Worker -->
     <script>
         if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
+            // Pokud v cache existuje stará verze → smaž všechny SW a reloadni
+            // (stará verze blokovala fetch na hud.html iframe)
+            caches.keys().then(keys => {
+                const CURRENT = 'chytre-ja-v22';
+                const hasOld = keys.some(k => k.startsWith('chytre-ja-') && k !== CURRENT);
+                if (hasOld) {
+                    console.log('🔄 Starý SW detekován, čistím...');
+                    navigator.serviceWorker.getRegistrations()
+                        .then(regs => Promise.all(regs.map(r => r.unregister())))
+                        .then(() => caches.keys())
+                        .then(ks => Promise.all(ks.map(k => caches.delete(k))))
+                        .then(() => location.reload());
+                    return; // neregistruj nový SW, reload to udělá sám
+                }
+                // Aktuální verze — registruj normálně
                 navigator.serviceWorker.register('/service-worker.js', { scope: '/' })
-                    .then(reg => {
-                        console.log('✅ SW zaregistrován');
-                        // Force-check for new SW version on every load
-                        reg.update();
-                        reg.addEventListener('updatefound', () => {
-                            const newSW = reg.installing;
-                            newSW.addEventListener('statechange', () => {
-                                if (newSW.state === 'activated') {
-                                    console.log('✅ SW aktualizován, reloading...');
-                                    window.location.reload();
-                                }
-                            });
-                        });
-                    })
+                    .then(reg => { reg.update(); })
                     .catch(err => console.warn('⚠️ SW registrace selhala:', err));
             });
             navigator.serviceWorker.addEventListener('message', e => {
@@ -524,7 +525,17 @@
             if (children.length) window.prefetchHudNodes(userId, children);
         };
 
+        // TOC uzly s vlastní fullscreen stránkou — přesměruj přímo, bez HUD iframu
+        const TOC_DIRECT_PAGES = {
+            vyroba_toc: '/app/toc-vyroba.html',
+        };
+
         window.openHudOverlay = async function(userId, nodeId) {
+            if (TOC_DIRECT_PAGES[nodeId]) {
+                window.location.href = TOC_DIRECT_PAGES[nodeId] + '?userId=' + encodeURIComponent(userId);
+                return;
+            }
+
             const overlay = document.getElementById('hud-overlay');
             const wrap    = document.getElementById('hud-panel-wrap');
             const iframe  = document.getElementById('hud-iframe');
