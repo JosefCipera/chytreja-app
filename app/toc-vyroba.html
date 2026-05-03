@@ -321,10 +321,13 @@ function render(data) {
     <div class="stat">ZBÝVÁ VYROBIT: <span>${celkem_ks.toLocaleString('cs')} ks</span></div>
   `;
 
-  // Sort
+  // Sort — datové sloupce porovnáváme jako Date, ne jako string
+  const DATE_RE = /^\d{4}-\d{2}-\d{2}/;
   const sorted = [...data].sort((a, b) => {
     let va = a[sortCol] ?? '', vb = b[sortCol] ?? '';
-    if (typeof va === 'string') return va.localeCompare(vb) * sortDir;
+    if (typeof va === 'string' && DATE_RE.test(va))
+      return (new Date(va) - new Date(vb)) * sortDir;
+    if (typeof va === 'string') return va.localeCompare(vb, 'cs') * sortDir;
     return (va - vb) * sortDir;
   });
 
