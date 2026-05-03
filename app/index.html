@@ -450,12 +450,6 @@
         ">
             <iframe id="hud-iframe" src="" style="width:100%; height:100%; border:none;" allow="microphone"></iframe>
         </div>
-        <!-- TOC action bar — rendered in parent, never inside iframe -->
-        <div id="toc-action-bar" style="
-            display:none; position:absolute; bottom:24px; left:50%;
-            transform:translateX(-50%); z-index:10;
-            display:none; gap:8px; flex-wrap:wrap; justify-content:center;
-        "></div>
     </div>
     <script>
         // ── HUD node data cache — prefetched on login ──────────────────────────
@@ -573,23 +567,6 @@
                 );
             }
 
-            // TOC action bar — buttons live in parent, not inside iframe
-            const tocBar = document.getElementById('toc-action-bar');
-            if (tocBar) {
-                const TOC_ACTIONS = {
-                    vyroba_toc: [{ label: 'Plán výroby', url: `/app/toc-vyroba.html?userId=${encodeURIComponent(userId)}` }],
-                };
-                const actions = TOC_ACTIONS[nodeId] || [];
-                if (actions.length) {
-                    tocBar.innerHTML = actions.map(a =>
-                        `<a href="${a.url}" style="padding:8px 18px;border-radius:999px;font-size:13px;background:rgba(6,182,212,0.12);border:1px solid rgba(6,182,212,0.35);color:#22d3ee;text-decoration:none;font-family:'JetBrains Mono',monospace;letter-spacing:0.05em;">${a.label}</a>`
-                    ).join('');
-                    tocBar.style.display = 'flex';
-                } else {
-                    tocBar.style.display = 'none';
-                }
-            }
-
             // Open panel — on subsequent opens data is already in iframe, no flicker
             overlay.style.display = 'flex';
             requestAnimationFrame(() => requestAnimationFrame(() => {
@@ -602,7 +579,6 @@
             const wrap    = document.getElementById('hud-panel-wrap');
             const tocBar  = document.getElementById('toc-action-bar');
             wrap.style.transform = 'translateX(100%)';
-            if (tocBar) tocBar.style.display = 'none';
             // Keep iframe alive — just hide overlay; _hudOpen stays true so no reload on reopen
             setTimeout(() => { overlay.style.display = 'none'; }, 360);
         };
