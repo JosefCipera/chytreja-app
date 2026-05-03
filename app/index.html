@@ -399,28 +399,11 @@
     <!-- Service Worker -->
     <script>
         if ('serviceWorker' in navigator) {
-            // Pokud v cache existuje stará verze → smaž všechny SW a reloadni
-            // (stará verze blokovala fetch na hud.html iframe)
-            caches.keys().then(keys => {
-                const CURRENT = 'chytre-ja-v22';
-                const hasOld = keys.some(k => k.startsWith('chytre-ja-') && k !== CURRENT);
-                if (hasOld) {
-                    console.log('🔄 Starý SW detekován, čistím...');
-                    navigator.serviceWorker.getRegistrations()
-                        .then(regs => Promise.all(regs.map(r => r.unregister())))
-                        .then(() => caches.keys())
-                        .then(ks => Promise.all(ks.map(k => caches.delete(k))))
-                        .then(() => location.reload());
-                    return; // neregistruj nový SW, reload to udělá sám
-                }
-                // Aktuální verze — registruj normálně
-                navigator.serviceWorker.register('/service-worker.js', { scope: '/' })
-                    .then(reg => { reg.update(); })
-                    .catch(err => console.warn('⚠️ SW registrace selhala:', err));
+            // SW je dočasně vypnutý — odregistruj vše co ještě běží
+            navigator.serviceWorker.getRegistrations().then(regs => {
+                regs.forEach(r => r.unregister());
             });
-            navigator.serviceWorker.addEventListener('message', e => {
-                if (e.data?.type === 'SW_UPDATED') window.location.reload();
-            });
+            caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
         }
     </script>
 
