@@ -299,14 +299,16 @@ export default async function handler(req, res) {
 
       if (!pracoviste?.length) return res.json({ ok: true, rows: [], pracoviste: [], message: 'Žádná pracoviště.' });
 
-      // 3) Rozsah datumů: od dneška do nejzazšího ukončení + 10 dní
+      // 3) Rozsah datumů: od zítřka do nejzazšího ukončení + 10 dní
+      const tomorrow = new Date(today.getTime() + ONE_DAY);
       const maxEnd = zakazkyKap.reduce((mx, z) => {
         const t = new Date(z.planovane_ukonceni).getTime();
         return t > mx ? t : mx;
-      }, today.getTime());
+      }, tomorrow.getTime());
 
+      const DAYS_CS = ['Ne','Po','Út','St','Čt','Pá','So'];
       const dates = [];
-      for (let ms = today.getTime(); ms <= maxEnd + 10 * ONE_DAY; ms += ONE_DAY) {
+      for (let ms = tomorrow.getTime(); ms <= maxEnd + 10 * ONE_DAY; ms += ONE_DAY) {
         dates.push(new Date(ms));
       }
 
@@ -361,8 +363,9 @@ export default async function handler(req, res) {
 
       // 5) Sestav řádky výsledné tabulky
       const rows = dates.map((d, di) => ({
-        datum: `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`,
+        datum: `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}`,
         datum_iso: d.toISOString().slice(0, 10),
+        dow: DAYS_CS[d.getDay()],
         nepracovni: isNonWorkingDay(d),
         zatizeni: wplaceResults.map(w => w.loadPct[di]),
       }));

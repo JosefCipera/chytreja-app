@@ -242,48 +242,97 @@
     .tab-btn:hover { color: #94a3b8; }
     .tab-btn.active { color: #22d3ee; border-bottom-color: #22d3ee; }
 
-    /* ── Kapacitní tabulka ── */
-    #kap-view { flex: 1; overflow: auto; display: none; }
-    .kap-wrap { padding: 0 24px 16px; min-width: fit-content; }
+    /* ── Kapacitní plán ── */
+    #kap-view {
+      flex: 1;
+      overflow: auto;
+      display: none;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(6,182,212,0.3) transparent;
+    }
+    #kap-view::-webkit-scrollbar { height: 4px; width: 4px; }
+    #kap-view::-webkit-scrollbar-thumb { background: rgba(6,182,212,0.3); border-radius: 2px; }
+
     .kap-info {
-      padding: 10px 24px;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 12px;
-      color: #475569;
       flex-shrink: 0;
+      padding: 8px 24px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      border-bottom: 1px solid rgba(239,68,68,0.15);
+      background: rgba(239,68,68,0.04);
       display: none;
     }
-    .kap-table { border-collapse: collapse; font-size: 14px; }
-    .kap-table th {
+    .kap-info .constraint-label { color: #64748b; }
+    .kap-info .constraint-val   { color: #f87171; }
+
+    .kap-legend {
+      flex-shrink: 0;
+      display: none;
+      gap: 16px;
+      padding: 8px 24px;
+      border-top: 1px solid rgba(255,255,255,0.04);
+      background: #080e1a;
+    }
+    .kap-legend-item { display: flex; align-items: center; gap: 5px; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #475569; }
+    .kap-legend-dot  { width: 8px; height: 8px; border-radius: 2px; }
+
+    .kap-wrap { padding: 0; min-width: fit-content; }
+
+    .kap-table { border-collapse: collapse; font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+
+    /* Sticky header row */
+    .kap-table thead th {
       position: sticky;
       top: 0;
       background: #0a1322;
       border-bottom: 1px solid rgba(6,182,212,0.2);
       color: #475569;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 12px;
-      letter-spacing: 0.06em;
-      padding: 8px 14px;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      padding: 7px 6px 5px;
       text-align: center;
       white-space: nowrap;
+      min-width: 46px;
       z-index: 3;
     }
-    .kap-table th.col-datum { text-align: left; }
-    .kap-table td {
-      padding: 6px 14px;
-      text-align: center;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 13px;
-      border-bottom: 1px solid rgba(255,255,255,0.03);
-      white-space: nowrap;
+    /* Sticky first column (pracoviště) */
+    .kap-table thead th:first-child,
+    .kap-table tbody td:first-child {
+      position: sticky;
+      left: 0;
+      z-index: 4;
+      background: #0a1322;
+      border-right: 1px solid rgba(6,182,212,0.2);
+      min-width: 110px;
+      text-align: left;
+      padding-left: 20px;
     }
-    .kap-table td.col-datum { text-align: left; color: #64748b; }
-    .kap-table tr.nonworking { background: rgba(255,255,255,0.01); }
-    .kap-table tr.nonworking td { color: #1e293b; }
-    .kap-pct-0    { color: #1e293b; }
-    .kap-pct-low  { color: #22c55e; }
-    .kap-pct-mid  { color: #eab308; }
-    .kap-pct-high { color: #ef4444; font-weight: 600; }
+    .kap-table thead th:first-child { z-index: 5; }
+
+    .kap-table thead th.weekend { background: #080e1a; color: #1e293b; }
+    .kap-date-day { display: block; font-size: 11px; }
+    .kap-date-dow { display: block; font-size: 9px; margin-top: 1px; color: #334155; }
+    .kap-table thead th.weekend .kap-date-day { color: #1e293b; }
+
+    .kap-table tbody tr { border-bottom: 1px solid rgba(255,255,255,0.03); }
+    .kap-table tbody td {
+      padding: 7px 6px;
+      text-align: center;
+      white-space: nowrap;
+      font-size: 12px;
+    }
+    .kap-table tbody td:first-child {
+      color: #94a3b8;
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      background: #0a1322;
+    }
+    .kap-u-empty   { color: #1e293b; }
+    .kap-u-weekend { background: rgba(255,255,255,0.01); color: #1e293b; }
+    .kap-u-ok      { color: #22c55e; background: rgba(34,197,94,0.07); }
+    .kap-u-warn    { color: #eab308; background: rgba(234,179,8,0.10); }
+    .kap-u-over    { color: #f87171; background: rgba(239,68,68,0.18); font-weight: 700; }
 
     /* ── Loading / Error ── */
     .center {
@@ -334,6 +383,12 @@
   <div class="kap-wrap" id="kap-wrap">
     <div class="center pulse">Spusť kapacitní plán tlačítkem výše.</div>
   </div>
+</div>
+<div class="kap-legend" id="kap-legend" style="display:none">
+  <div class="kap-legend-item"><div class="kap-legend-dot" style="background:rgba(34,197,94,0.5)"></div>OK &lt;80</div>
+  <div class="kap-legend-item"><div class="kap-legend-dot" style="background:rgba(234,179,8,0.6)"></div>WARN 80–99</div>
+  <div class="kap-legend-item"><div class="kap-legend-dot" style="background:rgba(239,68,68,0.6)"></div>OVER ≥100</div>
+  <div class="kap-legend-item"><div class="kap-legend-dot" style="background:#1e293b"></div>víkend/svátek</div>
 </div>
 
 <script>
@@ -632,8 +687,9 @@ function switchTab(tab) {
   document.getElementById('stats').style.display      = isPlan ? '' : 'none';
   document.getElementById('main').style.display       = isPlan ? '' : 'none';
   document.getElementById('pagination').style.display = isPlan ? '' : 'none';
-  document.getElementById('kap-info').style.display   = isPlan ? 'none' : '';
+  document.getElementById('kap-info').style.display   = isPlan ? 'none' : 'block';
   document.getElementById('kap-view').style.display   = isPlan ? 'none' : '';
+  document.getElementById('kap-legend').style.display = isPlan ? 'none' : 'flex';
 }
 
 // ── Kapacitní plán ─────────────────────────────────────────────────────────
@@ -676,24 +732,45 @@ async function runKapacita(limit) {
 function renderKapacita(json) {
   const { pracoviste, rows } = json;
 
-  const thead = `<tr>
-    <th class="col-datum">DATUM</th>
-    ${pracoviste.map(p => `<th title="Kapacita: ${p.kapacita_hod} hod/den">${p.nazev.toUpperCase()}</th>`).join('')}
-  </tr>`;
-
-  const tbody = rows.map(row => {
-    if (row.nepracovni) {
-      return `<tr class="nonworking">
-        <td class="col-datum">${row.datum}</td>
-        ${pracoviste.map(() => '<td>—</td>').join('')}
-      </tr>`;
+  // ── CONSTRAINT: pracoviště s nejvíce přetíženými dny v příštím týdnu ──
+  const next7work = rows.filter(r => !r.nepracovni).slice(0, 7);
+  let constraintHtml = '';
+  if (next7work.length && pracoviste.length) {
+    const overCounts = pracoviste.map((p, pi) => ({
+      nazev: p.nazev,
+      over: next7work.filter(r => (r.zatizeni[pi] || 0) >= 80).length,
+    })).sort((a, b) => b.over - a.over);
+    const top = overCounts[0];
+    if (top.over > 0) {
+      constraintHtml = `<span class="constraint-label">CONSTRAINT: </span>`
+        + `<span class="constraint-val">⚠ ${top.nazev.toUpperCase()} — přetíženo ${top.over}× tento týden</span>`;
     }
-    const cells = row.zatizeni.map(pct => {
-      if (pct === null || pct === 0) return `<td class="kap-pct-0">—</td>`;
-      const cls = pct > 100 ? 'kap-pct-high' : pct >= 80 ? 'kap-pct-mid' : 'kap-pct-low';
-      return `<td class="${cls}">${pct}%</td>`;
-    });
-    return `<tr><td class="col-datum">${row.datum}</td>${cells.join('')}</tr>`;
+  }
+  document.getElementById('kap-info').innerHTML = constraintHtml ||
+    `<span class="constraint-label">CONSTRAINT: </span><span style="color:#22c55e">✔ žádné přetížené pracoviště tento týden</span>`;
+
+  // ── TABULKA: řádky = pracoviště, sloupce = dny ──────────────────────────
+  // Záhlaví: první buňka = PRACOVIŠTĚ, pak datumy
+  const thCols = rows.map(r => {
+    const cls = r.nepracovni ? 'weekend' : '';
+    return `<th class="${cls}">
+      <span class="kap-date-day">${r.datum}</span>
+      <span class="kap-date-dow">${r.dow}</span>
+    </th>`;
+  }).join('');
+
+  const thead = `<tr><th>PRACOVIŠTĚ</th>${thCols}</tr>`;
+
+  // Tělo: jeden řádek = jedno pracoviště
+  const tbody = pracoviste.map((p, pi) => {
+    const cells = rows.map(r => {
+      if (r.nepracovni) return `<td class="kap-u-weekend"></td>`;
+      const v = r.zatizeni[pi];
+      if (v === null || v === 0) return `<td class="kap-u-empty">—</td>`;
+      const cls = v >= 100 ? 'kap-u-over' : v >= 80 ? 'kap-u-warn' : 'kap-u-ok';
+      return `<td class="${cls}">${v}</td>`;
+    }).join('');
+    return `<tr><td>${p.nazev.toUpperCase()}</td>${cells}</tr>`;
   }).join('');
 
   document.getElementById('kap-wrap').innerHTML = `
