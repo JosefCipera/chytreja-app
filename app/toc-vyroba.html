@@ -217,6 +217,74 @@
       text-align: center;
     }
 
+    /* ── Tabs ── */
+    .tab-bar {
+      flex-shrink: 0;
+      display: flex;
+      gap: 2px;
+      padding: 0 24px;
+      border-bottom: 1px solid rgba(6,182,212,0.15);
+      background: #080e1a;
+    }
+    .tab-btn {
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: #475569;
+      cursor: pointer;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      padding: 10px 16px;
+      transition: color 0.2s, border-color 0.2s;
+      white-space: nowrap;
+    }
+    .tab-btn:hover { color: #94a3b8; }
+    .tab-btn.active { color: #22d3ee; border-bottom-color: #22d3ee; }
+
+    /* ── Kapacitní tabulka ── */
+    #kap-view { flex: 1; overflow: auto; display: none; }
+    .kap-wrap { padding: 0 24px 16px; min-width: fit-content; }
+    .kap-info {
+      padding: 10px 24px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: #475569;
+      flex-shrink: 0;
+      display: none;
+    }
+    .kap-table { border-collapse: collapse; font-size: 14px; }
+    .kap-table th {
+      position: sticky;
+      top: 0;
+      background: #0a1322;
+      border-bottom: 1px solid rgba(6,182,212,0.2);
+      color: #475569;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      letter-spacing: 0.06em;
+      padding: 8px 14px;
+      text-align: center;
+      white-space: nowrap;
+      z-index: 3;
+    }
+    .kap-table th.col-datum { text-align: left; }
+    .kap-table td {
+      padding: 6px 14px;
+      text-align: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+      white-space: nowrap;
+    }
+    .kap-table td.col-datum { text-align: left; color: #64748b; }
+    .kap-table tr.nonworking { background: rgba(255,255,255,0.01); }
+    .kap-table tr.nonworking td { color: #1e293b; }
+    .kap-pct-0    { color: #1e293b; }
+    .kap-pct-low  { color: #22c55e; }
+    .kap-pct-mid  { color: #eab308; }
+    .kap-pct-high { color: #ef4444; font-weight: 600; }
+
     /* ── Loading / Error ── */
     .center {
       display: flex;
@@ -239,10 +307,16 @@
     <div class="title">[PLÁN VÝROBY]</div>
   </div>
   <div style="display:flex;gap:8px;align-items:center;">
-    <button id="btn-kontrola" class="btn-action" onclick="runKontrola()">⚙ Kontrola dat</button>
-    <button id="btn-plan"     class="btn-action" onclick="runPlan()" style="background:rgba(34,197,94,0.08);border-color:rgba(34,197,94,0.3);color:#4ade80;">▶ Vytvořit plán</button>
+    <button id="btn-kontrola"  class="btn-action" onclick="runKontrola()">⚙ Kontrola dat</button>
+    <button id="btn-plan"      class="btn-action" onclick="runPlan()" style="background:rgba(34,197,94,0.08);border-color:rgba(34,197,94,0.3);color:#4ade80;">▶ Vytvořit plán</button>
+    <button id="btn-kapacita"  class="btn-action" onclick="switchTab('kapacita');runKapacita(2)" style="background:rgba(234,179,8,0.08);border-color:rgba(234,179,8,0.3);color:#facc15;">📊 Kapacitní plán (test 2)</button>
     <button class="btn-close" onclick="window.location.href='/app/'">✕ Zavřít</button>
   </div>
+</div>
+
+<div class="tab-bar">
+  <button class="tab-btn active" id="tab-plan"     onclick="switchTab('plan')">PLÁN VÝROBY</button>
+  <button class="tab-btn"        id="tab-kapacita" onclick="switchTab('kapacita')">KAPACITNÍ PLÁN</button>
 </div>
 
 <div class="stats" id="stats">
@@ -254,6 +328,13 @@
 </div>
 
 <div class="pagination-bar" id="pagination" style="display:none"></div>
+
+<div class="kap-info" id="kap-info"></div>
+<div id="kap-view">
+  <div class="kap-wrap" id="kap-wrap">
+    <div class="center pulse">Spusť kapacitní plán tlačítkem výše.</div>
+  </div>
+</div>
 
 <script>
 const params  = new URLSearchParams(location.search);
@@ -541,6 +622,85 @@ async function runPlan() {
     btn.disabled = false;
     btn.textContent = '▶ Vytvořit plán';
   }
+}
+
+// ── Přepínání záložek ──────────────────────────────────────────────────────
+function switchTab(tab) {
+  const isPlan = tab === 'plan';
+  document.getElementById('tab-plan').classList.toggle('active', isPlan);
+  document.getElementById('tab-kapacita').classList.toggle('active', !isPlan);
+  document.getElementById('stats').style.display      = isPlan ? '' : 'none';
+  document.getElementById('main').style.display       = isPlan ? '' : 'none';
+  document.getElementById('pagination').style.display = isPlan ? '' : 'none';
+  document.getElementById('kap-info').style.display   = isPlan ? 'none' : '';
+  document.getElementById('kap-view').style.display   = isPlan ? 'none' : '';
+}
+
+// ── Kapacitní plán ─────────────────────────────────────────────────────────
+async function runKapacita(limit) {
+  const btn = document.getElementById('btn-kapacita');
+  if (btn) { btn.disabled = true; btn.textContent = '📊 Počítám…'; }
+
+  try {
+    const body = { action: 'kapacita', userId };
+    if (limit) body.limit = limit;
+
+    const res  = await fetch('/api/toc-plan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
+    if (!json.rows?.length) {
+      document.getElementById('kap-wrap').innerHTML = `<div class="center" style="color:#eab308">${json.message || 'Žádná data.'}</div>`;
+      return;
+    }
+
+    // Info bar
+    document.getElementById('kap-info').innerHTML =
+      `<span style="color:#22d3ee">KAPACITNÍ PLÁN</span> &nbsp;·&nbsp; ` +
+      `${json.zakazky_count} zakázek &nbsp;·&nbsp; ` +
+      `pracoviště: ${json.pracoviste.map(p => p.nazev).join(', ')} &nbsp;·&nbsp; ` +
+      `${json.rows.filter(r => !r.nepracovni).length} pracovních dní`;
+
+    renderKapacita(json);
+  } catch (e) {
+    document.getElementById('kap-wrap').innerHTML =
+      `<div class="center" style="color:#ef4444">Chyba: ${e.message}</div>`;
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '📊 Kapacitní plán'; }
+  }
+}
+
+function renderKapacita(json) {
+  const { pracoviste, rows } = json;
+
+  const thead = `<tr>
+    <th class="col-datum">DATUM</th>
+    ${pracoviste.map(p => `<th title="Kapacita: ${p.kapacita_hod} hod/den">${p.nazev.toUpperCase()}</th>`).join('')}
+  </tr>`;
+
+  const tbody = rows.map(row => {
+    if (row.nepracovni) {
+      return `<tr class="nonworking">
+        <td class="col-datum">${row.datum}</td>
+        ${pracoviste.map(() => '<td>—</td>').join('')}
+      </tr>`;
+    }
+    const cells = row.zatizeni.map(pct => {
+      if (pct === null || pct === 0) return `<td class="kap-pct-0">—</td>`;
+      const cls = pct > 100 ? 'kap-pct-high' : pct >= 80 ? 'kap-pct-mid' : 'kap-pct-low';
+      return `<td class="${cls}">${pct}%</td>`;
+    });
+    return `<tr><td class="col-datum">${row.datum}</td>${cells.join('')}</tr>`;
+  }).join('');
+
+  document.getElementById('kap-wrap').innerHTML = `
+    <table class="kap-table">
+      <thead>${thead}</thead>
+      <tbody>${tbody}</tbody>
+    </table>`;
 }
 
 function showErr(msg, url) {

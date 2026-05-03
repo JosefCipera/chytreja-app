@@ -1,5 +1,5 @@
 // POST /api/toc-plan
-// Body: { action: 'kontrola' | 'vytvor', userId: '...' }
+// Body: { action: 'kontrola' | 'vytvor' | 'kapacita', userId: '...', limit?: number }
 //
 // action=kontrola:
 //   Zkontroluje povinná pole každé zakázky, zapíše kontrola_dat: 'ok' nebo
@@ -7,11 +7,18 @@
 //
 // action=vytvor:
 //   Pro zakázky s kontrola_dat='ok' a stavem plánovaná/rozpracovaná:
-//   - spočítá planovane_zahajeni couváním od planovane_ukonceni přes prac. dny
+//   - spočítá planovane_zahajeni couváním od termin_dodani přes prac. dny
 //   - spočítá zpozdeni_dny a casove_plneni_pct
 //   - spočítá pracovní zátěž na pracoviště (zbývající ks × min/ks)
 //   - uloží do toc_zakazky
-//   - vrátí seřazeno sestupně podle planovane_zahajeni
+//   - vrátí seřazeno vzestupně podle planovane_zahajeni
+//
+// action=kapacita:
+//   Pro zaplánované zakázky s kapacitními daty (cas_pracoviste):
+//   - sestaví tabulku vytížení pracovišť po dnech (od dneška do max. ukončení)
+//   - hodnoty v % kapacity (minuty zátěže / minuty kapacity × 100)
+//   - nepracovní dny mají null
+//   - limit (volitelný) = max počet zakázek pro testování
 
 import dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' });
@@ -254,6 +261,119 @@ export default async function handler(req, res) {
         });
 
       return res.json({ ok: true, planned: plan.length, plan });
+    }
+
+    // ── ACTION: kapacita ────────────────────────────────────────────────────
+    if (action === 'kapacita') {
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      const ONE_DAY = 86400000;
+      const limit = req.body.limit ? Number(req.body.limit) : null;
+
+      // 1) Načti zaplánované zakázky s kapacitními daty
+      const { data: zakazky, error: zErr } = await sb
+        .from('toc_zakazky')
+        .select('id_zakazky, nazev_zakazky, planovane_zahajeni, planovane_ukonceni, prubeznа_doba, cas_pracoviste, vyrobit_ks, odvedeno_ks')
+        .eq('user_id', userId)
+        .eq('kontrola_dat', 'ok')
+        .in('stav', ['plánovaná', 'rozpracovaná'])
+        .not('planovane_zahajeni', 'is', null)
+        .not('planovane_ukonceni', 'is', null);
+
+      if (zErr) throw zErr;
+
+      // Filtruj jen zakázky s kapacitními daty, volitelně omezte počet
+      let zakazkyKap = (zakazky || []).filter(z =>
+        z.cas_pracoviste && Object.keys(z.cas_pracoviste).length > 0
+      );
+      if (limit) zakazkyKap = zakazkyKap.slice(0, limit);
+
+      if (!zakazkyKap.length) return res.json({ ok: true, rows: [], pracoviste: [], message: 'Žádné zakázky s kapacitními daty.' });
+
+      // 2) Načti pracoviště
+      const { data: pracoviste } = await sb
+        .from('toc_pracoviste')
+        .select('id_pracoviste, nazev_pracoviste, poradi, kapacita_hod')
+        .eq('user_id', userId)
+        .eq('aktivni', true)
+        .order('poradi');
+
+      if (!pracoviste?.length) return res.json({ ok: true, rows: [], pracoviste: [], message: 'Žádná pracoviště.' });
+
+      // 3) Rozsah datumů: od dneška do nejzazšího ukončení + 10 dní
+      const maxEnd = zakazkyKap.reduce((mx, z) => {
+        const t = new Date(z.planovane_ukonceni).getTime();
+        return t > mx ? t : mx;
+      }, today.getTime());
+
+      const dates = [];
+      for (let ms = today.getTime(); ms <= maxEnd + 10 * ONE_DAY; ms += ONE_DAY) {
+        dates.push(new Date(ms));
+      }
+
+      // 4) Pro každé pracoviště spočítej denní vytížení v minutách, pak převeď na %
+      const wplaceResults = pracoviste.map(p => {
+        const poradi  = String(p.poradi);
+        const kapHod  = p.kapacita_hod || 8;
+        const kapMin  = kapHod * 60;
+        const loadMin = new Array(dates.length).fill(0);
+
+        for (const z of zakazkyKap) {
+          // Celkové minuty pro toto pracoviště = min/ks × zbývající ks
+          const totalMin = Math.round(
+            ((z.cas_pracoviste || {})[poradi] || 0) *
+            Math.max(0, (z.vyrobit_ks || 0) - (z.odvedeno_ks || 0))
+          );
+          if (totalMin <= 0) continue;
+
+          const zahajeni = new Date(z.planovane_zahajeni); zahajeni.setHours(0,0,0,0);
+          const ukonceni = new Date(z.planovane_ukonceni); ukonceni.setHours(0,0,0,0);
+          if (today >= ukonceni) continue; // zakázka po termínu
+
+          // Okno = od dneška (nebo zahájení, pokud ještě nezačalo) do ukončení
+          const winStart = today > zahajeni ? today : zahajeni;
+
+          // Zbývající pracovní dny v okně
+          let zbyvaDni = 0;
+          for (let ms = winStart.getTime(); ms < ukonceni.getTime(); ms += ONE_DAY) {
+            if (!isNonWorkingDay(new Date(ms))) zbyvaDni++;
+          }
+          if (zbyvaDni <= 0) continue;
+
+          const prumerMin = totalMin / zbyvaDni; // průměr minut za pracovní den
+
+          // Vyplň zátěž do pole (jen pracovní dny v okně)
+          for (let di = 0; di < dates.length; di++) {
+            const d = dates[di];
+            if (d < winStart || d >= ukonceni) continue;
+            if (isNonWorkingDay(d)) continue;
+            loadMin[di] += prumerMin;
+          }
+        }
+
+        // Převeď na % kapacity (null = nepracovní den)
+        const loadPct = dates.map((d, di) => {
+          if (isNonWorkingDay(d)) return null;
+          return loadMin[di] > 0 ? Math.round(loadMin[di] / kapMin * 100) : 0;
+        });
+
+        return { poradi: p.poradi, nazev: p.nazev_pracoviste, kapacita_hod: kapHod, loadPct };
+      });
+
+      // 5) Sestav řádky výsledné tabulky
+      const rows = dates.map((d, di) => ({
+        datum: `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`,
+        datum_iso: d.toISOString().slice(0, 10),
+        nepracovni: isNonWorkingDay(d),
+        zatizeni: wplaceResults.map(w => w.loadPct[di]),
+      }));
+
+      return res.json({
+        ok: true,
+        zakazky_count: zakazkyKap.length,
+        zakazky_nazvy: zakazkyKap.map(z => z.id_zakazky),
+        pracoviste: wplaceResults.map(w => ({ poradi: w.poradi, nazev: w.nazev, kapacita_hod: w.kapacita_hod })),
+        rows,
+      });
     }
 
     return res.status(400).json({ error: `Neznámá akce: ${action}` });
