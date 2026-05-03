@@ -807,9 +807,8 @@ function initHeaderControls() {
 
   // roleSelect = admin override (testování), přepisuje DB mode
   const currentRole = localStorage.getItem("userRole") || "demo";
-  const stored = localStorage.getItem("currentModel");
   const modelKeys = Object.keys(window.UNIVERSE_INDEX);
-  const defaultModel = stored || modelKeys[0];
+  const defaultModel = modelKeys[0]; // vždy první z index.json (ignoruj stale localStorage)
 
   roleSelect.value = currentRole;
   modelSelect.value = defaultModel;
