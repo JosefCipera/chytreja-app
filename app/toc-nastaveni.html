@@ -320,6 +320,28 @@ async function handleUpload(input, type) {
 
     // Refresh náhledu
     loadPreview(type);
+
+    // Po importu zakázek → automatická kontrola dat
+    if (type === 'zakazky') {
+      statusEl.textContent += ' · ⚙ Kontroluji…';
+      try {
+        const kRes  = await fetch(`${API_BASE}/api/toc-plan`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'kontrola', userId }),
+        });
+        const kJson = await kRes.json();
+        if (kJson.err_count === 0) {
+          statusEl.textContent += ` · ✔ Kontrola OK (${kJson.checked})`;
+        } else {
+          statusEl.className = 'upload-status warn';
+          statusEl.textContent += ` · ⚠ ${kJson.err_count} zakázek s chybami`;
+          const errDiv = document.createElement('div');
+          errDiv.style.cssText = 'margin-top:8px;font-family:monospace;font-size:11px;color:#f87171;';
+          errDiv.textContent = kJson.errors.slice(0,5).map(e => `⚠ ${e.id}: ${e.chyby}`).join('\n');
+          statusEl.insertAdjacentElement('afterend', errDiv);
+        }
+      } catch(e) { /* kontrola selhala tiše */ }
+    }
   } catch (e) {
     statusEl.className = 'upload-status err';
     statusEl.textContent = '✕ ' + e.message;
