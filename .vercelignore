@@ -4,3 +4,5 @@ api/readiness.js
 api/voice.js
 api/agents.js
 api/snapshot-nodes.js
+api/aspiration.js
+api/orchestrator.js
