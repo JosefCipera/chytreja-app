@@ -280,7 +280,6 @@ function renderTab(tab) {
       <div class="format-hint">${cfg.format}</div>
     </div>
 
-    <div id="preview-${tab}"></div>
   `;
 
   // preview se zobrazí až po úspěšném importu
@@ -318,8 +317,6 @@ async function handleUpload(input, type) {
       statusEl.insertAdjacentElement('afterend', errDiv);
     }
 
-    // Refresh náhledu
-    loadPreview(type);
 
     // Po importu zakázek → automatická kontrola dat
     if (type === 'zakazky') {
