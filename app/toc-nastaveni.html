@@ -280,6 +280,7 @@ function renderTab(tab) {
       <div class="format-hint">${cfg.format}</div>
     </div>
 
+    ${tab === 'zakazky' ? `<div id="zakazky-table"></div>` : ''}
   `;
 
   // preview se zobrazí až po úspěšném importu
@@ -318,7 +319,7 @@ async function handleUpload(input, type) {
     }
 
 
-    // Po importu zakázek → automatická kontrola dat
+    // Po importu zakázek → automatická kontrola + zobraz tabulku
     if (type === 'zakazky') {
       statusEl.textContent += ' · ⚙ Kontroluji…';
       try {
@@ -327,17 +328,13 @@ async function handleUpload(input, type) {
           body: JSON.stringify({ action: 'kontrola', userId }),
         });
         const kJson = await kRes.json();
-        if (kJson.err_count === 0) {
-          statusEl.textContent += ` · ✔ Kontrola OK (${kJson.checked})`;
-        } else {
-          statusEl.className = 'upload-status warn';
-          statusEl.textContent += ` · ⚠ ${kJson.err_count} zakázek s chybami`;
-          const errDiv = document.createElement('div');
-          errDiv.style.cssText = 'margin-top:8px;font-family:monospace;font-size:11px;color:#f87171;';
-          errDiv.textContent = kJson.errors.slice(0,5).map(e => `⚠ ${e.id}: ${e.chyby}`).join('\n');
-          statusEl.insertAdjacentElement('afterend', errDiv);
-        }
+        const nok = kJson.err_count || 0;
+        statusEl.className = nok > 0 ? 'upload-status warn' : 'upload-status ok';
+        statusEl.textContent = json.message + (nok > 0
+          ? ` · ⚠ ${nok} zakázek NOK`
+          : ` · ✔ Kontrola OK (${kJson.checked})`);
       } catch(e) { /* kontrola selhala tiše */ }
+      await loadZakazkyTable();
     }
   } catch (e) {
     statusEl.className = 'upload-status err';
@@ -347,55 +344,83 @@ async function handleUpload(input, type) {
   input.value = '';
 }
 
-// ── Preview ───────────────────────────────────────────────────────────────────
-async function loadPreview(type) {
-  const el = document.getElementById('preview-' + type);
-  if (!el) return;
+// ── Tabulka zakázek po importu ────────────────────────────────────────────────
+let zData = [], zSortCol = 'kontrola_dat', zSortDir = 1;
 
+async function loadZakazkyTable() {
+  const wrap = document.getElementById('zakazky-table');
+  if (!wrap) return;
+  wrap.innerHTML = `<div style="color:#475569;font-family:monospace;font-size:12px;padding:8px 0;">↻ Načítám…</div>`;
   try {
-    if (type === 'zakazky') {
-      const res  = await fetch(`${API_BASE}/api/toc-zakazky?userId=${encodeURIComponent(userId)}`);
-      const json = await res.json();
-      const rows = (json.zakazky || []).slice(0, 10);
-      if (!rows.length) { el.innerHTML = empty(); return; }
-
-      el.innerHTML = `<div class="preview-wrap"><table class="preview-table">
-        <thead><tr>
-          <th>ID ZAKÁZKY</th><th>NÁZEV</th><th>TERMÍN</th>
-          <th>PRŮB. DOBA</th><th>VYROBIT</th><th>ODVEDENO</th><th>KONTROLA</th>
-        </tr></thead>
-        <tbody>${rows.map(z => `<tr>
-          <td>${z.id_zakazky}</td>
-          <td>${z.nazev_zakazky}</td>
-          <td>${fmt(z.termin_dodani)}</td>
-          <td>${z.prubeznа_doba ?? '—'} d</td>
-          <td>${z.vyrobit_ks}</td>
-          <td>${z.odvedeno_ks}</td>
-          <td class="${z.kontrola_dat === 'ok' ? 'ok' : z.kontrola_dat ? 'err' : ''}">${z.kontrola_dat || '—'}</td>
-        </tr>`).join('')}</tbody>
-      </table></div>
-      ${json.zakazky?.length > 10 ? `<div style="margin-top:8px;font-size:11px;color:#334155;font-family:monospace;">…a ${json.zakazky.length - 10} dalších</div>` : ''}`;
-
-    } else if (type === 'pracoviste') {
-      const res  = await fetch(`${API_BASE}/api/toc-import`, {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ action: 'list', type: 'pracoviste', userId }),
-      });
-      // toc-import nepodporuje list — načti přímo přes toc-zakazky workaround
-      // zatím zobraz hint
-      el.innerHTML = `<div style="color:#334155;font-family:monospace;font-size:12px;padding:8px 0;">
-        Nahraj pracoviste.csv pro zobrazení aktuálních dat.
-      </div>`;
-
-    } else if (type === 'parametry') {
-      el.innerHTML = `<div style="color:#334155;font-family:monospace;font-size:12px;padding:8px 0;">
-        Nahraj parametry.csv pro zobrazení aktuálních dat.
-      </div>`;
-    }
-  } catch (e) {
-    el.innerHTML = `<div style="color:#475569;font-size:12px;font-family:monospace;">${e.message}</div>`;
+    const res  = await fetch(`${API_BASE}/api/toc-zakazky?userId=${encodeURIComponent(userId)}`);
+    const json = await res.json();
+    zData = json.zakazky || [];
+    zSortCol = 'kontrola_dat'; zSortDir = 1;
+    renderZakazkyTable();
+  } catch(e) {
+    wrap.innerHTML = `<div style="color:#f87171;font-family:monospace;font-size:12px;">${e.message}</div>`;
   }
+}
+
+function renderZakazkyTable() {
+  const wrap = document.getElementById('zakazky-table');
+  if (!wrap || !zData.length) return;
+
+  const sorted = [...zData].sort((a, b) => {
+    const av = a[zSortCol] ?? '', bv = b[zSortCol] ?? '';
+    // NOK (chyba) jde nahoru, ok dolů, null (—) ještě dál
+    if (zSortCol === 'kontrola_dat') {
+      const rank = v => v === null || v === undefined ? 2 : v === 'ok' ? 1 : 0;
+      return (rank(a.kontrola_dat) - rank(b.kontrola_dat)) * zSortDir;
+    }
+    return av < bv ? -zSortDir : av > bv ? zSortDir : 0;
+  });
+
+  const cols = [
+    { key: 'id_zakazky',    label: 'ID ZAKÁZKY' },
+    { key: 'termin_dodani', label: 'TERMÍN' },
+    { key: 'prubeznа_doba', label: 'PRŮB.' },
+    { key: 'vyrobit_ks',    label: 'VYROBIT' },
+    { key: 'odvedeno_ks',   label: 'ODVEDENO' },
+    { key: 'kontrola_dat',  label: 'KONTROLA' },
+  ];
+
+  const arrow = col => zSortCol === col.key ? (zSortDir === 1 ? ' ▲' : ' ▼') : '';
+
+  const thead = `<tr>${cols.map(c =>
+    `<th style="cursor:pointer" onclick="zSort('${c.key}')">${c.label}${arrow(c)}</th>`
+  ).join('')}</tr>`;
+
+  const tbody = sorted.map(z => {
+    const nok = z.kontrola_dat && z.kontrola_dat !== 'ok';
+    const rowStyle = nok ? 'background:rgba(239,68,68,0.06);' : '';
+    const kTxt = z.kontrola_dat === 'ok' ? '✔ ok' : z.kontrola_dat ? `✕ ${z.kontrola_dat}` : '—';
+    const kCls = z.kontrola_dat === 'ok' ? 'ok' : z.kontrola_dat ? 'err' : '';
+    return `<tr style="${rowStyle}">
+      <td>${z.id_zakazky}</td>
+      <td>${fmt(z.termin_dodani)}</td>
+      <td>${z.prubeznа_doba ?? '—'} d</td>
+      <td>${z.vyrobit_ks}</td>
+      <td>${z.odvedeno_ks}</td>
+      <td class="${kCls}">${kTxt}</td>
+    </tr>`;
+  }).join('');
+
+  const nokCount = zData.filter(z => z.kontrola_dat && z.kontrola_dat !== 'ok').length;
+  wrap.innerHTML = `
+    <div style="font-family:monospace;font-size:11px;color:#334155;margin-bottom:8px;">
+      ${zData.length} zakázek · ${nokCount > 0 ? `<span style="color:#f87171">${nokCount} NOK</span>` : '<span style="color:#22c55e">vše OK</span>'}
+      — klikni na záhlaví pro řazení
+    </div>
+    <div class="preview-wrap"><table class="preview-table">
+      <thead>${thead}</thead>
+      <tbody>${tbody}</tbody>
+    </table></div>`;
+}
+
+function zSort(col) {
+  if (zSortCol === col) zSortDir *= -1; else { zSortCol = col; zSortDir = 1; }
+  renderZakazkyTable();
 }
 
 function fmt(d) {
