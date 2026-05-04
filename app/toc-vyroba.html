@@ -771,8 +771,7 @@ function renderKapacita(json) {
       const v = r.zatizeni[pi];
       if (v === null || v === 0) return `<td class="kap-u-empty">—</td>`;
       const cls = v >= 100 ? 'kap-u-over' : v >= 80 ? 'kap-u-warn' : 'kap-u-ok';
-      const txt = v > 999 ? '!!!' : v;  // ochrana před špatnými daty
-      return `<td class="${cls}">${txt}</td>`;
+      return `<td class="${cls}">${v}</td>`;
     }).join('');
     return `<tr><td>${p.nazev.toUpperCase()}</td>${cells}</tr>`;
   }).join('');
