@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nastavení · TOC</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; }
+    body {
+      background: #080e1a;
+      color: #e2e8f0;
+      font-family: 'Inter', system-ui, sans-serif;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ── */
+    .header {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 24px;
+      border-bottom: 1px solid rgba(6,182,212,0.2);
+      background: rgba(6,182,212,0.04);
+    }
+    .title {
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 20px;
+      font-weight: 300;
+      color: #22d3ee;
+      text-shadow: 0 0 18px rgba(34,211,238,0.5);
+      letter-spacing: 0.02em;
+    }
+    .btn-close {
+      background: none;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      color: #64748b;
+      cursor: pointer;
+      font-size: 18px;
+      padding: 6px 12px;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .btn-close:hover { color: #22d3ee; border-color: rgba(34,211,238,0.4); }
+
+    /* ── Tabs ── */
+    .tab-bar {
+      flex-shrink: 0;
+      display: flex;
+      gap: 2px;
+      padding: 0 24px;
+      border-bottom: 1px solid rgba(6,182,212,0.15);
+      background: #080e1a;
+    }
+    .tab-btn {
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: #475569;
+      cursor: pointer;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      padding: 10px 16px;
+      transition: color 0.2s, border-color 0.2s;
+      white-space: nowrap;
+    }
+    .tab-btn:hover { color: #94a3b8; }
+    .tab-btn.active { color: #22d3ee; border-bottom-color: #22d3ee; }
+
+    /* ── Scroll area ── */
+    #main { flex: 1; overflow-y: auto; padding: 32px 24px; }
+
+    /* ── Upload karta ── */
+    .upload-card {
+      background: rgba(15,23,42,0.8);
+      border: 1px solid rgba(6,182,212,0.15);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+      max-width: 680px;
+    }
+    .card-title {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      letter-spacing: 0.1em;
+      color: #22d3ee;
+      margin-bottom: 6px;
+    }
+    .card-desc {
+      font-size: 13px;
+      color: #64748b;
+      margin-bottom: 18px;
+      line-height: 1.6;
+    }
+    .card-desc code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: #94a3b8;
+      background: rgba(255,255,255,0.04);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .upload-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .btn-upload {
+      background: rgba(6,182,212,0.08);
+      border: 1px solid rgba(6,182,212,0.3);
+      border-radius: 8px;
+      color: #22d3ee;
+      cursor: pointer;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      letter-spacing: 0.05em;
+      padding: 8px 18px;
+      transition: background 0.2s;
+      white-space: nowrap;
+    }
+    .btn-upload:hover { background: rgba(6,182,212,0.16); }
+    .btn-upload:disabled { opacity: 0.4; cursor: default; }
+
+    input[type="file"] { display: none; }
+
+    .upload-status {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: #475569;
+    }
+    .upload-status.ok   { color: #22c55e; }
+    .upload-status.err  { color: #f87171; }
+    .upload-status.warn { color: #eab308; }
+
+    /* ── Preview tabulka ── */
+    .preview-wrap {
+      margin-top: 18px;
+      overflow-x: auto;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    .preview-table {
+      border-collapse: collapse;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      width: 100%;
+      min-width: 400px;
+    }
+    .preview-table th {
+      background: rgba(6,182,212,0.07);
+      color: #475569;
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      padding: 7px 12px;
+      text-align: left;
+      white-space: nowrap;
+      border-bottom: 1px solid rgba(6,182,212,0.15);
+    }
+    .preview-table td {
+      padding: 7px 12px;
+      color: #94a3b8;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+      white-space: nowrap;
+      font-size: 12px;
+    }
+    .preview-table tr:last-child td { border-bottom: none; }
+    .preview-table td.ok  { color: #22c55e; }
+    .preview-table td.err { color: #f87171; }
+
+    /* ── Sekce záhlaví ── */
+    .section-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      color: #334155;
+      margin-bottom: 16px;
+      margin-top: 8px;
+    }
+
+    /* ── Formát hint ── */
+    .format-hint {
+      margin-top: 14px;
+      padding: 10px 14px;
+      background: rgba(255,255,255,0.02);
+      border-radius: 6px;
+      border-left: 2px solid rgba(6,182,212,0.2);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: #334155;
+      line-height: 1.7;
+      overflow-x: auto;
+      white-space: pre;
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="title">[NASTAVENÍ · TOC]</div>
+  <button class="btn-close" onclick="history.length > 1 ? history.back() : window.location.href='/app/'">✕ Zavřít</button>
+</div>
+
+<div class="tab-bar">
+  <button class="tab-btn active" id="tab-zakazky"    onclick="switchTab('zakazky')">ZAKÁZKY</button>
+  <button class="tab-btn"        id="tab-pracoviste" onclick="switchTab('pracoviste')">PRACOVIŠTĚ</button>
+  <button class="tab-btn"        id="tab-parametry"  onclick="switchTab('parametry')">PARAMETRY</button>
+</div>
+
+<div id="main"></div>
+
+<script>
+const params = new URLSearchParams(location.search);
+const userId = params.get('userId') || 'qE09cLyXXGRBRxOBCGNZqTM2XRW2';
+const LOCAL_DEV = location.port === '5500' || location.port === '5501';
+const API_BASE  = LOCAL_DEV ? 'https://dev.iting.cz' : '';
+
+let activeTab = 'zakazky';
+
+// ── Tab switch ────────────────────────────────────────────────────────────────
+function switchTab(tab) {
+  activeTab = tab;
+  ['zakazky','pracoviste','parametry'].forEach(t => {
+    document.getElementById('tab-' + t).classList.toggle('active', t === tab);
+  });
+  renderTab(tab);
+}
+
+// ── Render tab obsahu ─────────────────────────────────────────────────────────
+function renderTab(tab) {
+  const main = document.getElementById('main');
+
+  const configs = {
+    zakazky: {
+      title:    'IMPORT · ZAKÁZKY',
+      desc:     'CSV soubor z ERP systému. Jeden řádek = jedna zakázka.',
+      inputId:  'file-zakazky',
+      btnLabel: '↑ Nahrát zakazky.csv',
+      format:   'id_zakazky, nazev_zakazky, termin_dodani, prubeznа_doba,\nvyrobit_ks, odvedeno_ks, stav, typ_zakazky,\nbrusky, soustruhy, ohyb, laser, svarovani  ← min/ks',
+    },
+    pracoviste: {
+      title:    'IMPORT · PRACOVIŠTĚ',
+      desc:     'CSV soubor s kapacitami pracovišť. Pořadí určuje prioritu v kapacitním plánu.',
+      inputId:  'file-pracoviste',
+      btnLabel: '↑ Nahrát pracoviste.csv',
+      format:   'poradi, nazev, smena_hod, pocet_smen, pocet_zdroju',
+    },
+    parametry: {
+      title:    'IMPORT · PARAMETRY',
+      desc:     'CSV soubor s globálními parametry TOC (plánovací horizont, buffery apod.).',
+      inputId:  'file-parametry',
+      btnLabel: '↑ Nahrát parametry.csv',
+      format:   'klic, hodnota, popis',
+    },
+  };
+
+  const cfg = configs[tab];
+
+  main.innerHTML = `
+    <div class="section-label">VSTUPNÍ DATA · ${tab.toUpperCase()}</div>
+
+    <div class="upload-card">
+      <div class="card-title">${cfg.title}</div>
+      <div class="card-desc">${cfg.desc}</div>
+
+      <div class="upload-row">
+        <button class="btn-upload" onclick="document.getElementById('${cfg.inputId}').click()">
+          ↑ Nahrát CSV
+        </button>
+        <input type="file" id="${cfg.inputId}" accept=".csv,text/csv"
+               onchange="handleUpload(this, '${tab}')">
+        ${tab === 'zakazky' ? `<button class="btn-upload" style="background:rgba(148,163,184,0.06);border-color:rgba(148,163,184,0.2);color:#64748b;" onclick="exportCsv('${tab}')">↓ Export z DB</button>` : ''}
+        <span class="upload-status" id="status-${tab}">—</span>
+      </div>
+
+      <div class="format-hint">${cfg.format}</div>
+    </div>
+
+    <div id="preview-${tab}"></div>
+  `;
+
+  // preview se zobrazí až po úspěšném importu
+}
+
+// ── Upload ────────────────────────────────────────────────────────────────────
+async function handleUpload(input, type) {
+  const file = input.files[0];
+  if (!file) return;
+
+  const statusEl = document.getElementById('status-' + type);
+  statusEl.className = 'upload-status';
+  statusEl.textContent = '↻ Nahrávám…';
+
+  try {
+    const csv = await file.text();
+    const res  = await fetch(`${API_BASE}/api/toc-import`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ type, userId, csv }),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error((json.message || json.error || `HTTP ${res.status}`))
+
+    statusEl.className = json.errors > 0 ? 'upload-status warn' : 'upload-status ok';
+    statusEl.textContent = json.message;
+
+    // Zobraz chyby pokud jsou
+    if (json.error_list?.length) {
+      const errDiv = document.createElement('div');
+      errDiv.style.cssText = 'margin-top:10px;font-family:monospace;font-size:11px;color:#f87171;';
+      errDiv.textContent = json.error_list.slice(0, 5).map(e =>
+        `⚠ ${e.id || JSON.stringify(e.row)}: ${e.reason}`
+      ).join('\n');
+      statusEl.insertAdjacentElement('afterend', errDiv);
+    }
+
+    // Refresh náhledu
+    loadPreview(type);
+  } catch (e) {
+    statusEl.className = 'upload-status err';
+    statusEl.textContent = '✕ ' + e.message;
+  }
+
+  input.value = '';
+}
+
+// ── Preview ───────────────────────────────────────────────────────────────────
+async function loadPreview(type) {
+  const el = document.getElementById('preview-' + type);
+  if (!el) return;
+
+  try {
+    if (type === 'zakazky') {
+      const res  = await fetch(`${API_BASE}/api/toc-zakazky?userId=${encodeURIComponent(userId)}`);
+      const json = await res.json();
+      const rows = (json.zakazky || []).slice(0, 10);
+      if (!rows.length) { el.innerHTML = empty(); return; }
+
+      el.innerHTML = `<div class="preview-wrap"><table class="preview-table">
+        <thead><tr>
+          <th>ID ZAKÁZKY</th><th>NÁZEV</th><th>TERMÍN</th>
+          <th>PRŮB. DOBA</th><th>VYROBIT</th><th>ODVEDENO</th><th>KONTROLA</th>
+        </tr></thead>
+        <tbody>${rows.map(z => `<tr>
+          <td>${z.id_zakazky}</td>
+          <td>${z.nazev_zakazky}</td>
+          <td>${fmt(z.termin_dodani)}</td>
+          <td>${z.prubeznа_doba ?? '—'} d</td>
+          <td>${z.vyrobit_ks}</td>
+          <td>${z.odvedeno_ks}</td>
+          <td class="${z.kontrola_dat === 'ok' ? 'ok' : z.kontrola_dat ? 'err' : ''}">${z.kontrola_dat || '—'}</td>
+        </tr>`).join('')}</tbody>
+      </table></div>
+      ${json.zakazky?.length > 10 ? `<div style="margin-top:8px;font-size:11px;color:#334155;font-family:monospace;">…a ${json.zakazky.length - 10} dalších</div>` : ''}`;
+
+    } else if (type === 'pracoviste') {
+      const res  = await fetch(`${API_BASE}/api/toc-import`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ action: 'list', type: 'pracoviste', userId }),
+      });
+      // toc-import nepodporuje list — načti přímo přes toc-zakazky workaround
+      // zatím zobraz hint
+      el.innerHTML = `<div style="color:#334155;font-family:monospace;font-size:12px;padding:8px 0;">
+        Nahraj pracoviste.csv pro zobrazení aktuálních dat.
+      </div>`;
+
+    } else if (type === 'parametry') {
+      el.innerHTML = `<div style="color:#334155;font-family:monospace;font-size:12px;padding:8px 0;">
+        Nahraj parametry.csv pro zobrazení aktuálních dat.
+      </div>`;
+    }
+  } catch (e) {
+    el.innerHTML = `<div style="color:#475569;font-size:12px;font-family:monospace;">${e.message}</div>`;
+  }
+}
+
+function fmt(d) {
+  if (!d) return '—';
+  return d.slice(0,10).split('-').reverse().join('.');
+}
+function empty() {
+  return `<div style="color:#334155;font-family:monospace;font-size:12px;padding:8px 0;">Žádná data v DB.</div>`;
+}
+
+// ── Export ───────────────────────────────────────────────────────────────────
+function exportCsv(type) {
+  const url = `${API_BASE}/api/toc-import?type=${type}&userId=${encodeURIComponent(userId)}`;
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${type}.csv`;
+  a.click();
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+renderTab('zakazky');
+</script>
+</body>
+</html>
