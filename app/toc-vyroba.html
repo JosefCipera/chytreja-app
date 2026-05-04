@@ -279,7 +279,7 @@
 
     .kap-wrap { padding: 0; min-width: fit-content; }
 
-    .kap-table { border-collapse: collapse; font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+    .kap-table { border-collapse: collapse; font-family: 'JetBrains Mono', monospace; font-size: 15px; }
 
     /* Sticky header row */
     .kap-table thead th {
@@ -288,12 +288,12 @@
       background: #0a1322;
       border-bottom: 1px solid rgba(6,182,212,0.2);
       color: #475569;
-      font-size: 11px;
+      font-size: 13px;
       letter-spacing: 0.08em;
       padding: 7px 6px 5px;
       text-align: center;
       white-space: nowrap;
-      min-width: 46px;
+      min-width: 52px;
       z-index: 3;
     }
     /* Sticky first column (pracoviště) */
@@ -311,20 +311,20 @@
     .kap-table thead th:first-child { z-index: 5; }
 
     .kap-table thead th.weekend { background: #080e1a; color: #1e293b; }
-    .kap-date-day { display: block; font-size: 11px; }
-    .kap-date-dow { display: block; font-size: 9px; margin-top: 1px; color: #334155; }
+    .kap-date-day { display: block; font-size: 13px; }
+    .kap-date-dow { display: block; font-size: 11px; margin-top: 1px; color: #334155; }
     .kap-table thead th.weekend .kap-date-day { color: #1e293b; }
 
     .kap-table tbody tr { border-bottom: 1px solid rgba(255,255,255,0.03); }
     .kap-table tbody td {
-      padding: 7px 6px;
+      padding: 9px 6px;
       text-align: center;
       white-space: nowrap;
-      font-size: 12px;
+      font-size: 15px;
     }
     .kap-table tbody td:first-child {
       color: #94a3b8;
-      font-size: 11px;
+      font-size: 13px;
       letter-spacing: 0.1em;
       background: #0a1322;
     }
@@ -359,7 +359,8 @@
     <button id="btn-kontrola"  class="btn-action" onclick="runKontrola()">⚙ Kontrola dat</button>
     <button id="btn-plan"      class="btn-action" onclick="runPlan()" style="background:rgba(34,197,94,0.08);border-color:rgba(34,197,94,0.3);color:#4ade80;">▶ Vytvořit plán</button>
     <button id="btn-kapacita"  class="btn-action" onclick="switchTab('kapacita');runKapacita()" style="background:rgba(234,179,8,0.08);border-color:rgba(234,179,8,0.3);color:#facc15;">📊 Kapacitní plán</button>
-    <button class="btn-close" onclick="window.location.href='/app/'">✕ Zavřít</button>
+    <button class="btn-action" onclick="window.location.href='/app/toc-nastaveni.html?userId='+userId" style="color:#94a3b8;border-color:rgba(148,163,184,0.2);">⚙ Nastavení</button>
+    <button class="btn-close" onclick="history.length > 1 ? history.back() : window.location.href='/app/'">✕ Zavřít</button>
   </div>
 </div>
 
@@ -417,6 +418,7 @@ const cols = [
   { key: 'prubeznа_doba',      label: 'PRŮB. DOBA' },
   { key: 'zpozdeni_dny',       label: 'ZPOŽDĚNÍ' },
   { key: 'stav',               label: 'STAV' },
+  { key: 'kontrola_dat',       label: 'KONTROLA' },
   { key: 'cas_pracoviste_txt', label: 'PRACOVIŠTĚ (min)' },
 ];
 
@@ -492,6 +494,7 @@ function render(data) {
       <td class="mono" style="text-align:right">${z.prubeznа_doba ?? '—'} d</td>
       <td><span class="zpozdeni ${zCls}">${z.zpozdeni_dny > 0 ? '+' + z.zpozdeni_dny + ' d' : '—'}</span></td>
       <td><span class="badge-stav stav-${stav}">${stav}</span></td>
+      <td class="mono" style="font-size:12px;color:${z.kontrola_dat==='ok'?'#22c55e':z.kontrola_dat?'#ef4444':'#475569'}" title="${z.kontrola_dat||''}">${z.kontrola_dat==='ok'?'✔ ok':z.kontrola_dat?'✕ '+z.kontrola_dat:'—'}</td>
       <td class="cas" title="${z.cas_pracoviste_txt}">${z.cas_pracoviste_txt || '—'}</td>
     </tr>`;
   }).join('');
@@ -668,7 +671,7 @@ async function runPlan() {
     const banner = document.createElement('div');
     banner.id = 'plan-banner';
     banner.style.cssText = 'padding:10px 24px;background:rgba(34,197,94,0.08);border-bottom:1px solid rgba(34,197,94,0.2);font-family:JetBrains Mono,monospace;font-size:13px;color:#4ade80;';
-    banner.textContent = `▶ PLÁN VYTVOŘEN — ${json.planned} zakázek seřazeno sestupně podle zahájení · průběžná doba = kalendářní dny`;
+    banner.textContent = `▶ PLÁN VYTVOŘEN — ${json.planned} zakázek seřazeno podle zahájení`;
     document.querySelector('.header').insertAdjacentElement('afterend', banner);
 
   } catch (e) {
