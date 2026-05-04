@@ -161,7 +161,7 @@ export default async function handler(req, res) {
           odvedeno_ks:     int(row['odvedeno_ks'] || row['odvedeno'], 0),
           stav:            row['stav'] || 'plánovaná',
           typ_zakazky:     row['typ_zakazky'] || row['typ'] || 'výroba',
-          cas_pracoviste:  Object.keys(cas).length ? cas : null,
+          cas_pracoviste:  Object.keys(cas).length ? cas : {},
           kontrola_dat:    null,        // resetovat — bude znovu zkontrolováno
           updated_at:      new Date().toISOString(),
         });
