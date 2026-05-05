@@ -781,27 +781,52 @@ function renderGantt() {
   const pct = d => Math.round((toDay(d) - minD) / DAY / totalDays * 10000) / 100;
   const todayPct = Math.round((today - minD) / DAY / totalDays * 10000) / 100;
 
-  // ── Hlavička s měsíci ────────────────────────────────────────────────────
+  // ── Dvouřádková hlavička: měsíce + datumy ───────────────────────────────
   const MONTHS_CS = ['Led','Úno','Bře','Dub','Kvě','Čvn','Čvc','Srp','Zář','Říj','Lis','Pro'];
-  let headerHtml = '';
-  let cur = new Date(minD);
+  const GT      = parametry.GT ?? 7;   // tick interval in days
+  const HDR_MON  = 18;                  // výška řádku měsíců
+  const HDR_TICK = 18;                  // výška řádku datumů
+  const HDR_H    = HDR_MON + HDR_TICK;
+
+  // Řádek 1: měsíce
+  let monthsHtml = '';
+  let cur = new Date(minD.getFullYear(), minD.getMonth(), 1);
   while (cur <= maxD) {
-    const mStart = new Date(cur.getFullYear(), cur.getMonth(), 1);
-    const mEnd   = new Date(cur.getFullYear(), cur.getMonth() + 1, 0);
-    const from = Math.max(cur.getTime(), mStart.getTime());
-    const to   = Math.min(maxD.getTime(), mEnd.getTime());
-    const leftPct  = (from - minD.getTime()) / DAY / totalDays * 100;
-    const widthPct = (to - from) / DAY / totalDays * 100;
-    headerHtml += `<div style="position:absolute;left:${leftPct.toFixed(2)}%;width:${widthPct.toFixed(2)}%;
-      border-right:1px solid rgba(255,255,255,0.06);font-size:10px;color:#334155;
-      padding:3px 4px;overflow:hidden;white-space:nowrap;">
-      ${MONTHS_CS[cur.getMonth()]} ${cur.getFullYear()}
+    const from     = Math.max(cur.getTime(), minD.getTime());
+    const nextMon  = new Date(cur.getFullYear(), cur.getMonth() + 1, 1);
+    const to       = Math.min(nextMon.getTime(), maxD.getTime());
+    if (from < to) {
+      const lp = (from - minD.getTime()) / DAY / totalDays * 100;
+      const wp = (to   - from)           / DAY / totalDays * 100;
+      monthsHtml += `<div style="position:absolute;left:${lp.toFixed(2)}%;width:${wp.toFixed(2)}%;
+        height:${HDR_MON}px;line-height:${HDR_MON}px;
+        border-right:1px solid rgba(255,255,255,0.08);font-size:10px;color:#475569;
+        padding:0 5px;overflow:hidden;white-space:nowrap;">
+        ${MONTHS_CS[cur.getMonth()]} ${cur.getFullYear()}
+      </div>`;
+    }
+    cur = nextMon;
+  }
+
+  // Řádek 2: ticky s datumy (interval GT dní)
+  let ticksHtml = '';
+  let tick = new Date(minD);
+  const todayStr = today.toISOString().slice(0, 10);
+  while (tick <= maxD) {
+    const lp       = (tick.getTime() - minD.getTime()) / DAY / totalDays * 100;
+    const isToday  = tick.toISOString().slice(0, 10) === todayStr;
+    const label    = `${tick.getDate()}.${tick.getMonth() + 1}.`;
+    ticksHtml += `<div style="position:absolute;left:${lp.toFixed(2)}%;top:0;bottom:0;
+      border-left:1px solid rgba(255,255,255,${isToday ? '0.18' : '0.06'});">
+      <span style="position:absolute;top:2px;left:2px;font-size:9px;
+        color:${isToday ? 'rgba(255,255,255,0.45)' : '#334155'};
+        font-family:'JetBrains Mono',monospace;white-space:nowrap;">${label}</span>
     </div>`;
-    cur = new Date(cur.getFullYear(), cur.getMonth() + 1, 1);
+    tick = new Date(tick.getTime() + GT * DAY);
   }
 
   // ── Řádky zakázek ────────────────────────────────────────────────────────
-  const ROW_H = 22;
+  const ROW_H = 14;
   const rowsHtml = visData.map((z, i) => {
     // Klip: začátek/konec úsečky na hranice okna
     const startD = toDay(z.planovane_zahajeni) < minD ? minD.toISOString().slice(0,10) : z.planovane_zahajeni;
@@ -824,12 +849,12 @@ function renderGantt() {
       const l = (Math.max(ts, minD.getTime()) - minD.getTime()) / DAY / totalDays * 100;
       const r = (Math.min(te, maxD.getTime()) - minD.getTime()) / DAY / totalDays * 100;
       if (r <= l) return '';
-      return `<div style="position:absolute;left:${l.toFixed(2)}%;width:${(r-l).toFixed(2)}%;height:14px;top:4px;background:${color};${rL?'border-radius:3px 0 0 3px;':''}${rR?'border-radius:0 3px 3px 0;':''}"></div>`;
+      return `<div style="position:absolute;left:${l.toFixed(2)}%;width:${(r-l).toFixed(2)}%;height:9px;top:2px;background:${color};${rL?'border-radius:2px 0 0 2px;':''}${rR?'border-radius:0 2px 2px 0;':''}"></div>`;
     };
     const bar =
-      seg(fullStart, t1,      'rgba(34,197,94,0.75)',  true,  false) +
-      seg(t1,        t2,      'rgba(234,179,8,0.75)',  false, false) +
-      seg(t2,        fullEnd, 'rgba(239,68,68,0.75)',  false, true);
+      seg(fullStart, t1,      'rgba(34,197,94,0.8)',   true,  false) +
+      seg(t1,        t2,      'rgba(234,179,8,0.8)',   false, false) +
+      seg(t2,        fullEnd, 'rgba(239,68,68,0.8)',   false, true);
 
     const bg = i % 2 === 0 ? 'rgba(255,255,255,0.01)' : 'transparent';
     return `<div style="position:relative;height:${ROW_H}px;background:${bg};border-bottom:1px solid rgba(255,255,255,0.03);">
@@ -837,57 +862,53 @@ function renderGantt() {
     </div>`;
   }).join('');
 
-  // ── Popisky (levý panel) ─────────────────────────────────────────────────
+  // ── Popisky (levý panel) — bez barev ────────────────────────────────────
   const labelsHtml = visData.map((z, i) => {
-    const bg = i % 2 === 0 ? 'rgba(255,255,255,0.01)' : 'transparent';
-    // Barva štítku podle pozice dneška v úsečce
-    const start  = toDay(z.planovane_zahajeni).getTime();
-    const end    = toDay(z.planovane_ukonceni).getTime();
-    const span   = end - start;
-    const todayT = today.getTime();
-    let labelColor = '#64748b';
-    if (todayT >= start && todayT <= end) {
-      const pos = (todayT - start) / span;
-      labelColor = pos < 1/3 ? '#4ade80' : pos < 2/3 ? '#facc15' : '#f87171';
-    } else if (todayT > end) {
-      labelColor = '#f87171';  // propadlý termín
-    } else {
-      labelColor = '#94a3b8';  // ještě nezahájeno
-    }
+    const bg = i % 2 === 0 ? 'rgba(255,255,255,0.015)' : 'transparent';
     return `<div style="height:${ROW_H}px;line-height:${ROW_H}px;background:${bg};
       border-bottom:1px solid rgba(255,255,255,0.03);padding:0 8px;
-      font-size:11px;color:${labelColor};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+      font-size:10px;color:#475569;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
       ${z.id_zakazky}
     </div>`;
   }).join('');
 
-  const chartH = visData.length * ROW_H;
+  const chartH  = visData.length * ROW_H;
   const LABEL_W = 200;
 
   wrap.innerHTML = `
     <div style="display:flex;height:100%;">
+
       <!-- Levý panel: ID zakázek -->
-      <div style="width:${LABEL_W}px;flex-shrink:0;">
-        <div style="height:24px;background:#0f172a;border-bottom:1px solid rgba(255,255,255,0.06);"></div>
-        <div style="overflow:hidden;">${labelsHtml}</div>
+      <div style="width:${LABEL_W}px;flex-shrink:0;border-right:1px solid rgba(255,255,255,0.06);">
+        <!-- prázdná hlavička stejně vysoká jako header grafu -->
+        <div style="height:${HDR_H}px;background:#0a1120;border-bottom:1px solid rgba(255,255,255,0.06);"></div>
+        <div style="overflow-y:hidden;">${labelsHtml}</div>
       </div>
 
       <!-- Pravý panel: pruh diagramu -->
       <div style="flex:1;overflow-x:auto;position:relative;">
-        <!-- Hlavička měsíce -->
-        <div style="height:24px;position:relative;background:#0f172a;border-bottom:1px solid rgba(255,255,255,0.06);">
-          ${headerHtml}
+
+        <!-- Hlavička: řádek měsíců -->
+        <div style="height:${HDR_MON}px;position:relative;background:#0a1120;
+          border-bottom:1px solid rgba(255,255,255,0.05);">
+          ${monthsHtml}
         </div>
+
+        <!-- Hlavička: řádek datumů / tiků -->
+        <div style="height:${HDR_TICK}px;position:relative;background:#080e1a;
+          border-bottom:1px solid rgba(255,255,255,0.08);">
+          ${ticksHtml}
+        </div>
+
         <!-- Pruhy -->
         <div style="position:relative;height:${chartH}px;min-width:600px;">
           ${rowsHtml}
           <!-- Svislá čára dnes -->
           <div style="position:absolute;left:${todayPct.toFixed(2)}%;top:0;bottom:0;width:1px;
             background:rgba(255,255,255,0.28);z-index:10;pointer-events:none;">
-            <div style="position:absolute;top:0;left:3px;font-size:9px;color:rgba(255,255,255,0.45);
-              font-family:'JetBrains Mono',monospace;white-space:nowrap;">DNES</div>
           </div>
         </div>
+
       </div>
     </div>`;
 }
