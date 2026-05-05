@@ -823,8 +823,8 @@ function renderGantt() {
   const tPct = t => (t - minD.getTime()) / DAY / totalDays * 100;
 
   // ── Tiky ukotvené na dnešek ──────────────────────────────────────────────
-  // Šikmé datumy potřebují min ~28px na popis — s 2× hustotou je to většinou splněno
-  const minLabelPx   = 28;
+  // Šikmé popisky: footprint = cos(45°) × šířka textu ≈ 14px pro "5.5"
+  const minLabelPx   = 14;
   const labelSpacing = GT * Math.max(1, Math.ceil(minLabelPx / Math.max(1, pxPerDay * GT)));
 
   let firstTick = new Date(today);
@@ -846,12 +846,14 @@ function renderGantt() {
       const gclr  = isTd ? 'rgba(255,255,255,0.55)' : 'rgba(255,255,255,0.18)';
       const gw    = isTd ? '2px' : '1px';
 
-      // Hlavička: jen šikmý label, bez čáry
+      // Šikmý label — zobraz jen když je dost místa (adaptivní na šířku displeje)
+      const dayOffset = Math.round((tick.getTime() - today.getTime()) / DAY);
+      const showLabel = (dayOffset % labelSpacing === 0);
       ticksHtml += `<div style="position:absolute;left:${lp.toFixed(2)}%;top:0;bottom:0;overflow:visible;">
-        <span style="position:absolute;bottom:8px;left:3px;
+        ${showLabel ? `<span style="position:absolute;bottom:8px;left:3px;
           font-size:10px;font-family:'JetBrains Mono',monospace;font-weight:${isTd ? '700' : '400'};
           color:${lclr};white-space:nowrap;
-          transform:rotate(-45deg);transform-origin:left bottom;display:block;">${label}</span>
+          transform:rotate(-45deg);transform-origin:left bottom;display:block;">${label}</span>` : ''}
       </div>`;
 
       // Data: svislá čára — z-index pod barem
