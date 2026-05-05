@@ -959,23 +959,23 @@ function renderGantt() {
 function renderHlavniPlan() {
   const wrap = document.getElementById('hp-wrap');
 
-  // Data (datumy posunuty na aktuální: 21.4–5.5.2026)
+  // Data — 1.5 až 15.5.2026
   const data = [
-    { d:'21.4', plan:780000,  uvol:550000,  pred:0       },
-    { d:'22.4', plan:790000,  uvol:815000,  pred:0       },
-    { d:'23.4', plan:800000,  uvol:640000,  pred:10000   },
-    { d:'24.4', plan:820000,  uvol:820000,  pred:80000   },
-    { d:'25.4', plan:900000,  uvol:1050000, pred:430000  },
-    { d:'26.4', plan:960000,  uvol:700000,  pred:550000  },
-    { d:'27.4', plan:1000000, uvol:1350000, pred:1200000 },
-    { d:'28.4', plan:1000000, uvol:1000000, pred:1000000 },
-    { d:'29.4', plan:1000000, uvol:790000,  pred:700000  },
-    { d:'30.4', plan:1200000, uvol:0,       pred:0       },
-    { d:'1.5',  plan:1200000, uvol:100000,  pred:100000  },
-    { d:'2.5',  plan:1200000, uvol:90000,   pred:90000   },
-    { d:'3.5',  plan:1200000, uvol:0,       pred:0       },
-    { d:'4.5',  plan:1250000, uvol:0,       pred:0       },
-    { d:'5.5',  plan:1300000, uvol:0,       pred:0       },
+    { d:'1.5',  plan:780000,  uvol:550000,  pred:0       },
+    { d:'2.5',  plan:790000,  uvol:815000,  pred:0       },
+    { d:'3.5',  plan:800000,  uvol:640000,  pred:10000   },
+    { d:'4.5',  plan:820000,  uvol:820000,  pred:80000   },
+    { d:'5.5',  plan:900000,  uvol:1050000, pred:430000  },
+    { d:'6.5',  plan:960000,  uvol:700000,  pred:550000  },
+    { d:'7.5',  plan:1000000, uvol:1350000, pred:1200000 },
+    { d:'8.5',  plan:1000000, uvol:1000000, pred:1000000 },
+    { d:'9.5',  plan:1000000, uvol:790000,  pred:700000  },
+    { d:'10.5', plan:1200000, uvol:0,       pred:0       },
+    { d:'11.5', plan:1200000, uvol:100000,  pred:100000  },
+    { d:'12.5', plan:1200000, uvol:90000,   pred:90000   },
+    { d:'13.5', plan:1200000, uvol:0,       pred:0       },
+    { d:'14.5', plan:1250000, uvol:0,       pred:0       },
+    { d:'15.5', plan:1300000, uvol:0,       pred:0       },
   ];
 
   const totalPlan = data.reduce((s,d) => s + d.plan, 0);
@@ -1037,20 +1037,12 @@ function renderHlavniPlan() {
     `<circle cx="${xc(i).toFixed(1)}" cy="${yv(d.plan).toFixed(1)}" r="2.5" fill="#22d3ee"/>`
   ).join('');
 
-  // X popisky + dnešní čára
-  const todayStr = '5.5';
-  const xLabels = data.map((d, i) => {
-    const isToday = d.d === todayStr;
-    return `<text x="${xc(i).toFixed(1)}" y="${H-pad.b+14}" fill="${isToday?'#e2e8f0':'#64748b'}"
-      font-size="10" text-anchor="middle" font-family="JetBrains Mono,monospace"
-      font-weight="${isToday?'700':'400'}">${d.d}</text>`;
-  }).join('');
-
-  const todayIdx = data.findIndex(d => d.d === todayStr);
-  const todayLine = todayIdx >= 0
-    ? `<line x1="${xc(todayIdx).toFixed(1)}" y1="${pad.t}" x2="${xc(todayIdx).toFixed(1)}" y2="${H-pad.b}"
-        stroke="rgba(255,255,255,0.25)" stroke-width="1" stroke-dasharray="3,3"/>`
-    : '';
+  // X popisky — bez zvýraznění konkrétního dne
+  const xLabels = data.map((d, i) =>
+    `<text x="${xc(i).toFixed(1)}" y="${H-pad.b+14}" fill="#64748b"
+      font-size="10" text-anchor="middle" font-family="JetBrains Mono,monospace">${d.d}</text>`
+  ).join('');
+  const todayLine = '';
 
   wrap.innerHTML = `
     <div style="padding:20px 20px 0;">
@@ -1073,6 +1065,14 @@ function renderHlavniPlan() {
           <span class="hp-stat-label">PLNĚNÍ</span>
           <span class="hp-stat-val" style="color:${pct>=90?'#4ade80':pct>=70?'#facc15':'#f87171'};">${pct} %</span>
         </div>
+      </div>
+
+      <!-- Popis výpočtu -->
+      <div style="font-size:11px;color:#475569;font-family:'JetBrains Mono',monospace;margin-bottom:14px;line-height:1.6;">
+        <span style="color:#22d3ee;">PLÁN</span> = denní výrobní cíl (ks).&nbsp;
+        <span style="color:#4ade80;">UVOLNĚNÉ</span> = zakázky skutečně spuštěné do výroby.&nbsp;
+        <span style="color:#facc15;">PŘEDVYDANÉ</span> = material/práce vydané před uvolněním.&nbsp;
+        <span style="color:#94a3b8;">PLNĚNÍ</span> = Σ uvolněné / Σ plán za zobrazené období.
       </div>
 
       <!-- Legenda -->
