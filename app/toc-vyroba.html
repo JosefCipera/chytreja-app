@@ -832,37 +832,34 @@ function renderGantt() {
     firstTick = new Date(firstTick.getTime() - GT * DAY);
   }
 
-  // Svislé čáry tikových pozic — renderujeme jako div-y (ne CSS gradient)
-  // Stejné divy jdou do hlavičky (label) i do každého řádku (gridLine)
-  let ticksHtml  = '';   // hlavička
-  let gridLines  = '';   // čáry pro řádky (sdílené, vkládané do každé td)
+  // Svislé čáry + šikmé datumy — každý kalendářní den
+  let ticksHtml = '';   // hlavička
+  let gridLines = '';   // čáry pro řádky
 
-  let tick = new Date(firstTick);
-  while (tick <= maxD) {
-    const lp       = tPct(tick.getTime());
+  let calDay = new Date(minD);
+  while (calDay.getTime() <= maxD.getTime()) {
+    const lp    = tPct(calDay.getTime());
     if (lp >= 0 && lp <= 100) {
-      const isTd      = tick.toISOString().slice(0, 10) === todayStr;
-      const dayOffset = Math.round((tick.getTime() - today.getTime()) / DAY);
-      const showLabel = (dayOffset % labelSpacing === 0);
-      const label     = `${tick.getDate()}.${tick.getMonth() + 1}`;
-      const lclr      = isTd ? '#e2e8f0' : '#94a3b8';
-      const gclr      = isTd ? 'rgba(255,255,255,0.55)' : 'rgba(255,255,255,0.18)';
-      const gw        = isTd ? '2px' : '1px';
+      const isTd  = calDay.toISOString().slice(0, 10) === todayStr;
+      const label = `${calDay.getDate()}.${calDay.getMonth() + 1}`;
+      const lclr  = isTd ? '#e2e8f0' : '#94a3b8';
+      const gclr  = isTd ? 'rgba(255,255,255,0.55)' : 'rgba(255,255,255,0.18)';
+      const gw    = isTd ? '2px' : '1px';
 
-      // Hlavička: šikmý label (rotate -45°, pivot vlevo dole)
-      ticksHtml += `<div style="position:absolute;left:${lp.toFixed(2)}%;top:0;bottom:0;
-        border-left:1px solid rgba(255,255,255,0.15);overflow:visible;">
-        ${showLabel ? `<span style="position:absolute;bottom:6px;left:2px;
+      // Hlavička: čára přetéká dolů (border-left táhne přes celou th výšku) + šikmý label
+      ticksHtml += `<div style="position:absolute;left:${lp.toFixed(2)}%;top:0;bottom:0;overflow:visible;">
+        <div style="position:absolute;top:0;bottom:-4px;left:0;width:${gw};background:${gclr};"></div>
+        <span style="position:absolute;bottom:8px;left:3px;
           font-size:10px;font-family:'JetBrains Mono',monospace;font-weight:${isTd ? '700' : '400'};
           color:${lclr};white-space:nowrap;
-          transform:rotate(-45deg);transform-origin:left bottom;display:block;">${label}</span>` : ''}
+          transform:rotate(-45deg);transform-origin:left bottom;display:block;">${label}</span>
       </div>`;
 
-      // Řádky: svislá čára
+      // Řádky: svislá čára (z-index pod barem)
       gridLines += `<div style="position:absolute;left:${lp.toFixed(2)}%;top:0;bottom:0;
         width:${gw};background:${gclr};pointer-events:none;z-index:1;"></div>`;
     }
-    tick = new Date(tick.getTime() + GT * DAY);
+    calDay = new Date(calDay.getTime() + DAY);
   }
 
   // ── Řádky: segment helper ────────────────────────────────────────────────
@@ -921,10 +918,10 @@ function renderGantt() {
             border-right:1px solid rgba(255,255,255,0.1);
             border-bottom:1px solid rgba(6,182,212,0.2);">
           </th>
-          <!-- Osa: šikmé datumy D.M -->
+          <!-- Osa: šikmé datumy D.M — overflow:visible, datumy přetékají volně -->
           <th style="position:sticky;top:0;z-index:30;
             background:#0a1120;padding:0;height:${HEADER_H}px;
-            border-bottom:1px solid rgba(6,182,212,0.2);overflow:hidden;">
+            border-bottom:1px solid rgba(6,182,212,0.2);overflow:visible;">
             <div style="position:relative;height:${HEADER_H}px;overflow:visible;">
               ${ticksHtml}
             </div>
