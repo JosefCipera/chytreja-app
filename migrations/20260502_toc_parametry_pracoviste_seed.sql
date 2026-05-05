@@ -15,7 +15,7 @@ VALUES
   (uid, 'KP',   'Počet dnů pro kapacitní plán',                      60),
   (uid, 'GD',   'Zobrazení Gantta do dneška ve dnech',              -30),
   (uid, 'GO',   'Zobrazení Gantta ode dneška ve dnech',              90),
-  (uid, 'GT',   'Interval tiků v Ganttově diagramu (dny: 2/3/7/10)', 3),
+  (uid, 'GT',   'Interval tiků v Ganttově diagramu (dny: 1/2/3/7/10)', 1),
   (uid, 'LZ',   'Limit záznamů pro mazání nebo zápis do tabulek', 1000),
   (uid, 'TEST', 'pro povely z AI',                                   20)
 ON CONFLICT (user_id, id_parametru) DO UPDATE

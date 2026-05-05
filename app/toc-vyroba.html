@@ -783,7 +783,7 @@ function renderGantt() {
   // Okno z Parametrů
   const GD = parametry.GD ?? -30;
   const GO = parametry.GO ?? 90;
-  const GT = Math.max(2, parametry.GT ?? 3);  // min 2 dny
+  const GT = Math.max(1, parametry.GT ?? 3);  // min 1 den
   const minD = new Date(today.getTime() + GD * DAY);
 
   // Filtr + řazení — nejprve bez omezení pravého okraje
@@ -832,22 +832,58 @@ function renderGantt() {
   const pxPerTick  = estChartPx * GT / totalDays;
   const showLabel  = pxPerTick >= 20;
 
-  // Rastr: linear-gradient ze všech tikových pozic — použit jako background-image řádků
-  const gridStops = [];
-  let gt = new Date(firstTick);
-  while (gt <= maxD) {
-    const p = tPct(gt.getTime());
-    const isWE = gt.getDay() === 0 || gt.getDay() === 6;
-    const lineA = gt.toISOString().slice(0,10) === todayStr ? '0.18'
-                : isWE ? '0.04' : '0.07';
-    gridStops.push(
-      `rgba(255,255,255,${lineA}) ${p.toFixed(2)}%`,
-      `rgba(255,255,255,${lineA}) calc(${p.toFixed(2)}% + 1px)`,
-      `transparent calc(${p.toFixed(2)}% + 1px)`
-    );
-    gt = new Date(gt.getTime() + GT * DAY);
+  // ── Rastr: kalendářový pohled (nezávislý na GT) ──────────────────────────
+  // Přesně jako ve vzoru: jemné podbarvení víkendů + čáry jen na Po a 1. měsíce
+  // Iterujeme každý kalendářní den — rychlé, výsledek se znovupoužívá pro všechny řádky
+  const weStops = ['transparent 0%'];   // víkendové podbarvení
+  const lineStops = ['transparent 0%']; // svislé čáry (Po + 1. měsíce)
+  let inWE = false;
+  let calDay = new Date(minD);
+  while (calDay.getTime() <= maxD.getTime() + DAY) {
+    const dow   = calDay.getDay();
+    const isWE  = dow === 0 || dow === 6;
+    const isMon = dow === 1;
+    const isMStart = calDay.getDate() === 1;
+    const p = tPct(calDay.getTime()).toFixed(2);
+
+    // Víkendové bloky
+    if (isWE && !inWE) {
+      weStops.push(`transparent ${p}%`, `rgba(255,255,255,0.03) ${p}%`);
+      inWE = true;
+    } else if (!isWE && inWE) {
+      weStops.push(`rgba(255,255,255,0.03) ${p}%`, `transparent ${p}%`);
+      inWE = false;
+    }
+
+    // Čáry: pondělí (slabší) nebo 1. měsíce (silnější)
+    if (isMon || isMStart) {
+      const a = isMStart ? '0.12' : '0.06';
+      lineStops.push(
+        `rgba(255,255,255,${a}) ${p}%`,
+        `rgba(255,255,255,${a}) calc(${p}% + 1px)`,
+        `transparent calc(${p}% + 1px)`
+      );
+    }
+    calDay = new Date(calDay.getTime() + DAY);
   }
-  const gridBg = `linear-gradient(to right, ${gridStops.join(', ')})`;
+  if (inWE) weStops.push(`rgba(255,255,255,0.03) 100%`);
+
+  // Dnešní sloupeček — jemné zvýraznění sloupce
+  const todayColPct  = tPct(today.getTime()).toFixed(2);
+  const todayColPct1 = tPct(today.getTime() + DAY).toFixed(2);
+  const todayColStop = [
+    `transparent ${todayColPct}%`,
+    `rgba(255,255,255,0.055) ${todayColPct}%`,
+    `rgba(255,255,255,0.055) ${todayColPct1}%`,
+    `transparent ${todayColPct1}%`,
+  ].join(', ');
+
+  // Kombinovaný background-image (3 vrstvy)
+  const gridBg = [
+    `linear-gradient(to right, ${todayColStop})`,
+    `linear-gradient(to right, ${lineStops.join(', ')})`,
+    `linear-gradient(to right, ${weStops.join(', ')})`,
+  ].join(', ');
 
   // Hlavičkové tiky (HTML)
   let ticksHtml = '';
@@ -904,13 +940,15 @@ function renderGantt() {
   const rowsHtml = visData.map((z, i) => {
     const fullStart = toDay(z.planovane_zahajeni).getTime();
     // +1 DAY: pruh sahá na konec posledního dne (ne na jeho začátek)
-    const fullEnd   = toDay(z.planovane_ukonceni).getTime() + DAY;
-    const span      = fullEnd - fullStart;
+    const fullEnd     = toDay(z.planovane_ukonceni).getTime() + DAY;
+    const span        = fullEnd - fullStart;
     const t1 = fullStart + span / 3;
     const t2 = fullStart + span * 2 / 3;
-    const bar = seg(fullStart, t1, 'rgba(34,197,94,0.58)', true, false)
-              + seg(t1, t2,        'rgba(234,179,8,0.58)',  false, false)
-              + seg(t2, fullEnd,   'rgba(239,68,68,0.58)',  false, true);
+    // Pokud zahájení před levým oknem → pruh začíná na okraji bez zaoblení vlevo
+    const clippedL = fullStart < minD.getTime();
+    const bar = seg(fullStart, t1, 'rgba(34,197,94,0.58)', !clippedL, false)
+              + seg(t1, t2,        'rgba(234,179,8,0.58)',  false,     false)
+              + seg(t2, fullEnd,   'rgba(239,68,68,0.58)',  false,     true);
     const bg = i % 2 === 0 ? '#090f1c' : '#080e1a';
     return `<tr>
       <td style="position:sticky;left:0;z-index:10;background:${bg};
