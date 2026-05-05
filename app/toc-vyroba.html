@@ -783,14 +783,14 @@ function renderGantt() {
   // Okno z Parametrů
   const GD = parametry.GD ?? -30;
   const GO = parametry.GO ?? 90;
-  const GT = Math.max(1, parametry.GT ?? 1);  // default 1 den, min 1
+  const GT = Math.max(2, parametry.GT ?? 3);  // min 2 dny
   const minD = new Date(today.getTime() + GD * DAY);
-  const maxD = new Date(today.getTime() + GO * DAY);
 
-  // Filtr + řazení
+  // Filtr + řazení — nejprve bez omezení pravého okraje
   const visData = allData
     .filter(z => z.planovane_zahajeni && z.planovane_ukonceni)
-    .filter(z => toDay(z.planovane_ukonceni) >= minD && toDay(z.planovane_zahajeni) <= maxD)
+    .filter(z => toDay(z.planovane_zahajeni) <= new Date(today.getTime() + GO * DAY))
+    .filter(z => toDay(z.planovane_ukonceni) >= minD)
     .sort((a, b) => a.planovane_zahajeni < b.planovane_zahajeni ? -1 : 1);
 
   if (!visData.length) {
@@ -798,6 +798,14 @@ function renderGantt() {
     wrap.innerHTML = '<div style="color:#475569;font-family:\'JetBrains Mono\',monospace;font-size:13px;">Žádné zakázky v zobrazovaném okně (GD/GO).</div>';
     return;
   }
+
+  // Pravý okraj = max(GO parametr, konec poslední zakázky) — žádná úsečka nesmí být oříznutá
+  let maxD = new Date(today.getTime() + GO * DAY);
+  for (const z of visData) {
+    const d = toDay(z.planovane_ukonceni);
+    if (d > maxD) maxD = d;
+  }
+  maxD = new Date(maxD.getTime() + 2 * DAY);  // malý pravý okraj
 
   const totalDays  = Math.round((maxD - minD) / DAY);
   const LABEL_W    = 180;  // px — levý sticky sloupec
@@ -876,7 +884,8 @@ function renderGantt() {
   // ── Generuj řádky tabulky ─────────────────────────────────────────────────
   const rowsHtml = visData.map((z, i) => {
     const fullStart = toDay(z.planovane_zahajeni).getTime();
-    const fullEnd   = toDay(z.planovane_ukonceni).getTime();
+    // +1 DAY: pruh sahá na konec posledního dne (ne na jeho začátek)
+    const fullEnd   = toDay(z.planovane_ukonceni).getTime() + DAY;
     const span      = fullEnd - fullStart;
     const t1 = fullStart + span / 3;
     const t2 = fullStart + span * 2 / 3;
