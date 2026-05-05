@@ -814,11 +814,10 @@ function renderGantt() {
   const BAR_TOP    = Math.floor((ROW_H - BAR_H) / 2);
   const HEADER_H   = 44;   // px — výška hlavičky (prostor pro šikmé datumy)
 
-  // Skutečná dostupná šířka pro výpočet hustoty popisků (bez umělého minima)
+  // pxPerDay: min 14px/den → chart je vždy dost široký, mobil scrolluje stejně jako desktop
   const realChartPx = Math.max(50, (view.getBoundingClientRect().width || window.innerWidth) - LABEL_W);
-  const pxPerDay    = (realChartPx / totalDays) * 2;
-  // Tabulka může scrollovat, ale minimálně 400px chartové oblasti
-  const CHART_W     = Math.max(400, Math.round(pxPerDay * totalDays));
+  const pxPerDay    = Math.max(14, (realChartPx / totalDays) * 2);
+  const CHART_W     = Math.round(pxPerDay * totalDays);
 
   // Časová osa → % v chartové oblasti (CHART_W px)
   const tPct = t => (t - minD.getTime()) / DAY / totalDays * 100;
