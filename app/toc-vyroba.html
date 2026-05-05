@@ -817,106 +817,54 @@ function renderGantt() {
   const tPct = t => (t - minD.getTime()) / DAY / totalDays * 100;
   const todayPct = tPct(today.getTime());
 
-  // ── Tiky ukotvené na dnešek: today je vždy přesně na tikové čáře ─────────
-  const MONTHS_CS = ['Led','Úno','Bře','Dub','Kvě','Čvn','Čvc','Srp','Zář','Říj','Lis','Pro'];
-  const DAYS_CS   = ['Ne','Po','Út','St','Čt','Pá','So'];
+  // ── Grid: tenká čára na každý kalendářní den (jako ve vzoru) ─────────────
+  const estChartPx = Math.max(600, (view.getBoundingClientRect().width || window.innerWidth) - LABEL_W);
+  const pxPerDay   = estChartPx / totalDays;
 
-  // Najdi první tik ≤ minD krokem GT zpět od dnešku
+  const gridStops = ['transparent 0%'];
+  let calDay = new Date(minD);
+  while (calDay.getTime() <= maxD.getTime()) {
+    const p   = tPct(calDay.getTime()).toFixed(2);
+    const isTd = calDay.toISOString().slice(0, 10) === todayStr;
+    const a   = isTd ? '0.22' : '0.06';
+    gridStops.push(
+      `rgba(255,255,255,${a}) ${p}%`,
+      `rgba(255,255,255,${a}) calc(${p}% + 1px)`,
+      `transparent calc(${p}% + 1px)`
+    );
+    calDay = new Date(calDay.getTime() + DAY);
+  }
+  const gridBg = `linear-gradient(to right, ${gridStops.join(', ')})`;
+
+  // ── Tiky ukotvené na dnešek: today vždy na tikové čáře ──────────────────
+  // Adaptivní hustota popisků: GT nastavuje interval, ale při úzkých sloupcích
+  // se automaticky řídne (každý N-tý tik) aby se popisky nepřekrývaly
+  const minLabelPx   = 30;
+  const labelSpacing = GT * Math.max(1, Math.ceil(minLabelPx / Math.max(1, pxPerDay * GT)));
+
   let firstTick = new Date(today);
   while (firstTick.getTime() > minD.getTime()) {
     firstTick = new Date(firstTick.getTime() - GT * DAY);
   }
 
-  // Adaptivní: skryj popisky pokud není dost místa
-  const estChartPx = Math.max(600, (view.getBoundingClientRect().width || window.innerWidth) - LABEL_W);
-  const pxPerTick  = estChartPx * GT / totalDays;
-  const showLabel  = pxPerTick >= 20;
-
-  // ── Rastr: kalendářový pohled (nezávislý na GT) ──────────────────────────
-  // Přesně jako ve vzoru: jemné podbarvení víkendů + čáry jen na Po a 1. měsíce
-  // Iterujeme každý kalendářní den — rychlé, výsledek se znovupoužívá pro všechny řádky
-  const weStops = ['transparent 0%'];   // víkendové podbarvení
-  const lineStops = ['transparent 0%']; // svislé čáry (Po + 1. měsíce)
-  let inWE = false;
-  let calDay = new Date(minD);
-  while (calDay.getTime() <= maxD.getTime() + DAY) {
-    const dow   = calDay.getDay();
-    const isWE  = dow === 0 || dow === 6;
-    const isMon = dow === 1;
-    const isMStart = calDay.getDate() === 1;
-    const p = tPct(calDay.getTime()).toFixed(2);
-
-    // Víkendové bloky
-    if (isWE && !inWE) {
-      weStops.push(`transparent ${p}%`, `rgba(255,255,255,0.03) ${p}%`);
-      inWE = true;
-    } else if (!isWE && inWE) {
-      weStops.push(`rgba(255,255,255,0.03) ${p}%`, `transparent ${p}%`);
-      inWE = false;
-    }
-
-    // Čáry: pondělí (slabší) nebo 1. měsíce (silnější)
-    if (isMon || isMStart) {
-      const a = isMStart ? '0.12' : '0.06';
-      lineStops.push(
-        `rgba(255,255,255,${a}) ${p}%`,
-        `rgba(255,255,255,${a}) calc(${p}% + 1px)`,
-        `transparent calc(${p}% + 1px)`
-      );
-    }
-    calDay = new Date(calDay.getTime() + DAY);
-  }
-  if (inWE) weStops.push(`rgba(255,255,255,0.03) 100%`);
-
-  // Dnešní sloupeček — jemné zvýraznění sloupce
-  const todayColPct  = tPct(today.getTime()).toFixed(2);
-  const todayColPct1 = tPct(today.getTime() + DAY).toFixed(2);
-  const todayColStop = [
-    `transparent ${todayColPct}%`,
-    `rgba(255,255,255,0.055) ${todayColPct}%`,
-    `rgba(255,255,255,0.055) ${todayColPct1}%`,
-    `transparent ${todayColPct1}%`,
-  ].join(', ');
-
-  // Kombinovaný background-image (3 vrstvy)
-  const gridBg = [
-    `linear-gradient(to right, ${todayColStop})`,
-    `linear-gradient(to right, ${lineStops.join(', ')})`,
-    `linear-gradient(to right, ${weStops.join(', ')})`,
-  ].join(', ');
-
-  // Hlavičkové tiky (HTML)
   let ticksHtml = '';
   let tick = new Date(firstTick);
-  let lastTickMonth = -1;
   while (tick <= maxD) {
-    const lp        = tPct(tick.getTime());
-    if (lp < 0) { tick = new Date(tick.getTime() + GT * DAY); continue; }
-    const dow       = tick.getDay();
-    const isWeekend = dow === 0 || dow === 6;
-    const isTd      = tick.toISOString().slice(0, 10) === todayStr;
-    const isNewMon  = tick.getMonth() !== lastTickMonth;
-    lastTickMonth   = tick.getMonth();
+    const lp  = tPct(tick.getTime());
+    if (lp >= 0) {
+      const isTd      = tick.toISOString().slice(0, 10) === todayStr;
+      const dayOffset = Math.round((tick.getTime() - today.getTime()) / DAY);
+      const showLabel = (dayOffset % labelSpacing === 0);
+      // Formát: "D.M" — jen číslo dne a měsíce, žádný den v týdnu
+      const label = `${tick.getDate()}.${tick.getMonth() + 1}`;
+      const clr   = isTd ? '#64748b' : '#334155';
 
-    const sub    = isNewMon ? MONTHS_CS[tick.getMonth()] : DAYS_CS[dow];
-    const dayClr = isTd ? '#94a3b8' : isWeekend ? '#1e293b' : '#475569';
-    const subClr = isTd ? '#64748b' : isNewMon ? '#475569' : isWeekend ? '#1e293b' : '#334155';
-    const lineClr = isTd     ? 'rgba(255,255,255,0.22)'
-                  : isNewMon ? 'rgba(255,255,255,0.14)'
-                  : isWeekend ? 'rgba(255,255,255,0.04)'
-                  : 'rgba(255,255,255,0.07)';
-
-    ticksHtml += `<div style="position:absolute;left:${lp.toFixed(2)}%;top:0;bottom:0;
-      border-left:1px solid ${lineClr};">
-      ${showLabel ? `
-        <span style="display:block;padding:3px 0 0 3px;font-size:13px;
-          font-family:'JetBrains Mono',monospace;color:${dayClr};
-          white-space:nowrap;line-height:1.1;">${tick.getDate()}</span>
-        <span style="display:block;padding:1px 0 0 3px;font-size:11px;
-          font-family:'JetBrains Mono',monospace;color:${subClr};
-          white-space:nowrap;line-height:1;">${sub}</span>
-      ` : ''}
-    </div>`;
+      ticksHtml += `<div style="position:absolute;left:${lp.toFixed(2)}%;top:0;bottom:0;">
+        ${showLabel ? `<span style="position:absolute;top:5px;left:3px;
+          font-size:11px;font-family:'JetBrains Mono',monospace;
+          color:${clr};white-space:nowrap;">${label}</span>` : ''}
+      </div>`;
+    }
     tick = new Date(tick.getTime() + GT * DAY);
   }
 
@@ -978,15 +926,15 @@ function renderGantt() {
         <tr>
           <!-- Roh: sticky top + left -->
           <th style="position:sticky;top:0;left:0;z-index:31;
-            background:#0a1120;padding:0;height:38px;
+            background:#0a1120;padding:0;height:26px;
             border-right:1px solid rgba(255,255,255,0.06);
             border-bottom:1px solid rgba(6,182,212,0.2);">
           </th>
-          <!-- Osa: den + zkratka (vzor kapacit, bez řádku měsíců) -->
+          <!-- Osa: D.M formát, jeden řádek -->
           <th style="position:sticky;top:0;z-index:30;
-            background:#0a1120;padding:0;height:38px;
+            background:#0a1120;padding:0;height:26px;
             border-bottom:1px solid rgba(6,182,212,0.2);">
-            <div style="position:relative;height:38px;">
+            <div style="position:relative;height:26px;">
               ${ticksHtml}
             </div>
           </th>
