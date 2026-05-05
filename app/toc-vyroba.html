@@ -817,46 +817,65 @@ function renderGantt() {
   const tPct = t => (t - minD.getTime()) / DAY / totalDays * 100;
   const todayPct = tPct(today.getTime());
 
-  // ── Hlavička: tiky — styl identický s Kapacitním plánem ─────────────────
-  // Bez řádku měsíců; první tik nového měsíce ukáže zkratku měsíce místo dne
+  // ── Tiky ukotvené na dnešek: today je vždy přesně na tikové čáře ─────────
   const MONTHS_CS = ['Led','Úno','Bře','Dub','Kvě','Čvn','Čvc','Srp','Zář','Říj','Lis','Pro'];
   const DAYS_CS   = ['Ne','Po','Út','St','Čt','Pá','So'];
 
-  // Adaptivní: skryj popisky pokud není dost místa (< 20 px na tik)
+  // Najdi první tik ≤ minD krokem GT zpět od dnešku
+  let firstTick = new Date(today);
+  while (firstTick.getTime() > minD.getTime()) {
+    firstTick = new Date(firstTick.getTime() - GT * DAY);
+  }
+
+  // Adaptivní: skryj popisky pokud není dost místa
   const estChartPx = Math.max(600, (view.getBoundingClientRect().width || window.innerWidth) - LABEL_W);
   const pxPerTick  = estChartPx * GT / totalDays;
   const showLabel  = pxPerTick >= 20;
 
+  // Rastr: linear-gradient ze všech tikových pozic — použit jako background-image řádků
+  const gridStops = [];
+  let gt = new Date(firstTick);
+  while (gt <= maxD) {
+    const p = tPct(gt.getTime());
+    const isWE = gt.getDay() === 0 || gt.getDay() === 6;
+    const lineA = gt.toISOString().slice(0,10) === todayStr ? '0.18'
+                : isWE ? '0.04' : '0.07';
+    gridStops.push(
+      `rgba(255,255,255,${lineA}) ${p.toFixed(2)}%`,
+      `rgba(255,255,255,${lineA}) calc(${p.toFixed(2)}% + 1px)`,
+      `transparent calc(${p.toFixed(2)}% + 1px)`
+    );
+    gt = new Date(gt.getTime() + GT * DAY);
+  }
+  const gridBg = `linear-gradient(to right, ${gridStops.join(', ')})`;
+
+  // Hlavičkové tiky (HTML)
   let ticksHtml = '';
-  let tick = new Date(minD);
+  let tick = new Date(firstTick);
   let lastTickMonth = -1;
   while (tick <= maxD) {
     const lp        = tPct(tick.getTime());
-    const dow       = tick.getDay();                          // 0=Ne…6=So
+    if (lp < 0) { tick = new Date(tick.getTime() + GT * DAY); continue; }
+    const dow       = tick.getDay();
     const isWeekend = dow === 0 || dow === 6;
     const isTd      = tick.toISOString().slice(0, 10) === todayStr;
-    const isNewMon  = tick.getMonth() !== lastTickMonth;     // první tik v měsíci
+    const isNewMon  = tick.getMonth() !== lastTickMonth;
     lastTickMonth   = tick.getMonth();
 
-    // Druhý řádek: měsíc na prvním tiku, jinak zkratka dne
-    const sub      = isNewMon ? MONTHS_CS[tick.getMonth()] : DAYS_CS[dow];
-
-    // Barvy: přesně jako Kapacit
-    // kap-date-day:  font 13px, barva z th (= #475569 pro pracovní, #1e293b pro víkend)
-    // kap-date-dow:  font 11px, color #334155 (pracovní), #1e293b (víkend)
+    const sub    = isNewMon ? MONTHS_CS[tick.getMonth()] : DAYS_CS[dow];
     const dayClr = isTd ? '#94a3b8' : isWeekend ? '#1e293b' : '#475569';
-    const subClr = isTd ? '#64748b' : isNewMon ? '#475569'  : isWeekend ? '#1e293b' : '#334155';
-    const lineClr = isTd  ? 'rgba(255,255,255,0.22)'
-                  : isNewMon ? 'rgba(255,255,255,0.12)'
-                  : isWeekend ? 'rgba(255,255,255,0.03)'
-                  : 'rgba(255,255,255,0.06)';
+    const subClr = isTd ? '#64748b' : isNewMon ? '#475569' : isWeekend ? '#1e293b' : '#334155';
+    const lineClr = isTd     ? 'rgba(255,255,255,0.22)'
+                  : isNewMon ? 'rgba(255,255,255,0.14)'
+                  : isWeekend ? 'rgba(255,255,255,0.04)'
+                  : 'rgba(255,255,255,0.07)';
 
     ticksHtml += `<div style="position:absolute;left:${lp.toFixed(2)}%;top:0;bottom:0;
       border-left:1px solid ${lineClr};">
       ${showLabel ? `
         <span style="display:block;padding:3px 0 0 3px;font-size:13px;
           font-family:'JetBrains Mono',monospace;color:${dayClr};
-          white-space:nowrap;line-height:1.1;">${tick.getDate()}.</span>
+          white-space:nowrap;line-height:1.1;">${tick.getDate()}</span>
         <span style="display:block;padding:1px 0 0 3px;font-size:11px;
           font-family:'JetBrains Mono',monospace;color:${subClr};
           white-space:nowrap;line-height:1;">${sub}</span>
@@ -902,7 +921,8 @@ function renderGantt() {
         border-bottom:1px solid rgba(255,255,255,0.03);">
         ${z.id_zakazky}
       </td>
-      <td style="position:relative;height:${ROW_H}px;padding:0;background:${bg};
+      <td style="position:relative;height:${ROW_H}px;padding:0;
+        background-color:${bg};background-image:${gridBg};
         border-bottom:1px solid rgba(255,255,255,0.03);">
         ${bar}${todayLine}
       </td>
