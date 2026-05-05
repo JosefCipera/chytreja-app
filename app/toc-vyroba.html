@@ -365,6 +365,7 @@
 <div class="tab-bar">
   <button class="tab-btn active" id="tab-plan"     onclick="switchTab('plan')">PLÁN VÝROBY</button>
   <button class="tab-btn"        id="tab-kapacita" onclick="switchTab('kapacita')">KAPACITNÍ PLÁN</button>
+  <button class="tab-btn"        id="tab-gantt"    onclick="switchTab('gantt')">GANTT</button>
 </div>
 
 <div class="stats" id="stats">
@@ -388,6 +389,12 @@
   <div class="kap-legend-item"><div class="kap-legend-dot" style="background:rgba(234,179,8,0.6)"></div>WARN 80–99</div>
   <div class="kap-legend-item"><div class="kap-legend-dot" style="background:rgba(239,68,68,0.6)"></div>OVER ≥100</div>
   <div class="kap-legend-item"><div class="kap-legend-dot" style="background:#1e293b"></div>víkend/svátek</div>
+</div>
+
+<div id="gantt-view" style="display:none;overflow:auto;flex:1;padding:0;">
+  <div id="gantt-wrap" style="padding:16px 24px;color:#475569;font-family:'JetBrains Mono',monospace;font-size:13px;">
+    Spusť plán tlačítkem výše.
+  </div>
 </div>
 
 <script>
@@ -643,15 +650,17 @@ async function runPlan() {
 
 // ── Přepínání záložek ──────────────────────────────────────────────────────
 function switchTab(tab) {
-  const isPlan = tab === 'plan';
-  document.getElementById('tab-plan').classList.toggle('active', isPlan);
-  document.getElementById('tab-kapacita').classList.toggle('active', !isPlan);
-  document.getElementById('stats').style.display      = isPlan ? '' : 'none';
-  document.getElementById('main').style.display       = isPlan ? '' : 'none';
-  document.getElementById('pagination').style.display = isPlan ? '' : 'none';
-  document.getElementById('kap-info').style.display   = isPlan ? 'none' : 'block';
-  document.getElementById('kap-view').style.display   = isPlan ? 'none' : 'block';
-  document.getElementById('kap-legend').style.display = isPlan ? 'none' : 'flex';
+  ['plan','kapacita','gantt'].forEach(t =>
+    document.getElementById('tab-' + t).classList.toggle('active', t === tab)
+  );
+  document.getElementById('stats').style.display      = tab === 'plan' ? '' : 'none';
+  document.getElementById('main').style.display       = tab === 'plan' ? '' : 'none';
+  document.getElementById('pagination').style.display = tab === 'plan' ? '' : 'none';
+  document.getElementById('kap-info').style.display   = tab === 'kapacita' ? 'block' : 'none';
+  document.getElementById('kap-view').style.display   = tab === 'kapacita' ? 'block' : 'none';
+  document.getElementById('kap-legend').style.display = tab === 'kapacita' ? 'flex' : 'none';
+  document.getElementById('gantt-view').style.display = tab === 'gantt' ? 'block' : 'none';
+  if (tab === 'gantt') renderGantt();
 }
 
 // ── Kapacitní plán ─────────────────────────────────────────────────────────
@@ -740,6 +749,128 @@ function renderKapacita(json) {
       <thead>${thead}</thead>
       <tbody>${tbody}</tbody>
     </table>`;
+}
+
+// ── Ganttův diagram ────────────────────────────────────────────────────────
+function renderGantt() {
+  const wrap = document.getElementById('gantt-wrap');
+  if (!allData?.length) {
+    wrap.innerHTML = '<div style="color:#475569">Spusť plán tlačítkem výše.</div>';
+    return;
+  }
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  const toDay = d => new Date(d + 'T00:00:00');
+  const DAY = 86400000;
+
+  // Rozsah dat
+  let minD = today, maxD = today;
+  for (const z of allData) {
+    if (z.planovane_zahajeni) { const d = toDay(z.planovane_zahajeni); if (d < minD) minD = d; }
+    if (z.termin_dodani)      { const d = toDay(z.termin_dodani);      if (d > maxD) maxD = d; }
+  }
+  // Přidej okraje: 3 dny vlevo, 5 dní vpravo
+  minD = new Date(minD.getTime() - 3 * DAY);
+  maxD = new Date(maxD.getTime() + 5 * DAY);
+  const totalDays = Math.round((maxD - minD) / DAY);
+
+  const pct = d => Math.round((toDay(d) - minD) / DAY / totalDays * 10000) / 100;
+  const todayPct = Math.round((today - minD) / DAY / totalDays * 10000) / 100;
+
+  // ── Hlavička s měsíci ────────────────────────────────────────────────────
+  const MONTHS_CS = ['Led','Úno','Bře','Dub','Kvě','Čvn','Čvc','Srp','Zář','Říj','Lis','Pro'];
+  let headerHtml = '';
+  let cur = new Date(minD);
+  while (cur <= maxD) {
+    const mStart = new Date(cur.getFullYear(), cur.getMonth(), 1);
+    const mEnd   = new Date(cur.getFullYear(), cur.getMonth() + 1, 0);
+    const from = Math.max(cur.getTime(), mStart.getTime());
+    const to   = Math.min(maxD.getTime(), mEnd.getTime());
+    const leftPct  = (from - minD.getTime()) / DAY / totalDays * 100;
+    const widthPct = (to - from) / DAY / totalDays * 100;
+    headerHtml += `<div style="position:absolute;left:${leftPct.toFixed(2)}%;width:${widthPct.toFixed(2)}%;
+      border-right:1px solid rgba(255,255,255,0.06);font-size:10px;color:#334155;
+      padding:3px 4px;overflow:hidden;white-space:nowrap;">
+      ${MONTHS_CS[cur.getMonth()]} ${cur.getFullYear()}
+    </div>`;
+    cur = new Date(cur.getFullYear(), cur.getMonth() + 1, 1);
+  }
+
+  // ── Řádky zakázek ────────────────────────────────────────────────────────
+  const ROW_H = 22;
+  const rowsHtml = allData.map((z, i) => {
+    if (!z.planovane_zahajeni || !z.termin_dodani) return '';
+    const left  = pct(z.planovane_zahajeni);
+    const right = pct(z.termin_dodani);
+    const width = right - left;
+    if (width <= 0) return '';
+
+    // 3 třetiny: zelená | žlutá | červená
+    const w3 = width / 3;
+    const bar = `
+      <div style="position:absolute;left:${left}%;width:${w3.toFixed(2)}%;height:14px;top:4px;background:rgba(34,197,94,0.75);border-radius:3px 0 0 3px;"></div>
+      <div style="position:absolute;left:${(left+w3).toFixed(2)}%;width:${w3.toFixed(2)}%;height:14px;top:4px;background:rgba(234,179,8,0.75);"></div>
+      <div style="position:absolute;left:${(left+2*w3).toFixed(2)}%;width:${w3.toFixed(2)}%;height:14px;top:4px;background:rgba(239,68,68,0.75);border-radius:0 3px 3px 0;"></div>`;
+
+    const bg = i % 2 === 0 ? 'rgba(255,255,255,0.01)' : 'transparent';
+    return `<div style="position:relative;height:${ROW_H}px;background:${bg};border-bottom:1px solid rgba(255,255,255,0.03);">
+      ${bar}
+    </div>`;
+  }).join('');
+
+  // ── Popisky (levý panel) ─────────────────────────────────────────────────
+  const labelsHtml = allData.map((z, i) => {
+    const bg = i % 2 === 0 ? 'rgba(255,255,255,0.01)' : 'transparent';
+    // Barva štítku podle pozice dneška v úsečce
+    let labelColor = '#64748b';
+    if (z.planovane_zahajeni && z.termin_dodani) {
+      const start = toDay(z.planovane_zahajeni).getTime();
+      const end   = toDay(z.termin_dodani).getTime();
+      const span  = end - start;
+      const todayT = today.getTime();
+      if (todayT >= start && todayT <= end) {
+        const pos = (todayT - start) / span;
+        labelColor = pos < 1/3 ? '#4ade80' : pos < 2/3 ? '#facc15' : '#f87171';
+      } else if (todayT > end) {
+        labelColor = '#f87171';  // propadlý termín
+      }
+    }
+    return `<div style="height:${ROW_H}px;line-height:${ROW_H}px;background:${bg};
+      border-bottom:1px solid rgba(255,255,255,0.03);padding:0 8px;
+      font-size:11px;color:${labelColor};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+      ${z.id_zakazky}
+    </div>`;
+  }).join('');
+
+  const chartH = allData.length * ROW_H;
+  const LABEL_W = 200;
+
+  wrap.innerHTML = `
+    <div style="display:flex;height:100%;">
+      <!-- Levý panel: ID zakázek -->
+      <div style="width:${LABEL_W}px;flex-shrink:0;">
+        <div style="height:24px;background:#0f172a;border-bottom:1px solid rgba(255,255,255,0.06);"></div>
+        <div style="overflow:hidden;">${labelsHtml}</div>
+      </div>
+
+      <!-- Pravý panel: pruh diagramu -->
+      <div style="flex:1;overflow-x:auto;position:relative;">
+        <!-- Hlavička měsíce -->
+        <div style="height:24px;position:relative;background:#0f172a;border-bottom:1px solid rgba(255,255,255,0.06);">
+          ${headerHtml}
+        </div>
+        <!-- Pruhy -->
+        <div style="position:relative;height:${chartH}px;min-width:600px;">
+          ${rowsHtml}
+          <!-- Svislá čára dnes -->
+          <div style="position:absolute;left:${todayPct.toFixed(2)}%;top:0;bottom:0;width:2px;
+            background:rgba(255,255,255,0.7);z-index:10;pointer-events:none;">
+            <div style="position:absolute;top:0;left:3px;font-size:9px;color:#fff;
+              font-family:'JetBrains Mono',monospace;white-space:nowrap;">DNES</div>
+          </div>
+        </div>
+      </div>
+    </div>`;
 }
 
 function showErr(msg, url) {
