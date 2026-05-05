@@ -242,6 +242,18 @@
     .tab-btn:hover { color: #94a3b8; }
     .tab-btn.active { color: #22d3ee; border-bottom-color: #22d3ee; }
 
+    /* ── Gantt ── */
+    #gantt-view {
+      flex: 1;
+      overflow: auto;
+      display: none;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(6,182,212,0.3) transparent;
+    }
+    #gantt-view::-webkit-scrollbar { height: 4px; width: 4px; }
+    #gantt-view::-webkit-scrollbar-thumb { background: rgba(6,182,212,0.3); border-radius: 2px; }
+    #gantt-wrap table thead th { font-weight: 400; }
+
     /* ── Kapacitní plán ── */
     #kap-view {
       flex: 1;
@@ -391,8 +403,8 @@
   <div class="kap-legend-item"><div class="kap-legend-dot" style="background:#1e293b"></div>víkend/svátek</div>
 </div>
 
-<div id="gantt-view" style="display:none;overflow:auto;flex:1;padding:0;">
-  <div id="gantt-wrap" style="padding:16px 24px;color:#475569;font-family:'JetBrains Mono',monospace;font-size:13px;">
+<div id="gantt-view">
+  <div id="gantt-wrap" style="padding:24px;color:#475569;font-family:'JetBrains Mono',monospace;font-size:13px;">
     Spusť plán tlačítkem výše.
   </div>
 </div>
@@ -754,163 +766,168 @@ function renderKapacita(json) {
 
 // ── Ganttův diagram ────────────────────────────────────────────────────────
 function renderGantt() {
+  const view = document.getElementById('gantt-view');
   const wrap = document.getElementById('gantt-wrap');
   if (!allData?.length) {
-    wrap.innerHTML = '<div style="color:#475569">Spusť plán tlačítkem výše.</div>';
+    wrap.style.padding = '24px';
+    wrap.innerHTML = '<div style="color:#475569;font-family:\'JetBrains Mono\',monospace;font-size:13px;">Spusť plán tlačítkem výše.</div>';
     return;
   }
+  wrap.style.padding = '0';
 
-  const today = new Date(); today.setHours(0,0,0,0);
-  const toDay = d => new Date(d + 'T00:00:00');
-  const DAY = 86400000;
+  const today  = new Date(); today.setHours(0,0,0,0);
+  const toDay  = d => new Date(d + 'T00:00:00');
+  const DAY    = 86400000;
+  const todayStr = today.toISOString().slice(0, 10);
 
-  // Okno z Parametrů: GD (záporné = dny před dneskem), GO (kladné = dny po dnesku)
+  // Okno z Parametrů
   const GD = parametry.GD ?? -30;
   const GO = parametry.GO ?? 90;
+  const GT = parametry.GT ?? 7;
   const minD = new Date(today.getTime() + GD * DAY);
   const maxD = new Date(today.getTime() + GO * DAY);
 
-  // Filtr: jen zakázky, jejichž úsečka překrývá okno
-  // Seřazení: od nejdříve zahájených
+  // Filtr + řazení
   const visData = allData
     .filter(z => z.planovane_zahajeni && z.planovane_ukonceni)
     .filter(z => toDay(z.planovane_ukonceni) >= minD && toDay(z.planovane_zahajeni) <= maxD)
-    .sort((a, b) => (a.planovane_zahajeni < b.planovane_zahajeni ? -1 : 1));
-  const totalDays = Math.round((maxD - minD) / DAY);
+    .sort((a, b) => a.planovane_zahajeni < b.planovane_zahajeni ? -1 : 1);
 
-  const pct = d => Math.round((toDay(d) - minD) / DAY / totalDays * 10000) / 100;
-  const todayPct = Math.round((today - minD) / DAY / totalDays * 10000) / 100;
+  if (!visData.length) {
+    wrap.style.padding = '24px';
+    wrap.innerHTML = '<div style="color:#475569;font-family:\'JetBrains Mono\',monospace;font-size:13px;">Žádné zakázky v zobrazovaném okně (GD/GO).</div>';
+    return;
+  }
 
-  // ── Dvouřádková hlavička: měsíce + datumy ───────────────────────────────
+  const totalDays  = Math.round((maxD - minD) / DAY);
+  const LABEL_W    = 180;  // px — levý sticky sloupec
+  const ROW_H      = 18;   // px — výška řádku
+  const BAR_H      = 9;    // px — výška pruhu
+  const BAR_TOP    = Math.floor((ROW_H - BAR_H) / 2);
+
+  // Časová osa → % v chartové oblasti
+  const tPct = t => (t - minD.getTime()) / DAY / totalDays * 100;
+  const todayPct = tPct(today.getTime());
+
+  // ── Hlavička: měsíce ──────────────────────────────────────────────────────
   const MONTHS_CS = ['Led','Úno','Bře','Dub','Kvě','Čvn','Čvc','Srp','Zář','Říj','Lis','Pro'];
-  const GT      = parametry.GT ?? 7;   // tick interval in days
-  const HDR_MON  = 18;                  // výška řádku měsíců
-  const HDR_TICK = 18;                  // výška řádku datumů
-  const HDR_H    = HDR_MON + HDR_TICK;
-
-  // Řádek 1: měsíce
   let monthsHtml = '';
   let cur = new Date(minD.getFullYear(), minD.getMonth(), 1);
   while (cur <= maxD) {
-    const from     = Math.max(cur.getTime(), minD.getTime());
-    const nextMon  = new Date(cur.getFullYear(), cur.getMonth() + 1, 1);
-    const to       = Math.min(nextMon.getTime(), maxD.getTime());
+    const nextMon = new Date(cur.getFullYear(), cur.getMonth() + 1, 1);
+    const from    = Math.max(cur.getTime(), minD.getTime());
+    const to      = Math.min(nextMon.getTime(), maxD.getTime());
     if (from < to) {
-      const lp = (from - minD.getTime()) / DAY / totalDays * 100;
-      const wp = (to   - from)           / DAY / totalDays * 100;
+      const lp = tPct(from);
+      const wp = (to - from) / DAY / totalDays * 100;
       monthsHtml += `<div style="position:absolute;left:${lp.toFixed(2)}%;width:${wp.toFixed(2)}%;
-        height:${HDR_MON}px;line-height:${HDR_MON}px;
-        border-right:1px solid rgba(255,255,255,0.08);font-size:10px;color:#475569;
-        padding:0 5px;overflow:hidden;white-space:nowrap;">
+        height:100%;display:flex;align-items:center;padding:0 8px;
+        border-right:1px solid rgba(255,255,255,0.07);overflow:hidden;white-space:nowrap;
+        font-size:12px;color:#475569;letter-spacing:0.04em;">
         ${MONTHS_CS[cur.getMonth()]} ${cur.getFullYear()}
       </div>`;
     }
     cur = nextMon;
   }
 
-  // Řádek 2: ticky s datumy (interval GT dní)
+  // ── Hlavička: tiky s datumy — adaptivní labely ───────────────────────────
+  // Odhadni šířku chartové oblasti, aby se nepřekrývaly popisky
+  const estChartPx = Math.max(600, (view.getBoundingClientRect().width || window.innerWidth) - LABEL_W);
+  const pxPerTick  = estChartPx * GT / totalDays;
+  const showLabel  = pxPerTick >= 30;   // skryj popisek, ne-li dost místa
+
   let ticksHtml = '';
   let tick = new Date(minD);
-  const todayStr = today.toISOString().slice(0, 10);
   while (tick <= maxD) {
-    const lp       = (tick.getTime() - minD.getTime()) / DAY / totalDays * 100;
-    const isToday  = tick.toISOString().slice(0, 10) === todayStr;
-    const label    = `${tick.getDate()}.${tick.getMonth() + 1}.`;
+    const lp      = tPct(tick.getTime());
+    const isTd    = tick.toISOString().slice(0, 10) === todayStr;
+    const label   = showLabel ? `${tick.getDate()}.${tick.getMonth() + 1}.` : '';
     ticksHtml += `<div style="position:absolute;left:${lp.toFixed(2)}%;top:0;bottom:0;
-      border-left:1px solid rgba(255,255,255,${isToday ? '0.18' : '0.06'});">
-      <span style="position:absolute;top:2px;left:2px;font-size:9px;
-        color:${isToday ? 'rgba(255,255,255,0.45)' : '#334155'};
-        font-family:'JetBrains Mono',monospace;white-space:nowrap;">${label}</span>
+      border-left:1px solid rgba(255,255,255,${isTd ? '0.18' : '0.06'});">
+      ${label ? `<span style="position:absolute;top:3px;left:3px;
+        font-size:11px;font-family:'JetBrains Mono',monospace;white-space:nowrap;
+        color:${isTd ? 'rgba(255,255,255,0.5)' : '#3d5168'};">${label}</span>` : ''}
     </div>`;
     tick = new Date(tick.getTime() + GT * DAY);
   }
 
-  // ── Řádky zakázek ────────────────────────────────────────────────────────
-  const ROW_H = 14;
-  const rowsHtml = visData.map((z, i) => {
-    // Klip: začátek/konec úsečky na hranice okna
-    const startD = toDay(z.planovane_zahajeni) < minD ? minD.toISOString().slice(0,10) : z.planovane_zahajeni;
-    const endD   = toDay(z.planovane_ukonceni) > maxD ? maxD.toISOString().slice(0,10) : z.planovane_ukonceni;
-    const left  = pct(startD);
-    const right = pct(endD);
-    const width = right - left;
-    if (width <= 0) return '';
+  // ── Řádky: segment helper ────────────────────────────────────────────────
+  const seg = (ts, te, color, rL, rR) => {
+    const from = Math.max(ts, minD.getTime());
+    const to   = Math.min(te, maxD.getTime());
+    if (from >= to) return '';
+    const l = tPct(from), r = tPct(to), w = r - l;
+    if (w <= 0) return '';
+    const br = rL && rR ? '2px' : rL ? '2px 0 0 2px' : rR ? '0 2px 2px 0' : '0';
+    return `<div style="position:absolute;left:${l.toFixed(2)}%;width:${w.toFixed(2)}%;
+      height:${BAR_H}px;top:${BAR_TOP}px;background:${color};border-radius:${br};"></div>`;
+  };
 
-    // Barvy třetin podle pozice v CELÉ původní úsečce (ne oříznuté)
+  // Čára DNES — jako absolutní překryv v každém tbody td
+  const todayLine = `<div style="position:absolute;left:${todayPct.toFixed(2)}%;top:0;bottom:0;
+    width:1px;background:rgba(255,255,255,0.22);pointer-events:none;z-index:2;"></div>`;
+
+  // ── Generuj řádky tabulky ─────────────────────────────────────────────────
+  const rowsHtml = visData.map((z, i) => {
     const fullStart = toDay(z.planovane_zahajeni).getTime();
     const fullEnd   = toDay(z.planovane_ukonceni).getTime();
-    const fullSpan  = fullEnd - fullStart;
-    // 3 pásma: [0,1/3), [1/3,2/3), [2/3,1] — v % celého okna
-    const t1 = fullStart + fullSpan / 3;
-    const t2 = fullStart + fullSpan * 2 / 3;
-    // Segment helper: vrátí šířku a barvu segmentu [ts, te] v grafu
-    const seg = (ts, te, color, rL, rR) => {
-      if (ts >= te) return '';
-      const l = (Math.max(ts, minD.getTime()) - minD.getTime()) / DAY / totalDays * 100;
-      const r = (Math.min(te, maxD.getTime()) - minD.getTime()) / DAY / totalDays * 100;
-      if (r <= l) return '';
-      return `<div style="position:absolute;left:${l.toFixed(2)}%;width:${(r-l).toFixed(2)}%;height:9px;top:2px;background:${color};${rL?'border-radius:2px 0 0 2px;':''}${rR?'border-radius:0 2px 2px 0;':''}"></div>`;
-    };
-    const bar =
-      seg(fullStart, t1,      'rgba(34,197,94,0.8)',   true,  false) +
-      seg(t1,        t2,      'rgba(234,179,8,0.8)',   false, false) +
-      seg(t2,        fullEnd, 'rgba(239,68,68,0.8)',   false, true);
-
-    const bg = i % 2 === 0 ? 'rgba(255,255,255,0.01)' : 'transparent';
-    return `<div style="position:relative;height:${ROW_H}px;background:${bg};border-bottom:1px solid rgba(255,255,255,0.03);">
-      ${bar}
-    </div>`;
+    const span      = fullEnd - fullStart;
+    const t1 = fullStart + span / 3;
+    const t2 = fullStart + span * 2 / 3;
+    const bar = seg(fullStart, t1, 'rgba(34,197,94,0.82)', true, false)
+              + seg(t1, t2,        'rgba(234,179,8,0.82)',  false, false)
+              + seg(t2, fullEnd,   'rgba(239,68,68,0.82)',  false, true);
+    const bg = i % 2 === 0 ? '#090f1c' : '#080e1a';
+    return `<tr>
+      <td style="position:sticky;left:0;z-index:10;background:${bg};
+        width:${LABEL_W}px;height:${ROW_H}px;padding:0 10px;
+        font-family:'JetBrains Mono',monospace;font-size:13px;color:#475569;
+        white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+        border-right:1px solid rgba(255,255,255,0.06);
+        border-bottom:1px solid rgba(255,255,255,0.03);">
+        ${z.id_zakazky}
+      </td>
+      <td style="position:relative;height:${ROW_H}px;padding:0;background:${bg};
+        border-bottom:1px solid rgba(255,255,255,0.03);">
+        ${bar}${todayLine}
+      </td>
+    </tr>`;
   }).join('');
 
-  // ── Popisky (levý panel) — bez barev ────────────────────────────────────
-  const labelsHtml = visData.map((z, i) => {
-    const bg = i % 2 === 0 ? 'rgba(255,255,255,0.015)' : 'transparent';
-    return `<div style="height:${ROW_H}px;line-height:${ROW_H}px;background:${bg};
-      border-bottom:1px solid rgba(255,255,255,0.03);padding:0 8px;
-      font-size:10px;color:#475569;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-      ${z.id_zakazky}
-    </div>`;
-  }).join('');
-
-  const chartH  = visData.length * ROW_H;
-  const LABEL_W = 200;
-
+  // ── Sestav tabulku ───────────────────────────────────────────────────────
   wrap.innerHTML = `
-    <div style="display:flex;height:100%;">
-
-      <!-- Levý panel: ID zakázek -->
-      <div style="width:${LABEL_W}px;flex-shrink:0;border-right:1px solid rgba(255,255,255,0.06);">
-        <!-- prázdná hlavička stejně vysoká jako header grafu -->
-        <div style="height:${HDR_H}px;background:#0a1120;border-bottom:1px solid rgba(255,255,255,0.06);"></div>
-        <div style="overflow-y:hidden;">${labelsHtml}</div>
-      </div>
-
-      <!-- Pravý panel: pruh diagramu -->
-      <div style="flex:1;overflow-x:auto;position:relative;">
-
-        <!-- Hlavička: řádek měsíců -->
-        <div style="height:${HDR_MON}px;position:relative;background:#0a1120;
-          border-bottom:1px solid rgba(255,255,255,0.05);">
-          ${monthsHtml}
-        </div>
-
-        <!-- Hlavička: řádek datumů / tiků -->
-        <div style="height:${HDR_TICK}px;position:relative;background:#080e1a;
-          border-bottom:1px solid rgba(255,255,255,0.08);">
-          ${ticksHtml}
-        </div>
-
-        <!-- Pruhy -->
-        <div style="position:relative;height:${chartH}px;min-width:600px;">
-          ${rowsHtml}
-          <!-- Svislá čára dnes -->
-          <div style="position:absolute;left:${todayPct.toFixed(2)}%;top:0;bottom:0;width:1px;
-            background:rgba(255,255,255,0.28);z-index:10;pointer-events:none;">
-          </div>
-        </div>
-
-      </div>
-    </div>`;
+    <table style="border-collapse:collapse;width:100%;min-width:${LABEL_W + 600}px;table-layout:fixed;">
+      <colgroup>
+        <col style="width:${LABEL_W}px;">
+        <col>
+      </colgroup>
+      <thead>
+        <tr>
+          <!-- Roh: sticky top + left -->
+          <th style="position:sticky;top:0;left:0;z-index:31;
+            background:#0a1120;padding:0;height:38px;
+            border-right:1px solid rgba(255,255,255,0.06);
+            border-bottom:1px solid rgba(6,182,212,0.2);">
+          </th>
+          <!-- Dvouřádková osa -->
+          <th style="position:sticky;top:0;z-index:30;
+            background:#0a1120;padding:0;height:38px;
+            border-bottom:1px solid rgba(6,182,212,0.2);">
+            <!-- Měsíce -->
+            <div style="position:relative;height:20px;border-bottom:1px solid rgba(255,255,255,0.06);">
+              ${monthsHtml}
+            </div>
+            <!-- Tiky / datumy -->
+            <div style="position:relative;height:18px;">
+              ${ticksHtml}
+            </div>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rowsHtml}
+      </tbody>
+    </table>`;
 }
 
 function showErr(msg, url) {
