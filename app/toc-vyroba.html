@@ -405,7 +405,8 @@ const today   = new Date().toISOString().slice(0, 10);
 const LOCAL_DEV = location.port === '5500' || location.port === '5501';
 const API_BASE  = LOCAL_DEV ? 'https://dev.iting.cz' : '';
 
-let allData  = [];
+let allData   = [];
+let parametry = { GD: -30, GO: 90 };   // Gantt window defaults (overridden from DB)
 let sortCol  = 'termin_dodani';
 let sortDir  = 1;
 let pageSize = 25;
@@ -763,16 +764,18 @@ function renderGantt() {
   const toDay = d => new Date(d + 'T00:00:00');
   const DAY = 86400000;
 
-  // Rozsah dat
-  let minD = today, maxD = today;
-  for (const z of allData) {
-    if (z.planovane_zahajeni) { const d = toDay(z.planovane_zahajeni); if (d < minD) minD = d; }
-    if (z.planovane_ukonceni) { const d = toDay(z.planovane_ukonceni); if (d > maxD) maxD = d; }
-    if (z.termin_dodani)      { const d = toDay(z.termin_dodani);      if (d > maxD) maxD = d; }
-  }
-  // Přidej okraje: 3 dny vlevo, 5 dní vpravo
-  minD = new Date(minD.getTime() - 3 * DAY);
-  maxD = new Date(maxD.getTime() + 5 * DAY);
+  // Okno z Parametrů: GD (záporné = dny před dneskem), GO (kladné = dny po dnesku)
+  const GD = parametry.GD ?? -30;
+  const GO = parametry.GO ?? 90;
+  const minD = new Date(today.getTime() + GD * DAY);
+  const maxD = new Date(today.getTime() + GO * DAY);
+
+  // Filtr: jen zakázky, jejichž úsečka překrývá okno
+  // Seřazení: od nejdříve zahájených
+  const visData = allData
+    .filter(z => z.planovane_zahajeni && z.planovane_ukonceni)
+    .filter(z => toDay(z.planovane_ukonceni) >= minD && toDay(z.planovane_zahajeni) <= maxD)
+    .sort((a, b) => (a.planovane_zahajeni < b.planovane_zahajeni ? -1 : 1));
   const totalDays = Math.round((maxD - minD) / DAY);
 
   const pct = d => Math.round((toDay(d) - minD) / DAY / totalDays * 10000) / 100;
@@ -799,19 +802,34 @@ function renderGantt() {
 
   // ── Řádky zakázek ────────────────────────────────────────────────────────
   const ROW_H = 22;
-  const rowsHtml = allData.map((z, i) => {
-    if (!z.planovane_zahajeni || !z.planovane_ukonceni) return '';
-    const left  = pct(z.planovane_zahajeni);
-    const right = pct(z.planovane_ukonceni);
+  const rowsHtml = visData.map((z, i) => {
+    // Klip: začátek/konec úsečky na hranice okna
+    const startD = toDay(z.planovane_zahajeni) < minD ? minD.toISOString().slice(0,10) : z.planovane_zahajeni;
+    const endD   = toDay(z.planovane_ukonceni) > maxD ? maxD.toISOString().slice(0,10) : z.planovane_ukonceni;
+    const left  = pct(startD);
+    const right = pct(endD);
     const width = right - left;
     if (width <= 0) return '';
 
-    // 3 třetiny: zelená | žlutá | červená
-    const w3 = width / 3;
-    const bar = `
-      <div style="position:absolute;left:${left}%;width:${w3.toFixed(2)}%;height:14px;top:4px;background:rgba(34,197,94,0.75);border-radius:3px 0 0 3px;"></div>
-      <div style="position:absolute;left:${(left+w3).toFixed(2)}%;width:${w3.toFixed(2)}%;height:14px;top:4px;background:rgba(234,179,8,0.75);"></div>
-      <div style="position:absolute;left:${(left+2*w3).toFixed(2)}%;width:${w3.toFixed(2)}%;height:14px;top:4px;background:rgba(239,68,68,0.75);border-radius:0 3px 3px 0;"></div>`;
+    // Barvy třetin podle pozice v CELÉ původní úsečce (ne oříznuté)
+    const fullStart = toDay(z.planovane_zahajeni).getTime();
+    const fullEnd   = toDay(z.planovane_ukonceni).getTime();
+    const fullSpan  = fullEnd - fullStart;
+    // 3 pásma: [0,1/3), [1/3,2/3), [2/3,1] — v % celého okna
+    const t1 = fullStart + fullSpan / 3;
+    const t2 = fullStart + fullSpan * 2 / 3;
+    // Segment helper: vrátí šířku a barvu segmentu [ts, te] v grafu
+    const seg = (ts, te, color, rL, rR) => {
+      if (ts >= te) return '';
+      const l = (Math.max(ts, minD.getTime()) - minD.getTime()) / DAY / totalDays * 100;
+      const r = (Math.min(te, maxD.getTime()) - minD.getTime()) / DAY / totalDays * 100;
+      if (r <= l) return '';
+      return `<div style="position:absolute;left:${l.toFixed(2)}%;width:${(r-l).toFixed(2)}%;height:14px;top:4px;background:${color};${rL?'border-radius:3px 0 0 3px;':''}${rR?'border-radius:0 3px 3px 0;':''}"></div>`;
+    };
+    const bar =
+      seg(fullStart, t1,      'rgba(34,197,94,0.75)',  true,  false) +
+      seg(t1,        t2,      'rgba(234,179,8,0.75)',  false, false) +
+      seg(t2,        fullEnd, 'rgba(239,68,68,0.75)',  false, true);
 
     const bg = i % 2 === 0 ? 'rgba(255,255,255,0.01)' : 'transparent';
     return `<div style="position:relative;height:${ROW_H}px;background:${bg};border-bottom:1px solid rgba(255,255,255,0.03);">
@@ -820,21 +838,21 @@ function renderGantt() {
   }).join('');
 
   // ── Popisky (levý panel) ─────────────────────────────────────────────────
-  const labelsHtml = allData.map((z, i) => {
+  const labelsHtml = visData.map((z, i) => {
     const bg = i % 2 === 0 ? 'rgba(255,255,255,0.01)' : 'transparent';
     // Barva štítku podle pozice dneška v úsečce
+    const start  = toDay(z.planovane_zahajeni).getTime();
+    const end    = toDay(z.planovane_ukonceni).getTime();
+    const span   = end - start;
+    const todayT = today.getTime();
     let labelColor = '#64748b';
-    if (z.planovane_zahajeni && z.planovane_ukonceni) {
-      const start = toDay(z.planovane_zahajeni).getTime();
-      const end   = toDay(z.planovane_ukonceni).getTime();
-      const span  = end - start;
-      const todayT = today.getTime();
-      if (todayT >= start && todayT <= end) {
-        const pos = (todayT - start) / span;
-        labelColor = pos < 1/3 ? '#4ade80' : pos < 2/3 ? '#facc15' : '#f87171';
-      } else if (todayT > end) {
-        labelColor = '#f87171';  // propadlý termín
-      }
+    if (todayT >= start && todayT <= end) {
+      const pos = (todayT - start) / span;
+      labelColor = pos < 1/3 ? '#4ade80' : pos < 2/3 ? '#facc15' : '#f87171';
+    } else if (todayT > end) {
+      labelColor = '#f87171';  // propadlý termín
+    } else {
+      labelColor = '#94a3b8';  // ještě nezahájeno
     }
     return `<div style="height:${ROW_H}px;line-height:${ROW_H}px;background:${bg};
       border-bottom:1px solid rgba(255,255,255,0.03);padding:0 8px;
@@ -843,7 +861,7 @@ function renderGantt() {
     </div>`;
   }).join('');
 
-  const chartH = allData.length * ROW_H;
+  const chartH = visData.length * ROW_H;
   const LABEL_W = 200;
 
   wrap.innerHTML = `
@@ -864,9 +882,9 @@ function renderGantt() {
         <div style="position:relative;height:${chartH}px;min-width:600px;">
           ${rowsHtml}
           <!-- Svislá čára dnes -->
-          <div style="position:absolute;left:${todayPct.toFixed(2)}%;top:0;bottom:0;width:2px;
-            background:rgba(255,255,255,0.7);z-index:10;pointer-events:none;">
-            <div style="position:absolute;top:0;left:3px;font-size:9px;color:#fff;
+          <div style="position:absolute;left:${todayPct.toFixed(2)}%;top:0;bottom:0;width:1px;
+            background:rgba(255,255,255,0.28);z-index:10;pointer-events:none;">
+            <div style="position:absolute;top:0;left:3px;font-size:9px;color:rgba(255,255,255,0.45);
               font-family:'JetBrains Mono',monospace;white-space:nowrap;">DNES</div>
           </div>
         </div>
@@ -901,7 +919,8 @@ async function load() {
     }
     const json = await res.json();
     if (json.error) throw new Error(json.error);
-    allData = json.zakazky || [];
+    allData   = json.zakazky   || [];
+    parametry = json.parametry || parametry;
     if (allData.length === 0) {
       document.getElementById('stats').innerHTML = `<div class="stat" style="color:#eab308">⚠ Žádné zakázky pro userId: ${userId}</div>`;
       return;

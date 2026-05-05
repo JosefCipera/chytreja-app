@@ -18,7 +18,7 @@ export default async function handler(req, res) {
 
     const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
-    const [zakazkyRes, pracovistRes] = await Promise.all([
+    const [zakazkyRes, pracovistRes, parametryRes] = await Promise.all([
       sb.from('toc_zakazky')
         .select('*')
         .eq('user_id', userId)
@@ -28,7 +28,15 @@ export default async function handler(req, res) {
         .eq('user_id', userId)
         .eq('aktivni', true)
         .order('poradi'),
+      sb.from('toc_parametry')
+        .select('id_parametru, hodnota')
+        .eq('user_id', userId),
     ]);
+
+    const parametry = {};
+    for (const p of parametryRes.data || []) {
+      parametry[p.id_parametru] = Number(p.hodnota);
+    }
 
     // Map poradi → nazev for cas_pracoviste display
     const poradiMap = {};
@@ -64,7 +72,7 @@ export default async function handler(req, res) {
       };
     });
 
-    return res.json({ zakazky, pracoviste: pracovistRes.data || [] });
+    return res.json({ zakazky, pracoviste: pracovistRes.data || [], parametry });
 
   } catch (err) {
     console.error('[toc-zakazky]', err);
