@@ -767,6 +767,7 @@ function renderGantt() {
   let minD = today, maxD = today;
   for (const z of allData) {
     if (z.planovane_zahajeni) { const d = toDay(z.planovane_zahajeni); if (d < minD) minD = d; }
+    if (z.planovane_ukonceni) { const d = toDay(z.planovane_ukonceni); if (d > maxD) maxD = d; }
     if (z.termin_dodani)      { const d = toDay(z.termin_dodani);      if (d > maxD) maxD = d; }
   }
   // Přidej okraje: 3 dny vlevo, 5 dní vpravo
@@ -799,9 +800,9 @@ function renderGantt() {
   // ── Řádky zakázek ────────────────────────────────────────────────────────
   const ROW_H = 22;
   const rowsHtml = allData.map((z, i) => {
-    if (!z.planovane_zahajeni || !z.termin_dodani) return '';
+    if (!z.planovane_zahajeni || !z.planovane_ukonceni) return '';
     const left  = pct(z.planovane_zahajeni);
-    const right = pct(z.termin_dodani);
+    const right = pct(z.planovane_ukonceni);
     const width = right - left;
     if (width <= 0) return '';
 
@@ -823,9 +824,9 @@ function renderGantt() {
     const bg = i % 2 === 0 ? 'rgba(255,255,255,0.01)' : 'transparent';
     // Barva štítku podle pozice dneška v úsečce
     let labelColor = '#64748b';
-    if (z.planovane_zahajeni && z.termin_dodani) {
+    if (z.planovane_zahajeni && z.planovane_ukonceni) {
       const start = toDay(z.planovane_zahajeni).getTime();
-      const end   = toDay(z.termin_dodani).getTime();
+      const end   = toDay(z.planovane_ukonceni).getTime();
       const span  = end - start;
       const todayT = today.getTime();
       if (todayT >= start && todayT <= end) {
