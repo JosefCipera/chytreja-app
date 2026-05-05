@@ -832,34 +832,33 @@ function renderGantt() {
     firstTick = new Date(firstTick.getTime() - GT * DAY);
   }
 
-  // Svislé čáry + šikmé datumy — každý kalendářní den
-  let ticksHtml = '';   // hlavička
-  let gridLines = '';   // čáry pro řádky
+  // Šikmé datumy v hlavičce + svislé čáry jen v datech (GT řídí krok)
+  let ticksHtml = '';   // hlavička — pouze labely, žádné čáry
+  let gridLines = '';   // čáry jen v datové oblasti
 
-  let calDay = new Date(minD);
-  while (calDay.getTime() <= maxD.getTime()) {
-    const lp    = tPct(calDay.getTime());
+  let tick = new Date(firstTick);
+  while (tick.getTime() <= maxD.getTime()) {
+    const lp   = tPct(tick.getTime());
     if (lp >= 0 && lp <= 100) {
-      const isTd  = calDay.toISOString().slice(0, 10) === todayStr;
-      const label = `${calDay.getDate()}.${calDay.getMonth() + 1}`;
+      const isTd  = tick.toISOString().slice(0, 10) === todayStr;
+      const label = `${tick.getDate()}.${tick.getMonth() + 1}`;
       const lclr  = isTd ? '#e2e8f0' : '#94a3b8';
       const gclr  = isTd ? 'rgba(255,255,255,0.55)' : 'rgba(255,255,255,0.18)';
       const gw    = isTd ? '2px' : '1px';
 
-      // Hlavička: čára přetéká dolů (border-left táhne přes celou th výšku) + šikmý label
+      // Hlavička: jen šikmý label, bez čáry
       ticksHtml += `<div style="position:absolute;left:${lp.toFixed(2)}%;top:0;bottom:0;overflow:visible;">
-        <div style="position:absolute;top:0;bottom:-4px;left:0;width:${gw};background:${gclr};"></div>
         <span style="position:absolute;bottom:8px;left:3px;
           font-size:10px;font-family:'JetBrains Mono',monospace;font-weight:${isTd ? '700' : '400'};
           color:${lclr};white-space:nowrap;
           transform:rotate(-45deg);transform-origin:left bottom;display:block;">${label}</span>
       </div>`;
 
-      // Řádky: svislá čára (z-index pod barem)
+      // Data: svislá čára — z-index pod barem
       gridLines += `<div style="position:absolute;left:${lp.toFixed(2)}%;top:0;bottom:0;
         width:${gw};background:${gclr};pointer-events:none;z-index:1;"></div>`;
     }
-    calDay = new Date(calDay.getTime() + DAY);
+    tick = new Date(tick.getTime() + GT * DAY);
   }
 
   // ── Řádky: segment helper ────────────────────────────────────────────────
