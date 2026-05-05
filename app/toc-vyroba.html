@@ -824,13 +824,16 @@ function renderGantt() {
   const gridStops = ['transparent 0%'];
   let calDay = new Date(minD);
   while (calDay.getTime() <= maxD.getTime()) {
-    const p   = tPct(calDay.getTime()).toFixed(2);
-    const isTd = calDay.toISOString().slice(0, 10) === todayStr;
-    const a   = isTd ? '0.35' : '0.13';
+    const p        = tPct(calDay.getTime()).toFixed(2);
+    const isTd     = calDay.toISOString().slice(0, 10) === todayStr;
+    const dayOff   = Math.round((calDay.getTime() - today.getTime()) / DAY);
+    const isTick   = (dayOff % GT === 0);   // silnější čára na tik-pozici (= datum v hlavičce)
+    const a        = isTd ? '0.55' : isTick ? '0.25' : '0.08';
+    const w        = isTd ? '2px'  : '1px';
     gridStops.push(
       `rgba(255,255,255,${a}) ${p}%`,
-      `rgba(255,255,255,${a}) calc(${p}% + 1px)`,
-      `transparent calc(${p}% + 1px)`
+      `rgba(255,255,255,${a}) calc(${p}% + ${w})`,
+      `transparent calc(${p}% + ${w})`
     );
     calDay = new Date(calDay.getTime() + DAY);
   }
@@ -880,9 +883,7 @@ function renderGantt() {
       height:${BAR_H}px;top:${BAR_TOP}px;background:${color};border-radius:${br};"></div>`;
   };
 
-  // Čára DNES — jako absolutní překryv v každém tbody td
-  const todayLine = `<div style="position:absolute;left:${todayPct.toFixed(2)}%;top:0;bottom:0;
-    width:1px;background:rgba(255,255,255,0.22);pointer-events:none;z-index:2;"></div>`;
+  // Čára DNES — je už v gridBg (2px, alpha 0.55), žádný extra overlay
 
   // ── Generuj řádky tabulky ─────────────────────────────────────────────────
   const rowsHtml = visData.map((z, i) => {
@@ -910,7 +911,7 @@ function renderGantt() {
       <td style="position:relative;height:${ROW_H}px;padding:0;
         background-color:${bg};background-image:${gridBg};
         border-bottom:1px solid rgba(255,255,255,0.03);">
-        ${bar}${todayLine}
+        ${bar}
       </td>
     </tr>`;
   }).join('');
