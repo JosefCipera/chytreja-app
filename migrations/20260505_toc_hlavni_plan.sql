@@ -24,7 +24,7 @@ ALTER TABLE toc_hlavni_plan ENABLE ROW LEVEL SECURITY;
 -- ── Seed: testovací data 1.5–15.5.2026 ───────────────────────────────────────
 DO $$
 DECLARE
-  uid TEXT := 'mfiTHj2yHtaw99QqHZg0y3eCSSm1';  -- << user_id
+  uid TEXT := 'qE09cLyXXGRBRxOBCGNZqTM2XRW2';  -- << user_id
 BEGIN
 INSERT INTO toc_hlavni_plan (user_id, datum, plan_ks, uvolnene_ks, predvydane_ks)
 VALUES
