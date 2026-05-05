@@ -780,10 +780,10 @@ function renderGantt() {
   const DAY    = 86400000;
   const todayStr = today.toISOString().slice(0, 10);
 
-  // Okno z Parametrů
+  // Okno z Parametrů (GT min. 3 — méně dní by vedlo k nepřehledné ose)
   const GD = parametry.GD ?? -30;
   const GO = parametry.GO ?? 90;
-  const GT = parametry.GT ?? 7;
+  const GT = Math.max(3, parametry.GT ?? 7);
   const minD = new Date(today.getTime() + GD * DAY);
   const maxD = new Date(today.getTime() + GO * DAY);
 
@@ -830,23 +830,34 @@ function renderGantt() {
     cur = nextMon;
   }
 
-  // ── Hlavička: tiky s datumy — adaptivní labely ───────────────────────────
-  // Odhadni šířku chartové oblasti, aby se nepřekrývaly popisky
+  // ── Hlavička: tiky s datumy — styl kapacit (den + zkratka dne) ──────────
+  // Adaptivní: skryj label pokud není dost místa (odhadneme px na tik)
   const estChartPx = Math.max(600, (view.getBoundingClientRect().width || window.innerWidth) - LABEL_W);
   const pxPerTick  = estChartPx * GT / totalDays;
-  const showLabel  = pxPerTick >= 30;   // skryj popisek, ne-li dost místa
+  const showLabel  = pxPerTick >= 24;
+
+  const DAYS_CS = ['Ne','Po','Út','St','Čt','Pá','So'];
 
   let ticksHtml = '';
   let tick = new Date(minD);
   while (tick <= maxD) {
     const lp      = tPct(tick.getTime());
+    const dow     = tick.getDay();                              // 0=Ne…6=So
+    const isWeekend = dow === 0 || dow === 6;
     const isTd    = tick.toISOString().slice(0, 10) === todayStr;
-    const label   = showLabel ? `${tick.getDate()}.${tick.getMonth() + 1}.` : '';
+    const lineClr = isTd ? 'rgba(255,255,255,0.2)' : isWeekend ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.06)';
+    const dayClr  = isTd ? '#94a3b8' : isWeekend ? '#1e293b' : '#475569';
+    const dowClr  = isTd ? '#475569' : '#1e293b';
     ticksHtml += `<div style="position:absolute;left:${lp.toFixed(2)}%;top:0;bottom:0;
-      border-left:1px solid rgba(255,255,255,${isTd ? '0.18' : '0.06'});">
-      ${label ? `<span style="position:absolute;top:3px;left:3px;
-        font-size:11px;font-family:'JetBrains Mono',monospace;white-space:nowrap;
-        color:${isTd ? 'rgba(255,255,255,0.5)' : '#3d5168'};">${label}</span>` : ''}
+      border-left:1px solid ${lineClr};">
+      ${showLabel ? `
+        <span style="display:block;padding:2px 0 0 3px;
+          font-size:13px;font-family:'JetBrains Mono',monospace;
+          color:${dayClr};white-space:nowrap;line-height:1;">${tick.getDate()}.</span>
+        <span style="display:block;padding:0 0 0 3px;
+          font-size:11px;font-family:'JetBrains Mono',monospace;
+          color:${dowClr};white-space:nowrap;line-height:1;">${DAYS_CS[dow]}</span>
+      ` : ''}
     </div>`;
     tick = new Date(tick.getTime() + GT * DAY);
   }
@@ -874,9 +885,9 @@ function renderGantt() {
     const span      = fullEnd - fullStart;
     const t1 = fullStart + span / 3;
     const t2 = fullStart + span * 2 / 3;
-    const bar = seg(fullStart, t1, 'rgba(34,197,94,0.82)', true, false)
-              + seg(t1, t2,        'rgba(234,179,8,0.82)',  false, false)
-              + seg(t2, fullEnd,   'rgba(239,68,68,0.82)',  false, true);
+    const bar = seg(fullStart, t1, 'rgba(34,197,94,0.38)', true, false)
+              + seg(t1, t2,        'rgba(234,179,8,0.38)',  false, false)
+              + seg(t2, fullEnd,   'rgba(239,68,68,0.38)',  false, true);
     const bg = i % 2 === 0 ? '#090f1c' : '#080e1a';
     return `<tr>
       <td style="position:sticky;left:0;z-index:10;background:${bg};
@@ -905,20 +916,20 @@ function renderGantt() {
         <tr>
           <!-- Roh: sticky top + left -->
           <th style="position:sticky;top:0;left:0;z-index:31;
-            background:#0a1120;padding:0;height:38px;
+            background:#0a1120;padding:0;height:50px;
             border-right:1px solid rgba(255,255,255,0.06);
             border-bottom:1px solid rgba(6,182,212,0.2);">
           </th>
           <!-- Dvouřádková osa -->
           <th style="position:sticky;top:0;z-index:30;
-            background:#0a1120;padding:0;height:38px;
+            background:#0a1120;padding:0;height:50px;
             border-bottom:1px solid rgba(6,182,212,0.2);">
-            <!-- Měsíce -->
+            <!-- Řádek 1: měsíce -->
             <div style="position:relative;height:20px;border-bottom:1px solid rgba(255,255,255,0.06);">
               ${monthsHtml}
             </div>
-            <!-- Tiky / datumy -->
-            <div style="position:relative;height:18px;">
+            <!-- Řádek 2: den číslo + zkratka dne (vzor kapacit) -->
+            <div style="position:relative;height:30px;">
               ${ticksHtml}
             </div>
           </th>
