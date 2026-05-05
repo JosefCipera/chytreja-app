@@ -956,27 +956,38 @@ function renderGantt() {
 }
 
 // ── Hlavní plán výroby ────────────────────────────────────────────────────
-function renderHlavniPlan() {
-  const wrap = document.getElementById('hp-wrap');
+let hpRendered = false;  // načítej jen jednou
 
-  // Data — 1.5 až 15.5.2026
-  const data = [
-    { d:'1.5',  plan:780000,  uvol:550000,  pred:0       },
-    { d:'2.5',  plan:790000,  uvol:815000,  pred:0       },
-    { d:'3.5',  plan:800000,  uvol:640000,  pred:10000   },
-    { d:'4.5',  plan:820000,  uvol:820000,  pred:80000   },
-    { d:'5.5',  plan:900000,  uvol:1050000, pred:430000  },
-    { d:'6.5',  plan:960000,  uvol:700000,  pred:550000  },
-    { d:'7.5',  plan:1000000, uvol:1350000, pred:1200000 },
-    { d:'8.5',  plan:1000000, uvol:1000000, pred:1000000 },
-    { d:'9.5',  plan:1000000, uvol:790000,  pred:700000  },
-    { d:'10.5', plan:1200000, uvol:0,       pred:0       },
-    { d:'11.5', plan:1200000, uvol:100000,  pred:100000  },
-    { d:'12.5', plan:1200000, uvol:90000,   pred:90000   },
-    { d:'13.5', plan:1200000, uvol:0,       pred:0       },
-    { d:'14.5', plan:1250000, uvol:0,       pred:0       },
-    { d:'15.5', plan:1300000, uvol:0,       pred:0       },
-  ];
+async function renderHlavniPlan() {
+  const wrap = document.getElementById('hp-wrap');
+  if (hpRendered) return;
+
+  wrap.innerHTML = '<div style="padding:24px;color:#475569;font-family:\'JetBrains Mono\',monospace;font-size:13px;">NAČÍTÁM…</div>';
+
+  let raw = [];
+  try {
+    const res = await fetch(`/api/toc-hlavni-plan?userId=${encodeURIComponent(userId)}`);
+    const json = await res.json();
+    raw = json.data || [];
+  } catch (e) {
+    wrap.innerHTML = '<div style="padding:24px;color:#ef4444;font-size:13px;">Chyba načítání hlavního plánu.</div>';
+    return;
+  }
+
+  if (!raw.length) {
+    wrap.innerHTML = '<div style="padding:24px;color:#475569;font-family:\'JetBrains Mono\',monospace;font-size:13px;">Žádná data v toc_hlavni_plan.</div>';
+    return;
+  }
+
+  hpRendered = true;
+
+  // Normalizace: datum → D.M, hodnoty
+  const data = raw.map(r => ({
+    d:    (() => { const dt = new Date(r.datum + 'T00:00:00'); return `${dt.getDate()}.${dt.getMonth()+1}`; })(),
+    plan: r.plan_ks,
+    uvol: r.uvolnene_ks,
+    pred: r.predvydane_ks,
+  }));
 
   const totalPlan = data.reduce((s,d) => s + d.plan, 0);
   const totalUvol = data.reduce((s,d) => s + d.uvol, 0);
