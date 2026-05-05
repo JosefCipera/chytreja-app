@@ -817,32 +817,10 @@ function renderGantt() {
   const tPct = t => (t - minD.getTime()) / DAY / totalDays * 100;
   const todayPct = tPct(today.getTime());
 
-  // ── Grid: tenká čára na každý kalendářní den (jako ve vzoru) ─────────────
-  const estChartPx = Math.max(600, (view.getBoundingClientRect().width || window.innerWidth) - LABEL_W);
-  const pxPerDay   = estChartPx / totalDays;
-
-  const gridStops = ['transparent 0%'];
-  let calDay = new Date(minD);
-  while (calDay.getTime() <= maxD.getTime()) {
-    const p        = tPct(calDay.getTime()).toFixed(2);
-    const isTd     = calDay.toISOString().slice(0, 10) === todayStr;
-    const dayOff   = Math.round((calDay.getTime() - today.getTime()) / DAY);
-    const isTick   = (dayOff % GT === 0);   // silnější čára na tik-pozici (= datum v hlavičce)
-    const a        = isTd ? '0.55' : isTick ? '0.25' : '0.08';
-    const w        = isTd ? '2px'  : '1px';
-    gridStops.push(
-      `rgba(255,255,255,${a}) ${p}%`,
-      `rgba(255,255,255,${a}) calc(${p}% + ${w})`,
-      `transparent calc(${p}% + ${w})`
-    );
-    calDay = new Date(calDay.getTime() + DAY);
-  }
-  const gridBg = `linear-gradient(to right, ${gridStops.join(', ')})`;
-
-  // ── Tiky ukotvené na dnešek: today vždy na tikové čáře ──────────────────
-  // Adaptivní hustota popisků: GT nastavuje interval, ale při úzkých sloupcích
-  // se automaticky řídne (každý N-tý tik) aby se popisky nepřekrývaly
-  const minLabelPx   = 30;
+  // ── Tiky ukotvené na dnešek ──────────────────────────────────────────────
+  const estChartPx  = Math.max(600, (view.getBoundingClientRect().width || window.innerWidth) - LABEL_W);
+  const pxPerDay    = estChartPx / totalDays;
+  const minLabelPx  = 30;
   const labelSpacing = GT * Math.max(1, Math.ceil(minLabelPx / Math.max(1, pxPerDay * GT)));
 
   let firstTick = new Date(today);
@@ -850,23 +828,34 @@ function renderGantt() {
     firstTick = new Date(firstTick.getTime() - GT * DAY);
   }
 
-  let ticksHtml = '';
+  // Svislé čáry tikových pozic — renderujeme jako div-y (ne CSS gradient)
+  // Stejné divy jdou do hlavičky (label) i do každého řádku (gridLine)
+  let ticksHtml  = '';   // hlavička
+  let gridLines  = '';   // čáry pro řádky (sdílené, vkládané do každé td)
+
   let tick = new Date(firstTick);
   while (tick <= maxD) {
-    const lp  = tPct(tick.getTime());
-    if (lp >= 0) {
+    const lp       = tPct(tick.getTime());
+    if (lp >= 0 && lp <= 100) {
       const isTd      = tick.toISOString().slice(0, 10) === todayStr;
       const dayOffset = Math.round((tick.getTime() - today.getTime()) / DAY);
       const showLabel = (dayOffset % labelSpacing === 0);
-      // Formát: "D.M" — jen číslo dne a měsíce, žádný den v týdnu
-      const label = `${tick.getDate()}.${tick.getMonth() + 1}`;
-      const clr   = isTd ? '#e2e8f0' : '#94a3b8';
+      const label     = `${tick.getDate()}.${tick.getMonth() + 1}`;
+      const lclr      = isTd ? '#e2e8f0' : '#94a3b8';
+      const gclr      = isTd ? 'rgba(255,255,255,0.55)' : 'rgba(255,255,255,0.18)';
+      const gw        = isTd ? '2px' : '1px';
 
-      ticksHtml += `<div style="position:absolute;left:${lp.toFixed(2)}%;top:0;bottom:0;">
+      // Hlavička: label
+      ticksHtml += `<div style="position:absolute;left:${lp.toFixed(2)}%;top:0;bottom:0;
+        border-left:1px solid rgba(255,255,255,0.15);">
         ${showLabel ? `<span style="position:absolute;top:5px;left:3px;
           font-size:11px;font-family:'JetBrains Mono',monospace;font-weight:${isTd ? '600' : '400'};
-          color:${clr};white-space:nowrap;">${label}</span>` : ''}
+          color:${lclr};white-space:nowrap;">${label}</span>` : ''}
       </div>`;
+
+      // Řádky: svislá čára
+      gridLines += `<div style="position:absolute;left:${lp.toFixed(2)}%;top:0;bottom:0;
+        width:${gw};background:${gclr};pointer-events:none;z-index:1;"></div>`;
     }
     tick = new Date(tick.getTime() + GT * DAY);
   }
@@ -880,38 +869,34 @@ function renderGantt() {
     if (w <= 0) return '';
     const br = rL && rR ? '2px' : rL ? '2px 0 0 2px' : rR ? '0 2px 2px 0' : '0';
     return `<div style="position:absolute;left:${l.toFixed(2)}%;width:${w.toFixed(2)}%;
-      height:${BAR_H}px;top:${BAR_TOP}px;background:${color};border-radius:${br};"></div>`;
+      height:${BAR_H}px;top:${BAR_TOP}px;background:${color};border-radius:${br};z-index:2;"></div>`;
   };
-
-  // Čára DNES — je už v gridBg (2px, alpha 0.55), žádný extra overlay
 
   // ── Generuj řádky tabulky ─────────────────────────────────────────────────
   const rowsHtml = visData.map((z, i) => {
     const fullStart = toDay(z.planovane_zahajeni).getTime();
-    // +1 DAY: pruh sahá na konec posledního dne (ne na jeho začátek)
-    const fullEnd     = toDay(z.planovane_ukonceni).getTime() + DAY;
-    const span        = fullEnd - fullStart;
-    const t1 = fullStart + span / 3;
-    const t2 = fullStart + span * 2 / 3;
-    // Pokud zahájení před levým oknem → pruh začíná na okraji bez zaoblení vlevo
-    const clippedL = fullStart < minD.getTime();
-    const bar = seg(fullStart, t1, 'rgba(34,197,94,0.58)', !clippedL, false)
-              + seg(t1, t2,        'rgba(234,179,8,0.58)',  false,     false)
-              + seg(t2, fullEnd,   'rgba(239,68,68,0.58)',  false,     true);
+    const fullEnd   = toDay(z.planovane_ukonceni).getTime() + DAY;
+    const span      = fullEnd - fullStart;
+    const t1        = fullStart + span / 3;
+    const t2        = fullStart + span * 2 / 3;
+    const clippedL  = fullStart < minD.getTime();
+    const bar = seg(fullStart, t1, 'rgba(34,197,94,0.65)', !clippedL, false)
+              + seg(t1, t2,        'rgba(234,179,8,0.65)',  false,     false)
+              + seg(t2, fullEnd,   'rgba(239,68,68,0.65)',  false,     true);
     const bg = i % 2 === 0 ? '#090f1c' : '#080e1a';
     return `<tr>
       <td style="position:sticky;left:0;z-index:10;background:${bg};
         width:${LABEL_W}px;height:${ROW_H}px;padding:0 10px;
         font-family:'JetBrains Mono',monospace;font-size:12px;color:#94a3b8;
         white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-        border-right:1px solid rgba(255,255,255,0.06);
-        border-bottom:1px solid rgba(255,255,255,0.03);">
+        border-right:1px solid rgba(255,255,255,0.1);
+        border-bottom:1px solid rgba(255,255,255,0.04);">
         ${z.id_zakazky}
       </td>
       <td style="position:relative;height:${ROW_H}px;padding:0;
-        background-color:${bg};background-image:${gridBg};
-        border-bottom:1px solid rgba(255,255,255,0.03);">
-        ${bar}
+        background:${bg};
+        border-bottom:1px solid rgba(255,255,255,0.04);">
+        ${gridLines}${bar}
       </td>
     </tr>`;
   }).join('');
