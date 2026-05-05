@@ -1003,7 +1003,7 @@ async function renderHlavniPlan() {
   // SVG dimenze — větší graf
   const N   = data.length;
   const H   = 420;
-  const pad = { t:24, r:30, b:56, l:90 };
+  const pad = { t:24, r:30, b:72, l:90 };
   const containerW = wrap.clientWidth || 800;
   const W   = Math.max(560, containerW - 2);
   const cW  = W - pad.l - pad.r;
@@ -1049,10 +1049,11 @@ async function renderHlavniPlan() {
     `<circle cx="${xc(i).toFixed(1)}" cy="${yv(d.plan).toFixed(1)}" r="3.5" fill="#22d3ee"/>`
   ).join('');
 
-  // X popisky
+  // X popisky — šikmé -45° aby se vešla i delší data jako "11.12."
   const xLabels = data.map((d,i) =>
-    `<text x="${xc(i).toFixed(1)}" y="${H-pad.b+20}" fill="#64748b" font-size="13"
-      text-anchor="middle" font-family="JetBrains Mono,monospace">${d.d}</text>`
+    `<text x="${xc(i).toFixed(1)}" y="${H-pad.b+8}" fill="#64748b" font-size="12"
+      text-anchor="end" font-family="JetBrains Mono,monospace"
+      transform="rotate(-45,${xc(i).toFixed(1)},${H-pad.b+8})">${d.d}</text>`
   ).join('');
 
   wrap.innerHTML = `
