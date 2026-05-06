@@ -252,7 +252,7 @@ export default async function handler(req, res) {
             planovane_zahajeni:   r.planovane_zahajeni,
             planovane_ukonceni:   r.planovane_ukonceni,
             termin_dodani:        z.termin_dodani,
-            prubeznа_doba:        r._prubeznа_doba_kal,   // kalendářní dny
+            prubeznа_doba:        z.prubeznа_doba,         // konstanta z DB, nikdy nepřepočítávat
             zpozdeni_dny:         r.zpozdeni_dny ?? 0,
             stav:                 z.stav,
             cas_pracoviste_txt:   r._cas_plan_txt,

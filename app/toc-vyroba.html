@@ -698,8 +698,6 @@ function switchTab(tab) {
 
 // ── Kapacitní plán ─────────────────────────────────────────────────────────
 async function runKapacita(limit) {
-  const btn = document.getElementById('btn-kapacita');
-  if (btn) { btn.disabled = true; btn.textContent = '📊 Počítám…'; }
 
   try {
     const body = { action: 'kapacita', userId };

@@ -1,0 +1,3 @@
+-- toc_parametry již existuje se schématem:
+-- user_id, id_parametru, parametr, hodnota, updated_at
+-- Tato migrace není potřeba.
