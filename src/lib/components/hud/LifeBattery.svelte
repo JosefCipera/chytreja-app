@@ -87,63 +87,92 @@
     </div>
   </div>
 
-  <!-- Battery shape -->
-  <div class="flex items-center gap-0 mb-3">
-    <!-- Main battery body -->
-    <div
-      class="relative flex-1 rounded-l-md rounded-r-none {percent <= 40 ? 'battery-pulse' : ''}"
-      style="
-        background: rgba(0, 0, 0, 0.55);
-        border: 2px solid rgba(255,255,255,0.07);
-        border-right: none;
-        box-shadow: {barGlow}, inset 0 2px 12px rgba(0,0,0,0.6);
-        padding: 5px;
-      "
-    >
-      <!-- Segments -->
-      <div class="relative flex gap-[4px]" style="z-index: 1;">
-        {#each Array(TOTAL_SEGMENTS) as _, i}
-          <div
-            class="flex-1 rounded-[2px] transition-all duration-500"
-            style="height: 100px; {i < filledSegments
-              ? `background: ${fillColor}; box-shadow: 0 0 8px ${glowColor}, inset 0 -2px 4px rgba(0,0,0,0.2);`
-              : 'background: rgba(255,255,255,0.025); border: 1px solid rgba(255,255,255,0.015);'}"
-          ></div>
-        {/each}
+  {#if universe === 'toc'}
+    <!-- Pipe/tube visualization for TOC universe — solid color, no fill semantics -->
+    <div class="mb-2" style="filter: drop-shadow(0 0 10px {glowColor});">
+      <svg width="100%" viewBox="0 0 300 58" xmlns="http://www.w3.org/2000/svg" style="display:block;">
+        <defs>
+          <linearGradient id="pipeDepth" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%"   stop-color="rgba(255,255,255,0.30)"/>
+            <stop offset="38%"  stop-color="rgba(255,255,255,0.04)"/>
+            <stop offset="100%" stop-color="rgba(0,0,0,0.38)"/>
+          </linearGradient>
+        </defs>
+        <!-- Body -->
+        <rect x="22" y="7" width="256" height="44" fill={fillColor} opacity="0.9" rx="2"/>
+        <!-- Left flange -->
+        <ellipse cx="22"  cy="29" rx="16" ry="25" fill={fillColor} opacity="0.95"/>
+        <ellipse cx="22"  cy="29" rx="16" ry="25" fill="url(#pipeDepth)"/>
+        <!-- Right flange -->
+        <ellipse cx="278" cy="29" rx="16" ry="25" fill={fillColor} opacity="0.95"/>
+        <ellipse cx="278" cy="29" rx="16" ry="25" fill="url(#pipeDepth)"/>
+        <!-- Top highlight overlay on body -->
+        <rect x="22" y="7" width="256" height="44" fill="url(#pipeDepth)" rx="2"/>
+      </svg>
+    </div>
+    <!-- State label below pipe -->
+    <div class="text-center mb-1">
+      <span class="hud-mono" style="font-size: 10px; letter-spacing: 3px; color: {watermarkColor}; opacity: 0.55;">{watermark}</span>
+    </div>
+  {:else}
+    <!-- Battery shape for longevity universe -->
+    <div class="flex items-center gap-0 mb-3">
+      <!-- Main battery body -->
+      <div
+        class="relative flex-1 rounded-l-md rounded-r-none {percent <= 40 ? 'battery-pulse' : ''}"
+        style="
+          background: rgba(0, 0, 0, 0.55);
+          border: 2px solid rgba(255,255,255,0.07);
+          border-right: none;
+          box-shadow: {barGlow}, inset 0 2px 12px rgba(0,0,0,0.6);
+          padding: 5px;
+        "
+      >
+        <!-- Segments -->
+        <div class="relative flex gap-[4px]" style="z-index: 1;">
+          {#each Array(TOTAL_SEGMENTS) as _, i}
+            <div
+              class="flex-1 rounded-[2px] transition-all duration-500"
+              style="height: 100px; {i < filledSegments
+                ? `background: ${fillColor}; box-shadow: 0 0 8px ${glowColor}, inset 0 -2px 4px rgba(0,0,0,0.2);`
+                : 'background: rgba(255,255,255,0.025); border: 1px solid rgba(255,255,255,0.015);'}"
+            ></div>
+          {/each}
+        </div>
+
+        <!-- Watermark -->
+        <div
+          class="absolute inset-0 flex items-center justify-center pointer-events-none select-none"
+          style="z-index: 3;"
+        >
+          <span
+            class="hud-mono font-black uppercase"
+            style="
+              font-size: 26px;
+              letter-spacing: 0.02em;
+              color: {watermarkColor};
+              text-shadow: 0 0 18px {watermarkColor}, 0 1px 3px rgba(0,0,0,0.9);
+              background: rgba(0,0,0,0.55);
+              padding: 4px 16px;
+              border-radius: 4px;
+            "
+          >{watermark}</span>
+        </div>
       </div>
 
-      <!-- Watermark -->
+      <!-- Battery terminal (nub) -->
       <div
-        class="absolute inset-0 flex items-center justify-center pointer-events-none select-none"
-        style="z-index: 3;"
-      >
-        <span
-          class="hud-mono font-black uppercase"
-          style="
-            font-size: 26px;
-            letter-spacing: 0.02em;
-            color: {watermarkColor};
-            text-shadow: 0 0 18px {watermarkColor}, 0 1px 3px rgba(0,0,0,0.9);
-            background: rgba(0,0,0,0.55);
-            padding: 4px 16px;
-            border-radius: 4px;
-          "
-        >{watermark}</span>
-      </div>
+        class="rounded-r-sm"
+        style="width: 12px; height: 58px; background: rgba(255,255,255,0.06); border: 2px solid rgba(255,255,255,0.06); border-left: none; box-shadow: 0 0 8px {glowColor};"
+      ></div>
     </div>
 
-    <!-- Battery terminal (nub) -->
-    <div
-      class="rounded-r-sm"
-      style="width: 12px; height: 58px; background: rgba(255,255,255,0.06); border: 2px solid rgba(255,255,255,0.06); border-left: none; box-shadow: 0 0 8px {glowColor};"
-    ></div>
-  </div>
-
-  <!-- EST_BIO_AGE — placeholder, data v0.4+ -->
-  <div class="flex items-center justify-between mt-3">
-    <span class="hud-mono" style="font-size: 13px; color: #475569;">
-      EST_BIO_AGE: <span style="color: #334155;">—</span>
-    </span>
-  </div>
+    <!-- EST_BIO_AGE — placeholder, data v0.4+ -->
+    <div class="flex items-center justify-between mt-3">
+      <span class="hud-mono" style="font-size: 13px; color: #475569;">
+        EST_BIO_AGE: <span style="color: #334155;">—</span>
+      </span>
+    </div>
+  {/if}
 
 </div>
