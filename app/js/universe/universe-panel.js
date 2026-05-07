@@ -907,7 +907,7 @@ function showToast(msg) {
 // SHOW GAME OF LIFE  (hlavní builder panelu)
 // =====================================================
 
-/** Generuje HTML baterie pro hlavní uzel (state = GREEN / YELLOW / RED / jiný). */
+/** Generuje HTML potrubí (pipe) pro hlavní uzel (state = GREEN / YELLOW / RED / jiný). */
 function _buildBatteryHTML(vitalityPct, goalLabel, trendDir) {
   // Color thresholds adjusted by trend direction
   // trendDir: 'up' | 'stable' | 'down'
@@ -919,57 +919,56 @@ function _buildBatteryHTML(vitalityPct, goalLabel, trendDir) {
   const t = THRESHOLDS[trendDir] || THRESHOLDS.stable;
 
   const pct = Math.round(vitalityPct ?? 60);
-  const fillPct = Math.max(3, Math.min(100, pct));
   const isGreen  = pct >= t.green;
   const isYellow = !isGreen && pct >= t.yellow;
-  const isRed    = !isGreen && !isYellow; // everything below yellow = red
+  const isRed    = !isGreen && !isYellow;
 
-  const battColor  = isGreen ? '#22c55e' : isYellow ? '#eab308' : isRed ? '#ef4444' : '#6b7280';
-  const battBorder = isGreen ? 'rgba(34,197,94,0.35)' : isYellow ? 'rgba(234,179,8,0.35)' : isRed ? 'rgba(239,68,68,0.35)' : 'rgba(107,114,128,0.35)';
-  const battGlow   = isGreen ? 'rgba(34,197,94,0.7)'  : isYellow ? 'rgba(234,179,8,0.7)'  : isRed ? 'rgba(239,68,68,0.7)'  : 'rgba(107,114,128,0.4)';
+  const color = isGreen ? '#22c55e' : isYellow ? '#eab308' : isRed ? '#ef4444' : '#6b7280';
+  const glow  = isGreen ? 'rgba(34,197,94,0.45)'  : isYellow ? 'rgba(234,179,8,0.45)'  : isRed ? 'rgba(239,68,68,0.45)'  : 'rgba(107,114,128,0.3)';
+  const stateLabel = isGreen ? 'FLOW_OK' : isYellow ? 'FLOW_WARN' : 'FLOW_LOW';
+
+  // Horizontal pipe SVG — solid color, no fill semantics, just state
+  // Pipe: left flange (ellipse) + body (rect) + right flange (ellipse)
+  // Top highlight gives 3D cylindrical depth
+  const uid = Math.random().toString(36).slice(2, 7); // unique gradient ID
+  const pipe = `<svg width="230" height="58" viewBox="0 0 230 58" xmlns="http://www.w3.org/2000/svg" style="display:block;">
+    <defs>
+      <linearGradient id="pg_${uid}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%"   stop-color="rgba(255,255,255,0.28)"/>
+        <stop offset="35%"  stop-color="rgba(255,255,255,0.04)"/>
+        <stop offset="100%" stop-color="rgba(0,0,0,0.32)"/>
+      </linearGradient>
+    </defs>
+    <!-- Body -->
+    <rect x="22" y="8" width="186" height="42" fill="${color}" opacity="0.88"/>
+    <!-- Left flange -->
+    <ellipse cx="22" cy="29" rx="15" ry="23" fill="${color}"/>
+    <ellipse cx="22" cy="29" rx="15" ry="23" fill="url(#pg_${uid})"/>
+    <!-- Right flange -->
+    <ellipse cx="208" cy="29" rx="15" ry="23" fill="${color}"/>
+    <ellipse cx="208" cy="29" rx="15" ry="23" fill="url(#pg_${uid})"/>
+    <!-- Highlight on body -->
+    <rect x="22" y="8" width="186" height="42" fill="url(#pg_${uid})"/>
+  </svg>`;
 
   return `
     <div style="padding:12px 0 4px;">
-      ${goalLabel ? `<div style="font-size:13px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:16px;">Cíl: držet nad 80 % <span style="color:#64748b;">· ${goalLabel}</span></div>` : `<div style="font-size:13px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:16px;">Cíl: držet nad 80 %</div>`}
+      <div style="font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:18px;">
+        FLOW-RATE${goalLabel ? ` · <span style="color:#475569;">${goalLabel}</span>` : ''}
+      </div>
       <div style="text-align:center;">
-        <!-- Battery + % side by side -->
-        <div style="display:inline-flex; align-items:center; gap:16px;">
-          <!-- Battery -->
-          <div style="display:inline-flex; flex-direction:column; align-items:center;">
-            <div style="
-              width:22px; height:11px;
-              border:2px solid ${battBorder};
-              border-bottom:none;
-              border-radius:5px 5px 0 0;
-              background:linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04));
-            "></div>
-            <div style="
-              width:62px; height:140px;
-              border:2px solid ${battBorder};
-              border-radius:5px 5px 8px 8px;
-              background:rgba(8,8,18,0.6);
-              position:relative; overflow:hidden;
-              box-shadow:0 0 22px ${battBorder}, inset 0 0 12px rgba(0,0,0,0.4);
-            ">
-              <div style="
-                position:absolute; bottom:0; left:0; right:0;
-                height:${fillPct}%;
-                background:linear-gradient(180deg, ${battColor}88, ${battColor}ee);
-                box-shadow:0 0 30px ${battGlow};
-                transition:height 1.5s ease;
-              "></div>
-              <div style="
-                position:absolute; top:0; bottom:0; left:6px; width:9px;
-                background:linear-gradient(90deg, rgba(255,255,255,0.09), transparent);
-                border-radius:4px; pointer-events:none;
-              "></div>
-              <div style="position:absolute;inset:0;display:flex;flex-direction:column;justify-content:space-evenly;padding:10px 0;pointer-events:none;">
-                ${[0,1,2].map(() => `<div style="height:1px;background:rgba(255,255,255,0.06);margin:0 8px;"></div>`).join('')}
-              </div>
-            </div>
+        <div style="display:inline-flex; flex-direction:column; align-items:center; gap:14px;">
+          <!-- Pipe -->
+          <div style="filter:drop-shadow(0 0 12px ${glow}) drop-shadow(0 0 4px ${glow});">
+            ${pipe}
           </div>
-          <!-- % next to battery, vertically centered -->
-          <span id="battery-pct" style="font-size:38px; font-weight:500; color:${battColor}; font-variant-numeric:tabular-nums; line-height:1;">${pct}<span style="font-size:22px;margin-left:2px;">%</span></span>
+          <!-- Percentage -->
+          <div style="display:flex; align-items:baseline; gap:3px;">
+            <span id="battery-pct" style="font-size:42px; font-weight:500; color:${color}; font-variant-numeric:tabular-nums; line-height:1;">${pct}</span>
+            <span style="font-size:20px; color:${color}; opacity:0.65;">%</span>
+          </div>
+          <!-- State label -->
+          <div style="font-size:10px; letter-spacing:2.5px; color:${color}; opacity:0.55; font-family:monospace;">${stateLabel}</div>
         </div>
       </div>
     </div>
