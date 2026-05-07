@@ -4,6 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Pipe Design Preview</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -15,245 +16,213 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 48px;
+    gap: 32px;
     padding: 40px 20px;
   }
-
   .card {
     background: rgba(15,23,42,0.85);
     border: 1px solid rgba(6,182,212,0.15);
     border-radius: 12px;
-    padding: 28px 32px;
-    width: 420px;
+    padding: 20px 24px;
+    width: 380px;
   }
-  .card-title {
-    font-size: 11px;
-    letter-spacing: 2px;
-    color: #475569;
-    margin-bottom: 20px;
-    text-transform: uppercase;
-  }
-
-  .pipe-wrap {
+  .header-row {
     display: flex;
-    flex-direction: column;
+    justify-content: space-between;
     align-items: center;
-    gap: 14px;
+    margin-bottom: 10px;
   }
-
-  /* ── Pipe SVG container ── */
-  .pipe-svg { display: block; width: 100%; }
-
-  /* ── Percent + label row ── */
-  .pipe-meta {
+  .header-label {
+    font-size: 18px;
+    letter-spacing: 0.04em;
+    color: #c8d4df;
+    font-weight: 300;
+  }
+  .header-right {
     display: flex;
-    align-items: baseline;
+    align-items: center;
     gap: 6px;
+    font-size: 13px;
   }
-  .pipe-pct {
-    font-size: 38px;
-    font-weight: 500;
-    font-variant-numeric: tabular-nums;
-    line-height: 1;
-  }
-  .pipe-pct-unit { font-size: 20px; opacity: 0.6; }
-  .pipe-state {
-    font-size: 10px;
-    letter-spacing: 3px;
-    opacity: 0.55;
-    margin-top: 2px;
-  }
+  .divider { color: #334155; }
 
-  /* ── Slider controls ── */
-  .controls {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    width: 100%;
-    margin-top: 8px;
+  /* ── Pipe body container ── */
+  .pipe-outer {
+    position: relative;
+    border-radius: 999px;   /* full pill → trubice */
+    border: 2px solid;
+    padding: 5px;
+    overflow: hidden;
+    box-sizing: border-box;
   }
-  .control-row {
+  /* Segments row */
+  .segments {
+    display: flex;
+    gap: 3px;
+    position: relative;
+    z-index: 1;
+    border-radius: 999px;
+    overflow: hidden;
+  }
+  .seg {
+    flex: 1;
+    height: 80px;
+    border-radius: 2px;
+    transition: all 0.5s;
+  }
+  /* Watermark */
+  .watermark {
+    position: absolute;
+    inset: 0;
     display: flex;
     align-items: center;
-    gap: 12px;
+    justify-content: center;
+    z-index: 3;
+    pointer-events: none;
+    user-select: none;
   }
-  .control-row label { font-size: 11px; color: #64748b; width: 70px; }
-  .control-row input[type=range] { flex: 1; }
-  .control-row span { font-size: 12px; color: #94a3b8; width: 40px; text-align: right; }
+  .watermark span {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    background: rgba(0,0,0,0.55);
+    padding: 3px 14px;
+    border-radius: 4px;
+  }
+  /* Bottom info row */
+  .info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+  }
+  .bio-age { font-size: 13px; color: #475569; }
+
+  /* Slider */
+  .slider-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 14px;
+  }
+  .slider-row label { font-size: 11px; color: #64748b; }
+  .slider-row input { flex: 1; }
+  .slider-row span { font-size: 12px; color: #94a3b8; width: 32px; text-align: right; }
 </style>
 </head>
 <body>
 
-<div style="font-size:13px; color:#475569; letter-spacing:2px; text-transform:uppercase; margin-bottom:-24px;">
-  TOC PIPE DESIGN — PREVIEW
-</div>
+<div style="font-size:11px; color:#475569; letter-spacing:2px; text-transform:uppercase;">TOC PIPE DESIGN — PREVIEW v2</div>
 
-<!-- GREEN state -->
-<div class="card">
-  <div class="card-title">FLOW-RATE — GREEN state (81 %)</div>
-  <div class="pipe-wrap">
-    <svg id="svgGreen" class="pipe-svg" viewBox="0 0 320 60" xmlns="http://www.w3.org/2000/svg"></svg>
-    <div class="pipe-meta">
-      <span class="pipe-pct" id="pctGreen" style="color:#22c55e">81</span>
-      <span class="pipe-pct-unit" style="color:#22c55e">%</span>
-    </div>
-    <div class="pipe-state" style="color:#22c55e">FLOW_OK</div>
-  </div>
-</div>
-
-<!-- YELLOW state -->
-<div class="card">
-  <div class="card-title">FLOW-RATE — YELLOW state (54 %)</div>
-  <div class="pipe-wrap">
-    <svg id="svgYellow" class="pipe-svg" viewBox="0 0 320 60" xmlns="http://www.w3.org/2000/svg"></svg>
-    <div class="pipe-meta">
-      <span class="pipe-pct" id="pctYellow" style="color:#eab308">54</span>
-      <span class="pipe-pct-unit" style="color:#eab308">%</span>
-    </div>
-    <div class="pipe-state" style="color:#eab308">FLOW_WARN</div>
-  </div>
-</div>
-
-<!-- RED state -->
-<div class="card">
-  <div class="card-title">FLOW-RATE — RED state (22 %)</div>
-  <div class="pipe-wrap">
-    <svg id="svgRed" class="pipe-svg" viewBox="0 0 320 60" xmlns="http://www.w3.org/2000/svg"></svg>
-    <div class="pipe-meta">
-      <span class="pipe-pct" id="pctRed" style="color:#ef4444">22</span>
-      <span class="pipe-pct-unit" style="color:#ef4444">%</span>
-    </div>
-    <div class="pipe-state" style="color:#ef4444">FLOW_LOW</div>
-  </div>
-</div>
-
-<!-- Interactive -->
-<div class="card">
-  <div class="card-title">INTERAKTIVNÍ — táhni slider</div>
-  <div class="pipe-wrap">
-    <svg id="svgLive" class="pipe-svg" viewBox="0 0 320 60" xmlns="http://www.w3.org/2000/svg"></svg>
-    <div class="pipe-meta">
-      <span class="pipe-pct" id="pctLive" style="color:#22c55e">75</span>
-      <span class="pipe-pct-unit" id="unitLive" style="color:#22c55e">%</span>
-    </div>
-    <div class="pipe-state" id="stateLive" style="color:#22c55e">FLOW_OK</div>
-    <div class="controls">
-      <div class="control-row">
-        <label>Průtok</label>
-        <input type="range" id="sliderPct" min="0" max="100" value="75">
-        <span id="sliderVal">75</span>
-      </div>
-    </div>
+<!-- GREEN -->
+<div class="card" id="cardGreen"></div>
+<!-- YELLOW -->
+<div class="card" id="cardYellow"></div>
+<!-- RED -->
+<div class="card" id="cardRed"></div>
+<!-- LIVE -->
+<div class="card" id="cardLive">
+  <div style="font-size:11px;color:#64748b;margin-bottom:12px;letter-spacing:1px;">INTERAKTIVNÍ</div>
+  <div id="liveContent"></div>
+  <div class="slider-row">
+    <label>%</label>
+    <input type="range" id="slider" min="0" max="100" value="75">
+    <span id="sliderVal">75</span>
   </div>
 </div>
 
 <script>
-// ── Pipe renderer ────────────────────────────────────────────────
-// W=320, H=60
-// Pipe: pill shape (full rounded) = rx=30
-// Body region: x=[30..290], w=260 (caps included via rx)
-// Fill from left based on pct
+const TOTAL_SEGMENTS = 12;
 
-const W = 320, H = 60;
-const PIPE_Y = 6, PIPE_H = 48;  // pipe top, height
-const RX = PIPE_H / 2;          // radius = half height = pill shape
-
-function stateColor(pct) {
-  if (pct > 70) return { color:'#22c55e', glow:'rgba(34,197,94,0.55)', border:'rgba(34,197,94,0.35)', label:'FLOW_OK' };
-  if (pct > 40) return { color:'#eab308', glow:'rgba(234,179,8,0.55)',  border:'rgba(234,179,8,0.35)',  label:'FLOW_WARN' };
-  return           { color:'#ef4444',  glow:'rgba(239,68,68,0.55)',  border:'rgba(239,68,68,0.35)',  label:'FLOW_LOW' };
+function state(pct) {
+  if (pct > 70) return {
+    color: 'rgba(134,196,106,0.75)',
+    glow:  '0 0 8px rgba(134,196,106,0.65), inset 0 -2px 4px rgba(0,0,0,0.2)',
+    border: 'rgba(134,196,106,0.35)',
+    barGlow: '0 0 28px rgba(134,196,106,0.28), 0 0 55px rgba(134,196,106,0.10)',
+    text: '#86C46A',
+    watermark: 'FLOW_STABLE',
+    label: 'FLOW-RATE',
+    trendLabel: 'STABILNÍ',
+    trendArrow: '–',
+  };
+  if (pct > 40) return {
+    color: 'rgba(190,210,85,0.75)',
+    glow:  '0 0 8px rgba(190,210,85,0.65), inset 0 -2px 4px rgba(0,0,0,0.2)',
+    border: 'rgba(190,210,85,0.35)',
+    barGlow: '0 0 28px rgba(190,210,85,0.28), 0 0 55px rgba(190,210,85,0.10)',
+    text: '#BED255',
+    watermark: 'FLOW_WARN',
+    label: 'FLOW-RATE',
+    trendLabel: 'KLESÁ',
+    trendArrow: '▼',
+  };
+  return {
+    color: 'rgba(201,114,114,0.75)',
+    glow:  '0 0 8px rgba(201,114,114,0.65), inset 0 -2px 4px rgba(0,0,0,0.2)',
+    border: 'rgba(201,114,114,0.35)',
+    barGlow: '0 0 28px rgba(201,114,114,0.32), 0 0 55px rgba(201,114,114,0.12)',
+    text: '#C97272',
+    watermark: 'FLOW_LOW',
+    label: 'FLOW-RATE',
+    trendLabel: 'KLESÁ',
+    trendArrow: '▼',
+  };
 }
 
-function renderPipe(svgEl, pct, uid) {
-  const s = stateColor(pct);
-  const fillW = Math.max(RX * 2, (pct / 100) * W); // min width = full left cap
-  // actual fill stops at W - if pct=100 fill whole pipe
-  const fillRight = Math.min(W, RX + (pct / 100) * (W - 2 * RX));
+function buildCard(pct) {
+  const filled = Math.round((pct / 100) * TOTAL_SEGMENTS);
+  const s = state(pct);
 
-  svgEl.innerHTML = `
-    <defs>
-      <!-- clip: pill shape of the pipe interior -->
-      <clipPath id="clip_${uid}">
-        <rect x="0" y="${PIPE_Y}" width="${W}" height="${PIPE_H}" rx="${RX}"/>
-      </clipPath>
-      <!-- top highlight gradient -->
-      <linearGradient id="hi_${uid}" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%"   stop-color="rgba(255,255,255,0.22)"/>
-        <stop offset="45%"  stop-color="rgba(255,255,255,0.04)"/>
-        <stop offset="100%" stop-color="rgba(0,0,0,0.0)"/>
-      </linearGradient>
-      <!-- bottom shadow gradient -->
-      <linearGradient id="sh_${uid}" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%"   stop-color="rgba(0,0,0,0.0)"/>
-        <stop offset="100%" stop-color="rgba(0,0,0,0.30)"/>
-      </linearGradient>
-      <!-- fill right edge soft fade -->
-      <linearGradient id="fe_${uid}" x1="0" y1="0" x2="1" y2="0">
-        <stop offset="0%"   stop-color="${s.color}" stop-opacity="1"/>
-        <stop offset="100%" stop-color="${s.color}" stop-opacity="0"/>
-      </linearGradient>
-      <!-- fill glow filter -->
-      <filter id="glow_${uid}" x="-20%" y="-50%" width="140%" height="200%">
-        <feGaussianBlur in="SourceGraphic" stdDeviation="5" result="blur"/>
-        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-      </filter>
-    </defs>
+  const segs = Array.from({length: TOTAL_SEGMENTS}, (_, i) => {
+    const isFilled = i < filled;
+    return `<div class="seg" style="${
+      isFilled
+        ? `background:${s.color}; box-shadow:${s.glow};`
+        : 'background:rgba(255,255,255,0.025); border:1px solid rgba(255,255,255,0.015);'
+    }"></div>`;
+  }).join('');
 
-    <!-- 1. Pipe outer body (dark background) -->
-    <rect x="0" y="${PIPE_Y}" width="${W}" height="${PIPE_H}" rx="${RX}"
-      fill="rgba(8,12,30,0.75)"
-      stroke="${s.border}" stroke-width="1.5"/>
+  return `
+    <div class="header-row">
+      <span class="header-label">${s.label}</span>
+      <div class="header-right">
+        <span style="color:${s.text}; font-size:14px;">${pct}%</span>
+        <span class="divider">|</span>
+        <span style="color:${s.text}; font-size:11px;">${s.trendArrow}</span>
+        <span style="color:${s.text}; font-size:13px;">${s.trendLabel}</span>
+      </div>
+    </div>
 
-    <!-- 2. Fill (clipped to pipe interior) -->
-    <g clip-path="url(#clip_${uid})">
-      <!-- Main fill rect -->
-      <rect x="0" y="${PIPE_Y}" width="${fillRight}" height="${PIPE_H}"
-        fill="${s.color}" opacity="0.82"
-        filter="url(#glow_${uid})"/>
-      <!-- Soft right edge of fill -->
-      ${pct < 98 ? `
-      <rect x="${Math.max(0, fillRight - 28)}" y="${PIPE_Y}" width="28" height="${PIPE_H}"
-        fill="url(#fe_${uid})"/>
-      ` : ''}
-      <!-- Bottom shadow inside fill -->
-      <rect x="0" y="${PIPE_Y}" width="${fillRight}" height="${PIPE_H}"
-        fill="url(#sh_${uid})"/>
-    </g>
+    <div class="pipe-outer" style="
+      background: rgba(0,0,0,0.55);
+      border-color: ${s.border};
+      box-shadow: ${s.barGlow}, inset 0 2px 12px rgba(0,0,0,0.6);
+    ">
+      <div class="segments">${segs}</div>
+      <div class="watermark">
+        <span style="color:${s.text}; text-shadow: 0 0 18px ${s.text}, 0 1px 3px rgba(0,0,0,0.9);">
+          ${s.watermark}
+        </span>
+      </div>
+    </div>
 
-    <!-- 3. Top highlight (entire pipe, clipped) -->
-    <rect x="0" y="${PIPE_Y}" width="${W}" height="${PIPE_H}" rx="${RX}"
-      fill="url(#hi_${uid})"
-      clip-path="url(#clip_${uid})"/>
-
-    <!-- 4. Pipe border on top (crisp rim) -->
-    <rect x="0" y="${PIPE_Y}" width="${W}" height="${PIPE_H}" rx="${RX}"
-      fill="none"
-      stroke="${s.border}" stroke-width="1.5"/>
-
-    <!-- 5. Subtle inner side highlight (left arc sheen) -->
-    <ellipse cx="${RX * 0.6}" cy="${PIPE_Y + PIPE_H * 0.32}" rx="${RX * 0.22}" ry="${PIPE_H * 0.22}"
-      fill="rgba(255,255,255,0.09)" clip-path="url(#clip_${uid})"/>
+    <div class="info-row">
+      <span class="bio-age">EST_BIO_AGE: <span style="color:#334155">—</span></span>
+    </div>
   `;
 }
 
-// ── Static cards ────────────────────────────────────
-renderPipe(document.getElementById('svgGreen'),  81, 'g');
-renderPipe(document.getElementById('svgYellow'), 54, 'y');
-renderPipe(document.getElementById('svgRed'),    22, 'r');
+document.getElementById('cardGreen').innerHTML  = buildCard(81);
+document.getElementById('cardYellow').innerHTML = buildCard(54);
+document.getElementById('cardRed').innerHTML    = buildCard(22);
 
-// ── Interactive card ────────────────────────────────
 function updateLive(pct) {
-  renderPipe(document.getElementById('svgLive'), pct, 'live');
-  const s = stateColor(pct);
-  document.getElementById('pctLive').textContent = pct;
-  document.getElementById('pctLive').style.color = s.color;
-  document.getElementById('unitLive').style.color = s.color;
-  document.getElementById('stateLive').textContent = s.label;
-  document.getElementById('stateLive').style.color = s.color;
+  document.getElementById('liveContent').innerHTML = buildCard(pct);
   document.getElementById('sliderVal').textContent = pct;
 }
-
-document.getElementById('sliderPct').addEventListener('input', e => updateLive(+e.target.value));
+document.getElementById('slider').addEventListener('input', e => updateLive(+e.target.value));
 updateLive(75);
 </script>
 </body>
