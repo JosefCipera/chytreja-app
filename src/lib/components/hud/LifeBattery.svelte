@@ -42,7 +42,93 @@
     '#C97272'
   );
 
-  $effect(() => { console.log('[LifeBattery] universe=', universe, 'percent=', percent); });
+  // Pipe SVG for TOC universe
+  const PIPE_VW = 360, PIPE_VH = 82, PIPE_CY = PIPE_VH / 2;
+  const PIPE_RX = 16;
+  const PIPE_SEGS = 12;
+
+  function pipePath() {
+    const lx = PIPE_RX, rx = PIPE_VW - PIPE_RX;
+    return `M ${lx},0 L ${rx},0 A ${PIPE_RX},${PIPE_CY} 0 0 1 ${rx},${PIPE_VH} L ${lx},${PIPE_VH} A ${PIPE_RX},${PIPE_CY} 0 0 1 ${lx},0 Z`;
+  }
+
+  function pipeSvg(pct) {
+    const uid = 'lb';
+    const filled = Math.round((pct / 100) * PIPE_SEGS);
+    const segFill   = pct > 70 ? 'rgba(134,196,106,0.75)' : pct > 40 ? 'rgba(190,210,85,0.75)'  : 'rgba(201,114,114,0.75)';
+    const segGlow   = pct > 70 ? 'rgba(134,196,106,0.55)' : pct > 40 ? 'rgba(190,210,85,0.55)'  : 'rgba(201,114,114,0.55)';
+    const border    = pct > 70 ? 'rgba(134,196,106,0.45)' : pct > 40 ? 'rgba(190,210,85,0.45)'  : 'rgba(201,114,114,0.45)';
+    const glow      = pct > 70 ? 'rgba(134,196,106,0.25)' : pct > 40 ? 'rgba(190,210,85,0.25)'  : 'rgba(201,114,114,0.25)';
+    const wmColor   = pct > 70 ? '#86C46A'                : pct > 40 ? '#BED255'                 : '#C97272';
+    const wm        = pct > 70 ? 'FLOW_STABLE'            : pct > 40 ? 'FLOW_WARN'               : 'FLOW_LOW';
+
+    const path = pipePath();
+    const SEG_PAD_X = 4;
+    const SEG_X0 = PIPE_RX + SEG_PAD_X;
+    const SEG_X1 = PIPE_VW - PIPE_RX - SEG_PAD_X;
+    const SEG_TOTAL_W = SEG_X1 - SEG_X0;
+    const GAP = 3;
+    const SEG_W = (SEG_TOTAL_W - GAP * (PIPE_SEGS - 1)) / PIPE_SEGS;
+    const SEG_Y = 9, SEG_H = PIPE_VH - 18;
+
+    let segs = '';
+    for (let i = 0; i < PIPE_SEGS; i++) {
+      const x = SEG_X0 + i * (SEG_W + GAP);
+      segs += i < filled
+        ? `<rect x="${x.toFixed(1)}" y="${SEG_Y}" width="${SEG_W.toFixed(1)}" height="${SEG_H}" rx="2" fill="${segFill}" filter="url(#gf${uid})"/>`
+        : `<rect x="${x.toFixed(1)}" y="${SEG_Y}" width="${SEG_W.toFixed(1)}" height="${SEG_H}" rx="2" fill="rgba(255,255,255,0.025)" stroke="rgba(255,255,255,0.015)" stroke-width="0.5"/>`;
+    }
+
+    const wmCX = (SEG_X0 + SEG_X1) / 2;
+    const wmW = 148, wmH = 26;
+
+    return `<svg viewBox="0 0 ${PIPE_VW} ${PIPE_VH}" xmlns="http://www.w3.org/2000/svg"
+      style="width:100%;display:block;filter:drop-shadow(0 0 12px ${glow}) drop-shadow(0 0 4px ${glow});">
+      <defs>
+        <clipPath id="cp${uid}"><path d="${path}"/></clipPath>
+        <filter id="gf${uid}" x="-10%" y="-20%" width="120%" height="140%">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="2.5" result="b"/>
+          <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <linearGradient id="hi${uid}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"   stop-color="rgba(255,255,255,0.14)"/>
+          <stop offset="38%"  stop-color="rgba(255,255,255,0.02)"/>
+          <stop offset="100%" stop-color="rgba(0,0,0,0)"/>
+        </linearGradient>
+        <linearGradient id="sh${uid}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"   stop-color="rgba(0,0,0,0)"/>
+          <stop offset="100%" stop-color="rgba(0,0,0,0.28)"/>
+        </linearGradient>
+        <linearGradient id="bg${uid}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"   stop-color="${border}" stop-opacity="0.9"/>
+          <stop offset="100%" stop-color="${border}" stop-opacity="0.3"/>
+        </linearGradient>
+        <radialGradient id="hole${uid}" cx="50%" cy="44%" r="55%">
+          <stop offset="0%"   stop-color="rgba(0,0,0,0.92)"/>
+          <stop offset="85%"  stop-color="rgba(0,0,0,0.72)"/>
+          <stop offset="100%" stop-color="rgba(0,0,0,0.20)"/>
+        </radialGradient>
+        <linearGradient id="ch${uid}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"   stop-color="rgba(255,255,255,0.20)"/>
+          <stop offset="50%"  stop-color="rgba(255,255,255,0.0)"/>
+        </linearGradient>
+      </defs>
+      <path d="${path}" fill="rgba(0,0,0,0.58)" clip-path="url(#cp${uid})"/>
+      <g clip-path="url(#cp${uid})">${segs}</g>
+      <rect x="0" y="0" width="${PIPE_VW}" height="${PIPE_VH}" fill="url(#hi${uid})" clip-path="url(#cp${uid})"/>
+      <rect x="0" y="0" width="${PIPE_VW}" height="${PIPE_VH}" fill="url(#sh${uid})" clip-path="url(#cp${uid})"/>
+      <path d="${path}" fill="none" stroke="url(#bg${uid})" stroke-width="1.5"/>
+      <g clip-path="url(#cp${uid})">
+        <rect x="${wmCX - wmW/2}" y="${PIPE_CY - wmH/2}" width="${wmW}" height="${wmH}" fill="rgba(0,0,0,0.65)" rx="3"/>
+        <text x="${wmCX}" y="${PIPE_CY + 1}" text-anchor="middle" dominant-baseline="middle"
+          font-family="JetBrains Mono, monospace" font-size="17" font-weight="700"
+          letter-spacing="1.5" fill="${wmColor}">${wm}</text>
+      </g>
+      <ellipse cx="${PIPE_RX}" cy="${PIPE_CY}" rx="${PIPE_RX}" ry="${PIPE_CY}" fill="url(#hole${uid})"/>
+      <ellipse cx="${PIPE_RX}" cy="${PIPE_CY}" rx="${PIPE_RX}" ry="${PIPE_CY}" fill="url(#ch${uid})"/>
+      <ellipse cx="${PIPE_RX}" cy="${PIPE_CY}" rx="${PIPE_RX}" ry="${PIPE_CY}" fill="none" stroke="url(#bg${uid})" stroke-width="1.5"/>
+    </svg>`;
+  }
 
   let watermark = $derived(
     universe === 'toc'
@@ -90,31 +176,9 @@
   </div>
 
   {#if universe === 'toc'}
-    <!-- Pipe/tube visualization for TOC universe — solid color, no fill semantics -->
-    <div class="mb-2" style="filter: drop-shadow(0 0 10px {glowColor});">
-      <svg width="100%" viewBox="0 0 300 58" xmlns="http://www.w3.org/2000/svg" style="display:block;">
-        <defs>
-          <linearGradient id="pipeDepth" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%"   stop-color="rgba(255,255,255,0.30)"/>
-            <stop offset="38%"  stop-color="rgba(255,255,255,0.04)"/>
-            <stop offset="100%" stop-color="rgba(0,0,0,0.38)"/>
-          </linearGradient>
-        </defs>
-        <!-- Body -->
-        <rect x="22" y="7" width="256" height="44" fill={fillColor} opacity="0.9" rx="2"/>
-        <!-- Left flange -->
-        <ellipse cx="22"  cy="29" rx="16" ry="25" fill={fillColor} opacity="0.95"/>
-        <ellipse cx="22"  cy="29" rx="16" ry="25" fill="url(#pipeDepth)"/>
-        <!-- Right flange -->
-        <ellipse cx="278" cy="29" rx="16" ry="25" fill={fillColor} opacity="0.95"/>
-        <ellipse cx="278" cy="29" rx="16" ry="25" fill="url(#pipeDepth)"/>
-        <!-- Top highlight overlay on body -->
-        <rect x="22" y="7" width="256" height="44" fill="url(#pipeDepth)" rx="2"/>
-      </svg>
-    </div>
-    <!-- State label below pipe -->
-    <div class="text-center mb-1">
-      <span class="hud-mono" style="font-size: 10px; letter-spacing: 3px; color: {watermarkColor}; opacity: 0.55;">{watermark}</span>
+    <!-- Pipe visualization v6 — SVG segments + ellipse cap in foreground -->
+    <div class="mb-2">
+      {@html pipeSvg(percent)}
     </div>
   {:else}
     <!-- Battery shape for longevity universe -->
