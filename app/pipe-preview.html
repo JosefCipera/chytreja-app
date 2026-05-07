@@ -231,45 +231,33 @@ function buildCard(pct) {
         </div>
       </div>
 
-      <!-- LEFT CAP: SVG ellipse in foreground — pipe opening -->
+      <!-- LEFT CAP: thin SVG ellipse in foreground — pipe opening -->
       <svg
-        style="position:absolute; left:-2px; top:-2px; bottom:-2px; height:calc(100%+4px);
-               width:60px; z-index:10; pointer-events:none; overflow:visible;"
-        viewBox="0 0 60 92"
+        style="position:absolute; left:-2px; top:-2px; height:calc(100% + 4px);
+               width:28px; z-index:10; pointer-events:none; overflow:visible;"
+        viewBox="0 0 28 92"
         xmlns="http://www.w3.org/2000/svg"
         preserveAspectRatio="xMinYMid meet"
       >
         <defs>
-          <!-- Rim gradient: top lighter, bottom darker = cylindrical rim -->
-          <linearGradient id="rimG_${s.wm}" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%"   stop-color="${s.shellTop}"/>
-            <stop offset="40%"  stop-color="${s.segFill}"/>
-            <stop offset="100%" stop-color="${s.shellBot}"/>
+          <radialGradient id="hG_${s.wm}" cx="50%" cy="42%" r="50%">
+            <stop offset="0%"   stop-color="rgba(0,0,0,0.90)"/>
+            <stop offset="100%" stop-color="rgba(0,0,0,0.45)"/>
+          </radialGradient>
+          <linearGradient id="rG_${s.wm}" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%"   stop-color="rgba(255,255,255,0.18)"/>
+            <stop offset="100%" stop-color="rgba(0,0,0,0.0)"/>
           </linearGradient>
-          <!-- Inner opening: dark hollow -->
-          <radialGradient id="holeG_${s.wm}" cx="50%" cy="48%" r="50%">
-            <stop offset="0%"   stop-color="rgba(0,0,0,0.92)"/>
-            <stop offset="70%"  stop-color="rgba(0,0,0,0.78)"/>
-            <stop offset="100%" stop-color="rgba(0,0,0,0.30)"/>
-          </radialGradient>
-          <!-- Rim top highlight -->
-          <radialGradient id="hiG_${s.wm}" cx="50%" cy="20%" r="60%">
-            <stop offset="0%"   stop-color="rgba(255,255,255,0.22)"/>
-            <stop offset="100%" stop-color="rgba(255,255,255,0.0)"/>
-          </radialGradient>
         </defs>
-        <!-- Outer ellipse: pipe rim (filled with state color gradient) -->
-        <ellipse cx="30" cy="46" rx="28" ry="44"
-          fill="url(#rimG_${s.wm})"/>
-        <!-- Inner ellipse: hollow pipe opening -->
-        <ellipse cx="30" cy="46" rx="18" ry="30"
-          fill="url(#holeG_${s.wm})"/>
-        <!-- Rim top highlight (specular) -->
-        <ellipse cx="30" cy="46" rx="28" ry="44"
-          fill="url(#hiG_${s.wm})"/>
-        <!-- Thin rim border -->
-        <ellipse cx="30" cy="46" rx="28" ry="44"
-          fill="none" stroke="${s.shellTop}" stroke-width="1"/>
+        <!-- Dark hollow interior -->
+        <ellipse cx="14" cy="46" rx="12" ry="44"
+          fill="url(#hG_${s.wm})"/>
+        <!-- Thin rim: just a stroke outline -->
+        <ellipse cx="14" cy="46" rx="12" ry="44"
+          fill="none" stroke="${s.shellTop}" stroke-width="1.5"/>
+        <!-- Subtle top highlight on the rim -->
+        <ellipse cx="14" cy="46" rx="12" ry="44"
+          fill="url(#rG_${s.wm})"/>
       </svg>
     </div>
 
