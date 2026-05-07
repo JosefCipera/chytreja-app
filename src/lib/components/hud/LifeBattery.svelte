@@ -42,6 +42,8 @@
     '#C97272'
   );
 
+  $effect(() => { console.log('[LifeBattery] universe=', universe, 'percent=', percent); });
+
   let watermark = $derived(
     universe === 'toc'
       ? (percent <= 40 ? 'FLOW_DECAY' : percent <= 70 ? 'FLOW_STABLE' : 'FLOW_OPTIMAL')
