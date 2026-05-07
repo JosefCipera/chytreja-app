@@ -26,121 +26,17 @@
     padding: 20px 24px;
     width: 400px;
   }
-  .header-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 10px;
-  }
-  .hl { font-size: 18px; letter-spacing: 0.04em; color: #c8d4df; font-weight: 300; }
-  .bio { font-size: 13px; color: #475569; margin-top: 10px; }
-  .slider-row { display: flex; align-items: center; gap: 10px; margin-top: 14px; }
-  .slider-row label { font-size: 11px; color: #64748b; }
-  .slider-row input { flex: 1; }
-  .slider-row span { font-size: 12px; color: #94a3b8; width: 32px; text-align: right; }
-
-  /* ── Pipe wrapper ── */
-  .pipe-wrap {
-    position: relative;
-  }
-
-  /* ── Outer shell: gradient border = 3D cylinder illusion ── */
-  .pipe-shell {
-    position: relative;
-    border-radius: 999px;
-    padding: 2px; /* border thickness */
-    /* gradient top→bottom: light rim → dark rim = cylinder edge */
-  }
-
-  /* ── Inner body ── */
-  .pipe-body {
-    position: relative;
-    border-radius: 999px;
-    padding: 6px;
-    overflow: hidden;
-    background: rgba(0,0,0,0.55);
-  }
-
-  /* ── Segments row ── */
-  .segs {
-    display: flex;
-    gap: 3px;
-    position: relative;
-    z-index: 1;
-  }
-  .seg {
-    flex: 1;
-    height: 72px;
-    border-radius: 2px;
-    transition: background 0.5s, box-shadow 0.5s;
-  }
-
-  /* ── Top cylindrical highlight (specular) ── */
-  .pipe-hi {
-    position: absolute;
-    top: 0; left: 30px; right: 30px;
-    height: 38%;
-    background: linear-gradient(rgba(255,255,255,0.14), rgba(255,255,255,0.0));
-    border-radius: 0 0 50% 50%;
-    pointer-events: none;
-    z-index: 4;
-  }
-
-  /* ── Bottom shadow ── */
-  .pipe-sh {
-    position: absolute;
-    bottom: 0; left: 30px; right: 30px;
-    height: 30%;
-    background: linear-gradient(rgba(0,0,0,0), rgba(0,0,0,0.30));
-    pointer-events: none;
-    z-index: 4;
-  }
-
-  /* ── Watermark ── */
-  .wm {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 5;
-    pointer-events: none;
-  }
-  .wm-text {
-    font-size: 20px;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    padding: 2px 16px;
-    border-radius: 3px;
-    background: rgba(0,0,0,0.62);
-    backdrop-filter: blur(2px);
-  }
-
-  /* ── End caps: dark ellipse overlay on each end = open pipe illusion ── */
-  .cap {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 26px;
-    height: calc(100% - 4px);
-    border-radius: 50%;
-    pointer-events: none;
-    z-index: 6;
-    /* Radial gradient: dark center (hollow) → transparent edge */
-    background: radial-gradient(ellipse at center,
-      rgba(0,0,0,0.55) 25%,
-      rgba(0,0,0,0.22) 55%,
-      rgba(0,0,0,0.0)  75%
-    );
-  }
-  .cap-left  { left: 4px; }
-  .cap-right { right: 4px; }
+  .header-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+  .bio { font-size:13px; color:#475569; margin-top:10px; }
+  .slider-row { display:flex; align-items:center; gap:10px; margin-top:14px; }
+  .slider-row label { font-size:11px; color:#64748b; }
+  .slider-row input { flex:1; }
+  .slider-row span { font-size:12px; color:#94a3b8; width:32px; text-align:right; }
 </style>
 </head>
 <body>
 
-<div style="font-size:11px;color:#475569;letter-spacing:2px;text-transform:uppercase;">TOC PIPE — v5</div>
+<div style="font-size:11px;color:#475569;letter-spacing:2px;text-transform:uppercase;">TOC PIPE — v6</div>
 
 <div class="card" id="cG"></div>
 <div class="card" id="cY"></div>
@@ -157,52 +53,168 @@
 
 <script>
 const SEGS = 12;
+// Pipe SVG geometry
+// Both ends use the SAME ellipse rx=RX, ry=CY
+// Left: full ellipse in foreground (open end)
+// Right: right half of same ellipse (closed/back end) — from clipPath
+const VW = 360, VH = 82, CY = VH / 2;
+const RX = 16;   // ellipse x-radius (thin cap)
+
+// Pipe outline path:
+//   starts at left ellipse center top,
+//   goes right along top edge,
+//   curves around right end (right half of ellipse),
+//   goes left along bottom edge,
+//   curves around left end (left half of ellipse, back to start)
+function pipePath() {
+  const lx = RX, rx = VW - RX;
+  // M lx,0  → top of left cap
+  // L rx,0  → top edge to right
+  // A RX,CY right arc (right half-ellipse, clockwise)
+  // L lx,VH → bottom edge to left
+  // A RX,CY left arc (left half-ellipse, back to top, clockwise)
+  return `M ${lx},0 L ${rx},0 A ${RX},${CY} 0 0 1 ${rx},${VH} L ${lx},${VH} A ${RX},${CY} 0 0 1 ${lx},0 Z`;
+}
 
 function st(pct) {
   if (pct > 70) return {
-    segFill: 'rgba(134,196,106,0.72)',
-    segGlow: '0 0 8px rgba(134,196,106,0.60), inset 0 -2px 4px rgba(0,0,0,0.2)',
-    shellTop: 'rgba(134,196,106,0.50)',
-    shellBot: 'rgba(134,196,106,0.15)',
-    outerGlow: '0 0 22px rgba(134,196,106,0.22), 0 0 48px rgba(134,196,106,0.08)',
+    segFill: 'rgba(134,196,106,0.75)',
+    segGlow: 'rgba(134,196,106,0.55)',
+    border:  'rgba(134,196,106,0.45)',
+    glow:    'rgba(134,196,106,0.25)',
     wmColor: '#86C46A',
     wm: 'FLOW_STABLE', trend: 'STABILNÍ', arrow: '–',
   };
   if (pct > 40) return {
-    segFill: 'rgba(190,210,85,0.72)',
-    segGlow: '0 0 8px rgba(190,210,85,0.60), inset 0 -2px 4px rgba(0,0,0,0.2)',
-    shellTop: 'rgba(190,210,85,0.50)',
-    shellBot: 'rgba(190,210,85,0.15)',
-    outerGlow: '0 0 22px rgba(190,210,85,0.22), 0 0 48px rgba(190,210,85,0.08)',
+    segFill: 'rgba(190,210,85,0.75)',
+    segGlow: 'rgba(190,210,85,0.55)',
+    border:  'rgba(190,210,85,0.45)',
+    glow:    'rgba(190,210,85,0.25)',
     wmColor: '#BED255',
     wm: 'FLOW_WARN', trend: 'KLESÁ', arrow: '▼',
   };
   return {
-    segFill: 'rgba(201,114,114,0.72)',
-    segGlow: '0 0 8px rgba(201,114,114,0.60), inset 0 -2px 4px rgba(0,0,0,0.2)',
-    shellTop: 'rgba(201,114,114,0.50)',
-    shellBot: 'rgba(201,114,114,0.15)',
-    outerGlow: '0 0 22px rgba(201,114,114,0.25), 0 0 48px rgba(201,114,114,0.08)',
+    segFill: 'rgba(201,114,114,0.75)',
+    segGlow: 'rgba(201,114,114,0.55)',
+    border:  'rgba(201,114,114,0.45)',
+    glow:    'rgba(201,114,114,0.25)',
     wmColor: '#C97272',
     wm: 'FLOW_LOW', trend: 'KLESÁ', arrow: '▼',
   };
 }
 
-function buildCard(pct) {
+function pipeSvg(pct, uid) {
   const filled = Math.round((pct / 100) * SEGS);
   const s = st(pct);
+  const path = pipePath();
 
-  const segs = Array.from({length: SEGS}, (_, i) => {
-    const f = i < filled;
-    return `<div class="seg" style="${f
-      ? `background:${s.segFill};box-shadow:${s.segGlow};`
-      : 'background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.015);'
-    }"></div>`;
-  }).join('');
+  // Segment geometry: body starts at RX (left cap centre), ends at VW-RX
+  const SEG_PAD_X = 4;  // gap between cap and first segment
+  const SEG_X0 = RX + SEG_PAD_X;
+  const SEG_X1 = VW - RX - SEG_PAD_X;
+  const SEG_TOTAL_W = SEG_X1 - SEG_X0;
+  const GAP = 3;
+  const SEG_W = (SEG_TOTAL_W - GAP * (SEGS - 1)) / SEGS;
+  const SEG_Y = 9, SEG_H = VH - 18;
 
+  let segs = '';
+  for (let i = 0; i < SEGS; i++) {
+    const x = SEG_X0 + i * (SEG_W + GAP);
+    segs += i < filled
+      ? `<rect x="${x.toFixed(1)}" y="${SEG_Y}" width="${SEG_W.toFixed(1)}" height="${SEG_H}" rx="2"
+           fill="${s.segFill}" filter="url(#gf${uid})"/>`
+      : `<rect x="${x.toFixed(1)}" y="${SEG_Y}" width="${SEG_W.toFixed(1)}" height="${SEG_H}" rx="2"
+           fill="rgba(255,255,255,0.025)" stroke="rgba(255,255,255,0.015)" stroke-width="0.5"/>`;
+  }
+
+  // Watermark background rect (centred in body, not under left cap)
+  const wmCX = (SEG_X0 + SEG_X1) / 2;
+  const wmW = 148, wmH = 26;
+
+  return `<svg viewBox="0 0 ${VW} ${VH}" xmlns="http://www.w3.org/2000/svg"
+    style="width:100%;display:block;
+           filter:drop-shadow(0 0 12px ${s.glow}) drop-shadow(0 0 4px ${s.glow});">
+  <defs>
+    <clipPath id="cp${uid}"><path d="${path}"/></clipPath>
+
+    <!-- Segment glow filter -->
+    <filter id="gf${uid}" x="-10%" y="-20%" width="120%" height="140%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="2.5" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+
+    <!-- Top highlight (cylinder lit from above) -->
+    <linearGradient id="hi${uid}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"   stop-color="rgba(255,255,255,0.14)"/>
+      <stop offset="38%"  stop-color="rgba(255,255,255,0.02)"/>
+      <stop offset="100%" stop-color="rgba(0,0,0,0)"/>
+    </linearGradient>
+    <!-- Bottom shadow -->
+    <linearGradient id="sh${uid}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"   stop-color="rgba(0,0,0,0)"/>
+      <stop offset="100%" stop-color="rgba(0,0,0,0.28)"/>
+    </linearGradient>
+    <!-- Border gradient: top lighter, bottom darker -->
+    <linearGradient id="bg${uid}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"   stop-color="${s.border}" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="${s.border}" stop-opacity="0.3"/>
+    </linearGradient>
+
+    <!-- Left cap: hollow inside -->
+    <radialGradient id="hole${uid}" cx="50%" cy="44%" r="55%">
+      <stop offset="0%"   stop-color="rgba(0,0,0,0.92)"/>
+      <stop offset="85%"  stop-color="rgba(0,0,0,0.72)"/>
+      <stop offset="100%" stop-color="rgba(0,0,0,0.20)"/>
+    </radialGradient>
+    <!-- Left cap: top rim highlight -->
+    <linearGradient id="ch${uid}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"   stop-color="rgba(255,255,255,0.20)"/>
+      <stop offset="50%"  stop-color="rgba(255,255,255,0.0)"/>
+    </linearGradient>
+  </defs>
+
+  <!-- 1. Pipe background (dark), clipped -->
+  <path d="${path}" fill="rgba(0,0,0,0.58)" clip-path="url(#cp${uid})"/>
+
+  <!-- 2. Segments, clipped -->
+  <g clip-path="url(#cp${uid})">${segs}</g>
+
+  <!-- 3. Top highlight + bottom shadow, clipped -->
+  <rect x="0" y="0" width="${VW}" height="${VH}"
+    fill="url(#hi${uid})" clip-path="url(#cp${uid})"/>
+  <rect x="0" y="0" width="${VW}" height="${VH}"
+    fill="url(#sh${uid})" clip-path="url(#cp${uid})"/>
+
+  <!-- 4. Pipe outline (follows the path shape) -->
+  <path d="${path}" fill="none" stroke="url(#bg${uid})" stroke-width="1.5"/>
+
+  <!-- 5. Watermark text (clipped, centred in body area) -->
+  <g clip-path="url(#cp${uid})">
+    <rect x="${wmCX - wmW/2}" y="${CY - wmH/2}" width="${wmW}" height="${wmH}"
+      fill="rgba(0,0,0,0.65)" rx="3"/>
+    <text x="${wmCX}" y="${CY + 1}" text-anchor="middle" dominant-baseline="middle"
+      font-family="JetBrains Mono, monospace" font-size="17" font-weight="700"
+      letter-spacing="1.5" fill="${s.wmColor}">${s.wm}</text>
+  </g>
+
+  <!-- 6. LEFT CAP: full ellipse in FOREGROUND (over segments) -->
+  <!-- Dark hollow interior -->
+  <ellipse cx="${RX}" cy="${CY}" rx="${RX}" ry="${CY}"
+    fill="url(#hole${uid})"/>
+  <!-- Rim top highlight -->
+  <ellipse cx="${RX}" cy="${CY}" rx="${RX}" ry="${CY}"
+    fill="url(#ch${uid})"/>
+  <!-- Rim border -->
+  <ellipse cx="${RX}" cy="${CY}" rx="${RX}" ry="${CY}"
+    fill="none" stroke="url(#bg${uid})" stroke-width="1.5"/>
+</svg>`;
+}
+
+function buildCard(pct, uid) {
+  const s = st(pct);
   return `
     <div class="header-row">
-      <span class="hl">FLOW-RATE</span>
+      <span style="font-size:18px;letter-spacing:0.04em;color:#c8d4df;font-weight:300;">FLOW-RATE</span>
       <div style="display:flex;align-items:center;gap:6px;font-size:13px;">
         <span style="color:${s.wmColor};font-size:14px;">${pct}%</span>
         <span style="color:#334155">|</span>
@@ -210,71 +222,21 @@ function buildCard(pct) {
         <span style="color:${s.wmColor};font-size:13px;">${s.trend}</span>
       </div>
     </div>
-
-    <div class="pipe-wrap">
-      <!-- Outer shell: gradient border for 3D cylinder rim -->
-      <div class="pipe-shell" style="
-        background: linear-gradient(180deg, ${s.shellTop} 0%, ${s.shellBot} 100%);
-        box-shadow: ${s.outerGlow}, inset 0 2px 12px rgba(0,0,0,0.6);
-      ">
-        <!-- Inner body — right end stays pill-rounded, no cap -->
-        <div class="pipe-body">
-          <!-- Segments — left margin leaves room so left cap covers them -->
-          <div class="segs" style="padding-left:22px;">${segs}</div>
-          <!-- 3D highlights -->
-          <div class="pipe-hi"></div>
-          <div class="pipe-sh"></div>
-          <!-- Watermark -->
-          <div class="wm" style="padding-left:44px;">
-            <span class="wm-text" style="color:${s.wmColor};text-shadow:0 0 14px ${s.wmColor};">${s.wm}</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- LEFT CAP: thin SVG ellipse in foreground — pipe opening -->
-      <svg
-        style="position:absolute; left:-2px; top:-2px; height:calc(100% + 4px);
-               width:28px; z-index:10; pointer-events:none; overflow:visible;"
-        viewBox="0 0 28 92"
-        xmlns="http://www.w3.org/2000/svg"
-        preserveAspectRatio="xMinYMid meet"
-      >
-        <defs>
-          <radialGradient id="hG_${s.wm}" cx="50%" cy="42%" r="50%">
-            <stop offset="0%"   stop-color="rgba(0,0,0,0.90)"/>
-            <stop offset="100%" stop-color="rgba(0,0,0,0.45)"/>
-          </radialGradient>
-          <linearGradient id="rG_${s.wm}" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%"   stop-color="rgba(255,255,255,0.18)"/>
-            <stop offset="100%" stop-color="rgba(0,0,0,0.0)"/>
-          </linearGradient>
-        </defs>
-        <!-- Dark hollow interior -->
-        <ellipse cx="14" cy="46" rx="12" ry="44"
-          fill="url(#hG_${s.wm})"/>
-        <!-- Thin rim: just a stroke outline -->
-        <ellipse cx="14" cy="46" rx="12" ry="44"
-          fill="none" stroke="${s.shellTop}" stroke-width="1.5"/>
-        <!-- Subtle top highlight on the rim -->
-        <ellipse cx="14" cy="46" rx="12" ry="44"
-          fill="url(#rG_${s.wm})"/>
-      </svg>
-    </div>
-
+    ${pipeSvg(pct, uid)}
     <div class="bio">EST_BIO_AGE: <span style="color:#334155">—</span></div>
   `;
 }
 
-document.getElementById('cG').innerHTML = buildCard(81);
-document.getElementById('cY').innerHTML = buildCard(54);
-document.getElementById('cR').innerHTML = buildCard(22);
+document.getElementById('cG').innerHTML = buildCard(81, 'g');
+document.getElementById('cY').innerHTML = buildCard(54, 'y');
+document.getElementById('cR').innerHTML = buildCard(22, 'r');
 
-function updateLive(pct) {
-  document.getElementById('li').innerHTML = buildCard(pct);
+function upd(pct) {
+  document.getElementById('li').innerHTML = buildCard(pct, 'lv');
   document.getElementById('sv').textContent = pct;
 }
-document.getElementById('sl').addEventListener('input', e => updateLive(+e.target.value));
-updateLive(75);
+document.getElementById('sl').addEventListener('input', e => upd(+e.target.value));
+upd(75);
 </script>
 </body>
 </html>
