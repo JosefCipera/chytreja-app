@@ -16,7 +16,7 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 32px;
+    gap: 28px;
     padding: 40px 20px;
   }
   .card {
@@ -24,7 +24,7 @@
     border: 1px solid rgba(6,182,212,0.15);
     border-radius: 12px;
     padding: 20px 24px;
-    width: 380px;
+    width: 400px;
   }
   .header-row {
     display: flex;
@@ -32,80 +32,10 @@
     align-items: center;
     margin-bottom: 10px;
   }
-  .header-label {
-    font-size: 18px;
-    letter-spacing: 0.04em;
-    color: #c8d4df;
-    font-weight: 300;
-  }
-  .header-right {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 13px;
-  }
-  .divider { color: #334155; }
-
-  /* ── Pipe body container ── */
-  .pipe-outer {
-    position: relative;
-    border-radius: 999px;   /* full pill → trubice */
-    border: 2px solid;
-    padding: 5px;
-    overflow: hidden;
-    box-sizing: border-box;
-  }
-  /* Segments row */
-  .segments {
-    display: flex;
-    gap: 3px;
-    position: relative;
-    z-index: 1;
-    border-radius: 999px;
-    overflow: hidden;
-  }
-  .seg {
-    flex: 1;
-    height: 80px;
-    border-radius: 2px;
-    transition: all 0.5s;
-  }
-  /* Watermark */
-  .watermark {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 3;
-    pointer-events: none;
-    user-select: none;
-  }
-  .watermark span {
-    font-size: 22px;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    background: rgba(0,0,0,0.55);
-    padding: 3px 14px;
-    border-radius: 4px;
-  }
-  /* Bottom info row */
-  .info-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 10px;
-  }
-  .bio-age { font-size: 13px; color: #475569; }
-
-  /* Slider */
-  .slider-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-top: 14px;
-  }
+  .header-label { font-size: 18px; letter-spacing: 0.04em; color: #c8d4df; font-weight: 300; }
+  .header-right { display: flex; align-items: center; gap: 6px; font-size: 13px; }
+  .bio-age { font-size: 13px; color: #475569; margin-top: 10px; }
+  .slider-row { display: flex; align-items: center; gap: 10px; margin-top: 14px; }
   .slider-row label { font-size: 11px; color: #64748b; }
   .slider-row input { flex: 1; }
   .slider-row span { font-size: 12px; color: #94a3b8; width: 32px; text-align: right; }
@@ -113,116 +43,165 @@
 </head>
 <body>
 
-<div style="font-size:11px; color:#475569; letter-spacing:2px; text-transform:uppercase;">TOC PIPE DESIGN — PREVIEW v2</div>
+<div style="font-size:11px;color:#475569;letter-spacing:2px;text-transform:uppercase;">TOC PIPE — v3 (cylindrické konce)</div>
 
-<!-- GREEN -->
-<div class="card" id="cardGreen"></div>
-<!-- YELLOW -->
-<div class="card" id="cardYellow"></div>
-<!-- RED -->
-<div class="card" id="cardRed"></div>
-<!-- LIVE -->
-<div class="card" id="cardLive">
+<div class="card" id="cG"></div>
+<div class="card" id="cY"></div>
+<div class="card" id="cR"></div>
+<div class="card" id="cL">
   <div style="font-size:11px;color:#64748b;margin-bottom:12px;letter-spacing:1px;">INTERAKTIVNÍ</div>
-  <div id="liveContent"></div>
+  <div id="liveInner"></div>
   <div class="slider-row">
     <label>%</label>
-    <input type="range" id="slider" min="0" max="100" value="75">
-    <span id="sliderVal">75</span>
+    <input type="range" id="sl" min="0" max="100" value="75">
+    <span id="sv">75</span>
   </div>
 </div>
 
 <script>
-const TOTAL_SEGMENTS = 12;
+const SEGS = 12;
+// SVG pipe dimensions
+const VW = 360, VH = 86;        // viewBox
+const CAP_RX = 30, CAP_RY = 43; // ellipse cap radii (half-height)
+const BX = CAP_RX;               // body x start
+const BW = VW - 2*CAP_RX;        // body width
+const SEG_PAD = 10;              // inner padding top/bottom inside pipe
+const SEG_H = VH - 2*SEG_PAD;
+const GAP = 3;
+const SEG_W = (BW - GAP*(SEGS-1)) / SEGS;
 
-function state(pct) {
+function st(pct) {
   if (pct > 70) return {
-    color: 'rgba(134,196,106,0.75)',
-    glow:  '0 0 8px rgba(134,196,106,0.65), inset 0 -2px 4px rgba(0,0,0,0.2)',
-    border: 'rgba(134,196,106,0.35)',
-    barGlow: '0 0 28px rgba(134,196,106,0.28), 0 0 55px rgba(134,196,106,0.10)',
-    text: '#86C46A',
-    watermark: 'FLOW_STABLE',
-    label: 'FLOW-RATE',
-    trendLabel: 'STABILNÍ',
-    trendArrow: '–',
+    fill:   'rgba(134,196,106,0.80)',
+    glow:   'rgba(134,196,106,0.6)',
+    border: 'rgba(134,196,106,0.4)',
+    barGlow:'0 0 28px rgba(134,196,106,0.28),0 0 55px rgba(134,196,106,0.10)',
+    text:   '#86C46A',
+    wm: 'FLOW_STABLE', trend: 'STABILNÍ', arrow: '–',
   };
   if (pct > 40) return {
-    color: 'rgba(190,210,85,0.75)',
-    glow:  '0 0 8px rgba(190,210,85,0.65), inset 0 -2px 4px rgba(0,0,0,0.2)',
-    border: 'rgba(190,210,85,0.35)',
-    barGlow: '0 0 28px rgba(190,210,85,0.28), 0 0 55px rgba(190,210,85,0.10)',
-    text: '#BED255',
-    watermark: 'FLOW_WARN',
-    label: 'FLOW-RATE',
-    trendLabel: 'KLESÁ',
-    trendArrow: '▼',
+    fill:   'rgba(190,210,85,0.80)',
+    glow:   'rgba(190,210,85,0.6)',
+    border: 'rgba(190,210,85,0.4)',
+    barGlow:'0 0 28px rgba(190,210,85,0.28),0 0 55px rgba(190,210,85,0.10)',
+    text:   '#BED255',
+    wm: 'FLOW_WARN', trend: 'KLESÁ', arrow: '▼',
   };
   return {
-    color: 'rgba(201,114,114,0.75)',
-    glow:  '0 0 8px rgba(201,114,114,0.65), inset 0 -2px 4px rgba(0,0,0,0.2)',
-    border: 'rgba(201,114,114,0.35)',
-    barGlow: '0 0 28px rgba(201,114,114,0.32), 0 0 55px rgba(201,114,114,0.12)',
-    text: '#C97272',
-    watermark: 'FLOW_LOW',
-    label: 'FLOW-RATE',
-    trendLabel: 'KLESÁ',
-    trendArrow: '▼',
+    fill:   'rgba(201,114,114,0.80)',
+    glow:   'rgba(201,114,114,0.6)',
+    border: 'rgba(201,114,114,0.4)',
+    barGlow:'0 0 28px rgba(201,114,114,0.32),0 0 55px rgba(201,114,114,0.12)',
+    text:   '#C97272',
+    wm: 'FLOW_LOW', trend: 'KLESÁ', arrow: '▼',
   };
 }
 
-function buildCard(pct) {
-  const filled = Math.round((pct / 100) * TOTAL_SEGMENTS);
-  const s = state(pct);
+function pipeSvg(pct, uid) {
+  const filled = Math.round((pct/100)*SEGS);
+  const s = st(pct);
 
-  const segs = Array.from({length: TOTAL_SEGMENTS}, (_, i) => {
-    const isFilled = i < filled;
-    return `<div class="seg" style="${
-      isFilled
-        ? `background:${s.color}; box-shadow:${s.glow};`
-        : 'background:rgba(255,255,255,0.025); border:1px solid rgba(255,255,255,0.015);'
-    }"></div>`;
-  }).join('');
+  // Segments
+  let segs = '';
+  for (let i = 0; i < SEGS; i++) {
+    const x = BX + i*(SEG_W+GAP);
+    if (i < filled) {
+      segs += `<rect x="${x}" y="${SEG_PAD}" width="${SEG_W}" height="${SEG_H}" rx="2"
+        fill="${s.fill}" filter="url(#g${uid})"/>`;
+    } else {
+      segs += `<rect x="${x}" y="${SEG_PAD}" width="${SEG_W}" height="${SEG_H}" rx="2"
+        fill="rgba(255,255,255,0.025)" stroke="rgba(255,255,255,0.02)" stroke-width="0.5"/>`;
+    }
+  }
 
+  return `<svg viewBox="0 0 ${VW} ${VH}" xmlns="http://www.w3.org/2000/svg"
+      style="width:100%;display:block;filter:drop-shadow(0 0 14px ${s.glow}) drop-shadow(0 0 6px ${s.glow})">
+    <defs>
+      <!-- Clip: rectangle body + two half-ellipses = pipe shape -->
+      <clipPath id="c${uid}">
+        <rect x="${BX}" y="0" width="${BW}" height="${VH}"/>
+        <ellipse cx="${BX}" cy="${CAP_RY}" rx="${CAP_RX}" ry="${CAP_RY}"/>
+        <ellipse cx="${BX+BW}" cy="${CAP_RY}" rx="${CAP_RX}" ry="${CAP_RY}"/>
+      </clipPath>
+
+      <!-- Segment glow filter -->
+      <filter id="g${uid}" x="-20%" y="-30%" width="140%" height="160%">
+        <feGaussianBlur in="SourceGraphic" stdDeviation="3.5" result="b"/>
+        <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+
+      <!-- Top highlight gradient -->
+      <linearGradient id="hi${uid}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%"  stop-color="rgba(255,255,255,0.13)"/>
+        <stop offset="40%" stop-color="rgba(255,255,255,0.02)"/>
+        <stop offset="100%" stop-color="rgba(0,0,0,0)"/>
+      </linearGradient>
+    </defs>
+
+    <!-- 1. Pipe background (dark, clipped to pipe shape) -->
+    <rect x="0" y="0" width="${VW}" height="${VH}"
+      fill="rgba(0,0,0,0.55)" clip-path="url(#c${uid})"/>
+
+    <!-- 2. Segments (clipped) -->
+    <g clip-path="url(#c${uid})">${segs}</g>
+
+    <!-- 3. Top highlight overlay (clipped) -->
+    <rect x="0" y="0" width="${VW}" height="${VH}"
+      fill="url(#hi${uid})" clip-path="url(#c${uid})"/>
+
+    <!-- 4. Pipe border: left cap ellipse -->
+    <ellipse cx="${BX}" cy="${CAP_RY}" rx="${CAP_RX}" ry="${CAP_RY}"
+      fill="none" stroke="${s.border}" stroke-width="1.5"/>
+
+    <!-- 5. Pipe border: right cap ellipse -->
+    <ellipse cx="${BX+BW}" cy="${CAP_RY}" rx="${CAP_RX}" ry="${CAP_RY}"
+      fill="none" stroke="${s.border}" stroke-width="1.5"/>
+
+    <!-- 6. Pipe border: top and bottom edges of body -->
+    <line x1="${BX}" y1="0" x2="${BX+BW}" y2="0"
+      stroke="${s.border}" stroke-width="1.5"/>
+    <line x1="${BX}" y1="${VH}" x2="${BX+BW}" y2="${VH}"
+      stroke="${s.border}" stroke-width="1.5"/>
+
+    <!-- 7. Watermark text -->
+    <text x="${VW/2}" y="${VH/2+1}" text-anchor="middle" dominant-baseline="middle"
+      font-family="JetBrains Mono, monospace" font-size="20" font-weight="700"
+      letter-spacing="2"
+      fill="${s.text}" opacity="0.85"
+      style="text-shadow:0 0 18px ${s.text}">${s.wm}</text>
+
+    <!-- 8. Subtle inset shadow top (depth) -->
+    <rect x="0" y="0" width="${VW}" height="6"
+      fill="rgba(0,0,0,0.25)" clip-path="url(#c${uid})"/>
+  </svg>`;
+}
+
+function buildCard(pct, uid) {
+  const s = st(pct);
   return `
     <div class="header-row">
-      <span class="header-label">${s.label}</span>
+      <span class="header-label">FLOW-RATE</span>
       <div class="header-right">
-        <span style="color:${s.text}; font-size:14px;">${pct}%</span>
-        <span class="divider">|</span>
-        <span style="color:${s.text}; font-size:11px;">${s.trendArrow}</span>
-        <span style="color:${s.text}; font-size:13px;">${s.trendLabel}</span>
+        <span style="color:${s.text};font-size:14px;">${pct}%</span>
+        <span style="color:#334155">|</span>
+        <span style="color:${s.text};font-size:11px;">${s.arrow}</span>
+        <span style="color:${s.text};font-size:13px;">${s.trend}</span>
       </div>
     </div>
-
-    <div class="pipe-outer" style="
-      background: rgba(0,0,0,0.55);
-      border-color: ${s.border};
-      box-shadow: ${s.barGlow}, inset 0 2px 12px rgba(0,0,0,0.6);
-    ">
-      <div class="segments">${segs}</div>
-      <div class="watermark">
-        <span style="color:${s.text}; text-shadow: 0 0 18px ${s.text}, 0 1px 3px rgba(0,0,0,0.9);">
-          ${s.watermark}
-        </span>
-      </div>
-    </div>
-
-    <div class="info-row">
-      <span class="bio-age">EST_BIO_AGE: <span style="color:#334155">—</span></span>
-    </div>
+    ${pipeSvg(pct, uid)}
+    <div class="bio-age">EST_BIO_AGE: <span style="color:#334155">—</span></div>
   `;
 }
 
-document.getElementById('cardGreen').innerHTML  = buildCard(81);
-document.getElementById('cardYellow').innerHTML = buildCard(54);
-document.getElementById('cardRed').innerHTML    = buildCard(22);
+document.getElementById('cG').innerHTML = buildCard(81,'g');
+document.getElementById('cY').innerHTML = buildCard(54,'y');
+document.getElementById('cR').innerHTML = buildCard(22,'r');
 
 function updateLive(pct) {
-  document.getElementById('liveContent').innerHTML = buildCard(pct);
-  document.getElementById('sliderVal').textContent = pct;
+  document.getElementById('liveInner').innerHTML = buildCard(pct,'lv');
+  document.getElementById('sv').textContent = pct;
 }
-document.getElementById('slider').addEventListener('input', e => updateLive(+e.target.value));
+document.getElementById('sl').addEventListener('input', e => updateLive(+e.target.value));
 updateLive(75);
 </script>
 </body>
