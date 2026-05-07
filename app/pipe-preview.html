@@ -140,7 +140,7 @@
 </head>
 <body>
 
-<div style="font-size:11px;color:#475569;letter-spacing:2px;text-transform:uppercase;">TOC PIPE — v4</div>
+<div style="font-size:11px;color:#475569;letter-spacing:2px;text-transform:uppercase;">TOC PIPE — v5</div>
 
 <div class="card" id="cG"></div>
 <div class="card" id="cY"></div>
@@ -217,22 +217,60 @@ function buildCard(pct) {
         background: linear-gradient(180deg, ${s.shellTop} 0%, ${s.shellBot} 100%);
         box-shadow: ${s.outerGlow}, inset 0 2px 12px rgba(0,0,0,0.6);
       ">
-        <!-- Inner body -->
+        <!-- Inner body — right end stays pill-rounded, no cap -->
         <div class="pipe-body">
-          <!-- Segments -->
-          <div class="segs">${segs}</div>
+          <!-- Segments — left margin leaves room so left cap covers them -->
+          <div class="segs" style="padding-left:22px;">${segs}</div>
           <!-- 3D highlights -->
           <div class="pipe-hi"></div>
           <div class="pipe-sh"></div>
           <!-- Watermark -->
-          <div class="wm">
+          <div class="wm" style="padding-left:44px;">
             <span class="wm-text" style="color:${s.wmColor};text-shadow:0 0 14px ${s.wmColor};">${s.wm}</span>
           </div>
         </div>
       </div>
-      <!-- End caps: open pipe illusion -->
-      <div class="cap cap-left"></div>
-      <div class="cap cap-right"></div>
+
+      <!-- LEFT CAP: SVG ellipse in foreground — pipe opening -->
+      <svg
+        style="position:absolute; left:-2px; top:-2px; bottom:-2px; height:calc(100%+4px);
+               width:60px; z-index:10; pointer-events:none; overflow:visible;"
+        viewBox="0 0 60 92"
+        xmlns="http://www.w3.org/2000/svg"
+        preserveAspectRatio="xMinYMid meet"
+      >
+        <defs>
+          <!-- Rim gradient: top lighter, bottom darker = cylindrical rim -->
+          <linearGradient id="rimG_${s.wm}" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%"   stop-color="${s.shellTop}"/>
+            <stop offset="40%"  stop-color="${s.segFill}"/>
+            <stop offset="100%" stop-color="${s.shellBot}"/>
+          </linearGradient>
+          <!-- Inner opening: dark hollow -->
+          <radialGradient id="holeG_${s.wm}" cx="50%" cy="48%" r="50%">
+            <stop offset="0%"   stop-color="rgba(0,0,0,0.92)"/>
+            <stop offset="70%"  stop-color="rgba(0,0,0,0.78)"/>
+            <stop offset="100%" stop-color="rgba(0,0,0,0.30)"/>
+          </radialGradient>
+          <!-- Rim top highlight -->
+          <radialGradient id="hiG_${s.wm}" cx="50%" cy="20%" r="60%">
+            <stop offset="0%"   stop-color="rgba(255,255,255,0.22)"/>
+            <stop offset="100%" stop-color="rgba(255,255,255,0.0)"/>
+          </radialGradient>
+        </defs>
+        <!-- Outer ellipse: pipe rim (filled with state color gradient) -->
+        <ellipse cx="30" cy="46" rx="28" ry="44"
+          fill="url(#rimG_${s.wm})"/>
+        <!-- Inner ellipse: hollow pipe opening -->
+        <ellipse cx="30" cy="46" rx="18" ry="30"
+          fill="url(#holeG_${s.wm})"/>
+        <!-- Rim top highlight (specular) -->
+        <ellipse cx="30" cy="46" rx="28" ry="44"
+          fill="url(#hiG_${s.wm})"/>
+        <!-- Thin rim border -->
+        <ellipse cx="30" cy="46" rx="28" ry="44"
+          fill="none" stroke="${s.shellTop}" stroke-width="1"/>
+      </svg>
     </div>
 
     <div class="bio">EST_BIO_AGE: <span style="color:#334155">—</span></div>
