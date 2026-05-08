@@ -448,7 +448,11 @@ async function loadModel(modelName) {
       if (nodesError) throw nodesError;
 
       // Exclude nodes from other universes (TOC nodes are in the same table but must not show in longevity canvas)
-      const TOC_IDS = new Set(['toc','finance_toc','vyroba_toc','ccpm','strategie_toc','marketing_toc']);
+      const TOC_IDS = new Set([
+        'toc','finance_toc','vyroba_toc','ccpm','strategie_toc','marketing_toc',
+        'prutok_toc','zasoby_toc','naklady_toc','cashflow_toc',
+        'zdroje_toc','materialy_toc','kvalita_toc','opravy_toc',
+      ]);
       const filteredNodes = modelName === 'longevity' ? nodes.filter(n => !TOC_IDS.has(n.id)) : nodes;
 
       console.log(`   ✓ Nodes: ${filteredNodes.length}`);
@@ -600,6 +604,32 @@ async function loadModel(modelName) {
 
     const data = await res.json();
     console.log(`✅ JSON data: ${data.length} nodes`);
+
+    // ── Hydrate with user metrics from Supabase (dynamic coloring) ──
+    try {
+      const userId = await getCurrentUserId();
+      if (userId && userId !== 'demo-user-123') {
+        const { data: metrics } = await window.supabaseClient
+          .from('user_metrics')
+          .select('node_id, current_index, state')
+          .eq('user_id', userId)
+          .eq('universe', modelName);
+
+        if (metrics?.length) {
+          const metricsMap = new Map(metrics.map(m => [m.node_id, m]));
+          applyTocCascade(data, metricsMap);
+          data.forEach(node => {
+            const metric = metricsMap.get(node.id);
+            const idx = metric?.current_index ?? 0;
+            node.current_index = idx;
+            node.state = (!metric || idx === 0) ? 'GRAY' : idx <= 40 ? 'RED' : idx <= 70 ? 'YELLOW' : 'GREEN';
+          });
+          console.log(`✅ JSON model hydrated with ${metrics.length} user metrics`);
+        }
+      }
+    } catch(e) {
+      console.warn('[CHJ] JSON model metrics hydration failed:', e);
+    }
 
     return data;
 

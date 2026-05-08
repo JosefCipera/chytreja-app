@@ -6,6 +6,7 @@
   import SourceCards from './hud/SourceCards.svelte';
   import SecondAction from './hud/SecondAction.svelte';
   import HealthUpload from './HealthUpload.svelte';
+  import { getTocConfig } from '../toc-config.js';
 
   let {
     data,
@@ -22,6 +23,11 @@
   } = $props();
 
   let showHealthUpload = $state(false);
+
+  // TOC: get static node config (problems, warning, action chips)
+  let tocConfig = $derived(universe === 'toc' ? getTocConfig(data.node_id) : null);
+  // TOC: active problem = first item (AI will pick dynamically in future)
+  let tocProblem = $derived(tocConfig?.problems?.[0] ?? '');
 
   function handleDocParsed(result) {
     showHealthUpload = false;
@@ -59,18 +65,38 @@
 
       <div class="hud-fade-in" style="animation-delay: 0.2s">
         {#if universe === 'toc'}
-          <!-- TOC: PROBLEM + PLÁNOVÁNÍ, no game loop -->
-          {#if data.killer?.description || data.verdict}
-            <div class="rounded-lg px-4 py-3" style="
-              background: transparent;
-            ">
+          <!-- TOC: PROBLEM + ACTION, no game loop -->
+
+          <!-- Main toc node: show OMEZENÍ (bottleneck identifier) -->
+          {#if data.node_id === 'toc'}
+            <div class="rounded-lg px-4 py-3 mb-1" style="background:transparent;">
+              <div class="hud-mono" style="font-size:20px;font-weight:300;letter-spacing:0.04em;color:#c8d4df;margin-bottom:6px;">OMEZENÍ:</div>
+              <div class="flex items-start gap-2">
+                <span style="color:#ef4444;flex-shrink:0;">⚠︎</span>
+                <span style="font-size:14px;color:#f87171;line-height:1.4;">
+                  {data.bottleneck ?? tocProblem}
+                </span>
+              </div>
+              <div class="hud-mono mt-2" style="font-size:11px;letter-spacing:2px;color:#475569;">
+                {tocConfig?.warning ?? ''}
+              </div>
+            </div>
+          {:else}
+            <!-- Sub-nodes: PROBLEM card -->
+            <div class="rounded-lg px-4 py-3 mb-1" style="background:transparent;">
               <div class="hud-mono" style="font-size:20px;font-weight:300;letter-spacing:0.04em;color:#c8d4df;margin-bottom:6px;">PROBLEM:</div>
               <div class="flex items-start gap-2">
                 <span style="color:#ef4444;flex-shrink:0;">⚠︎</span>
-                <span style="font-size:14px;color:#f87171;line-height:1.4;">{data.killer?.description || data.verdict}</span>
+                <span style="font-size:14px;color:#f87171;line-height:1.4;">
+                  {tocProblem}
+                </span>
+              </div>
+              <div class="hud-mono mt-2" style="font-size:11px;letter-spacing:2px;color:#475569;">
+                {tocConfig?.warning ?? ''}
               </div>
             </div>
           {/if}
+
           <ActionProtocol
             action={data.action ?? { id: 'toc_plan', label: '', type: 'habit', status: 'READY' }}
             killer={null}
@@ -78,6 +104,9 @@
             dayType={data.day_type}
             universe={universe}
             userId={userId}
+            nodeId={data.node_id}
+            tocChips={tocConfig?.action?.chips ?? []}
+            tocActionLabel={tocConfig?.action?.label ?? 'ACTION'}
             onComplete={null}
           />
         {:else if agentLoading && !data.action}
