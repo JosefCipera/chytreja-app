@@ -708,10 +708,10 @@ window.upgradeToLongevity = async function () {
 // 7) ACCESS MODEL
 // =====================================================
 async function applyAccessModel(role, model, modelName) {
-  const url = `${DATA_BASE}/${modelName}/access/access-${role}.json`;
+  const url = `${DATA_BASE}/${modelName}/access/access-${role}.json?v=20260509`;
 
   try {
-    const res = await fetch(url);
+    const res = await fetch(url, { cache: 'no-store' });
     if (!res.ok) return;
 
     const accessData = await res.json();
