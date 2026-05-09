@@ -588,11 +588,6 @@
             wrap.style.transform = 'translateX(100%)';
             // Keep iframe alive — just hide overlay; _hudOpen stays true so no reload on reopen
             setTimeout(() => { overlay.style.display = 'none'; }, 360);
-            // Gentle focus-back to last opened node
-            const lastId = window._hudLastNodeId;
-            if (lastId && typeof window.focusNode === 'function') {
-                setTimeout(() => window.focusNode(lastId), 200);
-            }
         };
         let _topTTS = null;
         function _runTopTTS(text, lang) {
