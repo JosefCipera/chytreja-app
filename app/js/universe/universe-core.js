@@ -82,6 +82,21 @@ export function getViewState() {
   return { centerId: currentCenter, nodes: [...lastRenderedNodes] };
 }
 
+// Save / restore viewport position + scale (used around HUD open/close)
+let _savedView = null;
+export function saveViewport() {
+  if (!network) return;
+  _savedView = { position: network.getViewPosition(), scale: network.getScale() };
+}
+export function restoreViewport() {
+  if (!network || !_savedView) return;
+  network.moveTo({
+    position: _savedView.position,
+    scale: _savedView.scale,
+    animation: { duration: 500, easingFunction: 'easeInOutQuad' },
+  });
+}
+
 // Focus canvas back on a specific node (called after HUD close)
 export function focusNode(nodeId) {
   if (!network || !nodeId) return;

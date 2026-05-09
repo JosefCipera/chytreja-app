@@ -510,7 +510,8 @@
         };
 
         window.openHudOverlay = async function(userId, nodeId) {
-            window._hudLastNodeId = nodeId; // remember for focus-back
+            window._hudLastNodeId = nodeId;
+            if (typeof window.saveViewport === 'function') window.saveViewport();
             const overlay = document.getElementById('hud-overlay');
             const wrap    = document.getElementById('hud-panel-wrap');
             const iframe  = document.getElementById('hud-iframe');
@@ -586,8 +587,8 @@
             const overlay = document.getElementById('hud-overlay');
             const wrap    = document.getElementById('hud-panel-wrap');
             wrap.style.transform = 'translateX(100%)';
-            // Keep iframe alive — just hide overlay; _hudOpen stays true so no reload on reopen
             setTimeout(() => { overlay.style.display = 'none'; }, 360);
+            if (typeof window.restoreViewport === 'function') setTimeout(() => window.restoreViewport(), 200);
         };
         let _topTTS = null;
         function _runTopTTS(text, lang) {
