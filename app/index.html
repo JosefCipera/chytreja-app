@@ -580,10 +580,6 @@
             requestAnimationFrame(() => requestAnimationFrame(() => {
                 wrap.style.transform = 'translateX(0)';
             }));
-            // Pan canvas left so node stays visible next to HUD panel
-            if (typeof window.focusNode === 'function') {
-                setTimeout(() => window.focusNode(nodeId, 150), 100);
-            }
         };
 
         window.closeHudOverlay = function() {
