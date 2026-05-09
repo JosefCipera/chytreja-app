@@ -751,10 +751,6 @@ async function applyAccessModel(role, model, modelName) {
       const labelOverride = typeof entry === 'object' ? entry?.label : null;
       if (labelOverride) n.label = labelOverride;
     });
-
-  } catch (err) {
-    console.warn("⚠️ Nelze načíst access model", err);
-  }
 }
 
 // =====================================================
