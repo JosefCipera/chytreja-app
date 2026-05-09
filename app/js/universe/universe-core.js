@@ -294,8 +294,8 @@ export function renderUniverse(DATA, subset = null, forcedMainId = null) {
       // potentiometer removed — battery in HUD panel is the single source
     });
 
-    // ── Lock emojis on GRAY nodes — recomputed each frame ──
-    const currentLocked = source.filter(n => n.state === 'GRAY').map(n => n.id);
+    // ── Lock emojis on explicitly locked nodes only (not just GRAY/no-data) ──
+    const currentLocked = source.filter(n => n.access === 'locked').map(n => n.id);
     if (currentLocked.length) {
       const lockPos = network.getPositions(currentLocked);
       ctx.save();
