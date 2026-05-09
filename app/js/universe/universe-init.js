@@ -707,15 +707,40 @@ window.upgradeToLongevity = async function () {
 // =====================================================
 // 7) ACCESS MODEL
 // =====================================================
+// Hardcoded access maps — no fetch, no CDN cache issues.
+// Update here when access changes.
+const INLINE_ACCESS = {
+  'longevity/dekatlon': [
+    { id: 'dlouhovekost', access: 'full', label: 'Stoletý desetibojař' },
+    { id: 'telo',         access: 'full' },
+    { id: 'vo2max',       access: 'full' },
+    { id: 'sila',         access: 'full' },
+    { id: 'stabilita',    access: 'full' },
+    { id: 'kardio',       access: 'full' },
+    { id: 'mobilita',     access: 'full' },
+    { id: 'vytrvalost',   access: 'full' },
+    { id: 'rovnovaha',    access: 'full' },
+    { id: 'plyometrie',   access: 'full' },
+    { id: 'dychani',      access: 'full' },
+  ],
+};
+
 async function applyAccessModel(role, model, modelName) {
-  const url = `${DATA_BASE}/${modelName}/access/access-${role}.json?v=20260509`;
+  // Try inline first (no network, no cache)
+  const inlineKey = `${modelName}/${role}`;
+  let accessData = INLINE_ACCESS[inlineKey] || null;
 
-  try {
-    const res = await fetch(url, { cache: 'no-store' });
-    if (!res.ok) return;
+  if (!accessData) {
+    const url = `${DATA_BASE}/${modelName}/access/access-${role}.json?v=20260509`;
+    try {
+      const res = await fetch(url, { cache: 'no-store' });
+      if (res.ok) accessData = await res.json();
+    } catch (_) {}
+  }
 
-    const accessData = await res.json();
-    const accessMap = new Map(accessData.map(n => [n.id, n]));
+  if (!accessData) return;
+
+  const accessMap = new Map(accessData.map(n => [n.id, n]));
 
     const defaultAccess = (role === 'demo' || role === 'free' || role === 'dekatlon') ? 'locked' : 'visible';
     model.forEach(n => {
