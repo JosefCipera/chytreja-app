@@ -6,8 +6,8 @@ export const TOC_NODE_CONFIG = {
 
   // ── Hlavní uzel ─────────────────────────────────────────────────────────
   toc: {
-    problems: ['Nerovnoměrný tok', 'Přetížené omezení', 'Skryté úzké místo'],
-    warning: 'Nerovnoměrný tok = ztráty.',
+    problems: ['TOK', 'Přetížené omezení', 'Skryté úzké místo'],
+    warning: 'Nerovnoměrný tok způsobuje ztráty.',
     action: {
       label: 'ANALÝZA SYSTÉMU',
       chips: [
