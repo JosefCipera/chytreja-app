@@ -9,5 +9,5 @@
   { "id": "vytrvalost",   "access": "full" },
   { "id": "rovnovaha",    "access": "full" },
   { "id": "plyometrie",   "access": "full" },
-  { "id": "dychani",      "access": "locked" }
+  { "id": "dychani",      "access": "full" }
 ]
