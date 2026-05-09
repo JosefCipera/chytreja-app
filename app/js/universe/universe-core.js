@@ -87,8 +87,8 @@ export function focusNode(nodeId) {
   if (!network || !nodeId) return;
   try {
     network.focus(nodeId, {
-      scale: 1.05,
-      animation: { duration: 380, easingFunction: 'easeInOutQuad' },
+      scale: network.getScale(),   // keep current zoom, no jump
+      animation: { duration: 600, easingFunction: 'easeInOutQuad' },
     });
   } catch(e) { /* node may not be visible */ }
 }
