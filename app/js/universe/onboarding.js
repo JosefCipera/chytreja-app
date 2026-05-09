@@ -71,6 +71,18 @@ export const onboardingQuestions = [
     desc: 'Hustota kostí a rychlost reakce — ochrana před zlomeninami.',
     help: 'Bojím se nebo nedokážu=1, Nejistě=5, Snadno ustojím=10'
   },
+  {
+    id: 'rovnovaha_zavrene_oci', node: 'rovnovaha', type: 'slider', category: 'health',
+    q: 'Ustojíte 10 sekund na jedné noze se zavřenýma očima bez zachycení?',
+    desc: 'Propriocepce a rovnovážný systém — prevence pádů ve stáří.',
+    help: 'Nedokážu ani 3 s=1, 5–8 s=5, 10 s snadno=10'
+  },
+  {
+    id: 'zadrzeni_dechu', node: 'dychani', type: 'slider', category: 'health',
+    q: 'Po klidném výdechu zadržíte dech déle než 20 sekund bez nucení?',
+    desc: 'Tolerance CO₂ a efektivita dýchání — základ výkonu i regenerace.',
+    help: 'Méně než 8 s=1, 10–18 s=5, 20 s a více=10'
+  },
 ];
 
 const TOTAL_STEPS = onboardingQuestions.length; // 11 health questions
@@ -443,7 +455,7 @@ async function saveOnboarding() {
 
     // 1b. Calculate parent node states (in memory)
     const parentMap = {
-      telo:         ['sila', 'stabilita', 'mobilita', 'plyometrie'],
+      telo:         ['sila', 'stabilita', 'mobilita', 'plyometrie', 'rovnovaha', 'dychani'],
       zdravi:       ['vo2max', 'vytrvalost'],
       mysl:         [],
       vyziva:       [],
