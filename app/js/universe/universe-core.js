@@ -227,7 +227,7 @@ export function renderUniverse(DATA, subset = null, forcedMainId = null) {
   });
 
   // 🔮 Sphere shading + 🔒 lock emojis — single afterDrawing pass
-  const lockedIds = source.filter(n => n.state === 'GRAY').map(n => n.id);
+  const lockedIds = source.filter(n => n.access === 'locked').map(n => n.id);
 
   // Fixed node radii matching makeNode() — avoids bbox including label text width
   const NODE_RADIUS = { main: 62, child: 46 };
