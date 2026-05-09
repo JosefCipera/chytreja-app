@@ -67,14 +67,43 @@ function calcTrend(history) {
   return             { label: 'STABLE', direction: 'stable' };
 }
 
+// Valid metric = not GRAY and has real data (index > 0).
+// current_index === 0 means "no data yet" — treat as GRAY (same guard as universe-init.js canvas).
+function validMetric(m) {
+  return m && m.state !== 'GRAY' && m.current_index != null && m.current_index > 0;
+}
+
 function worstChild(nodeId, metricsMap) {
   const children = CHILDREN[nodeId] || [];
-  // current_index === 0 means "no data yet" (onboarding default for unanswered nodes)
-  // — treat it as GRAY, not RED, same as the canvas-side cascade in universe-init.js.
-  const childMetrics = children.map(id => metricsMap.get(id))
-    .filter(m => m && m.state !== 'GRAY' && m.current_index != null && m.current_index > 0);
+  const childMetrics = children.map(id => metricsMap.get(id)).filter(validMetric);
   if (!childMetrics.length) return null;
   return childMetrics.reduce((worst, m) =>
+    (m.current_index ?? 50) < (worst.current_index ?? 50) ? m : worst
+  );
+}
+
+// Two-level cascade matching canvas universe-init.js behaviour.
+// For nodes whose direct children are intermediate aggregates (e.g. telo, zdravi),
+// their stored current_index may be stale. We prefer the leaf-level nodes
+// (grandchildren) which are written directly by onboarding/game-loop.
+// Falls back to direct children when no grandchild data is available.
+function worstLeaf(nodeId, metricsMap) {
+  const directChildren = CHILDREN[nodeId] || [];
+  const leaves = [];
+  let hasGrandchildren = false;
+  for (const childId of directChildren) {
+    const grandchildren = CHILDREN[childId] || [];
+    if (grandchildren.length > 0) {
+      hasGrandchildren = true;
+      leaves.push(...grandchildren);
+    } else {
+      leaves.push(childId);
+    }
+  }
+  if (!hasGrandchildren) return worstChild(nodeId, metricsMap);
+  const valid = leaves.map(id => metricsMap.get(id)).filter(validMetric);
+  if (!valid.length) return worstChild(nodeId, metricsMap); // fallback
+  return valid.reduce((worst, m) =>
     (m.current_index ?? 50) < (worst.current_index ?? 50) ? m : worst
   );
 }
@@ -93,7 +122,7 @@ async function fetchOneNode(sb, userId, nodeId, shared) {
   const current_index = nodeMeta.current_index ?? 50;
   const state       = indexToState(current_index);
   const hasChildren = !!CHILDREN[nodeId]?.length;
-  const worst       = hasChildren ? worstChild(nodeId, metricsMap) : null;
+  const worst       = hasChildren ? worstLeaf(nodeId, metricsMap) : null;
   const batteryPercent = worst ? (worst.current_index ?? 50) : current_index;
   const batteryState   = worst ? indexToState(worst.current_index ?? 50) : state;
 
