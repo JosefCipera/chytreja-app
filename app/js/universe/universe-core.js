@@ -82,14 +82,15 @@ export function getViewState() {
   return { centerId: currentCenter, nodes: [...lastRenderedNodes] };
 }
 
-// Focus canvas back on a specific node (called after HUD close)
-export function focusNode(nodeId) {
+// Focus canvas on a specific node; xOffset shifts the target position
+// (positive xOffset moves view left — keeps node visible when right HUD panel is open)
+export function focusNode(nodeId, xOffset = 0) {
   if (!network || !nodeId) return;
   try {
     const pos = network.getPositions([nodeId])[nodeId];
     if (!pos) return;
     network.moveTo({
-      position: pos,
+      position: { x: pos.x + xOffset, y: pos.y },
       animation: { duration: 500, easingFunction: 'easeInOutQuad' },
     });
   } catch(e) { /* node may not be visible */ }
