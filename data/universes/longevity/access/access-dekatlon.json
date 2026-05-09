@@ -8,5 +8,6 @@
   { "id": "mobilita",     "access": "full" },
   { "id": "vytrvalost",   "access": "full" },
   { "id": "rovnovaha",    "access": "full" },
-  { "id": "dychani",      "access": "full" }
+  { "id": "plyometrie",   "access": "full" },
+  { "id": "dychani",      "access": "locked" }
 ]

@@ -38,7 +38,7 @@ const VERDICT_TEXTS = {
 
 const CHILDREN = {
   dlouhovekost: ['telo','zdravi','mysl','vyziva'],
-  telo:         ['vo2max','sila','kardio','stabilita','rovnovaha','vytrvalost','mobilita','dychani'],
+  telo:         ['vo2max','sila','kardio','stabilita','rovnovaha','vytrvalost','mobilita','plyometrie','dychani'],
   zdravi:       ['imunitni','metabolicke','nervovy_system','obnova','spanek'],
   mysl:         ['emoce','klid','meditace','smysl','soustredeni','stres','vdecnost'],
   vyziva:       ['bilkoviny','casovani_jidel','glukoza_vyziva','hydratace','mikronutrienty','pust'],

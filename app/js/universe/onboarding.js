@@ -66,7 +66,7 @@ export const onboardingQuestions = [
     help: 'Potřebuji pomoc=1, S námahou=5, Bez problémů=10'
   },
   {
-    id: 'skocit_dopadnout', node: 'stabilita', type: 'slider', category: 'health',
+    id: 'skocit_dopadnout', node: 'plyometrie', type: 'slider', category: 'health',
     q: 'Seskočíte z obrubníku (20 cm) a ustojíte dopad na jedné noze?',
     desc: 'Hustota kostí a rychlost reakce — ochrana před zlomeninami.',
     help: 'Bojím se nebo nedokážu=1, Nejistě=5, Snadno ustojím=10'
@@ -443,7 +443,7 @@ async function saveOnboarding() {
 
     // 1b. Calculate parent node states (in memory)
     const parentMap = {
-      telo:         ['sila', 'stabilita', 'mobilita'],
+      telo:         ['sila', 'stabilita', 'mobilita', 'plyometrie'],
       zdravi:       ['vo2max', 'vytrvalost'],
       mysl:         [],
       vyziva:       [],
