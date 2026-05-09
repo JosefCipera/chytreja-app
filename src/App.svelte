@@ -18,7 +18,7 @@
   const TOC_NODE_IDS = new Set([
     'toc','finance_toc','vyroba_toc','ccpm','strategie_toc','marketing_toc',
     'prutok_toc','zasoby_toc','naklady_toc','cashflow_toc',
-    'zdroje_toc','materialy_toc','kvalita_toc','opravy_toc',
+    'kapacity_toc','material_toc','terminy_toc','kvalita_toc','opravy_toc',
   ]);
   let universe = $derived(TOC_NODE_IDS.has(nodeId) ? 'toc' : 'longevity');
 

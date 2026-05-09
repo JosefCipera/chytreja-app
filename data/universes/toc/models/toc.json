@@ -112,20 +112,30 @@
         ]
     },
     {
-        "id": "zdroje_toc",
-        "label": "Zdroje",
-        "icon": "👷",
-        "definition": "Lidé, stroje a kompetence jsou zdroje výroby. Přetížené nebo chybějící zdroje způsobují výpadky toku a vícenáklady.",
+        "id": "kapacity_toc",
+        "label": "Kapacity",
+        "icon": "⚙️",
+        "definition": "Vytížení strojů a lidí určuje, kde vzniká úzké místo. Přetížené kapacity = zpožděné zakázky a vícenáklady.",
         "parent": "vyroba_toc",
         "color": "#f59e0b",
         "articles": [],
         "media": []
     },
     {
-        "id": "materialy_toc",
-        "label": "Materiály",
+        "id": "material_toc",
+        "label": "Materiál",
         "icon": "📦",
-        "definition": "Chybějící nebo nekvalitní materiál zastavuje výrobu dřív než lidé. Zásoby materiálu jsou buffer chránící tok.",
+        "definition": "Chybějící nebo nekvalitní materiál zastavuje výrobu. Zásoby materiálu jsou buffer chránící tok zakázek.",
+        "parent": "vyroba_toc",
+        "color": "#f59e0b",
+        "articles": [],
+        "media": []
+    },
+    {
+        "id": "terminy_toc",
+        "label": "Termíny",
+        "icon": "📅",
+        "definition": "Plnění termínů zakázek je přímý ukazatel průtoku. Zpoždění = ztráta důvěry zákazníka i průtoku.",
         "parent": "vyroba_toc",
         "color": "#f59e0b",
         "articles": [],

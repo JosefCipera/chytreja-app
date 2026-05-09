@@ -67,35 +67,26 @@
         {#if universe === 'toc'}
           <!-- TOC: PROBLEM + ACTION, no game loop -->
 
-          <!-- Main toc node: show OMEZENÍ (bottleneck identifier) -->
-          {#if data.node_id === 'toc'}
-            <div class="rounded-lg px-4 py-3 mb-1" style="background:transparent;">
-              <div class="hud-mono" style="font-size:20px;font-weight:300;letter-spacing:0.04em;color:#c8d4df;margin-bottom:6px;">OMEZENÍ:</div>
-              <div class="flex items-start gap-2">
-                <span style="color:#ef4444;flex-shrink:0;">⚠︎</span>
-                <span style="font-size:14px;color:#f87171;line-height:1.4;">
-                  {data.bottleneck ?? tocProblem}
-                </span>
-              </div>
-              <div class="hud-mono mt-2" style="font-size:11px;letter-spacing:2px;color:#475569;">
-                {tocConfig?.warning ?? ''}
-              </div>
+          <!-- Main toc node: OMEZENÍ / Sub-nodes: PROBLEM -->
+          <div class="rounded-lg px-4 py-3 mb-1" style="background:transparent;">
+            <!-- Label + value + AI annotation on one line -->
+            <div class="hud-mono flex items-baseline gap-2 flex-wrap" style="margin-bottom:8px;">
+              <span style="font-size:20px;font-weight:300;letter-spacing:0.04em;color:#c8d4df;">
+                {data.node_id === 'toc' ? 'OMEZENÍ:' : 'PROBLEM:'}
+              </span>
+              <span style="font-size:16px;font-weight:500;color:#f87171;letter-spacing:0.06em;">
+                {(data.bottleneck ?? tocProblem).toUpperCase()}
+              </span>
+              <span style="font-size:10px;color:#334155;letter-spacing:1px;">← AI vybere</span>
             </div>
-          {:else}
-            <!-- Sub-nodes: PROBLEM card -->
-            <div class="rounded-lg px-4 py-3 mb-1" style="background:transparent;">
-              <div class="hud-mono" style="font-size:20px;font-weight:300;letter-spacing:0.04em;color:#c8d4df;margin-bottom:6px;">PROBLEM:</div>
-              <div class="flex items-start gap-2">
-                <span style="color:#ef4444;flex-shrink:0;">⚠︎</span>
-                <span style="font-size:14px;color:#f87171;line-height:1.4;">
-                  {tocProblem}
-                </span>
-              </div>
-              <div class="hud-mono mt-2" style="font-size:11px;letter-spacing:2px;color:#475569;">
+            <!-- Warning line -->
+            <div class="flex items-start gap-2">
+              <span style="color:#ef4444;flex-shrink:0;font-size:13px;">⚠︎</span>
+              <span class="hud-mono" style="font-size:11px;letter-spacing:1.5px;color:#475569;line-height:1.5;">
                 {tocConfig?.warning ?? ''}
-              </div>
+              </span>
             </div>
-          {/if}
+          </div>
 
           <ActionProtocol
             action={data.action ?? { id: 'toc_plan', label: '', type: 'habit', status: 'READY' }}

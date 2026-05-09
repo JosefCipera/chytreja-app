@@ -32,9 +32,9 @@ export const TOC_NODE_CONFIG = {
     },
   },
 
-  zdroje_toc: {
-    problems: ['Nedostatek lidí', 'Přetížení strojů', 'Chybějící kompetence'],
-    warning: 'Přetížené zdroje blokují tok zakázek.',
+  kapacity_toc: {
+    problems: ['Přetížení strojů', 'Nedostatek lidí', 'Chybějící kompetence'],
+    warning: 'Přetížené kapacity blokují tok zakázek.',
     action: {
       label: 'KAPACITY',
       chips: [
@@ -45,7 +45,7 @@ export const TOC_NODE_CONFIG = {
     },
   },
 
-  materialy_toc: {
+  material_toc: {
     problems: ['Nedodávky', 'Kvalita vstupů', 'Zásoby pod normou'],
     warning: 'Chybějící materiál zastavuje výrobu.',
     action: {
@@ -54,6 +54,19 @@ export const TOC_NODE_CONFIG = {
         { label: 'Plán nákupu',      href: null },
         { label: 'Alternativní dodavatel', href: null },
         { label: 'Pojistná zásoba',  href: null },
+      ],
+    },
+  },
+
+  terminy_toc: {
+    problems: ['Plnění termínů zakázek', 'Zpoždění ve výrobě', 'Přislíbené vs. skutečné termíny'],
+    warning: 'Nedodržení termínů = ztráta zákazníka i průtoku.',
+    action: {
+      label: 'TERMÍNY',
+      chips: [
+        { label: 'Přehled zakázek',  href: null },
+        { label: 'Kritický řetěz',   href: null },
+        { label: 'Eskalace',         href: null },
       ],
     },
   },
