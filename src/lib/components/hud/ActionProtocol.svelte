@@ -101,15 +101,19 @@
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;">
       {#each tocChips as chip}
-        <a
-          href={chip.href ? chip.href + (userId ? '?userId=' + userId : '') : 'javascript:void(0)'}
-          target={undefined}
-          style={chipStyle}
+        <button
+          onclick={() => {
+            if (chip.href) {
+              const url = chip.href + (userId ? '?userId=' + userId : '');
+              window.parent?.postMessage({ type: 'chj:tool:open', url }, '*');
+            }
+          }}
+          style={chipStyle + 'font-family:inherit;'}
           onmouseenter={(e)=>{e.currentTarget.style.background='rgba(6,182,212,0.18)';e.currentTarget.style.borderColor='rgba(6,182,212,0.4)';e.currentTarget.style.transform='translateY(-1px)'}}
           onmouseleave={(e)=>{e.currentTarget.style.background='rgba(255,255,255,0.06)';e.currentTarget.style.borderColor='rgba(255,255,255,0.12)';e.currentTarget.style.transform='none'}}
         >
           {chip.label}
-        </a>
+        </button>
       {/each}
     </div>
   </div>
