@@ -69,7 +69,10 @@ function calcTrend(history) {
 
 function worstChild(nodeId, metricsMap) {
   const children = CHILDREN[nodeId] || [];
-  const childMetrics = children.map(id => metricsMap.get(id)).filter(m => m && m.state !== 'GRAY');
+  // current_index === 0 means "no data yet" (onboarding default for unanswered nodes)
+  // — treat it as GRAY, not RED, same as the canvas-side cascade in universe-init.js.
+  const childMetrics = children.map(id => metricsMap.get(id))
+    .filter(m => m && m.state !== 'GRAY' && m.current_index != null && m.current_index > 0);
   if (!childMetrics.length) return null;
   return childMetrics.reduce((worst, m) =>
     (m.current_index ?? 50) < (worst.current_index ?? 50) ? m : worst
