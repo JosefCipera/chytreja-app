@@ -9,7 +9,8 @@
 ">
   {#if universe === 'toc'}
     <div class="hud-mono" style="font-size: 20px; font-weight: 300; letter-spacing: 0.04em; color: #c8d4df; line-height: 1.3; margin-bottom: 6px;">
-      PROBL\u00C9M
+      PROBLEM: <span style="color: #c8d4df;">{label}</span>
+      <span style="font-size: 10px; color: #334155; letter-spacing: 1px; margin-left: 6px;">\u2190 AI vybere</span>
     </div>
     <div class="flex items-start gap-2" style="line-height: 1.4;">
       <span style="font-size: 15px; color: #ef4444; flex-shrink: 0; margin-top: 1px;">{@html '\u26A0\uFE0E'}</span>
