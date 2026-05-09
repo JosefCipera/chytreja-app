@@ -330,7 +330,7 @@ export function renderUniverse(DATA, subset = null, forcedMainId = null) {
   });
 
   // ✨ Vycentrování s animací
-  setTimeout(() => network.fit({ animation: true }), 300);
+  setTimeout(() => network.fit({ animation: { duration: 600, easingFunction: 'easeInOutQuad' } }), 300);
 
   // 🖱️ Klik – otevře panel nebo návrat
   let clickTimer = null;
