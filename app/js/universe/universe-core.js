@@ -20,9 +20,15 @@ let lastRenderedNodes = [];
   canvas.id = 'star-field';
   document.body.appendChild(canvas);
 
+  let _lastW = 0, _lastH = 0;
   function resize() {
-    canvas.width  = window.innerWidth;
-    canvas.height = window.innerHeight - 56;
+    const w = window.innerWidth;
+    const h = window.innerHeight - 56;
+    // Skip redraw if dimensions unchanged — prevents star flicker on HUD open/close
+    if (w === _lastW && h === _lastH) return;
+    _lastW = w; _lastH = h;
+    canvas.width  = w;
+    canvas.height = h;
     draw();
   }
 
@@ -74,6 +80,17 @@ let lastRenderedNodes = [];
 // 🌌 Vykreslení hlavní nebo podsítě
 export function getViewState() {
   return { centerId: currentCenter, nodes: [...lastRenderedNodes] };
+}
+
+// Focus canvas back on a specific node (called after HUD close)
+export function focusNode(nodeId) {
+  if (!network || !nodeId) return;
+  try {
+    network.focus(nodeId, {
+      scale: 1.05,
+      animation: { duration: 380, easingFunction: 'easeInOutQuad' },
+    });
+  } catch(e) { /* node may not be visible */ }
 }
 
 // Update metrics in-place + force redraw — no network destroy/recreate

@@ -21,7 +21,7 @@ export const TOC_NODE_CONFIG = {
   // ── Výroba ──────────────────────────────────────────────────────────────
   vyroba_toc: {
     problems: ['Plnění termínů', 'Vytížení kapacit', 'Chybějící materiál', 'Kvalita'],
-    warning: 'Nezajištěné zdroje = vícenáklady.',
+    warning: 'Nedodržení plánu = ztráta průtoku.',
     action: {
       label: 'PLÁNOVÁNÍ',
       chips: [

@@ -7,7 +7,7 @@ const ORBIT_ZONES = [
   [500, 600],
   [620, 740]
 ];
-import { renderUniverse, getViewState, updateMetricsAndRedraw } from "./universe-core.js";
+import { renderUniverse, getViewState, updateMetricsAndRedraw, focusNode } from "./universe-core.js";
 import { showPanel } from "./universe-panel.js";
 import { initUserDataPanel } from "./user-data-panel.js?v=20260426a";
 import { listenOnce, handleVoiceInput, proactiveGreeting } from "./universe-voice.js";
@@ -163,6 +163,9 @@ function applyTocCascade(nodes, metricsMap) {
 
 // ── Global refresh — called from HUD after completing action ──────
 // Updates metrics in-place + redraws without destroying/recreating the network
+// Expose focusNode to window so closeHudOverlay (index.html) can call it
+window.focusNode = focusNode;
+
 window.refreshUniverseData = async function() {
   if (!window.MAIN_UNIVERSE_DATA) return;
 
