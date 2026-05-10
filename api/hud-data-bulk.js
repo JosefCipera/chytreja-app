@@ -18,6 +18,13 @@ const NODE_KILLERS = {
   kardio:       { label: 'SRDCE',        description: 'Srdce bez zátěže odejde dřív než čekáš.' },
   spanek:       { label: 'MOZEK',        description: 'Bez spánku mozek ničí sám sebe.' },
   dlouhovekost: { label: 'SRDCE',        description: 'Každý rok bez pohybu ti bere roky života.' },
+  // ── TOC uzly — OMEZENÍ místo killera ─────────────────
+  toc:          { label: 'OMEZENÍ', description: 'Každý systém má jedno místo, které brzdí vše ostatní.' },
+  finance_toc:  { label: 'OMEZENÍ', description: 'Firma vydělává tolik, kolik dovolí její nejslabší článek.' },
+  vyroba_toc:   { label: 'OMEZENÍ', description: 'Linka jede jen tak rychle jako její nejpomalejší pracoviště.' },
+  ccpm:         { label: 'OMEZENÍ', description: 'Projekt sklouzne tam, kde chybí buffer a přebývají priority.' },
+  strategie_toc:{ label: 'OMEZENÍ', description: 'Strategie bez identifikovaného omezení je jen seznam přání.' },
+  marketing_toc:{ label: 'OMEZENÍ', description: 'Poptávka bez průtoku je jen slogan, který firma nezvládne.' },
 };
 
 const NODE_LABELS = {

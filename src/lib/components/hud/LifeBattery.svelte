@@ -139,11 +139,13 @@
     ></div>
   </div>
 
-  <!-- EST_BIO_AGE — placeholder, data v0.4+ -->
+  <!-- EST_BIO_AGE — longevity only, data v0.4+ -->
+  {#if universe !== 'toc'}
   <div class="flex items-center justify-between mt-3">
     <span class="hud-mono" style="font-size: 13px; color: #475569;">
       EST_BIO_AGE: <span style="color: #334155;">—</span>
     </span>
   </div>
+  {/if}
 
 </div>
