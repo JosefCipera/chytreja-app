@@ -568,16 +568,19 @@
             }
 
             // Open panel — on subsequent opens data is already in iframe, no flicker
+            window._hudOverlayOpen = true;
             overlay.style.display = 'flex';
             requestAnimationFrame(() => requestAnimationFrame(() => {
                 wrap.style.transform = 'translateX(0)';
             }));
         };
 
+        window._hudOverlayOpen = false;  // tracks Svelte HUD visibility for canvas click guard
+
         window.closeHudOverlay = function() {
             const overlay = document.getElementById('hud-overlay');
             const wrap    = document.getElementById('hud-panel-wrap');
-            const tocBar  = document.getElementById('toc-action-bar');
+            window._hudOverlayOpen = false;
             wrap.style.transform = 'translateX(100%)';
             // Keep iframe alive — just hide overlay; _hudOpen stays true so no reload on reopen
             setTimeout(() => { overlay.style.display = 'none'; }, 360);
