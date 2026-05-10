@@ -66,7 +66,7 @@
             <div class="rounded-lg px-4 py-3" style="
               background: transparent;
             ">
-              <div class="hud-mono" style="font-size:20px;font-weight:300;letter-spacing:0.04em;color:#c8d4df;margin-bottom:6px;">PROBLEM:</div>
+              <div class="hud-mono" style="font-size:20px;font-weight:300;letter-spacing:0.04em;color:#c8d4df;margin-bottom:6px;">PROBLEM: <span style="color:#94a3b8;">{data.killer?.label ?? ''}</span></div>
               <div class="flex items-start gap-2">
                 <span style="color:#ef4444;flex-shrink:0;">⚠︎</span>
                 <span style="font-size:14px;color:#f87171;line-height:1.4;">{data.killer?.description || data.verdict}</span>

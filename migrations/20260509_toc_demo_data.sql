@@ -31,7 +31,8 @@ CROSS JOIN (VALUES
   ('zasoby_toc',    55),   -- YELLOW: WIP nad normou
   ('naklady_toc',   72),   -- GREEN:  náklady pod kontrolou
   ('cashflow_toc',  45),   -- YELLOW: platby se zpožďují
-  ('finance_toc',   45),   -- YELLOW cascade: nejhorší dítě = cashflow
+  ('investice_toc', 38),   -- RED:    investice bez ohledu na bottleneck
+  ('finance_toc',   38),   -- RED cascade: nejhorší dítě = investice
 
   -- ── Ostatní hlavní uzly ────────────────────────────
   ('ccpm',          60),   -- YELLOW: projekty se zpožďují

@@ -80,10 +80,10 @@
   <!-- Header row: LIFE-BATTERY + percent + trend -->
   <div class="flex items-center justify-between mb-1">
     <span class="hud-mono" style="font-size: 20px; letter-spacing: 0.04em; color: #c8d4df; font-weight: 300;">{universe === 'toc' ? 'FLOW-RATE' : 'LIFE-BATTERY'}</span>
-    <div class="flex items-center gap-0">
+    <div class="flex items-center gap-0" style="flex-shrink: 0;">
       <span class="hud-mono" style="font-size: 14px; font-weight: 300; color: {textColor};">{percent}%</span>
       <span class="hud-mono mx-1" style="font-size: 14px; color: #334155;">|</span>
-      <span class="hud-mono" style="font-size: 11px; color: {textColor}; margin-right: 3px;">{trendArrow}</span><span class="hud-mono" style="font-size: 13px; font-weight: 400; color: {textColor};">{trendWord}</span>
+      <span class="hud-mono" style="font-size: 11px; color: {textColor}; margin-right: 3px;">{trendArrow}</span><span class="hud-mono" style="font-size: 13px; font-weight: 400; color: {textColor}; white-space: nowrap;">{trendWord}</span>
     </div>
   </div>
 

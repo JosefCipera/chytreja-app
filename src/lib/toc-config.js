@@ -99,14 +99,12 @@ export const TOC_NODE_CONFIG = {
 
   // ── Finance ─────────────────────────────────────────────────────────────
   finance_toc: {
-    problems: ['Klesající zisk', 'Klesající ROI', 'Klesající CF'],
-    warning: 'Zhoršení globálních ukazatelů = zhoršení firmy jako celku.',
+    problems: ['Hodnocení ziskovosti', 'Zásoby', 'Náklady', 'Cash flow'],
+    warning: 'Firma vydělává tolik, kolik dovolí její nejslabší článek.',
     action: {
       label: 'FINANČNÍ SIMULACE',
       chips: [
-        { label: 'Hodnocení přínosů', href: null },
-        { label: 'Analýza průtoku',   href: null },
-        { label: 'T / I / OE přehled', href: null },
+        { label: 'Finanční simulace', href: null },
       ],
     },
   },
@@ -159,6 +157,17 @@ export const TOC_NODE_CONFIG = {
         { label: 'Cash flow plán',   href: null },
         { label: 'Pohledávky',       href: null },
         { label: 'Platební podmínky', href: null },
+      ],
+    },
+  },
+
+  investice_toc: {
+    problems: ['Investice bez ohledu na bottleneck', 'Špatné Make/Buy rozhodnutí', 'Nízká návratnost'],
+    warning: 'Investice bez ohledu na bottleneck — špatná návratnost.',
+    action: {
+      label: 'FINANČNÍ SIMULACE',
+      chips: [
+        { label: 'Finanční simulace', href: null },
       ],
     },
   },

@@ -87,6 +87,16 @@
         "media": []
     },
     {
+        "id": "investice_toc",
+        "label": "Investice (I)",
+        "icon": "🏗️",
+        "definition": "Investice v TOC = kapitál vázaný v aktivech, strojích a projektech. Každá investice musí být posuzována podle dopadu na průtok — ne podle nákladů nebo účetní návratnosti.",
+        "parent": "finance_toc",
+        "color": "#22c55e",
+        "articles": [],
+        "media": []
+    },
+    {
         "id": "vyroba_toc",
         "label": "Výroba (DBR)",
         "icon": "🏭",

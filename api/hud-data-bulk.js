@@ -18,22 +18,26 @@ const NODE_KILLERS = {
   kardio:       { label: 'SRDCE',        description: 'Srdce bez zátěže odejde dřív než čekáš.' },
   spanek:       { label: 'MOZEK',        description: 'Bez spánku mozek ničí sám sebe.' },
   dlouhovekost: { label: 'SRDCE',        description: 'Každý rok bez pohybu ti bere roky života.' },
-  // ── TOC uzly — OMEZENÍ místo killera ─────────────────
+  // ── TOC uzly — parent uzly (cascade z nejslabšího dítěte) ────────────────
   toc:          { label: 'OMEZENÍ', description: 'Každý systém má jedno místo, které brzdí vše ostatní.' },
   finance_toc:  { label: 'OMEZENÍ', description: 'Firma vydělává tolik, kolik dovolí její nejslabší článek.' },
-  prutok_toc:   { label: 'OMEZENÍ', description: 'Klesající průtok ohrožuje celý systém.' },
-  zasoby_toc:   { label: 'OMEZENÍ', description: 'Vázaný kapitál snižuje dostupné cash.' },
-  naklady_toc:  { label: 'OMEZENÍ', description: 'Rostoucí OE bez růstu T = zhoršování zisku.' },
-  cashflow_toc: { label: 'OMEZENÍ', description: 'Špatný cash flow blokuje provoz i investice.' },
   vyroba_toc:   { label: 'OMEZENÍ', description: 'Linka jede jen tak rychle jako její nejpomalejší pracoviště.' },
-  kapacity_toc: { label: 'OMEZENÍ', description: 'Přetížené kapacity blokují tok zakázek.' },
-  material_toc: { label: 'OMEZENÍ', description: 'Chybějící materiál zastavuje výrobu.' },
-  terminy_toc:  { label: 'OMEZENÍ', description: 'Nedodržení termínů = ztráta zákazníka i průtoku.' },
-  kvalita_toc:  { label: 'OMEZENÍ', description: 'Zmetky spotřebovávají kapacitu bez průtoku.' },
-  opravy_toc:   { label: 'OMEZENÍ', description: 'Neplánované odstávky jsou nejdražší ztrátou průtoku.' },
   ccpm:         { label: 'OMEZENÍ', description: 'Multitasking ničí projekty rychleji než technické problémy.' },
   strategie_toc:{ label: 'OMEZENÍ', description: 'Strategie bez identifikovaného omezení je jen seznam přání.' },
   marketing_toc:{ label: 'OMEZENÍ', description: 'Poptávka bez průtoku je jen slogan, který firma nezvládne.' },
+  // ── TOC uzly — sub-uzly (specifický label, ne generické OMEZENÍ) ─────────
+  // Výroba sub-uzly
+  terminy_toc:  { label: 'TERMÍNY',        description: 'Nedodržení termínů = ztráta zákazníka i průtoku.' },
+  kapacity_toc: { label: 'KAPACITY',       description: 'Přetížené kapacity blokují tok zakázek.' },
+  material_toc: { label: 'MATERIÁL',       description: 'Chybějící materiál zastavuje výrobu.' },
+  kvalita_toc:  { label: 'KVALITA',        description: 'Zmetky spotřebovávají kapacitu bez průtoku.' },
+  opravy_toc:   { label: 'OPRAVY A ÚDRŽBA', description: 'Neplánované odstávky jsou nejdražší ztrátou průtoku.' },
+  // Finance sub-uzly
+  prutok_toc:   { label: 'HODNOCENÍ ZISKOVOSTI', description: 'Zakázka vypadá ziskově, ale blokuje omezení — čistá ztráta průtoku.' },
+  zasoby_toc:   { label: 'ZÁSOBY',               description: 'Vázaný kapitál ve WIP a zásobách snižuje dostupné cash.' },
+  naklady_toc:  { label: 'NÁKLADY',              description: 'Rostoucí OE bez růstu T = zhoršování zisku.' },
+  cashflow_toc:  { label: 'CASH FLOW',   description: 'Špatný cash flow blokuje provoz i investice.' },
+  investice_toc: { label: 'INVESTICE',   description: 'Investice bez ohledu na bottleneck — špatná návratnost.' },
 };
 
 const NODE_LABELS = {
@@ -58,6 +62,13 @@ const CHILDREN = {
   zdravi:       ['imunitni','metabolicke','nervovy_system','obnova','spanek'],
   mysl:         ['emoce','klid','meditace','smysl','soustredeni','stres','vdecnost'],
   vyziva:       ['bilkoviny','casovani_jidel','glukoza_vyziva','hydratace','mikronutrienty','pust'],
+};
+
+// TOC parent→children — cascade killer z nejslabšího dítěte
+const TOC_CHILDREN = {
+  toc:         ['vyroba_toc','finance_toc','ccpm','strategie_toc','marketing_toc'],
+  vyroba_toc:  ['terminy_toc','kapacity_toc','material_toc','kvalita_toc','opravy_toc'],
+  finance_toc: ['prutok_toc','zasoby_toc','naklady_toc','cashflow_toc','investice_toc'],
 };
 
 const DISCIPLINE_PROTOCOLS = {
@@ -242,7 +253,17 @@ async function fetchOneNode(sb, userId, nodeId, shared) {
     script_cz: s.script_cz || null, summary: s.summary || null,
   }));
 
-  const killer = NODE_KILLERS[nodeId] || NODE_KILLERS.telo;
+  // TOC cascade: parent zdědí killer z nejslabšího dítěte (má-li data)
+  let killer = NODE_KILLERS[nodeId] || NODE_KILLERS.telo;
+  if (TOC_CHILDREN[nodeId]) {
+    const tocKids = TOC_CHILDREN[nodeId].map(id => metricsMap.get(id)).filter(validMetric);
+    if (tocKids.length) {
+      const worstKid = tocKids.reduce((w, m) =>
+        (m.current_index ?? 50) < (w.current_index ?? 50) ? m : w
+      );
+      killer = NODE_KILLERS[worstKid.node_id] || killer;
+    }
+  }
   const verdictMap = VERDICT_TEXTS[nodeId] || VERDICT_TEXTS.telo;
   const deterministicVerdict = verdictMap[batteryState] || verdictMap.YELLOW;
 

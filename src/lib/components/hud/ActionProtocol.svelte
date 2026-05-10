@@ -94,9 +94,9 @@
   <span class="hc hc-bl"></span><span class="hc hc-br"></span>
   <div class="px-4 pt-3 pb-3">
     <div class="hud-mono mb-3" style="letter-spacing: 0.04em; font-weight: 300;">
-      <div class="flex items-center justify-between" style="font-size: 20px;">
-        <span style="color: #c8d4df;">ACTION: <span style="color: #94a3b8;">{tocActionLabel}</span></span>
-        <span style="color: {statusColor};">[{status}]</span>
+      <div class="flex items-start justify-between gap-2" style="font-size: 20px;">
+        <span style="color: #c8d4df; line-height: 1.3;">ACTION: <span style="color: #94a3b8;">{tocActionLabel}</span></span>
+        <span style="color: {statusColor}; flex-shrink: 0;">[{status}]</span>
       </div>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;">
