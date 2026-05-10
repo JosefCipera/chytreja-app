@@ -276,10 +276,11 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
 
   try {
-  const { userId, nodes: nodesParam = 'telo,mysl,zdravi,vyziva', role } = req.query;
+  const { userId, nodes: nodesParam = 'telo,mysl,zdravi,vyziva', role, universe: universeParam } = req.query;
   if (!userId) return res.status(400).json({ error: 'userId required' });
 
   const nodeIds = nodesParam.split(',').map(n => n.trim()).filter(Boolean).slice(0, 8);
+  const universe = universeParam || 'longevity';
 
   if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
     console.error('[hud-data-bulk] Missing Supabase env vars');
@@ -292,7 +293,7 @@ export default async function handler(req, res) {
   // ── Shared queries — run once for all nodes ──────────
   const [metricsRes, orchRes, constraintsRes, profileRes] = await Promise.all([
     sb.from('user_metrics').select('node_id, current_index, state')
-      .eq('user_id', userId).eq('universe', 'longevity'),
+      .eq('user_id', userId).eq('universe', universe),
     sb.from('orchestrator_log')
       .select('node_id, pillar, verdict, completion_feedback, weekly_hint')
       .eq('user_id', userId).eq('date', today).in('node_id', nodeIds),

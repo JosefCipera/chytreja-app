@@ -59,7 +59,8 @@ export async function loadHudData(userId, nodeId) {
     const _params = new URLSearchParams(window.location.search);
     const _urlRole = _params.get('role');
     const _role = _urlRole || (typeof localStorage !== 'undefined' ? localStorage.getItem('userRole') : null) || 'pro';
-    const res = await fetch(`/api/hud-data-bulk?userId=${encodeURIComponent(userId)}&nodes=${encodeURIComponent(nodeId)}&role=${encodeURIComponent(_role)}`);
+    const _universe = _params.get('universe') || 'longevity';
+    const res = await fetch(`/api/hud-data-bulk?userId=${encodeURIComponent(userId)}&nodes=${encodeURIComponent(nodeId)}&role=${encodeURIComponent(_role)}&universe=${encodeURIComponent(_universe)}`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const bulk = await res.json();
     let data = bulk[nodeId];

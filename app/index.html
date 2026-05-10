@@ -471,7 +471,8 @@
             const missing = nodeIds.filter(id => !window._hudCache[id] && !window._hudPending[id]);
             if (!missing.length) return;
             const _role = localStorage.getItem('userRole') || 'pro';
-            const bulk = `/api/hud-data-bulk?userId=${encodeURIComponent(userId)}&nodes=${missing.join(',')}&role=${encodeURIComponent(_role)}`;
+            const _univ = window.CURRENT_MODEL || 'longevity';
+            const bulk = `/api/hud-data-bulk?userId=${encodeURIComponent(userId)}&nodes=${missing.join(',')}&role=${encodeURIComponent(_role)}&universe=${encodeURIComponent(_univ)}`;
             const p = fetch(bulk).then(r => r.json()).then(data => {
                 // Apply local label overrides before caching
                 if (window.MAIN_UNIVERSE_DATA) {
@@ -532,10 +533,11 @@
                 // Also kick off a background prefetch so the cache is warm if user
                 // closes and reopens before the iframe fetches on its own.
                 const _role0 = localStorage.getItem('userRole') || 'pro';
+                const _univ0 = window.CURRENT_MODEL || 'longevity';
                 // Pass local label override so Svelte can fix API label (e.g. dekatlon vs demo)
                 const _localNode0 = window.MAIN_UNIVERSE_DATA?.find(n => n.id === nodeId);
                 const _labelParam = _localNode0?.label ? `&nodeLabel=${encodeURIComponent(_localNode0.label)}` : '';
-                iframe.src = `/app/hud.html?userId=${encodeURIComponent(userId)}&nodeId=${encodeURIComponent(nodeId)}&role=${encodeURIComponent(_role0)}${_labelParam}`;
+                iframe.src = `/app/hud.html?userId=${encodeURIComponent(userId)}&nodeId=${encodeURIComponent(nodeId)}&role=${encodeURIComponent(_role0)}&universe=${encodeURIComponent(_univ0)}${_labelParam}`;
                 window._hudOpen = true;
                 window.prefetchHudNodes(userId, [nodeId]); // warm cache in parallel
 
@@ -549,7 +551,8 @@
                     if (loader) loader.classList.add('active');
                     try {
                         const _r = localStorage.getItem('userRole') || 'pro';
-                        const url = `/api/hud-data-bulk?userId=${encodeURIComponent(userId)}&nodes=${encodeURIComponent(nodeId)}&role=${encodeURIComponent(_r)}`;
+                        const _univ2 = window.CURRENT_MODEL || 'longevity';
+                        const url = `/api/hud-data-bulk?userId=${encodeURIComponent(userId)}&nodes=${encodeURIComponent(nodeId)}&role=${encodeURIComponent(_r)}&universe=${encodeURIComponent(_univ2)}`;
                         const res  = await fetch(url);
                         const bulk = await res.json();
                         data = bulk[nodeId] || null;
