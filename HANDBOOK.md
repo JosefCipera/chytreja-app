@@ -247,6 +247,32 @@ chytreja-app/
 | `toc_parametry` | — | TOC parametry |
 | `toc_pracoviste` | — | TOC pracoviště |
 
+### Osobní datová vrstva (v0.3) — `migrations/v03_personal_data_layer.sql`
+
+Čistě aditivní migrace (ADD COLUMN IF NOT EXISTS + nové tabulky). Nic se nemaže.
+
+**Rozšířené existující tabulky:**
+
+| Tabulka | Nové sloupce |
+|---------|-------------|
+| `user_supplements` | `form`, `frequency`, `reason`, `lab_marker`, `notes`, `updated_at` |
+| `user_medications` | `timing`, `frequency`, `condition`, `start_date`, `end_date`, `prescribed`, `notes`, `updated_at` |
+| `user_lab_results` | `status` (GENERATED: LOW/NORMAL/HIGH/CRITICAL), `lab_name`, `doc_ref`, `updated_at` |
+| `user_biometrics` | `muscle_mass_kg`, `bone_density`, `hrv_ms`, `resting_hr`, `vo2max`, `updated_at` |
+
+**Nové tabulky:**
+
+| Tabulka | Popis |
+|---------|-------|
+| `user_meals` | Tracking jídel (popis, foto_url, kcal, protein_g, carbs_g, fat_g, source) |
+| `user_daily_log` | Denní souhrn (kcal, protein, kroky, spánek, HRV, váha) — UNIQUE (user_id, log_date) |
+| `user_notification_schedule` | Plán proaktivních notifikací (trigger_type, time_of_day, days_of_week, message) |
+
+**Klíčová logika:**
+- `user_lab_results.status` je computed column — automaticky LOW/NORMAL/HIGH podle `value` vs `reference_min/max`
+- `user_supplements.end_date = null` → aktivní / chronické; `end_date` nastavené → ukončený suplement
+- `user_supplements.lab_marker` → propojení suplementu s lab výsledkem (např. Mg → marker 'Mg')
+
 ### Tabulky pro v0.4+ (Health Parser)
 
 | Tabulka | Popis |
@@ -314,8 +340,16 @@ stateDiagram-v2
 | 71–100 | GREEN | zelená |
 
 **GRAY ≠ LOCKED.** Kritická distinkce:
-- `state = GRAY` → uzel bez dat, uživatel k němu přístup má
-- `access = 'locked'` → záměrně uzamčeno rolí → zobrazí 🔒
+- `state = GRAY` → uzel bez dat, uživatel k němu přístup má → klik otevře HUD panel (prázdný)
+- `access = 'locked'` → záměrně uzamčeno rolí → zobrazí 🔒 → klik otevře **locked preview** ("🔒 Připravujeme pro tebe")
+
+### showPanel() — interní větvení
+
+`showPanel(node)` v `universe-panel.js` rozhoduje sama:
+- `node.access !== 'locked'` → normální HUD (baterie, killer, akce)
+- `node.access === 'locked'` → volá `showLockedPanel(node)` → zobrazí preview z `DEMO_PREVIEWS`
+
+**Anti-pattern:** nikdy neguardovat klik v `universe-core.js` na `access !== 'locked'` — zablokuje to locked preview zprávu. Správné místo pro větvení je uvnitř `showPanel()`.
 
 ### Kaskáda na parent uzly (worstLeaf)
 
