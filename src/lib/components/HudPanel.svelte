@@ -6,6 +6,7 @@
   import SourceCards from './hud/SourceCards.svelte';
   import SecondAction from './hud/SecondAction.svelte';
   import HealthUpload from './HealthUpload.svelte';
+  import { getTocConfig } from '../toc-config.js';
 
   let {
     data,
@@ -22,6 +23,7 @@
   } = $props();
 
   let showHealthUpload = $state(false);
+  let tocConfig = $derived(universe === 'toc' ? getTocConfig(data?.node_id ?? '') : null);
 
   function handleDocParsed(result) {
     showHealthUpload = false;
@@ -78,6 +80,9 @@
             dayType={data.day_type}
             universe={universe}
             userId={userId}
+            nodeId={data.node_id}
+            tocChips={tocConfig?.action?.chips ?? []}
+            tocActionLabel={tocConfig?.action?.label ?? 'ACTION'}
             onComplete={null}
           />
         {:else if agentLoading && !data.action}

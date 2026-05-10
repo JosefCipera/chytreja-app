@@ -1,5 +1,11 @@
 <script>
-  let { action, killer = null, verdict = null, dayType = 'STIMUL', onComplete = null, universe = 'longevity', userId = null } = $props();
+  let {
+    action, killer = null, verdict = null, dayType = 'STIMUL',
+    onComplete = null, universe = 'longevity', userId = null,
+    nodeId = null,
+    tocChips = [],           // [{ label, href }] — dynamic per TOC node
+    tocActionLabel = 'ACTION',
+  } = $props();
 
   // Determine action UI mode from type
   // timed → countdown timer
@@ -78,7 +84,7 @@
 </script>
 
 {#if universe === 'toc'}
-<!-- ── TOC ACTION: PLÁNOVÁNÍ ── -->
+<!-- ── TOC ACTION: dynamic per node ── -->
 <div class="rounded-lg hud-c4" style="
   background: rgba(6, 182, 212, 0.03);
   border: 1px solid rgba(255,255,255,0.07);
@@ -89,28 +95,26 @@
   <div class="px-4 pt-3 pb-3">
     <div class="hud-mono mb-3" style="letter-spacing: 0.04em; font-weight: 300;">
       <div class="flex items-center justify-between" style="font-size: 20px;">
-        <span style="color: #c8d4df;">ACTION: <span style="color: #94a3b8;">PLÁNOVÁNÍ</span></span>
+        <span style="color: #c8d4df;">ACTION: <span style="color: #94a3b8;">{tocActionLabel}</span></span>
         <span style="color: {statusColor};">[{status}]</span>
       </div>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;">
-      <a href="#"
-        style={chipStyle}
-        onclick={(e)=>{e.preventDefault();window.parent.postMessage({type:'chj:tool:open',url:`/app/toc-vyroba.html${userId?'?userId='+userId:''}`},'*')}}
-        onmouseenter={(e)=>{e.currentTarget.style.background='rgba(6,182,212,0.18)';e.currentTarget.style.borderColor='rgba(6,182,212,0.4)';e.currentTarget.style.transform='translateY(-1px)'}}
-        onmouseleave={(e)=>{e.currentTarget.style.background='rgba(255,255,255,0.06)';e.currentTarget.style.borderColor='rgba(255,255,255,0.12)';e.currentTarget.style.transform='none'}}>
-        Plán výroby
-      </a>
-      <a href="#" style={chipStyle}
-        onmouseenter={(e)=>{e.currentTarget.style.background='rgba(6,182,212,0.18)';e.currentTarget.style.borderColor='rgba(6,182,212,0.4)';e.currentTarget.style.transform='translateY(-1px)'}}
-        onmouseleave={(e)=>{e.currentTarget.style.background='rgba(255,255,255,0.06)';e.currentTarget.style.borderColor='rgba(255,255,255,0.12)';e.currentTarget.style.transform='none'}}>
-        Kapacitní plán
-      </a>
-      <a href="#" style={chipStyle}
-        onmouseenter={(e)=>{e.currentTarget.style.background='rgba(6,182,212,0.18)';e.currentTarget.style.borderColor='rgba(6,182,212,0.4)';e.currentTarget.style.transform='translateY(-1px)'}}
-        onmouseleave={(e)=>{e.currentTarget.style.background='rgba(255,255,255,0.06)';e.currentTarget.style.borderColor='rgba(255,255,255,0.12)';e.currentTarget.style.transform='none'}}>
-        Plán kooperací
-      </a>
+      {#each tocChips as chip}
+        <button
+          onclick={() => {
+            if (chip.href) {
+              const url = chip.href + (userId ? '?userId=' + userId : '');
+              window.parent?.postMessage({ type: 'chj:tool:open', url }, '*');
+            }
+          }}
+          style={chipStyle + 'font-family:inherit;'}
+          onmouseenter={(e)=>{e.currentTarget.style.background='rgba(6,182,212,0.18)';e.currentTarget.style.borderColor='rgba(6,182,212,0.4)';e.currentTarget.style.transform='translateY(-1px)'}}
+          onmouseleave={(e)=>{e.currentTarget.style.background='rgba(255,255,255,0.06)';e.currentTarget.style.borderColor='rgba(255,255,255,0.12)';e.currentTarget.style.transform='none'}}
+        >
+          {chip.label}
+        </button>
+      {/each}
     </div>
   </div>
 </div>
