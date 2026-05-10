@@ -337,7 +337,7 @@ export function renderUniverse(DATA, subset = null, forcedMainId = null) {
 
       const id = params.nodes[0];
       const node = findNodeById(DATA, id);
-      if (node && node.access !== 'locked') showPanel(node);
+      if (node) showPanel(node);
     }, 220);
   });
 
@@ -354,7 +354,7 @@ export function renderUniverse(DATA, subset = null, forcedMainId = null) {
     const id = params.nodes[0];
     const node = findNodeById(DATA, id);
     if (!node) return;
-    if (node.access === 'locked') return;  // locked nodes are not explorable
+    if (node.access === 'locked') return;  // locked nodes: single-click shows locked panel, double-click does nothing
     openSubUniverse(DATA, node);
   });
 
