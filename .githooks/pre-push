@@ -1,0 +1,20 @@
+#!/bin/sh
+# Syntax check core JS files before push
+# Install: git config core.hooksPath .githooks
+
+echo "🔍 Syntax check core JS..."
+
+FILES="app/js/universe/universe-init.js app/js/universe/universe-core.js api/hud-data-bulk.js"
+
+for f in $FILES; do
+  if [ -f "$f" ]; then
+    node --check "$f" 2>&1
+    if [ $? -ne 0 ]; then
+      echo "❌ Syntax error in $f — push blocked."
+      exit 1
+    fi
+  fi
+done
+
+echo "✅ Syntax OK — pushing."
+exit 0
