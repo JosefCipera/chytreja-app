@@ -47,6 +47,46 @@
         ]
     },
     {
+        "id": "prutok_toc",
+        "label": "Průtok (T)",
+        "icon": "📈",
+        "definition": "Průtok (Throughput) = rychlost, jakou systém vydělává peníze přes prodej. T = Tržby − Přímý materiál. Zvýšit T je priorita před snižováním nákladů.",
+        "parent": "finance_toc",
+        "color": "#22c55e",
+        "articles": [],
+        "media": []
+    },
+    {
+        "id": "zasoby_toc",
+        "label": "Zásoby (I)",
+        "icon": "🗄️",
+        "definition": "Zásoby (Inventory) = vázaný kapitál v materiálu, WIP a hotových výrobcích. Vysoké zásoby = skrytý náklad na tok.",
+        "parent": "finance_toc",
+        "color": "#22c55e",
+        "articles": [],
+        "media": []
+    },
+    {
+        "id": "naklady_toc",
+        "label": "Provozní náklady",
+        "icon": "💸",
+        "definition": "Provozní náklady (OE) = vše, co firma utratí za přeměnu zásob na průtok – mzdy, energie, režie. Snižovat OE má smysl jen pokud neohrozí T.",
+        "parent": "finance_toc",
+        "color": "#22c55e",
+        "articles": [],
+        "media": []
+    },
+    {
+        "id": "cashflow_toc",
+        "label": "Cash Flow",
+        "icon": "💵",
+        "definition": "Cash Flow = likvidita a schopnost firmy platit závazky včas. Zpoždění plateb a krátká splatnost jsou tichými omezujícími faktory průtoku.",
+        "parent": "finance_toc",
+        "color": "#22c55e",
+        "articles": [],
+        "media": []
+    },
+    {
         "id": "vyroba_toc",
         "label": "Výroba (DBR)",
         "icon": "🏭",
@@ -70,6 +110,56 @@
                 "url": "https://www.youtube.com/embed/2tFZlRXPGgY"
             }
         ]
+    },
+    {
+        "id": "kapacity_toc",
+        "label": "Kapacity",
+        "icon": "⚙️",
+        "definition": "Vytížení strojů a lidí určuje, kde vzniká úzké místo. Přetížené kapacity = zpožděné zakázky a vícenáklady.",
+        "parent": "vyroba_toc",
+        "color": "#f59e0b",
+        "articles": [],
+        "media": []
+    },
+    {
+        "id": "material_toc",
+        "label": "Materiál",
+        "icon": "📦",
+        "definition": "Chybějící nebo nekvalitní materiál zastavuje výrobu. Zásoby materiálu jsou buffer chránící tok zakázek.",
+        "parent": "vyroba_toc",
+        "color": "#f59e0b",
+        "articles": [],
+        "media": []
+    },
+    {
+        "id": "terminy_toc",
+        "label": "Termíny",
+        "icon": "📅",
+        "definition": "Plnění termínů zakázek je přímý ukazatel průtoku. Zpoždění = ztráta důvěry zákazníka i průtoku.",
+        "parent": "vyroba_toc",
+        "color": "#f59e0b",
+        "articles": [],
+        "media": []
+    },
+    {
+        "id": "kvalita_toc",
+        "label": "Kvalita",
+        "icon": "✅",
+        "definition": "Zmetky a reklamace spotřebovávají kapacitu bez průtoku. Kvalita v TOC = ochrana toku před ztrátami.",
+        "parent": "vyroba_toc",
+        "color": "#f59e0b",
+        "articles": [],
+        "media": []
+    },
+    {
+        "id": "opravy_toc",
+        "label": "Opravy a údržba",
+        "icon": "🔧",
+        "definition": "Neplánované odstávky jsou nejdražší formou ztráty průtoku. Preventivní údržba chrání kapacitu omezení.",
+        "parent": "vyroba_toc",
+        "color": "#f59e0b",
+        "articles": [],
+        "media": []
     },
     {
         "id": "ccpm",

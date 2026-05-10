@@ -21,8 +21,17 @@ const NODE_KILLERS = {
   // ── TOC uzly — OMEZENÍ místo killera ─────────────────
   toc:          { label: 'OMEZENÍ', description: 'Každý systém má jedno místo, které brzdí vše ostatní.' },
   finance_toc:  { label: 'OMEZENÍ', description: 'Firma vydělává tolik, kolik dovolí její nejslabší článek.' },
+  prutok_toc:   { label: 'OMEZENÍ', description: 'Klesající průtok ohrožuje celý systém.' },
+  zasoby_toc:   { label: 'OMEZENÍ', description: 'Vázaný kapitál snižuje dostupné cash.' },
+  naklady_toc:  { label: 'OMEZENÍ', description: 'Rostoucí OE bez růstu T = zhoršování zisku.' },
+  cashflow_toc: { label: 'OMEZENÍ', description: 'Špatný cash flow blokuje provoz i investice.' },
   vyroba_toc:   { label: 'OMEZENÍ', description: 'Linka jede jen tak rychle jako její nejpomalejší pracoviště.' },
-  ccpm:         { label: 'OMEZENÍ', description: 'Projekt sklouzne tam, kde chybí buffer a přebývají priority.' },
+  kapacity_toc: { label: 'OMEZENÍ', description: 'Přetížené kapacity blokují tok zakázek.' },
+  material_toc: { label: 'OMEZENÍ', description: 'Chybějící materiál zastavuje výrobu.' },
+  terminy_toc:  { label: 'OMEZENÍ', description: 'Nedodržení termínů = ztráta zákazníka i průtoku.' },
+  kvalita_toc:  { label: 'OMEZENÍ', description: 'Zmetky spotřebovávají kapacitu bez průtoku.' },
+  opravy_toc:   { label: 'OMEZENÍ', description: 'Neplánované odstávky jsou nejdražší ztrátou průtoku.' },
+  ccpm:         { label: 'OMEZENÍ', description: 'Multitasking ničí projekty rychleji než technické problémy.' },
   strategie_toc:{ label: 'OMEZENÍ', description: 'Strategie bez identifikovaného omezení je jen seznam přání.' },
   marketing_toc:{ label: 'OMEZENÍ', description: 'Poptávka bez průtoku je jen slogan, který firma nezvládne.' },
 };
