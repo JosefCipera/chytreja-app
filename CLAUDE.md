@@ -1,445 +1,233 @@
-# CLAUDE.md – CHJ (Chytré Já) v0.2.0
+# CLAUDE.md – CHJ (Chytré Já) v0.2.1
+
+> Instrukce pro Claude Code. Detailní dokumentace pro vývojáře → `HANDBOOK.md`.
+
+---
 
 ## Co je CHJ
 
-PWA (SaaS) aplikace – mobilní AI kouč pro dlouhověkost založený na Medicine 3.0 (Peter Attia, "Outlive"). Telefon je partner, který vede uživatele. Uživatel nemusí hledat, přemýšlet ani se ptát – appka mu říká co dělat a proč.
+PWA (SaaS) — mobilní AI kouč pro dlouhověkost (Medicine 3.0, Peter Attia "Outlive").
+Telefon vede uživatele. Uživatel nemusí hledat ani přemýšlet — appka říká co dělat a proč.
 
-Název: **Chytré Já** (CHJ)
-Jazyk: **mix** — systémové popisky (UI labels) anglicky, věcný obsah česky, tykání
-Tón: kombinace lidského kouče + systémového HUD terminálu
+**Název:** Chytré Já (CHJ) · **Jazyk:** UI labels anglicky, obsah česky, tykání
+**Tón:** lidský kouč + sci-fi HUD terminál
 
 ---
 
-## Architektura
-
-### Tři vrstvy
-
-1. **Klient (PWA, mobile first)** – vesmír uzlů (canvas) + Longevity HUD panel (Svelte) + hlas + notifikace
-2. **Orchestrátor (backend)** – CHJ Master Agent, rozhoduje co říct a koho zavolat
-3. **Skills + Agents + Tools** – deterministická logika, AI agenti, utility funkce
-
-### Stack
+## Stack (aktuální)
 
 | Vrstva | Technologie | Poznámka |
 |--------|-------------|----------|
-| **Frontend** | Svelte 4 + Vite | Komponenty, reaktivita |
-| **Styling** | Tailwind CSS 3 | Utility-first, HUD design tokens |
-| **Vesmír** | Canvas (vanilla JS) | Obalený ve Svelte wrapperu `<Universe>` |
-| **Backend** | Vercel serverless functions (Node.js, ESM) | |
-| **AI** | OpenAI GPT-4o-mini (plán: Claude Sonnet/Haiku) | |
+| **Frontend** | Vanilla JS + HTML/CSS | Žádný framework |
+| **Canvas** | vis.js network | Uzly jako planety |
+| **Backend** | Vercel serverless (Node.js, ESM) | |
+| **AI** | OpenAI GPT-4o-mini | Chat + verdikt |
+| **AI (parser)** | Claude Sonnet | Health Document Parser |
 | **DB** | Supabase (PostgreSQL) | |
 | **Auth** | Firebase | |
-| **TTS** | Browser Web Speech API (plán: ElevenLabs) | |
+| **TTS** | Web Speech API | Plán: ElevenLabs |
 
-### Svelte komponenty
+---
+
+## Adresářová struktura
 
 ```
-src/
-├── App.svelte                  ← hlavní layout
-├── lib/
-│   ├── components/
-│   │   ├── Universe.svelte     ← canvas wrapper (stávající logika)
-│   │   ├── HudPanel.svelte     ← hlavní HUD panel
-│   │   ├── hud/
-│   │   │   ├── NodeHeader.svelte    ← LONGEVITY NODE [TĚLO_v0.1] ✕
-│   │   │   ├── LifeBattery.svelte   ← baterie + REPAIR_RATE + CELL_VITALITY
-│   │   │   ├── KillerCard.svelte    ← KILLER: SRDCE + energy drain
-│   │   │   ├── ActionProtocol.svelte ← ACTION + timer/counter + Hotovo
-│   │   │   ├── SecondAction.svelte  ← Chceš jít dál? Ano/Ne + expand
-│   │   │   ├── SourceCards.svelte   ← SOURCE_VALIDATION karty
-│   │   │   └── TrendChart.svelte    ← sparkline s regresí
-│   │   ├── Splash.svelte
-│   │   └── ChatBar.svelte
-│   ├── stores/
-│   │   ├── universe.js         ← nodes, metrics, user data
-│   │   ├── mission.js          ← aktuální mise, streak, game loop
-│   │   └── user.js             ← auth, constraints, aspirace
-│   ├── skills/                 ← deterministická logika (bez AI)
-│   │   ├── kroky/
-│   │   │   ├── cviceni.js      ← cviky pro Tělo
-│   │   │   ├── metabol.js      ← metabolické akce
-│   │   │   └── prevence.js     ← prevence, spánek
-│   │   ├── verdikt/
-│   │   │   └── game-engine.js  ← verdikty + killer texty
-│   │   └── media/
-│   │       └── media-picker.js ← výběr zdrojů z DB
-│   ├── utils/
-│   │   ├── supabase.js
-│   │   ├── firebase.js
-│   │   └── api.js              ← fetch wrappery
-│   └── styles/
-│       └── hud.css             ← scan lines, glow, animace
+app/
+├── index.html
+├── js/universe/
+│   ├── universe-init.js    ← JÁDRO: načítání modelu, access, kaskáda stavů
+│   ├── universe-core.js    ← JÁDRO: canvas rendering, barvy, lock ikony
+│   ├── universe-panel.js   ← HUD panel (detail uzlu)
+│   ├── onboarding.js       ← onboardingové otázky + uložení
+│   ├── hud.js              ← HUD inicializace
+│   └── supabaseClient.js   ← anon key (pouze read)
+├── css/
+└── hud.html
+
+api/
+├── hud-data-bulk.js        ← JÁDRO: výpočet baterie, worstLeaf
+├── chat.js                 ← CHJ AI verdikt
+├── mission-complete.js     ← game loop
+├── mission-log.js          ← záznam kroků
+├── onboarding-save.js      ← uložení onboardingu (service_role)
+├── disciplines.js          ← disciplíny podle node
+└── tools/
+    └── parse.js            ← Health Document Parser (Claude Vision)
+
+data/
+├── index.json              ← seznam vesmírů
+└── universes/
+    ├── longevity/
+    │   ├── models/longevity.json
+    │   └── access/
+    │       ├── access-dekatlon.json   ← role access map
+    │       └── access-demo.json
+    └── toc/
+        └── models/toc.json
+
+migrations/                 ← SQL migrační skripty (spouštět ručně v Supabase)
+.githooks/
+└── pre-push               ← syntax check jádra před pushem
 ```
 
-### Prostředí
+---
+
+## JÁDRO vs OBSAH
+
+### ⚠️ JÁDRO — každá změna může shodit appku
+
+| Soubor | Co dělá |
+|--------|---------|
+| `app/js/universe/universe-init.js` | Načítání modelu, access model, kaskáda stavů |
+| `app/js/universe/universe-core.js` | Canvas rendering, barvy uzlů, lock ikony |
+| `api/hud-data-bulk.js` | Výpočet baterie, worstLeaf cascade |
+
+**Pravidlo:** před změnou jádra — napiš repro scénář. Po změně — ověř na `dev.iting.cz`.
+**Pre-push hook** automaticky kontroluje syntax těchto souborů.
+
+### ✅ OBSAH — bezpečná zóna
+
+| Soubor/složka | Co dělá |
+|---------------|---------|
+| `data/universes/*/access/*.json` | Kdo vidí co (role access maps) |
+| `app/js/universe/onboarding.js` | Onboardingové otázky |
+| `data/universes/*/models/*.json` | Struktura vesmíru |
+| `migrations/*.sql` | DB změny |
+
+---
+
+## Prostředí
 
 | Branch | URL | Účel |
 |--------|-----|------|
-| `production` | app.iting.cz | Produkce |
-| `test` | test.iting.cz | Testování |
 | `main` | dev.iting.cz | Vývoj |
+| `test` | test.iting.cz | Testování |
+| `production` | app.iting.cz | Produkce |
 | `demo` | demo.iting.cz | Demo |
 
-### Env proměnné
-
-- `OPENAI_API_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `AI_ENABLED`
-- Lokálně: `.env.local` + `dotenv` (nutný pro vercel dev na Windows)
+**Lokální vývoj:** appka vyžaduje Supabase + Firebase — nelze testovat bez backendu.
+Vždy testovat na `dev.iting.cz` po pushnutí.
 
 ---
 
-## UI Koncept: Longevity HUD
+## Datový model
 
-### Filosofie
+### Tabulky
 
-Dva režimy pohledu:
-1. **Vesmír** — mapa uzlů (planety na canvas), kliknutím otevři detail
-2. **HUD Panel** — detail uzlu ve stylu sci-fi/gaming HUD (cyber-med estetika)
+| Tabulka | Popis |
+|---------|-------|
+| `longevity_nodes` | Uzly vesmíru (id, label, parent, default_priority) |
+| `user_metrics` | Aktuální stav (user_id, node_id, current_index, state, universe) |
+| `node_state_history` | 30denní sparkline historie |
+| `mission_log` | Splněné kroky (user_id, node_id, date, action_type) |
+| `user_aspirations` | Uživatelův sen |
+| `aspiration_requirements` | Sen → required_level, importance_weight |
+| `user_constraints` | Zdravotní omezení |
+| `node_inputs` | Odpovědi z onboardingu (audit) |
 
-### HUD Panel — struktura (mobile stack)
+### Stav uzlu — single source of truth
 
 ```
-┌─────────────────────────────────────┐
-│ LONGEVITY NODE [TĚLO_v0.1]       ✕  │
-├─────────────────────────────────────┤
-│ LIFE-BATTERY                        │
-│ ████████░░░░  65% │ DOWN            │
-│                                     │
-│ REPAIR_RATE: 0.8x  CELL_VITALITY: 65% │
-├─────────────────────────────────────┤
-│ KILLER: SRDCE                       │
-│ ⚠ -8% ENERGY DRAIN                 │
-├─────────────────────────────────────┤
-│ ACTION: PLANK_60S [READY]           │
-│ 🏋️ Drž plank 60 sekund              │
-│ [▶ START]                           │
-│                                     │
-│ Chceš jít dál?  [Ano] [Ne]         │
-├─────────────────────────────────────┤
-│ SOURCE_VALIDATION                   │
-│ ┌──────────┐ ┌──────────┐          │
-│ │ MED_ID:104│ │ MED_ID:088│         │
-│ │ STUDY...  │ │ REVIEW... │         │
-│ │ [VERIFIED]│ │ [AUTH]    │         │
-│ └──────────┘ └──────────┘          │
-├─────────────────────────────────────┤
-│ [Zeptej se Chytrého já ____] 📤    │
-└─────────────────────────────────────┘
+current_index ≤ 40  → RED
+current_index ≤ 70  → YELLOW
+current_index > 70  → GREEN
+current_index = 0   → GRAY (žádná data)
+access = 'locked'   → GRAY + 🔒 (záměrně uzamčeno)
 ```
 
-### HUD Datový model (JSON)
+**GRAY ≠ LOCKED.** GRAY = bez dat. LOCKED = explicitně uzamčeno rolí.
+Lock ikona se kreslí pouze na `access === 'locked'`, ne na všechny GRAY uzly.
+
+### Parent kaskáda
+
+Parent uzel dostane barvu nejhoršího potomka (worstLeaf — kaskáda až na listy).
+
+---
+
+## Access model
+
+Každý vesmír má složku `access/` s JSON soubory per role.
+Soubor definuje které uzly jsou `full` / `locked` / `hidden`.
 
 ```json
-{
-  "node_id": "telo",
-  "node_label": "Tělo",
-  "node_version": "v0.1",
-  "life_battery": {
-    "percent": 65,
-    "trend": "down",
-    "trend_label": "DOWN",
-    "repair_rate": 0.8,
-    "cell_vitality": 65
-  },
-  "killer": {
-    "id": "kardio",
-    "label": "SRDCE",
-    "energy_drain": -8,
-    "description": "Srdce potřebuje pohyb."
-  },
-  "action": {
-    "id": "plank_60s",
-    "label": "Drž plank 60 sekund",
-    "icon": "🏋️",
-    "type": "timed",
-    "duration": 60,
-    "status": "READY",
-    "tier": 1
-  },
-  "second_action": {
-    "available": true,
-    "offer_text": "Můžeš to ještě posílit.",
-    "action": { "..." }
-  },
-  "sources": [
-    {
-      "med_id": 104,
-      "type": "STUDY",
-      "title": "Resistance Training and Cardiovascular Health",
-      "journal": "Nature Medicine",
-      "year": 2023,
-      "status": "VERIFIED",
-      "url": "https://..."
-    }
-  ],
-  "verdict": "Tělo ztrácí sílu."
-}
+[
+  { "id": "dlouhovekost", "access": "full", "label": "Vlastní label" },
+  { "id": "telo",         "access": "full" },
+  { "id": "mysl",         "access": "locked" }
+]
 ```
 
-### Estetika
-
-- **Tmavé pozadí**: #0f172a (slate-900)
-- **Neonové barvy**: zelená (#22c55e), žlutá (#eab308), červená (#ef4444), cyan (#06b6d4)
-- **Glassmorphism**: průhledné karty s blur + border
-- **Monospace font**: pro systémové popisky (KILLER, ACTION, STABLE)
-- **Sans-serif**: pro český obsah
-- **Animace**: pulse na baterii, glow na aktivní akci, scan line efekt
-
-### Tailwind HUD design tokens
-
-```js
-// tailwind.config.js
-module.exports = {
-  theme: {
-    extend: {
-      colors: {
-        hud: {
-          bg: '#0f172a',
-          panel: 'rgba(15, 23, 42, 0.85)',
-          border: 'rgba(6, 182, 212, 0.2)',
-          glow: '#06b6d4',
-          green: '#22c55e',
-          yellow: '#eab308',
-          red: '#ef4444',
-          cyan: '#06b6d4',
-          text: '#e2e8f0',
-          muted: '#94a3b8',
-          dim: '#64748b',
-        }
-      },
-      fontFamily: {
-        mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-      },
-      backdropBlur: {
-        hud: '12px',
-      },
-      boxShadow: {
-        'hud-glow': '0 0 15px rgba(6, 182, 212, 0.15)',
-        'hud-neon': '0 0 20px rgba(6, 182, 212, 0.3)',
-      }
-    }
-  }
-}
-```
+**Pravidla:**
+- Uzly **neuvedené** v souboru dostávají `defaultAccess` podle role
+- `dekatlon`, `demo`, `free` → `defaultAccess = 'locked'`
+- `longevity` → `defaultAccess = 'visible'`
+- Soubory jsou servírovány s `no-cache` hlavičkami (vercel.json)
+- Fetch probíhá s `cache: 'no-store'` — žádné inline duplikáty
 
 ---
 
-## Datový model (Supabase)
+## Role
 
-### Existující tabulky
+| Role | Vesmír | Přístup |
+|------|--------|---------|
+| `longevity` | Dlouhověkost | Plný přístup |
+| `dekatlon` | Dlouhověkost | Jen Tělo + 10 disciplín |
+| `demo` | Libovolný | Omezený náhled |
+| `free` | Libovolný | Základní přístup |
 
-- `longevity_nodes` – uzly vesmíru (id, label, parent, default_priority)
-- `user_metrics` – aktuální stav uzlu (user_id, node_id, current_index, state: GREEN/YELLOW/RED)
-- `node_state_history` – historie stavů + current_index pro sparkline trendy (30 dní)
-- `node_inputs` – odpovědi z onboardingu
-- `mission_log` – záznam splněných kroků (user_id, node_id, mission_id, date, action_type)
-- `aspiration_requirements` – sen → required_level, importance_weight
-- `user_aspirations` – user → aspiration_type
-- `user_constraints` – omezení uživatele (zdravotní, tělesné, demografické)
-- `longevity_articles`, `longevity_media`, `longevity_docs` – zdroje pro uzly
+### Dekaton — 10 disciplín (pod uzlem `telo`)
 
-### Views
-
-- `v_discipline_states` – agregovaný stav disciplín
-- `user_bottlenecks` – bottleneck_score ranking
-
-### Hlavní uzly
-
-| ID | Label | Popis |
-|----|-------|-------|
-| `dlouhovekost` | Hra o život | Hlavní uzel, celkový přehled |
-| `telo` | Tělo | Síla, svalová hmota, pohyblivost |
-| `mysl` | Mysl | Pozornost, paměť, emoční zdraví |
-| `vyziva` | Výživa | Strava, protein, energetická bilance |
-| `zdravi` | Zdraví | Prevence, odolnost, krevní markery |
-| `metabolicke` | Metabolismus | Metabolismus, inzulín, tělesná kompozice |
+| Uzel | Disciplína | Onboarding otázka |
+|------|-----------|-------------------|
+| `sila` | Síla | vynest_nakup, zvednout_vnouce, otevrit_zavarovacku |
+| `stabilita` | Stabilita | vstat_ze_zeme, balanc_jedna_noha |
+| `vo2max` | VO2max | vyjit_4_patra |
+| `kardio` | Kardio | (bez otázky — data z vo2max/vytrvalost) |
+| `mobilita` | Mobilita | kufr_do_police |
+| `vytrvalost` | Vytrvalost | rychla_chuze |
+| `rovnovaha` | Rovnováha | rovnovaha_zavrene_oci |
+| `plyometrie` | Plyometrie | skocit_dopadnout |
+| `dychani` | Dýchání | zadrzeni_dechu |
 
 ---
 
-## Semafor systém
+## Game Loop
 
-Každý uzel má stav: 🟢 GREEN / 🟡 YELLOW / 🔴 RED
+- **1 krok/den** = stabilizace (index beze změny)
+- **2 kroky/den** = zlepšení (+5 index)
+- **0 kroků/den** = pokles (−3 index další den)
+- Max 2 kroky/den na uzel, rolling 7denní okno
 
-**Index → State (single source of truth):**
-- ≤ 40 = RED
-- ≤ 70 = YELLOW
-- \> 70 = GREEN
+### Druhá akce
 
-**Parent uzly: barva = nejhorší dítě.**
+| Stav | Trend | Nabídka |
+|------|-------|---------|
+| RED | DOWN | Vždy |
+| YELLOW | STABLE | 50/50 |
+| GREEN | UP | "Dnes stačí." |
+| streak ≥ 3 | — | Boost offer |
 
 ---
 
-## Černí jezdci (Killers)
+## Killers (Černí jezdci)
 
-Čtyři smrtelné hrozby (Medicine 3.0):
-
-| Killer | HUD Label | Lidský popis |
-|--------|-----------|-------------|
+| Killer | HUD label | Oblast |
+|--------|-----------|--------|
 | Kardiovaskulární | SRDCE | srdce, pohyb |
-| Rakovina | IMUNITA | imunita, odolnost |
-| Neurodegenerace | MOZEK | myšlení, hlava |
+| Rakovina | IMUNITA | imunita |
+| Neurodegenerace | MOZEK | myšlení |
 | Metabolický syndrom | METABOLISMUS | rovnováha těla |
 
-CHJ NIKDY nepoužívá názvy nemocí. HUD zobrazuje `KILLER: SRDCE`, ne `KILLER: INFARKT`.
+**Nikdy nepoužívat názvy nemocí.** `KILLER: SRDCE`, ne `KILLER: INFARKT`.
 
 ---
 
-## Game Loop (Kroky)
-
-### Pravidla
-
-- **1 krok/den** = stabilizace (index se nezmění)
-- **2 kroky/den** = zlepšení (+5 index)
-- **0 kroků/den** = pokles (-3 index po neaktivním dni)
-- **Max 2 kroky/den** na uzel
-- Rolling 7denní okno (ne pondělní reset)
-
-### Druhá akce (smart offer)
-
-| Stav uzlu | Trend | Nabídka |
-|-----------|-------|---------|
-| 🔴 RED | DOWN | Vždy: "Můžeš to ještě posílit." |
-| 🟡 YELLOW | STABLE | 50/50 šance |
-| 🟢 GREEN | UP | "Držíš to. Dnes stačí." |
-| 🔥 streak ≥ 3 | — | Boost: "Jedeš dobře. Přidáš krok?" |
-
-Druhá akce = jiná mise ze STEJNÉHO uzlu. Ne z jiného.
-
-### Feedback (okamžitý)
-
-- Stabilizace: "✔ Hotovo. Držíš tempo."
-- Zlepšení: "📈 Posun! Jdeš nahoru."
-- Level up: "🎉 Level up! Viditelné zlepšení."
-
----
-
-## Skills / Agents / Tools — Architektura
-
-### Tři typy
-
-| Typ | Kde běží | AI? | Příklad |
-|-----|----------|-----|---------|
-| **Skills** | Frontend (JS) | Ne | Výběr cviku podle tier+constraints |
-| **Agents** | Backend (API → Claude) | Ano | Personalizovaný verdikt, nutriční analýza |
-| **Tools** | Backend (API) | Různé | Food Camera (Vision), TTS, DB lookup |
-
-### Adresářová struktura (v0.2.0+)
-
-```
-src/
-├── lib/
-│   ├── skills/                 ← deterministická logika (frontend)
-│   │   ├── kroky/
-│   │   │   ├── cviceni.js      ← cviky pro Tělo
-│   │   │   ├── metabol.js      ← metabolické akce
-│   │   │   └── prevence.js     ← prevence, spánek
-│   │   ├── verdikt/
-│   │   │   └── game-engine.js  ← verdict + killer texty
-│   │   └── media/
-│   │       └── media-picker.js ← výběr zdrojů z DB
-│
-api/
-├── agents/                     ← AI agenti (plán v0.3.0+)
-│   ├── master.js               ← CHJ orchestrátor (Claude Sonnet)
-│   ├── telo.js                 ← specializovaný agent Tělo
-│   ├── vyziva.js               ← specializovaný agent Výživa
-│   ├── mysl.js                 ← specializovaný agent Mysl
-│   ├── zdravi.js               ← specializovaný agent Zdraví
-│   └── metabol.js              ← specializovaný agent Metabolismus
-├── tools/                      ← utility pro agenty (plán v0.4.0+)
-│   ├── food-camera.js          ← foto → popis jídla (Vision API)
-│   ├── calorie-calc.js         ← popis → kalorie/makra
-│   ├── trend-engine.js         ← predikce (lineární regrese)
-│   └── media-lookup.js         ← DB lookup zdrojů
-├── chat.js                     ← CHJ AI (aktuálně GPT-4o-mini)
-├── mission-complete.js         ← game loop
-├── mission-log.js              ← záznam kroků
-└── disciplines.js              ← disciplíny
-```
-
-### Vertikální architektura (cíl v0.5.0+)
-
-```
-┌─────────────────────────────────┐
-│       CHJ Master Agent          │
-│   (orchestrátor, Claude Sonnet) │
-│   — rozhoduje CO říct a komu    │
-│     zavolat                     │
-└───────────┬─────────────────────┘
-            │
-  ┌─────────┼─────────────┐
-  │         │             │
-  ▼         ▼             ▼
-┌──────┐ ┌──────┐   ┌──────────┐
-│Agents│ │Tools │   │ Sensors  │
-└──────┘ └──────┘   └──────────┘
-
-AGENTS (Claude Haiku — rychlý, levný):
-├── Tělo Agent      — cviky, progrese, zranění
-├── Výživa Agent    — jídlo, kalorie, makra
-├── Mysl Agent      — mindfulness, spánek, stres
-├── Zdraví Agent    — prevence, markery, léky
-└── Metabol Agent   — glukóza, půst, kompozice
-
-TOOLS (API/funkce):
-├── 📷 Food Camera  — foto jídla → popis (Vision)
-├── 🔢 Calorie Calc — popis → kalorie/makra
-├── 📚 Media Lookup — zdroje podle uzlu z DB
-├── 🔊 TTS          — ElevenLabs hlas
-├── 📊 Trend Engine — sparkline + predikce
-└── 🔔 Push Engine  — proaktivní notifikace
-
-SENSORS (vstup od uživatele):
-├── Onboarding      — první data
-├── Kroky (mise)    — denní akce
-├── Foto jídel      — strava tracker
-├── Ruční vstup     — váha, spánek, nálada
-└── Wearables       — (budoucnost) Apple Health
-```
-
-### Příklad flow — focení jídla (v0.4.0+)
-
-```
-Uživatel → vyfotí oběd
-  → Food Camera tool → "kuřecí prsa, rýže, salát"
-  → Calorie Calc → 550 kcal, 45g protein
-  → Výživa Agent → "Protein ok. Přidej zeleninu."
-  → CHJ Master → uloží, updatne index výživy
-  → HUD Panel → sparkline se posune
-```
-
----
-
-## Bottleneck systém
-
-Bottleneck = nejhorší uzel brzdící dlouhověkost.
-
-Výpočet: barva × jezdec × aspirace
-- RED + smrtelný jezdec + ohrožuje sen = nejvyšší priorita
-- View `user_bottlenecks` existuje (aspiration_weight zatím null)
-
----
-
-## Aspirace (Sen)
-
-Uživatel si vybere sen (běžky v 85, Ironman, hrát s vnouky...).
-- **Hlavní uzel**: aspiraci IGNOROVAT (celkový přehled)
-- **Podřízený uzel**: aspiraci ZOHLEDNIT ("bez síly se na běžky nepostavíš")
-
----
-
-## CHJ AI — Pravidla
-
-### Striktní pravidla
+## CHJ AI — pravidla
 
 - JEDNA VĚTA, max 15 slov
-- Žádné názvy nemocí (srdce, ne infarkt)
-- Žádné akční kroky v textu (akce jsou v ACTION sekci)
-- Čeština, tykání, přímočaré
-
-### Zakázaná slova
-
-"musíš", "okamžitě", "je důležité", "měl bys", "hrozí", "ohrožuje", "samostatnost", "závislý", "pomoc druhých", "špatně", "trpí", "Dobrá zpráva je"
+- Čeština, tykání, žádné diagnózy
+- Žádné akční kroky v textu (akce patří do ACTION sekce)
+- **Zakázaná slova:** musíš, okamžitě, je důležité, měl bys, hrozí, ohrožuje, samostatnost, závislý, pomoc druhých, špatně, trpí
 
 ---
 
@@ -448,160 +236,42 @@ Uživatel si vybere sen (běžky v 85, Ironman, hrát s vnouky...).
 | Endpoint | Metoda | Popis |
 |----------|--------|-------|
 | `/api/chat` | POST | CHJ AI verdikt |
+| `/api/hud-data-bulk` | POST | HUD data (baterie, killer, akce) |
 | `/api/mission-log` | POST | Uložit splněný krok |
-| `/api/mission-complete` | POST | Game loop (stabilize/improve/decline) |
+| `/api/mission-complete` | POST | Game loop výpočet |
 | `/api/disciplines` | GET | Disciplíny podle node |
-| `/api/tools/health-parse` | POST | Analýza zdravotních dokumentů (PDF) |
+| `/api/onboarding-save` | POST | Uložit onboarding (service_role) |
+| `/api/tools/parse` | POST | Health Document Parser |
 
 ---
 
-## Health Document Parser (Tool)
+## Migrace
 
-Univerzální nástroj pro analýzu zdravotních dokumentů. Typ: **Tool** (backend API, Claude Vision).
+SQL skripty v `/migrations/`. Spouštět **ručně v Supabase SQL Editoru**.
+Každý soubor má komentář co dělá a proč je bezpečný.
 
-### Podporované dokumenty
-
-| Dokument | Co extrahuje | Cílový uzel |
-|----------|-------------|-------------|
-| Krevní výsledky | markery (CRP, LDL, HbA1c, Vitamin D...) | `zdravi`, `metabolicke`, `telo` |
-| Zpráva od lékaře | diagnózy, chronická onemocnění, léky | `user_constraints` |
-| EKG report | srdeční rytmus, anomálie | `zdravi` (SRDCE killer) |
-| DEXA scan | % tuku, svalová hmota, kostní denzita | `telo` |
-| Spánková studie | AHI, fáze spánku | `mysl` |
-| Apple Health XML | kroky, HRV, VO2max, spánek (průběžně) | `telo`, `mysl` |
-
-### Vstupy
-
-```
-POST /api/tools/health-parse
-Multipart form:
-  - file      PDF nebo obrázek (JPG/PNG skenu)
-  - userId    string
-  - date?     ISO date (volitelné, Claude odhadne z dokumentu)
-```
-
-### Výstupy — tři vrstvy
-
-```json
-{
-  "doc_type": "blood_test | ekg | doctor_report | dexa | sleep_study | other",
-  "doc_date": "2026-01-10",
-
-  "metrics": [
-    {
-      "node_id": "zdravi",
-      "index_delta": -12,
-      "confidence": "high | medium | low",
-      "reason": "CRP 8.2 mg/L (ref <5)"
-    }
-  ],
-
-  "constraints": [
-    {
-      "type": "respiratory | cardiac | musculoskeletal | metabolic",
-      "description": "Prodělal zápal plic, 2024-03",
-      "active": false,
-      "affects_skills": ["kardio_vysoke_intenzity"]
-    }
-  ],
-
-  "markers": [
-    { "name": "CRP", "value": 8.2, "unit": "mg/L", "status": "HIGH" }
-  ],
-
-  "flags": ["CONSULT_DOCTOR"]
-}
-```
-
-### Co se uloží kam
-
-| Výstup | Tabulka |
-|--------|---------|
-| `metrics.index_delta` | `user_metrics` (aplikován na current_index) |
-| snapshot | `node_state_history` (source: 'health_doc') |
-| `constraints` | `user_constraints` |
-| celý JSON | `node_inputs` (audit + budoucí re-parse) |
-
-### Pravidla
-
-- Tool **nestanoví diagnózu** — jen extrahuje a mapuje
-- `flags: CONSULT_DOCTOR` = upozornění pro uživatele, ne blokace
-- Zdravotní data dávají **reálný baseline** — game loop (akce) ho posouvá dál normálně
-- Nový dokument = re-kalibrace kotvy sparkline, ne reset hry
-- Starší dokumenty (zápal plic apod.) ukládáme s `active: false` — historický kontext pro constraints
-
-### Priorita implementace
-
-```
-1. Krevní výsledky     ← první, máme testovací data
-2. Zpráva od lékaře    ← high value, minimální práce navíc
-3. EKG report          ← specifický vstup pro SRDCE killer
-4. Apple Health XML    ← průběžná data, vyšší technická složitost
-5. DEXA scan           ← zlatý standard pro Tělo, pokud uživatel má
-```
-
-### Plán: Robustní pipeline pro různé formáty (TODO v0.4+)
-
-Dokumenty přicházejí v různých formátech — current `health-parse.js` posílá vše jako jeden blob.
-Potřebujeme dvoustupňový pipeline:
-
-**Stage 1 — Format Router (deterministický Node.js):**
-- PDF s textem → `pdf-parse` → čistý text → Claude (levnější, přesnější než Vision)
-- PDF skenovaný → render stránky na obrázek → Claude Vision
-- Foto (JPG/PNG) → přímo Claude Vision
-- Word/RTF → `mammoth.js` → čistý text → Claude
-
-**Stage 2 — Claude Sonnet (ne Haiku):**
-- Zprávy od lékaře jsou komplexní a v češtině — Haiku dělá chyby (viz "zápalební stav")
-- System prompt s českými referenčními hodnotami a medicínskými zkratkami
-- Výstup: markers, constraints, node_updates (stejná struktura jako dnes)
-
-**Stage 3 — Validace (deterministická):**
-- Křížová kontrola extrahovaných hodnot s biologicky možnými rozsahy
-- Porovnání s předchozími výsledky uživatele (trend, ne izolovaná hodnota)
-
-**Priorita detekce formátu:**
-```
-pdf-parse → pokud text > 100 znaků → textový PDF
-         → jinak → skenovaný → Vision
-image/*  → Vision
-.doc/.docx → mammoth.js → text
-```
+Před spuštěním: přečti komentář, ověř že se dotýká jen správných řádků.
 
 ---
 
-## Strategie externích zdravotních dat
+## Konvence kódu
 
-### Pozice CHJ vs. Claude (AI)
+- ESM moduly (`"type": "module"`)
+- Frontend v `/app/`, API v `/api/`, data v `/data/`
+- Supabase anon key pouze v `app/js/universe/supabaseClient.js` (read-only)
+- Všechny DB zápisy přes API endpointy (service_role zůstává na serveru)
+- `dotenv.config({ path: '.env.local' })` na začátku každé serverless funkce
+- Kód a komentáře: angličtina · UI labels: angličtina · Obsah: čeština
 
-| Vlastnost | Claude (chat) | CHJ (HUD) |
-|-----------|--------------|-----------|
-| Přístup | Musíš se ptát | Vidíš hned |
-| Emoce | Textový výpis | Vizuální HUD, blikající baterie |
-| Pravidla | Obecná AI | Medicine 3.0 hierarchie |
-| Akce | Poradí ti | Spustí timer, zapíše splnění |
-| Persistence | Žádná | Game loop, sparkline, streak |
+---
 
-**Claude = backend procesor. CHJ = operační systém.**
+## Závazky pro Claude
 
-### Realistické zdroje dat (v0.4.0+)
-
-1. **PDF upload (krev, EKG, zpráva od lékaře)** — uživatel nahraje → `/api/tools/health-parse` zavolá Claude API → JSON → CHJ aktualizuje metriky. **Žádný mezikrok pro uživatele.**
-
-2. **Apple Health XML** — uživatel exportuje z iPhone → nahraje → preprocessing na serveru (jen posledních 30 dní) → Claude extrahuje klíčové metriky → HUD.
-
-3. **Foto jídla** — Food Camera tool, Vision API (v0.4.0).
-
-4. **Claude Connectors / HealthEx** — zatím US-only beta, nespoléhat. Sledovat.
-
-### Anti-pattern (nevhodné)
-
-- Uživatel generuje JSON v claude.ai a ručně vkládá do CHJ — nerealistické, nevhodné pro produkt.
-- Přímý iframe claude.ai uvnitř CHJ — nemá smysl, jiný UX.
-
-### Klíčový princip
-
-CHJ volá Claude API **transparentně na pozadí** — uživatel nahraje dokument jedním klikem a CHJ se samo postará o zbytek. Claude je neviditelný engine, HUD je viditelný výstup.
+1. **Jádro se nemění bez repro scénáře** — popsat co se testuje před změnou
+2. **Jedna změna = jeden commit** — ne pět oprav najednou
+3. **Po změně jádra — update HANDBOOK.md** ve stejném commitu
+4. **Nikdy nevytvářet inline duplikát** toho co existuje v JSON/DB
+5. **Syntax error v core = opravit, commitnout, pushovat ihned** — nezanechat broken stav
 
 ---
 
@@ -609,42 +279,10 @@ CHJ volá Claude API **transparentně na pozadí** — uživatel nahraje dokumen
 
 | Verze | Obsah | Status |
 |-------|-------|--------|
-| **v0.1.0** | Semafor, kroky, baterie, sparkline, onboarding (vanilla JS) | ✅ Hotovo |
-| **v0.2.0** | Longevity HUD panel, Svelte + Tailwind, zdroje v panelu | 🔄 Aktivní |
-| **v0.3.0** | Claude Haiku pro výběr kroků (místo deterministického) | 📋 |
-| **v0.4.0** | Foto jídel → kalorie (Vision API) + Health Document Parser | 📋 |
-| **v0.5.0** | CHJ Master Agent + MCP orchestrace | 📋 |
-| **v0.6.0** | Push notifikace + ranní briefing | 📋 |
-| **v1.0.0** | SaaS launch — platební brána + landing | 📋 |
-
----
-
-## Konvence kódu
-
-- ESM moduly (`"type": "module"`)
-- Svelte komponenty v `src/lib/components/`
-- Svelte stores v `src/lib/stores/`
-- Skills (deterministická logika) v `src/lib/skills/`
-- Vercel serverless v `/api/`, frontend v `/src/`
-- Supabase klient UVNITŘ handler funkce (ne top level)
-- `dotenv` na začátku serverless functions
-- Systémové UI labels: angličtina (KILLER, ACTION, LIFE-BATTERY)
-- Obsah: čeština, tykání
-- Kód a komentáře: angličtina
-- Git: develop na `main`, test na `test`, produkce na `production`
-- Max 2 barvy v mission kartě: bílá (#e2e8f0) + modrá (#60a5fa)
-- HUD komponenty: neonové barvy podle stavu (green/yellow/red/cyan)
-
----
-
-## Důležité poznámky
-
-- `dotenv` nutný pro lokální vývoj (Windows)
-- GPT-4o-mini špatně dodržuje instrukce → šablony místo zákazů
-- State VŽDY derivován z indexu (≤40=RED, ≤70=YELLOW, >70=GREEN)
-- Bottleneck se posílá jako string z frontendu
-- Nepracujeme s čísly v UI — jen barvy, HUD metriky, přehled
-- Claude Code smí vytvářet nové tabulky v Supabase
-- Splash screen zobrazuje verzi při startu
-- v0.1.0 = vanilla JS (zachováno v git tagu), v0.2.0+ = Svelte
-- **Preview verifikace**: appka vyžaduje Supabase + Firebase backend → lokální dev server ji neuplatní → vždy přeskočit `<verification_workflow>`, testovat na `dev.iting.cz`
+| v0.1.0 | Semafor, kroky, baterie, onboarding (vanilla JS) | ✅ |
+| v0.2.0 | HUD panel, vícero vesmírů, Dekaton | ✅ |
+| v0.2.1 | Dekaton 10 disciplín, access model cleanup | ✅ `git tag v0.2.1-dekatlon-working` |
+| v0.3.0 | Claude Haiku pro výběr kroků | 📋 |
+| v0.4.0 | Foto jídel + Health Document Parser | 📋 |
+| v0.5.0 | CHJ Master Agent + MCP | 📋 |
+| v1.0.0 | SaaS launch | 📋 |
