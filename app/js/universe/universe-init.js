@@ -590,6 +590,7 @@ async function loadModel(modelName) {
 
   // ========================================
   // B) JSON MODE (TOC, BMC, ...)
+  // Node structure from JSON, metrics from Supabase user_metrics
   // ========================================
   try {
     const url = modelConfig.modelFile;
@@ -600,6 +601,35 @@ async function loadModel(modelName) {
 
     const data = await res.json();
     console.log(`✅ JSON data: ${data.length} nodes`);
+
+    // Load metrics from Supabase (same user_metrics table, filtered by universe)
+    try {
+      const userId = await getCurrentUserId();
+      const { data: metrics } = await window.supabaseClient
+        .from('user_metrics')
+        .select('node_id, current_index, state')
+        .eq('user_id', userId)
+        .eq('universe', modelName);
+
+      if (metrics && metrics.length > 0) {
+        const metricsMap = new Map(metrics.map(m => [m.node_id, m]));
+        console.log(`✅ JSON mode metrics: ${metrics.length} rows for universe=${modelName}`);
+
+        data.forEach(node => {
+          const metric = metricsMap.get(node.id);
+          const idx = metric?.current_index ?? 0;
+          node.current_index = idx;
+          node.state = (!metric || idx === 0) ? 'GRAY' : idx <= 40 ? 'RED' : idx <= 70 ? 'YELLOW' : 'GREEN';
+        });
+
+        // Cascade parent colors from worst child
+        applyTocCascade(data, metricsMap);
+      } else {
+        console.log(`ℹ️ No metrics for universe=${modelName} — all nodes GRAY`);
+      }
+    } catch (metricsErr) {
+      console.warn("⚠️ Could not load metrics for JSON universe:", metricsErr);
+    }
 
     return data;
 
