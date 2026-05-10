@@ -1,13 +1,17 @@
 -- TOC demo data — seeds metric values for all existing users
--- Bezpečné: ON CONFLICT DO UPDATE, lze spustit opakovaně
+-- Bezpečné: DELETE + INSERT, lze spustit opakovaně
 --
 -- Výroba (DBR):  RED  — termíny 35, kapacity 65 YELLOW, materiál 82 GREEN
--- Finance (TA):  YELLOW — průtok 68, zásoby 55, náklady 72 GREEN, cashflow 45 RED
+-- Finance (TA):  YELLOW — průtok 68, zásoby 55, náklady 72 GREEN, cashflow 45
 -- Projekty:      YELLOW — 60
 -- Strategie:     GREEN  — 75
 -- Marketing:     YELLOW — 58
 -- Kvalita/Opravy: GRAY (no row) — záměrně bez dat
 
+-- 1. Vymaž staré TOC záznamy pro všechny uživatele
+DELETE FROM user_metrics WHERE universe = 'toc';
+
+-- 2. Vlož čerstvá data
 INSERT INTO user_metrics (user_id, node_id, current_index, state, universe)
 SELECT u.user_id, v.node_id, v.idx,
   CASE WHEN v.idx <= 40 THEN 'RED' WHEN v.idx <= 70 THEN 'YELLOW' ELSE 'GREEN' END,
@@ -19,7 +23,7 @@ CROSS JOIN (VALUES
   ('material_toc',  82),   -- GREEN:  zásobování funguje
   ('terminy_toc',   35),   -- RED:    termíny hoří
   ('vyroba_toc',    35),   -- RED cascade: nejhorší dítě = termíny
-  -- kvalita_toc — GRAY (bez dat, zobrazí se šedá)
+  -- kvalita_toc — GRAY (bez dat)
   -- opravy_toc  — GRAY (bez dat)
 
   -- ── Finance a sub-uzly ─────────────────────────────
@@ -36,8 +40,4 @@ CROSS JOIN (VALUES
 
   -- ── Hlavní uzel — worst child ─────────────────────
   ('toc',           35)    -- RED: nejhorší = výroba (termíny 35)
-) v(node_id, idx)
-ON CONFLICT (user_id, node_id) DO UPDATE
-  SET current_index = EXCLUDED.current_index,
-      state         = EXCLUDED.state,
-      universe      = EXCLUDED.universe;
+) v(node_id, idx);
