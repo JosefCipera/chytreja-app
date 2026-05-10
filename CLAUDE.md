@@ -80,7 +80,7 @@ migrations/                 ← SQL migrační skripty (spouštět ručně v Sup
 |--------|---------|
 | `app/js/universe/universe-init.js` | Načítání modelu, access model, kaskáda stavů |
 | `app/js/universe/universe-core.js` | Canvas rendering, barvy uzlů, lock ikony |
-| `api/hud-data-bulk.js` | Výpočet baterie, worstLeaf cascade |
+| `api/hud-data-bulk.js` | Výpočet baterie, worstLeaf kaskáda |
 
 **Pravidlo:** před změnou jádra — napiš repro scénář. Po změně — ověř na `dev.iting.cz`.
 **Pre-push hook** automaticky kontroluje syntax těchto souborů.
