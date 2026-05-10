@@ -226,7 +226,7 @@ chytreja-app/
 
 ## 5. Datový model
 
-### Tabulky Supabase
+### Aktivní tabulky
 
 | Tabulka | Klíčové sloupce | Popis |
 |---------|----------------|-------|
@@ -236,8 +236,36 @@ chytreja-app/
 | `mission_log` | user_id, node_id, mission_id, date, action_type | Splněné kroky |
 | `user_aspirations` | user_id, aspiration_type | Uživatelský sen |
 | `aspiration_requirements` | aspiration_type, node_id, required_level, importance_weight | Co sen vyžaduje |
+| `user_decathlon` | user_id, goal_key, label, target_age, priority, pillar_weights | Osobní Dekaton cíle s vahami disciplín |
 | `user_constraints` | user_id, type, description, active | Zdravotní omezení |
 | `node_inputs` | user_id, node_id, source, raw_data | Audit vstupů |
+| `user_profiles` | user_id, ... | Uživatelský profil |
+| `ai_conversations` | user_id, node_id, messages | Historie AI chatu |
+| `onboarding_questions` | id, node_id, question, type | Onboardingové otázky (v DB, zatím nevyužito — základ pro admin panel) |
+| `toc_hlavni_plan` | — | TOC hlavní plán (KPI) |
+| `toc_zakazky` | — | TOC zakázky |
+| `toc_parametry` | — | TOC parametry |
+| `toc_pracoviste` | — | TOC pracoviště |
+
+### Tabulky pro v0.4+ (Health Parser)
+
+| Tabulka | Popis |
+|---------|-------|
+| `user_lab_results` | Výsledky krevních testů (179 řádků) |
+| `user_medications` | Léky uživatele |
+| `user_supplements` | Suplementy |
+| `user_fitness_tests` | Výsledky fitness testů |
+| `user_biometrics` | Biometrická data |
+| `vitality_score_history` | Historie vitality skóre |
+
+### Legacy tabulky (nepsat, pouze číst)
+
+| Tabulka | Popis |
+|---------|-------|
+| `nodes` | Starší verze longevity_nodes — bohatší obsah (definition, icon) |
+| `universe_nodes` | Duplikát nodes — zachováno kvůli FK |
+| `knowledge_nodes` | Duplikát nodes |
+| `universes` | Zachováno kvůli FK na universe_nodes |
 
 ### Views
 
@@ -245,6 +273,7 @@ chytreja-app/
 |------|-------|
 | `v_discipline_states` | Agregovaný stav disciplín pod Tělem |
 | `user_bottlenecks` | Ranking uzlů podle bottleneck skóre |
+| `v_vitality_dashboard` | Vitality dashboard přehled |
 
 ### Bezpečnost (Security model)
 
