@@ -451,6 +451,12 @@
             <iframe id="hud-iframe" src="" style="width:100%; height:100%; border:none;" allow="microphone"></iframe>
         </div>
     </div>
+
+    <!-- Tool Overlay — full-screen iframe for TOC tool pages (toc-vyroba, etc.) -->
+    <div id="tool-overlay" style="display:none; position:fixed; inset:0; z-index:6000; background:#080e1a;">
+        <iframe id="tool-iframe" src="" style="width:100%; height:100%; border:none;"></iframe>
+    </div>
+
     <script>
         // ── HUD node data cache — prefetched on login ──────────────────────────
         window._hudCache   = {};   // { nodeId: data }
@@ -599,8 +605,23 @@
             };
             window.speechSynthesis.speak(utt);
         }
+        window.openToolOverlay = function(url) {
+            const overlay = document.getElementById('tool-overlay');
+            const iframe  = document.getElementById('tool-iframe');
+            iframe.src = url;
+            overlay.style.display = 'block';
+        };
+        window.closeToolOverlay = function() {
+            const overlay = document.getElementById('tool-overlay');
+            const iframe  = document.getElementById('tool-iframe');
+            overlay.style.display = 'none';
+            iframe.src = '';
+        };
+
         window.addEventListener('message', function(e) {
             if (e.data === 'chj:hud:close') window.closeHudOverlay();
+            if (e.data === 'chj:tool:close') window.closeToolOverlay();
+            if (e.data?.type === 'chj:tool:open') window.openToolOverlay(e.data.url);
             if (e.data?.type === 'chj:navigate') window.location.href = e.data.url;
             if (e.data?.type === 'chj:source:open') openSourceViewer(e.data.source);
             if (e.data?.type === 'chj:tts:speak') _runTopTTS(e.data.text, e.data.lang);
