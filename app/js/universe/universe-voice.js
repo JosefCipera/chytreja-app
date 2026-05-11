@@ -127,6 +127,10 @@ function _startRecognition(attempt) {
           isListening = false;
           setMicState('idle');
           _startRecognition(attempt + 1).then(resolve);
+        } else if (e.error === 'audio-capture') {
+          // Všechny pokusy selhaly — mikrofon nedostupný
+          _showMicToast('Mikrofon není dostupný. Zavři Teams nebo jinou aplikaci, která ho používá.');
+          done(null);
         } else {
           done(null);
         }
@@ -484,6 +488,21 @@ export function setHeaderMicSpeaking(active) {
     headerBtn.dataset.state = 'idle';
     if (icon) icon.textContent = '🎤';
   }
+}
+
+// Chybový toast pro mic problémy (déle viditelný)
+function _showMicToast(message) {
+  const toast = document.createElement('div');
+  toast.style.cssText = `
+    position:fixed; top:70px; left:50%; transform:translateX(-50%);
+    background:rgba(127,29,29,0.95); color:#fecaca;
+    padding:10px 20px; border-radius:10px; font-size:13px;
+    z-index:9999; pointer-events:none; text-align:center; max-width:320px;
+    border:1px solid rgba(239,68,68,0.4);
+  `;
+  toast.textContent = message;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 5000);
 }
 
 // Zobrazí hlasovou odpověď do otevřeného panelu CHJ, jinak toast
