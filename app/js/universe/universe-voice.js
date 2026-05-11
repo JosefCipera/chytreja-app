@@ -86,7 +86,11 @@ export function listenOnce() {
       resolve(null);
       return;
     }
-    if (isListening) { resolve(null); return; }
+    // Reset zaseknutého stavu (předchozí selhaní bez onend)
+    if (isListening) {
+      recognition?.abort();
+      isListening = false;
+    }
 
     recognition = buildRecognition();
     isListening  = true;
