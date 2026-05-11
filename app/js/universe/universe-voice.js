@@ -79,6 +79,10 @@ function buildRecognition() {
 
 // Vrátí Promise<string> – transkript nebo null při chybě
 export function listenOnce() {
+  return _startRecognition(0);
+}
+
+function _startRecognition(attempt) {
   return new Promise((resolve) => {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) {
@@ -86,44 +90,57 @@ export function listenOnce() {
       resolve(null);
       return;
     }
-    // Reset zaseknutého stavu (předchozí selhaní bez onend)
+    // Reset zaseknutého stavu
     if (isListening) {
-      recognition?.abort();
+      try { recognition?.abort(); } catch (_) {}
       isListening = false;
     }
 
-    recognition = buildRecognition();
-    isListening  = true;
-    setMicState('listening');
+    // Krátká pauza aby audio systém uvolnil device (prevence audio-capture chyby)
+    setTimeout(() => {
+      recognition = buildRecognition();
+      isListening  = true;
+      setMicState('listening');
 
-    // Guard: Promise se splní jen jednou (onresult NEBO onend/onerror)
-    let settled = false;
-    const done = (val) => {
-      if (settled) return;
-      settled = true;
-      isListening = false;
-      setMicState('idle');
-      resolve(val);
-    };
+      let settled = false;
+      const done = (val) => {
+        if (settled) return;
+        settled = true;
+        isListening = false;
+        setMicState('idle');
+        resolve(val);
+      };
 
-    recognition.onresult = (e) => {
-      const text = e.results[0]?.[0]?.transcript || '';
-      console.log('🎤 STT:', text);
-      done(text.trim());
-    };
+      recognition.onresult = (e) => {
+        const text = e.results[0]?.[0]?.transcript || '';
+        console.log('🎤 STT:', text);
+        done(text.trim());
+      };
 
-    recognition.onerror = (e) => {
-      console.warn('STT error:', e.error);
-      if (e.error === 'not-allowed') aiSpeak('Povol přístup k mikrofonu.');
-      done(null);
-    };
+      recognition.onerror = (e) => {
+        console.warn('STT error:', e.error, '(pokus', attempt + 1, ')');
+        if (e.error === 'not-allowed') {
+          aiSpeak('Povol přístup k mikrofonu v prohlížeči.');
+          done(null);
+        } else if (e.error === 'audio-capture' && attempt < 2) {
+          // Audio device ještě není volný — retry po 300 ms
+          isListening = false;
+          setMicState('idle');
+          _startRecognition(attempt + 1).then(resolve);
+        } else {
+          done(null);
+        }
+      };
 
-    recognition.onend = () => {
-      // Zajistí resolve i pokud onresult/onerror nenastal (prázdný výsledek, timeout)
-      done(null);
-    };
+      recognition.onend = () => done(null);
 
-    recognition.start();
+      try {
+        recognition.start();
+      } catch (err) {
+        console.warn('recognition.start() threw:', err);
+        done(null);
+      }
+    }, attempt === 0 ? 80 : 350);   // první pokus: 80 ms, retry: 350 ms
   });
 }
 
