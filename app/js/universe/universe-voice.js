@@ -417,28 +417,33 @@ function setMicState(state) {
     }
   }
 
-  // Header mic (#header-mic-btn) – vlnky obarveny přes innerHTML span
-  const headerBtn = document.getElementById('header-mic-btn');
-  if (headerBtn) {
-    headerBtn.dataset.state = state;
-    const icon = headerBtn.querySelector('.header-mic-icon');
-    if (icon) {
-      switch (state) {
-        case 'listening':
-          // zelené vlnky dovnitř: )) 🎤 ((
-          icon.innerHTML = '<span style="color:#22c55e;font-weight:700">))</span> 🎤 <span style="color:#22c55e;font-weight:700">((</span>';
-          break;
-        case 'thinking':
-          icon.textContent = '💭';
-          break;
-        case 'speaking':
-          // modré vlnky ven: (( 🔊 ))
-          icon.innerHTML = '<span style="color:#60a5fa;font-weight:700">((</span> 🔊 <span style="color:#60a5fa;font-weight:700">))</span>';
-          break;
-        default:
-          icon.textContent = '🎤';
-          break;
-      }
+  // CMD mic (#cmd-mic-btn) – hlasový příkaz, aktivní stavy
+  const cmdBtn = document.getElementById('cmd-mic-btn');
+  if (cmdBtn) {
+    cmdBtn.dataset.state = state;
+    const icon  = document.getElementById('cmd-mic-icon');
+    const label = document.getElementById('cmd-mic-label');
+    switch (state) {
+      case 'listening':
+        if (icon)  icon.textContent  = '🎙️';
+        if (label) label.textContent = 'SLYŠÍM';
+        cmdBtn.title = 'Poslouchám…';
+        break;
+      case 'thinking':
+        if (icon)  icon.textContent  = '💭';
+        if (label) label.textContent = 'MYSLÍM';
+        cmdBtn.title = 'Zpracovávám…';
+        break;
+      case 'speaking':
+        if (icon)  icon.textContent  = '🔊';
+        if (label) label.textContent = 'MLUVÍM';
+        cmdBtn.title = 'Mluvím…';
+        break;
+      default:
+        if (icon)  icon.textContent  = '🎤';
+        if (label) label.textContent = 'CMD';
+        cmdBtn.title = 'Hlasový příkaz';
+        break;
     }
   }
 }

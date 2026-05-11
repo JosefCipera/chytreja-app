@@ -278,7 +278,8 @@ async function warmAgentCache() {
   initHeaderControls();
   initUserDataPanel();
   initVoiceButton();
-  initHeaderMic();
+  initCmdMic();
+  // initHeaderMic() removed — header-mic-btn is TTS indicator only, wired via setHeaderMicSpeaking()
   writeDailySnapshot();   // snapshot stavů uzlů → sparkline trend
 
   // ── Agent warm-up — show loader on Universe, open panel freely ────────
@@ -339,15 +340,32 @@ async function handleMicClick() {
     window.speechSynthesis.cancel();
     return;
   }
+  const text = await listenOnce();
+  if (text) await handleVoiceInput(text);
+}
+
+// ── Hlasový příkaz (CMD mic) ─────────────────────────────────
+async function handleCmdMicClick() {
+  if (window.speechSynthesis?.speaking) {
+    window.speechSynthesis.cancel();
+    return;
+  }
   // TTS cue — nejdříve promluv, pak teprve spusť mikrofon
   const alreadyGreeted = localStorage.getItem('chj_last_greeting') === new Date().toDateString();
   if (!alreadyGreeted) {
-    await proactiveGreeting();   // zdraví + "Řekni co chceš zobrazit."
+    await proactiveGreeting();
   } else {
     await aiSpeakPromise('Poslouchám.');
   }
   const text = await listenOnce();
   if (text) await handleVoiceInput(text);
+}
+
+function initCmdMic() {
+  const btn = document.getElementById('cmd-mic-btn');
+  if (!btn) return;
+  btn.addEventListener('click', handleCmdMicClick);
+  btn.addEventListener('touchend', (e) => { e.preventDefault(); handleCmdMicClick(); });
 }
 
 function initVoiceButton() {
