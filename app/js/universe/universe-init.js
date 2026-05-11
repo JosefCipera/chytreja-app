@@ -10,7 +10,7 @@ const ORBIT_ZONES = [
 import { renderUniverse, getViewState, updateMetricsAndRedraw } from "./universe-core.js";
 import { showPanel } from "./universe-panel.js";
 import { initUserDataPanel } from "./user-data-panel.js?v=20260426a";
-import { listenOnce, handleVoiceInput, proactiveGreeting } from "./universe-voice.js";
+import { listenOnce, handleVoiceInput, proactiveGreeting, aiSpeakPromise } from "./universe-voice.js";
 import { requestCHJPermission, checkAndRemind } from "./notifications.js";
 import { initHUD, hideHUD, showHUD } from "./hud.js?v=20260319a";
 
@@ -902,6 +902,14 @@ function initHeaderControls() {
   const headerMicBtn = document.getElementById('header-mic-btn');
   if (headerMicBtn) {
     headerMicBtn.addEventListener('click', async () => {
+      const alreadyGreeted = localStorage.getItem('chj_last_greeting') === new Date().toDateString();
+      if (!alreadyGreeted) {
+        // První klik dne — pozdrav, pak poslouchej
+        await proactiveGreeting();
+      } else {
+        // Opakovaný klik — krátký cue
+        await aiSpeakPromise('Poslouchám.');
+      }
       const text = await listenOnce();
       if (text) await handleVoiceInput(text);
     });

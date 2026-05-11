@@ -26,6 +26,23 @@ export function aiSpeak(text) {
   window.speechSynthesis.speak(msg);
 }
 
+// Vrátí Promise která se splní po skončení TTS (onend/onerror)
+export function aiSpeakPromise(text) {
+  return new Promise((resolve) => {
+    if (!window.speechSynthesis) { resolve(); return; }
+    window.speechSynthesis.cancel();
+    const msg = new SpeechSynthesisUtterance(text);
+    msg.lang = 'cs-CZ'; msg.rate = 1.05; msg.pitch = 1.1;
+    const voices = speechSynthesis.getVoices();
+    const czVoice = voices.find(v => /cs[-_]CZ/i.test(v.lang)) || voices.find(v => /czech/i.test(v.lang));
+    if (czVoice) msg.voice = czVoice;
+    msg.onstart = () => setMicState('speaking');
+    msg.onend   = () => { setMicState('idle'); resolve(); };
+    msg.onerror = () => { setMicState('idle'); resolve(); };
+    window.speechSynthesis.speak(msg);
+  });
+}
+
 // Počkej na načtení hlasů (asynchronní v Chrome)
 export function aiSpeakWhenReady(text) {
   const voices = speechSynthesis.getVoices();
@@ -352,29 +369,34 @@ function getOrCreateTimerOverlay() {
 
 // ── Proaktivní pozdrav ────────────────────────────────────────
 // Zavolej po první interakci uživatele (ne automaticky – browser blokuje)
+// Vrátí Promise — splní se až po skončení pozdravu (nebo ihned pokud dnes už proběhl)
 export function proactiveGreeting() {
   const today     = new Date().toDateString();
   const lastGreet = localStorage.getItem('chj_last_greeting');
-  if (lastGreet === today) return;   // dnes už pozdravil
+  if (lastGreet === today) return Promise.resolve();   // dnes už pozdravil
 
   localStorage.setItem('chj_last_greeting', today);
 
-  // Najdi stav hlavního uzlu
   const mainNode = window.MAIN_UNIVERSE_DATA?.find(n => n.id === 'dlouhovekost');
   const state    = mainNode?.state || 'YELLOW';
   const hour     = new Date().getHours();
-
   const timeGreet = hour < 12 ? 'Dobré ráno' : hour < 18 ? 'Dobrý den' : 'Dobrý večer';
 
   const greetings = {
-    GREEN:  `${timeGreet}. Tvoje baterie svítí zeleně, dobrá práce.`,
-    YELLOW: `${timeGreet}. Máš prostor zlepšit se — podívej se na svůj stav.`,
-    RED:    `${timeGreet}. Dnes je dobrý den začít změnu.`,
+    GREEN:  `${timeGreet}. Tvoje baterie svítí zeleně. Řekni co chceš zobrazit.`,
+    YELLOW: `${timeGreet}. Řekni mi co chceš zobrazit.`,
+    RED:    `${timeGreet}. Jsem tady. Řekni mi co chceš zobrazit.`,
   };
 
   const text = greetings[state] || greetings.YELLOW;
-  // Krátká prodleva aby se prohlížeč stihl inicializovat
-  setTimeout(() => aiSpeakWhenReady(text), 800);
+  return new Promise(resolve => {
+    const voices = speechSynthesis.getVoices();
+    if (voices.length > 0) {
+      aiSpeakPromise(text).then(resolve);
+    } else {
+      speechSynthesis.addEventListener('voiceschanged', () => aiSpeakPromise(text).then(resolve), { once: true });
+    }
+  });
 }
 
 
