@@ -898,6 +898,15 @@ function initHeaderControls() {
     await loadAndRenderModel(newModel, role);
   });
 
+  // ── Mic button — header ──────────────────────────────────────
+  const headerMicBtn = document.getElementById('header-mic-btn');
+  if (headerMicBtn) {
+    headerMicBtn.addEventListener('click', async () => {
+      const text = await listenOnce();
+      if (text) await handleVoiceInput(text);
+    });
+  }
+
   let clickCount = 0;
   let clickTimer = null;
 
