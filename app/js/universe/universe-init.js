@@ -333,19 +333,18 @@ async function writeDailySnapshot() {
 // VOICE BUTTON – mic tlačítka (floor + header)
 // =====================================================
 
-// Sdílený flag – pozdrav se přehraje jen jednou bez ohledu na to, které mic stlačíš
-let _voiceGreeted = false;
-
 async function handleMicClick() {
   // Klik na mic zruší případné probíhající TTS
   if (window.speechSynthesis?.speaking) {
     window.speechSynthesis.cancel();
     return;
   }
-  if (!_voiceGreeted) {
-    _voiceGreeted = true;
-    // proactiveGreeting() disabled — panel TTS handles all voice output
-    // Pokračuje dál – ihned spustí mic, nečeká na druhý klik
+  // TTS cue — nejdříve promluv, pak teprve spusť mikrofon
+  const alreadyGreeted = localStorage.getItem('chj_last_greeting') === new Date().toDateString();
+  if (!alreadyGreeted) {
+    await proactiveGreeting();   // zdraví + "Řekni co chceš zobrazit."
+  } else {
+    await aiSpeakPromise('Poslouchám.');
   }
   const text = await listenOnce();
   if (text) await handleVoiceInput(text);
@@ -898,22 +897,7 @@ function initHeaderControls() {
     await loadAndRenderModel(newModel, role);
   });
 
-  // ── Mic button — header ──────────────────────────────────────
-  const headerMicBtn = document.getElementById('header-mic-btn');
-  if (headerMicBtn) {
-    headerMicBtn.addEventListener('click', async () => {
-      const alreadyGreeted = localStorage.getItem('chj_last_greeting') === new Date().toDateString();
-      if (!alreadyGreeted) {
-        // První klik dne — pozdrav, pak poslouchej
-        await proactiveGreeting();
-      } else {
-        // Opakovaný klik — krátký cue
-        await aiSpeakPromise('Poslouchám.');
-      }
-      const text = await listenOnce();
-      if (text) await handleVoiceInput(text);
-    });
-  }
+  // header-mic-btn is wired via initHeaderMic() → handleMicClick()
 
   let clickCount = 0;
   let clickTimer = null;
