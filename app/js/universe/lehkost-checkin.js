@@ -39,8 +39,18 @@ export function showCheckinModal(userId, onComplete) {
       // Ulož BODY FLOW do window pro HUD
       if (json.body_flow) window.LH_BODY_FLOW = json.body_flow;
 
-      _closeModal(modal);
-      onComplete?.(json.body_flow);
+      // Zobraz potvrzení před zavřením
+      const score = json.body_flow?.score ?? '–';
+      const killer = json.body_flow?.top_killer?.label ?? null;
+      const actionsEl = modal.querySelector('.lh-modal__actions');
+      actionsEl.innerHTML = `
+        <div class="lh-success">
+          <span class="lh-success__icon">✓</span>
+          <span class="lh-success__text">Uloženo · BODY FLOW <strong>${score}%</strong>${killer ? `<br><span class="lh-success__killer">↑ ${killer}</span>` : ''}</span>
+        </div>
+      `;
+      setTimeout(() => { _closeModal(modal); onComplete?.(json.body_flow); }, 1800);
+
     } catch (err) {
       console.error('Checkin error:', err);
       btn.disabled = false;
@@ -216,6 +226,14 @@ function _buildModal() {
       .lh-btn--primary { background: #f59e0b; color: #0f172a; font-weight: 700; }
       .lh-btn--primary:hover { background: #fbbf24; }
       .lh-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+      .lh-success { display: flex; align-items: center; gap: 12px; width: 100%;
+                    background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.3);
+                    border-radius: 10px; padding: 12px 16px; }
+      .lh-success__icon { font-size: 20px; color: #22c55e; }
+      .lh-success__text { color: #e2e8f0; font-size: 14px; line-height: 1.5; }
+      .lh-success__text strong { color: #22c55e; }
+      .lh-success__killer { font-size: 11px; color: #f59e0b; font-family: monospace;
+                             letter-spacing: 1px; text-transform: uppercase; }
     `;
     document.head.appendChild(s);
   }
