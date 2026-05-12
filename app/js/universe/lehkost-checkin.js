@@ -5,7 +5,8 @@
 export function showCheckinModal(userId, onComplete) {
   // Nezobrazuj pokud dnes už proběhl
   const today = new Date().toISOString().slice(0, 10);
-  if (localStorage.getItem('lh_checkin_date') === today) {
+  const lsKey = `lh_checkin_date_${userId}`;
+  if (localStorage.getItem(lsKey) === today) {
     onComplete?.();
     return;
   }
@@ -33,7 +34,7 @@ export function showCheckinModal(userId, onComplete) {
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Chyba');
 
-      localStorage.setItem('lh_checkin_date', today);
+      localStorage.setItem(lsKey, today);
 
       // Ulož BODY FLOW do window pro HUD
       if (json.body_flow) window.LH_BODY_FLOW = json.body_flow;
