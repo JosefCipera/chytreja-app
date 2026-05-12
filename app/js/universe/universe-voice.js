@@ -274,13 +274,17 @@ async function callVoiceApi(text) {
   }
 }
 
-// Pomocná funkce: otevře panel pro uzel podle ID
+// Pomocná funkce: přiblíží uzel na canvas + otevře HUD panel
 async function _openNodeById(nodeId) {
   const node = window.MAIN_UNIVERSE_DATA?.find(n => n.id === nodeId);
   if (!node) return false;
   const { focusNode } = await import('./universe-core.js');
   playWhoosh();
   focusNode(nodeId);
+  // Krátká pauza aby animace canvas proběhla, pak otevři panel
+  setTimeout(() => {
+    if (typeof window.showPanel === 'function') window.showPanel(node);
+  }, 400);
   return true;
 }
 
