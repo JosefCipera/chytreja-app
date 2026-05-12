@@ -274,17 +274,38 @@ async function callVoiceApi(text) {
   }
 }
 
-// Pomocná funkce: přiblíží uzel na canvas + otevře HUD panel (= stejné jako klik)
+// Pomocná funkce: otevře uzel hlasem = stejné jako klik
+//   - 1. úroveň (Tělo, Výživa…): jen HUD, canvas beze změny
+//   - 2. úroveň (Kardio…): přepni canvas na podsíť rodiče (bez zoom), pak HUD
 async function _openNodeById(nodeId) {
-  const node = window.MAIN_UNIVERSE_DATA?.find(n => n.id === nodeId);
+  const DATA = window.MAIN_UNIVERSE_DATA || [];
+  const node = DATA.find(n => n.id === nodeId);
   if (!node) return false;
-  const [{ focusNode }, { showPanel }] = await Promise.all([
+
+  const [{ getViewState, openSubUniverse }, { showPanel }] = await Promise.all([
     import('./universe-core.js'),
     import('./universe-panel.js'),
   ]);
+
+  const ROOT = 'dlouhovekost';
+  const isFirstLevel = !node.parent || node.parent === ROOT;
+
   playWhoosh();
-  focusNode(nodeId);
-  showPanel(node);
+
+  if (isFirstLevel) {
+    // Jen otevři HUD, canvas nechej být
+    showPanel(node);
+  } else {
+    // Přepni canvas na podsíť rodiče (pokud ještě nejsme uvnitř)
+    const { centerId } = getViewState();
+    if (centerId !== node.parent) {
+      const parentNode = DATA.find(n => n.id === node.parent);
+      if (parentNode) openSubUniverse(DATA, parentNode);
+    }
+    // Malá pauza aby se canvas překreslil, pak otevři HUD
+    setTimeout(() => showPanel(node), 350);
+  }
+
   return true;
 }
 

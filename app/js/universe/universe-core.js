@@ -439,7 +439,7 @@ function findNodeById(DATA, id) {
 }
 
 // === Podsíť ===
-function openSubUniverse(DATA, centerNode) {
+export function openSubUniverse(DATA, centerNode) {
   const children = DATA.filter(n => n.parent === centerNode.id);
   if (children.length === 0) return;
 
