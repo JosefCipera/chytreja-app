@@ -288,17 +288,16 @@ async function _openNodeById(nodeId) {
 export async function handleVoiceInput(text) {
   if (!text) return;
 
-  // ── Okamžitá klient-side detekce uzlu (bez API) ──────────
+  // ── Klient-side detekce uzlu (bez API) ──────────────────
   const localNodeId = _tryShowNode(text);
   if (localNodeId) {
-    console.log('🎯 Local SHOW_NODE:', localNodeId);
     await _openNodeById(localNodeId);
     return;
   }
 
-  setMicState('thinking');
-  const result = await callVoiceApi(text);
+  // API není funkční — tiše ignoruj neznámé příkazy
   setMicState('idle');
+  return;
 
   console.log('🧠 Voice intent:', result);
 
