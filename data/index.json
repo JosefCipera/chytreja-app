@@ -14,6 +14,12 @@
             "label": "BMC",
             "useSupabase": false,
             "modelFile": "../data/universes/bmc/models/bmc.json"
+        },
+        "lehkost": {
+            "label": "Hra o lehkost",
+            "useSupabase": true,
+            "universe": "lehkost",
+            "modelFile": "../data/universes/lehkost/models/lehkost.json"
         }
     }
 }

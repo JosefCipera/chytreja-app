@@ -903,6 +903,17 @@ function initHeaderControls() {
 
     const role = localStorage.getItem("userRole") || "demo";
     await loadAndRenderModel(newModel, role);
+
+    // Hra o lehkost: zobraz ranní check-in pokud dnes ještě neproběhl
+    if (newModel === 'lehkost') {
+      const userId = window.firebaseAuth?.currentUser?.uid;
+      if (userId) {
+        const { showCheckinModal } = await import('./lehkost-checkin.js');
+        showCheckinModal(userId, (bodyFlow) => {
+          if (bodyFlow) console.log('💪 BODY FLOW:', bodyFlow.score);
+        });
+      }
+    }
   });
 
   // header-mic-btn is wired via initHeaderMic() → handleMicClick()
