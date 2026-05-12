@@ -12,7 +12,7 @@
 ">
   <div class="flex items-start justify-between gap-3">
     <h2 class="hud-mono leading-tight" style="font-size: 11px; letter-spacing: 0.18em; color: #94a3b8;">
-      {universe === 'toc' ? 'FLOW NODE' : 'LONGEVITY NODE'}
+      {universe === 'toc' ? 'FLOW NODE' : universe === 'lehkost' ? 'LEHKOST NODE' : 'LONGEVITY NODE'}
     </h2>
     <button
       onclick={onClose}
