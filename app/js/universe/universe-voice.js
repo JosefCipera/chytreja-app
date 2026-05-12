@@ -277,10 +277,10 @@ async function callVoiceApi(text) {
 // Pomocná funkce: otevře panel pro uzel podle ID
 async function _openNodeById(nodeId) {
   const node = window.MAIN_UNIVERSE_DATA?.find(n => n.id === nodeId);
-  if (!node) { aiSpeakWhenReady('Tento uzel jsem nenašel.'); return false; }
-  const { showPanel } = await import('./universe-panel.js');
+  if (!node) return false;
+  const { focusNode } = await import('./universe-core.js');
   playWhoosh();
-  await showPanel(node);
+  focusNode(nodeId);
   return true;
 }
 

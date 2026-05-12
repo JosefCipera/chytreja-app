@@ -76,6 +76,14 @@ export function getViewState() {
   return { centerId: currentCenter, nodes: [...lastRenderedNodes] };
 }
 
+// Zvýrazní uzel na canvasu a vystředí na něj (pro hlasové příkazy)
+export function focusNode(nodeId) {
+  if (!network) return false;
+  network.selectNodes([nodeId]);
+  network.focus(nodeId, { scale: 1.4, animation: { duration: 500, easingFunction: 'easeInOutQuad' } });
+  return true;
+}
+
 // Update metrics in-place + force redraw — no network destroy/recreate
 export function updateMetricsAndRedraw(metricsMap) {
   if (!network || !lastRenderedNodes.length) return;

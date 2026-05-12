@@ -346,20 +346,7 @@ async function handleMicClick() {
 
 // ── Hlasový příkaz (CMD mic) ─────────────────────────────────
 async function handleCmdMicClick() {
-  // Pokud TTS mluví — zastav
-  if (window.speechSynthesis?.speaking) {
-    window.speechSynthesis.cancel();
-    await new Promise(r => setTimeout(r, 200));
-  }
-  // TTS cue — nejdřív promluv, pak teprve spusť mikrofon
-  const alreadyGreeted = localStorage.getItem('chj_last_greeting') === new Date().toDateString();
-  if (!alreadyGreeted) {
-    await proactiveGreeting();
-  } else {
-    await aiSpeakPromise('Poslouchám.');
-  }
-  // Pauza po TTS — dáme audio systému čas přepnout výstup→vstup
-  await new Promise(r => setTimeout(r, 300));
+  if (window.speechSynthesis?.speaking) window.speechSynthesis.cancel();
   const text = await listenOnce();
   if (text) await handleVoiceInput(text);
 }
