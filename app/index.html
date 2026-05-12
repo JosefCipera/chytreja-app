@@ -48,6 +48,20 @@
 
                 const emailEl = document.querySelector('.email');
                 if (emailEl) emailEl.textContent = email;
+
+                // Lehkost check-in: zobraz modal pokud dnes ještě neproběhl pro tohoto uživatele
+                const currentModel = localStorage.getItem('currentModel');
+                if (currentModel === 'lehkost') {
+                    const today = new Date().toISOString().slice(0, 10);
+                    const lsKey = `lh_checkin_date_${user.uid}`;
+                    if (localStorage.getItem(lsKey) !== today) {
+                        import('./js/universe/lehkost-checkin.js').then(({ showCheckinModal }) => {
+                            showCheckinModal(user.uid, (bf) => {
+                                if (bf) console.log('💪 BODY FLOW:', bf.score);
+                            });
+                        });
+                    }
+                }
             }
         });
 
