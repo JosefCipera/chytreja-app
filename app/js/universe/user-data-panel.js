@@ -468,7 +468,7 @@ function bindCheckInEvents() {
 
     setStatus('chk-status', 'saving');
     try {
-      const res = await fetch('/api/readiness', {
+      const res = await fetch('/api/user?action=readiness', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

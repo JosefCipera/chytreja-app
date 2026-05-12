@@ -25,7 +25,7 @@ export function showCheckinModal(userId, onComplete) {
     btn.textContent = 'Ukládám…';
 
     try {
-      const res = await fetch('/api/lehkost?action=checkin', {
+      const res = await fetch('/api/user?action=checkin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId, ...data }),

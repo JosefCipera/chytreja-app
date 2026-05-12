@@ -721,7 +721,7 @@ window.upgradeToLongevity = async function () {
   if (!uid || uid === 'demo-user-123') return;
 
   // Server-side write — anon key cannot UPSERT (RLS blocks it)
-  const profileRes = await fetch('/api/user-profile', {
+  const profileRes = await fetch('/api/user?action=profile', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ userId: uid, primaryGoal: 'longevity' }),

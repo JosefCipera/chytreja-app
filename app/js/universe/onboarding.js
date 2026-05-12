@@ -514,7 +514,7 @@ async function saveOnboarding() {
       nodeId, state, currentIndex: nodeIndexMap[nodeId] ?? 0,
     }));
 
-    const saveRes = await fetch('/api/onboarding-save', {
+    const saveRes = await fetch('/api/user?action=onboarding', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId, nodes: allNodeEntries, primaryGoal }),
