@@ -275,6 +275,19 @@ Před spuštěním: přečti komentář, ověř že se dotýká jen správných 
 
 ---
 
+## Hlasové příkazy (STT) — stav k v0.2.x
+
+- **Aktuální řešení**: Browser `SpeechRecognition` (Web Speech API) — funguje, bez backendu
+- **Flow**: CMD mic → `listenOnce()` → `_tryShowNode()` (client-side matching) → `_openNodeById()`
+- **`_openNodeById` logika**:
+  - 1. úroveň (Tělo, Výživa…): jen `showPanel(node)`, canvas beze změny
+  - 2. úroveň (Kardio…): `openSubUniverse(parent)` bez zoom → `showPanel(node)`
+- **Bez TTS cue**: `handleCmdMicClick` nevolá „Poslouchám" před poslechem (blokuje mikrofon)
+- **Whisper STT** (`/api/voice`): zkoušeno, nefungovalo na Vercel Hobby — odloženo na pozdější verzi
+- **Vercel Hobby limit**: max 12 serverless functions — `snapshot-nodes.js` sloučen do `user.js?action=snapshot`
+
+---
+
 ## Verzování
 
 | Verze | Obsah | Status |
@@ -283,6 +296,6 @@ Před spuštěním: přečti komentář, ověř že se dotýká jen správných 
 | v0.2.0 | HUD panel, vícero vesmírů, Dekaton | ✅ |
 | v0.2.1 | Dekaton 10 disciplín, access model cleanup | ✅ `git tag v0.2.1-dekatlon-working` |
 | v0.3.0 | Claude Haiku pro výběr kroků | 📋 |
-| v0.4.0 | Foto jídel + Health Document Parser | 📋 |
+| v0.4.0 | Foto jídel + Health Document Parser + Whisper STT | 📋 |
 | v0.5.0 | CHJ Master Agent + MCP | 📋 |
 | v1.0.0 | SaaS launch | 📋 |
