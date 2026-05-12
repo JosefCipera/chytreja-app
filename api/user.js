@@ -147,12 +147,26 @@ async function handleCheckin(req, res) {
   if (error) return res.status(500).json({ error: error.message });
 
   const bf = await computeBodyFlow(userId, db);
-  await db.from('user_metrics').upsert({
-    user_id: userId, node_id: 'lh_main', universe: 'lehkost',
-    current_index: bf.score,
-    state: bf.score <= 40 ? 'RED' : bf.score <= 70 ? 'YELLOW' : 'GREEN',
-    updated_at: new Date().toISOString(),
-  }, { onConflict: 'user_id,node_id,universe' });
+
+  // lh_vyziva: binge=true→nižší, null→50
+  const vyzivaIdx = binge === true ? 38 : binge === false ? 62 : 50;
+  // lh_pohyb: high→80, medium→55, low→30, null→50
+  const pohybIdx  = movement_level === 'high' ? 80 : movement_level === 'medium' ? 55 : movement_level === 'low' ? 30 : 50;
+  // lh_regenerace: sleep ≥8→80, ≥7→65, ≥6→48, <6→30, null→50
+  const regenIdx  = sleep_hours == null ? 50 : parseFloat(sleep_hours) >= 8 ? 80 : parseFloat(sleep_hours) >= 7 ? 65 : parseFloat(sleep_hours) >= 6 ? 48 : 30;
+  // lh_mysl: stress 1-2→75, 3→55, 4-5→35, null→50
+  const myslIdx   = stress == null ? 50 : stress <= 2 ? 75 : stress === 3 ? 55 : 35;
+
+  const toState = i => i <= 40 ? 'RED' : i <= 70 ? 'YELLOW' : 'GREEN';
+  const now = new Date().toISOString();
+
+  await db.from('user_metrics').upsert([
+    { user_id: userId, node_id: 'lh_main',       universe: 'lehkost', current_index: bf.score,  state: toState(bf.score),  updated_at: now },
+    { user_id: userId, node_id: 'lh_vyziva',     universe: 'lehkost', current_index: vyzivaIdx, state: toState(vyzivaIdx), updated_at: now },
+    { user_id: userId, node_id: 'lh_pohyb',      universe: 'lehkost', current_index: pohybIdx,  state: toState(pohybIdx),  updated_at: now },
+    { user_id: userId, node_id: 'lh_regenerace', universe: 'lehkost', current_index: regenIdx,  state: toState(regenIdx),  updated_at: now },
+    { user_id: userId, node_id: 'lh_mysl',       universe: 'lehkost', current_index: myslIdx,   state: toState(myslIdx),   updated_at: now },
+  ], { onConflict: 'user_id,node_id,universe' });
 
   return res.json({ ok: true, body_flow: bf });
 }
