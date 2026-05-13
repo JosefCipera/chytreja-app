@@ -1,25 +1,25 @@
 {
     "universe": {
-        "toc": {
-            "label": "TOC",
-            "useSupabase": false,
-            "modelFile": "../data/universes/toc/models/toc.json"
-        },
         "longevity": {
             "label": "Dlouhověkost",
             "useSupabase": true,
             "modelFile": "../data/universes/longevity/models/longevity.json"
-        },
-        "bmc": {
-            "label": "BMC",
-            "useSupabase": false,
-            "modelFile": "../data/universes/bmc/models/bmc.json"
         },
         "lehkost": {
             "label": "Hra o lehkost",
             "useSupabase": true,
             "universe": "lehkost",
             "modelFile": "../data/universes/lehkost/models/lehkost.json"
+        },
+        "toc": {
+            "label": "TOC",
+            "useSupabase": false,
+            "modelFile": "../data/universes/toc/models/toc.json"
+        },
+        "bmc": {
+            "label": "BMC",
+            "useSupabase": false,
+            "modelFile": "../data/universes/bmc/models/bmc.json"
         }
     }
 }

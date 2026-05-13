@@ -57,7 +57,17 @@
                     if (localStorage.getItem(lsKey) !== today) {
                         import('./js/universe/lehkost-checkin.js').then(({ showCheckinModal }) => {
                             showCheckinModal(user.uid, (bf) => {
-                                if (bf) console.log('💪 BODY FLOW:', bf.score);
+                                if (!bf) return;
+                                console.log('💪 BODY FLOW:', bf.score);
+                                // Invaliduj HUD cache pro lh_ uzly a re-render canvas
+                                const LH_IDS = ['lh_main','lh_vyziva','lh_pohyb','lh_mysl','lh_regenerace'];
+                                LH_IDS.forEach(id => {
+                                    if (window._hudCache) delete window._hudCache[id];
+                                });
+                                // Re-načti canvas — aktualizuje barvy uzlů z DB
+                                if (window.refreshUniverseData) {
+                                    window.refreshUniverseData();
+                                }
                             });
                         });
                     }
@@ -771,7 +781,18 @@
 
                 const dlBtn = document.createElement('button');
                 dlBtn.textContent = '📥'; dlBtn.title = 'Stáhnout'; dlBtn.style.cssText = btnStyle;
-                const doDownload = async () => { const fname = (source.url||'').split('/').pop() || 'dokument.md'; const blob = await fetch(source.url).then(r => r.blob()); const burl = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = burl; a.download = fname; a.click(); setTimeout(() => URL.revokeObjectURL(burl), 2000); };
+                const doDownload = async () => {
+                    let blob, fname;
+                    if (source.script_cz) {
+                        // Lehkost — obsah v DB, vytvoř soubor ze script_cz
+                        fname = (source.title || 'clanek').toLowerCase().replace(/[^a-z0-9]+/g,'-').slice(0,40) + '.md';
+                        blob = new Blob([source.script_cz], { type: 'text/markdown' });
+                    } else {
+                        fname = (source.url||'').split('/').pop() || 'dokument.md';
+                        blob = await fetch(source.url).then(r => r.blob());
+                    }
+                    const burl = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = burl; a.download = fname; a.click(); setTimeout(() => URL.revokeObjectURL(burl), 2000);
+                };
                 dlBtn.addEventListener('click', doDownload);
                 dlBtn.addEventListener('touchend', (e) => { e.preventDefault(); doDownload(); });
                 header.appendChild(dlBtn);
@@ -804,9 +825,19 @@
                 else if (t === 'pdf') contentDiv.innerHTML = `<iframe src="${pdfEmbed(source.url)}" style="width:100%;height:100%;border:none;" title="${source.title||''}"></iframe>`;
             } else {
                 const noUrl = !source.url || source.url === '#';
-                if (noUrl) {
+                const isFetchable = source.url && (
+                    !source.url.startsWith('http') ||                          // relativní cesta
+                    source.url.includes('supabase.co') ||                      // náš Supabase storage
+                    source.url.toLowerCase().endsWith('.md')                   // markdown soubor
+                );
+                if (source.script_cz) {
+                    // Má český markdown obsah — zobrazit přímo, bez fetch
+                    const convert = window.CHJ_convertMd || (s => `<p>${s.replace(/\n/g,'<br>')}</p>`);
+                    contentDiv.innerHTML = `<div class="md-il">${convert(source.script_cz)}</div>`;
+                } else if (noUrl) {
                     contentDiv.innerHTML = '<div style="color:#475569;padding:24px;text-align:center;font-size:13px;font-family:monospace;">OBSAH PŘIPRAVUJEME</div>';
-                } else {
+                } else if (isFetchable) {
+                    // Fetchovatelný soubor (lokální nebo Supabase storage)
                     contentDiv.innerHTML = '<div style="color:#475569;padding:24px;text-align:center;font-size:13px;font-family:monospace;">NAČÍTÁM…</div>';
                     (async () => {
                         const res = await fetch(source.url);
@@ -815,6 +846,10 @@
                         const convert = window.CHJ_convertMd || (s => `<p>${s.replace(/\n/g,'<br>')}</p>`);
                         contentDiv.innerHTML = `<div class="md-il">${convert(md)}</div>`;
                     })().catch(err => { contentDiv.innerHTML = `<div style="color:#f87171;padding:24px;font-family:monospace;font-size:13px;">CHYBA: ${err.message}</div>`; });
+                } else {
+                    // Externí URL (pubmed, nature...) — otevři v novém tabu
+                    window.open(source.url, '_blank');
+                    window.closeSourceViewer();
                 }
             }
             wrap.appendChild(contentDiv);

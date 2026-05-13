@@ -18,6 +18,12 @@ const NODE_KILLERS = {
   kardio:       { label: 'SRDCE',        description: 'Srdce bez zátěže odejde dřív než čekáš.' },
   spanek:       { label: 'MOZEK',        description: 'Bez spánku mozek ničí sám sebe.' },
   dlouhovekost: { label: 'SRDCE',        description: 'Každý rok bez pohybu ti bere roky života.' },
+  // ── Lehkost uzly — FLOW KILLERS ─────────────────────────────────────────────
+  lh_main:       { label: 'NULOVÝ POHYB',       description: 'Každý den bez pohybu zpomaluje metabolismus.' },
+  lh_vyziva:     { label: 'VEČERNÍ PŘEJÍDÁNÍ',  description: 'Jídlo po 20h zvyšuje tukovou zátěž.' },
+  lh_pohyb:      { label: 'NULOVÝ POHYB',       description: 'Každý den bez pohybu zpomaluje metabolismus.' },
+  lh_mysl:       { label: 'STRESOVÉ JEDENÍ',    description: 'Stres zvyšuje kortizol a chuť na sladké.' },
+  lh_regenerace: { label: 'SPÁNKOVÝ DEFICIT',   description: 'Bez spánku tělo neregeneruje a hromadí tuk.' },
   // ── TOC uzly — parent uzly (cascade z nejslabšího dítěte) ────────────────
   toc:          { label: 'OMEZENÍ', description: 'Každý systém má jedno místo, které brzdí vše ostatní.' },
   finance_toc:  { label: 'OMEZENÍ', description: 'Firma vydělává tolik, kolik dovolí její nejslabší článek.' },
@@ -54,6 +60,12 @@ const VERDICT_TEXTS = {
   zdravi:      { RED: 'Prevence chybí.',         YELLOW: 'Prevence má mezery.',     GREEN: 'Prevence funguje.' },
   metabolicke: { RED: 'Metabolismus klesá.',     YELLOW: 'Metabolismus kolísá.',    GREEN: 'Metabolismus v normě.' },
   dlouhovekost:{ RED: 'Tělo a zdraví brzdí.',    YELLOW: 'Potenciál čeká.',         GREEN: 'Na správné cestě.' },
+  // Lehkost uzly
+  lh_main:       { RED: 'Body flow klesá.',        YELLOW: 'Pokrok je blízko.',       GREEN: 'Jedete dobře.' },
+  lh_vyziva:     { RED: 'Večerní jídlo brzdí.',    YELLOW: 'Výživa ujde, dá se líp.', GREEN: 'Výživa funguje.' },
+  lh_pohyb:      { RED: 'Pohyb chybí.',            YELLOW: 'Pohyb drží, přidej.',     GREEN: 'Pohyb je v pořádku.' },
+  lh_mysl:       { RED: 'Stres jí tě zevnitř.',    YELLOW: 'Mysl drží, ale sotva.',   GREEN: 'Hlava je v klidu.' },
+  lh_regenerace: { RED: 'Spánek nestačí.',          YELLOW: 'Regenerace má mezery.',   GREEN: 'Regenerace funguje.' },
 };
 
 const CHILDREN = {
@@ -78,6 +90,62 @@ const DISCIPLINE_PROTOCOLS = {
   kognitivni: ['NEURO_PROTOKOL','MEDITATION_PROTOKOL'], emocni: ['MEDITATION_PROTOKOL','STRESS_PROTOKOL'],
   prevence: ['PREVENTION_PROTOKOL'], smysl: ['MEDITATION_PROTOKOL'],
 };
+
+const LH_KILLER_DEFS = {
+  evening_overeating: { label: 'VEČERNÍ PŘEJÍDÁNÍ',    description: 'Jídlo po 20h zvyšuje tukovou zátěž.' },
+  low_movement:       { label: 'NULOVÝ POHYB',          description: 'Každý den bez pohybu zpomaluje metabolismus.' },
+  sleep_deficit:      { label: 'SPÁNKOVÝ DEFICIT',      description: 'Bez spánku tělo neregeneruje a hromadí tuk.' },
+  stress_eating:      { label: 'STRESOVÉ JEDENÍ',       description: 'Stres zvyšuje kortizol a chuť na sladké.' },
+  weekend_rebound:    { label: 'VÍKENDOVÉ PŘESTŘELENÍ', description: 'Víkend bez kontroly ničí týdenní pokrok.' },
+};
+
+// Fallback akce pro lh_ sub-uzly (nemají záznamy v longevity_actions)
+const LH_NODE_ACTIONS = {
+  lh_vyziva:     [
+    { id: 'lhv_cutoff',    label: 'Dnes zakonči jídlo před 20:00',                type: 'habit',  duration: null, icon: '🍽️' },
+    { id: 'lhv_protein',   label: 'Přidej bílkovinu ke každému jídlu dnes',       type: 'habit',  duration: null, icon: '🥚' },
+    { id: 'lhv_water',     label: 'Vypij sklenici vody před každým jídlem',       type: 'habit',  duration: null, icon: '💧' },
+  ],
+  lh_pohyb:      [
+    { id: 'lhp_walk10',    label: '10 minut chůze teď — vyjdi ven',              type: 'timed',  duration: 600,  icon: '🚶' },
+    { id: 'lhp_stairs',    label: 'Dnes jen schody, žádný výtah',                type: 'habit',  duration: null, icon: '🪜' },
+    { id: 'lhp_stand',     label: 'Každou hodinu vstát a 2 minuty se projít',    type: 'habit',  duration: null, icon: '🧍' },
+  ],
+  lh_mysl:       [
+    { id: 'lhm_breath',    label: '5 minut klidného dýchání před jídlem',        type: 'timed',  duration: 300,  icon: '🌬️' },
+    { id: 'lhm_pause',     label: 'Při stresu počkej 10 minut před jídlem',      type: 'habit',  duration: null, icon: '⏸️' },
+    { id: 'lhm_journal',   label: 'Napiš 3 věci za které jsi dnes vděčný',       type: 'habit',  duration: null, icon: '📓' },
+  ],
+  lh_regenerace: [
+    { id: 'lhr_sleep',     label: 'Dnes ulehni před 22:30',                      type: 'habit',  duration: null, icon: '😴' },
+    { id: 'lhr_screen',    label: 'Vypni obrazovky hodinu před spaním',          type: 'habit',  duration: null, icon: '📵' },
+    { id: 'lhr_temp',      label: 'Vyvětrej ložnici před spaním na 18 °C',       type: 'habit',  duration: null, icon: '🌡️' },
+  ],
+};
+
+const LH_KILLER_ACTIONS = {
+  evening_overeating: { id: 'lh_action_eating_cutoff',  label: 'Dnes zakonči jídlo před 20:00',              type: 'habit',  duration: null, icon: '🍽️' },
+  low_movement:       { id: 'lh_action_walk_10',         label: '10 minut chůze teď — vyjdi ven',             type: 'timed',  duration: 600,  icon: '🚶' },
+  sleep_deficit:      { id: 'lh_action_sleep_cutoff',    label: 'Dnes ulehni před 22:30',                     type: 'habit',  duration: null, icon: '😴' },
+  stress_eating:      { id: 'lh_action_breath_premeal',  label: '5 minut klidného dýchání před dalším jídlem', type: 'timed',  duration: 300,  icon: '🌬️' },
+  weekend_rebound:    { id: 'lh_action_snack_prep',      label: 'Připrav si zdravou svačinu před večeří',     type: 'habit',  duration: null, icon: '🥗' },
+};
+
+function detectFlowKiller(rows) {
+  if (!rows.length) return { killerId: 'low_movement', ...LH_KILLER_DEFS.low_movement };
+  const r7  = rows.slice(0, 7);
+  const avgStress = (() => { const v = r7.map(r=>r.stress).filter(Boolean); return v.length ? v.reduce((a,b)=>a+b,0)/v.length : 0; })();
+  const scores = [
+    { id: 'evening_overeating', score: Math.min(100, r7.filter(r=>r.binge).length*18 + (avgStress>=3?10:0)) },
+    { id: 'low_movement',       score: Math.min(100, r7.filter(r=>r.movement_level==='low').length*15 + (avgStress<3?5:0)) },
+    { id: 'sleep_deficit',      score: Math.min(100, r7.filter(r=>r.sleep_hours!=null&&parseFloat(r.sleep_hours)<6.5).length*14) },
+    { id: 'stress_eating',      score: Math.min(100, r7.filter(r=>r.stress>=4).length*8 + r7.filter(r=>r.binge&&r.stress>=4).length*15) },
+    { id: 'weekend_rebound',    score: Math.min(100, r7.filter(r=>{const d=new Date(r.date).getDay();return(d===0||d===6)&&r.binge}).length*35) },
+  ];
+  const top = scores.sort((a,b)=>b.score-a.score)[0];
+  const killerId = top?.id || 'low_movement';
+  return { killerId, ...(LH_KILLER_DEFS[killerId] || LH_KILLER_DEFS.low_movement) };
+}
 
 function indexToState(i) {
   if (i <= 40) return 'RED';
@@ -255,6 +323,33 @@ async function fetchOneNode(sb, userId, nodeId, shared) {
 
   // TOC cascade: parent zdědí killer z nejslabšího dítěte (má-li data)
   let killer = NODE_KILLERS[nodeId] || NODE_KILLERS.telo;
+
+  // Lehkost sub-uzly: fallback akce pokud DB nemá nic
+  if (!action && todayCount < 2 && LH_NODE_ACTIONS[nodeId]) {
+    const pool = LH_NODE_ACTIONS[nodeId];
+    const doneIds = (missionRes.data || []).map(m => m.mission_id).filter(Boolean);
+    const available = pool.filter(a => !doneIds.includes(a.id));
+    if (available.length > 0) {
+      const picked = available[Math.floor(Math.random() * available.length)];
+      action = { ...picked, status: 'READY', tier: 1, node_id: nodeId };
+    }
+  }
+
+  // Lehkost main: dynamic FLOW KILLER + killer-derived action
+  if (nodeId === 'lh_main') {
+    const since7 = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
+    const { data: lhCheckins } = await sb.from('daily_checkin')
+      .select('date,binge,movement_level,sleep_hours,stress')
+      .eq('user_id', userId).eq('universe', 'lehkost').gte('date', since7)
+      .order('date', { ascending: false });
+    killer = detectFlowKiller(lhCheckins || []);
+    // Action derived from top FLOW KILLER (overrides DB lookup below)
+    if (!action && todayCount < 2) {
+      const killerAction = LH_KILLER_ACTIONS[killer.killerId] || LH_KILLER_ACTIONS.low_movement;
+      action = { ...killerAction, status: 'READY', tier: 1, node_id: 'lh_main' };
+    }
+  }
+
   if (TOC_CHILDREN[nodeId]) {
     const tocKids = TOC_CHILDREN[nodeId].map(id => metricsMap.get(id)).filter(validMetric);
     if (tocKids.length) {

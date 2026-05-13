@@ -28,6 +28,12 @@ const OBLAST_MAP = {
   metabolicke:    'Metabolismus',
   zdravi:         'Dlouhověkost',
   dlouhovekost:   'Dlouhověkost',
+  // Lehkost universe
+  lh_main:        'Štíhlost',
+  lh_pohyb:       'Pohyb',
+  lh_vyziva:      'Výživa',
+  lh_mysl:        'Stres & imunita',
+  lh_regenerace:  'Spánek',
 };
 
 function getOblast(node_id) {

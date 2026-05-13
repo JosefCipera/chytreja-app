@@ -454,9 +454,14 @@ async function loadModel(modelName) {
 
       if (nodesError) throw nodesError;
 
-      // Exclude nodes from other universes (TOC nodes are in the same table but must not show in longevity canvas)
+      // Exclude nodes from other universes — each universe sees only its own nodes
       const TOC_IDS = new Set(['toc','finance_toc','vyroba_toc','ccpm','strategie_toc','marketing_toc']);
-      const filteredNodes = modelName === 'longevity' ? nodes.filter(n => !TOC_IDS.has(n.id)) : nodes;
+      const LH_IDS  = new Set(['lh_main','lh_vyziva','lh_pohyb','lh_mysl','lh_regenerace']);
+      const filteredNodes = modelName === 'longevity'
+        ? nodes.filter(n => !TOC_IDS.has(n.id) && !LH_IDS.has(n.id))
+        : modelName === 'lehkost'
+        ? nodes.filter(n => LH_IDS.has(n.id))
+        : nodes;
 
       console.log(`   ✓ Nodes: ${filteredNodes.length}`);
 
@@ -910,7 +915,12 @@ function initHeaderControls() {
       if (userId) {
         const { showCheckinModal } = await import('./lehkost-checkin.js');
         showCheckinModal(userId, (bodyFlow) => {
-          if (bodyFlow) console.log('💪 BODY FLOW:', bodyFlow.score);
+          if (!bodyFlow) return;
+          console.log('💪 BODY FLOW:', bodyFlow.score);
+          // Invaliduj HUD cache + re-render canvas s novými barvami
+          const LH_IDS = ['lh_main','lh_vyziva','lh_pohyb','lh_mysl','lh_regenerace'];
+          LH_IDS.forEach(id => { if (window._hudCache) delete window._hudCache[id]; });
+          if (window.refreshUniverseData) window.refreshUniverseData();
         });
       }
     }
