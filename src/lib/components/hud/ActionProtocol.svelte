@@ -146,7 +146,7 @@
   <div class="px-4 pt-2 pb-3">
     <div class="hud-mono mb-2" style="letter-spacing: 0.04em; font-weight: 300; line-height: 1.5;">
       <div class="flex items-center justify-between" style="font-size: 20px;">
-        <span style="color: #c8d4df;">ACTION: <span style="color: #94a3b8;">{protocolLabel}</span></span>
+        <span style="color: #c8d4df;">ACTION:{#if universe !== 'lehkost'} <span style="color: #94a3b8;">{protocolLabel}</span>{/if}</span>
         <span style="color: {statusColor};">[{status}]</span>
       </div>
     </div>
