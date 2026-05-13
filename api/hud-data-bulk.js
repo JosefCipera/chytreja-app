@@ -288,8 +288,16 @@ async function fetchOneNode(sb, userId, nodeId, shared) {
 
   if (!action && todayCount < 2) {
     let q = sb.from('longevity_actions').select('*').eq('active', true);
-    if (disciplineProtocols) q = q.in('protocol_type', disciplineProtocols);
-    else q = q.eq('node_id', actionNodeId);
+    if (disciplineProtocols) {
+      q = q.in('protocol_type', disciplineProtocols);
+    } else if (hasChildren) {
+      // Parent node: query the node itself + all its children
+      // (first-child-only often has no actions in DB, e.g. vo2max for telo)
+      const allNodeIds = [nodeId, ...(CHILDREN[nodeId] || [])];
+      q = q.in('node_id', allNodeIds);
+    } else {
+      q = q.eq('node_id', actionNodeId);
+    }
     if (dayType === 'REGENERACE') q = q.eq('type', 'habit');
     const { data: candidates } = await q.order('tier').limit(10);
     const doneIds = (missionRes.data || []).map(m => m.mission_id).filter(Boolean);
