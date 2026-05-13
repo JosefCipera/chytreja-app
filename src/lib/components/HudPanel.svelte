@@ -133,6 +133,15 @@
         {/if}
       </div>
 
+      <!-- VERDICT — motivační věta (longevity + lehkost) -->
+      {#if universe !== 'toc' && data.verdict}
+        <div class="hud-fade-in px-1" style="animation-delay: 0.35s;">
+          <p class="font-sans" style="font-size: 15px; color: #94a3b8; line-height: 1.5; margin: 0;">
+            {data.verdict}
+          </p>
+        </div>
+      {/if}
+
       <!-- Connector line: ACTION → SOURCE_VALIDATION -->
       <div style="position: relative; height: 38px; margin: -6px 0 -2px;">
         <div style="
