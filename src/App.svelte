@@ -136,12 +136,14 @@
 
   async function triggerLehkostAgent(uid, nid) {
     try {
+      console.log('[Lehkost Agent] calling API...');
       const res = await fetch('/api/agents', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ type: 'lehkost', userId: uid, nodeId: nid }),
       });
       const data = await res.json();
+      console.log('[Lehkost Agent] response:', data);
       if (data.action_id) {
         agentAction = {
           id: data.action_id, label: data.label,
@@ -150,8 +152,8 @@
           status: 'READY', tier: 1, node_id: nid,
           from_agent_cache: data.cached ?? false,
         };
-        // Motivation → verdict (1 personal sentence)
         if (data.motivation) {
+          console.log('[Lehkost Agent] patching verdict:', data.motivation);
           patchHudData({ verdict: data.motivation });
         }
       }

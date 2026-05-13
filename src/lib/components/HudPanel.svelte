@@ -135,8 +135,8 @@
 
       <!-- VERDICT — motivační věta (longevity + lehkost) -->
       {#if universe !== 'toc' && data.verdict}
-        <div class="hud-fade-in px-1" style="animation-delay: 0.35s;">
-          <p class="font-sans" style="font-size: 15px; color: #94a3b8; line-height: 1.5; margin: 0;">
+        <div class="hud-fade-in" style="animation-delay: 0.35s; padding: 12px 14px; background: rgba(255,255,255,0.03); border-radius: 8px; border-left: 2px solid rgba(6,182,212,0.4);">
+          <p class="font-sans" style="font-size: 15px; color: #cbd5e1; line-height: 1.5; margin: 0;">
             {data.verdict}
           </p>
         </div>
