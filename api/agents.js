@@ -651,6 +651,7 @@ Vyber jednu konkrétní akci pro dnešek a přidej krátkou motivaci.`;
 
 // ── MAIN HANDLER ──────────────────────────────────────
 export default async function handler(req, res) {
+  res.setHeader('Content-Type', 'application/json');
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });

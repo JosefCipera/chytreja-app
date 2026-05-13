@@ -144,6 +144,10 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ type: 'lehkost', userId: uid, nodeId: nid }),
       });
+      if (!res.ok) {
+        console.warn('[Lehkost Agent] HTTP error:', res.status, await res.text().catch(() => ''));
+        return;
+      }
       const data = await res.json();
       console.log('[Lehkost Agent] response:', data);
       if (data.action_id) {
