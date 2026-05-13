@@ -126,9 +126,38 @@
       await Promise.all([checkReadiness(), loadHudData(userId, nid)]);
     }
 
-    // No orchestrator call here — warm-up (universe-init.js) is the only place
-    // where AI computation happens. Panel just displays what hud-data-bulk returns.
     panelReady = true;
+
+    // Lehkost agent — personalizovaná akce + motivace pro lh_main
+    if (nid === 'lh_main' && userId && !devMode) {
+      triggerLehkostAgent(userId, nid);
+    }
+  }
+
+  async function triggerLehkostAgent(uid, nid) {
+    try {
+      const res = await fetch('/api/agents', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'lehkost', userId: uid, nodeId: nid }),
+      });
+      const data = await res.json();
+      if (data.action_id) {
+        agentAction = {
+          id: data.action_id, label: data.label,
+          type: data.type === 'timed' ? 'timed' : 'habit',
+          duration: data.duration_s ?? null,
+          status: 'READY', tier: 1, node_id: nid,
+          from_agent_cache: data.cached ?? false,
+        };
+        // Motivation → verdict (1 personal sentence)
+        if (data.motivation) {
+          patchHudData({ verdict: data.motivation });
+        }
+      }
+    } catch (e) {
+      console.warn('[CHJ] Lehkost Agent call failed:', e);
+    }
   }
 
   onMount(async () => {
