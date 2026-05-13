@@ -23,6 +23,7 @@
   } = $props();
 
   let showHealthUpload = $state(false);
+  let tocConfig = $derived(universe === 'toc' ? getTocConfig(data?.node_id ?? '') : null);
 
   // TOC: get static node config (problems, warning, action chips)
   let tocConfig = $derived(universe === 'toc' ? getTocConfig(data.node_id) : null);
@@ -65,26 +66,12 @@
 
       <div class="hud-fade-in" style="animation-delay: 0.2s">
         {#if universe === 'toc'}
-          <!-- TOC: PROBLEM + ACTION, no game loop -->
-
-          <!-- Main toc node: show OMEZENÍ (bottleneck identifier) -->
-          {#if data.node_id === 'toc'}
-            <div class="rounded-lg px-4 py-3 mb-1" style="background:transparent;">
-              <div class="hud-mono" style="font-size:20px;font-weight:300;letter-spacing:0.04em;color:#c8d4df;margin-bottom:6px;">OMEZENÍ:</div>
-              <div class="flex items-start gap-2">
-                <span style="color:#ef4444;flex-shrink:0;">⚠︎</span>
-                <span style="font-size:14px;color:#f87171;line-height:1.4;">
-                  {data.bottleneck ?? tocProblem}
-                </span>
-              </div>
-              <div class="hud-mono mt-2" style="font-size:11px;letter-spacing:2px;color:#475569;">
-                {tocConfig?.warning ?? ''}
-              </div>
-            </div>
-          {:else}
-            <!-- Sub-nodes: PROBLEM card -->
-            <div class="rounded-lg px-4 py-3 mb-1" style="background:transparent;">
-              <div class="hud-mono" style="font-size:20px;font-weight:300;letter-spacing:0.04em;color:#c8d4df;margin-bottom:6px;">PROBLEM:</div>
+          <!-- TOC: PROBLEM + PLÁNOVÁNÍ, no game loop -->
+          {#if data.killer?.description || data.verdict}
+            <div class="rounded-lg px-4 py-3" style="
+              background: transparent;
+            ">
+              <div class="hud-mono" style="font-size:20px;font-weight:300;letter-spacing:0.04em;color:#c8d4df;margin-bottom:6px;">PROBLEM: <span style="color:#94a3b8;">{data.killer?.label ?? ''}</span></div>
               <div class="flex items-start gap-2">
                 <span style="color:#ef4444;flex-shrink:0;">⚠︎</span>
                 <span style="font-size:14px;color:#f87171;line-height:1.4;">

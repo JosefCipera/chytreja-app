@@ -1,0 +1,46 @@
+[
+    {
+        "id": "lh_main",
+        "label": "Hra o lehkost",
+        "icon": "⚡",
+        "definition": "Lehkost není jen váha. Je to energie, pohyb, kontrola a pocit, že tělo slouží tobě — ne naopak. Každý den jeden tah k lehčímu já.",
+        "color": "#f59e0b",
+        "universe": "lehkost"
+    },
+    {
+        "id": "lh_vyziva",
+        "label": "Výživa",
+        "icon": "🍽️",
+        "definition": "Co jíš rozhoduje z 60 %. Ne kalorie — ale složení, načasování a večerní vzorce. Protein první, sladké ven.",
+        "color": "#22c55e",
+        "parent": "lh_main",
+        "universe": "lehkost"
+    },
+    {
+        "id": "lh_pohyb",
+        "label": "Pohyb",
+        "icon": "🚶",
+        "definition": "Ne sport. Pohyb. NEAT — kroky, chůze, vstávání. Denní pohyb mění metabolismus víc než hodina v posilovně jednou týdně.",
+        "color": "#06b6d4",
+        "parent": "lh_main",
+        "universe": "lehkost"
+    },
+    {
+        "id": "lh_mysl",
+        "label": "Mysl",
+        "icon": "🧠",
+        "definition": "Emoce jsou spouštěčem 80 % přejídání. Stres, nuda, únava — tělo hledá zkratku. Pauza před snackem změní vše.",
+        "color": "#a855f7",
+        "parent": "lh_main",
+        "universe": "lehkost"
+    },
+    {
+        "id": "lh_regenerace",
+        "label": "Regenerace",
+        "icon": "😴",
+        "definition": "Pod 7 hodin spánku = o 30 % vyšší hlad druhý den. Kortizol stoupá, disciplína klesá. Spánek není lenost — je to zbraň.",
+        "color": "#3b82f6",
+        "parent": "lh_main",
+        "universe": "lehkost"
+    }
+]

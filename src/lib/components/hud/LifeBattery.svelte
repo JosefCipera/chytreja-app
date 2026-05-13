@@ -167,11 +167,11 @@
   <span class="hc hc-tl"></span><span class="hc hc-tr"></span>
   <!-- Header row: LIFE-BATTERY + percent + trend -->
   <div class="flex items-center justify-between mb-1">
-    <span class="hud-mono" style="font-size: 20px; letter-spacing: 0.04em; color: #c8d4df; font-weight: 300;">{universe === 'toc' ? 'FLOW-RATE' : 'LIFE-BATTERY'}</span>
-    <div class="flex items-center gap-0">
+    <span class="hud-mono" style="font-size: 20px; letter-spacing: 0.04em; color: #c8d4df; font-weight: 300;">{universe === 'toc' ? 'FLOW-RATE' : universe === 'lehkost' ? 'BODY FLOW' : 'LIFE-BATTERY'}</span>
+    <div class="flex items-center gap-0" style="flex-shrink: 0;">
       <span class="hud-mono" style="font-size: 14px; font-weight: 300; color: {textColor};">{percent}%</span>
       <span class="hud-mono mx-1" style="font-size: 14px; color: #334155;">|</span>
-      <span class="hud-mono" style="font-size: 11px; color: {textColor}; margin-right: 3px;">{trendArrow}</span><span class="hud-mono" style="font-size: 13px; font-weight: 400; color: {textColor};">{trendWord}</span>
+      <span class="hud-mono" style="font-size: 11px; color: {textColor}; margin-right: 3px;">{trendArrow}</span><span class="hud-mono" style="font-size: 13px; font-weight: 400; color: {textColor}; white-space: nowrap;">{trendWord}</span>
     </div>
   </div>
 
@@ -233,12 +233,20 @@
       ></div>
     </div>
 
-    <!-- EST_BIO_AGE — placeholder, data v0.4+ -->
-    <div class="flex items-center justify-between mt-3">
-      <span class="hud-mono" style="font-size: 13px; color: #475569;">
-        EST_BIO_AGE: <span style="color: #334155;">—</span>
-      </span>
-    </div>
+    <!-- Battery terminal (nub) -->
+    <div
+      class="rounded-r-sm"
+      style="width: 12px; height: 58px; background: rgba(255,255,255,0.06); border: 2px solid rgba(255,255,255,0.06); border-left: none; box-shadow: 0 0 8px {glowColor};"
+    ></div>
+  </div>
+
+  <!-- EST_BIO_AGE — longevity only, data v0.4+ -->
+  {#if universe !== 'toc'}
+  <div class="flex items-center justify-between mt-3">
+    <span class="hud-mono" style="font-size: 13px; color: #475569;">
+      EST_BIO_AGE: <span style="color: #334155;">—</span>
+    </span>
+  </div>
   {/if}
 
 </div>

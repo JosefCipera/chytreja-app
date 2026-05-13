@@ -280,6 +280,7 @@
             "stabilita",
             "rovnovaha",
             "kardio",
+            "plyometrie",
             "dychani"
         ],
         "articles": [
@@ -350,6 +351,14 @@
         "icon": "❤️",
         "definition": "Zdraví srdce a cév – základ výdrže i regenerace. Sleduj tlak, tep, HRV a VO₂max.",
         "color": "#f59e0b",
+        "parent": "telo"
+    },
+    {
+        "id": "plyometrie",
+        "label": "Plyometrie",
+        "icon": "⚡",
+        "definition": "Výbušná síla a hustota kostí. Seskočit a ustát dopad — klíč k prevenci zlomenin a reakční síle v každém věku.",
+        "color": "#fbbf24",
         "parent": "telo"
     },
     {

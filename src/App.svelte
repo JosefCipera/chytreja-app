@@ -15,12 +15,9 @@
   let nodeId = $state(params.get('nodeId') || 'dlouhovekost');
 
   // Derive universe from nodeId — used for conditional HUD labels
-  const TOC_NODE_IDS = new Set([
-    'toc','finance_toc','vyroba_toc','ccpm','strategie_toc','marketing_toc',
-    'prutok_toc','zasoby_toc','naklady_toc','cashflow_toc',
-    'zdroje_toc','materialy_toc','kvalita_toc','opravy_toc',
-  ]);
-  let universe = $derived(TOC_NODE_IDS.has(nodeId) ? 'toc' : 'longevity');
+  const TOC_NODE_IDS = new Set(['toc','finance_toc','vyroba_toc','ccpm','strategie_toc','marketing_toc']);
+  const LH_NODE_IDS  = new Set(['lh_main','lh_vyziva','lh_pohyb','lh_mysl','lh_regenerace']);
+  let universe = $derived(TOC_NODE_IDS.has(nodeId) ? 'toc' : LH_NODE_IDS.has(nodeId) ? 'lehkost' : 'longevity');
 
   // ── CHECK-IN GATE ──────────────────────────────────────
   let readinessChecked = $state(false);   // has the check completed?

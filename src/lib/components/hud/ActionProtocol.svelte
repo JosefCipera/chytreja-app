@@ -94,22 +94,26 @@
   <span class="hc hc-bl"></span><span class="hc hc-br"></span>
   <div class="px-4 pt-3 pb-3">
     <div class="hud-mono mb-3" style="letter-spacing: 0.04em; font-weight: 300;">
-      <div class="flex items-center justify-between" style="font-size: 20px;">
-        <span style="color: #c8d4df;">ACTION: <span style="color: #94a3b8;">{tocActionLabel}</span></span>
-        <span style="color: {statusColor};">[{status}]</span>
+      <div class="flex items-start justify-between gap-2" style="font-size: 20px;">
+        <span style="color: #c8d4df; line-height: 1.3;">ACTION: <span style="color: #94a3b8;">{tocActionLabel}</span></span>
+        <span style="color: {statusColor}; flex-shrink: 0;">[{status}]</span>
       </div>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;">
       {#each tocChips as chip}
-        <a
-          href={chip.href ? chip.href + (userId ? '?userId=' + userId : '') : 'javascript:void(0)'}
-          target={chip.href ? '_top' : undefined}
-          style={chipStyle}
+        <button
+          onclick={() => {
+            if (chip.href) {
+              const url = chip.href + (userId ? '?userId=' + userId : '');
+              window.parent?.postMessage({ type: 'chj:tool:open', url }, '*');
+            }
+          }}
+          style={chipStyle + 'font-family:inherit;'}
           onmouseenter={(e)=>{e.currentTarget.style.background='rgba(6,182,212,0.18)';e.currentTarget.style.borderColor='rgba(6,182,212,0.4)';e.currentTarget.style.transform='translateY(-1px)'}}
           onmouseleave={(e)=>{e.currentTarget.style.background='rgba(255,255,255,0.06)';e.currentTarget.style.borderColor='rgba(255,255,255,0.12)';e.currentTarget.style.transform='none'}}
         >
           {chip.label}
-        </a>
+        </button>
       {/each}
     </div>
   </div>
@@ -128,7 +132,7 @@
   {#if killer}
     <div class="px-4 pt-3 pb-2">
       <div class="hud-mono" style="font-size: 20px; font-weight: 300; letter-spacing: 0.04em; color: #c8d4df; margin-bottom: 4px;">
-        {universe === 'toc' ? 'CONSTRAINT:' : 'KILLER:'} <span style="color: #94a3b8;">{killer.label}</span>
+        {universe === 'toc' ? 'CONSTRAINT:' : universe === 'lehkost' ? 'FLOW KILLER:' : 'KILLER:'} <span style="color: #94a3b8;">{killer.label}</span>
       </div>
       <div class="flex items-center gap-2">
         <span style="font-size: 17px; color: #C97272;">{@html '\u26A0\uFE0E'}</span>

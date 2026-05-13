@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="cs">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Plán výroby · CHJ</title>
+  <title>PlĂˇn vĂ˝roby Â· CHJ</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -20,7 +20,7 @@
       flex-direction: column;
     }
 
-    /* ── Header ── */
+    /* â”€â”€ Header â”€â”€ */
     .header {
       flex-shrink: 0;
       display: flex;
@@ -67,7 +67,7 @@
     .btn-action:hover { background: rgba(6,182,212,0.18); border-color: rgba(6,182,212,0.6); }
     .btn-action:disabled { opacity: 0.4; cursor: default; }
 
-    /* ── Stats bar ── */
+    /* â”€â”€ Stats bar â”€â”€ */
     .stats {
       flex-shrink: 0;
       display: flex;
@@ -87,14 +87,14 @@
     .stat .yellow { color: #eab308; }
     .stat .green  { color: #22c55e; }
 
-    /* ── Scroll area ── */
+    /* â”€â”€ Scroll area â”€â”€ */
     #main {
       flex: 1;
       overflow: auto;
       position: relative;
     }
 
-    /* ── Table ── */
+    /* â”€â”€ Table â”€â”€ */
     .table-wrap {
       padding: 0 24px 16px;
       min-width: fit-content;
@@ -148,9 +148,9 @@
       border-radius: 999px;
       border: 1px solid;
     }
-    .stav-planovaná  { color: #94a3b8; border-color: rgba(148,163,184,0.3); background: rgba(148,163,184,0.06); }
-    .stav-probíhá    { color: #22d3ee; border-color: rgba(34,211,238,0.3);  background: rgba(34,211,238,0.06);  }
-    .stav-dokončená  { color: #22c55e; border-color: rgba(34,197,94,0.3);   background: rgba(34,197,94,0.06);   }
+    .stav-planovanĂˇ  { color: #94a3b8; border-color: rgba(148,163,184,0.3); background: rgba(148,163,184,0.06); }
+    .stav-probĂ­hĂˇ    { color: #22d3ee; border-color: rgba(34,211,238,0.3);  background: rgba(34,211,238,0.06);  }
+    .stav-dokonÄŤenĂˇ  { color: #22c55e; border-color: rgba(34,197,94,0.3);   background: rgba(34,197,94,0.06);   }
 
     .zpozdeni {
       font-family: 'JetBrains Mono', monospace;
@@ -161,7 +161,7 @@
     .zpozdeni.yellow { color: #eab308; }
     .zpozdeni.ok     { color: #475569; }
 
-    /* ── Pagination bar ── */
+    /* â”€â”€ Pagination bar â”€â”€ */
     .pagination-bar {
       flex-shrink: 0;
       display: flex;
@@ -217,7 +217,7 @@
       text-align: center;
     }
 
-    /* ── Tabs ── */
+    /* â”€â”€ Tabs â”€â”€ */
     .tab-bar {
       flex-shrink: 0;
       display: flex;
@@ -242,7 +242,7 @@
     .tab-btn:hover { color: #94a3b8; }
     .tab-btn.active { color: #22d3ee; border-bottom-color: #22d3ee; }
 
-    /* ── Gantt ── */
+    /* â”€â”€ Gantt â”€â”€ */
     #hp-view {
       flex: 1;
       overflow: auto;
@@ -267,7 +267,7 @@
     #gantt-view::-webkit-scrollbar-thumb { background: rgba(6,182,212,0.3); border-radius: 2px; }
     #gantt-wrap table thead th { font-weight: 400; }
 
-    /* ── Kapacitní plán ── */
+    /* â”€â”€ KapacitnĂ­ plĂˇn â”€â”€ */
     #kap-view {
       flex: 1;
       overflow: auto;
@@ -321,7 +321,7 @@
       min-width: 52px;
       z-index: 3;
     }
-    /* Sticky first column (pracoviště) */
+    /* Sticky first column (pracoviĹˇtÄ›) */
     .kap-table thead th:first-child,
     .kap-table tbody td:first-child {
       position: sticky;
@@ -359,7 +359,7 @@
     .kap-u-warn    { color: #eab308; background: rgba(234,179,8,0.10); }
     .kap-u-over    { color: #f87171; background: rgba(239,68,68,0.18); font-weight: 700; }
 
-    /* ── Loading / Error ── */
+    /* â”€â”€ Loading / Error â”€â”€ */
     .center {
       display: flex;
       align-items: center;
@@ -378,28 +378,28 @@
 
 <div class="header">
   <div class="header-left">
-    <div class="title">[PLÁN VÝROBY]</div>
+    <div class="title">[PLĂN VĂťROBY]</div>
   </div>
   <div style="display:flex;gap:8px;align-items:center;">
-    <button id="btn-plan" class="btn-action" onclick="runPlan()" style="background:rgba(34,197,94,0.08);border-color:rgba(34,197,94,0.3);color:#4ade80;">▶ Vytvořit plán</button>
-    <button class="btn-action" onclick="window.location.href='/app/toc-nastaveni.html?userId='+userId" style="color:#94a3b8;border-color:rgba(148,163,184,0.2);">⚙ Nastavení</button>
-    <button class="btn-close" onclick="history.length > 1 ? history.back() : window.location.href='/app/'">✕ Zavřít</button>
+    <button id="btn-plan" class="btn-action" onclick="runPlan()" style="background:rgba(34,197,94,0.08);border-color:rgba(34,197,94,0.3);color:#4ade80;">â–¶ VytvoĹ™it plĂˇn</button>
+    <button class="btn-action" onclick="window.location.href='/app/toc-nastaveni.html?userId='+userId" style="color:#94a3b8;border-color:rgba(148,163,184,0.2);">âš™ NastavenĂ­</button>
+    <button class="btn-close" onclick="window.parent !== window ? window.parent.postMessage('chj:tool:close','*') : (history.length > 1 ? history.back() : window.location.href='/app/')">âś• ZavĹ™Ă­t</button>
   </div>
 </div>
 
 <div class="tab-bar">
-  <button class="tab-btn active" id="tab-plan"     onclick="switchTab('plan')">PLÁN VÝROBY</button>
-  <button class="tab-btn"        id="tab-kapacita" onclick="switchTab('kapacita')">KAPACITNÍ PLÁN</button>
+  <button class="tab-btn active" id="tab-plan"     onclick="switchTab('plan')">PLĂN VĂťROBY</button>
+  <button class="tab-btn"        id="tab-kapacita" onclick="switchTab('kapacita')">KAPACITNĂŤ PLĂN</button>
   <button class="tab-btn"        id="tab-gantt"    onclick="switchTab('gantt')">GANTT</button>
-  <button class="tab-btn"        id="tab-hp"       onclick="switchTab('hp')">HLAVNÍ PLÁN</button>
+  <button class="tab-btn"        id="tab-hp"       onclick="switchTab('hp')">HLAVNĂŤ PLĂN</button>
 </div>
 
 <div class="stats" id="stats">
-  <div class="stat pulse">NAČÍTÁM DATA…</div>
+  <div class="stat pulse">NAÄŚĂŤTĂM DATAâ€¦</div>
 </div>
 
 <div id="main">
-  <div class="center pulse">NAČÍTÁM ZAKÁZKY…</div>
+  <div class="center pulse">NAÄŚĂŤTĂM ZAKĂZKYâ€¦</div>
 </div>
 
 <div class="pagination-bar" id="pagination" style="display:none"></div>
@@ -407,19 +407,19 @@
 <div class="kap-info" id="kap-info"></div>
 <div id="kap-view">
   <div class="kap-wrap" id="kap-wrap">
-    <div class="center pulse">Spusť kapacitní plán tlačítkem výše.</div>
+    <div class="center pulse">SpusĹĄ kapacitnĂ­ plĂˇn tlaÄŤĂ­tkem vĂ˝Ĺˇe.</div>
   </div>
 </div>
 <div class="kap-legend" id="kap-legend" style="display:none">
   <div class="kap-legend-item"><div class="kap-legend-dot" style="background:rgba(34,197,94,0.5)"></div>OK &lt;80</div>
-  <div class="kap-legend-item"><div class="kap-legend-dot" style="background:rgba(234,179,8,0.6)"></div>WARN 80–99</div>
-  <div class="kap-legend-item"><div class="kap-legend-dot" style="background:rgba(239,68,68,0.6)"></div>OVER ≥100</div>
-  <div class="kap-legend-item"><div class="kap-legend-dot" style="background:#1e293b"></div>víkend/svátek</div>
+  <div class="kap-legend-item"><div class="kap-legend-dot" style="background:rgba(234,179,8,0.6)"></div>WARN 80â€“99</div>
+  <div class="kap-legend-item"><div class="kap-legend-dot" style="background:rgba(239,68,68,0.6)"></div>OVER â‰Ą100</div>
+  <div class="kap-legend-item"><div class="kap-legend-dot" style="background:#1e293b"></div>vĂ­kend/svĂˇtek</div>
 </div>
 
 <div id="gantt-view">
   <div id="gantt-wrap" style="padding:24px;color:#475569;font-family:'JetBrains Mono',monospace;font-size:13px;">
-    Spusť plán tlačítkem výše.
+    SpusĹĄ plĂˇn tlaÄŤĂ­tkem vĂ˝Ĺˇe.
   </div>
 </div>
 
@@ -432,7 +432,7 @@ const params  = new URLSearchParams(location.search);
 const userId  = params.get('userId') || 'qE09cLyXXGRBRxOBCGNZqTM2XRW2';
 const today   = new Date().toISOString().slice(0, 10);
 
-const LOCAL_DEV = location.port === '5500' || location.port === '5501';
+const LOCAL_DEV = ['5500', '5501', '3000'].includes(location.port);
 const API_BASE  = LOCAL_DEV ? 'https://dev.iting.cz' : '';
 
 let allData   = [];
@@ -443,30 +443,30 @@ let pageSize = 25;
 let page     = 0;
 
 const cols = [
-  { key: 'nazev_zakazky',      label: 'ZAKÁZKA' },
+  { key: 'nazev_zakazky',      label: 'ZAKĂZKA' },
   { key: 'typ_zakazky',        label: 'TYP' },
   { key: 'vyrobit_ks',         label: 'VYROBIT' },
   { key: 'odvedeno_ks',        label: 'ODVEDENO' },
-  { key: 'zbyvа_ks',           label: 'ZBÝVÁ' },
-  { key: 'planovane_zahajeni', label: 'ZAHÁJENÍ' },
-  { key: 'planovane_ukonceni', label: 'UKONČENÍ' },
-  { key: 'termin_dodani',      label: 'TERMÍN' },
-  { key: 'prubeznа_doba',      label: 'PRŮB. DOBA' },
-  { key: 'zpozdeni_dny',       label: 'ZPOŽDĚNÍ' },
+  { key: 'zbyvĐ°_ks',           label: 'ZBĂťVĂ' },
+  { key: 'planovane_zahajeni', label: 'ZAHĂJENĂŤ' },
+  { key: 'planovane_ukonceni', label: 'UKONÄŚENĂŤ' },
+  { key: 'termin_dodani',      label: 'TERMĂŤN' },
+  { key: 'prubeznĐ°_doba',      label: 'PRĹ®B. DOBA' },
+  { key: 'zpozdeni_dny',       label: 'ZPOĹ˝DÄšNĂŤ' },
   { key: 'stav',               label: 'STAV' },
   { key: 'kontrola_dat',       label: 'KONTROLA' },
-  { key: 'cas_pracoviste_txt', label: 'PRACOVIŠTĚ (min)' },
+  { key: 'cas_pracoviste_txt', label: 'PRACOVIĹ TÄš (min)' },
 ];
 
 function fmt(dateStr) {
-  if (!dateStr) return '—';
+  if (!dateStr) return 'â€”';
   return dateStr.slice(0, 10).split('-').reverse().join('.');
 }
 
 function stavClass(z) {
-  if (z.odvedeno_ks >= z.vyrobit_ks) return 'dokončená';
-  if (z.planovane_zahajeni && z.planovane_zahajeni <= today) return 'probíhá';
-  return 'plánovaná';
+  if (z.odvedeno_ks >= z.vyrobit_ks) return 'dokonÄŤenĂˇ';
+  if (z.planovane_zahajeni && z.planovane_zahajeni <= today) return 'probĂ­hĂˇ';
+  return 'plĂˇnovanĂˇ';
 }
 
 function goPage(p) {
@@ -485,17 +485,17 @@ function render(data) {
   // Stats
   const total     = data.length;
   const po_term   = data.filter(z => z.zpozdeni_dny > 0).length;
-  const probiha   = data.filter(z => stavClass(z) === 'probíhá').length;
-  const celkem_ks = data.reduce((s, z) => s + (z.zbyvа_ks || 0), 0);
+  const probiha   = data.filter(z => stavClass(z) === 'probĂ­hĂˇ').length;
+  const celkem_ks = data.reduce((s, z) => s + (z.zbyvĐ°_ks || 0), 0);
 
   document.getElementById('stats').innerHTML = `
-    <div class="stat">ZAKÁZKY: <span>${total}</span></div>
-    <div class="stat">PROBÍHÁ: <span class="yellow">${probiha}</span></div>
-    <div class="stat">PO TERMÍNU: <span class="red">${po_term}</span></div>
-    <div class="stat">ZBÝVÁ VYROBIT: <span>${celkem_ks.toLocaleString('cs')} ks</span></div>
+    <div class="stat">ZAKĂZKY: <span>${total}</span></div>
+    <div class="stat">PROBĂŤHĂ: <span class="yellow">${probiha}</span></div>
+    <div class="stat">PO TERMĂŤNU: <span class="red">${po_term}</span></div>
+    <div class="stat">ZBĂťVĂ VYROBIT: <span>${celkem_ks.toLocaleString('cs')} ks</span></div>
   `;
 
-  // Sort — datové sloupce porovnáváme jako Date, ne jako string
+  // Sort â€” datovĂ© sloupce porovnĂˇvĂˇme jako Date, ne jako string
   const DATE_RE = /^\d{4}-\d{2}-\d{2}/;
   const sorted = [...data].sort((a, b) => {
     let va = a[sortCol] ?? '', vb = b[sortCol] ?? '';
@@ -512,7 +512,7 @@ function render(data) {
   const slice = sorted.slice(start, start + pageSize);
 
   const thead = cols.map(c =>
-    `<th class="${sortCol === c.key ? 'sorted' : ''}" data-key="${c.key}">${c.label}${sortCol === c.key ? (sortDir === 1 ? ' ▲' : ' ▼') : ''}</th>`
+    `<th class="${sortCol === c.key ? 'sorted' : ''}" data-key="${c.key}">${c.label}${sortCol === c.key ? (sortDir === 1 ? ' â–˛' : ' â–Ľ') : ''}</th>`
   ).join('');
 
   const tbody = slice.map(z => {
@@ -523,15 +523,15 @@ function render(data) {
       <td class="mono">${z.typ_zakazky}</td>
       <td class="mono" style="text-align:right">${z.vyrobit_ks.toLocaleString('cs')}</td>
       <td class="mono" style="text-align:right">${z.odvedeno_ks.toLocaleString('cs')}</td>
-      <td class="mono" style="text-align:right;color:${z.zbyvа_ks > 0 ? '#e2e8f0' : '#22c55e'}">${(z.zbyvа_ks||0).toLocaleString('cs')}</td>
+      <td class="mono" style="text-align:right;color:${z.zbyvĐ°_ks > 0 ? '#e2e8f0' : '#22c55e'}">${(z.zbyvĐ°_ks||0).toLocaleString('cs')}</td>
       <td class="mono">${fmt(z.planovane_zahajeni)}</td>
       <td class="mono">${fmt(z.planovane_ukonceni)}</td>
       <td class="mono" style="color:${z.zpozdeni_dny > 0 ? '#ef4444' : '#22d3ee'};font-weight:500">${fmt(z.termin_dodani)}</td>
-      <td class="mono" style="text-align:right">${z.prubeznа_doba ?? '—'} d</td>
-      <td><span class="zpozdeni ${zCls}">${z.zpozdeni_dny > 0 ? '+' + z.zpozdeni_dny + ' d' : '—'}</span></td>
+      <td class="mono" style="text-align:right">${z.prubeznĐ°_doba ?? 'â€”'} d</td>
+      <td><span class="zpozdeni ${zCls}">${z.zpozdeni_dny > 0 ? '+' + z.zpozdeni_dny + ' d' : 'â€”'}</span></td>
       <td><span class="badge-stav stav-${stav}">${stav}</span></td>
-      <td class="mono" style="font-size:12px;color:${z.kontrola_dat==='ok'?'#22c55e':z.kontrola_dat?'#ef4444':'#475569'}" title="${z.kontrola_dat||''}">${z.kontrola_dat==='ok'?'✔ ok':z.kontrola_dat?'✕ '+z.kontrola_dat:'—'}</td>
-      <td class="cas" title="${z.cas_pracoviste_txt}">${z.cas_pracoviste_txt || '—'}</td>
+      <td class="mono" style="font-size:12px;color:${z.kontrola_dat==='ok'?'#22c55e':z.kontrola_dat?'#ef4444':'#475569'}" title="${z.kontrola_dat||''}">${z.kontrola_dat==='ok'?'âś” ok':z.kontrola_dat?'âś• '+z.kontrola_dat:'â€”'}</td>
+      <td class="cas" title="${z.cas_pracoviste_txt}">${z.cas_pracoviste_txt || 'â€”'}</td>
     </tr>`;
   }).join('');
 
@@ -562,16 +562,16 @@ function render(data) {
     const to   = Math.min(start + pageSize, sorted.length);
     pagEl.style.display = 'flex';
     pagEl.innerHTML = `
-      <div class="pag-info">${from}–${to} z ${sorted.length}</div>
+      <div class="pag-info">${from}â€“${to} z ${sorted.length}</div>
       <div class="pag-controls">
         <select class="pag-select" onchange="changePageSize(+this.value)">
-          ${[10,25,50,100].map(n => `<option value="${n}"${n===pageSize?' selected':''}>${n} řádků</option>`).join('')}
+          ${[10,25,50,100].map(n => `<option value="${n}"${n===pageSize?' selected':''}>${n} Ĺ™ĂˇdkĹŻ</option>`).join('')}
         </select>
-        <button class="pag-btn" onclick="goPage(0)" ${page===0?'disabled':''}>«</button>
-        <button class="pag-btn" onclick="goPage(${page-1})" ${page===0?'disabled':''}>‹</button>
+        <button class="pag-btn" onclick="goPage(0)" ${page===0?'disabled':''}>Â«</button>
+        <button class="pag-btn" onclick="goPage(${page-1})" ${page===0?'disabled':''}>â€ą</button>
         <span class="pag-page">${page+1} / ${totalPages}</span>
-        <button class="pag-btn" onclick="goPage(${page+1})" ${page>=totalPages-1?'disabled':''}>›</button>
-        <button class="pag-btn" onclick="goPage(${totalPages-1})" ${page>=totalPages-1?'disabled':''}>»</button>
+        <button class="pag-btn" onclick="goPage(${page+1})" ${page>=totalPages-1?'disabled':''}>â€ş</button>
+        <button class="pag-btn" onclick="goPage(${totalPages-1})" ${page>=totalPages-1?'disabled':''}>Â»</button>
       </div>
     `;
   } else {
@@ -584,56 +584,56 @@ function buildDemo() {
   const d = o => new Date(t.getTime() + o * 86400000).toISOString().slice(0,10);
   const zp = (termin) => termin < today ? Math.round((new Date(today) - new Date(termin)) / 86400000) : 0;
   const rows = [
-    { id_zakazky:'Z001', nazev_zakazky:'Svařovací rám XL-200',        typ_zakazky:'výroba',    vyrobit_ks:50,  odvedeno_ks:12,  planovane_zahajeni:d(-10), planovane_ukonceni:d(20),  termin_dodani:d(25),  prubeznа_doba:30 },
-    { id_zakazky:'Z002', nazev_zakazky:'Laserový výpalek A3 série',    typ_zakazky:'kooperace', vyrobit_ks:200, odvedeno_ks:200, planovane_zahajeni:d(-30), planovane_ukonceni:d(-5),  termin_dodani:d(-3),  prubeznа_doba:25 },
-    { id_zakazky:'Z003', nazev_zakazky:'Ohýbané profily B-44',         typ_zakazky:'výroba',    vyrobit_ks:80,  odvedeno_ks:0,   planovane_zahajeni:d(5),   planovane_ukonceni:d(35),  termin_dodani:d(10),  prubeznа_doba:28 },
-    { id_zakazky:'Z004', nazev_zakazky:'Příruba 44C pro zákazníka K',  typ_zakazky:'výroba',    vyrobit_ks:120, odvedeno_ks:30,  planovane_zahajeni:d(-20), planovane_ukonceni:d(-2),  termin_dodani:d(-15), prubeznа_doba:20 },
-    { id_zakazky:'Z005', nazev_zakazky:'Skříň rozvodná 2kV',           typ_zakazky:'výroba',    vyrobit_ks:8,   odvedeno_ks:0,   planovane_zahajeni:d(3),   planovane_ukonceni:d(28),  termin_dodani:d(30),  prubeznа_doba:25 },
-    { id_zakazky:'Z006', nazev_zakazky:'Trubkový rám T-série',         typ_zakazky:'kooperace', vyrobit_ks:35,  odvedeno_ks:35,  planovane_zahajeni:d(-45), planovane_ukonceni:d(-10), termin_dodani:d(-8),  prubeznа_doba:35 },
-    { id_zakazky:'Z007', nazev_zakazky:'Díly pro linku Müller',        typ_zakazky:'výroba',    vyrobit_ks:500, odvedeno_ks:210, planovane_zahajeni:d(-8),  planovane_ukonceni:d(22),  termin_dodani:d(5),   prubeznа_doba:30 },
-    { id_zakazky:'Z008', nazev_zakazky:'Konzola nosná typ 77',         typ_zakazky:'výroba',    vyrobit_ks:60,  odvedeno_ks:0,   planovane_zahajeni:d(12),  planovane_ukonceni:d(40),  termin_dodani:d(-5),  prubeznа_doba:22 },
-    { id_zakazky:'Z009', nazev_zakazky:'Hřídel pohonná D40',          typ_zakazky:'kooperace', vyrobit_ks:24,  odvedeno_ks:10,  planovane_zahajeni:d(-5),  planovane_ukonceni:d(15),  termin_dodani:d(20),  prubeznа_doba:18 },
-    { id_zakazky:'Z010', nazev_zakazky:'Výpalky plech 3mm — sada K2', typ_zakazky:'výroba',    vyrobit_ks:300, odvedeno_ks:300, planovane_zahajeni:d(-60), planovane_ukonceni:d(-20), termin_dodani:d(-18), prubeznа_doba:40 },
-    { id_zakazky:'Z011', nazev_zakazky:'Ložiskový domek B22',          typ_zakazky:'výroba',    vyrobit_ks:45,  odvedeno_ks:10,  planovane_zahajeni:d(-3),  planovane_ukonceni:d(18),  termin_dodani:d(12),  prubeznа_doba:21 },
-    { id_zakazky:'Z012', nazev_zakazky:'Svařenec základový R7',        typ_zakazky:'výroba',    vyrobit_ks:15,  odvedeno_ks:0,   planovane_zahajeni:d(8),   planovane_ukonceni:d(38),  termin_dodani:d(45),  prubeznа_doba:30 },
-    { id_zakazky:'Z013', nazev_zakazky:'Řetězové kolo Z48',            typ_zakazky:'kooperace', vyrobit_ks:100, odvedeno_ks:60,  planovane_zahajeni:d(-15), planovane_ukonceni:d(5),   termin_dodani:d(-2),  prubeznа_doba:20 },
-    { id_zakazky:'Z014', nazev_zakazky:'Převodový hřídel P6',          typ_zakazky:'výroba',    vyrobit_ks:30,  odvedeno_ks:0,   planovane_zahajeni:d(2),   planovane_ukonceni:d(32),  termin_dodani:d(35),  prubeznа_doba:30 },
-    { id_zakazky:'Z015', nazev_zakazky:'Trubky spojovací DN80 — sada', typ_zakazky:'kooperace', vyrobit_ks:60,  odvedeno_ks:60,  planovane_zahajeni:d(-22), planovane_ukonceni:d(-8),  termin_dodani:d(-6),  prubeznа_doba:14 },
-    { id_zakazky:'Z016', nazev_zakazky:'Nosník jeřábový NJ-120',       typ_zakazky:'výroba',    vyrobit_ks:4,   odvedeno_ks:0,   planovane_zahajeni:d(6),   planovane_ukonceni:d(50),  termin_dodani:d(55),  prubeznа_doba:44 },
-    { id_zakazky:'Z017', nazev_zakazky:'Kluzné pouzdro KP-18',         typ_zakazky:'výroba',    vyrobit_ks:250, odvedeno_ks:180, planovane_zahajeni:d(-6),  planovane_ukonceni:d(10),  termin_dodani:d(8),   prubeznа_doba:16 },
-    { id_zakazky:'Z018', nazev_zakazky:'Svařenec příruby série M',     typ_zakazky:'výroba',    vyrobit_ks:70,  odvedeno_ks:0,   planovane_zahajeni:d(4),   planovane_ukonceni:d(34),  termin_dodani:d(-10), prubeznа_doba:30 },
-    { id_zakazky:'Z019', nazev_zakazky:'Ozubené kolo Z32 modul 2',     typ_zakazky:'kooperace', vyrobit_ks:80,  odvedeno_ks:40,  planovane_zahajeni:d(-12), planovane_ukonceni:d(8),   termin_dodani:d(15),  prubeznа_doba:20 },
-    { id_zakazky:'Z020', nazev_zakazky:'Konzola věžového jeřábu',      typ_zakazky:'výroba',    vyrobit_ks:12,  odvedeno_ks:4,   planovane_zahajeni:d(-4),  planovane_ukonceni:d(26),  termin_dodani:d(20),  prubeznа_doba:30 },
-    { id_zakazky:'Z021', nazev_zakazky:'Plech děrovaný 2×1500',        typ_zakazky:'kooperace', vyrobit_ks:500, odvedeno_ks:500, planovane_zahajeni:d(-40), planovane_ukonceni:d(-15), termin_dodani:d(-12), prubeznа_doba:25 },
-    { id_zakazky:'Z022', nazev_zakazky:'Výkyvná deska VD-55',          typ_zakazky:'výroba',    vyrobit_ks:20,  odvedeno_ks:5,   planovane_zahajeni:d(-7),  planovane_ukonceni:d(13),  termin_dodani:d(10),  prubeznа_doba:20 },
-    { id_zakazky:'Z023', nazev_zakazky:'Vložky segmentové S-40',       typ_zakazky:'výroba',    vyrobit_ks:160, odvedeno_ks:0,   planovane_zahajeni:d(10),  planovane_ukonceni:d(40),  termin_dodani:d(42),  prubeznа_doba:30 },
-    { id_zakazky:'Z024', nazev_zakazky:'Spojovací hřídel SH-200',      typ_zakazky:'výroba',    vyrobit_ks:8,   odvedeno_ks:2,   planovane_zahajeni:d(-9),  planovane_ukonceni:d(11),  termin_dodani:d(-4),  prubeznа_doba:20 },
-    { id_zakazky:'Z025', nazev_zakazky:'Základová deska ZD-600',       typ_zakazky:'výroba',    vyrobit_ks:6,   odvedeno_ks:0,   planovane_zahajeni:d(1),   planovane_ukonceni:d(31),  termin_dodani:d(35),  prubeznа_doba:30 },
-    { id_zakazky:'Z026', nazev_zakazky:'Montážní sada MS-12 komplet',  typ_zakazky:'kooperace', vyrobit_ks:40,  odvedeno_ks:40,  planovane_zahajeni:d(-35), planovane_ukonceni:d(-12), termin_dodani:d(-9),  prubeznа_doba:23 },
-    { id_zakazky:'Z027', nazev_zakazky:'Svařovací přípravek SP-77',    typ_zakazky:'výroba',    vyrobit_ks:3,   odvedeno_ks:0,   planovane_zahajeni:d(5),   planovane_ukonceni:d(45),  termin_dodani:d(50),  prubeznа_doba:40 },
-    { id_zakazky:'Z028', nazev_zakazky:'Těsnění kruhové TK-88 sada',   typ_zakazky:'kooperace', vyrobit_ks:600, odvedeno_ks:350, planovane_zahajeni:d(-18), planovane_ukonceni:d(2),   termin_dodani:d(-8),  prubeznа_doba:20 },
-    { id_zakazky:'Z029', nazev_zakazky:'Přírubový spoj PS-32',         typ_zakazky:'výroba',    vyrobit_ks:55,  odvedeno_ks:20,  planovane_zahajeni:d(-11), planovane_ukonceni:d(9),   termin_dodani:d(5),   prubeznа_doba:20 },
-    { id_zakazky:'Z030', nazev_zakazky:'Paletový vozík rám PVR',       typ_zakazky:'výroba',    vyrobit_ks:10,  odvedeno_ks:0,   planovane_zahajeni:d(7),   planovane_ukonceni:d(37),  termin_dodani:d(40),  prubeznа_doba:30 },
+    { id_zakazky:'Z001', nazev_zakazky:'SvaĹ™ovacĂ­ rĂˇm XL-200',        typ_zakazky:'vĂ˝roba',    vyrobit_ks:50,  odvedeno_ks:12,  planovane_zahajeni:d(-10), planovane_ukonceni:d(20),  termin_dodani:d(25),  prubeznĐ°_doba:30 },
+    { id_zakazky:'Z002', nazev_zakazky:'LaserovĂ˝ vĂ˝palek A3 sĂ©rie',    typ_zakazky:'kooperace', vyrobit_ks:200, odvedeno_ks:200, planovane_zahajeni:d(-30), planovane_ukonceni:d(-5),  termin_dodani:d(-3),  prubeznĐ°_doba:25 },
+    { id_zakazky:'Z003', nazev_zakazky:'OhĂ˝banĂ© profily B-44',         typ_zakazky:'vĂ˝roba',    vyrobit_ks:80,  odvedeno_ks:0,   planovane_zahajeni:d(5),   planovane_ukonceni:d(35),  termin_dodani:d(10),  prubeznĐ°_doba:28 },
+    { id_zakazky:'Z004', nazev_zakazky:'PĹ™Ă­ruba 44C pro zĂˇkaznĂ­ka K',  typ_zakazky:'vĂ˝roba',    vyrobit_ks:120, odvedeno_ks:30,  planovane_zahajeni:d(-20), planovane_ukonceni:d(-2),  termin_dodani:d(-15), prubeznĐ°_doba:20 },
+    { id_zakazky:'Z005', nazev_zakazky:'SkĹ™Ă­Ĺ rozvodnĂˇ 2kV',           typ_zakazky:'vĂ˝roba',    vyrobit_ks:8,   odvedeno_ks:0,   planovane_zahajeni:d(3),   planovane_ukonceni:d(28),  termin_dodani:d(30),  prubeznĐ°_doba:25 },
+    { id_zakazky:'Z006', nazev_zakazky:'TrubkovĂ˝ rĂˇm T-sĂ©rie',         typ_zakazky:'kooperace', vyrobit_ks:35,  odvedeno_ks:35,  planovane_zahajeni:d(-45), planovane_ukonceni:d(-10), termin_dodani:d(-8),  prubeznĐ°_doba:35 },
+    { id_zakazky:'Z007', nazev_zakazky:'DĂ­ly pro linku MĂĽller',        typ_zakazky:'vĂ˝roba',    vyrobit_ks:500, odvedeno_ks:210, planovane_zahajeni:d(-8),  planovane_ukonceni:d(22),  termin_dodani:d(5),   prubeznĐ°_doba:30 },
+    { id_zakazky:'Z008', nazev_zakazky:'Konzola nosnĂˇ typ 77',         typ_zakazky:'vĂ˝roba',    vyrobit_ks:60,  odvedeno_ks:0,   planovane_zahajeni:d(12),  planovane_ukonceni:d(40),  termin_dodani:d(-5),  prubeznĐ°_doba:22 },
+    { id_zakazky:'Z009', nazev_zakazky:'HĹ™Ă­del pohonnĂˇ D40',          typ_zakazky:'kooperace', vyrobit_ks:24,  odvedeno_ks:10,  planovane_zahajeni:d(-5),  planovane_ukonceni:d(15),  termin_dodani:d(20),  prubeznĐ°_doba:18 },
+    { id_zakazky:'Z010', nazev_zakazky:'VĂ˝palky plech 3mm â€” sada K2', typ_zakazky:'vĂ˝roba',    vyrobit_ks:300, odvedeno_ks:300, planovane_zahajeni:d(-60), planovane_ukonceni:d(-20), termin_dodani:d(-18), prubeznĐ°_doba:40 },
+    { id_zakazky:'Z011', nazev_zakazky:'LoĹľiskovĂ˝ domek B22',          typ_zakazky:'vĂ˝roba',    vyrobit_ks:45,  odvedeno_ks:10,  planovane_zahajeni:d(-3),  planovane_ukonceni:d(18),  termin_dodani:d(12),  prubeznĐ°_doba:21 },
+    { id_zakazky:'Z012', nazev_zakazky:'SvaĹ™enec zĂˇkladovĂ˝ R7',        typ_zakazky:'vĂ˝roba',    vyrobit_ks:15,  odvedeno_ks:0,   planovane_zahajeni:d(8),   planovane_ukonceni:d(38),  termin_dodani:d(45),  prubeznĐ°_doba:30 },
+    { id_zakazky:'Z013', nazev_zakazky:'ĹetÄ›zovĂ© kolo Z48',            typ_zakazky:'kooperace', vyrobit_ks:100, odvedeno_ks:60,  planovane_zahajeni:d(-15), planovane_ukonceni:d(5),   termin_dodani:d(-2),  prubeznĐ°_doba:20 },
+    { id_zakazky:'Z014', nazev_zakazky:'PĹ™evodovĂ˝ hĹ™Ă­del P6',          typ_zakazky:'vĂ˝roba',    vyrobit_ks:30,  odvedeno_ks:0,   planovane_zahajeni:d(2),   planovane_ukonceni:d(32),  termin_dodani:d(35),  prubeznĐ°_doba:30 },
+    { id_zakazky:'Z015', nazev_zakazky:'Trubky spojovacĂ­ DN80 â€” sada', typ_zakazky:'kooperace', vyrobit_ks:60,  odvedeno_ks:60,  planovane_zahajeni:d(-22), planovane_ukonceni:d(-8),  termin_dodani:d(-6),  prubeznĐ°_doba:14 },
+    { id_zakazky:'Z016', nazev_zakazky:'NosnĂ­k jeĹ™ĂˇbovĂ˝ NJ-120',       typ_zakazky:'vĂ˝roba',    vyrobit_ks:4,   odvedeno_ks:0,   planovane_zahajeni:d(6),   planovane_ukonceni:d(50),  termin_dodani:d(55),  prubeznĐ°_doba:44 },
+    { id_zakazky:'Z017', nazev_zakazky:'KluznĂ© pouzdro KP-18',         typ_zakazky:'vĂ˝roba',    vyrobit_ks:250, odvedeno_ks:180, planovane_zahajeni:d(-6),  planovane_ukonceni:d(10),  termin_dodani:d(8),   prubeznĐ°_doba:16 },
+    { id_zakazky:'Z018', nazev_zakazky:'SvaĹ™enec pĹ™Ă­ruby sĂ©rie M',     typ_zakazky:'vĂ˝roba',    vyrobit_ks:70,  odvedeno_ks:0,   planovane_zahajeni:d(4),   planovane_ukonceni:d(34),  termin_dodani:d(-10), prubeznĐ°_doba:30 },
+    { id_zakazky:'Z019', nazev_zakazky:'OzubenĂ© kolo Z32 modul 2',     typ_zakazky:'kooperace', vyrobit_ks:80,  odvedeno_ks:40,  planovane_zahajeni:d(-12), planovane_ukonceni:d(8),   termin_dodani:d(15),  prubeznĐ°_doba:20 },
+    { id_zakazky:'Z020', nazev_zakazky:'Konzola vÄ›ĹľovĂ©ho jeĹ™Ăˇbu',      typ_zakazky:'vĂ˝roba',    vyrobit_ks:12,  odvedeno_ks:4,   planovane_zahajeni:d(-4),  planovane_ukonceni:d(26),  termin_dodani:d(20),  prubeznĐ°_doba:30 },
+    { id_zakazky:'Z021', nazev_zakazky:'Plech dÄ›rovanĂ˝ 2Ă—1500',        typ_zakazky:'kooperace', vyrobit_ks:500, odvedeno_ks:500, planovane_zahajeni:d(-40), planovane_ukonceni:d(-15), termin_dodani:d(-12), prubeznĐ°_doba:25 },
+    { id_zakazky:'Z022', nazev_zakazky:'VĂ˝kyvnĂˇ deska VD-55',          typ_zakazky:'vĂ˝roba',    vyrobit_ks:20,  odvedeno_ks:5,   planovane_zahajeni:d(-7),  planovane_ukonceni:d(13),  termin_dodani:d(10),  prubeznĐ°_doba:20 },
+    { id_zakazky:'Z023', nazev_zakazky:'VloĹľky segmentovĂ© S-40',       typ_zakazky:'vĂ˝roba',    vyrobit_ks:160, odvedeno_ks:0,   planovane_zahajeni:d(10),  planovane_ukonceni:d(40),  termin_dodani:d(42),  prubeznĐ°_doba:30 },
+    { id_zakazky:'Z024', nazev_zakazky:'SpojovacĂ­ hĹ™Ă­del SH-200',      typ_zakazky:'vĂ˝roba',    vyrobit_ks:8,   odvedeno_ks:2,   planovane_zahajeni:d(-9),  planovane_ukonceni:d(11),  termin_dodani:d(-4),  prubeznĐ°_doba:20 },
+    { id_zakazky:'Z025', nazev_zakazky:'ZĂˇkladovĂˇ deska ZD-600',       typ_zakazky:'vĂ˝roba',    vyrobit_ks:6,   odvedeno_ks:0,   planovane_zahajeni:d(1),   planovane_ukonceni:d(31),  termin_dodani:d(35),  prubeznĐ°_doba:30 },
+    { id_zakazky:'Z026', nazev_zakazky:'MontĂˇĹľnĂ­ sada MS-12 komplet',  typ_zakazky:'kooperace', vyrobit_ks:40,  odvedeno_ks:40,  planovane_zahajeni:d(-35), planovane_ukonceni:d(-12), termin_dodani:d(-9),  prubeznĐ°_doba:23 },
+    { id_zakazky:'Z027', nazev_zakazky:'SvaĹ™ovacĂ­ pĹ™Ă­pravek SP-77',    typ_zakazky:'vĂ˝roba',    vyrobit_ks:3,   odvedeno_ks:0,   planovane_zahajeni:d(5),   planovane_ukonceni:d(45),  termin_dodani:d(50),  prubeznĐ°_doba:40 },
+    { id_zakazky:'Z028', nazev_zakazky:'TÄ›snÄ›nĂ­ kruhovĂ© TK-88 sada',   typ_zakazky:'kooperace', vyrobit_ks:600, odvedeno_ks:350, planovane_zahajeni:d(-18), planovane_ukonceni:d(2),   termin_dodani:d(-8),  prubeznĐ°_doba:20 },
+    { id_zakazky:'Z029', nazev_zakazky:'PĹ™Ă­rubovĂ˝ spoj PS-32',         typ_zakazky:'vĂ˝roba',    vyrobit_ks:55,  odvedeno_ks:20,  planovane_zahajeni:d(-11), planovane_ukonceni:d(9),   termin_dodani:d(5),   prubeznĐ°_doba:20 },
+    { id_zakazky:'Z030', nazev_zakazky:'PaletovĂ˝ vozĂ­k rĂˇm PVR',       typ_zakazky:'vĂ˝roba',    vyrobit_ks:10,  odvedeno_ks:0,   planovane_zahajeni:d(7),   planovane_ukonceni:d(37),  termin_dodani:d(40),  prubeznĐ°_doba:30 },
   ];
   const casSamples = [
-    'Svařování: 240 min, Brusky: 60 min','Laser: 180 min','Ohyb: 320 min, Soustruhy: 90 min',
-    'Soustruhy: 450 min','Svařování: 600 min, Laser: 120 min','Laser: 90 min, Brusky: 30 min',
-    'Soustruhy: 280 min, Ohyb: 150 min','Brusky: 80 min, Svařování: 400 min','Soustruhy: 180 min',
-    'Laser: 250 min, Ohyb: 80 min','Svařování: 300 min, Brusky: 45 min','Laser: 200 min, Ohyb: 100 min',
-    'Soustruhy: 360 min','Svařování: 480 min, Soustruhy: 120 min','Laser: 130 min',
-    'Svařování: 1200 min, Brusky: 200 min','Soustruhy: 220 min, Ohyb: 60 min','Svařování: 540 min',
-    'Soustruhy: 400 min, Laser: 90 min','Svařování: 360 min, Brusky: 90 min',
+    'SvaĹ™ovĂˇnĂ­: 240 min, Brusky: 60 min','Laser: 180 min','Ohyb: 320 min, Soustruhy: 90 min',
+    'Soustruhy: 450 min','SvaĹ™ovĂˇnĂ­: 600 min, Laser: 120 min','Laser: 90 min, Brusky: 30 min',
+    'Soustruhy: 280 min, Ohyb: 150 min','Brusky: 80 min, SvaĹ™ovĂˇnĂ­: 400 min','Soustruhy: 180 min',
+    'Laser: 250 min, Ohyb: 80 min','SvaĹ™ovĂˇnĂ­: 300 min, Brusky: 45 min','Laser: 200 min, Ohyb: 100 min',
+    'Soustruhy: 360 min','SvaĹ™ovĂˇnĂ­: 480 min, Soustruhy: 120 min','Laser: 130 min',
+    'SvaĹ™ovĂˇnĂ­: 1200 min, Brusky: 200 min','Soustruhy: 220 min, Ohyb: 60 min','SvaĹ™ovĂˇnĂ­: 540 min',
+    'Soustruhy: 400 min, Laser: 90 min','SvaĹ™ovĂˇnĂ­: 360 min, Brusky: 90 min',
     'Laser: 160 min','Ohyb: 240 min, Soustruhy: 80 min','Soustruhy: 500 min',
-    'Svařování: 280 min, Ohyb: 120 min','Svařování: 420 min, Laser: 80 min',
-    'Laser: 110 min, Brusky: 40 min','Svařování: 900 min, Brusky: 150 min',
+    'SvaĹ™ovĂˇnĂ­: 280 min, Ohyb: 120 min','SvaĹ™ovĂˇnĂ­: 420 min, Laser: 80 min',
+    'Laser: 110 min, Brusky: 40 min','SvaĹ™ovĂˇnĂ­: 900 min, Brusky: 150 min',
     'Ohyb: 180 min, Soustruhy: 60 min','Soustruhy: 320 min, Brusky: 70 min',
-    'Svařování: 660 min, Laser: 100 min',
+    'SvaĹ™ovĂˇnĂ­: 660 min, Laser: 100 min',
   ];
   return rows.map((z, i) => ({
     ...z,
-    zbyvа_ks: z.vyrobit_ks - z.odvedeno_ks,
+    zbyvĐ°_ks: z.vyrobit_ks - z.odvedeno_ks,
     zpozdeni_dny: zp(z.termin_dodani),
-    cas_pracoviste_txt: casSamples[i] || '—',
+    cas_pracoviste_txt: casSamples[i] || 'â€”',
   }));
 }
 
@@ -643,9 +643,9 @@ async function runPlan() {
   document.getElementById('plan-banner')?.remove();
 
   try {
-    // ── Krok 1: Plán výroby ──────────────────────────────────────────────
-    btn.textContent = '▶ Plánuji…';
-    const pRes  = await fetch('/api/toc-plan', {
+    // â”€â”€ Krok 1: PlĂˇn vĂ˝roby â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    btn.textContent = 'â–¶ PlĂˇnujiâ€¦';
+    const pRes  = await fetch('/api/toc?route=plan', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'vytvor', userId }),
     });
@@ -653,14 +653,14 @@ async function runPlan() {
     if (!pRes.ok) throw new Error(pJson.error || `HTTP ${pRes.status}`);
 
     if (!pJson.plan?.length) {
-      alert(pJson.message || 'Žádné zakázky ke zplánování. Nejprve importuj a zkontroluj data v Nastavení.');
+      alert(pJson.message || 'Ĺ˝ĂˇdnĂ© zakĂˇzky ke zplĂˇnovĂˇnĂ­. Nejprve importuj a zkontroluj data v NastavenĂ­.');
       return;
     }
     allData = pJson.plan; sortCol = 'planovane_zahajeni'; sortDir = 1; page = 0;
     render(allData);
 
-    // ── Krok 2: Vytížení kapacit ─────────────────────────────────────────
-    btn.textContent = '📊 Kapacity…';
+    // â”€â”€ Krok 2: VytĂ­ĹľenĂ­ kapacit â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    btn.textContent = 'đź“Š Kapacityâ€¦';
     await runKapacita();
     switchTab('kapacita');
 
@@ -668,18 +668,18 @@ async function runPlan() {
     const banner = document.createElement('div');
     banner.id = 'plan-banner';
     banner.style.cssText = 'padding:10px 24px;background:rgba(34,197,94,0.08);border-bottom:1px solid rgba(34,197,94,0.2);font-family:JetBrains Mono,monospace;font-size:13px;color:#4ade80;';
-    banner.textContent = `✔ PLÁN VYTVOŘEN — ${pJson.planned} zakázek`;
+    banner.textContent = `âś” PLĂN VYTVOĹEN â€” ${pJson.planned} zakĂˇzek`;
     document.querySelector('.header').insertAdjacentElement('afterend', banner);
 
   } catch (e) {
-    alert('Plán selhal: ' + e.message);
+    alert('PlĂˇn selhal: ' + e.message);
   } finally {
     btn.disabled = false;
-    btn.textContent = '▶ Vytvořit plán';
+    btn.textContent = 'â–¶ VytvoĹ™it plĂˇn';
   }
 }
 
-// ── Přepínání záložek ──────────────────────────────────────────────────────
+// â”€â”€ PĹ™epĂ­nĂˇnĂ­ zĂˇloĹľek â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function switchTab(tab) {
   ['plan','kapacita','gantt','hp'].forEach(t =>
     document.getElementById('tab-' + t).classList.toggle('active', t === tab)
@@ -696,14 +696,14 @@ function switchTab(tab) {
   if (tab === 'hp')    renderHlavniPlan();
 }
 
-// ── Kapacitní plán ─────────────────────────────────────────────────────────
+// â”€â”€ KapacitnĂ­ plĂˇn â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async function runKapacita(limit) {
 
   try {
     const body = { action: 'kapacita', userId };
     if (limit) body.limit = limit;
 
-    const res  = await fetch('/api/toc-plan', {
+    const res  = await fetch('/api/toc?route=plan', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
@@ -711,30 +711,30 @@ async function runKapacita(limit) {
     const json = await res.json();
     if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
     if (!json.rows?.length) {
-      document.getElementById('kap-wrap').innerHTML = `<div class="center" style="color:#eab308">${json.message || 'Žádná data.'}</div>`;
+      document.getElementById('kap-wrap').innerHTML = `<div class="center" style="color:#eab308">${json.message || 'Ĺ˝ĂˇdnĂˇ data.'}</div>`;
       return;
     }
 
     // Info bar
     document.getElementById('kap-info').innerHTML =
-      `<span style="color:#22d3ee">KAPACITNÍ PLÁN</span> &nbsp;·&nbsp; ` +
-      `${json.zakazky_count} zakázek &nbsp;·&nbsp; ` +
-      `pracoviště: ${json.pracoviste.map(p => p.nazev).join(', ')} &nbsp;·&nbsp; ` +
-      `${json.rows.filter(r => !r.nepracovni).length} pracovních dní`;
+      `<span style="color:#22d3ee">KAPACITNĂŤ PLĂN</span> &nbsp;Â·&nbsp; ` +
+      `${json.zakazky_count} zakĂˇzek &nbsp;Â·&nbsp; ` +
+      `pracoviĹˇtÄ›: ${json.pracoviste.map(p => p.nazev).join(', ')} &nbsp;Â·&nbsp; ` +
+      `${json.rows.filter(r => !r.nepracovni).length} pracovnĂ­ch dnĂ­`;
 
     renderKapacita(json);
   } catch (e) {
     document.getElementById('kap-wrap').innerHTML =
       `<div class="center" style="color:#ef4444">Chyba: ${e.message}</div>`;
   } finally {
-    if (btn) { btn.disabled = false; btn.textContent = '📊 Kapacitní plán'; }
+    if (btn) { btn.disabled = false; btn.textContent = 'đź“Š KapacitnĂ­ plĂˇn'; }
   }
 }
 
 function renderKapacita(json) {
   const { pracoviste, rows } = json;
 
-  // ── CONSTRAINT: pracoviště s nejvíce přetíženými dny v příštím týdnu ──
+  // â”€â”€ CONSTRAINT: pracoviĹˇtÄ› s nejvĂ­ce pĹ™etĂ­ĹľenĂ˝mi dny v pĹ™Ă­ĹˇtĂ­m tĂ˝dnu â”€â”€
   const next7work = rows.filter(r => !r.nepracovni).slice(0, 7);
   let constraintHtml = '';
   if (next7work.length && pracoviste.length) {
@@ -745,14 +745,14 @@ function renderKapacita(json) {
     const top = overCounts[0];
     if (top.over > 0) {
       constraintHtml = `<span class="constraint-label">CONSTRAINT: </span>`
-        + `<span class="constraint-val">⚠ ${top.nazev.toUpperCase()} — přetíženo ${top.over}× tento týden</span>`;
+        + `<span class="constraint-val">âš  ${top.nazev.toUpperCase()} â€” pĹ™etĂ­Ĺľeno ${top.over}Ă— tento tĂ˝den</span>`;
     }
   }
   document.getElementById('kap-info').innerHTML = constraintHtml ||
-    `<span class="constraint-label">CONSTRAINT: </span><span style="color:#22c55e">✔ žádné přetížené pracoviště tento týden</span>`;
+    `<span class="constraint-label">CONSTRAINT: </span><span style="color:#22c55e">âś” ĹľĂˇdnĂ© pĹ™etĂ­ĹľenĂ© pracoviĹˇtÄ› tento tĂ˝den</span>`;
 
-  // ── TABULKA: řádky = pracoviště, sloupce = dny ──────────────────────────
-  // Záhlaví: první buňka = PRACOVIŠTĚ, pak datumy
+  // â”€â”€ TABULKA: Ĺ™Ăˇdky = pracoviĹˇtÄ›, sloupce = dny â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ZĂˇhlavĂ­: prvnĂ­ buĹka = PRACOVIĹ TÄš, pak datumy
   const thCols = rows.map(r => {
     const cls = r.nepracovni ? 'weekend' : '';
     return `<th class="${cls}">
@@ -761,14 +761,14 @@ function renderKapacita(json) {
     </th>`;
   }).join('');
 
-  const thead = `<tr><th>PRACOVIŠTĚ</th>${thCols}</tr>`;
+  const thead = `<tr><th>PRACOVIĹ TÄš</th>${thCols}</tr>`;
 
-  // Tělo: jeden řádek = jedno pracoviště
+  // TÄ›lo: jeden Ĺ™Ăˇdek = jedno pracoviĹˇtÄ›
   const tbody = pracoviste.map((p, pi) => {
     const cells = rows.map(r => {
       if (r.nepracovni) return `<td class="kap-u-weekend"></td>`;
       const v = r.zatizeni[pi];
-      if (v === null || v === 0) return `<td class="kap-u-empty">—</td>`;
+      if (v === null || v === 0) return `<td class="kap-u-empty">â€”</td>`;
       const cls = v >= 100 ? 'kap-u-over' : v >= 80 ? 'kap-u-warn' : 'kap-u-ok';
       return `<td class="${cls}">${v > 999 ? 999 : v}</td>`;
     }).join('');
@@ -782,13 +782,13 @@ function renderKapacita(json) {
     </table>`;
 }
 
-// ── Ganttův diagram ────────────────────────────────────────────────────────
+// â”€â”€ GanttĹŻv diagram â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function renderGantt() {
   const view = document.getElementById('gantt-view');
   const wrap = document.getElementById('gantt-wrap');
   if (!allData?.length) {
     wrap.style.padding = '24px';
-    wrap.innerHTML = '<div style="color:#475569;font-family:\'JetBrains Mono\',monospace;font-size:13px;">Spusť plán tlačítkem výše.</div>';
+    wrap.innerHTML = '<div style="color:#475569;font-family:\'JetBrains Mono\',monospace;font-size:13px;">SpusĹĄ plĂˇn tlaÄŤĂ­tkem vĂ˝Ĺˇe.</div>';
     return;
   }
   wrap.style.padding = '0';
@@ -798,13 +798,13 @@ function renderGantt() {
   const DAY    = 86400000;
   const todayStr = today.toISOString().slice(0, 10);
 
-  // Okno z Parametrů
+  // Okno z ParametrĹŻ
   const GD = parametry.GD ?? -30;
   const GO = parametry.GO ?? 90;
   const GT = Math.max(1, parametry.GT ?? 3);  // min 1 den
   const minD = new Date(today.getTime() + GD * DAY);
 
-  // Filtr + řazení — nejprve bez omezení pravého okraje
+  // Filtr + Ĺ™azenĂ­ â€” nejprve bez omezenĂ­ pravĂ©ho okraje
   const visData = allData
     .filter(z => z.planovane_zahajeni && z.planovane_ukonceni)
     .filter(z => toDay(z.planovane_zahajeni) <= new Date(today.getTime() + GO * DAY))
@@ -813,35 +813,35 @@ function renderGantt() {
 
   if (!visData.length) {
     wrap.style.padding = '24px';
-    wrap.innerHTML = '<div style="color:#475569;font-family:\'JetBrains Mono\',monospace;font-size:13px;">Žádné zakázky v zobrazovaném okně (GD/GO).</div>';
+    wrap.innerHTML = '<div style="color:#475569;font-family:\'JetBrains Mono\',monospace;font-size:13px;">Ĺ˝ĂˇdnĂ© zakĂˇzky v zobrazovanĂ©m oknÄ› (GD/GO).</div>';
     return;
   }
 
-  // Pravý okraj = max(GO parametr, konec poslední zakázky) — žádná úsečka nesmí být oříznutá
+  // PravĂ˝ okraj = max(GO parametr, konec poslednĂ­ zakĂˇzky) â€” ĹľĂˇdnĂˇ ĂşseÄŤka nesmĂ­ bĂ˝t oĹ™Ă­znutĂˇ
   let maxD = new Date(today.getTime() + GO * DAY);
   for (const z of visData) {
     const d = toDay(z.planovane_ukonceni);
     if (d > maxD) maxD = d;
   }
-  maxD = new Date(maxD.getTime() + 2 * DAY);  // malý pravý okraj
+  maxD = new Date(maxD.getTime() + 2 * DAY);  // malĂ˝ pravĂ˝ okraj
 
   const totalDays  = Math.round((maxD - minD) / DAY);
-  const LABEL_W    = 180;  // px — levý sticky sloupec
-  const ROW_H      = 18;   // px — výška řádku
-  const BAR_H      = 9;    // px — výška pruhu
+  const LABEL_W    = 180;  // px â€” levĂ˝ sticky sloupec
+  const ROW_H      = 18;   // px â€” vĂ˝Ĺˇka Ĺ™Ăˇdku
+  const BAR_H      = 9;    // px â€” vĂ˝Ĺˇka pruhu
   const BAR_TOP    = Math.floor((ROW_H - BAR_H) / 2);
-  const HEADER_H   = 44;   // px — výška hlavičky (prostor pro šikmé datumy)
+  const HEADER_H   = 44;   // px â€” vĂ˝Ĺˇka hlaviÄŤky (prostor pro ĹˇikmĂ© datumy)
 
-  // pxPerDay: min 14px/den → chart je vždy dost široký, mobil scrolluje stejně jako desktop
+  // pxPerDay: min 14px/den â†’ chart je vĹľdy dost ĹˇirokĂ˝, mobil scrolluje stejnÄ› jako desktop
   const realChartPx = Math.max(50, (view.getBoundingClientRect().width || window.innerWidth) - LABEL_W);
   const pxPerDay    = Math.max(14, (realChartPx / totalDays) * 2);
   const CHART_W     = Math.round(pxPerDay * totalDays);
 
-  // Časová osa → % v chartové oblasti (CHART_W px)
+  // ÄŚasovĂˇ osa â†’ % v chartovĂ© oblasti (CHART_W px)
   const tPct = t => (t - minD.getTime()) / DAY / totalDays * 100;
 
-  // ── Tiky ukotvené na dnešek ──────────────────────────────────────────────
-  // Šikmé popisky: footprint = cos(45°) × šířka textu ≈ 14px pro "5.5"
+  // â”€â”€ Tiky ukotvenĂ© na dneĹˇek â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // Ĺ ikmĂ© popisky: footprint = cos(45Â°) Ă— ĹˇĂ­Ĺ™ka textu â‰ 14px pro "5.5"
   const minLabelPx   = 14;
   const labelSpacing = GT * Math.max(1, Math.ceil(minLabelPx / Math.max(1, pxPerDay * GT)));
 
@@ -850,9 +850,9 @@ function renderGantt() {
     firstTick = new Date(firstTick.getTime() - GT * DAY);
   }
 
-  // Šikmé datumy v hlavičce + svislé čáry jen v datech (GT řídí krok)
-  let ticksHtml = '';   // hlavička — pouze labely, žádné čáry
-  let gridLines = '';   // čáry jen v datové oblasti
+  // Ĺ ikmĂ© datumy v hlaviÄŤce + svislĂ© ÄŤĂˇry jen v datech (GT Ĺ™Ă­dĂ­ krok)
+  let ticksHtml = '';   // hlaviÄŤka â€” pouze labely, ĹľĂˇdnĂ© ÄŤĂˇry
+  let gridLines = '';   // ÄŤĂˇry jen v datovĂ© oblasti
 
   let tick = new Date(firstTick);
   while (tick.getTime() <= maxD.getTime()) {
@@ -864,7 +864,7 @@ function renderGantt() {
       const gclr  = isTd ? 'rgba(255,255,255,0.55)' : 'rgba(255,255,255,0.18)';
       const gw    = isTd ? '2px' : '1px';
 
-      // Šikmý label — zobraz jen když je dost místa (adaptivní na šířku displeje)
+      // Ĺ ikmĂ˝ label â€” zobraz jen kdyĹľ je dost mĂ­sta (adaptivnĂ­ na ĹˇĂ­Ĺ™ku displeje)
       const dayOffset = Math.round((tick.getTime() - today.getTime()) / DAY);
       const showLabel = (dayOffset % labelSpacing === 0);
       ticksHtml += `<div style="position:absolute;left:${lp.toFixed(2)}%;top:0;bottom:0;overflow:visible;">
@@ -874,14 +874,14 @@ function renderGantt() {
           transform:rotate(-45deg);transform-origin:left bottom;display:block;">${label}</span>` : ''}
       </div>`;
 
-      // Data: svislá čára — z-index pod barem
+      // Data: svislĂˇ ÄŤĂˇra â€” z-index pod barem
       gridLines += `<div style="position:absolute;left:${lp.toFixed(2)}%;top:0;bottom:0;
         width:${gw};background:${gclr};pointer-events:none;z-index:1;"></div>`;
     }
     tick = new Date(tick.getTime() + GT * DAY);
   }
 
-  // ── Řádky: segment helper ────────────────────────────────────────────────
+  // â”€â”€ ĹĂˇdky: segment helper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const seg = (ts, te, color, rL, rR) => {
     const from = Math.max(ts, minD.getTime());
     const to   = Math.min(te, maxD.getTime());
@@ -893,7 +893,7 @@ function renderGantt() {
       height:${BAR_H}px;top:${BAR_TOP}px;background:${color};border-radius:${br};z-index:2;"></div>`;
   };
 
-  // ── Generuj řádky tabulky ─────────────────────────────────────────────────
+  // â”€â”€ Generuj Ĺ™Ăˇdky tabulky â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const rowsHtml = visData.map((z, i) => {
     const fullStart = toDay(z.planovane_zahajeni).getTime();
     const fullEnd   = toDay(z.planovane_ukonceni).getTime() + DAY;
@@ -922,7 +922,7 @@ function renderGantt() {
     </tr>`;
   }).join('');
 
-  // ── Sestav tabulku ───────────────────────────────────────────────────────
+  // â”€â”€ Sestav tabulku â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   wrap.innerHTML = `
     <table style="border-collapse:collapse;width:${LABEL_W + CHART_W}px;table-layout:fixed;">
       <colgroup>
@@ -937,7 +937,7 @@ function renderGantt() {
             border-right:1px solid rgba(255,255,255,0.1);
             border-bottom:1px solid rgba(6,182,212,0.2);">
           </th>
-          <!-- Osa: šikmé datumy D.M — overflow:visible, datumy přetékají volně -->
+          <!-- Osa: ĹˇikmĂ© datumy D.M â€” overflow:visible, datumy pĹ™etĂ©kajĂ­ volnÄ› -->
           <th style="position:sticky;top:0;z-index:30;
             background:#0a1120;padding:0;height:${HEADER_H}px;
             border-bottom:1px solid rgba(6,182,212,0.2);overflow:visible;">
@@ -953,33 +953,33 @@ function renderGantt() {
     </table>`;
 }
 
-// ── Hlavní plán výroby ────────────────────────────────────────────────────
-let hpRendered = false;  // načítej jen jednou
+// â”€â”€ HlavnĂ­ plĂˇn vĂ˝roby â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+let hpRendered = false;  // naÄŤĂ­tej jen jednou
 
 async function renderHlavniPlan() {
   const wrap = document.getElementById('hp-wrap');
   if (hpRendered) return;
 
-  wrap.innerHTML = '<div style="padding:24px;color:#475569;font-family:\'JetBrains Mono\',monospace;font-size:13px;">NAČÍTÁM…</div>';
+  wrap.innerHTML = '<div style="padding:24px;color:#475569;font-family:\'JetBrains Mono\',monospace;font-size:13px;">NAÄŚĂŤTĂMâ€¦</div>';
 
   let raw = [];
   try {
-    const res = await fetch(`/api/toc-hlavni-plan?userId=${encodeURIComponent(userId)}`);
+    const res = await fetch(`/api/toc?route=hlavni-plan&userId=${encodeURIComponent(userId)}`);
     const json = await res.json();
     raw = json.data || [];
   } catch (e) {
-    wrap.innerHTML = '<div style="padding:24px;color:#ef4444;font-size:13px;">Chyba načítání hlavního plánu.</div>';
+    wrap.innerHTML = '<div style="padding:24px;color:#ef4444;font-size:13px;">Chyba naÄŤĂ­tĂˇnĂ­ hlavnĂ­ho plĂˇnu.</div>';
     return;
   }
 
   if (!raw.length) {
-    wrap.innerHTML = '<div style="padding:24px;color:#475569;font-family:\'JetBrains Mono\',monospace;font-size:13px;">Žádná data v toc_hlavni_plan.</div>';
+    wrap.innerHTML = '<div style="padding:24px;color:#475569;font-family:\'JetBrains Mono\',monospace;font-size:13px;">Ĺ˝ĂˇdnĂˇ data v toc_hlavni_plan.</div>';
     return;
   }
 
   hpRendered = true;
 
-  // Normalizace: datum → D.M, hodnoty
+  // Normalizace: datum â†’ D.M, hodnoty
   const data = raw.map(r => ({
     d:    (() => { const dt = new Date(r.datum + 'T00:00:00'); return `${dt.getDate()}.${dt.getMonth()+1}`; })(),
     plan: r.plan_ks,
@@ -992,13 +992,13 @@ async function renderHlavniPlan() {
   const totalPred = data.reduce((s,d) => s + d.pred, 0);
   const pct = Math.round(totalUvol / totalPlan * 100);
   const fmt  = v => v >= 1000000
-    ? (v/1000000).toFixed(2).replace('.',',') + ' mil. Kč'
-    : Math.round(v/1000) + ' tis. Kč';
+    ? (v/1000000).toFixed(2).replace('.',',') + ' mil. KÄŤ'
+    : Math.round(v/1000) + ' tis. KÄŤ';
   const fmtY = v => v === 0 ? '0' : v >= 1000000
-    ? (v/1000000).toFixed(1).replace('.',',') + ' M Kč'
+    ? (v/1000000).toFixed(1).replace('.',',') + ' M KÄŤ'
     : Math.round(v/1000) + ' tis.';
 
-  // SVG dimenze — větší graf
+  // SVG dimenze â€” vÄ›tĹˇĂ­ graf
   const N   = data.length;
   const H   = 420;
   const pad = { t:24, r:30, b:72, l:90 };
@@ -1013,7 +1013,7 @@ async function renderHlavniPlan() {
   const xc = i => pad.l + i * colW + colW / 2;
   const yv = v => pad.t + cH - (v / maxV) * cH;
 
-  // Y mřížka — 5 dílků
+  // Y mĹ™Ă­Ĺľka â€” 5 dĂ­lkĹŻ
   const step = maxV / 4;
   const yTicks = [0,1,2,3,4].map(i => i * step);
   const grid = yTicks.map(v => {
@@ -1041,13 +1041,13 @@ async function renderHlavniPlan() {
     }
   });
 
-  // Linie Plán
+  // Linie PlĂˇn
   const planPts  = data.map((d,i) => `${i===0?'M':'L'}${xc(i).toFixed(1)},${yv(d.plan).toFixed(1)}`).join(' ');
   const planDots = data.map((d,i) =>
     `<circle cx="${xc(i).toFixed(1)}" cy="${yv(d.plan).toFixed(1)}" r="3.5" fill="#22d3ee"/>`
   ).join('');
 
-  // X popisky — šikmé -45° aby se vešla i delší data jako "11.12."
+  // X popisky â€” ĹˇikmĂ© -45Â° aby se veĹˇla i delĹˇĂ­ data jako "11.12."
   const xLabels = data.map((d,i) =>
     `<text x="${xc(i).toFixed(1)}" y="${H-pad.b+8}" fill="#64748b" font-size="12"
       text-anchor="end" font-family="JetBrains Mono,monospace"
@@ -1057,39 +1057,39 @@ async function renderHlavniPlan() {
   wrap.innerHTML = `
     <div style="padding:24px 24px 0;">
 
-      <!-- KPI řádek -->
+      <!-- KPI Ĺ™Ăˇdek -->
       <div style="display:flex;gap:36px;margin-bottom:20px;flex-wrap:wrap;">
         <div class="hp-stat">
-          <span class="hp-stat-label">PLÁN CELKEM</span>
+          <span class="hp-stat-label">PLĂN CELKEM</span>
           <span class="hp-stat-val" style="color:#22d3ee;">${fmt(totalPlan)}</span>
         </div>
         <div class="hp-stat">
-          <span class="hp-stat-label">UVOLNĚNO</span>
+          <span class="hp-stat-label">UVOLNÄšNO</span>
           <span class="hp-stat-val" style="color:#4ade80;">${fmt(totalUvol)}</span>
         </div>
         <div class="hp-stat">
-          <span class="hp-stat-label">PŘEDVYDÁNO</span>
+          <span class="hp-stat-label">PĹEDVYDĂNO</span>
           <span class="hp-stat-val" style="color:#facc15;">${fmt(totalPred)}</span>
         </div>
         <div class="hp-stat">
-          <span class="hp-stat-label">PLNĚNÍ</span>
+          <span class="hp-stat-label">PLNÄšNĂŤ</span>
           <span class="hp-stat-val" style="color:${pct>=90?'#4ade80':pct>=70?'#facc15':'#f87171'};">${pct} %</span>
         </div>
       </div>
 
-      <!-- Popis výpočtu -->
+      <!-- Popis vĂ˝poÄŤtu -->
       <div style="font-size:12px;color:#475569;font-family:'JetBrains Mono',monospace;margin-bottom:16px;line-height:1.7;">
-        <span style="color:#22d3ee;">PLÁN</span> = denní výrobní cíl v Kč. &nbsp;
-        <span style="color:#4ade80;">UVOLNĚNÉ</span> = zakázky spuštěné do výroby. &nbsp;
-        <span style="color:#facc15;">PŘEDVYDANÉ</span> = materiál/práce vydané před uvolněním. &nbsp;
-        <span style="color:#94a3b8;">PLNĚNÍ</span> = Σ uvolněné / Σ plán.
+        <span style="color:#22d3ee;">PLĂN</span> = dennĂ­ vĂ˝robnĂ­ cĂ­l v KÄŤ. &nbsp;
+        <span style="color:#4ade80;">UVOLNÄšNĂ‰</span> = zakĂˇzky spuĹˇtÄ›nĂ© do vĂ˝roby. &nbsp;
+        <span style="color:#facc15;">PĹEDVYDANĂ‰</span> = materiĂˇl/prĂˇce vydanĂ© pĹ™ed uvolnÄ›nĂ­m. &nbsp;
+        <span style="color:#94a3b8;">PLNÄšNĂŤ</span> = ÎŁ uvolnÄ›nĂ© / ÎŁ plĂˇn.
       </div>
 
       <!-- Legenda -->
       <div style="display:flex;gap:20px;margin-bottom:12px;font-size:12px;color:#64748b;font-family:'JetBrains Mono',monospace;">
-        <span><svg width="28" height="12" style="vertical-align:middle;margin-right:5px"><line x1="0" y1="6" x2="28" y2="6" stroke="#22d3ee" stroke-width="2" stroke-dasharray="5,3"/><circle cx="14" cy="6" r="3.5" fill="#22d3ee"/></svg>PLÁN</span>
-        <span><svg width="14" height="12" style="vertical-align:middle;margin-right:5px"><rect width="14" height="12" fill="rgba(34,197,94,0.65)" rx="1"/></svg>UVOLNĚNÉ</span>
-        <span><svg width="9" height="12" style="vertical-align:middle;margin-right:5px"><rect width="9" height="12" fill="rgba(234,179,8,0.85)" rx="1"/></svg>PŘEDVYDANÉ</span>
+        <span><svg width="28" height="12" style="vertical-align:middle;margin-right:5px"><line x1="0" y1="6" x2="28" y2="6" stroke="#22d3ee" stroke-width="2" stroke-dasharray="5,3"/><circle cx="14" cy="6" r="3.5" fill="#22d3ee"/></svg>PLĂN</span>
+        <span><svg width="14" height="12" style="vertical-align:middle;margin-right:5px"><rect width="14" height="12" fill="rgba(34,197,94,0.65)" rx="1"/></svg>UVOLNÄšNĂ‰</span>
+        <span><svg width="9" height="12" style="vertical-align:middle;margin-right:5px"><rect width="9" height="12" fill="rgba(234,179,8,0.85)" rx="1"/></svg>PĹEDVYDANĂ‰</span>
       </div>
 
       <!-- Graf -->
@@ -1121,7 +1121,7 @@ function showErr(msg, url) {
 
 async function load() {
   if (LOCAL_DEV) { allData = buildDemo(); render(allData); return; }
-  const url = `/api/toc-zakazky?userId=${encodeURIComponent(userId)}`;
+  const url = `/api/toc?route=zakazky&userId=${encodeURIComponent(userId)}`;
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 10000);
   try {
@@ -1129,21 +1129,21 @@ async function load() {
     clearTimeout(timer);
     if (!res.ok) {
       const body = await res.text().catch(() => '');
-      throw new Error(`HTTP ${res.status} — ${body.slice(0, 200)}`);
+      throw new Error(`HTTP ${res.status} â€” ${body.slice(0, 200)}`);
     }
     const json = await res.json();
     if (json.error) throw new Error(json.error);
     allData   = json.zakazky   || [];
     parametry = json.parametry || parametry;
     if (allData.length === 0) {
-      document.getElementById('stats').innerHTML = `<div class="stat" style="color:#eab308">⚠ Žádné zakázky pro userId: ${userId}</div>`;
+      document.getElementById('stats').innerHTML = `<div class="stat" style="color:#eab308">âš  Ĺ˝ĂˇdnĂ© zakĂˇzky pro userId: ${userId}</div>`;
       return;
     }
     render(allData);
   } catch (e) {
     clearTimeout(timer);
     const msg = e.name === 'AbortError'
-      ? 'Časový limit vypršel (10 s) — server neodpověděl'
+      ? 'ÄŚasovĂ˝ limit vyprĹˇel (10 s) â€” server neodpovÄ›dÄ›l'
       : `ERR: ${e.message}`;
     showErr(msg, url);
   }
@@ -1153,3 +1153,4 @@ load();
 </script>
 </body>
 </html>
+

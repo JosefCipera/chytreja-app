@@ -48,6 +48,30 @@
 
                 const emailEl = document.querySelector('.email');
                 if (emailEl) emailEl.textContent = email;
+
+                // Lehkost check-in: zobraz modal pokud dnes ještě neproběhl pro tohoto uživatele
+                const currentModel = localStorage.getItem('currentModel');
+                if (currentModel === 'lehkost') {
+                    const today = new Date().toISOString().slice(0, 10);
+                    const lsKey = `lh_checkin_date_${user.uid}`;
+                    if (localStorage.getItem(lsKey) !== today) {
+                        import('./js/universe/lehkost-checkin.js').then(({ showCheckinModal }) => {
+                            showCheckinModal(user.uid, (bf) => {
+                                if (!bf) return;
+                                console.log('💪 BODY FLOW:', bf.score);
+                                // Invaliduj HUD cache pro lh_ uzly a re-render canvas
+                                const LH_IDS = ['lh_main','lh_vyziva','lh_pohyb','lh_mysl','lh_regenerace'];
+                                LH_IDS.forEach(id => {
+                                    if (window._hudCache) delete window._hudCache[id];
+                                });
+                                // Re-načti canvas — aktualizuje barvy uzlů z DB
+                                if (window.refreshUniverseData) {
+                                    window.refreshUniverseData();
+                                }
+                            });
+                        });
+                    }
+                }
             }
         });
 
@@ -182,14 +206,14 @@
         body.panel-open #voice-mic-btn {
             bottom: 80px;
         }
-        /* === Header mic tlačítko === */
+        /* === Header mic tlačítko — TTS indikátor (speaking state) === */
         #header-mic-btn {
-            height: 38px;               /* stejná výška jako avatar */
-            min-width: 38px;            /* idle = kolečko; text = pill */
+            height: 38px;
+            min-width: 38px;
             padding: 0 8px;
-            border-radius: 9999px;      /* vždy pill, začíná jako kruh */
-            background: rgba(51, 65, 85, 0.65);  /* viditelný, ale ne černý */
-            border: 2px solid #475569;            /* výraznější border, stejný styl jako avatar */
+            border-radius: 9999px;
+            background: rgba(51, 65, 85, 0.65);
+            border: 2px solid #475569;
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -203,20 +227,48 @@
             background: rgba(71, 85, 105, 0.85);
             border-color: #64748b;
         }
-        /* LISTENING – zelená pulsující záře jako podlahový mic */
-        #header-mic-btn[data-state="listening"] {
-            border-color: rgba(34, 197, 94, 0.75);
-            animation: header-pulse-green 1.1s ease-in-out infinite;
-        }
-        /* THINKING – modro-šedá (AI generuje odpověď) */
-        #header-mic-btn[data-state="thinking"] {
-            border-color: rgba(147, 197, 253, 0.55);
-            box-shadow: 0 0 8px rgba(147, 197, 253, 0.2);
-        }
         /* SPEAKING – modrá pulsující záře (TTS čte) */
         #header-mic-btn[data-state="speaking"] {
             border-color: rgba(59, 130, 246, 0.8);
             animation: header-pulse-blue 1.1s ease-in-out infinite;
+        }
+
+        /* === Hlasový příkaz — nové tlačítko === */
+        #cmd-mic-btn {
+            height: 38px;
+            min-width: 38px;
+            padding: 0 10px;
+            border-radius: 9999px;
+            background: rgba(15, 23, 42, 0.75);
+            border: 2px solid rgba(34, 197, 94, 0.35);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 15px;
+            color: #94a3b8;
+            white-space: nowrap;
+            transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+            flex-shrink: 0;
+        }
+        #cmd-mic-btn:hover {
+            background: rgba(34, 197, 94, 0.12);
+            border-color: rgba(34, 197, 94, 0.6);
+            color: #22c55e;
+        }
+        #cmd-mic-btn[data-state="listening"] {
+            border-color: rgba(34, 197, 94, 0.85);
+            color: #22c55e;
+            animation: header-pulse-green 1.1s ease-in-out infinite;
+        }
+        #cmd-mic-btn[data-state="speaking"] {
+            border-color: rgba(59, 130, 246, 0.8);
+            color: #60a5fa;
+            animation: header-pulse-blue 1.1s ease-in-out infinite;
+        }
+        #cmd-mic-btn[data-state="thinking"] {
+            border-color: rgba(147, 197, 253, 0.55);
+            color: #93c5fd;
         }
         @keyframes header-pulse-green {
             0%, 100% { box-shadow: 0 0 8px rgba(34, 197, 94, 0.3); }
@@ -259,8 +311,12 @@
             </div>
         </div>
         <div class="user-profile-wrapper">
-            <button id="header-mic-btn" title="Říct CHJ" aria-label="Hlasový vstup">
-                <span class="header-mic-icon">🎤</span>
+            <button id="cmd-mic-btn" title="Hlasový příkaz" aria-label="Řekni příkaz">
+                <span id="cmd-mic-icon">🎤</span>
+                <span id="cmd-mic-label" style="font-size:12px;font-family:monospace;letter-spacing:0.05em;">CMD</span>
+            </button>
+            <button id="header-mic-btn" title="Přehrát odpověď" aria-label="TTS přehrávač">
+                <span class="header-mic-icon">🔊</span>
             </button>
             <button id="profileBtn" class="avatar-button">
                 <img src="https://ui-avatars.com/api/?name=Cipera&background=0D8ABC&color=fff" alt="Profil"
@@ -451,6 +507,12 @@
             <iframe id="hud-iframe" src="" style="width:100%; height:100%; border:none;" allow="microphone"></iframe>
         </div>
     </div>
+
+    <!-- Tool Overlay — full-screen iframe for TOC tool pages (toc-vyroba, etc.) -->
+    <div id="tool-overlay" style="display:none; position:fixed; inset:0; z-index:11000; background:#080e1a;">
+        <iframe id="tool-iframe" src="" style="width:100%; height:100%; border:none;"></iframe>
+    </div>
+
     <script>
         // ── HUD node data cache — prefetched on login ──────────────────────────
         window._hudCache   = {};   // { nodeId: data }
@@ -465,7 +527,8 @@
             const missing = nodeIds.filter(id => !window._hudCache[id] && !window._hudPending[id]);
             if (!missing.length) return;
             const _role = localStorage.getItem('userRole') || 'pro';
-            const bulk = `/api/hud-data-bulk?userId=${encodeURIComponent(userId)}&nodes=${missing.join(',')}&role=${encodeURIComponent(_role)}`;
+            const _univ = window.CURRENT_MODEL || 'longevity';
+            const bulk = `/api/hud-data-bulk?userId=${encodeURIComponent(userId)}&nodes=${missing.join(',')}&role=${encodeURIComponent(_role)}&universe=${encodeURIComponent(_univ)}`;
             const p = fetch(bulk).then(r => r.json()).then(data => {
                 // Apply local label overrides before caching
                 if (window.MAIN_UNIVERSE_DATA) {
@@ -493,7 +556,7 @@
         window.prefetchHudChildren = function(userId, parentNodeId) {
             const CHILDREN = {
                 dlouhovekost: ['telo','mysl','zdravi','vyziva'],
-                telo:   ['sila','kardio','stabilita','vo2max','mobilita','vytrvalost'],
+                telo:   ['sila','kardio','stabilita','vo2max','mobilita','vytrvalost','rovnovaha','plyometrie','dychani'],
                 zdravi: ['metabolicke','spanek','imunitni'],
                 mysl:   ['emoce','smysl','stres','kognitivni'],
                 vyziva: ['bilkoviny','glukoza_vyziva','hydratace'],
@@ -526,10 +589,11 @@
                 // Also kick off a background prefetch so the cache is warm if user
                 // closes and reopens before the iframe fetches on its own.
                 const _role0 = localStorage.getItem('userRole') || 'pro';
+                const _univ0 = window.CURRENT_MODEL || 'longevity';
                 // Pass local label override so Svelte can fix API label (e.g. dekatlon vs demo)
                 const _localNode0 = window.MAIN_UNIVERSE_DATA?.find(n => n.id === nodeId);
                 const _labelParam = _localNode0?.label ? `&nodeLabel=${encodeURIComponent(_localNode0.label)}` : '';
-                iframe.src = `/app/hud.html?userId=${encodeURIComponent(userId)}&nodeId=${encodeURIComponent(nodeId)}&role=${encodeURIComponent(_role0)}${_labelParam}`;
+                iframe.src = `/app/hud.html?userId=${encodeURIComponent(userId)}&nodeId=${encodeURIComponent(nodeId)}&role=${encodeURIComponent(_role0)}&universe=${encodeURIComponent(_univ0)}${_labelParam}`;
                 window._hudOpen = true;
                 window.prefetchHudNodes(userId, [nodeId]); // warm cache in parallel
 
@@ -543,7 +607,8 @@
                     if (loader) loader.classList.add('active');
                     try {
                         const _r = localStorage.getItem('userRole') || 'pro';
-                        const url = `/api/hud-data-bulk?userId=${encodeURIComponent(userId)}&nodes=${encodeURIComponent(nodeId)}&role=${encodeURIComponent(_r)}`;
+                        const _univ2 = window.CURRENT_MODEL || 'longevity';
+                        const url = `/api/hud-data-bulk?userId=${encodeURIComponent(userId)}&nodes=${encodeURIComponent(nodeId)}&role=${encodeURIComponent(_r)}&universe=${encodeURIComponent(_univ2)}`;
                         const res  = await fetch(url);
                         const bulk = await res.json();
                         data = bulk[nodeId] || null;
@@ -568,16 +633,19 @@
             }
 
             // Open panel — on subsequent opens data is already in iframe, no flicker
+            window._hudOverlayOpen = true;
             overlay.style.display = 'flex';
             requestAnimationFrame(() => requestAnimationFrame(() => {
                 wrap.style.transform = 'translateX(0)';
             }));
         };
 
+        window._hudOverlayOpen = false;  // tracks Svelte HUD visibility for canvas click guard
+
         window.closeHudOverlay = function() {
             const overlay = document.getElementById('hud-overlay');
             const wrap    = document.getElementById('hud-panel-wrap');
-            const tocBar  = document.getElementById('toc-action-bar');
+            window._hudOverlayOpen = false;
             wrap.style.transform = 'translateX(100%)';
             // Keep iframe alive — just hide overlay; _hudOpen stays true so no reload on reopen
             setTimeout(() => { overlay.style.display = 'none'; }, 360);
@@ -596,8 +664,23 @@
             };
             window.speechSynthesis.speak(utt);
         }
+        window.openToolOverlay = function(url) {
+            const overlay = document.getElementById('tool-overlay');
+            const iframe  = document.getElementById('tool-iframe');
+            iframe.src = url;
+            overlay.style.display = 'block';
+        };
+        window.closeToolOverlay = function() {
+            const overlay = document.getElementById('tool-overlay');
+            const iframe  = document.getElementById('tool-iframe');
+            overlay.style.display = 'none';
+            iframe.src = '';
+        };
+
         window.addEventListener('message', function(e) {
             if (e.data === 'chj:hud:close') window.closeHudOverlay();
+            if (e.data === 'chj:tool:close') window.closeToolOverlay();
+            if (e.data?.type === 'chj:tool:open') window.openToolOverlay(e.data.url);
             if (e.data?.type === 'chj:navigate') window.location.href = e.data.url;
             if (e.data?.type === 'chj:source:open') openSourceViewer(e.data.source);
             if (e.data?.type === 'chj:tts:speak') _runTopTTS(e.data.text, e.data.lang);
@@ -698,7 +781,18 @@
 
                 const dlBtn = document.createElement('button');
                 dlBtn.textContent = '📥'; dlBtn.title = 'Stáhnout'; dlBtn.style.cssText = btnStyle;
-                const doDownload = async () => { const fname = (source.url||'').split('/').pop() || 'dokument.md'; const blob = await fetch(source.url).then(r => r.blob()); const burl = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = burl; a.download = fname; a.click(); setTimeout(() => URL.revokeObjectURL(burl), 2000); };
+                const doDownload = async () => {
+                    let blob, fname;
+                    if (source.script_cz) {
+                        // Lehkost — obsah v DB, vytvoř soubor ze script_cz
+                        fname = (source.title || 'clanek').toLowerCase().replace(/[^a-z0-9]+/g,'-').slice(0,40) + '.md';
+                        blob = new Blob([source.script_cz], { type: 'text/markdown' });
+                    } else {
+                        fname = (source.url||'').split('/').pop() || 'dokument.md';
+                        blob = await fetch(source.url).then(r => r.blob());
+                    }
+                    const burl = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = burl; a.download = fname; a.click(); setTimeout(() => URL.revokeObjectURL(burl), 2000);
+                };
                 dlBtn.addEventListener('click', doDownload);
                 dlBtn.addEventListener('touchend', (e) => { e.preventDefault(); doDownload(); });
                 header.appendChild(dlBtn);
@@ -731,9 +825,19 @@
                 else if (t === 'pdf') contentDiv.innerHTML = `<iframe src="${pdfEmbed(source.url)}" style="width:100%;height:100%;border:none;" title="${source.title||''}"></iframe>`;
             } else {
                 const noUrl = !source.url || source.url === '#';
-                if (noUrl) {
+                const isFetchable = source.url && (
+                    !source.url.startsWith('http') ||                          // relativní cesta
+                    source.url.includes('supabase.co') ||                      // náš Supabase storage
+                    source.url.toLowerCase().endsWith('.md')                   // markdown soubor
+                );
+                if (source.script_cz) {
+                    // Má český markdown obsah — zobrazit přímo, bez fetch
+                    const convert = window.CHJ_convertMd || (s => `<p>${s.replace(/\n/g,'<br>')}</p>`);
+                    contentDiv.innerHTML = `<div class="md-il">${convert(source.script_cz)}</div>`;
+                } else if (noUrl) {
                     contentDiv.innerHTML = '<div style="color:#475569;padding:24px;text-align:center;font-size:13px;font-family:monospace;">OBSAH PŘIPRAVUJEME</div>';
-                } else {
+                } else if (isFetchable) {
+                    // Fetchovatelný soubor (lokální nebo Supabase storage)
                     contentDiv.innerHTML = '<div style="color:#475569;padding:24px;text-align:center;font-size:13px;font-family:monospace;">NAČÍTÁM…</div>';
                     (async () => {
                         const res = await fetch(source.url);
@@ -742,6 +846,10 @@
                         const convert = window.CHJ_convertMd || (s => `<p>${s.replace(/\n/g,'<br>')}</p>`);
                         contentDiv.innerHTML = `<div class="md-il">${convert(md)}</div>`;
                     })().catch(err => { contentDiv.innerHTML = `<div style="color:#f87171;padding:24px;font-family:monospace;font-size:13px;">CHYBA: ${err.message}</div>`; });
+                } else {
+                    // Externí URL (pubmed, nature...) — otevři v novém tabu
+                    window.open(source.url, '_blank');
+                    window.closeSourceViewer();
                 }
             }
             wrap.appendChild(contentDiv);

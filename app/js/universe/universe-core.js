@@ -76,6 +76,14 @@ export function getViewState() {
   return { centerId: currentCenter, nodes: [...lastRenderedNodes] };
 }
 
+// Zvýrazní uzel na canvasu a vystředí na něj (pro hlasové příkazy)
+export function focusNode(nodeId) {
+  if (!network) return false;
+  network.selectNodes([nodeId]);
+  network.focus(nodeId, { scale: 1.4, animation: { duration: 500, easingFunction: 'easeInOutQuad' } });
+  return true;
+}
+
 // Update metrics in-place + force redraw — no network destroy/recreate
 export function updateMetricsAndRedraw(metricsMap) {
   if (!network || !lastRenderedNodes.length) return;
@@ -227,7 +235,7 @@ export function renderUniverse(DATA, subset = null, forcedMainId = null) {
   });
 
   // 🔮 Sphere shading + 🔒 lock emojis — single afterDrawing pass
-  const lockedIds = source.filter(n => n.state === 'GRAY').map(n => n.id);
+  const lockedIds = source.filter(n => n.access === 'locked').map(n => n.id);
 
   // Fixed node radii matching makeNode() — avoids bbox including label text width
   const NODE_RADIUS = { main: 62, child: 46 };
@@ -294,8 +302,8 @@ export function renderUniverse(DATA, subset = null, forcedMainId = null) {
       // potentiometer removed — battery in HUD panel is the single source
     });
 
-    // ── Lock emojis on GRAY nodes — recomputed each frame ──
-    const currentLocked = source.filter(n => n.state === 'GRAY').map(n => n.id);
+    // ── Lock emojis on access=locked nodes only (GRAY without access=locked = no data, not locked) ──
+    const currentLocked = source.filter(n => n.access === 'locked').map(n => n.id);
     if (currentLocked.length) {
       const lockPos = network.getPositions(currentLocked);
       ctx.save();
@@ -326,10 +334,11 @@ export function renderUniverse(DATA, subset = null, forcedMainId = null) {
 
       if (!params.nodes.length) {
         const panelWasOpen = document.getElementById("sidePanel")?.classList.contains("open");
+        const hudOverlayWasOpen = !!window._hudOverlayOpen;
         closePanel();
         window.closeHudOverlay?.();
-        // Návrat o úroveň výš jen pokud panel byl už zavřený
-        if (!panelWasOpen && currentCenter) {
+        // Návrat o úroveň výš jen pokud žádný panel nebyl otevřený
+        if (!panelWasOpen && !hudOverlayWasOpen && currentCenter) {
           smoothReturnToUniverse(DATA);
         }
         return;
@@ -354,6 +363,7 @@ export function renderUniverse(DATA, subset = null, forcedMainId = null) {
     const id = params.nodes[0];
     const node = findNodeById(DATA, id);
     if (!node) return;
+    if (node.access === 'locked') return;  // locked nodes: single-click shows locked panel, double-click does nothing
     openSubUniverse(DATA, node);
   });
 
@@ -429,7 +439,7 @@ function findNodeById(DATA, id) {
 }
 
 // === Podsíť ===
-function openSubUniverse(DATA, centerNode) {
+export function openSubUniverse(DATA, centerNode) {
   const children = DATA.filter(n => n.parent === centerNode.id);
   if (children.length === 0) return;
 

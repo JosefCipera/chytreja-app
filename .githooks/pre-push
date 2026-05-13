@@ -1,0 +1,35 @@
+#!/bin/sh
+# CHJ pre-push hook
+# 1. Syntax check core JS files (BLOCKER)
+# 2. Warn if core changed without HANDBOOK.md update (WARNING only)
+
+CORE_FILES="app/js/universe/universe-init.js app/js/universe/universe-core.js api/hud-data-bulk.js"
+DOC_FILES="HANDBOOK.md CLAUDE.md"
+
+# ── 1. Syntax check — BLOCKS push on error ──────────────────────────
+echo "🔍 Syntax check core JS..."
+for f in $CORE_FILES; do
+  if [ -f "$f" ]; then
+    node --check "$f" 2>&1
+    if [ $? -ne 0 ]; then
+      echo "❌ Syntax error in $f — push blocked."
+      exit 1
+    fi
+  fi
+done
+echo "✅ Syntax OK"
+
+# ── 2. Docs check — WARNING only, does not block ────────────────────
+CHANGED_CORE=$(git diff --name-only HEAD~1 HEAD 2>/dev/null | grep -E "universe-init\.js|universe-core\.js|hud-data-bulk\.js|onboarding\.js")
+CHANGED_DOCS=$(git diff --name-only HEAD~1 HEAD 2>/dev/null | grep -E "HANDBOOK\.md|CLAUDE\.md")
+
+if [ -n "$CHANGED_CORE" ] && [ -z "$CHANGED_DOCS" ]; then
+  echo ""
+  echo "📖 POZOR: Změnil jsi jádro bez aktualizace dokumentace."
+  echo "   Změněné core soubory: $CHANGED_CORE"
+  echo "   Nezapomeň aktualizovat HANDBOOK.md nebo CLAUDE.md."
+  echo "   (Push pokračuje — ale nezapomeň!)"
+  echo ""
+fi
+
+exit 0

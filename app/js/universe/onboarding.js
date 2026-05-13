@@ -66,10 +66,22 @@ export const onboardingQuestions = [
     help: 'Potřebuji pomoc=1, S námahou=5, Bez problémů=10'
   },
   {
-    id: 'skocit_dopadnout', node: 'stabilita', type: 'slider', category: 'health',
+    id: 'skocit_dopadnout', node: 'plyometrie', type: 'slider', category: 'health',
     q: 'Seskočíte z obrubníku (20 cm) a ustojíte dopad na jedné noze?',
     desc: 'Hustota kostí a rychlost reakce — ochrana před zlomeninami.',
     help: 'Bojím se nebo nedokážu=1, Nejistě=5, Snadno ustojím=10'
+  },
+  {
+    id: 'rovnovaha_zavrene_oci', node: 'rovnovaha', type: 'slider', category: 'health',
+    q: 'Ustojíte 10 sekund na jedné noze se zavřenýma očima bez zachycení?',
+    desc: 'Propriocepce a rovnovážný systém — prevence pádů ve stáří.',
+    help: 'Nedokážu ani 3 s=1, 5–8 s=5, 10 s snadno=10'
+  },
+  {
+    id: 'zadrzeni_dechu', node: 'dychani', type: 'slider', category: 'health',
+    q: 'Po klidném výdechu zadržíte dech déle než 20 sekund bez nucení?',
+    desc: 'Tolerance CO₂ a efektivita dýchání — základ výkonu i regenerace.',
+    help: 'Méně než 8 s=1, 10–18 s=5, 20 s a více=10'
   },
 ];
 
@@ -443,7 +455,7 @@ async function saveOnboarding() {
 
     // 1b. Calculate parent node states (in memory)
     const parentMap = {
-      telo:         ['sila', 'stabilita', 'mobilita'],
+      telo:         ['sila', 'stabilita', 'mobilita', 'plyometrie', 'rovnovaha', 'dychani'],
       zdravi:       ['vo2max', 'vytrvalost'],
       mysl:         [],
       vyziva:       [],
@@ -502,7 +514,7 @@ async function saveOnboarding() {
       nodeId, state, currentIndex: nodeIndexMap[nodeId] ?? 0,
     }));
 
-    const saveRes = await fetch('/api/onboarding-save', {
+    const saveRes = await fetch('/api/user?action=onboarding', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId, nodes: allNodeEntries, primaryGoal }),

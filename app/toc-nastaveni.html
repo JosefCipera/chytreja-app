@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="cs">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Nastavení · TOC</title>
+  <title>NastavenĂ­ Â· TOC</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { height: 100%; overflow: hidden; }
@@ -15,7 +15,7 @@
       flex-direction: column;
     }
 
-    /* ── Header ── */
+    /* â”€â”€ Header â”€â”€ */
     .header {
       flex-shrink: 0;
       display: flex;
@@ -45,7 +45,7 @@
     }
     .btn-close:hover { color: #22d3ee; border-color: rgba(34,211,238,0.4); }
 
-    /* ── Tabs ── */
+    /* â”€â”€ Tabs â”€â”€ */
     .tab-bar {
       flex-shrink: 0;
       display: flex;
@@ -70,10 +70,10 @@
     .tab-btn:hover { color: #94a3b8; }
     .tab-btn.active { color: #22d3ee; border-bottom-color: #22d3ee; }
 
-    /* ── Scroll area ── */
+    /* â”€â”€ Scroll area â”€â”€ */
     #main { flex: 1; overflow-y: auto; padding: 32px 24px; }
 
-    /* ── Upload karta ── */
+    /* â”€â”€ Upload karta â”€â”€ */
     .upload-card {
       background: rgba(15,23,42,0.8);
       border: 1px solid rgba(6,182,212,0.15);
@@ -137,7 +137,7 @@
     .upload-status.err  { color: #f87171; }
     .upload-status.warn { color: #eab308; }
 
-    /* ── Preview tabulka ── */
+    /* â”€â”€ Preview tabulka â”€â”€ */
     .preview-wrap {
       margin-top: 18px;
       overflow-x: auto;
@@ -172,7 +172,7 @@
     .preview-table td.ok  { color: #22c55e; }
     .preview-table td.err { color: #f87171; }
 
-    /* ── Sekce záhlaví ── */
+    /* â”€â”€ Sekce zĂˇhlavĂ­ â”€â”€ */
     .section-label {
       font-family: 'JetBrains Mono', monospace;
       font-size: 10px;
@@ -182,7 +182,7 @@
       margin-top: 8px;
     }
 
-    /* ── Formát hint ── */
+    /* â”€â”€ FormĂˇt hint â”€â”€ */
     .format-hint {
       margin-top: 14px;
       padding: 10px 14px;
@@ -201,13 +201,13 @@
 <body>
 
 <div class="header">
-  <div class="title">[NASTAVENÍ · TOC]</div>
-  <button class="btn-close" onclick="history.length > 1 ? history.back() : window.location.href='/app/'">✕ Zavřít</button>
+  <div class="title">[NASTAVENĂŤ Â· TOC]</div>
+  <button class="btn-close" onclick="history.length > 1 ? history.back() : window.location.href='/app/'">âś• ZavĹ™Ă­t</button>
 </div>
 
 <div class="tab-bar">
-  <button class="tab-btn active" id="tab-zakazky"    onclick="switchTab('zakazky')">ZAKÁZKY</button>
-  <button class="tab-btn"        id="tab-pracoviste" onclick="switchTab('pracoviste')">PRACOVIŠTĚ</button>
+  <button class="tab-btn active" id="tab-zakazky"    onclick="switchTab('zakazky')">ZAKĂZKY</button>
+  <button class="tab-btn"        id="tab-pracoviste" onclick="switchTab('pracoviste')">PRACOVIĹ TÄš</button>
   <button class="tab-btn"        id="tab-parametry"  onclick="switchTab('parametry')">PARAMETRY</button>
 </div>
 
@@ -221,7 +221,7 @@ const API_BASE  = LOCAL_DEV ? 'https://dev.iting.cz' : '';
 
 let activeTab = 'zakazky';
 
-// ── Tab switch ────────────────────────────────────────────────────────────────
+// â”€â”€ Tab switch â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function switchTab(tab) {
   activeTab = tab;
   ['zakazky','pracoviste','parametry'].forEach(t => {
@@ -230,30 +230,30 @@ function switchTab(tab) {
   renderTab(tab);
 }
 
-// ── Render tab obsahu ─────────────────────────────────────────────────────────
+// â”€â”€ Render tab obsahu â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function renderTab(tab) {
   const main = document.getElementById('main');
 
   const configs = {
     zakazky: {
-      title:    'IMPORT · ZAKÁZKY',
-      desc:     'CSV soubor z ERP systému. Jeden řádek = jedna zakázka.',
+      title:    'IMPORT Â· ZAKĂZKY',
+      desc:     'CSV soubor z ERP systĂ©mu. Jeden Ĺ™Ăˇdek = jedna zakĂˇzka.',
       inputId:  'file-zakazky',
-      btnLabel: '↑ Nahrát zakazky.csv',
-      format:   'id_zakazky, nazev_zakazky, termin_dodani, prubeznа_doba,\nvyrobit_ks, odvedeno_ks, stav, typ_zakazky,\nbrusky, soustruhy, ohyb, laser, svarovani  ← min/ks',
+      btnLabel: 'â†‘ NahrĂˇt zakazky.csv',
+      format:   'id_zakazky, nazev_zakazky, termin_dodani, prubeznĐ°_doba,\nvyrobit_ks, odvedeno_ks, stav, typ_zakazky,\nbrusky, soustruhy, ohyb, laser, svarovani  â† min/ks',
     },
     pracoviste: {
-      title:    'IMPORT · PRACOVIŠTĚ',
-      desc:     'CSV soubor s kapacitami pracovišť. Pořadí určuje prioritu v kapacitním plánu.',
+      title:    'IMPORT Â· PRACOVIĹ TÄš',
+      desc:     'CSV soubor s kapacitami pracoviĹˇĹĄ. PoĹ™adĂ­ urÄŤuje prioritu v kapacitnĂ­m plĂˇnu.',
       inputId:  'file-pracoviste',
-      btnLabel: '↑ Nahrát pracoviste.csv',
+      btnLabel: 'â†‘ NahrĂˇt pracoviste.csv',
       format:   'poradi, nazev, smena_hod, pocet_smen, pocet_zdroju',
     },
     parametry: {
-      title:    'IMPORT · PARAMETRY',
-      desc:     'CSV soubor s globálními parametry TOC (plánovací horizont, buffery apod.).',
+      title:    'IMPORT Â· PARAMETRY',
+      desc:     'CSV soubor s globĂˇlnĂ­mi parametry TOC (plĂˇnovacĂ­ horizont, buffery apod.).',
       inputId:  'file-parametry',
-      btnLabel: '↑ Nahrát parametry.csv',
+      btnLabel: 'â†‘ NahrĂˇt parametry.csv',
       format:   'klic, hodnota, popis',
     },
   };
@@ -261,7 +261,7 @@ function renderTab(tab) {
   const cfg = configs[tab];
 
   main.innerHTML = `
-    <div class="section-label">VSTUPNÍ DATA · ${tab.toUpperCase()}</div>
+    <div class="section-label">VSTUPNĂŤ DATA Â· ${tab.toUpperCase()}</div>
 
     <div class="upload-card">
       <div class="card-title">${cfg.title}</div>
@@ -269,12 +269,12 @@ function renderTab(tab) {
 
       <div class="upload-row">
         <button class="btn-upload" onclick="document.getElementById('${cfg.inputId}').click()">
-          ↑ Nahrát CSV
+          â†‘ NahrĂˇt CSV
         </button>
         <input type="file" id="${cfg.inputId}" accept=".csv,text/csv"
                onchange="handleUpload(this, '${tab}')">
-        ${tab === 'zakazky' ? `<button class="btn-upload" style="background:rgba(148,163,184,0.06);border-color:rgba(148,163,184,0.2);color:#64748b;" onclick="exportCsv('${tab}')">↓ Export z DB</button>` : ''}
-        <span class="upload-status" id="status-${tab}">—</span>
+        ${tab === 'zakazky' ? `<button class="btn-upload" style="background:rgba(148,163,184,0.06);border-color:rgba(148,163,184,0.2);color:#64748b;" onclick="exportCsv('${tab}')">â†“ Export z DB</button>` : ''}
+        <span class="upload-status" id="status-${tab}">â€”</span>
       </div>
 
       <div class="format-hint">${cfg.format}</div>
@@ -283,21 +283,21 @@ function renderTab(tab) {
     ${tab === 'zakazky' ? `<div id="zakazky-table"></div>` : ''}
   `;
 
-  // preview se zobrazí až po úspěšném importu
+  // preview se zobrazĂ­ aĹľ po ĂşspÄ›ĹˇnĂ©m importu
 }
 
-// ── Upload ────────────────────────────────────────────────────────────────────
+// â”€â”€ Upload â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async function handleUpload(input, type) {
   const file = input.files[0];
   if (!file) return;
 
   const statusEl = document.getElementById('status-' + type);
   statusEl.className = 'upload-status';
-  statusEl.textContent = '↻ Nahrávám…';
+  statusEl.textContent = 'â†» NahrĂˇvĂˇmâ€¦';
 
   try {
     const csv = await file.text();
-    const res  = await fetch(`${API_BASE}/api/toc-import`, {
+    const res  = await fetch(`${API_BASE}/api/toc?route=import`, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify({ type, userId, csv }),
@@ -313,17 +313,17 @@ async function handleUpload(input, type) {
       const errDiv = document.createElement('div');
       errDiv.style.cssText = 'margin-top:10px;font-family:monospace;font-size:11px;color:#f87171;';
       errDiv.textContent = json.error_list.slice(0, 5).map(e =>
-        `⚠ ${e.id || JSON.stringify(e.row)}: ${e.reason}`
+        `âš  ${e.id || JSON.stringify(e.row)}: ${e.reason}`
       ).join('\n');
       statusEl.insertAdjacentElement('afterend', errDiv);
     }
 
 
-    // Po importu zakázek → automatická kontrola + zobraz tabulku
+    // Po importu zakĂˇzek â†’ automatickĂˇ kontrola + zobraz tabulku
     if (type === 'zakazky') {
-      statusEl.textContent += ' · ⚙ Kontroluji…';
+      statusEl.textContent += ' Â· âš™ Kontrolujiâ€¦';
       try {
-        const kRes  = await fetch(`${API_BASE}/api/toc-plan`, {
+        const kRes  = await fetch(`${API_BASE}/api/toc?route=plan`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: 'kontrola', userId }),
         });
@@ -331,28 +331,28 @@ async function handleUpload(input, type) {
         const nok = kJson.err_count || 0;
         statusEl.className = nok > 0 ? 'upload-status warn' : 'upload-status ok';
         statusEl.textContent = json.message + (nok > 0
-          ? ` · ⚠ ${nok} zakázek NOK`
-          : ` · ✔ Kontrola OK (${kJson.checked})`);
-      } catch(e) { /* kontrola selhala tiše */ }
+          ? ` Â· âš  ${nok} zakĂˇzek NOK`
+          : ` Â· âś” Kontrola OK (${kJson.checked})`);
+      } catch(e) { /* kontrola selhala tiĹˇe */ }
       await loadZakazkyTable();
     }
   } catch (e) {
     statusEl.className = 'upload-status err';
-    statusEl.textContent = '✕ ' + e.message;
+    statusEl.textContent = 'âś• ' + e.message;
   }
 
   input.value = '';
 }
 
-// ── Tabulka zakázek po importu ────────────────────────────────────────────────
+// â”€â”€ Tabulka zakĂˇzek po importu â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 let zData = [], zSortCol = 'kontrola_dat', zSortDir = 1;
 
 async function loadZakazkyTable() {
   const wrap = document.getElementById('zakazky-table');
   if (!wrap) return;
-  wrap.innerHTML = `<div style="color:#475569;font-family:monospace;font-size:12px;padding:8px 0;">↻ Načítám…</div>`;
+  wrap.innerHTML = `<div style="color:#475569;font-family:monospace;font-size:12px;padding:8px 0;">â†» NaÄŤĂ­tĂˇmâ€¦</div>`;
   try {
-    const res  = await fetch(`${API_BASE}/api/toc-zakazky?userId=${encodeURIComponent(userId)}`);
+    const res  = await fetch(`${API_BASE}/api/toc?route=zakazky&userId=${encodeURIComponent(userId)}`);
     const json = await res.json();
     zData = json.zakazky || [];
     zSortCol = 'kontrola_dat'; zSortDir = 1;
@@ -368,7 +368,7 @@ function renderZakazkyTable() {
 
   const sorted = [...zData].sort((a, b) => {
     const av = a[zSortCol] ?? '', bv = b[zSortCol] ?? '';
-    // NOK (chyba) jde nahoru, ok dolů, null (—) ještě dál
+    // NOK (chyba) jde nahoru, ok dolĹŻ, null (â€”) jeĹˇtÄ› dĂˇl
     if (zSortCol === 'kontrola_dat') {
       const rank = v => v === null || v === undefined ? 2 : v === 'ok' ? 1 : 0;
       return (rank(a.kontrola_dat) - rank(b.kontrola_dat)) * zSortDir;
@@ -377,15 +377,15 @@ function renderZakazkyTable() {
   });
 
   const cols = [
-    { key: 'id_zakazky',    label: 'ID ZAKÁZKY' },
-    { key: 'termin_dodani', label: 'TERMÍN' },
-    { key: 'prubeznа_doba', label: 'PRŮB.' },
+    { key: 'id_zakazky',    label: 'ID ZAKĂZKY' },
+    { key: 'termin_dodani', label: 'TERMĂŤN' },
+    { key: 'prubeznĐ°_doba', label: 'PRĹ®B.' },
     { key: 'vyrobit_ks',    label: 'VYROBIT' },
     { key: 'odvedeno_ks',   label: 'ODVEDENO' },
     { key: 'kontrola_dat',  label: 'KONTROLA' },
   ];
 
-  const arrow = col => zSortCol === col.key ? (zSortDir === 1 ? ' ▲' : ' ▼') : '';
+  const arrow = col => zSortCol === col.key ? (zSortDir === 1 ? ' â–˛' : ' â–Ľ') : '';
 
   const thead = `<tr>${cols.map(c =>
     `<th style="cursor:pointer" onclick="zSort('${c.key}')">${c.label}${arrow(c)}</th>`
@@ -394,12 +394,12 @@ function renderZakazkyTable() {
   const tbody = sorted.map(z => {
     const nok = z.kontrola_dat && z.kontrola_dat !== 'ok';
     const rowStyle = nok ? 'background:rgba(239,68,68,0.06);' : '';
-    const kTxt = z.kontrola_dat === 'ok' ? '✔ ok' : z.kontrola_dat ? `✕ ${z.kontrola_dat}` : '—';
+    const kTxt = z.kontrola_dat === 'ok' ? 'âś” ok' : z.kontrola_dat ? `âś• ${z.kontrola_dat}` : 'â€”';
     const kCls = z.kontrola_dat === 'ok' ? 'ok' : z.kontrola_dat ? 'err' : '';
     return `<tr style="${rowStyle}">
       <td>${z.id_zakazky}</td>
       <td>${fmt(z.termin_dodani)}</td>
-      <td>${z.prubeznа_doba ?? '—'} d</td>
+      <td>${z.prubeznĐ°_doba ?? 'â€”'} d</td>
       <td>${z.vyrobit_ks}</td>
       <td>${z.odvedeno_ks}</td>
       <td class="${kCls}">${kTxt}</td>
@@ -409,8 +409,8 @@ function renderZakazkyTable() {
   const nokCount = zData.filter(z => z.kontrola_dat && z.kontrola_dat !== 'ok').length;
   wrap.innerHTML = `
     <div style="font-family:monospace;font-size:11px;color:#334155;margin-bottom:8px;">
-      ${zData.length} zakázek · ${nokCount > 0 ? `<span style="color:#f87171">${nokCount} NOK</span>` : '<span style="color:#22c55e">vše OK</span>'}
-      — klikni na záhlaví pro řazení
+      ${zData.length} zakĂˇzek Â· ${nokCount > 0 ? `<span style="color:#f87171">${nokCount} NOK</span>` : '<span style="color:#22c55e">vĹˇe OK</span>'}
+      â€” klikni na zĂˇhlavĂ­ pro Ĺ™azenĂ­
     </div>
     <div class="preview-wrap"><table class="preview-table">
       <thead>${thead}</thead>
@@ -424,24 +424,25 @@ function zSort(col) {
 }
 
 function fmt(d) {
-  if (!d) return '—';
+  if (!d) return 'â€”';
   return d.slice(0,10).split('-').reverse().join('.');
 }
 function empty() {
-  return `<div style="color:#334155;font-family:monospace;font-size:12px;padding:8px 0;">Žádná data v DB.</div>`;
+  return `<div style="color:#334155;font-family:monospace;font-size:12px;padding:8px 0;">Ĺ˝ĂˇdnĂˇ data v DB.</div>`;
 }
 
-// ── Export ───────────────────────────────────────────────────────────────────
+// â”€â”€ Export â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function exportCsv(type) {
-  const url = `${API_BASE}/api/toc-import?type=${type}&userId=${encodeURIComponent(userId)}`;
+  const url = `${API_BASE}/api/toc?route=import&type=${type}&userId=${encodeURIComponent(userId)}`;
   const a = document.createElement('a');
   a.href = url;
   a.download = `${type}.csv`;
   a.click();
 }
 
-// ── Init ──────────────────────────────────────────────────────────────────────
+// â”€â”€ Init â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 renderTab('zakazky');
 </script>
 </body>
 </html>
+

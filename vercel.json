@@ -51,6 +51,14 @@
             ]
         },
         {
+            "source": "/data/(.*\\.json)",
+            "headers": [
+                { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate, max-age=0" },
+                { "key": "Pragma", "value": "no-cache" },
+                { "key": "CDN-Cache-Control", "value": "no-store" }
+            ]
+        },
+        {
             "source": "/hud",
             "headers": [
                 { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate, s-maxage=0" },

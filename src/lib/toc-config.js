@@ -6,8 +6,8 @@ export const TOC_NODE_CONFIG = {
 
   // ── Hlavní uzel ─────────────────────────────────────────────────────────
   toc: {
-    problems: ['Nerovnoměrný tok', 'Přetížené omezení', 'Skryté úzké místo'],
-    warning: 'Nerovnoměrný tok = ztráty.',
+    problems: ['TOK', 'Přetížené omezení', 'Skryté úzké místo'],
+    warning: 'Nerovnoměrný tok způsobuje ztráty.',
     action: {
       label: 'ANALÝZA SYSTÉMU',
       chips: [
@@ -21,7 +21,7 @@ export const TOC_NODE_CONFIG = {
   // ── Výroba ──────────────────────────────────────────────────────────────
   vyroba_toc: {
     problems: ['Plnění termínů', 'Vytížení kapacit', 'Chybějící materiál', 'Kvalita'],
-    warning: 'Nezajištěné zdroje = vícenáklady.',
+    warning: 'Nedodržení plánu = ztráta průtoku.',
     action: {
       label: 'PLÁNOVÁNÍ',
       chips: [
@@ -32,9 +32,9 @@ export const TOC_NODE_CONFIG = {
     },
   },
 
-  zdroje_toc: {
-    problems: ['Nedostatek lidí', 'Přetížení strojů', 'Chybějící kompetence'],
-    warning: 'Přetížené zdroje blokují tok zakázek.',
+  kapacity_toc: {
+    problems: ['Přetížení strojů', 'Nedostatek lidí', 'Chybějící kompetence'],
+    warning: 'Přetížené kapacity blokují tok zakázek.',
     action: {
       label: 'KAPACITY',
       chips: [
@@ -45,7 +45,7 @@ export const TOC_NODE_CONFIG = {
     },
   },
 
-  materialy_toc: {
+  material_toc: {
     problems: ['Nedodávky', 'Kvalita vstupů', 'Zásoby pod normou'],
     warning: 'Chybějící materiál zastavuje výrobu.',
     action: {
@@ -54,6 +54,19 @@ export const TOC_NODE_CONFIG = {
         { label: 'Plán nákupu',      href: null },
         { label: 'Alternativní dodavatel', href: null },
         { label: 'Pojistná zásoba',  href: null },
+      ],
+    },
+  },
+
+  terminy_toc: {
+    problems: ['Plnění termínů zakázek', 'Zpoždění ve výrobě', 'Přislíbené vs. skutečné termíny'],
+    warning: 'Nedodržení termínů = ztráta zákazníka i průtoku.',
+    action: {
+      label: 'TERMÍNY',
+      chips: [
+        { label: 'Přehled zakázek',  href: null },
+        { label: 'Kritický řetěz',   href: null },
+        { label: 'Eskalace',         href: null },
       ],
     },
   },
@@ -86,14 +99,12 @@ export const TOC_NODE_CONFIG = {
 
   // ── Finance ─────────────────────────────────────────────────────────────
   finance_toc: {
-    problems: ['Klesající zisk', 'Klesající ROI', 'Klesající CF'],
-    warning: 'Zhoršení globálních ukazatelů = zhoršení firmy jako celku.',
+    problems: ['Hodnocení ziskovosti', 'Zásoby', 'Náklady', 'Cash flow'],
+    warning: 'Firma vydělává tolik, kolik dovolí její nejslabší článek.',
     action: {
       label: 'FINANČNÍ SIMULACE',
       chips: [
-        { label: 'Hodnocení přínosů', href: null },
-        { label: 'Analýza průtoku',   href: null },
-        { label: 'T / I / OE přehled', href: null },
+        { label: 'Finanční simulace', href: null },
       ],
     },
   },
@@ -146,6 +157,17 @@ export const TOC_NODE_CONFIG = {
         { label: 'Cash flow plán',   href: null },
         { label: 'Pohledávky',       href: null },
         { label: 'Platební podmínky', href: null },
+      ],
+    },
+  },
+
+  investice_toc: {
+    problems: ['Investice bez ohledu na bottleneck', 'Špatné Make/Buy rozhodnutí', 'Nízká návratnost'],
+    warning: 'Investice bez ohledu na bottleneck — špatná návratnost.',
+    action: {
+      label: 'FINANČNÍ SIMULACE',
+      chips: [
+        { label: 'Finanční simulace', href: null },
       ],
     },
   },

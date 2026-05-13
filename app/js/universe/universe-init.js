@@ -10,7 +10,7 @@ const ORBIT_ZONES = [
 import { renderUniverse, getViewState, updateMetricsAndRedraw } from "./universe-core.js";
 import { showPanel } from "./universe-panel.js";
 import { initUserDataPanel } from "./user-data-panel.js?v=20260426a";
-import { listenOnce, handleVoiceInput, proactiveGreeting } from "./universe-voice.js";
+import { listenOnce, handleVoiceInput, proactiveGreeting, aiSpeakPromise } from "./universe-voice.js";
 import { requestCHJPermission, checkAndRemind } from "./notifications.js";
 import { initHUD, hideHUD, showHUD } from "./hud.js?v=20260319a";
 
@@ -278,7 +278,8 @@ async function warmAgentCache() {
   initHeaderControls();
   initUserDataPanel();
   initVoiceButton();
-  initHeaderMic();
+  initCmdMic();
+  // initHeaderMic() removed — header-mic-btn is TTS indicator only, wired via setHeaderMicSpeaking()
   writeDailySnapshot();   // snapshot stavů uzlů → sparkline trend
 
   // ── Agent warm-up — show loader on Universe, open panel freely ────────
@@ -333,22 +334,28 @@ async function writeDailySnapshot() {
 // VOICE BUTTON – mic tlačítka (floor + header)
 // =====================================================
 
-// Sdílený flag – pozdrav se přehraje jen jednou bez ohledu na to, které mic stlačíš
-let _voiceGreeted = false;
-
 async function handleMicClick() {
   // Klik na mic zruší případné probíhající TTS
   if (window.speechSynthesis?.speaking) {
     window.speechSynthesis.cancel();
     return;
   }
-  if (!_voiceGreeted) {
-    _voiceGreeted = true;
-    // proactiveGreeting() disabled — panel TTS handles all voice output
-    // Pokračuje dál – ihned spustí mic, nečeká na druhý klik
-  }
   const text = await listenOnce();
   if (text) await handleVoiceInput(text);
+}
+
+// ── Hlasový příkaz (CMD mic) ─────────────────────────────────
+async function handleCmdMicClick() {
+  if (window.speechSynthesis?.speaking) window.speechSynthesis.cancel();
+  const text = await listenOnce();
+  if (text) await handleVoiceInput(text);
+}
+
+function initCmdMic() {
+  const btn = document.getElementById('cmd-mic-btn');
+  if (!btn) return;
+  btn.addEventListener('click', handleCmdMicClick);
+  btn.addEventListener('touchend', (e) => { e.preventDefault(); handleCmdMicClick(); });
 }
 
 function initVoiceButton() {
@@ -447,13 +454,14 @@ async function loadModel(modelName) {
 
       if (nodesError) throw nodesError;
 
-      // Exclude nodes from other universes (TOC nodes are in the same table but must not show in longevity canvas)
-      const TOC_IDS = new Set([
-        'toc','finance_toc','vyroba_toc','ccpm','strategie_toc','marketing_toc',
-        'prutok_toc','zasoby_toc','naklady_toc','cashflow_toc',
-        'zdroje_toc','materialy_toc','kvalita_toc','opravy_toc',
-      ]);
-      const filteredNodes = modelName === 'longevity' ? nodes.filter(n => !TOC_IDS.has(n.id)) : nodes;
+      // Exclude nodes from other universes — each universe sees only its own nodes
+      const TOC_IDS = new Set(['toc','finance_toc','vyroba_toc','ccpm','strategie_toc','marketing_toc']);
+      const LH_IDS  = new Set(['lh_main','lh_vyziva','lh_pohyb','lh_mysl','lh_regenerace']);
+      const filteredNodes = modelName === 'longevity'
+        ? nodes.filter(n => !TOC_IDS.has(n.id) && !LH_IDS.has(n.id))
+        : modelName === 'lehkost'
+        ? nodes.filter(n => LH_IDS.has(n.id))
+        : nodes;
 
       console.log(`   ✓ Nodes: ${filteredNodes.length}`);
 
@@ -594,6 +602,7 @@ async function loadModel(modelName) {
 
   // ========================================
   // B) JSON MODE (TOC, BMC, ...)
+  // Node structure from JSON, metrics from Supabase user_metrics
   // ========================================
   try {
     const url = modelConfig.modelFile;
@@ -605,30 +614,33 @@ async function loadModel(modelName) {
     const data = await res.json();
     console.log(`✅ JSON data: ${data.length} nodes`);
 
-    // ── Hydrate with user metrics from Supabase (dynamic coloring) ──
+    // Load metrics from Supabase (same user_metrics table, filtered by universe)
     try {
       const userId = await getCurrentUserId();
-      if (userId && userId !== 'demo-user-123') {
-        const { data: metrics } = await window.supabaseClient
-          .from('user_metrics')
-          .select('node_id, current_index, state')
-          .eq('user_id', userId)
-          .eq('universe', modelName);
+      const { data: metrics } = await window.supabaseClient
+        .from('user_metrics')
+        .select('node_id, current_index, state')
+        .eq('user_id', userId)
+        .eq('universe', modelName);
 
-        if (metrics?.length) {
-          const metricsMap = new Map(metrics.map(m => [m.node_id, m]));
-          applyTocCascade(data, metricsMap);
-          data.forEach(node => {
-            const metric = metricsMap.get(node.id);
-            const idx = metric?.current_index ?? 0;
-            node.current_index = idx;
-            node.state = (!metric || idx === 0) ? 'GRAY' : idx <= 40 ? 'RED' : idx <= 70 ? 'YELLOW' : 'GREEN';
-          });
-          console.log(`✅ JSON model hydrated with ${metrics.length} user metrics`);
-        }
+      if (metrics && metrics.length > 0) {
+        const metricsMap = new Map(metrics.map(m => [m.node_id, m]));
+        console.log(`✅ JSON mode metrics: ${metrics.length} rows for universe=${modelName}`);
+
+        data.forEach(node => {
+          const metric = metricsMap.get(node.id);
+          const idx = metric?.current_index ?? 0;
+          node.current_index = idx;
+          node.state = (!metric || idx === 0) ? 'GRAY' : idx <= 40 ? 'RED' : idx <= 70 ? 'YELLOW' : 'GREEN';
+        });
+
+        // Cascade parent colors from worst child
+        applyTocCascade(data, metricsMap);
+      } else {
+        console.log(`ℹ️ No metrics for universe=${modelName} — all nodes GRAY`);
       }
-    } catch(e) {
-      console.warn('[CHJ] JSON model metrics hydration failed:', e);
+    } catch (metricsErr) {
+      console.warn("⚠️ Could not load metrics for JSON universe:", metricsErr);
     }
 
     return data;
@@ -714,7 +726,7 @@ window.upgradeToLongevity = async function () {
   if (!uid || uid === 'demo-user-123') return;
 
   // Server-side write — anon key cannot UPSERT (RLS blocks it)
-  const profileRes = await fetch('/api/user-profile', {
+  const profileRes = await fetch('/api/user?action=profile', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ userId: uid, primaryGoal: 'longevity' }),
@@ -738,10 +750,10 @@ window.upgradeToLongevity = async function () {
 // 7) ACCESS MODEL
 // =====================================================
 async function applyAccessModel(role, model, modelName) {
-  const url = `${DATA_BASE}/${modelName}/access/access-${role}.json`;
+  const url = `${DATA_BASE}/${modelName}/access/access-${role}.json?v=20260509`;
 
   try {
-    const res = await fetch(url);
+    const res = await fetch(url, { cache: 'no-store' });
     if (!res.ok) return;
 
     const accessData = await res.json();
@@ -896,7 +908,25 @@ function initHeaderControls() {
 
     const role = localStorage.getItem("userRole") || "demo";
     await loadAndRenderModel(newModel, role);
+
+    // Hra o lehkost: zobraz ranní check-in pokud dnes ještě neproběhl
+    if (newModel === 'lehkost') {
+      const userId = window.firebaseAuth?.currentUser?.uid;
+      if (userId) {
+        const { showCheckinModal } = await import('./lehkost-checkin.js');
+        showCheckinModal(userId, (bodyFlow) => {
+          if (!bodyFlow) return;
+          console.log('💪 BODY FLOW:', bodyFlow.score);
+          // Invaliduj HUD cache + re-render canvas s novými barvami
+          const LH_IDS = ['lh_main','lh_vyziva','lh_pohyb','lh_mysl','lh_regenerace'];
+          LH_IDS.forEach(id => { if (window._hudCache) delete window._hudCache[id]; });
+          if (window.refreshUniverseData) window.refreshUniverseData();
+        });
+      }
+    }
   });
+
+  // header-mic-btn is wired via initHeaderMic() → handleMicClick()
 
   let clickCount = 0;
   let clickTimer = null;
