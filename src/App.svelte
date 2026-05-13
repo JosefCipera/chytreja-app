@@ -137,10 +137,10 @@
   async function triggerLehkostAgent(uid, nid) {
     try {
       console.log('[Lehkost Agent] calling API...');
-      const res = await fetch('/api/agents', {
+      const res = await fetch('/api/user?action=lehkost-agent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'lehkost', userId: uid, nodeId: nid }),
+        body: JSON.stringify({ userId: uid, nodeId: nid }),
       });
       if (!res.ok) {
         console.warn('[Lehkost Agent] HTTP error:', res.status, await res.text().catch(() => ''));

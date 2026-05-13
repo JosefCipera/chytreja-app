@@ -1,12 +1,14 @@
-// /api/user — user-profile, onboarding-save, readiness, snapshot-nodes + lehkost body-flow
-// Route: ?action=profile | onboarding | readiness | snapshot | body-flow | checkin
+// /api/user — user-profile, onboarding-save, readiness, snapshot-nodes + lehkost body-flow + lehkost agent
+// Route: ?action=profile | onboarding | readiness | snapshot | body-flow | checkin | lehkost-agent
 //
 // Dřívější soubory: user-profile.js, onboarding-save.js, readiness.js, snapshot-nodes.js
 // + lehkost.js (checkin + body-flow)
+// lehkost-agent přesunuto z agents.js (limit 12 Vercel Hobby functions)
 
 import dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' });
 import { createClient } from '@supabase/supabase-js';
+import Anthropic from '@anthropic-ai/sdk';
 
 function sb() {
   return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
@@ -19,10 +21,11 @@ export default async function handler(req, res) {
   if (action === 'onboarding') return handleOnboarding(req, res);
   if (action === 'readiness')  return handleReadiness(req, res);
   if (action === 'snapshot')   return handleSnapshot(req, res);
-  if (action === 'checkin')    return handleCheckin(req, res);
-  if (action === 'body-flow')  return handleBodyFlow(req, res);
+  if (action === 'checkin')        return handleCheckin(req, res);
+  if (action === 'body-flow')      return handleBodyFlow(req, res);
+  if (action === 'lehkost-agent')  return handleLehkostAgent(req, res);
 
-  return res.status(400).json({ error: 'action required: profile | onboarding | readiness | snapshot | checkin | body-flow' });
+  return res.status(400).json({ error: 'action required: profile | onboarding | readiness | snapshot | checkin | body-flow | lehkost-agent' });
 }
 
 
@@ -244,3 +247,169 @@ function detectKillers(rows) {
 }
 
 function avg(arr) { return arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : null; }
+
+// ── LEHKOST AGENT (přesunuto z agents.js kvůli limitu 12 Vercel functions) ──
+
+const LH_MODEL = 'claude-haiku-4-5';
+
+const LEHKOST_SYSTEM = `Jsi Lehkost Agent CHJ — vybíráš konkrétní návykovou akci pro dnešní den na základě dat z check-inu.
+
+FLOW KILLERS (co uživatele nejvíc brzdí):
+- evening_overeating: jídlo po 20h, přejídání večer
+- low_movement: málo pohybu, sedavý den
+- sleep_deficit: spánek pod 6,5h
+- stress_eating: jí ze stresu, kortizol
+- weekend_rebound: víkend ruinuje týdenní pokrok
+
+AKCE podle killeru:
+evening_overeating:
+  - "Dnes zakonči jídlo před 20:00 — nastav si budík"
+  - "Připrav si zdravou svačinu před 19h, ať nemáš důvod sahat do lednice později"
+  - "Po večeři jdi na krátkou procházku — přeruší chuť na jídlo"
+
+low_movement:
+  - "10 minut chůze teď — vyjdi ven nebo po schodech"
+  - "Každou hodinu vstát a 2 minuty se projít — nastav připomínku"
+  - "Při telefonátu stůj nebo choď — žádné sezení"
+
+sleep_deficit:
+  - "Dnes ulehni před 22:30 — nastav alarm jako připomínku"
+  - "Vypni obrazovky hodinu před spaním — zhasni, dej si knihu"
+  - "Vyvětrej ložnici na 18°C před spánkem"
+
+stress_eating:
+  - "Při stresu počkej 10 minut před jídlem — chuť přejde"
+  - "5 minut pomalého dýchání před dalším jídlem — 4 sekundy nádech, 6 výdech"
+  - "Napiš 3 věci za které jsi dnes vděčný — resetuje kortizol"
+
+weekend_rebound:
+  - "Připrav si jídlo na víkend dopředu — co budeš mít doma, to sníš"
+  - "Víkendová procházka 30 minut — udrží metabolismus"
+  - "Snídaně s proteinem i o víkendu — stabilizuje den"
+
+PRAVIDLA:
+- Nikdy neopakuj yesterdayAction
+- Vyber JEDNU konkrétní akci — ne výčet možností
+- motivation: JEDNA věta max 12 slov, osobní, bez "musíš" nebo "měl bys"
+- Česky, tykej, klidný motivační tón
+- type: "habit" (jednorázové HOTOVO) | "timed" (s dobou v sekundách)
+
+ODPOVĚZ POUZE JSON (bez markdown):
+{"action_id":"...","label":"...","type":"habit|timed","duration_s":null,"motivation":"..."}`;
+
+const LEHKOST_FALLBACKS = {
+  evening_overeating: { action_id: 'lh_cutoff_20',     label: 'Dnes zakonči jídlo před 20:00 — nastav si budík',    type: 'habit', duration_s: null, motivation: 'Večerní klid bez jídla ti přes noc vydělá nejvíc.' },
+  low_movement:       { action_id: 'lh_walk_10',        label: '10 minut chůze teď — vyjdi ven',                     type: 'timed', duration_s: 600,  motivation: 'Deset minut pohybu mění celý zbytek dne.' },
+  sleep_deficit:      { action_id: 'lh_sleep_2230',     label: 'Dnes ulehni před 22:30 — nastav si budík',           type: 'habit', duration_s: null, motivation: 'Spánek je jediná věc, která regeneruje všechno najednou.' },
+  stress_eating:      { action_id: 'lh_breath_premeal', label: '5 minut pomalého dýchání před dalším jídlem',        type: 'timed', duration_s: 300,  motivation: 'Dech resetuje kortizol dřív než se k jídlu dostaneš.' },
+  weekend_rebound:    { action_id: 'lh_prep_food',      label: 'Připrav si zdravou svačinu na víkend dopředu',       type: 'habit', duration_s: null, motivation: 'Co máš doma připravené, to sníš — ne co najdeš.' },
+};
+
+async function lehkostAgentCore(supabase, { userId, nodeId = 'lh_main', force = false, excludeActionId = null }) {
+  const today = new Date().toISOString().split('T')[0];
+
+  // Cache check
+  if (!force) {
+    const { data: cached } = await supabase.from('agent_log')
+      .select('action_id, label, type, duration_s, motivation')
+      .eq('user_id', userId).eq('node_id', nodeId).eq('date', today)
+      .maybeSingle();
+    if (cached?.action_id) return { ...cached, cached: true };
+  }
+
+  const since7 = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
+  const [checkinsRes, missionRes, metricsRes] = await Promise.all([
+    supabase.from('daily_checkin')
+      .select('date,binge,movement_level,sleep_hours,stress,weight_kg,energy')
+      .eq('user_id', userId).eq('universe', 'lehkost').gte('date', since7)
+      .order('date', { ascending: false }),
+    supabase.from('mission_log').select('action_id').eq('user_id', userId).eq('node_id', nodeId)
+      .gte('date', new Date(Date.now() - 86400000).toISOString().slice(0, 10))
+      .order('date', { ascending: false }).limit(1).maybeSingle(),
+    supabase.from('user_metrics').select('current_index')
+      .eq('user_id', userId).eq('node_id', nodeId).eq('universe', 'lehkost').maybeSingle(),
+  ]);
+
+  const rows = checkinsRes.data || [];
+  const yesterdayAction = missionRes.data?.action_id ?? null;
+  const bodyFlow = metricsRes.data?.current_index ?? 50;
+
+  // Detect top FLOW KILLER
+  const LH_KILLER_DEFS = {
+    evening_overeating: 'Večerní přejídání', low_movement: 'Nulový pohyb',
+    sleep_deficit: 'Spánkový deficit',       stress_eating: 'Stresové jedení',
+    weekend_rebound: 'Víkendové přestřelení',
+  };
+  let killerId = 'low_movement';
+  if (rows.length > 0) {
+    const r7 = rows.slice(0, 7);
+    const avgS = (() => { const v = r7.map(r => r.stress).filter(Boolean); return v.length ? v.reduce((a,b)=>a+b,0)/v.length : 0; })();
+    const scores = [
+      { id: 'evening_overeating', score: r7.filter(r=>r.binge).length*18 + (avgS>=3?10:0) },
+      { id: 'low_movement',       score: r7.filter(r=>r.movement_level==='low').length*15 },
+      { id: 'sleep_deficit',      score: r7.filter(r=>r.sleep_hours!=null&&parseFloat(r.sleep_hours)<6.5).length*14 },
+      { id: 'stress_eating',      score: r7.filter(r=>r.stress>=4).length*8 + r7.filter(r=>r.binge&&r.stress>=4).length*15 },
+      { id: 'weekend_rebound',    score: r7.filter(r=>{const d=new Date(r.date).getDay();return(d===0||d===6)&&r.binge}).length*35 },
+    ];
+    killerId = scores.sort((a,b)=>b.score-a.score)[0]?.id || 'low_movement';
+  }
+
+  const r3 = rows.slice(0, 3);
+  const avgSleep = r3.length ? (r3.map(r=>parseFloat(r.sleep_hours||0)).reduce((a,b)=>a+b,0)/r3.length).toFixed(1) : null;
+  const avgStress3 = r3.length ? (r3.map(r=>r.stress||0).reduce((a,b)=>a+b,0)/r3.length).toFixed(1) : null;
+  const bingeCount = r3.filter(r=>r.binge).length;
+  const todayRow = rows[0]?.date === today ? rows[0] : null;
+
+  const contextMsg = `FLOW KILLER: ${killerId} (${LH_KILLER_DEFS[killerId] || killerId})
+BODY FLOW: ${bodyFlow}/100
+POSLEDNÍCH 3 DNÍ: spánek ${avgSleep ?? '?'}h průměr, stres ${avgStress3 ?? '?'}/5, přejídání ${bingeCount}× z 3
+${todayRow ? `DNEŠNÍ CHECK-IN: energie ${todayRow.energy}/5, pohyb ${todayRow.movement_level}` : 'DNEŠNÍ CHECK-IN: chybí'}
+VČEREJŠÍ AKCE: ${yesterdayAction ?? 'žádná'}
+${excludeActionId ? `VYHNOUT SE: ${excludeActionId}` : ''}
+${force ? 'DRUHÁ AKCE: Vyber jinou variantu.' : ''}
+
+Vyber jednu konkrétní akci pro dnešek a přidej krátkou motivaci.`;
+
+  let action = null;
+  try {
+    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+    const response = await client.messages.create({
+      model: LH_MODEL, max_tokens: 200,
+      system: LEHKOST_SYSTEM,
+      messages: [{ role: 'user', content: contextMsg }],
+    });
+    const text = response.content.find(b => b.type === 'text')?.text || '';
+    const match = text.match(/\{[\s\S]*\}/);
+    if (match) action = JSON.parse(match[0]);
+  } catch (e) {
+    console.warn('Lehkost Agent Haiku failed:', e.message);
+  }
+
+  if (!action?.action_id) {
+    action = LEHKOST_FALLBACKS[killerId] || LEHKOST_FALLBACKS.low_movement;
+  }
+
+  // Save to agent_log (fire-and-forget)
+  supabase.from('agent_log').insert({
+    user_id: userId, node_id: nodeId, discipline: killerId, date: today, tier: 1,
+    action_id: action.action_id, label: action.label, type: action.type,
+    duration_s: action.duration_s ?? null, guide_search: null, guide_label: null,
+    motivation: action.motivation ?? null,
+  }).then(({ error }) => { if (error) console.warn('agent_log insert failed:', error.message); });
+
+  return action;
+}
+
+async function handleLehkostAgent(req, res) {
+  res.setHeader('Content-Type', 'application/json');
+  if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
+  const { userId, nodeId, force, excludeActionId } = req.body || {};
+  if (!userId) return res.status(400).json({ error: 'userId required' });
+  try {
+    const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+    return res.json(await lehkostAgentCore(supabase, { userId, nodeId, force, excludeActionId }));
+  } catch (e) {
+    console.error('lehkost-agent error:', e);
+    return res.status(500).json({ error: e.message });
+  }
+}
