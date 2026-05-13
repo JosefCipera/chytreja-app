@@ -30,6 +30,7 @@
 
   // ── AGENT ACTION (overrides DB action when available) ──
   let agentAction      = $state(null);
+  let agentMotivation  = $state(null);  // Lehkost: personal 1-sentence verdict
   let agentLoading     = $state(false); // PREPARING shown only when data.action is also null
   let panelReady       = $state(false); // panel mounts only when we have data + agentLoading state — universe shows through until then
 
@@ -116,7 +117,8 @@
   // ── NAVIGATE to a new node (called on postMessage or initial load) ──────────
   async function navigateTo(nid, prefetchedData = null) {
     nodeId = nid;
-    agentAction = null;
+    agentAction     = null;
+    agentMotivation = null;
     secondOffer = null;
     panelReady  = false;
 
@@ -153,8 +155,8 @@
           from_agent_cache: data.cached ?? false,
         };
         if (data.motivation) {
-          console.log('[Lehkost Agent] patching verdict:', data.motivation);
-          patchHudData({ verdict: data.motivation });
+          console.log('[Lehkost Agent] setting motivation:', data.motivation);
+          agentMotivation = data.motivation;
         }
       }
     } catch (e) {
@@ -310,17 +312,14 @@
     }
   }
 
-  // Active data: real store or test fallback + agent action override
+  // Active data: real store or test fallback + agent action/motivation override
   let displayData = $derived((() => {
     const base = (userId && !devMode && $nodeData) ? $nodeData : testNode;
+    const verdict = agentMotivation || base.verdict;
     if (agentAction && userId && !devMode) {
-      return {
-        ...base,
-        action: agentAction,
-        completion_feedback: base.completion_feedback || null,
-      };
+      return { ...base, verdict, action: agentAction, completion_feedback: base.completion_feedback || null };
     }
-    return base;
+    return { ...base, verdict };
   })());
 
   // ── GAME LOOP: called when user completes an action ──────
