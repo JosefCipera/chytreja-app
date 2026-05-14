@@ -290,19 +290,18 @@ weekend_rebound:
 PRAVIDLA:
 - Nikdy neopakuj yesterdayAction
 - Vyber JEDNU konkrétní akci — ne výčet možností
-- motivation: JEDNA věta max 12 slov, osobní, bez "musíš" nebo "měl bys"
 - Česky, tykej, klidný motivační tón
 - type: "habit" (jednorázové HOTOVO) | "timed" (s dobou v sekundách)
 
 ODPOVĚZ POUZE JSON (bez markdown):
-{"action_id":"...","label":"...","type":"habit|timed","duration_s":null,"motivation":"..."}`;
+{"action_id":"...","label":"...","type":"habit|timed","duration_s":null}`;
 
 const LEHKOST_FALLBACKS = {
-  evening_overeating: { action_id: 'lh_cutoff_20',     label: 'Dnes zakonči jídlo před 20:00 — nastav si budík',    type: 'habit', duration_s: null, motivation: 'Večerní klid bez jídla ti přes noc vydělá nejvíc.' },
-  low_movement:       { action_id: 'lh_walk_10',        label: '10 minut chůze teď — vyjdi ven',                     type: 'timed', duration_s: 600,  motivation: 'Deset minut pohybu mění celý zbytek dne.' },
-  sleep_deficit:      { action_id: 'lh_sleep_2230',     label: 'Dnes ulehni před 22:30 — nastav si budík',           type: 'habit', duration_s: null, motivation: 'Spánek je jediná věc, která regeneruje všechno najednou.' },
-  stress_eating:      { action_id: 'lh_breath_premeal', label: '5 minut pomalého dýchání před dalším jídlem',        type: 'timed', duration_s: 300,  motivation: 'Dech resetuje kortizol dřív než se k jídlu dostaneš.' },
-  weekend_rebound:    { action_id: 'lh_prep_food',      label: 'Připrav si zdravou svačinu na víkend dopředu',       type: 'habit', duration_s: null, motivation: 'Co máš doma připravené, to sníš — ne co najdeš.' },
+  evening_overeating: { action_id: 'lh_cutoff_20',     label: 'Dnes zakonči jídlo před 20:00 — nastav si budík',    type: 'habit', duration_s: null },
+  low_movement:       { action_id: 'lh_walk_10',        label: '10 minut chůze teď — vyjdi ven',                     type: 'timed', duration_s: 600  },
+  sleep_deficit:      { action_id: 'lh_sleep_2230',     label: 'Dnes ulehni před 22:30 — nastav si budík',           type: 'habit', duration_s: null },
+  stress_eating:      { action_id: 'lh_breath_premeal', label: '5 minut pomalého dýchání před dalším jídlem',        type: 'timed', duration_s: 300  },
+  weekend_rebound:    { action_id: 'lh_prep_food',      label: 'Připrav si zdravou svačinu na víkend dopředu',       type: 'habit', duration_s: null },
 };
 
 async function lehkostAgentCore(supabase, { userId, nodeId = 'lh_main', force = false, excludeActionId = null }) {
@@ -311,7 +310,7 @@ async function lehkostAgentCore(supabase, { userId, nodeId = 'lh_main', force = 
   // Cache check
   if (!force) {
     const { data: cached } = await supabase.from('agent_log')
-      .select('action_id, label, type, duration_s, motivation')
+      .select('action_id, label, type, duration_s')
       .eq('user_id', userId).eq('node_id', nodeId).eq('date', today)
       .maybeSingle();
     if (cached?.action_id) return { ...cached, cached: true };
@@ -394,7 +393,6 @@ Vyber jednu konkrétní akci pro dnešek a přidej krátkou motivaci.`;
     user_id: userId, node_id: nodeId, discipline: killerId, date: today, tier: 1,
     action_id: action.action_id, label: action.label, type: action.type,
     duration_s: action.duration_s ?? null, guide_search: null, guide_label: null,
-    motivation: action.motivation ?? null,
   }).then(({ error }) => { if (error) console.warn('agent_log insert failed:', error.message); });
 
   return action;
