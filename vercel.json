@@ -3,6 +3,7 @@
     "outputDirectory": ".",
     "framework": null,
     "alias": ["dev.iting.cz"],
+    "ignoreCommand": "[ \"$VERCEL_ENV\" = \"preview\" ]",
     "functions": {
         "api/tools/parse.js":          { "maxDuration": 60 }
     },
