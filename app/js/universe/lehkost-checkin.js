@@ -66,9 +66,14 @@ export function showCheckinModal(userId, onComplete, force = false) {
 
 function _collectData(modal) {
   return {
-    weight_kg:   _numOrNull(modal.querySelector('#lh-weight').value),
-    energy:      _intOrNull(modal.querySelector('#lh-energy').value),
-    sleep_hours: _numOrNull(modal.querySelector('#lh-sleep').value),
+    weight_kg:      _numOrNull(modal.querySelector('#lh-weight').value),
+    energy:         _intOrNull(modal.querySelector('#lh-energy').value),
+    sleep_hours:    _numOrNull(modal.querySelector('#lh-sleep').value),
+    binge:          modal.querySelector('#lh-binge').value === 'yes' ? true
+                  : modal.querySelector('#lh-binge').value === 'no'  ? false
+                  : null,
+    movement_level: modal.querySelector('#lh-movement').value || null,
+    stress:         _intOrNull(modal.querySelector('#lh-stress').value),
   };
 }
 
@@ -115,6 +120,33 @@ function _buildModal() {
             <button class="lh-scale__btn lh-scale__btn--text" data-val="8">skvěle</button>
           </div>
           <input id="lh-sleep" type="hidden">
+        </label>
+
+        <label class="lh-field">
+          <span class="lh-field__label">Přejedl ses včera večer?</span>
+          <div class="lh-scale" data-field="lh-binge">
+            <button class="lh-scale__btn lh-scale__btn--text" data-val="no">Ne</button>
+            <button class="lh-scale__btn lh-scale__btn--text" data-val="yes">Ano</button>
+          </div>
+          <input id="lh-binge" type="hidden">
+        </label>
+
+        <label class="lh-field">
+          <span class="lh-field__label">Pohyb včera</span>
+          <div class="lh-scale" data-field="lh-movement">
+            <button class="lh-scale__btn lh-scale__btn--text" data-val="low">Málo</button>
+            <button class="lh-scale__btn lh-scale__btn--text" data-val="medium">Střed</button>
+            <button class="lh-scale__btn lh-scale__btn--text" data-val="high">Hodně</button>
+          </div>
+          <input id="lh-movement" type="hidden">
+        </label>
+
+        <label class="lh-field">
+          <span class="lh-field__label">Stres včera</span>
+          <div class="lh-scale" data-field="lh-stress">
+            ${[1,2,3,4,5].map(n => `<button class="lh-scale__btn" data-val="${n}">${n}</button>`).join('')}
+          </div>
+          <input id="lh-stress" type="hidden">
         </label>
 
       </div>
