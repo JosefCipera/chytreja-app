@@ -93,7 +93,7 @@ function _buildModal() {
       <div class="lng-modal__header">
         <span class="lng-modal__icon">🧬</span>
         <span class="lng-modal__title">MORNING_CHECK-IN</span>
-        <span class="lng-modal__sub">Hra o život · 15 sekund</span>
+        <span class="lng-modal__sub">Hra o život</span>
       </div>
 
       <div class="lng-modal__fields">
