@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="cs">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hra o průtok — Průvodce</title>
+
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: #0d1117;
+            color: #e2e8f0;
+            font-family: system-ui, -apple-system, sans-serif;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .back-btn {
+            position: fixed;
+            top: 14px;
+            left: 14px;
+            z-index: 100;
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px solid #334155;
+            color: #94a3b8;
+            font-size: 15px;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            backdrop-filter: blur(8px);
+            transition: color 0.2s, border-color 0.2s;
+        }
+
+        .back-btn:hover { color: #e2e8f0; border-color: #475569; }
+
+        .container {
+            max-width: 640px;
+            margin: 0 auto;
+            padding: 60px 20px 80px;
+        }
+
+        .hero {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+
+        .hero-logo {
+            width: 72px;
+            height: 72px;
+            margin-bottom: 16px;
+            border-radius: 16px;
+        }
+
+        .hero h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #a8c7ff;
+            margin-bottom: 12px;
+        }
+
+        .hero p {
+            color: #94a3b8;
+            font-size: 15px;
+            max-width: 420px;
+            margin: 0 auto;
+        }
+
+        .section {
+            border: 1px solid #1e293b;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            overflow: hidden;
+            background: #0f172a;
+            transition: border-color 0.3s;
+        }
+
+        .section.open { border-color: #334155; }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px 20px;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.2s;
+        }
+
+        .section-header:hover { background: rgba(30, 41, 59, 0.5); }
+
+        .section-icon { font-size: 22px; flex-shrink: 0; }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #e2e8f0;
+            flex: 1;
+        }
+
+        .section-arrow {
+            color: #475569;
+            font-size: 13px;
+            transition: transform 0.3s;
+            flex-shrink: 0;
+        }
+
+        .section.open .section-arrow { transform: rotate(180deg); }
+
+        .section-body {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease;
+        }
+
+        .section.open .section-body { max-height: 900px; }
+
+        .section-content {
+            padding: 0 20px 20px;
+            color: #94a3b8;
+            font-size: 15px;
+            line-height: 1.7;
+        }
+
+        .section-content p { margin-bottom: 12px; }
+        .section-content p:last-child { margin-bottom: 0; }
+
+        .step {
+            margin-bottom: 16px;
+            padding-left: 16px;
+            border-left: 2px solid #1e293b;
+        }
+
+        .step-title {
+            font-weight: 600;
+            color: #60a5fa;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        .step p { font-size: 14px; }
+
+        .quote {
+            background: rgba(6, 182, 212, 0.06);
+            border-left: 3px solid rgba(6, 182, 212, 0.3);
+            padding: 10px 14px;
+            border-radius: 0 8px 8px 0;
+            margin: 10px 0;
+            font-style: italic;
+            font-size: 14px;
+            color: #a5f3fc;
+        }
+
+        .toc-steps {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin: 12px 0;
+            counter-reset: toc-step;
+        }
+
+        .toc-step {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+            background: rgba(96, 165, 250, 0.04);
+            border: 1px solid rgba(96, 165, 250, 0.1);
+            border-radius: 10px;
+            padding: 12px 14px;
+            counter-increment: toc-step;
+        }
+
+        .toc-step-num {
+            background: rgba(37, 99, 235, 0.2);
+            color: #60a5fa;
+            font-weight: 700;
+            font-size: 13px;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .toc-step-text {
+            font-size: 14px;
+            color: #94a3b8;
+        }
+
+        .toc-step-text strong {
+            color: #e2e8f0;
+            display: block;
+            margin-bottom: 2px;
+        }
+
+        .philosophy-note {
+            background: rgba(139, 92, 246, 0.06);
+            border: 1px solid rgba(139, 92, 246, 0.15);
+            border-radius: 10px;
+            padding: 16px;
+            margin-top: 12px;
+            font-size: 14px;
+            color: #c4b5fd;
+            line-height: 1.6;
+        }
+
+        .bold { color: #e2e8f0; font-weight: 600; }
+    </style>
+</head>
+
+<body>
+
+    <button class="back-btn" onclick="history.back()">← Zpět</button>
+
+    <div class="container">
+
+        <div class="hero">
+            <img src="/app/assets/images/logo-192.png" alt="Chytré Já" class="hero-logo">
+            <h1>Hra o průtok</h1>
+            <p>Každý systém má omezení. Ten, kdo ho najde první, vyhrává.</p>
+        </div>
+
+        <!-- 1. Co je TOC -->
+        <div class="section open" data-section>
+            <div class="section-header" onclick="toggleSection(this)">
+                <span class="section-icon">🔩</span>
+                <span class="section-title">Co je Hra o průtok</span>
+                <span class="section-arrow">▼</span>
+            </div>
+            <div class="section-body">
+                <div class="section-content">
+                    <p>Hra o průtok vychází z <span class="bold">Teorie omezení (TOC)</span> — metody řízení, která tvrdí: každý systém má jedno hlavní omezení (bottleneck), které brzdí výsledky celku.</p>
+                    <p>Nerozprašuj energii na všechno. Najdi omezení, exploatuj ho na maximum, podřiď mu zbytek. Pak ho zvedni. Opakuj.</p>
+                    <div class="quote">Řetěz je tak silný, jako jeho nejslabší článek.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Pět kroků TOC -->
+        <div class="section" data-section>
+            <div class="section-header" onclick="toggleSection(this)">
+                <span class="section-icon">🔄</span>
+                <span class="section-title">Pět kroků TOC</span>
+                <span class="section-arrow">▼</span>
+            </div>
+            <div class="section-body">
+                <div class="section-content">
+                    <p>Herní smyčka Hry o průtok kopíruje pět kroků TOC:</p>
+                    <div class="toc-steps">
+                        <div class="toc-step">
+                            <div class="toc-step-num">1</div>
+                            <div class="toc-step-text">
+                                <strong>Identifikuj omezení</strong>
+                                Co nejvíce brzdí průtok tvého systému?
+                            </div>
+                        </div>
+                        <div class="toc-step">
+                            <div class="toc-step-num">2</div>
+                            <div class="toc-step-text">
+                                <strong>Exploatuj omezení</strong>
+                                Vytěž z omezení maximum — bez dalších investic.
+                            </div>
+                        </div>
+                        <div class="toc-step">
+                            <div class="toc-step-num">3</div>
+                            <div class="toc-step-text">
+                                <strong>Subordinuj zbytek</strong>
+                                Podřiď vše ostatní potřebám omezení.
+                            </div>
+                        </div>
+                        <div class="toc-step">
+                            <div class="toc-step-num">4</div>
+                            <div class="toc-step-text">
+                                <strong>Zvedni omezení</strong>
+                                Investuj do kapacity omezení, pokud nestačí.
+                            </div>
+                        </div>
+                        <div class="toc-step">
+                            <div class="toc-step-num">5</div>
+                            <div class="toc-step-text">
+                                <strong>Opakuj</strong>
+                                Omezení se přesunulo. Začni znovu od 1.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Průtok a trubice -->
+        <div class="section" data-section>
+            <div class="section-header" onclick="toggleSection(this)">
+                <span class="section-icon">🚰</span>
+                <span class="section-title">Průtok — vizualizace trubice</span>
+                <span class="section-arrow">▼</span>
+            </div>
+            <div class="section-body">
+                <div class="section-content">
+                    <p>HUD zobrazuje průtok systému jako <span class="bold">trubici s vodou</span>. Čím vyšší průtok, tím více vody protéká. Omezení trubici zužuje.</p>
+                    <div class="step">
+                        <div class="step-title">Plná trubice (80–100 %)</div>
+                        <p>Systém teče. Omezení je pod kontrolou. Průtok = zisk.</p>
+                    </div>
+                    <div class="step">
+                        <div class="step-title">Škrcení (40–79 %)</div>
+                        <p>Omezení brzdí systém. Kapacita se plýtvá jinde, ne tam kde to bolí.</p>
+                    </div>
+                    <div class="step">
+                        <div class="step-title">Blokáda (0–39 %)</div>
+                        <p>Průtok stojí. Omezení dominuje celému systému.</p>
+                    </div>
+                    <div class="quote">Plný průtok = výsledky přicházejí bez tření.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. Filosofie -->
+        <div class="section" data-section>
+            <div class="section-header" onclick="toggleSection(this)">
+                <span class="section-icon">🧬</span>
+                <span class="section-title">Filosofie</span>
+                <span class="section-arrow">▼</span>
+            </div>
+            <div class="section-body">
+                <div class="section-content">
+                    <p>TOC převrací intuici. Místo zlepšování všeho najednou říká: zlepši jen jedno — to, co brzdí celek.</p>
+                    <p>Výsledek: menší úsilí, větší dopad. Systém teče, i když není dokonalý — protože omezení je pod kontrolou.</p>
+                    <div class="philosophy-note">
+                        Nejsi omezení svého systému. Jsi ten, kdo ho dokáže najít a změnit.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        function toggleSection(header) {
+            const section = header.parentElement;
+            const wasOpen = section.classList.contains('open');
+            document.querySelectorAll('[data-section]').forEach(s => s.classList.remove('open'));
+            if (!wasOpen) section.classList.add('open');
+        }
+    </script>
+
+</body>
+</html>

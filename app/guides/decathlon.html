@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="cs">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hra Dekatlon — Průvodce</title>
+
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: #0d1117;
+            color: #e2e8f0;
+            font-family: system-ui, -apple-system, sans-serif;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .back-btn {
+            position: fixed;
+            top: 14px;
+            left: 14px;
+            z-index: 100;
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px solid #334155;
+            color: #94a3b8;
+            font-size: 15px;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            backdrop-filter: blur(8px);
+            transition: color 0.2s, border-color 0.2s;
+        }
+
+        .back-btn:hover { color: #e2e8f0; border-color: #475569; }
+
+        .container {
+            max-width: 640px;
+            margin: 0 auto;
+            padding: 60px 20px 80px;
+        }
+
+        .hero {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+
+        .hero-logo {
+            width: 72px;
+            height: 72px;
+            margin-bottom: 16px;
+            border-radius: 16px;
+        }
+
+        .hero h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #a8c7ff;
+            margin-bottom: 12px;
+        }
+
+        .hero p {
+            color: #94a3b8;
+            font-size: 15px;
+            max-width: 420px;
+            margin: 0 auto;
+        }
+
+        .section {
+            border: 1px solid #1e293b;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            overflow: hidden;
+            background: #0f172a;
+            transition: border-color 0.3s;
+        }
+
+        .section.open { border-color: #334155; }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px 20px;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.2s;
+        }
+
+        .section-header:hover { background: rgba(30, 41, 59, 0.5); }
+
+        .section-icon { font-size: 22px; flex-shrink: 0; }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #e2e8f0;
+            flex: 1;
+        }
+
+        .section-arrow {
+            color: #475569;
+            font-size: 13px;
+            transition: transform 0.3s;
+            flex-shrink: 0;
+        }
+
+        .section.open .section-arrow { transform: rotate(180deg); }
+
+        .section-body {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease;
+        }
+
+        .section.open .section-body { max-height: 800px; }
+
+        .section-content {
+            padding: 0 20px 20px;
+            color: #94a3b8;
+            font-size: 15px;
+            line-height: 1.7;
+        }
+
+        .section-content p { margin-bottom: 12px; }
+        .section-content p:last-child { margin-bottom: 0; }
+
+        .step {
+            margin-bottom: 16px;
+            padding-left: 16px;
+            border-left: 2px solid #1e293b;
+        }
+
+        .step-title {
+            font-weight: 600;
+            color: #60a5fa;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        .step p { font-size: 14px; }
+
+        .quote {
+            background: rgba(6, 182, 212, 0.06);
+            border-left: 3px solid rgba(6, 182, 212, 0.3);
+            padding: 10px 14px;
+            border-radius: 0 8px 8px 0;
+            margin: 10px 0;
+            font-style: italic;
+            font-size: 14px;
+            color: #a5f3fc;
+        }
+
+        .discipline-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin: 12px 0;
+        }
+
+        .discipline-card {
+            background: rgba(96, 165, 250, 0.06);
+            border: 1px solid rgba(96, 165, 250, 0.15);
+            border-radius: 10px;
+            padding: 14px;
+        }
+
+        .discipline-card .name {
+            font-weight: 600;
+            color: #93c5fd;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        .discipline-card .desc {
+            font-size: 13px;
+            color: #94a3b8;
+            line-height: 1.5;
+        }
+
+        .philosophy-note {
+            background: rgba(139, 92, 246, 0.06);
+            border: 1px solid rgba(139, 92, 246, 0.15);
+            border-radius: 10px;
+            padding: 16px;
+            margin-top: 12px;
+            font-size: 14px;
+            color: #c4b5fd;
+            line-height: 1.6;
+        }
+
+        .bold { color: #e2e8f0; font-weight: 600; }
+    </style>
+</head>
+
+<body>
+
+    <button class="back-btn" onclick="history.back()">← Zpět</button>
+
+    <div class="container">
+
+        <div class="hero">
+            <img src="/app/assets/images/logo-192.png" alt="Chytré Já" class="hero-logo">
+            <h1>Hra Dekatlon</h1>
+            <p>Deset disciplín. Jedno tělo. Cíl — být schopný ve všem, co život vyžaduje.</p>
+        </div>
+
+        <!-- 1. Co je Dekatlon -->
+        <div class="section open" data-section>
+            <div class="section-header" onclick="toggleSection(this)">
+                <span class="section-icon">🏅</span>
+                <span class="section-title">Co je Dekatlon</span>
+                <span class="section-arrow">▼</span>
+            </div>
+            <div class="section-body">
+                <div class="section-content">
+                    <p>Dekatlon není závodní disciplína. Je to model fyzické připravenosti pro život — schopnost zvládat vše, co tě potká. Silové, kardio, pohybové i regenerační.</p>
+                    <p>Vychází z konceptu <span class="bold">Centenarian Decathlon</span> (Peter Attia) — deseti aktivit, které chceš zvládat v 80 nebo 90 letech. Začínáš je trénovat dnes.</p>
+                    <div class="discipline-grid">
+                        <div class="discipline-card">
+                            <div class="name">Síla</div>
+                            <div class="desc">Nosit, tlačit, tahat — základ soběstačnosti.</div>
+                        </div>
+                        <div class="discipline-card">
+                            <div class="name">Kardio</div>
+                            <div class="desc">Srdce a plíce — výdrž pro život, ne jen pro sport.</div>
+                        </div>
+                        <div class="discipline-card">
+                            <div class="name">Rovnováha</div>
+                            <div class="desc">Stabilita, koordinace — základ pohybu bez pádu.</div>
+                        </div>
+                        <div class="discipline-card">
+                            <div class="name">Flexibilita</div>
+                            <div class="desc">Pohyblivost kloubů — kvalita pohybu každý den.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Jak funguje readiness -->
+        <div class="section" data-section>
+            <div class="section-header" onclick="toggleSection(this)">
+                <span class="section-icon">📊</span>
+                <span class="section-title">Ranní readiness check</span>
+                <span class="section-arrow">▼</span>
+            </div>
+            <div class="section-body">
+                <div class="section-content">
+                    <p>Každé ráno CHJ zjistí, jak na tom jsi. Pár otázek — energie, spánek, pohyb včera. Na základě toho vyladí dnešní misi.</p>
+                    <div class="step">
+                        <div class="step-title">Nízká energie</div>
+                        <p>CHJ zvolí lehčí krok. Regenerace je součást tréninku, ne jeho opak.</p>
+                    </div>
+                    <div class="step">
+                        <div class="step-title">Plná energie</div>
+                        <p>CHJ přidá náročnější variantu nebo nabídne druhý krok.</p>
+                    </div>
+                    <div class="quote">Readiness rozhoduje. Nenuť tělo tam, kde nepůjde.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Jak se hraje -->
+        <div class="section" data-section>
+            <div class="section-header" onclick="toggleSection(this)">
+                <span class="section-icon">🎮</span>
+                <span class="section-title">Jak se hraje</span>
+                <span class="section-arrow">▼</span>
+            </div>
+            <div class="section-body">
+                <div class="section-content">
+                    <div class="step">
+                        <div class="step-title">Check-in</div>
+                        <p>Ráno vyplníš 3–4 otázky. Jak jsi spal, jak se cítíš, co tě dnes čeká. Trvá méně než minutu.</p>
+                    </div>
+                    <div class="step">
+                        <div class="step-title">Mise</div>
+                        <p>Dostaneš jednu akci přizpůsobenou tvé dnešní formě. Timer nebo počítadlo — žádné dohady.</p>
+                    </div>
+                    <div class="step">
+                        <div class="step-title">Hotovo</div>
+                        <p>Splníš a zapíšeš. Série roste. Oblast se zlepšuje.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. Filosofie -->
+        <div class="section" data-section>
+            <div class="section-header" onclick="toggleSection(this)">
+                <span class="section-icon">🧬</span>
+                <span class="section-title">Filosofie</span>
+                <span class="section-arrow">▼</span>
+            </div>
+            <div class="section-body">
+                <div class="section-content">
+                    <p>Nejde o výkon sportovce. Jde o to být soběstačný — zvládnout vnuka na zádech, vynést kufr, ujet na kole deset kilometrů — v osmdesáti.</p>
+                    <p>Fyzická zdatnost ve stáří se buduje desetiletí předem. Každý dnešní krok je investice do budoucí soběstačnosti.</p>
+                    <div class="philosophy-note">
+                        Dekatlon nehraješ pro medaili. Hraješ ho proto, abys žil — ne jen existoval.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        function toggleSection(header) {
+            const section = header.parentElement;
+            const wasOpen = section.classList.contains('open');
+            document.querySelectorAll('[data-section]').forEach(s => s.classList.remove('open'));
+            if (!wasOpen) section.classList.add('open');
+        }
+    </script>
+
+</body>
+</html>

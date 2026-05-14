@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="cs">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hra o lehkost — Průvodce</title>
+
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: #0d1117;
+            color: #e2e8f0;
+            font-family: system-ui, -apple-system, sans-serif;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .back-btn {
+            position: fixed;
+            top: 14px;
+            left: 14px;
+            z-index: 100;
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px solid #334155;
+            color: #94a3b8;
+            font-size: 15px;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            backdrop-filter: blur(8px);
+            transition: color 0.2s, border-color 0.2s;
+        }
+
+        .back-btn:hover { color: #e2e8f0; border-color: #475569; }
+
+        .container {
+            max-width: 640px;
+            margin: 0 auto;
+            padding: 60px 20px 80px;
+        }
+
+        .hero {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+
+        .hero-logo {
+            width: 72px;
+            height: 72px;
+            margin-bottom: 16px;
+            border-radius: 16px;
+        }
+
+        .hero h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #a8c7ff;
+            margin-bottom: 12px;
+        }
+
+        .hero p {
+            color: #94a3b8;
+            font-size: 15px;
+            max-width: 420px;
+            margin: 0 auto;
+        }
+
+        .section {
+            border: 1px solid #1e293b;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            overflow: hidden;
+            background: #0f172a;
+            transition: border-color 0.3s;
+        }
+
+        .section.open { border-color: #334155; }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px 20px;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.2s;
+        }
+
+        .section-header:hover { background: rgba(30, 41, 59, 0.5); }
+
+        .section-icon { font-size: 22px; flex-shrink: 0; }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #e2e8f0;
+            flex: 1;
+        }
+
+        .section-arrow {
+            color: #475569;
+            font-size: 13px;
+            transition: transform 0.3s;
+            flex-shrink: 0;
+        }
+
+        .section.open .section-arrow { transform: rotate(180deg); }
+
+        .section-body {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease;
+        }
+
+        .section.open .section-body { max-height: 800px; }
+
+        .section-content {
+            padding: 0 20px 20px;
+            color: #94a3b8;
+            font-size: 15px;
+            line-height: 1.7;
+        }
+
+        .section-content p { margin-bottom: 12px; }
+        .section-content p:last-child { margin-bottom: 0; }
+
+        .killer-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin: 12px 0;
+        }
+
+        .killer-card {
+            background: rgba(239, 68, 68, 0.06);
+            border: 1px solid rgba(239, 68, 68, 0.15);
+            border-radius: 10px;
+            padding: 14px;
+        }
+
+        .killer-card .name {
+            font-weight: 600;
+            color: #f87171;
+            font-size: 13px;
+            margin-bottom: 4px;
+            font-family: monospace;
+            letter-spacing: 0.05em;
+        }
+
+        .killer-card .desc {
+            font-size: 13px;
+            color: #94a3b8;
+            line-height: 1.5;
+        }
+
+        .step {
+            margin-bottom: 16px;
+            padding-left: 16px;
+            border-left: 2px solid #1e293b;
+        }
+
+        .step-title {
+            font-weight: 600;
+            color: #60a5fa;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        .step p { font-size: 14px; }
+
+        .quote {
+            background: rgba(6, 182, 212, 0.06);
+            border-left: 3px solid rgba(6, 182, 212, 0.3);
+            padding: 10px 14px;
+            border-radius: 0 8px 8px 0;
+            margin: 10px 0;
+            font-style: italic;
+            font-size: 14px;
+            color: #a5f3fc;
+        }
+
+        .checkin-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin: 12px 0;
+        }
+
+        .checkin-item {
+            display: flex;
+            gap: 10px;
+            font-size: 14px;
+            align-items: flex-start;
+            background: rgba(30, 41, 59, 0.4);
+            border-radius: 8px;
+            padding: 10px 12px;
+        }
+
+        .checkin-icon { font-size: 16px; flex-shrink: 0; }
+
+        .philosophy-note {
+            background: rgba(139, 92, 246, 0.06);
+            border: 1px solid rgba(139, 92, 246, 0.15);
+            border-radius: 10px;
+            padding: 16px;
+            margin-top: 12px;
+            font-size: 14px;
+            color: #c4b5fd;
+            line-height: 1.6;
+        }
+
+        .bold { color: #e2e8f0; font-weight: 600; }
+    </style>
+</head>
+
+<body>
+
+    <button class="back-btn" onclick="history.back()">← Zpět</button>
+
+    <div class="container">
+
+        <div class="hero">
+            <img src="/app/assets/images/logo-192.png" alt="Chytré Já" class="hero-logo">
+            <h1>Hra o lehkost</h1>
+            <p>Nejde o váhu na váze. Jde o to, jak se cítíš ve svém těle každý den.</p>
+        </div>
+
+        <!-- 1. Co je Lehkost -->
+        <div class="section open" data-section>
+            <div class="section-header" onclick="toggleSection(this)">
+                <span class="section-icon">⚖️</span>
+                <span class="section-title">Co je Hra o lehkost</span>
+                <span class="section-arrow">▼</span>
+            </div>
+            <div class="section-body">
+                <div class="section-content">
+                    <p>Lehkost není dieta ani fitnesprogram. Je to systém malých každodenních rozhodnutí — co jíš, jak se hýbeš, jak spíš, jak zvládáš stres.</p>
+                    <p>CHJ tě nenutí do žádného režimu. Sleduje tvůj <span class="bold">BODY FLOW</span> — jak moc tvůj den podporuje nebo brzdí přirozenou rovnováhu těla.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Flow Killers -->
+        <div class="section" data-section>
+            <div class="section-header" onclick="toggleSection(this)">
+                <span class="section-icon">⚠️</span>
+                <span class="section-title">Flow Killers — co brzdí lehkost</span>
+                <span class="section-arrow">▼</span>
+            </div>
+            <div class="section-body">
+                <div class="section-content">
+                    <p>Pět vzorců, které nejčastěji narušují tělesnou rovnováhu. CHJ sleduje, který z nich na tebe útočí:</p>
+                    <div class="killer-grid">
+                        <div class="killer-card">
+                            <div class="name">VEČERNÍ PŘEJÍDÁNÍ</div>
+                            <div class="desc">Večer tělo nestíhá zpracovat přebytek — ukládá ho.</div>
+                        </div>
+                        <div class="killer-card">
+                            <div class="name">NULOVÝ POHYB</div>
+                            <div class="desc">Tělo bez pohybu zpomaluje metabolismus a hromadí napětí.</div>
+                        </div>
+                        <div class="killer-card">
+                            <div class="name">SPÁNKOVÝ DEFICIT</div>
+                            <div class="desc">Bez spánku tělo vyžaduje více energie — a hledá ji v jídle.</div>
+                        </div>
+                        <div class="killer-card">
+                            <div class="name">STRESOVÉ JEDENÍ</div>
+                            <div class="desc">Stres přepisuje signály hladu. Jíš, i když nepotřebuješ.</div>
+                        </div>
+                    </div>
+                    <p>CHJ identifikuje tvůj hlavní FLOW KILLER a navrhne jednu akci přímo na něj.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Ranní check-in -->
+        <div class="section" data-section>
+            <div class="section-header" onclick="toggleSection(this)">
+                <span class="section-icon">🌅</span>
+                <span class="section-title">Ranní check-in</span>
+                <span class="section-arrow">▼</span>
+            </div>
+            <div class="section-body">
+                <div class="section-content">
+                    <p>Každé ráno 6 otázek. Trvá méně než minutu. Na základě odpovědí CHJ vypočítá tvůj <span class="bold">BODY FLOW score</span> a určí dnešní prioritu.</p>
+                    <div class="checkin-list">
+                        <div class="checkin-item">
+                            <span class="checkin-icon">⚖️</span>
+                            <span>Váha dnes ráno (kg)</span>
+                        </div>
+                        <div class="checkin-item">
+                            <span class="checkin-icon">⚡</span>
+                            <span>Energie 1–5 (jak se cítíš)</span>
+                        </div>
+                        <div class="checkin-item">
+                            <span class="checkin-icon">😴</span>
+                            <span>Kolik hodin jsi spal</span>
+                        </div>
+                        <div class="checkin-item">
+                            <span class="checkin-icon">🏃</span>
+                            <span>Pohyb včera (žádný / lehký / střední / intenzivní)</span>
+                        </div>
+                        <div class="checkin-item">
+                            <span class="checkin-icon">🍕</span>
+                            <span>Přestřelil jsi včera se stravou? (ano / ne)</span>
+                        </div>
+                        <div class="checkin-item">
+                            <span class="checkin-icon">🧘</span>
+                            <span>Stres 1–5 (jaká byla psychická zátěž)</span>
+                        </div>
+                    </div>
+                    <div class="quote">Check-in trvá méně než minutu. BODY FLOW se počítá sám.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. Jak se hraje -->
+        <div class="section" data-section>
+            <div class="section-header" onclick="toggleSection(this)">
+                <span class="section-icon">🎮</span>
+                <span class="section-title">Jak se hraje</span>
+                <span class="section-arrow">▼</span>
+            </div>
+            <div class="section-body">
+                <div class="section-content">
+                    <div class="step">
+                        <div class="step-title">Ráno: check-in</div>
+                        <p>Vyplníš check-in. CHJ vidí tvůj FLOW a ví, který killer na tebe útočí nejvíc.</p>
+                    </div>
+                    <div class="step">
+                        <div class="step-title">Mise</div>
+                        <p>Dostaneš jednu akci přizpůsobenou tvému dnešnímu FLOW KILLERU. Konkrétní, proveditelnou — ne seznam tipů.</p>
+                        <div class="quote">Dnešní akce: 20 min lehká chůze po jídle. Útočíš na NULOVÝ POHYB.</div>
+                    </div>
+                    <div class="step">
+                        <div class="step-title">Séria a posun</div>
+                        <p>Čím déle držíš sérii check-inů a akcí, tím víc BODY FLOW roste. FLOW KILLER ztrácí sílu.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. Filosofie -->
+        <div class="section" data-section>
+            <div class="section-header" onclick="toggleSection(this)">
+                <span class="section-icon">🧬</span>
+                <span class="section-title">Filosofie</span>
+                <span class="section-arrow">▼</span>
+            </div>
+            <div class="section-body">
+                <div class="section-content">
+                    <p>Lehkost není cíl. Je to stav — kdy tělo funguje tak, jak má. Bez boje, bez hladu, bez vyčerpání.</p>
+                    <p>CHJ nesoudí. Neměří tuk ani kalorie. Sleduje, zda tvůj den tělu pomáhá nebo ho zatěžuje.</p>
+                    <div class="philosophy-note">
+                        Lehkost se nedobuduje za měsíc. Buduje se každý den — jedním rozhodnutím za druhým.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        function toggleSection(header) {
+            const section = header.parentElement;
+            const wasOpen = section.classList.contains('open');
+            document.querySelectorAll('[data-section]').forEach(s => s.classList.remove('open'));
+            if (!wasOpen) section.classList.add('open');
+        }
+    </script>
+
+</body>
+</html>
