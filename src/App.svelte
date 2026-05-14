@@ -22,6 +22,7 @@
   // ── CHECK-IN GATE ──────────────────────────────────────
   let readinessChecked = $state(false);   // has the check completed?
   let needsCheckIn     = $state(false);   // should we show check-in screen?
+  let hasNavigated     = $state(false);   // true only after user clicks a node (not on initial load)
 
   // ── SECOND ACTION OFFER ────────────────────────────────
   // null = no offer, 'pending' = showing offer, 'declined' = user said Ne
@@ -167,6 +168,7 @@
       // Listen for node-switch navigation from Universe (postMessage)
       window.addEventListener('message', (e) => {
         if (e.data?.type === 'chj:navigate' && e.data.nodeId) {
+          hasNavigated = true;
           navigateTo(e.data.nodeId, e.data.data || null);
         }
       });
@@ -441,6 +443,6 @@
 {/if}
 
 <!-- Check-in modal — independent of panel, always available after readiness check -->
-{#if userId && !devMode && needsCheckIn && readinessChecked}
+{#if userId && !devMode && needsCheckIn && readinessChecked && hasNavigated}
   <CheckIn {userId} onComplete={onCheckInComplete} />
 {/if}
