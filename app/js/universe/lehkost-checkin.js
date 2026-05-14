@@ -93,7 +93,7 @@ function _buildModal() {
       <div class="lh-modal__header">
         <span class="lh-modal__icon">⚡</span>
         <span class="lh-modal__title">RANNÍ CHECK-IN</span>
-        <span class="lh-modal__sub">Hra o lehkost · 15 sekund</span>
+        <span class="lh-modal__sub">Hra o lehkost</span>
       </div>
 
       <div class="lh-modal__fields">

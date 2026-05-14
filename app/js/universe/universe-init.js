@@ -397,32 +397,16 @@ async function loadAndRenderModel(modelName, role) {
 
   renderVisibleUniverse(window.MAIN_UNIVERSE_DATA);
 
-  // Per-universe morning check-in + auto-open
-  const _uid = window.firebaseAuth?.currentUser?.uid;
-  const _realUser = _uid && _uid !== 'demo-user-123';
-
+  // Auto-open main node for longevity
   if (modelName === 'longevity') {
-    if (_realUser) {
-      const { showReadinessModal } = await import('./longevity-checkin.js');
-      showReadinessModal(_uid);
-    }
     setTimeout(() => {
       const mainNode = window.MAIN_UNIVERSE_DATA?.find(n => n.id === 'dlouhovekost');
       if (mainNode) showPanel(mainNode);
     }, 700);
   }
 
-  if (modelName === 'lehkost') {
-    if (_realUser) {
-      const { showCheckinModal } = await import('./lehkost-checkin.js');
-      showCheckinModal(_uid, (bodyFlow) => {
-        if (!bodyFlow) return;
-        const LH_IDS = ['lh_main','lh_vyziva','lh_pohyb','lh_mysl','lh_regenerace'];
-        LH_IDS.forEach(id => { if (window._hudCache) delete window._hudCache[id]; });
-        if (window.refreshUniverseData) window.refreshUniverseData();
-      });
-    }
-  }
+  // TODO v0.3: morning check-in per universe — needs user profile → universe mapping
+  // longevity-checkin.js + lehkost-checkin.js are ready, trigger from user profile
 
   // HUD init — bio-age, streak, mission overlay on main screen
   // (700ms čeká na inicializaci vis.js sítě)
