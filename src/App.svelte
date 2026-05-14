@@ -126,9 +126,40 @@
       await Promise.all([checkReadiness(), loadHudData(userId, nid)]);
     }
 
-    // No orchestrator call here — warm-up (universe-init.js) is the only place
-    // where AI computation happens. Panel just displays what hud-data-bulk returns.
     panelReady = true;
+
+    // Lehkost agent — personalizovaná akce + motivace pro lh_main
+    if (nid === 'lh_main' && userId && !devMode) {
+      triggerLehkostAgent(userId, nid);
+    }
+  }
+
+  async function triggerLehkostAgent(uid, nid) {
+    try {
+      console.log('[Lehkost Agent] calling API...');
+      const res = await fetch('/api/user?action=lehkost-agent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: uid, nodeId: nid }),
+      });
+      if (!res.ok) {
+        console.warn('[Lehkost Agent] HTTP error:', res.status, await res.text().catch(() => ''));
+        return;
+      }
+      const data = await res.json();
+      console.log('[Lehkost Agent] response:', data);
+      if (data.action_id) {
+        agentAction = {
+          id: data.action_id, label: data.label,
+          type: data.type === 'timed' ? 'timed' : 'habit',
+          duration: data.duration_s ?? null,
+          status: 'READY', tier: 1, node_id: nid,
+          from_agent_cache: data.cached ?? false,
+        };
+      }
+    } catch (e) {
+      console.warn('[CHJ] Lehkost Agent call failed:', e);
+    }
   }
 
   onMount(async () => {
@@ -283,11 +314,7 @@
   let displayData = $derived((() => {
     const base = (userId && !devMode && $nodeData) ? $nodeData : testNode;
     if (agentAction && userId && !devMode) {
-      return {
-        ...base,
-        action: agentAction,
-        completion_feedback: base.completion_feedback || null,
-      };
+      return { ...base, action: agentAction, completion_feedback: base.completion_feedback || null };
     }
     return base;
   })());
