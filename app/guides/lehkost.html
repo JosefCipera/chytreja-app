@@ -38,7 +38,7 @@
         .container {
             max-width: 640px;
             margin: 0 auto;
-            padding: 60px 20px 80px;
+            padding: 24px 20px 60px;
         }
 
         .hero {
@@ -217,7 +217,7 @@
 
 <body>
 
-    <button class="back-btn" onclick="history.back()">← Zpět</button>
+    <button class="back-btn" onclick="window.opener ? window.close() : history.back()">← Zpět</button>
 
     <div class="container">
 
