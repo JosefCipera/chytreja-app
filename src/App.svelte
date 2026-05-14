@@ -220,7 +220,7 @@
 
   async function checkReadiness() {
     try {
-      const res  = await fetch(`/api/readiness?userId=${userId}`);
+      const res  = await fetch(`/api/user?action=readiness&userId=${encodeURIComponent(userId)}`);
       const json = await res.json();
       needsCheckIn = !json.exists;
     } catch {

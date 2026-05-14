@@ -399,6 +399,13 @@ async function loadAndRenderModel(modelName, role) {
   // Auto-open: Hra o život panel se otevře 700ms po načtení vesmíru
   // GRAY state means no data yet — still open HUD (not locked)
   if (modelName === 'longevity') {
+    // Morning readiness check-in (canvas-level modal, before panel auto-open)
+    const _uid = window.firebaseAuth?.currentUser?.uid;
+    if (_uid && _uid !== 'demo-user-123') {
+      const { showReadinessModal } = await import('./longevity-checkin.js');
+      showReadinessModal(_uid);
+    }
+
     setTimeout(() => {
       const mainNode = window.MAIN_UNIVERSE_DATA?.find(n => n.id === 'dlouhovekost');
       if (mainNode) {
