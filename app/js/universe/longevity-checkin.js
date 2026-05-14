@@ -3,14 +3,14 @@
 // Mirrors the pattern of lehkost-checkin.js but for user_readiness data.
 // API: GET/POST /api/user?action=readiness
 
-export async function showReadinessModal(userId, onComplete) {
+export async function showReadinessModal(userId, onComplete, force = false) {
   // Skip for demo user
   if (!userId || userId === 'demo-user-123') { onComplete?.(); return; }
 
-  // Skip if already submitted today (localStorage fast-path)
+  // Skip if already submitted today — unless force=true (manual trigger from menu)
   const today = new Date().toISOString().slice(0, 10);
   const lsKey = `lng_readiness_${userId}`;
-  if (localStorage.getItem(lsKey) === today) { onComplete?.(); return; }
+  if (!force && localStorage.getItem(lsKey) === today) { onComplete?.(); return; }
 
   // Check server — in case user used a different device today
   try {

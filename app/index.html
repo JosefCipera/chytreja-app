@@ -93,6 +93,27 @@
             window.open(url, '_blank');
         };
 
+        // Daily check-in — triggers the right modal for the active universe
+        window.openDailyCheckin = async () => {
+            // Close dropdown first
+            document.getElementById('profileDropdown')?.classList.add('hidden');
+            const model = window.CURRENT_MODEL || 'longevity';
+            const userId = localStorage.getItem('chj_uid');
+            if (!userId) return;
+            if (model === 'longevity') {
+                const { showReadinessModal } = await import('/app/js/universe/longevity-checkin.js');
+                showReadinessModal(userId, null, true); // force=true → show even if already done today
+            } else if (model === 'lehkost') {
+                const { showCheckinModal } = await import('/app/js/universe/lehkost-checkin.js');
+                showCheckinModal(userId, (bodyFlow) => {
+                    if (!bodyFlow) return;
+                    const LH_IDS = ['lh_main','lh_vyziva','lh_pohyb','lh_mysl','lh_regenerace'];
+                    LH_IDS.forEach(id => { if (window._hudCache) delete window._hudCache[id]; });
+                    if (window.refreshUniverseData) window.refreshUniverseData();
+                }, true); // force=true
+            }
+        };
+
         // Expose auth for other scripts
         window.firebaseAuth = auth;
     </script>
@@ -350,6 +371,7 @@
                 </div>
                 <nav class="dropdown-nav">
                     <a href="#" onclick="openUserDataPanel(); return false;"><i class="icon">👤</i> Já</a>
+                    <a href="#" onclick="openDailyCheckin(); return false;" id="checkin-menu-item"><i class="icon">📋</i> Dnešní záznam</a>
                     <a href="/app/medioteka.html"><i class="icon">📚</i> Mediotéka</a>
                     <a href="#" onclick="openGuide(); return false;"><i class="icon">📖</i> Návod</a>
                     <div class="divider"></div>
