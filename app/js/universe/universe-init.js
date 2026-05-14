@@ -269,9 +269,10 @@ async function warmAgentCache() {
     return;
   }
 
-  // Start with first model from index.json (currently 'toc')
-  const modelName = keys[0];
-  localStorage.setItem("currentModel", modelName);
+  // Respect previously saved model; fall back to first in index.json
+  const _saved = localStorage.getItem('currentModel');
+  const modelName = (_saved && window.UNIVERSE_INDEX[_saved]) ? _saved : keys[0];
+  localStorage.setItem('currentModel', modelName);
   const role = await getUserMode();
 
   await loadAndRenderModel(modelName, role);
@@ -396,25 +397,31 @@ async function loadAndRenderModel(modelName, role) {
 
   renderVisibleUniverse(window.MAIN_UNIVERSE_DATA);
 
-  // Auto-open: Hra o život panel se otevře 700ms po načtení vesmíru
-  // GRAY state means no data yet — still open HUD (not locked)
+  // Per-universe morning check-in + auto-open
+  const _uid = window.firebaseAuth?.currentUser?.uid;
+  const _realUser = _uid && _uid !== 'demo-user-123';
+
   if (modelName === 'longevity') {
-    // Morning readiness check-in — only for longevity users.
-    // Skip if user previously switched to a different universe (persisted in localStorage).
-    const _savedModel = localStorage.getItem('currentModel');
-    const _isLongevityUser = !_savedModel || _savedModel === 'longevity';
-    const _uid = window.firebaseAuth?.currentUser?.uid;
-    if (_uid && _uid !== 'demo-user-123' && _isLongevityUser) {
+    if (_realUser) {
       const { showReadinessModal } = await import('./longevity-checkin.js');
       showReadinessModal(_uid);
     }
-
     setTimeout(() => {
       const mainNode = window.MAIN_UNIVERSE_DATA?.find(n => n.id === 'dlouhovekost');
-      if (mainNode) {
-        showPanel(mainNode);
-      }
+      if (mainNode) showPanel(mainNode);
     }, 700);
+  }
+
+  if (modelName === 'lehkost') {
+    if (_realUser) {
+      const { showCheckinModal } = await import('./lehkost-checkin.js');
+      showCheckinModal(_uid, (bodyFlow) => {
+        if (!bodyFlow) return;
+        const LH_IDS = ['lh_main','lh_vyziva','lh_pohyb','lh_mysl','lh_regenerace'];
+        LH_IDS.forEach(id => { if (window._hudCache) delete window._hudCache[id]; });
+        if (window.refreshUniverseData) window.refreshUniverseData();
+      });
+    }
   }
 
   // HUD init — bio-age, streak, mission overlay on main screen
