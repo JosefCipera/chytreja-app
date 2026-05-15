@@ -66,6 +66,16 @@
     color: #64748b;
     margin-left: 3px;
   }
+  .spark-range {
+    margin-top: 5px;
+    font-family: monospace;
+    font-size: 10px;
+    letter-spacing: 1px;
+    color: #475569;
+  }
+  .spark-range span {
+    color: #64748b;
+  }
 </style>
 </head>
 <body>
@@ -77,6 +87,7 @@
     <div class="spark-label">Váha za 14 dní</div>
     <canvas class="spark" id="w"></canvas>
     <div class="spark-big">73,2<span class="unit">kg</span></div>
+    <div class="spark-range">Rozmezí: <span>70–75 kg</span></div>
   </div>
 </div>
 
@@ -87,6 +98,7 @@
     <div class="spark-label">Pohyb za 14 dní</div>
     <canvas class="spark" id="p"></canvas>
     <div class="spark-big">68<span class="unit">%</span></div>
+    <div class="spark-range">Cíl: <span>≥ 70 %</span></div>
   </div>
 </div>
 
@@ -97,6 +109,7 @@
     <div class="spark-label">Regenerace za 14 dní</div>
     <canvas class="spark" id="r"></canvas>
     <div class="spark-big">5,8<span class="unit">hod</span></div>
+    <div class="spark-range">Rozmezí: <span>7–9 hod</span></div>
   </div>
 </div>
 
