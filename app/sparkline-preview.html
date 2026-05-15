@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sparkline preview — lh_pohyb</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0a0f1a;
+    font-family: system-ui, sans-serif;
+    color: #e2e8f0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+    padding: 32px 16px;
+  }
+
+  .card {
+    width: 288px;
+    background: rgba(15, 23, 42, 0.95);
+    border: 1px solid rgba(245, 158, 11, 0.2);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+
+  /* Header */
+  .node-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .node-label { font-family: monospace; font-size: 10px; letter-spacing: 2px; color: #f59e0b; }
+  .node-sub   { font-family: monospace; font-size: 9px; color: #475569; letter-spacing: 1px; }
+  .node-close { color: #334155; font-size: 14px; }
+
+  /* Sparkline */
+  .spark-section {
+    padding: 12px 14px 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .spark-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 5px;
+  }
+  .spark-metric { font-family: monospace; font-size: 10px; letter-spacing: 1.5px; color: #64748b; }
+  .spark-period { font-family: monospace; font-size: 9px; color: #334155; }
+
+  canvas.spark { width: 100%; height: 52px; display: block; margin-bottom: 6px; }
+
+  .spark-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+  .spark-value { font-size: 12px; font-family: monospace; color: #94a3b8; }
+  .spark-trend { font-family: monospace; font-size: 12px; font-weight: 600; }
+  .trend-good { color: #22c55e; }
+  .trend-flat { color: #64748b; }
+  .trend-bad  { color: #ef4444; }
+
+  /* Problém */
+  .problem {
+    padding: 8px 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .problem-label { font-family: monospace; font-size: 10px; letter-spacing: 2px; color: #64748b; }
+  .problem-name  { font-family: monospace; font-size: 11px; color: #ef4444; letter-spacing: 1px; }
+
+  /* Action */
+  .action { padding: 12px 14px; }
+  .action-header { font-family: monospace; font-size: 10px; letter-spacing: 2px; color: #64748b; margin-bottom: 6px; }
+  .action-header span { color: #94a3b8; }
+  .action-label { font-size: 13px; color: #e2e8f0; margin-bottom: 10px; line-height: 1.45; }
+  .action-btn {
+    width: 100%;
+    padding: 9px;
+    background: rgba(245,158,11,0.08);
+    border: 1px solid rgba(245,158,11,0.3);
+    border-radius: 9px;
+    color: #fbbf24;
+    font-family: monospace;
+    font-size: 12px;
+    letter-spacing: 1px;
+    cursor: pointer;
+  }
+
+  /* Labels */
+  .col { display: flex; flex-direction: column; gap: 8px; align-items: center; }
+  .col-label { font-family: monospace; font-size: 10px; letter-spacing: 2px; color: #334155; text-transform: uppercase; }
+</style>
+</head>
+<body>
+
+<!-- ROSTE -->
+<div class="col">
+  <div class="col-label">pohyb · roste</div>
+  <div class="card">
+    <div class="node-header">
+      <div><div class="node-label">LEHKOST NODE</div><div class="node-sub">POHYB_v0.1</div></div>
+      <span class="node-close">✕</span>
+    </div>
+    <div class="spark-section">
+      <div class="spark-top">
+        <span class="spark-metric">POHYB / 14 DNÍ</span>
+        <span class="spark-period">1.5. – 14.5.</span>
+      </div>
+      <canvas class="spark" id="s-a"></canvas>
+      <div class="spark-bottom">
+        <span class="spark-value">střední · dnes</span>
+        <span class="spark-trend trend-good">↑ zlepšení</span>
+      </div>
+    </div>
+    <div class="problem">
+      <span class="problem-label">PROBLÉM:</span>
+      <span class="problem-name">MALÝ POHYB</span>
+    </div>
+    <div class="action">
+      <div class="action-header">ACTION: <span>POHYB</span></div>
+      <div class="action-label">Každou hodinu vstát a 2 minuty se projít — nastav připomínku</div>
+      <button class="action-btn">✓ HOTOVO</button>
+    </div>
+  </div>
+</div>
+
+<!-- STAGNUJE -->
+<div class="col">
+  <div class="col-label">pohyb · stagnuje</div>
+  <div class="card">
+    <div class="node-header">
+      <div><div class="node-label">LEHKOST NODE</div><div class="node-sub">POHYB_v0.1</div></div>
+      <span class="node-close">✕</span>
+    </div>
+    <div class="spark-section">
+      <div class="spark-top">
+        <span class="spark-metric">POHYB / 14 DNÍ</span>
+        <span class="spark-period">1.5. – 14.5.</span>
+      </div>
+      <canvas class="spark" id="s-b"></canvas>
+      <div class="spark-bottom">
+        <span class="spark-value">málo · dnes</span>
+        <span class="spark-trend trend-flat">→ beze změny</span>
+      </div>
+    </div>
+    <div class="problem">
+      <span class="problem-label">PROBLÉM:</span>
+      <span class="problem-name">MALÝ POHYB</span>
+    </div>
+    <div class="action">
+      <div class="action-header">ACTION: <span>POHYB</span></div>
+      <div class="action-label">10 minut chůze teď — vyjdi ven nebo po schodech</div>
+      <button class="action-btn">✓ HOTOVO</button>
+    </div>
+  </div>
+</div>
+
+<!-- KLESÁ -->
+<div class="col">
+  <div class="col-label">pohyb · klesá</div>
+  <div class="card">
+    <div class="node-header">
+      <div><div class="node-label">LEHKOST NODE</div><div class="node-sub">POHYB_v0.1</div></div>
+      <span class="node-close">✕</span>
+    </div>
+    <div class="spark-section">
+      <div class="spark-top">
+        <span class="spark-metric">POHYB / 14 DNÍ</span>
+        <span class="spark-period">1.5. – 14.5.</span>
+      </div>
+      <canvas class="spark" id="s-c"></canvas>
+      <div class="spark-bottom">
+        <span class="spark-value">málo · dnes</span>
+        <span class="spark-trend trend-bad">↓ zhoršení</span>
+      </div>
+    </div>
+    <div class="problem">
+      <span class="problem-label">PROBLÉM:</span>
+      <span class="problem-name">MALÝ POHYB</span>
+    </div>
+    <div class="action">
+      <div class="action-header">ACTION: <span>POHYB</span></div>
+      <div class="action-label">Při telefonátu stůj nebo choď — žádné sezení</div>
+      <button class="action-btn">✓ HOTOVO</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const DATA = {
+    a: [1,2,1,2,2,3,2,2,3,3,2,3,3,2],  // rostoucí
+    b: [1,1,2,1,1,2,1,1,2,1,1,1,2,1],  // stagnace
+    c: [3,2,3,3,2,2,2,1,2,1,1,1,1,1],  // klesající
+  };
+  const COLORS = { a: '#22c55e', b: '#64748b', c: '#ef4444' };
+
+  function drawSpark(id, vals, color) {
+    const canvas = document.getElementById(id);
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+    const w = canvas.clientWidth, h = canvas.clientHeight;
+    canvas.width = w * dpr; canvas.height = h * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    const mx = 10, my = 8;
+    const min = Math.min(...vals), max = Math.max(...vals);
+    const rng = Math.max(0.1, max - min);
+    const pts = vals.map((v, i) => ({
+      x: mx + (i / (vals.length - 1)) * (w - mx * 2),
+      y: h - my - ((v - min) / rng) * (h - my * 2),
+    }));
+
+    // Area fill
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, h);
+    pts.forEach(p => ctx.lineTo(p.x, p.y));
+    ctx.lineTo(pts.at(-1).x, h);
+    ctx.closePath();
+    ctx.fillStyle = color + '18';
+    ctx.fill();
+
+    // Bezier line
+    ctx.beginPath();
+    ctx.lineWidth = 2;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = color + 'cc';
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for (let i = 1; i < pts.length - 2; i++) {
+      const xc = (pts[i].x + pts[i+1].x) / 2;
+      const yc = (pts[i].y + pts[i+1].y) / 2;
+      ctx.quadraticCurveTo(pts[i].x, pts[i].y, xc, yc);
+    }
+    const last = pts.at(-1), pre = pts.at(-2);
+    ctx.quadraticCurveTo(pre.x, pre.y, last.x, last.y);
+    ctx.stroke();
+
+    // Dashed tail
+    ctx.beginPath();
+    ctx.setLineDash([3, 4]);
+    ctx.moveTo(last.x, last.y);
+    ctx.lineTo(Math.min(w - 6, last.x + 28), last.y);
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = '#33415540';
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Dot
+    ctx.beginPath();
+    ctx.arc(last.x, last.y, 4.5, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = '#0a0f1a';
+    ctx.stroke();
+  }
+
+  requestAnimationFrame(() => {
+    drawSpark('s-a', DATA.a, COLORS.a);
+    drawSpark('s-b', DATA.b, COLORS.b);
+    drawSpark('s-c', DATA.c, COLORS.c);
+  });
+</script>
+</body>
+</html>
