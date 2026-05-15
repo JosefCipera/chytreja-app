@@ -17,7 +17,7 @@
     </div>
   {:else if universe === 'lehkost'}
     <div class="hud-mono" style="font-size: 20px; font-weight: 300; letter-spacing: 0.04em; color: #c8d4df; line-height: 1.3; margin-bottom: 6px;">
-      FLOW KILLER: <span style="color: #c8d4df;">{label}</span>
+      PROBLÉM: <span style="color: #c8d4df;">{label}</span>
     </div>
     <div class="flex items-center gap-2" style="line-height: 1.3;">
       <span style="font-size: 15px; color: #ef4444;">{@html '\u26A0\uFE0E'}</span>

@@ -234,7 +234,7 @@ function detectKillers(rows) {
   const scores = [
     { id: 'evening_overeating', label: 'VEČERNÍ PŘEJÍDÁNÍ',
       score: Math.min(100, r7.filter(r=>r.binge).length*18 + (avgStress>=3?10:0)) },
-    { id: 'low_movement', label: 'NULOVÝ POHYB',
+    { id: 'low_movement', label: 'MALÝ POHYB',
       score: Math.min(100, r7.filter(r=>r.movement_level==='low').length*15 + (avg(r7.map(r=>r.energy).filter(Boolean))<3?10:0)) },
     { id: 'sleep_deficit', label: 'SPÁNKOVÝ DEFICIT',
       score: Math.min(100, r7.filter(r=>r.sleep_hours!=null&&parseFloat(r.sleep_hours)<6.5).length*14 + (r7.filter(r=>r.binge).length>0?8:0)) },
