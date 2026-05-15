@@ -14,7 +14,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 24px;
+    gap: 20px;
     flex-wrap: wrap;
     padding: 40px 16px;
   }
@@ -25,110 +25,115 @@
     color: #334155; text-transform: uppercase;
   }
 
-  /* Karta — jen spark sekce */
+  /* Karta */
   .spark-card {
-    width: 288px;
-    background: rgba(15, 23, 42, 0.95);
-    border: 1px solid rgba(245, 158, 11, 0.2);
-    border-radius: 14px;
+    width: 260px;
+    background: #1e293b;
+    border-radius: 12px;
     padding: 16px 16px 18px;
   }
 
-  /* Nad grafem */
+  /* Nad grafem — název metriky */
   .spark-label {
-    font-family: monospace;
-    font-size: 10px;
-    letter-spacing: 2px;
-    color: #64748b;
-    text-transform: uppercase;
-    margin-bottom: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #cbd5e1;
+    margin-bottom: 8px;
   }
 
   /* Canvas */
   canvas.spark {
     width: 100%;
-    height: 64px;
+    height: 68px;
     display: block;
+    margin-bottom: 14px;
   }
 
-  /* Pod grafem — velké číslo */
+  /* Velké číslo */
   .spark-big {
-    margin-top: 12px;
-    font-family: monospace;
-    font-size: 28px;
-    font-weight: 600;
-    letter-spacing: -0.5px;
-    color: #e2e8f0;
+    font-size: 32px;
+    font-weight: 700;
+    color: #f1f5f9;
+    line-height: 1;
+    margin-bottom: 6px;
   }
   .spark-big .unit {
-    font-size: 14px;
+    font-size: 16px;
     font-weight: 400;
-    color: #64748b;
-    margin-left: 3px;
+    color: #94a3b8;
+    margin-left: 4px;
   }
+
+  /* Status s tečkou */
+  .spark-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: #94a3b8;
+    margin-bottom: 4px;
+  }
+  .spark-status .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* Rozmezí */
   .spark-range {
-    margin-top: 5px;
-    font-family: monospace;
-    font-size: 10px;
-    letter-spacing: 1px;
-    color: #475569;
-  }
-  .spark-range span {
+    font-size: 12px;
     color: #64748b;
   }
 </style>
 </head>
 <body>
 
-<!-- Váha -->
+<!-- Váha — v rozmezí (zelená) -->
 <div class="col">
   <div class="col-label">lh_main · váha</div>
   <div class="spark-card">
     <div class="spark-label">Váha za 14 dní</div>
     <canvas class="spark" id="w"></canvas>
     <div class="spark-big">73,2<span class="unit">kg</span></div>
-    <div class="spark-range">Rozmezí: <span>70–75 kg</span></div>
+    <div class="spark-status"><span class="dot" style="background:#22c55e"></span>v rozmezí</div>
+    <div class="spark-range">Rozmezí: 70–75 kg</div>
   </div>
 </div>
 
-<!-- Pohyb -->
+<!-- Pohyb — těsně pod cílem (žlutá) -->
 <div class="col">
   <div class="col-label">lh_pohyb · roste</div>
   <div class="spark-card">
     <div class="spark-label">Pohyb za 14 dní</div>
     <canvas class="spark" id="p"></canvas>
     <div class="spark-big">68<span class="unit">%</span></div>
-    <div class="spark-range">Cíl: <span>≥ 70 %</span></div>
+    <div class="spark-status"><span class="dot" style="background:#f59e0b"></span>těsně pod cílem</div>
+    <div class="spark-range">Cíl: ≥ 70 %</div>
   </div>
 </div>
 
-<!-- Spánek / Regenerace -->
+<!-- Spánek — mimo rozmezí (červená) -->
 <div class="col">
   <div class="col-label">lh_regenerace · klesá</div>
   <div class="spark-card">
     <div class="spark-label">Regenerace za 14 dní</div>
     <canvas class="spark" id="r"></canvas>
     <div class="spark-big">5,8<span class="unit">hod</span></div>
-    <div class="spark-range">Rozmezí: <span>7–9 hod</span></div>
+    <div class="spark-status"><span class="dot" style="background:#ef4444"></span>mimo rozmezí</div>
+    <div class="spark-range">Rozmezí: 7–9 hod</div>
   </div>
 </div>
 
 <script>
-  // Data: reálné hodnoty (poslední = dnešek)
-  // Prognóza = tečkovaná extrapolace za posledním bodem (lineární trend z posl. 5 bodů)
   const DATA = {
-    w: [76.1, 75.8, 75.6, 75.9, 75.4, 75.2, 74.8, 74.9, 74.5, 74.2, 73.9, 74.1, 73.6, 73.2], // váha klesá
-    p: [1, 2, 1, 2, 2, 3, 2, 2, 3, 3, 2, 3, 3, 2],   // pohyb roste (1=málo,2=střed,3=hodně)
-    r: [7, 7.5, 6, 5.5, 6.5, 7, 6, 5.5, 5, 6, 5.5, 5, 5.5, 5.8], // spánek klesá
+    w: [76.1, 75.8, 75.6, 75.9, 75.4, 75.2, 74.8, 74.9, 74.5, 74.2, 73.9, 74.1, 73.6, 73.2],
+    p: [1, 2, 1, 2, 2, 3, 2, 2, 3, 3, 2, 3, 3, 2],
+    r: [7, 7.5, 6, 5.5, 6.5, 7, 6, 5.5, 5, 6, 5.5, 5, 5.5, 5.8],
   };
-  const COLORS = {
-    w: '#22c55e',  // váha klesá = dobré = zelená
-    p: '#22c55e',  // pohyb roste = zelená
-    r: '#ef4444',  // spánek klesá = červená
-  };
+  const COLORS = { w: '#22c55e', p: '#f59e0b', r: '#ef4444' };
 
   function linearForecast(vals, steps = 4) {
-    // Lineární regrese z posledních 5 bodů → extrapoluj dalších `steps` bodů
     const n = Math.min(5, vals.length);
     const slice = vals.slice(-n);
     let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
@@ -137,11 +142,8 @@
     }
     const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
     const intercept = (sumY - slope * sumX) / n;
-    const lastX = n - 1;
     const forecast = [];
-    for (let s = 1; s <= steps; s++) {
-      forecast.push(intercept + slope * (lastX + s));
-    }
+    for (let s = 1; s <= steps; s++) forecast.push(intercept + slope * ((n - 1) + s));
     return forecast;
   }
 
@@ -156,66 +158,65 @@
 
     const forecast = linearForecast(vals, 4);
     const allVals = [...vals, ...forecast];
-
-    const mx = 10, my = 10;
+    const mx = 12, my = 12;
     const min = Math.min(...allVals), max = Math.max(...allVals);
     const rng = Math.max(0.001, max - min);
 
-    // Pouze reálné body
     const realPts = vals.map((v, i) => ({
       x: mx + (i / (allVals.length - 1)) * (w - mx * 2),
       y: h - my - ((v - min) / rng) * (h - my * 2),
     }));
-
-    // Forecast body
     const fcPts = forecast.map((v, i) => ({
       x: mx + ((vals.length + i) / (allVals.length - 1)) * (w - mx * 2),
       y: h - my - ((v - min) / rng) * (h - my * 2),
     }));
 
-    // Area fill (jen reálné)
+    // Area fill
     ctx.beginPath();
-    ctx.moveTo(realPts[0].x, h - my + 2);
+    ctx.moveTo(realPts[0].x, h);
     realPts.forEach(p => ctx.lineTo(p.x, p.y));
-    ctx.lineTo(realPts.at(-1).x, h - my + 2);
+    ctx.lineTo(realPts.at(-1).x, h);
     ctx.closePath();
-    ctx.fillStyle = color + '15';
+    ctx.fillStyle = color + '18';
     ctx.fill();
 
-    // Reálná linie — bezier
+    // Hlavní linie — tlustá, bezier
     ctx.beginPath();
-    ctx.lineWidth = 2.5;
+    ctx.lineWidth = 9;
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
-    ctx.strokeStyle = color + 'dd';
+    ctx.strokeStyle = color + 'e0';
     ctx.moveTo(realPts[0].x, realPts[0].y);
     for (let i = 1; i < realPts.length - 2; i++) {
       const xc = (realPts[i].x + realPts[i + 1].x) / 2;
       const yc = (realPts[i].y + realPts[i + 1].y) / 2;
       ctx.quadraticCurveTo(realPts[i].x, realPts[i].y, xc, yc);
     }
-    ctx.quadraticCurveTo(realPts.at(-2).x, realPts.at(-2).y, realPts.at(-1).x, realPts.at(-1).y);
+    // Zabrzdí těsně před posledním bodem (jako v biomarkery)
+    const last = realPts.at(-1), pre = realPts.at(-2);
+    const endX = pre.x + (last.x - pre.x) * 0.88;
+    const endY = pre.y + (last.y - pre.y) * 0.88;
+    ctx.quadraticCurveTo(pre.x, pre.y, endX, endY);
     ctx.stroke();
 
     // Tečkovaná prognóza
     ctx.beginPath();
-    ctx.setLineDash([4, 5]);
-    ctx.lineWidth = 1.8;
-    ctx.strokeStyle = color + '55';
+    ctx.setLineDash([4, 6]);
+    ctx.lineWidth = 9;
     ctx.lineCap = 'round';
-    ctx.moveTo(realPts.at(-1).x, realPts.at(-1).y);
+    ctx.strokeStyle = color + '40';
+    ctx.moveTo(endX, endY);
     fcPts.forEach(p => ctx.lineTo(p.x, p.y));
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // Dot — dnešní hodnota
-    const last = realPts.at(-1);
+    // Velký dot — aktuální hodnota
     ctx.beginPath();
-    ctx.arc(last.x, last.y, 5, 0, Math.PI * 2);
+    ctx.arc(endX, endY, 11, 0, Math.PI * 2);
     ctx.fillStyle = color;
     ctx.fill();
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = '#0a0f1a';
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = '#1e293b';
     ctx.stroke();
   }
 
