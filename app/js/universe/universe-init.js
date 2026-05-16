@@ -911,19 +911,35 @@ function initHeaderControls() {
     const role = localStorage.getItem("userRole") || "demo";
     await loadAndRenderModel(newModel, role);
 
-    // Hra o lehkost: zobraz ranní check-in pokud dnes ještě neproběhl
+    // Hra o lehkost: onboarding (první spuštění) → pak check-in
     if (newModel === 'lehkost') {
       const userId = window.firebaseAuth?.currentUser?.uid;
       if (userId) {
-        const { showCheckinModal } = await import('./lehkost-checkin.js');
-        showCheckinModal(userId, (bodyFlow) => {
-          if (!bodyFlow) return;
-          console.log('💪 BODY FLOW:', bodyFlow.score);
-          // Invaliduj HUD cache + re-render canvas s novými barvami
-          const LH_IDS = ['lh_main','lh_vyziva','lh_pohyb','lh_mysl','lh_regenerace'];
-          LH_IDS.forEach(id => { if (window._hudCache) delete window._hudCache[id]; });
-          if (window.refreshUniverseData) window.refreshUniverseData();
-        });
+        const { checkLehkostOnboarding, showLehkostOnboarding } = await import('./lehkost-onboarding.js');
+        const needsOnboarding = await checkLehkostOnboarding(userId);
+        if (needsOnboarding) {
+          showLehkostOnboarding(userId, () => {
+            // After onboarding → show check-in
+            import('./lehkost-checkin.js').then(({ showCheckinModal }) => {
+              showCheckinModal(userId, (bodyFlow) => {
+                if (!bodyFlow) return;
+                const LH_IDS = ['lh_main','lh_vyziva','lh_pohyb','lh_mysl','lh_regenerace'];
+                LH_IDS.forEach(id => { if (window._hudCache) delete window._hudCache[id]; });
+                if (window.refreshUniverseData) window.refreshUniverseData();
+              });
+            });
+          });
+        } else {
+          // Onboarding done — show check-in as usual
+          const { showCheckinModal } = await import('./lehkost-checkin.js');
+          showCheckinModal(userId, (bodyFlow) => {
+            if (!bodyFlow) return;
+            console.log('💪 BODY FLOW:', bodyFlow.score);
+            const LH_IDS = ['lh_main','lh_vyziva','lh_pohyb','lh_mysl','lh_regenerace'];
+            LH_IDS.forEach(id => { if (window._hudCache) delete window._hudCache[id]; });
+            if (window.refreshUniverseData) window.refreshUniverseData();
+          });
+        }
       }
     }
   });

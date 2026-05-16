@@ -1,5 +1,5 @@
 // /api/user — user-profile, onboarding-save, readiness, snapshot-nodes + lehkost body-flow + lehkost agent
-// Route: ?action=profile | onboarding | readiness | snapshot | body-flow | checkin | lehkost-agent
+// Route: ?action=profile | onboarding | lehkost-onboarding | readiness | snapshot | body-flow | checkin | lehkost-agent
 //
 // Dřívější soubory: user-profile.js, onboarding-save.js, readiness.js, snapshot-nodes.js
 // + lehkost.js (checkin + body-flow)
@@ -17,24 +17,33 @@ function sb() {
 export default async function handler(req, res) {
   const action = req.query.action;
 
-  if (action === 'profile')    return handleProfile(req, res);
-  if (action === 'onboarding') return handleOnboarding(req, res);
-  if (action === 'readiness')  return handleReadiness(req, res);
-  if (action === 'snapshot')   return handleSnapshot(req, res);
-  if (action === 'checkin')        return handleCheckin(req, res);
-  if (action === 'body-flow')      return handleBodyFlow(req, res);
-  if (action === 'lehkost-agent')  return handleLehkostAgent(req, res);
+  if (action === 'profile')             return handleProfile(req, res);
+  if (action === 'onboarding')          return handleOnboarding(req, res);
+  if (action === 'lehkost-onboarding')  return handleLehkostOnboarding(req, res);
+  if (action === 'readiness')           return handleReadiness(req, res);
+  if (action === 'snapshot')            return handleSnapshot(req, res);
+  if (action === 'checkin')             return handleCheckin(req, res);
+  if (action === 'body-flow')           return handleBodyFlow(req, res);
+  if (action === 'lehkost-agent')       return handleLehkostAgent(req, res);
 
-  return res.status(400).json({ error: 'action required: profile | onboarding | readiness | snapshot | checkin | body-flow | lehkost-agent' });
+  return res.status(400).json({ error: 'action required: profile | onboarding | lehkost-onboarding | readiness | snapshot | checkin | body-flow | lehkost-agent' });
 }
 
 
-// ── POST ?action=profile ──────────────────────────────────────────
+// ── GET/POST ?action=profile ──────────────────────────────────────
 async function handleProfile(req, res) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
-  const { userId, primaryGoal } = req.body || {};
+  const userId = req.body?.userId || req.query?.userId;
   if (!userId) return res.status(400).json({ error: 'userId required' });
 
+  if (req.method === 'GET') {
+    const { data, error } = await sb().from('user_profiles')
+      .select('primary_goal, lh_identity, lh_blocker, lh_target_kg, lh_target_note, lh_started_at')
+      .eq('user_id', userId).maybeSingle();
+    if (error) return res.status(500).json({ error: error.message });
+    return res.json(data || {});
+  }
+
+  const { primaryGoal } = req.body || {};
   const update = { user_id: userId };
   if (primaryGoal !== undefined) update.primary_goal = primaryGoal;
 
@@ -73,6 +82,29 @@ async function handleOnboarding(req, res) {
     console.error('[user/onboarding]', err);
     return res.status(500).json({ error: err.message });
   }
+}
+
+
+// ── POST ?action=lehkost-onboarding ──────────────────────────────
+async function handleLehkostOnboarding(req, res) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
+  const { userId, identity, blocker, targetKg, targetNote } = req.body || {};
+  if (!userId || !identity || !blocker) {
+    return res.status(400).json({ error: 'userId, identity and blocker required' });
+  }
+
+  const update = {
+    user_id:        userId,
+    lh_identity:    identity,
+    lh_blocker:     blocker,
+    lh_target_kg:   targetKg   ?? null,
+    lh_target_note: targetNote ?? null,
+    lh_started_at:  new Date().toISOString(),
+  };
+
+  const { error } = await sb().from('user_profiles').upsert(update, { onConflict: 'user_id' });
+  if (error) return res.status(500).json({ error: error.message });
+  return res.json({ ok: true });
 }
 
 
