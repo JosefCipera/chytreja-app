@@ -243,6 +243,59 @@ const LH_SPARK_CONFIGS = {
   },
 };
 
+function calcLehkostIndex(nodeId, slots) {
+  const valid = slots.filter(s => s != null);
+  if (!valid.length) return null;
+
+  switch (nodeId) {
+    case 'lh_pohyb': {
+      const withData = valid.filter(s => s.movement_level != null);
+      if (!withData.length) return null;
+      const active = withData.filter(s => ['medium','high'].includes(s.movement_level)).length;
+      return Math.round(active / withData.length * 100);
+    }
+    case 'lh_vyziva': {
+      const withData = valid.filter(s => s.binge != null);
+      if (!withData.length) return null;
+      const clean = withData.filter(s => !s.binge).length;
+      return Math.round(clean / withData.length * 100);
+    }
+    case 'lh_mysl': {
+      const withData = valid.filter(s => s.stress != null);
+      if (!withData.length) return null;
+      const avg = withData.reduce((a, s) => a + s.stress, 0) / withData.length;
+      return Math.round(Math.max(0, (5 - avg) / 4 * 100));
+    }
+    case 'lh_regenerace': {
+      const withData = valid.filter(s => s.sleep_hours != null).map(s => parseFloat(s.sleep_hours));
+      if (!withData.length) return null;
+      const scores = withData.map(h => {
+        if (h >= 7 && h <= 9) return Math.round(100 - Math.abs(h - 8) * 15);
+        if (h >= 6) return 40;
+        return 15;
+      });
+      return Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+    }
+    case 'lh_main': {
+      const withData = valid.filter(s => s.weight_kg != null).map(s => parseFloat(s.weight_kg));
+      if (withData.length < 3) return null;
+      const n = withData.length;
+      let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
+      for (let i = 0; i < n; i++) {
+        sumX += i; sumY += withData[i]; sumXY += i * withData[i]; sumXX += i * i;
+      }
+      const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX || 1);
+      // Negative slope = weight going down = good
+      if (slope < -0.1) return 85;
+      if (slope < -0.03) return 70;
+      if (slope < 0.03)  return 50;
+      if (slope < 0.1)   return 35;
+      return 20;
+    }
+    default: return null;
+  }
+}
+
 async function getLehkostSpark(nodeId, userId, sb) {
   const cfg = LH_SPARK_CONFIGS[nodeId];
   if (!cfg) return null;
@@ -271,13 +324,16 @@ async function getLehkostSpark(nodeId, userId, sb) {
   const value   = cfg.getValue(slots);
   const status  = cfg.getStatus(slots);
 
+  const computed_index = calcLehkostIndex(nodeId, slots);
+
   return {
-    data:         filled,         // 14 numbers (or null if no data at all)
+    data:           filled,       // 14 numbers (or null if no data at all)
     value,                        // display string, e.g. "73,2"
-    unit:         cfg.unit,
-    range:        cfg.range,      // null for lh_main
-    status_text:  status.text,
-    status_color: status.color,
+    unit:           cfg.unit,
+    range:          cfg.range,    // null for lh_main
+    status_text:    status.text,
+    status_color:   status.color,
+    computed_index,               // 0-100 or null if not enough data
   };
 }
 
@@ -495,8 +551,14 @@ async function fetchOneNode(sb, userId, nodeId, shared) {
   // Lehkost spark — 14-day metric trend replacing BODY FLOW battery
   const LH_IDS = ['lh_main','lh_pohyb','lh_vyziva','lh_mysl','lh_regenerace'];
   let spark = null;
+  let lhBatteryPercent = batteryPercent;
+  let lhBatteryState   = batteryState;
   if (LH_IDS.includes(nodeId)) {
     spark = await getLehkostSpark(nodeId, userId, sb);
+    if (spark?.computed_index != null) {
+      lhBatteryPercent = spark.computed_index;
+      lhBatteryState   = indexToState(spark.computed_index);
+    }
   }
 
   if (TOC_CHILDREN[nodeId]) {
@@ -518,7 +580,7 @@ async function fetchOneNode(sb, userId, nodeId, shared) {
   return {
     node: { id: nodeId, label: nodeLabel, version: 'v0.2' },
     battery: {
-      percent: batteryPercent, state: batteryState,
+      percent: lhBatteryPercent, state: lhBatteryState,
       trend_label: trend.label, trend_direction: trend.direction,
       spanek_index: spanekIndex, vyziva_index: vyzivaIndex,
     },
