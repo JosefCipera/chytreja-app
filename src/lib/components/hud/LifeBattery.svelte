@@ -156,16 +156,18 @@
     ctx.quadraticCurveTo(pre.x, pre.y, endX, endY);
     ctx.stroke();
 
-    // Dashed forecast
-    ctx.beginPath();
-    ctx.setLineDash([4, 6]);
-    ctx.lineWidth = 7;
-    ctx.lineCap = 'round';
-    ctx.strokeStyle = dotColor + '40';
-    ctx.moveTo(endX, endY);
-    fcPts.forEach(p => ctx.lineTo(p.x, p.y));
-    ctx.stroke();
-    ctx.setLineDash([]);
+    // Dashed forecast — only with enough data
+    if (validData.length >= 5) {
+      ctx.beginPath();
+      ctx.setLineDash([4, 6]);
+      ctx.lineWidth = 7;
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = dotColor + '40';
+      ctx.moveTo(endX, endY);
+      fcPts.forEach(p => ctx.lineTo(p.x, p.y));
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
 
     // Dot
     ctx.beginPath();
