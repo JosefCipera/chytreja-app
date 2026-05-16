@@ -99,9 +99,6 @@
     return fc;
   }
 
-  // Fixed line color (blue, like biomarkery charts) — status shown via dot below
-  const LINE_COLOR = '#60a5fa';
-
   function drawSpark(canvas, data, dotColor) {
     if (!canvas || !data?.length) return;
     const ctx = canvas.getContext('2d');
@@ -138,15 +135,15 @@
     fcPts.forEach(p => ctx.lineTo(p.x, p.y));
     ctx.lineTo(lastFc.x, h);
     ctx.closePath();
-    ctx.fillStyle = LINE_COLOR + '14';
+    ctx.fillStyle = dotColor + '14';
     ctx.fill();
 
     // Main line — bezier
     ctx.beginPath();
-    ctx.lineWidth = 5;
+    ctx.lineWidth = 7;
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
-    ctx.strokeStyle = LINE_COLOR + 'dd';
+    ctx.strokeStyle = dotColor + 'dd';
     ctx.moveTo(realPts[0].x, realPts[0].y);
     for (let i = 1; i < realPts.length - 2; i++) {
       const xc = (realPts[i].x + realPts[i+1].x) / 2;
@@ -162,20 +159,20 @@
     // Dashed forecast
     ctx.beginPath();
     ctx.setLineDash([4, 6]);
-    ctx.lineWidth = 5;
+    ctx.lineWidth = 7;
     ctx.lineCap = 'round';
-    ctx.strokeStyle = LINE_COLOR + '40';
+    ctx.strokeStyle = dotColor + '40';
     ctx.moveTo(endX, endY);
     fcPts.forEach(p => ctx.lineTo(p.x, p.y));
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // Dot — uses status color
+    // Dot
     ctx.beginPath();
-    ctx.arc(endX, endY, 7, 0, Math.PI * 2);
+    ctx.arc(endX, endY, 9, 0, Math.PI * 2);
     ctx.fillStyle = dotColor;
     ctx.fill();
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 2.5;
     ctx.strokeStyle = '#1e293b';
     ctx.stroke();
   }
@@ -199,7 +196,7 @@
 <!-- ── LEHKOST: sparkline sekce ── -->
 <div style="background: #1e293b; border-radius: 12px; padding: 16px 16px 18px;">
   <!-- Label nad grafem -->
-  <div style="font-size: 14px; font-weight: 500; color: #cbd5e1; margin-bottom: 10px;">
+  <div style="font-size: 15px; font-weight: 400; color: #94a3b8; margin-bottom: 10px;">
     {sparkLabel}
   </div>
 
@@ -223,7 +220,7 @@
 
     <!-- Rozmezí -->
     {#if spark.range}
-      <div style="font-size: 12px; color: #64748b;">{spark.range}</div>
+      <div style="font-size: 13px; color: #94a3b8;">{spark.range}</div>
     {/if}
   {:else}
     <!-- Fallback pokud spark data ještě nejsou -->
