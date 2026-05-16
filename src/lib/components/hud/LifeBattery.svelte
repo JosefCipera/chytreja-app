@@ -10,9 +10,11 @@
     bioAvailableKeys = [],
     biomarkers = {},
     universe = 'longevity',
+    nodeId = null,
+    spark = null,
   } = $props();
 
-
+  // ── Longevity / TOC battery ────────────────────────────
   const TOTAL_SEGMENTS = 12;
   let filledSegments = $derived(Math.round((percent / 100) * TOTAL_SEGMENTS));
 
@@ -34,8 +36,6 @@
     '0 0 28px rgba(201, 114, 114, 0.32), 0 0 55px rgba(201, 114, 114, 0.12)'
   );
 
-  let textNeon = $derived('');
-
   let textColor = $derived(
     percent > 70 ? '#86C46A' :
     percent > 40 ? '#BED255' :
@@ -48,7 +48,6 @@
       : (percent <= 40 ? 'CELL_DECAY' : percent <= 70 ? 'CELL_STABLE' : 'CELL_OPTIMAL')
   );
 
-  // Watermark uses semafor color — matches battery state
   let watermarkColor = $derived(textColor);
 
   let trendArrow = $derived(
@@ -62,7 +61,6 @@
     'KLESÁ'
   );
 
-  // BIO_AGE
   let bioAge = $derived(
     assessBioAge({ vitalityPercent: percent, chronoAge, availableKeys: bioAvailableKeys, biomarkers })
   );
@@ -73,13 +71,167 @@
     '#94a3b8'
   );
   let confidencePct = $derived(Math.round(bioAge.confidence * 100));
+
+  // ── Lehkost sparkline ──────────────────────────────────
+  const LH_SPARK_LABELS = {
+    lh_main:       'Váha za 14 dní',
+    lh_pohyb:      'Pohyb za 14 dní',
+    lh_vyziva:     'Výživa za 14 dní',
+    lh_mysl:       'Mysl za 14 dní',
+    lh_regenerace: 'Regenerace za 14 dní',
+  };
+
+  let sparkLabel = $derived(LH_SPARK_LABELS[nodeId] ?? 'Za 14 dní');
+
+  let sparkCanvas = $state(null);
+
+  function linearForecast(vals, steps = 4) {
+    const n = Math.min(5, vals.length);
+    const slice = vals.slice(-n);
+    let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
+    for (let i = 0; i < n; i++) {
+      sumX += i; sumY += slice[i]; sumXY += i * slice[i]; sumXX += i * i;
+    }
+    const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX || 1);
+    const intercept = (sumY - slope * sumX) / n;
+    const fc = [];
+    for (let s = 1; s <= steps; s++) fc.push(intercept + slope * ((n - 1) + s));
+    return fc;
+  }
+
+  function drawSpark(canvas, data, color) {
+    if (!canvas || !data?.length) return;
+    const ctx = canvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+    const w = canvas.clientWidth, h = canvas.clientHeight;
+    if (!w || !h) return;
+    canvas.width = w * dpr; canvas.height = h * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    // Filter out leading nulls
+    const validData = data.filter(v => v != null);
+    if (validData.length < 2) return;
+
+    const forecast = linearForecast(validData, 4);
+    const allVals = [...validData, ...forecast];
+    const mx = 12, my = 12;
+    const min = Math.min(...allVals), max = Math.max(...allVals);
+    const rng = Math.max(0.001, max - min);
+
+    const realPts = validData.map((v, i) => ({
+      x: mx + (i / (allVals.length - 1)) * (w - mx * 2),
+      y: h - my - ((v - min) / rng) * (h - my * 2),
+    }));
+    const fcPts = forecast.map((v, i) => ({
+      x: mx + ((validData.length + i) / (allVals.length - 1)) * (w - mx * 2),
+      y: h - my - ((v - min) / rng) * (h - my * 2),
+    }));
+
+    // Area fill
+    ctx.beginPath();
+    ctx.moveTo(realPts[0].x, h);
+    realPts.forEach(p => ctx.lineTo(p.x, p.y));
+    ctx.lineTo(realPts.at(-1).x, h);
+    ctx.closePath();
+    ctx.fillStyle = color + '18';
+    ctx.fill();
+
+    // Main line — bezier
+    ctx.beginPath();
+    ctx.lineWidth = 4;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = color + 'dd';
+    ctx.moveTo(realPts[0].x, realPts[0].y);
+    for (let i = 1; i < realPts.length - 2; i++) {
+      const xc = (realPts[i].x + realPts[i+1].x) / 2;
+      const yc = (realPts[i].y + realPts[i+1].y) / 2;
+      ctx.quadraticCurveTo(realPts[i].x, realPts[i].y, xc, yc);
+    }
+    const last = realPts.at(-1), pre = realPts.at(-2);
+    const endX = pre.x + (last.x - pre.x) * 0.88;
+    const endY = pre.y + (last.y - pre.y) * 0.88;
+    ctx.quadraticCurveTo(pre.x, pre.y, endX, endY);
+    ctx.stroke();
+
+    // Dashed forecast
+    ctx.beginPath();
+    ctx.setLineDash([4, 6]);
+    ctx.lineWidth = 4;
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = color + '45';
+    ctx.moveTo(endX, endY);
+    fcPts.forEach(p => ctx.lineTo(p.x, p.y));
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Dot
+    ctx.beginPath();
+    ctx.arc(endX, endY, 6, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#1e293b';
+    ctx.stroke();
+  }
+
+  const sparkColor = $derived(
+    spark?.status_color === '#22c55e' ? '#22c55e' :
+    spark?.status_color === '#f59e0b' ? '#f59e0b' :
+    spark?.status_color === '#ef4444' ? '#ef4444' :
+    '#64748b'
+  );
+
+  $effect(() => {
+    if (universe === 'lehkost' && sparkCanvas && spark?.data) {
+      // rAF so canvas has layout dimensions
+      requestAnimationFrame(() => drawSpark(sparkCanvas, spark.data, sparkColor));
+    }
+  });
 </script>
 
+{#if universe === 'lehkost'}
+<!-- ── LEHKOST: sparkline sekce ── -->
+<div style="background: #1e293b; border-radius: 12px; padding: 16px 16px 18px;">
+  <!-- Label nad grafem -->
+  <div style="font-size: 14px; font-weight: 500; color: #cbd5e1; margin-bottom: 10px;">
+    {sparkLabel}
+  </div>
+
+  <!-- Canvas -->
+  <canvas
+    bind:this={sparkCanvas}
+    style="width: 100%; height: 68px; display: block; margin-bottom: 14px;"
+  ></canvas>
+
+  {#if spark}
+    <!-- Velké číslo -->
+    <div style="font-size: 32px; font-weight: 300; color: #f1f5f9; line-height: 1; margin-bottom: 6px;">
+      {spark.value}{#if spark.unit}<span style="font-size: 16px; font-weight: 400; color: #94a3b8; margin-left: 4px;">{spark.unit}</span>{/if}
+    </div>
+
+    <!-- Status s tečkou -->
+    <div style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: #94a3b8; margin-bottom: 4px;">
+      <span style="width: 8px; height: 8px; border-radius: 50%; background: {spark.status_color}; flex-shrink: 0; display: inline-block;"></span>
+      {spark.status_text}
+    </div>
+
+    <!-- Rozmezí -->
+    {#if spark.range}
+      <div style="font-size: 12px; color: #64748b;">{spark.range}</div>
+    {/if}
+  {:else}
+    <!-- Fallback pokud spark data ještě nejsou -->
+    <div style="font-size: 13px; color: #475569; font-family: monospace;">Vyplň check-in pro data</div>
+  {/if}
+</div>
+
+{:else}
+<!-- ── LONGEVITY / TOC: původní baterie ── -->
 <div class="hud-glass rounded-lg p-4 hud-c4">
   <span class="hc hc-tl"></span><span class="hc hc-tr"></span>
-  <!-- Header row: LIFE-BATTERY + percent + trend -->
   <div class="flex items-center justify-between mb-1">
-    <span class="hud-mono" style="font-size: 20px; letter-spacing: 0.04em; color: #c8d4df; font-weight: 300;">{universe === 'toc' ? 'FLOW-RATE' : universe === 'lehkost' ? 'BODY FLOW' : 'LIFE-BATTERY'}</span>
+    <span class="hud-mono" style="font-size: 20px; letter-spacing: 0.04em; color: #c8d4df; font-weight: 300;">{universe === 'toc' ? 'FLOW-RATE' : 'LIFE-BATTERY'}</span>
     <div class="flex items-center gap-0" style="flex-shrink: 0;">
       <span class="hud-mono" style="font-size: 14px; font-weight: 300; color: {textColor};">{percent}%</span>
       <span class="hud-mono mx-1" style="font-size: 14px; color: #334155;">|</span>
@@ -87,9 +239,7 @@
     </div>
   </div>
 
-  <!-- Battery shape -->
   <div class="flex items-center gap-0 mb-3">
-    <!-- Main battery body -->
     <div
       class="relative flex-1 rounded-l-md rounded-r-none {percent <= 40 ? 'battery-pulse' : ''}"
       style="
@@ -100,7 +250,6 @@
         padding: 5px;
       "
     >
-      <!-- Segments -->
       <div class="relative flex gap-[4px]" style="z-index: 1;">
         {#each Array(TOTAL_SEGMENTS) as _, i}
           <div
@@ -112,7 +261,6 @@
         {/each}
       </div>
 
-      <!-- Watermark -->
       <div
         class="absolute inset-0 flex items-center justify-center pointer-events-none select-none"
         style="z-index: 3;"
@@ -132,14 +280,12 @@
       </div>
     </div>
 
-    <!-- Battery terminal (nub) -->
     <div
       class="rounded-r-sm"
       style="width: 12px; height: 58px; background: rgba(255,255,255,0.06); border: 2px solid rgba(255,255,255,0.06); border-left: none; box-shadow: 0 0 8px {glowColor};"
     ></div>
   </div>
 
-  <!-- EST_BIO_AGE — longevity only, data v0.4+ -->
   {#if universe !== 'toc'}
   <div class="flex items-center justify-between mt-3">
     <span class="hud-mono" style="font-size: 13px; color: #475569;">
@@ -147,5 +293,5 @@
     </span>
   </div>
   {/if}
-
 </div>
+{/if}

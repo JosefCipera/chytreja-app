@@ -147,6 +147,140 @@ function detectFlowKiller(rows) {
   return { killerId, ...(LH_KILLER_DEFS[killerId] || LH_KILLER_DEFS.low_movement) };
 }
 
+// ── Lehkost spark configs — per-node metric definition ──────────────────────
+const LH_SPARK_CONFIGS = {
+  lh_main: {
+    unit: 'kg',
+    range: null, // trend-based, no fixed range
+    extract: r => r?.weight_kg != null ? parseFloat(r.weight_kg) : null,
+    getValue(slots) {
+      const vals = slots.map(r => r?.weight_kg != null ? parseFloat(r.weight_kg) : null).filter(v => v != null);
+      return vals.length ? vals.at(-1).toFixed(1).replace('.', ',') : '—';
+    },
+    getStatus(slots) {
+      const vals = slots.map(r => r?.weight_kg != null ? parseFloat(r.weight_kg) : null).filter(v => v != null);
+      if (vals.length < 4) return { text: 'málo dat', color: '#64748b' };
+      const half = Math.floor(vals.length / 2);
+      const avg1 = vals.slice(0, half).reduce((a,b)=>a+b,0) / half;
+      const avg2 = vals.slice(half).reduce((a,b)=>a+b,0) / (vals.length - half);
+      if (avg2 < avg1 - 0.2) return { text: 'klesá', color: '#22c55e' };
+      if (avg2 > avg1 + 0.2) return { text: 'roste', color: '#ef4444' };
+      return { text: 'stabilní', color: '#64748b' };
+    },
+  },
+  lh_pohyb: {
+    unit: '%',
+    range: 'Cíl: ≥ 70 %',
+    extract: r => r?.movement_level ? (r.movement_level === 'high' ? 3 : r.movement_level === 'medium' ? 2 : 1) : null,
+    getValue(slots) {
+      const valid = slots.filter(r => r?.movement_level);
+      if (!valid.length) return '—';
+      const good = valid.filter(r => r.movement_level !== 'low').length;
+      return String(Math.round((good / valid.length) * 100));
+    },
+    getStatus(slots) {
+      const valid = slots.filter(r => r?.movement_level);
+      if (!valid.length) return { text: '—', color: '#64748b' };
+      const pct = Math.round(valid.filter(r => r.movement_level !== 'low').length / valid.length * 100);
+      if (pct >= 70) return { text: 'v rozmezí', color: '#22c55e' };
+      if (pct >= 50) return { text: 'těsně pod cílem', color: '#f59e0b' };
+      return { text: 'mimo rozmezí', color: '#ef4444' };
+    },
+  },
+  lh_vyziva: {
+    unit: '%',
+    range: 'Cíl: ≥ 80 %',
+    extract: r => r?.binge != null ? (r.binge ? 0 : 1) : null,
+    getValue(slots) {
+      const valid = slots.filter(r => r?.binge != null);
+      if (!valid.length) return '—';
+      return String(Math.round(valid.filter(r => !r.binge).length / valid.length * 100));
+    },
+    getStatus(slots) {
+      const valid = slots.filter(r => r?.binge != null);
+      if (!valid.length) return { text: '—', color: '#64748b' };
+      const pct = Math.round(valid.filter(r => !r.binge).length / valid.length * 100);
+      if (pct >= 80) return { text: 'v rozmezí', color: '#22c55e' };
+      if (pct >= 60) return { text: 'těsně pod cílem', color: '#f59e0b' };
+      return { text: 'mimo rozmezí', color: '#ef4444' };
+    },
+  },
+  lh_mysl: {
+    unit: '',
+    range: 'Cíl: stres ≤ 2',
+    extract: r => r?.stress ?? null,
+    getValue(slots) {
+      const vals = slots.filter(r => r?.stress != null).map(r => r.stress);
+      if (!vals.length) return '—';
+      return (vals.reduce((a,b)=>a+b,0) / vals.length).toFixed(1).replace('.', ',');
+    },
+    getStatus(slots) {
+      const vals = slots.filter(r => r?.stress != null).map(r => r.stress);
+      if (!vals.length) return { text: '—', color: '#64748b' };
+      const avg = vals.reduce((a,b)=>a+b,0) / vals.length;
+      if (avg <= 2) return { text: 'v rozmezí', color: '#22c55e' };
+      if (avg <= 3) return { text: 'těsně nad cílem', color: '#f59e0b' };
+      return { text: 'mimo rozmezí', color: '#ef4444' };
+    },
+  },
+  lh_regenerace: {
+    unit: 'hod',
+    range: 'Rozmezí: 7–9 hod',
+    extract: r => r?.sleep_hours != null ? parseFloat(r.sleep_hours) : null,
+    getValue(slots) {
+      const vals = slots.filter(r => r?.sleep_hours != null).map(r => parseFloat(r.sleep_hours));
+      if (!vals.length) return '—';
+      return vals.at(-1).toFixed(1).replace('.', ',');
+    },
+    getStatus(slots) {
+      const vals = slots.filter(r => r?.sleep_hours != null).map(r => parseFloat(r.sleep_hours));
+      if (!vals.length) return { text: '—', color: '#64748b' };
+      const last = vals.at(-1);
+      if (last >= 7 && last <= 9) return { text: 'v rozmezí', color: '#22c55e' };
+      if (last >= 6)              return { text: 'těsně pod cílem', color: '#f59e0b' };
+      return { text: 'mimo rozmezí', color: '#ef4444' };
+    },
+  },
+};
+
+async function getLehkostSpark(nodeId, userId, sb) {
+  const cfg = LH_SPARK_CONFIGS[nodeId];
+  if (!cfg) return null;
+
+  const since14 = new Date(Date.now() - 14 * 86400000).toISOString().slice(0, 10);
+  const { data: rows } = await sb.from('daily_checkin')
+    .select('date, weight_kg, movement_level, binge, stress, sleep_hours')
+    .eq('user_id', userId).eq('universe', 'lehkost')
+    .gte('date', since14).order('date', { ascending: true });
+
+  const byDate = {};
+  (rows || []).forEach(r => { byDate[r.date] = r; });
+
+  // 14-day slots, oldest first
+  const slots = [];
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10);
+    slots.push(byDate[d] || null);
+  }
+
+  // Raw values + forward-fill nulls
+  const raw = slots.map(r => cfg.extract(r));
+  let last = null;
+  const filled = raw.map(v => { if (v != null) last = v; return v != null ? v : last; });
+
+  const value   = cfg.getValue(slots);
+  const status  = cfg.getStatus(slots);
+
+  return {
+    data:         filled,         // 14 numbers (or null if no data at all)
+    value,                        // display string, e.g. "73,2"
+    unit:         cfg.unit,
+    range:        cfg.range,      // null for lh_main
+    status_text:  status.text,
+    status_color: status.color,
+  };
+}
+
 function indexToState(i) {
   if (i <= 40) return 'RED';
   if (i <= 70) return 'YELLOW';
@@ -358,6 +492,13 @@ async function fetchOneNode(sb, userId, nodeId, shared) {
     }
   }
 
+  // Lehkost spark — 14-day metric trend replacing BODY FLOW battery
+  const LH_IDS = ['lh_main','lh_pohyb','lh_vyziva','lh_mysl','lh_regenerace'];
+  let spark = null;
+  if (LH_IDS.includes(nodeId)) {
+    spark = await getLehkostSpark(nodeId, userId, sb);
+  }
+
   if (TOC_CHILDREN[nodeId]) {
     const tocKids = TOC_CHILDREN[nodeId].map(id => metricsMap.get(id)).filter(validMetric);
     if (tocKids.length) {
@@ -390,6 +531,7 @@ async function fetchOneNode(sb, userId, nodeId, shared) {
     today_count: todayCount,
     all_done_today: todayCount >= 2,
     streak,
+    spark,
   };
 }
 

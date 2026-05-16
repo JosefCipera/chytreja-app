@@ -40,6 +40,7 @@ export const nodeData = derived(rawData, ($raw) => {
     today_count:    $raw.today_count,
     all_done_today: $raw.all_done_today,
     streak:         $raw.streak,
+    spark:          $raw.spark || null,
     day_type:       $raw.day_type || 'STIMUL',
   };
 });

@@ -56,6 +56,8 @@
           bioAvailableKeys={data.user?.bio_available_keys ?? []}
           biomarkers={data.user?.biomarkers ?? {}}
           universe={universe}
+          nodeId={data.node_id}
+          spark={data.spark}
         />
       </div>
 
