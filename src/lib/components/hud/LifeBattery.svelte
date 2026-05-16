@@ -199,7 +199,7 @@
 <div style="background: #1e293b; border-radius: 12px; padding: 16px 16px 18px;">
 
   <!-- Label -->
-  <div style="font-size: 15px; font-weight: 400; color: #94a3b8; margin-bottom: 10px;">
+  <div style="font-size: 18px; font-weight: 400; color: #f1f5f9; margin-bottom: 10px;">
     {sparkLabel}
   </div>
 
