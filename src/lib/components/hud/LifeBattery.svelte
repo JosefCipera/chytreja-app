@@ -197,10 +197,21 @@
 {#if universe === 'lehkost'}
 <!-- ── LEHKOST: sparkline sekce ── -->
 <div style="background: #1e293b; border-radius: 12px; padding: 16px 16px 18px;">
-  <!-- Label nad grafem -->
-  <div style="font-size: 15px; font-weight: 400; color: #94a3b8; margin-bottom: 10px;">
-    {sparkLabel}
-  </div>
+
+  {#if nodeId === 'lh_main' && spark?.trajectory}
+    <!-- lh_main: TRAJECTORY header nad grafem -->
+    <div style="margin-bottom: 10px;">
+      <div style="font-family: monospace; font-size: 13px; letter-spacing: 0.12em; color: #94a3b8; margin-bottom: 4px;">TRAJECTORY</div>
+      <div style="font-size: 22px; font-weight: 500; color: {spark.trajectory.color}; line-height: 1;">
+        {spark.trajectory.delta}
+      </div>
+    </div>
+  {:else}
+    <!-- Ostatní uzly: klasický label -->
+    <div style="font-size: 15px; font-weight: 400; color: #94a3b8; margin-bottom: 10px;">
+      {sparkLabel}
+    </div>
+  {/if}
 
   <!-- Canvas -->
   <canvas
@@ -214,29 +225,17 @@
       {spark.value}{#if spark.unit}<span style="font-size: 16px; font-weight: 400; color: #94a3b8; margin-left: 4px;">{spark.unit}</span>{/if}
     </div>
 
-    <!-- Status s tečkou -->
+    <!-- Status s tečkou (bez textu trajektorie — jen dot) -->
     <div style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: #94a3b8; margin-bottom: 4px;">
-      <span style="width: 8px; height: 8px; border-radius: 50%; background: {spark.status_color}; flex-shrink: 0; display: inline-block;"></span>
+      <span style="width: 8px; height: 8px; border-radius: 50%; background: {spark.trajectory?.color ?? spark.status_color}; flex-shrink: 0; display: inline-block;"></span>
       {spark.status_text}
     </div>
 
-    <!-- Rozmezí -->
-    {#if spark.range}
+    <!-- Rozmezí / to_target -->
+    {#if spark.trajectory?.to_target}
+      <div style="font-size: 13px; color: #94a3b8;">{spark.trajectory.to_target}</div>
+    {:else if spark.range}
       <div style="font-size: 13px; color: #94a3b8;">{spark.range}</div>
-    {/if}
-
-    <!-- Trajectory — jen pro lh_main -->
-    {#if spark.trajectory}
-      <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.06);">
-        <div style="font-family: monospace; font-size: 10px; letter-spacing: 0.12em; color: #475569; margin-bottom: 5px;">TRAJECTORY</div>
-        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
-          <span style="font-size: 15px; font-weight: 500; color: #e2e8f0;">{spark.trajectory.delta}</span>
-          <span style="font-family: monospace; font-size: 11px; color: {spark.trajectory.color}; letter-spacing: 0.08em;">{spark.trajectory.label}</span>
-        </div>
-        {#if spark.trajectory.to_target}
-          <div style="font-size: 12px; color: #64748b;">{spark.trajectory.to_target}</div>
-        {/if}
-      </div>
     {/if}
   {:else}
     <!-- Fallback pokud spark data ještě nejsou -->
