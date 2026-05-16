@@ -1,4 +1,4 @@
-# CLAUDE.md – CHJ (Chytré Já) v0.2.1
+# CLAUDE.md – CHJ (Chytré Já) v0.2.2
 
 > Instrukce pro Claude Code. Detailní dokumentace pro vývojáře → `HANDBOOK.md`.
 
@@ -6,11 +6,108 @@
 
 ## Co je CHJ
 
-PWA (SaaS) — mobilní AI kouč pro dlouhověkost (Medicine 3.0, Peter Attia "Outlive").
-Telefon vede uživatele. Uživatel nemusí hledat ani přemýšlet — appka říká co dělat a proč.
+PWA (SaaS) — osobní navigační systém člověka. Každý den najde největší omezení systému člověka a navrhne nejlepší další tah.
 
 **Název:** Chytré Já (CHJ) · **Jazyk:** UI labels anglicky, obsah česky, tykání
 **Tón:** lidský kouč + sci-fi HUD terminál
+
+---
+
+## Filozofie — Constraint Navigation Engine
+
+CHJ není health tracker ani longevity appka.
+
+**CHJ = decision layer nad životem člověka.**
+
+```
+Každý den:
+1. Najdi největší omezení (bottleneck)
+2. Urči nejlepší další tah (leverage)
+3. Změř adherenci a trajektorii
+4. Opakuj
+```
+
+Lidé nepřijdou kvůli „navigačnímu systému" — přijdou kvůli:
+- chci zhubnout / mít energii / mít kontrolu / přestat začínat znovu
+
+Uvnitř běží **Constraint Navigation Engine**. Navenek vidí **Lehkost / Energii / Výkon**.
+
+**CHJ nekupuje uživatel jako technologii. Kupuje pocit kontroly nad sebou.**
+
+---
+
+## Vesmíry — jedna filozofie, více realit
+
+Každý vesmír je instanciací stejného engine. Mění se kontext, ne jádro.
+
+```
+Lehkost    → řízení těla (váha, pohyb, jídlo)         ← MVP, aktivní
+Energie    → řízení vitality (spánek, stres, recovery) ← příští
+Výkon      → řízení kapacity (focus, výdrž, manažeři)  ← B2B2C
+Zdraví     → řízení zdraví (markery, suplementy)       ← po validaci enginu
+Longevity  → řízení dlouhověkosti (Medicine 3.0)       ← původní, rozšíření
+TOC        → řízení průtoku (byznys, Goldratt)         ← B2B separátní
+Život      → meta vrstva, syntéza všeho                ← dlouhodobý cíl
+```
+
+### 4 meta uzly — konstantní napříč vesmíry
+
+| Uzel | Co řídí | Constraint příklady |
+|------|---------|-------------------|
+| **Výživa** | energie, impulzy, metabolismus | večerní přejídání, liquid calories |
+| **Pohyb** | aktivita, kapacita, vitalita | low NEAT, stagnace |
+| **Regenerace** | spánek, stres, recovery | spánkový deficit, kortizol |
+| **Mysl** | emoce, focus, impulzy, motivace | stres eating, závislosti |
+
+Constrainty = konkrétní projevy dysbalance meta uzlů.
+
+### Cílové segmenty (B2B2C první)
+
+| Segment | Proč |
+|---------|------|
+| Výkonní profesionálové + majitelé firem | Platí za hodnotu, mají data, zdraví = business |
+| 45+ s nastupujícími omezeními | Prevence a opravy, přirozený downstream |
+| Amatérští sportovci / biohackeři | Early adopters, validátoři, ne jádro businessu |
+
+---
+
+## Lehkost — první vesmír (MVP)
+
+**git tag:** `v0.2-lehkost-pre-onboarding`
+
+### Uzly
+`lh_main` (Hra o lehkost) → `lh_vyziva`, `lh_pohyb`, `lh_mysl`, `lh_regenerace`
+
+### Check-in (daily_checkin tabulka)
+Pole: `weight_kg` (volitelné, 2–3×/týden), `energy` (1–5), `sleep_hours`, `binge` (bool), `movement_level` (low/medium/high), `stress` (1–5)
+
+### FLOW KILLERS (5 typů)
+`evening_overeating`, `low_movement`, `sleep_deficit`, `jedení ze stresu`, `víkendové přejídání`
+
+### current_index z check-in dat
+Pro lh_* uzly se index počítá z posledních 14 dní (ne game loop):
+- `lh_pohyb`: % dní s medium/high pohybem
+- `lh_vyziva`: % čistých dní (bez binge)
+- `lh_mysl`: inversní stress průměr (1=100%, 5=0%)
+- `lh_regenerace`: sleep score (8h=100%, <6h=15%)
+- `lh_main`: trend váhy (klesá=vyšší index)
+
+### Spark sekce (nahrazuje baterii v Lehkost)
+14denní sparkline s dashed prognózou (zobrazí se od 5 check-inů). Barva = status_color (zelená/žlutá/červená), čára 7px, tečka 9px.
+
+### Onboarding 3-vrstvý cíl (TODO — chybí)
+```
+1. Identita:   Co chceš získat? (Více energie / Lehčí tělo / Kontrolu...)
+2. Blocker:    Co tě nejvíc brzdí? (Večery / Sladké / Víkendy...)
+3. Trajektorie: Směr (-5 kg / cítit se líp)
+```
+Tato data řídí killer engine, verdikty a HUD trajektorii.
+
+### Co chybí pro MVP testování
+- [ ] Onboarding 3-vrstvý cíl (největší díra)
+- [ ] TARGET TRAJECTORY v HUDu (`-0.4 kg / 14 dní · STABLE DESCENT`)
+- [ ] Týdenní přehled (`BODY FLOW ↑ +6% · Main improvement · Biggest risk`)
+- [ ] Reminder / push notifikace (kontextuální, ne generické)
 
 ---
 
@@ -295,7 +392,10 @@ Před spuštěním: přečti komentář, ověř že se dotýká jen správných 
 | v0.1.0 | Semafor, kroky, baterie, onboarding (vanilla JS) | ✅ |
 | v0.2.0 | HUD panel, vícero vesmírů, Dekaton | ✅ |
 | v0.2.1 | Dekaton 10 disciplín, access model cleanup | ✅ `git tag v0.2.1-dekatlon-working` |
-| v0.3.0 | Claude Haiku pro výběr kroků | 📋 |
-| v0.4.0 | Foto jídel + Health Document Parser + Whisper STT | 📋 |
-| v0.5.0 | CHJ Master Agent + MCP | 📋 |
-| v1.0.0 | SaaS launch | 📋 |
+| v0.2.2 | Lehkost: spark, check-in index, killers, TOC pipe | ✅ `git tag v0.2-lehkost-pre-onboarding` |
+| v0.3.0 | Lehkost MVP: onboarding, trajektorie, týdenní přehled | 🔄 aktivní |
+| v0.4.0 | Energie vesmír (druhá instanciace enginu) | 📋 |
+| v0.5.0 | Health data pipeline (krev, PDF, wearables) | 📋 |
+| v0.6.0 | Push notifikace + ranní briefing | 📋 |
+| v0.7.0 | Claude orchestrátor (místo GPT-4o-mini) | 📋 |
+| v1.0.0 | SaaS launch — B2B2C, platební brána | 📋 |
