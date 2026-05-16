@@ -74,14 +74,14 @@
 
   // ── Lehkost sparkline ──────────────────────────────────
   const LH_SPARK_LABELS = {
-    lh_main:       'Váha za 14 dní',
-    lh_pohyb:      'Pohyb za 14 dní',
-    lh_vyziva:     'Výživa za 14 dní',
-    lh_mysl:       'Mysl za 14 dní',
-    lh_regenerace: 'Regenerace za 14 dní',
+    lh_main:       'Váha za posledních 14 dní',
+    lh_pohyb:      'Posledních 14 dní',
+    lh_vyziva:     'Posledních 14 dní',
+    lh_mysl:       'Posledních 14 dní',
+    lh_regenerace: 'Posledních 14 dní',
   };
 
-  let sparkLabel = $derived(LH_SPARK_LABELS[nodeId] ?? 'Za 14 dní');
+  let sparkLabel = $derived(LH_SPARK_LABELS[nodeId] ?? 'Posledních 14 dní');
 
   let sparkCanvas = $state(null);
 
@@ -99,7 +99,10 @@
     return fc;
   }
 
-  function drawSpark(canvas, data, color) {
+  // Fixed line color (blue, like biomarkery charts) — status shown via dot below
+  const LINE_COLOR = '#60a5fa';
+
+  function drawSpark(canvas, data, dotColor) {
     if (!canvas || !data?.length) return;
     const ctx = canvas.getContext('2d');
     const dpr = window.devicePixelRatio || 1;
@@ -127,21 +130,23 @@
       y: h - my - ((v - min) / rng) * (h - my * 2),
     }));
 
-    // Area fill
+    // Area fill — under full width including forecast
+    const lastFc = fcPts.at(-1);
     ctx.beginPath();
     ctx.moveTo(realPts[0].x, h);
     realPts.forEach(p => ctx.lineTo(p.x, p.y));
-    ctx.lineTo(realPts.at(-1).x, h);
+    fcPts.forEach(p => ctx.lineTo(p.x, p.y));
+    ctx.lineTo(lastFc.x, h);
     ctx.closePath();
-    ctx.fillStyle = color + '18';
+    ctx.fillStyle = LINE_COLOR + '14';
     ctx.fill();
 
     // Main line — bezier
     ctx.beginPath();
-    ctx.lineWidth = 4;
+    ctx.lineWidth = 5;
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
-    ctx.strokeStyle = color + 'dd';
+    ctx.strokeStyle = LINE_COLOR + 'dd';
     ctx.moveTo(realPts[0].x, realPts[0].y);
     for (let i = 1; i < realPts.length - 2; i++) {
       const xc = (realPts[i].x + realPts[i+1].x) / 2;
@@ -157,18 +162,18 @@
     // Dashed forecast
     ctx.beginPath();
     ctx.setLineDash([4, 6]);
-    ctx.lineWidth = 4;
+    ctx.lineWidth = 5;
     ctx.lineCap = 'round';
-    ctx.strokeStyle = color + '45';
+    ctx.strokeStyle = LINE_COLOR + '40';
     ctx.moveTo(endX, endY);
     fcPts.forEach(p => ctx.lineTo(p.x, p.y));
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // Dot
+    // Dot — uses status color
     ctx.beginPath();
-    ctx.arc(endX, endY, 6, 0, Math.PI * 2);
-    ctx.fillStyle = color;
+    ctx.arc(endX, endY, 7, 0, Math.PI * 2);
+    ctx.fillStyle = dotColor;
     ctx.fill();
     ctx.lineWidth = 2;
     ctx.strokeStyle = '#1e293b';
@@ -185,7 +190,7 @@
   $effect(() => {
     if (universe === 'lehkost' && sparkCanvas && spark?.data) {
       // rAF so canvas has layout dimensions
-      requestAnimationFrame(() => drawSpark(sparkCanvas, spark.data, sparkColor));
+      requestAnimationFrame(() => drawSpark(sparkCanvas, spark.data, sparkColor ?? '#60a5fa'));
     }
   });
 </script>
@@ -206,7 +211,7 @@
 
   {#if spark}
     <!-- Velké číslo -->
-    <div style="font-size: 32px; font-weight: 300; color: #f1f5f9; line-height: 1; margin-bottom: 6px;">
+    <div style="font-size: 32px; font-weight: 400; color: #f1f5f9; line-height: 1; margin-bottom: 6px;">
       {spark.value}{#if spark.unit}<span style="font-size: 16px; font-weight: 400; color: #94a3b8; margin-left: 4px;">{spark.unit}</span>{/if}
     </div>
 
