@@ -74,11 +74,11 @@
 
   // ── Lehkost sparkline ──────────────────────────────────
   const LH_SPARK_LABELS = {
-    lh_main:       'Váha za posledních 14 dní',
-    lh_pohyb:      'Posledních 14 dní',
-    lh_vyziva:     'Posledních 14 dní',
-    lh_mysl:       'Posledních 14 dní',
-    lh_regenerace: 'Posledních 14 dní',
+    lh_main:       'Váha',
+    lh_pohyb:      'Pohyb',
+    lh_vyziva:     'Výživa',
+    lh_mysl:       'Mysl',
+    lh_regenerace: 'Regenerace',
   };
 
   let sparkLabel = $derived(LH_SPARK_LABELS[nodeId] ?? 'Posledních 14 dní');
@@ -198,20 +198,10 @@
 <!-- ── LEHKOST: sparkline sekce ── -->
 <div style="background: #1e293b; border-radius: 12px; padding: 16px 16px 18px;">
 
-  {#if nodeId === 'lh_main' && spark?.trajectory}
-    <!-- lh_main: TRAJECTORY header nad grafem -->
-    <div style="margin-bottom: 10px;">
-      <div style="font-family: monospace; font-size: 13px; letter-spacing: 0.12em; color: #94a3b8; margin-bottom: 4px;">TRAJECTORY</div>
-      <div style="font-size: 22px; font-weight: 500; color: {spark.trajectory.color}; line-height: 1;">
-        {spark.trajectory.delta}
-      </div>
-    </div>
-  {:else}
-    <!-- Ostatní uzly: klasický label -->
-    <div style="font-size: 15px; font-weight: 400; color: #94a3b8; margin-bottom: 10px;">
-      {sparkLabel}
-    </div>
-  {/if}
+  <!-- Label -->
+  <div style="font-size: 15px; font-weight: 400; color: #94a3b8; margin-bottom: 10px;">
+    {sparkLabel}
+  </div>
 
   <!-- Canvas -->
   <canvas
@@ -221,24 +211,28 @@
 
   {#if spark}
     <!-- Velké číslo -->
-    <div style="font-size: 32px; font-weight: 400; color: #f1f5f9; line-height: 1; margin-bottom: 6px;">
+    <div style="font-size: 32px; font-weight: 400; color: #f1f5f9; line-height: 1; margin-bottom: 10px;">
       {spark.value}{#if spark.unit}<span style="font-size: 16px; font-weight: 400; color: #94a3b8; margin-left: 4px;">{spark.unit}</span>{/if}
     </div>
 
-    <!-- Status s tečkou (bez textu trajektorie — jen dot) -->
-    <div style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: #94a3b8; margin-bottom: 4px;">
-      <span style="width: 8px; height: 8px; border-radius: 50%; background: {spark.trajectory?.color ?? spark.status_color}; flex-shrink: 0; display: inline-block;"></span>
-      {spark.status_text}
+    <!-- Status + trajektorie ve stejném řádku -->
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+      <div style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: #94a3b8;">
+        <span style="width: 8px; height: 8px; border-radius: 50%; background: {spark.trajectory?.color ?? spark.status_color}; flex-shrink: 0; display: inline-block;"></span>
+        {spark.status_text}
+      </div>
+      {#if spark.trajectory}
+        <span style="font-size: 13px; color: {spark.trajectory.color}; font-weight: 500;">{spark.trajectory.delta}</span>
+      {/if}
     </div>
 
-    <!-- Rozmezí / to_target -->
+    <!-- Cíl / rozmezí -->
     {#if spark.trajectory?.to_target}
-      <div style="font-size: 13px; color: #94a3b8;">{spark.trajectory.to_target}</div>
+      <div style="font-size: 12px; color: #64748b;">{spark.trajectory.to_target}</div>
     {:else if spark.range}
-      <div style="font-size: 13px; color: #94a3b8;">{spark.range}</div>
+      <div style="font-size: 12px; color: #64748b;">{spark.range}</div>
     {/if}
   {:else}
-    <!-- Fallback pokud spark data ještě nejsou -->
     <div style="font-size: 13px; color: #475569; font-family: monospace;">Vyplň check-in pro data</div>
   {/if}
 </div>
