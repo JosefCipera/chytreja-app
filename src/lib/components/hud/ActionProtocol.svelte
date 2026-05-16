@@ -87,8 +87,8 @@
     'MALÝ POHYB':            'POHYB',
     'VEČERNÍ PŘEJÍDÁNÍ':     'STRAVA',
     'SPÁNKOVÝ DEFICIT':      'SPÁNEK',
-    'STRESOVÉ JEDENÍ':       'STRES',
-    'VÍKENDOVÉ PŘESTŘELENÍ': 'RYTMUS',
+    'JEDENÍ ZE STRESU':       'STRES',
+    'VÍKENDOVÉ PŘEJÍDÁNÍ': 'RYTMUS',
   };
   let lehkostLabel = $derived(LH_KILLER_SHORT[killer?.label] ?? 'AKCE');
 </script>

@@ -22,7 +22,7 @@ const NODE_KILLERS = {
   lh_main:       { label: 'MALÝ POHYB',         description: 'Každý den bez pohybu zpomaluje metabolismus.' },
   lh_vyziva:     { label: 'VEČERNÍ PŘEJÍDÁNÍ',  description: 'Jídlo po 20h zvyšuje tukovou zátěž.' },
   lh_pohyb:      { label: 'MALÝ POHYB',         description: 'Každý den bez pohybu zpomaluje metabolismus.' },
-  lh_mysl:       { label: 'STRESOVÉ JEDENÍ',    description: 'Stres zvyšuje kortizol a chuť na sladké.' },
+  lh_mysl:       { label: 'JEDENÍ ZE STRESU',    description: 'Stres zvyšuje kortizol a chuť na sladké.' },
   lh_regenerace: { label: 'SPÁNKOVÝ DEFICIT',   description: 'Bez spánku tělo neregeneruje a hromadí tuk.' },
   // ── TOC uzly — parent uzly (cascade z nejslabšího dítěte) ────────────────
   toc:          { label: 'OMEZENÍ', description: 'Každý systém má jedno místo, které brzdí vše ostatní.' },
@@ -95,8 +95,8 @@ const LH_KILLER_DEFS = {
   evening_overeating: { label: 'VEČERNÍ PŘEJÍDÁNÍ',    description: 'Jídlo po 20h zvyšuje tukovou zátěž.' },
   low_movement:       { label: 'MALÝ POHYB',            description: 'Každý den bez pohybu zpomaluje metabolismus.' },
   sleep_deficit:      { label: 'SPÁNKOVÝ DEFICIT',      description: 'Bez spánku tělo neregeneruje a hromadí tuk.' },
-  stress_eating:      { label: 'STRESOVÉ JEDENÍ',       description: 'Stres zvyšuje kortizol a chuť na sladké.' },
-  weekend_rebound:    { label: 'VÍKENDOVÉ PŘESTŘELENÍ', description: 'Víkend bez kontroly ničí týdenní pokrok.' },
+  stress_eating:      { label: 'JEDENÍ ZE STRESU',       description: 'Stres zvyšuje kortizol a chuť na sladké.' },
+  weekend_rebound:    { label: 'VÍKENDOVÉ PŘEJÍDÁNÍ', description: 'Přejídání o víkendu maže to, co týden budoval.' },
 };
 
 // Fallback akce pro lh_ sub-uzly (nemají záznamy v longevity_actions)

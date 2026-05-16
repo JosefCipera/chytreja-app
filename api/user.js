@@ -238,9 +238,9 @@ function detectKillers(rows) {
       score: Math.min(100, r7.filter(r=>r.movement_level==='low').length*15 + (avg(r7.map(r=>r.energy).filter(Boolean))<3?10:0)) },
     { id: 'sleep_deficit', label: 'SPÁNKOVÝ DEFICIT',
       score: Math.min(100, r7.filter(r=>r.sleep_hours!=null&&parseFloat(r.sleep_hours)<6.5).length*14 + (r7.filter(r=>r.binge).length>0?8:0)) },
-    { id: 'stress_eating', label: 'STRESOVÉ JEDENÍ',
+    { id: 'stress_eating', label: 'JEDENÍ ZE STRESU',
       score: Math.min(100, r7.filter(r=>r.stress>=4).length*8 + r7.filter(r=>r.binge&&r.stress>=4).length*15) },
-    { id: 'weekend_rebound', label: 'VÍKENDOVÉ PŘESTŘELENÍ',
+    { id: 'weekend_rebound', label: 'VÍKENDOVÉ PŘEJÍDÁNÍ',
       score: Math.min(100, r7.filter(r=>{const d=new Date(r.date).getDay();return(d===0||d===6)&&r.binge}).length*35) },
   ];
   return scores.sort((a,b)=>b.score-a.score);
@@ -336,7 +336,7 @@ async function lehkostAgentCore(supabase, { userId, nodeId = 'lh_main', force = 
   // Detect top FLOW KILLER
   const LH_KILLER_DEFS = {
     evening_overeating: 'Večerní přejídání', low_movement: 'Nulový pohyb',
-    sleep_deficit: 'Spánkový deficit',       stress_eating: 'Stresové jedení',
+    sleep_deficit: 'Spánkový deficit',       stress_eating: 'Jedení ze stresu',
     weekend_rebound: 'Víkendové přestřelení',
   };
   let killerId = 'low_movement';
