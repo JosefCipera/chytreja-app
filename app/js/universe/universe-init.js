@@ -851,10 +851,11 @@ function initHeaderControls() {
   // roleSelect = admin override (testování), přepisuje DB mode
   const currentRole = localStorage.getItem("userRole") || "demo";
   const modelKeys = Object.keys(window.UNIVERSE_INDEX);
-  const defaultModel = modelKeys[0]; // vždy první z index.json (ignoruj stale localStorage)
+  const defaultModel = modelKeys[0];
+  const activeModel = window.CURRENT_MODEL || localStorage.getItem('currentModel') || defaultModel;
 
   roleSelect.value = currentRole;
-  modelSelect.value = defaultModel;
+  modelSelect.value = activeModel;
   document.body.classList.add(currentRole);
 
   if (currentRole === "user") {
