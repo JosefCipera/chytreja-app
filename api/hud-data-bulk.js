@@ -326,6 +326,12 @@ async function getLehkostSpark(nodeId, userId, sb) {
 
   const computed_index = calcLehkostIndex(nodeId, slots);
 
+  // Trajectory — only for lh_main (weight trend)
+  let trajectory = null;
+  if (nodeId === 'lh_main') {
+    trajectory = calcWeightTrajectory(slots);
+  }
+
   return {
     data:           filled,       // 14 numbers (or null if no data at all)
     value,                        // display string, e.g. "73,2"
@@ -334,7 +340,36 @@ async function getLehkostSpark(nodeId, userId, sb) {
     status_text:    status.text,
     status_color:   status.color,
     computed_index,               // 0-100 or null if not enough data
+    trajectory,                   // { delta, label, color, to_target } or null
   };
+}
+
+function calcWeightTrajectory(slots) {
+  const pts = slots
+    .map((s, i) => s?.weight_kg != null ? { i, v: parseFloat(s.weight_kg) } : null)
+    .filter(Boolean);
+  if (pts.length < 2) return null;
+
+  // Linear regression on actual data points
+  const n = pts.length;
+  let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
+  for (const p of pts) {
+    sumX += p.i; sumY += p.v; sumXY += p.i * p.v; sumXX += p.i * p.i;
+  }
+  const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX || 1);
+  const delta14 = slope * 14; // projected change over 14 days
+
+  const sign  = delta14 < 0 ? '' : '+';
+  const delta = `${sign}${delta14.toFixed(1).replace('.', ',')} kg / 14 dní`;
+
+  let label, color;
+  if (slope < -0.07)      { label = 'RYCHLÝ SESTUP'; color = '#22c55e'; }
+  else if (slope < -0.02) { label = 'SESTUP';        color = '#22c55e'; }
+  else if (slope < 0.02)  { label = 'STABILNÍ';      color = '#f59e0b'; }
+  else if (slope < 0.07)  { label = 'NÁRŮST';        color = '#ef4444'; }
+  else                    { label = 'RYCHLÝ NÁRŮST'; color = '#ef4444'; }
+
+  return { delta, label, color };
 }
 
 function indexToState(i) {
@@ -400,7 +435,7 @@ function getDayType() {
 
 // ── Per-node data fetch (runs in parallel for all requested nodes) ──
 async function fetchOneNode(sb, userId, nodeId, shared) {
-  const { metricsMap, orchLogs, today, constraints, spanekIndex, vyzivaIndex, isDekatlon } = shared;
+  const { metricsMap, orchLogs, today, constraints, spanekIndex, vyzivaIndex, isDekatlon, lhTargetKg } = shared;
   const dayType = getDayType();
 
   const nodeMeta    = metricsMap.get(nodeId) || { current_index: 50, state: 'YELLOW' };
@@ -559,6 +594,13 @@ async function fetchOneNode(sb, userId, nodeId, shared) {
       lhBatteryPercent = spark.computed_index;
       lhBatteryState   = indexToState(spark.computed_index);
     }
+    // Attach target distance for lh_main if user set a target weight
+    if (nodeId === 'lh_main' && spark?.trajectory && lhTargetKg != null && spark.value !== '—') {
+      const currentKg = parseFloat(spark.value.replace(',', '.'));
+      const diff = currentKg - lhTargetKg;
+      const sign = diff > 0 ? '-' : '+';
+      spark.trajectory.to_target = `${sign}${Math.abs(diff).toFixed(1).replace('.', ',')} kg do cíle (${String(lhTargetKg).replace('.', ',')} kg)`;
+    }
   }
 
   if (TOC_CHILDREN[nodeId]) {
@@ -627,11 +669,12 @@ export default async function handler(req, res) {
       .eq('user_id', userId).eq('date', today).in('node_id', nodeIds),
     sb.from('user_constraints').select('constraint_key, constraint_value')
       .eq('user_id', userId).eq('constraint_type', 'injury'),
-    sb.from('user_profiles').select('primary_goal')
+    sb.from('user_profiles').select('primary_goal, lh_target_kg')
       .eq('user_id', userId).maybeSingle(),
   ]);
 
-  const isDekatlon = profileRes.data?.primary_goal === 'dekatlon' || role === 'dekatlon';
+  const isDekatlon  = profileRes.data?.primary_goal === 'dekatlon' || role === 'dekatlon';
+  const lhTargetKg  = profileRes.data?.lh_target_kg ?? null;
 
   const metricsMap = new Map((metricsRes.data || []).map(m => [m.node_id, m]));
   const orchLogs   = orchRes.data || [];
@@ -656,7 +699,7 @@ export default async function handler(req, res) {
     } catch { /* ignore */ }
   }
 
-  const shared = { metricsMap, orchLogs, today, constraints, spanekIndex, vyzivaIndex, isDekatlon };
+  const shared = { metricsMap, orchLogs, today, constraints, spanekIndex, vyzivaIndex, isDekatlon, lhTargetKg };
 
   // ── Per-node in parallel ─────────────────────────────
   const results = await Promise.all(

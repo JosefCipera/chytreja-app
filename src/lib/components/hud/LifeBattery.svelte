@@ -224,6 +224,20 @@
     {#if spark.range}
       <div style="font-size: 13px; color: #94a3b8;">{spark.range}</div>
     {/if}
+
+    <!-- Trajectory — jen pro lh_main -->
+    {#if spark.trajectory}
+      <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.06);">
+        <div style="font-family: monospace; font-size: 10px; letter-spacing: 0.12em; color: #475569; margin-bottom: 5px;">TRAJECTORY</div>
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+          <span style="font-size: 15px; font-weight: 500; color: #e2e8f0;">{spark.trajectory.delta}</span>
+          <span style="font-family: monospace; font-size: 11px; color: {spark.trajectory.color}; letter-spacing: 0.08em;">{spark.trajectory.label}</span>
+        </div>
+        {#if spark.trajectory.to_target}
+          <div style="font-size: 12px; color: #64748b;">{spark.trajectory.to_target}</div>
+        {/if}
+      </div>
+    {/if}
   {:else}
     <!-- Fallback pokud spark data ještě nejsou -->
     <div style="font-size: 13px; color: #475569; font-family: monospace;">Vyplň check-in pro data</div>
