@@ -33,8 +33,10 @@ let _currentScreen = 1;
 
 export async function checkLehkostOnboarding(userId) {
   // Returns true if onboarding is needed (lh_identity not set)
+  // Falls back to false on any error (API/DB not ready) — never blocks the user
   try {
     const res = await fetch(`/api/user?action=profile&userId=${userId}`);
+    if (!res.ok) return false; // migrace ještě neproběhla → pustit dál
     const data = await res.json();
     return !data?.lh_identity;
   } catch {
