@@ -1441,6 +1441,9 @@ async function showGameOfLife(node, options = {}) {
 
           if (isSecondAction) {
             // No 3rd step — done for today
+          } else if (node.id?.startsWith('lh_')) {
+            // Lehkost: battery updates via check-in only, not actions → no second action offer
+            // Feedback "výsledek uvidíš v zítřejším check-inu" is already shown above — nothing more to do
           } else if (glResult.offerMore) {
             // Find mission from a DIFFERENT CHILD of same parent (or child of current node)
             const allNodes = window.MAIN_UNIVERSE_DATA || [];

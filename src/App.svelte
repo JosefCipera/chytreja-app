@@ -344,22 +344,26 @@
         body: JSON.stringify({ userId, nodeId: effectiveNodeId }),
       });
 
+      const isLehkostNode = effectiveNodeId?.startsWith('lh_');
+      // Lehkost: delay refresh so user reads "výsledek uvidíš v zítřejším check-inu"
+      const refreshDelay = isLehkostNode ? 2500 : 0;
+
       if (wasCount === 0) {
         // First action just completed — remember it, offer second
         lastCompletedId = actionId;
-        const result = shouldOfferSecond(snapData);
+        const result = isLehkostNode ? { offer: false } : shouldOfferSecond(snapData);
         if (result.offer) {
           secondOffer     = 'pending';
           secondOfferText = result.text;
-          loadHudData(userId, nodeId); // refresh HUD in background
+          setTimeout(() => loadHudData(userId, nodeId), refreshDelay);
         } else {
           secondOffer = null;
-          loadHudData(userId, nodeId);
+          setTimeout(() => loadHudData(userId, nodeId), refreshDelay);
         }
       } else {
         // Second (or more) action just completed — no more offers
         secondOffer = null;
-        loadHudData(userId, nodeId);
+        setTimeout(() => loadHudData(userId, nodeId), refreshDelay);
       }
 
       setTimeout(() => {

@@ -182,7 +182,14 @@
           ⏹ STOP
         </button>
       {:else if status === 'COMPLETE'}
-        <div class="text-center" style="padding: 14px; font-size: 16px; color: #86C46A;">✔ HOTOVO</div>
+        {#if universe === 'lehkost'}
+          <div style="padding: 12px 0 4px; text-align: center;">
+            <div style="font-size: 16px; color: #22c55e; font-weight: 600; margin-bottom: 6px;">✔ Hotovo</div>
+            <div style="font-size: 13px; color: #64748b; line-height: 1.5;">Výsledek uvidíš v zítřejším check-inu.</div>
+          </div>
+        {:else}
+          <div class="text-center" style="padding: 14px; font-size: 16px; color: #86C46A;">✔ HOTOVO</div>
+        {/if}
       {:else}
         <button onclick={startTimer} class="w-full rounded-lg border border-cyan-500/20 bg-cyan-500/[0.07] hud-mono tracking-wider hover:bg-cyan-500/[0.12] hover:shadow-[0_0_20px_rgba(6,182,212,0.2)] transition-all cursor-pointer"
           style="padding: 14px; font-size: 16px; color: #22d3ee;">
@@ -193,7 +200,14 @@
     <!-- ── REPS ── -->
     {:else if actionMode === 'reps'}
       {#if status === 'COMPLETE'}
-        <div class="text-center" style="padding: 14px; font-size: 16px; color: #86C46A;">✔ HOTOVO</div>
+        {#if universe === 'lehkost'}
+          <div style="padding: 12px 0 4px; text-align: center;">
+            <div style="font-size: 16px; color: #22c55e; font-weight: 600; margin-bottom: 6px;">✔ Hotovo</div>
+            <div style="font-size: 13px; color: #64748b; line-height: 1.5;">Výsledek uvidíš v zítřejším check-inu.</div>
+          </div>
+        {:else}
+          <div class="text-center" style="padding: 14px; font-size: 16px; color: #86C46A;">✔ HOTOVO</div>
+        {/if}
       {:else}
         <div class="text-center mb-3">
           <span class="hud-mono tabular-nums" style="font-size: 2.2rem; font-weight: 400; color: #e2e8f0;">
@@ -210,7 +224,14 @@
     <!-- ── HABIT ── -->
     {:else}
       {#if status === 'COMPLETE'}
-        <div class="text-center" style="padding: 14px; font-size: 16px; color: #86C46A;">✔ HOTOVO</div>
+        {#if universe === 'lehkost'}
+          <div style="padding: 12px 0 4px; text-align: center;">
+            <div style="font-size: 16px; color: #22c55e; font-weight: 600; margin-bottom: 6px;">✔ Hotovo</div>
+            <div style="font-size: 13px; color: #64748b; line-height: 1.5;">Výsledek uvidíš v zítřejším check-inu.</div>
+          </div>
+        {:else}
+          <div class="text-center" style="padding: 14px; font-size: 16px; color: #86C46A;">✔ HOTOVO</div>
+        {/if}
       {:else}
         <button onclick={complete} class="w-full rounded-lg border border-cyan-500/20 bg-cyan-500/[0.07] hud-mono tracking-wider hover:bg-cyan-500/[0.12] transition-all cursor-pointer"
           style="padding: 14px; font-size: 16px; color: #22d3ee;">
