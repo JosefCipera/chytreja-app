@@ -161,6 +161,30 @@ function applyTocCascade(nodes, metricsMap) {
   return metricsMap;
 }
 
+// ── Lehkost: sync canvas node states from computed check-in indices ──
+// Calls hud-data-bulk for all lh_* nodes, applies battery.state to canvas.
+async function syncLehkostCanvasStates(userId) {
+  try {
+    const LH_IDS = 'lh_main,lh_vyziva,lh_pohyb,lh_mysl,lh_regenerace';
+    const res = await fetch(`/api/hud-data-bulk?nodes=${LH_IDS}&userId=${userId}&universe=lehkost`);
+    if (!res.ok) return;
+    const data = await res.json();
+    let changed = false;
+    (window.MAIN_UNIVERSE_DATA || []).forEach(node => {
+      const nd = data[node.id];
+      if (!nd?.battery) return;
+      node.current_index = nd.battery.percent;
+      node.state = nd.battery.state || (nd.battery.percent <= 40 ? 'RED' : nd.battery.percent <= 70 ? 'YELLOW' : 'GREEN');
+      changed = true;
+    });
+    if (changed) {
+      updateMetricsAndRedraw(new Map());
+    }
+  } catch (e) {
+    console.warn('[CHJ] syncLehkostCanvasStates error:', e);
+  }
+}
+
 // ── Global refresh — called from HUD after completing action ──────
 // Updates metrics in-place + redraws without destroying/recreating the network
 window.refreshUniverseData = async function() {
@@ -193,6 +217,11 @@ window.refreshUniverseData = async function() {
 
     // Update visible nodes + redraw (no network destroy)
     updateMetricsAndRedraw(metricsMap);
+
+    // Lehkost: override canvas states with computed check-in indices
+    if (window.CURRENT_MODEL === 'lehkost') {
+      syncLehkostCanvasStates(userId);
+    }
 
   } catch (e) {
     console.warn('[CHJ] refreshUniverseData error:', e);
@@ -915,6 +944,8 @@ function initHeaderControls() {
     if (newModel === 'lehkost') {
       const userId = window.firebaseAuth?.currentUser?.uid;
       if (userId) {
+        // Sync canvas colors from computed check-in indices immediately
+        syncLehkostCanvasStates(userId);
         const { checkLehkostOnboarding, showLehkostOnboarding } = await import('./lehkost-onboarding.js');
         const needsOnboarding = await checkLehkostOnboarding(userId);
         const _lhRefresh = () => {
