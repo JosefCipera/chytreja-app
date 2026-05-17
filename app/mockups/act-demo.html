@@ -5,624 +5,642 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ACT — Vzpírání v poloze na břiše</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
-    body {
-      background: #0f172a;
-      font-family: 'Inter', sans-serif;
-      min-height: 100vh;
-    }
+    body { background: #0a0f1e; font-family: 'Inter', sans-serif; min-height: 100vh; }
     .hud-mono { font-family: 'JetBrains Mono', monospace; }
 
-    .hud-card {
-      background: rgba(15, 23, 42, 0.9);
-      border: 1px solid rgba(6, 182, 212, 0.18);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
+    /* ── Cards ── */
+    .card {
+      background: rgba(15,23,42,0.92);
+      border: 1px solid rgba(6,182,212,0.15);
+      border-radius: 14px;
+      position: relative;
+      overflow: hidden;
+    }
+    .card-green { border-color: rgba(34,197,94,0.25); }
+    .card-warm  { border-color: rgba(234,179,8,0.2); }
+    .card-ghost { background: rgba(255,255,255,0.03); border-color: rgba(255,255,255,0.07); border-radius:14px; }
+
+    /* corner brackets */
+    .hc { position:absolute; width:10px; height:10px; }
+    .hc-tl { top:-1px; left:-1px; border-top:1px solid rgba(6,182,212,0.55); border-left:1px solid rgba(6,182,212,0.55); }
+    .hc-br { bottom:-1px; right:-1px; border-bottom:1px solid rgba(6,182,212,0.55); border-right:1px solid rgba(6,182,212,0.55); }
+
+    /* ── Scan lines ── */
+    .scan { pointer-events:none; position:fixed; inset:0; z-index:0;
+      background: repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(6,182,212,0.013) 3px,rgba(6,182,212,0.013) 4px); }
+
+    /* ── Muscle anatomy colours ── */
+    .m-primary   { fill: rgba(6,182,212,0.55); }
+    .m-secondary { fill: rgba(99,102,241,0.4); }
+    .m-support   { fill: rgba(34,197,94,0.3); }
+    .m-body      { fill: #1e293b; stroke: #334155; stroke-width: 1.2; }
+    .m-body-line { fill: none; stroke: rgba(6,182,212,0.12); stroke-width: 0.8; }
+
+    /* ── Akrálky pulse ── */
+    @keyframes akral { 0%,100%{opacity:.5;filter:drop-shadow(0 0 4px rgba(6,182,212,.5))} 50%{opacity:1;filter:drop-shadow(0 0 16px rgba(6,182,212,1))} }
+    .akral-pulse { animation: akral 1.5s ease-in-out infinite; }
+    @keyframes ring { 0%{transform:scale(1);opacity:.7} 100%{transform:scale(2.2);opacity:0} }
+    .ring-anim   { animation: ring 1.5s ease-out infinite; }
+
+    /* ── Rep counter ── */
+    @keyframes repPop { 0%{transform:scale(1)} 30%{transform:scale(1.18)} 100%{transform:scale(1)} }
+    .rep-pop { animation: repPop 0.25s ease; }
+
+    /* ── Progress bar ── */
+    #rep-bar { transition: width 0.35s ease; background: linear-gradient(90deg,#06b6d4,#22c55e); }
+
+    /* ── Donut ── */
+    .donut-ring { fill: none; stroke-width: 10; }
+    .donut-bg   { stroke: rgba(255,255,255,0.07); }
+    .donut-fill { stroke: #06b6d4; stroke-dasharray: 188 62; stroke-linecap: round;
+                  filter: drop-shadow(0 0 6px rgba(6,182,212,0.6)); transform: rotate(-90deg); transform-origin: 50% 50%; }
+
+    /* ── Sparkline chart ── */
+    .spark-line { fill: none; stroke: url(#sparkGrad); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .spark-area { fill: url(#areaGrad); }
+
+    /* ── Phases ── */
+    .phase { display:none; }
+    .phase.active { display:block; animation: fadeUp 0.35s ease; }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+
+    /* ── Photo placeholder ── */
+    .exercise-photo {
+      background:
+        radial-gradient(ellipse at 50% 30%, rgba(6,182,212,0.08) 0%, transparent 60%),
+        linear-gradient(180deg, #0d1929 0%, #0a1020 100%);
       border-radius: 12px;
       position: relative;
+      overflow: hidden;
     }
-    .hud-card-green {
-      background: rgba(15, 23, 42, 0.9);
-      border: 1px solid rgba(34, 197, 94, 0.25);
-      backdrop-filter: blur(12px);
-      border-radius: 12px;
-    }
-    .hud-card-warm {
-      background: rgba(15, 23, 42, 0.9);
-      border: 1px solid rgba(234, 179, 8, 0.2);
-      backdrop-filter: blur(12px);
-      border-radius: 12px;
-    }
-    .hud-card-red {
-      background: rgba(15, 23, 42, 0.9);
-      border: 1px solid rgba(239, 68, 68, 0.2);
-      backdrop-filter: blur(12px);
-      border-radius: 12px;
+    .exercise-photo::before {
+      content:'';
+      position:absolute; inset:0;
+      background: repeating-linear-gradient(0deg,transparent,transparent 40px,rgba(6,182,212,0.025) 40px,rgba(6,182,212,0.025) 41px);
     }
 
-    /* Corner decorators */
-    .hc { position: absolute; width: 10px; height: 10px; }
-    .hc-tl { top: -1px; left: -1px; border-top: 1px solid rgba(6,182,212,0.6); border-left: 1px solid rgba(6,182,212,0.6); }
-    .hc-br { bottom: -1px; right: -1px; border-bottom: 1px solid rgba(6,182,212,0.6); border-right: 1px solid rgba(6,182,212,0.6); }
+    /* ── Feedback btns ── */
+    .fb { cursor:pointer; transition:all .18s; }
+    .fb:hover { transform:translateY(-1px); }
+    .fb.ok-sel  { border-color:rgba(34,197,94,.6)!important;  background:rgba(34,197,94,.1)!important;  color:#22c55e!important; }
+    .fb.bad-sel { border-color:rgba(239,68,68,.6)!important;  background:rgba(239,68,68,.1)!important;  color:#ef4444!important; }
 
-    /* Akrálky pulse */
-    @keyframes akral-pulse {
-      0%, 100% { opacity: 0.5; filter: drop-shadow(0 0 4px rgba(6,182,212,0.5)); }
-      50%       { opacity: 1;   filter: drop-shadow(0 0 14px rgba(6,182,212,1)) drop-shadow(0 0 28px rgba(6,182,212,0.5)); }
-    }
-    .akral-active { animation: akral-pulse 1.4s ease-in-out infinite; }
+    /* ── Blinking dot ── */
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+    .blink { animation: blink 2s ease-in-out infinite; }
 
-    @keyframes akral-pulse-hand {
-      0%, 100% { opacity: 0.4; filter: drop-shadow(0 0 3px rgba(6,182,212,0.4)); }
-      50%       { opacity: 0.9; filter: drop-shadow(0 0 10px rgba(6,182,212,0.8)); }
-    }
-    .akral-hand { animation: akral-pulse-hand 1.4s ease-in-out infinite 0.35s; }
+    /* ── Guidance cycle ── */
+    @keyframes gc { 0%,8%{opacity:0;transform:translateY(5px)} 18%,80%{opacity:1;transform:translateY(0)} 92%,100%{opacity:0;transform:translateY(-4px)} }
+    .gc1 { animation: gc 6s ease-in-out infinite; }
+    .gc2 { animation: gc 6s ease-in-out 3s infinite; }
 
-    /* Timer bar */
-    @keyframes timer-drain {
-      from { width: 100%; background: #22c55e; }
-      60%  { background: #eab308; }
-      to   { width: 0%;   background: #ef4444; }
-    }
-    .timer-bar-anim { animation: timer-drain var(--duration, 15s) linear forwards; }
+    /* ── Arrow indicator ── */
+    @keyframes arrowPulse { 0%,100%{opacity:.4;transform:translateX(0)} 50%{opacity:1;transform:translateX(3px)} }
+    .arr { animation: arrowPulse 2s ease-in-out infinite; }
+    .arr2 { animation: arrowPulse 2s ease-in-out .5s infinite; }
 
-    /* Body point ping */
-    @keyframes ping-ring {
-      0%   { transform: scale(1);   opacity: 0.8; }
-      100% { transform: scale(2.4); opacity: 0; }
-    }
-    .ping-ring { animation: ping-ring 1.4s ease-out infinite; }
-
-    /* Guidance text fade cycle */
-    @keyframes fadeSlide {
-      0%,10%  { opacity: 0; transform: translateY(6px); }
-      20%,80% { opacity: 1; transform: translateY(0); }
-      90%,100%{ opacity: 0; transform: translateY(-4px); }
-    }
-    .guidance-cycle { animation: fadeSlide 5s ease-in-out infinite; }
-    .guidance-cycle-2 { animation: fadeSlide 5s ease-in-out 2.5s infinite; }
-
-    /* Progress bar fill */
-    @keyframes fill-bar {
-      from { width: 58%; }
-      to   { width: 68%; }
-    }
-    .progress-grow {
-      animation: fill-bar 1.6s ease-out forwards;
-      animation-delay: 0.4s;
-    }
-
-    /* Phase transitions */
-    .phase { display: none; }
-    .phase.active {
-      display: block;
-      animation: fadeIn 0.35s ease forwards;
-    }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-
-    /* Feedback button hover */
-    .fb-btn { transition: all 0.18s ease; cursor: pointer; }
-    .fb-btn:hover { transform: translateY(-1px); }
-    .fb-btn.selected-ok  { border-color: rgba(34,197,94,0.6)  !important; background: rgba(34,197,94,0.12)  !important; color: #22c55e !important; }
-    .fb-btn.selected-bad { border-color: rgba(239,68,68,0.6)  !important; background: rgba(239,68,68,0.12)  !important; color: #ef4444 !important; }
-
-    /* Scan lines overlay */
-    .scan-overlay {
-      pointer-events: none;
-      position: fixed; inset: 0;
-      background: repeating-linear-gradient(
-        0deg, transparent, transparent 3px,
-        rgba(6,182,212,0.012) 3px, rgba(6,182,212,0.012) 4px
-      );
-      z-index: 0;
-    }
-
-    /* Status dot */
-    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
-    .status-dot { animation: blink 2s ease-in-out infinite; }
+    /* progress grow */
+    @keyframes grow { from{width:58%} to{width:68%} }
+    .grow-bar { animation: grow 1.4s .5s ease-out forwards; width:58%; }
   </style>
 </head>
 <body class="text-slate-200">
+<div class="scan"></div>
+<div class="relative z-10 max-w-sm mx-auto px-4 py-6 space-y-4">
 
-  <div class="scan-overlay"></div>
+  <!-- HEADER -->
+  <div class="flex items-center justify-between">
+    <div>
+      <div class="hud-mono text-xs tracking-widest text-slate-600 mb-0.5">ACT NODE</div>
+      <div class="hud-mono text-base font-light tracking-wide" style="color:#06b6d4;">[VZPÍRÁNÍ_v0.1]</div>
+    </div>
+    <div class="flex items-center gap-2">
+      <span class="blink w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block"></span>
+      <span class="hud-mono text-xs text-slate-600">ONLINE</span>
+    </div>
+  </div>
+  <div style="border-top:1px solid rgba(6,182,212,0.12);"></div>
 
-  <div class="relative z-10 max-w-md mx-auto px-4 py-6 space-y-4">
 
-    <!-- ── HEADER ── -->
-    <div class="flex items-start justify-between">
-      <div>
-        <div class="hud-mono text-xs tracking-widest text-slate-500 mb-1">ACT NODE</div>
-        <div class="hud-mono text-lg font-light tracking-wide" style="color:#06b6d4;">[VZPÍRÁNÍ_v0.1]</div>
-      </div>
-      <div class="flex items-center gap-2 mt-1">
-        <span class="status-dot w-2 h-2 rounded-full bg-emerald-400 inline-block"></span>
-        <span class="hud-mono text-xs text-slate-500">ACT ONLINE</span>
+  <!-- ══════ PHASE PRE ══════ -->
+  <div id="phase-pre" class="phase active space-y-4">
+
+    <!-- Exercise title -->
+    <div class="card px-4 pt-3 pb-3">
+      <span class="hc hc-tl"></span><span class="hc hc-br"></span>
+      <div class="hud-mono text-xs tracking-widest mb-1 text-slate-600">CVIČENÍ / ZÁKLAD ACT</div>
+      <div class="text-base font-semibold text-slate-100">Vzpírání v poloze na břiše</div>
+      <div class="mt-2 inline-flex items-center gap-2 px-3 py-1 rounded-full" style="background:rgba(6,182,212,0.08);border:1px solid rgba(6,182,212,0.2);">
+        <span style="color:#06b6d4; font-size:11px;">ⓘ</span>
+        <span class="hud-mono text-xs" style="color:#94a3b8;">Level 1 · Vývojová kineziologie 1.–3. měsíc</span>
       </div>
     </div>
 
-    <!-- divider -->
-    <div style="border-top:1px solid rgba(6,182,212,0.15);"></div>
+    <!-- ANATOMY MAP -->
+    <div class="card px-4 pt-3 pb-4">
+      <span class="hc hc-tl"></span>
+      <div class="hud-mono text-xs tracking-widest mb-3 text-slate-600">AKTIVOVANÉ SVALOVÉ SKUPINY</div>
+      <div class="flex gap-4 items-start">
 
+        <!-- SVG anatomy (front view, prone relevant) -->
+        <div class="flex-shrink-0">
+          <svg viewBox="0 0 110 230" width="100" height="210" xmlns="http://www.w3.org/2000/svg">
 
-    <!-- ══════════════════════════════════════
-         PHASE 1 — PRE
-    ══════════════════════════════════════ -->
-    <div id="phase-pre" class="phase active space-y-4">
+            <!-- ─ HEAD ─ -->
+            <ellipse cx="55" cy="22" rx="18" ry="21" class="m-body"/>
+            <!-- neck -->
+            <rect x="49" y="40" width="12" height="12" rx="4" class="m-body"/>
 
-      <!-- Title card -->
-      <div class="hud-card px-4 pt-3 pb-4">
-        <span class="hc hc-tl"></span><span class="hc hc-br"></span>
-        <div class="hud-mono text-xs tracking-widest mb-2" style="color:#94a3b8;">CVIČENÍ / ZÁKLAD ACT</div>
-        <div class="text-base font-semibold text-slate-100 leading-snug mb-1">
-          Vzpírání v poloze na břiše
-        </div>
-        <div class="text-xs text-slate-500">1.–3. měsíc vývojové kineziologie</div>
-      </div>
+            <!-- ─ TORSO ─ -->
+            <path d="M28,52 Q20,68 22,110 Q22,125 35,128 L75,128 Q88,125 88,110 Q90,68 82,52 Z" class="m-body"/>
+            <!-- deep spine / erector — PRIMARY -->
+            <rect x="47" y="54" width="7" height="70" rx="3.5" class="m-primary" opacity=".7"/>
+            <rect x="56" y="54" width="7" height="70" rx="3.5" class="m-primary" opacity=".7"/>
+            <!-- core / transverse — PRIMARY -->
+            <ellipse cx="55" cy="95" rx="17" ry="12" class="m-primary" opacity=".5"/>
+            <!-- pecs / shoulder stabilisers — SECONDARY -->
+            <ellipse cx="38" cy="70" rx="10" ry="13" class="m-secondary"/>
+            <ellipse cx="72" cy="70" rx="10" ry="13" class="m-secondary"/>
 
-      <!-- AI context -->
-      <div class="hud-card px-4 py-3">
-        <div class="hud-mono text-xs tracking-widest mb-2" style="color:#06b6d4;">▸ CHJ KONTEXT</div>
-        <p class="text-sm leading-relaxed" style="color:#cbd5e1;">
-          Dnes je den hlubokého restartu. Hořčík z předchozího večera je plně vstřebán —
-          nervosvalové spoje jsou připravené přijmout signál.
-        </p>
-        <div class="mt-3 pt-3" style="border-top:1px solid rgba(6,182,212,0.1);">
-          <div class="flex items-center gap-3">
-            <div class="text-center">
-              <div class="hud-mono text-lg font-semibold" style="color:#22c55e;">15s</div>
-              <div class="hud-mono text-xs text-slate-600">DÉLKA</div>
-            </div>
-            <div style="width:1px;height:32px;background:rgba(6,182,212,0.15);"></div>
-            <div class="text-center">
-              <div class="hud-mono text-lg font-semibold" style="color:#22c55e;">2</div>
-              <div class="hud-mono text-xs text-slate-600">AKRÁLKY</div>
-            </div>
-            <div style="width:1px;height:32px;background:rgba(6,182,212,0.15);"></div>
-            <div class="text-center">
-              <div class="hud-mono text-lg font-semibold" style="color:#22c55e;">L1</div>
-              <div class="hud-mono text-xs text-slate-600">LEVEL</div>
-            </div>
-          </div>
-        </div>
-      </div>
+            <!-- ─ UPPER ARMS ─ -->
+            <rect x="18" y="52" width="14" height="42" rx="7" class="m-body"/>
+            <rect x="78" y="52" width="14" height="42" rx="7" class="m-body"/>
+            <!-- forearms — PRIMARY (akrálky) -->
+            <rect x="16" y="96" width="12" height="38" rx="6" class="m-primary"/>
+            <rect x="82" y="96" width="12" height="38" rx="6" class="m-primary"/>
 
-      <!-- Position instruction -->
-      <div class="hud-card px-4 py-3">
-        <div class="hud-mono text-xs tracking-widest mb-3" style="color:#94a3b8;">NASTAVENÍ POZICE</div>
-        <div class="space-y-2">
-          <div class="flex items-start gap-2">
-            <span class="hud-mono text-xs mt-0.5 flex-shrink-0" style="color:#06b6d4;">01.</span>
-            <span class="text-sm text-slate-300">Lehni si na <strong class="text-slate-100">břicho</strong> na podložku</span>
-          </div>
-          <div class="flex items-start gap-2">
-            <span class="hud-mono text-xs mt-0.5 flex-shrink-0" style="color:#06b6d4;">02.</span>
-            <span class="text-sm text-slate-300">Pokrč paže, opři se o <strong class="text-slate-100">předloktí</strong></span>
-          </div>
-          <div class="flex items-start gap-2">
-            <span class="hud-mono text-xs mt-0.5 flex-shrink-0" style="color:#06b6d4;">03.</span>
-            <span class="text-sm text-slate-300">Roztáhni prsty, lokty pod rameny</span>
-          </div>
-          <div class="flex items-start gap-2">
-            <span class="hud-mono text-xs mt-0.5 flex-shrink-0" style="color:#06b6d4;">04.</span>
-            <span class="text-sm text-slate-300">Hlava v prodloužení páteře, pohled dolů</span>
-          </div>
-        </div>
-      </div>
+            <!-- ─ HANDS ─ -->
+            <ellipse cx="22" cy="138" rx="8" ry="6" class="m-body"/>
+            <ellipse cx="88" cy="138" rx="8" ry="6" class="m-body"/>
 
-      <!-- Start button -->
-      <button onclick="startPhase()" class="w-full hud-mono tracking-widest rounded-xl cursor-pointer transition-all duration-200"
-        style="
-          padding: 16px;
-          font-size: 15px;
-          color: #06b6d4;
-          border: 1px solid rgba(6,182,212,0.4);
-          background: rgba(6,182,212,0.07);
-          box-shadow: 0 0 20px rgba(6,182,212,0.08);
-        "
-        onmouseover="this.style.background='rgba(6,182,212,0.14)'; this.style.boxShadow='0 0 30px rgba(6,182,212,0.2)'"
-        onmouseout="this.style.background='rgba(6,182,212,0.07)'; this.style.boxShadow='0 0 20px rgba(6,182,212,0.08)'"
-      >
-        ▶ &nbsp;START CVIČENÍ
-      </button>
+            <!-- ─ PELVIS ─ -->
+            <path d="M35,128 Q32,145 38,150 L72,150 Q78,145 75,128 Z" class="m-body"/>
+            <!-- glutes — SUPPORT -->
+            <ellipse cx="42" cy="142" rx="9" ry="10" class="m-support"/>
+            <ellipse cx="68" cy="142" rx="9" ry="10" class="m-support"/>
 
-    </div><!-- /phase-pre -->
+            <!-- ─ LEGS ─ -->
+            <rect x="35" y="150" width="16" height="48" rx="8" class="m-body"/>
+            <rect x="59" y="150" width="16" height="48" rx="8" class="m-body"/>
+            <!-- hammies - support -->
+            <rect x="37" y="155" width="12" height="28" rx="6" class="m-support" opacity=".5"/>
+            <rect x="61" y="155" width="12" height="28" rx="6" class="m-support" opacity=".5"/>
 
+            <!-- ─ CALVES ─ -->
+            <rect x="36" y="200" width="14" height="26" rx="7" class="m-body"/>
+            <rect x="60" y="200" width="14" height="26" rx="7" class="m-body"/>
 
-    <!-- ══════════════════════════════════════
-         PHASE 2 — ACTIVE
-    ══════════════════════════════════════ -->
-    <div id="phase-active" class="phase space-y-4">
-
-      <!-- Active header -->
-      <div class="hud-card px-4 pt-3 pb-3">
-        <span class="hc hc-tl"></span><span class="hc hc-br"></span>
-        <div class="flex items-center justify-between mb-1">
-          <div class="hud-mono text-xs tracking-widest" style="color:#06b6d4;">AKTIVNÍ FÁZE</div>
-          <span class="status-dot w-2 h-2 rounded-full bg-cyan-400 inline-block"></span>
-        </div>
-        <div class="hud-mono text-sm font-light text-slate-300">Odtlačení od akrálek</div>
-      </div>
-
-      <!-- Timer -->
-      <div class="hud-card px-4 py-4">
-        <div class="flex items-baseline justify-between mb-3">
-          <div>
-            <span id="timer-display" class="hud-mono font-semibold tabular-nums" style="font-size:2.8rem; color:#e2e8f0; text-shadow: 0 0 20px rgba(6,182,212,0.4);">15</span>
-            <span class="hud-mono text-base text-slate-600 ml-1">/ 15 s</span>
-          </div>
-          <div class="text-right">
-            <div class="hud-mono text-xs text-slate-600">ZBÝVÁ</div>
-            <div id="timer-pct" class="hud-mono text-sm" style="color:#22c55e;">100%</div>
-          </div>
-        </div>
-        <!-- Timer bar -->
-        <div class="rounded-full overflow-hidden" style="height:6px; background:rgba(255,255,255,0.06);">
-          <div id="timer-bar" class="h-full rounded-full" style="width:100%; background:#22c55e; transition: width 1s linear, background 1s linear;"></div>
-        </div>
-      </div>
-
-      <!-- Body visualization -->
-      <div class="hud-card px-4 py-4">
-        <div class="hud-mono text-xs tracking-widest mb-3 text-center" style="color:#94a3b8;">OPĚRNÉ BODY (AKRÁLKY) — POHLED SHORA</div>
-
-        <div class="flex justify-center">
-          <svg viewBox="0 0 220 300" width="200" height="270" xmlns="http://www.w3.org/2000/svg">
-            <!-- Background grid -->
-            <defs>
-              <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
-                <path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(6,182,212,0.05)" stroke-width="0.5"/>
-              </pattern>
-            </defs>
-            <rect width="220" height="300" fill="url(#grid)" rx="8"/>
-
-            <!-- Legs -->
-            <rect x="82" y="175" width="26" height="100" rx="13" fill="#1e293b" stroke="#334155" stroke-width="1"/>
-            <rect x="113" y="175" width="26" height="100" rx="13" fill="#1e293b" stroke="#334155" stroke-width="1"/>
-            <!-- Feet hint -->
-            <ellipse cx="95" cy="275" rx="13" ry="7" fill="#1e293b" stroke="#334155" stroke-width="1"/>
-            <ellipse cx="126" cy="275" rx="13" ry="7" fill="#1e293b" stroke="#334155" stroke-width="1"/>
-
-            <!-- Torso -->
-            <rect x="72" y="78" width="76" height="102" rx="22" fill="#1e293b" stroke="#334155" stroke-width="1.5"/>
-            <!-- Spine hint -->
-            <line x1="110" y1="85" x2="110" y2="175" stroke="rgba(6,182,212,0.15)" stroke-width="1" stroke-dasharray="4,4"/>
-
-            <!-- Head -->
-            <ellipse cx="110" cy="52" rx="24" ry="28" fill="#1e293b" stroke="#334155" stroke-width="1.5"/>
-            <!-- Face direction indicator -->
-            <ellipse cx="110" cy="48" rx="7" ry="5" fill="rgba(6,182,212,0.08)" stroke="rgba(6,182,212,0.2)" stroke-width="1"/>
-
-            <!-- LEFT ARM / FOREARM -->
-            <!-- Upper arm -->
-            <line x1="82" y1="95" x2="48" y2="118" stroke="#334155" stroke-width="10" stroke-linecap="round"/>
-            <!-- Forearm -->
-            <rect x="20" y="108" width="52" height="16" rx="8"
-              fill="rgba(6,182,212,0.08)" stroke="rgba(6,182,212,0.4)" stroke-width="1.5"
-              transform="rotate(-15 46 116)"
-            />
-
-            <!-- RIGHT ARM / FOREARM -->
-            <!-- Upper arm -->
-            <line x1="138" y1="95" x2="172" y2="118" stroke="#334155" stroke-width="10" stroke-linecap="round"/>
-            <!-- Forearm -->
-            <rect x="148" y="108" width="52" height="16" rx="8"
-              fill="rgba(6,182,212,0.08)" stroke="rgba(6,182,212,0.4)" stroke-width="1.5"
-              transform="rotate(15 174 116)"
-            />
-
-            <!-- ═══ AKRÁLKY — LEFT ELBOW ═══ -->
-            <!-- Ping ring -->
-            <circle class="ping-ring" cx="30" cy="128" r="10" fill="none" stroke="rgba(6,182,212,0.6)" stroke-width="1.5"/>
-            <!-- Contact point -->
-            <circle class="akral-active" cx="30" cy="128" r="9" fill="rgba(6,182,212,0.25)" stroke="#06b6d4" stroke-width="2"/>
-            <circle cx="30" cy="128" r="4" fill="#06b6d4"/>
-            <!-- Label -->
-            <text x="10" y="148" font-family="JetBrains Mono" font-size="7" fill="#06b6d4" opacity="0.8">LOKET L</text>
-
-            <!-- ═══ AKRÁLKY — RIGHT ELBOW ═══ -->
-            <circle class="ping-ring" cx="190" cy="128" r="10" fill="none" stroke="rgba(6,182,212,0.6)" stroke-width="1.5"
-              style="animation-delay: 0.7s"/>
-            <circle class="akral-active" cx="190" cy="128" r="9" fill="rgba(6,182,212,0.25)" stroke="#06b6d4" stroke-width="2"
-              style="animation-delay: 0.7s"/>
-            <circle cx="190" cy="128" r="4" fill="#06b6d4"/>
-            <text x="170" y="148" font-family="JetBrains Mono" font-size="7" fill="#06b6d4" opacity="0.8">LOKET P</text>
-
-            <!-- ═══ HAND LEFT (forward) ═══ -->
-            <circle class="akral-hand" cx="22" cy="108" r="7" fill="rgba(6,182,212,0.15)" stroke="rgba(6,182,212,0.5)" stroke-width="1.5"/>
-            <!-- Fingers schematic -->
-            <line x1="17" y1="104" x2="12" y2="99" stroke="rgba(6,182,212,0.35)" stroke-width="1.5" stroke-linecap="round"/>
-            <line x1="20" y1="102" x2="17" y2="96" stroke="rgba(6,182,212,0.35)" stroke-width="1.5" stroke-linecap="round"/>
-            <line x1="23" y1="101" x2="22" y2="95" stroke="rgba(6,182,212,0.35)" stroke-width="1.5" stroke-linecap="round"/>
-            <line x1="26" y1="102" x2="28" y2="96" stroke="rgba(6,182,212,0.35)" stroke-width="1.5" stroke-linecap="round"/>
-            <line x1="28" y1="104" x2="32" y2="100" stroke="rgba(6,182,212,0.35)" stroke-width="1.5" stroke-linecap="round"/>
-
-            <!-- ═══ HAND RIGHT (forward) ═══ -->
-            <circle class="akral-hand" cx="198" cy="108" r="7" fill="rgba(6,182,212,0.15)" stroke="rgba(6,182,212,0.5)" stroke-width="1.5"
-              style="animation-delay: 0.35s"/>
-            <line x1="203" y1="104" x2="208" y2="99" stroke="rgba(6,182,212,0.35)" stroke-width="1.5" stroke-linecap="round"/>
-            <line x1="200" y1="102" x2="203" y2="96" stroke="rgba(6,182,212,0.35)" stroke-width="1.5" stroke-linecap="round"/>
-            <line x1="197" y1="101" x2="198" y2="95" stroke="rgba(6,182,212,0.35)" stroke-width="1.5" stroke-linecap="round"/>
-            <line x1="194" y1="102" x2="192" y2="96" stroke="rgba(6,182,212,0.35)" stroke-width="1.5" stroke-linecap="round"/>
-            <line x1="192" y1="104" x2="188" y2="100" stroke="rgba(6,182,212,0.35)" stroke-width="1.5" stroke-linecap="round"/>
-
-            <!-- Legend -->
-            <circle cx="80" cy="263" r="5" fill="rgba(6,182,212,0.3)" stroke="#06b6d4" stroke-width="1.5"/>
-            <text x="90" y="267" font-family="JetBrains Mono" font-size="8" fill="#64748b">= aktivní opěrný bod</text>
+            <!-- ─ ACTIVATION ARROWS ─ -->
+            <!-- Upward spine arrow -->
+            <g class="arr">
+              <line x1="55" y1="88" x2="55" y2="58" stroke="#06b6d4" stroke-width="1.5" stroke-dasharray="3,2"/>
+              <polygon points="55,54 51,62 59,62" fill="#06b6d4"/>
+            </g>
+            <!-- Left forearm press arrow -->
+            <g class="arr2">
+              <line x1="10" y1="115" x2="3" y2="115" stroke="#06b6d4" stroke-width="1.5"/>
+              <polygon points="2,115 8,111 8,119" fill="#06b6d4"/>
+            </g>
+            <!-- Right forearm press arrow -->
+            <g class="arr2">
+              <line x1="100" y1="115" x2="107" y2="115" stroke="#06b6d4" stroke-width="1.5"/>
+              <polygon points="108,115 102,111 102,119" fill="#06b6d4"/>
+            </g>
+            <!-- Core activation circle -->
+            <circle cx="55" cy="95" r="20" fill="none" stroke="#06b6d4" stroke-width="1" stroke-dasharray="4,3" opacity=".4"/>
           </svg>
         </div>
 
-        <!-- Pressure indicator -->
-        <div class="mt-3 pt-3" style="border-top:1px solid rgba(6,182,212,0.1);">
-          <div class="flex justify-between items-center mb-1">
-            <span class="hud-mono text-xs text-slate-600">TLAK PŘEDLOKTÍ</span>
-            <span class="hud-mono text-xs" style="color:#06b6d4;">AKTIVNÍ</span>
+        <!-- Legend -->
+        <div class="flex-1 space-y-2 pt-1">
+          <div class="text-xs font-medium text-slate-300 mb-3">Aktivační mapa</div>
+          <div class="flex items-center gap-2">
+            <div class="w-3 h-3 rounded-sm flex-shrink-0" style="background:rgba(6,182,212,0.55);"></div>
+            <span class="text-xs text-slate-400">Primární<br><span class="text-slate-500">hluboký střed, předloktí</span></span>
           </div>
-          <div class="flex gap-2">
-            <div class="flex-1 rounded-full overflow-hidden" style="height:4px; background:rgba(6,182,212,0.1);">
-              <div class="h-full rounded-full akral-active" style="width:82%; background:rgba(6,182,212,0.7);"></div>
-            </div>
-            <div class="flex-1 rounded-full overflow-hidden" style="height:4px; background:rgba(6,182,212,0.1);">
-              <div class="h-full rounded-full akral-active" style="width:78%; background:rgba(6,182,212,0.7); animation-delay:0.7s"></div>
-            </div>
+          <div class="flex items-center gap-2">
+            <div class="w-3 h-3 rounded-sm flex-shrink-0" style="background:rgba(99,102,241,0.5);"></div>
+            <span class="text-xs text-slate-400">Sekundární<br><span class="text-slate-500">stabilisátory ramen</span></span>
           </div>
-          <div class="flex justify-between mt-1">
-            <span class="hud-mono text-xs text-slate-700">L</span>
-            <span class="hud-mono text-xs text-slate-700">P</span>
+          <div class="flex items-center gap-2">
+            <div class="w-3 h-3 rounded-sm flex-shrink-0" style="background:rgba(34,197,94,0.4);"></div>
+            <span class="text-xs text-slate-400">Podpůrné<br><span class="text-slate-500">hýždě, hamstringy</span></span>
+          </div>
+          <div class="mt-3 pt-3" style="border-top:1px solid rgba(6,182,212,0.1);">
+            <div class="hud-mono text-xs text-slate-600 mb-1">AKRÁLKY</div>
+            <div class="hud-mono text-xs" style="color:#06b6d4;">2 × předloktí</div>
           </div>
         </div>
       </div>
+    </div>
 
-      <!-- Dynamic AI guidance -->
-      <div class="hud-card px-4 py-3" style="min-height:90px; overflow:hidden; position:relative;">
-        <div class="hud-mono text-xs tracking-widest mb-2" style="color:#94a3b8;">▸ CHJ PRŮVODCE</div>
-        <div id="guidance-1" class="guidance-cycle text-sm leading-relaxed text-slate-300 absolute" style="left:16px;right:16px;top:38px;">
-          Roztáhni prsty na rukou. Pevně zatlač předloktími do podložky — <span style="color:#06b6d4;">jakoby odtlač podlahu od sebe.</span>
-        </div>
-        <div id="guidance-2" class="guidance-cycle-2 text-sm leading-relaxed text-slate-300 absolute" style="left:16px;right:16px;top:38px; opacity:0;">
-          Hlava v prodloužení páteře. Pohled dolů. <span style="color:#06b6d4;">Dýchej volně do břicha</span> — nedrž dech.
-        </div>
+    <!-- AI context -->
+    <div class="card px-4 py-3">
+      <div class="hud-mono text-xs tracking-widest mb-2" style="color:#06b6d4;">▸ CHJ KONTEXT</div>
+      <p class="text-sm leading-relaxed text-slate-300">
+        Hořčík (Bisglycinát) z předchozího večera je plně vstřebán.
+        Nervosvalové spoje jsou připravené přijmout signál hlubokého středu.
+      </p>
+    </div>
+
+    <!-- Stats row -->
+    <div class="grid grid-cols-3 gap-2">
+      <div class="card-ghost px-3 py-3 text-center">
+        <div class="hud-mono text-lg font-semibold" style="color:#22c55e;">12</div>
+        <div class="hud-mono text-xs text-slate-600 mt-0.5">OPAK.</div>
+      </div>
+      <div class="card-ghost px-3 py-3 text-center">
+        <div class="hud-mono text-lg font-semibold" style="color:#22c55e;">3</div>
+        <div class="hud-mono text-xs text-slate-600 mt-0.5">SÉRIE</div>
+      </div>
+      <div class="card-ghost px-3 py-3 text-center">
+        <div class="hud-mono text-lg font-semibold" style="color:#22c55e;">L1</div>
+        <div class="hud-mono text-xs text-slate-600 mt-0.5">LEVEL</div>
+      </div>
+    </div>
+
+    <!-- START -->
+    <button onclick="goActive()"
+      class="w-full hud-mono tracking-widest rounded-xl cursor-pointer transition-all"
+      style="padding:16px;font-size:15px;color:#06b6d4;border:1px solid rgba(6,182,212,0.4);background:rgba(6,182,212,0.07);"
+      onmouseover="this.style.background='rgba(6,182,212,0.14)'"
+      onmouseout="this.style.background='rgba(6,182,212,0.07)'">
+      ▶ &nbsp;START CVIČENÍ
+    </button>
+
+  </div><!-- /pre -->
+
+
+  <!-- ══════ PHASE ACTIVE ══════ -->
+  <div id="phase-active" class="phase space-y-4">
+
+    <!-- Status bar -->
+    <div class="card px-4 py-3 flex items-center justify-between">
+      <div>
+        <div class="hud-mono text-xs tracking-widest" style="color:#06b6d4;">AKTIVNÍ FÁZE</div>
+        <div class="text-sm font-medium text-slate-200 mt-0.5">Vzpírání — série <span id="serie-num">1</span> / 3</div>
+      </div>
+      <div class="text-right">
+        <div class="blink w-2 h-2 rounded-full bg-cyan-400 inline-block"></div>
+        <div class="hud-mono text-xs text-slate-600 mt-1">LIVE</div>
+      </div>
+    </div>
+
+    <!-- Exercise photo placeholder -->
+    <div class="exercise-photo" style="height:240px;">
+      <!-- Body diagram — side view schematic for prone on elbows -->
+      <svg viewBox="0 0 320 240" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" style="position:absolute;inset:0;">
+
+        <!-- Floor line -->
+        <line x1="20" y1="185" x2="300" y2="185" stroke="rgba(6,182,212,0.15)" stroke-width="1" stroke-dasharray="6,4"/>
+        <text x="250" y="196" font-family="JetBrains Mono" font-size="9" fill="rgba(6,182,212,0.4)">PODLOŽKA</text>
+
+        <!-- ─ LEGS (side view, horizontal) ─ -->
+        <!-- Thigh -->
+        <rect x="170" y="158" width="95" height="18" rx="9" fill="#1e293b" stroke="#334155"/>
+        <!-- Lower leg -->
+        <rect x="175" y="168" width="90" height="14" rx="7" fill="#1e293b" stroke="#2d3f55"/>
+        <!-- Foot -->
+        <rect x="252" y="172" width="22" height="10" rx="5" fill="#1e293b" stroke="#334155"/>
+
+        <!-- ─ PELVIS / HIP ─ -->
+        <ellipse cx="175" cy="165" rx="20" ry="16" fill="#1e293b" stroke="#334155"/>
+
+        <!-- ─ TORSO (horizontal, lifted slightly) ─ -->
+        <path d="M80,138 Q90,125 175,138 Q175,165 80,160 Z" fill="#1e293b" stroke="#334155"/>
+        <!-- Spine line -->
+        <path d="M85,148 Q130,136 172,148" fill="none" stroke="rgba(6,182,212,0.2)" stroke-width="1" stroke-dasharray="4,3"/>
+
+        <!-- ─ HEAD ─ -->
+        <ellipse cx="65" cy="140" rx="22" ry="19" fill="#1e293b" stroke="#334155"/>
+        <!-- Face direction -->
+        <circle cx="52" cy="138" r="4" fill="rgba(6,182,212,0.1)" stroke="rgba(6,182,212,0.3)"/>
+
+        <!-- ─ LEFT ARM (L forearm on ground) ─ -->
+        <!-- upper arm -->
+        <rect x="82" y="148" width="12" height="32" rx="6" fill="#1e293b" stroke="#334155" transform="rotate(-10 88 164)"/>
+        <!-- forearm — PRIMARY AKRAL, horizontal on floor -->
+        <rect x="58" y="172" width="58" height="14" rx="7" fill="rgba(6,182,212,0.12)" stroke="#06b6d4" stroke-width="1.5"/>
+
+        <!-- ─ AKRÁLKY — ELBOW ─ -->
+        <!-- ring -->
+        <circle class="ring-anim" cx="60" cy="179" r="10" fill="none" stroke="rgba(6,182,212,0.5)" stroke-width="1.5"/>
+        <!-- dot -->
+        <circle class="akral-pulse" cx="60" cy="179" r="8" fill="rgba(6,182,212,0.2)" stroke="#06b6d4" stroke-width="2"/>
+        <circle cx="60" cy="179" r="3.5" fill="#06b6d4"/>
+
+        <!-- ─ HAND / WRIST ─ -->
+        <ellipse cx="114" cy="179" rx="9" ry="6" fill="rgba(6,182,212,0.1)" stroke="rgba(6,182,212,0.4)"/>
+        <!-- fingers spread -->
+        <line x1="110" y1="175" x2="107" y2="169" stroke="rgba(6,182,212,0.4)" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="114" y1="174" x2="113" y2="168" stroke="rgba(6,182,212,0.4)" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="118" y1="174" x2="119" y2="169" stroke="rgba(6,182,212,0.4)" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="121" y1="176" x2="124" y2="171" stroke="rgba(6,182,212,0.4)" stroke-width="1.5" stroke-linecap="round"/>
+
+        <!-- ─ PRESS ARROWS ─ -->
+        <!-- Down into floor -->
+        <g class="arr2">
+          <line x1="60" y1="190" x2="60" y2="200" stroke="#06b6d4" stroke-width="1.5"/>
+          <polygon points="60,205 56,197 64,197" fill="#06b6d4"/>
+        </g>
+        <!-- Up (reactive) -->
+        <g class="arr">
+          <line x1="60" y1="165" x2="60" y2="155" stroke="rgba(6,182,212,0.6)" stroke-width="1.5" stroke-dasharray="3,2"/>
+          <polygon points="60,150 56,158 64,158" fill="rgba(6,182,212,0.6)"/>
+        </g>
+
+        <!-- Activation glow on torso core -->
+        <ellipse cx="128" cy="148" rx="30" ry="12" fill="none" stroke="rgba(6,182,212,0.2)" stroke-width="1" stroke-dasharray="4,3" class="akral-pulse"/>
+
+        <!-- LABEL -->
+        <text x="155" y="30" font-family="JetBrains Mono" font-size="11" fill="#06b6d4" text-anchor="middle" opacity=".6">POHLED ZE STRANY</text>
+
+        <!-- Label - forearm press -->
+        <text x="30" y="215" font-family="JetBrains Mono" font-size="8" fill="#06b6d4" opacity=".7">↓ TLAK PŘEDLOKTÍ</text>
+        <text x="90" y="215" font-family="JetBrains Mono" font-size="8" fill="rgba(6,182,212,0.5)" opacity=".7">→ AKTIVACE STŘEDU</text>
+      </svg>
+
+      <!-- Exercise name overlay -->
+      <div style="position:absolute;bottom:12px;left:12px;right:12px;">
+        <div class="hud-mono text-xs tracking-widest mb-1" style="color:#06b6d4;">VZPÍRÁNÍ V POLOZE NA BŘIŠE</div>
+        <div class="text-xs text-slate-500">(Aktivní)</div>
+      </div>
+    </div>
+
+    <!-- Rep counter — main -->
+    <div class="card px-5 py-4">
+      <span class="hc hc-tl"></span><span class="hc hc-br"></span>
+      <div class="flex items-center justify-between mb-3">
+        <div class="hud-mono text-xs tracking-widest text-slate-600">OPAKOVÁNÍ</div>
+        <div class="hud-mono text-xs text-slate-600">SÉRIE <span id="s-cur">1</span>/3</div>
       </div>
 
-      <!-- Stop button -->
-      <button onclick="finishPhase()" class="w-full hud-mono tracking-widest rounded-xl cursor-pointer"
-        style="padding:14px; font-size:14px; color:#BED255; border:1px solid rgba(190,210,85,0.3); background:rgba(190,210,85,0.07);"
-        onmouseover="this.style.background='rgba(190,210,85,0.13)'"
-        onmouseout="this.style.background='rgba(190,210,85,0.07)'"
-      >
-        ⏹ &nbsp;DOKONČIT
+      <!-- Big counter -->
+      <div class="text-center mb-4">
+        <span id="rep-display" class="hud-mono font-semibold tabular-nums"
+          style="font-size:3.5rem; color:#e2e8f0; text-shadow:0 0 24px rgba(6,182,212,0.35); line-height:1;">
+          0
+        </span>
+        <span class="hud-mono text-xl text-slate-600"> / 12</span>
+      </div>
+
+      <!-- Rep progress bar -->
+      <div class="rounded-full overflow-hidden mb-2" style="height:7px; background:rgba(255,255,255,0.06);">
+        <div id="rep-bar" class="h-full rounded-full" style="width:0%;"></div>
+      </div>
+      <div class="flex justify-between hud-mono text-xs text-slate-700 mb-4">
+        <span>0</span><span>6</span><span>12</span>
+      </div>
+
+      <!-- REP BUTTON -->
+      <button onclick="addRep()"
+        class="w-full rounded-xl hud-mono tracking-widest cursor-pointer transition-all mb-3"
+        style="padding:15px; font-size:15px; color:#22d3ee; border:1px solid rgba(6,182,212,0.35); background:rgba(6,182,212,0.08);"
+        onmouseover="this.style.background='rgba(6,182,212,0.16)'"
+        onmouseout="this.style.background='rgba(6,182,212,0.08)'">
+        + 1 OPAKOVÁNÍ
       </button>
 
-    </div><!-- /phase-active -->
+      <!-- Skip to finish (demo) -->
+      <button onclick="goPost()"
+        class="w-full rounded-xl hud-mono tracking-widest cursor-pointer text-slate-600"
+        style="padding:10px; font-size:12px; border:1px solid rgba(255,255,255,0.06); background:transparent;"
+        onmouseover="this.style.color='#94a3b8'"
+        onmouseout="this.style.color='#475569'">
+        ⏹ DOKONČIT
+      </button>
+    </div>
+
+    <!-- Guidance -->
+    <div class="card px-4 py-3" style="min-height:80px; position:relative; overflow:hidden;">
+      <div class="hud-mono text-xs tracking-widest mb-2" style="color:#94a3b8;">▸ CHJ PRŮVODCE</div>
+      <div class="gc1 text-sm leading-relaxed text-slate-300 absolute" style="left:16px;right:16px;top:38px;">
+        Roztáhni prsty. Pevně zatlač předloktím do podložky — <span style="color:#06b6d4;">odtlač podlahu od sebe.</span>
+      </div>
+      <div class="gc2 text-sm leading-relaxed text-slate-300 absolute" style="left:16px;right:16px;top:38px;opacity:0;">
+        Hlava v prodloužení páteře. <span style="color:#06b6d4;">Dýchej volně</span> — nepřerušuj výdech.
+      </div>
+    </div>
+
+  </div><!-- /active -->
 
 
-    <!-- ══════════════════════════════════════
-         PHASE 3 — POST
-    ══════════════════════════════════════ -->
-    <div id="phase-post" class="phase space-y-4">
+  <!-- ══════ PHASE POST ══════ -->
+  <div id="phase-post" class="phase space-y-4">
 
-      <!-- Success -->
-      <div class="hud-card-green px-4 py-4">
-        <div class="hud-mono text-xs tracking-widest mb-2" style="color:#22c55e;">✔ RELACE DOKONČENA</div>
-        <div class="text-base font-semibold text-slate-100 mb-1">Skvělá práce.</div>
-        <p class="text-sm text-slate-400 leading-relaxed">
-          Nervová soustava úspěšně aktivovala hluboký střed těla skrze opěrné body.
-          Signál byl přijat.
+    <!-- CHJ Asistent header -->
+    <div class="card card-green px-4 py-4">
+      <div class="flex items-start gap-3">
+        <!-- Avatar -->
+        <div class="flex-shrink-0 w-11 h-11 rounded-full flex items-center justify-center text-xl"
+          style="background:rgba(6,182,212,0.12); border:1px solid rgba(6,182,212,0.3);">
+          🧠
+        </div>
+        <div>
+          <div class="hud-mono text-xs tracking-widest mb-1" style="color:#22c55e;">CHJ ASISTENT</div>
+          <div class="text-base font-semibold text-slate-100 mb-1">Výborně!</div>
+          <p class="text-sm text-slate-400 leading-relaxed">
+            Nervová soustava úspěšně aktivovala hluboký střed těla. Signál skrze akrálky byl přijat.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- SÍLA STEHEN chart -->
+    <div class="card px-4 py-4">
+      <div class="hud-mono text-xs tracking-widest mb-1 text-slate-600">SÍLA STŘEDU TĚLA</div>
+      <div class="flex items-baseline gap-2 mb-3">
+        <span class="hud-mono text-2xl font-semibold" style="color:#22c55e;">+10 %</span>
+        <span class="text-xs text-slate-600">tato relace</span>
+        <span class="ml-auto hud-mono text-sm text-slate-300">68 %</span>
+      </div>
+
+      <!-- SVG sparkline -->
+      <svg viewBox="0 0 280 80" width="100%" height="80" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="sparkGrad" x1="0" x2="1" y1="0" y2="0">
+            <stop offset="0%" stop-color="#06b6d4"/>
+            <stop offset="100%" stop-color="#22c55e"/>
+          </linearGradient>
+          <linearGradient id="areaGrad" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stop-color="rgba(6,182,212,0.25)"/>
+            <stop offset="100%" stop-color="rgba(6,182,212,0)"/>
+          </linearGradient>
+        </defs>
+        <!-- Y axis grid -->
+        <line x1="0" y1="20" x2="280" y2="20" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+        <line x1="0" y1="40" x2="280" y2="40" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+        <line x1="0" y1="60" x2="280" y2="60" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+        <!-- Y labels -->
+        <text x="0" y="23" font-family="JetBrains Mono" font-size="8" fill="rgba(255,255,255,0.2)">100</text>
+        <text x="0" y="43" font-family="JetBrains Mono" font-size="8" fill="rgba(255,255,255,0.2)">60</text>
+        <text x="0" y="63" font-family="JetBrains Mono" font-size="8" fill="rgba(255,255,255,0.2)">20</text>
+        <!-- Area -->
+        <path class="spark-area" d="M30,72 L60,64 L90,58 L120,50 L150,44 L180,38 L210,32 L240,26 L255,22 L255,80 L30,80 Z"/>
+        <!-- Line -->
+        <path class="spark-line" d="M30,72 L60,64 L90,58 L120,50 L150,44 L180,38 L210,32 L240,26 L255,22"/>
+        <!-- Last point — current -->
+        <circle cx="255" cy="22" r="4" fill="#22c55e" style="filter:drop-shadow(0 0 6px rgba(34,197,94,0.7))"/>
+        <!-- X labels -->
+        <text x="26" y="78" font-family="JetBrains Mono" font-size="8" fill="rgba(255,255,255,0.2)">Týden 1</text>
+        <text x="230" y="78" font-family="JetBrains Mono" font-size="8" fill="rgba(255,255,255,0.2)">Dnes</text>
+      </svg>
+    </div>
+
+    <!-- Vstřebatelnost Mg — DONUT -->
+    <div class="card px-4 py-4">
+      <div class="flex items-center gap-4">
+        <!-- Donut SVG -->
+        <div class="flex-shrink-0 relative" style="width:72px;height:72px;">
+          <svg viewBox="0 0 80 80" width="72" height="72" xmlns="http://www.w3.org/2000/svg">
+            <circle class="donut-ring donut-bg" cx="40" cy="40" r="30"/>
+            <circle class="donut-ring donut-fill" cx="40" cy="40" r="30"
+              stroke-dasharray="141 47" <!-- 75% of 188 circumference ≈ 141 -->
+            />
+          </svg>
+          <div class="absolute inset-0 flex items-center justify-center">
+            <span class="hud-mono text-sm font-semibold" style="color:#06b6d4;">75%</span>
+          </div>
+        </div>
+        <!-- Text -->
+        <div>
+          <div class="hud-mono text-xs tracking-widest mb-1" style="color:#94a3b8;">VSTŘEBATELNOST Mg</div>
+          <div class="text-sm font-medium text-slate-200 mb-1">Bisglycinát (150 mg)</div>
+          <div class="text-xs text-slate-500 leading-relaxed">v plné síle. Nervosvalový přenos optimální.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Biofeedback -->
+    <div class="card px-4 py-4">
+      <div class="hud-mono text-xs tracking-widest mb-1 text-slate-600">BIOFEEDBACK</div>
+      <div class="text-sm text-slate-400 mb-3">Pocit v krční páteři:</div>
+      <div class="flex gap-3 mb-3">
+        <button id="fb-ok" class="fb flex-1 rounded-xl py-3 text-sm font-medium text-slate-400"
+          style="border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.03);"
+          onclick="feedback('ok')">✓ &nbsp;OK</button>
+        <button id="fb-bad" class="fb flex-1 rounded-xl py-3 text-sm font-medium text-slate-400"
+          style="border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.03);"
+          onclick="feedback('bad')">⚡ Napětí</button>
+      </div>
+      <div id="fb-correction" style="display:none;" class="rounded-xl px-3 py-3"
+        style="background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);">
+        <div class="hud-mono text-xs tracking-widest mb-1" style="color:#ef4444;">▸ ACT KOREKCE</div>
+        <p class="text-sm text-slate-300 leading-relaxed">
+          Příště zasuň bradu dozadu — <strong class="text-slate-100">jako bys dělal druhou bradu</strong>.
+          Ramena dolů od uší. Uloženo do profilu.
         </p>
       </div>
-
-      <!-- Progress indicator -->
-      <div class="hud-card px-4 py-4">
-        <div class="hud-mono text-xs tracking-widest mb-3" style="color:#94a3b8;">REAKTIVITA STŘEDU TĚLA</div>
-        <div class="flex items-end gap-3 mb-3">
-          <div>
-            <div class="hud-mono text-2xl font-semibold" style="color:#22c55e;">+10 %</div>
-            <div class="hud-mono text-xs text-slate-600">tato relace</div>
-          </div>
-          <div style="width:1px; height:40px; background:rgba(6,182,212,0.15);"></div>
-          <div>
-            <div class="hud-mono text-2xl font-semibold text-slate-300">68 %</div>
-            <div class="hud-mono text-xs text-slate-600">celkový index</div>
-          </div>
-        </div>
-        <!-- Progress bar -->
-        <div class="rounded-full overflow-hidden mb-1" style="height:8px; background:rgba(255,255,255,0.06);">
-          <div class="h-full rounded-full progress-grow" style="width:58%; background: linear-gradient(90deg, #22c55e, #06b6d4);"></div>
-        </div>
-        <div class="flex justify-between">
-          <span class="hud-mono text-xs text-slate-700">0</span>
-          <span class="hud-mono text-xs text-slate-700">před: 58%</span>
-          <span class="hud-mono text-xs text-slate-700" style="color:#22c55e;">→ 68%</span>
-          <span class="hud-mono text-xs text-slate-700">100</span>
-        </div>
-        <!-- Mini sparkline (static demo) -->
-        <div class="mt-3 pt-3" style="border-top:1px solid rgba(6,182,212,0.1);">
-          <div class="hud-mono text-xs text-slate-700 mb-2">7 DNÍ</div>
-          <div class="flex items-end gap-1" style="height:28px;">
-            <div class="flex-1 rounded-sm" style="height:40%; background:rgba(6,182,212,0.25);"></div>
-            <div class="flex-1 rounded-sm" style="height:55%; background:rgba(6,182,212,0.3);"></div>
-            <div class="flex-1 rounded-sm" style="height:45%; background:rgba(6,182,212,0.25);"></div>
-            <div class="flex-1 rounded-sm" style="height:60%; background:rgba(6,182,212,0.35);"></div>
-            <div class="flex-1 rounded-sm" style="height:50%; background:rgba(6,182,212,0.3);"></div>
-            <div class="flex-1 rounded-sm" style="height:65%; background:rgba(6,182,212,0.35);"></div>
-            <div class="flex-1 rounded-sm" style="height:100%; background:#22c55e; box-shadow:0 0 8px rgba(34,197,94,0.5);"></div>
-          </div>
-        </div>
+      <div id="fb-ok-msg" style="display:none;" class="rounded-xl px-3 py-2"
+        style="background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.2);">
+        <p class="text-sm text-slate-400">
+          Výborně. Cervikální segment reaguje správně. <span style="color:#22c55e;">Pokračuj v tomto nastavení.</span>
+        </p>
       </div>
+    </div>
 
-      <!-- Biofeedback -->
-      <div class="hud-card px-4 py-4">
-        <div class="hud-mono text-xs tracking-widest mb-1" style="color:#94a3b8;">BIOFEEDBACK</div>
-        <div class="text-sm text-slate-400 mb-3">Jak se cítí krční páteř?</div>
-        <div class="flex gap-3">
-          <button id="fb-ok" class="fb-btn flex-1 rounded-xl py-3 text-sm font-medium text-slate-400"
-            style="border:1px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.03);"
-            onclick="selectFeedback('ok')"
-          >
-            ✓ &nbsp;V pořádku
-          </button>
-          <button id="fb-bad" class="fb-btn flex-1 rounded-xl py-3 text-sm font-medium text-slate-400"
-            style="border:1px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.03);"
-            onclick="selectFeedback('bad')"
-          >
-            ⚡ Cítím napětí
-          </button>
-        </div>
-
-        <!-- Correction text (hidden by default) -->
-        <div id="correction" class="mt-3 rounded-lg px-3 py-3" style="display:none; background:rgba(239,68,68,0.06); border:1px solid rgba(239,68,68,0.2);">
-          <div class="hud-mono text-xs tracking-widest mb-1" style="color:#ef4444;">▸ ACT KOREKCE</div>
-          <p class="text-sm leading-relaxed text-slate-300">
-            Příště zasuň bradu víc dozadu — jako bys dělal <strong class="text-slate-100">druhou bradu</strong>.
-            Ramena dolů od uší. Signál z akrálek pak cestuje páteří volněji.
-          </p>
-          <div class="mt-2 pt-2 hud-mono text-xs text-slate-600" style="border-top:1px solid rgba(239,68,68,0.1);">
-            Uloženo do profilu → příští instrukce bude upravena.
-          </div>
-        </div>
-
-        <!-- OK message (hidden by default) -->
-        <div id="ok-msg" class="mt-3 rounded-lg px-3 py-2" style="display:none; background:rgba(34,197,94,0.06); border:1px solid rgba(34,197,94,0.2);">
-          <p class="text-sm text-slate-400">
-            Výborně. Cervikální segment reaguje správně. <span style="color:#22c55e;">Pokračuj v tomto nastavení.</span>
-          </p>
-        </div>
+    <!-- Next session -->
+    <div class="card card-warm px-4 py-3">
+      <div class="hud-mono text-xs tracking-widest mb-2" style="color:#eab308;">PŘÍŠTÍ RELACE</div>
+      <div class="flex items-center justify-between">
+        <span class="text-sm text-slate-300">Vzpírání — Level 1, série 2</span>
+        <span class="hud-mono text-xs" style="color:#eab308;">zítra</span>
       </div>
+      <div class="hud-mono text-xs text-slate-700 mt-1">Nervová konsolidace vzoru: tato noc.</div>
+    </div>
 
-      <!-- Next session -->
-      <div class="hud-card-warm px-4 py-3">
-        <div class="hud-mono text-xs tracking-widest mb-2" style="color:#eab308;">DALŠÍ RELACE</div>
-        <div class="flex items-center justify-between">
-          <span class="text-sm text-slate-400">Vzpírání — prodloužená verze</span>
-          <span class="hud-mono text-xs" style="color:#eab308;">30s · zítra</span>
-        </div>
-        <div class="mt-2 hud-mono text-xs text-slate-600">
-          Střed těla absorbuje dnešní vzor. Nervová konsolidace: noc.
-        </div>
-      </div>
+    <!-- Demo reset -->
+    <button onclick="reset()"
+      class="w-full hud-mono text-xs tracking-widest rounded-xl cursor-pointer text-slate-700"
+      style="padding:12px;border:1px solid rgba(71,85,105,0.15);background:transparent;"
+      onmouseover="this.style.background='rgba(71,85,105,0.06)'"
+      onmouseout="this.style.background='transparent'">
+      ↺ &nbsp;RESET DEMO
+    </button>
 
-      <!-- Reset (demo only) -->
-      <button onclick="resetDemo()" class="w-full hud-mono tracking-widest rounded-xl cursor-pointer"
-        style="padding:12px; font-size:12px; color:#475569; border:1px solid rgba(71,85,105,0.2); background:transparent;"
-        onmouseover="this.style.background='rgba(71,85,105,0.06)'"
-        onmouseout="this.style.background='transparent'"
-      >
-        ↺ &nbsp;RESET DEMO
-      </button>
+  </div><!-- /post -->
 
-    </div><!-- /phase-post -->
+</div><!-- /container -->
 
-  </div><!-- /container -->
+<script>
+  // ── PHASES ───────────────────────────────────────────
+  function show(id) {
+    document.querySelectorAll('.phase').forEach(p => p.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+  }
+  function goActive() { show('phase-active'); }
+  function goPost()   { show('phase-post'); }
 
-  <script>
-    // ── PHASE MANAGEMENT ──────────────────────────────────────────
-    let timerInterval = null;
-    let timerSeconds  = 15;
+  // ── REPS ─────────────────────────────────────────────
+  let reps = 0, series = 1;
+  const MAX_REPS = 12, MAX_SERIES = 3;
 
-    function showPhase(id) {
-      document.querySelectorAll('.phase').forEach(p => p.classList.remove('active'));
-      document.getElementById(id).classList.add('active');
-    }
+  function addRep() {
+    reps++;
+    const disp = document.getElementById('rep-display');
+    disp.classList.remove('rep-pop');
+    void disp.offsetWidth; // reflow
+    disp.classList.add('rep-pop');
+    disp.textContent = reps;
+    document.getElementById('rep-bar').style.width = (reps / MAX_REPS * 100) + '%';
 
-    // PRE → ACTIVE
-    function startPhase() {
-      showPhase('phase-active');
-      startTimer();
-    }
-
-    // ACTIVE → POST
-    function finishPhase() {
-      clearInterval(timerInterval);
-      showPhase('phase-post');
-    }
-
-    // Reset to PRE
-    function resetDemo() {
-      clearInterval(timerInterval);
-      timerSeconds = 15;
-      // Reset timer display
-      document.getElementById('timer-display').textContent = '15';
-      document.getElementById('timer-pct').textContent = '100%';
-      document.getElementById('timer-pct').style.color = '#22c55e';
-      document.getElementById('timer-bar').style.width = '100%';
-      document.getElementById('timer-bar').style.background = '#22c55e';
-      // Reset biofeedback
-      document.getElementById('fb-ok').className = 'fb-btn flex-1 rounded-xl py-3 text-sm font-medium text-slate-400';
-      document.getElementById('fb-ok').style.cssText = 'border:1px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.03);';
-      document.getElementById('fb-bad').className = 'fb-btn flex-1 rounded-xl py-3 text-sm font-medium text-slate-400';
-      document.getElementById('fb-bad').style.cssText = 'border:1px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.03);';
-      document.getElementById('correction').style.display = 'none';
-      document.getElementById('ok-msg').style.display = 'none';
-      showPhase('phase-pre');
-    }
-
-    // ── TIMER ─────────────────────────────────────────────────────
-    function startTimer() {
-      timerSeconds = 15;
-      updateTimerDisplay();
-
-      timerInterval = setInterval(() => {
-        timerSeconds--;
-        updateTimerDisplay();
-        if (timerSeconds <= 0) {
-          clearInterval(timerInterval);
-          setTimeout(() => finishPhase(), 400);
-        }
-      }, 1000);
-    }
-
-    function updateTimerDisplay() {
-      const total = 15;
-      const pct   = Math.round((timerSeconds / total) * 100);
-
-      document.getElementById('timer-display').textContent = timerSeconds;
-      document.getElementById('timer-pct').textContent     = pct + '%';
-
-      const bar = document.getElementById('timer-bar');
-      bar.style.width = pct + '%';
-
-      // Color transitions
-      if (pct > 60) {
-        bar.style.background = '#22c55e';
-        document.getElementById('timer-pct').style.color = '#22c55e';
-      } else if (pct > 30) {
-        bar.style.background = '#eab308';
-        document.getElementById('timer-pct').style.color = '#eab308';
+    if (reps >= MAX_REPS) {
+      if (series < MAX_SERIES) {
+        series++;
+        reps = 0;
+        setTimeout(() => {
+          document.getElementById('rep-display').textContent = reps;
+          document.getElementById('rep-bar').style.width = '0%';
+          document.getElementById('s-cur').textContent = series;
+          document.getElementById('serie-num').textContent = series;
+        }, 600);
       } else {
-        bar.style.background = '#ef4444';
-        document.getElementById('timer-pct').style.color = '#ef4444';
+        setTimeout(() => goPost(), 700);
       }
     }
 
-    // ── BIOFEEDBACK ───────────────────────────────────────────────
-    function selectFeedback(type) {
-      const btnOk  = document.getElementById('fb-ok');
-      const btnBad = document.getElementById('fb-bad');
-      const corr   = document.getElementById('correction');
-      const okMsg  = document.getElementById('ok-msg');
+    if (navigator.vibrate) navigator.vibrate(30);
+  }
 
-      // Reset both
-      btnOk.classList.remove('selected-ok','selected-bad');
-      btnBad.classList.remove('selected-ok','selected-bad');
-      btnOk.style.cssText  = 'border:1px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.03);';
-      btnBad.style.cssText = 'border:1px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.03);';
-      corr.style.display  = 'none';
-      okMsg.style.display = 'none';
+  // ── BIOFEEDBACK ───────────────────────────────────────
+  function feedback(type) {
+    ['fb-ok','fb-bad'].forEach(id => {
+      document.getElementById(id).classList.remove('ok-sel','bad-sel');
+      document.getElementById(id).style.cssText = 'border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.03);';
+    });
+    document.getElementById('fb-correction').style.display = 'none';
+    document.getElementById('fb-ok-msg').style.display = 'none';
 
-      if (type === 'ok') {
-        btnOk.classList.add('selected-ok');
-        okMsg.style.display = 'block';
-        okMsg.style.animation = 'fadeIn 0.35s ease forwards';
-      } else {
-        btnBad.classList.add('selected-bad');
-        corr.style.display = 'block';
-        corr.style.animation = 'fadeIn 0.35s ease forwards';
-      }
+    if (type === 'ok') {
+      document.getElementById('fb-ok').classList.add('ok-sel');
+      const m = document.getElementById('fb-ok-msg');
+      m.style.display = 'block';
+      m.style.cssText = 'display:block;background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.2);border-radius:12px;padding:10px 12px;';
+    } else {
+      document.getElementById('fb-bad').classList.add('bad-sel');
+      const c = document.getElementById('fb-correction');
+      c.style.display = 'block';
+      c.style.cssText = 'display:block;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);border-radius:12px;padding:12px;';
     }
-  </script>
+  }
 
+  // ── RESET ─────────────────────────────────────────────
+  function reset() {
+    reps = 0; series = 1;
+    document.getElementById('rep-display').textContent = '0';
+    document.getElementById('rep-bar').style.width = '0%';
+    document.getElementById('s-cur').textContent = '1';
+    document.getElementById('serie-num').textContent = '1';
+    ['fb-ok','fb-bad'].forEach(id => {
+      document.getElementById(id).classList.remove('ok-sel','bad-sel');
+      document.getElementById(id).style.cssText = 'border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.03);';
+    });
+    document.getElementById('fb-correction').style.display = 'none';
+    document.getElementById('fb-ok-msg').style.display = 'none';
+    show('phase-pre');
+  }
+</script>
 </body>
 </html>
