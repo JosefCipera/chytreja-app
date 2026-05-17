@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lehkost — Bottleneck architektura</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #070d1a;
+    color: #e2e8f0;
+    font-family: system-ui, -apple-system, sans-serif;
+    min-height: 100vh;
+    padding: 28px 16px 60px;
+  }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+  .container { max-width: 760px; margin: 0 auto; }
+
+  /* Header */
+  .page-header { text-align: center; margin-bottom: 36px; }
+  .page-header .eyebrow { font-size: 10px; letter-spacing: 0.18em; color: #1e3a5f; font-family: monospace; margin-bottom: 10px; }
+  .page-header h1 { font-size: 14px; color: #475569; font-weight: 400; letter-spacing: 0.06em; }
+
+  /* Two-column layout */
+  .layout { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+
+  /* Section labels */
+  .section-label { font-size: 10px; font-family: monospace; letter-spacing: 0.15em; color: #1e3a5f; text-transform: uppercase; margin-bottom: 10px; }
+
+  /* ── Battery card ── */
+  .battery-card {
+    background: rgba(15, 23, 42, 0.9);
+    border: 1px solid rgba(6,182,212,0.2);
+    border-radius: 14px;
+    padding: 16px;
+    box-shadow: 0 0 40px rgba(6,182,212,0.05);
+    position: relative;
+    overflow: hidden;
+  }
+  .battery-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .battery-label { font-family: monospace; font-size: 16px; color: #c8d4df; font-weight: 300; letter-spacing: 0.04em; }
+  .battery-pct { font-family: monospace; font-size: 13px; }
+  .battery-trend { font-family: monospace; font-size: 12px; }
+
+  /* Segments */
+  .segments-wrap {
+    display: flex; align-items: center; gap: 0; margin-bottom: 0;
+  }
+  .segments {
+    flex: 1;
+    background: rgba(0,0,0,0.55);
+    border: 2px solid rgba(255,255,255,0.07);
+    border-right: none;
+    border-radius: 6px 0 0 6px;
+    padding: 4px;
+    position: relative;
+  }
+  .segments-inner { display: flex; gap: 3px; }
+  .seg {
+    flex: 1; border-radius: 2px; height: 72px;
+    transition: background 0.3s;
+  }
+  .seg.filled { }
+  .seg.empty { background: rgba(255,255,255,0.025); border: 1px solid rgba(255,255,255,0.015); }
+  .watermark {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-family: monospace; font-weight: 900; font-size: 18px;
+    letter-spacing: 0.02em; pointer-events: none; z-index: 2;
+  }
+  .watermark span {
+    background: rgba(0,0,0,0.55);
+    padding: 3px 12px; border-radius: 4px;
+  }
+  .battery-nub {
+    width: 10px; height: 44px;
+    background: rgba(255,255,255,0.06);
+    border: 2px solid rgba(255,255,255,0.06);
+    border-left: none;
+    border-radius: 0 4px 4px 0;
+  }
+
+  /* Colors */
+  .green  { color: #22c55e; }
+  .yellow { color: #eab308; }
+  .red    { color: #ef4444; }
+  .cyan   { color: #06b6d4; }
+  .muted  { color: #64748b; }
+
+  .seg-green  { background: rgba(34,197,94,0.72);  box-shadow: 0 0 6px rgba(34,197,94,0.4); }
+  .seg-yellow { background: rgba(234,179,8,0.72);  box-shadow: 0 0 6px rgba(234,179,8,0.4); }
+  .seg-red    { background: rgba(239,68,68,0.72);  box-shadow: 0 0 6px rgba(239,68,68,0.4); }
+
+  .glow-green  { box-shadow: 0 0 24px rgba(34,197,94,0.2); }
+  .glow-yellow { box-shadow: 0 0 24px rgba(234,179,8,0.2); border-color: rgba(234,179,8,0.2) !important; }
+  .glow-red    { box-shadow: 0 0 24px rgba(239,68,68,0.25); border-color: rgba(239,68,68,0.2) !important; }
+
+  /* ── Sub-nodes grid ── */
+  .subnodes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  .sub-card {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 12px;
+  }
+  .sub-card.bottleneck {
+    border-color: rgba(239,68,68,0.4);
+    background: rgba(239,68,68,0.04);
+    box-shadow: 0 0 16px rgba(239,68,68,0.1);
+  }
+  .sub-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .sub-name { font-size: 11px; color: #94a3b8; font-family: monospace; letter-spacing: 0.08em; }
+  .sub-pct  { font-size: 12px; font-family: monospace; font-weight: 600; }
+  .sub-bar-wrap { height: 6px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden; }
+  .sub-bar { height: 100%; border-radius: 3px; transition: width 0.5s; }
+  .sub-status { font-size: 10px; color: #475569; margin-top: 6px; font-family: monospace; }
+
+  /* ── Connector arrow ── */
+  .connector-area {
+    display: flex; align-items: center; justify-content: center;
+    padding: 8px 0; position: relative;
+  }
+  .arrow-line {
+    width: 2px; height: 40px;
+    background: linear-gradient(to bottom, rgba(239,68,68,0.6), rgba(239,68,68,0.1));
+    margin: 0 auto;
+    position: relative;
+  }
+  .arrow-line::after {
+    content: '↓';
+    position: absolute; bottom: -18px; left: 50%; transform: translateX(-50%);
+    color: rgba(239,68,68,0.5); font-size: 14px;
+  }
+  .connector-label {
+    position: absolute; left: 50%; transform: translateX(-50%);
+    font-size: 9px; font-family: monospace; letter-spacing: 0.1em;
+    color: #ef4444; opacity: 0.6; white-space: nowrap; top: 50%; margin-top: -6px;
+    background: #070d1a; padding: 0 8px;
+  }
+
+  /* ── Killer card ── */
+  .killer-card {
+    margin-top: 12px;
+    background: rgba(239,68,68,0.06);
+    border: 1px solid rgba(239,68,68,0.25);
+    border-radius: 10px;
+    padding: 12px 14px;
+    display: flex; gap: 10px; align-items: flex-start;
+  }
+  .killer-icon { font-size: 18px; flex-shrink: 0; }
+  .killer-label { font-size: 10px; font-family: monospace; letter-spacing: 0.12em; color: #ef4444; margin-bottom: 3px; }
+  .killer-name  { font-size: 14px; color: #fca5a5; font-weight: 500; margin-bottom: 2px; }
+  .killer-desc  { font-size: 11px; color: #64748b; }
+
+  /* ── Explanation boxes ── */
+  .explain {
+    margin-top: 32px;
+    display: grid; grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+  }
+  .explain-box {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 10px;
+    padding: 14px;
+  }
+  .explain-box .eb-num {
+    font-size: 10px; font-family: monospace; color: #334155;
+    margin-bottom: 6px; letter-spacing: 0.1em;
+  }
+  .explain-box .eb-title { font-size: 12px; color: #94a3b8; font-weight: 500; margin-bottom: 4px; }
+  .explain-box .eb-text  { font-size: 11px; color: #475569; line-height: 1.5; }
+  .explain-box.highlight { border-color: rgba(6,182,212,0.2); background: rgba(6,182,212,0.03); }
+
+  /* ── vs. comparison ── */
+  .vs-row {
+    margin-top: 32px;
+    display: grid; grid-template-columns: 1fr auto 1fr;
+    gap: 0; align-items: start;
+  }
+  .vs-col {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 12px;
+    padding: 16px;
+  }
+  .vs-col.current { opacity: 0.5; }
+  .vs-col.new { border-color: rgba(6,182,212,0.2); background: rgba(6,182,212,0.03); }
+  .vs-title { font-size: 10px; font-family: monospace; letter-spacing: 0.12em; color: #334155; margin-bottom: 10px; }
+  .vs-title.new-label { color: #06b6d4; }
+  .vs-item { font-size: 12px; color: #64748b; padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.04); line-height: 1.4; }
+  .vs-item:last-child { border: none; }
+  .vs-item .vi-key { color: #94a3b8; }
+  .vs-sep {
+    display: flex; align-items: center; justify-content: center;
+    padding: 0 12px; font-size: 18px; color: #1e3a5f; margin-top: 40px;
+  }
+
+  @media (max-width: 580px) {
+    .layout { grid-template-columns: 1fr; }
+    .explain { grid-template-columns: 1fr; }
+    .vs-row { grid-template-columns: 1fr; gap: 8px; }
+    .vs-sep { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="page-header">
+    <div class="eyebrow mono">MOCKUP · Lehkost — Bottleneck architektura</div>
+    <h1>lh_main = nejhorší dítě &nbsp;·&nbsp; stejná mechanika jako Longevity</h1>
+  </div>
+
+  <div class="layout">
+
+    <!-- LEFT: lh_main battery -->
+    <div>
+      <div class="section-label mono">Hlavní uzel</div>
+      <div class="battery-card glow-red">
+        <div class="battery-header">
+          <span class="battery-label mono">BODY FLOW</span>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span class="battery-pct red mono">38%</span>
+            <span class="muted mono" style="font-size:13px;">|</span>
+            <span class="battery-trend red mono">▼ KLESÁ</span>
+          </div>
+        </div>
+
+        <div class="segments-wrap">
+          <div class="segments">
+            <div class="segments-inner">
+              <!-- 12 segmentů, 38% = ~4-5 filled -->
+              <div class="seg seg-red filled"></div>
+              <div class="seg seg-red filled"></div>
+              <div class="seg seg-red filled"></div>
+              <div class="seg seg-red filled"></div>
+              <div class="seg empty"></div>
+              <div class="seg empty"></div>
+              <div class="seg empty"></div>
+              <div class="seg empty"></div>
+              <div class="seg empty"></div>
+              <div class="seg empty"></div>
+              <div class="seg empty"></div>
+              <div class="seg empty"></div>
+            </div>
+            <div class="watermark">
+              <span class="red mono">FLOW_DECAY</span>
+            </div>
+          </div>
+          <div class="battery-nub" style="box-shadow:0 0 8px rgba(239,68,68,0.3);"></div>
+        </div>
+
+        <!-- Killer card -->
+        <div class="killer-card">
+          <div class="killer-icon">🌙</div>
+          <div>
+            <div class="killer-label mono">FLOW KILLER · BOTTLENECK</div>
+            <div class="killer-name">VEČERNÍ PŘEJÍDÁNÍ</div>
+            <div class="killer-desc">Výživa táhne systém dolů — 38 %.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: sub-nodes -->
+    <div>
+      <div class="section-label mono">Sub-uzly → přispívají barvou</div>
+      <div class="subnodes">
+
+        <!-- Výživa — BOTTLENECK -->
+        <div class="sub-card bottleneck">
+          <div class="sub-header">
+            <span class="sub-name mono">VÝŽIVA</span>
+            <span class="sub-pct red">38%</span>
+          </div>
+          <div class="sub-bar-wrap">
+            <div class="sub-bar" style="width:38%;background:#ef4444;box-shadow:0 0 6px rgba(239,68,68,0.5);"></div>
+          </div>
+          <div class="sub-status mono">↑ BOTTLENECK</div>
+        </div>
+
+        <!-- Pohyb -->
+        <div class="sub-card">
+          <div class="sub-header">
+            <span class="sub-name mono">POHYB</span>
+            <span class="sub-pct yellow">57%</span>
+          </div>
+          <div class="sub-bar-wrap">
+            <div class="sub-bar" style="width:57%;background:#eab308;"></div>
+          </div>
+          <div class="sub-status mono">FLOW_STABLE</div>
+        </div>
+
+        <!-- Regenerace -->
+        <div class="sub-card">
+          <div class="sub-header">
+            <span class="sub-name mono">REGENERACE</span>
+            <span class="sub-pct green">78%</span>
+          </div>
+          <div class="sub-bar-wrap">
+            <div class="sub-bar" style="width:78%;background:#22c55e;"></div>
+          </div>
+          <div class="sub-status mono">FLOW_OPTIMAL</div>
+        </div>
+
+        <!-- Mysl -->
+        <div class="sub-card">
+          <div class="sub-header">
+            <span class="sub-name mono">MYSL</span>
+            <span class="sub-pct green">72%</span>
+          </div>
+          <div class="sub-bar-wrap">
+            <div class="sub-bar" style="width:72%;background:#22c55e;"></div>
+          </div>
+          <div class="sub-status mono">FLOW_OPTIMAL</div>
+        </div>
+
+      </div>
+
+      <!-- Connector -->
+      <div class="connector-area" style="height:52px;">
+        <div style="position:relative;width:100%;text-align:center;">
+          <div style="height:1px;background:linear-gradient(to right,transparent,rgba(239,68,68,0.3),transparent);margin-bottom:4px;"></div>
+          <span style="font-size:10px;font-family:monospace;color:rgba(239,68,68,0.5);letter-spacing:0.12em;">
+            NEJHORŠÍ DÍTĚ → PARENT
+          </span>
+          <div style="text-align:center;font-size:18px;color:rgba(239,68,68,0.3);margin-top:2px;">↙</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Explanation -->
+  <div class="explain">
+    <div class="explain-box">
+      <div class="eb-num mono">01 · PRINCIP</div>
+      <div class="eb-title">Nejhorší dítě = parent</div>
+      <div class="eb-text">lh_main je červený protože Výživa je červená (38%). Ostatní sub-uzly jsou zelené — ale nestačí.</div>
+    </div>
+    <div class="explain-box highlight">
+      <div class="eb-num mono">02 · KILLER</div>
+      <div class="eb-title">Bottleneck je viditelný</div>
+      <div class="eb-text">FLOW KILLER card ukazuje který sub-uzel táhne systém dolů. Uživatel vidí přímou linku: červená → důvod.</div>
+    </div>
+    <div class="explain-box">
+      <div class="eb-num mono">03 · AKCE</div>
+      <div class="eb-title">Akce míří na bottleneck</div>
+      <div class="eb-text">ACTION protocol se generuje pro nejslabší uzel. Oprav Výživu → lh_main se automaticky rozsvítí.</div>
+    </div>
+  </div>
+
+  <!-- vs. comparison -->
+  <div class="vs-row">
+    <div class="vs-col current">
+      <div class="vs-title mono">NYNÍ · Váhový trend</div>
+      <div class="vs-item"><span class="vi-key">lh_main =</span> sklon váhové křivky</div>
+      <div class="vs-item"><span class="vi-key">Reaguje pomalu</span> (14 dní lag)</div>
+      <div class="vs-item"><span class="vi-key">Chybí bez dat</span> — váha nepovinná</div>
+      <div class="vs-item"><span class="vi-key">Sub-uzly nezávislé</span> — nejsou propojené</div>
+      <div class="vs-item"><span class="vi-key">Mechanika</span> jiná než u Longevity</div>
+    </div>
+    <div class="vs-sep">→</div>
+    <div class="vs-col new">
+      <div class="vs-title new-label mono">NOVĚ · Nejhorší dítě</div>
+      <div class="vs-item"><span class="vi-key">lh_main =</span> min(pohyb, výživa, mysl, regen)</div>
+      <div class="vs-item"><span class="vi-key">Reaguje okamžitě</span> — každý check-in</div>
+      <div class="vs-item"><span class="vi-key">Vždy k dispozici</span> — váha není nutná</div>
+      <div class="vs-item"><span class="vi-key">Hierarchie viditelná</span> — sub-uzel → parent</div>
+      <div class="vs-item"><span class="vi-key">Mechanika</span> shodná s Longevity</div>
+    </div>
+  </div>
+
+  <!-- Footer note -->
+  <div style="margin-top:28px;padding:14px 18px;background:rgba(6,182,212,0.04);border:1px solid rgba(6,182,212,0.1);border-radius:10px;font-size:12px;color:#475569;line-height:1.6;font-family:monospace;">
+    BODY FLOW skóre z check-inu zůstane jako číslo v potvrzení ("Uloženo · BODY FLOW 73%") —
+    ale nebude řídit barvu baterie. Jedna mechanika, dvě hry.
+  </div>
+
+</div>
+</body>
+</html>

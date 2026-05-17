@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CHJ — Platform Hierarchy</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #070d1a;
+    color: #e2e8f0;
+    font-family: system-ui, -apple-system, sans-serif;
+    min-height: 100vh;
+    padding: 32px 20px 60px;
+  }
+
+  /* ── Typography ── */
+  .mono { font-family: 'JetBrains Mono', 'Fira Code', monospace; }
+  .label-xs { font-size: 10px; letter-spacing: 0.14em; color: #475569; text-transform: uppercase; }
+  .label-sm { font-size: 11px; letter-spacing: 0.12em; color: #64748b; text-transform: uppercase; }
+
+  /* ── Layout ── */
+  .container { max-width: 720px; margin: 0 auto; }
+
+  /* ── Header ── */
+  .page-header {
+    text-align: center;
+    margin-bottom: 48px;
+  }
+  .page-header .eyebrow {
+    font-size: 10px; letter-spacing: 0.18em; color: #334155;
+    text-transform: uppercase; margin-bottom: 12px; font-family: monospace;
+  }
+  .page-header h1 {
+    font-size: 15px; font-weight: 400; color: #475569; letter-spacing: 0.06em;
+  }
+
+  /* ── Layers ── */
+  .layer { margin-bottom: 8px; }
+
+  .layer-label {
+    font-size: 10px; letter-spacing: 0.15em; color: #1e3a5f;
+    text-transform: uppercase; margin-bottom: 10px;
+    padding-left: 4px; font-family: monospace;
+  }
+
+  /* ── Platform card ── */
+  .platform-card {
+    background: linear-gradient(135deg, rgba(6,182,212,0.07) 0%, rgba(6,182,212,0.03) 100%);
+    border: 1px solid rgba(6,182,212,0.25);
+    border-radius: 16px;
+    padding: 22px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .platform-left { flex: 1; }
+  .platform-name {
+    font-size: 22px; font-weight: 500; color: #e2e8f0;
+    letter-spacing: -0.01em; margin-bottom: 4px;
+  }
+  .platform-sub {
+    font-size: 12px; color: #64748b;
+  }
+  .platform-badge {
+    font-size: 10px; font-family: monospace; letter-spacing: 0.12em;
+    color: rgba(6,182,212,0.7);
+    background: rgba(6,182,212,0.07);
+    border: 1px solid rgba(6,182,212,0.2);
+    border-radius: 6px; padding: 4px 10px;
+    white-space: nowrap;
+  }
+
+  /* ── Connector ── */
+  .connector {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 28px;
+    position: relative;
+  }
+  .connector-line {
+    width: 1px;
+    height: 100%;
+    background: linear-gradient(to bottom, rgba(6,182,212,0.3), rgba(6,182,212,0.1));
+    position: absolute;
+  }
+  .connector-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: rgba(6,182,212,0.4);
+    border: 1px solid rgba(6,182,212,0.6);
+    z-index: 1;
+    position: relative;
+  }
+
+  /* ── Shared infrastructure ── */
+  .infra-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .infra-chip {
+    flex: 1;
+    background: rgba(255,255,255,0.025);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 10px;
+    padding: 10px 14px;
+    text-align: center;
+  }
+  .infra-chip .ic-icon { font-size: 16px; margin-bottom: 4px; }
+  .infra-chip .ic-label { font-size: 11px; color: #475569; letter-spacing: 0.06em; }
+
+  /* ── Split connector ── */
+  .split-connector {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    height: 36px;
+    position: relative;
+    margin: 4px 0;
+  }
+  .split-connector::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 16.67%; right: 16.67%;
+    height: 1px;
+    background: linear-gradient(to right,
+      transparent,
+      rgba(6,182,212,0.25) 20%,
+      rgba(6,182,212,0.25) 80%,
+      transparent
+    );
+  }
+  .split-col {
+    display: flex;
+    justify-content: center;
+    position: relative;
+  }
+  .split-col::before {
+    content: '';
+    position: absolute;
+    top: 0; bottom: 0;
+    width: 1px;
+    background: linear-gradient(to bottom, rgba(6,182,212,0.25), rgba(6,182,212,0.08));
+  }
+  .split-dot {
+    position: absolute;
+    bottom: 0;
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: rgba(6,182,212,0.35);
+    border: 1px solid rgba(6,182,212,0.5);
+    left: 50%; transform: translateX(-50%);
+  }
+
+  /* ── Game cards ── */
+  .games-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .game-card {
+    border-radius: 14px;
+    padding: 16px 14px 14px;
+    position: relative;
+    overflow: hidden;
+    cursor: default;
+  }
+
+  .game-card.active {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+  .game-card.future {
+    background: rgba(255,255,255,0.015);
+    border: 1px dashed rgba(255,255,255,0.07);
+    opacity: 0.6;
+  }
+
+  .game-card.lehkost { border-color: rgba(34,197,94,0.3); background: rgba(34,197,94,0.04); }
+  .game-card.longevity { border-color: rgba(6,182,212,0.3); background: rgba(6,182,212,0.04); }
+  .game-card.toc { border-color: rgba(245,158,11,0.3); background: rgba(245,158,11,0.04); }
+
+  .game-icon { font-size: 22px; margin-bottom: 8px; display: block; }
+  .game-name { font-size: 13px; font-weight: 600; color: #e2e8f0; margin-bottom: 2px; line-height: 1.3; }
+  .game-tagline { font-size: 11px; color: #64748b; line-height: 1.4; margin-bottom: 10px; }
+  .game-status {
+    font-size: 10px; font-family: monospace; letter-spacing: 0.1em;
+    padding: 3px 8px; border-radius: 4px; display: inline-block;
+  }
+  .status-live { background: rgba(34,197,94,0.1); color: #4ade80; border: 1px solid rgba(34,197,94,0.25); }
+  .status-dev { background: rgba(6,182,212,0.1); color: #67e8f9; border: 1px solid rgba(6,182,212,0.25); }
+  .status-plan { background: rgba(255,255,255,0.04); color: #475569; border: 1px solid rgba(255,255,255,0.08); }
+
+  .game-nodes {
+    margin-top: 10px;
+    display: flex; flex-wrap: wrap; gap: 4px;
+  }
+  .node-chip {
+    font-size: 10px; color: #475569;
+    background: rgba(255,255,255,0.04);
+    border-radius: 4px; padding: 2px 6px;
+    font-family: monospace;
+  }
+
+  /* ── Shared layer ── */
+  .shared-section {
+    margin-top: 48px;
+    padding-top: 32px;
+    border-top: 1px solid rgba(255,255,255,0.05);
+  }
+  .shared-title {
+    font-size: 11px; font-family: monospace; letter-spacing: 0.14em;
+    color: #334155; text-transform: uppercase; margin-bottom: 16px;
+  }
+  .shared-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .shared-item {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 10px;
+    padding: 12px 16px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .shared-item-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+  .shared-item-title { font-size: 12px; color: #94a3b8; margin-bottom: 2px; font-weight: 500; }
+  .shared-item-desc { font-size: 11px; color: #475569; line-height: 1.4; }
+
+  /* ── User journey ── */
+  .journey-section {
+    margin-top: 40px;
+  }
+  .journey-title {
+    font-size: 11px; font-family: monospace; letter-spacing: 0.14em;
+    color: #334155; text-transform: uppercase; margin-bottom: 16px;
+  }
+  .journey-steps {
+    display: flex;
+    gap: 0;
+    align-items: stretch;
+    position: relative;
+  }
+  .journey-step {
+    flex: 1;
+    text-align: center;
+    padding: 14px 10px;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.06);
+    position: relative;
+  }
+  .journey-step:first-child { border-radius: 10px 0 0 10px; }
+  .journey-step:last-child { border-radius: 0 10px 10px 0; }
+  .journey-step + .journey-step { border-left: none; }
+  .journey-step.highlight {
+    background: rgba(6,182,212,0.05);
+    border-color: rgba(6,182,212,0.2);
+  }
+  .journey-step .js-num {
+    font-size: 10px; font-family: monospace; color: #334155; margin-bottom: 6px;
+  }
+  .journey-step .js-text {
+    font-size: 11px; color: #94a3b8; line-height: 1.4;
+  }
+  .journey-step .js-game {
+    font-size: 10px; color: #22c55e; font-family: monospace; margin-top: 4px;
+  }
+  .arrow-between {
+    position: absolute; right: -8px; top: 50%;
+    transform: translateY(-50%);
+    font-size: 10px; color: #334155;
+    z-index: 2;
+  }
+
+  /* ── Footer note ── */
+  .footer-note {
+    margin-top: 48px;
+    padding: 16px 20px;
+    background: rgba(6,182,212,0.04);
+    border: 1px solid rgba(6,182,212,0.12);
+    border-radius: 12px;
+    font-size: 12px; color: #475569; line-height: 1.6;
+  }
+  .footer-note strong { color: #64748b; }
+
+  /* ── Responsive ── */
+  @media (max-width: 520px) {
+    .games-row { grid-template-columns: 1fr; }
+    .split-connector { display: none; }
+    .shared-grid { grid-template-columns: 1fr; }
+    .journey-steps { flex-direction: column; }
+    .journey-step { border-radius: 0; border-left: 1px solid rgba(255,255,255,0.06); border-top: none; }
+    .journey-step:first-child { border-radius: 10px 10px 0 0; border-top: 1px solid rgba(255,255,255,0.06); }
+    .journey-step:last-child { border-radius: 0 0 10px 10px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <div class="page-header">
+    <div class="eyebrow">CHJ · Architektura platformy</div>
+    <h1>Jedna appka — více her</h1>
+  </div>
+
+  <!-- LAYER 1: Platform -->
+  <div class="layer">
+    <div class="layer-label mono">01 · Platforma</div>
+    <div class="platform-card">
+      <div class="platform-left">
+        <div class="platform-name">Chytré já</div>
+        <div class="platform-sub">Jeden účet · jeden profil · jedna appka</div>
+      </div>
+      <div class="platform-badge mono">CHJ v0.2</div>
+    </div>
+  </div>
+
+  <!-- Connector -->
+  <div class="connector">
+    <div class="connector-line"></div>
+    <div class="connector-dot"></div>
+  </div>
+
+  <!-- LAYER 2: Shared infrastructure -->
+  <div class="layer">
+    <div class="layer-label mono">02 · Sdílená vrstva</div>
+    <div class="infra-row">
+      <div class="infra-chip">
+        <div class="ic-icon">🔐</div>
+        <div class="ic-label mono">Auth</div>
+      </div>
+      <div class="infra-chip">
+        <div class="ic-icon">👤</div>
+        <div class="ic-label mono">Profil</div>
+      </div>
+      <div class="infra-chip">
+        <div class="ic-icon">📊</div>
+        <div class="ic-label mono">Check-in</div>
+      </div>
+      <div class="infra-chip">
+        <div class="ic-icon">🏆</div>
+        <div class="ic-label mono">Streak</div>
+      </div>
+      <div class="infra-chip">
+        <div class="ic-icon">🔔</div>
+        <div class="ic-label mono">Notif.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Split connector -->
+  <div class="split-connector">
+    <div class="split-col"><div class="split-dot"></div></div>
+    <div class="split-col"><div class="split-dot"></div></div>
+    <div class="split-col"><div class="split-dot"></div></div>
+  </div>
+
+  <!-- LAYER 3: Games -->
+  <div class="layer">
+    <div class="layer-label mono">03 · Hry</div>
+    <div class="games-row">
+
+      <!-- Lehkost -->
+      <div class="game-card lehkost active">
+        <span class="game-icon">⚖️</span>
+        <div class="game-name">Hra o lehkost</div>
+        <div class="game-tagline">Váha, energie, spánek, pohyb</div>
+        <span class="game-status status-live mono">LIVE</span>
+        <div class="game-nodes">
+          <span class="node-chip">lh_main</span>
+          <span class="node-chip">vyziva</span>
+          <span class="node-chip">pohyb</span>
+          <span class="node-chip">mysl</span>
+          <span class="node-chip">regen</span>
+        </div>
+      </div>
+
+      <!-- Longevity -->
+      <div class="game-card longevity active">
+        <span class="game-icon">🧬</span>
+        <div class="game-name">Hra o dlouhověkost</div>
+        <div class="game-tagline">Tělo, mysl, výživa, zdraví</div>
+        <span class="game-status status-dev mono">DEV</span>
+        <div class="game-nodes">
+          <span class="node-chip">telo</span>
+          <span class="node-chip">mysl</span>
+          <span class="node-chip">vyziva</span>
+          <span class="node-chip">zdravi</span>
+          <span class="node-chip">metabol</span>
+        </div>
+      </div>
+
+      <!-- TOC -->
+      <div class="game-card toc active">
+        <span class="game-icon">🔩</span>
+        <div class="game-name">Hra o průtok</div>
+        <div class="game-tagline">Omezení, průtok, systém</div>
+        <span class="game-status status-dev mono">DEV</span>
+        <div class="game-nodes">
+          <span class="node-chip">strategie</span>
+          <span class="node-chip">finance</span>
+          <span class="node-chip">vyroba</span>
+          <span class="node-chip">projekty</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Future games row -->
+    <div class="games-row" style="opacity:0.5; margin-bottom:0;">
+      <div class="game-card future">
+        <span class="game-icon" style="font-size:18px; opacity:0.4;">💰</span>
+        <div class="game-name" style="color:#475569; font-size:12px;">Hra o finance</div>
+        <div class="game-tagline" style="font-size:10px;">Cashflow, cíle, návyky</div>
+        <span class="game-status status-plan mono">PLÁN</span>
+      </div>
+      <div class="game-card future">
+        <span class="game-icon" style="font-size:18px; opacity:0.4;">🎯</span>
+        <div class="game-name" style="color:#475569; font-size:12px;">Hra o výkon</div>
+        <div class="game-tagline" style="font-size:10px;">Soustředění, energie, čas</div>
+        <span class="game-status status-plan mono">PLÁN</span>
+      </div>
+      <div class="game-card future">
+        <span class="game-icon" style="font-size:18px; opacity:0.4;">❤️</span>
+        <div class="game-name" style="color:#475569; font-size:12px;">Hra o vztahy</div>
+        <div class="game-tagline" style="font-size:10px;">Komunikace, přítomnost</div>
+        <span class="game-status status-plan mono">PLÁN</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Shared infrastructure detail -->
+  <div class="shared-section">
+    <div class="shared-title mono">Co sdílejí všechny hry</div>
+    <div class="shared-grid">
+      <div class="shared-item">
+        <div class="shared-item-icon">👤</div>
+        <div>
+          <div class="shared-item-title">Profil uživatele</div>
+          <div class="shared-item-desc">Jeden účet, jeden login. Data z Lehkosti vidí i Longevity (váha, spánek).</div>
+        </div>
+      </div>
+      <div class="shared-item">
+        <div class="shared-item-icon">📋</div>
+        <div>
+          <div class="shared-item-title">Check-in systém</div>
+          <div class="shared-item-desc">Ranní záznam — sdílí se energie a spánek přes hry. Váha patří Lehkosti.</div>
+        </div>
+      </div>
+      <div class="shared-item">
+        <div class="shared-item-icon">🔥</div>
+        <div>
+          <div class="shared-item-title">Streak a game loop</div>
+          <div class="shared-item-desc">Každá hra má vlastní streak, ale vizuál je sjednocený — jedna mechanika.</div>
+        </div>
+      </div>
+      <div class="shared-item">
+        <div class="shared-item-icon">🤖</div>
+        <div>
+          <div class="shared-item-title">CHJ engine (AI)</div>
+          <div class="shared-item-desc">Jeden master agent, specializovaní agenti per hra. Backend je společný.</div>
+        </div>
+      </div>
+      <div class="shared-item">
+        <div class="shared-item-icon">🎨</div>
+        <div>
+          <div class="shared-item-title">HUD design systém</div>
+          <div class="shared-item-desc">Baterie, sparkline, akce, sources — stejné komponenty, různá data.</div>
+        </div>
+      </div>
+      <div class="shared-item">
+        <div class="shared-item-icon">🔔</div>
+        <div>
+          <div class="shared-item-title">Notifikace a plán</div>
+          <div class="shared-item-desc">Jedno push centrum. Každá hra si naplánuje svůj čas, bez konfliktu.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- User journey -->
+  <div class="journey-section">
+    <div class="journey-title mono">Jak uživatel přechází mezi hrami</div>
+    <div class="journey-steps">
+      <div class="journey-step">
+        <div class="js-num mono">01</div>
+        <div class="js-text">Stáhne appku, vytvoří účet</div>
+      </div>
+      <div class="journey-step highlight">
+        <div class="js-num mono">02</div>
+        <div class="js-text">Vybere první hru</div>
+        <div class="js-game">→ Hra o lehkost</div>
+      </div>
+      <div class="journey-step">
+        <div class="js-num mono">03</div>
+        <div class="js-text">Onboarding té hry (3 otázky)</div>
+      </div>
+      <div class="journey-step highlight">
+        <div class="js-num mono">04</div>
+        <div class="js-text">Přepne na jinou hru</div>
+        <div class="js-game">→ bez nového účtu</div>
+      </div>
+      <div class="journey-step">
+        <div class="js-num mono">05</div>
+        <div class="js-text">Data se prolínají kde dávají smysl</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer-note mono">
+    <strong>Klíčový princip:</strong> Každá hra má vlastní onboarding, vlastní uzly a vlastní check-in logiku —
+    ale sdílí platformu, profil a design systém. Uživatel neví, že přepíná „universum". Vidí jen jiný HUD.
+  </div>
+
+</div>
+</body>
+</html>
