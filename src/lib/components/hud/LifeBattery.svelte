@@ -83,8 +83,6 @@
 
   let sparkLabel = $derived(LH_SPARK_LABELS[nodeId] ?? 'Posledních 14 dní');
 
-  let sparkCanvas = $state(null);
-
   function linearForecast(vals, steps = 4) {
     const n = Math.min(5, vals.length);
     const slice = vals.slice(-n);
@@ -186,12 +184,6 @@
     '#64748b'
   );
 
-  $effect(() => {
-    if (universe === 'lehkost' && nodeId === 'lh_main' && sparkCanvas && spark?.data) {
-      // rAF so canvas has layout dimensions
-      requestAnimationFrame(() => drawSpark(sparkCanvas, spark.data, sparkColor ?? '#60a5fa'));
-    }
-  });
 </script>
 
 <!-- ── Baterie — všechny vesmíry a všechny uzly ── -->
@@ -267,30 +259,5 @@
   </div>
   {/if}
 
-  {#if universe === 'lehkost' && nodeId === 'lh_main' && spark?.data?.filter(v => v != null).length >= 2}
-  <!-- ── Sparkline váhy — doplněk pod baterií lh_main ── -->
-  <div style="margin-top: 16px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 14px;">
-    <div style="font-family: monospace; font-size: 10px; letter-spacing: 0.13em; color: #475569; margin-bottom: 8px;">VÁHA · 14 DNÍ</div>
-    <canvas
-      bind:this={sparkCanvas}
-      style="width: 100%; height: 52px; display: block;"
-    ></canvas>
-    {#if spark}
-      <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 10px;">
-        <div style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: #94a3b8;">
-          <span style="width: 8px; height: 8px; border-radius: 50%; background: {spark.trajectory?.color ?? spark.status_color}; flex-shrink: 0; display: inline-block;"></span>
-          <span style="font-size: 16px; color: #f1f5f9; font-weight: 400;">{spark.value}</span>
-          <span style="font-size: 13px; color: #64748b;">{spark.unit}</span>
-        </div>
-        {#if spark.trajectory}
-          <span style="font-size: 13px; color: {spark.trajectory.color}; font-weight: 500;">{spark.trajectory.delta}</span>
-        {/if}
-      </div>
-      {#if spark.trajectory?.to_target}
-        <div style="font-size: 12px; color: #64748b; margin-top: 4px;">{spark.trajectory.to_target}</div>
-      {/if}
-    {/if}
-  </div>
-  {/if}
 
 </div>
