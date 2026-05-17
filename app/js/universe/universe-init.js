@@ -434,6 +434,39 @@ async function loadAndRenderModel(modelName, role) {
     }, 700);
   }
 
+  // Lehkost: sync canvas colors + show check-in (same as model-switch handler)
+  if (modelName === 'lehkost') {
+    const uid = window.firebaseAuth?.currentUser?.uid;
+    if (uid) {
+      // Immediately sync canvas colors from hud-data-bulk (overrides stale user_metrics)
+      syncLehkostCanvasStates(uid);
+
+      // Show check-in modal (onboarding check first)
+      const _lhRefresh = () => {
+        const LH_IDS = ['lh_main','lh_vyziva','lh_pohyb','lh_mysl','lh_regenerace'];
+        LH_IDS.forEach(id => { if (window._hudCache) delete window._hudCache[id]; });
+        if (window.refreshUniverseData) window.refreshUniverseData();
+      };
+      import('./lehkost-onboarding.js').then(async ({ checkLehkostOnboarding, showLehkostOnboarding }) => {
+        const needsOnboarding = await checkLehkostOnboarding(uid);
+        if (needsOnboarding) {
+          showLehkostOnboarding(uid, () => {
+            import('./lehkost-checkin.js').then(({ showCheckinModal }) => {
+              showCheckinModal(uid, _lhRefresh);
+            });
+          });
+        } else {
+          import('./lehkost-checkin.js').then(({ showCheckinModal }) => {
+            showCheckinModal(uid, (bodyFlow) => {
+              if (bodyFlow) console.log('💪 BODY FLOW:', bodyFlow.score);
+              _lhRefresh();
+            });
+          });
+        }
+      });
+    }
+  }
+
   // TODO v0.3: morning check-in per universe — needs user profile → universe mapping
   // longevity-checkin.js + lehkost-checkin.js are ready, trigger from user profile
 
@@ -939,38 +972,7 @@ function initHeaderControls() {
 
     const role = localStorage.getItem("userRole") || "demo";
     await loadAndRenderModel(newModel, role);
-
-    // Hra o lehkost: onboarding (první spuštění) → pak check-in
-    if (newModel === 'lehkost') {
-      const userId = window.firebaseAuth?.currentUser?.uid;
-      if (userId) {
-        // Sync canvas colors from computed check-in indices immediately
-        syncLehkostCanvasStates(userId);
-        const { checkLehkostOnboarding, showLehkostOnboarding } = await import('./lehkost-onboarding.js');
-        const needsOnboarding = await checkLehkostOnboarding(userId);
-        const _lhRefresh = () => {
-          const LH_IDS = ['lh_main','lh_vyziva','lh_pohyb','lh_mysl','lh_regenerace'];
-          LH_IDS.forEach(id => { if (window._hudCache) delete window._hudCache[id]; });
-          if (window.refreshUniverseData) window.refreshUniverseData();
-        };
-
-        if (needsOnboarding) {
-          showLehkostOnboarding(userId, () => {
-            // After onboarding → show check-in
-            import('./lehkost-checkin.js').then(({ showCheckinModal }) => {
-              showCheckinModal(userId, _lhRefresh);
-            });
-          });
-        } else {
-          // Onboarding done — show check-in as usual
-          const { showCheckinModal } = await import('./lehkost-checkin.js');
-          showCheckinModal(userId, (bodyFlow) => {
-            if (bodyFlow) console.log('💪 BODY FLOW:', bodyFlow.score);
-            _lhRefresh();
-          });
-        }
-      }
-    }
+    // Lehkost: sync + check-in now handled inside loadAndRenderModel
   });
 
   // header-mic-btn is wired via initHeaderMic() → handleMicClick()
