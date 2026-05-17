@@ -277,20 +277,11 @@ function calcLehkostIndex(nodeId, slots) {
       return Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
     }
     case 'lh_main': {
-      const withData = valid.filter(s => s.weight_kg != null).map(s => parseFloat(s.weight_kg));
-      if (withData.length < 3) return null;
-      const n = withData.length;
-      let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
-      for (let i = 0; i < n; i++) {
-        sumX += i; sumY += withData[i]; sumXY += i * withData[i]; sumXX += i * i;
-      }
-      const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX || 1);
-      // Negative slope = weight going down = good
-      if (slope < -0.1) return 85;
-      if (slope < -0.03) return 70;
-      if (slope < 0.03)  return 50;
-      if (slope < 0.1)   return 35;
-      return 20;
+      // Worst child — stejná mechanika jako Longevity
+      const kids = ['lh_pohyb', 'lh_vyziva', 'lh_mysl', 'lh_regenerace'];
+      const indices = kids.map(id => calcLehkostIndex(id, slots)).filter(v => v != null);
+      if (!indices.length) return null;
+      return Math.min(...indices);
     }
     default: return null;
   }
