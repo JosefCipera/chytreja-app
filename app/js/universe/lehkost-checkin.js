@@ -59,6 +59,7 @@ export function showCheckinModal(userId, onComplete, force = false) {
   });
 
   modal.querySelector('#lh-skip').addEventListener('click', () => {
+    localStorage.setItem(lsKey, today); // neopakuj dnes
     _closeModal(modal);
     onComplete?.();
   });

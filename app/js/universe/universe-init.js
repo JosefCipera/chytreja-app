@@ -917,27 +917,25 @@ function initHeaderControls() {
       if (userId) {
         const { checkLehkostOnboarding, showLehkostOnboarding } = await import('./lehkost-onboarding.js');
         const needsOnboarding = await checkLehkostOnboarding(userId);
+        const _lhRefresh = () => {
+          const LH_IDS = ['lh_main','lh_vyziva','lh_pohyb','lh_mysl','lh_regenerace'];
+          LH_IDS.forEach(id => { if (window._hudCache) delete window._hudCache[id]; });
+          if (window.refreshUniverseData) window.refreshUniverseData();
+        };
+
         if (needsOnboarding) {
           showLehkostOnboarding(userId, () => {
             // After onboarding → show check-in
             import('./lehkost-checkin.js').then(({ showCheckinModal }) => {
-              showCheckinModal(userId, (bodyFlow) => {
-                if (!bodyFlow) return;
-                const LH_IDS = ['lh_main','lh_vyziva','lh_pohyb','lh_mysl','lh_regenerace'];
-                LH_IDS.forEach(id => { if (window._hudCache) delete window._hudCache[id]; });
-                if (window.refreshUniverseData) window.refreshUniverseData();
-              });
+              showCheckinModal(userId, _lhRefresh);
             });
           });
         } else {
           // Onboarding done — show check-in as usual
           const { showCheckinModal } = await import('./lehkost-checkin.js');
           showCheckinModal(userId, (bodyFlow) => {
-            if (!bodyFlow) return;
-            console.log('💪 BODY FLOW:', bodyFlow.score);
-            const LH_IDS = ['lh_main','lh_vyziva','lh_pohyb','lh_mysl','lh_regenerace'];
-            LH_IDS.forEach(id => { if (window._hudCache) delete window._hudCache[id]; });
-            if (window.refreshUniverseData) window.refreshUniverseData();
+            if (bodyFlow) console.log('💪 BODY FLOW:', bodyFlow.score);
+            _lhRefresh();
           });
         }
       }
