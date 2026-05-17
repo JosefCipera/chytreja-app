@@ -169,17 +169,17 @@ async function syncLehkostCanvasStates(userId) {
     const res = await fetch(`/api/hud-data-bulk?nodes=${LH_IDS}&userId=${userId}&universe=lehkost`);
     if (!res.ok) return;
     const data = await res.json();
-    let changed = false;
+    // Build metricsMap with computed indices — updateMetricsAndRedraw needs it populated
+    const metricsMap = new Map();
     (window.MAIN_UNIVERSE_DATA || []).forEach(node => {
       const nd = data[node.id];
       if (!nd?.battery) return;
-      node.current_index = nd.battery.percent;
-      node.state = nd.battery.state || (nd.battery.percent <= 40 ? 'RED' : nd.battery.percent <= 70 ? 'YELLOW' : 'GREEN');
-      changed = true;
+      const idx = nd.battery.percent ?? 50;
+      node.current_index = idx;
+      node.state = idx <= 40 ? 'RED' : idx <= 70 ? 'YELLOW' : 'GREEN';
+      metricsMap.set(node.id, { current_index: idx });
     });
-    if (changed) {
-      updateMetricsAndRedraw(new Map());
-    }
+    if (metricsMap.size) updateMetricsAndRedraw(metricsMap);
   } catch (e) {
     console.warn('[CHJ] syncLehkostCanvasStates error:', e);
   }
