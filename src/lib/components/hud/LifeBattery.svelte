@@ -43,7 +43,7 @@
   );
 
   let watermark = $derived(
-    universe === 'toc'
+    (universe === 'toc' || universe === 'lehkost')
       ? (percent <= 40 ? 'FLOW_DECAY' : percent <= 70 ? 'FLOW_STABLE' : 'FLOW_OPTIMAL')
       : (percent <= 40 ? 'CELL_DECAY' : percent <= 70 ? 'CELL_STABLE' : 'CELL_OPTIMAL')
   );
@@ -194,8 +194,8 @@
   });
 </script>
 
-{#if universe === 'lehkost'}
-<!-- ── LEHKOST: sparkline sekce ── -->
+{#if universe === 'lehkost' && nodeId !== 'lh_main'}
+<!-- ── LEHKOST sub-node: sparkline sekce ── -->
 <div style="background: #1e293b; border-radius: 12px; padding: 16px 16px 18px;">
 
   <!-- Label -->
@@ -242,7 +242,7 @@
 <div class="hud-glass rounded-lg p-4 hud-c4">
   <span class="hc hc-tl"></span><span class="hc hc-tr"></span>
   <div class="flex items-center justify-between mb-1">
-    <span class="hud-mono" style="font-size: 20px; letter-spacing: 0.04em; color: #c8d4df; font-weight: 300;">{universe === 'toc' ? 'FLOW-RATE' : 'LIFE-BATTERY'}</span>
+    <span class="hud-mono" style="font-size: 20px; letter-spacing: 0.04em; color: #c8d4df; font-weight: 300;">{universe === 'toc' ? 'FLOW-RATE' : universe === 'lehkost' ? 'BODY FLOW' : 'LIFE-BATTERY'}</span>
     <div class="flex items-center gap-0" style="flex-shrink: 0;">
       <span class="hud-mono" style="font-size: 14px; font-weight: 300; color: {textColor};">{percent}%</span>
       <span class="hud-mono mx-1" style="font-size: 14px; color: #334155;">|</span>
