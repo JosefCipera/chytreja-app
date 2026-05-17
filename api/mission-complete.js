@@ -41,6 +41,30 @@ export default async function (req, res) {
 
     const today = new Date().toISOString().split('T')[0];
 
+    // ── Lehkost uzly: battery = check-in data, ne user_metrics ──────────────
+    // Akce se loguje (mission_log), ale user_metrics se nemění.
+    // Baterie se změní zítra po check-inu — to je záměr (Option B).
+    const LH_IDS = new Set(['lh_main','lh_vyziva','lh_pohyb','lh_mysl','lh_regenerace']);
+    if (LH_IDS.has(nodeId)) {
+      const { data: todayLh } = await supabase
+        .from('mission_log').select('id, node_id')
+        .eq('user_id', userId).eq('date', today);
+      const todayCount = (todayLh || []).filter(m => m.node_id === nodeId).length;
+      const { data: weekLh } = await supabase
+        .from('mission_log').select('id')
+        .eq('user_id', userId).eq('node_id', nodeId)
+        .gte('date', new Date(Date.now() - 7*86400000).toISOString().slice(0,10));
+      return res.json({
+        impact: 'lehkost',
+        todayCount,
+        weekCount: weekLh?.length || 0,
+        nodeId,
+        stateChanged: false,
+        offerMore: todayCount === 1,
+        canDoMore: todayCount < 2,
+      });
+    }
+
     // 1. Count today's steps — one query for all nodes, then filter
     const { data: todayAllMissions } = await supabase
       .from('mission_log')

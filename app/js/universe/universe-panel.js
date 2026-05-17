@@ -1384,10 +1384,14 @@ async function showGameOfLife(node, options = {}) {
         completedBtn.style.display = 'none';
         const feedbackEl = document.createElement('div');
         feedbackEl.style.cssText = 'opacity:0; transition: opacity 0.5s ease;';
-        const feedbackText = node.state === 'RED' ? '✔ Krok hotový.'
+        const isLehkost = node.id?.startsWith('lh_');
+        const feedbackText = isLehkost
+          ? '✔ Hotovo — výsledek uvidíš v zítřejším check-inu'
+          : node.state === 'RED' ? '✔ Krok hotový.'
           : node.state === 'GREEN' ? '✔ Hotovo. Forma drží.'
           : '✔ Hotovo. Držíš tempo.';
-        feedbackEl.innerHTML = `<div style="text-align:center;padding:12px;color:#e2e8f0;font-size:14px;font-weight:500;">${feedbackText}</div>`;
+        const feedbackColor = isLehkost ? '#22c55e' : '#e2e8f0';
+        feedbackEl.innerHTML = `<div style="text-align:center;padding:12px;color:${feedbackColor};font-size:14px;font-weight:500;">${feedbackText}</div>`;
         missionCard.appendChild(feedbackEl);
         requestAnimationFrame(() => feedbackEl.style.opacity = '1');
       }
@@ -1420,8 +1424,9 @@ async function showGameOfLife(node, options = {}) {
           if (!missionCard) return;
 
           // Upgrade feedback if state changed or improved
+          // Lehkost: přeskočit — baterie se mění přes check-in, ne akce
           const existingFeedback = missionCard.querySelector('div[style*="text-align:center"]');
-          if (existingFeedback) {
+          if (existingFeedback && !node.id?.startsWith('lh_')) {
             if (glResult.stateChanged) {
               existingFeedback.innerHTML = '<div style="text-align:center;padding:12px;color:#e2e8f0;font-size:14px;font-weight:500;">🎉 Level up! Viditelné zlepšení.</div>';
               if (navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 300]);
