@@ -187,62 +187,23 @@
   );
 
   $effect(() => {
-    if (universe === 'lehkost' && sparkCanvas && spark?.data) {
+    if (universe === 'lehkost' && nodeId === 'lh_main' && sparkCanvas && spark?.data) {
       // rAF so canvas has layout dimensions
       requestAnimationFrame(() => drawSpark(sparkCanvas, spark.data, sparkColor ?? '#60a5fa'));
     }
   });
 </script>
 
-{#if universe === 'lehkost' && nodeId !== 'lh_main'}
-<!-- ── LEHKOST sub-node: sparkline sekce ── -->
-<div style="background: #1e293b; border-radius: 12px; padding: 16px 16px 18px;">
-
-  <!-- Label -->
-  <div style="font-size: 18px; font-weight: 400; color: #f1f5f9; margin-bottom: 10px;">
-    {sparkLabel}
-  </div>
-
-  <!-- Canvas -->
-  <canvas
-    bind:this={sparkCanvas}
-    style="width: 100%; height: 68px; display: block; margin-bottom: 14px;"
-  ></canvas>
-
-  {#if spark}
-    <!-- Velké číslo -->
-    <div style="font-size: 32px; font-weight: 400; color: #f1f5f9; line-height: 1; margin-bottom: 10px;">
-      {spark.value}{#if spark.unit}<span style="font-size: 16px; font-weight: 400; color: #94a3b8; margin-left: 4px;">{spark.unit}</span>{/if}
-    </div>
-
-    <!-- Status + trajektorie ve stejném řádku -->
-    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
-      <div style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: #94a3b8;">
-        <span style="width: 8px; height: 8px; border-radius: 50%; background: {spark.trajectory?.color ?? spark.status_color}; flex-shrink: 0; display: inline-block;"></span>
-        {spark.status_text}
-      </div>
-      {#if spark.trajectory}
-        <span style="font-size: 13px; color: {spark.trajectory.color}; font-weight: 500;">{spark.trajectory.delta}</span>
-      {/if}
-    </div>
-
-    <!-- Cíl / rozmezí -->
-    {#if spark.trajectory?.to_target}
-      <div style="font-size: 12px; color: #64748b;">{spark.trajectory.to_target}</div>
-    {:else if spark.range}
-      <div style="font-size: 12px; color: #64748b;">{spark.range}</div>
-    {/if}
-  {:else}
-    <div style="font-size: 13px; color: #475569; font-family: monospace;">Vyplň check-in pro data</div>
-  {/if}
-</div>
-
-{:else}
-<!-- ── LONGEVITY / TOC: původní baterie ── -->
+<!-- ── Baterie — všechny vesmíry a všechny uzly ── -->
 <div class="hud-glass rounded-lg p-4 hud-c4">
   <span class="hc hc-tl"></span><span class="hc hc-tr"></span>
   <div class="flex items-center justify-between mb-1">
-    <span class="hud-mono" style="font-size: 20px; letter-spacing: 0.04em; color: #c8d4df; font-weight: 300;">{universe === 'toc' ? 'FLOW-RATE' : universe === 'lehkost' ? 'BODY FLOW' : 'LIFE-BATTERY'}</span>
+    <span class="hud-mono" style="font-size: 20px; letter-spacing: 0.04em; color: #c8d4df; font-weight: 300;">
+      {universe === 'toc'                            ? 'FLOW-RATE'   :
+       universe === 'lehkost' && nodeId === 'lh_main'? 'BODY FLOW'   :
+       universe === 'lehkost'                        ? 'FLOW-RATE'   :
+                                                       'LIFE-BATTERY'}
+    </span>
     <div class="flex items-center gap-0" style="flex-shrink: 0;">
       <span class="hud-mono" style="font-size: 14px; font-weight: 300; color: {textColor};">{percent}%</span>
       <span class="hud-mono mx-1" style="font-size: 14px; color: #334155;">|</span>
@@ -297,12 +258,39 @@
     ></div>
   </div>
 
-  {#if universe !== 'toc'}
+  {#if universe === 'longevity'}
+  <!-- EST_BIO_AGE — jen longevity -->
   <div class="flex items-center justify-between mt-3">
     <span class="hud-mono" style="font-size: 13px; color: #475569;">
       EST_BIO_AGE: <span style="color: #334155;">—</span>
     </span>
   </div>
   {/if}
+
+  {#if universe === 'lehkost' && nodeId === 'lh_main' && spark?.data?.filter(v => v != null).length >= 2}
+  <!-- ── Sparkline váhy — doplněk pod baterií lh_main ── -->
+  <div style="margin-top: 16px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 14px;">
+    <div style="font-family: monospace; font-size: 10px; letter-spacing: 0.13em; color: #475569; margin-bottom: 8px;">VÁHA · 14 DNÍ</div>
+    <canvas
+      bind:this={sparkCanvas}
+      style="width: 100%; height: 52px; display: block;"
+    ></canvas>
+    {#if spark}
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 10px;">
+        <div style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: #94a3b8;">
+          <span style="width: 8px; height: 8px; border-radius: 50%; background: {spark.trajectory?.color ?? spark.status_color}; flex-shrink: 0; display: inline-block;"></span>
+          <span style="font-size: 16px; color: #f1f5f9; font-weight: 400;">{spark.value}</span>
+          <span style="font-size: 13px; color: #64748b;">{spark.unit}</span>
+        </div>
+        {#if spark.trajectory}
+          <span style="font-size: 13px; color: {spark.trajectory.color}; font-weight: 500;">{spark.trajectory.delta}</span>
+        {/if}
+      </div>
+      {#if spark.trajectory?.to_target}
+        <div style="font-size: 12px; color: #64748b; margin-top: 4px;">{spark.trajectory.to_target}</div>
+      {/if}
+    {/if}
+  </div>
+  {/if}
+
 </div>
-{/if}
