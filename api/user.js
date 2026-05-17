@@ -183,27 +183,72 @@ async function handleCheckin(req, res) {
 
   const bf = await computeBodyFlow(userId, db);
 
-  // lh_vyziva: binge=true→nižší, null→50
-  const vyzivaIdx = binge === true ? 38 : binge === false ? 62 : 50;
-  // lh_pohyb: high→80, medium→55, low→30, null→50
-  const pohybIdx  = movement_level === 'high' ? 80 : movement_level === 'medium' ? 55 : movement_level === 'low' ? 30 : 50;
-  // lh_regenerace: sleep ≥8→80, ≥7→65, ≥6→48, <6→30, null→50
-  const regenIdx  = sleep_hours == null ? 50 : parseFloat(sleep_hours) >= 8 ? 80 : parseFloat(sleep_hours) >= 7 ? 65 : parseFloat(sleep_hours) >= 6 ? 48 : 30;
-  // lh_mysl: stress 1-2→75, 3→55, 4-5→35, null→50
-  const myslIdx   = stress == null ? 50 : stress <= 2 ? 75 : stress === 3 ? 55 : 35;
+  // Fetch 14-day slots (same as calcLehkostIndex in hud-data-bulk)
+  const since14Str = new Date(Date.now() - 14 * 86400000).toISOString().slice(0, 10);
+  const { data: rows14 } = await db.from('daily_checkin')
+    .select('date,movement_level,binge,stress,sleep_hours')
+    .eq('user_id', userId).eq('universe', 'lehkost')
+    .gte('date', since14Str).order('date', { ascending: false });
+
+  const slots = rows14 || [];
+
+  // Compute indices matching calcLehkostIndex in hud-data-bulk.js exactly
+  function lhIndex(nodeId) {
+    const valid = slots.filter(s => s != null);
+    if (!valid.length) return 50; // default fallback
+
+    switch (nodeId) {
+      case 'lh_pohyb': {
+        const withData = valid.filter(s => s.movement_level != null);
+        if (!withData.length) return 50;
+        const active = withData.filter(s => ['medium','high'].includes(s.movement_level)).length;
+        return Math.round(active / withData.length * 100);
+      }
+      case 'lh_vyziva': {
+        const withData = valid.filter(s => s.binge != null);
+        if (!withData.length) return 50;
+        const clean = withData.filter(s => !s.binge).length;
+        return Math.round(clean / withData.length * 100);
+      }
+      case 'lh_mysl': {
+        const withData = valid.filter(s => s.stress != null);
+        if (!withData.length) return 50;
+        const avg = withData.reduce((a, s) => a + s.stress, 0) / withData.length;
+        return Math.round(Math.max(0, (5 - avg) / 4 * 100));
+      }
+      case 'lh_regenerace': {
+        const withData = valid.filter(s => s.sleep_hours != null).map(s => parseFloat(s.sleep_hours));
+        if (!withData.length) return 50;
+        const scores = withData.map(h => {
+          if (h >= 7 && h <= 9) return Math.round(100 - Math.abs(h - 8) * 15);
+          if (h >= 6) return 40;
+          return 15;
+        });
+        return Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+      }
+      default: return 50;
+    }
+  }
+
+  const pohybIdx  = lhIndex('lh_pohyb');
+  const vyzivaIdx = lhIndex('lh_vyziva');
+  const myslIdx   = lhIndex('lh_mysl');
+  const regenIdx  = lhIndex('lh_regenerace');
+  // lh_main = worst child (same as parent rule in Longevity)
+  const mainIdx   = Math.min(pohybIdx, vyzivaIdx, myslIdx, regenIdx);
 
   const toState = i => i <= 40 ? 'RED' : i <= 70 ? 'YELLOW' : 'GREEN';
   const now = new Date().toISOString();
 
   await db.from('user_metrics').upsert([
-    { user_id: userId, node_id: 'lh_main',       universe: 'lehkost', current_index: bf.score,  state: toState(bf.score),  updated_at: now },
+    { user_id: userId, node_id: 'lh_main',       universe: 'lehkost', current_index: mainIdx,   state: toState(mainIdx),   updated_at: now },
     { user_id: userId, node_id: 'lh_vyziva',     universe: 'lehkost', current_index: vyzivaIdx, state: toState(vyzivaIdx), updated_at: now },
     { user_id: userId, node_id: 'lh_pohyb',      universe: 'lehkost', current_index: pohybIdx,  state: toState(pohybIdx),  updated_at: now },
     { user_id: userId, node_id: 'lh_regenerace', universe: 'lehkost', current_index: regenIdx,  state: toState(regenIdx),  updated_at: now },
     { user_id: userId, node_id: 'lh_mysl',       universe: 'lehkost', current_index: myslIdx,   state: toState(myslIdx),   updated_at: now },
   ], { onConflict: 'user_id,node_id,universe' });
 
-  return res.json({ ok: true, body_flow: bf });
+  return res.json({ ok: true, body_flow: bf, indices: { main: mainIdx, pohyb: pohybIdx, vyziva: vyzivaIdx, mysl: myslIdx, regenerace: regenIdx } });
 }
 
 
