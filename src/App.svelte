@@ -3,6 +3,7 @@
   import { get } from 'svelte/store';
   import HudPanel from './lib/components/HudPanel.svelte';
   import CheckIn from './lib/components/CheckIn.svelte';
+  import ActOverlay from './lib/components/hud/ActOverlay.svelte';
   import { loadHudData, patchHudData, nodeData, rawData, loading, error } from './lib/stores/hudData.js';
   import { calcVitality } from './lib/utils/vitality.js';
 
@@ -23,6 +24,9 @@
   let readinessChecked = $state(false);   // has the check completed?
   let needsCheckIn     = $state(false);   // should we show check-in screen?
   let hasNavigated     = $state(false);   // true only after user clicks a node (not on initial load)
+
+  // ── ACT OVERLAY ────────────────────────────────────────
+  let showActOverlay = $state(false);
 
   // ── SECOND ACTION OFFER ────────────────────────────────
   // null = no offer, 'pending' = showing offer, 'declined' = user said Ne
@@ -429,6 +433,7 @@
           universe={universe}
           agentLoading={agentLoading && userId && !devMode}
           onActionComplete={handleActionComplete}
+          onActStart={() => showActOverlay = true}
           secondOffer={secondOffer}
           secondOfferText={secondOfferText}
           onAcceptSecond={acceptSecondAction}
@@ -449,4 +454,15 @@
 <!-- Check-in modal — independent of panel, always available after readiness check -->
 {#if userId && !devMode && needsCheckIn && readinessChecked && hasNavigated}
   <CheckIn {userId} onComplete={onCheckInComplete} />
+{/if}
+
+<!-- ACT Overlay — full-screen 3-screen swipe, triggered by act-type actions -->
+{#if showActOverlay}
+  <ActOverlay
+    onClose={() => showActOverlay = false}
+    onComplete={() => {
+      showActOverlay = false;
+      handleActionComplete(displayData.action?.id, 'act', nodeId);
+    }}
+  />
 {/if}

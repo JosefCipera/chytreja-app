@@ -1,7 +1,7 @@
 <script>
   let {
     action, killer = null, verdict = null, dayType = 'STIMUL',
-    onComplete = null, universe = 'longevity', userId = null,
+    onComplete = null, onActStart = null, universe = 'longevity', userId = null,
     nodeId = null,
     tocChips = [],           // [{ label, href }] — dynamic per TOC node
     tocActionLabel = 'ACTION',
@@ -12,6 +12,7 @@
   // reps  → rep counter (+1)
   // habit → single HOTOVO button (no START step)
   const actionMode = $derived(
+    action.type === 'act'   ? 'act'   :
     action.type === 'habit' ? 'habit' :
     action.type === 'reps'  ? 'reps'  :
     'timed'
@@ -168,8 +169,19 @@
 
     <!-- Guide link — reserved for curated content, hidden until filled per model -->
 
+    <!-- ── ACT ── -->
+    {#if actionMode === 'act'}
+      {#if status === 'COMPLETE'}
+        <div class="text-center" style="padding: 14px; font-size: 16px; color: #86C46A;">✔ HOTOVO</div>
+      {:else}
+        <button onclick={() => onActStart?.()} class="w-full rounded-lg border border-cyan-500/20 bg-cyan-500/[0.07] hud-mono tracking-wider hover:bg-cyan-500/[0.12] hover:shadow-[0_0_20px_rgba(6,182,212,0.2)] transition-all cursor-pointer"
+          style="padding: 14px; font-size: 16px; color: #22d3ee;">
+          ▶ START PROTOCOL
+        </button>
+      {/if}
+
     <!-- ── TIMED ── -->
-    {#if actionMode === 'timed'}
+    {:else if actionMode === 'timed'}
       {#if status === 'ACTIVE'}
         <div class="text-center mb-3">
           <span class="hud-mono tabular-nums"

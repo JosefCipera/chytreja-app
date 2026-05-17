@@ -15,6 +15,7 @@
     children,
     agentLoading       = false,
     onActionComplete   = null,
+    onActStart         = null,
     secondOffer        = null,
     secondOfferText    = 'Chceš jít dál?',
     onAcceptSecond     = null,
@@ -111,6 +112,7 @@
             dayType={data.day_type}
             universe={universe}
             onComplete={() => onActionComplete?.(data.action.id, data.action.type, data.action.node_id)}
+            onActStart={onActStart}
           />
         {:else if secondOffer === 'declined' || data.all_done_today || (data.today_count > 0 && !data.action)}
           <div style="background:rgba(34,197,94,0.07);border:1px solid rgba(34,197,94,0.25);border-radius:10px;padding:16px;">
