@@ -7,12 +7,12 @@
 // Trigger:  call showLehkostOnboarding(userId, onComplete) when lh_identity is null
 
 const IDENTITY_OPTIONS = [
-  { id: 'energie',     label: 'Více energie',          icon: '⚡' },
-  { id: 'lehci_telo',  label: 'Lehčí tělo',            icon: '🪶' },
-  { id: 'kontrola',    label: 'Kontrolu nad jídlem',   icon: '🎯' },
-  { id: 'kondice',     label: 'Lepší kondici',         icon: '🏃' },
-  { id: 'stabilita',   label: 'Stabilitu a rytmus',    icon: '⚖️' },
-  { id: 'znovu_zacit', label: 'Konečně začít znovu',   icon: '🔄' },
+  { id: 'energie',     label: 'Více energie',    icon: '⚡' },
+  { id: 'zhubnout',   label: 'Zhubnout',        icon: '⚖️' },
+  { id: 'kondice',    label: 'Lepší kondici',   icon: '🏃' },
+  { id: 'jidlo',      label: 'Míň řešit jídlo', icon: '🍽️' },
+  { id: 'spanek',     label: 'Lépe spát',       icon: '😴' },
+  { id: 'pohoda',     label: 'Cítit se líp',    icon: '🌤️' },
 ];
 
 const BLOCKER_OPTIONS = [
