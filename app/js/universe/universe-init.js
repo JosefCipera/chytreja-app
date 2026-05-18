@@ -219,8 +219,9 @@ window.refreshUniverseData = async function() {
     updateMetricsAndRedraw(metricsMap);
 
     // Lehkost: override canvas states with computed check-in indices
+    // Must be awaited — otherwise updateMetricsAndRedraw (user_metrics) wins the race
     if (window.CURRENT_MODEL === 'lehkost') {
-      syncLehkostCanvasStates(userId);
+      await syncLehkostCanvasStates(userId);
     }
 
   } catch (e) {
