@@ -6,7 +6,7 @@
             "modelFile": "../data/universes/longevity/models/longevity.json"
         },
         "lehkost": {
-            "label": "Hra o lehkost",
+            "label": "Chytré já",
             "useSupabase": true,
             "universe": "lehkost",
             "modelFile": "../data/universes/lehkost/models/lehkost.json"
