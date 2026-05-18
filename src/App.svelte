@@ -106,7 +106,7 @@
     killer: { label: 'SRDCE', energy_drain: -8, description: 'Srdce potřebuje pohyb.' },
     action: {
       id: 'plank_60s', label: 'Drž plank 60 sekund', icon: '🏋️',
-      type: 'act', duration: 60, status: 'READY', tier: 1,
+      type: 'timed', duration: 60, status: 'READY', tier: 1,
     },
     sources: [
       { med_id: 104, type: 'STUDY', title: 'Resistance Training and Cardiovascular Health', journal: 'Nature Medicine', year: 2023, status: 'VERIFIED' },
