@@ -617,7 +617,9 @@ async function fetchOneNode(sb, userId, nodeId, shared) {
       trend_label: trend.label, trend_direction: trend.direction,
       spanek_index: spanekIndex, vyziva_index: vyzivaIndex,
     },
-    killer, action,
+    // Lehkost sub-uzly: nezobrazuj killer pokud je uzel GREEN
+    killer: (LH_IDS.includes(nodeId) && nodeId !== 'lh_main' && lhBatteryState === 'GREEN') ? null : killer,
+    action,
     day_type: disciplineId || dayType,
     sources,
     verdict: orchLog?.verdict || deterministicVerdict,
