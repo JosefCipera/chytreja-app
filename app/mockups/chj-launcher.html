@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>CHJ Launcher</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #080f1e;
+    color: #e2e8f0;
+    font-family: 'Inter', system-ui, sans-serif;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 48px 20px 32px;
+  }
+
+  /* Header */
+  .logo {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+  .logo-chj {
+    font-family: monospace;
+    font-size: 28px;
+    letter-spacing: 0.4em;
+    color: #06b6d4;
+    text-shadow: 0 0 20px rgba(6,182,212,0.4);
+  }
+  .logo-sub {
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    color: #334155;
+    margin-top: 4px;
+  }
+
+  /* Universe cards */
+  .universes {
+    width: 100%;
+    max-width: 380px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+
+  .card {
+    border-radius: 14px;
+    padding: 16px 18px;
+    border: 1px solid rgba(255,255,255,0.07);
+    background: rgba(15,23,42,0.6);
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .card:hover {
+    border-color: rgba(6,182,212,0.25);
+    background: rgba(15,23,42,0.85);
+  }
+
+  /* Recommended card */
+  .card--recommended {
+    border-color: rgba(6,182,212,0.35);
+    background: rgba(6,182,212,0.05);
+    box-shadow: 0 0 24px rgba(6,182,212,0.08);
+  }
+  .card--recommended::before {
+    content: 'DOPORUČENO';
+    position: absolute;
+    top: 10px; right: 12px;
+    font-family: monospace;
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    color: #06b6d4;
+  }
+
+  .card-top {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .card-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .card-name {
+    font-size: 13px;
+    font-family: monospace;
+    letter-spacing: 0.08em;
+    color: #94a3b8;
+  }
+  .card-state {
+    margin-left: auto;
+    font-size: 11px;
+    font-family: monospace;
+    letter-spacing: 0.1em;
+  }
+
+  .card-action {
+    font-size: 16px;
+    color: #e2e8f0;
+    line-height: 1.4;
+    font-weight: 400;
+  }
+  .card-action--muted {
+    font-size: 14px;
+    color: #475569;
+  }
+
+  .card-meta {
+    margin-top: 8px;
+    font-size: 11px;
+    color: #334155;
+    font-family: monospace;
+    letter-spacing: 0.06em;
+  }
+
+  /* Voice button */
+  .voice-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    margin-top: 8px;
+  }
+
+  .voice-btn {
+    width: 72px; height: 72px;
+    border-radius: 50%;
+    border: 1px solid rgba(6,182,212,0.3);
+    background: rgba(6,182,212,0.07);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 26px;
+  }
+  .voice-btn:hover {
+    border-color: rgba(6,182,212,0.6);
+    background: rgba(6,182,212,0.14);
+    box-shadow: 0 0 24px rgba(6,182,212,0.2);
+  }
+  .voice-btn.listening {
+    border-color: #06b6d4;
+    background: rgba(6,182,212,0.18);
+    animation: pulse 1.2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(6,182,212,0.3); }
+    50%       { box-shadow: 0 0 0 12px rgba(6,182,212,0); }
+  }
+
+  .voice-hint {
+    font-size: 12px;
+    color: #334155;
+    font-family: monospace;
+    letter-spacing: 0.1em;
+  }
+  .voice-hint span {
+    color: #475569;
+  }
+
+  /* State colors */
+  .green  { color: #22c55e; }
+  .yellow { color: #eab308; }
+  .red    { color: #ef4444; }
+  .dot-green  { background: #22c55e; }
+  .dot-yellow { background: #eab308; }
+  .dot-red    { background: #ef4444; }
+  .dot-gray   { background: #334155; }
+</style>
+</head>
+<body>
+
+<div class="logo">
+  <div class="logo-chj">C H J</div>
+  <div class="logo-sub">CHYTRÉ JÁ</div>
+</div>
+
+<div class="universes">
+
+  <!-- Zdraví — recommended -->
+  <div class="card card--recommended" onclick="openUniverse('zdravi')">
+    <div class="card-top">
+      <div class="card-dot dot-yellow"></div>
+      <span class="card-name">ZDRAVÍ</span>
+      <span class="card-state yellow">YELLOW · −STABILNÍ</span>
+    </div>
+    <div class="card-action">Jdi dnes spát před 22:30</div>
+    <div class="card-meta">VINÍK: SPÁNKOVÝ DEFICIT · cost/throughput ↑↑</div>
+  </div>
+
+  <!-- Byznys -->
+  <div class="card" onclick="openUniverse('byznis')">
+    <div class="card-top">
+      <div class="card-dot dot-red"></div>
+      <span class="card-name">BYZNYS</span>
+      <span class="card-state red">RED · OMEZENÍ</span>
+    </div>
+    <div class="card-action">Zkontroluj kapacitu linky B před poradou</div>
+    <div class="card-meta">VINÍK: VÝROBA · bottleneck aktivní</div>
+  </div>
+
+  <!-- Rodina — locked -->
+  <div class="card" style="opacity:0.4;" onclick="addUniverse()">
+    <div class="card-top">
+      <div class="card-dot dot-gray"></div>
+      <span class="card-name">+ PŘIDAT VESMÍR</span>
+    </div>
+    <div class="card-action--muted">Rodina, Učení, Finance…</div>
+  </div>
+
+</div>
+
+<!-- Voice -->
+<div class="voice-wrap">
+  <button class="voice-btn" id="voiceBtn" onclick="toggleVoice()">🎙</button>
+  <div class="voice-hint">řekni: <span>"zdraví"</span> · <span>"byznys"</span> · <span>"přidej"</span></div>
+</div>
+
+<script>
+  const btn = document.getElementById('voiceBtn');
+  let listening = false;
+
+  function toggleVoice() {
+    listening = !listening;
+    btn.classList.toggle('listening', listening);
+    if (listening) {
+      setTimeout(() => {
+        listening = false;
+        btn.classList.remove('listening');
+        // Simulace rozpoznání "zdraví"
+        openUniverse('zdravi');
+      }, 2000);
+    }
+  }
+
+  function openUniverse(id) {
+    const names = { zdravi: 'Zdraví', byznis: 'Byznys' };
+    alert(`Otevírám vesmír: ${names[id] || id}`);
+  }
+
+  function addUniverse() {
+    alert('Výběr dalšího vesmíru…');
+  }
+</script>
+</body>
+</html>
