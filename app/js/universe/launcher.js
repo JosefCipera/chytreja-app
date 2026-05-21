@@ -361,10 +361,11 @@ async function loadBioData() {
 
     // Launcher vždy zobrazuje BIO stav z Lehkosti (lh_main) — bio je základ bez ohledu na aktivní model.
     // currentModel se použije jen pro routing hlasových příkazů (viz tryRoute).
-    const url = `/api/hud-data-bulk?nodeId=lh_main&userId=${userId}&universe=lehkost`;
+    const url = `/api/hud-data-bulk?nodes=lh_main&userId=${userId}&universe=lehkost`;
     const res = await fetch(url);
     if (!res.ok) throw new Error(`hud-data-bulk ${res.status}`);
-    const data = await res.json();
+    const bulk = await res.json();
+    const data = bulk.lh_main || {};
 
     // Debug — viditelné v konzoli (F12)
     console.log('[CHJ Launcher] bio data:', { url, uid: userId, killer: data.killer, pct: data.battery?.percent });
