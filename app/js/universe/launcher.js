@@ -272,22 +272,46 @@ const HTML = `
 `;
 
 // ── Node routing map ─────────────────────────────────────────────────────────
-// Maps voice keywords → node IDs (same as _tryShowNode in universe-panel.js)
+// Maps voice keywords → node IDs
+// Pokrývá Lehkost i Longevity uzly — launcher rozpozná oba vesmíry
 const NODE_KEYWORDS = {
-  'pohyb':        'lh_pohyb',
-  'regenerace':   'lh_regenerace',
-  'výživa':       'lh_vyziva',
-  'výživu':       'lh_vyziva',
-  'jídlo':        'lh_vyziva',
-  'mysl':         'lh_mysl',
-  'myšlení':      'lh_mysl',
-  'zdraví':       'zdravi',
-  'zdravi':       'zdravi',
-  'tělo':         'telo',
-  'síla':         'telo',
-  'vesmír':       null,  // just open the universe, no panel
-  'domů':         null,
-  'přehled':      null,
+  // ── Lehkost ──
+  'pohyb':          'lh_pohyb',
+  'regenerace':     'lh_regenerace',
+  'spánek':         'lh_regenerace',
+  'spanek':         'lh_regenerace',
+  'spát':           'lh_regenerace',
+  'výživa':         'lh_vyziva',
+  'výživu':         'lh_vyziva',
+  'jídlo':          'lh_vyziva',
+  'jídla':          'lh_vyziva',
+  'mysl':           'lh_mysl',
+  'myšlení':        'lh_mysl',
+  'stres':          'lh_mysl',
+  // ── Longevity ──
+  'tělo':           'telo',
+  'síla':           'telo',
+  'svaly':          'telo',
+  'zdraví':         'zdravi',
+  'zdravi':         'zdravi',
+  'prevence':       'zdravi',
+  'metabolismus':   'metabolicke',
+  'metabolicke':    'metabolicke',
+  'cukr':           'metabolicke',
+  'inzulín':        'metabolicke',
+  'mysl longevity': 'mysl',
+  'mozek':          'mysl',
+  'kardio':         'kardio',
+  'srdce':          'kardio',
+  'kondice':        'kardio',
+  'výživa longevity': 'vyziva',
+  'protein':        'vyziva',
+  // ── Navigace ──
+  'vesmír':         null,
+  'domů':           null,
+  'přehled':        null,
+  'zpět':           null,
+  'hlavní':         null,
 };
 
 // ── State ────────────────────────────────────────────────────────────────────
@@ -341,9 +365,13 @@ async function loadBioData() {
     const mainNodeId = isLehkost ? 'lh_main' : 'dlouhovekost';
     const universeParam = isLehkost ? '&universe=lehkost' : '';
 
-    const res = await fetch(`/api/hud-data-bulk?nodeId=${mainNodeId}&userId=${userId}${universeParam}`);
-    if (!res.ok) throw new Error('hud-data-bulk failed');
+    const url = `/api/hud-data-bulk?nodeId=${mainNodeId}&userId=${userId}${universeParam}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`hud-data-bulk ${res.status}`);
     const data = await res.json();
+
+    // Debug — viditelné v konzoli (F12)
+    console.log('[CHJ Launcher] data:', { url, uid: userId, model: currentModel, killer: data.killer, pct: data.life_battery?.percent });
 
     const pct    = data.life_battery?.percent ?? 50;
     const killer = data.killer?.label ?? null;
