@@ -628,29 +628,31 @@ function startPassiveListening() {
   if (!('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) return;
   if (_recognition) return; // už běží
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  const r  = new SR();
-  r.lang = 'cs-CZ'; r.continuous = true; r.interimResults = false;
-  r.onresult = e => {
-    const t = Array.from(e.results)
-      .slice(e.resultIndex)
-      .filter(res => res.isFinal)
-      .map(res => res[0].transcript)
-      .join(' ')
-      .toLowerCase();
-    console.log('[CHJ Passive] heard:', t);
-    if (t) tryRoute(t);
-  };
-  r.onend = () => {
-    _recognition = null;
-    if (_phase === 'sleeping') setTimeout(() => startPassiveListening(), 1000);
-  };
-  r.onerror = (e) => {
-    console.warn('[CHJ Passive] error:', e.error);
-    _recognition = null;
-    if (_phase === 'sleeping') setTimeout(() => startPassiveListening(), 2000);
-  };
-  _recognition = r;
-  try { r.start(); } catch(e) { _recognition = null; }
+
+  function spawnSession() {
+    if (_phase !== 'sleeping' || _recognition) return;
+    const r = new SR();
+    r.lang = 'cs-CZ'; r.continuous = false; r.interimResults = false; r.maxAlternatives = 1;
+    r.onresult = e => {
+      const t = e.results[0][0].transcript.toLowerCase();
+      console.log('[CHJ Passive] heard:', t);
+      tryRoute(t);
+    };
+    r.onend = () => {
+      _recognition = null;
+      if (_phase === 'sleeping') setTimeout(spawnSession, 300);
+    };
+    r.onerror = e => {
+      console.warn('[CHJ Passive] error:', e.error);
+      _recognition = null;
+      const delay = e.error === 'not-allowed' ? 0 : 1500;
+      if (_phase === 'sleeping' && e.error !== 'not-allowed') setTimeout(spawnSession, delay);
+    };
+    _recognition = r;
+    try { r.start(); } catch(err) { _recognition = null; }
+  }
+
+  spawnSession();
 }
 
 function listenOnce(cb) {
@@ -693,9 +695,12 @@ async function onTextSend() {
 
   if (!text) { if (_phase === 'awake') showAction(); return; }
 
-  // Try routing by keyword first
-  const routed = tryRoute(text.toLowerCase());
-  if (routed) return;
+  // Route jen pokud je to krátký příkaz (max 4 slova) — delší věty jdou na AI
+  const wordCount = text.trim().split(/\s+/).length;
+  if (wordCount <= 4) {
+    const routed = tryRoute(text.toLowerCase());
+    if (routed) return;
+  }
 
   // Otherwise send to AI and show response as action
   if (_phase !== 'action') {
