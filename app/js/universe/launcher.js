@@ -93,8 +93,9 @@ const STYLE = `
 
 /* ── Laser line ── */
 .chjl-laser-wrap {
-  width: 100%; max-width: 340px;
+  width: min(85vw, 480px);
   height: 6px;
+  margin-top: 18px;
   background: transparent;
   border: none;
   border-radius: 3px; overflow: hidden;
@@ -203,6 +204,27 @@ const STYLE = `
 /* Sleep state */
 #chj-launcher.sleeping .chjl-footer { opacity: 0.15; }
 #chj-launcher.sleeping .chjl-laser { opacity: 0.3; }
+
+/* Plovoucí ← tlačítko zpět do launcheru */
+#chj-back-btn {
+  position: fixed; bottom: 28px; left: 50%;
+  transform: translateX(-50%);
+  z-index: 9998;
+  background: rgba(1,4,6,0.85);
+  border: 1px solid rgba(0,188,212,0.2);
+  color: #4a8fa0;
+  font-family: monospace;
+  font-size: 11px; letter-spacing: 3px;
+  padding: 9px 22px;
+  border-radius: 20px;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  transition: all 0.3s;
+}
+#chj-back-btn:hover {
+  color: #00bcd4;
+  border-color: rgba(0,188,212,0.5);
+}
 `;
 
 // ── HTML ─────────────────────────────────────────────────────────────────────
@@ -353,16 +375,21 @@ async function loadBioData() {
 }
 
 function getUid() {
-  return window.CHJ_UID || window.firebaseAuth?.currentUser?.uid || null;
+  // chj_uid je uložené v localStorage po přihlášení — nejrychlejší zdroj
+  return localStorage.getItem('chj_uid')
+    || window.CHJ_UID
+    || window.firebaseAuth?.currentUser?.uid
+    || null;
 }
 
 function waitForUserId(timeoutMs) {
   return new Promise(resolve => {
-    if (getUid()) { resolve(getUid()); return; }
+    const uid = getUid();
+    if (uid) { resolve(uid); return; }
     const start = Date.now();
     const t = setInterval(() => {
-      const uid = getUid();
-      if (uid) { clearInterval(t); resolve(uid); }
+      const u = getUid();
+      if (u) { clearInterval(t); resolve(u); }
       else if (Date.now() - start > timeoutMs) { clearInterval(t); resolve(null); }
     }, 200);
   });
@@ -482,29 +509,36 @@ function routeToNode(nodeId) {
     window._showUniverse();
   }
 
-  // Pak teprve fade-out launcheru — canvas je připraven
-  setTimeout(() => {
-    launcher.classList.add('fade-out');
-    setTimeout(() => { launcher.style.display = 'none'; }, 650);
-  }, 150);
-
   // Vrať hlavičku appky — odstraň CSS inject
   document.getElementById('chj-hide-header')?.remove();
 
-  // Re-show launcher when HUD panel closes
-  document.addEventListener('chjPanelClosed', () => {
-    launcher.style.display = 'flex';
-    launcher.classList.remove('fade-out');
-    launcher.style.opacity = '1';
-    // Znovu skryj header
-    if (!document.getElementById('chj-hide-header')) {
-      const s = document.createElement('style');
-      s.id = 'chj-hide-header';
-      s.textContent = '#appHeader { display: none !important; }';
-      document.head.appendChild(s);
-    }
-    // Stay sleeping — user sees "—" and can speak again
-  }, { once: true });
+  // Pak teprve fade-out launcheru — canvas je připraven
+  setTimeout(() => {
+    launcher.classList.add('fade-out');
+    setTimeout(() => {
+      launcher.style.display = 'none';
+      // Injektuj plovoucí ← tlačítko zpět
+      if (!document.getElementById('chj-back-btn')) {
+        const btn = document.createElement('button');
+        btn.id = 'chj-back-btn';
+        btn.textContent = '← CHJ';
+        btn.onclick = () => {
+          btn.remove();
+          launcher.style.display = 'flex';
+          launcher.classList.remove('fade-out');
+          launcher.style.opacity = '1';
+          // Znovu skryj header
+          if (!document.getElementById('chj-hide-header')) {
+            const s = document.createElement('style');
+            s.id = 'chj-hide-header';
+            s.textContent = '#appHeader { display: none !important; } body { background: #010406 !important; }';
+            document.head.appendChild(s);
+          }
+        };
+        document.body.appendChild(btn);
+      }
+    }, 650);
+  }, 150);
 }
 
 // ── Voice ────────────────────────────────────────────────────────────────────
