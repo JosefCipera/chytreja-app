@@ -59,9 +59,9 @@ const STYLE = `
   margin-bottom: 10px;
 }
 .chjl-cursor {
-  width: 3px; height: 80px; background: #00bcd4; border-radius: 2px;
+  width: 2px; height: 74px; background: #00bcd4; border-radius: 1px;
   flex-shrink: 0; animation: chjl-blink 1.1s step-end infinite;
-  box-shadow: 0 0 12px rgba(0,188,212,0.85);
+  box-shadow: 0 0 10px rgba(0,188,212,0.8);
 }
 @keyframes chjl-blink { 0%,100%{opacity:1} 50%{opacity:0} }
 .chjl-text {
@@ -282,6 +282,10 @@ let _recognition = null;
   el.addEventListener('click', onLauncherClick);
   document.body.insertAdjacentElement('afterbegin', el);
 
+  // Skryj hlavičku appky — launcher je fullscreen shell
+  const header = document.getElementById('appHeader');
+  if (header) header.style.display = 'none';
+
   // Wire up controls (after insertion)
   document.getElementById('chjBtn').addEventListener('click', onHotovo);
   document.getElementById('chjMic').addEventListener('click', onMicClick);
@@ -311,9 +315,15 @@ async function loadBioData() {
     const killer = data.killer?.label ?? null;
     const action = data.action?.label ?? null;
 
+    const killerText = killer
+      ? killer.toLowerCase()
+      : pct > 70 ? 'tělo v kondici'
+      : pct > 40 ? 'energie pod střed'
+      : 'přetížení regenerace';
+
     _bioData = {
       pct,
-      killer: killer ? killer.toLowerCase() : null,
+      killer: killerText,
       action: action || 'Odpočiň si a sleduj jak se cítíš.',
       color:  pct > 70 ? '#22c55e' : pct > 40 ? '#eab308' : '#ef4444',
       gradient: pct > 70
@@ -349,9 +359,9 @@ function waitForUserId(timeoutMs) {
 function showFallback() {
   // Show without real data — generic morning state
   _bioData = {
-    pct: 50, killer: 'připraven', action: 'Řekni co chceš řešit.',
-    color: '#06b6d4',
-    gradient: 'linear-gradient(90deg, #0d3854, #00cbba)',
+    pct: 50, killer: 'energie pod střed', action: 'Řekni co chceš řešit.',
+    color: '#eab308',
+    gradient: 'linear-gradient(90deg, #2d1f00, #eab308)',
   };
   showAwake();
 }
@@ -463,11 +473,16 @@ function routeToNode(nodeId) {
     }
   }, 600);
 
+  // Vrať hlavičku appky
+  const header = document.getElementById('appHeader');
+  if (header) header.style.display = '';
+
   // Re-show launcher when HUD panel closes
   document.addEventListener('chjPanelClosed', () => {
     launcher.style.display = 'flex';
     launcher.classList.remove('fade-out');
     launcher.style.opacity = '1';
+    if (header) header.style.display = 'none';
     // Stay sleeping — user sees "—" and can speak again
   }, { once: true });
 }
