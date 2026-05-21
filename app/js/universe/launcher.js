@@ -274,56 +274,61 @@ const HTML = `
 // ── Node routing map ─────────────────────────────────────────────────────────
 // Maps voice keywords → node IDs
 // Pokrývá Lehkost i Longevity uzly — launcher rozpozná oba vesmíry
+// Klíčová slova rozdělená podle modelu — "spánek" v longevity ≠ "spánek" v lehkost
 const NODE_KEYWORDS = {
-  // ── Lehkost ──
-  'pohyb':          'lh_pohyb',
-  'regenerace':     'lh_regenerace',
-  'spánek':         'lh_regenerace',
-  'spanek':         'lh_regenerace',
-  'spát':           'lh_regenerace',
-  'výživa':         'lh_vyziva',
-  'výživu':         'lh_vyziva',
-  'jídlo':          'lh_vyziva',
-  'jídla':          'lh_vyziva',
-  'mysl':           'lh_mysl',
-  'myšlení':        'lh_mysl',
-  'stres':          'lh_mysl',
-  // ── Longevity ──
-  'tělo':           'telo',
-  'síla':           'telo',
-  'svaly':          'telo',
-  'zdraví':         'zdravi',
-  'zdravi':         'zdravi',
-  'prevence':       'zdravi',
-  'metabolismus':   'metabolicke',
-  'metabolicke':    'metabolicke',
-  'cukr':           'metabolicke',
-  'inzulín':        'metabolicke',
-  'mysl longevity': 'mysl',
-  'mozek':          'mysl',
-  'kardio':         'kardio',
-  'srdce':          'kardio',
-  'kondice':        'kardio',
-  'výživa longevity': 'vyziva',
-  'protein':        'vyziva',
-  // ── TOC ──
-  'průtok':         'toc',
-  'prutok':         'toc',
-  'hra o průtok':   'toc',
-  'hra o prutok':   'toc',
-  'toc':            'toc',
-  'omezení':        'toc',
-  'strategie':      'toc_strategie',
-  'finance':        'toc_finance',
-  'výroba':         'toc_vyroba',
-  'projekty':       'toc_projekty',
-  'marketing':      'toc_marketing',
-  // ── Navigace ──
-  'vesmír':         null,
-  'domů':           null,
-  'přehled':        null,
-  'zpět':           null,
-  'hlavní':         null,
+  lehkost: {
+    'pohyb':      'lh_pohyb',
+    'regenerace': 'lh_regenerace',
+    'spánek':     'lh_regenerace',
+    'spanek':     'lh_regenerace',
+    'spát':       'lh_regenerace',
+    'výživa':     'lh_vyziva',
+    'výživu':     'lh_vyziva',
+    'jídlo':      'lh_vyziva',
+    'mysl':       'lh_mysl',
+    'myšlení':    'lh_mysl',
+    'stres':      'lh_mysl',
+  },
+  longevity: {
+    'tělo':         'telo',
+    'síla':         'telo',
+    'svaly':        'telo',
+    'pohyb':        'telo',
+    'zdraví':       'zdravi',
+    'prevence':     'zdravi',
+    'metabolismus': 'metabolicke',
+    'cukr':         'metabolicke',
+    'inzulín':      'metabolicke',
+    'mysl':         'mysl',
+    'mozek':        'mysl',
+    'spánek':       'spanek',
+    'spanek':       'spanek',
+    'kardio':       'kardio',
+    'srdce':        'kardio',
+    'kondice':      'kardio',
+    'výživa':       'vyziva',
+    'protein':      'vyziva',
+  },
+  toc: {
+    'průtok':       'toc',
+    'prutok':       'toc',
+    'hra o průtok': 'toc',
+    'hra o prutok': 'toc',
+    'omezení':      'toc',
+    'strategie':    'toc_strategie',
+    'finance':      'toc_finance',
+    'výroba':       'toc_vyroba',
+    'projekty':     'toc_projekty',
+    'marketing':    'toc_marketing',
+  },
+  // Funguje ve všech modelech
+  common: {
+    'vesmír':  null,
+    'domů':    null,
+    'přehled': null,
+    'zpět':    null,
+    'hlavní':  null,
+  },
 };
 
 // ── State ────────────────────────────────────────────────────────────────────
@@ -678,10 +683,16 @@ function listenOnce(cb) {
 }
 
 function tryRoute(transcript) {
-  for (const [kw, nodeId] of Object.entries(NODE_KEYWORDS)) {
-    if (transcript.includes(kw)) {
-      routeToNode(nodeId);
-      return true;
+  const model  = localStorage.getItem('currentModel') || 'longevity';
+  const modelKws  = NODE_KEYWORDS[model]  || {};
+  const commonKws = NODE_KEYWORDS.common;
+
+  for (const map of [modelKws, commonKws]) {
+    for (const [kw, nodeId] of Object.entries(map)) {
+      if (transcript.includes(kw)) {
+        routeToNode(nodeId);
+        return true;
+      }
     }
   }
   return false;
