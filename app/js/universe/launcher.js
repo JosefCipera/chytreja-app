@@ -593,6 +593,9 @@ function routeToNode(nodeId) {
             s.textContent = '#appHeader { display: none !important; } body { background: #010406 !important; }';
             document.head.appendChild(s);
           }
+          // Restartuj pasivní poslouchání
+          _phase = 'sleeping';
+          startPassiveListening();
         };
         document.body.appendChild(btn);
       }
@@ -622,24 +625,32 @@ function onMicClick(e) {
 }
 
 function startPassiveListening() {
-  // Continuous low-priority listening while sleeping
-  // Re-uses browser SpeechRecognition — restarts on silence
   if (!('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) return;
+  if (_recognition) return; // už běží
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   const r  = new SR();
-  r.lang = 'cs-CZ'; r.continuous = false; r.interimResults = false;
+  r.lang = 'cs-CZ'; r.continuous = true; r.interimResults = false;
   r.onresult = e => {
-    const t = e.results[0][0].transcript.toLowerCase();
-    tryRoute(t);
+    const t = Array.from(e.results)
+      .slice(e.resultIndex)
+      .filter(res => res.isFinal)
+      .map(res => res[0].transcript)
+      .join(' ')
+      .toLowerCase();
+    console.log('[CHJ Passive] heard:', t);
+    if (t) tryRoute(t);
   };
   r.onend = () => {
-    if (_phase === 'sleeping') setTimeout(() => r.start(), 800);
+    _recognition = null;
+    if (_phase === 'sleeping') setTimeout(() => startPassiveListening(), 1000);
   };
-  r.onerror = () => {
-    if (_phase === 'sleeping') setTimeout(() => r.start(), 2000);
+  r.onerror = (e) => {
+    console.warn('[CHJ Passive] error:', e.error);
+    _recognition = null;
+    if (_phase === 'sleeping') setTimeout(() => startPassiveListening(), 2000);
   };
   _recognition = r;
-  r.start();
+  try { r.start(); } catch(e) { _recognition = null; }
 }
 
 function listenOnce(cb) {

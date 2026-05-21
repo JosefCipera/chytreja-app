@@ -567,8 +567,8 @@ async function fetchOneNode(sb, userId, nodeId, shared) {
       .eq('user_id', userId).eq('universe', 'lehkost').gte('date', since7)
       .order('date', { ascending: false });
     killer = detectFlowKiller(lhCheckins || []);
-    // Action derived from top FLOW KILLER (overrides DB lookup below)
-    if (!action && todayCount < 2) {
+    // lh_main: vždy deterministický killer action — ignoruje agent_log (může mít AI-generovaný text)
+    if (todayCount < 2) {
       const killerAction = LH_KILLER_ACTIONS[killer.killerId] || LH_KILLER_ACTIONS.low_movement;
       action = { ...killerAction, status: 'READY', tier: 1, node_id: 'lh_main' };
     }
