@@ -93,7 +93,8 @@ const STYLE = `
 
 /* ── Laser line ── */
 .chjl-laser-wrap {
-  width: 100%; height: 6px;
+  width: 100%; max-width: 340px;
+  height: 6px;
   background: transparent;
   border: none;
   border-radius: 3px; overflow: hidden;
@@ -274,10 +275,13 @@ let _recognition = null;
 
 // ── Mount ────────────────────────────────────────────────────────────────────
 (function mount() {
-  // Injektuj CSS pro skrytí headeru okamžitě — dříve než se header vykreslí
+  // Injektuj CSS okamžitě — skryj header, nastav tmavé body pozadí (zabraňuje přebliknutí)
   const hideHeaderStyle = document.createElement('style');
   hideHeaderStyle.id = 'chj-hide-header';
-  hideHeaderStyle.textContent = '#appHeader { display: none !important; }';
+  hideHeaderStyle.textContent = `
+    #appHeader { display: none !important; }
+    body { background: #010406 !important; }
+  `;
   document.head.appendChild(hideHeaderStyle);
 
   const el = document.createElement('div');
@@ -309,7 +313,13 @@ async function loadBioData() {
     const userId = await waitForUserId(8000);
     if (!userId) { showFallback(); return; }
 
-    const res = await fetch(`/api/hud-data-bulk?nodeId=lh_main&userId=${userId}`);
+    // Detekuj aktivní vesmír — lehkost má vlastní main node
+    const currentModel = localStorage.getItem('currentModel') || 'lehkost';
+    const isLehkost = currentModel === 'lehkost';
+    const mainNodeId = isLehkost ? 'lh_main' : 'dlouhovekost';
+    const universeParam = isLehkost ? '&universe=lehkost' : '';
+
+    const res = await fetch(`/api/hud-data-bulk?nodeId=${mainNodeId}&userId=${userId}${universeParam}`);
     if (!res.ok) throw new Error('hud-data-bulk failed');
     const data = await res.json();
 
@@ -464,16 +474,19 @@ function goSleep() {
 // ── Routing — open universe node ─────────────────────────────────────────────
 function routeToNode(nodeId) {
   const launcher = document.getElementById('chj-launcher');
-  launcher.classList.add('fade-out');
+
+  // Nejdřív spusť uzel (canvas se připraví pod laucherem)
+  if (nodeId && window._openNodeById) {
+    window._openNodeById(nodeId);
+  } else if (window._showUniverse) {
+    window._showUniverse();
+  }
+
+  // Pak teprve fade-out launcheru — canvas je připraven
   setTimeout(() => {
-    launcher.style.display = 'none';
-    // Delegate to universe — same functions used by voice CMD in universe-panel.js
-    if (nodeId && window._openNodeById) {
-      window._openNodeById(nodeId);
-    } else if (window._showUniverse) {
-      window._showUniverse();
-    }
-  }, 600);
+    launcher.classList.add('fade-out');
+    setTimeout(() => { launcher.style.display = 'none'; }, 650);
+  }, 150);
 
   // Vrať hlavičku appky — odstraň CSS inject
   document.getElementById('chj-hide-header')?.remove();
