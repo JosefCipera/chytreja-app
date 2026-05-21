@@ -359,19 +359,15 @@ async function loadBioData() {
     const userId = await waitForUserId(8000);
     if (!userId) { showFallback(); return; }
 
-    // Detekuj aktivní vesmír — lehkost má vlastní main node
-    const currentModel = localStorage.getItem('currentModel') || 'lehkost';
-    const isLehkost = currentModel === 'lehkost';
-    const mainNodeId = isLehkost ? 'lh_main' : 'dlouhovekost';
-    const universeParam = isLehkost ? '&universe=lehkost' : '';
-
-    const url = `/api/hud-data-bulk?nodeId=${mainNodeId}&userId=${userId}${universeParam}`;
+    // Launcher vždy zobrazuje BIO stav z Lehkosti (lh_main) — bio je základ bez ohledu na aktivní model.
+    // currentModel se použije jen pro routing hlasových příkazů (viz tryRoute).
+    const url = `/api/hud-data-bulk?nodeId=lh_main&userId=${userId}&universe=lehkost`;
     const res = await fetch(url);
     if (!res.ok) throw new Error(`hud-data-bulk ${res.status}`);
     const data = await res.json();
 
     // Debug — viditelné v konzoli (F12)
-    console.log('[CHJ Launcher] data:', { url, uid: userId, model: currentModel, killer: data.killer, pct: data.life_battery?.percent });
+    console.log('[CHJ Launcher] bio data:', { url, uid: userId, killer: data.killer, pct: data.life_battery?.percent });
 
     const pct    = data.life_battery?.percent ?? 50;
     const killer = data.killer?.label ?? null;
