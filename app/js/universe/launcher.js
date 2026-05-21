@@ -62,6 +62,8 @@ const STYLE = `
   width: 2px; height: 74px; background: #00bcd4; border-radius: 1px;
   flex-shrink: 0; animation: chjl-blink 1.1s step-end infinite;
   box-shadow: 0 0 10px rgba(0,188,212,0.8);
+  align-self: flex-end;
+  margin-bottom: 2px;
 }
 @keyframes chjl-blink { 0%,100%{opacity:1} 50%{opacity:0} }
 .chjl-text {
@@ -69,9 +71,8 @@ const STYLE = `
   font-family: 'Urbanist', sans-serif;
   line-height: 0.88; letter-spacing: 2px; text-align: left;
 }
-.chjl-row1 { font-size: 46px; font-weight: 300; color: #94a3b8; }
-.chjl-row2 { font-size: 46px; font-weight: 800; color: #00bcd4;
-  text-shadow: 0 0 20px rgba(0,188,212,0.5); }
+.chjl-row1 { font-size: 46px; font-weight: 300; color: #e2e8f0; }
+.chjl-row2 { font-size: 46px; font-weight: 800; color: #e2e8f0; }
 
 /* Flat accent mark above letter */
 .chjl-ac {
@@ -93,10 +94,9 @@ const STYLE = `
 /* ── Laser line ── */
 .chjl-laser-wrap {
   width: 100%; height: 6px;
-  background: rgba(0,20,30,0.7);
-  border: 1px solid rgba(0,188,212,0.12);
+  background: transparent;
+  border: none;
   border-radius: 3px; overflow: hidden;
-  box-shadow: 0 0 20px rgba(0,0,0,0.8);
 }
 .chjl-laser {
   height: 100%; border-radius: 3px;
@@ -274,6 +274,12 @@ let _recognition = null;
 
 // ── Mount ────────────────────────────────────────────────────────────────────
 (function mount() {
+  // Injektuj CSS pro skrytí headeru okamžitě — dříve než se header vykreslí
+  const hideHeaderStyle = document.createElement('style');
+  hideHeaderStyle.id = 'chj-hide-header';
+  hideHeaderStyle.textContent = '#appHeader { display: none !important; }';
+  document.head.appendChild(hideHeaderStyle);
+
   const el = document.createElement('div');
   el.id = 'chj-launcher';
   el.innerHTML = HTML;
@@ -281,10 +287,6 @@ let _recognition = null;
   // Block clicks going through while loading
   el.addEventListener('click', onLauncherClick);
   document.body.insertAdjacentElement('afterbegin', el);
-
-  // Skryj hlavičku appky — launcher je fullscreen shell
-  const header = document.getElementById('appHeader');
-  if (header) header.style.display = 'none';
 
   // Wire up controls (after insertion)
   document.getElementById('chjBtn').addEventListener('click', onHotovo);
@@ -473,16 +475,21 @@ function routeToNode(nodeId) {
     }
   }, 600);
 
-  // Vrať hlavičku appky
-  const header = document.getElementById('appHeader');
-  if (header) header.style.display = '';
+  // Vrať hlavičku appky — odstraň CSS inject
+  document.getElementById('chj-hide-header')?.remove();
 
   // Re-show launcher when HUD panel closes
   document.addEventListener('chjPanelClosed', () => {
     launcher.style.display = 'flex';
     launcher.classList.remove('fade-out');
     launcher.style.opacity = '1';
-    if (header) header.style.display = 'none';
+    // Znovu skryj header
+    if (!document.getElementById('chj-hide-header')) {
+      const s = document.createElement('style');
+      s.id = 'chj-hide-header';
+      s.textContent = '#appHeader { display: none !important; }';
+      document.head.appendChild(s);
+    }
     // Stay sleeping — user sees "—" and can speak again
   }, { once: true });
 }
