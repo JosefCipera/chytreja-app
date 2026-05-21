@@ -549,12 +549,15 @@ function routeToNode(nodeId) {
   const currentModel = localStorage.getItem('currentModel');
   const needsSwitch  = targetModel && targetModel !== currentModel;
 
+  // Zastav pasivní poslouchání — onend nesmí restartovat po routingu
+  _phase = 'routing';
+  if (_recognition) { try { _recognition.stop(); } catch(_) {} _recognition = null; }
+
   const doOpen = () => {
     if (nodeId && window._openNodeById) {
       window._openNodeById(nodeId);
-    } else if (window._showUniverse) {
-      window._showUniverse();
     }
+    // null nodeId = jen odhali canvas (universe běží za laucherem)
   };
 
   if (needsSwitch && window._loadAndRenderModel) {
@@ -607,7 +610,14 @@ function onMicClick(e) {
       if (!routed) showAction(); // treat as "co dál"
     });
   } else if (_phase === 'sleeping') {
-    listenOnce(transcript => tryRoute(transcript));
+    // Toggle pasivní poslouchání: klik → aktivní listenOnce, nebo zastav pasivní
+    if (_recognition) {
+      try { _recognition.stop(); } catch(_) {}
+      _recognition = null;
+      document.getElementById('chjMic').classList.remove('listening');
+    } else {
+      listenOnce(transcript => tryRoute(transcript));
+    }
   }
 }
 
