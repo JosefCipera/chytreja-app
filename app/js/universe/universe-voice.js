@@ -568,3 +568,6 @@ if (!document.getElementById('voice-toast-style')) {
   `;
   document.head.appendChild(s);
 }
+
+// Expose for launcher.js routing
+window._openNodeById = _openNodeById;

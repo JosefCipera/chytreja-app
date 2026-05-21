@@ -1,333 +1,518 @@
 <!DOCTYPE html>
 <html lang="cs">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-<title>CHJ</title>
-<style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  html, body {
-    height: 100%;
-    background: #000;
-    color: #e2e8f0;
-    font-family: 'Inter', system-ui, sans-serif;
-    overflow: hidden;
-    user-select: none;
-  }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CHJ // HUMAN OS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@300;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0; padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
 
-  .screen {
-    position: fixed; inset: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: space-between;
-    padding: 52px 32px 56px;
-  }
+        body {
+            background-color: #010406;
+            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            padding: 60px 40px 52px;
+            overflow: hidden;
+            cursor: pointer;
+            position: relative;
+        }
 
-  /* ── Logo ── */
-  .logo {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 6px;
-  }
-  .logo-chj {
-    font-family: monospace;
-    font-size: 20px;
-    letter-spacing: 0.55em;
-    color: #06b6d4;
-    text-shadow: 0 0 24px rgba(6,182,212,0.45);
-  }
-  .logo-sub {
-    font-size: 9px;
-    letter-spacing: 0.28em;
-    color: #0e2d38;
-    font-family: monospace;
-  }
+        /* Jemná ambientní záře v rozích */
+        body::before, body::after {
+            content: '';
+            position: absolute;
+            width: 300px; height: 300px;
+            border-radius: 50%;
+            background: rgba(0, 188, 212, 0.03);
+            filter: blur(80px);
+            pointer-events: none;
+        }
+        body::before { top: -50px; left: -50px; }
+        body::after  { bottom: -50px; right: -50px; }
 
-  /* ── Linka ── */
-  .line-wrap {
-    width: 100%;
-    max-width: 340px;
-    height: 2px;
-    background: rgba(255,255,255,0.04);
-    border-radius: 2px;
-    overflow: hidden;
-    margin-top: 10px;
-  }
-  .line-fill {
-    height: 100%;
-    border-radius: 2px;
-    transition: width 2s cubic-bezier(0.4,0,0.2,1), background 2s ease;
-    box-shadow: 0 0 12px currentColor;
-  }
+        /* Rohové hvězdy */
+        .corner-star {
+            position: absolute;
+            color: #4ba6b5;
+            font-size: 22px;
+            opacity: 0.35;
+            pointer-events: none;
+        }
+        .star-tl { top: 28px; left: 28px; }
+        .star-br { bottom: 28px; right: 28px; }
 
-  /* ── Střed — status ── */
-  .center {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0;
-    flex: 1;
-    justify-content: center;
-  }
-  .status-text {
-    font-size: 28px;
-    font-weight: 300;
-    color: #e2e8f0;
-    text-align: center;
-    line-height: 1.35;
-    letter-spacing: -0.01em;
-    transition: opacity 0.8s ease, transform 0.8s ease;
-  }
-  .status-text.hidden {
-    opacity: 0;
-    transform: translateY(-12px);
-  }
-  .action-text {
-    font-size: 20px;
-    font-weight: 300;
-    color: #e2e8f0;
-    text-align: center;
-    line-height: 1.5;
-    letter-spacing: -0.01em;
-    opacity: 0;
-    transform: translateY(12px);
-    transition: opacity 0.8s ease, transform 0.8s ease;
-    position: absolute;
-    padding: 0 32px;
-  }
-  .action-text.visible {
-    opacity: 1;
-    transform: translateY(0);
-  }
+        /* ── Logo ── */
+        header {
+            text-align: center;
+            width: 100%;
+            max-width: 900px;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0;
+        }
 
-  /* ── Dole — mikrofon ── */
-  .bottom {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 16px;
-  }
+        /* CHJ logo — kurzor vlevo + Chytré / Já */
+        .chj-logo {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
 
-  .mic-ring {
-    width: 64px; height: 64px;
-    border-radius: 50%;
-    border: 1px solid rgba(6,182,212,0.4);
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer;
-    transition: all 0.3s;
-    position: relative;
-  }
-  .mic-ring::before {
-    content: '';
-    position: absolute; inset: -6px;
-    border-radius: 50%;
-    border: 1px solid rgba(6,182,212,0.12);
-    animation: ripple 2.4s infinite;
-  }
-  .mic-ring::after {
-    content: '';
-    position: absolute; inset: -14px;
-    border-radius: 50%;
-    border: 1px solid rgba(6,182,212,0.06);
-    animation: ripple 2.4s 0.8s infinite;
-  }
-  @keyframes ripple {
-    0%   { transform: scale(1);    opacity: 1; }
-    100% { transform: scale(1.25); opacity: 0; }
-  }
-  .mic-ring.listening {
-    border-color: #06b6d4;
-    box-shadow: 0 0 0 0 rgba(6,182,212,0.4);
-    animation: micpulse 1s infinite;
-  }
-  @keyframes micpulse {
-    0%,100% { box-shadow: 0 0 0 0   rgba(6,182,212,0.4); }
-    50%     { box-shadow: 0 0 0 14px rgba(6,182,212,0);   }
-  }
-  .mic-icon {
-    font-size: 22px;
-    line-height: 1;
-  }
+        .chj-cursor {
+            width: 3px;
+            height: 80px;
+            background: #00bcd4;
+            border-radius: 2px;
+            flex-shrink: 0;
+            animation: blink 1.1s step-end infinite;
+            box-shadow: 0 0 12px rgba(0,188,212,0.85);
+        }
+        @keyframes blink {
+            0%,100% { opacity: 1; }
+            50%      { opacity: 0; }
+        }
 
-  .mic-label {
-    font-family: monospace;
-    font-size: 10px;
-    letter-spacing: 0.2em;
-    color: #0e2d38;
-    transition: color 0.3s;
-  }
-  .mic-label.active { color: #06b6d4; }
+        .chj-text {
+            display: flex;
+            flex-direction: column;
+            font-family: 'Urbanist', sans-serif;
+            line-height: 0.88;
+            letter-spacing: 1px;
+            color: #ffffff;
+            text-align: left;
+        }
+        .chj-row1 {
+            font-size: 46px;
+            font-weight: 300;
+            color: #94a3b8;
+            letter-spacing: 2px;
+        }
+        .chj-row2 {
+            font-size: 46px;
+            font-weight: 800;
+            color: #00bcd4;
+            text-shadow: 0 0 20px rgba(0,188,212,0.5);
+            letter-spacing: 2px;
+        }
 
-  /* Confirm button */
-  .confirm-btn {
-    font-family: monospace;
-    font-size: 12px;
-    letter-spacing: 0.2em;
-    color: #334155;
-    border: 1px solid rgba(255,255,255,0.06);
-    background: transparent;
-    padding: 10px 28px;
-    border-radius: 24px;
-    cursor: pointer;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.5s;
-  }
-  .confirm-btn.visible {
-    opacity: 1;
-    pointer-events: all;
-  }
-  .confirm-btn:hover { color: #94a3b8; border-color: rgba(255,255,255,0.15); }
+        /* Placatá čárka nad písmenem (místo háčku/čárky) */
+        .ac {
+            position: relative;
+            display: inline-block;
+        }
+        .ac::after {
+            content: '';
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0.42em;
+            height: 0.06em;
+            background: currentColor;
+            top: 0.1em;
+            border-radius: 1px;
+        }
 
-  /* Demo switcher */
-  .demo-states {
-    position: fixed;
-    bottom: 16px;
-    right: 16px;
-    display: flex;
-    gap: 6px;
-  }
-  .demo-dot {
-    width: 10px; height: 10px;
-    border-radius: 50%;
-    cursor: pointer;
-    opacity: 0.4;
-    transition: opacity 0.2s;
-  }
-  .demo-dot:hover { opacity: 1; }
-  .demo-dot.active { opacity: 1; }
-</style>
+        .logo-sub {
+            font-size: 12px;
+            letter-spacing: 5px;
+            color: #5ba8bc;
+            text-transform: uppercase;
+            margin-top: 14px;
+            margin-bottom: 22px;
+            padding-right: 5px;
+            text-shadow: 0 0 18px rgba(91,168,188,0.5);
+        }
+
+        /* ── Laser linka ── */
+        .laser-container {
+            width: 100%;
+            height: 6px;
+            background: rgba(0, 20, 30, 0.7);
+            border: 1px solid rgba(0, 188, 212, 0.12);
+            border-radius: 3px;
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(0,0,0,0.8);
+        }
+
+        .laser-line {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 1.6s cubic-bezier(0.4,0,0.2,1), background 1.6s ease, box-shadow 1.6s ease;
+        }
+
+        /* ── Střední scéna ── */
+        main {
+            text-align: center;
+            max-width: 560px;
+            width: 100%;
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            z-index: 10;
+        }
+
+        .text-stage {
+            width: 100%;
+            transition: opacity 0.55s cubic-bezier(0.4,0,0.2,1),
+                        transform 0.55s cubic-bezier(0.4,0,0.2,1),
+                        filter 0.55s cubic-bezier(0.4,0,0.2,1);
+            position: absolute;
+        }
+
+        /* Stav 1: alarm text */
+        .state-alarm {
+            font-size: 56px;
+            font-weight: 300;
+            letter-spacing: 1px;
+            color: #8ba8b8;
+            line-height: 1.2;
+            text-shadow: none;
+        }
+
+        /* Stav 2: akce */
+        .state-action {
+            font-size: 26px;
+            font-weight: 300;
+            line-height: 1.65;
+            color: #e8f4f8;
+            opacity: 0;
+            transform: scale(0.97);
+            filter: blur(14px);
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 40px;
+        }
+
+        /* HOTOVO button */
+        .btn-done {
+            background: linear-gradient(180deg, rgba(14,52,69,0.85) 0%, rgba(7,30,41,0.95) 100%);
+            border: 1.5px solid #3ca9bd;
+            color: #ffffff;
+            padding: 14px 48px;
+            font-size: 22px;
+            font-weight: 400;
+            letter-spacing: 2px;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 0 28px rgba(0,188,212,0.25), inset 0 0 12px rgba(0,188,212,0.15);
+            transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+            font-family: inherit;
+        }
+        .btn-done:hover {
+            border-color: #00bcd4;
+            box-shadow: 0 0 45px rgba(0,188,212,0.55), inset 0 0 18px rgba(0,188,212,0.25);
+            transform: scale(1.02);
+        }
+
+        /* ── Footer / mic ── */
+        footer {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 14px;
+            transition: opacity 0.5s ease;
+            z-index: 10;
+        }
+
+        .mic-button {
+            width: 72px; height: 72px;
+            border-radius: 50%;
+            background: rgba(4,28,36,0.6);
+            border: 1px solid rgba(0,188,212,0.3);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 0 22px rgba(0,188,212,0.12);
+            animation: pulse-mic 3s infinite ease-in-out;
+        }
+
+        .mic-icon {
+            fill: #3ca9bd;
+            width: 28px; height: 28px;
+            transition: fill 0.3s ease;
+        }
+
+        .mic-text {
+            font-size: 11px;
+            letter-spacing: 3px;
+            color: #2a5060;
+            text-transform: uppercase;
+            transition: color 0.3s ease;
+        }
+
+        /* Text input fallback */
+        .text-input-wrap {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 4px;
+            border-bottom: 1px solid rgba(0,188,212,0.15);
+            padding-bottom: 4px;
+            width: 200px;
+            transition: border-color 0.3s;
+        }
+        .text-input-wrap:focus-within {
+            border-color: rgba(0,188,212,0.5);
+        }
+        .text-input {
+            background: transparent;
+            border: none;
+            outline: none;
+            color: #7ab8c8;
+            font-family: inherit;
+            font-size: 13px;
+            letter-spacing: 0.3px;
+            width: 100%;
+            caret-color: #00bcd4;
+        }
+        .text-input::placeholder {
+            color: #3a7080;
+            font-size: 13px;
+            letter-spacing: 0.5px;
+        }
+        .text-send {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #1e3a48;
+            font-size: 16px;
+            padding: 0;
+            line-height: 1;
+            transition: color 0.2s;
+            flex-shrink: 0;
+        }
+        .text-send:hover { color: #00bcd4; }
+
+        @keyframes pulse-mic {
+            0%   { transform: scale(1);    box-shadow: 0 0 22px rgba(0,188,212,0.12); border-color: rgba(0,188,212,0.3); }
+            50%  { transform: scale(1.05); box-shadow: 0 0 38px rgba(0,188,212,0.35); border-color: rgba(0,188,212,0.65); }
+            100% { transform: scale(1);    box-shadow: 0 0 22px rgba(0,188,212,0.12); border-color: rgba(0,188,212,0.3); }
+        }
+
+        /* Demo přepínač */
+        .demo-dots {
+            position: fixed;
+            bottom: 14px; right: 16px;
+            display: flex; gap: 8px;
+            z-index: 100;
+        }
+        .demo-dot {
+            width: 9px; height: 9px;
+            border-radius: 50%;
+            cursor: pointer; opacity: 0.3;
+            transition: opacity 0.2s, transform 0.2s;
+        }
+        .demo-dot:hover { opacity: 0.8; transform: scale(1.2); }
+        .demo-dot.active { opacity: 1; }
+    </style>
 </head>
 <body>
 
-<div class="screen">
+    <div class="corner-star star-tl">✦</div>
+    <div class="corner-star star-br">✦</div>
 
-  <!-- Logo + linka -->
-  <div class="logo">
-    <div class="logo-chj">C H J</div>
-    <div class="logo-sub">CHYTRÉ JÁ // HUMAN OS</div>
-    <div class="line-wrap" style="margin-top:16px;">
-      <div class="line-fill" id="lineFill"></div>
+    <header>
+        <div class="chj-logo">
+            <div class="chj-cursor"></div>
+            <div class="chj-text">
+                <div class="chj-row1">chytr<span class="ac">e</span></div>
+                <div class="chj-row2">j<span class="ac">a</span></div>
+            </div>
+        </div>
+        <div class="logo-sub">Medicína 3.0</div>
+        <div class="laser-container">
+            <div class="laser-line" id="laserLine"></div>
+        </div>
+    </header>
+
+    <main id="mainStage">
+        <div class="text-stage state-alarm" id="alarmText"></div>
+
+        <div class="text-stage state-action" id="actionText">
+            <div id="actionContent"></div>
+            <button class="btn-done" id="btnDone" onclick="resetToSilence(event)">[ Hotovo / Rozumím ]</button>
+        </div>
+    </main>
+
+    <footer id="footerMic">
+        <div class="mic-button" id="micButton">
+            <svg class="mic-icon" id="micIcon" viewBox="0 0 24 24">
+                <path d="M12,14A3,3 0 0,0 15,11V5A3,3 0 0,0 12,2A3,3 0 0,0 9,5V11A3,3 0 0,0 12,14M17.3,11C17.3,14 14.76,16.2 12,16.2C9.24,16.2 6.7,14 6.7,11H5C5,14.41 7.72,17.23 11,17.72V21H13V17.72C16.28,17.23 19,14.41 19,11H17.3Z" />
+            </svg>
+        </div>
+        <div class="text-input-wrap" onclick="event.stopPropagation()">
+            <input class="text-input" id="textInput" type="text" placeholder="nebo napiš…" autocomplete="off"
+                onkeydown="if(event.key==='Enter') submitText()">
+            <button class="text-send" onclick="submitText()" title="Odeslat">↵</button>
+        </div>
+    </footer>
+
+    <!-- Demo stavové tečky -->
+    <div class="demo-dots">
+        <div class="demo-dot" style="background:#22c55e" onclick="setDemo(0,event)" title="Nabitý"></div>
+        <div class="demo-dot" style="background:#eab308" onclick="setDemo(1,event)" title="Střed"></div>
+        <div class="demo-dot active" style="background:#ef4444" onclick="setDemo(2,event)" title="Přetížení"></div>
     </div>
-  </div>
 
-  <!-- Střed -->
-  <div class="center" style="position:relative; width:100%;">
-    <div class="status-text" id="statusText"></div>
-    <div class="action-text" id="actionText"></div>
-  </div>
+    <script>
+        const DEMOS = [
+            {
+                pct: 88, color: '#22c55e',
+                gradient: 'linear-gradient(90deg, #0d3820, #22c55e)',
+                shadow: '0 0 20px #22c55e, 0 0 8px #22c55e',
+                alarm: 'tělo v kondici',
+                action: 'Využij to. Přidej dnes silový trénink — stačí 20 minut. Tělo je připravené.',
+            },
+            {
+                pct: 52, color: '#eab308',
+                gradient: 'linear-gradient(90deg, #2d1f00, #eab308)',
+                shadow: '0 0 20px #eab308, 0 0 8px #eab308',
+                alarm: 'nízký pohyb',
+                action: 'Začni den 500 ml vlažné vody. Vynechej ranní kofein a přidej 10 minut chůze na světle.',
+            },
+            {
+                pct: 22, color: '#ef4444',
+                gradient: 'linear-gradient(90deg, #2d0808, #ef4444)',
+                shadow: '0 0 20px #ef4444, 0 0 8px #ef4444',
+                alarm: 'večerní přejídání',
+                action: 'Jen nejnutnější. Dnes vynechej intenzivní pohyb a jdi spát před 22:30.',
+            },
+        ];
 
-  <!-- Dole -->
-  <div class="bottom">
-    <button class="confirm-btn" id="confirmBtn" onclick="confirm()">ROZUMÍM</button>
-    <div class="mic-ring" id="micRing" onclick="activate()">
-      <span class="mic-icon">🎙</span>
-    </div>
-    <div class="mic-label" id="micLabel">HLAS AKTIVNÍ</div>
-  </div>
+        let current = 2;
+        let state = 'alarm'; // 'alarm' | 'action' | 'silence'
 
-</div>
+        const alarmText   = document.getElementById('alarmText');
+        const actionText  = document.getElementById('actionText');
+        const actionContent = document.getElementById('actionContent');
+        const laserLine   = document.getElementById('laserLine');
+        const footerMic   = document.getElementById('footerMic');
+        const micIcon     = document.getElementById('micIcon');
+        const micButton   = document.getElementById('micButton');
+        const micText     = document.getElementById('micText');
 
-<!-- Demo přepínač stavů -->
-<div class="demo-states">
-  <div class="demo-dot active" style="background:#22c55e;" onclick="setDemo(0)" title="Nabitý"></div>
-  <div class="demo-dot"        style="background:#eab308;" onclick="setDemo(1)" title="Střed"></div>
-  <div class="demo-dot"        style="background:#ef4444;" onclick="setDemo(2)" title="Přetížení"></div>
-</div>
+        function applyDemo(i) {
+            const d = DEMOS[i];
+            laserLine.style.width      = d.pct + '%';
+            laserLine.style.background = d.gradient;
+            laserLine.style.boxShadow  = d.shadow;
+            alarmText.textContent = d.alarm;
+            actionContent.textContent = d.action;
+            // Reset state
+            state = 'alarm';
+            alarmText.style.opacity = '1';
+            alarmText.style.transform = 'scale(1)';
+            alarmText.style.filter = 'blur(0px)';
+            alarmText.style.pointerEvents = 'auto';
+            alarmText.style.color = '#ffffff';
+            alarmText.style.fontSize = '';
+            alarmText.style.letterSpacing = '';
+            actionText.style.opacity = '0';
+            actionText.style.transform = 'scale(0.97)';
+            actionText.style.filter = 'blur(14px)';
+            actionText.style.pointerEvents = 'none';
+            footerMic.style.opacity = '1';
+            micIcon.style.fill = '#3ca9bd';
+            micButton.style.animation = 'pulse-mic 3s infinite ease-in-out';
+            micButton.style.borderColor = '';
+            micText.textContent = 'Hlas aktivní';
+            micText.style.color = '';
+        }
 
-<script>
-const DEMOS = [
-  {
-    line:   { pct: 88, color: '#22c55e' },
-    status: 'Systém v kondici.',
-    action: 'Dnes máš kapacitu na těžká rozhodnutí. Dopoledne strategické — odpoledne nech volně plynout.',
-  },
-  {
-    line:   { pct: 52, color: '#eab308' },
-    status: 'Energie pod střed.',
-    action: 'Vyřeš expedici zakázky XY a po obědě už na nic netlač. Večer tě uložím v devět.',
-  },
-  {
-    line:   { pct: 22, color: '#ef4444' },
-    status: 'Přetížení regenerace.',
-    action: 'Jen to nejnutnější. Jdi spát před 22:30 — zítra systém obnoví kapacitu.',
-  },
-];
+        function setDemo(i, e) {
+            e?.stopPropagation();
+            current = i;
+            document.querySelectorAll('.demo-dot').forEach((d,j) => d.classList.toggle('active', j===i));
+            applyDemo(i);
+        }
 
-let current = 1;
-let phase = 'status'; // 'status' | 'action' | 'done'
+        document.body.addEventListener('click', () => {
+            if (state === 'alarm') triggerAction();
+            else if (state === 'silence') setDemo(current, null);
+        });
 
-function applyDemo(idx) {
-  const d = DEMOS[idx];
-  // Linka
-  const f = document.getElementById('lineFill');
-  f.style.width      = d.line.pct + '%';
-  f.style.background = d.line.color;
-  f.style.boxShadow  = `0 0 10px ${d.line.color}`;
-  // Status text
-  document.getElementById('statusText').textContent = d.status;
-  // Reset do fáze 1
-  phase = 'status';
-  document.getElementById('statusText').classList.remove('hidden');
-  document.getElementById('actionText').classList.remove('visible');
-  document.getElementById('confirmBtn').classList.remove('visible');
-  document.getElementById('micRing').classList.remove('listening');
-  document.getElementById('micLabel').classList.remove('active');
-  document.getElementById('micLabel').textContent = 'HLAS AKTIVNÍ';
-}
+        function triggerAction() {
+            state = 'action';
 
-function setDemo(idx) {
-  current = idx;
-  document.querySelectorAll('.demo-dot').forEach((d,i) => d.classList.toggle('active', i === idx));
-  applyDemo(idx);
-}
+            // Blur + fade status text
+            alarmText.style.opacity = '0';
+            alarmText.style.transform = 'scale(1.06)';
+            alarmText.style.filter = 'blur(18px)';
+            alarmText.style.pointerEvents = 'none';
 
-function activate() {
-  if (phase === 'status') {
-    // Fáze 1 → 2: poslouchám → generuji akci
-    const mic = document.getElementById('micRing');
-    const lbl = document.getElementById('micLabel');
-    mic.classList.add('listening');
-    lbl.classList.add('active');
-    lbl.textContent = 'POSLOUCHÁM…';
+            // Mic ztlumení
+            micIcon.style.fill = '#102830';
+            micButton.style.animation = 'none';
+            micButton.style.borderColor = 'rgba(0,188,212,0.05)';
+            micText.textContent = 'Zpracovávám…';
+            micText.style.color = '#1a3a48';
 
-    setTimeout(() => {
-      // Přechod na akci
-      phase = 'action';
-      document.getElementById('statusText').classList.add('hidden');
-      lbl.textContent = 'HLAS AKTIVNÍ';
-      lbl.classList.remove('active');
-      mic.classList.remove('listening');
+            // Linka jemně pulzuje
+            laserLine.style.width = (DEMOS[current].pct + 3) + '%';
 
-      setTimeout(() => {
-        document.getElementById('actionText').textContent = DEMOS[current].action;
-        document.getElementById('actionText').classList.add('visible');
-        document.getElementById('confirmBtn').classList.add('visible');
-      }, 400);
-    }, 1800);
+            setTimeout(() => {
+                micText.textContent = 'Hlas aktivní';
+                actionText.style.opacity = '1';
+                actionText.style.transform = 'scale(1)';
+                actionText.style.filter = 'blur(0px)';
+                actionText.style.pointerEvents = 'all';
+            }, 180);
+        }
 
-  } else if (phase === 'done') {
-    // Reset
-    setDemo(current);
-  }
-}
+        function resetToSilence(event) {
+            event.stopPropagation();
+            state = 'silence';
 
-function confirm() {
-  phase = 'done';
-  document.getElementById('actionText').classList.remove('visible');
-  document.getElementById('confirmBtn').classList.remove('visible');
-  document.getElementById('micLabel').textContent = 'HLAS AKTIVNÍ';
-  // Zhasnutí — systém čeká
-  setTimeout(() => {
-    document.getElementById('statusText').classList.remove('hidden');
-    document.getElementById('statusText').textContent = '—';
-  }, 800);
-}
+            actionText.style.opacity = '0';
+            actionText.style.transform = 'scale(0.96)';
+            actionText.style.filter = 'blur(18px)';
+            actionText.style.pointerEvents = 'none';
 
-// Init
-setTimeout(() => applyDemo(1), 100);
-</script>
+            laserLine.style.width = '0%';
+            laserLine.style.boxShadow = 'none';
+            footerMic.style.opacity = '0';
+
+            setTimeout(() => {
+                alarmText.textContent = '—';
+                alarmText.style.color = '#0d2530';
+                alarmText.style.fontSize = '28px';
+                alarmText.style.letterSpacing = '6px';
+                alarmText.style.opacity = '1';
+                alarmText.style.transform = 'scale(1)';
+                alarmText.style.filter = 'blur(0px)';
+            }, 500);
+        }
+
+        function submitText() {
+            const input = document.getElementById('textInput');
+            if (!input.value.trim() && state !== 'alarm') return;
+            input.value = '';
+            if (state === 'alarm') triggerAction();
+        }
+
+        // Init
+        setTimeout(() => applyDemo(2), 80);
+    </script>
 </body>
 </html>

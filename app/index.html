@@ -316,7 +316,7 @@
 </head>
 
 <body>
-    <script src="/app/js/universe/splash.js"></script>
+    <script src="/app/js/universe/launcher.js"></script>
 
     <!-- Horní lišta -->
     <header id="appHeader" class="app-header">
@@ -449,21 +449,7 @@
     <script type="module" src="/app/js/universe/ai-assistant.js?v=20260401b"></script>
     <script type="module" src="/app/js/universe/universe-panel.js?v=20260401b"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script>
-        window.addEventListener('load', () => {
-            setTimeout(() => {
-                const splash = document.getElementById('app-splash');
-                if (splash) {
-                    splash.style.opacity = '0';
-                    setTimeout(() => {
-                        splash.remove();
-                        // V /app/index.html tady nemusíš nic showView, 
-                        // jen se ujisti, že dashboard pod tím už běží.
-                    }, 500);
-                }
-            }, 2500);
-        });
-    </script>
+    <!-- Launcher (launcher.js) manages its own lifecycle — no splash fallback needed -->
 
     <!-- Hide app header when any modal opens — works regardless of JS cache version -->
     <script>

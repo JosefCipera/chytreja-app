@@ -1,0 +1,600 @@
+/**
+ * launcher.js — CHJ Shell
+ * Injected immediately on page load (replaces splash.js).
+ * Acts as a persistent shell: shows bio state, sleeps after action,
+ * wakes on voice command to route to universe nodes.
+ */
+
+// ── Version ──────────────────────────────────────────────────────────────────
+const CHJ_VERSION = 'v0.2.0';
+
+// ── Styles ───────────────────────────────────────────────────────────────────
+const STYLE = `
+@import url('https://fonts.googleapis.com/css2?family=Urbanist:wght@300;800&display=swap');
+
+#chj-launcher {
+  position: fixed; inset: 0; z-index: 9999;
+  background: #010406;
+  color: #fff;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  display: flex; flex-direction: column;
+  justify-content: space-between; align-items: center;
+  padding: 60px 40px 52px;
+  overflow: hidden; cursor: pointer;
+  transition: opacity 0.6s ease;
+}
+#chj-launcher.fade-out { opacity: 0; pointer-events: none; }
+
+/* Ambient corners */
+#chj-launcher::before, #chj-launcher::after {
+  content: ''; position: absolute;
+  width: 300px; height: 300px; border-radius: 50%;
+  background: rgba(0,188,212,0.03); filter: blur(80px); pointer-events: none;
+}
+#chj-launcher::before { top: -50px; left: -50px; }
+#chj-launcher::after  { bottom: -50px; right: -50px; }
+
+/* Corner stars */
+.chjl-star {
+  position: absolute; color: #4ba6b5;
+  font-size: 22px; opacity: 0.35; pointer-events: none;
+}
+.chjl-star-tl { top: 28px; left: 28px; }
+.chjl-star-br { bottom: 28px; right: 28px; }
+
+/* Version */
+.chjl-version {
+  position: absolute; bottom: 14px; left: 20px;
+  font-size: 11px; color: #0d2530; letter-spacing: 1px;
+  font-family: monospace;
+}
+
+/* ── Logo ── */
+.chjl-header {
+  text-align: center; width: 100%; z-index: 10;
+  display: flex; flex-direction: column; align-items: center;
+}
+.chjl-logo {
+  display: flex; flex-direction: row; align-items: center; gap: 10px;
+  margin-bottom: 10px;
+}
+.chjl-cursor {
+  width: 3px; height: 80px; background: #00bcd4; border-radius: 2px;
+  flex-shrink: 0; animation: chjl-blink 1.1s step-end infinite;
+  box-shadow: 0 0 12px rgba(0,188,212,0.85);
+}
+@keyframes chjl-blink { 0%,100%{opacity:1} 50%{opacity:0} }
+.chjl-text {
+  display: flex; flex-direction: column;
+  font-family: 'Urbanist', sans-serif;
+  line-height: 0.88; letter-spacing: 2px; text-align: left;
+}
+.chjl-row1 { font-size: 46px; font-weight: 300; color: #94a3b8; }
+.chjl-row2 { font-size: 46px; font-weight: 800; color: #00bcd4;
+  text-shadow: 0 0 20px rgba(0,188,212,0.5); }
+
+/* Flat accent mark above letter */
+.chjl-ac {
+  position: relative; display: inline-block;
+}
+.chjl-ac::after {
+  content: ''; position: absolute;
+  left: 50%; transform: translateX(-50%);
+  width: 0.42em; height: 0.06em; background: currentColor;
+  top: 0.1em; border-radius: 1px;
+}
+
+.chjl-sub {
+  font-size: 12px; letter-spacing: 5px; color: #5ba8bc;
+  text-transform: uppercase; margin-top: 14px; margin-bottom: 22px;
+  padding-right: 5px; text-shadow: 0 0 18px rgba(91,168,188,0.5);
+}
+
+/* ── Laser line ── */
+.chjl-laser-wrap {
+  width: 100%; height: 6px;
+  background: rgba(0,20,30,0.7);
+  border: 1px solid rgba(0,188,212,0.12);
+  border-radius: 3px; overflow: hidden;
+  box-shadow: 0 0 20px rgba(0,0,0,0.8);
+}
+.chjl-laser {
+  height: 100%; border-radius: 3px;
+  transition: width 1.6s cubic-bezier(0.4,0,0.2,1),
+              background 1.6s ease, box-shadow 1.6s ease;
+  width: 0%;
+}
+
+/* ── Center stage ── */
+.chjl-main {
+  text-align: center; max-width: 560px; width: 100%;
+  flex-grow: 1; display: flex;
+  justify-content: center; align-items: center;
+  position: relative; z-index: 10;
+}
+.chjl-stage {
+  width: 100%; position: absolute;
+  transition: opacity 0.55s cubic-bezier(0.4,0,0.2,1),
+              transform 0.55s cubic-bezier(0.4,0,0.2,1),
+              filter 0.55s cubic-bezier(0.4,0,0.2,1);
+}
+.chjl-alarm {
+  font-size: 56px; font-weight: 300;
+  letter-spacing: 1px; color: #8ba8b8;
+  line-height: 1.2; text-shadow: none;
+}
+.chjl-action {
+  font-size: 26px; font-weight: 300; line-height: 1.65;
+  color: #e8f4f8; opacity: 0; transform: scale(0.97);
+  filter: blur(14px); pointer-events: none;
+  display: flex; flex-direction: column; align-items: center; gap: 40px;
+}
+
+/* HOTOVO button */
+.chjl-btn {
+  background: linear-gradient(180deg, rgba(14,52,69,0.85) 0%, rgba(7,30,41,0.95) 100%);
+  border: 1.5px solid #3ca9bd; color: #fff;
+  padding: 14px 48px; font-size: 22px; font-weight: 400;
+  letter-spacing: 2px; border-radius: 8px; cursor: pointer;
+  box-shadow: 0 0 28px rgba(0,188,212,0.25), inset 0 0 12px rgba(0,188,212,0.15);
+  transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+  font-family: inherit;
+}
+.chjl-btn:hover {
+  border-color: #00bcd4;
+  box-shadow: 0 0 45px rgba(0,188,212,0.55), inset 0 0 18px rgba(0,188,212,0.25);
+  transform: scale(1.02);
+}
+
+/* ── Footer ── */
+.chjl-footer {
+  text-align: center; display: flex; flex-direction: column;
+  align-items: center; gap: 14px;
+  transition: opacity 0.5s ease; z-index: 10;
+}
+.chjl-mic {
+  width: 72px; height: 72px; border-radius: 50%;
+  background: rgba(4,28,36,0.6);
+  border: 1px solid rgba(0,188,212,0.3);
+  display: flex; justify-content: center; align-items: center;
+  box-shadow: 0 0 22px rgba(0,188,212,0.12);
+  animation: chjl-mic-pulse 3s infinite ease-in-out;
+  cursor: pointer;
+}
+.chjl-mic svg { fill: #3ca9bd; width: 28px; height: 28px; transition: fill 0.3s; }
+@keyframes chjl-mic-pulse {
+  0%   { transform:scale(1);    box-shadow:0 0 22px rgba(0,188,212,0.12); border-color:rgba(0,188,212,0.3); }
+  50%  { transform:scale(1.05); box-shadow:0 0 38px rgba(0,188,212,0.35); border-color:rgba(0,188,212,0.65); }
+  100% { transform:scale(1);    box-shadow:0 0 22px rgba(0,188,212,0.12); border-color:rgba(0,188,212,0.3); }
+}
+.chjl-mic.listening {
+  animation: none;
+  border-color: rgba(0,188,212,0.8);
+  box-shadow: 0 0 0 0 rgba(0,188,212,0.4);
+  animation: chjl-mic-listen 1s infinite;
+}
+@keyframes chjl-mic-listen {
+  0%,100% { box-shadow: 0 0 0 0 rgba(0,188,212,0.4); }
+  50%     { box-shadow: 0 0 0 12px rgba(0,188,212,0); }
+}
+
+/* Text input */
+.chjl-input-wrap {
+  display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid rgba(0,188,212,0.15);
+  padding-bottom: 4px; width: 200px;
+  transition: border-color 0.3s;
+}
+.chjl-input-wrap:focus-within { border-color: rgba(0,188,212,0.5); }
+.chjl-input {
+  background: transparent; border: none; outline: none;
+  color: #7ab8c8; font-family: inherit; font-size: 13px;
+  width: 100%; caret-color: #00bcd4;
+}
+.chjl-input::placeholder { color: #3a7080; font-size: 13px; }
+.chjl-send {
+  background: none; border: none; cursor: pointer;
+  color: #1e3a48; font-size: 16px; padding: 0; line-height: 1;
+  transition: color 0.2s; flex-shrink: 0;
+}
+.chjl-send:hover { color: #00bcd4; }
+
+/* Sleep state */
+#chj-launcher.sleeping .chjl-footer { opacity: 0.15; }
+#chj-launcher.sleeping .chjl-laser { opacity: 0.3; }
+`;
+
+// ── HTML ─────────────────────────────────────────────────────────────────────
+const HTML = `
+<style>${STYLE}</style>
+
+<div class="chjl-star chjl-star-tl">✦</div>
+<div class="chjl-star chjl-star-br">✦</div>
+<div class="chjl-version">${CHJ_VERSION}</div>
+
+<div class="chjl-header">
+  <div class="chjl-logo">
+    <div class="chjl-cursor"></div>
+    <div class="chjl-text">
+      <span class="chjl-row1">chytr<span class="chjl-ac">e</span></span>
+      <span class="chjl-row2">j<span class="chjl-ac">a</span></span>
+    </div>
+  </div>
+  <div class="chjl-sub">Medicína 3.0</div>
+  <div class="chjl-laser-wrap">
+    <div class="chjl-laser" id="chjLaser"></div>
+  </div>
+</div>
+
+<div class="chjl-main">
+  <div class="chjl-stage chjl-alarm" id="chjAlarm">—</div>
+  <div class="chjl-stage chjl-action" id="chjAction">
+    <div id="chjActionText"></div>
+    <button class="chjl-btn" id="chjBtn">[ Hotovo / Rozumím ]</button>
+  </div>
+</div>
+
+<div class="chjl-footer" id="chjFooter">
+  <div class="chjl-mic" id="chjMic">
+    <svg viewBox="0 0 24 24">
+      <path d="M12,14A3,3 0 0,0 15,11V5A3,3 0 0,0 12,2A3,3 0 0,0 9,5V11A3,3 0 0,0 12,14M17.3,11C17.3,14 14.76,16.2 12,16.2C9.24,16.2 6.7,14 6.7,11H5C5,14.41 7.72,17.23 11,17.72V21H13V17.72C16.28,17.23 19,14.41 19,11H17.3Z"/>
+    </svg>
+  </div>
+  <div class="chjl-input-wrap" id="chjInputWrap">
+    <input class="chjl-input" id="chjInput" type="text"
+      placeholder="nebo napiš…" autocomplete="off">
+    <button class="chjl-send" id="chjSend">↵</button>
+  </div>
+</div>
+`;
+
+// ── Node routing map ─────────────────────────────────────────────────────────
+// Maps voice keywords → node IDs (same as _tryShowNode in universe-panel.js)
+const NODE_KEYWORDS = {
+  'pohyb':        'lh_pohyb',
+  'regenerace':   'lh_regenerace',
+  'výživa':       'lh_vyziva',
+  'výživu':       'lh_vyziva',
+  'jídlo':        'lh_vyziva',
+  'mysl':         'lh_mysl',
+  'myšlení':      'lh_mysl',
+  'zdraví':       'zdravi',
+  'zdravi':       'zdravi',
+  'tělo':         'telo',
+  'síla':         'telo',
+  'vesmír':       null,  // just open the universe, no panel
+  'domů':         null,
+  'přehled':      null,
+};
+
+// ── State ────────────────────────────────────────────────────────────────────
+let _phase = 'loading'; // loading | awake | action | sleeping
+let _bioData = null;    // { killer, percent, color, action }
+let _recognition = null;
+
+// ── Mount ────────────────────────────────────────────────────────────────────
+(function mount() {
+  const el = document.createElement('div');
+  el.id = 'chj-launcher';
+  el.innerHTML = HTML;
+
+  // Block clicks going through while loading
+  el.addEventListener('click', onLauncherClick);
+  document.body.insertAdjacentElement('afterbegin', el);
+
+  // Wire up controls (after insertion)
+  document.getElementById('chjBtn').addEventListener('click', onHotovo);
+  document.getElementById('chjMic').addEventListener('click', onMicClick);
+  document.getElementById('chjSend').addEventListener('click', onTextSend);
+  document.getElementById('chjInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') onTextSend();
+  });
+  document.getElementById('chjInput').addEventListener('click', e => e.stopPropagation());
+  document.getElementById('chjInputWrap').addEventListener('click', e => e.stopPropagation());
+
+  // Start loading data (auth is handled by universe-init.js separately)
+  loadBioData();
+})();
+
+// ── Data loading ─────────────────────────────────────────────────────────────
+async function loadBioData() {
+  try {
+    // Wait for Firebase auth (universe-init sets window._chjUserId)
+    const userId = await waitForUserId(8000);
+    if (!userId) { showFallback(); return; }
+
+    const res = await fetch(`/api/hud-data-bulk?nodeId=lh_main&userId=${userId}`);
+    if (!res.ok) throw new Error('hud-data-bulk failed');
+    const data = await res.json();
+
+    const pct    = data.life_battery?.percent ?? 50;
+    const killer = data.killer?.label ?? null;
+    const action = data.action?.label ?? null;
+
+    _bioData = {
+      pct,
+      killer: killer ? killer.toLowerCase() : null,
+      action: action || 'Odpočiň si a sleduj jak se cítíš.',
+      color:  pct > 70 ? '#22c55e' : pct > 40 ? '#eab308' : '#ef4444',
+      gradient: pct > 70
+        ? 'linear-gradient(90deg, #0d3820, #22c55e)'
+        : pct > 40
+        ? 'linear-gradient(90deg, #2d1f00, #eab308)'
+        : 'linear-gradient(90deg, #2d0808, #ef4444)',
+    };
+
+    showAwake();
+  } catch (e) {
+    console.warn('[CHJ Launcher] loadBioData failed:', e);
+    showFallback();
+  }
+}
+
+function getUid() {
+  return window.CHJ_UID || window.firebaseAuth?.currentUser?.uid || null;
+}
+
+function waitForUserId(timeoutMs) {
+  return new Promise(resolve => {
+    if (getUid()) { resolve(getUid()); return; }
+    const start = Date.now();
+    const t = setInterval(() => {
+      const uid = getUid();
+      if (uid) { clearInterval(t); resolve(uid); }
+      else if (Date.now() - start > timeoutMs) { clearInterval(t); resolve(null); }
+    }, 200);
+  });
+}
+
+function showFallback() {
+  // Show without real data — generic morning state
+  _bioData = {
+    pct: 50, killer: 'připraven', action: 'Řekni co chceš řešit.',
+    color: '#06b6d4',
+    gradient: 'linear-gradient(90deg, #0d3854, #00cbba)',
+  };
+  showAwake();
+}
+
+// ── Phases ───────────────────────────────────────────────────────────────────
+function showAwake() {
+  _phase = 'awake';
+  const launcher = document.getElementById('chj-launcher');
+  launcher.classList.remove('sleeping');
+
+  // Laser line
+  const laser = document.getElementById('chjLaser');
+  laser.style.width      = _bioData.pct + '%';
+  laser.style.background = _bioData.gradient;
+  laser.style.boxShadow  = `0 0 20px ${_bioData.color}, 0 0 8px ${_bioData.color}`;
+
+  // Alarm text
+  const alarm = document.getElementById('chjAlarm');
+  alarm.textContent  = _bioData.killer ?? '—';
+  alarm.style.opacity   = '1';
+  alarm.style.transform = 'scale(1)';
+  alarm.style.filter    = 'blur(0)';
+  alarm.style.color     = '#8ba8b8';
+  alarm.style.fontSize  = '';
+
+  // Hide action
+  const action = document.getElementById('chjAction');
+  action.style.opacity      = '0';
+  action.style.transform    = 'scale(0.97)';
+  action.style.filter       = 'blur(14px)';
+  action.style.pointerEvents = 'none';
+
+  // Footer
+  document.getElementById('chjFooter').style.opacity = '1';
+  document.getElementById('chjMic').style.animation = 'chjl-mic-pulse 3s infinite ease-in-out';
+}
+
+function showAction() {
+  _phase = 'action';
+
+  // Blur out alarm
+  const alarm = document.getElementById('chjAlarm');
+  alarm.style.opacity   = '0';
+  alarm.style.transform = 'scale(1.06)';
+  alarm.style.filter    = 'blur(18px)';
+  alarm.style.pointerEvents = 'none';
+
+  // Dim mic
+  const mic = document.getElementById('chjMic');
+  mic.classList.remove('listening');
+  mic.style.animation  = 'none';
+  mic.style.borderColor = 'rgba(0,188,212,0.05)';
+  mic.querySelector('svg').style.fill = '#102830';
+
+  // Show action text
+  setTimeout(() => {
+    document.getElementById('chjActionText').textContent = _bioData.action;
+    const action = document.getElementById('chjAction');
+    action.style.opacity      = '1';
+    action.style.transform    = 'scale(1)';
+    action.style.filter       = 'blur(0)';
+    action.style.pointerEvents = 'all';
+  }, 180);
+}
+
+function goSleep() {
+  _phase = 'sleeping';
+  const launcher = document.getElementById('chj-launcher');
+  launcher.classList.add('sleeping');
+
+  // Fade out action
+  const action = document.getElementById('chjAction');
+  action.style.opacity      = '0';
+  action.style.transform    = 'scale(0.96)';
+  action.style.filter       = 'blur(18px)';
+  action.style.pointerEvents = 'none';
+
+  // Laser off
+  const laser = document.getElementById('chjLaser');
+  laser.style.width     = '0%';
+  laser.style.boxShadow = 'none';
+
+  // Show sleep indicator
+  setTimeout(() => {
+    const alarm = document.getElementById('chjAlarm');
+    alarm.textContent     = '—';
+    alarm.style.color     = '#0d2530';
+    alarm.style.fontSize  = '28px';
+    alarm.style.opacity   = '1';
+    alarm.style.transform = 'scale(1)';
+    alarm.style.filter    = 'blur(0)';
+  }, 500);
+
+  // Start passive voice listening for node commands
+  startPassiveListening();
+}
+
+// ── Routing — open universe node ─────────────────────────────────────────────
+function routeToNode(nodeId) {
+  const launcher = document.getElementById('chj-launcher');
+  launcher.classList.add('fade-out');
+  setTimeout(() => {
+    launcher.style.display = 'none';
+    // Delegate to universe — same functions used by voice CMD in universe-panel.js
+    if (nodeId && window._openNodeById) {
+      window._openNodeById(nodeId);
+    } else if (window._showUniverse) {
+      window._showUniverse();
+    }
+  }, 600);
+
+  // Re-show launcher when HUD panel closes
+  document.addEventListener('chjPanelClosed', () => {
+    launcher.style.display = 'flex';
+    launcher.classList.remove('fade-out');
+    launcher.style.opacity = '1';
+    // Stay sleeping — user sees "—" and can speak again
+  }, { once: true });
+}
+
+// ── Voice ────────────────────────────────────────────────────────────────────
+function onMicClick(e) {
+  e.stopPropagation();
+  if (_phase === 'awake') {
+    listenOnce(transcript => {
+      // Try routing first (e.g. "ukáž zdraví")
+      const routed = tryRoute(transcript);
+      if (!routed) showAction(); // treat as "co dál"
+    });
+  } else if (_phase === 'sleeping') {
+    listenOnce(transcript => tryRoute(transcript));
+  }
+}
+
+function startPassiveListening() {
+  // Continuous low-priority listening while sleeping
+  // Re-uses browser SpeechRecognition — restarts on silence
+  if (!('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) return;
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const r  = new SR();
+  r.lang = 'cs-CZ'; r.continuous = false; r.interimResults = false;
+  r.onresult = e => {
+    const t = e.results[0][0].transcript.toLowerCase();
+    tryRoute(t);
+  };
+  r.onend = () => {
+    if (_phase === 'sleeping') setTimeout(() => r.start(), 800);
+  };
+  r.onerror = () => {
+    if (_phase === 'sleeping') setTimeout(() => r.start(), 2000);
+  };
+  _recognition = r;
+  r.start();
+}
+
+function listenOnce(cb) {
+  if (!('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
+    showAction(); return;
+  }
+  if (_recognition) { try { _recognition.stop(); } catch(_) {} }
+
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const r  = new SR();
+  r.lang = 'cs-CZ'; r.continuous = false; r.interimResults = false;
+
+  const mic = document.getElementById('chjMic');
+  mic.classList.add('listening');
+
+  r.onresult = e => {
+    mic.classList.remove('listening');
+    cb(e.results[0][0].transcript.toLowerCase());
+  };
+  r.onend = () => mic.classList.remove('listening');
+  r.onerror = () => { mic.classList.remove('listening'); showAction(); };
+  r.start();
+}
+
+function tryRoute(transcript) {
+  for (const [kw, nodeId] of Object.entries(NODE_KEYWORDS)) {
+    if (transcript.includes(kw)) {
+      routeToNode(nodeId);
+      return true;
+    }
+  }
+  return false;
+}
+
+// ── Text input ───────────────────────────────────────────────────────────────
+async function onTextSend() {
+  const input = document.getElementById('chjInput');
+  const text  = input.value.trim();
+  input.value = '';
+
+  if (!text) { if (_phase === 'awake') showAction(); return; }
+
+  // Try routing by keyword first
+  const routed = tryRoute(text.toLowerCase());
+  if (routed) return;
+
+  // Otherwise send to AI and show response as action
+  if (_phase !== 'action') {
+    document.getElementById('chjActionText').textContent = '…';
+    showAction();
+  }
+
+  try {
+    const userId = getUid() || '';
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: text, userId, nodeId: 'lh_main', mode: 'launcher' }),
+    });
+    const data = await res.json();
+    document.getElementById('chjActionText').textContent =
+      data.reply || data.message || data.text || text;
+  } catch (e) {
+    document.getElementById('chjActionText').textContent =
+      'Teď to nejde. Zkus to znovu.';
+  }
+}
+
+// ── Click handler ─────────────────────────────────────────────────────────────
+function onLauncherClick(e) {
+  if (e.target.closest('#chjBtn,#chjMic,#chjInputWrap')) return;
+  if (_phase === 'awake') showAction();
+  else if (_phase === 'sleeping') showAwake();
+}
+
+// ── HOTOVO ───────────────────────────────────────────────────────────────────
+function onHotovo(e) {
+  e.stopPropagation();
+  goSleep();
+}
+
+// ── Public API (for universe-init to call) ───────────────────────────────────
+window.chjLauncher = {
+  hide:    () => routeToNode(null),
+  sleep:   goSleep,
+  wake:    showAwake,
+  version: CHJ_VERSION,
+};
+
+// ── Expose hideSplash alias for compatibility ─────────────────────────────────
+window.hideSplash = () => {
+  // Legacy alias — do nothing, launcher manages its own lifecycle
+};
