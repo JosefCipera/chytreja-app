@@ -3,7 +3,7 @@
     "outputDirectory": ".",
     "framework": null,
     "alias": ["dev.iting.cz"],
-    "ignoreCommand": "[ \"$VERCEL_GIT_COMMIT_REF\" != \"main\" ] && [ \"$VERCEL_GIT_COMMIT_REF\" != \"test\" ] && [ \"$VERCEL_GIT_COMMIT_REF\" != \"production\" ] && [ \"$VERCEL_GIT_COMMIT_REF\" != \"demo\" ]",
+    "ignoreCommand": "[ \"$VERCEL_GIT_COMMIT_REF\" != \"${DEPLOY_BRANCH:-main}\" ]",
     "functions": {
         "api/tools/parse.js":          { "maxDuration": 60 }
     },
