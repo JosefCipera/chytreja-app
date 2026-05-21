@@ -306,6 +306,18 @@ const NODE_KEYWORDS = {
   'kondice':        'kardio',
   'výživa longevity': 'vyziva',
   'protein':        'vyziva',
+  // ── TOC ──
+  'průtok':         'toc',
+  'prutok':         'toc',
+  'hra o průtok':   'toc',
+  'hra o prutok':   'toc',
+  'toc':            'toc',
+  'omezení':        'toc',
+  'strategie':      'toc_strategie',
+  'finance':        'toc_finance',
+  'výroba':         'toc_vyroba',
+  'projekty':       'toc_projekty',
+  'marketing':      'toc_marketing',
   // ── Navigace ──
   'vesmír':         null,
   'domů':           null,
