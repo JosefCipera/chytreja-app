@@ -59,9 +59,9 @@ const STYLE = `
   margin-bottom: 10px;
 }
 .chjl-cursor {
-  width: 2px; height: 74px; background: #00bcd4; border-radius: 1px;
+  width: 2px; height: 74px; background: #e2e8f0; border-radius: 1px;
   flex-shrink: 0; animation: chjl-blink 1.1s step-end infinite;
-  box-shadow: 0 0 10px rgba(0,188,212,0.8);
+  box-shadow: none;
   align-self: flex-end;
   margin-bottom: 2px;
 }
