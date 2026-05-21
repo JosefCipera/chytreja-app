@@ -367,9 +367,9 @@ async function loadBioData() {
     const data = await res.json();
 
     // Debug — viditelné v konzoli (F12)
-    console.log('[CHJ Launcher] bio data:', { url, uid: userId, killer: data.killer, pct: data.life_battery?.percent });
+    console.log('[CHJ Launcher] bio data:', { url, uid: userId, killer: data.killer, pct: data.battery?.percent });
 
-    const pct    = data.life_battery?.percent ?? 50;
+    const pct    = data.battery?.percent ?? 50;
     const killer = data.killer?.label ?? null;
     const action = data.action?.label ?? null;
 
