@@ -1044,3 +1044,5 @@ window.loadVitalityScore = async function () {
   console.log("🔋 Vitality Score:", data[0]);
   return data[0];
 };
+// Expose for launcher.js — universe switch before node routing
+window._loadAndRenderModel = loadAndRenderModel;

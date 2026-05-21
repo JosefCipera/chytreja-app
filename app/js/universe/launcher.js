@@ -539,11 +539,30 @@ function goSleep() {
 function routeToNode(nodeId) {
   const launcher = document.getElementById('chj-launcher');
 
-  // Nejdřív spusť uzel (canvas se připraví pod laucherem)
-  if (nodeId && window._openNodeById) {
-    window._openNodeById(nodeId);
-  } else if (window._showUniverse) {
-    window._showUniverse();
+  // Přepni vesmír podle prefixu uzlu (lh_ → lehkost, toc → toc, ostatní → longevity)
+  const targetModel = nodeId
+    ? (nodeId.startsWith('lh_') ? 'lehkost'
+      : (nodeId === 'toc' || nodeId.startsWith('toc_')) ? 'toc'
+      : 'longevity')
+    : null;
+
+  const currentModel = localStorage.getItem('currentModel');
+  const needsSwitch  = targetModel && targetModel !== currentModel;
+
+  const doOpen = () => {
+    if (nodeId && window._openNodeById) {
+      window._openNodeById(nodeId);
+    } else if (window._showUniverse) {
+      window._showUniverse();
+    }
+  };
+
+  if (needsSwitch && window._loadAndRenderModel) {
+    localStorage.setItem('currentModel', targetModel);
+    const role = localStorage.getItem('userRole') || 'demo';
+    window._loadAndRenderModel(targetModel, role).then(doOpen).catch(doOpen);
+  } else {
+    doOpen();
   }
 
   // Vrať hlavičku appky — odstraň CSS inject
