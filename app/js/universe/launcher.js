@@ -379,12 +379,10 @@ let _recognition = null;
   document.getElementById('chjInput').addEventListener('click', e => e.stopPropagation());
   document.getElementById('chjInputWrap').addEventListener('click', e => e.stopPropagation());
 
-  // Desktop: skryj mic kruh, přidej textové tlačítko
-  // userAgentData.mobile je spolehlivější než UA string (DevTools ho nefalšuje)
-  const isMobile = navigator.userAgentData
-    ? navigator.userAgentData.mobile
-    : /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-  console.log('[CHJ Launcher] isMobile:', isMobile);
+  // pointer:coarse = dotykový displej (mobil/tablet), pointer:fine = myš (desktop)
+  // Toto DevTools Responsive mód nefalšuje na rozdíl od UA stringu
+  const isMobile = window.matchMedia('(pointer: coarse)').matches;
+  console.log('[CHJ Launcher] isMobile:', isMobile, '| pointer:coarse:', isMobile);
   if (!isMobile) {
     const micCircle = document.getElementById('chjMic');
     micCircle.style.display = 'none';
@@ -565,8 +563,7 @@ function goSleep() {
   }, 500);
 
   // Mobil: pasivní poslouchání, Desktop: tap-to-talk
-  const mob = navigator.userAgentData ? navigator.userAgentData.mobile : /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-  if (mob) startPassiveListening();
+  if (window.matchMedia('(pointer: coarse)').matches) startPassiveListening();
 }
 
 // ── Routing — open universe node ─────────────────────────────────────────────
@@ -629,8 +626,7 @@ function routeToNode(nodeId) {
           }
           // Restartuj pasivní poslouchání jen na mobilu
           _phase = 'sleeping';
-          const mob2 = navigator.userAgentData ? navigator.userAgentData.mobile : /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-          if (mob2) startPassiveListening();
+          if (window.matchMedia('(pointer: coarse)').matches) startPassiveListening();
         };
         document.body.appendChild(btn);
       }
