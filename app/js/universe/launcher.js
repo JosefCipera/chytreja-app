@@ -536,8 +536,7 @@ function goSleep() {
     alarm.style.opacity   = '0';
   }, 500);
 
-  // Start passive voice listening for node commands
-  startPassiveListening();
+  // Pasivní STT nefunguje spolehlivě na desktopu — mic čeká na tap
 }
 
 // ── Routing — open universe node ─────────────────────────────────────────────
