@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<title>STT test</title>
+<style>
+  body { font-family: sans-serif; padding: 40px; background: #111; color: #eee; }
+  button { font-size: 20px; padding: 14px 32px; cursor: pointer; background: #1a4a5a; color: #fff; border: 1px solid #3ca9bd; border-radius: 8px; }
+  button:active { background: #0d2530; }
+  #result { margin-top: 30px; font-size: 28px; color: #3ca9bd; min-height: 40px; }
+  #status { margin-top: 10px; font-size: 14px; color: #666; }
+</style>
+</head>
+<body>
+
+<button id="btn">🎤 Mluv</button>
+<div id="result"></div>
+<div id="status"></div>
+
+<script>
+const btn    = document.getElementById('btn');
+const result = document.getElementById('result');
+const status = document.getElementById('status');
+
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+if (!SR) { status.textContent = 'Tento prohlížeč nepodporuje STT.'; btn.disabled = true; }
+
+btn.addEventListener('click', () => {
+  const r = new SR();
+  r.lang = 'cs-CZ';
+  r.continuous = false;
+  r.interimResults = false;
+
+  btn.textContent = '⏺ Poslouchám…';
+  btn.disabled = true;
+  status.textContent = '';
+  result.textContent = '';
+
+  r.onresult = e => {
+    result.textContent = e.results[0][0].transcript;
+    status.textContent = 'Jistota: ' + Math.round(e.results[0][0].confidence * 100) + '%';
+  };
+  r.onerror = e => {
+    status.textContent = 'Chyba: ' + e.error;
+  };
+  r.onend = () => {
+    btn.textContent = '🎤 Mluv';
+    btn.disabled = false;
+  };
+
+  r.start();
+});
+</script>
+</body>
+</html>
