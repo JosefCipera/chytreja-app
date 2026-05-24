@@ -692,58 +692,52 @@ function startPassiveListening() {
 
 function listenOnce(cb) {
   if (!('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) return;
-
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  const r  = new SR();
-  r.lang = 'cs-CZ'; r.continuous = true; r.interimResults = false;
-
   const mic = document.getElementById('chjMic');
-  mic.classList.add('listening');
-  _recognition = r;
-  let gotResult = false;
+  const btn = document.getElementById('chjMicText');
 
-  r.onresult = e => {
-    if (gotResult) return;
-    gotResult = true;
-    const t = e.results[e.results.length - 1][0].transcript.toLowerCase();
-    console.log('[CHJ] heard:', t);
-    r.stop();
-    _recognition = null;
-    mic.classList.remove('listening');
-    cb(t);
-  };
-  r.onerror = e => {
-    console.warn('[CHJ] STT error:', e.error);
-    if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
-      // Mikrofon zakázán — konec
+  function attempt(tries) {
+    if (tries <= 0) {
       _recognition = null;
       mic.classList.remove('listening');
-      const b = document.getElementById('chjMicText');
-      if (b) { b.classList.remove('listening'); b.textContent = '[ mikrofon zakázán ]'; }
-    }
-    // no-speech / aborted → onend to restartuje
-  };
-  r.onend = () => {
-    if (gotResult) {
-      _recognition = null;
-      mic.classList.remove('listening');
-      const b = document.getElementById('chjMicText');
-      if (b) { b.classList.remove('listening'); b.textContent = '[ Mluv ]'; }
+      if (btn) { btn.classList.remove('listening'); btn.textContent = '[ Mluv ]'; }
       return;
     }
-    // Ještě neslyšel výsledek — restart (no-speech loop)
-    if (_recognition === r) {
-      const b = document.getElementById('chjMicText');
-      if (b) b.textContent = '[ Poslouchám… ]';
-      try { r.start(); } catch(_) {
-        _recognition = null;
+    const r = new SR();
+    r.lang = 'cs-CZ'; r.continuous = false; r.interimResults = false;
+    _recognition = r;
+
+    r.onresult = e => {
+      const t = e.results[0][0].transcript.toLowerCase();
+      console.log('[CHJ] heard:', t);
+      _recognition = null;
+      mic.classList.remove('listening');
+      if (btn) { btn.classList.remove('listening'); btn.textContent = '[ Mluv ]'; }
+      cb(t);
+    };
+    r.onerror = e => {
+      console.warn('[CHJ] STT:', e.error);
+      _recognition = null;
+      if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
         mic.classList.remove('listening');
-        const b2 = document.getElementById('chjMicText');
-        if (b2) { b2.classList.remove('listening'); b2.textContent = '[ Mluv ]'; }
+        if (btn) { btn.classList.remove('listening'); btn.textContent = '[ mikrofon zakázán ]'; }
+        return;
       }
+      // no-speech / aborted → zkus znovu
+      if (btn) btn.textContent = '[ Poslouchám… ]';
+      setTimeout(() => attempt(tries - 1), 200);
+    };
+    r.onend = () => { if (_recognition === r) _recognition = null; };
+    try { r.start(); } catch(err) {
+      _recognition = null;
+      mic.classList.remove('listening');
+      if (btn) { btn.classList.remove('listening'); btn.textContent = '[ Mluv ]'; }
     }
-  };
-  try { r.start(); } catch(err) { _recognition = null; mic.classList.remove('listening'); }
+  }
+
+  mic.classList.add('listening');
+  if (btn) { btn.classList.add('listening'); btn.textContent = '[ Poslouchám… ]'; }
+  attempt(5);
 }
 
 function tryRoute(transcript) {
