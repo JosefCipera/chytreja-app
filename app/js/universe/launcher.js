@@ -300,6 +300,8 @@ const NODE_KEYWORDS = {
   longevity: {
     'chytré já':    'dlouhovekost',
     'chytre ja':    'dlouhovekost',
+    'hra o život':  'dlouhovekost',
+    'hra o zivot':  'dlouhovekost',
     'přehled':      'dlouhovekost',
     'hlavní':       'dlouhovekost',
     'domů':         'dlouhovekost',
@@ -696,12 +698,13 @@ function listenOnce(cb) {
 }
 
 function tryRoute(transcript) {
-  const model  = localStorage.getItem('currentModel') || 'longevity';
-  const modelKws  = NODE_KEYWORDS[model]  || {};
-  const commonKws = NODE_KEYWORDS.common;
+  const model = localStorage.getItem('currentModel') || 'longevity';
+  // Aktivní model má prioritu, pak ostatní modely (aby šlo přeskočit mezi vesmíry hlasem)
+  const order = [model, ...Object.keys(NODE_KEYWORDS).filter(k => k !== model)];
 
-  for (const map of [modelKws, commonKws]) {
-    for (const [kw, nodeId] of Object.entries(map)) {
+  for (const m of order) {
+    const kws = NODE_KEYWORDS[m] || {};
+    for (const [kw, nodeId] of Object.entries(kws)) {
       if (transcript.includes(kw)) {
         routeToNode(nodeId);
         return true;
