@@ -121,7 +121,7 @@ const STYLE = `
               filter 0.55s cubic-bezier(0.4,0,0.2,1);
 }
 .chjl-alarm {
-  font-size: 44px; font-weight: 300;
+  font-size: 56px; font-weight: 300;
   letter-spacing: 1px; color: #8ba8b8;
   line-height: 1.2; text-shadow: none;
 }
@@ -154,14 +154,6 @@ const STYLE = `
   align-items: center; gap: 14px;
   transition: opacity 0.5s ease; z-index: 10;
 }
-.chjl-mic-wrap {
-  display: flex; flex-direction: column; align-items: center; gap: 8px;
-}
-.chjl-mic-hint {
-  font-size: 11px; letter-spacing: 2px; color: #2a4a56;
-  text-transform: lowercase; transition: opacity 0.3s;
-}
-#chj-launcher.sleeping .chjl-mic-hint { color: #3ca9bd; opacity: 0.6; }
 .chjl-mic {
   width: 72px; height: 72px; border-radius: 50%;
   background: rgba(4,28,36,0.6);
@@ -266,7 +258,11 @@ const HTML = `
 </div>
 
 <div class="chjl-footer" id="chjFooter">
-  <div class="chjl-mic" id="chjMic" style="display:none"></div>
+  <div class="chjl-mic" id="chjMic">
+    <svg viewBox="0 0 24 24">
+      <path d="M12,14A3,3 0 0,0 15,11V5A3,3 0 0,0 12,2A3,3 0 0,0 9,5V11A3,3 0 0,0 12,14M17.3,11C17.3,14 14.76,16.2 12,16.2C9.24,16.2 6.7,14 6.7,11H5C5,14.41 7.72,17.23 11,17.72V21H13V17.72C16.28,17.23 19,14.41 19,11H17.3Z"/>
+    </svg>
+  </div>
   <div class="chjl-input-wrap" id="chjInputWrap">
     <input class="chjl-input" id="chjInput" type="text"
       placeholder="nebo napiš…" autocomplete="off">
@@ -336,10 +332,9 @@ const NODE_KEYWORDS = {
 };
 
 // ── State ────────────────────────────────────────────────────────────────────
-let _phase = 'loading'; // loading | awake | action | sleeping | routing
+let _phase = 'loading'; // loading | awake | action | sleeping
 let _bioData = null;    // { killer, percent, color, action }
 let _recognition = null;
-let _autoAdvance = null; // setTimeout handle pro auto-přechod awake→action
 
 // ── Mount ────────────────────────────────────────────────────────────────────
 (function mount() {
@@ -452,18 +447,6 @@ function showFallback() {
   showAwake();
 }
 
-// ── Typewriter helper ────────────────────────────────────────────────────────
-function typewrite(el, text, speed = 55) {
-  el.textContent = '';
-  // Capitalize first letter
-  const out = text.charAt(0).toUpperCase() + text.slice(1);
-  let i = 0;
-  const tick = () => {
-    if (i < out.length) { el.textContent += out[i++]; setTimeout(tick, speed); }
-  };
-  tick();
-}
-
 // ── Phases ───────────────────────────────────────────────────────────────────
 function showAwake() {
   _phase = 'awake';
@@ -476,31 +459,28 @@ function showAwake() {
   laser.style.background = _bioData.gradient;
   laser.style.boxShadow  = `0 0 20px ${_bioData.color}, 0 0 8px ${_bioData.color}`;
 
-  // Alarm text — typewriter efekt
+  // Alarm text
   const alarm = document.getElementById('chjAlarm');
+  alarm.textContent  = _bioData.killer ?? '—';
   alarm.style.opacity   = '1';
   alarm.style.transform = 'scale(1)';
   alarm.style.filter    = 'blur(0)';
   alarm.style.color     = '#8ba8b8';
   alarm.style.fontSize  = '';
-  typewrite(alarm, _bioData.killer ?? 'energie pod střed');
 
-  // Hide action, hide footer during alarm phase
+  // Hide action
   const action = document.getElementById('chjAction');
   action.style.opacity      = '0';
   action.style.transform    = 'scale(0.97)';
   action.style.filter       = 'blur(14px)';
   action.style.pointerEvents = 'none';
-  document.getElementById('chjFooter').style.opacity = '0';
 
-  // Auto-advance po 3.5s — tap na plochu jde dřív (viz onLauncherClick)
-  _autoAdvance = setTimeout(() => {
-    if (_phase === 'awake') showAction();
-  }, 3500);
+  // Footer
+  document.getElementById('chjFooter').style.opacity = '1';
+  document.getElementById('chjMic').style.animation = 'chjl-mic-pulse 3s infinite ease-in-out';
 }
 
 function showAction() {
-  if (_autoAdvance) { clearTimeout(_autoAdvance); _autoAdvance = null; }
   _phase = 'action';
 
   // Blur out alarm
@@ -545,23 +525,15 @@ function goSleep() {
   laser.style.width     = '0%';
   laser.style.boxShadow = 'none';
 
-  // Alarm zhasne
+  // Sleeping — alarm zhasne, mic pulse zůstane
   setTimeout(() => {
     const alarm = document.getElementById('chjAlarm');
-    alarm.textContent = '';
-    alarm.style.opacity = '0';
-  }, 400);
+    alarm.textContent     = '';
+    alarm.style.opacity   = '0';
+  }, 500);
 
-  // Mic se obnoví a spustí pasivní poslouchání
-  setTimeout(() => {
-    const mic = document.getElementById('chjMic');
-    mic.classList.remove('listening');
-    mic.style.animation   = 'chjl-mic-pulse 3s infinite ease-in-out';
-    mic.style.borderColor = '';
-    mic.querySelector('svg').style.fill = '#3ca9bd';
-    document.getElementById('chjFooter').style.opacity = '1';
-    startPassiveListening();
-  }, 600);
+  // Start passive voice listening for node commands
+  startPassiveListening();
 }
 
 // ── Routing — open universe node ─────────────────────────────────────────────
@@ -654,9 +626,34 @@ function onMicClick(e) {
 }
 
 function startPassiveListening() {
-  // Pasivní STT není spolehlivé v Chrome bez OS přístupu.
-  // Mic pulzuje jako pozvánka k tapu — listenOnce se spustí po tapu.
-  // (funkce zachována pro případné budoucí použití)
+  if (!('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) return;
+  if (_recognition) return; // už běží
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+  function spawnSession() {
+    if (_phase !== 'sleeping' || _recognition) return;
+    const r = new SR();
+    r.lang = 'cs-CZ'; r.continuous = false; r.interimResults = false; r.maxAlternatives = 1;
+    r.onresult = e => {
+      const t = e.results[0][0].transcript.toLowerCase();
+      console.log('[CHJ Passive] heard:', t);
+      tryRoute(t);
+    };
+    r.onend = () => {
+      _recognition = null;
+      if (_phase === 'sleeping') setTimeout(spawnSession, 300);
+    };
+    r.onerror = e => {
+      console.warn('[CHJ Passive] error:', e.error);
+      _recognition = null;
+      const delay = e.error === 'not-allowed' ? 0 : 1500;
+      if (_phase === 'sleeping' && e.error !== 'not-allowed') setTimeout(spawnSession, delay);
+    };
+    _recognition = r;
+    try { r.start(); } catch(err) { _recognition = null; }
+  }
+
+  spawnSession();
 }
 
 function listenOnce(cb) {
@@ -683,12 +680,10 @@ function listenOnce(cb) {
 
 function tryRoute(transcript) {
   const model  = localStorage.getItem('currentModel') || 'longevity';
-  // Launcher vždy zobrazuje Lehkost data — Lehkost klíčová slova mají přednost
-  const lhKws     = NODE_KEYWORDS.lehkost;
-  const modelKws  = model !== 'lehkost' ? (NODE_KEYWORDS[model] || {}) : {};
+  const modelKws  = NODE_KEYWORDS[model]  || {};
   const commonKws = NODE_KEYWORDS.common;
 
-  for (const map of [lhKws, modelKws, commonKws]) {
+  for (const map of [modelKws, commonKws]) {
     for (const [kw, nodeId] of Object.entries(map)) {
       if (transcript.includes(kw)) {
         routeToNode(nodeId);
@@ -707,19 +702,40 @@ async function onTextSend() {
 
   if (!text) { if (_phase === 'awake') showAction(); return; }
 
-  tryRoute(text.toLowerCase());
+  // Route jen pokud je to krátký příkaz (max 4 slova) — delší věty jdou na AI
+  const wordCount = text.trim().split(/\s+/).length;
+  if (wordCount <= 4) {
+    const routed = tryRoute(text.toLowerCase());
+    if (routed) return;
+  }
+
+  // Otherwise send to AI and show response as action
+  if (_phase !== 'action') {
+    document.getElementById('chjActionText').textContent = '…';
+    showAction();
+  }
+
+  try {
+    const userId = getUid() || '';
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: text, userId, nodeId: 'lh_main', mode: 'launcher' }),
+    });
+    const data = await res.json();
+    document.getElementById('chjActionText').textContent =
+      data.reply || data.message || data.text || text;
+  } catch (e) {
+    document.getElementById('chjActionText').textContent =
+      'Teď to nejde. Zkus to znovu.';
+  }
 }
 
 // ── Click handler ─────────────────────────────────────────────────────────────
 function onLauncherClick(e) {
   if (e.target.closest('#chjBtn,#chjMic,#chjInputWrap')) return;
-  if (_phase === 'awake') {
-    // Tap = zkratka, zruš auto-advance timer
-    if (_autoAdvance) { clearTimeout(_autoAdvance); _autoAdvance = null; }
-    showAction();
-  } else if (_phase === 'sleeping') {
-    showAwake();
-  }
+  if (_phase === 'awake') showAction();
+  else if (_phase === 'sleeping') showAwake();
 }
 
 // ── HOTOVO ───────────────────────────────────────────────────────────────────
