@@ -638,20 +638,20 @@ function startPassiveListening() {
     if (_phase !== 'sleeping' || _recognition) return;
     const r = new SR();
     r.lang = 'cs-CZ'; r.continuous = false; r.interimResults = false; r.maxAlternatives = 1;
+    let blocked = false;
+
     r.onresult = e => {
       const t = e.results[0][0].transcript.toLowerCase();
       console.log('[CHJ Passive] heard:', t);
       tryRoute(t);
     };
-    r.onend = () => {
-      _recognition = null;
-      if (_phase === 'sleeping') setTimeout(spawnSession, 300);
-    };
     r.onerror = e => {
       console.warn('[CHJ Passive] error:', e.error);
+      if (e.error === 'not-allowed' || e.error === 'service-not-allowed') blocked = true;
+    };
+    r.onend = () => {
       _recognition = null;
-      const delay = e.error === 'not-allowed' ? 0 : 1500;
-      if (_phase === 'sleeping' && e.error !== 'not-allowed') setTimeout(spawnSession, delay);
+      if (_phase === 'sleeping' && !blocked) setTimeout(spawnSession, 300);
     };
     _recognition = r;
     try { r.start(); } catch(err) { _recognition = null; }
