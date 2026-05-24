@@ -280,11 +280,6 @@ const HTML = `
 // Klíčová slova rozdělená podle modelu — "spánek" v longevity ≠ "spánek" v lehkost
 const NODE_KEYWORDS = {
   lehkost: {
-    'chytré já':  'lh_main',
-    'chytre ja':  'lh_main',
-    'přehled':    'lh_main',
-    'hlavní':     'lh_main',
-    'domů':       'lh_main',
     'pohyb':      'lh_pohyb',
     'regenerace': 'lh_regenerace',
     'spánek':     'lh_regenerace',
@@ -298,14 +293,10 @@ const NODE_KEYWORDS = {
     'stres':      'lh_mysl',
   },
   longevity: {
-    'chytré já':    'dlouhovekost',
-    'chytre ja':    'dlouhovekost',
     'hra o život':  'dlouhovekost',
     'hra o zivot':  'dlouhovekost',
-    'přehled':      'dlouhovekost',
-    'hlavní':       'dlouhovekost',
-    'domů':         'dlouhovekost',
     'tělo':         'telo',
+    'telo':         'telo',
     'síla':         'telo',
     'svaly':        'telo',
     'pohyb':        'telo',
@@ -325,11 +316,6 @@ const NODE_KEYWORDS = {
     'protein':      'vyziva',
   },
   toc: {
-    'chytré já':    'toc',
-    'chytre ja':    'toc',
-    'přehled':      'toc',
-    'hlavní':       'toc',
-    'domů':         'toc',
     'průtok':       'toc',
     'prutok':       'toc',
     'hra o průtok': 'toc',
@@ -341,6 +327,7 @@ const NODE_KEYWORDS = {
     'projekty':     'toc_projekty',
     'marketing':    'toc_marketing',
   },
+  // common: prázdné — sdílená slova řeší tryRoute dynamicky
   common: {},
 };
 
@@ -697,11 +684,23 @@ function listenOnce(cb) {
   attempt(5);
 }
 
+// Hlavní uzly pro každý model
+const MAIN_NODE = { longevity: 'dlouhovekost', lehkost: 'lh_main', toc: 'toc' };
+const HOME_PHRASES = ['chytré já', 'chytre ja', 'přehled', 'hlavní', 'domů', 'domu'];
+
 function tryRoute(transcript) {
   const model = localStorage.getItem('currentModel') || 'longevity';
-  // Aktivní model má prioritu, pak ostatní modely (aby šlo přeskočit mezi vesmíry hlasem)
-  const order = [model, ...Object.keys(NODE_KEYWORDS).filter(k => k !== model)];
 
+  // "domů / přehled / chytré já" → vždy hlavní uzel aktivního modelu
+  for (const phrase of HOME_PHRASES) {
+    if (transcript.includes(phrase)) {
+      routeToNode(MAIN_NODE[model] || 'dlouhovekost');
+      return true;
+    }
+  }
+
+  // Aktivní model má prioritu, pak ostatní (cross-model hlas)
+  const order = [model, ...Object.keys(NODE_KEYWORDS).filter(k => k !== model && k !== 'common')];
   for (const m of order) {
     const kws = NODE_KEYWORDS[m] || {};
     for (const [kw, nodeId] of Object.entries(kws)) {
