@@ -695,31 +695,53 @@ function listenOnce(cb) {
 
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   const r  = new SR();
-  r.lang = 'cs-CZ'; r.continuous = false; r.interimResults = false;
+  r.lang = 'cs-CZ'; r.continuous = true; r.interimResults = false;
 
   const mic = document.getElementById('chjMic');
   mic.classList.add('listening');
   _recognition = r;
+  let gotResult = false;
 
   r.onresult = e => {
-    const t = e.results[0][0].transcript.toLowerCase();
+    if (gotResult) return;
+    gotResult = true;
+    const t = e.results[e.results.length - 1][0].transcript.toLowerCase();
     console.log('[CHJ] heard:', t);
+    r.stop();
     _recognition = null;
     mic.classList.remove('listening');
     cb(t);
   };
-  r.onend = () => {
-    _recognition = null;
-    mic.classList.remove('listening');
-    const b = document.getElementById('chjMicText');
-    if (b) { b.classList.remove('listening'); b.textContent = '[ Mluv ]'; }
-  };
   r.onerror = e => {
     console.warn('[CHJ] STT error:', e.error);
-    _recognition = null;
-    mic.classList.remove('listening');
-    const b = document.getElementById('chjMicText');
-    if (b) { b.classList.remove('listening'); b.textContent = '[ ' + e.error + ' ]'; }
+    if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+      // Mikrofon zakázán — konec
+      _recognition = null;
+      mic.classList.remove('listening');
+      const b = document.getElementById('chjMicText');
+      if (b) { b.classList.remove('listening'); b.textContent = '[ mikrofon zakázán ]'; }
+    }
+    // no-speech / aborted → onend to restartuje
+  };
+  r.onend = () => {
+    if (gotResult) {
+      _recognition = null;
+      mic.classList.remove('listening');
+      const b = document.getElementById('chjMicText');
+      if (b) { b.classList.remove('listening'); b.textContent = '[ Mluv ]'; }
+      return;
+    }
+    // Ještě neslyšel výsledek — restart (no-speech loop)
+    if (_recognition === r) {
+      const b = document.getElementById('chjMicText');
+      if (b) b.textContent = '[ Poslouchám… ]';
+      try { r.start(); } catch(_) {
+        _recognition = null;
+        mic.classList.remove('listening');
+        const b2 = document.getElementById('chjMicText');
+        if (b2) { b2.classList.remove('listening'); b2.textContent = '[ Mluv ]'; }
+      }
+    }
   };
   try { r.start(); } catch(err) { _recognition = null; mic.classList.remove('listening'); }
 }
