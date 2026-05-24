@@ -494,12 +494,7 @@ function showAction() {
   alarm.style.filter    = 'blur(18px)';
   alarm.style.pointerEvents = 'none';
 
-  // Dim mic
-  const mic = document.getElementById('chjMic');
-  mic.classList.remove('listening');
-  mic.style.animation  = 'none';
-  mic.style.borderColor = 'rgba(0,188,212,0.05)';
-  mic.querySelector('svg').style.fill = '#102830';
+  // Mic zůstane viditelný a pulzující — nikdy ho nehaste
 
   // Show action text
   setTimeout(() => {
@@ -529,17 +524,12 @@ function goSleep() {
   laser.style.width     = '0%';
   laser.style.boxShadow = 'none';
 
-  // Alarm zhasne, mic se obnoví
+  // Alarm zhasne, footer zůstane viditelný
   setTimeout(() => {
     const alarm = document.getElementById('chjAlarm');
     alarm.textContent = '';
     alarm.style.opacity = '0';
-
-    // Obnov mic — showAction() ho ztlumila
-    const mic = document.getElementById('chjMic');
-    mic.style.animation   = 'chjl-mic-pulse 3s infinite ease-in-out';
-    mic.style.borderColor = '';
-    mic.querySelector('svg').style.fill = '#3ca9bd';
+    // Přepiš CSS sleeping class — mic musí být stále viditelný
     document.getElementById('chjFooter').style.opacity = '1';
   }, 500);
 
