@@ -201,6 +201,19 @@ const STYLE = `
 }
 .chjl-send:hover { color: #00bcd4; }
 
+/* Desktop: textové tlačítko místo mic kruhu */
+.chjl-mic-text {
+  background: transparent;
+  border: 1px solid rgba(0,188,212,0.3);
+  color: #4a9fb0; font-family: monospace;
+  font-size: 14px; letter-spacing: 2px;
+  padding: 10px 28px; border-radius: 6px;
+  cursor: pointer; transition: all 0.3s;
+}
+.chjl-mic-text:hover { color: #00bcd4; border-color: rgba(0,188,212,0.7); }
+.chjl-mic-text.listening { color: #00bcd4; border-color: rgba(0,188,212,0.8);
+  box-shadow: 0 0 12px rgba(0,188,212,0.3); }
+
 /* Sleep state */
 #chj-launcher.sleeping .chjl-footer { opacity: 0.15; }
 #chj-launcher.sleeping .chjl-laser { opacity: 0.3; }
@@ -364,6 +377,19 @@ let _recognition = null;
   });
   document.getElementById('chjInput').addEventListener('click', e => e.stopPropagation());
   document.getElementById('chjInputWrap').addEventListener('click', e => e.stopPropagation());
+
+  // Desktop: skryj mic kruh, přidej textové tlačítko
+  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  if (!isMobile) {
+    const micCircle = document.getElementById('chjMic');
+    micCircle.style.display = 'none';
+    const micText = document.createElement('button');
+    micText.id = 'chjMicText';
+    micText.className = 'chjl-mic-text';
+    micText.textContent = '[ Mluv ]';
+    micText.addEventListener('click', e => { e.stopPropagation(); onMicTextClick(); });
+    micCircle.parentNode.insertBefore(micText, micCircle);
+  }
 
   // Start loading data (auth is handled by universe-init.js separately)
   loadBioData();
@@ -596,9 +622,9 @@ function routeToNode(nodeId) {
             s.textContent = '#appHeader { display: none !important; } body { background: #010406 !important; }';
             document.head.appendChild(s);
           }
-          // Restartuj pasivní poslouchání
+          // Restartuj pasivní poslouchání jen na mobilu
           _phase = 'sleeping';
-          startPassiveListening();
+          if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) startPassiveListening();
         };
         document.body.appendChild(btn);
       }
@@ -610,9 +636,19 @@ function routeToNode(nodeId) {
 function onMicClick(e) {
   e.stopPropagation();
   if (_phase === 'routing') return;
-  // Zastav cokoliv co běží a poslouchej znovu
   if (_recognition) { try { _recognition.stop(); } catch(_) {} _recognition = null; }
   listenOnce(transcript => tryRoute(transcript));
+}
+
+function onMicTextClick() {
+  if (_phase === 'routing') return;
+  if (_recognition) { try { _recognition.stop(); } catch(_) {} _recognition = null; }
+  const btn = document.getElementById('chjMicText');
+  if (btn) btn.classList.add('listening');
+  listenOnce(transcript => {
+    if (btn) btn.classList.remove('listening');
+    tryRoute(transcript);
+  });
 }
 
 function startPassiveListening() {
