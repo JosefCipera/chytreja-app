@@ -529,15 +529,21 @@ function goSleep() {
   laser.style.width     = '0%';
   laser.style.boxShadow = 'none';
 
-  // Sleeping — alarm zhasne, mic pulse zůstane
+  // Alarm zhasne, mic se obnoví
   setTimeout(() => {
     const alarm = document.getElementById('chjAlarm');
-    alarm.textContent     = '';
-    alarm.style.opacity   = '0';
+    alarm.textContent = '';
+    alarm.style.opacity = '0';
+
+    // Obnov mic — showAction() ho ztlumila
+    const mic = document.getElementById('chjMic');
+    mic.style.animation   = 'chjl-mic-pulse 3s infinite ease-in-out';
+    mic.style.borderColor = '';
+    mic.querySelector('svg').style.fill = '#3ca9bd';
+    document.getElementById('chjFooter').style.opacity = '1';
   }, 500);
 
-  // Mobil: on-device STT funguje spolehlivě → pasivní poslouchání
-  // Desktop: cloud STT s krátkým timeoutem → jen tap-to-talk
+  // Mobil: pasivní poslouchání, Desktop: tap-to-talk
   const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
   if (isMobile) startPassiveListening();
 }
