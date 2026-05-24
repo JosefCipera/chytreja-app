@@ -655,31 +655,27 @@ function startPassiveListening() {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   const r  = new SR();
   r.lang            = 'cs-CZ';
-  r.continuous      = true;
+  r.continuous      = false; // single-utterance — browser lépe zachytí krátká slova
   r.interimResults  = false;
   r.maxAlternatives = 1;
 
-  let _blocked = false; // true pokud browser odmítl mic
+  let _blocked = false;
 
   r.onresult = e => {
-    const result = e.results[e.results.length - 1];
-    if (!result.isFinal) return;
-    const t = result[0].transcript.toLowerCase().trim();
+    const t = e.results[0][0].transcript.toLowerCase().trim();
     console.log('[CHJ Passive] heard:', t);
     tryRoute(t);
   };
 
-  // onerror jen označí blokaci — restart řeší onend
   r.onerror = e => {
-    console.warn('[CHJ Passive] error:', e.error);
     if (e.error === 'not-allowed' || e.error === 'service-not-allowed') _blocked = true;
+    // no-speech je normální — onend restartuje
   };
 
-  // onend vždy restartuje (pokud spíme a nejsme blokováni)
   r.onend = () => {
     _recognition = null;
     if (_phase === 'sleeping' && !_blocked) {
-      setTimeout(startPassiveListening, 150);
+      setTimeout(startPassiveListening, 80); // okamžitý restart — minimální mezera
     }
   };
 
