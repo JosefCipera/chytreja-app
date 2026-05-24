@@ -266,6 +266,7 @@ const HTML = `
 </div>
 
 <div class="chjl-footer" id="chjFooter">
+  <div class="chjl-mic" id="chjMic" style="display:none"></div>
   <div class="chjl-input-wrap" id="chjInputWrap">
     <input class="chjl-input" id="chjInput" type="text"
       placeholder="nebo napiš…" autocomplete="off">
