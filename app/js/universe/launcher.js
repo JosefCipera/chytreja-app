@@ -533,9 +533,6 @@ function goSleep() {
     document.getElementById('chjFooter').style.opacity = '1';
   }, 500);
 
-  // Mobil: pasivní poslouchání, Desktop: tap-to-talk
-  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-  if (isMobile) startPassiveListening();
 }
 
 // ── Routing — open universe node ─────────────────────────────────────────────
@@ -609,62 +606,14 @@ function routeToNode(nodeId) {
 // ── Voice ────────────────────────────────────────────────────────────────────
 function onMicClick(e) {
   e.stopPropagation();
-  if (_phase === 'awake') {
-    listenOnce(transcript => {
-      // Try routing first (e.g. "ukáž zdraví")
-      const routed = tryRoute(transcript);
-      if (!routed) showAction(); // treat as "co dál"
-    });
-  } else if (_phase === 'sleeping') {
-    // Toggle pasivní poslouchání: klik → aktivní listenOnce, nebo zastav pasivní
-    if (_recognition) {
-      try { _recognition.stop(); } catch(_) {}
-      _recognition = null;
-      document.getElementById('chjMic').classList.remove('listening');
-    } else {
-      // Obnov viditelnost footeru aby bylo jasné že poslouchá
-      document.getElementById('chjFooter').style.opacity = '1';
-      listenOnce(transcript => tryRoute(transcript));
-    }
-  }
-}
-
-function startPassiveListening() {
-  if (!('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) return;
-  if (_recognition) return; // už běží
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-
-  function spawnSession() {
-    if (_phase !== 'sleeping' || _recognition) return;
-    const r = new SR();
-    r.lang = 'cs-CZ'; r.continuous = false; r.interimResults = false; r.maxAlternatives = 1;
-    let blocked = false;
-
-    r.onresult = e => {
-      const t = e.results[0][0].transcript.toLowerCase();
-      console.log('[CHJ Passive] heard:', t);
-      tryRoute(t);
-    };
-    r.onerror = e => {
-      console.warn('[CHJ Passive] error:', e.error);
-      if (e.error === 'not-allowed' || e.error === 'service-not-allowed') blocked = true;
-    };
-    r.onend = () => {
-      _recognition = null;
-      if (_phase === 'sleeping' && !blocked) setTimeout(spawnSession, 300);
-    };
-    _recognition = r;
-    try { r.start(); } catch(err) { _recognition = null; }
-  }
-
-  spawnSession();
+  if (_phase === 'routing') return;
+  // Zastav cokoliv co běží a poslouchej znovu
+  if (_recognition) { try { _recognition.stop(); } catch(_) {} _recognition = null; }
+  listenOnce(transcript => tryRoute(transcript));
 }
 
 function listenOnce(cb) {
-  if (!('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
-    showAction(); return;
-  }
-  if (_recognition) { try { _recognition.stop(); } catch(_) {} _recognition = null; }
+  if (!('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) return;
 
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   const r  = new SR();
@@ -672,26 +621,25 @@ function listenOnce(cb) {
 
   const mic = document.getElementById('chjMic');
   mic.classList.add('listening');
+  _recognition = r;
 
   r.onresult = e => {
     const t = e.results[0][0].transcript.toLowerCase();
-    console.log('[CHJ listenOnce] heard:', t);
+    console.log('[CHJ] heard:', t);
+    _recognition = null;
     mic.classList.remove('listening');
-    document.getElementById('chjFooter').style.opacity = '';
     cb(t);
   };
   r.onend = () => {
+    _recognition = null;
     mic.classList.remove('listening');
-    document.getElementById('chjFooter').style.opacity = '';
   };
-  // showAction jen pokud jsme v awake, ne ve sleeping (tam jen tiše selže)
   r.onerror = e => {
-    console.warn('[CHJ listenOnce] error:', e.error);
+    console.warn('[CHJ] STT error:', e.error);
+    _recognition = null;
     mic.classList.remove('listening');
-    document.getElementById('chjFooter').style.opacity = '';
-    if (_phase === 'awake') showAction();
   };
-  r.start();
+  try { r.start(); } catch(err) { _recognition = null; mic.classList.remove('listening'); }
 }
 
 function tryRoute(transcript) {
