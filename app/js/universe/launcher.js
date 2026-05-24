@@ -646,10 +646,16 @@ function onMicTextClick() {
   if (_phase === 'routing') return;
   if (_recognition) { try { _recognition.stop(); } catch(_) {} _recognition = null; }
   const btn = document.getElementById('chjMicText');
-  if (btn) btn.classList.add('listening');
+  if (btn) { btn.classList.add('listening'); btn.textContent = '[ Poslouchám… ]'; }
   listenOnce(transcript => {
-    if (btn) btn.classList.remove('listening');
-    tryRoute(transcript);
+    if (btn) { btn.classList.remove('listening'); btn.textContent = '[ Mluv ]'; }
+    console.log('[CHJ] routing transcript:', transcript);
+    const routed = tryRoute(transcript);
+    if (!routed) {
+      // Zobraz co bylo slyšeno — pomáhá s debugem
+      document.getElementById('chjActionText').textContent = '« ' + transcript + ' » — neznám tento uzel';
+      if (_phase !== 'action') showAction();
+    }
   });
 }
 
@@ -705,11 +711,15 @@ function listenOnce(cb) {
   r.onend = () => {
     _recognition = null;
     mic.classList.remove('listening');
+    const b = document.getElementById('chjMicText');
+    if (b) { b.classList.remove('listening'); b.textContent = '[ Mluv ]'; }
   };
   r.onerror = e => {
     console.warn('[CHJ] STT error:', e.error);
     _recognition = null;
     mic.classList.remove('listening');
+    const b = document.getElementById('chjMicText');
+    if (b) { b.classList.remove('listening'); b.textContent = '[ ' + e.error + ' ]'; }
   };
   try { r.start(); } catch(err) { _recognition = null; mic.classList.remove('listening'); }
 }
