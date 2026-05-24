@@ -447,6 +447,18 @@ function showFallback() {
   showAwake();
 }
 
+// ── Typewriter helper ────────────────────────────────────────────────────────
+function typewrite(el, text, speed = 55) {
+  el.textContent = '';
+  // Capitalize first letter
+  const out = text.charAt(0).toUpperCase() + text.slice(1);
+  let i = 0;
+  const tick = () => {
+    if (i < out.length) { el.textContent += out[i++]; setTimeout(tick, speed); }
+  };
+  tick();
+}
+
 // ── Phases ───────────────────────────────────────────────────────────────────
 function showAwake() {
   _phase = 'awake';
@@ -459,14 +471,14 @@ function showAwake() {
   laser.style.background = _bioData.gradient;
   laser.style.boxShadow  = `0 0 20px ${_bioData.color}, 0 0 8px ${_bioData.color}`;
 
-  // Alarm text
+  // Alarm text — typewriter efekt
   const alarm = document.getElementById('chjAlarm');
-  alarm.textContent  = _bioData.killer ?? '—';
   alarm.style.opacity   = '1';
   alarm.style.transform = 'scale(1)';
   alarm.style.filter    = 'blur(0)';
   alarm.style.color     = '#8ba8b8';
   alarm.style.fontSize  = '';
+  typewrite(alarm, _bioData.killer ?? 'energie pod střed');
 
   // Hide action
   const action = document.getElementById('chjAction');
@@ -475,9 +487,13 @@ function showAwake() {
   action.style.filter       = 'blur(14px)';
   action.style.pointerEvents = 'none';
 
-  // Footer
+  // Footer — mic pulse
+  const mic = document.getElementById('chjMic');
   document.getElementById('chjFooter').style.opacity = '1';
-  document.getElementById('chjMic').style.animation = 'chjl-mic-pulse 3s infinite ease-in-out';
+  mic.style.animation   = 'chjl-mic-pulse 3s infinite ease-in-out';
+  mic.style.borderColor = '';
+  mic.querySelector('svg').style.fill = '#3ca9bd';
+  mic.classList.remove('listening');
 }
 
 function showAction() {
@@ -525,15 +541,22 @@ function goSleep() {
   laser.style.width     = '0%';
   laser.style.boxShadow = 'none';
 
-  // Sleeping — alarm zhasne, mic pulse zůstane
+  // Alarm zhasne
   setTimeout(() => {
     const alarm = document.getElementById('chjAlarm');
-    alarm.textContent     = '';
-    alarm.style.opacity   = '0';
-  }, 500);
+    alarm.textContent = '';
+    alarm.style.opacity = '0';
+  }, 400);
 
-  // Start passive voice listening for node commands
-  startPassiveListening();
+  // Mic se obnoví — tap-to-talk, žádné pasivní poslouchání (nespolehlivé na mobilu)
+  setTimeout(() => {
+    const mic = document.getElementById('chjMic');
+    mic.classList.remove('listening');
+    mic.style.animation   = 'chjl-mic-pulse 3s infinite ease-in-out';
+    mic.style.borderColor = '';
+    mic.querySelector('svg').style.fill = '#3ca9bd';
+    document.getElementById('chjFooter').style.opacity = '1';
+  }, 600);
 }
 
 // ── Routing — open universe node ─────────────────────────────────────────────
