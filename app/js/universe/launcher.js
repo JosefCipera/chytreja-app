@@ -6,7 +6,8 @@
  */
 
 // ── Version ──────────────────────────────────────────────────────────────────
-const CHJ_VERSION = 'v0.2.0';
+const CHJ_VERSION = 'v0.2.1';
+console.log('[CHJ Launcher] loaded', CHJ_VERSION);
 
 // ── Styles ───────────────────────────────────────────────────────────────────
 const STYLE = `
@@ -379,7 +380,11 @@ let _recognition = null;
   document.getElementById('chjInputWrap').addEventListener('click', e => e.stopPropagation());
 
   // Desktop: skryj mic kruh, přidej textové tlačítko
-  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  // userAgentData.mobile je spolehlivější než UA string (DevTools ho nefalšuje)
+  const isMobile = navigator.userAgentData
+    ? navigator.userAgentData.mobile
+    : /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  console.log('[CHJ Launcher] isMobile:', isMobile);
   if (!isMobile) {
     const micCircle = document.getElementById('chjMic');
     micCircle.style.display = 'none';
@@ -559,9 +564,9 @@ function goSleep() {
     document.getElementById('chjFooter').style.opacity = '1';
   }, 500);
 
-  // Mobil: pasivní poslouchání (on-device STT), Desktop: tap-to-talk
-  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-  if (isMobile) startPassiveListening();
+  // Mobil: pasivní poslouchání, Desktop: tap-to-talk
+  const mob = navigator.userAgentData ? navigator.userAgentData.mobile : /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  if (mob) startPassiveListening();
 }
 
 // ── Routing — open universe node ─────────────────────────────────────────────
@@ -624,7 +629,8 @@ function routeToNode(nodeId) {
           }
           // Restartuj pasivní poslouchání jen na mobilu
           _phase = 'sleeping';
-          if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) startPassiveListening();
+          const mob2 = navigator.userAgentData ? navigator.userAgentData.mobile : /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+          if (mob2) startPassiveListening();
         };
         document.body.appendChild(btn);
       }
