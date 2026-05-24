@@ -591,20 +591,25 @@ function routeToNode(nodeId) {
     // null nodeId = jen odhali canvas (universe běží za laucherem)
   };
 
-  if (needsSwitch && window._loadAndRenderModel) {
-    localStorage.setItem('currentModel', targetModel);
-    const role = localStorage.getItem('userRole') || 'demo';
-    window._loadAndRenderModel(targetModel, role).then(doOpen).catch(doOpen);
-  } else {
-    doOpen();
-  }
-
   // Vrať hlavičku appky — odstraň CSS inject
   document.getElementById('chj-hide-header')?.remove();
 
-  // Pak teprve fade-out launcheru — canvas je připraven
+  const fadeOut = () => {
+    // Nejdřív otevři uzel (launcher ho ještě zakrývá), pak teprve fade
+    doOpen();
+    requestAnimationFrame(() => launcher.classList.add('fade-out'));
+  };
+
+  if (needsSwitch && window._loadAndRenderModel) {
+    localStorage.setItem('currentModel', targetModel);
+    const role = localStorage.getItem('userRole') || 'demo';
+    window._loadAndRenderModel(targetModel, role).then(fadeOut).catch(fadeOut);
+  } else {
+    fadeOut();
+  }
+
   setTimeout(() => {
-    launcher.classList.add('fade-out');
+    launcher.classList.add('fade-out'); // fallback
     setTimeout(() => {
       launcher.style.display = 'none';
       // Injektuj plovoucí ← tlačítko zpět
