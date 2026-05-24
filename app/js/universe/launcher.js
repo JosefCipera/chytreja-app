@@ -266,14 +266,6 @@ const HTML = `
 </div>
 
 <div class="chjl-footer" id="chjFooter">
-  <div class="chjl-mic-wrap">
-    <div class="chjl-mic" id="chjMic">
-      <svg viewBox="0 0 24 24">
-        <path d="M12,14A3,3 0 0,0 15,11V5A3,3 0 0,0 12,2A3,3 0 0,0 9,5V11A3,3 0 0,0 12,14M17.3,11C17.3,14 14.76,16.2 12,16.2C9.24,16.2 6.7,14 6.7,11H5C5,14.41 7.72,17.23 11,17.72V21H13V17.72C16.28,17.23 19,14.41 19,11H17.3Z"/>
-      </svg>
-    </div>
-    <div class="chjl-mic-hint" id="chjMicHint">tapni a mluv</div>
-  </div>
   <div class="chjl-input-wrap" id="chjInputWrap">
     <input class="chjl-input" id="chjInput" type="text"
       placeholder="nebo napiš…" autocomplete="off">
@@ -714,33 +706,7 @@ async function onTextSend() {
 
   if (!text) { if (_phase === 'awake') showAction(); return; }
 
-  // Route jen pokud je to krátký příkaz (max 4 slova) — delší věty jdou na AI
-  const wordCount = text.trim().split(/\s+/).length;
-  if (wordCount <= 4) {
-    const routed = tryRoute(text.toLowerCase());
-    if (routed) return;
-  }
-
-  // Otherwise send to AI and show response as action
-  if (_phase !== 'action') {
-    document.getElementById('chjActionText').textContent = '…';
-    showAction();
-  }
-
-  try {
-    const userId = getUid() || '';
-    const res = await fetch('/api/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: text, userId, nodeId: 'lh_main', mode: 'launcher' }),
-    });
-    const data = await res.json();
-    document.getElementById('chjActionText').textContent =
-      data.reply || data.message || data.text || text;
-  } catch (e) {
-    document.getElementById('chjActionText').textContent =
-      'Teď to nejde. Zkus to znovu.';
-  }
+  tryRoute(text.toLowerCase());
 }
 
 // ── Click handler ─────────────────────────────────────────────────────────────
