@@ -291,6 +291,11 @@ const HTML = `
 // Klíčová slova rozdělená podle modelu — "spánek" v longevity ≠ "spánek" v lehkost
 const NODE_KEYWORDS = {
   lehkost: {
+    'chytré já':  'lh_main',
+    'chytre ja':  'lh_main',
+    'přehled':    'lh_main',
+    'hlavní':     'lh_main',
+    'domů':       'lh_main',
     'pohyb':      'lh_pohyb',
     'regenerace': 'lh_regenerace',
     'spánek':     'lh_regenerace',
@@ -304,6 +309,11 @@ const NODE_KEYWORDS = {
     'stres':      'lh_mysl',
   },
   longevity: {
+    'chytré já':    'dlouhovekost',
+    'chytre ja':    'dlouhovekost',
+    'přehled':      'dlouhovekost',
+    'hlavní':       'dlouhovekost',
+    'domů':         'dlouhovekost',
     'tělo':         'telo',
     'síla':         'telo',
     'svaly':        'telo',
@@ -324,6 +334,11 @@ const NODE_KEYWORDS = {
     'protein':      'vyziva',
   },
   toc: {
+    'chytré já':    'toc',
+    'chytre ja':    'toc',
+    'přehled':      'toc',
+    'hlavní':       'toc',
+    'domů':         'toc',
     'průtok':       'toc',
     'prutok':       'toc',
     'hra o průtok': 'toc',
@@ -335,14 +350,7 @@ const NODE_KEYWORDS = {
     'projekty':     'toc_projekty',
     'marketing':    'toc_marketing',
   },
-  // Funguje ve všech modelech
-  common: {
-    'vesmír':  null,
-    'domů':    null,
-    'přehled': null,
-    'zpět':    null,
-    'hlavní':  null,
-  },
+  common: {},
 };
 
 // ── State ────────────────────────────────────────────────────────────────────
