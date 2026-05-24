@@ -536,7 +536,10 @@ function goSleep() {
     alarm.style.opacity   = '0';
   }, 500);
 
-  // Pasivní STT nefunguje spolehlivě na desktopu — mic čeká na tap
+  // Mobil: on-device STT funguje spolehlivě → pasivní poslouchání
+  // Desktop: cloud STT s krátkým timeoutem → jen tap-to-talk
+  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  if (isMobile) startPassiveListening();
 }
 
 // ── Routing — open universe node ─────────────────────────────────────────────
@@ -677,7 +680,8 @@ function listenOnce(cb) {
     cb(e.results[0][0].transcript.toLowerCase());
   };
   r.onend = () => mic.classList.remove('listening');
-  r.onerror = () => { mic.classList.remove('listening'); showAction(); };
+  // showAction jen pokud jsme v awake, ne ve sleeping (tam jen tiše selže)
+  r.onerror = () => { mic.classList.remove('listening'); if (_phase === 'awake') showAction(); };
   r.start();
 }
 
