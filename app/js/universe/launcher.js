@@ -533,6 +533,9 @@ function goSleep() {
     document.getElementById('chjFooter').style.opacity = '1';
   }, 500);
 
+  // Mobil: pasivní poslouchání (on-device STT), Desktop: tap-to-talk
+  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  if (isMobile) startPassiveListening();
 }
 
 // ── Routing — open universe node ─────────────────────────────────────────────
@@ -610,6 +613,37 @@ function onMicClick(e) {
   // Zastav cokoliv co běží a poslouchej znovu
   if (_recognition) { try { _recognition.stop(); } catch(_) {} _recognition = null; }
   listenOnce(transcript => tryRoute(transcript));
+}
+
+function startPassiveListening() {
+  if (!('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) return;
+  if (_recognition) return;
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+  function spawnSession() {
+    if (_phase !== 'sleeping' || _recognition) return;
+    const r = new SR();
+    r.lang = 'cs-CZ'; r.continuous = false; r.interimResults = false; r.maxAlternatives = 1;
+    let blocked = false;
+
+    r.onresult = e => {
+      const t = e.results[0][0].transcript.toLowerCase();
+      console.log('[CHJ Passive] heard:', t);
+      tryRoute(t);
+    };
+    r.onerror = e => {
+      console.warn('[CHJ Passive] error:', e.error);
+      if (e.error === 'not-allowed' || e.error === 'service-not-allowed') blocked = true;
+    };
+    r.onend = () => {
+      _recognition = null;
+      if (_phase === 'sleeping' && !blocked) setTimeout(spawnSession, 300);
+    };
+    _recognition = r;
+    try { r.start(); } catch(err) { _recognition = null; }
+  }
+
+  spawnSession();
 }
 
 function listenOnce(cb) {
