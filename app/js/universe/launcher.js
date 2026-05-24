@@ -121,7 +121,7 @@ const STYLE = `
               filter 0.55s cubic-bezier(0.4,0,0.2,1);
 }
 .chjl-alarm {
-  font-size: 56px; font-weight: 300;
+  font-size: 44px; font-weight: 300;
   letter-spacing: 1px; color: #8ba8b8;
   line-height: 1.2; text-shadow: none;
 }
@@ -332,9 +332,10 @@ const NODE_KEYWORDS = {
 };
 
 // ── State ────────────────────────────────────────────────────────────────────
-let _phase = 'loading'; // loading | awake | action | sleeping
+let _phase = 'loading'; // loading | awake | action | sleeping | routing
 let _bioData = null;    // { killer, percent, color, action }
 let _recognition = null;
+let _autoAdvance = null; // setTimeout handle pro auto-přechod awake→action
 
 // ── Mount ────────────────────────────────────────────────────────────────────
 (function mount() {
@@ -480,23 +481,22 @@ function showAwake() {
   alarm.style.fontSize  = '';
   typewrite(alarm, _bioData.killer ?? 'energie pod střed');
 
-  // Hide action
+  // Hide action, hide footer during alarm phase
   const action = document.getElementById('chjAction');
   action.style.opacity      = '0';
   action.style.transform    = 'scale(0.97)';
   action.style.filter       = 'blur(14px)';
   action.style.pointerEvents = 'none';
+  document.getElementById('chjFooter').style.opacity = '0';
 
-  // Footer — mic pulse
-  const mic = document.getElementById('chjMic');
-  document.getElementById('chjFooter').style.opacity = '1';
-  mic.style.animation   = 'chjl-mic-pulse 3s infinite ease-in-out';
-  mic.style.borderColor = '';
-  mic.querySelector('svg').style.fill = '#3ca9bd';
-  mic.classList.remove('listening');
+  // Auto-advance po 3.5s — tap na plochu jde dřív (viz onLauncherClick)
+  _autoAdvance = setTimeout(() => {
+    if (_phase === 'awake') showAction();
+  }, 3500);
 }
 
 function showAction() {
+  if (_autoAdvance) { clearTimeout(_autoAdvance); _autoAdvance = null; }
   _phase = 'action';
 
   // Blur out alarm
@@ -764,8 +764,13 @@ async function onTextSend() {
 // ── Click handler ─────────────────────────────────────────────────────────────
 function onLauncherClick(e) {
   if (e.target.closest('#chjBtn,#chjMic,#chjInputWrap')) return;
-  if (_phase === 'awake') showAction();
-  else if (_phase === 'sleeping') showAwake();
+  if (_phase === 'awake') {
+    // Tap = zkratka, zruš auto-advance timer
+    if (_autoAdvance) { clearTimeout(_autoAdvance); _autoAdvance = null; }
+    showAction();
+  } else if (_phase === 'sleeping') {
+    showAwake();
+  }
 }
 
 // ── HOTOVO ───────────────────────────────────────────────────────────────────
