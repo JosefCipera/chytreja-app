@@ -121,7 +121,7 @@ const STYLE = `
               filter 0.55s cubic-bezier(0.4,0,0.2,1);
 }
 .chjl-alarm {
-  font-size: 56px; font-weight: 300;
+  font-size: 42px; font-weight: 300;
   letter-spacing: 1px; color: #8ba8b8;
   line-height: 1.2; text-shadow: none;
 }
@@ -459,9 +459,10 @@ function showAwake() {
   laser.style.background = _bioData.gradient;
   laser.style.boxShadow  = `0 0 20px ${_bioData.color}, 0 0 8px ${_bioData.color}`;
 
-  // Alarm text
+  // Alarm text — velké první písmeno
   const alarm = document.getElementById('chjAlarm');
-  alarm.textContent  = _bioData.killer ?? '—';
+  const killerText = _bioData.killer ?? 'energie pod střed';
+  alarm.textContent  = killerText.charAt(0).toUpperCase() + killerText.slice(1);
   alarm.style.opacity   = '1';
   alarm.style.transform = 'scale(1)';
   alarm.style.filter    = 'blur(0)';
@@ -478,6 +479,9 @@ function showAwake() {
   // Footer
   document.getElementById('chjFooter').style.opacity = '1';
   document.getElementById('chjMic').style.animation = 'chjl-mic-pulse 3s infinite ease-in-out';
+
+  // Auto-advance na akci po 4s (tap na plochu jde dřív)
+  setTimeout(() => { if (_phase === 'awake') showAction(); }, 4000);
 }
 
 function showAction() {
