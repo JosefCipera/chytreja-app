@@ -154,6 +154,14 @@ const STYLE = `
   align-items: center; gap: 14px;
   transition: opacity 0.5s ease; z-index: 10;
 }
+.chjl-mic-wrap {
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+}
+.chjl-mic-hint {
+  font-size: 11px; letter-spacing: 2px; color: #2a4a56;
+  text-transform: lowercase; transition: opacity 0.3s;
+}
+#chj-launcher.sleeping .chjl-mic-hint { color: #3ca9bd; opacity: 0.6; }
 .chjl-mic {
   width: 72px; height: 72px; border-radius: 50%;
   background: rgba(4,28,36,0.6);
@@ -258,10 +266,13 @@ const HTML = `
 </div>
 
 <div class="chjl-footer" id="chjFooter">
-  <div class="chjl-mic" id="chjMic">
-    <svg viewBox="0 0 24 24">
-      <path d="M12,14A3,3 0 0,0 15,11V5A3,3 0 0,0 12,2A3,3 0 0,0 9,5V11A3,3 0 0,0 12,14M17.3,11C17.3,14 14.76,16.2 12,16.2C9.24,16.2 6.7,14 6.7,11H5C5,14.41 7.72,17.23 11,17.72V21H13V17.72C16.28,17.23 19,14.41 19,11H17.3Z"/>
-    </svg>
+  <div class="chjl-mic-wrap">
+    <div class="chjl-mic" id="chjMic">
+      <svg viewBox="0 0 24 24">
+        <path d="M12,14A3,3 0 0,0 15,11V5A3,3 0 0,0 12,2A3,3 0 0,0 9,5V11A3,3 0 0,0 12,14M17.3,11C17.3,14 14.76,16.2 12,16.2C9.24,16.2 6.7,14 6.7,11H5C5,14.41 7.72,17.23 11,17.72V21H13V17.72C16.28,17.23 19,14.41 19,11H17.3Z"/>
+      </svg>
+    </div>
+    <div class="chjl-mic-hint" id="chjMicHint">tapni a mluv</div>
   </div>
   <div class="chjl-input-wrap" id="chjInputWrap">
     <input class="chjl-input" id="chjInput" type="text"
@@ -650,37 +661,9 @@ function onMicClick(e) {
 }
 
 function startPassiveListening() {
-  if (!('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) return;
-  if (_recognition) return;
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  const r  = new SR();
-  r.lang            = 'cs-CZ';
-  r.continuous      = false; // single-utterance — browser lépe zachytí krátká slova
-  r.interimResults  = false;
-  r.maxAlternatives = 1;
-
-  let _blocked = false;
-
-  r.onresult = e => {
-    const t = e.results[0][0].transcript.toLowerCase().trim();
-    console.log('[CHJ Passive] heard:', t);
-    tryRoute(t);
-  };
-
-  r.onerror = e => {
-    if (e.error === 'not-allowed' || e.error === 'service-not-allowed') _blocked = true;
-    // no-speech je normální — onend restartuje
-  };
-
-  r.onend = () => {
-    _recognition = null;
-    if (_phase === 'sleeping' && !_blocked) {
-      setTimeout(startPassiveListening, 80); // okamžitý restart — minimální mezera
-    }
-  };
-
-  _recognition = r;
-  try { r.start(); } catch(err) { _recognition = null; }
+  // Pasivní STT není spolehlivé v Chrome bez OS přístupu.
+  // Mic pulzuje jako pozvánka k tapu — listenOnce se spustí po tapu.
+  // (funkce zachována pro případné budoucí použití)
 }
 
 function listenOnce(cb) {
@@ -707,10 +690,12 @@ function listenOnce(cb) {
 
 function tryRoute(transcript) {
   const model  = localStorage.getItem('currentModel') || 'longevity';
-  const modelKws  = NODE_KEYWORDS[model]  || {};
+  // Launcher vždy zobrazuje Lehkost data — Lehkost klíčová slova mají přednost
+  const lhKws     = NODE_KEYWORDS.lehkost;
+  const modelKws  = model !== 'lehkost' ? (NODE_KEYWORDS[model] || {}) : {};
   const commonKws = NODE_KEYWORDS.common;
 
-  for (const map of [modelKws, commonKws]) {
+  for (const map of [lhKws, modelKws, commonKws]) {
     for (const [kw, nodeId] of Object.entries(map)) {
       if (transcript.includes(kw)) {
         routeToNode(nodeId);
