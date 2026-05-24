@@ -626,6 +626,8 @@ function onMicClick(e) {
       _recognition = null;
       document.getElementById('chjMic').classList.remove('listening');
     } else {
+      // Obnov viditelnost footeru aby bylo jasné že poslouchá
+      document.getElementById('chjFooter').style.opacity = '1';
       listenOnce(transcript => tryRoute(transcript));
     }
   }
@@ -676,12 +678,23 @@ function listenOnce(cb) {
   mic.classList.add('listening');
 
   r.onresult = e => {
+    const t = e.results[0][0].transcript.toLowerCase();
+    console.log('[CHJ listenOnce] heard:', t);
     mic.classList.remove('listening');
-    cb(e.results[0][0].transcript.toLowerCase());
+    document.getElementById('chjFooter').style.opacity = '';
+    cb(t);
   };
-  r.onend = () => mic.classList.remove('listening');
+  r.onend = () => {
+    mic.classList.remove('listening');
+    document.getElementById('chjFooter').style.opacity = '';
+  };
   // showAction jen pokud jsme v awake, ne ve sleeping (tam jen tiše selže)
-  r.onerror = () => { mic.classList.remove('listening'); if (_phase === 'awake') showAction(); };
+  r.onerror = e => {
+    console.warn('[CHJ listenOnce] error:', e.error);
+    mic.classList.remove('listening');
+    document.getElementById('chjFooter').style.opacity = '';
+    if (_phase === 'awake') showAction();
+  };
   r.start();
 }
 
