@@ -691,7 +691,7 @@ const HOME_PHRASES = ['chytré já', 'chytre ja', 'přehled', 'hlavní', 'domů'
 function tryRoute(transcript) {
   const model = localStorage.getItem('currentModel') || 'longevity';
 
-  // "domů / přehled / chytré já" → vždy hlavní uzel aktivního modelu
+  // "domů / přehled / chytré já" → hlavní uzel aktivního modelu
   for (const phrase of HOME_PHRASES) {
     if (transcript.includes(phrase)) {
       routeToNode(MAIN_NODE[model] || 'dlouhovekost');
@@ -699,15 +699,12 @@ function tryRoute(transcript) {
     }
   }
 
-  // Aktivní model má prioritu, pak ostatní (cross-model hlas)
-  const order = [model, ...Object.keys(NODE_KEYWORDS).filter(k => k !== model && k !== 'common')];
-  for (const m of order) {
-    const kws = NODE_KEYWORDS[m] || {};
-    for (const [kw, nodeId] of Object.entries(kws)) {
-      if (transcript.includes(kw)) {
-        routeToNode(nodeId);
-        return true;
-      }
+  // Jen klíčová slova aktivního modelu — bez přepínání vesmírů
+  const kws = NODE_KEYWORDS[model] || {};
+  for (const [kw, nodeId] of Object.entries(kws)) {
+    if (transcript.includes(kw)) {
+      routeToNode(nodeId);
+      return true;
     }
   }
   return false;
