@@ -655,12 +655,13 @@ function startPassiveListening() {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   const r  = new SR();
   r.lang            = 'cs-CZ';
-  r.continuous      = true;   // jedna long-running session — neopakuje se každé 2s
+  r.continuous      = true;
   r.interimResults  = false;
   r.maxAlternatives = 1;
 
+  let _blocked = false; // true pokud browser odmítl mic
+
   r.onresult = e => {
-    // Vezmi poslední finální výsledek
     const result = e.results[e.results.length - 1];
     if (!result.isFinal) return;
     const t = result[0].transcript.toLowerCase().trim();
@@ -668,17 +669,17 @@ function startPassiveListening() {
     tryRoute(t);
   };
 
-  r.onend = () => {
-    _recognition = null;
-    // Restart jen pokud stále spíme (neskončilo routingem)
-    if (_phase === 'sleeping') setTimeout(startPassiveListening, 1000);
-  };
-
+  // onerror jen označí blokaci — restart řeší onend
   r.onerror = e => {
     console.warn('[CHJ Passive] error:', e.error);
+    if (e.error === 'not-allowed' || e.error === 'service-not-allowed') _blocked = true;
+  };
+
+  // onend vždy restartuje (pokud spíme a nejsme blokováni)
+  r.onend = () => {
     _recognition = null;
-    if (_phase === 'sleeping' && e.error !== 'not-allowed') {
-      setTimeout(startPassiveListening, 2000);
+    if (_phase === 'sleeping' && !_blocked) {
+      setTimeout(startPassiveListening, 150);
     }
   };
 
