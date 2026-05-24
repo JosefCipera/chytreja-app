@@ -202,19 +202,6 @@ const STYLE = `
 }
 .chjl-send:hover { color: #00bcd4; }
 
-/* Desktop: textové tlačítko místo mic kruhu */
-.chjl-mic-text {
-  background: transparent;
-  border: 1px solid rgba(0,188,212,0.3);
-  color: #4a9fb0; font-family: monospace;
-  font-size: 14px; letter-spacing: 2px;
-  padding: 10px 28px; border-radius: 6px;
-  cursor: pointer; transition: all 0.3s;
-}
-.chjl-mic-text:hover { color: #00bcd4; border-color: rgba(0,188,212,0.7); }
-.chjl-mic-text.listening { color: #00bcd4; border-color: rgba(0,188,212,0.8);
-  box-shadow: 0 0 12px rgba(0,188,212,0.3); }
-
 /* Sleep state */
 #chj-launcher.sleeping .chjl-footer { opacity: 0.15; }
 #chj-launcher.sleeping .chjl-laser { opacity: 0.3; }
@@ -386,21 +373,6 @@ let _recognition = null;
   });
   document.getElementById('chjInput').addEventListener('click', e => e.stopPropagation());
   document.getElementById('chjInputWrap').addEventListener('click', e => e.stopPropagation());
-
-  // pointer:coarse = dotykový displej (mobil/tablet), pointer:fine = myš (desktop)
-  // Toto DevTools Responsive mód nefalšuje na rozdíl od UA stringu
-  const isMobile = window.matchMedia('(pointer: coarse)').matches;
-  console.log('[CHJ Launcher] isMobile:', isMobile, '| pointer:coarse:', isMobile);
-  if (!isMobile) {
-    const micCircle = document.getElementById('chjMic');
-    micCircle.style.display = 'none';
-    const micText = document.createElement('button');
-    micText.id = 'chjMicText';
-    micText.className = 'chjl-mic-text';
-    micText.textContent = '[ Mluv ]';
-    micText.addEventListener('click', e => { e.stopPropagation(); onMicTextClick(); });
-    micCircle.parentNode.insertBefore(micText, micCircle);
-  }
 
   // Start loading data (auth is handled by universe-init.js separately)
   loadBioData();
@@ -655,22 +627,6 @@ function onMicClick(e) {
   listenOnce(transcript => tryRoute(transcript));
 }
 
-function onMicTextClick() {
-  if (_phase === 'routing') return;
-  if (_recognition) { try { _recognition.stop(); } catch(_) {} _recognition = null; }
-  const btn = document.getElementById('chjMicText');
-  if (btn) { btn.classList.add('listening'); btn.textContent = '[ Poslouchám… ]'; }
-  listenOnce(transcript => {
-    if (btn) { btn.classList.remove('listening'); btn.textContent = '[ Mluv ]'; }
-    console.log('[CHJ] routing transcript:', transcript);
-    const routed = tryRoute(transcript);
-    if (!routed) {
-      // Zobraz co bylo slyšeno — pomáhá s debugem
-      document.getElementById('chjActionText').textContent = '« ' + transcript + ' » — neznám tento uzel';
-      if (_phase !== 'action') showAction();
-    }
-  });
-}
 
 function startPassiveListening() {
   if (!('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) return;
@@ -707,15 +663,9 @@ function listenOnce(cb) {
   if (!('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) return;
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   const mic = document.getElementById('chjMic');
-  const btn = document.getElementById('chjMicText');
 
   function attempt(tries) {
-    if (tries <= 0) {
-      _recognition = null;
-      mic.classList.remove('listening');
-      if (btn) { btn.classList.remove('listening'); btn.textContent = '[ Mluv ]'; }
-      return;
-    }
+    if (tries <= 0) { _recognition = null; mic.classList.remove('listening'); return; }
     const r = new SR();
     r.lang = 'cs-CZ'; r.continuous = false; r.interimResults = false;
     _recognition = r;
@@ -725,31 +675,21 @@ function listenOnce(cb) {
       console.log('[CHJ] heard:', t);
       _recognition = null;
       mic.classList.remove('listening');
-      if (btn) { btn.classList.remove('listening'); btn.textContent = '[ Mluv ]'; }
       cb(t);
     };
     r.onerror = e => {
       console.warn('[CHJ] STT:', e.error);
       _recognition = null;
       if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
-        mic.classList.remove('listening');
-        if (btn) { btn.classList.remove('listening'); btn.textContent = '[ mikrofon zakázán ]'; }
-        return;
+        mic.classList.remove('listening'); return;
       }
-      // no-speech / aborted → zkus znovu
-      if (btn) btn.textContent = '[ Poslouchám… ]';
       setTimeout(() => attempt(tries - 1), 200);
     };
     r.onend = () => { if (_recognition === r) _recognition = null; };
-    try { r.start(); } catch(err) {
-      _recognition = null;
-      mic.classList.remove('listening');
-      if (btn) { btn.classList.remove('listening'); btn.textContent = '[ Mluv ]'; }
-    }
+    try { r.start(); } catch(err) { _recognition = null; mic.classList.remove('listening'); }
   }
 
   mic.classList.add('listening');
-  if (btn) { btn.classList.add('listening'); btn.textContent = '[ Poslouchám… ]'; }
   attempt(5);
 }
 
