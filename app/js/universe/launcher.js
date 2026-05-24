@@ -141,7 +141,7 @@ const STYLE = `
   letter-spacing: 2px; border-radius: 8px; cursor: pointer;
   box-shadow: 0 0 28px rgba(0,188,212,0.25), inset 0 0 12px rgba(0,188,212,0.15);
   transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
-  font-family: inherit;
+  font-family: inherit; white-space: nowrap;
 }
 .chjl-btn:hover {
   border-color: #00bcd4;
@@ -577,7 +577,7 @@ function routeToNode(nodeId) {
   const fadeOut = () => {
     // Nejdřív otevři uzel (launcher ho ještě zakrývá), pak teprve fade
     doOpen();
-    requestAnimationFrame(() => launcher.classList.add('fade-out'));
+    setTimeout(() => launcher.classList.add('fade-out'), 120);
   };
 
   if (needsSwitch && window._loadAndRenderModel) {
