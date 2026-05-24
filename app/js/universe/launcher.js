@@ -250,7 +250,7 @@ const HTML = `
 </div>
 
 <div class="chjl-main">
-  <div class="chjl-stage chjl-alarm" id="chjAlarm">—</div>
+  <div class="chjl-stage chjl-alarm" id="chjAlarm"></div>
   <div class="chjl-stage chjl-action" id="chjAction">
     <div id="chjActionText"></div>
     <button class="chjl-btn" id="chjBtn">[ Hotovo / Rozumím ]</button>
@@ -525,15 +525,11 @@ function goSleep() {
   laser.style.width     = '0%';
   laser.style.boxShadow = 'none';
 
-  // Show sleep indicator
+  // Sleeping — alarm zhasne, mic pulse zůstane
   setTimeout(() => {
     const alarm = document.getElementById('chjAlarm');
-    alarm.textContent     = '—';
-    alarm.style.color     = '#0d2530';
-    alarm.style.fontSize  = '28px';
-    alarm.style.opacity   = '1';
-    alarm.style.transform = 'scale(1)';
-    alarm.style.filter    = 'blur(0)';
+    alarm.textContent     = '';
+    alarm.style.opacity   = '0';
   }, 500);
 
   // Start passive voice listening for node commands
@@ -664,7 +660,7 @@ function listenOnce(cb) {
   if (!('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
     showAction(); return;
   }
-  if (_recognition) { try { _recognition.stop(); } catch(_) {} }
+  if (_recognition) { try { _recognition.stop(); } catch(_) {} _recognition = null; }
 
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   const r  = new SR();
