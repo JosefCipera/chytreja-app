@@ -204,6 +204,52 @@ const STYLE = `
 }
 .chjl-send:hover { color: #00bcd4; }
 
+/* Sources */
+.chjl-sources {
+  display: flex; gap: 10px; justify-content: center;
+  margin-top: 18px; width: 100%;
+}
+.chjl-src {
+  flex: 1; max-width: 160px;
+  background: rgba(6,182,212,0.04);
+  border: 1px solid rgba(6,182,212,0.15);
+  border-radius: 8px; padding: 10px 12px;
+  cursor: pointer; text-align: left;
+  transition: border-color 0.2s, background 0.2s;
+}
+.chjl-src:hover { border-color: rgba(6,182,212,0.4); background: rgba(6,182,212,0.08); }
+.chjl-src-type { font-size: 9px; letter-spacing: 2px; color: #3ca9bd; font-family: monospace; margin-bottom: 4px; }
+.chjl-src-title { font-size: 11px; color: #7ab8c8; line-height: 1.35;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.chjl-src-badge { font-size: 9px; color: #22c55e; margin-top: 5px; letter-spacing: 1px; }
+
+/* Source modal */
+#chj-src-modal {
+  position: fixed; inset: 0; z-index: 10000;
+  background: rgba(1,4,6,0.92); backdrop-filter: blur(8px);
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+}
+#chj-src-modal.hidden { display: none; }
+.chjl-modal-box {
+  background: #0a1a22; border: 1px solid rgba(6,182,212,0.2);
+  border-radius: 12px; max-width: 540px; width: 100%;
+  max-height: 80vh; overflow-y: auto; padding: 28px 24px;
+  position: relative;
+}
+.chjl-modal-close {
+  position: absolute; top: 14px; right: 16px;
+  background: none; border: none; color: #3ca9bd;
+  font-size: 20px; cursor: pointer; line-height: 1;
+}
+.chjl-modal-type { font-size: 10px; letter-spacing: 2px; color: #3ca9bd; font-family: monospace; margin-bottom: 8px; }
+.chjl-modal-title { font-size: 17px; color: #e2e8f0; font-weight: 500; margin-bottom: 6px; line-height: 1.4; }
+.chjl-modal-meta { font-size: 12px; color: #4a7a8a; margin-bottom: 16px; }
+.chjl-modal-body { font-size: 14px; color: #94a3b8; line-height: 1.7; }
+.chjl-modal-link { display: inline-block; margin-top: 16px; font-size: 12px;
+  color: #3ca9bd; text-decoration: none; letter-spacing: 1px; }
+.chjl-modal-link:hover { color: #00bcd4; }
+
 /* Sleep state */
 #chj-launcher.sleeping .chjl-footer { opacity: 0.15; }
 #chj-launcher.sleeping .chjl-laser { opacity: 0.3; }
@@ -257,6 +303,18 @@ const HTML = `
   <div class="chjl-stage chjl-action" id="chjAction">
     <div id="chjActionText"></div>
     <button class="chjl-btn" id="chjBtn">[ Hotovo / Rozumím ]</button>
+    <div class="chjl-sources" id="chjSources"></div>
+  </div>
+</div>
+
+<div id="chj-src-modal" class="hidden">
+  <div class="chjl-modal-box">
+    <button class="chjl-modal-close" id="chjModalClose">✕</button>
+    <div class="chjl-modal-type" id="chjModalType"></div>
+    <div class="chjl-modal-title" id="chjModalTitle"></div>
+    <div class="chjl-modal-meta" id="chjModalMeta"></div>
+    <div class="chjl-modal-body" id="chjModalBody"></div>
+    <a class="chjl-modal-link" id="chjModalLink" target="_blank" rel="noopener">↗ OTEVŘÍT ZDROJ</a>
   </div>
 </div>
 
@@ -365,6 +423,14 @@ let _recognition = null;
   document.getElementById('chjInput').addEventListener('click', e => e.stopPropagation());
   document.getElementById('chjInputWrap').addEventListener('click', e => e.stopPropagation());
 
+  // Source modal — zavření
+  document.getElementById('chjModalClose').addEventListener('click', () =>
+    document.getElementById('chj-src-modal').classList.add('hidden'));
+  document.getElementById('chj-src-modal').addEventListener('click', e => {
+    if (e.target.id === 'chj-src-modal')
+      document.getElementById('chj-src-modal').classList.add('hidden');
+  });
+
   // Start loading data (auth is handled by universe-init.js separately)
   loadBioData();
 })();
@@ -401,6 +467,7 @@ async function loadBioData() {
       pct,
       killer: killerText,
       action: action || 'Odpočiň si a sleduj jak se cítíš.',
+      sources: data.sources || [],
       color:  pct > 70 ? '#22c55e' : pct > 40 ? '#eab308' : '#ef4444',
       gradient: pct > 70
         ? 'linear-gradient(90deg, #0d3820, #22c55e)'
@@ -496,9 +563,24 @@ function showAction() {
 
   // Mic zůstane viditelný a pulzující — nikdy ho nehaste
 
-  // Show action text
+  // Show action text + sources
   setTimeout(() => {
     document.getElementById('chjActionText').textContent = _bioData.action;
+
+    // Sources — max 2 karty
+    const sourcesEl = document.getElementById('chjSources');
+    sourcesEl.innerHTML = '';
+    (_bioData.sources || []).slice(0, 2).forEach(src => {
+      const card = document.createElement('div');
+      card.className = 'chjl-src';
+      card.innerHTML = `
+        <div class="chjl-src-type">${src.type || 'ARTICLE'}</div>
+        <div class="chjl-src-title">${src.title || ''}</div>
+        <div class="chjl-src-badge">${src.status || 'VERIFIED'}</div>`;
+      card.addEventListener('click', e => { e.stopPropagation(); openSourceModal(src); });
+      sourcesEl.appendChild(card);
+    });
+
     const action = document.getElementById('chjAction');
     action.style.opacity      = '1';
     action.style.transform    = 'scale(1)';
@@ -759,6 +841,29 @@ function onHotovo(e) {
   e.stopPropagation();
   goSleep();
 }
+
+// ── Source modal ─────────────────────────────────────────────────────────────
+function openSourceModal(src) {
+  document.getElementById('chjModalType').textContent  = src.type || 'ARTICLE';
+  document.getElementById('chjModalTitle').textContent = src.title || '';
+  document.getElementById('chjModalMeta').textContent  = [src.journal, src.year].filter(Boolean).join(' · ');
+
+  const body = document.getElementById('chjModalBody');
+  if (src.script_cz) {
+    body.textContent = src.script_cz;
+  } else if (src.summary) {
+    body.textContent = src.summary;
+  } else {
+    body.textContent = 'Otevři odkaz pro plný text zdroje.';
+  }
+
+  const link = document.getElementById('chjModalLink');
+  if (src.url) { link.href = src.url; link.style.display = 'inline-block'; }
+  else { link.style.display = 'none'; }
+
+  document.getElementById('chj-src-modal').classList.remove('hidden');
+}
+
 
 // ── Public API (for universe-init to call) ───────────────────────────────────
 window.chjLauncher = {
