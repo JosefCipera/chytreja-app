@@ -839,6 +839,17 @@ function onLauncherClick(e) {
 // ── HOTOVO ───────────────────────────────────────────────────────────────────
 function onHotovo(e) {
   e.stopPropagation();
+  // Zaloguj splněnou misi
+  const userId = getUid();
+  if (userId) {
+    const model = localStorage.getItem('currentModel') || 'longevity';
+    const nodeId = model === 'lehkost' ? 'lh_main' : 'dlouhovekost';
+    fetch('/api/mission-complete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, nodeId }),
+    }).catch(err => console.warn('[CHJ] mission-complete failed:', err));
+  }
   if ((_bioData.sources || []).length > 0) showDone();
   else goSleep();
 }
