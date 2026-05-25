@@ -206,22 +206,30 @@ const STYLE = `
 
 /* Sources */
 .chjl-sources {
-  display: flex; gap: 10px; justify-content: center;
-  margin-top: 18px; width: 100%;
+  display: flex; gap: 12px; justify-content: center;
+  margin-top: 24px; width: 100%;
+  animation: chjl-fade-up 0.5s ease forwards;
+}
+@keyframes chjl-fade-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 .chjl-src {
-  flex: 1; max-width: 160px;
-  background: rgba(6,182,212,0.04);
-  border: 1px solid rgba(6,182,212,0.15);
-  border-radius: 8px; padding: 10px 12px;
+  flex: 1;
+  background: rgba(6,182,212,0.05);
+  border: 1px solid rgba(6,182,212,0.2);
+  border-radius: 10px; padding: 14px 16px;
   cursor: pointer; text-align: left;
   transition: border-color 0.2s, background 0.2s;
 }
-.chjl-src:hover { border-color: rgba(6,182,212,0.4); background: rgba(6,182,212,0.08); }
-.chjl-src-type { font-size: 9px; letter-spacing: 2px; color: #3ca9bd; font-family: monospace; margin-bottom: 4px; }
-.chjl-src-title { font-size: 11px; color: #7ab8c8; line-height: 1.35;
+.chjl-src:hover { border-color: rgba(6,182,212,0.5); background: rgba(6,182,212,0.1); }
+.chjl-src-type { font-size: 9px; letter-spacing: 2px; color: #3ca9bd;
+  font-family: monospace; margin-bottom: 6px; }
+.chjl-src-title { font-size: 13px; color: #c8dfe8; line-height: 1.45; font-weight: 500;
   display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-.chjl-src-badge { font-size: 9px; color: #22c55e; margin-top: 5px; letter-spacing: 1px; }
+.chjl-src-meta { font-size: 10px; color: #3a6a7a; margin-top: 5px; }
+.chjl-src-badge { font-size: 9px; color: #22c55e; margin-top: 8px;
+  letter-spacing: 1px; font-family: monospace; }
 
 /* Source modal */
 #chj-src-modal {
@@ -246,6 +254,10 @@ const STYLE = `
 .chjl-modal-title { font-size: 17px; color: #e2e8f0; font-weight: 500; margin-bottom: 6px; line-height: 1.4; }
 .chjl-modal-meta { font-size: 12px; color: #4a7a8a; margin-bottom: 16px; }
 .chjl-modal-body { font-size: 14px; color: #94a3b8; line-height: 1.7; }
+.chjl-modal-body h3 { font-size: 15px; color: #c8dfe8; margin: 16px 0 6px; font-weight: 600; }
+.chjl-modal-body h4 { font-size: 13px; color: #3ca9bd; margin: 12px 0 4px; font-weight: 600; letter-spacing: 1px; }
+.chjl-modal-body p  { margin: 0 0 8px; }
+.chjl-modal-body strong { color: #e2e8f0; }
 .chjl-modal-link { display: inline-block; margin-top: 16px; font-size: 12px;
   color: #3ca9bd; text-decoration: none; letter-spacing: 1px; }
 .chjl-modal-link:hover { color: #00bcd4; }
@@ -563,23 +575,10 @@ function showAction() {
 
   // Mic zůstane viditelný a pulzující — nikdy ho nehaste
 
-  // Show action text + sources
+  // Show action text (sources přijdou až po HOTOVO)
   setTimeout(() => {
     document.getElementById('chjActionText').textContent = _bioData.action;
-
-    // Sources — max 2 karty
-    const sourcesEl = document.getElementById('chjSources');
-    sourcesEl.innerHTML = '';
-    (_bioData.sources || []).slice(0, 2).forEach(src => {
-      const card = document.createElement('div');
-      card.className = 'chjl-src';
-      card.innerHTML = `
-        <div class="chjl-src-type">${src.type || 'ARTICLE'}</div>
-        <div class="chjl-src-title">${src.title || ''}</div>
-        <div class="chjl-src-badge">${src.status || 'VERIFIED'}</div>`;
-      card.addEventListener('click', e => { e.stopPropagation(); openSourceModal(src); });
-      sourcesEl.appendChild(card);
-    });
+    document.getElementById('chjSources').innerHTML = '';
 
     const action = document.getElementById('chjAction');
     action.style.opacity      = '1';
@@ -606,13 +605,14 @@ function goSleep() {
   laser.style.width     = '0%';
   laser.style.boxShadow = 'none';
 
-  // Alarm zhasne, footer zůstane viditelný
+  // Alarm zhasne, footer zůstane viditelný, HOTOVO tlačítko obnov
   setTimeout(() => {
     const alarm = document.getElementById('chjAlarm');
     alarm.textContent = '';
     alarm.style.opacity = '0';
-    // Přepiš CSS sleeping class — mic musí být stále viditelný
     document.getElementById('chjFooter').style.opacity = '1';
+    document.getElementById('chjBtn').style.display = '';
+    document.getElementById('chjSources').innerHTML = '';
   }, 500);
 
   // Mobil: pasivní poslouchání, Desktop: tap-to-talk
@@ -839,22 +839,61 @@ function onLauncherClick(e) {
 // ── HOTOVO ───────────────────────────────────────────────────────────────────
 function onHotovo(e) {
   e.stopPropagation();
-  goSleep();
+  if ((_bioData.sources || []).length > 0) showDone();
+  else goSleep();
+}
+
+function showDone() {
+  _phase = 'done';
+
+  // Skryj HOTOVO tlačítko, akční text nech
+  document.getElementById('chjBtn').style.display = 'none';
+
+  // Zobraz sources
+  const sourcesEl = document.getElementById('chjSources');
+  sourcesEl.innerHTML = '';
+  (_bioData.sources || []).slice(0, 2).forEach(src => {
+    const card = document.createElement('div');
+    card.className = 'chjl-src';
+    card.innerHTML = `
+      <div class="chjl-src-type">${(src.type || 'article').toUpperCase()}</div>
+      <div class="chjl-src-title">${src.title || ''}</div>
+      <div class="chjl-src-meta">${[src.journal, src.year].filter(Boolean).join(' · ')}</div>
+      <div class="chjl-src-badge">[${src.status || 'VERIFIED'}]</div>`;
+    card.addEventListener('click', e => { e.stopPropagation(); openSourceModal(src); });
+    sourcesEl.appendChild(card);
+  });
+
+  // Po 60s automaticky spát
+  setTimeout(() => { if (_phase === 'done') goSleep(); }, 60000);
 }
 
 // ── Source modal ─────────────────────────────────────────────────────────────
+function renderMd(text) {
+  return text
+    .split('\n')
+    .map(line => {
+      if (/^### (.+)/.test(line)) return `<h4>${line.replace(/^### /, '')}</h4>`;
+      if (/^## (.+)/.test(line))  return `<h3>${line.replace(/^## /, '')}</h3>`;
+      if (/^\|/.test(line))       return ''; // skip markdown tables
+      line = line.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+      line = line.replace(/\*(.+?)\*/g, '<em>$1</em>');
+      return line.trim() ? `<p>${line}</p>` : '';
+    })
+    .join('');
+}
+
 function openSourceModal(src) {
   document.getElementById('chjModalType').textContent  = src.type || 'ARTICLE';
   document.getElementById('chjModalTitle').textContent = src.title || '';
   document.getElementById('chjModalMeta').textContent  = [src.journal, src.year].filter(Boolean).join(' · ');
 
   const body = document.getElementById('chjModalBody');
-  if (src.script_cz) {
-    body.textContent = src.script_cz;
-  } else if (src.summary) {
-    body.textContent = src.summary;
+  const raw = src.script_cz || src.summary || '';
+  if (raw) {
+    body.innerHTML = renderMd(raw);
   } else {
-    body.textContent = 'Otevři odkaz pro plný text zdroje.';
+    body.innerHTML = '<p>Otevři odkaz pro plný text zdroje.</p>';
   }
 
   const link = document.getElementById('chjModalLink');
