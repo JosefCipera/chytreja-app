@@ -532,11 +532,14 @@ function showAwake() {
   const launcher = document.getElementById('chj-launcher');
   launcher.classList.remove('sleeping');
 
-  // Laser line
+  // Laser line — double rAF zajistí že browser vidí width:0% před animací
   const laser = document.getElementById('chjLaser');
-  laser.style.width      = _bioData.pct + '%';
-  laser.style.background = _bioData.gradient;
-  laser.style.boxShadow  = `0 0 20px ${_bioData.color}, 0 0 8px ${_bioData.color}`;
+  laser.style.width = '0%';
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    laser.style.width      = _bioData.pct + '%';
+    laser.style.background = _bioData.gradient;
+    laser.style.boxShadow  = `0 0 20px ${_bioData.color}, 0 0 8px ${_bioData.color}`;
+  }));
 
   // Alarm text — velké první písmeno
   const alarm = document.getElementById('chjAlarm');
