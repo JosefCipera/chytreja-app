@@ -133,7 +133,58 @@ const STYLE = `
   display: flex; flex-direction: column; align-items: center; gap: 40px;
 }
 
-/* HOTOVO button */
+/* ── Chips ── */
+.chjl-chips {
+  display: flex; flex-wrap: wrap; gap: 12px; justify-content: center;
+}
+.chjl-chip {
+  background: linear-gradient(180deg, rgba(14,52,69,0.85) 0%, rgba(7,30,41,0.95) 100%);
+  border: 1.5px solid #3ca9bd; color: #fff;
+  padding: 12px clamp(16px, 7vw, 40px);
+  font-size: clamp(13px, 3.8vw, 18px); font-weight: 400;
+  letter-spacing: 1.5px; border-radius: 8px; cursor: pointer;
+  box-shadow: 0 0 18px rgba(0,188,212,0.2), inset 0 0 8px rgba(0,188,212,0.1);
+  transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+  font-family: inherit; white-space: nowrap;
+}
+.chjl-chip:hover {
+  border-color: #00bcd4;
+  box-shadow: 0 0 35px rgba(0,188,212,0.45), inset 0 0 14px rgba(0,188,212,0.2);
+  transform: scale(1.03);
+}
+.chjl-chip--muted {
+  border-color: rgba(60,169,189,0.35);
+  box-shadow: none; color: #8ba8b8;
+}
+.chjl-chip--muted:hover {
+  border-color: rgba(60,169,189,0.7);
+  box-shadow: 0 0 18px rgba(0,188,212,0.2);
+  color: #e2e8f0;
+}
+
+/* ── Timer ── */
+.chjl-timer {
+  display: flex; flex-direction: column; align-items: center; gap: 28px;
+}
+.chjl-timer-num {
+  font-size: clamp(52px, 16vw, 88px); font-weight: 300; letter-spacing: 4px;
+  color: #e8f4f8; font-family: 'Urbanist', sans-serif; line-height: 1;
+  text-shadow: 0 0 40px rgba(0,188,212,0.3);
+}
+
+/* ── Inline zdroje ── */
+.chjl-srcs-back {
+  background: none; border: none; color: #3ca9bd; cursor: pointer;
+  font-size: 14px; letter-spacing: 1px; padding: 6px 0;
+  font-family: inherit; align-self: flex-start;
+  display: flex; align-items: center; gap: 6px;
+}
+.chjl-srcs-back:hover { color: #00bcd4; }
+.chjl-srcs-wrap {
+  display: flex; flex-direction: column; gap: 14px; width: 100%;
+}
+
+/* HOTOVO button — zachováno pro zpětnou kompatibilitu (modal close atd.) */
 .chjl-btn {
   background: linear-gradient(180deg, rgba(14,52,69,0.85) 0%, rgba(7,30,41,0.95) 100%);
   border: 1.5px solid #3ca9bd; color: #fff;
@@ -314,8 +365,15 @@ const HTML = `
   <div class="chjl-stage chjl-alarm" id="chjAlarm"></div>
   <div class="chjl-stage chjl-action" id="chjAction">
     <div id="chjActionText"></div>
-    <button class="chjl-btn" id="chjBtn">[ Hotovo / Rozumím ]</button>
-    <div class="chjl-sources" id="chjSources"></div>
+    <div class="chjl-chips" id="chjChips"></div>
+    <div class="chjl-timer" id="chjTimerWrap" style="display:none">
+      <div class="chjl-timer-num" id="chjTimerNum">0:00</div>
+      <button class="chjl-chip" id="chjBtn">[ Hotovo ]</button>
+    </div>
+    <div class="chjl-srcs-wrap" id="chjSrcsInline" style="display:none">
+      <button class="chjl-srcs-back" id="chjSrcsBack">← zpět</button>
+      <div class="chjl-sources" id="chjSources"></div>
+    </div>
   </div>
 </div>
 
@@ -402,8 +460,8 @@ const NODE_KEYWORDS = {
 };
 
 // ── State ────────────────────────────────────────────────────────────────────
-let _phase = 'loading'; // loading | awake | action | sleeping
-let _bioData = null;    // { killer, percent, color, action }
+let _phase = 'loading'; // loading | awake | action | timer | sleeping
+let _bioData = null;    // { killer, pct, color, action, actionType, actionDuration, sources }
 let _recognition = null;
 
 // ── Mount ────────────────────────────────────────────────────────────────────
@@ -426,7 +484,12 @@ let _recognition = null;
   document.body.insertAdjacentElement('afterbegin', el);
 
   // Wire up controls (after insertion)
-  document.getElementById('chjBtn').addEventListener('click', onHotovo);
+  document.getElementById('chjBtn').addEventListener('click', onHotovo);   // HOTOVO v timeru
+  document.getElementById('chjSrcsBack').addEventListener('click', e => {  // ← zpět ze zdrojů
+    e.stopPropagation();
+    document.getElementById('chjSrcsInline').style.display = 'none';
+    document.getElementById('chjChips').style.display = 'flex';
+  });
   document.getElementById('chjMic').addEventListener('click', onMicClick);
   document.getElementById('chjSend').addEventListener('click', onTextSend);
   document.getElementById('chjInput').addEventListener('keydown', e => {
@@ -480,6 +543,8 @@ async function loadBioData() {
       pct,
       killer: killerText,
       action: action || 'Odpočiň si a sleduj jak se cítíš.',
+      actionType:     data.action?.type     || 'simple',
+      actionDuration: data.action?.duration || 0,
       sources: data.sources || [],
       color:  pct > 70 ? '#22c55e' : pct > 40 ? '#eab308' : '#ef4444',
       gradient: pct > 70
@@ -578,12 +643,30 @@ function showAction() {
   alarm.style.filter    = 'blur(18px)';
   alarm.style.pointerEvents = 'none';
 
-  // Mic zůstane viditelný a pulzující — nikdy ho nehaste
-
-  // Show action text (sources přijdou až po HOTOVO)
   setTimeout(() => {
     document.getElementById('chjActionText').textContent = _bioData.action;
+
+    // Resetuj sub-views
+    document.getElementById('chjTimerWrap').style.display = 'none';
+    document.getElementById('chjSrcsInline').style.display = 'none';
     document.getElementById('chjSources').innerHTML = '';
+    if (_timerInterval) { clearInterval(_timerInterval); _timerInterval = null; }
+
+    // Chipy podle typu akce
+    const chips = document.getElementById('chjChips');
+    chips.innerHTML = '';
+    const isTimed = _bioData.actionType === 'timed' || _bioData.actionType === 'reps';
+    const hasSources = (_bioData.sources || []).length > 0;
+
+    if (isTimed) {
+      chips.appendChild(_makeChip('[ Start ]', 'chjl-chip', onStart));
+      chips.appendChild(_makeChip('Později', 'chjl-chip chjl-chip--muted', onPozdeji));
+    } else {
+      chips.appendChild(_makeChip('[ Hotovo ]', 'chjl-chip', onHotovo));
+    }
+    if (hasSources) {
+      chips.appendChild(_makeChip('Zdroje', 'chjl-chip chjl-chip--muted', showSourcesInline));
+    }
 
     const action = document.getElementById('chjAction');
     action.style.opacity      = '1';
@@ -591,6 +674,79 @@ function showAction() {
     action.style.filter       = 'blur(0)';
     action.style.pointerEvents = 'all';
   }, 180);
+}
+
+function _makeChip(label, cls, handler) {
+  const btn = document.createElement('button');
+  btn.className = cls;
+  btn.textContent = label;
+  btn.addEventListener('click', e => { e.stopPropagation(); handler(e); });
+  return btn;
+}
+
+let _timerInterval = null;
+
+function onStart(e) {
+  if (e) e.stopPropagation();
+  _phase = 'timer';
+
+  // Skryj chipy, zobraz timer
+  document.getElementById('chjChips').style.display = 'none';
+  const timerWrap = document.getElementById('chjTimerWrap');
+  timerWrap.style.display = 'flex';
+
+  const duration = _bioData.actionDuration || 60;
+  let remaining = duration;
+
+  function fmt(s) {
+    const m = Math.floor(s / 60);
+    return m > 0 ? `${m}:${String(s % 60).padStart(2, '0')}` : `${s}`;
+  }
+
+  document.getElementById('chjTimerNum').textContent = fmt(remaining);
+
+  _timerInterval = setInterval(() => {
+    remaining--;
+    document.getElementById('chjTimerNum').textContent = fmt(remaining);
+    if (remaining <= 0) {
+      clearInterval(_timerInterval);
+      _timerInterval = null;
+      onHotovo(null);
+    }
+  }, 1000);
+}
+
+function onPozdeji(e) {
+  if (e) e.stopPropagation();
+  if (_timerInterval) { clearInterval(_timerInterval); _timerInterval = null; }
+  goSleep(); // bez logování mise
+}
+
+function showSourcesInline(e) {
+  if (e) e.stopPropagation();
+
+  // Skryj chipy, zobraz inline zdroje
+  document.getElementById('chjChips').style.display = 'none';
+  const wrap = document.getElementById('chjSrcsInline');
+  wrap.style.display = 'flex';
+
+  const sourcesEl = document.getElementById('chjSources');
+  sourcesEl.innerHTML = '';
+  sourcesEl.style.display = 'flex';
+  sourcesEl.style.flexDirection = 'row';
+  sourcesEl.style.gap = '12px';
+
+  (_bioData.sources || []).slice(0, 2).forEach(src => {
+    const card = document.createElement('div');
+    card.className = 'chjl-src';
+    card.innerHTML = `
+      <div class="chjl-src-type">${(src.type || 'article').toUpperCase()}</div>
+      <div class="chjl-src-title">${src.title || ''}</div>
+      <div class="chjl-src-meta">${[src.journal, src.year].filter(Boolean).join(' · ')}</div>
+      <div class="chjl-src-badge">[${src.status || 'VERIFIED'}]</div>`;
+    card.addEventListener('click', e => { e.stopPropagation(); openSourceModal(src); });
+    sourcesEl.appendChild(card);
+  });
 }
 
 function goSleep() {
@@ -611,14 +767,17 @@ function goSleep() {
   laser.style.background = '';
   laser.style.boxShadow  = 'none';
 
-  // Alarm zhasne, footer zůstane viditelný, HOTOVO tlačítko obnov
+  // Reset timer + chipy
+  if (_timerInterval) { clearInterval(_timerInterval); _timerInterval = null; }
   setTimeout(() => {
     const alarm = document.getElementById('chjAlarm');
     alarm.textContent = '';
     alarm.style.opacity = '0';
     document.getElementById('chjFooter').style.opacity = '1';
-    document.getElementById('chjBtn').style.display = '';
     document.getElementById('chjSources').innerHTML = '';
+    document.getElementById('chjChips').style.display = 'flex';
+    document.getElementById('chjTimerWrap').style.display = 'none';
+    document.getElementById('chjSrcsInline').style.display = 'none';
   }, 500);
 
   // Mobil: pasivní poslouchání, Desktop: tap-to-talk
@@ -837,14 +996,17 @@ async function onTextSend() {
 
 // ── Click handler ─────────────────────────────────────────────────────────────
 function onLauncherClick(e) {
-  if (e.target.closest('#chjBtn,#chjMic,#chjInputWrap')) return;
+  if (e.target.closest('#chjBtn,#chjMic,#chjInputWrap,#chjChips,#chjSrcsInline')) return;
   if (_phase === 'awake') showAction();
   else if (_phase === 'sleeping') showAwake();
+  // 'action', 'timer', 'done' — klik nic nedělá
 }
 
 // ── HOTOVO ───────────────────────────────────────────────────────────────────
 function onHotovo(e) {
-  e.stopPropagation();
+  if (e) e.stopPropagation();
+  if (_timerInterval) { clearInterval(_timerInterval); _timerInterval = null; }
+
   // Zaloguj splněnou misi
   const userId = getUid();
   if (userId) {
@@ -856,33 +1018,7 @@ function onHotovo(e) {
       body: JSON.stringify({ userId, nodeId }),
     }).catch(err => console.warn('[CHJ] mission-complete failed:', err));
   }
-  if ((_bioData.sources || []).length > 0) showDone();
-  else goSleep();
-}
-
-function showDone() {
-  _phase = 'done';
-
-  // Skryj HOTOVO tlačítko, akční text nech
-  document.getElementById('chjBtn').style.display = 'none';
-
-  // Zobraz sources
-  const sourcesEl = document.getElementById('chjSources');
-  sourcesEl.innerHTML = '';
-  (_bioData.sources || []).slice(0, 2).forEach(src => {
-    const card = document.createElement('div');
-    card.className = 'chjl-src';
-    card.innerHTML = `
-      <div class="chjl-src-type">${(src.type || 'article').toUpperCase()}</div>
-      <div class="chjl-src-title">${src.title || ''}</div>
-      <div class="chjl-src-meta">${[src.journal, src.year].filter(Boolean).join(' · ')}</div>
-      <div class="chjl-src-badge">[${src.status || 'VERIFIED'}]</div>`;
-    card.addEventListener('click', e => { e.stopPropagation(); openSourceModal(src); });
-    sourcesEl.appendChild(card);
-  });
-
-  // Po 60s automaticky spát
-  setTimeout(() => { if (_phase === 'done') goSleep(); }, 60000);
+  goSleep();
 }
 
 // ── Source modal ─────────────────────────────────────────────────────────────
