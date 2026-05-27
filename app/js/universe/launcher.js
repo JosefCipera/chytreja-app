@@ -103,8 +103,7 @@ const STYLE = `
 }
 .chjl-laser {
   height: 100%; border-radius: 3px;
-  transition: width 1.6s cubic-bezier(0.4,0,0.2,1),
-              background 1.6s ease, box-shadow 1.6s ease;
+  transition: width 1.6s cubic-bezier(0.4,0,0.2,1), box-shadow 1.6s ease;
   width: 0%;
 }
 
@@ -532,15 +531,15 @@ function showAwake() {
   const launcher = document.getElementById('chj-launcher');
   launcher.classList.remove('sleeping');
 
-  // Laser line — reset inline stylů, force reflow, pak animace
+  // Laser line
   const laser = document.getElementById('chjLaser');
-  laser.style.width      = '';
-  laser.style.background = '';
-  laser.style.boxShadow  = '';
-  void laser.offsetWidth; // force reflow — browser vidí CSS width:0% před transition
-  laser.style.width      = _bioData.pct + '%';
+  // Set background immediately (gradients can't be transitioned — removed from CSS transition)
   laser.style.background = _bioData.gradient;
   laser.style.boxShadow  = `0 0 20px ${_bioData.color}, 0 0 8px ${_bioData.color}`;
+  // Animate width: clear inline → CSS resets to 0% → reflow → set target
+  laser.style.width = '';
+  void laser.offsetWidth;
+  laser.style.width = _bioData.pct + '%';
 
   // Alarm text — velké první písmeno
   const alarm = document.getElementById('chjAlarm');
