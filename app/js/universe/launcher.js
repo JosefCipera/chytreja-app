@@ -532,14 +532,15 @@ function showAwake() {
   const launcher = document.getElementById('chj-launcher');
   launcher.classList.remove('sleeping');
 
-  // Laser line — double rAF zajistí že browser vidí width:0% před animací
+  // Laser line — reset inline stylů, force reflow, pak animace
   const laser = document.getElementById('chjLaser');
-  laser.style.width = '0%';
-  requestAnimationFrame(() => requestAnimationFrame(() => {
-    laser.style.width      = _bioData.pct + '%';
-    laser.style.background = _bioData.gradient;
-    laser.style.boxShadow  = `0 0 20px ${_bioData.color}, 0 0 8px ${_bioData.color}`;
-  }));
+  laser.style.width      = '';
+  laser.style.background = '';
+  laser.style.boxShadow  = '';
+  void laser.offsetWidth; // force reflow — browser vidí CSS width:0% před transition
+  laser.style.width      = _bioData.pct + '%';
+  laser.style.background = _bioData.gradient;
+  laser.style.boxShadow  = `0 0 20px ${_bioData.color}, 0 0 8px ${_bioData.color}`;
 
   // Alarm text — velké první písmeno
   const alarm = document.getElementById('chjAlarm');
@@ -603,10 +604,11 @@ function goSleep() {
   action.style.filter       = 'blur(18px)';
   action.style.pointerEvents = 'none';
 
-  // Laser off
+  // Laser off — čisti inline styly, CSS class vrátí width:0%
   const laser = document.getElementById('chjLaser');
-  laser.style.width     = '0%';
-  laser.style.boxShadow = 'none';
+  laser.style.width      = '';
+  laser.style.background = '';
+  laser.style.boxShadow  = 'none';
 
   // Alarm zhasne, footer zůstane viditelný, HOTOVO tlačítko obnov
   setTimeout(() => {
