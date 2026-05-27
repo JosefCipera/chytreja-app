@@ -133,33 +133,24 @@ const STYLE = `
   display: flex; flex-direction: column; align-items: center; gap: 40px;
 }
 
-/* ── Chips ── */
+/* ── Chips — stejný styl jako starý HOTOVO ── */
 .chjl-chips {
-  display: flex; flex-wrap: wrap; gap: 12px; justify-content: center;
+  display: flex; flex-wrap: wrap; gap: 14px; justify-content: center;
 }
 .chjl-chip {
   background: linear-gradient(180deg, rgba(14,52,69,0.85) 0%, rgba(7,30,41,0.95) 100%);
   border: 1.5px solid #3ca9bd; color: #fff;
-  padding: 12px clamp(16px, 7vw, 40px);
-  font-size: clamp(13px, 3.8vw, 18px); font-weight: 400;
-  letter-spacing: 1.5px; border-radius: 8px; cursor: pointer;
-  box-shadow: 0 0 18px rgba(0,188,212,0.2), inset 0 0 8px rgba(0,188,212,0.1);
+  padding: 14px clamp(18px, 8vw, 48px);
+  font-size: clamp(15px, 4.5vw, 22px); font-weight: 400;
+  letter-spacing: 2px; border-radius: 8px; cursor: pointer;
+  box-shadow: 0 0 28px rgba(0,188,212,0.25), inset 0 0 12px rgba(0,188,212,0.15);
   transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
   font-family: inherit; white-space: nowrap;
 }
 .chjl-chip:hover {
   border-color: #00bcd4;
-  box-shadow: 0 0 35px rgba(0,188,212,0.45), inset 0 0 14px rgba(0,188,212,0.2);
-  transform: scale(1.03);
-}
-.chjl-chip--muted {
-  border-color: rgba(60,169,189,0.35);
-  box-shadow: none; color: #8ba8b8;
-}
-.chjl-chip--muted:hover {
-  border-color: rgba(60,169,189,0.7);
-  box-shadow: 0 0 18px rgba(0,188,212,0.2);
-  color: #e2e8f0;
+  box-shadow: 0 0 45px rgba(0,188,212,0.55), inset 0 0 18px rgba(0,188,212,0.25);
+  transform: scale(1.02);
 }
 
 /* ── Timer ── */
@@ -175,13 +166,28 @@ const STYLE = `
 /* ── Inline zdroje ── */
 .chjl-srcs-back {
   background: none; border: none; color: #3ca9bd; cursor: pointer;
-  font-size: 14px; letter-spacing: 1px; padding: 6px 0;
+  font-size: 16px; letter-spacing: 1px; padding: 4px 0 12px;
   font-family: inherit; align-self: flex-start;
-  display: flex; align-items: center; gap: 6px;
 }
 .chjl-srcs-back:hover { color: #00bcd4; }
 .chjl-srcs-wrap {
   display: flex; flex-direction: column; gap: 14px; width: 100%;
+}
+/* Zdroje v inline pohledu — větší jako v HUDu */
+.chjl-srcs-wrap .chjl-src {
+  padding: 20px 22px;
+}
+.chjl-srcs-wrap .chjl-src-type {
+  font-size: 11px; margin-bottom: 10px;
+}
+.chjl-srcs-wrap .chjl-src-title {
+  font-size: 17px; -webkit-line-clamp: 4;
+}
+.chjl-srcs-wrap .chjl-src-meta {
+  font-size: 12px; margin-top: 8px;
+}
+.chjl-srcs-wrap .chjl-src-badge {
+  font-size: 11px; margin-top: 12px;
 }
 
 /* HOTOVO button — zachováno pro zpětnou kompatibilitu (modal close atd.) */
@@ -488,6 +494,7 @@ let _recognition = null;
   document.getElementById('chjSrcsBack').addEventListener('click', e => {  // ← zpět ze zdrojů
     e.stopPropagation();
     document.getElementById('chjSrcsInline').style.display = 'none';
+    document.getElementById('chjActionText').style.display = '';
     document.getElementById('chjChips').style.display = 'flex';
   });
   document.getElementById('chjMic').addEventListener('click', onMicClick);
@@ -659,13 +666,13 @@ function showAction() {
     const hasSources = (_bioData.sources || []).length > 0;
 
     if (isTimed) {
-      chips.appendChild(_makeChip('[ Start ]', 'chjl-chip', onStart));
-      chips.appendChild(_makeChip('Později', 'chjl-chip chjl-chip--muted', onPozdeji));
+      chips.appendChild(_makeChip('[ Start ]',   'chjl-chip', onStart));
+      chips.appendChild(_makeChip('[ Později ]', 'chjl-chip', onPozdeji));
     } else {
-      chips.appendChild(_makeChip('[ Hotovo ]', 'chjl-chip', onHotovo));
+      chips.appendChild(_makeChip('[ Hotovo ]',  'chjl-chip', onHotovo));
     }
     if (hasSources) {
-      chips.appendChild(_makeChip('Zdroje', 'chjl-chip chjl-chip--muted', showSourcesInline));
+      chips.appendChild(_makeChip('[ Zdroje ]',  'chjl-chip', showSourcesInline));
     }
 
     const action = document.getElementById('chjAction');
@@ -725,7 +732,8 @@ function onPozdeji(e) {
 function showSourcesInline(e) {
   if (e) e.stopPropagation();
 
-  // Skryj chipy, zobraz inline zdroje
+  // Skryj action text + chipy, zobraz inline zdroje
+  document.getElementById('chjActionText').style.display = 'none';
   document.getElementById('chjChips').style.display = 'none';
   const wrap = document.getElementById('chjSrcsInline');
   wrap.style.display = 'flex';
@@ -733,8 +741,8 @@ function showSourcesInline(e) {
   const sourcesEl = document.getElementById('chjSources');
   sourcesEl.innerHTML = '';
   sourcesEl.style.display = 'flex';
-  sourcesEl.style.flexDirection = 'row';
-  sourcesEl.style.gap = '12px';
+  sourcesEl.style.flexDirection = 'column';
+  sourcesEl.style.gap = '14px';
 
   (_bioData.sources || []).slice(0, 2).forEach(src => {
     const card = document.createElement('div');
