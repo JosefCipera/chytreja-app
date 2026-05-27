@@ -464,7 +464,8 @@ async function loadBioData() {
     // Debug — viditelné v konzoli (F12)
     console.log('[CHJ Launcher] bio data:', { url, uid: userId, killer: data.killer, pct: data.battery?.percent });
 
-    const pct    = data.battery?.percent ?? 50;
+    const rawPct = data.battery?.percent ?? 50;
+    const pct    = rawPct > 0 ? rawPct : 50; // fallback to 50 if no data yet (new user)
     const killer = data.killer?.label ?? null;
     const action = data.action?.label ?? null;
 
