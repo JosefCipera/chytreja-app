@@ -848,7 +848,10 @@ function initHeaderControls() {
   if (!roleSelect || !modelSelect) return;
 
   // roleSelect = admin override (testování), přepisuje DB mode
-  const currentRole = localStorage.getItem("userRole") || "demo";
+  // test.iting.cz: default = "user" (skrytý model selector), odemkni přes ?dev=1
+  const _devMode = new URLSearchParams(location.search).get('dev') === '1';
+  if (_devMode) localStorage.setItem("userRole", "demo");
+  const currentRole = localStorage.getItem("userRole") || "user";
   const modelKeys = Object.keys(window.UNIVERSE_INDEX);
   const defaultModel = modelKeys[0]; // vždy první z index.json (ignoruj stale localStorage)
 
