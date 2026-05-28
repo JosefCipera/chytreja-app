@@ -952,6 +952,7 @@ function initHeaderControls() {
         clickTimer = null;
         console.warn("🔓 Admin escape: návrat z USER režimu");
         localStorage.setItem("userRole", "demo");
+        localStorage.setItem("userRoleOverride", "demo");
         location.reload();
       }
     });
