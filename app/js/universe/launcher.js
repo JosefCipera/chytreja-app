@@ -604,10 +604,11 @@ function showFallback() {
 
 // ── Voice briefing ───────────────────────────────────────────────────────────
 function speakBriefing() {
+  console.log('[TTS] speakBriefing called, spoken:', _briefingSpoken);
   if (_briefingSpoken) return;
   _briefingSpoken = true;
 
-  if (!('speechSynthesis' in window)) return;
+  if (!('speechSynthesis' in window)) { console.warn('[TTS] no speechSynthesis'); return; }
 
   const h      = new Date().getHours();
   const pct    = _bioData?.pct ?? 50;
@@ -629,11 +630,13 @@ function speakBriefing() {
   const u = new SpeechSynthesisUtterance(text);
   u.lang  = 'cs-CZ';
   u.rate  = 0.92;
-  u.onstart = () => laser?.classList.add('speaking');
-  u.onend   = () => laser?.classList.remove('speaking');
-  u.onerror = (e) => { console.warn('[CHJ TTS]', e.error); laser?.classList.remove('speaking'); };
+  u.onstart = () => { console.log('[TTS] onstart'); laser?.classList.add('speaking'); };
+  u.onend   = () => { console.log('[TTS] onend');   laser?.classList.remove('speaking'); };
+  u.onerror = (e) => { console.warn('[TTS] onerror:', e.error); laser?.classList.remove('speaking'); };
 
+  console.log('[TTS] calling speak(), lang:', u.lang, 'text:', text.slice(0,30));
   speechSynthesis.speak(u);
+  console.log('[TTS] after speak(), speaking:', speechSynthesis.speaking, 'pending:', speechSynthesis.pending);
 }
 
 // ── Phases ───────────────────────────────────────────────────────────────────
