@@ -628,7 +628,6 @@ function speakBriefing() {
 
   const laser = document.getElementById('chjLaser');
   const u = new SpeechSynthesisUtterance(text);
-  u.lang  = 'cs-CZ';
   u.rate  = 0.92;
   u.onstart = () => { console.log('[TTS] onstart'); laser?.classList.add('speaking'); };
   u.onend   = () => { console.log('[TTS] onend');   laser?.classList.remove('speaking'); };
