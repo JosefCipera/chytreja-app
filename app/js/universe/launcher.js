@@ -67,6 +67,8 @@ const STYLE = `
   margin-bottom: 2px;
 }
 @keyframes chjl-blink { 0%,100%{opacity:1} 50%{opacity:0} }
+@keyframes chjl-speaking { 0%,100%{opacity:1} 50%{opacity:0.45} }
+.chjl-laser.speaking { animation: chjl-speaking 1.1s ease-in-out infinite; }
 .chjl-text {
   display: flex; flex-direction: column;
   font-family: 'Urbanist', sans-serif;
@@ -469,6 +471,7 @@ const NODE_KEYWORDS = {
 let _phase = 'loading'; // loading | awake | action | timer | sleeping
 let _bioData = null;    // { killer, pct, color, action, actionType, actionDuration, sources }
 let _recognition = null;
+let _briefingSpoken = false;
 
 // ── Mount ────────────────────────────────────────────────────────────────────
 (function mount() {
@@ -599,6 +602,45 @@ function showFallback() {
   showAwake();
 }
 
+// ── Voice briefing ───────────────────────────────────────────────────────────
+function speakBriefing() {
+  if (_briefingSpoken) return;
+  _briefingSpoken = true;
+
+  if (!('speechSynthesis' in window)) return;
+
+  const h      = new Date().getHours();
+  const pct    = _bioData?.pct ?? 50;
+  const killer = _bioData?.killer ?? 'energie';
+  const action = _bioData?.action ?? 'Řekni co chceš řešit.';
+
+  let text;
+  if (h >= 5 && h < 11) {
+    text = `Dobré ráno. Energie na ${pct} procent. Dnes tě brzdí ${killer}. ${action}.`;
+  } else if (h >= 11 && h < 17) {
+    text = `${killer.charAt(0).toUpperCase() + killer.slice(1)} stále hraje roli. Máš připraveno: ${action}.`;
+  } else if (h >= 17 && h < 22) {
+    text = `Dobrý večer. Energie na ${pct} procent. ${action}.`;
+  } else {
+    text = `Pozdní hodina. Energie na ${pct} procent. Zkus si odpočinout.`;
+  }
+
+  const laser = document.getElementById('chjLaser');
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang  = 'cs-CZ';
+  u.rate  = 0.92;
+  u.onstart = () => laser?.classList.add('speaking');
+  u.onend   = () => laser?.classList.remove('speaking');
+  u.onerror = (e) => { console.warn('[CHJ TTS]', e.error); laser?.classList.remove('speaking'); };
+
+  const doSpeak = () => speechSynthesis.speak(u);
+  if (speechSynthesis.getVoices().length === 0) {
+    speechSynthesis.onvoiceschanged = () => { speechSynthesis.onvoiceschanged = null; doSpeak(); };
+  } else {
+    doSpeak();
+  }
+}
+
 // ── Phases ───────────────────────────────────────────────────────────────────
 function showAwake() {
   _phase = 'awake';
@@ -636,8 +678,13 @@ function showAwake() {
   document.getElementById('chjFooter').style.opacity = '1';
   document.getElementById('chjMic').style.animation = 'chjl-mic-pulse 3s infinite ease-in-out';
 
-  // Auto-advance na akci po 4s (tap na plochu jde dřív)
-  setTimeout(() => { if (_phase === 'awake') showAction(); }, 4000);
+  const _isTouch = window.matchMedia('(pointer: coarse)').matches;
+  if (!_isTouch) {
+    // Desktop: mluví automaticky + auto-advance (bez tapu)
+    setTimeout(() => { if (_phase === 'awake') speakBriefing(); }, 600);
+    setTimeout(() => { if (_phase === 'awake') showAction(); }, 4000);
+  }
+  // Mobil: tap → speakBriefing() + showAction() synchronně (viz onLauncherClick)
 }
 
 function showAction() {
@@ -1005,7 +1052,10 @@ async function onTextSend() {
 // ── Click handler ─────────────────────────────────────────────────────────────
 function onLauncherClick(e) {
   if (e.target.closest('#chjBtn,#chjMic,#chjInputWrap,#chjChips,#chjSrcsInline')) return;
-  if (_phase === 'awake') showAction();
+  if (_phase === 'awake') {
+    speakBriefing(); // synchronně s tapem — mobil vyžaduje gesture v call stacku
+    showAction();
+  }
   else if (_phase === 'sleeping') showAwake();
   // 'action', 'timer', 'done' — klik nic nedělá
 }
