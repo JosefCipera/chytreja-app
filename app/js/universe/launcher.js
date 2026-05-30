@@ -687,8 +687,7 @@ function showAwake() {
   document.getElementById('chjFooter').style.opacity = '1';
   document.getElementById('chjMic').style.animation = 'chjl-mic-pulse 3s infinite ease-in-out';
 
-  // Auto-advance na akci po 4s (tap na plochu jde dřív)
-  setTimeout(() => { if (_phase === 'awake') showAction(); }, 4000);
+  // Bez auto-advance — uživatel ťukne sám (jinak se mine gesture window pro TTS)
 
 }
 
