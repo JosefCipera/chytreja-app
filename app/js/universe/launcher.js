@@ -683,8 +683,7 @@ function showAwake() {
   setTimeout(() => { if (_phase === 'awake') showAction(); }, 4000);
 
   // Mluví první — na první dotek (autoplay blokován bez gesta na mobilu)
-  const launcher = document.getElementById('chj-launcher');
-  launcher.addEventListener('pointerdown', () => {
+  document.getElementById('chj-launcher').addEventListener('pointerdown', () => {
     speakBriefing();
   }, { once: true });
 }
