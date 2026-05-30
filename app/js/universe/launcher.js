@@ -681,11 +681,6 @@ function showAwake() {
 
   // Auto-advance na akci po 4s (tap na plochu jde dřív)
   setTimeout(() => { if (_phase === 'awake') showAction(); }, 4000);
-
-  // Mluví první — na první dotek (autoplay blokován bez gesta na mobilu)
-  document.getElementById('chj-launcher').addEventListener('pointerdown', () => {
-    speakBriefing();
-  }, { once: true });
 }
 
 function showAction() {
@@ -728,6 +723,9 @@ function showAction() {
     action.style.transform    = 'scale(1)';
     action.style.filter       = 'blur(0)';
     action.style.pointerEvents = 'all';
+
+    // Mluví první — gesto (tap) už proběhlo, TTS odblokován
+    speakBriefing();
   }, 180);
 }
 
