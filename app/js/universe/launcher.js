@@ -732,8 +732,6 @@ function showAction() {
     action.style.transform    = 'scale(1)';
     action.style.filter       = 'blur(0)';
     action.style.pointerEvents = 'all';
-
-    speakBriefing();
   }, 180);
 }
 
@@ -1059,7 +1057,10 @@ async function onTextSend() {
 // ── Click handler ─────────────────────────────────────────────────────────────
 function onLauncherClick(e) {
   if (e.target.closest('#chjBtn,#chjMic,#chjInputWrap,#chjChips,#chjSrcsInline')) return;
-  if (_phase === 'awake') showAction();
+  if (_phase === 'awake') {
+    speakBriefing(); // synchronně v gesture callbacku — iOS/mobil vyžaduje
+    showAction();
+  }
   else if (_phase === 'sleeping') showAwake();
   // 'action', 'timer', 'done' — klik nic nedělá
 }
