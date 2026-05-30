@@ -67,6 +67,13 @@ const STYLE = `
   margin-bottom: 2px;
 }
 @keyframes chjl-blink { 0%,100%{opacity:1} 50%{opacity:0} }
+@keyframes chjl-laser-speaking {
+  0%,100% { opacity: 1; }
+  50%      { opacity: 0.55; }
+}
+.chjl-laser.speaking {
+  animation: chjl-laser-speaking 1.2s ease-in-out infinite;
+}
 .chjl-text {
   display: flex; flex-direction: column;
   font-family: 'Urbanist', sans-serif;
@@ -599,6 +606,42 @@ function showFallback() {
   showAwake();
 }
 
+// ── Voice briefing ───────────────────────────────────────────────────────────
+function speakBriefing() {
+  // Jednou za den — neopakovat při každém otevření
+  const todayKey = `chj_spoken_${new Date().toDateString()}`;
+  if (localStorage.getItem(todayKey)) return;
+  localStorage.setItem(todayKey, '1');
+
+  const h      = new Date().getHours();
+  const pct    = _bioData.pct ?? 50;
+  const killer = _bioData.killer ?? 'energie';
+  const action = _bioData.action ?? 'Řekni co chceš řešit.';
+
+  let text;
+  if (h >= 5 && h < 11) {
+    text = `Dobré ráno. Energie na ${pct} procent. Dnes tě brzdí ${killer}. ${action}.`;
+  } else if (h >= 11 && h < 17) {
+    text = `${killer.charAt(0).toUpperCase() + killer.slice(1)} stále hraje roli. Máš připraveno: ${action}.`;
+  } else if (h >= 17 && h < 22) {
+    text = `Dobrý večer. Energie na ${pct} procent. ${action}.`;
+  } else {
+    text = `Pozdní hodina. Energie na ${pct} procent. Zkus si odpočinout.`;
+  }
+
+  if (!('speechSynthesis' in window)) return;
+
+  const laser = document.getElementById('chjLaser');
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang  = 'cs-CZ';
+  u.rate  = 0.92;
+  u.pitch = 1.0;
+  u.onstart = () => laser?.classList.add('speaking');
+  u.onend   = () => laser?.classList.remove('speaking');
+  u.onerror  = () => laser?.classList.remove('speaking');
+  speechSynthesis.speak(u);
+}
+
 // ── Phases ───────────────────────────────────────────────────────────────────
 function showAwake() {
   _phase = 'awake';
@@ -638,6 +681,12 @@ function showAwake() {
 
   // Auto-advance na akci po 4s (tap na plochu jde dřív)
   setTimeout(() => { if (_phase === 'awake') showAction(); }, 4000);
+
+  // Mluví první — na první dotek (autoplay blokován bez gesta na mobilu)
+  const launcher = document.getElementById('chj-launcher');
+  launcher.addEventListener('pointerdown', () => {
+    speakBriefing();
+  }, { once: true });
 }
 
 function showAction() {
