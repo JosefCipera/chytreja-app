@@ -633,12 +633,7 @@ function speakBriefing() {
   u.onend   = () => laser?.classList.remove('speaking');
   u.onerror = (e) => { console.warn('[CHJ TTS]', e.error); laser?.classList.remove('speaking'); };
 
-  const doSpeak = () => speechSynthesis.speak(u);
-  if (speechSynthesis.getVoices().length === 0) {
-    speechSynthesis.onvoiceschanged = () => { speechSynthesis.onvoiceschanged = null; doSpeak(); };
-  } else {
-    doSpeak();
-  }
+  speechSynthesis.speak(u);
 }
 
 // ── Phases ───────────────────────────────────────────────────────────────────
