@@ -627,9 +627,6 @@ function speakBriefing() {
 
   if (!('speechSynthesis' in window)) return;
 
-  // Reset případného zaseknutého stavu
-  speechSynthesis.cancel();
-
   const laser = document.getElementById('chjLaser');
   const u = new SpeechSynthesisUtterance(text);
   u.lang  = 'cs-CZ';
@@ -639,12 +636,17 @@ function speakBriefing() {
   u.onend   = () => laser?.classList.remove('speaking');
   u.onerror = (e) => { console.warn('[CHJ TTS] error:', e.error); laser?.classList.remove('speaking'); };
 
-  // Chrome bug: voices not loaded yet na cold start → krátký delay
-  const speak = () => speechSynthesis.speak(u);
-  if (speechSynthesis.getVoices().length === 0) {
-    speechSynthesis.onvoiceschanged = () => { speechSynthesis.onvoiceschanged = null; speak(); };
+  const doSpeak = () => speechSynthesis.speak(u);
+
+  if (speechSynthesis.speaking || speechSynthesis.pending) {
+    // Probíhá jiný speech — cancel + krátký delay (mobil potřebuje tick)
+    speechSynthesis.cancel();
+    setTimeout(doSpeak, 50);
+  } else if (speechSynthesis.getVoices().length === 0) {
+    // Desktop cold start — hlasy ještě nenačteny
+    speechSynthesis.onvoiceschanged = () => { speechSynthesis.onvoiceschanged = null; doSpeak(); };
   } else {
-    speak();
+    doSpeak();
   }
 }
 
