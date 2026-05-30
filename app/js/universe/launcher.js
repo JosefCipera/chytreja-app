@@ -627,6 +627,9 @@ function speakBriefing() {
 
   if (!('speechSynthesis' in window)) return;
 
+  // Reset případného zaseknutého stavu
+  speechSynthesis.cancel();
+
   const laser = document.getElementById('chjLaser');
   const u = new SpeechSynthesisUtterance(text);
   u.lang  = 'cs-CZ';
@@ -634,8 +637,15 @@ function speakBriefing() {
   u.pitch = 1.0;
   u.onstart = () => laser?.classList.add('speaking');
   u.onend   = () => laser?.classList.remove('speaking');
-  u.onerror  = () => laser?.classList.remove('speaking');
-  speechSynthesis.speak(u);
+  u.onerror = (e) => { console.warn('[CHJ TTS] error:', e.error); laser?.classList.remove('speaking'); };
+
+  // Chrome bug: voices not loaded yet na cold start → krátký delay
+  const speak = () => speechSynthesis.speak(u);
+  if (speechSynthesis.getVoices().length === 0) {
+    speechSynthesis.onvoiceschanged = () => { speechSynthesis.onvoiceschanged = null; speak(); };
+  } else {
+    speak();
+  }
 }
 
 // ── Phases ───────────────────────────────────────────────────────────────────
