@@ -681,6 +681,17 @@ function showAwake() {
 
   // Auto-advance na akci po 4s (tap na plochu jde dřív)
   setTimeout(() => { if (_phase === 'awake') showAction(); }, 4000);
+
+  // Mluví ihned — desktop OK, mobil tiše selže (browser blokuje bez gesta)
+  // Fallback: promluví na první tap pokud ihned nešlo
+  let _spoken = false;
+  const trySpeak = () => {
+    if (_spoken) return;
+    _spoken = true;
+    speakBriefing();
+  };
+  setTimeout(trySpeak, 600); // desktop: mluví po 600ms
+  document.getElementById('chj-launcher').addEventListener('pointerdown', trySpeak, { once: true });
 }
 
 function showAction() {
@@ -723,9 +734,6 @@ function showAction() {
     action.style.transform    = 'scale(1)';
     action.style.filter       = 'blur(0)';
     action.style.pointerEvents = 'all';
-
-    // Mluví první — gesto (tap) už proběhlo, TTS odblokován
-    speakBriefing();
   }, 180);
 }
 
