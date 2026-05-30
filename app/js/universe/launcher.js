@@ -476,6 +476,7 @@ const NODE_KEYWORDS = {
 let _phase = 'loading'; // loading | awake | action | timer | sleeping
 let _bioData = null;    // { killer, pct, color, action, actionType, actionDuration, sources }
 let _recognition = null;
+let _briefingSpoken = false; // guard: mluví jen jednou per session
 
 // ── Mount ────────────────────────────────────────────────────────────────────
 (function mount() {
@@ -608,6 +609,8 @@ function showFallback() {
 
 // ── Voice briefing ───────────────────────────────────────────────────────────
 function speakBriefing() {
+  if (_briefingSpoken) return;
+  _briefingSpoken = true;
 
   const h      = new Date().getHours();
   const pct    = _bioData.pct ?? 50;
@@ -687,7 +690,12 @@ function showAwake() {
   document.getElementById('chjFooter').style.opacity = '1';
   document.getElementById('chjMic').style.animation = 'chjl-mic-pulse 3s infinite ease-in-out';
 
-  // Bez auto-advance — uživatel ťukne sám (jinak se mine gesture window pro TTS)
+  // Desktop: mluví automaticky po 600ms (bez gesta OK)
+  // Mobil: mluví na první tap (gesture required) — viz onLauncherClick
+  const _isTouch = window.matchMedia('(pointer: coarse)').matches;
+  if (!_isTouch) {
+    setTimeout(() => { if (_phase === 'awake') speakBriefing(); }, 600);
+  }
 
 }
 
