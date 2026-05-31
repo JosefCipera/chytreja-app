@@ -600,7 +600,11 @@ async function speakBriefing() {
 
     audio.onplay  = () => {
       laser?.classList.add('speaking');
-      if (spokenText) _typewriterStart(spokenText);
+      // Spoken text přepíše alarm — co CHJ říká, to se píše
+      if (spokenText) {
+        const alarm = document.getElementById('chjAlarm');
+        if (alarm) _typewriter(alarm, spokenText, 45);
+      }
     };
     audio.onended = () => {
       laser?.classList.remove('speaking');
