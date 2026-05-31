@@ -486,8 +486,6 @@ async function speakBriefing() {
 
   // Pošleme kontext na backend — AI vygeneruje přirozený mluvený text
   const context = {
-    hour:   new Date().getHours(),
-    pct:    _bioData?.pct    ?? 50,
     killer: _bioData?.killer ?? 'energie',
     action: _bioData?.action ?? '',
     streak: _bioData?.streak ?? 0,

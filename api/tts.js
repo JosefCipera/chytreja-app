@@ -30,36 +30,25 @@ const MODEL_ID = 'eleven_multilingual_v2';
 
 // ── AI briefing text generation ──────────────────────────────────────────────
 
-function buildTimeLabel(hour) {
-  if (hour >= 5  && hour < 11) return 'ráno';
-  if (hour >= 11 && hour < 14) return 'dopoledne';
-  if (hour >= 14 && hour < 18) return 'odpoledne';
-  if (hour >= 18 && hour < 22) return 'večer';
-  return 'pozdě v noci';
-}
-
 async function generateBriefingText(context) {
-  const { hour = new Date().getHours(), pct = 50, killer = 'energie', action = '', streak = 0 } = context;
-  const timeLabel = buildTimeLabel(hour);
-  const streakNote = streak >= 3 ? ` Máš sérii ${streak} dní v řadě.` : '';
+  const { killer = 'energie', action = '', streak = 0 } = context;
+  const streakNote = streak >= 3 ? ` Uživatel je na sérii ${streak} dní v řadě.` : '';
 
   const systemPrompt = `Jsi CHJ — osobní digitální partner pro zdraví a dlouhověkost.
-Mluvenou češtinou (tykání) vítáš uživatele při otevření appky.
-Pravidla pro tvou odpověď:
+Po spuštění appky řekneš uživateli jeho největší aktuální problém a co s tím dnes udělat.
+Pravidla:
 - Přesně 1–2 věty, maximálně 25 slov celkem
-- Přirozená mluvená čeština — žádné markdown, žádné odrážky
-- Tón: přátelský kouč, ne doktor
-- Žádné názvy nemocí, diagnóz
-- Žádné příkazy ("musíš", "měl bys", "okamžitě")
-- Žádná zobecnění ("je důležité", "je třeba")
-- Reaguj na denní dobu, stav energie, hlavní hrozbu a akci`;
+- Přirozená mluvená čeština, tykání
+- Tón: přátelský ale přímý kouč — rovnou k věci, bez úvodu
+- Žádné "dobré ráno", žádná procenta, žádné obecné fráze
+- Žádné názvy nemocí ani diagnóz
+- Žádné příkazy ("musíš", "měl bys") — místo toho nabídni nebo navrhni
+- Výstup: jen samotný text, nic jiného`;
 
-  const userPrompt = `Denní doba: ${timeLabel}
-Energie: ${pct} %
-Největší hrozba dnes: ${killer}
-Doporučená akce: ${action || 'žádná konkrétní'}${streakNote}
+  const userPrompt = `Největší problém uživatele teď: ${killer}
+Doporučená akce: ${action || 'není specifikována'}${streakNote}
 
-Vygeneruj uvítání.`;
+Řekni mu situaci a co udělat.`;
 
   const openaiKey = process.env.OPENAI_API_KEY;
   if (!openaiKey) throw new Error('OPENAI_API_KEY not configured');
