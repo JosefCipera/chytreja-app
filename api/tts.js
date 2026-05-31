@@ -34,21 +34,20 @@ async function generateBriefingText(context) {
   const { description = '', action = '', streak = 0 } = context;
   const streakNote = streak >= 3 ? ` Uživatel je na sérii ${streak} dní v řadě.` : '';
 
-  const systemPrompt = `Jsi CHJ — osobní digitální partner pro zdraví a dlouhověkost.
-Po spuštění appky řekneš uživateli jeho největší aktuální problém a co s tím dnes udělat.
+  const systemPrompt = `Jsi CHJ — digitální partner. Mluvíš jako kamarád, ne jako aplikace.
+Řekneš jednu věc: co uživatele teď nejvíc brzdí a co s tím.
 Pravidla:
-- Přesně 1–2 věty, maximálně 25 slov celkem
-- Přirozená mluvená čeština, tykání
-- Tón: přátelský ale přímý kouč — rovnou k věci, bez úvodu
-- Žádné "dobré ráno", žádná procenta, žádné obecné fráze
-- Žádné názvy nemocí ani diagnóz
-- Žádné příkazy ("musíš", "měl bys") — místo toho nabídni nebo navrhni
-- Výstup: jen samotný text, nic jiného`;
+- 1–2 věty, max 20 slov
+- Hovorová čeština, tykání — jako by ses bavil s kamarádem
+- Žádné formální obraty, žádné "je důležité", žádné poučování
+- Konkrétní, přímé — ne obecné rady
+- Žádné názvy nemocí
+- Výstup: jen text, bez uvozovek`;
 
-  const userPrompt = `Situace uživatele: ${description || 'chybí pohyb a aktivita'}
-Doporučená akce: ${action || 'není specifikována'}${streakNote}
+  const userPrompt = `Situace: ${description || 'málo pohybu'}
+Akce: ${action || ''}${streakNote}
 
-Řekni mu to přirozeně — situaci a co udělat.`;
+Řekni to jako kamarád — co se děje a co udělat.`;
 
   const anthropicKey = process.env.ANTHROPIC_API_KEY;
   if (!anthropicKey) throw new Error('ANTHROPIC_API_KEY not configured');

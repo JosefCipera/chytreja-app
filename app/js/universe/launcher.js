@@ -103,8 +103,8 @@ const STYLE = `
 }
 .chjl-laser {
   height: 100%; border-radius: 3px;
-  transition: width 1.6s cubic-bezier(0.4,0,0.2,1),
-              background 1.6s ease, box-shadow 1.6s ease;
+  transition: width 3.2s cubic-bezier(0.25,0,0.1,1),
+              box-shadow 3.2s ease;
   width: 0%;
 }
 
@@ -122,9 +122,9 @@ const STYLE = `
               filter 0.55s cubic-bezier(0.4,0,0.2,1);
 }
 .chjl-alarm {
-  font-size: 42px; font-weight: 300;
-  letter-spacing: 1px; color: #8ba8b8;
-  line-height: 1.2; text-shadow: none;
+  font-size: 26px; font-weight: 300;
+  letter-spacing: 0px; color: #8ba8b8;
+  line-height: 1.65; text-shadow: none;
 }
 .chjl-action {
   font-size: 26px; font-weight: 300; line-height: 1.65;
