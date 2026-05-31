@@ -476,32 +476,25 @@ async function speakBriefing() {
   if (_briefingSpoken) return;
   _briefingSpoken = true;
 
-  const h      = new Date().getHours();
-  const pct    = _bioData?.pct ?? 50;
-  const killer = _bioData?.killer ?? 'energie';
-  const action = _bioData?.action ?? 'Řekni co chceš řešit.';
-
-  let text;
-  if (h >= 5 && h < 11) {
-    text = `Dobré ráno. Energie na ${pct} procent. Dnes tě brzdí ${killer}. ${action}.`;
-  } else if (h >= 11 && h < 17) {
-    text = `${killer.charAt(0).toUpperCase() + killer.slice(1)} stále hraje roli. Máš připraveno: ${action}.`;
-  } else if (h >= 17 && h < 22) {
-    text = `Dobrý večer. Energie na ${pct} procent. ${action}.`;
-  } else {
-    text = `Pozdní hodina. Energie na ${pct} procent. Zkus si odpočinout.`;
-  }
+  // Pošleme kontext na backend — AI vygeneruje přirozený mluvený text
+  const context = {
+    hour:   new Date().getHours(),
+    pct:    _bioData?.pct    ?? 50,
+    killer: _bioData?.killer ?? 'energie',
+    action: _bioData?.action ?? '',
+    streak: _bioData?.streak ?? 0,
+  };
 
   try {
     const res = await fetch('/api/tts', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text }),
+      body: JSON.stringify({ context }),
     });
     if (!res.ok) throw new Error(`TTS ${res.status}`);
 
-    const blob = await res.blob();
-    const url  = URL.createObjectURL(blob);
+    const blob  = await res.blob();
+    const url   = URL.createObjectURL(blob);
     const audio = new Audio(url);
     const laser = document.getElementById('chjLaser');
 
