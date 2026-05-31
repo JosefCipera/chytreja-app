@@ -482,7 +482,7 @@ async function speakBriefing() {
   if (localStorage.getItem(todayKey)) return;
 
   _briefingSpoken = true;
-  localStorage.setItem(todayKey, '1');
+  // localStorage se nastaví až po úspěšném přehrání — ne před TTS voláním
 
   // Pošleme kontext na backend — AI vygeneruje přirozený mluvený text
   const context = {
@@ -508,7 +508,11 @@ async function speakBriefing() {
     const laser = document.getElementById('chjLaser');
 
     audio.onplay  = () => laser?.classList.add('speaking');
-    audio.onended = () => { laser?.classList.remove('speaking'); URL.revokeObjectURL(url); };
+    audio.onended = () => {
+      laser?.classList.remove('speaking');
+      URL.revokeObjectURL(url);
+      localStorage.setItem(todayKey, '1'); // uložit až po úspěšném přehrání
+    };
     audio.onerror = () => { laser?.classList.remove('speaking'); URL.revokeObjectURL(url); };
     audio.play().catch(e => console.warn('[TTS] play blocked:', e));
   } catch (e) {
