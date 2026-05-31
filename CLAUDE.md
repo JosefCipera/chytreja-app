@@ -385,6 +385,52 @@ Před spuštěním: přečti komentář, ověř že se dotýká jen správných 
 
 ---
 
+## CHJ // Human OS — Launcher architektura (v2.0)
+
+### Filozofie
+Voice-First / Zero-UI. Displej je vizuální ozvěnou hlasu.
+Bio (Longevity) = podvozek. TOC = motor. Nesoutěží — špatné Bio dává doporučení, ale neblokuje exekutivu.
+
+### Tři stavy launcheru
+
+#### STAV 1 — Ticho (Ochranný objekt)
+- Absolutní černá. Žádné logo, žádný text, žádný laser.
+- Uprostřed pomalu dýchá temná vesmírná nebula (CSS morfující blob + hvězdy na Canvas 2D).
+- Trigger probuzení: tap nebo hlas (kdo přijde dřív).
+- Noc (0–5h): vždy STAV 1, žádná akce.
+
+#### STAV 2 — Ranní filtr (Probuzení)
+- Spustí se při prvním vstupu po 6h+ neaktivitě (`chj_last_active` timestamp v localStorage).
+- Flow:
+  1. Nebula ustoupí → rozsvítí se branding + laser (délka/barva = Vitality Score)
+  2. CHJ hlasem řekne největší bio hrdlo + co udělat (constraint-first, bez "dobré ráno")
+  3. Hlasový check-in: 3–4 otázky (spánek, energie, nálada) → Claude → `daily_checkin`
+  4. Závěrečné doporučení hlasem
+  5. Zobrazí se `[ Hotovo ]` → tap → STAV 1
+
+#### STAV 3 — Ambient Router (celodenní)
+- Pokud od posledního vstupu < 6h → přeskočí STAV 2, rovnou sem.
+- Dva typy vstupu (hlas nebo text):
+  - **Kontextový** ("Co dál?") → Claude zanalyzuje čas + Bio + TOC → jedna akce
+  - **Specifický povel** ("Zapiš oběd", "Otevři Tělo") → HUD panel / podvesmír → po dokončení → STAV 1
+- Po dokončení akce vždy zpět do STAV 1.
+
+### Tech stack launcheru
+- Launcher shell: Vanilla JS (žádný framework)
+- Nebula objekt: CSS morph + Canvas 2D hvězdy (žádný WebGL)
+- HUD / podvesmíry: Svelte (voláno z STAV 3)
+- Audio: ElevenLabs (`eleven_multilingual_v2`), Charlotte default
+- AI text: Claude Haiku (`claude-haiku-4-5`) přes `/api/tts` context mode
+- Storage: localStorage → IndexedDB (fáze 2)
+
+### Implementační pořadí
+1. ✅ MLUVÍM — CHJ mluví po probuzení (ElevenLabs + Claude Haiku)
+2. 🔄 STAV 1 — nebula objekt (nahradit current sleep state)
+3. 📋 STAV 2 — 6h trigger + hlasový check-in dialog (multi-turn)
+4. 📋 STAV 3 — ambient router
+
+---
+
 ## Verzování
 
 | Verze | Obsah | Status |
