@@ -6,10 +6,20 @@
 import dotenv from "dotenv";
 dotenv.config({ path: '.env.local' });
 
-// Czech voice — eleven_multilingual_v2 model
-// Default: "Matěj" (Czech male, natural intonation)
-// Override via voiceId in request body
-const DEFAULT_VOICE_ID = 'nPczCjzI2devNBz1zQrb'; // Brian — fallback if Czech not available
+// Czech voice — eleven_multilingual_v2 model supports Czech natively
+// Override via ELEVENLABS_VOICE_ID env var or voiceId in request body
+
+// Available voices (tested with eleven_multilingual_v2 + Czech):
+// MALE:
+//   Brian    nPczCjzI2devNBz1zQrb  — warm, confident
+//   Adam     pNInz6obpgDQGcFmaJgB  — deep, authoritative
+//   Callum   N2lVS1w4EtoT3dr4eOWO  — calm, smooth
+// FEMALE:
+//   Charlotte XB0fDUnXU5powFXDhCwa — warm, natural (great for CZ)
+//   Matilda  XrExE9yKIg1WjnnlVkGX  — friendly, clear
+//   Alice    Xb7hH8MSUJpSbSDYk0k2  — authoritative, precise
+
+const DEFAULT_VOICE_ID = process.env.ELEVENLABS_VOICE_ID || 'XB0fDUnXU5powFXDhCwa'; // Charlotte (female)
 const MODEL_ID = 'eleven_multilingual_v2';
 
 export default async function handler(req, res) {
