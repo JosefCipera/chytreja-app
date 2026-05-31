@@ -499,7 +499,10 @@ async function speakBriefing() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ context }),
     });
-    if (!res.ok) throw new Error(`TTS ${res.status}`);
+    if (!res.ok) {
+      const detail = await res.json().catch(() => ({}));
+      throw new Error(`TTS ${res.status}: ${detail.detail || detail.error || '?'}`);
+    }
 
     const blob  = await res.blob();
     const url   = URL.createObjectURL(blob);
