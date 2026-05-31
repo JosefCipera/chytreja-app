@@ -457,6 +457,7 @@ const HTML = `
 
 <div class="chjl-main">
   <div class="chjl-stage chjl-alarm" id="chjAlarm"></div>
+
   <div class="chjl-stage chjl-action" id="chjAction">
     <div id="chjActionText"></div>
     <div class="chjl-chips" id="chjChips"></div>
@@ -589,16 +590,21 @@ async function speakBriefing() {
       throw new Error(`TTS ${res.status}: ${detail.detail || detail.error || '?'}`);
     }
 
+    // Spoken text z response headeru — pro typewriter
+    const spokenText = decodeURIComponent(res.headers.get('X-CHJ-Text') || '');
+
     const blob  = await res.blob();
     const url   = URL.createObjectURL(blob);
     const audio = new Audio(url);
     const laser = document.getElementById('chjLaser');
 
-    audio.onplay  = () => laser?.classList.add('speaking');
+    audio.onplay  = () => {
+      laser?.classList.add('speaking');
+      if (spokenText) _typewriterStart(spokenText);
+    };
     audio.onended = () => {
       laser?.classList.remove('speaking');
       URL.revokeObjectURL(url);
-      // localStorage.setItem(todayKey, '1'); // TODO: odkomentovat až bude guard aktivní
     };
     audio.onerror = () => { laser?.classList.remove('speaking'); URL.revokeObjectURL(url); };
     audio.play().catch(e => console.warn('[TTS] play blocked:', e));
@@ -606,6 +612,19 @@ async function speakBriefing() {
     console.warn('[TTS] speakBriefing failed:', e);
     _briefingSpoken = false; // retry možný
   }
+}
+
+// ── Typewriter ───────────────────────────────────────────────────────────────
+// _typewriter(el, text, charDelay) — píše znak po znaku do elementu
+function _typewriter(el, text, charDelay = 50) {
+  if (!el) return;
+  el.textContent = '';
+  let i = 0;
+  const interval = setInterval(() => {
+    if (i >= text.length) { clearInterval(interval); return; }
+    el.textContent += text[i];
+    i++;
+  }, charDelay);
 }
 
 // ── Nebula stars ─────────────────────────────────────────────────────────────
@@ -799,15 +818,16 @@ function showAwake() {
   laser.style.background = _bioData.gradient;
   laser.style.boxShadow  = `0 0 20px ${_bioData.color}, 0 0 8px ${_bioData.color}`;
 
-  // Alarm text — velké první písmeno
+  // Alarm text — killer (typewriter efekt)
   const alarm = document.getElementById('chjAlarm');
   const killerText = _bioData.killer ?? 'energie pod střed';
-  alarm.textContent  = killerText.charAt(0).toUpperCase() + killerText.slice(1);
+  alarm.textContent = '';
   alarm.style.opacity   = '1';
   alarm.style.transform = 'scale(1)';
   alarm.style.filter    = 'blur(0)';
   alarm.style.color     = '#8ba8b8';
   alarm.style.fontSize  = '';
+  _typewriter(alarm, killerText.charAt(0).toUpperCase() + killerText.slice(1), 60);
 
   // Hide action
   const action = document.getElementById('chjAction');
@@ -840,7 +860,9 @@ function showAction() {
   alarm.style.pointerEvents = 'none';
 
   setTimeout(() => {
-    document.getElementById('chjActionText').textContent = _bioData.action;
+    const actionTextEl = document.getElementById('chjActionText');
+    actionTextEl.textContent = '';
+    _typewriter(actionTextEl, _bioData.action, 35);
 
     // Resetuj sub-views
     document.getElementById('chjTimerWrap').style.display = 'none';

@@ -147,6 +147,11 @@ export default async function handler(req, res) {
 
     res.setHeader('Content-Type', 'audio/mpeg');
     res.setHeader('Cache-Control', 'no-store');
+    // Vrátíme text jako header — frontend ho přečte pro typewriter efekt
+    if (spokenText) {
+      res.setHeader('X-CHJ-Text', encodeURIComponent(spokenText));
+      res.setHeader('Access-Control-Expose-Headers', 'X-CHJ-Text');
+    }
 
     const buf = await elRes.arrayBuffer();
     res.send(Buffer.from(buf));
