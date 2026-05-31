@@ -320,11 +320,17 @@ const STYLE = `
 .chjl-modal-link:hover { color: #00bcd4; }
 
 /* Sleep state — nebula visible, branding hidden */
-#chj-launcher.sleeping .chjl-footer  { opacity: 0; pointer-events: none; }
-#chj-launcher.sleeping .chjl-laser-wrap { opacity: 0; }
-#chj-launcher.sleeping .chjl-header  { opacity: 0; pointer-events: none; }
-#chj-launcher.sleeping .chjl-nebula  { opacity: 1; }
+#chj-launcher.sleeping .chjl-footer     { opacity: 0 !important; pointer-events: none; }
+#chj-launcher.sleeping .chjl-laser-wrap { opacity: 0 !important; }
+#chj-launcher.sleeping .chjl-header     { opacity: 0 !important; pointer-events: none; }
+#chj-launcher.sleeping .chjl-nebula     { opacity: 1; }
 #chj-launcher:not(.sleeping) .chjl-nebula { opacity: 0; pointer-events: none; }
+
+/* Plynulé přechody mezi stavy */
+.chjl-nebula     { transition: opacity 1.8s ease; }
+.chjl-header     { transition: opacity 1.4s ease 0.8s; } /* delay — čeká na nebulu */
+.chjl-laser-wrap { transition: opacity 1.2s ease 1.0s; }
+.chjl-footer     { transition: opacity 1.0s ease 1.2s; }
 
 /* Nebula orb */
 .chjl-nebula {
@@ -555,14 +561,12 @@ let _briefingSpoken = false;
 async function speakBriefing() {
   if (_briefingSpoken) return;
 
-  // Jen ráno (5–12h) a jednou denně
-  const h = new Date().getHours();
-  if (h < 5 || h >= 12) return;
-  const todayKey = `chj_briefing_${new Date().toISOString().slice(0, 10)}`;
-  if (localStorage.getItem(todayKey)) return;
-
   _briefingSpoken = true;
-  // localStorage se nastaví až po úspěšném přehrání — ne před TTS voláním
+  // TODO guard: jen ráno (5–12h), jednou denně — až bude hlas stabilní
+  // const h = new Date().getHours();
+  // if (h < 5 || h >= 12) return;
+  // const todayKey = `chj_briefing_${new Date().toISOString().slice(0,10)}`;
+  // if (localStorage.getItem(todayKey)) return;
 
   // Pošleme kontext na backend — AI vygeneruje přirozený mluvený text
   const context = {
@@ -592,7 +596,7 @@ async function speakBriefing() {
     audio.onended = () => {
       laser?.classList.remove('speaking');
       URL.revokeObjectURL(url);
-      localStorage.setItem(todayKey, '1'); // uložit až po úspěšném přehrání
+      // localStorage.setItem(todayKey, '1'); // TODO: odkomentovat až bude guard aktivní
     };
     audio.onerror = () => { laser?.classList.remove('speaking'); URL.revokeObjectURL(url); };
     audio.play().catch(e => console.warn('[TTS] play blocked:', e));
