@@ -653,6 +653,7 @@ function _initNebulaStars() {
 
   const el = document.createElement('div');
   el.id = 'chj-launcher';
+  el.classList.add('sleeping'); // STAV 1: začínáme s nebulou
   el.innerHTML = HTML;
 
   // Block clicks going through while loading
@@ -722,6 +723,7 @@ async function loadBioData() {
     _bioData = {
       pct,
       killer: killerText,
+      description: data.killer?.description ?? '',
       action: action || 'Odpočiň si a sleduj jak se cítíš.',
       actionType:     data.action?.type     || 'simple',
       actionDuration: data.action?.duration || 0,
@@ -734,7 +736,9 @@ async function loadBioData() {
         : 'linear-gradient(90deg, #2d0808, #ef4444)',
     };
 
-    showAwake();
+    // Data načtena — čekáme na tap uživatele (STAV 1 → STAV 2)
+    // showAwake() se volá z onLauncherClick nebo hlasového triggeru
+    _phase = 'sleeping';
   } catch (e) {
     console.warn('[CHJ Launcher] loadBioData failed:', e);
     showFallback();
@@ -763,13 +767,14 @@ function waitForUserId(timeoutMs) {
 }
 
 function showFallback() {
-  // Show without real data — generic morning state
+  // Fallback data — čekáme na tap stejně jako s reálnými daty
   _bioData = {
     pct: 50, killer: 'energie pod střed', action: 'Řekni co chceš řešit.',
+    description: '',
     color: '#eab308',
     gradient: 'linear-gradient(90deg, #2d1f00, #eab308)',
   };
-  showAwake();
+  _phase = 'sleeping';
 }
 
 // ── Phases ───────────────────────────────────────────────────────────────────
