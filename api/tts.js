@@ -31,7 +31,7 @@ const MODEL_ID = 'eleven_multilingual_v2';
 // ── AI briefing text generation ──────────────────────────────────────────────
 
 async function generateBriefingText(context) {
-  const { killer = 'energie', action = '', streak = 0 } = context;
+  const { description = '', action = '', streak = 0 } = context;
   const streakNote = streak >= 3 ? ` Uživatel je na sérii ${streak} dní v řadě.` : '';
 
   const systemPrompt = `Jsi CHJ — osobní digitální partner pro zdraví a dlouhověkost.
@@ -45,10 +45,10 @@ Pravidla:
 - Žádné příkazy ("musíš", "měl bys") — místo toho nabídni nebo navrhni
 - Výstup: jen samotný text, nic jiného`;
 
-  const userPrompt = `Největší problém uživatele teď: ${killer}
+  const userPrompt = `Situace uživatele: ${description || 'chybí pohyb a aktivita'}
 Doporučená akce: ${action || 'není specifikována'}${streakNote}
 
-Řekni mu situaci a co udělat.`;
+Řekni mu to přirozeně — situaci a co udělat.`;
 
   const anthropicKey = process.env.ANTHROPIC_API_KEY;
   if (!anthropicKey) throw new Error('ANTHROPIC_API_KEY not configured');

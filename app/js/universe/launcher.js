@@ -486,9 +486,10 @@ async function speakBriefing() {
 
   // Pošleme kontext na backend — AI vygeneruje přirozený mluvený text
   const context = {
-    killer: _bioData?.killer ?? 'energie',
-    action: _bioData?.action ?? '',
-    streak: _bioData?.streak ?? 0,
+    killer:      _bioData?.killer      ?? 'energie',
+    description: _bioData?.description ?? '',
+    action:      _bioData?.action      ?? '',
+    streak:      _bioData?.streak      ?? 0,
   };
 
   try {
