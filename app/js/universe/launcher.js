@@ -475,9 +475,9 @@ let _briefingSpoken = false;
 async function speakBriefing() {
   if (_briefingSpoken) return;
 
-  // Jen ráno (5–11h) a jednou denně
+  // Jen ráno (5–12h) a jednou denně
   const h = new Date().getHours();
-  if (h < 5 || h >= 11) return;
+  if (h < 5 || h >= 12) return;
   const todayKey = `chj_briefing_${new Date().toISOString().slice(0, 10)}`;
   if (localStorage.getItem(todayKey)) return;
 
