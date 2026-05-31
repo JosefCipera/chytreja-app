@@ -323,14 +323,16 @@ const STYLE = `
 #chj-launcher.sleeping .chjl-footer     { opacity: 0 !important; pointer-events: none; }
 #chj-launcher.sleeping .chjl-laser-wrap { opacity: 0 !important; }
 #chj-launcher.sleeping .chjl-header     { opacity: 0 !important; pointer-events: none; }
+#chj-launcher.sleeping .chjl-main       { opacity: 0 !important; pointer-events: none; }
 #chj-launcher.sleeping .chjl-nebula     { opacity: 1; }
 #chj-launcher:not(.sleeping) .chjl-nebula { opacity: 0; pointer-events: none; }
 
 /* Plynulé přechody mezi stavy */
 .chjl-nebula     { transition: opacity 1.8s ease; }
-.chjl-header     { transition: opacity 1.4s ease 0.8s; } /* delay — čeká na nebulu */
-.chjl-laser-wrap { transition: opacity 1.2s ease 1.0s; }
-.chjl-footer     { transition: opacity 1.0s ease 1.2s; }
+.chjl-header     { transition: opacity 1.2s ease 0.8s; }  /* logo: po nebuле */
+.chjl-laser-wrap { transition: opacity 1.0s ease 1.4s; }  /* laser: po logu */
+.chjl-main       { transition: opacity 1.0s ease 2.0s; }  /* text: až po laseru */
+.chjl-footer     { transition: opacity 0.8s ease 2.2s; }  /* mic: poslední */
 
 /* Nebula orb */
 .chjl-nebula {
