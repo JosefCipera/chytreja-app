@@ -474,7 +474,15 @@ let _briefingSpoken = false;
 // ── ElevenLabs TTS ───────────────────────────────────────────────────────────
 async function speakBriefing() {
   if (_briefingSpoken) return;
+
+  // Jen ráno (5–11h) a jednou denně
+  const h = new Date().getHours();
+  if (h < 5 || h >= 11) return;
+  const todayKey = `chj_briefing_${new Date().toISOString().slice(0, 10)}`;
+  if (localStorage.getItem(todayKey)) return;
+
   _briefingSpoken = true;
+  localStorage.setItem(todayKey, '1');
 
   // Pošleme kontext na backend — AI vygeneruje přirozený mluvený text
   const context = {
