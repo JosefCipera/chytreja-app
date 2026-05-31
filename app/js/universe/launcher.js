@@ -633,7 +633,8 @@ function speakBriefing() {
   u.onend   = () => { console.log('[TTS] onend');   laser?.classList.remove('speaking'); };
   u.onerror = (e) => { console.warn('[TTS] onerror:', e.error); laser?.classList.remove('speaking'); };
 
-  console.log('[TTS] calling speak(), lang:', u.lang, 'text:', text.slice(0,30));
+  speechSynthesis.cancel(); // zruší případný silent primer z universe-init.js
+  console.log('[TTS] calling speak(), text:', text.slice(0,30));
   speechSynthesis.speak(u);
   console.log('[TTS] after speak(), speaking:', speechSynthesis.speaking, 'pending:', speechSynthesis.pending);
 }
