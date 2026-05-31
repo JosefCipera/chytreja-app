@@ -319,9 +319,81 @@ const STYLE = `
   color: #3ca9bd; text-decoration: none; letter-spacing: 1px; }
 .chjl-modal-link:hover { color: #00bcd4; }
 
-/* Sleep state */
-#chj-launcher.sleeping .chjl-footer { opacity: 0.15; }
-#chj-launcher.sleeping .chjl-laser { opacity: 0.3; }
+/* Sleep state — nebula visible, branding hidden */
+#chj-launcher.sleeping .chjl-footer  { opacity: 0; pointer-events: none; }
+#chj-launcher.sleeping .chjl-laser-wrap { opacity: 0; }
+#chj-launcher.sleeping .chjl-header  { opacity: 0; pointer-events: none; }
+#chj-launcher.sleeping .chjl-nebula  { opacity: 1; }
+#chj-launcher:not(.sleeping) .chjl-nebula { opacity: 0; pointer-events: none; }
+
+/* Nebula orb */
+.chjl-nebula {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  transition: opacity 1.2s ease;
+  pointer-events: none;
+}
+.chjl-nebula-halo {
+  position: absolute;
+  width: 280px; height: 280px; border-radius: 50%;
+  background: radial-gradient(circle,
+    rgba(6,182,212,0.07) 0%,
+    rgba(88,28,135,0.04) 50%,
+    transparent 75%
+  );
+  filter: blur(22px);
+  animation: chjl-halo 5s ease-in-out infinite;
+}
+.chjl-nebula-body {
+  position: absolute;
+  width: 170px; height: 170px;
+  background: radial-gradient(ellipse at 38% 38%,
+    rgba(14,40,60,0.95) 0%,
+    rgba(6,20,35,0.98) 45%,
+    rgba(2,8,18,1) 100%
+  );
+  box-shadow:
+    0 0 50px rgba(6,182,212,0.10),
+    0 0 100px rgba(6,182,212,0.05),
+    inset 0 0 35px rgba(6,182,212,0.07);
+  animation: chjl-morph 9s ease-in-out infinite,
+             chjl-breathe 5s ease-in-out infinite;
+}
+.chjl-nebula-core {
+  position: absolute;
+  width: 60px; height: 60px; border-radius: 50%;
+  background: radial-gradient(circle,
+    rgba(6,182,212,0.18) 0%,
+    rgba(6,182,212,0.05) 55%,
+    transparent 100%
+  );
+  filter: blur(10px);
+  animation: chjl-core 5s ease-in-out infinite;
+}
+.chjl-nebula canvas {
+  position: absolute; inset: 0;
+  pointer-events: none;
+}
+@keyframes chjl-morph {
+  0%  { border-radius: 58% 42% 44% 56% / 52% 48% 52% 48%; }
+  20% { border-radius: 42% 58% 56% 44% / 44% 56% 44% 56%; }
+  40% { border-radius: 52% 48% 38% 62% / 60% 40% 60% 40%; }
+  60% { border-radius: 44% 56% 62% 38% / 48% 52% 48% 52%; }
+  80% { border-radius: 62% 38% 46% 54% / 40% 60% 38% 62%; }
+  100%{ border-radius: 58% 42% 44% 56% / 52% 48% 52% 48%; }
+}
+@keyframes chjl-breathe {
+  0%,100% { transform: scale(1);    opacity: 0.85; }
+  50%      { transform: scale(1.08); opacity: 1; }
+}
+@keyframes chjl-halo {
+  0%,100% { transform: scale(1);    opacity: 0.6; }
+  50%      { transform: scale(1.18); opacity: 1; }
+}
+@keyframes chjl-core {
+  0%,100% { transform: scale(1);   opacity: 0.5; }
+  50%      { transform: scale(1.4); opacity: 1; }
+}
 
 /* Plovoucí ← tlačítko zpět do launcheru */
 #chj-back-btn {
@@ -352,6 +424,14 @@ const HTML = `
 <div class="chjl-star chjl-star-tl">✦</div>
 <div class="chjl-star chjl-star-br">✦</div>
 <div class="chjl-version">${CHJ_VERSION}</div>
+
+<!-- STAV 1: Nebula (sleep state) -->
+<div class="chjl-nebula" id="chjNebula">
+  <canvas id="chjNebulaStars"></canvas>
+  <div class="chjl-nebula-halo"></div>
+  <div class="chjl-nebula-body"></div>
+  <div class="chjl-nebula-core"></div>
+</div>
 
 <div class="chjl-header">
   <div class="chjl-logo">
@@ -522,6 +602,44 @@ async function speakBriefing() {
   }
 }
 
+// ── Nebula stars ─────────────────────────────────────────────────────────────
+function _initNebulaStars() {
+  const canvas = document.getElementById('chjNebulaStars');
+  if (!canvas) return;
+  const nebula = document.getElementById('chjNebula');
+  canvas.width  = nebula.offsetWidth  || window.innerWidth;
+  canvas.height = nebula.offsetHeight || window.innerHeight;
+  canvas.style.position = 'absolute';
+  canvas.style.inset    = '0';
+  canvas.style.width    = '100%';
+  canvas.style.height   = '100%';
+
+  const ctx = canvas.getContext('2d');
+  const stars = Array.from({ length: 70 }, () => ({
+    x:     Math.random() * canvas.width,
+    y:     Math.random() * canvas.height,
+    r:     Math.random() * 1.1 + 0.2,
+    phase: Math.random() * Math.PI * 2,
+    speed: Math.random() * 0.006 + 0.002,
+    base:  Math.random() * 0.4 + 0.1,
+  }));
+
+  let _running = true;
+  function draw(t) {
+    if (!_running) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    stars.forEach(s => {
+      const op = s.base * (0.4 + 0.6 * Math.sin(t * s.speed + s.phase));
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255,255,255,${op})`;
+      ctx.fill();
+    });
+    requestAnimationFrame(draw);
+  }
+  requestAnimationFrame(draw);
+}
+
 // ── Mount ────────────────────────────────────────────────────────────────────
 (function mount() {
   // Injektuj CSS okamžitě — skryj header, nastav tmavé body pozadí (zabraňuje přebliknutí)
@@ -540,6 +658,9 @@ async function speakBriefing() {
   // Block clicks going through while loading
   el.addEventListener('click', onLauncherClick);
   document.body.insertAdjacentElement('afterbegin', el);
+
+  // Nebula hvězdy (Canvas 2D)
+  _initNebulaStars();
 
   // Wire up controls (after insertion)
   document.getElementById('chjBtn').addEventListener('click', onHotovo);   // HOTOVO v timeru
