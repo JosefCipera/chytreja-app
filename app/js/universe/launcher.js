@@ -822,16 +822,14 @@ function showAwake() {
   laser.style.background = _bioData.gradient;
   laser.style.boxShadow  = `0 0 20px ${_bioData.color}, 0 0 8px ${_bioData.color}`;
 
-  // Alarm text — killer (typewriter efekt)
+  // Alarm text — prázdný, vyplní ho typewriter ze spoken textu při onplay
   const alarm = document.getElementById('chjAlarm');
-  const killerText = _bioData.killer ?? 'energie pod střed';
-  alarm.textContent = '';
+  alarm.textContent     = '';
   alarm.style.opacity   = '1';
   alarm.style.transform = 'scale(1)';
   alarm.style.filter    = 'blur(0)';
   alarm.style.color     = '#8ba8b8';
   alarm.style.fontSize  = '';
-  _typewriter(alarm, killerText.charAt(0).toUpperCase() + killerText.slice(1), 60);
 
   // Hide action
   const action = document.getElementById('chjAction');
@@ -864,9 +862,7 @@ function showAction() {
   alarm.style.pointerEvents = 'none';
 
   setTimeout(() => {
-    const actionTextEl = document.getElementById('chjActionText');
-    actionTextEl.textContent = '';
-    _typewriter(actionTextEl, _bioData.action, 35);
+    document.getElementById('chjActionText').textContent = _bioData.action;
 
     // Resetuj sub-views
     document.getElementById('chjTimerWrap').style.display = 'none';
