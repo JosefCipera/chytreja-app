@@ -50,33 +50,33 @@ Doporučená akce: ${action || 'není specifikována'}${streakNote}
 
 Řekni mu situaci a co udělat.`;
 
-  const openaiKey = process.env.OPENAI_API_KEY;
-  if (!openaiKey) throw new Error('OPENAI_API_KEY not configured');
+  const anthropicKey = process.env.ANTHROPIC_API_KEY;
+  if (!anthropicKey) throw new Error('ANTHROPIC_API_KEY not configured');
 
-  const aiRes = await fetch('https://api.openai.com/v1/chat/completions', {
+  const aiRes = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${openaiKey}`,
+      'x-api-key': anthropicKey,
+      'anthropic-version': '2023-06-01',
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'gpt-4o-mini',
+      model: 'claude-haiku-4-5',
       max_tokens: 80,
-      temperature: 0.85,
+      system: systemPrompt,
       messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user',   content: userPrompt },
+        { role: 'user', content: userPrompt },
       ],
     }),
   });
 
   if (!aiRes.ok) {
     const err = await aiRes.text();
-    throw new Error(`OpenAI error ${aiRes.status}: ${err}`);
+    throw new Error(`Claude error ${aiRes.status}: ${err}`);
   }
 
   const data = await aiRes.json();
-  return data.choices?.[0]?.message?.content?.trim() ?? '';
+  return data.content?.[0]?.text?.trim() ?? '';
 }
 
 // ── Main handler ─────────────────────────────────────────────────────────────
