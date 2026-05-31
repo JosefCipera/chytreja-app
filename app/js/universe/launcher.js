@@ -469,6 +469,51 @@ const NODE_KEYWORDS = {
 let _phase = 'loading'; // loading | awake | action | timer | sleeping
 let _bioData = null;    // { killer, pct, color, action, actionType, actionDuration, sources }
 let _recognition = null;
+let _briefingSpoken = false;
+
+// ── ElevenLabs TTS ───────────────────────────────────────────────────────────
+async function speakBriefing() {
+  if (_briefingSpoken) return;
+  _briefingSpoken = true;
+
+  const h      = new Date().getHours();
+  const pct    = _bioData?.pct ?? 50;
+  const killer = _bioData?.killer ?? 'energie';
+  const action = _bioData?.action ?? 'Řekni co chceš řešit.';
+
+  let text;
+  if (h >= 5 && h < 11) {
+    text = `Dobré ráno. Energie na ${pct} procent. Dnes tě brzdí ${killer}. ${action}.`;
+  } else if (h >= 11 && h < 17) {
+    text = `${killer.charAt(0).toUpperCase() + killer.slice(1)} stále hraje roli. Máš připraveno: ${action}.`;
+  } else if (h >= 17 && h < 22) {
+    text = `Dobrý večer. Energie na ${pct} procent. ${action}.`;
+  } else {
+    text = `Pozdní hodina. Energie na ${pct} procent. Zkus si odpočinout.`;
+  }
+
+  try {
+    const res = await fetch('/api/tts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text }),
+    });
+    if (!res.ok) throw new Error(`TTS ${res.status}`);
+
+    const blob = await res.blob();
+    const url  = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+    const laser = document.getElementById('chjLaser');
+
+    audio.onplay  = () => laser?.classList.add('speaking');
+    audio.onended = () => { laser?.classList.remove('speaking'); URL.revokeObjectURL(url); };
+    audio.onerror = () => { laser?.classList.remove('speaking'); URL.revokeObjectURL(url); };
+    audio.play().catch(e => console.warn('[TTS] play blocked:', e));
+  } catch (e) {
+    console.warn('[TTS] speakBriefing failed:', e);
+    _briefingSpoken = false; // retry možný
+  }
+}
 
 // ── Mount ────────────────────────────────────────────────────────────────────
 (function mount() {
@@ -636,8 +681,13 @@ function showAwake() {
   document.getElementById('chjFooter').style.opacity = '1';
   document.getElementById('chjMic').style.animation = 'chjl-mic-pulse 3s infinite ease-in-out';
 
-  // Auto-advance na akci po 4s (tap na plochu jde dřív)
-  setTimeout(() => { if (_phase === 'awake') showAction(); }, 4000);
+  // Desktop: mluví automaticky + auto-advance (Audio API nepotřebuje gesto)
+  // Mobil: Audio.play() po tapu (viz onLauncherClick)
+  const _isTouch = window.matchMedia('(pointer: coarse)').matches;
+  if (!_isTouch) {
+    speakBriefing();
+    setTimeout(() => { if (_phase === 'awake') showAction(); }, 4000);
+  }
 }
 
 function showAction() {
@@ -1005,7 +1055,10 @@ async function onTextSend() {
 // ── Click handler ─────────────────────────────────────────────────────────────
 function onLauncherClick(e) {
   if (e.target.closest('#chjBtn,#chjMic,#chjInputWrap,#chjChips,#chjSrcsInline')) return;
-  if (_phase === 'awake') showAction();
+  if (_phase === 'awake') {
+    speakBriefing(); // Audio API — funguje na mobilu i bez gesture tricků
+    showAction();
+  }
   else if (_phase === 'sleeping') showAwake();
   // 'action', 'timer', 'done' — klik nic nedělá
 }
