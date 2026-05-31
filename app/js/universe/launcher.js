@@ -609,6 +609,13 @@ async function speakBriefing() {
     audio.onended = () => {
       laser?.classList.remove('speaking');
       URL.revokeObjectURL(url);
+      // Hlas skončil → zobraz footer (mic + input)
+      const footer = document.getElementById('chjFooter');
+      if (footer) {
+        footer.style.transition = 'opacity 0.8s ease';
+        footer.style.opacity = '1';
+      }
+      document.getElementById('chjMic').style.animation = 'chjl-mic-pulse 3s infinite ease-in-out';
     };
     audio.onerror = () => { laser?.classList.remove('speaking'); URL.revokeObjectURL(url); };
     audio.play().catch(e => console.warn('[TTS] play blocked:', e));
@@ -838,17 +845,12 @@ function showAwake() {
   action.style.filter       = 'blur(14px)';
   action.style.pointerEvents = 'none';
 
-  // Footer
-  document.getElementById('chjFooter').style.opacity = '1';
-  document.getElementById('chjMic').style.animation = 'chjl-mic-pulse 3s infinite ease-in-out';
+  // Footer schovaný — zobrazí se až po hlasu (viz speakBriefing onended)
+  document.getElementById('chjFooter').style.opacity = '0';
 
-  // Desktop: mluví automaticky + auto-advance (Audio API nepotřebuje gesto)
-  // Mobil: Audio.play() po tapu (viz onLauncherClick)
+  // Desktop: mluví automaticky — bez auto-advance, čeká na tap
   const _isTouch = window.matchMedia('(pointer: coarse)').matches;
-  if (!_isTouch) {
-    speakBriefing();
-    setTimeout(() => { if (_phase === 'awake') showAction(); }, 4000);
-  }
+  if (!_isTouch) speakBriefing();
 }
 
 function showAction() {
