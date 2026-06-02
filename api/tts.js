@@ -55,7 +55,7 @@ Věty spojuj přirozeně čárkou nebo spojkou.`;
   const userPrompt = `Situace uživatele: ${description || 'málo pohybu'}
 Co má dnes udělat: ${action || ''}${streakNote}
 
-Řekni v jedné větě situaci i co udělat — přirozeně česky, jako kamarád.
+Řekni v jedné větě situaci i co udělat — přirozeně česky, jako kamarád.`;
 
   const anthropicKey = process.env.ANTHROPIC_API_KEY;
   if (!anthropicKey) throw new Error('ANTHROPIC_API_KEY not configured');
