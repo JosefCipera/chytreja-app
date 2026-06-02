@@ -321,8 +321,8 @@ const STYLE = `
 .chjl-modal-link:hover { color: #00bcd4; }
 
 /* Footer v sleep-listening stavu — jen minimální input, bez mic */
-#chj-launcher.sleeping .chjl-footer { opacity: 0; }
-#chj-launcher.sleeping.listening .chjl-footer { opacity: 1 !important; }
+#chj-launcher.sleeping .chjl-footer { opacity: 0; pointer-events: none; }
+#chj-launcher.sleeping.listening .chjl-footer { opacity: 1 !important; pointer-events: all; }
 #chj-launcher.sleeping .chjl-mic { display: none !important; }
 
 /* Sleep state — nebula visible, branding hidden */
@@ -567,6 +567,7 @@ let _recognition = null;
 let _briefingSpoken = false;
 let _briefingBlob = null;   // prefetchnutý audio blob (pro mobilní tap)
 let _briefingText = '';     // spoken text z X-CHJ-Text headeru
+let _sourcesBlob  = null;   // prefetchnutý blob pro sources odpověď
 
 // ── ElevenLabs TTS ───────────────────────────────────────────────────────────
 function speakBriefing() {
@@ -998,6 +999,8 @@ function showSourcesInline(e) {
 function goSleepListening() {
   goSleep();
   document.getElementById('chj-launcher')?.classList.add('listening');
+  // Prefetch sources audio na pozadí — ready na "proč?" příkaz
+  _prewarmSources();
   // Spusť pasivní STT
   if (window.matchMedia('(pointer: coarse)').matches) startPassiveListening();
 }
@@ -1232,34 +1235,22 @@ async function _handleCommand(text) {
   return false;
 }
 
-// Přečte první zdroj + zobrazí karty
-async function _doSources() {
+// Sestaví spoken text pro zdroje
+function _buildSourcesText() {
   const sources = _bioData?.sources || [];
-  if (!sources.length) {
-    await _speakText('Ke téhle akci teď nemám konkrétní studie.');
-    return;
-  }
-
-  // Preferuj zdroj se script_cz, jinak první dostupný
+  if (!sources.length) return 'Ke téhle akci teď nemám konkrétní studie.';
   const best = sources.find(s => s.script_cz) || sources[0];
-
-  let spoken;
   if (best.script_cz) {
-    // Vezmi první 2 věty ze script_cz
-    spoken = best.script_cz
+    return best.script_cz
       .replace(/^#+.*/gm, '').replace(/\*\*/g, '').trim()
       .split(/(?<=[.!?])\s+/).slice(0, 2).join(' ');
-  } else {
-    spoken = `${best.title}${best.journal ? ', ' + best.journal : ''}${best.year ? ', ' + best.year : ''}.`;
   }
-
-  // Přečti + zobraz karty paralelně
-  _speakText(spoken);
-  showSourcesInline();
+  return `${best.title}${best.journal ? ', ' + best.journal : ''}${best.year ? ', ' + best.year : ''}.`;
 }
 
-// Přehraje libovolný text přes ElevenLabs (Mode A — přímý text)
-async function _speakText(text) {
+// Prefetch sources audio na pozadí (volá se po goSleepListening)
+async function _prewarmSources() {
+  const text = _buildSourcesText();
   try {
     const res = await fetch('/api/tts', {
       method: 'POST',
@@ -1267,12 +1258,49 @@ async function _speakText(text) {
       body: JSON.stringify({ text }),
     });
     if (!res.ok) return;
-    const url = URL.createObjectURL(await res.blob());
+    _sourcesBlob = URL.createObjectURL(await res.blob());
+  } catch (e) {
+    console.warn('[CHJ] prewarm sources failed:', e);
+  }
+}
+
+// Přečte první zdroj + zobrazí karty
+function _doSources() {
+  // Použij prefetchnutý blob (iOS synchronní play) nebo async fallback
+  _speakText(_buildSourcesText(), _sourcesBlob);
+  _sourcesBlob = null;
+  showSourcesInline();
+}
+
+// Přehraje libovolný text přes ElevenLabs (Mode A — přímý text)
+// blobUrl: pokud je předpřipravený blob, použij ho (synchronní play pro iOS)
+async function _speakText(text, blobUrl = null) {
+  const laser = document.getElementById('chjLaser');
+  const play = (url, revoke) => {
     const audio = new Audio(url);
-    const laser = document.getElementById('chjLaser');
     audio.onplay  = () => laser?.classList.add('speaking');
-    audio.onended = () => { laser?.classList.remove('speaking'); URL.revokeObjectURL(url); };
-    audio.play().catch(() => {});
+    audio.onended = () => {
+      laser?.classList.remove('speaking');
+      if (revoke) URL.revokeObjectURL(url);
+    };
+    audio.play().catch(e => console.warn('[CHJ] play blocked:', e));
+  };
+
+  if (blobUrl) {
+    // Synchronní — iOS gesture ok
+    play(blobUrl, true);
+    return;
+  }
+
+  // Async fallback (desktop)
+  try {
+    const res = await fetch('/api/tts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text }),
+    });
+    if (!res.ok) return;
+    play(URL.createObjectURL(await res.blob()), true);
   } catch (e) {
     console.warn('[CHJ] _speakText failed:', e);
   }
