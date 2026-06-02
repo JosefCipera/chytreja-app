@@ -218,7 +218,8 @@ const STYLE = `
   width: 72px; height: 72px; border-radius: 50%;
   background: rgba(4,28,36,0.6);
   border: 1px solid rgba(0,188,212,0.3);
-  display: flex; justify-content: center; align-items: center;
+  display: none; /* skrytý — voice probíhá automaticky */
+  justify-content: center; align-items: center;
   box-shadow: 0 0 22px rgba(0,188,212,0.12);
   animation: chjl-mic-pulse 3s infinite ease-in-out;
   cursor: pointer;
@@ -590,9 +591,8 @@ function _playBriefingUrl(url, spokenText) {
   audio.onended = () => {
     laser?.classList.remove('speaking');
     URL.revokeObjectURL(url);
-    const footer = document.getElementById('chjFooter');
-    if (footer) { footer.style.transition = 'opacity 0.8s ease'; footer.style.opacity = '1'; }
-    document.getElementById('chjMic').style.animation = 'chjl-mic-pulse 3s infinite ease-in-out';
+    // Hlas skončil → akce se objeví automaticky, spustí se pasivní STT
+    setTimeout(() => showAction(), 600);
   };
   audio.onerror = () => laser?.classList.remove('speaking');
   audio.play().catch(e => console.warn('[TTS] play blocked:', e));
@@ -878,11 +878,11 @@ function showAwake() {
 function showAction() {
   _phase = 'action';
 
-  // Blur out alarm
+  // Alarm fade out
   const alarm = document.getElementById('chjAlarm');
-  alarm.style.opacity   = '0';
-  alarm.style.transform = 'scale(1.06)';
-  alarm.style.filter    = 'blur(18px)';
+  alarm.style.opacity       = '0';
+  alarm.style.transform     = 'scale(1.04)';
+  alarm.style.filter        = 'blur(14px)';
   alarm.style.pointerEvents = 'none';
 
   setTimeout(() => {
@@ -894,27 +894,23 @@ function showAction() {
     document.getElementById('chjSources').innerHTML = '';
     if (_timerInterval) { clearInterval(_timerInterval); _timerInterval = null; }
 
-    // Chipy podle typu akce
+    // Jen [ Hotovo ] — žádný Start, Później, Zdroje
     const chips = document.getElementById('chjChips');
     chips.innerHTML = '';
-    const isTimed = _bioData.actionType === 'timed' || _bioData.actionType === 'reps';
-    const hasSources = (_bioData.sources || []).length > 0;
-
-    if (isTimed) {
-      chips.appendChild(_makeChip('[ Start ]',   'chjl-chip', onStart));
-      chips.appendChild(_makeChip('[ Později ]', 'chjl-chip', onPozdeji));
-    } else {
-      chips.appendChild(_makeChip('[ Hotovo ]',  'chjl-chip', onHotovo));
-    }
-    if (hasSources) {
-      chips.appendChild(_makeChip('[ Zdroje ]',  'chjl-chip', showSourcesInline));
-    }
+    chips.appendChild(_makeChip('[ Hotovo ]', 'chjl-chip', onHotovo));
 
     const action = document.getElementById('chjAction');
     action.style.opacity      = '1';
     action.style.transform    = 'scale(1)';
     action.style.filter       = 'blur(0)';
     action.style.pointerEvents = 'all';
+
+    // Footer s diskrétním textovým polem (bez mic ikony)
+    const footer = document.getElementById('chjFooter');
+    if (footer) { footer.style.transition = 'opacity 0.8s ease'; footer.style.opacity = '1'; }
+
+    // Pasivní STT — uživatel může říct "hotovo"
+    if (window.matchMedia('(pointer: coarse)').matches) startPassiveListening();
   }, 180);
 }
 

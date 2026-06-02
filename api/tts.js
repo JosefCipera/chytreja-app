@@ -52,10 +52,10 @@ Příklady správného tónu a plynulé češtiny:
 Vyhýbej se pomlčce (—) uprostřed věty, způsobuje tvrdý předěl v řeči.
 Věty spojuj přirozeně čárkou nebo spojkou.`;
 
-  const userPrompt = `Situace: ${description || 'málo pohybu'}
-Akce: ${action || ''}${streakNote}
+  const userPrompt = `Situace uživatele: ${description || 'málo pohybu'}
+Co má dnes udělat: ${action || ''}${streakNote}
 
-Řekni to přirozeně česky.`;
+Řekni v jedné větě situaci i co udělat — přirozeně česky, jako kamarád.
 
   const anthropicKey = process.env.ANTHROPIC_API_KEY;
   if (!anthropicKey) throw new Error('ANTHROPIC_API_KEY not configured');
