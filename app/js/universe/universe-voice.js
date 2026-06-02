@@ -293,8 +293,9 @@ async function _openNodeById(nodeId) {
   playWhoosh();
 
   if (isFirstLevel) {
-    // Jen otevři HUD, canvas nechej být
-    showPanel(node);
+    // Otevři sub-vesmír uzlu (Síla, Mobilita... kolem Těla) + HUD panel
+    openSubUniverse(DATA, node);
+    setTimeout(() => showPanel(node), 350);
   } else {
     // Přepni canvas na podsíť rodiče (pokud ještě nejsme uvnitř)
     const { centerId } = getViewState();
