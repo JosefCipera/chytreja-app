@@ -138,9 +138,9 @@ export default async function handler(req, res) {
           text: spokenText.slice(0, 500),
           model_id: MODEL_ID,
           voice_settings: {
-            stability: 0.5,
-            similarity_boost: 0.75,
-            speed: 0.95,
+            stability: 0.35,       // méně stiff, více expresivní
+            similarity_boost: 0.65,
+            speed: 1.05,           // o trochu svižnější
           },
         }),
       }

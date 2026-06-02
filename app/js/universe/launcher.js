@@ -320,6 +320,11 @@ const STYLE = `
   color: #3ca9bd; text-decoration: none; letter-spacing: 1px; }
 .chjl-modal-link:hover { color: #00bcd4; }
 
+/* Footer v sleep-listening stavu — jen minimální input, bez mic */
+#chj-launcher.sleeping .chjl-footer { opacity: 0; }
+#chj-launcher.sleeping.listening .chjl-footer { opacity: 1 !important; }
+#chj-launcher.sleeping .chjl-mic { display: none !important; }
+
 /* Sleep state — nebula visible, branding hidden */
 #chj-launcher.sleeping .chjl-footer     { opacity: 0 !important; pointer-events: none; }
 #chj-launcher.sleeping .chjl-laser-wrap { opacity: 0 !important; }
@@ -591,8 +596,8 @@ function _playBriefingUrl(url, spokenText) {
   audio.onended = () => {
     laser?.classList.remove('speaking');
     URL.revokeObjectURL(url);
-    // Hlas skončil → akce se objeví automaticky, spustí se pasivní STT
-    setTimeout(() => showAction(), 600);
+    // Hlas skončil → zpět do sleep, čekáme na hlasový povel
+    setTimeout(() => goSleepListening(), 800);
   };
   audio.onerror = () => laser?.classList.remove('speaking');
   audio.play().catch(e => console.warn('[TTS] play blocked:', e));
@@ -840,7 +845,7 @@ function showFallback() {
 function showAwake() {
   _phase = 'awake';
   const launcher = document.getElementById('chj-launcher');
-  launcher.classList.remove('sleeping');
+  launcher.classList.remove('sleeping', 'listening');
 
   // Laser line — reset inline stylů, force reflow, pak animace
   const laser = document.getElementById('chjLaser');
@@ -986,6 +991,15 @@ function showSourcesInline(e) {
     card.addEventListener('click', e => { e.stopPropagation(); openSourceModal(src); });
     sourcesEl.appendChild(card);
   });
+}
+
+// Po briefingu: sleep + zobraz text input pro hlasový/textový povel
+// Po briefingu: sleep + zobraz text input pro hlasový/textový povel
+function goSleepListening() {
+  goSleep();
+  document.getElementById('chj-launcher')?.classList.add('listening');
+  // Spusť pasivní STT
+  if (window.matchMedia('(pointer: coarse)').matches) startPassiveListening();
 }
 
 function goSleep() {
