@@ -1115,7 +1115,7 @@ function onMicClick(e) {
   e.stopPropagation();
   if (_phase === 'routing') return;
   if (_recognition) { try { _recognition.stop(); } catch(_) {} _recognition = null; }
-  listenOnce(transcript => tryRoute(transcript));
+  listenOnce(transcript => _handleCommand(transcript));
 }
 
 
@@ -1133,7 +1133,7 @@ function startPassiveListening() {
     r.onresult = e => {
       const t = e.results[0][0].transcript.toLowerCase();
       console.log('[CHJ Passive] heard:', t);
-      tryRoute(t);
+      _handleCommand(t);
     };
     r.onerror = e => {
       console.warn('[CHJ Passive] error:', e.error);
@@ -1210,20 +1210,85 @@ function tryRoute(transcript) {
   return false;
 }
 
+// ── Command handler ──────────────────────────────────────────────────────────
+const SOURCES_KEYWORDS = ['proč', 'proc', 'zdroje', 'zdroj', 'studie', 'víc', 'vic',
+  'řekni mi víc', 'rekni mi vic', 'důkaz', 'dukaz', 'odkud to víš', 'proc to'];
+
+async function _handleCommand(text) {
+  const t = text.toLowerCase().trim();
+
+  // 1. Zdroje
+  if (SOURCES_KEYWORDS.some(kw => t.includes(kw))) {
+    await _doSources();
+    return true;
+  }
+
+  // 2. Navigace na uzel (max 4 slova)
+  if (t.split(/\s+/).length <= 4) {
+    if (tryRoute(t)) return true;
+  }
+
+  // 3. Volné dotazy → AI (fallback)
+  return false;
+}
+
+// Přečte první zdroj + zobrazí karty
+async function _doSources() {
+  const sources = _bioData?.sources || [];
+  if (!sources.length) {
+    await _speakText('Ke téhle akci teď nemám konkrétní studie.');
+    return;
+  }
+
+  // Preferuj zdroj se script_cz, jinak první dostupný
+  const best = sources.find(s => s.script_cz) || sources[0];
+
+  let spoken;
+  if (best.script_cz) {
+    // Vezmi první 2 věty ze script_cz
+    spoken = best.script_cz
+      .replace(/^#+.*/gm, '').replace(/\*\*/g, '').trim()
+      .split(/(?<=[.!?])\s+/).slice(0, 2).join(' ');
+  } else {
+    spoken = `${best.title}${best.journal ? ', ' + best.journal : ''}${best.year ? ', ' + best.year : ''}.`;
+  }
+
+  // Přečti + zobraz karty paralelně
+  _speakText(spoken);
+  showSourcesInline();
+}
+
+// Přehraje libovolný text přes ElevenLabs (Mode A — přímý text)
+async function _speakText(text) {
+  try {
+    const res = await fetch('/api/tts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text }),
+    });
+    if (!res.ok) return;
+    const url = URL.createObjectURL(await res.blob());
+    const audio = new Audio(url);
+    const laser = document.getElementById('chjLaser');
+    audio.onplay  = () => laser?.classList.add('speaking');
+    audio.onended = () => { laser?.classList.remove('speaking'); URL.revokeObjectURL(url); };
+    audio.play().catch(() => {});
+  } catch (e) {
+    console.warn('[CHJ] _speakText failed:', e);
+  }
+}
+
 // ── Text input ───────────────────────────────────────────────────────────────
 async function onTextSend() {
   const input = document.getElementById('chjInput');
   const text  = input.value.trim();
   input.value = '';
 
-  if (!text) { if (_phase === 'awake') showAction(); return; }
+  if (!text) return;
 
-  // Route jen pokud je to krátký příkaz (max 4 slova) — delší věty jdou na AI
-  const wordCount = text.trim().split(/\s+/).length;
-  if (wordCount <= 4) {
-    const routed = tryRoute(text.toLowerCase());
-    if (routed) return;
-  }
+  // Command handler — zdroje, navigace
+  const handled = await _handleCommand(text);
+  if (handled) return;
 
   // Otherwise send to AI and show response as action
   if (_phase !== 'action') {
