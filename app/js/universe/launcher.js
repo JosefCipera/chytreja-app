@@ -1269,6 +1269,30 @@ function _doSources() {
   // Použij prefetchnutý blob (iOS synchronní play) nebo async fallback
   _speakText(_buildSourcesText(), _sourcesBlob);
   _sourcesBlob = null;
+
+  // Zobraz action view se zdroji (chjSrcsInline je uvnitř chjAction)
+  _phase = 'action';
+  document.getElementById('chj-launcher')?.classList.remove('sleeping', 'listening');
+
+  const alarm = document.getElementById('chjAlarm');
+  alarm.style.opacity = '0';
+
+  const actionTextEl = document.getElementById('chjActionText');
+  actionTextEl.textContent = '';
+
+  const chips = document.getElementById('chjChips');
+  chips.innerHTML = '';
+
+  const action = document.getElementById('chjAction');
+  action.style.opacity      = '1';
+  action.style.transform    = 'scale(1)';
+  action.style.filter       = 'blur(0)';
+  action.style.pointerEvents = 'all';
+
+  // Zpět do nebuly místo zpět na akci
+  const srcsBack = document.getElementById('chjSrcsBack');
+  if (srcsBack) srcsBack.onclick = e => { e.stopPropagation(); goSleepListening(); };
+
   showSourcesInline();
 }
 
