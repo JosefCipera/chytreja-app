@@ -323,7 +323,13 @@ const STYLE = `
 /* Footer v sleep-listening stavu — jen minimální input, bez mic */
 #chj-launcher.sleeping .chjl-footer { opacity: 0; pointer-events: none; }
 #chj-launcher.sleeping.listening .chjl-footer { opacity: 1 !important; pointer-events: all; }
-#chj-launcher.sleeping .chjl-mic { display: none !important; }
+#chj-launcher.sleeping:not(.listening) .chjl-mic { display: none !important; }
+#chj-launcher.sleeping.listening .chjl-mic {
+  display: flex !important;
+  width: 36px; height: 36px;
+  opacity: 0.4;
+  animation: chjl-mic-pulse 3s infinite ease-in-out;
+}
 
 /* Sleep state — nebula visible, branding hidden */
 #chj-launcher.sleeping .chjl-footer     { opacity: 0 !important; pointer-events: none; }
@@ -1001,8 +1007,8 @@ function goSleepListening() {
   document.getElementById('chj-launcher')?.classList.add('listening');
   // Prefetch sources audio na pozadí — ready na "proč?" příkaz
   _prewarmSources();
-  // Spusť pasivní STT
-  if (window.matchMedia('(pointer: coarse)').matches) startPassiveListening();
+  // Spusť pasivní STT na všech zařízeních
+  startPassiveListening();
 }
 
 function goSleep() {
@@ -1235,17 +1241,17 @@ async function _handleCommand(text) {
   return false;
 }
 
-// Sestaví spoken text pro zdroje
-function _buildSourcesText() {
+// Vrátí nejlepší zdroj (preferuj script_cz)
+function _bestSource() {
   const sources = _bioData?.sources || [];
-  if (!sources.length) return 'Ke téhle akci teď nemám konkrétní studie.';
-  const best = sources.find(s => s.script_cz) || sources[0];
-  if (best.script_cz) {
-    return best.script_cz
-      .replace(/^#+.*/gm, '').replace(/\*\*/g, '').trim()
-      .split(/(?<=[.!?])\s+/).slice(0, 2).join(' ');
-  }
-  return `${best.title}${best.journal ? ', ' + best.journal : ''}${best.year ? ', ' + best.year : ''}.`;
+  return sources.find(s => s.script_cz) || sources[0] || null;
+}
+
+// Sestaví spoken text pro zdroje — jen název + journal (krátké)
+function _buildSourcesText() {
+  const src = _bestSource();
+  if (!src) return 'Ke téhle akci teď nemám konkrétní studie.';
+  return `${src.title}${src.journal ? ', ' + src.journal : ''}.`;
 }
 
 // Prefetch sources audio na pozadí (volá se po goSleepListening)
@@ -1275,8 +1281,8 @@ function _doSources() {
   _speakText(_buildSourcesText(), _sourcesBlob);
   _sourcesBlob = null;
 
-  // Otevři nejlepší zdroj rovnou v modalu (bez mezikroku s kartami)
-  const best = sources.find(s => s.script_cz) || sources[0];
+  // Otevři nejlepší zdroj rovnou v modalu — stejný jako spoken text
+  const best = _bestSource();
   if (best) openSourceModal(best);
 }
 
