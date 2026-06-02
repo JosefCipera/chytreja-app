@@ -43,11 +43,14 @@ Pravidla:
 - Žádné názvy nemocí
 - Výstup: jen text, bez uvozovek
 
-Příklady správného tónu:
-- "Tělo si říká o pohyb — vyjdi si na chvíli ven, uvolní se ti hlava i nohy."
-- "Spánek tě dneska brzdí. Dej si odpoledne krátkou pauzu, pak to půjde líp."
-- "Regenerace zaostává — zkus dnes bez kávy po druhé, uvidíš rozdíl."
-- "Málo pohybu, ale dá se to napravit. Deset minut chůze a tělo se probudí."`;
+Příklady správného tónu a plynulé češtiny:
+- "Tělo si říká o pohyb, vyjdi si na deset minut ven a uvolní se ti celá hlava."
+- "Spánek tě dneska trochu brzdí, tak si odpoledne dej krátkou pauzu a pak to půjde líp."
+- "Regenerace zaostává, zkus dnes bez kávy po druhé hodině a uvidíš rozdíl."
+- "Pohybu je málo, ale deset minut chůze ti tělo hezky nastartuje."
+
+Vyhýbej se pomlčce (—) uprostřed věty, způsobuje tvrdý předěl v řeči.
+Věty spojuj přirozeně čárkou nebo spojkou.`;
 
   const userPrompt = `Situace: ${description || 'málo pohybu'}
 Akce: ${action || ''}${streakNote}
