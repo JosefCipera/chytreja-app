@@ -1264,36 +1264,20 @@ async function _prewarmSources() {
   }
 }
 
-// Přečte první zdroj + zobrazí karty
+// Přečte první zdroj + otevře ho rovnou v modalu
 function _doSources() {
-  // Použij prefetchnutý blob (iOS synchronní play) nebo async fallback
+  const sources = _bioData?.sources || [];
+
+  // Zavři HUD panel pokud je otevřený
+  if (window.closePanel) window.closePanel();
+
+  // Přečti spoken text
   _speakText(_buildSourcesText(), _sourcesBlob);
   _sourcesBlob = null;
 
-  // Zobraz action view se zdroji (chjSrcsInline je uvnitř chjAction)
-  _phase = 'action';
-  document.getElementById('chj-launcher')?.classList.remove('sleeping', 'listening');
-
-  const alarm = document.getElementById('chjAlarm');
-  alarm.style.opacity = '0';
-
-  const actionTextEl = document.getElementById('chjActionText');
-  actionTextEl.textContent = '';
-
-  const chips = document.getElementById('chjChips');
-  chips.innerHTML = '';
-
-  const action = document.getElementById('chjAction');
-  action.style.opacity      = '1';
-  action.style.transform    = 'scale(1)';
-  action.style.filter       = 'blur(0)';
-  action.style.pointerEvents = 'all';
-
-  // Zpět do nebuly místo zpět na akci
-  const srcsBack = document.getElementById('chjSrcsBack');
-  if (srcsBack) srcsBack.onclick = e => { e.stopPropagation(); goSleepListening(); };
-
-  showSourcesInline();
+  // Otevři nejlepší zdroj rovnou v modalu (bez mezikroku s kartami)
+  const best = sources.find(s => s.script_cz) || sources[0];
+  if (best) openSourceModal(best);
 }
 
 // Přehraje libovolný text přes ElevenLabs (Mode A — přímý text)
