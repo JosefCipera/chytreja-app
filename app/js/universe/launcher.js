@@ -516,16 +516,26 @@ const HTML = `
 const NODE_KEYWORDS = {
   lehkost: {
     'pohyb':      'lh_pohyb',
+    'tělo':       'lh_pohyb',
+    'telo':       'lh_pohyb',
+    'cvičení':    'lh_pohyb',
+    'cviceni':    'lh_pohyb',
+    'chůze':      'lh_pohyb',
+    'chuze':      'lh_pohyb',
     'regenerace': 'lh_regenerace',
     'spánek':     'lh_regenerace',
     'spanek':     'lh_regenerace',
     'spát':       'lh_regenerace',
+    'odpočinek':  'lh_regenerace',
     'výživa':     'lh_vyziva',
     'výživu':     'lh_vyziva',
     'jídlo':      'lh_vyziva',
+    'jidlo':      'lh_vyziva',
+    'jím':        'lh_vyziva',
     'mysl':       'lh_mysl',
     'myšlení':    'lh_mysl',
     'stres':      'lh_mysl',
+    'hlava':      'lh_mysl',
   },
   longevity: {
     'hra o život':  'dlouhovekost',
@@ -1281,9 +1291,10 @@ function _doSources() {
   // Zavři HUD panel pokud je otevřený
   if (window.closePanel) window.closePanel();
 
-  // Přečti spoken text
-  _speakText(_buildSourcesText(), _sourcesBlob);
+  // Přečti spoken text s prodlevou — modal se stihne otevřít
+  const _blob = _sourcesBlob;
   _sourcesBlob = null;
+  setTimeout(() => _speakText(_buildSourcesText(), _blob), 800);
 
   // Otevři nejlepší zdroj rovnou v modalu — stejný jako spoken text
   const best = _bestSource();
