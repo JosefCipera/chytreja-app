@@ -1015,8 +1015,6 @@ function showSourcesInline(e) {
 function goSleepListening() {
   goSleep();
   document.getElementById('chj-launcher')?.classList.add('listening');
-  // Prefetch sources audio na pozadí — ready na "proč?" příkaz
-  _prewarmSources();
   // Spusť pasivní STT na všech zařízeních
   startPassiveListening();
 }
@@ -1291,12 +1289,9 @@ function _doSources() {
   // Zavři HUD panel pokud je otevřený
   if (window.closePanel) window.closePanel();
 
-  // Přečti spoken text s prodlevou — modal se stihne otevřít
-  const _blob = _sourcesBlob;
-  _sourcesBlob = null;
-  setTimeout(() => _speakText(_buildSourcesText(), _blob), 800);
+  _sourcesBlob = null; // zahod prewarm — nečteme nahlas
 
-  // Otevři nejlepší zdroj rovnou v modalu — stejný jako spoken text
+  // Otevři nejlepší zdroj rovnou v modalu
   const best = _bestSource();
   if (best) openSourceModal(best);
 }
