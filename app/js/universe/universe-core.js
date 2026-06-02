@@ -364,12 +364,7 @@ export function renderUniverse(DATA, subset = null, forcedMainId = null) {
     const node = findNodeById(DATA, id);
     if (!node) return;
     if (node.access === 'locked') return;  // locked nodes: single-click shows locked panel, double-click does nothing
-    const hasChildren = DATA.some(n => n.parent === node.id);
-    if (hasChildren) {
-      openSubUniverse(DATA, node);
-    } else {
-      showPanel(node); // listový uzel — žádné děti, rovnou panel
-    }
+    openSubUniverse(DATA, node);
   });
 
   lastRenderedNodes = [...source];
