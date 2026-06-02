@@ -292,10 +292,15 @@ async function _openNodeById(nodeId) {
 
   playWhoosh();
 
-  if (isFirstLevel) {
-    // Otevři sub-vesmír uzlu (Síla, Mobilita... kolem Těla) + HUD panel
+  const hasChildren = DATA.some(n => n.parent === node.id);
+
+  if (isFirstLevel && hasChildren) {
+    // Uzel má děti → otevři sub-vesmír (Síla, Mobilita... kolem Těla)
     openSubUniverse(DATA, node);
     setTimeout(() => showPanel(node), 350);
+  } else if (isFirstLevel) {
+    // Listový uzel první úrovně → jen panel
+    showPanel(node);
   } else {
     // Přepni canvas na podsíť rodiče (pokud ještě nejsme uvnitř)
     const { centerId } = getViewState();
