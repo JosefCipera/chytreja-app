@@ -1064,6 +1064,9 @@ function routeToNode(nodeId) {
   _phase = 'routing';
   if (_recognition) { try { _recognition.stop(); } catch(_) {} _recognition = null; }
 
+  // Odstraň sleeping/listening před fade-out — zabrání CSS konfliktům
+  launcher.classList.remove('sleeping', 'listening');
+
   const doOpen = () => {
     if (nodeId && window._openNodeById) {
       window._openNodeById(nodeId);
@@ -1109,9 +1112,10 @@ function routeToNode(nodeId) {
             s.textContent = '#appHeader { display: none !important; } body { background: #010406 !important; }';
             document.head.appendChild(s);
           }
-          // Restartuj pasivní poslouchání jen na mobilu
+          // Vrať nebulu + listening stav, spusť STT
+          launcher.classList.add('sleeping', 'listening');
           _phase = 'sleeping';
-          if (window.matchMedia('(pointer: coarse)').matches) startPassiveListening();
+          startPassiveListening();
         };
         document.body.appendChild(btn);
       }
@@ -1361,7 +1365,10 @@ function onLauncherClick(e) {
     speakBriefing(); // Audio API — funguje na mobilu i bez gesture tricků
     showAction();
   }
-  else if (_phase === 'sleeping') showAwake();
+  else if (_phase === 'sleeping') {
+    if (_briefingSpoken) return; // briefing byl přehrán — tap nic nedělá
+    showAwake();
+  }
   // 'action', 'timer', 'done' — klik nic nedělá
 }
 
