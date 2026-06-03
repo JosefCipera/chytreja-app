@@ -1304,34 +1304,21 @@ async function _doRecommend() {
       throw new Error(`TTS ${res.status}: ${d.detail || d.error || '?'}`);
     }
     const spokenText = decodeURIComponent(res.headers.get('X-CHJ-Text') || '');
-    const url      = URL.createObjectURL(await res.blob());
-    const audio    = new Audio(url);
-    const laser    = document.getElementById('chjLaser');
-    const launcher = document.getElementById('chj-launcher');
-    const alarm    = document.getElementById('chjAlarm');
-    _chj_speaking  = true;
+    const url   = URL.createObjectURL(await res.blob());
+    const audio = new Audio(url);
+    const laser = document.getElementById('chjLaser');
 
-    // Odkryj main + alarm (skryté ve sleeping stavu)
-    const mainEl = document.getElementById('chj-launcher')?.querySelector('.chjl-main');
-    if (mainEl) mainEl.style.opacity = '1';
-    if (alarm) { alarm.textContent = ''; alarm.style.opacity = '1'; }
-
-    audio.onplay = () => {
-      laser?.classList.add('speaking');
-      if (spokenText && alarm) _typewriter(alarm, spokenText, 48);
-    };
+    audio.onplay  = () => laser?.classList.add('speaking');
     audio.onended = () => {
       laser?.classList.remove('speaking');
       URL.revokeObjectURL(url);
       _chj_speaking = false;
-      if (mainEl) mainEl.style.opacity = '';  // vrátit sleeping CSS
       setTimeout(() => goSleepListening(), 600);
     };
     audio.onerror = () => {
       laser?.classList.remove('speaking');
       URL.revokeObjectURL(url);
       _chj_speaking = false;
-      if (mainEl) mainEl.style.opacity = '';
     };
     audio.play().catch(e => { console.warn('[CHJ] recommend play blocked:', e); _chj_speaking = false; });
   } catch (e) {
@@ -1370,6 +1357,7 @@ async function _prewarmSources() {
 
 // Přečte první zdroj + otevře ho rovnou v modalu
 function _doSources() {
+  if (_chj_speaking) return; // nikdy neotevírat zatímco CHJ mluví
   const sources = _bioData?.sources || [];
 
   // Zavři HUD panel pokud je otevřený
