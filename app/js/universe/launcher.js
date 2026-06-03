@@ -343,7 +343,7 @@ const STYLE = `
 .chjl-nebula     { transition: opacity 1.8s ease; }
 .chjl-header     { transition: opacity 1.2s ease 0.8s; }  /* logo: po nebuле */
 .chjl-laser-wrap { transition: opacity 1.0s ease 1.4s; }  /* laser: po logu */
-.chjl-main       { transition: opacity 1.0s ease 2.0s; }  /* text: až po laseru */
+.chjl-main       { transition: opacity 0.6s ease; }  /* text: bez delay — hlas začíná hned */
 .chjl-footer     { transition: opacity 0.8s ease 2.2s; }  /* mic: poslední */
 
 /* Nebula orb */
@@ -611,12 +611,14 @@ function _playBriefingUrl(url, spokenText) {
 
   audio.onplay = () => {
     laser?.classList.add('speaking');
+    // Odkryj main okamžitě — přepíše CSS transition delay
+    const mainEl = document.getElementById('chj-launcher')?.querySelector('.chjl-main');
+    if (mainEl) mainEl.style.opacity = '1';
     if (spokenText) {
       const alarm = document.getElementById('chjAlarm');
       if (alarm) {
         alarm.textContent = '';
         alarm.style.opacity = '1';
-        // Pevný delay — duration z blob není spolehlivý před přehráváním
         _typewriter(alarm, spokenText, 48);
       }
     }
@@ -1308,11 +1310,10 @@ async function _doRecommend() {
     const alarm    = document.getElementById('chjAlarm');
     _chj_speaking  = true;
 
-    // Odkryj alarm (je skrytý ve sleeping stavu)
-    if (alarm) { alarm.textContent = ''; alarm.style.opacity = '1'; }
-    // Dočasně zobraz chjl-main přes inline styl (překryje sleeping CSS)
-    const mainEl = document.querySelector('.chjl-main');
+    // Odkryj main + alarm (skryté ve sleeping stavu)
+    const mainEl = document.getElementById('chj-launcher')?.querySelector('.chjl-main');
     if (mainEl) mainEl.style.opacity = '1';
+    if (alarm) { alarm.textContent = ''; alarm.style.opacity = '1'; }
 
     audio.onplay = () => {
       laser?.classList.add('speaking');
