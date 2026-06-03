@@ -293,8 +293,10 @@ async function _openNodeById(nodeId) {
   playWhoosh();
 
   if (isFirstLevel) {
-    // Stejné chování jako klik v canvasu — vždy openSubUniverse
-    openSubUniverse(DATA, node);
+    // Má-li děti → otevři sub-vesmír (jako dvojklik), pak panel
+    const hasChildren = DATA.some(n => n.parent === node.id);
+    if (hasChildren) openSubUniverse(DATA, node);
+    setTimeout(() => showPanel(node), hasChildren ? 350 : 0);
   } else {
     // Přepni canvas na podsíť rodiče (pokud ještě nejsme uvnitř)
     const { centerId } = getViewState();

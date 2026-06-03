@@ -527,6 +527,8 @@ const NODE_KEYWORDS = {
     'spanek':     'lh_regenerace',
     'spát':       'lh_regenerace',
     'odpočinek':  'lh_regenerace',
+    'zdraví':     'lh_regenerace',
+    'zdravi':     'lh_regenerace',
     'výživa':     'lh_vyziva',
     'výživu':     'lh_vyziva',
     'jídlo':      'lh_vyziva',
