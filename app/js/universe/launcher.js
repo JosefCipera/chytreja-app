@@ -605,6 +605,7 @@ function speakBriefing() {
 function _playBriefingUrl(url, spokenText) {
   if (_chj_speaking) return;
   _chj_speaking = true;
+  if (_recognition) { try { _recognition.stop(); } catch(_) {} _recognition = null; }
 
   const audio = new Audio(url);
   const laser = document.getElementById('chjLaser');
@@ -1280,7 +1281,7 @@ async function _handleCommand(text) {
 
 // "Co dál?" — zavolá API s bio kontextem, přehraje odpověď, vrátí do nebuly
 async function _doRecommend() {
-  // Zastav STT — zabrání echo triggeru z reproduktoru
+  _chj_speaking = true; // nastav HNED — blokuje echo triggery během celého fetch
   if (_recognition) { try { _recognition.stop(); } catch(_) {} _recognition = null; }
 
   const context = {
