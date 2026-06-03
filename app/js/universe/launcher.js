@@ -1250,11 +1250,14 @@ const RECOMMEND_PHRASES = ['co dál', 'co dal', 'co teď', 'co ted', 'co mám d�
   'co mam delat', 'poraď', 'porad', 'další krok', 'dalsi krok', 'co doporučuješ', 'co dal'];
 
 async function _handleCommand(text) {
+  // Ignoruj všechny příkazy dokud CHJ mluví (echo z reproduktoru)
+  if (_chj_speaking) return true;
+
   const t = text.toLowerCase().trim();
 
   // 1. "Co dál?" — multikriteriální doporučení
   if (RECOMMEND_PHRASES.some(kw => t.includes(kw))) {
-    if (!_chj_speaking) await _doRecommend();
+    await _doRecommend();
     return true;
   }
 
@@ -1275,6 +1278,9 @@ async function _handleCommand(text) {
 
 // "Co dál?" — zavolá API s bio kontextem, přehraje odpověď, vrátí do nebuly
 async function _doRecommend() {
+  // Zastav STT — zabrání echo triggeru z reproduktoru
+  if (_recognition) { try { _recognition.stop(); } catch(_) {} _recognition = null; }
+
   const context = {
     mode:        'recommend',
     hour:        new Date().getHours(),
