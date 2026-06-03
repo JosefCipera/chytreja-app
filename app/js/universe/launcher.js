@@ -331,6 +331,10 @@ const STYLE = `
   animation: chjl-mic-pulse 3s infinite ease-in-out;
 }
 
+/* Speaking override — text viditelný i ze sleep stavu */
+#chj-launcher.speaking .chjl-main   { opacity: 1 !important; pointer-events: all !important; }
+#chj-launcher.speaking .chjl-alarm  { opacity: 1 !important; }
+
 /* Sleep state — nebula visible, branding hidden */
 #chj-launcher.sleeping .chjl-footer     { opacity: 0 !important; pointer-events: none; }
 #chj-launcher.sleeping .chjl-laser-wrap { opacity: 0 !important; }
@@ -1304,23 +1308,30 @@ async function _doRecommend() {
       throw new Error(`TTS ${res.status}: ${d.detail || d.error || '?'}`);
     }
     const spokenText = decodeURIComponent(res.headers.get('X-CHJ-Text') || '');
-    const url   = URL.createObjectURL(await res.blob());
-    const audio = new Audio(url);
-    const laser = document.getElementById('chjLaser');
+    const url      = URL.createObjectURL(await res.blob());
+    const audio    = new Audio(url);
+    const laser    = document.getElementById('chjLaser');
+    const launcher = document.getElementById('chj-launcher');
 
-    audio.onplay  = () => laser?.classList.add('speaking');
-    audio.onended = () => {
+    const cleanup = () => {
       laser?.classList.remove('speaking');
-      URL.revokeObjectURL(url);
-      _chj_speaking = false;
-      setTimeout(() => goSleepListening(), 600);
-    };
-    audio.onerror = () => {
-      laser?.classList.remove('speaking');
+      launcher?.classList.remove('speaking');
       URL.revokeObjectURL(url);
       _chj_speaking = false;
     };
-    audio.play().catch(e => { console.warn('[CHJ] recommend play blocked:', e); _chj_speaking = false; });
+
+    audio.onplay = () => {
+      laser?.classList.add('speaking');
+      launcher?.classList.add('speaking'); // odkryje .chjl-main přes CSS override
+      const alarm = document.getElementById('chjAlarm');
+      if (alarm && spokenText) {
+        alarm.textContent = '';
+        _typewriter(alarm, spokenText, 48);
+      }
+    };
+    audio.onended = () => { cleanup(); setTimeout(() => goSleepListening(), 600); };
+    audio.onerror = () => cleanup();
+    audio.play().catch(e => { console.warn('[CHJ] recommend play blocked:', e); cleanup(); });
   } catch (e) {
     console.warn('[CHJ] _doRecommend failed:', e);
   }
