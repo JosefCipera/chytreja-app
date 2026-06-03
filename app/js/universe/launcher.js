@@ -1239,25 +1239,82 @@ function tryRoute(transcript) {
 }
 
 // ── Command handler ──────────────────────────────────────────────────────────
-const SOURCES_KEYWORDS = ['proč', 'proc', 'zdroje', 'zdroj', 'studie', 'víc', 'vic',
+const SOURCES_KEYWORDS  = ['proč', 'proc', 'zdroje', 'zdroj', 'studie', 'víc', 'vic',
   'řekni mi víc', 'rekni mi vic', 'důkaz', 'dukaz', 'odkud to víš', 'proc to'];
+
+const RECOMMEND_PHRASES = ['co dál', 'co dal', 'co teď', 'co ted', 'co mám dělat',
+  'co mam delat', 'poraď', 'porad', 'další krok', 'dalsi krok', 'co doporučuješ', 'co dal'];
 
 async function _handleCommand(text) {
   const t = text.toLowerCase().trim();
 
-  // 1. Zdroje
-  if (SOURCES_KEYWORDS.some(kw => t.includes(kw))) {
-    await _doSources();
+  // 1. "Co dál?" — multikriteriální doporučení
+  if (RECOMMEND_PHRASES.some(kw => t.includes(kw))) {
+    await _doRecommend();
     return true;
   }
 
-  // 2. Navigace na uzel (max 4 slova)
+  // 2. Zdroje
+  if (SOURCES_KEYWORDS.some(kw => t.includes(kw))) {
+    _doSources();
+    return true;
+  }
+
+  // 3. Navigace na uzel (max 4 slova)
   if (t.split(/\s+/).length <= 4) {
     if (tryRoute(t)) return true;
   }
 
-  // 3. Volné dotazy → AI (fallback)
+  // 4. Volné dotazy → AI (fallback)
   return false;
+}
+
+// "Co dál?" — zavolá API s bio kontextem, přehraje odpověď, vrátí do nebuly
+async function _doRecommend() {
+  const context = {
+    mode:        'recommend',
+    hour:        new Date().getHours(),
+    pct:         _bioData?.pct         ?? 50,
+    killer:      _bioData?.killer      ?? '',
+    description: _bioData?.description ?? '',
+    toc:         null, // TODO: TOC bottleneck až bude vrstva aktivní
+  };
+
+  try {
+    const res = await fetch('/api/tts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ context }),
+    });
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      throw new Error(`TTS ${res.status}: ${d.detail || d.error || '?'}`);
+    }
+    const spokenText = decodeURIComponent(res.headers.get('X-CHJ-Text') || '');
+    const url   = URL.createObjectURL(await res.blob());
+    const audio = new Audio(url);
+    const laser = document.getElementById('chjLaser');
+
+    audio.onplay  = () => {
+      laser?.classList.add('speaking');
+      if (spokenText) {
+        const alarm = document.getElementById('chjAlarm');
+        if (alarm) {
+          const delay = Math.max(20, Math.min(80, Math.floor(((audio.duration || 5) * 1000) / spokenText.length)));
+          _typewriter(alarm, spokenText, delay);
+        }
+      }
+    };
+    audio.onended = () => {
+      laser?.classList.remove('speaking');
+      URL.revokeObjectURL(url);
+      setTimeout(() => goSleepListening(), 600);
+    };
+    audio.onerror = () => { laser?.classList.remove('speaking'); URL.revokeObjectURL(url); };
+    audio.play().catch(e => console.warn('[CHJ] recommend play blocked:', e));
+  } catch (e) {
+    console.warn('[CHJ] _doRecommend failed:', e);
+  }
 }
 
 // Vrátí nejlepší zdroj (preferuj script_cz)

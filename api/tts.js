@@ -86,6 +86,63 @@ Jedna věta — situace + dopad na cíl + co udělat.`;
   return data.content?.[0]?.text?.trim() ?? '';
 }
 
+// ── "Co dál?" recommendation ─────────────────────────────────────────────────
+
+async function generateRecommendText(context) {
+  const { hour = new Date().getHours(), pct = 50, killer = '', description = '', toc = null } = context;
+
+  const timeLabel = hour < 9 ? 'ráno' : hour < 12 ? 'dopoledne' : hour < 17 ? 'odpoledne' : 'večer';
+  const energy = pct >= 70 ? 'vysoká' : pct >= 40 ? 'střední' : 'nízká';
+  const tocNote = toc?.bottleneck ? `\nByznysová priorita: ${toc.bottleneck}` : '';
+
+  const systemPrompt = `Jsi CHJ — digitální partner. Uživatel se ptá co má dělat dál.
+Máš k dispozici jeho aktuální stav a rozhoduješ co je teď nejdůležitější.
+Pravidla:
+- 1–2 věty, max 22 slov
+- Přirozená hovorová čeština, tykání
+- Doporuč JEDNU konkrétní akci — ne obecnou radu
+- Zohledni kognitivní kapacitu: nízká energie = lehčí úkol, ne mentální zátěž
+- Žádné formální obraty, žádné "je důležité"
+- Výstup: jen text, bez uvozovek
+
+Příklady:
+- (nízká energie, odpoledne) "Energie je dole, takže teď nejlíp uděláš krátkou procházku a pak se vrátíš k práci."
+- (vysoká energie, dopoledne) "Energie dobrá, dnes dopoledne je nejlepší čas na ten těžký úkol co odkládáš."
+- (střední energie, večer) "Dnešní den se chýlí ke konci, ulož co jsi stihl a připrav si zítra jeden cíl."`;
+
+  const userPrompt = `Denní doba: ${timeLabel}
+Energie uživatele: ${energy} (${pct} %)
+Bio hrdlo: ${description || killer || 'bez dat'}${tocNote}
+
+Co teď doporučíš?`;
+
+  const anthropicKey = process.env.ANTHROPIC_API_KEY;
+  if (!anthropicKey) throw new Error('ANTHROPIC_API_KEY not configured');
+
+  const aiRes = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'x-api-key': anthropicKey,
+      'anthropic-version': '2023-06-01',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'claude-haiku-4-5',
+      max_tokens: 80,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: userPrompt }],
+    }),
+  });
+
+  if (!aiRes.ok) {
+    const err = await aiRes.text();
+    throw new Error(`Claude error ${aiRes.status}: ${err}`);
+  }
+
+  const data = await aiRes.json();
+  return data.content?.[0]?.text?.trim() ?? '';
+}
+
 // ── Main handler ─────────────────────────────────────────────────────────────
 
 export default async function handler(req, res) {
@@ -109,11 +166,17 @@ export default async function handler(req, res) {
   let spokenText = text;
   if (!spokenText) {
     try {
-      spokenText = await generateBriefingText(context);
-      console.log('[TTS] AI briefing:', spokenText);
+      const mode = context?.mode || 'briefing';
+      if (mode === 'recommend') {
+        spokenText = await generateRecommendText(context);
+        console.log('[TTS] recommend:', spokenText);
+      } else {
+        spokenText = await generateBriefingText(context);
+        console.log('[TTS] briefing:', spokenText);
+      }
     } catch (err) {
       console.error('[TTS] AI generation failed:', err);
-      return res.status(502).json({ error: 'AI briefing generation failed', detail: err.message });
+      return res.status(502).json({ error: 'AI generation failed', detail: err.message });
     }
   }
 
