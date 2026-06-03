@@ -607,7 +607,12 @@ function _playBriefingUrl(url, spokenText) {
     laser?.classList.add('speaking');
     if (spokenText) {
       const alarm = document.getElementById('chjAlarm');
-      if (alarm) _typewriter(alarm, spokenText, 45);
+      if (alarm) {
+        // Syncni typewriter s délkou audia — finish together
+        const duration = audio.duration || 5;
+        const delay = Math.max(20, Math.min(80, Math.floor((duration * 1000) / spokenText.length)));
+        _typewriter(alarm, spokenText, delay);
+      }
     }
   };
   audio.onended = () => {
