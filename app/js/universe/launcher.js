@@ -603,29 +603,32 @@ function speakBriefing() {
 }
 
 function _playBriefingUrl(url, spokenText) {
+  if (_chj_speaking) return;
+  _chj_speaking = true;
+
   const audio = new Audio(url);
   const laser = document.getElementById('chjLaser');
 
-  audio.onloadedmetadata = () => {
+  audio.onplay = () => {
+    laser?.classList.add('speaking');
     if (spokenText) {
       const alarm = document.getElementById('chjAlarm');
       if (alarm) {
-        const dur = isFinite(audio.duration) ? audio.duration : 5;
-        const delay = Math.max(20, Math.min(80, Math.floor((dur * 1000) / spokenText.length)));
         alarm.textContent = '';
         alarm.style.opacity = '1';
-        _typewriter(alarm, spokenText, delay);
+        // Pevný delay — duration z blob není spolehlivý před přehráváním
+        _typewriter(alarm, spokenText, 48);
       }
     }
   };
-  audio.onplay  = () => laser?.classList.add('speaking');
   audio.onended = () => {
     laser?.classList.remove('speaking');
     URL.revokeObjectURL(url);
+    _chj_speaking = false;
     setTimeout(() => goSleepListening(), 800);
   };
-  audio.onerror = () => laser?.classList.remove('speaking');
-  audio.play().catch(e => console.warn('[TTS] play blocked:', e));
+  audio.onerror = () => { laser?.classList.remove('speaking'); _chj_speaking = false; };
+  audio.play().catch(e => { console.warn('[TTS] play blocked:', e); _chj_speaking = false; });
 }
 
 async function _fetchAndPlay() {
@@ -1292,35 +1295,35 @@ async function _doRecommend() {
       throw new Error(`TTS ${res.status}: ${d.detail || d.error || '?'}`);
     }
     const spokenText = decodeURIComponent(res.headers.get('X-CHJ-Text') || '');
-    const url   = URL.createObjectURL(await res.blob());
-    const audio = new Audio(url);
-    const laser = document.getElementById('chjLaser');
-    _chj_speaking = true;
+    const url      = URL.createObjectURL(await res.blob());
+    const audio    = new Audio(url);
+    const laser    = document.getElementById('chjLaser');
+    const launcher = document.getElementById('chj-launcher');
+    const alarm    = document.getElementById('chjAlarm');
+    _chj_speaking  = true;
 
-    // Načti metadata napřed → duration bude přesné
-    audio.onloadedmetadata = () => {
-      if (spokenText) {
-        const alarm = document.getElementById('chjAlarm');
-        if (alarm) {
-          const dur = isFinite(audio.duration) ? audio.duration : 5;
-          const delay = Math.max(20, Math.min(80, Math.floor((dur * 1000) / spokenText.length)));
-          alarm.textContent = '';
-          alarm.style.opacity = '1';
-          _typewriter(alarm, spokenText, delay);
-        }
-      }
+    // Odkryj alarm (je skrytý ve sleeping stavu)
+    if (alarm) { alarm.textContent = ''; alarm.style.opacity = '1'; }
+    // Dočasně zobraz chjl-main přes inline styl (překryje sleeping CSS)
+    const mainEl = document.querySelector('.chjl-main');
+    if (mainEl) mainEl.style.opacity = '1';
+
+    audio.onplay = () => {
+      laser?.classList.add('speaking');
+      if (spokenText && alarm) _typewriter(alarm, spokenText, 48);
     };
-    audio.onplay  = () => laser?.classList.add('speaking');
     audio.onended = () => {
       laser?.classList.remove('speaking');
       URL.revokeObjectURL(url);
       _chj_speaking = false;
+      if (mainEl) mainEl.style.opacity = '';  // vrátit sleeping CSS
       setTimeout(() => goSleepListening(), 600);
     };
     audio.onerror = () => {
       laser?.classList.remove('speaking');
       URL.revokeObjectURL(url);
       _chj_speaking = false;
+      if (mainEl) mainEl.style.opacity = '';
     };
     audio.play().catch(e => { console.warn('[CHJ] recommend play blocked:', e); _chj_speaking = false; });
   } catch (e) {
