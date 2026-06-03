@@ -332,8 +332,7 @@ const STYLE = `
 }
 
 /* Speaking override — text viditelný i ze sleep stavu */
-#chj-launcher.speaking .chjl-main   { opacity: 1 !important; pointer-events: all !important; }
-#chj-launcher.speaking .chjl-alarm  { opacity: 1 !important; }
+/* Musí být za sleep pravidly A mít vyšší specificitu (sleeping.speaking) */
 
 /* Sleep state — nebula visible, branding hidden */
 #chj-launcher.sleeping .chjl-footer     { opacity: 0 !important; pointer-events: none; }
@@ -342,6 +341,10 @@ const STYLE = `
 #chj-launcher.sleeping .chjl-main       { opacity: 0 !important; pointer-events: none; }
 #chj-launcher.sleeping .chjl-nebula     { opacity: 1; }
 #chj-launcher:not(.sleeping) .chjl-nebula { opacity: 0; pointer-events: none; }
+
+/* Speaking tijdens sleep — vyšší specificita než sleeping pravidla (stejná + .speaking) */
+#chj-launcher.sleeping.speaking .chjl-main  { opacity: 1 !important; pointer-events: all !important; }
+#chj-launcher.sleeping.speaking .chjl-alarm { opacity: 1 !important; transform: none !important; filter: none !important; }
 
 /* Plynulé přechody mezi stavy */
 .chjl-nebula     { transition: opacity 1.8s ease; }
