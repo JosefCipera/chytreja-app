@@ -586,6 +586,7 @@ let _briefingSpoken = false;
 let _briefingBlob = null;   // prefetchnutý audio blob (pro mobilní tap)
 let _briefingText = '';     // spoken text z X-CHJ-Text headeru
 let _sourcesBlob  = null;   // prefetchnutý blob pro sources odpověď
+let _chj_speaking = false;  // guard: zabrání dvojímu spuštění hlasu
 
 // ── ElevenLabs TTS ───────────────────────────────────────────────────────────
 function speakBriefing() {
@@ -605,22 +606,22 @@ function _playBriefingUrl(url, spokenText) {
   const audio = new Audio(url);
   const laser = document.getElementById('chjLaser');
 
-  audio.onplay  = () => {
-    laser?.classList.add('speaking');
+  audio.onloadedmetadata = () => {
     if (spokenText) {
       const alarm = document.getElementById('chjAlarm');
       if (alarm) {
-        // Syncni typewriter s délkou audia — finish together
-        const duration = audio.duration || 5;
-        const delay = Math.max(20, Math.min(80, Math.floor((duration * 1000) / spokenText.length)));
+        const dur = isFinite(audio.duration) ? audio.duration : 5;
+        const delay = Math.max(20, Math.min(80, Math.floor((dur * 1000) / spokenText.length)));
+        alarm.textContent = '';
+        alarm.style.opacity = '1';
         _typewriter(alarm, spokenText, delay);
       }
     }
   };
+  audio.onplay  = () => laser?.classList.add('speaking');
   audio.onended = () => {
     laser?.classList.remove('speaking');
     URL.revokeObjectURL(url);
-    // Hlas skončil → zpět do sleep, čekáme na hlasový povel
     setTimeout(() => goSleepListening(), 800);
   };
   audio.onerror = () => laser?.classList.remove('speaking');
@@ -1250,7 +1251,7 @@ async function _handleCommand(text) {
 
   // 1. "Co dál?" — multikriteriální doporučení
   if (RECOMMEND_PHRASES.some(kw => t.includes(kw))) {
-    await _doRecommend();
+    if (!_chj_speaking) await _doRecommend();
     return true;
   }
 
@@ -1294,24 +1295,34 @@ async function _doRecommend() {
     const url   = URL.createObjectURL(await res.blob());
     const audio = new Audio(url);
     const laser = document.getElementById('chjLaser');
+    _chj_speaking = true;
 
-    audio.onplay  = () => {
-      laser?.classList.add('speaking');
+    // Načti metadata napřed → duration bude přesné
+    audio.onloadedmetadata = () => {
       if (spokenText) {
         const alarm = document.getElementById('chjAlarm');
         if (alarm) {
-          const delay = Math.max(20, Math.min(80, Math.floor(((audio.duration || 5) * 1000) / spokenText.length)));
+          const dur = isFinite(audio.duration) ? audio.duration : 5;
+          const delay = Math.max(20, Math.min(80, Math.floor((dur * 1000) / spokenText.length)));
+          alarm.textContent = '';
+          alarm.style.opacity = '1';
           _typewriter(alarm, spokenText, delay);
         }
       }
     };
+    audio.onplay  = () => laser?.classList.add('speaking');
     audio.onended = () => {
       laser?.classList.remove('speaking');
       URL.revokeObjectURL(url);
+      _chj_speaking = false;
       setTimeout(() => goSleepListening(), 600);
     };
-    audio.onerror = () => { laser?.classList.remove('speaking'); URL.revokeObjectURL(url); };
-    audio.play().catch(e => console.warn('[CHJ] recommend play blocked:', e));
+    audio.onerror = () => {
+      laser?.classList.remove('speaking');
+      URL.revokeObjectURL(url);
+      _chj_speaking = false;
+    };
+    audio.play().catch(e => { console.warn('[CHJ] recommend play blocked:', e); _chj_speaking = false; });
   } catch (e) {
     console.warn('[CHJ] _doRecommend failed:', e);
   }
