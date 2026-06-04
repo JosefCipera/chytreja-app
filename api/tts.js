@@ -104,7 +104,7 @@ async function fetchBottleneck(userId) {
     .order('bottleneck_score', { ascending: false })
     .limit(1)
     .maybeSingle();
-  if (bn?.node_label) return bn;
+  if (bn?.node_label) { console.log('[TTS] bottleneck (view):', bn.node_label, bn.bottleneck_score); return bn; }
 
   // 2. Fallback — nejhorší RED/YELLOW uzel z user_metrics
   const { data: worst } = await supabase
@@ -124,11 +124,9 @@ async function fetchBottleneck(userId) {
     .eq('id', worst.node_id)
     .maybeSingle();
 
-  return {
-    node_label: node?.label || worst.node_id,
-    bottleneck_score: worst.current_index,
-    gap: null,
-  };
+  const result = { node_label: node?.label || worst.node_id, bottleneck_score: worst.current_index, gap: null };
+  console.log('[TTS] bottleneck (fallback):', result.node_label, result.bottleneck_score);
+  return result;
 }
 
 async function generateRecommendText(context) {
