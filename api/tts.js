@@ -88,31 +88,52 @@ Jedna věta — situace + dopad na cíl + co udělat.`;
 
 // ── "Co dál?" recommendation ─────────────────────────────────────────────────
 
+async function fetchBottleneck(userId) {
+  if (!userId) return null;
+  const { createClient } = await import('@supabase/supabase-js');
+  const supabase = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+  );
+  const { data } = await supabase
+    .from('user_bottlenecks')
+    .select('node_label, bottleneck_score, gap')
+    .eq('user_id', userId)
+    .order('bottleneck_score', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return data || null;
+}
+
 async function generateRecommendText(context) {
-  const { hour = new Date().getHours(), pct = 50, killer = '', description = '', toc = null } = context;
+  const { hour = new Date().getHours(), userId = null, goal = 'longevity', toc = null } = context;
+
+  const bottleneck = await fetchBottleneck(userId);
 
   const timeLabel = hour < 9 ? 'ráno' : hour < 12 ? 'dopoledne' : hour < 17 ? 'odpoledne' : 'večer';
-  const energy = pct >= 70 ? 'vysoká' : pct >= 40 ? 'střední' : 'nízká';
+  const goalLine = goal === 'longevity'
+    ? 'Globální cíl uživatele: žít déle a zdravěji (Medicine 3.0 / Longevity).'
+    : `Globální cíl uživatele: ${goal}.`;
+  const bottleneckLine = bottleneck?.node_label
+    ? `Aktuální bottleneck: ${bottleneck.node_label} (skóre ${Math.round((bottleneck.bottleneck_score ?? 0) * 100)} %).`
+    : 'Bez výrazného bottlenecku — tělo v pohodě.';
   const tocNote = toc?.bottleneck ? `\nByznysová priorita: ${toc.bottleneck}` : '';
 
-  const systemPrompt = `Jsi CHJ — digitální partner. Uživatel se ptá co má dělat dál.
-Máš k dispozici jeho aktuální stav a rozhoduješ co je teď nejdůležitější.
-Pravidla:
-- 1–2 věty, max 22 slov
-- Přirozená hovorová čeština, tykání
-- Doporuč JEDNU konkrétní akci — ne obecnou radu
-- Zohledni kognitivní kapacitu: nízká energie = lehčí úkol, ne mentální zátěž
-- Žádné formální obraty, žádné "je důležité"
-- Výstup: jen text, bez uvozovek
+  const systemPrompt = `Jsi CHJ — digitální partner pro zdraví a výkon. Uživatel se ptá co má dělat dál.
+Tvoje logika (TOC bottleneck-first):
+1. Najdi jediné hrdlo co teď brzdí uživatelův cíl.
+2. Doporuč jednu akci která hrdlo odblokuje nebo zmírní.
+3. Propoj odpověď s uživatelovým cílem — ne generická rada.
 
-Příklady:
-- (nízká energie, odpoledne) "Energie je dole, takže teď nejlíp uděláš krátkou procházku a pak se vrátíš k práci."
-- (vysoká energie, dopoledne) "Energie dobrá, dnes dopoledne je nejlepší čas na ten těžký úkol co odkládáš."
-- (střední energie, večer) "Dnešní den se chýlí ke konci, ulož co jsi stihl a připrav si zítra jeden cíl."`;
+Pravidla:
+- 1–2 věty, max 25 slov
+- Přirozená hovorová čeština, tykání
+- Výstup: jen text, bez uvozovek
+- Vyhýbej se pomlčce (—) uprostřed věty`;
 
   const userPrompt = `Denní doba: ${timeLabel}
-Energie uživatele: ${energy} (${pct} %)
-Bio hrdlo: ${description || killer || 'bez dat'}${tocNote}
+${goalLine}
+${bottleneckLine}${tocNote}
 
 Co teď doporučíš?`;
 

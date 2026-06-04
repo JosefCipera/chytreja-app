@@ -800,13 +800,13 @@ async function loadBioData() {
     const userId = await waitForUserId(8000);
     if (!userId) { showFallback(); return; }
 
-    // Launcher vždy zobrazuje BIO stav z Lehkosti (lh_main) — bio je základ bez ohledu na aktivní model.
+    // Launcher vždy zobrazuje BIO stav z Longevity (dlouhovekost) — Bio-Vesmír je základ.
     // currentModel se použije jen pro routing hlasových příkazů (viz tryRoute).
-    const url = `/api/hud-data-bulk?nodes=lh_main&userId=${userId}&universe=lehkost`;
+    const url = `/api/hud-data-bulk?nodes=dlouhovekost&userId=${userId}&universe=longevity`;
     const res = await fetch(url);
     if (!res.ok) throw new Error(`hud-data-bulk ${res.status}`);
     const bulk = await res.json();
-    const data = bulk.lh_main || {};
+    const data = bulk.dlouhovekost || {};
 
     // Debug — viditelné v konzoli (F12)
     console.log('[CHJ Launcher] bio data:', { url, uid: userId, killer: data.killer, pct: data.battery?.percent });
@@ -830,6 +830,7 @@ async function loadBioData() {
       actionType:     data.action?.type     || 'simple',
       actionDuration: data.action?.duration || 0,
       sources: data.sources || [],
+      userId,
       color:  pct > 70 ? '#22c55e' : pct > 40 ? '#eab308' : '#ef4444',
       gradient: pct > 70
         ? 'linear-gradient(90deg, #0d3820, #22c55e)'
@@ -1292,12 +1293,11 @@ async function _doRecommend() {
   if (_recognition) { try { _recognition.stop(); } catch(_) {} _recognition = null; }
 
   const context = {
-    mode:        'recommend',
-    hour:        new Date().getHours(),
-    pct:         _bioData?.pct         ?? 50,
-    killer:      _bioData?.killer      ?? '',
-    description: _bioData?.description ?? '',
-    toc:         null, // TODO: TOC bottleneck až bude vrstva aktivní
+    mode:   'recommend',
+    hour:   new Date().getHours(),
+    userId: _bioData?.userId ?? null,
+    goal:   'longevity',
+    toc:    null, // TODO: TOC bottleneck až bude vrstva aktivní
   };
 
   try {
