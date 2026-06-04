@@ -134,7 +134,9 @@ async function fetchBottleneck(userId, role) {
       .eq('id', worst.node_id)
       .maybeSingle();
 
-    const result = { node_label: node?.label || worst.node_id, bottleneck_score: worst.current_index, gap: null };
+    // current_index je 0–100 škála v DB — normalizuj na 0–1
+  const score = worst.current_index > 1 ? worst.current_index / 100 : worst.current_index;
+  const result = { node_label: node?.label || worst.node_id, bottleneck_score: score, gap: null };
     console.log('[TTS] bottleneck (fallback):', result.node_label, result.bottleneck_score);
     return result;
   } catch (e) {
