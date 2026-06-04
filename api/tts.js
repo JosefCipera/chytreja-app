@@ -65,13 +65,24 @@ Vyhýbej se pomlčce (—) uprostřed věty. Věty spojuj čárkou nebo spojkou.
 }
 
 async function generateBriefingText(context) {
-  const { description = '', action = '', streak = 0, role = 'longevity' } = context;
+  const { description = '', action = '', streak = 0, role = 'longevity', userId = null } = context;
   const streakNote = streak >= 3 ? ` Táhne to ${streak} dní v řadě.` : '';
 
   const systemPrompt = getBriefingSystemPrompt(role);
 
-  const userPrompt = `Situace: ${description || 'nejasný stav'}
-Co udělat: ${action || ''}${streakNote}
+  // Pro dekatlon: použij reálný bottleneck místo generic longevity description
+  let situace = description || 'nejasný stav';
+  let coUdelat = action || '';
+  if (role === 'dekatlon' && userId) {
+    const bn = await fetchBottleneck(userId, role);
+    if (bn?.node_label) {
+      situace = `${bn.node_label} zaostává nejvíc (skóre ${Math.round(bn.bottleneck_score * 100)} %)`;
+      coUdelat = coUdelat || `trénuj ${bn.node_label.toLowerCase()}`;
+    }
+  }
+
+  const userPrompt = `Situace: ${situace}
+Co udělat: ${coUdelat}${streakNote}
 
 Jedna věta — situace + dopad na cíl + co udělat.`;
 

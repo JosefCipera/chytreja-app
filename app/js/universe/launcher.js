@@ -672,12 +672,14 @@ async function _fetchAndPlay() {
 // Na mobilním tapu pak play() proběhne synchronně — iOS gesture context zachován.
 async function _prewarmBriefing() {
   try {
+    const role = localStorage.getItem('userRole') || 'longevity';
     const context = {
+      role,
+      userId:      _bioData?.userId      ?? null,
       killer:      _bioData?.killer      ?? 'energie',
       description: _bioData?.description ?? '',
       action:      _bioData?.action      ?? '',
       streak:      _bioData?.streak      ?? 0,
-      role:        localStorage.getItem('userRole') || 'longevity',
     };
     const res = await fetch('/api/tts', {
       method: 'POST',
