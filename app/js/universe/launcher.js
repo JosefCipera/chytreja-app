@@ -651,6 +651,7 @@ async function _fetchAndPlay() {
         description: _bioData?.description ?? '',
         action:      _bioData?.action      ?? '',
         streak:      _bioData?.streak      ?? 0,
+        role:        localStorage.getItem('userRole') || 'longevity',
       }}),
     });
     if (!res.ok) {
@@ -676,6 +677,7 @@ async function _prewarmBriefing() {
       description: _bioData?.description ?? '',
       action:      _bioData?.action      ?? '',
       streak:      _bioData?.streak      ?? 0,
+      role:        localStorage.getItem('userRole') || 'longevity',
     };
     const res = await fetch('/api/tts', {
       method: 'POST',
