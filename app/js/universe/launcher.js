@@ -816,8 +816,8 @@ function showAwake() {
   action.style.filter       = 'blur(14px)';
   action.style.pointerEvents = 'none';
 
-  // Footer schovaný — zobrazí se až po akci
-  document.getElementById('chjFooter').style.opacity = '0';
+  // Footer hned viditelný — uživatel může mluvit nebo psát
+  document.getElementById('chjFooter').style.opacity = '1';
 }
 
 function showAction() {
