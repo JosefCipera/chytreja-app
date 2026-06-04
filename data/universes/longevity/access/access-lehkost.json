@@ -1,0 +1,7 @@
+[
+  { "id": "dlouhovekost", "access": "full", "label": "Hra o lehkost" },
+  { "id": "vyziva",       "access": "full", "label": "Výživa" },
+  { "id": "kardio",       "access": "full", "label": "Pohyb" },
+  { "id": "spanek",       "access": "full", "label": "Regenerace" },
+  { "id": "mysl",         "access": "full", "label": "Mysl" }
+]

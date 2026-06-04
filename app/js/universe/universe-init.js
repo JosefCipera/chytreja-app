@@ -301,9 +301,11 @@ async function warmAgentCache() {
 
   // Respect previously saved model; fall back to first in index.json
   const _saved = localStorage.getItem('currentModel');
-  const modelName = (_saved && window.UNIVERSE_INDEX[_saved]) ? _saved : keys[0];
-  localStorage.setItem('currentModel', modelName);
+  let modelName = (_saved && window.UNIVERSE_INDEX[_saved]) ? _saved : keys[0];
   const role = await getUserMode();
+  // Lehkost je filtr/pohled na longevity — stejně jako dekatlon
+  if (role === 'lehkost' && modelName === 'lehkost') modelName = 'longevity';
+  localStorage.setItem('currentModel', modelName);
 
   await loadAndRenderModel(modelName, role);
   initHeaderControls();
@@ -435,17 +437,11 @@ async function loadAndRenderModel(modelName, role) {
     }, 700);
   }
 
-  // Lehkost: sync canvas colors + show check-in (same as model-switch handler)
-  if (modelName === 'lehkost') {
+  // Lehkost: show check-in modal (role-based, not model-based)
+  if (role === 'lehkost') {
     const uid = window.firebaseAuth?.currentUser?.uid;
     if (uid) {
-      // Immediately sync canvas colors from hud-data-bulk (overrides stale user_metrics)
-      syncLehkostCanvasStates(uid);
-
-      // Show check-in modal (onboarding check first)
       const _lhRefresh = () => {
-        const LH_IDS = ['lh_main','lh_vyziva','lh_pohyb','lh_mysl','lh_regenerace'];
-        LH_IDS.forEach(id => { if (window._hudCache) delete window._hudCache[id]; });
         if (window.refreshUniverseData) window.refreshUniverseData();
       };
       import('./lehkost-onboarding.js').then(async ({ checkLehkostOnboarding, showLehkostOnboarding }) => {
@@ -523,17 +519,17 @@ async function loadModel(modelName) {
       const LH_IDS  = new Set(['lh_main','lh_vyziva','lh_pohyb','lh_mysl','lh_regenerace']);
       const filteredNodes = modelName === 'longevity'
         ? nodes.filter(n => !TOC_IDS.has(n.id) && !LH_IDS.has(n.id))
-        : modelName === 'lehkost'
-        ? nodes.filter(n => LH_IDS.has(n.id))
         : nodes;
 
       console.log(`   ✓ Nodes: ${filteredNodes.length}`);
 
+      // Lehkost je filtr na longevity — metrics jsou v universe='longevity'
+      const metricsUniverse = (role === 'lehkost') ? 'longevity' : modelName;
       const { data: metrics, error: metricsError } = await window.supabaseClient
         .from('user_metrics')
         .select('*')
         .eq('user_id', userId)
-        .eq('universe', modelName);
+        .eq('universe', metricsUniverse);
 
       if (metricsError) throw metricsError;
       console.log(`   ✓ Metrics: ${metrics.length}`);
@@ -823,7 +819,7 @@ async function applyAccessModel(role, model, modelName) {
     const accessData = await res.json();
     const accessMap = new Map(accessData.map(n => [n.id, n]));
 
-    const defaultAccess = (role === 'demo' || role === 'free' || role === 'dekatlon') ? 'locked' : 'visible';
+    const defaultAccess = (role === 'demo' || role === 'free' || role === 'dekatlon' || role === 'lehkost') ? 'locked' : 'visible';
     model.forEach(n => {
       const entry = accessMap.get(n.id);
       n.access = (typeof entry === 'object' ? entry?.access : entry) || defaultAccess;
@@ -932,7 +928,7 @@ function initHeaderControls() {
   // "Skrýt šedé" toggle — visible only when role has locked nodes
   const hideGrayLabel = document.getElementById('hideGrayLabel');
   const hideGrayToggle = document.getElementById('hideGrayToggle');
-  const ROLES_WITH_GRAY = ['demo', 'free', 'dekatlon'];
+  const ROLES_WITH_GRAY = ['demo', 'free', 'dekatlon', 'lehkost'];
   function _syncHideGrayVisibility(role) {
     if (hideGrayLabel) hideGrayLabel.style.display = ROLES_WITH_GRAY.includes(role) ? 'flex' : 'none';
   }
