@@ -1358,7 +1358,7 @@ function onLauncherClick(e) {
   if (e.target.closest('#chjBtn,#chjMic,#chjInputWrap,#chjChips,#chjSrcsInline')) return;
   if (_phase === 'awake') {
     // Tap na awake — spusť STT pokud neprobíhá
-    if (!_chj_speaking) handleCmdMicClick();
+    if (!_chj_speaking) onMicClick();
   }
   else if (_phase === 'sleeping') {
     showAwake();
