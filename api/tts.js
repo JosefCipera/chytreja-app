@@ -95,14 +95,40 @@ async function fetchBottleneck(userId) {
     process.env.SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY
   );
-  const { data } = await supabase
+
+  // 1. Zkus user_bottlenecks (aspiration-weighted)
+  const { data: bn } = await supabase
     .from('user_bottlenecks')
     .select('node_label, bottleneck_score, gap')
     .eq('user_id', userId)
     .order('bottleneck_score', { ascending: false })
     .limit(1)
     .maybeSingle();
-  return data || null;
+  if (bn?.node_label) return bn;
+
+  // 2. Fallback — nejhorší RED/YELLOW uzel z user_metrics
+  const { data: worst } = await supabase
+    .from('user_metrics')
+    .select('node_id, current_index, state')
+    .eq('user_id', userId)
+    .in('state', ['RED', 'YELLOW'])
+    .order('current_index', { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  if (!worst) return null;
+
+  // Načti label z longevity_nodes
+  const { data: node } = await supabase
+    .from('longevity_nodes')
+    .select('label')
+    .eq('id', worst.node_id)
+    .maybeSingle();
+
+  return {
+    node_label: node?.label || worst.node_id,
+    bottleneck_score: worst.current_index,
+    gap: null,
+  };
 }
 
 async function generateRecommendText(context) {
