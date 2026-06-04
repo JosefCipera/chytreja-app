@@ -1119,15 +1119,16 @@ function listenOnce(cb) {
       if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
         mic.classList.remove('listening'); return;
       }
-      // no-speech / timeout → mic zůstane viditelný, uživatel klikne znovu
-      mic.classList.remove('listening');
+      // no-speech → restartuj automaticky pokud jsme stále awake
+      if (_phase === 'awake') setTimeout(() => attempt(tries - 1), 300);
+      else mic.classList.remove('listening');
     };
-    r.onend = () => { if (_recognition === r) { _recognition = null; mic.classList.remove('listening'); } };
+    r.onend = () => { if (_recognition === r) _recognition = null; };
     try { r.start(); } catch(err) { _recognition = null; mic.classList.remove('listening'); }
   }
 
   mic.classList.add('listening');
-  attempt(1);
+  attempt(8);
 }
 
 // Hlavní uzly pro každý model
