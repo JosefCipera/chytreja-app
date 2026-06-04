@@ -589,111 +589,12 @@ const NODE_KEYWORDS = {
 let _phase = 'loading'; // loading | awake | action | timer | sleeping
 let _bioData = null;    // { killer, pct, color, action, actionType, actionDuration, sources }
 let _recognition = null;
-let _briefingSpoken = false;
-let _briefingBlob = null;   // prefetchnutý audio blob (pro mobilní tap)
-let _briefingText = '';     // spoken text z X-CHJ-Text headeru
+// Briefing je on-demand — žádný auto-prewarm, uživatel iniciuje hlasem
 let _sourcesBlob  = null;   // prefetchnutý blob pro sources odpověď
 let _chj_speaking = false;  // guard: zabrání dvojímu spuštění hlasu
 
-// ── ElevenLabs TTS ───────────────────────────────────────────────────────────
-function speakBriefing() {
-  if (_briefingSpoken) return;
-  _briefingSpoken = true;
-
-  // Pokud prewarm stihl načíst blob → play() je synchronní → iOS ok
-  if (_briefingBlob) {
-    _playBriefingUrl(_briefingBlob, _briefingText);
-  } else {
-    // Prewarm ještě nedoběhl (pomalé připojení) → async fallback
-    _fetchAndPlay();
-  }
-}
-
-function _playBriefingUrl(url, spokenText) {
-  if (_chj_speaking) return;
-  _chj_speaking = true;
-  if (_recognition) { try { _recognition.stop(); } catch(_) {} _recognition = null; }
-
-  const audio = new Audio(url);
-  const laser = document.getElementById('chjLaser');
-
-  audio.onplay = () => {
-    laser?.classList.add('speaking');
-    // Odkryj main okamžitě — přepíše CSS transition delay
-    const mainEl = document.getElementById('chj-launcher')?.querySelector('.chjl-main');
-    if (mainEl) mainEl.style.opacity = '1';
-    if (spokenText) {
-      const alarm = document.getElementById('chjAlarm');
-      if (alarm) {
-        alarm.textContent = '';
-        alarm.style.opacity = '1';
-        _typewriter(alarm, spokenText, 48);
-      }
-    }
-  };
-  audio.onended = () => {
-    laser?.classList.remove('speaking');
-    URL.revokeObjectURL(url);
-    _chj_speaking = false;
-    setTimeout(() => goSleepListening(), 800);
-  };
-  audio.onerror = () => { laser?.classList.remove('speaking'); _chj_speaking = false; };
-  audio.play().catch(e => { console.warn('[TTS] play blocked:', e); _chj_speaking = false; });
-}
-
-async function _fetchAndPlay() {
-  try {
-    const res = await fetch('/api/tts', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ context: {
-        killer:      _bioData?.killer      ?? 'energie',
-        description: _bioData?.description ?? '',
-        action:      _bioData?.action      ?? '',
-        streak:      _bioData?.streak      ?? 0,
-        role:        localStorage.getItem('userRole') || 'longevity',
-      }}),
-    });
-    if (!res.ok) {
-      const d = await res.json().catch(() => ({}));
-      throw new Error(`TTS ${res.status}: ${d.detail || d.error || '?'}`);
-    }
-    const spokenText = decodeURIComponent(res.headers.get('X-CHJ-Text') || '');
-    const url = URL.createObjectURL(await res.blob());
-    _playBriefingUrl(url, spokenText);
-  } catch (e) {
-    console.warn('[TTS] _fetchAndPlay failed:', e);
-    _briefingSpoken = false;
-  }
-}
-
 // ── Briefing prewarm ─────────────────────────────────────────────────────────
-// Fetchne audio na pozadí hned po načtení bio dat.
-// Na mobilním tapu pak play() proběhne synchronně — iOS gesture context zachován.
-async function _prewarmBriefing() {
-  try {
-    const role = localStorage.getItem('userRole') || 'longevity';
-    const context = {
-      role,
-      userId:      _bioData?.userId      ?? null,
-      killer:      _bioData?.killer      ?? 'energie',
-      description: _bioData?.description ?? '',
-      action:      _bioData?.action      ?? '',
-      streak:      _bioData?.streak      ?? 0,
-    };
-    const res = await fetch('/api/tts', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ context }),
-    });
-    if (!res.ok) return;
-    _briefingText = decodeURIComponent(res.headers.get('X-CHJ-Text') || '');
-    _briefingBlob = URL.createObjectURL(await res.blob());
-    console.log('[CHJ] briefing prewarmed, text:', _briefingText);
-  } catch (e) {
-    console.warn('[CHJ] prewarm failed:', e);
-  }
-}
+// Briefing je on-demand — uživatel iniciuje hlasem. Prewarm jen načte bio data.
 
 // ── Typewriter ───────────────────────────────────────────────────────────────
 // _typewriter(el, text, charDelay) — píše znak po znaku do elementu
@@ -843,8 +744,7 @@ async function loadBioData() {
         : 'linear-gradient(90deg, #2d0808, #ef4444)',
     };
 
-    // Prefetchni audio na pozadí — ready na první tap
-    _prewarmBriefing();
+    // Bio data načtena — launcher čeká na uživatele (on-demand)
     _phase = 'sleeping';
   } catch (e) {
     console.warn('[CHJ Launcher] loadBioData failed:', e);
@@ -916,11 +816,8 @@ function showAwake() {
   action.style.filter       = 'blur(14px)';
   action.style.pointerEvents = 'none';
 
-  // Footer schovaný — zobrazí se až po hlasu (viz speakBriefing onended)
+  // Footer schovaný — zobrazí se až po akci
   document.getElementById('chjFooter').style.opacity = '0';
-
-  // Mluví na všech zařízeních — blob je prefetchnutý, play() je synchronní
-  speakBriefing();
 }
 
 function showAction() {
@@ -1460,11 +1357,10 @@ async function onTextSend() {
 function onLauncherClick(e) {
   if (e.target.closest('#chjBtn,#chjMic,#chjInputWrap,#chjChips,#chjSrcsInline')) return;
   if (_phase === 'awake') {
-    speakBriefing(); // Audio API — funguje na mobilu i bez gesture tricků
-    showAction();
+    // Tap na awake — spusť STT pokud neprobíhá
+    if (!_chj_speaking) handleCmdMicClick();
   }
   else if (_phase === 'sleeping') {
-    if (_briefingSpoken) return; // briefing byl přehrán — tap nic nedělá
     showAwake();
   }
   // 'action', 'timer', 'done' — klik nic nedělá
