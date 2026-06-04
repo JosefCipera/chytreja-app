@@ -1114,16 +1114,19 @@ function listenOnce(cb) {
       cb(t);
     };
     r.onerror = e => {
-      console.warn('[CHJ] STT:', e.error);
+      console.warn('[CHJ] STT error:', e.error);
       _recognition = null;
       if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
         mic.classList.remove('listening'); return;
       }
-      // no-speech → restartuj automaticky pokud jsme stále awake
-      if (_phase === 'awake') setTimeout(() => attempt(tries - 1), 300);
+    };
+    r.onend = () => {
+      if (_recognition !== r) return;
+      _recognition = null;
+      // Restart pokud nikdo nemluvil a jsme stále awake
+      if (_phase === 'awake') setTimeout(() => attempt(tries), 400);
       else mic.classList.remove('listening');
     };
-    r.onend = () => { if (_recognition === r) _recognition = null; };
     try { r.start(); } catch(err) { _recognition = null; mic.classList.remove('listening'); }
   }
 
