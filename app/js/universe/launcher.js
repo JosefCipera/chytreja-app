@@ -324,6 +324,7 @@ const STYLE = `
 #chj-launcher.sleeping .chjl-footer { opacity: 0; pointer-events: none; }
 #chj-launcher.sleeping.listening .chjl-footer { opacity: 1 !important; pointer-events: all; }
 #chj-launcher.sleeping:not(.listening) .chjl-mic { display: none !important; }
+#chj-launcher:not(.sleeping) .chjl-mic { display: flex !important; }
 #chj-launcher.sleeping.listening .chjl-mic {
   display: flex !important;
   width: 36px; height: 36px;
