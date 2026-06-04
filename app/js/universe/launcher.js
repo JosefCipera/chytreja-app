@@ -1359,7 +1359,7 @@ function onLauncherClick(e) {
   if (e.target.closest('#chjBtn,#chjMic,#chjInputWrap,#chjChips,#chjSrcsInline')) return;
   if (_phase === 'awake') {
     // Tap na awake — spusť STT pokud neprobíhá
-    if (!_chj_speaking) onMicClick();
+    if (!_chj_speaking) { if (_recognition) { try { _recognition.stop(); } catch(_) {} _recognition = null; } listenOnce(t => _handleCommand(t)); }
   }
   else if (_phase === 'sleeping') {
     showAwake();
