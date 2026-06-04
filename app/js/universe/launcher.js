@@ -1296,7 +1296,7 @@ async function _doRecommend() {
     mode:   'recommend',
     hour:   new Date().getHours(),
     userId: _bioData?.userId ?? null,
-    goal:   'longevity',
+    role:   localStorage.getItem('userRole') || 'longevity',
     toc:    null, // TODO: TOC bottleneck až bude vrstva aktivní
   };
 

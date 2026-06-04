@@ -88,56 +88,74 @@ Jedna věta — situace + dopad na cíl + co udělat.`;
 
 // ── "Co dál?" recommendation ─────────────────────────────────────────────────
 
-async function fetchBottleneck(userId) {
+// Dekatlon uzly — pod 'telo', mají data v user_metrics
+const DEKATLON_NODE_IDS = ['sila','stabilita','vo2max','kardio','mobilita','vytrvalost','rovnovaha','plyometrie','dychani'];
+
+async function fetchBottleneck(userId, role) {
   if (!userId) return null;
-  const { createClient } = await import('@supabase/supabase-js');
-  const supabase = createClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-  );
+  try {
+    const { createClient } = await import('@supabase/supabase-js');
+    const supabase = createClient(
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY
+    );
 
-  // 1. Zkus user_bottlenecks (aspiration-weighted)
-  const { data: bn } = await supabase
-    .from('user_bottlenecks')
-    .select('node_label, bottleneck_score, gap')
-    .eq('user_id', userId)
-    .order('bottleneck_score', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  if (bn?.node_label) { console.log('[TTS] bottleneck (view):', bn.node_label, bn.bottleneck_score); return bn; }
+    // 1. Zkus user_bottlenecks (aspiration-weighted)
+    const { data: bn } = await supabase
+      .from('user_bottlenecks')
+      .select('node_label, bottleneck_score, gap')
+      .eq('user_id', userId)
+      .order('bottleneck_score', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (bn?.node_label) { console.log('[TTS] bottleneck (view):', bn.node_label, bn.bottleneck_score); return bn; }
 
-  // 2. Fallback — nejhorší RED/YELLOW uzel z user_metrics
-  const { data: worst } = await supabase
-    .from('user_metrics')
-    .select('node_id, current_index, state')
-    .eq('user_id', userId)
-    .in('state', ['RED', 'YELLOW'])
-    .order('current_index', { ascending: true })
-    .limit(1)
-    .maybeSingle();
-  if (!worst) return null;
+    // 2. Fallback — nejhorší RED/YELLOW uzel z user_metrics
+    // Pro dekatlon filtruj jen dekatlon uzly kde máme skutečná data
+    let query = supabase
+      .from('user_metrics')
+      .select('node_id, current_index, state')
+      .eq('user_id', userId)
+      .in('state', ['RED', 'YELLOW'])
+      .order('current_index', { ascending: true })
+      .limit(1);
 
-  // Načti label z longevity_nodes
-  const { data: node } = await supabase
-    .from('longevity_nodes')
-    .select('label')
-    .eq('id', worst.node_id)
-    .maybeSingle();
+    if (role === 'dekatlon') {
+      query = query.in('node_id', DEKATLON_NODE_IDS);
+    }
 
-  const result = { node_label: node?.label || worst.node_id, bottleneck_score: worst.current_index, gap: null };
-  console.log('[TTS] bottleneck (fallback):', result.node_label, result.bottleneck_score);
-  return result;
+    const { data: worst } = await query.maybeSingle();
+    if (!worst) { console.log('[TTS] bottleneck: no data for user', userId, 'role', role); return null; }
+
+    // Načti label z longevity_nodes
+    const { data: node } = await supabase
+      .from('longevity_nodes')
+      .select('label')
+      .eq('id', worst.node_id)
+      .maybeSingle();
+
+    const result = { node_label: node?.label || worst.node_id, bottleneck_score: worst.current_index, gap: null };
+    console.log('[TTS] bottleneck (fallback):', result.node_label, result.bottleneck_score);
+    return result;
+  } catch (e) {
+    console.error('[TTS] fetchBottleneck error:', e.message);
+    return null;
+  }
+}
+
+// Popis kontextu vesmíru pro AI prompt
+function getUniverseContext(role) {
+  if (role === 'dekatlon') return 'Uživatel trénuje Dekatlon dlouhověkosti — 9 fyzických disciplín (síla, kardio, mobilita, VO2max, stabilita...). Cíl: být fyzicky zdatný ve vysokém věku.';
+  return 'Globální cíl uživatele: žít déle a zdravěji (Medicine 3.0 / Longevity).';
 }
 
 async function generateRecommendText(context) {
-  const { hour = new Date().getHours(), userId = null, goal = 'longevity', toc = null } = context;
+  const { hour = new Date().getHours(), userId = null, role = 'longevity', toc = null } = context;
 
-  const bottleneck = await fetchBottleneck(userId);
+  const bottleneck = await fetchBottleneck(userId, role);
 
   const timeLabel = hour < 9 ? 'ráno' : hour < 12 ? 'dopoledne' : hour < 17 ? 'odpoledne' : 'večer';
-  const goalLine = goal === 'longevity'
-    ? 'Globální cíl uživatele: žít déle a zdravěji (Medicine 3.0 / Longevity).'
-    : `Globální cíl uživatele: ${goal}.`;
+  const goalLine = getUniverseContext(role);
   const bottleneckLine = bottleneck?.node_label
     ? `Aktuální bottleneck: ${bottleneck.node_label} (skóre ${Math.round((bottleneck.bottleneck_score ?? 0) * 100)} %).`
     : 'Bez výrazného bottlenecku — tělo v pohodě.';
