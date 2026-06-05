@@ -229,7 +229,8 @@ Správné příklady:
 
 Špatné příklady — TAKTO NIKDY:
 - "Spánek je tvoje greatest weakness..." ← anglická fráze
-- "...tak si nedělej kofein a lehni si v devět." ← DVĚ akce, "a" spojuje dva povely
+- "...tak si postav budík na osm a zalehni v devět." ← DVĚ akce oddělené "a"
+- "...tak si nedělej kofein a lehni si v devět." ← DVĚ akce oddělené "a"
 - "Regenerace je tvoje greatest hitter..." ← anglická fráze`;
 
   const userPrompt = `Denní doba: ${timeLabel}

@@ -1137,7 +1137,8 @@ function listenOnce(cb) {
     r.onerror = e => {
       console.warn('[CHJ] STT error:', e.error);
       _recognition = null;
-      if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+      // aborted = ručně zastaveno (mic toggle) — nerestart
+      if (e.error === 'not-allowed' || e.error === 'service-not-allowed' || e.error === 'aborted') {
         mic.classList.remove('listening'); return;
       }
     };
