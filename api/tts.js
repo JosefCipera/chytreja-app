@@ -292,7 +292,7 @@ export default async function handler(req, res) {
       const mode = context?.mode || 'briefing';
       if (mode === 'recommend') {
         spokenText = await generateRecommendText(context);
-        console.log('[TTS] recommend:', spokenText);
+        console.log(`[TTS] recommend [role=${context.role||'?'} userId=${context.userId||'?'}]:`, spokenText);
       } else {
         spokenText = await generateBriefingText(context);
         console.log('[TTS] briefing:', spokenText);
