@@ -136,6 +136,7 @@ Jedna věta — situace + dopad na cíl + co udělat.`;
 
 // Dekatlon uzly — pod 'telo', mají data v user_metrics
 const DEKATLON_NODE_IDS = ['sila','stabilita','vo2max','kardio','mobilita','vytrvalost','rovnovaha','plyometrie','dychani'];
+const LEHKOST_NODE_IDS  = ['vyziva','kardio','spanek','mysl'];
 
 async function fetchBottleneck(userId, role) {
   if (!userId) return null;
@@ -168,6 +169,8 @@ async function fetchBottleneck(userId, role) {
 
     if (role === 'dekatlon') {
       query = query.in('node_id', DEKATLON_NODE_IDS);
+    } else if (role === 'lehkost') {
+      query = query.in('node_id', LEHKOST_NODE_IDS);
     }
 
     const { data: worst } = await query.maybeSingle();
@@ -205,8 +208,8 @@ async function generateRecommendText(context) {
   const timeLabel = hour < 9 ? 'ráno' : hour < 12 ? 'dopoledne' : hour < 17 ? 'odpoledne' : 'večer';
   const goalLine = getUniverseContext(role);
   const bottleneckLine = bottleneck?.node_label
-    ? `Aktuální bottleneck: ${bottleneck.node_label} (skóre ${Math.round((bottleneck.bottleneck_score ?? 0) * 100)} %).`
-    : 'Bez výrazného bottlenecku — tělo v pohodě.';
+    ? `Nejužší hrdlo (bottleneck): ${bottleneck.node_label} (skóre ${Math.round((bottleneck.bottleneck_score ?? 0) * 100)} %).`
+    : 'Bez výrazného hrdla — tělo v pohodě.';
   const tocNote = toc?.bottleneck ? `\nByznysová priorita: ${toc.bottleneck}` : '';
 
   const systemPrompt = `Jsi CHJ — osobní průvodce zdravím. Mluv přirozeně česky jako kamarád, ne jako asistent.
@@ -223,7 +226,7 @@ Pravidla:
 
 Správné příklady:
 - "Regenerace zaostává, tak dnes večer jdi na 20 minut klidné chůze."
-- "Spánek je teď tvoje největší hrdlo, takže dnes zalehni nejpozději v deset."
+- "Spánek je teď tvoje nejužší hrdlo, takže dnes zalehni nejpozději v deset."
 - "Kondice klesá, tak si dnes odpoledne dej 30 minut na kole."
 
 Špatné příklady (nedělej to):
