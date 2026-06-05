@@ -1074,7 +1074,14 @@ function routeToNode(nodeId) {
 function onMicClick(e) {
   e.stopPropagation();
   if (_phase === 'routing') return;
-  if (_recognition) { try { _recognition.stop(); } catch(_) {} _recognition = null; }
+  // Pokud poslouchá → vypni a usni (toggle)
+  const mic = document.getElementById('chjMic');
+  if (_recognition || mic?.classList.contains('listening')) {
+    if (_recognition) { try { _recognition.stop(); } catch(_) {} _recognition = null; }
+    mic?.classList.remove('listening');
+    goSleep();
+    return;
+  }
   listenOnce(transcript => _handleCommand(transcript));
 }
 
