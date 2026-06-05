@@ -413,7 +413,7 @@ async function loadAndRenderModel(modelName, role) {
 
   console.log(`🔄 Loading model: ${modelName} (access: ${role})`);
 
-  const model = await loadModel(modelName);
+  const model = await loadModel(modelName, role);
 
   if (!model || model.length === 0) {
     console.error("❌ No data loaded!");
@@ -495,7 +495,7 @@ async function loadAndRenderModel(modelName, role) {
 // =====================================================
 // 5) LOAD MODEL - HYBRID (Supabase + JSON)
 // =====================================================
-async function loadModel(modelName) {
+async function loadModel(modelName, role = 'longevity') {
   const modelConfig = window.UNIVERSE_INDEX?.[modelName];
   if (!modelConfig) return [];
 
