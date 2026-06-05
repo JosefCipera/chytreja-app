@@ -224,6 +224,7 @@ Pevná pravidla — každé porušení je chyba:
 
 Správné příklady:
 - "Spánek je teď tvoje nejslabší místo, tak dnes zalehni nejpozději v deset."
+- Budík: "nastav budík" — ne "postav budík"
 - "Regenerace zaostává, tak dnes večer jdi na 20 minut klidné chůze."
 - "Kondice klesá, tak si dnes odpoledne dej 30 minut na kole."
 
