@@ -1215,11 +1215,13 @@ async function _doRecommend() {
   _chj_speaking = true; // nastav HNED — blokuje echo triggery během celého fetch
   if (_recognition) { try { _recognition.stop(); } catch(_) {} _recognition = null; }
 
+  const _role = localStorage.getItem('userRole') || 'longevity';
+  console.log('[CHJ] _doRecommend role:', _role, '| userRoleOverride:', localStorage.getItem('userRoleOverride'));
   const context = {
     mode:   'recommend',
     hour:   new Date().getHours(),
     userId: _bioData?.userId ?? null,
-    role:   localStorage.getItem('userRole') || 'longevity',
+    role:   _role,
     toc:    null, // TODO: TOC bottleneck až bude vrstva aktivní
   };
 
