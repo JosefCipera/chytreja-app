@@ -162,29 +162,6 @@ function applyTocCascade(nodes, metricsMap) {
   return metricsMap;
 }
 
-// ── Lehkost: sync canvas node states from computed check-in indices ──
-// Calls hud-data-bulk for all lh_* nodes, applies battery.state to canvas.
-async function syncLehkostCanvasStates(userId) {
-  try {
-    const LH_IDS = 'lh_main,lh_vyziva,lh_pohyb,lh_mysl,lh_regenerace';
-    const res = await fetch(`/api/hud-data-bulk?nodes=${LH_IDS}&userId=${userId}&universe=lehkost`);
-    if (!res.ok) return;
-    const data = await res.json();
-    // Build metricsMap with computed indices — updateMetricsAndRedraw needs it populated
-    const metricsMap = new Map();
-    (window.MAIN_UNIVERSE_DATA || []).forEach(node => {
-      const nd = data[node.id];
-      if (!nd?.battery) return;
-      const idx = nd.battery.percent ?? 50;
-      node.current_index = idx;
-      node.state = idx <= 40 ? 'RED' : idx <= 70 ? 'YELLOW' : 'GREEN';
-      metricsMap.set(node.id, { current_index: idx });
-    });
-    if (metricsMap.size) updateMetricsAndRedraw(metricsMap);
-  } catch (e) {
-    console.warn('[CHJ] syncLehkostCanvasStates error:', e);
-  }
-}
 
 // ── Global refresh — called from HUD after completing action ──────
 // Updates metrics in-place + redraws without destroying/recreating the network
@@ -221,11 +198,6 @@ window.refreshUniverseData = async function() {
     // Update visible nodes + redraw (no network destroy)
     updateMetricsAndRedraw(metricsMap);
 
-    // Lehkost: override canvas states with computed check-in indices
-    // Must be awaited — otherwise updateMetricsAndRedraw (user_metrics) wins the race
-    if (window.CURRENT_MODEL === 'lehkost') {
-      await syncLehkostCanvasStates(userId);
-    }
 
   } catch (e) {
     console.warn('[CHJ] refreshUniverseData error:', e);

@@ -198,25 +198,25 @@ async function handleCheckin(req, res) {
     if (!valid.length) return 50; // default fallback
 
     switch (nodeId) {
-      case 'lh_pohyb': {
+      case 'kardio': {
         const withData = valid.filter(s => s.movement_level != null);
         if (!withData.length) return 50;
         const active = withData.filter(s => ['medium','high'].includes(s.movement_level)).length;
         return Math.round(active / withData.length * 100);
       }
-      case 'lh_vyziva': {
+      case 'vyziva': {
         const withData = valid.filter(s => s.binge != null);
         if (!withData.length) return 50;
         const clean = withData.filter(s => !s.binge).length;
         return Math.round(clean / withData.length * 100);
       }
-      case 'lh_mysl': {
+      case 'mysl': {
         const withData = valid.filter(s => s.stress != null);
         if (!withData.length) return 50;
         const avg = withData.reduce((a, s) => a + s.stress, 0) / withData.length;
         return Math.round(Math.max(0, (5 - avg) / 4 * 100));
       }
-      case 'lh_regenerace': {
+      case 'spanek': {
         const withData = valid.filter(s => s.sleep_hours != null).map(s => parseFloat(s.sleep_hours));
         if (!withData.length) return 50;
         const scores = withData.map(h => {
@@ -230,22 +230,25 @@ async function handleCheckin(req, res) {
     }
   }
 
-  const pohybIdx  = lhIndex('lh_pohyb');
-  const vyzivaIdx = lhIndex('lh_vyziva');
-  const myslIdx   = lhIndex('lh_mysl');
-  const regenIdx  = lhIndex('lh_regenerace');
+  const pohybIdx  = lhIndex('kardio');
+  const vyzivaIdx = lhIndex('vyziva');
+  const myslIdx   = lhIndex('mysl');
+  const regenIdx  = lhIndex('spanek');
   // lh_main = worst child (same as parent rule in Longevity)
   const mainIdx   = Math.min(pohybIdx, vyzivaIdx, myslIdx, regenIdx);
 
   const toState = i => i <= 40 ? 'RED' : i <= 70 ? 'YELLOW' : 'GREEN';
   const now = new Date().toISOString();
 
+  // Hubnutí (lehkost) → zapisuje do longevity uzlů
+  // Mapování: lh_pohyb→kardio, lh_vyziva→vyziva, lh_mysl→mysl, lh_regenerace→spanek
+  // dlouhovekost = worst child (hlavní uzel)
   await db.from('user_metrics').upsert([
-    { user_id: userId, node_id: 'lh_main',       universe: 'lehkost', current_index: mainIdx,   state: toState(mainIdx),   updated_at: now },
-    { user_id: userId, node_id: 'lh_vyziva',     universe: 'lehkost', current_index: vyzivaIdx, state: toState(vyzivaIdx), updated_at: now },
-    { user_id: userId, node_id: 'lh_pohyb',      universe: 'lehkost', current_index: pohybIdx,  state: toState(pohybIdx),  updated_at: now },
-    { user_id: userId, node_id: 'lh_regenerace', universe: 'lehkost', current_index: regenIdx,  state: toState(regenIdx),  updated_at: now },
-    { user_id: userId, node_id: 'lh_mysl',       universe: 'lehkost', current_index: myslIdx,   state: toState(myslIdx),   updated_at: now },
+    { user_id: userId, node_id: 'dlouhovekost', universe: 'longevity', current_index: mainIdx,   state: toState(mainIdx),   updated_at: now },
+    { user_id: userId, node_id: 'vyziva',       universe: 'longevity', current_index: vyzivaIdx, state: toState(vyzivaIdx), updated_at: now },
+    { user_id: userId, node_id: 'kardio',       universe: 'longevity', current_index: pohybIdx,  state: toState(pohybIdx),  updated_at: now },
+    { user_id: userId, node_id: 'spanek',       universe: 'longevity', current_index: regenIdx,  state: toState(regenIdx),  updated_at: now },
+    { user_id: userId, node_id: 'mysl',         universe: 'longevity', current_index: myslIdx,   state: toState(myslIdx),   updated_at: now },
   ], { onConflict: 'user_id,node_id,universe' });
 
   return res.json({ ok: true, body_flow: bf, indices: { main: mainIdx, pohyb: pohybIdx, vyziva: vyzivaIdx, mysl: myslIdx, regenerace: regenIdx } });
