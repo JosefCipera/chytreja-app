@@ -209,25 +209,32 @@ async function generateRecommendText(context) {
     : 'Bez výrazného bottlenecku — tělo v pohodě.';
   const tocNote = toc?.bottleneck ? `\nByznysová priorita: ${toc.bottleneck}` : '';
 
-  const systemPrompt = `Jsi CHJ — digitální partner pro zdraví a výkon. Uživatel se ptá co má dělat dál.
-Tvoje logika (TOC bottleneck-first):
-1. Aktuální bottleneck je jediné hrdlo — zmíň ho jménem v odpovědi.
-2. Doporuč JEDNU konkrétní akci která ho odblokuje.
-3. Propoj s cílem uživatele — ne generická rada.
+  const systemPrompt = `Jsi CHJ — osobní průvodce zdravím. Mluv přirozeně česky jako kamarád, ne jako asistent.
+Uživatel se ptá co má teď udělat. Řekneš mu jednu věc.
 
 Pravidla:
-- 1–2 věty, max 25 slov
-- Přirozená hovorová čeština, tykání
-- Výstup: jen text, bez uvozovek
-- Vyhýbej se pomlčce (—) uprostřed věty
+- JEDNA věta, max 20 slov
+- Čistá čeština — žádná anglická slova ani fráze
+- Pojmenuj bottleneck česky (Spánek, Regenerace, Kondice, Výživa...)
+- JEDNA konkrétní akce — ne dvě nebo tři
+- Přirozené sloveso: "jdi na procházku", "jdi do sauny", "lehni si", "sněz", "vypni"
+- Tykání, bez formálních obratů
+- Bez uvozovek, bez pomlčky uprostřed věty
 
-Příklad (bottleneck = VO2max): "VO2max je teď tvoje největší hrdlo, tak dnes večer zkus 20 minut svižné chůze nebo kolo."`;
+Správné příklady:
+- "Regenerace zaostává, tak dnes večer jdi na 20 minut klidné chůze."
+- "Spánek je teď tvoje největší hrdlo, takže dnes zalehni nejpozději v deset."
+- "Kondice klesá, tak si dnes odpoledne dej 30 minut na kole."
+
+Špatné příklady (nedělej to):
+- "Regenerace je tvoje greatest hitter..." ← anglická fráze
+- "...nebo saunuj, pak spánek o 22:00." ← dvě akce, "saunuj" není čeština`;
 
   const userPrompt = `Denní doba: ${timeLabel}
 ${goalLine}
 ${bottleneckLine}${tocNote}
 
-Co teď doporučíš?`;
+Jedna věta, jedna akce, čistá čeština:`;
 
   const anthropicKey = process.env.ANTHROPIC_API_KEY;
   if (!anthropicKey) throw new Error('ANTHROPIC_API_KEY not configured');
