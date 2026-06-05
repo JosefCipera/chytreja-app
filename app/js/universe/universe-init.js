@@ -211,8 +211,10 @@ window.refreshUniverseData = async function() {
       if (metric) {
         node.current_index = metric.current_index ?? node.current_index;
         const idx = node.current_index;
-        // idx === 0 means no real data — show GRAY, not RED
-        node.state = (idx === 0) ? 'GRAY' : idx <= 40 ? 'RED' : idx <= 70 ? 'YELLOW' : 'GREEN';
+        // Locked uzly zůstanou GRAY bez ohledu na data
+        if (node.access !== 'locked') {
+          node.state = (idx === 0) ? 'GRAY' : idx <= 40 ? 'RED' : idx <= 70 ? 'YELLOW' : 'GREEN';
+        }
       }
     });
 

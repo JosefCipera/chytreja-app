@@ -96,7 +96,9 @@ export function updateMetricsAndRedraw(metricsMap) {
     if (!metric) return;
     node.current_index = metric.current_index ?? node.current_index;
     const idx = node.current_index;
-    // Preserve GRAY (locked) for untouched nodes — only update if user has activity
+    // Preserve GRAY for locked nodes — access overrides data
+    if (node.access === 'locked') return;
+    // Only update if user has activity
     if (idx > 0 || node.state !== 'GRAY') {
       node.state = idx <= 40 ? 'RED' : idx <= 70 ? 'YELLOW' : 'GREEN';
     }
