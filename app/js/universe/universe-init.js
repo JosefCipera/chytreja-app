@@ -552,7 +552,12 @@ async function loadModel(modelName, role = 'longevity') {
         // Always derive state from current_index, never trust stored state column.
         // idx === 0 means "no data yet" (default) — show as GRAY, not RED.
         // Genuine RED nodes have idx > 0 and <= 40 from real measurements.
-        node.state = (!metric || idx === 0) ? 'GRAY' : idx <= 40 ? 'RED' : idx <= 70 ? 'YELLOW' : 'GREEN';
+        // Locked uzly zůstanou GRAY bez ohledu na data
+        if (node.access === 'locked') {
+          node.state = 'GRAY';
+        } else {
+          node.state = (!metric || idx === 0) ? 'GRAY' : idx <= 40 ? 'RED' : idx <= 70 ? 'YELLOW' : 'GREEN';
+        }
       });
 
       console.log("✅ Merged state into nodes");
@@ -692,7 +697,11 @@ async function loadModel(modelName, role = 'longevity') {
           const metric = metricsMap.get(node.id);
           const idx = metric?.current_index ?? 0;
           node.current_index = idx;
-          node.state = (!metric || idx === 0) ? 'GRAY' : idx <= 40 ? 'RED' : idx <= 70 ? 'YELLOW' : 'GREEN';
+          if (node.access === 'locked') {
+            node.state = 'GRAY';
+          } else {
+            node.state = (!metric || idx === 0) ? 'GRAY' : idx <= 40 ? 'RED' : idx <= 70 ? 'YELLOW' : 'GREEN';
+          }
         });
 
         // Cascade parent colors from worst child
