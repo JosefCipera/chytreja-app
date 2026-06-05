@@ -138,6 +138,22 @@ Jedna věta — situace + dopad na cíl + co udělat.`;
 const DEKATLON_NODE_IDS = ['sila','stabilita','vo2max','kardio','mobilita','vytrvalost','rovnovaha','plyometrie','dychani'];
 const LEHKOST_NODE_IDS  = ['vyziva','kardio','spanek','mysl'];
 
+// Killer riziko pro každý uzel — propojení s 4 zabijáky
+const NODE_KILLER_RISK = {
+  vo2max:       'Nízký VO2max je nejsilnější prediktor předčasné smrti ze všech měřitelných ukazatelů.',
+  kardio:       'Srdce bez pravidelné zátěže odejde dřív, než to čekáš.',
+  sila:         'Bez svalů srdce nemá co pohánět a metabolismus zpomaluje.',
+  stabilita:    'První pád ve vyšším věku spouští řetězec, který končí ztrátou pohybu.',
+  vytrvalost:   'Bez vytrvalosti srdce ztrácí rezervu, kterou jednou budeš potřebovat.',
+  mobilita:     'Ztráta mobility předchází ztrátě nezávislosti — mozek bez pohybu degeneruje.',
+  rovnovaha:    'Pád ve vyšším věku je jednou z hlavních příčin rychlého úpadku.',
+  plyometrie:   'Výbušná síla chrání srdce a udržuje svalovou hmotu do vysokého věku.',
+  dychani:      'Špatné dýchání snižuje okysličení mozku a zvyšuje kortizol.',
+  spanek:       'Bez spánku mozek ničí sám sebe a tělo neregeneruje.',
+  vyziva:       'Špatná strava ničí metabolismus dřív, než ho stačíš opravit.',
+  mysl:         'Chronický stres je tichý zabiják — kortizol ničí srdce i mozek.',
+};
+
 async function fetchBottleneck(userId, role) {
   if (!userId) return null;
   try {
@@ -150,7 +166,7 @@ async function fetchBottleneck(userId, role) {
     // 1. Zkus user_bottlenecks (aspiration-weighted)
     const { data: bn } = await supabase
       .from('user_bottlenecks')
-      .select('node_label, bottleneck_score, gap')
+      .select('node_id, node_label, bottleneck_score, gap')
       .eq('user_id', userId)
       .order('bottleneck_score', { ascending: false })
       .limit(1)
@@ -185,7 +201,7 @@ async function fetchBottleneck(userId, role) {
 
     // current_index je 0–100 škála v DB — normalizuj na 0–1
   const score = worst.current_index > 1 ? worst.current_index / 100 : worst.current_index;
-  const result = { node_label: node?.label || worst.node_id, bottleneck_score: score, gap: null };
+  const result = { node_id: worst.node_id, node_label: node?.label || worst.node_id, bottleneck_score: score, gap: null };
     console.log('[TTS] bottleneck (fallback):', result.node_label, result.bottleneck_score);
     return result;
   } catch (e) {
@@ -207,9 +223,10 @@ async function generateRecommendText(context) {
 
   const timeLabel = hour < 9 ? 'ráno' : hour < 12 ? 'dopoledne' : hour < 17 ? 'odpoledne' : 'večer';
   const goalLine = getUniverseContext(role);
+  const killerRisk = bottleneck?.node_id ? (NODE_KILLER_RISK[bottleneck.node_id] || '') : '';
   const bottleneckLine = bottleneck?.node_label
-    ? `Nejužší hrdlo (bottleneck): ${bottleneck.node_label} (skóre ${Math.round((bottleneck.bottleneck_score ?? 0) * 100)} %).`
-    : 'Bez výrazného hrdla — tělo v pohodě.';
+    ? `Nejslabší místo: ${bottleneck.node_label} (skóre ${Math.round((bottleneck.bottleneck_score ?? 0) * 100)} %).${killerRisk ? `\nRiziko: ${killerRisk}` : ''}`
+    : 'Bez výrazného slabého místa — tělo v pohodě.';
   const tocNote = toc?.bottleneck ? `\nByznysová priorita: ${toc.bottleneck}` : '';
 
   const systemPrompt = `Jsi CHJ — osobní průvodce zdravím. Mluv přirozeně česky jako kamarád, ne jako asistent.

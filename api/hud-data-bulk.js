@@ -18,6 +18,12 @@ const NODE_KILLERS = {
   kardio:       { label: 'SRDCE',        description: 'Srdce bez zátěže odejde dřív než čekáš.' },
   spanek:       { label: 'MOZEK',        description: 'Bez spánku mozek ničí sám sebe.' },
   dlouhovekost: { label: 'SRDCE',        description: 'Každý rok bez pohybu ti bere roky života.' },
+  vo2max:       { label: 'SRDCE',        description: 'Nízký VO2max je nejsilnější prediktor předčasné smrti ze všech měřitelných ukazatelů.' },
+  vytrvalost:   { label: 'SRDCE',        description: 'Bez vytrvalosti srdce ztrácí rezervu, kterou jednou budeš potřebovat.' },
+  mobilita:     { label: 'MOZEK',        description: 'Ztráta mobility předchází ztrátě nezávislosti — mozek bez pohybu degeneruje.' },
+  rovnovaha:    { label: 'MOZEK',        description: 'Pád ve vyšším věku je jednou z hlavních příčin rychlého úpadku.' },
+  plyometrie:   { label: 'SRDCE',        description: 'Výbušná síla chrání srdce a udržuje svalovou hmotu do vysokého věku.' },
+  dychani:      { label: 'MOZEK',        description: 'Špatné dýchání snižuje okysličení mozku a zvyšuje kortizol.' },
   // ── Lehkost uzly — FLOW KILLERS ─────────────────────────────────────────────
   lh_main:       { label: 'MALÝ POHYB',         description: 'Pohyb chybí — a tělo to registruje každý den.' },
   lh_vyziva:     { label: 'VEČERNÍ PŘEJÍDÁNÍ',  description: 'Jídlo po 20h zvyšuje tukovou zátěž.' },
