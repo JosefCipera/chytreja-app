@@ -791,15 +791,10 @@ function showAwake() {
   const launcher = document.getElementById('chj-launcher');
   launcher.classList.remove('sleeping', 'listening');
 
-  // Laser line — reset inline stylů, force reflow, pak animace
+  // Laser — schovaný dokud nevíme kontext povelu
   const laser = document.getElementById('chjLaser');
-  laser.style.width      = '';
-  laser.style.background = '';
-  laser.style.boxShadow  = '';
-  void laser.offsetWidth;
-  laser.style.width      = _bioData.pct + '%';
-  laser.style.background = _bioData.gradient;
-  laser.style.boxShadow  = `0 0 20px ${_bioData.color}, 0 0 8px ${_bioData.color}`;
+  laser.style.width     = '0%';
+  laser.style.boxShadow = 'none';
 
   // Alarm text — prázdný, vyplní ho typewriter ze spoken textu při onplay
   const alarm = document.getElementById('chjAlarm');
@@ -819,6 +814,19 @@ function showAwake() {
 
   // Footer hned viditelný — uživatel může mluvit nebo psát
   document.getElementById('chjFooter').style.opacity = '1';
+}
+
+// Zobrazí laser s kontextovou barvou — voláme až po zpracování povelu
+function showLaser(pct, color, gradient) {
+  const laser = document.getElementById('chjLaser');
+  if (!laser) return;
+  laser.style.width      = '';
+  laser.style.background = '';
+  laser.style.boxShadow  = '';
+  void laser.offsetWidth; // force reflow pro CSS transition
+  laser.style.width      = pct + '%';
+  laser.style.background = gradient;
+  laser.style.boxShadow  = `0 0 20px ${color}, 0 0 8px ${color}`;
 }
 
 function showAction() {
@@ -999,6 +1007,13 @@ function routeToNode(nodeId) {
   // Odstraň sleeping/listening před fade-out — zabrání CSS konfliktům
   launcher.classList.remove('sleeping', 'listening');
 
+  // Laser podle stavu cílového uzlu (pokud ho známe z bio dat)
+  // TOC a non-bio uzly → laser se nezobrazí
+  const isBioNode = nodeId && !nodeId.startsWith('toc') && !nodeId.startsWith('lh_');
+  if (isBioNode) {
+    showLaser(_bioData?.pct ?? 50, _bioData?.color ?? '#eab308', _bioData?.gradient ?? 'linear-gradient(90deg,#2d1f00,#eab308)');
+  }
+
   const doOpen = () => {
     if (nodeId && window._openNodeById) {
       window._openNodeById(nodeId);
@@ -1173,8 +1188,9 @@ async function _handleCommand(text) {
 
   const t = text.toLowerCase().trim();
 
-  // 1. "Co dál?" — multikriteriální doporučení
+  // 1. "Co dál?" — multikriteriální doporučení → laser = bio stav
   if (RECOMMEND_PHRASES.some(kw => t.includes(kw))) {
+    showLaser(_bioData?.pct ?? 50, _bioData?.color ?? '#eab308', _bioData?.gradient ?? 'linear-gradient(90deg,#2d1f00,#eab308)');
     await _doRecommend();
     return true;
   }
