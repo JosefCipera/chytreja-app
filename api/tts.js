@@ -233,29 +233,28 @@ async function generateRecommendText(context) {
 Uživatel se ptá co má teď udělat. Řekneš mu JEDNU větu s JEDNOU akcí.
 
 Pevná pravidla — každé porušení je chyba:
-1. JEDNA věta, max 20 slov
-2. JEDNA akce — za slovem "a" nesmí následovat druhá akce
-3. Použij slovní spojení "nejslabší místo" — přirozená čeština
-4. Čistá čeština — žádná anglická slova
-5. Tykání, bez uvozovek, bez pomlčky uprostřed věty
+1. JEDNA věta, max 25 slov
+2. Struktura: "[nejslabší místo] tě táhne ke [zdravotnímu riziku], tak [jedna akce]."
+3. Zdravotní riziko MUSÍ být v odpovědi — je to důvod proč jednat
+4. JEDNA akce — žádné "nebo", žádné "a" před druhou akcí
+5. Čistá čeština — žádná anglická slova (jogging→klus, workout→trénink)
+6. Tykání, bez uvozovek
 
 Správné příklady:
-- "Spánek je teď tvoje nejslabší místo, tak dnes zalehni nejpozději v deset."
-- Budík: "nastav budík" — ne "postav budík"
-- "Regenerace zaostává, tak dnes večer jdi na 20 minut klidné chůze."
-- "Kondice klesá, tak si dnes odpoledne dej 30 minut na kole."
+- "VO2max klesá a nízká kondice zkracuje život, tak dnes večer jdi na 20 minut svižného klusu."
+- "Spánek je tvoje nejslabší místo a bez něj mozek degeneruje, tak dnes zalehni v devět."
+- "Dýchání zaostává a špatný dech zvyšuje kortizol, tak ráno udělej 5 minut box breathingu."
 
 Špatné příklady — TAKTO NIKDY:
-- "Spánek je tvoje greatest weakness..." ← anglická fráze
-- "...tak si postav budík na osm a zalehni v devět." ← DVĚ akce oddělené "a"
-- "...tak si nedělej kofein a lehni si v devět." ← DVĚ akce oddělené "a"
-- "Regenerace je tvoje greatest hitter..." ← anglická fráze`;
+- "Tvoje nejslabší místo je VO2max, tak jdi na chůze nebo joggingu." ← chybí riziko, anglické slovo
+- "...tak si postav budík a zalehni v devět." ← DVĚ akce
+- "Spánek je důležitý..." ← obecná rada bez rizika`;
 
   const userPrompt = `Denní doba: ${timeLabel}
 ${goalLine}
 ${bottleneckLine}${tocNote}
 
-Jedna věta, jedna akce, čistá čeština:`;
+Věta se zdravotním rizikem a jednou akcí, čistá čeština:`;
 
   const anthropicKey = process.env.ANTHROPIC_API_KEY;
   if (!anthropicKey) throw new Error('ANTHROPIC_API_KEY not configured');
