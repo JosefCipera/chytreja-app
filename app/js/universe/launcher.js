@@ -1074,11 +1074,10 @@ function routeToNode(nodeId) {
 function onMicClick(e) {
   e.stopPropagation();
   if (_phase === 'routing') return;
-  // Pokud poslouchá → vypni a usni (toggle)
-  const mic = document.getElementById('chjMic');
-  if (_recognition || mic?.classList.contains('listening')) {
+  // Pokud jsme awake → vypni STT a usni (toggle)
+  if (_phase === 'awake') {
     if (_recognition) { try { _recognition.stop(); } catch(_) {} _recognition = null; }
-    mic?.classList.remove('listening');
+    document.getElementById('chjMic')?.classList.remove('listening');
     goSleep();
     return;
   }

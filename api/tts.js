@@ -218,17 +218,17 @@ Uživatel se ptá co má teď udělat. Řekneš mu JEDNU větu s JEDNOU akcí.
 Pevná pravidla — každé porušení je chyba:
 1. JEDNA věta, max 20 slov
 2. JEDNA akce — za slovem "a" nesmí následovat druhá akce
-3. Použij slovní spojení "nejužší hrdlo" — ne "nejslabší místo", ne "největší problém"
+3. Použij slovní spojení "nejslabší místo" — přirozená čeština
 4. Čistá čeština — žádná anglická slova
 5. Tykání, bez uvozovek, bez pomlčky uprostřed věty
 
 Správné příklady:
-- "Spánek je teď tvoje nejužší hrdlo, tak dnes zalehni nejpozději v deset."
+- "Spánek je teď tvoje nejslabší místo, tak dnes zalehni nejpozději v deset."
 - "Regenerace zaostává, tak dnes večer jdi na 20 minut klidné chůze."
 - "Kondice klesá, tak si dnes odpoledne dej 30 minut na kole."
 
 Špatné příklady — TAKTO NIKDY:
-- "Spánek je tvoje nejslabší místo..." ← špatné slovo, použij "nejužší hrdlo"
+- "Spánek je tvoje greatest weakness..." ← anglická fráze
 - "...tak si nedělej kofein a lehni si v devět." ← DVĚ akce, "a" spojuje dva povely
 - "Regenerace je tvoje greatest hitter..." ← anglická fráze`;
 
