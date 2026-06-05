@@ -6,7 +6,8 @@
             "modelFile": "../data/universes/longevity/models/longevity.json"
         },
         "lehkost": {
-            "label": "Chytré já",
+            "label": "Hubnutí",
+            "hidden": true,
             "useSupabase": true,
             "universe": "lehkost",
             "modelFile": "../data/universes/lehkost/models/lehkost.json"

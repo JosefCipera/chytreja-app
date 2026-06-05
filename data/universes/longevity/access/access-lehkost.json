@@ -1,5 +1,5 @@
 [
-  { "id": "dlouhovekost", "access": "full", "label": "Hra o lehkost" },
+  { "id": "dlouhovekost", "access": "full", "label": "Hra o hubnutí" },
   { "id": "vyziva",       "access": "full", "label": "Výživa" },
   { "id": "kardio",       "access": "full", "label": "Pohyb" },
   { "id": "spanek",       "access": "full", "label": "Regenerace" },

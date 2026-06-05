@@ -92,6 +92,7 @@ async function populateModelSelector() {
   if (!index) return;
 
   Object.entries(index)
+    .filter(([, cfg]) => !cfg.hidden)
     .forEach(([key, cfg]) => {
       const opt = document.createElement("option");
       opt.value = key;
