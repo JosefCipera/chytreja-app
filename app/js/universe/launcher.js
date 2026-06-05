@@ -1032,7 +1032,7 @@ function routeToNode(nodeId) {
 
   if (needsSwitch && window._loadAndRenderModel) {
     localStorage.setItem('currentModel', targetModel);
-    const role = localStorage.getItem('userRole') || 'demo';
+    const role = localStorage.getItem('userRoleOverride') || localStorage.getItem('userRole') || 'demo';
     window._loadAndRenderModel(targetModel, role).then(fadeOut).catch(fadeOut);
   } else {
     fadeOut();
@@ -1215,8 +1215,8 @@ async function _doRecommend() {
   _chj_speaking = true; // nastav HNED — blokuje echo triggery během celého fetch
   if (_recognition) { try { _recognition.stop(); } catch(_) {} _recognition = null; }
 
-  const _role = localStorage.getItem('userRole') || 'longevity';
-  console.log('[CHJ] _doRecommend role:', _role, '| userRoleOverride:', localStorage.getItem('userRoleOverride'));
+  const _role = localStorage.getItem('userRoleOverride') || localStorage.getItem('userRole') || 'longevity';
+  console.log('[CHJ] _doRecommend role:', _role);
   const context = {
     mode:   'recommend',
     hour:   new Date().getHours(),
