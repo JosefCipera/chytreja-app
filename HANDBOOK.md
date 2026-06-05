@@ -2,7 +2,7 @@
 
 > Technická dokumentace pro vývojáře a architekty.
 > Pro instrukce Claudovi → `CLAUDE.md`
-> Verze: v0.2.1 · Aktualizováno: 2026-05-09
+> Verze: v0.3.0 · Aktualizováno: 2026-06-05
 
 ---
 
@@ -14,13 +14,14 @@
 4. [Jádro vs Obsah](#4-jádro-vs-obsah)
 5. [Datový model](#5-datový-model)
 6. [Stavový systém](#6-stavový-systém)
-7. [Access model a role](#7-access-model-a-role)
-8. [Game Loop](#8-game-loop)
-9. [Vesmíry](#9-vesmíry)
-10. [API endpointy](#10-api-endpointy)
-11. [Vývojový workflow](#11-vývojový-workflow)
-12. [Pasti a anti-patterny](#12-pasti-a-anti-patterny)
-13. [Roadmapa](#13-roadmapa)
+7. [Launcher a Bio-Vesmír](#7-launcher-a-bio-vesmír-v03)
+8. [Access model a role](#8-access-model-a-role)
+9. [Game Loop](#9-game-loop)
+10. [Vesmíry](#10-vesmíry)
+11. [API endpointy](#11-api-endpointy)
+12. [Vývojový workflow](#12-vývojový-workflow)
+13. [Pasti a anti-patterny](#13-pasti-a-anti-patterny)
+14. [Roadmapa](#14-roadmapa)
 
 ---
 
@@ -170,7 +171,8 @@ chytreja-app/
 │       │   ├── models/
 │       │   │   └── longevity.json  ← Struktura uzlů vesmíru
 │       │   ├── access/
-│       │   │   ├── access-dekatlon.json
+│       │   │   ├── access-dekatlon.json  ← 9 fyzických disciplín
+│       │   │   ├── access-lehkost.json   ← Hubnutí (kardio, vyziva, spanek, mysl)
 │       │   │   ├── access-pro.json
 │       │   │   ├── access-free.json
 │       │   │   └── access-demo.json
@@ -374,17 +376,72 @@ Parent uzly berou barvu **nejhoršího potomka** na všech úrovních (worstLeaf
 
 ---
 
-## 7. Access model a role
+## 7. Launcher a Bio-Vesmír (v0.3)
+
+### Filozofie
+
+Launcher je **Zero-UI shell** — nebula čeká, uživatel iniciuje. Žádný automatický briefing.
+
+```
+Tap → showAwake() + STT spustí hned
+Hlas → tryRoute() → "co dál?" / specifický povel / fallback AI
+```
+
+### Bio-Vesmír — Single Source of Truth
+
+Launcher vždy načítá bio data z `dlouhovekost/longevity` bez ohledu na aktivní model.
+
+```js
+// launcher.js — loadBioData()
+const url = `/api/hud-data-bulk?nodes=dlouhovekost&userId=${userId}&universe=longevity`;
+```
+
+### "Co dál?" router (bottleneck-first)
+
+```
+fetchBottleneck(userId, role)
+  1. user_bottlenecks view (aspiration-weighted)
+  2. fallback: nejhorší RED/YELLOW uzel z user_metrics
+     - role=dekatlon → filtr na dekatlon uzly
+     - role=lehkost → filtr na longevity uzly (vyziva, kardio, spanek, mysl)
+
+generateRecommendText(context)
+  → getUniverseContext(role) → AI prompt s bottleneckem + cílem
+  → 1–2 věty, max 25 slov, bottleneck jménem
+```
+
+### STT chování
+
+- Tap → `showAwake()` + `listenOnce()` v jednom
+- `no-speech` → `onend` handler restartuje automaticky (dokud phase=awake)
+- Mic zůstane viditelný i po timeoutu
+
+---
+
+## 8. Access model a role
 
 ### Role
 
-| Role | Vesmír | Výchozí přístup (defaultAccess) |
-|------|--------|--------------------------------|
-| `longevity` | Dlouhověkost | `visible` |
-| `dekatlon` | Dlouhověkost | `locked` |
-| `pro` | Libovolný | `visible` |
-| `free` | Libovolný | `locked` |
-| `demo` | Libovolný | `locked` |
+| Role | Model (canvas) | Produkt (uživatel vidí) | defaultAccess |
+|------|---------------|------------------------|---------------|
+| `longevity` | longevity | Dlouhověkost (plný přístup) | `visible` |
+| `dekatlon` | longevity | Dekatlon | `locked` |
+| `lehkost` | longevity | Hubnutí | `locked` |
+| `pro` | libovolný | — | `visible` |
+| `free` | libovolný | — | `locked` |
+| `demo` | libovolný | Demo | `locked` |
+
+**Důležité:** `dekatlon` a `lehkost` jsou **filtry/pohledy na longevity model** — ne samostatné vesmíry. Sdílejí stejný canvas, stejné uzly, stejnou `user_metrics` tabulku s `universe='longevity'`.
+
+**Mapování lehkost → longevity uzly:**
+
+| Lehkost oblast | Longevity uzel | Label override |
+|----------------|---------------|---------------|
+| Pohyb | `kardio` | "Pohyb" |
+| Výživa | `vyziva` | — |
+| Regenerace | `spanek` | "Regenerace" |
+| Mysl | `mysl` | — |
+| Hlavní | `dlouhovekost` | "Hra o hubnutí" |
 
 ### Jak access model funguje
 
