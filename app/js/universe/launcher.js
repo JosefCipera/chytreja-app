@@ -1074,13 +1074,11 @@ function routeToNode(nodeId) {
 function onMicClick(e) {
   e.stopPropagation();
   if (_phase === 'routing') return;
-  // Pokud jsme awake → vypni STT a usni (toggle)
-  if (_phase === 'awake') {
-    if (_recognition) { try { _recognition.stop(); } catch(_) {} _recognition = null; }
-    document.getElementById('chjMic')?.classList.remove('listening');
-    goSleep();
-    return;
-  }
+  // Klik na mic = vždy zastav a usni (kromě routing)
+  if (_recognition) { try { _recognition.stop(); } catch(_) {} _recognition = null; }
+  document.getElementById('chjMic')?.classList.remove('listening');
+  goSleep();
+  return;
   listenOnce(transcript => _handleCommand(transcript));
 }
 

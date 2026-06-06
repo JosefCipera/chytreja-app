@@ -237,9 +237,12 @@ async function generateStatusText(context) {
   const { userId = null, role = 'longevity' } = context;
   const bottleneck = await fetchBottleneck(userId, role);
 
-  const killerRisk = bottleneck?.node_id ? (NODE_KILLER_RISK[bottleneck.node_id] || '') : '';
-  const bottleneckLabel = (bottleneck?.node_id && NODE_FRIENDLY_CZ[bottleneck.node_id])
-    || bottleneck?.node_label || null;
+  // node_id může chybět z user_bottlenecks view — zkus odvodit z node_label
+  const nodeId = bottleneck?.node_id
+    || Object.entries(NODE_FRIENDLY_CZ).find(([, v]) => v === bottleneck?.node_label)?.[0]
+    || null;
+  const killerRisk = nodeId ? (NODE_KILLER_RISK[nodeId] || '') : '';
+  const bottleneckLabel = (nodeId && NODE_FRIENDLY_CZ[nodeId]) || bottleneck?.node_label || null;
   const score = bottleneck ? Math.round((bottleneck.bottleneck_score ?? 0) * 100) : null;
 
   const systemPrompt = `Jsi CHJ — kamarád který říká pravdu bez příkras. Uživatel se ptá jak je na tom.
