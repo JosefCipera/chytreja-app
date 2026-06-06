@@ -136,6 +136,23 @@ Jedna věta — situace + dopad na cíl + co udělat.`;
 
 // Dekatlon uzly — pod 'telo', mají data v user_metrics
 const DEKATLON_NODE_IDS = ['sila','stabilita','vo2max','kardio','mobilita','vytrvalost','rovnovaha','plyometrie','dychani'];
+
+// Překlad technických názvů uzlů do srozumitelné češtiny pro uživatele
+const NODE_FRIENDLY_CZ = {
+  vo2max:     'aerobní kapacita (kondice srdce)',
+  kardio:     'kardio kondice',
+  sila:       'svalová síla',
+  stabilita:  'stabilita a koordinace',
+  mobilita:   'pohyblivost kloubů',
+  vytrvalost: 'vytrvalost',
+  rovnovaha:  'rovnováha',
+  plyometrie: 'výbušná síla',
+  dychani:    'dýchání',
+  spanek:     'spánek',
+  vyziva:     'výživa',
+  mysl:       'psychická odolnost',
+  dlouhovekost: 'celkové zdraví',
+};
 const LEHKOST_NODE_IDS  = ['vyziva','kardio','spanek','mysl'];
 
 // Killer riziko pro každý uzel — propojení s 4 zabijáky
@@ -221,7 +238,8 @@ async function generateStatusText(context) {
   const bottleneck = await fetchBottleneck(userId, role);
 
   const killerRisk = bottleneck?.node_id ? (NODE_KILLER_RISK[bottleneck.node_id] || '') : '';
-  const bottleneckLabel = bottleneck?.node_label || null;
+  const bottleneckLabel = (bottleneck?.node_id && NODE_FRIENDLY_CZ[bottleneck.node_id])
+    || bottleneck?.node_label || null;
   const score = bottleneck ? Math.round((bottleneck.bottleneck_score ?? 0) * 100) : null;
 
   const systemPrompt = `Jsi CHJ — kamarád který říká pravdu bez příkras. Uživatel se ptá jak je na tom.

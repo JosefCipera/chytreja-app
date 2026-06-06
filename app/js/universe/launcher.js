@@ -1277,9 +1277,12 @@ async function _doStatus() {
       laser?.classList.add('speaking');
       launcher?.classList.add('speaking');
       const alarm = document.getElementById('chjAlarm');
-      if (alarm && spokenText) { alarm.textContent = ''; _typewriter(alarm, spokenText, 48); }
+      if (alarm && spokenText) { alarm.textContent = ''; _typewriter(alarm, spokenText, 30); }
     };
     audio.onended = () => {
+      // Zobraz celý text okamžitě pokud typewriter nestíhal
+      const alarm = document.getElementById('chjAlarm');
+      if (alarm && spokenText && alarm.textContent.length < spokenText.length) alarm.textContent = spokenText;
       laser?.classList.remove('speaking');
       launcher?.classList.remove('speaking');
       URL.revokeObjectURL(url);
