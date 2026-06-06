@@ -1188,8 +1188,13 @@ const SOURCES_KEYWORDS  = ['proč', 'proc', 'zdroje', 'zdroj', 'studie', 'víc',
 
 const RECOMMEND_PHRASES = ['co dál', 'co dal', 'co teď', 'co ted', 'co mám dělat',
   'co mam delat', 'poraď', 'porad', 'další krok', 'dalsi krok', 'co doporučuješ', 'co dal'];
-const STATUS_PHRASES = ['jak jsem na tom', 'jak sem na tom', 'jak na tom jsem',
-  'jak se mám', 'jak se mam', 'můj stav', 'muj stav', 'přehled', 'prehled'];
+const STATUS_PHRASES = [
+  'jak jsem na tom', 'jak sem na tom', 'jak na tom jsem', 'jak na tom sem',
+  'jak se mám', 'jak se mam', 'jak se vedu', 'jak se vedu',
+  'můj stav', 'muj stav', 'přehled', 'prehled',
+  'jak jsem', 'jak sem', 'co je se mnou', 'co je se mnou',
+  'jak to vypadá', 'jak to vypada', 'stav těla', 'stav tela',
+];
 
 async function _handleCommand(text) {
   // Ignoruj všechny příkazy dokud CHJ mluví (echo z reproduktoru)
@@ -1222,8 +1227,25 @@ async function _handleCommand(text) {
     if (tryRoute(t)) return true;
   }
 
-  // 4. Volné dotazy → AI (fallback)
-  return false;
+  // 4. Neznámý povel → krátká odpověď a usni
+  _chj_speaking = true;
+  if (_recognition) { try { _recognition.stop(); } catch(_) {} _recognition = null; }
+  try {
+    const res = await fetch('/api/tts', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: 'To nevím. Zkus říct co dál nebo jak jsem na tom.' }),
+    });
+    if (res.ok) {
+      const url = URL.createObjectURL(await res.blob());
+      const audio = new Audio(url);
+      audio.onended = () => { URL.revokeObjectURL(url); _chj_speaking = false; setTimeout(() => goSleepListening(), 400); };
+      audio.onerror = () => { _chj_speaking = false; goSleepListening(); };
+      audio.play().catch(() => { _chj_speaking = false; goSleepListening(); });
+    } else {
+      _chj_speaking = false; goSleepListening();
+    }
+  } catch(e) { _chj_speaking = false; goSleepListening(); }
+  return true;
 }
 
 // "Jak jsem na tom?" — stav + killer, bez akce
