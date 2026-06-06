@@ -245,7 +245,8 @@ Správné příklady:
 
 Špatné příklady — TAKTO NIKDY:
 - "...tak jdi na chůzi nebo klus." ← dvě možnosti
-- "...tak si nastav budík a zalehni." ← dvě akce`;
+- "...tak si nastav budík a zalehni." ← dvě akce
+- "...tempem, kterým se stěží domluví." ← nesrozumitelná konstrukce, říkej "svižně" nebo "rychle"`;
 
   const userPrompt = `Denní doba: ${timeLabel}
 ${goalLine}
