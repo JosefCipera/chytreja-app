@@ -1188,6 +1188,8 @@ const SOURCES_KEYWORDS  = ['proč', 'proc', 'zdroje', 'zdroj', 'studie', 'víc',
 
 const RECOMMEND_PHRASES = ['co dál', 'co dal', 'co teď', 'co ted', 'co mám dělat',
   'co mam delat', 'poraď', 'porad', 'další krok', 'dalsi krok', 'co doporučuješ', 'co dal'];
+const STATUS_PHRASES = ['jak jsem na tom', 'jak sem na tom', 'jak na tom jsem',
+  'jak se mám', 'jak se mam', 'můj stav', 'muj stav', 'přehled', 'prehled'];
 
 async function _handleCommand(text) {
   // Ignoruj všechny příkazy dokud CHJ mluví (echo z reproduktoru)
@@ -1195,7 +1197,14 @@ async function _handleCommand(text) {
 
   const t = text.toLowerCase().trim();
 
-  // 1. "Co dál?" — multikriteriální doporučení → laser = bio stav
+  // 1. "Jak jsem na tom?" — stav + killer
+  if (STATUS_PHRASES.some(kw => t.includes(kw))) {
+    showLaser(_bioData?.pct ?? 50, _bioData?.color ?? '#eab308', _bioData?.gradient ?? 'linear-gradient(90deg,#2d1f00,#eab308)');
+    await _doStatus();
+    return true;
+  }
+
+  // 2. "Co dál?" — jedna akce
   if (RECOMMEND_PHRASES.some(kw => t.includes(kw))) {
     showLaser(_bioData?.pct ?? 50, _bioData?.color ?? '#eab308', _bioData?.gradient ?? 'linear-gradient(90deg,#2d1f00,#eab308)');
     await _doRecommend();
@@ -1215,6 +1224,52 @@ async function _handleCommand(text) {
 
   // 4. Volné dotazy → AI (fallback)
   return false;
+}
+
+// "Jak jsem na tom?" — stav + killer, bez akce
+async function _doStatus() {
+  _chj_speaking = true;
+  if (_recognition) { try { _recognition.stop(); } catch(_) {} _recognition = null; }
+
+  const _role = localStorage.getItem('userRoleOverride') || localStorage.getItem('userRole') || 'longevity';
+  const context = {
+    mode:   'status',
+    hour:   new Date().getHours(),
+    userId: _bioData?.userId ?? null,
+    role:   _role,
+  };
+
+  try {
+    const res = await fetch('/api/tts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ context }),
+    });
+    if (!res.ok) throw new Error(`TTS ${res.status}`);
+    const spokenText = decodeURIComponent(res.headers.get('X-CHJ-Text') || '');
+    const url = URL.createObjectURL(await res.blob());
+    const audio = new Audio(url);
+    const laser = document.getElementById('chjLaser');
+    const launcher = document.getElementById('chj-launcher');
+    audio.onplay = () => {
+      laser?.classList.add('speaking');
+      launcher?.classList.add('speaking');
+      const alarm = document.getElementById('chjAlarm');
+      if (alarm && spokenText) { alarm.textContent = ''; _typewriter(alarm, spokenText, 48); }
+    };
+    audio.onended = () => {
+      laser?.classList.remove('speaking');
+      launcher?.classList.remove('speaking');
+      URL.revokeObjectURL(url);
+      _chj_speaking = false;
+      setTimeout(() => goSleepListening(), 600);
+    };
+    audio.onerror = () => { laser?.classList.remove('speaking'); launcher?.classList.remove('speaking'); _chj_speaking = false; };
+    audio.play().catch(() => { _chj_speaking = false; });
+  } catch (e) {
+    console.warn('[CHJ] _doStatus failed:', e);
+    _chj_speaking = false;
+  }
 }
 
 // "Co dál?" — zavolá API s bio kontextem, přehraje odpověď, vrátí do nebuly

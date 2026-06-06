@@ -216,6 +216,47 @@ function getUniverseContext(role) {
   return 'Globální cíl uživatele: žít déle a zdravěji (Medicine 3.0 / Longevity).';
 }
 
+async function generateStatusText(context) {
+  const { userId = null, role = 'longevity' } = context;
+  const bottleneck = await fetchBottleneck(userId, role);
+
+  const killerRisk = bottleneck?.node_id ? (NODE_KILLER_RISK[bottleneck.node_id] || '') : '';
+  const bottleneckLabel = bottleneck?.node_label || null;
+  const score = bottleneck ? Math.round((bottleneck.bottleneck_score ?? 0) * 100) : null;
+
+  const systemPrompt = `Jsi CHJ — osobní průvodce zdravím. Uživatel se ptá jak je na tom.
+Řekneš mu JEDNU větu: pojmenuj jeho největší slabinu a proč je nebezpečná.
+BEZ akce — akci dostane až řekne "Co dál?".
+
+Pravidla:
+- JEDNA věta, max 20 slov
+- Čistá čeština, tykání
+- Zmiň konkrétní slabinu a zdravotní riziko které přináší
+- Bez uvozovek, bez anglicismů
+
+Příklady:
+- "VO2max je tvoje největší slabina a nízká kondice je nejsilnější prediktor předčasné smrti."
+- "Spánek ti ujíždí a bez regenerace mozek i srdce stárnou rychleji."
+- "Dýchání zaostává a špatný dech dlouhodobě zvyšuje kortizol a záněty."`;
+
+  const userPrompt = `Slabina: ${bottleneckLabel || 'neznámá'} (skóre ${score ?? '?'} %)
+Riziko: ${killerRisk || 'obecné zdravotní riziko'}
+
+Jedna věta — slabina + proč je nebezpečná:`;
+
+  const anthropicKey = process.env.ANTHROPIC_API_KEY;
+  if (!anthropicKey) throw new Error('ANTHROPIC_API_KEY not configured');
+
+  const aiRes = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'x-api-key': anthropicKey, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model: 'claude-haiku-4-5', max_tokens: 80, system: systemPrompt, messages: [{ role: 'user', content: userPrompt }] }),
+  });
+  if (!aiRes.ok) throw new Error(`Claude error ${aiRes.status}`);
+  const data = await aiRes.json();
+  return data.content?.[0]?.text?.trim() ?? '';
+}
+
 async function generateRecommendText(context) {
   const { hour = new Date().getHours(), userId = null, role = 'longevity', toc = null } = context;
 
@@ -308,6 +349,9 @@ export default async function handler(req, res) {
       if (mode === 'recommend') {
         spokenText = await generateRecommendText(context);
         console.log(`[TTS] recommend [role=${context.role||'?'} userId=${context.userId||'?'}]:`, spokenText);
+      } else if (mode === 'status') {
+        spokenText = await generateStatusText(context);
+        console.log(`[TTS] status [role=${context.role||'?'}]:`, spokenText);
       } else {
         spokenText = await generateBriefingText(context);
         console.log('[TTS] briefing:', spokenText);
