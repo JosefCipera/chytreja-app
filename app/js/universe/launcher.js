@@ -1237,12 +1237,10 @@ async function _handleCommand(text) {
     });
     if (res.ok) {
       const fallbackText = 'To nevím. Zkus říct co dál nebo jak jsem na tom.';
+      const alarm = document.getElementById('chjAlarm');
+      if (alarm) { alarm.textContent = ''; alarm.style.opacity = '1'; _typewriter(alarm, fallbackText, 30); }
       const url = URL.createObjectURL(await res.blob());
       const audio = new Audio(url);
-      audio.onplay = () => {
-        const alarm = document.getElementById('chjAlarm');
-        if (alarm) { alarm.textContent = ''; _typewriter(alarm, fallbackText, 30); }
-      };
       audio.onended = () => { URL.revokeObjectURL(url); _chj_speaking = false; setTimeout(() => goSleepListening(), 400); };
       audio.onerror = () => { _chj_speaking = false; goSleepListening(); };
       audio.play().catch(() => { _chj_speaking = false; goSleepListening(); });
