@@ -193,7 +193,35 @@ async function loadCRT() {
 }
 
 // ── SVG renderer — plná kontrola nad velikostí a pozicí ─────────────────────
-const BOX_W = 200, BOX_H = 72, R = 10; // box rozměry + border-radius
+const BOX_W = 210, R = 10;
+const FONT_SIZE = 14;
+const CHARS_PER_LINE = Math.floor((BOX_W - 28) / (FONT_SIZE * 0.58)); // ~28px padding
+
+// Rozdělí text na řádky tak aby nepřesáhl šířku boxu
+function wrapText(label) {
+  const lines = [];
+  // Nejdřív rozděl explicitní \n
+  label.split('\n').forEach(segment => {
+    const words = segment.split(' ');
+    let line = '';
+    words.forEach(word => {
+      if ((line + ' ' + word).trim().length > CHARS_PER_LINE) {
+        if (line) lines.push(line.trim());
+        line = word;
+      } else {
+        line = (line + ' ' + word).trim();
+      }
+    });
+    if (line) lines.push(line.trim());
+  });
+  return lines;
+}
+
+// Výška boxu podle počtu řádků
+function boxHeight(label) {
+  const lines = wrapText(label);
+  return Math.max(56, lines.length * (FONT_SIZE + 6) + 24);
+}
 
 const STATE_STYLE = {
   RED:    { fill: '#3d1a1a', stroke: '#e05252', text: '#f5a0a0' },
@@ -271,17 +299,16 @@ function renderTree(data) {
   data.edges.forEach(e => {
     const src = nodeMap[e.from], tgt = nodeMap[e.to];
     if (!src || !tgt) return;
-    // src má menší y šablony (dole) → větší SVG y; šipka jde nahoru
-    // Start: horní okraj src (cy - BOX_H/2), End: dolní okraj tgt (cy + BOX_H/2)
-    const x1 = cx(src.x ?? 0), y1 = cy(src.y ?? 0) - BOX_H / 2;
-    const x2 = cx(tgt.x ?? 0), y2 = cy(tgt.y ?? 0) + BOX_H / 2;
+    const srcH = boxHeight(src.label), tgtH = boxHeight(tgt.label);
+    const x1 = cx(src.x ?? 0), y1 = cy(src.y ?? 0) - srcH / 2;
+    const x2 = cx(tgt.x ?? 0), y2 = cy(tgt.y ?? 0) + tgtH / 2;
 
     // AND-join: šipka končí na elipse (12px nad středem elipsy)
     let endY = y2;
     if (andJoinTargets.has(e.to)) {
       const joinSrcs = AND_JOINS[e.to];
-      const avgSrcTopY = joinSrcs.reduce((s, id) => s + (cy(nodeMap[id]?.y ?? 0) - BOX_H/2), 0) / joinSrcs.length;
-      const tgtBottomY = cy(nodeMap[e.to]?.y ?? 0) + BOX_H / 2;
+      const avgSrcTopY = joinSrcs.reduce((s, id) => s + (cy(nodeMap[id]?.y ?? 0) - boxHeight(nodeMap[id]?.label||'')/2), 0) / joinSrcs.length;
+      const tgtBottomY = cy(nodeMap[e.to]?.y ?? 0) + boxHeight(nodeMap[e.to]?.label||'') / 2;
       endY = avgSrcTopY + (tgtBottomY - avgSrcTopY) * 0.5 - 12;
     }
 
@@ -301,8 +328,8 @@ function renderTree(data) {
     if (!tgt) return;
     const srcs = sourceIds.map(id => nodeMap[id]).filter(Boolean);
     // Elipsa přesně uprostřed mezi horním okrajem zdrojů a dolním okrajem cíle
-    const avgSrcTopY = srcs.reduce((s, n) => s + (cy(n.y ?? 0) - BOX_H/2), 0) / srcs.length;
-    const tgtBottomY = cy(tgt.y ?? 0) + BOX_H / 2;
+    const avgSrcTopY = srcs.reduce((s, n) => s + (cy(n.y ?? 0) - boxHeight(n.label)/2), 0) / srcs.length;
+    const tgtBottomY = cy(tgt.y ?? 0) + boxHeight(tgt.label) / 2;
     const ey = avgSrcTopY + (tgtBottomY - avgSrcTopY) * 0.5;
     const ex = cx(tgt.x ?? 0);
     svg.appendChild(svgEl('ellipse', {
@@ -314,29 +341,31 @@ function renderTree(data) {
   // ── Uzly (boxy) ──────────────────────────────────────────────────────────
   data.nodes.forEach(n => {
     const st   = n._type === 'golden_box' ? STATE_STYLE.GOLDEN : STATE_STYLE[n._state] || STATE_STYLE.GRAY;
-    const bx   = cx(n.x ?? 0) - BOX_W / 2;
-    const by   = cy(n.y ?? 0) - BOX_H / 2;
     const g    = svgEl('g', { class: 'crt-node', 'data-id': n.id, style: 'cursor:pointer' });
+
+    const lines = wrapText(n.label);
+    const bh   = boxHeight(n.label);
+    const lineH = FONT_SIZE + 6;
+    const bx   = cx(n.x ?? 0) - BOX_W / 2;
+    const by   = cy(n.y ?? 0) - bh / 2;
 
     // Box
     g.appendChild(svgEl('rect', {
-      x: bx, y: by, width: BOX_W, height: BOX_H, rx: R, ry: R,
+      x: bx, y: by, width: BOX_W, height: bh, rx: R, ry: R,
       fill: st.fill, stroke: st.stroke,
       'stroke-width': n._type === 'golden_box' ? '3' : n._type === 'ude' ? '2.5' : '1.5',
       'stroke-dasharray': n._type === 'ude' ? '6 3' : 'none',
     }));
 
-    // Text — rozdělení na řádky podle \n
-    const lines = n.label.split('\n');
-    const lineH = 20;
-    const totalH = lines.length * lineH;
-    const startY = by + BOX_H / 2 - totalH / 2 + lineH * 0.75;
+    // Text — zarovnaný do středu boxu
+    const totalTH = lines.length * lineH;
+    const startY  = by + bh / 2 - totalTH / 2 + lineH * 0.75;
     lines.forEach((line, i) => {
       g.appendChild(svgEl('text', {
         x: cx(n.x ?? 0), y: startY + i * lineH,
         'text-anchor': 'middle',
         fill: st.text,
-        'font-size': '15',
+        'font-size': String(FONT_SIZE),
         'font-family': 'Inter, Segoe UI, system-ui, sans-serif',
         'font-weight': n._type === 'golden_box' ? '600' : '400',
       }, line));
