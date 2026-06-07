@@ -213,18 +213,20 @@ function renderTree(data) {
       hierarchical: { enabled: false },  // ruční x,y souřadnice ze šablony
     },
     nodes: {
-      borderWidth:  1,
+      borderWidth:  2,
       borderWidthSelected: 3,
       shape:        'box',
-      widthConstraint: { minimum: 170, maximum: 230 },
-      margin:       { top: 14, right: 18, bottom: 14, left: 18 },
-      font:         { face: 'Inter, Segoe UI, system-ui', size: 14, multi: true },
+      widthConstraint: { minimum: 200, maximum: 260 },
+      heightConstraint: { minimum: 60 },
+      margin:       { top: 18, right: 22, bottom: 18, left: 22 },
+      font:         { face: 'Inter, Segoe UI, system-ui', size: 15, multi: true },
+      shapeProperties: { borderRadius: 8 },
     },
     edges: {
-      width:        1.5,
-      smooth:       { type: 'cubicBezier', roundness: 0.2 },
-      arrows:       { to: { enabled: true, scaleFactor: 0.8 } },
-      color:        { color: '#2a3d4d', highlight: '#5a8aaa', hover: '#5a8aaa' },
+      width:        2,
+      smooth:       { type: 'cubicBezier', roundness: 0.15 },
+      arrows:       { to: { enabled: true, scaleFactor: 0.9 } },
+      color:        { color: '#3a5060', highlight: '#5a8aaa', hover: '#5a8aaa' },
     },
     interaction: {
       hover:           true,
@@ -275,6 +277,37 @@ function renderTree(data) {
       window.location.href = `/?node=${node._node_id}`;
     }
   });
+
+  // AND-join elipsy — kreslíme SVG overlay na uzlech kam přicházejí 2+ hrany
+  const AND_JOINS = ['C1', 'C2', 'S1']; // uzly s více vstupy
+  function drawAndJoins() {
+    let svg = document.getElementById('crt-and-svg');
+    if (!svg) {
+      svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.id = 'crt-and-svg';
+      svg.style.cssText = 'position:absolute;inset:0;pointer-events:none;overflow:visible;';
+      container.style.position = 'relative';
+      container.appendChild(svg);
+    }
+    svg.innerHTML = '';
+    AND_JOINS.forEach(nodeId => {
+      const pos = network.getPositions([nodeId])[nodeId];
+      if (!pos) return;
+      const domPos = network.canvasToDOM(pos);
+      const el = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse');
+      el.setAttribute('cx', domPos.x);
+      el.setAttribute('cy', domPos.y + 38); // těsně pod uzlem
+      el.setAttribute('rx', 16);
+      el.setAttribute('ry', 8);
+      el.setAttribute('fill', '#1a2a3a');
+      el.setAttribute('stroke', '#4a7a8a');
+      el.setAttribute('stroke-width', '1.5');
+      svg.appendChild(el);
+    });
+  }
+  network.on('afterDrawing', drawAndJoins);
+  network.on('zoom', drawAndJoins);
+  network.on('dragEnd', drawAndJoins);
 
   // Fit po vykreslení
   setTimeout(() => network.fit({ animation: { duration: 600, easingFunction: 'easeInOutQuad' } }), 100);

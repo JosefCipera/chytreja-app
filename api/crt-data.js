@@ -56,7 +56,10 @@ export default async function handler(req, res) {
         .select('node_id, state, current_index')
         .eq('user_id', userId)
         .eq('universe', 'longevity');
-      if (data) data.forEach(m => { metricsMap[m.node_id] = m; });
+      if (data) {
+      data.forEach(m => { metricsMap[m.node_id] = m; });
+      console.log('[CRT] metrics found:', Object.keys(metricsMap), 'for userId:', userId);
+    }
     } catch (e) {
       console.error('[CRT] metrics fetch error:', e.message);
       // Pokračuj bez dat — uzly budou GRAY
