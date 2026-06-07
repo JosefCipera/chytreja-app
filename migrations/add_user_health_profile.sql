@@ -62,16 +62,14 @@ CREATE TRIGGER trg_uhp_updated
   FOR EACH ROW EXECUTE FUNCTION update_uhp_timestamp();
 
 -- =====================================================
--- Seed: Josef Cipera (pro demo/MVP)
--- Spustit ručně po vytvoření tabulky.
--- user_id = Firebase UID ze Supabase auth.
+-- Seed: Josef Cipera
+-- user_id: qE09cLyXXGRBRxOBCGNZqTM2XRW2
 -- =====================================================
-/*
 INSERT INTO user_health_profile (
   user_id, birth_year, height_cm, sex,
   diagnoses, medications, labs, goal_type, goal_text
 ) VALUES (
-  'DOPLNIT_FIREBASE_UID',
+  'qE09cLyXXGRBRxOBCGNZqTM2XRW2',
   1971, 182, 'male',
   '["Fibrilace síní (FaP)", "Chronický stres", "Hypertenze"]'::jsonb,
   '[
@@ -97,4 +95,3 @@ ON CONFLICT (user_id) DO UPDATE SET
   goal_type    = EXCLUDED.goal_type,
   goal_text    = EXCLUDED.goal_text,
   updated_at   = now();
-*/
