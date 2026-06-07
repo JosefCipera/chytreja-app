@@ -93,13 +93,15 @@ export default async function handler(req, res) {
     };
   });
 
+  // Edges: šablona má kořen→efekt, pro BT layout otočíme na efekt←kořen
+  // (šipka ukazuje nahoru: příčina dole, důsledek nahoře)
   const visEdges = template.edges.map((e, i) => ({
     id:     `e${i}`,
-    from:   e.from,
-    to:     e.to,
+    from:   e.from,   // nižší level (příčina)
+    to:     e.to,     // vyšší level (důsledek)
     arrows: { to: { enabled: true, scaleFactor: 0.7 } },
     color:  { color: '#3a4a5a', highlight: '#6a8aaa' },
-    smooth: { type: 'curvedCW', roundness: 0.1 },
+    smooth: { type: 'cubicBezier', forceDirection: 'vertical', roundness: 0.3 },
   }));
 
   res.setHeader('Cache-Control', 'no-store');
