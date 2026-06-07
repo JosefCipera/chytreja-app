@@ -249,12 +249,14 @@ function boxHeight(label) {
   return Math.max(56, lines.length * (FONT_SIZE + 6) + 24);
 }
 
+// Jednotný styl — bez barev podle stavu (matou, nemáme pro ně dost dat)
+const NODE_STYLE  = { fill: '#1a2535', stroke: '#3a5068', text: '#c8d8e8' };
+const GOLDEN_STYLE = { fill: '#7a5a00', stroke: '#f0c040', text: '#f8e080' };
+const UDE_STYLE   = { fill: '#1a2535', stroke: '#8ba8b8', text: '#e8f0f8' };
+// Zpětná kompatibilita — STATE_STYLE nevyužíváme
 const STATE_STYLE = {
-  RED:    { fill: '#3d1a1a', stroke: '#e05252', text: '#f5a0a0' },
-  YELLOW: { fill: '#3a2e0a', stroke: '#d4a017', text: '#f0d060' },
-  GREEN:  { fill: '#0f2d1a', stroke: '#3a9e5f', text: '#6ddb99' },
-  GRAY:   { fill: '#1a2535', stroke: '#3a5068', text: '#8ba8b8' },
-  GOLDEN: { fill: '#7a5a00', stroke: '#f0c040', text: '#f8e080' },
+  RED: NODE_STYLE, YELLOW: NODE_STYLE, GREEN: NODE_STYLE,
+  GRAY: NODE_STYLE, GOLDEN: GOLDEN_STYLE,
 };
 
 function svgEl(tag, attrs, text) {
@@ -366,7 +368,7 @@ function renderTree(data) {
 
   // ── Uzly (boxy) ──────────────────────────────────────────────────────────
   data.nodes.forEach(n => {
-    const st   = n._type === 'golden_box' ? STATE_STYLE.GOLDEN : STATE_STYLE[n._state] || STATE_STYLE.GRAY;
+    const st   = n._type === 'golden_box' ? GOLDEN_STYLE : n._type === 'ude' ? UDE_STYLE : NODE_STYLE;
     const g    = svgEl('g', { class: 'crt-node', 'data-id': n.id, style: 'cursor:pointer' });
 
     const lines = wrapText(n.label);
@@ -408,11 +410,6 @@ function renderTree(data) {
     const tooltip = document.getElementById('crtTooltip');
     g.addEventListener('mouseenter', e => {
       let html = `<strong>${n.label.replace(/\n/g, ' ')}</strong>`;
-      if (n._state && n._state !== 'GRAY') {
-        const sl = { RED: '🔴 Kritické', YELLOW: '🟡 Pozor', GREEN: '🟢 V pořádku' };
-        html += `<br>${sl[n._state]}`;
-      }
-      if (n._index != null) html += `<br>Skóre: ${n._index} %`;
       if (n._node_id) html += `<br><span style="color:#4a8a8a;font-size:11px">Klikni pro detail</span>`;
       tooltip.innerHTML = html;
       tooltip.style.display = 'block';
@@ -459,7 +456,7 @@ async function regenCRT() {
   document.getElementById('crtLoading').textContent = 'Generuji novou mapu…';
   document.getElementById('crtLoading').classList.remove('hidden');
   document.getElementById('crt-canvas').innerHTML = '';
-  document.getElementById('crtInjectionsBar').innerHTML = '';
+  document.getElementById('crtInjections').innerHTML = '';
   try {
     const data = await loadCRT(true);
     document.getElementById('crtLoading').classList.add('hidden');
