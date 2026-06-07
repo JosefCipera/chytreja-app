@@ -163,7 +163,10 @@
 
   <div class="crt-injections" id="crtInjections"></div>
 
-  <div class="crt-loading" id="crtLoading">Načítám kauzální mapu…</div>
+  <div class="crt-loading" id="crtLoading">
+    <div>Analyzuji tvá data a sestavuji kauzální mapu…</div>
+    <div style="font-size:11px;color:#3a5a6a;margin-top:8px">Claude generuje strom příčin</div>
+  </div>
 </div>
 
 <div class="crt-tooltip" id="crtTooltip"></div>
@@ -180,11 +183,12 @@ const userRole = localStorage.getItem('userRoleOverride') || localStorage.getIte
 
 // ── Fetch CRT data ───────────────────────────────────────────────────────────
 async function loadCRT() {
-  const params = new URLSearchParams({ role: userRole });
-  if (userId) params.set('userId', userId);
-
-  const res = await fetch(`/api/crt-data?${params}`);
-  if (!res.ok) throw new Error(`CRT API ${res.status}`);
+  const res = await fetch('/api/crt-generate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId, role: userRole }),
+  });
+  if (!res.ok) throw new Error(`CRT generate ${res.status}`);
   return res.json();
 }
 
@@ -252,14 +256,11 @@ function renderTree(data) {
     style: 'display:block;margin:0 auto;',
   });
 
-  // ── Defs: arrowheads per větev ───────────────────────────────────────────
-  const BRANCH_COLOR = { L: '#4a7ab0', R: '#b07a3a', C: '#4a8a6a' };
+  // ── Defs: arrowhead ──────────────────────────────────────────────────────
   const defs = svgEl('defs', {});
-  ['L','R','C'].forEach(b => {
-    const m = svgEl('marker', { id: `arrow-${b}`, markerWidth: '10', markerHeight: '7', refX: '9', refY: '3.5', orient: 'auto' });
-    m.appendChild(svgEl('polygon', { points: '0 0, 10 3.5, 0 7', fill: BRANCH_COLOR[b] }));
-    defs.appendChild(m);
-  });
+  const marker = svgEl('marker', { id: 'arrow', markerWidth: '10', markerHeight: '7', refX: '9', refY: '3.5', orient: 'auto' });
+  marker.appendChild(svgEl('polygon', { points: '0 0, 10 3.5, 0 7', fill: '#5a7890' }));
+  defs.appendChild(marker);
   svg.appendChild(defs);
 
   // AND-join mapa z dat
@@ -286,12 +287,10 @@ function renderTree(data) {
 
     const midY1 = y1 + (endY - y1) * 0.4;
     const midY2 = y1 + (endY - y1) * 0.6;
-    const branch = e.branch || 'C';
-    const strokeColor = BRANCH_COLOR[branch] || '#4a6878';
     const path = svgEl('path', {
       d: `M ${x1} ${y1} C ${x1} ${midY1}, ${x2} ${midY2}, ${x2} ${endY}`,
-      fill: 'none', stroke: strokeColor, 'stroke-width': '2.5',
-      'marker-end': `url(#arrow-${branch})`,
+      fill: 'none', stroke: '#4a6878', 'stroke-width': '2.5',
+      'marker-end': 'url(#arrow)',
     });
     svg.appendChild(path);
   });
