@@ -439,12 +439,15 @@ async function boot() {
   }
 }
 
-// Vystav funkce na window (kvůli onclick v HTML a type="module" scope)
-window.loadCRT   = loadCRT;
-window.renderTree = renderTree;
+// Vystav na window — onclick v HTML vyžaduje globální scope
+window._crtCacheKey  = CRT_CACHE_KEY;
+window._loadCRT      = loadCRT;
+window._renderTree   = renderTree;
 
 boot();
+</script>
 
+<script>
 function goBack() {
   if (window.opener) { window.close(); }
   else if (history.length > 1) { history.back(); }
@@ -455,15 +458,15 @@ async function regenCRT() {
   const btn = document.getElementById('crtRegenBtn');
   btn.textContent = '↻ Generuji…';
   btn.disabled = true;
-  localStorage.removeItem(window.CRT_CACHE_KEY);
+  localStorage.removeItem(window._crtCacheKey);
   document.getElementById('crtLoading').textContent = 'Generuji novou mapu…';
   document.getElementById('crtLoading').classList.remove('hidden');
   document.getElementById('crt-canvas').innerHTML = '';
   document.getElementById('crtInjections').innerHTML = '';
   try {
-    const data = await window.loadCRT(true);
+    const data = await window._loadCRT(true);
     document.getElementById('crtLoading').classList.add('hidden');
-    window.renderTree(data);
+    window._renderTree(data);
   } catch(e) {
     document.getElementById('crtLoading').textContent = 'Chyba: ' + e.message;
   }
