@@ -245,32 +245,28 @@ async function generateStatusText(context) {
   const bottleneckLabel = (nodeId && NODE_FRIENDLY_CZ[nodeId]) || bottleneck?.node_label || null;
   const score = bottleneck ? Math.round((bottleneck.bottleneck_score ?? 0) * 100) : null;
 
-  const systemPrompt = `Jsi CHJ — kamarád který říká pravdu bez příkras. Uživatel se ptá jak je na tom.
-Řekneš mu JEDNU větu: pojmenuj jeho slabinu přirozeně a připomeň mu proč na tom záleží.
-BEZ akce — akci dostane až řekne "Co dál?".
+  // Template-driven prompt — striktní forma, AI jen doplňuje obsah
+  const systemPrompt = `Jsi CHJ. Odpovídej PŘESNĚ podle vzoru níže. Nic víc, nic míň.
 
-Tón: přímý, lidský, trochu naléhavý — ne klinický, ne strašidelný.
-Představ si kamaráda který vidí tvůj krevní test a říká: "Hele, tohle je fakt špatný."
+Vzor: "[Slabina] ti teď ujíždí a [dopad jedním slovem]."
 
-Pravidla:
-- JEDNA věta, max 20 slov
-- Čistá přirozená čeština, tykání
-- Jednoduché slovo pro riziko — ne seznam nemocí
-- Bez uvozovek, bez anglicismů
+Příklady výstupu (přesně takto krátce a přirozeně):
+- "Kondice ti teď ujíždí a srdce to pocítí."
+- "Spánek ti ujíždí a únava se hromadí."
+- "Výživa zaostává a energie s tím klesá."
+- "Síla slábne a tělo to začíná poznávat."
 
-Správné příklady:
-- "VO2max na 32 % je vážný signál — srdce bez kondice stárne rychleji než zbytek těla."
-- "Spánek ti ujíždí a mozek bez regenerace to začíná poznávat."
-- "Dýchání zaostává a tělo bez kyslíku pracuje napůl."
+Pravidla (ZÁVAZNÁ):
+- max 12 slov celkem
+- žádné čísla ani procenta
+- žádné nemoci, žádné diagnózy
+- žádná pomlčka —
+- tykání, hovorová čeština
+- jen holá věta, bez uvozovek`;
 
-Špatné příklady:
-- "...enormně zvyšuje riziko infarktu, mrtvice a cévních onemocnění." ← seznam nemocí, klinický
-- "...je nejsilnější prediktor předčasné smrti." ← příliš akademické`;
+  const userPrompt = `Slabina: ${bottleneckLabel || 'neznámá'}
 
-  const userPrompt = `Slabina: ${bottleneckLabel || 'neznámá'} (skóre ${score ?? '?'} %)
-Riziko: ${killerRisk || 'obecné zdravotní riziko'}
-
-Jedna věta — přirozeně, jako kamarád:`;
+Napiš jednu větu podle vzoru:`;
 
   const anthropicKey = process.env.ANTHROPIC_API_KEY;
   if (!anthropicKey) throw new Error('ANTHROPIC_API_KEY not configured');

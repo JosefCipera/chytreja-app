@@ -1235,12 +1235,16 @@ async function _handleCommand(text) {
     });
     if (res.ok) {
       const fallbackText = 'To nevím. Zkus říct co dál nebo jak jsem na tom.';
-      const alarm = document.getElementById('chjAlarm');
-      if (alarm) { alarm.textContent = ''; alarm.style.opacity = '1'; _typewriter(alarm, fallbackText, 30); }
       const url = URL.createObjectURL(await res.blob());
       const audio = new Audio(url);
-      audio.onended = () => { URL.revokeObjectURL(url); _chj_speaking = false; setTimeout(() => goSleepListening(), 400); };
-      audio.onerror = () => { _chj_speaking = false; goSleepListening(); };
+      const launcher = document.getElementById('chj-launcher');
+      audio.onplay = () => {
+        launcher?.classList.add('speaking');
+        const alarm = document.getElementById('chjAlarm');
+        if (alarm) { alarm.textContent = ''; alarm.style.opacity = '1'; _typewriter(alarm, fallbackText, 30); }
+      };
+      audio.onended = () => { launcher?.classList.remove('speaking'); URL.revokeObjectURL(url); _chj_speaking = false; setTimeout(() => goSleepListening(), 400); };
+      audio.onerror = () => { launcher?.classList.remove('speaking'); _chj_speaking = false; goSleepListening(); };
       audio.play().catch(() => { _chj_speaking = false; goSleepListening(); });
     } else {
       _chj_speaking = false; goSleepListening();
