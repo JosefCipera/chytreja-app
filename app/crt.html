@@ -216,11 +216,11 @@ function renderTree(data) {
       borderWidth:  2,
       borderWidthSelected: 3,
       shape:        'box',
-      widthConstraint: { minimum: 200, maximum: 260 },
-      heightConstraint: { minimum: 60 },
-      margin:       { top: 18, right: 22, bottom: 18, left: 22 },
-      font:         { face: 'Inter, Segoe UI, system-ui', size: 15, multi: true },
-      shapeProperties: { borderRadius: 8 },
+      widthConstraint: { minimum: 210, maximum: 270 },
+      heightConstraint: { minimum: 70 },
+      margin:       { top: 20, right: 24, bottom: 20, left: 24 },
+      font:         { face: 'Inter, Segoe UI, system-ui', size: 17, multi: true },
+      shapeProperties: { borderRadius: 10 },
     },
     edges: {
       width:        2,
@@ -278,36 +278,52 @@ function renderTree(data) {
     }
   });
 
-  // AND-join elipsy — kreslíme SVG overlay na uzlech kam přicházejí 2+ hrany
-  const AND_JOINS = ['C1', 'C2', 'S1']; // uzly s více vstupy
+  // AND-join elipsy — v místě kde se sbíhají 2+ šipky do jednoho uzlu
+  // Pozice = střed mezi průměrem zdrojových uzlů a cílovým uzlem
+  const AND_JOIN_MAP = {
+    'C1': ['L3', 'R2'],   // Diastolický tlak ← Tuhé cévy + Stažení cév
+    'C2': ['L3', 'R3'],   // Mechanický tlak ← Tuhé cévy + Zvýšená dráždivost
+    'S1': ['C1', 'C2'],   // Extra systoly ← Diastolický + Mechanický
+  };
+
   function drawAndJoins() {
     let svg = document.getElementById('crt-and-svg');
     if (!svg) {
       svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
       svg.id = 'crt-and-svg';
-      svg.style.cssText = 'position:absolute;inset:0;pointer-events:none;overflow:visible;';
-      container.style.position = 'relative';
+      svg.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible;';
       container.appendChild(svg);
     }
     svg.innerHTML = '';
-    AND_JOINS.forEach(nodeId => {
-      const pos = network.getPositions([nodeId])[nodeId];
-      if (!pos) return;
-      const domPos = network.canvasToDOM(pos);
+    const positions = network.getPositions();
+
+    Object.entries(AND_JOIN_MAP).forEach(([targetId, sourceIds]) => {
+      const tPos = positions[targetId];
+      if (!tPos) return;
+      // Průměr zdrojových uzlů
+      const srcs = sourceIds.map(id => positions[id]).filter(Boolean);
+      if (srcs.length < 2) return;
+      const srcAvgY = srcs.reduce((s, p) => s + p.y, 0) / srcs.length;
+      const srcAvgX = srcs.reduce((s, p) => s + p.x, 0) / srcs.length;
+      // Střed mezi zdroji a cílem (v canvas souřadnicích)
+      const midCanvas = { x: (srcAvgX + tPos.x) / 2, y: (srcAvgY + tPos.y) / 2 };
+      const midDom = network.canvasToDOM(midCanvas);
+
       const el = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse');
-      el.setAttribute('cx', domPos.x);
-      el.setAttribute('cy', domPos.y + 38); // těsně pod uzlem
-      el.setAttribute('rx', 16);
-      el.setAttribute('ry', 8);
-      el.setAttribute('fill', '#1a2a3a');
-      el.setAttribute('stroke', '#4a7a8a');
-      el.setAttribute('stroke-width', '1.5');
+      el.setAttribute('cx', midDom.x);
+      el.setAttribute('cy', midDom.y);
+      el.setAttribute('rx', 22);
+      el.setAttribute('ry', 11);
+      el.setAttribute('fill', '#0f1e2e');
+      el.setAttribute('stroke', '#4a8a9a');
+      el.setAttribute('stroke-width', '2');
       svg.appendChild(el);
     });
   }
+
   network.on('afterDrawing', drawAndJoins);
-  network.on('zoom', drawAndJoins);
-  network.on('dragEnd', drawAndJoins);
+  network.on('zoom',         drawAndJoins);
+  network.on('dragEnd',      drawAndJoins);
 
   // Fit po vykreslení
   setTimeout(() => network.fit({ animation: { duration: 600, easingFunction: 'easeInOutQuad' } }), 100);

@@ -69,7 +69,13 @@ export default async function handler(req, res) {
   // Obohať uzly o barvy a vis.js styl
   const visNodes = template.nodes.map(n => {
     const metric = n.node_id ? metricsMap[n.node_id] : null;
-    const state  = metric?.state || 'GRAY';
+    // state z DB; fallback: odvoď z current_index pokud state chybí
+    let state = metric?.state;
+    if (!state && metric?.current_index != null) {
+      const idx = metric.current_index > 1 ? metric.current_index : metric.current_index * 100;
+      state = idx <= 0 ? 'GRAY' : idx <= 40 ? 'RED' : idx <= 70 ? 'YELLOW' : 'GREEN';
+    }
+    state = state || 'GRAY';
     const color  = n.type === 'golden_box'
       ? { background: '#7a5a00', border: '#f0c040', highlight: { background: '#9a7a00', border: '#f8d870' } }
       : { background: STATE_COLOR[state].bg, border: STATE_COLOR[state].border,
