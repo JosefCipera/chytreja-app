@@ -369,7 +369,8 @@ function renderTree(data) {
 
   // ── Uzly (boxy) ──────────────────────────────────────────────────────────
   data.nodes.forEach(n => {
-    const st   = n._type === 'golden_box' ? GOLDEN_STYLE : n._type === 'ude' ? UDE_STYLE : NODE_STYLE;
+    const ntype = n._type || n.type || 'cause';
+    const st   = ntype === 'golden_box' ? GOLDEN_STYLE : ntype === 'ude' ? UDE_STYLE : NODE_STYLE;
     const g    = svgEl('g', { class: 'crt-node', 'data-id': n.id, style: 'cursor:pointer' });
 
     const lines = wrapText(n.label);
@@ -382,8 +383,8 @@ function renderTree(data) {
     g.appendChild(svgEl('rect', {
       x: bx, y: by, width: BOX_W, height: bh, rx: R, ry: R,
       fill: st.fill, stroke: st.stroke,
-      'stroke-width': n._type === 'golden_box' ? '3' : n._type === 'ude' ? '2.5' : '1.5',
-      'stroke-dasharray': n._type === 'ude' ? '6 3' : 'none',
+      'stroke-width': ntype === 'golden_box' ? '3' : ntype === 'ude' ? '2.5' : '1.5',
+      'stroke-dasharray': ntype === 'ude' ? '6 3' : 'none',
     }));
 
     // Text — zarovnaný do středu boxu

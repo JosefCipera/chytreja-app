@@ -165,8 +165,17 @@ POSLEDNÍ CHECK-INY:
 ${checkinText}
 
 Na základě diagnóz a dat sestav CRT: najdi jednu kořenovou příčinu, dvě kauzální větve (L a R), junction uzly kde se větve sbíhají, a 1–2 UDE nahoře.
-UDE musí odpovídat skutečným diagnózám uživatele (ne obecným frázím).
-Injections musí respektovat léky a omezení (např. antikoagulancia → žádný kontaktní sport).
+
+Pravidla pro UDE:
+- Pokud má uživatel diagnózu Fibrilace síní (FaP), MUSÍ být FaP nejvyšší UDE (type=ude, nejvyšší level)
+- Extrasystoly jsou junction uzel těsně pod FaP (type=junction), ne UDE
+- Hypertenze je příčina (type=cause), ne UDE
+
+Pravidla pro injections:
+- PRVNÍ injections jsou vždy léky z profilu uživatele (Torvacard, Pradaxa, Kalnormin...)
+- Pak 1–2 životní intervence (pohyb, dech, strava)
+- Celkem max 4 injections
+
 Strom musí mít 8–11 uzlů celkem (root + nodes). Vrať pouze JSON.`;
 
   const res = await fetch('https://api.anthropic.com/v1/messages', {
