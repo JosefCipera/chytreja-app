@@ -214,16 +214,16 @@ function renderTree(data) {
     },
     nodes: {
       borderWidth:  1,
-      borderWidthSelected: 2,
+      borderWidthSelected: 3,
       shape:        'box',
-      widthConstraint: { minimum: 140, maximum: 200 },
-      margin:       { top: 12, right: 14, bottom: 12, left: 14 },
-      font:         { face: 'Inter, Segoe UI, system-ui', size: 13, multi: true },
+      widthConstraint: { minimum: 170, maximum: 230 },
+      margin:       { top: 14, right: 18, bottom: 14, left: 18 },
+      font:         { face: 'Inter, Segoe UI, system-ui', size: 14, multi: true },
     },
     edges: {
       width:        1.5,
-      smooth:       { type: 'cubicBezier', forceDirection: 'vertical', roundness: 0.3 },
-      arrows:       { to: { enabled: true, scaleFactor: 0.7 } },
+      smooth:       { type: 'cubicBezier', roundness: 0.2 },
+      arrows:       { to: { enabled: true, scaleFactor: 0.8 } },
       color:        { color: '#2a3d4d', highlight: '#5a8aaa', hover: '#5a8aaa' },
     },
     interaction: {

@@ -1,100 +1,109 @@
 {
-  "id": "longevity-default",
+  "id": "cipera-cardiac",
   "title": "Kauzální mapa zdraví",
   "subtitle": "Current Reality Tree — kde vzniká největší omezení",
   "branch_labels": {
-    "L": "Metabolický subsystém",
-    "R": "Autonomní subsystém"
+    "L": "Cévní a metabolický subsystém",
+    "R": "Autonomní a elektrický subsystém"
   },
   "nodes": [
     {
       "id": "root",
-      "label": "Chronická přetíženost\nsystému",
+      "label": "Chronický stres\n(přetížení)",
       "type": "golden_box",
       "level": 0,
       "node_id": null,
-      "x": 0, "y": 500
+      "x": 0, "y": 560
     },
     {
       "id": "L1",
-      "label": "Výživa zaostává",
+      "label": "Vysoké LDL",
       "type": "cause",
       "level": 1,
       "branch": "L",
       "node_id": "vyziva",
-      "x": -280, "y": 340
+      "x": -320, "y": 420
     },
     {
       "id": "R1",
-      "label": "Chronický stres",
+      "label": "Chronický sympatikus\n(bojuj nebo uteč)",
       "type": "cause",
       "level": 1,
       "branch": "R",
       "node_id": "mysl",
-      "x": 280, "y": 340
+      "x": 320, "y": 420
     },
     {
       "id": "L2",
-      "label": "Zánět a tuhé cévy",
+      "label": "Cévní pláty\na zánět",
       "type": "cause",
       "level": 2,
       "branch": "L",
       "node_id": "kardio",
-      "x": -280, "y": 180
+      "x": -320, "y": 270
     },
     {
       "id": "R2",
-      "label": "Kortizol chronicky\nvysoko",
+      "label": "Stažení cév",
       "type": "cause",
       "level": 2,
       "branch": "R",
-      "node_id": "mysl",
-      "x": 280, "y": 180
+      "node_id": "kardio",
+      "x": 320, "y": 270
     },
     {
       "id": "L3",
-      "label": "Kardiovaskulární\nzátěž",
+      "label": "Tuhé cévy",
       "type": "junction",
       "level": 3,
       "branch": "L",
-      "node_id": "vo2max",
-      "x": -140, "y": 20
+      "node_id": "kardio",
+      "x": -160, "y": 120
     },
     {
       "id": "R3",
-      "label": "Spánkový deficit",
+      "label": "Zvýšená elektrická\ndráždivost",
       "type": "junction",
       "level": 3,
       "branch": "R",
-      "node_id": "spanek",
-      "x": 140, "y": 20
+      "node_id": "mysl",
+      "x": 160, "y": 120
     },
     {
       "id": "C1",
-      "label": "Nízká regenerační\nkapacita",
+      "label": "Diastolický tlak\n~90 mmHg",
       "type": "junction",
       "level": 4,
       "branch": "C",
-      "node_id": "spanek",
-      "x": 0, "y": -140
+      "node_id": "kardio",
+      "x": -80, "y": -30
     },
     {
-      "id": "UDE1",
-      "label": "Výkonnostní strop\na únava",
+      "id": "C2",
+      "label": "Mechanický tlak\nna srdeční stěny",
+      "type": "junction",
+      "level": 4,
+      "branch": "C",
+      "node_id": "kardio",
+      "x": 80, "y": -30
+    },
+    {
+      "id": "S1",
+      "label": "Extra systoly",
       "type": "ude",
       "level": 5,
       "branch": "C",
-      "node_id": "dlouhovekost",
-      "x": -120, "y": -300
+      "node_id": "kardio",
+      "x": 0, "y": -180
     },
     {
-      "id": "UDE2",
-      "label": "Předčasné stárnutí",
+      "id": "S2",
+      "label": "Fibrilace síní\n(FaP)",
       "type": "ude",
       "level": 6,
       "branch": "C",
-      "node_id": "dlouhovekost",
-      "x": 120, "y": -300
+      "node_id": "kardio",
+      "x": 0, "y": -330
     }
   ],
   "edges": [
@@ -105,13 +114,18 @@
     { "from": "L2",   "to": "L3" },
     { "from": "R2",   "to": "R3" },
     { "from": "L3",   "to": "C1" },
-    { "from": "R3",   "to": "C1" },
-    { "from": "C1",   "to": "UDE1" },
-    { "from": "C1",   "to": "UDE2" }
+    { "from": "R2",   "to": "C1" },
+    { "from": "L3",   "to": "C2" },
+    { "from": "R3",   "to": "C2" },
+    { "from": "C1",   "to": "S1" },
+    { "from": "C2",   "to": "S1" },
+    { "from": "S1",   "to": "S2" }
   ],
   "injections": [
-    { "label": "Zone 2 kardio 3×/týden",  "targets": ["L3"], "node_id": "kardio" },
-    { "label": "Spánek do 22:00",          "targets": ["R3"], "node_id": "spanek" },
-    { "label": "Protizánětlivá strava",    "targets": ["L2"], "node_id": "vyziva" }
+    { "label": "Torvacard",                "targets": ["L2"], "node_id": "vyziva" },
+    { "label": "Kalnormin",                "targets": ["R3"], "node_id": "mysl"  },
+    { "label": "Pradaxa",                  "targets": ["S2"], "node_id": "kardio" },
+    { "label": "Dechová cvičení 4-7-8",    "targets": ["R1"], "node_id": "mysl"  },
+    { "label": "Lehká večeře",             "targets": ["L1"], "node_id": "vyziva" }
   ]
 }
