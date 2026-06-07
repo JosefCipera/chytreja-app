@@ -34,25 +34,52 @@ function calcPositions(nodes) {
   return nodes;
 }
 
-async function fetchUserMetrics(userId, role) {
+async function fetchContext(userId, role) {
   const { createClient } = await import('@supabase/supabase-js');
   const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
-  let query = supabase
+  // 1. Metriky uzlů
+  let q = supabase
     .from('user_metrics')
     .select('node_id, state, current_index')
     .eq('user_id', userId)
     .eq('universe', 'longevity')
     .in('state', ['RED', 'YELLOW', 'GREEN']);
+  if (role === 'dekatlon') q = q.in('node_id', DEKATLON_NODE_IDS);
+  else if (role === 'lehkost') q = q.in('node_id', LEHKOST_NODE_IDS);
+  const { data: metrics } = await q;
 
-  if (role === 'dekatlon') query = query.in('node_id', DEKATLON_NODE_IDS);
-  else if (role === 'lehkost') query = query.in('node_id', LEHKOST_NODE_IDS);
+  // 2. Zdravotní profil (diagnózy, léky, labs)
+  const { data: profile } = await supabase
+    .from('user_health_profile')
+    .select('diagnoses, medications, labs, physical, goal_text, doctor_notes, birth_year, sex')
+    .eq('user_id', userId)
+    .single();
 
-  const { data } = await query;
-  return data || [];
+  // 3. Poslední check-in (energie, spánek, stres)
+  const today = new Date().toISOString().slice(0, 10);
+  const { data: checkins } = await supabase
+    .from('daily_checkin')
+    .select('energy, sleep_hours, stress, binge, movement_level, weight_kg, date')
+    .eq('user_id', userId)
+    .order('date', { ascending: false })
+    .limit(7);
+
+  // 4. Onboarding odpovědi (fyzické limity, node_inputs)
+  const { data: nodeInputs } = await supabase
+    .from('node_inputs')
+    .select('node_id, question_id, value')
+    .eq('user_id', userId);
+
+  return {
+    metrics: metrics || [],
+    profile: profile || {},
+    checkins: checkins || [],
+    nodeInputs: nodeInputs || [],
+  };
 }
 
-async function generateCRT(metrics, role) {
+async function generateCRT({ metrics, profile, checkins, nodeInputs }, role) {
   // Seřaď uzly od nejhoršího
   const sorted = [...metrics].sort((a, b) => (a.current_index ?? 100) - (b.current_index ?? 100));
   const worstNodes = sorted.slice(0, 6).map(m => ({
@@ -67,9 +94,29 @@ async function generateCRT(metrics, role) {
     ? 'Uživatel pracuje na hubnutí a lehčím životním stylu.'
     : 'Uživatel pracuje na dlouhověkosti a celkovém zdraví.';
 
-  const metricsText = worstNodes.map(n =>
-    `- ${n.id}: ${n.state} (${n.score}%)`
-  ).join('\n');
+  const metricsText = worstNodes.length
+    ? worstNodes.map(n => `- ${n.id}: ${n.state} (${n.score}%)`).join('\n')
+    : '(žádná data ze skóre)';
+
+  // Zdravotní profil
+  const diagText   = (profile.diagnoses   || []).join(', ') || 'neuvedeno';
+  const medsText   = (profile.medications || []).map(m => `${m.name} ${m.dose || ''}`).join(', ') || 'neuvedeno';
+  const labsObj    = profile.labs || {};
+  const labsText   = Object.entries(labsObj)
+    .filter(([k]) => k !== 'date')
+    .map(([k, v]) => `${k}: ${v}`)
+    .join(', ') || 'neuvedeno';
+  const goalText   = profile.goal_text || 'neuvedeno';
+  const doctorText = profile.doctor_notes ? `\nPoznámky od lékaře:\n${profile.doctor_notes.slice(0, 800)}` : '';
+
+  // Poslední check-in (průměr posledních 7 dní)
+  const checkinText = checkins.length
+    ? checkins.slice(0, 3).map(c =>
+        `${c.date}: energie ${c.energy}/5, spánek ${c.sleep_hours}h, stres ${c.stress}/5${c.binge ? ', přejedení' : ''}`
+      ).join('\n')
+    : 'žádné záznamy';
+
+  const metricsText2 = metricsText;
 
   const systemPrompt = `Jsi expert na Theory of Constraints (Goldratt) a medicínu.
 Analyzuješ zdravotní data uživatele a sestavuješ Current Reality Tree (CRT) — kauzální strom příčin a důsledků.
@@ -102,10 +149,21 @@ Topologie — čistý strom BEZ křížení:
 
   const userPrompt = `${roleContext}
 
-Změřené zdravotní uzly (od nejhoršího):
-${metricsText || '(žádná data — vytvoř obecný strom pro daný kontext)'}
+ZDRAVOTNÍ PROFIL:
+- Diagnózy: ${diagText}
+- Léky: ${medsText}
+- Labs: ${labsText}
+- Cíl: ${goalText}${doctorText}
 
-Sestav CRT: najdi jednu kořenovou příčinu, dvě kauzální větve (L a R), junction uzly kde se větve sbíhají, a 1–2 UDE nahoře.
+SKÓRE UZLŮ (od nejhoršího):
+${metricsText2}
+
+POSLEDNÍ CHECK-INY:
+${checkinText}
+
+Na základě diagnóz a dat sestav CRT: najdi jednu kořenovou příčinu, dvě kauzální větve (L a R), junction uzly kde se větve sbíhají, a 1–2 UDE nahoře.
+UDE musí odpovídat skutečným diagnózám uživatele (ne obecným frázím).
+Injections musí respektovat léky a omezení (např. antikoagulancia → žádný kontaktní sport).
 Strom musí mít 8–11 uzlů celkem (root + nodes). Vrať pouze JSON.`;
 
   const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -162,12 +220,12 @@ export default async function handler(req, res) {
   const { userId, role = 'longevity' } = req.body || {};
 
   try {
-    // 1. Načti metriky
-    const metrics = userId ? await fetchUserMetrics(userId, role) : [];
-    console.log(`[CRT] generate for userId=${userId} role=${role} metrics=${metrics.length}`);
+    // 1. Načti všechny zdroje dat
+    const ctx = userId ? await fetchContext(userId, role) : { metrics: [], profile: {}, checkins: [], nodeInputs: [] };
+    console.log(`[CRT] generate userId=${userId} role=${role} metrics=${ctx.metrics.length} profile=${!!ctx.profile.diagnoses}`);
 
     // 2. Claude vygeneruje strom
-    const crt = await generateCRT(metrics, role);
+    const crt = await generateCRT(ctx, role);
 
     // 3. Sestav seznam všech uzlů
     const allNodes = [
@@ -178,8 +236,8 @@ export default async function handler(req, res) {
     // 4. Auto-pozicování
     calcPositions(allNodes);
 
-    // 5. Overlay barev
-    const coloredNodes = overlayColors(allNodes, metrics);
+    // 5. Overlay barev (bez barev — jen mapování stavu pro případné budoucí použití)
+    const coloredNodes = overlayColors(allNodes, ctx.metrics);
 
     res.setHeader('Cache-Control', 'no-store');
     res.json({
@@ -189,7 +247,7 @@ export default async function handler(req, res) {
       edges:      crt.edges || [],
       and_joins:  crt.and_joins || [],
       injections: crt.injections || [],
-      has_data:   metrics.length > 0,
+      has_data:   ctx.metrics.length > 0 || !!ctx.profile.diagnoses,
     });
 
   } catch (e) {
