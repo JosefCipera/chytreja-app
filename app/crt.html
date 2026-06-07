@@ -133,10 +133,11 @@
 
 <div class="crt-header">
   <button class="crt-back" onclick="goBack()">← Zpět</button>
-  <div>
+  <div style="flex:1">
     <div class="crt-title" id="crtTitle">Kauzální mapa zdraví</div>
     <div class="crt-subtitle" id="crtSubtitle">Current Reality Tree</div>
   </div>
+  <button class="crt-back" id="crtRegenBtn" onclick="regenCRT()" title="Přegenerovat mapu z aktuálních dat" style="font-size:12px;opacity:0.6">↺ Obnovit</button>
 </div>
 
 <div class="crt-body">
@@ -181,15 +182,40 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 let userId = localStorage.getItem('chj_uid') || null;
 const userRole = localStorage.getItem('userRoleOverride') || localStorage.getItem('userRole') || 'longevity';
 
-// ── Fetch CRT data ───────────────────────────────────────────────────────────
-async function loadCRT() {
+// ── Fetch CRT data (s localStorage cache na 24h) ─────────────────────────────
+const CRT_CACHE_KEY = `chj_crt_${userId}`;
+const CRT_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hodin
+
+async function loadCRT(force = false) {
+  // Zkus cache
+  if (!force) {
+    try {
+      const cached = localStorage.getItem(CRT_CACHE_KEY);
+      if (cached) {
+        const { ts, data } = JSON.parse(cached);
+        if (Date.now() - ts < CRT_CACHE_TTL) {
+          console.log('[CRT] z cache');
+          return data;
+        }
+      }
+    } catch(e) { /* ignoruj poškozený cache */ }
+  }
+
+  // Fetch z API
   const res = await fetch('/api/crt-generate', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ userId, role: userRole }),
   });
   if (!res.ok) throw new Error(`CRT generate ${res.status}`);
-  return res.json();
+  const data = await res.json();
+
+  // Ulož do cache
+  try {
+    localStorage.setItem(CRT_CACHE_KEY, JSON.stringify({ ts: Date.now(), data }));
+  } catch(e) { /* ignoruj při plném storage */ }
+
+  return data;
 }
 
 // ── SVG renderer — plná kontrola nad velikostí a pozicí ─────────────────────
@@ -423,6 +449,26 @@ function goBack() {
   if (window.opener) { window.close(); }
   else if (history.length > 1) { history.back(); }
   else { window.location.href = '/'; }
+}
+
+async function regenCRT() {
+  const btn = document.getElementById('crtRegenBtn');
+  btn.textContent = '↻ Generuji…';
+  btn.disabled = true;
+  localStorage.removeItem(CRT_CACHE_KEY);
+  document.getElementById('crtLoading').textContent = 'Generuji novou mapu…';
+  document.getElementById('crtLoading').classList.remove('hidden');
+  document.getElementById('crt-canvas').innerHTML = '';
+  document.getElementById('crtInjectionsBar').innerHTML = '';
+  try {
+    const data = await loadCRT(true);
+    document.getElementById('crtLoading').classList.add('hidden');
+    renderTree(data);
+  } catch(e) {
+    document.getElementById('crtLoading').textContent = 'Chyba: ' + e.message;
+  }
+  btn.textContent = '↺ Obnovit';
+  btn.disabled = false;
 }
 </script>
 
