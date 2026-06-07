@@ -185,6 +185,7 @@ const userRole = localStorage.getItem('userRoleOverride') || localStorage.getIte
 // ── Fetch CRT data (s localStorage cache na 24h) ─────────────────────────────
 var CRT_CACHE_KEY = 'chj_crt_' + userId;
 var CRT_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hodin
+window.CRT_CACHE_KEY = CRT_CACHE_KEY;
 
 async function loadCRT(force = false) {
   // Zkus cache
@@ -438,6 +439,10 @@ async function boot() {
   }
 }
 
+// Vystav funkce na window (kvůli onclick v HTML a type="module" scope)
+window.loadCRT   = loadCRT;
+window.renderTree = renderTree;
+
 boot();
 
 function goBack() {
@@ -450,15 +455,15 @@ async function regenCRT() {
   const btn = document.getElementById('crtRegenBtn');
   btn.textContent = '↻ Generuji…';
   btn.disabled = true;
-  localStorage.removeItem(CRT_CACHE_KEY);
+  localStorage.removeItem(window.CRT_CACHE_KEY);
   document.getElementById('crtLoading').textContent = 'Generuji novou mapu…';
   document.getElementById('crtLoading').classList.remove('hidden');
   document.getElementById('crt-canvas').innerHTML = '';
   document.getElementById('crtInjections').innerHTML = '';
   try {
-    const data = await loadCRT(true);
+    const data = await window.loadCRT(true);
     document.getElementById('crtLoading').classList.add('hidden');
-    renderTree(data);
+    window.renderTree(data);
   } catch(e) {
     document.getElementById('crtLoading').textContent = 'Chyba: ' + e.message;
   }
