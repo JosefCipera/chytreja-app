@@ -1,42 +1,38 @@
 {
   "id": "cipera-cardiac",
   "title": "Kauzální mapa zdraví",
-  "subtitle": "Current Reality Tree — kde vzniká největší omezení",
+  "subtitle": "Current Reality Tree",
   "branch_labels": {
     "L": "Cévní a metabolický subsystém",
     "R": "Autonomní a elektrický subsystém"
   },
   "nodes": [
-    { "id": "root", "label": "Chronický stres\n(přetížení)",            "type": "golden_box", "node_id": null,     "x":    0, "y":    0 },
-    { "id": "L1",   "label": "Vysoké LDL",                              "type": "cause",      "node_id": "vyziva", "x": -320, "y":  130 },
-    { "id": "R1",   "label": "Chronický sympatikus\n(bojuj nebo uteč)", "type": "cause",      "node_id": "mysl",   "x":  320, "y":  130 },
-    { "id": "L2",   "label": "Cévní pláty\na zánět",                   "type": "cause",      "node_id": "kardio", "x": -320, "y":  260 },
-    { "id": "R2",   "label": "Stažení cév",                             "type": "cause",      "node_id": "kardio", "x":  320, "y":  260 },
-    { "id": "L3",   "label": "Tuhé cévy",                               "type": "junction",   "node_id": "kardio", "x": -160, "y":  390 },
-    { "id": "R3",   "label": "Zvýšená elektrická\ndráždivost",          "type": "junction",   "node_id": "mysl",   "x":  160, "y":  390 },
-    { "id": "C1",   "label": "Diastolický tlak\n~90 mmHg",              "type": "junction",   "node_id": "kardio", "x":  -90, "y":  520 },
-    { "id": "C2",   "label": "Mechanický tlak\nna srdeční stěny",       "type": "junction",   "node_id": "kardio", "x":   90, "y":  520 },
-    { "id": "S1",   "label": "Extra systoly",                           "type": "ude",        "node_id": "kardio", "x":    0, "y":  650 },
-    { "id": "S2",   "label": "Fibrilace síní\n(FaP)",                   "type": "ude",        "node_id": "kardio", "x":    0, "y":  780 }
+    { "id": "root", "label": "Chronický stres\n(přetížení)",            "type": "golden_box", "node_id": null,     "x":    0, "y":   0, "branch": "C" },
+    { "id": "L1",   "label": "Vysoké LDL",                              "type": "cause",      "node_id": "vyziva", "x": -280, "y": 130, "branch": "L" },
+    { "id": "R1",   "label": "Chronický sympatikus\n(bojuj nebo uteč)", "type": "cause",      "node_id": "mysl",   "x":  280, "y": 130, "branch": "R" },
+    { "id": "L2",   "label": "Cévní pláty\na zánět",                   "type": "cause",      "node_id": "kardio", "x": -280, "y": 260, "branch": "L" },
+    { "id": "R2",   "label": "Stažení cév",                             "type": "cause",      "node_id": "kardio", "x":  280, "y": 260, "branch": "R" },
+    { "id": "L3",   "label": "Tuhé cévy",                               "type": "cause",      "node_id": "kardio", "x": -280, "y": 390, "branch": "L" },
+    { "id": "R3",   "label": "Zvýšená elektrická\ndráždivost",          "type": "cause",      "node_id": "mysl",   "x":  280, "y": 390, "branch": "R" },
+    { "id": "C1",   "label": "Mechanický tlak\nna srdeční stěny",       "type": "junction",   "node_id": "kardio", "x": -140, "y": 520, "branch": "L" },
+    { "id": "C2",   "label": "Diastolický tlak\n~90 mmHg",              "type": "junction",   "node_id": "kardio", "x":  140, "y": 520, "branch": "R" },
+    { "id": "S1",   "label": "Extra systoly",                           "type": "ude",        "node_id": "kardio", "x":    0, "y": 650, "branch": "C" },
+    { "id": "S2",   "label": "Fibrilace síní\n(FaP)",                   "type": "ude",        "node_id": "kardio", "x":    0, "y": 780, "branch": "C" }
   ],
   "edges": [
-    { "from": "root", "to": "L1" },
-    { "from": "root", "to": "R1" },
-    { "from": "L1",   "to": "L2" },
-    { "from": "R1",   "to": "R2" },
-    { "from": "L2",   "to": "L3" },
-    { "from": "R2",   "to": "R3" },
-    { "from": "L3",   "to": "C1" },
-    { "from": "R2",   "to": "C1" },
-    { "from": "L3",   "to": "C2" },
-    { "from": "R3",   "to": "C2" },
-    { "from": "C1",   "to": "S1" },
-    { "from": "C2",   "to": "S1" },
-    { "from": "S1",   "to": "S2" }
+    { "from": "root", "to": "L1",  "branch": "L" },
+    { "from": "root", "to": "R1",  "branch": "R" },
+    { "from": "L1",   "to": "L2",  "branch": "L" },
+    { "from": "R1",   "to": "R2",  "branch": "R" },
+    { "from": "L2",   "to": "L3",  "branch": "L" },
+    { "from": "R2",   "to": "R3",  "branch": "R" },
+    { "from": "L3",   "to": "C1",  "branch": "L" },
+    { "from": "R3",   "to": "C2",  "branch": "R" },
+    { "from": "C1",   "to": "S1",  "branch": "C" },
+    { "from": "C2",   "to": "S1",  "branch": "C" },
+    { "from": "S1",   "to": "S2",  "branch": "C" }
   ],
   "and_joins": [
-    { "sources": ["L3", "R2"], "target": "C1" },
-    { "sources": ["L3", "R3"], "target": "C2" },
     { "sources": ["C1", "C2"], "target": "S1" }
   ],
   "injections": [

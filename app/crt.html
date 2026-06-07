@@ -252,16 +252,19 @@ function renderTree(data) {
     style: 'display:block;margin:0 auto;',
   });
 
-  // ── Defs: arrowhead ──────────────────────────────────────────────────────
+  // ── Defs: arrowheads per větev ───────────────────────────────────────────
+  const BRANCH_COLOR = { L: '#4a7ab0', R: '#b07a3a', C: '#4a8a6a' };
   const defs = svgEl('defs', {});
-  const marker = svgEl('marker', { id: 'arrow', markerWidth: '10', markerHeight: '7',
-    refX: '9', refY: '3.5', orient: 'auto' });
-  marker.appendChild(svgEl('polygon', { points: '0 0, 10 3.5, 0 7', fill: '#4a7090' }));
-  defs.appendChild(marker);
+  ['L','R','C'].forEach(b => {
+    const m = svgEl('marker', { id: `arrow-${b}`, markerWidth: '10', markerHeight: '7', refX: '9', refY: '3.5', orient: 'auto' });
+    m.appendChild(svgEl('polygon', { points: '0 0, 10 3.5, 0 7', fill: BRANCH_COLOR[b] }));
+    defs.appendChild(m);
+  });
   svg.appendChild(defs);
 
-  // ── Hrany ────────────────────────────────────────────────────────────────
-  const AND_JOINS = { C1: ['L3','R2'], C2: ['L3','R3'], S1: ['C1','C2'] };
+  // AND-join mapa z dat
+  const AND_JOINS = {};
+  (data.and_joins || []).forEach(aj => { AND_JOINS[aj.target] = aj.sources; });
   const andJoinTargets = new Set(Object.keys(AND_JOINS));
 
   data.edges.forEach(e => {
@@ -283,10 +286,12 @@ function renderTree(data) {
 
     const midY1 = y1 + (endY - y1) * 0.4;
     const midY2 = y1 + (endY - y1) * 0.6;
+    const branch = e.branch || 'C';
+    const strokeColor = BRANCH_COLOR[branch] || '#4a6878';
     const path = svgEl('path', {
       d: `M ${x1} ${y1} C ${x1} ${midY1}, ${x2} ${midY2}, ${x2} ${endY}`,
-      fill: 'none', stroke: '#4a6878', 'stroke-width': '2.5',
-      'marker-end': 'url(#arrow)',
+      fill: 'none', stroke: strokeColor, 'stroke-width': '2.5',
+      'marker-end': `url(#arrow-${branch})`,
     });
     svg.appendChild(path);
   });
