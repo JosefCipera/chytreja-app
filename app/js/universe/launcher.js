@@ -593,6 +593,7 @@ let _recognition = null;
 // Briefing je on-demand — žádný auto-prewarm, uživatel iniciuje hlasem
 let _sourcesBlob  = null;   // prefetchnutý blob pro sources odpověď
 let _chj_speaking = false;  // guard: zabrání dvojímu spuštění hlasu
+let _chj_spoke_at = 0;      // timestamp posledního mluvení — cooldown proti echu
 
 // ── Briefing prewarm ─────────────────────────────────────────────────────────
 // Briefing je on-demand — uživatel iniciuje hlasem. Prewarm jen načte bio data.
@@ -1195,8 +1196,9 @@ const STATUS_PHRASES = [
 ];
 
 async function _handleCommand(text) {
-  // Ignoruj všechny příkazy dokud CHJ mluví (echo z reproduktoru)
+  // Ignoruj příkazy dokud CHJ mluví nebo 2s po domluvení (echo z reproduktoru)
   if (_chj_speaking) return true;
+  if (Date.now() - _chj_spoke_at < 2000) { console.log('[CHJ] echo guard — ignoring:', text); return true; }
 
   const t = text.toLowerCase().trim();
 
@@ -1243,8 +1245,8 @@ async function _handleCommand(text) {
         const alarm = document.getElementById('chjAlarm');
         if (alarm) { alarm.textContent = ''; alarm.style.opacity = '1'; _typewriter(alarm, fallbackText, 30); }
       };
-      audio.onended = () => { launcher?.classList.remove('speaking'); URL.revokeObjectURL(url); _chj_speaking = false; setTimeout(() => goSleepListening(), 400); };
-      audio.onerror = () => { launcher?.classList.remove('speaking'); _chj_speaking = false; goSleepListening(); };
+      audio.onended = () => { launcher?.classList.remove('speaking'); URL.revokeObjectURL(url); _chj_speaking = false; _chj_spoke_at = Date.now(); setTimeout(() => goSleepListening(), 400); };
+      audio.onerror = () => { launcher?.classList.remove('speaking'); _chj_speaking = false; _chj_spoke_at = Date.now(); goSleepListening(); };
       audio.play().catch(() => { _chj_speaking = false; goSleepListening(); });
     } else {
       _chj_speaking = false; goSleepListening();
@@ -1292,6 +1294,7 @@ async function _doStatus() {
       launcher?.classList.remove('speaking');
       URL.revokeObjectURL(url);
       _chj_speaking = false;
+      _chj_spoke_at = Date.now(); // echo cooldown
       setTimeout(() => goSleepListening(), 600);
     };
     audio.onerror = () => { laser?.classList.remove('speaking'); launcher?.classList.remove('speaking'); _chj_speaking = false; };
@@ -1338,6 +1341,7 @@ async function _doRecommend() {
       launcher?.classList.remove('speaking');
       URL.revokeObjectURL(url);
       _chj_speaking = false;
+      _chj_spoke_at = Date.now(); // echo cooldown
     };
 
     audio.onplay = () => {
