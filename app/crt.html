@@ -231,15 +231,16 @@ function renderTree(data) {
   const ys = data.nodes.map(n => n.y ?? 0);
   const minX = Math.min(...xs), maxX = Math.max(...xs);
   const minY = Math.min(...ys), maxY = Math.max(...ys);
-  const PAD = 80;
+  const PAD = 60;
+  const PAD_TOP = 100; // extra prostor nahoře pro UDE label
   const svgW = (maxX - minX) + BOX_W + PAD * 2;
-  const svgH = (maxY - minY) + BOX_H + PAD * 2;
+  const svgH = (maxY - minY) + BOX_H + PAD + PAD_TOP;
 
   // canvas → svg pixel
   // root y=0 (min) → SVG dole → flip: cy = svgH - offset - (y - minY)
   // S2   y=780 (max) → SVG nahoře (malé SVG y)
   const cx = x => x - minX + PAD + BOX_W / 2;
-  const cy = y => svgH - PAD - BOX_H / 2 - (y - minY);
+  const cy = y => svgH - PAD_TOP - BOX_H / 2 - (y - minY);
 
   const container = document.getElementById('crt-canvas');
   container.innerHTML = '';
@@ -271,19 +272,20 @@ function renderTree(data) {
     const x1 = cx(src.x ?? 0), y1 = cy(src.y ?? 0) - BOX_H / 2;
     const x2 = cx(tgt.x ?? 0), y2 = cy(tgt.y ?? 0) + BOX_H / 2;
 
-    // AND-join: šipka končí na elipse
+    // AND-join: šipka končí na elipse (12px nad středem elipsy)
     let endY = y2;
     if (andJoinTargets.has(e.to)) {
-      const srcs = AND_JOINS[e.to];
-      const avgY = srcs.reduce((s, id) => s + (cy(nodeMap[id]?.y ?? 0) - BOX_H/2), 0) / srcs.length;
-      endY = (avgY + y2) / 2 + 8;
+      const joinSrcs = AND_JOINS[e.to];
+      const avgSrcTopY = joinSrcs.reduce((s, id) => s + (cy(nodeMap[id]?.y ?? 0) - BOX_H/2), 0) / joinSrcs.length;
+      const tgtBottomY = cy(nodeMap[e.to]?.y ?? 0) + BOX_H / 2;
+      endY = avgSrcTopY + (tgtBottomY - avgSrcTopY) * 0.5 - 12;
     }
 
     const midY1 = y1 + (endY - y1) * 0.4;
     const midY2 = y1 + (endY - y1) * 0.6;
     const path = svgEl('path', {
       d: `M ${x1} ${y1} C ${x1} ${midY1}, ${x2} ${midY2}, ${x2} ${endY}`,
-      fill: 'none', stroke: '#3a5868', 'stroke-width': '2',
+      fill: 'none', stroke: '#4a6878', 'stroke-width': '2.5',
       'marker-end': 'url(#arrow)',
     });
     svg.appendChild(path);
@@ -294,10 +296,10 @@ function renderTree(data) {
     const tgt = nodeMap[targetId];
     if (!tgt) return;
     const srcs = sourceIds.map(id => nodeMap[id]).filter(Boolean);
-    // Průměrný horní okraj zdrojů (odkud šipky vychází)
+    // Elipsa přesně uprostřed mezi horním okrajem zdrojů a dolním okrajem cíle
     const avgSrcTopY = srcs.reduce((s, n) => s + (cy(n.y ?? 0) - BOX_H/2), 0) / srcs.length;
-    const tgtBottomY = cy(tgt.y ?? 0) + BOX_H / 2; // dolní okraj cíle
-    const ey = (avgSrcTopY + tgtBottomY) / 2;
+    const tgtBottomY = cy(tgt.y ?? 0) + BOX_H / 2;
+    const ey = avgSrcTopY + (tgtBottomY - avgSrcTopY) * 0.5;
     const ex = cx(tgt.x ?? 0);
     svg.appendChild(svgEl('ellipse', {
       cx: ex, cy: ey, rx: 28, ry: 12,
