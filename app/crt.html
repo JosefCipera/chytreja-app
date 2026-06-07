@@ -183,8 +183,8 @@ let userId = localStorage.getItem('chj_uid') || null;
 const userRole = localStorage.getItem('userRoleOverride') || localStorage.getItem('userRole') || 'longevity';
 
 // ── Fetch CRT data (s localStorage cache na 24h) ─────────────────────────────
-const CRT_CACHE_KEY = `chj_crt_${userId}`;
-const CRT_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hodin
+var CRT_CACHE_KEY = 'chj_crt_' + userId;
+var CRT_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hodin
 
 async function loadCRT(force = false) {
   // Zkus cache
