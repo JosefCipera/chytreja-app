@@ -236,10 +236,10 @@ function renderTree(data) {
   const svgH = (maxY - minY) + BOX_H + PAD * 2;
 
   // canvas → svg pixel
-  // root y=900 (největší) → SVG dole (největší SVG y) → přímé mapování
-  // S2   y=-560 (nejmenší) → SVG nahoře (nejmenší SVG y)
+  // root y=0 (min) → SVG dole → flip: cy = svgH - offset - (y - minY)
+  // S2   y=780 (max) → SVG nahoře (malé SVG y)
   const cx = x => x - minX + PAD + BOX_W / 2;
-  const cy = y => PAD + BOX_H / 2 + (y - minY); // přímé: větší y šablony = větší SVG y = dole
+  const cy = y => svgH - PAD - BOX_H / 2 - (y - minY);
 
   const container = document.getElementById('crt-canvas');
   container.innerHTML = '';
@@ -266,8 +266,8 @@ function renderTree(data) {
   data.edges.forEach(e => {
     const src = nodeMap[e.from], tgt = nodeMap[e.to];
     if (!src || !tgt) return;
-    // src je níže (velké y šablony = velké SVG y), tgt je výše (menší SVG y)
-    // Šipka: z horního okraje src → dolní okraj tgt (nahoru)
+    // src má menší y šablony (dole) → větší SVG y; šipka jde nahoru
+    // Start: horní okraj src (cy - BOX_H/2), End: dolní okraj tgt (cy + BOX_H/2)
     const x1 = cx(src.x ?? 0), y1 = cy(src.y ?? 0) - BOX_H / 2;
     const x2 = cx(tgt.x ?? 0), y2 = cy(tgt.y ?? 0) + BOX_H / 2;
 

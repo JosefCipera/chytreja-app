@@ -7,17 +7,17 @@
     "R": "Autonomní a elektrický subsystém"
   },
   "nodes": [
-    { "id": "root", "label": "Chronický stres\n(přetížení)",         "type": "golden_box", "level": 0, "node_id": null,        "x":    0, "y":  900 },
-    { "id": "L1",   "label": "Vysoké LDL",                           "type": "cause",      "level": 1, "node_id": "vyziva",    "x": -420, "y":  660 },
-    { "id": "R1",   "label": "Chronický sympatikus\n(bojuj nebo uteč)", "type": "cause",   "level": 1, "node_id": "mysl",      "x":  420, "y":  660 },
-    { "id": "L2",   "label": "Cévní pláty\na zánět",                 "type": "cause",      "level": 2, "node_id": "kardio",    "x": -420, "y":  420 },
-    { "id": "R2",   "label": "Stažení cév",                          "type": "cause",      "level": 2, "node_id": "kardio",    "x":  420, "y":  420 },
-    { "id": "L3",   "label": "Tuhé cévy",                            "type": "junction",   "level": 3, "node_id": "kardio",    "x": -210, "y":  180 },
-    { "id": "R3",   "label": "Zvýšená elektrická\ndráždivost",        "type": "junction",   "level": 3, "node_id": "mysl",      "x":  210, "y":  180 },
-    { "id": "C1",   "label": "Diastolický tlak\n~90 mmHg",           "type": "junction",   "level": 4, "node_id": "kardio",    "x": -120, "y":  -80 },
-    { "id": "C2",   "label": "Mechanický tlak\nna srdeční stěny",    "type": "junction",   "level": 4, "node_id": "kardio",    "x":  120, "y":  -80 },
-    { "id": "S1",   "label": "Extra systoly",                        "type": "ude",        "level": 5, "node_id": "kardio",    "x":    0, "y": -320 },
-    { "id": "S2",   "label": "Fibrilace síní\n(FaP)",                "type": "ude",        "level": 6, "node_id": "kardio",    "x":    0, "y": -560 }
+    { "id": "root", "label": "Chronický stres\n(přetížení)",            "type": "golden_box", "node_id": null,     "x":    0, "y":    0 },
+    { "id": "L1",   "label": "Vysoké LDL",                              "type": "cause",      "node_id": "vyziva", "x": -320, "y":  130 },
+    { "id": "R1",   "label": "Chronický sympatikus\n(bojuj nebo uteč)", "type": "cause",      "node_id": "mysl",   "x":  320, "y":  130 },
+    { "id": "L2",   "label": "Cévní pláty\na zánět",                   "type": "cause",      "node_id": "kardio", "x": -320, "y":  260 },
+    { "id": "R2",   "label": "Stažení cév",                             "type": "cause",      "node_id": "kardio", "x":  320, "y":  260 },
+    { "id": "L3",   "label": "Tuhé cévy",                               "type": "junction",   "node_id": "kardio", "x": -160, "y":  390 },
+    { "id": "R3",   "label": "Zvýšená elektrická\ndráždivost",          "type": "junction",   "node_id": "mysl",   "x":  160, "y":  390 },
+    { "id": "C1",   "label": "Diastolický tlak\n~90 mmHg",              "type": "junction",   "node_id": "kardio", "x":  -90, "y":  520 },
+    { "id": "C2",   "label": "Mechanický tlak\nna srdeční stěny",       "type": "junction",   "node_id": "kardio", "x":   90, "y":  520 },
+    { "id": "S1",   "label": "Extra systoly",                           "type": "ude",        "node_id": "kardio", "x":    0, "y":  650 },
+    { "id": "S2",   "label": "Fibrilace síní\n(FaP)",                   "type": "ude",        "node_id": "kardio", "x":    0, "y":  780 }
   ],
   "edges": [
     { "from": "root", "to": "L1" },
@@ -35,9 +35,9 @@
     { "from": "S1",   "to": "S2" }
   ],
   "and_joins": [
-    { "id": "aj1", "sources": ["L3", "R2"], "target": "C1" },
-    { "id": "aj2", "sources": ["L3", "R3"], "target": "C2" },
-    { "id": "aj3", "sources": ["C1", "C2"], "target": "S1" }
+    { "sources": ["L3", "R2"], "target": "C1" },
+    { "sources": ["L3", "R3"], "target": "C2" },
+    { "sources": ["C1", "C2"], "target": "S1" }
   ],
   "injections": [
     { "label": "Torvacard",             "targets": ["L2"], "node_id": "vyziva" },
