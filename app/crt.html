@@ -216,16 +216,16 @@ function renderTree(data) {
       borderWidth:  2,
       borderWidthSelected: 3,
       shape:        'box',
-      widthConstraint: { minimum: 210, maximum: 270 },
-      heightConstraint: { minimum: 70 },
-      margin:       { top: 20, right: 24, bottom: 20, left: 24 },
-      font:         { face: 'Inter, Segoe UI, system-ui', size: 17, multi: true },
+      widthConstraint: { minimum: 180, maximum: 240 },
+      heightConstraint: { minimum: 64 },
+      margin:       { top: 18, right: 22, bottom: 18, left: 22 },
+      font:         { face: 'Inter, Segoe UI, system-ui', size: 20, multi: true, bold: { size: 22 } },
       shapeProperties: { borderRadius: 10 },
     },
     edges: {
       width:        2,
-      smooth:       { type: 'cubicBezier', roundness: 0.15 },
-      arrows:       { to: { enabled: true, scaleFactor: 0.9 } },
+      smooth:       { type: 'cubicBezier', roundness: 0.12 },
+      arrows:       { to: { enabled: true, scaleFactor: 1.0 } },
       color:        { color: '#3a5060', highlight: '#5a8aaa', hover: '#5a8aaa' },
     },
     interaction: {
@@ -325,8 +325,18 @@ function renderTree(data) {
   network.on('zoom',         drawAndJoins);
   network.on('dragEnd',      drawAndJoins);
 
-  // Fit po vykreslení
-  setTimeout(() => network.fit({ animation: { duration: 600, easingFunction: 'easeInOutQuad' } }), 100);
+  // Nastav scale tak aby strom vyplnil viewport — nepouží fit() který vše zmáčkne
+  setTimeout(() => {
+    const bbox = network.getBoundingBox();
+    const canvasH = container.clientHeight;
+    const canvasW = container.clientWidth;
+    const treeH = Math.abs(bbox.bottom - bbox.top) + 200;
+    const treeW = Math.abs(bbox.right  - bbox.left)  + 200;
+    const scale = Math.min(canvasH / treeH, canvasW / treeW, 1.0);
+    const centerY = (bbox.top + bbox.bottom) / 2;
+    const centerX = (bbox.left + bbox.right) / 2;
+    network.moveTo({ position: { x: centerX, y: centerY }, scale, animation: { duration: 400 } });
+  }, 150);
 }
 
 // ── Boot ─────────────────────────────────────────────────────────────────────
