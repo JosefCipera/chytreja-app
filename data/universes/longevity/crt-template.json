@@ -12,7 +12,8 @@
       "label": "Chronická přetíženost\nsystému",
       "type": "golden_box",
       "level": 0,
-      "node_id": null
+      "node_id": null,
+      "x": 0, "y": 500
     },
     {
       "id": "L1",
@@ -20,7 +21,8 @@
       "type": "cause",
       "level": 1,
       "branch": "L",
-      "node_id": "vyziva"
+      "node_id": "vyziva",
+      "x": -280, "y": 340
     },
     {
       "id": "R1",
@@ -28,7 +30,8 @@
       "type": "cause",
       "level": 1,
       "branch": "R",
-      "node_id": "mysl"
+      "node_id": "mysl",
+      "x": 280, "y": 340
     },
     {
       "id": "L2",
@@ -36,7 +39,8 @@
       "type": "cause",
       "level": 2,
       "branch": "L",
-      "node_id": "kardio"
+      "node_id": "kardio",
+      "x": -280, "y": 180
     },
     {
       "id": "R2",
@@ -44,7 +48,8 @@
       "type": "cause",
       "level": 2,
       "branch": "R",
-      "node_id": "mysl"
+      "node_id": "mysl",
+      "x": 280, "y": 180
     },
     {
       "id": "L3",
@@ -52,7 +57,8 @@
       "type": "junction",
       "level": 3,
       "branch": "L",
-      "node_id": "vo2max"
+      "node_id": "vo2max",
+      "x": -140, "y": 20
     },
     {
       "id": "R3",
@@ -60,7 +66,8 @@
       "type": "junction",
       "level": 3,
       "branch": "R",
-      "node_id": "spanek"
+      "node_id": "spanek",
+      "x": 140, "y": 20
     },
     {
       "id": "C1",
@@ -68,7 +75,8 @@
       "type": "junction",
       "level": 4,
       "branch": "C",
-      "node_id": "spanek"
+      "node_id": "spanek",
+      "x": 0, "y": -140
     },
     {
       "id": "UDE1",
@@ -76,7 +84,8 @@
       "type": "ude",
       "level": 5,
       "branch": "C",
-      "node_id": "dlouhovekost"
+      "node_id": "dlouhovekost",
+      "x": -120, "y": -300
     },
     {
       "id": "UDE2",
@@ -84,7 +93,8 @@
       "type": "ude",
       "level": 6,
       "branch": "C",
-      "node_id": "dlouhovekost"
+      "node_id": "dlouhovekost",
+      "x": 120, "y": -300
     }
   ],
   "edges": [
@@ -97,7 +107,7 @@
     { "from": "L3",   "to": "C1" },
     { "from": "R3",   "to": "C1" },
     { "from": "C1",   "to": "UDE1" },
-    { "from": "UDE1", "to": "UDE2" }
+    { "from": "C1",   "to": "UDE2" }
   ],
   "injections": [
     { "label": "Zone 2 kardio 3×/týden",  "targets": ["L3"], "node_id": "kardio" },

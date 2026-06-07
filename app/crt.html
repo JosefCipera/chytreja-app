@@ -175,7 +175,7 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 const SUPABASE_URL = 'https://pzbbmfzdjkqpzopnsmxb.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB6YmJtZnpkamtxcHpvcG5zbXhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MDc4MzQ3MzMsImV4cCI6MjAyMzQxMDczM30.mMSZuLFTHxVrpk1bCr5pDEKcTKdNS7q6Gj_bGVV_Hb4';
 
-let userId = localStorage.getItem('userId') || null;
+let userId = localStorage.getItem('chj_uid') || null;
 const userRole = localStorage.getItem('userRoleOverride') || localStorage.getItem('userRole') || 'longevity';
 
 // ── Fetch CRT data ───────────────────────────────────────────────────────────
@@ -210,15 +210,7 @@ function renderTree(data) {
 
   const options = {
     layout: {
-      hierarchical: {
-        enabled:         true,
-        direction:       'BT',          // bottom-to-top: kořen dole, UDE nahoře
-        sortMethod:      'hubsize',     // respektuj explicitní level z dat
-        levelSeparation: 130,
-        nodeSpacing:     200,
-        treeSpacing:     250,
-        shakeTowards:    'roots',
-      },
+      hierarchical: { enabled: false },  // ruční x,y souřadnice ze šablony
     },
     nodes: {
       borderWidth:  1,

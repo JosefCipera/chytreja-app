@@ -85,6 +85,10 @@ export default async function handler(req, res) {
       borderDashes: typeStyle.borderDashes || false,
       margin: 10,
       // Metadata pro frontend
+      // Ruční pozice ze šablony — vis.js je respektuje když hierarchical=false
+      x: n.x ?? undefined,
+      y: n.y ?? undefined,
+      fixed: (n.x !== undefined) ? { x: true, y: true } : false,
       _type:    n.type,
       _branch:  n.branch || 'C',
       _node_id: n.node_id,
