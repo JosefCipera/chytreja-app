@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CHJ · Kauzální mapa zdraví</title>
-  <script src="https://unpkg.com/vis-network@9.1.9/dist/vis-network.min.js"></script>
+  <!-- vis-network odstraněn — používáme vlastní SVG renderer -->
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -188,7 +188,24 @@ async function loadCRT() {
   return res.json();
 }
 
-// ── vis.js render ────────────────────────────────────────────────────────────
+// ── SVG renderer — plná kontrola nad velikostí a pozicí ─────────────────────
+const BOX_W = 200, BOX_H = 72, R = 10; // box rozměry + border-radius
+
+const STATE_STYLE = {
+  RED:    { fill: '#3d1a1a', stroke: '#e05252', text: '#f5a0a0' },
+  YELLOW: { fill: '#3a2e0a', stroke: '#d4a017', text: '#f0d060' },
+  GREEN:  { fill: '#0f2d1a', stroke: '#3a9e5f', text: '#6ddb99' },
+  GRAY:   { fill: '#1a2535', stroke: '#3a5068', text: '#8ba8b8' },
+  GOLDEN: { fill: '#7a5a00', stroke: '#f0c040', text: '#f8e080' },
+};
+
+function svgEl(tag, attrs, text) {
+  const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+  Object.entries(attrs).forEach(([k, v]) => el.setAttribute(k, v));
+  if (text) el.textContent = text;
+  return el;
+}
+
 function renderTree(data) {
   document.getElementById('crtTitle').textContent    = data.title;
   document.getElementById('crtSubtitle').textContent = data.subtitle;
@@ -204,139 +221,147 @@ function renderTree(data) {
     injEl.appendChild(el);
   });
 
+  // Mapa node id → data
+  const nodeMap = {};
+  data.nodes.forEach(n => { nodeMap[n.id] = n; });
+
+  // Souřadnice z šablony: y je "fyzikální" (nahoru = větší)
+  // Převedeme: svgY = OFFSET_Y - n.y  (obrátíme osu)
+  const xs = data.nodes.map(n => n.x ?? 0);
+  const ys = data.nodes.map(n => n.y ?? 0);
+  const minX = Math.min(...xs), maxX = Math.max(...xs);
+  const minY = Math.min(...ys), maxY = Math.max(...ys);
+  const PAD = 120;
+  const svgW = (maxX - minX) + BOX_W + PAD * 2;
+  const svgH = (maxY - minY) + BOX_H + PAD * 2;
+
+  // canvas → svg pixel
+  const cx = x => x - minX + PAD + BOX_W / 2;  // střed boxu X
+  const cy = y => svgH - PAD - BOX_H / 2 - (y - minY); // střed boxu Y (y obrácen)
+
   const container = document.getElementById('crt-canvas');
-  const nodes = new vis.DataSet(data.nodes);
-  const edges = new vis.DataSet(data.edges);
+  container.innerHTML = '';
+  container.style.overflow = 'auto';
 
-  const options = {
-    layout: {
-      hierarchical: { enabled: false },  // ruční x,y souřadnice ze šablony
-    },
-    nodes: {
-      borderWidth:  2,
-      borderWidthSelected: 3,
-      shape:        'box',
-      widthConstraint: { minimum: 180, maximum: 240 },
-      heightConstraint: { minimum: 64 },
-      margin:       { top: 18, right: 22, bottom: 18, left: 22 },
-      font:         { face: 'Inter, Segoe UI, system-ui', size: 20, multi: true, bold: { size: 22 } },
-      shapeProperties: { borderRadius: 10 },
-    },
-    edges: {
-      width:        2,
-      smooth:       { type: 'cubicBezier', roundness: 0.12 },
-      arrows:       { to: { enabled: true, scaleFactor: 1.0 } },
-      color:        { color: '#3a5060', highlight: '#5a8aaa', hover: '#5a8aaa' },
-    },
-    interaction: {
-      hover:           true,
-      tooltipDelay:    0,
-      zoomView:        true,
-      dragView:        true,
-      selectConnectedEdges: true,
-    },
-    physics: { enabled: false },
-  };
-
-  const network = new vis.Network(container, { nodes, edges }, options);
-
-  // ── Tooltip on hover ─────────────────────────────────────────────────────
-  const tooltip = document.getElementById('crtTooltip');
-  network.on('hoverNode', params => {
-    const node = data.nodes.find(n => n.id === params.node);
-    if (!node) return;
-    let html = `<strong>${node.label.replace(/\n/g, ' ')}</strong>`;
-    if (node._state && node._state !== 'GRAY') {
-      const stateLabel = { RED: '🔴 Kritické', YELLOW: '🟡 Pozor', GREEN: '🟢 V pořádku' };
-      html += `<br>${stateLabel[node._state] || node._state}`;
-    }
-    if (node._index !== null) html += `<br>Skóre: ${node._index} %`;
-    if (node._node_id) html += `<br><span style="color:#4a8a8a;font-size:11px">Klikni pro detail</span>`;
-    tooltip.innerHTML = html;
-    tooltip.style.display = 'block';
+  const svg = svgEl('svg', {
+    viewBox: `0 0 ${svgW} ${svgH}`,
+    width: svgW, height: svgH,
+    style: 'display:block;margin:0 auto;',
   });
-  network.on('blurNode', () => { tooltip.style.display = 'none'; });
-  document.addEventListener('mousemove', e => {
-    if (tooltip.style.display !== 'none') {
+
+  // ── Defs: arrowhead ──────────────────────────────────────────────────────
+  const defs = svgEl('defs', {});
+  const marker = svgEl('marker', { id: 'arrow', markerWidth: '10', markerHeight: '7',
+    refX: '9', refY: '3.5', orient: 'auto' });
+  marker.appendChild(svgEl('polygon', { points: '0 0, 10 3.5, 0 7', fill: '#4a7090' }));
+  defs.appendChild(marker);
+  svg.appendChild(defs);
+
+  // ── Hrany ────────────────────────────────────────────────────────────────
+  const AND_JOINS = { C1: ['L3','R2'], C2: ['L3','R3'], S1: ['C1','C2'] };
+  const andJoinTargets = new Set(Object.keys(AND_JOINS));
+
+  data.edges.forEach(e => {
+    const src = nodeMap[e.from], tgt = nodeMap[e.to];
+    if (!src || !tgt) return;
+    const x1 = cx(src.x ?? 0), y1 = cy(src.y ?? 0) - BOX_H / 2; // bottom of src
+    const x2 = cx(tgt.x ?? 0), y2 = cy(tgt.y ?? 0) + BOX_H / 2; // top of tgt
+
+    // AND-join: šipka končí na elipse, ne na boxu
+    let endY = y2;
+    if (andJoinTargets.has(e.to)) {
+      const srcs = AND_JOINS[e.to];
+      const avgX = srcs.reduce((s, id) => s + cx(nodeMap[id]?.x ?? 0), 0) / srcs.length;
+      const avgY = srcs.reduce((s, id) => s + (cy(nodeMap[id]?.y ?? 0) - BOX_H/2), 0) / srcs.length;
+      endY = (avgY + y2) / 2 + 8; // konec na elipse
+    }
+
+    const midY1 = y1 + (endY - y1) * 0.4;
+    const midY2 = y1 + (endY - y1) * 0.6;
+    const path = svgEl('path', {
+      d: `M ${x1} ${y1} C ${x1} ${midY1}, ${x2} ${midY2}, ${x2} ${endY}`,
+      fill: 'none', stroke: '#3a5868', 'stroke-width': '2',
+      'marker-end': 'url(#arrow)',
+    });
+    svg.appendChild(path);
+  });
+
+  // ── AND-join elipsy ──────────────────────────────────────────────────────
+  Object.entries(AND_JOINS).forEach(([targetId, sourceIds]) => {
+    const tgt = nodeMap[targetId];
+    if (!tgt) return;
+    const srcs = sourceIds.map(id => nodeMap[id]).filter(Boolean);
+    const avgY = srcs.reduce((s, n) => s + (cy(n.y ?? 0) - BOX_H/2), 0) / srcs.length;
+    const tgtTopY = cy(tgt.y ?? 0) + BOX_H / 2;
+    const ey = (avgY + tgtTopY) / 2;
+    const ex = cx(tgt.x ?? 0);
+    svg.appendChild(svgEl('ellipse', {
+      cx: ex, cy: ey, rx: 28, ry: 12,
+      fill: '#0d1822', stroke: '#4a8a9a', 'stroke-width': '2',
+    }));
+  });
+
+  // ── Uzly (boxy) ──────────────────────────────────────────────────────────
+  data.nodes.forEach(n => {
+    const st   = n._type === 'golden_box' ? STATE_STYLE.GOLDEN : STATE_STYLE[n._state] || STATE_STYLE.GRAY;
+    const bx   = cx(n.x ?? 0) - BOX_W / 2;
+    const by   = cy(n.y ?? 0) - BOX_H / 2;
+    const g    = svgEl('g', { class: 'crt-node', 'data-id': n.id, style: 'cursor:pointer' });
+
+    // Box
+    g.appendChild(svgEl('rect', {
+      x: bx, y: by, width: BOX_W, height: BOX_H, rx: R, ry: R,
+      fill: st.fill, stroke: st.stroke,
+      'stroke-width': n._type === 'golden_box' ? '3' : n._type === 'ude' ? '2.5' : '1.5',
+      'stroke-dasharray': n._type === 'ude' ? '6 3' : 'none',
+    }));
+
+    // Text — rozdělení na řádky podle \n
+    const lines = n.label.split('\n');
+    const lineH = 20;
+    const totalH = lines.length * lineH;
+    const startY = by + BOX_H / 2 - totalH / 2 + lineH * 0.75;
+    lines.forEach((line, i) => {
+      g.appendChild(svgEl('text', {
+        x: cx(n.x ?? 0), y: startY + i * lineH,
+        'text-anchor': 'middle',
+        fill: st.text,
+        'font-size': '15',
+        'font-family': 'Inter, Segoe UI, system-ui, sans-serif',
+        'font-weight': n._type === 'golden_box' ? '600' : '400',
+      }, line));
+    });
+
+    // Klik
+    g.addEventListener('click', () => {
+      if (!n._node_id) return;
+      if (window.opener?._openNodeById) { window.opener._openNodeById(n._node_id); window.close(); }
+      else window.location.href = `/?node=${n._node_id}`;
+    });
+
+    // Tooltip
+    const tooltip = document.getElementById('crtTooltip');
+    g.addEventListener('mouseenter', e => {
+      let html = `<strong>${n.label.replace(/\n/g, ' ')}</strong>`;
+      if (n._state && n._state !== 'GRAY') {
+        const sl = { RED: '🔴 Kritické', YELLOW: '🟡 Pozor', GREEN: '🟢 V pořádku' };
+        html += `<br>${sl[n._state]}`;
+      }
+      if (n._index != null) html += `<br>Skóre: ${n._index} %`;
+      if (n._node_id) html += `<br><span style="color:#4a8a8a;font-size:11px">Klikni pro detail</span>`;
+      tooltip.innerHTML = html;
+      tooltip.style.display = 'block';
+    });
+    g.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
+    g.addEventListener('mousemove',  e => {
       tooltip.style.left = (e.clientX + 14) + 'px';
       tooltip.style.top  = (e.clientY - 10) + 'px';
-    }
-  });
-
-  // ── Klik → otevři uzel v CHJ ─────────────────────────────────────────────
-  network.on('click', params => {
-    if (!params.nodes.length) return;
-    const node = data.nodes.find(n => n.id === params.nodes[0]);
-    if (!node?._node_id) return;
-    // Otevři CHJ universe panel pro daný uzel
-    if (window.opener && window.opener._openNodeById) {
-      window.opener._openNodeById(node._node_id);
-      window.close();
-    } else {
-      // Přejdi na hlavní stránku s parametrem
-      window.location.href = `/?node=${node._node_id}`;
-    }
-  });
-
-  // AND-join elipsy — v místě kde se sbíhají 2+ šipky do jednoho uzlu
-  // Pozice = střed mezi průměrem zdrojových uzlů a cílovým uzlem
-  const AND_JOIN_MAP = {
-    'C1': ['L3', 'R2'],   // Diastolický tlak ← Tuhé cévy + Stažení cév
-    'C2': ['L3', 'R3'],   // Mechanický tlak ← Tuhé cévy + Zvýšená dráždivost
-    'S1': ['C1', 'C2'],   // Extra systoly ← Diastolický + Mechanický
-  };
-
-  function drawAndJoins() {
-    let svg = document.getElementById('crt-and-svg');
-    if (!svg) {
-      svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-      svg.id = 'crt-and-svg';
-      svg.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible;';
-      container.appendChild(svg);
-    }
-    svg.innerHTML = '';
-    const positions = network.getPositions();
-
-    Object.entries(AND_JOIN_MAP).forEach(([targetId, sourceIds]) => {
-      const tPos = positions[targetId];
-      if (!tPos) return;
-      // Průměr zdrojových uzlů
-      const srcs = sourceIds.map(id => positions[id]).filter(Boolean);
-      if (srcs.length < 2) return;
-      const srcAvgY = srcs.reduce((s, p) => s + p.y, 0) / srcs.length;
-      const srcAvgX = srcs.reduce((s, p) => s + p.x, 0) / srcs.length;
-      // Střed mezi zdroji a cílem (v canvas souřadnicích)
-      const midCanvas = { x: (srcAvgX + tPos.x) / 2, y: (srcAvgY + tPos.y) / 2 };
-      const midDom = network.canvasToDOM(midCanvas);
-
-      const el = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse');
-      el.setAttribute('cx', midDom.x);
-      el.setAttribute('cy', midDom.y);
-      el.setAttribute('rx', 22);
-      el.setAttribute('ry', 11);
-      el.setAttribute('fill', '#0f1e2e');
-      el.setAttribute('stroke', '#4a8a9a');
-      el.setAttribute('stroke-width', '2');
-      svg.appendChild(el);
     });
-  }
 
-  network.on('afterDrawing', drawAndJoins);
-  network.on('zoom',         drawAndJoins);
-  network.on('dragEnd',      drawAndJoins);
+    svg.appendChild(g);
+  });
 
-  // Nastav scale tak aby strom vyplnil viewport — nepouží fit() který vše zmáčkne
-  setTimeout(() => {
-    const bbox = network.getBoundingBox();
-    const canvasH = container.clientHeight;
-    const canvasW = container.clientWidth;
-    const treeH = Math.abs(bbox.bottom - bbox.top) + 200;
-    const treeW = Math.abs(bbox.right  - bbox.left)  + 200;
-    const scale = Math.min(canvasH / treeH, canvasW / treeW, 1.0);
-    const centerY = (bbox.top + bbox.bottom) / 2;
-    const centerX = (bbox.left + bbox.right) / 2;
-    network.moveTo({ position: { x: centerX, y: centerY }, scale, animation: { duration: 400 } });
-  }, 150);
+  container.appendChild(svg);
 }
 
 // ── Boot ─────────────────────────────────────────────────────────────────────
