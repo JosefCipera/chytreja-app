@@ -514,6 +514,15 @@ const HTML = `
       placeholder="nebo napiš…" autocomplete="off">
     <button class="chjl-send" id="chjSend">↵</button>
   </div>
+  <div style="margin-top:4px">
+    <a id="chjCrtLink" href="/crt.html" target="_blank"
+       style="font-size:11px;color:#2a4a5a;text-decoration:none;letter-spacing:.06em;
+              transition:color .2s;"
+       onmouseover="this.style.color='#5a8aaa'"
+       onmouseout="this.style.color='#2a4a5a'">
+      ⬡ KAUZÁLNÍ MAPA
+    </a>
+  </div>
 </div>
 `;
 

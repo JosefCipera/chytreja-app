@@ -1,0 +1,107 @@
+{
+  "id": "longevity-default",
+  "title": "Kauzální mapa zdraví",
+  "subtitle": "Current Reality Tree — kde vzniká největší omezení",
+  "branch_labels": {
+    "L": "Metabolický subsystém",
+    "R": "Autonomní subsystém"
+  },
+  "nodes": [
+    {
+      "id": "root",
+      "label": "Chronická přetíženost\nsystému",
+      "type": "golden_box",
+      "level": 0,
+      "node_id": null
+    },
+    {
+      "id": "L1",
+      "label": "Výživa zaostává",
+      "type": "cause",
+      "level": 1,
+      "branch": "L",
+      "node_id": "vyziva"
+    },
+    {
+      "id": "R1",
+      "label": "Chronický stres",
+      "type": "cause",
+      "level": 1,
+      "branch": "R",
+      "node_id": "mysl"
+    },
+    {
+      "id": "L2",
+      "label": "Zánět a tuhé cévy",
+      "type": "cause",
+      "level": 2,
+      "branch": "L",
+      "node_id": "kardio"
+    },
+    {
+      "id": "R2",
+      "label": "Kortizol chronicky\nvysoko",
+      "type": "cause",
+      "level": 2,
+      "branch": "R",
+      "node_id": "mysl"
+    },
+    {
+      "id": "L3",
+      "label": "Kardiovaskulární\nzátěž",
+      "type": "junction",
+      "level": 3,
+      "branch": "L",
+      "node_id": "vo2max"
+    },
+    {
+      "id": "R3",
+      "label": "Spánkový deficit",
+      "type": "junction",
+      "level": 3,
+      "branch": "R",
+      "node_id": "spanek"
+    },
+    {
+      "id": "C1",
+      "label": "Nízká regenerační\nkapacita",
+      "type": "junction",
+      "level": 4,
+      "branch": "C",
+      "node_id": "spanek"
+    },
+    {
+      "id": "UDE1",
+      "label": "Výkonnostní strop\na únava",
+      "type": "ude",
+      "level": 5,
+      "branch": "C",
+      "node_id": "dlouhovekost"
+    },
+    {
+      "id": "UDE2",
+      "label": "Předčasné stárnutí",
+      "type": "ude",
+      "level": 6,
+      "branch": "C",
+      "node_id": "dlouhovekost"
+    }
+  ],
+  "edges": [
+    { "from": "root", "to": "L1" },
+    { "from": "root", "to": "R1" },
+    { "from": "L1",   "to": "L2" },
+    { "from": "R1",   "to": "R2" },
+    { "from": "L2",   "to": "L3" },
+    { "from": "R2",   "to": "R3" },
+    { "from": "L3",   "to": "C1" },
+    { "from": "R3",   "to": "C1" },
+    { "from": "C1",   "to": "UDE1" },
+    { "from": "UDE1", "to": "UDE2" }
+  ],
+  "injections": [
+    { "label": "Zone 2 kardio 3×/týden",  "targets": ["L3"], "node_id": "kardio" },
+    { "label": "Spánek do 22:00",          "targets": ["R3"], "node_id": "spanek" },
+    { "label": "Protizánětlivá strava",    "targets": ["L2"], "node_id": "vyziva" }
+  ]
+}

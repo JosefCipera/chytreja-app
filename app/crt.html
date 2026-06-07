@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CHJ · Kauzální mapa zdraví</title>
+  <script src="https://unpkg.com/vis-network@9.1.9/dist/vis-network.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0b0f1a;
+      color: #c8d8e8;
+      font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ── */
+    .crt-header {
+      padding: 18px 24px 12px;
+      border-bottom: 1px solid #1e2d3d;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .crt-back {
+      background: none; border: 1px solid #2a3a4a; color: #8ba8b8;
+      padding: 6px 14px; border-radius: 6px; cursor: pointer;
+      font-size: 13px; transition: border-color .2s, color .2s;
+    }
+    .crt-back:hover { border-color: #6a8aaa; color: #c8d8e8; }
+    .crt-title { font-size: 17px; font-weight: 600; color: #e8f0f8; }
+    .crt-subtitle { font-size: 12px; color: #5a7a8a; margin-top: 2px; }
+
+    /* ── Branch labels ── */
+    .crt-body {
+      display: flex;
+      flex: 1;
+      position: relative;
+    }
+    .crt-branch-label {
+      writing-mode: vertical-lr;
+      transform: rotate(180deg);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: #3a5a6a;
+      padding: 16px 10px;
+      display: flex;
+      align-items: center;
+    }
+    .crt-branch-label.right { transform: rotate(0deg); }
+
+    /* ── Canvas ── */
+    #crt-canvas {
+      flex: 1;
+      height: calc(100vh - 80px);
+    }
+
+    /* ── Legend ── */
+    .crt-legend {
+      position: absolute;
+      top: 16px; right: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .crt-legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      color: #6a8a9a;
+    }
+    .crt-legend-dot {
+      width: 10px; height: 10px;
+      border-radius: 2px;
+      border: 1.5px solid;
+    }
+
+    /* ── Injekce panel ── */
+    .crt-injections {
+      position: absolute;
+      bottom: 16px; left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .crt-injection {
+      background: #0f1e2e;
+      border: 1px solid #1e3a2a;
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 12px;
+      color: #6ddb99;
+      cursor: default;
+    }
+    .crt-injection::before { content: '💉 '; }
+
+    /* ── Tooltip ── */
+    .crt-tooltip {
+      position: fixed;
+      background: #131c2a;
+      border: 1px solid #2a4a5a;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 12px;
+      color: #c8d8e8;
+      pointer-events: none;
+      display: none;
+      z-index: 100;
+      max-width: 220px;
+      line-height: 1.5;
+    }
+
+    /* ── Loading ── */
+    .crt-loading {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: #0b0f1a;
+      font-size: 14px; color: #5a7a8a;
+      z-index: 10;
+    }
+    .crt-loading.hidden { display: none; }
+  </style>
+</head>
+<body>
+
+<div class="crt-header">
+  <button class="crt-back" onclick="goBack()">← Zpět</button>
+  <div>
+    <div class="crt-title" id="crtTitle">Kauzální mapa zdraví</div>
+    <div class="crt-subtitle" id="crtSubtitle">Current Reality Tree</div>
+  </div>
+</div>
+
+<div class="crt-body">
+  <div class="crt-branch-label" id="branchL">Metabolický subsystém</div>
+
+  <div id="crt-canvas"></div>
+
+  <div class="crt-branch-label right" id="branchR">Autonomní subsystém</div>
+
+  <div class="crt-legend">
+    <div class="crt-legend-item">
+      <div class="crt-legend-dot" style="background:#3d1a1a;border-color:#e05252"></div> Kritické
+    </div>
+    <div class="crt-legend-item">
+      <div class="crt-legend-dot" style="background:#3a2e0a;border-color:#d4a017"></div> Pozor
+    </div>
+    <div class="crt-legend-item">
+      <div class="crt-legend-dot" style="background:#0f2d1a;border-color:#3a9e5f"></div> V pořádku
+    </div>
+    <div class="crt-legend-item">
+      <div class="crt-legend-dot" style="background:#1a1f2e;border-color:#4a5568"></div> Bez dat
+    </div>
+  </div>
+
+  <div class="crt-injections" id="crtInjections"></div>
+
+  <div class="crt-loading" id="crtLoading">Načítám kauzální mapu…</div>
+</div>
+
+<div class="crt-tooltip" id="crtTooltip"></div>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+
+// ── Auth → userId ────────────────────────────────────────────────────────────
+const SUPABASE_URL = 'https://pzbbmfzdjkqpzopnsmxb.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB6YmJtZnpkamtxcHpvcG5zbXhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MDc4MzQ3MzMsImV4cCI6MjAyMzQxMDczM30.mMSZuLFTHxVrpk1bCr5pDEKcTKdNS7q6Gj_bGVV_Hb4';
+
+let userId = localStorage.getItem('userId') || null;
+const userRole = localStorage.getItem('userRoleOverride') || localStorage.getItem('userRole') || 'longevity';
+
+// ── Fetch CRT data ───────────────────────────────────────────────────────────
+async function loadCRT() {
+  const params = new URLSearchParams({ role: userRole });
+  if (userId) params.set('userId', userId);
+
+  const res = await fetch(`/api/crt-data?${params}`);
+  if (!res.ok) throw new Error(`CRT API ${res.status}`);
+  return res.json();
+}
+
+// ── vis.js render ────────────────────────────────────────────────────────────
+function renderTree(data) {
+  document.getElementById('crtTitle').textContent    = data.title;
+  document.getElementById('crtSubtitle').textContent = data.subtitle;
+  document.getElementById('branchL').textContent     = data.branch_labels?.L || '';
+  document.getElementById('branchR').textContent     = data.branch_labels?.R || '';
+
+  // Injekce
+  const injEl = document.getElementById('crtInjections');
+  (data.injections || []).forEach(inj => {
+    const el = document.createElement('div');
+    el.className = 'crt-injection';
+    el.textContent = inj.label;
+    injEl.appendChild(el);
+  });
+
+  const container = document.getElementById('crt-canvas');
+  const nodes = new vis.DataSet(data.nodes);
+  const edges = new vis.DataSet(data.edges);
+
+  const options = {
+    layout: {
+      hierarchical: {
+        enabled:         true,
+        direction:       'BT',          // bottom-to-top: kořen dole, UDE nahoře
+        sortMethod:      'directed',
+        levelSeparation: 110,
+        nodeSpacing:     160,
+        treeSpacing:     200,
+      },
+    },
+    nodes: {
+      borderWidth:  1,
+      borderWidthSelected: 2,
+      shape:        'box',
+      widthConstraint: { minimum: 130, maximum: 190 },
+      margin:       { top: 10, right: 12, bottom: 10, left: 12 },
+      font:         { face: 'Inter, Segoe UI, system-ui', size: 12, multi: true },
+    },
+    edges: {
+      width:        1.5,
+      smooth:       { type: 'cubicBezier', forceDirection: 'vertical', roundness: 0.4 },
+      arrows:       { to: { enabled: true, scaleFactor: 0.6 } },
+      color:        { color: '#2a3d4d', highlight: '#5a8aaa', hover: '#5a8aaa' },
+    },
+    interaction: {
+      hover:           true,
+      tooltipDelay:    0,
+      zoomView:        true,
+      dragView:        true,
+      selectConnectedEdges: true,
+    },
+    physics: { enabled: false },
+  };
+
+  const network = new vis.Network(container, { nodes, edges }, options);
+
+  // ── Tooltip on hover ─────────────────────────────────────────────────────
+  const tooltip = document.getElementById('crtTooltip');
+  network.on('hoverNode', params => {
+    const node = data.nodes.find(n => n.id === params.node);
+    if (!node) return;
+    let html = `<strong>${node.label.replace(/\n/g, ' ')}</strong>`;
+    if (node._state && node._state !== 'GRAY') {
+      const stateLabel = { RED: '🔴 Kritické', YELLOW: '🟡 Pozor', GREEN: '🟢 V pořádku' };
+      html += `<br>${stateLabel[node._state] || node._state}`;
+    }
+    if (node._index !== null) html += `<br>Skóre: ${node._index} %`;
+    if (node._node_id) html += `<br><span style="color:#4a8a8a;font-size:11px">Klikni pro detail</span>`;
+    tooltip.innerHTML = html;
+    tooltip.style.display = 'block';
+  });
+  network.on('blurNode', () => { tooltip.style.display = 'none'; });
+  document.addEventListener('mousemove', e => {
+    if (tooltip.style.display !== 'none') {
+      tooltip.style.left = (e.clientX + 14) + 'px';
+      tooltip.style.top  = (e.clientY - 10) + 'px';
+    }
+  });
+
+  // ── Klik → otevři uzel v CHJ ─────────────────────────────────────────────
+  network.on('click', params => {
+    if (!params.nodes.length) return;
+    const node = data.nodes.find(n => n.id === params.nodes[0]);
+    if (!node?._node_id) return;
+    // Otevři CHJ universe panel pro daný uzel
+    if (window.opener && window.opener._openNodeById) {
+      window.opener._openNodeById(node._node_id);
+      window.close();
+    } else {
+      // Přejdi na hlavní stránku s parametrem
+      window.location.href = `/?node=${node._node_id}`;
+    }
+  });
+
+  // Fit po vykreslení
+  setTimeout(() => network.fit({ animation: { duration: 600, easingFunction: 'easeInOutQuad' } }), 100);
+}
+
+// ── Boot ─────────────────────────────────────────────────────────────────────
+async function boot() {
+  try {
+    const data = await loadCRT();
+    document.getElementById('crtLoading').classList.add('hidden');
+    renderTree(data);
+  } catch (e) {
+    document.getElementById('crtLoading').textContent = 'Chyba načítání: ' + e.message;
+    console.error('[CRT]', e);
+  }
+}
+
+boot();
+</script>
+
+<script>
+function goBack() {
+  if (window.opener) { window.close(); }
+  else if (history.length > 1) { history.back(); }
+  else { window.location.href = '/'; }
+}
+</script>
+
+</body>
+</html>
