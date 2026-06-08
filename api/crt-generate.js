@@ -229,8 +229,12 @@ Strom musí mít 10–14 uzlů celkem (root + nodes). Vrať pouze JSON.`;
 
   // Parse JSON — Claude by měl vrátit čistý JSON
   const jsonMatch = text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) throw new Error('Claude nevrátil validní JSON');
-  return JSON.parse(jsonMatch[0]);
+  if (!jsonMatch) throw new Error(`Claude nevrátil JSON. Text: ${text.slice(0, 200)}`);
+  try {
+    return JSON.parse(jsonMatch[0]);
+  } catch(e) {
+    throw new Error(`JSON parse error: ${e.message}. Text: ${jsonMatch[0].slice(0, 300)}`);
+  }
 }
 
 // Overlay barev z user_metrics
