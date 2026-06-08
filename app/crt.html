@@ -292,16 +292,17 @@ function renderTree(data) {
   const ys = data.nodes.map(n => n.y ?? 0);
   const minX = Math.min(...xs), maxX = Math.max(...xs);
   const minY = Math.min(...ys), maxY = Math.max(...ys);
-  const PAD = 60;
-  const PAD_TOP = 120; // extra prostor nahoře pro meta-UDE
+  const PAD_BOTTOM = 100; // prostor dole pro root (zlatý box)
+  const PAD_TOP = 120;   // prostor nahoře pro meta-UDE
+  const PAD_SIDE = 60;
   const maxBoxH = Math.max(...data.nodes.map(n => boxHeight(n.label ?? '')));
-  const svgW = (maxX - minX) + BOX_W + PAD * 2;
-  const svgH = (maxY - minY) + maxBoxH * 2 + PAD + PAD_TOP;
+  const svgW = (maxX - minX) + BOX_W + PAD_SIDE * 2;
+  const svgH = (maxY - minY) + maxBoxH * 2 + PAD_BOTTOM + PAD_TOP;
 
   // canvas → svg pixel
   // root y=0 (min) → SVG dole → flip: cy = svgH - offset - (y - minY)
   // S2   y=780 (max) → SVG nahoře (malé SVG y)
-  const cx = x => x - minX + PAD + BOX_W / 2;
+  const cx = x => x - minX + PAD_SIDE + BOX_W / 2;
   const cy = y => svgH - PAD_TOP - BOX_H / 2 - (y - minY);
 
   const container = document.getElementById('crt-canvas');
@@ -366,6 +367,14 @@ function renderTree(data) {
     svg.appendChild(svgEl('ellipse', {
       cx: ex, cy: ey, rx: 28, ry: 12,
       fill: '#0d1822', stroke: '#4a8a9a', 'stroke-width': '2',
+    }));
+    // Šipka z elipsy na cílový uzel
+    const tgtBottomY2 = cy(tgt.y ?? 0) + boxHeight(tgt.label) / 2;
+    svg.appendChild(svgEl('line', {
+      x1: ex, y1: ey - 12,
+      x2: cx(tgt.x ?? 0), y2: tgtBottomY2 + 2,
+      stroke: '#4a6878', 'stroke-width': '2.5',
+      'marker-end': 'url(#arrow)',
     }));
   });
 
