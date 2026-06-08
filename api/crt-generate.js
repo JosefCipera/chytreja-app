@@ -194,10 +194,8 @@ ${checkinText}
 Na základě diagnóz a dat sestav CRT: najdi jednu kořenovou příčinu, dvě kauzální větve (L a R), junction uzly kde se větve sbíhají, a 1–2 UDE nahoře.
 
 Pravidla pro UDE:
-- Nejvyšší UDE (úplně nahoře) je VŽDY meta-cíl odvozený z goal_text uživatele — co se nestane pokud se nic nezmění.
-  Příklad: goal="běžky v 85 / dlouhověkost" → meta-UDE = "Nedožiji se 90+ aktivně"
-  Formuluj jako osobní ztrátu, max 4 slova, bez medicínských termínů.
-- Pod meta-UDE je hlavní diagnóza jako UDE (např. Fibrilace síní FaP)
+- Nejvyšší UDE je hlavní diagnóza uživatele kterou AKTUÁLNĚ prožívá (např. Fibrilace síní FaP)
+- Cíl (goal_text) do CRT NEPATŘÍ — patří do Goal Tree, ne do Current Reality
 - Extrasystoly jsou junction uzel těsně pod FaP (type=junction), ne UDE
 - Hypertenze je příčina (type=cause), ne UDE
 
