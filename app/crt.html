@@ -293,9 +293,10 @@ function renderTree(data) {
   const minX = Math.min(...xs), maxX = Math.max(...xs);
   const minY = Math.min(...ys), maxY = Math.max(...ys);
   const PAD = 60;
-  const PAD_TOP = 100; // extra prostor nahoře pro UDE label
+  const PAD_TOP = 120; // extra prostor nahoře pro meta-UDE
+  const maxBoxH = Math.max(...data.nodes.map(n => boxHeight(n.label ?? '')));
   const svgW = (maxX - minX) + BOX_W + PAD * 2;
-  const svgH = (maxY - minY) + BOX_H + PAD + PAD_TOP;
+  const svgH = (maxY - minY) + maxBoxH * 2 + PAD + PAD_TOP;
 
   // canvas → svg pixel
   // root y=0 (min) → SVG dole → flip: cy = svgH - offset - (y - minY)
@@ -360,7 +361,8 @@ function renderTree(data) {
     const avgSrcTopY = srcs.reduce((s, n) => s + (cy(n.y ?? 0) - boxHeight(n.label)/2), 0) / srcs.length;
     const tgtBottomY = cy(tgt.y ?? 0) + boxHeight(tgt.label) / 2;
     const ey = avgSrcTopY + (tgtBottomY - avgSrcTopY) * 0.5;
-    const ex = cx(tgt.x ?? 0);
+    // Elipsa na průměrné X zdrojů (ne X cíle — cíl může být uprostřed)
+    const ex = srcs.reduce((s, n) => s + cx(n.x ?? 0), 0) / srcs.length;
     svg.appendChild(svgEl('ellipse', {
       cx: ex, cy: ey, rx: 28, ry: 12,
       fill: '#0d1822', stroke: '#4a8a9a', 'stroke-width': '2',
