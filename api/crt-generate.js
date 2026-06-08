@@ -20,15 +20,15 @@ function calcPositions(nodes) {
   const levels = [...new Set(nodes.map(n => n.level ?? 0))].sort((a,b) => a-b);
   const maxLevel = Math.max(...levels);
   const Y_STEP = 130;
-  const X_BASE = 280;
+  const X_BASE = 320; // širší pro 3 větve
 
   nodes.forEach(n => {
     const lv = n.level ?? 0;
-    // x: větve se sbíhají ke středu s rostoucí úrovní
-    const spread = X_BASE * (1 - lv / (maxLevel + 1) * 0.4);
+    const spread = X_BASE * (1 - lv / (maxLevel + 1) * 0.35);
     if (n.branch === 'L') n.x = -spread;
     else if (n.branch === 'R') n.x = spread;
-    else n.x = 0; // C (center) — root, junction, UDE
+    else if (n.branch === 'LC') n.x = -spread * 0.5; // střední-levá (fyzická větev)
+    else n.x = 0; // C — root, junction, UDE
     n.y = lv * Y_STEP;
   });
   return nodes;
@@ -170,10 +170,12 @@ Pravidla pro strukturu:
   Příklady: "Ztuhlé cévy" ne "Arteroskleróza", "Slabý srdeční rytmus" ne "Arytmie",
   "Únava po pohybu" ne "Snížená aerobní kapacita". Max 4 slova.
 
-Topologie — čistý strom BEZ křížení:
-- Levá větev (L): příčiny z metabolického/cévního subsystému
-- Pravá větev (R): příčiny z autonomního/nervového subsystému
-- Větve se spojí v junction uzlech, pak pokračují jako UDE`;
+Topologie — čistý strom BEZ křížení, TŘI větve:
+- Levá větev (L): příčiny z metabolického/cévního subsystému (LDL, cévy, zánět)
+- Pravá větev (R): příčiny z autonomního/nervového subsystému (stres, sympatikus, HRV)
+- Střední větev (C) pod kořenem: fyzická kondice (pohyb, aerobní kapacita, svalová síla)
+  → fyzická dekondice zvyšuje zátěž srdce a zhoršuje obě ostatní větve
+- Všechny tři větve se sbíhají v junction uzlech před hlavním UDE`;
 
   const userPrompt = `${roleContext}
 
@@ -204,7 +206,7 @@ Pravidla pro injections:
 - Pak 1–2 životní intervence (pohyb, dech, strava)
 - Celkem max 4 injections
 
-Strom musí mít 8–11 uzlů celkem (root + nodes). Vrať pouze JSON.`;
+Strom musí mít 10–14 uzlů celkem (root + nodes). Vrať pouze JSON.`;
 
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
