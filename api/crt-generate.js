@@ -79,14 +79,39 @@ async function fetchContext(userId, role) {
   };
 }
 
+// Lidsky čitelné popisky CHJ uzlů pro Opus
+const NODE_LABELS = {
+  telo:          'Fyzická kondice (síla, pohyb, mobilita)',
+  kardio:        'Kardiovaskulární kondice (srdce, oběh)',
+  dychani:       'Dýchání a okysličení',
+  sila:          'Svalová síla',
+  mobilita:      'Pohyblivost a flexibilita',
+  stabilita:     'Stabilita a rovnováha',
+  vytrvalost:    'Vytrvalost a výdrž',
+  plyometrie:    'Výbušnost a rychlost',
+  rovnovaha:     'Rovnováha',
+  mysl:          'Mentální zdraví (stres, emoce, focus)',
+  stres:         'Chronický stres',
+  vyziva:        'Výživa a stravování',
+  spanek:        'Spánek a regenerace',
+  zdravi:        'Celkové zdraví',
+  metabolicke:   'Metabolické zdraví',
+  nervovy_system:'Nervový systém',
+  dlouhovekost:  'Dlouhověkost (celkový stav)',
+};
+
 async function generateCRT({ metrics, profile, checkins, nodeInputs }, role) {
-  // Seřaď uzly od nejhoršího
+  // Seřaď uzly od nejhoršího — vezmi všechny RED a YELLOW
   const sorted = [...metrics].sort((a, b) => (a.current_index ?? 100) - (b.current_index ?? 100));
-  const worstNodes = sorted.slice(0, 6).map(m => ({
-    id: m.node_id,
-    state: m.state,
-    score: m.current_index > 1 ? Math.round(m.current_index) : Math.round(m.current_index * 100),
-  }));
+  const worstNodes = sorted
+    .filter(m => m.state === 'RED' || m.state === 'YELLOW')
+    .slice(0, 8)
+    .map(m => ({
+      id: m.node_id,
+      label: NODE_LABELS[m.node_id] || m.node_id,
+      state: m.state,
+      score: m.current_index > 1 ? Math.round(m.current_index) : Math.round(m.current_index * 100),
+    }));
 
   const roleContext = role === 'dekatlon'
     ? 'Uživatel trénuje Dekatlon dlouhověkosti (9 fyzických disciplín).'
@@ -95,7 +120,7 @@ async function generateCRT({ metrics, profile, checkins, nodeInputs }, role) {
     : 'Uživatel pracuje na dlouhověkosti a celkovém zdraví.';
 
   const metricsText = worstNodes.length
-    ? worstNodes.map(n => `- ${n.id}: ${n.state} (${n.score}%)`).join('\n')
+    ? worstNodes.map(n => `- ${n.label}: ${n.state} (${n.score}%)`).join('\n')
     : '(žádná data ze skóre)';
 
   // Zdravotní profil
