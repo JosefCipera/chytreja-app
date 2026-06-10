@@ -166,6 +166,7 @@
     <div class="crt-title" id="crtTitle">Kauzální mapa zdraví</div>
     <div class="crt-subtitle" id="crtSubtitle">Current Reality Tree</div>
   </div>
+  <button class="crt-back" id="crtRotateBtn" onclick="toggleRotate()" title="Otočit diagram" style="font-size:12px;opacity:0.6">⤢ Otočit</button>
   <button class="crt-back" id="crtRegenBtn" onclick="regenCRT()" title="Přegenerovat mapu z aktuálních dat" style="font-size:12px;opacity:0.6">↺ Obnovit</button>
 </div>
 
@@ -249,12 +250,14 @@ async function loadCRT(force = false) {
 }
 
 // ── SVG renderer — plná kontrola nad velikostí a pozicí ─────────────────────
-const IS_MOBILE = window.innerWidth < 600 || window.screen.width < 600;
-const BOX_W = IS_MOBILE ? 180 : 210;
-const BOX_H = IS_MOBILE ? 64 : 72;
-const FONT_SIZE = IS_MOBILE ? 16 : 14;
+const IS_MOBILE = window.innerWidth < 700 || window.screen.width < 700;
+// Na mobilu zmenšíme X_SCALE → užší strom → SVG viewBox užší → font čitelnější po scale
+const X_SCALE  = IS_MOBILE ? 0.55 : 1.0;
+const BOX_W    = IS_MOBILE ? 160 : 210;
+const BOX_H    = IS_MOBILE ? 60 : 72;
+const FONT_SIZE = IS_MOBILE ? 15 : 14;
 const R = 10;
-const CHARS_PER_LINE = Math.floor((BOX_W - 24) / (FONT_SIZE * 0.58));
+const CHARS_PER_LINE = Math.floor((BOX_W - 20) / (FONT_SIZE * 0.58));
 
 // Rozdělí text na řádky tak aby nepřesáhl šířku boxu
 function wrapText(label) {
@@ -320,7 +323,7 @@ function renderTree(data) {
 
   // Souřadnice z šablony: y je "fyzikální" (nahoru = větší)
   // Převedeme: svgY = OFFSET_Y - n.y  (obrátíme osu)
-  const xs = data.nodes.map(n => n.x ?? 0);
+  const xs = data.nodes.map(n => (n.x ?? 0) * X_SCALE);
   const ys = data.nodes.map(n => n.y ?? 0);
   const minX = Math.min(...xs), maxX = Math.max(...xs);
   const minY = Math.min(...ys), maxY = Math.max(...ys);
@@ -334,7 +337,7 @@ function renderTree(data) {
   // canvas → svg pixel
   // root y=0 (min) → SVG dole → flip: cy = svgH - offset - (y - minY)
   // S2   y=780 (max) → SVG nahoře (malé SVG y)
-  const cx = x => x - minX + PAD_SIDE + BOX_W / 2;
+  const cx = x => (x * X_SCALE) - minX + PAD_SIDE + BOX_W / 2;
   const cy = y => svgH - PAD_TOP - BOX_H / 2 - (y - minY);
 
   const container = document.getElementById('crt-canvas');
@@ -500,6 +503,36 @@ window.addEventListener('orientationchange', () => {
 </script>
 
 <script>
+let _rotated = false;
+function toggleRotate() {
+  _rotated = !_rotated;
+  const canvas = document.getElementById('crt-canvas');
+  const svg = canvas.querySelector('svg');
+  const btn = document.getElementById('crtRotateBtn');
+  if (!svg) return;
+
+  if (_rotated) {
+    const svgW = parseFloat(svg.getAttribute('width') || svg.viewBox.baseVal.width);
+    const svgH = parseFloat(svg.getAttribute('height') || svg.viewBox.baseVal.height);
+    // Otočíme SVG o 90° — výška stane šířkou
+    svg.style.transformOrigin = '0 0';
+    svg.style.transform = `rotate(90deg) translateY(-100%)`;
+    svg.style.width  = svgH + 'px';
+    svg.style.height = svgW + 'px';
+    canvas.style.overflowX = 'auto';
+    canvas.style.height = svgW + 'px';
+    btn.textContent = '⤡ Zpět';
+  } else {
+    svg.style.transform = '';
+    svg.style.transformOrigin = '';
+    svg.style.width  = '100%';
+    svg.style.height = 'auto';
+    canvas.style.height = '';
+    canvas.style.overflowX = 'hidden';
+    btn.textContent = '⤢ Otočit';
+  }
+}
+
 function goBack() {
   if (window.opener) { window.close(); }
   else if (history.length > 1) { history.back(); }
