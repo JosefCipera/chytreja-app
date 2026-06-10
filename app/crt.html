@@ -2,7 +2,7 @@
 <html lang="cs">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
   <title>CHJ · Kauzální mapa zdraví</title>
   <!-- vis-network odstraněn — používáme vlastní SVG renderer -->
   <style>
@@ -135,8 +135,16 @@
     @media (max-width: 600px) {
       .crt-branch-label { display: none; }
       .crt-legend { display: none; }
-      .crt-header { padding: 12px 14px 8px; }
-      .crt-title { font-size: 15px; }
+      .crt-header { padding: 10px 12px 8px; gap: 8px; }
+      .crt-title { font-size: 14px; }
+      .crt-subtitle { font-size: 11px; }
+      .crt-injection { font-size: 11px; padding: 6px 10px; }
+    }
+    /* Landscape mobil — diagram využije celou šířku */
+    @media (max-height: 500px) and (orientation: landscape) {
+      .crt-header { padding: 6px 12px; }
+      #crt-canvas svg { max-width: 100%; }
+      .crt-injections { padding: 6px 12px 10px; }
     }
 
     /* ── Loading ── */
@@ -241,9 +249,12 @@ async function loadCRT(force = false) {
 }
 
 // ── SVG renderer — plná kontrola nad velikostí a pozicí ─────────────────────
-const BOX_W = 210, BOX_H = 72, R = 10;
-const FONT_SIZE = 14;
-const CHARS_PER_LINE = Math.floor((BOX_W - 28) / (FONT_SIZE * 0.58)); // ~28px padding
+const IS_MOBILE = window.innerWidth < 600 || window.screen.width < 600;
+const BOX_W = IS_MOBILE ? 180 : 210;
+const BOX_H = IS_MOBILE ? 64 : 72;
+const FONT_SIZE = IS_MOBILE ? 16 : 14;
+const R = 10;
+const CHARS_PER_LINE = Math.floor((BOX_W - 24) / (FONT_SIZE * 0.58));
 
 // Rozdělí text na řádky tak aby nepřesáhl šířku boxu
 function wrapText(label) {
@@ -478,6 +489,14 @@ window._loadCRT      = loadCRT;
 window._renderTree   = renderTree;
 
 boot();
+
+// Re-render při rotaci (landscape/portrait)
+let _lastCrtData = null;
+const _origRenderTree = renderTree;
+window._renderTree = function(data) { _lastCrtData = data; _origRenderTree(data); };
+window.addEventListener('orientationchange', () => {
+  if (_lastCrtData) setTimeout(() => _origRenderTree(_lastCrtData), 300);
+});
 </script>
 
 <script>
