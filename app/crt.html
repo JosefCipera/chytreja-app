@@ -69,8 +69,10 @@
     }
     #crt-canvas svg {
       width: 100%;
+      max-width: 900px;
       height: auto;
       display: block;
+      margin: 0 auto;
     }
 
     /* ── Legend ── */
@@ -225,7 +227,7 @@ async function loadCRT(force = false) {
   const res = await fetch('/api/crt-generate', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ userId, role: userRole }),
+    body: JSON.stringify({ userId, role: userRole, force }),
   });
   if (!res.ok) throw new Error(`CRT generate ${res.status}`);
   const data = await res.json();

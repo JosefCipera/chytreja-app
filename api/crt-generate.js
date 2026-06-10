@@ -258,12 +258,35 @@ function overlayColors(nodes, metrics) {
   });
 }
 
+const CRT_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24h
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { userId, role = 'longevity' } = req.body || {};
+  const { userId, role = 'longevity', force = false } = req.body || {};
+
+  const { createClient } = await import('@supabase/supabase-js');
+  const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
   try {
+    // 0. Zkus server-side cache (user_health_profile.crt_cache)
+    if (userId && !force) {
+      const { data: prof } = await supabase
+        .from('user_health_profile')
+        .select('crt_cache, crt_cache_at')
+        .eq('user_id', userId)
+        .single();
+
+      if (prof?.crt_cache && prof?.crt_cache_at) {
+        const age = Date.now() - new Date(prof.crt_cache_at).getTime();
+        if (age < CRT_CACHE_TTL_MS) {
+          console.log(`[CRT] server cache hit (${Math.round(age/60000)}min old)`);
+          res.setHeader('Cache-Control', 'no-store');
+          return res.json({ ...prof.crt_cache, _cached: true });
+        }
+      }
+    }
+
     // 1. Načti všechny zdroje dat
     const ctx = userId ? await fetchContext(userId, role) : { metrics: [], profile: {}, checkins: [], nodeInputs: [] };
     console.log(`[CRT] generate userId=${userId} role=${role} metrics=${ctx.metrics.length} profile=${!!ctx.profile.diagnoses}`);
@@ -283,8 +306,7 @@ export default async function handler(req, res) {
     // 5. Overlay barev (bez barev — jen mapování stavu pro případné budoucí použití)
     const coloredNodes = overlayColors(allNodes, ctx.metrics);
 
-    res.setHeader('Cache-Control', 'no-store');
-    res.json({
+    const result = {
       title:      'Kauzální mapa zdraví',
       subtitle:   'Current Reality Tree — generováno z vašich dat',
       nodes:      coloredNodes,
@@ -292,7 +314,17 @@ export default async function handler(req, res) {
       and_joins:  crt.and_joins || [],
       injections: crt.injections || [],
       has_data:   ctx.metrics.length > 0 || !!ctx.profile.diagnoses,
-    });
+    };
+
+    // Ulož do server-side cache
+    if (userId) {
+      await supabase.from('user_health_profile')
+        .update({ crt_cache: result, crt_cache_at: new Date().toISOString() })
+        .eq('user_id', userId);
+    }
+
+    res.setHeader('Cache-Control', 'no-store');
+    res.json(result);
 
   } catch (e) {
     console.error('[CRT] generate error:', e.message);
