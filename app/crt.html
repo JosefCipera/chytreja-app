@@ -166,7 +166,6 @@
     <div class="crt-title" id="crtTitle">Kauzální mapa zdraví</div>
     <div class="crt-subtitle" id="crtSubtitle">Current Reality Tree</div>
   </div>
-  <button class="crt-back" id="crtRotateBtn" onclick="toggleRotate()" title="Otočit diagram" style="font-size:12px;opacity:0.6">⤢ Otočit</button>
   <button class="crt-back" id="crtRegenBtn" onclick="regenCRT()" title="Přegenerovat mapu z aktuálních dat" style="font-size:12px;opacity:0.6">↺ Obnovit</button>
 </div>
 
@@ -503,36 +502,6 @@ window.addEventListener('orientationchange', () => {
 </script>
 
 <script>
-let _rotated = false;
-function toggleRotate() {
-  _rotated = !_rotated;
-  const canvas = document.getElementById('crt-canvas');
-  const svg = canvas.querySelector('svg');
-  const btn = document.getElementById('crtRotateBtn');
-  if (!svg) return;
-
-  if (_rotated) {
-    const svgW = parseFloat(svg.getAttribute('width') || svg.viewBox.baseVal.width);
-    const svgH = parseFloat(svg.getAttribute('height') || svg.viewBox.baseVal.height);
-    // Otočíme SVG o 90° — výška stane šířkou
-    svg.style.transformOrigin = '0 0';
-    svg.style.transform = `rotate(90deg) translateY(-100%)`;
-    svg.style.width  = svgH + 'px';
-    svg.style.height = svgW + 'px';
-    canvas.style.overflowX = 'auto';
-    canvas.style.height = svgW + 'px';
-    btn.textContent = '⤡ Zpět';
-  } else {
-    svg.style.transform = '';
-    svg.style.transformOrigin = '';
-    svg.style.width  = '100%';
-    svg.style.height = 'auto';
-    canvas.style.height = '';
-    canvas.style.overflowX = 'hidden';
-    btn.textContent = '⤢ Otočit';
-  }
-}
-
 function goBack() {
   if (window.opener) { window.close(); }
   else if (history.length > 1) { history.back(); }
