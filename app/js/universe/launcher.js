@@ -605,6 +605,7 @@ let _chj_speaking = false;  // guard: zabrání dvojímu spuštění hlasu
 let _chj_spoke_at = 0;      // timestamp posledního mluvení — cooldown proti echu
 let _currentAudio = null;   // reference na aktuálně přehrávané audio — umožňuje stop
 let _briefing_done = false; // auto-briefing jen jednou za session (první tap)
+let _dialog_active = false; // blokuje _handleCommand routing během dialogu
 
 // ── Briefing prewarm ─────────────────────────────────────────────────────────
 // Briefing je on-demand — uživatel iniciuje hlasem. Prewarm jen načte bio data.
@@ -1161,8 +1162,8 @@ function listenOnce(cb) {
     r.onend = () => {
       if (_recognition !== r) return;
       _recognition = null;
-      // Restart pokud nikdo nemluvil a jsme stále awake
-      if (_phase === 'awake') setTimeout(() => attempt(tries), 400);
+      // Restart pokud nikdo nemluvil, jsme awake a NENÍ aktivní dialog
+      if (_phase === 'awake' && !_dialog_active) setTimeout(() => attempt(tries), 400);
       else mic.classList.remove('listening');
     };
     try { r.start(); } catch(err) { _recognition = null; mic.classList.remove('listening'); }
@@ -1213,8 +1214,9 @@ const STATUS_PHRASES = [
 ];
 
 async function _handleCommand(text) {
-  // Ignoruj příkazy dokud CHJ mluví nebo 2s po domluvení (echo z reproduktoru)
+  // Ignoruj příkazy dokud CHJ mluví, 2s po domluvení (echo) nebo během dialogu
   if (_chj_speaking) return true;
+  if (_dialog_active) return true;
   if (Date.now() - _chj_spoke_at < 2000) { console.log('[CHJ] echo guard — ignoring:', text); return true; }
 
   const t = text.toLowerCase().trim();
@@ -1313,6 +1315,7 @@ function _speakText(text) {
 
 // ── Constraint finding dialog ─────────────────────────────────────────────────
 async function _doDialog() {
+  _dialog_active = true;
   const userId = _bioData?.userId ?? getUid();
   const role   = localStorage.getItem('userRoleOverride') || localStorage.getItem('userRole') || 'longevity';
   const messages = [];
@@ -1330,6 +1333,7 @@ async function _doDialog() {
       await _speakText(data.text);
 
       if (data.done) {
+        _dialog_active = false;
         _chj_spoke_at = Date.now();
         setTimeout(() => goSleepListening(), 800);
         return;
@@ -1339,12 +1343,13 @@ async function _doDialog() {
 
       // Počkej na odpověď uživatele
       listenOnce(async (userText) => {
-        if (!userText || Date.now() - _chj_spoke_at < 1500) { goSleepListening(); return; }
+        if (!userText || Date.now() - _chj_spoke_at < 1500) { _dialog_active = false; goSleepListening(); return; }
         messages.push({ role: 'user', content: userText });
         await turn();
       });
     } catch(e) {
       console.warn('[CHJ] _doDialog failed:', e);
+      _dialog_active = false;
       goSleepListening();
     }
   }
