@@ -245,16 +245,16 @@ async function generateStatusText(context) {
   const bottleneckLabel = (nodeId && NODE_FRIENDLY_CZ[nodeId]) || bottleneck?.node_label || null;
   const score = bottleneck ? Math.round((bottleneck.bottleneck_score ?? 0) * 100) : null;
 
-  // Template-driven prompt — striktní forma, AI jen doplňuje obsah
+  // Template-driven prompt — diagnóza + hint na akci
   const systemPrompt = `Jsi CHJ. Odpovídej PŘESNĚ podle vzoru níže. Nic víc, nic míň.
 
-Vzor: "[Slabina] ti teď ujíždí a [dopad jedním slovem]."
+Vzor: "[Slabina] ti teď ujíždí, řekni mi co dál."
 
 Příklady výstupu (přesně takto krátce a přirozeně):
-- "Kondice ti teď ujíždí a srdce to pocítí."
-- "Spánek ti ujíždí a únava se hromadí."
-- "Výživa zaostává a energie s tím klesá."
-- "Síla slábne a tělo to začíná poznávat."
+- "Kondice ti ujíždí, řekni mi co dál."
+- "Spánek zaostává, řekni mi co s tím."
+- "Výživa slábne, zeptej se co dál."
+- "Síla klesá, zeptej se co teď."
 
 Pravidla (ZÁVAZNÁ):
 - max 12 slov celkem

@@ -604,6 +604,7 @@ let _sourcesBlob  = null;   // prefetchnutý blob pro sources odpověď
 let _chj_speaking = false;  // guard: zabrání dvojímu spuštění hlasu
 let _chj_spoke_at = 0;      // timestamp posledního mluvení — cooldown proti echu
 let _currentAudio = null;   // reference na aktuálně přehrávané audio — umožňuje stop
+let _briefing_done = false; // auto-briefing jen jednou za session (první tap)
 
 // ── Briefing prewarm ─────────────────────────────────────────────────────────
 // Briefing je on-demand — uživatel iniciuje hlasem. Prewarm jen načte bio data.
@@ -826,8 +827,11 @@ function showAwake() {
   // Footer hned viditelný — uživatel může mluvit nebo psát
   document.getElementById('chjFooter').style.opacity = '1';
 
-  // Auto-briefing: "Jak jsem na tom" při každém probuzení
-  if (!_chj_speaking) _doStatus();
+  // Auto-briefing: jen při prvním probuzení za session
+  if (!_chj_speaking && !_briefing_done) {
+    _briefing_done = true;
+    _doStatus();
+  }
 }
 
 // Zobrazí laser s kontextovou barvou — voláme až po zpracování povelu
