@@ -1,7 +1,6 @@
 import dotenv from "dotenv";
 dotenv.config({ path: '.env.local' });
 
-import OpenAI from "openai";
 import { createClient } from "@supabase/supabase-js";
 
 export default async function handler(req, res) {
@@ -51,8 +50,6 @@ export default async function handler(req, res) {
     return res.json({ sources: pool.slice(0, 5).map(fmt), ai: false });
   }
 
-  const oai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
   const list = pool
     .map((c, i) => `${i}. [${c.type}] ${c.title}${c.tags?.length ? " [" + c.tags.join(", ") + "]" : ""}`)
     .join("\n");
@@ -71,13 +68,12 @@ Vrať POUZE JSON pole číselných indexů, např. [0, 2, 4]. Preferuj konkrétn
 
   let selected = pool.slice(0, 5);
   try {
-    const completion = await oai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [{ role: "user", content: prompt }],
-      temperature: 0.1,
-      max_tokens: 60,
+    const aiRes = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 60, messages: [{ role: 'user', content: prompt }] }),
     });
-    const raw = completion.choices[0].message.content.trim();
+    const raw = (await aiRes.json()).content?.[0]?.text?.trim() ?? '';
     const indices = JSON.parse(raw);
     const picked = indices.map(i => pool[i]).filter(Boolean);
     if (picked.length > 0) selected = picked;

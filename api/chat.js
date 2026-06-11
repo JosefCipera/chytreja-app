@@ -1,11 +1,10 @@
 // =====================================================
-// API ENDPOINT: /api/chat.js - Chytré já (OpenAI)
+// API ENDPOINT: /api/chat.js - Chytré já
 // =====================================================
 
 import dotenv from "dotenv";
 dotenv.config({ path: '.env.local' });
 
-import OpenAI from "openai";
 import { createClient } from "@supabase/supabase-js";
 
 // Fallback aspiration data – matches api/aspiration.js
@@ -96,10 +95,6 @@ export default async function (req, res) {
       url: process.env.SUPABASE_URL,
       key: process.env.SUPABASE_SERVICE_ROLE_KEY ? 'EXISTS' : 'MISSING',
       ai: process.env.AI_ENABLED
-    });
-
-    const openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY
     });
 
     const supabase = createClient(
@@ -422,18 +417,15 @@ ${evidenceBlock ? `Evidence:\n${evidenceBlock}` : constraintsLine ? `Omezení:\n
 ${stepProvocation ? `Kontext: "${stepProvocation}"` : ''}
 Dotaz uživatele: ${userQuestion}`;
 
-      const convoCompletion = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
-        messages: [
-          { role: "system", content: CONVO_SYSTEM },
-          { role: "user", content: CONVO_USER }
-        ],
-        temperature: 0.7,
-        max_tokens: 280
+      const convoRes = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 280, system: CONVO_SYSTEM, messages: [{ role: 'user', content: CONVO_USER }] }),
       });
+      const convoData = await convoRes.json();
 
       return res.json({
-        verdict: convoCompletion.choices[0].message.content.trim()
+        verdict: convoData.content?.[0]?.text?.trim() ?? ''
       });
     }
     // ────────────────────────────────────────────────────────────────────────
@@ -583,18 +575,15 @@ ${showKiller ? `KILLER: ${killerText}` : ''}
 ${aspirationBlock}
 `.trim();
 
-    // 5️⃣ OpenAI API call
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: USER_PROMPT }
-      ],
-      temperature: 0.7,
-      max_tokens: 200
+    // 5️⃣ Anthropic API call
+    const aiRes = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 200, system: SYSTEM_PROMPT, messages: [{ role: 'user', content: USER_PROMPT }] }),
     });
+    const aiData = await aiRes.json();
 
-    const text = completion.choices[0].message.content;
+    const text = aiData.content?.[0]?.text ?? '';
 
     console.log("=== RAW TEXT ===");
     console.log(text);
@@ -623,12 +612,7 @@ ${aspirationBlock}
     return res.json({
       verdict: formatted,
       ...(verdictLines ? { verdictLines } : {}),
-      ...(nodeId === 'dlouhovekost' ? { bottleneckNodeId: context?.bottleneck || null } : {}),
-      usage: {
-        prompt_tokens: completion.usage.prompt_tokens,
-        completion_tokens: completion.usage.completion_tokens,
-        total_tokens: completion.usage.total_tokens
-      }
+      ...(nodeId === 'dlouhovekost' ? { bottleneckNodeId: context?.bottleneck || null } : {})
     });
 
   } catch (err) {
