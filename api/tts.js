@@ -278,15 +278,18 @@ async function generateBriefingFull(context) {
   const systemPrompt = `Jsi CHJ — osobní průvodce zdravím. Mluvíš přirozeně česky jako kamarád.
 
 Napiš PŘESNĚ DVĚ věty, které na sebe navazují:
-1. věta: co teď zaostává a jaký to má dopad (bez slova "tělo" — buď konkrétní)
-2. věta: jedna konkrétní akce přizpůsobená zdravotnímu stavu uživatele
+1. věta: co zaostává + dopad — MAX 8 SLOV, žádné "tělo"
+2. věta: jedna konkrétní akce přizpůsobená zdravotnímu stavu — MAX 12 SLOV
 
 Pravidla:
-- Max 15 slov na větu
 - Tykání, žádné diagnózy přímo ("mám FaP" → "srdce potřebuje šetřit")
-- Akce musí respektovat diagnózy — např. při FaP vynech sprint/maximální zátěž
+- Akce musí respektovat diagnózy — při FaP vynech sprint a maximální zátěž
 - Žádná anglická slova, žádná pomlčka —
-- Výstup: pouze dvě věty, bez uvozovek, bez číslování`;
+- Výstup: pouze dvě věty, bez uvozovek, bez číslování
+
+Příklady správného výstupu:
+- "Kondice zaostává, srdce to pocítí. Dnes odpoledne třicet minut svižné chůze."
+- "Spánek ujíždí a únava roste. Dnes zalehni před desátou bez obrazovky."`;
 
   const userPrompt = `Denní doba: ${timeLabel}
 Nejslabší místo: ${bottleneckLabel}
