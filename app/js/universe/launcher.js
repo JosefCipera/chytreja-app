@@ -1316,8 +1316,7 @@ async function _doStatus() {
       const alarm = document.getElementById('chjAlarm');
       if (alarm && spokenText && alarm.textContent.length < spokenText.length) alarm.textContent = spokenText;
       cleanup();
-      // Automaticky navazuje doporučení — uživatel nemusí nic říkat
-      setTimeout(() => _doRecommend(), 600);
+      setTimeout(() => goSleepListening(), 600);
     };
     audio.onerror = () => { cleanup(); goSleepListening(); };
     audio.play().catch(() => { _chj_speaking = false; _currentAudio = null; });

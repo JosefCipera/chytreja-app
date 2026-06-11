@@ -233,6 +233,80 @@ function getUniverseContext(role) {
   return 'Globální cíl uživatele: žít déle a zdravěji (Medicine 3.0 / Longevity).';
 }
 
+async function fetchHealthProfile(userId) {
+  if (!userId) return null;
+  try {
+    const { createClient } = await import('@supabase/supabase-js');
+    const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+    const { data } = await supabase
+      .from('user_health_profile')
+      .select('diagnoses, medications, labs, goal_text')
+      .eq('user_id', userId)
+      .maybeSingle();
+    return data || null;
+  } catch { return null; }
+}
+
+// Jeden briefing = diagnóza + akce, vše v jednom volání s plným kontextem
+async function generateBriefingFull(context) {
+  const { hour = new Date().getHours(), userId = null, role = 'longevity' } = context;
+  const timeLabel = hour < 9 ? 'ráno' : hour < 12 ? 'dopoledne' : hour < 17 ? 'odpoledne' : 'večer';
+
+  const [bottleneck, profile] = await Promise.all([
+    fetchBottleneck(userId, role),
+    fetchHealthProfile(userId),
+  ]);
+
+  const nodeId = bottleneck?.node_id || null;
+  const bottleneckLabel = (nodeId && NODE_FRIENDLY_CZ[nodeId]) || bottleneck?.node_label || 'kondice';
+  const killerRisk = nodeId ? (NODE_KILLER_RISK[nodeId] || '') : '';
+
+  const diagnozy = profile?.diagnoses?.length ? profile.diagnoses.join(', ') : null;
+  const laby = profile?.labs ? Object.entries(profile.labs)
+    .filter(([k]) => k !== 'date')
+    .map(([k, v]) => `${k}: ${v}`)
+    .join(', ') : null;
+  const cil = profile?.goal_text || null;
+
+  const profileLines = [
+    diagnozy && `Diagnózy: ${diagnozy}`,
+    laby && `Lab výsledky: ${laby}`,
+    cil && `Cíl: ${cil}`,
+    killerRisk && `Riziko: ${killerRisk}`,
+  ].filter(Boolean).join('\n');
+
+  const systemPrompt = `Jsi CHJ — osobní průvodce zdravím. Mluvíš přirozeně česky jako kamarád.
+
+Napiš PŘESNĚ DVĚ věty, které na sebe navazují:
+1. věta: co teď zaostává a jaký to má dopad (bez slova "tělo" — buď konkrétní)
+2. věta: jedna konkrétní akce přizpůsobená zdravotnímu stavu uživatele
+
+Pravidla:
+- Max 15 slov na větu
+- Tykání, žádné diagnózy přímo ("mám FaP" → "srdce potřebuje šetřit")
+- Akce musí respektovat diagnózy — např. při FaP vynech sprint/maximální zátěž
+- Žádná anglická slova, žádná pomlčka —
+- Výstup: pouze dvě věty, bez uvozovek, bez číslování`;
+
+  const userPrompt = `Denní doba: ${timeLabel}
+Nejslabší místo: ${bottleneckLabel}
+${profileLines}
+
+Napiš dvě navazující věty:`;
+
+  const anthropicKey = process.env.ANTHROPIC_API_KEY;
+  if (!anthropicKey) throw new Error('ANTHROPIC_API_KEY not configured');
+
+  const aiRes = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'x-api-key': anthropicKey, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 120, system: systemPrompt, messages: [{ role: 'user', content: userPrompt }] }),
+  });
+  if (!aiRes.ok) throw new Error(`Claude error ${aiRes.status}`);
+  const data = await aiRes.json();
+  return data.content?.[0]?.text?.trim() ?? '';
+}
+
 async function generateStatusText(context) {
   const { userId = null, role = 'longevity' } = context;
   const bottleneck = await fetchBottleneck(userId, role);
@@ -371,12 +445,10 @@ export default async function handler(req, res) {
   if (!spokenText) {
     try {
       const mode = context?.mode || 'briefing';
-      if (mode === 'recommend') {
-        spokenText = await generateRecommendText(context);
-        console.log(`[TTS] recommend [role=${context.role||'?'} userId=${context.userId||'?'}]:`, spokenText);
-      } else if (mode === 'status') {
-        spokenText = await generateStatusText(context);
-        console.log(`[TTS] status [role=${context.role||'?'}]:`, spokenText);
+      if (mode === 'status' || mode === 'recommend') {
+        // Obě nahrazeny jednotným briefingem s plným kontextem
+        spokenText = await generateBriefingFull(context);
+        console.log(`[TTS] briefingFull [mode=${mode} role=${context.role||'?'}]:`, spokenText);
       } else {
         spokenText = await generateBriefingText(context);
         console.log('[TTS] briefing:', spokenText);
