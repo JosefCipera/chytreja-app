@@ -827,10 +827,10 @@ function showAwake() {
   // Footer hned viditelný — uživatel může mluvit nebo psát
   document.getElementById('chjFooter').style.opacity = '1';
 
-  // Auto-briefing: jen při prvním probuzení za session
+  // Auto-dialog: jen při prvním probuzení za session
   if (!_chj_speaking && !_briefing_done) {
     _briefing_done = true;
-    _doStatus();
+    _doDialog();
   }
 }
 
@@ -1270,6 +1270,86 @@ async function _handleCommand(text) {
     }
   } catch(e) { _chj_speaking = false; goSleepListening(); }
   return true;
+}
+
+// ── Shared TTS helper — vrátí Promise resolved po dohraní ────────────────────
+function _speakText(text) {
+  return new Promise(async (resolve) => {
+    if (!text) { resolve(); return; }
+    _chj_speaking = true;
+    if (_recognition) { try { _recognition.stop(); } catch(_) {} _recognition = null; }
+    try {
+      const res = await fetch('/api/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text }),
+      });
+      if (!res.ok) { _chj_speaking = false; resolve(); return; }
+      const url = URL.createObjectURL(await res.blob());
+      const audio = new Audio(url);
+      _currentAudio = audio;
+      const laser   = document.getElementById('chjLaser');
+      const launcher = document.getElementById('chj-launcher');
+      const alarm   = document.getElementById('chjAlarm');
+      const cleanup = () => {
+        laser?.classList.remove('speaking');
+        launcher?.classList.remove('speaking');
+        URL.revokeObjectURL(url);
+        _chj_speaking = false;
+        _chj_spoke_at = Date.now();
+        _currentAudio = null;
+      };
+      audio.onplay = () => {
+        laser?.classList.add('speaking');
+        launcher?.classList.add('speaking');
+        if (alarm) { alarm.textContent = ''; _typewriter(alarm, text, 35); }
+      };
+      audio.onended = () => { if (alarm && alarm.textContent.length < text.length) alarm.textContent = text; cleanup(); resolve(); };
+      audio.onerror = () => { cleanup(); resolve(); };
+      audio.play().catch(() => { _chj_speaking = false; _currentAudio = null; resolve(); });
+    } catch(e) { _chj_speaking = false; resolve(); }
+  });
+}
+
+// ── Constraint finding dialog ─────────────────────────────────────────────────
+async function _doDialog() {
+  const userId = _bioData?.userId ?? getUid();
+  const role   = localStorage.getItem('userRoleOverride') || localStorage.getItem('userRole') || 'longevity';
+  const messages = [];
+
+  async function turn() {
+    try {
+      const res = await fetch('/api/dialog', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, role, messages }),
+      });
+      if (!res.ok) { goSleepListening(); return; }
+      const data = await res.json();
+
+      await _speakText(data.text);
+
+      if (data.done) {
+        _chj_spoke_at = Date.now();
+        setTimeout(() => goSleepListening(), 800);
+        return;
+      }
+
+      messages.push({ role: 'assistant', content: data.text });
+
+      // Počkej na odpověď uživatele
+      listenOnce(async (userText) => {
+        if (!userText || Date.now() - _chj_spoke_at < 1500) { goSleepListening(); return; }
+        messages.push({ role: 'user', content: userText });
+        await turn();
+      });
+    } catch(e) {
+      console.warn('[CHJ] _doDialog failed:', e);
+      goSleepListening();
+    }
+  }
+
+  await turn();
 }
 
 // "Jak jsem na tom?" — stav + killer, bez akce
