@@ -240,11 +240,28 @@ async function fetchHealthProfile(userId) {
     const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
     const { data } = await supabase
       .from('user_health_profile')
-      .select('diagnoses, medications, labs, goal_text')
+      .select('diagnoses, medications, labs, goal_text, crt_cache')
       .eq('user_id', userId)
       .maybeSingle();
     return data || null;
   } catch { return null; }
+}
+
+// Extrahuje klíčové poznatky z CRT pro briefing prompt
+function extractCrtInsights(crtCache) {
+  if (!crtCache?.nodes?.length) return null;
+  const nodes = crtCache.nodes;
+  // Kořen (root) = nejnižší y, nebo type === 'root'
+  const root = nodes.find(n => n.type === 'root') || nodes.reduce((a, b) => (a.y ?? 0) < (b.y ?? 0) ? a : b);
+  // UDE = nejvyšší y, nebo type === 'ude'
+  const ude  = nodes.find(n => n.type === 'ude')  || nodes.reduce((a, b) => (a.y ?? 0) > (b.y ?? 0) ? a : b);
+  // Střední uzly — přeskočíme root a ude, seřadíme podle y sestupně (blíže UDE = důležitější)
+  const middle = nodes
+    .filter(n => n.id !== root?.id && n.id !== ude?.id)
+    .sort((a, b) => (b.y ?? 0) - (a.y ?? 0))
+    .slice(0, 3)
+    .map(n => n.label);
+  return { root: root?.label, ude: ude?.label, middle };
 }
 
 // Jeden briefing = diagnóza + akce, vše v jednom volání s plným kontextem
@@ -267,12 +284,18 @@ async function generateBriefingFull(context) {
     .map(([k, v]) => `${k}: ${v}`)
     .join(', ') : null;
   const cil = profile?.goal_text || null;
+  const crt = extractCrtInsights(profile?.crt_cache);
+
+  const crtLine = crt
+    ? `Kauzální řetězec (z CRT): ${crt.root} → ${crt.middle?.join(' → ') || '...'} → ${crt.ude}`
+    : null;
 
   const profileLines = [
     diagnozy && `Diagnózy: ${diagnozy}`,
     laby && `Lab výsledky: ${laby}`,
     cil && `Cíl: ${cil}`,
     killerRisk && `Riziko: ${killerRisk}`,
+    crtLine,
   ].filter(Boolean).join('\n');
 
   const systemPrompt = `Jsi CHJ — osobní průvodce zdravím. Mluvíš přirozeně česky jako kamarád.
@@ -281,15 +304,17 @@ Napiš PŘESNĚ DVĚ věty, které na sebe navazují:
 1. věta: co zaostává + dopad — MAX 8 SLOV, žádné "tělo"
 2. věta: jedna konkrétní akce přizpůsobená zdravotnímu stavu — MAX 12 SLOV
 
+Pokud máš k dispozici kauzální řetězec (z CRT), použij ho — první věta může zmínit kořenovou příčinu, druhá věta zasáhne více problémů najednou.
+
 Pravidla:
 - Tykání, žádné diagnózy přímo ("mám FaP" → "srdce potřebuje šetřit")
 - Akce musí respektovat diagnózy — při FaP vynech sprint a maximální zátěž
 - Žádná anglická slova, žádná pomlčka —
 - Výstup: pouze dvě věty, bez uvozovek, bez číslování
 
-Příklady správného výstupu:
-- "Kondice zaostává, srdce to pocítí. Dnes odpoledne třicet minut svižné chůze."
-- "Spánek ujíždí a únava roste. Dnes zalehni před desátou bez obrazovky."`;
+Příklady s CRT kontextem:
+- "Sedavý styl živí LDL i stres zároveň. Dnes půl hodiny chůze zasáhne oboje."
+- "Kondice zaostává, srdce to pocítí. Dnes třicet minut svižné chůze, ne klusu."`;
 
   const userPrompt = `Denní doba: ${timeLabel}
 Nejslabší místo: ${bottleneckLabel}
