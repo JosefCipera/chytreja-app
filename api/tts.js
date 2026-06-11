@@ -114,7 +114,7 @@ Jedna věta — situace + dopad na cíl + co udělat.`;
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'claude-haiku-4-5',
+      model: 'claude-sonnet-4-6',
       max_tokens: 80,
       system: systemPrompt,
       messages: [
@@ -274,7 +274,7 @@ Napiš jednu větu podle vzoru:`;
   const aiRes = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: { 'x-api-key': anthropicKey, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
-    body: JSON.stringify({ model: 'claude-haiku-4-5', max_tokens: 80, system: systemPrompt, messages: [{ role: 'user', content: userPrompt }] }),
+    body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 80, system: systemPrompt, messages: [{ role: 'user', content: userPrompt }] }),
   });
   if (!aiRes.ok) throw new Error(`Claude error ${aiRes.status}`);
   const data = await aiRes.json();
@@ -331,7 +331,7 @@ Jedna věta, jedna akce, čistá čeština:`;
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'claude-haiku-4-5',
+      model: 'claude-sonnet-4-6',
       max_tokens: 80,
       system: systemPrompt,
       messages: [{ role: 'user', content: userPrompt }],
