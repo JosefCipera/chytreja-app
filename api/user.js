@@ -1,9 +1,5 @@
-// /api/user — user-profile, onboarding-save, readiness, snapshot-nodes + lehkost body-flow + lehkost agent
-// Route: ?action=profile | onboarding | lehkost-onboarding | readiness | snapshot | body-flow | checkin | lehkost-agent
-//
-// Dřívější soubory: user-profile.js, onboarding-save.js, readiness.js, snapshot-nodes.js
-// + lehkost.js (checkin + body-flow)
-// lehkost-agent přesunuto z agents.js (limit 12 Vercel Hobby functions)
+// /api/user — user-profile, onboarding, readiness, snapshot, lehkost, dialog, health-profile
+// Route: ?action=profile | onboarding | lehkost-onboarding | readiness | snapshot | body-flow | checkin | lehkost-agent | dialog | health-profile
 
 import dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' });
@@ -25,8 +21,10 @@ export default async function handler(req, res) {
   if (action === 'checkin')             return handleCheckin(req, res);
   if (action === 'body-flow')           return handleBodyFlow(req, res);
   if (action === 'lehkost-agent')       return handleLehkostAgent(req, res);
+  if (action === 'dialog')              return handleDialog(req, res);
+  if (action === 'health-profile')      return handleHealthProfile(req, res);
 
-  return res.status(400).json({ error: 'action required: profile | onboarding | lehkost-onboarding | readiness | snapshot | checkin | body-flow | lehkost-agent' });
+  return res.status(400).json({ error: 'action required: profile | onboarding | readiness | snapshot | checkin | body-flow | lehkost-agent | dialog | health-profile' });
 }
 
 
@@ -490,4 +488,113 @@ async function handleLehkostAgent(req, res) {
     console.error('lehkost-agent error:', e);
     return res.status(500).json({ error: e.message });
   }
+}
+
+// ── Dialog — constraint finding ───────────────────────────────────────────────
+async function handleDialog(req, res) {
+  res.setHeader('Cache-Control', 'no-store');
+  if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
+
+  const { userId, role = 'longevity', messages = [] } = req.body || {};
+  if (!userId) return res.status(400).json({ error: 'userId required' });
+
+  const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+
+  // Načti kontext
+  const [metricsRes, profileRes] = await Promise.all([
+    supabase.from('user_metrics').select('node_id, state').eq('user_id', userId).in('state', ['RED','YELLOW']).order('current_index', { ascending: true }).limit(4),
+    supabase.from('user_health_profile').select('diagnoses, labs, goal_text, crt_cache').eq('user_id', userId).maybeSingle(),
+  ]);
+
+  const profile = profileRes.data || {};
+  const contextBlock = [
+    (metricsRes.data||[]).length && `Nejslabší uzly: ${(metricsRes.data||[]).map(n=>`${n.node_id}(${n.state})`).join(', ')}`,
+    profile.diagnoses?.length   && `Diagnózy: ${profile.diagnoses.join(', ')}`,
+    profile.labs?.LDL           && `LDL ${profile.labs.LDL}`,
+    profile.goal_text           && `Cíl: ${profile.goal_text}`,
+    profile.crt_cache?.nodes?.find(n=>n.type==='root')?.label && `CRT kořen: ${profile.crt_cache.nodes.find(n=>n.type==='root').label}`,
+  ].filter(Boolean).join('\n');
+
+  const systemPrompt = `Jsi CHJ — osobní průvodce zdravím. Vedeš krátký ranní rozhovor abys zjistil co dnes nejvíc blokuje uživatele.
+
+Kontext:
+${contextBlock}
+
+Pravidla:
+- Max 3 otázky celkem. Pak musíš rozhodnout.
+- Každá otázka jedna věta, max 12 slov, tykání.
+- Reaguj na odpověď — nedrž skript.
+- Když víš constraint, vrať JSON (nic jiného):
+  {"done":true,"text":"jedna akce max 12 slov","constraint":"název","node_id":"node_id"}
+- node_id musí být: spanek | mysl | kardio | vyziva | regenerace
+- Při FaP: ne sprint, ne maximální zátěž
+- Pokud uživatel v pohodě → constraint je kondice nebo spánek
+- Tykání, čistá čeština`;
+
+  const reqMessages = messages.length === 0
+    ? [{ role: 'user', content: '(začni dialog)' }]
+    : messages;
+
+  const anthropicKey = process.env.ANTHROPIC_API_KEY;
+  if (!anthropicKey) return res.status(500).json({ error: 'ANTHROPIC_API_KEY missing' });
+
+  const aiRes = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'x-api-key': anthropicKey, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 150, system: systemPrompt, messages: reqMessages }),
+  });
+
+  if (!aiRes.ok) return res.status(502).json({ error: 'Claude error', detail: await aiRes.text() });
+
+  const raw = (await aiRes.json()).content?.[0]?.text?.trim() ?? '';
+
+  try {
+    const m = raw.match(/\{.*"done"\s*:\s*true.*\}/s);
+    if (m) {
+      const result = JSON.parse(m[0]);
+      if (result.node_id) {
+        const today = new Date().toISOString().slice(0,10);
+        await supabase.from('daily_checkin').upsert(
+          { user_id: userId, date: today, universe: 'longevity', constraint_node_id: result.node_id, constraint_label: result.constraint },
+          { onConflict: 'user_id,date,universe' }
+        );
+      }
+      return res.json({ text: result.text, done: true, constraint: result.constraint, node_id: result.node_id });
+    }
+  } catch(_) {}
+
+  return res.json({ text: raw, done: false });
+}
+
+// ── Health profile — GET/POST ─────────────────────────────────────────────────
+async function handleHealthProfile(req, res) {
+  res.setHeader('Cache-Control', 'no-store');
+  const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+
+  if (req.method === 'GET') {
+    const { userId } = req.query;
+    if (!userId) return res.status(400).json({ error: 'userId required' });
+    const { data, error } = await supabase.from('user_health_profile').select('*').eq('user_id', userId).single();
+    if (error && error.code !== 'PGRST116') return res.status(500).json({ error: error.message });
+    return res.json(data || { user_id: userId });
+  }
+
+  if (req.method === 'POST') {
+    const { userId, ...patch } = req.body || {};
+    if (!userId) return res.status(400).json({ error: 'userId required' });
+    const { data: existing } = await supabase.from('user_health_profile').select('*').eq('user_id', userId).single();
+    const merged = { user_id: userId, ...(existing||{}), ...patch };
+    if (patch.diagnoses && existing?.diagnoses) merged.diagnoses = [...new Set([...existing.diagnoses, ...patch.diagnoses])];
+    if (patch.medications && existing?.medications) {
+      const map = {}; [...(existing.medications||[]),...(patch.medications||[])].forEach(m=>{ map[m.name]=m; });
+      merged.medications = Object.values(map);
+    }
+    if (patch.labs && existing?.labs) merged.labs = { ...existing.labs, ...patch.labs };
+    if (patch.doctor_notes && existing?.doctor_notes) merged.doctor_notes = existing.doctor_notes + '\n\n---\n\n' + patch.doctor_notes;
+    const { data, error } = await supabase.from('user_health_profile').upsert(merged, { onConflict: 'user_id' }).select().single();
+    if (error) return res.status(500).json({ error: error.message });
+    return res.json({ ok: true, profile: data });
+  }
+
+  return res.status(405).json({ error: 'Method not allowed' });
 }

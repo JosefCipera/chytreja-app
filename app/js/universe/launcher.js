@@ -1319,7 +1319,7 @@ async function _doDialog() {
 
   async function turn() {
     try {
-      const res = await fetch('/api/dialog', {
+      const res = await fetch('/api/user?action=dialog', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId, role, messages }),
