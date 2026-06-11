@@ -801,10 +801,10 @@ function showAwake() {
   const launcher = document.getElementById('chj-launcher');
   launcher.classList.remove('sleeping', 'listening');
 
-  // Laser — schovaný dokud nevíme kontext povelu
-  const laser = document.getElementById('chjLaser');
-  laser.style.width     = '0%';
-  laser.style.boxShadow = 'none';
+  // Laser — okamžitě zobraz vitality score
+  if (_bioData) {
+    showLaser(_bioData.pct, _bioData.color, _bioData.gradient);
+  }
 
   // Alarm text — prázdný, vyplní ho typewriter ze spoken textu při onplay
   const alarm = document.getElementById('chjAlarm');
@@ -824,6 +824,9 @@ function showAwake() {
 
   // Footer hned viditelný — uživatel může mluvit nebo psát
   document.getElementById('chjFooter').style.opacity = '1';
+
+  // Auto-briefing: "Jak jsem na tom" při každém probuzení
+  if (!_chj_speaking) _doStatus();
 }
 
 // Zobrazí laser s kontextovou barvou — voláme až po zpracování povelu
