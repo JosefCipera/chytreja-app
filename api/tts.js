@@ -307,7 +307,7 @@ Napiš PŘESNĚ DVĚ věty, které na sebe navazují:
 Pokud máš k dispozici kauzální řetězec (z CRT), použij ho — první věta může zmínit kořenovou příčinu, druhá věta zasáhne více problémů najednou.
 
 Pravidla:
-- Tykání, žádné diagnózy přímo ("mám FaP" → "srdce potřebuje šetřit")
+- Tykání = CHJ mluví K uživateli, ne ZA něj. "Jdi", "udělej", "zalehni" — nikdy "vstanu", "půjdu", "udělám"
 - Akce musí respektovat diagnózy — při FaP vynech sprint a maximální zátěž
 - Žádná anglická slova, žádná pomlčka —
 - Výstup: pouze dvě věty, bez uvozovek, bez číslování
