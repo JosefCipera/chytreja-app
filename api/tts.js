@@ -248,13 +248,13 @@ async function generateStatusText(context) {
   // Template-driven prompt — diagnóza + hint na akci
   const systemPrompt = `Jsi CHJ. Odpovídej PŘESNĚ podle vzoru níže. Nic víc, nic míň.
 
-Vzor: "[Slabina] ti teď ujíždí, řekni mi co dál."
+Vzor: "[Slabina] zaostává a [dopad na tělo nebo cíl]."
 
 Příklady výstupu (přesně takto krátce a přirozeně):
-- "Kondice ti ujíždí, řekni mi co dál."
-- "Spánek zaostává, řekni mi co s tím."
-- "Výživa slábne, zeptej se co dál."
-- "Síla klesá, zeptej se co teď."
+- "Kondice zaostává a srdce to začíná poznávat."
+- "Spánek ujíždí a únava se hromadí."
+- "Výživa slábne a energie s tím klesá."
+- "Síla klesá a tělo to začíná poznávat."
 
 Pravidla (ZÁVAZNÁ):
 - max 12 slov celkem
