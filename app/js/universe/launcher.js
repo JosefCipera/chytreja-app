@@ -603,6 +603,7 @@ let _recognition = null;
 let _sourcesBlob  = null;   // prefetchnutý blob pro sources odpověď
 let _chj_speaking = false;  // guard: zabrání dvojímu spuštění hlasu
 let _chj_spoke_at = 0;      // timestamp posledního mluvení — cooldown proti echu
+let _currentAudio = null;   // reference na aktuálně přehrávané audio — umožňuje stop
 
 // ── Briefing prewarm ─────────────────────────────────────────────────────────
 // Briefing je on-demand — uživatel iniciuje hlasem. Prewarm jen načte bio data.
@@ -1290,8 +1291,17 @@ async function _doStatus() {
     const spokenText = decodeURIComponent(res.headers.get('X-CHJ-Text') || '');
     const url = URL.createObjectURL(await res.blob());
     const audio = new Audio(url);
+    _currentAudio = audio;
     const laser = document.getElementById('chjLaser');
     const launcher = document.getElementById('chj-launcher');
+    const cleanup = () => {
+      laser?.classList.remove('speaking');
+      launcher?.classList.remove('speaking');
+      URL.revokeObjectURL(url);
+      _chj_speaking = false;
+      _chj_spoke_at = Date.now();
+      _currentAudio = null;
+    };
     audio.onplay = () => {
       laser?.classList.add('speaking');
       launcher?.classList.add('speaking');
@@ -1299,18 +1309,13 @@ async function _doStatus() {
       if (alarm && spokenText) { alarm.textContent = ''; _typewriter(alarm, spokenText, 30); }
     };
     audio.onended = () => {
-      // Zobraz celý text okamžitě pokud typewriter nestíhal
       const alarm = document.getElementById('chjAlarm');
       if (alarm && spokenText && alarm.textContent.length < spokenText.length) alarm.textContent = spokenText;
-      laser?.classList.remove('speaking');
-      launcher?.classList.remove('speaking');
-      URL.revokeObjectURL(url);
-      _chj_speaking = false;
-      _chj_spoke_at = Date.now(); // echo cooldown
+      cleanup();
       setTimeout(() => goSleepListening(), 600);
     };
-    audio.onerror = () => { laser?.classList.remove('speaking'); launcher?.classList.remove('speaking'); _chj_speaking = false; };
-    audio.play().catch(() => { _chj_speaking = false; });
+    audio.onerror = () => { cleanup(); };
+    audio.play().catch(() => { _chj_speaking = false; _currentAudio = null; });
   } catch (e) {
     console.warn('[CHJ] _doStatus failed:', e);
     _chj_speaking = false;
@@ -1345,6 +1350,7 @@ async function _doRecommend() {
     const spokenText = decodeURIComponent(res.headers.get('X-CHJ-Text') || '');
     const url      = URL.createObjectURL(await res.blob());
     const audio    = new Audio(url);
+    _currentAudio  = audio;
     const laser    = document.getElementById('chjLaser');
     const launcher = document.getElementById('chj-launcher');
 
@@ -1353,7 +1359,8 @@ async function _doRecommend() {
       launcher?.classList.remove('speaking');
       URL.revokeObjectURL(url);
       _chj_speaking = false;
-      _chj_spoke_at = Date.now(); // echo cooldown
+      _chj_spoke_at = Date.now();
+      _currentAudio = null;
     };
 
     audio.onplay = () => {
@@ -1487,9 +1494,21 @@ async function onTextSend() {
 
 // ── Click handler ─────────────────────────────────────────────────────────────
 function onLauncherClick(e) {
-  if (e.target.closest('#chjBtn,#chjMic,#chjInputWrap,#chjChips,#chjSrcsInline')) return;
+  if (e.target.closest('#chjBtn,#chjMic,#chjInputWrap,#chjChips,#chjSrcsInline,#chjCrtLink')) return;
+
+  // Tap během mluvení — zastav audio
+  if (_chj_speaking && _currentAudio) {
+    _currentAudio.pause();
+    _currentAudio = null;
+    _chj_speaking = false;
+    _chj_spoke_at = Date.now();
+    document.getElementById('chj-launcher')?.classList.remove('speaking');
+    document.getElementById('chjLaser')?.classList.remove('speaking');
+    goSleepListening();
+    return;
+  }
+
   if (_phase === 'awake') {
-    // Tap na awake — spusť STT pokud neprobíhá
     if (!_chj_speaking) { if (_recognition) { try { _recognition.stop(); } catch(_) {} _recognition = null; } listenOnce(t => _handleCommand(t)); }
   }
   else if (_phase === 'sleeping') {
