@@ -217,44 +217,19 @@ var CRT_CACHE_KEY = 'chj_crt_' + userId;
 var CRT_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hodin
 window.CRT_CACHE_KEY = CRT_CACHE_KEY;
 
-// ?force=1 v URL → vždy čerstvé data (např. po změně v DB)
-const _urlForce = new URLSearchParams(location.search).get('force') === '1';
-
-async function loadCRT(force = false) {
-  force = force || _urlForce;
-  // Zkus cache
-  if (!force) {
-    try {
-      const cached = localStorage.getItem(CRT_CACHE_KEY);
-      if (cached) {
-        const { ts, data } = JSON.parse(cached);
-        if (Date.now() - ts < CRT_CACHE_TTL) {
-          console.log('[CRT] z cache');
-          return data;
-        }
-      }
-    } catch(e) { /* ignoruj poškozený cache */ }
-  }
-
-  // Fetch z API
+async function loadCRT() {
+  // Cache řeší server (hash vstupních dat) — localStorage nepoužíváme
   const res = await fetch('/api/crt-generate', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ userId, role: userRole, force }),
+    body: JSON.stringify({ userId, role: userRole }),
   });
   if (!res.ok) {
     let detail = '';
     try { detail = (await res.json()).detail || ''; } catch(_) {}
     throw new Error(`CRT generate ${res.status}${detail ? ': ' + detail : ''}`);
   }
-  const data = await res.json();
-
-  // Ulož do cache
-  try {
-    localStorage.setItem(CRT_CACHE_KEY, JSON.stringify({ ts: Date.now(), data }));
-  } catch(e) { /* ignoruj při plném storage */ }
-
-  return data;
+  return res.json();
 }
 
 // ── SVG renderer — plná kontrola nad velikostí a pozicí ─────────────────────

@@ -258,38 +258,50 @@ function overlayColors(nodes, metrics) {
   });
 }
 
-const CRT_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24h
+// Stabilní hash vstupních dat — změna dat = nový hash = nový graf
+function dataHash(ctx) {
+  const key = JSON.stringify({
+    diagnoses:   ctx.profile.diagnoses || [],
+    medications: (ctx.profile.medications || []).map(m => m.name),
+    labs:        ctx.profile.labs || {},
+    goal:        ctx.profile.goal_text || '',
+    metrics:     ctx.metrics.map(m => `${m.node_id}:${m.state}`).sort(),
+  });
+  let h = 0;
+  for (let i = 0; i < key.length; i++) { h = (Math.imul(31, h) + key.charCodeAt(i)) | 0; }
+  return String(h >>> 0);
+}
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { userId, role = 'longevity', force = false } = req.body || {};
+  const { userId, role = 'longevity' } = req.body || {};
 
   const { createClient } = await import('@supabase/supabase-js');
   const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
   try {
-    // 0. Zkus server-side cache (user_health_profile.crt_cache)
-    if (userId && !force) {
+    // 1. Načti všechny zdroje dat
+    const ctx = userId ? await fetchContext(userId, role) : { metrics: [], profile: {}, checkins: [], nodeInputs: [] };
+    const hash = dataHash(ctx);
+    console.log(`[CRT] userId=${userId} role=${role} hash=${hash}`);
+
+    // 0. Zkus server-side cache — platná pokud hash sedí
+    if (userId) {
       const { data: prof } = await supabase
         .from('user_health_profile')
-        .select('crt_cache, crt_cache_at')
+        .select('crt_cache, crt_cache_hash')
         .eq('user_id', userId)
         .single();
 
-      if (prof?.crt_cache && prof?.crt_cache_at) {
-        const age = Date.now() - new Date(prof.crt_cache_at).getTime();
-        if (age < CRT_CACHE_TTL_MS) {
-          console.log(`[CRT] server cache hit (${Math.round(age/60000)}min old)`);
-          res.setHeader('Cache-Control', 'no-store');
-          return res.json({ ...prof.crt_cache, _cached: true });
-        }
+      if (prof?.crt_cache && prof?.crt_cache_hash === hash) {
+        console.log('[CRT] cache hit — data nezměněna');
+        res.setHeader('Cache-Control', 'no-store');
+        return res.json({ ...prof.crt_cache, _cached: true });
       }
     }
 
-    // 1. Načti všechny zdroje dat
-    const ctx = userId ? await fetchContext(userId, role) : { metrics: [], profile: {}, checkins: [], nodeInputs: [] };
-    console.log(`[CRT] generate userId=${userId} role=${role} metrics=${ctx.metrics.length} profile=${!!ctx.profile.diagnoses}`);
+    console.log(`[CRT] generuji nový strom (data changed) metrics=${ctx.metrics.length} profile=${!!ctx.profile.diagnoses}`);
 
     // 2. Claude vygeneruje strom
     const crt = await generateCRT(ctx, role);
@@ -316,10 +328,10 @@ export default async function handler(req, res) {
       has_data:   ctx.metrics.length > 0 || !!ctx.profile.diagnoses,
     };
 
-    // Ulož do server-side cache
+    // Ulož do server-side cache s hashem vstupních dat
     if (userId) {
       await supabase.from('user_health_profile')
-        .update({ crt_cache: result, crt_cache_at: new Date().toISOString() })
+        .update({ crt_cache: result, crt_cache_hash: hash, crt_cache_at: new Date().toISOString() })
         .eq('user_id', userId);
     }
 
