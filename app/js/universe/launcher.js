@@ -733,6 +733,7 @@ async function loadBioData() {
     // Wait for Firebase auth (universe-init sets window._chjUserId)
     const userId = await waitForUserId(8000);
     if (!userId) { showFallback(); return; }
+    window._chjUserId = userId; // zpřístupní userId pro openUserDataPanel v nebule
 
     // Launcher vždy zobrazuje BIO stav z Longevity (dlouhovekost) — Bio-Vesmír je základ.
     // currentModel se použije jen pro routing hlasových příkazů (viz tryRoute).
