@@ -521,7 +521,7 @@ Kontext:
 ${contextBlock}
 
 Pravidla:
-- Max 3 otázky celkem. Po třetí otázce vždy rozhodni.
+- Ptej se dokud nemáš jasno. Pak rozhodni — klidně po 2 otázkách, klidně po 5.
 - Každá otázka: přirozená čeština, tykání, max 8 slov.
 - Ptej se jako člověk, ne jako formulář. Reaguj na předchozí odpověď.
 - Příklady: "Spal jsi dobře?" / "Jak se cítíš?" / "Bolí tě něco?"

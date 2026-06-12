@@ -208,6 +208,18 @@ const STYLE = `
   transform: scale(1.02);
 }
 
+/* ── Nav chipy ── */
+.chjl-nav-chip {
+  background: rgba(4,28,36,0.7);
+  border: 1px solid rgba(0,188,212,0.25); color: #5ba8bc;
+  padding: 7px 16px; font-size: 12px; font-weight: 400;
+  letter-spacing: 1.5px; border-radius: 6px; cursor: pointer;
+  font-family: inherit; white-space: nowrap;
+  transition: border-color .2s, color .2s;
+  text-transform: uppercase;
+}
+.chjl-nav-chip:hover { border-color: #00bcd4; color: #e8f4f8; }
+
 /* ── Footer ── */
 .chjl-footer {
   text-align: center; display: flex; flex-direction: column;
@@ -514,15 +526,7 @@ const HTML = `
       placeholder="nebo napiš…" autocomplete="off">
     <button class="chjl-send" id="chjSend">↵</button>
   </div>
-  <div style="margin-top:4px">
-    <a id="chjCrtLink" href="/crt.html" target="_blank"
-       style="font-size:11px;color:#2a4a5a;text-decoration:none;letter-spacing:.06em;
-              transition:color .2s;"
-       onmouseover="this.style.color='#5a8aaa'"
-       onmouseout="this.style.color='#2a4a5a'">
-      ⬡ KAUZÁLNÍ MAPA
-    </a>
-  </div>
+  <div id="chjNavChips" style="display:none;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:10px"></div>
 </div>
 `;
 
@@ -848,6 +852,40 @@ function showLaser(pct, color, gradient) {
   laser.style.width      = pct + '%';
   laser.style.background = gradient;
   laser.style.boxShadow  = `0 0 20px ${color}, 0 0 8px ${color}`;
+}
+
+function showNavChips() {
+  const wrap = document.getElementById('chjNavChips');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  wrap.style.display = 'flex';
+  const chips = [
+    { label: 'Dialog',         fn: () => { wrap.style.display='none'; _doDialog(); } },
+    { label: 'Nová data',      fn: () => { window.open('/app/hud.html', '_blank'); } },
+    { label: 'Kauzální mapa',  fn: () => { window.open('/crt.html', '_blank'); } },
+    { label: 'Vesmír',         fn: () => { const model = localStorage.getItem('currentModel')||'longevity'; const node = {longevity:'dlouhovekost',lehkost:'lh_main',toc:'toc'}[model]||'dlouhovekost'; routeToNode(node); } },
+  ];
+  chips.forEach(({ label, fn }) => {
+    const btn = document.createElement('button');
+    btn.className = 'chjl-nav-chip';
+    btn.textContent = label;
+    btn.addEventListener('click', e => { e.stopPropagation(); fn(); });
+    wrap.appendChild(btn);
+  });
+}
+
+async function refreshBio() {
+  const userId = getUid();
+  if (!userId) return;
+  try {
+    const res = await fetch(`/api/hud-data-bulk?nodes=dlouhovekost&userId=${userId}&universe=longevity`);
+    if (!res.ok) return;
+    const json = await res.json();
+    const d = json['dlouhovekost'];
+    if (!d) return;
+    _bioData = { ..._bioData, pct: d.pct ?? _bioData.pct, color: d.color ?? _bioData.color, gradient: d.gradient ?? _bioData.gradient, killer: d.killer ?? _bioData.killer, action: d.action ?? _bioData.action };
+    showLaser(_bioData.pct, _bioData.color, _bioData.gradient);
+  } catch(e) { console.warn('[CHJ] refreshBio failed:', e); }
 }
 
 function showAction() {
@@ -1380,7 +1418,7 @@ async function _doDialog() {
 
         if (data.done) {
           _dialog_active = false;
-          setTimeout(() => goSleepListening(), 800);
+          setTimeout(async () => { await refreshBio(); showNavChips(); }, 800);
           return;
         }
 
@@ -1596,7 +1634,7 @@ async function onTextSend() {
 
 // ── Click handler ─────────────────────────────────────────────────────────────
 function onLauncherClick(e) {
-  if (e.target.closest('#chjBtn,#chjMic,#chjInputWrap,#chjChips,#chjSrcsInline,#chjCrtLink')) return;
+  if (e.target.closest('#chjBtn,#chjMic,#chjInputWrap,#chjChips,#chjSrcsInline,#chjNavChips')) return;
 
   // Tap během mluvení — zastav audio
   if (_chj_speaking && _currentAudio) {
