@@ -248,6 +248,18 @@ async function fetchHealthProfile(userId) {
 }
 
 // Extrahuje klíčové poznatky z CRT pro briefing prompt
+// Nahradí lékařské zkratky čitelným textem pro TTS
+function sanitizeMedAbbr(text) {
+  return text
+    .replace(/\bFaP\b/g, 'fibrilace síní')
+    .replace(/\bFAP\b/g, 'fibrilace síní')
+    .replace(/\bAF\b/g, 'fibrilace síní')
+    .replace(/\bHRV\b/g, 'variabilita srdečního rytmu')
+    .replace(/\bLDL\b/g, 'LDL cholesterol')
+    .replace(/\bHDL\b/g, 'HDL cholesterol')
+    .replace(/\bBMI\b/g, 'index tělesné hmotnosti');
+}
+
 function extractCrtInsights(crtCache) {
   if (!crtCache?.nodes?.length) return null;
   const nodes = crtCache.nodes;
@@ -278,7 +290,9 @@ async function generateBriefingFull(context) {
   const bottleneckLabel = (nodeId && NODE_FRIENDLY_CZ[nodeId]) || bottleneck?.node_label || 'kondice';
   const killerRisk = nodeId ? (NODE_KILLER_RISK[nodeId] || '') : '';
 
-  const diagnozy = profile?.diagnoses?.length ? profile.diagnoses.join(', ') : null;
+  const diagnozy = profile?.diagnoses?.length
+    ? sanitizeMedAbbr(profile.diagnoses.join(', '))
+    : null;
   const laby = profile?.labs ? Object.entries(profile.labs)
     .filter(([k]) => k !== 'date')
     .map(([k, v]) => `${k}: ${v}`)
@@ -287,7 +301,7 @@ async function generateBriefingFull(context) {
   const crt = extractCrtInsights(profile?.crt_cache);
 
   const crtLine = crt
-    ? `Kauzální řetězec (z CRT): ${crt.root} → ${crt.middle?.join(' → ') || '...'} → ${crt.ude}`
+    ? sanitizeMedAbbr(`Kauzální řetězec (z CRT): ${crt.root} → ${crt.middle?.join(' → ') || '...'} → ${crt.ude}`)
     : null;
 
   const profileLines = [
