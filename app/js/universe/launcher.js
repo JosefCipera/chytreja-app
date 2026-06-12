@@ -343,11 +343,9 @@ const STYLE = `
 #chj-launcher.sleeping .chjl-nebula     { opacity: 1; }
 #chj-launcher:not(.sleeping) .chjl-nebula { opacity: 0; pointer-events: none; }
 
-/* Speaking — vždy viditelný text když CHJ mluví (sleeping i awake) */
+/* Speaking tijdens sleep — vyšší specificita než sleeping pravidla (stejná + .speaking) */
 #chj-launcher.sleeping.speaking .chjl-main  { opacity: 1 !important; pointer-events: all !important; }
 #chj-launcher.sleeping.speaking .chjl-alarm { opacity: 1 !important; transform: none !important; filter: none !important; }
-#chj-launcher.speaking .chjl-main  { opacity: 1 !important; pointer-events: all !important; }
-#chj-launcher.speaking .chjl-alarm { opacity: 1 !important; transform: none !important; filter: none !important; }
 
 /* Plynulé přechody mezi stavy */
 .chjl-nebula     { transition: opacity 1.8s ease; }
@@ -607,7 +605,6 @@ let _chj_speaking = false;  // guard: zabrání dvojímu spuštění hlasu
 let _chj_spoke_at = 0;      // timestamp posledního mluvení — cooldown proti echu
 let _currentAudio = null;   // reference na aktuálně přehrávané audio — umožňuje stop
 let _briefing_done = false; // auto-briefing jen jednou za session (první tap)
-let _dialog_active = false; // blokuje _handleCommand routing během dialogu
 
 // ── Briefing prewarm ─────────────────────────────────────────────────────────
 // Briefing je on-demand — uživatel iniciuje hlasem. Prewarm jen načte bio data.
@@ -806,15 +803,12 @@ function showAwake() {
   const launcher = document.getElementById('chj-launcher');
   launcher.classList.remove('sleeping', 'listening');
 
-  // Laser — při prvním probuzení (dialog) schovat, jinak zobrazit
-  if (!_briefing_done && _bioData) {
-    const laser = document.getElementById('chjLaser');
-    if (laser) laser.style.width = '0%';
-  } else if (_bioData) {
+  // Laser — okamžitě zobraz vitality score
+  if (_bioData) {
     showLaser(_bioData.pct, _bioData.color, _bioData.gradient);
   }
 
-  // Alarm text reset
+  // Alarm text — prázdný, vyplní ho typewriter ze spoken textu při onplay
   const alarm = document.getElementById('chjAlarm');
   alarm.textContent     = '';
   alarm.style.opacity   = '1';
@@ -830,14 +824,17 @@ function showAwake() {
   action.style.filter       = 'blur(14px)';
   action.style.pointerEvents = 'none';
 
+  // Footer hned viditelný — uživatel může mluvit nebo psát
   document.getElementById('chjFooter').style.opacity = '1';
 
-  // Auto-dialog při prvním probuzení
+  // Auto-briefing: jen při prvním probuzení za session
   if (!_chj_speaking && !_briefing_done) {
     _briefing_done = true;
     _doDialog();
   }
 }
+
+let _dialog_active = false;
 
 // Zobrazí laser s kontextovou barvou — voláme až po zpracování povelu
 function showLaser(pct, color, gradient) {
@@ -1166,7 +1163,7 @@ function listenOnce(cb) {
     r.onend = () => {
       if (_recognition !== r) return;
       _recognition = null;
-      // Restart pokud nikdo nemluvil a jsme awake (dialog i normální režim)
+      // Restart pokud nikdo nemluvil a jsme stále awake
       if (_phase === 'awake') setTimeout(() => attempt(tries), 400);
       else mic.classList.remove('listening');
     };
@@ -1218,7 +1215,6 @@ const STATUS_PHRASES = [
 ];
 
 async function _handleCommand(text) {
-  // Ignoruj příkazy dokud CHJ mluví, 2s po domluvení (echo) nebo během dialogu
   if (_chj_speaking) return true;
   if (_dialog_active) return true;
   if (Date.now() - _chj_spoke_at < 2000) { console.log('[CHJ] echo guard — ignoring:', text); return true; }
@@ -1278,90 +1274,6 @@ async function _handleCommand(text) {
   return true;
 }
 
-// ── Shared TTS helper — vrátí Promise resolved po dohraní ────────────────────
-function _speakText(text) {
-  return new Promise(async (resolve) => {
-    if (!text) { resolve(); return; }
-    _chj_speaking = true;
-    if (_recognition) { try { _recognition.stop(); } catch(_) {} _recognition = null; }
-    try {
-      const res = await fetch('/api/tts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text }),
-      });
-      if (!res.ok) { _chj_speaking = false; resolve(); return; }
-      const url = URL.createObjectURL(await res.blob());
-      const audio = new Audio(url);
-      _currentAudio = audio;
-      const laser   = document.getElementById('chjLaser');
-      const launcher = document.getElementById('chj-launcher');
-      const alarm   = document.getElementById('chjAlarm');
-      const cleanup = () => {
-        laser?.classList.remove('speaking');
-        launcher?.classList.remove('speaking');
-        URL.revokeObjectURL(url);
-        _chj_speaking = false;
-        _chj_spoke_at = Date.now();
-        _currentAudio = null;
-      };
-      // Inline style přeruší transition okamžitě (CSS class nestačí)
-      launcher?.classList.add('speaking');
-      const main = alarm?.closest('.chjl-main') || document.querySelector('.chjl-main');
-      if (main) { main.style.transition = 'none'; main.style.opacity = '1'; }
-      if (alarm) { alarm.style.opacity = '1'; alarm.textContent = ''; _typewriter(alarm, text, 35); }
-      audio.onplay = () => { laser?.classList.add('speaking'); };
-      audio.onended = () => { if (alarm) alarm.textContent = text; cleanup(); resolve(); };
-      audio.onerror = () => { cleanup(); resolve(); };
-      audio.play().catch(() => { _chj_speaking = false; _chj_spoke_at = Date.now(); _currentAudio = null; resolve(); });
-    } catch(e) { _chj_speaking = false; _chj_spoke_at = Date.now(); resolve(); }
-  });
-}
-
-// ── Constraint finding dialog ─────────────────────────────────────────────────
-async function _doDialog() {
-  _dialog_active = true;
-  const userId = _bioData?.userId ?? getUid();
-  const role   = localStorage.getItem('userRoleOverride') || localStorage.getItem('userRole') || 'longevity';
-  const messages = [];
-
-  async function turn() {
-    try {
-      const res = await fetch('/api/user?action=dialog', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, role, messages }),
-      });
-      if (!res.ok) { goSleepListening(); return; }
-      const data = await res.json();
-
-      await _speakText(data.text);
-
-      if (data.done) {
-        _dialog_active = false;
-        _chj_spoke_at = Date.now();
-        setTimeout(() => goSleepListening(), 800);
-        return;
-      }
-
-      messages.push({ role: 'assistant', content: data.text });
-
-      // Počkej na odpověď uživatele
-      listenOnce(async (userText) => {
-        if (!userText) { _dialog_active = false; goSleepListening(); return; }
-        messages.push({ role: 'user', content: userText });
-        await turn();
-      });
-    } catch(e) {
-      console.warn('[CHJ] _doDialog failed:', e);
-      _dialog_active = false;
-      goSleepListening();
-    }
-  }
-
-  await turn();
-}
-
 // "Jak jsem na tom?" — stav + killer, bez akce
 async function _doStatus() {
   _chj_speaking = true;
@@ -1414,6 +1326,92 @@ async function _doStatus() {
     console.warn('[CHJ] _doStatus failed:', e);
     _chj_speaking = false;
   }
+}
+
+// ── Constraint finding dialog ─────────────────────────────────────────────────
+async function _doDialog() {
+  const userId = _bioData?.userId ?? getUid();
+  const role   = localStorage.getItem('userRoleOverride') || localStorage.getItem('userRole') || 'longevity';
+  const messages = [];
+  _dialog_active = true;
+
+  async function turn() {
+    _chj_speaking = true;
+    if (_recognition) { try { _recognition.stop(); } catch(_) {} _recognition = null; }
+
+    try {
+      const res = await fetch('/api/user?action=dialog', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, role, messages }),
+      });
+      if (!res.ok) { _chj_speaking = false; _dialog_active = false; goSleepListening(); return; }
+      const data = await res.json();
+      const questionText = data.text || '';
+
+      // TTS — stejný pattern jako _doStatus
+      const ttsRes = await fetch('/api/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: questionText }),
+      });
+      if (!ttsRes.ok) { _chj_speaking = false; _dialog_active = false; goSleepListening(); return; }
+
+      const url = URL.createObjectURL(await ttsRes.blob());
+      const audio = new Audio(url);
+      _currentAudio = audio;
+      const laser   = document.getElementById('chjLaser');
+      const launcher = document.getElementById('chj-launcher');
+
+      audio.onplay = () => {
+        laser?.classList.add('speaking');
+        launcher?.classList.add('speaking');
+        const alarm = document.getElementById('chjAlarm');
+        if (alarm && questionText) { alarm.textContent = ''; _typewriter(alarm, questionText, 30); }
+      };
+
+      audio.onended = () => {
+        const alarm = document.getElementById('chjAlarm');
+        if (alarm && alarm.textContent.length < questionText.length) alarm.textContent = questionText;
+        laser?.classList.remove('speaking');
+        launcher?.classList.remove('speaking');
+        URL.revokeObjectURL(url);
+        _chj_speaking = false;
+        _chj_spoke_at = Date.now();
+        _currentAudio = null;
+
+        if (data.done) {
+          _dialog_active = false;
+          setTimeout(() => goSleepListening(), 800);
+          return;
+        }
+
+        messages.push({ role: 'assistant', content: questionText });
+        listenOnce(async (userText) => {
+          if (!userText) { _dialog_active = false; goSleepListening(); return; }
+          messages.push({ role: 'user', content: userText });
+          await turn();
+        });
+      };
+
+      audio.onerror = () => {
+        URL.revokeObjectURL(url);
+        _chj_speaking = false;
+        _dialog_active = false;
+        goSleepListening();
+      };
+
+      audio.play().catch(() => { _chj_speaking = false; _dialog_active = false; _currentAudio = null; goSleepListening(); });
+
+    } catch(e) {
+      console.warn('[CHJ] _doDialog failed:', e);
+      _chj_speaking = false;
+      _dialog_active = false;
+      goSleepListening();
+    }
+  }
+
+  await turn();
 }
 
 // "Co dál?" — zavolá API s bio kontextem, přehraje odpověď, vrátí do nebuly
