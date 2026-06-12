@@ -216,7 +216,6 @@ Strom musí mít 10–14 uzlů celkem (root + nodes). Vrať pouze JSON.`;
     body: JSON.stringify({
       model: 'claude-opus-4-8',
       max_tokens: 2000,
-      temperature: 0,
       system: systemPrompt,
       messages: [{ role: 'user', content: userPrompt }],
     }),
