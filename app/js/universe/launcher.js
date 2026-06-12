@@ -877,11 +877,13 @@ function showNavChips() {
   if (!wrap) return;
   wrap.innerHTML = '';
   wrap.style.display = 'flex';
+  const _openData = () => { if (!document.getElementById('userDataModal')) window.initUserDataPanel?.(); window.openUserDataPanel?.(); };
   const chips = _hasHealthData ? [
     { label: 'Kauzální mapa', fn: () => { window.location.href = '/crt.html?force=1'; } },
     { label: 'Vesmír',        fn: () => { const model = localStorage.getItem('currentModel')||'longevity'; const node = {longevity:'dlouhovekost',lehkost:'lh_main',toc:'toc'}[model]||'dlouhovekost'; routeToNode(node); } },
+    { label: 'Data',          fn: _openData },
   ] : [
-    { label: 'Zadat data',    fn: () => { if (!document.getElementById('userDataModal')) window.initUserDataPanel?.(); window.openUserDataPanel?.(); } },
+    { label: 'Zadat data',    fn: _openData },
   ];
   chips.forEach(({ label, fn }) => {
     const btn = document.createElement('button');

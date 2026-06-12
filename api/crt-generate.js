@@ -169,9 +169,10 @@ Pravidla pro strukturu:
 - injections: 2–3 konkrétní akce které přeruší kauzální řetěz
 - node_id: CHJ uzel pokud existuje (kardio/mysl/vyziva/spanek/dlouhovekost), jinak null
 - Labely v češtině: PRIMÁRNĚ srozumitelně pro laika (co člověk cítí nebo zná z běžného života)
-  Odborný termín pouze pokud je diagnóza přímo z profilu uživatele (např. "Fibrilace síní FaP").
+  Odborný termín pouze pokud je diagnóza přímo z profilu uživatele (např. "Fibrilace síní").
   Příklady: "Ztuhlé cévy" ne "Arteroskleróza", "Slabý srdeční rytmus" ne "Arytmie",
-  "Únava po pohybu" ne "Snížená aerobní kapacita". Max 4 slova.
+  "Únava po pohybu" ne "Snížená aerobní kapacita".
+  Max 5 slov. Label musí být CELÁ srozumitelná věta nebo fráze — nikdy nezkracuj doprostřed.
 
 Topologie — čistý strom BEZ křížení, TŘI větve:
 - Levá větev (L): příčiny z metabolického/cévního subsystému (LDL, cévy, zánět, krevní tlak)
