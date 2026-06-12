@@ -1355,7 +1355,10 @@ async function _doStatus() {
       const alarm = document.getElementById('chjAlarm');
       if (alarm && spokenText && alarm.textContent.length < spokenText.length) alarm.textContent = spokenText;
       cleanup();
-      setTimeout(() => goSleepListening(), 600);
+      setTimeout(async () => {
+        if (_bioData) showLaser(_bioData.pct, _bioData.color, _bioData.gradient);
+        showNavChips();
+      }, 600);
     };
     audio.onerror = () => { cleanup(); goSleepListening(); };
     audio.play().catch(() => { _chj_speaking = false; _currentAudio = null; });
