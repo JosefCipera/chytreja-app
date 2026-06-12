@@ -1611,7 +1611,7 @@ function onLauncherClick(e) {
   }
 
   if (_phase === 'awake') {
-    if (!_chj_speaking) { if (_recognition) { try { _recognition.stop(); } catch(_) {} _recognition = null; } listenOnce(t => _handleCommand(t)); }
+    if (!_chj_speaking && !_dialog_active) { if (_recognition) { try { _recognition.stop(); } catch(_) {} _recognition = null; } listenOnce(t => _handleCommand(t)); }
   }
   else if (_phase === 'sleeping') {
     showAwake();

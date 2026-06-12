@@ -515,21 +515,20 @@ async function handleDialog(req, res) {
     profile.crt_cache?.nodes?.find(n=>n.type==='root')?.label && `CRT kořen: ${profile.crt_cache.nodes.find(n=>n.type==='root').label}`,
   ].filter(Boolean).join('\n');
 
-  const systemPrompt = `Jsi CHJ — ranní průvodce. Zjisti jednou větou co dnes uživatele nejvíc limituje.
+  const systemPrompt = `Jsi CHJ. Vedeš krátký ranní rozhovor — zjisti co dnes uživatele nejvíc limituje.
 
 Kontext:
 ${contextBlock}
 
 Pravidla:
-- Max 3 otázky. Pak rozhodni.
-- Otázka = jedna věta, max 10 slov, tykání, přirozená čeština.
-- Nepouži metafory ("táhne dolů", "brzdí tě") — ptej se přímo a konkrétně.
-- Příklady dobré otázky: "Jak ses dnes ráno probudil?" / "Bolí tě něco?" / "Spal jsi dobře?"
-- Reaguj na odpověď — nedrž skript.
-- Když víš constraint, vrať pouze JSON:
-  {"done":true,"text":"jedna konkrétní akce max 10 slov","constraint":"název","node_id":"node_id"}
+- Max 3 otázky celkem. Po třetí otázce vždy rozhodni.
+- Každá otázka: přirozená čeština, tykání, max 8 slov.
+- Ptej se jako člověk, ne jako formulář. Reaguj na předchozí odpověď.
+- Příklady: "Spal jsi dobře?" / "Jak se cítíš?" / "Bolí tě něco?"
+- Když máš dost info, vrať POUZE tento JSON bez dalšího textu:
+  {"done":true,"text":"konkrétní akce max 8 slov","constraint":"název","node_id":"node_id"}
 - node_id: spanek | mysl | kardio | vyziva | regenerace
-- Tykání, žádné metafory, žádná dramatizace`;
+- Nikdy neříkej "řekni co dál" ani podobné výzvy — to řeší UI`;
 
   const reqMessages = messages.length === 0
     ? [{ role: 'user', content: '(začni dialog)' }]
