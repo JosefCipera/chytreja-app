@@ -1307,12 +1307,10 @@ function _speakText(text) {
         _chj_spoke_at = Date.now();
         _currentAudio = null;
       };
-      audio.onplay = () => {
-        laser?.classList.add('speaking');
-        launcher?.classList.add('speaking');
-        if (alarm) { alarm.textContent = ''; _typewriter(alarm, text, 35); }
-      };
-      audio.onended = () => { if (alarm && alarm.textContent.length < text.length) alarm.textContent = text; cleanup(); resolve(); };
+      // Text zobrazit PŘED play — onplay je nespolehlivý (mobile, Safari)
+      if (alarm) { alarm.style.opacity = '1'; alarm.textContent = ''; _typewriter(alarm, text, 35); }
+      audio.onplay = () => { laser?.classList.add('speaking'); launcher?.classList.add('speaking'); };
+      audio.onended = () => { if (alarm) alarm.textContent = text; cleanup(); resolve(); };
       audio.onerror = () => { cleanup(); resolve(); };
       audio.play().catch(() => { _chj_speaking = false; _chj_spoke_at = Date.now(); _currentAudio = null; resolve(); });
     } catch(e) { _chj_speaking = false; _chj_spoke_at = Date.now(); resolve(); }
