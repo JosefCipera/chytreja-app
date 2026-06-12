@@ -802,16 +802,23 @@ function showFallback() {
 
 // ── Phases ───────────────────────────────────────────────────────────────────
 function showAwake() {
+  // První probuzení za session: dialog běží ve sleeping stavu (sleeping.speaking CSS funguje)
+  if (!_chj_speaking && !_briefing_done) {
+    _briefing_done = true;
+    _phase = 'awake';
+    document.getElementById('chjFooter').style.opacity = '1';
+    _doDialog();
+    return;
+  }
+
   _phase = 'awake';
   const launcher = document.getElementById('chj-launcher');
   launcher.classList.remove('sleeping', 'listening');
 
-  // Laser — okamžitě zobraz vitality score
-  if (_bioData) {
-    showLaser(_bioData.pct, _bioData.color, _bioData.gradient);
-  }
+  // Laser — zobraz vitality score
+  if (_bioData) showLaser(_bioData.pct, _bioData.color, _bioData.gradient);
 
-  // Alarm text — prázdný, vyplní ho typewriter ze spoken textu při onplay
+  // Alarm text reset
   const alarm = document.getElementById('chjAlarm');
   alarm.textContent     = '';
   alarm.style.opacity   = '1';
@@ -827,20 +834,7 @@ function showAwake() {
   action.style.filter       = 'blur(14px)';
   action.style.pointerEvents = 'none';
 
-  // Footer hned viditelný — uživatel může mluvit nebo psát
   document.getElementById('chjFooter').style.opacity = '1';
-
-  // Auto-dialog: jen při prvním probuzení za session
-  // Laser se schová — zobrazí se až po dialogu s výsledkem
-  if (!_chj_speaking && !_briefing_done) {
-    _briefing_done = true;
-    const laser = document.getElementById('chjLaser');
-    if (laser) laser.style.width = '0%';
-    // Přeskočíme CSS transition chjl-main (0.6s sleeping→awake) aby byl text viditelný
-    const main = document.querySelector('.chjl-main');
-    if (main) { main.style.transition = 'none'; main.style.opacity = '1'; }
-    _doDialog();
-  }
 }
 
 // Zobrazí laser s kontextovou barvou — voláme až po zpracování povelu
