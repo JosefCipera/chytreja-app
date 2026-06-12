@@ -308,7 +308,8 @@ Pokud máš k dispozici kauzální řetězec (z CRT), použij ho — první vět
 
 Pravidla:
 - Tykání = CHJ mluví K uživateli, ne ZA něj. "Jdi", "udělej", "zalehni" — nikdy "vstanu", "půjdu", "udělám"
-- Akce musí respektovat diagnózy — při FaP vynech sprint a maximální zátěž
+- Akce musí respektovat diagnózy — při fibrilaci síní vynech sprint a maximální zátěž
+- Nikdy nepoužívej lékařské zkratky (FaP, LDL, HRV) — piš celým slovem
 - Žádná anglická slova, žádná pomlčka —
 - Výstup: pouze dvě věty, bez uvozovek, bez číslování
 

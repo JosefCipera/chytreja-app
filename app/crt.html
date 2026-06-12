@@ -345,56 +345,70 @@ function renderTree(data) {
   (data.and_joins || []).forEach(aj => { AND_JOINS[aj.target] = aj.sources; });
   const andJoinTargets = new Set(Object.keys(AND_JOINS));
 
+  // AND-join zdroje — sada zdrojových node IDs které jsou součástí AND joinu
+  const andJoinSources = new Set(
+    Object.values(AND_JOINS).flat()
+  );
+
   data.edges.forEach(e => {
     const src = nodeMap[e.from], tgt = nodeMap[e.to];
     if (!src || !tgt) return;
+    // Přeskočit hrany které jsou součástí AND-joinu — ty kreslíme v AND sekci
+    if (andJoinTargets.has(e.to) && andJoinSources.has(e.from)) return;
+
     const srcH = boxHeight(src.label), tgtH = boxHeight(tgt.label);
     const x1 = cx(src.x ?? 0), y1 = cy(src.y ?? 0) - srcH / 2;
     const x2 = cx(tgt.x ?? 0), y2 = cy(tgt.y ?? 0) + tgtH / 2;
 
-    // AND-join: šipka končí na elipse (12px nad středem elipsy)
-    let endY = y2;
-    if (andJoinTargets.has(e.to)) {
-      const joinSrcs = AND_JOINS[e.to];
-      const avgSrcTopY = joinSrcs.reduce((s, id) => s + (cy(nodeMap[id]?.y ?? 0) - boxHeight(nodeMap[id]?.label||'')/2), 0) / joinSrcs.length;
-      const tgtBottomY = cy(nodeMap[e.to]?.y ?? 0) + boxHeight(nodeMap[e.to]?.label||'') / 2;
-      endY = avgSrcTopY + (tgtBottomY - avgSrcTopY) * 0.5 - 12;
-    }
-
-    const midY1 = y1 + (endY - y1) * 0.4;
-    const midY2 = y1 + (endY - y1) * 0.6;
-    const path = svgEl('path', {
-      d: `M ${x1} ${y1} C ${x1} ${midY1}, ${x2} ${midY2}, ${x2} ${endY}`,
+    const midY1 = y1 + (y2 - y1) * 0.4;
+    const midY2 = y1 + (y2 - y1) * 0.6;
+    svg.appendChild(svgEl('path', {
+      d: `M ${x1} ${y1} C ${x1} ${midY1}, ${x2} ${midY2}, ${x2} ${y2}`,
       fill: 'none', stroke: '#4a6878', 'stroke-width': '2.5',
       'marker-end': 'url(#arrow)',
-    });
-    svg.appendChild(path);
+    }));
   });
 
-  // ── AND-join elipsy ──────────────────────────────────────────────────────
+  // ── AND-join obloučky (Goldratt CRT notace) ─────────────────────────────
+  // Šipky ze zdrojů se sbíhají → oblouček těsně nad cílovým boxem → jedna šipka dolů
   Object.entries(AND_JOINS).forEach(([targetId, sourceIds]) => {
     const tgt = nodeMap[targetId];
     if (!tgt) return;
     const srcs = sourceIds.map(id => nodeMap[id]).filter(Boolean);
-    // Elipsa přesně uprostřed mezi horním okrajem zdrojů a dolním okrajem cíle
-    const avgSrcTopY = srcs.reduce((s, n) => s + (cy(n.y ?? 0) - boxHeight(n.label)/2), 0) / srcs.length;
+    if (srcs.length < 2) return;
+
     const tgtBottomY = cy(tgt.y ?? 0) + boxHeight(tgt.label) / 2;
-    const ey = avgSrcTopY + (tgtBottomY - avgSrcTopY) * 0.5;
-    // Elipsa na průměrné X zdrojů (ne X cíle — cíl může být uprostřed)
-    const ex = srcs.reduce((s, n) => s + cx(n.x ?? 0), 0) / srcs.length;
-    svg.appendChild(svgEl('ellipse', {
-      cx: ex, cy: ey, rx: 28, ry: 12,
-      fill: '#0d1822', stroke: '#4a8a9a', 'stroke-width': '2',
+    const tgtCx = cx(tgt.x ?? 0);
+
+    // Oblouček je těsně nad cílovým boxem
+    const arcY = tgtBottomY + 50;
+    const srcXs = srcs.map(n => cx(n.x ?? 0));
+    const arcX1 = Math.min(...srcXs);
+    const arcX2 = Math.max(...srcXs);
+    const arcMidX = (arcX1 + arcX2) / 2;
+
+    // Šipky ze zdrojových uzlů dolů na koncové body obloučku
+    srcs.forEach((n, i) => {
+      const sx = cx(n.x ?? 0);
+      const sy = cy(n.y ?? 0) - boxHeight(n.label) / 2; // top of source box
+      const ex = srcXs[i];
+      svg.appendChild(svgEl('path', {
+        d: `M ${sx} ${sy} C ${sx} ${(sy + arcY) / 2}, ${ex} ${(sy + arcY) / 2}, ${ex} ${arcY}`,
+        fill: 'none', stroke: '#4a6878', 'stroke-width': '2.5',
+      }));
+    });
+
+    // Oblouček — konvexní dolů (⌢) spojující konce šipek
+    const arcSag = 18; // výška oblouku
+    svg.appendChild(svgEl('path', {
+      d: `M ${arcX1} ${arcY} Q ${arcMidX} ${arcY + arcSag} ${arcX2} ${arcY}`,
+      fill: 'none', stroke: '#4a8a9a', 'stroke-width': '2',
     }));
-    svg.appendChild(svgEl('text', {
-      x: ex, y: ey + 4, 'text-anchor': 'middle',
-      fill: '#4a8a9a', 'font-size': '10', 'font-family': 'monospace', 'letter-spacing': '1',
-    }, 'AND'));
-    // Šipka z elipsy na cílový uzel
-    const tgtBottomY2 = cy(tgt.y ?? 0) + boxHeight(tgt.label) / 2;
+
+    // Jedna šipka z vrcholu obloučku na cílový box
     svg.appendChild(svgEl('line', {
-      x1: ex, y1: ey - 12,
-      x2: cx(tgt.x ?? 0), y2: tgtBottomY2 + 2,
+      x1: arcMidX, y1: arcY,
+      x2: tgtCx, y2: tgtBottomY + 2,
       stroke: '#4a6878', 'stroke-width': '2.5',
       'marker-end': 'url(#arrow)',
     }));

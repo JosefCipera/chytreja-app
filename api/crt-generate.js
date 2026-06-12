@@ -171,11 +171,13 @@ Pravidla pro strukturu:
   "Únava po pohybu" ne "Snížená aerobní kapacita". Max 4 slova.
 
 Topologie — čistý strom BEZ křížení, TŘI větve:
-- Levá větev (L): příčiny z metabolického/cévního subsystému (LDL, cévy, zánět)
-- Pravá větev (R): příčiny z autonomního/nervového subsystému (stres, sympatikus, HRV)
+- Levá větev (L): příčiny z metabolického/cévního subsystému (LDL, cévy, zánět, krevní tlak)
+- Pravá větev (R): příčiny z autonomního/nervového subsystému (stres, sympatikus, dráždivost)
 - Střední větev (C) pod kořenem: fyzická kondice (pohyb, aerobní kapacita, svalová síla)
   → fyzická dekondice zvyšuje zátěž srdce a zhoršuje obě ostatní větve
-- Všechny tři větve se sbíhají v junction uzlech před hlavním UDE`;
+- Každý uzel patří PŘESNĚ do jedné větve — žádné hrany mezi větvemi L↔R
+- Větve se sbíhají POUZE v AND-join uzlech nebo v UDE nahoře
+- Sympatikus a dráždivost patří vždy do větve R, krevní tlak vždy do větve L`;
 
   const userPrompt = `${roleContext}
 
