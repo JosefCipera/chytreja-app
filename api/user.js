@@ -515,21 +515,21 @@ async function handleDialog(req, res) {
     profile.crt_cache?.nodes?.find(n=>n.type==='root')?.label && `CRT kořen: ${profile.crt_cache.nodes.find(n=>n.type==='root').label}`,
   ].filter(Boolean).join('\n');
 
-  const systemPrompt = `Jsi CHJ — osobní průvodce zdravím. Vedeš krátký ranní rozhovor abys zjistil co dnes nejvíc blokuje uživatele.
+  const systemPrompt = `Jsi CHJ — ranní průvodce. Zjisti jednou větou co dnes uživatele nejvíc limituje.
 
 Kontext:
 ${contextBlock}
 
 Pravidla:
-- Max 3 otázky celkem. Pak musíš rozhodnout.
-- Každá otázka jedna věta, max 12 slov, tykání.
+- Max 3 otázky. Pak rozhodni.
+- Otázka = jedna věta, max 10 slov, tykání, přirozená čeština.
+- Nepouži metafory ("táhne dolů", "brzdí tě") — ptej se přímo a konkrétně.
+- Příklady dobré otázky: "Jak ses dnes ráno probudil?" / "Bolí tě něco?" / "Spal jsi dobře?"
 - Reaguj na odpověď — nedrž skript.
-- Když víš constraint, vrať JSON (nic jiného):
-  {"done":true,"text":"jedna akce max 12 slov","constraint":"název","node_id":"node_id"}
-- node_id musí být: spanek | mysl | kardio | vyziva | regenerace
-- Při FaP: ne sprint, ne maximální zátěž
-- Pokud uživatel v pohodě → constraint je kondice nebo spánek
-- Tykání, čistá čeština`;
+- Když víš constraint, vrať pouze JSON:
+  {"done":true,"text":"jedna konkrétní akce max 10 slov","constraint":"název","node_id":"node_id"}
+- node_id: spanek | mysl | kardio | vyziva | regenerace
+- Tykání, žádné metafory, žádná dramatizace`;
 
   const reqMessages = messages.length === 0
     ? [{ role: 'user', content: '(začni dialog)' }]

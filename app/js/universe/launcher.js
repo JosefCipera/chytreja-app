@@ -835,6 +835,7 @@ function showAwake() {
 }
 
 let _dialog_active = false;
+let _dialogCallback = null; // čekající callback pro odpověď uživatele
 
 // Zobrazí laser s kontextovou barvou — voláme až po zpracování povelu
 function showLaser(pct, color, gradient) {
@@ -1384,11 +1385,14 @@ async function _doDialog() {
         }
 
         messages.push({ role: 'assistant', content: questionText });
-        listenOnce(async (userText) => {
+        const dialogCb = async (userText) => {
+          _dialogCallback = null;
           if (!userText) { _dialog_active = false; goSleepListening(); return; }
           messages.push({ role: 'user', content: userText });
           await turn();
-        });
+        };
+        _dialogCallback = dialogCb;
+        listenOnce(dialogCb);
       };
 
       audio.onerror = () => {
@@ -1554,6 +1558,15 @@ async function onTextSend() {
   input.value = '';
 
   if (!text) return;
+
+  // Dialog má přednost — odpověď jde přímo do dialogu
+  if (_dialog_active && _dialogCallback) {
+    if (_recognition) { try { _recognition.stop(); } catch(_) {} _recognition = null; }
+    const cb = _dialogCallback;
+    _dialogCallback = null;
+    cb(text);
+    return;
+  }
 
   // Command handler — zdroje, navigace
   const handled = await _handleCommand(text);
