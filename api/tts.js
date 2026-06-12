@@ -303,18 +303,11 @@ async function generateBriefingFull(context) {
     .map(([k, v]) => `${k}: ${v}`)
     .join(', ') : null;
   const cil = profile?.goal_text || null;
-  const crt = extractCrtInsights(profile?.crt_cache);
-
-  const crtLine = crt
-    ? sanitizeMedAbbr(`Kauzální řetězec (z CRT): ${crt.root} → ${crt.middle?.join(' → ') || '...'} → ${crt.ude}`)
-    : null;
-
   const profileLines = [
     diagnozy && `Diagnózy: ${diagnozy}`,
     laby && `Lab výsledky: ${laby}`,
     cil && `Cíl: ${cil}`,
     killerRisk && `Riziko: ${killerRisk}`,
-    crtLine,
   ].filter(Boolean).join('\n');
 
   const systemPrompt = `Jsi CHJ — osobní průvodce zdravím. Mluvíš přirozeně česky jako kamarád.
