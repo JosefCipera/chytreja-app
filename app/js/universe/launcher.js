@@ -807,10 +807,7 @@ function showAwake() {
   const launcher = document.getElementById('chj-launcher');
   launcher.classList.remove('sleeping', 'listening');
 
-  // Laser — zobraz jen pokud dialog už proběhl (ne při prvním probuzení)
-  if (_bioData && _briefing_done) {
-    showLaser(_bioData.pct, _bioData.color, _bioData.gradient);
-  }
+  if (_bioData) showLaser(_bioData.pct, _bioData.color, _bioData.gradient);
 
   // Alarm text — prázdný, vyplní ho typewriter ze spoken textu při onplay
   const alarm = document.getElementById('chjAlarm');
