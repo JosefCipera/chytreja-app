@@ -875,8 +875,9 @@ function showNavChips() {
   wrap.innerHTML = '';
   wrap.style.display = 'flex';
   const chips = [
-    { label: 'Kauzální mapa', fn: () => { window.open('/crt.html?force=1', '_blank'); } },
+    { label: 'Kauzální mapa', fn: () => { window.location.href = '/crt.html?force=1'; } },
     { label: 'Vesmír',        fn: () => { const model = localStorage.getItem('currentModel')||'longevity'; const node = {longevity:'dlouhovekost',lehkost:'lh_main',toc:'toc'}[model]||'dlouhovekost'; routeToNode(node); } },
+    { label: 'Já',            fn: () => { if (typeof window.openUserDataPanel === 'function') window.openUserDataPanel(); } },
   ];
   chips.forEach(({ label, fn }) => {
     const btn = document.createElement('button');

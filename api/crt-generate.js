@@ -49,12 +49,15 @@ async function fetchContext(userId, role) {
   else if (role === 'lehkost') q = q.in('node_id', LEHKOST_NODE_IDS);
   const { data: metrics } = await q;
 
-  // 2. Zdravotní profil (diagnózy, léky, labs)
-  const { data: profile } = await supabase
-    .from('user_health_profile')
-    .select('diagnoses, medications, labs, physical, goal_text, doctor_notes, birth_year, sex')
-    .eq('user_id', userId)
-    .single();
+  // 2. Zdravotní profil (diagnózy, labs) + léky z user_medications
+  const [{ data: profile }, { data: meds }] = await Promise.all([
+    supabase.from('user_health_profile')
+      .select('diagnoses, labs, physical, goal_text, doctor_notes, birth_year, sex')
+      .eq('user_id', userId).single(),
+    supabase.from('user_medications')
+      .select('name, dose').eq('user_id', userId).eq('active', true),
+  ]);
+  if (profile) profile.medications = meds ?? [];
 
   // 3. Poslední check-in (energie, spánek, stres)
   const today = new Date().toISOString().slice(0, 10);

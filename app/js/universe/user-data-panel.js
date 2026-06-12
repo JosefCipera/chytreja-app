@@ -31,18 +31,22 @@ window.openUserDataPanel = openUserDataPanel;
 async function loadAndRender() {
   renderSkeleton();
 
-  const [profileRes, constraintsRes, decathlonRes, integrationsRes] = await Promise.all([
+  const [profileRes, constraintsRes, decathlonRes, integrationsRes, healthRes, medsRes] = await Promise.all([
     supabase.from('user_profiles').select('age, gender, height, weight, birth_year').eq('user_id', userId).maybeSingle(),
     supabase.from('user_constraints').select('constraint_type, constraint_key, constraint_value, severity').eq('user_id', userId),
     supabase.from('user_decathlon').select('goal_key, label').eq('user_id', userId).eq('active', true).maybeSingle(),
-    supabase.from('user_integrations').select('service, enabled').eq('user_id', userId)
+    supabase.from('user_integrations').select('service, enabled').eq('user_id', userId),
+    supabase.from('user_health_profile').select('diagnoses').eq('user_id', userId).maybeSingle(),
+    supabase.from('user_medications').select('name, dose, active').eq('user_id', userId).eq('active', true)
   ]);
 
   cachedData = {
     profile:      profileRes.data      ?? {},
     constraints:  constraintsRes.data  ?? [],
     decathlon:    decathlonRes.data    ?? {},
-    integrations: integrationsRes.data ?? []
+    integrations: integrationsRes.data ?? [],
+    diagnoses:    healthRes.data?.diagnoses ?? [],
+    medications:  medsRes.data ?? [],
   };
 
   renderTab(activeTab);
@@ -75,6 +79,7 @@ function renderTab(tab) {
     case 'aspirations':  body.innerHTML = renderAspirationsTab();   break;
     case 'vitality':     body.innerHTML = renderVitalityTab();      break;
     case 'checkin':      body.innerHTML = renderCheckInTab();       break;
+    case 'zdravi':       body.innerHTML = renderZdraviTab();        break;
     case 'documents':    body.innerHTML = renderDocumentsTab();     break;
     case 'integrations': body.innerHTML = renderIntegrationsTab();  break;
   }
@@ -583,6 +588,7 @@ function bindTabEvents(tab) {
     case 'aspirations':  bindAspirationsEvents();    break;
     case 'vitality':     bindVitalityEvents();       break;
     case 'checkin':      bindCheckInEvents();        break;
+    case 'zdravi':       bindZdraviEvents();         break;
     case 'documents':    bindDocumentsEvents();      break;
     case 'integrations': bindIntegrationsEvents();   break;
   }
@@ -739,6 +745,7 @@ export function initUserDataPanel() {
         <button class="udp-tab" data-tab="constraints">Omezení</button>
         <button class="udp-tab" data-tab="aspirations">Sen</button>
         <button class="udp-tab" data-tab="vitality">Vitalita</button>
+        <button class="udp-tab" data-tab="zdravi">Zdraví</button>
         <button class="udp-tab" data-tab="documents">Dokumenty</button>
         <button class="udp-tab" data-tab="integrations">Integrace</button>
       </div>
@@ -764,6 +771,102 @@ export function openCheckInTab() {
 }
 
 window.openCheckInTab = openCheckInTab;
+
+// ═══════════════════════════════════════════════════
+// TAB: Zdraví — Diagnózy + Léky
+// ═══════════════════════════════════════════════════
+
+function renderZdraviTab() {
+  const diagnoses = (cachedData.diagnoses ?? []).join('\n');
+  const meds = cachedData.medications ?? [];
+
+  const medRows = meds.length
+    ? meds.map((m, i) => renderMedRow(i, m)).join('')
+    : renderMedRow(0, {});
+
+  return `
+    <div class="udp-section">
+      <div class="udp-section-label">Diagnózy</div>
+      <p style="color:#64748b;font-size:13px;margin:0 0 10px;line-height:1.5;">
+        Každá diagnóza na nový řádek. Neznáš přesný název? Napiš jak to popisuje lékař — AI doplní.
+      </p>
+      <textarea id="zdravi-diagnoses" rows="4" class="udp-input" style="width:100%;resize:vertical;font-family:inherit;"
+        placeholder="např. Fibrilace síní&#10;Hypertenze&#10;Vysoký LDL">${esc(diagnoses)}</textarea>
+    </div>
+
+    <div class="udp-section" style="margin-top:20px;">
+      <div class="udp-section-label">Léky & doplňky</div>
+      <div id="med-rows">${medRows}</div>
+      <button id="btn-add-med" class="udp-add-btn">+ Přidat</button>
+    </div>
+
+    <div class="udp-save-row">
+      <span id="udp-status-zdravi" class="udp-status"></span>
+      <button id="btn-save-zdravi" class="udp-save-btn">Uložit</button>
+    </div>`;
+}
+
+function renderMedRow(i, med = {}) {
+  return `
+    <div class="udp-injury-row" data-med-idx="${i}">
+      <input class="udp-input med-name" placeholder="Název (např. Pradaxa)"
+             value="${esc(med.name ?? '')}" style="flex:2;">
+      <input class="udp-input med-dose" placeholder="Dávka (např. 110 mg 2×)"
+             value="${esc(med.dose ?? '')}" style="flex:2;">
+      <button class="udp-del-btn" data-med-idx="${i}" title="Odstranit">✕</button>
+    </div>`;
+}
+
+function bindZdraviEvents() {
+  document.getElementById('btn-add-med')?.addEventListener('click', () => {
+    const container = document.getElementById('med-rows');
+    const idx = container.querySelectorAll('.udp-injury-row').length;
+    container.insertAdjacentHTML('beforeend', renderMedRow(idx));
+    bindMedDelButtons();
+  });
+  bindMedDelButtons();
+  document.getElementById('btn-save-zdravi')?.addEventListener('click', saveZdravi);
+}
+
+function bindMedDelButtons() {
+  document.querySelectorAll('[data-med-idx] .udp-del-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      btn.closest('.udp-injury-row').remove();
+    });
+  });
+}
+
+async function saveZdravi() {
+  setStatus('udp-status-zdravi', 'saving');
+  const diagText = document.getElementById('zdravi-diagnoses')?.value ?? '';
+  const diagnoses = diagText.split('\n').map(s => s.trim()).filter(Boolean);
+
+  const medRows = document.querySelectorAll('#med-rows .udp-injury-row');
+  const medications = [...medRows].map(row => ({
+    name: row.querySelector('.med-name')?.value.trim(),
+    dose: row.querySelector('.med-dose')?.value.trim() || null,
+  })).filter(m => m.name);
+
+  try {
+    // Upsert diagnózy do user_health_profile
+    await supabase.from('user_health_profile')
+      .upsert({ user_id: userId, diagnoses }, { onConflict: 'user_id' });
+
+    // Deaktivuj staré léky, ulož nové
+    await supabase.from('user_medications').update({ active: false }).eq('user_id', userId);
+    for (const med of medications) {
+      await supabase.from('user_medications')
+        .upsert({ user_id: userId, name: med.name, dose: med.dose, active: true }, { onConflict: 'user_id,name' });
+    }
+
+    cachedData.diagnoses = diagnoses;
+    cachedData.medications = medications;
+    setStatus('udp-status-zdravi', 'saved');
+  } catch (e) {
+    console.error('saveZdravi:', e);
+    setStatus('udp-status-zdravi', 'error');
+  }
+}
 
 // ═══════════════════════════════════════════════════
 // TAB: Dokumenty — Health Document Parser
