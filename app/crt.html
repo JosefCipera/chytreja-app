@@ -167,7 +167,7 @@
     <div class="crt-subtitle" id="crtSubtitle">Current Reality Tree</div>
   </div>
   <!-- Obnovit schováno — mapa se regeneruje jen při změně health profilu -->
-  <button class="crt-back" id="crtRegenBtn" onclick="regenCRT()">↺ Přegenerovat</button>
+  <button class="crt-back" id="crtRegenBtn" onclick="regenCRT()" style="display:none">↺ Přegenerovat</button>
 </div>
 
 <div class="crt-body">
@@ -337,7 +337,7 @@ function renderTree(data) {
   const minY = Math.min(...ys), maxY = Math.max(...ys);
   const PAD_BOTTOM = 100; // prostor dole pro root (zlatý box)
   const PAD_TOP = 120;   // prostor nahoře pro meta-UDE
-  const PAD_SIDE = 60;
+  const PAD_SIDE = 120;
   const maxBoxH = Math.max(...data.nodes.map(n => boxHeight(n.label ?? '')));
   const svgW = (maxX - minX) + BOX_W + PAD_SIDE * 2;
   const svgH = (maxY - minY) + maxBoxH * 2 + PAD_BOTTOM + PAD_TOP;
@@ -355,7 +355,7 @@ function renderTree(data) {
   const svg = svgEl('svg', {
     viewBox: `0 0 ${svgW} ${svgH}`,
     width: svgW, height: svgH,
-    style: 'display:block;margin:0 auto;',
+    style: 'display:block;margin:0 auto;overflow:visible;',
   });
 
   // ── Defs: arrowhead ──────────────────────────────────────────────────────
