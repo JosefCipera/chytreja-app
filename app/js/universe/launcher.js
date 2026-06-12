@@ -1347,12 +1347,12 @@ async function _doStatus() {
       launcher?.classList.add('speaking');
       const alarm = document.getElementById('chjAlarm');
       if (alarm && spokenText) { alarm.textContent = ''; _typewriter(alarm, spokenText, 30); }
-      showNavChips();
     };
     audio.onended = () => {
       const alarm = document.getElementById('chjAlarm');
       if (alarm && spokenText && alarm.textContent.length < spokenText.length) alarm.textContent = spokenText;
       cleanup();
+      setTimeout(() => showNavChips(), 400);
     };
     audio.onerror = () => { cleanup(); goSleepListening(); };
     audio.play().catch(() => { _chj_speaking = false; _currentAudio = null; });
