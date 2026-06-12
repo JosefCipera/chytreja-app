@@ -1333,10 +1333,6 @@ async function _doDialog() {
       if (!res.ok) { goSleepListening(); return; }
       const data = await res.json();
 
-      // Zobraz text okamžitě — nezávisle na TTS (audio může selhat)
-      const alarm = document.getElementById('chjAlarm');
-      if (alarm && data.text) { alarm.textContent = ''; _typewriter(alarm, data.text, 35); }
-
       await _speakText(data.text);
 
       if (data.done) {
