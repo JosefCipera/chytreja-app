@@ -1305,9 +1305,11 @@ function _speakText(text) {
         _chj_spoke_at = Date.now();
         _currentAudio = null;
       };
-      // speaking class + text PŘED play → CSS .speaking zajistí viditelnost chjl-main
+      // Inline style přeruší transition okamžitě (CSS class nestačí)
       launcher?.classList.add('speaking');
-      if (alarm) { alarm.textContent = ''; _typewriter(alarm, text, 35); }
+      const main = alarm?.closest('.chjl-main') || document.querySelector('.chjl-main');
+      if (main) { main.style.transition = 'none'; main.style.opacity = '1'; }
+      if (alarm) { alarm.style.opacity = '1'; alarm.textContent = ''; _typewriter(alarm, text, 35); }
       audio.onplay = () => { laser?.classList.add('speaking'); };
       audio.onended = () => { if (alarm) alarm.textContent = text; cleanup(); resolve(); };
       audio.onerror = () => { cleanup(); resolve(); };
