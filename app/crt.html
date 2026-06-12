@@ -238,7 +238,11 @@ async function loadCRT(force = false) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ userId, role: userRole, force }),
   });
-  if (!res.ok) throw new Error(`CRT generate ${res.status}`);
+  if (!res.ok) {
+    let detail = '';
+    try { detail = (await res.json()).detail || ''; } catch(_) {}
+    throw new Error(`CRT generate ${res.status}${detail ? ': ' + detail : ''}`);
+  }
   const data = await res.json();
 
   // Ulož do cache
