@@ -711,8 +711,11 @@ function _initNebulaStars() {
       document.getElementById('chj-src-modal').classList.add('hidden');
   });
 
-  // Návrat z CRT — okamžitě awake, bez čekání na auth
-  if (new URLSearchParams(location.search).get('awake') === '1') {
+  // Návrat z CRT/Vesmíru — okamžitě awake, bez čekání na auth
+  const _returnAwake = sessionStorage.getItem('chj_return_awake') === '1'
+    || new URLSearchParams(location.search).get('awake') === '1';
+  if (_returnAwake) {
+    sessionStorage.removeItem('chj_return_awake');
     history.replaceState({}, '', location.pathname);
     _briefing_done = true;
     showAwake();
@@ -772,10 +775,8 @@ async function loadBioData() {
     // Bio data načtena — launcher čeká na uživatele (on-demand)
     _phase = 'sleeping';
 
-    // Návrat z CRT — přeskočit sleep i TTS briefing, rovnou awake s chipy
-    if (new URLSearchParams(location.search).get('awake') === '1') {
-      history.replaceState({}, '', location.pathname);
-      _briefing_done = true; // nespouštět _doStatus
+    // Návrat z CRT (bio data teď dostupná — zobraz laser)
+    if (_briefing_done && _phase === 'sleeping') {
       showAwake();
       if (_bioData) showLaser(_bioData.pct, _bioData.color, _bioData.gradient);
       setTimeout(() => showNavChips(), 100);
