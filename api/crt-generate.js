@@ -267,7 +267,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx) {
   const key = JSON.stringify({
-    _v:          2, // bump při změně promptu → invaliduje cache
+    _v:          3, // bump při změně promptu → invaliduje cache
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),
     labs:        ctx.profile.labs || {},
@@ -312,6 +312,23 @@ export default async function handler(req, res) {
 
     // 2. Claude vygeneruje strom
     const crt = await generateCRT(ctx, role);
+
+    // Post-processing: nahraď odborné/špatné výrazy srozumitelnou češtinou
+    const LABEL_FIXES = [
+      [/\bdekondice\b/gi,          'nízká kondice'],
+      [/\bdekondiční\b/gi,         'kondice'],
+      [/\bvysoké stahy\b/gi,       'předčasné stahy'],
+      [/\bhigh contractions\b/gi,  'předčasné stahy'],
+      [/\barytmie\b/gi,            'nepravidelný rytmus'],
+      [/\barteroskleros[ai]s?\b/gi,'ztuhlé cévy'],
+      [/\bhypertenze\b/gi,         'vysoký tlak'],
+      [/\bdyslipidémie\b/gi,       'vysoký LDL'],
+      [/\bsympatikotonie\b/gi,     'přetížený sympatikus'],
+    ];
+    const fixLabel = s => LABEL_FIXES.reduce((t, [re, v]) => t.replace(re, v), s);
+    if (crt.root) crt.root.label = fixLabel(crt.root.label);
+    (crt.nodes || []).forEach(n => { n.label = fixLabel(n.label); });
+    (crt.injections || []).forEach(n => { n.label = fixLabel(n.label); });
 
     // 3. Sestav seznam všech uzlů
     const allNodes = [
