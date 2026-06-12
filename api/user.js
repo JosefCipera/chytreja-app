@@ -328,7 +328,7 @@ function avg(arr) { return arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : nu
 
 // ── LEHKOST AGENT (přesunuto z agents.js kvůli limitu 12 Vercel functions) ──
 
-const LH_MODEL = 'claude-haiku-4-5';
+const LH_MODEL = 'claude-sonnet-4-6';
 
 const LEHKOST_SYSTEM = `Jsi Lehkost Agent CHJ — vybíráš konkrétní návykovou akci pro dnešní den na základě dat z check-inu.
 

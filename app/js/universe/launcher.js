@@ -1360,11 +1360,9 @@ async function _doDialog() {
       const url = URL.createObjectURL(await ttsRes.blob());
       const audio = new Audio(url);
       _currentAudio = audio;
-      const laser   = document.getElementById('chjLaser');
       const launcher = document.getElementById('chj-launcher');
 
       audio.onplay = () => {
-        laser?.classList.add('speaking');
         launcher?.classList.add('speaking');
         const alarm = document.getElementById('chjAlarm');
         if (alarm && questionText) { alarm.textContent = ''; _typewriter(alarm, questionText, 30); }
@@ -1373,7 +1371,6 @@ async function _doDialog() {
       audio.onended = () => {
         const alarm = document.getElementById('chjAlarm');
         if (alarm && alarm.textContent.length < questionText.length) alarm.textContent = questionText;
-        laser?.classList.remove('speaking');
         launcher?.classList.remove('speaking');
         URL.revokeObjectURL(url);
         _chj_speaking = false;
