@@ -834,6 +834,9 @@ function showAwake() {
     _briefing_done = true;
     const laser = document.getElementById('chjLaser');
     if (laser) laser.style.width = '0%';
+    // Přeskočíme CSS transition chjl-main (0.6s sleeping→awake) aby byl text viditelný
+    const main = document.querySelector('.chjl-main');
+    if (main) { main.style.transition = 'none'; main.style.opacity = '1'; }
     _doDialog();
   }
 }
@@ -1165,8 +1168,8 @@ function listenOnce(cb) {
     r.onend = () => {
       if (_recognition !== r) return;
       _recognition = null;
-      // Restart pokud nikdo nemluvil, jsme awake a NENÍ aktivní dialog
-      if (_phase === 'awake' && !_dialog_active) setTimeout(() => attempt(tries), 400);
+      // Restart pokud nikdo nemluvil a jsme awake (dialog i normální režim)
+      if (_phase === 'awake') setTimeout(() => attempt(tries), 400);
       else mic.classList.remove('listening');
     };
     try { r.start(); } catch(err) { _recognition = null; mic.classList.remove('listening'); }
