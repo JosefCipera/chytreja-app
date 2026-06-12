@@ -343,9 +343,11 @@ const STYLE = `
 #chj-launcher.sleeping .chjl-nebula     { opacity: 1; }
 #chj-launcher:not(.sleeping) .chjl-nebula { opacity: 0; pointer-events: none; }
 
-/* Speaking tijdens sleep — vyšší specificita než sleeping pravidla (stejná + .speaking) */
+/* Speaking — vždy viditelný text když CHJ mluví (sleeping i awake) */
 #chj-launcher.sleeping.speaking .chjl-main  { opacity: 1 !important; pointer-events: all !important; }
 #chj-launcher.sleeping.speaking .chjl-alarm { opacity: 1 !important; transform: none !important; filter: none !important; }
+#chj-launcher.speaking .chjl-main  { opacity: 1 !important; pointer-events: all !important; }
+#chj-launcher.speaking .chjl-alarm { opacity: 1 !important; transform: none !important; filter: none !important; }
 
 /* Plynulé přechody mezi stavy */
 .chjl-nebula     { transition: opacity 1.8s ease; }
@@ -1307,9 +1309,10 @@ function _speakText(text) {
         _chj_spoke_at = Date.now();
         _currentAudio = null;
       };
-      // Text zobrazit PŘED play — onplay je nespolehlivý (mobile, Safari)
-      if (alarm) { alarm.style.opacity = '1'; alarm.textContent = ''; _typewriter(alarm, text, 35); }
-      audio.onplay = () => { laser?.classList.add('speaking'); launcher?.classList.add('speaking'); };
+      // speaking class + text PŘED play → CSS .speaking zajistí viditelnost chjl-main
+      launcher?.classList.add('speaking');
+      if (alarm) { alarm.textContent = ''; _typewriter(alarm, text, 35); }
+      audio.onplay = () => { laser?.classList.add('speaking'); };
       audio.onended = () => { if (alarm) alarm.textContent = text; cleanup(); resolve(); };
       audio.onerror = () => { cleanup(); resolve(); };
       audio.play().catch(() => { _chj_speaking = false; _chj_spoke_at = Date.now(); _currentAudio = null; resolve(); });
