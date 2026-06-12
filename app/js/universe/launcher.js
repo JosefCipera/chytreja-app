@@ -764,10 +764,13 @@ async function loadBioData() {
     // Bio data načtena — launcher čeká na uživatele (on-demand)
     _phase = 'sleeping';
 
-    // Návrat z CRT nebo Vesmíru — přeskočit sleep, rovnou awake
+    // Návrat z CRT — přeskočit sleep i TTS briefing, rovnou awake s chipy
     if (new URLSearchParams(location.search).get('awake') === '1') {
-      history.replaceState({}, '', location.pathname); // čistá URL bez parametru
+      history.replaceState({}, '', location.pathname);
+      _briefing_done = true; // nespouštět _doStatus
       showAwake();
+      if (_bioData) showLaser(_bioData.pct, _bioData.color, _bioData.gradient);
+      setTimeout(() => showNavChips(), 100);
     }
   } catch (e) {
     console.warn('[CHJ Launcher] loadBioData failed:', e);
@@ -1085,7 +1088,9 @@ function routeToNode(nodeId) {
   document.getElementById('chj-hide-header')?.remove();
 
   const fadeOut = () => {
-    // Nejdřív otevři uzel (launcher ho ještě zakrývá), pak teprve fade
+    // Smaž text před fade — zabrání bliknutí starého textu při návratu
+    const alarm = document.getElementById('chjAlarm');
+    if (alarm) alarm.textContent = '';
     doOpen();
     setTimeout(() => launcher.classList.add('fade-out'), 300);
   };
