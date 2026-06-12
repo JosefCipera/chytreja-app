@@ -602,6 +602,7 @@ const NODE_KEYWORDS = {
 // ── State ────────────────────────────────────────────────────────────────────
 let _phase = 'loading'; // loading | awake | action | timer | sleeping
 let _bioData = null;    // { killer, pct, color, action, actionType, actionDuration, sources }
+let _hasHealthData = false; // true = uživatel má vyplněná zdravotní data
 let _recognition = null;
 // Briefing je on-demand — žádný auto-prewarm, uživatel iniciuje hlasem
 let _sourcesBlob  = null;   // prefetchnutý blob pro sources odpověď
@@ -772,6 +773,8 @@ async function loadBioData() {
         : 'linear-gradient(90deg, #2d0808, #ef4444)',
     };
 
+    _hasHealthData = bulk.has_health_data === true;
+
     // Bio data načtena — launcher čeká na uživatele (on-demand)
     _phase = 'sleeping';
 
@@ -874,10 +877,11 @@ function showNavChips() {
   if (!wrap) return;
   wrap.innerHTML = '';
   wrap.style.display = 'flex';
-  const chips = [
+  const chips = _hasHealthData ? [
     { label: 'Kauzální mapa', fn: () => { window.location.href = '/crt.html?force=1'; } },
     { label: 'Vesmír',        fn: () => { const model = localStorage.getItem('currentModel')||'longevity'; const node = {longevity:'dlouhovekost',lehkost:'lh_main',toc:'toc'}[model]||'dlouhovekost'; routeToNode(node); } },
-    { label: 'Data',          fn: () => { if (!document.getElementById('userDataModal')) window.initUserDataPanel?.(); window.openUserDataPanel?.(); } },
+  ] : [
+    { label: 'Zadat data',    fn: () => { if (!document.getElementById('userDataModal')) window.initUserDataPanel?.(); window.openUserDataPanel?.(); } },
   ];
   chips.forEach(({ label, fn }) => {
     const btn = document.createElement('button');

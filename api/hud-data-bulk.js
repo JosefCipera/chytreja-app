@@ -660,7 +660,7 @@ export default async function handler(req, res) {
   const today = new Date().toISOString().slice(0, 10);
 
   // ── Shared queries — run once for all nodes ──────────
-  const [metricsRes, orchRes, constraintsRes, profileRes] = await Promise.all([
+  const [metricsRes, orchRes, constraintsRes, profileRes, healthRes] = await Promise.all([
     sb.from('user_metrics').select('node_id, current_index, state')
       .eq('user_id', userId).eq('universe', universe),
     sb.from('orchestrator_log')
@@ -669,6 +669,8 @@ export default async function handler(req, res) {
     sb.from('user_constraints').select('constraint_key, constraint_value')
       .eq('user_id', userId).eq('constraint_type', 'injury'),
     sb.from('user_profiles').select('primary_goal, lh_target_kg')
+      .eq('user_id', userId).maybeSingle(),
+    sb.from('user_health_profile').select('diagnoses')
       .eq('user_id', userId).maybeSingle(),
   ]);
 
@@ -707,6 +709,7 @@ export default async function handler(req, res) {
 
   const response = {};
   nodeIds.forEach((nodeId, i) => { response[nodeId] = results[i]; });
+  response.has_health_data = Array.isArray(healthRes.data?.diagnoses) && healthRes.data.diagnoses.length > 0;
 
   return res.json(response);
 

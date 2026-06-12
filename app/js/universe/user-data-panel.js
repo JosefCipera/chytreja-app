@@ -12,7 +12,7 @@ let userId      = null;
 
 // ─── Open / Close ─────────────────────────────────
 export function openUserDataPanel() {
-  userId = window.firebaseAuth?.currentUser?.uid;
+  userId = window._chjUserId || window.firebaseAuth?.currentUser?.uid;
   if (!userId) { console.warn('Not authenticated'); return; }
 
   const modal = document.getElementById('userDataModal');
