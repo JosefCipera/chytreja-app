@@ -46,6 +46,14 @@ export async function showReadinessModal(userId, onComplete, force = false) {
 
       localStorage.setItem(lsKey, today);
 
+      // Invalidate CRT cache on background — data changed, map should reflect it
+      const uid = userId;
+      fetch('/api/user?action=crt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: uid, force: true }),
+      }).catch(() => {});
+
       // Success flash then close
       const actionsEl = modal.querySelector('.lng-modal__actions');
       actionsEl.innerHTML = `

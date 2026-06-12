@@ -834,7 +834,7 @@ function showAwake() {
   // Auto-briefing: jen při prvním probuzení za session
   if (!_chj_speaking && !_briefing_done) {
     _briefing_done = true;
-    _doDialog();
+    _doStatus();
   }
 }
 
@@ -860,16 +860,6 @@ function showNavChips() {
   wrap.innerHTML = '';
   wrap.style.display = 'flex';
   const chips = [
-    { label: 'Dialog', fn: () => {
-        wrap.style.display = 'none';
-        // Reset state — dialog vždy spustitelný
-        if (_currentAudio) { _currentAudio.pause(); _currentAudio = null; }
-        _chj_speaking = false; _dialog_active = false;
-        if (_recognition) { try { _recognition.stop(); } catch(_) {} _recognition = null; }
-        _doDialog();
-      }
-    },
-    { label: 'Nová data',     fn: () => { window.open('/app/hud.html', '_blank'); } },
     { label: 'Kauzální mapa', fn: () => { window.location.href = '/crt.html'; } },
     { label: 'Vesmír',        fn: () => { const model = localStorage.getItem('currentModel')||'longevity'; const node = {longevity:'dlouhovekost',lehkost:'lh_main',toc:'toc'}[model]||'dlouhovekost'; routeToNode(node); } },
   ];
