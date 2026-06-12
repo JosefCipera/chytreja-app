@@ -803,8 +803,8 @@ function showAwake() {
   const launcher = document.getElementById('chj-launcher');
   launcher.classList.remove('sleeping', 'listening');
 
-  // Laser — okamžitě zobraz vitality score
-  if (_bioData) {
+  // Laser — zobraz jen pokud dialog už proběhl (ne při prvním probuzení)
+  if (_bioData && _briefing_done) {
     showLaser(_bioData.pct, _bioData.color, _bioData.gradient);
   }
 
