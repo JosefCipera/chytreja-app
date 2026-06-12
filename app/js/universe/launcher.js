@@ -829,8 +829,11 @@ function showAwake() {
   document.getElementById('chjFooter').style.opacity = '1';
 
   // Auto-dialog: jen při prvním probuzení za session
+  // Laser se schová — zobrazí se až po dialogu s výsledkem
   if (!_chj_speaking && !_briefing_done) {
     _briefing_done = true;
+    const laser = document.getElementById('chjLaser');
+    if (laser) laser.style.width = '0%';
     _doDialog();
   }
 }
@@ -1308,8 +1311,8 @@ function _speakText(text) {
       };
       audio.onended = () => { if (alarm && alarm.textContent.length < text.length) alarm.textContent = text; cleanup(); resolve(); };
       audio.onerror = () => { cleanup(); resolve(); };
-      audio.play().catch(() => { _chj_speaking = false; _currentAudio = null; resolve(); });
-    } catch(e) { _chj_speaking = false; resolve(); }
+      audio.play().catch(() => { _chj_speaking = false; _chj_spoke_at = Date.now(); _currentAudio = null; resolve(); });
+    } catch(e) { _chj_speaking = false; _chj_spoke_at = Date.now(); resolve(); }
   });
 }
 
@@ -1330,6 +1333,10 @@ async function _doDialog() {
       if (!res.ok) { goSleepListening(); return; }
       const data = await res.json();
 
+      // Zobraz text okamžitě — nezávisle na TTS (audio může selhat)
+      const alarm = document.getElementById('chjAlarm');
+      if (alarm && data.text) { alarm.textContent = ''; _typewriter(alarm, data.text, 35); }
+
       await _speakText(data.text);
 
       if (data.done) {
@@ -1343,7 +1350,7 @@ async function _doDialog() {
 
       // Počkej na odpověď uživatele
       listenOnce(async (userText) => {
-        if (!userText || Date.now() - _chj_spoke_at < 1500) { _dialog_active = false; goSleepListening(); return; }
+        if (!userText) { _dialog_active = false; goSleepListening(); return; }
         messages.push({ role: 'user', content: userText });
         await turn();
       });
