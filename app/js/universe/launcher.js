@@ -1110,7 +1110,7 @@ function routeToNode(nodeId) {
         btn.onclick = () => {
           btn.remove();
           launcher.style.display = 'flex';
-          launcher.classList.remove('fade-out');
+          launcher.classList.remove('fade-out', 'sleeping', 'listening');
           launcher.style.opacity = '1';
           // Znovu skryj header
           if (!document.getElementById('chj-hide-header')) {
@@ -1119,10 +1119,9 @@ function routeToNode(nodeId) {
             s.textContent = '#appHeader { display: none !important; } body { background: #010406 !important; }';
             document.head.appendChild(s);
           }
-          // Vrať nebulu + listening stav, spusť STT
-          launcher.classList.add('sleeping', 'listening');
-          _phase = 'sleeping';
-          startPassiveListening();
+          // Vrať awake stav s chipy — ne sleep
+          showAwake();
+          showNavChips();
         };
         document.body.appendChild(btn);
       }
