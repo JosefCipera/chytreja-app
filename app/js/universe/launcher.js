@@ -763,6 +763,12 @@ async function loadBioData() {
 
     // Bio data načtena — launcher čeká na uživatele (on-demand)
     _phase = 'sleeping';
+
+    // Návrat z CRT nebo Vesmíru — přeskočit sleep, rovnou awake
+    if (new URLSearchParams(location.search).get('awake') === '1') {
+      history.replaceState({}, '', location.pathname); // čistá URL bez parametru
+      showAwake();
+    }
   } catch (e) {
     console.warn('[CHJ Launcher] loadBioData failed:', e);
     showFallback();

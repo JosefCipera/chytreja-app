@@ -506,8 +506,7 @@ window.addEventListener('orientationchange', () => {
 <script>
 function goBack() {
   if (window.opener) { window.close(); }
-  else if (history.length > 1) { history.back(); }
-  else { window.location.href = '/'; }
+  else { window.location.href = '/?awake=1'; }
 }
 
 async function regenCRT() {
