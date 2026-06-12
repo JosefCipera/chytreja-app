@@ -233,7 +233,7 @@ async function loadCRT(force = false) {
   }
 
   // Fetch z API
-  const res = await fetch('/api/user?action=crt', {
+  const res = await fetch('/api/crt-generate', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ userId, role: userRole, force }),
