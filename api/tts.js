@@ -257,7 +257,12 @@ function sanitizeMedAbbr(text) {
     .replace(/\bHRV\b/g, 'variabilita srdečního rytmu')
     .replace(/\bLDL\b/g, 'LDL cholesterol')
     .replace(/\bHDL\b/g, 'HDL cholesterol')
-    .replace(/\bBMI\b/g, 'index tělesné hmotnosti');
+    .replace(/\bBMI\b/g, 'index tělesné hmotnosti')
+    .replace(/\bdekondic[ei]\b/gi, 'nízká kondice')
+    .replace(/\bdekondiční\b/gi, 'kondice')
+    .replace(/\bhypertenze\b/gi, 'vysoký tlak')
+    .replace(/\barytmi[ei]\b/gi, 'nepravidelný rytmus')
+    .replace(/\barteroskleros[ai]s?\b/gi, 'ztuhlé cévy');
 }
 
 function extractCrtInsights(crtCache) {
@@ -502,6 +507,7 @@ export default async function handler(req, res) {
     }
   }
 
+  if (spokenText) spokenText = sanitizeMedAbbr(spokenText);
   if (!spokenText || typeof spokenText !== 'string') {
     return res.status(400).json({ error: 'Empty text after generation' });
   }
