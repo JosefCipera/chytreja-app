@@ -802,21 +802,17 @@ function showFallback() {
 
 // ── Phases ───────────────────────────────────────────────────────────────────
 function showAwake() {
-  // První probuzení za session: dialog běží ve sleeping stavu (sleeping.speaking CSS funguje)
-  if (!_chj_speaking && !_briefing_done) {
-    _briefing_done = true;
-    _phase = 'awake';
-    document.getElementById('chjFooter').style.opacity = '1';
-    _doDialog();
-    return;
-  }
-
   _phase = 'awake';
   const launcher = document.getElementById('chj-launcher');
   launcher.classList.remove('sleeping', 'listening');
 
-  // Laser — zobraz vitality score
-  if (_bioData) showLaser(_bioData.pct, _bioData.color, _bioData.gradient);
+  // Laser — při prvním probuzení (dialog) schovat, jinak zobrazit
+  if (!_briefing_done && _bioData) {
+    const laser = document.getElementById('chjLaser');
+    if (laser) laser.style.width = '0%';
+  } else if (_bioData) {
+    showLaser(_bioData.pct, _bioData.color, _bioData.gradient);
+  }
 
   // Alarm text reset
   const alarm = document.getElementById('chjAlarm');
@@ -835,6 +831,12 @@ function showAwake() {
   action.style.pointerEvents = 'none';
 
   document.getElementById('chjFooter').style.opacity = '1';
+
+  // Auto-dialog při prvním probuzení
+  if (!_chj_speaking && !_briefing_done) {
+    _briefing_done = true;
+    _doDialog();
+  }
 }
 
 // Zobrazí laser s kontextovou barvou — voláme až po zpracování povelu
