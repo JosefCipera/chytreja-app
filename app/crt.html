@@ -217,7 +217,11 @@ var CRT_CACHE_KEY = 'chj_crt_' + userId;
 var CRT_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hodin
 window.CRT_CACHE_KEY = CRT_CACHE_KEY;
 
+// ?force=1 v URL → vždy čerstvé data (např. po změně v DB)
+const _urlForce = new URLSearchParams(location.search).get('force') === '1';
+
 async function loadCRT(force = false) {
+  force = force || _urlForce;
   // Zkus cache
   if (!force) {
     try {
