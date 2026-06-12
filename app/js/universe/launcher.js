@@ -711,6 +711,14 @@ function _initNebulaStars() {
       document.getElementById('chj-src-modal').classList.add('hidden');
   });
 
+  // Návrat z CRT — okamžitě awake, bez čekání na auth
+  if (new URLSearchParams(location.search).get('awake') === '1') {
+    history.replaceState({}, '', location.pathname);
+    _briefing_done = true;
+    showAwake();
+    showNavChips();
+  }
+
   // Start loading data (auth is handled by universe-init.js separately)
   loadBioData();
 })();
