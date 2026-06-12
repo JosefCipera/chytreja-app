@@ -26,6 +26,7 @@ function closePanel() {
 }
 
 window.openUserDataPanel = openUserDataPanel;
+window.initUserDataPanel = initUserDataPanel;
 
 // ─── Load all data ─────────────────────────────────
 async function loadAndRender() {
