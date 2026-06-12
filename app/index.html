@@ -1,10 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="cs">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Chytré já</title>
+    <title>ChytrĂ© jĂˇ</title>
     <!-- build: 20260402a -->
 
     <!-- Fonts -->
@@ -34,7 +34,7 @@
             if (!user) {
                 window.location.href = '/login';
             } else {
-                // Always clear cached role on auth — getUserMode() reads fresh from DB each load
+                // Always clear cached role on auth â€” getUserMode() reads fresh from DB each load
                 localStorage.removeItem('userRole');
                 localStorage.setItem('chj_uid', user.uid);
                 // Update avatar dynamically
@@ -49,7 +49,7 @@
                 const emailEl = document.querySelector('.email');
                 if (emailEl) emailEl.textContent = email;
 
-                // Lehkost check-in: zobraz modal pokud dnes ještě neproběhl pro tohoto uživatele
+                // Lehkost check-in: zobraz modal pokud dnes jeĹˇtÄ› neprobÄ›hl pro tohoto uĹľivatele
                 const currentModel = localStorage.getItem('currentModel');
                 if (currentModel === 'lehkost') {
                     const today = new Date().toISOString().slice(0, 10);
@@ -58,13 +58,13 @@
                         import('./js/universe/lehkost-checkin.js').then(({ showCheckinModal }) => {
                             showCheckinModal(user.uid, (bf) => {
                                 if (!bf) return;
-                                console.log('💪 BODY FLOW:', bf.score);
+                                console.log('đź’Ş BODY FLOW:', bf.score);
                                 // Invaliduj HUD cache pro lh_ uzly a re-render canvas
                                 const LH_IDS = ['lh_main','lh_vyziva','lh_pohyb','lh_mysl','lh_regenerace'];
                                 LH_IDS.forEach(id => {
                                     if (window._hudCache) delete window._hudCache[id];
                                 });
-                                // Re-načti canvas — aktualizuje barvy uzlů z DB
+                                // Re-naÄŤti canvas â€” aktualizuje barvy uzlĹŻ z DB
                                 if (window.refreshUniverseData) {
                                     window.refreshUniverseData();
                                 }
@@ -80,7 +80,7 @@
             signOut(auth).then(() => window.location.href = '/').catch(console.error);
         };
 
-        // Contextual guide — opens the guide for the active universe
+        // Contextual guide â€” opens the guide for the active universe
         window.openGuide = () => {
             const model = window.CURRENT_MODEL || 'longevity';
             const guideMap = {
@@ -93,7 +93,7 @@
             window.open(url, '_blank');
         };
 
-        // Daily check-in — triggers the right modal for the active universe
+        // Daily check-in â€” triggers the right modal for the active universe
         window.openDailyCheckin = async () => {
             // Close dropdown first
             document.getElementById('profileDropdown')?.classList.add('hidden');
@@ -102,7 +102,7 @@
             if (!userId) return;
             if (model === 'longevity') {
                 const { showReadinessModal } = await import('/app/js/universe/longevity-checkin.js');
-                showReadinessModal(userId, null, true); // force=true → show even if already done today
+                showReadinessModal(userId, null, true); // force=true â†’ show even if already done today
             } else if (model === 'lehkost') {
                 const { showCheckinModal } = await import('/app/js/universe/lehkost-checkin.js');
                 showCheckinModal(userId, (bodyFlow) => {
@@ -135,7 +135,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Chytré já">
+    <meta name="apple-mobile-web-app-title" content="ChytrĂ© jĂˇ">
 
     <style>
         .battery-section {
@@ -187,7 +187,7 @@
             font-size: 0.85em;
             margin: 8px 0 16px;
         }
-        /* === Mic tlačítko === */
+        /* === Mic tlaÄŤĂ­tko === */
         #voice-mic-btn {
             position: fixed;
             bottom: 24px;
@@ -231,16 +231,16 @@
             0%, 100% { box-shadow: 0 0 18px rgba(59, 130, 246, 0.3); }
             50%       { box-shadow: 0 0 32px rgba(59, 130, 246, 0.7); }
         }
-        /* CHJ bubliny – fade-in + slide-up pro animované 3-větový briefing */
+        /* CHJ bubliny â€“ fade-in + slide-up pro animovanĂ© 3-vÄ›tovĂ˝ briefing */
         @keyframes chjFadeIn {
             from { opacity: 0; transform: translateY(8px); }
             to   { opacity: 1; transform: translateY(0); }
         }
-        /* Posunout mic btn nahoru když je panel otevřený */
+        /* Posunout mic btn nahoru kdyĹľ je panel otevĹ™enĂ˝ */
         body.panel-open #voice-mic-btn {
             bottom: 80px;
         }
-        /* === Header mic tlačítko — TTS indikátor (speaking state) === */
+        /* === Header mic tlaÄŤĂ­tko â€” TTS indikĂˇtor (speaking state) === */
         #header-mic-btn {
             height: 38px;
             min-width: 38px;
@@ -261,13 +261,13 @@
             background: rgba(71, 85, 105, 0.85);
             border-color: #64748b;
         }
-        /* SPEAKING – modrá pulsující záře (TTS čte) */
+        /* SPEAKING â€“ modrĂˇ pulsujĂ­cĂ­ zĂˇĹ™e (TTS ÄŤte) */
         #header-mic-btn[data-state="speaking"] {
             border-color: rgba(59, 130, 246, 0.8);
             animation: header-pulse-blue 1.1s ease-in-out infinite;
         }
 
-        /* === Hlasový příkaz — nové tlačítko === */
+        /* === HlasovĂ˝ pĹ™Ă­kaz â€” novĂ© tlaÄŤĂ­tko === */
         #cmd-mic-btn {
             height: 38px;
             min-width: 38px;
@@ -316,9 +316,9 @@
 </head>
 
 <body>
-    <script src="/app/js/universe/launcher.js?v=20260606a"></script>
+    <script src="/app/js/universe/launcher.js?v=20260612a"></script>
 
-    <!-- Horní lišta -->
+    <!-- HornĂ­ liĹˇta -->
     <header id="appHeader" class="app-header">
         <div id="appTitle" class="chj-logo">
             <div class="chj-logo__cursor"></div>
@@ -329,7 +329,7 @@
         </div>
         <div class="header-right">
             <div class="header-controls" style="display:none;">
-                <label for="modelSelector">Vesmír:</label>
+                <label for="modelSelector">VesmĂ­r:</label>
                 <select id="modelSelector"></select>
                 <label for="roleSelect">Produkt:</label>
                 <select id="roleSelect">
@@ -337,21 +337,21 @@
                     <option value="free">Free</option>
                     <option value="pro">Pro</option>
                     <option value="dekatlon">Dekatlon</option>
-                    <option value="lehkost">Hubnutí</option>
+                    <option value="lehkost">HubnutĂ­</option>
                     <option value="user">User</option>
                 </select>
                 <label id="hideGrayLabel" style="display:none; align-items:center; gap:5px; cursor:pointer;">
-                    <input type="checkbox" id="hideGrayToggle"> Skrýt šedé
+                    <input type="checkbox" id="hideGrayToggle"> SkrĂ˝t ĹˇedĂ©
                 </label>
             </div>
         </div>
         <div class="user-profile-wrapper">
-            <button id="cmd-mic-btn" title="Hlasový příkaz" aria-label="Řekni příkaz">
-                <span id="cmd-mic-icon">🎤</span>
+            <button id="cmd-mic-btn" title="HlasovĂ˝ pĹ™Ă­kaz" aria-label="Ĺekni pĹ™Ă­kaz">
+                <span id="cmd-mic-icon">đźŽ¤</span>
                 <span id="cmd-mic-label" style="font-size:12px;font-family:monospace;letter-spacing:0.05em;">CMD</span>
             </button>
-            <button id="header-mic-btn" title="Přehrát odpověď" aria-label="TTS přehrávač">
-                <span class="header-mic-icon">🔊</span>
+            <button id="header-mic-btn" title="PĹ™ehrĂˇt odpovÄ›ÄŹ" aria-label="TTS pĹ™ehrĂˇvaÄŤ">
+                <span class="header-mic-icon">đź”Š</span>
             </button>
             <button id="profileBtn" class="avatar-button">
                 <img src="https://ui-avatars.com/api/?name=Cipera&background=0D8ABC&color=fff" alt="Profil"
@@ -371,30 +371,30 @@
                     </div>
                 </div>
                 <nav class="dropdown-nav">
-                    <a href="#" onclick="openUserDataPanel(); return false;"><i class="icon">👤</i> Já</a>
-                    <a href="#" onclick="openDailyCheckin(); return false;" id="checkin-menu-item"><i class="icon">📋</i> Dnešní záznam</a>
-                    <a href="/app/medioteka.html"><i class="icon">📚</i> Mediotéka</a>
-                    <a href="#" onclick="openGuide(); return false;"><i class="icon">📖</i> Návod</a>
+                    <a href="#" onclick="openUserDataPanel(); return false;"><i class="icon">đź‘¤</i> JĂˇ</a>
+                    <a href="#" onclick="openDailyCheckin(); return false;" id="checkin-menu-item"><i class="icon">đź“‹</i> DneĹˇnĂ­ zĂˇznam</a>
+                    <a href="/app/medioteka.html"><i class="icon">đź“š</i> MediotĂ©ka</a>
+                    <a href="#" onclick="openGuide(); return false;"><i class="icon">đź“–</i> NĂˇvod</a>
                     <div class="divider"></div>
                     <button onclick="handleLogout()" class="logout-action">
-                        <i class="icon">⭕</i> Odhlásit
+                        <i class="icon">â­•</i> OdhlĂˇsit
                     </button>
                 </nav>
             </div>
         </div>
     </header>
 
-    <!-- Plátno sítě -->
+    <!-- PlĂˇtno sĂ­tÄ› -->
     <div id="network"></div>
 
-    <!-- Postranní panel -->
+    <!-- PostrannĂ­ panel -->
     <aside id="sidePanel">
         <div class="panel-header">
             <div class="panel-node-row">
                 <div id="nodeTitle" class="panel-node-title">
-                    <i class="fa-solid fa-circle-nodes"></i> Uzlový název
+                    <i class="fa-solid fa-circle-nodes"></i> UzlovĂ˝ nĂˇzev
                 </div>
-                <button class="panel-close" id="closePanel">✖</button>
+                <button class="panel-close" id="closePanel">âś–</button>
             </div>
         </div>
 
@@ -402,12 +402,12 @@
             <div class="ai-intelligence-zone">
                 <!-- <h3
                     style="color:#83B0E3; font-size:18px; margin:0 0 15px 0; display:flex; align-items:center; gap:10px;">
-                    ⚡ Zeptejte se
+                    âšˇ Zeptejte se
                 </h3>
-               <h3 class="panel-section-title"><i class="fa-solid fa-brain"></i> Chytré já</h3> -->
+               <h3 class="panel-section-title"><i class="fa-solid fa-brain"></i> ChytrĂ© jĂˇ</h3> -->
                 <div id="ai-integrated-msgs" class="ai-prediction-text"></div>
                 <div id="aiPanelSection" style="display:flex; margin-top:20px;">
-                    <input id="aiPanelInput" type="text" placeholder="Zeptej se Chytrého já…" />
+                    <input id="aiPanelInput" type="text" placeholder="Zeptej se ChytrĂ©ho jĂˇâ€¦" />
                     <button id="ai-send"><i class="fa-solid fa-paper-plane"></i></button>
                 </div>
             </div>
@@ -435,7 +435,7 @@
         window.addEventListener('DOMContentLoaded', async () => {
             supabase.auth.onAuthStateChange((event, session) => {
                 if (session) {
-                    console.log("Uživatel přihlášen, aktualizuji doporučení...");
+                    console.log("UĹľivatel pĹ™ihlĂˇĹˇen, aktualizuji doporuÄŤenĂ­...");
                     updateRecommendations();
                 }
             });
@@ -450,9 +450,9 @@
     <script type="module" src="/app/js/universe/ai-assistant.js?v=20260401b"></script>
     <script type="module" src="/app/js/universe/universe-panel.js?v=20260401b"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <!-- Launcher (launcher.js) manages its own lifecycle — no splash fallback needed -->
+    <!-- Launcher (launcher.js) manages its own lifecycle â€” no splash fallback needed -->
 
-    <!-- Hide app header when any modal opens — works regardless of JS cache version -->
+    <!-- Hide app header when any modal opens â€” works regardless of JS cache version -->
     <script>
         new MutationObserver(mutations => {
             for (const m of mutations) {
@@ -477,7 +477,7 @@
     <!-- Service Worker -->
     <script>
         if ('serviceWorker' in navigator) {
-            // SW je dočasně vypnutý — odregistruj vše co ještě běží
+            // SW je doÄŤasnÄ› vypnutĂ˝ â€” odregistruj vĹˇe co jeĹˇtÄ› bÄ›ĹľĂ­
             navigator.serviceWorker.getRegistrations().then(regs => {
                 regs.forEach(r => r.unregister());
             });
@@ -487,7 +487,7 @@
 
     <!-- Onboarding Modal -->
 
-    <!-- HUD fetch loader — thin bar at the right edge while data is being fetched -->
+    <!-- HUD fetch loader â€” thin bar at the right edge while data is being fetched -->
     <style>
         #hud-fetch-loader {
             position: fixed;
@@ -512,7 +512,7 @@
     </style>
     <div id="hud-fetch-loader"></div>
 
-    <!-- HUD Overlay — Svelte HUD panel (same as index.html) -->
+    <!-- HUD Overlay â€” Svelte HUD panel (same as index.html) -->
     <div id="hud-overlay" style="
         display: none; position: fixed; inset: 0; z-index: 5000;
         background: transparent; align-items: stretch; justify-content: flex-end;
@@ -530,15 +530,15 @@
         </div>
     </div>
 
-    <!-- Tool Overlay — full-screen iframe for TOC tool pages (toc-vyroba, etc.) -->
+    <!-- Tool Overlay â€” full-screen iframe for TOC tool pages (toc-vyroba, etc.) -->
     <div id="tool-overlay" style="display:none; position:fixed; inset:0; z-index:11000; background:#080e1a;">
         <iframe id="tool-iframe" src="" style="width:100%; height:100%; border:none;"></iframe>
     </div>
 
     <script>
-        // ── HUD node data cache — prefetched on login ──────────────────────────
+        // â”€â”€ HUD node data cache â€” prefetched on login â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         window._hudCache   = {};   // { nodeId: data }
-        window._hudPending = {};   // { nodeId: Promise } — in-flight fetches
+        window._hudPending = {};   // { nodeId: Promise } â€” in-flight fetches
         window._hudOpen    = false;
         window._hudUserId  = null;
 
@@ -606,8 +606,8 @@
             window.prefetchHudChildren(userId, nodeId);
 
             if (!window._hudOpen) {
-                // ── First open this session ─────────────────────────────────────
-                // Iframe hasn't loaded yet — let Svelte read nodeId from URL.
+                // â”€â”€ First open this session â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                // Iframe hasn't loaded yet â€” let Svelte read nodeId from URL.
                 // Also kick off a background prefetch so the cache is warm if user
                 // closes and reopens before the iframe fetches on its own.
                 const _role0 = localStorage.getItem('userRole') || 'pro';
@@ -620,12 +620,12 @@
                 window.prefetchHudNodes(userId, [nodeId]); // warm cache in parallel
 
             } else {
-                // ── Subsequent opens — DATA FIRST, then show ────────────────────
+                // â”€â”€ Subsequent opens â€” DATA FIRST, then show â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                 // Check cache first (synchronous, zero latency)
                 let data = window._hudCache[nodeId] || null;
 
                 if (!data) {
-                    // Cache cold — show right-edge loader and fetch
+                    // Cache cold â€” show right-edge loader and fetch
                     if (loader) loader.classList.add('active');
                     try {
                         const _r = localStorage.getItem('userRole') || 'pro';
@@ -647,14 +647,14 @@
                     if (localNode?.label) data = { ...data, node: { ...data.node, label: localNode.label } };
                 }
 
-                // Send data to already-loaded iframe — it renders before panel is visible
+                // Send data to already-loaded iframe â€” it renders before panel is visible
                 iframe.contentWindow?.postMessage(
                     { type: 'chj:navigate', nodeId, userId, data },
                     '*'
                 );
             }
 
-            // Open panel — on subsequent opens data is already in iframe, no flicker
+            // Open panel â€” on subsequent opens data is already in iframe, no flicker
             window._hudOverlayOpen = true;
             overlay.style.display = 'flex';
             requestAnimationFrame(() => requestAnimationFrame(() => {
@@ -669,7 +669,7 @@
             const wrap    = document.getElementById('hud-panel-wrap');
             window._hudOverlayOpen = false;
             wrap.style.transform = 'translateX(100%)';
-            // Keep iframe alive — just hide overlay; _hudOpen stays true so no reload on reopen
+            // Keep iframe alive â€” just hide overlay; _hudOpen stays true so no reload on reopen
             setTimeout(() => { overlay.style.display = 'none'; }, 360);
         };
         let _topTTS = null;
@@ -788,25 +788,25 @@
             header.style.cssText = 'padding:10px 14px;border-bottom:1px solid rgba(6,182,212,0.18);display:flex;align-items:center;gap:2px;flex-shrink:0;min-height:48px;background:rgba(2,6,14,0.97);position:sticky;top:0;z-index:1;';
             const headerInfo = document.createElement('span');
             headerInfo.style.cssText = 'font-family:monospace;font-size:11px;letter-spacing:0.08em;color:#64748b;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
-            headerInfo.innerHTML = `[MED_ID:&nbsp;${shortId(source.med_id)}]&nbsp;&nbsp;·&nbsp;&nbsp;${source.journal || ''}, ${source.year || ''}`;
+            headerInfo.innerHTML = `[MED_ID:&nbsp;${shortId(source.med_id)}]&nbsp;&nbsp;Â·&nbsp;&nbsp;${source.journal || ''}, ${source.year || ''}`;
             header.appendChild(headerInfo);
 
             let _mdTtsOn = false;
             if (isMdType) {
                 const btnStyle = 'background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);border-radius:6px;cursor:pointer;padding:5px 9px;-webkit-tap-highlight-color:transparent;flex-shrink:0;font-size:15px;line-height:1;color:#e2e8f0;margin-left:4px;min-width:44px;min-height:44px;';
                 const printBtn = document.createElement('button');
-                printBtn.textContent = '🖨'; printBtn.title = 'Tisk'; printBtn.style.cssText = btnStyle;
+                printBtn.textContent = 'đź–¨'; printBtn.title = 'Tisk'; printBtn.style.cssText = btnStyle;
                 const doPrint = () => { const el = document.querySelector('.md-il'); if (!el) return; const iframe = document.createElement('iframe'); iframe.style.cssText = 'position:fixed;width:0;height:0;border:none;top:-9999px;'; document.body.appendChild(iframe); const doc = iframe.contentDocument; doc.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${source.title||''}</title><style>body{font-family:system-ui,sans-serif;padding:24px;max-width:780px;margin:0 auto;color:#1e293b;line-height:1.7;font-size:15px}</style></head><body>${el.innerHTML}</body></html>`); doc.close(); iframe.contentWindow.focus(); iframe.contentWindow.print(); setTimeout(() => document.body.removeChild(iframe), 1000); };
                 printBtn.addEventListener('click', doPrint);
                 printBtn.addEventListener('touchend', (e) => { e.preventDefault(); doPrint(); });
                 header.appendChild(printBtn);
 
                 const dlBtn = document.createElement('button');
-                dlBtn.textContent = '📥'; dlBtn.title = 'Stáhnout'; dlBtn.style.cssText = btnStyle;
+                dlBtn.textContent = 'đź“Ą'; dlBtn.title = 'StĂˇhnout'; dlBtn.style.cssText = btnStyle;
                 const doDownload = async () => {
                     let blob, fname;
                     if (source.script_cz) {
-                        // Lehkost — obsah v DB, vytvoř soubor ze script_cz
+                        // Lehkost â€” obsah v DB, vytvoĹ™ soubor ze script_cz
                         fname = (source.title || 'clanek').toLowerCase().replace(/[^a-z0-9]+/g,'-').slice(0,40) + '.md';
                         blob = new Blob([source.script_cz], { type: 'text/markdown' });
                     } else {
@@ -820,15 +820,15 @@
                 header.appendChild(dlBtn);
 
                 const ttsBtn = document.createElement('button');
-                ttsBtn.textContent = '🔊'; ttsBtn.title = 'Přehrát'; ttsBtn.style.cssText = btnStyle;
-                const doTTS = () => { if (_mdTtsOn) { speechSynthesis.cancel(); _mdTtsOn = false; ttsBtn.textContent = '🔊'; return; } const el = document.querySelector('.md-il'); if (!el) return; const txt = el.innerText.replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu,'').trim(); if (!txt) return; _mdTtsOn = true; ttsBtn.textContent = '⏹'; speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(txt); u.lang = 'cs-CZ'; u.rate = 1.05; u.pitch = 1.1; const sv = () => { const cz = speechSynthesis.getVoices().find(v => /cs[-_]CZ/i.test(v.lang)); if (cz) u.voice = cz; }; sv(); if (!u.voice) speechSynthesis.addEventListener('voiceschanged', sv, {once:true}); u.onend = u.onerror = () => { _mdTtsOn = false; ttsBtn.textContent = '🔊'; }; speechSynthesis.speak(u); };
+                ttsBtn.textContent = 'đź”Š'; ttsBtn.title = 'PĹ™ehrĂˇt'; ttsBtn.style.cssText = btnStyle;
+                const doTTS = () => { if (_mdTtsOn) { speechSynthesis.cancel(); _mdTtsOn = false; ttsBtn.textContent = 'đź”Š'; return; } const el = document.querySelector('.md-il'); if (!el) return; const txt = el.innerText.replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu,'').trim(); if (!txt) return; _mdTtsOn = true; ttsBtn.textContent = 'âŹą'; speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(txt); u.lang = 'cs-CZ'; u.rate = 1.05; u.pitch = 1.1; const sv = () => { const cz = speechSynthesis.getVoices().find(v => /cs[-_]CZ/i.test(v.lang)); if (cz) u.voice = cz; }; sv(); if (!u.voice) speechSynthesis.addEventListener('voiceschanged', sv, {once:true}); u.onend = u.onerror = () => { _mdTtsOn = false; ttsBtn.textContent = 'đź”Š'; }; speechSynthesis.speak(u); };
                 ttsBtn.addEventListener('click', doTTS);
                 ttsBtn.addEventListener('touchend', (e) => { e.preventDefault(); doTTS(); });
                 header.appendChild(ttsBtn);
             }
 
             const closeBtn = document.createElement('button');
-            closeBtn.textContent = '✕'; closeBtn.title = 'Zavřít';
+            closeBtn.textContent = 'âś•'; closeBtn.title = 'ZavĹ™Ă­t';
             closeBtn.style.cssText = 'color:#94a3b8;background:none;border:none;cursor:pointer;padding:8px 4px 8px 10px;font-size:20px;line-height:1;-webkit-tap-highlight-color:transparent;min-width:44px;min-height:44px;flex-shrink:0;';
             closeBtn.addEventListener('click', () => window.closeSourceViewer());
             closeBtn.addEventListener('touchend', (e) => { e.preventDefault(); e.stopPropagation(); window.closeSourceViewer(); });
@@ -848,19 +848,19 @@
             } else {
                 const noUrl = !source.url || source.url === '#';
                 const isFetchable = source.url && (
-                    !source.url.startsWith('http') ||                          // relativní cesta
-                    source.url.includes('supabase.co') ||                      // náš Supabase storage
+                    !source.url.startsWith('http') ||                          // relativnĂ­ cesta
+                    source.url.includes('supabase.co') ||                      // nĂˇĹˇ Supabase storage
                     source.url.toLowerCase().endsWith('.md')                   // markdown soubor
                 );
                 if (source.script_cz) {
-                    // Má český markdown obsah — zobrazit přímo, bez fetch
+                    // MĂˇ ÄŤeskĂ˝ markdown obsah â€” zobrazit pĹ™Ă­mo, bez fetch
                     const convert = window.CHJ_convertMd || (s => `<p>${s.replace(/\n/g,'<br>')}</p>`);
                     contentDiv.innerHTML = `<div class="md-il">${convert(source.script_cz)}</div>`;
                 } else if (noUrl) {
-                    contentDiv.innerHTML = '<div style="color:#475569;padding:24px;text-align:center;font-size:13px;font-family:monospace;">OBSAH PŘIPRAVUJEME</div>';
+                    contentDiv.innerHTML = '<div style="color:#475569;padding:24px;text-align:center;font-size:13px;font-family:monospace;">OBSAH PĹIPRAVUJEME</div>';
                 } else if (isFetchable) {
-                    // Fetchovatelný soubor (lokální nebo Supabase storage)
-                    contentDiv.innerHTML = '<div style="color:#475569;padding:24px;text-align:center;font-size:13px;font-family:monospace;">NAČÍTÁM…</div>';
+                    // FetchovatelnĂ˝ soubor (lokĂˇlnĂ­ nebo Supabase storage)
+                    contentDiv.innerHTML = '<div style="color:#475569;padding:24px;text-align:center;font-size:13px;font-family:monospace;">NAÄŚĂŤTĂMâ€¦</div>';
                     (async () => {
                         const res = await fetch(source.url);
                         if (!res.ok) throw new Error(res.status);
@@ -869,7 +869,7 @@
                         contentDiv.innerHTML = `<div class="md-il">${convert(md)}</div>`;
                     })().catch(err => { contentDiv.innerHTML = `<div style="color:#f87171;padding:24px;font-family:monospace;font-size:13px;">CHYBA: ${err.message}</div>`; });
                 } else {
-                    // Externí URL (pubmed, nature...) — otevři v novém tabu
+                    // ExternĂ­ URL (pubmed, nature...) â€” otevĹ™i v novĂ©m tabu
                     window.open(source.url, '_blank');
                     window.closeSourceViewer();
                 }

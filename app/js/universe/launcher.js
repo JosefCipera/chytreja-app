@@ -890,7 +890,7 @@ function showNavChips() {
     const btn = document.createElement('button');
     btn.className = 'chjl-nav-chip';
     btn.textContent = label;
-    btn.addEventListener('click', e => { e.stopPropagation(); fn(); });
+    btn.addEventListener('click', e => { e.stopPropagation(); console.log('[CHJ chip click]', label); fn(); });
     wrap.appendChild(btn);
   });
 }
