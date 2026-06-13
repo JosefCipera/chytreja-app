@@ -876,13 +876,17 @@ async function saveZdravi() {
   })).filter(m => m.name);
 
   try {
-    await supabase.from('user_health_profile')
+    const { error: e1 } = await supabase.from('user_health_profile')
       .upsert({ user_id: userId, diagnoses, symptoms, family_history }, { onConflict: 'user_id' });
+    if (e1) throw e1;
 
-    await supabase.from('user_medications').update({ active: false }).eq('user_id', userId);
+    const { error: e2 } = await supabase.from('user_medications').update({ active: false }).eq('user_id', userId);
+    if (e2) throw e2;
+
     for (const med of medications) {
-      await supabase.from('user_medications')
+      const { error: e3 } = await supabase.from('user_medications')
         .upsert({ user_id: userId, name: med.name, dose: med.dose, active: true }, { onConflict: 'user_id,name' });
+      if (e3) throw e3;
     }
 
     cachedData.diagnoses      = diagnoses;
@@ -891,7 +895,7 @@ async function saveZdravi() {
     cachedData.medications    = medications;
     setStatus('udp-status-zdravi', 'ok');
   } catch (e) {
-    console.error('saveZdravi:', e);
+    console.error('saveZdravi error:', e);
     setStatus('udp-status-zdravi', 'error');
   }
 }
