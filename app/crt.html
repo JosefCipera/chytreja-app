@@ -157,9 +157,6 @@
     }
     .crt-loading.hidden { display: none; }
 
-    #crtMedBtn.active { border-color: #5a9aaa; color: #9ad8e8; }
-    .crt-med-badge { cursor: default; }
-    .crt-med-hidden { display: none; }
   </style>
 </head>
 <body>
@@ -170,7 +167,6 @@
     <div class="crt-title" id="crtTitle">Kauzální mapa zdraví</div>
     <div class="crt-subtitle" id="crtSubtitle">Current Reality Tree</div>
   </div>
-  <button class="crt-back" id="crtMedBtn" onclick="toggleMeds()" style="display:none">🛡 Léky</button>
   <!-- Obnovit schováno — mapa se regeneruje jen při změně health profilu -->
   <button class="crt-back" id="crtRegenBtn" onclick="regenCRT()" style="display:none">↺ Přegenerovat</button>
 </div>
@@ -477,88 +473,8 @@ function renderTree(data) {
     svg.appendChild(g);
   });
 
-  // ── Medication shields v SVG ─────────────────────────────────────────────
-  const medsMap = (data.medications_map || []).filter(m => (m.targets || []).length > 0);
-
-  if (medsMap.length) {
-    // Mapa node id → SVG pozice
-    const nodeById2 = {};
-    [data.root, ...(data.nodes || [])].forEach(n => { if (n) nodeById2[n.id] = n; });
-
-    const SH_W = IS_MOBILE ? 28 : 36;   // šířka tvaru štítu
-    const SH_H = IS_MOBILE ? 38 : 48;   // výška tvaru štítu
-    const SH_GAP = 10;                   // mezera mezi uzlem a štítem
-    const SH_FS  = IS_MOBILE ? 13 : 15; // font název
-    const SH_COLOR = '#4a9aee';
-    const SH_FILL  = '#1a3a5a';
-    const SHIELD_TOTAL = SH_GAP + SH_W + 10 + 130; // prostor napravo od uzlu
-
-    // Rozšíř SVG vpravo jen o potřebný prostor (redukovaný o pravý PAD_SIDE)
-    const extraW = Math.max(0, SHIELD_TOTAL - 60);
-    const newSvgW = svgW + extraW;
-    svg.setAttribute('viewBox', `0 0 ${newSvgW} ${svgH}`);
-    svg.setAttribute('width', newSvgW);
-
-    medsMap.forEach(med => {
-      const primaryNode = nodeById2[med.targets[0]];
-      if (!primaryNode) return;
-
-      const nx  = cx(primaryNode.x ?? 0);
-      const ny  = cy(primaryNode.y ?? 0);
-      const sx  = nx + BOX_W / 2 + SH_GAP;
-      const sy  = ny - SH_H / 2;
-
-      const g = svgEl('g', { class: 'crt-med-badge crt-med-hidden' });
-
-      // Tvar štítu — symetrický, zaoblený dole do hrotu
-      const hw = SH_W / 2;
-      g.appendChild(svgEl('path', {
-        d: `M${sx},${sy} L${sx+SH_W},${sy} L${sx+SH_W},${sy+SH_H*0.5} Q${sx+SH_W},${sy+SH_H*0.82} ${sx+hw},${sy+SH_H} Q${sx},${sy+SH_H*0.82} ${sx},${sy+SH_H*0.5} Z`,
-        fill: SH_FILL, stroke: SH_COLOR, 'stroke-width': '2.5',
-      }));
-
-      // "Rx" uvnitř štítu
-      g.appendChild(svgEl('text', {
-        x: sx + hw, y: sy + SH_H * 0.55,
-        'text-anchor': 'middle', fill: SH_COLOR,
-        'font-size': String(SH_W * 0.33 | 0),
-        'font-family': 'Inter, Segoe UI, system-ui, sans-serif',
-      }, 'Rx'));
-
-      // Název léku — normální tloušťka
-      g.appendChild(svgEl('text', {
-        x: sx + SH_W + 10, y: sy + SH_H * 0.42,
-        fill: SH_COLOR, 'font-size': String(SH_FS),
-        'font-family': 'Inter, Segoe UI, system-ui, sans-serif',
-        'font-weight': '400',
-      }, med.name));
-
-      // Efekt — menší, tlumený
-      if (med.effect) {
-        g.appendChild(svgEl('text', {
-          x: sx + SH_W + 10, y: sy + SH_H * 0.7,
-          fill: SH_COLOR, 'font-size': String(SH_FS - 4),
-          'font-family': 'Inter, Segoe UI, system-ui, sans-serif',
-          opacity: '0.6',
-        }, med.effect));
-      }
-
-      svg.appendChild(g);
-    });
-
-    document.getElementById('crtMedBtn').style.display = '';
-  }
-
   container.appendChild(svg);
 }
-
-window.toggleMeds = function() {
-  const btn = document.getElementById('crtMedBtn');
-  const els = document.querySelectorAll('.crt-med-badge');
-  const show = els.length && els[0].classList.contains('crt-med-hidden');
-  els.forEach(el => el.classList.toggle('crt-med-hidden', !show));
-  if (btn) btn.classList.toggle('active', show);
-};
 
 // ── Boot ─────────────────────────────────────────────────────────────────────
 async function boot() {
