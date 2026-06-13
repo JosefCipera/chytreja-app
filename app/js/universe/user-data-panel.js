@@ -746,7 +746,7 @@ export function initUserDataPanel() {
   modal.innerHTML = `
     <div class="udp-panel">
       <div class="udp-header">
-        <h2 class="udp-title">👤 Já</h2>
+        <h2 class="udp-title">Vstupní data</h2>
         <button id="udp-close" class="udp-close-btn">✕</button>
       </div>
       <div class="udp-tabs">
