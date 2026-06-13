@@ -495,12 +495,7 @@ function renderTree(data) {
     const pillX = treeRight + COL_GAP;
     const maxPW  = Math.max(...medsMap.map(pillW));
 
-    // Rozšíř SVG pokud pills přesahují
-    const neededW = pillX + maxPW + 12;
-    if (neededW > svgW) {
-      svg.setAttribute('viewBox', `0 0 ${neededW} ${svgH}`);
-      svg.setAttribute('width', neededW);
-    }
+    // Pills přetékají doprava — overflow:visible na SVG + overflow-x:auto na canvas
 
     medsMap.forEach(med => {
       const targets = (med.targets || []).map(id => nodeById[id]).filter(Boolean);
