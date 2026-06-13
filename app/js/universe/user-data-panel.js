@@ -625,7 +625,7 @@ export function initUserDataPanel() {
   style.textContent = `
     .udp-hidden { display: none !important; }
     #userDataModal {
-      position: fixed; inset: 0; z-index: 9000;
+      position: fixed; inset: 0; z-index: 10100;
       background: rgba(2,6,23,0.85); backdrop-filter: blur(4px);
       display: flex; align-items: center; justify-content: center;
       padding: 16px; box-sizing: border-box;
