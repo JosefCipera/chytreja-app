@@ -354,11 +354,16 @@ function renderTree(data) {
     Object.values(AND_JOINS).flat()
   );
 
+  // Max povolená horizontální vzdálenost hrany = 1.5× X_BASE (cross-branch = přeskočit)
+  const MAX_EDGE_DX = 1.5 * 320 * X_SCALE + BOX_W;
+
   data.edges.forEach(e => {
     const src = nodeMap[e.from], tgt = nodeMap[e.to];
     if (!src || !tgt) return;
     // Přeskočit hrany které jsou součástí AND-joinu — ty kreslíme v AND sekci
     if (andJoinTargets.has(e.to) && andJoinSources.has(e.from)) return;
+    // Přeskočit nesmyslné cross-branch hrany (Opus občas vygeneruje L↔R přímé spojení)
+    if (Math.abs((src.x ?? 0) - (tgt.x ?? 0)) * X_SCALE > MAX_EDGE_DX) return;
 
     const srcH = boxHeight(src.label), tgtH = boxHeight(tgt.label);
     const x1 = cx(src.x ?? 0), y1 = cy(src.y ?? 0) - srcH / 2;
