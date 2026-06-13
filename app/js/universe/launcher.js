@@ -886,7 +886,7 @@ function showNavChips() {
     window.openUserDataPanel?.();
   };
   const chips = _hasHealthData ? [
-    { label: 'Kauzální mapa', fn: () => { window.location.href = '/crt.html?force=1'; } },
+    { label: 'Kauzální mapa', fn: () => { window.location.href = '/crt.html'; } },
     { label: 'Vesmír',        fn: () => { const model = localStorage.getItem('currentModel')||'longevity'; const node = {longevity:'dlouhovekost',lehkost:'lh_main',toc:'toc'}[model]||'dlouhovekost'; routeToNode(node); } },
     { label: 'Data',          fn: _openData },
   ] : [
