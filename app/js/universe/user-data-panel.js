@@ -40,7 +40,7 @@ async function loadAndRender() {
     supabase.from('user_constraints').select('constraint_type, constraint_key, constraint_value, severity').eq('user_id', userId),
     supabase.from('user_decathlon').select('goal_key, label').eq('user_id', userId).eq('active', true).maybeSingle(),
     supabase.from('user_integrations').select('service, enabled').eq('user_id', userId),
-    supabase.from('user_health_profile').select('diagnoses').eq('user_id', userId).maybeSingle(),
+    supabase.from('user_health_profile').select('diagnoses, symptoms, family_history').eq('user_id', userId).maybeSingle(),
     supabase.from('user_medications').select('name, dose, active').eq('user_id', userId).eq('active', true)
   ]);
 
@@ -49,8 +49,10 @@ async function loadAndRender() {
     constraints:  constraintsRes.data  ?? [],
     decathlon:    decathlonRes.data    ?? {},
     integrations: integrationsRes.data ?? [],
-    diagnoses:    healthRes.data?.diagnoses ?? [],
-    medications:  medsRes.data ?? [],
+    diagnoses:      healthRes.data?.diagnoses      ?? [],
+    symptoms:       healthRes.data?.symptoms       ?? [],
+    family_history: healthRes.data?.family_history ?? '',
+    medications:    medsRes.data ?? [],
   };
 
   renderTab(activeTab);
@@ -632,8 +634,8 @@ export function initUserDataPanel() {
     }
     .udp-panel {
       background: #0f172a; border: 1px solid #1e293b;
-      border-radius: 16px; width: 100%; max-width: 620px;
-      max-height: 88vh; display: flex; flex-direction: column;
+      border-radius: 16px; width: 100%; max-width: 760px;
+      max-height: 90vh; display: flex; flex-direction: column;
       overflow: hidden; box-shadow: 0 24px 64px rgba(0,0,0,0.7);
     }
     .udp-header {
@@ -647,12 +649,13 @@ export function initUserDataPanel() {
     }
     .udp-close-btn:hover { color: #94a3b8; background: rgba(255,255,255,0.05); }
     .udp-tabs {
-      display: flex; gap: 0; padding: 16px 24px 0; border-bottom: 1px solid #1e293b;
-      flex-shrink: 0;
+      display: flex; gap: 0; padding: 12px 20px 0; border-bottom: 1px solid #1e293b;
+      flex-shrink: 0; overflow-x: auto; scrollbar-width: none;
     }
+    .udp-tabs::-webkit-scrollbar { display: none; }
     .udp-tab {
       background: none; border: none; border-bottom: 2px solid transparent;
-      color: #64748b; font-size: 14px; font-weight: 600; padding: 10px 18px 13px;
+      color: #64748b; font-size: 13px; font-weight: 600; padding: 8px 14px 12px;
       cursor: pointer; white-space: nowrap; letter-spacing: 0.3px;
       transition: color 0.15s, border-color 0.15s;
     }
@@ -745,12 +748,12 @@ export function initUserDataPanel() {
         <button id="udp-close" class="udp-close-btn">✕</button>
       </div>
       <div class="udp-tabs">
-        <button class="udp-tab" data-tab="profile">Profil</button>
-        <button class="udp-tab" data-tab="constraints">Omezení</button>
-        <button class="udp-tab" data-tab="aspirations">Sen</button>
-        <button class="udp-tab" data-tab="vitality">Vitalita</button>
         <button class="udp-tab" data-tab="zdravi">Zdraví</button>
         <button class="udp-tab" data-tab="documents">Dokumenty</button>
+        <button class="udp-tab" data-tab="profile">Profil</button>
+        <button class="udp-tab" data-tab="vitality">Vitalita</button>
+        <button class="udp-tab" data-tab="aspirations">Sen</button>
+        <button class="udp-tab" data-tab="constraints">Omezení</button>
         <button class="udp-tab" data-tab="integrations">Integrace</button>
       </div>
       <div id="udp-body"></div>
@@ -758,7 +761,7 @@ export function initUserDataPanel() {
   document.body.appendChild(modal);
 
   // Set initial active tab style
-  activeTab = 'profile';
+  activeTab = 'zdravi';
   setTimeout(() => switchTab(activeTab), 0);
 }
 
@@ -781,8 +784,10 @@ window.openCheckInTab = openCheckInTab;
 // ═══════════════════════════════════════════════════
 
 function renderZdraviTab() {
-  const diagnoses = (cachedData.diagnoses ?? []).join('\n');
-  const meds = cachedData.medications ?? [];
+  const diagnoses    = (cachedData.diagnoses ?? []).join('\n');
+  const symptoms     = (cachedData.symptoms  ?? []).join('\n');
+  const familyHist   = cachedData.family_history ?? '';
+  const meds         = cachedData.medications ?? [];
 
   const medRows = meds.length
     ? meds.map((m, i) => renderMedRow(i, m)).join('')
@@ -794,11 +799,29 @@ function renderZdraviTab() {
       <p style="color:#64748b;font-size:13px;margin:0 0 10px;line-height:1.5;">
         Každá diagnóza na nový řádek. Neznáš přesný název? Napiš jak to popisuje lékař — AI doplní.
       </p>
-      <textarea id="zdravi-diagnoses" rows="4" class="udp-input" style="width:100%;resize:vertical;font-family:inherit;"
+      <textarea id="zdravi-diagnoses" rows="3" class="udp-input" style="width:100%;resize:vertical;font-family:inherit;"
         placeholder="např. Fibrilace síní&#10;Hypertenze&#10;Vysoký LDL">${esc(diagnoses)}</textarea>
     </div>
 
-    <div class="udp-section" style="margin-top:20px;">
+    <div class="udp-section">
+      <div class="udp-section-label">Symptomy</div>
+      <p style="color:#64748b;font-size:13px;margin:0 0 10px;line-height:1.5;">
+        Co tě pravidelně trápí — bolest, únava, dušnost, závratě... Každý symptom na řádek.
+      </p>
+      <textarea id="zdravi-symptoms" rows="3" class="udp-input" style="width:100%;resize:vertical;font-family:inherit;"
+        placeholder="např. Únava po obědě&#10;Noční pocení&#10;Bušení srdce">${esc(symptoms)}</textarea>
+    </div>
+
+    <div class="udp-section">
+      <div class="udp-section-label">Rodinná anamnéza</div>
+      <p style="color:#64748b;font-size:13px;margin:0 0 10px;line-height:1.5;">
+        Nemoci rodičů nebo sourozenců — kardio, cukrovka, rakovina, demence...
+      </p>
+      <textarea id="zdravi-family" rows="3" class="udp-input" style="width:100%;resize:vertical;font-family:inherit;"
+        placeholder="např. Otec: infarkt v 65, cukrovka 2. typu&#10;Matka: rakovina prsu">${esc(familyHist)}</textarea>
+    </div>
+
+    <div class="udp-section">
       <div class="udp-section-label">Léky & doplňky</div>
       <div id="med-rows">${medRows}</div>
       <button id="btn-add-med" class="udp-add-btn">+ Přidat</button>
@@ -842,8 +865,9 @@ function bindMedDelButtons() {
 
 async function saveZdravi() {
   setStatus('udp-status-zdravi', 'saving');
-  const diagText = document.getElementById('zdravi-diagnoses')?.value ?? '';
-  const diagnoses = diagText.split('\n').map(s => s.trim()).filter(Boolean);
+  const diagnoses      = (document.getElementById('zdravi-diagnoses')?.value ?? '').split('\n').map(s => s.trim()).filter(Boolean);
+  const symptoms       = (document.getElementById('zdravi-symptoms')?.value   ?? '').split('\n').map(s => s.trim()).filter(Boolean);
+  const family_history = (document.getElementById('zdravi-family')?.value     ?? '').trim();
 
   const medRows = document.querySelectorAll('#med-rows .udp-injury-row');
   const medications = [...medRows].map(row => ({
@@ -852,20 +876,20 @@ async function saveZdravi() {
   })).filter(m => m.name);
 
   try {
-    // Upsert diagnózy do user_health_profile
     await supabase.from('user_health_profile')
-      .upsert({ user_id: userId, diagnoses }, { onConflict: 'user_id' });
+      .upsert({ user_id: userId, diagnoses, symptoms, family_history }, { onConflict: 'user_id' });
 
-    // Deaktivuj staré léky, ulož nové
     await supabase.from('user_medications').update({ active: false }).eq('user_id', userId);
     for (const med of medications) {
       await supabase.from('user_medications')
         .upsert({ user_id: userId, name: med.name, dose: med.dose, active: true }, { onConflict: 'user_id,name' });
     }
 
-    cachedData.diagnoses = diagnoses;
-    cachedData.medications = medications;
-    setStatus('udp-status-zdravi', 'saved');
+    cachedData.diagnoses      = diagnoses;
+    cachedData.symptoms       = symptoms;
+    cachedData.family_history = family_history;
+    cachedData.medications    = medications;
+    setStatus('udp-status-zdravi', 'ok');
   } catch (e) {
     console.error('saveZdravi:', e);
     setStatus('udp-status-zdravi', 'error');

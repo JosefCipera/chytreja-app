@@ -52,7 +52,7 @@ async function fetchContext(userId, role) {
   // 2. Zdravotní profil (diagnózy, labs) + léky z user_medications
   const [{ data: profile }, { data: meds }] = await Promise.all([
     supabase.from('user_health_profile')
-      .select('diagnoses, labs, physical, goal_text, doctor_notes, birth_year, sex')
+      .select('diagnoses, symptoms, family_history, labs, physical, goal_text, doctor_notes, birth_year, sex')
       .eq('user_id', userId).single(),
     supabase.from('user_medications')
       .select('name, dose').eq('user_id', userId).eq('active', true),
@@ -127,15 +127,17 @@ async function generateCRT({ metrics, profile, checkins, nodeInputs }, role) {
     : '(žádná data ze skóre)';
 
   // Zdravotní profil
-  const diagText   = (profile.diagnoses   || []).join(', ') || 'neuvedeno';
-  const medsText   = (profile.medications || []).map(m => `${m.name} ${m.dose || ''}`).join(', ') || 'neuvedeno';
-  const labsObj    = profile.labs || {};
-  const labsText   = Object.entries(labsObj)
+  const diagText     = (profile.diagnoses     || []).join(', ') || 'neuvedeno';
+  const sympText     = (profile.symptoms      || []).join(', ') || 'neuvedeno';
+  const familyText   = profile.family_history || 'neuvedeno';
+  const medsText     = (profile.medications   || []).map(m => `${m.name} ${m.dose || ''}`).join(', ') || 'neuvedeno';
+  const labsObj      = profile.labs || {};
+  const labsText     = Object.entries(labsObj)
     .filter(([k]) => k !== 'date')
     .map(([k, v]) => `${k}: ${v}`)
     .join(', ') || 'neuvedeno';
-  const goalText   = profile.goal_text || 'neuvedeno';
-  const doctorText = profile.doctor_notes ? `\nPoznámky od lékaře:\n${profile.doctor_notes.slice(0, 800)}` : '';
+  const goalText     = profile.goal_text || 'neuvedeno';
+  const doctorText   = profile.doctor_notes ? `\nPoznámky od lékaře:\n${profile.doctor_notes.slice(0, 800)}` : '';
 
   // Poslední check-in (průměr posledních 7 dní)
   const checkinText = checkins.length
@@ -187,6 +189,8 @@ Topologie — čistý strom BEZ křížení, TŘI větve:
 
 ZDRAVOTNÍ PROFIL:
 - Diagnózy: ${diagText}
+- Symptomy: ${sympText}
+- Rodinná anamnéza: ${familyText}
 - Léky: ${medsText}
 - Labs: ${labsText}
 - Cíl: ${goalText}${doctorText}
@@ -267,7 +271,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx) {
   const key = JSON.stringify({
-    _v:          3, // bump při změně promptu → invaliduje cache
+    _v:          4, // bump při změně promptu → invaliduje cache
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),
     labs:        ctx.profile.labs || {},
