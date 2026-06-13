@@ -236,7 +236,7 @@ async function loadCRT() {
   const res = await fetch('/api/crt-generate', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ userId, role: userRole }),
+    body: JSON.stringify({ userId, role: userRole, force: new URLSearchParams(location.search).get('force') === '1' }),
   });
   if (!res.ok) {
     let detail = '';
@@ -568,13 +568,13 @@ function renderTree(data) {
   container.appendChild(svg);
 }
 
-function toggleMeds() {
+window.toggleMeds = function() {
   const btn = document.getElementById('crtMedBtn');
   const els = document.querySelectorAll('.crt-med-badge, .crt-med-line');
   const show = els.length && els[0].classList.contains('crt-med-hidden');
   els.forEach(el => el.classList.toggle('crt-med-hidden', !show));
   if (btn) btn.classList.toggle('active', show);
-}
+};
 
 // ── Boot ─────────────────────────────────────────────────────────────────────
 async function boot() {
