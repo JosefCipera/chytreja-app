@@ -260,6 +260,7 @@ function sanitizeMedAbbr(text) {
     .replace(/\bBMI\b/g, 'index tělesné hmotnosti')
     .replace(/\bdekondic[ei]\b/gi, 'nízká kondice')
     .replace(/\bdekondiční\b/gi, 'kondice')
+    .replace(/\bpředčasné stahy\b/gi, 'předčasné stahy srdce')
     .replace(/\bhypertenze\b/gi, 'vysoký tlak')
     .replace(/\barytmi[ei]\b/gi, 'nepravidelný rytmus')
     .replace(/\barteroskleros[ai]s?\b/gi, 'ztuhlé cévy');

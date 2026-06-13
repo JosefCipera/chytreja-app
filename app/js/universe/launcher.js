@@ -878,7 +878,11 @@ function showNavChips() {
   if (!wrap) return;
   wrap.innerHTML = '';
   wrap.style.display = 'flex';
-  const _openData = () => { if (!document.getElementById('userDataModal')) window.initUserDataPanel?.(); window.openUserDataPanel?.(); };
+  const _openData = async () => {
+    if (!document.getElementById('userDataModal')) window.initUserDataPanel?.();
+    if (!window._chjUserId) await waitForUserId(5000);
+    window.openUserDataPanel?.();
+  };
   const chips = _hasHealthData ? [
     { label: 'Kauzální mapa', fn: () => { window.location.href = '/crt.html?force=1'; } },
     { label: 'Vesmír',        fn: () => { const model = localStorage.getItem('currentModel')||'longevity'; const node = {longevity:'dlouhovekost',lehkost:'lh_main',toc:'toc'}[model]||'dlouhovekost'; routeToNode(node); } },
