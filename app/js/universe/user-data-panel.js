@@ -626,12 +626,14 @@ export function initUserDataPanel() {
   const style = document.createElement('style');
   style.textContent = `
     .udp-hidden { display: none !important; }
+    @keyframes udp-fadein { from { opacity:0; transform:scale(0.97); } to { opacity:1; transform:scale(1); } }
     #userDataModal {
       position: fixed; inset: 0; z-index: 10100;
       background: rgba(2,6,23,0.85); backdrop-filter: blur(4px);
       display: flex; align-items: center; justify-content: center;
       padding: 16px; box-sizing: border-box;
     }
+    #userDataModal:not(.udp-hidden) .udp-panel { animation: udp-fadein 0.18s ease; }
     .udp-panel {
       background: #0f172a; border: 1px solid #1e293b;
       border-radius: 16px; width: 100%; max-width: 760px;
