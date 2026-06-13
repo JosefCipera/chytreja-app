@@ -13,11 +13,14 @@ let userId      = null;
 // ─── Open / Close ─────────────────────────────────
 export function openUserDataPanel() {
   userId = window._chjUserId || window.firebaseAuth?.currentUser?.uid;
-  if (!userId) { console.warn('Not authenticated'); return; }
+  console.error('[UDP] open called, uid:', userId);
+  if (!userId) { console.error('[UDP] no uid, returning'); return; }
 
   const modal = document.getElementById('userDataModal');
+  console.error('[UDP] modal el:', modal ? 'found' : 'NULL');
   if (!modal) return;
   modal.classList.remove('udp-hidden');
+  console.error('[UDP] modal shown, classes now:', modal.className);
   loadAndRender();
 }
 
