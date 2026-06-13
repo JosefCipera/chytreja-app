@@ -487,80 +487,109 @@ function renderTree(data) {
   });
 
   // ── Medication shields ────────────────────────────────────────────────────
-  const medsMap = data.medications_map || [];
+  const medsMap = (data.medications_map || []).filter(m => (m.targets || []).length > 0);
+
   // Indexuj pozice uzlů (root + nodes) podle id
   const nodePos = {};
   [data.root, ...(data.nodes || [])].forEach(n => {
-    if (n) nodePos[n.id] = { x: cx(n.x ?? 0), y: cy(n.y ?? 0), label: n.label };
+    if (n) nodePos[n.id] = { x: cx(n.x ?? 0), y: cy(n.y ?? 0) };
   });
 
-  const SHIELD_W = 52, SHIELD_H = 22;
-  const MED_COLORS = ['#1a3a4a','#1a2a3a','#2a1a3a','#1a3a2a','#3a2a1a'];
-  const MED_STROKES = ['#4a9aaa','#4a6aaa','#8a4aaa','#4aaa7a','#aa7a4a'];
-
-  medsMap.forEach((med, mi) => {
-    const mc = MED_COLORS[mi % MED_COLORS.length];
-    const ms = MED_STROKES[mi % MED_STROKES.length];
-    const targets = (med.targets || []).filter(tid => nodePos[tid]);
-    if (!targets.length) return;
-
-    // Pozice štítku léku — vedle prvního cílového uzlu, posunutý vlevo
-    const firstPos = nodePos[targets[0]];
-    const sx = firstPos.x - BOX_W / 2 - SHIELD_W - 18;
-    const sy = firstPos.y - SHIELD_H / 2;
-
-    // Štítek léku
-    const g = svgEl('g', { class: 'crt-med-badge crt-med-hidden', 'data-med': String(mi) });
-    g.appendChild(svgEl('rect', {
-      x: sx, y: sy, width: SHIELD_W, height: SHIELD_H, rx: '4',
-      fill: mc, stroke: ms, 'stroke-width': '1.5', 'stroke-dasharray': '4 2',
-    }));
-    const medLines = wrapText(med.name).slice(0, 2);
-    medLines.forEach((line, li) => {
-      g.appendChild(svgEl('text', {
-        x: sx + SHIELD_W / 2, y: sy + 8 + li * 12,
-        'text-anchor': 'middle', fill: ms,
-        'font-size': '9', 'font-family': 'Inter, Segoe UI, system-ui, sans-serif',
-        'font-weight': '600',
-      }, line));
-    });
-    // Malý štít emoji
-    g.appendChild(svgEl('text', {
-      x: sx + 6, y: sy + 14,
-      'text-anchor': 'middle', fill: ms, 'font-size': '10',
-    }, '🛡'));
-
-    // Tooltip s efektem
-    g.addEventListener('mouseenter', e => {
-      const tooltip = document.getElementById('crtTooltip');
-      tooltip.innerHTML = `<strong>${med.name}</strong><br><span style="color:#7ab8c8;font-size:11px">${med.effect || ''}</span>`;
-      tooltip.style.display = 'block';
-    });
-    g.addEventListener('mouseleave', () => { document.getElementById('crtTooltip').style.display = 'none'; });
-    g.addEventListener('mousemove', e => {
-      const t = document.getElementById('crtTooltip');
-      t.style.left = (e.clientX + 14) + 'px';
-      t.style.top  = (e.clientY - 10) + 'px';
-    });
-    svg.appendChild(g);
-
-    // Přerušované čáry na každý cílový uzel
-    targets.forEach(tid => {
-      const tp = nodePos[tid];
-      const line = svgEl('line', {
-        class: 'crt-med-line crt-med-hidden',
-        'data-med': String(mi),
-        x1: sx + SHIELD_W, y1: sy + SHIELD_H / 2,
-        x2: tp.x - BOX_W / 2 - 4, y2: tp.y,
-        stroke: ms, 'stroke-width': '1.5',
-        'stroke-dasharray': '5 3', opacity: '0.7',
-      });
-      svg.insertBefore(line, svg.firstChild); // pod uzly
-    });
-  });
-
-  // Zobraz toggle tlačítko jen pokud jsou léky
   if (medsMap.length) {
+    const SHIELD_W  = IS_MOBILE ? 88 : 114;
+    const SHIELD_H  = IS_MOBILE ? 32 : 40;
+    const SHIELD_FS = IS_MOBILE ? 11 : 13;
+    const MED_GAP   = IS_MOBILE ? 14 : 18;
+    const MED_STROKES = ['#4a9aaa','#c47aaa','#7aaa7a','#d4a040','#aa7a6a'];
+    const MED_FILLS   = ['#0d2530','#2a1030','#0d2a18','#2a1e08','#2a1818'];
+
+    // Rozšíř SVG doprava o sloupec štítků
+    const colX = svgW + 40; // levý okraj sloupce štítků
+    const newSvgW = colX + SHIELD_W + 20;
+    svg.setAttribute('viewBox', `0 0 ${newSvgW} ${svgH}`);
+    svg.setAttribute('width', newSvgW);
+
+    // Vypočítej y pozici každého štítku (střed na průměru y-souřadnic cílů)
+    const totalH = medsMap.length * (SHIELD_H + MED_GAP) - MED_GAP;
+    const startY = svgH / 2 - totalH / 2;
+
+    medsMap.forEach((med, mi) => {
+      const ms  = MED_STROKES[mi % MED_STROKES.length];
+      const mf  = MED_FILLS[mi % MED_FILLS.length];
+      const bx  = colX;
+      const by  = startY + mi * (SHIELD_H + MED_GAP);
+      const midY = by + SHIELD_H / 2;
+
+      // Čáry ke cílovým uzlům — kreslíme pod uzly (insertBefore)
+      (med.targets || []).filter(tid => nodePos[tid]).forEach(tid => {
+        const tp = nodePos[tid];
+        // Bezierova křivka: ze štítku doleva ke hraně cílového uzlu
+        const x1 = bx, y1 = midY;
+        const x2 = tp.x + BOX_W / 2 + 4, y2 = tp.y;
+        const cpx = (x1 + x2) / 2;
+        const path = svgEl('path', {
+          class: 'crt-med-line crt-med-hidden',
+          'data-med': String(mi),
+          d: `M ${x1} ${y1} C ${cpx} ${y1}, ${cpx} ${y2}, ${x2} ${y2}`,
+          fill: 'none', stroke: ms, 'stroke-width': IS_MOBILE ? '1.5' : '2',
+          'stroke-dasharray': '6 3', opacity: '0.75',
+        });
+        svg.insertBefore(path, svg.firstChild);
+      });
+
+      // Badge group
+      const g = svgEl('g', { class: 'crt-med-badge crt-med-hidden', 'data-med': String(mi), style: 'cursor:default' });
+
+      // Box s kulatými rohy
+      g.appendChild(svgEl('rect', {
+        x: bx, y: by, width: SHIELD_W, height: SHIELD_H, rx: '7', ry: '7',
+        fill: mf, stroke: ms, 'stroke-width': '2', 'stroke-dasharray': '5 2',
+      }));
+
+      // Název léku — tučně, velký font
+      const nameLines = wrapText(med.name).slice(0, 2);
+      const lineH = SHIELD_FS + 5;
+      const textStartY = by + SHIELD_H / 2 - (nameLines.length * lineH) / 2 + SHIELD_FS * 0.7;
+      nameLines.forEach((line, li) => {
+        g.appendChild(svgEl('text', {
+          x: bx + SHIELD_W / 2,
+          y: textStartY + li * lineH,
+          'text-anchor': 'middle', fill: ms,
+          'font-size': String(SHIELD_FS),
+          'font-family': 'Inter, Segoe UI, system-ui, sans-serif',
+          'font-weight': '700',
+        }, line));
+      });
+
+      // Efekt — menší text pod názvem (jen pokud se vejde na 1 řádek)
+      if (med.effect && nameLines.length === 1) {
+        g.appendChild(svgEl('text', {
+          x: bx + SHIELD_W / 2,
+          y: textStartY + lineH,
+          'text-anchor': 'middle', fill: ms,
+          'font-size': String(Math.max(9, SHIELD_FS - 3)),
+          'font-family': 'Inter, Segoe UI, system-ui, sans-serif',
+          opacity: '0.75',
+        }, med.effect));
+      }
+
+      // Tooltip
+      g.addEventListener('mouseenter', () => {
+        const t = document.getElementById('crtTooltip');
+        t.innerHTML = `<strong>${med.name}</strong><br><span style="color:#7ab8c8;font-size:11px">${med.effect || ''}</span>`;
+        t.style.display = 'block';
+      });
+      g.addEventListener('mouseleave', () => { document.getElementById('crtTooltip').style.display = 'none'; });
+      g.addEventListener('mousemove', e => {
+        const t = document.getElementById('crtTooltip');
+        t.style.left = (e.clientX + 14) + 'px';
+        t.style.top  = (e.clientY - 10) + 'px';
+      });
+
+      svg.appendChild(g);
+    });
+
+    // Zobraz toggle tlačítko
     const btn = document.getElementById('crtMedBtn');
     if (btn) btn.style.display = '';
   }

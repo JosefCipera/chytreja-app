@@ -171,7 +171,7 @@ Pravidla pro strukturu:
 - and_joins: jen kde dva uzly SPOLEČNĚ způsobují třetí
 - injections: 2–3 konkrétní akce které přeruší kauzální řetěz
 - node_id: CHJ uzel pokud existuje (kardio/mysl/vyziva/spanek/dlouhovekost), jinak null
-- medications_map: pro každý lék z profilu urči které uzly ovlivňuje (targets = pole id uzlů) a jaký má efekt (1–3 slova, česky, např. "snižuje zánět", "tlumí sympatikus")
+- medications_map: POUZE léky které přímo ovlivňují uzly v tomto CRT stromu (targets = pole id uzlů z nodes/root). Léky pro nesouvisející stavy (kyselina močová, žaludeční sliznice apod.) VYNECH pokud jejich cílový orgán není v CRT. Efekt: 1–3 slova česky (např. "snižuje LDL", "tlumí sympatikus", "zpomaluje tep")
 - Labely v češtině: PRIMÁRNĚ srozumitelně pro laika (co člověk cítí nebo zná z běžného života)
   Odborný termín pouze pokud je diagnóza přímo z profilu uživatele (např. "Fibrilace síní").
   Příklady: "Ztuhlé cévy" ne "Arteroskleróza", "Slabý srdeční rytmus" ne "Arytmie",
