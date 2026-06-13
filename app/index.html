@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>ChytrĂ© jĂˇ</title>
+    <title>Chytré já</title>
     <!-- build: 20260402a -->
 
     <!-- Fonts -->
@@ -49,7 +49,7 @@
                 const emailEl = document.querySelector('.email');
                 if (emailEl) emailEl.textContent = email;
 
-                // Lehkost check-in: zobraz modal pokud dnes jeĹˇtÄ› neprobÄ›hl pro tohoto uĹľivatele
+                // Lehkost check-in: zobraz modal pokud dnes ještě neproběhl pro tohoto uživatele
                 const currentModel = localStorage.getItem('currentModel');
                 if (currentModel === 'lehkost') {
                     const today = new Date().toISOString().slice(0, 10);
@@ -135,7 +135,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="ChytrĂ© jĂˇ">
+    <meta name="apple-mobile-web-app-title" content="Chytré já">
 
     <style>
         .battery-section {
@@ -267,7 +267,7 @@
             animation: header-pulse-blue 1.1s ease-in-out infinite;
         }
 
-        /* === HlasovĂ˝ pĹ™Ă­kaz â€” novĂ© tlaÄŤĂ­tko === */
+        /* === Hlasový příkaz â€” novĂ© tlaÄŤĂ­tko === */
         #cmd-mic-btn {
             height: 38px;
             min-width: 38px;
@@ -318,7 +318,7 @@
 <body>
     <script src="/app/js/universe/launcher.js?v=20260613b"></script>
 
-    <!-- HornĂ­ liĹˇta -->
+    <!-- Horní lišta -->
     <header id="appHeader" class="app-header">
         <div id="appTitle" class="chj-logo">
             <div class="chj-logo__cursor"></div>
@@ -329,7 +329,7 @@
         </div>
         <div class="header-right">
             <div class="header-controls" style="display:none;">
-                <label for="modelSelector">VesmĂ­r:</label>
+                <label for="modelSelector">Vesmír:</label>
                 <select id="modelSelector"></select>
                 <label for="roleSelect">Produkt:</label>
                 <select id="roleSelect">
@@ -337,20 +337,20 @@
                     <option value="free">Free</option>
                     <option value="pro">Pro</option>
                     <option value="dekatlon">Dekatlon</option>
-                    <option value="lehkost">HubnutĂ­</option>
+                    <option value="lehkost">Hubnutí</option>
                     <option value="user">User</option>
                 </select>
                 <label id="hideGrayLabel" style="display:none; align-items:center; gap:5px; cursor:pointer;">
-                    <input type="checkbox" id="hideGrayToggle"> SkrĂ˝t ĹˇedĂ©
+                    <input type="checkbox" id="hideGrayToggle"> Skrýt šedé
                 </label>
             </div>
         </div>
         <div class="user-profile-wrapper">
-            <button id="cmd-mic-btn" title="HlasovĂ˝ pĹ™Ă­kaz" aria-label="Ĺekni pĹ™Ă­kaz">
+            <button id="cmd-mic-btn" title="Hlasový příkaz" aria-label="Ĺekni příkaz">
                 <span id="cmd-mic-icon">đźŽ¤</span>
                 <span id="cmd-mic-label" style="font-size:12px;font-family:monospace;letter-spacing:0.05em;">CMD</span>
             </button>
-            <button id="header-mic-btn" title="PĹ™ehrĂˇt odpovÄ›ÄŹ" aria-label="TTS pĹ™ehrĂˇvaÄŤ">
+            <button id="header-mic-btn" title="Přehrát odpověď" aria-label="TTS přehrávač">
                 <span class="header-mic-icon">đź”Š</span>
             </button>
             <button id="profileBtn" class="avatar-button">
@@ -371,28 +371,28 @@
                     </div>
                 </div>
                 <nav class="dropdown-nav">
-                    <a href="#" onclick="openUserDataPanel(); return false;"><i class="icon">đź‘¤</i> JĂˇ</a>
-                    <a href="#" onclick="openDailyCheckin(); return false;" id="checkin-menu-item"><i class="icon">đź“‹</i> DneĹˇnĂ­ zĂˇznam</a>
-                    <a href="/app/medioteka.html"><i class="icon">đź“š</i> MediotĂ©ka</a>
-                    <a href="#" onclick="openGuide(); return false;"><i class="icon">đź“–</i> NĂˇvod</a>
+                    <a href="#" onclick="openUserDataPanel(); return false;"><i class="icon">đź‘¤</i> Já</a>
+                    <a href="#" onclick="openDailyCheckin(); return false;" id="checkin-menu-item"><i class="icon">đź“‹</i> Dnešní záznam</a>
+                    <a href="/app/medioteka.html"><i class="icon">đź“š</i> Mediotéka</a>
+                    <a href="#" onclick="openGuide(); return false;"><i class="icon">đź“–</i> Návod</a>
                     <div class="divider"></div>
                     <button onclick="handleLogout()" class="logout-action">
-                        <i class="icon">â­•</i> OdhlĂˇsit
+                        <i class="icon">â­•</i> Odhlásit
                     </button>
                 </nav>
             </div>
         </div>
     </header>
 
-    <!-- PlĂˇtno sĂ­tÄ› -->
+    <!-- Plátno sítě -->
     <div id="network"></div>
 
-    <!-- PostrannĂ­ panel -->
+    <!-- Postranní panel -->
     <aside id="sidePanel">
         <div class="panel-header">
             <div class="panel-node-row">
                 <div id="nodeTitle" class="panel-node-title">
-                    <i class="fa-solid fa-circle-nodes"></i> UzlovĂ˝ nĂˇzev
+                    <i class="fa-solid fa-circle-nodes"></i> Uzlový název
                 </div>
                 <button class="panel-close" id="closePanel">âś–</button>
             </div>
@@ -404,10 +404,10 @@
                     style="color:#83B0E3; font-size:18px; margin:0 0 15px 0; display:flex; align-items:center; gap:10px;">
                     âšˇ Zeptejte se
                 </h3>
-               <h3 class="panel-section-title"><i class="fa-solid fa-brain"></i> ChytrĂ© jĂˇ</h3> -->
+               <h3 class="panel-section-title"><i class="fa-solid fa-brain"></i> Chytré já</h3> -->
                 <div id="ai-integrated-msgs" class="ai-prediction-text"></div>
                 <div id="aiPanelSection" style="display:flex; margin-top:20px;">
-                    <input id="aiPanelInput" type="text" placeholder="Zeptej se ChytrĂ©ho jĂˇâ€¦" />
+                    <input id="aiPanelInput" type="text" placeholder="Zeptej se Chytrého já…" />
                     <button id="ai-send"><i class="fa-solid fa-paper-plane"></i></button>
                 </div>
             </div>
@@ -477,7 +477,7 @@
     <!-- Service Worker -->
     <script>
         if ('serviceWorker' in navigator) {
-            // SW je doÄŤasnÄ› vypnutĂ˝ â€” odregistruj vĹˇe co jeĹˇtÄ› bÄ›ĹľĂ­
+            // SW je doÄŤasnÄ› vypnutĂ˝ â€” odregistruj vĹˇe co ještě bÄ›ĹľĂ­
             navigator.serviceWorker.getRegistrations().then(regs => {
                 regs.forEach(r => r.unregister());
             });
@@ -802,7 +802,7 @@
                 header.appendChild(printBtn);
 
                 const dlBtn = document.createElement('button');
-                dlBtn.textContent = 'đź“Ą'; dlBtn.title = 'StĂˇhnout'; dlBtn.style.cssText = btnStyle;
+                dlBtn.textContent = 'đź“Ą'; dlBtn.title = 'Stáhnout'; dlBtn.style.cssText = btnStyle;
                 const doDownload = async () => {
                     let blob, fname;
                     if (source.script_cz) {
@@ -820,7 +820,7 @@
                 header.appendChild(dlBtn);
 
                 const ttsBtn = document.createElement('button');
-                ttsBtn.textContent = 'đź”Š'; ttsBtn.title = 'PĹ™ehrĂˇt'; ttsBtn.style.cssText = btnStyle;
+                ttsBtn.textContent = 'đź”Š'; ttsBtn.title = 'Přehrát'; ttsBtn.style.cssText = btnStyle;
                 const doTTS = () => { if (_mdTtsOn) { speechSynthesis.cancel(); _mdTtsOn = false; ttsBtn.textContent = 'đź”Š'; return; } const el = document.querySelector('.md-il'); if (!el) return; const txt = el.innerText.replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu,'').trim(); if (!txt) return; _mdTtsOn = true; ttsBtn.textContent = 'âŹą'; speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(txt); u.lang = 'cs-CZ'; u.rate = 1.05; u.pitch = 1.1; const sv = () => { const cz = speechSynthesis.getVoices().find(v => /cs[-_]CZ/i.test(v.lang)); if (cz) u.voice = cz; }; sv(); if (!u.voice) speechSynthesis.addEventListener('voiceschanged', sv, {once:true}); u.onend = u.onerror = () => { _mdTtsOn = false; ttsBtn.textContent = 'đź”Š'; }; speechSynthesis.speak(u); };
                 ttsBtn.addEventListener('click', doTTS);
                 ttsBtn.addEventListener('touchend', (e) => { e.preventDefault(); doTTS(); });
@@ -828,7 +828,7 @@
             }
 
             const closeBtn = document.createElement('button');
-            closeBtn.textContent = 'âś•'; closeBtn.title = 'ZavĹ™Ă­t';
+            closeBtn.textContent = 'âś•'; closeBtn.title = 'Zavřít';
             closeBtn.style.cssText = 'color:#94a3b8;background:none;border:none;cursor:pointer;padding:8px 4px 8px 10px;font-size:20px;line-height:1;-webkit-tap-highlight-color:transparent;min-width:44px;min-height:44px;flex-shrink:0;';
             closeBtn.addEventListener('click', () => window.closeSourceViewer());
             closeBtn.addEventListener('touchend', (e) => { e.preventDefault(); e.stopPropagation(); window.closeSourceViewer(); });
