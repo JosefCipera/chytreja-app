@@ -288,7 +288,7 @@ function dataHash(ctx) {
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { userId, role = 'longevity' } = req.body || {};
+  const { userId, role = 'longevity', force = false } = req.body || {};
 
   const { createClient } = await import('@supabase/supabase-js');
   const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
@@ -307,7 +307,7 @@ export default async function handler(req, res) {
         .eq('user_id', userId)
         .single();
 
-      if (prof?.crt_cache && prof?.crt_cache_hash === hash) {
+      if (!force && prof?.crt_cache && prof?.crt_cache_hash === hash) {
         console.log('[CRT] cache hit — data nezměněna');
         res.setHeader('Cache-Control', 'no-store');
         return res.json({ ...prof.crt_cache, _cached: true });
@@ -354,8 +354,9 @@ export default async function handler(req, res) {
       nodes:      coloredNodes,
       edges:      crt.edges || [],
       and_joins:  crt.and_joins || [],
-      injections: crt.injections || [],
-      has_data:   ctx.metrics.length > 0 || !!ctx.profile.diagnoses,
+      injections:      crt.injections || [],
+      medications_map: crt.medications_map || [],
+      has_data:        ctx.metrics.length > 0 || !!ctx.profile.diagnoses,
     };
 
     // Ulož do server-side cache s hashem vstupních dat
