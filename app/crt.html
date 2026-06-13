@@ -156,6 +156,8 @@
       z-index: 10;
     }
     .crt-loading.hidden { display: none; }
+    .crt-med-hidden { display: none; }
+    #crtMedBtn.active { opacity: 1; border-color: #4a9aee; color: #4a9aee; }
 
   </style>
 </head>
@@ -167,6 +169,7 @@
     <div class="crt-title" id="crtTitle">Kauzální mapa zdraví</div>
     <div class="crt-subtitle" id="crtSubtitle">Current Reality Tree</div>
   </div>
+  <button class="crt-back" id="crtMedBtn" onclick="toggleMeds()" style="display:none">🛡 Léky</button>
   <!-- Obnovit schováno — mapa se regeneruje jen při změně health profilu -->
   <button class="crt-back" id="crtRegenBtn" onclick="regenCRT()" style="display:none">↺ Přegenerovat</button>
 </div>
@@ -510,6 +513,7 @@ function renderTree(data) {
         const tx = cx(n.x ?? 0) + BOX_W / 2;
         const ty = cy(n.y ?? 0);
         svg.insertBefore(svgEl('path', {
+          class: 'crt-med-el crt-med-hidden',
           d: `M ${pillX} ${avgY} C ${(pillX + tx) / 2} ${avgY}, ${(pillX + tx) / 2} ${ty}, ${tx} ${ty}`,
           fill: 'none', stroke: MED_C, 'stroke-width': '1.5',
           'stroke-dasharray': '5 3', opacity: '0.55',
@@ -519,13 +523,14 @@ function renderTree(data) {
         const sx = tx - 1, sy = ty - 8;
         const SW = 10, SH = 13;
         svg.appendChild(svgEl('path', {
+          class: 'crt-med-el crt-med-hidden',
           d: `M${sx-SW/2},${sy} L${sx+SW/2},${sy} L${sx+SW/2},${sy+SH*0.55} Q${sx+SW/2},${sy+SH*0.9} ${sx},${sy+SH} Q${sx-SW/2},${sy+SH*0.9} ${sx-SW/2},${sy+SH*0.55} Z`,
           fill: MED_C, opacity: '0.9',
         }));
       });
 
       // Pill label
-      const g = svgEl('g', { style: 'cursor:default' });
+      const g = svgEl('g', { class: 'crt-med-el crt-med-hidden', style: 'cursor:default' });
       g.appendChild(svgEl('rect', {
         x: pillX, y: py, width: pw, height: PILL_H,
         rx: String(PILL_H / 2), fill: MED_FILL,
@@ -539,10 +544,20 @@ function renderTree(data) {
       }, med.name));
       svg.appendChild(g);
     });
+
+    document.getElementById('crtMedBtn').style.display = '';
   }
 
   container.appendChild(svg);
 }
+
+window.toggleMeds = function() {
+  const btn = document.getElementById('crtMedBtn');
+  const els = document.querySelectorAll('.crt-med-el');
+  const show = els.length && els[0].classList.contains('crt-med-hidden');
+  els.forEach(el => el.classList.toggle('crt-med-hidden', !show));
+  if (btn) btn.style.opacity = show ? '1' : '0.5';
+};
 
 // ── Boot ─────────────────────────────────────────────────────────────────────
 async function boot() {
