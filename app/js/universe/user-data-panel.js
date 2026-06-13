@@ -895,7 +895,7 @@ async function saveZdravi() {
     cachedData.medications    = medications;
     setStatus('udp-status-zdravi', 'ok');
   } catch (e) {
-    console.error('saveZdravi error:', e);
+    console.error('saveZdravi error:', e?.message || e?.code || JSON.stringify(e));
     setStatus('udp-status-zdravi', 'error');
   }
 }
