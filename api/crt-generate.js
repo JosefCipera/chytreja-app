@@ -159,7 +159,8 @@ Vrátíš POUZE validní JSON (bez markdown bloků, bez komentářů) v přesné
   ],
   "edges": [{ "from": "root", "to": "L1" }],
   "and_joins": [{ "sources": ["C1","C2"], "target": "S1" }],
-  "injections": [{ "label": "Konkrétní akce", "node_id": "kardio" }]
+  "injections": [{ "label": "Konkrétní akce", "node_id": "kardio" }],
+  "medications_map": [{ "name": "Název léku", "targets": ["L1","C2"], "effect": "snižuje" }]
 }
 
 Pravidla pro strukturu:
@@ -170,6 +171,7 @@ Pravidla pro strukturu:
 - and_joins: jen kde dva uzly SPOLEČNĚ způsobují třetí
 - injections: 2–3 konkrétní akce které přeruší kauzální řetěz
 - node_id: CHJ uzel pokud existuje (kardio/mysl/vyziva/spanek/dlouhovekost), jinak null
+- medications_map: pro každý lék z profilu urči které uzly ovlivňuje (targets = pole id uzlů) a jaký má efekt (1–3 slova, česky, např. "snižuje zánět", "tlumí sympatikus")
 - Labely v češtině: PRIMÁRNĚ srozumitelně pro laika (co člověk cítí nebo zná z běžného života)
   Odborný termín pouze pokud je diagnóza přímo z profilu uživatele (např. "Fibrilace síní").
   Příklady: "Ztuhlé cévy" ne "Arteroskleróza", "Slabý srdeční rytmus" ne "Arytmie",
@@ -271,7 +273,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx) {
   const key = JSON.stringify({
-    _v:          4, // bump při změně promptu → invaliduje cache
+    _v:          5, // bump při změně promptu → invaliduje cache
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),
     labs:        ctx.profile.labs || {},

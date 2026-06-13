@@ -901,6 +901,22 @@ function showNavChips() {
   });
 }
 
+// Volá user-data-panel.js po úspěšném saveZdravi — znovu načte has_health_data a překreslí chips
+window.chjRefreshHealthData = async function() {
+  const uid = getUid();
+  if (!uid) return;
+  try {
+    const res = await fetch(`/api/hud-data-bulk?nodes=lh_main&userId=${uid}&universe=longevity`);
+    if (!res.ok) return;
+    const bulk = await res.json();
+    const newHasData = bulk.has_health_data === true;
+    if (newHasData !== _hasHealthData) {
+      _hasHealthData = newHasData;
+      showNavChips();
+    }
+  } catch(e) { console.warn('[CHJ] chjRefreshHealthData failed:', e); }
+};
+
 async function refreshBio() {
   const userId = getUid();
   if (!userId) return;

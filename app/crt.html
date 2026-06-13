@@ -156,6 +156,19 @@
       z-index: 10;
     }
     .crt-loading.hidden { display: none; }
+
+    /* ── Medication shields ── */
+    .crt-med-badge {
+      cursor: default;
+      transition: opacity .25s;
+    }
+    .crt-med-badge:hover { opacity: .85; }
+    .crt-med-line {
+      pointer-events: none;
+      transition: opacity .25s;
+    }
+    .crt-med-hidden { display: none; }
+    #crtMedBtn.active { border-color: #5a9aaa; color: #9ad8e8; }
   </style>
 </head>
 <body>
@@ -166,6 +179,7 @@
     <div class="crt-title" id="crtTitle">Kauzální mapa zdraví</div>
     <div class="crt-subtitle" id="crtSubtitle">Current Reality Tree</div>
   </div>
+  <button class="crt-back" id="crtMedBtn" onclick="toggleMeds()" style="display:none">🛡 Léky</button>
   <!-- Obnovit schováno — mapa se regeneruje jen při změně health profilu -->
   <button class="crt-back" id="crtRegenBtn" onclick="regenCRT()" style="display:none">↺ Přegenerovat</button>
 </div>
@@ -472,7 +486,94 @@ function renderTree(data) {
     svg.appendChild(g);
   });
 
+  // ── Medication shields ────────────────────────────────────────────────────
+  const medsMap = data.medications_map || [];
+  // Indexuj pozice uzlů (root + nodes) podle id
+  const nodePos = {};
+  [data.root, ...(data.nodes || [])].forEach(n => {
+    if (n) nodePos[n.id] = { x: cx(n.x ?? 0), y: cy(n.y ?? 0), label: n.label };
+  });
+
+  const SHIELD_W = 52, SHIELD_H = 22;
+  const MED_COLORS = ['#1a3a4a','#1a2a3a','#2a1a3a','#1a3a2a','#3a2a1a'];
+  const MED_STROKES = ['#4a9aaa','#4a6aaa','#8a4aaa','#4aaa7a','#aa7a4a'];
+
+  medsMap.forEach((med, mi) => {
+    const mc = MED_COLORS[mi % MED_COLORS.length];
+    const ms = MED_STROKES[mi % MED_STROKES.length];
+    const targets = (med.targets || []).filter(tid => nodePos[tid]);
+    if (!targets.length) return;
+
+    // Pozice štítku léku — vedle prvního cílového uzlu, posunutý vlevo
+    const firstPos = nodePos[targets[0]];
+    const sx = firstPos.x - BOX_W / 2 - SHIELD_W - 18;
+    const sy = firstPos.y - SHIELD_H / 2;
+
+    // Štítek léku
+    const g = svgEl('g', { class: 'crt-med-badge crt-med-hidden', 'data-med': String(mi) });
+    g.appendChild(svgEl('rect', {
+      x: sx, y: sy, width: SHIELD_W, height: SHIELD_H, rx: '4',
+      fill: mc, stroke: ms, 'stroke-width': '1.5', 'stroke-dasharray': '4 2',
+    }));
+    const medLines = wrapText(med.name).slice(0, 2);
+    medLines.forEach((line, li) => {
+      g.appendChild(svgEl('text', {
+        x: sx + SHIELD_W / 2, y: sy + 8 + li * 12,
+        'text-anchor': 'middle', fill: ms,
+        'font-size': '9', 'font-family': 'Inter, Segoe UI, system-ui, sans-serif',
+        'font-weight': '600',
+      }, line));
+    });
+    // Malý štít emoji
+    g.appendChild(svgEl('text', {
+      x: sx + 6, y: sy + 14,
+      'text-anchor': 'middle', fill: ms, 'font-size': '10',
+    }, '🛡'));
+
+    // Tooltip s efektem
+    g.addEventListener('mouseenter', e => {
+      const tooltip = document.getElementById('crtTooltip');
+      tooltip.innerHTML = `<strong>${med.name}</strong><br><span style="color:#7ab8c8;font-size:11px">${med.effect || ''}</span>`;
+      tooltip.style.display = 'block';
+    });
+    g.addEventListener('mouseleave', () => { document.getElementById('crtTooltip').style.display = 'none'; });
+    g.addEventListener('mousemove', e => {
+      const t = document.getElementById('crtTooltip');
+      t.style.left = (e.clientX + 14) + 'px';
+      t.style.top  = (e.clientY - 10) + 'px';
+    });
+    svg.appendChild(g);
+
+    // Přerušované čáry na každý cílový uzel
+    targets.forEach(tid => {
+      const tp = nodePos[tid];
+      const line = svgEl('line', {
+        class: 'crt-med-line crt-med-hidden',
+        'data-med': String(mi),
+        x1: sx + SHIELD_W, y1: sy + SHIELD_H / 2,
+        x2: tp.x - BOX_W / 2 - 4, y2: tp.y,
+        stroke: ms, 'stroke-width': '1.5',
+        'stroke-dasharray': '5 3', opacity: '0.7',
+      });
+      svg.insertBefore(line, svg.firstChild); // pod uzly
+    });
+  });
+
+  // Zobraz toggle tlačítko jen pokud jsou léky
+  if (medsMap.length) {
+    const btn = document.getElementById('crtMedBtn');
+    if (btn) btn.style.display = '';
+  }
+
   container.appendChild(svg);
+}
+
+function toggleMeds() {
+  const btn = document.getElementById('crtMedBtn');
+  const els = document.querySelectorAll('.crt-med-badge, .crt-med-line');
+  const show = els.length && els[0].classList.contains('crt-med-hidden');
+  els.forEach(el => el.classList.toggle('crt-med-hidden', !show));
+  if (btn) btn.classList.toggle('active', show);
 }
 
 // ── Boot ─────────────────────────────────────────────────────────────────────

@@ -894,6 +894,7 @@ async function saveZdravi() {
     cachedData.family_history = family_history;
     cachedData.medications    = medications;
     setStatus('udp-status-zdravi', 'ok');
+    window.chjRefreshHealthData?.();
   } catch (e) {
     console.error('saveZdravi error:', e?.message || e?.code || JSON.stringify(e));
     setStatus('udp-status-zdravi', 'error');
