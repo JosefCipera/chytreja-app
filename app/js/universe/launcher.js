@@ -879,7 +879,7 @@ function showNavChips() {
   wrap.innerHTML = '';
   wrap.style.display = 'flex';
   const _openData = async () => {
-    console.log('[CHJ Data] click, initFn:', typeof window.initUserDataPanel, 'openFn:', typeof window.openUserDataPanel, 'uid:', window._chjUserId);
+    console.error('[CHJ Data] click, initFn:', typeof window.initUserDataPanel, 'openFn:', typeof window.openUserDataPanel, 'uid:', window._chjUserId);
     if (!document.getElementById('userDataModal')) window.initUserDataPanel?.();
     if (!window._chjUserId) await waitForUserId(5000);
     console.log('[CHJ Data] after wait, uid:', window._chjUserId);
