@@ -388,10 +388,10 @@ async function loadCRTOpus(force = false) {
 // ── SVG renderer — plná kontrola nad velikostí a pozicí ─────────────────────
 const IS_MOBILE = window.innerWidth < 700 || window.screen.width < 700;
 // Na mobilu zmenšíme X_SCALE → užší strom → SVG viewBox užší → font čitelnější po scale
-const X_SCALE  = IS_MOBILE ? 0.75 : 1.0;
-const BOX_W    = IS_MOBILE ? 200 : 230;
-const BOX_H    = IS_MOBILE ? 68 : 76;
-const FONT_SIZE = IS_MOBILE ? 15 : 16;
+const X_SCALE  = 1.0;
+const BOX_W    = IS_MOBILE ? 190 : 220;
+const BOX_H    = IS_MOBILE ? 70 : 76;
+const FONT_SIZE = IS_MOBILE ? 14 : 16;
 const R = 10;
 const CHARS_PER_LINE = Math.floor((BOX_W - 20) / (FONT_SIZE * 0.58));
 
@@ -463,9 +463,9 @@ function renderTree(data) {
   const ys = data.nodes.map(n => n.y ?? 0);
   const minX = Math.min(...xs), maxX = Math.max(...xs);
   const minY = Math.min(...ys), maxY = Math.max(...ys);
-  const PAD_BOTTOM = 100; // prostor dole pro root (zlatý box)
-  const PAD_TOP = 120;   // prostor nahoře pro meta-UDE
-  const PAD_SIDE = 120;
+  const PAD_BOTTOM = 80;
+  const PAD_TOP    = 100;
+  const PAD_SIDE   = IS_MOBILE ? 40 : 100;
   const maxBoxH = Math.max(...data.nodes.map(n => boxHeight(n.label ?? '')));
   const svgW = (maxX - minX) + BOX_W + PAD_SIDE * 2;
   const svgH = (maxY - minY) + maxBoxH * 2 + PAD_BOTTOM + PAD_TOP;
@@ -487,19 +487,25 @@ function renderTree(data) {
     style: 'display:block;transform-origin:top left;overflow:visible;user-select:none;',
   });
 
-  // Zoom + pan state — inicializace po vykreslení (container musí mít rozměry)
+  // Zoom + pan state
   let _sc = 1, _tx = 0, _ty = 0;
   const applyT = () => { svg.style.transform = `translate(${_tx}px,${_ty}px) scale(${_sc})`; };
 
   const initView = () => {
-    const cw = container.clientWidth || 800;
-    const ch = container.clientHeight || 600;
-    _sc = Math.min(1, (cw - 40) / svgW, (ch - 40) / svgH);
+    const cw = container.clientWidth || window.innerWidth || 800;
+    if (IS_MOBILE) {
+      // Mobil: začni na plné velikosti, vycentruj — user pinchuje ven
+      _sc = 1;
+    } else {
+      // Desktop: přizpůsob šířce okna
+      _sc = Math.min(1, (cw - 40) / svgW);
+    }
     _tx = (cw - svgW * _sc) / 2;
-    _ty = Math.max(16, (ch - svgH * _sc) / 2);
+    _ty = 20;
     applyT();
   };
-  requestAnimationFrame(initView);
+  // setTimeout zajistí že layout proběhl a container má rozměry
+  setTimeout(initView, 30);
 
   container.addEventListener('wheel', e => {
     e.preventDefault();
@@ -563,7 +569,7 @@ function renderTree(data) {
   );
 
   // Max povolená horizontální vzdálenost hrany = 1.5× X_BASE (cross-branch = přeskočit)
-  const MAX_EDGE_DX = 1.5 * 320 * X_SCALE + BOX_W;
+  const MAX_EDGE_DX = 1.5 * 340 + BOX_W;
 
   data.edges.forEach(e => {
     const src = nodeMap[e.from], tgt = nodeMap[e.to];
