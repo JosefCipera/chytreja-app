@@ -68,11 +68,8 @@
       overflow-y: auto;
     }
     #crt-canvas svg {
-      width: 100%;
-      max-width: 900px;
-      height: auto;
       display: block;
-      margin: 0 auto;
+      transform-origin: top left;
     }
 
     /* ── Legend ── */
@@ -164,12 +161,14 @@
       position: fixed;
       top: 0; right: 0;
       height: 100dvh;
-      width: 460px;
+      width: 480px;
       display: flex;
       transform: translateX(110%);
       transition: transform 0.22s cubic-bezier(0.4,0,0.2,1);
       pointer-events: none;
       z-index: 60;
+      border-left: 3px solid #1e3a55;
+      box-shadow: -6px 0 24px rgba(0,0,0,0.5);
     }
     #crtNodePanel.open {
       transform: translateX(0);
@@ -197,18 +196,18 @@
     }
     .cnp-section:last-child { border-bottom: none; }
     .cnp-lbl {
-      font-size: 9.5px;
+      font-size: 11px;
       color: #3a5870;
       text-transform: uppercase;
       letter-spacing: .08em;
-      margin: 0 0 6px;
+      margin: 0 0 7px;
     }
     .cnp-row {
       display: flex;
       align-items: center;
       gap: 7px;
-      padding: 3px 0;
-      font-size: 12px;
+      padding: 4px 0;
+      font-size: 14px;
       line-height: 1.35;
     }
     .cnp-arr { font-size: 16px; color: #2a4c64; flex-shrink: 0; line-height: 1; }
@@ -216,23 +215,23 @@
       display: flex;
       align-items: flex-start;
       gap: 7px;
-      padding: 7px 10px;
+      padding: 8px 11px;
       background: #0e1e2e;
       border-radius: 6px;
-      margin-bottom: 5px;
-      font-size: 12px;
+      margin-bottom: 6px;
+      font-size: 13px;
       color: #8aacbc;
       line-height: 1.4;
     }
-    .cnp-action::before { content: '▸'; color: #3a6080; flex-shrink: 0; margin-top: 1px; }
+    .cnp-action::before { content: '▸'; color: #3a6080; flex-shrink: 0; margin-top: 2px; }
     .cnp-chip {
       display: inline-flex;
       align-items: center;
       background: #0a1c34;
       border: 1.5px solid #4a9aee;
       border-radius: 20px;
-      padding: 3px 11px;
-      font-size: 11px;
+      padding: 4px 13px;
+      font-size: 13px;
       color: #5aaaf0;
     }
     @media (max-width: 699px) {
@@ -604,8 +603,8 @@ function renderTree(data) {
     _ty = 20;
     applyT();
   };
-  // setTimeout zajistí že layout proběhl a container má rozměry
-  setTimeout(initView, 30);
+  // Double rAF — čeká na dokončení layoutu, pak vycentruje
+  requestAnimationFrame(() => requestAnimationFrame(initView));
 
   container.addEventListener('wheel', e => {
     e.preventDefault();
@@ -1000,8 +999,8 @@ function buildPanelData(node, ctx, parents, children, med) {
       const unit   = detail.value_unit   ? ` ${detail.value_unit}` : '';
       const target = detail.value_target ? ` · cíl ${detail.value_target}` : '';
       valueHtml = `<div style="margin-top:9px;display:flex;align-items:baseline;gap:5px">
-        <span style="font-size:22px;font-weight:500;color:#c0d4e4">${val}</span>
-        <span style="font-size:11px;color:#3a5870">${unit}${target}</span>
+        <span style="font-size:24px;font-weight:500;color:#c0d4e4">${val}</span>
+        <span style="font-size:13px;color:#3a5870">${unit}${target}</span>
       </div>`;
     }
   }
@@ -1022,7 +1021,7 @@ function buildPanelData(node, ctx, parents, children, med) {
       <p class="cnp-lbl">léková ochrana</p>
       <div style="display:flex;align-items:flex-start;gap:9px;flex-wrap:wrap">
         <span class="cnp-chip">🛡 ${med.name}</span>
-        ${med.reason ? `<span style="font-size:11px;color:#3a5870;line-height:1.4;flex:1;min-width:0">${med.reason}</span>` : ''}
+        ${med.reason ? `<span style="font-size:13px;color:#3a5870;line-height:1.4;flex:1;min-width:0">${med.reason}</span>` : ''}
       </div>
     </div>` : '';
 
@@ -1037,7 +1036,7 @@ function buildPanelData(node, ctx, parents, children, med) {
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
         <div>
           <p class="cnp-lbl" style="margin-bottom:4px">${typeLabel}</p>
-          <p style="margin:0;font-size:15px;font-weight:500;color:#c0d8e8;line-height:1.3">${node.label}</p>
+          <p style="margin:0;font-size:17px;font-weight:500;color:#c0d8e8;line-height:1.3">${node.label}</p>
         </div>
         <button onclick="closeCrtPanel()" style="background:none;border:none;cursor:pointer;color:#2a4a60;font-size:22px;padding:0;line-height:1;flex-shrink:0;margin-top:-2px">×</button>
       </div>
