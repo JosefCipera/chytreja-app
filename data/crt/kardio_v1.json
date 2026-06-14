@@ -17,7 +17,7 @@
     { "id": "N_HYPOKALEMIE", "label": "Nízký draslík",              "layer": 2, "branch": "right" },
     { "id": "N_ZTUHE_CEVY",  "label": "Ztuhlé cévy",                "layer": 4, "branch": "left" },
     { "id": "N_NAPETI_ANS",  "label": "Napětí nervového systému",   "layer": 3, "branch": "right" },
-    { "id": "N_NIZKE_HRV",   "label": "Nízká HRV",                  "layer": 3, "branch": "right" },
+    { "id": "N_NIZKE_HRV",   "label": "Nízká HRV",                  "layer": 4, "branch": "right" },
     { "id": "N_VYSOKY_TK",   "label": "Vysoký krevní tlak",         "layer": 5, "branch": "left" },
     { "id": "N_DRAZDIVOST",  "label": "Elektrická dráždivost síní", "layer": 5, "branch": "right" },
     { "id": "N_MECH_TLAK",   "label": "Mechanický tlak na srdce",   "layer": 6, "branch": "left" },
