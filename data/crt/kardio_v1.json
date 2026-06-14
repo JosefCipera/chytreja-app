@@ -19,7 +19,7 @@
     { "id": "N_NAPETI_ANS",  "label": "Napětí nervového systému",   "layer": 3, "branch": "right" },
     { "id": "N_NIZKE_HRV",   "label": "Nízká HRV",                  "layer": 3, "branch": "right" },
     { "id": "N_VYSOKY_TK",   "label": "Vysoký krevní tlak",         "layer": 5, "branch": "left" },
-    { "id": "N_DRAZDIVOST",  "label": "Elektrická dráždivost síní", "layer": 4, "branch": "right" },
+    { "id": "N_DRAZDIVOST",  "label": "Elektrická dráždivost síní", "layer": 5, "branch": "right" },
     { "id": "N_MECH_TLAK",   "label": "Mechanický tlak na srdce",   "layer": 6, "branch": "left" },
     { "id": "N_EXTRASYSTOLY","label": "Extrasystoly",               "layer": 7, "branch": "center", "type": "junction" },
     { "id": "N_FAP",         "label": "Fibrilace síní (FaP)",       "layer": 8, "branch": "center", "type": "ude" }
