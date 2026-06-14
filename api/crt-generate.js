@@ -117,11 +117,16 @@ async function resolveMedications(meds) {
     body: JSON.stringify({
       model: 'claude-opus-4-8',
       max_tokens: 800,
+      temperature: 0,
       messages: [{ role: 'user', content:
         `Pro každý lék níže uveď: INN název (účinná látka), farmakologická skupina, a hlavní mechanismus účinku (1 věta česky, max 8 slov).\nVrať POUZE JSON pole, bez komentářů:\n[{"name":"obchodní název","inn":"účinná látka","group":"skupina","effect":"mechanismus"}]\n\nLéky:\n${list}` }],
     }),
   });
-  if (!res.ok) return meds.map(m => ({ name: m.name, inn: m.name, group: '', effect: '' }));
+  if (!res.ok) {
+    const errBody = await res.text().catch(() => '');
+    console.error(`[CRT] resolveMedications ${res.status}:`, errBody.slice(0, 300));
+    return meds.map(m => ({ name: m.name, inn: m.name, group: '', effect: '' }));
+  }
   const data = await res.json();
   const text = data.content?.[0]?.text?.trim() ?? '[]';
   try {
@@ -190,7 +195,7 @@ Vrátíš POUZE validní JSON (bez markdown bloků, bez komentářů) v přesné
   "edges": [{ "from": "root", "to": "L1" }],
   "and_joins": [{ "sources": ["C1","C2"], "target": "S1" }],
   "injections": [{ "label": "Konkrétní akce", "node_id": "kardio" }],
-  "medications_map": [{ "name": "Název léku", "targets": ["L1","C2"], "effect": "snižuje" }]
+  "medications_map": [{ "name": "Název léku", "targets": ["L1","C2"], "effect": "snižuje LDL", "reason": "Proč je lék napojen právě na tento uzel — 1 věta česky pro laika" }]
 }
 
 Pravidla pro strukturu:
@@ -201,7 +206,7 @@ Pravidla pro strukturu:
 - and_joins: jen kde dva uzly SPOLEČNĚ způsobují třetí
 - injections: 2–3 konkrétní akce které přeruší kauzální řetěz
 - node_id: CHJ uzel pokud existuje (kardio/mysl/vyziva/spanek/dlouhovekost), jinak null
-- medications_map: POUZE léky které přímo ovlivňují uzly v tomto CRT stromu (targets = pole id uzlů z nodes/root). Léky pro nesouvisející stavy VYNECH. Přiřazuj podle skutečného farmakologického mechanismu — ne podle diagnózy pacienta. Příklady: Torvacard/statiny → uzly s LDL/cévy; Pradaxa/antikoagulancia → uzly s fibrilací/tromby; Kalnormin/draslík → uzly s elektrickou dráždivostí/arytmií (NE krevní tlak). Efekt: 1–3 slova česky.
+- medications_map: POUZE léky které přímo ovlivňují uzly v tomto CRT stromu. Přiřazuj podle farmakologického mechanismu, ne podle diagnózy. Příklady: statiny → uzel s LDL/cévami; antikoagulancia → uzel s fibrilací; draslík → uzel s elektrickou dráždivostí síní (NE krevní tlak). Pro každý lék uveď "reason": 1 věta česky pro laika — proč je lék napojen právě na tento uzel v TOC logice (co blokuje, před čím chrání). Efekt: 1–3 slova česky.
 - Labely v češtině: PRIMÁRNĚ srozumitelně pro laika (co člověk cítí nebo zná z běžného života)
   Odborný termín pouze pokud je diagnóza přímo z profilu uživatele (např. "Fibrilace síní").
   Příklady: "Ztuhlé cévy" ne "Arteroskleróza", "Slabý srdeční rytmus" ne "Arytmie",
@@ -264,6 +269,7 @@ Strom musí mít 10–14 uzlů celkem (root + nodes). Vrať pouze JSON.`;
     body: JSON.stringify({
       model: 'claude-opus-4-8',
       max_tokens: 2000,
+      temperature: 0,
       system: systemPrompt,
       messages: [{ role: 'user', content: userPrompt }],
     }),
@@ -309,7 +315,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx) {
   const key = JSON.stringify({
-    _v:          7, // bump při změně promptu → invaliduje cache
+    _v:          8, // bump při změně promptu → invaliduje cache
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),
     labs:        ctx.profile.labs || {},
