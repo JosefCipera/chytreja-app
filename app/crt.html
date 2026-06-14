@@ -303,7 +303,9 @@ function calcPositionsClient(nodes) {
 
   nodes.forEach(n => {
     const lv = n.layer ?? 0;
-    const spread = X_BASE * Math.max(0.12, 1 - (lv / maxLayer) * 0.88);
+    const junctionLv = nodes.find(n => n.type === 'junction')?.layer ?? maxLayer;
+    const spread = n.branch === 'center' ? 0
+      : X_BASE * Math.max(0, (junctionLv - lv) / junctionLv);
     const key = `${lv}_${n.branch ?? 'center'}`;
     const group = slots[key];
     const idx = group.indexOf(n);

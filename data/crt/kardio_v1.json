@@ -53,7 +53,7 @@
     { "id": "A_022", "from": "N_SYMPATIKUS", "to": "N_NAPETI_ANS",   "condition": "user.checkin.stress > 3 || user.diagnoses.includes('CHRONICKY_STRES')" },
     { "id": "A_023", "from": "N_SYMPATIKUS", "to": "N_HYPOKALEMIE",  "condition": "user.checkin.stress > 4 && user.labs.k < 3.8" },
     { "id": "A_024", "from": "N_NAPETI_ANS", "to": "N_NIZKE_HRV",    "condition": "user.checkin.hrv < 30 || user.checkin.stress > 3 || user.diagnoses.includes('CHRONICKY_STRES')" },
-    { "id": "A_025", "from": "N_NAPETI_ANS", "to": "N_DRAZDIVOST",   "condition": "user.checkin.stress > 3 || user.diagnoses.includes('FIBRILACE_SINI_PAROXYSMALNI')" },
+    { "id": "A_025", "from": "N_NAPETI_ANS", "to": "N_DRAZDIVOST",   "condition": "user.checkin.stress > 4" },
     { "id": "A_026", "from": "N_NIZKE_HRV",  "to": "N_DRAZDIVOST",   "condition": "user.checkin.hrv < 25 || user.diagnoses.includes('FIBRILACE_SINI_PAROXYSMALNI')" },
     { "id": "A_027", "from": "N_HYPOKALEMIE","to": "N_DRAZDIVOST",   "condition": "user.labs.k < 3.5" },
     { "id": "A_028", "from": "N_ZANET",      "to": "N_DRAZDIVOST",   "condition": "user.labs.crp > 2.0 && user.diagnoses.includes('FIBRILACE_SINI_PAROXYSMALNI')" },
