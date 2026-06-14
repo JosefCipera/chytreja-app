@@ -602,14 +602,15 @@ async function handleHealthProfile(req, res) {
 
 // ── GET ?action=crt-context ───────────────────────────────────────────────────
 const DIAG_MAP = [
-  [/fibrilace\s*síní\s*(paroxysmální|fap|\(fap\))/i, 'FIBRILACE_SINI_PAROXYSMALNI'],
-  [/fibrilace\s*síní/i,                               'FIBRILACE_SINI'],
-  [/arteriální\s*hypertenze|^hypertenze$/i,            'HYPERTENZE'],
-  [/ateroskleróz[ae]/i,                               'ATEROSKLEROZA'],
-  [/extrasystol[ye]|předčasné\s*stahy/i,              'EXTRASYSTOLY'],
-  [/bušení\s*srdce|palpitace/i,                       'BUSENI_SRDCE'],
-  [/diabetes/i,                                        'DIABETES'],
-  [/inzulínová\s*rezistence/i,                        'INZULINOVA_REZISTENCE'],
+  [/fibrilace\s*síní\s*(paroxysmální|fap|\(fap\))/i,                  'FIBRILACE_SINI_PAROXYSMALNI'],
+  [/fibrilace\s*síní/i,                                                'FIBRILACE_SINI'],
+  [/arteriální\s*hypertenze|hypertenze|vysoký\s*(krevní\s*)?tlak/i,   'HYPERTENZE'],
+  [/ateroskleróz[ae]/i,                                                'ATEROSKLEROZA'],
+  [/extrasystol[ye]|předčasné\s*stahy/i,                               'EXTRASYSTOLY'],
+  [/bušení\s*srdce|palpitace/i,                                        'BUSENI_SRDCE'],
+  [/chronický\s*stres/i,                                               'CHRONICKY_STRES'],
+  [/diabetes/i,                                                         'DIABETES'],
+  [/inzulínová\s*rezistence/i,                                         'INZULINOVA_REZISTENCE'],
 ];
 const LAB_KEY_MAP = {
   ldl:'ldl', ldl_cholesterol:'ldl',
