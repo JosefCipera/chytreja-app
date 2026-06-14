@@ -753,7 +753,7 @@ function renderTree(data) {
       }));
 
       // Pill
-      const g = svgEl('g', { class: 'crt-med-el crt-med-hidden', style: 'cursor:default' });
+      const g = svgEl('g', { class: 'crt-med-el crt-med-hidden', style: 'cursor:help' });
       g.appendChild(svgEl('rect', {
         x: px, y: py, width: pw, height: PILL_H,
         rx: String(PILL_H / 2), fill: MED_FILL,
@@ -765,6 +765,21 @@ function renderTree(data) {
         'font-size': String(PILL_FS),
         'font-family': 'Inter, Segoe UI, system-ui, sans-serif',
       }, med.name));
+
+      // Tooltip s reason
+      if (med.reason) {
+        const tooltip = document.getElementById('crtTooltip');
+        g.addEventListener('mouseenter', () => {
+          tooltip.innerHTML = `<strong>${med.name}</strong><br><span style="color:#a8c8d8">${med.reason}</span>`;
+          tooltip.style.display = 'block';
+        });
+        g.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
+        g.addEventListener('mousemove', e => {
+          tooltip.style.left = (e.clientX + 14) + 'px';
+          tooltip.style.top  = (e.clientY - 10) + 'px';
+        });
+      }
+
       svg.appendChild(g);
     });
 
