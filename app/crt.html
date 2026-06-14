@@ -196,8 +196,8 @@
     </div>
 
     <div class="crt-loading" id="crtLoading">
-      <div>Analyzuji tvá data a sestavuji kauzální mapu…</div>
-      <div style="font-size:11px;color:#3a5a6a;margin-top:8px">Claude generuje strom příčin</div>
+      <div>Sestavuji kauzální mapu…</div>
+      <div style="font-size:11px;color:#3a5a6a;margin-top:8px">Vyhodnocuji tvá data</div>
     </div>
   </div><!-- /crt-body-inner -->
 
@@ -209,24 +209,171 @@
 <script type="module">
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
-// ── Auth → userId ────────────────────────────────────────────────────────────
+// ── Auth ──────────────────────────────────────────────────────────────────────
 const SUPABASE_URL = 'https://pzbbmfzdjkqpzopnsmxb.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB6YmJtZnpkamtxcHpvcG5zbXhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MDc4MzQ3MzMsImV4cCI6MjAyMzQxMDczM30.mMSZuLFTHxVrpk1bCr5pDEKcTKdNS7q6Gj_bGVV_Hb4';
 
 let userId = localStorage.getItem('chj_uid') || null;
 const userRole = localStorage.getItem('userRoleOverride') || localStorage.getItem('userRole') || 'longevity';
-
-// ── Fetch CRT data (s localStorage cache na 24h) ─────────────────────────────
 var CRT_CACHE_KEY = 'chj_crt_' + userId;
-var CRT_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hodin
 window.CRT_CACHE_KEY = CRT_CACHE_KEY;
 
+// ── Rule Engine ───────────────────────────────────────────────────────────────
+function getVal(user, path) {
+  return path.trim().split('.').slice(1).reduce((o, k) => o?.[k], user);
+}
+function evalAtom(expr, user) {
+  expr = expr.trim();
+  const neg = expr.startsWith('!');
+  if (neg) expr = expr.slice(1).trim();
+  const inclM = expr.match(/^(user[\w.]+)\.includes\('([^']+)'\)$/);
+  if (inclM) {
+    const arr = getVal(user, inclM[1]) ?? [];
+    const r = Array.isArray(arr) ? arr.includes(inclM[2]) : false;
+    return neg ? !r : r;
+  }
+  const cmpM = expr.match(/^(user[\w.]+)\s*(>=|<=|!=|==|>|<)\s*(.+)$/);
+  if (cmpM) {
+    const lhs = getVal(user, cmpM[1]);
+    const op = cmpM[2];
+    let rhs = cmpM[3].trim().replace(/^'|'$/g, '');
+    if (!isNaN(rhs)) rhs = parseFloat(rhs);
+    if (lhs == null) return neg ? true : false;
+    const r = op==='>'?lhs>rhs:op==='<'?lhs<rhs:op==='>='?lhs>=rhs:op==='<='?lhs<=rhs:op==='=='?lhs==rhs:lhs!=rhs;
+    return neg ? !r : r;
+  }
+  return false;
+}
+function evalAndExpr(expr, user) { return expr.split('&&').every(p => evalAtom(p.trim(), user)); }
+function evalCondition(cond, user) {
+  if (!cond) return true;
+  if (cond.includes('||')) return cond.split('||').some(p => evalAndExpr(p.trim(), user));
+  return evalAndExpr(cond, user);
+}
+
+// ── Data normalizace ──────────────────────────────────────────────────────────
+const DIAG_MAP = [
+  [/fibrilace\s*síní\s*(paroxysmální|fap|\(fap\))/i, 'FIBRILACE_SINI_PAROXYSMALNI'],
+  [/fibrilace\s*síní/i,                               'FIBRILACE_SINI'],
+  [/arteriální\s*hypertenze|^hypertenze$/i,            'HYPERTENZE'],
+  [/ateroskleróz[ae]/i,                               'ATEROSKLEROZA'],
+  [/extrasystol[ye]|předčasné\s*stahy/i,              'EXTRASYSTOLY'],
+  [/bušení\s*srdce|palpitace/i,                       'BUSENI_SRDCE'],
+  [/diabetes/i,                                        'DIABETES'],
+  [/inzulínová\s*rezistence/i,                        'INZULINOVA_REZISTENCE'],
+];
+const LAB_MAP = {
+  ldl:'ldl', ldl_cholesterol:'ldl',
+  systolic_bp:'systolic_bp', systolický_tlak:'systolic_bp', tk_sys:'systolic_bp',
+  diastolic_bp:'diastolic_bp',
+  k:'k', kalium:'k', draslík:'k',
+  crp:'crp', glucose:'glucose', glukóza:'glucose', hba1c:'hba1c',
+};
+function normDiag(d) {
+  for (const [re, code] of DIAG_MAP) if (re.test(d)) return code;
+  return d.toUpperCase().replace(/\s+/g, '_').replace(/[^A-Z0-9_]/g, '');
+}
+function normLabs(raw) {
+  if (!raw) return {};
+  const out = {};
+  Object.entries(raw).forEach(([k, v]) => {
+    const nk = LAB_MAP[k.toLowerCase().replace(/\s+/g,'_')] || k.toLowerCase();
+    out[nk] = typeof v === 'string' ? (isNaN(v) ? v : parseFloat(v)) : v;
+  });
+  return out;
+}
+async function fetchUserContext() {
+  if (!userId) return { labs:{}, checkin:{}, diagnoses:[], symptoms:[], meds:[] };
+  const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+  const [{ data: prof }, { data: meds }, { data: chk }, { data: rdns }] = await Promise.all([
+    sb.from('user_health_profile').select('diagnoses,symptoms,labs').eq('user_id', userId).single(),
+    sb.from('user_medications').select('name').eq('user_id', userId).eq('active', true),
+    sb.from('daily_checkin').select('stress,sleep_hours,movement_level,energy').eq('user_id', userId).order('date',{ascending:false}).limit(3),
+    sb.from('user_readiness').select('hrv').eq('user_id', userId).order('created_at',{ascending:false}).limit(1),
+  ]);
+  const avg = key => { const vs=(chk||[]).map(c=>c[key]).filter(v=>v!=null); return vs.length?vs.reduce((a,b)=>a+b,0)/vs.length:null; };
+  const mode = key => { const vs=(chk||[]).map(c=>c[key]).filter(Boolean); if(!vs.length) return null; const f={}; vs.forEach(v=>f[v]=(f[v]||0)+1); return Object.entries(f).sort((a,b)=>b[1]-a[1])[0][0]; };
+  return {
+    labs: normLabs(prof?.labs),
+    checkin: { stress:avg('stress'), sleep_hours:avg('sleep_hours'), movement_level:mode('movement_level'), energy:avg('energy'), hrv:rdns?.[0]?.hrv??null },
+    diagnoses: (prof?.diagnoses||[]).map(normDiag),
+    symptoms:  (prof?.symptoms ||[]).map(normDiag),
+    meds: (meds||[]).map(m=>m.name),
+  };
+}
+
+// ── Layout ────────────────────────────────────────────────────────────────────
+function calcPositionsClient(nodes) {
+  const maxLayer = Math.max(...nodes.map(n => n.layer ?? 0));
+  const Y_STEP = 130, X_BASE = 320;
+  nodes.forEach(n => {
+    const lv = n.layer ?? 0;
+    const spread = X_BASE * (1 - lv / (maxLayer + 1) * 0.35);
+    n.x = n.branch==='left' ? -spread : n.branch==='right' ? spread : 0;
+    n.y = lv * Y_STEP;
+    n._type = n.type==='root' ? 'golden_box' : (n.type || 'cause');
+  });
+}
+
+// ── Medications ───────────────────────────────────────────────────────────────
+function buildMedsMap(shields, userMeds, activeIds, arrowsById) {
+  return (shields||[])
+    .filter(s => userMeds.some(m => m.toLowerCase()===s.med.toLowerCase()))
+    .map(s => {
+      let targets = [];
+      if (s.shields_arrow) { const a=arrowsById[s.shields_arrow]; if(a&&activeIds.has(a.to)) targets=[a.to]; }
+      else if (s.shields_node && activeIds.has(s.shields_node)) targets=[s.shields_node];
+      return targets.length ? {name:s.med, targets, effect:'', reason:s.reason} : null;
+    }).filter(Boolean);
+}
+
+// ── Load CRT — Rule Engine (Opus jako fallback) ───────────────────────────────
 async function loadCRT() {
-  // Cache řeší server (hash vstupních dat) — localStorage nepoužíváme
+  const forceOpus = new URLSearchParams(location.search).get('opus') === '1';
+  if (forceOpus) return loadCRTOpus(false);
+
+  const [kb, ctx] = await Promise.all([
+    fetch('/data/crt/kardio_v1.json').then(r => r.json()),
+    fetchUserContext(),
+  ]);
+
+  const activeArrows = kb.possible_arrows.filter(a => evalCondition(a.condition, ctx));
+  console.log(`[CRT] rule engine: ${activeArrows.length} aktivních šipek`, ctx.diagnoses);
+
+  // Fallback na Opus pokud málo dat nebo neznámá doména
+  if (activeArrows.length < 3) {
+    console.log('[CRT] fallback → Opus');
+    return loadCRTOpus(new URLSearchParams(location.search).get('force') === '1');
+  }
+
+  const activeIds = new Set();
+  activeArrows.forEach(a => { activeIds.add(a.from); activeIds.add(a.to); });
+
+  const kbMap = {};
+  kb.nodes.forEach(n => { kbMap[n.id] = n; });
+  const nodes = [...activeIds].map(id => ({ ...kbMap[id] })).filter(Boolean);
+  calcPositionsClient(nodes);
+
+  const arrowsById = {};
+  kb.possible_arrows.forEach(a => { arrowsById[a.id] = a; });
+
+  return {
+    title: 'Kauzální mapa zdraví',
+    subtitle: `Kauzální engine · ${activeArrows.length} aktivních spojení`,
+    branch_labels: { L: 'Metabolický subsystém', R: 'Autonomní subsystém' },
+    nodes,
+    edges: activeArrows.map(a => ({ from: a.from, to: a.to })),
+    and_joins: [],
+    injections: [],
+    medications_map: buildMedsMap(kb.medication_shields, ctx.meds, activeIds, arrowsById),
+  };
+}
+
+async function loadCRTOpus(force = false) {
   const res = await fetch('/api/crt-generate', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ userId, role: userRole, force: new URLSearchParams(location.search).get('force') === '1' }),
+    body: JSON.stringify({ userId, role: userRole, force }),
   });
   if (!res.ok) {
     let detail = '';
