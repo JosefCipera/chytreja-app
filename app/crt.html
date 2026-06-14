@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
   <title>CHJ · Kauzální mapa zdraví</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
   <!-- vis-network odstraněn — používáme vlastní SVG renderer -->
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -223,7 +224,7 @@
       color: #8aacbc;
       line-height: 1.4;
     }
-    .cnp-action::before { content: '▸'; color: #3a6080; flex-shrink: 0; margin-top: 2px; }
+    .cnp-action i { color: #2a4a68; flex-shrink: 0; margin-top: 1px; }
     .cnp-chip {
       display: inline-flex;
       align-items: center;
@@ -985,60 +986,118 @@ function buildPanelMiniSVG(node, parents, children, kbMap) {
   </svg>`;
 }
 
+function evalValueStatus(val, targetStr) {
+  if (!targetStr || val == null) return { pct: 0, status: 'none' };
+  const ltM  = targetStr.match(/^<\s*([\d.]+)/);
+  const lteM = targetStr.match(/^≤\s*([\d.]+)/);
+  const gtM  = targetStr.match(/^>\s*([\d.]+)/);
+  const rngM = targetStr.match(/^([\d.]+)–([\d.]+)/);
+  if (ltM || lteM) {
+    const tgt = parseFloat((ltM || lteM)[1]);
+    const pct = Math.min(100, Math.round(val / (tgt * 1.8) * 100));
+    const status = val <= tgt * (ltM ? 1 : 1) ? 'ok' : val <= tgt * 1.35 ? 'warning' : 'danger';
+    return { pct, status };
+  }
+  if (gtM) {
+    const tgt = parseFloat(gtM[1]);
+    const pct = Math.min(100, Math.round(val / (tgt * 1.5) * 100));
+    const status = val >= tgt ? 'ok' : val >= tgt * 0.65 ? 'warning' : 'danger';
+    return { pct, status };
+  }
+  if (rngM) {
+    const lo = parseFloat(rngM[1]), hi = parseFloat(rngM[2]);
+    const pct = Math.min(100, Math.round(val / (hi * 1.3) * 100));
+    const status = (val >= lo && val <= hi) ? 'ok' : (val >= lo * 0.9 && val <= hi * 1.15) ? 'warning' : 'danger';
+    return { pct, status };
+  }
+  return { pct: 50, status: 'none' };
+}
+
 function buildPanelData(node, ctx, parents, children, med) {
   const detail = node.detail || {};
   const typeLabels = { root: 'kořen', ude: 'UDE', junction: 'průnik' };
   const typeLabel  = typeLabels[node.type] || 'příčina';
 
-  // Value from ctx
-  let valueHtml = '';
+  // Value + status
+  let val = null;
+  const unit   = detail.value_unit   || '';
+  const target = detail.value_target || '';
   if (detail.value_key) {
     const [obj, key] = detail.value_key.split('.');
-    const val = ctx[obj]?.[key];
-    if (val != null) {
-      const unit   = detail.value_unit   ? ` ${detail.value_unit}` : '';
-      const target = detail.value_target ? ` · cíl ${detail.value_target}` : '';
-      valueHtml = `<div style="margin-top:9px;display:flex;align-items:baseline;gap:5px">
-        <span style="font-size:24px;font-weight:500;color:#c0d4e4">${val}</span>
-        <span style="font-size:13px;color:#3a5870">${unit}${target}</span>
+    val = ctx[obj]?.[key] ?? null;
+  }
+  const si = val != null ? evalValueStatus(val, target) : null;
+
+  const statusDef = {
+    ok:      { label: 'V POŘÁDKU', bg: '#061a0e', color: '#2aaa50', border: '#0e3020' },
+    warning: { label: 'POZOR',     bg: '#1e1400', color: '#b88a10', border: '#302000' },
+    danger:  { label: 'KRITICKÉ',  bg: '#1a0606', color: '#c84040', border: '#300e0e' },
+    none:    null,
+  };
+  const sd = si ? statusDef[si.status] : null;
+
+  const badgeHtml = sd
+    ? `<span style="font-size:11px;font-weight:500;background:${sd.bg};color:${sd.color};border:1px solid ${sd.border};border-radius:4px;padding:1px 7px;letter-spacing:.04em">${sd.label}</span>`
+    : '';
+
+  let valueHtml = '';
+  if (val != null) {
+    const barColor = sd ? sd.color : '#3a6888';
+    const pct = si?.pct ?? 50;
+    valueHtml = `
+      <div style="margin-top:10px">
+        <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:7px">
+          <span style="font-size:26px;font-weight:500;color:#c8d8e8">${val}</span>
+          <span style="font-size:13px;color:#3a5870">${unit ? unit + ' ' : ''}${target ? '· cíl ' + target : ''}</span>
+        </div>
+        <div style="height:5px;background:#0a1826;border-radius:3px;overflow:hidden">
+          <div style="height:100%;width:${pct}%;background:${barColor};border-radius:3px;transition:width .4s ease"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:3px">
+          <span style="font-size:11px;color:#1a2e40">0</span>
+          <span style="font-size:11px;color:#1a2e40">max</span>
+        </div>
       </div>`;
-    }
   }
 
   const parentsHtml = parents.slice(0, 3).map(p =>
-    `<div class="cnp-row"><span class="cnp-arr">↓</span><span style="color:#6a8898">${p.label}</span></div>`
+    `<div class="cnp-row"><span class="cnp-arr">↓</span><span style="color:#5a8098">${p.label}</span></div>`
   ).join('');
 
   const childrenHtml = children.slice(0, 2).map((c, i) => {
-    const color = i === 0 ? '#8aaaba' : '#4a6070';
-    const extra = i === 1 && children.length > 2
-      ? `<span style="font-size:10px;color:#2a4050"> +${children.length - 2}</span>` : '';
-    return `<div class="cnp-row"><span class="cnp-arr">↑</span><span style="color:${color}">${c.label}${extra}</span></div>`;
+    const extra = (i === 1 && children.length > 2)
+      ? `<span style="font-size:11px;color:#1e3040"> +${children.length - 2}</span>` : '';
+    return `<div class="cnp-row" style="opacity:${i === 0 ? 1 : 0.55}"><span class="cnp-arr">↑</span><span style="color:${i === 0 ? '#9abaca' : '#3a5060'}">${c.label}${extra}</span></div>`;
   }).join('');
 
   const medHtml = med ? `
     <div class="cnp-section">
       <p class="cnp-lbl">léková ochrana</p>
-      <div style="display:flex;align-items:flex-start;gap:9px;flex-wrap:wrap">
-        <span class="cnp-chip">🛡 ${med.name}</span>
-        ${med.reason ? `<span style="font-size:13px;color:#3a5870;line-height:1.4;flex:1;min-width:0">${med.reason}</span>` : ''}
+      <div style="display:flex;align-items:flex-start;gap:10px">
+        <span class="cnp-chip"><i class="ti ti-shield" aria-hidden="true"></i> ${med.name}</span>
+        ${med.reason ? `<span style="font-size:13px;color:#3a5870;line-height:1.5;flex:1;min-width:0">${med.reason}</span>` : ''}
       </div>
     </div>` : '';
 
   const actionsHtml = (detail.actions || []).length ? `
     <div class="cnp-section">
       <p class="cnp-lbl">co s tím</p>
-      ${(detail.actions || []).map(a => `<div class="cnp-action">${a}</div>`).join('')}
+      ${(detail.actions || []).map(a =>
+        `<div class="cnp-action"><i class="ti ti-circle-dot" style="font-size:14px" aria-hidden="true"></i>${a}</div>`
+      ).join('')}
     </div>` : '';
 
   return `
     <div class="cnp-section">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
-        <div>
-          <p class="cnp-lbl" style="margin-bottom:4px">${typeLabel}</p>
-          <p style="margin:0;font-size:17px;font-weight:500;color:#c0d8e8;line-height:1.3">${node.label}</p>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;flex-wrap:wrap">
+            <span class="cnp-lbl" style="margin:0">${typeLabel}</span>
+            ${badgeHtml}
+          </div>
+          <p style="margin:0;font-size:17px;font-weight:500;color:#c8d8e8;line-height:1.3">${node.label}</p>
         </div>
-        <button onclick="closeCrtPanel()" style="background:none;border:none;cursor:pointer;color:#2a4a60;font-size:22px;padding:0;line-height:1;flex-shrink:0;margin-top:-2px">×</button>
+        <button onclick="closeCrtPanel()" style="background:none;border:none;cursor:pointer;color:#2a4a60;font-size:22px;padding:0;line-height:1;flex-shrink:0;margin-top:-2px" aria-label="Zavřít">×</button>
       </div>
       ${valueHtml}
     </div>
