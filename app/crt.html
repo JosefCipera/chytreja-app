@@ -291,10 +291,9 @@ async function fetchUserContext() {
 
 // ── Layout ────────────────────────────────────────────────────────────────────
 function calcPositionsClient(nodes) {
-  const maxLayer = Math.max(...nodes.map(n => n.layer ?? 0));
-  const Y_STEP = 130, X_BASE = 320;
+  const Y_STEP = 130, X_BASE = 340;
 
-  // Group by layer+branch to detect slot collisions
+  // Group by layer+branch — stagger if collision
   const slots = {};
   nodes.forEach(n => {
     const key = `${n.layer ?? 0}_${n.branch ?? 'center'}`;
@@ -303,18 +302,14 @@ function calcPositionsClient(nodes) {
 
   nodes.forEach(n => {
     const lv = n.layer ?? 0;
-    const junctionLv = nodes.find(n => n.type === 'junction')?.layer ?? maxLayer;
-    const spread = n.branch === 'center' ? 0
-      : X_BASE * Math.max(0, (junctionLv - lv) / junctionLv);
     const key = `${lv}_${n.branch ?? 'center'}`;
     const group = slots[key];
     const idx = group.indexOf(n);
     const count = group.length;
-
-    // Multiple nodes in same slot: stagger vertically (±Y_STEP/3 per step)
     const yOff = count > 1 ? (idx - (count - 1) / 2) * Math.round(Y_STEP * 0.45) : 0;
 
-    n.x = n.branch==='left' ? -spread : n.branch==='right' ? spread : 0;
+    // Pevné sloupce — žádná konvergence
+    n.x = n.branch==='left' ? -X_BASE : n.branch==='right' ? X_BASE : 0;
     n.y = lv * Y_STEP + yOff;
     n._type = n.type==='root' ? 'golden_box' : (n.type || 'cause');
   });
@@ -483,13 +478,56 @@ function renderTree(data) {
 
   const container = document.getElementById('crt-canvas');
   container.innerHTML = '';
-  container.style.overflow = 'auto';
+  container.style.overflow = 'hidden';
+  container.style.cursor = 'grab';
 
   const svg = svgEl('svg', {
     viewBox: `0 0 ${svgW} ${svgH}`,
     width: svgW, height: svgH,
-    style: 'display:block;margin:0 auto;overflow:visible;',
+    style: 'display:block;transform-origin:top left;overflow:visible;user-select:none;',
   });
+
+  // Zoom + pan state
+  let _sc = Math.min(1, (container.clientWidth || 800) / svgW);
+  let _tx = ((container.clientWidth || 800) - svgW * _sc) / 2;
+  let _ty = 0;
+  const applyT = () => { svg.style.transform = `translate(${_tx}px,${_ty}px) scale(${_sc})`; };
+  setTimeout(applyT, 0);
+
+  container.addEventListener('wheel', e => {
+    e.preventDefault();
+    const f = e.deltaY < 0 ? 1.12 : 0.89;
+    const rect = container.getBoundingClientRect();
+    const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+    _tx = mx - (mx - _tx) * f; _ty = my - (my - _ty) * f;
+    _sc = Math.max(0.25, Math.min(3, _sc * f));
+    applyT();
+  }, { passive: false });
+
+  let _drag = false, _lx = 0, _ly = 0;
+  container.addEventListener('mousedown', e => { _drag=true; _lx=e.clientX; _ly=e.clientY; container.style.cursor='grabbing'; });
+  window.addEventListener('mouseup', () => { _drag=false; container.style.cursor='grab'; });
+  window.addEventListener('mousemove', e => {
+    if (!_drag) return;
+    _tx += e.clientX-_lx; _ty += e.clientY-_ly; _lx=e.clientX; _ly=e.clientY; applyT();
+  });
+
+  // Touch pan+pinch
+  let _touches = [], _lastDist = 0;
+  container.addEventListener('touchstart', e => { _touches=[...e.touches]; _lastDist=0; }, {passive:true});
+  container.addEventListener('touchmove', e => {
+    e.preventDefault();
+    if (e.touches.length === 2) {
+      const d = Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
+      if (_lastDist) { const f=d/_lastDist; _sc=Math.max(0.25,Math.min(3,_sc*f)); applyT(); }
+      _lastDist = d;
+    } else if (e.touches.length === 1 && _touches.length === 1) {
+      _tx += e.touches[0].clientX-_touches[0].clientX;
+      _ty += e.touches[0].clientY-_touches[0].clientY;
+      applyT();
+    }
+    _touches = [...e.touches];
+  }, {passive:false});
 
   // ── Defs: arrowhead ──────────────────────────────────────────────────────
   const defs = svgEl('defs', {});
