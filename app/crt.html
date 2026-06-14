@@ -1067,7 +1067,7 @@ function buildPanelData(node, ctx, parents, children, med) {
     <div class="cnp-section">
       <p class="cnp-lbl">léková ochrana</p>
       <div style="display:flex;align-items:flex-start;gap:10px">
-        <span class="cnp-chip"><i class="ti ti-shield" aria-hidden="true"></i> ${med.name}</span>
+        <span class="cnp-chip"><i class="ti ti-shield" aria-hidden="true" style="margin-right:6px;opacity:.7"></i><span style="border-left:1px solid #2a5a88;padding-left:9px">${med.name}</span></span>
         ${med.reason ? `<span style="font-size:14px;color:#3a5870;line-height:1.5;flex:1;min-width:0">${med.reason}</span>` : ''}
       </div>
     </div>` : '';
