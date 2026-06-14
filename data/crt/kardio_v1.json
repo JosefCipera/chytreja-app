@@ -13,16 +13,16 @@
     { "id": "N_SYMPATIKUS",  "label": "Aktivace sympatiku",          "layer": 2, "branch": "right" },
     { "id": "N_PLAKY",       "label": "Usazeniny v cévách",          "layer": 2, "branch": "left" },
     { "id": "N_ZATEZ",       "label": "Vyšší zátěž srdce",           "layer": 2, "branch": "center" },
-    { "id": "N_ZANET",       "label": "Zánět cév",                   "layer": 2, "branch": "left" },
+    { "id": "N_ZANET",       "label": "Zánět cév",                   "layer": 3, "branch": "left" },
     { "id": "N_HYPOKALEMIE", "label": "Nízký draslík",              "layer": 2, "branch": "right" },
-    { "id": "N_ZTUHE_CEVY",  "label": "Ztuhlé cévy",                "layer": 3, "branch": "left" },
+    { "id": "N_ZTUHE_CEVY",  "label": "Ztuhlé cévy",                "layer": 4, "branch": "left" },
     { "id": "N_NAPETI_ANS",  "label": "Napětí nervového systému",   "layer": 3, "branch": "right" },
     { "id": "N_NIZKE_HRV",   "label": "Nízká HRV",                  "layer": 3, "branch": "right" },
-    { "id": "N_VYSOKY_TK",   "label": "Vysoký krevní tlak",         "layer": 4, "branch": "left" },
+    { "id": "N_VYSOKY_TK",   "label": "Vysoký krevní tlak",         "layer": 5, "branch": "left" },
     { "id": "N_DRAZDIVOST",  "label": "Elektrická dráždivost síní", "layer": 4, "branch": "right" },
-    { "id": "N_MECH_TLAK",   "label": "Mechanický tlak na srdce",   "layer": 5, "branch": "left" },
-    { "id": "N_EXTRASYSTOLY","label": "Extrasystoly",               "layer": 6, "branch": "center", "type": "junction" },
-    { "id": "N_FAP",         "label": "Fibrilace síní (FaP)",       "layer": 7, "branch": "center", "type": "ude" }
+    { "id": "N_MECH_TLAK",   "label": "Mechanický tlak na srdce",   "layer": 6, "branch": "left" },
+    { "id": "N_EXTRASYSTOLY","label": "Extrasystoly",               "layer": 7, "branch": "center", "type": "junction" },
+    { "id": "N_FAP",         "label": "Fibrilace síní (FaP)",       "layer": 8, "branch": "center", "type": "ude" }
   ],
 
   "possible_arrows": [

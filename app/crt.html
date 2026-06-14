@@ -293,11 +293,27 @@ async function fetchUserContext() {
 function calcPositionsClient(nodes) {
   const maxLayer = Math.max(...nodes.map(n => n.layer ?? 0));
   const Y_STEP = 130, X_BASE = 320;
+
+  // Group by layer+branch to detect slot collisions
+  const slots = {};
+  nodes.forEach(n => {
+    const key = `${n.layer ?? 0}_${n.branch ?? 'center'}`;
+    (slots[key] = slots[key] || []).push(n);
+  });
+
   nodes.forEach(n => {
     const lv = n.layer ?? 0;
     const spread = X_BASE * (1 - lv / (maxLayer + 1) * 0.35);
+    const key = `${lv}_${n.branch ?? 'center'}`;
+    const group = slots[key];
+    const idx = group.indexOf(n);
+    const count = group.length;
+
+    // Multiple nodes in same slot: stagger vertically (±Y_STEP/3 per step)
+    const yOff = count > 1 ? (idx - (count - 1) / 2) * Math.round(Y_STEP * 0.45) : 0;
+
     n.x = n.branch==='left' ? -spread : n.branch==='right' ? spread : 0;
-    n.y = lv * Y_STEP;
+    n.y = lv * Y_STEP + yOff;
     n._type = n.type==='root' ? 'golden_box' : (n.type || 'cause');
   });
 }
