@@ -103,6 +103,34 @@ const NODE_LABELS = {
   dlouhovekost:  'Dlouhověkost (celkový stav)',
 };
 
+// Pre-processing: přeloží české obchodní názvy léků na INN + mechanismus
+async function resolveMedications(meds) {
+  if (!meds || meds.length === 0) return [];
+  const list = meds.map(m => `${m.name}${m.dose ? ' ' + m.dose : ''}`).join('\n');
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'x-api-key': process.env.ANTHROPIC_API_KEY,
+      'anthropic-version': '2023-06-01',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'claude-opus-4-8',
+      max_tokens: 800,
+      temperature: 0,
+      messages: [{ role: 'user', content:
+        `Pro každý lék níže uveď: INN název (účinná látka), farmakologická skupina, a hlavní mechanismus účinku (1 věta česky, max 8 slov).\nVrať POUZE JSON pole, bez komentářů:\n[{"name":"obchodní název","inn":"účinná látka","group":"skupina","effect":"mechanismus"}]\n\nLéky:\n${list}` }],
+    }),
+  });
+  if (!res.ok) return meds.map(m => ({ name: m.name, inn: m.name, group: '', effect: '' }));
+  const data = await res.json();
+  const text = data.content?.[0]?.text?.trim() ?? '[]';
+  try {
+    const match = text.match(/\[[\s\S]*\]/);
+    return match ? JSON.parse(match[0]) : [];
+  } catch { return []; }
+}
+
 async function generateCRT({ metrics, profile, checkins, nodeInputs }, role) {
   // Seřaď uzly od nejhoršího — vezmi všechny RED a YELLOW
   const sorted = [...metrics].sort((a, b) => (a.current_index ?? 100) - (b.current_index ?? 100));
@@ -130,7 +158,10 @@ async function generateCRT({ metrics, profile, checkins, nodeInputs }, role) {
   const diagText     = (profile.diagnoses     || []).join(', ') || 'neuvedeno';
   const sympText     = (profile.symptoms      || []).join(', ') || 'neuvedeno';
   const familyText   = profile.family_history || 'neuvedeno';
-  const medsText     = (profile.medications   || []).map(m => `${m.name} ${m.dose || ''}`).join(', ') || 'neuvedeno';
+  const resolvedMeds = await resolveMedications(profile.medications || []);
+  const medsText     = resolvedMeds.length
+    ? resolvedMeds.map(m => `${m.name} (${m.inn}${m.effect ? ' — ' + m.effect : ''})`).join(', ')
+    : 'neuvedeno';
   const labsObj      = profile.labs || {};
   const labsText     = Object.entries(labsObj)
     .filter(([k]) => k !== 'date')
@@ -228,6 +259,7 @@ Strom musí mít 10–14 uzlů celkem (root + nodes). Vrať pouze JSON.`;
     body: JSON.stringify({
       model: 'claude-opus-4-8',
       max_tokens: 2000,
+      temperature: 0,
       system: systemPrompt,
       messages: [{ role: 'user', content: userPrompt }],
     }),
@@ -273,7 +305,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx) {
   const key = JSON.stringify({
-    _v:          5, // bump při změně promptu → invaliduje cache
+    _v:          6, // bump při změně promptu → invaliduje cache
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),
     labs:        ctx.profile.labs || {},
