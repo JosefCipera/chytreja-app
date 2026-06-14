@@ -1,5 +1,5 @@
-// /api/user — user-profile, onboarding, readiness, snapshot, lehkost, dialog, health-profile
-// Route: ?action=profile | onboarding | lehkost-onboarding | readiness | snapshot | body-flow | checkin | lehkost-agent | dialog | health-profile
+// /api/user — user-profile, onboarding, readiness, snapshot, lehkost, dialog, health-profile, crt-context
+// Route: ?action=profile | onboarding | lehkost-onboarding | readiness | snapshot | body-flow | checkin | lehkost-agent | dialog | health-profile | crt-context
 
 import dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' });
@@ -23,8 +23,9 @@ export default async function handler(req, res) {
   if (action === 'lehkost-agent')       return handleLehkostAgent(req, res);
   if (action === 'dialog')              return handleDialog(req, res);
   if (action === 'health-profile')      return handleHealthProfile(req, res);
+  if (action === 'crt-context')         return handleCrtContext(req, res);
 
-  return res.status(400).json({ error: 'action required: profile | onboarding | readiness | snapshot | checkin | body-flow | lehkost-agent | dialog | health-profile' });
+  return res.status(400).json({ error: 'action required: profile | onboarding | readiness | snapshot | checkin | body-flow | lehkost-agent | dialog | health-profile | crt-context' });
 }
 
 
@@ -596,4 +597,64 @@ async function handleHealthProfile(req, res) {
   }
 
   return res.status(405).json({ error: 'Method not allowed' });
+}
+
+
+// ── GET ?action=crt-context ───────────────────────────────────────────────────
+const DIAG_MAP = [
+  [/fibrilace\s*síní\s*(paroxysmální|fap|\(fap\))/i, 'FIBRILACE_SINI_PAROXYSMALNI'],
+  [/fibrilace\s*síní/i,                               'FIBRILACE_SINI'],
+  [/arteriální\s*hypertenze|^hypertenze$/i,            'HYPERTENZE'],
+  [/ateroskleróz[ae]/i,                               'ATEROSKLEROZA'],
+  [/extrasystol[ye]|předčasné\s*stahy/i,              'EXTRASYSTOLY'],
+  [/bušení\s*srdce|palpitace/i,                       'BUSENI_SRDCE'],
+  [/diabetes/i,                                        'DIABETES'],
+  [/inzulínová\s*rezistence/i,                        'INZULINOVA_REZISTENCE'],
+];
+const LAB_KEY_MAP = {
+  ldl:'ldl', ldl_cholesterol:'ldl',
+  systolic_bp:'systolic_bp', systolický_tlak:'systolic_bp', tk_sys:'systolic_bp',
+  diastolic_bp:'diastolic_bp',
+  k:'k', kalium:'k', draslík:'k',
+  crp:'crp', glucose:'glucose', glukóza:'glucose', hba1c:'hba1c',
+};
+function normDiag(d) {
+  for (const [re, code] of DIAG_MAP) if (re.test(d)) return code;
+  return d.toUpperCase().replace(/\s+/g,'_').replace(/[^A-Z0-9_]/g,'');
+}
+function normLabs(raw) {
+  if (!raw) return {};
+  const out = {};
+  Object.entries(raw).forEach(([k,v]) => {
+    const nk = LAB_KEY_MAP[k.toLowerCase().replace(/\s+/g,'_')] || k.toLowerCase();
+    out[nk] = typeof v === 'string' ? (isNaN(v) ? v : parseFloat(v)) : v;
+  });
+  return out;
+}
+
+async function handleCrtContext(req, res) {
+  const userId = req.query.userId || req.body?.userId;
+  if (!userId) return res.status(400).json({ error: 'userId required' });
+
+  const supabase = sb();
+  const [{ data: prof }, { data: meds }, { data: chk }, { data: rdns }] = await Promise.all([
+    supabase.from('user_health_profile').select('diagnoses,symptoms,labs').eq('user_id', userId).single(),
+    supabase.from('user_medications').select('name').eq('user_id', userId).eq('active', true),
+    supabase.from('daily_checkin').select('stress,sleep_hours,movement_level,energy').eq('user_id', userId).order('date',{ascending:false}).limit(3),
+    supabase.from('user_readiness').select('hrv').eq('user_id', userId).order('created_at',{ascending:false}).limit(1),
+  ]);
+
+  const avg = (arr, key) => { const vs=(arr||[]).map(c=>c[key]).filter(v=>v!=null); return vs.length?vs.reduce((a,b)=>a+b,0)/vs.length:null; };
+  const mode = (arr, key) => { const vs=(arr||[]).map(c=>c[key]).filter(Boolean); if(!vs.length) return null; const f={}; vs.forEach(v=>f[v]=(f[v]||0)+1); return Object.entries(f).sort((a,b)=>b[1]-a[1])[0][0]; };
+
+  const ctx = {
+    labs: normLabs(prof?.labs),
+    checkin: { stress:avg(chk,'stress'), sleep_hours:avg(chk,'sleep_hours'), movement_level:mode(chk,'movement_level'), energy:avg(chk,'energy'), hrv:rdns?.[0]?.hrv??null },
+    diagnoses: (prof?.diagnoses||[]).map(normDiag),
+    symptoms:  (prof?.symptoms ||[]).map(normDiag),
+    meds: (meds||[]).map(m=>m.name),
+  };
+
+  res.setHeader('Cache-Control','no-store');
+  res.json(ctx);
 }

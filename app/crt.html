@@ -284,22 +284,9 @@ function normLabs(raw) {
 }
 async function fetchUserContext() {
   if (!userId) return { labs:{}, checkin:{}, diagnoses:[], symptoms:[], meds:[] };
-  const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
-  const [{ data: prof }, { data: meds }, { data: chk }, { data: rdns }] = await Promise.all([
-    sb.from('user_health_profile').select('diagnoses,symptoms,labs').eq('user_id', userId).single(),
-    sb.from('user_medications').select('name').eq('user_id', userId).eq('active', true),
-    sb.from('daily_checkin').select('stress,sleep_hours,movement_level,energy').eq('user_id', userId).order('date',{ascending:false}).limit(3),
-    sb.from('user_readiness').select('hrv').eq('user_id', userId).order('created_at',{ascending:false}).limit(1),
-  ]);
-  const avg = key => { const vs=(chk||[]).map(c=>c[key]).filter(v=>v!=null); return vs.length?vs.reduce((a,b)=>a+b,0)/vs.length:null; };
-  const mode = key => { const vs=(chk||[]).map(c=>c[key]).filter(Boolean); if(!vs.length) return null; const f={}; vs.forEach(v=>f[v]=(f[v]||0)+1); return Object.entries(f).sort((a,b)=>b[1]-a[1])[0][0]; };
-  return {
-    labs: normLabs(prof?.labs),
-    checkin: { stress:avg('stress'), sleep_hours:avg('sleep_hours'), movement_level:mode('movement_level'), energy:avg('energy'), hrv:rdns?.[0]?.hrv??null },
-    diagnoses: (prof?.diagnoses||[]).map(normDiag),
-    symptoms:  (prof?.symptoms ||[]).map(normDiag),
-    meds: (meds||[]).map(m=>m.name),
-  };
+  const res = await fetch(`/api/user?action=crt-context&userId=${userId}`);
+  if (!res.ok) return { labs:{}, checkin:{}, diagnoses:[], symptoms:[], meds:[] };
+  return res.json();
 }
 
 // ── Layout ────────────────────────────────────────────────────────────────────
