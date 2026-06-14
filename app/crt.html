@@ -504,12 +504,28 @@ function renderTree(data) {
     const maxPW  = Math.max(...medsMap.map(pillW));
 
     // Pills přetékají doprava — overflow:visible na SVG + overflow-x:auto na canvas
+    // Vertikální anti-overlap: sleduj obsazené Y pozice
+    const usedY = [];
+    const findFreeY = (idealY) => {
+      let y = idealY;
+      const gap = PILL_H + 6;
+      let changed = true;
+      while (changed) {
+        changed = false;
+        for (const uy of usedY) {
+          if (Math.abs(y - uy) < gap) { y = uy + gap; changed = true; }
+        }
+      }
+      usedY.push(y);
+      return y;
+    };
 
     medsMap.forEach(med => {
       const targets = (med.targets || []).map(id => nodeById[id]).filter(Boolean);
       if (!targets.length) return;
 
-      const avgY = targets.reduce((s, n) => s + cy(n.y ?? 0), 0) / targets.length;
+      const idealY = targets.reduce((s, n) => s + cy(n.y ?? 0), 0) / targets.length;
+      const avgY = findFreeY(idealY);
       const pw   = pillW(med);
       const py   = avgY - PILL_H / 2;
 

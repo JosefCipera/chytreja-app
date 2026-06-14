@@ -206,7 +206,7 @@ Pravidla pro strukturu:
 - and_joins: jen kde dva uzly SPOLEČNĚ způsobují třetí
 - injections: 2–3 konkrétní akce které přeruší kauzální řetěz
 - node_id: CHJ uzel pokud existuje (kardio/mysl/vyziva/spanek/dlouhovekost), jinak null
-- medications_map: POUZE léky které přímo ovlivňují uzly v tomto CRT stromu. Přiřazuj podle farmakologického mechanismu, ne podle diagnózy. Příklady: statiny → uzel s LDL/cévami; antikoagulancia → uzel s fibrilací; draslík → uzel s elektrickou dráždivostí síní (NE krevní tlak). Pro každý lék uveď "reason": 1 věta česky pro laika — proč je lék napojen právě na tento uzel v TOC logice (co blokuje, před čím chrání). Efekt: 1–3 slova česky.
+- medications_map: POUZE léky z pole "Léky:" výše, které mají PŘÍMÝ farmakologický efekt na uzel v tomto stromu. Žádné nepřímé nebo vícestupňové vazby. Pokud lék nemá přímý efekt na žádný uzel v tomto CRT (např. pantoprazol/žaludek, allopurinol/kyselina močová v kardiálním CRT), VYNECH ho úplně. Pro každý zahrnutý lék uveď "reason": 1 věta česky pro laika — co konkrétně blokuje nebo chrání v tomto kauzálním řetězu. Efekt: 1–3 slova česky.
 - Labely v češtině: PRIMÁRNĚ srozumitelně pro laika (co člověk cítí nebo zná z běžného života)
   Odborný termín pouze pokud je diagnóza přímo z profilu uživatele (např. "Fibrilace síní").
   Příklady: "Ztuhlé cévy" ne "Arteroskleróza", "Slabý srdeční rytmus" ne "Arytmie",
@@ -315,7 +315,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx) {
   const key = JSON.stringify({
-    _v:          8, // bump při změně promptu → invaliduje cache
+    _v:          9, // bump při změně promptu → invaliduje cache
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),
     labs:        ctx.profile.labs || {},
