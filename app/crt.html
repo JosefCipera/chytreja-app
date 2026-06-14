@@ -338,7 +338,9 @@ async function loadCRT() {
   ]);
 
   const activeArrows = kb.possible_arrows.filter(a => evalCondition(a.condition, ctx));
-  console.log(`[CRT] rule engine: ${activeArrows.length} aktivních šipek`, ctx.diagnoses);
+  console.log('[CRT] ctx:', JSON.stringify(ctx, null, 2));
+  console.log(`[CRT] rule engine: ${activeArrows.length} aktivních šipek`);
+  console.log('[CRT] aktivní šipky:', activeArrows.map(a => a.id + ': ' + a.condition));
 
   // Fallback na Opus pokud málo dat nebo neznámá doména
   if (activeArrows.length < 3) {
