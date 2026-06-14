@@ -159,6 +159,96 @@
     .crt-med-hidden { display: none; }
     #crtMedBtn.active { opacity: 1; border-color: #4a9aee; color: #4a9aee; }
 
+    /* ── Node detail panel ─────────────────────────────────────── */
+    #crtNodePanel {
+      position: fixed;
+      top: 0; right: 0;
+      height: 100dvh;
+      width: 460px;
+      display: flex;
+      transform: translateX(110%);
+      transition: transform 0.22s cubic-bezier(0.4,0,0.2,1);
+      pointer-events: none;
+      z-index: 60;
+    }
+    #crtNodePanel.open {
+      transform: translateX(0);
+      pointer-events: all;
+    }
+    .cnp-mini {
+      width: 168px;
+      flex-shrink: 0;
+      background: #080f18;
+      border-right: 1px solid #1a2f40;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .cnp-data {
+      flex: 1;
+      background: #0b1624;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+    .cnp-section {
+      padding: 11px 14px;
+      border-bottom: 0.5px solid #182838;
+    }
+    .cnp-section:last-child { border-bottom: none; }
+    .cnp-lbl {
+      font-size: 9.5px;
+      color: #3a5870;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      margin: 0 0 6px;
+    }
+    .cnp-row {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 3px 0;
+      font-size: 12px;
+      line-height: 1.35;
+    }
+    .cnp-arr { font-size: 16px; color: #2a4c64; flex-shrink: 0; line-height: 1; }
+    .cnp-action {
+      display: flex;
+      align-items: flex-start;
+      gap: 7px;
+      padding: 7px 10px;
+      background: #0e1e2e;
+      border-radius: 6px;
+      margin-bottom: 5px;
+      font-size: 12px;
+      color: #8aacbc;
+      line-height: 1.4;
+    }
+    .cnp-action::before { content: '▸'; color: #3a6080; flex-shrink: 0; margin-top: 1px; }
+    .cnp-chip {
+      display: inline-flex;
+      align-items: center;
+      background: #0a1c34;
+      border: 1.5px solid #4a9aee;
+      border-radius: 20px;
+      padding: 3px 11px;
+      font-size: 11px;
+      color: #5aaaf0;
+    }
+    @media (max-width: 699px) {
+      #crtNodePanel {
+        width: 100vw;
+        top: auto; bottom: 0; right: 0;
+        height: auto;
+        max-height: 65vh;
+        transform: translateY(110%);
+        flex-direction: column;
+      }
+      #crtNodePanel.open { transform: translateY(0); }
+      .cnp-mini { display: none; }
+      .cnp-data { max-height: 65vh; width: 100%; }
+    }
+
   </style>
 </head>
 <body>
@@ -205,6 +295,11 @@
 </div>
 
 <div class="crt-tooltip" id="crtTooltip"></div>
+
+<div id="crtNodePanel">
+  <div class="cnp-mini" id="cnpMini"></div>
+  <div class="cnp-data" id="cnpData"></div>
+</div>
 
 <script type="module">
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
@@ -368,6 +463,10 @@ async function loadCRT() {
     and_joins: [],
     injections: [],
     medications_map: buildMedsMap(kb.medication_shields, ctx.meds, activeIds, arrowsById),
+    _kb: kb,
+    _ctx: ctx,
+    _activeArrows: activeArrows,
+    _kbMap: kbMap,
   };
 }
 
@@ -439,6 +538,7 @@ function svgEl(tag, attrs, text) {
 }
 
 function renderTree(data) {
+  window._crtData = data;
   document.getElementById('crtTitle').textContent    = data.title;
   document.getElementById('crtSubtitle').textContent = data.subtitle;
   document.getElementById('branchL').textContent     = data.branch_labels?.L || '';
@@ -550,6 +650,9 @@ function renderTree(data) {
     }
     _touches = [...e.touches];
   }, {passive:false});
+
+  // Click outside nodes → zavři panel
+  container.addEventListener('click', () => closeCrtPanel());
 
   // ── Defs: arrowhead ──────────────────────────────────────────────────────
   const defs = svgEl('defs', {});
@@ -671,11 +774,10 @@ function renderTree(data) {
       }, line));
     });
 
-    // Klik
-    g.addEventListener('click', () => {
-      if (!n._node_id) return;
-      if (window.opener?._openNodeById) { window.opener._openNodeById(n._node_id); window.close(); }
-      else window.location.href = `/?node=${n._node_id}`;
+    // Klik → detail panel
+    g.addEventListener('click', e => {
+      e.stopPropagation();
+      openNodePanel(n.id);
     });
 
     // Tooltip
@@ -788,6 +890,167 @@ function renderTree(data) {
 
   container.appendChild(svg);
 }
+
+// ── Node detail panel ────────────────────────────────────────────────────────
+function closeCrtPanel() {
+  document.getElementById('crtNodePanel').classList.remove('open');
+  document.querySelectorAll('.crt-node rect').forEach(r => r.style.filter = '');
+}
+
+function openNodePanel(nodeId) {
+  const data = window._crtData;
+  if (!data?._kbMap) return;
+
+  const kbMap         = data._kbMap;
+  const ctx           = data._ctx   || {};
+  const activeArrows  = data._activeArrows || [];
+  const medsMap       = data.medications_map || [];
+
+  const node = kbMap[nodeId];
+  if (!node) return;
+
+  const parents  = activeArrows.filter(a => a.to   === nodeId && kbMap[a.from]).map(a => kbMap[a.from]);
+  const children = activeArrows.filter(a => a.from === nodeId && kbMap[a.to  ]).map(a => kbMap[a.to  ]);
+  const med      = medsMap.find(m => (m.targets || []).includes(nodeId));
+
+  // Highlight
+  document.querySelectorAll('.crt-node rect').forEach(r => r.style.filter = '');
+  const sel = document.querySelector(`.crt-node[data-id="${nodeId}"] rect`);
+  if (sel) sel.style.filter = 'drop-shadow(0 0 8px #5aaaf0)';
+
+  document.getElementById('cnpMini').innerHTML = buildPanelMiniSVG(node, parents, children, kbMap);
+  document.getElementById('cnpData').innerHTML = buildPanelData(node, ctx, parents, children, med);
+  document.getElementById('crtNodePanel').classList.add('open');
+}
+
+function buildPanelMiniSVG(node, parents, children, kbMap) {
+  const W = 160, BW = 144, BH = 38, GAP = 80, PAD = 26;
+
+  const chain = [];
+  if (parents[0]) chain.push({ label: parents[0].label, role: 'parent' });
+  chain.push({ label: node.label, role: 'selected' });
+  if (children[0]) chain.push({ label: children[0].label, role: 'child' });
+  if (children[1]) chain.push({ label: children[1].label, role: 'faded' });
+
+  const totalH = chain.length * GAP + PAD;
+  // Bottom-to-top: chain[0] = large svgY, chain[n] = small svgY
+  chain.forEach((n, i) => { n.svgY = totalH - PAD / 2 - i * GAP; });
+
+  const parts = [];
+
+  // Arrows first (so boxes render on top)
+  for (let i = 0; i < chain.length - 1; i++) {
+    const y1 = chain[i].svgY - BH / 2 - 2;
+    const y2 = chain[i + 1].svgY + BH / 2 + 8;
+    parts.push(`<line x1="${W/2}" y1="${y1}" x2="${W/2}" y2="${y2}" stroke="#1e3850" stroke-width="1.5" marker-end="url(#pm)"/>`);
+  }
+
+  // Boxes + text
+  chain.forEach(n => {
+    const sel   = n.role === 'selected';
+    const faded = n.role === 'faded';
+    const op    = faded ? '0.42' : '1';
+    const stroke = sel ? '#5a9aee' : '#1e3850';
+    const fill   = sel ? '#122640' : '#090f18';
+    const textC  = sel ? '#8abef8' : '#4a6a7a';
+    const sw     = sel ? '2.5' : '1.5';
+
+    // Wrap to max 2 lines
+    const words = n.label.split(' ');
+    const lines = []; let cur = '';
+    words.forEach(w => {
+      if ((cur + ' ' + w).trim().length > 18) { if (cur) lines.push(cur); cur = w; }
+      else cur = (cur + ' ' + w).trim();
+    });
+    if (cur) lines.push(cur);
+    const ls = lines.slice(0, 2);
+    if (lines.length > 2) ls[1] = ls[1].substring(0, 14) + '…';
+    const bh = ls.length > 1 ? BH + 14 : BH;
+    const baseY = n.svgY;
+
+    parts.push(`<rect x="${(W - BW) / 2}" y="${baseY - bh / 2}" width="${BW}" height="${bh}" rx="7" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" opacity="${op}"/>`);
+    ls.forEach((line, li) => {
+      const ly = baseY - (ls.length - 1) * 7 + li * 14 + 5;
+      parts.push(`<text x="${W/2}" y="${ly}" text-anchor="middle" fill="${textC}" font-size="10" font-family="Inter,system-ui,sans-serif" opacity="${op}">${line}</text>`);
+    });
+  });
+
+  if (children.length > 2) {
+    const topY = chain[chain.length - 1].svgY - BH / 2 - 10;
+    parts.push(`<text x="${W/2}" y="${topY}" text-anchor="middle" fill="#1e3850" font-size="11">+${children.length - 2} dal.</text>`);
+  }
+
+  return `<svg width="${W}" height="${totalH}" viewBox="0 0 ${W} ${totalH}" xmlns="http://www.w3.org/2000/svg">
+    <defs><marker id="pm" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#1e3850"/></marker></defs>
+    ${parts.join('')}
+  </svg>`;
+}
+
+function buildPanelData(node, ctx, parents, children, med) {
+  const detail = node.detail || {};
+  const typeLabels = { root: 'kořen', ude: 'UDE', junction: 'průnik' };
+  const typeLabel  = typeLabels[node.type] || 'příčina';
+
+  // Value from ctx
+  let valueHtml = '';
+  if (detail.value_key) {
+    const [obj, key] = detail.value_key.split('.');
+    const val = ctx[obj]?.[key];
+    if (val != null) {
+      const unit   = detail.value_unit   ? ` ${detail.value_unit}` : '';
+      const target = detail.value_target ? ` · cíl ${detail.value_target}` : '';
+      valueHtml = `<div style="margin-top:9px;display:flex;align-items:baseline;gap:5px">
+        <span style="font-size:22px;font-weight:500;color:#c0d4e4">${val}</span>
+        <span style="font-size:11px;color:#3a5870">${unit}${target}</span>
+      </div>`;
+    }
+  }
+
+  const parentsHtml = parents.slice(0, 3).map(p =>
+    `<div class="cnp-row"><span class="cnp-arr">↓</span><span style="color:#6a8898">${p.label}</span></div>`
+  ).join('');
+
+  const childrenHtml = children.slice(0, 2).map((c, i) => {
+    const color = i === 0 ? '#8aaaba' : '#4a6070';
+    const extra = i === 1 && children.length > 2
+      ? `<span style="font-size:10px;color:#2a4050"> +${children.length - 2}</span>` : '';
+    return `<div class="cnp-row"><span class="cnp-arr">↑</span><span style="color:${color}">${c.label}${extra}</span></div>`;
+  }).join('');
+
+  const medHtml = med ? `
+    <div class="cnp-section">
+      <p class="cnp-lbl">léková ochrana</p>
+      <div style="display:flex;align-items:flex-start;gap:9px;flex-wrap:wrap">
+        <span class="cnp-chip">🛡 ${med.name}</span>
+        ${med.reason ? `<span style="font-size:11px;color:#3a5870;line-height:1.4;flex:1;min-width:0">${med.reason}</span>` : ''}
+      </div>
+    </div>` : '';
+
+  const actionsHtml = (detail.actions || []).length ? `
+    <div class="cnp-section">
+      <p class="cnp-lbl">co s tím</p>
+      ${(detail.actions || []).map(a => `<div class="cnp-action">${a}</div>`).join('')}
+    </div>` : '';
+
+  return `
+    <div class="cnp-section">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
+        <div>
+          <p class="cnp-lbl" style="margin-bottom:4px">${typeLabel}</p>
+          <p style="margin:0;font-size:15px;font-weight:500;color:#c0d8e8;line-height:1.3">${node.label}</p>
+        </div>
+        <button onclick="closeCrtPanel()" style="background:none;border:none;cursor:pointer;color:#2a4a60;font-size:22px;padding:0;line-height:1;flex-shrink:0;margin-top:-2px">×</button>
+      </div>
+      ${valueHtml}
+    </div>
+    ${parentsHtml ? `<div class="cnp-section"><p class="cnp-lbl">způsobeno</p>${parentsHtml}</div>` : ''}
+    ${childrenHtml ? `<div class="cnp-section"><p class="cnp-lbl">vede k</p>${childrenHtml}</div>` : ''}
+    ${medHtml}
+    ${actionsHtml}
+  `;
+}
+
+window.closeCrtPanel = closeCrtPanel;
 
 window.toggleMeds = function() {
   const btn = document.getElementById('crtMedBtn');
