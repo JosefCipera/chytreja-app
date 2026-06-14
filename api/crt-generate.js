@@ -117,7 +117,6 @@ async function resolveMedications(meds) {
     body: JSON.stringify({
       model: 'claude-opus-4-8',
       max_tokens: 800,
-      temperature: 0,
       messages: [{ role: 'user', content:
         `Pro každý lék níže uveď: INN název (účinná látka), farmakologická skupina, a hlavní mechanismus účinku (1 věta česky, max 8 slov).\nVrať POUZE JSON pole, bez komentářů:\n[{"name":"obchodní název","inn":"účinná látka","group":"skupina","effect":"mechanismus"}]\n\nLéky:\n${list}` }],
     }),
@@ -259,7 +258,6 @@ Strom musí mít 10–14 uzlů celkem (root + nodes). Vrať pouze JSON.`;
     body: JSON.stringify({
       model: 'claude-opus-4-8',
       max_tokens: 2000,
-      temperature: 0,
       system: systemPrompt,
       messages: [{ role: 'user', content: userPrompt }],
     }),
