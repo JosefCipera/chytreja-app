@@ -215,7 +215,13 @@ Topologie — čistý strom BEZ křížení, TŘI větve:
   → fyzická dekondice zvyšuje zátěž srdce a zhoršuje obě ostatní větve
 - Každý uzel patří PŘESNĚ do jedné větve — žádné hrany mezi větvemi L↔R
 - Větve se sbíhají POUZE v AND-join uzlech nebo v UDE nahoře
-- Sympatikus a dráždivost patří vždy do větve R, krevní tlak vždy do větve L`;
+- Sympatikus a dráždivost patří vždy do větve R, krevní tlak vždy do větve L
+
+Kauzální řetězce — přesné směry hran (příčina → důsledek):
+- LDL → usazeniny v cévách → vysoký krevní tlak → tlak na srdeční stěny (NE: LDL → zátěž srdce přímo)
+- fyzická dekondice → vyšší zátěž srdce (střední větev C, samostatná příčina)
+- stres → napětí v autonomním systému → dráždivost síní
+- Vyšší zátěž srdce je VŽDY způsobena fyzickou dekondicí (větev C), nikdy přímo LDL nebo stresem`;
 
   const userPrompt = `${roleContext}
 
@@ -303,7 +309,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx) {
   const key = JSON.stringify({
-    _v:          6, // bump při změně promptu → invaliduje cache
+    _v:          7, // bump při změně promptu → invaliduje cache
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),
     labs:        ctx.profile.labs || {},
