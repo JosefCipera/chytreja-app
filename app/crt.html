@@ -388,10 +388,10 @@ async function loadCRTOpus(force = false) {
 // ── SVG renderer — plná kontrola nad velikostí a pozicí ─────────────────────
 const IS_MOBILE = window.innerWidth < 700 || window.screen.width < 700;
 // Na mobilu zmenšíme X_SCALE → užší strom → SVG viewBox užší → font čitelnější po scale
-const X_SCALE  = IS_MOBILE ? 0.55 : 1.0;
-const BOX_W    = IS_MOBILE ? 180 : 210;
-const BOX_H    = IS_MOBILE ? 64 : 72;
-const FONT_SIZE = IS_MOBILE ? 17 : 14;
+const X_SCALE  = IS_MOBILE ? 0.75 : 1.0;
+const BOX_W    = IS_MOBILE ? 200 : 230;
+const BOX_H    = IS_MOBILE ? 68 : 76;
+const FONT_SIZE = IS_MOBILE ? 15 : 16;
 const R = 10;
 const CHARS_PER_LINE = Math.floor((BOX_W - 20) / (FONT_SIZE * 0.58));
 
@@ -487,12 +487,19 @@ function renderTree(data) {
     style: 'display:block;transform-origin:top left;overflow:visible;user-select:none;',
   });
 
-  // Zoom + pan state
-  let _sc = Math.min(1, (container.clientWidth || 800) / svgW);
-  let _tx = ((container.clientWidth || 800) - svgW * _sc) / 2;
-  let _ty = 0;
+  // Zoom + pan state — inicializace po vykreslení (container musí mít rozměry)
+  let _sc = 1, _tx = 0, _ty = 0;
   const applyT = () => { svg.style.transform = `translate(${_tx}px,${_ty}px) scale(${_sc})`; };
-  setTimeout(applyT, 0);
+
+  const initView = () => {
+    const cw = container.clientWidth || 800;
+    const ch = container.clientHeight || 600;
+    _sc = Math.min(1, (cw - 40) / svgW, (ch - 40) / svgH);
+    _tx = (cw - svgW * _sc) / 2;
+    _ty = Math.max(16, (ch - svgH * _sc) / 2);
+    applyT();
+  };
+  requestAnimationFrame(initView);
 
   container.addEventListener('wheel', e => {
     e.preventDefault();
@@ -500,7 +507,7 @@ function renderTree(data) {
     const rect = container.getBoundingClientRect();
     const mx = e.clientX - rect.left, my = e.clientY - rect.top;
     _tx = mx - (mx - _tx) * f; _ty = my - (my - _ty) * f;
-    _sc = Math.max(0.25, Math.min(3, _sc * f));
+    _sc = Math.max(0.2, Math.min(3, _sc * f));
     applyT();
   }, { passive: false });
 
@@ -512,18 +519,27 @@ function renderTree(data) {
     _tx += e.clientX-_lx; _ty += e.clientY-_ly; _lx=e.clientX; _ly=e.clientY; applyT();
   });
 
-  // Touch pan+pinch
+  // Touch pan + pinch-to-zoom od středu prstů
   let _touches = [], _lastDist = 0;
   container.addEventListener('touchstart', e => { _touches=[...e.touches]; _lastDist=0; }, {passive:true});
   container.addEventListener('touchmove', e => {
     e.preventDefault();
     if (e.touches.length === 2) {
-      const d = Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
-      if (_lastDist) { const f=d/_lastDist; _sc=Math.max(0.25,Math.min(3,_sc*f)); applyT(); }
+      const t0 = e.touches[0], t1 = e.touches[1];
+      const d = Math.hypot(t0.clientX-t1.clientX, t0.clientY-t1.clientY);
+      if (_lastDist) {
+        const f = d / _lastDist;
+        const rect = container.getBoundingClientRect();
+        const mx = (t0.clientX + t1.clientX) / 2 - rect.left;
+        const my = (t0.clientY + t1.clientY) / 2 - rect.top;
+        _tx = mx - (mx - _tx) * f; _ty = my - (my - _ty) * f;
+        _sc = Math.max(0.2, Math.min(3, _sc * f));
+        applyT();
+      }
       _lastDist = d;
-    } else if (e.touches.length === 1 && _touches.length === 1) {
-      _tx += e.touches[0].clientX-_touches[0].clientX;
-      _ty += e.touches[0].clientY-_touches[0].clientY;
+    } else if (e.touches.length === 1 && _touches.length >= 1) {
+      _tx += e.touches[0].clientX - _touches[0].clientX;
+      _ty += e.touches[0].clientY - _touches[0].clientY;
       applyT();
     }
     _touches = [...e.touches];
