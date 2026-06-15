@@ -562,8 +562,6 @@ function renderTree(data) {
   window._crtData = data;
   document.getElementById('crtTitle').textContent    = data.title;
   document.getElementById('crtSubtitle').textContent = data.subtitle;
-  document.getElementById('branchL').textContent     = data.branch_labels?.L || '';
-  document.getElementById('branchR').textContent     = data.branch_labels?.R || '';
 
   // Injekce
   const injEl = document.getElementById('crtInjections');
