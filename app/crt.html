@@ -583,7 +583,7 @@ function renderTree(data) {
   const minX = Math.min(...xs), maxX = Math.max(...xs);
   const minY = Math.min(...ys), maxY = Math.max(...ys);
   const PAD_BOTTOM = 80;
-  const PAD_TOP    = 20;
+  const PAD_TOP    = 4;
   const PAD_SIDE   = IS_MOBILE ? 40 : 100;
   const maxBoxH = Math.max(...data.nodes.map(n => boxHeight(n.label ?? '')));
   const svgW = (maxX - minX) + BOX_W + PAD_SIDE * 2;
@@ -620,7 +620,7 @@ function renderTree(data) {
       _sc = Math.min(1, (cw - 40) / svgW);
     }
     _tx = (cw - svgW * _sc) / 2;
-    _ty = 4;
+    _ty = 0;
     applyT();
   };
   // Double rAF — čeká na dokončení layoutu, pak vycentruje
@@ -1161,7 +1161,6 @@ function buildPanelData(node, ctx, parents, children, med, supp) {
       <p class="cnp-lbl">léková ochrana</p>
       <div style="display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap">
         <span class="cnp-chip"><i class="ti ti-shield" aria-hidden="true" style="opacity:.7;margin-right:6px"></i><span style="border-left:1px solid rgba(245,158,11,0.3);padding-left:8px">${med.name}</span></span>
-        ${med.reason ? `<span style="font-size:13px;color:#475569;line-height:1.5;flex:1;min-width:120px">${med.reason}</span>` : ''}
       </div>
     </div>` : '';
 
@@ -1170,7 +1169,6 @@ function buildPanelData(node, ctx, parents, children, med, supp) {
       <p class="cnp-lbl">doplněk stravy</p>
       <div style="display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap">
         <span class="cnp-chip" style="background:rgba(34,197,94,0.07);border-color:rgba(34,197,94,0.35);color:#4ade80"><i class="ti ti-leaf" aria-hidden="true" style="opacity:.7;margin-right:6px"></i><span style="border-left:1px solid rgba(34,197,94,0.3);padding-left:8px">${supp.name}</span></span>
-        ${supp.reason ? `<span style="font-size:13px;color:#475569;line-height:1.5;flex:1;min-width:120px">${supp.reason}</span>` : ''}
       </div>
     </div>` : '';
 
