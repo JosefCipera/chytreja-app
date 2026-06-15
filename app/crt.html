@@ -161,7 +161,7 @@
     /* ── HUD-style node panel ─────────────────────────── */
     #crtNodePanel {
       position: fixed;
-      top: calc(72px + env(safe-area-inset-top, 0px));
+      top: calc(84px + env(safe-area-inset-top, 0px));
       right: 8px;
       width: 420px;
       max-width: 92vw;
@@ -600,7 +600,7 @@ function renderTree(data) {
       _sc = Math.min(1, (cw - 40) / svgW);
     }
     _tx = (cw - svgW * _sc) / 2;
-    _ty = 20;
+    _ty = 4;
     applyT();
   };
   // Double rAF — čeká na dokončení layoutu, pak vycentruje
