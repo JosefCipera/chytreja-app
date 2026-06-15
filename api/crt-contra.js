@@ -10,10 +10,10 @@ export default async function handler(req, res) {
   const allMeds = [...user_meds, ...user_supps].filter(Boolean).join(', ');
 
   const prompt = `Uživatel bere tyto léky a doplňky: ${allMeds}.
-Chystá se vzít "${drug}", ale ten může nebezpečně interagovat s "${conflicts_with}", které již bere.
+Chystá se vzít "${drug}", ale to je rizikové v kombinaci s jeho současnou léčbou.
 
 Napiš varování přesně ve 2 větách. Česky, tykání. Bez markdown formátování (žádné hvězdičky, emoji, tučné písmo). Bez lékařského žargonu. Bez čísel ani dávek.
-Zdůrazni konkrétní riziko (ne jen "poraď se s lékařem") a pak řekni, co má udělat.`;
+Zaměř se na riziko samotného "${drug}" v kombinaci s léky uživatele — ne na množství hořčíku. Napiš konkrétní dopad (ne jen "poraď se s lékařem") a pak co má udělat.`;
 
   const aiRes = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
