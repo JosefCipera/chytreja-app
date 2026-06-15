@@ -269,20 +269,6 @@
     <div id="crt-canvas"></div>
     <div class="crt-branch-label right" id="branchR">Autonomní subsystém</div>
 
-    <div class="crt-legend">
-      <div class="crt-legend-item">
-        <div class="crt-legend-dot" style="background:#3d1a1a;border-color:#e05252"></div> Kritické
-      </div>
-      <div class="crt-legend-item">
-        <div class="crt-legend-dot" style="background:#3a2e0a;border-color:#d4a017"></div> Pozor
-      </div>
-      <div class="crt-legend-item">
-        <div class="crt-legend-dot" style="background:#0f2d1a;border-color:#3a9e5f"></div> V pořádku
-      </div>
-      <div class="crt-legend-item">
-        <div class="crt-legend-dot" style="background:#1a1f2e;border-color:#4a5568"></div> Bez dat
-      </div>
-    </div>
 
     <div class="crt-loading" id="crtLoading">
       <div>Sestavuji kauzální mapu…</div>
@@ -1001,8 +987,8 @@ function openNodePanel(nodeId) {
 
   const parents  = activeArrows.filter(a => a.to   === nodeId && kbMap[a.from]).map(a => kbMap[a.from]);
   const children = activeArrows.filter(a => a.from === nodeId && kbMap[a.to  ]).map(a => kbMap[a.to  ]);
-  const med      = medsMap.find(m => (m.targets || []).includes(nodeId));
-  const supp     = suppsMap.find(s => (s.targets || []).includes(nodeId));
+  const meds     = medsMap.filter(m => (m.targets || []).includes(nodeId));
+  const supps    = suppsMap.filter(s => (s.targets || []).includes(nodeId));
 
   // Highlight
   document.querySelectorAll('.crt-node rect').forEach(r => r.style.filter = '');
@@ -1010,7 +996,7 @@ function openNodePanel(nodeId) {
   if (sel) sel.style.filter = 'drop-shadow(0 0 8px #5aaaf0)';
 
   document.getElementById('cnpMini').innerHTML = buildPanelMiniSVG(node, parents, children, kbMap);
-  document.getElementById('cnpData').innerHTML = buildPanelData(node, ctx, parents, children, med, supp);
+  document.getElementById('cnpData').innerHTML = buildPanelData(node, ctx, parents, children, meds, supps);
   document.getElementById('crtNodePanel').classList.add('open');
 }
 
@@ -1104,7 +1090,7 @@ function evalValueStatus(val, targetStr) {
   return { pct: 50, status: 'none' };
 }
 
-function buildPanelData(node, ctx, parents, children, med, supp) {
+function buildPanelData(node, ctx, parents, children, meds, supps) {
   const detail = node.detail || {};
   const typeLabels = { root: 'kořen', ude: 'UDE', junction: 'průnik' };
   const typeLabel  = typeLabels[node.type] || 'příčina';
@@ -1156,19 +1142,19 @@ function buildPanelData(node, ctx, parents, children, med, supp) {
     return `<div class="cnp-row" style="opacity:${i === 0 ? 1 : 0.4}"><span class="cnp-arr">↑</span>${c.label}${extra}</div>`;
   }).join('');
 
-  const medHtml = med ? `
+  const medHtml = meds?.length ? `
     <div class="cnp-section">
       <p class="cnp-lbl">léková ochrana</p>
-      <div style="display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap">
-        <span class="cnp-chip"><i class="ti ti-shield" aria-hidden="true" style="opacity:.7;margin-right:6px"></i><span style="border-left:1px solid rgba(245,158,11,0.3);padding-left:8px">${med.name}</span></span>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        ${meds.map(m => `<span class="cnp-chip"><i class="ti ti-shield" aria-hidden="true" style="opacity:.7;margin-right:6px"></i><span style="border-left:1px solid rgba(245,158,11,0.3);padding-left:8px">${m.name}</span></span>`).join('')}
       </div>
     </div>` : '';
 
-  const suppHtml = supp ? `
+  const suppHtml = supps?.length ? `
     <div class="cnp-section">
-      <p class="cnp-lbl">doplněk stravy</p>
-      <div style="display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap">
-        <span class="cnp-chip" style="background:rgba(34,197,94,0.07);border-color:rgba(34,197,94,0.35);color:#4ade80"><i class="ti ti-leaf" aria-hidden="true" style="opacity:.7;margin-right:6px"></i><span style="border-left:1px solid rgba(34,197,94,0.3);padding-left:8px">${supp.name}</span></span>
+      <p class="cnp-lbl">doplňky stravy</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        ${supps.map(s => `<span class="cnp-chip" style="background:rgba(34,197,94,0.07);border-color:rgba(34,197,94,0.35);color:#4ade80"><i class="ti ti-leaf" aria-hidden="true" style="opacity:.7;margin-right:6px"></i><span style="border-left:1px solid rgba(34,197,94,0.3);padding-left:8px">${s.name}</span></span>`).join('')}
       </div>
     </div>` : '';
 
