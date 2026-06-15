@@ -1229,23 +1229,46 @@ window.toggleMeds = function() {
 
 // ── Boot ─────────────────────────────────────────────────────────────────────
 async function enrichContraMap(data) {
-  if (!data.contra_map?.length) return;
   const ctx = data._ctx || {};
   const user_meds = ctx.meds || [];
   const user_supps = ctx.supps || [];
-  await Promise.all(data.contra_map.map(async c => {
-    try {
-      const res = await fetch('/api/crt-contra', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ drug: c.drug, conflicts_with: c.conflicts_with, user_meds, user_supps }),
-      });
-      if (res.ok) {
-        const { text } = await res.json();
-        if (text) c.reason = text;
+  if ([...user_meds, ...user_supps].length < 2) return;
+
+  try {
+    const res = await fetch('/api/crt-contra', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_meds, user_supps }),
+    });
+    if (!res.ok) return;
+    const { interactions } = await res.json();
+    if (!interactions?.length) return;
+
+    // Map Sonnet findings onto CRT nodes via KB shields
+    const kb = data._kb || {};
+    const allShields = [...(kb.medication_shields||[]), ...(kb.supplement_shields||[])];
+    const activeIds = new Set((data.nodes||[]).map(n => n.id));
+    const arrowsById = {};
+    (data._activeArrows||[]).forEach(a => { arrowsById[a.id] = a; });
+
+    data.contra_map = [];
+    for (const item of interactions) {
+      const drugL = item.drug.toLowerCase();
+      // Find which node this drug's shield protects
+      let nodeId = null;
+      for (const s of allShields) {
+        const names = [s.med||s.supp, ...(s.aliases||[])].map(k => k.toLowerCase());
+        if (!names.some(k => drugL.includes(k) || k.includes(drugL))) continue;
+        if (s.shields_arrow) { const a = arrowsById[s.shields_arrow]; if (a && activeIds.has(a.to)) { nodeId = a.to; break; } }
+        else if (s.shields_node && activeIds.has(s.shields_node)) { nodeId = s.shields_node; break; }
       }
-    } catch (_) {}
-  }));
+      if (!nodeId) {
+        // fallback: attach to first active node
+        nodeId = (data.nodes||[])[0]?.id;
+      }
+      if (nodeId) data.contra_map.push({ drug: item.drug, reason: item.reason, nodeId });
+    }
+  } catch (_) {}
 }
 
 async function boot() {
