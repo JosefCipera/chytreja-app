@@ -792,7 +792,7 @@ function renderZdraviTab() {
   const supps        = cachedData.supplements  ?? [];
 
   const medRows  = meds.length  ? meds.map((m, i) => renderMedRow(i, m)).join('')  : renderMedRow(0, {});
-  const suppRows = supps.length ? supps.map((s, i) => renderSuppRow(i, s)).join('') : renderSuppRow(0, '');
+  const suppRows = supps.length ? supps.map((s, i) => renderSuppRow(i, s)).join('') : renderSuppRow(0, {});
 
   return `
     <div class="udp-section">
@@ -843,11 +843,15 @@ function renderZdraviTab() {
     </div>`;
 }
 
-function renderSuppRow(i, name = '') {
+function renderSuppRow(i, supp = {}) {
+  const name = typeof supp === 'string' ? supp : (supp.name ?? '');
+  const dose = typeof supp === 'string' ? '' : (supp.dose ?? '');
   return `
     <div class="udp-injury-row" data-supp-idx="${i}">
-      <input class="udp-input supp-name" placeholder="např. Omega-3, Hořčík, CoQ10"
-             value="${esc(name)}" style="flex:1;">
+      <input class="udp-input supp-name" placeholder="Název (např. Omega-3)"
+             value="${esc(name)}" style="flex:2;">
+      <input class="udp-input supp-dose" placeholder="Dávka (např. 500 mg 1×)"
+             value="${esc(dose)}" style="flex:2;">
       <button class="udp-del-btn" data-supp-idx="${i}" title="Odstranit">✕</button>
     </div>`;
 }
@@ -906,7 +910,10 @@ async function saveZdravi() {
   })).filter(m => m.name);
 
   const suppRows = document.querySelectorAll('#supp-rows .udp-injury-row');
-  const supplements = [...suppRows].map(row => row.querySelector('.supp-name')?.value.trim()).filter(Boolean);
+  const supplements = [...suppRows].map(row => ({
+    name: row.querySelector('.supp-name')?.value.trim(),
+    dose: row.querySelector('.supp-dose')?.value.trim() || null,
+  })).filter(s => s.name);
 
   try {
     const { error: e1 } = await supabase.from('user_health_profile')

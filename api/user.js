@@ -654,7 +654,7 @@ async function handleCrtContext(req, res) {
     diagnoses: (prof?.diagnoses||[]).map(normDiag),
     symptoms:  (prof?.symptoms ||[]).map(normDiag),
     meds: (meds||[]).map(m=>m.name),
-    supps: (prof?.supplements||[]),
+    supps: (prof?.supplements||[]).map(s => (typeof s === 'string' ? s : s.name)).filter(Boolean),
   };
 
   res.setHeader('Cache-Control','no-store');

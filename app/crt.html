@@ -1178,16 +1178,16 @@ function buildPanelData(node, ctx, parents, children, meds, supps, contras) {
   const medHtml = meds?.length ? `
     <div class="cnp-section">
       <p class="cnp-lbl">léková ochrana</p>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        ${meds.map(m => `<span class="cnp-chip"><i class="ti ti-shield" aria-hidden="true" style="opacity:.7;margin-right:6px"></i><span style="border-left:1px solid rgba(245,158,11,0.3);padding-left:8px">${m.name}</span></span>`).join('')}
+      <div style="display:flex;flex-direction:column;gap:6px">
+        ${meds.map(m => `<span class="cnp-chip" style="align-self:flex-start"><i class="ti ti-shield" aria-hidden="true" style="opacity:.7;margin-right:6px"></i><span style="border-left:1px solid rgba(245,158,11,0.3);padding-left:8px">${m.name}</span></span>`).join('')}
       </div>
     </div>` : '';
 
   const suppHtml = supps?.length ? `
     <div class="cnp-section">
       <p class="cnp-lbl">doplňky stravy</p>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        ${supps.map(s => `<span class="cnp-chip" style="background:rgba(34,197,94,0.07);border-color:rgba(34,197,94,0.35);color:#4ade80"><i class="ti ti-leaf" aria-hidden="true" style="opacity:.7;margin-right:6px"></i><span style="border-left:1px solid rgba(34,197,94,0.3);padding-left:8px">${s.name}</span></span>`).join('')}
+      <div style="display:flex;flex-direction:column;gap:6px">
+        ${supps.map(s => `<span class="cnp-chip" style="background:rgba(34,197,94,0.07);border-color:rgba(34,197,94,0.35);color:#4ade80;align-self:flex-start"><i class="ti ti-leaf" aria-hidden="true" style="opacity:.7;margin-right:6px"></i><span style="border-left:1px solid rgba(34,197,94,0.3);padding-left:8px">${s.name}</span></span>`).join('')}
       </div>
     </div>` : '';
 
