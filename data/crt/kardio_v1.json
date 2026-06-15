@@ -137,7 +137,7 @@
       "drug": "Magnosolv",
       "aliases": ["magnosolv", "magnézium citrát", "magnesium citrate"],
       "conflicts_with": "Hořčík",
-      "reason": "Magnosolv i Hořčík bisglycinát jsou zdroje hořčíku — kombinace překračuje denní limit (> 400 mg) a způsobuje průjem a svalovou slabost. Vyber jen jeden."
+      "reason": "Oba obsahují hořčík — přebytek snižuje renální clearance Pradaxy (vyšší hladina → krvácení), zpomaluje AV vedení (bradykardie, riziko arytmie u FaP) a v kombinaci s Kalnorminem destabilizuje elektrolytovou rovnováhu síní. Vyber jeden zdroj Mg a drž se doporučené dávky."
     }
   ],
 
