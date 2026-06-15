@@ -161,18 +161,18 @@
     /* ── HUD-style node panel ─────────────────────────── */
     #crtNodePanel {
       position: fixed;
-      top: 0; right: 0;
-      height: 100dvh;
+      top: 16px; right: 16px; bottom: 16px;
       width: 320px;
       display: flex;
       flex-direction: column;
-      transform: translateX(110%);
-      transition: transform 0.22s cubic-bezier(0.4,0,0.2,1);
+      transform: translateX(calc(100% + 32px));
+      transition: transform 0.25s cubic-bezier(0.4,0,0.2,1);
       pointer-events: none;
       z-index: 60;
       background: rgba(10, 15, 28, 0.98);
-      border-left: 1px solid rgba(245,158,11,0.18);
-      box-shadow: -8px 0 40px rgba(0,0,0,0.7);
+      border: 1px solid rgba(245,158,11,0.2);
+      border-radius: 16px;
+      box-shadow: 0 0 40px rgba(0,0,0,0.7);
       overflow-y: auto;
     }
     #crtNodePanel.open {
@@ -235,13 +235,12 @@
     }
     @media (max-width: 699px) {
       #crtNodePanel {
-        width: 100vw;
-        top: auto; bottom: 0;
-        height: auto;
-        max-height: 70vh;
-        transform: translateY(110%);
-        border-left: none;
-        border-top: 1px solid rgba(245,158,11,0.18);
+        top: auto; bottom: 12px;
+        left: 12px; right: 12px;
+        width: auto;
+        max-height: 72vh;
+        transform: translateY(calc(100% + 28px));
+        border-radius: 16px;
       }
       #crtNodePanel.open { transform: translateY(0); }
     }
