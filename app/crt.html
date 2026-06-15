@@ -799,19 +799,6 @@ function renderTree(data) {
       openNodePanel(n.id);
     });
 
-    // Tooltip
-    const tooltip = document.getElementById('crtTooltip');
-    g.addEventListener('mouseenter', e => {
-      let html = `<strong>${n.label.replace(/\n/g, ' ')}</strong>`;
-      if (n._node_id) html += `<br><span style="color:#4a8a8a;font-size:11px">Klikni pro detail</span>`;
-      tooltip.innerHTML = html;
-      tooltip.style.display = 'block';
-    });
-    g.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
-    g.addEventListener('mousemove',  e => {
-      tooltip.style.left = (e.clientX + 14) + 'px';
-      tooltip.style.top  = (e.clientY - 10) + 'px';
-    });
 
     svg.appendChild(g);
   });
@@ -1006,7 +993,8 @@ function openNodePanel(nodeId) {
   const kbMap         = data._kbMap;
   const ctx           = data._ctx   || {};
   const activeArrows  = data._activeArrows || [];
-  const medsMap       = data.medications_map || [];
+  const medsMap       = data.medications_map  || [];
+  const suppsMap      = data.supplements_map  || [];
 
   const node = kbMap[nodeId];
   if (!node) return;
@@ -1014,6 +1002,7 @@ function openNodePanel(nodeId) {
   const parents  = activeArrows.filter(a => a.to   === nodeId && kbMap[a.from]).map(a => kbMap[a.from]);
   const children = activeArrows.filter(a => a.from === nodeId && kbMap[a.to  ]).map(a => kbMap[a.to  ]);
   const med      = medsMap.find(m => (m.targets || []).includes(nodeId));
+  const supp     = suppsMap.find(s => (s.targets || []).includes(nodeId));
 
   // Highlight
   document.querySelectorAll('.crt-node rect').forEach(r => r.style.filter = '');
@@ -1021,7 +1010,7 @@ function openNodePanel(nodeId) {
   if (sel) sel.style.filter = 'drop-shadow(0 0 8px #5aaaf0)';
 
   document.getElementById('cnpMini').innerHTML = buildPanelMiniSVG(node, parents, children, kbMap);
-  document.getElementById('cnpData').innerHTML = buildPanelData(node, ctx, parents, children, med);
+  document.getElementById('cnpData').innerHTML = buildPanelData(node, ctx, parents, children, med, supp);
   document.getElementById('crtNodePanel').classList.add('open');
 }
 
@@ -1115,7 +1104,7 @@ function evalValueStatus(val, targetStr) {
   return { pct: 50, status: 'none' };
 }
 
-function buildPanelData(node, ctx, parents, children, med) {
+function buildPanelData(node, ctx, parents, children, med, supp) {
   const detail = node.detail || {};
   const typeLabels = { root: 'kořen', ude: 'UDE', junction: 'průnik' };
   const typeLabel  = typeLabels[node.type] || 'příčina';
@@ -1176,6 +1165,15 @@ function buildPanelData(node, ctx, parents, children, med) {
       </div>
     </div>` : '';
 
+  const suppHtml = supp ? `
+    <div class="cnp-section">
+      <p class="cnp-lbl">doplněk stravy</p>
+      <div style="display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap">
+        <span class="cnp-chip" style="background:rgba(34,197,94,0.07);border-color:rgba(34,197,94,0.35);color:#4ade80"><i class="ti ti-leaf" aria-hidden="true" style="opacity:.7;margin-right:6px"></i><span style="border-left:1px solid rgba(34,197,94,0.3);padding-left:8px">${supp.name}</span></span>
+        ${supp.reason ? `<span style="font-size:13px;color:#475569;line-height:1.5;flex:1;min-width:120px">${supp.reason}</span>` : ''}
+      </div>
+    </div>` : '';
+
   const actionsHtml = (detail.actions || []).length ? `
     <div class="cnp-section">
       <p class="cnp-lbl">co s tím</p>
@@ -1199,6 +1197,7 @@ function buildPanelData(node, ctx, parents, children, med) {
     ${parentsHtml ? `<div class="cnp-section"><p class="cnp-lbl">způsobeno</p>${parentsHtml}</div>` : ''}
     ${childrenHtml ? `<div class="cnp-section"><p class="cnp-lbl">vede k</p>${childrenHtml}</div>` : ''}
     ${medHtml}
+    ${suppHtml}
     ${actionsHtml}
   `;
 }
