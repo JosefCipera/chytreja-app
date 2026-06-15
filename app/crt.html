@@ -471,7 +471,7 @@ async function loadCRT() {
   const arrowsById = {};
   kb.possible_arrows.forEach(a => { arrowsById[a.id] = a; });
 
-  return {
+  const result = {
     title: 'Kauzální mapa zdraví',
     subtitle: `Kauzální engine · ${activeArrows.length} aktivních spojení`,
     branch_labels: { L: 'Metabolický subsystém', R: 'Autonomní subsystém' },
@@ -481,14 +481,13 @@ async function loadCRT() {
     injections: [],
     medications_map: buildMedsMap(kb.medication_shields, ctx.meds, activeIds, arrowsById),
     supplements_map: buildSuppsMap(kb.supplement_shields, ctx.supps||[], activeIds, arrowsById),
-    get contra_map() {
-      return buildContraMap(kb.contraindications, ctx.meds, ctx.supps||[], this.medications_map, this.supplements_map);
-    },
     _kb: kb,
     _ctx: ctx,
     _activeArrows: activeArrows,
     _kbMap: kbMap,
   };
+  result.contra_map = buildContraMap(kb.contraindications, ctx.meds, ctx.supps||[], result.medications_map, result.supplements_map);
+  return result;
 }
 
 async function loadCRTOpus(force = false) {
