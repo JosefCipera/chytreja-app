@@ -850,7 +850,7 @@ function renderSuppRow(i, supp = {}) {
     <div class="udp-injury-row" data-supp-idx="${i}">
       <input class="udp-input supp-name" placeholder="Název (např. Omega-3)"
              value="${esc(name)}" style="flex:2;">
-      <input class="udp-input supp-dose" placeholder="Dávka (např. 500 mg 1×)"
+      <input class="udp-input supp-dose" placeholder="Dávka (např. 500 mg)"
              value="${esc(dose)}" style="flex:2;">
       <button class="udp-del-btn" data-supp-idx="${i}" title="Odstranit">✕</button>
     </div>`;
