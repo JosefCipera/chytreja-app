@@ -15,16 +15,16 @@ export default async function handler(req, res) {
 
   const list = all.map((x, i) => `${i + 1}. ${x}`).join('\n');
 
-  const prompt = `Uživatel bere následující léky a doplňky stravy:
+  const system = `Jsi klinický farmaceut. Tvůj úkol je identifikovat lékové interakce a rizika v kombinacích léků a doplňků stravy. Vždy odpovídáš pouze validním JSON polem, žádný jiný text.`;
+
+  const prompt = `Pacient bere současně:
 ${list}
 
-Zkontroluj všechny kombinace a najdi ty, které jsou rizikové nebo nevhodné dohromady.
-Pro každou rizikovou kombinaci vrať JSON objekt s klíči:
-- "drug": název problematického přípravku (ten, který uživatel přidává nebo který je rizikový)
-- "reason": varování ve 2 větách, česky, tykání, bez markdown, bez lékařského žargonu — konkrétní dopad a co má udělat
+Které kombinace jsou klinicky rizikové? Zahrň interakce lék-lék, lék-doplněk i doplněk-doplněk.
+Příklady rizik: zvýšené krvácení, srdeční arytmie, snížená účinnost léku, toxicita.
 
-Vrať pouze JSON pole těchto objektů. Pokud nejsou žádné interakce, vrať prázdné pole [].
-Žádný jiný text, pouze JSON.`;
+Odpověz POUZE tímto JSON polem (bez markdown, bez komentářů):
+[{"drug":"název rizikového přípravku","reason":"2 věty česky, tykání, konkrétní dopad + co udělat"}]`;
 
   const aiRes = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -36,6 +36,7 @@ Vrať pouze JSON pole těchto objektů. Pokud nejsou žádné interakce, vrať p
     body: JSON.stringify({
       model: 'claude-sonnet-4-6',
       max_tokens: 600,
+      system,
       messages: [{ role: 'user', content: prompt }],
     }),
   });
