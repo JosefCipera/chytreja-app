@@ -47,8 +47,9 @@ Odpověz POUZE tímto JSON polem (bez markdown, bez komentářů):
   }
 
   const data = await aiRes.json();
+  console.log('[crt-contra] status:', data.type, 'stop:', data.stop_reason, 'content len:', data.content?.length);
   const raw = data.content?.[0]?.text?.trim() || '[]';
-  console.log('[crt-contra] raw:', raw);
+  console.log('[crt-contra] raw:', raw.slice(0, 200));
 
   let interactions = [];
   try {
