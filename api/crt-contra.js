@@ -13,7 +13,7 @@ export default async function handler(req, res) {
 Chystá se vzít "${drug}", ale to je rizikové v kombinaci s jeho současnou léčbou.
 
 Napiš varování přesně ve 2 větách. Česky, tykání. Bez markdown formátování (žádné hvězdičky, emoji, tučné písmo). Bez lékařského žargonu. Bez čísel ani dávek.
-Zaměř se na riziko samotného "${drug}" v kombinaci s léky uživatele — ne na množství hořčíku. Napiš konkrétní dopad (ne jen "poraď se s lékařem") a pak co má udělat.`;
+Napiš konkrétní dopad a pak co má udělat.`;
 
   const aiRes = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
