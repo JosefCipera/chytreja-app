@@ -1009,9 +1009,15 @@ function openNodePanel(nodeId) {
   const sel = document.querySelector(`.crt-node[data-id="${nodeId}"] rect`);
   if (sel) sel.style.filter = 'drop-shadow(0 0 8px #5aaaf0)';
 
-  document.getElementById('cnpMini').innerHTML = buildPanelMiniSVG(node, parents, children, kbMap);
-  document.getElementById('cnpData').innerHTML = buildPanelData(node, ctx, parents, children, meds, supps, contras);
-  document.getElementById('crtNodePanel').classList.add('open');
+  try {
+    document.getElementById('cnpMini').innerHTML = buildPanelMiniSVG(node, parents, children, kbMap);
+    document.getElementById('cnpData').innerHTML = buildPanelData(node, ctx, parents, children, meds, supps, contras);
+    document.getElementById('crtNodePanel').classList.add('open');
+  } catch(err) {
+    console.error('[CRT panel]', err);
+    document.getElementById('cnpData').innerHTML = `<div style="padding:16px;color:#ef4444;font-size:13px">${err.message}</div>`;
+    document.getElementById('crtNodePanel').classList.add('open');
+  }
 }
 
 function buildPanelMiniSVG(node, parents, children, kbMap) {
