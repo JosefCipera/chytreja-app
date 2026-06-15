@@ -410,9 +410,17 @@ function calcPositionsClient(nodes) {
 }
 
 // ── Medications ───────────────────────────────────────────────────────────────
+function suppMatches(shield, userSupps) {
+  const keywords = [shield.supp, ...(shield.aliases||[])].map(k => k.toLowerCase());
+  return userSupps.some(u => {
+    const ul = u.toLowerCase();
+    return keywords.some(k => ul.includes(k) || k.includes(ul));
+  });
+}
+
 function buildSuppsMap(shields, userSupps, activeIds, arrowsById) {
   return (shields||[])
-    .filter(s => userSupps.some(u => u.toLowerCase()===s.supp.toLowerCase()))
+    .filter(s => suppMatches(s, userSupps))
     .map(s => {
       let targets = [];
       if (s.shields_arrow) { const a=arrowsById[s.shields_arrow]; if(a&&activeIds.has(a.to)) targets=[a.to]; }
@@ -575,7 +583,7 @@ function renderTree(data) {
   const minX = Math.min(...xs), maxX = Math.max(...xs);
   const minY = Math.min(...ys), maxY = Math.max(...ys);
   const PAD_BOTTOM = 80;
-  const PAD_TOP    = 100;
+  const PAD_TOP    = 20;
   const PAD_SIDE   = IS_MOBILE ? 40 : 100;
   const maxBoxH = Math.max(...data.nodes.map(n => boxHeight(n.label ?? '')));
   const svgW = (maxX - minX) + BOX_W + PAD_SIDE * 2;

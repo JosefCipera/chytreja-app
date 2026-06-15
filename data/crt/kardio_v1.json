@@ -108,16 +108,19 @@
   "supplement_shields": [
     {
       "supp": "Omega-3",
+      "aliases": ["omega3", "epa", "dha", "rybí olej", "fish oil", "omega 3"],
       "shields_arrow": "A_009",
       "reason": "EPA+DHA snižují CRP a zpomalují zánětlivé poškození cévní stěny"
     },
     {
       "supp": "Hořčík",
+      "aliases": ["magnesium", "magnézium", "bisglycinát", "bisglycinate", "mg", "hořčík"],
       "shields_node": "N_ZTUHE_CEVY",
       "reason": "Hořčík zlepšuje pružnost hladké svaloviny cév a snižuje arteriální tuhnutí"
     },
     {
       "supp": "CoQ10",
+      "aliases": ["coq10", "koenzym q", "ubiquinol", "ubidecarenone", "q10"],
       "shields_node": "N_NIZKE_HRV",
       "reason": "Koenzym Q10 podporuje mitochondriální energetiku srdečního svalu a zlepšuje HRV"
     }
