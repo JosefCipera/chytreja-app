@@ -639,7 +639,7 @@ async function handleCrtContext(req, res) {
 
   const supabase = sb();
   const [{ data: prof }, { data: meds }, { data: chk }, { data: rdns }] = await Promise.all([
-    supabase.from('user_health_profile').select('diagnoses,symptoms,labs').eq('user_id', userId).single(),
+    supabase.from('user_health_profile').select('diagnoses,symptoms,labs,supplements').eq('user_id', userId).single(),
     supabase.from('user_medications').select('name').eq('user_id', userId).eq('active', true),
     supabase.from('daily_checkin').select('stress,sleep_hours,movement_level,energy').eq('user_id', userId).order('date',{ascending:false}).limit(3),
     supabase.from('user_readiness').select('hrv').eq('user_id', userId).order('created_at',{ascending:false}).limit(1),
@@ -654,6 +654,7 @@ async function handleCrtContext(req, res) {
     diagnoses: (prof?.diagnoses||[]).map(normDiag),
     symptoms:  (prof?.symptoms ||[]).map(normDiag),
     meds: (meds||[]).map(m=>m.name),
+    supps: (prof?.supplements||[]),
   };
 
   res.setHeader('Cache-Control','no-store');

@@ -105,6 +105,24 @@
     { "id": "A_034", "from": "N_NIZKE_HRV",  "to": "N_ZATEZ",        "condition": "user.checkin.hrv < 25 && user.checkin.energy < 3" }
   ],
 
+  "supplement_shields": [
+    {
+      "supp": "Omega-3",
+      "shields_arrow": "A_009",
+      "reason": "EPA+DHA snižují CRP a zpomalují zánětlivé poškození cévní stěny"
+    },
+    {
+      "supp": "Hořčík",
+      "shields_node": "N_ZTUHE_CEVY",
+      "reason": "Hořčík zlepšuje pružnost hladké svaloviny cév a snižuje arteriální tuhnutí"
+    },
+    {
+      "supp": "CoQ10",
+      "shields_node": "N_NIZKE_HRV",
+      "reason": "Koenzym Q10 podporuje mitochondriální energetiku srdečního svalu a zlepšuje HRV"
+    }
+  ],
+
   "medication_shields": [
     {
       "med": "Torvacard",

@@ -410,6 +410,17 @@ function calcPositionsClient(nodes) {
 }
 
 // ── Medications ───────────────────────────────────────────────────────────────
+function buildSuppsMap(shields, userSupps, activeIds, arrowsById) {
+  return (shields||[])
+    .filter(s => userSupps.some(u => u.toLowerCase()===s.supp.toLowerCase()))
+    .map(s => {
+      let targets = [];
+      if (s.shields_arrow) { const a=arrowsById[s.shields_arrow]; if(a&&activeIds.has(a.to)) targets=[a.to]; }
+      else if (s.shields_node && activeIds.has(s.shields_node)) targets=[s.shields_node];
+      return targets.length ? {name:s.supp, targets, reason:s.reason} : null;
+    }).filter(Boolean);
+}
+
 function buildMedsMap(shields, userMeds, activeIds, arrowsById) {
   return (shields||[])
     .filter(s => userMeds.some(m => m.toLowerCase()===s.med.toLowerCase()))
@@ -462,6 +473,7 @@ async function loadCRT() {
     and_joins: [],
     injections: [],
     medications_map: buildMedsMap(kb.medication_shields, ctx.meds, activeIds, arrowsById),
+    supplements_map: buildSuppsMap(kb.supplement_shields, ctx.supps||[], activeIds, arrowsById),
     _kb: kb,
     _ctx: ctx,
     _activeArrows: activeArrows,
@@ -885,6 +897,89 @@ function renderTree(data) {
     });
 
     document.getElementById('crtMedBtn').style.display = '';
+  }
+
+  // ── Doplňky stravy: stejně jako léky, ale vlevo a zelené ────────────────
+  const suppsMap = (data.supplements_map || []).filter(s => (s.targets || []).length > 0);
+  if (suppsMap.length) {
+    const SUPP_C    = '#22c55e';
+    const SUPP_FILL = '#0a2016';
+    const PILL_H   = IS_MOBILE ? 30 : 34;
+    const PILL_FS  = IS_MOBILE ? 13 : 14;
+    const PILL_PAD = 16;
+    const GAP      = 10;
+
+    const nodeById2 = {};
+    [data.root, ...(data.nodes || [])].forEach(n => { if (n) nodeById2[n.id] = n; });
+
+    const pillW2 = name => Math.max(64, name.length * PILL_FS * 0.62 + PILL_PAD * 2);
+    const usedRectsL = [];
+    const findFreeXL = (idealX, idealY, pw) => {
+      let x = idealX;
+      for (const r of usedRectsL) {
+        if (Math.abs(r.y - idealY) < PILL_H + 4 && x + pw > r.x - 4 && x < r.x + r.w + 4) {
+          x = r.x - pw - 8;
+        }
+      }
+      usedRectsL.push({ x, y: idealY, w: pw });
+      return x;
+    };
+
+    suppsMap.forEach(supp => {
+      const targets = (supp.targets || []).map(id => nodeById2[id]).filter(Boolean);
+      if (!targets.length) return;
+
+      const node = targets[0];
+      const nx = cx(node.x ?? 0);
+      const ny = cy(node.y ?? 0);
+      const nodeLeft = nx - BOX_W / 2;
+      const pw = pillW2(supp.name);
+      const px = findFreeXL(nodeLeft - GAP - pw, ny, pw);
+      const py = ny - PILL_H / 2;
+
+      svg.insertBefore(svgEl('line', {
+        class: 'crt-med-el crt-med-hidden',
+        x1: nodeLeft, y1: ny, x2: px + pw, y2: ny,
+        stroke: SUPP_C, 'stroke-width': '1.5',
+        'stroke-dasharray': '4 3', opacity: '0.6',
+      }), svg.firstChild);
+
+      const SW = 9, SH = 12;
+      const sx = nodeLeft + 1, sy = ny - SH / 2;
+      svg.appendChild(svgEl('path', {
+        class: 'crt-med-el crt-med-hidden',
+        d: `M${sx-SW/2},${sy} L${sx+SW/2},${sy} L${sx+SW/2},${sy+SH*0.55} Q${sx+SW/2},${sy+SH*0.9} ${sx},${sy+SH} Q${sx-SW/2},${sy+SH*0.9} ${sx-SW/2},${sy+SH*0.55} Z`,
+        fill: SUPP_C, opacity: '0.9',
+      }));
+
+      const g = svgEl('g', { class: 'crt-med-el crt-med-hidden', style: 'cursor:help' });
+      g.appendChild(svgEl('rect', {
+        x: px, y: py, width: pw, height: PILL_H,
+        rx: String(PILL_H / 2), fill: SUPP_FILL,
+        stroke: SUPP_C, 'stroke-width': '1.5',
+      }));
+      g.appendChild(svgEl('text', {
+        x: px + pw / 2, y: py + PILL_H * 0.67,
+        'text-anchor': 'middle', fill: SUPP_C,
+        'font-size': String(PILL_FS),
+        'font-family': 'Inter, Segoe UI, system-ui, sans-serif',
+      }, supp.name));
+
+      if (supp.reason) {
+        const tooltip = document.getElementById('crtTooltip');
+        g.addEventListener('mouseenter', () => {
+          tooltip.innerHTML = `<strong>${supp.name}</strong><br><span style="color:#a8c8d8">${supp.reason}</span>`;
+          tooltip.style.display = 'block';
+        });
+        g.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
+        g.addEventListener('mousemove', e => {
+          tooltip.style.left = (e.clientX + 14) + 'px';
+          tooltip.style.top  = (e.clientY - 10) + 'px';
+        });
+      }
+
+      svg.appendChild(g);
+    });
   }
 
   container.appendChild(svg);
