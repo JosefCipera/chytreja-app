@@ -35,7 +35,7 @@ Odpověz POUZE tímto JSON polem (bez markdown, bez komentářů):
     },
     body: JSON.stringify({
       model: 'claude-sonnet-4-6',
-      max_tokens: 600,
+      max_tokens: 1200,
       system,
       messages: [{ role: 'user', content: prompt }],
     }),
