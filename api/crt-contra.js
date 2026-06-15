@@ -12,7 +12,7 @@ export default async function handler(req, res) {
   const prompt = `Uživatel bere tyto léky a doplňky: ${allMeds}.
 Chystá se vzít "${drug}", ale ten může nebezpečně interagovat s "${conflicts_with}", které již bere.
 
-Napiš varování přesně ve 2 větách. Česky, tykání. Bez lékařského žargonu. Bez čísel ani dávek.
+Napiš varování přesně ve 2 větách. Česky, tykání. Bez markdown formátování (žádné hvězdičky, emoji, tučné písmo). Bez lékařského žargonu. Bez čísel ani dávek.
 Zdůrazni konkrétní riziko (ne jen "poraď se s lékařem") a pak řekni, co má udělat.`;
 
   const aiRes = await fetch('https://api.anthropic.com/v1/messages', {
@@ -24,7 +24,7 @@ Zdůrazni konkrétní riziko (ne jen "poraď se s lékařem") a pak řekni, co m
     },
     body: JSON.stringify({
       model: 'claude-sonnet-4-6',
-      max_tokens: 120,
+      max_tokens: 200,
       messages: [{ role: 'user', content: prompt }],
     }),
   });
