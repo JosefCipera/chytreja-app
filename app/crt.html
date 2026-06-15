@@ -265,9 +265,7 @@
 
 <div class="crt-body">
   <div class="crt-body-inner">
-    <div class="crt-branch-label" id="branchL">Metabolický subsystém</div>
     <div id="crt-canvas"></div>
-    <div class="crt-branch-label right" id="branchR">Autonomní subsystém</div>
 
 
     <div class="crt-loading" id="crtLoading">
@@ -1158,10 +1156,14 @@ function buildPanelData(node, ctx, parents, children, meds, supps) {
       </div>
     </div>` : '';
 
-  const actionsHtml = (detail.actions || []).length ? `
+  const shieldNames = [...(meds||[]), ...(supps||[])].map(x => x.name.toLowerCase());
+  const filteredActions = (detail.actions || []).filter(a =>
+    !shieldNames.some(n => a.toLowerCase().includes(n))
+  );
+  const actionsHtml = filteredActions.length ? `
     <div class="cnp-section">
       <p class="cnp-lbl">co s tím</p>
-      ${(detail.actions || []).map(a =>
+      ${filteredActions.map(a =>
         `<div class="cnp-action"><i class="ti ti-circle-dot" aria-hidden="true"></i>${a}</div>`
       ).join('')}
     </div>` : '';

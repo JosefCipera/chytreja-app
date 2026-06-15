@@ -26,7 +26,7 @@
       "detail": { "actions": ["Pravidelný pohyb reguluje autonomní systém", "Dech 4-7-8 — ventil sympatikotonie"] }
     },
     { "id": "N_PLAKY",       "label": "Usazeniny v cévách",          "layer": 2, "branch": "left",
-      "detail": { "value_key": "labs.ldl", "value_unit": "mmol/L", "value_target": "< 3.0", "actions": ["Statin podle lékaře: snižuje LDL o 30–50 %", "Kontroluj LDL každé 3 měsíce"] }
+      "detail": { "value_key": "labs.ldl", "value_unit": "mmol/L", "value_target": "< 3.0", "actions": ["Omez nasycené tuky (červené maso, sýry, máslo) — přímý vliv na LDL", "Kontroluj LDL každé 3 měsíce"] }
     },
     { "id": "N_ZATEZ",       "label": "Vyšší zátěž srdce",           "layer": 2, "branch": "center",
       "detail": { "actions": ["Aerobní pohyb 150 min / týden snižuje srdeční zátěž", "Cílový diastolický tlak < 80 mmHg"] }
