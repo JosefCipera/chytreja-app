@@ -38,7 +38,7 @@ async function loadAndRender() {
     supabase.from('user_constraints').select('constraint_type, constraint_key, constraint_value, severity').eq('user_id', userId),
     supabase.from('user_decathlon').select('goal_key, label').eq('user_id', userId).eq('active', true).maybeSingle(),
     supabase.from('user_integrations').select('service, enabled').eq('user_id', userId),
-    supabase.from('user_health_profile').select('diagnoses, symptoms, family_history').eq('user_id', userId).maybeSingle(),
+    supabase.from('user_health_profile').select('diagnoses, symptoms, family_history, supplements').eq('user_id', userId).maybeSingle(),
     supabase.from('user_medications').select('name, dose, active').eq('user_id', userId).eq('active', true)
   ]);
 
@@ -50,6 +50,7 @@ async function loadAndRender() {
     diagnoses:      healthRes.data?.diagnoses      ?? [],
     symptoms:       healthRes.data?.symptoms       ?? [],
     family_history: healthRes.data?.family_history ?? '',
+    supplements:    healthRes.data?.supplements    ?? [],
     medications:    medsRes.data ?? [],
   };
 
@@ -787,11 +788,11 @@ function renderZdraviTab() {
   const diagnoses    = (cachedData.diagnoses ?? []).join('\n');
   const symptoms     = (cachedData.symptoms  ?? []).join('\n');
   const familyHist   = cachedData.family_history ?? '';
-  const meds         = cachedData.medications ?? [];
+  const meds         = cachedData.medications  ?? [];
+  const supps        = cachedData.supplements  ?? [];
 
-  const medRows = meds.length
-    ? meds.map((m, i) => renderMedRow(i, m)).join('')
-    : renderMedRow(0, {});
+  const medRows  = meds.length  ? meds.map((m, i) => renderMedRow(i, m)).join('')  : renderMedRow(0, {});
+  const suppRows = supps.length ? supps.map((s, i) => renderSuppRow(i, s)).join('') : renderSuppRow(0, '');
 
   return `
     <div class="udp-section">
@@ -822,14 +823,32 @@ function renderZdraviTab() {
     </div>
 
     <div class="udp-section">
-      <div class="udp-section-label">Léky & doplňky</div>
+      <div class="udp-section-label">Léky</div>
       <div id="med-rows">${medRows}</div>
-      <button id="btn-add-med" class="udp-add-btn">+ Přidat</button>
+      <button id="btn-add-med" class="udp-add-btn">+ Přidat lék</button>
+    </div>
+
+    <div class="udp-section">
+      <div class="udp-section-label">Doplňky stravy</div>
+      <p style="color:#64748b;font-size:13px;margin:0 0 10px;line-height:1.5;">
+        Vitamíny, minerály, omega-3, adaptogeny... každý na řádek.
+      </p>
+      <div id="supp-rows">${suppRows}</div>
+      <button id="btn-add-supp" class="udp-add-btn">+ Přidat doplněk</button>
     </div>
 
     <div class="udp-save-row">
       <span id="udp-status-zdravi" class="udp-status"></span>
       <button id="btn-save-zdravi" class="udp-save-btn">Uložit</button>
+    </div>`;
+}
+
+function renderSuppRow(i, name = '') {
+  return `
+    <div class="udp-injury-row" data-supp-idx="${i}">
+      <input class="udp-input supp-name" placeholder="např. Omega-3, Hořčík, CoQ10"
+             value="${esc(name)}" style="flex:1;">
+      <button class="udp-del-btn" data-supp-idx="${i}" title="Odstranit">✕</button>
     </div>`;
 }
 
@@ -851,15 +870,26 @@ function bindZdraviEvents() {
     container.insertAdjacentHTML('beforeend', renderMedRow(idx));
     bindMedDelButtons();
   });
+  document.getElementById('btn-add-supp')?.addEventListener('click', () => {
+    const container = document.getElementById('supp-rows');
+    const idx = container.querySelectorAll('.udp-injury-row').length;
+    container.insertAdjacentHTML('beforeend', renderSuppRow(idx));
+    bindSuppDelButtons();
+  });
   bindMedDelButtons();
+  bindSuppDelButtons();
   document.getElementById('btn-save-zdravi')?.addEventListener('click', saveZdravi);
 }
 
 function bindMedDelButtons() {
   document.querySelectorAll('[data-med-idx] .udp-del-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      btn.closest('.udp-injury-row').remove();
-    });
+    btn.addEventListener('click', () => btn.closest('.udp-injury-row').remove());
+  });
+}
+
+function bindSuppDelButtons() {
+  document.querySelectorAll('[data-supp-idx] .udp-del-btn').forEach(btn => {
+    btn.addEventListener('click', () => btn.closest('.udp-injury-row').remove());
   });
 }
 
@@ -875,9 +905,12 @@ async function saveZdravi() {
     dose: row.querySelector('.med-dose')?.value.trim() || null,
   })).filter(m => m.name);
 
+  const suppRows = document.querySelectorAll('#supp-rows .udp-injury-row');
+  const supplements = [...suppRows].map(row => row.querySelector('.supp-name')?.value.trim()).filter(Boolean);
+
   try {
     const { error: e1 } = await supabase.from('user_health_profile')
-      .upsert({ user_id: userId, diagnoses, symptoms, family_history }, { onConflict: 'user_id' });
+      .upsert({ user_id: userId, diagnoses, symptoms, family_history, supplements }, { onConflict: 'user_id' });
     if (e1) throw e1;
 
     const { error: e2 } = await supabase.from('user_medications').update({ active: false }).eq('user_id', userId);
@@ -892,6 +925,7 @@ async function saveZdravi() {
     cachedData.diagnoses      = diagnoses;
     cachedData.symptoms       = symptoms;
     cachedData.family_history = family_history;
+    cachedData.supplements    = supplements;
     cachedData.medications    = medications;
     setStatus('udp-status-zdravi', 'ok');
     window.chjRefreshHealthData?.();
