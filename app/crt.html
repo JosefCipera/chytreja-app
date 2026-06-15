@@ -1230,11 +1230,32 @@ window.toggleMeds = function() {
 };
 
 // ── Boot ─────────────────────────────────────────────────────────────────────
+async function enrichContraMap(data) {
+  if (!data.contra_map?.length) return;
+  const ctx = data._ctx || {};
+  const user_meds = ctx.meds || [];
+  const user_supps = ctx.supps || [];
+  await Promise.all(data.contra_map.map(async c => {
+    try {
+      const res = await fetch('/api/crt-contra', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ drug: c.drug, conflicts_with: c.conflicts_with, user_meds, user_supps }),
+      });
+      if (res.ok) {
+        const { text } = await res.json();
+        if (text) c.reason = text;
+      }
+    } catch (_) {}
+  }));
+}
+
 async function boot() {
   try {
     const data = await loadCRT();
     document.getElementById('crtLoading').classList.add('hidden');
     renderTree(data);
+    enrichContraMap(data); // async, panel se doplní při příštím otevření
   } catch (e) {
     document.getElementById('crtLoading').textContent = 'Chyba načítání: ' + e.message;
     console.error('[CRT]', e);
