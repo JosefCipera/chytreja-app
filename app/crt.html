@@ -1179,7 +1179,7 @@ function buildPanelData(node, ctx, parents, children, meds, supps, contras) {
       <p class="cnp-lbl" style="color:#ef4444">⚠ interakce</p>
       ${contras.map(c => `
         <div style="font-size:13px;color:#fca5a5;line-height:1.5;margin-bottom:6px">
-          <strong style="color:#f87171">${c.drug}</strong> + ${c.conflicts_with_user || c.conflicts_with}<br>
+          <strong style="color:#f87171">${c.drug}</strong><br>
           <span style="color:#94a3b8">${c.reason}</span>
         </div>`).join('')}
     </div>` : '';
