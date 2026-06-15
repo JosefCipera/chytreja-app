@@ -126,6 +126,15 @@
     }
   ],
 
+  "contraindications": [
+    {
+      "drug": "Mukosolvan",
+      "aliases": ["ambroxol", "ambrobene", "mucosolvan"],
+      "conflicts_with": "Pradaxa",
+      "reason": "Ambroxol inhibuje P-gp transport — zvyšuje hladinu Pradaxy v krvi a riziko krvácení. Konzultuj s lékařem před užitím."
+    }
+  ],
+
   "medication_shields": [
     {
       "med": "Torvacard",

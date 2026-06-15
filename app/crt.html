@@ -402,6 +402,21 @@ function suppMatches(shield, userSupps) {
   });
 }
 
+function buildContraMap(contraindications, userMeds, userSupps, medsMap, suppsMap) {
+  const allUserDrugs = [...userMeds, ...userSupps].map(d => d.toLowerCase());
+  return (contraindications || []).flatMap(c => {
+    const drugNames = [c.drug, ...(c.aliases || [])].map(k => k.toLowerCase());
+    const userHasDrug = allUserDrugs.some(u => drugNames.some(k => u.includes(k) || k.includes(u)));
+    if (!userHasDrug) return [];
+    // Najdi uzel kde je konfliktující štít
+    const shieldEntry = [...medsMap, ...suppsMap].find(m => m.name.toLowerCase() === c.conflicts_with.toLowerCase());
+    if (!shieldEntry) return [];
+    return (shieldEntry.targets || []).map(nodeId => ({
+      drug: c.drug, conflicts_with: c.conflicts_with, reason: c.reason, nodeId
+    }));
+  });
+}
+
 function buildSuppsMap(shields, userSupps, activeIds, arrowsById) {
   return (shields||[])
     .filter(s => suppMatches(s, userSupps))
@@ -466,6 +481,9 @@ async function loadCRT() {
     injections: [],
     medications_map: buildMedsMap(kb.medication_shields, ctx.meds, activeIds, arrowsById),
     supplements_map: buildSuppsMap(kb.supplement_shields, ctx.supps||[], activeIds, arrowsById),
+    get contra_map() {
+      return buildContraMap(kb.contraindications, ctx.meds, ctx.supps||[], this.medications_map, this.supplements_map);
+    },
     _kb: kb,
     _ctx: ctx,
     _activeArrows: activeArrows,
@@ -987,6 +1005,7 @@ function openNodePanel(nodeId) {
   const children = activeArrows.filter(a => a.from === nodeId && kbMap[a.to  ]).map(a => kbMap[a.to  ]);
   const meds     = medsMap.filter(m => (m.targets || []).includes(nodeId));
   const supps    = suppsMap.filter(s => (s.targets || []).includes(nodeId));
+  const contras  = (data.contra_map || []).filter(c => c.nodeId === nodeId);
 
   // Highlight
   document.querySelectorAll('.crt-node rect').forEach(r => r.style.filter = '');
@@ -994,7 +1013,7 @@ function openNodePanel(nodeId) {
   if (sel) sel.style.filter = 'drop-shadow(0 0 8px #5aaaf0)';
 
   document.getElementById('cnpMini').innerHTML = buildPanelMiniSVG(node, parents, children, kbMap);
-  document.getElementById('cnpData').innerHTML = buildPanelData(node, ctx, parents, children, meds, supps);
+  document.getElementById('cnpData').innerHTML = buildPanelData(node, ctx, parents, children, meds, supps, contras);
   document.getElementById('crtNodePanel').classList.add('open');
 }
 
@@ -1088,7 +1107,7 @@ function evalValueStatus(val, targetStr) {
   return { pct: 50, status: 'none' };
 }
 
-function buildPanelData(node, ctx, parents, children, meds, supps) {
+function buildPanelData(node, ctx, parents, children, meds, supps, contras) {
   const detail = node.detail || {};
   const typeLabels = { root: 'kořen', ude: 'UDE', junction: 'průnik' };
   const typeLabel  = typeLabels[node.type] || 'příčina';
@@ -1156,6 +1175,16 @@ function buildPanelData(node, ctx, parents, children, meds, supps) {
       </div>
     </div>` : '';
 
+  const contraHtml = contras?.length ? `
+    <div class="cnp-section" style="border-left:2px solid #ef4444">
+      <p class="cnp-lbl" style="color:#ef4444">⚠ interakce</p>
+      ${contras.map(c => `
+        <div style="font-size:13px;color:#fca5a5;line-height:1.5;margin-bottom:6px">
+          <strong style="color:#f87171">${c.drug}</strong> + ${c.conflicts_with}<br>
+          <span style="color:#94a3b8">${c.reason}</span>
+        </div>`).join('')}
+    </div>` : '';
+
   const shieldNames = [...(meds||[]), ...(supps||[])].map(x => x.name.toLowerCase());
   const filteredActions = (detail.actions || []).filter(a =>
     !shieldNames.some(n => a.toLowerCase().includes(n))
@@ -1184,6 +1213,7 @@ function buildPanelData(node, ctx, parents, children, meds, supps) {
     ${childrenHtml ? `<div class="cnp-section"><p class="cnp-lbl">vede k</p>${childrenHtml}</div>` : ''}
     ${medHtml}
     ${suppHtml}
+    ${contraHtml}
     ${actionsHtml}
   `;
 }
