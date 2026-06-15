@@ -409,7 +409,7 @@ function buildContraMap(contraindications, userMeds, userSupps, medsMap, suppsMa
     const userHasDrug = allUserDrugs.some(u => drugNames.some(k => u.includes(k) || k.includes(u)));
     if (!userHasDrug) return [];
     // Najdi uzel kde je konfliktující štít
-    const shieldEntry = [...medsMap, ...suppsMap].find(m => m.name.toLowerCase() === c.conflicts_with.toLowerCase());
+    const shieldEntry = [...medsMap, ...suppsMap].find(m => (m._shield||m.name).toLowerCase() === c.conflicts_with.toLowerCase());
     if (!shieldEntry) return [];
     return (shieldEntry.targets || []).map(nodeId => ({
       drug: c.drug, conflicts_with: c.conflicts_with, reason: c.reason, nodeId
@@ -418,14 +418,26 @@ function buildContraMap(contraindications, userMeds, userSupps, medsMap, suppsMa
 }
 
 function buildSuppsMap(shields, userSupps, activeIds, arrowsById) {
-  return (shields||[])
-    .filter(s => suppMatches(s, userSupps))
-    .map(s => {
-      let targets = [];
-      if (s.shields_arrow) { const a=arrowsById[s.shields_arrow]; if(a&&activeIds.has(a.to)) targets=[a.to]; }
-      else if (s.shields_node && activeIds.has(s.shields_node)) targets=[s.shields_node];
-      return targets.length ? {name:s.supp, targets, reason:s.reason} : null;
-    }).filter(Boolean);
+  const results = [];
+  const usedNames = new Set();
+  for (const s of (shields||[])) {
+    let targets = [];
+    if (s.shields_arrow) { const a=arrowsById[s.shields_arrow]; if(a&&activeIds.has(a.to)) targets=[a.to]; }
+    else if (s.shields_node && activeIds.has(s.shields_node)) targets=[s.shields_node];
+    if (!targets.length) continue;
+    const keywords = [s.supp, ...(s.aliases||[])].map(k => k.toLowerCase());
+    for (const u of (userSupps||[])) {
+      const ul = u.toLowerCase();
+      if (keywords.some(k => ul.includes(k) || k.includes(ul))) {
+        const key = ul + '|' + targets.join(',');
+        if (!usedNames.has(key)) {
+          usedNames.add(key);
+          results.push({ name: u, targets, reason: s.reason, _shield: s.supp });
+        }
+      }
+    }
+  }
+  return results;
 }
 
 function buildMedsMap(shields, userMeds, activeIds, arrowsById) {
