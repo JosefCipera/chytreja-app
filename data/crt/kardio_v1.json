@@ -50,7 +50,7 @@
       "detail": { "value_key": "labs.systolic_bp", "value_unit": "mmHg", "value_target": "< 130", "actions": ["Aerobní pohyb snižuje TK o 5–8 mmHg", "Omez sodík < 5 g/den"] }
     },
     { "id": "N_DRAZDIVOST",  "label": "Elektrická dráždivost síní", "layer": 5, "branch": "right",
-      "detail": { "actions": ["Kalnormin — stabilizuje K+ a elektrický potenciál síní", "Vyhni se kofeinu odpoledne — zvyšuje dráždivost"] }
+      "detail": { "actions": ["Vyhni se kofeinu po 14h — zvyšuje elektrickou dráždivost síní", "Alkohol i v malém množství spouští ektopické stahy — vynech večerní sklenku"] }
     },
     { "id": "N_MECH_TLAK",   "label": "Mechanický tlak na srdce",   "layer": 6, "branch": "left",
       "detail": { "actions": ["Cílový TK < 130/80 mmHg — chronický cíl", "Léky na TK užívej pravidelně bez vynechávání"] }
