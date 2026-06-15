@@ -987,6 +987,7 @@ function closeCrtPanel() {
 
 function openNodePanel(nodeId) {
   const data = window._crtData;
+  console.log('[panel] open', nodeId, 'kbMap:', !!data?._kbMap, 'data keys:', data ? Object.keys(data) : null);
   if (!data?._kbMap) return;
 
   const kbMap         = data._kbMap;
