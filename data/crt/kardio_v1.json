@@ -162,6 +162,22 @@
       "group": "antikoagulans",
       "shields_node": "N_FAP",
       "reason": "Nechrání před fibrilací, ale blokuje její fatální důsledek — srážení krve v síních a riziko mrtvice"
+    },
+    {
+      "med": "Nolpaza",
+      "inn": "Pantoprazol",
+      "aliases": ["nolpaza", "pantoprazol", "pantoprazole", "omeprazol"],
+      "group": "PPI",
+      "shields_node": "N_FAP",
+      "reason": "Gastroprotekce při antikoagulační léčbě — snižuje riziko krvácení do žaludku"
+    },
+    {
+      "med": "Ibalgin",
+      "inn": "Ibuprofen",
+      "aliases": ["ibalgin", "ibuprofen", "ibuprofenum", "brufen", "advil"],
+      "group": "NSAID",
+      "shields_node": "N_FAP",
+      "reason": "NSAID zvyšuje riziko krvácení v kombinaci s antikoagulancii — léky na ředění krve"
     }
   ]
 }
