@@ -143,6 +143,14 @@
 
   "medication_shields": [
     {
+      "med": "Milurit",
+      "inn": "Alopurinol",
+      "aliases": ["milurit", "alopurinol", "allopurinol"],
+      "group": "urikostatikum",
+      "shields_node": "N_ZANET",
+      "reason": "Snižuje kyselinu močovou — vysoká hladina přispívá k zánětu cévní stěny a oxidativnímu stresu"
+    },
+    {
       "med": "Torvacard",
       "inn": "Atorvastatin",
       "group": "statin",

@@ -623,8 +623,12 @@ function renderTree(data) {
 
   const initView = () => {
     const cw = container.clientWidth || window.innerWidth || 800;
+    const ch = container.clientHeight || window.innerHeight || 600;
     if (IS_MOBILE) {
-      _sc = 1;
+      // Přizpůsob oběma rozměrům — funguje pro portrait i landscape
+      const scW = (cw - 20) / svgW;
+      const scH = (ch - 80) / svgH;
+      _sc = Math.min(scW, scH, 1);
     } else {
       _sc = Math.min(0.85, (cw - 40) / svgW);
     }
@@ -815,6 +819,11 @@ function renderTree(data) {
   // ── Léky: pill přímo vedle cílového uzlu ────────────────────────────────
   const medsMap = (data.medications_map || []).filter(m => (m.targets || []).length > 0);
   if (medsMap.length) {
+    const MED_COLORS = {
+      treatment: { stroke: '#4a9aee', fill: '#0e2038' },
+      protects:  { stroke: '#22c55e', fill: '#0a2016' },
+      warning:   { stroke: '#f59e0b', fill: '#1c1206' },
+    };
     const MED_C    = '#4a9aee';
     const MED_FILL = '#0e2038';
     const PILL_H   = IS_MOBILE ? 30 : 34;
@@ -840,19 +849,25 @@ function renderTree(data) {
       return x;
     };
 
+    // Group by node, stack vertically (stejně jako suplementy)
+    const medsByNode = {};
     medsMap.forEach(med => {
-      const targets = (med.targets || []).map(id => nodeById[id]).filter(Boolean);
-      if (!targets.length) return;
+      const nodeId = (med.targets || [])[0];
+      if (!nodeId) return;
+      (medsByNode[nodeId] = medsByNode[nodeId] || []).push(med);
+    });
 
-      const node = targets[0];
-      const nx = cx(node.x ?? 0);
-      const ny = cy(node.y ?? 0);
+    const GAP_Y_M = 6;
+    Object.entries(medsByNode).forEach(([nodeId, items]) => {
+      const node = nodeById[nodeId]; if (!node) return;
+      const nx = cx(node.x ?? 0), ny = cy(node.y ?? 0);
       const nodeRight = nx + BOX_W / 2;
-      const pw = pillW(med.name);
-      const px = findFreeX(nodeRight + GAP, ny, pw);
-      const py = ny - PILL_H / 2;
+      const maxPW = Math.max(...items.map(m => pillW(m.name)));
+      const totalH = items.length * PILL_H + (items.length - 1) * GAP_Y_M;
+      const startY = ny - totalH / 2;
+      const px = nodeRight + GAP;
 
-      // Krátká čárka: pravý okraj uzlu → pill
+      // Jedna čárka od uzlu ke středu skupiny
       svg.insertBefore(svgEl('line', {
         class: 'crt-med-el crt-med-hidden',
         x1: nodeRight, y1: ny, x2: px, y2: ny,
@@ -869,35 +884,39 @@ function renderTree(data) {
         fill: MED_C, opacity: '0.9',
       }));
 
-      // Pill
-      const g = svgEl('g', { class: 'crt-med-el crt-med-hidden', style: 'cursor:help' });
-      g.appendChild(svgEl('rect', {
-        x: px, y: py, width: pw, height: PILL_H,
-        rx: String(PILL_H / 2), fill: MED_FILL,
-        stroke: MED_C, 'stroke-width': '1.5',
-      }));
-      g.appendChild(svgEl('text', {
-        x: px + pw / 2, y: py + PILL_H * 0.67,
-        'text-anchor': 'middle', fill: MED_C,
-        'font-size': String(PILL_FS),
-        'font-family': 'Inter, Segoe UI, system-ui, sans-serif',
-      }, med.name));
+      items.forEach((med, i) => {
+        const pw = pillW(med.name);
+        const py = startY + i * (PILL_H + GAP_Y_M);
+        const colors = MED_COLORS[med.type] || MED_COLORS.treatment;
+        const C = colors.stroke, F = colors.fill;
 
-      // Tooltip s reason
-      if (med.reason) {
-        const tooltip = document.getElementById('crtTooltip');
-        g.addEventListener('mouseenter', () => {
-          tooltip.innerHTML = `<strong>${med.name}</strong><br><span style="color:#a8c8d8">${med.reason}</span>`;
-          tooltip.style.display = 'block';
-        });
-        g.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
-        g.addEventListener('mousemove', e => {
-          tooltip.style.left = (e.clientX + 14) + 'px';
-          tooltip.style.top  = (e.clientY - 10) + 'px';
-        });
-      }
+        const g = svgEl('g', { class: 'crt-med-el crt-med-hidden', style: 'cursor:help' });
+        g.appendChild(svgEl('rect', {
+          x: px, y: py, width: pw, height: PILL_H,
+          rx: String(PILL_H / 2), fill: F,
+          stroke: C, 'stroke-width': '1.5',
+        }));
+        g.appendChild(svgEl('text', {
+          x: px + pw / 2, y: py + PILL_H * 0.67,
+          'text-anchor': 'middle', fill: C,
+          'font-size': String(PILL_FS),
+          'font-family': 'Inter, Segoe UI, system-ui, sans-serif',
+        }, med.name));
 
-      svg.appendChild(g);
+        if (med.reason) {
+          const tooltip = document.getElementById('crtTooltip');
+          g.addEventListener('mouseenter', () => {
+            tooltip.innerHTML = `<strong>${med.name}</strong><br><span style="color:#a8c8d8">${med.reason}</span>`;
+            tooltip.style.display = 'block';
+          });
+          g.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
+          g.addEventListener('mousemove', e => {
+            tooltip.style.left = (e.clientX + 14) + 'px';
+            tooltip.style.top  = (e.clientY - 10) + 'px';
+          });
+        }
+        svg.appendChild(g);
+      });
     });
 
     document.getElementById('crtMedBtn').style.display = '';
