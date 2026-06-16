@@ -1295,6 +1295,7 @@ async function boot() {
   try {
     const data = await loadCRT();
     document.getElementById('crtLoading').classList.add('hidden');
+    _lastCrtData = data;
     renderTree(data);
     enrichContraMap(data); // async, panel se doplní při příštím otevření
   } catch (e) {
