@@ -13,18 +13,24 @@ export default async function handler(req, res) {
   const all = [...user_meds, ...user_supps].filter(Boolean);
   if (all.length < 2) return res.status(200).json({ interactions: [] });
 
-  const list = all.map((x, i) => `${i + 1}. ${x}`).join('\n');
+  const medsList = user_meds.map((x, i) => `${i + 1}. ${x}`).join('\n') || '(žádné)';
+  const suppsList = user_supps.map((x, i) => `${i + 1}. ${x}`).join('\n') || '(žádné)';
 
-  const system = `Jsi klinický farmaceut. Tvůj úkol je identifikovat lékové interakce a rizika v kombinacích léků a doplňků stravy. Vždy odpovídáš pouze validním JSON polem, žádný jiný text.`;
+  const system = `Jsi klinický farmaceut. Tvůj úkol je upozornit pacienta jen na NOVÁ, AKČNÍ rizika — ne opakovat to, co jeho lékař už zná a sleduje. Vždy odpovídáš pouze validním JSON polem, žádný jiný text.`;
 
-  const prompt = `Pacient bere současně:
-${list}
+  const prompt = `Pacient bere tyto PŘEDEPSANÉ léky (lékař je zvolil společně, zná jejich vzájemné interakce a rutinně je sleduje):
+${medsList}
 
-Které kombinace jsou klinicky rizikové? Zahrň interakce lék-lék, lék-doplněk i doplněk-doplněk.
-Příklady rizik: zvýšené krvácení, srdeční arytmie, snížená účinnost léku, toxicita.
+Pacient navíc bere tyto DOPLŇKY STRAVY / volně dostupné přípravky (lékař o nich nemusí vědět):
+${suppsList}
+
+Pravidla:
+- Mezi předepsanými léky NEVAROVAT, pokud jde o běžnou, očekávanou interakci kterou lékař při předepsání zjevně zohlednil a rutinně monitoruje (např. společné předepsání statinu s antikoagulanciem). Upozorni jen pokud je riziko závažné, neobvyklé, nebo vyžaduje akci nad rámec běžné kontroly.
+- Hlavní pozornost věnuj doplňkům stravy — ty lékař nevidí. Pokud doplněk riskantně interaguje s předepsaným lékem nebo s jiným doplňkem, vždy to ohlas.
+- Pokud žádné riziko nenajdeš, vrať prázdné pole.
 
 Odpověz POUZE tímto JSON polem (bez markdown, bez komentářů):
-[{"drug":"název rizikového přípravku","reason":"2 věty česky, tykání, konkrétní dopad + co udělat"}]`;
+[{"drug":"název přípravku, kvůli kterému je třeba jednat","reason":"2 věty česky, tykání, konkrétní dopad + co udělat"}]`;
 
   const aiRes = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
