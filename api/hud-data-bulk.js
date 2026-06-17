@@ -5,6 +5,60 @@
 import dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' });
 import { createClient } from '@supabase/supabase-js';
+import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { join, dirname } from 'path';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+// ── CRT KB cache (loaded once per cold start) ──────────
+let _kardioKb = null;
+function getKardioKb() {
+  if (!_kardioKb) {
+    try {
+      const raw = readFileSync(join(__dirname, '../data/crt/kardio_v1.json'), 'utf8');
+      _kardioKb = JSON.parse(raw);
+    } catch { _kardioKb = null; }
+  }
+  return _kardioKb;
+}
+
+// Evaluate a single condition string against user context.
+// Supports: >, <, ==, ||, &&, .includes()
+function evalCondition(cond, user) {
+  try {
+    // Build a safe evaluation context
+    const fn = new Function('user', `"use strict"; try { return !!(${cond}); } catch { return false; }`);
+    return fn(user);
+  } catch { return false; }
+}
+
+// Run KB rule engine → returns Set of active CRT node IDs
+function runCrtRuleEngine(kb, userCtx) {
+  if (!kb?.possible_arrows || !kb?.nodes) return new Set();
+  const active = new Set();
+  for (const arrow of kb.possible_arrows) {
+    if (evalCondition(arrow.condition, userCtx)) {
+      active.add(arrow.from);
+      active.add(arrow.to);
+    }
+  }
+  return active;
+}
+
+// Build universeNode → 'RED' map from active CRT nodes
+// Returns Map<universeNodeId, 'RED'>
+function buildCrtColorMap(kb, userCtx) {
+  const activeNodes = runCrtRuleEngine(kb, userCtx);
+  if (!activeNodes.size) return new Map();
+  const colorMap = new Map();
+  for (const node of kb.nodes) {
+    if (activeNodes.has(node.id) && node.universe_node) {
+      colorMap.set(node.universe_node, 'RED');
+    }
+  }
+  return colorMap;
+}
 
 // ── Shared constants from hud-data.js ─────────────────
 const NODE_KILLERS = {
@@ -432,7 +486,7 @@ function getDayType() {
 
 // ── Per-node data fetch (runs in parallel for all requested nodes) ──
 async function fetchOneNode(sb, userId, nodeId, shared) {
-  const { metricsMap, orchLogs, today, constraints, spanekIndex, vyzivaIndex, isDekatlon, lhTargetKg } = shared;
+  const { metricsMap, orchLogs, today, constraints, spanekIndex, vyzivaIndex, isDekatlon, lhTargetKg, crtColorMap } = shared;
   const dayType = getDayType();
 
   const nodeMeta    = metricsMap.get(nodeId) || { current_index: 50, state: 'YELLOW' };
@@ -441,7 +495,9 @@ async function fetchOneNode(sb, userId, nodeId, shared) {
   const hasChildren = !!CHILDREN[nodeId]?.length;
   const worst       = hasChildren ? worstLeaf(nodeId, metricsMap) : null;
   const batteryPercent = worst ? (worst.current_index ?? 50) : current_index;
-  const batteryState   = worst ? indexToState(worst.current_index ?? 50) : state;
+  // CRT override: if rule engine found active CRT nodes for this universe node, force RED
+  const batteryState = crtColorMap?.has(nodeId) ? 'RED'
+    : worst ? indexToState(worst.current_index ?? 50) : state;
 
   // Orchestrator decision for this node (from shared pre-fetch)
   const orchLog = orchLogs.find(r => r.node_id === nodeId);
@@ -660,7 +716,8 @@ export default async function handler(req, res) {
   const today = new Date().toISOString().slice(0, 10);
 
   // ── Shared queries — run once for all nodes ──────────
-  const [metricsRes, orchRes, constraintsRes, profileRes, healthRes] = await Promise.all([
+  const checkinSince = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
+  const [metricsRes, orchRes, constraintsRes, profileRes, healthRes, checkinRes] = await Promise.all([
     sb.from('user_metrics').select('node_id, current_index, state')
       .eq('user_id', userId).eq('universe', universe),
     sb.from('orchestrator_log')
@@ -670,8 +727,11 @@ export default async function handler(req, res) {
       .eq('user_id', userId).eq('constraint_type', 'injury'),
     sb.from('user_profiles').select('primary_goal, lh_target_kg')
       .eq('user_id', userId).maybeSingle(),
-    sb.from('user_health_profile').select('diagnoses')
+    sb.from('user_health_profile').select('diagnoses, symptoms, labs')
       .eq('user_id', userId).maybeSingle(),
+    sb.from('daily_checkin').select('stress, sleep_hours, energy, movement_level, hrv')
+      .eq('user_id', userId).gte('date', checkinSince)
+      .order('date', { ascending: false }).limit(1).maybeSingle(),
   ]);
 
   const isDekatlon  = profileRes.data?.primary_goal === 'dekatlon' || role === 'dekatlon';
@@ -700,7 +760,24 @@ export default async function handler(req, res) {
     } catch { /* ignore */ }
   }
 
-  const shared = { metricsMap, orchLogs, today, constraints, spanekIndex, vyzivaIndex, isDekatlon, lhTargetKg };
+  // ── CRT color map — override universe node colors from rule engine ──
+  const latestCheckin = checkinRes.data || {};
+  const crtUserCtx = {
+    diagnoses: { includes: (x) => Array.isArray(healthRes.data?.diagnoses) && healthRes.data.diagnoses.includes(x) },
+    symptoms:  { includes: (x) => Array.isArray(healthRes.data?.symptoms)  && healthRes.data.symptoms.includes(x) },
+    labs:  healthRes.data?.labs  || {},
+    checkin: {
+      stress:         latestCheckin.stress         ?? 0,
+      sleep_hours:    latestCheckin.sleep_hours     ?? 8,
+      energy:         latestCheckin.energy          ?? 3,
+      movement_level: latestCheckin.movement_level  ?? 'medium',
+      hrv:            latestCheckin.hrv             ?? 99,
+    },
+  };
+  const kardioKb = getKardioKb();
+  const crtColorMap = kardioKb ? buildCrtColorMap(kardioKb, crtUserCtx) : new Map();
+
+  const shared = { metricsMap, orchLogs, today, constraints, spanekIndex, vyzivaIndex, isDekatlon, lhTargetKg, crtColorMap };
 
   // ── Per-node in parallel ─────────────────────────────
   const results = await Promise.all(
