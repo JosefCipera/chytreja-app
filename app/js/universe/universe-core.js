@@ -63,6 +63,7 @@ let lastRenderedNodes = [];
 
   resize();
   window.addEventListener('resize', resize);
+  if (screen.orientation) screen.orientation.addEventListener('change', () => setTimeout(resize, 300));
 })();
 
 // ── 🌌 Subtle breathing animation only (no tilt) ─────────────────────────────

@@ -1321,9 +1321,9 @@ boot();
 let _lastCrtData = null;
 const _origRenderTree = renderTree;
 window._renderTree = function(data) { _lastCrtData = data; _origRenderTree(data); };
-window.addEventListener('orientationchange', () => {
-  if (_lastCrtData) setTimeout(() => _origRenderTree(_lastCrtData), 400);
-});
+const _rerender = () => { if (_lastCrtData) setTimeout(() => _origRenderTree(_lastCrtData), 300); };
+window.addEventListener('resize', _rerender);
+if (screen.orientation) screen.orientation.addEventListener('change', _rerender);
 </script>
 
 <script>
