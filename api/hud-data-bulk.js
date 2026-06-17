@@ -515,9 +515,11 @@ async function fetchOneNode(sb, userId, nodeId, shared) {
   const state       = indexToState(current_index);
   const hasChildren = !!CHILDREN[nodeId]?.length;
   const worst       = hasChildren ? worstLeaf(nodeId, metricsMap) : null;
-  const batteryPercent = worst ? (worst.current_index ?? 50) : current_index;
-  // CRT override: if rule engine found active CRT nodes for this universe node, force RED
-  const batteryState = crtColorMap?.has(nodeId) ? 'RED'
+  const rawBatteryPercent = worst ? (worst.current_index ?? 50) : current_index;
+  const crtOverride = crtColorMap?.has(nodeId);
+  // CRT override: force RED — cap percent at 40 so LifeBattery renders red color
+  const batteryPercent = crtOverride ? Math.min(rawBatteryPercent, 40) : rawBatteryPercent;
+  const batteryState   = crtOverride ? 'RED'
     : worst ? indexToState(worst.current_index ?? 50) : state;
 
   // Orchestrator decision for this node (from shared pre-fetch)
