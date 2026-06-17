@@ -776,11 +776,31 @@ export default async function handler(req, res) {
 
   // ── CRT color map — override universe node colors from rule engine ──
   const latestCheckin = checkinRes.data || {};
-  // Map both daily_checkin (lehkost) and user_readiness (longevity) to unified CRT context
+
+  // Diagnoses stored in DB as Czech strings — map to KB codes used in conditions
+  const DIAG_ALIASES = {
+    'FIBRILACE_SINI_PAROXYSMALNI': ['fibrilace síní', 'fibrilace sini', 'fap', 'fibrilace'],
+    'FIBRILACE_SINI':              ['fibrilace síní', 'fibrilace sini'],
+    'EXTRASYSTOLY':                ['extrasystoly', 'předčasné stahy', 'predasne stahy'],
+    'CHRONICKY_STRES':             ['chronický stres', 'chronicky stres', 'stres'],
+    'HYPERTENZE':                  ['vysoký tlak', 'vysoky tlak', 'hypertenze', 'arteriální hypertenze'],
+    'ATEROSKLEROZA':               ['ateroskleróza', 'ateroskleroza'],
+  };
+  const rawDiagnoses = (healthRes.data?.diagnoses || []).map(d => d.toLowerCase());
+  const resolvedDiagnoses = new Set();
+  for (const [code, aliases] of Object.entries(DIAG_ALIASES)) {
+    if (aliases.some(a => rawDiagnoses.some(d => d.includes(a)))) resolvedDiagnoses.add(code);
+  }
+
+  // Labs keys normalized to lowercase (DB stores as CRP, LDL — KB conditions use crp, ldl)
+  const rawLabs = healthRes.data?.labs || {};
+  const normalizedLabs = Object.fromEntries(Object.entries(rawLabs).map(([k, v]) => [k.toLowerCase(), v]));
+  console.log('[CRT-KB] resolved diagnoses:', [...resolvedDiagnoses], 'normalized labs:', normalizedLabs);
+
   const crtUserCtx = {
-    diagnoses: { includes: (x) => Array.isArray(healthRes.data?.diagnoses) && healthRes.data.diagnoses.includes(x) },
-    symptoms:  { includes: (x) => Array.isArray(healthRes.data?.symptoms)  && healthRes.data.symptoms.includes(x) },
-    labs:  healthRes.data?.labs  || {},
+    diagnoses: { includes: (x) => resolvedDiagnoses.has(x) },
+    symptoms:  { includes: (x) => Array.isArray(healthRes.data?.symptoms) && healthRes.data.symptoms.includes(x) },
+    labs:  normalizedLabs,
     checkin: {
       stress:         latestCheckin.stress                                        ?? 0,
       sleep_hours:    latestCheckin.sleep_hours    ?? (latestCheckin.sleep_quality === 'malo' ? 5.5 : latestCheckin.sleep_quality === 'ok' ? 7 : 8),
