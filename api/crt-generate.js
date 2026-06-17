@@ -154,6 +154,10 @@ async function generateCRT({ metrics, profile, checkins, nodeInputs }, role) {
     ? 'Uživatel pracuje na hubnutí a lehčím životním stylu.'
     : 'Uživatel pracuje na dlouhověkosti a celkovém zdraví.';
 
+  const universeNodes = role === 'lehkost'
+    ? ['lh_main','lh_vyziva','lh_pohyb','lh_mysl','lh_regenerace']
+    : ['dlouhovekost','telo','mysl','vyziva','pohyb','regenerace','sila','stabilita','vo2max','kardio','mobilita','vytrvalost','rovnovaha','plyometrie','dychani'];
+
   const metricsText = worstNodes.length
     ? worstNodes.map(n => `- ${n.label}: ${n.state} (${n.score}%)`).join('\n')
     : '(žádná data ze skóre)';
@@ -195,7 +199,12 @@ Vrátíš POUZE validní JSON (bez markdown bloků, bez komentářů) v přesné
   "edges": [{ "from": "root", "to": "L1" }],
   "and_joins": [{ "sources": ["C1","C2"], "target": "S1" }],
   "injections": [{ "label": "Konkrétní akce", "node_id": "kardio" }],
-  "medications_map": [{ "name": "Název léku", "targets": ["L1","C2"], "effect": "snižuje LDL", "reason": "Proč je lék napojen právě na tento uzel — 1 věta česky pro laika" }]
+  "universe_map": [{ "crt_node_id": "L1", "universe_node": "kardio" }],
+  "medications_map": [
+    { "name": "Název léku", "targets": ["L1","C2"], "effect": "snižuje LDL", "type": "treatment", "reason": "Proč je lék napojen právě na tento uzel — 1 věta česky pro laika" },
+    { "name": "Nolpaza", "targets": ["L1"], "effect": "chrání žaludek", "type": "protects", "reason": "Chrání žaludek před vedlejším účinkem Pradaxy — 1 věta česky" },
+    { "name": "Ibuprofen", "targets": ["L1"], "effect": "zvyšuje krvácivost", "type": "warning", "reason": "Kombinace s antikoagulanciem zvyšuje riziko krvácení — 1 věta česky" }
+  ]
 }
 
 Pravidla pro strukturu:
@@ -206,7 +215,12 @@ Pravidla pro strukturu:
 - and_joins: jen kde dva uzly SPOLEČNĚ způsobují třetí
 - injections: 2–3 konkrétní akce které přeruší kauzální řetěz
 - node_id: CHJ uzel pokud existuje (kardio/mysl/vyziva/spanek/dlouhovekost), jinak null
-- medications_map: POUZE léky z pole "Léky:" výše, které mají PŘÍMÝ farmakologický efekt na uzel v tomto stromu. Žádné nepřímé nebo vícestupňové vazby. Pokud lék nemá přímý efekt na žádný uzel v tomto CRT (např. pantoprazol/žaludek, allopurinol/kyselina močová v kardiálním CRT), VYNECH ho úplně. Pro každý zahrnutý lék uveď "reason": 1 věta česky pro laika — co konkrétně blokuje nebo chrání v tomto kauzálním řetězu. Efekt: 1–3 slova česky.
+- universe_map: pole objektů {"crt_node_id": "L1", "universe_node": "kardio"} — každý CRT uzel namapuj na nejbližší vesmírový uzel ze seznamu UNIVERSE_NODES níže. Pokud uzel nemá jasný vesmírový protějšek, vynech ho.
+- medications_map: Léky z pole "Léky:" výše. Každý lék dostane typ:
+  * type="treatment" — lék má PŘÍMÝ farmakologický efekt na uzel (např. statin → LDL). Zahrnout jen léky s přímým efektem.
+  * type="protects" — lék je protilek / ochrana k jinému léku v tomto stromě (např. pantoprazol chrání žaludek před Pradaxou). Target = stejný uzel jako chráněný lék. ZAHRNOUT, i když nemá přímý kardiální efekt.
+  * type="warning" — lék je riziková kombinace s jiným lékem v tomto stromě (např. ibuprofen zvyšuje krvácivost při antikoagulaci). Target = stejný uzel jako lék se kterým interaguje. ZAHRNOUT jako varování.
+  Léky bez jakékoli vazby na léky nebo uzly v tomto CRT VYNECH. Pro každý lék uveď "reason": 1 věta česky pro laika. Efekt: 1–3 slova česky.
 - Labely v češtině: PRIMÁRNĚ srozumitelně pro laika (co člověk cítí nebo zná z běžného života)
   Odborný termín pouze pokud je diagnóza přímo z profilu uživatele (např. "Fibrilace síní").
   Příklady: "Ztuhlé cévy" ne "Arteroskleróza", "Slabý srdeční rytmus" ne "Arytmie",
@@ -221,6 +235,8 @@ Topologie — čistý strom BEZ křížení, TŘI větve:
 - Každý uzel patří PŘESNĚ do jedné větve — žádné hrany mezi větvemi L↔R
 - Větve se sbíhají POUZE v AND-join uzlech nebo v UDE nahoře
 - Sympatikus a dráždivost patří vždy do větve R, krevní tlak vždy do větve L
+
+UNIVERSE_NODES pro universe_map (použij přesně tyto id): UNIVERSE_NODES_PLACEHOLDER
 
 Kauzální řetězce — přesné směry hran (příčina → důsledek):
 - LDL → usazeniny v cévách → vysoký krevní tlak → tlak na srdeční stěny (NE: LDL → zátěž srdce přímo)
@@ -257,7 +273,7 @@ Pravidla pro injections:
 - Pak 1–2 životní intervence (pohyb, dech, strava)
 - Celkem max 4 injections
 
-Strom musí mít 10–14 uzlů celkem (root + nodes). Vrať pouze JSON.`;
+Strom musí mít 10–14 uzlů celkem (root + nodes). Vrať pouze JSON.`.replace('UNIVERSE_NODES_PLACEHOLDER', universeNodes.join(', '));
 
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
