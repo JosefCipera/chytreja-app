@@ -726,6 +726,7 @@ export default async function handler(req, res) {
 
   // ── Shared queries — run once for all nodes ──────────
   const checkinSince = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
+  const isLehkost = universe === 'lehkost';
   const [metricsRes, orchRes, constraintsRes, profileRes, healthRes, checkinRes] = await Promise.all([
     sb.from('user_metrics').select('node_id, current_index, state')
       .eq('user_id', userId).eq('universe', universe),
@@ -738,9 +739,13 @@ export default async function handler(req, res) {
       .eq('user_id', userId).maybeSingle(),
     sb.from('user_health_profile').select('diagnoses, symptoms, labs')
       .eq('user_id', userId).maybeSingle(),
-    sb.from('daily_checkin').select('stress, sleep_hours, energy, movement_level, hrv')
-      .eq('user_id', userId).gte('date', checkinSince)
-      .order('date', { ascending: false }).limit(1).maybeSingle(),
+    isLehkost
+      ? sb.from('daily_checkin').select('stress, sleep_hours, energy, movement_level')
+          .eq('user_id', userId).gte('date', checkinSince)
+          .order('date', { ascending: false }).limit(1).maybeSingle()
+      : sb.from('user_readiness').select('energy, sleep_quality, hrv_morning, stress')
+          .eq('user_id', userId).gte('date', checkinSince)
+          .order('date', { ascending: false }).limit(1).maybeSingle(),
   ]);
 
   const isDekatlon  = profileRes.data?.primary_goal === 'dekatlon' || role === 'dekatlon';
@@ -771,18 +776,20 @@ export default async function handler(req, res) {
 
   // ── CRT color map — override universe node colors from rule engine ──
   const latestCheckin = checkinRes.data || {};
+  // Map both daily_checkin (lehkost) and user_readiness (longevity) to unified CRT context
   const crtUserCtx = {
     diagnoses: { includes: (x) => Array.isArray(healthRes.data?.diagnoses) && healthRes.data.diagnoses.includes(x) },
     symptoms:  { includes: (x) => Array.isArray(healthRes.data?.symptoms)  && healthRes.data.symptoms.includes(x) },
     labs:  healthRes.data?.labs  || {},
     checkin: {
-      stress:         latestCheckin.stress         ?? 0,
-      sleep_hours:    latestCheckin.sleep_hours     ?? 8,
-      energy:         latestCheckin.energy          ?? 3,
-      movement_level: latestCheckin.movement_level  ?? 'medium',
-      hrv:            latestCheckin.hrv             ?? 99,
+      stress:         latestCheckin.stress                                        ?? 0,
+      sleep_hours:    latestCheckin.sleep_hours    ?? (latestCheckin.sleep_quality === 'malo' ? 5.5 : latestCheckin.sleep_quality === 'ok' ? 7 : 8),
+      energy:         latestCheckin.energy                                        ?? 3,
+      movement_level: latestCheckin.movement_level                                ?? 'medium',
+      hrv:            latestCheckin.hrv_morning    ?? latestCheckin.hrv           ?? 99,
     },
   };
+  console.log('[CRT-KB] userCtx diagnoses:', healthRes.data?.diagnoses, 'labs:', healthRes.data?.labs);
   const kardioKb = getKardioKb();
   const crtColorMap = kardioKb ? buildCrtColorMap(kardioKb, crtUserCtx) : new Map();
 
