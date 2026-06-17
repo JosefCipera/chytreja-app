@@ -18,6 +18,7 @@ export const nodeData = derived(rawData, ($raw) => {
 
     life_battery: {
       percent:      $raw.battery.percent,
+      state:        $raw.battery.state,
       trend:        $raw.battery.trend_direction,
       trend_label:  $raw.battery.trend_label,
       cell_vitality: $raw.battery.percent,
@@ -42,6 +43,7 @@ export const nodeData = derived(rawData, ($raw) => {
     streak:         $raw.streak,
     spark:          $raw.spark || null,
     day_type:       $raw.day_type || 'STIMUL',
+    crt_cause:      $raw.crt_cause || null,
   };
 });
 
