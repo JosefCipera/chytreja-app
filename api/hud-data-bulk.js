@@ -823,6 +823,8 @@ export default async function handler(req, res) {
   const response = {};
   nodeIds.forEach((nodeId, i) => { response[nodeId] = results[i]; });
   response.has_health_data = Array.isArray(healthRes.data?.diagnoses) && healthRes.data.diagnoses.length > 0;
+  // _crt_states: flat map universeNodeId → 'RED' — used by universe-init.js for canvas coloring
+  response._crt_states = Object.fromEntries(crtColorMap);
   response._crt_debug = { resolved_diagnoses: [...resolvedDiagnoses], labs: normalizedLabs, crt_active_nodes: [...crtColorMap.keys()], kb_loaded: !!kardioKb };
 
   return res.json(response);

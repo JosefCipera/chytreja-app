@@ -517,6 +517,24 @@ async function loadModel(modelName, role = 'longevity') {
       applyTocCascade(filteredNodes, metricsMap);
       // ─────────────────────────────────────────────────────────────
 
+      // ── CRT override — force RED on universe nodes with active CRT causes ──
+      // Fetches _crt_states from hud-data-bulk (one call, parallel-safe, no extra DB query).
+      try {
+        const crtRes = await fetch(`/api/hud-data-bulk?userId=${encodeURIComponent(userId)}&nodes=dlouhovekost&role=${encodeURIComponent(role)}&universe=${encodeURIComponent(metricsUniverse)}`);
+        if (crtRes.ok) {
+          const crtBulk = await crtRes.json();
+          const crtStates = crtBulk._crt_states || {};
+          for (const [nodeId, state] of Object.entries(crtStates)) {
+            const existing = metricsMap.get(nodeId);
+            // Only override if node has real data (not GRAY/new user) and CRT says RED
+            if (existing && (existing.current_index ?? 0) > 0 && state === 'RED') {
+              metricsMap.set(nodeId, { ...existing, state: 'RED', current_index: Math.min(existing.current_index ?? 40, 40) });
+            }
+          }
+        }
+      } catch (e) { /* CRT override optional — canvas falls back to user_metrics */ }
+      // ───────────────────────────────────────────────────────────────────────
+
       // ✅ PŘIDEJ — merge state do nodes
       filteredNodes.forEach(node => {
         const metric = metricsMap.get(node.id);
