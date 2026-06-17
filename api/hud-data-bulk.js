@@ -15,10 +15,19 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 let _kardioKb = null;
 function getKardioKb() {
   if (!_kardioKb) {
-    try {
-      const raw = readFileSync(join(__dirname, '../data/crt/kardio_v1.json'), 'utf8');
-      _kardioKb = JSON.parse(raw);
-    } catch { _kardioKb = null; }
+    const paths = [
+      join(process.cwd(), 'data/crt/kardio_v1.json'),
+      join(__dirname, '../data/crt/kardio_v1.json'),
+    ];
+    for (const p of paths) {
+      try {
+        _kardioKb = JSON.parse(readFileSync(p, 'utf8'));
+        console.log('[CRT-KB] loaded from', p);
+        break;
+      } catch (e) {
+        console.warn('[CRT-KB] failed to load from', p, e.message);
+      }
+    }
   }
   return _kardioKb;
 }
