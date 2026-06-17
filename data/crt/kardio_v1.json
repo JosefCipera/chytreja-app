@@ -4,61 +4,61 @@
   "description": "Znalostní báze: kardiovaskulární, autonomní a elektrický subsystém",
 
   "nodes": [
-    { "id": "N_ROOT",        "label": "Sedavý životní styl",         "layer": 0, "branch": "center", "type": "root",
+    { "id": "N_ROOT",        "label": "Sedavý životní styl",         "layer": 0, "branch": "center", "type": "root", "universe_node": "telo",
       "detail": { "actions": ["7 000 kroků denně — jednoduchý první krok", "Stůj 2h ze 8h pracovní doby"] }
     },
-    { "id": "N_STRES",       "label": "Chronický stres",             "layer": 1, "branch": "right",
+    { "id": "N_STRES",       "label": "Chronický stres",             "layer": 1, "branch": "right", "universe_node": "regenerace",
       "detail": { "value_key": "checkin.stress", "value_unit": "/ 5", "value_target": "≤ 2", "actions": ["10 min meditace ráno — aktivuje parasympatikus", "Pohyb jako ventil stresu — procházka 20 min"] }
     },
-    { "id": "N_LDL",         "label": "Vysoké LDL v krvi",           "layer": 1, "branch": "left",
+    { "id": "N_LDL",         "label": "Vysoké LDL v krvi",           "layer": 1, "branch": "left", "universe_node": "vyziva",
       "detail": { "value_key": "labs.ldl", "value_unit": "mmol/L", "value_target": "< 3.0", "actions": ["Omez nasycené tuky (< 10 % kalorií)", "150 min aerobního pohybu / týden"] }
     },
-    { "id": "N_INSRES",      "label": "Inzulínová rezistence",       "layer": 1, "branch": "left",
+    { "id": "N_INSRES",      "label": "Inzulínová rezistence",       "layer": 1, "branch": "left", "universe_node": "vyziva",
       "detail": { "value_key": "labs.glucose", "value_unit": "mmol/L", "value_target": "< 5.6", "actions": ["Low-carb strava: 50–100 g sacharidů / den", "Chůze 10 min po jídle — snižuje glukózu o 15 %"] }
     },
-    { "id": "N_DEKONDICE",   "label": "Slabá fyzická kondice",       "layer": 1, "branch": "center",
+    { "id": "N_DEKONDICE",   "label": "Slabá fyzická kondice",       "layer": 1, "branch": "center", "universe_node": "pohyb",
       "detail": { "actions": ["150 min / týden mírná aktivita (doporučení WHO)", "Začni malým: 15 min chůze každý den"] }
     },
-    { "id": "N_SPANEK",      "label": "Spánkový deficit",            "layer": 1, "branch": "right",
+    { "id": "N_SPANEK",      "label": "Spánkový deficit",            "layer": 1, "branch": "right", "universe_node": "regenerace",
       "detail": { "value_key": "checkin.sleep_hours", "value_unit": "hod", "value_target": "≥ 7.5", "actions": ["Stejná hodina spánku 7 dní v řadě", "Teplota v ložnici 18 °C zlepší spánek o 20 %"] }
     },
-    { "id": "N_SYMPATIKUS",  "label": "Aktivace sympatiku",          "layer": 2, "branch": "right",
+    { "id": "N_SYMPATIKUS",  "label": "Aktivace sympatiku",          "layer": 2, "branch": "right", "universe_node": "regenerace",
       "detail": { "actions": ["Pravidelný pohyb reguluje autonomní systém", "Dech 4-7-8 — ventil sympatikotonie"] }
     },
-    { "id": "N_PLAKY",       "label": "Usazeniny v cévách",          "layer": 2, "branch": "left",
+    { "id": "N_PLAKY",       "label": "Usazeniny v cévách",          "layer": 2, "branch": "left", "universe_node": "kardio",
       "detail": { "value_key": "labs.ldl", "value_unit": "mmol/L", "value_target": "< 3.0", "actions": ["Omez nasycené tuky (červené maso, sýry, máslo) — přímý vliv na LDL", "Kontroluj LDL každé 3 měsíce"] }
     },
-    { "id": "N_ZATEZ",       "label": "Vyšší zátěž srdce",           "layer": 2, "branch": "center",
+    { "id": "N_ZATEZ",       "label": "Vyšší zátěž srdce",           "layer": 2, "branch": "center", "universe_node": "kardio",
       "detail": { "actions": ["Aerobní pohyb 150 min / týden snižuje srdeční zátěž", "Cílový diastolický tlak < 80 mmHg"] }
     },
-    { "id": "N_ZANET",       "label": "Zánět cév",                   "layer": 3, "branch": "left",
+    { "id": "N_ZANET",       "label": "Zánět cév",                   "layer": 3, "branch": "left", "universe_node": "kardio",
       "detail": { "value_key": "labs.crp", "value_unit": "mg/L", "value_target": "< 1.0", "actions": ["Omega-3 (EPA+DHA 2 g/den) snižuje CRP", "Vyhni se ultra-zpracovaným potravinám"] }
     },
-    { "id": "N_HYPOKALEMIE", "label": "Nízký draslík",              "layer": 2, "branch": "right",
+    { "id": "N_HYPOKALEMIE", "label": "Nízký draslík",              "layer": 2, "branch": "right", "universe_node": "regenerace",
       "detail": { "value_key": "labs.k", "value_unit": "mmol/L", "value_target": "3.5–5.0", "actions": ["Banán, avokádo, brambory — přírodní zdroje K+", "Kalnormin: kontroluj hladinu K každé 3 měsíce"] }
     },
-    { "id": "N_ZTUHE_CEVY",  "label": "Ztuhlé cévy",                "layer": 4, "branch": "left",
+    { "id": "N_ZTUHE_CEVY",  "label": "Ztuhlé cévy",                "layer": 4, "branch": "left", "universe_node": "kardio",
       "detail": { "actions": ["Omega-3 a hořčík zlepšují pružnost cév", "DASH dieta snižuje arteriální tuhnutí"] }
     },
-    { "id": "N_NAPETI_ANS",  "label": "Napětí nervového systému",   "layer": 3, "branch": "right",
+    { "id": "N_NAPETI_ANS",  "label": "Napětí nervového systému",   "layer": 3, "branch": "right", "universe_node": "regenerace",
       "detail": { "value_key": "checkin.hrv", "value_unit": "ms", "value_target": "> 50", "actions": ["Rezonační dýchání 6 nádechů / min", "Studená sprcha 30 s — aktivuje vagový nerv"] }
     },
-    { "id": "N_NIZKE_HRV",   "label": "Nízká HRV",                  "layer": 4, "branch": "right",
+    { "id": "N_NIZKE_HRV",   "label": "Nízká HRV",                  "layer": 4, "branch": "right", "universe_node": "regenerace",
       "detail": { "value_key": "checkin.hrv", "value_unit": "ms", "value_target": "> 50", "actions": ["Stejná hodina spánku každý den", "Alkohol snižuje HRV o 20–30 % — vyhni se"] }
     },
-    { "id": "N_VYSOKY_TK",   "label": "Vysoký krevní tlak",         "layer": 5, "branch": "left",
+    { "id": "N_VYSOKY_TK",   "label": "Vysoký krevní tlak",         "layer": 5, "branch": "left", "universe_node": "kardio",
       "detail": { "value_key": "labs.systolic_bp", "value_unit": "mmHg", "value_target": "< 130", "actions": ["Aerobní pohyb snižuje TK o 5–8 mmHg", "Omez sodík < 5 g/den"] }
     },
-    { "id": "N_DRAZDIVOST",  "label": "Elektrická dráždivost síní", "layer": 5, "branch": "right",
+    { "id": "N_DRAZDIVOST",  "label": "Elektrická dráždivost síní", "layer": 5, "branch": "right", "universe_node": "kardio",
       "detail": { "actions": ["Vyhni se kofeinu po 14h — zvyšuje elektrickou dráždivost síní", "Alkohol i v malém množství spouští ektopické stahy — vynech večerní sklenku"] }
     },
-    { "id": "N_MECH_TLAK",   "label": "Mechanický tlak na srdce",   "layer": 6, "branch": "left",
+    { "id": "N_MECH_TLAK",   "label": "Mechanický tlak na srdce",   "layer": 6, "branch": "left", "universe_node": "kardio",
       "detail": { "actions": ["Cílový TK < 130/80 mmHg — chronický cíl", "Léky na TK užívej pravidelně bez vynechávání"] }
     },
-    { "id": "N_EXTRASYSTOLY","label": "Extrasystoly",               "layer": 7, "branch": "center", "type": "junction",
+    { "id": "N_EXTRASYSTOLY","label": "Extrasystoly",               "layer": 7, "branch": "center", "type": "junction", "universe_node": "kardio",
       "detail": { "actions": ["Zaznamenej triggery: kofein, alkohol, stres, únava", "Monitoruj pulz 2× denně — data pro kardiologa"] }
     },
-    { "id": "N_FAP",         "label": "Fibrilace síní (FaP)",       "layer": 8, "branch": "center", "type": "ude",
+    { "id": "N_FAP",         "label": "Fibrilace síní (FaP)",       "layer": 8, "branch": "center", "type": "ude", "universe_node": "kardio",
       "detail": { "actions": ["Pravidelné kontroly u kardiologa každých 6 měsíců", "Pradaxa: nepřerušuj bez konzultace — riziko mrtvice"] }
     }
   ],
