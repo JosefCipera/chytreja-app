@@ -62,6 +62,20 @@
         />
       </div>
 
+      {#if data.crt_cause && data.life_battery?.state === 'RED'}
+        <div class="hud-fade-in" style="animation-delay: 0.15s">
+          <div style="background:rgba(239,68,68,0.07);border:1px solid rgba(239,68,68,0.2);border-radius:10px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
+            <div>
+              <div class="hud-mono" style="font-size:11px;letter-spacing:0.1em;color:#94a3b8;margin-bottom:4px;">ROOT CAUSE</div>
+              <div style="font-size:14px;color:#fca5a5;line-height:1.4;">{data.crt_cause.label}</div>
+            </div>
+            <a href="/app/crt.html" style="flex-shrink:0;font-size:12px;color:#06b6d4;text-decoration:none;border:1px solid rgba(6,182,212,0.3);border-radius:6px;padding:4px 10px;white-space:nowrap;" class="hud-mono">
+              PROČ? →
+            </a>
+          </div>
+        </div>
+      {/if}
+
       <div class="hud-fade-in" style="animation-delay: 0.2s">
         {#if universe === 'toc'}
           <!-- TOC: PROBLEM + PLÁNOVÁNÍ, no game loop -->

@@ -69,6 +69,18 @@ function buildCrtColorMap(kb, userCtx) {
   return colorMap;
 }
 
+// Find top CRT cause for a universe node — the highest-layer active node mapping to it.
+// Returns { label, node_id } or null.
+function getCrtTopCause(kb, activeNodes, universeNodeId) {
+  if (!activeNodes?.size) return null;
+  const candidates = kb.nodes.filter(n => activeNodes.has(n.id) && n.universe_node === universeNodeId);
+  if (!candidates.length) return null;
+  // Prefer UDE type, then highest layer
+  const ude = candidates.find(n => n.type === 'ude');
+  const top = ude ?? candidates.reduce((a, b) => (b.layer ?? 0) > (a.layer ?? 0) ? b : a);
+  return { label: top.label, node_id: top.id };
+}
+
 // ── Shared constants from hud-data.js ─────────────────
 const NODE_KILLERS = {
   telo:         { label: 'SRDCE',        description: 'Každý rok bez pohybu ti bere roky života.' },
@@ -495,7 +507,7 @@ function getDayType() {
 
 // ── Per-node data fetch (runs in parallel for all requested nodes) ──
 async function fetchOneNode(sb, userId, nodeId, shared) {
-  const { metricsMap, orchLogs, today, constraints, spanekIndex, vyzivaIndex, isDekatlon, lhTargetKg, crtColorMap } = shared;
+  const { metricsMap, orchLogs, today, constraints, spanekIndex, vyzivaIndex, isDekatlon, lhTargetKg, crtColorMap, crtActiveNodes, kardioKb } = shared;
   const dayType = getDayType();
 
   const nodeMeta    = metricsMap.get(nodeId) || { current_index: 50, state: 'YELLOW' };
@@ -683,6 +695,9 @@ async function fetchOneNode(sb, userId, nodeId, shared) {
 
   return {
     node: { id: nodeId, label: nodeLabel, version: 'v0.2' },
+    crt_cause: crtColorMap?.has(nodeId) && kardioKb
+      ? getCrtTopCause(kardioKb, crtActiveNodes, nodeId)
+      : null,
     battery: {
       percent: lhBatteryPercent, state: lhBatteryState,
       trend_label: trend.label, trend_direction: trend.direction,
@@ -812,8 +827,9 @@ export default async function handler(req, res) {
   console.log('[CRT-KB] userCtx diagnoses:', healthRes.data?.diagnoses, 'labs:', healthRes.data?.labs);
   const kardioKb = getKardioKb();
   const crtColorMap = kardioKb ? buildCrtColorMap(kardioKb, crtUserCtx) : new Map();
+  const crtActiveNodes = kardioKb ? runCrtRuleEngine(kardioKb, crtUserCtx) : new Set();
 
-  const shared = { metricsMap, orchLogs, today, constraints, spanekIndex, vyzivaIndex, isDekatlon, lhTargetKg, crtColorMap };
+  const shared = { metricsMap, orchLogs, today, constraints, spanekIndex, vyzivaIndex, isDekatlon, lhTargetKg, crtColorMap, crtActiveNodes, kardioKb };
 
   // ── Per-node in parallel ─────────────────────────────
   const results = await Promise.all(
