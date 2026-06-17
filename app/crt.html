@@ -640,7 +640,7 @@ function renderTree(data) {
       _sc = Math.min(0.85, (cw - 40) / svgW);
     }
     _tx = (cw - svgW * _sc) / 2;
-    _ty = -60;
+    _ty = IS_MOBILE ? 20 : -60;
     applyT();
   };
   // Double rAF — čeká na dokončení layoutu, pak vycentruje
@@ -998,6 +998,8 @@ function renderTree(data) {
   }
 
   container.appendChild(svg);
+  // Obnov stav Léky po re-renderu (otočení atd.)
+  if (typeof _applyMedsState === 'function') _applyMedsState();
 }
 
 // ── Node detail panel ────────────────────────────────────────────────────────
@@ -1245,13 +1247,19 @@ function buildPanelData(node, ctx, parents, children, meds, supps, contras) {
 
 window.closeCrtPanel = closeCrtPanel;
 
+let _medsVisible = false;
+
 window.toggleMeds = function() {
+  _medsVisible = !_medsVisible;
+  _applyMedsState();
+};
+
+function _applyMedsState() {
   const btn = document.getElementById('crtMedBtn');
   const els = document.querySelectorAll('.crt-med-el');
-  const show = els.length && els[0].classList.contains('crt-med-hidden');
-  els.forEach(el => el.classList.toggle('crt-med-hidden', !show));
-  if (btn) btn.style.opacity = show ? '1' : '0.5';
-};
+  els.forEach(el => el.classList.toggle('crt-med-hidden', !_medsVisible));
+  if (btn) btn.style.opacity = _medsVisible ? '1' : '0.5';
+}
 
 // ── Boot ─────────────────────────────────────────────────────────────────────
 async function enrichContraMap(data) {
