@@ -1315,13 +1315,6 @@ async function boot() {
     _lastCrtData = data;
     renderTree(data);
     enrichContraMap(data); // async, panel se doplní při příštím otevření
-    // DEBUG — dočasně, odstraní se po diagnostice
-    const dbg = document.createElement('div');
-    dbg.style.cssText = 'position:fixed;bottom:8px;left:8px;background:#1a1a2e;border:1px solid #334;color:#7af;font:11px monospace;padding:4px 8px;border-radius:4px;z-index:9999;pointer-events:none;';
-    const isOpus = data.subtitle && data.subtitle.includes('Current Reality Tree');
-    const medsLen = (data.medications_map||[]).filter(m=>(m.targets||[]).length>0).length;
-    dbg.textContent = `uid:${userId?.slice(-6)||'?'} dx:${(data._ctx?.diagnoses||[]).length} arrows:${(data._activeArrows||[]).length} meds:${medsLen} ${isOpus?'OPUS':'ENGINE'}`;
-    document.body.appendChild(dbg);
   } catch (e) {
     document.getElementById('crtLoading').textContent = 'Chyba načítání: ' + e.message;
     console.error('[CRT]', e);

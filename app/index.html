@@ -709,6 +709,8 @@
             const overlay = document.getElementById('crt-overlay');
             const iframe  = document.getElementById('crt-iframe');
             const userId  = window._hudUserId || '';
+            const hdr = document.getElementById('appHeader');
+            if (hdr) hdr.style.display = 'none';
             overlay.style.display = 'block';
             iframe.src = `/app/crt.html?userId=${encodeURIComponent(userId)}`;
         };
@@ -717,6 +719,8 @@
             const iframe  = document.getElementById('crt-iframe');
             overlay.style.display = 'none';
             iframe.src = '';
+            const hdr = document.getElementById('appHeader');
+            if (hdr) hdr.style.display = '';
         };
 
         window.addEventListener('message', function(e) {
