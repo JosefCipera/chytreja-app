@@ -20,16 +20,29 @@ function calcPositions(nodes) {
   const levels = [...new Set(nodes.map(n => n.level ?? 0))].sort((a,b) => a-b);
   const maxLevel = Math.max(...levels);
   const Y_STEP = 130;
-  const X_BASE = 320; // širší pro 3 větve
+  const X_BASE = 320;
+
+  // Group by level+branch to stagger overlapping nodes
+  const slots = {};
+  nodes.forEach(n => {
+    const key = `${n.level ?? 0}_${n.branch ?? 'C'}`;
+    (slots[key] = slots[key] || []).push(n);
+  });
 
   nodes.forEach(n => {
     const lv = n.level ?? 0;
+    const key = `${lv}_${n.branch ?? 'C'}`;
+    const group = slots[key];
+    const idx = group.indexOf(n);
+    const count = group.length;
+    const yOff = count > 1 ? (idx - (count - 1) / 2) * Math.round(Y_STEP * 0.65) : 0;
+
     const spread = X_BASE * (1 - lv / (maxLevel + 1) * 0.35);
     if (n.branch === 'L') n.x = -spread;
     else if (n.branch === 'R') n.x = spread;
-    else if (n.branch === 'LC') n.x = -spread * 0.5; // střední-levá (fyzická větev)
-    else n.x = 0; // C — root, junction, UDE
-    n.y = lv * Y_STEP;
+    else if (n.branch === 'LC') n.x = -spread * 0.5;
+    else n.x = 0;
+    n.y = lv * Y_STEP + yOff;
   });
   return nodes;
 }
