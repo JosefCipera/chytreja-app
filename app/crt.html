@@ -1339,7 +1339,11 @@ if (screen.orientation) screen.orientation.addEventListener('change', _rerender)
 function goBack() {
   console.log('[CRT] goBack called');
   sessionStorage.setItem('chj_return_awake', '1');
-  window.location.href = '/app';
+  if (window.parent !== window) {
+    window.parent.postMessage({ type: 'chj:crt:close' }, '*');
+  } else {
+    window.location.href = '/app';
+  }
 }
 
 async function regenCRT() {

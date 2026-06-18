@@ -69,9 +69,9 @@
               <div class="hud-mono" style="font-size:11px;letter-spacing:0.1em;color:#94a3b8;margin-bottom:4px;">ROOT CAUSE</div>
               <div style="font-size:14px;color:#fca5a5;line-height:1.4;">{data.crt_cause.label}</div>
             </div>
-            <a href="/app/crt.html" style="flex-shrink:0;font-size:12px;color:#06b6d4;text-decoration:none;border:1px solid rgba(6,182,212,0.3);border-radius:6px;padding:4px 10px;white-space:nowrap;" class="hud-mono">
+            <button onclick={() => { const w = window.parent !== window ? window.parent : window; w.postMessage({ type: 'chj:crt:open' }, '*'); }} style="flex-shrink:0;font-size:12px;color:#06b6d4;background:none;cursor:pointer;border:1px solid rgba(6,182,212,0.3);border-radius:6px;padding:4px 10px;white-space:nowrap;" class="hud-mono">
               PROČ? →
-            </a>
+            </button>
           </div>
         </div>
       {/if}

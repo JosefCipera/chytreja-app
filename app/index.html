@@ -535,6 +535,11 @@
         <iframe id="tool-iframe" src="" style="width:100%; height:100%; border:none;"></iframe>
     </div>
 
+    <!-- CRT Overlay — replaces canvas, opened via PROČ? button in HUD panel -->
+    <div id="crt-overlay" style="display:none; position:fixed; inset:0; z-index:6000; background:#0b0f1a;">
+        <iframe id="crt-iframe" src="" style="width:100%; height:100%; border:none;"></iframe>
+    </div>
+
     <script>
         // â”€â”€ HUD node data cache â€” prefetched on login â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         window._hudCache   = {};   // { nodeId: data }
@@ -699,6 +704,21 @@
             iframe.src = '';
         };
 
+        window.openCrtOverlay = function() {
+            window.closeHudOverlay();
+            const overlay = document.getElementById('crt-overlay');
+            const iframe  = document.getElementById('crt-iframe');
+            const userId  = window._hudUserId || '';
+            iframe.src = `/app/crt.html?userId=${encodeURIComponent(userId)}`;
+            overlay.style.display = 'block';
+        };
+        window.closeCrtOverlay = function() {
+            const overlay = document.getElementById('crt-overlay');
+            const iframe  = document.getElementById('crt-iframe');
+            overlay.style.display = 'none';
+            iframe.src = '';
+        };
+
         window.addEventListener('message', function(e) {
             if (e.data === 'chj:hud:close') window.closeHudOverlay();
             if (e.data === 'chj:tool:close') window.closeToolOverlay();
@@ -707,6 +727,8 @@
             if (e.data?.type === 'chj:source:open') openSourceViewer(e.data.source);
             if (e.data?.type === 'chj:tts:speak') _runTopTTS(e.data.text, e.data.lang);
             if (e.data?.type === 'chj:tts:stop') { if ('speechSynthesis' in window) window.speechSynthesis.cancel(); }
+            if (e.data?.type === 'chj:crt:open')  window.openCrtOverlay();
+            if (e.data?.type === 'chj:crt:close') window.closeCrtOverlay();
         });
 
         function mediaTypeOf(url) {
