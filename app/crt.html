@@ -829,6 +829,7 @@ function renderTree(data) {
   // ── Léky: pill přímo vedle cílového uzlu ────────────────────────────────
   const medsMap = (data.medications_map || []).filter(m => (m.targets || []).length > 0);
   if (medsMap.length) {
+    document.getElementById('crtMedBtn').style.display = '';
     const MED_COLORS = {
       treatment: { stroke: '#4a9aee', fill: '#0e2038' },
       protects:  { stroke: '#22c55e', fill: '#0a2016' },
@@ -928,8 +929,6 @@ function renderTree(data) {
         svg.appendChild(g);
       });
     });
-
-    document.getElementById('crtMedBtn').style.display = '';
   }
 
   // ── Doplňky stravy: vlevo od uzlu, stackovat vertikálně ─────────────────
