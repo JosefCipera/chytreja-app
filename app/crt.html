@@ -1358,7 +1358,7 @@ async function regenCRT() {
   document.getElementById('crt-canvas').innerHTML = '';
   document.getElementById('crtInjections').innerHTML = '';
   try {
-    const data = await window._loadCRT(true);
+    const data = await loadCRTOpus(true);
     document.getElementById('crtLoading').classList.add('hidden');
     window._renderTree(data);
   } catch(e) {
