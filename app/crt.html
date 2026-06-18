@@ -449,15 +449,14 @@ function buildSuppsMap(shields, userSupps, activeIds, arrowsById) {
 
 function buildMedsMap(shields, userMeds, activeIds, arrowsById) {
   return (shields||[])
-    .filter(s => {
-      const names = new Set([s.med, s.inn, ...(s.aliases||[])].filter(Boolean).map(n=>n.toLowerCase()));
-      return userMeds.some(m => names.has(m.toLowerCase()));
-    })
     .map(s => {
       let targets = [];
       if (s.shields_arrow) { const a=arrowsById[s.shields_arrow]; if(a&&activeIds.has(a.to)) targets=[a.to]; }
       else if (s.shields_node && activeIds.has(s.shields_node)) targets=[s.shields_node];
-      return targets.length ? {name:s.med, targets, effect:'', reason:s.reason} : null;
+      if (!targets.length) return null;
+      const names = new Set([s.med, s.inn, ...(s.aliases||[])].filter(Boolean).map(n=>n.toLowerCase()));
+      const userHas = userMeds.some(m => names.has(m.toLowerCase()));
+      return { name: s.med, targets, effect: '', reason: s.reason, userHas };
     }).filter(Boolean);
 }
 
