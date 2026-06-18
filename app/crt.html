@@ -449,7 +449,10 @@ function buildSuppsMap(shields, userSupps, activeIds, arrowsById) {
 
 function buildMedsMap(shields, userMeds, activeIds, arrowsById) {
   return (shields||[])
-    .filter(s => userMeds.some(m => m.toLowerCase()===s.med.toLowerCase()))
+    .filter(s => {
+      const names = new Set([s.med, s.inn, ...(s.aliases||[])].filter(Boolean).map(n=>n.toLowerCase()));
+      return userMeds.some(m => names.has(m.toLowerCase()));
+    })
     .map(s => {
       let targets = [];
       if (s.shields_arrow) { const a=arrowsById[s.shields_arrow]; if(a&&activeIds.has(a.to)) targets=[a.to]; }
@@ -603,8 +606,9 @@ function renderTree(data) {
   const PAD_BOTTOM = 80;
   const PAD_TOP    = 4;
   const PAD_SIDE   = IS_MOBILE ? 40 : 100;
+  const PAD_RIGHT  = IS_MOBILE ? 40 : 220; // extra space for medication pills on the right
   const maxBoxH = Math.max(...data.nodes.map(n => boxHeight(n.label ?? '')));
-  const svgW = (maxX - minX) + BOX_W + PAD_SIDE * 2;
+  const svgW = (maxX - minX) + BOX_W + PAD_SIDE + PAD_RIGHT;
   const svgH = (maxY - minY) + maxBoxH * 2 + PAD_BOTTOM + PAD_TOP;
 
   // canvas → svg pixel
