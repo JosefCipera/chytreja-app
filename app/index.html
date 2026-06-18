@@ -709,8 +709,8 @@
             const overlay = document.getElementById('crt-overlay');
             const iframe  = document.getElementById('crt-iframe');
             const userId  = window._hudUserId || '';
-            iframe.src = `/app/crt.html?userId=${encodeURIComponent(userId)}`;
             overlay.style.display = 'block';
+            iframe.src = `/app/crt.html?userId=${encodeURIComponent(userId)}`;
         };
         window.closeCrtOverlay = function() {
             const overlay = document.getElementById('crt-overlay');
