@@ -602,6 +602,7 @@ async function handleHealthProfile(req, res) {
 
 // ── GET ?action=crt-context ───────────────────────────────────────────────────
 const DIAG_MAP = [
+  // Kardiovaskulární
   [/fibrilace\s*síní\s*(paroxysmální|fap|\(fap\))/i,                  'FIBRILACE_SINI_PAROXYSMALNI'],
   [/fibrilace\s*síní/i,                                                'FIBRILACE_SINI'],
   [/arteriální\s*hypertenze|hypertenze|vysoký\s*(krevní\s*)?tlak/i,   'HYPERTENZE'],
@@ -609,8 +610,31 @@ const DIAG_MAP = [
   [/extrasystol[ye]|předčasné\s*stahy/i,                               'EXTRASYSTOLY'],
   [/bušení\s*srdce|palpitace/i,                                        'BUSENI_SRDCE'],
   [/chronický\s*stres/i,                                               'CHRONICKY_STRES'],
-  [/diabetes/i,                                                         'DIABETES'],
+  // Metabolické
+  [/diabetes\s*(mellitus\s*)?(2\.\s*typu|typ\s*2|ii)/i,               'DIABETES_2_TYPU'],
+  [/diabetes/i,                                                         'DIABETES_2_TYPU'],
+  [/prediabetes|hraniční\s*glykémie/i,                                 'PREDIABETES'],
   [/inzulínová\s*rezistence/i,                                         'INZULINOVA_REZISTENCE'],
+  [/metabolický\s*syndrom/i,                                           'METABOLICKY_SYNDROM'],
+  // Hormonální
+  [/hypothyreóz[ae]|hypotyreóz[ae]|snížená\s*funkce\s*štítné/i,      'HYPOTHYREOZA'],
+  [/hyperthyreóz[ae]/i,                                                'HYPERTHYREOZA'],
+  // Pohybový aparát
+  [/stenóza\s*páteřního\s*kanálu|spinální\s*stenóz[ae]/i,             'STENOZA_PATERE'],
+  [/spondylóz[ae]|spondylartróz[ae]/i,                                 'SPONDYLOZA'],
+  [/degenerativní\s*(změny|onemocnění)\s*(páteře|plotének)/i,          'DEGENERATIVNI_ZMENY_PATERE'],
+  [/výhřez\s*(meziobratlové\s*)?ploténky|hernie\s*disku/i,             'HERNIATED_DISC'],
+  [/osteoporóz[ae]/i,                                                  'OSTEOPOROZA'],
+  [/osteopéni[ae]/i,                                                   'OSTEOPENIE'],
+  [/periferní\s*neuropati[ae]/i,                                       'PERIEFERNI_NEUROPATIE'],
+  // Neurologické / psychické
+  [/depres[ei]/i,                                                       'DEPRESE'],
+  [/úzkost(ná\s*porucha)?|anxióz[aní]/i,                               'UZKOST'],
+  [/esenciální\s*tremor/i,                                             'ESENCIALNI_TREMOR'],
+  // Symptomy
+  [/bolest\s*(v\s*)?(noh|dolních\s*končetin)/i,                        'BOLEST_NOHOU'],
+  [/slabost\s*(noh|dolních\s*končetin)/i,                              'SLABOST_NOHOU'],
+  [/nestabilní\s*(chůze|chůzi)/i,                                      'NESTABILITA_CHUZE'],
 ];
 const LAB_KEY_MAP = {
   ldl:'ldl', ldl_cholesterol:'ldl',
@@ -618,6 +642,12 @@ const LAB_KEY_MAP = {
   diastolic_bp:'diastolic_bp',
   k:'k', kalium:'k', draslík:'k',
   crp:'crp', glucose:'glucose', glukóza:'glucose', hba1c:'hba1c',
+  tsh:'tsh', ft4:'ft4',
+  'vitamin_d':'vitamin_d', 'vit_d':'vitamin_d', 'calcidiol':'vitamin_d',
+  b12:'b12', 'vitamin_b12':'b12',
+  calcium:'calcium', vápník:'calcium',
+  kreatinin:'kreatinin', creatinine:'kreatinin',
+  alt:'alt', ast:'ast',
 };
 function normDiag(d) {
   for (const [re, code] of DIAG_MAP) if (re.test(d)) return code;

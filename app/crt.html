@@ -314,8 +314,8 @@ window.CRT_CACHE_KEY = CRT_CACHE_KEY;
 //   { "and": [ ...conditions ] }
 function evalCondition(cond, user) {
   if (!cond) return true;
-  if (cond.or)  return cond.or.every  ? false : cond.or.some(c  => evalCondition(c, user));
-  if (cond.and) return cond.and.every(c => evalCondition(c, user));
+  if (Array.isArray(cond.or))  return cond.or.some(c  => evalCondition(c, user));
+  if (Array.isArray(cond.and)) return cond.and.every(c => evalCondition(c, user));
   if (cond.diag)    return (user.diagnoses || []).includes(cond.diag);
   if (cond.symptom) return (user.symptoms  || []).includes(cond.symptom);
   if (cond.med) {
