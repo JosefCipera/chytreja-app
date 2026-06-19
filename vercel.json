@@ -5,7 +5,9 @@
     "alias": ["dev.iting.cz"],
     "ignoreCommand": "[ \"$VERCEL_GIT_COMMIT_REF\" != \"${DEPLOY_BRANCH:-main}\" ]",
     "functions": {
-        "api/tools/parse.js":          { "maxDuration": 60 }
+        "api/tools/parse.js":          { "maxDuration": 60 },
+        "api/hud-data-bulk.js":        { "includeFiles": "data/crt/**" },
+        "api/crt-generate.js":         { "includeFiles": "data/crt/**" }
     },
     "headers": [
         {
