@@ -461,8 +461,7 @@ const STYLE = `
 const HTML = `
 <style>${STYLE}</style>
 
-<div class="chjl-star chjl-star-tl">✦</div>
-<div class="chjl-star chjl-star-br">✦</div>
+
 <div class="chjl-version">${CHJ_VERSION}</div>
 
 <!-- STAV 1: Nebula (sleep state) -->
@@ -1692,12 +1691,13 @@ function onLauncherClick(e) {
     return;
   }
 
+  const isMobile = window.matchMedia('(pointer: coarse)').matches;
   if (_phase === 'awake') {
-    if (!_chj_speaking && !_dialog_active) { if (_recognition) { try { _recognition.stop(); } catch(_) {} _recognition = null; } listenOnce(t => _handleCommand(t)); }
+    if (isMobile && !_chj_speaking && !_dialog_active) { if (_recognition) { try { _recognition.stop(); } catch(_) {} _recognition = null; } listenOnce(t => _handleCommand(t)); }
   }
   else if (_phase === 'sleeping') {
     showAwake();
-    if (!_chj_speaking) { if (_recognition) { try { _recognition.stop(); } catch(_) {} _recognition = null; } listenOnce(t => _handleCommand(t)); }
+    if (isMobile && !_chj_speaking) { if (_recognition) { try { _recognition.stop(); } catch(_) {} _recognition = null; } listenOnce(t => _handleCommand(t)); }
   }
   // 'action', 'timer', 'done' — klik nic nedělá
 }
