@@ -260,7 +260,7 @@ FLAGS: přidej "CONSULT_DOCTOR" při kritických hodnotách, QTc > 500ms nebo ak
        přidej "HIGH_STROKE_RISK" při CHADSVASc > 2.
 diagnoses: seznam diagnóz zmíněných v dokumentu (česky, stručně). Prázdné pole pokud žádné.
 symptoms: seznam symptomů zmíněných v dokumentu. Prázdné pole pokud žádné.
-Nestanoví diagnózu — jen extrahuj fakta a mapuj na uzly.
+Nestanoví vlastní diagnózu — ale extrahuj diagnózy, které jsou přímo uvedené v dokumentu lékařem.
 Piš česky.`;
 
 function applyDelta(current, delta) {
