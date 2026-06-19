@@ -465,7 +465,9 @@ function calcPositionsClient(nodes) {
     const group = slots[key];
     const idx = group.indexOf(n);
     const count = group.length;
-    const yOff = count > 1 ? (idx - (count - 1) / 2) * Math.round(Y_STEP * 0.45) : 0;
+    const maxBH = Math.max(...group.map(n => boxHeight(n.label ?? '')));
+    const step  = Math.max(maxBH + 12, Math.round(Y_STEP * 0.55));
+    const yOff  = count > 1 ? (idx - (count - 1) / 2) * step : 0;
 
     // Pevné sloupce — žádná konvergence
     n.x = n.branch==='left' ? -X_BASE : n.branch==='right' ? X_BASE : 0;
@@ -1006,14 +1008,20 @@ function renderTree(data) {
 
         if (med.reason) {
           const tooltip = document.getElementById('crtTooltip');
-          g.addEventListener('mouseenter', () => {
+          const showTip = (x, y) => {
             tooltip.innerHTML = `<strong>${med.name}</strong><br><span style="color:#a8c8d8">${med.reason}</span>`;
             tooltip.style.display = 'block';
-          });
+            tooltip.style.left = (x + 14) + 'px';
+            tooltip.style.top  = (y - 10) + 'px';
+          };
+          g.addEventListener('mouseenter', e => showTip(e.clientX, e.clientY));
           g.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
-          g.addEventListener('mousemove', e => {
-            tooltip.style.left = (e.clientX + 14) + 'px';
-            tooltip.style.top  = (e.clientY - 10) + 'px';
+          g.addEventListener('mousemove',  e => { tooltip.style.left = (e.clientX + 14) + 'px'; tooltip.style.top = (e.clientY - 10) + 'px'; });
+          g.addEventListener('click', e => {
+            e.stopPropagation();
+            if (tooltip.style.display === 'block') { tooltip.style.display = 'none'; return; }
+            showTip(e.clientX, e.clientY);
+            setTimeout(() => { tooltip.style.display = 'none'; }, 4000);
           });
         }
         svg.appendChild(g);

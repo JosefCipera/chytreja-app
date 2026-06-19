@@ -822,30 +822,53 @@ export default async function handler(req, res) {
   // ── CRT color map — override universe node colors from rule engine ──
   const latestCheckin = checkinRes.data || {};
 
-  // Diagnoses stored in DB as Czech strings — map to KB codes used in conditions
+  // Diagnoses: DB may store Czech strings OR direct KB codes (parser outputs codes since v0.2.3)
   const DIAG_ALIASES = {
-    'FIBRILACE_SINI_PAROXYSMALNI': ['fibrilace síní', 'fibrilace sini', 'fap', 'fibrilace'],
+    'FIBRILACE_SINI_PAROXYSMALNI': ['fibrilace síní paroxysmální', 'fibrilace sini parox', 'fap'],
     'FIBRILACE_SINI':              ['fibrilace síní', 'fibrilace sini'],
-    'EXTRASYSTOLY':                ['extrasystoly', 'předčasné stahy', 'predasne stahy'],
-    'CHRONICKY_STRES':             ['chronický stres', 'chronicky stres', 'stres'],
-    'HYPERTENZE':                  ['vysoký tlak', 'vysoky tlak', 'hypertenze', 'arteriální hypertenze'],
+    'EXTRASYSTOLY':                ['extrasystoly', 'předčasné stahy'],
+    'CHRONICKY_STRES':             ['chronický stres'],
+    'HYPERTENZE':                  ['vysoký tlak', 'hypertenze', 'arteriální hypertenze'],
     'ATEROSKLEROZA':               ['ateroskleróza', 'ateroskleroza'],
+    'DIABETES_2_TYPU':             ['diabetes', 'cukrovka', 'dm2', 'diabetes mellitus'],
+    'PREDIABETES':                 ['prediabetes', 'hraniční glykémie'],
+    'INZULINOVA_REZISTENCE':       ['inzulínová rezistence', 'inzulinova rezistence'],
+    'HYPOTHYREOZA':                ['hypothyreóza', 'hypotyreóza', 'snížená funkce štítné'],
+    'DEPRESE':                     ['deprese', 'depresivní porucha'],
+    'UZKOST':                      ['úzkost', 'anxiózní porucha'],
+    'OSTEOPOROZA':                 ['osteoporóza', 'osteoporoza'],
+    'OSTEOPENIE':                  ['osteopénie', 'osteopenie'],
+    'STENOZA_PATERE':              ['stenóza páteřního', 'spinální stenóza'],
+    'SPONDYLOZA':                  ['spondylóza', 'spondylartróza'],
+    'DEGENERATIVNI_ZMENY_PATERE':  ['degenerativní změny páteře', 'degenerativní onemocnění páteře'],
+    'PERIEFERNI_NEUROPATIE':       ['periferní neuropatie', 'neuropatie'],
+    'ESENCIALNI_TREMOR':           ['esenciální tremor', 'tremor'],
   };
-  const rawDiagnoses = (healthRes.data?.diagnoses || []).map(d => d.toLowerCase());
+  const rawDiagnoses = (healthRes.data?.diagnoses || []);
   const resolvedDiagnoses = new Set();
-  for (const [code, aliases] of Object.entries(DIAG_ALIASES)) {
-    if (aliases.some(a => rawDiagnoses.some(d => d.includes(a)))) resolvedDiagnoses.add(code);
+  for (const d of rawDiagnoses) {
+    const dl = String(d).toLowerCase();
+    // 1. If already a KB code (uppercase + underscores) — add directly
+    if (/^[A-Z][A-Z0-9_]+$/.test(d)) { resolvedDiagnoses.add(d); continue; }
+    // 2. Map Czech text via aliases
+    for (const [code, aliases] of Object.entries(DIAG_ALIASES)) {
+      if (aliases.some(a => dl.includes(a.toLowerCase()))) resolvedDiagnoses.add(code);
+    }
+    // 3. Generic normalization as fallback
+    resolvedDiagnoses.add(dl.toUpperCase().replace(/\s+/g, '_').replace(/[^A-Z0-9_]/g, ''));
   }
 
   // Labs keys normalized to lowercase (DB stores as CRP, LDL — KB conditions use crp, ldl)
   const rawLabs = healthRes.data?.labs || {};
-  const normalizedLabs = Object.fromEntries(Object.entries(rawLabs).map(([k, v]) => [k.toLowerCase(), v]));
+  const normalizedLabs = Object.fromEntries(Object.entries(rawLabs).map(([k, v]) => [k.toLowerCase().replace(/\s+/g, '_'), v]));
   console.log('[CRT-KB] resolved diagnoses:', [...resolvedDiagnoses], 'normalized labs:', normalizedLabs);
 
+  // diagnoses as plain array — works for both old string eval (arr.includes) and new JSON conditions
   const crtUserCtx = {
-    diagnoses: { includes: (x) => resolvedDiagnoses.has(x) },
-    symptoms:  { includes: (x) => Array.isArray(healthRes.data?.symptoms) && healthRes.data.symptoms.includes(x) },
-    labs:  normalizedLabs,
+    diagnoses: [...resolvedDiagnoses],
+    symptoms:  (healthRes.data?.symptoms || []),
+    meds:      (medsRes.data || []).map(m => m.name).filter(Boolean),
+    labs:      normalizedLabs,
     checkin: {
       stress:         latestCheckin.stress                                        ?? 0,
       sleep_hours:    latestCheckin.sleep_hours    ?? (latestCheckin.sleep_quality === 'malo' ? 5.5 : latestCheckin.sleep_quality === 'ok' ? 7 : 8),
