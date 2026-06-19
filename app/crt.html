@@ -410,6 +410,53 @@ async function fetchUserContext() {
 }
 
 // ── Layout ────────────────────────────────────────────────────────────────────
+// Najde spojité komponenty (pro multi-KB — každá KB může mít svůj strom)
+function findComponents(nodes, arrows) {
+  const adj = {};
+  nodes.forEach(n => { adj[n.id] = []; });
+  arrows.forEach(a => {
+    if (adj[a.from] !== undefined) adj[a.from].push(a.to);
+    if (adj[a.to]   !== undefined) adj[a.to].push(a.from);
+  });
+  const visited = new Set();
+  const comps = [];
+  const byId = Object.fromEntries(nodes.map(n => [n.id, n]));
+  for (const n of nodes) {
+    if (visited.has(n.id)) continue;
+    const comp = [];
+    const q = [n.id];
+    while (q.length) {
+      const id = q.shift();
+      if (visited.has(id)) continue;
+      visited.add(id);
+      if (byId[id]) comp.push(byId[id]);
+      (adj[id] || []).forEach(nb => q.push(nb));
+    }
+    if (comp.length) comps.push(comp);
+  }
+  return comps;
+}
+
+// Rozloží každou komponentu zvlášť a seřadí je vedle sebe (největší vlevo)
+function layoutMultiComponent(nodes, arrows) {
+  const comps = findComponents(nodes, arrows);
+  if (comps.length <= 1) { calcPositionsClient(nodes); return; }
+  comps.sort((a, b) => b.length - a.length); // největší první
+
+  comps.forEach((comp, ci) => {
+    calcPositionsClient(comp);
+    if (ci === 0) return;
+    // Posun doprava za předchozí komponenty
+    let maxPrevX = 0;
+    for (let pi = 0; pi < ci; pi++) {
+      comps[pi].forEach(n => { maxPrevX = Math.max(maxPrevX, (n.x || 0) + 340 + BOX_W / 2); });
+    }
+    const minCurrX = Math.min(...comp.map(n => n.x || 0)) - 340 - BOX_W / 2;
+    const shift = maxPrevX - minCurrX + 120;
+    comp.forEach(n => { n.x = (n.x || 0) + shift; });
+  });
+}
+
 function calcPositionsClient(nodes) {
   const Y_STEP = 130, X_BASE = 340;
 
@@ -539,7 +586,7 @@ async function loadCRT() {
   activeArrows.forEach(a => { activeIds.add(a.from); activeIds.add(a.to); });
 
   const nodes = [...activeIds].map(id => ({ ...mergedNodes[id] })).filter(Boolean);
-  calcPositionsClient(nodes);
+  layoutMultiComponent(nodes, activeArrows);
 
   const arrowsById = {};
   mergedArrows.forEach(a => { arrowsById[a.id] = a; });
@@ -548,6 +595,7 @@ async function loadCRT() {
     title: 'Kauzální mapa zdraví',
     subtitle: `Kauzální engine · ${activeArrows.length} aktivních spojení`,
     branch_labels: { L: 'Metabolický subsystém', R: 'Autonomní subsystém' },
+    _kbMap: mergedNodes,
     nodes,
     edges: activeArrows.map(a => ({ from: a.from, to: a.to })),
     and_joins: [],
