@@ -1,13 +1,12 @@
 {
   "domain": "Pohybovy_Metabolicky_V1",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Znalostní báze: pohybový aparát, hormonální a metabolický subsystém, neuropatie",
 
   "nodes": [
     { "id": "N_ROOT_P",      "label": "Metabolická a hormonální dysbalance", "layer": 0, "branch": "center", "type": "root", "universe_node": "metabolicke",
       "detail": { "actions": ["Pohyb jako první lék — 30 min chůze denně", "Pravidelné laboratorní kontroly 1× ročně"] }
     },
-
     { "id": "N_HYPOTHY",     "label": "Snížená funkce štítné žlázy", "layer": 1, "branch": "left", "universe_node": "zdravi",
       "detail": { "value_key": "labs.tsh", "value_unit": "mIU/L", "value_target": "0.4–4.0", "actions": ["Eutyrox užívej nalačno, 30 min před jídlem", "Kontrola TSH každých 6 měsíců"] }
     },
@@ -17,14 +16,12 @@
     { "id": "N_OSTEOPOROZA", "label": "Řídnutí kostí", "layer": 1, "branch": "left", "universe_node": "telo",
       "detail": { "actions": ["Caltrate: vápník s vitamínem D — klíčový základ", "Silový trénink 2× týdně — stimuluje tvorbu kosti"] }
     },
-
     { "id": "N_PATERE",      "label": "Opotřebení páteře", "layer": 1, "branch": "right", "universe_node": "telo",
       "detail": { "actions": ["Posilování hlubokého stabilizačního systému", "Fyzioterapie — mobilizace bederní páteře"] }
     },
     { "id": "N_DEPRESE",     "label": "Deprese a úzkost", "layer": 1, "branch": "right", "universe_node": "mysl",
       "detail": { "actions": ["Pohyb 3× týdně má efekt srovnatelný s antidepresivem", "Sociální kontakt — klíčový faktor v prevenci recidivy"] }
     },
-
     { "id": "N_SLABE_SVALY", "label": "Slabé a nepoužívané svaly", "layer": 2, "branch": "left", "universe_node": "telo",
       "detail": { "actions": ["Silový trénink 2× týdně — základní ochrana", "Bílkoviny 1.2–1.6 g/kg tělesné hmotnosti denně"] }
     },
@@ -37,7 +34,6 @@
     { "id": "N_MALO_POHYBU", "label": "Málo pohybu a sedavý život", "layer": 2, "branch": "center", "universe_node": "telo",
       "detail": { "actions": ["7 000 kroků denně — první krok", "Stůj 2h ze 8h pracovní doby — snižuje metabolické riziko"] }
     },
-
     { "id": "N_NEUROPATIE",  "label": "Poškození nervů v nohách", "layer": 3, "branch": "left", "universe_node": "zdravi",
       "detail": { "actions": ["Kontrola glukózy — neuropatie se zastaví při normoglykémii", "Vitamín B12 — klíčový pro regeneraci nervu"] }
     },
@@ -47,55 +43,76 @@
     { "id": "N_UNAVA",       "label": "Chronická únava a malátnost", "layer": 3, "branch": "center", "universe_node": "mysl",
       "detail": { "actions": ["Pravidelný spánek 7–8 hod — základ regenerace", "Kontrola TSH a vitamínu D — nejčastější příčiny únavy"] }
     },
-
     { "id": "N_NESTABILITA", "label": "Nestabilní chůze a koordinace", "layer": 4, "branch": "center", "type": "junction", "universe_node": "telo",
       "detail": { "actions": ["Trénink rovnováhy 10 min denně — snižuje riziko pádu o 30 %", "Fyzioterapeut: proprioceptivní cvičení"] }
     },
-
     { "id": "N_PADY",        "label": "Riziko pádu a zranění", "layer": 5, "branch": "center", "type": "ude", "universe_node": "zdravi",
       "detail": { "actions": ["Odstraň koberce a práhy doma", "Ortopedické vložky nebo hůl — okamžité snížení rizika", "Trénink rovnováhy — dlouhodobá prevence"] }
     }
   ],
 
   "possible_arrows": [
-    { "id": "P_001", "from": "N_ROOT_P",      "to": "N_HYPOTHY",     "condition": "user.diagnoses.includes('HYPOTHYREOZA') || user.meds.includes('EUTYROX') || user.meds.includes('LEVOTHYROXIN')" },
-    { "id": "P_002", "from": "N_ROOT_P",      "to": "N_VYSOKE_GL",   "condition": "user.labs.glucose > 6.0 || user.labs.hba1c > 6.5 || user.diagnoses.includes('DIABETES_2_TYPU') || user.diagnoses.includes('PREDIABETES')" },
-    { "id": "P_003", "from": "N_ROOT_P",      "to": "N_OSTEOPOROZA", "condition": "user.diagnoses.includes('OSTEOPOROZA') || user.diagnoses.includes('OSTEOPENIE')" },
-    { "id": "P_004", "from": "N_ROOT_P",      "to": "N_PATERE",      "condition": "user.diagnoses.includes('STENOZA_PATERE') || user.diagnoses.includes('SPONDYLOZA') || user.diagnoses.includes('DEGENERATIVNI_ZMENY_PATERE') || user.diagnoses.includes('HERNIATED_DISC')" },
-    { "id": "P_005", "from": "N_ROOT_P",      "to": "N_DEPRESE",     "condition": "user.diagnoses.includes('DEPRESE') || user.meds.includes('MIRTAZAPIN') || user.meds.includes('DULOXETIN') || user.meds.includes('DULOPEN')" },
-    { "id": "P_006", "from": "N_ROOT_P",      "to": "N_MALO_POHYBU", "condition": "user.checkin.movement_level == 'low'" },
+    { "id": "P_001", "from": "N_ROOT_P",      "to": "N_HYPOTHY",
+      "condition": { "or": [{ "diag": "HYPOTHYREOZA" }, { "med": "eutyrox" }, { "med": "levothyroxin" }] } },
+    { "id": "P_002", "from": "N_ROOT_P",      "to": "N_VYSOKE_GL",
+      "condition": { "or": [{ "lab": "glucose", "gt": 6.0 }, { "lab": "hba1c", "gt": 6.5 }, { "diag": "DIABETES_2_TYPU" }, { "diag": "PREDIABETES" }] } },
+    { "id": "P_003", "from": "N_ROOT_P",      "to": "N_OSTEOPOROZA",
+      "condition": { "or": [{ "diag": "OSTEOPOROZA" }, { "diag": "OSTEOPENIE" }] } },
+    { "id": "P_004", "from": "N_ROOT_P",      "to": "N_PATERE",
+      "condition": { "or": [{ "diag": "STENOZA_PATERE" }, { "diag": "SPONDYLOZA" }, { "diag": "DEGENERATIVNI_ZMENY_PATERE" }, { "diag": "HERNIATED_DISC" }] } },
+    { "id": "P_005", "from": "N_ROOT_P",      "to": "N_DEPRESE",
+      "condition": { "or": [{ "diag": "DEPRESE" }, { "med": "mirtazapin" }, { "med": "duloxetin" }, { "med": "dulopen" }] } },
+    { "id": "P_006", "from": "N_ROOT_P",      "to": "N_MALO_POHYBU",
+      "condition": { "checkin": "movement_level", "eq": "low" } },
 
-    { "id": "P_007", "from": "N_HYPOTHY",     "to": "N_SLABE_SVALY", "condition": "user.diagnoses.includes('HYPOTHYREOZA') || user.meds.includes('EUTYROX')" },
-    { "id": "P_008", "from": "N_HYPOTHY",     "to": "N_UNAVA",       "condition": "user.diagnoses.includes('HYPOTHYREOZA') || user.meds.includes('EUTYROX')" },
-    { "id": "P_009", "from": "N_VYSOKE_GL",   "to": "N_ZANET_META",  "condition": "user.labs.glucose > 6.0 || user.labs.hba1c > 6.5" },
-    { "id": "P_010", "from": "N_VYSOKE_GL",   "to": "N_NEUROPATIE",  "condition": "user.labs.glucose > 7.0 || user.labs.hba1c > 7.0 || user.diagnoses.includes('DIABETES_2_TYPU')" },
-    { "id": "P_011", "from": "N_OSTEOPOROZA", "to": "N_PADY",        "condition": "user.diagnoses.includes('OSTEOPOROZA')" },
+    { "id": "P_007", "from": "N_HYPOTHY",     "to": "N_SLABE_SVALY",
+      "condition": { "or": [{ "diag": "HYPOTHYREOZA" }, { "med": "eutyrox" }] } },
+    { "id": "P_008", "from": "N_HYPOTHY",     "to": "N_UNAVA",
+      "condition": { "or": [{ "diag": "HYPOTHYREOZA" }, { "med": "eutyrox" }] } },
+    { "id": "P_009", "from": "N_VYSOKE_GL",   "to": "N_ZANET_META",
+      "condition": { "or": [{ "lab": "glucose", "gt": 6.0 }, { "lab": "hba1c", "gt": 6.5 }] } },
+    { "id": "P_010", "from": "N_VYSOKE_GL",   "to": "N_NEUROPATIE",
+      "condition": { "or": [{ "lab": "glucose", "gt": 7.0 }, { "lab": "hba1c", "gt": 7.0 }, { "diag": "DIABETES_2_TYPU" }] } },
+    { "id": "P_011", "from": "N_OSTEOPOROZA", "to": "N_PADY",
+      "condition": { "diag": "OSTEOPOROZA" } },
 
-    { "id": "P_012", "from": "N_PATERE",      "to": "N_UTLAK_NERVU", "condition": "user.diagnoses.includes('STENOZA_PATERE') || user.diagnoses.includes('SPONDYLOZA') || user.diagnoses.includes('DEGENERATIVNI_ZMENY_PATERE')" },
-    { "id": "P_013", "from": "N_DEPRESE",     "to": "N_MALO_POHYBU", "condition": "user.diagnoses.includes('DEPRESE') || user.meds.includes('MIRTAZAPIN')" },
-    { "id": "P_014", "from": "N_DEPRESE",     "to": "N_UNAVA",       "condition": "user.diagnoses.includes('DEPRESE')" },
+    { "id": "P_012", "from": "N_PATERE",      "to": "N_UTLAK_NERVU",
+      "condition": { "or": [{ "diag": "STENOZA_PATERE" }, { "diag": "SPONDYLOZA" }, { "diag": "DEGENERATIVNI_ZMENY_PATERE" }] } },
+    { "id": "P_013", "from": "N_DEPRESE",     "to": "N_MALO_POHYBU",
+      "condition": { "or": [{ "diag": "DEPRESE" }, { "med": "mirtazapin" }] } },
+    { "id": "P_014", "from": "N_DEPRESE",     "to": "N_UNAVA",
+      "condition": { "diag": "DEPRESE" } },
 
-    { "id": "P_015", "from": "N_SLABE_SVALY", "to": "N_NESTABILITA", "condition": "user.diagnoses.includes('HYPOTHYREOZA') || user.checkin.movement_level == 'low'" },
-    { "id": "P_016", "from": "N_ZANET_META",  "to": "N_SLABE_SVALY", "condition": "user.labs.glucose > 7.0 || user.labs.hba1c > 7.0" },
-    { "id": "P_017", "from": "N_UTLAK_NERVU", "to": "N_BOLEST_NOH",  "condition": "user.diagnoses.includes('STENOZA_PATERE') || user.symptoms.includes('BOLEST_NOHOU') || user.symptoms.includes('SLABOST_NOHOU')" },
-    { "id": "P_018", "from": "N_MALO_POHYBU", "to": "N_SLABE_SVALY", "condition": "user.checkin.movement_level == 'low'" },
-    { "id": "P_019", "from": "N_MALO_POHYBU", "to": "N_ZANET_META",  "condition": "user.checkin.movement_level == 'low' && user.labs.crp > 1.0" },
+    { "id": "P_015", "from": "N_SLABE_SVALY", "to": "N_NESTABILITA",
+      "condition": { "or": [{ "diag": "HYPOTHYREOZA" }, { "checkin": "movement_level", "eq": "low" }] } },
+    { "id": "P_016", "from": "N_ZANET_META",  "to": "N_SLABE_SVALY",
+      "condition": { "or": [{ "lab": "glucose", "gt": 7.0 }, { "lab": "hba1c", "gt": 7.0 }] } },
+    { "id": "P_017", "from": "N_UTLAK_NERVU", "to": "N_BOLEST_NOH",
+      "condition": { "or": [{ "diag": "STENOZA_PATERE" }, { "symptom": "BOLEST_NOHOU" }, { "symptom": "SLABOST_NOHOU" }] } },
+    { "id": "P_018", "from": "N_MALO_POHYBU", "to": "N_SLABE_SVALY",
+      "condition": { "checkin": "movement_level", "eq": "low" } },
+    { "id": "P_019", "from": "N_MALO_POHYBU", "to": "N_ZANET_META",
+      "condition": { "and": [{ "checkin": "movement_level", "eq": "low" }, { "lab": "crp", "gt": 1.0 }] } },
 
-    { "id": "P_020", "from": "N_NEUROPATIE",  "to": "N_NESTABILITA", "condition": "user.diagnoses.includes('DIABETES_2_TYPU') || user.labs.glucose > 7.0" },
-    { "id": "P_021", "from": "N_BOLEST_NOH",  "to": "N_NESTABILITA", "condition": "user.symptoms.includes('BOLEST_NOHOU') || user.diagnoses.includes('STENOZA_PATERE')" },
-    { "id": "P_022", "from": "N_UNAVA",       "to": "N_MALO_POHYBU", "condition": "user.diagnoses.includes('HYPOTHYREOZA') || user.diagnoses.includes('DEPRESE')" },
+    { "id": "P_020", "from": "N_NEUROPATIE",  "to": "N_NESTABILITA",
+      "condition": { "or": [{ "diag": "DIABETES_2_TYPU" }, { "lab": "glucose", "gt": 7.0 }] } },
+    { "id": "P_021", "from": "N_BOLEST_NOH",  "to": "N_NESTABILITA",
+      "condition": { "or": [{ "symptom": "BOLEST_NOHOU" }, { "diag": "STENOZA_PATERE" }] } },
+    { "id": "P_022", "from": "N_UNAVA",       "to": "N_MALO_POHYBU",
+      "condition": { "or": [{ "diag": "HYPOTHYREOZA" }, { "diag": "DEPRESE" }] } },
 
-    { "id": "P_023", "from": "N_NESTABILITA", "to": "N_PADY",        "condition": "user.diagnoses.includes('OSTEOPOROZA') || user.symptoms.includes('NESTABILITA_CHUZE') || user.diagnoses.includes('STENOZA_PATERE')" }
+    { "id": "P_023", "from": "N_NESTABILITA", "to": "N_PADY",
+      "condition": { "or": [{ "diag": "OSTEOPOROZA" }, { "symptom": "NESTABILITA_CHUZE" }, { "diag": "STENOZA_PATERE" }] } }
   ],
 
   "medication_shields": [
-    { "med": "Eutyrox",    "inn": "levothyroxin", "aliases": ["Letrox","Euthyrox"], "shields_node": "N_HYPOTHY",     "reason": "Nahrazuje chybějící hormon štítné žlázy — přímo řeší příčinu svalové slabosti a únavy." },
-    { "med": "Sorvasta",   "inn": "rosuvastatin", "aliases": ["Crestor","Rosuvastatin"], "shields_node": "N_ZANET_META",  "reason": "Snižuje cholesterol a tlumí cévní zánět — snižuje metabolické riziko." },
-    { "med": "Caltrate",   "inn": "kalcium+D3",   "aliases": ["Calcium","Vápník"], "shields_node": "N_OSTEOPOROZA",  "reason": "Vápník a vitamín D jsou základní stavební kameny kostní hustoty." },
-    { "med": "Mirtazapin", "inn": "mirtazapin",   "aliases": ["Remeron"],          "shields_node": "N_DEPRESE",      "reason": "Stabilizuje náladu a spánek — snižuje centrální příčinu inaktivity." },
-    { "med": "Dulopen",    "inn": "duloxetin",    "aliases": ["Cymbalta","Duloxetin"], "shields_node": "N_BOLEST_NOH","reason": "Snižuje neuropatickou bolest — přímý efekt na bolest z nervu." },
-    { "med": "Doreta",     "inn": "tramadol+paracetamol", "aliases": ["Zaldiar"], "shields_node": "N_BOLEST_NOH",   "reason": "Analgetikum pro akutní úlevu od bolesti pohybového aparátu." },
-    { "med": "Liskantin",  "inn": "primidon",     "aliases": ["Primidone","Mysoline"], "shields_node": "N_NESTABILITA", "reason": "Snižuje esenciální tremor — přispívá ke stabilitě pohybu." }
+    { "med": "Eutyrox",    "inn": "levothyroxin", "aliases": ["Letrox","Euthyrox"],       "shields_node": "N_HYPOTHY",     "reason": "Nahrazuje chybějící hormon štítné žlázy — přímo řeší příčinu svalové slabosti a únavy." },
+    { "med": "Sorvasta",   "inn": "rosuvastatin", "aliases": ["Crestor","Rosuvastatin"],  "shields_node": "N_ZANET_META",  "reason": "Snižuje cholesterol a tlumí cévní zánět — snižuje metabolické riziko." },
+    { "med": "Caltrate",   "inn": "kalcium+D3",   "aliases": ["Calcium","Vápník"],        "shields_node": "N_OSTEOPOROZA", "reason": "Vápník a vitamín D jsou základní stavební kameny kostní hustoty." },
+    { "med": "Mirtazapin", "inn": "mirtazapin",   "aliases": ["Remeron"],                 "shields_node": "N_DEPRESE",     "reason": "Stabilizuje náladu a spánek — snižuje centrální příčinu inaktivity." },
+    { "med": "Dulopen",    "inn": "duloxetin",    "aliases": ["Cymbalta","Duloxetin"],    "shields_node": "N_BOLEST_NOH",  "reason": "Snižuje neuropatickou bolest — přímý efekt na bolest z nervu." },
+    { "med": "Doreta",     "inn": "tramadol+paracetamol", "aliases": ["Zaldiar"],         "shields_node": "N_BOLEST_NOH",  "reason": "Analgetikum pro akutní úlevu od bolesti pohybového aparátu." },
+    { "med": "Liskantin",  "inn": "primidon",     "aliases": ["Primidone","Mysoline"],    "shields_node": "N_NESTABILITA", "reason": "Snižuje esenciální tremor — přispívá ke stabilitě pohybu." }
   ],
 
   "supplement_shields": [],

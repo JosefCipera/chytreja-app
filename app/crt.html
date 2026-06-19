@@ -303,42 +303,38 @@ const userRole = localStorage.getItem('userRoleOverride') || localStorage.getIte
 var CRT_CACHE_KEY = 'chj_crt_' + userId;
 window.CRT_CACHE_KEY = CRT_CACHE_KEY;
 
-// ── Rule Engine ───────────────────────────────────────────────────────────────
-function getVal(user, path) {
-  return path.trim().split('.').slice(1).reduce((o, k) => o?.[k], user);
-}
-function evalAtom(expr, user) {
-  expr = expr.trim();
-  const neg = expr.startsWith('!');
-  if (neg) expr = expr.slice(1).trim();
-  const inclM = expr.match(/^(user[\w.]+)\.includes\('([^']+)'\)$/);
-  if (inclM) {
-    const arr = getVal(user, inclM[1]) ?? [];
-    const needle = inclM[2].toLowerCase();
-    // meds: case-insensitive substring match; diagnoses/symptoms: exact match
-    const isMeds = inclM[1].includes('meds') || inclM[1].includes('medications');
-    const r = Array.isArray(arr) ? arr.some(v =>
-      isMeds ? String(v).toLowerCase().includes(needle) : String(v) === inclM[2]
-    ) : false;
-    return neg ? !r : r;
-  }
-  const cmpM = expr.match(/^(user[\w.]+)\s*(>=|<=|!=|==|>|<)\s*(.+)$/);
-  if (cmpM) {
-    const lhs = getVal(user, cmpM[1]);
-    const op = cmpM[2];
-    let rhs = cmpM[3].trim().replace(/^'|'$/g, '');
-    if (!isNaN(rhs)) rhs = parseFloat(rhs);
-    if (lhs == null) return neg ? true : false;
-    const r = op==='>'?lhs>rhs:op==='<'?lhs<rhs:op==='>='?lhs>=rhs:op==='<='?lhs<=rhs:op==='=='?lhs==rhs:lhs!=rhs;
-    return neg ? !r : r;
-  }
-  return false;
-}
-function evalAndExpr(expr, user) { return expr.split('&&').every(p => evalAtom(p.trim(), user)); }
+// ── Rule Engine — JSON condition evaluator ────────────────────────────────────
+// Condition format:
+//   { "diag": "CODE" }                       → diagnoses includes CODE
+//   { "symptom": "CODE" }                    → symptoms includes CODE
+//   { "med": "name" }                        → meds case-insensitive includes name
+//   { "lab": "key", "gt"|"lt"|"gte"|"lte"|"eq": value }
+//   { "checkin": "key", "gt"|"lt"|"gte"|"lte"|"eq": value }
+//   { "or": [ ...conditions ] }
+//   { "and": [ ...conditions ] }
 function evalCondition(cond, user) {
   if (!cond) return true;
-  if (cond.includes('||')) return cond.split('||').some(p => evalAndExpr(p.trim(), user));
-  return evalAndExpr(cond, user);
+  if (cond.or)  return cond.or.every  ? false : cond.or.some(c  => evalCondition(c, user));
+  if (cond.and) return cond.and.every(c => evalCondition(c, user));
+  if (cond.diag)    return (user.diagnoses || []).includes(cond.diag);
+  if (cond.symptom) return (user.symptoms  || []).includes(cond.symptom);
+  if (cond.med) {
+    const needle = cond.med.toLowerCase();
+    return (user.meds || []).some(m => String(m).toLowerCase().includes(needle));
+  }
+  const key = cond.lab || cond.checkin;
+  if (key) {
+    const src = cond.lab ? user.labs : user.checkin;
+    const val = src?.[key];
+    if (val == null) return false;
+    if (cond.gt  != null) return val >  cond.gt;
+    if (cond.lt  != null) return val <  cond.lt;
+    if (cond.gte != null) return val >= cond.gte;
+    if (cond.lte != null) return val <= cond.lte;
+    if (cond.eq  != null) return String(val) === String(cond.eq);
+    if (cond.ne  != null) return String(val) !== String(cond.ne);
+  }
+  return false;
 }
 
 // ── Data normalizace ──────────────────────────────────────────────────────────

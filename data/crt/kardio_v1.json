@@ -2,150 +2,854 @@
   "domain": "Biovesmir_Kardio_V1",
   "version": "1.0.0",
   "description": "Znalostní báze: kardiovaskulární, autonomní a elektrický subsystém",
-
   "nodes": [
-    { "id": "N_ROOT",        "label": "Sedavý životní styl",         "layer": 0, "branch": "center", "type": "root", "universe_node": "telo",
-      "detail": { "actions": ["7 000 kroků denně — jednoduchý první krok", "Stůj 2h ze 8h pracovní doby"] }
+    {
+      "id": "N_ROOT",
+      "label": "Sedavý životní styl",
+      "layer": 0,
+      "branch": "center",
+      "type": "root",
+      "universe_node": "telo",
+      "detail": {
+        "actions": [
+          "7 000 kroků denně — jednoduchý první krok",
+          "Stůj 2h ze 8h pracovní doby"
+        ]
+      }
     },
-    { "id": "N_STRES",       "label": "Chronický stres",             "layer": 1, "branch": "right", "universe_node": "regenerace",
-      "detail": { "value_key": "checkin.stress", "value_unit": "/ 5", "value_target": "≤ 2", "actions": ["10 min meditace ráno — aktivuje parasympatikus", "Pohyb jako ventil stresu — procházka 20 min"] }
+    {
+      "id": "N_STRES",
+      "label": "Chronický stres",
+      "layer": 1,
+      "branch": "right",
+      "universe_node": "regenerace",
+      "detail": {
+        "value_key": "checkin.stress",
+        "value_unit": "/ 5",
+        "value_target": "≤ 2",
+        "actions": [
+          "10 min meditace ráno — aktivuje parasympatikus",
+          "Pohyb jako ventil stresu — procházka 20 min"
+        ]
+      }
     },
-    { "id": "N_LDL",         "label": "Vysoké LDL v krvi",           "layer": 1, "branch": "left", "universe_node": "vyziva",
-      "detail": { "value_key": "labs.ldl", "value_unit": "mmol/L", "value_target": "< 3.0", "actions": ["Omez nasycené tuky (< 10 % kalorií)", "150 min aerobního pohybu / týden"] }
+    {
+      "id": "N_LDL",
+      "label": "Vysoké LDL v krvi",
+      "layer": 1,
+      "branch": "left",
+      "universe_node": "vyziva",
+      "detail": {
+        "value_key": "labs.ldl",
+        "value_unit": "mmol/L",
+        "value_target": "< 3.0",
+        "actions": [
+          "Omez nasycené tuky (< 10 % kalorií)",
+          "150 min aerobního pohybu / týden"
+        ]
+      }
     },
-    { "id": "N_INSRES",      "label": "Inzulínová rezistence",       "layer": 1, "branch": "left", "universe_node": "vyziva",
-      "detail": { "value_key": "labs.glucose", "value_unit": "mmol/L", "value_target": "< 5.6", "actions": ["Low-carb strava: 50–100 g sacharidů / den", "Chůze 10 min po jídle — snižuje glukózu o 15 %"] }
+    {
+      "id": "N_INSRES",
+      "label": "Inzulínová rezistence",
+      "layer": 1,
+      "branch": "left",
+      "universe_node": "vyziva",
+      "detail": {
+        "value_key": "labs.glucose",
+        "value_unit": "mmol/L",
+        "value_target": "< 5.6",
+        "actions": [
+          "Low-carb strava: 50–100 g sacharidů / den",
+          "Chůze 10 min po jídle — snižuje glukózu o 15 %"
+        ]
+      }
     },
-    { "id": "N_DEKONDICE",   "label": "Slabá fyzická kondice",       "layer": 1, "branch": "center", "universe_node": "pohyb",
-      "detail": { "actions": ["150 min / týden mírná aktivita (doporučení WHO)", "Začni malým: 15 min chůze každý den"] }
+    {
+      "id": "N_DEKONDICE",
+      "label": "Slabá fyzická kondice",
+      "layer": 1,
+      "branch": "center",
+      "universe_node": "pohyb",
+      "detail": {
+        "actions": [
+          "150 min / týden mírná aktivita (doporučení WHO)",
+          "Začni malým: 15 min chůze každý den"
+        ]
+      }
     },
-    { "id": "N_SPANEK",      "label": "Spánkový deficit",            "layer": 1, "branch": "right", "universe_node": "regenerace",
-      "detail": { "value_key": "checkin.sleep_hours", "value_unit": "hod", "value_target": "≥ 7.5", "actions": ["Stejná hodina spánku 7 dní v řadě", "Teplota v ložnici 18 °C zlepší spánek o 20 %"] }
+    {
+      "id": "N_SPANEK",
+      "label": "Spánkový deficit",
+      "layer": 1,
+      "branch": "right",
+      "universe_node": "regenerace",
+      "detail": {
+        "value_key": "checkin.sleep_hours",
+        "value_unit": "hod",
+        "value_target": "≥ 7.5",
+        "actions": [
+          "Stejná hodina spánku 7 dní v řadě",
+          "Teplota v ložnici 18 °C zlepší spánek o 20 %"
+        ]
+      }
     },
-    { "id": "N_SYMPATIKUS",  "label": "Aktivace sympatiku",          "layer": 2, "branch": "right", "universe_node": "regenerace",
-      "detail": { "actions": ["Pravidelný pohyb reguluje autonomní systém", "Dech 4-7-8 — ventil sympatikotonie"] }
+    {
+      "id": "N_SYMPATIKUS",
+      "label": "Aktivace sympatiku",
+      "layer": 2,
+      "branch": "right",
+      "universe_node": "regenerace",
+      "detail": {
+        "actions": [
+          "Pravidelný pohyb reguluje autonomní systém",
+          "Dech 4-7-8 — ventil sympatikotonie"
+        ]
+      }
     },
-    { "id": "N_PLAKY",       "label": "Usazeniny v cévách",          "layer": 2, "branch": "left", "universe_node": "kardio",
-      "detail": { "value_key": "labs.ldl", "value_unit": "mmol/L", "value_target": "< 3.0", "actions": ["Omez nasycené tuky (červené maso, sýry, máslo) — přímý vliv na LDL", "Kontroluj LDL každé 3 měsíce"] }
+    {
+      "id": "N_PLAKY",
+      "label": "Usazeniny v cévách",
+      "layer": 2,
+      "branch": "left",
+      "universe_node": "kardio",
+      "detail": {
+        "value_key": "labs.ldl",
+        "value_unit": "mmol/L",
+        "value_target": "< 3.0",
+        "actions": [
+          "Omez nasycené tuky (červené maso, sýry, máslo) — přímý vliv na LDL",
+          "Kontroluj LDL každé 3 měsíce"
+        ]
+      }
     },
-    { "id": "N_ZATEZ",       "label": "Vyšší zátěž srdce",           "layer": 2, "branch": "center", "universe_node": "kardio",
-      "detail": { "actions": ["Aerobní pohyb 150 min / týden snižuje srdeční zátěž", "Cílový diastolický tlak < 80 mmHg"] }
+    {
+      "id": "N_ZATEZ",
+      "label": "Vyšší zátěž srdce",
+      "layer": 2,
+      "branch": "center",
+      "universe_node": "kardio",
+      "detail": {
+        "actions": [
+          "Aerobní pohyb 150 min / týden snižuje srdeční zátěž",
+          "Cílový diastolický tlak < 80 mmHg"
+        ]
+      }
     },
-    { "id": "N_ZANET",       "label": "Zánět cév",                   "layer": 3, "branch": "left", "universe_node": "kardio",
-      "detail": { "value_key": "labs.crp", "value_unit": "mg/L", "value_target": "< 1.0", "actions": ["Omega-3 (EPA+DHA 2 g/den) snižuje CRP", "Vyhni se ultra-zpracovaným potravinám"] }
+    {
+      "id": "N_ZANET",
+      "label": "Zánět cév",
+      "layer": 3,
+      "branch": "left",
+      "universe_node": "kardio",
+      "detail": {
+        "value_key": "labs.crp",
+        "value_unit": "mg/L",
+        "value_target": "< 1.0",
+        "actions": [
+          "Omega-3 (EPA+DHA 2 g/den) snižuje CRP",
+          "Vyhni se ultra-zpracovaným potravinám"
+        ]
+      }
     },
-    { "id": "N_HYPOKALEMIE", "label": "Nízký draslík",              "layer": 2, "branch": "right", "universe_node": "regenerace",
-      "detail": { "value_key": "labs.k", "value_unit": "mmol/L", "value_target": "3.5–5.0", "actions": ["Banán, avokádo, brambory — přírodní zdroje K+", "Kalnormin: kontroluj hladinu K každé 3 měsíce"] }
+    {
+      "id": "N_HYPOKALEMIE",
+      "label": "Nízký draslík",
+      "layer": 2,
+      "branch": "right",
+      "universe_node": "regenerace",
+      "detail": {
+        "value_key": "labs.k",
+        "value_unit": "mmol/L",
+        "value_target": "3.5–5.0",
+        "actions": [
+          "Banán, avokádo, brambory — přírodní zdroje K+",
+          "Kalnormin: kontroluj hladinu K každé 3 měsíce"
+        ]
+      }
     },
-    { "id": "N_ZTUHE_CEVY",  "label": "Ztuhlé cévy",                "layer": 4, "branch": "left", "universe_node": "kardio",
-      "detail": { "actions": ["Omega-3 a hořčík zlepšují pružnost cév", "DASH dieta snižuje arteriální tuhnutí"] }
+    {
+      "id": "N_ZTUHE_CEVY",
+      "label": "Ztuhlé cévy",
+      "layer": 4,
+      "branch": "left",
+      "universe_node": "kardio",
+      "detail": {
+        "actions": [
+          "Omega-3 a hořčík zlepšují pružnost cév",
+          "DASH dieta snižuje arteriální tuhnutí"
+        ]
+      }
     },
-    { "id": "N_NAPETI_ANS",  "label": "Napětí nervového systému",   "layer": 3, "branch": "right", "universe_node": "regenerace",
-      "detail": { "value_key": "checkin.hrv", "value_unit": "ms", "value_target": "> 50", "actions": ["Rezonační dýchání 6 nádechů / min", "Studená sprcha 30 s — aktivuje vagový nerv"] }
+    {
+      "id": "N_NAPETI_ANS",
+      "label": "Napětí nervového systému",
+      "layer": 3,
+      "branch": "right",
+      "universe_node": "regenerace",
+      "detail": {
+        "value_key": "checkin.hrv",
+        "value_unit": "ms",
+        "value_target": "> 50",
+        "actions": [
+          "Rezonační dýchání 6 nádechů / min",
+          "Studená sprcha 30 s — aktivuje vagový nerv"
+        ]
+      }
     },
-    { "id": "N_NIZKE_HRV",   "label": "Nízká HRV",                  "layer": 4, "branch": "right", "universe_node": "regenerace",
-      "detail": { "value_key": "checkin.hrv", "value_unit": "ms", "value_target": "> 50", "actions": ["Stejná hodina spánku každý den", "Alkohol snižuje HRV o 20–30 % — vyhni se"] }
+    {
+      "id": "N_NIZKE_HRV",
+      "label": "Nízká HRV",
+      "layer": 4,
+      "branch": "right",
+      "universe_node": "regenerace",
+      "detail": {
+        "value_key": "checkin.hrv",
+        "value_unit": "ms",
+        "value_target": "> 50",
+        "actions": [
+          "Stejná hodina spánku každý den",
+          "Alkohol snižuje HRV o 20–30 % — vyhni se"
+        ]
+      }
     },
-    { "id": "N_VYSOKY_TK",   "label": "Vysoký krevní tlak",         "layer": 5, "branch": "left", "universe_node": "kardio",
-      "detail": { "value_key": "labs.systolic_bp", "value_unit": "mmHg", "value_target": "< 130", "actions": ["Aerobní pohyb snižuje TK o 5–8 mmHg", "Omez sodík < 5 g/den"] }
+    {
+      "id": "N_VYSOKY_TK",
+      "label": "Vysoký krevní tlak",
+      "layer": 5,
+      "branch": "left",
+      "universe_node": "kardio",
+      "detail": {
+        "value_key": "labs.systolic_bp",
+        "value_unit": "mmHg",
+        "value_target": "< 130",
+        "actions": [
+          "Aerobní pohyb snižuje TK o 5–8 mmHg",
+          "Omez sodík < 5 g/den"
+        ]
+      }
     },
-    { "id": "N_DRAZDIVOST",  "label": "Elektrická dráždivost síní", "layer": 5, "branch": "right", "universe_node": "kardio",
-      "detail": { "actions": ["Vyhni se kofeinu po 14h — zvyšuje elektrickou dráždivost síní", "Alkohol i v malém množství spouští ektopické stahy — vynech večerní sklenku"] }
+    {
+      "id": "N_DRAZDIVOST",
+      "label": "Elektrická dráždivost síní",
+      "layer": 5,
+      "branch": "right",
+      "universe_node": "kardio",
+      "detail": {
+        "actions": [
+          "Vyhni se kofeinu po 14h — zvyšuje elektrickou dráždivost síní",
+          "Alkohol i v malém množství spouští ektopické stahy — vynech večerní sklenku"
+        ]
+      }
     },
-    { "id": "N_MECH_TLAK",   "label": "Mechanický tlak na srdce",   "layer": 6, "branch": "left", "universe_node": "kardio",
-      "detail": { "actions": ["Cílový TK < 130/80 mmHg — chronický cíl", "Léky na TK užívej pravidelně bez vynechávání"] }
+    {
+      "id": "N_MECH_TLAK",
+      "label": "Mechanický tlak na srdce",
+      "layer": 6,
+      "branch": "left",
+      "universe_node": "kardio",
+      "detail": {
+        "actions": [
+          "Cílový TK < 130/80 mmHg — chronický cíl",
+          "Léky na TK užívej pravidelně bez vynechávání"
+        ]
+      }
     },
-    { "id": "N_EXTRASYSTOLY","label": "Extrasystoly",               "layer": 7, "branch": "center", "type": "junction", "universe_node": "kardio",
-      "detail": { "actions": ["Zaznamenej triggery: kofein, alkohol, stres, únava", "Monitoruj pulz 2× denně — data pro kardiologa"] }
+    {
+      "id": "N_EXTRASYSTOLY",
+      "label": "Extrasystoly",
+      "layer": 7,
+      "branch": "center",
+      "type": "junction",
+      "universe_node": "kardio",
+      "detail": {
+        "actions": [
+          "Zaznamenej triggery: kofein, alkohol, stres, únava",
+          "Monitoruj pulz 2× denně — data pro kardiologa"
+        ]
+      }
     },
-    { "id": "N_FAP",         "label": "Fibrilace síní (FaP)",       "layer": 8, "branch": "center", "type": "ude", "universe_node": "kardio",
-      "detail": { "actions": ["Pravidelné kontroly u kardiologa každých 6 měsíců", "Pradaxa: nepřerušuj bez konzultace — riziko mrtvice"] }
+    {
+      "id": "N_FAP",
+      "label": "Fibrilace síní (FaP)",
+      "layer": 8,
+      "branch": "center",
+      "type": "ude",
+      "universe_node": "kardio",
+      "detail": {
+        "actions": [
+          "Pravidelné kontroly u kardiologa každých 6 měsíců",
+          "Pradaxa: nepřerušuj bez konzultace — riziko mrtvice"
+        ]
+      }
     }
   ],
-
   "possible_arrows": [
-    { "id": "A_001", "from": "N_ROOT",       "to": "N_LDL",          "condition": "user.labs.ldl > 3.0" },
-    { "id": "A_002", "from": "N_ROOT",       "to": "N_INSRES",       "condition": "user.labs.glucose > 5.6 || user.labs.hba1c > 5.7" },
-    { "id": "A_003", "from": "N_ROOT",       "to": "N_DEKONDICE",    "condition": "user.checkin.movement_level == 'low'" },
-    { "id": "A_004", "from": "N_ROOT",       "to": "N_STRES",        "condition": "user.checkin.stress > 3 || user.diagnoses.includes('CHRONICKY_STRES')" },
-    { "id": "A_005", "from": "N_ROOT",       "to": "N_SPANEK",       "condition": "user.checkin.sleep_hours < 6.5" },
-
-    { "id": "A_006", "from": "N_LDL",        "to": "N_PLAKY",        "condition": "user.labs.ldl > 3.0" },
-    { "id": "A_007", "from": "N_INSRES",     "to": "N_LDL",          "condition": "user.labs.glucose > 5.6 && user.labs.ldl > 3.0" },
-    { "id": "A_008", "from": "N_INSRES",     "to": "N_ZANET",        "condition": "user.labs.glucose > 6.0 || user.labs.hba1c > 6.0" },
-    { "id": "A_009", "from": "N_PLAKY",      "to": "N_ZANET",        "condition": "user.labs.crp > 1.0" },
-    { "id": "A_010", "from": "N_PLAKY",      "to": "N_ZTUHE_CEVY",   "condition": "user.labs.ldl > 4.0 || user.diagnoses.includes('ATEROSKLEROZA')" },
-    { "id": "A_011", "from": "N_ZANET",      "to": "N_ZTUHE_CEVY",   "condition": "user.labs.crp > 1.0 && user.labs.ldl > 3.0" },
-    { "id": "A_012", "from": "N_ZTUHE_CEVY", "to": "N_VYSOKY_TK",   "condition": "user.labs.systolic_bp > 130 || user.diagnoses.includes('HYPERTENZE')" },
-    { "id": "A_013", "from": "N_VYSOKY_TK",  "to": "N_MECH_TLAK",   "condition": "user.labs.systolic_bp > 140 || user.diagnoses.includes('HYPERTENZE')" },
-    { "id": "A_014", "from": "N_MECH_TLAK",  "to": "N_EXTRASYSTOLY", "condition": "user.symptoms.includes('EXTRASYSTOLY') || user.symptoms.includes('BUSENI_SRDCE')" },
-
-    { "id": "A_015", "from": "N_DEKONDICE",  "to": "N_ZATEZ",        "condition": "user.checkin.movement_level == 'low' || user.checkin.energy < 3" },
-    { "id": "A_016", "from": "N_ZTUHE_CEVY", "to": "N_ZATEZ",        "condition": "user.labs.systolic_bp > 150" },
-    { "id": "A_017", "from": "N_ZATEZ",      "to": "N_EXTRASYSTOLY", "condition": "user.symptoms.includes('EXTRASYSTOLY') || user.checkin.energy < 2" },
-
-    { "id": "A_018", "from": "N_STRES",      "to": "N_SYMPATIKUS",   "condition": "user.checkin.stress > 3 || user.diagnoses.includes('CHRONICKY_STRES')" },
-    { "id": "A_019", "from": "N_SPANEK",     "to": "N_SYMPATIKUS",   "condition": "user.checkin.sleep_hours < 6.5" },
-    { "id": "A_020", "from": "N_SPANEK",     "to": "N_DEKONDICE",    "condition": "user.checkin.sleep_hours < 6.0 && user.checkin.movement_level == 'low'" },
-    { "id": "A_021", "from": "N_SYMPATIKUS", "to": "N_VYSOKY_TK",    "condition": "user.checkin.stress > 3 && user.labs.systolic_bp > 130" },
-    { "id": "A_022", "from": "N_SYMPATIKUS", "to": "N_NAPETI_ANS",   "condition": "user.checkin.stress > 3 || user.diagnoses.includes('CHRONICKY_STRES')" },
-    { "id": "A_023", "from": "N_SYMPATIKUS", "to": "N_HYPOKALEMIE",  "condition": "user.checkin.stress > 4 && user.labs.k < 3.8" },
-    { "id": "A_024", "from": "N_NAPETI_ANS", "to": "N_NIZKE_HRV",    "condition": "user.checkin.hrv < 30 || user.checkin.stress > 3 || user.diagnoses.includes('CHRONICKY_STRES')" },
-    { "id": "A_025", "from": "N_NAPETI_ANS", "to": "N_DRAZDIVOST",   "condition": "user.checkin.stress > 4" },
-    { "id": "A_026", "from": "N_NIZKE_HRV",  "to": "N_DRAZDIVOST",   "condition": "user.checkin.hrv < 25 || user.diagnoses.includes('FIBRILACE_SINI_PAROXYSMALNI')" },
-    { "id": "A_027", "from": "N_HYPOKALEMIE","to": "N_DRAZDIVOST",   "condition": "user.labs.k < 3.5" },
-    { "id": "A_028", "from": "N_ZANET",      "to": "N_DRAZDIVOST",   "condition": "user.labs.crp > 2.0 && user.diagnoses.includes('FIBRILACE_SINI_PAROXYSMALNI')" },
-
-    { "id": "A_029", "from": "N_DRAZDIVOST", "to": "N_EXTRASYSTOLY", "condition": "user.symptoms.includes('EXTRASYSTOLY') || user.diagnoses.includes('EXTRASYSTOLY')" },
-    { "id": "A_030", "from": "N_EXTRASYSTOLY","to": "N_FAP",         "condition": "user.diagnoses.includes('FIBRILACE_SINI_PAROXYSMALNI') || user.diagnoses.includes('FIBRILACE_SINI')" },
-
-    { "id": "A_031", "from": "N_DEKONDICE",  "to": "N_STRES",        "condition": "user.checkin.movement_level == 'low' && user.checkin.stress > 3" },
-    { "id": "A_032", "from": "N_STRES",      "to": "N_INSRES",       "condition": "user.checkin.stress > 4 && user.labs.glucose > 5.6" },
-    { "id": "A_033", "from": "N_STRES",      "to": "N_SPANEK",       "condition": "user.checkin.stress > 3 && user.checkin.sleep_hours < 7.0" },
-    { "id": "A_034", "from": "N_NIZKE_HRV",  "to": "N_ZATEZ",        "condition": "user.checkin.hrv < 25 && user.checkin.energy < 3" }
+    {
+      "id": "A_001",
+      "from": "N_ROOT",
+      "to": "N_LDL",
+      "condition": {
+        "lab": "ldl",
+        "gt": 3.0
+      }
+    },
+    {
+      "id": "A_002",
+      "from": "N_ROOT",
+      "to": "N_INSRES",
+      "condition": {
+        "or": [
+          {
+            "lab": "glucose",
+            "gt": 5.6
+          },
+          {
+            "lab": "hba1c",
+            "gt": 5.7
+          }
+        ]
+      }
+    },
+    {
+      "id": "A_003",
+      "from": "N_ROOT",
+      "to": "N_DEKONDICE",
+      "condition": {
+        "checkin": "movement_level",
+        "eq": "low"
+      }
+    },
+    {
+      "id": "A_004",
+      "from": "N_ROOT",
+      "to": "N_STRES",
+      "condition": {
+        "or": [
+          {
+            "checkin": "stress",
+            "gt": 3.0
+          },
+          {
+            "diag": "CHRONICKY_STRES"
+          }
+        ]
+      }
+    },
+    {
+      "id": "A_005",
+      "from": "N_ROOT",
+      "to": "N_SPANEK",
+      "condition": {
+        "checkin": "sleep_hours",
+        "lt": 6.5
+      }
+    },
+    {
+      "id": "A_006",
+      "from": "N_LDL",
+      "to": "N_PLAKY",
+      "condition": {
+        "lab": "ldl",
+        "gt": 3.0
+      }
+    },
+    {
+      "id": "A_007",
+      "from": "N_INSRES",
+      "to": "N_LDL",
+      "condition": {
+        "and": [
+          {
+            "lab": "glucose",
+            "gt": 5.6
+          },
+          {
+            "lab": "ldl",
+            "gt": 3.0
+          }
+        ]
+      }
+    },
+    {
+      "id": "A_008",
+      "from": "N_INSRES",
+      "to": "N_ZANET",
+      "condition": {
+        "or": [
+          {
+            "lab": "glucose",
+            "gt": 6.0
+          },
+          {
+            "lab": "hba1c",
+            "gt": 6.0
+          }
+        ]
+      }
+    },
+    {
+      "id": "A_009",
+      "from": "N_PLAKY",
+      "to": "N_ZANET",
+      "condition": {
+        "lab": "crp",
+        "gt": 1.0
+      }
+    },
+    {
+      "id": "A_010",
+      "from": "N_PLAKY",
+      "to": "N_ZTUHE_CEVY",
+      "condition": {
+        "or": [
+          {
+            "lab": "ldl",
+            "gt": 4.0
+          },
+          {
+            "diag": "ATEROSKLEROZA"
+          }
+        ]
+      }
+    },
+    {
+      "id": "A_011",
+      "from": "N_ZANET",
+      "to": "N_ZTUHE_CEVY",
+      "condition": {
+        "and": [
+          {
+            "lab": "crp",
+            "gt": 1.0
+          },
+          {
+            "lab": "ldl",
+            "gt": 3.0
+          }
+        ]
+      }
+    },
+    {
+      "id": "A_012",
+      "from": "N_ZTUHE_CEVY",
+      "to": "N_VYSOKY_TK",
+      "condition": {
+        "or": [
+          {
+            "lab": "systolic_bp",
+            "gt": 130.0
+          },
+          {
+            "diag": "HYPERTENZE"
+          }
+        ]
+      }
+    },
+    {
+      "id": "A_013",
+      "from": "N_VYSOKY_TK",
+      "to": "N_MECH_TLAK",
+      "condition": {
+        "or": [
+          {
+            "lab": "systolic_bp",
+            "gt": 140.0
+          },
+          {
+            "diag": "HYPERTENZE"
+          }
+        ]
+      }
+    },
+    {
+      "id": "A_014",
+      "from": "N_MECH_TLAK",
+      "to": "N_EXTRASYSTOLY",
+      "condition": {
+        "or": [
+          {
+            "symptom": "EXTRASYSTOLY"
+          },
+          {
+            "symptom": "BUSENI_SRDCE"
+          }
+        ]
+      }
+    },
+    {
+      "id": "A_015",
+      "from": "N_DEKONDICE",
+      "to": "N_ZATEZ",
+      "condition": {
+        "or": [
+          {
+            "checkin": "movement_level",
+            "eq": "low"
+          },
+          {
+            "checkin": "energy",
+            "lt": 3.0
+          }
+        ]
+      }
+    },
+    {
+      "id": "A_016",
+      "from": "N_ZTUHE_CEVY",
+      "to": "N_ZATEZ",
+      "condition": {
+        "lab": "systolic_bp",
+        "gt": 150.0
+      }
+    },
+    {
+      "id": "A_017",
+      "from": "N_ZATEZ",
+      "to": "N_EXTRASYSTOLY",
+      "condition": {
+        "or": [
+          {
+            "symptom": "EXTRASYSTOLY"
+          },
+          {
+            "checkin": "energy",
+            "lt": 2.0
+          }
+        ]
+      }
+    },
+    {
+      "id": "A_018",
+      "from": "N_STRES",
+      "to": "N_SYMPATIKUS",
+      "condition": {
+        "or": [
+          {
+            "checkin": "stress",
+            "gt": 3.0
+          },
+          {
+            "diag": "CHRONICKY_STRES"
+          }
+        ]
+      }
+    },
+    {
+      "id": "A_019",
+      "from": "N_SPANEK",
+      "to": "N_SYMPATIKUS",
+      "condition": {
+        "checkin": "sleep_hours",
+        "lt": 6.5
+      }
+    },
+    {
+      "id": "A_020",
+      "from": "N_SPANEK",
+      "to": "N_DEKONDICE",
+      "condition": {
+        "and": [
+          {
+            "checkin": "sleep_hours",
+            "lt": 6.0
+          },
+          {
+            "checkin": "movement_level",
+            "eq": "low"
+          }
+        ]
+      }
+    },
+    {
+      "id": "A_021",
+      "from": "N_SYMPATIKUS",
+      "to": "N_VYSOKY_TK",
+      "condition": {
+        "and": [
+          {
+            "checkin": "stress",
+            "gt": 3.0
+          },
+          {
+            "lab": "systolic_bp",
+            "gt": 130.0
+          }
+        ]
+      }
+    },
+    {
+      "id": "A_022",
+      "from": "N_SYMPATIKUS",
+      "to": "N_NAPETI_ANS",
+      "condition": {
+        "or": [
+          {
+            "checkin": "stress",
+            "gt": 3.0
+          },
+          {
+            "diag": "CHRONICKY_STRES"
+          }
+        ]
+      }
+    },
+    {
+      "id": "A_023",
+      "from": "N_SYMPATIKUS",
+      "to": "N_HYPOKALEMIE",
+      "condition": {
+        "and": [
+          {
+            "checkin": "stress",
+            "gt": 4.0
+          },
+          {
+            "lab": "k",
+            "lt": 3.8
+          }
+        ]
+      }
+    },
+    {
+      "id": "A_024",
+      "from": "N_NAPETI_ANS",
+      "to": "N_NIZKE_HRV",
+      "condition": {
+        "or": [
+          {
+            "checkin": "hrv",
+            "lt": 30.0
+          },
+          {
+            "checkin": "stress",
+            "gt": 3.0
+          },
+          {
+            "diag": "CHRONICKY_STRES"
+          }
+        ]
+      }
+    },
+    {
+      "id": "A_025",
+      "from": "N_NAPETI_ANS",
+      "to": "N_DRAZDIVOST",
+      "condition": {
+        "checkin": "stress",
+        "gt": 4.0
+      }
+    },
+    {
+      "id": "A_026",
+      "from": "N_NIZKE_HRV",
+      "to": "N_DRAZDIVOST",
+      "condition": {
+        "or": [
+          {
+            "checkin": "hrv",
+            "lt": 25.0
+          },
+          {
+            "diag": "FIBRILACE_SINI_PAROXYSMALNI"
+          }
+        ]
+      }
+    },
+    {
+      "id": "A_027",
+      "from": "N_HYPOKALEMIE",
+      "to": "N_DRAZDIVOST",
+      "condition": {
+        "lab": "k",
+        "lt": 3.5
+      }
+    },
+    {
+      "id": "A_028",
+      "from": "N_ZANET",
+      "to": "N_DRAZDIVOST",
+      "condition": {
+        "and": [
+          {
+            "lab": "crp",
+            "gt": 2.0
+          },
+          {
+            "diag": "FIBRILACE_SINI_PAROXYSMALNI"
+          }
+        ]
+      }
+    },
+    {
+      "id": "A_029",
+      "from": "N_DRAZDIVOST",
+      "to": "N_EXTRASYSTOLY",
+      "condition": {
+        "or": [
+          {
+            "symptom": "EXTRASYSTOLY"
+          },
+          {
+            "diag": "EXTRASYSTOLY"
+          }
+        ]
+      }
+    },
+    {
+      "id": "A_030",
+      "from": "N_EXTRASYSTOLY",
+      "to": "N_FAP",
+      "condition": {
+        "or": [
+          {
+            "diag": "FIBRILACE_SINI_PAROXYSMALNI"
+          },
+          {
+            "diag": "FIBRILACE_SINI"
+          }
+        ]
+      }
+    },
+    {
+      "id": "A_031",
+      "from": "N_DEKONDICE",
+      "to": "N_STRES",
+      "condition": {
+        "and": [
+          {
+            "checkin": "movement_level",
+            "eq": "low"
+          },
+          {
+            "checkin": "stress",
+            "gt": 3.0
+          }
+        ]
+      }
+    },
+    {
+      "id": "A_032",
+      "from": "N_STRES",
+      "to": "N_INSRES",
+      "condition": {
+        "and": [
+          {
+            "checkin": "stress",
+            "gt": 4.0
+          },
+          {
+            "lab": "glucose",
+            "gt": 5.6
+          }
+        ]
+      }
+    },
+    {
+      "id": "A_033",
+      "from": "N_STRES",
+      "to": "N_SPANEK",
+      "condition": {
+        "and": [
+          {
+            "checkin": "stress",
+            "gt": 3.0
+          },
+          {
+            "checkin": "sleep_hours",
+            "lt": 7.0
+          }
+        ]
+      }
+    },
+    {
+      "id": "A_034",
+      "from": "N_NIZKE_HRV",
+      "to": "N_ZATEZ",
+      "condition": {
+        "and": [
+          {
+            "checkin": "hrv",
+            "lt": 25.0
+          },
+          {
+            "checkin": "energy",
+            "lt": 3.0
+          }
+        ]
+      }
+    }
   ],
-
   "supplement_shields": [
     {
       "supp": "Omega-3",
-      "aliases": ["omega3", "epa", "dha", "rybí olej", "fish oil", "omega 3"],
+      "aliases": [
+        "omega3",
+        "epa",
+        "dha",
+        "rybí olej",
+        "fish oil",
+        "omega 3"
+      ],
       "shields_arrow": "A_009",
       "reason": "EPA+DHA snižují CRP a zpomalují zánětlivé poškození cévní stěny"
     },
     {
       "supp": "Hořčík",
-      "aliases": ["magnesium", "magnézium", "bisglycinát", "bisglycinate", "hořčík"],
+      "aliases": [
+        "magnesium",
+        "magnézium",
+        "bisglycinát",
+        "bisglycinate",
+        "hořčík"
+      ],
       "shields_node": "N_ZTUHE_CEVY",
       "reason": "Hořčík zlepšuje pružnost hladké svaloviny cév a snižuje arteriální tuhnutí"
     },
     {
       "supp": "Magnosolv",
-      "aliases": ["magnosolv", "magnézium citrát", "magnesium citrate"],
+      "aliases": [
+        "magnosolv",
+        "magnézium citrát",
+        "magnesium citrate"
+      ],
       "shields_node": "N_ZTUHE_CEVY",
       "reason": "Hořčík zlepšuje pružnost hladké svaloviny cév a snižuje arteriální tuhnutí"
     },
     {
       "supp": "CoQ10",
-      "aliases": ["coq10", "koenzym q", "ubiquinol", "ubidecarenone", "q10"],
+      "aliases": [
+        "coq10",
+        "koenzym q",
+        "ubiquinol",
+        "ubidecarenone",
+        "q10"
+      ],
       "shields_node": "N_NIZKE_HRV",
       "reason": "Koenzym Q10 podporuje mitochondriální energetiku srdečního svalu a zlepšuje HRV"
     }
   ],
-
   "contraindications": [
     {
       "drug": "Magnosolv",
-      "aliases": ["magnosolv", "magnézium citrát", "magnesium citrate"],
+      "aliases": [
+        "magnosolv",
+        "magnézium citrát",
+        "magnesium citrate"
+      ],
       "conflicts_with": "Hořčík",
       "reason": "Magnosolv není jen hořčík — zvyšuje hladinu Pradaxy v krvi a může zesilovat účinek dalších léků na srdce. Pokud ho bereš bez vědomí lékaře, riskuješ krvácení nebo arytmii. Než ho vezmeš, řekni to svému lékaři."
     }
   ],
-
   "medication_shields": [
     {
       "med": "Milurit",
       "inn": "Alopurinol",
-      "aliases": ["milurit", "alopurinol", "allopurinol"],
+      "aliases": [
+        "milurit",
+        "alopurinol",
+        "allopurinol"
+      ],
       "group": "urikostatikum",
       "shields_node": "N_ZANET",
       "reason": "Snižuje kyselinu močovou — vysoká hladina přispívá k zánětu cévní stěny a oxidativnímu stresu"
@@ -174,7 +878,12 @@
     {
       "med": "Nolpaza",
       "inn": "Pantoprazol",
-      "aliases": ["nolpaza", "pantoprazol", "pantoprazole", "omeprazol"],
+      "aliases": [
+        "nolpaza",
+        "pantoprazol",
+        "pantoprazole",
+        "omeprazol"
+      ],
       "group": "PPI",
       "shields_node": "N_FAP",
       "reason": "Gastroprotekce při antikoagulační léčbě — snižuje riziko krvácení do žaludku"
@@ -182,7 +891,13 @@
     {
       "med": "Ibalgin",
       "inn": "Ibuprofen",
-      "aliases": ["ibalgin", "ibuprofen", "ibuprofenum", "brufen", "advil"],
+      "aliases": [
+        "ibalgin",
+        "ibuprofen",
+        "ibuprofenum",
+        "brufen",
+        "advil"
+      ],
       "group": "NSAID",
       "shields_node": "N_FAP",
       "reason": "NSAID zvyšuje riziko krvácení v kombinaci s antikoagulancii — léky na ředění krve"
