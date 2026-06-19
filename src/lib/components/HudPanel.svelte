@@ -62,7 +62,7 @@
         />
       </div>
 
-      {#if data.crt_cause && data.life_battery?.state === 'RED'}
+      {#if data.crt_cause}
         <div class="hud-fade-in" style="animation-delay: 0.15s">
           <div style="background:rgba(239,68,68,0.07);border:1px solid rgba(239,68,68,0.2);border-radius:10px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
             <div>

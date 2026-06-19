@@ -437,24 +437,16 @@ function findComponents(nodes, arrows) {
   return comps;
 }
 
-// Rozloží každou komponentu zvlášť a seřadí je vedle sebe (největší vlevo)
+// Zobrazí jen největší komponentu (ostatní = sirotci z jiných KB domén → skrýt)
 function layoutMultiComponent(nodes, arrows) {
   const comps = findComponents(nodes, arrows);
   if (comps.length <= 1) { calcPositionsClient(nodes); return; }
-  comps.sort((a, b) => b.length - a.length); // největší první
-
-  comps.forEach((comp, ci) => {
-    calcPositionsClient(comp);
-    if (ci === 0) return;
-    // Posun doprava za předchozí komponenty
-    let maxPrevX = 0;
-    for (let pi = 0; pi < ci; pi++) {
-      comps[pi].forEach(n => { maxPrevX = Math.max(maxPrevX, (n.x || 0) + 340 + BOX_W / 2); });
-    }
-    const minCurrX = Math.min(...comp.map(n => n.x || 0)) - 340 - BOX_W / 2;
-    const shift = maxPrevX - minCurrX + 120;
-    comp.forEach(n => { n.x = (n.x || 0) + shift; });
-  });
+  comps.sort((a, b) => b.length - a.length);
+  const main = comps[0]; // největší strom
+  // Odstraň sirotčí uzly z pole nodes (in-place filter)
+  const mainIds = new Set(main.map(n => n.id));
+  nodes.splice(0, nodes.length, ...nodes.filter(n => mainIds.has(n.id)));
+  calcPositionsClient(nodes);
 }
 
 function calcPositionsClient(nodes) {

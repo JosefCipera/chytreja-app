@@ -12,34 +12,62 @@ import { join, dirname } from 'path';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // ── CRT KB cache (loaded once per cold start) ──────────
-let _kardioKb = null;
-function getKardioKb() {
-  if (!_kardioKb) {
-    const paths = [
-      join(process.cwd(), 'data/crt/kardio_v1.json'),
-      join(__dirname, '../data/crt/kardio_v1.json'),
-    ];
+const KB_FILES = ['data/crt/kardio_v1.json', 'data/crt/pohybovy_v1.json'];
+let _mergedKb = null;
+function getMergedKb() {
+  if (_mergedKb) return _mergedKb;
+  const merged = { nodes: [], possible_arrows: [] };
+  for (const rel of KB_FILES) {
+    const paths = [join(process.cwd(), rel), join(__dirname, '..', rel)];
     for (const p of paths) {
       try {
-        _kardioKb = JSON.parse(readFileSync(p, 'utf8'));
-        console.log('[CRT-KB] loaded from', p);
+        const kb = JSON.parse(readFileSync(p, 'utf8'));
+        merged.nodes.push(...(kb.nodes || []));
+        merged.possible_arrows.push(...(kb.possible_arrows || []));
+        console.log('[CRT-KB] loaded', p);
         break;
       } catch (e) {
-        console.warn('[CRT-KB] failed to load from', p, e.message);
+        console.warn('[CRT-KB] failed', p, e.message);
       }
     }
   }
-  return _kardioKb;
+  _mergedKb = merged;
+  return _mergedKb;
 }
+// Legacy alias — callers still reference kardioKb variable name in shared context
+function getKardioKb() { return getMergedKb(); }
 
-// Evaluate a single condition string against user context.
-// Supports: >, <, ==, ||, &&, .includes()
+// Evaluate a JSON condition object against user context (no eval).
 function evalCondition(cond, user) {
-  try {
-    // Build a safe evaluation context
-    const fn = new Function('user', `"use strict"; try { return !!(${cond}); } catch { return false; }`);
-    return fn(user);
-  } catch { return false; }
+  if (!cond) return true;
+  if (typeof cond === 'string') {
+    // Legacy string conditions (old kardio_v1 format) — safe eval
+    try {
+      const fn = new Function('user', `"use strict"; try { return !!(${cond}); } catch { return false; }`);
+      return fn(user);
+    } catch { return false; }
+  }
+  if (Array.isArray(cond.or))  return cond.or.some(c  => evalCondition(c, user));
+  if (Array.isArray(cond.and)) return cond.and.every(c => evalCondition(c, user));
+  if (cond.diag)    return (user.diagnoses || []).includes(cond.diag);
+  if (cond.symptom) return (user.symptoms  || []).includes(cond.symptom);
+  if (cond.med) {
+    const needle = cond.med.toLowerCase();
+    return (user.meds || []).some(m => String(m).toLowerCase().includes(needle));
+  }
+  const key = cond.lab || cond.checkin;
+  if (key) {
+    const src = cond.lab ? user.labs : user.checkin;
+    const val = src?.[key];
+    if (val == null) return false;
+    if (cond.gt  != null) return val >  cond.gt;
+    if (cond.lt  != null) return val <  cond.lt;
+    if (cond.gte != null) return val >= cond.gte;
+    if (cond.lte != null) return val <= cond.lte;
+    if (cond.eq  != null) return String(val) === String(cond.eq);
+    if (cond.ne  != null) return String(val) !== String(cond.ne);
+  }
+  return false;
 }
 
 // Run KB rule engine → returns Set of active CRT node IDs
