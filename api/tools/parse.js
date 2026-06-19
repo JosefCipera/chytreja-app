@@ -251,11 +251,15 @@ VÝSTUPNÍ FORMÁT (přesně tento JSON, bez markdown):
       "affects": "antikoagulace"
     }
   ],
+  "diagnoses": ["Hypertenze", "Fibrilace síní"],
+  "symptoms": ["bušení srdce", "únava"],
   "flags": []
 }
 
 FLAGS: přidej "CONSULT_DOCTOR" při kritických hodnotách, QTc > 500ms nebo aktivních arytmiích.
        přidej "HIGH_STROKE_RISK" při CHADSVASc > 2.
+diagnoses: seznam diagnóz zmíněných v dokumentu (česky, stručně). Prázdné pole pokud žádné.
+symptoms: seznam symptomů zmíněných v dokumentu. Prázdné pole pokud žádné.
 Nestanoví diagnózu — jen extrahuj fakta a mapuj na uzly.
 Piš česky.`;
 
@@ -384,6 +388,22 @@ async function handleHealthDoc(req, res, sb) {
     const affectsKey = (med.affects || '').toLowerCase();
     const { error } = await sb.from('user_medications').upsert({ user_id: userId, name: med.name, dose: med.dose || null, affects: affectsMap[affectsKey] ?? [], active: true }, { onConflict: 'user_id,name' });
     if (!error) savedMedications.push(med.name);
+  }
+
+  // Save diagnoses + symptoms to user_health_profile
+  const newDiagnoses = (parsed.diagnoses || []).filter(d => d?.trim());
+  const newSymptoms  = (parsed.symptoms  || []).filter(s => s?.trim());
+  if (newDiagnoses.length || newSymptoms.length) {
+    const { data: existingProfile } = await sb.from('user_health_profile')
+      .select('diagnoses, symptoms').eq('user_id', userId).maybeSingle();
+    const existingDx   = existingProfile?.diagnoses || [];
+    const existingSx   = existingProfile?.symptoms  || [];
+    const mergedDx = [...new Set([...existingDx, ...newDiagnoses])];
+    const mergedSx = [...new Set([...existingSx, ...newSymptoms])];
+    await sb.from('user_health_profile').upsert(
+      { user_id: userId, diagnoses: mergedDx, symptoms: mergedSx, updated_at: new Date().toISOString() },
+      { onConflict: 'user_id' }
+    );
   }
 
   const { intro, conclusion } = buildDisplay(updatedNodes, parsed.flags);
