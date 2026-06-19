@@ -772,7 +772,7 @@ export default async function handler(req, res) {
   // ── Shared queries — run once for all nodes ──────────
   const checkinSince = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
   const isLehkost = universe === 'lehkost';
-  const [metricsRes, orchRes, constraintsRes, profileRes, healthRes, checkinRes] = await Promise.all([
+  const [metricsRes, orchRes, constraintsRes, profileRes, healthRes, checkinRes, medsRes] = await Promise.all([
     sb.from('user_metrics').select('node_id, current_index, state')
       .eq('user_id', userId).eq('universe', universe),
     sb.from('orchestrator_log')
@@ -791,6 +791,7 @@ export default async function handler(req, res) {
       : sb.from('user_readiness').select('energy, sleep_quality, hrv_morning, stress')
           .eq('user_id', userId).gte('date', checkinSince)
           .order('date', { ascending: false }).limit(1).maybeSingle(),
+    sb.from('user_medications').select('name').eq('user_id', userId).eq('active', true),
   ]);
 
   const isDekatlon  = profileRes.data?.primary_goal === 'dekatlon' || role === 'dekatlon';
