@@ -258,8 +258,18 @@ VÝSTUPNÍ FORMÁT (přesně tento JSON, bez markdown):
 
 FLAGS: přidej "CONSULT_DOCTOR" při kritických hodnotách, QTc > 500ms nebo aktivních arytmiích.
        přidej "HIGH_STROKE_RISK" při CHADSVASc > 2.
-diagnoses: seznam diagnóz zmíněných v dokumentu (česky, stručně). Prázdné pole pokud žádné.
-symptoms: seznam symptomů zmíněných v dokumentu. Prázdné pole pokud žádné.
+diagnoses: seznam diagnóz zmíněných v dokumentu. Použij PŘESNĚ tyto kódy kde odpovídají:
+  FIBRILACE_SINI_PAROXYSMALNI, FIBRILACE_SINI, HYPERTENZE, ATEROSKLEROZA, EXTRASYSTOLY,
+  DIABETES_2_TYPU, PREDIABETES, INZULINOVA_REZISTENCE, METABOLICKY_SYNDROM,
+  HYPOTHYREOZA, HYPERTHYREOZA,
+  STENOZA_PATERE, SPONDYLOZA, DEGENERATIVNI_ZMENY_PATERE, HERNIATED_DISC,
+  OSTEOPOROZA, OSTEOPENIE, PERIEFERNI_NEUROPATIE,
+  DEPRESE, UZKOST, ESENCIALNI_TREMOR,
+  CHRONICKY_STRES.
+  Pokud diagnóza neodpovídá žádnému kódu, použij česky srozumitelný název.
+symptoms: seznam symptomů z dokumentu. Použij kódy kde odpovídají:
+  BOLEST_NOHOU, SLABOST_NOHOU, NESTABILITA_CHUZE, BUSENI_SRDCE, EXTRASYSTOLY.
+  Jinak česky.
 Nestanoví vlastní diagnózu — ale extrahuj diagnózy, které jsou přímo uvedené v dokumentu lékařem.
 Piš česky.`;
 

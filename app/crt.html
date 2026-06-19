@@ -314,7 +314,12 @@ function evalAtom(expr, user) {
   const inclM = expr.match(/^(user[\w.]+)\.includes\('([^']+)'\)$/);
   if (inclM) {
     const arr = getVal(user, inclM[1]) ?? [];
-    const r = Array.isArray(arr) ? arr.includes(inclM[2]) : false;
+    const needle = inclM[2].toLowerCase();
+    // meds: case-insensitive substring match; diagnoses/symptoms: exact match
+    const isMeds = inclM[1].includes('meds') || inclM[1].includes('medications');
+    const r = Array.isArray(arr) ? arr.some(v =>
+      isMeds ? String(v).toLowerCase().includes(needle) : String(v) === inclM[2]
+    ) : false;
     return neg ? !r : r;
   }
   const cmpM = expr.match(/^(user[\w.]+)\s*(>=|<=|!=|==|>|<)\s*(.+)$/);
@@ -338,14 +343,38 @@ function evalCondition(cond, user) {
 
 // ── Data normalizace ──────────────────────────────────────────────────────────
 const DIAG_MAP = [
+  // Kardiovaskulární
   [/fibrilace\s*síní\s*(paroxysmální|fap|\(fap\))/i, 'FIBRILACE_SINI_PAROXYSMALNI'],
   [/fibrilace\s*síní/i,                               'FIBRILACE_SINI'],
-  [/arteriální\s*hypertenze|^hypertenze$/i,            'HYPERTENZE'],
+  [/arteriální\s*hypertenze|^hypertenze$|vysoký\s*tlak/i, 'HYPERTENZE'],
   [/ateroskleróz[ae]/i,                               'ATEROSKLEROZA'],
   [/extrasystol[ye]|předčasné\s*stahy/i,              'EXTRASYSTOLY'],
   [/bušení\s*srdce|palpitace/i,                       'BUSENI_SRDCE'],
-  [/diabetes/i,                                        'DIABETES'],
+  // Metabolické
+  [/diabetes\s*(mellitus\s*)?(2\.\s*typu|typ\s*2|ii)/i, 'DIABETES_2_TYPU'],
+  [/diabetes/i,                                        'DIABETES_2_TYPU'],
+  [/prediabetes|hraniční\s*glykémie/i,                'PREDIABETES'],
   [/inzulínová\s*rezistence/i,                        'INZULINOVA_REZISTENCE'],
+  [/metabolický\s*syndrom/i,                          'METABOLICKY_SYNDROM'],
+  // Hormonální
+  [/hypothyreóz[ae]|hypotyreóz[ae]|snížená\s*funkce\s*štítné/i, 'HYPOTHYREOZA'],
+  [/hyperthyreóz[ae]/i,                               'HYPERTHYREOZA'],
+  // Pohybový aparát
+  [/stenóza\s*páteřního\s*kanálu|spinální\s*stenóz[ae]/i, 'STENOZA_PATERE'],
+  [/spondylóz[ae]|spondylartróz[ae]/i,                'SPONDYLOZA'],
+  [/degenerativní\s*(změny|onemocnění)\s*(páteře|plotének)/i, 'DEGENERATIVNI_ZMENY_PATERE'],
+  [/výhřez\s*(meziobratlové\s*)?ploténky|hernie\s*disku/i, 'HERNIATED_DISC'],
+  [/osteoporóz[ae]/i,                                 'OSTEOPOROZA'],
+  [/osteopéni[ae]/i,                                  'OSTEOPENIE'],
+  [/periferní\s*neuropati[ae]/i,                      'PERIEFERNI_NEUROPATIE'],
+  // Neurologické / psychické
+  [/depres[ei]/i,                                     'DEPRESE'],
+  [/úzkost(ná\s*porucha)?|anxióz[aní]/i,              'UZKOST'],
+  [/esenciální\s*tremor/i,                            'ESENCIALNI_TREMOR'],
+  // Symptomy
+  [/bolest\s*(v\s*)?(noh|dolních\s*končetin)/i,       'BOLEST_NOHOU'],
+  [/slabost\s*(noh|dolních\s*končetin)/i,             'SLABOST_NOHOU'],
+  [/nestabilní\s*(chůze|chůzi)/i,                     'NESTABILITA_CHUZE'],
 ];
 const LAB_MAP = {
   ldl:'ldl', ldl_cholesterol:'ldl',
@@ -353,6 +382,16 @@ const LAB_MAP = {
   diastolic_bp:'diastolic_bp',
   k:'k', kalium:'k', draslík:'k',
   crp:'crp', glucose:'glucose', glukóza:'glucose', hba1c:'hba1c',
+  // Štítná žláza
+  tsh:'tsh', 'tsh (thyroid-stimulating hormone)':'tsh',
+  ft4:'ft4', 'free t4':'ft4',
+  // Kostní metabolismus
+  'd3':'vitamin_d', 'vitamin d':'vitamin_d', '25-oh vitamin d':'vitamin_d', 'calcidiol':'vitamin_d',
+  'b12':'b12', 'vitamin b12':'b12', 'cobalamin':'b12',
+  'ca':'calcium', 'vápník':'calcium', 'calcium':'calcium',
+  // Ledviny / játra
+  kreatinin:'kreatinin', creatinine:'kreatinin',
+  alt:'alt', ast:'ast',
 };
 function normDiag(d) {
   for (const [re, code] of DIAG_MAP) if (re.test(d)) return code;
@@ -461,18 +500,37 @@ function buildMedsMap(shields, userMeds, activeIds, arrowsById) {
 }
 
 // ── Load CRT — Rule Engine (Opus jako fallback) ───────────────────────────────
+const KB_FILES = [
+  '/data/crt/kardio_v1.json',
+  '/data/crt/pohybovy_v1.json',
+];
+
 async function loadCRT() {
   const forceOpus = new URLSearchParams(location.search).get('opus') === '1';
   if (forceOpus) return loadCRTOpus(false);
 
-  const [kb, ctx] = await Promise.all([
-    fetch('/data/crt/kardio_v1.json').then(r => r.json()),
+  const [kbs, ctx] = await Promise.all([
+    Promise.all(KB_FILES.map(f => fetch(f).then(r => r.json()).catch(() => null))).then(r => r.filter(Boolean)),
     fetchUserContext(),
   ]);
 
-  const activeArrows = kb.possible_arrows.filter(a => evalCondition(a.condition, ctx));
+  // Sloučení všech KB — uzly a šipky z všech domén
+  const mergedNodes = {};
+  const mergedArrows = [];
+  const mergedMedShields = [];
+  const mergedSuppShields = [];
+  const mergedContra = [];
+  for (const kb of kbs) {
+    kb.nodes.forEach(n => { mergedNodes[n.id] = n; });
+    mergedArrows.push(...(kb.possible_arrows || []));
+    mergedMedShields.push(...(kb.medication_shields || []));
+    mergedSuppShields.push(...(kb.supplement_shields || []));
+    mergedContra.push(...(kb.contraindications || []));
+  }
+
+  const activeArrows = mergedArrows.filter(a => evalCondition(a.condition, ctx));
   console.log('[CRT] ctx:', JSON.stringify(ctx, null, 2));
-  console.log(`[CRT] rule engine: ${activeArrows.length} aktivních šipek`);
+  console.log(`[CRT] rule engine: ${activeArrows.length} aktivních šipek (${kbs.length} KB)`);
   console.log('[CRT] aktivní šipky:', activeArrows.map(a => a.id + ': ' + a.condition));
 
   // Fallback na Opus pokud málo dat nebo neznámá doména
@@ -484,13 +542,11 @@ async function loadCRT() {
   const activeIds = new Set();
   activeArrows.forEach(a => { activeIds.add(a.from); activeIds.add(a.to); });
 
-  const kbMap = {};
-  kb.nodes.forEach(n => { kbMap[n.id] = n; });
-  const nodes = [...activeIds].map(id => ({ ...kbMap[id] })).filter(Boolean);
+  const nodes = [...activeIds].map(id => ({ ...mergedNodes[id] })).filter(Boolean);
   calcPositionsClient(nodes);
 
   const arrowsById = {};
-  kb.possible_arrows.forEach(a => { arrowsById[a.id] = a; });
+  mergedArrows.forEach(a => { arrowsById[a.id] = a; });
 
   const result = {
     title: 'Kauzální mapa zdraví',
@@ -500,14 +556,12 @@ async function loadCRT() {
     edges: activeArrows.map(a => ({ from: a.from, to: a.to })),
     and_joins: [],
     injections: [],
-    medications_map: buildMedsMap(kb.medication_shields, ctx.meds, activeIds, arrowsById),
-    supplements_map: buildSuppsMap(kb.supplement_shields, ctx.supps||[], activeIds, arrowsById),
-    _kb: kb,
+    medications_map: buildMedsMap(mergedMedShields, ctx.meds, activeIds, arrowsById),
+    supplements_map: buildSuppsMap(mergedSuppShields, ctx.supps||[], activeIds, arrowsById),
     _ctx: ctx,
     _activeArrows: activeArrows,
-    _kbMap: kbMap,
   };
-  result.contra_map = buildContraMap(kb.contraindications, ctx.meds, ctx.supps||[], result.medications_map, result.supplements_map);
+  result.contra_map = buildContraMap(mergedContra, ctx.meds, ctx.supps||[], result.medications_map, result.supplements_map);
   return result;
 }
 
