@@ -450,29 +450,31 @@ function layoutMultiComponent(nodes, arrows) {
 }
 
 function calcPositionsClient(nodes) {
-  const Y_STEP = 130, X_BASE = 340;
+  const Y_STEP = 140;
 
-  // Group by layer+branch — stagger if collision
-  const slots = {};
-  nodes.forEach(n => {
-    const key = `${n.layer ?? 0}_${n.branch ?? 'center'}`;
-    (slots[key] = slots[key] || []).push(n);
-  });
-
+  // Group by layer
+  const byLayer = {};
   nodes.forEach(n => {
     const lv = n.layer ?? 0;
-    const key = `${lv}_${n.branch ?? 'center'}`;
-    const group = slots[key];
-    const idx = group.indexOf(n);
-    const count = group.length;
-    const maxBH = Math.max(...group.map(n => boxHeight(n.label ?? '')));
-    const step  = Math.max(maxBH + 12, Math.round(Y_STEP * 0.55));
-    const yOff  = count > 1 ? (idx - (count - 1) / 2) * step : 0;
+    (byLayer[lv] = byLayer[lv] || []).push(n);
+  });
 
-    // Pevné sloupce — žádná konvergence
-    n.x = n.branch==='left' ? -X_BASE : n.branch==='right' ? X_BASE : 0;
-    n.y = lv * Y_STEP + yOff;
-    n._type = n.type==='root' ? 'golden_box' : (n.type || 'cause');
+  // Dynamic X spread — enough room so no two boxes overlap horizontally
+  const maxPerLayer = Math.max(...Object.values(byLayer).map(g => g.length));
+  const MIN_GAP = 28;
+  const X_SPREAD = Math.max(340, Math.ceil((maxPerLayer - 1) * (BOX_W + MIN_GAP) / 2));
+
+  Object.entries(byLayer).forEach(([, group]) => {
+    // Sort within layer so left-branch nodes come first, right last (visual consistency)
+    const branchOrder = { left: 0, center: 1, right: 2 };
+    group.sort((a, b) => (branchOrder[a.branch ?? 'center'] ?? 1) - (branchOrder[b.branch ?? 'center'] ?? 1));
+
+    const count = group.length;
+    group.forEach((n, idx) => {
+      n.x = count === 1 ? 0 : -X_SPREAD + (idx / (count - 1)) * X_SPREAD * 2;
+      n.y = (n.layer ?? 0) * Y_STEP;
+      n._type = n.type === 'root' ? 'golden_box' : (n.type || 'cause');
+    });
   });
 }
 
