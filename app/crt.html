@@ -1445,7 +1445,7 @@ function goBack() {
   if (window.parent !== window) {
     window.parent.postMessage({ type: 'chj:crt:close' }, '*');
   } else {
-    window.location.href = '/app';
+    history.back();
   }
 }
 
