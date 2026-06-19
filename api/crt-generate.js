@@ -303,7 +303,7 @@ Strom musí mít 10–14 uzlů celkem (root + nodes). Vrať pouze JSON.`.replace
     },
     body: JSON.stringify({
       model: 'claude-opus-4-8',
-      max_tokens: 2000,
+      max_tokens: 4000,
 
       system: systemPrompt,
       messages: [{ role: 'user', content: userPrompt }],
