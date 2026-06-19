@@ -85,8 +85,8 @@
     { "id": "P_014", "from": "N_DEPRESE",     "to": "N_UNAVA",
       "condition": { "diag": "DEPRESE" } },
 
-    { "id": "P_015", "from": "N_SLABE_SVALY", "to": "N_MALO_POHYBU",
-      "condition": { "or": [{ "diag": "HYPOTHYREOZA" }, { "checkin": "movement_level", "eq": "low" }] } },
+    { "id": "P_015", "from": "N_SLABE_SVALY", "to": "N_UNAVA",
+      "condition": { "diag": "HYPOTHYREOZA" } },
     { "id": "P_016", "from": "N_ZANET_META",  "to": "N_SLABE_SVALY",
       "condition": { "or": [{ "lab": "glucose", "gt": 7.0 }, { "lab": "hba1c", "gt": 7.0 }] } },
     { "id": "P_017", "from": "N_UTLAK_NERVU", "to": "N_BOLEST_NOH",
