@@ -232,7 +232,7 @@
     {
       "id": "N_DRAZDIVOST",
       "label": "Elektrická dráždivost síní",
-      "layer": 5,
+      "layer": 6,
       "branch": "right",
       "universe_node": "kardio",
       "detail": {
