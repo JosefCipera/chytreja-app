@@ -1152,7 +1152,7 @@ function routeToNode(nodeId) {
       if (!document.getElementById('chj-back-btn')) {
         const btn = document.createElement('button');
         btn.id = 'chj-back-btn';
-        btn.textContent = '← CHJ';
+        btn.textContent = '← Zpět';
         btn.onclick = () => {
           btn.remove();
           launcher.style.display = 'flex';
