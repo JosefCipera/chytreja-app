@@ -91,8 +91,8 @@
       "condition": { "or": [{ "lab": "glucose", "gt": 7.0 }, { "lab": "hba1c", "gt": 7.0 }] } },
     { "id": "P_017", "from": "N_UTLAK_NERVU", "to": "N_BOLEST_NOH",
       "condition": { "or": [{ "diag": "STENOZA_PATERE" }, { "symptom": "BOLEST_NOHOU" }, { "symptom": "SLABOST_NOHOU" }] } },
-    { "id": "P_018", "from": "N_MALO_POHYBU", "to": "N_SLABE_SVALY",
-      "condition": { "checkin": "movement_level", "eq": "low" } },
+    { "id": "P_018", "from": "N_MALO_POHYBU", "to": "N_UNAVA",
+      "condition": { "or": [{ "checkin": "movement_level", "eq": "low" }, { "diag": "DEPRESE" }, { "diag": "HYPOTHYREOZA" }] } },
     { "id": "P_019", "from": "N_MALO_POHYBU", "to": "N_ZANET_META",
       "condition": { "and": [{ "checkin": "movement_level", "eq": "low" }, { "lab": "crp", "gt": 1.0 }] } },
 
