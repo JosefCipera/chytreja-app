@@ -1396,7 +1396,8 @@ async function enrichContraMap(data) {
     const arrowsById = {};
     (data._activeArrows||[]).forEach(a => { arrowsById[a.id] = a; });
 
-    data.contra_map = [];
+    const existingContra = data.contra_map || [];
+    data.contra_map = [...existingContra];
     for (const item of interactions) {
       const drugL = item.drug.toLowerCase();
       // Find which node this drug's shield protects
