@@ -100,7 +100,7 @@
       "condition": { "or": [{ "diag": "DIABETES_2_TYPU" }, { "lab": "glucose", "gt": 7.0 }, { "diag": "PERIEFERNI_NEUROPATIE" }] } },
     { "id": "P_021", "from": "N_BOLEST_NOH",  "to": "N_NESTABILITA",
       "condition": { "or": [{ "symptom": "BOLEST_NOHOU" }, { "diag": "STENOZA_PATERE" }] } },
-    { "id": "P_022", "from": "N_UNAVA",       "to": "N_MALO_POHYBU",
+    { "id": "P_022", "from": "N_UNAVA",       "to": "N_NESTABILITA",
       "condition": { "or": [{ "diag": "HYPOTHYREOZA" }, { "diag": "DEPRESE" }] } },
 
     { "id": "P_023", "from": "N_NESTABILITA", "to": "N_PADY",
