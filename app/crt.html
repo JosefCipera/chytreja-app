@@ -471,7 +471,8 @@ function calcPositionsClient(nodes) {
 
     const count = group.length;
     group.forEach((n, idx) => {
-      n.x = count === 1 ? 0 : -X_SPREAD + (idx / (count - 1)) * X_SPREAD * 2;
+      const branchX = { left: -X_SPREAD, center: 0, right: X_SPREAD };
+      n.x = count === 1 ? (branchX[n.branch ?? 'center'] ?? 0) : -X_SPREAD + (idx / (count - 1)) * X_SPREAD * 2;
       n.y = (n.layer ?? 0) * Y_STEP;
       n._type = n.type === 'root' ? 'golden_box' : (n.type || 'cause');
     });
