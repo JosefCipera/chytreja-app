@@ -684,12 +684,9 @@
       "to": "N_EXTRASYSTOLY",
       "condition": {
         "or": [
-          {
-            "symptom": "EXTRASYSTOLY"
-          },
-          {
-            "diag": "EXTRASYSTOLY"
-          }
+          { "symptom": "EXTRASYSTOLY" },
+          { "diag": "EXTRASYSTOLY" },
+          { "diag": "FIBRILACE_SINI_PAROXYSMALNI" }
         ]
       }
     },
