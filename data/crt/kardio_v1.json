@@ -826,12 +826,11 @@
   "contraindications": [
     {
       "drug": "Magnosolv",
-      "aliases": [
-        "magnosolv",
-        "magnézium citrát",
-        "magnesium citrate"
-      ],
+      "aliases": ["magnosolv", "magnézium citrát", "magnesium citrate"],
       "conflicts_with": "Hořčík",
+      "conflicts_with_med": "Pradaxa",
+      "conflicts_with_med_aliases": ["pradaxa", "dabigatran"],
+      "node": "N_ZTUHE_CEVY",
       "reason": "Magnosolv není jen hořčík — zvyšuje hladinu Pradaxy v krvi a může zesilovat účinek dalších léků na srdce. Pokud ho bereš bez vědomí lékaře, riskuješ krvácení nebo arytmii. Než ho vezmeš, řekni to svému lékaři."
     }
   ],

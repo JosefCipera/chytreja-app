@@ -488,13 +488,21 @@ function suppMatches(shield, userSupps) {
   });
 }
 
-function buildContraMap(contraindications, userMeds, userSupps, medsMap, suppsMap) {
+function buildContraMap(contraindications, userMeds, userSupps, medsMap, suppsMap, activeIds) {
   const allUserDrugs = [...userMeds, ...userSupps].map(d => d.toLowerCase());
   return (contraindications || []).flatMap(c => {
+    // Varianta A: přímý node + lék konflikt (conflicts_with_med)
+    if (c.conflicts_with_med && c.node) {
+      if (!activeIds || !activeIds.has(c.node)) return [];
+      const medNames = [c.conflicts_with_med, ...(c.conflicts_with_med_aliases || [])].map(k => k.toLowerCase());
+      const userHasMed = allUserDrugs.some(u => medNames.some(k => u.includes(k) || k.includes(u)));
+      if (!userHasMed) return [];
+      return [{ drug: c.drug, conflicts_with: c.conflicts_with_med, reason: c.reason, nodeId: c.node }];
+    }
+    // Varianta B: shield-based (původní logika)
     const drugNames = [c.drug, ...(c.aliases || [])].map(k => k.toLowerCase());
     const userHasDrug = allUserDrugs.some(u => drugNames.some(k => u.includes(k) || k.includes(u)));
     if (!userHasDrug) return [];
-    // Najdi uzel kde je konfliktující štít
     const shieldEntry = [...medsMap, ...suppsMap].find(m => (m._shield||m.name).toLowerCase() === c.conflicts_with.toLowerCase());
     if (!shieldEntry) return [];
     return (shieldEntry.targets || []).map(nodeId => ({
@@ -602,7 +610,7 @@ async function loadCRT() {
     _ctx: ctx,
     _activeArrows: activeArrows,
   };
-  result.contra_map = buildContraMap(mergedContra, ctx.meds, ctx.supps||[], result.medications_map, result.supplements_map);
+  result.contra_map = buildContraMap(mergedContra, ctx.meds, ctx.supps||[], result.medications_map, result.supplements_map, activeIds);
   return result;
 }
 
