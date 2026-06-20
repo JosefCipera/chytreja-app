@@ -319,6 +319,60 @@ Soubor definuje které uzly jsou `full` / `locked` / `hidden`.
 
 ---
 
+## CRT — Znalostní báze (KB) a produktová strategie
+
+### Architektura KB
+
+Každý killer = jeden KB soubor v `data/crt/`. Engine je sdílený, mění se jen data.
+Více KB souborů se merguje v runtime (viz `KB_FILES` v `hud-data-bulk.js` a `crt.html`).
+
+| Soubor | Killer | Attia horseman | Stav |
+|--------|--------|----------------|------|
+| `kardio_v1.json` | SRDCE | Kardiovaskulární | ✅ hotovo |
+| `pohybovy_v1.json` | POHYB + METABOLISMUS + HORMONY | Metabolický syndrom | ✅ hotovo |
+| `mozek_v1.json` | MOZEK | Neurodegenerace | ❌ chybí |
+| `imunita_v1.json` | IMUNITA | Rakovina | ❌ chybí |
+
+### Mapování KB → CHJ uzly vesmíru
+
+KB uzly mají pole `universe_node` které mapuje CRT příčinu na uzel ve vesmíru:
+- `telo` → pohybový KB dominantní
+- `mysl` → MOZEK KB (až vznikne)
+- `vyziva` → metabolický/SRDCE KB
+- `zdravi` → IMUNITA KB (až vznikne)
+- `metabolicke` → pohybový KB
+
+### Produktová logika (upsell / crosssell)
+
+```
+Free:    1 KB, základní strom
+Starter: 1 KB plný + lékové štíty
+Pro:     všechny KB + průnik mezi killery (insight který jiný nástroj nedá)
+B2B:     API pro lékaře — jejich pacienti, jejich branding
+```
+
+Přirozený crosssell: SRDCE → "vaše riziko pro MOZEK je také vysoké, chcete vidět proč?"
+
+### Priorita dalšího KB
+
+**MOZEK KB jako další** (proč):
+- Překryv s pohybovým KB (deprese, únava, pohyb = prevence neurodegenerace)
+- Přirozený pro segment 45+ (největší strach = ztráta kognitivních funkcí)
+- Kovářová a podobní uživatelé — deprese + tremor tam patří více
+
+MOZEK KB uzly (návrh): chronický stres, spánkový deficit, deprese, nízký VO2max,
+sociální izolace, metabolická zánětlivost → kognitivní pokles, demence (UDE)
+
+### Pravidla pro tvorbu KB
+
+- Každý KB: max ~15 uzlů, ~25 šipek — víc = nepřehledný strom
+- Každý uzel: `layer` (0=root, nejvyšší=UDE), `branch` (left/center/right), `universe_node`
+- Šipky: podmínky JSON (ne eval string), vždy vedou na vyšší layer
+- Lékové štíty: pouze generická léčiva (INN název), ne značkové
+- Medicínský review před nasazením — KB nesmí obsahovat diagnózy ani doporučení
+
+---
+
 ## CHJ AI — pravidla
 
 - JEDNA VĚTA, max 15 slov
