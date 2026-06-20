@@ -34,7 +34,7 @@
     { "id": "N_MALO_POHYBU", "label": "Málo pohybu a sedavý život", "layer": 2, "branch": "center", "universe_node": "telo",
       "detail": { "actions": ["7 000 kroků denně — první krok", "Stůj 2h ze 8h pracovní doby — snižuje metabolické riziko"] }
     },
-    { "id": "N_NEUROPATIE",  "label": "Poškození nervů v nohách", "layer": 3, "branch": "left", "universe_node": "zdravi",
+    { "id": "N_NEUROPATIE",  "label": "Poškození nervů v nohách", "layer": 2, "branch": "left", "universe_node": "zdravi",
       "detail": { "actions": ["Kontrola glukózy — neuropatie se zastaví při normoglykémii", "Vitamín B12 — klíčový pro regeneraci nervu"] }
     },
     { "id": "N_BOLEST_NOH",  "label": "Bolest a slabost nohou", "layer": 3, "branch": "right", "universe_node": "telo",
@@ -82,7 +82,7 @@
       "condition": { "or": [{ "diag": "STENOZA_PATERE" }, { "diag": "SPONDYLOZA" }, { "diag": "DEGENERATIVNI_ZMENY_PATERE" }] } },
     { "id": "P_013", "from": "N_DEPRESE",     "to": "N_MALO_POHYBU",
       "condition": { "or": [{ "diag": "DEPRESE" }, { "med": "mirtazapin" }] } },
-    { "id": "P_014", "from": "N_DEPRESE",     "to": "N_UNAVA",
+    { "id": "P_014", "from": "N_DEPRESE",     "to": "N_MALO_POHYBU",
       "condition": { "diag": "DEPRESE" } },
 
     { "id": "P_015", "from": "N_SLABE_SVALY", "to": "N_UNAVA",

@@ -720,6 +720,9 @@ function _initNebulaStars() {
     _briefing_done = true;
     showAwake();
     showNavChips();
+    const _retModel = localStorage.getItem('currentModel') || 'longevity';
+    const _retNode  = { longevity: 'dlouhovekost', lehkost: 'lh_main', toc: 'toc' }[_retModel] || 'dlouhovekost';
+    setTimeout(() => routeToNode(_retNode), 400);
   }
 
   // Start loading data (auth is handled by universe-init.js separately)
