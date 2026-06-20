@@ -468,12 +468,9 @@
       "to": "N_EXTRASYSTOLY",
       "condition": {
         "or": [
-          {
-            "symptom": "EXTRASYSTOLY"
-          },
-          {
-            "symptom": "BUSENI_SRDCE"
-          }
+          { "symptom": "EXTRASYSTOLY" },
+          { "symptom": "BUSENI_SRDCE" },
+          { "diag": "FIBRILACE_SINI_PAROXYSMALNI" }
         ]
       }
     },
