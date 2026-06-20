@@ -801,16 +801,6 @@
       "reason": "Hořčík zlepšuje pružnost hladké svaloviny cév a snižuje arteriální tuhnutí"
     },
     {
-      "supp": "Magnosolv",
-      "aliases": [
-        "magnosolv",
-        "magnézium citrát",
-        "magnesium citrate"
-      ],
-      "shields_node": "N_ZTUHE_CEVY",
-      "reason": "Hořčík zlepšuje pružnost hladké svaloviny cév a snižuje arteriální tuhnutí"
-    },
-    {
       "supp": "CoQ10",
       "aliases": [
         "coq10",
