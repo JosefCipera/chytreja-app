@@ -1408,11 +1408,6 @@ async function enrichContraMap(data) {
         if (s.shields_arrow) { const a = arrowsById[s.shields_arrow]; if (a && activeIds.has(a.to)) { nodeId = a.to; break; } }
         else if (s.shields_node && activeIds.has(s.shields_node)) { nodeId = s.shields_node; break; }
       }
-      if (!nodeId) {
-        // fallback: attach to root node (golden_box = UDE / hlavní diagnóza)
-        const root = (data.nodes||[]).find(n => n.type === 'golden_box' || n._type === 'golden_box');
-        nodeId = root?.id || (data.nodes||[])[0]?.id;
-      }
       if (nodeId) data.contra_map.push({ drug: item.drug, reason: item.reason, nodeId });
     }
   } catch (_) {}
