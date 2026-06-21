@@ -373,6 +373,31 @@ parents (dolů ke kořenům) + children (nahoru k cíli) → zobrazí jen tuto v
 | `pohybovy_v1.json` | POHYB + METABOLISMUS | ✅ v1 hotovo, migrace na v2 pending |
 | `mozek_v1.json` | MOZEK | ✅ v1 hotovo, migrace na v2 pending |
 | `imunita_v1.json` | IMUNITA | ✅ v1 hotovo, migrace na v2 pending |
+| `biosystem_v2.json` | všechny | ✅ unified KB — aktivní, Kovářová demo data |
+
+### CRT zobrazení — Top-N vs Plná mapa
+
+**Default: Top-N** (`git tag v0.2-crt-topn-laik-panel`)
+
+Top-N = BFS nejkratší cesty ROOT → každý aktivní UDE killer, union všech cest.
+
+**Algoritmus `computeTopN` (app/crt.html):**
+1. BFS ze ROOT ke každému UDE → union cest = `topIds`
+2. Bridge pass: layer-1 node → přidá layer-2 child pokud chybí vazba (gap fill, ne rozšíření)
+   - Podmínka: `cid.layer < minTopChild` a `cid.children` má průnik s `topIds`
+3. Filtr hran: jen hrany kde `topIds.has(from) && topIds.has(to)`
+4. Panel data (suplementy, léky, interakce) vždy z `_rawCrtData` — ignoruje Top-N filtr
+
+**Co NENÍ v Top-N (záměrně odstraněno):**
+- Medication pass (byl přidán, pak odebrán — příliš mnoho uzlů u polyfarmace)
+
+### CRT label mód (Laik / Expert)
+
+- `_labelMode`: `'expert'` (default) | `'layman'`
+- `applyLabelMode(data)`: nastaví `n.label` na všech uzlech v `data.nodes`
+- `kbLabel(kb)`: helper pro panel — čte `label_layman`/`label_expert` z raw KB node
+- `toggleLabelMode()`: parsuje transform z DOM (`svgEl.style.transform`), ukládá střed viewportu jako frakci SVG (`_preservedCenter`), pak re-render
+- `initView()`: pokud existuje `_preservedCenter` — obnoví stejnou frakci středu (funguje i při změně výšky SVG mezi módy)
 
 ### Produktová logika (upsell / crosssell)
 
