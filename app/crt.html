@@ -1572,6 +1572,13 @@ function computeTopN(rawData) {
     if (rootId) { const p = bfsPath(rootId, udeId, nodeMap, allIds); if (p) p.forEach(id => topIds.add(id)); }
   }
 
+  // Medication pass: always show nodes actively shielded by user's medications
+  for (const med of (rawData.medications_map || [])) {
+    for (const tid of (med.targets || [])) {
+      if (allIds.has(tid)) topIds.add(tid);
+    }
+  }
+
   // Bridge pass: fill layer-2 gaps when a layer-1 root cause skips directly to layer-3+
   // e.g. HYPOTHY→ZANET(layer3) skips SLABE_SVALY(layer2) — add SLABE_SVALY
   for (const pid of [...topIds]) {
