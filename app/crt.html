@@ -1276,6 +1276,12 @@ function evalValueStatus(val, targetStr) {
   return { pct: 50, status: 'none' };
 }
 
+function kbLabel(kb) {
+  return _labelMode === 'layman'
+    ? (kb.label_layman || kb.label_expert || kb.label || '')
+    : (kb.label_expert || kb.label || '');
+}
+
 function buildPanelData(node, ctx, parents, children, meds, supps, contras, hiddenParents = 0, hiddenChildren = 0, nodeId = '') {
   const detail = node.detail || {};
   const typeLabels = { root: 'kořen', ude: 'UDE', junction: 'průnik' };
@@ -1322,13 +1328,13 @@ function buildPanelData(node, ctx, parents, children, meds, supps, contras, hidd
     ? `<div class="cnp-row" style="opacity:0.55;cursor:pointer;" onclick="switchToFullMap('${nodeId}')"><span class="cnp-arr" style="color:#3a5878">↓</span><span style="color:#4a7898">+ ${hiddenParents} dalších v plné mapě ›</span></div>`
     : '';
   const parentsHtml = parents.slice(0, 3).map(p =>
-    `<div class="cnp-row"><span class="cnp-arr">↓</span>${p.label}</div>`
+    `<div class="cnp-row"><span class="cnp-arr">↓</span>${kbLabel(p)}</div>`
   ).join('') + hiddenParentsNote;
 
   const childrenHtml = children.slice(0, 2).map((c, i) => {
     const extra = (i === 1 && children.length > 2)
       ? ` <span style="font-family:monospace;font-size:10px;color:#334155">+${children.length - 2}</span>` : '';
-    return `<div class="cnp-row" style="opacity:${i === 0 ? 1 : 0.4}"><span class="cnp-arr">↑</span>${c.label}${extra}</div>`;
+    return `<div class="cnp-row" style="opacity:${i === 0 ? 1 : 0.4}"><span class="cnp-arr">↑</span>${kbLabel(c)}${extra}</div>`;
   }).join('');
 
   const medHtml = meds?.length ? `
@@ -1378,7 +1384,7 @@ function buildPanelData(node, ctx, parents, children, meds, supps, contras, hidd
       <button onclick="closeCrtPanel()" style="background:none;border:none;cursor:pointer;color:#475569;font-size:18px;padding:0;line-height:1" aria-label="Zavřít">✕</button>
     </div>
     <div class="cnp-section">
-      <p style="margin:0;font-size:18px;font-weight:500;color:#e2e8f0;line-height:1.3">${node.label}</p>
+      <p style="margin:0;font-size:18px;font-weight:500;color:#e2e8f0;line-height:1.3">${kbLabel(node)}</p>
       ${valueHtml}
     </div>
     ${parentsHtml ? `<div class="cnp-section"><p class="cnp-lbl">způsobeno</p>${parentsHtml}</div>` : ''}
@@ -1407,19 +1413,27 @@ function applyLabelMode(data) {
 }
 
 window.toggleLabelMode = function() {
-  // Zachyť střed viewportu v SVG-frakci — funguje i když se změní výška SVG (laik vs expert)
+  // Zachyť střed viewportu v SVG-frakci — parsuj z DOM (sc/tx/ty jsou closure uvnitř renderTree)
   const svgEl = document.querySelector('#crt-canvas svg');
   const cont  = document.getElementById('crt-canvas');
   if (svgEl && cont) {
-    const svgW = parseFloat(svgEl.getAttribute('width'))  || 800;
-    const svgH = parseFloat(svgEl.getAttribute('height')) || 600;
-    const cw   = cont.clientWidth  || window.innerWidth  || 800;
-    const ch   = cont.clientHeight || window.innerHeight || 600;
-    window._preservedCenter = [
-      _sc,
-      (cw / 2 - _tx) / (_sc * svgW),
-      (ch / 2 - _ty) / (_sc * svgH),
-    ];
+    const t   = svgEl.style.transform;
+    const mTr = t.match(/translate\(([-\d.]+)px,\s*([-\d.]+)px\)/);
+    const mSc = t.match(/scale\(([-\d.]+)\)/);
+    if (mTr && mSc) {
+      const sc   = parseFloat(mSc[1]);
+      const tx   = parseFloat(mTr[1]);
+      const ty   = parseFloat(mTr[2]);
+      const svgW = parseFloat(svgEl.getAttribute('width'))  || 800;
+      const svgH = parseFloat(svgEl.getAttribute('height')) || 600;
+      const cw   = cont.clientWidth  || window.innerWidth  || 800;
+      const ch   = cont.clientHeight || window.innerHeight || 600;
+      window._preservedCenter = [
+        sc,
+        (cw / 2 - tx) / (sc * svgW),
+        (ch / 2 - ty) / (sc * svgH),
+      ];
+    }
   }
   _labelMode = _labelMode === 'expert' ? 'layman' : 'expert';
   const data = window._crtData;
