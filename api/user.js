@@ -631,6 +631,8 @@ const DIAG_MAP = [
   [/depres[ei]/i,                                                       'DEPRESE'],
   [/úzkost(ná\s*porucha)?|anxióz[aní]/i,                               'UZKOST'],
   [/esenciální\s*tremor/i,                                             'ESENCIALNI_TREMOR'],
+  [/st\.?\s*p\.?\s*(i?CMP|cévní\s*mozk\w+\s*příhod\w+|stroke|TIA)/i, 'STAV_PO_CMP'],
+  [/mild\s*(kognitivní|cognitive)\s*(impairment|porucha)|MCI|lehká\s*kognitivní\s*porucha/i, 'MILD_KOGN_IMPAIRMENT'],
   // Symptomy
   [/bolest\s*(v\s*)?(noh|dolních\s*končetin)/i,                        'BOLEST_NOHOU'],
   [/slabost\s*(noh|dolních\s*končetin)/i,                              'SLABOST_NOHOU'],

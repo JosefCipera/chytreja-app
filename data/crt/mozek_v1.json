@@ -1,0 +1,118 @@
+{
+  "domain": "Biovesmir_Mozek_V1",
+  "version": "1.0.0",
+  "description": "Znalostní báze: neurodegenerace, vaskulární a metabolické poškození mozku, kognitivní pokles",
+
+  "nodes": [
+    { "id": "N_ROOT_M",      "label": "Metabolická a cerebrovaskulární dysbalance", "layer": 0, "branch": "center", "type": "root", "universe_node": "zdravi",
+      "detail": { "actions": ["Pohyb 30 min denně — prokrvení mozku a neuroplasticita", "Kontrola TK, glukózy a cholesterolu — základ prevence"] }
+    },
+    { "id": "N_HYPERGL_M",   "label": "Vysoká hladina cukru v krvi", "layer": 1, "branch": "left", "universe_node": "metabolicke",
+      "detail": { "value_key": "labs.glucose", "value_unit": "mmol/L", "value_target": "< 5.6", "actions": ["Chůze 10 min po jídle — snižuje glukózu o 15 %", "Siofor užívej pravidelně, ne jen občas"] }
+    },
+    { "id": "N_HYPOTHY_M",   "label": "Snížená funkce štítné žlázy", "layer": 1, "branch": "left", "universe_node": "zdravi",
+      "detail": { "value_key": "labs.tsh", "value_unit": "mIU/L", "value_target": "0.4–2.5", "actions": ["Euthyrox užívej nalačno 30 min před jídlem", "Kontrola TSH každých 6 měsíců — při špatné kompenzaci se zhoršuje paměť"] }
+    },
+    { "id": "N_MALO_POHYBU_M", "label": "Málo pohybu a sedavý život", "layer": 1, "branch": "center", "universe_node": "telo",
+      "detail": { "actions": ["Aerobní pohyb 3× týdně — zvyšuje BDNF (růstový faktor mozku)", "Chůze s holemi — bezpečná volba i při nestabilitě"] }
+    },
+    { "id": "N_DEPRESE_M",   "label": "Deprese a sociální izolace", "layer": 1, "branch": "right", "universe_node": "mysl",
+      "detail": { "actions": ["Pravidelný sociální kontakt — klíčový faktor proti kognitivnímu úpadku", "Pohyb má efekt srovnatelný s antidepresivem"] }
+    },
+    { "id": "N_HYPERTENZE_M", "label": "Vysoký krevní tlak", "layer": 1, "branch": "right", "universe_node": "zdravi",
+      "detail": { "value_key": "labs.systolic_bp", "value_unit": "mmHg", "value_target": "< 130", "actions": ["Pravidelné měření TK doma", "Omez sůl a alkohol — snižují TK bez léků"] }
+    },
+    { "id": "N_INSULREZ",    "label": "Inzulínová rezistence mozku", "layer": 2, "branch": "left", "universe_node": "metabolicke",
+      "detail": { "actions": ["Omez rafinované sacharidy — mozkové buňky ztrácejí schopnost využívat glukózu", "Přerušovaný půst (12h okno) — zlepšuje mozkový metabolismus"] }
+    },
+    { "id": "N_KORTIZOL",    "label": "Chronicky vysoký kortizol", "layer": 2, "branch": "right", "universe_node": "mysl",
+      "detail": { "actions": ["10 min meditace nebo hlubokého dýchání denně", "Omez zprávy a sociální sítě večer — snižují kortizol před spánkem"] }
+    },
+    { "id": "N_SPANEK_M",    "label": "Spánkový deficit a nekvalitní spánek", "layer": 3, "branch": "right", "universe_node": "regenerace",
+      "detail": { "value_key": "checkin.sleep_hours", "value_unit": "h", "value_target": "7–8", "actions": ["Pravidelný čas usínání i o víkendu", "Bez obrazovek 1h před spaním — blokují melatonin"] }
+    },
+    { "id": "N_ZANET_M",     "label": "Chronický zánět mozkové tkáně", "layer": 3, "branch": "center", "universe_node": "zdravi",
+      "detail": { "value_key": "labs.crp", "value_unit": "mg/L", "value_target": "< 1.0", "actions": ["Omega-3 (EPA+DHA 2 g/den) — prokazatelně snižuje neurální zánět", "Středomořská strava — olivový olej, ryby, zelenina"] }
+    },
+    { "id": "N_VASK_MOZ",    "label": "Vaskulární poškození mozku", "layer": 3, "branch": "left", "universe_node": "zdravi",
+      "detail": { "actions": ["Antiagregační terapie (Stacyl) — prevence dalšího vaskulárního poškození", "Kontrola TK a glukózy — dva hlavní faktory cévního poškození mozku"] }
+    },
+    { "id": "N_SYNAP",       "label": "Úbytek neuronů a synaptických spojení", "layer": 4, "branch": "center", "type": "junction", "universe_node": "zdravi",
+      "detail": { "actions": ["Učení nových věcí — stimuluje tvorbu nových spojení (neuroplasticita)", "Sociální interakce — prokázaný ochranný faktor"] }
+    },
+    { "id": "N_UDE_MOZ",     "label": "Zhoršení paměti a kognice", "layer": 5, "branch": "center", "type": "ude", "universe_node": "mysl",
+      "detail": { "actions": ["Duspelin — podpora acetylcholinových drah, zpomaluje pokles", "Kognitivní trénink: čtení, křížovky, společenské hry"] }
+    }
+  ],
+
+  "possible_arrows": [
+    { "id": "M_001", "from": "N_ROOT_M",      "to": "N_HYPERGL_M",
+      "condition": { "or": [{ "diag": "DIABETES_2_TYPU" }, { "lab": "glucose", "gt": 6.0 }, { "lab": "hba1c", "gt": 6.5 }, { "med": "sifor" }, { "med": "metformin" }] } },
+    { "id": "M_002", "from": "N_ROOT_M",      "to": "N_HYPOTHY_M",
+      "condition": { "or": [{ "diag": "HYPOTHYREOZA" }, { "med": "euthyrox" }, { "med": "levothyroxin" }] } },
+    { "id": "M_003", "from": "N_ROOT_M",      "to": "N_MALO_POHYBU_M",
+      "condition": { "or": [{ "checkin": "movement_level", "eq": "low" }, { "checkin": "energy", "lt": 3 }] } },
+    { "id": "M_004", "from": "N_ROOT_M",      "to": "N_DEPRESE_M",
+      "condition": { "or": [{ "diag": "DEPRESE" }, { "med": "mirtazapin" }] } },
+    { "id": "M_005", "from": "N_ROOT_M",      "to": "N_HYPERTENZE_M",
+      "condition": { "or": [{ "diag": "HYPERTENZE" }, { "med": "tezeo" }, { "med": "telmisartan" }, { "lab": "systolic_bp", "gt": 140 }] } },
+
+    { "id": "M_006", "from": "N_HYPERGL_M",   "to": "N_INSULREZ",
+      "condition": { "or": [{ "diag": "DIABETES_2_TYPU" }, { "lab": "glucose", "gt": 6.0 }, { "lab": "hba1c", "gt": 6.5 }] } },
+    { "id": "M_007", "from": "N_HYPOTHY_M",   "to": "N_ZANET_M",
+      "condition": { "or": [{ "diag": "HYPOTHYREOZA" }, { "med": "euthyrox" }] } },
+    { "id": "M_008", "from": "N_MALO_POHYBU_M", "to": "N_ZANET_M",
+      "condition": { "checkin": "movement_level", "eq": "low" } },
+    { "id": "M_009", "from": "N_MALO_POHYBU_M", "to": "N_VASK_MOZ",
+      "condition": { "or": [{ "med": "stacyl" }, { "diag": "STAV_PO_CMP" }] } },
+    { "id": "M_010", "from": "N_DEPRESE_M",   "to": "N_KORTIZOL",
+      "condition": { "or": [{ "diag": "DEPRESE" }, { "med": "mirtazapin" }] } },
+    { "id": "M_011", "from": "N_DEPRESE_M",   "to": "N_SPANEK_M",
+      "condition": { "or": [{ "diag": "DEPRESE" }, { "checkin": "sleep_hours", "lt": 6 }] } },
+    { "id": "M_012", "from": "N_HYPERTENZE_M", "to": "N_VASK_MOZ",
+      "condition": { "or": [{ "diag": "HYPERTENZE" }, { "med": "tezeo" }, { "lab": "systolic_bp", "gt": 140 }, { "diag": "STAV_PO_CMP" }, { "med": "stacyl" }] } },
+
+    { "id": "M_013", "from": "N_KORTIZOL",    "to": "N_SPANEK_M",
+      "condition": { "or": [{ "checkin": "stress", "gt": 3 }, { "diag": "DEPRESE" }] } },
+    { "id": "M_014", "from": "N_KORTIZOL",    "to": "N_ZANET_M",
+      "condition": { "checkin": "stress", "gt": 3 } },
+    { "id": "M_015", "from": "N_SPANEK_M",    "to": "N_ZANET_M",
+      "condition": { "or": [{ "checkin": "sleep_hours", "lt": 6 }, { "diag": "DEPRESE" }] } },
+    { "id": "M_016", "from": "N_INSULREZ",    "to": "N_ZANET_M",
+      "condition": { "or": [{ "diag": "DIABETES_2_TYPU" }, { "lab": "glucose", "gt": 7.0 }] } },
+
+    { "id": "M_017", "from": "N_ZANET_M",     "to": "N_SYNAP",
+      "condition": { "or": [{ "med": "duspelin" }, { "diag": "MILD_KOGN_IMPAIRMENT" }, { "diag": "STAV_PO_CMP" }, { "lab": "crp", "gt": 1.0 }] } },
+    { "id": "M_018", "from": "N_VASK_MOZ",    "to": "N_SYNAP",
+      "condition": { "or": [{ "med": "stacyl" }, { "diag": "STAV_PO_CMP" }, { "med": "duspelin" }] } },
+    { "id": "M_019", "from": "N_SYNAP",       "to": "N_UDE_MOZ",
+      "condition": { "or": [{ "med": "duspelin" }, { "diag": "MILD_KOGN_IMPAIRMENT" }, { "diag": "STAV_PO_CMP" }] } }
+  ],
+
+  "medication_shields": [
+    { "med": "Duspelin",  "inn": "donepezil",   "aliases": ["donepezil","Aricept","duspelin"],                    "shields_node": "N_UDE_MOZ",     "reason": "Zpomaluje rozpad acetylcholinu — udržuje synaptický přenos a zpomaluje kognitivní pokles." },
+    { "med": "Stacyl",    "inn": "kyselina acetylsalicylová", "aliases": ["stacyl","aspirin","ASA","acidum acetylsalicylicum"], "shields_node": "N_VASK_MOZ", "reason": "Antiagregant — zabraňuje shlukování krevních destiček a snižuje riziko dalšího vaskulárního poškození mozku." },
+    { "med": "Tezeo",     "inn": "telmisartan", "aliases": ["tezeo","telmisartan","micardis"],                    "shields_node": "N_HYPERTENZE_M","reason": "Snižuje krevní tlak — klíčová ochrana před dalším vaskulárním poškozením mozku." },
+    { "med": "Sifor",     "inn": "metformin",   "aliases": ["sifor","siofor","metformin","glucophage"],            "shields_node": "N_HYPERGL_M",   "reason": "Kontroluje hladinu cukru — snižuje riziko inzulínové rezistence mozkových buněk." },
+    { "med": "Euthyrox",  "inn": "levothyroxin","aliases": ["euthyrox","levothyroxin","eutyrox"],                  "shields_node": "N_HYPOTHY_M",   "reason": "Nahrazuje hormon štítné žlázy — špatně kompenzovaná hypothyreóza přímo zhoršuje paměť a koncentraci." },
+    { "med": "Mirtazapin","inn": "mirtazapin",  "aliases": ["mirtazapin","remeron","mirtazapine"],                 "shields_node": "N_DEPRESE_M",   "reason": "Stabilizuje náladu a spánek — deprese je samostatný rizikový faktor kognitivního poklesu." }
+  ],
+
+  "supplement_shields": [
+    { "supp": "Omega-3", "aliases": ["omega3","omega-3","epa","dha","rybí olej","fish oil"], "shields_node": "N_ZANET_M", "reason": "EPA+DHA snižují neurální zánět a podporují strukturu buněčných membrán mozkových buněk." },
+    { "supp": "Vitamín B12", "aliases": ["B12","vitamin B12","kobalamin","methylkobalamin","kyanokobalamin"], "shields_node": "N_SYNAP", "reason": "B12 je nezbytný pro myelinizaci nervů a metabolismus homocysteinu — jeho deficit urychluje atrofii mozku." },
+    { "supp": "Hořčík",  "aliases": ["magnesium","magnézium","bisglycinát","bisglycinate"], "shields_node": "N_KORTIZOL", "reason": "Hořčík tlumí aktivitu osy stres-kortizol a podporuje kvalitu spánku — dvojí ochrana mozku." },
+    { "supp": "Vitamín D","aliases": ["vitamín D","vitamin D","D3","cholekalciferol","cholecalciferol"], "shields_node": "N_ZANET_M", "reason": "Vitamín D moduluje neurální zánět a podporuje produkci neurotrofinů — jeho deficit je spojen s vyšším rizikem demence." }
+  ],
+
+  "contraindications": [
+    {
+      "drug": "Mirtazapin",
+      "aliases": ["mirtazapin","mirtazapine","remeron"],
+      "conflicts_with_med": "Duspelin",
+      "conflicts_with_med_aliases": ["duspelin","donepezil","aricept"],
+      "node": "N_UDE_MOZ",
+      "reason": "Mirtazapin tlumí acetylcholinové receptory — může oslabovat efekt Duspelinu (donepezilu), který naopak acetylcholin zvyšuje. Pokud se paměť nezlepšuje, informuj neurologa."
+    }
+  ]
+}

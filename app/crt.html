@@ -551,6 +551,7 @@ function buildMedsMap(shields, userMeds, activeIds, arrowsById) {
 const KB_FILES = [
   '/data/crt/kardio_v1.json',
   '/data/crt/pohybovy_v1.json',
+  '/data/crt/mozek_v1.json',
 ];
 
 async function loadCRT() {
@@ -931,11 +932,6 @@ function renderTree(data) {
   const medsMap = (data.medications_map || []).filter(m => (m.targets || []).length > 0);
   if (medsMap.length) {
     document.getElementById('crtMedBtn').style.display = '';
-    const MED_COLORS = {
-      treatment: { stroke: '#4a9aee', fill: '#0e2038' },
-      protects:  { stroke: '#22c55e', fill: '#0a2016' },
-      warning:   { stroke: '#f59e0b', fill: '#1c1206' },
-    };
     const MED_C    = '#4a9aee';
     const MED_FILL = '#0e2038';
     const PILL_H   = IS_MOBILE ? 30 : 34;
@@ -999,18 +995,15 @@ function renderTree(data) {
       items.forEach((med, i) => {
         const pw = pillW(med.name);
         const py = startY + i * (PILL_H + GAP_Y_M);
-        const colors = MED_COLORS[med.type] || MED_COLORS.treatment;
-        const C = colors.stroke, F = colors.fill;
-
         const g = svgEl('g', { class: 'crt-med-el crt-med-hidden', style: 'cursor:help' });
         g.appendChild(svgEl('rect', {
           x: px, y: py, width: pw, height: PILL_H,
-          rx: String(PILL_H / 2), fill: F,
-          stroke: C, 'stroke-width': '1.5',
+          rx: String(PILL_H / 2), fill: MED_FILL,
+          stroke: MED_C, 'stroke-width': '1.5',
         }));
         g.appendChild(svgEl('text', {
           x: px + pw / 2, y: py + PILL_H * 0.67,
-          'text-anchor': 'middle', fill: C,
+          'text-anchor': 'middle', fill: MED_C,
           'font-size': String(PILL_FS),
           'font-family': 'Inter, Segoe UI, system-ui, sans-serif',
         }, med.name));
