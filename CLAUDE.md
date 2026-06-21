@@ -321,53 +321,72 @@ Soubor definuje které uzly jsou `full` / `locked` / `hidden`.
 
 ## CRT — Znalostní báze (KB) a produktová strategie
 
-### Architektura KB
+### ⚠️ Architektura CRT v2 — Integrovaný Biovesmír (Jun 2026)
 
-Každý killer = jeden KB soubor v `data/crt/`. Engine je sdílený, mění se jen data.
-Více KB souborů se merguje v runtime (viz `KB_FILES` v `hud-data-bulk.js` a `crt.html`).
+**Záloha v1:** `git tag v0.2-crt-isolated-kbs-backup`
 
-| Soubor | Killer | Attia horseman | Stav |
-|--------|--------|----------------|------|
-| `kardio_v1.json` | SRDCE | Kardiovaskulární | ✅ hotovo |
-| `pohybovy_v1.json` | POHYB + METABOLISMUS + HORMONY | Metabolický syndrom | ✅ hotovo |
-| `mozek_v1.json` | MOZEK | Neurodegenerace | ❌ chybí |
-| `imunita_v1.json` | IMUNITA | Rakovina | ❌ chybí |
+Přechod z izolovaných KB stromů na **jeden unified kauzální graf** (Goldratt CRT + Attia Medicine 3.0).
 
-### Mapování KB → CHJ uzly vesmíru
+#### 4 logická patra (layer mapping)
 
-KB uzly mají pole `universe_node` které mapuje CRT příčinu na uzel ve vesmíru:
-- `telo` → pohybový KB dominantní
-- `mysl` → MOZEK KB (až vznikne)
-- `vyziva` → metabolický/SRDCE KB
-- `zdravi` → IMUNITA KB (až vznikne)
-- `metabolicke` → pohybový KB
+| Patro | Název | layer | Popis |
+|-------|-------|-------|-------|
+| 1 | Root Causes | 0 | Systémová úzká hrdla (Metabolická dysregulace, Chronický stres CNS) |
+| 2 | Biovesmír / UDE | 1–3 | Biochemie (1), nemoci/stavy (2), symptomy (3) — flexibilní střed |
+| 3 | NC / CSF (Attia) | 4 | Metabolické zdraví, Kardiovaskulární stabilita, Neurokognitivní zachování |
+| 4 | Goal | 5 | Maximální Healthspan & Lifespan |
+
+#### Conditions — na uzlu, ne na hraně
+
+Podmínka (`condition`) je vlastností **uzlu**. Uzel je aktivní pokud splní podmínku.
+Engine renderuje pouze aktivní uzly; hrany se kreslí automaticky mezi aktivními uzly.
+
+```json
+{
+  "id": "INZULREZ_UDE",
+  "label": "Inzulínová rezistence",
+  "layer": 1,
+  "type": "UDE",
+  "condition": { "or": [{ "med": "sifor" }, { "diag": "DIABETES_2_TYPU" }] },
+  "parents": ["METABOLICKA_DYSREG_ROOT"],
+  "children": ["OBEZITA_UDE", "ZANET_UDE", "MOZEK_CSF"]
+}
+```
+
+Šipky nejsou samostatné pole — odvozují se z `parents`/`children` relací.
+
+#### Merge strategie
+
+Engine načítá oddělené soubory (`kardio.json`, `mozek.json`, atd.), při startu je merguje
+do unified mapy v paměti (dedup podle node ID). Sdílené uzly existují v jednom souboru.
+
+#### Moduly (ED, Hubnutí, Energie) = View filtry
+
+UDE uzly v 2. patře master KB. UI filtr: `current_view = "ED"` → engine trasuje
+parents (dolů ke kořenům) + children (nahoru k cíli) → zobrazí jen tuto větev.
+
+### KB soubory (stav)
+
+| Soubor | Killer | Stav |
+|--------|--------|------|
+| `kardio_v1.json` | SRDCE | ✅ v1 hotovo, migrace na v2 pending |
+| `pohybovy_v1.json` | POHYB + METABOLISMUS | ✅ v1 hotovo, migrace na v2 pending |
+| `mozek_v1.json` | MOZEK | ✅ v1 hotovo, migrace na v2 pending |
+| `imunita_v1.json` | IMUNITA | ✅ v1 hotovo, migrace na v2 pending |
 
 ### Produktová logika (upsell / crosssell)
 
 ```
-Free:    1 KB, základní strom
-Starter: 1 KB plný + lékové štíty
-Pro:     všechny KB + průnik mezi killery (insight který jiný nástroj nedá)
+Free:    1 view filtr (např. Hubnutí)
+Starter: 1 killer plný + lékové štíty
+Pro:     celý Biovesmír + průniky mezi killery + view filtry
 B2B:     API pro lékaře — jejich pacienti, jejich branding
 ```
 
-Přirozený crosssell: SRDCE → "vaše riziko pro MOZEK je také vysoké, chcete vidět proč?"
+### Pravidla pro tvorbu KB (v2)
 
-### Priorita dalšího KB
-
-**MOZEK KB jako další** (proč):
-- Překryv s pohybovým KB (deprese, únava, pohyb = prevence neurodegenerace)
-- Přirozený pro segment 45+ (největší strach = ztráta kognitivních funkcí)
-- Kovářová a podobní uživatelé — deprese + tremor tam patří více
-
-MOZEK KB uzly (návrh): chronický stres, spánkový deficit, deprese, nízký VO2max,
-sociální izolace, metabolická zánětlivost → kognitivní pokles, demence (UDE)
-
-### Pravidla pro tvorbu KB
-
-- Každý KB: max ~15 uzlů, ~25 šipek — víc = nepřehledný strom
-- Každý uzel: `layer` (0=root, nejvyšší=UDE), `branch` (left/center/right), `universe_node`
-- Šipky: podmínky JSON (ne eval string), vždy vedou na vyšší layer
+- Conditions na uzlu, ne na hraně
+- `parents`/`children` místo `possible_arrows`
 - Lékové štíty: pouze generická léčiva (INN název), ne značkové
 - Medicínský review před nasazením — KB nesmí obsahovat diagnózy ani doporučení
 
