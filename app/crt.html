@@ -679,7 +679,7 @@ function boxHeight(label) {
 
 // Jednotný styl — bez barev podle stavu (matou, nemáme pro ně dost dat)
 const NODE_STYLE   = { fill: '#1a2535', stroke: '#3a5068', text: '#c8d8e8' };
-const GOLDEN_STYLE = { fill: '#12100a', stroke: '#b08828', text: '#d4a838' };
+const GOLDEN_STYLE = { fill: '#081510', stroke: '#b08828', text: '#d4a838' };
 const UDE_STYLE    = { fill: '#1a2535', stroke: '#8ba8b8', text: '#e8f0f8' };
 const GOAL_STYLE   = { fill: '#081510', stroke: '#18884a', text: '#24a85e' };
 // Zpětná kompatibilita — STATE_STYLE nevyužíváme
@@ -1569,6 +1569,16 @@ function computeTopN(rawData) {
   for (const udeId of udeIds) {
     topIds.add(udeId);
     if (rootId) { const p = bfsPath(rootId, udeId, nodeMap, allIds); if (p) p.forEach(id => topIds.add(id)); }
+  }
+
+  // Bridge pass: add active nodes that directly connect two topIds nodes
+  for (const pid of [...topIds]) {
+    const pNode = nodeMap[pid];
+    for (const cid of (pNode?.children || [])) {
+      if (topIds.has(cid) || !allIds.has(cid)) continue;
+      const cNode = nodeMap[cid];
+      if ((cNode?.children || []).some(gc => topIds.has(gc))) topIds.add(cid);
+    }
   }
 
   const nodes = [...topIds].map(id => ({...nodeMap[id]})).filter(Boolean);
