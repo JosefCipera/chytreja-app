@@ -37,7 +37,7 @@
       "layer": 1, "branch": "left",
       "condition": { "or": [{"med":"euthyrox"}, {"med":"levothyroxin"}, {"diag":"HYPOTHYREOZA"}] },
       "parents": ["ROOT"],
-      "children": ["SLABE_SVALY"],
+      "children": ["SLABE_SVALY", "ZANET"],
       "detail": {
         "value_key": "labs.tsh", "value_unit": "mIU/L", "value_target": "0.5–2.5",
         "actions": ["Euthyrox — substituce hormonu štítné žlázy", "Kontrola TSH každých 6 měsíců"]
@@ -134,7 +134,7 @@
       "layer": 2, "branch": "center",
       "condition": { "or": [{"med":"stacyl"}, {"med":"aspirin"}, {"med":"anopyrin"}, {"med":"rosucard"}, {"med":"rosuvastatin"}, {"diag":"STAV_PO_CMP"}, {"diag":"ATEROSKLEROZA"}] },
       "parents": ["HYPERGLYK", "HIGH_LDL", "HYPERTENZE"],
-      "children": ["VASK_POD", "UDE_SRDCE"],
+      "children": ["VASK_POD", "UDE_SRDCE", "SYNAP_UBYT"],
       "detail": {
         "actions": ["Stacyl — antiagregační ochrana cév", "Statiny — zpomalují tvorbu plaků a mají pleiotropní efekty"]
       }
@@ -186,7 +186,7 @@
       "label_layman": "Tělo je\ntrvale zanícené",
       "layer": 3, "branch": "center",
       "condition": { "or": [{"lab":"crp","gt":1.0}, {"diag":"DIABETES_2_TYPU"}, {"med":"sifor"}, {"med":"metformin"}, {"med":"mirtazapin"}, {"checkin":"stress","gt":3}, {"checkin":"movement_level","eq":"low"}] },
-      "parents": ["HYPERGLYK", "DEPRESE", "VITZD_DEF", "MALO_POHYBU", "INZULREZ"],
+      "parents": ["HYPERGLYK", "DEPRESE", "VITZD_DEF", "MALO_POHYBU", "INZULREZ", "HYPOTHY"],
       "children": ["UDE_SRDCE", "UDE_MOZEK", "UDE_IMUNITA"],
       "detail": {
         "value_key": "labs.crp", "value_unit": "mg/L", "value_target": "< 1.0",
@@ -239,7 +239,7 @@
       "label_layman": "Rychlejší\nstárnutí mozku",
       "layer": 3, "branch": "center",
       "condition": { "or": [{"med":"duspelin"}, {"med":"donepezil"}, {"diag":"MILD_KOGN_IMPAIRMENT"}, {"diag":"STAV_PO_CMP"}] },
-      "parents": ["INZULREZ"],
+      "parents": ["INZULREZ", "ATEROSKLEROZA"],
       "children": ["UDE_MOZEK"],
       "detail": {
         "actions": ["Duspelin/donepezil — inhibitor acetylcholinesterázy, zachovává kognitivní funkce", "Vitamín B12 — klíčový pro myelinizaci nervů", "Kognitivní trénink — neuroplasticita i ve vyšším věku"]
