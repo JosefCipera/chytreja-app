@@ -677,9 +677,9 @@ function boxHeight(label) {
 
 // Jednotný styl — bez barev podle stavu (matou, nemáme pro ně dost dat)
 const NODE_STYLE   = { fill: '#1a2535', stroke: '#3a5068', text: '#c8d8e8' };
-const GOLDEN_STYLE = { fill: '#0c0800', stroke: '#f0c040', text: '#fcd34d' };
+const GOLDEN_STYLE = { fill: '#12100a', stroke: '#b08828', text: '#d4a838' };
 const UDE_STYLE    = { fill: '#1a2535', stroke: '#8ba8b8', text: '#e8f0f8' };
-const GOAL_STYLE   = { fill: '#0a2a0a', stroke: '#22c55e', text: '#4ade80' };
+const GOAL_STYLE   = { fill: '#081510', stroke: '#18884a', text: '#24a85e' };
 // Zpětná kompatibilita — STATE_STYLE nevyužíváme
 const STATE_STYLE = {
   RED: NODE_STYLE, YELLOW: NODE_STYLE, GREEN: NODE_STYLE,
@@ -747,6 +747,14 @@ function renderTree(data) {
   const applyT = () => { svg.style.transform = `translate(${_tx}px,${_ty}px) scale(${_sc})`; };
 
   const initView = () => {
+    // Při re-renderu (toggle labels) zachovej aktuální pan/zoom
+    if (window._preservedTransform) {
+      const [sc, tx, ty] = window._preservedTransform;
+      _sc = sc; _tx = tx; _ty = ty;
+      applyT();
+      window._preservedTransform = null;
+      return;
+    }
     const cw = container.clientWidth || window.innerWidth || 800;
     const ch = container.clientHeight || window.innerHeight || 600;
     if (IS_MOBILE) {
@@ -1377,6 +1385,16 @@ function applyLabelMode(data) {
 }
 
 window.toggleLabelMode = function() {
+  // Zachyť aktuální pan/zoom aby se graf nepřeskočil
+  const svgEl = document.querySelector('#crt-canvas svg');
+  if (svgEl?.style.transform) {
+    const t = svgEl.style.transform;
+    const mTr = t.match(/translate\(([-\d.]+)px,([-\d.]+)px\)/);
+    const mSc = t.match(/scale\(([-\d.]+)\)/);
+    if (mTr && mSc) {
+      window._preservedTransform = [parseFloat(mSc[1]), parseFloat(mTr[1]), parseFloat(mTr[2])];
+    }
+  }
   _labelMode = _labelMode === 'expert' ? 'layman' : 'expert';
   const data = window._crtData;
   if (!data) return;
