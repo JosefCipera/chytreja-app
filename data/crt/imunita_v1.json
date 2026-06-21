@@ -1,0 +1,89 @@
+{
+  "domain": "Biovesmir_Imunita_V1",
+  "version": "1.0.0",
+  "description": "Znalostní báze: onkologické riziko, imunitní dysregulace, chronický zánět a oxidační stres",
+
+  "nodes": [
+    { "id": "N_ROOT_I",    "label": "Metabolická dysregulace a chronický zánět", "layer": 0, "branch": "center", "type": "root", "universe_node": "metabolicke",
+      "detail": { "actions": ["Pohyb 30 min denně — nejsilnější protizánětlivá intervence", "Kontrola glukózy a vitamínu D — dva klíčové markery imunitní funkce"] }
+    },
+    { "id": "N_INZULREZ_I", "label": "Inzulínová rezistence", "layer": 1, "branch": "left", "universe_node": "metabolicke",
+      "detail": { "value_key": "labs.glucose", "value_unit": "mmol/L", "value_target": "< 5.6", "actions": ["Siofor/Sifor — snižuje inzulínovou rezistenci, má protizánětlivý efekt", "Omez rafinované sacharidy a cukr"] }
+    },
+    { "id": "N_SEDAV_I",   "label": "Málo pohybu a sedavý život", "layer": 1, "branch": "center", "universe_node": "telo",
+      "detail": { "actions": ["150 min aerobního pohybu týdně — aktivuje NK buňky (přirození zabijáci nádorů)", "Chůze venku — pohyb + sluneční záření = dvojí efekt"] }
+    },
+    { "id": "N_STRES_I",   "label": "Chronický stres a deprese", "layer": 1, "branch": "right", "universe_node": "mysl",
+      "detail": { "actions": ["Pravidelný spánek, sociální kontakt — snižují kortizol", "Pohyb jako antidepresivum — redukuje imunosupresivní efekt kortizolu"] }
+    },
+    { "id": "N_OXID",      "label": "Oxidační stres a poškození DNA", "layer": 2, "branch": "left", "universe_node": "zdravi",
+      "detail": { "actions": ["Pestrá zelenina a ovoce — antioxidanty z přirozených zdrojů", "Omega-3 — snižuje oxidační zátěž buněčných membrán"] }
+    },
+    { "id": "N_VITZD",     "label": "Nedostatek vitamínu D", "layer": 2, "branch": "center", "universe_node": "zdravi",
+      "detail": { "value_key": "labs.vitamin_d", "value_unit": "nmol/L", "value_target": "> 75", "actions": ["Vigantol — doplnění na optimální hladinu > 75 nmol/L", "Pobyt na slunci 20 min denně (ruce, obličej)"] }
+    },
+    { "id": "N_SPANEK_I",  "label": "Spánkový deficit", "layer": 2, "branch": "right", "universe_node": "regenerace",
+      "detail": { "value_key": "checkin.sleep_hours", "value_unit": "h", "value_target": "7–8", "actions": ["Pravidelný čas usínání — melatonin má přímý protinádorový efekt", "Tma v ložnici — blokuje světlo narušující cirkadiánní rytmus"] }
+    },
+    { "id": "N_ZANET_I",   "label": "Chronický systémový zánět", "layer": 3, "branch": "center", "type": "junction", "universe_node": "zdravi",
+      "detail": { "value_key": "labs.crp", "value_unit": "mg/L", "value_target": "< 1.0", "actions": ["Omega-3 (EPA+DHA 2 g/den) — přímý protizánětlivý efekt", "Středomořská strava — zelenina, ryby, olivový olej"] }
+    },
+    { "id": "N_IMUNO",     "label": "Oslabená imunitní kontrola", "layer": 4, "branch": "center", "universe_node": "zdravi",
+      "detail": { "actions": ["Vitamín D > 75 nmol/L — moduluje NK buňky a T-lymfocyty", "Přerušovaný půst (12h okno) — stimuluje autofagii (čištění poškozených buněk)"] }
+    },
+    { "id": "N_UDE_I",     "label": "Zvýšené onkologické riziko", "layer": 5, "branch": "center", "type": "ude", "universe_node": "zdravi",
+      "detail": { "actions": ["Pravidelné screeningové vyšetření (mammografie, kolonoskopie)", "Kontrola CRP, vitamínu D a glukózy 1× ročně"] }
+    }
+  ],
+
+  "possible_arrows": [
+    { "id": "I_001", "from": "N_ROOT_I",    "to": "N_INZULREZ_I",
+      "condition": { "or": [{ "diag": "DIABETES_2_TYPU" }, { "lab": "glucose", "gt": 6.0 }, { "lab": "hba1c", "gt": 6.5 }, { "med": "sifor" }, { "med": "metformin" }] } },
+    { "id": "I_002", "from": "N_ROOT_I",    "to": "N_SEDAV_I",
+      "condition": { "or": [{ "checkin": "movement_level", "eq": "low" }, { "checkin": "energy", "lt": 3 }] } },
+    { "id": "I_003", "from": "N_ROOT_I",    "to": "N_STRES_I",
+      "condition": { "or": [{ "diag": "DEPRESE" }, { "med": "mirtazapin" }, { "checkin": "stress", "gt": 3 }] } },
+
+    { "id": "I_004", "from": "N_INZULREZ_I","to": "N_OXID",
+      "condition": { "or": [{ "diag": "DIABETES_2_TYPU" }, { "lab": "glucose", "gt": 7.0 }] } },
+    { "id": "I_005", "from": "N_INZULREZ_I","to": "N_ZANET_I",
+      "condition": { "or": [{ "diag": "DIABETES_2_TYPU" }, { "lab": "glucose", "gt": 6.0 }, { "med": "sifor" }] } },
+
+    { "id": "I_006", "from": "N_SEDAV_I",   "to": "N_ZANET_I",
+      "condition": { "checkin": "movement_level", "eq": "low" } },
+    { "id": "I_007", "from": "N_SEDAV_I",   "to": "N_VITZD",
+      "condition": { "or": [{ "checkin": "movement_level", "eq": "low" }, { "lab": "vitamin_d", "lt": 75 }] } },
+
+    { "id": "I_008", "from": "N_STRES_I",   "to": "N_SPANEK_I",
+      "condition": { "or": [{ "diag": "DEPRESE" }, { "med": "mirtazapin" }, { "checkin": "sleep_hours", "lt": 6 }] } },
+    { "id": "I_009", "from": "N_STRES_I",   "to": "N_ZANET_I",
+      "condition": { "or": [{ "checkin": "stress", "gt": 3 }, { "diag": "DEPRESE" }, { "med": "mirtazapin" }] } },
+
+    { "id": "I_010", "from": "N_OXID",      "to": "N_ZANET_I",
+      "condition": { "or": [{ "diag": "DIABETES_2_TYPU" }, { "lab": "glucose", "gt": 7.0 }, { "lab": "crp", "gt": 1.0 }] } },
+    { "id": "I_011", "from": "N_VITZD",     "to": "N_IMUNO",
+      "condition": { "or": [{ "lab": "vitamin_d", "lt": 75 }, { "med": "vigantol" }, { "checkin": "energy", "lt": 3 }] } },
+    { "id": "I_012", "from": "N_SPANEK_I",  "to": "N_ZANET_I",
+      "condition": { "or": [{ "checkin": "sleep_hours", "lt": 6 }, { "diag": "DEPRESE" }, { "med": "mirtazapin" }] } },
+
+    { "id": "I_013", "from": "N_ZANET_I",   "to": "N_IMUNO",
+      "condition": { "or": [{ "lab": "crp", "gt": 1.0 }, { "diag": "DIABETES_2_TYPU" }, { "med": "sifor" }, { "med": "mirtazapin" }] } },
+    { "id": "I_014", "from": "N_IMUNO",     "to": "N_UDE_I",
+      "condition": { "or": [{ "diag": "DIABETES_2_TYPU" }, { "lab": "vitamin_d", "lt": 75 }, { "med": "sifor" }, { "med": "vigantol" }] } }
+  ],
+
+  "medication_shields": [
+    { "med": "Sifor",     "inn": "metformin",       "aliases": ["siofor","metformin","glucophage"],              "shields_node": "N_INZULREZ_I", "reason": "Metformin snižuje inzulínovou rezistenci a má prokázané protizánětlivé efekty — v observačních studiích snižuje onkologické riziko." },
+    { "med": "Vigantol",  "inn": "cholekalciferol", "aliases": ["vitamín D3","vitamin D","D3","cholecalciferol"], "shields_node": "N_VITZD",      "reason": "Vitamín D3 doplňuje deficit a moduluje imunitní dohled — NK buňky a T-lymfocyty potřebují vitamín D pro správnou funkci." },
+    { "med": "Mirtazapin","inn": "mirtazapin",      "aliases": ["remeron","mirtazapine"],                        "shields_node": "N_STRES_I",    "reason": "Stabilizuje náladu a spánek — chronická deprese zvyšuje kortizol, který dlouhodobě tlumí imunitní odpověď." }
+  ],
+
+  "supplement_shields": [
+    { "supp": "Omega-3",    "aliases": ["omega3","omega-3","epa","dha","rybí olej","fish oil"], "shields_node": "N_ZANET_I", "reason": "EPA+DHA snižují prozánětlivé cytokiny (IL-6, TNF-α) — přímý efekt na chronický systémový zánět." },
+    { "supp": "Vitamín D",  "aliases": ["vitamín D","vitamin D","D3","cholekalciferol"],        "shields_node": "N_VITZD",   "reason": "Vitamín D > 75 nmol/L výrazně zlepšuje imunitní dohled nad abnormálními buňkami." },
+    { "supp": "Vitamín C",  "aliases": ["vitamín C","vitamin C","kyselina askorbová","ascorbic acid"], "shields_node": "N_IMUNO", "reason": "Antioxidant — neutralizuje volné radikály a podporuje aktivitu NK buněk." },
+    { "supp": "Kurkumin",   "aliases": ["kurkuma","turmeric","curcumin"],                        "shields_node": "N_ZANET_I", "reason": "Kurkumin inhibuje NF-κB — jeden z hlavních přepínačů chronického zánětu." }
+  ],
+
+  "contraindications": []
+}
