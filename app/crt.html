@@ -267,6 +267,7 @@
   </div>
   <button class="crt-back" id="crtMedBtn" onclick="toggleMeds()" style="display:none">🛡 Léky</button>
   <button class="crt-back" id="crtLabelBtn" onclick="toggleLabelMode()" style="display:none">👤 Laik</button>
+  <button class="crt-back" id="crtExportBtn" onclick="exportCRTImage()" style="display:none">📥 Export</button>
   <!-- Obnovit schováno — mapa se regeneruje jen při změně health profilu -->
   <button class="crt-back" id="crtRegenBtn" onclick="regenCRT()" style="display:none">↺ Přegenerovat</button>
 </div>
@@ -1461,6 +1462,73 @@ async function enrichContraMap(data) {
   } catch (_) {}
 }
 
+// Export mapy jako PNG se světlým pozadím
+window.exportCRTImage = function() {
+  const svgEl = document.querySelector('#crt-canvas svg');
+  if (!svgEl) return;
+
+  // Klonuj SVG a přebarvím na světlé téma
+  let svgStr = new XMLSerializer().serializeToString(svgEl.cloneNode(true));
+
+  const remap = [
+    // Node fills dark → light
+    ['fill="#1a2535"',  'fill="#dde4ec"'],   // regular node
+    ['fill="#12100a"',  'fill="#fffae8"'],   // ROOT
+    ['fill="#081510"',  'fill="#eef8f2"'],   // GOAL
+    ['fill="#0e2038"',  'fill="#e8f4ff"'],   // med pill
+    // Text dark theme → readable on light bg
+    ['fill="#c8d8e8"',  'fill="#1a2535"'],
+    ['fill="#e8f0f8"',  'fill="#1a3548"'],
+    ['fill="#d4a838"',  'fill="#7a5010"'],   // ROOT text
+    ['fill="#24a85e"',  'fill="#0a5030"'],   // GOAL text
+    // Arrows
+    ['stroke="#4a6878"', 'stroke="#6a8898"'],
+    ['fill="#5a7890"',   'fill="#6a8898"'],  // arrowhead
+    ['stroke="#8ba8b8"', 'stroke="#5a8090"'],
+  ];
+  for (const [from, to] of remap) {
+    svgStr = svgStr.split(from).join(to);
+  }
+
+  // Vlož bílý obdélník jako pozadí
+  const w = parseFloat(svgEl.getAttribute('width'));
+  const h = parseFloat(svgEl.getAttribute('height'));
+  svgStr = svgStr.replace(/(<svg[^>]*>)/, `$1<rect width="${w}" height="${h}" fill="white"/>`);
+
+  const blob = new Blob([svgStr], { type: 'image/svg+xml' });
+  const url  = URL.createObjectURL(blob);
+
+  const img = new Image();
+  img.onload = () => {
+    const scale  = 2; // 2× pro sharp výstup
+    const canvas = document.createElement('canvas');
+    canvas.width  = w * scale;
+    canvas.height = h * scale;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.scale(scale, scale);
+    ctx.drawImage(img, 0, 0, w, h);
+    URL.revokeObjectURL(url);
+    canvas.toBlob(b => {
+      const a = document.createElement('a');
+      a.download = 'kauzalni-mapa-zdravi.png';
+      a.href = URL.createObjectURL(b);
+      a.click();
+    }, 'image/png');
+  };
+  img.onerror = () => {
+    // Fallback: stáhni jako SVG
+    URL.revokeObjectURL(url);
+    const url2 = URL.createObjectURL(new Blob([svgStr], { type: 'image/svg+xml' }));
+    const a = document.createElement('a');
+    a.download = 'kauzalni-mapa-zdravi.svg';
+    a.href = url2;
+    a.click();
+  };
+  img.src = url;
+};
+
 async function boot() {
   try {
     const data = await loadCRT();
@@ -1469,6 +1537,7 @@ async function boot() {
     applyLabelMode(data); // inicializuj labely podle _labelMode (default: expert)
     renderTree(data);
     document.getElementById('crtLabelBtn').style.display = '';
+    document.getElementById('crtExportBtn').style.display = '';
     enrichContraMap(data); // async, panel se doplní při příštím otevření
   } catch (e) {
     document.getElementById('crtLoading').textContent = 'Chyba načítání: ' + e.message;
