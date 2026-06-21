@@ -1,0 +1,357 @@
+{
+  "domain": "Biosystem_Unified_V2",
+  "version": "2.0.0",
+  "description": "Integrovaný kauzální Biovesmír — 24 uzlů, 4 killers, Goldratt CRT + Attia Medicine 3.0. Podmínky na uzlech, hrany z parents/children.",
+
+  "nodes": [
+    {
+      "id": "ROOT",
+      "label": "Metabolická dysregulace\na systémový zánět",
+      "layer": 0, "type": "root", "branch": "center",
+      "parents": [],
+      "children": ["HYPERGLYK", "HYPOTHY", "HIGH_LDL", "HYPERTENZE", "DEPRESE", "VITZD_DEF", "OSTEOPOROZA"],
+      "detail": { "actions": ["Klíčové markery: glukóza, TSH, CRP, LDL, vitamín D"] }
+    },
+
+    {
+      "id": "HYPERGLYK",
+      "label": "Hyperglykémie / DM2",
+      "layer": 1, "branch": "left",
+      "condition": { "or": [{"med":"sifor"}, {"med":"metformin"}, {"diag":"DIABETES_2_TYPU"}, {"lab":"glucose","gt":6.0}, {"lab":"hba1c","gt":6.5}] },
+      "parents": ["ROOT"],
+      "children": ["INZULREZ", "NEUROPATIE", "ATEROSKLEROZA"],
+      "detail": {
+        "value_key": "labs.glucose", "value_unit": "mmol/L", "value_target": "< 5.6",
+        "actions": ["Sifor/metformin — snižuje inzulínovou rezistenci a má protizánětlivé efekty", "Omez rafinované sacharidy a přidaný cukr"]
+      }
+    },
+    {
+      "id": "HYPOTHY",
+      "label": "Snížená funkce\nštítné žlázy",
+      "layer": 1, "branch": "left",
+      "condition": { "or": [{"med":"euthyrox"}, {"med":"levothyroxin"}, {"diag":"HYPOTHYREOZA"}] },
+      "parents": ["ROOT"],
+      "children": ["SLABE_SVALY"],
+      "detail": {
+        "value_key": "labs.tsh", "value_unit": "mIU/L", "value_target": "0.5–2.5",
+        "actions": ["Euthyrox — substituce hormonu štítné žlázy", "Kontrola TSH každých 6 měsíců"]
+      }
+    },
+    {
+      "id": "HIGH_LDL",
+      "label": "Vysoký LDL cholesterol",
+      "layer": 1, "branch": "center",
+      "condition": { "or": [{"med":"rosucard"}, {"med":"rosuvastatin"}, {"med":"atorvastatin"}, {"med":"torvacard"}, {"lab":"ldl","gt":3.0}] },
+      "parents": ["ROOT"],
+      "children": ["ATEROSKLEROZA"],
+      "detail": {
+        "value_key": "labs.ldl", "value_unit": "mmol/L", "value_target": "< 1.8",
+        "actions": ["Rosucard/rosuvastatin — snižuje LDL až o 50%", "Minimalizuj trans-tuky a nasycené tuky"]
+      }
+    },
+    {
+      "id": "HYPERTENZE",
+      "label": "Hypertenze",
+      "layer": 1, "branch": "center",
+      "condition": { "or": [{"med":"tezeo"}, {"med":"telmisartan"}, {"med":"lisinopril"}, {"med":"amlodipine"}, {"med":"ramipril"}, {"diag":"HYPERTENZE"}, {"lab":"systolic_bp","gt":140}] },
+      "parents": ["ROOT"],
+      "children": ["ATEROSKLEROZA", "VASK_POD"],
+      "detail": {
+        "value_key": "labs.systolic_bp", "value_unit": "mmHg", "value_target": "< 130",
+        "actions": ["Tezeo/telmisartan — ARB blokátor s kardioprotektivním efektem", "Snížení soli a stres management"]
+      }
+    },
+    {
+      "id": "DEPRESE",
+      "label": "Deprese a chronický stres",
+      "layer": 1, "branch": "right",
+      "condition": { "or": [{"med":"mirtazapin"}, {"med":"sertralin"}, {"med":"escitalopram"}, {"diag":"DEPRESE"}, {"checkin":"stress","gt":3}] },
+      "parents": ["ROOT"],
+      "children": ["MALO_POHYBU", "ZANET"],
+      "detail": {
+        "actions": ["Mirtazapin — stabilizuje náladu a spánek, snižuje kortizol", "Pohyb jako antidepresivum — 30 min chůze snižuje kortizol o 30%"]
+      }
+    },
+    {
+      "id": "VITZD_DEF",
+      "label": "Nedostatek vitamínu D",
+      "layer": 1, "branch": "right",
+      "condition": { "or": [{"lab":"vitamin_d","lt":75}, {"med":"vigantol"}, {"med":"cholekalciferol"}] },
+      "parents": ["ROOT"],
+      "children": ["ZANET", "IMUNO_OSL"],
+      "detail": {
+        "value_key": "labs.vitamin_d", "value_unit": "nmol/L", "value_target": "> 75",
+        "actions": ["Vigantol — doplnění na optimální hladinu > 75 nmol/L", "Pobyt na slunci 20 min denně"]
+      }
+    },
+
+    {
+      "id": "MALO_POHYBU",
+      "label": "Málo pohybu\na sedavý život",
+      "layer": 2, "branch": "right",
+      "condition": { "or": [{"checkin":"movement_level","eq":"low"}, {"checkin":"energy","lt":3}] },
+      "parents": ["DEPRESE"],
+      "children": ["ZANET", "SLABE_SVALY"],
+      "detail": {
+        "actions": ["150 min aerobního pohybu týdně — aktivuje NK buňky", "Chůze venku — pohyb + sluneční záření = dvojí efekt"]
+      }
+    },
+    {
+      "id": "INZULREZ",
+      "label": "Inzulínová rezistence",
+      "layer": 2, "branch": "left",
+      "condition": { "or": [{"diag":"DIABETES_2_TYPU"}, {"lab":"glucose","gt":6.0}, {"med":"sifor"}, {"med":"metformin"}, {"lab":"hba1c","gt":6.5}] },
+      "parents": ["HYPERGLYK"],
+      "children": ["ZANET", "SYNAP_UBYT"],
+      "detail": {
+        "value_key": "labs.glucose", "value_unit": "mmol/L", "value_target": "< 5.6",
+        "actions": ["Sifor/metformin — přímý efekt na inzulínovou rezistenci", "Přerušovaný půst (12h okno) — zvyšuje citlivost na inzulín"]
+      }
+    },
+    {
+      "id": "ATEROSKLEROZA",
+      "label": "Ateroskleróza\na vaskulární plaky",
+      "layer": 2, "branch": "center",
+      "condition": { "or": [{"med":"stacyl"}, {"med":"aspirin"}, {"med":"anopyrin"}, {"med":"rosucard"}, {"med":"rosuvastatin"}, {"diag":"STAV_PO_CMP"}, {"diag":"ATEROSKLEROZA"}] },
+      "parents": ["HYPERGLYK", "HIGH_LDL", "HYPERTENZE"],
+      "children": ["VASK_POD", "UDE_SRDCE"],
+      "detail": {
+        "actions": ["Stacyl — antiagregační ochrana cév", "Statiny — zpomalují tvorbu plaků a mají pleiotropní efekty"]
+      }
+    },
+    {
+      "id": "NEUROPATIE",
+      "label": "Periferní neuropatie",
+      "layer": 2, "branch": "left",
+      "condition": { "or": [{"med":"afexil"}, {"med":"pregabalin"}, {"med":"dulopren"}, {"med":"duloxetin"}, {"diag":"PERIEFERNI_NEUROPATIE"}, {"diag":"DIABETES_2_TYPU"}] },
+      "parents": ["HYPERGLYK"],
+      "children": ["BOLEST_POHYB"],
+      "detail": {
+        "actions": ["Afexil/pregabalin — snižuje neuropatickou bolest", "Dulopren/duloxetin — SNRI se specifickým efektem na neuropatii", "Glykemická kontrola — zastavuje progresi neuropatie"]
+      }
+    },
+    {
+      "id": "OSTEOPOROZA",
+      "label": "Osteoporóza",
+      "layer": 2, "branch": "center",
+      "condition": { "or": [{"med":"ibandronat"}, {"med":"ibandronát"}, {"med":"alendronate"}, {"diag":"OSTEOPOROZA"}, {"med":"caltrate"}, {"med":"kalcium"}] },
+      "parents": ["ROOT"],
+      "children": ["NESTABILITA"],
+      "detail": {
+        "actions": ["Ibandronát — bisfosfonát zastavující úbytek kostní hmoty", "Caltrate — vápník + vitamín D jako základ léčby osteoporózy", "Silový trénink — stimuluje remodeling kosti"]
+      }
+    },
+    {
+      "id": "SLABE_SVALY",
+      "label": "Slabé svaly a únava",
+      "layer": 2, "branch": "right",
+      "condition": { "or": [{"med":"euthyrox"}, {"med":"levothyroxin"}, {"diag":"HYPOTHYREOZA"}, {"checkin":"movement_level","eq":"low"}, {"checkin":"energy","lt":3}] },
+      "parents": ["HYPOTHY", "MALO_POHYBU"],
+      "children": ["NESTABILITA"],
+      "detail": {
+        "actions": ["Silový trénink 2× týdně — zachování svalové hmoty (prevence sarkopénie)", "Protein 1.6 g/kg/den — nutný základ pro syntézu svalů"]
+      }
+    },
+
+    {
+      "id": "ZANET",
+      "label": "Chronický systémový zánět",
+      "layer": 3, "branch": "center",
+      "condition": { "or": [{"lab":"crp","gt":1.0}, {"diag":"DIABETES_2_TYPU"}, {"med":"sifor"}, {"med":"metformin"}, {"med":"mirtazapin"}, {"checkin":"stress","gt":3}, {"checkin":"movement_level","eq":"low"}] },
+      "parents": ["HYPERGLYK", "DEPRESE", "VITZD_DEF", "MALO_POHYBU", "INZULREZ"],
+      "children": ["UDE_SRDCE", "UDE_MOZEK", "UDE_IMUNITA"],
+      "detail": {
+        "value_key": "labs.crp", "value_unit": "mg/L", "value_target": "< 1.0",
+        "actions": ["Omega-3 (EPA+DHA 2 g/den) — přímý protizánětlivý efekt", "Středomořská strava — zelenina, ryby, olivový olej"]
+      }
+    },
+    {
+      "id": "VASK_POD",
+      "label": "Vaskulární poškození mozku",
+      "layer": 3, "branch": "left",
+      "condition": { "or": [{"med":"stacyl"}, {"med":"aspirin"}, {"diag":"STAV_PO_CMP"}, {"med":"tezeo"}, {"med":"telmisartan"}, {"diag":"HYPERTENZE"}] },
+      "parents": ["HYPERTENZE", "ATEROSKLEROZA"],
+      "children": ["UDE_MOZEK"],
+      "detail": {
+        "actions": ["Stacyl — prevence mikrotrombů a TIA", "Tezeo — kontrola TK snižuje riziko dalších vaskulárních příhod", "MRI kontrola každé 2 roky u rizikových pacientů"]
+      }
+    },
+    {
+      "id": "BOLEST_POHYB",
+      "label": "Bolest a omezení pohybu",
+      "layer": 3, "branch": "left",
+      "condition": { "or": [{"med":"palgotal"}, {"med":"doreta"}, {"med":"tramadol"}, {"med":"afexil"}, {"med":"pregabalin"}, {"med":"liskantin"}, {"med":"primidon"}] },
+      "parents": ["NEUROPATIE"],
+      "children": ["UDE_PADY"],
+      "detail": {
+        "actions": ["Fyzioterapie — klíčová pro zachování pohybového rozsahu", "Doreta/tramadol — krátkodobé analgetikum při akutní bolesti", "Afexil/pregabalin — neuropatická bolest"]
+      }
+    },
+    {
+      "id": "NESTABILITA",
+      "label": "Nestabilní chůze\na riziko pádu",
+      "layer": 3, "branch": "right",
+      "condition": { "or": [{"med":"liskantin"}, {"med":"primidon"}, {"diag":"NESTABILITA_CHUZE"}, {"med":"ibandronat"}, {"med":"ibandronát"}] },
+      "parents": ["OSTEOPOROZA", "SLABE_SVALY"],
+      "children": ["UDE_PADY"],
+      "detail": {
+        "actions": ["Balanční trénink 3× týdně — snižuje riziko pádu o 30%", "Liskantin — léčí tremor, ale může ovlivnit rovnováhu (monitoruj)", "Úprava domácího prostředí — madla, osvětlení, koberce"]
+      }
+    },
+    {
+      "id": "SYNAP_UBYT",
+      "label": "Úbytek neuronů\na synapsí",
+      "layer": 3, "branch": "center",
+      "condition": { "or": [{"med":"duspelin"}, {"med":"donepezil"}, {"diag":"MILD_KOGN_IMPAIRMENT"}, {"diag":"STAV_PO_CMP"}] },
+      "parents": ["INZULREZ"],
+      "children": ["UDE_MOZEK"],
+      "detail": {
+        "actions": ["Duspelin/donepezil — inhibitor acetylcholinesterázy, zachovává kognitivní funkce", "Vitamín B12 — klíčový pro myelinizaci nervů", "Kognitivní trénink — neuroplasticita i ve vyšším věku"]
+      }
+    },
+    {
+      "id": "IMUNO_OSL",
+      "label": "Oslabená imunitní\nkontrola",
+      "layer": 3, "branch": "right",
+      "condition": { "or": [{"med":"sifor"}, {"med":"metformin"}, {"diag":"DIABETES_2_TYPU"}, {"med":"vigantol"}, {"med":"mirtazapin"}] },
+      "parents": ["VITZD_DEF"],
+      "children": ["UDE_IMUNITA"],
+      "detail": {
+        "actions": ["Vitamín D > 75 nmol/L — moduluje NK buňky a T-lymfocyty", "Přerušovaný půst (12h okno) — stimuluje autofagii", "Pohyb — aktivuje NK buňky (přirození zabijáci nádorů)"]
+      }
+    },
+
+    {
+      "id": "UDE_SRDCE",
+      "label": "Riziko infarktu\na CMP",
+      "layer": 4, "type": "ude", "branch": "left",
+      "condition": { "or": [{"med":"stacyl"}, {"med":"rosucard"}, {"med":"rosuvastatin"}, {"diag":"STAV_PO_CMP"}, {"med":"tezeo"}, {"diag":"HYPERTENZE"}] },
+      "parents": ["ZANET", "ATEROSKLEROZA"],
+      "children": ["GOAL"],
+      "detail": {
+        "actions": ["Kardiologická kontrola 1× ročně", "LDL < 1.8 mmol/L po CMP — agresivní cíl", "Antiagregace (Stacyl) — sekundární prevence"]
+      }
+    },
+    {
+      "id": "UDE_MOZEK",
+      "label": "Zhoršení paměti\na kognice",
+      "layer": 4, "type": "ude", "branch": "center",
+      "condition": { "or": [{"med":"duspelin"}, {"med":"donepezil"}, {"diag":"MILD_KOGN_IMPAIRMENT"}, {"diag":"STAV_PO_CMP"}] },
+      "parents": ["ZANET", "VASK_POD", "SYNAP_UBYT"],
+      "children": ["GOAL"],
+      "detail": {
+        "actions": ["Duspelin — zachovává kognitivní funkce, zpomaluje progresi", "Kognitivní trénink + sociální kontakt — neuroplasticita", "Kontrola TK a glykemie — hlavní vaskulární rizika"]
+      }
+    },
+    {
+      "id": "UDE_IMUNITA",
+      "label": "Onkologické\nriziko",
+      "layer": 4, "type": "ude", "branch": "right",
+      "condition": { "or": [{"diag":"DIABETES_2_TYPU"}, {"lab":"vitamin_d","lt":75}, {"med":"sifor"}, {"med":"vigantol"}] },
+      "parents": ["ZANET", "IMUNO_OSL"],
+      "children": ["GOAL"],
+      "detail": {
+        "actions": ["Pravidelný screening (mammografie, kolonoskopie)", "Kontrola CRP, vitamínu D a glukózy 1× ročně"]
+      }
+    },
+    {
+      "id": "UDE_PADY",
+      "label": "Riziko pádu\na zranění",
+      "layer": 4, "type": "ude", "branch": "right",
+      "condition": { "or": [{"med":"liskantin"}, {"med":"primidon"}, {"diag":"NESTABILITA_CHUZE"}, {"med":"ibandronat"}, {"med":"ibandronát"}] },
+      "parents": ["BOLEST_POHYB", "NESTABILITA"],
+      "children": ["GOAL"],
+      "detail": {
+        "actions": ["Balanční trénink 3× týdně — 30% snížení rizika pádu", "Revize léků zhoršujících rovnováhu (Liskantin)", "Úprava prostředí — madla, osvětlení"]
+      }
+    },
+
+    {
+      "id": "GOAL",
+      "label": "Maximální\nHealthspan & Lifespan",
+      "layer": 5, "type": "goal", "branch": "center",
+      "parents": ["UDE_SRDCE", "UDE_MOZEK", "UDE_IMUNITA", "UDE_PADY"],
+      "children": [],
+      "detail": {
+        "actions": ["Každý aktivní uzel v tomto grafu je příčina snižující tvoji šanci na dobrý život", "Prioritizuj uzly v červené — ty snižují Healthspan nejvíce"]
+      }
+    }
+  ],
+
+  "medication_shields": [
+    { "med": "Sifor", "inn": "metformin", "aliases": ["siofor","metformin","glucophage"], "shields_node": "HYPERGLYK",
+      "reason": "Metformin snižuje glykemii a inzulínovou rezistenci — první volba pro DM2 s protizánětlivým bonusem." },
+    { "med": "Euthyrox", "inn": "levothyroxin", "aliases": ["euthyrox","levothyroxin","l-thyroxin","levothyroxine"], "shields_node": "HYPOTHY",
+      "reason": "Levothyroxin substituuje nedostatek hormonu štítné žlázy — normalizuje TSH, snižuje KV riziko a únavu." },
+    { "med": "Rosucard", "inn": "rosuvastatin", "aliases": ["rosucard","rosuvastatin","crestor","atorvastatin","torvacard"], "shields_node": "HIGH_LDL",
+      "reason": "Rosuvastatin snižuje LDL a stabilizuje aterosklerotické plaky — snižuje riziko CMP a infarktu." },
+    { "med": "Tezeo", "inn": "telmisartan", "aliases": ["tezeo","telmisartan","micardis","lisinopril","ramipril","amlodipine","amlodipín"], "shields_node": "HYPERTENZE",
+      "reason": "Telmisartan (ARB) kontroluje krevní tlak a chrání ledviny a srdce před hypertenzním poškozením." },
+    { "med": "Ibandronát", "inn": "ibandronate", "aliases": ["ibandronat","ibandronát","bondronat","ibandronate","alendronate","caltrate","kalcium"], "shields_node": "OSTEOPOROZA",
+      "reason": "Bisfosfonát zastavuje úbytek kostní hmoty a snižuje riziko zlomenin při pádu." },
+    { "med": "Vigantol", "inn": "cholekalciferol", "aliases": ["vigantol","vitamín D3","vitamin D","D3","cholecalciferol"], "shields_node": "VITZD_DEF",
+      "reason": "Vitamín D3 doplňuje deficit — moduluje imunitní funkce, kostní metabolismus a svalovou sílu." },
+    { "med": "Mirtazapin", "inn": "mirtazapin", "aliases": ["mirtazapin","remeron","mirtazapine"], "shields_node": "DEPRESE",
+      "reason": "Mirtazapin stabilizuje náladu a spánek — snižuje chronický kortizol, který tlumí imunitu a akceleruje zánět." },
+    { "med": "Stacyl", "inn": "kyselina acetylsalicylová", "aliases": ["stacyl","aspirin","anopyrin","asa","kyselina acetylsalicylova","acetylsalicylic acid"], "shields_node": "ATEROSKLEROZA",
+      "reason": "Antiagregant snižuje riziko tvorby trombů na aterosklerotických plátech — sekundární prevence CMP/IM." },
+    { "med": "Dulopren", "inn": "duloxetin", "aliases": ["dulopren","duloxetin","duloxetine","cymbalta"], "shields_node": "NEUROPATIE",
+      "reason": "Duloxetin (SNRI) snižuje intenzitu neuropatické bolesti a zlepšuje pohyblivost." },
+    { "med": "Afexil", "inn": "pregabalin", "aliases": ["afexil","pregabalin","lyrica"], "shields_node": "NEUROPATIE",
+      "reason": "Pregabalin blokuje α2δ kanály — snižuje neuropatickou bolest a zlepšuje pohyblivost." },
+    { "med": "Duspelin", "inn": "donepezil", "aliases": ["duspelin","donepezil","aricept","donepezilum"], "shields_node": "SYNAP_UBYT",
+      "reason": "Inhibitor acetylcholinesterázy — zachovává kognitivní funkce a zpomaluje progresi kognitivního poklesu." },
+    { "med": "Liskantin", "inn": "primidon", "aliases": ["liskantin","primidon","primidone","mysoline"], "shields_node": "NESTABILITA",
+      "reason": "Primidon léčí esenciální tremor — pozor: vedlejší efekt může zhoršovat rovnováhu při vyšších dávkách." },
+    { "med": "Doreta", "inn": "tramadol+paracetamol", "aliases": ["doreta","tramadol","zaldiar","domedon"], "shields_node": "BOLEST_POHYB",
+      "reason": "Kombinovaný analgetikum — snižuje bolest umožňující pohyb; jen krátkodobé použití." },
+    { "med": "Palgotal", "inn": "tramadol", "aliases": ["palgotal","tramadol"], "shields_node": "BOLEST_POHYB",
+      "reason": "Opioidní analgetikum — snižuje bolest při pohybu; nutný pro zachování aktivity při silné bolesti." },
+    { "med": "Duspelin", "inn": "donepezil", "aliases": ["duspelin","donepezil","aricept"], "shields_node": "UDE_MOZEK",
+      "reason": "Donepezil přímo zpomaluje progresi kognitivního poklesu — jediná registrovaná farmakologická intervence pro MCI." }
+  ],
+
+  "supplement_shields": [
+    { "supp": "Omega-3", "aliases": ["omega3","omega-3","epa","dha","rybí olej","fish oil"], "shields_node": "ZANET",
+      "reason": "EPA+DHA snižují prozánětlivé cytokiny (IL-6, TNF-α) — přímý efekt na chronický systémový zánět." },
+    { "supp": "Vitamín D", "aliases": ["vitamín D","vitamin D","D3","cholekalciferol"], "shields_node": "VITZD_DEF",
+      "reason": "Vitamín D > 75 nmol/L výrazně zlepšuje imunitní dohled a svalovou funkci." },
+    { "supp": "Vitamín B12", "aliases": ["vitamín B12","vitamin B12","B12","kyanokobalamin","methylkobalamin","cyanocobalamin"], "shields_node": "SYNAP_UBYT",
+      "reason": "Vitamín B12 je klíčový pro myelinizaci nervů — deficit urychluje neurodegeneraci." },
+    { "supp": "Hořčík", "aliases": ["hořčík","magnézium","magnesium","Mg"], "shields_node": "DEPRESE",
+      "reason": "Hořčík snižuje kortizol a zlepšuje kvalitu spánku — dvojitý efekt na chronický stres." },
+    { "supp": "Vitamín C", "aliases": ["vitamín C","vitamin C","kyselina askorbová","ascorbic acid"], "shields_node": "IMUNO_OSL",
+      "reason": "Antioxidant — neutralizuje volné radikály a podporuje aktivitu NK buněk." },
+    { "supp": "Kurkumin", "aliases": ["kurkumin","kurkuma","turmeric","curcumin"], "shields_node": "ZANET",
+      "reason": "Kurkumin inhibuje NF-κB — jeden z hlavních přepínačů chronického zánětu." },
+    { "supp": "Koenzym Q10", "aliases": ["Q10","CoQ10","koenzym Q10","ubiquinol","ubiquinone"], "shields_node": "HIGH_LDL",
+      "reason": "Statiny snižují endogenní Q10 — doplnění chrání mitochondrie a snižuje svalovou bolest ze statinů." }
+  ],
+
+  "contraindications": [
+    {
+      "drug": "Mirtazapin", "aliases": ["mirtazapin","mirtazapine","remeron"],
+      "conflicts_with_med": "duspelin", "conflicts_with_med_aliases": ["duspelin","donepezil","aricept"],
+      "node": "SYNAP_UBYT",
+      "reason": "Mirtazapin má anticholinergní vlastnosti — antagonizuje efekt donepezilu na cholinergní přenos. Kombinace může snižovat kognitivní benefit donepezilu."
+    },
+    {
+      "drug": "Sifor", "aliases": ["sifor","metformin","siofor","glucophage"],
+      "conflicts_with_med": "vitamín B12", "conflicts_with_med_aliases": ["vitamín B12","vitamin B12","B12","methylkobalamin","cyanocobalamin"],
+      "node": "SYNAP_UBYT",
+      "reason": "Metformin snižuje vstřebávání vitamínu B12 ve střevě — deficit B12 urychluje neurodegeneraci. Monitoruj B12 při dlouhodobé léčbě metforminem."
+    },
+    {
+      "drug": "Ibandronát", "aliases": ["ibandronat","ibandronát","ibandronate","bondronat"],
+      "conflicts_with_med": "caltrate", "conflicts_with_med_aliases": ["caltrate","kalcium","calcium","vápník"],
+      "node": "OSTEOPOROZA",
+      "reason": "Vápník snižuje vstřebávání ibandronátu — bisfosfonáty musí být užity nalačno 30–60 min před vápníkem."
+    },
+    {
+      "drug": "Liskantin", "aliases": ["liskantin","primidon","primidone","mysoline"],
+      "conflicts_with_med": "mirtazapin", "conflicts_with_med_aliases": ["mirtazapin","mirtazapine","remeron"],
+      "node": "NESTABILITA",
+      "reason": "Primidon + mirtazapin — CNS depresivní efekty se sčítají. Kombinace může výrazně zhoršit rovnováhu a koordinaci."
+    }
+  ]
+}
