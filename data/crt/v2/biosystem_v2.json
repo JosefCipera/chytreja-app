@@ -1,12 +1,14 @@
 {
   "domain": "Biosystem_Unified_V2",
-  "version": "2.0.0",
-  "description": "Integrovaný kauzální Biovesmír — 24 uzlů, 4 killers, Goldratt CRT + Attia Medicine 3.0. Podmínky na uzlech, hrany z parents/children.",
+  "version": "2.1.0",
+  "description": "Integrovaný kauzální Biovesmír — 24 uzlů, 4 killers, Goldratt CRT + Attia Medicine 3.0. label_expert + label_layman pro přepínač.",
 
   "nodes": [
     {
       "id": "ROOT",
       "label": "Metabolická dysregulace\na systémový zánět",
+      "label_expert": "Metabolická dysregulace\na systémový zánět",
+      "label_layman": "Jak tělo pálí\na ukládá energii",
       "layer": 0, "type": "root", "branch": "center",
       "parents": [],
       "children": ["HYPERGLYK", "HYPOTHY", "HIGH_LDL", "HYPERTENZE", "DEPRESE", "VITZD_DEF", "OSTEOPOROZA"],
@@ -16,6 +18,8 @@
     {
       "id": "HYPERGLYK",
       "label": "Hyperglykémie / DM2",
+      "label_expert": "Hyperglykémie / DM2",
+      "label_layman": "Příliš mnoho\ncukru v krvi",
       "layer": 1, "branch": "left",
       "condition": { "or": [{"med":"sifor"}, {"med":"metformin"}, {"diag":"DIABETES_2_TYPU"}, {"lab":"glucose","gt":6.0}, {"lab":"hba1c","gt":6.5}] },
       "parents": ["ROOT"],
@@ -28,6 +32,8 @@
     {
       "id": "HYPOTHY",
       "label": "Snížená funkce\nštítné žlázy",
+      "label_expert": "Snížená funkce\nštítné žlázy",
+      "label_layman": "Pomalá\nštítná žláza",
       "layer": 1, "branch": "left",
       "condition": { "or": [{"med":"euthyrox"}, {"med":"levothyroxin"}, {"diag":"HYPOTHYREOZA"}] },
       "parents": ["ROOT"],
@@ -40,6 +46,8 @@
     {
       "id": "HIGH_LDL",
       "label": "Vysoký LDL cholesterol",
+      "label_expert": "Vysoký LDL cholesterol",
+      "label_layman": "Příliš mnoho\nšpatného cholesterolu",
       "layer": 1, "branch": "center",
       "condition": { "or": [{"med":"rosucard"}, {"med":"rosuvastatin"}, {"med":"atorvastatin"}, {"med":"torvacard"}, {"lab":"ldl","gt":3.0}] },
       "parents": ["ROOT"],
@@ -52,6 +60,8 @@
     {
       "id": "HYPERTENZE",
       "label": "Hypertenze",
+      "label_expert": "Hypertenze",
+      "label_layman": "Krev tlačí\npříliš silně",
       "layer": 1, "branch": "center",
       "condition": { "or": [{"med":"tezeo"}, {"med":"telmisartan"}, {"med":"lisinopril"}, {"med":"amlodipine"}, {"med":"ramipril"}, {"diag":"HYPERTENZE"}, {"lab":"systolic_bp","gt":140}] },
       "parents": ["ROOT"],
@@ -64,6 +74,8 @@
     {
       "id": "DEPRESE",
       "label": "Deprese a chronický stres",
+      "label_expert": "Deprese a chronický stres",
+      "label_layman": "Stres a sklíčenost\ntrvají příliš dlouho",
       "layer": 1, "branch": "right",
       "condition": { "or": [{"med":"mirtazapin"}, {"med":"sertralin"}, {"med":"escitalopram"}, {"diag":"DEPRESE"}, {"checkin":"stress","gt":3}] },
       "parents": ["ROOT"],
@@ -75,6 +87,8 @@
     {
       "id": "VITZD_DEF",
       "label": "Nedostatek vitamínu D",
+      "label_expert": "Nedostatek vitamínu D",
+      "label_layman": "Chybí vitamín D",
       "layer": 1, "branch": "right",
       "condition": { "or": [{"lab":"vitamin_d","lt":75}, {"med":"vigantol"}, {"med":"cholekalciferol"}] },
       "parents": ["ROOT"],
@@ -88,6 +102,8 @@
     {
       "id": "MALO_POHYBU",
       "label": "Málo pohybu\na sedavý život",
+      "label_expert": "Málo pohybu\na sedavý život",
+      "label_layman": "Příliš málo pohybu",
       "layer": 2, "branch": "right",
       "condition": { "or": [{"checkin":"movement_level","eq":"low"}, {"checkin":"energy","lt":3}] },
       "parents": ["DEPRESE"],
@@ -99,6 +115,8 @@
     {
       "id": "INZULREZ",
       "label": "Inzulínová rezistence",
+      "label_expert": "Inzulínová rezistence",
+      "label_layman": "Buňky špatně slyší\nna cukr v krvi",
       "layer": 2, "branch": "left",
       "condition": { "or": [{"diag":"DIABETES_2_TYPU"}, {"lab":"glucose","gt":6.0}, {"med":"sifor"}, {"med":"metformin"}, {"lab":"hba1c","gt":6.5}] },
       "parents": ["HYPERGLYK"],
@@ -111,6 +129,8 @@
     {
       "id": "ATEROSKLEROZA",
       "label": "Ateroskleróza\na vaskulární plaky",
+      "label_expert": "Ateroskleróza\na vaskulární plaky",
+      "label_layman": "Zanášení\na kornatění cév",
       "layer": 2, "branch": "center",
       "condition": { "or": [{"med":"stacyl"}, {"med":"aspirin"}, {"med":"anopyrin"}, {"med":"rosucard"}, {"med":"rosuvastatin"}, {"diag":"STAV_PO_CMP"}, {"diag":"ATEROSKLEROZA"}] },
       "parents": ["HYPERGLYK", "HIGH_LDL", "HYPERTENZE"],
@@ -122,6 +142,8 @@
     {
       "id": "NEUROPATIE",
       "label": "Periferní neuropatie",
+      "label_expert": "Periferní neuropatie",
+      "label_layman": "Poškození nervů\nv končetinách",
       "layer": 2, "branch": "left",
       "condition": { "or": [{"med":"afexil"}, {"med":"pregabalin"}, {"med":"dulopren"}, {"med":"duloxetin"}, {"diag":"PERIEFERNI_NEUROPATIE"}, {"diag":"DIABETES_2_TYPU"}] },
       "parents": ["HYPERGLYK"],
@@ -133,6 +155,8 @@
     {
       "id": "OSTEOPOROZA",
       "label": "Osteoporóza",
+      "label_expert": "Osteoporóza",
+      "label_layman": "Řídnutí kostí",
       "layer": 2, "branch": "center",
       "condition": { "or": [{"med":"ibandronat"}, {"med":"ibandronát"}, {"med":"alendronate"}, {"diag":"OSTEOPOROZA"}, {"med":"caltrate"}, {"med":"kalcium"}] },
       "parents": ["ROOT"],
@@ -144,6 +168,8 @@
     {
       "id": "SLABE_SVALY",
       "label": "Slabé svaly a únava",
+      "label_expert": "Slabé svaly a únava",
+      "label_layman": "Svaly slábnou\na síla ubývá",
       "layer": 2, "branch": "right",
       "condition": { "or": [{"med":"euthyrox"}, {"med":"levothyroxin"}, {"diag":"HYPOTHYREOZA"}, {"checkin":"movement_level","eq":"low"}, {"checkin":"energy","lt":3}] },
       "parents": ["HYPOTHY", "MALO_POHYBU"],
@@ -156,6 +182,8 @@
     {
       "id": "ZANET",
       "label": "Chronický systémový zánět",
+      "label_expert": "Chronický systémový zánět",
+      "label_layman": "Tělo je\ntrvale zanícené",
       "layer": 3, "branch": "center",
       "condition": { "or": [{"lab":"crp","gt":1.0}, {"diag":"DIABETES_2_TYPU"}, {"med":"sifor"}, {"med":"metformin"}, {"med":"mirtazapin"}, {"checkin":"stress","gt":3}, {"checkin":"movement_level","eq":"low"}] },
       "parents": ["HYPERGLYK", "DEPRESE", "VITZD_DEF", "MALO_POHYBU", "INZULREZ"],
@@ -168,6 +196,8 @@
     {
       "id": "VASK_POD",
       "label": "Vaskulární poškození mozku",
+      "label_expert": "Vaskulární poškození mozku",
+      "label_layman": "Poškozené cévy\nv mozku",
       "layer": 3, "branch": "left",
       "condition": { "or": [{"med":"stacyl"}, {"med":"aspirin"}, {"diag":"STAV_PO_CMP"}, {"med":"tezeo"}, {"med":"telmisartan"}, {"diag":"HYPERTENZE"}] },
       "parents": ["HYPERTENZE", "ATEROSKLEROZA"],
@@ -179,6 +209,8 @@
     {
       "id": "BOLEST_POHYB",
       "label": "Bolest a omezení pohybu",
+      "label_expert": "Bolest a omezení pohybu",
+      "label_layman": "Bolest\nbrání pohybu",
       "layer": 3, "branch": "left",
       "condition": { "or": [{"med":"palgotal"}, {"med":"doreta"}, {"med":"tramadol"}, {"med":"afexil"}, {"med":"pregabalin"}, {"med":"liskantin"}, {"med":"primidon"}] },
       "parents": ["NEUROPATIE"],
@@ -190,6 +222,8 @@
     {
       "id": "NESTABILITA",
       "label": "Nestabilní chůze\na riziko pádu",
+      "label_expert": "Nestabilní chůze\na riziko pádu",
+      "label_layman": "Nejistá chůze\na pády",
       "layer": 3, "branch": "right",
       "condition": { "or": [{"med":"liskantin"}, {"med":"primidon"}, {"diag":"NESTABILITA_CHUZE"}, {"med":"ibandronat"}, {"med":"ibandronát"}] },
       "parents": ["OSTEOPOROZA", "SLABE_SVALY"],
@@ -201,6 +235,8 @@
     {
       "id": "SYNAP_UBYT",
       "label": "Úbytek neuronů\na synapsí",
+      "label_expert": "Úbytek neuronů\na synapsí",
+      "label_layman": "Rychlejší\nstárnutí mozku",
       "layer": 3, "branch": "center",
       "condition": { "or": [{"med":"duspelin"}, {"med":"donepezil"}, {"diag":"MILD_KOGN_IMPAIRMENT"}, {"diag":"STAV_PO_CMP"}] },
       "parents": ["INZULREZ"],
@@ -212,6 +248,8 @@
     {
       "id": "IMUNO_OSL",
       "label": "Oslabená imunitní\nkontrola",
+      "label_expert": "Oslabená imunitní\nkontrola",
+      "label_layman": "Oslabená\nobrana těla",
       "layer": 3, "branch": "right",
       "condition": { "or": [{"med":"sifor"}, {"med":"metformin"}, {"diag":"DIABETES_2_TYPU"}, {"med":"vigantol"}, {"med":"mirtazapin"}] },
       "parents": ["VITZD_DEF"],
@@ -224,6 +262,8 @@
     {
       "id": "UDE_SRDCE",
       "label": "Riziko infarktu\na CMP",
+      "label_expert": "Riziko infarktu\na CMP",
+      "label_layman": "Srdce a cévy\nv ohrožení",
       "layer": 4, "type": "ude", "branch": "left",
       "condition": { "or": [{"med":"stacyl"}, {"med":"rosucard"}, {"med":"rosuvastatin"}, {"diag":"STAV_PO_CMP"}, {"med":"tezeo"}, {"diag":"HYPERTENZE"}] },
       "parents": ["ZANET", "ATEROSKLEROZA"],
@@ -235,6 +275,8 @@
     {
       "id": "UDE_MOZEK",
       "label": "Zhoršení paměti\na kognice",
+      "label_expert": "Zhoršení paměti\na kognice",
+      "label_layman": "Paměť a myšlení\nslábnou",
       "layer": 4, "type": "ude", "branch": "center",
       "condition": { "or": [{"med":"duspelin"}, {"med":"donepezil"}, {"diag":"MILD_KOGN_IMPAIRMENT"}, {"diag":"STAV_PO_CMP"}] },
       "parents": ["ZANET", "VASK_POD", "SYNAP_UBYT"],
@@ -246,6 +288,8 @@
     {
       "id": "UDE_IMUNITA",
       "label": "Onkologické\nriziko",
+      "label_expert": "Onkologické\nriziko",
+      "label_layman": "Tělo hůře bojuje\ns nádory",
       "layer": 4, "type": "ude", "branch": "right",
       "condition": { "or": [{"diag":"DIABETES_2_TYPU"}, {"lab":"vitamin_d","lt":75}, {"med":"sifor"}, {"med":"vigantol"}] },
       "parents": ["ZANET", "IMUNO_OSL"],
@@ -257,6 +301,8 @@
     {
       "id": "UDE_PADY",
       "label": "Riziko pádu\na zranění",
+      "label_expert": "Riziko pádu\na zranění",
+      "label_layman": "Nebezpečné pády\na zlomeniny",
       "layer": 4, "type": "ude", "branch": "right",
       "condition": { "or": [{"med":"liskantin"}, {"med":"primidon"}, {"diag":"NESTABILITA_CHUZE"}, {"med":"ibandronat"}, {"med":"ibandronát"}] },
       "parents": ["BOLEST_POHYB", "NESTABILITA"],
@@ -269,6 +315,8 @@
     {
       "id": "GOAL",
       "label": "Maximální\nHealthspan & Lifespan",
+      "label_expert": "Maximální\nHealthspan & Lifespan",
+      "label_layman": "Dlouhý\na zdravý život",
       "layer": 5, "type": "goal", "branch": "center",
       "parents": ["UDE_SRDCE", "UDE_MOZEK", "UDE_IMUNITA", "UDE_PADY"],
       "children": [],

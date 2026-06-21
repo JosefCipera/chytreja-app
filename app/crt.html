@@ -266,6 +266,7 @@
     <div class="crt-subtitle" id="crtSubtitle">Current Reality Tree</div>
   </div>
   <button class="crt-back" id="crtMedBtn" onclick="toggleMeds()" style="display:none">🛡 Léky</button>
+  <button class="crt-back" id="crtLabelBtn" onclick="toggleLabelMode()" style="display:none">👤 Laik</button>
   <!-- Obnovit schováno — mapa se regeneruje jen při změně health profilu -->
   <button class="crt-back" id="crtRegenBtn" onclick="regenCRT()" style="display:none">↺ Přegenerovat</button>
 </div>
@@ -676,7 +677,7 @@ function boxHeight(label) {
 
 // Jednotný styl — bez barev podle stavu (matou, nemáme pro ně dost dat)
 const NODE_STYLE   = { fill: '#1a2535', stroke: '#3a5068', text: '#c8d8e8' };
-const GOLDEN_STYLE = { fill: '#7a5a00', stroke: '#f0c040', text: '#f8e080' };
+const GOLDEN_STYLE = { fill: '#0c0800', stroke: '#f0c040', text: '#fcd34d' };
 const UDE_STYLE    = { fill: '#1a2535', stroke: '#8ba8b8', text: '#e8f0f8' };
 const GOAL_STYLE   = { fill: '#0a2a0a', stroke: '#22c55e', text: '#4ade80' };
 // Zpětná kompatibilita — STATE_STYLE nevyužíváme
@@ -1362,6 +1363,32 @@ function buildPanelData(node, ctx, parents, children, meds, supps, contras) {
 window.closeCrtPanel = closeCrtPanel;
 
 let _medsVisible = false;
+let _labelMode = 'expert'; // 'expert' | 'layman'
+
+// Nastaví label na všech uzlech podle aktuálního módu a překreslí
+function applyLabelMode(data) {
+  if (!data?._kbMap) return;
+  data.nodes.forEach(n => {
+    const kb = data._kbMap[n.id] || n;
+    n.label = _labelMode === 'layman'
+      ? (kb.label_layman || kb.label_expert || kb.label || n.label)
+      : (kb.label_expert || kb.label || n.label);
+  });
+}
+
+window.toggleLabelMode = function() {
+  _labelMode = _labelMode === 'expert' ? 'layman' : 'expert';
+  const data = window._crtData;
+  if (!data) return;
+  applyLabelMode(data);
+  renderTree(data);
+  const btn = document.getElementById('crtLabelBtn');
+  if (btn) {
+    btn.textContent = _labelMode === 'layman' ? '🔬 Expert' : '👤 Laik';
+    btn.style.borderColor = _labelMode === 'layman' ? '#22c55e' : '';
+    btn.style.color       = _labelMode === 'layman' ? '#22c55e' : '';
+  }
+};
 
 window.toggleMeds = function() {
   _medsVisible = !_medsVisible;
@@ -1421,7 +1448,9 @@ async function boot() {
     const data = await loadCRT();
     document.getElementById('crtLoading').classList.add('hidden');
     _lastCrtData = data;
+    applyLabelMode(data); // inicializuj labely podle _labelMode (default: expert)
     renderTree(data);
+    document.getElementById('crtLabelBtn').style.display = '';
     enrichContraMap(data); // async, panel se doplní při příštím otevření
   } catch (e) {
     document.getElementById('crtLoading').textContent = 'Chyba načítání: ' + e.message;
