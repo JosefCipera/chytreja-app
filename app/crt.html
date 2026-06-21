@@ -1140,8 +1140,9 @@ function openNodePanel(nodeId) {
 
   const kbMap    = data._kbMap;
   const ctx      = data._ctx || {};
-  const medsMap  = data.medications_map || [];
-  const suppsMap = data.supplements_map || [];
+  const rawData  = _rawCrtData || data;
+  const medsMap  = rawData.medications_map || [];
+  const suppsMap = rawData.supplements_map || [];
 
   const node = kbMap[nodeId];
   if (!node) return;
@@ -1151,7 +1152,7 @@ function openNodePanel(nodeId) {
   const children = (node.children || []).map(cid => kbMap[cid]).filter(Boolean).filter(c => activeIds.has(c.id));
   const meds     = medsMap.filter(m => (m.targets || []).includes(nodeId));
   const supps    = suppsMap.filter(s => (s.targets || []).includes(nodeId));
-  const contras  = (data.contra_map || []).filter(c => c.nodeId === nodeId);
+  const contras  = (rawData.contra_map || []).filter(c => c.nodeId === nodeId);
 
   // Počet příčin/důsledků skrytých v Top-N pohledu
   const rawIds = _rawCrtData?._activeIds || activeIds;
