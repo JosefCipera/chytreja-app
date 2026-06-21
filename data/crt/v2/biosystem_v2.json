@@ -373,7 +373,9 @@
     { "supp": "Kurkumin", "aliases": ["kurkumin","kurkuma","turmeric","curcumin"], "shields_node": "ZANET",
       "reason": "Kurkumin inhibuje NF-κB — jeden z hlavních přepínačů chronického zánětu." },
     { "supp": "Koenzym Q10", "aliases": ["Q10","CoQ10","koenzym Q10","ubiquinol","ubiquinone"], "shields_node": "HIGH_LDL",
-      "reason": "Statiny snižují endogenní Q10 — doplnění chrání mitochondrie a snižuje svalovou bolest ze statinů." }
+      "reason": "Statiny snižují endogenní Q10 — doplnění chrání mitochondrie a snižuje svalovou bolest ze statinů." },
+    { "supp": "Zen plus", "aliases": ["zen plus","zen+","zenplus","zen"], "shields_node": "DEPRESE",
+      "reason": "Zen plus — bylinná směs pro kvalitní spánek snižuje noční kortizol, který prohlubuje chronický stres a urychluje zánět." }
   ],
 
   "contraindications": [

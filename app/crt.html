@@ -1571,13 +1571,19 @@ function computeTopN(rawData) {
     if (rootId) { const p = bfsPath(rootId, udeId, nodeMap, allIds); if (p) p.forEach(id => topIds.add(id)); }
   }
 
-  // Bridge pass: add active nodes that directly connect two topIds nodes
+  // Bridge pass: fill layer-2 gaps when a layer-1 root cause skips directly to layer-3+
+  // e.g. HYPOTHY→ZANET(layer3) skips SLABE_SVALY(layer2) — add SLABE_SVALY
   for (const pid of [...topIds]) {
+    if ((nodeMap[pid]?.layer ?? 99) !== 1) continue;
     const pNode = nodeMap[pid];
+    const minTopChild = Math.min(...(pNode.children || [])
+      .filter(c => topIds.has(c)).map(c => nodeMap[c]?.layer ?? 99), Infinity);
     for (const cid of (pNode?.children || [])) {
       if (topIds.has(cid) || !allIds.has(cid)) continue;
-      const cNode = nodeMap[cid];
-      if ((cNode?.children || []).some(gc => topIds.has(gc))) topIds.add(cid);
+      const cLayer = nodeMap[cid]?.layer ?? 99;
+      if (cLayer < minTopChild && (nodeMap[cid]?.children || []).some(gc => topIds.has(gc))) {
+        topIds.add(cid);
+      }
     }
   }
 
