@@ -683,10 +683,7 @@ async function handleCrtContext(req, res) {
     checkin: { stress:avg(chk,'stress'), sleep_hours:avg(chk,'sleep_hours'), movement_level:mode(chk,'movement_level'), energy:avg(chk,'energy'), hrv:rdns?.[0]?.hrv??null },
     diagnoses: (prof?.diagnoses||[]).map(normDiag),
     symptoms:  (prof?.symptoms ||[]).map(normDiag),
-    meds: [
-      ...(prof?.medications||[]).map(m => typeof m === 'string' ? m : m?.name).filter(Boolean),
-      ...(meds||[]).map(m=>m.name),
-    ],
+    meds: (meds||[]).map(m=>m.name),
     supps: (prof?.supplements||[]).map(s => (typeof s === 'string' ? s : s.name)).filter(Boolean),
   };
 

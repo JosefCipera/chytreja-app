@@ -108,15 +108,58 @@
   ],
 
   "medication_shields": [
-    { "med": "Eutyrox",    "inn": "levothyroxin", "aliases": ["Letrox","Euthyrox"],       "shields_node": "N_HYPOTHY",     "reason": "Nahrazuje chybějící hormon štítné žlázy — přímo řeší příčinu svalové slabosti a únavy." },
-    { "med": "Sorvasta",   "inn": "rosuvastatin", "aliases": ["Crestor","Rosuvastatin"],  "shields_node": "N_ZANET_META",  "reason": "Snižuje cholesterol a tlumí cévní zánět — snižuje metabolické riziko." },
-    { "med": "Caltrate",   "inn": "kalcium+D3",   "aliases": ["Calcium","Vápník"],        "shields_node": "N_OSTEOPOROZA", "reason": "Vápník a vitamín D jsou základní stavební kameny kostní hustoty." },
-    { "med": "Mirtazapin", "inn": "mirtazapin",   "aliases": ["Remeron"],                 "shields_node": "N_DEPRESE",     "reason": "Stabilizuje náladu a spánek — snižuje centrální příčinu inaktivity." },
-    { "med": "Dulopen",    "inn": "duloxetin",    "aliases": ["Cymbalta","Duloxetin"],    "shields_node": "N_BOLEST_NOH",  "reason": "Snižuje neuropatickou bolest — přímý efekt na bolest z nervu." },
-    { "med": "Doreta",     "inn": "tramadol+paracetamol", "aliases": ["Zaldiar"],         "shields_node": "N_BOLEST_NOH",  "reason": "Analgetikum pro akutní úlevu od bolesti pohybového aparátu." },
-    { "med": "Liskantin",  "inn": "primidon",     "aliases": ["Primidone","Mysoline"],    "shields_node": "N_NESTABILITA", "reason": "Snižuje esenciální tremor — přispívá ke stabilitě pohybu." }
+    { "med": "Eutyrox",     "inn": "levothyroxin", "aliases": ["Letrox","Euthyrox","Euthyrox","levothyroxinum"], "shields_node": "N_HYPOTHY",     "reason": "Nahrazuje chybějící hormon štítné žlázy — přímo řeší příčinu svalové slabosti a únavy." },
+    { "med": "Rosucard",    "inn": "rosuvastatin", "aliases": ["Sorvasta","Crestor","rosuvastatin"],             "shields_node": "N_ZANET_META",  "reason": "Snižuje cholesterol a tlumí cévní zánět — snižuje metabolické riziko." },
+    { "med": "Caltrate",    "inn": "kalcium+D3",   "aliases": ["Calcium","Vápník","calcium+cholekalciferol"],    "shields_node": "N_OSTEOPOROZA", "reason": "Vápník a vitamín D jsou základní stavební kameny kostní hustoty." },
+    { "med": "Ibandronát",  "inn": "ibandronic acid", "aliases": ["Ibandronat Mylan","Bonviva","ibandronate"],   "shields_node": "N_OSTEOPOROZA", "reason": "Bisfosfonát — zpomaluje odbourávání kostní hmoty a snižuje riziko zlomenin." },
+    { "med": "Vigantol",    "inn": "cholekalciferol", "aliases": ["vitamín D3","vitamin D","D3","cholecalciferol"], "shields_node": "N_OSTEOPOROZA", "reason": "Vitamín D3 zajišťuje vstřebávání vápníku — klíčový pro pevnost kostí a svalovou funkci." },
+    { "med": "Sifor",       "inn": "metformin",    "aliases": ["Siofor","Glucophage","metformin"],               "shields_node": "N_VYSOKE_GL",   "reason": "Snižuje jaterní produkci glukózy — základní lék při diabetu 2. typu." },
+    { "med": "Mirtazapin",  "inn": "mirtazapin",   "aliases": ["Remeron","mirtazapine"],                        "shields_node": "N_DEPRESE",     "reason": "Stabilizuje náladu a spánek — snižuje centrální příčinu inaktivity." },
+    { "med": "Dulopren",    "inn": "duloxetin",    "aliases": ["Dulopen","Cymbalta","duloxetine"],               "shields_node": "N_BOLEST_NOH",  "reason": "Snižuje neuropatickou bolest — přímý efekt na bolest z nervu." },
+    { "med": "Afexil",      "inn": "pregabalin",   "aliases": ["Lyrica","pregabaline"],                         "shields_node": "N_BOLEST_NOH",  "reason": "Tlumí přenos bolestivých signálů z poškozených nervů — snižuje neuropatickou bolest." },
+    { "med": "Doreta",      "inn": "tramadol+paracetamol", "aliases": ["Zaldiar","tramadol"],                   "shields_node": "N_BOLEST_NOH",  "reason": "Analgetikum pro akutní úlevu od bolesti pohybového aparátu." },
+    { "med": "Palgotal",    "inn": "paracetamol",  "aliases": ["Paracetamol","Paralen","acetaminophen"],         "shields_node": "N_BOLEST_NOH",  "reason": "Základní analgetikum — snižuje bolest bez rizika GI krvácení jako NSAID." },
+    { "med": "Esoprex",     "inn": "esomeprazol",  "aliases": ["Nexium","esomeprazole","Emanera","Esoprex"],     "shields_node": "N_BOLEST_NOH",  "reason": "Chrání žaludeční sliznici při dlouhodobé analgetické léčbě — snižuje riziko GI krvácení." },
+    { "med": "Liskantin",   "inn": "primidon",     "aliases": ["Liskantín","Primidone","Mysoline"],              "shields_node": "N_NESTABILITA", "reason": "Snižuje esenciální tremor — přispívá ke stabilitě pohybu." }
   ],
 
-  "supplement_shields": [],
-  "contraindications": []
+  "supplement_shields": [
+    { "supp": "Vitamín B12", "aliases": ["B12","vitamin B12","kyanokobalamin","methylkobalamin","kobalamin"], "shields_node": "N_NEUROPATIE", "reason": "Vitamín B12 je klíčový pro regeneraci nervových vláken — jeho deficit (častý při metforminu) zhoršuje neuropatii." },
+    { "supp": "Hořčík",      "aliases": ["magnesium","magnézium","magnésium","bisglycinát","bisglycinate"],   "shields_node": "N_UNAVA",      "reason": "Hořčík podporuje svalovou funkci a energetický metabolismus — jeho nízká hladina přispívá k únavě a svalovým křečím." }
+  ],
+
+  "contraindications": [
+    {
+      "drug": "Liskantín",
+      "aliases": ["liskantin","primidon","primidone"],
+      "conflicts_with_med": "Dulopren",
+      "conflicts_with_med_aliases": ["dulopren","dulopen","duloxetin","duloxetine","cymbalta"],
+      "node": "N_BOLEST_NOH",
+      "reason": "Liskantín (primidon) urychluje odbourávání duloxetinu v játrech — může výrazně snížit jeho hladinu v krvi a oslabit tlumení bolesti. Informuj lékaře, pokud bolest nereaguje na Dulopren."
+    },
+    {
+      "drug": "Mirtazapin",
+      "aliases": ["mirtazapin","mirtazapine","remeron"],
+      "conflicts_with_med": "Liskantín",
+      "conflicts_with_med_aliases": ["liskantín","liskantin","primidon","primidone"],
+      "node": "N_NESTABILITA",
+      "reason": "Kombinace mirtazapinu a primidonu zesiluje útlum centrální nervové soustavy — zvyšuje ospalost a riziko pádu. Vstávej pomalu, vyhni se alkoholu."
+    },
+    {
+      "drug": "Ibandronát",
+      "aliases": ["ibandronát","ibandronate","ibandronat mylan","bonviva"],
+      "conflicts_with_med": "Caltrate",
+      "conflicts_with_med_aliases": ["caltrate","calcium","vápník"],
+      "node": "N_OSTEOPOROZA",
+      "reason": "Vápník z Caltrate blokuje vstřebávání Ibandronátu — musí se brát s odstupem alespoň 2 hodin. Ibandronát vždy nalačno ráno, Caltrate až večer."
+    },
+    {
+      "drug": "Sifor",
+      "aliases": ["sifor","siofor","metformin","glucophage"],
+      "conflicts_with_med": "Vitamín B12",
+      "conflicts_with_med_aliases": ["b12","vitamin b12","kobalamin"],
+      "node": "N_NEUROPATIE",
+      "reason": "Metformin (Sifor) dlouhodobě snižuje vstřebávání vitamínu B12 — deficit zhoršuje neuropatii nohou. Nech si pravidelně kontrolovat hladinu B12."
+    }
+  ]
 }
