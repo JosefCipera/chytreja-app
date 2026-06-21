@@ -749,7 +749,18 @@ function renderTree(data) {
   const applyT = () => { svg.style.transform = `translate(${_tx}px,${_ty}px) scale(${_sc})`; };
 
   const initView = () => {
-    // Při re-renderu (toggle labels) zachovej aktuální pan/zoom
+    // Při re-renderu zachovej střed viewportu (frakce SVG) — platí i když se změní výška SVG
+    if (window._preservedCenter) {
+      const [sc, fracX, fracY] = window._preservedCenter;
+      const cw = container.clientWidth || window.innerWidth || 800;
+      const ch = container.clientHeight || window.innerHeight || 600;
+      _sc = sc;
+      _tx = cw / 2 - fracX * svgW * sc;
+      _ty = ch / 2 - fracY * svgH * sc;
+      applyT();
+      window._preservedCenter = null;
+      return;
+    }
     if (window._preservedTransform) {
       const [sc, tx, ty] = window._preservedTransform;
       _sc = sc; _tx = tx; _ty = ty;
@@ -1396,15 +1407,19 @@ function applyLabelMode(data) {
 }
 
 window.toggleLabelMode = function() {
-  // Zachyť aktuální pan/zoom aby se graf nepřeskočil
+  // Zachyť střed viewportu v SVG-frakci — funguje i když se změní výška SVG (laik vs expert)
   const svgEl = document.querySelector('#crt-canvas svg');
-  if (svgEl?.style.transform) {
-    const t = svgEl.style.transform;
-    const mTr = t.match(/translate\(([-\d.]+)px,([-\d.]+)px\)/);
-    const mSc = t.match(/scale\(([-\d.]+)\)/);
-    if (mTr && mSc) {
-      window._preservedTransform = [parseFloat(mSc[1]), parseFloat(mTr[1]), parseFloat(mTr[2])];
-    }
+  const cont  = document.getElementById('crt-canvas');
+  if (svgEl && cont) {
+    const svgW = parseFloat(svgEl.getAttribute('width'))  || 800;
+    const svgH = parseFloat(svgEl.getAttribute('height')) || 600;
+    const cw   = cont.clientWidth  || window.innerWidth  || 800;
+    const ch   = cont.clientHeight || window.innerHeight || 600;
+    window._preservedCenter = [
+      _sc,
+      (cw / 2 - _tx) / (_sc * svgW),
+      (ch / 2 - _ty) / (_sc * svgH),
+    ];
   }
   _labelMode = _labelMode === 'expert' ? 'layman' : 'expert';
   const data = window._crtData;
@@ -1570,13 +1585,6 @@ function computeTopN(rawData) {
   for (const udeId of udeIds) {
     topIds.add(udeId);
     if (rootId) { const p = bfsPath(rootId, udeId, nodeMap, allIds); if (p) p.forEach(id => topIds.add(id)); }
-  }
-
-  // Medication pass: always show nodes actively shielded by user's medications
-  for (const med of (rawData.medications_map || [])) {
-    for (const tid of (med.targets || [])) {
-      if (allIds.has(tid)) topIds.add(tid);
-    }
   }
 
   // Bridge pass: fill layer-2 gaps when a layer-1 root cause skips directly to layer-3+
