@@ -267,6 +267,7 @@
   </div>
   <button class="crt-back" id="crtMedBtn" onclick="toggleMeds()" style="display:none">🛡 Léky</button>
   <button class="crt-back" id="crtLabelBtn" onclick="toggleLabelMode()" style="display:none">👤 Laik</button>
+  <button class="crt-back" id="crtTopNBtn"  onclick="toggleTopN()"    style="display:none">📋 Plná mapa</button>
   <button class="crt-back" id="crtExportBtn" onclick="exportCRTImage()" style="display:none">📥 Export</button>
   <!-- Obnovit schováno — mapa se regeneruje jen při změně health profilu -->
   <button class="crt-back" id="crtRegenBtn" onclick="regenCRT()" style="display:none">↺ Přegenerovat</button>
@@ -1152,6 +1153,11 @@ function openNodePanel(nodeId) {
   const supps    = suppsMap.filter(s => (s.targets || []).includes(nodeId));
   const contras  = (data.contra_map || []).filter(c => c.nodeId === nodeId);
 
+  // Počet příčin/důsledků skrytých v Top-N pohledu
+  const rawIds = _rawCrtData?._activeIds || activeIds;
+  const hiddenParents  = (node.parents  || []).filter(pid => rawIds.has(pid)  && !activeIds.has(pid)).length;
+  const hiddenChildren = (node.children || []).filter(cid => rawIds.has(cid) && !activeIds.has(cid)).length;
+
   // Highlight
   document.querySelectorAll('.crt-node rect').forEach(r => r.style.filter = '');
   const sel = document.querySelector(`.crt-node[data-id="${nodeId}"] rect`);
@@ -1159,7 +1165,7 @@ function openNodePanel(nodeId) {
 
   try {
     document.getElementById('cnpMini').innerHTML = buildPanelMiniSVG(node, parents, children, kbMap);
-    document.getElementById('cnpData').innerHTML = buildPanelData(node, ctx, parents, children, meds, supps, contras);
+    document.getElementById('cnpData').innerHTML = buildPanelData(node, ctx, parents, children, meds, supps, contras, hiddenParents, hiddenChildren, nodeId);
     document.getElementById('crtNodePanel').classList.add('open');
   } catch(err) {
     console.error('[CRT panel]', err);
@@ -1258,7 +1264,7 @@ function evalValueStatus(val, targetStr) {
   return { pct: 50, status: 'none' };
 }
 
-function buildPanelData(node, ctx, parents, children, meds, supps, contras) {
+function buildPanelData(node, ctx, parents, children, meds, supps, contras, hiddenParents = 0, hiddenChildren = 0, nodeId = '') {
   const detail = node.detail || {};
   const typeLabels = { root: 'kořen', ude: 'UDE', junction: 'průnik' };
   const typeLabel  = typeLabels[node.type] || 'příčina';
@@ -1300,9 +1306,12 @@ function buildPanelData(node, ctx, parents, children, meds, supps, contras) {
       </div>`;
   }
 
+  const hiddenParentsNote = hiddenParents > 0
+    ? `<div class="cnp-row" style="opacity:0.55;cursor:pointer;" onclick="switchToFullMap('${nodeId}')"><span class="cnp-arr" style="color:#3a5878">↓</span><span style="color:#4a7898">+ ${hiddenParents} dalších v plné mapě ›</span></div>`
+    : '';
   const parentsHtml = parents.slice(0, 3).map(p =>
     `<div class="cnp-row"><span class="cnp-arr">↓</span>${p.label}</div>`
-  ).join('');
+  ).join('') + hiddenParentsNote;
 
   const childrenHtml = children.slice(0, 2).map((c, i) => {
     const extra = (i === 1 && children.length > 2)
@@ -1529,16 +1538,93 @@ window.exportCRTImage = function() {
   img.src = url;
 };
 
+// ── Top-N: zobraz jen uzly na nejkratší cestě ROOT→každý killer ──────────────
+let _topNMode = true;
+let _rawCrtData = null; // plná nefiltrovaná data
+
+function bfsPath(fromId, toId, nodeMap, activeIds) {
+  const queue = [[fromId]];
+  const visited = new Set([fromId]);
+  while (queue.length) {
+    const path = queue.shift();
+    const cur = path[path.length - 1];
+    if (cur === toId) return path;
+    for (const cid of (nodeMap[cur]?.children || [])) {
+      if (activeIds.has(cid) && !visited.has(cid)) { visited.add(cid); queue.push([...path, cid]); }
+    }
+  }
+  return null;
+}
+
+function computeTopN(rawData) {
+  const nodeMap = rawData._kbMap;
+  const allIds  = rawData._activeIds;
+  const rootId  = [...allIds].find(id => nodeMap[id]?.type === 'root');
+  const goalId  = [...allIds].find(id => nodeMap[id]?.type === 'goal');
+  const udeIds  = [...allIds].filter(id => nodeMap[id]?.type === 'ude');
+
+  const topIds = new Set();
+  if (rootId) topIds.add(rootId);
+  if (goalId) topIds.add(goalId);
+  for (const udeId of udeIds) {
+    topIds.add(udeId);
+    if (rootId) { const p = bfsPath(rootId, udeId, nodeMap, allIds); if (p) p.forEach(id => topIds.add(id)); }
+  }
+
+  const nodes = [...topIds].map(id => ({...nodeMap[id]})).filter(Boolean);
+  calcPositionsClient(nodes);
+  applyLabelMode({nodes, _kbMap: nodeMap});
+
+  const edges = rawData.edges.filter(e => topIds.has(e.from) && topIds.has(e.to));
+  return {
+    ...rawData,
+    nodes, edges,
+    medications_map: (rawData.medications_map || []).filter(m => m.targets?.some(t => topIds.has(t))),
+    supplements_map: (rawData.supplements_map || []).filter(s => s.targets?.some(t => topIds.has(t))),
+    contra_map:      (rawData.contra_map      || []).filter(c => topIds.has(c.nodeId)),
+    _activeIds: topIds,
+    subtitle: `Top-N přehled · ${nodes.length} uzlů · ${edges.length} spojení  (plná mapa: ${allIds.size} uzlů)`,
+  };
+}
+
+window.toggleTopN = function() {
+  _topNMode = !_topNMode;
+  const btn  = document.getElementById('crtTopNBtn');
+  const data = _topNMode ? computeTopN(_rawCrtData) : _rawCrtData;
+  applyLabelMode(data);
+  _lastCrtData = data;
+  renderTree(data);
+  if (btn) {
+    btn.textContent    = _topNMode ? '📋 Plná mapa' : '🗺 Přehled';
+    btn.style.borderColor = _topNMode ? '' : '#4a9aee';
+    btn.style.color       = _topNMode ? '' : '#4a9aee';
+  }
+};
+
+window.switchToFullMap = function(nodeId) {
+  _topNMode = false;
+  const btn = document.getElementById('crtTopNBtn');
+  if (btn) { btn.textContent = '🗺 Přehled'; btn.style.borderColor = '#4a9aee'; btn.style.color = '#4a9aee'; }
+  if (!_rawCrtData) return;
+  applyLabelMode(_rawCrtData);
+  _lastCrtData = _rawCrtData;
+  renderTree(_rawCrtData);
+  requestAnimationFrame(() => openNodePanel(nodeId));
+};
+
 async function boot() {
   try {
     const data = await loadCRT();
+    _rawCrtData = data;
     document.getElementById('crtLoading').classList.add('hidden');
-    _lastCrtData = data;
-    applyLabelMode(data); // inicializuj labely podle _labelMode (default: expert)
-    renderTree(data);
+    const displayData = _topNMode ? computeTopN(data) : data;
+    applyLabelMode(displayData);
+    _lastCrtData = displayData;
+    renderTree(displayData);
     document.getElementById('crtLabelBtn').style.display = '';
     document.getElementById('crtExportBtn').style.display = '';
-    enrichContraMap(data); // async, panel se doplní při příštím otevření
+    document.getElementById('crtTopNBtn').style.display  = '';
+    enrichContraMap(data); // async na raw datech, doplní se při přepnutí na plnou mapu
   } catch (e) {
     document.getElementById('crtLoading').textContent = 'Chyba načítání: ' + e.message;
     console.error('[CRT]', e);
