@@ -1586,17 +1586,34 @@ function bfsPath(fromId, toId, nodeMap, activeIds) {
   return null;
 }
 
-// Vrátí ID nejhoršího UDE — ten s nejvíce aktivními layer-1 příčinami
+// Všichni aktivní předci daného UDE (zpětný BFS přes parents)
+// Neobsahuje goal ani CSF — jen příčiny UDE samotného
+function allAncestors(udeId, nodeMap, allIds) {
+  const result = new Set([udeId]);
+  const queue  = [udeId];
+  while (queue.length) {
+    const cur = queue.shift();
+    for (const pid of (nodeMap[cur]?.parents || [])) {
+      if (allIds.has(pid) && !result.has(pid)) {
+        const t = nodeMap[pid]?.type;
+        if (t === 'goal' || t === 'csf') continue; // goal + CSF budou zvlášť jako strategie
+        result.add(pid);
+        queue.push(pid);
+      }
+    }
+  }
+  return result;
+}
+
+// Nejhorší UDE — ten s nejvíce aktivními předky (největší kauzální strom)
 function worstUde(rawData) {
   const nodeMap = rawData._kbMap;
   const allIds  = rawData._activeIds;
-  const rootId  = [...allIds].find(id => nodeMap[id]?.type === 'root');
   const udeIds  = [...allIds].filter(id => nodeMap[id]?.type === 'ude');
   if (!udeIds.length) return null;
   let best = udeIds[0], bestScore = -1;
   for (const udeId of udeIds) {
-    const path = rootId ? bfsPath(rootId, udeId, nodeMap, allIds) : null;
-    const score = path ? path.filter(id => (nodeMap[id]?.layer ?? 99) === 1).length : 0;
+    const score = allAncestors(udeId, nodeMap, allIds).size;
     if (score > bestScore) { bestScore = score; best = udeId; }
   }
   return best;
@@ -1605,32 +1622,34 @@ function worstUde(rawData) {
 function computeTopN(rawData, focusUde = null) {
   const nodeMap = rawData._kbMap;
   const allIds  = rawData._activeIds;
-  const rootId  = [...allIds].find(id => nodeMap[id]?.type === 'root');
-  const goalId  = [...allIds].find(id => nodeMap[id]?.type === 'goal');
-  const udeIds  = focusUde && allIds.has(focusUde)
-    ? [focusUde]
-    : [...allIds].filter(id => nodeMap[id]?.type === 'ude');
 
-  const topIds = new Set();
-  if (rootId) topIds.add(rootId);
-  if (goalId) topIds.add(goalId);
-  for (const udeId of udeIds) {
-    topIds.add(udeId);
-    if (rootId) { const p = bfsPath(rootId, udeId, nodeMap, allIds); if (p) p.forEach(id => topIds.add(id)); }
-  }
+  let topIds;
 
-  // Bridge pass: fill layer-2 gaps when a layer-1 root cause skips directly to layer-3+
-  // e.g. HYPOTHY→ZANET(layer3) skips SLABE_SVALY(layer2) — add SLABE_SVALY
-  for (const pid of [...topIds]) {
-    if ((nodeMap[pid]?.layer ?? 99) !== 1) continue;
-    const pNode = nodeMap[pid];
-    const minTopChild = Math.min(...(pNode.children || [])
-      .filter(c => topIds.has(c)).map(c => nodeMap[c]?.layer ?? 99), Infinity);
-    for (const cid of (pNode?.children || [])) {
-      if (topIds.has(cid) || !allIds.has(cid)) continue;
-      const cLayer = nodeMap[cid]?.layer ?? 99;
-      if (cLayer < minTopChild && (nodeMap[cid]?.children || []).some(gc => topIds.has(gc))) {
-        topIds.add(cid);
+  if (focusUde && allIds.has(focusUde)) {
+    // Focus mód: všichni předci UDE, bez goal/CSF
+    topIds = allAncestors(focusUde, nodeMap, allIds);
+  } else {
+    // Standardní Top-N: BFS ROOT→každý killer, union cest
+    const rootId = [...allIds].find(id => nodeMap[id]?.type === 'root');
+    const goalId = [...allIds].find(id => nodeMap[id]?.type === 'goal');
+    const udeIds = [...allIds].filter(id => nodeMap[id]?.type === 'ude');
+    topIds = new Set();
+    if (rootId) topIds.add(rootId);
+    if (goalId) topIds.add(goalId);
+    for (const udeId of udeIds) {
+      topIds.add(udeId);
+      if (rootId) { const p = bfsPath(rootId, udeId, nodeMap, allIds); if (p) p.forEach(id => topIds.add(id)); }
+    }
+    // Bridge pass: layer-2 gap fill
+    for (const pid of [...topIds]) {
+      if ((nodeMap[pid]?.layer ?? 99) !== 1) continue;
+      const pNode = nodeMap[pid];
+      const minTopChild = Math.min(...(pNode.children || [])
+        .filter(c => topIds.has(c)).map(c => nodeMap[c]?.layer ?? 99), Infinity);
+      for (const cid of (pNode?.children || [])) {
+        if (topIds.has(cid) || !allIds.has(cid)) continue;
+        const cLayer = nodeMap[cid]?.layer ?? 99;
+        if (cLayer < minTopChild && (nodeMap[cid]?.children || []).some(gc => topIds.has(gc))) topIds.add(cid);
       }
     }
   }
@@ -1648,7 +1667,7 @@ function computeTopN(rawData, focusUde = null) {
     contra_map:      (rawData.contra_map      || []).filter(c => topIds.has(c.nodeId)),
     _activeIds: topIds,
     subtitle: focusUde
-      ? `${kbLabel(nodeMap[focusUde] || {label: focusUde})} · kauzální cesta · ${nodes.length} uzlů  (plná mapa: ${allIds.size} uzlů)`
+      ? `${kbLabel(nodeMap[focusUde] || {label: focusUde})} · příčinný strom · ${nodes.length} uzlů  (plná mapa: ${allIds.size} uzlů)`
       : `Top-N přehled · ${nodes.length} uzlů · ${edges.length} spojení  (plná mapa: ${allIds.size} uzlů)`,
   };
 }
