@@ -1603,6 +1603,12 @@ function allAncestors(udeId, nodeMap, allIds, maxDepth = Infinity) {
       }
     }
   }
+  // Vždy přidej root-type uzly které se napojují na vybrané uzly (i za maxDepth)
+  for (const id of allIds) {
+    if (nodeMap[id]?.type === 'root' && !result.has(id)) {
+      if ((nodeMap[id]?.children || []).some(c => result.has(c))) result.add(id);
+    }
+  }
   return result;
 }
 
