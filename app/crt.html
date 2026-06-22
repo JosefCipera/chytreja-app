@@ -1586,19 +1586,20 @@ function bfsPath(fromId, toId, nodeMap, activeIds) {
   return null;
 }
 
-// Všichni aktivní předci daného UDE (zpětný BFS přes parents)
+// Aktivní předci daného UDE (zpětný BFS přes parents), max maxDepth úrovní
 // Neobsahuje goal ani CSF — jen příčiny UDE samotného
-function allAncestors(udeId, nodeMap, allIds) {
+function allAncestors(udeId, nodeMap, allIds, maxDepth = Infinity) {
   const result = new Set([udeId]);
-  const queue  = [udeId];
+  const queue  = [[udeId, 0]];
   while (queue.length) {
-    const cur = queue.shift();
+    const [cur, depth] = queue.shift();
+    if (depth >= maxDepth) continue;
     for (const pid of (nodeMap[cur]?.parents || [])) {
       if (allIds.has(pid) && !result.has(pid)) {
         const t = nodeMap[pid]?.type;
-        if (t === 'goal' || t === 'csf') continue; // goal + CSF budou zvlášť jako strategie
+        if (t === 'goal' || t === 'csf') continue;
         result.add(pid);
-        queue.push(pid);
+        queue.push([pid, depth + 1]);
       }
     }
   }
@@ -1626,8 +1627,8 @@ function computeTopN(rawData, focusUde = null) {
   let topIds;
 
   if (focusUde && allIds.has(focusUde)) {
-    // Focus mód: všichni předci UDE, bez goal/CSF
-    topIds = allAncestors(focusUde, nodeMap, allIds);
+    // Focus mód: 2 úrovně příčin nad UDE — čitelné i na mobilu
+    topIds = allAncestors(focusUde, nodeMap, allIds, 2);
   } else {
     // Standardní Top-N: BFS ROOT→každý killer, union cest
     const rootId = [...allIds].find(id => nodeMap[id]?.type === 'root');
