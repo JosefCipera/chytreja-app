@@ -888,7 +888,7 @@ function showNavChips() {
     window.openUserDataPanel?.();
   };
   const chips = _hasHealthData ? [
-    { label: 'Kauzální mapa', fn: () => { window.location.href = '/crt.html'; } },
+    { label: 'Kauzální mapa', fn: () => { window.location.href = '/crt.html?focus=worst'; } },
     { label: 'Vesmír',        fn: () => { const model = localStorage.getItem('currentModel')||'longevity'; const node = {longevity:'dlouhovekost',lehkost:'lh_main',toc:'toc'}[model]||'dlouhovekost'; routeToNode(node); } },
     { label: 'Data',          fn: _openData },
   ] : [
@@ -1262,9 +1262,19 @@ function listenOnce(cb) {
 // Hlavní uzly pro každý model
 const MAIN_NODE = { longevity: 'dlouhovekost', lehkost: 'lh_main', toc: 'toc' };
 const HOME_PHRASES = ['chytré já', 'chytre ja', 'přehled', 'hlavní', 'domů', 'domu'];
+const CRT_PHRASES  = ['ukáž', 'ukaz', 'zobraz', 'detail', 'kauzální', 'kauzalni',
+  'příčinu', 'pricinu', 'důvod', 'duvod'];
 
 function tryRoute(transcript) {
   const model = localStorage.getItem('currentModel') || 'longevity';
+
+  // "ukáž / zobraz / detail" → CRT fokus na nejhorší UDE
+  for (const phrase of CRT_PHRASES) {
+    if (transcript.includes(phrase)) {
+      window.location.href = '/crt.html?focus=worst';
+      return true;
+    }
+  }
 
   // "domů / přehled / chytré já" → hlavní uzel aktivního modelu
   for (const phrase of HOME_PHRASES) {

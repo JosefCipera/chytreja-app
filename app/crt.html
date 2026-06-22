@@ -1586,12 +1586,30 @@ function bfsPath(fromId, toId, nodeMap, activeIds) {
   return null;
 }
 
-function computeTopN(rawData) {
+// Vrátí ID nejhoršího UDE — ten s nejvíce aktivními layer-1 příčinami
+function worstUde(rawData) {
+  const nodeMap = rawData._kbMap;
+  const allIds  = rawData._activeIds;
+  const rootId  = [...allIds].find(id => nodeMap[id]?.type === 'root');
+  const udeIds  = [...allIds].filter(id => nodeMap[id]?.type === 'ude');
+  if (!udeIds.length) return null;
+  let best = udeIds[0], bestScore = -1;
+  for (const udeId of udeIds) {
+    const path = rootId ? bfsPath(rootId, udeId, nodeMap, allIds) : null;
+    const score = path ? path.filter(id => (nodeMap[id]?.layer ?? 99) === 1).length : 0;
+    if (score > bestScore) { bestScore = score; best = udeId; }
+  }
+  return best;
+}
+
+function computeTopN(rawData, focusUde = null) {
   const nodeMap = rawData._kbMap;
   const allIds  = rawData._activeIds;
   const rootId  = [...allIds].find(id => nodeMap[id]?.type === 'root');
   const goalId  = [...allIds].find(id => nodeMap[id]?.type === 'goal');
-  const udeIds  = [...allIds].filter(id => nodeMap[id]?.type === 'ude');
+  const udeIds  = focusUde && allIds.has(focusUde)
+    ? [focusUde]
+    : [...allIds].filter(id => nodeMap[id]?.type === 'ude');
 
   const topIds = new Set();
   if (rootId) topIds.add(rootId);
@@ -1629,7 +1647,9 @@ function computeTopN(rawData) {
     supplements_map: (rawData.supplements_map || []).filter(s => s.targets?.some(t => topIds.has(t))),
     contra_map:      (rawData.contra_map      || []).filter(c => topIds.has(c.nodeId)),
     _activeIds: topIds,
-    subtitle: `Top-N přehled · ${nodes.length} uzlů · ${edges.length} spojení  (plná mapa: ${allIds.size} uzlů)`,
+    subtitle: focusUde
+      ? `${kbLabel(nodeMap[focusUde] || {label: focusUde})} · kauzální cesta · ${nodes.length} uzlů  (plná mapa: ${allIds.size} uzlů)`
+      : `Top-N přehled · ${nodes.length} uzlů · ${edges.length} spojení  (plná mapa: ${allIds.size} uzlů)`,
   };
 }
 
@@ -1663,7 +1683,15 @@ async function boot() {
     const data = await loadCRT();
     _rawCrtData = data;
     document.getElementById('crtLoading').classList.add('hidden');
-    const displayData = _topNMode ? computeTopN(data) : data;
+    // ?focus=UDE_ID|worst — z launcheru při hlasovém příkazu "ukáž" / "zobraz"
+    const urlFocus = new URLSearchParams(location.search).get('focus');
+    let focusUde = null;
+    if (urlFocus === 'worst') {
+      focusUde = worstUde(data);
+    } else if (urlFocus && data._activeIds?.has(urlFocus)) {
+      focusUde = urlFocus;
+    }
+    const displayData = _topNMode ? computeTopN(data, focusUde) : data;
     applyLabelMode(displayData);
     _lastCrtData = displayData;
     renderTree(displayData);
