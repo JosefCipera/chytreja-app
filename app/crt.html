@@ -508,7 +508,7 @@ function buildMedsMap(shields, userMeds, activeIds, arrowsById) {
       if (!targets.length) return null;
       const names = new Set([s.med, s.inn, ...(s.aliases||[])].filter(Boolean).map(n=>n.toLowerCase()));
       const userHas = userMeds.some(m => names.has(m.toLowerCase()));
-      return { name: s.med, targets, effect: '', reason: s.reason, note: s.note, userHas };
+      return { name: s.med, targets, effect: '', reason: s.reason, note: s.note, protocol: s.protocol, userHas };
     }).filter(Boolean);
 }
 
@@ -1342,8 +1342,15 @@ function buildPanelData(node, ctx, parents, children, meds, supps, contras, hidd
       <p class="cnp-lbl">léková ochrana</p>
       <div style="display:flex;flex-direction:column;gap:6px">
         ${meds.map(m => {
-          const noteHtml = m.note ? `<span style="display:block;font-size:10px;color:#64748b;margin-top:2px;font-style:italic;padding-left:22px">${m.note}</span>` : '';
-          return `<span class="cnp-chip" style="align-self:flex-start;flex-direction:column;align-items:flex-start"><span style="display:flex;align-items:center"><i class="ti ti-shield" aria-hidden="true" style="opacity:.7;margin-right:6px"></i><span style="border-left:1px solid rgba(245,158,11,0.3);padding-left:8px">${m.name}</span></span>${noteHtml}</span>`;
+          const noteHtml = m.note ? `<span style="display:block;font-size:12px;color:#94a3b8;margin-top:3px;font-style:italic;padding-left:22px">${m.note}</span>` : '';
+          const protocolHtml = m.protocol?.length ? `
+            <details style="margin-top:6px;padding-left:22px">
+              <summary style="font-size:11px;color:#f59e0b;cursor:pointer;list-style:none;user-select:none">▸ Jak užívat</summary>
+              <div style="margin-top:6px;display:flex;flex-direction:column;gap:4px">
+                ${m.protocol.map(step => `<div style="font-size:12px;color:#94a3b8;line-height:1.5">${step}</div>`).join('')}
+              </div>
+            </details>` : '';
+          return `<span class="cnp-chip" style="align-self:flex-start;flex-direction:column;align-items:flex-start"><span style="display:flex;align-items:center"><i class="ti ti-shield" aria-hidden="true" style="opacity:.7;margin-right:6px"></i><span style="border-left:1px solid rgba(245,158,11,0.3);padding-left:8px">${m.name}</span></span>${noteHtml}${protocolHtml}</span>`;
         }).join('')}
       </div>
     </div>` : '';
