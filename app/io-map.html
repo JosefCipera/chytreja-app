@@ -408,9 +408,9 @@ function printIO() {
   w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
   <title>IO Mapa — Strategie zdraví</title>
   <style>
-    body { margin: 20px; background: #fff; }
-    svg { max-width: 100%; height: auto; display: block; }
-    /* přebarvení pro tisk: tmavé fills → světlé */
+    @page { size: A4 landscape; margin: 8mm; }
+    body { margin: 0; background: #fff; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+    svg { width: 100%; height: auto; display: block; }
     rect { fill: #f8fafc !important; stroke: #334155 !important; }
     text { fill: #1e293b !important; }
   </style></head><body>${svgHtml}<script>window.print();<\/script></body></html>`);
