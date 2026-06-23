@@ -548,6 +548,7 @@ async function loadCRT() {
   // Rule engine — podmínka na uzlu (ne na hraně)
   const activeIds = new Set();
   for (const [id, node] of Object.entries(nodeMap)) {
+    if (node.type === 'goal') continue;
     if (node.type === 'root' || !node.condition) {
       activeIds.add(id);
     } else if (evalCondition(node.condition, ctx)) {
