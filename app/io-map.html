@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IO Mapa — Strategie zdraví</title>
+  <link rel="manifest" href="/manifest.webmanifest">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #0b0f1a;
+      color: #c8d8e8;
+      font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .io-header {
+      padding: 16px 24px 12px;
+      border-bottom: 1px solid #1e2d3d;
+      display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+    }
+    .io-back {
+      background: none; border: 1px solid #2a3a4a; color: #8ba8b8;
+      padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px;
+    }
+    .io-back:hover { border-color: #6a8aaa; color: #c8d8e8; }
+    .io-title-block { flex: 1; }
+    .io-title { font-size: 17px; font-weight: 600; color: #e8f0f8; }
+    .io-subtitle { font-size: 12px; color: #5a7a8a; margin-top: 2px; }
+    .io-controls { display: flex; gap: 8px; margin-left: auto; }
+    .io-btn {
+      background: none; border: 1px solid #2a3a4a; color: #8ba8b8;
+      padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 12px;
+      transition: border-color .2s, color .2s;
+    }
+    .io-btn:hover { border-color: #6a8aaa; color: #c8d8e8; }
+    .io-btn.active { border-color: #4a8aaa; color: #88c8e8; }
+
+    .io-body { flex: 1; position: relative; overflow: hidden; }
+    #io-canvas {
+      width: 100%; height: 100%;
+      position: absolute; inset: 0;
+      cursor: grab;
+    }
+    #io-canvas:active { cursor: grabbing; }
+    #io-loading {
+      position: absolute; inset: 0; display: flex; align-items: center;
+      justify-content: center; font-size: 14px; color: #5a7a8a;
+    }
+
+    /* ── Print layout ── */
+    @media print {
+      body { background: #fff; color: #000; }
+      .io-header { border-bottom: 1px solid #ccc; }
+      .io-back, .io-controls { display: none; }
+      .io-body { overflow: visible; }
+      #io-canvas { position: static; width: 100%; height: auto; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="io-header">
+  <button class="io-back" onclick="history.back()">← Zpět</button>
+  <div class="io-title-block">
+    <div class="io-title">IO Mapa · Strategie zdraví</div>
+    <div class="io-subtitle" id="ioSubtitle">Načítám…</div>
+  </div>
+  <div class="io-controls">
+    <button class="io-btn active" id="ioLabelBtn" onclick="toggleLabelMode()">Laik</button>
+    <button class="io-btn" id="ioCrtBtn" onclick="window.location.href='/crt.html'">CRT →</button>
+    <button class="io-btn" onclick="window.print()">🖨 Tisk</button>
+  </div>
+</div>
+
+<div class="io-body">
+  <div id="io-loading">Načítám mapu…</div>
+  <div id="io-canvas"></div>
+</div>
+
+<script>
+// ── Config ───────────────────────────────────────────────────────────────────
+const userId   = new URLSearchParams(location.search).get('userId') || localStorage.getItem('chj_uid') || null;
+const csfFilter = new URLSearchParams(location.search).get('csf') || null;
+
+// ── Label mode ───────────────────────────────────────────────────────────────
+let _labelMode = 'layman';
+function ioLabel(node) {
+  return _labelMode === 'expert'
+    ? (node.label_expert || node.label_layman || '')
+    : (node.label_layman || node.label_expert || '');
+}
+function toggleLabelMode() {
+  _labelMode = _labelMode === 'layman' ? 'expert' : 'layman';
+  const btn = document.getElementById('ioLabelBtn');
+  if (btn) { btn.textContent = _labelMode === 'layman' ? 'Laik' : 'Expert'; btn.classList.toggle('active', _labelMode === 'layman'); }
+  if (_ioData) renderIO(_ioData, _udeStates);
+}
+
+// ── SVG helpers ──────────────────────────────────────────────────────────────
+function svgEl(tag, attrs = {}, text = null) {
+  const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+  Object.entries(attrs).forEach(([k, v]) => el.setAttribute(k, v));
+  if (text !== null) el.textContent = text;
+  return el;
+}
+
+// ── Layout constants ─────────────────────────────────────────────────────────
+const BOX_W    = 160;
+const FONT_SIZE = 13;
+const R        = 8;
+const Y_STEP   = 150;
+const MARGIN   = 60;
+const NC_SPREAD = 68;  // half-width for NC group under each CSF
+const CSF_SPREAD = 340; // half-width for CSF row
+
+// ── Text wrap ────────────────────────────────────────────────────────────────
+function wrapText(text, maxChars = 20) {
+  if (!text) return [''];
+  const words = text.split(/\s+/);
+  const lines = []; let cur = '';
+  words.forEach(w => {
+    if ((cur + ' ' + w).trim().length > maxChars && cur) { lines.push(cur); cur = w; }
+    else { cur = (cur ? cur + ' ' : '') + w; }
+  });
+  if (cur) lines.push(cur);
+  return lines;
+}
+function boxHeight(text) {
+  const lines = wrapText(text);
+  return Math.max(44, lines.length * (FONT_SIZE + 6) + 20);
+}
+
+// ── Node styles ──────────────────────────────────────────────────────────────
+const STYLES = {
+  goal:    { fill: '#011208', stroke: '#22c55e', text: '#86efac', sw: '2.5', dash: '6 3' },
+  csf_red:    { fill: '#100404', stroke: '#ef4444', text: '#fca5a5', sw: '2',   dash: 'none' },
+  csf_yellow: { fill: '#100900', stroke: '#eab308', text: '#fde68a', sw: '2',   dash: 'none' },
+  csf_green:  { fill: '#011208', stroke: '#22c55e', text: '#86efac', sw: '2',   dash: 'none' },
+  csf_gray:   { fill: '#0a0f16', stroke: '#334155', text: '#475569', sw: '1.5', dash: 'none' },
+  nc_red:     { fill: '#0c0303', stroke: '#7f1d1d', text: '#f87171', sw: '1',   dash: 'none' },
+  nc_yellow:  { fill: '#0c0800', stroke: '#78350f', text: '#fbbf24', sw: '1',   dash: 'none' },
+  nc_green:   { fill: '#010e05', stroke: '#166534', text: '#4ade80', sw: '1',   dash: 'none' },
+  nc_gray:    { fill: '#090d14', stroke: '#1e293b', text: '#334155', sw: '1',   dash: 'none' },
+};
+
+function csfStyle(state) { return STYLES['csf_' + (state || 'gray')]; }
+function ncStyle(state)  { return STYLES['nc_'  + (state || 'gray')]; }
+function arrowColor(state) {
+  return state === 'red' ? '#7f1d1d' : state === 'yellow' ? '#78350f' : state === 'green' ? '#166534' : '#1e293b';
+}
+
+// ── Layout ───────────────────────────────────────────────────────────────────
+function calcPositions(nodes) {
+  const goals = nodes.filter(n => n.type === 'goal');
+  const csfs  = nodes.filter(n => n.type === 'csf');
+  const ncs   = nodes.filter(n => n.type === 'nc');
+
+  // Goal: center, top layer (y=2)
+  goals.forEach(n => { n.x = 0; n.y = 2 * Y_STEP; });
+
+  // CSFs: evenly spread, middle layer (y=1)
+  csfs.forEach((n, i) => {
+    n.x = csfs.length === 1 ? 0 : -CSF_SPREAD + (i / (csfs.length - 1)) * CSF_SPREAD * 2;
+    n.y = 1 * Y_STEP;
+  });
+
+  // NCs: grouped under parent CSF, bottom layer (y=0)
+  csfs.forEach(csf => {
+    const myNcs = ncs.filter(nc => nc.children?.includes(csf.id));
+    myNcs.forEach((nc, i) => {
+      nc.x = csf.x + (myNcs.length === 1 ? 0 : -NC_SPREAD + (i / (myNcs.length - 1)) * NC_SPREAD * 2);
+      nc.y = 0;
+    });
+    // NCs that don't belong to this CSF (shouldn't happen, but safety)
+  });
+}
+
+// ── Pan/zoom state ────────────────────────────────────────────────────────────
+let _sc = 1, _tx = 0, _ty = 0;
+function applyT() {
+  const svgEl = document.querySelector('#io-canvas svg');
+  if (svgEl) svgEl.style.transform = `translate(${_tx}px,${_ty}px) scale(${_sc})`;
+}
+function initView(svgW, svgH) {
+  const cw = document.getElementById('io-canvas').clientWidth  || window.innerWidth  || 900;
+  const ch = document.getElementById('io-canvas').clientHeight || window.innerHeight || 600;
+  _sc = Math.min((cw - 40) / svgW, (ch - 40) / svgH, 1.2);
+  _tx = (cw - svgW * _sc) / 2;
+  _ty = (ch - svgH * _sc) / 2;
+  applyT();
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
+let _ioData = null, _udeStates = {};
+
+function renderIO(data, udeStates) {
+  const container = document.getElementById('io-canvas');
+  container.innerHTML = '';
+
+  // Apply labels
+  data.nodes.forEach(n => { n.label = ioLabel(n); });
+
+  // Filter by csfFilter if set
+  let nodes = data.nodes;
+  if (csfFilter) {
+    const csf = nodes.find(n => n.id === csfFilter);
+    if (csf) {
+      const ncIds = new Set(csf.parents || []);
+      nodes = nodes.filter(n => n.type === 'goal' || n.id === csfFilter || ncIds.has(n.id));
+    }
+  }
+
+  calcPositions(nodes);
+
+  const nodeMap = {};
+  nodes.forEach(n => { nodeMap[n.id] = n; });
+
+  // SVG dimensions
+  const xs = nodes.map(n => n.x ?? 0);
+  const minX = Math.min(...xs), maxX = Math.max(...xs);
+  const SVG_W = maxX - minX + BOX_W + MARGIN * 2;
+  const SVG_H = 3 * Y_STEP + 100 + MARGIN * 2;
+  const cx = x => x - minX + BOX_W / 2 + MARGIN;
+  // y=0 (NC) at bottom, y=2*Y_STEP (goal) at top
+  const maxY = 2 * Y_STEP;
+  const cy = y => SVG_H - MARGIN - 50 - y;
+
+  const svg = svgEl('svg', {
+    width: SVG_W, height: SVG_H,
+    viewBox: `0 0 ${SVG_W} ${SVG_H}`,
+    style: 'transform-origin: 0 0; overflow: visible;',
+  });
+
+  // Arrowhead defs — one per state color
+  const defs = svgEl('defs', {});
+  ['red','yellow','green','gray'].forEach(state => {
+    const m = svgEl('marker', { id: `arr-${state}`, markerWidth: '10', markerHeight: '7', refX: '9', refY: '3.5', orient: 'auto' });
+    m.appendChild(svgEl('polygon', { points: '0 0, 10 3.5, 0 7', fill: arrowColor(state) }));
+    defs.appendChild(m);
+  });
+  svg.appendChild(defs);
+
+  // ── Edges (NC→CSF, CSF→Goal) — zdola nahoru ─────────────────────────────
+  data.nodes.forEach(src => {
+    if (!nodeMap[src.id]) return;
+    (src.children || []).forEach(tgtId => {
+      const tgt = nodeMap[tgtId];
+      if (!tgt) return;
+
+      // State: use UDE link of the CSF (for NC→CSF edge: src=NC, tgt=CSF)
+      const csfId = tgt.type === 'csf' ? tgt.id : src.type === 'csf' ? src.id : null;
+      const csfNode = csfId ? nodeMap[csfId] : null;
+      const udeId = csfNode?.ude_link;
+      const state = udeId ? (udeStates[udeId] || 'gray') : 'gray';
+
+      const srcH = boxHeight(src.label), tgtH = boxHeight(tgt.label);
+      const x1 = cx(src.x ?? 0);
+      const y1 = cy(src.y ?? 0) - srcH / 2;   // top of source (lower node)
+      const x2 = cx(tgt.x ?? 0);
+      const y2 = cy(tgt.y ?? 0) + tgtH / 2;   // bottom of target (higher node)
+
+      const midY1 = y1 + (y2 - y1) * 0.4;
+      const midY2 = y1 + (y2 - y1) * 0.6;
+      svg.appendChild(svgEl('path', {
+        d: `M ${x1} ${y1} C ${x1} ${midY1}, ${x2} ${midY2}, ${x2} ${y2}`,
+        fill: 'none', stroke: arrowColor(state), 'stroke-width': '2',
+        'marker-end': `url(#arr-${state})`,
+      }));
+    });
+  });
+
+  // ── Nodes ─────────────────────────────────────────────────────────────────
+  nodes.forEach(n => {
+    const udeId = n.ude_link;
+    const state = udeId ? (udeStates[udeId] || 'gray') : null;
+
+    // Determine style
+    let st;
+    if (n.type === 'goal') st = STYLES.goal;
+    else if (n.type === 'csf') st = csfStyle(state);
+    else {
+      // NC: inherit state from parent CSF
+      const parentCsfId = (n.children || []).find(id => nodeMap[id]?.type === 'csf');
+      const parentCsf = parentCsfId ? nodeMap[parentCsfId] : null;
+      const ncUdeId = parentCsf?.ude_link;
+      const ncState = ncUdeId ? (udeStates[ncUdeId] || 'gray') : 'gray';
+      st = ncStyle(ncState);
+    }
+
+    const g = svgEl('g', { class: 'io-node', 'data-id': n.id, style: 'cursor:pointer' });
+    const lines = wrapText(n.label);
+    const bh = boxHeight(n.label);
+    const bx = cx(n.x ?? 0) - BOX_W / 2;
+    const by = cy(n.y ?? 0) - bh / 2;
+
+    g.appendChild(svgEl('rect', {
+      x: bx, y: by, width: BOX_W, height: bh, rx: R, ry: R,
+      fill: st.fill, stroke: st.stroke,
+      'stroke-width': st.sw,
+      'stroke-dasharray': st.dash || 'none',
+    }));
+
+    const lineH = FONT_SIZE + 6;
+    const totalTH = lines.length * lineH;
+    const startY = by + bh / 2 - totalTH / 2 + lineH * 0.75;
+    lines.forEach((line, i) => {
+      g.appendChild(svgEl('text', {
+        x: cx(n.x ?? 0), y: startY + i * lineH,
+        'text-anchor': 'middle',
+        fill: st.text,
+        'font-size': String(FONT_SIZE),
+        'font-family': 'Inter, Segoe UI, system-ui, sans-serif',
+        'font-weight': n.type === 'goal' ? '600' : n.type === 'csf' ? '500' : '400',
+      }, line));
+    });
+
+    // Click: CSF → CRT focus
+    if (n.type === 'csf' && n.ude_link) {
+      g.addEventListener('click', e => {
+        e.stopPropagation();
+        const uid = userId ? `&userId=${userId}` : '';
+        window.location.href = `/crt.html?focus=${n.ude_link}${uid}`;
+      });
+    }
+
+    svg.appendChild(g);
+  });
+
+  container.appendChild(svg);
+  initView(SVG_W, SVG_H);
+
+  // Pan / zoom
+  let _drag = false, _lx = 0, _ly = 0;
+  container.addEventListener('mousedown', e => { _drag = true; _lx = e.clientX; _ly = e.clientY; container.style.cursor = 'grabbing'; });
+  window.addEventListener('mouseup', () => { _drag = false; container.style.cursor = 'grab'; });
+  window.addEventListener('mousemove', e => {
+    if (!_drag) return;
+    _tx += e.clientX - _lx; _ty += e.clientY - _ly; _lx = e.clientX; _ly = e.clientY; applyT();
+  });
+  container.addEventListener('wheel', e => {
+    e.preventDefault();
+    const f = e.deltaY < 0 ? 1.12 : 0.89;
+    const rect = container.getBoundingClientRect();
+    const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+    _tx = mx - (mx - _tx) * f; _ty = my - (my - _ty) * f;
+    _sc = Math.max(0.15, Math.min(4, _sc * f)); applyT();
+  }, { passive: false });
+
+  document.getElementById('ioSubtitle').textContent =
+    `Goal · ${nodes.filter(n=>n.type==='csf').length} CSF · ${nodes.filter(n=>n.type==='nc').length} NC${csfFilter ? ' · fokus: ' + csfFilter : ''}`;
+}
+
+// ── CRT rule engine (minimální — jen pro barvy CSF) ──────────────────────────
+function evalCondition(cond, ctx) {
+  if (!cond) return false;
+  if (cond.or)  return cond.or.some(c  => evalCondition(c, ctx));
+  if (cond.and) return cond.and.every(c => evalCondition(c, ctx));
+  if (cond.diag) return (ctx.diag || []).includes(cond.diag);
+  if (cond.med)  return (ctx.meds || []).includes(cond.med);
+  if (cond.lab) {
+    const v = (ctx.labs || {})[cond.lab];
+    if (v === undefined) return false;
+    if (cond.gt !== undefined) return v > cond.gt;
+    if (cond.lt !== undefined) return v < cond.lt;
+  }
+  return false;
+}
+
+async function loadUdeStates() {
+  if (!userId) return {};
+  try {
+    const [ctxRes, kbRes] = await Promise.all([
+      fetch(`/api/user?action=crt-context&userId=${userId}`),
+      fetch('/data/crt/v2/biosystem_v2.json'),
+    ]);
+    if (!ctxRes.ok || !kbRes.ok) return {};
+    const ctx = await ctxRes.json();
+    const kb  = await kbRes.json();
+
+    // Normalize
+    const normCtx = {
+      diag: (ctx.diagnoses || []).map(d => d.toUpperCase().replace(/\s+/g,'_')),
+      meds: (ctx.meds || []).map(m => m.toLowerCase()),
+      labs: ctx.labs || {},
+    };
+
+    // Activate nodes
+    const activeIds = new Set();
+    const nodeMap = {};
+    kb.nodes.forEach(n => {
+      nodeMap[n.id] = n;
+      if (n.type === 'root' || !n.condition || evalCondition(n.condition, normCtx)) {
+        activeIds.add(n.id);
+      }
+    });
+
+    // UDE states: active = 'red', else 'green'
+    const states = {};
+    kb.nodes.filter(n => n.type === 'ude').forEach(n => {
+      states[n.id] = activeIds.has(n.id) ? 'red' : 'green';
+    });
+    return states;
+  } catch (e) {
+    console.warn('[IO Map] UDE states failed:', e);
+    return {};
+  }
+}
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+async function boot() {
+  try {
+    const [ioRes, udeStates] = await Promise.all([
+      fetch('/data/io-map/io-map.json'),
+      loadUdeStates(),
+    ]);
+    if (!ioRes.ok) throw new Error('IO Map data nenalezena');
+    _ioData = await ioRes.json();
+    _udeStates = udeStates;
+    document.getElementById('io-loading').style.display = 'none';
+    renderIO(_ioData, _udeStates);
+  } catch (e) {
+    document.getElementById('io-loading').textContent = 'Chyba: ' + e.message;
+  }
+}
+
+window.addEventListener('resize', () => {
+  if (_ioData) renderIO(_ioData, _udeStates);
+});
+
+boot();
+</script>
+</body>
+</html>

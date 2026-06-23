@@ -1,0 +1,270 @@
+{
+  "_meta": {
+    "version": "1.0",
+    "source": "Attia — Outlive (Medicine 3.0) S&T tree",
+    "note": "Šipky jdou zdola nahoru (NC → CSF → Goal). label_*_en prázdné — doplnit."
+  },
+  "nodes": [
+    {
+      "id": "GOAL",
+      "type": "goal",
+      "layer": 4,
+      "label_expert": "Maximálně zdravý a dlouhý život",
+      "label_layman": "Maximálně zdravý a dlouhý život",
+      "label_expert_en": "Maximally Healthy and Long Life",
+      "label_layman_en": "",
+      "sub": "Healthspan & Lifespan",
+      "parents": ["CSF_METABOLISMUS", "CSF_KARDIO", "CSF_MOZEK", "CSF_SILA"],
+      "children": []
+    },
+
+    {
+      "id": "CSF_METABOLISMUS",
+      "type": "csf",
+      "layer": 3,
+      "branch": "left",
+      "label_expert": "Optimální metabolické zdraví",
+      "label_layman": "Zdravý metabolismus",
+      "label_expert_en": "Optimized Metabolic Health",
+      "label_layman_en": "",
+      "ude_link": "UDE_SRDCE",
+      "parents": ["NC_GLYKEMIE", "NC_KOMPOZICE", "NC_LIPIDY_META", "NC_JATRA"],
+      "children": ["GOAL"]
+    },
+    {
+      "id": "CSF_KARDIO",
+      "type": "csf",
+      "layer": 3,
+      "branch": "center-left",
+      "label_expert": "Kardiovaskulární stabilita",
+      "label_layman": "Zdravé srdce a cévy",
+      "label_expert_en": "Cardiovascular Stability",
+      "label_layman_en": "",
+      "ude_link": "UDE_SRDCE",
+      "parents": ["NC_APOB", "NC_TK", "NC_KARDIO_FIT", "NC_SRDCE_FUNKCE"],
+      "children": ["GOAL"]
+    },
+    {
+      "id": "CSF_MOZEK",
+      "type": "csf",
+      "layer": 3,
+      "branch": "center-right",
+      "label_expert": "Neurokognitivní zachování",
+      "label_layman": "Zdravý mozek a paměť",
+      "label_expert_en": "Neurocognitive Preservation",
+      "label_layman_en": "",
+      "ude_link": "UDE_MOZEK",
+      "parents": ["NC_SPANEK", "NC_STRES", "NC_KOGNICE", "NC_SOCIALNI"],
+      "children": ["GOAL"]
+    },
+    {
+      "id": "CSF_SILA",
+      "type": "csf",
+      "layer": 3,
+      "branch": "right",
+      "label_expert": "Strukturální síla a stabilita",
+      "label_layman": "Silné tělo a pohyb",
+      "label_expert_en": "Structural Strength",
+      "label_layman_en": "",
+      "ude_link": "UDE_PADY",
+      "parents": ["NC_SVAL", "NC_SILOVY_TRENINK", "NC_VO2MAX", "NC_MOBILITA"],
+      "children": ["GOAL"]
+    },
+
+    {
+      "id": "NC_GLYKEMIE",
+      "type": "nc",
+      "layer": 2,
+      "branch": "left",
+      "label_expert": "Glykemická kontrola a inzulínová senzitivita",
+      "label_layman": "Cukr a inzulín pod kontrolou",
+      "label_expert_en": "Glycemic Control & Insulin Sensitivity",
+      "label_layman_en": "",
+      "parents": [],
+      "children": ["CSF_METABOLISMUS"]
+    },
+    {
+      "id": "NC_KOMPOZICE",
+      "type": "nc",
+      "layer": 2,
+      "branch": "left",
+      "label_expert": "Složení těla (sval/tuk)",
+      "label_layman": "Zdravé složení těla",
+      "label_expert_en": "Body Composition (muscle/fat ratio)",
+      "label_layman_en": "",
+      "parents": [],
+      "children": ["CSF_METABOLISMUS"]
+    },
+    {
+      "id": "NC_LIPIDY_META",
+      "type": "nc",
+      "layer": 2,
+      "branch": "left",
+      "label_expert": "Non-HDL cholesterol a triglyceridy",
+      "label_layman": "Tuky v krvi",
+      "label_expert_en": "Non-HDL Cholesterol & Triglycerides",
+      "label_layman_en": "",
+      "parents": [],
+      "children": ["CSF_METABOLISMUS"]
+    },
+    {
+      "id": "NC_JATRA",
+      "type": "nc",
+      "layer": 2,
+      "branch": "left",
+      "label_expert": "Prevence jaterní steatózy (NAFLD)",
+      "label_layman": "Zdravá játra",
+      "label_expert_en": "Liver Health (NAFLD prevention)",
+      "label_layman_en": "",
+      "parents": [],
+      "children": ["CSF_METABOLISMUS"]
+    },
+
+    {
+      "id": "NC_APOB",
+      "type": "nc",
+      "layer": 2,
+      "branch": "center-left",
+      "label_expert": "ApoB a LDL-C v cílovém rozsahu",
+      "label_layman": "Cholesterol v cévách pod kontrolou",
+      "label_expert_en": "ApoB & LDL-C Control",
+      "label_layman_en": "",
+      "parents": [],
+      "children": ["CSF_KARDIO"]
+    },
+    {
+      "id": "NC_TK",
+      "type": "nc",
+      "layer": 2,
+      "branch": "center-left",
+      "label_expert": "Krevní tlak pod 120/80 mmHg",
+      "label_layman": "Krevní tlak v normě",
+      "label_expert_en": "Blood Pressure < 120/80 mmHg",
+      "label_layman_en": "",
+      "parents": [],
+      "children": ["CSF_KARDIO"]
+    },
+    {
+      "id": "NC_KARDIO_FIT",
+      "type": "nc",
+      "layer": 2,
+      "branch": "center-left",
+      "label_expert": "Kardiorespirační zdatnost (VO2max ≥ 50. percentil)",
+      "label_layman": "Dobré dýchání při zátěži",
+      "label_expert_en": "Cardiorespiratory Fitness (VO2max ≥ 50th percentile)",
+      "label_layman_en": "",
+      "parents": [],
+      "children": ["CSF_KARDIO"]
+    },
+    {
+      "id": "NC_SRDCE_FUNKCE",
+      "type": "nc",
+      "layer": 2,
+      "branch": "center-left",
+      "label_expert": "Struktura a funkce srdce (echo, EKG)",
+      "label_layman": "Srdce bije správně",
+      "label_expert_en": "Cardiac Structure & Function",
+      "label_layman_en": "",
+      "parents": [],
+      "children": ["CSF_KARDIO"]
+    },
+
+    {
+      "id": "NC_SPANEK",
+      "type": "nc",
+      "layer": 2,
+      "branch": "center-right",
+      "label_expert": "Spánek 7–9 h, architektura REM a hlubokého spánku",
+      "label_layman": "Kvalitní hluboký spánek",
+      "label_expert_en": "Sleep 7–9h, REM & Deep Sleep Architecture",
+      "label_layman_en": "",
+      "parents": [],
+      "children": ["CSF_MOZEK"]
+    },
+    {
+      "id": "NC_STRES",
+      "type": "nc",
+      "layer": 2,
+      "branch": "center-right",
+      "label_expert": "Stres management a emoční regulace",
+      "label_layman": "Zvládání stresu",
+      "label_expert_en": "Stress Management & Emotional Regulation",
+      "label_layman_en": "",
+      "parents": [],
+      "children": ["CSF_MOZEK"]
+    },
+    {
+      "id": "NC_KOGNICE",
+      "type": "nc",
+      "layer": 2,
+      "branch": "center-right",
+      "label_expert": "Kognitivní angažovanost a učení",
+      "label_layman": "Mentální aktivita",
+      "label_expert_en": "Cognitive Engagement & Learning",
+      "label_layman_en": "",
+      "parents": [],
+      "children": ["CSF_MOZEK"]
+    },
+    {
+      "id": "NC_SOCIALNI",
+      "type": "nc",
+      "layer": 2,
+      "branch": "center-right",
+      "label_expert": "Sociální vazby a smysluplné vztahy",
+      "label_layman": "Dobré vztahy a komunita",
+      "label_expert_en": "Social Connection & Meaningful Relationships",
+      "label_layman_en": "",
+      "parents": [],
+      "children": ["CSF_MOZEK"]
+    },
+
+    {
+      "id": "NC_SVAL",
+      "type": "nc",
+      "layer": 2,
+      "branch": "right",
+      "label_expert": "Svalová hmota (zachovat s věkem)",
+      "label_layman": "Silné svaly",
+      "label_expert_en": "Muscle Mass (preserve with age)",
+      "label_layman_en": "",
+      "parents": [],
+      "children": ["CSF_SILA"]
+    },
+    {
+      "id": "NC_SILOVY_TRENINK",
+      "type": "nc",
+      "layer": 2,
+      "branch": "right",
+      "label_expert": "Silový trénink 3× týdně (Zóna 4–5)",
+      "label_layman": "Pravidelný silový trénink",
+      "label_expert_en": "Strength Training 3×/week (Zone 4–5)",
+      "label_layman_en": "",
+      "parents": [],
+      "children": ["CSF_SILA"]
+    },
+    {
+      "id": "NC_VO2MAX",
+      "type": "nc",
+      "layer": 2,
+      "branch": "right",
+      "label_expert": "VO2max trénink (Zóna 2 + HIIT)",
+      "label_layman": "Aerobní kapacita",
+      "label_expert_en": "VO2max Training (Zone 2 + HIIT)",
+      "label_layman_en": "",
+      "parents": [],
+      "children": ["CSF_SILA"]
+    },
+    {
+      "id": "NC_MOBILITA",
+      "type": "nc",
+      "layer": 2,
+      "branch": "right",
+      "label_expert": "Mobilita, flexibilita a rovnováha",
+      "label_layman": "Pohyblivost a rovnováha",
+      "label_expert_en": "Mobility, Flexibility & Balance",
+      "label_layman_en": "",
+      "parents": [],
+      "children": ["CSF_SILA"]
+    }
+  ]
+}
