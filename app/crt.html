@@ -1341,7 +1341,11 @@ function buildPanelData(node, ctx, parents, children, meds, supps, contras, hidd
     <div class="cnp-section">
       <p class="cnp-lbl">léková ochrana</p>
       <div style="display:flex;flex-direction:column;gap:6px">
-        ${meds.map(m => `<span class="cnp-chip" style="align-self:flex-start"><i class="ti ti-shield" aria-hidden="true" style="opacity:.7;margin-right:6px"></i><span style="border-left:1px solid rgba(245,158,11,0.3);padding-left:8px">${m.name}</span></span>`).join('')}
+        ${meds.map(m => {
+          const rawM = (_rawCrtData?.medication_shields || []).find(x => x.med === m.name) || {};
+          const noteHtml = rawM.note ? `<span style="display:block;font-size:10px;color:#64748b;margin-top:2px;font-style:italic">${rawM.note}</span>` : '';
+          return `<span class="cnp-chip" style="align-self:flex-start;flex-direction:column;align-items:flex-start"><span style="display:flex;align-items:center"><i class="ti ti-shield" aria-hidden="true" style="opacity:.7;margin-right:6px"></i><span style="border-left:1px solid rgba(245,158,11,0.3);padding-left:8px">${m.name}</span></span>${noteHtml}</span>`;
+        }).join('')}
       </div>
     </div>` : '';
 
