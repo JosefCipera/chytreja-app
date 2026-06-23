@@ -107,13 +107,15 @@ function svgEl(tag, attrs = {}, text = null) {
 }
 
 // ── Layout constants ─────────────────────────────────────────────────────────
-const BOX_W    = 160;
+const BOX_W     = 160;
+const NC_BOX_W  = 115;   // NCs are smaller
 const FONT_SIZE = 13;
-const R        = 8;
-const Y_STEP   = 150;
-const MARGIN   = 60;
-const NC_SPREAD = 68;  // half-width for NC group under each CSF
-const CSF_SPREAD = 340; // half-width for CSF row
+const NC_FONT   = 11;
+const R         = 8;
+const Y_STEP    = 160;
+const MARGIN    = 60;
+const NC_SPREAD  = 58;   // half-width for NC group under each CSF
+const CSF_SPREAD = 390;  // half-width for CSF row
 
 // ── Text wrap ────────────────────────────────────────────────────────────────
 function wrapText(text, maxChars = 20) {
@@ -127,28 +129,30 @@ function wrapText(text, maxChars = 20) {
   if (cur) lines.push(cur);
   return lines;
 }
-function boxHeight(text) {
-  const lines = wrapText(text);
-  return Math.max(44, lines.length * (FONT_SIZE + 6) + 20);
+function boxHeight(text, fs = FONT_SIZE) {
+  const lines = wrapText(text, fs < 12 ? 18 : 20);
+  return Math.max(36, lines.length * (fs + 5) + 16);
 }
 
-// ── Node styles ──────────────────────────────────────────────────────────────
-const STYLES = {
-  goal:    { fill: '#011208', stroke: '#22c55e', text: '#86efac', sw: '2.5', dash: '6 3' },
-  csf_red:    { fill: '#100404', stroke: '#ef4444', text: '#fca5a5', sw: '2',   dash: 'none' },
-  csf_yellow: { fill: '#100900', stroke: '#eab308', text: '#fde68a', sw: '2',   dash: 'none' },
-  csf_green:  { fill: '#011208', stroke: '#22c55e', text: '#86efac', sw: '2',   dash: 'none' },
-  csf_gray:   { fill: '#0a0f16', stroke: '#334155', text: '#475569', sw: '1.5', dash: 'none' },
-  nc_red:     { fill: '#0c0303', stroke: '#7f1d1d', text: '#f87171', sw: '1',   dash: 'none' },
-  nc_yellow:  { fill: '#0c0800', stroke: '#78350f', text: '#fbbf24', sw: '1',   dash: 'none' },
-  nc_green:   { fill: '#010e05', stroke: '#166534', text: '#4ade80', sw: '1',   dash: 'none' },
-  nc_gray:    { fill: '#090d14', stroke: '#1e293b', text: '#334155', sw: '1',   dash: 'none' },
+// ── Node styles — ladit s CRT (NODE_STYLE / GOAL_STYLE) ─────────────────────
+// CRT: NODE_STYLE #1a2535/#3a5068/#c8d8e8 · GOAL_STYLE #081510/#18884a/#24a85e
+const STYLE_NODE = { fill: '#1a2535', stroke: '#3a5068', text: '#c8d8e8', sw: '1.5', dash: 'none' };
+const STYLE_GOAL = { fill: '#081510', stroke: '#18884a', text: '#24a85e', sw: '2.5', dash: '6 3' };
+// CSF: stejná základní paleta jako NODE, stav indikován pouze subtilní změnou stroke
+const STYLE_CSF = {
+  red:    { fill: '#1a2535', stroke: '#6a3848', text: '#c8d8e8', sw: '2', dash: 'none' },
+  yellow: { fill: '#1a2535', stroke: '#6a5828', text: '#c8d8e8', sw: '2', dash: 'none' },
+  green:  { fill: '#1a2535', stroke: '#2a6848', text: '#c8d8e8', sw: '2', dash: 'none' },
+  gray:   { fill: '#1a2535', stroke: '#3a5068', text: '#8898a8', sw: '1.5', dash: 'none' },
 };
+// NC: totožné s NODE_STYLE, menší
+const STYLE_NC = { fill: '#131d2a', stroke: '#2a4058', text: '#8898a8', sw: '1', dash: 'none' };
 
-function csfStyle(state) { return STYLES['csf_' + (state || 'gray')]; }
-function ncStyle(state)  { return STYLES['nc_'  + (state || 'gray')]; }
+// Tečka stavu vedle názvu CSF: malý barevný indikátor
+const STATE_DOT = { red: '#8b3040', yellow: '#8b7020', green: '#208848', gray: '#2a4058' };
+
 function arrowColor(state) {
-  return state === 'red' ? '#7f1d1d' : state === 'yellow' ? '#78350f' : state === 'green' ? '#166534' : '#1e293b';
+  return { red: '#6a3848', yellow: '#6a5828', green: '#2a6848', gray: '#2a4058' }[state] || '#2a4058';
 }
 
 // ── Layout ───────────────────────────────────────────────────────────────────
@@ -217,14 +221,13 @@ function renderIO(data, udeStates) {
   const nodeMap = {};
   nodes.forEach(n => { nodeMap[n.id] = n; });
 
-  // SVG dimensions
-  const xs = nodes.map(n => n.x ?? 0);
-  const minX = Math.min(...xs), maxX = Math.max(...xs);
-  const SVG_W = maxX - minX + BOX_W + MARGIN * 2;
+  // SVG dimensions — account for NC_BOX_W vs BOX_W
+  const hw = n => (n.type === 'nc' ? NC_BOX_W : BOX_W) / 2;
+  const leftEdge  = Math.min(...nodes.map(n => (n.x ?? 0) - hw(n)));
+  const rightEdge = Math.max(...nodes.map(n => (n.x ?? 0) + hw(n)));
+  const SVG_W = rightEdge - leftEdge + MARGIN * 2;
   const SVG_H = 3 * Y_STEP + 100 + MARGIN * 2;
-  const cx = x => x - minX + BOX_W / 2 + MARGIN;
-  // y=0 (NC) at bottom, y=2*Y_STEP (goal) at top
-  const maxY = 2 * Y_STEP;
+  const cx = x => x - leftEdge + MARGIN;
   const cy = y => SVG_H - MARGIN - 50 - y;
 
   const svg = svgEl('svg', {
@@ -243,29 +246,28 @@ function renderIO(data, udeStates) {
   svg.appendChild(defs);
 
   // ── Edges (NC→CSF, CSF→Goal) — zdola nahoru ─────────────────────────────
-  data.nodes.forEach(src => {
-    if (!nodeMap[src.id]) return;
+  nodes.forEach(src => {
     (src.children || []).forEach(tgtId => {
       const tgt = nodeMap[tgtId];
       if (!tgt) return;
 
-      // State: use UDE link of the CSF (for NC→CSF edge: src=NC, tgt=CSF)
-      const csfId = tgt.type === 'csf' ? tgt.id : src.type === 'csf' ? src.id : null;
-      const csfNode = csfId ? nodeMap[csfId] : null;
-      const udeId = csfNode?.ude_link;
-      const state = udeId ? (udeStates[udeId] || 'gray') : 'gray';
+      // State from nearest CSF's ude_link
+      const csfNode = tgt.type === 'csf' ? tgt : src.type === 'csf' ? src : null;
+      const state = csfNode?.ude_link ? (udeStates[csfNode.ude_link] || 'gray') : 'gray';
 
-      const srcH = boxHeight(src.label), tgtH = boxHeight(tgt.label);
+      const srcFS = src.type === 'nc' ? NC_FONT : FONT_SIZE;
+      const tgtFS = tgt.type === 'nc' ? NC_FONT : FONT_SIZE;
+      const srcH = boxHeight(src.label, srcFS), tgtH = boxHeight(tgt.label, tgtFS);
       const x1 = cx(src.x ?? 0);
-      const y1 = cy(src.y ?? 0) - srcH / 2;   // top of source (lower node)
+      const y1 = cy(src.y ?? 0) - srcH / 2;
       const x2 = cx(tgt.x ?? 0);
-      const y2 = cy(tgt.y ?? 0) + tgtH / 2;   // bottom of target (higher node)
+      const y2 = cy(tgt.y ?? 0) + tgtH / 2;
 
-      const midY1 = y1 + (y2 - y1) * 0.4;
-      const midY2 = y1 + (y2 - y1) * 0.6;
+      const midY1 = y1 + (y2 - y1) * 0.35;
+      const midY2 = y1 + (y2 - y1) * 0.65;
       svg.appendChild(svgEl('path', {
         d: `M ${x1} ${y1} C ${x1} ${midY1}, ${x2} ${midY2}, ${x2} ${y2}`,
-        fill: 'none', stroke: arrowColor(state), 'stroke-width': '2',
+        fill: 'none', stroke: arrowColor(state), 'stroke-width': '1.5',
         'marker-end': `url(#arr-${state})`,
       }));
     });
@@ -273,51 +275,58 @@ function renderIO(data, udeStates) {
 
   // ── Nodes ─────────────────────────────────────────────────────────────────
   nodes.forEach(n => {
-    const udeId = n.ude_link;
-    const state = udeId ? (udeStates[udeId] || 'gray') : null;
+    const isNC   = n.type === 'nc';
+    const isCSF  = n.type === 'csf';
+    const isGoal = n.type === 'goal';
 
-    // Determine style
+    // Style lookup
     let st;
-    if (n.type === 'goal') st = STYLES.goal;
-    else if (n.type === 'csf') st = csfStyle(state);
-    else {
-      // NC: inherit state from parent CSF
-      const parentCsfId = (n.children || []).find(id => nodeMap[id]?.type === 'csf');
-      const parentCsf = parentCsfId ? nodeMap[parentCsfId] : null;
-      const ncUdeId = parentCsf?.ude_link;
-      const ncState = ncUdeId ? (udeStates[ncUdeId] || 'gray') : 'gray';
-      st = ncStyle(ncState);
+    if (isGoal) {
+      st = STYLE_GOAL;
+    } else if (isCSF) {
+      const state = n.ude_link ? (udeStates[n.ude_link] || 'gray') : 'gray';
+      st = STYLE_CSF[state] || STYLE_CSF.gray;
+    } else {
+      st = STYLE_NC;
     }
 
-    const g = svgEl('g', { class: 'io-node', 'data-id': n.id, style: 'cursor:pointer' });
-    const lines = wrapText(n.label);
-    const bh = boxHeight(n.label);
-    const bx = cx(n.x ?? 0) - BOX_W / 2;
+    const bw = isNC ? NC_BOX_W : BOX_W;
+    const fs = isNC ? NC_FONT  : FONT_SIZE;
+    const g  = svgEl('g', { class: 'io-node', 'data-id': n.id, style: isCSF ? 'cursor:pointer' : '' });
+    const lines = wrapText(n.label, fs < 12 ? 18 : 20);
+    const bh = boxHeight(n.label, fs);
+    const bx = cx(n.x ?? 0) - bw / 2;
     const by = cy(n.y ?? 0) - bh / 2;
 
     g.appendChild(svgEl('rect', {
-      x: bx, y: by, width: BOX_W, height: bh, rx: R, ry: R,
+      x: bx, y: by, width: bw, height: bh, rx: R, ry: R,
       fill: st.fill, stroke: st.stroke,
-      'stroke-width': st.sw,
-      'stroke-dasharray': st.dash || 'none',
+      'stroke-width': st.sw, 'stroke-dasharray': st.dash || 'none',
     }));
 
-    const lineH = FONT_SIZE + 6;
+    // State dot on CSF (small circle top-right corner)
+    if (isCSF) {
+      const state = n.ude_link ? (udeStates[n.ude_link] || 'gray') : 'gray';
+      g.appendChild(svgEl('circle', {
+        cx: bx + bw - 10, cy: by + 10, r: '5',
+        fill: STATE_DOT[state] || STATE_DOT.gray,
+      }));
+    }
+
+    const lineH = fs + 5;
     const totalTH = lines.length * lineH;
-    const startY = by + bh / 2 - totalTH / 2 + lineH * 0.75;
+    const startY = by + bh / 2 - totalTH / 2 + lineH * 0.8;
     lines.forEach((line, i) => {
       g.appendChild(svgEl('text', {
         x: cx(n.x ?? 0), y: startY + i * lineH,
-        'text-anchor': 'middle',
-        fill: st.text,
-        'font-size': String(FONT_SIZE),
+        'text-anchor': 'middle', fill: st.text,
+        'font-size': String(fs),
         'font-family': 'Inter, Segoe UI, system-ui, sans-serif',
-        'font-weight': n.type === 'goal' ? '600' : n.type === 'csf' ? '500' : '400',
+        'font-weight': isGoal ? '600' : isCSF ? '500' : '400',
       }, line));
     });
 
-    // Click: CSF → CRT focus
-    if (n.type === 'csf' && n.ude_link) {
+    if (isCSF && n.ude_link) {
       g.addEventListener('click', e => {
         e.stopPropagation();
         const uid = userId ? `&userId=${userId}` : '';
