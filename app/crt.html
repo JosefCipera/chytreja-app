@@ -508,7 +508,7 @@ function buildMedsMap(shields, userMeds, activeIds, arrowsById) {
       if (!targets.length) return null;
       const names = new Set([s.med, s.inn, ...(s.aliases||[])].filter(Boolean).map(n=>n.toLowerCase()));
       const userHas = userMeds.some(m => names.has(m.toLowerCase()));
-      return { name: s.med, targets, effect: '', reason: s.reason, userHas };
+      return { name: s.med, targets, effect: '', reason: s.reason, note: s.note, userHas };
     }).filter(Boolean);
 }
 
@@ -1342,8 +1342,7 @@ function buildPanelData(node, ctx, parents, children, meds, supps, contras, hidd
       <p class="cnp-lbl">léková ochrana</p>
       <div style="display:flex;flex-direction:column;gap:6px">
         ${meds.map(m => {
-          const rawM = (_rawCrtData?.medication_shields || []).find(x => x.med === m.name) || {};
-          const noteHtml = rawM.note ? `<span style="display:block;font-size:10px;color:#64748b;margin-top:2px;font-style:italic">${rawM.note}</span>` : '';
+          const noteHtml = m.note ? `<span style="display:block;font-size:10px;color:#64748b;margin-top:2px;font-style:italic;padding-left:22px">${m.note}</span>` : '';
           return `<span class="cnp-chip" style="align-self:flex-start;flex-direction:column;align-items:flex-start"><span style="display:flex;align-items:center"><i class="ti ti-shield" aria-hidden="true" style="opacity:.7;margin-right:6px"></i><span style="border-left:1px solid rgba(245,158,11,0.3);padding-left:8px">${m.name}</span></span>${noteHtml}</span>`;
         }).join('')}
       </div>
