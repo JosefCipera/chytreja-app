@@ -403,16 +403,26 @@ async function boot() {
 function printIO() {
   const svgEl = document.querySelector('#io-canvas svg');
   if (!svgEl) return;
-  const svgHtml = svgEl.outerHTML;
+  // Klonuj, odstraň absolutní rozměry a pan/zoom transform
+  const clone = svgEl.cloneNode(true);
+  clone.removeAttribute('width');
+  clone.removeAttribute('height');
+  clone.style.transform = '';
+  clone.style.transformOrigin = '';
+  // viewBox zůstane — CSS width:100% pak správně škáluje
+  const svgHtml = clone.outerHTML;
   const w = window.open('', '_blank');
   w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
   <title>IO Mapa — Strategie zdraví</title>
   <style>
     @page { size: A4 landscape; margin: 8mm; }
-    body { margin: 0; background: #fff; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #fff; display: flex; align-items: center; justify-content: center; width: 100%; height: 100vh; }
     svg { width: 100%; height: auto; display: block; }
-    rect { fill: #f8fafc !important; stroke: #334155 !important; }
+    rect { fill: #f8fafc !important; stroke: #475569 !important; }
     text { fill: #1e293b !important; }
+    path { stroke: #94a3b8 !important; }
+    polygon { fill: #94a3b8 !important; }
   </style></head><body>${svgHtml}<script>window.print();<\/script></body></html>`);
   w.document.close();
 }
