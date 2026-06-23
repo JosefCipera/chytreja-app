@@ -548,7 +548,7 @@ async function loadCRT() {
   // Rule engine — podmínka na uzlu (ne na hraně)
   const activeIds = new Set();
   for (const [id, node] of Object.entries(nodeMap)) {
-    if (node.type === 'root' || node.type === 'goal' || !node.condition) {
+    if (node.type === 'root' || !node.condition) {
       activeIds.add(id);
     } else if (evalCondition(node.condition, ctx)) {
       activeIds.add(id);
@@ -1638,11 +1638,9 @@ function computeTopN(rawData, focusUde = null) {
   } else {
     // Standardní Top-N: BFS ROOT→každý killer, union cest
     const rootId = [...allIds].find(id => nodeMap[id]?.type === 'root');
-    const goalId = [...allIds].find(id => nodeMap[id]?.type === 'goal');
     const udeIds = [...allIds].filter(id => nodeMap[id]?.type === 'ude');
     topIds = new Set();
     if (rootId) topIds.add(rootId);
-    if (goalId) topIds.add(goalId);
     for (const udeId of udeIds) {
       topIds.add(udeId);
       if (rootId) { const p = bfsPath(rootId, udeId, nodeMap, allIds); if (p) p.forEach(id => topIds.add(id)); }
