@@ -70,7 +70,7 @@
   <div class="io-controls">
     <button class="io-btn active" id="ioLabelBtn" onclick="toggleLabelMode()">Laik</button>
     <button class="io-btn" id="ioCrtBtn" onclick="window.location.href='/crt.html'">CRT →</button>
-    <button class="io-btn" onclick="window.print()">🖨 Tisk</button>
+    <button class="io-btn" onclick="printIO()">🖨 Tisk</button>
   </div>
 </div>
 
@@ -108,14 +108,14 @@ function svgEl(tag, attrs = {}, text = null) {
 
 // ── Layout constants ─────────────────────────────────────────────────────────
 const BOX_W     = 160;
-const NC_BOX_W  = 115;   // NCs are smaller
+const NC_BOX_W  = 105;   // NCs smaller — readable but compact
 const FONT_SIZE = 13;
-const NC_FONT   = 11;
+const NC_FONT   = 10;
 const R         = 8;
 const Y_STEP    = 160;
 const MARGIN    = 60;
-const NC_SPREAD  = 58;   // half-width for NC group under each CSF
-const CSF_SPREAD = 390;  // half-width for CSF row
+const NC_SPREAD  = 160;  // 4 NCs: -160,-53,+53,+160 → spacing 107px > NC_BOX_W 105px ✓
+const CSF_SPREAD = 490;  // 4 CSFs: -490,-163,+163,+490 → group -650 to -330 / gap 30px ✓
 
 // ── Text wrap ────────────────────────────────────────────────────────────────
 function wrapText(text, maxChars = 20) {
@@ -134,26 +134,11 @@ function boxHeight(text, fs = FONT_SIZE) {
   return Math.max(36, lines.length * (fs + 5) + 16);
 }
 
-// ── Node styles — ladit s CRT (NODE_STYLE / GOAL_STYLE) ─────────────────────
-// CRT: NODE_STYLE #1a2535/#3a5068/#c8d8e8 · GOAL_STYLE #081510/#18884a/#24a85e
-const STYLE_NODE = { fill: '#1a2535', stroke: '#3a5068', text: '#c8d8e8', sw: '1.5', dash: 'none' };
-const STYLE_GOAL = { fill: '#081510', stroke: '#18884a', text: '#24a85e', sw: '2.5', dash: '6 3' };
-// CSF: stejná základní paleta jako NODE, stav indikován pouze subtilní změnou stroke
-const STYLE_CSF = {
-  red:    { fill: '#1a2535', stroke: '#6a3848', text: '#c8d8e8', sw: '2', dash: 'none' },
-  yellow: { fill: '#1a2535', stroke: '#6a5828', text: '#c8d8e8', sw: '2', dash: 'none' },
-  green:  { fill: '#1a2535', stroke: '#2a6848', text: '#c8d8e8', sw: '2', dash: 'none' },
-  gray:   { fill: '#1a2535', stroke: '#3a5068', text: '#8898a8', sw: '1.5', dash: 'none' },
-};
-// NC: totožné s NODE_STYLE, menší
-const STYLE_NC = { fill: '#131d2a', stroke: '#2a4058', text: '#8898a8', sw: '1', dash: 'none' };
-
-// Tečka stavu vedle názvu CSF: malý barevný indikátor
-const STATE_DOT = { red: '#8b3040', yellow: '#8b7020', green: '#208848', gray: '#2a4058' };
-
-function arrowColor(state) {
-  return { red: '#6a3848', yellow: '#6a5828', green: '#2a6848', gray: '#2a4058' }[state] || '#2a4058';
-}
+// ── Node styles — identické s CRT ────────────────────────────────────────────
+const STYLE_GOAL = { fill: '#081510', stroke: '#18884a', text: '#24a85e', sw: '2', dash: '6 3' };
+const STYLE_CSF  = { fill: '#1a2535', stroke: '#8ba8b8', text: '#e8f0f8', sw: '1.5', dash: 'none' };
+const STYLE_NC   = { fill: '#131d2a', stroke: '#2a4058', text: '#8898a8', sw: '1',   dash: 'none' };
+const ARROW_COLOR = '#2a4058';
 
 // ── Layout ───────────────────────────────────────────────────────────────────
 function calcPositions(nodes) {
@@ -192,7 +177,7 @@ function initView(svgW, svgH) {
   const ch = document.getElementById('io-canvas').clientHeight || window.innerHeight || 600;
   _sc = Math.min((cw - 40) / svgW, (ch - 40) / svgH, 1.2);
   _tx = (cw - svgW * _sc) / 2;
-  _ty = (ch - svgH * _sc) / 2;
+  _ty = 24;  // posun nahoru — více prostoru dole
   applyT();
 }
 
@@ -236,24 +221,18 @@ function renderIO(data, udeStates) {
     style: 'transform-origin: 0 0; overflow: visible;',
   });
 
-  // Arrowhead defs — one per state color
+  // Arrowhead def — jednotná barva jako CRT
   const defs = svgEl('defs', {});
-  ['red','yellow','green','gray'].forEach(state => {
-    const m = svgEl('marker', { id: `arr-${state}`, markerWidth: '10', markerHeight: '7', refX: '9', refY: '3.5', orient: 'auto' });
-    m.appendChild(svgEl('polygon', { points: '0 0, 10 3.5, 0 7', fill: arrowColor(state) }));
-    defs.appendChild(m);
-  });
+  const m = svgEl('marker', { id: 'arr-io', markerWidth: '10', markerHeight: '7', refX: '9', refY: '3.5', orient: 'auto' });
+  m.appendChild(svgEl('polygon', { points: '0 0, 10 3.5, 0 7', fill: ARROW_COLOR }));
+  defs.appendChild(m);
   svg.appendChild(defs);
 
-  // ── Edges (NC→CSF, CSF→Goal) — zdola nahoru ─────────────────────────────
+  // ── Edges (NC→CSF, CSF→Goal) — zdola nahoru, jednotná barva ─────────────
   nodes.forEach(src => {
     (src.children || []).forEach(tgtId => {
       const tgt = nodeMap[tgtId];
       if (!tgt) return;
-
-      // State from nearest CSF's ude_link
-      const csfNode = tgt.type === 'csf' ? tgt : src.type === 'csf' ? src : null;
-      const state = csfNode?.ude_link ? (udeStates[csfNode.ude_link] || 'gray') : 'gray';
 
       const srcFS = src.type === 'nc' ? NC_FONT : FONT_SIZE;
       const tgtFS = tgt.type === 'nc' ? NC_FONT : FONT_SIZE;
@@ -267,8 +246,8 @@ function renderIO(data, udeStates) {
       const midY2 = y1 + (y2 - y1) * 0.65;
       svg.appendChild(svgEl('path', {
         d: `M ${x1} ${y1} C ${x1} ${midY1}, ${x2} ${midY2}, ${x2} ${y2}`,
-        fill: 'none', stroke: arrowColor(state), 'stroke-width': '1.5',
-        'marker-end': `url(#arr-${state})`,
+        fill: 'none', stroke: ARROW_COLOR, 'stroke-width': '1.5',
+        'marker-end': 'url(#arr-io)',
       }));
     });
   });
@@ -279,21 +258,11 @@ function renderIO(data, udeStates) {
     const isCSF  = n.type === 'csf';
     const isGoal = n.type === 'goal';
 
-    // Style lookup
-    let st;
-    if (isGoal) {
-      st = STYLE_GOAL;
-    } else if (isCSF) {
-      const state = n.ude_link ? (udeStates[n.ude_link] || 'gray') : 'gray';
-      st = STYLE_CSF[state] || STYLE_CSF.gray;
-    } else {
-      st = STYLE_NC;
-    }
-
+    const st = isGoal ? STYLE_GOAL : isCSF ? STYLE_CSF : STYLE_NC;
     const bw = isNC ? NC_BOX_W : BOX_W;
     const fs = isNC ? NC_FONT  : FONT_SIZE;
     const g  = svgEl('g', { class: 'io-node', 'data-id': n.id, style: isCSF ? 'cursor:pointer' : '' });
-    const lines = wrapText(n.label, fs < 12 ? 18 : 20);
+    const lines = wrapText(n.label, fs < 12 ? 16 : 20);
     const bh = boxHeight(n.label, fs);
     const bx = cx(n.x ?? 0) - bw / 2;
     const by = cy(n.y ?? 0) - bh / 2;
@@ -303,15 +272,6 @@ function renderIO(data, udeStates) {
       fill: st.fill, stroke: st.stroke,
       'stroke-width': st.sw, 'stroke-dasharray': st.dash || 'none',
     }));
-
-    // State dot on CSF (small circle top-right corner)
-    if (isCSF) {
-      const state = n.ude_link ? (udeStates[n.ude_link] || 'gray') : 'gray';
-      g.appendChild(svgEl('circle', {
-        cx: bx + bw - 10, cy: by + 10, r: '5',
-        fill: STATE_DOT[state] || STATE_DOT.gray,
-      }));
-    }
 
     const lineH = fs + 5;
     const totalTH = lines.length * lineH;
@@ -432,6 +392,23 @@ async function boot() {
   } catch (e) {
     document.getElementById('io-loading').textContent = 'Chyba: ' + e.message;
   }
+}
+
+function printIO() {
+  const svgEl = document.querySelector('#io-canvas svg');
+  if (!svgEl) return;
+  const svgHtml = svgEl.outerHTML;
+  const w = window.open('', '_blank');
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <title>IO Mapa — Strategie zdraví</title>
+  <style>
+    body { margin: 20px; background: #fff; }
+    svg { max-width: 100%; height: auto; display: block; }
+    /* přebarvení pro tisk: tmavé fills → světlé */
+    rect { fill: #f8fafc !important; stroke: #334155 !important; }
+    text { fill: #1e293b !important; }
+  </style></head><body>${svgHtml}<script>window.print();<\/script></body></html>`);
+  w.document.close();
 }
 
 window.addEventListener('resize', () => {
