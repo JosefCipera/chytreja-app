@@ -107,15 +107,17 @@ function svgEl(tag, attrs = {}, text = null) {
 }
 
 // ── Layout constants ─────────────────────────────────────────────────────────
-const BOX_W     = 160;
-const NC_BOX_W  = 105;   // NCs smaller — readable but compact
-const FONT_SIZE = 13;
-const NC_FONT   = 10;
-const R         = 8;
-const Y_STEP    = 160;
-const MARGIN    = 60;
-const NC_SPREAD  = 160;  // 4 NCs: -160,-53,+53,+160 → spacing 107px > NC_BOX_W 105px ✓
-const CSF_SPREAD = 490;  // 4 CSFs: -490,-163,+163,+490 → group -650 to -330 / gap 30px ✓
+const BOX_W        = 160;
+const NC_BOX_W     = 130;   // 2×2 grid pod CSF
+const FONT_SIZE    = 13;
+const NC_FONT      = 11;
+const R            = 8;
+const Y_STEP       = 160;   // goal↔csf, csf↔nc_top
+const Y_STEP_NC    = 85;    // nc_top↔nc_bottom
+const MARGIN       = 60;
+const NC_COL_OFFSET = 73;   // NC sloupce ±73 od CSF centra — NC_BOX_W/2+8 gap
+const CSF_SPREAD   = 450;   // 4 CSFs: -450,-150,+150,+450 → spacing 300px
+// CSF group span: ±(NC_COL_OFFSET+NC_BOX_W/2)=±138 → skupiny se neptají na 300-276=24px ✓
 
 // ── Text wrap ────────────────────────────────────────────────────────────────
 function wrapText(text, maxChars = 20) {
@@ -140,29 +142,32 @@ const STYLE_CSF  = { fill: '#1a2535', stroke: '#8ba8b8', text: '#e8f0f8', sw: '1
 const STYLE_NC   = { fill: '#131d2a', stroke: '#2a4058', text: '#8898a8', sw: '1',   dash: 'none' };
 const ARROW_COLOR = '#2a4058';
 
-// ── Layout ───────────────────────────────────────────────────────────────────
+// ── Layout — 2×2 grid NCs pod každým CSF ────────────────────────────────────
 function calcPositions(nodes) {
   const goals = nodes.filter(n => n.type === 'goal');
   const csfs  = nodes.filter(n => n.type === 'csf');
   const ncs   = nodes.filter(n => n.type === 'nc');
 
-  // Goal: center, top layer (y=2)
-  goals.forEach(n => { n.x = 0; n.y = 2 * Y_STEP; });
+  // Y úrovně (zdola nahoru)
+  const NC_Y_BOT = 0;
+  const NC_Y_TOP = Y_STEP_NC;           // 85
+  const CSF_Y    = NC_Y_TOP + Y_STEP;   // 245
+  const GOAL_Y   = CSF_Y   + Y_STEP;   // 405
 
-  // CSFs: evenly spread, middle layer (y=1)
+  goals.forEach(n => { n.x = 0;  n.y = GOAL_Y; });
+
   csfs.forEach((n, i) => {
     n.x = csfs.length === 1 ? 0 : -CSF_SPREAD + (i / (csfs.length - 1)) * CSF_SPREAD * 2;
-    n.y = 1 * Y_STEP;
+    n.y = CSF_Y;
   });
 
-  // NCs: grouped under parent CSF, bottom layer (y=0)
   csfs.forEach(csf => {
     const myNcs = ncs.filter(nc => nc.children?.includes(csf.id));
+    // 2×2: i=0 top-left, i=1 top-right, i=2 bottom-left, i=3 bottom-right
     myNcs.forEach((nc, i) => {
-      nc.x = csf.x + (myNcs.length === 1 ? 0 : -NC_SPREAD + (i / (myNcs.length - 1)) * NC_SPREAD * 2);
-      nc.y = 0;
+      nc.x = csf.x + (i % 2 === 0 ? -NC_COL_OFFSET : +NC_COL_OFFSET);
+      nc.y = i < 2 ? NC_Y_TOP : NC_Y_BOT;
     });
-    // NCs that don't belong to this CSF (shouldn't happen, but safety)
   });
 }
 
@@ -211,9 +216,10 @@ function renderIO(data, udeStates) {
   const leftEdge  = Math.min(...nodes.map(n => (n.x ?? 0) - hw(n)));
   const rightEdge = Math.max(...nodes.map(n => (n.x ?? 0) + hw(n)));
   const SVG_W = rightEdge - leftEdge + MARGIN * 2;
-  const SVG_H = 3 * Y_STEP + 100 + MARGIN * 2;
+  const GOAL_Y = Y_STEP_NC + Y_STEP + Y_STEP;
+  const SVG_H  = GOAL_Y + 80 + MARGIN * 2;   // 80 = výška Goal boxu + reserve
   const cx = x => x - leftEdge + MARGIN;
-  const cy = y => SVG_H - MARGIN - 50 - y;
+  const cy = y => SVG_H - MARGIN - 40 - y;
 
   const svg = svgEl('svg', {
     width: SVG_W, height: SVG_H,
