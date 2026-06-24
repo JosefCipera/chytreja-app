@@ -266,9 +266,10 @@
     <div class="crt-subtitle" id="crtSubtitle">Current Reality Tree</div>
   </div>
   <button class="crt-back" id="crtMedBtn" onclick="toggleMeds()" style="display:none">🛡 Léky</button>
-  <button class="crt-back" id="crtLabelBtn" onclick="toggleLabelMode()" style="display:none">👤 Laik</button>
+  <button class="crt-back" id="crtLabelBtn" onclick="toggleLabelMode()" style="display:none">🔬 Expert</button>
   <button class="crt-back" id="crtTopNBtn"  onclick="toggleTopN()"    style="display:none">📋 Plná mapa</button>
   <button class="crt-back" id="crtExportBtn" onclick="exportCRTImage()" style="display:none">📥 Export</button>
+  <button class="crt-back" id="crtPrintBtn" onclick="printCRT()" style="display:none">🖨 Tisk</button>
   <!-- Obnovit schováno — mapa se regeneruje jen při změně health profilu -->
   <button class="crt-back" id="crtRegenBtn" onclick="regenCRT()" style="display:none">↺ Přegenerovat</button>
 </div>
@@ -1410,7 +1411,7 @@ function buildPanelData(node, ctx, parents, children, meds, supps, contras, hidd
 window.closeCrtPanel = closeCrtPanel;
 
 let _medsVisible = false;
-let _labelMode = 'expert'; // 'expert' | 'layman'
+let _labelMode = 'layman'; // 'expert' | 'layman'
 
 // Nastaví label na všech uzlech podle aktuálního módu a překreslí
 function applyLabelMode(data) {
@@ -1511,6 +1512,31 @@ async function enrichContraMap(data) {
     }
   } catch (_) {}
 }
+
+// Tisk mapy — nový tab, světlé téma, A4 landscape
+window.printCRT = function() {
+  const svgEl = document.querySelector('#crt-canvas svg');
+  if (!svgEl) return;
+  const clone = svgEl.cloneNode(true);
+  clone.removeAttribute('width');
+  clone.removeAttribute('height');
+  clone.style.transform = '';
+  clone.style.transformOrigin = '';
+  const w = window.open('', '_blank');
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <title>Kauzální mapa zdraví</title>
+  <style>
+    @page { size: A4 landscape; margin: 8mm; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #fff; display: flex; align-items: center; justify-content: center; width: 100%; height: 100vh; }
+    svg { width: 100%; height: auto; display: block; }
+    rect { fill: #f0f4f8 !important; stroke: #475569 !important; }
+    text { fill: #1e293b !important; }
+    path { stroke: #94a3b8 !important; }
+    polygon { fill: #94a3b8 !important; }
+  </style></head><body>${clone.outerHTML}<script>window.print();<\/script></body></html>`);
+  w.document.close();
+};
 
 // Export mapy jako PNG se světlým pozadím
 window.exportCRTImage = function() {
@@ -1730,9 +1756,10 @@ async function boot() {
     applyLabelMode(displayData);
     _lastCrtData = displayData;
     renderTree(displayData);
-    document.getElementById('crtLabelBtn').style.display = '';
+    document.getElementById('crtLabelBtn').style.display  = '';
     document.getElementById('crtExportBtn').style.display = '';
-    document.getElementById('crtTopNBtn').style.display  = '';
+    document.getElementById('crtPrintBtn').style.display  = '';
+    document.getElementById('crtTopNBtn').style.display   = '';
     enrichContraMap(data); // async na raw datech, doplní se při přepnutí na plnou mapu
   } catch (e) {
     document.getElementById('crtLoading').textContent = 'Chyba načítání: ' + e.message;
