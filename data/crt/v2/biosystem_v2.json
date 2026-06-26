@@ -51,7 +51,7 @@
       "layer": 1, "branch": "center",
       "condition": { "or": [{"med":"rosucard"}, {"med":"rosuvastatin"}, {"med":"atorvastatin"}, {"med":"torvacard"}, {"lab":"ldl","gt":3.0}] },
       "parents": ["ROOT"],
-      "children": ["ATEROSKLEROZA"],
+      "children": ["ATEROSKLEROZA", "ZANET"],
       "detail": {
         "value_key": "labs.ldl", "value_unit": "mmol/L", "value_target": "< 1.8",
         "actions": ["Rosucard/rosuvastatin — snižuje LDL až o 50%", "Minimalizuj trans-tuky a nasycené tuky"]
@@ -65,7 +65,7 @@
       "layer": 1, "branch": "center",
       "condition": { "or": [{"med":"tezeo"}, {"med":"telmisartan"}, {"med":"lisinopril"}, {"med":"amlodipine"}, {"med":"ramipril"}, {"diag":"HYPERTENZE"}, {"lab":"systolic_bp","gt":140}] },
       "parents": ["ROOT"],
-      "children": ["ATEROSKLEROZA", "VASK_POD"],
+      "children": ["ATEROSKLEROZA", "VASK_POD", "ZANET"],
       "detail": {
         "value_key": "labs.systolic_bp", "value_unit": "mmHg", "value_target": "< 130",
         "actions": ["Tezeo/telmisartan — ARB blokátor s kardioprotektivním efektem", "Snížení soli a stres management"]
@@ -186,7 +186,7 @@
       "label_layman": "Tělo je\ntrvale zanícené",
       "layer": 3, "branch": "center",
       "condition": { "or": [{"lab":"crp","gt":1.0}, {"diag":"DIABETES_2_TYPU"}, {"med":"sifor"}, {"med":"metformin"}, {"med":"mirtazapin"}, {"checkin":"stress","gt":3}, {"checkin":"movement_level","eq":"low"}] },
-      "parents": ["HYPERGLYK", "DEPRESE", "VITZD_DEF", "MALO_POHYBU", "INZULREZ", "HYPOTHY"],
+      "parents": ["HYPERGLYK", "HIGH_LDL", "HYPERTENZE", "DEPRESE", "VITZD_DEF", "MALO_POHYBU", "INZULREZ", "HYPOTHY"],
       "children": ["UDE_SRDCE", "UDE_MOZEK", "UDE_IMUNITA", "UDE_METABOLISMUS"],
       "detail": {
         "value_key": "labs.crp", "value_unit": "mg/L", "value_target": "< 1.0",
