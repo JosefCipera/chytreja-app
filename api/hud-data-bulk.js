@@ -680,10 +680,13 @@ async function fetchOneNode(sb, userId, nodeId, shared) {
   const hasChildren = !!CHILDREN[nodeId]?.length;
   const worst       = hasChildren ? worstLeaf(nodeId, metricsMap) : null;
   const rawBatteryPercent = worst ? (worst.current_index ?? 50) : current_index;
-  const crtOverride = crtColorMap?.has(nodeId);
-  // CRT override: force RED — cap percent at 40 so LifeBattery renders red color
-  const batteryPercent = crtOverride ? Math.min(rawBatteryPercent, 40) : rawBatteryPercent;
-  const batteryState   = crtOverride ? 'RED'
+  const crtState = crtColorMap?.get(nodeId) || 'GRAY';
+  // CRT override: clamp battery to match CRT state (RED≤40, YELLOW 41–70, GRAY=no change)
+  const batteryPercent = crtState === 'RED'    ? Math.min(rawBatteryPercent, 40)
+    : crtState === 'YELLOW' ? Math.max(Math.min(rawBatteryPercent, 70), 41)
+    : rawBatteryPercent;
+  const batteryState = crtState === 'RED'    ? 'RED'
+    : crtState === 'YELLOW' ? 'YELLOW'
     : worst ? indexToState(worst.current_index ?? 50) : state;
 
   // Orchestrator decision for this node (from shared pre-fetch)
