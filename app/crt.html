@@ -465,7 +465,7 @@ function calcPositionsClient(nodes) {
         : (branchOrder[a.branch ?? 'center'] ?? 1) - (branchOrder[b.branch ?? 'center'] ?? 1));
       placeGroup(g);
     });
-    [...layers].reverse().slice(1).forEach(lv => { // bottom-up: sort by child x
+    layers.slice(1, -1).reverse().forEach(lv => {  // bottom-up: skip ROOT(0) + top layer
       const g = byLayer[lv];
       g.forEach(n => { n._bc = bc(n, false) ?? n.x; });
       g.sort((a, b) => a._bc !== b._bc ? a._bc - b._bc

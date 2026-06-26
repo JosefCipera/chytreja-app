@@ -187,7 +187,7 @@
       "layer": 3, "branch": "center",
       "condition": { "or": [{"lab":"crp","gt":1.0}, {"diag":"DIABETES_2_TYPU"}, {"med":"sifor"}, {"med":"metformin"}, {"med":"mirtazapin"}, {"checkin":"stress","gt":3}, {"checkin":"movement_level","eq":"low"}] },
       "parents": ["HYPERGLYK", "DEPRESE", "VITZD_DEF", "MALO_POHYBU", "INZULREZ", "HYPOTHY"],
-      "children": ["UDE_SRDCE", "UDE_MOZEK", "UDE_IMUNITA"],
+      "children": ["UDE_SRDCE", "UDE_MOZEK", "UDE_IMUNITA", "UDE_METABOLISMUS"],
       "detail": {
         "value_key": "labs.crp", "value_unit": "mg/L", "value_target": "< 1.0",
         "actions": ["Omega-3 (EPA+DHA 2 g/den) — přímý protizánětlivý efekt", "Středomořská strava — zelenina, ryby, olivový olej"]
