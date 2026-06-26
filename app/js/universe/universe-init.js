@@ -526,9 +526,12 @@ async function loadModel(modelName, role = 'longevity') {
           const crtStates = crtBulk._crt_states || {};
           for (const [nodeId, state] of Object.entries(crtStates)) {
             const existing = metricsMap.get(nodeId);
-            // Only override if node has real data (not GRAY/new user) and CRT says RED
-            if (existing && (existing.current_index ?? 0) > 0 && state === 'RED') {
+            if (!existing || state === 'GRAY') continue; // GRAY = žádné CRT podmínky, ponechat current_index
+            if (state === 'RED') {
               metricsMap.set(nodeId, { ...existing, state: 'RED', current_index: Math.min(existing.current_index ?? 40, 40) });
+            } else if (state === 'YELLOW' && existing.state !== 'RED') {
+              const ci = Math.max(Math.min(existing.current_index ?? 55, 70), 41);
+              metricsMap.set(nodeId, { ...existing, state: 'YELLOW', current_index: ci });
             }
           }
         }

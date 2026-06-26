@@ -1,6 +1,6 @@
 {
   "domain": "Biosystem_Unified_V2",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "Integrovaný kauzální Biovesmír — 24 uzlů, 4 killers, Goldratt CRT + Attia Medicine 3.0. label_expert + label_layman pro přepínač.",
 
   "nodes": [
@@ -313,12 +313,33 @@
     },
 
     {
+      "id": "UDE_METABOLISMUS",
+      "label": "Metabolický\nsyndrom / DM2",
+      "label_expert": "Metabolický\nsyndrom / DM2",
+      "label_layman": "Cukrovka a metabolická\nnerovnováha",
+      "layer": 4, "type": "ude", "branch": "left",
+      "condition": { "or": [
+        { "diag": "DIABETES_2_TYPU" },
+        { "med": "sifor" }, { "med": "metformin" },
+        { "lab": "hba1c", "gt": 6.5 },
+        { "lab": "glucose", "gt": 7 }
+      ]},
+      "parents": ["HYPERGLYK", "INZULREZ", "ZANET"],
+      "children": ["GOAL"],
+      "detail": { "actions": [
+        "Monitoruj HbA1c a glukózu nalačno každé 3 měsíce",
+        "Silový trénink 2× týdně — zvyšuje inzulinovou senzitivitu",
+        "Omez rafinované sacharidy, přidej přerušovaný půst"
+      ]}
+    },
+
+    {
       "id": "GOAL",
       "label": "Maximální\nHealthspan & Lifespan",
       "label_expert": "Maximální\nHealthspan & Lifespan",
       "label_layman": "Dlouhý\na zdravý život",
       "layer": 5, "type": "goal", "branch": "center",
-      "parents": ["UDE_SRDCE", "UDE_MOZEK", "UDE_IMUNITA", "UDE_PADY"],
+      "parents": ["UDE_SRDCE", "UDE_MOZEK", "UDE_IMUNITA", "UDE_PADY", "UDE_METABOLISMUS"],
       "children": [],
       "detail": {
         "actions": ["Každý aktivní uzel v tomto grafu je příčina snižující tvoji šanci na dobrý život", "Prioritizuj uzly v červené — ty snižují Healthspan nejvíce"]

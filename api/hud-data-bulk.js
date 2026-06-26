@@ -24,18 +24,124 @@ function getMergedKb() {
         const kb = JSON.parse(readFileSync(p, 'utf8'));
         merged.nodes.push(...(kb.nodes || []));
         merged.possible_arrows.push(...(kb.possible_arrows || []));
-        console.log('[CRT-KB] loaded', p);
         break;
-      } catch (e) {
-        console.warn('[CRT-KB] failed', p, e.message);
-      }
+      } catch (e) { /* ignore */ }
     }
   }
   _mergedKb = merged;
   return _mergedKb;
 }
-// Legacy alias — callers still reference kardioKb variable name in shared context
 function getKardioKb() { return getMergedKb(); }
+
+// ── Biosystem v2 KB (condition-based activation) ───────
+const V2_PATH = 'data/crt/v2/biosystem_v2.json';
+let _biosystemV2 = null;
+function getBiosystemV2() {
+  if (_biosystemV2) return _biosystemV2;
+  const paths = [join(process.cwd(), V2_PATH), join(__dirname, '..', V2_PATH)];
+  for (const p of paths) {
+    try { _biosystemV2 = JSON.parse(readFileSync(p, 'utf8')).nodes; break; } catch (e) { /* ignore */ }
+  }
+  return _biosystemV2 || [];
+}
+
+// Universe node → UDE IDs that determine its health state
+const NODE_UDE_MAP = {
+  telo:          ['UDE_SRDCE'],
+  kardio:        ['UDE_SRDCE'],
+  sila:          ['UDE_SRDCE', 'UDE_PADY'],
+  vytrvalost:    ['UDE_SRDCE'],
+  vo2max:        ['UDE_SRDCE'],
+  stabilita:     ['UDE_PADY'],
+  rovnovaha:     ['UDE_PADY'],
+  plyometrie:    ['UDE_PADY'],
+  mobilita:      ['UDE_PADY'],
+  dychani:       ['UDE_SRDCE'],
+  mysl:          ['UDE_MOZEK'],
+  stres:         ['UDE_MOZEK'],
+  emoce:         ['UDE_MOZEK'],
+  klid:          ['UDE_MOZEK'],
+  meditace:      ['UDE_MOZEK'],
+  smysl:         ['UDE_MOZEK'],
+  soustredeni:   ['UDE_MOZEK'],
+  vdecnost:      ['UDE_MOZEK'],
+  nervovy_system:['UDE_MOZEK'],
+  spanek:        ['UDE_MOZEK'],
+  vyziva:        ['UDE_METABOLISMUS'],
+  metabolicke:   ['UDE_METABOLISMUS'],
+  glukoza_vyziva:['UDE_METABOLISMUS'],
+  pust:          ['UDE_METABOLISMUS'],
+  bilkoviny:     ['UDE_METABOLISMUS'],
+  mikronutrienty:['UDE_METABOLISMUS'],
+  hydratace:     ['UDE_METABOLISMUS'],
+  casovani_jidel:['UDE_METABOLISMUS'],
+  imunitni:      ['UDE_IMUNITA'],
+  obnova:        ['UDE_PADY'],
+};
+
+// Activate v2 nodes via condition-based engine
+function activateV2(nodes, userCtx) {
+  const active = new Set();
+  for (const node of nodes) {
+    if (node.type === 'goal') continue;
+    if (node.type === 'root' || !node.condition) { active.add(node.id); continue; }
+    if (evalCondition(node.condition, userCtx)) active.add(node.id);
+  }
+  return active;
+}
+
+// GRAY = no ancestors active, YELLOW = precursors active but UDE not, RED = UDE active
+function getUdeSeverity(activeIds, udeId, nodeMap) {
+  if (activeIds.has(udeId)) return 'RED';
+  const visited = new Set();
+  const queue = [udeId];
+  while (queue.length) {
+    const id = queue.shift();
+    if (visited.has(id)) continue;
+    visited.add(id);
+    for (const parentId of (nodeMap[id]?.parents || [])) {
+      if (activeIds.has(parentId)) return 'YELLOW';
+      if (!visited.has(parentId)) queue.push(parentId);
+    }
+  }
+  return 'GRAY';
+}
+
+// Build universe color map from biosystem v2
+// Returns Map<universeNodeId, 'RED'|'YELLOW'|'GRAY'>
+function buildV2ColorMap(userCtx) {
+  const nodes = getBiosystemV2();
+  if (!nodes.length) return new Map();
+  const nodeMap = Object.fromEntries(nodes.map(n => [n.id, n]));
+  const activeIds = activateV2(nodes, userCtx);
+  const SEV = { RED: 2, YELLOW: 1, GRAY: 0 };
+  const colorMap = new Map();
+
+  for (const [nodeId, udeIds] of Object.entries(NODE_UDE_MAP)) {
+    let worst = 'GRAY';
+    for (const udeId of udeIds) {
+      const s = getUdeSeverity(activeIds, udeId, nodeMap);
+      if (SEV[s] > SEV[worst]) worst = s;
+      if (worst === 'RED') break;
+    }
+    colorMap.set(nodeId, worst);
+  }
+
+  // Parent cascade — zdravi, telo, mysl, vyziva, dlouhovekost
+  const cascade = (parentId, children) => {
+    const worst = children
+      .map(id => colorMap.get(id) || 'GRAY')
+      .reduce((a, b) => SEV[a] >= SEV[b] ? a : b, 'GRAY');
+    colorMap.set(parentId, worst);
+  };
+  cascade('zdravi',       ['metabolicke','imunitni','nervovy_system','spanek','obnova']);
+  cascade('telo',         ['vo2max','sila','kardio','stabilita','rovnovaha','vytrvalost','mobilita','plyometrie','dychani']);
+  cascade('mysl',         ['stres','emoce','klid','meditace','smysl','soustredeni','vdecnost']);
+  cascade('vyziva',       ['glukoza_vyziva','pust','bilkoviny','mikronutrienty','hydratace','casovani_jidel']);
+  cascade('dlouhovekost', ['telo','zdravi','mysl','vyziva']);
+
+  return colorMap;
+}
 
 // Evaluate a JSON condition object against user context (no eval).
 function evalCondition(cond, user) {
@@ -880,8 +986,9 @@ export default async function handler(req, res) {
   };
   console.log('[CRT-KB] userCtx diagnoses:', healthRes.data?.diagnoses, 'labs:', healthRes.data?.labs);
   const kardioKb = getKardioKb();
-  const crtColorMap = kardioKb ? buildCrtColorMap(kardioKb, crtUserCtx) : new Map();
   const crtActiveNodes = kardioKb ? runCrtRuleEngine(kardioKb, crtUserCtx) : new Set();
+  // v2: condition-based CRT coloring — GRAY/YELLOW/RED per universe node
+  const crtColorMap = buildV2ColorMap(crtUserCtx);
 
   const shared = { metricsMap, orchLogs, today, constraints, spanekIndex, vyzivaIndex, isDekatlon, lhTargetKg, crtColorMap, crtActiveNodes, kardioKb };
 
@@ -893,9 +1000,9 @@ export default async function handler(req, res) {
   const response = {};
   nodeIds.forEach((nodeId, i) => { response[nodeId] = results[i]; });
   response.has_health_data = Array.isArray(healthRes.data?.diagnoses) && healthRes.data.diagnoses.length > 0;
-  // _crt_states: flat map universeNodeId → 'RED' — used by universe-init.js for canvas coloring
+  // _crt_states: flat map universeNodeId → 'RED'|'YELLOW'|'GRAY' — used by universe-init.js
   response._crt_states = Object.fromEntries(crtColorMap);
-  response._crt_debug = { resolved_diagnoses: [...resolvedDiagnoses], labs: normalizedLabs, crt_active_nodes: [...crtColorMap.keys()], kb_loaded: !!kardioKb };
+  response._crt_debug = { resolved_diagnoses: [...resolvedDiagnoses], labs: normalizedLabs, crt_active_nodes: [...crtColorMap.keys()], biosystem_v2_nodes: getBiosystemV2().length };
 
   return res.json(response);
 
