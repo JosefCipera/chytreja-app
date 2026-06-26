@@ -418,31 +418,61 @@ async function fetchUserContext() {
 function calcPositionsClient(nodes) {
   const Y_STEP = 140;
 
-  // Group by layer
   const byLayer = {};
   nodes.forEach(n => {
     const lv = n.layer ?? 0;
     (byLayer[lv] = byLayer[lv] || []).push(n);
+    n._type = n.type === 'root' ? 'golden_box' : n.type === 'goal' ? 'goal' : (n.type || 'cause');
   });
 
-  // Dynamic X spread — enough room so no two boxes overlap horizontally
+  const layers = Object.keys(byLayer).map(Number).sort((a, b) => a - b);
+  const nodeById = Object.fromEntries(nodes.map(n => [n.id, n]));
   const maxPerLayer = Math.max(...Object.values(byLayer).map(g => g.length));
   const MIN_GAP = 28;
   const X_SPREAD = Math.max(340, Math.ceil((maxPerLayer - 1) * (BOX_W + MIN_GAP) / 2));
+  const branchOrder = { left: 0, center: 1, right: 2 };
 
-  Object.entries(byLayer).forEach(([, group]) => {
-    // Sort within layer so left-branch nodes come first, right last (visual consistency)
-    const branchOrder = { left: 0, center: 1, right: 2 };
-    group.sort((a, b) => (branchOrder[a.branch ?? 'center'] ?? 1) - (branchOrder[b.branch ?? 'center'] ?? 1));
-
+  // Place group evenly; single-node layer uses barycenter if known
+  const placeGroup = (group) => {
     const count = group.length;
     group.forEach((n, idx) => {
-      const branchX = { left: -X_SPREAD, center: 0, right: X_SPREAD };
-      n.x = count === 1 ? (branchX[n.branch ?? 'center'] ?? 0) : -X_SPREAD + (idx / (count - 1)) * X_SPREAD * 2;
+      n.x = count === 1
+        ? (n._bc != null ? n._bc : n.x ?? 0)
+        : -X_SPREAD + (idx / (count - 1)) * X_SPREAD * 2;
       n.y = (n.layer ?? 0) * Y_STEP;
-      n._type = n.type === 'root' ? 'golden_box' : n.type === 'goal' ? 'goal' : (n.type || 'cause');
     });
+  };
+
+  // Initial placement: sort by branch hint
+  layers.forEach(lv => {
+    const g = byLayer[lv];
+    g.sort((a, b) => (branchOrder[a.branch ?? 'center'] ?? 1) - (branchOrder[b.branch ?? 'center'] ?? 1));
+    placeGroup(g);
   });
+
+  // Barycenter heuristic — 3 iterations top-down + bottom-up to minimise crossings
+  const bc = (n, useParents) => {
+    const ids = useParents ? (n.parents || []) : (n.children || []);
+    const xs = ids.map(id => nodeById[id]?.x).filter(x => x != null);
+    return xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null;
+  };
+
+  for (let iter = 0; iter < 3; iter++) {
+    layers.slice(1).forEach(lv => {               // top-down: sort by parent x
+      const g = byLayer[lv];
+      g.forEach(n => { n._bc = bc(n, true) ?? n.x; });
+      g.sort((a, b) => a._bc !== b._bc ? a._bc - b._bc
+        : (branchOrder[a.branch ?? 'center'] ?? 1) - (branchOrder[b.branch ?? 'center'] ?? 1));
+      placeGroup(g);
+    });
+    [...layers].reverse().slice(1).forEach(lv => { // bottom-up: sort by child x
+      const g = byLayer[lv];
+      g.forEach(n => { n._bc = bc(n, false) ?? n.x; });
+      g.sort((a, b) => a._bc !== b._bc ? a._bc - b._bc
+        : (branchOrder[a.branch ?? 'center'] ?? 1) - (branchOrder[b.branch ?? 'center'] ?? 1));
+      placeGroup(g);
+    });
+  }
 }
 
 // ── Medications ───────────────────────────────────────────────────────────────
