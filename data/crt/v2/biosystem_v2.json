@@ -120,7 +120,7 @@
       "layer": 2, "branch": "left",
       "condition": { "or": [{"diag":"DIABETES_2_TYPU"}, {"lab":"glucose","gt":6.0}, {"med":"sifor"}, {"med":"metformin"}, {"lab":"hba1c","gt":6.5}] },
       "parents": ["HYPERGLYK"],
-      "children": ["ZANET", "SYNAP_UBYT"],
+      "children": ["ZANET", "SYNAP_UBYT", "IMUNO_OSL"],
       "detail": {
         "value_key": "labs.glucose", "value_unit": "mmol/L", "value_target": "< 5.6",
         "actions": ["Sifor/metformin — přímý efekt na inzulínovou rezistenci", "Přerušovaný půst (12h okno) — zvyšuje citlivost na inzulín"]
@@ -252,7 +252,7 @@
       "label_layman": "Oslabená\nobrana těla",
       "layer": 3, "branch": "right",
       "condition": { "or": [{"med":"sifor"}, {"med":"metformin"}, {"diag":"DIABETES_2_TYPU"}, {"med":"vigantol"}, {"med":"mirtazapin"}] },
-      "parents": ["VITZD_DEF"],
+      "parents": ["VITZD_DEF", "INZULREZ"],
       "children": ["UDE_IMUNITA"],
       "detail": {
         "actions": ["Vitamín D > 75 nmol/L — moduluje NK buňky a T-lymfocyty", "Přerušovaný půst (12h okno) — stimuluje autofagii", "Pohyb — aktivuje NK buňky (přirození zabijáci nádorů)"]
