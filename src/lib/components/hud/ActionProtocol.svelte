@@ -149,6 +149,17 @@
         <span style="font-size: 17px; color: #C97272;">{@html '\u26A0\uFE0E'}</span>
         <span style="font-size: 15px; color: #C97272;">{killer.description}</span>
       </div>
+      {#if killer.why}
+        <div style="margin-top: 8px; font-size: 13px; color: #64748b; line-height: 1.5; font-style: italic;">
+          {killer.why}
+          {#if killer.crt_focus}
+            <a href="/crt.html?focus={killer.crt_focus}" target="_blank"
+               style="color: #22d3ee; margin-left: 6px; text-decoration: none; font-style: normal; white-space: nowrap;">
+              Pro\u010D? \u2192
+            </a>
+          {/if}
+        </div>
+      {/if}
     </div>
     <div style="margin: 0 16px; border-top: 1px solid rgba(6,182,212,0.30);"></div>
   {/if}

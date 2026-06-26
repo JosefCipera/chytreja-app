@@ -79,6 +79,30 @@ const NODE_UDE_MAP = {
   obnova:        ['UDE_PADY'],
 };
 
+// One-sentence CRT explanation per UDE × state — shown in panel below KILLER
+const NODE_CRT_WHY = {
+  UDE_SRDCE: {
+    RED:    'Srdce a cévy jsou pod přímým tlakem — to chce aktivní kroky.',
+    YELLOW: 'Chronický zánět tiše zatěžuje srdce — prevence teď má největší smysl.',
+  },
+  UDE_MOZEK: {
+    RED:    'Mozek dostává méně, než potřebuje — kognitivní funkce začínají klesat.',
+    YELLOW: 'Zánět nebo oběhové riziko pomalu zasahují mozek.',
+  },
+  UDE_METABOLISMUS: {
+    RED:    'Cukr a inzulín nejsou v rovnováze — tělo nese trvalé metabolické břemeno.',
+    YELLOW: 'Metabolické signály naznačují nastupující dysbalanci.',
+  },
+  UDE_IMUNITA: {
+    RED:    'Imunita operuje pod kapacitou — obranyschopnost je oslabena.',
+    YELLOW: 'Zánět a deficit vitamínů pomalu snižují imunitní rezervu.',
+  },
+  UDE_PADY: {
+    RED:    'Nervový systém nebo léky výrazně zvyšují riziko pádu.',
+    YELLOW: 'Neuropatie nebo oslabené svaly naznačují nastupující nestabilitu.',
+  },
+};
+
 // Activate v2 nodes via condition-based engine
 function activateV2(nodes, userCtx) {
   const active = new Set();
@@ -108,14 +132,20 @@ function getUdeSeverity(activeIds, udeId, nodeMap) {
 }
 
 // Build universe color map from biosystem v2
-// Returns Map<universeNodeId, 'RED'|'YELLOW'|'GRAY'>
+// Returns { colorMap: Map<universeNodeId, state>, udeStateMap: Map<udeId, state> }
 function buildV2ColorMap(userCtx) {
   const nodes = getBiosystemV2();
-  if (!nodes.length) return new Map();
+  if (!nodes.length) return { colorMap: new Map(), udeStateMap: new Map() };
   const nodeMap = Object.fromEntries(nodes.map(n => [n.id, n]));
   const activeIds = activateV2(nodes, userCtx);
   const SEV = { RED: 2, YELLOW: 1, GRAY: 0 };
   const colorMap = new Map();
+
+  // Compute state for each known UDE directly
+  const udeStateMap = new Map();
+  for (const udeId of ['UDE_SRDCE','UDE_MOZEK','UDE_METABOLISMUS','UDE_IMUNITA','UDE_PADY']) {
+    udeStateMap.set(udeId, getUdeSeverity(activeIds, udeId, nodeMap));
+  }
 
   for (const [nodeId, udeIds] of Object.entries(NODE_UDE_MAP)) {
     let worst = 'GRAY';
@@ -140,7 +170,7 @@ function buildV2ColorMap(userCtx) {
   cascade('vyziva',       ['glukoza_vyziva','pust','bilkoviny','mikronutrienty','hydratace','casovani_jidel']);
   cascade('dlouhovekost', ['telo','zdravi','mysl','vyziva']);
 
-  return colorMap;
+  return { colorMap, udeStateMap };
 }
 
 // Evaluate a JSON condition object against user context (no eval).
@@ -641,7 +671,7 @@ function getDayType() {
 
 // ── Per-node data fetch (runs in parallel for all requested nodes) ──
 async function fetchOneNode(sb, userId, nodeId, shared) {
-  const { metricsMap, orchLogs, today, constraints, spanekIndex, vyzivaIndex, isDekatlon, lhTargetKg, crtColorMap, crtActiveNodes, kardioKb } = shared;
+  const { metricsMap, orchLogs, today, constraints, spanekIndex, vyzivaIndex, isDekatlon, lhTargetKg, crtColorMap, crtUdeStateMap, crtActiveNodes, kardioKb } = shared;
   const dayType = getDayType();
 
   const nodeMeta    = metricsMap.get(nodeId) || { current_index: 50, state: 'YELLOW' };
@@ -764,6 +794,21 @@ async function fetchOneNode(sb, userId, nodeId, shared) {
     script_cz: s.script_cz || null, summary: s.summary || null,
   }));
 
+  // CRT why-sentence — one layman sentence explaining node color
+  const SEV_MAP = { GRAY: 0, YELLOW: 1, RED: 2 };
+  let crtWhy = null, crtFocus = null;
+  const udeIdsForNode = NODE_UDE_MAP[nodeId] || [];
+  if (udeIdsForNode.length && crtUdeStateMap) {
+    const worstUde = udeIdsForNode.reduce((best, id) =>
+      (SEV_MAP[crtUdeStateMap.get(id) || 'GRAY'] > SEV_MAP[crtUdeStateMap.get(best) || 'GRAY']) ? id : best
+    );
+    const udeState = crtUdeStateMap.get(worstUde) || 'GRAY';
+    if (udeState !== 'GRAY') {
+      crtWhy = NODE_CRT_WHY[worstUde]?.[udeState] || null;
+      crtFocus = crtWhy ? worstUde : null;
+    }
+  }
+
   // TOC cascade: parent zdědí killer z nejslabšího dítěte (má-li data)
   let killer = NODE_KILLERS[nodeId] || NODE_KILLERS.telo;
 
@@ -840,7 +885,8 @@ async function fetchOneNode(sb, userId, nodeId, shared) {
       spanek_index: spanekIndex, vyziva_index: vyzivaIndex,
     },
     // Lehkost sub-uzly: nezobrazuj killer pokud je uzel GREEN
-    killer: (LH_IDS.includes(nodeId) && nodeId !== 'lh_main' && lhBatteryState === 'GREEN') ? null : killer,
+    killer: (LH_IDS.includes(nodeId) && nodeId !== 'lh_main' && lhBatteryState === 'GREEN') ? null
+      : killer ? { ...killer, why: crtWhy, crt_focus: crtFocus } : null,
     action,
     day_type: disciplineId || dayType,
     sources,
@@ -988,9 +1034,9 @@ export default async function handler(req, res) {
   const kardioKb = getKardioKb();
   const crtActiveNodes = kardioKb ? runCrtRuleEngine(kardioKb, crtUserCtx) : new Set();
   // v2: condition-based CRT coloring — GRAY/YELLOW/RED per universe node
-  const crtColorMap = buildV2ColorMap(crtUserCtx);
+  const { colorMap: crtColorMap, udeStateMap: crtUdeStateMap } = buildV2ColorMap(crtUserCtx);
 
-  const shared = { metricsMap, orchLogs, today, constraints, spanekIndex, vyzivaIndex, isDekatlon, lhTargetKg, crtColorMap, crtActiveNodes, kardioKb };
+  const shared = { metricsMap, orchLogs, today, constraints, spanekIndex, vyzivaIndex, isDekatlon, lhTargetKg, crtColorMap, crtUdeStateMap, crtActiveNodes, kardioKb };
 
   // ── Per-node in parallel ─────────────────────────────
   const results = await Promise.all(
