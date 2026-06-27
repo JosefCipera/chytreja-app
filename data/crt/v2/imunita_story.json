@@ -1,0 +1,146 @@
+{
+  "domain": "Imunita_Story_V2",
+  "version": "1.0.0",
+  "description": "Kauzální příběh: cesta ke zvýšenému onkologickému riziku. Tři větve: glykemická (DM2→oxidační stres), pohybová (sedavost→vitamín D), stresová (deprese→spánek→zánět). 6 vrstev.",
+
+  "nodes": [
+    {
+      "id": "ROOT_IM",
+      "label": "Metabolická dysregulace\na chronický zánět",
+      "label_expert": "Metabolická dysregulace\na chronický zánět",
+      "label_layman": "Základ problémů\ns imunitou",
+      "layer": 0, "type": "root", "branch": "center",
+      "parents": [],
+      "children": ["INZULREZ_IM", "SEDAV_IM", "STRES_IM"],
+      "detail": { "actions": ["Klíčové markery: glukóza, HbA1c, CRP, vitamín D"] }
+    },
+
+    {
+      "id": "INZULREZ_IM",
+      "label": "Inzulínová\nrezistence",
+      "label_expert": "Inzulínová rezistence\n/ DM2",
+      "label_layman": "Tělo špatně\nzpracuje cukr",
+      "layer": 1, "branch": "left",
+      "condition": { "or": [{"diag":"DIABETES_2_TYPU"}, {"lab":"glucose","gt":6.0}, {"lab":"hba1c","gt":6.5}, {"med":"sifor"}, {"med":"metformin"}] },
+      "parents": ["ROOT_IM"],
+      "children": ["OXID_IM", "ZANET_IM"],
+      "detail": { "value_key": "labs.glucose", "value_unit": "mmol/L", "value_target": "< 5.6", "actions": ["Metformin — snižuje inzulínovou rezistenci a má prokázaný protionkologický efekt", "Přerušovaný půst — snižuje IGF-1 a zánětlivé markery"] }
+    },
+    {
+      "id": "SEDAV_IM",
+      "label": "Málo pohybu\na sedavý život",
+      "label_expert": "Sedavý životní styl\n(imunosuprese)",
+      "label_layman": "Příliš málo\npohybu",
+      "layer": 1, "branch": "center",
+      "condition": { "or": [{"checkin":"movement_level","eq":"low"}, {"checkin":"energy","lt":3}] },
+      "parents": ["ROOT_IM"],
+      "children": ["ZANET_IM", "VITZD_IM"],
+      "detail": { "actions": ["150 min pohybu týdně — aktivuje NK buňky, přirozené zabíječe nádorových buněk", "Vystavení slunci 20 min denně — vitamín D + pohyb = dvojí efekt"] }
+    },
+    {
+      "id": "STRES_IM",
+      "label": "Chronický stres\na deprese",
+      "label_expert": "Chronický stres\na deprese",
+      "label_layman": "Dlouhodobý\nstres a sklíčenost",
+      "layer": 1, "branch": "right",
+      "condition": { "or": [{"diag":"DEPRESE"}, {"med":"mirtazapin"}, {"checkin":"stress","gt":3}] },
+      "parents": ["ROOT_IM"],
+      "children": ["SPANEK_IM", "ZANET_IM"],
+      "detail": { "actions": ["Mirtazapin — stabilizuje náladu a spánek", "Chronická deprese zvyšuje onkologické riziko o 30–40 % přes imunosupresi"] }
+    },
+
+    {
+      "id": "OXID_IM",
+      "label": "Oxidační stres\na poškození DNA",
+      "label_expert": "Oxidační stres\n(ROS + poškození DNA)",
+      "label_layman": "Volné radikály\nposkozují buňky",
+      "layer": 2, "branch": "left",
+      "condition": { "or": [{"diag":"DIABETES_2_TYPU"}, {"lab":"glucose","gt":7.0}, {"lab":"hba1c","gt":7.0}] },
+      "parents": ["INZULREZ_IM"],
+      "children": ["ZANET_IM"],
+      "detail": { "actions": ["Vitamín C 500 mg/den — neutralizuje volné radikály", "Kurkumin 500 mg/den — silný antioxidant s protizánětlivým efektem", "Minimalizuj ultrazpracované potraviny"] }
+    },
+    {
+      "id": "VITZD_IM",
+      "label": "Nedostatek\nvitamínu D",
+      "label_expert": "Deficit vitamínu D\n(imunomodulace)",
+      "label_layman": "Chybí vitamín D",
+      "layer": 2, "branch": "center",
+      "condition": { "or": [{"lab":"vitamin_d","lt":75}, {"med":"vigantol"}, {"med":"cholekalciferol"}, {"checkin":"energy","lt":3}] },
+      "parents": ["SEDAV_IM"],
+      "children": ["IMUNO_IM"],
+      "detail": { "value_key": "labs.vitamin_d", "value_unit": "nmol/L", "value_target": "> 75", "actions": ["Vitamín D3 2000–4000 IU/den — klíč k imunitnímu dohledu nad nádory", "Cíl 75–150 nmol/L — kontrola 2× ročně"] }
+    },
+    {
+      "id": "SPANEK_IM",
+      "label": "Spánkový\ndeficit",
+      "label_expert": "Spánkový deficit\n(imunosuprese)",
+      "label_layman": "Nedostatek\nspánku",
+      "layer": 2, "branch": "right",
+      "condition": { "or": [{"checkin":"sleep_hours","lt":6}, {"diag":"DEPRESE"}, {"med":"mirtazapin"}, {"checkin":"stress","gt":3}] },
+      "parents": ["STRES_IM"],
+      "children": ["ZANET_IM"],
+      "detail": { "actions": ["Spánek < 6h snižuje NK buňky o 70 % — kritická imunitní zranitelnost", "Mirtazapin zlepšuje kvalitu spánku — nižší kortizol v noci"] }
+    },
+
+    {
+      "id": "ZANET_IM",
+      "label": "Chronický systémový\nzánět",
+      "label_expert": "Chronický systémový zánět\n(tumor microenvironment)",
+      "label_layman": "Tělo je trvale\nzanícené",
+      "layer": 3, "branch": "center",
+      "condition": { "or": [{"lab":"crp","gt":1.0}, {"diag":"DIABETES_2_TYPU"}, {"med":"sifor"}, {"med":"metformin"}, {"checkin":"stress","gt":3}, {"checkin":"movement_level","eq":"low"}, {"checkin":"sleep_hours","lt":6}] },
+      "parents": ["INZULREZ_IM", "SEDAV_IM", "STRES_IM", "OXID_IM", "SPANEK_IM"],
+      "children": ["IMUNO_IM"],
+      "detail": { "value_key": "labs.crp", "value_unit": "mg/L", "value_target": "< 1.0", "actions": ["Omega-3 EPA+DHA 2 g/den — přímý protizánětlivý efekt", "Středomořská strava — zelenina, ryby, olivový olej"] }
+    },
+
+    {
+      "id": "IMUNO_IM",
+      "label": "Oslabená imunitní\nkontrolanávorů",
+      "label_expert": "Oslabená imunitní kontrola\n(imunosurveilance)",
+      "label_layman": "Imunita nestíhá\nhlídat nádory",
+      "layer": 4, "branch": "center",
+      "condition": { "or": [{"lab":"vitamin_d","lt":75}, {"med":"vigantol"}, {"lab":"crp","gt":1.0}, {"diag":"DIABETES_2_TYPU"}, {"med":"sifor"}, {"med":"mirtazapin"}] },
+      "parents": ["VITZD_IM", "ZANET_IM"],
+      "children": ["UDE_IMUNITA_IM"],
+      "detail": { "actions": ["Vitamín D3 — moduluje NK buňky a T-lymfocyty", "Pravidelný pohyb — zvyšuje cirkulaci imunitních buněk", "Screening: mammografie, kolonoskopie, PSA dle věku"] }
+    },
+
+    {
+      "id": "UDE_IMUNITA_IM",
+      "label": "Zvýšené\nonkologické riziko",
+      "label_expert": "Zvýšené onkologické\nriziko",
+      "label_layman": "Tělo hůře bojuje\ns nádory",
+      "layer": 5, "type": "ude", "branch": "center",
+      "condition": { "or": [{"diag":"DIABETES_2_TYPU"}, {"lab":"vitamin_d","lt":75}, {"med":"sifor"}, {"med":"metformin"}, {"med":"vigantol"}] },
+      "parents": ["IMUNO_IM"],
+      "children": [],
+      "detail": { "actions": ["Pravidelný onkologický screening dle věku a pohlaví", "Kontrola CRP, vitamínu D a glukózy 1× ročně", "Pohyb — snižuje riziko nejčastějších onkologických diagnóz o 20–30 %"] }
+    }
+  ],
+
+  "medication_shields": [
+    {
+      "med": "Metformin", "inn": "metformin",
+      "note": "metformin · DM2 · onkologická protekce",
+      "aliases": ["sifor", "siofor", "metformin", "glucophage"],
+      "shields_node": "INZULREZ_IM",
+      "reason": "Metformin snižuje inzulínovou rezistenci a má prokázaný protionkologický efekt — snižuje riziko některých nádorů o 20–30 %."
+    },
+    {
+      "med": "Vitamín D3", "inn": "cholekalciferol",
+      "note": "vitamín D3 · imunita · nádory",
+      "aliases": ["vigantol", "vitamin d", "d3", "cholecalciferol", "cholekalciferol"],
+      "shields_node": "VITZD_IM",
+      "reason": "Vitamín D3 moduluje imunitní dohled nad nádory — hladina > 75 nmol/L snižuje onkologické riziko."
+    },
+    {
+      "med": "Mirtazapin", "inn": "mirtazapin",
+      "note": "antidepresivum · spánek · imunita",
+      "aliases": ["mirtazapin", "remeron", "mirtazapine"],
+      "shields_node": "STRES_IM",
+      "reason": "Mirtazapin stabilizuje náladu a spánek — chronická deprese zvyšuje onkologické riziko, léčba ho snižuje."
+    }
+  ]
+}

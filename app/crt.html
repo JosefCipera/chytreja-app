@@ -550,10 +550,16 @@ function buildMedsMap(shields, userMeds, activeIds, arrowsById) {
 
 // ── Load CRT v2 — Integrovaný Biovesmír ──────────────────────────────────────
 // Podmínky na uzlech (ne šipkách). Hrany z parents/children.
-// ?kb=story → kardio příběh (9 vrstev, 2 větve), default → unified biosystem
+// ?kb=story/mozek/pohyb/imunita → příběhová KB, default → unified biosystem
 const _kbParam = new URLSearchParams(location.search).get('kb');
-const KB_FILES_V2 = _kbParam === 'story'
-  ? ['/data/crt/v2/kardio_story.json']
+const _KB_STORY_MAP = {
+  story:   '/data/crt/v2/kardio_story.json',
+  mozek:   '/data/crt/v2/mozek_story.json',
+  pohyb:   '/data/crt/v2/pohyb_story.json',
+  imunita: '/data/crt/v2/imunita_story.json',
+};
+const KB_FILES_V2 = _KB_STORY_MAP[_kbParam]
+  ? [_KB_STORY_MAP[_kbParam]]
   : ['/data/crt/v2/biosystem_v2.json'];
 
 async function loadCRT() {
@@ -1767,12 +1773,22 @@ window.toggleTopN = function() {
   }
 };
 
+// Mapa UDE z biosystem_v2 → story KB parametr
+const _UDE_TO_KB = {
+  UDE_SRDCE:   'story',
+  UDE_MOZEK:   'mozek',
+  UDE_PADY:    'pohyb',
+  UDE_IMUNITA: 'imunita',
+};
+
 window.toggleStoryKB = function() {
   const sp = new URLSearchParams(location.search);
-  if (sp.get('kb') === 'story') {
+  if (_KB_STORY_MAP[sp.get('kb')]) {
     sp.delete('kb');
   } else {
-    sp.set('kb', 'story');
+    // Auto-vyber příběh pro nejhorší killer, fallback → kardio
+    const worst = _lastCrtData ? worstUde(_lastCrtData) : null;
+    sp.set('kb', (worst && _UDE_TO_KB[worst]) || 'story');
   }
   location.search = sp.toString();
 };
@@ -1810,7 +1826,7 @@ async function boot() {
     document.getElementById('crtPrintBtn').style.display  = '';
     document.getElementById('crtTopNBtn').style.display   = '';
     document.getElementById('crtStoryBtn').style.display  = '';
-    if (_kbParam === 'story') {
+    if (_KB_STORY_MAP[_kbParam]) {
       const sb = document.getElementById('crtStoryBtn');
       sb.textContent = '🗺 Přehled'; sb.style.borderColor = '#4a9aee'; sb.style.color = '#4a9aee';
     }

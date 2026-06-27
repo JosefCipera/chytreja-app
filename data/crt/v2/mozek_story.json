@@ -1,0 +1,200 @@
+{
+  "domain": "Mozek_Story_V2",
+  "version": "1.0.0",
+  "description": "Kauzální příběh: cesta k zhoršení paměti a kognice. Tři větve: glykemická (cukr→zánět mozku), vaskulární (TK→poškození cév), stresová (kortizol→spánek→zánět). 6 vrstev.",
+
+  "nodes": [
+    {
+      "id": "ROOT_MZ",
+      "label": "Metabolická a\ncerebrovaskulární dysbalance",
+      "label_expert": "Metabolická a\ncerebrovaskulární dysbalance",
+      "label_layman": "Základ problémů\ns mozkem",
+      "layer": 0, "type": "root", "branch": "center",
+      "parents": [],
+      "children": ["HIGH_GLUKOZA_MZ", "HYPOTHY_MZ", "MALO_POHYBU_MZ", "DEPRESE_MZ", "HYPERTENZE_MZ"],
+      "detail": { "actions": ["Klíčové markery: glukóza, TSH, CRP, krevní tlak"] }
+    },
+
+    {
+      "id": "HIGH_GLUKOZA_MZ",
+      "label": "Vysoká hladina\ncukru v krvi",
+      "label_expert": "Hyperglykémie / DM2",
+      "label_layman": "Příliš mnoho\ncukru v krvi",
+      "layer": 1, "branch": "left",
+      "condition": { "or": [{"diag":"DIABETES_2_TYPU"}, {"lab":"glucose","gt":6.0}, {"lab":"hba1c","gt":6.5}, {"med":"sifor"}, {"med":"metformin"}] },
+      "parents": ["ROOT_MZ"],
+      "children": ["INZULREZ_MZ"],
+      "detail": { "value_key": "labs.glucose", "value_unit": "mmol/L", "value_target": "< 5.6", "actions": ["Metformin — snižuje inzulínovou rezistenci mozku", "Low-carb strava: 50–100 g sacharidů/den"] }
+    },
+    {
+      "id": "HYPOTHY_MZ",
+      "label": "Snížená funkce\nštítné žlázy",
+      "label_expert": "Hypothyreóza",
+      "label_layman": "Pomalá\nštítná žláza",
+      "layer": 1, "branch": "left",
+      "condition": { "or": [{"diag":"HYPOTHYREOZA"}, {"med":"euthyrox"}, {"med":"levothyroxin"}] },
+      "parents": ["ROOT_MZ"],
+      "children": ["ZANET_MZ"],
+      "detail": { "value_key": "labs.tsh", "value_unit": "mIU/L", "value_target": "0.5–2.5", "actions": ["Levothyroxin — TSH mimo rozsah zhoršuje kognici", "Kontrola TSH každých 6 měsíců"] }
+    },
+    {
+      "id": "MALO_POHYBU_MZ",
+      "label": "Málo pohybu\na sedavý život",
+      "label_expert": "Sedavý životní styl",
+      "label_layman": "Příliš\nmálo pohybu",
+      "layer": 1, "branch": "center",
+      "condition": { "or": [{"checkin":"movement_level","eq":"low"}, {"checkin":"energy","lt":3}] },
+      "parents": ["ROOT_MZ"],
+      "children": ["ZANET_MZ", "VASK_MOZ_MZ"],
+      "detail": { "actions": ["150 min aerobního pohybu týdně — zvyšuje BDNF a neuroplasticitu", "Chůze 30 min denně — přímý vliv na hippocampus"] }
+    },
+    {
+      "id": "DEPRESE_MZ",
+      "label": "Deprese a\nsociální izolace",
+      "label_expert": "Deprese a chronický stres",
+      "label_layman": "Dlouhodobá\nsklíčenost",
+      "layer": 1, "branch": "right",
+      "condition": { "or": [{"diag":"DEPRESE"}, {"med":"mirtazapin"}, {"checkin":"stress","gt":3}] },
+      "parents": ["ROOT_MZ"],
+      "children": ["KORTIZOL_MZ", "SPANEK_MZ"],
+      "detail": { "actions": ["Mirtazapin — stabilizuje náladu a spánek", "Sociální kontakt — nezávislý prediktor kognitivního zdraví"] }
+    },
+    {
+      "id": "HYPERTENZE_MZ",
+      "label": "Vysoký\nkrevní tlak",
+      "label_expert": "Hypertenze",
+      "label_layman": "Krev tlačí\npříliš silně",
+      "layer": 1, "branch": "left",
+      "condition": { "or": [{"diag":"HYPERTENZE"}, {"med":"tezeo"}, {"med":"telmisartan"}, {"lab":"systolic_bp","gt":140}] },
+      "parents": ["ROOT_MZ"],
+      "children": ["VASK_MOZ_MZ"],
+      "detail": { "value_key": "labs.systolic_bp", "value_unit": "mmHg", "value_target": "< 130", "actions": ["Telmisartan — ARB s neuroprotektivním efektem", "Cíl TK < 130/80 — mozek je nejcitlivější orgán na hypertenzi"] }
+    },
+
+    {
+      "id": "INZULREZ_MZ",
+      "label": "Inzulínová\nrezistence mozku",
+      "label_expert": "Cerebrální inzulínová\nrezistence",
+      "label_layman": "Mozek špatně\nvyužívá energii",
+      "layer": 2, "branch": "left",
+      "condition": { "or": [{"diag":"DIABETES_2_TYPU"}, {"lab":"glucose","gt":6.0}, {"lab":"hba1c","gt":6.5}, {"med":"sifor"}, {"med":"metformin"}] },
+      "parents": ["HIGH_GLUKOZA_MZ"],
+      "children": ["ZANET_MZ"],
+      "detail": { "actions": ["Přerušovaný půst — zvyšuje citlivost mozku na inzulín", "Pohyb po jídle — snižuje glukózové špičky"] }
+    },
+    {
+      "id": "KORTIZOL_MZ",
+      "label": "Chronicky vysoký\nkortizol",
+      "label_expert": "Hyperkortizolismus\n(chronický stres)",
+      "label_layman": "Stresový hormon\nničí mozek",
+      "layer": 2, "branch": "right",
+      "condition": { "or": [{"diag":"DEPRESE"}, {"med":"mirtazapin"}, {"checkin":"stress","gt":3}] },
+      "parents": ["DEPRESE_MZ"],
+      "children": ["SPANEK_MZ", "ZANET_MZ"],
+      "detail": { "actions": ["Kortizol v chronické nadprodukci zmenšuje hippocampus o 10–15 %", "Dechové cvičení a pohyb — přímé snižování kortizolu"] }
+    },
+
+    {
+      "id": "SPANEK_MZ",
+      "label": "Spánkový deficit\na nekvalitní spánek",
+      "label_expert": "Spánkový deficit\n(clearance beta-amyloidu)",
+      "label_layman": "Mozek se nestihne\nvyčistit v noci",
+      "layer": 3, "branch": "right",
+      "condition": { "or": [{"checkin":"sleep_hours","lt":6}, {"diag":"DEPRESE"}, {"med":"mirtazapin"}, {"checkin":"stress","gt":3}] },
+      "parents": ["DEPRESE_MZ", "KORTIZOL_MZ"],
+      "children": ["ZANET_MZ"],
+      "detail": { "actions": ["Spánek < 6h blokuje glymfatický systém — beta-amyloid se hromadí", "Stejná hodina spánku 7 dní v řadě — nejdůležitější intervence"] }
+    },
+    {
+      "id": "ZANET_MZ",
+      "label": "Chronický zánět\nmozkové tkáně",
+      "label_expert": "Neuroinflammace\n(zánět CNS)",
+      "label_layman": "Mozek je\ntrvale zanícený",
+      "layer": 3, "branch": "center",
+      "condition": { "or": [{"lab":"crp","gt":1.0}, {"diag":"HYPOTHYREOZA"}, {"checkin":"movement_level","eq":"low"}, {"checkin":"stress","gt":3}, {"checkin":"sleep_hours","lt":6}, {"diag":"DIABETES_2_TYPU"}, {"lab":"glucose","gt":6.0}] },
+      "parents": ["HIGH_GLUKOZA_MZ", "HYPOTHY_MZ", "MALO_POHYBU_MZ", "KORTIZOL_MZ", "SPANEK_MZ", "INZULREZ_MZ"],
+      "children": ["SYNAP_MZ"],
+      "detail": { "value_key": "labs.crp", "value_unit": "mg/L", "value_target": "< 1.0", "actions": ["Omega-3 2 g/den — protizánětlivý efekt na CNS", "Kurkumin 500 mg/den — přechází hematoencefalickou bariéru"] }
+    },
+    {
+      "id": "VASK_MOZ_MZ",
+      "label": "Vaskulární poškození\nmozku",
+      "label_expert": "Cerebrovaskulární\npoškození",
+      "label_layman": "Poškozené cévy\nv mozku",
+      "layer": 3, "branch": "left",
+      "condition": { "or": [{"diag":"HYPERTENZE"}, {"med":"tezeo"}, {"med":"telmisartan"}, {"lab":"systolic_bp","gt":140}, {"diag":"STAV_PO_CMP"}, {"med":"stacyl"}, {"med":"aspirin"}] },
+      "parents": ["HYPERTENZE_MZ", "MALO_POHYBU_MZ"],
+      "children": ["SYNAP_MZ"],
+      "detail": { "actions": ["Kontrola TK < 130/80 — zastavuje cerebrovaskulární progresi", "MRI mozku 1× za 2 roky u rizikových pacientů"] }
+    },
+
+    {
+      "id": "SYNAP_MZ",
+      "label": "Úbytek neuronů\na synaptických spojení",
+      "label_expert": "Synaptická degenerace\n(neuroinflammace + ischemie)",
+      "label_layman": "Mozková spojení\nslábnou",
+      "layer": 4, "branch": "center",
+      "condition": { "or": [{"med":"duspelin"}, {"med":"donepezil"}, {"diag":"MILD_KOGN_IMPAIRMENT"}, {"diag":"STAV_PO_CMP"}, {"lab":"crp","gt":1.0}] },
+      "parents": ["ZANET_MZ", "VASK_MOZ_MZ"],
+      "children": ["UDE_MOZ_MZ"],
+      "detail": { "actions": ["Kognitivní trénink — udržuje synaptické rezervy", "Donepezil — zpomaluje progresi úbytku acetylcholinu", "Sociální aktivita — nezávislý neuroprotektivní faktor"] }
+    },
+
+    {
+      "id": "UDE_MOZ_MZ",
+      "label": "Zhoršení paměti\na kognice",
+      "label_expert": "Kognitivní decline\n(MCI / demence)",
+      "label_layman": "Paměť a myšlení\nslábnou",
+      "layer": 5, "type": "ude", "branch": "center",
+      "condition": { "or": [{"med":"duspelin"}, {"med":"donepezil"}, {"diag":"MILD_KOGN_IMPAIRMENT"}, {"diag":"STAV_PO_CMP"}] },
+      "parents": ["SYNAP_MZ"],
+      "children": [],
+      "detail": { "actions": ["Donepezil — zachovává kognitivní funkce", "Komplexní intervence: pohyb + spánek + stres + glukóza", "Kognitivní testy 1× ročně — MMSE nebo MoCA"] }
+    }
+  ],
+
+  "medication_shields": [
+    {
+      "med": "Donepezil", "inn": "donepezil",
+      "note": "inhibitor cholinesterázy · kognice",
+      "aliases": ["duspelin", "donepezil", "aricept"],
+      "shields_node": "UDE_MOZ_MZ",
+      "reason": "Donepezil zpomaluje rozpad acetylcholinu — udržuje synaptický přenos a kognitivní funkce."
+    },
+    {
+      "med": "Aspirin", "inn": "acidum acetylsalicylicum",
+      "note": "antiagregant · cerebrovaskulární ochrana",
+      "aliases": ["stacyl", "aspirin", "asa", "anopyrin", "acidum acetylsalicylicum"],
+      "shields_node": "VASK_MOZ_MZ",
+      "reason": "Antiagregant — zabraňuje shlukování destiček a chrání mozkové cévy před mikrotrombózou."
+    },
+    {
+      "med": "Telmisartan", "inn": "telmisartan",
+      "note": "antihypertenzivum · neuroprotekce",
+      "aliases": ["tezeo", "telmisartan", "micardis"],
+      "shields_node": "HYPERTENZE_MZ",
+      "reason": "Telmisartan snižuje TK a má neuroprotektivní efekt — klíčová ochrana před dalším cerebrovaskulárním poškozením."
+    },
+    {
+      "med": "Metformin", "inn": "metformin",
+      "note": "metformin · cukrovka · mozek",
+      "aliases": ["sifor", "siofor", "metformin", "glucophage"],
+      "shields_node": "HIGH_GLUKOZA_MZ",
+      "reason": "Metformin kontroluje glykemii a snižuje inzulínovou rezistenci mozku — má prokázaný neuroprotektivní efekt."
+    },
+    {
+      "med": "Levothyroxin", "inn": "levothyroxin",
+      "note": "levothyroxin · štítná žláza · kognice",
+      "aliases": ["euthyrox", "levothyroxin", "eutyrox", "letrox"],
+      "shields_node": "HYPOTHY_MZ",
+      "reason": "Levothyroxin nahrazuje hormon štítné žlázy — špatně kompenzovaná hypothyreóza je reversibilní příčina kognitivního poklesu."
+    },
+    {
+      "med": "Mirtazapin", "inn": "mirtazapin",
+      "note": "antidepresivum · spánek · kortizol",
+      "aliases": ["mirtazapin", "remeron", "mirtazapine"],
+      "shields_node": "DEPRESE_MZ",
+      "reason": "Mirtazapin stabilizuje náladu a spánek — deprese je samostatný rizikový faktor demence, léčba snižuje riziko o 30 %."
+    }
+  ]
+}

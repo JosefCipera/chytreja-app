@@ -1,0 +1,229 @@
+{
+  "domain": "Pohyb_Story_V2",
+  "version": "1.0.0",
+  "description": "Kauzální příběh: cesta k pádům a pohybovým omezením. Čtyři větve: hormonální (štítná žláza), glykemická (DM2→neuropatie), strukturální (páteř→útlak nervů), pohybová (sedavost→únava). 6 vrstev.",
+
+  "nodes": [
+    {
+      "id": "ROOT_PH",
+      "label": "Metabolická a\nhormonální dysbalance",
+      "label_expert": "Metabolická a\nhormonální dysbalance",
+      "label_layman": "Základ problémů\ns pohybem",
+      "layer": 0, "type": "root", "branch": "center",
+      "parents": [],
+      "children": ["HYPOTHY_PH", "VYSOKE_GL_PH", "OSTEOPOROZA_PH", "PATERE_PH", "DEPRESE_PH"],
+      "detail": { "actions": ["Klíčové markery: TSH, glukóza, vitamin D, kostní denzita"] }
+    },
+
+    {
+      "id": "HYPOTHY_PH",
+      "label": "Snížená funkce\nštítné žlázy",
+      "label_expert": "Hypothyreóza",
+      "label_layman": "Pomalá\nštítná žláza",
+      "layer": 1, "branch": "left",
+      "condition": { "or": [{"diag":"HYPOTHYREOZA"}, {"med":"euthyrox"}, {"med":"levothyroxin"}, {"med":"eutyrox"}] },
+      "parents": ["ROOT_PH"],
+      "children": ["SLABE_SVALY_PH", "UNAVA_PH"],
+      "detail": { "value_key": "labs.tsh", "value_unit": "mIU/L", "value_target": "0.5–2.5", "actions": ["Levothyroxin — TSH mimo rozsah způsobuje svalovou slabost a únavu", "Kontrola TSH každých 6 měsíců"] }
+    },
+    {
+      "id": "VYSOKE_GL_PH",
+      "label": "Vysoký cukr\nv krvi",
+      "label_expert": "Hyperglykémie / DM2",
+      "label_layman": "Příliš mnoho\ncukru v krvi",
+      "layer": 1, "branch": "left",
+      "condition": { "or": [{"lab":"glucose","gt":6.0}, {"lab":"hba1c","gt":6.5}, {"diag":"DIABETES_2_TYPU"}, {"diag":"PREDIABETES"}, {"med":"sifor"}, {"med":"metformin"}] },
+      "parents": ["ROOT_PH"],
+      "children": ["ZANET_META_PH", "NEUROPATIE_PH"],
+      "detail": { "value_key": "labs.glucose", "value_unit": "mmol/L", "value_target": "< 5.6", "actions": ["Metformin — snižuje glykemii a metabolický zánět", "Pohyb po jídle — okamžité snížení glukózy"] }
+    },
+    {
+      "id": "OSTEOPOROZA_PH",
+      "label": "Řídnutí kostí\n(osteoporóza)",
+      "label_expert": "Osteoporóza / osteopenie",
+      "label_layman": "Řídnutí\na křehnutí kostí",
+      "layer": 1, "branch": "center",
+      "condition": { "or": [{"diag":"OSTEOPOROZA"}, {"diag":"OSTEOPENIE"}, {"med":"ibandronat"}, {"med":"ibandronát"}, {"med":"alendronate"}] },
+      "parents": ["ROOT_PH"],
+      "children": ["NESTABILITA_PH"],
+      "detail": { "actions": ["Ibandronát — bisfosfonát zastavující úbytek kostní hmoty", "Vitamin D3 + vápník — základ prevence a léčby", "Silový trénink — stimuluje remodeling kosti"] }
+    },
+    {
+      "id": "PATERE_PH",
+      "label": "Opotřebení\npáteře",
+      "label_expert": "Degenerativní změny páteře\n(stenóza, spondylóza)",
+      "label_layman": "Opotřebovaná\na zúžená páteř",
+      "layer": 1, "branch": "right",
+      "condition": { "or": [{"diag":"STENOZA_PATERE"}, {"diag":"SPONDYLOZA"}, {"diag":"DEGENERATIVNI_ZMENY_PATERE"}, {"diag":"HERNIATED_DISC"}] },
+      "parents": ["ROOT_PH"],
+      "children": ["UTLAK_NERVU_PH"],
+      "detail": { "actions": ["Fyzioterapie — klíčová pro stabilizaci a redukci bolesti", "MRI páteře — přesná diagnostika stupně stenózy"] }
+    },
+    {
+      "id": "DEPRESE_PH",
+      "label": "Deprese\na úzkost",
+      "label_expert": "Deprese a\nchronický stres",
+      "label_layman": "Dlouhodobá\nsklíčenost",
+      "layer": 1, "branch": "right",
+      "condition": { "or": [{"diag":"DEPRESE"}, {"med":"mirtazapin"}, {"med":"duloxetin"}, {"checkin":"stress","gt":3}] },
+      "parents": ["ROOT_PH"],
+      "children": ["MALO_POHYBU_PH"],
+      "detail": { "actions": ["Mirtazapin/Duloxetin — léčba deprese zlepšuje pohybovou aktivitu", "Pohyb jako antidepresivum — 30 min chůze snižuje kortizol"] }
+    },
+
+    {
+      "id": "SLABE_SVALY_PH",
+      "label": "Slabé a\nnepoužívané svaly",
+      "label_expert": "Svalová slabost\n(sarkopenie + hypothyreóza)",
+      "label_layman": "Svaly slábnou\na mizí",
+      "layer": 2, "branch": "left",
+      "condition": { "or": [{"diag":"HYPOTHYREOZA"}, {"med":"euthyrox"}, {"med":"levothyroxin"}, {"checkin":"movement_level","eq":"low"}] },
+      "parents": ["HYPOTHY_PH", "ZANET_META_PH"],
+      "children": ["UNAVA_PH"],
+      "detail": { "actions": ["Silový trénink 2× týdně — jediná páka proti sarkopenii", "Protein 1,6 g/kg/den — základ svalové syntézy"] }
+    },
+    {
+      "id": "ZANET_META_PH",
+      "label": "Chronický zánět\na oxidační stres",
+      "label_expert": "Metabolický zánět\n(zánět svalové tkáně)",
+      "label_layman": "Svaly v zánětu",
+      "layer": 2, "branch": "left",
+      "condition": { "or": [{"lab":"glucose","gt":6.0}, {"lab":"hba1c","gt":6.5}, {"checkin":"movement_level","eq":"low"}, {"lab":"crp","gt":1.0}] },
+      "parents": ["VYSOKE_GL_PH", "MALO_POHYBU_PH"],
+      "children": ["SLABE_SVALY_PH"],
+      "detail": { "value_key": "labs.crp", "value_unit": "mg/L", "value_target": "< 1.0", "actions": ["Omega-3 2 g/den — protizánětlivý efekt na svalstvo", "Pohyb — přímá redukce metabolického zánětu"] }
+    },
+    {
+      "id": "UTLAK_NERVU_PH",
+      "label": "Útlak nervu\nv páteři",
+      "label_expert": "Nervová komprese\n(stenóza páteřního kanálu)",
+      "label_layman": "Nerv v páteři\nje stlačený",
+      "layer": 2, "branch": "right",
+      "condition": { "or": [{"diag":"STENOZA_PATERE"}, {"diag":"SPONDYLOZA"}, {"diag":"DEGENERATIVNI_ZMENY_PATERE"}, {"diag":"HERNIATED_DISC"}] },
+      "parents": ["PATERE_PH"],
+      "children": ["BOLEST_NOH_PH"],
+      "detail": { "actions": ["Dekompreční cvičení — uvolňuje tlak na nervové kořeny", "Epidurální blokáda — pro akutní bolest"] }
+    },
+    {
+      "id": "MALO_POHYBU_PH",
+      "label": "Málo pohybu\na sedavý život",
+      "label_expert": "Sedavý životní styl",
+      "label_layman": "Příliš\nmálo pohybu",
+      "layer": 2, "branch": "center",
+      "condition": { "or": [{"checkin":"movement_level","eq":"low"}, {"diag":"DEPRESE"}, {"med":"mirtazapin"}, {"checkin":"energy","lt":3}] },
+      "parents": ["DEPRESE_PH"],
+      "children": ["UNAVA_PH", "ZANET_META_PH"],
+      "detail": { "actions": ["150 min pohybu týdně — minimum pro zdraví pohybového aparátu", "Chůze jako start — i 20 min denně mění trajektorii"] }
+    },
+    {
+      "id": "NEUROPATIE_PH",
+      "label": "Poškození nervů\nv nohách",
+      "label_expert": "Periferní neuropatie\n(diabetická)",
+      "label_layman": "Poškozené nervy\nv nohách",
+      "layer": 2, "branch": "right",
+      "condition": { "or": [{"lab":"glucose","gt":7.0}, {"lab":"hba1c","gt":7.0}, {"diag":"DIABETES_2_TYPU"}, {"med":"duloxetin"}, {"med":"pregabalin"}, {"med":"afexil"}] },
+      "parents": ["VYSOKE_GL_PH"],
+      "children": ["BOLEST_NOH_PH"],
+      "detail": { "actions": ["Duloxetin — SNRI se specifickým efektem na neuropatickou bolest", "Pregabalin — tlumí přenos bolestivých signálů", "Glykemická kontrola — zastavuje progresi neuropatie"] }
+    },
+
+    {
+      "id": "BOLEST_NOH_PH",
+      "label": "Bolest a\nslabost nohou",
+      "label_expert": "Bolest a slabost\ndolních končetin",
+      "label_layman": "Bolestivé\na slabé nohy",
+      "layer": 3, "branch": "right",
+      "condition": { "or": [{"diag":"STENOZA_PATERE"}, {"diag":"DIABETES_2_TYPU"}, {"lab":"glucose","gt":7.0}, {"med":"duloxetin"}, {"med":"pregabalin"}, {"med":"afexil"}] },
+      "parents": ["UTLAK_NERVU_PH", "NEUROPATIE_PH"],
+      "children": ["NESTABILITA_PH"],
+      "detail": { "actions": ["Duloxetin nebo pregabalin — tlumí neuropatickou bolest", "Fyzioterapie — kompenzační posílení okolních svalů"] }
+    },
+    {
+      "id": "UNAVA_PH",
+      "label": "Chronická únava\na malátnost",
+      "label_expert": "Chronická únava\n(multifaktoriální)",
+      "label_layman": "Trvalá únava\na nedostatek sil",
+      "layer": 3, "branch": "center",
+      "condition": { "or": [{"diag":"HYPOTHYREOZA"}, {"med":"euthyrox"}, {"diag":"DEPRESE"}, {"checkin":"movement_level","eq":"low"}, {"checkin":"energy","lt":3}] },
+      "parents": ["HYPOTHY_PH", "SLABE_SVALY_PH", "MALO_POHYBU_PH"],
+      "children": ["NESTABILITA_PH"],
+      "detail": { "actions": ["Kompenzace hypothyreózy — únava při TSH > 3 mIU/L je léčitelná", "Pravidelný pohyb paradoxně zvyšuje energii"] }
+    },
+
+    {
+      "id": "NESTABILITA_PH",
+      "label": "Nestabilní chůze\na koordinace",
+      "label_expert": "Instabilita chůze\n(multifaktoriální)",
+      "label_layman": "Nejistá chůze\na špatná rovnováha",
+      "layer": 4, "branch": "center",
+      "condition": { "or": [{"diag":"OSTEOPOROZA"}, {"diag":"OSTEOPENIE"}, {"diag":"STENOZA_PATERE"}, {"diag":"HYPOTHYREOZA"}, {"diag":"DEPRESE"}, {"med":"liskantin"}, {"med":"primidon"}] },
+      "parents": ["OSTEOPOROZA_PH", "BOLEST_NOH_PH", "UNAVA_PH"],
+      "children": ["UDE_PADY_PH"],
+      "detail": { "actions": ["Balanční trénink 3× týdně — snižuje riziko pádu o 30 %", "Liskantin — léčí tremor, ale monitoruj vliv na rovnováhu", "Revize prostředí — madla, osvětlení, koberce"] }
+    },
+
+    {
+      "id": "UDE_PADY_PH",
+      "label": "Riziko pádu\na zranění",
+      "label_expert": "Riziko pádu\na zlomenin",
+      "label_layman": "Nebezpečné pády\na zlomeniny",
+      "layer": 5, "type": "ude", "branch": "center",
+      "condition": { "or": [{"diag":"OSTEOPOROZA"}, {"diag":"STENOZA_PATERE"}, {"med":"liskantin"}, {"med":"primidon"}, {"diag":"HYPOTHYREOZA"}] },
+      "parents": ["NESTABILITA_PH"],
+      "children": [],
+      "detail": { "actions": ["Ibandronát — zpevňuje kosti před případným pádem", "Balanční a silový trénink — komplexní prevence", "Úprava domácího prostředí"] }
+    }
+  ],
+
+  "medication_shields": [
+    {
+      "med": "Levothyroxin", "inn": "levothyroxin",
+      "note": "levothyroxin · štítná žláza · svaly",
+      "aliases": ["euthyrox", "levothyroxin", "eutyrox", "letrox", "levothyroxinum"],
+      "shields_node": "HYPOTHY_PH",
+      "reason": "Levothyroxin nahrazuje hormon štítné žlázy — přímo zlepšuje svalovou sílu a energii."
+    },
+    {
+      "med": "Metformin", "inn": "metformin",
+      "note": "metformin · DM2 · metabolický zánět",
+      "aliases": ["sifor", "siofor", "metformin", "glucophage"],
+      "shields_node": "ZANET_META_PH",
+      "reason": "Metformin snižuje glykemii a tlumí metabolický zánět — zpomaluje svalovou degradaci."
+    },
+    {
+      "med": "Ibandronát", "inn": "ibandronát",
+      "note": "bisfosfonát · osteoporóza",
+      "aliases": ["ibandronat", "ibandronát", "bonviva", "ibandronate"],
+      "shields_node": "OSTEOPOROZA_PH",
+      "reason": "Ibandronát zpomaluje odbourávání kostní hmoty a snižuje riziko zlomenin při pádu."
+    },
+    {
+      "med": "Vitamín D3", "inn": "cholekalciferol",
+      "note": "vitamín D3 · kosti · svaly",
+      "aliases": ["vigantol", "vitamin d", "d3", "cholecalciferol", "cholekalciferol"],
+      "shields_node": "OSTEOPOROZA_PH",
+      "reason": "Vitamín D3 zajišťuje vstřebávání vápníku a má přímý vliv na svalovou sílu a koordinaci."
+    },
+    {
+      "med": "Duloxetin", "inn": "duloxetin",
+      "note": "SNRI · neuropatická bolest",
+      "aliases": ["duloxetin", "dulopen", "cymbalta", "dulopren", "duloxetine"],
+      "shields_node": "BOLEST_NOH_PH",
+      "reason": "Duloxetin snižuje neuropatickou bolest — přímý efekt na bolest ze stlačených nervů i diabetickou neuropatii."
+    },
+    {
+      "med": "Pregabalin", "inn": "pregabalin",
+      "note": "pregabalin · neuropatická bolest",
+      "aliases": ["pregabalin", "lyrica", "afexil"],
+      "shields_node": "BOLEST_NOH_PH",
+      "reason": "Pregabalin tlumí přenos bolestivých signálů z poškozených nervů — snižuje bolest nohou."
+    },
+    {
+      "med": "Primidon", "inn": "primidon",
+      "note": "antiepileptikum · tremor",
+      "aliases": ["liskantin", "primidon", "mysoline", "primidone"],
+      "shields_node": "NESTABILITA_PH",
+      "reason": "Primidon snižuje esenciální tremor — přispívá ke stabilitě chůze, ale může ovlivnit rovnováhu."
+    }
+  ]
+}
