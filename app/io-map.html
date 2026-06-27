@@ -69,7 +69,7 @@
   </div>
   <div class="io-controls">
     <button class="io-btn active" id="ioLabelBtn" onclick="toggleLabelMode()">Laik</button>
-    <button class="io-btn" id="ioCrtBtn" onclick="window.location.href='/crt.html'">CRT →</button>
+    <button class="io-btn" id="ioCrtBtn" onclick="window.location.href='/crt.html?focus=worst' + (userId ? '&userId=' + userId : '')">CRT →</button>
     <button class="io-btn" onclick="printIO()">🖨 Tisk</button>
   </div>
 </div>
