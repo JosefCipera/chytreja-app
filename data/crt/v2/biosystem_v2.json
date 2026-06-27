@@ -65,7 +65,7 @@
       "layer": 1, "branch": "center",
       "condition": { "or": [{"med":"tezeo"}, {"med":"telmisartan"}, {"med":"lisinopril"}, {"med":"amlodipine"}, {"med":"ramipril"}, {"diag":"HYPERTENZE"}, {"lab":"systolic_bp","gt":140}] },
       "parents": ["ROOT"],
-      "children": ["ATEROSKLEROZA", "VASK_POD", "ZANET", "AUTONOM_DYSBAL", "SINOAT_REMODEL"],
+      "children": ["ATEROSKLEROZA", "VASK_POD", "ZANET"],
       "detail": {
         "value_key": "labs.systolic_bp", "value_unit": "mmHg", "value_target": "< 130",
         "actions": ["Tezeo/telmisartan — ARB blokátor s kardioprotektivním efektem", "Snížení soli a stres management"]
@@ -79,7 +79,7 @@
       "layer": 1, "branch": "right",
       "condition": { "or": [{"med":"mirtazapin"}, {"med":"sertralin"}, {"med":"escitalopram"}, {"diag":"DEPRESE"}, {"checkin":"stress","gt":3}] },
       "parents": ["ROOT"],
-      "children": ["MALO_POHYBU", "ZANET", "HPA_DYSREG"],
+      "children": ["MALO_POHYBU", "ZANET"],
       "detail": {
         "actions": ["Mirtazapin — stabilizuje náladu a spánek, snižuje kortizol", "Pohyb jako antidepresivum — 30 min chůze snižuje kortizol o 30%"]
       }
@@ -107,7 +107,7 @@
       "layer": 2, "branch": "right",
       "condition": { "or": [{"checkin":"movement_level","eq":"low"}, {"checkin":"energy","lt":3}] },
       "parents": ["DEPRESE"],
-      "children": ["ZANET", "SLABE_SVALY", "NIZKA_VO2MAX"],
+      "children": ["ZANET", "SLABE_SVALY"],
       "detail": {
         "actions": ["150 min aerobního pohybu týdně — aktivuje NK buňky", "Chůze venku — pohyb + sluneční záření = dvojí efekt"]
       }
@@ -119,7 +119,7 @@
       "label_layman": "Buňky špatně slyší\nna cukr v krvi",
       "layer": 2, "branch": "left",
       "condition": { "or": [{"diag":"DIABETES_2_TYPU"}, {"lab":"glucose","gt":6.0}, {"med":"sifor"}, {"med":"metformin"}, {"lab":"hba1c","gt":6.5}] },
-      "parents": ["HYPERGLYK", "HPA_DYSREG", "NIZKA_VO2MAX"],
+      "parents": ["HYPERGLYK"],
       "children": ["ZANET", "SYNAP_UBYT", "IMUNO_OSL"],
       "detail": {
         "value_key": "labs.glucose", "value_unit": "mmol/L", "value_target": "< 5.6",
@@ -134,7 +134,7 @@
       "layer": 2, "branch": "center",
       "condition": { "or": [{"med":"stacyl"}, {"med":"aspirin"}, {"med":"anopyrin"}, {"med":"rosucard"}, {"med":"rosuvastatin"}, {"diag":"STAV_PO_CMP"}, {"diag":"ATEROSKLEROZA"}] },
       "parents": ["HYPERGLYK", "HIGH_LDL", "HYPERTENZE"],
-      "children": ["VASK_POD", "UDE_SRDCE", "SYNAP_UBYT", "ZTUHE_CEVY"],
+      "children": ["VASK_POD", "UDE_SRDCE", "SYNAP_UBYT"],
       "detail": {
         "actions": ["Stacyl — antiagregační ochrana cév", "Statiny — zpomalují tvorbu plaků a mají pleiotropní efekty"]
       }
@@ -173,7 +173,7 @@
       "layer": 2, "branch": "right",
       "condition": { "or": [{"med":"euthyrox"}, {"med":"levothyroxin"}, {"diag":"HYPOTHYREOZA"}, {"checkin":"movement_level","eq":"low"}, {"checkin":"energy","lt":3}] },
       "parents": ["HYPOTHY", "MALO_POHYBU"],
-      "children": ["NESTABILITA", "SARKOPENIE"],
+      "children": ["NESTABILITA"],
       "detail": {
         "actions": ["Silový trénink 2× týdně — zachování svalové hmoty (prevence sarkopénie)", "Protein 1.6 g/kg/den — nutný základ pro syntézu svalů"]
       }
@@ -186,8 +186,8 @@
       "label_layman": "Tělo je\ntrvale zanícené",
       "layer": 3, "branch": "center",
       "condition": { "or": [{"lab":"crp","gt":1.0}, {"diag":"DIABETES_2_TYPU"}, {"med":"sifor"}, {"med":"metformin"}, {"med":"mirtazapin"}, {"checkin":"stress","gt":3}, {"checkin":"movement_level","eq":"low"}] },
-      "parents": ["HYPERGLYK", "HIGH_LDL", "HYPERTENZE", "DEPRESE", "VITZD_DEF", "MALO_POHYBU", "INZULREZ", "HYPOTHY", "HPA_DYSREG"],
-      "children": ["UDE_SRDCE", "UDE_MOZEK", "UDE_IMUNITA", "UDE_METABOLISMUS", "SINOAT_REMODEL", "ZTUHE_CEVY", "DRAZDIVOST_SINI"],
+      "parents": ["HYPERGLYK", "HIGH_LDL", "HYPERTENZE", "DEPRESE", "VITZD_DEF", "MALO_POHYBU", "INZULREZ", "HYPOTHY"],
+      "children": ["UDE_SRDCE", "UDE_MOZEK", "UDE_IMUNITA", "UDE_METABOLISMUS"],
       "detail": {
         "value_key": "labs.crp", "value_unit": "mg/L", "value_target": "< 1.0",
         "actions": ["Omega-3 (EPA+DHA 2 g/den) — přímý protizánětlivý efekt", "Středomořská strava — zelenina, ryby, olivový olej"]
@@ -226,7 +226,7 @@
       "label_layman": "Nejistá chůze\na pády",
       "layer": 3, "branch": "right",
       "condition": { "or": [{"med":"liskantin"}, {"med":"primidon"}, {"diag":"NESTABILITA_CHUZE"}, {"med":"ibandronat"}, {"med":"ibandronát"}] },
-      "parents": ["OSTEOPOROZA", "SLABE_SVALY", "SARKOPENIE"],
+      "parents": ["OSTEOPOROZA", "SLABE_SVALY"],
       "children": ["UDE_PADY"],
       "detail": {
         "actions": ["Balanční trénink 3× týdně — snižuje riziko pádu o 30%", "Liskantin — léčí tremor, ale může ovlivnit rovnováhu (monitoruj)", "Úprava domácího prostředí — madla, osvětlení, koberce"]
@@ -266,7 +266,7 @@
       "label_layman": "Srdce a cévy\nv ohrožení",
       "layer": 4, "type": "ude", "branch": "left",
       "condition": { "or": [{"med":"stacyl"}, {"med":"rosucard"}, {"med":"rosuvastatin"}, {"med":"torvacard"}, {"med":"atorvastatin"}, {"med":"pradaxa"}, {"med":"dabigatran"}, {"lab":"ldl","gt":3.0}, {"diag":"STAV_PO_CMP"}, {"med":"tezeo"}, {"diag":"HYPERTENZE"}, {"diag":"FIBRILACE_SINI"}, {"diag":"FIBRILACE"}, {"diag":"AFIB"}] },
-      "parents": ["ZANET", "ATEROSKLEROZA", "VASK_POD", "FIBRILACE_SINI_NODE", "TROMBOEMBOL", "NIZKA_VO2MAX"],
+      "parents": ["ZANET", "ATEROSKLEROZA", "VASK_POD"],
       "children": ["GOAL"],
       "detail": {
         "actions": ["Kardiologická kontrola 1× ročně", "LDL < 1.8 mmol/L po CMP — agresivní cíl", "Antiagregace (Stacyl) — sekundární prevence"]
@@ -279,7 +279,7 @@
       "label_layman": "Paměť a myšlení\nslábnou",
       "layer": 4, "type": "ude", "branch": "center",
       "condition": { "or": [{"med":"duspelin"}, {"med":"donepezil"}, {"diag":"MILD_KOGN_IMPAIRMENT"}, {"diag":"STAV_PO_CMP"}] },
-      "parents": ["ZANET", "VASK_POD", "SYNAP_UBYT", "TROMBOEMBOL"],
+      "parents": ["ZANET", "VASK_POD", "SYNAP_UBYT"],
       "children": ["GOAL"],
       "detail": {
         "actions": ["Duspelin — zachovává kognitivní funkce, zpomaluje progresi", "Kognitivní trénink + sociální kontakt — neuroplasticita", "Kontrola TK a glykemie — hlavní vaskulární rizika"]
@@ -324,147 +324,13 @@
         { "lab": "hba1c", "gt": 6.5 },
         { "lab": "glucose", "gt": 7 }
       ]},
-      "parents": ["HYPERGLYK", "INZULREZ", "ZANET", "SARKOPENIE"],
+      "parents": ["HYPERGLYK", "INZULREZ", "ZANET"],
       "children": ["GOAL"],
       "detail": { "actions": [
         "Monitoruj HbA1c a glukózu nalačno každé 3 měsíce",
         "Silový trénink 2× týdně — zvyšuje inzulinovou senzitivitu",
         "Omez rafinované sacharidy, přidej přerušovaný půst"
       ]}
-    },
-
-    {
-      "id": "ZTUHE_CEVY",
-      "label": "Ztuhlé cévy",
-      "label_expert": "Arteriální tuhost\n(ztuhlé cévy)",
-      "label_layman": "Ztuhlé\na nepružné cévy",
-      "layer": 2, "branch": "left",
-      "condition": { "or": [{"lab":"ldl","gt":3.0}, {"med":"stacyl"}, {"med":"aspirin"}, {"diag":"ATEROSKLEROZA"}, {"med":"torvacard"}, {"med":"atorvastatin"}] },
-      "parents": ["ATEROSKLEROZA", "ZANET"],
-      "children": ["HYPERTENZE_MECH", "MECH_TLAK"],
-      "detail": { "actions": ["Torvacard — statiny zpomalují tuhost tepen nad rámec snižování LDL", "Aerobní pohyb — zóna 2 snižuje arteriální tuhost o 10–15 %", "Omez sůl < 5 g/den — přímý vliv na elasticitu tepen"] }
-    },
-    {
-      "id": "MECH_TLAK",
-      "label": "Mechanický tlak\nna srdce",
-      "label_expert": "Mechanické přetížení\nmyokardu",
-      "label_layman": "Srdce pracuje\nve ztíženém prostředí",
-      "layer": 3, "branch": "left",
-      "condition": { "or": [{"diag":"HYPERTENZE"}, {"med":"tezeo"}, {"med":"telmisartan"}, {"lab":"ldl","gt":3.0}] },
-      "parents": ["HYPERTENZE", "ZTUHE_CEVY"],
-      "children": ["EXTRASYSTOLY"],
-      "detail": { "actions": ["Tezeo — ARB snižuje afterload a chrání srdce před mechanickým stresem", "Kontrola TK < 130/80 — každých 10 mmHg snižuje zátěž srdce o ~15 %", "Echokardiografie — sleduje tloušťku stěny levé komory"] }
-    },
-    {
-      "id": "HYPOKALEMIE",
-      "label": "Nízký draslík\n(hypokalemie)",
-      "label_expert": "Hypokalemie\n(deficit draslíku)",
-      "label_layman": "Nedostatek draslíku\nv těle",
-      "layer": 2, "branch": "right",
-      "condition": { "or": [{"med":"kalnormin"}, {"lab":"kalium","lt":3.5}, {"med":"furosemid"}, {"med":"hydrochlorothiazid"}] },
-      "parents": ["AUTONOM_DYSBAL"],
-      "children": ["DRAZDIVOST_SINI"],
-      "detail": { "actions": ["Kalnormin — suplementace draslíku stabilizuje membránový potenciál srdečních buněk", "Potraviny bohaté na draslík: banány, avokádo, brambory, luštěniny", "Kontrola K+ v krvi 2× ročně — cíl 4.0–5.0 mmol/L"] }
-    },
-    {
-      "id": "DRAZDIVOST_SINI",
-      "label": "Elektrická dráždivost\nsíní",
-      "label_expert": "Zvýšená elektrická\ndráždivost myokardu síní",
-      "label_layman": "Srdeční síně\npříliš elekticky citlivé",
-      "layer": 3, "branch": "right",
-      "condition": { "or": [{"med":"kalnormin"}, {"diag":"FIBRILACE_SINI"}, {"diag":"FIBRILACE"}, {"diag":"AFIB"}, {"checkin":"stress","gt":3}] },
-      "parents": ["HYPOKALEMIE", "SINOAT_REMODEL", "ZANET"],
-      "children": ["EXTRASYSTOLY"],
-      "detail": { "actions": ["Vyhni se kofeinu po 14h — zvyšuje elektrickou dráždivost síní", "Alkohol i v malém množství spouští ektopické stahy — vynech večerní sklenku", "Hořčík (400 mg/den) — stabilizuje elektrický potenciál buněčných membrán"] }
-    },
-
-    {
-      "id": "HPA_DYSREG",
-      "label": "Dysregulace\nstresové osy",
-      "label_expert": "Dysregulace HPA osy\n(chronický kortizol)",
-      "label_layman": "Tělo je trvale\nv pohotovosti",
-      "layer": 2, "branch": "right",
-      "condition": { "or": [{"diag":"CHRONICKY_STRES"}, {"checkin":"stress","gt":3}, {"med":"mirtazapin"}] },
-      "parents": ["DEPRESE"],
-      "children": ["ZANET", "AUTONOM_DYSBAL", "INZULREZ"],
-      "detail": { "actions": ["Dechové cvičení a HRV trénink — přímo tlumí sympatikus a kortizol", "Pravidelný spánek 7–8 h — resetuje kortizolový rytmus", "Pohyb venku snižuje bazální kortizol o ~30 %"] }
-    },
-    {
-      "id": "AUTONOM_DYSBAL",
-      "label": "Autonomní\nnerovnováha",
-      "label_expert": "Sympatovagální nerovnováha\n(nízká HRV)",
-      "label_layman": "Nervy ovládající\nsrdce jsou rozladěné",
-      "layer": 2, "branch": "center",
-      "condition": { "or": [{"diag":"CHRONICKY_STRES"}, {"diag":"FIBRILACE_SINI"}, {"diag":"FIBRILACE"}, {"diag":"AFIB"}, {"checkin":"stress","gt":3}] },
-      "parents": ["HPA_DYSREG", "HYPERTENZE"],
-      "children": ["SINOAT_REMODEL", "HYPOKALEMIE"],
-      "detail": { "actions": ["Trénink HRV (pomalé dýchání 6 dechů/min) zvyšuje vagový tonus", "Omez kofein a alkohol — oba zvyšují adrenergní spouštěče arytmie", "Doplnění draslíku a hořčíku stabilizuje membránový potenciál"] }
-    },
-    {
-      "id": "SINOAT_REMODEL",
-      "label": "Strukturální\npřestavba síní",
-      "label_expert": "Atriální remodelace\n(fibróza a dilatace síní)",
-      "label_layman": "Srdeční síně\nse přestavují",
-      "layer": 3, "branch": "center",
-      "condition": { "or": [{"diag":"FIBRILACE_SINI"}, {"diag":"FIBRILACE"}, {"diag":"AFIB"}, {"diag":"HYPERTENZE"}, {"med":"tezeo"}, {"med":"telmisartan"}] },
-      "parents": ["AUTONOM_DYSBAL", "HYPERTENZE", "ZANET"],
-      "children": ["DRAZDIVOST_SINI"],
-      "detail": { "actions": ["Kontrola TK < 130/80 — nejúčinnější prevence další fibrózy síní", "Echokardiografie 1× ročně — sleduje velikost levé síně", "Léčba spánkové apnoe (pokud přítomna) zpomaluje remodelaci"] }
-    },
-    {
-      "id": "EXTRASYSTOLY",
-      "label": "Síňové\nextrasystoly",
-      "label_expert": "Supraventrikulární\nextrasystoly (SVES)",
-      "label_layman": "Předčasné\nstahy srdce",
-      "layer": 3, "branch": "center",
-      "condition": { "or": [{"diag":"EXTRASYSTOLY"}, {"diag":"FIBRILACE_SINI"}, {"diag":"FIBRILACE"}, {"diag":"AFIB"}, {"med":"kalnormin"}, {"lab":"ldl","gt":3.0}] },
-      "parents": ["MECH_TLAK", "DRAZDIVOST_SINI"],
-      "children": ["FIBRILACE_SINI_NODE"],
-      "detail": { "actions": ["Holter EKG — kvantifikuje četnost extrasystol jako prediktor AFib", "Korekce draslíku a hořčíku snižuje ektopickou aktivitu", "Omez stimulanty (kofein, nikotin) — typické spouštěče SVES"] }
-    },
-    {
-      "id": "FIBRILACE_SINI_NODE",
-      "label": "Paroxysmální\nfibrilace síní",
-      "label_expert": "Paroxysmální\nfibrilace síní (FaP)",
-      "label_layman": "Nepravidelný\nrychlý tep síní",
-      "layer": 3, "branch": "center",
-      "condition": { "or": [{"diag":"FIBRILACE_SINI"}, {"diag":"FIBRILACE"}, {"diag":"AFIB"}, {"med":"pradaxa"}, {"med":"dabigatran"}] },
-      "parents": ["EXTRASYSTOLY"],
-      "children": ["TROMBOEMBOL", "UDE_SRDCE"],
-      "detail": { "actions": ["Pradaxa (dabigatran) — antikoagulace dle CHA₂DS₂-VASc skóre", "Kontrola tepové frekvence i rytmu u kardiologa", "Drž draslík v horní polovině normy (Kalnormin) — snižuje arytmie"] }
-    },
-    {
-      "id": "TROMBOEMBOL",
-      "label": "Riziko\ntromboembolie",
-      "label_expert": "Tromboembolické riziko\n(kardioembolická CMP)",
-      "label_layman": "Krevní sraženina\nze srdce",
-      "layer": 3, "branch": "center",
-      "condition": { "or": [{"med":"pradaxa"}, {"med":"dabigatran"}, {"diag":"FIBRILACE_SINI"}, {"diag":"FIBRILACE"}, {"diag":"AFIB"}, {"diag":"STAV_PO_CMP"}] },
-      "parents": ["FIBRILACE_SINI_NODE"],
-      "children": ["UDE_SRDCE", "UDE_MOZEK"],
-      "detail": { "actions": ["Pradaxa 150 mg 2× denně — snižuje riziko kardioembolické CMP o ~65 %", "Nikdy nevynechávej dávku — krátký poločas znamená rychlou ztrátu ochrany", "Při krvácení existuje specifické antidotum (idarucizumab)"] }
-    },
-    {
-      "id": "NIZKA_VO2MAX",
-      "label": "Nízká\nkardiorespirační\nzdatnost",
-      "label_expert": "Snížená VO2max\n(kardiorespirační zdatnost)",
-      "label_layman": "Slabá kondice\na rychlá zadýchanost",
-      "layer": 2, "branch": "left",
-      "condition": { "or": [{"lab":"vo2max","lt":35}, {"checkin":"movement_level","eq":"low"}, {"checkin":"energy","lt":3}] },
-      "parents": ["MALO_POHYBU"],
-      "children": ["INZULREZ", "SLABE_SVALY", "UDE_SRDCE"],
-      "detail": { "actions": ["Zóna 2 kardio 150 min/týden — nejsilnější jednotlivý prediktor délky života", "Přidej 1× týdně intervaly (VO2max blok) — zvyšuje strop zdatnosti", "Cíl: zlepšit VO2max o jednu věkovou kategorii (~3,5 ml/kg/min)"] }
-    },
-    {
-      "id": "SARKOPENIE",
-      "label": "Sarkopenie",
-      "label_expert": "Sarkopenie\n(úbytek svalové hmoty)",
-      "label_layman": "Mizení svalů\nvěkem",
-      "layer": 3, "branch": "left",
-      "condition": { "or": [{"lab":"vo2max","lt":35}, {"checkin":"movement_level","eq":"low"}, {"diag":"SARKOPENIE"}] },
-      "parents": ["SLABE_SVALY", "NIZKA_VO2MAX"],
-      "children": ["UDE_METABOLISMUS", "NESTABILITA"],
-      "detail": { "actions": ["Silový trénink 2–3× týdně — jediná účinná páka proti sarkopenii", "Protein 1,6 g/kg/den rovnoměrně přes den", "Svaly jsou metabolický orgán — víc svalu = lepší citlivost na inzulín"] }
     },
 
     {
