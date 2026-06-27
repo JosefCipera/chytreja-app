@@ -195,13 +195,13 @@
     },
     {
       "id": "VASK_POD",
-      "label": "Vaskulární poškození mozku",
-      "label_expert": "Vaskulární poškození mozku",
-      "label_layman": "Poškozené cévy\nv mozku",
-      "layer": 3, "branch": "left",
+      "label": "Vaskulární poškození",
+      "label_expert": "Vaskulární poškození (mozek + srdce)",
+      "label_layman": "Poškozené cévy",
+      "layer": 3, "branch": "center",
       "condition": { "or": [{"med":"stacyl"}, {"med":"aspirin"}, {"diag":"STAV_PO_CMP"}, {"med":"tezeo"}, {"med":"telmisartan"}, {"diag":"HYPERTENZE"}] },
       "parents": ["HYPERTENZE", "ATEROSKLEROZA"],
-      "children": ["UDE_MOZEK"],
+      "children": ["UDE_MOZEK", "UDE_SRDCE"],
       "detail": {
         "actions": ["Stacyl — prevence mikrotrombů a TIA", "Tezeo — kontrola TK snižuje riziko dalších vaskulárních příhod", "MRI kontrola každé 2 roky u rizikových pacientů"]
       }
@@ -265,8 +265,8 @@
       "label_expert": "Riziko infarktu\na CMP",
       "label_layman": "Srdce a cévy\nv ohrožení",
       "layer": 4, "type": "ude", "branch": "left",
-      "condition": { "or": [{"med":"stacyl"}, {"med":"rosucard"}, {"med":"rosuvastatin"}, {"diag":"STAV_PO_CMP"}, {"med":"tezeo"}, {"diag":"HYPERTENZE"}] },
-      "parents": ["ZANET", "ATEROSKLEROZA"],
+      "condition": { "or": [{"med":"stacyl"}, {"med":"rosucard"}, {"med":"rosuvastatin"}, {"med":"torvacard"}, {"med":"atorvastatin"}, {"med":"pradaxa"}, {"med":"dabigatran"}, {"lab":"ldl","gt":3.0}, {"diag":"STAV_PO_CMP"}, {"med":"tezeo"}, {"diag":"HYPERTENZE"}, {"diag":"FIBRILACE_SINI"}, {"diag":"FIBRILACE"}, {"diag":"AFIB"}] },
+      "parents": ["ZANET", "ATEROSKLEROZA", "VASK_POD"],
       "children": ["GOAL"],
       "detail": {
         "actions": ["Kardiologická kontrola 1× ročně", "LDL < 1.8 mmol/L po CMP — agresivní cíl", "Antiagregace (Stacyl) — sekundární prevence"]
