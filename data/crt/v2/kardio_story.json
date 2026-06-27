@@ -1,0 +1,213 @@
+{
+  "domain": "Kardio_Story_V2",
+  "version": "1.0.0",
+  "description": "Kauzální příběh: Extrasystoly → Fibrilace síní. Dvě větve: mechanická (LDL→cévy) + elektrická (stres→HRV→draslík). 9 vrstev pro čistý hierarchický strom.",
+
+  "nodes": [
+    {
+      "id": "ROOT_K",
+      "label": "Sedavý životní styl\na metabolická zátěž",
+      "label_expert": "Sedavý životní styl\na metabolická zátěž",
+      "label_layman": "Základ problémů\nse srdcem",
+      "layer": 0, "type": "root", "branch": "center",
+      "parents": [],
+      "children": ["HIGH_LDL_K", "STRES_K"],
+      "detail": { "actions": ["7000 kroků denně", "Pohyb jako základ kardiovaskulárního zdraví"] }
+    },
+
+    {
+      "id": "HIGH_LDL_K",
+      "label": "Vysoký LDL\ncholesterol",
+      "label_expert": "Vysoký LDL cholesterol",
+      "label_layman": "Příliš mnoho\nšpatného cholesterolu",
+      "layer": 1, "branch": "left",
+      "condition": { "or": [{"lab":"ldl","gt":3.0}, {"med":"torvacard"}, {"med":"atorvastatin"}, {"med":"rosuvastatin"}, {"med":"rosucard"}] },
+      "parents": ["ROOT_K"],
+      "children": ["PLAKY_K"],
+      "detail": {
+        "value_key": "labs.ldl", "value_unit": "mmol/L", "value_target": "< 1.8",
+        "actions": ["Torvacard — snižuje LDL o 40–50 %", "Omez nasycené tuky a trans-tuky"]
+      }
+    },
+    {
+      "id": "STRES_K",
+      "label": "Chronický stres\na špatný spánek",
+      "label_expert": "Chronický stres\na spánkový deficit",
+      "label_layman": "Stres a nedostatek\nspánku",
+      "layer": 1, "branch": "right",
+      "condition": { "or": [{"checkin":"stress","gt":3}, {"checkin":"sleep_hours","lt":7}, {"diag":"CHRONICKY_STRES"}] },
+      "parents": ["ROOT_K"],
+      "children": ["SYMPATIKUS_K"],
+      "detail": { "actions": ["Pravidelný spánek 7–8 h", "10 min meditace ráno — aktivuje parasympatikus"] }
+    },
+
+    {
+      "id": "PLAKY_K",
+      "label": "Usazeniny\nv cévách",
+      "label_expert": "Aterosklerotické plaky\nv cévách",
+      "label_layman": "Usazeniny\nv cévách",
+      "layer": 2, "branch": "left",
+      "condition": { "or": [{"lab":"ldl","gt":3.0}, {"med":"torvacard"}, {"med":"atorvastatin"}, {"med":"stacyl"}, {"med":"aspirin"}] },
+      "parents": ["HIGH_LDL_K"],
+      "children": ["ZANET_CEV_K"],
+      "detail": {
+        "value_key": "labs.ldl", "value_unit": "mmol/L", "value_target": "< 1.8",
+        "actions": ["Kontroluj LDL každé 3 měsíce", "Torvacard — brzdí tvorbu nových plaků a stabilizuje stávající"]
+      }
+    },
+    {
+      "id": "SYMPATIKUS_K",
+      "label": "Aktivace\nsympatiku",
+      "label_expert": "Sympatická aktivace\nautonomního NS",
+      "label_layman": "Nervový systém\nv pohotovosti",
+      "layer": 2, "branch": "right",
+      "condition": { "or": [{"checkin":"stress","gt":3}, {"diag":"CHRONICKY_STRES"}, {"checkin":"sleep_hours","lt":7}] },
+      "parents": ["STRES_K"],
+      "children": ["NAPETI_ANS_K"],
+      "detail": { "actions": ["Dech 4-7-8 — ventil sympatikotonie", "Pravidelný pohyb reguluje autonomní systém"] }
+    },
+
+    {
+      "id": "ZANET_CEV_K",
+      "label": "Zánět cév",
+      "label_expert": "Vaskulární zánět\n(endoteliální dysfunkce)",
+      "label_layman": "Zanícené\ncévní stěny",
+      "layer": 3, "branch": "left",
+      "condition": { "or": [{"lab":"ldl","gt":3.0}, {"lab":"crp","gt":1.0}, {"med":"torvacard"}, {"med":"atorvastatin"}] },
+      "parents": ["PLAKY_K"],
+      "children": ["ZTUHE_CEVY_K"],
+      "detail": {
+        "value_key": "labs.crp", "value_unit": "mg/L", "value_target": "< 1.0",
+        "actions": ["Omega-3 2 g/den — přímý protizánětlivý efekt", "Středomořská strava"]
+      }
+    },
+    {
+      "id": "NAPETI_ANS_K",
+      "label": "Napětí nervového\nsystému",
+      "label_expert": "Napětí autonomního\nnervového systému",
+      "label_layman": "Permanentní\nnapětí nervů",
+      "layer": 3, "branch": "right",
+      "condition": { "or": [{"checkin":"stress","gt":3}, {"diag":"CHRONICKY_STRES"}, {"med":"kalnormin"}] },
+      "parents": ["SYMPATIKUS_K"],
+      "children": ["NIZKE_HRV_K", "HYPOKALEMIE_K"],
+      "detail": { "actions": ["HRV trénink — 6 dechů/min zvyšuje vagový tonus", "Biofeedback"] }
+    },
+
+    {
+      "id": "ZTUHE_CEVY_K",
+      "label": "Ztuhlé cévy",
+      "label_expert": "Arteriální tuhost\n(snížená poddajnost)",
+      "label_layman": "Ztuhlé\na nepružné cévy",
+      "layer": 4, "branch": "left",
+      "condition": { "or": [{"lab":"ldl","gt":3.0}, {"med":"torvacard"}, {"med":"atorvastatin"}, {"lab":"crp","gt":1.0}] },
+      "parents": ["ZANET_CEV_K"],
+      "children": ["MECH_TLAK_K"],
+      "detail": { "actions": ["Aerobní pohyb (zóna 2) — snižuje arteriální tuhost o 10–15 %", "Magnesium 400 mg/den"] }
+    },
+    {
+      "id": "NIZKE_HRV_K",
+      "label": "Nízká HRV",
+      "label_expert": "Nízká variabilita\nsrdečního rytmu (HRV)",
+      "label_layman": "Srdce málo\npružně reaguje",
+      "layer": 4, "branch": "right",
+      "condition": { "or": [{"checkin":"stress","gt":3}, {"diag":"FIBRILACE_SINI"}, {"diag":"FIBRILACE"}, {"diag":"AFIB"}, {"med":"kalnormin"}] },
+      "parents": ["NAPETI_ANS_K"],
+      "children": ["DRAZDIVOST_K"],
+      "detail": { "actions": ["Měř HRV každé ráno", "Pohyb zóna 2 zvyšuje HRV dlouhodobě"] }
+    },
+    {
+      "id": "HYPOKALEMIE_K",
+      "label": "Nízký draslík\n(hypokalemie)",
+      "label_expert": "Hypokalemie\n(deficit draslíku)",
+      "label_layman": "Nedostatek draslíku\nv těle",
+      "layer": 4, "branch": "center",
+      "condition": { "or": [{"med":"kalnormin"}, {"lab":"kalium","lt":3.5}] },
+      "parents": ["NAPETI_ANS_K"],
+      "children": ["DRAZDIVOST_K"],
+      "detail": { "actions": ["Kalnormin — suplementace draslíku stabilizuje membránový potenciál", "Banány, avokádo, luštěniny — potraviny bohaté na draslík", "Cíl K+ 4.0–5.0 mmol/L — kontrola 2× ročně"] }
+    },
+
+    {
+      "id": "MECH_TLAK_K",
+      "label": "Mechanický tlak\nna srdce",
+      "label_expert": "Mechanické přetížení\nmyokardu",
+      "label_layman": "Srdce pracuje\nve ztíženém prostředí",
+      "layer": 5, "branch": "left",
+      "condition": { "or": [{"diag":"HYPERTENZE"}, {"med":"tezeo"}, {"med":"telmisartan"}, {"lab":"ldl","gt":3.0}] },
+      "parents": ["ZTUHE_CEVY_K"],
+      "children": ["EXTRASYSTOLY_K"],
+      "detail": { "actions": ["Tezeo — ARB snižuje afterload a chrání myokard", "Echokardiografie 1× ročně — sleduje tloušťku stěny"] }
+    },
+    {
+      "id": "DRAZDIVOST_K",
+      "label": "Elektrická dráždivost\nsíní",
+      "label_expert": "Zvýšená elektrická\ndráždivost myokardu síní",
+      "label_layman": "Srdeční síně\npříliš elektricky citlivé",
+      "layer": 5, "branch": "right",
+      "condition": { "or": [{"med":"kalnormin"}, {"diag":"FIBRILACE_SINI"}, {"diag":"FIBRILACE"}, {"diag":"AFIB"}, {"checkin":"stress","gt":3}] },
+      "parents": ["NIZKE_HRV_K", "HYPOKALEMIE_K"],
+      "children": ["EXTRASYSTOLY_K"],
+      "detail": { "actions": ["Vyhni se kofeinu po 14h — zvyšuje elektrickou dráždivost", "Alkohol i v malém množství spouští ektopické stahy — vynech večerní sklenku", "Hořčík 400 mg/den — stabilizuje membránový potenciál"] }
+    },
+
+    {
+      "id": "EXTRASYSTOLY_K",
+      "label": "Extrasystoly",
+      "label_expert": "Supraventrikulární\nextrasystoly (SVES)",
+      "label_layman": "Předčasné\nstahy srdce",
+      "layer": 6, "branch": "center",
+      "condition": { "or": [{"diag":"FIBRILACE_SINI"}, {"diag":"FIBRILACE"}, {"diag":"AFIB"}, {"med":"kalnormin"}, {"lab":"ldl","gt":3.0}] },
+      "parents": ["MECH_TLAK_K", "DRAZDIVOST_K"],
+      "children": ["FIBRILACE_K"],
+      "detail": { "actions": ["Holter EKG — kvantifikuje četnost extrasystol jako prediktor AFib", "Korekce draslíku a hořčíku snižuje ektopickou aktivitu", "Omez stimulanty (kofein, nikotin)"] }
+    },
+
+    {
+      "id": "FIBRILACE_K",
+      "label": "Fibrilace síní (FaP)",
+      "label_expert": "Paroxysmální\nfibrilace síní (FaP)",
+      "label_layman": "Nepravidelný\nrychlý tep síní",
+      "layer": 7, "branch": "center",
+      "condition": { "or": [{"med":"pradaxa"}, {"med":"dabigatran"}, {"diag":"FIBRILACE_SINI"}, {"diag":"FIBRILACE"}, {"diag":"AFIB"}] },
+      "parents": ["EXTRASYSTOLY_K"],
+      "children": ["UDE_SRDCE_K"],
+      "detail": { "actions": ["Pradaxa 150 mg 2× denně — antikoagulace dle CHA₂DS₂-VASc", "Kardiologická kontrola tepové frekvence i rytmu", "Kalnormin — udržuj K+ v horní polovině normy"] }
+    },
+
+    {
+      "id": "UDE_SRDCE_K",
+      "label": "Riziko infarktu\na CMP",
+      "label_expert": "Riziko infarktu\na CMP",
+      "label_layman": "Srdce a cévy\nv ohrožení",
+      "layer": 8, "type": "ude", "branch": "center",
+      "condition": { "or": [{"med":"pradaxa"}, {"med":"torvacard"}, {"med":"atorvastatin"}, {"lab":"ldl","gt":3.0}, {"diag":"FIBRILACE_SINI"}, {"diag":"FIBRILACE"}] },
+      "parents": ["FIBRILACE_K"],
+      "children": [],
+      "detail": { "actions": ["Kardiologická kontrola 1× ročně", "LDL < 1.8 mmol/L — agresivní cíl po AFib", "Pradaxa nikdy nevynechávej — krátký poločas"] }
+    }
+  ],
+
+  "medication_shields": [
+    {
+      "med": "Torvacard", "inn": "atorvastatin",
+      "note": "statin · vysoký LDL",
+      "aliases": ["torvacard", "atorvastatin", "atoris", "sortis", "rosucard", "rosuvastatin"],
+      "shields_node": "PLAKY_K",
+      "reason": "Atorvastatin snižuje LDL, stabilizuje aterosklerotické plaky a má pleiotropní protizánětlivý efekt."
+    },
+    {
+      "med": "Kalnormin", "inn": "kalium-chloridum",
+      "note": "draslík · hypokalemie · arytmie",
+      "aliases": ["kalnormin", "kalium chloratum", "kalnormin retard"],
+      "shields_node": "HYPOKALEMIE_K",
+      "reason": "Kalnormin koriguje deficit draslíku — stabilizuje elektrický potenciál srdečních buněk a snižuje riziko arytmií."
+    },
+    {
+      "med": "Pradaxa", "inn": "dabigatran",
+      "note": "antikoagulant · fibrilace síní",
+      "aliases": ["pradaxa", "dabigatran"],
+      "shields_node": "FIBRILACE_K",
+      "reason": "Dabigatran snižuje riziko kardioembolické CMP u fibrilace síní o ~65 %."
+    }
+  ]
+}

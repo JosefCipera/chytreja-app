@@ -268,6 +268,7 @@
   <button class="crt-back" id="crtMedBtn" onclick="toggleMeds()" style="display:none">🛡 Léky</button>
   <button class="crt-back" id="crtLabelBtn" onclick="toggleLabelMode()" style="display:none">🔬 Expert</button>
   <button class="crt-back" id="crtTopNBtn"  onclick="toggleTopN()"    style="display:none">📋 Plná mapa</button>
+  <button class="crt-back" id="crtStoryBtn" onclick="toggleStoryKB()" style="display:none">📖 Příběh</button>
   <button class="crt-back" id="crtExportBtn" onclick="exportCRTImage()" style="display:none">📥 Export</button>
   <button class="crt-back" id="crtPrintBtn" onclick="printCRT()" style="display:none">🖨 Tisk</button>
   <!-- Obnovit schováno — mapa se regeneruje jen při změně health profilu -->
@@ -548,8 +549,12 @@ function buildMedsMap(shields, userMeds, activeIds, arrowsById) {
 }
 
 // ── Load CRT v2 — Integrovaný Biovesmír ──────────────────────────────────────
-// Podmínky na uzlech (ne šipkách). Hrany z parents/children. Jeden unified KB soubor.
-const KB_FILES_V2 = ['/data/crt/v2/biosystem_v2.json'];
+// Podmínky na uzlech (ne šipkách). Hrany z parents/children.
+// ?kb=story → kardio příběh (9 vrstev, 2 větve), default → unified biosystem
+const _kbParam = new URLSearchParams(location.search).get('kb');
+const KB_FILES_V2 = _kbParam === 'story'
+  ? ['/data/crt/v2/kardio_story.json']
+  : ['/data/crt/v2/biosystem_v2.json'];
 
 async function loadCRT() {
   const forceOpus = new URLSearchParams(location.search).get('opus') === '1';
@@ -1762,6 +1767,16 @@ window.toggleTopN = function() {
   }
 };
 
+window.toggleStoryKB = function() {
+  const sp = new URLSearchParams(location.search);
+  if (sp.get('kb') === 'story') {
+    sp.delete('kb');
+  } else {
+    sp.set('kb', 'story');
+  }
+  location.search = sp.toString();
+};
+
 window.switchToFullMap = function(nodeId) {
   _topNMode = false;
   const btn = document.getElementById('crtTopNBtn');
@@ -1794,6 +1809,11 @@ async function boot() {
     document.getElementById('crtExportBtn').style.display = '';
     document.getElementById('crtPrintBtn').style.display  = '';
     document.getElementById('crtTopNBtn').style.display   = '';
+    document.getElementById('crtStoryBtn').style.display  = '';
+    if (_kbParam === 'story') {
+      const sb = document.getElementById('crtStoryBtn');
+      sb.textContent = '🗺 Přehled'; sb.style.borderColor = '#4a9aee'; sb.style.color = '#4a9aee';
+    }
     enrichContraMap(data); // async na raw datech, doplní se při přepnutí na plnou mapu
   } catch (e) {
     document.getElementById('crtLoading').textContent = 'Chyba načítání: ' + e.message;
