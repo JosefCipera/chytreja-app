@@ -538,8 +538,12 @@ function buildMedsMap(shields, userMeds, activeIds, arrowsById) {
       else if (s.shields_node && activeIds.has(s.shields_node)) targets=[s.shields_node];
       if (!targets.length) return null;
       const names = new Set([s.med, s.inn, ...(s.aliases||[])].filter(Boolean).map(n=>n.toLowerCase()));
-      const userHas = userMeds.some(m => names.has(m.toLowerCase()));
-      return { name: s.med, targets, effect: '', reason: s.reason, note: s.note, protocol: s.protocol, userHas };
+      const matchedMed = userMeds.find(m => names.has(m.toLowerCase()));
+      const userHas = !!matchedMed;
+      const displayName = userHas
+        ? matchedMed.charAt(0).toUpperCase() + matchedMed.slice(1)
+        : s.med;
+      return { name: displayName, targets, effect: '', reason: s.reason, note: s.note, protocol: s.protocol, userHas };
     }).filter(Boolean);
 }
 
