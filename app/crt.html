@@ -995,7 +995,7 @@ function renderTree(data) {
   });
 
   // ── Léky: pill přímo vedle cílového uzlu ────────────────────────────────
-  const medsMap = (data.medications_map || []).filter(m => (m.targets || []).length > 0);
+  const medsMap = (data.medications_map || []).filter(m => (m.targets || []).length > 0 && m.userHas);
   if (medsMap.length) {
     document.getElementById('crtMedBtn').style.display = '';
     const MED_C    = '#4a9aee';
@@ -1193,7 +1193,7 @@ function openNodePanel(nodeId) {
   const activeIds = data._activeIds || new Set(data.nodes?.map(n => n.id) || []);
   const parents  = (node.parents  || []).map(pid => kbMap[pid]).filter(Boolean).filter(p => activeIds.has(p.id));
   const children = (node.children || []).map(cid => kbMap[cid]).filter(Boolean).filter(c => activeIds.has(c.id));
-  const meds     = medsMap.filter(m => (m.targets || []).includes(nodeId));
+  const meds     = medsMap.filter(m => (m.targets || []).includes(nodeId) && m.userHas);
   const supps    = suppsMap.filter(s => (s.targets || []).includes(nodeId));
   const contras  = (rawData.contra_map || []).filter(c => c.nodeId === nodeId);
 
@@ -1734,7 +1734,7 @@ function computeTopN(rawData, focusUde = null) {
   return {
     ...rawData,
     nodes, edges,
-    medications_map: (rawData.medications_map || []).filter(m => m.targets?.some(t => topIds.has(t))),
+    medications_map: (rawData.medications_map || []).filter(m => m.userHas && m.targets?.some(t => topIds.has(t))),
     supplements_map: (rawData.supplements_map || []).filter(s => s.targets?.some(t => topIds.has(t))),
     contra_map:      (rawData.contra_map      || []).filter(c => topIds.has(c.nodeId)),
     _activeIds: topIds,
