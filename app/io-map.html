@@ -95,7 +95,7 @@ function toggleLabelMode() {
   _labelMode = _labelMode === 'layman' ? 'expert' : 'layman';
   const btn = document.getElementById('ioLabelBtn');
   if (btn) { btn.textContent = _labelMode === 'layman' ? 'Laik' : 'Expert'; btn.classList.toggle('active', _labelMode === 'layman'); }
-  if (_ioData) renderIO(_ioData, _udeStates);
+  if (_ioData) renderIO(_ioData, _udeStates, _ncStatuses);
 }
 
 // ── SVG helpers ──────────────────────────────────────────────────────────────
@@ -142,6 +142,84 @@ const STYLE_CSF  = { fill: '#1a2535', stroke: '#8ba8b8', text: '#e8f0f8', sw: '1
 const STYLE_NC   = { fill: '#131d2a', stroke: '#2a4058', text: '#8898a8', sw: '1',   dash: 'none' };
 const ARROW_COLOR = '#2a4058';
 
+// ── NC personalizace — status barvy ─────────────────────────────────────────
+const NC_ST = {
+  ok:   { stroke: '#22c55e', sw: '2', dot: '#22c55e' },
+  risk: { stroke: '#f59e0b', sw: '2', dot: '#f59e0b' },
+  bad:  { stroke: '#ef4444', sw: '2', dot: '#ef4444' },
+};
+
+// NC_RULES: (labs, rawDiag, checkin) → ['ok'|'risk'|'bad', 'hodnota'] | null
+const NC_RULES = {
+  NC_GLYKEMIE(l, d) {
+    const h = l.hba1c; if (h != null) return h < 5.4 ? ['ok',`HbA1c ${h}%`] : h < 5.7 ? ['risk',`HbA1c ${h}%`] : ['bad',`HbA1c ${h}%`];
+    const g = l.glucose; if (g != null) return g < 5.0 ? ['ok',`Glc ${g}`] : g < 6.0 ? ['risk',`Glc ${g}`] : ['bad',`Glc ${g}`];
+    return null;
+  },
+  NC_LIPIDY_META(l) {
+    const v = l.ldl; if (v != null) return v < 2.0 ? ['ok',`LDL ${v}`] : v < 3.0 ? ['risk',`LDL ${v}`] : ['bad',`LDL ${v}`];
+    const t = l.triglycerides; if (t != null) return t < 1.5 ? ['ok',`TG ${t}`] : t < 2.0 ? ['risk',`TG ${t}`] : ['bad',`TG ${t}`];
+    return null;
+  },
+  NC_JATRA(l) {
+    const v = l.alt; if (v != null) return v < 35 ? ['ok',`ALT ${v}`] : v < 55 ? ['risk',`ALT ${v}`] : ['bad',`ALT ${v}`];
+    return null;
+  },
+  NC_KOMPOZICE() { return null; },
+  NC_APOB(l) {
+    const v = l.ldl; if (v != null) return v < 1.8 ? ['ok',`LDL ${v} mmol/L`] : v < 2.6 ? ['risk',`LDL ${v} mmol/L`] : ['bad',`LDL ${v} mmol/L`];
+    return null;
+  },
+  NC_TK(l, d) {
+    const v = l.systolic_bp; if (v != null) return v < 120 ? ['ok',`${v} mmHg`] : v < 130 ? ['risk',`${v} mmHg`] : ['bad',`${v} mmHg`];
+    if (d.some(x => /hypertenz|vysoký.tlak/i.test(x))) return ['risk','Hypertenze'];
+    return null;
+  },
+  NC_KARDIO_FIT(l) {
+    const v = l.vo2max; if (v != null) return v >= 50 ? ['ok',`VO₂max ${v}`] : v >= 35 ? ['risk',`VO₂max ${v}`] : ['bad',`VO₂max ${v}`];
+    return null;
+  },
+  NC_SRDCE_FUNKCE(l, d) {
+    if (d.some(x => /fibrilace/i.test(x))) return ['bad','Fibrilace síní'];
+    if (d.some(x => /extrasystol/i.test(x))) return ['risk','Extrasystoly'];
+    return null;
+  },
+  NC_SPANEK(l, d, c) {
+    const v = c.sleep_hours; if (v != null) return v >= 7 ? ['ok',`${v}h`] : v >= 6 ? ['risk',`${v}h`] : ['bad',`${v}h`];
+    return null;
+  },
+  NC_STRES(l, d, c) {
+    if (d.some(x => /chronický.stres|deprese/i.test(x))) return ['risk','Chronický stres'];
+    const v = c.stress; if (v != null) return v <= 2 ? ['ok',`Stres ${v}/5`] : v <= 3 ? ['risk',`Stres ${v}/5`] : ['bad',`Stres ${v}/5`];
+    return null;
+  },
+  NC_KOGNICE(l, d, c) {
+    const v = c.energy; if (v != null) return v >= 4 ? ['ok',`Energie ${v}/5`] : v >= 3 ? ['risk',`Energie ${v}/5`] : ['bad',`Energie ${v}/5`];
+    return null;
+  },
+  NC_SOCIALNI() { return null; },
+  NC_SVAL()     { return null; },
+  NC_SILOVY_TRENINK() { return null; },
+  NC_VO2MAX(l) {
+    const v = l.vo2max; if (v != null) return v >= 50 ? ['ok',`VO₂max ${v}`] : v >= 35 ? ['risk',`VO₂max ${v}`] : ['bad',`VO₂max ${v}`];
+    return null;
+  },
+  NC_MOBILITA() { return null; },
+};
+
+function computeNcStatuses(ctx) {
+  const labs = {};
+  Object.entries(ctx.labs || {}).forEach(([k,v]) => { labs[k.toLowerCase().replace(/[^a-z0-9]/g,'')] = v; });
+  const rawDiag = ctx.diagnoses || [];
+  const checkin = ctx.checkin || {};
+  const out = {};
+  Object.entries(NC_RULES).forEach(([id, fn]) => {
+    const r = fn(labs, rawDiag, checkin);
+    if (r) out[id] = { status: r[0], val: r[1] };
+  });
+  return out;
+}
+
 // ── Layout — 2×2 grid NCs pod každým CSF ────────────────────────────────────
 function calcPositions(nodes) {
   const goals = nodes.filter(n => n.type === 'goal');
@@ -187,9 +265,9 @@ function initView(svgW, svgH) {
 }
 
 // ── Render ────────────────────────────────────────────────────────────────────
-let _ioData = null, _udeStates = {};
+let _ioData = null, _udeStates = {}, _ncStatuses = {};
 
-function renderIO(data, udeStates) {
+function renderIO(data, udeStates, ncStatuses = {}) {
   const container = document.getElementById('io-canvas');
   container.innerHTML = '';
 
@@ -264,10 +342,13 @@ function renderIO(data, udeStates) {
     const isCSF  = n.type === 'csf';
     const isGoal = n.type === 'goal';
 
-    const st = isGoal ? STYLE_GOAL : isCSF ? STYLE_CSF : STYLE_NC;
+    const ncSt  = isNC ? (ncStatuses[n.id] || null) : null;
+    const stBase = isGoal ? STYLE_GOAL : isCSF ? STYLE_CSF : STYLE_NC;
+    const st = ncSt ? { ...stBase, stroke: NC_ST[ncSt.status].stroke, sw: NC_ST[ncSt.status].sw } : stBase;
     const bw = isNC ? NC_BOX_W : BOX_W;
     const fs = isNC ? NC_FONT  : FONT_SIZE;
     const g  = svgEl('g', { class: 'io-node', 'data-id': n.id, style: isCSF ? 'cursor:pointer' : '' });
+    if (ncSt) g.appendChild(svgEl('title', {}, `${n.label}: ${ncSt.val}`));
     const lines = wrapText(n.label, fs < 12 ? 16 : 20);
     const bh = boxHeight(n.label, fs);
     const bx = cx(n.x ?? 0) - bw / 2;
@@ -291,6 +372,14 @@ function renderIO(data, udeStates) {
         'font-weight': isGoal ? '600' : isCSF ? '500' : '400',
       }, line));
     });
+
+    if (ncSt) {
+      g.appendChild(svgEl('text', {
+        x: cx(n.x ?? 0), y: by + bh - 5,
+        'text-anchor': 'middle', fill: NC_ST[ncSt.status].dot,
+        'font-size': '9', 'font-family': 'Inter, Segoe UI, system-ui, sans-serif',
+      }, ncSt.val));
+    }
 
     if (isCSF && n.ude_link) {
       g.addEventListener('click', e => {
@@ -376,10 +465,10 @@ async function loadUdeStates() {
     kb.nodes.filter(n => n.type === 'ude').forEach(n => {
       states[n.id] = activeIds.has(n.id) ? 'red' : 'green';
     });
-    return states;
+    return { udeStates: states, ncStatuses: computeNcStatuses(ctx) };
   } catch (e) {
     console.warn('[IO Map] UDE states failed:', e);
-    return {};
+    return { udeStates: {}, ncStatuses: {} };
   }
 }
 
@@ -392,9 +481,10 @@ async function boot() {
     ]);
     if (!ioRes.ok) throw new Error('IO Map data nenalezena');
     _ioData = await ioRes.json();
-    _udeStates = udeStates;
+    _udeStates = udeStates.udeStates || udeStates;
+    _ncStatuses = udeStates.ncStatuses || {};
     document.getElementById('io-loading').style.display = 'none';
-    renderIO(_ioData, _udeStates);
+    renderIO(_ioData, _udeStates, _ncStatuses);
   } catch (e) {
     document.getElementById('io-loading').textContent = 'Chyba: ' + e.message;
   }
@@ -428,7 +518,7 @@ function printIO() {
 }
 
 window.addEventListener('resize', () => {
-  if (_ioData) renderIO(_ioData, _udeStates);
+  if (_ioData) renderIO(_ioData, _udeStates, _ncStatuses);
 });
 
 boot();
