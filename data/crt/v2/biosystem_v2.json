@@ -134,7 +134,7 @@
       "layer": 2, "branch": "center",
       "condition": { "or": [{"med":"stacyl"}, {"med":"aspirin"}, {"med":"anopyrin"}, {"med":"rosucard"}, {"med":"rosuvastatin"}, {"diag":"STAV_PO_CMP"}, {"diag":"ATEROSKLEROZA"}] },
       "parents": ["HYPERGLYK", "HIGH_LDL", "HYPERTENZE"],
-      "children": ["VASK_POD", "UDE_SRDCE", "SYNAP_UBYT"],
+      "children": ["VASK_POD", "UDE_SRDCE", "SYNAP_UBYT", "ZTUHE_CEVY"],
       "detail": {
         "actions": ["Stacyl — antiagregační ochrana cév", "Statiny — zpomalují tvorbu plaků a mají pleiotropní efekty"]
       }
@@ -187,7 +187,7 @@
       "layer": 3, "branch": "center",
       "condition": { "or": [{"lab":"crp","gt":1.0}, {"diag":"DIABETES_2_TYPU"}, {"med":"sifor"}, {"med":"metformin"}, {"med":"mirtazapin"}, {"checkin":"stress","gt":3}, {"checkin":"movement_level","eq":"low"}] },
       "parents": ["HYPERGLYK", "HIGH_LDL", "HYPERTENZE", "DEPRESE", "VITZD_DEF", "MALO_POHYBU", "INZULREZ", "HYPOTHY", "HPA_DYSREG"],
-      "children": ["UDE_SRDCE", "UDE_MOZEK", "UDE_IMUNITA", "UDE_METABOLISMUS", "SINOAT_REMODEL"],
+      "children": ["UDE_SRDCE", "UDE_MOZEK", "UDE_IMUNITA", "UDE_METABOLISMUS", "SINOAT_REMODEL", "ZTUHE_CEVY", "DRAZDIVOST_SINI"],
       "detail": {
         "value_key": "labs.crp", "value_unit": "mg/L", "value_target": "< 1.0",
         "actions": ["Omega-3 (EPA+DHA 2 g/den) — přímý protizánětlivý efekt", "Středomořská strava — zelenina, ryby, olivový olej"]
@@ -334,6 +334,51 @@
     },
 
     {
+      "id": "ZTUHE_CEVY",
+      "label": "Ztuhlé cévy",
+      "label_expert": "Arteriální tuhost\n(ztuhlé cévy)",
+      "label_layman": "Ztuhlé\na nepružné cévy",
+      "layer": 2, "branch": "left",
+      "condition": { "or": [{"lab":"ldl","gt":3.0}, {"med":"stacyl"}, {"med":"aspirin"}, {"diag":"ATEROSKLEROZA"}, {"med":"torvacard"}, {"med":"atorvastatin"}] },
+      "parents": ["ATEROSKLEROZA", "ZANET"],
+      "children": ["HYPERTENZE_MECH", "MECH_TLAK"],
+      "detail": { "actions": ["Torvacard — statiny zpomalují tuhost tepen nad rámec snižování LDL", "Aerobní pohyb — zóna 2 snižuje arteriální tuhost o 10–15 %", "Omez sůl < 5 g/den — přímý vliv na elasticitu tepen"] }
+    },
+    {
+      "id": "MECH_TLAK",
+      "label": "Mechanický tlak\nna srdce",
+      "label_expert": "Mechanické přetížení\nmyokardu",
+      "label_layman": "Srdce pracuje\nve ztíženém prostředí",
+      "layer": 3, "branch": "left",
+      "condition": { "or": [{"diag":"HYPERTENZE"}, {"med":"tezeo"}, {"med":"telmisartan"}, {"lab":"ldl","gt":3.0}] },
+      "parents": ["HYPERTENZE", "ZTUHE_CEVY"],
+      "children": ["EXTRASYSTOLY"],
+      "detail": { "actions": ["Tezeo — ARB snižuje afterload a chrání srdce před mechanickým stresem", "Kontrola TK < 130/80 — každých 10 mmHg snižuje zátěž srdce o ~15 %", "Echokardiografie — sleduje tloušťku stěny levé komory"] }
+    },
+    {
+      "id": "HYPOKALEMIE",
+      "label": "Nízký draslík\n(hypokalemie)",
+      "label_expert": "Hypokalemie\n(deficit draslíku)",
+      "label_layman": "Nedostatek draslíku\nv těle",
+      "layer": 2, "branch": "right",
+      "condition": { "or": [{"med":"kalnormin"}, {"lab":"kalium","lt":3.5}, {"med":"furosemid"}, {"med":"hydrochlorothiazid"}] },
+      "parents": ["AUTONOM_DYSBAL"],
+      "children": ["DRAZDIVOST_SINI"],
+      "detail": { "actions": ["Kalnormin — suplementace draslíku stabilizuje membránový potenciál srdečních buněk", "Potraviny bohaté na draslík: banány, avokádo, brambory, luštěniny", "Kontrola K+ v krvi 2× ročně — cíl 4.0–5.0 mmol/L"] }
+    },
+    {
+      "id": "DRAZDIVOST_SINI",
+      "label": "Elektrická dráždivost\nsíní",
+      "label_expert": "Zvýšená elektrická\ndráždivost myokardu síní",
+      "label_layman": "Srdeční síně\npříliš elekticky citlivé",
+      "layer": 3, "branch": "right",
+      "condition": { "or": [{"med":"kalnormin"}, {"diag":"FIBRILACE_SINI"}, {"diag":"FIBRILACE"}, {"diag":"AFIB"}, {"checkin":"stress","gt":3}] },
+      "parents": ["HYPOKALEMIE", "SINOAT_REMODEL", "ZANET"],
+      "children": ["EXTRASYSTOLY"],
+      "detail": { "actions": ["Vyhni se kofeinu po 14h — zvyšuje elektrickou dráždivost síní", "Alkohol i v malém množství spouští ektopické stahy — vynech večerní sklenku", "Hořčík (400 mg/den) — stabilizuje elektrický potenciál buněčných membrán"] }
+    },
+
+    {
       "id": "HPA_DYSREG",
       "label": "Dysregulace\nstresové osy",
       "label_expert": "Dysregulace HPA osy\n(chronický kortizol)",
@@ -352,7 +397,7 @@
       "layer": 2, "branch": "center",
       "condition": { "or": [{"diag":"CHRONICKY_STRES"}, {"diag":"FIBRILACE_SINI"}, {"diag":"FIBRILACE"}, {"diag":"AFIB"}, {"checkin":"stress","gt":3}] },
       "parents": ["HPA_DYSREG", "HYPERTENZE"],
-      "children": ["SINOAT_REMODEL"],
+      "children": ["SINOAT_REMODEL", "HYPOKALEMIE"],
       "detail": { "actions": ["Trénink HRV (pomalé dýchání 6 dechů/min) zvyšuje vagový tonus", "Omez kofein a alkohol — oba zvyšují adrenergní spouštěče arytmie", "Doplnění draslíku a hořčíku stabilizuje membránový potenciál"] }
     },
     {
@@ -363,7 +408,7 @@
       "layer": 3, "branch": "center",
       "condition": { "or": [{"diag":"FIBRILACE_SINI"}, {"diag":"FIBRILACE"}, {"diag":"AFIB"}, {"diag":"HYPERTENZE"}, {"med":"tezeo"}, {"med":"telmisartan"}] },
       "parents": ["AUTONOM_DYSBAL", "HYPERTENZE", "ZANET"],
-      "children": ["EXTRASYSTOLY"],
+      "children": ["DRAZDIVOST_SINI"],
       "detail": { "actions": ["Kontrola TK < 130/80 — nejúčinnější prevence další fibrózy síní", "Echokardiografie 1× ročně — sleduje velikost levé síně", "Léčba spánkové apnoe (pokud přítomna) zpomaluje remodelaci"] }
     },
     {
@@ -372,8 +417,8 @@
       "label_expert": "Supraventrikulární\nextrasystoly (SVES)",
       "label_layman": "Předčasné\nstahy srdce",
       "layer": 3, "branch": "center",
-      "condition": { "or": [{"diag":"EXTRASYSTOLY"}, {"diag":"FIBRILACE_SINI"}, {"diag":"FIBRILACE"}, {"diag":"AFIB"}] },
-      "parents": ["SINOAT_REMODEL"],
+      "condition": { "or": [{"diag":"EXTRASYSTOLY"}, {"diag":"FIBRILACE_SINI"}, {"diag":"FIBRILACE"}, {"diag":"AFIB"}, {"med":"kalnormin"}, {"lab":"ldl","gt":3.0}] },
+      "parents": ["MECH_TLAK", "DRAZDIVOST_SINI"],
       "children": ["FIBRILACE_SINI_NODE"],
       "detail": { "actions": ["Holter EKG — kvantifikuje četnost extrasystol jako prediktor AFib", "Korekce draslíku a hořčíku snižuje ektopickou aktivitu", "Omez stimulanty (kofein, nikotin) — typické spouštěče SVES"] }
     },
