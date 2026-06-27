@@ -27,7 +27,7 @@
       "label_layman": "Zdravý metabolismus",
       "label_expert_en": "Optimized Metabolic Health",
       "label_layman_en": "",
-      "ude_link": "UDE_SRDCE",
+      "ude_link": "UDE_METABOLISMUS",
       "parents": ["NC_GLYKEMIE", "NC_KOMPOZICE", "NC_LIPIDY_META", "NC_JATRA"],
       "children": ["GOAL"]
     },
