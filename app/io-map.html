@@ -148,6 +148,12 @@ const NC_ST = {
   risk: { stroke: '#f59e0b', sw: '2', dot: '#f59e0b' },
   bad:  { stroke: '#ef4444', sw: '2', dot: '#ef4444' },
 };
+// CSF dostane jen jemný hint — tenčí čára, tlumená barva
+const CSF_ST = {
+  ok:   { stroke: '#166534', sw: '2' },
+  risk: { stroke: '#92400e', sw: '2' },
+  bad:  { stroke: '#7f1d1d', sw: '2' },
+};
 
 // NC_RULES: (labs, rawDiag, checkin) → ['ok'|'risk'|'bad', 'hodnota'] | null
 const NC_RULES = {
@@ -353,9 +359,10 @@ function renderIO(data, udeStates, ncStatuses = {}) {
       });
     }
     const overrideStatus = ncSt?.status || csfWorst || null;
-    const st = overrideStatus
-      ? { ...stBase, stroke: NC_ST[overrideStatus].stroke, sw: NC_ST[overrideStatus].sw }
-      : stBase;
+    const stOverride = overrideStatus
+      ? (isCSF ? CSF_ST[overrideStatus] : { stroke: NC_ST[overrideStatus].stroke, sw: NC_ST[overrideStatus].sw })
+      : null;
+    const st = stOverride ? { ...stBase, ...stOverride } : stBase;
     const bw = isNC ? NC_BOX_W : BOX_W;
     const fs = isNC ? NC_FONT  : FONT_SIZE;
     const g  = svgEl('g', { class: 'io-node', 'data-id': n.id, style: isCSF ? 'cursor:pointer' : '' });
