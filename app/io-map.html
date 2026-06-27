@@ -344,7 +344,18 @@ function renderIO(data, udeStates, ncStatuses = {}) {
 
     const ncSt  = isNC ? (ncStatuses[n.id] || null) : null;
     const stBase = isGoal ? STYLE_GOAL : isCSF ? STYLE_CSF : STYLE_NC;
-    const st = ncSt ? { ...stBase, stroke: NC_ST[ncSt.status].stroke, sw: NC_ST[ncSt.status].sw } : stBase;
+    let csfWorst = null;
+    if (isCSF) {
+      const sev = { ok: 1, risk: 2, bad: 3 };
+      (n.parents || []).forEach(cid => {
+        const s = ncStatuses[cid]?.status;
+        if (s && ((sev[s] || 0) > (sev[csfWorst] || 0))) csfWorst = s;
+      });
+    }
+    const overrideStatus = ncSt?.status || csfWorst || null;
+    const st = overrideStatus
+      ? { ...stBase, stroke: NC_ST[overrideStatus].stroke, sw: NC_ST[overrideStatus].sw }
+      : stBase;
     const bw = isNC ? NC_BOX_W : BOX_W;
     const fs = isNC ? NC_FONT  : FONT_SIZE;
     const g  = svgEl('g', { class: 'io-node', 'data-id': n.id, style: isCSF ? 'cursor:pointer' : '' });
@@ -375,9 +386,10 @@ function renderIO(data, udeStates, ncStatuses = {}) {
 
     if (ncSt) {
       g.appendChild(svgEl('text', {
-        x: cx(n.x ?? 0), y: by + bh - 5,
+        x: cx(n.x ?? 0), y: by + bh + 12,
         'text-anchor': 'middle', fill: NC_ST[ncSt.status].dot,
-        'font-size': '9', 'font-family': 'Inter, Segoe UI, system-ui, sans-serif',
+        'font-size': '10', 'font-family': 'Inter, Segoe UI, system-ui, sans-serif',
+        'font-weight': '500',
       }, ncSt.val));
     }
 
