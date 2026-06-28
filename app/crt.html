@@ -1558,29 +1558,47 @@ async function enrichContraMap(data) {
   } catch (_) {}
 }
 
-// Tisk mapy — nový tab, světlé téma, A4 landscape
+// Tisk mapy — nový tab, světlé téma, A4 landscape (barevně, fit-to-page)
 window.printCRT = function() {
   const svgEl = document.querySelector('#crt-canvas svg');
   if (!svgEl) return;
-  const clone = svgEl.cloneNode(true);
-  clone.removeAttribute('width');
-  clone.removeAttribute('height');
-  clone.style.transform = '';
-  clone.style.transformOrigin = '';
-  const w = window.open('', '_blank');
-  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+
+  // Remap dark fills → light (stejná logika jako exportCRTImage)
+  let svgStr = new XMLSerializer().serializeToString(svgEl.cloneNode(true));
+  const remap = [
+    ['fill="#1a2535"',   'fill="#dde4ec"'],   // regular node
+    ['fill="#12100a"',   'fill="#fffae8"'],   // ROOT
+    ['fill="#081510"',   'fill="#eef8f2"'],   // GOAL
+    ['fill="#0e2038"',   'fill="#e8f4ff"'],   // med pill
+    ['fill="#c8d8e8"',   'fill="#1a2535"'],   // text
+    ['fill="#e8f0f8"',   'fill="#1a3548"'],
+    ['fill="#d4a838"',   'fill="#7a5010"'],   // ROOT text
+    ['fill="#24a85e"',   'fill="#0a5030"'],   // GOAL text
+    ['stroke="#4a6878"', 'stroke="#6a8898"'],
+    ['fill="#5a7890"',   'fill="#6a8898"'],   // arrowhead
+    ['stroke="#8ba8b8"', 'stroke="#5a8090"'],
+  ];
+  for (const [from, to] of remap) svgStr = svgStr.split(from).join(to);
+
+  // Odstraň pan/zoom transform, odstraň pevné rozměry
+  svgStr = svgStr.replace(/\s*style="transform:[^"]*"/, '');
+  svgStr = svgStr.replace(/\bwidth="\d+(\.\d+)?"/, '');
+  svgStr = svgStr.replace(/\bheight="\d+(\.\d+)?"/, '');
+
+  const pw = window.open('', '_blank');
+  pw.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
   <title>Kauzální mapa zdraví</title>
   <style>
     @page { size: A4 landscape; margin: 8mm; }
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background: #fff; display: flex; align-items: center; justify-content: center; width: 100%; height: 100vh; }
-    svg { width: 100%; height: auto; display: block; }
-    rect { fill: #f0f4f8 !important; stroke: #475569 !important; }
-    text { fill: #1e293b !important; }
-    path { stroke: #94a3b8 !important; }
-    polygon { fill: #94a3b8 !important; }
-  </style></head><body>${clone.outerHTML}<script>window.print();<\/script></body></html>`);
-  w.document.close();
+    body { background: #fff; display: flex; align-items: center; justify-content: center;
+           width: 100vw; height: 100vh; overflow: hidden; }
+    svg { max-width: 100%; max-height: 100vh; width: auto; height: auto; display: block; }
+  </style></head><body>${svgStr}<script>
+    window.onafterprint = function() { window.close(); };
+    window.print();
+  <\/script></body></html>`);
+  pw.document.close();
 };
 
 // Export mapy jako PNG se světlým pozadím

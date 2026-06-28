@@ -374,9 +374,7 @@ function renderIO(data, udeStates, ncStatuses = {}) {
     }
     const overrideStatus = ncSt?.status || csfWorst || null;
     const stOverride = overrideStatus
-      ? (isCSF
-          ? { text: CSF_ST[overrideStatus] }   // CSF: jen text, rámeček beze změny
-          : { stroke: NC_ST[overrideStatus].stroke, sw: NC_ST[overrideStatus].sw })
+      ? { stroke: NC_ST[overrideStatus].stroke, sw: NC_ST[overrideStatus].sw }
       : null;
     const st = stOverride ? { ...stBase, ...stOverride } : stBase;
     const bw = isNC ? NC_BOX_W : BOX_W;
