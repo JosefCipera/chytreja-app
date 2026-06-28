@@ -1651,7 +1651,8 @@ window.exportCRTImage = function() {
 };
 
 // ── Top-N: zobraz jen uzly na nejkratší cestě ROOT→každý killer ──────────────
-let _topNMode = true;
+// ?full=1 → start v plné mapě (z launcheru / io-map)
+let _topNMode = new URLSearchParams(location.search).get('full') !== '1';
 let _rawCrtData = null; // plná nefiltrovaná data
 
 function bfsPath(fromId, toId, nodeMap, activeIds) {
@@ -1829,6 +1830,10 @@ async function boot() {
     if (_KB_STORY_MAP[_kbParam]) {
       const sb = document.getElementById('crtStoryBtn');
       sb.textContent = '🗺 Přehled'; sb.style.borderColor = '#4a9aee'; sb.style.color = '#4a9aee';
+    }
+    if (!_topNMode) {
+      const tnBtn = document.getElementById('crtTopNBtn');
+      tnBtn.textContent = '🗺 Přehled'; tnBtn.style.borderColor = '#4a9aee'; tnBtn.style.color = '#4a9aee';
     }
     enrichContraMap(data); // async na raw datech, doplní se při přepnutí na plnou mapu
   } catch (e) {

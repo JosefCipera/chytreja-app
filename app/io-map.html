@@ -82,7 +82,7 @@
       <button class="io-toggle-opt active" id="ioToggleLaik"   onclick="_setLabelMode('layman')">Laik</button>
       <button class="io-toggle-opt"        id="ioToggleExpert" onclick="_setLabelMode('expert')">Expert</button>
     </div>
-    <button class="io-btn" id="ioCrtBtn" onclick="window.location.href='/crt.html?focus=worst' + (userId ? '&userId=' + userId : '')">CRT →</button>
+    <button class="io-btn" id="ioCrtBtn" onclick="window.location.href='/crt.html?full=1' + (userId ? '&userId=' + userId : '')">CRT →</button>
     <button class="io-btn" onclick="printIO()">🖨 Tisk</button>
   </div>
 </div>
@@ -534,8 +534,10 @@ function printIO() {
   <style>
     @page { size: A4 landscape; margin: 8mm; }
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background: #0b0f1a; display: flex; align-items: center; justify-content: center; width: 100%; height: 100vh; }
+    body { background: #fff; display: flex; align-items: center; justify-content: center; width: 100%; height: 100vh; }
     svg { width: 100%; height: auto; display: block; }
+    rect { fill: #fff !important; }
+    text { fill: #1e293b !important; }
   </style></head><body>${svgHtml}<script>
     window.onafterprint = function() { window.close(); };
     window.print();
