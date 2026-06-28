@@ -1836,20 +1836,22 @@ async function boot() {
     } else if (urlFocus && data._activeIds?.has(urlFocus)) {
       focusUde = urlFocus;
     }
-    const displayData = _topNMode ? computeTopN(data, focusUde) : data;
+    // Story KBs jsou kurátorský strom — vždy full, Top-N se nepouži
+    const isStory = !!_KB_STORY_MAP[_kbParam];
+    const displayData = (_topNMode && !isStory) ? computeTopN(data, focusUde) : data;
     applyLabelMode(displayData);
     _lastCrtData = displayData;
     renderTree(displayData);
     document.getElementById('crtLabelBtn').style.display  = '';
     document.getElementById('crtExportBtn').style.display = '';
     document.getElementById('crtPrintBtn').style.display  = '';
-    document.getElementById('crtTopNBtn').style.display   = '';
+    // Top-N tlačítko: skryj v story módu (2× Přehled problem), jinak zobraz + nastav stav
+    document.getElementById('crtTopNBtn').style.display   = isStory ? 'none' : '';
     document.getElementById('crtStoryBtn').style.display  = '';
-    if (_KB_STORY_MAP[_kbParam]) {
+    if (isStory) {
       const sb = document.getElementById('crtStoryBtn');
       sb.textContent = '🗺 Přehled'; sb.style.borderColor = '#4a9aee'; sb.style.color = '#4a9aee';
-    }
-    if (!_topNMode) {
+    } else if (!_topNMode) {
       const tnBtn = document.getElementById('crtTopNBtn');
       tnBtn.textContent = '🗺 Přehled'; tnBtn.style.borderColor = '#4a9aee'; tnBtn.style.color = '#4a9aee';
     }

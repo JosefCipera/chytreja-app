@@ -82,7 +82,7 @@
       <button class="io-toggle-opt active" id="ioToggleLaik"   onclick="_setLabelMode('layman')">Laik</button>
       <button class="io-toggle-opt"        id="ioToggleExpert" onclick="_setLabelMode('expert')">Expert</button>
     </div>
-    <button class="io-btn" id="ioCrtBtn" onclick="window.location.href='/crt.html?full=1' + (userId ? '&userId=' + userId : '')">CRT →</button>
+    <button class="io-btn" id="ioCrtBtn" onclick="window.location.href='/crt.html?kb=story&full=1' + (userId ? '&userId=' + userId : '')">CRT →</button>
     <button class="io-btn" onclick="printIO()">🖨 Tisk</button>
   </div>
 </div>
@@ -152,7 +152,7 @@ function boxHeight(text, fs = FONT_SIZE) {
 
 // ── Node styles — identické s CRT ────────────────────────────────────────────
 const STYLE_GOAL = { fill: '#081510', stroke: '#18884a', text: '#24a85e', sw: '2', dash: '6 3' };
-const STYLE_CSF  = { fill: '#1a2535', stroke: '#8ba8b8', text: '#e8f0f8', sw: '1.5', dash: 'none' };
+const STYLE_CSF  = { fill: '#1a2535', stroke: '#8ba8b8', text: '#a8b8c8', sw: '1.5', dash: 'none' };
 const STYLE_NC   = { fill: '#131d2a', stroke: '#2a4058', text: '#8898a8', sw: '1',   dash: 'none' };
 const ARROW_COLOR = '#2a4058';
 
