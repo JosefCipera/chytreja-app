@@ -1804,10 +1804,12 @@ window.toggleStoryKB = function() {
   const sp = new URLSearchParams(location.search);
   if (_KB_STORY_MAP[sp.get('kb')]) {
     sp.delete('kb');
+    sp.delete('full');  // story → biosystém Top-N (skutečný přehled)
   } else {
     // Auto-vyber příběh pro nejhorší killer, fallback → kardio
     const worst = _lastCrtData ? worstUde(_lastCrtData) : null;
     sp.set('kb', (worst && _UDE_TO_KB[worst]) || 'story');
+    sp.set('full', '1');  // příběh vždy full
   }
   location.search = sp.toString();
 };
@@ -1850,7 +1852,7 @@ async function boot() {
     document.getElementById('crtStoryBtn').style.display  = '';
     if (isStory) {
       const sb = document.getElementById('crtStoryBtn');
-      sb.textContent = '🗺 Přehled'; sb.style.borderColor = '#4a9aee'; sb.style.color = '#4a9aee';
+      sb.textContent = '← Biosystém'; sb.style.borderColor = '#4a9aee'; sb.style.color = '#4a9aee';
     } else if (!_topNMode) {
       const tnBtn = document.getElementById('crtTopNBtn');
       tnBtn.textContent = '🗺 Přehled'; tnBtn.style.borderColor = '#4a9aee'; tnBtn.style.color = '#4a9aee';
