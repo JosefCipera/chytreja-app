@@ -272,6 +272,7 @@
     <div class="crt-subtitle" id="crtSubtitle">Current Reality Tree</div>
   </div>
   <button class="crt-back" id="crtMedBtn" onclick="toggleMeds()" style="display:none">Léky</button>
+  <button class="crt-back" id="crtLabelBtn" onclick="toggleLabelMode()" style="display:none">Expert</button>
   <div class="crt-pill" id="crtViewPill" style="display:none">
     <button class="crt-pill-opt active" id="crtPillFull" onclick="setViewFull()">Plná mapa</button>
     <button class="crt-pill-opt" id="crtPillTopN" onclick="setViewTopN()">Top-N</button>
@@ -1856,6 +1857,7 @@ async function boot() {
     applyLabelMode(displayData);
     _lastCrtData = displayData;
     renderTree(displayData);
+    document.getElementById('crtLabelBtn').style.display  = '';
     document.getElementById('crtViewPill').style.display  = '';
     document.getElementById('crtExportBtn').style.display = '';
     document.getElementById('crtPrintBtn').style.display  = '';
