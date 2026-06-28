@@ -321,7 +321,7 @@ function evalCondition(cond, user) {
   if (!cond) return true;
   if (Array.isArray(cond.or))  return cond.or.some(c  => evalCondition(c, user));
   if (Array.isArray(cond.and)) return cond.and.every(c => evalCondition(c, user));
-  if (cond.diag)    return (user.diagnoses || []).includes(cond.diag);
+  if (cond.diag)    return (user.diagnoses || []).some(d => d === cond.diag || d.startsWith(cond.diag + '_'));
   if (cond.symptom) return (user.symptoms  || []).includes(cond.symptom);
   if (cond.med) {
     const needle = cond.med.toLowerCase();
