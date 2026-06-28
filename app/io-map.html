@@ -37,6 +37,16 @@
     .io-btn:hover { border-color: #6a8aaa; color: #c8d8e8; }
     .io-btn.active { border-color: #4a8aaa; color: #88c8e8; }
 
+    .io-toggle { display: flex; border: 1px solid #2a3a4a; border-radius: 6px; overflow: hidden; }
+    .io-toggle-opt {
+      background: none; border: none; border-right: 1px solid #2a3a4a;
+      padding: 6px 12px; cursor: pointer; font-size: 12px; color: #8ba8b8;
+      transition: background .15s, color .15s;
+    }
+    .io-toggle-opt:last-child { border-right: none; }
+    .io-toggle-opt.active { background: #1a2535; color: #88c8e8; }
+    .io-toggle-opt:hover:not(.active) { color: #c8d8e8; }
+
     .io-body { flex: 1; position: relative; overflow: hidden; }
     #io-canvas {
       width: 100%; height: 100%;
@@ -68,7 +78,10 @@
     <div class="io-subtitle" id="ioSubtitle">Načítám…</div>
   </div>
   <div class="io-controls">
-    <button class="io-btn active" id="ioLabelBtn" onclick="toggleLabelMode()">Laik</button>
+    <div class="io-toggle">
+      <button class="io-toggle-opt active" id="ioToggleLaik"   onclick="_setLabelMode('layman')">Laik</button>
+      <button class="io-toggle-opt"        id="ioToggleExpert" onclick="_setLabelMode('expert')">Expert</button>
+    </div>
     <button class="io-btn" id="ioCrtBtn" onclick="window.location.href='/crt.html?focus=worst' + (userId ? '&userId=' + userId : '')">CRT →</button>
     <button class="io-btn" onclick="printIO()">🖨 Tisk</button>
   </div>
@@ -91,12 +104,13 @@ function ioLabel(node) {
     ? (node.label_expert || node.label_layman || '')
     : (node.label_layman || node.label_expert || '');
 }
-function toggleLabelMode() {
-  _labelMode = _labelMode === 'layman' ? 'expert' : 'layman';
-  const btn = document.getElementById('ioLabelBtn');
-  if (btn) { btn.textContent = _labelMode === 'layman' ? 'Laik' : 'Expert'; btn.classList.toggle('active', _labelMode === 'layman'); }
+function _setLabelMode(mode) {
+  _labelMode = mode;
+  document.getElementById('ioToggleLaik').classList.toggle('active', mode === 'layman');
+  document.getElementById('ioToggleExpert').classList.toggle('active', mode === 'expert');
   if (_ioData) renderIO(_ioData, _udeStates, _ncStatuses);
 }
+function toggleLabelMode() { _setLabelMode(_labelMode === 'layman' ? 'expert' : 'layman'); }
 
 // ── SVG helpers ──────────────────────────────────────────────────────────────
 function svgEl(tag, attrs = {}, text = null) {
@@ -393,14 +407,6 @@ function renderIO(data, udeStates, ncStatuses = {}) {
       }, line));
     });
 
-    if (ncSt) {
-      g.appendChild(svgEl('text', {
-        x: cx(n.x ?? 0), y: by + bh + 12,
-        'text-anchor': 'middle', fill: NC_ST[ncSt.status].dot,
-        'font-size': '10', 'font-family': 'Inter, Segoe UI, system-ui, sans-serif',
-        'font-weight': '500',
-      }, ncSt.val));
-    }
 
     if (isCSF && n.ude_link) {
       g.addEventListener('click', e => {
@@ -528,13 +534,12 @@ function printIO() {
   <style>
     @page { size: A4 landscape; margin: 8mm; }
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background: #fff; display: flex; align-items: center; justify-content: center; width: 100%; height: 100vh; }
+    body { background: #0b0f1a; display: flex; align-items: center; justify-content: center; width: 100%; height: 100vh; }
     svg { width: 100%; height: auto; display: block; }
-    rect { fill: #f8fafc !important; stroke: #475569 !important; }
-    text { fill: #1e293b !important; }
-    path { stroke: #94a3b8 !important; }
-    polygon { fill: #94a3b8 !important; }
-  </style></head><body>${svgHtml}<script>window.print();<\/script></body></html>`);
+  </style></head><body>${svgHtml}<script>
+    window.onafterprint = function() { window.close(); };
+    window.print();
+  <\/script></body></html>`);
   w.document.close();
 }
 
