@@ -1829,7 +1829,7 @@ window.setViewTopN = function() {
   document.getElementById('crtPillTopN').classList.add('active');
   document.getElementById('crtPillFull').classList.remove('active');
   if (!_rawCrtData) return;
-  const topN = computeTopN(_rawCrtData, worstUde(_rawCrtData));
+  const topN = computeTopN(_rawCrtData);   // standard BFS ROOT→UDE, bez focus módu
   applyLabelMode(topN);
   _lastCrtData = topN;
   renderTree(topN);
