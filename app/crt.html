@@ -1563,6 +1563,16 @@ window.printCRT = function() {
   const svgEl = document.querySelector('#crt-canvas svg');
   if (!svgEl) return;
 
+  // Spočítej bbox obsahu v SVG souřadnicích (ignoruje CSS transform)
+  let computedViewBox = null;
+  try {
+    const bb = svgEl.getBBox();
+    if (bb.width > 0 && bb.height > 0) {
+      const mg = 24;
+      computedViewBox = `${bb.x - mg} ${bb.y - mg} ${bb.width + 2*mg} ${bb.height + 2*mg}`;
+    }
+  } catch(e) {}
+
   // Remap dark fills → light (stejná logika jako exportCRTImage)
   let svgStr = new XMLSerializer().serializeToString(svgEl.cloneNode(true));
   const remap = [
@@ -1580,10 +1590,16 @@ window.printCRT = function() {
   ];
   for (const [from, to] of remap) svgStr = svgStr.split(from).join(to);
 
-  // Odstraň pan/zoom transform, odstraň pevné rozměry
+  // Odstraň CSS pan/zoom transform + pevné rozměry
   svgStr = svgStr.replace(/\s*style="transform:[^"]*"/, '');
   svgStr = svgStr.replace(/\bwidth="\d+(\.\d+)?"/, '');
   svgStr = svgStr.replace(/\bheight="\d+(\.\d+)?"/, '');
+
+  // Přepiš viewBox na přesný obsah (crop prázdné okraje)
+  if (computedViewBox) {
+    svgStr = svgStr.replace(/\s*viewBox="[^"]*"/, '');
+    svgStr = svgStr.replace('<svg ', `<svg viewBox="${computedViewBox}" `);
+  }
 
   const pw = window.open('', '_blank');
   pw.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
