@@ -1709,6 +1709,24 @@ function bfsPath(fromId, toId, nodeMap, activeIds) {
   return null;
 }
 
+// Všechny uzly ležící na JAKÉKOLIV cestě fromId→toId v aktivním podgrafu.
+// Forward BFS (children) ∩ Backward BFS (parents) = uzly mezi kořenem a UDE.
+function nodesOnAnyPath(fromId, toId, nodeMap, activeIds) {
+  const fwd = new Set(), q1 = [fromId];
+  while (q1.length) {
+    const cur = q1.shift(); if (fwd.has(cur)) continue; fwd.add(cur);
+    for (const c of (nodeMap[cur]?.children || [])) { if (activeIds.has(c)) q1.push(c); }
+  }
+  const bwd = new Set(), q2 = [toId];
+  while (q2.length) {
+    const cur = q2.shift(); if (bwd.has(cur)) continue; bwd.add(cur);
+    for (const p of (nodeMap[cur]?.parents || [])) { if (activeIds.has(p)) q2.push(p); }
+  }
+  const result = new Set();
+  for (const id of fwd) { if (bwd.has(id)) result.add(id); }
+  return result;
+}
+
 // Aktivní předci daného UDE (zpětný BFS přes parents), max maxDepth úrovní
 // Neobsahuje goal ani CSF — jen příčiny UDE samotného
 function allAncestors(udeId, nodeMap, allIds, maxDepth = Infinity) {
@@ -1766,7 +1784,7 @@ function computeTopN(rawData, focusUde = null) {
     if (rootId) topIds.add(rootId);
     for (const udeId of udeIds) {
       topIds.add(udeId);
-      if (rootId) { const p = bfsPath(rootId, udeId, nodeMap, allIds); if (p) p.forEach(id => topIds.add(id)); }
+      if (rootId) { nodesOnAnyPath(rootId, udeId, nodeMap, allIds).forEach(id => topIds.add(id)); }
     }
     // Bridge pass: layer-2 gap fill
     for (const pid of [...topIds]) {
