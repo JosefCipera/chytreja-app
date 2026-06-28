@@ -1566,21 +1566,31 @@ async function enrichContraMap(data) {
 
 // Tisk mapy — nový tab, světlé téma, A4 landscape (barevně, fit-to-page)
 window.printCRT = function() {
-  const svgEl = document.querySelector('#crt-canvas svg');
-  if (!svgEl) return;
+  const liveSvg = document.querySelector('#crt-canvas svg');
+  if (!liveSvg) return;
 
-  // Spočítej bbox obsahu v SVG souřadnicích (ignoruje CSS transform)
-  let computedViewBox = null;
+  // Klonuj SVG v DOM — transform/width/height operujeme přes API, ne regex
+  const clone = liveSvg.cloneNode(true);
+
+  // Odstraň CSS pan/zoom transform (je součástí style, ne standalone atribut)
+  clone.style.transform      = '';
+  clone.style.transformOrigin = '';
+
+  // Crop viewBox na skutečný obsah — getBBox() běží na live SVG (má DOM kontext)
   try {
-    const bb = svgEl.getBBox();
+    const bb = liveSvg.getBBox();
     if (bb.width > 0 && bb.height > 0) {
       const mg = 24;
-      computedViewBox = `${bb.x - mg} ${bb.y - mg} ${bb.width + 2*mg} ${bb.height + 2*mg}`;
+      clone.setAttribute('viewBox', `${bb.x - mg} ${bb.y - mg} ${bb.width + 2*mg} ${bb.height + 2*mg}`);
     }
   } catch(e) {}
 
+  // Odstraň pevné rozměry — SVG se roztáhne přes CSS max-width/max-height
+  clone.removeAttribute('width');
+  clone.removeAttribute('height');
+
   // Remap dark fills → light (stejná logika jako exportCRTImage)
-  let svgStr = new XMLSerializer().serializeToString(svgEl.cloneNode(true));
+  let svgStr = new XMLSerializer().serializeToString(clone);
   const remap = [
     ['fill="#1a2535"',   'fill="#dde4ec"'],   // regular node
     ['fill="#12100a"',   'fill="#fffae8"'],   // ROOT
@@ -1595,17 +1605,6 @@ window.printCRT = function() {
     ['stroke="#8ba8b8"', 'stroke="#5a8090"'],
   ];
   for (const [from, to] of remap) svgStr = svgStr.split(from).join(to);
-
-  // Odstraň CSS pan/zoom transform + pevné rozměry
-  svgStr = svgStr.replace(/\s*style="transform:[^"]*"/, '');
-  svgStr = svgStr.replace(/\bwidth="\d+(\.\d+)?"/, '');
-  svgStr = svgStr.replace(/\bheight="\d+(\.\d+)?"/, '');
-
-  // Přepiš viewBox na přesný obsah (crop prázdné okraje)
-  if (computedViewBox) {
-    svgStr = svgStr.replace(/\s*viewBox="[^"]*"/, '');
-    svgStr = svgStr.replace('<svg ', `<svg viewBox="${computedViewBox}" `);
-  }
 
   const pw = window.open('', '_blank');
   pw.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
