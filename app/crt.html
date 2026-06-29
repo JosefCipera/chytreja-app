@@ -603,14 +603,21 @@ async function loadCRT() {
     allContra.push(...(kb.contraindications || []));
   }
 
-  // ?kb=full: story ROOTs nemají parents → propoj je na biosystem ROOT dynamicky
+  // ?kb=full: smaž story ROOTs, jejich children napoj přímo na biosystem ROOT
   if (_kbParam === 'full') {
     const bioRoot = Object.values(nodeMap).find(n => n.type === 'root' && n.id === 'ROOT');
     if (bioRoot) {
       const storyRoots = Object.values(nodeMap).filter(n => n.type === 'root' && n.id !== 'ROOT');
       for (const sr of storyRoots) {
-        if (!sr.parents.includes('ROOT'))      sr.parents.push('ROOT');
-        if (!bioRoot.children.includes(sr.id)) bioRoot.children.push(sr.id);
+        for (const cid of (sr.children || [])) {
+          if (!bioRoot.children.includes(cid)) bioRoot.children.push(cid);
+          const child = nodeMap[cid];
+          if (child) {
+            child.parents = child.parents.filter(p => p !== sr.id);
+            if (!child.parents.includes('ROOT')) child.parents.push('ROOT');
+          }
+        }
+        delete nodeMap[sr.id];   // odstraň story ROOT ze scény
       }
     }
   }
