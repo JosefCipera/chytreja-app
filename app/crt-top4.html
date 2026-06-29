@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kauzální přehled</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0a1520; color: #c8d8e8; font-family: 'Inter', system-ui, sans-serif;
+         min-height: 100vh; padding: 16px; }
+
+  .top4-header {
+    display: flex; align-items: center; gap: 16px;
+    padding: 12px 8px 16px; border-bottom: 1px solid #1e2d3d; margin-bottom: 16px;
+  }
+  .top4-title { font-size: 16px; font-weight: 600; color: #e8f0f8; flex: 1; }
+  .top4-back { background: none; border: 1px solid #2a3a4a; color: #8ba8b8;
+    padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+  .top4-back:hover { border-color: #6a8aaa; color: #c8d8e8; }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; max-width: 1200px; margin: 0 auto; }
+  @media (max-width: 700px) { .grid { grid-template-columns: 1fr; } }
+
+  .card {
+    background: #0d1e2e; border: 1px solid #1e3040; border-radius: 12px;
+    overflow: hidden; cursor: pointer; transition: border-color .2s, box-shadow .2s;
+    display: flex; flex-direction: column;
+  }
+  .card:hover { border-color: #3a5a7a; box-shadow: 0 4px 24px rgba(0,0,0,.4); }
+  .card.inactive { opacity: .55; cursor: default; }
+  .card.inactive:hover { border-color: #1e3040; box-shadow: none; }
+
+  .card-header { padding: 14px 16px 10px; border-bottom: 1px solid #1a2d3d; }
+  .card-killer { font-size: 11px; font-weight: 700; letter-spacing: .12em; margin-bottom: 3px; }
+  .card-sub { font-size: 11px; color: #4a6a7a; }
+
+  .card-body { flex: 1; padding: 8px; overflow: hidden; position: relative; min-height: 200px; }
+  .card-body svg { display: block; width: 100%; height: auto; }
+
+  .card-footer { padding: 8px 14px 12px; border-top: 1px solid #1a2d3d; }
+  .card-warn { font-size: 10px; color: #e8a855; margin-bottom: 3px; }
+  .card-info { font-size: 10px; color: #4a6a7a; font-style: italic; }
+
+  .legend {
+    display: flex; gap: 18px; flex-wrap: wrap; align-items: center;
+    padding: 12px 8px 0; margin-top: 8px; border-top: 1px solid #1a2d3d;
+    font-size: 11px; color: #5a7a8a;
+  }
+  .legend-item { display: flex; align-items: center; gap: 5px; }
+  .leg-pill { padding: 1px 7px; border-radius: 10px; font-size: 10px; }
+  .leg-med  { background: #0e2038; border: 1px solid #4a9aee; color: #4a9aee; }
+  .leg-supp { background: #0a1e12; border: 1px solid #24a85e; color: #24a85e; }
+  .leg-warn { background: #1e1200; border: 1px solid #e8a855; color: #e8a855; }
+</style>
+</head>
+<body>
+
+<div class="top4-header">
+  <button class="top4-back" onclick="goBack()">← Zpět</button>
+  <div class="top4-title">Kauzální přehled · Top-N</div>
+  <div id="top4Sub" style="font-size:12px;color:#5a7a8a"></div>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<div class="legend">
+  <span class="legend-item"><span class="leg-pill leg-med">Lék</span> medication shield</span>
+  <span class="legend-item"><span class="leg-pill leg-supp">Suplement</span> supplement shield</span>
+  <span class="legend-item"><span class="leg-pill leg-warn">⚠ kontraindikace</span></span>
+  <span class="legend-item" style="color:#2a4a5a">uzel</span><span style="font-size:10px;color:#4a6a7a"> neaktivní (bez dat)</span>
+</div>
+
+<script>
+// ── Config ──────────────────────────────────────────────────────────────────
+const KILLERS = [
+  { kb: 'story',   label: 'KILLER: SRDCE',          color: '#e85555', sub: 'Kardiovaskulární riziko' },
+  { kb: 'pohyb',   label: 'POHYB & METABOLISMUS',   color: '#e8a855', sub: 'Pohybový aparát, metabolismus' },
+  { kb: 'mozek',   label: 'KILLER: MOZEK',          color: '#a855e8', sub: 'Neurodegenerace, kognitivní pokles' },
+  { kb: 'imunita', label: 'KILLER: IMUNITA',        color: '#55b8e8', sub: 'Onkologické riziko' },
+];
+const KB_FILES = {
+  story:   '/data/crt/v2/kardio_story.json',
+  pohyb:   '/data/crt/v2/pohyb_story.json',
+  mozek:   '/data/crt/v2/mozek_story.json',
+  imunita: '/data/crt/v2/imunita_story.json',
+};
+
+// Mini render constants
+const BW = 106, BH = 32, FSIZE = 9, LGAP = 52, XSC = 0.52;
+const PPAD = 6, PH = 18, PFONT = 8;
+
+const sp = new URLSearchParams(location.search);
+const userId = sp.get('userId') || sp.get('user_id') || '';
+
+function goBack() { history.back(); }
+
+// ── Condition evaluation (same as crt.html) ──────────────────────────────
+const DIAG_MAP = [
+  [/fibrilace\s*síní/i,                               'FIBRILACE_SINI'],
+  [/fibrilace/i,                                       'FIBRILACE'],
+  [/hypertenze|vysoký\s*tlak|vysoký\s*krevní\s*tlak/i,'HYPERTENZE'],
+  [/diabetes|cukrovka|dm\s*2|dm2/i,                   'DIABETES_2_TYPU'],
+  [/hypothyre[oó]za|štítná\s*žláza/i,                 'HYPOTHYREOZA'],
+  [/chronický\s*stres|stres/i,                         'CHRONICKY_STRES'],
+  [/extrasystoly/i,                                    'EXTRASYSTOLY'],
+  [/inzulínová\s*rezistence|inzulinová\s*rezistence/i, 'INZULIN_REZISTENCE'],
+  [/obezita/i,                                         'OBEZITA'],
+];
+function normDiag(d) {
+  if (!d || typeof d !== 'string') return '';
+  for (const [re, code] of DIAG_MAP) { if (re.test(d)) return code; }
+  return d.toUpperCase().replace(/\s+/g,'_').replace(/[^A-Z0-9_]/g,'');
+}
+function evalCondition(cond, user) {
+  if (!cond) return true;
+  if (cond.and) return cond.and.every(c => evalCondition(c, user));
+  if (cond.or)  return cond.or.some(c  => evalCondition(c, user));
+  if (cond.not) return !evalCondition(cond.not, user);
+  if (cond.diag) return (user.diagnoses||[]).some(d => d===cond.diag || d.startsWith(cond.diag+'_'));
+  if (cond.med) {
+    const needle = cond.med.toLowerCase();
+    return (user.meds||[]).some(m => String(m).toLowerCase().includes(needle));
+  }
+  if (cond.lab) {
+    const v = user.labs?.[cond.lab];
+    if (v == null) return false;
+    if (cond.gt != null) return v > cond.gt;
+    if (cond.lt != null) return v < cond.lt;
+  }
+  if (cond.checkin) {
+    const v = user.checkin?.[cond.checkin];
+    if (v == null) return false;
+    if (cond.gt != null) return v > cond.gt;
+    if (cond.lt != null) return v < cond.lt;
+  }
+  return false;
+}
+
+// ── Fetch user context ───────────────────────────────────────────────────
+async function fetchCtx() {
+  if (!userId) return { labs:{}, checkin:{}, diagnoses:[], meds:[], supps:[] };
+  try {
+    const r = await fetch(`/api/user?action=crt-context&userId=${userId}`);
+    return r.ok ? r.json() : { labs:{}, checkin:{}, diagnoses:[], meds:[], supps:[] };
+  } catch { return { labs:{}, checkin:{}, diagnoses:[], meds:[], supps:[] }; }
+}
+
+// ── Build active nodes from KB + ctx ────────────────────────────────────
+function buildActive(kbNodes, ctx) {
+  const nodeMap = {};
+  for (const n of kbNodes) nodeMap[n.id] = { ...n, children:[...(n.children||[])], parents:[...(n.parents||[])] };
+  const active = new Set();
+  for (const [id, n] of Object.entries(nodeMap)) {
+    if (n.type === 'goal') continue;
+    if (n.type === 'root' || !n.condition) { active.add(id); continue; }
+    if (evalCondition(n.condition, ctx)) active.add(id);
+  }
+  return { nodeMap, active };
+}
+
+// ── Mini layout (same algorithm as crt.html calcPositionsClient) ─────────
+function miniLayout(nodes) {
+  const byLayer = {};
+  for (const n of nodes) { (byLayer[n.layer??0] = byLayer[n.layer??0]||[]).push(n); }
+  const layers = Object.keys(byLayer).map(Number).sort((a,b)=>a-b);
+  const branchOrder = { left:0, center:1, right:2 };
+  function placeGroup(g) {
+    g.sort((a,b)=>(branchOrder[a.branch??'center']??1)-(branchOrder[b.branch??'center']??1));
+    const total = g.length;
+    g.forEach((n,i) => { n.x = (i - (total-1)/2) * 1.1; n.y = (n.layer??0) * LGAP; });
+  }
+  layers.forEach(lv => placeGroup(byLayer[lv]));
+
+  // parent-centring passes
+  for (let iter = 0; iter < 2; iter++) {
+    layers.slice(1).forEach(lv => {
+      byLayer[lv].forEach(n => {
+        const activeParents = (n.parents||[]).map(pid => nodes.find(nn=>nn.id===pid)).filter(Boolean);
+        if (activeParents.length) n.x = activeParents.reduce((s,p)=>s+p.x,0)/activeParents.length;
+      });
+      const g = byLayer[lv]; g.sort((a,b)=>a.x-b.x);
+      const sep = 1.1;
+      for (let i=1;i<g.length;i++) { if (g[i].x < g[i-1].x+sep) g[i].x = g[i-1].x+sep; }
+    });
+  }
+}
+
+// ── Mini SVG renderer ────────────────────────────────────────────────────
+function svgEl(tag, attrs, text) {
+  const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+  for (const [k,v] of Object.entries(attrs)) el.setAttribute(k,v);
+  if (text) el.textContent = text;
+  return el;
+}
+
+function wrapMini(label, maxW) {
+  if (!label) return [''];
+  const words = label.replace(/\n/g,' ').split(' ');
+  const lines = []; let cur = '';
+  const approxCharW = FSIZE * 0.55;
+  const maxChars = Math.floor(maxW / approxCharW);
+  for (const w of words) {
+    if ((cur+' '+w).trim().length <= maxChars) { cur = (cur+' '+w).trim(); }
+    else { if (cur) lines.push(cur); cur = w; }
+  }
+  if (cur) lines.push(cur);
+  return lines.length ? lines : [''];
+}
+
+function boxH(label) {
+  const lines = wrapMini(label, BW - 16);
+  return Math.max(BH, lines.length * (FSIZE + 3) + 10);
+}
+
+function renderMiniSvg(nodes, nodeMap, active, medsMap, suppsMap) {
+  const xs = nodes.map(n=>n.x * XSC * BW);
+  const ys = nodes.map(n=>n.y);
+  const minX = Math.min(...xs), maxX = Math.max(...xs);
+  const minY = Math.min(...ys), maxY = Math.max(...ys);
+  const PAD = 12, PAD_R = 60;
+  const svgW = (maxX - minX) + BW + PAD*2 + PAD_R;
+  const svgH = (maxY - minY) + BH * 2 + PAD * 2;
+
+  const cx = x => (x * XSC * BW) - minX + PAD + BW/2;
+  const cy = y => svgH - PAD - BH/2 - (y - minY);
+
+  const svg = svgEl('svg', { viewBox:`0 0 ${svgW} ${svgH}`, width:svgW, height:svgH,
+    style:'display:block;overflow:visible' });
+
+  // Arrows
+  for (const n of nodes) {
+    const fx=cx(n.x), fy=cy(n.y);
+    for (const cid of (n.children||[])) {
+      if (!active.has(cid)) continue;
+      const child = nodes.find(nn=>nn.id===cid); if (!child) continue;
+      const tx=cx(child.x), ty=cy(child.y);
+      const ch = boxH(child.label??'');
+      const dy = ch/2;
+      const g = svgEl('g',{});
+      g.appendChild(svgEl('line',{ x1:fx, y1:fy-BH/2, x2:tx, y2:ty+dy, stroke:'#3a5a6a', 'stroke-width':'1' }));
+      // arrowhead
+      const angle = Math.atan2(fy-BH/2-(ty+dy), fx-tx);
+      const aw=5,al=7;
+      const p1x=tx+aw*Math.cos(angle+Math.PI/6), p1y=ty+dy+aw*Math.sin(angle+Math.PI/6);
+      const p2x=tx+aw*Math.cos(angle-Math.PI/6), p2y=ty+dy+aw*Math.sin(angle-Math.PI/6);
+      g.appendChild(svgEl('polygon',{ points:`${tx},${ty+dy} ${p1x},${p1y} ${p2x},${p2y}`, fill:'#4a7890' }));
+      svg.appendChild(g);
+    }
+  }
+
+  // Nodes
+  for (const n of nodes) {
+    const x=cx(n.x), y=cy(n.y);
+    const type = n.type || 'cause';
+    const isRoot = type === 'root', isUde = type === 'ude';
+    const fill  = isRoot ? '#12100a' : isUde ? '#0d1e10' : '#1a2535';
+    const stroke= isRoot ? '#d4a838' : isUde ? '#24a85e' : '#3a5a6a';
+    const sw    = isRoot || isUde ? 1.5 : 1;
+    const dash  = isUde ? '4,3' : undefined;
+    const lines = wrapMini(n.label??'', BW-12);
+    const bh    = boxH(n.label??'');
+
+    const g = svgEl('g',{});
+    const rect = svgEl('rect',{ x:x-BW/2, y:y-bh/2, width:BW, height:bh, rx:5,
+      fill, stroke, 'stroke-width':sw });
+    if (dash) rect.setAttribute('stroke-dasharray', dash);
+    g.appendChild(rect);
+
+    const textColor = isRoot ? '#d4a838' : isUde ? '#24a85e' : '#c8d8e8';
+    const fontW = isRoot || isUde ? '600' : '400';
+    lines.forEach((ln,i) => {
+      const textY = y - (lines.length-1)*(FSIZE+3)/2 + i*(FSIZE+3);
+      g.appendChild(svgEl('text',{ x, y:textY, 'text-anchor':'middle', 'dominant-baseline':'middle',
+        fill:textColor, 'font-size':FSIZE, 'font-weight':fontW, 'font-family':'Inter,system-ui,sans-serif' }, ln));
+    });
+
+    // Med pills on right side
+    const meds = (medsMap||[]).filter(m=>m.targets?.includes(n.id));
+    const supps = (suppsMap||[]).filter(s=>s.targets?.includes(n.id));
+    let pillY = y - bh/2;
+    for (const m of meds) {
+      const pw = m.name.length * PFONT * 0.58 + PPAD*2;
+      const pill = svgEl('g',{});
+      pill.appendChild(svgEl('rect',{ x:x+BW/2+3, y:pillY, width:pw, height:PH, rx:PH/2,
+        fill:'#0e2038', stroke:'#4a9aee', 'stroke-width':'1' }));
+      pill.appendChild(svgEl('text',{ x:x+BW/2+3+pw/2, y:pillY+PH/2, 'text-anchor':'middle',
+        'dominant-baseline':'middle', fill:'#4a9aee', 'font-size':PFONT,
+        'font-family':'Inter,system-ui,sans-serif' }, m.name));
+      svg.appendChild(pill);
+      pillY += PH + 3;
+    }
+    for (const s of supps) {
+      const pw = s.name.length * PFONT * 0.58 + PPAD*2;
+      const pill = svgEl('g',{});
+      pill.appendChild(svgEl('rect',{ x:x+BW/2+3, y:pillY, width:pw, height:PH, rx:PH/2,
+        fill:'#0a1e12', stroke:'#24a85e', 'stroke-width':'1' }));
+      pill.appendChild(svgEl('text',{ x:x+BW/2+3+pw/2, y:pillY+PH/2, 'text-anchor':'middle',
+        'dominant-baseline':'middle', fill:'#24a85e', 'font-size':PFONT,
+        'font-family':'Inter,system-ui,sans-serif' }, s.name));
+      svg.appendChild(pill);
+      pillY += PH + 3;
+    }
+
+    svg.appendChild(g);
+  }
+
+  return svg;
+}
+
+// ── Build med/supp maps (simplified) ────────────────────────────────────
+function buildMini(shields, userDrugs, active) {
+  return (shields||[]).flatMap(s => {
+    const targets = [];
+    if (s.shields_node && active.has(s.shields_node)) targets.push(s.shields_node);
+    if (!targets.length) return [];
+    const names = [s.med||s.supp||'', ...(s.aliases||[])].filter(Boolean).map(k=>k.toLowerCase());
+    const has = userDrugs.some(u => names.some(k => String(u).toLowerCase().includes(k) || k.includes(String(u).toLowerCase())));
+    return [{ name: s.med||s.supp||s.inn||'', targets, userHas: has }];
+  }).filter(m=>m.userHas);
+}
+
+// ── Render one card ──────────────────────────────────────────────────────
+async function renderCard(killer, ctx) {
+  const card = document.createElement('div');
+  card.className = 'card';
+
+  const header = document.createElement('div');
+  header.className = 'card-header';
+  header.innerHTML = `<div class="card-killer" style="color:${killer.color}">○ ${killer.label}</div>
+    <div class="card-sub" id="sub-${killer.kb}">${killer.sub}</div>`;
+  card.appendChild(header);
+
+  const body = document.createElement('div');
+  body.className = 'card-body';
+  card.appendChild(body);
+
+  const footer = document.createElement('div');
+  footer.className = 'card-footer';
+  card.appendChild(footer);
+
+  document.getElementById('grid').appendChild(card);
+
+  try {
+    const r = await fetch(KB_FILES[killer.kb]);
+    if (!r.ok) throw new Error('KB not found');
+    const kb = await r.json();
+    const kbNodes = kb.nodes || kb;
+
+    const { nodeMap, active } = buildActive(kbNodes, ctx);
+    if (active.size <= 1) {
+      card.classList.add('inactive');
+      body.innerHTML = `<div style="padding:24px;font-size:11px;color:#3a5a6a;text-align:center">Bez dat · doplňte zdravotní profil</div>`;
+      return;
+    }
+
+    const nodes = [...active].map(id=>({...nodeMap[id]}));
+    miniLayout(nodes);
+
+    const medsMap  = buildMini(kb.medication_shields||[], ctx.meds||[], active);
+    const suppsMap = buildMini(kb.supplement_shields||[], ctx.supps||[], active);
+
+    const svg = renderMiniSvg(nodes, nodeMap, active, medsMap, suppsMap);
+    body.appendChild(svg);
+
+    // Warnings
+    const contra = (kb.contraindications||[]).filter(c => {
+      if (!c.node || !active.has(c.node)) return false;
+      const allDrugs = [...(ctx.meds||[]),...(ctx.supps||[])].map(d=>d.toLowerCase());
+      const meds2 = [c.conflicts_with_med,...(c.conflicts_with_med_aliases||[])].map(k=>k.toLowerCase());
+      return allDrugs.some(u=>meds2.some(k=>u.includes(k)||k.includes(u)));
+    });
+    contra.slice(0,2).forEach(c => {
+      const w = document.createElement('div');
+      w.className = 'card-warn';
+      w.textContent = `⚠ ${c.conflicts_with_med} — ${c.reason||'interakce'}`;
+      footer.appendChild(w);
+    });
+
+    card.style.cursor = 'pointer';
+    card.onclick = () => {
+      const url = new URL('crt.html', location.href);
+      if (userId) url.searchParams.set('userId', userId);
+      url.searchParams.set('kb', killer.kb);
+      location.href = url.toString();
+    };
+
+  } catch(e) {
+    card.classList.add('inactive');
+    body.innerHTML = `<div style="padding:24px;font-size:11px;color:#3a5a6a;text-align:center">KB zatím neexistuje</div>`;
+    console.warn('[top4]', killer.kb, e.message);
+  }
+}
+
+// ── Boot ─────────────────────────────────────────────────────────────────
+(async () => {
+  const ctx = await fetchCtx();
+  if (ctx.diagnoses) ctx.diagnoses = ctx.diagnoses.map(normDiag);
+  document.getElementById('top4Sub').textContent = userId ? `userId: ${userId.slice(0,8)}…` : '';
+  await Promise.all(KILLERS.map(k => renderCard(k, ctx)));
+})();
+</script>
+</body>
+</html>
