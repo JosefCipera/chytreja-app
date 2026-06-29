@@ -557,7 +557,9 @@ function buildMedsMap(shields, userMeds, activeIds, arrowsById) {
 
 // ── Load CRT v2 — Integrovaný Biovesmír ──────────────────────────────────────
 // Podmínky na uzlech (ne šipkách). Hrany z parents/children.
-// ?kb=story/mozek/pohyb/imunita → příběhová KB, default → unified biosystem
+// ?kb=story/mozek/pohyb/imunita → příběhová KB
+// ?kb=full → biosystem ROOT + všechny 4 story KBs merged
+// default → unified biosystem
 const _kbParam = new URLSearchParams(location.search).get('kb');
 const _KB_STORY_MAP = {
   story:   '/data/crt/v2/kardio_story.json',
@@ -565,9 +567,12 @@ const _KB_STORY_MAP = {
   pohyb:   '/data/crt/v2/pohyb_story.json',
   imunita: '/data/crt/v2/imunita_story.json',
 };
-const KB_FILES_V2 = _KB_STORY_MAP[_kbParam]
-  ? [_KB_STORY_MAP[_kbParam]]
-  : ['/data/crt/v2/biosystem_v2.json'];
+const _ALL_STORY_FILES = Object.values(_KB_STORY_MAP);
+const KB_FILES_V2 = _kbParam === 'full'
+  ? ['/data/crt/v2/biosystem_v2.json', ..._ALL_STORY_FILES]
+  : _KB_STORY_MAP[_kbParam]
+    ? [_KB_STORY_MAP[_kbParam]]
+    : ['/data/crt/v2/biosystem_v2.json'];
 
 async function loadCRT() {
   const forceOpus = new URLSearchParams(location.search).get('opus') === '1';
@@ -596,6 +601,18 @@ async function loadCRT() {
     allMedShields.push(...(kb.medication_shields || []));
     allSuppShields.push(...(kb.supplement_shields || []));
     allContra.push(...(kb.contraindications || []));
+  }
+
+  // ?kb=full: story ROOTs nemají parents → propoj je na biosystem ROOT dynamicky
+  if (_kbParam === 'full') {
+    const bioRoot = Object.values(nodeMap).find(n => n.type === 'root' && n.id === 'ROOT');
+    if (bioRoot) {
+      const storyRoots = Object.values(nodeMap).filter(n => n.type === 'root' && n.id !== 'ROOT');
+      for (const sr of storyRoots) {
+        if (!sr.parents.includes('ROOT'))      sr.parents.push('ROOT');
+        if (!bioRoot.children.includes(sr.id)) bioRoot.children.push(sr.id);
+      }
+    }
   }
 
   // Rule engine — podmínka na uzlu (ne na hraně)
@@ -1693,7 +1710,7 @@ window.exportCRTImage = function() {
 // ── Top-N: zobraz jen uzly na nejkratší cestě ROOT→každý killer ──────────────
 // Story KB vždy startuje v Plné mapě; biosystem defaultně Top-N (pokud ne ?full=1)
 const _urlParams   = new URLSearchParams(location.search);
-const _isStoryBoot = !!_KB_STORY_MAP[_urlParams.get('kb')];
+const _isStoryBoot = !!_KB_STORY_MAP[_urlParams.get('kb')] || _urlParams.get('kb') === 'full';
 let _topNMode = _isStoryBoot ? false : (_urlParams.get('full') !== '1');
 let _rawCrtData = null; // plná nefiltrovaná data
 

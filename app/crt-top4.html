@@ -401,7 +401,7 @@ async function renderCard(killer, ctx) {
 
     const fullUrl = new URL('crt.html', location.href);
     if (userId) fullUrl.searchParams.set('userId', userId);
-    fullUrl.searchParams.set('kb', killer.kb);
+    fullUrl.searchParams.set('kb', 'full');
     const a = document.createElement('a');
     a.className = 'card-open'; a.href = fullUrl.toString(); a.textContent = 'Plná mapa →';
     a.onclick = e => e.stopPropagation();
