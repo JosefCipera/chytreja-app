@@ -132,7 +132,7 @@
       "label_expert": "Ateroskleróza\na vaskulární plaky",
       "label_layman": "Zanášení\na kornatění cév",
       "layer": 2, "branch": "center",
-      "condition": { "or": [{"med":"stacyl"}, {"med":"aspirin"}, {"med":"anopyrin"}, {"med":"rosucard"}, {"med":"rosuvastatin"}, {"diag":"STAV_PO_CMP"}, {"diag":"ATEROSKLEROZA"}] },
+      "condition": { "or": [{"med":"stacyl"}, {"med":"aspirin"}, {"med":"anopyrin"}, {"med":"rosucard"}, {"med":"rosuvastatin"}, {"med":"torvacard"}, {"med":"atorvastatin"}, {"lab":"ldl","gt":3.0}, {"diag":"STAV_PO_CMP"}, {"diag":"ATEROSKLEROZA"}] },
       "parents": ["HYPERGLYK", "HIGH_LDL", "HYPERTENZE"],
       "children": ["VASK_POD", "UDE_SRDCE", "SYNAP_UBYT"],
       "detail": {
@@ -238,7 +238,7 @@
       "label_expert": "Úbytek neuronů\na synapsí",
       "label_layman": "Rychlejší\nstárnutí mozku",
       "layer": 3, "branch": "center",
-      "condition": { "or": [{"med":"duspelin"}, {"med":"donepezil"}, {"diag":"MILD_KOGN_IMPAIRMENT"}, {"diag":"STAV_PO_CMP"}] },
+      "condition": { "or": [{"med":"duspelin"}, {"med":"donepezil"}, {"diag":"MILD_KOGN_IMPAIRMENT"}, {"diag":"STAV_PO_CMP"}, {"diag":"FIBRILACE_SINI"}, {"med":"pradaxa"}, {"med":"dabigatran"}] },
       "parents": ["INZULREZ", "ATEROSKLEROZA"],
       "children": ["UDE_MOZEK"],
       "detail": {
@@ -278,7 +278,7 @@
       "label_expert": "Zhoršení paměti\na kognice",
       "label_layman": "Paměť a myšlení\nslábnou",
       "layer": 4, "type": "ude", "branch": "center",
-      "condition": { "or": [{"med":"duspelin"}, {"med":"donepezil"}, {"diag":"MILD_KOGN_IMPAIRMENT"}, {"diag":"STAV_PO_CMP"}] },
+      "condition": { "or": [{"med":"duspelin"}, {"med":"donepezil"}, {"diag":"MILD_KOGN_IMPAIRMENT"}, {"diag":"STAV_PO_CMP"}, {"diag":"HYPERTENZE"}, {"diag":"FIBRILACE_SINI"}, {"med":"pradaxa"}, {"med":"dabigatran"}] },
       "parents": ["ZANET", "VASK_POD", "SYNAP_UBYT"],
       "children": ["GOAL"],
       "detail": {
@@ -291,7 +291,7 @@
       "label_expert": "Onkologické\nriziko",
       "label_layman": "Tělo hůře bojuje\ns nádory",
       "layer": 4, "type": "ude", "branch": "right",
-      "condition": { "or": [{"diag":"DIABETES_2_TYPU"}, {"lab":"vitamin_d","lt":75}, {"med":"sifor"}, {"med":"vigantol"}] },
+      "condition": { "or": [{"diag":"DIABETES_2_TYPU"}, {"lab":"vitamin_d","lt":75}, {"med":"sifor"}, {"med":"vigantol"}, {"lab":"crp","gt":1.0}] },
       "parents": ["ZANET", "IMUNO_OSL"],
       "children": ["GOAL"],
       "detail": {

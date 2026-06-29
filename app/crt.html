@@ -568,11 +568,10 @@ const _KB_STORY_MAP = {
   imunita: '/data/crt/v2/imunita_story.json',
 };
 const _ALL_STORY_FILES = Object.values(_KB_STORY_MAP);
-const KB_FILES_V2 = _kbParam === 'full'
-  ? ['/data/crt/v2/biosystem_v2.json', ..._ALL_STORY_FILES]
-  : _KB_STORY_MAP[_kbParam]
-    ? [_KB_STORY_MAP[_kbParam]]
-    : ['/data/crt/v2/biosystem_v2.json'];
+// kb=full → biosystem_v2 (unified, all 4 killers); story KBs for individual killer views
+const KB_FILES_V2 = _KB_STORY_MAP[_kbParam]
+  ? [_KB_STORY_MAP[_kbParam]]
+  : ['/data/crt/v2/biosystem_v2.json'];
 
 async function loadCRT() {
   const forceOpus = new URLSearchParams(location.search).get('opus') === '1';
@@ -603,24 +602,6 @@ async function loadCRT() {
     allContra.push(...(kb.contraindications || []));
   }
 
-  // ?kb=full: smaž story ROOTs, jejich children napoj přímo na biosystem ROOT
-  if (_kbParam === 'full') {
-    const bioRoot = Object.values(nodeMap).find(n => n.type === 'root' && n.id === 'ROOT');
-    if (bioRoot) {
-      const storyRoots = Object.values(nodeMap).filter(n => n.type === 'root' && n.id !== 'ROOT');
-      for (const sr of storyRoots) {
-        for (const cid of (sr.children || [])) {
-          if (!bioRoot.children.includes(cid)) bioRoot.children.push(cid);
-          const child = nodeMap[cid];
-          if (child) {
-            child.parents = child.parents.filter(p => p !== sr.id);
-            if (!child.parents.includes('ROOT')) child.parents.push('ROOT');
-          }
-        }
-        delete nodeMap[sr.id];   // odstraň story ROOT ze scény
-      }
-    }
-  }
 
   // Rule engine — podmínka na uzlu (ne na hraně)
   const activeIds = new Set();
