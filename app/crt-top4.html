@@ -161,6 +161,24 @@ function buildActive(kbNodes, ctx) {
   return { nodeMap, active };
 }
 
+// Nejkratší cesta ROOT→UDE pro Top-N kartu (páteř, ne všechny větve)
+function spineIds(nodeMap, active) {
+  const rootId = [...active].find(id => nodeMap[id]?.type === 'root');
+  const udeId  = [...active].find(id => nodeMap[id]?.type === 'ude');
+  if (!rootId || !udeId) return active;
+  // BFS ROOT→UDE přes children
+  const queue = [[rootId]], visited = new Set([rootId]);
+  while (queue.length) {
+    const path = queue.shift();
+    const cur = path[path.length - 1];
+    if (cur === udeId) return new Set(path);
+    for (const cid of (nodeMap[cur]?.children || [])) {
+      if (active.has(cid) && !visited.has(cid)) { visited.add(cid); queue.push([...path, cid]); }
+    }
+  }
+  return active; // fallback: vše
+}
+
 // ── Mini layout (same algorithm as crt.html calcPositionsClient) ─────────
 function miniLayout(nodes) {
   const byLayer = {};
@@ -356,13 +374,15 @@ async function renderCard(killer, ctx) {
       return;
     }
 
-    const nodes = [...active].map(id=>({...nodeMap[id]}));
+    // Karta = páteř (nejkratší cesta ROOT→UDE), plná mapa má vše
+    const spine = spineIds(nodeMap, active);
+    const nodes = [...spine].map(id=>({...nodeMap[id]}));
     miniLayout(nodes);
 
-    const medsMap  = buildMini(kb.medication_shields||[], ctx.meds||[], active);
-    const suppsMap = buildMini(kb.supplement_shields||[], ctx.supps||[], active);
+    const medsMap  = buildMini(kb.medication_shields||[], ctx.meds||[], spine);
+    const suppsMap = buildMini(kb.supplement_shields||[], ctx.supps||[], spine);
 
-    const svg = renderMiniSvg(nodes, nodeMap, active, medsMap, suppsMap);
+    const svg = renderMiniSvg(nodes, nodeMap, spine, medsMap, suppsMap);
     body.appendChild(svg);
 
     // Warnings
