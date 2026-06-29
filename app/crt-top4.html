@@ -40,6 +40,9 @@
   .card-footer { padding: 8px 14px 12px; border-top: 1px solid #1a2d3d; }
   .card-warn { font-size: 10px; color: #e8a855; margin-bottom: 3px; }
   .card-info { font-size: 10px; color: #4a6a7a; font-style: italic; }
+  .card-open { display:inline-block; margin-top:8px; font-size:11px; color:#88c8e8;
+    border:1px solid #2a4a6a; border-radius:5px; padding:4px 10px; text-decoration:none; }
+  .card-open:hover { border-color:#4a9aee; color:#4a9aee; }
 
   .legend {
     display: flex; gap: 18px; flex-wrap: wrap; align-items: center;
@@ -376,13 +379,16 @@ async function renderCard(killer, ctx) {
       footer.appendChild(w);
     });
 
+    const fullUrl = new URL('crt.html', location.href);
+    if (userId) fullUrl.searchParams.set('userId', userId);
+    fullUrl.searchParams.set('kb', killer.kb);
+    const a = document.createElement('a');
+    a.className = 'card-open'; a.href = fullUrl.toString(); a.textContent = 'Plná mapa →';
+    a.onclick = e => e.stopPropagation();
+    footer.appendChild(a);
+
     card.style.cursor = 'pointer';
-    card.onclick = () => {
-      const url = new URL('crt.html', location.href);
-      if (userId) url.searchParams.set('userId', userId);
-      url.searchParams.set('kb', killer.kb);
-      location.href = url.toString();
-    };
+    card.onclick = () => { location.href = fullUrl.toString(); };
 
   } catch(e) {
     card.classList.add('inactive');
