@@ -1691,8 +1691,10 @@ window.exportCRTImage = function() {
 };
 
 // ── Top-N: zobraz jen uzly na nejkratší cestě ROOT→každý killer ──────────────
-// ?full=1 → start v plné mapě (z launcheru / io-map)
-let _topNMode = new URLSearchParams(location.search).get('full') !== '1';
+// Story KB vždy startuje v Plné mapě; biosystem defaultně Top-N (pokud ne ?full=1)
+const _urlParams   = new URLSearchParams(location.search);
+const _isStoryBoot = !!_KB_STORY_MAP[_urlParams.get('kb')];
+let _topNMode = _isStoryBoot ? false : (_urlParams.get('full') !== '1');
 let _rawCrtData = null; // plná nefiltrovaná data
 
 function bfsPath(fromId, toId, nodeMap, activeIds) {
