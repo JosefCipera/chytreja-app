@@ -175,6 +175,19 @@
     }
   ],
 
+  "supplement_shields": [
+    {
+      "supp": "Vitamín B12", "aliases": ["B12", "vitamin B12", "kyanokobalamin", "methylkobalamin", "kobalamin"],
+      "shields_node": "NEUROPATIE_PH",
+      "reason": "Vitamín B12 je klíčový pro regeneraci nervových vláken — jeho deficit (častý při metforminu) zhoršuje neuropatii."
+    },
+    {
+      "supp": "Hořčík", "aliases": ["magnesium", "magnézium", "magnésium", "bisglycinát", "bisglycinate"],
+      "shields_node": "UNAVA_PH",
+      "reason": "Hořčík podporuje svalovou funkci a energetický metabolismus — jeho nízká hladina přispívá k únavě a svalovým křečím."
+    }
+  ],
+
   "medication_shields": [
     {
       "med": "Levothyroxin", "inn": "levothyroxin",

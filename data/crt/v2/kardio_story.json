@@ -187,6 +187,24 @@
     }
   ],
 
+  "supplement_shields": [
+    {
+      "supp": "Hořčík", "aliases": ["magnesium", "magnézium", "bisglycinát", "bisglycinate", "hořčík"],
+      "shields_node": "ZTUHE_CEVY_K",
+      "reason": "Hořčík zlepšuje pružnost hladké svaloviny cév a snižuje arteriální tuhnutí."
+    },
+    {
+      "supp": "CoQ10", "aliases": ["coq10", "koenzym q", "ubiquinol", "ubidecarenone", "q10"],
+      "shields_node": "NIZKE_HRV_K",
+      "reason": "Koenzym Q10 podporuje mitochondriální energetiku srdečního svalu a zlepšuje HRV."
+    },
+    {
+      "supp": "Omega-3", "aliases": ["omega3", "epa", "dha", "rybí olej", "fish oil", "omega 3"],
+      "shields_node": "ZANET_CEV_K",
+      "reason": "EPA+DHA snižují CRP a zpomalují zánětlivé poškození cévní stěny."
+    }
+  ],
+
   "medication_shields": [
     {
       "med": "Torvacard", "inn": "atorvastatin",

@@ -557,9 +557,8 @@ function buildMedsMap(shields, userMeds, activeIds, arrowsById) {
 
 // ── Load CRT v2 — Integrovaný Biovesmír ──────────────────────────────────────
 // Podmínky na uzlech (ne šipkách). Hrany z parents/children.
-// ?kb=story/mozek/pohyb/imunita → příběhová KB
-// ?kb=full → biosystem ROOT + všechny 4 story KBs merged
-// default → unified biosystem
+// ?kb=story/mozek/pohyb/imunita → jeden příběhový strom (jeden killer)
+// default i ?kb=full → všechny 4 příběhové KB sloučené pod jeden ROOT (Plná mapa)
 const _kbParam = new URLSearchParams(location.search).get('kb');
 const _KB_STORY_MAP = {
   story:   '/data/crt/v2/kardio_story.json',
@@ -568,10 +567,10 @@ const _KB_STORY_MAP = {
   imunita: '/data/crt/v2/imunita_story.json',
 };
 const _ALL_STORY_FILES = Object.values(_KB_STORY_MAP);
-// kb=full → biosystem_v2 (unified, all 4 killers); story KBs for individual killer views
+const _CANONICAL_ROOT_ID = 'ROOT_K';
 const KB_FILES_V2 = _KB_STORY_MAP[_kbParam]
   ? [_KB_STORY_MAP[_kbParam]]
-  : ['/data/crt/v2/biosystem_v2.json'];
+  : _ALL_STORY_FILES;
 
 async function loadCRT() {
   const forceOpus = new URLSearchParams(location.search).get('opus') === '1';
@@ -602,6 +601,24 @@ async function loadCRT() {
     allContra.push(...(kb.contraindications || []));
   }
 
+  // Sloučený režim (více story KB) → smaž vedlejší ROOTy, jejich children napoj na kanonický ROOT
+  if (!_KB_STORY_MAP[_kbParam]) {
+    const canonicalRoot = nodeMap[_CANONICAL_ROOT_ID];
+    if (canonicalRoot) {
+      const otherRoots = Object.values(nodeMap).filter(n => n.type === 'root' && n.id !== _CANONICAL_ROOT_ID);
+      for (const sr of otherRoots) {
+        for (const cid of (sr.children || [])) {
+          if (!canonicalRoot.children.includes(cid)) canonicalRoot.children.push(cid);
+          const child = nodeMap[cid];
+          if (child) {
+            child.parents = child.parents.filter(p => p !== sr.id);
+            if (!child.parents.includes(_CANONICAL_ROOT_ID)) child.parents.push(_CANONICAL_ROOT_ID);
+          }
+        }
+        delete nodeMap[sr.id];
+      }
+    }
+  }
 
   // Rule engine — podmínka na uzlu (ne na hraně)
   const activeIds = new Set();
@@ -615,7 +632,7 @@ async function loadCRT() {
   }
 
   // 4 hlavní killers (Attia/Goldratt) vždy zobrazeny — i neaktivní, jen šedě
-  const MAIN_UDE_IDS = ['UDE_SRDCE', 'UDE_MOZEK', 'UDE_IMUNITA', 'UDE_METABOLISMUS'];
+  const MAIN_UDE_IDS = Object.values(nodeMap).filter(n => n.type === 'ude').map(n => n.id);
   for (const id of MAIN_UDE_IDS) {
     if (nodeMap[id] && !activeIds.has(id)) {
       activeIds.add(id);

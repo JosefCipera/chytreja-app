@@ -120,6 +120,29 @@
     }
   ],
 
+  "supplement_shields": [
+    {
+      "supp": "Omega-3", "aliases": ["omega3", "omega-3", "epa", "dha", "rybí olej", "fish oil"],
+      "shields_node": "ZANET_IM",
+      "reason": "EPA+DHA snižují prozánětlivé cytokiny (IL-6, TNF-α) — přímý efekt na chronický systémový zánět."
+    },
+    {
+      "supp": "Vitamín D", "aliases": ["vitamín D", "vitamin D", "D3", "cholekalciferol"],
+      "shields_node": "VITZD_IM",
+      "reason": "Vitamín D > 75 nmol/L výrazně zlepšuje imunitní dohled nad abnormálními buňkami."
+    },
+    {
+      "supp": "Vitamín C", "aliases": ["vitamín C", "vitamin C", "kyselina askorbová", "ascorbic acid"],
+      "shields_node": "IMUNO_IM",
+      "reason": "Antioxidant — neutralizuje volné radikály a podporuje aktivitu NK buněk."
+    },
+    {
+      "supp": "Kurkumin", "aliases": ["kurkuma", "turmeric", "curcumin"],
+      "shields_node": "ZANET_IM",
+      "reason": "Kurkumin inhibuje NF-κB — jeden z hlavních přepínačů chronického zánětu."
+    }
+  ],
+
   "medication_shields": [
     {
       "med": "Metformin", "inn": "metformin",

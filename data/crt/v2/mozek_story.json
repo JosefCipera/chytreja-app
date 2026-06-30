@@ -153,6 +153,29 @@
     }
   ],
 
+  "supplement_shields": [
+    {
+      "supp": "Omega-3", "aliases": ["omega3", "omega-3", "epa", "dha", "rybí olej", "fish oil"],
+      "shields_node": "ZANET_MZ",
+      "reason": "EPA+DHA snižují neurální zánět a podporují strukturu buněčných membrán mozkových buněk."
+    },
+    {
+      "supp": "Vitamín B12", "aliases": ["B12", "vitamin B12", "kobalamin", "methylkobalamin", "kyanokobalamin"],
+      "shields_node": "SYNAP_MZ",
+      "reason": "B12 je nezbytný pro myelinizaci nervů a metabolismus homocysteinu — jeho deficit urychluje atrofii mozku."
+    },
+    {
+      "supp": "Hořčík", "aliases": ["magnesium", "magnézium", "bisglycinát", "bisglycinate"],
+      "shields_node": "KORTIZOL_MZ",
+      "reason": "Hořčík tlumí aktivitu osy stres-kortizol a podporuje kvalitu spánku — dvojí ochrana mozku."
+    },
+    {
+      "supp": "Vitamín D", "aliases": ["vitamín D", "vitamin D", "D3", "cholekalciferol", "cholecalciferol"],
+      "shields_node": "ZANET_MZ",
+      "reason": "Vitamín D moduluje neurální zánět a podporuje produkci neurotrofinů — jeho deficit je spojen s vyšším rizikem demence."
+    }
+  ],
+
   "medication_shields": [
     {
       "med": "Donepezil", "inn": "donepezil",
