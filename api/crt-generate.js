@@ -64,6 +64,7 @@ function calcPositions(nodes, edges) {
       const n = group[0];
       n.x = n._bc != null ? n._bc : (n.x ?? 0);
       n.y = (n.level ?? 0) * Y_STEP;
+      n._isAnchor = true; // jediná větev v úrovni = triviálně kotva pro děti
       return;
     }
     group.forEach((n, idx) => {
@@ -77,6 +78,8 @@ function calcPositions(nodes, edges) {
     group.forEach(n => { const b = n.branch || '_'; (byBranch[b] = byBranch[b] || []).push(n); });
     const anchors  = group.filter(n => byBranch[n.branch || '_'].length === 1);
     const floaters = group.filter(n => byBranch[n.branch || '_'].length > 1);
+    anchors.forEach(n => { n._isAnchor = true; });
+    floaters.forEach(n => { n._isAnchor = false; });
     if (anchors.length) {
       resolveCollisions(anchors);
       floaters.forEach(f => {
@@ -99,8 +102,16 @@ function calcPositions(nodes, edges) {
   // už 2 úrovně před skutečným spojením — barva mimo sloupec.
   // Junction se vystředí sám správně, protože jeho bc = průměr VŠECH
   // jeho (už finálně umístěných) rodičů — bottom-up není potřeba.
+  //
+  // Kotva (anchor) počítá bc JEN z rodičů, kteří jsou TAKÉ kotvy — floater
+  // rodič (extra uzel) ji nesmí odtáhnout z rovného sloupce, jen hrana k němu
+  // se ohne. Junction (sám není kotva) chce naopak průměr přes VŠECHNY své
+  // kotva-rodiče (to je skutečné spojení větví, žádný floater filtr).
   const bc = (n) => {
-    const xs = (n._parents || []).map(id => nodeById[id]?.x).filter(x => x != null);
+    const parentIds = n._parents || [];
+    const anchorParents = parentIds.filter(id => nodeById[id]?._isAnchor);
+    const ids = anchorParents.length ? anchorParents : parentIds;
+    const xs = ids.map(id => nodeById[id]?.x).filter(x => x != null);
     return xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null;
   };
   levels.forEach(lv => {
@@ -423,7 +434,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx) {
   const key = JSON.stringify({
-    _v:          13, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
+    _v:          14, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),
     labs:        ctx.profile.labs || {},

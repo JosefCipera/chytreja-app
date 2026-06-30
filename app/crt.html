@@ -470,6 +470,7 @@ function calcPositionsClient(nodes) {
       const n = group[0];
       n.x = n._bc != null ? n._bc : (n.x ?? 0);
       n.y = (n.layer ?? 0) * Y_STEP;
+      n._isAnchor = true; // jediná větev ve vrstvě = triviálně kotva pro děti
       return;
     }
     group.forEach((n, idx) => {
@@ -481,9 +482,12 @@ function calcPositionsClient(nodes) {
     // Floater = branch center (v2 KB to vždy myslí jako extra/vedlejší uzel,
     // i když je ve vrstvě sám) — vmáčkne se do mezery vedle kotev, nehýbe s nimi.
     // (Pozn.: Opus cesta v api/crt-generate.js má jiné větvení — L/R/C jsou
-    // tam 3 rovnocenné reálné větve, proto tam platí jiné, obecnější pravidlo.)
+    // tam 3 rovnocenné reálné větve, proto tam platí jiné, obecnější pravidlo
+    // pro klasifikaci kotva/floater — ale stejný _isAnchor mechanismus níž.)
     const anchors  = group.filter(n => n.branch === 'left' || n.branch === 'right');
     const floaters = group.filter(n => !(n.branch === 'left' || n.branch === 'right'));
+    anchors.forEach(n => { n._isAnchor = true; });
+    floaters.forEach(n => { n._isAnchor = false; });
     if (anchors.length) {
       resolveCollisions(anchors);
       floaters.forEach(f => {
@@ -508,8 +512,16 @@ function calcPositionsClient(nodes) {
   // končí v AND-join uzlu o pár vrstev výš, celá větev se "svezla" ke středu
   // už dřív, než ke skutečnému spojení došlo. Junction se vystředí sám správně,
   // protože jeho bc = průměr VŠECH jeho (už finálně umístěných) rodičů.
+  //
+  // Kotva (anchor) počítá bc JEN z rodičů, kteří jsou TAKÉ kotvy — floater
+  // rodič (extra uzel typu Nedostatek draslíku) ji nesmí odtáhnout z rovného
+  // sloupce, jen hrana k němu se ohne. Junction (sám není kotva) naopak chce
+  // průměr přes VŠECHNY své kotva-rodiče (skutečné spojení větví).
   const bc = (n) => {
-    const xs = (n.parents || []).map(id => nodeById[id]?.x).filter(x => x != null);
+    const parentIds = n.parents || [];
+    const anchorParents = parentIds.filter(id => nodeById[id]?._isAnchor);
+    const ids = anchorParents.length ? anchorParents : parentIds;
+    const xs = ids.map(id => nodeById[id]?.x).filter(x => x != null);
     return xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null;
   };
   layers.forEach(lv => {
