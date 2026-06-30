@@ -455,11 +455,34 @@ function calcPositionsClient(nodes) {
     group.forEach((n, idx) => {
       n.x = n._bc != null ? n._bc : (-X_SPREAD + (idx / (count - 1)) * X_SPREAD * 2);
     });
-    // group je seřazená podle ideálního x → vyřeš kolize posunem doprava
+
+    // Hlavní větve (branch: left/right) jsou kotvy — drží svůj barycenter beze
+    // změny, ať tvoří rovný sloupec napříč vrstvami. Extra uzel (branch: center,
+    // 3.+ v řadě) se jen vmáčkne do mezery vedle nich, nehýbe s kotvami.
+    const anchors  = group.filter(n => n.branch === 'left' || n.branch === 'right');
+    const floaters = group.filter(n => !(n.branch === 'left' || n.branch === 'right'));
+    if (anchors.length >= 2 && floaters.length) {
+      anchors.sort((a, b) => a.x - b.x);
+      for (let i = 1; i < anchors.length; i++) {
+        if (anchors[i].x < anchors[i - 1].x + MIN_DIST) anchors[i].x = anchors[i - 1].x + MIN_DIST;
+      }
+      floaters.forEach(f => {
+        let x = f.x;
+        for (const a of anchors) {
+          if (Math.abs(x - a.x) < MIN_DIST) x = x < a.x ? a.x - MIN_DIST : a.x + MIN_DIST;
+        }
+        f.x = x;
+      });
+      group.forEach(n => { n.y = (n.layer ?? 0) * Y_STEP; });
+      return;
+    }
+
+    // Fallback (čistě binární vrstva nebo bez kotev) — kolize posunem doprava,
+    // pak vycentrování kolem těžiště.
+    group.sort((a, b) => a.x - b.x);
     for (let i = 1; i < group.length; i++) {
       if (group[i].x < group[i - 1].x + MIN_DIST) group[i].x = group[i - 1].x + MIN_DIST;
     }
-    // vycentruj celou skupinu kolem jejího těžiště, ať se nesune k jedné straně
     const meanX = group.reduce((a, n) => a + n.x, 0) / group.length;
     group.forEach(n => { n.x -= meanX; n.y = (n.layer ?? 0) * Y_STEP; });
   };
