@@ -14,36 +14,96 @@ dotenv.config({ path: '.env.local' });
 const DEKATLON_NODE_IDS = ['sila','stabilita','vo2max','kardio','mobilita','vytrvalost','rovnovaha','plyometrie','dychani'];
 const LEHKOST_NODE_IDS  = ['vyziva','kardio','spanek','mysl'];
 
-// Auto-pozicování: level + branch → x, y
-// Strom se od kořene (y=0) rozevírá nahoru (větší y = vyšší úroveň)
-function calcPositions(nodes) {
-  const levels = [...new Set(nodes.map(n => n.level ?? 0))].sort((a,b) => a-b);
-  const maxLevel = Math.max(...levels);
-  const Y_STEP = 130;
-  const X_BASE = 320;
+// Auto-pozicování: barycenter (skutečná pozice rodiče/dítěte přes edges), ne
+// pevné x podle branch nálepky — ta dřív dávala VŠEM uzlům se stejnou
+// level+branch identické x (jen -spread/+spread/0), takže se při více uzlech
+// v jedné větvi/úrovni vizuálně překrývaly. branch L/R drží sloupec jako kotva,
+// C/LC (a cokoliv extra) se vmáčkne do mezery mezi kotvami beze změny.
+// Strom se od kořene (y=0) rozevírá nahoru (větší y = vyšší úroveň).
+function calcPositions(nodes, edges) {
+  const Y_STEP   = 130;
+  const BOX_W    = 220;
+  const MIN_GAP  = 230; // místo na lék/doplněk pilulky napravo od uzlu
+  const MIN_DIST = BOX_W + MIN_GAP;
+  const branchRank = { L: 0, LC: 1, C: 1, R: 2 };
 
-  // Group by level+branch to stagger overlapping nodes
-  const slots = {};
-  nodes.forEach(n => {
-    const key = `${n.level ?? 0}_${n.branch ?? 'C'}`;
-    (slots[key] = slots[key] || []).push(n);
+  const nodeById = Object.fromEntries(nodes.map(n => [n.id, n]));
+  (edges || []).forEach(e => {
+    const from = nodeById[e.from], to = nodeById[e.to];
+    if (!from || !to) return;
+    (to._parents  = to._parents  || []).push(e.from);
+    (from._children = from._children || []).push(e.to);
   });
 
-  nodes.forEach(n => {
-    const lv = n.level ?? 0;
-    const key = `${lv}_${n.branch ?? 'C'}`;
-    const group = slots[key];
-    const idx = group.indexOf(n);
+  const byLevel = {};
+  nodes.forEach(n => { const lv = n.level ?? 0; (byLevel[lv] = byLevel[lv] || []).push(n); });
+  const levels = Object.keys(byLevel).map(Number).sort((a, b) => a - b);
+  const maxPerLevel = Math.max(...Object.values(byLevel).map(g => g.length));
+  const X_SPREAD = Math.max(340, Math.ceil((maxPerLevel - 1) * MIN_DIST / 2));
+
+  const placeGroup = (group) => {
     const count = group.length;
-    const yOff = count > 1 ? (idx - (count - 1) / 2) * Math.round(Y_STEP * 0.65) : 0;
+    if (count === 1) {
+      const n = group[0];
+      n.x = n._bc != null ? n._bc : (n.x ?? 0);
+      n.y = (n.level ?? 0) * Y_STEP;
+      return;
+    }
+    group.forEach((n, idx) => {
+      n.x = n._bc != null ? n._bc : (-X_SPREAD + (idx / (count - 1)) * X_SPREAD * 2);
+    });
+    const anchors  = group.filter(n => n.branch === 'L' || n.branch === 'R');
+    const floaters = group.filter(n => !(n.branch === 'L' || n.branch === 'R'));
+    if (anchors.length >= 2 && floaters.length) {
+      anchors.sort((a, b) => a.x - b.x);
+      for (let i = 1; i < anchors.length; i++) {
+        if (anchors[i].x < anchors[i - 1].x + MIN_DIST) anchors[i].x = anchors[i - 1].x + MIN_DIST;
+      }
+      floaters.forEach(f => {
+        let x = f.x;
+        for (const a of anchors) if (Math.abs(x - a.x) < MIN_DIST) x = x < a.x ? a.x - MIN_DIST : a.x + MIN_DIST;
+        f.x = x;
+      });
+      group.forEach(n => { n.y = (n.level ?? 0) * Y_STEP; });
+      return;
+    }
+    group.sort((a, b) => a.x - b.x);
+    for (let i = 1; i < group.length; i++) {
+      if (group[i].x < group[i - 1].x + MIN_DIST) group[i].x = group[i - 1].x + MIN_DIST;
+    }
+    const meanX = group.reduce((a, n) => a + n.x, 0) / group.length;
+    group.forEach(n => { n.x -= meanX; n.y = (n.level ?? 0) * Y_STEP; });
+  };
 
-    const spread = X_BASE * (1 - lv / (maxLevel + 1) * 0.35);
-    if (n.branch === 'L') n.x = -spread;
-    else if (n.branch === 'R') n.x = spread;
-    else if (n.branch === 'LC') n.x = -spread * 0.5;
-    else n.x = 0;
-    n.y = lv * Y_STEP + yOff;
+  levels.forEach(lv => {
+    const g = byLevel[lv];
+    g.sort((a, b) => (branchRank[a.branch ?? 'C'] ?? 1) - (branchRank[b.branch ?? 'C'] ?? 1));
+    placeGroup(g);
   });
+
+  const bc = (n, useParents) => {
+    const ids = useParents ? (n._parents || []) : (n._children || []);
+    const xs = ids.map(id => nodeById[id]?.x).filter(x => x != null);
+    return xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null;
+  };
+  for (let iter = 0; iter < 3; iter++) {
+    levels.slice(1).forEach(lv => {
+      const g = byLevel[lv];
+      g.forEach(n => { n._bc = bc(n, true) ?? n.x; });
+      g.sort((a, b) => a._bc !== b._bc ? a._bc - b._bc
+        : (branchRank[a.branch ?? 'C'] ?? 1) - (branchRank[b.branch ?? 'C'] ?? 1));
+      placeGroup(g);
+    });
+    levels.slice(1, -1).reverse().forEach(lv => {
+      const g = byLevel[lv];
+      g.forEach(n => { n._bc = bc(n, false) ?? n.x; });
+      g.sort((a, b) => a._bc !== b._bc ? a._bc - b._bc
+        : (branchRank[a.branch ?? 'C'] ?? 1) - (branchRank[b.branch ?? 'C'] ?? 1));
+      placeGroup(g);
+    });
+  }
+
+  nodes.forEach(n => { delete n._parents; delete n._children; delete n._bc; });
   return nodes;
 }
 
@@ -350,7 +410,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx) {
   const key = JSON.stringify({
-    _v:          9, // bump při změně promptu → invaliduje cache
+    _v:          10, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),
     labs:        ctx.profile.labs || {},
@@ -420,7 +480,7 @@ export default async function handler(req, res) {
     ];
 
     // 4. Auto-pozicování
-    calcPositions(allNodes);
+    calcPositions(allNodes, crt.edges || []);
 
     // 5. Overlay barev (bez barev — jen mapování stavu pro případné budoucí použití)
     const coloredNodes = overlayColors(allNodes, ctx.metrics);
