@@ -1673,9 +1673,11 @@ window.exportCRTImage = function() {
 
 // ── Top-N: zobraz jen uzly na nejkratší cestě ROOT→každý killer ──────────────
 // Story KB vždy startuje v Plné mapě; biosystem defaultně Top-N (pokud ne ?full=1)
+// Opus data (?opus=1) nemají _kbMap/_activeIds (jiný tvar dat) → computeTopN by spadl, nikdy nezapínat.
 const _urlParams   = new URLSearchParams(location.search);
+const _isOpusBoot  = _urlParams.get('opus') === '1';
 const _isStoryBoot = !!_KB_STORY_MAP[_urlParams.get('kb')] || _urlParams.get('kb') === 'full';
-let _topNMode = _isStoryBoot ? false : (_urlParams.get('full') !== '1');
+let _topNMode = (_isStoryBoot || _isOpusBoot) ? false : (_urlParams.get('full') !== '1');
 let _rawCrtData = null; // plná nefiltrovaná data
 
 function bfsPath(fromId, toId, nodeMap, activeIds) {
@@ -1859,7 +1861,8 @@ async function boot() {
     _lastCrtData = displayData;
     renderTree(displayData);
     document.getElementById('crtLabelBtn').style.display  = '';
-    document.getElementById('crtViewPill').style.display  = '';
+    // Top-N (computeTopN) nepodporuje tvar Opus dat (_kbMap/_activeIds chybí) → pill skrýt
+    document.getElementById('crtViewPill').style.display  = _isOpusBoot ? 'none' : '';
     document.getElementById('crtExportBtn').style.display = '';
     document.getElementById('crtPrintBtn').style.display  = '';
     // Nastav aktivní stav pillu
