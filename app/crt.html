@@ -440,15 +440,28 @@ function calcPositionsClient(nodes) {
   const X_SPREAD = Math.max(340, Math.ceil((maxPerLayer - 1) * (BOX_W + MIN_GAP) / 2));
   const branchOrder = { left: 0, center: 1, right: 2 };
 
-  // Place group evenly; single-node layer uses barycenter if known
+  // Place group: use barycenter (parent/child x) jako ideální pozici, ne nucené
+  // rovnoměrné rozprostření přes celou šířku — uzly se stejným rodičem/dítětem
+  // se tak shluknou kolem jeho x místo roztažení do fixních slotů.
+  const MIN_DIST = BOX_W + MIN_GAP;
   const placeGroup = (group) => {
     const count = group.length;
-    group.forEach((n, idx) => {
-      n.x = count === 1
-        ? (n._bc != null ? n._bc : n.x ?? 0)
-        : -X_SPREAD + (idx / (count - 1)) * X_SPREAD * 2;
+    if (count === 1) {
+      const n = group[0];
+      n.x = n._bc != null ? n._bc : (n.x ?? 0);
       n.y = (n.layer ?? 0) * Y_STEP;
+      return;
+    }
+    group.forEach((n, idx) => {
+      n.x = n._bc != null ? n._bc : (-X_SPREAD + (idx / (count - 1)) * X_SPREAD * 2);
     });
+    // group je seřazená podle ideálního x → vyřeš kolize posunem doprava
+    for (let i = 1; i < group.length; i++) {
+      if (group[i].x < group[i - 1].x + MIN_DIST) group[i].x = group[i - 1].x + MIN_DIST;
+    }
+    // vycentruj celou skupinu kolem jejího těžiště, ať se nesune k jedné straně
+    const meanX = group.reduce((a, n) => a + n.x, 0) / group.length;
+    group.forEach(n => { n.x -= meanX; n.y = (n.layer ?? 0) * Y_STEP; });
   };
 
   // Initial placement: sort by branch hint
