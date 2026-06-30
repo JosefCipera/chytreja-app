@@ -235,6 +235,13 @@
       "reason": "Pantoprazol chrání žaludeční sliznici během antikoagulační léčby Pradaxou — snižuje riziko gastrointestinálního krvácení."
     },
     {
+      "med": "Ibalgin", "inn": "ibuprofen",
+      "note": "NSAID · pozor s Pradaxou",
+      "aliases": ["ibalgin", "ibuprofen"],
+      "shields_node": "FIBRILACE_K",
+      "reason": "Analgetikum proti bolesti. Pozor: s Pradaxou zvyšuje riziko krvácení do trávicího traktu — viz lékové kolize."
+    },
+    {
       "med": "Milurit", "inn": "alopurinol",
       "note": "snižuje kyselinu močovou",
       "aliases": ["milurit", "alopurinol", "allopurinol"],

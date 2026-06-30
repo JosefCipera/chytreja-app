@@ -1045,90 +1045,72 @@ function renderTree(data) {
     svg.appendChild(g);
   });
 
-  // ── Léky: pill přímo vedle cílového uzlu ────────────────────────────────
-  const medsMap = (data.medications_map || []).filter(m => (m.targets || []).length > 0 && m.userHas);
-  if (medsMap.length) {
-    document.getElementById('crtMedBtn').style.display = '';
-    const MED_C    = '#4a9aee';
-    const MED_FILL = '#0e2038';
+  // ── Léky + doplňky: jeden sloupec pillek vpravo od uzlu (léky nahoře, doplňky pod nimi) ──
+  const medsMap  = (data.medications_map  || []).filter(m => (m.targets || []).length > 0 && m.userHas);
+  const suppsMap = (data.supplements_map || []).filter(s => (s.targets || []).length > 0);
+  if (medsMap.length) document.getElementById('crtMedBtn').style.display = '';
+  if (medsMap.length || suppsMap.length) {
+    const MED_C     = '#4a9aee';
+    const MED_FILL  = '#0e2038';
+    const SUPP_C    = '#22c55e';
+    const SUPP_FILL = '#0a2016';
     const PILL_H   = IS_MOBILE ? 30 : 34;
     const PILL_FS  = IS_MOBILE ? 13 : 14;
     const PILL_PAD = 16;
-    const GAP      = 10; // mezera mezi uzlem a pill
+    const GAP      = 10;
+    const GAP_Y    = 6;
 
     const nodeById = {};
     [data.root, ...(data.nodes || [])].forEach(n => { if (n) nodeById[n.id] = n; });
-
     const pillW = name => Math.max(64, name.length * PILL_FS * 0.62 + PILL_PAD * 2);
 
-    // Anti-overlap: sleduj obsazené (x,y) pozice pill
-    const usedRects = [];
-    const findFreeX = (idealX, idealY, pw) => {
-      let x = idealX;
-      for (const r of usedRects) {
-        if (Math.abs(r.y - idealY) < PILL_H + 4 && x < r.x + r.w + 4 && x + pw > r.x - 4) {
-          x = r.x + r.w + 8;
-        }
-      }
-      usedRects.push({ x, y: idealY, w: pw });
-      return x;
-    };
-
-    // Group by node, stack vertically (stejně jako suplementy)
-    const medsByNode = {};
+    // Sloučit léky (nahoře) + doplňky (dole) do jednoho sloupce na uzel
+    const itemsByNode = {};
     medsMap.forEach(med => {
-      const nodeId = (med.targets || [])[0];
-      if (!nodeId) return;
-      (medsByNode[nodeId] = medsByNode[nodeId] || []).push(med);
+      const nodeId = (med.targets || [])[0]; if (!nodeId) return;
+      (itemsByNode[nodeId] = itemsByNode[nodeId] || []).push({ ...med, _kind: 'med', _c: MED_C, _fill: MED_FILL });
+    });
+    suppsMap.forEach(supp => {
+      const nodeId = (supp.targets || [])[0]; if (!nodeId) return;
+      (itemsByNode[nodeId] = itemsByNode[nodeId] || []).push({ ...supp, _kind: 'supp', _c: SUPP_C, _fill: SUPP_FILL });
     });
 
-    const GAP_Y_M = 6;
-    Object.entries(medsByNode).forEach(([nodeId, items]) => {
+    Object.entries(itemsByNode).forEach(([nodeId, items]) => {
       const node = nodeById[nodeId]; if (!node) return;
       const nx = cx(node.x ?? 0), ny = cy(node.y ?? 0);
       const nodeRight = nx + BOX_W / 2;
-      const maxPW = Math.max(...items.map(m => pillW(m.name)));
-      const totalH = items.length * PILL_H + (items.length - 1) * GAP_Y_M;
+      const totalH = items.length * PILL_H + (items.length - 1) * GAP_Y;
       const startY = ny - totalH / 2;
       const px = nodeRight + GAP;
 
-      // Jedna čárka od uzlu ke středu skupiny
+      // Jedna čárka od uzlu ke sloupci
       svg.insertBefore(svgEl('line', {
         class: 'crt-med-el crt-med-hidden',
         x1: nodeRight, y1: ny, x2: px, y2: ny,
-        stroke: MED_C, 'stroke-width': '1.5',
+        stroke: items[0]._c, 'stroke-width': '1.5',
         'stroke-dasharray': '4 3', opacity: '0.6',
       }), svg.firstChild);
 
-      // Miniaturní štít na uzlu
-      const SW = 9, SH = 12;
-      const sx = nodeRight - 1, sy = ny - SH / 2;
-      svg.appendChild(svgEl('path', {
-        class: 'crt-med-el crt-med-hidden',
-        d: `M${sx-SW/2},${sy} L${sx+SW/2},${sy} L${sx+SW/2},${sy+SH*0.55} Q${sx+SW/2},${sy+SH*0.9} ${sx},${sy+SH} Q${sx-SW/2},${sy+SH*0.9} ${sx-SW/2},${sy+SH*0.55} Z`,
-        fill: MED_C, opacity: '0.9',
-      }));
-
-      items.forEach((med, i) => {
-        const pw = pillW(med.name);
-        const py = startY + i * (PILL_H + GAP_Y_M);
+      items.forEach((item, i) => {
+        const pw = pillW(item.name);
+        const py = startY + i * (PILL_H + GAP_Y);
         const g = svgEl('g', { class: 'crt-med-el crt-med-hidden', style: 'cursor:help' });
         g.appendChild(svgEl('rect', {
           x: px, y: py, width: pw, height: PILL_H,
-          rx: String(PILL_H / 2), fill: MED_FILL,
-          stroke: MED_C, 'stroke-width': '1.5',
+          rx: String(PILL_H / 2), fill: item._fill,
+          stroke: item._c, 'stroke-width': '1.5',
         }));
         g.appendChild(svgEl('text', {
           x: px + pw / 2, y: py + PILL_H * 0.67,
-          'text-anchor': 'middle', fill: MED_C,
+          'text-anchor': 'middle', fill: item._c,
           'font-size': String(PILL_FS),
           'font-family': 'Inter, Segoe UI, system-ui, sans-serif',
-        }, med.name));
+        }, item.name));
 
-        if (med.reason) {
+        if (item.reason) {
           const tooltip = document.getElementById('crtTooltip');
           const showTip = (x, y) => {
-            tooltip.innerHTML = `<strong>${med.name}</strong><br><span style="color:#a8c8d8">${med.reason}</span>`;
+            tooltip.innerHTML = `<strong>${item.name}</strong><br><span style="color:#a8c8d8">${item.reason}</span>`;
             tooltip.style.display = 'block';
             tooltip.style.left = (x + 14) + 'px';
             tooltip.style.top  = (y - 10) + 'px';
@@ -1143,74 +1125,6 @@ function renderTree(data) {
             setTimeout(() => { tooltip.style.display = 'none'; }, 4000);
           });
         }
-        svg.appendChild(g);
-      });
-    });
-  }
-
-  // ── Doplňky stravy: vlevo od uzlu, stackovat vertikálně ─────────────────
-  const suppsMap = (data.supplements_map || []).filter(s => (s.targets || []).length > 0);
-  if (suppsMap.length) {
-    const SUPP_C    = '#22c55e';
-    const SUPP_FILL = '#0a2016';
-    const PILL_H   = IS_MOBILE ? 30 : 34;
-    const PILL_FS  = IS_MOBILE ? 13 : 14;
-    const PILL_PAD = 16;
-    const GAP_X    = 10;
-    const GAP_Y    = 6;
-
-    const nodeById2 = {};
-    [data.root, ...(data.nodes || [])].forEach(n => { if (n) nodeById2[n.id] = n; });
-    const pillW2 = name => Math.max(64, name.length * PILL_FS * 0.62 + PILL_PAD * 2);
-
-    // Seskupit podle cílového uzlu
-    const byNode = {};
-    suppsMap.forEach(supp => {
-      const nodeId = (supp.targets||[])[0];
-      if (!nodeId) return;
-      (byNode[nodeId] = byNode[nodeId] || []).push(supp);
-    });
-
-    Object.entries(byNode).forEach(([nodeId, items]) => {
-      const node = nodeById2[nodeId]; if (!node) return;
-      const nx = cx(node.x ?? 0), ny = cy(node.y ?? 0);
-      const nodeLeft = nx - BOX_W / 2;
-      const totalH = items.length * PILL_H + (items.length - 1) * GAP_Y;
-      const startY = ny - totalH / 2;
-      const maxPW = Math.max(...items.map(s => pillW2(s.name)));
-
-      // Jedna čárka od uzlu ke skupině
-      svg.insertBefore(svgEl('line', {
-        class: 'crt-med-el crt-med-hidden',
-        x1: nodeLeft, y1: ny, x2: nodeLeft - GAP_X, y2: ny,
-        stroke: SUPP_C, 'stroke-width': '1.5', 'stroke-dasharray': '4 3', opacity: '0.6',
-      }), svg.firstChild);
-
-      // Jeden štít na uzlu
-      const SW = 9, SH = 12;
-      const sx = nodeLeft + 1, sy2 = ny - SH / 2;
-      svg.appendChild(svgEl('path', {
-        class: 'crt-med-el crt-med-hidden',
-        d: `M${sx-SW/2},${sy2} L${sx+SW/2},${sy2} L${sx+SW/2},${sy2+SH*0.55} Q${sx+SW/2},${sy2+SH*0.9} ${sx},${sy2+SH} Q${sx-SW/2},${sy2+SH*0.9} ${sx-SW/2},${sy2+SH*0.55} Z`,
-        fill: SUPP_C, opacity: '0.9',
-      }));
-
-      items.forEach((supp, i) => {
-        const pw = pillW2(supp.name);
-        const px = nodeLeft - GAP_X - maxPW;
-        const py = startY + i * (PILL_H + GAP_Y);
-
-        const g = svgEl('g', { class: 'crt-med-el crt-med-hidden' });
-        g.appendChild(svgEl('rect', {
-          x: px, y: py, width: pw, height: PILL_H,
-          rx: String(PILL_H / 2), fill: SUPP_FILL, stroke: SUPP_C, 'stroke-width': '1.5',
-        }));
-        g.appendChild(svgEl('text', {
-          x: px + pw / 2, y: py + PILL_H * 0.67,
-          'text-anchor': 'middle', fill: SUPP_C,
-          'font-size': String(PILL_FS),
-          'font-family': 'Inter, Segoe UI, system-ui, sans-serif',
-        }, supp.name));
         svg.appendChild(g);
       });
     });
