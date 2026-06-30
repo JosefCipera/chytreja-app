@@ -40,6 +40,24 @@ function calcPositions(nodes, edges) {
   const maxPerLevel = Math.max(...Object.values(byLevel).map(g => g.length));
   const X_SPREAD = Math.max(340, Math.ceil((maxPerLevel - 1) * MIN_DIST / 2));
 
+  // Symetricky vyřeš kolize — posuň OBA sousedy od sebe o polovinu překryvu,
+  // ne jen toho pozdějšího doprava. Jednosměrný posun vychyloval těžiště
+  // skupiny, takže se sloupec o úroveň výš/níž rozjel (viz historie commitů).
+  // Symetrický posun těžiště zachová, takže navazuje přesně na barycenter rodiče.
+  const resolveCollisions = (arr, iterations = 4) => {
+    for (let it = 0; it < iterations; it++) {
+      arr.sort((a, b) => a.x - b.x);
+      for (let i = 1; i < arr.length; i++) {
+        const gap = arr[i].x - arr[i - 1].x;
+        if (gap < MIN_DIST) {
+          const overlap = (MIN_DIST - gap) / 2;
+          arr[i - 1].x -= overlap;
+          arr[i].x += overlap;
+        }
+      }
+    }
+  };
+
   const placeGroup = (group) => {
     const count = group.length;
     if (count === 1) {
@@ -51,18 +69,16 @@ function calcPositions(nodes, edges) {
     group.forEach((n, idx) => {
       n.x = n._bc != null ? n._bc : (-X_SPREAD + (idx / (count - 1)) * X_SPREAD * 2);
     });
-    // Kotva = větev (L/R/C/LC) má v této vrstvě JEDEN uzel — drží svůj barycenter.
+    // Kotva = větev (L/R/C/LC) má v této vrstvě JEDEN uzel — drží svůj SKUTEČNÝ
+    // barycenter vždy, bez ohledu na to, jestli je ve vrstvě i floater.
     // Floater = větev má víc uzlů najednou (AND-join kolize, extra uzel) — vmáčkne se mezi kotvy.
     // Prompt staví 3 reálné větve (L=cévní, R=nervová, C=fyzická kondice), ne jen 2 + občasný extra.
     const byBranch = {};
     group.forEach(n => { const b = n.branch || '_'; (byBranch[b] = byBranch[b] || []).push(n); });
     const anchors  = group.filter(n => byBranch[n.branch || '_'].length === 1);
     const floaters = group.filter(n => byBranch[n.branch || '_'].length > 1);
-    if (anchors.length >= 2 && floaters.length) {
-      anchors.sort((a, b) => a.x - b.x);
-      for (let i = 1; i < anchors.length; i++) {
-        if (anchors[i].x < anchors[i - 1].x + MIN_DIST) anchors[i].x = anchors[i - 1].x + MIN_DIST;
-      }
+    if (anchors.length) {
+      resolveCollisions(anchors);
       floaters.forEach(f => {
         let x = f.x;
         for (const a of anchors) if (Math.abs(x - a.x) < MIN_DIST) x = x < a.x ? a.x - MIN_DIST : a.x + MIN_DIST;
@@ -71,12 +87,8 @@ function calcPositions(nodes, edges) {
       group.forEach(n => { n.y = (n.level ?? 0) * Y_STEP; });
       return;
     }
-    group.sort((a, b) => a.x - b.x);
-    for (let i = 1; i < group.length; i++) {
-      if (group[i].x < group[i - 1].x + MIN_DIST) group[i].x = group[i - 1].x + MIN_DIST;
-    }
-    const meanX = group.reduce((a, n) => a + n.x, 0) / group.length;
-    group.forEach(n => { n.x -= meanX; n.y = (n.level ?? 0) * Y_STEP; });
+    resolveCollisions(group);
+    group.forEach(n => { n.y = (n.level ?? 0) * Y_STEP; });
   };
 
   // Jediný průchod shora dolů (jen podle rodičů). Předtím existoval i průchod
@@ -339,6 +351,11 @@ Na základě diagnóz a dat sestav CRT: najdi jednu kořenovou příčinu, dvě 
 
 Pravidla pro UDE:
 - Nejvyšší UDE je hlavní diagnóza uživatele kterou AKTUÁLNĚ prožívá (např. Fibrilace síní FaP)
+- Pokud má uživatel VÍCE nezávislých aktuálních diagnóz/symptomů (např. fibrilace síní A erektilní dysfunkce),
+  KAŽDÁ dostane VLASTNÍ UDE na konci VLASTNÍ větve nebo podvětve — nikdy jeden UDE nenahrazuje,
+  nepřepisuje ani nesdílí pozici s jiným existujícím kauzálním uzlem (např. s uzlem o draslíku/hypokalemii)
+- Nová diagnóza se napojuje jako DALŠÍ child na existující kauzální řetězec, pokud sdílí stejnou příčinu
+  (např. cévní zánět → erektilní dysfunkce I infarkt jsou různé UDE se stejným kořenem) — nepřepisuje uzel, který tam už je
 - Cíl (goal_text) do CRT NEPATŘÍ — patří do Goal Tree, ne do Current Reality
 - Extrasystoly jsou junction uzel těsně pod FaP (type=junction), ne UDE
 - Hypertenze je příčina (type=cause), ne UDE
@@ -406,7 +423,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx) {
   const key = JSON.stringify({
-    _v:          12, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
+    _v:          13, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),
     labs:        ctx.profile.labs || {},

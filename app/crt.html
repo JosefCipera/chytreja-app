@@ -445,6 +445,25 @@ function calcPositionsClient(nodes) {
   // rovnoměrné rozprostření přes celou šířku — uzly se stejným rodičem/dítětem
   // se tak shluknou kolem jeho x místo roztažení do fixních slotů.
   const MIN_DIST = BOX_W + MIN_GAP;
+
+  // Symetricky vyřeš kolize — posuň OBA sousedy od sebe o polovinu překryvu,
+  // ne jen toho pozdějšího doprava. Jednosměrný posun vychyloval těžiště
+  // skupiny, takže se sloupec o vrstvu výš/níž rozjel (viz historie commitů).
+  // Symetrický posun těžiště zachová, takže navazuje přesně na barycenter rodiče.
+  const resolveCollisions = (arr, iterations = 4) => {
+    for (let it = 0; it < iterations; it++) {
+      arr.sort((a, b) => a.x - b.x);
+      for (let i = 1; i < arr.length; i++) {
+        const gap = arr[i].x - arr[i - 1].x;
+        if (gap < MIN_DIST) {
+          const overlap = (MIN_DIST - gap) / 2;
+          arr[i - 1].x -= overlap;
+          arr[i].x += overlap;
+        }
+      }
+    }
+  };
+
   const placeGroup = (group) => {
     const count = group.length;
     if (count === 1) {
@@ -457,19 +476,16 @@ function calcPositionsClient(nodes) {
       n.x = n._bc != null ? n._bc : (-X_SPREAD + (idx / (count - 1)) * X_SPREAD * 2);
     });
 
-    // Kotva = branch left/right (hlavní větev v2 KB) — drží svůj barycenter
-    // beze změny, ať tvoří rovný sloupec napříč vrstvami. Floater = branch
-    // center (v2 KB to vždy myslí jako extra/vedlejší uzel, i když je ve
-    // vrstvě sám) — vmáčkne se do mezery vedle kotev, nehýbe s nimi.
+    // Kotva = branch left/right (hlavní větev v2 KB) — drží svůj SKUTEČNÝ
+    // barycenter vždy, bez ohledu na to, jestli je ve vrstvě i floater.
+    // Floater = branch center (v2 KB to vždy myslí jako extra/vedlejší uzel,
+    // i když je ve vrstvě sám) — vmáčkne se do mezery vedle kotev, nehýbe s nimi.
     // (Pozn.: Opus cesta v api/crt-generate.js má jiné větvení — L/R/C jsou
     // tam 3 rovnocenné reálné větve, proto tam platí jiné, obecnější pravidlo.)
     const anchors  = group.filter(n => n.branch === 'left' || n.branch === 'right');
     const floaters = group.filter(n => !(n.branch === 'left' || n.branch === 'right'));
-    if (anchors.length >= 2 && floaters.length) {
-      anchors.sort((a, b) => a.x - b.x);
-      for (let i = 1; i < anchors.length; i++) {
-        if (anchors[i].x < anchors[i - 1].x + MIN_DIST) anchors[i].x = anchors[i - 1].x + MIN_DIST;
-      }
+    if (anchors.length) {
+      resolveCollisions(anchors);
       floaters.forEach(f => {
         let x = f.x;
         for (const a of anchors) {
@@ -481,14 +497,9 @@ function calcPositionsClient(nodes) {
       return;
     }
 
-    // Fallback (čistě binární vrstva nebo bez kotev) — kolize posunem doprava,
-    // pak vycentrování kolem těžiště.
-    group.sort((a, b) => a.x - b.x);
-    for (let i = 1; i < group.length; i++) {
-      if (group[i].x < group[i - 1].x + MIN_DIST) group[i].x = group[i - 1].x + MIN_DIST;
-    }
-    const meanX = group.reduce((a, n) => a + n.x, 0) / group.length;
-    group.forEach(n => { n.x -= meanX; n.y = (n.layer ?? 0) * Y_STEP; });
+    // Žádné kotvy (čistě floater vrstva) — symetrické vyřešení kolizí stačí samo.
+    resolveCollisions(group);
+    group.forEach(n => { n.y = (n.layer ?? 0) * Y_STEP; });
   };
 
   // Jediný průchod shora dolů (jen podle rodičů). Dřív byl i průchod zdola
