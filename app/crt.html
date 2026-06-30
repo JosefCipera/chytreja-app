@@ -614,6 +614,15 @@ async function loadCRT() {
     }
   }
 
+  // 4 hlavní killers (Attia/Goldratt) vždy zobrazeny — i neaktivní, jen šedě
+  const MAIN_UDE_IDS = ['UDE_SRDCE', 'UDE_MOZEK', 'UDE_IMUNITA', 'UDE_METABOLISMUS'];
+  for (const id of MAIN_UDE_IDS) {
+    if (nodeMap[id] && !activeIds.has(id)) {
+      activeIds.add(id);
+      nodeMap[id].inactive = true;
+    }
+  }
+
   console.log('[CRT v2] ctx:', JSON.stringify(ctx, null, 2));
   console.log(`[CRT v2] aktivní uzly: ${activeIds.size}/${Object.keys(nodeMap).length}`, [...activeIds]);
 
@@ -740,6 +749,7 @@ function boxHeight(label) {
 const NODE_STYLE   = { fill: '#1a2535', stroke: '#3a5068', text: '#c8d8e8' };
 const GOLDEN_STYLE = { fill: '#081510', stroke: '#b08828', text: '#d4a838' };
 const UDE_STYLE    = { fill: '#1a2535', stroke: '#8ba8b8', text: '#e8f0f8' };
+const UDE_INACTIVE_STYLE = { fill: '#11161d', stroke: '#384450', text: '#5a6878' };
 const GOAL_STYLE   = { fill: '#081510', stroke: '#18884a', text: '#24a85e' };
 // Zpětná kompatibilita — STATE_STYLE nevyužíváme
 const STATE_STYLE = {
@@ -980,7 +990,7 @@ function renderTree(data) {
   // ── Uzly (boxy) ──────────────────────────────────────────────────────────
   data.nodes.forEach(n => {
     const ntype = n._type || n.type || 'cause';
-    const st   = ntype === 'golden_box' ? GOLDEN_STYLE : ntype === 'goal' ? GOAL_STYLE : ntype === 'ude' ? UDE_STYLE : NODE_STYLE;
+    const st   = ntype === 'golden_box' ? GOLDEN_STYLE : ntype === 'goal' ? GOAL_STYLE : ntype === 'ude' ? (n.inactive ? UDE_INACTIVE_STYLE : UDE_STYLE) : NODE_STYLE;
     const g    = svgEl('g', { class: 'crt-node', 'data-id': n.id, style: 'cursor:pointer' });
 
     const lines = wrapText(n.label);
