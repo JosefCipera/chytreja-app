@@ -457,11 +457,14 @@ function calcPositionsClient(nodes) {
       n.x = n._bc != null ? n._bc : (-X_SPREAD + (idx / (count - 1)) * X_SPREAD * 2);
     });
 
-    // Hlavní větve (branch: left/right) jsou kotvy — drží svůj barycenter beze
-    // změny, ať tvoří rovný sloupec napříč vrstvami. Extra uzel (branch: center,
-    // 3.+ v řadě) se jen vmáčkne do mezery vedle nich, nehýbe s kotvami.
-    const anchors  = group.filter(n => n.branch === 'left' || n.branch === 'right');
-    const floaters = group.filter(n => !(n.branch === 'left' || n.branch === 'right'));
+    // Kotva = větev má v této vrstvě JEDEN uzel — drží svůj barycenter beze
+    // změny, ať tvoří rovný sloupec napříč vrstvami. Floater = větev má víc
+    // uzlů najednou (extra uzel, AND-join kolize) — vmáčkne se do mezery
+    // vedle kotev, nehýbe s nimi. Funguje pro 2 i 3+ reálných větví.
+    const byBranch = {};
+    group.forEach(n => { const b = n.branch || '_'; (byBranch[b] = byBranch[b] || []).push(n); });
+    const anchors  = group.filter(n => byBranch[n.branch || '_'].length === 1);
+    const floaters = group.filter(n => byBranch[n.branch || '_'].length > 1);
     if (anchors.length >= 2 && floaters.length) {
       anchors.sort((a, b) => a.x - b.x);
       for (let i = 1; i < anchors.length; i++) {

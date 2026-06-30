@@ -52,8 +52,13 @@ function calcPositions(nodes, edges) {
     group.forEach((n, idx) => {
       n.x = n._bc != null ? n._bc : (-X_SPREAD + (idx / (count - 1)) * X_SPREAD * 2);
     });
-    const anchors  = group.filter(n => n.branch === 'L' || n.branch === 'R');
-    const floaters = group.filter(n => !(n.branch === 'L' || n.branch === 'R'));
+    // Kotva = větev (L/R/C/LC) má v této vrstvě JEDEN uzel — drží svůj barycenter.
+    // Floater = větev má víc uzlů najednou (AND-join kolize, extra uzel) — vmáčkne se mezi kotvy.
+    // Prompt staví 3 reálné větve (L=cévní, R=nervová, C=fyzická kondice), ne jen 2 + občasný extra.
+    const byBranch = {};
+    group.forEach(n => { const b = n.branch || '_'; (byBranch[b] = byBranch[b] || []).push(n); });
+    const anchors  = group.filter(n => byBranch[n.branch || '_'].length === 1);
+    const floaters = group.filter(n => byBranch[n.branch || '_'].length > 1);
     if (anchors.length >= 2 && floaters.length) {
       anchors.sort((a, b) => a.x - b.x);
       for (let i = 1; i < anchors.length; i++) {
@@ -410,7 +415,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx) {
   const key = JSON.stringify({
-    _v:          10, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
+    _v:          11, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),
     labs:        ctx.profile.labs || {},
