@@ -6,9 +6,9 @@
   "nodes": [
     {
       "id": "ROOT_K",
-      "label": "Sedavý životní styl\na metabolická zátěž",
-      "label_expert": "Sedavý životní styl\na metabolická zátěž",
-      "label_layman": "Základ problémů\nse srdcem",
+      "label": "Metabolická dysregulace\na systémový zánět",
+      "label_expert": "Metabolická dysregulace\na systémový zánět",
+      "label_layman": "Jak tělo pálí\na ukládá energii",
       "layer": 0, "type": "root", "branch": "center",
       "parents": [],
       "children": ["HIGH_LDL_K", "STRES_K"],

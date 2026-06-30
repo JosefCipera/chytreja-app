@@ -558,7 +558,8 @@ function buildMedsMap(shields, userMeds, activeIds, arrowsById) {
 // ── Load CRT v2 — Integrovaný Biovesmír ──────────────────────────────────────
 // Podmínky na uzlech (ne šipkách). Hrany z parents/children.
 // ?kb=story/mozek/pohyb/imunita → jeden příběhový strom (jeden killer)
-// default i ?kb=full → všechny 4 příběhové KB sloučené pod jeden ROOT (Plná mapa)
+// ?kb=full → všechny 4 příběhové KB sloučené pod jeden ROOT
+// default (bez parametru) → jen kardio, jeden UDE nahoře (start)
 const _kbParam = new URLSearchParams(location.search).get('kb');
 const _KB_STORY_MAP = {
   story:   '/data/crt/v2/kardio_story.json',
@@ -568,9 +569,11 @@ const _KB_STORY_MAP = {
 };
 const _ALL_STORY_FILES = Object.values(_KB_STORY_MAP);
 const _CANONICAL_ROOT_ID = 'ROOT_K';
-const KB_FILES_V2 = _KB_STORY_MAP[_kbParam]
+const KB_FILES_V2 = _kbParam === 'full'
+  ? _ALL_STORY_FILES
+  : _KB_STORY_MAP[_kbParam]
   ? [_KB_STORY_MAP[_kbParam]]
-  : _ALL_STORY_FILES;
+  : [_KB_STORY_MAP.story];
 
 async function loadCRT() {
   const forceOpus = new URLSearchParams(location.search).get('opus') === '1';
