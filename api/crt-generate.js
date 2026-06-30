@@ -40,23 +40,7 @@ function calcPositions(nodes, edges) {
   const maxPerLevel = Math.max(...Object.values(byLevel).map(g => g.length));
   const X_SPREAD = Math.max(340, Math.ceil((maxPerLevel - 1) * MIN_DIST / 2));
 
-  // Symetricky vyřeš kolize — posuň OBA sousedy od sebe o polovinu překryvu,
-  // ne jen toho pozdějšího doprava. Jednosměrný posun vychyloval těžiště
-  // skupiny, takže se sloupec o úroveň výš/níž rozjel (viz historie commitů).
-  // Symetrický posun těžiště zachová, takže navazuje přesně na barycenter rodiče.
-  const resolveCollisions = (arr, iterations = 4) => {
-    for (let it = 0; it < iterations; it++) {
-      arr.sort((a, b) => a.x - b.x);
-      for (let i = 1; i < arr.length; i++) {
-        const gap = arr[i].x - arr[i - 1].x;
-        if (gap < MIN_DIST) {
-          const overlap = (MIN_DIST - gap) / 2;
-          arr[i - 1].x -= overlap;
-          arr[i].x += overlap;
-        }
-      }
-    }
-  };
+  const TIE_EPS = 1; // uzly se shodným (na px) barycentrem = praví sourozenci (sdílí rodiče)
 
   const placeGroup = (group) => {
     const count = group.length;
@@ -70,38 +54,44 @@ function calcPositions(nodes, edges) {
     group.forEach((n, idx) => {
       n.x = n._bc != null ? n._bc : (-X_SPREAD + (idx / (count - 1)) * X_SPREAD * 2);
     });
-    // Kotva = větev (L/R/C/LC) má v této vrstvě JEDEN uzel — drží svůj SKUTEČNÝ
-    // barycenter vždy, bez ohledu na to, jestli je ve vrstvě i floater.
-    // Floater = větev má víc uzlů najednou (AND-join kolize, extra uzel) — vmáčkne se mezi kotvy.
-    // Prompt staví 3 reálné větve (L=cévní, R=nervová, C=fyzická kondice), ne jen 2 + občasný extra.
+
+    // Shlukuj podle SDÍLENÉHO barycentru — uzly se stejným x (= stejný rodič,
+    // skuteční sourozenci) tvoří jeden shluk. Uzly s ODLIŠNÝM barycentrem
+    // (jiná větev, jiný rodič) tvoří vlastní shluk a vzájemně se vůbec
+    // neovlivňují — osa jedné větve se nehýbe kvůli rozvětvení na druhé straně.
+    const sorted = [...group].sort((a, b) => a.x - b.x);
+    const clusters = [];
+    sorted.forEach(n => {
+      const last = clusters[clusters.length - 1];
+      if (last && Math.abs(n.x - last.center) < TIE_EPS) last.nodes.push(n);
+      else clusters.push({ center: n.x, nodes: [n] });
+    });
+
+    // Shluk s víc uzly (= rozvětvení) → rozestup symetricky kolem společné
+    // osy (rodičova x), ne jeden uzel pevně na ose a druhý vystrčený stranou.
+    clusters.forEach(c => {
+      if (c.nodes.length > 1) {
+        c.nodes.forEach((node, i) => {
+          node.x = c.center + (i - (c.nodes.length - 1) / 2) * MIN_DIST;
+        });
+      }
+    });
+
+    // Kotva = větev (L/R/C/LC) má v této vrstvě JEDEN uzel. Floater = větev
+    // má víc uzlů najednou (AND-join kolize, extra uzel). Prompt staví
+    // 3 reálné větve (L=cévní, R=nervová, C=fyzická kondice), ne jen 2 +
+    // občasný extra — proto se klasifikace dělá podle počtu, ne podle
+    // konkrétního písmene.
     const byBranch = {};
     group.forEach(n => { const b = n.branch || '_'; (byBranch[b] = byBranch[b] || []).push(n); });
-    const anchors  = group.filter(n => byBranch[n.branch || '_'].length === 1);
-    const floaters = group.filter(n => byBranch[n.branch || '_'].length > 1);
-    anchors.forEach(n => { n._isAnchor = true; });
-    floaters.forEach(n => { n._isAnchor = false; });
-    if (anchors.length) {
-      resolveCollisions(anchors);
-      floaters.forEach(f => {
-        let x = f.x;
-        for (const a of anchors) if (Math.abs(x - a.x) < MIN_DIST) x = x < a.x ? a.x - MIN_DIST : a.x + MIN_DIST;
-        f.x = x;
-      });
-      group.forEach(n => { n.y = (n.level ?? 0) * Y_STEP; });
-      return;
-    }
-    resolveCollisions(group);
-    group.forEach(n => { n.y = (n.level ?? 0) * Y_STEP; });
+    group.forEach(n => {
+      n.y = (n.level ?? 0) * Y_STEP;
+      n._isAnchor = byBranch[n.branch || '_'].length === 1;
+    });
   };
 
-  // Jediný průchod shora dolů (jen podle rodičů). Předtím existoval i průchod
-  // zdola nahoru (podle dětí) pro "minimalizaci křížení" — ten ale táhl
-  // jednořetězové uzly (1 uzel/úroveň, žádný sourozenec) směrem k jejich
-  // jedinému dítěti. Když větev končí v junction uzlu o pár úrovní výš
-  // (např. L4→L5→J1, J1 má 3 rodiče), celá větev se "svezla" ke středu
-  // už 2 úrovně před skutečným spojením — barva mimo sloupec.
-  // Junction se vystředí sám správně, protože jeho bc = průměr VŠECH
-  // jeho (už finálně umístěných) rodičů — bottom-up není potřeba.
+  // Jediný průchod shora dolů (jen podle rodičů, žádný bottom-up — viz
+  // historie commitů proč bottom-up i jednosměrná kolize obě rozhazovaly úrovně).
   //
   // Kotva (anchor) počítá bc JEN z rodičů, kteří jsou TAKÉ kotvy — floater
   // rodič (extra uzel) ji nesmí odtáhnout z rovného sloupce, jen hrana k němu
@@ -434,7 +424,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx) {
   const key = JSON.stringify({
-    _v:          14, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
+    _v:          15, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),
     labs:        ctx.profile.labs || {},
