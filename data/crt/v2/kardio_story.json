@@ -75,7 +75,7 @@
       "layer": 3, "branch": "left",
       "condition": { "or": [{"lab":"ldl","gt":3.0}, {"lab":"crp","gt":1.0}, {"med":"torvacard"}, {"med":"atorvastatin"}] },
       "parents": ["PLAKY_K"],
-      "children": ["ZTUHE_CEVY_K"],
+      "children": ["ZTUHE_CEVY_K", "ED_K"],
       "detail": {
         "value_key": "labs.crp", "value_unit": "mg/L", "value_target": "< 1.0",
         "actions": ["Omega-3 2 g/den — přímý protizánětlivý efekt", "Středomořská strava"]
@@ -179,11 +179,29 @@
       "label": "Riziko infarktu\na CMP",
       "label_expert": "Riziko infarktu\na CMP",
       "label_layman": "Srdce a cévy\nv ohrožení",
-      "layer": 8, "type": "ude", "branch": "center",
+      "layer": 8, "type": "ude", "branch": "center", "always_show": true,
       "condition": { "or": [{"med":"pradaxa"}, {"med":"torvacard"}, {"med":"atorvastatin"}, {"lab":"ldl","gt":3.0}, {"diag":"FIBRILACE_SINI"}, {"diag":"FIBRILACE"}] },
       "parents": ["FIBRILACE_K"],
       "children": [],
       "detail": { "actions": ["Kardiologická kontrola 1× ročně", "LDL < 1.8 mmol/L — agresivní cíl po AFib", "Pradaxa nikdy nevynechávej — krátký poločas"] }
+    },
+
+    {
+      "id": "ED_K",
+      "label": "Erektilní dysfunkce",
+      "label_expert": "Vaskulogenní erektilní\ndysfunkce",
+      "label_layman": "Problémy\ns erekcí",
+      "layer": 4, "type": "ude", "branch": "center",
+      "condition": { "or": [{"diag":"ERECTILNI_DYSFUNKCE"}, {"med":"sildenafil"}, {"med":"tadalafil"}, {"med":"viagra"}, {"med":"cialis"}] },
+      "parents": ["ZANET_CEV_K"],
+      "children": [],
+      "detail": {
+        "actions": [
+          "Erekce závisí na průtoku malými cévami — bývá první příznak, dřív než infarkt nebo CMP",
+          "Stejná opatření jako pro srdce (statiny, pohyb, LDL pod kontrolou) zlepšují i tohle",
+          "Urologické/kardiologické vyšetření — ED je často časný marker, ne izolovaný problém"
+        ]
+      }
     }
   ],
 

@@ -637,6 +637,8 @@ const DIAG_MAP = [
   [/bolest\s*(v\s*)?(noh|dolních\s*končetin)/i,                        'BOLEST_NOHOU'],
   [/slabost\s*(noh|dolních\s*končetin)/i,                              'SLABOST_NOHOU'],
   [/nestabilní\s*(chůze|chůzi)/i,                                      'NESTABILITA_CHUZE'],
+  // Vaskulární / sexuální zdraví
+  [/erektilní\s*dysfunkc[ei]|erektilní\s*poruch[ay]|impotence/i,        'ERECTILNI_DYSFUNKCE'],
 ];
 const LAB_KEY_MAP = {
   ldl:'ldl', ldl_cholesterol:'ldl',

@@ -665,8 +665,9 @@ async function loadCRT() {
     }
   }
 
-  // 4 hlavní killers (Attia/Goldratt) vždy zobrazeny — i neaktivní, jen šedě
-  const MAIN_UDE_IDS = Object.values(nodeMap).filter(n => n.type === 'ude').map(n => n.id);
+  // Jen univerzální killery (always_show: true v KB) jsou vždy zobrazeny — i neaktivní, šedě.
+  // Ostatní UDE (např. ED — netýká se každého) se zobrazí jen když je opravdu aktivní.
+  const MAIN_UDE_IDS = Object.values(nodeMap).filter(n => n.type === 'ude' && n.always_show).map(n => n.id);
   for (const id of MAIN_UDE_IDS) {
     if (nodeMap[id] && !activeIds.has(id)) {
       activeIds.add(id);
