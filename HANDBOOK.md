@@ -727,6 +727,21 @@ source.filter(n => n.access === 'locked')
 
 ---
 
+### 🔴 Dvě paralelní CRT generování — Opus dynamický vs. statický v2 KB
+
+**Problém:** V repu existují dvě nezávislé cesty, jak se sestaví Kauzální mapa (`app/crt.html`):
+
+1. **`api/crt-generate.js`** — Opus (`claude-opus-4-8`) dynamicky generuje strom z reálných dat uživatele (diagnózy, léky, labs) přes strukturovaný prompt, včetně `medications_map` (treatment/protects/warning). Aktivně vyvíjeno do 19.6.2026. Spouští se přes `?opus=1`.
+2. **`data/crt/v2/*.json`** (`biosystem_v2.json`, `kardio_story.json`, ...) — ručně psané KB soubory s `condition` pravidly, vykreslované přes `loadCRT()` v `crt.html`. Tohle je **default** (bez `?opus=1`).
+
+**Příčina:** Pravděpodobně ztracený kontext mezi sessions (ne záměrný architektonický rozhodnutí) — vznikly vedle sebe, nikdo to nesjednotil.
+
+**Stav k 30.6.2026:** Opus cesta (`?opus=1`) se vykreslí, ale layout je nepoužitelný. v2 statický systém je funkční a aktivně laděný (barycenter layout, pill rendering, lékové kolize).
+
+**Pravidlo:** v2 statický systém (`data/crt/v2/`) je teď primární. Než se znovu sáhne na Opus cestu, je potřeba ji buď opravit, nebo `api/crt-generate.js` + `loadCRTOpus` v `crt.html` jako mrtvý kód odstranit — ne nechat ležet jako nejasnou druhou pravdu.
+
+---
+
 ## 13. Roadmapa
 
 | Verze | Obsah | Status |
