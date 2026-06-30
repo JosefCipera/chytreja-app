@@ -436,7 +436,8 @@ function calcPositionsClient(nodes) {
   const layers = Object.keys(byLayer).map(Number).sort((a, b) => a - b);
   const nodeById = Object.fromEntries(nodes.map(n => [n.id, n]));
   const maxPerLayer = Math.max(...Object.values(byLayer).map(g => g.length));
-  const MIN_GAP = 28;
+  // Dost místa napravo od uzlu pro sloupec lék/doplněk pilulek (max ~210px + mezera)
+  const MIN_GAP = IS_MOBILE ? 60 : 230;
   const X_SPREAD = Math.max(340, Math.ceil((maxPerLayer - 1) * (BOX_W + MIN_GAP) / 2));
   const branchOrder = { left: 0, center: 1, right: 2 };
 
