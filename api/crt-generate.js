@@ -31,8 +31,7 @@ function calcPositions(nodes, edges) {
   (edges || []).forEach(e => {
     const from = nodeById[e.from], to = nodeById[e.to];
     if (!from || !to) return;
-    (to._parents  = to._parents  || []).push(e.from);
-    (from._children = from._children || []).push(e.to);
+    (to._parents = to._parents || []).push(e.from);
   });
 
   const byLevel = {};
@@ -80,35 +79,27 @@ function calcPositions(nodes, edges) {
     group.forEach(n => { n.x -= meanX; n.y = (n.level ?? 0) * Y_STEP; });
   };
 
+  // Jediný průchod shora dolů (jen podle rodičů). Předtím existoval i průchod
+  // zdola nahoru (podle dětí) pro "minimalizaci křížení" — ten ale táhl
+  // jednořetězové uzly (1 uzel/úroveň, žádný sourozenec) směrem k jejich
+  // jedinému dítěti. Když větev končí v junction uzlu o pár úrovní výš
+  // (např. L4→L5→J1, J1 má 3 rodiče), celá větev se "svezla" ke středu
+  // už 2 úrovně před skutečným spojením — barva mimo sloupec.
+  // Junction se vystředí sám správně, protože jeho bc = průměr VŠECH
+  // jeho (už finálně umístěných) rodičů — bottom-up není potřeba.
+  const bc = (n) => {
+    const xs = (n._parents || []).map(id => nodeById[id]?.x).filter(x => x != null);
+    return xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null;
+  };
   levels.forEach(lv => {
     const g = byLevel[lv];
-    g.sort((a, b) => (branchRank[a.branch ?? 'C'] ?? 1) - (branchRank[b.branch ?? 'C'] ?? 1));
+    g.forEach(n => { n._bc = bc(n); });
+    g.sort((a, b) => (a._bc != null && b._bc != null && a._bc !== b._bc) ? a._bc - b._bc
+      : (branchRank[a.branch ?? 'C'] ?? 1) - (branchRank[b.branch ?? 'C'] ?? 1));
     placeGroup(g);
   });
 
-  const bc = (n, useParents) => {
-    const ids = useParents ? (n._parents || []) : (n._children || []);
-    const xs = ids.map(id => nodeById[id]?.x).filter(x => x != null);
-    return xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null;
-  };
-  for (let iter = 0; iter < 3; iter++) {
-    levels.slice(1).forEach(lv => {
-      const g = byLevel[lv];
-      g.forEach(n => { n._bc = bc(n, true) ?? n.x; });
-      g.sort((a, b) => a._bc !== b._bc ? a._bc - b._bc
-        : (branchRank[a.branch ?? 'C'] ?? 1) - (branchRank[b.branch ?? 'C'] ?? 1));
-      placeGroup(g);
-    });
-    levels.slice(1, -1).reverse().forEach(lv => {
-      const g = byLevel[lv];
-      g.forEach(n => { n._bc = bc(n, false) ?? n.x; });
-      g.sort((a, b) => a._bc !== b._bc ? a._bc - b._bc
-        : (branchRank[a.branch ?? 'C'] ?? 1) - (branchRank[b.branch ?? 'C'] ?? 1));
-      placeGroup(g);
-    });
-  }
-
-  nodes.forEach(n => { delete n._parents; delete n._children; delete n._bc; });
+  nodes.forEach(n => { delete n._parents; delete n._bc; });
   return nodes;
 }
 
@@ -415,7 +406,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx) {
   const key = JSON.stringify({
-    _v:          11, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
+    _v:          12, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),
     labs:        ctx.profile.labs || {},

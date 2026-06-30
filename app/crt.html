@@ -491,36 +491,23 @@ function calcPositionsClient(nodes) {
     group.forEach(n => { n.x -= meanX; n.y = (n.layer ?? 0) * Y_STEP; });
   };
 
-  // Initial placement: sort by branch hint
-  layers.forEach(lv => {
-    const g = byLayer[lv];
-    g.sort((a, b) => (branchOrder[a.branch ?? 'center'] ?? 1) - (branchOrder[b.branch ?? 'center'] ?? 1));
-    placeGroup(g);
-  });
-
-  // Barycenter heuristic — 3 iterations top-down + bottom-up to minimise crossings
-  const bc = (n, useParents) => {
-    const ids = useParents ? (n.parents || []) : (n.children || []);
-    const xs = ids.map(id => nodeById[id]?.x).filter(x => x != null);
+  // Jediný průchod shora dolů (jen podle rodičů). Dřív byl i průchod zdola
+  // nahoru (podle dětí) pro "minimalizaci křížení" — ten ale táhl jednořetězové
+  // uzly (1 uzel/vrstva, žádný sourozenec) k jejich jedinému dítěti. Když větev
+  // končí v AND-join uzlu o pár vrstev výš, celá větev se "svezla" ke středu
+  // už dřív, než ke skutečnému spojení došlo. Junction se vystředí sám správně,
+  // protože jeho bc = průměr VŠECH jeho (už finálně umístěných) rodičů.
+  const bc = (n) => {
+    const xs = (n.parents || []).map(id => nodeById[id]?.x).filter(x => x != null);
     return xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null;
   };
-
-  for (let iter = 0; iter < 3; iter++) {
-    layers.slice(1).forEach(lv => {               // top-down: sort by parent x
-      const g = byLayer[lv];
-      g.forEach(n => { n._bc = bc(n, true) ?? n.x; });
-      g.sort((a, b) => a._bc !== b._bc ? a._bc - b._bc
-        : (branchOrder[a.branch ?? 'center'] ?? 1) - (branchOrder[b.branch ?? 'center'] ?? 1));
-      placeGroup(g);
-    });
-    layers.slice(1, -1).reverse().forEach(lv => {  // bottom-up: skip ROOT(0) + top layer
-      const g = byLayer[lv];
-      g.forEach(n => { n._bc = bc(n, false) ?? n.x; });
-      g.sort((a, b) => a._bc !== b._bc ? a._bc - b._bc
-        : (branchOrder[a.branch ?? 'center'] ?? 1) - (branchOrder[b.branch ?? 'center'] ?? 1));
-      placeGroup(g);
-    });
-  }
+  layers.forEach(lv => {
+    const g = byLayer[lv];
+    g.forEach(n => { n._bc = bc(n); });
+    g.sort((a, b) => (a._bc != null && b._bc != null && a._bc !== b._bc) ? a._bc - b._bc
+      : (branchOrder[a.branch ?? 'center'] ?? 1) - (branchOrder[b.branch ?? 'center'] ?? 1));
+    placeGroup(g);
+  });
 }
 
 // ── Medications ───────────────────────────────────────────────────────────────
