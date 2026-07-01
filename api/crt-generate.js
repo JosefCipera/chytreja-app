@@ -280,11 +280,11 @@ async function generateCRT({ metrics, profile, checkins, nodeInputs }, role) {
 ### ZÁKLADNÍ STRUKTURA A TOPOLOGIE STROMU:
 1. Strom musí mít přesně definované vrstvy (Level 0 až Level 6).
 2. Na samém vrcholu (Level 6) musí být přesně JEDNO HLAVNÍ ULTIMATE UDE. Všechny větve pod ním musí organicky směřovat a gradovat k tomuto bodu.
-3. Strom nesmí obsahovat křížení hran. Musí mít jasnou levou (L) a pravou (R) větev, které se setkají až těsně pod vrcholem.
-   - LEVÁ VĚTEV (Cévní/Strukturální): metabolický zánět → vysoké LDL → kornatění cév → poškození mikrocirkulace.
-   - KLÍČOVÉ PRAVIDLO PRO ED: Erektilní dysfunkce ("Problémy s erekcí") je medicínsky prvním projevem poškození malých cév. Musí proto ležet v LEVÉ větvi jako přímý následek zhoršeného průtoku krve nejtenčími cévami. Nesmí viset z boku jako izolovaný ostrov!
-   - PRAVÁ VĚTEV (Nervová/Elektrická): stres/nedostatek spánku → přetížení sympatiku → nízká HRV → elektrická dráždivost síní.
-4. Na Level 5 se obě větve setkají v junction uzlu nebo v UDE (Fibrilace síní), které je přímým spouštěčem pro Ultimate UDE na Level 6.
+3. LEVÁ VĚTEV (Cévní) a PRAVÁ VĚTEV (Nervová) se nesmí větvit do prázdna.
+   - Z uzlu "Poškození nejmenších cév" MUSÍ vést hrana do uzlu "Problémy s erekcí".
+   - Z uzlu "Problémy s erekcí" MUSÍ vést hrana dál nahoru do uzlu "Fibrilace síní a nepravidelný tep" (nebo do společného junction uzlu). Žádný uzel nesmí zůstat bez výstupní hrany!
+4. Na Level 5 bude uzel "Fibrilace síní a nepravidelný tep", do kterého se slijí obě větve naráz (přiteče tam hrana z "Problémy s erekcí" i z "Předčasné stahy srdce").
+5. Z Level 5 ("Fibrilace síní") povede jediná finální hrana do Level 6 ("Riziko infarktu a CMP").
 
 ### PATOFYZIOLOGICKÁ PRAVIDLA PRO LÉKY:
 - Statiny (Torvacard, atorvastatin) → uzel s LDL cholesterolem (L větev). Nikdy k erekci nebo nervům!
@@ -415,7 +415,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx) {
   const key = JSON.stringify({
-    _v:          20, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
+    _v:          21, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),
     labs:        ctx.profile.labs || {},
