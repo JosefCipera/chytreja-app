@@ -275,45 +275,49 @@ async function generateCRT({ metrics, profile, checkins, nodeInputs }, role) {
 
   const metricsText2 = metricsText;
 
-  const systemPrompt = `Jsi špičkový expert na Goldrattovu Teorii omezení (TOC) a preventivní medicínu dlouhověkosti (Medicine 3.0). Tvým úkolem je analyzovat zdravotní data pacienta a sestavit perfektní, čistý a logicky neprůstřelný Current Reality Tree (CRT) ve formátu JSON. Výstup bude přímo vykreslen enginem do formátu karet.
+  const systemPrompt = `Jsi špičkový expert na Goldrattovu Teorii omezení (TOC) a preventivní medicínu dlouhověkosti (Medicine 3.0). Tvým úkolem je analyzovat zdravotní data pacienta a sestavit perfektní, čistý a logicky neprůstřelný Current Reality Tree (CRT) ve formátu JSON. Výstup je zpracováván skriptem, který podle parametrů 'level' a 'branch' natvrdo počítá souřadnice pro SVG vykreslení.
 
-### ZÁKLADNÍ STRUKTURA A TOPOLOGIE STROMU:
-1. Strom musí mít přesně definované vrstvy (Level 0 až Level 6).
-2. Na samém vrcholu (Level 6) musí být přesně JEDNO HLAVNÍ ULTIMATE UDE. Všechny větve pod ním musí organicky směřovat a gradovat k tomuto bodu.
-3. LEVÁ VĚTEV (Cévní) a PRAVÁ VĚTEV (Nervová) se nesmí větvit do prázdna.
-   - Z uzlu "Poškození nejmenších cév" MUSÍ vést hrana do uzlu "Problémy s erekcí".
-   - Z uzlu "Problémy s erekcí" MUSÍ vést hrana dál nahoru do uzlu "Fibrilace síní a nepravidelný tep" (nebo do společného junction uzlu). Žádný uzel nesmí zůstat bez výstupní hrany!
-4. Na Level 5 bude uzel "Fibrilace síní a nepravidelný tep", do kterého se slijí obě větve naráz (přiteče tam hrana z "Problémy s erekcí" i z "Předčasné stahy srdce").
-5. Z Level 5 ("Fibrilace síní") povede jediná finální hrana do Level 6 ("Riziko infarktu a CMP").
+### ⚠️ ZÁVAZNÁ MATEMATICKÁ PRAVIDLA PRO LEVELING A TOPOLOGII:
+Parametry \`level\` (0 až 6) a \`branch\` (L/R/C) určují absolutní polohu uzlu na obrazovce. Musíš je generovat podle těchto striktních pravidel, jinak se vizuální mapa rozpadne:
 
-### PATOFYZIOLOGICKÁ PRAVIDLA PRO LÉKY:
-- Statiny (Torvacard, atorvastatin) → uzel s LDL cholesterolem (L větev). Nikdy k erekci nebo nervům!
-- Kalnormin/Draslík/Magnesium → uzel s elektrickou dráždivostí (R větev). Nikdy k erekci!
-- Antikoagulanty (Pradaxa, dabigatran) → jako type="protects" k uzlu Fibrilace nebo k Ultimate UDE.
+1. PRAVIDLO KAUZÁLNÍHO STOUPÁNÍ (Osa Y):
+   - Pokud uzel A způsobuje uzel B, pak uzel B MUSÍ mít parametr \`level\` minimálně o 1 vyšší než uzel A (např. uzel A má level 2, uzel B má level 3).
+   - Příčina a její přímý následek NESMÍ mít nikdy stejný level!
 
-### LABELY:
-Česky, srozumitelně pro laika. Odborný termín jen pokud je přímo z profilu (např. "Fibrilace síní").
-Příklady: "Ztuhlé cévy" ne "Ateroskleróza", "Přetížený sympatikus" ne "Sympatikotonická dysregulace". Max 5 slov.
+2. PRAVIDLO PRO PARALELNÍ VĚTVE (Osa X):
+   - Uzly v levé větvi (branch: "L") a pravé větvi (branch: "R") se vyvíjejí nezávisle.
+   - Na stejný level smíš dát uzel z L a uzel z R POUZE tehdy, pokud jsou v kauzálním řetězci stejně vzdálené od kořene (Level 0). Nesnaž se je uměle zarovnávat horizontálně, pokud jedna větev stoupá rychleji.
+
+3. PRAVIDLO ŽÁDNÝCH SLEPÝCH ULIČEK (No Dead Ends):
+   - Každý uzel v grafu, kromě samotného vrcholu (Level 6), MUSÍ mít alespoň jednu výstupní hranu (edge) směřující do uzlu na vyšším levelu. Žádný uzel nesmí zůstat "viset" bez následníka.
+
+4. SBÍHAVOST DO JEDNOHO VRCHOLU (Finální trychtýř):
+   - Na samém vrcholu (Level 6, branch: "C") musí být vždy přesně JEDNO HLAVNÍ ULTIMATE UDE (např. "Riziko infarktu a CMP").
+   - Pokud máš na Level 4 nebo 5 dvě závažná UDE (např. "Problémy s erekcí" v L větvi a "Fibrilace síní" v R větvi), obě z nich MUSÍ mít výstupní hranu vedoucí nahoru. Buď se slijí do společného uzlu na Level 5, nebo obě samostatně odkazují hranou přímo do finálního Ultimate UDE na Level 6.
 
 ### FORMÁT VÝSTUPU:
-Vrať POUZE validní JSON bez markdown bloků, bez komentářů:
+Vrať POUZE validní JSON bez jakéhokoliv doprovodného textu.
+
 {
-  "root": "node_root_id",
+  "root": "node_root",
   "nodes": [
-    { "id": "node_root_id", "level": 0, "branch": "C", "type": "cause", "label": "Kořenová příčina" },
-    { "id": "L1", "level": 1, "branch": "L", "type": "cause", "label": "Max 5 slov" }
+    { "id": "node_id", "level": 0, "branch": "C", "type": "cause", "label": "Stručný český název (max 5 slov)" }
   ],
-  "edges": [{ "from": "node_root_id", "to": "L1" }],
-  "and_joins": [{ "sources": ["L3", "R3"], "target": "J1" }],
-  "injections": [{ "label": "Konkrétní akce (max 6 slov)", "node_id": null }],
+  "edges": [
+    { "from": "node_id", "to": "node_id" }
+  ],
+  "and_joins": [],
+  "injections": [],
+  "universe_map": [
+    { "node_id": "node_id", "universe": "cardio/metabolism" }
+  ],
   "medications_map": [
-    { "medication": "Torvacard", "target_node_id": "L1", "type": "treatment", "label": "snižuje LDL" },
-    { "medication": "Pradaxa", "target_node_id": "UDE_fap", "type": "protects", "label": "snižuje riziko CMP" }
+    { "medication": "Název", "target_node_id": "node_id", "type": "treatment/protects/warning", "label": "Co dělá v těle" }
   ]
 }
 
 Typy uzlů: "cause" (příčina), "junction" (spojení dvou větví), "ude" (co pacient prožívá — Level 5–6).
-Level 0 = root, Level 6 = Ultimate UDE. Rozsah: 10–14 uzlů celkem (včetně root).`;
+Level 0 = root (golden_box), Level 6 = Ultimate UDE. Rozsah: 10–14 uzlů celkem (včetně root).`;
 
   const userPrompt = `Sestav CRT strom pro tohoto pacienta:
 
@@ -415,7 +419,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx) {
   const key = JSON.stringify({
-    _v:          21, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
+    _v:          22, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),
     labs:        ctx.profile.labs || {},
