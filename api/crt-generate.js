@@ -297,9 +297,11 @@ Vrátíš POUZE validní JSON (bez markdown bloků, bez komentářů) v přesné
 
 Pravidla pro strukturu:
 - root: type="golden_box", level=0, branch="C" — nejhlubší příčina (Single Root Cause)
-- nodes: level 1–5, branch L (levá větev) nebo R (pravá větev), C (střed — junction/UDE)
+- nodes: level 1–5, branch L (levá větev) nebo R (pravá větev), C (střed — junction)
 - type: "cause" (příčina), "junction" (spojení dvou příčin), "ude" (nežádoucí důsledek — symptom)
-- UDE uzly (type=ude): nejvyšší level, branch=C — to co uživatel CÍTÍ jako problém
+- UDE uzly (type=ude): nejvyšší level — to co uživatel CÍTÍ jako problém
+  * Pokud jsou 2 UDE: první branch=L, druhý branch=R (každý vrcholí svou větví)
+  * Pokud je 1 UDE: branch=C
 - and_joins: jen kde dva uzly SPOLEČNĚ způsobují třetí
 - injections: 2–3 konkrétní akce které přeruší kauzální řetěz
 - node_id: CHJ uzel pokud existuje (kardio/mysl/vyziva/spanek/dlouhovekost), jinak null
@@ -341,14 +343,24 @@ ${checkinText}
 Na základě diagnóz a dat sestav CRT: najdi kořenovou příčinu, kauzální větve a 1–2 UDE nahoře. Strukturu urči sám z dat — nevnucuj pevné větve.
 
 Pravidla pro UDE:
-- UDE = stav který uživatel aktivně PROŽÍVÁ a trpí jím. Vždy subjektivní nebo jasně měřitelná událost.
-  ✓ UDE: Fibrilace síní, Problémy s erekcí, Bolest na hrudi, Infarkt/CMP riziko
-  ✗ NENÍ UDE: Hypertenze, Vysoký TK, Vysoké LDL, Ateroskleróza — to jsou příčiny (type=cause)
-- Hlavní UDE = nejzávažnější stav z profilu (např. Fibrilace síní). Jde na úplný vrchol stromu.
-- Vedlejší UDE (max 1 další): jen pokud jde o jiný systém se sdílenou příčinou (např. ED sdílí cévní zápal se srdcem). Napojuje se jako sourozenci hlavního UDE nebo z posledního sdíleného uzlu.
-- Nikdy nehádej UDE z klinických nálezů — jen z toho co uživatel CÍTÍ nebo co mu lékař diagnostikoval jako stav.
-- Cíl (goal_text) do CRT NEPATŘÍ
-- Extrasystoly jsou junction uzel těsně pod FaP (type=junction), ne UDE
+- UDE = stav který uživatel PROŽÍVÁ, nikoli klinický nález.
+  ✓ UDE: Fibrilace síní, Problémy s erekcí
+  ✗ NENÍ UDE: Hypertenze, Vysoký TK, Vysoké LDL, Ateroskleróza — příčiny (type=cause)
+- Cíl (goal_text) do CRT NEPATŘÍ. Extrasystoly = junction těsně pod FaP, ne UDE.
+
+POVINNÉ UDE pro tento profil (obě diagnózy z profilu MUSÍ být UDE):
+1. "Fibrilace síní" — type=ude, branch=L, nejvyšší level
+   Vstup: cévní větev (L) + nervová složka jako druhý input (AND-join nebo junction těsně pod)
+2. "Problémy s erekcí" — type=ude, branch=R, nejvyšší level
+   ED má DVOUSLOŽKOVOU příčinu — obě větve do ní ústí:
+   · Cévní složka (z L větve): ztuhlé cévy, nízký průtok → AND-join source 1
+   · Nervová/stresová složka (z R větve): sympatikus, kortizol → AND-join source 2
+   → and_joins MUSÍ obsahovat: {"sources": ["[id cévního uzlu]", "[id nervového uzlu]"], "target": "[ED id]"}
+
+Architektura stromu se dvěma UDE:
+- Levá větev (L): cévní → metabolická cesta → vrcholí FaP (branch=L)
+- Pravá větev (R): nervová → stresová cesta → přispívá k FaP (junction) I k ED (AND-join)
+- Obě větve mají sdílené příčiny dole (root, level 1–2) — odtud se rozbíhají
 
 Pravidla pro injections:
 - PRVNÍ injections jsou vždy léky z profilu uživatele (Torvacard, Pradaxa, Kalnormin...)
@@ -413,7 +425,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx) {
   const key = JSON.stringify({
-    _v:          18, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
+    _v:          19, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),
     labs:        ctx.profile.labs || {},
