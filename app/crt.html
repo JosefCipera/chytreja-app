@@ -434,9 +434,12 @@ async function calcPositionsELK(nodes, layoutEdges) {
   });
 
   const nodeSet = new Set(nodes.map(n => n.id));
-  const elkEdges = (layoutEdges || [])
-    .filter(e => nodeSet.has(e.from) && nodeSet.has(e.to))
-    .map((e, i) => ({ id: `e${i}`, sources: [e.from], targets: [e.to] }));
+  const validLayoutEdges = (layoutEdges || []).filter(e => nodeSet.has(e.from) && nodeSet.has(e.to));
+  const elkEdges = validLayoutEdges.map((e, i) => ({
+    id: `e${i}`,
+    sources: [e.from],
+    targets: [e.to],
+  }));
 
   const graph = {
     id: 'root',
@@ -446,7 +449,7 @@ async function calcPositionsELK(nodes, layoutEdges) {
       'elk.layered.nodePlacement.strategy': 'BRANDES_KOEPF',
       'elk.spacing.nodeNode': String(MIN_GAP),
       'elk.layered.spacing.nodeNodeBetweenLayers': '80',
-      'elk.edgeRouting': 'POLYLINE',
+      'elk.edgeRouting': 'ORTHOGONAL',
     },
     children: nodes.map(n => ({ id: n.id, width: BOX_W, height: BOX_H })),
     edges: elkEdges,
@@ -460,6 +463,17 @@ async function calcPositionsELK(nodes, layoutEdges) {
     if (p) {
       n.x = p.x + BOX_W / 2; // ELK dává top-left, chceme střed
       n.y = p.y + BOX_H / 2;
+    }
+  });
+
+  // Uložit ELK waypoints na hrany — ORTHOGONAL routing dá sections s bend body
+  const elkEdgeById = Object.fromEntries((result.edges || []).map(ee => [ee.id, ee]));
+  validLayoutEdges.forEach((e, i) => {
+    const ee = elkEdgeById[`e${i}`];
+    if (ee?.sections?.[0]) {
+      e._elkSections = ee.sections[0]; // { startPoint, bendPoints, endPoint }
+    } else {
+      delete e._elkSections;
     }
   });
 }
@@ -923,17 +937,30 @@ function renderTree(data) {
     if (!src || !tgt) return;
     // Přeskočit hrany které jsou součástí AND-joinu — ty kreslíme v AND sekci
     if (andJoinTargets.has(e.to) && andJoinSources.has(e.from)) return;
-    // Přeskočit nesmyslné cross-branch hrany (Opus občas vygeneruje L↔R přímé spojení)
-    if (Math.abs((src.x ?? 0) - (tgt.x ?? 0)) * X_SCALE > MAX_EDGE_DX) return;
 
-    const srcH = boxHeight(src.label), tgtH = boxHeight(tgt.label);
-    const x1 = cx(src.x ?? 0), y1 = cy(src.y ?? 0) - srcH / 2;
-    const x2 = cx(tgt.x ?? 0), y2 = cy(tgt.y ?? 0) + tgtH / 2;
+    let d;
+    if (e._elkSections) {
+      // ELK ORTHOGONAL waypoints — transformujeme ELK coords stejně jako node souřadnice
+      const s = e._elkSections;
+      const pts = [s.startPoint, ...(s.bendPoints || []), s.endPoint];
+      const svgPts = pts.map(p => ({ x: cx(p.x), y: cy(p.y) }));
+      d = `M ${svgPts[0].x} ${svgPts[0].y}`;
+      for (let i = 1; i < svgPts.length; i++) {
+        d += ` L ${svgPts[i].x} ${svgPts[i].y}`;
+      }
+    } else {
+      // Fallback: Bezier křivka
+      if (Math.abs((src.x ?? 0) - (tgt.x ?? 0)) * X_SCALE > MAX_EDGE_DX) return;
+      const srcH = boxHeight(src.label), tgtH = boxHeight(tgt.label);
+      const x1 = cx(src.x ?? 0), y1 = cy(src.y ?? 0) - srcH / 2;
+      const x2 = cx(tgt.x ?? 0), y2 = cy(tgt.y ?? 0) + tgtH / 2;
+      const midY1 = y1 + (y2 - y1) * 0.4;
+      const midY2 = y1 + (y2 - y1) * 0.6;
+      d = `M ${x1} ${y1} C ${x1} ${midY1}, ${x2} ${midY2}, ${x2} ${y2}`;
+    }
 
-    const midY1 = y1 + (y2 - y1) * 0.4;
-    const midY2 = y1 + (y2 - y1) * 0.6;
     svg.appendChild(svgEl('path', {
-      d: `M ${x1} ${y1} C ${x1} ${midY1}, ${x2} ${midY2}, ${x2} ${y2}`,
+      d,
       fill: 'none', stroke: '#3a5a78', 'stroke-width': '2',
       'marker-end': 'url(#arrow)',
     }));
