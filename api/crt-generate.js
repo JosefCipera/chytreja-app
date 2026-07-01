@@ -351,15 +351,14 @@ ${checkinText}
 Na základě diagnóz a dat sestav CRT: najdi jednu kořenovou příčinu, dvě kauzální větve (L a R), junction uzly kde se větve sbíhají, a 1–2 UDE nahoře.
 
 Pravidla pro UDE:
-- KAŽDÁ diagnóza z pole "Diagnózy:" → VLASTNÍ UDE uzel. Počet UDE = počet diagnóz (max 3).
-- Název UDE = laicky srozumitelný název diagnózy. NIKDY nenahrazuj diagnózu generickým mechanismem.
-  Příklady: "fibrilace síní" → UDE "Fibrilace síní", "erektilní dysfunkce" → UDE "Problémy s erekcí"
-  ŠPATNĚ: nahradit "erektilní dysfunkce" za "Slabé prokrvení tkání" — to je mechanismus, ne UDE
-- Každý UDE musí mít vlastní kauzální cestu z kořene — buď vlastní větev, nebo podvětev ze sdíleného uzlu
-  (např. cévní zánět → Fibrilace síní; cévní zánět → Problémy s erekcí — oba UDE, sdílený uzel)
-- Cíl (goal_text) do CRT NEPATŘÍ — patří do Goal Tree, ne do Current Reality
+- UDE = stav který uživatel aktivně PROŽÍVÁ a trpí jím. Vždy subjektivní nebo jasně měřitelná událost.
+  ✓ UDE: Fibrilace síní, Problémy s erekcí, Bolest na hrudi, Infarkt/CMP riziko
+  ✗ NENÍ UDE: Hypertenze, Vysoký TK, Vysoké LDL, Ateroskleróza — to jsou příčiny (type=cause)
+- Hlavní UDE = nejzávažnější stav z profilu (např. Fibrilace síní). Jde na úplný vrchol stromu.
+- Vedlejší UDE (max 1 další): jen pokud jde o jiný systém se sdílenou příčinou (např. ED sdílí cévní zápal se srdcem). Napojuje se jako sourozenci hlavního UDE nebo z posledního sdíleného uzlu.
+- Nikdy nehádej UDE z klinických nálezů — jen z toho co uživatel CÍTÍ nebo co mu lékař diagnostikoval jako stav.
+- Cíl (goal_text) do CRT NEPATŘÍ
 - Extrasystoly jsou junction uzel těsně pod FaP (type=junction), ne UDE
-- Hypertenze je příčina (type=cause), ne UDE
 
 Pravidla pro injections:
 - PRVNÍ injections jsou vždy léky z profilu uživatele (Torvacard, Pradaxa, Kalnormin...)
@@ -424,7 +423,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx) {
   const key = JSON.stringify({
-    _v:          16, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
+    _v:          17, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),
     labs:        ctx.profile.labs || {},
