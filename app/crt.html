@@ -7,6 +7,7 @@
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
   <!-- vis-network odstraněn — používáme vlastní SVG renderer -->
+  <script src="https://cdn.jsdelivr.net/npm/elkjs@0.9.3/lib/elk.bundled.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -421,99 +422,45 @@ async function fetchUserContext() {
   return res.json();
 }
 
-// ── Layout ────────────────────────────────────────────────────────────────────
+// ── Layout (ELK.js) ───────────────────────────────────────────────────────────
 
-function calcPositionsClient(nodes) {
-  const Y_STEP = 140;
+const _elk = new ELK();
 
-  const byLayer = {};
+async function calcPositionsELK(nodes, layoutEdges) {
+  const MIN_GAP = IS_MOBILE ? 60 : 200;
+
   nodes.forEach(n => {
-    const lv = n.layer ?? 0;
-    (byLayer[lv] = byLayer[lv] || []).push(n);
     n._type = n.type === 'root' ? 'golden_box' : n.type === 'goal' ? 'goal' : (n.type || 'cause');
   });
 
-  const layers = Object.keys(byLayer).map(Number).sort((a, b) => a - b);
-  const nodeById = Object.fromEntries(nodes.map(n => [n.id, n]));
-  const maxPerLayer = Math.max(...Object.values(byLayer).map(g => g.length));
-  // Dost místa napravo od uzlu pro sloupec lék/doplněk pilulek (max ~210px + mezera)
-  const MIN_GAP = IS_MOBILE ? 60 : 230;
-  const X_SPREAD = Math.max(340, Math.ceil((maxPerLayer - 1) * (BOX_W + MIN_GAP) / 2));
-  const branchOrder = { left: 0, center: 1, right: 2 };
+  const nodeSet = new Set(nodes.map(n => n.id));
+  const elkEdges = (layoutEdges || [])
+    .filter(e => nodeSet.has(e.from) && nodeSet.has(e.to))
+    .map((e, i) => ({ id: `e${i}`, sources: [e.from], targets: [e.to] }));
 
-  // Place group: barycenter (parent x) jako ideální pozice, NE nucené
-  // rovnoměrné rozprostření přes celou šířku.
-  const MIN_DIST = BOX_W + MIN_GAP;
-  const TIE_EPS = 1; // uzly se shodným (na px) barycentrem = praví sourozenci (sdílí rodiče)
+  const graph = {
+    id: 'root',
+    layoutOptions: {
+      'elk.algorithm': 'layered',
+      'elk.direction': 'DOWN',
+      'elk.layered.nodePlacement.strategy': 'BRANDES_KOEPF',
+      'elk.spacing.nodeNode': String(MIN_GAP),
+      'elk.layered.spacing.nodeNodeBetweenLayers': '80',
+      'elk.edgeRouting': 'POLYLINE',
+    },
+    children: nodes.map(n => ({ id: n.id, width: BOX_W, height: BOX_H })),
+    edges: elkEdges,
+  };
 
-  const placeGroup = (group) => {
-    const count = group.length;
-    if (count === 1) {
-      const n = group[0];
-      n.x = n._bc != null ? n._bc : (n.x ?? 0);
-      n.y = (n.layer ?? 0) * Y_STEP;
-      n._isAnchor = true; // jediná větev ve vrstvě = triviálně kotva pro děti
-      return;
+  const result = await _elk.layout(graph);
+
+  const byId = Object.fromEntries(result.children.map(c => [c.id, c]));
+  nodes.forEach(n => {
+    const p = byId[n.id];
+    if (p) {
+      n.x = p.x + BOX_W / 2; // ELK dává top-left, chceme střed
+      n.y = p.y + BOX_H / 2;
     }
-    group.forEach((n, idx) => {
-      n.x = n._bc != null ? n._bc : (-X_SPREAD + (idx / (count - 1)) * X_SPREAD * 2);
-    });
-
-    // Shlukuj podle SDÍLENÉHO barycentru — uzly se stejným x (= stejný rodič,
-    // skuteční sourozenci jako "Srdce málo pružně reaguje" + "Nedostatek
-    // draslíku v těle", oba děti "Permanentní napětí nervů") tvoří jeden
-    // shluk. Uzly s ODLIŠNÝM barycentrem (jiná větev, jiný rodič) tvoří
-    // vlastní shluk a vzájemně se vůbec neovlivňují — osa jedné větve se
-    // nehýbe kvůli rozvětvení na druhé straně.
-    const sorted = [...group].sort((a, b) => a.x - b.x);
-    const clusters = [];
-    sorted.forEach(n => {
-      const last = clusters[clusters.length - 1];
-      if (last && Math.abs(n.x - last.center) < TIE_EPS) last.nodes.push(n);
-      else clusters.push({ center: n.x, nodes: [n] });
-    });
-
-    // Shluk s víc uzly (= rozvětvení) → rozestup symetricky kolem společné
-    // osy (rodičova x), ne jeden uzel pevně na ose a druhý vystrčený stranou.
-    clusters.forEach(c => {
-      if (c.nodes.length > 1) {
-        c.nodes.forEach((node, i) => {
-          node.x = c.center + (i - (c.nodes.length - 1) / 2) * MIN_DIST;
-        });
-      }
-    });
-
-    group.forEach(n => {
-      n.y = (n.layer ?? 0) * Y_STEP;
-      // Kotva = branch left/right (hlavní větev v2 KB). Floater = branch
-      // center (vždy extra/vedlejší uzel, i sám ve vrstvě). Children podle
-      // tohoto filtrují bc — viz níž. (Opus cesta v api/crt-generate.js má
-      // jiné větvení, L/R/C jsou tam 3 rovnocenné větve, jiné pravidlo
-      // klasifikace, ale stejný _isAnchor mechanismus.)
-      n._isAnchor = (n.branch === 'left' || n.branch === 'right');
-    });
-  };
-
-  // Jediný průchod shora dolů (jen podle rodičů, žádný bottom-up — viz
-  // historie commitů proč bottom-up i jednosměrná kolize obě rozhazovaly sloupce).
-  //
-  // Kotva (anchor) počítá bc JEN z rodičů, kteří jsou TAKÉ kotvy — floater
-  // rodič (extra uzel typu Nedostatek draslíku) ji nesmí odtáhnout pryč ze
-  // své vlastní rovné větve. Junction (sám není kotva) naopak chce průměr
-  // přes VŠECHNY své kotva-rodiče (skutečné spojení větví, ne floater filtr).
-  const bc = (n) => {
-    const parentIds = n.parents || [];
-    const anchorParents = parentIds.filter(id => nodeById[id]?._isAnchor);
-    const ids = anchorParents.length ? anchorParents : parentIds;
-    const xs = ids.map(id => nodeById[id]?.x).filter(x => x != null);
-    return xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null;
-  };
-  layers.forEach(lv => {
-    const g = byLayer[lv];
-    g.forEach(n => { n._bc = bc(n); });
-    g.sort((a, b) => (a._bc != null && b._bc != null && a._bc !== b._bc) ? a._bc - b._bc
-      : (branchOrder[a.branch ?? 'center'] ?? 1) - (branchOrder[b.branch ?? 'center'] ?? 1));
-    placeGroup(g);
   });
 }
 
@@ -724,7 +671,8 @@ async function loadCRT() {
   }
 
   const nodes = [...activeIds].map(id => ({ ...nodeMap[id] })).filter(Boolean);
-  calcPositionsClient(nodes);
+  const layoutEdges = edges.filter(e => activeIds.has(e.from) && activeIds.has(e.to));
+  await calcPositionsELK(nodes, layoutEdges);
 
   const result = {
     title: 'Kauzální mapa zdraví',
@@ -1749,7 +1697,7 @@ function worstUde(rawData) {
   return best;
 }
 
-function computeTopN(rawData, focusUde = null) {
+async function computeTopN(rawData, focusUde = null) {
   const nodeMap = rawData._kbMap;
   const allIds  = rawData._activeIds;
 
@@ -1783,10 +1731,9 @@ function computeTopN(rawData, focusUde = null) {
   }
 
   const nodes = [...topIds].map(id => ({...nodeMap[id]})).filter(Boolean);
-  calcPositionsClient(nodes);
-  applyLabelMode({nodes, _kbMap: nodeMap});
-
   const edges = rawData.edges.filter(e => topIds.has(e.from) && topIds.has(e.to));
+  await calcPositionsELK(nodes, edges);
+  applyLabelMode({nodes, _kbMap: nodeMap});
   return {
     ...rawData,
     nodes, edges,
@@ -1824,12 +1771,12 @@ window.setViewFull = function() {
 };
 
 // Pill: Top-N
-window.setViewTopN = function() {
+window.setViewTopN = async function() {
   _topNMode = true;
   document.getElementById('crtPillTopN').classList.add('active');
   document.getElementById('crtPillFull').classList.remove('active');
   if (!_rawCrtData) return;
-  const topN = computeTopN(_rawCrtData);   // standard BFS ROOT→UDE, bez focus módu
+  const topN = await computeTopN(_rawCrtData);
   applyLabelMode(topN);
   _lastCrtData = topN;
   renderTree(topN);
@@ -1853,7 +1800,7 @@ async function boot() {
     } else if (urlFocus && data._activeIds?.has(urlFocus)) {
       focusUde = urlFocus;
     }
-    const displayData = _topNMode ? computeTopN(data, focusUde) : data;
+    const displayData = _topNMode ? await computeTopN(data, focusUde) : data;
     applyLabelMode(displayData);
     _lastCrtData = displayData;
     renderTree(displayData);
