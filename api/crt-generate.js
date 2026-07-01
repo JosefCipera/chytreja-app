@@ -315,22 +315,12 @@ Pravidla pro strukturu:
   "Únava po pohybu" ne "Snížená aerobní kapacita".
   Max 5 slov. Label musí být CELÁ srozumitelná věta nebo fráze — nikdy nezkracuj doprostřed.
 
-Topologie — čistý strom BEZ křížení, TŘI větve:
-- Levá větev (L): příčiny z metabolického/cévního subsystému (LDL, cévy, zánět, krevní tlak)
-- Pravá větev (R): příčiny z autonomního/nervového subsystému (stres, sympatikus, dráždivost)
-- Střední větev (C) pod kořenem: fyzická kondice (pohyb, aerobní kapacita, svalová síla)
-  → fyzická dekondice zvyšuje zátěž srdce a zhoršuje obě ostatní větve
-- Každý uzel patří PŘESNĚ do jedné větve — žádné hrany mezi větvemi L↔R
-- Větve se sbíhají POUZE v AND-join uzlech nebo v UDE nahoře
-- Sympatikus a dráždivost patří vždy do větve R, krevní tlak vždy do větve L
+Topologie — čistý strom BEZ křížení:
+- Větve (L/R/C) urči sám podle dat uživatele — neexistuje pevná šablona
+- Každý uzel patří do jedné větve — žádné hrany mezi větvemi
+- Větve se sbíhají pouze v junction uzlech nebo v UDE nahoře
 
-UNIVERSE_NODES pro universe_map (použij přesně tyto id): UNIVERSE_NODES_PLACEHOLDER
-
-Kauzální řetězce — přesné směry hran (příčina → důsledek):
-- LDL → usazeniny v cévách → vysoký krevní tlak → tlak na srdeční stěny (NE: LDL → zátěž srdce přímo)
-- fyzická dekondice → vyšší zátěž srdce (střední větev C, samostatná příčina)
-- stres → napětí v autonomním systému → dráždivost síní
-- Vyšší zátěž srdce je VŽDY způsobena fyzickou dekondicí (větev C), nikdy přímo LDL nebo stresem`;
+UNIVERSE_NODES pro universe_map (použij přesně tyto id): UNIVERSE_NODES_PLACEHOLDER`;
 
   const userPrompt = `${roleContext}
 
@@ -348,7 +338,7 @@ ${metricsText2}
 POSLEDNÍ CHECK-INY:
 ${checkinText}
 
-Na základě diagnóz a dat sestav CRT: najdi jednu kořenovou příčinu, dvě kauzální větve (L a R), junction uzly kde se větve sbíhají, a 1–2 UDE nahoře.
+Na základě diagnóz a dat sestav CRT: najdi kořenovou příčinu, kauzální větve a 1–2 UDE nahoře. Strukturu urči sám z dat — nevnucuj pevné větve.
 
 Pravidla pro UDE:
 - UDE = stav který uživatel aktivně PROŽÍVÁ a trpí jím. Vždy subjektivní nebo jasně měřitelná událost.
@@ -423,7 +413,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx) {
   const key = JSON.stringify({
-    _v:          17, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
+    _v:          18, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),
     labs:        ctx.profile.labs || {},
