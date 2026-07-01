@@ -275,99 +275,64 @@ async function generateCRT({ metrics, profile, checkins, nodeInputs }, role) {
 
   const metricsText2 = metricsText;
 
-  const systemPrompt = `Jsi expert na Theory of Constraints (Goldratt) a medicínu.
-Analyzuješ zdravotní data uživatele a sestavuješ Current Reality Tree (CRT) — kauzální strom příčin a důsledků.
+  const systemPrompt = `Jsi špičkový expert na Goldrattovu Teorii omezení (TOC) a preventivní medicínu dlouhověkosti (Medicine 3.0). Tvým úkolem je analyzovat zdravotní data pacienta a sestavit perfektní, čistý a logicky neprůstřelný Current Reality Tree (CRT) ve formátu JSON. Výstup bude přímo vykreslen enginem do formátu karet.
 
-Vrátíš POUZE validní JSON (bez markdown bloků, bez komentářů) v přesném formátu:
+### ZÁKLADNÍ STRUKTURA A TOPOLOGIE STROMU:
+1. Strom musí mít přesně definované vrstvy (Level 0 až Level 6).
+2. Na samém vrcholu (Level 6) musí být přesně JEDNO HLAVNÍ ULTIMATE UDE. Všechny větve pod ním musí organicky směřovat a gradovat k tomuto bodu.
+3. Strom nesmí obsahovat křížení hran. Musí mít jasnou levou (L) a pravou (R) větev, které se setkají až těsně pod vrcholem.
+   - LEVÁ VĚTEV (Cévní/Strukturální): metabolický zánět → vysoké LDL → kornatění cév → poškození mikrocirkulace.
+   - KLÍČOVÉ PRAVIDLO PRO ED: Erektilní dysfunkce ("Problémy s erekcí") je medicínsky prvním projevem poškození malých cév. Musí proto ležet v LEVÉ větvi jako přímý následek zhoršeného průtoku krve nejtenčími cévami. Nesmí viset z boku jako izolovaný ostrov!
+   - PRAVÁ VĚTEV (Nervová/Elektrická): stres/nedostatek spánku → přetížení sympatiku → nízká HRV → elektrická dráždivost síní.
+4. Na Level 5 se obě větve setkají v junction uzlu nebo v UDE (Fibrilace síní), které je přímým spouštěčem pro Ultimate UDE na Level 6.
+
+### PATOFYZIOLOGICKÁ PRAVIDLA PRO LÉKY:
+- Statiny (Torvacard, atorvastatin) → uzel s LDL cholesterolem (L větev). Nikdy k erekci nebo nervům!
+- Kalnormin/Draslík/Magnesium → uzel s elektrickou dráždivostí (R větev). Nikdy k erekci!
+- Antikoagulanty (Pradaxa, dabigatran) → jako type="protects" k uzlu Fibrilace nebo k Ultimate UDE.
+
+### LABELY:
+Česky, srozumitelně pro laika. Odborný termín jen pokud je přímo z profilu (např. "Fibrilace síní").
+Příklady: "Ztuhlé cévy" ne "Ateroskleróza", "Přetížený sympatikus" ne "Sympatikotonická dysregulace". Max 5 slov.
+
+### FORMÁT VÝSTUPU:
+Vrať POUZE validní JSON bez markdown bloků, bez komentářů:
 {
-  "root": { "id": "root", "label": "Kořenová příčina (max 4 slova)", "node_id": null },
+  "root": "node_root_id",
   "nodes": [
-    { "id": "L1", "label": "Uzel (max 4 slova)", "type": "cause", "node_id": "kardio", "level": 1, "branch": "L" }
+    { "id": "node_root_id", "level": 0, "branch": "C", "type": "cause", "label": "Kořenová příčina" },
+    { "id": "L1", "level": 1, "branch": "L", "type": "cause", "label": "Max 5 slov" }
   ],
-  "edges": [{ "from": "root", "to": "L1" }],
-  "and_joins": [{ "sources": ["C1","C2"], "target": "S1" }],
-  "injections": [{ "label": "Konkrétní akce", "node_id": "kardio" }],
-  "universe_map": [{ "crt_node_id": "L1", "universe_node": "kardio" }],
+  "edges": [{ "from": "node_root_id", "to": "L1" }],
+  "and_joins": [{ "sources": ["L3", "R3"], "target": "J1" }],
+  "injections": [{ "label": "Konkrétní akce (max 6 slov)", "node_id": null }],
   "medications_map": [
-    { "name": "Název léku", "targets": ["L1","C2"], "effect": "snižuje LDL", "type": "treatment", "reason": "Proč je lék napojen právě na tento uzel — 1 věta česky pro laika" },
-    { "name": "Nolpaza", "targets": ["L1"], "effect": "chrání žaludek", "type": "protects", "reason": "Chrání žaludek před vedlejším účinkem Pradaxy — 1 věta česky" },
-    { "name": "Ibuprofen", "targets": ["L1"], "effect": "zvyšuje krvácivost", "type": "warning", "reason": "Kombinace s antikoagulanciem zvyšuje riziko krvácení — 1 věta česky" }
+    { "medication": "Torvacard", "target_node_id": "L1", "type": "treatment", "label": "snižuje LDL" },
+    { "medication": "Pradaxa", "target_node_id": "UDE_fap", "type": "protects", "label": "snižuje riziko CMP" }
   ]
 }
 
-Pravidla pro strukturu:
-- root: type="golden_box", level=0, branch="C" — nejhlubší příčina (Single Root Cause)
-- nodes: level 1–5, branch L (levá větev) nebo R (pravá větev), C (střed — junction)
-- type: "cause" (příčina), "junction" (spojení dvou příčin), "ude" (nežádoucí důsledek — symptom)
-- UDE uzly (type=ude): nejvyšší level — to co uživatel CÍTÍ jako problém
-  * Pokud jsou 2 UDE: první branch=L, druhý branch=R (každý vrcholí svou větví)
-  * Pokud je 1 UDE: branch=C
-- and_joins: jen kde dva uzly SPOLEČNĚ způsobují třetí
-- injections: 2–3 konkrétní akce které přeruší kauzální řetěz
-- node_id: CHJ uzel pokud existuje (kardio/mysl/vyziva/spanek/dlouhovekost), jinak null
-- universe_map: pole objektů {"crt_node_id": "L1", "universe_node": "kardio"} — každý CRT uzel namapuj na nejbližší vesmírový uzel ze seznamu UNIVERSE_NODES níže. Pokud uzel nemá jasný vesmírový protějšek, vynech ho.
-- medications_map: Léky z pole "Léky:" výše. Každý lék dostane typ:
-  * type="treatment" — lék má PŘÍMÝ farmakologický efekt na uzel (např. statin → LDL). Zahrnout jen léky s přímým efektem.
-  * type="protects" — lék je protilek / ochrana k jinému léku v tomto stromě (např. pantoprazol chrání žaludek před Pradaxou). Target = stejný uzel jako chráněný lék. ZAHRNOUT, i když nemá přímý kardiální efekt.
-  * type="warning" — lék je riziková kombinace s jiným lékem v tomto stromě (např. ibuprofen zvyšuje krvácivost při antikoagulaci). Target = stejný uzel jako lék se kterým interaguje. ZAHRNOUT jako varování.
-  Léky bez jakékoli vazby na léky nebo uzly v tomto CRT VYNECH. Pro každý lék uveď "reason": 1 věta česky pro laika. Efekt: 1–3 slova česky.
-- Labely v češtině: PRIMÁRNĚ srozumitelně pro laika (co člověk cítí nebo zná z běžného života)
-  Odborný termín pouze pokud je diagnóza přímo z profilu uživatele (např. "Fibrilace síní").
-  Příklady: "Ztuhlé cévy" ne "Arteroskleróza", "Slabý srdeční rytmus" ne "Arytmie",
-  "Únava po pohybu" ne "Snížená aerobní kapacita".
-  Max 5 slov. Label musí být CELÁ srozumitelná věta nebo fráze — nikdy nezkracuj doprostřed.
+Typy uzlů: "cause" (příčina), "junction" (spojení dvou větví), "ude" (co pacient prožívá — Level 5–6).
+Level 0 = root, Level 6 = Ultimate UDE. Rozsah: 10–14 uzlů celkem (včetně root).`;
 
-Topologie — čistý strom BEZ křížení:
-- Větve (L/R/C) urči sám podle dat uživatele — neexistuje pevná šablona
-- Každý uzel patří do jedné větve — žádné hrany mezi větvemi
-- Větve se sbíhají pouze v junction uzlech nebo v UDE nahoře
+  const userPrompt = `Sestav CRT strom pro tohoto pacienta:
 
-UNIVERSE_NODES pro universe_map (použij přesně tyto id): UNIVERSE_NODES_PLACEHOLDER`;
-
-  const userPrompt = `${roleContext}
-
-ZDRAVOTNÍ PROFIL:
-- Diagnózy: ${diagText}
-- Symptomy: ${sympText}
-- Rodinná anamnéza: ${familyText}
-- Léky: ${medsText}
-- Labs: ${labsText}
-- Cíl: ${goalText}${doctorText}
+PACIENT: ${profile.birth_year ? (new Date().getFullYear() - profile.birth_year) + 'letý ' : ''}muž
+DIAGNÓZY: ${diagText}
+LÉKY: ${medsText}
+LABS: ${labsText}${sympText !== 'neuvedeno' ? '\nSYMPTOMY: ' + sympText : ''}${doctorText}
 
 SKÓRE UZLŮ (od nejhoršího):
-${metricsText2}
+${metricsText}
 
 POSLEDNÍ CHECK-INY:
 ${checkinText}
 
-Na základě diagnóz a dat sestav CRT: najdi kořenovou příčinu, kauzální větve a 1–2 UDE nahoře. Strukturu urči sám z dat — nevnucuj pevné větve.
+HLAVNÍ ULTIMATE UDE NA VRCHOLU (Level 6): urči sám z diagnóz (pro FaP = "Riziko infarktu a CMP")
 
-Pravidla pro UDE:
-- UDE = stav který uživatel PROŽÍVÁ, nikoli klinický nález.
-  ✓ UDE: Fibrilace síní, Problémy s erekcí
-  ✗ NENÍ UDE: Hypertenze, Vysoký TK, Vysoké LDL, Ateroskleróza — příčiny (type=cause)
-- Cíl (goal_text) do CRT NEPATŘÍ. Extrasystoly = junction těsně pod FaP, ne UDE.
+Injections: nejprve léky z profilu (${(profile.medications || []).map(m => m.name || m).join(', ') || 'neuvedeno'}), pak 1–2 životní intervence. Max 4 celkem.
 
-POVINNÉ UDE pro tento profil (obě diagnózy z profilu MUSÍ být UDE):
-1. "Fibrilace síní" — type=ude, branch=L, nejvyšší level
-   Vstup: cévní větev (L) + nervová složka jako druhý input (AND-join nebo junction těsně pod)
-2. "Problémy s erekcí" — type=ude, branch=R, nejvyšší level
-   ED má DVOUSLOŽKOVOU příčinu — obě větve do ní ústí:
-   · Cévní složka (z L větve): ztuhlé cévy, nízký průtok → AND-join source 1
-   · Nervová/stresová složka (z R větve): sympatikus, kortizol → AND-join source 2
-   → and_joins MUSÍ obsahovat: {"sources": ["[id cévního uzlu]", "[id nervového uzlu]"], "target": "[ED id]"}
-
-Architektura stromu se dvěma UDE:
-- Levá větev (L): cévní → metabolická cesta → vrcholí FaP (branch=L)
-- Pravá větev (R): nervová → stresová cesta → přispívá k FaP (junction) I k ED (AND-join)
-- Obě větve mají sdílené příčiny dole (root, level 1–2) — odtud se rozbíhají
-
-Pravidla pro injections:
-- PRVNÍ injections jsou vždy léky z profilu uživatele (Torvacard, Pradaxa, Kalnormin...)
-- Pak 1–2 životní intervence (pohyb, dech, strava)
-- Celkem max 4 injections
-
-Strom musí mít 10–16 uzlů celkem (root + nodes). Více UDE = více uzlů. Vrať pouze JSON.`.replace('UNIVERSE_NODES_PLACEHOLDER', universeNodes.join(', '));
+Vrať pouze čistý JSON. Žádný text navíc.`;
 
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -379,7 +344,6 @@ Strom musí mít 10–16 uzlů celkem (root + nodes). Více UDE = více uzlů. V
     body: JSON.stringify({
       model: 'claude-opus-4-8',
       max_tokens: 4000,
-
       system: systemPrompt,
       messages: [{ role: 'user', content: userPrompt }],
     }),
@@ -389,14 +353,40 @@ Strom musí mít 10–16 uzlů celkem (root + nodes). Více UDE = více uzlů. V
   const data = await res.json();
   const text = data.content?.[0]?.text?.trim() ?? '';
 
-  // Parse JSON — Claude by měl vrátit čistý JSON
   const jsonMatch = text.match(/\{[\s\S]*\}/);
   if (!jsonMatch) throw new Error(`Claude nevrátil JSON. Text: ${text.slice(0, 200)}`);
+  let crt;
   try {
-    return JSON.parse(jsonMatch[0]);
+    crt = JSON.parse(jsonMatch[0]);
   } catch(e) {
     throw new Error(`JSON parse error: ${e.message}. Text: ${jsonMatch[0].slice(0, 300)}`);
   }
+
+  // Transformace nového formátu (root=string, medications_map s target_node_id)
+  // na starý formát který očekává renderCRT / handler
+  if (typeof crt.root === 'string') {
+    const rootId = crt.root;
+    const rootIdx = (crt.nodes || []).findIndex(n => n.id === rootId);
+    if (rootIdx >= 0) {
+      crt.root = crt.nodes[rootIdx];         // vytáhni root objekt z nodes
+      crt.nodes = crt.nodes.filter((_, i) => i !== rootIdx);
+    } else {
+      crt.root = { id: rootId, label: 'Kořenová příčina', level: 0, branch: 'C' };
+    }
+  }
+
+  // medications_map: {medication, target_node_id, type, label} → {name, targets[], effect, type, reason}
+  if (Array.isArray(crt.medications_map)) {
+    crt.medications_map = crt.medications_map.map(m => ({
+      name:    m.medication || m.name || '',
+      targets: m.target_node_id ? [m.target_node_id] : (m.targets || []),
+      effect:  m.label || m.effect || '',
+      type:    m.type || 'treatment',
+      reason:  m.label || m.reason || '',
+    }));
+  }
+
+  return crt;
 }
 
 // Overlay barev z user_metrics
@@ -425,7 +415,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx) {
   const key = JSON.stringify({
-    _v:          19, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
+    _v:          20, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),
     labs:        ctx.profile.labs || {},
