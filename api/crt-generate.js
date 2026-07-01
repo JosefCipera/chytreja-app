@@ -351,12 +351,12 @@ ${checkinText}
 Na základě diagnóz a dat sestav CRT: najdi jednu kořenovou příčinu, dvě kauzální větve (L a R), junction uzly kde se větve sbíhají, a 1–2 UDE nahoře.
 
 Pravidla pro UDE:
-- Nejvyšší UDE je hlavní diagnóza uživatele kterou AKTUÁLNĚ prožívá (např. Fibrilace síní FaP)
-- Pokud má uživatel VÍCE nezávislých aktuálních diagnóz/symptomů (např. fibrilace síní A erektilní dysfunkce),
-  KAŽDÁ dostane VLASTNÍ UDE na konci VLASTNÍ větve nebo podvětve — nikdy jeden UDE nenahrazuje,
-  nepřepisuje ani nesdílí pozici s jiným existujícím kauzálním uzlem (např. s uzlem o draslíku/hypokalemii)
-- Nová diagnóza se napojuje jako DALŠÍ child na existující kauzální řetězec, pokud sdílí stejnou příčinu
-  (např. cévní zánět → erektilní dysfunkce I infarkt jsou různé UDE se stejným kořenem) — nepřepisuje uzel, který tam už je
+- KAŽDÁ diagnóza z pole "Diagnózy:" → VLASTNÍ UDE uzel. Počet UDE = počet diagnóz (max 3).
+- Název UDE = laicky srozumitelný název diagnózy. NIKDY nenahrazuj diagnózu generickým mechanismem.
+  Příklady: "fibrilace síní" → UDE "Fibrilace síní", "erektilní dysfunkce" → UDE "Problémy s erekcí"
+  ŠPATNĚ: nahradit "erektilní dysfunkce" za "Slabé prokrvení tkání" — to je mechanismus, ne UDE
+- Každý UDE musí mít vlastní kauzální cestu z kořene — buď vlastní větev, nebo podvětev ze sdíleného uzlu
+  (např. cévní zánět → Fibrilace síní; cévní zánět → Problémy s erekcí — oba UDE, sdílený uzel)
 - Cíl (goal_text) do CRT NEPATŘÍ — patří do Goal Tree, ne do Current Reality
 - Extrasystoly jsou junction uzel těsně pod FaP (type=junction), ne UDE
 - Hypertenze je příčina (type=cause), ne UDE
@@ -366,7 +366,7 @@ Pravidla pro injections:
 - Pak 1–2 životní intervence (pohyb, dech, strava)
 - Celkem max 4 injections
 
-Strom musí mít 10–14 uzlů celkem (root + nodes). Vrať pouze JSON.`.replace('UNIVERSE_NODES_PLACEHOLDER', universeNodes.join(', '));
+Strom musí mít 10–16 uzlů celkem (root + nodes). Více UDE = více uzlů. Vrať pouze JSON.`.replace('UNIVERSE_NODES_PLACEHOLDER', universeNodes.join(', '));
 
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -424,7 +424,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx) {
   const key = JSON.stringify({
-    _v:          15, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
+    _v:          16, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),
     labs:        ctx.profile.labs || {},
