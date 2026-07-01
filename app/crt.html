@@ -743,11 +743,11 @@ function boxHeight(label) {
 }
 
 // Jednotný styl — bez barev podle stavu (matou, nemáme pro ně dost dat)
-const NODE_STYLE   = { fill: '#1a2535', stroke: '#3a5068', text: '#c8d8e8' };
-const GOLDEN_STYLE = { fill: '#081510', stroke: '#b08828', text: '#d4a838' };
-const UDE_STYLE    = { fill: '#1a2535', stroke: '#8ba8b8', text: '#e8f0f8' };
-const UDE_INACTIVE_STYLE = { fill: '#11161d', stroke: '#384450', text: '#5a6878' };
-const GOAL_STYLE   = { fill: '#081510', stroke: '#18884a', text: '#24a85e' };
+const NODE_STYLE   = { fill: '#0d1824', stroke: '#2a4560', text: '#c8d8e8' };
+const GOLDEN_STYLE = { fill: '#090c04', stroke: '#c09a22', text: '#d8a830' };
+const UDE_STYLE    = { fill: '#0d1824', stroke: '#4ab8d0', text: '#e8f4ff' };
+const UDE_INACTIVE_STYLE = { fill: '#0a0f15', stroke: '#2a3540', text: '#4a5a68' };
+const GOAL_STYLE   = { fill: '#040e08', stroke: '#18884a', text: '#24a85e' };
 // Zpětná kompatibilita — STATE_STYLE nevyužíváme
 const STATE_STYLE = {
   RED: NODE_STYLE, YELLOW: NODE_STYLE, GREEN: NODE_STYLE,
@@ -901,7 +901,7 @@ function renderTree(data) {
   // ── Defs: arrowhead ──────────────────────────────────────────────────────
   const defs = svgEl('defs', {});
   const marker = svgEl('marker', { id: 'arrow', markerWidth: '10', markerHeight: '7', refX: '9', refY: '3.5', orient: 'auto' });
-  marker.appendChild(svgEl('polygon', { points: '0 0, 10 3.5, 0 7', fill: '#5a7890' }));
+  marker.appendChild(svgEl('polygon', { points: '0 0, 10 3.5, 0 7', fill: '#4a7898' }));
   defs.appendChild(marker);
   svg.appendChild(defs);
 
@@ -934,7 +934,7 @@ function renderTree(data) {
     const midY2 = y1 + (y2 - y1) * 0.6;
     svg.appendChild(svgEl('path', {
       d: `M ${x1} ${y1} C ${x1} ${midY1}, ${x2} ${midY2}, ${x2} ${y2}`,
-      fill: 'none', stroke: '#4a6878', 'stroke-width': '2.5',
+      fill: 'none', stroke: '#3a5a78', 'stroke-width': '2',
       'marker-end': 'url(#arrow)',
     }));
   });
@@ -1000,8 +1000,8 @@ function renderTree(data) {
     g.appendChild(svgEl('rect', {
       x: bx, y: by, width: BOX_W, height: bh, rx: R, ry: R,
       fill: st.fill, stroke: st.stroke,
-      'stroke-width': ntype === 'golden_box' ? '3' : ntype === 'goal' ? '3' : ntype === 'ude' ? '2.5' : '1.5',
-      'stroke-dasharray': ntype === 'ude' ? '6 3' : ntype === 'goal' ? '5 4' : 'none',
+      'stroke-width': ntype === 'golden_box' ? '2.5' : ntype === 'goal' ? '2.5' : ntype === 'ude' ? '2' : '1',
+      'stroke-dasharray': ntype === 'ude' ? '7 4' : ntype === 'goal' ? '5 4' : 'none',
     }));
 
     // Text — zarovnaný do středu boxu
