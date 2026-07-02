@@ -670,29 +670,27 @@ function renderTree(data) {
 
   const container = document.getElementById('crt-network');
 
-  // Apex UDE = UDE bez odchozích hran → dashed border
-  console.log('[CRT nodes]', data.nodes.map(n => ({ id: n.id, type: n.type, _type: n._type, label: n.label })));
   const edgeSources = new Set(data.edges.map(e => e.from));
 
   const visNodes = data.nodes.map(n => {
     const ntype = n._type || n.type || 'cause';
-    const isApex   = ntype === 'ude' && !edgeSources.has(n.id);
-    const isRoot   = ntype === 'golden_box' || n.type === 'root';
+    const isApex     = ntype === 'ude' && !edgeSources.has(n.id);
+    const isRoot     = ntype === 'golden_box' || n.type === 'root';
     const isInactive = !!n.inactive;
 
     let bg, border, textColor, bw, dashes;
     if (isRoot) {
-      bg = '#090c04'; border = '#c09a22'; textColor = '#d8a830'; bw = 3; dashes = false;
+      bg = '#12100a'; border = '#c09a22'; textColor = '#d8a830'; bw = 3; dashes = false;
     } else if (ntype === 'ude' || n.type === 'ude') {
       if (isInactive) {
         bg = '#0a0f15'; border = '#2a3540'; textColor = '#4a5a68'; bw = 2; dashes = false;
       } else {
-        bg = '#0d1824'; border = '#4ab8d0'; textColor = '#e8f4ff';
-        bw = isApex ? 2.5 : 2;
-        dashes = isApex ? [7, 4] : false;
+        bg = '#071520'; border = '#4ab8d0'; textColor = '#c8f0ff';
+        bw = isApex ? 3 : 2;
+        dashes = isApex ? [8, 5] : false;
       }
     } else {
-      bg = '#1a2d40'; border = '#2a4560'; textColor = '#a7c7df'; bw = 1.8; dashes = false;
+      bg = '#1a2d40'; border = '#2a4a60'; textColor = '#a7c7df'; bw = 1.5; dashes = false;
     }
 
     return {
@@ -701,10 +699,10 @@ function renderTree(data) {
       color: {
         background: bg,
         border: border,
-        highlight: { background: bg, border: '#6ab8e0' },
-        hover:     { background: bg, border: '#5aa8d0' },
+        highlight: { background: bg, border: '#80d8f0' },
+        hover:     { background: bg, border: '#60c8e8' },
       },
-      font: { color: textColor, size: IS_MOBILE ? 13 : 14, face: 'Inter, system-ui, sans-serif' },
+      font: { color: textColor, size: IS_MOBILE ? 14 : 16, face: 'Inter, system-ui, sans-serif', bold: isRoot ? '700' : '400' },
       borderWidth: bw,
       shapeProperties: { borderDashes: dashes, borderRadius: 8 },
     };
@@ -727,9 +725,9 @@ function renderTree(data) {
           enabled: true,
           direction: 'DU',
           sortMethod: 'directed',
-          levelSeparation: IS_MOBILE ? 120 : 170,
-          nodeSpacing: IS_MOBILE ? 180 : 280,
-          treeSpacing: IS_MOBILE ? 180 : 300,
+          levelSeparation: IS_MOBILE ? 110 : 150,
+          nodeSpacing: IS_MOBILE ? 160 : 240,
+          treeSpacing: IS_MOBILE ? 160 : 260,
           blockShifting: true,
           edgeMinimization: true,
           parentCentralization: true,
@@ -737,21 +735,21 @@ function renderTree(data) {
       },
       nodes: {
         shape: 'box',
-        margin: { top: 12, right: 18, bottom: 12, left: 18 },
+        margin: { top: 12, right: 20, bottom: 12, left: 20 },
         widthConstraint: { minimum: IS_MOBILE ? 160 : 200, maximum: IS_MOBILE ? 220 : 280 },
         font: { size: IS_MOBILE ? 14 : 16, face: 'Inter, system-ui, sans-serif' },
       },
       edges: {
         arrows: { to: { enabled: true, scaleFactor: 0.9 } },
-        color: { color: '#3a5a78', highlight: '#6a9ab8', hover: '#5a8aaa' },
+        color: { color: '#2a4a68', highlight: '#5a8ab8', hover: '#4a7aa8' },
         smooth: { enabled: false },
-        width: 2,
+        width: 1.5,
       },
       physics: { enabled: false },
       interaction: {
         dragNodes: false,
         hover: true,
-        tooltipDelay: 800,
+        tooltipDelay: 600,
         navigationButtons: false,
         keyboard: false,
       },
@@ -763,9 +761,10 @@ function renderTree(data) {
     openNodePanel(params.nodes[0]);
   });
 
-  _visNetwork.once('afterDrawing', () => {
-    _visNetwork.fit({ animation: { duration: 400, easingFunction: 'easeInOutQuad' } });
-  });
+  // fit po vykreslení — timeout zajistí správné rozměry containeru
+  setTimeout(() => {
+    if (_visNetwork) _visNetwork.fit({ animation: { duration: 500, easingFunction: 'easeInOutQuad' } });
+  }, 150);
 }
 
 
