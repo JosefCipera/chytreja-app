@@ -681,6 +681,8 @@ function renderTree(data) {
     let bg, border, textColor, bw, dashes;
     if (isApex) {
       bg = '#071520'; border = '#4ab8d0'; textColor = '#c8f0ff'; bw = 3; dashes = [8, 5];
+    } else if (isRoot) {
+      bg = '#12100a'; border = '#c09a22'; textColor = '#d8a830'; bw = 3; dashes = false;
     } else {
       bg = '#1a2d40'; border = '#2a4a60'; textColor = '#a7c7df'; bw = 1.5; dashes = false;
     }
