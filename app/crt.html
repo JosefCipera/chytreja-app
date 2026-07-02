@@ -787,15 +787,16 @@ function addMedPills(data) {
     });
   });
 
-  const OFFSET_X = IS_MOBILE ? 220 : 300;
-  const SPACING_Y = IS_MOBILE ? 42 : 52;
+  // OFFSET_X: pills těsně napravo od nodu (node šířka ~240 canvas jednotek + 16px mezera)
+  const OFFSET_X  = IS_MOBILE ? 170 : 200;
+  // Stack jde NAHORU (menší Y = výš vizuálně v DU layoutu kde root má největší Y)
+  const SPACING_Y = IS_MOBILE ? 40 : 48;
 
-  const pillNodes = [], pillEdges = [];
+  const pillNodes = [];
 
   Object.entries(byTarget).forEach(([targetId, items]) => {
     const pos = positions[targetId];
     if (!pos) return;
-    const startY = pos.y - ((items.length - 1) / 2) * SPACING_Y;
 
     items.forEach((item, i) => {
       const nid   = `_pill_${targetId}_${i}`;
@@ -804,37 +805,27 @@ function addMedPills(data) {
         id:    nid,
         label: item.name,
         title: item.effect || item.reason || '',
+        // i=0 → stejná Y jako node; i=1 → o SPACING_Y výš; atd.
         x: pos.x + OFFSET_X,
-        y: startY + i * SPACING_Y,
+        y: pos.y - i * SPACING_Y,
         fixed: { x: true, y: true },
         shape: 'box',
         color: {
-          background: isMed ? '#1c1100' : '#051a0a',
+          background: isMed ? '#231400' : '#071a0a',
           border:     isMed ? '#d97706' : '#22c55e',
-          highlight:  { background: isMed ? '#2a1800' : '#071f0d', border: isMed ? '#f59e0b' : '#4ade80' },
-          hover:      { background: isMed ? '#2a1800' : '#071f0d', border: isMed ? '#f59e0b' : '#4ade80' },
+          highlight:  { background: isMed ? '#2e1a00' : '#0a2210', border: isMed ? '#f59e0b' : '#4ade80' },
+          hover:      { background: isMed ? '#2e1a00' : '#0a2210', border: isMed ? '#f59e0b' : '#4ade80' },
         },
-        font: { color: isMed ? '#fbbf24' : '#4ade80', size: IS_MOBILE ? 12 : 14, face: 'Inter, system-ui, sans-serif' },
-        borderWidth: 1.5,
+        font: { color: isMed ? '#f59e0b' : '#4ade80', size: IS_MOBILE ? 13 : 16, face: 'Inter, system-ui, sans-serif', bold: true },
+        borderWidth: 2,
         shapeProperties: { borderRadius: 20 },
-        margin: { top: 5, right: 14, bottom: 5, left: 14 },
-      });
-      pillEdges.push({
-        id:    `_edge_pill_${targetId}_${i}`,
-        from:  nid,
-        to:    targetId,
-        arrows: { to: { enabled: false } },
-        color: { color: isMed ? 'rgba(217,119,6,0.35)' : 'rgba(34,197,94,0.35)' },
-        dashes: [3, 5],
-        width: 1,
-        smooth: { enabled: false },
+        margin: { top: 7, right: 16, bottom: 7, left: 16 },
       });
     });
   });
 
   if (pillNodes.length) {
     _visNetwork.body.data.nodes.add(pillNodes);
-    _visNetwork.body.data.edges.add(pillEdges);
   }
 }
 
