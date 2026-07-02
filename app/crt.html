@@ -671,6 +671,7 @@ function renderTree(data) {
   const container = document.getElementById('crt-network');
 
   // Apex UDE = UDE bez odchozích hran → dashed border
+  console.log('[CRT nodes]', data.nodes.map(n => ({ id: n.id, type: n.type, _type: n._type, label: n.label })));
   const edgeSources = new Set(data.edges.map(e => e.from));
 
   const visNodes = data.nodes.map(n => {
@@ -726,18 +727,23 @@ function renderTree(data) {
           enabled: true,
           direction: 'DU',
           sortMethod: 'directed',
-          levelSeparation: IS_MOBILE ? 120 : 160,
-          nodeSpacing: IS_MOBILE ? 180 : 260,
-          treeSpacing: IS_MOBILE ? 180 : 280,
+          levelSeparation: IS_MOBILE ? 120 : 170,
+          nodeSpacing: IS_MOBILE ? 180 : 280,
+          treeSpacing: IS_MOBILE ? 180 : 300,
+          blockShifting: true,
+          edgeMinimization: true,
+          parentCentralization: true,
+          avoidOverlap: 0.8,
         },
       },
       nodes: {
         shape: 'box',
-        margin: { top: 10, right: 14, bottom: 10, left: 14 },
-        widthConstraint: { minimum: IS_MOBILE ? 140 : 160, maximum: IS_MOBILE ? 180 : 220 },
+        margin: { top: 12, right: 18, bottom: 12, left: 18 },
+        widthConstraint: { minimum: IS_MOBILE ? 160 : 200, maximum: IS_MOBILE ? 220 : 280 },
+        font: { size: IS_MOBILE ? 14 : 16, face: 'Inter, system-ui, sans-serif' },
       },
       edges: {
-        arrows: { to: { enabled: true, scaleFactor: 0.8 } },
+        arrows: { to: { enabled: true, scaleFactor: 0.9 } },
         color: { color: '#3a5a78', highlight: '#6a9ab8', hover: '#5a8aaa' },
         smooth: { enabled: false },
         width: 2,
