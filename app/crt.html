@@ -949,14 +949,17 @@ function renderTree(data) {
         d += ` L ${svgPts[i].x} ${svgPts[i].y}`;
       }
     } else {
-      // Fallback: Bezier křivka
+      // Fallback: ortogonální lomená čára (bez ELK waypoints — Opus CRT)
       if (Math.abs((src.x ?? 0) - (tgt.x ?? 0)) * X_SCALE > MAX_EDGE_DX) return;
       const srcH = boxHeight(src.label), tgtH = boxHeight(tgt.label);
       const x1 = cx(src.x ?? 0), y1 = cy(src.y ?? 0) - srcH / 2;
       const x2 = cx(tgt.x ?? 0), y2 = cy(tgt.y ?? 0) + tgtH / 2;
-      const midY1 = y1 + (y2 - y1) * 0.4;
-      const midY2 = y1 + (y2 - y1) * 0.6;
-      d = `M ${x1} ${y1} C ${x1} ${midY1}, ${x2} ${midY2}, ${x2} ${y2}`;
+      if (Math.abs(x1 - x2) < 2) {
+        d = `M ${x1} ${y1} L ${x2} ${y2}`;
+      } else {
+        const midY = (y1 + y2) / 2;
+        d = `M ${x1} ${y1} L ${x1} ${midY} L ${x2} ${midY} L ${x2} ${y2}`;
+      }
     }
 
     svg.appendChild(svgEl('path', {
@@ -1012,8 +1015,10 @@ function renderTree(data) {
   });
 
   // ── Uzly (boxy) ──────────────────────────────────────────────────────────
+  const _maxNodeLevel = Math.max(...data.nodes.map(n => n.level ?? 0), 0);
   data.nodes.forEach(n => {
     const ntype = n._type || n.type || 'cause';
+    const isTopKiller = ntype === 'ude' && (n.level ?? 0) >= _maxNodeLevel;
     const st   = ntype === 'golden_box' ? GOLDEN_STYLE : ntype === 'goal' ? GOAL_STYLE : ntype === 'ude' ? (n.inactive ? UDE_INACTIVE_STYLE : UDE_STYLE) : NODE_STYLE;
     const g    = svgEl('g', { class: 'crt-node', 'data-id': n.id, style: 'cursor:pointer' });
 
@@ -1027,8 +1032,8 @@ function renderTree(data) {
     g.appendChild(svgEl('rect', {
       x: bx, y: by, width: BOX_W, height: bh, rx: R, ry: R,
       fill: st.fill, stroke: st.stroke,
-      'stroke-width': ntype === 'golden_box' ? '3' : ntype === 'goal' ? '3' : ntype === 'ude' ? '2.5' : '1.8',
-      'stroke-dasharray': ntype === 'ude' ? '7 4' : ntype === 'goal' ? '5 4' : 'none',
+      'stroke-width': ntype === 'golden_box' ? '3' : ntype === 'goal' ? '3' : isTopKiller ? '2.5' : ntype === 'ude' ? '2' : '1.8',
+      'stroke-dasharray': isTopKiller ? '7 4' : ntype === 'goal' ? '5 4' : 'none',
     }));
 
     // Text — zarovnaný do středu boxu
