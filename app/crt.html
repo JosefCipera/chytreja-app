@@ -752,13 +752,90 @@ function renderTree(data) {
 
   _visNetwork.on('click', params => {
     if (!params.nodes.length) { closeCrtPanel(); return; }
+    // Ignoruj klik na pill uzly — ty panel neotvírají
+    if (String(params.nodes[0]).startsWith('_pill_')) return;
     openNodePanel(params.nodes[0]);
   });
 
-  // fit po vykreslení — timeout zajistí správné rozměry containeru
+  // Přidej pill uzly po layoutu, pak fit
   setTimeout(() => {
-    if (_visNetwork) _visNetwork.fit({ animation: { duration: 500, easingFunction: 'easeInOutQuad' } });
+    if (_visNetwork) {
+      addMedPills(data);
+      _visNetwork.fit({ animation: { duration: 500, easingFunction: 'easeInOutQuad' } });
+    }
   }, 150);
+}
+
+function addMedPills(data) {
+  if (!_visNetwork) return;
+  const medsMap  = (data.medications_map  || []).filter(m => m.userHas !== false);
+  const suppsMap = (data.supplements_map  || []);
+  if (!medsMap.length && !suppsMap.length) return;
+
+  const positions = _visNetwork.getPositions();
+
+  // Seskup léky+doplňky podle target nodu
+  const byTarget = {};
+  medsMap.forEach(m => {
+    (m.targets || []).forEach(tid => {
+      (byTarget[tid] = byTarget[tid] || []).push({ ...m, _kind: 'med' });
+    });
+  });
+  suppsMap.forEach(s => {
+    (s.targets || []).forEach(tid => {
+      (byTarget[tid] = byTarget[tid] || []).push({ ...s, _kind: 'supp' });
+    });
+  });
+
+  const OFFSET_X = IS_MOBILE ? 220 : 300;
+  const SPACING_Y = IS_MOBILE ? 42 : 52;
+
+  const pillNodes = [], pillEdges = [];
+
+  Object.entries(byTarget).forEach(([targetId, items]) => {
+    const pos = positions[targetId];
+    if (!pos) return;
+    const startY = pos.y - ((items.length - 1) / 2) * SPACING_Y;
+
+    items.forEach((item, i) => {
+      const nid   = `_pill_${targetId}_${i}`;
+      const isMed = item._kind === 'med';
+      pillNodes.push({
+        id:    nid,
+        label: item.name,
+        title: item.effect || item.reason || '',
+        x: pos.x + OFFSET_X,
+        y: startY + i * SPACING_Y,
+        fixed: { x: true, y: true },
+        shape: 'box',
+        color: {
+          background: isMed ? '#1c1100' : '#051a0a',
+          border:     isMed ? '#d97706' : '#22c55e',
+          highlight:  { background: isMed ? '#2a1800' : '#071f0d', border: isMed ? '#f59e0b' : '#4ade80' },
+          hover:      { background: isMed ? '#2a1800' : '#071f0d', border: isMed ? '#f59e0b' : '#4ade80' },
+        },
+        font: { color: isMed ? '#fbbf24' : '#4ade80', size: IS_MOBILE ? 12 : 14, face: 'Inter, system-ui, sans-serif' },
+        borderWidth: 1.5,
+        shapeProperties: { borderRadius: 20 },
+        margin: { top: 5, right: 14, bottom: 5, left: 14 },
+      });
+      pillEdges.push({
+        id:    `_edge_pill_${targetId}_${i}`,
+        from:  nid,
+        to:    targetId,
+        arrows: { to: { enabled: false } },
+        color: { color: isMed ? 'rgba(217,119,6,0.35)' : 'rgba(34,197,94,0.35)' },
+        dashes: [3, 5],
+        width: 1,
+        smooth: { enabled: false },
+      });
+    });
+  });
+
+  if (pillNodes.length) {
+    _visNetwork.body.data.nodes.add(pillNodes);
+    _visNetwork.body.data.edges.add(pillEdges);
+  }
 }
 
 
