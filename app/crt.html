@@ -757,13 +757,11 @@ function renderTree(data) {
     openNodePanel(params.nodes[0]);
   });
 
-  // Přidej pill uzly po layoutu, pak fit
-  setTimeout(() => {
-    if (_visNetwork) {
-      addMedPills(data);
-      _visNetwork.fit({ animation: { duration: 500, easingFunction: 'easeInOutQuad' } });
-    }
-  }, 150);
+  // afterDrawing = první skutečný render, hierarchical pozice jsou platné
+  _visNetwork.once('afterDrawing', () => {
+    addMedPills(data);
+    _visNetwork.fit({ animation: { duration: 500, easingFunction: 'easeInOutQuad' } });
+  });
 }
 
 function addMedPills(data) {
