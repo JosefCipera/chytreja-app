@@ -769,30 +769,41 @@ function closeCrtPanel() {
 }
 
 function openNodePanel(nodeId) {
-  const data = window._crtData;
-  console.log('[panel] open', nodeId, 'kbMap:', !!data?._kbMap, 'data keys:', data ? Object.keys(data) : null);
-  if (!data?._kbMap) return;
+  const data    = window._crtData;
+  const rawData = _rawCrtData || data;
 
-  const kbMap    = data._kbMap;
-  const ctx      = data._ctx || {};
-  const rawData  = _rawCrtData || data;
-  const medsMap  = rawData.medications_map || [];
-  const suppsMap = rawData.supplements_map || [];
+  let kbMap, medsMap, suppsMap;
+  const ctx = data?._ctx || {};
+
+  if (data?._kbMap) {
+    kbMap    = data._kbMap;
+    medsMap  = rawData.medications_map || [];
+    suppsMap = rawData.supplements_map || [];
+  } else {
+    // Opus mode — build kbMap from nodes+edges
+    kbMap = {};
+    (rawData.nodes || []).forEach(n => { kbMap[n.id] = { ...n, parents: [], children: [] }; });
+    (rawData.edges || []).forEach(e => {
+      if (kbMap[e.from]) kbMap[e.from].children.push(e.to);
+      if (kbMap[e.to])   kbMap[e.to].parents.push(e.from);
+    });
+    medsMap  = (rawData.medications_map || []).map(m => ({ ...m, userHas: true }));
+    suppsMap = rawData.supplements_map || [];
+  }
 
   const node = kbMap[nodeId];
   if (!node) return;
 
-  const activeIds = data._activeIds || new Set(data.nodes?.map(n => n.id) || []);
+  const activeIds = data?._activeIds || new Set((rawData.nodes || []).map(n => n.id));
   const parents  = (node.parents  || []).map(pid => kbMap[pid]).filter(Boolean).filter(p => activeIds.has(p.id));
   const children = (node.children || []).map(cid => kbMap[cid]).filter(Boolean).filter(c => activeIds.has(c.id));
   const meds     = medsMap.filter(m => (m.targets || []).includes(nodeId) && m.userHas);
   const supps    = suppsMap.filter(s => (s.targets || []).includes(nodeId));
   const contras  = (rawData.contra_map || []).filter(c => c.nodeId === nodeId);
 
-  // Počet příčin/důsledků skrytých v Top-N pohledu
   const rawIds = _rawCrtData?._activeIds || activeIds;
-  const hiddenParents  = (node.parents  || []).filter(pid => rawIds.has(pid)  && !activeIds.has(pid)).length;
-  const hiddenChildren = (node.children || []).filter(cid => rawIds.has(cid) && !activeIds.has(cid)).length;
+  const hiddenParents  = data?._kbMap ? (node.parents  || []).filter(pid => rawIds.has(pid)  && !activeIds.has(pid)).length : 0;
+  const hiddenChildren = data?._kbMap ? (node.children || []).filter(cid => rawIds.has(cid) && !activeIds.has(cid)).length : 0;
 
   try {
     document.getElementById('cnpMini').innerHTML = buildPanelMiniSVG(node, parents, children, kbMap);

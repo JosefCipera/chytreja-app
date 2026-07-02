@@ -889,7 +889,7 @@ function showNavChips() {
   };
   const chips = _hasHealthData ? [
     { label: 'IO Mapa',       fn: () => { const uid = window._chjUserId ? `?userId=${window._chjUserId}` : ''; window.location.href = `/io-map.html${uid}`; } },
-    { label: 'Kauzální mapa', fn: () => { const uid = window._chjUserId ? `?userId=${window._chjUserId}` : ''; window.location.href = `/crt-top4.html${uid}`; } },
+    { label: 'Kauzální mapa', fn: () => { const uid = window._chjUserId ? `&userId=${window._chjUserId}` : ''; window.location.href = `/crt.html?opus=1${uid}`; } },
     { label: 'Vesmír',        fn: () => { const model = localStorage.getItem('currentModel')||'longevity'; const node = {longevity:'dlouhovekost',lehkost:'lh_main',toc:'toc'}[model]||'dlouhovekost'; routeToNode(node); } },
     { label: 'Data',          fn: _openData },
   ] : [
@@ -1272,7 +1272,7 @@ function tryRoute(transcript) {
   // "ukáž / zobraz / detail" → CRT fokus na nejhorší UDE
   for (const phrase of CRT_PHRASES) {
     if (transcript.includes(phrase)) {
-      window.location.href = '/crt.html?focus=worst';
+      const _uid = window._chjUserId ? `&userId=${window._chjUserId}` : ''; window.location.href = `/crt.html?opus=1${_uid}`;
       return true;
     }
   }
