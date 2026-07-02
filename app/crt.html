@@ -702,7 +702,7 @@ function renderTree(data) {
         highlight: { background: bg, border: '#80d8f0' },
         hover:     { background: bg, border: '#60c8e8' },
       },
-      font: { color: textColor, size: IS_MOBILE ? 14 : 16, face: 'Inter, system-ui, sans-serif', bold: isRoot ? '700' : '400' },
+      font: { color: textColor, size: IS_MOBILE ? 16 : 20, face: 'Inter, system-ui, sans-serif' },
       borderWidth: bw,
       shapeProperties: { borderDashes: dashes, borderRadius: 8 },
     };
@@ -735,9 +735,9 @@ function renderTree(data) {
       },
       nodes: {
         shape: 'box',
-        margin: { top: 12, right: 20, bottom: 12, left: 20 },
-        widthConstraint: { minimum: IS_MOBILE ? 160 : 200, maximum: IS_MOBILE ? 220 : 280 },
-        font: { size: IS_MOBILE ? 14 : 16, face: 'Inter, system-ui, sans-serif' },
+        margin: { top: 16, right: 24, bottom: 16, left: 24 },
+        widthConstraint: { minimum: IS_MOBILE ? 180 : 240, maximum: IS_MOBILE ? 260 : 360 },
+        font: { size: IS_MOBILE ? 16 : 20, face: 'Inter, system-ui, sans-serif' },
       },
       edges: {
         arrows: { to: { enabled: true, scaleFactor: 0.9 } },
