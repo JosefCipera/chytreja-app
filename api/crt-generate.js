@@ -295,6 +295,14 @@ Parametry \`level\` (0 až 6) a \`branch\` (L/R/C) určují absolutní polohu uz
    - Na samém vrcholu (Level 6, branch: "C") musí být vždy přesně JEDNO HLAVNÍ ULTIMATE UDE (např. "Riziko infarktu a CMP").
    - Pokud máš na Level 4 nebo 5 dvě závažná UDE (např. "Problémy s erekcí" v L větvi a "Fibrilace síní" v R větvi), obě z nich MUSÍ mít výstupní hranu vedoucí nahoru. Buď se slijí do společného uzlu na Level 5, nebo obě samostatně odkazují hranou přímo do finálního Ultimate UDE na Level 6.
 
+5. PRAVIDLO ČISTÝCH VĚTVÍ — ABSOLUTNÍ ZÁKAZ KŘÍŽENÍ:
+   - Uzel branch="L" smí mít hranu (edge "from") VÝHRADNĚ do uzlů branch="L" nebo do junction/C uzlu na vyšším levelu.
+   - Uzel branch="R" smí mít hranu (edge "from") VÝHRADNĚ do uzlů branch="R" nebo do junction/C uzlu na vyšším levelu.
+   - POVOLENO: root (L0, C) → uzel L nebo R větve. POVOLENO: L větev → junction C nahoře. POVOLENO: R větev → junction C nahoře.
+   - ZAKÁZÁNO: hrana z L uzlu do R uzlu nebo naopak kdekoliv uprostřed stromu.
+   - ZAKÁZÁNO: uzel A (branch L) má hranu do uzlu B (branch R) i kdyby byl B na vyšším levelu — musí projít přes junction.
+   - PROČ: renderovací engine kreslí hrany přímo. Jakákoli cross-branch hrana vytvoří vizuální křížení šipek, které mapu znehodnotí.
+
 ### FORMÁT VÝSTUPU:
 Vrať POUZE validní JSON bez jakéhokoliv doprovodného textu.
 
@@ -419,7 +427,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx) {
   const key = JSON.stringify({
-    _v:          22, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
+    _v:          23, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),
     labs:        ctx.profile.labs || {},
