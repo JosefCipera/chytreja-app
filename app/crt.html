@@ -679,9 +679,7 @@ function renderTree(data) {
     const isInactive = !!n.inactive;
 
     let bg, border, textColor, bw, dashes;
-    if (isRoot) {
-      bg = '#12100a'; border = '#c09a22'; textColor = '#d8a830'; bw = 3; dashes = false;
-    } else if (isApex) {
+    if (isApex) {
       bg = '#071520'; border = '#4ab8d0'; textColor = '#c8f0ff'; bw = 3; dashes = [8, 5];
     } else {
       bg = '#1a2d40'; border = '#2a4a60'; textColor = '#a7c7df'; bw = 1.5; dashes = false;
@@ -719,9 +717,9 @@ function renderTree(data) {
           enabled: true,
           direction: 'DU',
           sortMethod: 'directed',
-          levelSeparation: IS_MOBILE ? 110 : 150,
-          nodeSpacing: IS_MOBILE ? 160 : 240,
-          treeSpacing: IS_MOBILE ? 160 : 260,
+          levelSeparation: IS_MOBILE ? 110 : 160,
+          nodeSpacing: IS_MOBILE ? 160 : 320,
+          treeSpacing: IS_MOBILE ? 160 : 340,
           blockShifting: true,
           edgeMinimization: true,
           parentCentralization: true,
