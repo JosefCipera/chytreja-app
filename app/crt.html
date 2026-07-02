@@ -757,11 +757,9 @@ function renderTree(data) {
     openNodePanel(params.nodes[0]);
   });
 
-  // afterDrawing = první skutečný render, hierarchical pozice jsou platné
-  _visNetwork.once('afterDrawing', () => {
-    addMedPills(data);
-    _visNetwork.fit({ animation: { duration: 500, easingFunction: 'easeInOutQuad' } });
-  });
+  setTimeout(() => {
+    if (_visNetwork) _visNetwork.fit({ animation: { duration: 500, easingFunction: 'easeInOutQuad' } });
+  }, 150);
 }
 
 function addMedPills(data) {
