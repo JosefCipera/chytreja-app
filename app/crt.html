@@ -6,8 +6,7 @@
   <title>Kauzální mapa zdraví</title>
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
-  <!-- vis-network odstraněn — používáme vlastní SVG renderer -->
-  <script src="https://cdn.jsdelivr.net/npm/elkjs@0.9.3/lib/elk.bundled.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vis-network@9.1.9/dist/vis-network.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -70,15 +69,11 @@
     }
     .crt-branch-label.right { transform: rotate(0deg); }
 
-    /* ── Canvas ── */
-    #crt-canvas {
+    /* ── vis.js Network canvas ── */
+    #crt-network {
       flex: 1;
-      overflow-x: auto;
-      overflow-y: auto;
-    }
-    #crt-canvas svg {
-      display: block;
-      transform-origin: top left;
+      width: 100%;
+      height: 100%;
     }
 
     /* ── Legend ── */
@@ -149,7 +144,6 @@
     /* Landscape mobil — diagram využije celou šířku */
     @media (max-height: 500px) and (orientation: landscape) {
       .crt-header { padding: 6px 12px; }
-      #crt-canvas svg { max-width: 100%; }
       .crt-injections { padding: 6px 12px 10px; }
     }
 
@@ -285,7 +279,7 @@
 
 <div class="crt-body">
   <div class="crt-body-inner">
-    <div id="crt-canvas"></div>
+    <div id="crt-network"></div>
 
 
     <div class="crt-loading" id="crtLoading">
@@ -422,61 +416,8 @@ async function fetchUserContext() {
   return res.json();
 }
 
-// ── Layout (ELK.js) ───────────────────────────────────────────────────────────
-
-const _elk = new ELK();
-
-async function calcPositionsELK(nodes, layoutEdges) {
-  const MIN_GAP = IS_MOBILE ? 60 : 200;
-
-  nodes.forEach(n => {
-    n._type = n.type === 'root' ? 'golden_box' : n.type === 'goal' ? 'goal' : (n.type || 'cause');
-  });
-
-  const nodeSet = new Set(nodes.map(n => n.id));
-  const validLayoutEdges = (layoutEdges || []).filter(e => nodeSet.has(e.from) && nodeSet.has(e.to));
-  const elkEdges = validLayoutEdges.map((e, i) => ({
-    id: `e${i}`,
-    sources: [e.from],
-    targets: [e.to],
-  }));
-
-  const graph = {
-    id: 'root',
-    layoutOptions: {
-      'elk.algorithm': 'layered',
-      'elk.direction': 'DOWN',
-      'elk.layered.nodePlacement.strategy': 'BRANDES_KOEPF',
-      'elk.spacing.nodeNode': String(MIN_GAP),
-      'elk.layered.spacing.nodeNodeBetweenLayers': '80',
-      'elk.edgeRouting': 'ORTHOGONAL',
-    },
-    children: nodes.map(n => ({ id: n.id, width: BOX_W, height: BOX_H })),
-    edges: elkEdges,
-  };
-
-  const result = await _elk.layout(graph);
-
-  const byId = Object.fromEntries(result.children.map(c => [c.id, c]));
-  nodes.forEach(n => {
-    const p = byId[n.id];
-    if (p) {
-      n.x = p.x + BOX_W / 2; // ELK dává top-left, chceme střed
-      n.y = p.y + BOX_H / 2;
-    }
-  });
-
-  // Uložit ELK waypoints na hrany — ORTHOGONAL routing dá sections s bend body
-  const elkEdgeById = Object.fromEntries((result.edges || []).map(ee => [ee.id, ee]));
-  validLayoutEdges.forEach((e, i) => {
-    const ee = elkEdgeById[`e${i}`];
-    if (ee?.sections?.[0]) {
-      e._elkSections = ee.sections[0]; // { startPoint, bendPoints, endPoint }
-    } else {
-      delete e._elkSections;
-    }
-  });
-}
+// ── Layout handled by vis.js Network (hierarchical DU) ───────────────────────
+// calcPositionsELK removed — vis.js computes positions automatically.
 
 // ── Medications ───────────────────────────────────────────────────────────────
 function suppMatches(shield, userSupps) {
@@ -686,7 +627,6 @@ async function loadCRT() {
 
   const nodes = [...activeIds].map(id => ({ ...nodeMap[id] })).filter(Boolean);
   const layoutEdges = edges.filter(e => activeIds.has(e.from) && activeIds.has(e.to));
-  await calcPositionsELK(nodes, layoutEdges);
 
   const result = {
     title: 'Kauzální mapa zdraví',
@@ -720,440 +660,118 @@ async function loadCRTOpus(force = false) {
   return res.json();
 }
 
-// ── SVG renderer — plná kontrola nad velikostí a pozicí ─────────────────────
+// ── vis.js Network renderer ──────────────────────────────────────────────────
 const IS_MOBILE = window.innerWidth < 700 || window.screen.width < 700;
-// Na mobilu zmenšíme X_SCALE → užší strom → SVG viewBox užší → font čitelnější po scale
-const X_SCALE  = 1.0;
-const BOX_W    = IS_MOBILE ? 190 : 220;
-const BOX_H    = IS_MOBILE ? 70 : 76;
-const FONT_SIZE = IS_MOBILE ? 14 : 16;
-const R = 10;
-const CHARS_PER_LINE = Math.floor((BOX_W - 20) / (FONT_SIZE * 0.58));
-
-// Rozdělí text na řádky tak aby nepřesáhl šířku boxu
-function wrapText(label) {
-  const lines = [];
-  // Nejdřív rozděl explicitní \n
-  label.split('\n').forEach(segment => {
-    const words = segment.split(' ');
-    let line = '';
-    words.forEach(word => {
-      if ((line + ' ' + word).trim().length > CHARS_PER_LINE) {
-        if (line) lines.push(line.trim());
-        line = word;
-      } else {
-        line = (line + ' ' + word).trim();
-      }
-    });
-    if (line) lines.push(line.trim());
-  });
-  return lines;
-}
-
-// Výška boxu podle počtu řádků
-function boxHeight(label) {
-  const lines = wrapText(label);
-  return Math.max(56, lines.length * (FONT_SIZE + 6) + 24);
-}
-
-// Jednotný styl — bez barev podle stavu (matou, nemáme pro ně dost dat)
-const NODE_STYLE   = { fill: '#1a2d40', stroke: '#2a4560', text: '#a7c7df' };
-const GOLDEN_STYLE = { fill: '#090c04', stroke: '#c09a22', text: '#d8a830' };
-const UDE_STYLE    = { fill: '#0d1824', stroke: '#4ab8d0', text: '#e8f4ff' };
-const UDE_INACTIVE_STYLE = { fill: '#0a0f15', stroke: '#2a3540', text: '#4a5a68' };
-const GOAL_STYLE   = { fill: '#040e08', stroke: '#18884a', text: '#24a85e' };
-// Zpětná kompatibilita — STATE_STYLE nevyužíváme
-const STATE_STYLE = {
-  RED: NODE_STYLE, YELLOW: NODE_STYLE, GREEN: NODE_STYLE,
-  GRAY: NODE_STYLE, GOLDEN: GOLDEN_STYLE,
-};
-
-function svgEl(tag, attrs, text) {
-  const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
-  Object.entries(attrs).forEach(([k, v]) => el.setAttribute(k, v));
-  if (text) el.textContent = text;
-  return el;
-}
+let _visNetwork = null;
 
 function renderTree(data) {
   window._crtData = data;
   document.getElementById('crtTitle').textContent    = data.title;
   document.getElementById('crtSubtitle').textContent = data.subtitle;
 
-  // Injekce
-  const injEl = document.getElementById('crtInjections');
-  (data.injections || []).forEach(inj => {
-    const el = document.createElement('div');
-    el.className = 'crt-injection';
-    el.textContent = inj.label;
-    injEl.appendChild(el);
-  });
+  const container = document.getElementById('crt-network');
 
-  // Mapa node id → data
-  const nodeMap = {};
-  data.nodes.forEach(n => { nodeMap[n.id] = n; });
+  // Apex UDE = UDE bez odchozích hran → dashed border
+  const edgeSources = new Set(data.edges.map(e => e.from));
 
-  // Souřadnice z šablony: y je "fyzikální" (nahoru = větší)
-  // Převedeme: svgY = OFFSET_Y - n.y  (obrátíme osu)
-  const xs = data.nodes.map(n => (n.x ?? 0) * X_SCALE);
-  const ys = data.nodes.map(n => n.y ?? 0);
-  const minX = Math.min(...xs), maxX = Math.max(...xs);
-  const minY = Math.min(...ys), maxY = Math.max(...ys);
-  const PAD_BOTTOM = 80;
-  const PAD_TOP    = 4;
-  const PAD_SIDE   = IS_MOBILE ? 40 : 100;
-  const PAD_RIGHT  = IS_MOBILE ? 40 : 220; // extra space for medication pills on the right
-  const maxBoxH = Math.max(...data.nodes.map(n => boxHeight(n.label ?? '')));
-  const svgW = (maxX - minX) + BOX_W + PAD_SIDE + PAD_RIGHT;
-  const svgH = (maxY - minY) + maxBoxH * 2 + PAD_BOTTOM + PAD_TOP;
+  const visNodes = data.nodes.map(n => {
+    const ntype = n._type || n.type || 'cause';
+    const isApex   = ntype === 'ude' && !edgeSources.has(n.id);
+    const isRoot   = ntype === 'golden_box' || n.type === 'root';
+    const isInactive = !!n.inactive;
 
-  // canvas → svg pixel
-  // root y=0 (min) → SVG dole → flip: cy = svgH - offset - (y - minY)
-  // S2   y=780 (max) → SVG nahoře (malé SVG y)
-  const cx = x => (x * X_SCALE) - minX + PAD_SIDE + BOX_W / 2;
-  const cy = y => svgH - PAD_TOP - BOX_H / 2 - (y - minY);
-
-  const container = document.getElementById('crt-canvas');
-  container.innerHTML = '';
-  container.style.overflow = 'hidden';
-  container.style.cursor = 'grab';
-
-  const svg = svgEl('svg', {
-    viewBox: `0 0 ${svgW} ${svgH}`,
-    width: svgW, height: svgH,
-    style: 'display:block;transform-origin:top left;overflow:visible;user-select:none;',
-  });
-
-  // Zoom + pan state
-  let _sc = 1, _tx = 0, _ty = 0;
-  const applyT = () => { svg.style.transform = `translate(${_tx}px,${_ty}px) scale(${_sc})`; };
-
-  const initView = () => {
-    // Při re-renderu zachovej střed viewportu (frakce SVG) — platí i když se změní výška SVG
-    if (window._preservedCenter) {
-      const [sc, fracX, fracY] = window._preservedCenter;
-      const cw = container.clientWidth || window.innerWidth || 800;
-      const ch = container.clientHeight || window.innerHeight || 600;
-      _sc = sc;
-      _tx = cw / 2 - fracX * svgW * sc;
-      _ty = ch / 2 - fracY * svgH * sc;
-      applyT();
-      window._preservedCenter = null;
-      return;
-    }
-    if (window._preservedTransform) {
-      const [sc, tx, ty] = window._preservedTransform;
-      _sc = sc; _tx = tx; _ty = ty;
-      applyT();
-      window._preservedTransform = null;
-      return;
-    }
-    const cw = container.clientWidth || window.innerWidth || 800;
-    const ch = container.clientHeight || window.innerHeight || 600;
-    if (IS_MOBILE) {
-      // Přizpůsob oběma rozměrům — funguje pro portrait i landscape
-      const scW = (cw - 20) / svgW;
-      const scH = (ch - 80) / svgH;
-      _sc = Math.min(scW, scH, 1);
-    } else {
-      _sc = Math.min(0.85, (cw - 40) / svgW);
-    }
-    _tx = (cw - svgW * _sc) / 2;
-    _ty = IS_MOBILE ? 20 : -60;
-    applyT();
-  };
-  // Double rAF — čeká na dokončení layoutu, pak vycentruje
-  requestAnimationFrame(() => requestAnimationFrame(initView));
-
-  container.addEventListener('wheel', e => {
-    e.preventDefault();
-    const f = e.deltaY < 0 ? 1.12 : 0.89;
-    const rect = container.getBoundingClientRect();
-    const mx = e.clientX - rect.left, my = e.clientY - rect.top;
-    _tx = mx - (mx - _tx) * f; _ty = my - (my - _ty) * f;
-    _sc = Math.max(0.2, Math.min(3, _sc * f));
-    applyT();
-  }, { passive: false });
-
-  let _drag = false, _lx = 0, _ly = 0;
-  container.addEventListener('mousedown', e => { _drag=true; _lx=e.clientX; _ly=e.clientY; container.style.cursor='grabbing'; });
-  window.addEventListener('mouseup', () => { _drag=false; container.style.cursor='grab'; });
-  window.addEventListener('mousemove', e => {
-    if (!_drag) return;
-    _tx += e.clientX-_lx; _ty += e.clientY-_ly; _lx=e.clientX; _ly=e.clientY; applyT();
-  });
-
-  // Touch pan + pinch-to-zoom od středu prstů
-  let _touches = [], _lastDist = 0;
-  container.addEventListener('touchstart', e => { _touches=[...e.touches]; _lastDist=0; }, {passive:true});
-  container.addEventListener('touchmove', e => {
-    e.preventDefault();
-    if (e.touches.length === 2) {
-      const t0 = e.touches[0], t1 = e.touches[1];
-      const d = Math.hypot(t0.clientX-t1.clientX, t0.clientY-t1.clientY);
-      if (_lastDist) {
-        const f = d / _lastDist;
-        const rect = container.getBoundingClientRect();
-        const mx = (t0.clientX + t1.clientX) / 2 - rect.left;
-        const my = (t0.clientY + t1.clientY) / 2 - rect.top;
-        _tx = mx - (mx - _tx) * f; _ty = my - (my - _ty) * f;
-        _sc = Math.max(0.2, Math.min(3, _sc * f));
-        applyT();
+    let bg, border, textColor, bw, dashes;
+    if (isRoot) {
+      bg = '#090c04'; border = '#c09a22'; textColor = '#d8a830'; bw = 3; dashes = false;
+    } else if (ntype === 'ude' || n.type === 'ude') {
+      if (isInactive) {
+        bg = '#0a0f15'; border = '#2a3540'; textColor = '#4a5a68'; bw = 2; dashes = false;
+      } else {
+        bg = '#0d1824'; border = '#4ab8d0'; textColor = '#e8f4ff';
+        bw = isApex ? 2.5 : 2;
+        dashes = isApex ? [7, 4] : false;
       }
-      _lastDist = d;
-    } else if (e.touches.length === 1 && _touches.length >= 1) {
-      _tx += e.touches[0].clientX - _touches[0].clientX;
-      _ty += e.touches[0].clientY - _touches[0].clientY;
-      applyT();
+    } else {
+      bg = '#1a2d40'; border = '#2a4560'; textColor = '#a7c7df'; bw = 1.8; dashes = false;
     }
-    _touches = [...e.touches];
-  }, {passive:false});
 
-  // Click outside nodes → zavři panel
-  container.addEventListener('click', () => closeCrtPanel());
+    const lvl = (n.level != null) ? n.level : (n.layer != null) ? n.layer : undefined;
 
-  // ── Defs: arrowhead ──────────────────────────────────────────────────────
-  const defs = svgEl('defs', {});
-  const marker = svgEl('marker', { id: 'arrow', markerWidth: '10', markerHeight: '7', refX: '9', refY: '3.5', orient: 'auto' });
-  marker.appendChild(svgEl('polygon', { points: '0 0, 10 3.5, 0 7', fill: '#4a7898' }));
-  defs.appendChild(marker);
-  svg.appendChild(defs);
+    return {
+      id: n.id,
+      label: n.label ?? n.id,
+      level: lvl,
+      color: {
+        background: bg,
+        border: border,
+        highlight: { background: bg, border: '#6ab8e0' },
+        hover:     { background: bg, border: '#5aa8d0' },
+      },
+      font: { color: textColor, size: IS_MOBILE ? 13 : 14, face: 'Inter, system-ui, sans-serif' },
+      borderWidth: bw,
+      shapeProperties: { borderDashes: dashes, borderRadius: 8 },
+    };
+  });
 
-  // AND-join mapa z dat
-  const AND_JOINS = {};
-  (data.and_joins || []).forEach(aj => { AND_JOINS[aj.target] = aj.sources; });
-  const andJoinTargets = new Set(Object.keys(AND_JOINS));
+  const visEdges = data.edges.map((e, i) => ({
+    id: `e${i}`,
+    from: e.from,
+    to: e.to,
+  }));
 
-  // AND-join zdroje — sada zdrojových node IDs které jsou součástí AND joinu
-  const andJoinSources = new Set(
-    Object.values(AND_JOINS).flat()
+  if (_visNetwork) { _visNetwork.destroy(); _visNetwork = null; }
+
+  _visNetwork = new vis.Network(
+    container,
+    { nodes: new vis.DataSet(visNodes), edges: new vis.DataSet(visEdges) },
+    {
+      layout: {
+        hierarchical: {
+          enabled: true,
+          direction: 'DU',
+          sortMethod: 'directed',
+          levelSeparation: IS_MOBILE ? 100 : 130,
+          nodeSpacing: IS_MOBILE ? 160 : 200,
+          treeSpacing: IS_MOBILE ? 160 : 220,
+        },
+      },
+      nodes: {
+        shape: 'box',
+        margin: { top: 10, right: 14, bottom: 10, left: 14 },
+        widthConstraint: { minimum: IS_MOBILE ? 140 : 160, maximum: IS_MOBILE ? 180 : 220 },
+      },
+      edges: {
+        arrows: { to: { enabled: true, scaleFactor: 0.8 } },
+        color: { color: '#3a5a78', highlight: '#6a9ab8', hover: '#5a8aaa' },
+        smooth: { type: 'straightCross' },
+        width: 2,
+      },
+      physics: { enabled: false },
+      interaction: {
+        dragNodes: false,
+        hover: true,
+        tooltipDelay: 800,
+        navigationButtons: false,
+        keyboard: false,
+      },
+    }
   );
 
-  // Max povolená horizontální vzdálenost hrany = 1.5× X_BASE (cross-branch = přeskočit)
-  const MAX_EDGE_DX = 1.5 * 340 + BOX_W;
-
-  data.edges.forEach(e => {
-    const src = nodeMap[e.from], tgt = nodeMap[e.to];
-    if (!src || !tgt) return;
-    // Přeskočit hrany které jsou součástí AND-joinu — ty kreslíme v AND sekci
-    if (andJoinTargets.has(e.to) && andJoinSources.has(e.from)) return;
-
-    let d;
-    if (e._elkSections) {
-      // ELK ORTHOGONAL waypoints — transformujeme ELK coords stejně jako node souřadnice
-      const s = e._elkSections;
-      const pts = [s.startPoint, ...(s.bendPoints || []), s.endPoint];
-      const svgPts = pts.map(p => ({ x: cx(p.x), y: cy(p.y) }));
-      d = `M ${svgPts[0].x} ${svgPts[0].y}`;
-      for (let i = 1; i < svgPts.length; i++) {
-        d += ` L ${svgPts[i].x} ${svgPts[i].y}`;
-      }
-    } else {
-      // Fallback: ortogonální lomená čára (bez ELK waypoints — Opus CRT)
-      if (Math.abs((src.x ?? 0) - (tgt.x ?? 0)) * X_SCALE > MAX_EDGE_DX) return;
-      const srcH = boxHeight(src.label), tgtH = boxHeight(tgt.label);
-      const x1 = cx(src.x ?? 0), y1 = cy(src.y ?? 0) - srcH / 2;
-      const x2 = cx(tgt.x ?? 0), y2 = cy(tgt.y ?? 0) + tgtH / 2;
-      if (Math.abs(x1 - x2) < 2) {
-        d = `M ${x1} ${y1} L ${x2} ${y2}`;
-      } else {
-        const midY = (y1 + y2) / 2;
-        d = `M ${x1} ${y1} L ${x1} ${midY} L ${x2} ${midY} L ${x2} ${y2}`;
-      }
-    }
-
-    svg.appendChild(svgEl('path', {
-      d,
-      fill: 'none', stroke: '#3a5a78', 'stroke-width': '2',
-      'marker-end': 'url(#arrow)',
-    }));
+  _visNetwork.on('click', params => {
+    if (!params.nodes.length) { closeCrtPanel(); return; }
+    openNodePanel(params.nodes[0]);
   });
 
-  // ── AND-join obloučky (Goldratt CRT notace) ─────────────────────────────
-  // Šipky ze zdrojů se sbíhají → oblouček těsně nad cílovým boxem → jedna šipka dolů
-  Object.entries(AND_JOINS).forEach(([targetId, sourceIds]) => {
-    const tgt = nodeMap[targetId];
-    if (!tgt) return;
-    const srcs = sourceIds.map(id => nodeMap[id]).filter(Boolean);
-    if (srcs.length < 2) return;
-
-    const tgtBottomY = cy(tgt.y ?? 0) + boxHeight(tgt.label) / 2;
-    const tgtCx = cx(tgt.x ?? 0);
-
-    // Oblouček je těsně nad cílovým boxem
-    const arcY = tgtBottomY + 50;
-    const srcXs = srcs.map(n => cx(n.x ?? 0));
-    const arcX1 = Math.min(...srcXs);
-    const arcX2 = Math.max(...srcXs);
-    const arcMidX = (arcX1 + arcX2) / 2;
-
-    // Šipky ze zdrojových uzlů dolů na koncové body obloučku
-    srcs.forEach((n, i) => {
-      const sx = cx(n.x ?? 0);
-      const sy = cy(n.y ?? 0) - boxHeight(n.label) / 2; // top of source box
-      const ex = srcXs[i];
-      svg.appendChild(svgEl('path', {
-        d: `M ${sx} ${sy} C ${sx} ${(sy + arcY) / 2}, ${ex} ${(sy + arcY) / 2}, ${ex} ${arcY}`,
-        fill: 'none', stroke: '#4a6878', 'stroke-width': '2.5',
-      }));
-    });
-
-    // Oblouček — konvexní dolů (⌢) spojující konce šipek
-    const arcSag = 18; // výška oblouku
-    svg.appendChild(svgEl('path', {
-      d: `M ${arcX1} ${arcY} Q ${arcMidX} ${arcY + arcSag} ${arcX2} ${arcY}`,
-      fill: 'none', stroke: '#4a8a9a', 'stroke-width': '2',
-    }));
-
-    // Jedna šipka z vrcholu obloučku na cílový box
-    svg.appendChild(svgEl('line', {
-      x1: arcMidX, y1: arcY,
-      x2: tgtCx, y2: tgtBottomY + 2,
-      stroke: '#4a6878', 'stroke-width': '2.5',
-      'marker-end': 'url(#arrow)',
-    }));
+  _visNetwork.once('afterDrawing', () => {
+    _visNetwork.fit({ animation: { duration: 400, easingFunction: 'easeInOutQuad' } });
   });
-
-  // ── Uzly (boxy) ──────────────────────────────────────────────────────────
-  const _edgeSources = new Set(data.edges.map(e => e.from));
-  data.nodes.forEach(n => {
-    const ntype = n._type || n.type || 'cause';
-    const isTopKiller = ntype === 'ude' && !_edgeSources.has(n.id);
-    const st   = ntype === 'golden_box' ? GOLDEN_STYLE : ntype === 'goal' ? GOAL_STYLE : ntype === 'ude' ? (n.inactive ? UDE_INACTIVE_STYLE : UDE_STYLE) : NODE_STYLE;
-    const g    = svgEl('g', { class: 'crt-node', 'data-id': n.id, style: 'cursor:pointer' });
-
-    const lines = wrapText(n.label);
-    const bh   = boxHeight(n.label);
-    const lineH = FONT_SIZE + 6;
-    const bx   = cx(n.x ?? 0) - BOX_W / 2;
-    const by   = cy(n.y ?? 0) - bh / 2;
-
-    // Box
-    g.appendChild(svgEl('rect', {
-      x: bx, y: by, width: BOX_W, height: bh, rx: R, ry: R,
-      fill: st.fill, stroke: st.stroke,
-      'stroke-width': ntype === 'golden_box' ? '3' : ntype === 'goal' ? '3' : isTopKiller ? '2.5' : ntype === 'ude' ? '2' : '1.8',
-      'stroke-dasharray': isTopKiller ? '7 4' : ntype === 'goal' ? '5 4' : 'none',
-    }));
-
-    // Text — zarovnaný do středu boxu
-    const totalTH = lines.length * lineH;
-    const startY  = by + bh / 2 - totalTH / 2 + lineH * 0.75;
-    lines.forEach((line, i) => {
-      g.appendChild(svgEl('text', {
-        x: cx(n.x ?? 0), y: startY + i * lineH,
-        'text-anchor': 'middle',
-        fill: st.text,
-        'font-size': String(FONT_SIZE),
-        'font-family': 'Inter, Segoe UI, system-ui, sans-serif',
-        'font-weight': n._type === 'golden_box' ? '600' : '400',
-      }, line));
-    });
-
-    // Klik → detail panel
-    g.addEventListener('click', e => {
-      e.stopPropagation();
-      openNodePanel(n.id);
-    });
-
-
-    svg.appendChild(g);
-  });
-
-  // ── Léky + doplňky: jeden sloupec pillek vpravo od uzlu (léky nahoře, doplňky pod nimi) ──
-  const medsMap  = (data.medications_map  || []).filter(m => (m.targets || []).length > 0 && m.userHas);
-  const suppsMap = (data.supplements_map || []).filter(s => (s.targets || []).length > 0);
-  if (medsMap.length) document.getElementById('crtMedBtn').style.display = '';
-  if (medsMap.length || suppsMap.length) {
-    const MED_C     = '#4a9aee';
-    const MED_FILL  = '#0e2038';
-    const SUPP_C    = '#22c55e';
-    const SUPP_FILL = '#0a2016';
-    const PILL_H   = IS_MOBILE ? 30 : 34;
-    const PILL_FS  = IS_MOBILE ? 13 : 14;
-    const PILL_PAD = 16;
-    const GAP      = 10;
-    const GAP_Y    = 6;
-
-    const nodeById = {};
-    [data.root, ...(data.nodes || [])].forEach(n => { if (n) nodeById[n.id] = n; });
-    const pillW = name => Math.max(64, name.length * PILL_FS * 0.62 + PILL_PAD * 2);
-
-    // Sloučit léky (nahoře) + doplňky (dole) do jednoho sloupce na uzel
-    const itemsByNode = {};
-    medsMap.forEach(med => {
-      const nodeId = (med.targets || [])[0]; if (!nodeId) return;
-      (itemsByNode[nodeId] = itemsByNode[nodeId] || []).push({ ...med, _kind: 'med', _c: MED_C, _fill: MED_FILL });
-    });
-    suppsMap.forEach(supp => {
-      const nodeId = (supp.targets || [])[0]; if (!nodeId) return;
-      (itemsByNode[nodeId] = itemsByNode[nodeId] || []).push({ ...supp, _kind: 'supp', _c: SUPP_C, _fill: SUPP_FILL });
-    });
-
-    Object.entries(itemsByNode).forEach(([nodeId, items]) => {
-      const node = nodeById[nodeId]; if (!node) return;
-      const nx = cx(node.x ?? 0), ny = cy(node.y ?? 0);
-      const nodeRight = nx + BOX_W / 2;
-      const totalH = items.length * PILL_H + (items.length - 1) * GAP_Y;
-      const startY = ny - totalH / 2;
-      const px = nodeRight + GAP;
-
-      // Jedna čárka od uzlu ke sloupci
-      svg.insertBefore(svgEl('line', {
-        class: 'crt-med-el crt-med-hidden',
-        x1: nodeRight, y1: ny, x2: px, y2: ny,
-        stroke: items[0]._c, 'stroke-width': '1.5',
-        'stroke-dasharray': '4 3', opacity: '0.6',
-      }), svg.firstChild);
-
-      items.forEach((item, i) => {
-        const pw = pillW(item.name);
-        const py = startY + i * (PILL_H + GAP_Y);
-        const g = svgEl('g', { class: 'crt-med-el crt-med-hidden', style: 'cursor:help' });
-        g.appendChild(svgEl('rect', {
-          x: px, y: py, width: pw, height: PILL_H,
-          rx: String(PILL_H / 2), fill: item._fill,
-          stroke: item._c, 'stroke-width': '1.5',
-        }));
-        g.appendChild(svgEl('text', {
-          x: px + pw / 2, y: py + PILL_H * 0.67,
-          'text-anchor': 'middle', fill: item._c,
-          'font-size': String(PILL_FS),
-          'font-family': 'Inter, Segoe UI, system-ui, sans-serif',
-        }, item.name));
-
-        if (item.reason) {
-          const tooltip = document.getElementById('crtTooltip');
-          const showTip = (x, y) => {
-            tooltip.innerHTML = `<strong>${item.name}</strong><br><span style="color:#a8c8d8">${item.reason}</span>`;
-            tooltip.style.display = 'block';
-            tooltip.style.left = (x + 14) + 'px';
-            tooltip.style.top  = (y - 10) + 'px';
-          };
-          g.addEventListener('mouseenter', e => showTip(e.clientX, e.clientY));
-          g.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
-          g.addEventListener('mousemove',  e => { tooltip.style.left = (e.clientX + 14) + 'px'; tooltip.style.top = (e.clientY - 10) + 'px'; });
-          g.addEventListener('click', e => {
-            e.stopPropagation();
-            if (tooltip.style.display === 'block') { tooltip.style.display = 'none'; return; }
-            showTip(e.clientX, e.clientY);
-            setTimeout(() => { tooltip.style.display = 'none'; }, 4000);
-          });
-        }
-        svg.appendChild(g);
-      });
-    });
-  }
-
-  container.appendChild(svg);
-  // Obnov stav Léky po re-renderu (otočení atd.)
-  if (typeof _applyMedsState === 'function') _applyMedsState();
 }
+
 
 // ── Node detail panel ────────────────────────────────────────────────────────
 function closeCrtPanel() {
   document.getElementById('crtNodePanel').classList.remove('open');
-  document.querySelectorAll('.crt-node rect').forEach(r => r.style.filter = '');
+  if (_visNetwork) _visNetwork.unselectAll();
 }
 
 function openNodePanel(nodeId) {
@@ -1181,11 +799,6 @@ function openNodePanel(nodeId) {
   const rawIds = _rawCrtData?._activeIds || activeIds;
   const hiddenParents  = (node.parents  || []).filter(pid => rawIds.has(pid)  && !activeIds.has(pid)).length;
   const hiddenChildren = (node.children || []).filter(cid => rawIds.has(cid) && !activeIds.has(cid)).length;
-
-  // Highlight
-  document.querySelectorAll('.crt-node rect').forEach(r => r.style.filter = '');
-  const sel = document.querySelector(`.crt-node[data-id="${nodeId}"] rect`);
-  if (sel) sel.style.filter = 'drop-shadow(0 0 8px #5aaaf0)';
 
   try {
     document.getElementById('cnpMini').innerHTML = buildPanelMiniSVG(node, parents, children, kbMap);
@@ -1435,28 +1048,6 @@ function applyLabelMode(data) {
 }
 
 window.toggleLabelMode = function() {
-  // Zachyť střed viewportu v SVG-frakci — parsuj z DOM (sc/tx/ty jsou closure uvnitř renderTree)
-  const svgEl = document.querySelector('#crt-canvas svg');
-  const cont  = document.getElementById('crt-canvas');
-  if (svgEl && cont) {
-    const t   = svgEl.style.transform;
-    const mTr = t.match(/translate\(([-\d.]+)px,\s*([-\d.]+)px\)/);
-    const mSc = t.match(/scale\(([-\d.]+)\)/);
-    if (mTr && mSc) {
-      const sc   = parseFloat(mSc[1]);
-      const tx   = parseFloat(mTr[1]);
-      const ty   = parseFloat(mTr[2]);
-      const svgW = parseFloat(svgEl.getAttribute('width'))  || 800;
-      const svgH = parseFloat(svgEl.getAttribute('height')) || 600;
-      const cw   = cont.clientWidth  || window.innerWidth  || 800;
-      const ch   = cont.clientHeight || window.innerHeight || 600;
-      window._preservedCenter = [
-        sc,
-        (cw / 2 - tx) / (sc * svgW),
-        (ch / 2 - ty) / (sc * svgH),
-      ];
-    }
-  }
   _labelMode = _labelMode === 'expert' ? 'layman' : 'expert';
   const data = window._crtData;
   if (!data) return;
@@ -1523,129 +1114,29 @@ async function enrichContraMap(data) {
   } catch (_) {}
 }
 
-// Tisk mapy — nový tab, světlé téma, A4 landscape (barevně, fit-to-page)
+// Export mapy jako PNG — vis.js canvas přímý přístup
+window.exportCRTImage = function() {
+  const canvas = document.querySelector('#crt-network canvas');
+  if (!canvas) return;
+  canvas.toBlob(b => {
+    const a = document.createElement('a');
+    a.download = 'kauzalni-mapa-zdravi.png';
+    a.href = URL.createObjectURL(b);
+    a.click();
+  }, 'image/png');
+};
+
+// Tisk mapy — PNG z canvas do nového tabu
 window.printCRT = function() {
-  const liveSvg = document.querySelector('#crt-canvas svg');
-  if (!liveSvg) return;
-
-  // Klonuj SVG v DOM — transform/width/height operujeme přes API, ne regex
-  const clone = liveSvg.cloneNode(true);
-
-  // Odstraň CSS pan/zoom transform (je součástí style, ne standalone atribut)
-  clone.style.transform      = '';
-  clone.style.transformOrigin = '';
-
-  // Crop viewBox na skutečný obsah — getBBox() běží na live SVG (má DOM kontext)
-  try {
-    const bb = liveSvg.getBBox();
-    if (bb.width > 0 && bb.height > 0) {
-      const mg = 24;
-      clone.setAttribute('viewBox', `${bb.x - mg} ${bb.y - mg} ${bb.width + 2*mg} ${bb.height + 2*mg}`);
-    }
-  } catch(e) {}
-
-  // Odstraň pevné rozměry — SVG se roztáhne přes CSS max-width/max-height
-  clone.removeAttribute('width');
-  clone.removeAttribute('height');
-
-  // Remap dark fills → light (stejná logika jako exportCRTImage)
-  let svgStr = new XMLSerializer().serializeToString(clone);
-  const remap = [
-    ['fill="#1a2535"',   'fill="#dde4ec"'],   // regular node
-    ['fill="#12100a"',   'fill="#fffae8"'],   // ROOT
-    ['fill="#081510"',   'fill="#eef8f2"'],   // GOAL
-    ['fill="#0e2038"',   'fill="#e8f4ff"'],   // med pill
-    ['fill="#c8d8e8"',   'fill="#1a2535"'],   // text
-    ['fill="#e8f0f8"',   'fill="#1a3548"'],
-    ['fill="#d4a838"',   'fill="#7a5010"'],   // ROOT text
-    ['fill="#24a85e"',   'fill="#0a5030"'],   // GOAL text
-    ['stroke="#4a6878"', 'stroke="#6a8898"'],
-    ['fill="#5a7890"',   'fill="#6a8898"'],   // arrowhead
-    ['stroke="#8ba8b8"', 'stroke="#5a8090"'],
-  ];
-  for (const [from, to] of remap) svgStr = svgStr.split(from).join(to);
-
+  const canvas = document.querySelector('#crt-network canvas');
+  if (!canvas) return;
+  const dataURL = canvas.toDataURL('image/png');
   const pw = window.open('', '_blank');
   pw.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
   <title>Kauzální mapa zdraví</title>
-  <style>
-    @page { size: A4 landscape; margin: 8mm; }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background: #fff; display: flex; align-items: center; justify-content: center;
-           width: 100vw; height: 100vh; overflow: hidden; }
-    svg { max-width: 100%; max-height: 100vh; width: auto; height: auto; display: block; }
-  </style></head><body>${svgStr}<script>
-    window.onafterprint = function() { window.close(); };
-    window.print();
-  <\/script></body></html>`);
+  <style>@page{size:A4 landscape;margin:8mm;}body{margin:0;display:flex;align-items:center;justify-content:center;width:100vw;height:100vh;}img{max-width:100%;max-height:100vh;}</style>
+  </head><body><img src="${dataURL}"><script>window.onload=function(){window.print();window.onafterprint=function(){window.close();};};<\/script></body></html>`);
   pw.document.close();
-};
-
-// Export mapy jako PNG se světlým pozadím
-window.exportCRTImage = function() {
-  const svgEl = document.querySelector('#crt-canvas svg');
-  if (!svgEl) return;
-
-  // Klonuj SVG a přebarvím na světlé téma
-  let svgStr = new XMLSerializer().serializeToString(svgEl.cloneNode(true));
-
-  const remap = [
-    // Node fills dark → light
-    ['fill="#1a2535"',  'fill="#dde4ec"'],   // regular node
-    ['fill="#12100a"',  'fill="#fffae8"'],   // ROOT
-    ['fill="#081510"',  'fill="#eef8f2"'],   // GOAL
-    ['fill="#0e2038"',  'fill="#e8f4ff"'],   // med pill
-    // Text dark theme → readable on light bg
-    ['fill="#c8d8e8"',  'fill="#1a2535"'],
-    ['fill="#e8f0f8"',  'fill="#1a3548"'],
-    ['fill="#d4a838"',  'fill="#7a5010"'],   // ROOT text
-    ['fill="#24a85e"',  'fill="#0a5030"'],   // GOAL text
-    // Arrows
-    ['stroke="#4a6878"', 'stroke="#6a8898"'],
-    ['fill="#5a7890"',   'fill="#6a8898"'],  // arrowhead
-    ['stroke="#8ba8b8"', 'stroke="#5a8090"'],
-  ];
-  for (const [from, to] of remap) {
-    svgStr = svgStr.split(from).join(to);
-  }
-
-  // Vlož bílý obdélník jako pozadí
-  const w = parseFloat(svgEl.getAttribute('width'));
-  const h = parseFloat(svgEl.getAttribute('height'));
-  svgStr = svgStr.replace(/(<svg[^>]*>)/, `$1<rect width="${w}" height="${h}" fill="white"/>`);
-
-  const blob = new Blob([svgStr], { type: 'image/svg+xml' });
-  const url  = URL.createObjectURL(blob);
-
-  const img = new Image();
-  img.onload = () => {
-    const scale  = 2; // 2× pro sharp výstup
-    const canvas = document.createElement('canvas');
-    canvas.width  = w * scale;
-    canvas.height = h * scale;
-    const ctx = canvas.getContext('2d');
-    ctx.fillStyle = 'white';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.scale(scale, scale);
-    ctx.drawImage(img, 0, 0, w, h);
-    URL.revokeObjectURL(url);
-    canvas.toBlob(b => {
-      const a = document.createElement('a');
-      a.download = 'kauzalni-mapa-zdravi.png';
-      a.href = URL.createObjectURL(b);
-      a.click();
-    }, 'image/png');
-  };
-  img.onerror = () => {
-    // Fallback: stáhni jako SVG
-    URL.revokeObjectURL(url);
-    const url2 = URL.createObjectURL(new Blob([svgStr], { type: 'image/svg+xml' }));
-    const a = document.createElement('a');
-    a.download = 'kauzalni-mapa-zdravi.svg';
-    a.href = url2;
-    a.click();
-  };
-  img.src = url;
 };
 
 // ── Top-N: zobraz jen uzly na nejkratší cestě ROOT→každý killer ──────────────
@@ -1764,7 +1255,6 @@ async function computeTopN(rawData, focusUde = null) {
 
   const nodes = [...topIds].map(id => ({...nodeMap[id]})).filter(Boolean);
   const edges = rawData.edges.filter(e => topIds.has(e.from) && topIds.has(e.to));
-  await calcPositionsELK(nodes, edges);
   applyLabelMode({nodes, _kbMap: nodeMap});
   return {
     ...rawData,
@@ -1886,7 +1376,7 @@ async function regenCRT() {
   localStorage.removeItem(window._crtCacheKey);
   document.getElementById('crtLoading').textContent = 'Generuji novou mapu…';
   document.getElementById('crtLoading').classList.remove('hidden');
-  document.getElementById('crt-canvas').innerHTML = '';
+  if (_visNetwork) { _visNetwork.destroy(); _visNetwork = null; }
   document.getElementById('crtInjections').innerHTML = '';
   try {
     const data = await window._loadCRTOpus(true);
