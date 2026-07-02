@@ -720,8 +720,8 @@ function renderTree(data) {
           direction: 'DU',
           sortMethod: 'directed',
           levelSeparation: IS_MOBILE ? 110 : 160,
-          nodeSpacing: IS_MOBILE ? 160 : 320,
-          treeSpacing: IS_MOBILE ? 160 : 340,
+          nodeSpacing: IS_MOBILE ? 160 : 380,
+          treeSpacing: IS_MOBILE ? 160 : 400,
           blockShifting: true,
           edgeMinimization: true,
           parentCentralization: true,
@@ -730,7 +730,7 @@ function renderTree(data) {
       nodes: {
         shape: 'box',
         margin: { top: 18, right: 28, bottom: 18, left: 28 },
-        widthConstraint: { minimum: IS_MOBILE ? 200 : 280, maximum: IS_MOBILE ? 300 : 420 },
+        widthConstraint: { minimum: IS_MOBILE ? 180 : 220 },
         font: { size: IS_MOBILE ? 17 : 22, face: 'Inter, system-ui, sans-serif' },
       },
       edges: {
