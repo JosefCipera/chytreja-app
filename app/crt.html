@@ -687,9 +687,14 @@ function renderTree(data) {
       bg = '#1a2d40'; border = '#2a4a60'; textColor = '#a7c7df'; bw = 1.5; dashes = false;
     }
 
+    // Opus data: branch L/R/C → fixed x drží sloupce zarovnané
+    const BRANCH_X = { L: -450, C: 0, R: 450 };
+    const bx = (n.branch && BRANCH_X[n.branch] !== undefined) ? BRANCH_X[n.branch] : undefined;
+
     return {
       id: n.id,
       label: n.label ?? n.id,
+      ...(bx !== undefined ? { x: bx, fixed: { x: true, y: false } } : {}),
       color: {
         background: bg,
         border: border,
@@ -730,7 +735,7 @@ function renderTree(data) {
       nodes: {
         shape: 'box',
         margin: { top: 18, right: 28, bottom: 18, left: 28 },
-        widthConstraint: { minimum: IS_MOBILE ? 180 : 220 },
+        widthConstraint: { minimum: IS_MOBILE ? 180 : 220, maximum: IS_MOBILE ? 260 : 340 },
         font: { size: IS_MOBILE ? 17 : 22, face: 'Inter, system-ui, sans-serif' },
       },
       edges: {
