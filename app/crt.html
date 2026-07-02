@@ -1015,10 +1015,10 @@ function renderTree(data) {
   });
 
   // ── Uzly (boxy) ──────────────────────────────────────────────────────────
-  const _maxNodeLevel = Math.max(...data.nodes.map(n => n.level ?? 0), 0);
+  const _edgeSources = new Set(data.edges.map(e => e.from));
   data.nodes.forEach(n => {
     const ntype = n._type || n.type || 'cause';
-    const isTopKiller = ntype === 'ude' && (n.level ?? 0) >= _maxNodeLevel;
+    const isTopKiller = ntype === 'ude' && !_edgeSources.has(n.id);
     const st   = ntype === 'golden_box' ? GOLDEN_STYLE : ntype === 'goal' ? GOAL_STYLE : ntype === 'ude' ? (n.inactive ? UDE_INACTIVE_STYLE : UDE_STYLE) : NODE_STYLE;
     const g    = svgEl('g', { class: 'crt-node', 'data-id': n.id, style: 'cursor:pointer' });
 
