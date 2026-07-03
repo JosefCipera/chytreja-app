@@ -423,6 +423,11 @@ function validateEdges(nodes, root, edges) {
       console.log(`[CRT validate] odstraněna hrana ${e.from}(L${from.level})→${e.to}(L${to.level}): nejde nahoru`);
       return false;
     }
+    // Max 1 úroveň skok — přeskočení způsobuje diagonální křížení
+    if ((to.level ?? 0) - (from.level ?? 0) > 1) {
+      console.log(`[CRT validate] odstraněna hrana ${e.from}(L${from.level})→${e.to}(L${to.level}): přeskočení úrovně`);
+      return false;
+    }
 
     const fb = from.branch, tb = to.branch;
     // Zakázáno: L↔R (přímé křížení větví)
@@ -483,6 +488,8 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const { userId, role = 'longevity', force = false } = req.body || {};
+
+  if (!userId) return res.status(401).json({ error: 'Přihlaste se pro zobrazení mapy.' });
 
   const { createClient } = await import('@supabase/supabase-js');
   const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
