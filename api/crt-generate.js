@@ -364,7 +364,9 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
 
   if (!res.ok) throw new Error(`Claude ${res.status}`);
   const data = await res.json();
-  const text = data.content?.[0]?.text?.trim() ?? '';
+  // Fable/Opus s adaptive thinking vrací thinking bloky před textem — hledáme první text blok
+  const textBlock = (data.content || []).find(b => b.type === 'text');
+  const text = textBlock?.text?.trim() ?? '';
 
   const jsonMatch = text.match(/\{[\s\S]*\}/);
   if (!jsonMatch) throw new Error(`Claude nevrátil JSON. Text: ${text.slice(0, 200)}`);
