@@ -1112,9 +1112,8 @@ let _labelMode = 'layman'; // 'expert' | 'layman'
 
 // Nastaví label na všech uzlech podle aktuálního módu a překreslí
 function applyLabelMode(data) {
-  if (!data?._kbMap) return;
   data.nodes.forEach(n => {
-    const kb = data._kbMap[n.id] || n;
+    const kb = data._kbMap ? (data._kbMap[n.id] || n) : n;
     n.label = _labelMode === 'layman'
       ? (kb.label_layman || kb.label_expert || kb.label || n.label)
       : (kb.label_expert || kb.label || n.label);

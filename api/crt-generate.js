@@ -309,7 +309,7 @@ Vrať POUZE validní JSON bez jakéhokoliv doprovodného textu.
 {
   "root": "node_root",
   "nodes": [
-    { "id": "node_id", "level": 0, "branch": "C", "type": "cause", "label": "Stručný český název (max 5 slov)" }
+    { "id": "node_id", "level": 0, "branch": "C", "type": "cause", "label": "Stručný odborný název (max 5 slov)", "label_layman": "Jednoduché vysvětlení pro laika (max 6 slov)" }
   ],
   "edges": [
     { "from": "node_id", "to": "node_id" }
@@ -430,7 +430,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx) {
   const key = JSON.stringify({
-    _v:          24, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
+    _v:          25, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),
     labs:        ctx.profile.labs || {},
