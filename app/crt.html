@@ -1112,11 +1112,15 @@ let _labelMode = 'layman'; // 'expert' | 'layman'
 
 // Nastaví label na všech uzlech podle aktuálního módu a překreslí
 function applyLabelMode(data) {
-  data.nodes.forEach(n => {
+  const allNodes = [...(data.nodes || [])];
+  if (data.root) allNodes.push(data.root);
+  allNodes.forEach(n => {
     const kb = data._kbMap ? (data._kbMap[n.id] || n) : n;
+    // Zachovat originální label před prvním přepsáním
+    if (n._label_orig === undefined) n._label_orig = n.label;
     n.label = _labelMode === 'layman'
-      ? (kb.label_layman || kb.label_expert || kb.label || n.label)
-      : (kb.label_expert || kb.label || n.label);
+      ? (kb.label_layman || kb.label_expert || n._label_orig || '')
+      : (kb.label_expert || n._label_orig || kb.label || '');
   });
 }
 
