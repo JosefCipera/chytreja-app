@@ -425,9 +425,15 @@ function validateEdges(nodes, root, edges) {
     }
 
     const fb = from.branch, tb = to.branch;
-    // Zakázáno: L→R nebo R→L
+    // Zakázáno: L↔R (přímé křížení větví)
     if ((fb === 'L' && tb === 'R') || (fb === 'R' && tb === 'L')) {
       console.log(`[CRT validate] odstraněna cross-branch hrana: ${e.from}(${fb})→${e.to}(${tb})`);
+      return false;
+    }
+    // Zakázáno: C→L nebo C→R mimo root (center nesmí krmit zpět do větve)
+    // Root (level 0) smí startovat obě větve
+    if (fb === 'C' && (tb === 'L' || tb === 'R') && (from.level ?? 0) > 0) {
+      console.log(`[CRT validate] odstraněna center→branch hrana: ${e.from}(C,L${from.level})→${e.to}(${tb})`);
       return false;
     }
 
