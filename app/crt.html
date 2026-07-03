@@ -505,8 +505,9 @@ const _CANONICAL_ROOT_ID = 'ROOT_K';
 const KB_FILES_V2 = [_KB_STORY_MAP.story];
 
 async function loadCRT() {
-  const forceOpus = new URLSearchParams(location.search).get('opus') === '1';
-  if (forceOpus) return loadCRTOpus(false);
+  const forceOpus  = new URLSearchParams(location.search).get('opus')  === '1';
+  const forceRegen = new URLSearchParams(location.search).get('force') === '1';
+  if (forceOpus) return loadCRTOpus(forceRegen);
 
   const [kbs, ctx] = await Promise.all([
     Promise.all(KB_FILES_V2.map(f => fetch(f).then(r => r.json()).catch(() => null))).then(r => r.filter(Boolean)),
