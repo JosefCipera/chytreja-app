@@ -354,8 +354,9 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'claude-opus-4-8',
-      max_tokens: 4000,
+      model: 'claude-fable-5',
+      max_tokens: 8000,
+      thinking: { type: 'adaptive' },
       system: systemPrompt,
       messages: [{ role: 'user', content: userPrompt }],
     }),
@@ -427,7 +428,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx) {
   const key = JSON.stringify({
-    _v:          23, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
+    _v:          24, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),
     labs:        ctx.profile.labs || {},
