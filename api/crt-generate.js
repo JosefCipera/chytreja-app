@@ -401,7 +401,38 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
     }));
   }
 
+  // Post-processing: odstraň hrany porušující topologická pravidla
+  crt.edges = validateEdges(crt.nodes, crt.root, crt.edges || []);
+
   return crt;
+}
+
+// Odstraní cross-branch hrany (L↔R) a hrany jdoucí dolů nebo po stejné úrovni
+function validateEdges(nodes, root, edges) {
+  const allNodes = [...(nodes || [])];
+  if (root) allNodes.push(root);
+  const nodeById = Object.fromEntries(allNodes.map(n => [n.id, n]));
+
+  return edges.filter(e => {
+    const from = nodeById[e.from];
+    const to   = nodeById[e.to];
+    if (!from || !to) return true;
+
+    // Musí jít nahoru (větší level = vyšší pozice v DU grafu)
+    if ((from.level ?? 0) >= (to.level ?? 0)) {
+      console.log(`[CRT validate] odstraněna hrana ${e.from}(L${from.level})→${e.to}(L${to.level}): nejde nahoru`);
+      return false;
+    }
+
+    const fb = from.branch, tb = to.branch;
+    // Zakázáno: L→R nebo R→L
+    if ((fb === 'L' && tb === 'R') || (fb === 'R' && tb === 'L')) {
+      console.log(`[CRT validate] odstraněna cross-branch hrana: ${e.from}(${fb})→${e.to}(${tb})`);
+      return false;
+    }
+
+    return true;
+  });
 }
 
 // Overlay barev z user_metrics
