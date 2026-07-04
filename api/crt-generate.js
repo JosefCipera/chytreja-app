@@ -423,6 +423,9 @@ function validateEdges(nodes, root, edges) {
       console.log(`[CRT validate] odstraněna hrana ${e.from}(L${from.level})→${e.to}(L${to.level}): nejde nahoru`);
       return false;
     }
+
+    const fb = from.branch, tb = to.branch;
+
     // Level skip uvnitř stejné větve (L→L nebo R→R, jump > 1) = redundantní hrana
     // C→C spine a cross-level junction jsou záměrné, neodstraňovat
     if ((fb === 'L' && tb === 'L') || (fb === 'R' && tb === 'R')) {
@@ -431,8 +434,6 @@ function validateEdges(nodes, root, edges) {
         return false;
       }
     }
-
-    const fb = from.branch, tb = to.branch;
     // Zakázáno: L↔R (přímé křížení větví)
     if ((fb === 'L' && tb === 'R') || (fb === 'R' && tb === 'L')) {
       console.log(`[CRT validate] odstraněna cross-branch hrana: ${e.from}(${fb})→${e.to}(${tb})`);
