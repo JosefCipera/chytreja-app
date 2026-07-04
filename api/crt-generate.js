@@ -387,14 +387,18 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
     }),
   });
 
-  if (!res.ok) throw new Error(`Claude ${res.status}`);
+  if (!res.ok) {
+    const errBody = await res.text().catch(() => '');
+    throw new Error(`Claude ${res.status}: ${errBody.slice(0, 200)}`);
+  }
   const data = await res.json();
   // Fable/Opus s adaptive thinking vrací thinking bloky před textem — hledáme první text blok
   const textBlock = (data.content || []).find(b => b.type === 'text');
   const text = textBlock?.text?.trim() ?? '';
+  console.log(`[CRT] model=${modelCfg.id} content blocks:`, (data.content || []).map(b => `${b.type}(${b.text?.length ?? 0})`).join(', '));
 
   const jsonMatch = text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) throw new Error(`Claude nevrátil JSON. Text: ${text.slice(0, 200)}`);
+  if (!jsonMatch) throw new Error(`Claude nevrátil JSON. Model: ${modelCfg.id}. Text: ${text.slice(0, 300)}`);
   let crt;
   try {
     crt = JSON.parse(jsonMatch[0]);
@@ -499,9 +503,10 @@ function overlayColors(nodes, metrics) {
 }
 
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
-function dataHash(ctx) {
+function dataHash(ctx, modelId) {
   const key = JSON.stringify({
     _v:          26, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
+    model:       modelId || 'claude-fable-5',
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),
     labs:        ctx.profile.labs || {},
@@ -534,7 +539,7 @@ export default async function handler(req, res) {
   try {
     // 1. Načti všechny zdroje dat
     const ctx = userId ? await fetchContext(userId, role) : { metrics: [], profile: {}, checkins: [], nodeInputs: [] };
-    const hash = dataHash(ctx);
+    const hash = dataHash(ctx, modelCfg.id);
     console.log(`[CRT] userId=${userId} role=${role} hash=${hash}`);
 
     // 0. Zkus server-side cache — platná pokud hash sedí
