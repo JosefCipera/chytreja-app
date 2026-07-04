@@ -223,7 +223,7 @@ async function resolveMedications(meds) {
   } catch { return []; }
 }
 
-async function generateCRT({ metrics, profile, checkins, nodeInputs }, role) {
+async function generateCRT({ metrics, profile, checkins, nodeInputs }, role, modelCfg) {
   // Seřaď uzly od nejhoršího — vezmi všechny RED a YELLOW
   const sorted = [...metrics].sort((a, b) => (a.current_index ?? 100) - (b.current_index ?? 100));
   const worstNodes = sorted
@@ -324,8 +324,33 @@ Vrať POUZE validní JSON bez jakéhokoliv doprovodného textu.
   ]
 }
 
-Typy uzlů: "cause" (příčina), "junction" (spojení dvou větví), "ude" (co pacient prožívá — Level 5–6).
-Level 0 = root (golden_box), Level 6 = Ultimate UDE. Rozsah: 10–14 uzlů celkem (včetně root).`;
+### KRITICKÁ PRAVIDLA PRO OBSAH UZLŮ — GOLDRATTOVA CRT:
+
+6. TYPY UZLŮ A CO DO NICH PATŘÍ:
+
+   **CAUSE (Level 0–3)** = systémová příčina nebo metabolický/fyziologický mechanismus.
+   - ✅ "Inzulínová rezistence zpomaluje metabolismus"
+   - ✅ "Ateroskleróza mozkových tepen"
+   - ❌ ZAKÁZÁNO: anamnestická fakta jako "Prodělal mrtvici v roce X" nebo "Diagnostikován s diabetem" — toto je vstupní podmínka, ne příčina v CRT!
+   - Anamnéza (prodělané nemoci, diagnózy) patří do root uzlu nebo jako kontext, NIKDY jako standalone UDE uzel.
+
+   **UDE = Undesirable Effect (Level 4–5)** = stav, který pacient AKTUÁLNĚ prožívá negativně a lze ho pozorovat.
+   - ✅ "Chronická bolest zad omezuje pohyb" (pacient to teď cítí)
+   - ✅ "Nestabilní chůze a třes rukou" (pozorovatelné nyní)
+   - ❌ ZAKÁZÁNO: prognózy a předpoklady jako "na hraně kolapsu", "hrozí pád", "pacient křehne" — to jsou budoucí rizika, ne aktuální UDE!
+   - ❌ ZAKÁZÁNO: past tense jako "prodělal", "byl hospitalizován", "utrpěl" — CRT popisuje SOUČASNOU realitu.
+
+   **ULTIMATE UDE (Level 6, branch C)** = jediný bod sbíhání, smí být prognostický.
+   - ✅ "Hrozí recidiva mrtvice nebo imobilizace" — apex smí popisovat budoucí riziko, protože je to cíl celého stromu.
+
+   **JUNCTION (Level 4–5, branch C)** = sbíhavý uzel kde se L a R větve setkají před apexem.
+
+7. PRAVIDLO KAUZALITY — KAŽDÁ HRANA MUSÍ MÍT LOGIKU "PROTOŽE":
+   - Hrana A→B musí dávat smysl jako: "Protože A, proto B."
+   - Pokud si nedokážeš říct "protože X, proto Y", hrana nepatří do grafu.
+
+Typy uzlů: "cause" (příčina), "junction" (spojení dvou větví), "ude" (aktuálně prožívaný negativní stav — Level 4–5).
+Level 0 = root, Level 6 = Ultimate UDE (apex). Rozsah: 10–14 uzlů celkem (včetně root).`;
 
   const userPrompt = `Sestav CRT strom pro tohoto pacienta:
 
@@ -354,9 +379,9 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'claude-fable-5',
+      model: modelCfg.id,
       max_tokens: 8000,
-      thinking: { type: 'adaptive' },
+      ...(modelCfg.thinking ? { thinking: { type: 'adaptive' } } : {}),
       system: systemPrompt,
       messages: [{ role: 'user', content: userPrompt }],
     }),
@@ -476,7 +501,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx) {
   const key = JSON.stringify({
-    _v:          25, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
+    _v:          26, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),
     labs:        ctx.profile.labs || {},
@@ -491,7 +516,15 @@ function dataHash(ctx) {
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { userId, role = 'longevity', force = false } = req.body || {};
+  const { userId, role = 'longevity', force = false, model: modelParam } = req.body || {};
+
+  // Výběr modelu: fable (default), opus, sonnet5
+  const MODEL_MAP = {
+    opus:    { id: 'claude-opus-4-8',  thinking: true  },
+    sonnet5: { id: 'claude-sonnet-5',  thinking: false },
+    fable:   { id: 'claude-fable-5',   thinking: true  },
+  };
+  const modelCfg = MODEL_MAP[modelParam] || MODEL_MAP.fable;
 
   if (!userId) return res.status(401).json({ error: 'Přihlaste se pro zobrazení mapy.' });
 
@@ -522,7 +555,7 @@ export default async function handler(req, res) {
     console.log(`[CRT] generuji nový strom (data changed) metrics=${ctx.metrics.length} profile=${!!ctx.profile.diagnoses}`);
 
     // 2. Claude vygeneruje strom
-    const crt = await generateCRT(ctx, role);
+    const crt = await generateCRT(ctx, role, modelCfg);
 
     // Post-processing: nahraď odborné/špatné výrazy srozumitelnou češtinou
     const LABEL_FIXES = [
