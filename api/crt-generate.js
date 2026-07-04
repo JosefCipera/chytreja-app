@@ -328,11 +328,17 @@ Vrať POUZE validní JSON bez jakéhokoliv doprovodného textu.
 
 6. TYPY UZLŮ A CO DO NICH PATŘÍ:
 
-   **CAUSE (Level 0–3)** = systémová příčina nebo metabolický/fyziologický mechanismus.
-   - ✅ "Inzulínová rezistence zpomaluje metabolismus"
-   - ✅ "Ateroskleróza mozkových tepen"
-   - ❌ ZAKÁZÁNO: anamnestická fakta jako "Prodělal mrtvici v roce X" nebo "Diagnostikován s diabetem" — toto je vstupní podmínka, ne příčina v CRT!
-   - Anamnéza (prodělané nemoci, diagnózy) patří do root uzlu nebo jako kontext, NIKDY jako standalone UDE uzel.
+   **ROOT (Level 0, branch C, type "cause")** = jediný kořenový systémový bottleneck.
+   - Musí být KONKRÉTNÍ fyziologický/metabolický stav — ne vágní shrnutí!
+   - ✅ "Chronická inzulínová rezistence a hyperglykémie"
+   - ✅ "Metabolický syndrom — viscerální tuk a inzulinová rezistence"
+   - ❌ ZAKÁZÁNO: "Tělo dlouhodobě strádá", "Celkové oslabení organismu", "Komplexní zdravotní stav" — příliš vágní!
+   - Root = jediná nejhlubší systémová příčina ze které vychází celý strom.
+
+   **CAUSE (Level 1–3)** = konkrétní patofyziologický mechanismus odvozený z root.
+   - ✅ "Ateroskleróza mozkových tepen", "Neuropatie periferních nervů"
+   - ❌ ZAKÁZÁNO: anamnestická fakta jako "Prodělal mrtvici v roce X" — toto je vstupní podmínka, ne příčina v CRT!
+   - Anamnéza (prodělané nemoci) patří jako kontext pro výběr root, NIKDY jako standalone uzel.
 
    **UDE = Undesirable Effect (Level 4–5)** = stav, který pacient AKTUÁLNĚ prožívá negativně a lze ho pozorovat.
    - ✅ "Chronická bolest zad omezuje pohyb" (pacient to teď cítí)
@@ -506,7 +512,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx, modelId) {
   const key = JSON.stringify({
-    _v:          26, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
+    _v:          27, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
     model:       modelId || 'claude-fable-5',
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),
@@ -603,11 +609,13 @@ export default async function handler(req, res) {
       has_data:        ctx.metrics.length > 0 || !!ctx.profile.diagnoses,
     };
 
-    // Ulož do server-side cache s hashem vstupních dat
+    // Ulož do server-side cache — upsert (update selžel tiše pokud řádek neexistuje)
     if (userId) {
-      await supabase.from('user_health_profile')
-        .update({ crt_cache: result, crt_cache_hash: hash, crt_cache_at: new Date().toISOString() })
-        .eq('user_id', userId);
+      const { error: cacheErr } = await supabase.from('user_health_profile')
+        .upsert({ user_id: userId, crt_cache: result, crt_cache_hash: hash, crt_cache_at: new Date().toISOString() },
+                { onConflict: 'user_id' });
+      if (cacheErr) console.warn('[CRT] cache save failed:', cacheErr.message);
+      else console.log('[CRT] cache saved, hash=', hash);
     }
 
     res.setHeader('Cache-Control', 'no-store');
