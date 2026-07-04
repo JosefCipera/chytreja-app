@@ -397,8 +397,9 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
   const text = textBlock?.text?.trim() ?? '';
   console.log(`[CRT] model=${modelCfg.id} content blocks:`, (data.content || []).map(b => `${b.type}(${b.text?.length ?? 0})`).join(', '));
 
+  const blocks = (data.content || []).map(b => `${b.type}(${b.text?.length ?? b.thinking?.length ?? '?'})`).join(',');
   const jsonMatch = text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) throw new Error(`Claude nevrátil JSON. Model: ${modelCfg.id}. Text: ${text.slice(0, 300)}`);
+  if (!jsonMatch) throw new Error(`Claude nevrátil JSON. Model: ${modelCfg.id}. Blocks: ${blocks}. Text: ${text.slice(0, 300)}`);
   let crt;
   try {
     crt = JSON.parse(jsonMatch[0]);
