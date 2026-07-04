@@ -561,9 +561,9 @@ export default async function handler(req, res) {
 
   // Výběr modelu: fable (default), opus, sonnet5
   const MODEL_MAP = {
-    opus:    { id: 'claude-opus-4-8',  thinking: true  },
+    opus:    { id: 'claude-opus-4-8',  thinking: false },  // thinking → 504 na Hobby
     sonnet5: { id: 'claude-sonnet-5',  thinking: false },
-    fable:   { id: 'claude-fable-5',   thinking: true  },
+    fable:   { id: 'claude-fable-5',   thinking: true  },  // Fable má 60s limit + effort:low
   };
   const modelCfg = MODEL_MAP[modelParam] || MODEL_MAP.fable;
 
