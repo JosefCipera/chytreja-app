@@ -542,7 +542,7 @@ function overlayColors(nodes, metrics) {
 function dataHash(ctx, modelId) {
   const key = JSON.stringify({
     _v:          27, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
-    model:       modelId || 'claude-fable-5',
+    model:       modelId || 'claude-sonnet-5',
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),
     labs:        ctx.profile.labs || {},
@@ -565,7 +565,7 @@ export default async function handler(req, res) {
     sonnet5: { id: 'claude-sonnet-5',  thinking: false },
     fable:   { id: 'claude-fable-5',   thinking: true  },  // Fable má 60s limit + effort:low
   };
-  const modelCfg = MODEL_MAP[modelParam] || MODEL_MAP.fable;
+  const modelCfg = MODEL_MAP[modelParam] || MODEL_MAP.sonnet5;
 
   if (!userId) return res.status(401).json({ error: 'Přihlaste se pro zobrazení mapy.' });
 
