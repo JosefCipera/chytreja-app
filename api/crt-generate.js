@@ -360,7 +360,7 @@ Level 0 = root, Level 6 = Ultimate UDE (apex). Rozsah: 10–14 uzlů celkem (vč
 
   const userPrompt = `Sestav CRT strom pro tohoto pacienta:
 
-PACIENT: ${profile.birth_year ? (new Date().getFullYear() - profile.birth_year) + 'letý ' : ''}muž
+PACIENT: ${profile.birth_year ? (new Date().getFullYear() - profile.birth_year) + 'let' + (profile.sex === 'F' ? 'á' : profile.sex === 'M' ? 'ý' : '') + ' ' : ''}${profile.sex === 'F' ? 'žena' : profile.sex === 'M' ? 'muž' : 'pacient'}
 DIAGNÓZY: ${diagText}
 LÉKY: ${medsText}
 LABS: ${labsText}${sympText !== 'neuvedeno' ? '\nSYMPTOMY: ' + sympText : ''}${doctorText}
@@ -440,6 +440,9 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
   // Post-processing: odstraň hrany porušující topologická pravidla
   crt.edges = validateEdges(crt.nodes, crt.root, crt.edges || []);
 
+  // Připoj orphan apex uzly k hlavnímu apexu (validateEdges mohl odebrat jejich hranu)
+  crt.edges = connectOrphans(crt.nodes, crt.root, crt.edges);
+
   return crt;
 }
 
@@ -484,6 +487,32 @@ function validateEdges(nodes, root, edges) {
 
     return true;
   });
+}
+
+// Připoj uzly bez výstupní hrany (orphan apex) k hlavnímu apexu stromu
+function connectOrphans(nodes, root, edges) {
+  const allNodes = [...(nodes || [])];
+  if (root) allNodes.push(root);
+
+  // Hlavní apex = uzel s nejvyšším levelem (branch C, nebo max level celkově)
+  const mainApex = allNodes.reduce((best, n) =>
+    (n.level ?? 0) > (best?.level ?? -1) ? n : best, null);
+  if (!mainApex) return edges;
+
+  const hasSources = new Set(edges.map(e => e.from));
+  const result = [...edges];
+
+  allNodes.forEach(n => {
+    if (n.id === mainApex.id) return;
+    if (n.id === root?.id) return;
+    if (!hasSources.has(n.id)) {
+      // Orphan — nemá výstupní hranu, připoj k apexu
+      console.log(`[CRT] orphan apex připojen: ${n.id} → ${mainApex.id}`);
+      result.push({ from: n.id, to: mainApex.id });
+    }
+  });
+
+  return result;
 }
 
 // Overlay barev z user_metrics
