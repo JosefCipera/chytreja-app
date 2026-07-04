@@ -381,7 +381,7 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
     body: JSON.stringify({
       model: modelCfg.id,
       max_tokens: modelCfg.thinking ? 16000 : 4000,
-      ...(modelCfg.thinking ? { thinking: { type: 'adaptive' } } : {}),
+      ...(modelCfg.thinking ? { thinking: { type: 'adaptive' }, output_config: { effort: 'low' } } : {}),
       system: systemPrompt,
       messages: [{ role: 'user', content: userPrompt }],
     }),
