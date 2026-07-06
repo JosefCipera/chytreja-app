@@ -301,8 +301,8 @@ Parametry \`level\` (0 až 6) a \`branch\` (L/R/C) určují absolutní polohu uz
    - POVOLENO: root (L0, C) → uzel L nebo R větve.
    - POVOLENO: L nebo R větev → junction C s levelem 5 nebo 6 (vrchol stromu).
    - ZAKÁZÁNO: hrana z L uzlu do R uzlu nebo naopak kdekoliv ve stromě.
-   - ZAKÁZÁNO: L nebo R uzel → C junction uzel na levelu 1–4 (způsobí vizuální křížení uprostřed stromu).
-   - PRAVIDLO: větve L a R musí zůstat čisté až do levelu 4 nebo 5. Teprve NA VRCHOLU (level 5–6) se větve smí slétat do C junction.
+   - ZAKÁZÁNO: L nebo R uzel → C junction uzel na levelu 1–3 (způsobí vizuální křížení uprostřed stromu).
+   - PRAVIDLO: větve L a R musí zůstat čisté až do levelu 4. Teprve NA VRCHOLU (level 4–6) se větve smí slétat do C junction.
    - PROČ: renderovací engine kreslí hrany jako přímé čáry. L→C na nízké úrovni vizuálně kříží R větev a znehodnocuje mapu.
 
 ### FORMÁT VÝSTUPU:
@@ -487,8 +487,8 @@ function validateEdges(nodes, root, edges) {
       console.log(`[CRT validate] odstraněna center→branch hrana: ${e.from}(C,L${from.level})→${e.to}(${tb})`);
       return false;
     }
-    // Zakázáno: L nebo R → C junction na levelu < 5 (vizuálně kříží opačnou větev uprostřed stromu)
-    if ((fb === 'L' || fb === 'R') && tb === 'C' && (to.level ?? 0) < 5) {
+    // Zakázáno: L nebo R → C junction na levelu < 4 (vizuálně kříží opačnou větev uprostřed stromu)
+    if ((fb === 'L' || fb === 'R') && tb === 'C' && (to.level ?? 0) < 4) {
       console.log(`[CRT validate] odstraněna low-level ${fb}→C hrana: ${e.from}(L${from.level})→${e.to}(C,L${to.level})`);
       return false;
     }

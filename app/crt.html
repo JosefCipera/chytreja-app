@@ -1186,10 +1186,11 @@ function _applyMedsState() {
   const btn = document.getElementById('crtMedBtn');
 
   if (_medsVisible) {
-    // Přidej pill nody do grafu (jen jednou)
+    // Přidej pill nody do grafu (jen jednou), pak zaostři na celý graf
     if (!_pillsAdded && _visNetwork && window._crtData) {
       addMedPills(window._crtData);
       _pillsAdded = true;
+      setTimeout(() => _visNetwork?.fit({ animation: false }), 50);
     }
   } else {
     // Odeber všechny pill nody z grafu
