@@ -1528,6 +1528,8 @@ async function boot() {
     document.getElementById('crtViewPill').style.display  = _isOpusBoot ? 'none' : '';
     document.getElementById('crtExportBtn').style.display = '';
     document.getElementById('crtPrintBtn').style.display  = '';
+    const hasMeds = (window._crtData?.medications_map || []).length > 0;
+    document.getElementById('crtMedBtn').style.display = hasMeds ? '' : 'none';
     // Nastav aktivní stav pillu
     document.getElementById('crtPillFull').classList.toggle('active', !_topNMode);
     document.getElementById('crtPillTopN').classList.toggle('active',  _topNMode);

@@ -387,7 +387,7 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
     body: JSON.stringify({
       model: modelCfg.id,
       max_tokens: modelCfg.maxTokens,
-      ...(modelCfg.thinking ? { thinking: { type: 'adaptive', display: 'summarized' }, output_config: { effort: 'low' } } : {}),
+      ...(modelCfg.thinking ? { thinking: { type: 'adaptive' }, output_config: { effort: 'low' } } : {}),
       system: systemPrompt,
       messages: [{ role: 'user', content: userPrompt }],
     }),
@@ -564,7 +564,7 @@ export default async function handler(req, res) {
   const MODEL_MAP = {
     opus:    { id: 'claude-opus-4-8',  thinking: false, maxTokens: 8000 },
     sonnet5: { id: 'claude-sonnet-5',  thinking: true,  maxTokens: 16000 },
-    fable:   { id: 'claude-fable-5',   thinking: true,  maxTokens: 32000 },
+    fable:   { id: 'claude-fable-5',   thinking: false, maxTokens: 32000 },
   };
   const modelCfg = MODEL_MAP[modelParam] || MODEL_MAP.fable;
 
