@@ -1243,7 +1243,7 @@ function _buildMedDrawer() {
         const radius = ph / 2;
 
         // Pill background
-        ctx.fillStyle = 'rgba(8,18,28,0.88)';
+        ctx.fillStyle = 'rgba(225,242,255,0.96)';
         ctx.beginPath();
         ctx.moveTo(rx + radius, ry);
         ctx.lineTo(rx + pw - radius, ry);
@@ -1351,6 +1351,7 @@ window.printCRT = function() {
     };
   });
   dataset.update(printUpdates);
+  _visNetwork.redraw(); // zajistí světlé uzly před screenshotem
 
   // 2. Roztáhni canvas na A4 landscape rozměry → fit → screenshot
   container.style.width  = PRINT_W + 'px';
@@ -1358,6 +1359,9 @@ window.printCRT = function() {
   _visNetwork.setSize(PRINT_W + 'px', PRINT_H + 'px');
   _visNetwork.redraw();
   _visNetwork.fit({ animation: false });
+
+  // Druhý fit po krátkém delay — mobil potřebuje čas na reflow canvas
+  setTimeout(() => { _visNetwork.fit({ animation: false }); }, 300);
 
   setTimeout(() => {
     const src = document.querySelector('#crt-network canvas');
@@ -1396,7 +1400,7 @@ window.printCRT = function() {
       window.print();
       document.body.classList.remove('crt-printing');
     }, 150);
-  }, 600);
+  }, 1200);
 };
 
 // ── Top-N: zobraz jen uzly na nejkratší cestě ROOT→každý killer ──────────────
