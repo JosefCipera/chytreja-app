@@ -825,7 +825,7 @@ function addMedPills(data) {
   });
 
   // OFFSET_X: pills těsně napravo od nodu (node šířka ~240 canvas jednotek + 16px mezera)
-  const OFFSET_X  = IS_MOBILE ? 170 : 200;
+  const OFFSET_X  = IS_MOBILE ? 130 : 150;
   // Stack jde NAHORU (menší Y = výš vizuálně v DU layoutu kde root má největší Y)
   const SPACING_Y = IS_MOBILE ? 40 : 48;
 
@@ -1190,7 +1190,6 @@ function _applyMedsState() {
     if (!_pillsAdded && _visNetwork && window._crtData) {
       addMedPills(window._crtData);
       _pillsAdded = true;
-      setTimeout(() => _visNetwork?.fit({ animation: false }), 50);
     }
   } else {
     // Odeber všechny pill nody z grafu
