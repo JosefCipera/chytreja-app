@@ -158,6 +158,49 @@
     .crt-med-hidden { display: none; }
     #crtMedBtn.active { opacity: 1; border-color: #4a9aee; color: #4a9aee; }
 
+    /* ── Medications overlay panel ── */
+    #crtMedsPanel {
+      position: fixed;
+      top: 70px; right: 0;
+      width: 300px;
+      max-height: calc(100dvh - 80px);
+      overflow-y: auto;
+      background: #0d1b2a;
+      border-left: 1px solid #1e2d3d;
+      padding: 14px 16px;
+      transform: translateX(100%);
+      transition: transform .25s cubic-bezier(.4,0,.2,1);
+      z-index: 30;
+    }
+    #crtMedsPanel.open { transform: translateX(0); }
+    .crt-med-item {
+      margin-bottom: 10px; padding: 9px 11px;
+      background: #111d2a; border-radius: 7px;
+      border-left: 3px solid #4a6a8a;
+    }
+    .crt-med-name { font-size: 13px; color: #c8d8e8; font-weight: 500; }
+    .crt-med-effect { font-size: 11px; color: #5a7a8a; margin-top: 3px; }
+    .crt-med-type { font-size: 10px; text-transform: uppercase; letter-spacing: .08em; margin-top: 5px; }
+
+    /* ── Print ── */
+    #crtPrintContent {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    @media print {
+      body > * { display: none !important; }
+      #crtPrintContent {
+        display: flex !important;
+        position: fixed; inset: 0;
+        background: #fff;
+        padding: 6mm;
+      }
+      #crtPrintContent img { width: 100%; height: auto; max-height: 92vh; object-fit: contain; }
+      #crtPrintFooter { margin-top: 4mm; font-size: 9px; color: #888; font-family: sans-serif; }
+    }
+
     /* ── Node detail panel ─────────────────────────────────────── */
     /* ── HUD-style node panel ─────────────────────────── */
     #crtNodePanel {
@@ -295,6 +338,13 @@
 <div id="crtNodePanel">
   <div class="cnp-mini" id="cnpMini"></div>
   <div class="cnp-data" id="cnpData"></div>
+</div>
+
+<div id="crtMedsPanel"></div>
+
+<div id="crtPrintContent">
+  <img id="crtPrintImg" src="" alt="">
+  <div id="crtPrintFooter"></div>
 </div>
 
 <script type="module">
@@ -1146,10 +1196,37 @@ window.toggleMeds = function() {
 };
 
 function _applyMedsState() {
-  const btn = document.getElementById('crtMedBtn');
-  const els = document.querySelectorAll('.crt-med-el');
-  els.forEach(el => el.classList.toggle('crt-med-hidden', !_medsVisible));
-  if (btn) btn.style.opacity = _medsVisible ? '1' : '0.5';
+  const btn   = document.getElementById('crtMedBtn');
+  const panel = document.getElementById('crtMedsPanel');
+
+  // Fable/Opus generated mode — show overlay panel
+  const medsMap = (window._crtData?.medications_map || []);
+  if (medsMap.length && panel) {
+    panel.classList.toggle('open', _medsVisible);
+    if (_medsVisible) _renderMedsPanel(medsMap);
+  }
+
+  // Opus KB mode — toggle pill icons on graph
+  document.querySelectorAll('.crt-med-el')
+    .forEach(el => el.classList.toggle('crt-med-hidden', !_medsVisible));
+
+  if (btn) btn.classList.toggle('active', _medsVisible);
+}
+
+function _renderMedsPanel(medsMap) {
+  const panel = document.getElementById('crtMedsPanel');
+  if (!panel) return;
+  const typeColor = { treatment: '#4ab8d0', protects: '#22c55e', warning: '#f59e0b' };
+  const typeLabel = { treatment: 'léčba', protects: 'ochrana', warning: 'interakce' };
+  panel.innerHTML = `
+    <div style="font-size:10px;letter-spacing:.1em;color:#3a5878;text-transform:uppercase;margin-bottom:10px">Léková ochrana</div>
+    ${medsMap.map(m => `
+      <div class="crt-med-item" style="border-left-color:${typeColor[m.type]||'#4a6a8a'}">
+        <div class="crt-med-name">${m.name || ''}</div>
+        ${m.effect ? `<div class="crt-med-effect">${m.effect}</div>` : ''}
+        <div class="crt-med-type" style="color:${typeColor[m.type]||'#4a6a8a'}">${typeLabel[m.type]||m.type||''}</div>
+      </div>`).join('')}
+  `;
 }
 
 // ── Boot ─────────────────────────────────────────────────────────────────────
@@ -1205,38 +1282,58 @@ window.exportCRTImage = function() {
   }, 'image/png');
 };
 
-// Tisk mapy — vis.js fit → bílé pozadí → PNG → nový tab
+// Tisk mapy — světlé uzly → PNG → @media print overlay (zůstane na stejné stránce)
 window.printCRT = function() {
   if (!_visNetwork) return;
+
+  // 1. Ulož původní barvy uzlů a přebarvit na světlé
+  const dataset = _visNetwork.body.data.nodes;
+  const origColors = {};
+  dataset.forEach(n => { origColors[n.id] = { color: n.color, font: n.font }; });
+
+  const printUpdates = dataset.get().map(n => {
+    const border = n.color?.border || '#4a7a9a';
+    const isRoot = border === '#c09a22';
+    const isApex = border === '#4ab8d0';
+    const bg = isRoot ? '#fffbee' : isApex ? '#eaf8ff' : '#f0f5fa';
+    return {
+      id: n.id,
+      color: { background: bg, border, highlight: { background: bg, border }, hover: { background: bg, border } },
+      font:  { color: '#1a2d40', size: n.font?.size || 22, face: n.font?.face || 'Inter, system-ui' },
+    };
+  });
+  dataset.update(printUpdates);
   _visNetwork.fit({ animation: false });
+
   setTimeout(() => {
     const src = document.querySelector('#crt-network canvas');
-    if (!src) return;
+    if (!src) { dataset.update(Object.entries(origColors).map(([id, c]) => ({ id, ...c }))); return; }
+
+    // 2. Zachyť canvas
     const out = document.createElement('canvas');
-    out.width  = src.width;
-    out.height = src.height;
+    out.width = src.width; out.height = src.height;
     const ctx2 = out.getContext('2d');
     ctx2.fillStyle = '#ffffff';
     ctx2.fillRect(0, 0, out.width, out.height);
     ctx2.drawImage(src, 0, 0);
     const dataURL = out.toDataURL('image/png');
-    const pw = window.open('', '_blank');
-    if (!pw) return;
-    pw.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
-<title>Kauzální mapa zdraví</title>
-<style>
-@page{size:A4 landscape;margin:6mm;}
-*{box-sizing:border-box;margin:0;padding:0;}
-body{background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;width:100vw;height:100vh;}
-img{width:100%;height:auto;max-height:90vh;object-fit:contain;}
-footer{margin-top:3mm;font-size:9px;color:#999;font-family:sans-serif;}
-</style></head><body>
-<img src="${dataURL}">
-<footer>Kauzální mapa zdraví · CHJ · ${new Date().toLocaleDateString('cs-CZ')}</footer>
-<script>window.onload=function(){window.print();window.onafterprint=function(){window.close();};};<\/script>
-</body></html>`);
-    pw.document.close();
-  }, 300);
+
+    // 3. Obnov původní barvy
+    dataset.update(Object.entries(origColors).map(([id, c]) => ({ id, ...c })));
+
+    // 4. Zobraz overlay a tiskni (zůstaneme na stejné stránce)
+    const overlay  = document.getElementById('crtPrintContent');
+    const img      = document.getElementById('crtPrintImg');
+    const footer   = document.getElementById('crtPrintFooter');
+    if (!overlay || !img) return;
+    img.src = dataURL;
+    if (footer) footer.textContent = `Kauzální mapa zdraví · CHJ · ${new Date().toLocaleDateString('cs-CZ')}`;
+    overlay.style.display = 'flex';
+    setTimeout(() => {
+      window.print();
+      overlay.style.display = 'none';
+    }, 150);
+  }, 500);
 };
 
 // ── Top-N: zobraz jen uzly na nejkratší cestě ROOT→každý killer ──────────────
