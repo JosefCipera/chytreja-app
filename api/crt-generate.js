@@ -595,14 +595,14 @@ export default async function handler(req, res) {
 
   const { userId, role = 'longevity', force = false, model: modelParam } = req.body || {};
 
-  // Výběr modelu: sonnet5 default, opus, fable
-  // Fable: effort null = default high (effort:low způsoboval malformed JSON — trailing commas, unescaped chars)
+  // Výběr modelu: sonnet5 default (nejlepší výsledek), fable/opus jako alternativy přes ?model=
+  // Fable s effort:null (high) spotřebovával příliš tokenů na thinking → prázdný JSON výstup
   const MODEL_MAP = {
     opus:    { id: 'claude-opus-4-8',  thinking: false, effort: null,  maxTokens: 8000 },
-    sonnet5: { id: 'claude-sonnet-5',  thinking: true,  effort: 'low', maxTokens: 16000 },
-    fable:   { id: 'claude-fable-5',   thinking: false, effort: null,  maxTokens: 64000 },
+    sonnet5: { id: 'claude-sonnet-5',  thinking: true,  effort: 'low', maxTokens: 32000 },
+    fable:   { id: 'claude-fable-5',   thinking: false, effort: 'low', maxTokens: 64000 },
   };
-  const modelCfg = MODEL_MAP[modelParam] || MODEL_MAP.fable;
+  const modelCfg = MODEL_MAP[modelParam] || MODEL_MAP.sonnet5;
 
   if (!userId) return res.status(401).json({ error: 'Přihlaste se pro zobrazení mapy.' });
 
