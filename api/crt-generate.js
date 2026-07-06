@@ -444,13 +444,28 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
 
   // medications_map: {medication, target_node_id, type, label} → {name, targets[], effect, type, reason}
   if (Array.isArray(crt.medications_map)) {
-    crt.medications_map = crt.medications_map.map(m => ({
-      name:    m.medication || m.name || '',
-      targets: m.target_node_id ? [m.target_node_id] : (m.targets || []),
-      effect:  m.label || m.effect || '',
-      type:    m.type || 'treatment',
-      reason:  m.label || m.reason || '',
-    }));
+    const allNodeIds = new Set([
+      ...(crt.nodes || []).map(n => n.id),
+      ...(crt.root ? [typeof crt.root === 'string' ? crt.root : crt.root.id] : []),
+    ]);
+    const rootId = typeof crt.root === 'string' ? crt.root : crt.root?.id;
+
+    crt.medications_map = crt.medications_map.map(m => {
+      const rawTargets = m.target_node_id ? [m.target_node_id] : (m.targets || []);
+      // Pokud AI vygenerovala target_node_id které neexistuje v grafu → fallback na root
+      const validTargets = rawTargets.filter(t => allNodeIds.has(t));
+      const targets = validTargets.length > 0 ? validTargets : (rootId ? [rootId] : rawTargets);
+      if (validTargets.length !== rawTargets.length) {
+        console.log(`[CRT] med "${m.medication || m.name}" target ${rawTargets} → fallback na ${targets}`);
+      }
+      return {
+        name:    m.medication || m.name || '',
+        targets,
+        effect:  m.label || m.effect || '',
+        type:    m.type || 'treatment',
+        reason:  m.label || m.reason || '',
+      };
+    });
   }
 
   // Post-processing: odstraň hrany porušující topologická pravidla
