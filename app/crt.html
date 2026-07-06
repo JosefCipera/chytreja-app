@@ -189,16 +189,17 @@
       align-items: center;
       justify-content: center;
     }
+    @page { size: A4 landscape; margin: 8mm; }
     @media print {
       body > * { display: none !important; }
       #crtPrintContent {
         display: flex !important;
         position: fixed; inset: 0;
         background: #fff;
-        padding: 6mm;
+        padding: 0;
       }
-      #crtPrintContent img { width: 100%; height: auto; max-height: 92vh; object-fit: contain; }
-      #crtPrintFooter { margin-top: 4mm; font-size: 9px; color: #888; font-family: sans-serif; }
+      #crtPrintContent img { width: 100%; height: auto; object-fit: contain; }
+      #crtPrintFooter { position: fixed; bottom: 4mm; right: 8mm; font-size: 9px; color: #888; font-family: sans-serif; }
     }
 
     /* ── Node detail panel ─────────────────────────────────────── */
@@ -1309,13 +1310,14 @@ window.printCRT = function() {
     const src = document.querySelector('#crt-network canvas');
     if (!src) { dataset.update(Object.entries(origColors).map(([id, c]) => ({ id, ...c }))); return; }
 
-    // 2. Zachyť canvas
+    // 2. Zachyť canvas — 2× scale pro ostrý tisk
+    const SCALE = 2;
     const out = document.createElement('canvas');
-    out.width = src.width; out.height = src.height;
+    out.width = src.width * SCALE; out.height = src.height * SCALE;
     const ctx2 = out.getContext('2d');
     ctx2.fillStyle = '#ffffff';
     ctx2.fillRect(0, 0, out.width, out.height);
-    ctx2.drawImage(src, 0, 0);
+    ctx2.drawImage(src, 0, 0, out.width, out.height);
     const dataURL = out.toDataURL('image/png');
 
     // 3. Obnov původní barvy
