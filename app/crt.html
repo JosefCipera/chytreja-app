@@ -1207,7 +1207,7 @@ function _applyMedsState() {
   if (btn) btn.classList.toggle('active', _medsVisible);
 }
 
-function _buildMedDrawer() {
+function _buildMedDrawer(forPrint = false) {
   const medsMap = window._crtData?.medications_map || [];
   const typeColor = { treatment: '#f59e0b', protects: '#4ade80', warning: '#fbbf24' };
   const OFFSET_X  = 140; // canvas jednotky vlevo od okraje uzlu (~node šířka/2 + mezera)
@@ -1242,8 +1242,8 @@ function _buildMedDrawer() {
         const ry     = pos.y - (meds.length - 1) * SPACING_Y / 2 + i * SPACING_Y - ph / 2;
         const radius = ph / 2;
 
-        // Pill background — světlé jako uzly v tisku
-        ctx.fillStyle = 'rgba(225,242,255,0.96)';
+        // Pill background: tmavé v normálním pohledu, světlé při tisku
+        ctx.fillStyle = forPrint ? 'rgba(225,242,255,0.96)' : 'rgba(26,45,64,0.97)';
         ctx.beginPath();
         ctx.moveTo(rx + radius, ry);
         ctx.lineTo(rx + pw - radius, ry);
@@ -1354,6 +1354,13 @@ window.printCRT = function() {
   });
   dataset.update(printUpdates);
 
+  // Přepni pill drawer na světlý (tiskový) variant
+  if (_medDrawFn && _pillsAdded) {
+    _visNetwork.off('afterDrawing', _medDrawFn);
+    _medDrawFn = _buildMedDrawer(true);
+    _visNetwork.on('afterDrawing', _medDrawFn);
+  }
+
   // Desktop: skryj container přes opacity aby resize nevytvářel vizuální flicker
   if (!IS_MOBILE) container.style.opacity = '0';
 
@@ -1371,6 +1378,12 @@ window.printCRT = function() {
 
     const restore = () => {
       dataset.update(Object.entries(origColors).map(([id, c]) => ({ id, ...c })));
+      // Obnov tmavý pill drawer
+      if (_pillsAdded) {
+        if (_medDrawFn) _visNetwork.off('afterDrawing', _medDrawFn);
+        _medDrawFn = _buildMedDrawer(false);
+        _visNetwork.on('afterDrawing', _medDrawFn);
+      }
       container.style.width   = origW;
       container.style.height  = origH;
       container.style.opacity = '';
