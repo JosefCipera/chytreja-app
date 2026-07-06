@@ -1182,19 +1182,20 @@ window.toggleMeds = function() {
   _applyMedsState();
 };
 
+let _medDrawFn = null;
+
 function _applyMedsState() {
   const btn = document.getElementById('crtMedBtn');
 
   if (_visNetwork && window._crtData) {
-    const dataset = _visNetwork.body.data.nodes;
-
     if (_medsVisible && !_pillsAdded) {
-      _addMedLabels(dataset);
+      _medDrawFn = _buildMedDrawer();
+      _visNetwork.on('afterDrawing', _medDrawFn);
+      _visNetwork.redraw();
       _pillsAdded = true;
     } else if (!_medsVisible && _pillsAdded) {
-      // Odeber pill nody
-      const pillIds = dataset.get().filter(n => String(n.id).startsWith('_pill_')).map(n => n.id);
-      if (pillIds.length) dataset.remove(pillIds);
+      if (_medDrawFn) { _visNetwork.off('afterDrawing', _medDrawFn); _medDrawFn = null; }
+      _visNetwork.redraw();
       _pillsAdded = false;
     }
   }
@@ -1206,14 +1207,12 @@ function _applyMedsState() {
   if (btn) btn.classList.toggle('active', _medsVisible);
 }
 
-function _addMedLabels(dataset) {
+function _buildMedDrawer() {
   const medsMap = window._crtData?.medications_map || [];
-  if (!medsMap.length || !_visNetwork) return;
-
-  const positions = _visNetwork.getPositions();
-  const typeColor = { treatment: { bg: '#1a0d00', border: '#d97706', font: '#f59e0b' },
-                      protects:  { bg: '#071a0a', border: '#16a34a', font: '#4ade80' },
-                      warning:   { bg: '#1a1000', border: '#ca8a04', font: '#fbbf24' } };
+  const typeColor = { treatment: '#f59e0b', protects: '#4ade80', warning: '#fbbf24' };
+  const OFFSET_X  = 140; // canvas jednotky vlevo od okraje uzlu (~node šířka/2 + mezera)
+  const SPACING_Y = 28;
+  const FONT_SIZE = IS_MOBILE ? 13 : 16;
 
   // Seskup léky podle target nodu
   const byNode = {};
@@ -1221,35 +1220,53 @@ function _addMedLabels(dataset) {
     (m.targets || []).forEach(tid => { (byNode[tid] = byNode[tid] || []).push(m); });
   });
 
-  const OFFSET_X = IS_MOBILE ? -130 : -155;  // VLEVO od uzlu
-  const SPACING_Y = IS_MOBILE ? 38 : 44;
+  return function drawMeds(ctx) {
+    if (!_visNetwork) return;
+    const positions = _visNetwork.getPositions();
 
-  const pillNodes = [];
-  Object.entries(byNode).forEach(([targetId, meds]) => {
-    const pos = positions[targetId];
-    if (!pos) return;
-    meds.forEach((m, i) => {
-      const c = typeColor[m.type] || typeColor.treatment;
-      pillNodes.push({
-        id: `_pill_${targetId}_${i}`,
-        label: m.name,
-        title: m.effect || '',
-        x: pos.x + OFFSET_X,
-        y: pos.y - i * SPACING_Y,
-        fixed: { x: true, y: true },
-        shape: 'box',
-        color: { background: c.bg, border: c.border,
-                 highlight: { background: c.bg, border: c.border },
-                 hover:     { background: c.bg, border: c.border } },
-        font: { color: c.font, size: IS_MOBILE ? 12 : 15, face: 'Inter, system-ui, sans-serif', bold: true },
-        borderWidth: 1.5,
-        shapeProperties: { borderRadius: 20 },
-        margin: { top: 5, right: 12, bottom: 5, left: 12 },
+    ctx.save();
+    ctx.font = `bold ${FONT_SIZE}px Inter, system-ui, sans-serif`;
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+
+    Object.entries(byNode).forEach(([nodeId, meds]) => {
+      const pos = positions[nodeId];
+      if (!pos) return;
+      meds.forEach((m, i) => {
+        const color  = typeColor[m.type] || typeColor.treatment;
+        const text   = m.name;
+        const tw     = ctx.measureText(text).width;
+        const ph     = FONT_SIZE + 10;
+        const pw     = tw + 20;
+        const rx     = pos.x - OFFSET_X - pw; // levý kraj pilulky
+        const ry     = pos.y - (meds.length - 1) * SPACING_Y / 2 + i * SPACING_Y - ph / 2;
+        const radius = ph / 2;
+
+        // Pill background
+        ctx.fillStyle = 'rgba(8,18,28,0.88)';
+        ctx.beginPath();
+        ctx.moveTo(rx + radius, ry);
+        ctx.lineTo(rx + pw - radius, ry);
+        ctx.quadraticCurveTo(rx + pw, ry, rx + pw, ry + radius);
+        ctx.lineTo(rx + pw, ry + ph - radius);
+        ctx.quadraticCurveTo(rx + pw, ry + ph, rx + pw - radius, ry + ph);
+        ctx.lineTo(rx + radius, ry + ph);
+        ctx.quadraticCurveTo(rx, ry + ph, rx, ry + ph - radius);
+        ctx.lineTo(rx, ry + radius);
+        ctx.quadraticCurveTo(rx, ry, rx + radius, ry);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        // Text
+        ctx.fillStyle = color;
+        ctx.fillText(text, pos.x - OFFSET_X - 5, pos.y - (meds.length - 1) * SPACING_Y / 2 + i * SPACING_Y);
       });
     });
-  });
-
-  if (pillNodes.length) dataset.add(pillNodes);
+    ctx.restore();
+  };
 }
 
 // ── Boot ─────────────────────────────────────────────────────────────────────
