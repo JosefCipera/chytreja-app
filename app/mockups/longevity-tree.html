@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CHJ — Dlouhověkost Universe · Strom uzlů</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: #050810;
+  color: #a7c7df;
+  font-family: 'Courier New', monospace;
+  overflow-x: auto;
+}
+#header {
+  padding: 20px 32px 12px;
+  border-bottom: 1px solid #1a2d40;
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+}
+#header h1 {
+  font-size: 14px;
+  font-weight: normal;
+  color: #4ab8d0;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+#header .sub {
+  font-size: 11px;
+  color: #2a4058;
+}
+#legend {
+  padding: 10px 32px;
+  display: flex;
+  gap: 20px;
+  font-size: 11px;
+  border-bottom: 1px solid #0d1b2a;
+}
+.legend-item { display: flex; align-items: center; gap: 6px; }
+.legend-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  border: 2px solid transparent;
+}
+#svg-wrap {
+  padding: 16px 0 32px;
+  overflow-x: auto;
+}
+svg text { font-family: 'Courier New', monospace; }
+</style>
+</head>
+<body>
+
+<div id="header">
+  <h1>🧬 Dlouhověkost Universe</h1>
+  <span class="sub">mockup · strom uzlů · v0.3</span>
+</div>
+<div id="legend">
+  <div class="legend-item"><div class="legend-dot" style="border-color:#22c55e;background:#0a1f12"></div><span style="color:#22c55e">GREEN</span></div>
+  <div class="legend-item"><div class="legend-dot" style="border-color:#f59e0b;background:#1f1500"></div><span style="color:#f59e0b">YELLOW</span></div>
+  <div class="legend-item"><div class="legend-dot" style="border-color:#ef4444;background:#1f0808"></div><span style="color:#ef4444">RED</span></div>
+  <div class="legend-item"><div class="legend-dot" style="border-color:#4a5568;background:#0d1b2a"></div><span style="color:#4a5568">GRAY</span></div>
+  <div class="legend-item"><div class="legend-dot" style="border-color:#2563eb;background:#0a1230"></div><span style="color:#4ab8d0">ROOT</span></div>
+</div>
+
+<div id="svg-wrap">
+<svg id="tree" xmlns="http://www.w3.org/2000/svg"></svg>
+</div>
+
+<script>
+const STATUS = {
+  green:  { stroke: '#22c55e', fill: '#0a1f12', text: '#22c55e' },
+  yellow: { stroke: '#f59e0b', fill: '#1f1500', text: '#f59e0b' },
+  red:    { stroke: '#ef4444', fill: '#1f0808', text: '#ef4444' },
+  blue:   { stroke: '#2563eb', fill: '#0a1230', text: '#4ab8d0' },
+  gray:   { stroke: '#4a5568', fill: '#0d1b2a', text: '#4a5568' },
+};
+
+const TREE = {
+  id: 'dlouhovekost', label: 'Dlouhověkost', icon: '🧬', status: 'blue',
+  children: [
+    {
+      id: 'zdravi', label: 'Zdraví', icon: '⚕️', status: 'yellow',
+      children: [
+        { id: 'metabolicke', label: 'Metabolické zdraví', icon: '🟩', status: 'yellow' },
+        { id: 'imunitni',    label: 'Imunitní rovnováha', icon: '🛡️', status: 'green' },
+        { id: 'nervovy',     label: 'Nervový systém',     icon: '🧠', status: 'green' },
+        { id: 'spanek',      label: 'Spánek',             icon: '🌙', status: 'yellow' },
+        {
+          id: 'biomarkery', label: 'Biomarkery', icon: '📊', status: 'red',
+          children: [
+            { id: 'glukoza',          label: 'S_Glukóza · 5.3',    icon: '🩸', status: 'green' },
+            { id: 'bilirubin',        label: 'S_Bilirubin · 30.7', icon: '🧪', status: 'yellow' },
+            { id: 'leukocyty',        label: 'B_Leukocyty · 14.1', icon: '🧬', status: 'red' },
+            { id: 'erytrocyty',       label: 'U_Erytrocyty · 16',  icon: '🩸', status: 'red' },
+            { id: 'souhrn',           label: 'Souhrn',             icon: '📘', status: 'red' },
+          ]
+        },
+        { id: 'obnova', label: 'Obnova', icon: '🔄', status: 'green' },
+      ]
+    },
+    {
+      id: 'telo', label: 'Tělo', icon: '💪', status: 'green',
+      children: [
+        { id: 'sila',       label: 'Síla',         icon: '🏋️', status: 'green' },
+        { id: 'vytrvalost', label: 'Výdrž',         icon: '🏃', status: 'green' },
+        { id: 'mobilita',   label: 'Mobilita',      icon: '🤸', status: 'yellow' },
+        { id: 'stabilita',  label: 'Stabilita',     icon: '🧍', status: 'green' },
+        { id: 'rovnovaha',  label: 'Rovnováha',     icon: '⚖️', status: 'green' },
+        { id: 'kardio',     label: 'Kardio a oběh', icon: '❤️', status: 'yellow' },
+        { id: 'plyometrie', label: 'Plyometrie',    icon: '⚡', status: 'green' },
+        {
+          id: 'dychani', label: 'Dýchání', icon: '🌬️', status: 'green',
+          children: [
+            { id: 'nosni',    label: 'Nosní dýchání',   icon: '👃', status: 'green' },
+            { id: 'koherence',label: 'Dech. koherence', icon: '〰️', status: 'green' },
+            { id: 'butejko',  label: 'Buteyko',         icon: '🫁', status: 'green' },
+          ]
+        },
+      ]
+    },
+    {
+      id: 'mysl', label: 'Mysl', icon: '🧘', status: 'green',
+      children: [
+        { id: 'stres',       label: 'Stres',       icon: '⚡', status: 'yellow' },
+        { id: 'smysl',       label: 'Smysl',       icon: '🎯', status: 'green' },
+        { id: 'soustredeni', label: 'Soustředění', icon: '🔬', status: 'green' },
+        { id: 'vdecnost',    label: 'Vděčnost',    icon: '💜', status: 'green' },
+        { id: 'meditace',    label: 'Meditace',    icon: '🧘', status: 'green' },
+        { id: 'emoce',       label: 'Emoce',       icon: '💖', status: 'green' },
+        { id: 'klid',        label: 'Klid',        icon: '🌿', status: 'green' },
+      ]
+    },
+    {
+      id: 'vyziva', label: 'Výživa', icon: '🥗', status: 'green',
+      children: [
+        { id: 'pust',           label: 'Půst',             icon: '⏳', status: 'green' },
+        { id: 'bilkoviny',      label: 'Bílkoviny',        icon: '🥚', status: 'green' },
+        { id: 'glukoza_vyziva', label: 'Glukóza (výživa)', icon: '🍬', status: 'yellow' },
+        { id: 'mikronutrienty', label: 'Mikronutrienty',   icon: '💊', status: 'green' },
+        { id: 'hydratace',      label: 'Hydratace',        icon: '💧', status: 'green' },
+        { id: 'casovani',       label: 'Časování jídel',   icon: '⏰', status: 'green' },
+      ]
+    },
+  ]
+};
+
+// --- Layout ---
+const COL_W   = 210;
+const ROW_H   = 52;
+const NODE_R  = 20;
+const PAD_L   = 50;
+const PAD_T   = 50;
+const LABEL_OFFSET = NODE_R + 8;
+
+function countLeaves(node) {
+  if (!node.children || !node.children.length) { node._leaves = 1; return 1; }
+  node._leaves = node.children.reduce((s, c) => s + countLeaves(c), 0);
+  return node._leaves;
+}
+
+function assignPos(node, depth, ySlot) {
+  node._x = PAD_L + depth * COL_W;
+  if (!node.children || !node.children.length) {
+    node._y = PAD_T + ySlot * ROW_H;
+    return ySlot + 1;
+  }
+  let offset = ySlot;
+  for (const ch of node.children) {
+    offset = assignPos(ch, depth + 1, offset);
+  }
+  const first = node.children[0];
+  const last  = node.children[node.children.length - 1];
+  node._y = (first._y + last._y) / 2;
+  return offset;
+}
+
+countLeaves(TREE);
+const totalLeaves = TREE._leaves;
+assignPos(TREE, 0, 0);
+
+// --- Compute SVG dimensions ---
+function maxDepth(node, d = 0) {
+  if (!node.children || !node.children.length) return d;
+  return Math.max(...node.children.map(c => maxDepth(c, d + 1)));
+}
+const depth = maxDepth(TREE);
+const svgW = PAD_L + depth * COL_W + 220;
+const svgH = PAD_T + totalLeaves * ROW_H + PAD_T;
+
+// --- Render ---
+let edgeSVG = '';
+let nodeSVG = '';
+
+function renderEdges(node) {
+  if (!node.children || !node.children.length) return;
+  for (const ch of node.children) {
+    const x1 = node._x + NODE_R;
+    const y1 = node._y;
+    const x2 = ch._x - NODE_R;
+    const y2 = ch._y;
+    const mx = (x1 + x2) / 2;
+    edgeSVG += `<path d="M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}" fill="none" stroke="#1a2d40" stroke-width="1.5"/>`;
+    renderEdges(ch);
+  }
+}
+
+function getBranchColor(node) {
+  // Find L1 ancestor to color-code branch connector
+  const colors = { zdravi:'#22c55e', telo:'#f59e0b', mysl:'#a855f7', vyziva:'#ef4444' };
+  return colors[node.id] || null;
+}
+
+function renderNodes(node) {
+  const s = STATUS[node.status] || STATUS.gray;
+  const x = node._x;
+  const y = node._y;
+  const r = NODE_R;
+  const isRoot = node.id === 'dlouhovekost';
+  const strokeW = isRoot ? 2.5 : 1.5;
+
+  // glow filter via box shadow simulation (just use a circle shadow)
+  if (isRoot) {
+    nodeSVG += `<circle cx="${x}" cy="${y}" r="${r + 6}" fill="none" stroke="${s.stroke}" stroke-width="0.5" opacity="0.25"/>`;
+  }
+
+  nodeSVG += `<circle cx="${x}" cy="${y}" r="${r}" fill="${s.fill}" stroke="${s.stroke}" stroke-width="${strokeW}"/>`;
+
+  // icon (emoji)
+  nodeSVG += `<text x="${x}" y="${y + 5}" text-anchor="middle" font-size="${isRoot ? 14 : 12}" fill="${s.stroke}" opacity="0.9">${node.icon}</text>`;
+
+  // label: to the right of node
+  const labelX = x + LABEL_OFFSET;
+  const labelY = y + 4;
+  const fontSize = isRoot ? 13 : node._leaves > 1 ? 12 : 11;
+  const labelColor = node._leaves > 1 ? s.text : '#6a8fa8';
+  nodeSVG += `<text x="${labelX}" y="${labelY}" font-size="${fontSize}" fill="${labelColor}" font-family="'Courier New', monospace">${node.label}</text>`;
+
+  if (node.children) node.children.forEach(renderNodes);
+}
+
+renderEdges(TREE);
+renderNodes(TREE);
+
+// Branch labels (L1 domains)
+let branchSVG = '';
+const BRANCH_COLORS = { zdravi:'#22c55e', telo:'#f59e0b', mysl:'#a855f7', vyziva:'#ef4444' };
+for (const ch of TREE.children) {
+  const col = BRANCH_COLORS[ch.id] || '#4a5568';
+  const x1 = ch._x - NODE_R - 4;
+  const y1 = ch.children ? ch.children[0]._y : ch._y;
+  const y2 = ch.children ? ch.children[ch.children.length - 1]._y : ch._y;
+  branchSVG += `<line x1="${x1}" y1="${y1}" x2="${x1}" y2="${y2}" stroke="${col}" stroke-width="2" opacity="0.3"/>`;
+}
+
+const svg = document.getElementById('tree');
+svg.setAttribute('width', svgW);
+svg.setAttribute('height', svgH);
+svg.innerHTML = `
+  <defs>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  ${branchSVG}
+  ${edgeSVG}
+  ${nodeSVG}
+`;
+</script>
+</body>
+</html>
