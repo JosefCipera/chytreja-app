@@ -1326,6 +1326,14 @@ window.exportCRTImage = function() {
 window.printCRT = function() {
   if (!_visNetwork) return;
 
+  // A4 landscape @ 2× (pro ostrý tisk): 297mm × 210mm → 2244 × 1587 CSS px
+  const PRINT_W = 2244;
+  const PRINT_H = 1587;
+
+  const container = document.getElementById('crt-network');
+  const origW = container.style.width;
+  const origH = container.style.height;
+
   // 1. Ulož původní barvy uzlů a přebarvit na světlé
   const dataset = _visNetwork.body.data.nodes;
   const origColors = {};
@@ -1343,26 +1351,41 @@ window.printCRT = function() {
     };
   });
   dataset.update(printUpdates);
+
+  // 2. Roztáhni canvas na A4 landscape rozměry → fit → screenshot
+  container.style.width  = PRINT_W + 'px';
+  container.style.height = PRINT_H + 'px';
+  _visNetwork.setSize(PRINT_W + 'px', PRINT_H + 'px');
+  _visNetwork.redraw();
   _visNetwork.fit({ animation: false });
 
   setTimeout(() => {
     const src = document.querySelector('#crt-network canvas');
-    if (!src) { dataset.update(Object.entries(origColors).map(([id, c]) => ({ id, ...c }))); return; }
 
-    // 2. Zachyť canvas — 2× scale pro ostrý tisk
-    const SCALE = 2;
+    const restore = () => {
+      // 3. Obnov původní barvy + rozměry
+      dataset.update(Object.entries(origColors).map(([id, c]) => ({ id, ...c })));
+      container.style.width  = origW;
+      container.style.height = origH;
+      _visNetwork.setSize(origW || '100%', origH || '100%');
+      _visNetwork.redraw();
+      _visNetwork.fit({ animation: false });
+    };
+
+    if (!src) { restore(); return; }
+
+    // 4. Zachyť canvas (je už A4 landscape rozměrů — nepotřebuje SCALE)
     const out = document.createElement('canvas');
-    out.width = src.width * SCALE; out.height = src.height * SCALE;
+    out.width = src.width; out.height = src.height;
     const ctx2 = out.getContext('2d');
     ctx2.fillStyle = '#ffffff';
     ctx2.fillRect(0, 0, out.width, out.height);
-    ctx2.drawImage(src, 0, 0, out.width, out.height);
+    ctx2.drawImage(src, 0, 0);
     const dataURL = out.toDataURL('image/png');
 
-    // 3. Obnov původní barvy
-    dataset.update(Object.entries(origColors).map(([id, c]) => ({ id, ...c })));
+    restore();
 
-    // 4. Vlož obrázek a tiskni přes body.crt-printing class (spolehlivější než @media print overlay)
+    // 5. Vlož obrázek a tiskni přes body.crt-printing class
     const img    = document.getElementById('crtPrintImg');
     const footer = document.getElementById('crtPrintFooter');
     if (!img) return;
@@ -1372,8 +1395,8 @@ window.printCRT = function() {
     setTimeout(() => {
       window.print();
       document.body.classList.remove('crt-printing');
-    }, 100);
-  }, 500);
+    }, 150);
+  }, 600);
 };
 
 // ── Top-N: zobraz jen uzly na nejkratší cestě ROOT→každý killer ──────────────
