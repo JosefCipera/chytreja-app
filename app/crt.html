@@ -1351,9 +1351,7 @@ window.printCRT = function() {
     };
   });
   dataset.update(printUpdates);
-  // Dočasně skryj pill léků (canvas overlay — na světlém pozadí špatně vypadají)
-  if (_medDrawFn) { _visNetwork.off('afterDrawing', _medDrawFn); }
-  _visNetwork.redraw(); // zajistí světlé uzly bez pill
+  _visNetwork.redraw(); // světlé uzly
 
   // 2. Roztáhni canvas na A4 landscape rozměry → fit → screenshot
   container.style.width  = PRINT_W + 'px';
@@ -1369,9 +1367,8 @@ window.printCRT = function() {
     const src = document.querySelector('#crt-network canvas');
 
     const restore = () => {
-      // 3. Obnov původní barvy + rozměry + pill léky
+      // 3. Obnov původní barvy + rozměry
       dataset.update(Object.entries(origColors).map(([id, c]) => ({ id, ...c })));
-      if (_medDrawFn && _pillsAdded) { _visNetwork.on('afterDrawing', _medDrawFn); }
       container.style.width  = origW;
       container.style.height = origH;
       _visNetwork.setSize(origW || '100%', origH || '100%');
@@ -1392,17 +1389,19 @@ window.printCRT = function() {
 
     restore();
 
-    // 5. Vlož obrázek a tiskni přes body.crt-printing class
+    // 5. Vlož obrázek a tiskni — čekej na onload (mobil načítá data URL pomalu)
     const img    = document.getElementById('crtPrintImg');
     const footer = document.getElementById('crtPrintFooter');
     if (!img) return;
-    img.src = dataURL;
     if (footer) footer.textContent = `Kauzální mapa zdraví · CHJ · ${new Date().toLocaleDateString('cs-CZ')}`;
-    document.body.classList.add('crt-printing');
-    setTimeout(() => {
-      window.print();
-      document.body.classList.remove('crt-printing');
-    }, 150);
+    img.onload = () => {
+      document.body.classList.add('crt-printing');
+      setTimeout(() => {
+        window.print();
+        document.body.classList.remove('crt-printing');
+      }, 80);
+    };
+    img.src = dataURL;
   }, 1200);
 };
 
