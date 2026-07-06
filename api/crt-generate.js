@@ -408,12 +408,23 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
 
   const blocks = (data.content || []).map(b => `${b.type}(${b.text?.length ?? b.thinking?.length ?? '?'})`).join(',');
   const jsonMatch = text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) throw new Error(`Claude nevrátil JSON. Model: ${modelCfg.id}. Blocks: ${blocks}. Text: ${text.slice(0, 300)}`);
+  if (!jsonMatch) throw new Error(`Claude nevrátil JSON. Model: ${modelCfg.id}. Blocks: ${blocks}. Text: ${text.slice(0, 500)}`);
   let crt;
+  const rawJson = jsonMatch[0];
   try {
-    crt = JSON.parse(jsonMatch[0]);
+    crt = JSON.parse(rawJson);
   } catch(e) {
-    throw new Error(`JSON parse error: ${e.message}. Text: ${jsonMatch[0].slice(0, 300)}`);
+    // Trailing commas jsou nejčastější příčina — zkus opravit
+    const cleaned = rawJson.replace(/,(\s*[}\]])/g, '$1');
+    try {
+      crt = JSON.parse(cleaned);
+      console.log('[CRT] JSON opraven odstraněním trailing commas');
+    } catch(e2) {
+      // Loguj víc kontextu pro debug — kde přesně parse selhal
+      const pos = parseInt((e2.message.match(/position (\d+)/) || [])[1] || '0');
+      const snippet = rawJson.slice(Math.max(0, pos - 80), pos + 80);
+      throw new Error(`JSON parse error: ${e.message}. Near pos ${pos}: ...${snippet}... | Full length: ${rawJson.length}`);
+    }
   }
 
   // Transformace nového formátu (root=string, medications_map s target_node_id)
@@ -568,11 +579,11 @@ export default async function handler(req, res) {
   const { userId, role = 'longevity', force = false, model: modelParam } = req.body || {};
 
   // Výběr modelu: sonnet5 default, opus, fable
-  // Sonnet 5 má adaptive thinking by default (stejně jako Fable) → thinking:true + effort:low
+  // Fable: effort null = default high (effort:low způsoboval malformed JSON — trailing commas, unescaped chars)
   const MODEL_MAP = {
     opus:    { id: 'claude-opus-4-8',  thinking: false, effort: null,  maxTokens: 8000 },
     sonnet5: { id: 'claude-sonnet-5',  thinking: true,  effort: 'low', maxTokens: 16000 },
-    fable:   { id: 'claude-fable-5',   thinking: false, effort: 'low', maxTokens: 64000 },
+    fable:   { id: 'claude-fable-5',   thinking: false, effort: null,  maxTokens: 64000 },
   };
   const modelCfg = MODEL_MAP[modelParam] || MODEL_MAP.fable;
 
