@@ -371,7 +371,7 @@ ${metricsText}
 POSLEDNÍ CHECK-INY:
 ${checkinText}
 
-HLAVNÍ ULTIMATE UDE NA VRCHOLU (Level 6): urči sám z diagnóz (pro FaP = "Riziko infarktu a CMP")
+HLAVNÍ ULTIMATE UDE NA VRCHOLU (Level 6): urči sám podle všech dat tohoto pacienta — konkrétní prognostické riziko specifické pro něj (ne generické "zhoršení kvality života").
 
 Injections: nejprve léky z profilu (${(profile.medications || []).map(m => m.name || m).join(', ') || 'neuvedeno'}), pak 1–2 životní intervence. Max 4 celkem.
 
