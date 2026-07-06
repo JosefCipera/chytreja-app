@@ -1167,8 +1167,8 @@ window.toggleLabelMode = function() {
   if (!data) return;
   applyLabelMode(data);
   renderTree(data);
-  _pillsAdded = false; // renderTree odstraní pill nody — reset stavu
-  if (_medsVisible) { addMedPills(data); _pillsAdded = true; }
+  _pillsAdded = false; // renderTree obnoví labely — reset stavu aby _applyMedsState přidala znovu
+  if (_medsVisible) _applyMedsState();
   const btn = document.getElementById('crtLabelBtn');
   if (btn) {
     btn.textContent = _labelMode === 'layman' ? '🔬 Expert' : '👤 Laik';
@@ -1185,19 +1185,35 @@ window.toggleMeds = function() {
 function _applyMedsState() {
   const btn = document.getElementById('crtMedBtn');
 
-  if (_medsVisible) {
-    // Přidej pill nody do grafu (jen jednou), pak zaostři na celý graf
-    if (!_pillsAdded && _visNetwork && window._crtData) {
-      addMedPills(window._crtData);
+  if (_visNetwork && window._crtData) {
+    const medsMap = window._crtData.medications_map || [];
+    const dataset = _visNetwork.body.data.nodes;
+    const typeIcon = { treatment: '\u{1F48A}', protects: '\u{1F6E1}', warning: '⚠️' };
+
+    if (_medsVisible && !_pillsAdded) {
+      // Seskup léky podle target uzlu
+      const byNode = {};
+      medsMap.forEach(m => {
+        (m.targets || []).forEach(tid => { (byNode[tid] = byNode[tid] || []).push(m); });
+      });
+      // Přidej jméno léku jako druhý řádek v labelu uzlu
+      const updates = [];
+      Object.entries(byNode).forEach(([nodeId, meds]) => {
+        const node = dataset.get(nodeId);
+        if (!node) return;
+        const orig = node._labelOrig ?? node.label ?? '';
+        const suffix = meds.map(m => `${typeIcon[m.type] || '\u{1F48A}'} ${m.name}`).join('\n');
+        updates.push({ id: nodeId, label: orig + '\n' + suffix, _labelOrig: orig });
+      });
+      if (updates.length) dataset.update(updates);
       _pillsAdded = true;
-    }
-  } else {
-    // Odeber všechny pill nody z grafu
-    if (_pillsAdded && _visNetwork) {
-      const pillIds = _visNetwork.body.data.nodes.get()
-        .filter(n => String(n.id).startsWith('_pill_'))
-        .map(n => n.id);
-      if (pillIds.length) _visNetwork.body.data.nodes.remove(pillIds);
+
+    } else if (!_medsVisible && _pillsAdded) {
+      // Obnov původní labely
+      const updates = dataset.get()
+        .filter(n => n._labelOrig != null)
+        .map(n => ({ id: n.id, label: n._labelOrig, _labelOrig: null }));
+      if (updates.length) dataset.update(updates);
       _pillsAdded = false;
     }
   }
