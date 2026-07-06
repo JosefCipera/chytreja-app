@@ -572,7 +572,7 @@ export default async function handler(req, res) {
   const MODEL_MAP = {
     opus:    { id: 'claude-opus-4-8',  thinking: false, effort: null,  maxTokens: 8000 },
     sonnet5: { id: 'claude-sonnet-5',  thinking: true,  effort: 'low', maxTokens: 16000 },
-    fable:   { id: 'claude-fable-5',   thinking: false, effort: 'low', maxTokens: 32000 },
+    fable:   { id: 'claude-fable-5',   thinking: false, effort: 'low', maxTokens: 64000 },
   };
   const modelCfg = MODEL_MAP[modelParam] || MODEL_MAP.fable;
 

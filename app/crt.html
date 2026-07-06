@@ -1167,7 +1167,7 @@ window.toggleLabelMode = function() {
   if (!data) return;
   applyLabelMode(data);
   renderTree(data);
-  _pillsAdded = false; // renderTree obnoví labely — reset stavu aby _applyMedsState přidala znovu
+  _pillsAdded = false; // renderTree smaže pill nody — reset stavu
   if (_medsVisible) _applyMedsState();
   const btn = document.getElementById('crtLabelBtn');
   if (btn) {
@@ -1186,34 +1186,15 @@ function _applyMedsState() {
   const btn = document.getElementById('crtMedBtn');
 
   if (_visNetwork && window._crtData) {
-    const medsMap = window._crtData.medications_map || [];
     const dataset = _visNetwork.body.data.nodes;
-    const typeIcon = { treatment: '\u{1F48A}', protects: '\u{1F6E1}', warning: '⚠️' };
 
     if (_medsVisible && !_pillsAdded) {
-      // Seskup léky podle target uzlu
-      const byNode = {};
-      medsMap.forEach(m => {
-        (m.targets || []).forEach(tid => { (byNode[tid] = byNode[tid] || []).push(m); });
-      });
-      // Přidej jméno léku jako druhý řádek v labelu uzlu
-      const updates = [];
-      Object.entries(byNode).forEach(([nodeId, meds]) => {
-        const node = dataset.get(nodeId);
-        if (!node) return;
-        const orig = node._labelOrig ?? node.label ?? '';
-        const suffix = meds.map(m => `${typeIcon[m.type] || '\u{1F48A}'} ${m.name}`).join('\n');
-        updates.push({ id: nodeId, label: orig + '\n' + suffix, _labelOrig: orig });
-      });
-      if (updates.length) dataset.update(updates);
+      _addMedLabels(dataset);
       _pillsAdded = true;
-
     } else if (!_medsVisible && _pillsAdded) {
-      // Obnov původní labely
-      const updates = dataset.get()
-        .filter(n => n._labelOrig != null)
-        .map(n => ({ id: n.id, label: n._labelOrig, _labelOrig: null }));
-      if (updates.length) dataset.update(updates);
+      // Odeber pill nody
+      const pillIds = dataset.get().filter(n => String(n.id).startsWith('_pill_')).map(n => n.id);
+      if (pillIds.length) dataset.remove(pillIds);
       _pillsAdded = false;
     }
   }
@@ -1223,6 +1204,52 @@ function _applyMedsState() {
     .forEach(el => el.classList.toggle('crt-med-hidden', !_medsVisible));
 
   if (btn) btn.classList.toggle('active', _medsVisible);
+}
+
+function _addMedLabels(dataset) {
+  const medsMap = window._crtData?.medications_map || [];
+  if (!medsMap.length || !_visNetwork) return;
+
+  const positions = _visNetwork.getPositions();
+  const typeColor = { treatment: { bg: '#1a0d00', border: '#d97706', font: '#f59e0b' },
+                      protects:  { bg: '#071a0a', border: '#16a34a', font: '#4ade80' },
+                      warning:   { bg: '#1a1000', border: '#ca8a04', font: '#fbbf24' } };
+
+  // Seskup léky podle target nodu
+  const byNode = {};
+  medsMap.forEach(m => {
+    (m.targets || []).forEach(tid => { (byNode[tid] = byNode[tid] || []).push(m); });
+  });
+
+  const OFFSET_X = IS_MOBILE ? -130 : -155;  // VLEVO od uzlu
+  const SPACING_Y = IS_MOBILE ? 38 : 44;
+
+  const pillNodes = [];
+  Object.entries(byNode).forEach(([targetId, meds]) => {
+    const pos = positions[targetId];
+    if (!pos) return;
+    meds.forEach((m, i) => {
+      const c = typeColor[m.type] || typeColor.treatment;
+      pillNodes.push({
+        id: `_pill_${targetId}_${i}`,
+        label: m.name,
+        title: m.effect || '',
+        x: pos.x + OFFSET_X,
+        y: pos.y - i * SPACING_Y,
+        fixed: { x: true, y: true },
+        shape: 'box',
+        color: { background: c.bg, border: c.border,
+                 highlight: { background: c.bg, border: c.border },
+                 hover:     { background: c.bg, border: c.border } },
+        font: { color: c.font, size: IS_MOBILE ? 12 : 15, face: 'Inter, system-ui, sans-serif', bold: true },
+        borderWidth: 1.5,
+        shapeProperties: { borderRadius: 20 },
+        margin: { top: 5, right: 12, bottom: 5, left: 12 },
+      });
+    });
+  });
+
+  if (pillNodes.length) dataset.add(pillNodes);
 }
 
 // ── Boot ─────────────────────────────────────────────────────────────────────
