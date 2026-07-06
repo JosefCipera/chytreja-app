@@ -1242,8 +1242,8 @@ function _buildMedDrawer() {
         const ry     = pos.y - (meds.length - 1) * SPACING_Y / 2 + i * SPACING_Y - ph / 2;
         const radius = ph / 2;
 
-        // Pill background
-        ctx.fillStyle = 'rgba(225,242,255,0.96)';
+        // Pill background — stejná barva jako uzly (#1a2d40)
+        ctx.fillStyle = 'rgba(26,45,64,0.97)';
         ctx.beginPath();
         ctx.moveTo(rx + radius, ry);
         ctx.lineTo(rx + pw - radius, ry);
@@ -1351,7 +1351,9 @@ window.printCRT = function() {
     };
   });
   dataset.update(printUpdates);
-  _visNetwork.redraw(); // zajistí světlé uzly před screenshotem
+  // Dočasně skryj pill léků (canvas overlay — na světlém pozadí špatně vypadají)
+  if (_medDrawFn) { _visNetwork.off('afterDrawing', _medDrawFn); }
+  _visNetwork.redraw(); // zajistí světlé uzly bez pill
 
   // 2. Roztáhni canvas na A4 landscape rozměry → fit → screenshot
   container.style.width  = PRINT_W + 'px';
@@ -1367,8 +1369,9 @@ window.printCRT = function() {
     const src = document.querySelector('#crt-network canvas');
 
     const restore = () => {
-      // 3. Obnov původní barvy + rozměry
+      // 3. Obnov původní barvy + rozměry + pill léky
       dataset.update(Object.entries(origColors).map(([id, c]) => ({ id, ...c })));
+      if (_medDrawFn && _pillsAdded) { _visNetwork.on('afterDrawing', _medDrawFn); }
       container.style.width  = origW;
       container.style.height = origH;
       _visNetwork.setSize(origW || '100%', origH || '100%');
