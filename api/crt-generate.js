@@ -326,6 +326,8 @@ Vrať POUZE validní JSON bez jakéhokoliv doprovodného textu.
   ]
 }
 
+POVINNÉ PRAVIDLO PRO medications_map: Každý lék a suplement z pacientova profilu MUSÍ být v medications_map — bez výjimky. Suplementy (hořčík, vitamin D, omega-3 apod.) jsou léky stejně jako farmaka. Pokud lék nemá přímý cílový uzel, přiřaď ho k nejbližšímu relevantnímu uzlu. Pro interakce mezi léky použij type="warning" a vysvětli interferenci v label.
+
 ### KRITICKÁ PRAVIDLA PRO OBSAH UZLŮ — GOLDRATTOVA CRT:
 
 6. TYPY UZLŮ A CO DO NICH PATŘÍ:
