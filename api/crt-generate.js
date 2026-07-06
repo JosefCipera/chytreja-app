@@ -203,7 +203,7 @@ async function resolveMedications(meds) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'claude-opus-4-8',
+      model: 'claude-haiku-4-5',
       max_tokens: 800,
 
       messages: [{ role: 'user', content:
