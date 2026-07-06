@@ -560,10 +560,10 @@ export default async function handler(req, res) {
   const { userId, role = 'longevity', force = false, model: modelParam } = req.body || {};
 
   // Výběr modelu: sonnet5 default, opus, fable
-  // Sonnet 5 má adaptive thinking by default → max_tokens 8000 (thinking + JSON výstup)
+  // Sonnet 5 má adaptive thinking by default (stejně jako Fable) → thinking:true + effort:low
   const MODEL_MAP = {
     opus:    { id: 'claude-opus-4-8',  thinking: false, maxTokens: 8000 },
-    sonnet5: { id: 'claude-sonnet-5',  thinking: false, maxTokens: 8000 },
+    sonnet5: { id: 'claude-sonnet-5',  thinking: true,  maxTokens: 16000 },
     fable:   { id: 'claude-fable-5',   thinking: true,  maxTokens: 16000 },
   };
   const modelCfg = MODEL_MAP[modelParam] || MODEL_MAP.sonnet5;
