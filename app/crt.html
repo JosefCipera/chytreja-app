@@ -1242,8 +1242,8 @@ function _buildMedDrawer() {
         const ry     = pos.y - (meds.length - 1) * SPACING_Y / 2 + i * SPACING_Y - ph / 2;
         const radius = ph / 2;
 
-        // Pill background — stejná barva jako uzly (#1a2d40)
-        ctx.fillStyle = 'rgba(26,45,64,0.97)';
+        // Pill background — světlé jako uzly v tisku
+        ctx.fillStyle = 'rgba(225,242,255,0.96)';
         ctx.beginPath();
         ctx.moveTo(rx + radius, ry);
         ctx.lineTo(rx + pw - radius, ry);
@@ -1326,9 +1326,11 @@ window.exportCRTImage = function() {
 window.printCRT = function() {
   if (!_visNetwork) return;
 
-  // A4 landscape @ 2× (pro ostrý tisk): 297mm × 210mm → 2244 × 1587 CSS px
-  const PRINT_W = 2244;
-  const PRINT_H = 1587;
+  // Mobil DPR=3 → canvas limit 16M px → 2244×1587×9 = 32M → failuje → černé uzly.
+  // Na mobilu bezpečný rozměr: 1100×780 CSS px × DPR=3 → 3300×2340 = 7.7M px.
+  const IS_MOBILE = window.innerWidth < 900;
+  const PRINT_W = IS_MOBILE ? 1100 : 2244;
+  const PRINT_H = IS_MOBILE ?  780 : 1587;
 
   const container = document.getElementById('crt-network');
   const origW = container.style.width;
@@ -1351,26 +1353,27 @@ window.printCRT = function() {
     };
   });
   dataset.update(printUpdates);
-  _visNetwork.redraw(); // světlé uzly
 
-  // 2. Roztáhni canvas na A4 landscape rozměry → fit → screenshot
+  // Desktop: skryj container přes opacity aby resize nevytvářel vizuální flicker
+  if (!IS_MOBILE) container.style.opacity = '0';
+
+  // 2. Roztáhni canvas → fit → screenshot
   container.style.width  = PRINT_W + 'px';
   container.style.height = PRINT_H + 'px';
   _visNetwork.setSize(PRINT_W + 'px', PRINT_H + 'px');
   _visNetwork.redraw();
   _visNetwork.fit({ animation: false });
 
-  // Druhý fit po krátkém delay — mobil potřebuje čas na reflow canvas
   setTimeout(() => { _visNetwork.fit({ animation: false }); }, 300);
 
   setTimeout(() => {
     const src = document.querySelector('#crt-network canvas');
 
     const restore = () => {
-      // 3. Obnov původní barvy + rozměry
       dataset.update(Object.entries(origColors).map(([id, c]) => ({ id, ...c })));
-      container.style.width  = origW;
-      container.style.height = origH;
+      container.style.width   = origW;
+      container.style.height  = origH;
+      container.style.opacity = '';
       _visNetwork.setSize(origW || '100%', origH || '100%');
       _visNetwork.redraw();
       _visNetwork.fit({ animation: false });
@@ -1378,7 +1381,7 @@ window.printCRT = function() {
 
     if (!src) { restore(); return; }
 
-    // 4. Zachyť canvas (je už A4 landscape rozměrů — nepotřebuje SCALE)
+    // 3. Zachyť canvas
     const out = document.createElement('canvas');
     out.width = src.width; out.height = src.height;
     const ctx2 = out.getContext('2d');
@@ -1389,7 +1392,7 @@ window.printCRT = function() {
 
     restore();
 
-    // 5. Vlož obrázek a tiskni — čekej na onload (mobil načítá data URL pomalu)
+    // 4. Vlož obrázek — čekej na onload, pak tiskni
     const img    = document.getElementById('crtPrintImg');
     const footer = document.getElementById('crtPrintFooter');
     if (!img) return;
@@ -1402,7 +1405,7 @@ window.printCRT = function() {
       }, 80);
     };
     img.src = dataURL;
-  }, 1200);
+  }, IS_MOBILE ? 1400 : 1000);
 };
 
 // ── Top-N: zobraz jen uzly na nejkratší cestě ROOT→každý killer ──────────────
