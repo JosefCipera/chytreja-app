@@ -566,7 +566,7 @@ export default async function handler(req, res) {
     sonnet5: { id: 'claude-sonnet-5',  thinking: true,  maxTokens: 16000 },
     fable:   { id: 'claude-fable-5',   thinking: true,  maxTokens: 16000 },
   };
-  const modelCfg = MODEL_MAP[modelParam] || MODEL_MAP.sonnet5;
+  const modelCfg = MODEL_MAP[modelParam] || MODEL_MAP.fable;
 
   if (!userId) return res.status(401).json({ error: 'Přihlaste se pro zobrazení mapy.' });
 
