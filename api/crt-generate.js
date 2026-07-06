@@ -387,7 +387,8 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
     body: JSON.stringify({
       model: modelCfg.id,
       max_tokens: modelCfg.maxTokens,
-      ...(modelCfg.thinking ? { thinking: { type: 'adaptive' }, output_config: { effort: 'low' } } : {}),
+      ...(modelCfg.thinking ? { thinking: { type: 'adaptive' } } : {}),
+      ...(modelCfg.effort   ? { output_config: { effort: modelCfg.effort } } : {}),
       system: systemPrompt,
       messages: [{ role: 'user', content: userPrompt }],
     }),
@@ -562,9 +563,9 @@ export default async function handler(req, res) {
   // Výběr modelu: sonnet5 default, opus, fable
   // Sonnet 5 má adaptive thinking by default (stejně jako Fable) → thinking:true + effort:low
   const MODEL_MAP = {
-    opus:    { id: 'claude-opus-4-8',  thinking: false, maxTokens: 8000 },
-    sonnet5: { id: 'claude-sonnet-5',  thinking: true,  maxTokens: 16000 },
-    fable:   { id: 'claude-fable-5',   thinking: false, maxTokens: 32000 },
+    opus:    { id: 'claude-opus-4-8',  thinking: false, effort: null,  maxTokens: 8000 },
+    sonnet5: { id: 'claude-sonnet-5',  thinking: true,  effort: 'low', maxTokens: 16000 },
+    fable:   { id: 'claude-fable-5',   thinking: false, effort: 'low', maxTokens: 32000 },
   };
   const modelCfg = MODEL_MAP[modelParam] || MODEL_MAP.fable;
 
