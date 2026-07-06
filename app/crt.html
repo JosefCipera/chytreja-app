@@ -158,48 +158,31 @@
     .crt-med-hidden { display: none; }
     #crtMedBtn.active { opacity: 1; border-color: #4a9aee; color: #4a9aee; }
 
-    /* ── Medications overlay panel ── */
-    #crtMedsPanel {
-      position: fixed;
-      top: 70px; right: 0;
-      width: 300px;
-      max-height: calc(100dvh - 80px);
-      overflow-y: auto;
-      background: #0d1b2a;
-      border-left: 1px solid #1e2d3d;
-      padding: 14px 16px;
-      transform: translateX(100%);
-      transition: transform .25s cubic-bezier(.4,0,.2,1);
-      z-index: 30;
-    }
-    #crtMedsPanel.open { transform: translateX(0); }
-    .crt-med-item {
-      margin-bottom: 10px; padding: 9px 11px;
-      background: #111d2a; border-radius: 7px;
-      border-left: 3px solid #4a6a8a;
-    }
-    .crt-med-name { font-size: 13px; color: #c8d8e8; font-weight: 500; }
-    .crt-med-effect { font-size: 11px; color: #5a7a8a; margin-top: 3px; }
-    .crt-med-type { font-size: 10px; text-transform: uppercase; letter-spacing: .08em; margin-top: 5px; }
-
     /* ── Print ── */
-    #crtPrintContent {
-      display: none;
+    @page { size: A4 landscape; margin: 6mm; }
+    #crtPrintContent { display: none; }
+    body.crt-printing > *:not(#crtPrintContent) { display: none !important; }
+    body.crt-printing #crtPrintContent {
+      display: flex !important;
+      position: fixed; inset: 0;
+      background: #fff;
       flex-direction: column;
-      align-items: center;
-      justify-content: center;
+      align-items: stretch;
+      justify-content: flex-start;
+      z-index: 9999;
     }
-    @page { size: A4 landscape; margin: 8mm; }
+    body.crt-printing #crtPrintContent img { width: 100%; height: auto; display: block; }
+    body.crt-printing #crtPrintFooter {
+      font-size: 9px; color: #888; font-family: sans-serif;
+      text-align: right; padding: 3mm 4mm 0;
+    }
     @media print {
-      body > * { display: none !important; }
-      #crtPrintContent {
-        display: flex !important;
-        position: fixed; inset: 0;
-        background: #fff;
-        padding: 0;
+      body.crt-printing > *:not(#crtPrintContent) { display: none !important; }
+      body.crt-printing #crtPrintContent {
+        display: flex !important; position: fixed; inset: 0; background: #fff;
+        flex-direction: column; align-items: stretch;
       }
-      #crtPrintContent img { width: 100%; height: auto; object-fit: contain; }
-      #crtPrintFooter { position: fixed; bottom: 4mm; right: 8mm; font-size: 9px; color: #888; font-family: sans-serif; }
+      body.crt-printing #crtPrintContent img { width: 100%; height: auto; display: block; }
     }
 
     /* ── Node detail panel ─────────────────────────────────────── */
@@ -341,7 +324,7 @@
   <div class="cnp-data" id="cnpData"></div>
 </div>
 
-<div id="crtMedsPanel"></div>
+
 
 <div id="crtPrintContent">
   <img id="crtPrintImg" src="" alt="">
@@ -1161,6 +1144,7 @@ function buildPanelData(node, ctx, parents, children, meds, supps, contras, hidd
 window.closeCrtPanel = closeCrtPanel;
 
 let _medsVisible = false;
+let _pillsAdded  = false;
 let _labelMode = 'layman'; // 'expert' | 'layman'
 
 // Nastaví label na všech uzlech podle aktuálního módu a překreslí
@@ -1183,6 +1167,8 @@ window.toggleLabelMode = function() {
   if (!data) return;
   applyLabelMode(data);
   renderTree(data);
+  _pillsAdded = false; // renderTree odstraní pill nody — reset stavu
+  if (_medsVisible) { addMedPills(data); _pillsAdded = true; }
   const btn = document.getElementById('crtLabelBtn');
   if (btn) {
     btn.textContent = _labelMode === 'layman' ? '🔬 Expert' : '👤 Laik';
@@ -1197,37 +1183,30 @@ window.toggleMeds = function() {
 };
 
 function _applyMedsState() {
-  const btn   = document.getElementById('crtMedBtn');
-  const panel = document.getElementById('crtMedsPanel');
+  const btn = document.getElementById('crtMedBtn');
 
-  // Fable/Opus generated mode — show overlay panel
-  const medsMap = (window._crtData?.medications_map || []);
-  if (medsMap.length && panel) {
-    panel.classList.toggle('open', _medsVisible);
-    if (_medsVisible) _renderMedsPanel(medsMap);
+  if (_medsVisible) {
+    // Přidej pill nody do grafu (jen jednou)
+    if (!_pillsAdded && _visNetwork && window._crtData) {
+      addMedPills(window._crtData);
+      _pillsAdded = true;
+    }
+  } else {
+    // Odeber všechny pill nody z grafu
+    if (_pillsAdded && _visNetwork) {
+      const pillIds = _visNetwork.body.data.nodes.get()
+        .filter(n => String(n.id).startsWith('_pill_'))
+        .map(n => n.id);
+      if (pillIds.length) _visNetwork.body.data.nodes.remove(pillIds);
+      _pillsAdded = false;
+    }
   }
 
-  // Opus KB mode — toggle pill icons on graph
+  // Starý KB path — toggle HTML pill elementy
   document.querySelectorAll('.crt-med-el')
     .forEach(el => el.classList.toggle('crt-med-hidden', !_medsVisible));
 
   if (btn) btn.classList.toggle('active', _medsVisible);
-}
-
-function _renderMedsPanel(medsMap) {
-  const panel = document.getElementById('crtMedsPanel');
-  if (!panel) return;
-  const typeColor = { treatment: '#4ab8d0', protects: '#22c55e', warning: '#f59e0b' };
-  const typeLabel = { treatment: 'léčba', protects: 'ochrana', warning: 'interakce' };
-  panel.innerHTML = `
-    <div style="font-size:10px;letter-spacing:.1em;color:#3a5878;text-transform:uppercase;margin-bottom:10px">Léková ochrana</div>
-    ${medsMap.map(m => `
-      <div class="crt-med-item" style="border-left-color:${typeColor[m.type]||'#4a6a8a'}">
-        <div class="crt-med-name">${m.name || ''}</div>
-        ${m.effect ? `<div class="crt-med-effect">${m.effect}</div>` : ''}
-        <div class="crt-med-type" style="color:${typeColor[m.type]||'#4a6a8a'}">${typeLabel[m.type]||m.type||''}</div>
-      </div>`).join('')}
-  `;
 }
 
 // ── Boot ─────────────────────────────────────────────────────────────────────
@@ -1323,18 +1302,17 @@ window.printCRT = function() {
     // 3. Obnov původní barvy
     dataset.update(Object.entries(origColors).map(([id, c]) => ({ id, ...c })));
 
-    // 4. Zobraz overlay a tiskni (zůstaneme na stejné stránce)
-    const overlay  = document.getElementById('crtPrintContent');
-    const img      = document.getElementById('crtPrintImg');
-    const footer   = document.getElementById('crtPrintFooter');
-    if (!overlay || !img) return;
+    // 4. Vlož obrázek a tiskni přes body.crt-printing class (spolehlivější než @media print overlay)
+    const img    = document.getElementById('crtPrintImg');
+    const footer = document.getElementById('crtPrintFooter');
+    if (!img) return;
     img.src = dataURL;
     if (footer) footer.textContent = `Kauzální mapa zdraví · CHJ · ${new Date().toLocaleDateString('cs-CZ')}`;
-    overlay.style.display = 'flex';
+    document.body.classList.add('crt-printing');
     setTimeout(() => {
       window.print();
-      overlay.style.display = 'none';
-    }, 150);
+      document.body.classList.remove('crt-printing');
+    }, 100);
   }, 500);
 };
 
