@@ -131,20 +131,24 @@ async function fetchContext(userId, role) {
   else if (role === 'lehkost') q = q.in('node_id', LEHKOST_NODE_IDS);
   const { data: metrics } = await q;
 
-  // 2. Zdravotní profil (diagnózy, labs) + léky z user_medications
+  // 2. Zdravotní profil (diagnózy, labs) + léky + suplementy z user_medications
   const [{ data: profile }, { data: meds }] = await Promise.all([
     supabase.from('user_health_profile')
-      .select('diagnoses, symptoms, family_history, labs, physical, goal_text, doctor_notes, birth_year, sex, medications')
+      .select('diagnoses, symptoms, family_history, labs, physical, goal_text, doctor_notes, birth_year, sex, medications, supplements')
       .eq('user_id', userId).single(),
     supabase.from('user_medications')
       .select('name, dose').eq('user_id', userId).eq('active', true),
   ]);
   if (profile) {
     const profileMeds = (profile.medications || []).map(m => ({ name: typeof m === 'string' ? m : m?.name, dose: m?.dose || '' })).filter(m => m.name);
+    const profileSupps = (profile.supplements || []).map(s => ({ name: typeof s === 'string' ? s : s?.name, dose: s?.dose || '' })).filter(s => s.name);
     const tableMeds   = meds ?? [];
     const seen = new Set(tableMeds.map(m => m.name?.toLowerCase()));
+    // Merge: table meds + profile meds + profile supplements (supps se interně odliší přes Haiku is_supplement)
     const merged = [...tableMeds, ...profileMeds.filter(m => !seen.has(m.name?.toLowerCase()))];
-    profile.medications = merged;
+    const seenAll = new Set(merged.map(m => m.name?.toLowerCase()));
+    const mergedSupps = profileSupps.filter(s => !seenAll.has(s.name?.toLowerCase()));
+    profile.medications = [...merged, ...mergedSupps];
   }
 
   // 3. Poslední check-in (energie, spánek, stres)
