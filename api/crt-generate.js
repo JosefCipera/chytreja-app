@@ -210,7 +210,7 @@ async function resolveMedications(meds) {
       max_tokens: 800,
 
       messages: [{ role: 'user', content:
-        `Pro každý lék níže uveď: INN název, farmakologická skupina, hlavní mechanismus (1 věta česky, max 8 slov), a zda jde o suplement/vitamin/minerál (is_supplement: true) nebo lék na předpis (is_supplement: false).\nVrať POUZE JSON pole, bez komentářů:\n[{"name":"obchodní název","inn":"účinná látka","group":"skupina","effect":"mechanismus","is_supplement":false}]\n\nLéky:\n${list}` }],
+        `Pro každý lék níže uveď: INN název, farmakologická skupina, hlavní mechanismus (1 věta česky, max 8 slov), a zda jde o volně prodejný suplement/vitamin/minerál (is_supplement: true) nebo lék/přípravek vydávaný na předpis (is_supplement: false).\nPoznámka: elektrolyty na předpis (KCl, Kalnormin, Slow-K) jsou léky na předpis — is_supplement: false.\nVrať POUZE JSON pole, bez komentářů:\n[{"name":"obchodní název","inn":"účinná látka","group":"skupina","effect":"mechanismus","is_supplement":false}]\n\nLéky:\n${list}` }],
     }),
   });
   if (!res.ok) {
@@ -412,11 +412,13 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
     throw new Error(`Claude ${res.status}: ${errBody.slice(0, 200)}`);
   }
   const data = await res.json();
-  // Fable vrací JSON někdy v 'text' bloku, někdy v 'refusal' bloku — vezmeme první s obsahem
-  const textBlock = (data.content || []).find(b => (b.type === 'text' || b.type === 'refusal') && (b.text || b.refusal));
-  const text = (textBlock?.text || textBlock?.refusal || '').trim();
   const usage = data.usage || {};
   console.log(`[CRT] model=${modelCfg.id} stop=${data.stop_reason} tokens: input=${usage.input_tokens} output=${usage.output_tokens}`);
+  if (data.stop_reason === 'refusal' || (usage.output_tokens != null && usage.output_tokens < 150)) {
+    throw new Error(`Fable refusal: stop=${data.stop_reason} output_tokens=${usage.output_tokens}`);
+  }
+  const textBlock = (data.content || []).find(b => b.type === 'text' && b.text);
+  const text = (textBlock?.text || '').trim();
 
   const blocks = (data.content || []).map(b => `${b.type}(${b.text?.length ?? b.thinking?.length ?? '?'})`).join(',');
   const jsonMatch = text.match(/\{[\s\S]*\}/);
@@ -633,14 +635,13 @@ export default async function handler(req, res) {
 
   const { userId, role = 'longevity', force = false, model: modelParam } = req.body || {};
 
-  // Výběr modelu: fable default, opus/sonnet5 přes ?model=
-  // Fable effort:low — omezí thinking; trailing commas opravuje JSON cleaner
+  // Výběr modelu: Fable default, Sonnet 5 jako fallback při refusal
   const MODEL_MAP = {
-    opus:    { id: 'claude-opus-4-8',  thinking: false, effort: null,  maxTokens: 8000 },
     sonnet5: { id: 'claude-sonnet-5',  thinking: true,  effort: 'low', maxTokens: 16000 },
     fable:   { id: 'claude-fable-5',   thinking: true,  effort: 'low', maxTokens: 64000 },
   };
-  const modelCfg = MODEL_MAP[modelParam] || MODEL_MAP.opus;
+  const modelCfg = MODEL_MAP[modelParam] || MODEL_MAP.fable;
+  const fallbackCfg = MODEL_MAP.sonnet5;
 
   if (!userId) return res.status(401).json({ error: 'Přihlaste se pro zobrazení mapy.' });
 
@@ -670,8 +671,18 @@ export default async function handler(req, res) {
 
     console.log(`[CRT] generuji nový strom (data changed) metrics=${ctx.metrics.length} profile=${!!ctx.profile.diagnoses}`);
 
-    // 2. Claude vygeneruje strom
-    const crt = await generateCRT(ctx, role, modelCfg);
+    // 2. Claude vygeneruje strom — Fable fallback na Sonnet 5 při safety refusal
+    let crt;
+    try {
+      crt = await generateCRT(ctx, role, modelCfg);
+    } catch (e) {
+      if (modelCfg.id === 'claude-fable-5' && e.message?.includes('refusal')) {
+        console.warn('[CRT] Fable refusal — přepínám na Sonnet 5');
+        crt = await generateCRT(ctx, role, fallbackCfg);
+      } else {
+        throw e;
+      }
+    }
 
     // Post-processing: nahraď odborné/špatné výrazy srozumitelnou češtinou
     const LABEL_FIXES = [
