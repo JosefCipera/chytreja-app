@@ -196,7 +196,7 @@ const NODE_LABELS = {
 
 // Pre-processing: přeloží české obchodní názvy léků na INN + mechanismus
 async function resolveMedications(meds) {
-  if (!meds || meds.length === 0) return [];
+  if (!meds || meds.length === 0) return { meds: [], interactions: [] };
   const list = meds.map(m => `${m.name}${m.dose ? ' ' + m.dose : ''}`).join('\n');
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -207,23 +207,23 @@ async function resolveMedications(meds) {
     },
     body: JSON.stringify({
       model: 'claude-haiku-4-5',
-      max_tokens: 800,
-
+      max_tokens: 1200,
       messages: [{ role: 'user', content:
-        `Pro každý lék níže uveď: INN název, farmakologická skupina, hlavní mechanismus (1 věta česky, max 8 slov), a zda jde o volně prodejný suplement/vitamin/minerál (is_supplement: true) nebo lék/přípravek vydávaný na předpis (is_supplement: false).\nPoznámka: elektrolyty na předpis (KCl, Kalnormin, Slow-K) jsou léky na předpis — is_supplement: false.\nVrať POUZE JSON pole, bez komentářů:\n[{"name":"obchodní název","inn":"účinná látka","group":"skupina","effect":"mechanismus","is_supplement":false}]\n\nLéky:\n${list}` }],
+        `Pro každý lék níže uveď INN název, farmakologickou skupinu, hlavní mechanismus (1 věta česky, max 8 slov), a zda jde o volně prodejný suplement/vitamin/minerál (is_supplement: true) nebo lék/přípravek vydávaný na předpis (is_supplement: false).\nPoznámka: elektrolyty na předpis (KCl, Kalnormin, Slow-K) jsou léky na předpis — is_supplement: false.\n\nNavíc identifikuj klinicky významné interakce mezi léky ze seznamu (pouze skutečné interakce, ne teoretické).\n\nVrať POUZE JSON objekt, bez komentářů:\n{"meds":[{"name":"obchodní název","inn":"účinná látka","group":"skupina","effect":"mechanismus","is_supplement":false}],"interactions":[{"drugs":["Lék A","Lék B"],"note":"Popis interakce česky, max 8 slov"}]}\n\nLéky:\n${list}` }],
     }),
   });
   if (!res.ok) {
     const errBody = await res.text().catch(() => '');
     console.error(`[CRT] resolveMedications ${res.status}:`, errBody.slice(0, 300));
-    return meds.map(m => ({ name: m.name, inn: m.name, group: '', effect: '' }));
+    return { meds: meds.map(m => ({ name: m.name, inn: m.name, group: '', effect: '' })), interactions: [] };
   }
   const data = await res.json();
-  const text = data.content?.[0]?.text?.trim() ?? '[]';
+  const text = data.content?.[0]?.text?.trim() ?? '{}';
   try {
-    const match = text.match(/\[[\s\S]*\]/);
-    return match ? JSON.parse(match[0]) : [];
-  } catch { return []; }
+    const match = text.match(/\{[\s\S]*\}/);
+    const parsed = match ? JSON.parse(match[0]) : {};
+    return { meds: parsed.meds || [], interactions: parsed.interactions || [] };
+  } catch { return { meds: [], interactions: [] }; }
 }
 
 async function generateCRT({ metrics, profile, checkins, nodeInputs }, role, modelCfg) {
@@ -257,8 +257,8 @@ async function generateCRT({ metrics, profile, checkins, nodeInputs }, role, mod
   const diagText     = (profile.diagnoses     || []).join(', ') || 'neuvedeno';
   const sympText     = (profile.symptoms      || []).join(', ') || 'neuvedeno';
   const familyText   = profile.family_history || 'neuvedeno';
-  const resolvedMeds = await resolveMedications(profile.medications || []);
-  const medsText     = resolvedMeds.length
+  const { meds: resolvedMeds, interactions: resolvedInteractions } = await resolveMedications(profile.medications || []);
+  const medsText = resolvedMeds.length
     ? resolvedMeds.map(m => `${m.name} (${m.inn}${m.effect ? ' — ' + m.effect : ''})`).join(', ')
     : 'neuvedeno';
   const labsObj      = profile.labs || {};
@@ -505,7 +505,17 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
       console.log(`[CRT] doplněny chybějící léky: ${missingMapped.map(m => m.name).join(', ')}`);
     }
 
-    crt.medications_map = [...fableMeds, ...missingMapped];
+    const warningMeds = resolvedInteractions.map(ix => ({
+      name:    ix.drugs.join(' + '),
+      targets: rootId ? [rootId] : [],
+      effect:  ix.note || '',
+      type:    'warning',
+      reason:  ix.note || '',
+    }));
+    if (warningMeds.length) {
+      console.log(`[CRT] interakce: ${warningMeds.map(w => w.name).join(', ')}`);
+    }
+    crt.medications_map = [...fableMeds, ...missingMapped, ...warningMeds];
   }
 
   // Post-processing: odstraň hrany porušující topologická pravidla
