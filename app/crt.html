@@ -539,11 +539,10 @@ const _CANONICAL_ROOT_ID = 'ROOT_K';
 const KB_FILES_V2 = [_KB_STORY_MAP.story];
 
 async function loadCRT() {
-  const forceOpus  = new URLSearchParams(location.search).get('opus')  === '1';
   const forceRegen = new URLSearchParams(location.search).get('force') === '1';
-  // ?opus=1 bez explicitního ?model= → opus; ?model=X přepíše
-  const modelParam = new URLSearchParams(location.search).get('model') || (forceOpus ? 'opus' : undefined);
-  if (forceOpus) return loadCRTOpus(forceRegen, modelParam);
+  const modelParam = new URLSearchParams(location.search).get('model') || undefined;
+  // Fable generátor je default pro všechny uživatele; ?kb=story/mozek/... = statický KB pro vývojáře
+  if (!_isStoryBoot) return loadCRTOpus(forceRegen, modelParam);
 
   const [kbs, ctx] = await Promise.all([
     Promise.all(KB_FILES_V2.map(f => fetch(f).then(r => r.json()).catch(() => null))).then(r => r.filter(Boolean)),
@@ -1446,11 +1445,12 @@ window.printCRT = function() {
 
 // ── Top-N: zobraz jen uzly na nejkratší cestě ROOT→každý killer ──────────────
 // Story KB vždy startuje v Plné mapě; biosystem defaultně Top-N (pokud ne ?full=1)
-// Opus data (?opus=1) nemají _kbMap/_activeIds (jiný tvar dat) → computeTopN by spadl, nikdy nezapínat.
+// Fable data (default) nemají _kbMap/_activeIds → computeTopN by spadl, nikdy nezapínat.
+// _isStoryBoot = statický biosystem KB (?kb=story/mozek/...) — vývojářský mód
 const _urlParams   = new URLSearchParams(location.search);
-const _isOpusBoot  = _urlParams.get('opus') === '1';
 const _isStoryBoot = !!_KB_STORY_MAP[_urlParams.get('kb')] || _urlParams.get('kb') === 'full';
-let _topNMode = (_isStoryBoot || _isOpusBoot) ? false : (_urlParams.get('full') !== '1');
+const _isOpusBoot  = !_isStoryBoot; // Fable je default = vždy "opus boot" pokud není story KB
+let _topNMode = _isStoryBoot ? (_urlParams.get('full') !== '1') : false;
 let _rawCrtData = null; // plná nefiltrovaná data
 
 function bfsPath(fromId, toId, nodeMap, activeIds) {
