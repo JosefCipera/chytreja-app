@@ -443,7 +443,7 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
   }
 
   // medications_map — garantuj že VŠECHNY léky/suplementy z profilu jsou zobrazeny.
-  // Fable navrhuje target_node_id; post-processing doplní chybějící a opraví neplatné targety.
+  // Fable navrhuje target_node_id; post-processing opraví typy a doplní chybějící.
   {
     const allNodeIds = new Set([
       ...(crt.nodes || []).map(n => n.id),
@@ -451,16 +451,32 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
     ]);
     const rootId = typeof crt.root === 'string' ? crt.root : crt.root?.id;
 
-    // Normalizuj co Fable vygeneroval
+    // resolvedMeds lookup: name → {inn, group} pro určení správného typu
+    const resolvedMap = Object.fromEntries(
+      resolvedMeds.map(m => [m.name.toLowerCase(), m])
+    );
+    const inferType = (name) => {
+      const r = resolvedMap[name.toLowerCase()];
+      const g = (r?.group || '').toLowerCase();
+      const n = name.toLowerCase();
+      if (/vitamin|minerál|suplement|hořčík|magnesi|omega|probiotik|prebiotik|koenzym|q10|zinek|selen|d3|b12|folat|železo/i.test(g + ' ' + n))
+        return 'protects'; // zelená — suplementy/vitaminy
+      if (/antikoagulans|antiplatelet|warfarin|pradaxa|xarelto|dabigatran|rivaroxaban/i.test(g + ' ' + n))
+        return 'warning';  // žlutá — léky vyžadující pozornost
+      return 'treatment';  // amber — ostatní léky na předpis
+    };
+
+    // Normalizuj co Fable vygeneroval a oprav typy
     const fableMeds = (crt.medications_map || []).map(m => {
       const rawTargets = m.target_node_id ? [m.target_node_id] : (m.targets || []);
       const validTargets = rawTargets.filter(t => allNodeIds.has(t));
       const targets = validTargets.length > 0 ? validTargets : (rootId ? [rootId] : []);
+      const name = (m.medication || m.name || '').trim();
       return {
-        name:    (m.medication || m.name || '').trim(),
+        name,
         targets,
         effect:  m.label || m.effect || '',
-        type:    m.type || 'treatment',
+        type:    inferType(name),
         reason:  m.label || m.reason || '',
       };
     }).filter(m => m.name);
@@ -472,13 +488,16 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
       const n = (m.name || m || '').trim().toLowerCase();
       return n && !fabNames.has(n);
     });
-    const missingMapped = missing.map(m => ({
-      name:    (m.name || m).trim(),
-      targets: rootId ? [rootId] : [],
-      effect:  '',
-      type:    'treatment',
-      reason:  '',
-    }));
+    const missingMapped = missing.map(m => {
+      const name = (m.name || m).trim();
+      return {
+        name,
+        targets: rootId ? [rootId] : [],
+        effect:  '',
+        type:    inferType(name),
+        reason:  '',
+      };
+    });
     if (missingMapped.length) {
       console.log(`[CRT] doplněny chybějící léky: ${missingMapped.map(m => m.name).join(', ')}`);
     }
