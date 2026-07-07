@@ -541,7 +541,8 @@ const KB_FILES_V2 = [_KB_STORY_MAP.story];
 async function loadCRT() {
   const forceRegen = new URLSearchParams(location.search).get('force') === '1';
   const modelParam = new URLSearchParams(location.search).get('model') || undefined;
-  // Fable generátor je default pro všechny uživatele; ?kb=story/mozek/... = statický KB pro vývojáře
+  // Fable generátor = default pro všechny (včetně crt.html bez parametrů)
+  // ?kb=story/mozek/... = statický KB (vývojáři)
   if (!_isStoryBoot) return loadCRTOpus(forceRegen, modelParam);
 
   const [kbs, ctx] = await Promise.all([
