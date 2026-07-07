@@ -391,6 +391,24 @@ Top-N = BFS nejkratší cesty ROOT → každý aktivní UDE killer, union všech
 **Co NENÍ v Top-N (záměrně odstraněno):**
 - Medication pass (byl přidán, pak odebrán — příliš mnoho uzlů u polyfarmace)
 
+### Léky na uzlech CRT — barvy a typy
+
+Barvy léků určuje **systém z dat**, ne AI model:
+
+| Barva | Typ | Kdy |
+|-------|-----|-----|
+| 🟠 amber `#f59e0b` | `treatment` | Lék na předpis (statiny, antikoagulancia, antihypertenziva…) |
+| 🟢 zelená `#4ade80` | `protects` | Suplement / vitamin / minerál (hořčík, D3, omega-3…) |
+| 🟡 žlutá `#fbbf24` | `warning` | Interakce mezi léky (explicitní data) |
+
+**Pipeline:**
+1. `resolveMedications()` (Haiku) → vrátí `is_supplement: true/false` pro každý lék
+2. Post-processing v `crt-generate.js` → `medType(name)`: `is_supplement → 'protects'`, jinak `'treatment'`
+3. Fable určuje pouze `target_node_id` a `label` — **nikdy nerozhoduje o typu/barvě**
+4. Všechny léky z profilu jsou garantovány v `medications_map` (chybějící → fallback na root)
+
+**Pravidlo:** Nikdy nepoužívat AI keyword-matching ani Fable pro určení barev léků.
+
 ### CRT label mód (Laik / Expert)
 
 - `_labelMode`: `'expert'` (default) | `'layman'`

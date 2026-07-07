@@ -207,7 +207,7 @@ async function resolveMedications(meds) {
       max_tokens: 800,
 
       messages: [{ role: 'user', content:
-        `Pro každý lék níže uveď: INN název (účinná látka), farmakologická skupina, a hlavní mechanismus účinku (1 věta česky, max 8 slov).\nVrať POUZE JSON pole, bez komentářů:\n[{"name":"obchodní název","inn":"účinná látka","group":"skupina","effect":"mechanismus"}]\n\nLéky:\n${list}` }],
+        `Pro každý lék níže uveď: INN název, farmakologická skupina, hlavní mechanismus (1 věta česky, max 8 slov), a zda jde o suplement/vitamin/minerál (is_supplement: true) nebo lék na předpis (is_supplement: false).\nVrať POUZE JSON pole, bez komentářů:\n[{"name":"obchodní název","inn":"účinná látka","group":"skupina","effect":"mechanismus","is_supplement":false}]\n\nLéky:\n${list}` }],
     }),
   });
   if (!res.ok) {
@@ -322,11 +322,15 @@ Vrať POUZE validní JSON bez jakéhokoliv doprovodného textu.
     { "node_id": "node_id", "universe": "cardio/metabolism" }
   ],
   "medications_map": [
-    { "medication": "Název", "target_node_id": "node_id", "type": "treatment/protects/warning", "label": "Co dělá v těle" }
+    { "medication": "Název", "target_node_id": "node_id", "label": "Co dělá v těle" }
   ]
 }
 
-POVINNÉ PRAVIDLO PRO medications_map: Každý lék a suplement z pacientova profilu MUSÍ být v medications_map — bez výjimky. Suplementy (hořčík, vitamin D, omega-3 apod.) jsou léky stejně jako farmaka. Pokud lék nemá přímý cílový uzel, přiřaď ho k nejbližšímu relevantnímu uzlu. Pro interakce mezi léky použij type="warning" a vysvětli interferenci v label.
+POVINNÉ PRAVIDLO PRO medications_map:
+- Každý lék a suplement z profilu MUSÍ být zahrnut — bez výjimky.
+- Tvým úkolem je POUZE určit target_node_id (nejrelevantnější uzel) a label (co dělá v těle).
+- Barvy a typy určuje systém z dat — neposílej pole "type".
+- Pokud lék nemá přímý cílový uzel, přiřaď ho k nejbližšímu relevantnímu uzlu.
 
 ### KRITICKÁ PRAVIDLA PRO OBSAH UZLŮ — GOLDRATTOVA CRT:
 
@@ -451,22 +455,12 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
     ]);
     const rootId = typeof crt.root === 'string' ? crt.root : crt.root?.id;
 
-    // resolvedMeds lookup: name → {inn, group} pro určení správného typu
-    const resolvedMap = Object.fromEntries(
-      resolvedMeds.map(m => [m.name.toLowerCase(), m])
-    );
-    const inferType = (name) => {
-      const r = resolvedMap[name.toLowerCase()];
-      const g = (r?.group || '').toLowerCase();
-      const n = name.toLowerCase();
-      if (/vitamin|minerál|suplement|hořčík|magnesi|omega|probiotik|prebiotik|koenzym|q10|zinek|selen|d3|b12|folat|železo/i.test(g + ' ' + n))
-        return 'protects'; // zelená — suplementy/vitaminy
-      if (/antikoagulans|antiplatelet|warfarin|pradaxa|xarelto|dabigatran|rivaroxaban/i.test(g + ' ' + n))
-        return 'warning';  // žlutá — léky vyžadující pozornost
-      return 'treatment';  // amber — ostatní léky na předpis
-    };
+    // Typ léku z dat (Haiku resolveMedications) — Fable nerozhoduje o barvách
+    // is_supplement: true → protects (zelená), false → treatment (amber)
+    const resolvedMap = Object.fromEntries(resolvedMeds.map(m => [m.name.toLowerCase(), m]));
+    const medType = (name) => resolvedMap[name.toLowerCase()]?.is_supplement ? 'protects' : 'treatment';
 
-    // Normalizuj co Fable vygeneroval a oprav typy
+    // Normalizuj co Fable vygeneroval — použij jeho target_node_id, ale typ z dat
     const fableMeds = (crt.medications_map || []).map(m => {
       const rawTargets = m.target_node_id ? [m.target_node_id] : (m.targets || []);
       const validTargets = rawTargets.filter(t => allNodeIds.has(t));
@@ -476,7 +470,7 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
         name,
         targets,
         effect:  m.label || m.effect || '',
-        type:    inferType(name),
+        type:    medType(name),
         reason:  m.label || m.reason || '',
       };
     }).filter(m => m.name);
@@ -494,7 +488,7 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
         name,
         targets: rootId ? [rootId] : [],
         effect:  '',
-        type:    inferType(name),
+        type:    medType(name),
         reason:  '',
       };
     });
