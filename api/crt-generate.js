@@ -414,7 +414,8 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
   // Fable/Opus s adaptive thinking vrací thinking bloky před textem — hledáme první text blok
   const textBlock = (data.content || []).find(b => b.type === 'text');
   const text = textBlock?.text?.trim() ?? '';
-  console.log(`[CRT] model=${modelCfg.id} content blocks:`, (data.content || []).map(b => `${b.type}(${b.text?.length ?? 0})`).join(', '));
+  const usage = data.usage || {};
+  console.log(`[CRT] model=${modelCfg.id} stop=${data.stop_reason} tokens: input=${usage.input_tokens} output=${usage.output_tokens} cache_read=${usage.cache_read_input_tokens ?? 0}`);
 
   const blocks = (data.content || []).map(b => `${b.type}(${b.text?.length ?? b.thinking?.length ?? '?'})`).join(',');
   const jsonMatch = text.match(/\{[\s\S]*\}/);
@@ -635,7 +636,7 @@ export default async function handler(req, res) {
   const MODEL_MAP = {
     opus:    { id: 'claude-opus-4-8',  thinking: false, effort: null,  maxTokens: 8000 },
     sonnet5: { id: 'claude-sonnet-5',  thinking: true,  effort: 'low', maxTokens: 16000 },
-    fable:   { id: 'claude-fable-5',   thinking: false, effort: 'low', maxTokens: 64000 },
+    fable:   { id: 'claude-fable-5',   thinking: true,  effort: 'low', maxTokens: 64000 },
   };
   const modelCfg = MODEL_MAP[modelParam] || MODEL_MAP.fable;
 
