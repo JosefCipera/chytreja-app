@@ -495,19 +495,19 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
       const name = (m.name || m).trim();
       return {
         name,
-        targets: rootId ? [rootId] : [],
+        targets: [],
         effect:  '',
         type:    medType(name),
         reason:  '',
       };
     });
     if (missingMapped.length) {
-      console.log(`[CRT] doplněny chybějící léky: ${missingMapped.map(m => m.name).join(', ')}`);
+      console.log(`[CRT] doplněny chybějící léky (bez uzlu): ${missingMapped.map(m => m.name).join(', ')}`);
     }
 
     const warningMeds = resolvedInteractions.map(ix => ({
       name:    ix.drugs.join(' + '),
-      targets: rootId ? [rootId] : [],
+      targets: [],
       effect:  ix.note || '',
       type:    'warning',
       reason:  ix.note || '',
