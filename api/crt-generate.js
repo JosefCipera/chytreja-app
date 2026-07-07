@@ -141,10 +141,9 @@ async function fetchContext(userId, role) {
   ]);
   if (profile) {
     const profileMeds = (profile.medications || []).map(m => ({ name: typeof m === 'string' ? m : m?.name, dose: m?.dose || '' })).filter(m => m.name);
-    const profileSupps = (profile.supplements || []).map(s => ({ name: typeof s === 'string' ? s : s?.name, dose: s?.dose || '' })).filter(s => s.name);
+    const profileSupps = (profile.supplements || []).map(s => ({ name: typeof s === 'string' ? s : s?.name, dose: s?.dose || '', _fromDb: 'supplements' })).filter(s => s.name);
     const tableMeds   = meds ?? [];
     const seen = new Set(tableMeds.map(m => m.name?.toLowerCase()));
-    // Merge: table meds + profile meds + profile supplements (supps se interně odliší přes Haiku is_supplement)
     const merged = [...tableMeds, ...profileMeds.filter(m => !seen.has(m.name?.toLowerCase()))];
     const seenAll = new Set(merged.map(m => m.name?.toLowerCase()));
     const mergedSupps = profileSupps.filter(s => !seenAll.has(s.name?.toLowerCase()));
@@ -462,10 +461,11 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
     ]);
     const rootId = typeof crt.root === 'string' ? crt.root : crt.root?.id;
 
-    // Typ léku z dat (Haiku resolveMedications) — Fable nerozhoduje o barvách
-    // is_supplement: true → protects (zelená), false → treatment (amber)
+    // Typ léku z dat: zdroj DB supplements → vždy protects; jinak Haiku is_supplement
     const resolvedMap = Object.fromEntries(resolvedMeds.map(m => [m.name.toLowerCase(), m]));
-    const medType = (name) => resolvedMap[name.toLowerCase()]?.is_supplement ? 'protects' : 'treatment';
+    const dbSuppsSet  = new Set((profile.medications || []).filter(m => m._fromDb === 'supplements').map(m => m.name?.toLowerCase()));
+    const medType = (name) => dbSuppsSet.has(name.toLowerCase()) ? 'protects'
+      : (resolvedMap[name.toLowerCase()]?.is_supplement ? 'protects' : 'treatment');
 
     // Normalizuj co Fable vygeneroval — použij jeho target_node_id, ale typ z dat
     const fableMeds = (crt.medications_map || []).map(m => {
