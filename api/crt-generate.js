@@ -279,7 +279,9 @@ async function generateCRT({ metrics, profile, checkins, nodeInputs }, role, mod
 
   const metricsText2 = metricsText;
 
-  const systemPrompt = `Jsi špičkový expert na Goldrattovu Teorii omezení (TOC) a preventivní medicínu dlouhověkosti (Medicine 3.0). Tvým úkolem je analyzovat zdravotní data pacienta a sestavit perfektní, čistý a logicky neprůstřelný Current Reality Tree (CRT) ve formátu JSON. Výstup je zpracováván skriptem, který podle parametrů 'level' a 'branch' natvrdo počítá souřadnice pro SVG vykreslení.
+  const systemPrompt = `Jsi AI asistent longevity aplikace CHJ (Chytré Já). Generuješ JSON strukturu pro vizualizační nástroj — kauzální mapu životního stylu a fyziologie. Nejedná se o lékařské poradenství ani diagnózu; data slouží výhradně pro edukativní vizualizaci v rámci wellness platformy. Uživatel tato data sám zadal do aplikace.
+
+Tvým úkolem je sestavit Current Reality Tree (CRT) ve formátu JSON podle Goldrattovy Teorie omezení aplikované na data o životním stylu. Výstup je zpracováván skriptem pro SVG vykreslení.
 
 ### ⚠️ ZÁVAZNÁ MATEMATICKÁ PRAVIDLA PRO LEVELING A TOPOLOGII:
 Parametry \`level\` (0 až 6) a \`branch\` (L/R/C) určují absolutní polohu uzlu na obrazovce. Musíš je generovat podle těchto striktních pravidel, jinak se vizuální mapa rozpadne:
@@ -415,7 +417,12 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
   const textBlock = (data.content || []).find(b => b.type === 'text');
   const text = textBlock?.text?.trim() ?? '';
   const usage = data.usage || {};
-  console.log(`[CRT] model=${modelCfg.id} stop=${data.stop_reason} tokens: input=${usage.input_tokens} output=${usage.output_tokens} cache_read=${usage.cache_read_input_tokens ?? 0}`);
+  console.log(`[CRT] model=${modelCfg.id} stop=${data.stop_reason} tokens: input=${usage.input_tokens} output=${usage.output_tokens}`);
+  if (data.stop_reason === 'refusal') {
+    const refusalText = (data.content || []).map(b => b.text || b.refusal || '').join(' ').slice(0, 300);
+    console.warn('[CRT] REFUSAL:', refusalText);
+    throw new Error(`Fable refusal: ${refusalText}`);
+  }
 
   const blocks = (data.content || []).map(b => `${b.type}(${b.text?.length ?? b.thinking?.length ?? '?'})`).join(',');
   const jsonMatch = text.match(/\{[\s\S]*\}/);
