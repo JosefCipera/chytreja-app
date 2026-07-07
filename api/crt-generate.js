@@ -442,30 +442,48 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
     }
   }
 
-  // medications_map: {medication, target_node_id, type, label} → {name, targets[], effect, type, reason}
-  if (Array.isArray(crt.medications_map)) {
+  // medications_map — garantuj že VŠECHNY léky/suplementy z profilu jsou zobrazeny.
+  // Fable navrhuje target_node_id; post-processing doplní chybějící a opraví neplatné targety.
+  {
     const allNodeIds = new Set([
       ...(crt.nodes || []).map(n => n.id),
       ...(crt.root ? [typeof crt.root === 'string' ? crt.root : crt.root.id] : []),
     ]);
     const rootId = typeof crt.root === 'string' ? crt.root : crt.root?.id;
 
-    crt.medications_map = crt.medications_map.map(m => {
+    // Normalizuj co Fable vygeneroval
+    const fableMeds = (crt.medications_map || []).map(m => {
       const rawTargets = m.target_node_id ? [m.target_node_id] : (m.targets || []);
-      // Pokud AI vygenerovala target_node_id které neexistuje v grafu → fallback na root
       const validTargets = rawTargets.filter(t => allNodeIds.has(t));
-      const targets = validTargets.length > 0 ? validTargets : (rootId ? [rootId] : rawTargets);
-      if (validTargets.length !== rawTargets.length) {
-        console.log(`[CRT] med "${m.medication || m.name}" target ${rawTargets} → fallback na ${targets}`);
-      }
+      const targets = validTargets.length > 0 ? validTargets : (rootId ? [rootId] : []);
       return {
-        name:    m.medication || m.name || '',
+        name:    (m.medication || m.name || '').trim(),
         targets,
         effect:  m.label || m.effect || '',
         type:    m.type || 'treatment',
         reason:  m.label || m.reason || '',
       };
+    }).filter(m => m.name);
+
+    // Přidej všechny léky z profilu které Fable vynechal
+    const fabNames = new Set(fableMeds.map(m => m.name.toLowerCase()));
+    const profileMeds = profile.medications || [];
+    const missing = profileMeds.filter(m => {
+      const n = (m.name || m || '').trim().toLowerCase();
+      return n && !fabNames.has(n);
     });
+    const missingMapped = missing.map(m => ({
+      name:    (m.name || m).trim(),
+      targets: rootId ? [rootId] : [],
+      effect:  '',
+      type:    'treatment',
+      reason:  '',
+    }));
+    if (missingMapped.length) {
+      console.log(`[CRT] doplněny chybějící léky: ${missingMapped.map(m => m.name).join(', ')}`);
+    }
+
+    crt.medications_map = [...fableMeds, ...missingMapped];
   }
 
   // Post-processing: odstraň hrany porušující topologická pravidla
