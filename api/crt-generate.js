@@ -413,16 +413,11 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
     throw new Error(`Claude ${res.status}: ${errBody.slice(0, 200)}`);
   }
   const data = await res.json();
-  // Fable/Opus s adaptive thinking vrací thinking bloky před textem — hledáme první text blok
-  const textBlock = (data.content || []).find(b => b.type === 'text');
-  const text = textBlock?.text?.trim() ?? '';
+  // Fable vrací JSON někdy v 'text' bloku, někdy v 'refusal' bloku — vezmeme první s obsahem
+  const textBlock = (data.content || []).find(b => (b.type === 'text' || b.type === 'refusal') && (b.text || b.refusal));
+  const text = (textBlock?.text || textBlock?.refusal || '').trim();
   const usage = data.usage || {};
   console.log(`[CRT] model=${modelCfg.id} stop=${data.stop_reason} tokens: input=${usage.input_tokens} output=${usage.output_tokens}`);
-  if (data.stop_reason === 'refusal') {
-    const refusalText = (data.content || []).map(b => b.text || b.refusal || '').join(' ').slice(0, 300);
-    console.warn('[CRT] REFUSAL:', refusalText);
-    throw new Error(`Fable refusal: ${refusalText}`);
-  }
 
   const blocks = (data.content || []).map(b => `${b.type}(${b.text?.length ?? b.thinking?.length ?? '?'})`).join(',');
   const jsonMatch = text.match(/\{[\s\S]*\}/);
