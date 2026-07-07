@@ -541,7 +541,8 @@ const KB_FILES_V2 = [_KB_STORY_MAP.story];
 async function loadCRT() {
   const forceOpus  = new URLSearchParams(location.search).get('opus')  === '1';
   const forceRegen = new URLSearchParams(location.search).get('force') === '1';
-  const modelParam = new URLSearchParams(location.search).get('model') || undefined;
+  // ?opus=1 bez explicitního ?model= → opus; ?model=X přepíše
+  const modelParam = new URLSearchParams(location.search).get('model') || (forceOpus ? 'opus' : undefined);
   if (forceOpus) return loadCRTOpus(forceRegen, modelParam);
 
   const [kbs, ctx] = await Promise.all([
