@@ -505,13 +505,26 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
       console.log(`[CRT] doplněny chybějící léky (bez uzlu): ${missingMapped.map(m => m.name).join(', ')}`);
     }
 
-    const warningMeds = resolvedInteractions.map(ix => ({
-      name:    ix.drugs.join(' + '),
-      targets: [],
-      effect:  ix.note || '',
-      type:    'warning',
-      reason:  ix.note || '',
-    }));
+    // Interakce: targets = union uzlů kde jsou přiřazeny léky z páru
+    const medTargetMap = {};
+    fableMeds.forEach(m => {
+      (m.targets || []).forEach(tid => {
+        (medTargetMap[m.name.toLowerCase()] = medTargetMap[m.name.toLowerCase()] || new Set()).add(tid);
+      });
+    });
+    const warningMeds = resolvedInteractions.map(ix => {
+      const targets = new Set();
+      ix.drugs.forEach(drug => {
+        (medTargetMap[drug.toLowerCase()] || new Set()).forEach(t => targets.add(t));
+      });
+      return {
+        name:    ix.drugs.join(' + '),
+        targets: [...targets],
+        effect:  ix.note || '',
+        type:    'warning',
+        reason:  ix.note || '',
+      };
+    });
     if (warningMeds.length) {
       console.log(`[CRT] interakce: ${warningMeds.map(w => w.name).join(', ')}`);
     }
@@ -521,8 +534,10 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
   // Post-processing: odstraň hrany porušující topologická pravidla
   crt.edges = validateEdges(crt.nodes, crt.root, crt.edges || []);
 
-  // Připoj orphan apex uzly k hlavnímu apexu (validateEdges mohl odebrat jejich hranu)
+  // Připoj uzly bez výstupní hrany (orphan apex) k hlavnímu apexu
   crt.edges = connectOrphans(crt.nodes, crt.root, crt.edges);
+  // Připoj uzly bez vstupní hrany (orphan source) k nejbližšímu nižšímu uzlu
+  crt.edges = connectSourceless(crt.nodes, crt.root, crt.edges);
 
   return crt;
 }
@@ -595,6 +610,34 @@ function connectOrphans(nodes, root, edges) {
       // Orphan — nemá výstupní hranu, připoj k apexu
       console.log(`[CRT] orphan apex připojen: ${n.id} → ${mainApex.id}`);
       result.push({ from: n.id, to: mainApex.id });
+    }
+  });
+
+  return result;
+}
+
+// Připoj uzly bez vstupní hrany (orphan source) k nejbližšímu nižšímu uzlu stejné větve
+function connectSourceless(nodes, root, edges) {
+  const allNodes = [...(nodes || [])];
+  if (root) allNodes.push(root);
+
+  const hasTargets = new Set(edges.map(e => e.to));
+  const result = [...edges];
+
+  allNodes.forEach(n => {
+    if (n.id === root?.id) return;
+    if (hasTargets.has(n.id)) return;
+
+    const candidates = allNodes.filter(c =>
+      c.id !== n.id &&
+      (c.level ?? 0) < (n.level ?? 0) &&
+      (c.branch === n.branch || c.branch === 'C' || n.branch === 'C')
+    ).sort((a, b) => (b.level ?? 0) - (a.level ?? 0));
+
+    if (candidates.length) {
+      const parent = candidates[0];
+      console.log(`[CRT] sourceless napojení: ${parent.id}(L${parent.level}) → ${n.id}(L${n.level})`);
+      result.push({ from: parent.id, to: n.id });
     }
   });
 
