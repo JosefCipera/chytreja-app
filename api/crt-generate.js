@@ -22,7 +22,6 @@ const MODELS = {
   crt:       'claude-fable-5',    // generátor CRT stromu
   fallback:  'claude-sonnet-5',   // fallback při safety refusal
   medparse:  'claude-sonnet-5',   // klasifikace léků (primary_indication, companion_for)
-  interact:  'claude-sonnet-4-6', // detekce interakcí
   reassign:  'claude-haiku-4-5',  // reassignment root-only léků (rychlý, levný)
 };
 // ─────────────────────────────────────────────────────────────────────────────
@@ -250,26 +249,30 @@ async function resolveMedications(meds) {
     } catch (e) { console.warn('[CRT] drug resolve fallback failed:', e.message); }
   }
 
-  // 3. Interakce — Sonnet, vynech záměrné kombinace (PPI + antikoagulant)
-  // Přidej INN do seznamu, aby Sonnet mohl vrátit buď brand nebo INN a lookup fungoval
-  const allNames = meds.map(m => {
-    const name = (m.name || m || '').trim();
-    if (!name || name === 'undefined') return null;
-    const db = DRUGS_DB[name.toLowerCase()];
-    return db?.inn ? `${name} (${db.inn})` : name;
-  }).filter(Boolean).join('\n');
-  let interactions = [];
-  try {
-    const ixText = await haiku(
-      `Ze seznamu léků identifikuj klinicky NEBEZPEČNÉ interakce.\nVYNECH záměrné terapeutické kombinace: PPI s antikoagulanty (gastroprotekce), elektrolyty s diuretiky.\nPro každou interakci napiš note česky: 2-3 věty co se děje v těle, jaké je riziko a proč na to dát pozor. DŮLEŽITÉ: note musí být jeden řádek bez zalomení (věty oddělit tečkou a mezerou).\nVrať POUZE JSON pole:\n[{"drugs":["Lék A","Lék B"],"note":"2-3 věty na jednom řádku"}]\nPokud žádné, vrať [].\n\nLéky:\n${allNames}`,
-      900, MODELS.interact
-    );
-    const m = ixText.match(/\[[\s\S]*?\]/);
-    if (m) {
-      const safe = m[0].replace(/[\r\n]+/g, ' ');
-      try { interactions = JSON.parse(safe); } catch (pe) { console.warn('[CRT] interactions parse:', pe.message, safe.slice(0, 200)); }
-    }
-  } catch (e) { console.error('[CRT] interactions FAILED:', e.message); }
+  // 3. Interakce — deterministické z DRUGS_DB (bez AI)
+  // Vynech záměrné terapeutické kombinace: PPI + antikoagulant (gastroprotekce)
+  const intentionalPairs = new Set(['inhibitor protonové pumpy|antikoagulancium', 'antikoagulancium|inhibitor protonové pumpy']);
+  const allMedKeys = meds.map(m => (m.name || '').toLowerCase().trim()).filter(Boolean);
+  const interactions = [];
+  const seenPairs = new Set();
+  meds.forEach(m => {
+    const keyA = (m.name || '').toLowerCase().trim();
+    const dbA  = DRUGS_DB[keyA];
+    if (!dbA?.interacts_with) return;
+    dbA.interacts_with.forEach(keyB => {
+      if (!allMedKeys.includes(keyB)) return;
+      const pairKey = [keyA, keyB].sort().join('|');
+      if (seenPairs.has(pairKey)) return;
+      // Vynech záměrné terapeutické páry
+      const dbB = DRUGS_DB[keyB];
+      const groupPair = [dbA.group || '', dbB?.group || ''].join('|');
+      if (intentionalPairs.has(groupPair)) return;
+      seenPairs.add(pairKey);
+      const note = dbA.interaction_note || (dbB?.interaction_note) || `Interakce: ${m.name} + ${keyB}`;
+      const medB = meds.find(x => (x.name || '').toLowerCase().trim() === keyB);
+      interactions.push({ drugs: [m.name, medB?.name || keyB], note });
+    });
+  });
 
   console.log(`[CRT] léky: ${resolved.length} (${unknown.length} neznámých), interakce: ${interactions.length}`);
   return { meds: resolved, interactions };
@@ -864,7 +867,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx, modelId) {
   const key = JSON.stringify({
-    _v:          38, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
+    _v:          39, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
     model:       modelId || 'claude-sonnet-5',
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),
