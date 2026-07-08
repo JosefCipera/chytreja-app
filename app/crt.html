@@ -1077,14 +1077,15 @@ function buildPanelData(node, ctx, parents, children, meds, supps, contras, hidd
     return `<div class="cnp-row" style="opacity:${i === 0 ? 1 : 0.4}"><span class="cnp-arr">↑</span>${kbLabel(c)}${extra}</div>`;
   }).join('');
 
-  const treatMeds = (meds || []).filter(m => m.type !== 'warning');
-  const warnMeds  = (meds || []).filter(m => m.type === 'warning');
+  const rxMeds     = (meds || []).filter(m => m.type === 'treatment');
+  const suppMeds   = (meds || []).filter(m => m.type === 'protects');
+  const warnMeds   = (meds || []).filter(m => m.type === 'warning');
 
-  const medHtml = treatMeds.length ? `
+  const medHtml = rxMeds.length ? `
     <div class="cnp-section">
       <p class="cnp-lbl">léková ochrana</p>
       <div style="display:flex;flex-direction:column;gap:6px">
-        ${treatMeds.map(m => {
+        ${rxMeds.map(m => {
           const noteHtml = m.note ? `<span style="display:block;font-size:12px;color:#94a3b8;margin-top:3px;font-style:italic;padding-left:22px">${m.note}</span>` : '';
           const protocolHtml = m.protocol?.length ? `
             <details style="margin-top:6px;padding-left:22px">
@@ -1095,6 +1096,14 @@ function buildPanelData(node, ctx, parents, children, meds, supps, contras, hidd
             </details>` : '';
           return `<span class="cnp-chip" style="align-self:flex-start;flex-direction:column;align-items:flex-start"><span style="display:flex;align-items:center"><i class="ti ti-shield" aria-hidden="true" style="opacity:.7;margin-right:6px"></i><span style="border-left:1px solid rgba(245,158,11,0.3);padding-left:8px">${m.name}</span></span>${noteHtml}${protocolHtml}</span>`;
         }).join('')}
+      </div>
+    </div>` : '';
+
+  const suppPanelHtml = suppMeds.length ? `
+    <div class="cnp-section">
+      <p class="cnp-lbl" style="color:#4ade80">doplňky stravy</p>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        ${suppMeds.map(s => `<span class="cnp-chip" style="background:rgba(34,197,94,0.07);border-color:rgba(34,197,94,0.35);color:#4ade80;align-self:flex-start"><i class="ti ti-leaf" aria-hidden="true" style="opacity:.7;margin-right:6px"></i><span style="border-left:1px solid rgba(34,197,94,0.3);padding-left:8px">${s.name}</span></span>`).join('')}
       </div>
     </div>` : '';
 
@@ -1153,6 +1162,7 @@ function buildPanelData(node, ctx, parents, children, meds, supps, contras, hidd
     ${parentsHtml ? `<div class="cnp-section"><p class="cnp-lbl">způsobeno</p>${parentsHtml}</div>` : ''}
     ${childrenHtml ? `<div class="cnp-section"><p class="cnp-lbl">vede k</p>${childrenHtml}</div>` : ''}
     ${medHtml}
+    ${suppPanelHtml}
     ${suppHtml}
     ${warnHtml}
     ${contraHtml}
