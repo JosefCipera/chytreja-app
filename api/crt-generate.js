@@ -255,11 +255,14 @@ async function resolveMedications(meds) {
   let interactions = [];
   try {
     const ixText = await haiku(
-      `Ze seznamu léků identifikuj klinicky NEBEZPEČNÉ interakce.\nVYNECH záměrné terapeutické kombinace: PPI s antikoagulanty (gastroprotekce), elektrolyty s diuretiky.\nPro každou interakci napiš popis česky, 2–3 věty: co se děje v těle, jaké je riziko a proč na to dát pozor.\nVrať POUZE JSON pole:\n[{"drugs":["Lék A","Lék B"],"note":"2–3 věty česky"}]\nPokud žádné, vrať [].\n\nLéky:\n${allNames}`,
-      800, MODELS.interact
+      `Ze seznamu léků identifikuj klinicky NEBEZPEČNÉ interakce.\nVYNECH záměrné terapeutické kombinace: PPI s antikoagulanty (gastroprotekce), elektrolyty s diuretiky.\nPro každou interakci napiš note česky: 2-3 věty co se děje v těle, jaké je riziko a proč na to dát pozor. DŮLEŽITÉ: note musí být jeden řádek bez zalomení (věty oddělit tečkou a mezerou).\nVrať POUZE JSON pole:\n[{"drugs":["Lék A","Lék B"],"note":"2-3 věty na jednom řádku"}]\nPokud žádné, vrať [].\n\nLéky:\n${allNames}`,
+      900, MODELS.interact
     );
-    const m = ixText.match(/\[[\s\S]*\]/);
-    interactions = m ? JSON.parse(m[0]) : [];
+    const m = ixText.match(/\[[\s\S]*?\]/);
+    if (m) {
+      const safe = m[0].replace(/[\r\n]+/g, ' ');
+      try { interactions = JSON.parse(safe); } catch (pe) { console.warn('[CRT] interactions parse:', pe.message, safe.slice(0, 200)); }
+    }
   } catch (e) { console.warn('[CRT] interactions failed:', e.message); }
 
   console.log(`[CRT] léky: ${resolved.length} (${unknown.length} neznámých), interakce: ${interactions.length}`);
@@ -808,7 +811,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx, modelId) {
   const key = JSON.stringify({
-    _v:          30, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
+    _v:          31, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
     model:       modelId || 'claude-sonnet-5',
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),
