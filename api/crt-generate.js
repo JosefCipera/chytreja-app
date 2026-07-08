@@ -503,6 +503,35 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
       };
     }).filter(m => m.name);
 
+    // Léky přiřazené POUZE na root/apex (level 0 nebo max) nejdou na canvas → Haiku najde lepší uzel
+    {
+      const allCrtNodes = [...(crt.nodes || [])];
+      if (crt.root && typeof crt.root === 'object') allCrtNodes.push(crt.root);
+      const maxLv = allCrtNodes.reduce((m, n) => Math.max(m, n.level ?? 0), 0);
+      const excludedForCanvas = new Set(
+        [rootId, ...allCrtNodes.filter(n => (n.level ?? 0) === 0 || (n.level ?? 0) === maxLv).map(n => n.id)].filter(Boolean)
+      );
+      const eligibleNodes = allCrtNodes.filter(n => !excludedForCanvas.has(n.id));
+      const rootOnlyMeds  = fableMeds.filter(m => m.targets.length > 0 && m.targets.every(t => excludedForCanvas.has(t)));
+      if (rootOnlyMeds.length && eligibleNodes.length) {
+        try {
+          const nodeListRe = eligibleNodes.map(n => `${n.id}: ${n.label}`).join('\n');
+          const medListRe  = rootOnlyMeds.map(m => `${m.name}${m.effect ? ' (' + m.effect + ')' : ''}`).join('\n');
+          const haikuRe = await haiku(
+            `Přiřaď každý lék k nejrelevantnějšímu uzlu ze seznamu podle mechanismu účinku.\nVrať POUZE JSON pole:\n[{"medication":"název","target_node_id":"node_id"}]\n\nUzly:\n${nodeListRe}\n\nLéky:\n${medListRe}`, 400
+          );
+          const rm = haikuRe.match(/\[[\s\S]*\]/);
+          (rm ? JSON.parse(rm[0]) : []).forEach(r => {
+            const med = fableMeds.find(m => m.name.toLowerCase() === (r.medication || '').toLowerCase());
+            if (med && r.target_node_id && eligibleNodes.some(n => n.id === r.target_node_id)) {
+              med.targets = [r.target_node_id];
+              console.log(`[CRT] reassigned root-only: ${med.name} → ${r.target_node_id}`);
+            }
+          });
+        } catch (e) { console.warn('[CRT] med reassign failed:', e.message); }
+      }
+    }
+
     // Přidej všechny léky z profilu které Fable vynechal
     const fabNames = new Set(fableMeds.map(m => m.name.toLowerCase()));
     const profileMeds = profile.medications || [];
