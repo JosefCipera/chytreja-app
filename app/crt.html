@@ -1073,11 +1073,14 @@ function buildPanelData(node, ctx, parents, children, meds, supps, contras, hidd
     return `<div class="cnp-row" style="opacity:${i === 0 ? 1 : 0.4}"><span class="cnp-arr">↑</span>${kbLabel(c)}${extra}</div>`;
   }).join('');
 
-  const medHtml = meds?.length ? `
+  const treatMeds = (meds || []).filter(m => m.type !== 'warning');
+  const warnMeds  = (meds || []).filter(m => m.type === 'warning');
+
+  const medHtml = treatMeds.length ? `
     <div class="cnp-section">
       <p class="cnp-lbl">léková ochrana</p>
       <div style="display:flex;flex-direction:column;gap:6px">
-        ${meds.map(m => {
+        ${treatMeds.map(m => {
           const noteHtml = m.note ? `<span style="display:block;font-size:12px;color:#94a3b8;margin-top:3px;font-style:italic;padding-left:22px">${m.note}</span>` : '';
           const protocolHtml = m.protocol?.length ? `
             <details style="margin-top:6px;padding-left:22px">
@@ -1089,6 +1092,16 @@ function buildPanelData(node, ctx, parents, children, meds, supps, contras, hidd
           return `<span class="cnp-chip" style="align-self:flex-start;flex-direction:column;align-items:flex-start"><span style="display:flex;align-items:center"><i class="ti ti-shield" aria-hidden="true" style="opacity:.7;margin-right:6px"></i><span style="border-left:1px solid rgba(245,158,11,0.3);padding-left:8px">${m.name}</span></span>${noteHtml}${protocolHtml}</span>`;
         }).join('')}
       </div>
+    </div>` : '';
+
+  const warnHtml = warnMeds.length ? `
+    <div class="cnp-section" style="border-left:2px solid #f59e0b">
+      <p class="cnp-lbl" style="color:#f59e0b">⚡ interakce léků</p>
+      ${warnMeds.map(w => `
+        <div style="font-size:13px;color:#fde68a;line-height:1.5;margin-bottom:6px">
+          <strong style="color:#fbbf24">${w.name}</strong><br>
+          <span style="color:#94a3b8">${w.effect || w.reason || ''}</span>
+        </div>`).join('')}
     </div>` : '';
 
   const suppHtml = supps?.length ? `
@@ -1137,6 +1150,7 @@ function buildPanelData(node, ctx, parents, children, meds, supps, contras, hidd
     ${childrenHtml ? `<div class="cnp-section"><p class="cnp-lbl">vede k</p>${childrenHtml}</div>` : ''}
     ${medHtml}
     ${suppHtml}
+    ${warnHtml}
     ${contraHtml}
     ${actionsHtml}
   `;
