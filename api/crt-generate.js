@@ -906,7 +906,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx, modelId) {
   const key = JSON.stringify({
-    _v:          43, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
+    _v:          44, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
     model:       modelId || 'claude-sonnet-5',
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),
@@ -987,9 +987,15 @@ export default async function handler(req, res) {
       [/\bsympatikotonie\b/gi,     'přetížený sympatikus'],
     ];
     const fixLabel = s => s ? LABEL_FIXES.reduce((t, [re, v]) => t.replace(re, v), s) : (s ?? '');
+    // Sanitizace — GPT-4o někdy vrátí strings nebo null místo objektů v nodes
+    if (crt.root && typeof crt.root === 'string') {
+      const rootId = crt.root;
+      crt.root = (crt.nodes || []).find(n => n?.id === rootId) || { id: rootId, label: rootId, level: 0, branch: 'C' };
+    }
+    crt.nodes = (crt.nodes || []).filter(n => n && typeof n === 'object');
     if (crt.root) crt.root.label = fixLabel(crt.root.label);
     (crt.nodes || []).forEach(n => { n.label = fixLabel(n.label); });
-    (crt.injections || []).forEach(n => { n.label = fixLabel(n.label); });
+    (crt.injections || []).filter(n => n && typeof n === 'object').forEach(n => { n.label = fixLabel(n.label); });
 
     // 3. Sestav seznam všech uzlů
     const allNodes = [
