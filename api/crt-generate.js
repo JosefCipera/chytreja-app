@@ -22,7 +22,7 @@ const MODELS = {
   crt:       'claude-fable-5',    // generátor CRT stromu
   fallback:  'claude-sonnet-5',   // fallback při safety refusal
   medparse:  'claude-sonnet-5',   // klasifikace léků (primary_indication, companion_for)
-  interact:  'claude-sonnet-5',   // detekce interakcí
+  interact:  'claude-haiku-4-5',  // detekce interakcí (haiku = zaručeně dostupný)
   reassign:  'claude-haiku-4-5',  // reassignment root-only léků (rychlý, levný)
 };
 // ─────────────────────────────────────────────────────────────────────────────
@@ -269,7 +269,7 @@ async function resolveMedications(meds) {
       const safe = m[0].replace(/[\r\n]+/g, ' ');
       try { interactions = JSON.parse(safe); } catch (pe) { console.warn('[CRT] interactions parse:', pe.message, safe.slice(0, 200)); }
     }
-  } catch (e) { console.warn('[CRT] interactions failed:', e.message); }
+  } catch (e) { console.error('[CRT] interactions FAILED:', e.message); }
 
   console.log(`[CRT] léky: ${resolved.length} (${unknown.length} neznámých), interakce: ${interactions.length}`);
   return { meds: resolved, interactions };
@@ -825,7 +825,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx, modelId) {
   const key = JSON.stringify({
-    _v:          32, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
+    _v:          33, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
     model:       modelId || 'claude-sonnet-5',
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),
