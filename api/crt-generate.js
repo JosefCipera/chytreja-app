@@ -275,6 +275,40 @@ async function resolveMedications(meds) {
   return { meds: resolved, interactions };
 }
 
+async function callGPT4o(systemPrompt, userPrompt, modelCfg) {
+  const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: modelCfg.id,
+      max_completion_tokens: modelCfg.maxTokens,
+      response_format: { type: 'json_object' },
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user',   content: userPrompt },
+      ],
+    }),
+  });
+  if (!res.ok) {
+    const errBody = await res.text().catch(() => '');
+    throw new Error(`GPT-4o ${res.status}: ${errBody.slice(0, 200)}`);
+  }
+  const data = await res.json();
+  const usage = data.usage || {};
+  const text  = data.choices?.[0]?.message?.content?.trim() ?? '';
+  console.log(`[CRT] model=${modelCfg.id} finish=${data.choices?.[0]?.finish_reason} tokens: input=${usage.prompt_tokens} output=${usage.completion_tokens}`);
+  const jsonMatch = text.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) throw new Error(`GPT-4o nevrátil JSON. Text: ${text.slice(0, 300)}`);
+  try { return JSON.parse(jsonMatch[0]); }
+  catch(e) {
+    const cleaned = jsonMatch[0].replace(/,(\s*[}\]])/g, '$1');
+    return JSON.parse(cleaned);
+  }
+}
+
 async function generateCRT({ metrics, profile, checkins, nodeInputs }, role, modelCfg) {
   // Seřaď uzly od nejhoršího — vezmi všechny RED a YELLOW
   const sorted = [...metrics].sort((a, b) => (a.current_index ?? 100) - (b.current_index ?? 100));
@@ -450,54 +484,54 @@ Injections: nejprve léky z profilu (${(profile.medications || []).map(m => m.na
 
 Vrať pouze čistý JSON. Žádný text navíc.`;
 
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'x-api-key': process.env.ANTHROPIC_API_KEY,
-      'anthropic-version': '2023-06-01',
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: modelCfg.id,
-      max_tokens: modelCfg.maxTokens,
-      ...(modelCfg.thinking ? { thinking: { type: 'adaptive' } } : {}),
-      ...(modelCfg.effort   ? { output_config: { effort: modelCfg.effort } } : {}),
-      system: systemPrompt,
-      messages: [{ role: 'user', content: userPrompt }],
-    }),
-  });
-
-  if (!res.ok) {
-    const errBody = await res.text().catch(() => '');
-    throw new Error(`Claude ${res.status}: ${errBody.slice(0, 200)}`);
-  }
-  const data = await res.json();
-  const usage = data.usage || {};
-  console.log(`[CRT] model=${modelCfg.id} stop=${data.stop_reason} tokens: input=${usage.input_tokens} output=${usage.output_tokens}`);
-  if (data.stop_reason === 'refusal' || (usage.output_tokens != null && usage.output_tokens < 150)) {
-    throw new Error(`Fable refusal: stop=${data.stop_reason} output_tokens=${usage.output_tokens}`);
-  }
-  const textBlock = (data.content || []).find(b => b.type === 'text' && b.text);
-  const text = (textBlock?.text || '').trim();
-
-  const blocks = (data.content || []).map(b => `${b.type}(${b.text?.length ?? b.thinking?.length ?? '?'})`).join(',');
-  const jsonMatch = text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) throw new Error(`Claude nevrátil JSON. Model: ${modelCfg.id}. Blocks: ${blocks}. Text: ${text.slice(0, 500)}`);
   let crt;
-  const rawJson = jsonMatch[0];
-  try {
-    crt = JSON.parse(rawJson);
-  } catch(e) {
-    // Trailing commas jsou nejčastější příčina — zkus opravit
-    const cleaned = rawJson.replace(/,(\s*[}\]])/g, '$1');
+  if (modelCfg.provider === 'openai') {
+    crt = await callGPT4o(systemPrompt, userPrompt, modelCfg);
+  } else {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': process.env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: modelCfg.id,
+        max_tokens: modelCfg.maxTokens,
+        ...(modelCfg.thinking ? { thinking: { type: 'adaptive' } } : {}),
+        ...(modelCfg.effort   ? { output_config: { effort: modelCfg.effort } } : {}),
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userPrompt }],
+      }),
+    });
+    if (!res.ok) {
+      const errBody = await res.text().catch(() => '');
+      throw new Error(`Claude ${res.status}: ${errBody.slice(0, 200)}`);
+    }
+    const data = await res.json();
+    const usage = data.usage || {};
+    console.log(`[CRT] model=${modelCfg.id} stop=${data.stop_reason} tokens: input=${usage.input_tokens} output=${usage.output_tokens}`);
+    if (data.stop_reason === 'refusal' || (usage.output_tokens != null && usage.output_tokens < 150)) {
+      throw new Error(`Fable refusal: stop=${data.stop_reason} output_tokens=${usage.output_tokens}`);
+    }
+    const textBlock = (data.content || []).find(b => b.type === 'text' && b.text);
+    const text = (textBlock?.text || '').trim();
+    const blocks = (data.content || []).map(b => `${b.type}(${b.text?.length ?? b.thinking?.length ?? '?'})`).join(',');
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error(`Claude nevrátil JSON. Model: ${modelCfg.id}. Blocks: ${blocks}. Text: ${text.slice(0, 500)}`);
+    const rawJson = jsonMatch[0];
     try {
-      crt = JSON.parse(cleaned);
-      console.log('[CRT] JSON opraven odstraněním trailing commas');
-    } catch(e2) {
-      // Loguj víc kontextu pro debug — kde přesně parse selhal
-      const pos = parseInt((e2.message.match(/position (\d+)/) || [])[1] || '0');
-      const snippet = rawJson.slice(Math.max(0, pos - 80), pos + 80);
-      throw new Error(`JSON parse error: ${e.message}. Near pos ${pos}: ...${snippet}... | Full length: ${rawJson.length}`);
+      crt = JSON.parse(rawJson);
+    } catch(e) {
+      const cleaned = rawJson.replace(/,(\s*[}\]])/g, '$1');
+      try {
+        crt = JSON.parse(cleaned);
+        console.log('[CRT] JSON opraven odstraněním trailing commas');
+      } catch(e2) {
+        const pos = parseInt((e2.message.match(/position (\d+)/) || [])[1] || '0');
+        const snippet = rawJson.slice(Math.max(0, pos - 80), pos + 80);
+        throw new Error(`JSON parse error: ${e.message}. Near pos ${pos}: ...${snippet}... | Full length: ${rawJson.length}`);
+      }
     }
   }
 
@@ -825,7 +859,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx, modelId) {
   const key = JSON.stringify({
-    _v:          33, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
+    _v:          34, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
     model:       modelId || 'claude-sonnet-5',
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),
@@ -845,8 +879,9 @@ export default async function handler(req, res) {
 
   // Výběr modelu: Fable default, Sonnet 5 jako fallback při refusal
   const MODEL_MAP = {
-    sonnet5: { id: MODELS.fallback, thinking: true,  effort: 'low', maxTokens: 16000 },
-    fable:   { id: MODELS.crt,      thinking: true,  effort: 'low', maxTokens: 64000 },
+    sonnet5: { id: MODELS.fallback,  thinking: true,  effort: 'low', maxTokens: 16000 },
+    fable:   { id: MODELS.crt,       thinking: true,  effort: 'low', maxTokens: 64000 },
+    gpt4o:   { id: 'gpt-4o',         provider: 'openai',             maxTokens: 16000 },
   };
   const modelCfg = MODEL_MAP[modelParam] || MODEL_MAP.fable;
   const fallbackCfg = MODEL_MAP.sonnet5;
