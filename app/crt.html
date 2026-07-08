@@ -1216,29 +1216,27 @@ function _buildMedDrawer(forPrint = false) {
   const SPACING_Y = 28;
   const FONT_SIZE = IS_MOBILE ? 13 : 16;
 
-  // Seskup léky + suplementy podle target nodu
-  const byNode = {};
-  medsMap.forEach(m => {
-    (m.targets || []).forEach(tid => { (byNode[tid] = byNode[tid] || []).push(m); });
-  });
-  // Suplementy: ze supplements_map (statický KB) i z medications_map type='protects' (Fable)
-  suppsMap.forEach(s => {
-    const entry = { ...s, type: 'protects' };
-    (s.targets || []).forEach(tid => {
-      if (!(byNode[tid] || []).some(x => x.name === s.name)) {
-        (byNode[tid] = byNode[tid] || []).push(entry);
-      }
-    });
-  });
+  // Root a apex vyloučit z canvasu
+  const rootId = typeof window._crtData?.root === 'string' ? window._crtData.root : window._crtData?.root?.id;
+  const allCrtNodes = [...(window._crtData?.nodes || []), ...(window._crtData?.root && typeof window._crtData.root === 'object' ? [window._crtData.root] : [])];
+  const apexId = allCrtNodes.reduce((best, n) => ((n.level ?? 0) > (best?.level ?? -1) ? n : best), null)?.id;
+  const excludedCanvas = new Set([rootId, apexId].filter(Boolean));
 
-  // Debug: log co je v byNode (jednou při buildu)
-  const protectsNodes = Object.entries(byNode).filter(([, meds]) => meds.some(m => m.type === 'protects'));
-  if (protectsNodes.length === 0) {
-    console.warn('[CRT pills] Žádné suplementy v byNode. medsMap=', medsMap.length, 'suppsMap=', suppsMap.length,
-      'protects v meds=', medsMap.filter(m => m.type === 'protects').map(m => m.name));
-  } else {
-    console.log('[CRT pills] Suplementy v byNode:', protectsNodes.map(([nid, meds]) => `${nid}: ${meds.map(m=>m.name).join(', ')}`));
-  }
+  // Každý lék/doplněk max 1× na canvasu — první validní target (ne root/apex)
+  const byNode = {};
+  const seenOnCanvas = new Set();
+  const allEntries = [
+    ...medsMap,
+    ...suppsMap.map(s => ({ ...s, type: 'protects' })),
+  ];
+  allEntries.forEach(m => {
+    if (!m.name || seenOnCanvas.has(m.name)) return;
+    const target = (m.targets || []).find(t => !excludedCanvas.has(t));
+    if (target) {
+      seenOnCanvas.add(m.name);
+      (byNode[target] = byNode[target] || []).push(m);
+    }
+  });
 
   return function drawMeds(ctx) {
     if (!_visNetwork) return;
