@@ -49,6 +49,16 @@
                                 "interacts_with": ["pradaxa","xarelto","warfarin","anopyrin"],
                                 "interaction_note": "Voltaren (diklofenak) spolu s antikoagulanty zvyšuje riziko závažného krvácení. Neužívat bez konzultace s lékařem." },
 
+  "vizarsin":                 { "inn": "sildenafil",             "group": "PDE5 inhibitor",             "effect": "zvyšuje průtok krve do penisu relaxací hladkého svalstva", "primary_indication": "Erektilní dysfunkce",                        "companion_for": null,      "is_supplement": false,
+                                "interacts_with": ["nitroglycerin","isosorbid","monoket","nitromint","isoket"],
+                                "interaction_note": "Vizarsin (sildenafil) v kombinaci s nitráty (nitroglycerin, isosorbid) způsobuje závažný pokles krevního tlaku ohrožující život. Tato kombinace je absolutně kontraindikována — nikdy neužívat společně." },
+  "nitroglycerin":            { "inn": "nitroglycerin",          "group": "nitrát",                     "effect": "rozšiřuje koronární cévy, ulevuje při angíně",        "primary_indication": "Angina pectoris",                             "companion_for": null,      "is_supplement": false,
+                                "interacts_with": ["vizarsin","cialis","levitra"],
+                                "interaction_note": "Nitráty v kombinaci s PDE5 inhibitory (sildenafil, tadalafil) způsobují závažnou hypotenzi ohrožující život. Absolutní kontraindikace." },
+  "cialis":                   { "inn": "tadalafil",              "group": "PDE5 inhibitor",             "effect": "zvyšuje průtok krve, relaxuje hladké svalstvo",      "primary_indication": "Erektilní dysfunkce",                         "companion_for": null,      "is_supplement": false,
+                                "interacts_with": ["nitroglycerin","isosorbid","monoket","nitromint"],
+                                "interaction_note": "Cialis (tadalafil) v kombinaci s nitráty způsobuje závažný pokles krevního tlaku ohrožující život. Absolutně kontraindikováno." },
+
   "metformin":                { "inn": "metformin",              "group": "biguanid",                   "effect": "snižuje glykémii, zlepšuje citlivost na inzulín",    "primary_indication": "Diabetes 2. typu",                            "companion_for": null,      "is_supplement": false },
   "glucophage":               { "inn": "metformin",              "group": "biguanid",                   "effect": "snižuje glykémii, zlepšuje citlivost na inzulín",    "primary_indication": "Diabetes 2. typu",                            "companion_for": null,      "is_supplement": false },
   "siofor":                   { "inn": "metformin",              "group": "biguanid",                   "effect": "snižuje glykémii, zlepšuje citlivost na inzulín",    "primary_indication": "Diabetes 2. typu",                            "companion_for": null,      "is_supplement": false },
