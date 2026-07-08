@@ -251,7 +251,13 @@ async function resolveMedications(meds) {
   }
 
   // 3. Interakce — Sonnet, vynech záměrné kombinace (PPI + antikoagulant)
-  const allNames = meds.map(m => m.name).join('\n');
+  // Přidej INN do seznamu, aby Sonnet mohl vrátit buď brand nebo INN a lookup fungoval
+  const allNames = meds.map(m => {
+    const name = (m.name || m || '').trim();
+    if (!name || name === 'undefined') return null;
+    const db = DRUGS_DB[name.toLowerCase()];
+    return db?.inn ? `${name} (${db.inn})` : name;
+  }).filter(Boolean).join('\n');
   let interactions = [];
   try {
     const ixText = await haiku(
@@ -417,6 +423,10 @@ PRAVIDLO medications_map:
 7. PRAVIDLO KAUZALITY — KAŽDÁ HRANA MUSÍ MÍT LOGIKU "PROTOŽE":
    - Hrana A→B musí dávat smysl jako: "Protože A, proto B."
    - Pokud si nedokážeš říct "protože X, proto Y", hrana nepatří do grafu.
+
+8. PRAVIDLO UNIKÁTNOSTI UZLŮ:
+   - Žádné dva uzly nesmí popisovat totéž různými slovy (např. "Srdce mimořádně buší" a "Cítí bušení srdce" = duplicita — ZAKÁZÁNO).
+   - Každý uzel musí přidávat odlišnou fyziologickou entitu nebo příčinu, ne jinou formulaci stejného jevu.
 
 Typy uzlů: "cause" (příčina), "junction" (spojení dvou větví), "ude" (aktuálně prožívaný negativní stav — Level 4–5).
 Level 0 = root, Level 6 = Ultimate UDE (apex). Rozsah: 10–14 uzlů celkem (včetně root).`;
@@ -647,10 +657,14 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
     }
 
     // Interakce: targets = union uzlů kde jsou přiřazeny léky z páru
+    // Index podle brand name I INN — Sonnet vrací INN (ibuprofen), profil má brand (Ibalgin)
     const medTargetMap = {};
     fableMeds.forEach(m => {
+      const dbEntry = DRUGS_DB[m.name.toLowerCase()];
+      const keys = [m.name.toLowerCase()];
+      if (dbEntry?.inn) keys.push(dbEntry.inn.toLowerCase());
       (m.targets || []).forEach(tid => {
-        (medTargetMap[m.name.toLowerCase()] = medTargetMap[m.name.toLowerCase()] || new Set()).add(tid);
+        keys.forEach(k => { (medTargetMap[k] = medTargetMap[k] || new Set()).add(tid); });
       });
     });
     const warningMeds = resolvedInteractions.map(ix => {
@@ -811,7 +825,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx, modelId) {
   const key = JSON.stringify({
-    _v:          31, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
+    _v:          32, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
     model:       modelId || 'claude-sonnet-5',
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),
