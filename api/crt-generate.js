@@ -9,7 +9,13 @@
 // =====================================================
 
 import dotenv from 'dotenv';
+import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 dotenv.config({ path: '.env.local' });
+
+const _dir = dirname(fileURLToPath(import.meta.url));
+const DRUGS_DB = JSON.parse(readFileSync(join(_dir, '../data/drugs.json'), 'utf8'));
 
 // ── Modely — měň zde, ne v kódu ──────────────────────────────────────────────
 const MODELS = {
@@ -217,21 +223,47 @@ async function haiku(prompt, maxTokens = 800, model = MODELS.reassign) {
 
 async function resolveMedications(meds) {
   if (!meds || meds.length === 0) return { meds: [], interactions: [] };
-  const list = meds.map(m => `${m.name}${m.dose ? ' ' + m.dose : ''}`).join('\n');
 
-  const [medsText, ixText] = await Promise.all([
-    haiku(`Jsi farmakologický asistent. Pro každý lék níže vrať strukturovaný JSON.\nPravidla:\n- primary_indication: pro jaký stav/diagnózu se primárně užívá (česky, stručně)\n- companion_for: obchodní název léku ke kterému je TENTO lék doplňkem/ochranou (gastroprotekce, elektrolyt, vitamín k léku) — nebo null\n- is_supplement: true pouze pro volně prodejné vitamíny/minerály/suplementy; předpisové elektrolyty (KCl, Kalnormin) jsou false\nVrať POUZE JSON pole:\n[{"name":"...","inn":"...","group":"...","effect":"...","primary_indication":"...","companion_for":null,"is_supplement":false}]\n\nLéky:\n${list}`, 1200, MODELS.medparse),
-    haiku(`Ze seznamu léků níže identifikuj klinicky NEBEZPEČNÉ interakce. VYNECH záměrné kombinace — PPI (omeprazol, pantoprazol, esomeprazol) s antikoagulanty nebo NSAID jsou záměrná gastroprotekce, ne interakce. Vrať POUZE JSON pole:\n[{"drugs":["Lék A","Lék B"],"note":"Popis česky, max 8 slov"}]\nPokud žádné nejsou, vrať [].\n\nLéky:\n${list}`, 600, MODELS.interact),
-  ]);
+  // 1. Dictionary lookup — deterministické, bez AI
+  const resolved = [];
+  const unknown  = [];
+  meds.forEach(m => {
+    const key   = (m.name || '').toLowerCase().trim();
+    const entry = DRUGS_DB[key];
+    if (entry) {
+      resolved.push({ name: m.name, ...entry });
+    } else {
+      unknown.push(m);
+    }
+  });
 
-  let resolvedMeds = [];
-  try { const m = medsText.match(/\[[\s\S]*\]/); resolvedMeds = m ? JSON.parse(m[0]) : []; } catch {}
+  // 2. Sonnet fallback pouze pro neznámé léky
+  if (unknown.length) {
+    const list = unknown.map(m => `${m.name}${m.dose ? ' ' + m.dose : ''}`).join('\n');
+    try {
+      const text = await haiku(
+        `Jsi farmakologický asistent. Pro každý lék vrať JSON.\nPole: inn, group, effect (česky max 8 slov), primary_indication (česky), companion_for (název léku ke kterému je ochranou, nebo null), is_supplement (true jen volně prodejné vitamíny/minerály).\nVrať POUZE JSON pole:\n[{"name":"...","inn":"...","group":"...","effect":"...","primary_indication":"...","companion_for":null,"is_supplement":false}]\n\nLéky:\n${list}`,
+        1200, MODELS.medparse
+      );
+      const m = text.match(/\[[\s\S]*\]/);
+      if (m) resolved.push(...JSON.parse(m[0]));
+    } catch (e) { console.warn('[CRT] drug resolve fallback failed:', e.message); }
+  }
 
+  // 3. Interakce — Sonnet, vynech záměrné kombinace (PPI + antikoagulant)
+  const allNames = meds.map(m => m.name).join('\n');
   let interactions = [];
-  try { const m = ixText.match(/\[[\s\S]*\]/); interactions = m ? JSON.parse(m[0]) : []; } catch {}
+  try {
+    const ixText = await haiku(
+      `Ze seznamu léků identifikuj klinicky NEBEZPEČNÉ interakce. VYNECH záměrné kombinace: PPI s antikoagulanty (gastroprotekce), elektrolyty s diuretiky. Vrať POUZE JSON pole:\n[{"drugs":["Lék A","Lék B"],"note":"Popis česky, max 8 slov"}]\nPokud žádné, vrať [].\n\nLéky:\n${allNames}`,
+      600, MODELS.interact
+    );
+    const m = ixText.match(/\[[\s\S]*\]/);
+    interactions = m ? JSON.parse(m[0]) : [];
+  } catch (e) { console.warn('[CRT] interactions failed:', e.message); }
 
-  console.log(`[CRT] interakce Haiku: ${JSON.stringify(interactions)}`);
-  return { meds: resolvedMeds, interactions };
+  console.log(`[CRT] léky: ${resolved.length} (${unknown.length} neznámých), interakce: ${interactions.length}`);
+  return { meds: resolved, interactions };
 }
 
 async function generateCRT({ metrics, profile, checkins, nodeInputs }, role, modelCfg) {
@@ -764,7 +796,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx, modelId) {
   const key = JSON.stringify({
-    _v:          28, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
+    _v:          29, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
     model:       modelId || 'claude-sonnet-5',
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),
