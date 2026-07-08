@@ -693,7 +693,9 @@ async function loadCRTOpus(force = false, model = undefined) {
     try { detail = (await res.json()).detail || ''; } catch(_) {}
     throw new Error(`CRT generate ${res.status}${detail ? ': ' + detail : ''}`);
   }
-  return res.json();
+  const data = await res.json();
+  if (model) console.log('[CRT debug] medications_map:', JSON.stringify(data.medications_map?.slice(0,6)));
+  return data;
 }
 
 // ── vis.js Network renderer ──────────────────────────────────────────────────
