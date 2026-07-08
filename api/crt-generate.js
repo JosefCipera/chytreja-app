@@ -210,7 +210,7 @@ async function resolveMedications(meds) {
   const list = meds.map(m => `${m.name}${m.dose ? ' ' + m.dose : ''}`).join('\n');
 
   const [medsText, ixText] = await Promise.all([
-    haiku(`Pro každý lék níže uveď INN název, farmakologickou skupinu, hlavní mechanismus (1 věta česky, max 8 slov), a zda jde o volně prodejný suplement/vitamin/minerál (is_supplement: true) nebo lék/přípravek vydávaný na předpis (is_supplement: false).\nPoznámka: elektrolyty na předpis (KCl, Kalnormin, Slow-K) jsou is_supplement: false.\nVrať POUZE JSON pole:\n[{"name":"...","inn":"...","group":"...","effect":"...","is_supplement":false}]\n\nLéky:\n${list}`),
+    haiku(`Jsi farmakologický asistent. Pro každý lék níže vrať strukturovaný JSON.\nPravidla:\n- primary_indication: pro jaký stav/diagnózu se primárně užívá (česky, stručně)\n- companion_for: obchodní název léku ke kterému je TENTO lék doplňkem/ochranou (gastroprotekce, elektrolyt, vitamín k léku) — nebo null\n- is_supplement: true pouze pro volně prodejné vitamíny/minerály/suplementy; předpisové elektrolyty (KCl, Kalnormin) jsou false\nVrať POUZE JSON pole:\n[{"name":"...","inn":"...","group":"...","effect":"...","primary_indication":"...","companion_for":null,"is_supplement":false}]\n\nLéky:\n${list}`, 1200),
     haiku(`Ze seznamu léků níže identifikuj klinicky NEBEZPEČNÉ interakce. VYNECH záměrné kombinace — PPI (omeprazol, pantoprazol, esomeprazol) s antikoagulanty nebo NSAID jsou záměrná gastroprotekce, ne interakce. Vrať POUZE JSON pole:\n[{"drugs":["Lék A","Lék B"],"note":"Popis česky, max 8 slov"}]\nPokud žádné nejsou, vrať [].\n\nLéky:\n${list}`, 600),
   ]);
 
@@ -257,7 +257,13 @@ async function generateCRT({ metrics, profile, checkins, nodeInputs }, role, mod
   const familyText   = profile.family_history || 'neuvedeno';
   const { meds: resolvedMeds, interactions: resolvedInteractions } = await resolveMedications(profile.medications || []);
   const medsText = resolvedMeds.length
-    ? resolvedMeds.map(m => `${m.name} (${m.inn}${m.effect ? ' — ' + m.effect : ''})`).join(', ')
+    ? resolvedMeds.map(m => {
+        const parts = [`${m.name} (${m.inn})`];
+        if (m.primary_indication) parts.push(`indikace: ${m.primary_indication}`);
+        if (m.companion_for)      parts.push(`doplněk k: ${m.companion_for}`);
+        else if (m.effect)        parts.push(m.effect);
+        return parts.join(', ');
+      }).join('\n')
     : 'neuvedeno';
   const labsObj      = profile.labs || {};
   const labsText     = Object.entries(labsObj)
@@ -503,7 +509,25 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
       };
     }).filter(m => m.name);
 
-    // Léky přiřazené POUZE na root/apex (level 0 nebo max) nejdou na canvas → Haiku najde lepší uzel
+    // Krok A: companion_for → stejný uzel jako primární lék (deterministicky, bez AI)
+    {
+      const companionMap = Object.fromEntries(
+        resolvedMeds.filter(m => m.companion_for).map(m => [m.name.toLowerCase(), m.companion_for.toLowerCase()])
+      );
+      fableMeds.forEach(m => {
+        const primaryName = companionMap[m.name.toLowerCase()];
+        if (!primaryName) return;
+        const primary = fableMeds.find(p => p.name.toLowerCase() === primaryName);
+        if (!primary?.targets?.length) return;
+        const t = primary.targets[0];
+        if (t && t !== m.targets[0]) {
+          console.log(`[CRT] companion ${m.name} → ${t} (via ${primary.name})`);
+          m.targets = [t];
+        }
+      });
+    }
+
+    // Krok B: léky stále na root/apex → Haiku najde lepší uzel
     {
       const allCrtNodes = [...(crt.nodes || [])];
       if (crt.root && typeof crt.root === 'object') allCrtNodes.push(crt.root);
@@ -512,29 +536,32 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
         [rootId, ...allCrtNodes.filter(n => (n.level ?? 0) === 0 || (n.level ?? 0) === maxLv).map(n => n.id)].filter(Boolean)
       );
       const eligibleNodes = allCrtNodes.filter(n => !excludedForCanvas.has(n.id));
-      const rootOnlyMeds  = fableMeds.filter(m => m.targets.length > 0 && m.targets.every(t => excludedForCanvas.has(t)));
+      const rootOnlyMeds  = fableMeds.filter(m => !m.targets.length || m.targets.every(t => excludedForCanvas.has(t)));
       if (rootOnlyMeds.length && eligibleNodes.length) {
         try {
           const resolvedByName = Object.fromEntries(resolvedMeds.map(m => [m.name.toLowerCase(), m]));
           const nodeListRe = eligibleNodes.map(n => `${n.id}: ${n.label}`).join('\n');
           const medListRe  = rootOnlyMeds.map(m => {
             const r = resolvedByName[m.name.toLowerCase()];
-            const desc = r ? `${r.inn} — ${r.effect}` : (m.effect || '');
-            return `${m.name}${desc ? ' (' + desc + ')' : ''}`;
+            const parts = [m.name];
+            if (r?.inn)                parts.push(r.inn);
+            if (r?.primary_indication) parts.push(`indikace: ${r.primary_indication}`);
+            else if (r?.effect)        parts.push(r.effect);
+            return parts.join(' — ');
           }).join('\n');
           const assignedCtx = fableMeds
             .filter(m => m.targets.some(t => !excludedForCanvas.has(t)))
-            .map(m => `${m.name} → ${m.targets.filter(t => !excludedForCanvas.has(t))[0]}`)
+            .map(m => `${m.name} → ${m.targets.find(t => !excludedForCanvas.has(t))}`)
             .join('\n');
           const haikuRe = await haiku(
-            `Přiřaď každý lék k nejrelevantnějšímu uzlu. Pokud lék slouží jako ochrana při užívání jiného léku (gastroprotekce PPI s antikoagulantem, doplněk elektrolytů), přiřaď ho ke STEJNÉMU uzlu jako ten lék.\nPřiřazení ostatních léků:\n${assignedCtx}\n\nVrať POUZE JSON pole:\n[{"medication":"název","target_node_id":"node_id"}]\n\nUzly:\n${nodeListRe}\n\nLéky k přiřazení:\n${medListRe}`, 500
+            `Přiřaď každý lék k nejrelevantnějšímu uzlu podle jeho primární indikace.\nPřiřazení ostatních léků (pro kontext):\n${assignedCtx}\n\nVrať POUZE JSON pole:\n[{"medication":"název","target_node_id":"node_id"}]\n\nUzly:\n${nodeListRe}\n\nLéky k přiřazení:\n${medListRe}`, 500
           );
           const rm = haikuRe.match(/\[[\s\S]*\]/);
           (rm ? JSON.parse(rm[0]) : []).forEach(r => {
             const med = fableMeds.find(m => m.name.toLowerCase() === (r.medication || '').toLowerCase());
             if (med && r.target_node_id && eligibleNodes.some(n => n.id === r.target_node_id)) {
               med.targets = [r.target_node_id];
-              console.log(`[CRT] reassigned root-only: ${med.name} → ${r.target_node_id}`);
+              console.log(`[CRT] reassigned: ${med.name} → ${r.target_node_id}`);
             }
           });
         } catch (e) { console.warn('[CRT] med reassign failed:', e.message); }
