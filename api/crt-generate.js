@@ -515,8 +515,13 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
       const rootOnlyMeds  = fableMeds.filter(m => m.targets.length > 0 && m.targets.every(t => excludedForCanvas.has(t)));
       if (rootOnlyMeds.length && eligibleNodes.length) {
         try {
+          const resolvedByName = Object.fromEntries(resolvedMeds.map(m => [m.name.toLowerCase(), m]));
           const nodeListRe = eligibleNodes.map(n => `${n.id}: ${n.label}`).join('\n');
-          const medListRe  = rootOnlyMeds.map(m => `${m.name}${m.effect ? ' (' + m.effect + ')' : ''}`).join('\n');
+          const medListRe  = rootOnlyMeds.map(m => {
+            const r = resolvedByName[m.name.toLowerCase()];
+            const desc = r ? `${r.inn} — ${r.effect}` : (m.effect || '');
+            return `${m.name}${desc ? ' (' + desc + ')' : ''}`;
+          }).join('\n');
           const haikuRe = await haiku(
             `Přiřaď každý lék k nejrelevantnějšímu uzlu ze seznamu podle mechanismu účinku.\nVrať POUZE JSON pole:\n[{"medication":"název","target_node_id":"node_id"}]\n\nUzly:\n${nodeListRe}\n\nLéky:\n${medListRe}`, 400
           );
