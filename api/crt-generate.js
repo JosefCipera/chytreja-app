@@ -466,9 +466,16 @@ PRAVIDLO medications_map:
    - Žádné dva uzly nesmí popisovat totéž různými slovy (např. "Srdce mimořádně buší" a "Cítí bušení srdce" = duplicita — ZAKÁZÁNO).
    - Každý uzel musí přidávat odlišnou fyziologickou entitu nebo příčinu, ne jinou formulaci stejného jevu.
    - Root uzel nesmí být synonymem jiného uzlu ve stromě (např. "Trvalý stres" jako root + "Dlouhodobý stres" jako uzel = duplicita — ZAKÁZÁNO).
+   - Před finalizací projdi všechny uzly a odstraň duplicity — stejný label (nebo synonym) smí existovat pouze jednou.
+
+9. PRAVIDLO SYMPTOMŮ — KAŽDÝ SYMPTOM = UDE UZEL:
+   - Každý symptom uvedený v sekci SYMPTOMY musí být zahrnut jako UDE uzel (type: "ude") ve stromě.
+   - Symptom NENÍ příčina — je to prožívaný negativní stav, proto patří na Level 3–5, nikoli na Level 0–2.
+   - Erektilní dysfunkce = vaskulární UDE (způsobuje ji endoteliální dysfunkce, ateroskleróza, chronický stres → nízký testosteron). Napojen na cévní větev stromu, ne izolovaně.
+   - Vizarsin/sildenafil v lékovém profilu = přímý signal, že ED uzel musí být ve stromě.
 
 Typy uzlů: "cause" (příčina), "junction" (spojení dvou větví), "ude" (aktuálně prožívaný negativní stav — Level 4–5).
-Level 0 = root, Level 6 = Ultimate UDE (apex). Rozsah: 10–14 uzlů celkem (včetně root).`;
+Level 0 = root, Level 6 = Ultimate UDE (apex). Rozsah: 10–16 uzlů celkem (včetně root).`;
 
   const userPrompt = `Sestav CRT strom pro tohoto pacienta:
 
@@ -894,7 +901,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx, modelId) {
   const key = JSON.stringify({
-    _v:          41, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
+    _v:          42, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
     model:       modelId || 'claude-sonnet-5',
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),
