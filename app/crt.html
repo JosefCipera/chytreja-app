@@ -737,8 +737,8 @@ function renderTree(data) {
       color: {
         background: bg,
         border: border,
-        highlight: { background: bg, border: '#80d8f0' },
-        hover:     { background: bg, border: '#60c8e8' },
+        highlight: { background: bg, border: isRoot ? border : '#80d8f0' },
+        hover:     { background: bg, border: isRoot ? border : '#60c8e8' },
       },
       font: { color: textColor, size: IS_MOBILE ? 17 : 22, face: 'Inter, system-ui, sans-serif' },
       borderWidth: bw,
