@@ -326,8 +326,15 @@ Vrať POUZE validní JSON bez jakéhokoliv doprovodného textu.
   "universe_map": [
     { "node_id": "node_id", "universe": "cardio/metabolism" }
   ],
-  "medications_map": []
+  "medications_map": [
+    { "medication": "Název", "target_node_id": "node_id", "label": "Co dělá v těle (max 6 slov)" }
+  ]
 }
+
+PRAVIDLO medications_map:
+- Každý lék a suplement z profilu MUSÍ být zahrnut.
+- Urči target_node_id (nejrelevantnější uzel) a label (mechanismus, max 6 slov).
+- Neposílej pole "type" — barvy určuje systém.
 
 ### KRITICKÁ PRAVIDLA PRO OBSAH UZLŮ — GOLDRATTOVA CRT:
 
@@ -367,6 +374,7 @@ Level 0 = root, Level 6 = Ultimate UDE (apex). Rozsah: 10–14 uzlů celkem (vč
 
 PACIENT: ${profile.birth_year ? (new Date().getFullYear() - profile.birth_year) + 'let' + (profile.sex === 'F' ? 'á' : profile.sex === 'M' ? 'ý' : '') + ' ' : ''}${profile.sex === 'F' ? 'žena' : profile.sex === 'M' ? 'muž' : 'pacient'}
 DIAGNÓZY: ${diagText}
+LÉKY: ${medsText}
 LABS: ${labsText}${sympText !== 'neuvedeno' ? '\nSYMPTOMY: ' + sympText : ''}${doctorText}
 
 SKÓRE UZLŮ (od nejhoršího):
@@ -377,7 +385,7 @@ ${checkinText}
 
 HLAVNÍ ULTIMATE UDE NA VRCHOLU (Level 6): urči sám podle všech dat tohoto pacienta — konkrétní prognostické riziko specifické pro něj (ne generické "zhoršení kvality života").
 
-Injections: 1–2 životní intervence (bez léků). Max 2 celkem.
+Injections: nejprve léky z profilu (${(profile.medications || []).map(m => m.name || m).join(', ') || 'neuvedeno'}), pak 1–2 životní intervence. Max 4 celkem.
 
 Vrať pouze čistý JSON. Žádný text navíc.`;
 
@@ -460,34 +468,38 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
     const medType = (name) => dbSuppsSet.has(name.toLowerCase()) ? 'protects'
       : (resolvedMap[name.toLowerCase()]?.is_supplement ? 'protects' : 'treatment');
 
-    // Haiku přiřadí léky na uzly (Fable je nedostal v promptu)
-    const nodeList = [...allNodeIds].map(id => {
-      const n = [...(crt.nodes || []), crt.root].find(x => x?.id === id);
-      return `${id}: ${n?.label || id}`;
-    }).join('\n');
-    const medList = (profile.medications || []).map(m => m.name || m).filter(Boolean).join('\n');
-    let haikuAssigned = [];
-    if (medList) {
-      try {
-        const haikuResp = await haiku(
-          `Přiřaď každý lék k nejrelevantnějšímu uzlu CRT grafu podle mechanismu účinku.\nVrať POUZE JSON pole:\n[{"medication":"název","target_node_id":"node_id","label":"Co dělá v těle, max 6 slov"}]\n\nUzly:\n${nodeList}\n\nLéky:\n${medList}`,
-          800
-        );
-        const m = haikuResp.match(/\[[\s\S]*\]/);
-        haikuAssigned = m ? JSON.parse(m[0]) : [];
-      } catch (e) { console.warn('[CRT] Haiku med assign failed:', e.message); }
+    // Fable medications_map — pokud prázdná, Haiku přiřadí zvlášť
+    let assigned = (crt.medications_map || []).filter(m => m.medication || m.name);
+    if (!assigned.length) {
+      const nodeList = [...allNodeIds].map(id => {
+        const n = [...(crt.nodes || []), crt.root].find(x => x?.id === id);
+        return `${id}: ${n?.label || id}`;
+      }).join('\n');
+      const medList = (profile.medications || []).map(m => m.name || m).filter(Boolean).join('\n');
+      if (medList) {
+        try {
+          const haikuResp = await haiku(
+            `Přiřaď každý lék k nejrelevantnějšímu uzlu CRT grafu podle mechanismu účinku.\nVrať POUZE JSON pole:\n[{"medication":"název","target_node_id":"node_id","label":"Co dělá v těle, max 6 slov"}]\n\nUzly:\n${nodeList}\n\nLéky:\n${medList}`,
+            800
+          );
+          const m = haikuResp.match(/\[[\s\S]*\]/);
+          assigned = m ? JSON.parse(m[0]) : [];
+          console.log('[CRT] Haiku med assign fallback použit');
+        } catch (e) { console.warn('[CRT] Haiku med assign failed:', e.message); }
+      }
     }
 
-    const fableMeds = haikuAssigned.map(m => {
+    const fableMeds = assigned.map(m => {
       const rawTarget = m.target_node_id;
-      const targets = rawTarget && allNodeIds.has(rawTarget) ? [rawTarget] : [];
+      const validTarget = rawTarget && allNodeIds.has(rawTarget) ? rawTarget : null;
+      const targets = validTarget ? [validTarget] : [];
       const name = (m.medication || m.name || '').trim();
       return {
         name,
         targets,
-        effect:  m.label || '',
+        effect:  m.label || m.effect || '',
         type:    medType(name),
-        reason:  m.label || '',
+        reason:  m.label || m.reason || '',
       };
     }).filter(m => m.name);
 
