@@ -211,7 +211,7 @@ async function resolveMedications(meds) {
 
   const [medsText, ixText] = await Promise.all([
     haiku(`Pro každý lék níže uveď INN název, farmakologickou skupinu, hlavní mechanismus (1 věta česky, max 8 slov), a zda jde o volně prodejný suplement/vitamin/minerál (is_supplement: true) nebo lék/přípravek vydávaný na předpis (is_supplement: false).\nPoznámka: elektrolyty na předpis (KCl, Kalnormin, Slow-K) jsou is_supplement: false.\nVrať POUZE JSON pole:\n[{"name":"...","inn":"...","group":"...","effect":"...","is_supplement":false}]\n\nLéky:\n${list}`),
-    haiku(`Ze seznamu léků níže identifikuj klinicky významné interakce (pouze skutečné, ne teoretické). Vrať POUZE JSON pole, bez komentářů:\n[{"drugs":["Lék A","Lék B"],"note":"Popis česky, max 8 slov"}]\nPokud žádné nejsou, vrať [].\n\nLéky:\n${list}`, 600),
+    haiku(`Ze seznamu léků níže identifikuj klinicky NEBEZPEČNÉ interakce. VYNECH záměrné kombinace — PPI (omeprazol, pantoprazol, esomeprazol) s antikoagulanty nebo NSAID jsou záměrná gastroprotekce, ne interakce. Vrať POUZE JSON pole:\n[{"drugs":["Lék A","Lék B"],"note":"Popis česky, max 8 slov"}]\nPokud žádné nejsou, vrať [].\n\nLéky:\n${list}`, 600),
   ]);
 
   let resolvedMeds = [];
@@ -522,8 +522,12 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
             const desc = r ? `${r.inn} — ${r.effect}` : (m.effect || '');
             return `${m.name}${desc ? ' (' + desc + ')' : ''}`;
           }).join('\n');
+          const assignedCtx = fableMeds
+            .filter(m => m.targets.some(t => !excludedForCanvas.has(t)))
+            .map(m => `${m.name} → ${m.targets.filter(t => !excludedForCanvas.has(t))[0]}`)
+            .join('\n');
           const haikuRe = await haiku(
-            `Přiřaď každý lék k nejrelevantnějšímu uzlu ze seznamu podle mechanismu účinku.\nVrať POUZE JSON pole:\n[{"medication":"název","target_node_id":"node_id"}]\n\nUzly:\n${nodeListRe}\n\nLéky:\n${medListRe}`, 400
+            `Přiřaď každý lék k nejrelevantnějšímu uzlu. Pokud lék slouží jako ochrana při užívání jiného léku (gastroprotekce PPI s antikoagulantem, doplněk elektrolytů), přiřaď ho ke STEJNÉMU uzlu jako ten lék.\nPřiřazení ostatních léků:\n${assignedCtx}\n\nVrať POUZE JSON pole:\n[{"medication":"název","target_node_id":"node_id"}]\n\nUzly:\n${nodeListRe}\n\nLéky k přiřazení:\n${medListRe}`, 500
           );
           const rm = haikuRe.match(/\[[\s\S]*\]/);
           (rm ? JSON.parse(rm[0]) : []).forEach(r => {
