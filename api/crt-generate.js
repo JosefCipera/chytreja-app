@@ -195,11 +195,11 @@ const NODE_LABELS = {
 };
 
 // Pre-processing: přeloží české obchodní názvy léků na INN + mechanismus
-async function haiku(prompt, maxTokens = 800) {
+async function haiku(prompt, maxTokens = 800, model = 'claude-haiku-4-5') {
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: { 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
-    body: JSON.stringify({ model: 'claude-haiku-4-5', max_tokens: maxTokens, messages: [{ role: 'user', content: prompt }] }),
+    body: JSON.stringify({ model, max_tokens: maxTokens, messages: [{ role: 'user', content: prompt }] }),
   });
   if (!res.ok) throw new Error(`Haiku ${res.status}`);
   return (await res.json()).content?.[0]?.text?.trim() ?? '';
@@ -210,8 +210,8 @@ async function resolveMedications(meds) {
   const list = meds.map(m => `${m.name}${m.dose ? ' ' + m.dose : ''}`).join('\n');
 
   const [medsText, ixText] = await Promise.all([
-    haiku(`Jsi farmakologický asistent. Pro každý lék níže vrať strukturovaný JSON.\nPravidla:\n- primary_indication: pro jaký stav/diagnózu se primárně užívá (česky, stručně)\n- companion_for: obchodní název léku ke kterému je TENTO lék doplňkem/ochranou (gastroprotekce, elektrolyt, vitamín k léku) — nebo null\n- is_supplement: true pouze pro volně prodejné vitamíny/minerály/suplementy; předpisové elektrolyty (KCl, Kalnormin) jsou false\nVrať POUZE JSON pole:\n[{"name":"...","inn":"...","group":"...","effect":"...","primary_indication":"...","companion_for":null,"is_supplement":false}]\n\nLéky:\n${list}`, 1200),
-    haiku(`Ze seznamu léků níže identifikuj klinicky NEBEZPEČNÉ interakce. VYNECH záměrné kombinace — PPI (omeprazol, pantoprazol, esomeprazol) s antikoagulanty nebo NSAID jsou záměrná gastroprotekce, ne interakce. Vrať POUZE JSON pole:\n[{"drugs":["Lék A","Lék B"],"note":"Popis česky, max 8 slov"}]\nPokud žádné nejsou, vrať [].\n\nLéky:\n${list}`, 600),
+    haiku(`Jsi farmakologický asistent. Pro každý lék níže vrať strukturovaný JSON.\nPravidla:\n- primary_indication: pro jaký stav/diagnózu se primárně užívá (česky, stručně)\n- companion_for: obchodní název léku ke kterému je TENTO lék doplňkem/ochranou (gastroprotekce, elektrolyt, vitamín k léku) — nebo null\n- is_supplement: true pouze pro volně prodejné vitamíny/minerály/suplementy; předpisové elektrolyty (KCl, Kalnormin) jsou false\nVrať POUZE JSON pole:\n[{"name":"...","inn":"...","group":"...","effect":"...","primary_indication":"...","companion_for":null,"is_supplement":false}]\n\nLéky:\n${list}`, 1200, 'claude-sonnet-5'),
+    haiku(`Ze seznamu léků níže identifikuj klinicky NEBEZPEČNÉ interakce. VYNECH záměrné kombinace — PPI (omeprazol, pantoprazol, esomeprazol) s antikoagulanty nebo NSAID jsou záměrná gastroprotekce, ne interakce. Vrať POUZE JSON pole:\n[{"drugs":["Lék A","Lék B"],"note":"Popis česky, max 8 slov"}]\nPokud žádné nejsou, vrať [].\n\nLéky:\n${list}`, 600, 'claude-sonnet-5'),
   ]);
 
   let resolvedMeds = [];
