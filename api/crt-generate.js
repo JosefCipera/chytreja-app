@@ -434,10 +434,10 @@ PRAVIDLO medications_map:
 
    **ROOT (Level 0, branch C, type "cause")** = jediný kořenový systémový bottleneck.
    - Musí být KONKRÉTNÍ fyziologický/metabolický stav — ne vágní shrnutí!
-   - ✅ "Chronická inzulínová rezistence a hyperglykémie"
-   - ✅ "Metabolický syndrom — viscerální tuk a inzulinová rezistence"
+   - CRITICAL: Root MUSÍ vycházet z reálných diagnóz nebo rizikových faktorů uvedených v profilu pacienta. Nikdy nevymýšlej root který není podložen daty pacienta (např. "vysoký cukr" pokud pacient nemá diabetes).
    - ❌ ZAKÁZÁNO: "Tělo dlouhodobě strádá", "Celkové oslabení organismu", "Komplexní zdravotní stav" — příliš vágní!
-   - Root = jediná nejhlubší systémová příčina ze které vychází celý strom.
+   - ❌ ZAKÁZÁNO: vymýšlet diagnózy které pacient nemá (diabetes, obezita, kouření...) pokud nejsou v DIAGNÓZY nebo LABS.
+   - Root = jediná nejhlubší systémová příčina ze které vychází celý strom — musí být doložitelná z dat pacienta.
 
    **CAUSE (Level 1–3)** = konkrétní patofyziologický mechanismus odvozený z root.
    - ✅ "Ateroskleróza mozkových tepen", "Neuropatie periferních nervů"
@@ -861,7 +861,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx, modelId) {
   const key = JSON.stringify({
-    _v:          36, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
+    _v:          37, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
     model:       modelId || 'claude-sonnet-5',
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),
