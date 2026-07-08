@@ -276,9 +276,11 @@ async function generateCRT({ metrics, profile, checkins, nodeInputs }, role, mod
 
   const metricsText2 = metricsText;
 
-  const systemPrompt = `Jsi AI asistent longevity aplikace CHJ (Chytré Já). Generuješ JSON strukturu pro vizualizační nástroj — kauzální mapu životního stylu a fyziologie. Nejedná se o lékařské poradenství ani diagnózu; data slouží výhradně pro edukativní vizualizaci v rámci wellness platformy. Uživatel tato data sám zadal do aplikace.
+  const systemPrompt = `Tato analýza slouží výhradně jako abstraktní logická simulace systémových vazeb v rámci Teorie omezení (TOC) pro akademické účely vizualizace. Nejedná se o klinickou diagnózu ani terapeutické doporučení pro živého pacienta. Mapování léků provádíš pouze jako teoretické přiřazení mechanismu účinku k danému uzlu.
 
-Tvým úkolem je sestavit Current Reality Tree (CRT) ve formátu JSON podle Goldrattovy Teorie omezení aplikované na data o životním stylu. Výstup je zpracováván skriptem pro SVG vykreslení.
+Jsi AI asistent longevity aplikace CHJ (Chytré Já). Generuješ JSON strukturu pro vizualizační nástroj — kauzální mapu životního stylu a fyziologie. Výstup je zpracováván skriptem pro SVG vykreslení.
+
+Tvým úkolem je sestavit Current Reality Tree (CRT) ve formátu JSON podle Goldrattovy Teorie omezení aplikované na data o životním stylu.
 
 ### ⚠️ ZÁVAZNÁ MATEMATICKÁ PRAVIDLA PRO LEVELING A TOPOLOGII:
 Parametry \`level\` (0 až 6) a \`branch\` (L/R/C) určují absolutní polohu uzlu na obrazovce. Musíš je generovat podle těchto striktních pravidel, jinak se vizuální mapa rozpadne:
@@ -324,16 +326,8 @@ Vrať POUZE validní JSON bez jakéhokoliv doprovodného textu.
   "universe_map": [
     { "node_id": "node_id", "universe": "cardio/metabolism" }
   ],
-  "medications_map": [
-    { "medication": "Název", "target_node_id": "node_id", "label": "Co dělá v těle" }
-  ]
+  "medications_map": []
 }
-
-POVINNÉ PRAVIDLO PRO medications_map:
-- Každý lék a suplement z profilu MUSÍ být zahrnut — bez výjimky.
-- Tvým úkolem je POUZE určit target_node_id (nejrelevantnější uzel) a label (co dělá v těle).
-- Barvy a typy určuje systém z dat — neposílej pole "type".
-- Pokud lék nemá přímý cílový uzel, přiřaď ho k nejbližšímu relevantnímu uzlu.
 
 ### KRITICKÁ PRAVIDLA PRO OBSAH UZLŮ — GOLDRATTOVA CRT:
 
@@ -373,7 +367,6 @@ Level 0 = root, Level 6 = Ultimate UDE (apex). Rozsah: 10–14 uzlů celkem (vč
 
 PACIENT: ${profile.birth_year ? (new Date().getFullYear() - profile.birth_year) + 'let' + (profile.sex === 'F' ? 'á' : profile.sex === 'M' ? 'ý' : '') + ' ' : ''}${profile.sex === 'F' ? 'žena' : profile.sex === 'M' ? 'muž' : 'pacient'}
 DIAGNÓZY: ${diagText}
-LÉKY: ${medsText}
 LABS: ${labsText}${sympText !== 'neuvedeno' ? '\nSYMPTOMY: ' + sympText : ''}${doctorText}
 
 SKÓRE UZLŮ (od nejhoršího):
@@ -384,7 +377,7 @@ ${checkinText}
 
 HLAVNÍ ULTIMATE UDE NA VRCHOLU (Level 6): urči sám podle všech dat tohoto pacienta — konkrétní prognostické riziko specifické pro něj (ne generické "zhoršení kvality života").
 
-Injections: nejprve léky z profilu (${(profile.medications || []).map(m => m.name || m).join(', ') || 'neuvedeno'}), pak 1–2 životní intervence. Max 4 celkem.
+Injections: 1–2 životní intervence (bez léků). Max 2 celkem.
 
 Vrať pouze čistý JSON. Žádný text navíc.`;
 
@@ -467,18 +460,34 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
     const medType = (name) => dbSuppsSet.has(name.toLowerCase()) ? 'protects'
       : (resolvedMap[name.toLowerCase()]?.is_supplement ? 'protects' : 'treatment');
 
-    // Normalizuj co Fable vygeneroval — použij jeho target_node_id, ale typ z dat
-    const fableMeds = (crt.medications_map || []).map(m => {
-      const rawTargets = m.target_node_id ? [m.target_node_id] : (m.targets || []);
-      const validTargets = rawTargets.filter(t => allNodeIds.has(t));
-      const targets = validTargets.length > 0 ? validTargets : (rootId ? [rootId] : []);
+    // Haiku přiřadí léky na uzly (Fable je nedostal v promptu)
+    const nodeList = [...allNodeIds].map(id => {
+      const n = [...(crt.nodes || []), crt.root].find(x => x?.id === id);
+      return `${id}: ${n?.label || id}`;
+    }).join('\n');
+    const medList = (profile.medications || []).map(m => m.name || m).filter(Boolean).join('\n');
+    let haikuAssigned = [];
+    if (medList) {
+      try {
+        const haikuResp = await haiku(
+          `Přiřaď každý lék k nejrelevantnějšímu uzlu CRT grafu podle mechanismu účinku.\nVrať POUZE JSON pole:\n[{"medication":"název","target_node_id":"node_id","label":"Co dělá v těle, max 6 slov"}]\n\nUzly:\n${nodeList}\n\nLéky:\n${medList}`,
+          800
+        );
+        const m = haikuResp.match(/\[[\s\S]*\]/);
+        haikuAssigned = m ? JSON.parse(m[0]) : [];
+      } catch (e) { console.warn('[CRT] Haiku med assign failed:', e.message); }
+    }
+
+    const fableMeds = haikuAssigned.map(m => {
+      const rawTarget = m.target_node_id;
+      const targets = rawTarget && allNodeIds.has(rawTarget) ? [rawTarget] : [];
       const name = (m.medication || m.name || '').trim();
       return {
         name,
         targets,
-        effect:  m.label || m.effect || '',
+        effect:  m.label || '',
         type:    medType(name),
-        reason:  m.label || m.reason || '',
+        reason:  m.label || '',
       };
     }).filter(m => m.name);
 
