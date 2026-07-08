@@ -426,6 +426,7 @@ PRAVIDLO medications_map:
 - Každý lék a suplement z profilu MUSÍ být zahrnut.
 - Urči target_node_id (nejrelevantnější uzel) a label (mechanismus, max 6 slov).
 - Neposílej pole "type" — barvy určuje systém.
+- STRICT VALIDATION RULE: Every target_node_id specified in the medications_map MUST exactly match an existing id defined inside the nodes array. Do not invent, hallucinate, or use alternative IDs under any circumstances.
 
 ### KRITICKÁ PRAVIDLA PRO OBSAH UZLŮ — GOLDRATTOVA CRT:
 
@@ -859,7 +860,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx, modelId) {
   const key = JSON.stringify({
-    _v:          34, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
+    _v:          35, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
     model:       modelId || 'claude-sonnet-5',
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),
