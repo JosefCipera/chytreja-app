@@ -11,6 +11,16 @@
 import dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' });
 
+// ── Modely — měň zde, ne v kódu ──────────────────────────────────────────────
+const MODELS = {
+  crt:       'claude-fable-5',    // generátor CRT stromu
+  fallback:  'claude-sonnet-5',   // fallback při safety refusal
+  medparse:  'claude-sonnet-5',   // klasifikace léků (primary_indication, companion_for)
+  interact:  'claude-sonnet-5',   // detekce interakcí
+  reassign:  'claude-haiku-4-5',  // reassignment root-only léků (rychlý, levný)
+};
+// ─────────────────────────────────────────────────────────────────────────────
+
 const DEKATLON_NODE_IDS = ['sila','stabilita','vo2max','kardio','mobilita','vytrvalost','rovnovaha','plyometrie','dychani'];
 const LEHKOST_NODE_IDS  = ['vyziva','kardio','spanek','mysl'];
 
@@ -195,7 +205,7 @@ const NODE_LABELS = {
 };
 
 // Pre-processing: přeloží české obchodní názvy léků na INN + mechanismus
-async function haiku(prompt, maxTokens = 800, model = 'claude-haiku-4-5') {
+async function haiku(prompt, maxTokens = 800, model = MODELS.reassign) {
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: { 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
@@ -210,8 +220,8 @@ async function resolveMedications(meds) {
   const list = meds.map(m => `${m.name}${m.dose ? ' ' + m.dose : ''}`).join('\n');
 
   const [medsText, ixText] = await Promise.all([
-    haiku(`Jsi farmakologický asistent. Pro každý lék níže vrať strukturovaný JSON.\nPravidla:\n- primary_indication: pro jaký stav/diagnózu se primárně užívá (česky, stručně)\n- companion_for: obchodní název léku ke kterému je TENTO lék doplňkem/ochranou (gastroprotekce, elektrolyt, vitamín k léku) — nebo null\n- is_supplement: true pouze pro volně prodejné vitamíny/minerály/suplementy; předpisové elektrolyty (KCl, Kalnormin) jsou false\nVrať POUZE JSON pole:\n[{"name":"...","inn":"...","group":"...","effect":"...","primary_indication":"...","companion_for":null,"is_supplement":false}]\n\nLéky:\n${list}`, 1200, 'claude-sonnet-5'),
-    haiku(`Ze seznamu léků níže identifikuj klinicky NEBEZPEČNÉ interakce. VYNECH záměrné kombinace — PPI (omeprazol, pantoprazol, esomeprazol) s antikoagulanty nebo NSAID jsou záměrná gastroprotekce, ne interakce. Vrať POUZE JSON pole:\n[{"drugs":["Lék A","Lék B"],"note":"Popis česky, max 8 slov"}]\nPokud žádné nejsou, vrať [].\n\nLéky:\n${list}`, 600, 'claude-sonnet-5'),
+    haiku(`Jsi farmakologický asistent. Pro každý lék níže vrať strukturovaný JSON.\nPravidla:\n- primary_indication: pro jaký stav/diagnózu se primárně užívá (česky, stručně)\n- companion_for: obchodní název léku ke kterému je TENTO lék doplňkem/ochranou (gastroprotekce, elektrolyt, vitamín k léku) — nebo null\n- is_supplement: true pouze pro volně prodejné vitamíny/minerály/suplementy; předpisové elektrolyty (KCl, Kalnormin) jsou false\nVrať POUZE JSON pole:\n[{"name":"...","inn":"...","group":"...","effect":"...","primary_indication":"...","companion_for":null,"is_supplement":false}]\n\nLéky:\n${list}`, 1200, MODELS.medparse),
+    haiku(`Ze seznamu léků níže identifikuj klinicky NEBEZPEČNÉ interakce. VYNECH záměrné kombinace — PPI (omeprazol, pantoprazol, esomeprazol) s antikoagulanty nebo NSAID jsou záměrná gastroprotekce, ne interakce. Vrať POUZE JSON pole:\n[{"drugs":["Lék A","Lék B"],"note":"Popis česky, max 8 slov"}]\nPokud žádné nejsou, vrať [].\n\nLéky:\n${list}`, 600, MODELS.interact),
   ]);
 
   let resolvedMeds = [];
@@ -774,8 +784,8 @@ export default async function handler(req, res) {
 
   // Výběr modelu: Fable default, Sonnet 5 jako fallback při refusal
   const MODEL_MAP = {
-    sonnet5: { id: 'claude-sonnet-5',  thinking: true,  effort: 'low', maxTokens: 16000 },
-    fable:   { id: 'claude-fable-5',   thinking: true,  effort: 'low', maxTokens: 64000 },
+    sonnet5: { id: MODELS.fallback, thinking: true,  effort: 'low', maxTokens: 16000 },
+    fable:   { id: MODELS.crt,      thinking: true,  effort: 'low', maxTokens: 64000 },
   };
   const modelCfg = MODEL_MAP[modelParam] || MODEL_MAP.fable;
   const fallbackCfg = MODEL_MAP.sonnet5;
