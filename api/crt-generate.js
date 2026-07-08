@@ -695,6 +695,34 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
       console.log(`[CRT] doplněny chybějící léky (bez uzlu): ${missingMapped.map(m => m.name).join(', ')}`);
     }
 
+    // Companion pass pro missingMapped (Krok A se aplikoval jen na fableMeds)
+    // Např. Nolpaza (companion_for: Pradaxa) → přiřadí se k uzlu Pradaxy
+    {
+      const fabTargetsByName = {};
+      fableMeds.forEach(m => {
+        const keys = [m.name.toLowerCase()];
+        const db = DRUGS_DB[m.name.toLowerCase()];
+        if (db?.inn) keys.push(db.inn.toLowerCase());
+        keys.forEach(k => { fabTargetsByName[k] = m.targets || []; });
+      });
+      missingMapped.forEach(mm => {
+        const db = DRUGS_DB[mm.name.toLowerCase()];
+        if (!db?.companion_for) return;
+        const primaryKey = db.companion_for.toLowerCase();
+        const primaryDb  = DRUGS_DB[primaryKey];
+        const lookupKeys = [primaryKey];
+        if (primaryDb?.inn) lookupKeys.push(primaryDb.inn.toLowerCase());
+        for (const k of lookupKeys) {
+          const targets = fabTargetsByName[k];
+          if (targets?.length) {
+            mm.targets = [targets[0]];
+            console.log(`[CRT] companion (missing) ${mm.name} → ${targets[0]}`);
+            break;
+          }
+        }
+      });
+    }
+
     // Interakce: targets = union uzlů kde jsou přiřazeny léky z páru
     // Index podle brand name I INN — Sonnet vrací INN (ibuprofen), profil má brand (Ibalgin)
     const medTargetMap = {};
@@ -706,7 +734,6 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
         keys.forEach(k => { (medTargetMap[k] = medTargetMap[k] || new Set()).add(tid); });
       });
     });
-    console.log(`[CRT] resolvedInteractions raw:`, JSON.stringify(resolvedInteractions));
     const warningMeds = resolvedInteractions.map(ix => {
       const targets = new Set();
       ix.drugs.forEach(drug => {
@@ -867,7 +894,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx, modelId) {
   const key = JSON.stringify({
-    _v:          39, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
+    _v:          40, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
     model:       modelId || 'claude-sonnet-5',
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),
