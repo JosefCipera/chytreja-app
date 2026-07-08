@@ -22,7 +22,7 @@ const MODELS = {
   crt:       'claude-fable-5',    // generátor CRT stromu
   fallback:  'claude-sonnet-5',   // fallback při safety refusal
   medparse:  'claude-sonnet-5',   // klasifikace léků (primary_indication, companion_for)
-  interact:  'claude-haiku-4-5',  // detekce interakcí (haiku = zaručeně dostupný)
+  interact:  'claude-sonnet-4-6', // detekce interakcí
   reassign:  'claude-haiku-4-5',  // reassignment root-only léků (rychlý, levný)
 };
 // ─────────────────────────────────────────────────────────────────────────────
@@ -462,6 +462,7 @@ PRAVIDLO medications_map:
 8. PRAVIDLO UNIKÁTNOSTI UZLŮ:
    - Žádné dva uzly nesmí popisovat totéž různými slovy (např. "Srdce mimořádně buší" a "Cítí bušení srdce" = duplicita — ZAKÁZÁNO).
    - Každý uzel musí přidávat odlišnou fyziologickou entitu nebo příčinu, ne jinou formulaci stejného jevu.
+   - Root uzel nesmí být synonymem jiného uzlu ve stromě (např. "Trvalý stres" jako root + "Dlouhodobý stres" jako uzel = duplicita — ZAKÁZÁNO).
 
 Typy uzlů: "cause" (příčina), "junction" (spojení dvou větví), "ude" (aktuálně prožívaný negativní stav — Level 4–5).
 Level 0 = root, Level 6 = Ultimate UDE (apex). Rozsah: 10–14 uzlů celkem (včetně root).`;
@@ -860,7 +861,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx, modelId) {
   const key = JSON.stringify({
-    _v:          35, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
+    _v:          36, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
     model:       modelId || 'claude-sonnet-5',
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),
