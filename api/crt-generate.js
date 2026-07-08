@@ -552,19 +552,28 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
     }).filter(m => m.name);
 
     // Krok A: companion_for → stejný uzel jako primární lék (deterministicky, bez AI)
+    // Fable může použít brand name NEBO INN — matchujeme obojí
     {
-      const companionMap = Object.fromEntries(
-        resolvedMeds.filter(m => m.companion_for).map(m => [m.name.toLowerCase(), m.companion_for.toLowerCase()])
-      );
-      fableMeds.forEach(m => {
-        const primaryName = companionMap[m.name.toLowerCase()];
-        if (!primaryName) return;
-        const primary = fableMeds.find(p => p.name.toLowerCase() === primaryName);
-        if (!primary?.targets?.length) return;
-        const t = primary.targets[0];
-        if (t && t !== m.targets[0]) {
-          console.log(`[CRT] companion ${m.name} → ${t} (via ${primary.name})`);
-          m.targets = [t];
+      const byName = Object.fromEntries(resolvedMeds.map(m => [m.name.toLowerCase(), m]));
+      const byInn  = Object.fromEntries(resolvedMeds.filter(m => m.inn).map(m => [m.inn.toLowerCase(), m]));
+      const lookup = k => byName[k] || byInn[k];
+
+      const findFable = (key) => fableMeds.find(f => {
+        const fl = f.name.toLowerCase();
+        const r  = lookup(fl);
+        return fl === key || (r?.name?.toLowerCase() === key) || (r?.inn?.toLowerCase() === key);
+      });
+
+      resolvedMeds.filter(m => m.companion_for).forEach(comp => {
+        const compFable    = findFable(comp.name.toLowerCase()) || findFable(comp.inn?.toLowerCase());
+        if (!compFable) return;
+        const primaryKey   = comp.companion_for.toLowerCase();
+        const primaryFable = findFable(primaryKey);
+        if (!primaryFable?.targets?.length) return;
+        const t = primaryFable.targets[0];
+        if (t && t !== compFable.targets[0]) {
+          console.log(`[CRT] companion ${compFable.name} → ${t} (via ${primaryFable.name})`);
+          compFable.targets = [t];
         }
       });
     }
