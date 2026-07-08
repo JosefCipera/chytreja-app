@@ -703,10 +703,13 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
         keys.forEach(k => { (medTargetMap[k] = medTargetMap[k] || new Set()).add(tid); });
       });
     });
+    console.log(`[CRT] resolvedInteractions raw:`, JSON.stringify(resolvedInteractions));
     const warningMeds = resolvedInteractions.map(ix => {
       const targets = new Set();
       ix.drugs.forEach(drug => {
-        (medTargetMap[drug.toLowerCase()] || new Set()).forEach(t => targets.add(t));
+        // Strip INN in parentheses: "Pradaxa (dabigatran)" → "pradaxa"
+        const key = drug.replace(/\s*\([^)]*\)/g, '').trim().toLowerCase();
+        (medTargetMap[key] || new Set()).forEach(t => targets.add(t));
       });
       return {
         name:    ix.drugs.join(' + '),
@@ -861,7 +864,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx, modelId) {
   const key = JSON.stringify({
-    _v:          37, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
+    _v:          38, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
     model:       modelId || 'claude-sonnet-5',
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),
