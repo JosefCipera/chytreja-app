@@ -484,6 +484,11 @@ DIAGNÓZY: ${diagText}
 LÉKY: ${medsText}
 LABS: ${labsText}${sympText !== 'neuvedeno' ? '\nSYMPTOMY: ' + sympText : ''}${doctorText}
 
+⚠️ ZÁVAZNÉ INSTRUKCE (PŘED generováním):
+1. ROOT musí být stav přímo doložitelný z DIAGNÓZY nebo LABS výše — ne generická kardiovaskulární příčina bez opory v datech. Pokud pacient nemá hypertenzi v diagnózách, "Vysoký tlak" NENÍ přípustný root.
+2. LÉKY: medications_map musí obsahovat KAŽDÝ lék z LÉKY sekce. Vynechat léky = kritická chyba.
+3. SYMPTOMY: každý symptom z profilu = UDE uzel ve stromě (Pravidlo 9).
+
 SKÓRE UZLŮ (od nejhoršího):
 ${metricsText}
 
@@ -901,7 +906,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx, modelId) {
   const key = JSON.stringify({
-    _v:          42, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
+    _v:          43, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
     model:       modelId || 'claude-sonnet-5',
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),
