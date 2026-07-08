@@ -802,7 +802,7 @@ export default async function handler(req, res) {
       [/\bdyslipidémie\b/gi,       'vysoký LDL'],
       [/\bsympatikotonie\b/gi,     'přetížený sympatikus'],
     ];
-    const fixLabel = s => LABEL_FIXES.reduce((t, [re, v]) => t.replace(re, v), s);
+    const fixLabel = s => s ? LABEL_FIXES.reduce((t, [re, v]) => t.replace(re, v), s) : (s ?? '');
     if (crt.root) crt.root.label = fixLabel(crt.root.label);
     (crt.nodes || []).forEach(n => { n.label = fixLabel(n.label); });
     (crt.injections || []).forEach(n => { n.label = fixLabel(n.label); });
