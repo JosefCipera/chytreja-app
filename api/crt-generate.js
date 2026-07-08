@@ -255,8 +255,8 @@ async function resolveMedications(meds) {
   let interactions = [];
   try {
     const ixText = await haiku(
-      `Ze seznamu léků identifikuj klinicky NEBEZPEČNÉ interakce. VYNECH záměrné kombinace: PPI s antikoagulanty (gastroprotekce), elektrolyty s diuretiky. Vrať POUZE JSON pole:\n[{"drugs":["Lék A","Lék B"],"note":"Popis česky, max 8 slov"}]\nPokud žádné, vrať [].\n\nLéky:\n${allNames}`,
-      600, MODELS.interact
+      `Ze seznamu léků identifikuj klinicky NEBEZPEČNÉ interakce.\nVYNECH záměrné terapeutické kombinace: PPI s antikoagulanty (gastroprotekce), elektrolyty s diuretiky.\nPro každou interakci napiš popis česky, 2–3 věty: co se děje v těle, jaké je riziko a proč na to dát pozor.\nVrať POUZE JSON pole:\n[{"drugs":["Lék A","Lék B"],"note":"2–3 věty česky"}]\nPokud žádné, vrať [].\n\nLéky:\n${allNames}`,
+      800, MODELS.interact
     );
     const m = ixText.match(/\[[\s\S]*\]/);
     interactions = m ? JSON.parse(m[0]) : [];
@@ -540,8 +540,11 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
     const fableMeds = assigned.map(m => {
       const rawTarget = m.target_node_id;
       const validTarget = rawTarget && allNodeIds.has(rawTarget) ? rawTarget : null;
-      const targets = validTarget ? [validTarget] : [];
       const name = (m.medication || m.name || '').trim();
+      const dbEntry = DRUGS_DB[name.toLowerCase()];
+      const noCanvas = dbEntry?.no_canvas === true;
+      const targets = (!noCanvas && validTarget) ? [validTarget] : [];
+      if (noCanvas) console.log(`[CRT] no_canvas: ${name} (${dbEntry?.group})`);
       return {
         name,
         targets,
@@ -605,7 +608,7 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
             .map(m => `${m.name} → ${m.targets.find(t => !excludedForCanvas.has(t))}`)
             .join('\n');
           const haikuRe = await haiku(
-            `Přiřaď každý lék k nejrelevantnějšímu uzlu podle jeho primární indikace.\nPřiřazení ostatních léků (pro kontext):\n${assignedCtx}\n\nVrať POUZE JSON pole:\n[{"medication":"název","target_node_id":"node_id"}]\n\nUzly:\n${nodeListRe}\n\nLéky k přiřazení:\n${medListRe}`, 500
+            `Přiřaď každý lék k nejrelevantnějšímu uzlu CRT grafu podle primární indikace.\nPokud žádný uzel nesedí na indikaci léku (lék léčí jinou oblast než je CRT strom), vrať target_node_id: null — NEPŘIŘAZUJ nasilu.\nPřiřazení ostatních léků (pro kontext):\n${assignedCtx}\n\nVrať POUZE JSON pole:\n[{"medication":"název","target_node_id":"node_id nebo null"}]\n\nUzly:\n${nodeListRe}\n\nLéky k přiřazení:\n${medListRe}`, 500
           );
           const rm = haikuRe.match(/\[[\s\S]*\]/);
           (rm ? JSON.parse(rm[0]) : []).forEach(r => {
@@ -805,7 +808,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx, modelId) {
   const key = JSON.stringify({
-    _v:          29, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
+    _v:          30, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
     model:       modelId || 'claude-sonnet-5',
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),
