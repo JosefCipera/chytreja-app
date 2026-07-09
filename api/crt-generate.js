@@ -15,7 +15,9 @@ import { dirname, join } from 'path';
 dotenv.config({ path: '.env.local' });
 
 const _dir = dirname(fileURLToPath(import.meta.url));
-const DRUGS_DB = JSON.parse(readFileSync(join(_dir, '../data/drugs.json'), 'utf8'));
+const DRUGS_DB   = JSON.parse(readFileSync(join(_dir, '../data/drugs.json'), 'utf8'));
+const STATES_ARR = JSON.parse(readFileSync(join(_dir, '../data/crt/longevity-states.json'), 'utf8'));
+const STATES_DB  = Object.fromEntries(STATES_ARR.map(s => [s.id, s]));
 
 // ── Modely — měň zde, ne v kódu ──────────────────────────────────────────────
 const MODELS = {
@@ -370,123 +372,80 @@ async function generateCRT({ metrics, profile, checkins, nodeInputs }, role, mod
 
   const metricsText2 = metricsText;
 
-  const systemPrompt = `Tato analýza slouží výhradně jako abstraktní logická simulace systémových vazeb v rámci Teorie omezení (TOC) pro akademické účely vizualizace. Nejedná se o klinickou diagnózu ani terapeutické doporučení pro živého pacienta. Mapování léků provádíš pouze jako teoretické přiřazení mechanismu účinku k danému uzlu.
+  // State Dictionary → prompt text
+  const stateListText = STATES_ARR.map(s =>
+    `${s.id} | ${s.label} | typ: ${s.type} | větev: ${s.typical_branch} | level: ${s.typical_level}${s.can_be_root ? ' | může být root' : ''}`
+  ).join('\n');
 
-Jsi AI asistent longevity aplikace CHJ (Chytré Já). Generuješ JSON strukturu pro vizualizační nástroj — kauzální mapu životního stylu a fyziologie. Výstup je zpracováván skriptem pro SVG vykreslení.
+  const systemPrompt = `Tato analýza slouží výhradně jako abstraktní logická simulace systémových vazeb v rámci Teorie omezení (TOC) pro akademické účely vizualizace. Nejedná se o klinickou diagnózu ani terapeutické doporučení.
 
-Tvým úkolem je sestavit Current Reality Tree (CRT) ve formátu JSON podle Goldrattovy Teorie omezení aplikované na data o životním stylu.
+Jsi DETERMINISTICKÝ PARSER kauzálních map pro longevity aplikaci CHJ.
 
-### ⚠️ ZÁVAZNÁ MATEMATICKÁ PRAVIDLA PRO LEVELING A TOPOLOGII:
-Parametry \`level\` (0 až 6) a \`branch\` (L/R/C) určují absolutní polohu uzlu na obrazovce. Musíš je generovat podle těchto striktních pravidel, jinak se vizuální mapa rozpadne:
+TVŮJ JEDINÝ ÚKOL:
+1. Přečti KAUZÁLNÍ POPIS lékaře (sekce KAUZÁLNÍ POPIS v user promptu) — to je zdroj pravdy.
+2. Namapuj každou entitu z popisu na odpovídající ID ze STATE DICTIONARY níže.
+3. Přeložení kauzální vztahy popsané lékařem do JSON struktury.
+4. ŽÁDNÁ KREATIVITA. ŽÁDNÉ VYMÝŠLENÍ. Pouze překlad popisu do struktury.
 
-1. PRAVIDLO KAUZÁLNÍHO STOUPÁNÍ (Osa Y):
-   - Pokud uzel A způsobuje uzel B, pak uzel B MUSÍ mít parametr \`level\` minimálně o 1 vyšší než uzel A (např. uzel A má level 2, uzel B má level 3).
-   - Příčina a její přímý následek NESMÍ mít nikdy stejný level!
+STATE DICTIONARY — JEDINÁ POVOLENÁ ID UZLŮ:
+${stateListText}
 
-2. PRAVIDLO PRO PARALELNÍ VĚTVE (Osa X):
-   - Uzly v levé větvi (branch: "L") a pravé větvi (branch: "R") se vyvíjejí nezávisle.
-   - Na stejný level smíš dát uzel z L a uzel z R POUZE tehdy, pokud jsou v kauzálním řetězci stejně vzdálené od kořene (Level 0). Nesnaž se je uměle zarovnávat horizontálně, pokud jedna větev stoupá rychleji.
+Uzly MIMO State Dictionary jsou ZAKÁZÁNY. Pokud lékařský popis zmiňuje stav který není v dictionary, použij nejbližší ID.
 
-3. PRAVIDLO ŽÁDNÝCH SLEPÝCH ULIČEK (No Dead Ends):
-   - Každý uzel v grafu, kromě samotného vrcholu (Level 6), MUSÍ mít alespoň jednu výstupní hranu (edge) směřující do uzlu na vyšším levelu. Žádný uzel nesmí zůstat "viset" bez následníka.
+### LAYOUT PRAVIDLA (závazná pro vizuální engine):
 
-4. SBÍHAVOST DO JEDNOHO VRCHOLU (Finální trychtýř):
-   - Na samém vrcholu (Level 6, branch: "C") musí být vždy přesně JEDNO HLAVNÍ ULTIMATE UDE (např. "Riziko infarktu a CMP").
-   - Pokud máš na Level 4 nebo 5 dvě závažná UDE (např. "Problémy s erekcí" v L větvi a "Fibrilace síní" v R větvi), obě z nich MUSÍ mít výstupní hranu vedoucí nahoru. Buď se slijí do společného uzlu na Level 5, nebo obě samostatně odkazují hranou přímo do finálního Ultimate UDE na Level 6.
+1. KAUZÁLNÍ STOUPÁNÍ: Pokud A způsobuje B → B má level alespoň o 1 vyšší než A.
 
-5. PRAVIDLO ČISTÝCH VĚTVÍ — ABSOLUTNÍ ZÁKAZ KŘÍŽENÍ:
-   - Uzel branch="L" smí mít hranu VÝHRADNĚ do uzlů branch="L" nebo do uzlu branch="C" s levelem ≥ 5.
-   - Uzel branch="R" smí mít hranu VÝHRADNĚ do uzlů branch="R" nebo do uzlu branch="C" s levelem ≥ 5.
-   - POVOLENO: root (L0, C) → uzel L nebo R větve.
-   - POVOLENO: L nebo R větev → junction C s levelem 5 nebo 6 (vrchol stromu).
-   - ZAKÁZÁNO: hrana z L uzlu do R uzlu nebo naopak kdekoliv ve stromě.
-   - ZAKÁZÁNO: L nebo R uzel → C junction uzel na levelu 1–3 (způsobí vizuální křížení uprostřed stromu).
-   - PRAVIDLO: větve L a R musí zůstat čisté až do levelu 4. Teprve NA VRCHOLU (level 4–6) se větve smí slétat do C junction.
-   - PROČ: renderovací engine kreslí hrany jako přímé čáry. L→C na nízké úrovni vizuálně kříží R větev a znehodnocuje mapu.
+2. PARALELNÍ VĚTVE: L větev a R větev se vyvíjejí nezávisle. Na stejný level dej L a R uzel jen pokud jsou stejně daleko od root.
 
-### FORMÁT VÝSTUPU:
-Vrať POUZE validní JSON bez jakéhokoliv doprovodného textu.
+3. ŽÁDNÉ SLEPÉ ULIČKY: Každý uzel (kromě apex) musí mít hranu výše.
+
+4. JEDEN VRCHOL: Level 6, branch C = jediné Ultimate UDE. Obě větve se musí sbíhat.
+
+5. ČISTÉ VĚTVE — ABSOLUTNÍ ZÁKAZ KŘÍŽENÍ:
+   - L uzel → pouze L uzly nebo C uzel na level ≥ 5.
+   - R uzel → pouze R uzly nebo C uzel na level ≥ 5.
+   - ZAKÁZÁNO: L→R nebo R→L hrana kdekoliv ve stromě.
+   - ZAKÁZÁNO: L nebo R → C junction na level 1–3.
+
+6. KAUZALITA: Hrana A→B musí dávat smysl jako "Protože A, proto B."
+
+### FORMÁT VÝSTUPU — pouze čistý JSON:
 
 {
-  "root": "node_root",
+  "root": "STATE_ID",
   "nodes": [
-    { "id": "node_id", "level": 0, "branch": "C", "type": "cause", "label": "Stručný odborný název (max 5 slov)", "label_layman": "Jednoduché vysvětlení pro laika (max 6 slov)" }
+    { "id": "STATE_ID", "level": 0, "branch": "C", "type": "cause", "label": "z dictionary", "label_layman": "z dictionary" }
   ],
   "edges": [
-    { "from": "node_id", "to": "node_id" }
+    { "from": "STATE_ID", "to": "STATE_ID" }
   ],
   "and_joins": [],
   "injections": [],
-  "universe_map": [
-    { "node_id": "node_id", "universe": "cardio/metabolism" }
-  ],
-  "medications_map": [
-    { "medication": "Název", "target_node_id": "node_id", "label": "Co dělá v těle (max 6 slov)" }
-  ]
+  "universe_map": []
 }
 
-PRAVIDLO medications_map:
-- Každý lék a suplement z profilu MUSÍ být zahrnut.
-- Urči target_node_id (nejrelevantnější uzel) a label (mechanismus, max 6 slov).
-- Neposílej pole "type" — barvy určuje systém.
-- STRICT VALIDATION RULE: Every target_node_id specified in the medications_map MUST exactly match an existing id defined inside the nodes array. Do not invent, hallucinate, or use alternative IDs under any circumstances.
+PRAVIDLA JSON:
+- "id" musí být přesně ID ze STATE DICTIONARY.
+- "label" a "label_layman" přebírej z STATE DICTIONARY (jsou tam pro každé ID).
+- "type" přebírej z STATE DICTIONARY.
+- "level" a "branch" nastav podle layout pravidel (použij typical_level a typical_branch jako výchozí bod).
+- medications_map NEGENERUJ — léky přiřadí systém deterministicky po tvém výstupu.
+- Rozsah: 8–14 uzlů celkem (včetně root).`;
 
-### KRITICKÁ PRAVIDLA PRO OBSAH UZLŮ — GOLDRATTOVA CRT:
+  const hasDoctorNotes = !!(profile.doctor_notes && profile.doctor_notes.trim().length > 20);
 
-6. TYPY UZLŮ A CO DO NICH PATŘÍ:
+  const userPrompt = `Přelož lékařský popis do CRT JSON struktury.
 
-   **ROOT (Level 0, branch C, type "cause")** = jediný kořenový systémový bottleneck.
-   - Musí být KONKRÉTNÍ fyziologický/metabolický stav — ne vágní shrnutí!
-   - CRITICAL: Root MUSÍ vycházet z reálných diagnóz nebo rizikových faktorů uvedených v profilu pacienta. Nikdy nevymýšlej root který není podložen daty pacienta (např. "vysoký cukr" pokud pacient nemá diabetes).
-   - ❌ ZAKÁZÁNO: "Tělo dlouhodobě strádá", "Celkové oslabení organismu", "Komplexní zdravotní stav" — příliš vágní!
-   - ❌ ZAKÁZÁNO: vymýšlet diagnózy které pacient nemá (diabetes, obezita, kouření...) pokud nejsou v DIAGNÓZY nebo LABS.
-   - Root = jediná nejhlubší systémová příčina ze které vychází celý strom — musí být doložitelná z dat pacienta.
-
-   **CAUSE (Level 1–3)** = konkrétní patofyziologický mechanismus odvozený z root.
-   - ✅ "Ateroskleróza mozkových tepen", "Neuropatie periferních nervů"
-   - ❌ ZAKÁZÁNO: anamnestická fakta jako "Prodělal mrtvici v roce X" — toto je vstupní podmínka, ne příčina v CRT!
-   - Anamnéza (prodělané nemoci) patří jako kontext pro výběr root, NIKDY jako standalone uzel.
-
-   **UDE = Undesirable Effect (Level 4–5)** = stav, který pacient AKTUÁLNĚ prožívá negativně a lze ho pozorovat.
-   - ✅ "Chronická bolest zad omezuje pohyb" (pacient to teď cítí)
-   - ✅ "Nestabilní chůze a třes rukou" (pozorovatelné nyní)
-   - ❌ ZAKÁZÁNO: prognózy a předpoklady jako "na hraně kolapsu", "hrozí pád", "pacient křehne" — to jsou budoucí rizika, ne aktuální UDE!
-   - ❌ ZAKÁZÁNO: past tense jako "prodělal", "byl hospitalizován", "utrpěl" — CRT popisuje SOUČASNOU realitu.
-
-   **ULTIMATE UDE (Level 6, branch C)** = jediný bod sbíhání, smí být prognostický.
-   - ✅ "Hrozí recidiva mrtvice nebo imobilizace" — apex smí popisovat budoucí riziko, protože je to cíl celého stromu.
-
-   **JUNCTION (Level 4–5, branch C)** = sbíhavý uzel kde se L a R větve setkají před apexem.
-
-7. PRAVIDLO KAUZALITY — KAŽDÁ HRANA MUSÍ MÍT LOGIKU "PROTOŽE":
-   - Hrana A→B musí dávat smysl jako: "Protože A, proto B."
-   - Pokud si nedokážeš říct "protože X, proto Y", hrana nepatří do grafu.
-
-8. PRAVIDLO UNIKÁTNOSTI UZLŮ:
-   - Žádné dva uzly nesmí popisovat totéž různými slovy (např. "Srdce mimořádně buší" a "Cítí bušení srdce" = duplicita — ZAKÁZÁNO).
-   - Každý uzel musí přidávat odlišnou fyziologickou entitu nebo příčinu, ne jinou formulaci stejného jevu.
-   - Root uzel nesmí být synonymem jiného uzlu ve stromě (např. "Trvalý stres" jako root + "Dlouhodobý stres" jako uzel = duplicita — ZAKÁZÁNO).
-   - Před finalizací projdi všechny uzly a odstraň duplicity — stejný label (nebo synonym) smí existovat pouze jednou.
-
-Typy uzlů: "cause" (příčina), "junction" (spojení dvou větví), "ude" (aktuálně prožívaný negativní stav — Level 4–5).
-Level 0 = root, Level 6 = Ultimate UDE (apex). Rozsah: 10–14 uzlů celkem (včetně root).`;
-
-  const userPrompt = `Sestav CRT strom pro tohoto pacienta:
-
-PACIENT: ${profile.birth_year ? (new Date().getFullYear() - profile.birth_year) + 'let' + (profile.sex === 'F' ? 'á' : profile.sex === 'M' ? 'ý' : '') + ' ' : ''}${profile.sex === 'F' ? 'žena' : profile.sex === 'M' ? 'muž' : 'pacient'}
 DIAGNÓZY: ${diagText}
-LÉKY: ${medsText}
-LABS: ${labsText}${sympText !== 'neuvedeno' ? '\nSYMPTOMY: ' + sympText : ''}${doctorText}
+LABS: ${labsText}${sympText !== 'neuvedeno' ? '\nSYMPTOMY: ' + sympText : ''}
 
-SKÓRE UZLŮ (od nejhoršího):
-${metricsText}
+${hasDoctorNotes
+  ? `KAUZÁLNÍ POPIS (zdroj pravdy — přelož přesně, neměň kauzalitu):
+${profile.doctor_notes.trim()}
 
-POSLEDNÍ CHECK-INY:
-${checkinText}
-
-HLAVNÍ ULTIMATE UDE NA VRCHOLU (Level 6): urči sám podle všech dat tohoto pacienta — konkrétní prognostické riziko specifické pro něj (ne generické "zhoršení kvality života").
-
-Injections: nejprve léky z profilu (${(profile.medications || []).map(m => m.name || m).join(', ') || 'neuvedeno'}), pak 1–2 životní intervence. Max 4 celkem.
+Instrukce: Namapuj každou entitu z KAUZÁLNÍHO POPISU na ID ze STATE DICTIONARY. Použij přesně ty kauzální vztahy které popis uvádí. Apex (Level 6) = hlavní riziko vyplývající z popisu.`
+  : `Kauzální popis není k dispozici. Odvoď kauzální řetěz z DIAGNÓZY a LABS. Použij pouze ID ze STATE DICTIONARY.`}
 
 Vrať pouze čistý JSON. Žádný text navíc.`;
 
@@ -554,206 +513,115 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
     }
   }
 
-  // medications_map — garantuj že VŠECHNY léky/suplementy z profilu jsou zobrazeny.
-  // Fable navrhuje target_node_id; post-processing opraví typy a doplní chybějící.
+  // Soft validation: odstraň uzly s ID mimo STATES_DB, přebij labely z State Dictionary
   {
-    const allNodeIds = new Set([
+    const before = (crt.nodes || []).length;
+    crt.nodes = (crt.nodes || []).filter(n => {
+      if (!n?.id || !STATES_DB[n.id]) {
+        console.log(`[CRT] soft-validation: odstraněn neznámý uzel '${n?.id}'`);
+        return false;
+      }
+      return true;
+    });
+    if ((crt.nodes || []).length < before)
+      console.log(`[CRT] soft-validation: odstraněno ${before - crt.nodes.length} uzlů`);
+
+    // Kanonické labely ze State Dictionary — eliminuje různé překlady téhož ID
+    const applyStateLabels = n => {
+      const def = STATES_DB[n?.id];
+      if (def) { n.label = def.label; n.label_layman = def.label_layman; n.type = def.type; }
+    };
+    (crt.nodes || []).forEach(applyStateLabels);
+    if (crt.root && typeof crt.root === 'object') applyStateLabels(crt.root);
+  }
+
+  // medications_map — DETERMINISTICKY z STATES_DB.med_targets, žádné AI
+  {
+    const activeStateIds = new Set([
       ...(crt.nodes || []).map(n => n.id),
       ...(crt.root ? [typeof crt.root === 'string' ? crt.root : crt.root.id] : []),
     ]);
-    const rootId = typeof crt.root === 'string' ? crt.root : crt.root?.id;
 
-    // Typ léku z dat: zdroj DB supplements → vždy protects; jinak Haiku is_supplement
+    // Reverse map: drug key (lowercase brand/INN) → [active state_id, ...]
+    const drugToStates = {};
+    for (const sid of activeStateIds) {
+      for (const drug of (STATES_DB[sid]?.med_targets || [])) {
+        const k = drug.toLowerCase();
+        (drugToStates[k] = drugToStates[k] || []).push(sid);
+      }
+    }
+
     const resolvedMap = Object.fromEntries(resolvedMeds.map(m => [m.name.toLowerCase(), m]));
     const dbSuppsSet  = new Set((profile.medications || []).filter(m => m._fromDb === 'supplements').map(m => m.name?.toLowerCase()));
-    const medType = (name) => dbSuppsSet.has(name.toLowerCase()) ? 'protects'
+    const medType = name => dbSuppsSet.has(name.toLowerCase()) ? 'protects'
       : (resolvedMap[name.toLowerCase()]?.is_supplement ? 'protects' : 'treatment');
 
-    // Fable medications_map — pokud prázdná, Haiku přiřadí zvlášť
-    let assigned = (crt.medications_map || []).filter(m => m.medication || m.name);
-    if (!assigned.length) {
-      const nodeList = [...allNodeIds].map(id => {
-        const n = [...(crt.nodes || []), crt.root].find(x => x?.id === id);
-        return `${id}: ${n?.label || id}`;
-      }).join('\n');
-      const medList = (profile.medications || []).map(m => m.name || m).filter(Boolean).join('\n');
-      if (medList) {
-        try {
-          const haikuResp = await haiku(
-            `Přiřaď každý lék k nejrelevantnějšímu uzlu CRT grafu podle mechanismu účinku.\nVrať POUZE JSON pole:\n[{"medication":"název","target_node_id":"node_id","label":"Co dělá v těle, max 6 slov"}]\n\nUzly:\n${nodeList}\n\nLéky:\n${medList}`,
-            800
-          );
-          const m = haikuResp.match(/\[[\s\S]*\]/);
-          assigned = m ? JSON.parse(m[0]) : [];
-          console.log('[CRT] Haiku med assign fallback použit');
-        } catch (e) { console.warn('[CRT] Haiku med assign failed:', e.message); }
+    // Pass 1: přiřaď každý lék ze State Dictionary (brand nebo INN lookup)
+    const primaryMeds = [];
+    for (const m of (profile.medications || [])) {
+      const name    = (m.name || m || '').trim();
+      if (!name) continue;
+      const nameLow = name.toLowerCase();
+      const dbEntry = DRUGS_DB[nameLow];
+
+      if (dbEntry?.no_canvas) { console.log(`[CRT] no_canvas: ${name}`); continue; }
+
+      let targets = drugToStates[nameLow] || [];
+      if (!targets.length && dbEntry?.inn)
+        targets = drugToStates[dbEntry.inn.toLowerCase()] || [];
+
+      primaryMeds.push({
+        name,
+        targets:      [...targets],
+        effect:       dbEntry?.effect || '',
+        type:         medType(name),
+        reason:       dbEntry?.effect || '',
+        _nameLow:     nameLow,
+        _inn:         dbEntry?.inn?.toLowerCase(),
+        _companionFor: dbEntry?.companion_for?.toLowerCase(),
+      });
+    }
+
+    // Pass 2: companion_for → sdílí uzel s primárním lékem
+    for (const comp of primaryMeds.filter(m => m._companionFor && !m.targets.length)) {
+      const pk      = comp._companionFor;
+      const pkInn   = DRUGS_DB[pk]?.inn?.toLowerCase();
+      const primary = primaryMeds.find(p => p._nameLow === pk || p._inn === pk || p._nameLow === pkInn);
+      if (primary?.targets?.length) {
+        comp.targets = [primary.targets[0]];
+        console.log(`[CRT] companion ${comp.name} → ${comp.targets[0]} (via ${pk})`);
       }
     }
 
-    const fableMeds = assigned.map(m => {
-      const rawTarget = m.target_node_id;
-      const validTarget = rawTarget && allNodeIds.has(rawTarget) ? rawTarget : null;
-      const name = (m.medication || m.name || '').trim();
-      const dbEntry = DRUGS_DB[name.toLowerCase()];
-      const noCanvas = dbEntry?.no_canvas === true;
-      const targets = (!noCanvas && validTarget) ? [validTarget] : [];
-      if (noCanvas) console.log(`[CRT] no_canvas: ${name} (${dbEntry?.group})`);
-      return {
-        name,
-        targets,
-        effect:  m.label || m.effect || '',
-        type:    medType(name),
-        reason:  m.label || m.reason || '',
-      };
-    }).filter(m => m.name);
-
-    // Krok A: companion_for → stejný uzel jako primární lék (deterministicky, bez AI)
-    // Fable může použít brand name NEBO INN — matchujeme obojí
-    {
-      const byName = Object.fromEntries(resolvedMeds.map(m => [m.name.toLowerCase(), m]));
-      const byInn  = Object.fromEntries(resolvedMeds.filter(m => m.inn).map(m => [m.inn.toLowerCase(), m]));
-      const lookup = k => byName[k] || byInn[k];
-
-      const findFable = (key) => fableMeds.find(f => {
-        const fl = f.name.toLowerCase();
-        const r  = lookup(fl);
-        return fl === key || (r?.name?.toLowerCase() === key) || (r?.inn?.toLowerCase() === key);
-      });
-
-      resolvedMeds.filter(m => m.companion_for).forEach(comp => {
-        const compFable    = findFable(comp.name.toLowerCase()) || findFable(comp.inn?.toLowerCase());
-        if (!compFable) return;
-        const primaryKey   = comp.companion_for.toLowerCase();
-        const primaryFable = findFable(primaryKey);
-        if (!primaryFable?.targets?.length) return;
-        const t = primaryFable.targets[0];
-        if (t && t !== compFable.targets[0]) {
-          console.log(`[CRT] companion ${compFable.name} → ${t} (via ${primaryFable.name})`);
-          compFable.targets = [t];
-        }
-      });
-    }
-
-    // Krok B: léky stále na root/apex → Haiku najde lepší uzel
-    {
-      const allCrtNodes = [...(crt.nodes || [])];
-      if (crt.root && typeof crt.root === 'object') allCrtNodes.push(crt.root);
-      const maxLv = allCrtNodes.reduce((m, n) => Math.max(m, n.level ?? 0), 0);
-      const excludedForCanvas = new Set(
-        [rootId, ...allCrtNodes.filter(n => (n.level ?? 0) === 0 || (n.level ?? 0) === maxLv).map(n => n.id)].filter(Boolean)
-      );
-      const eligibleNodes = allCrtNodes.filter(n => !excludedForCanvas.has(n.id));
-      const rootOnlyMeds  = fableMeds.filter(m => !m.targets.length || m.targets.every(t => excludedForCanvas.has(t)));
-      if (rootOnlyMeds.length && eligibleNodes.length) {
-        try {
-          const resolvedByName = Object.fromEntries(resolvedMeds.map(m => [m.name.toLowerCase(), m]));
-          const nodeListRe = eligibleNodes.map(n => `${n.id}: ${n.label}`).join('\n');
-          const medListRe  = rootOnlyMeds.map(m => {
-            const r = resolvedByName[m.name.toLowerCase()];
-            const parts = [m.name];
-            if (r?.inn)                parts.push(r.inn);
-            if (r?.primary_indication) parts.push(`indikace: ${r.primary_indication}`);
-            else if (r?.effect)        parts.push(r.effect);
-            return parts.join(' — ');
-          }).join('\n');
-          const assignedCtx = fableMeds
-            .filter(m => m.targets.some(t => !excludedForCanvas.has(t)))
-            .map(m => `${m.name} → ${m.targets.find(t => !excludedForCanvas.has(t))}`)
-            .join('\n');
-          const haikuRe = await haiku(
-            `Přiřaď každý lék k nejrelevantnějšímu uzlu CRT grafu podle primární indikace.\nPokud žádný uzel nesedí na indikaci léku (lék léčí jinou oblast než je CRT strom), vrať target_node_id: null — NEPŘIŘAZUJ nasilu.\nPřiřazení ostatních léků (pro kontext):\n${assignedCtx}\n\nVrať POUZE JSON pole:\n[{"medication":"název","target_node_id":"node_id nebo null"}]\n\nUzly:\n${nodeListRe}\n\nLéky k přiřazení:\n${medListRe}`, 500
-          );
-          const rm = haikuRe.match(/\[[\s\S]*\]/);
-          (rm ? JSON.parse(rm[0]) : []).forEach(r => {
-            const med = fableMeds.find(m => m.name.toLowerCase() === (r.medication || '').toLowerCase());
-            if (med && r.target_node_id && eligibleNodes.some(n => n.id === r.target_node_id)) {
-              med.targets = [r.target_node_id];
-              console.log(`[CRT] reassigned: ${med.name} → ${r.target_node_id}`);
-            }
-          });
-        } catch (e) { console.warn('[CRT] med reassign failed:', e.message); }
-      }
-    }
-
-    // Přidej všechny léky z profilu které Fable vynechal
-    const fabNames = new Set(fableMeds.map(m => m.name.toLowerCase()));
-    const profileMeds = profile.medications || [];
-    const missing = profileMeds.filter(m => {
-      const n = (m.name || m || '').trim().toLowerCase();
-      return n && !fabNames.has(n);
-    });
-    const missingMapped = missing.map(m => {
-      const name = (m.name || m).trim();
-      return {
-        name,
-        targets: [],
-        effect:  '',
-        type:    medType(name),
-        reason:  '',
-      };
-    });
-    if (missingMapped.length) {
-      console.log(`[CRT] doplněny chybějící léky (bez uzlu): ${missingMapped.map(m => m.name).join(', ')}`);
-    }
-
-    // Companion pass pro missingMapped (Krok A se aplikoval jen na fableMeds)
-    // Např. Nolpaza (companion_for: Pradaxa) → přiřadí se k uzlu Pradaxy
-    {
-      const fabTargetsByName = {};
-      fableMeds.forEach(m => {
-        const keys = [m.name.toLowerCase()];
-        const db = DRUGS_DB[m.name.toLowerCase()];
-        if (db?.inn) keys.push(db.inn.toLowerCase());
-        keys.forEach(k => { fabTargetsByName[k] = m.targets || []; });
-      });
-      missingMapped.forEach(mm => {
-        const db = DRUGS_DB[mm.name.toLowerCase()];
-        if (!db?.companion_for) return;
-        const primaryKey = db.companion_for.toLowerCase();
-        const primaryDb  = DRUGS_DB[primaryKey];
-        const lookupKeys = [primaryKey];
-        if (primaryDb?.inn) lookupKeys.push(primaryDb.inn.toLowerCase());
-        for (const k of lookupKeys) {
-          const targets = fabTargetsByName[k];
-          if (targets?.length) {
-            mm.targets = [targets[0]];
-            console.log(`[CRT] companion (missing) ${mm.name} → ${targets[0]}`);
-            break;
-          }
-        }
-      });
-    }
-
-    // Interakce: targets = union uzlů kde jsou přiřazeny léky z páru
-    // Index podle brand name I INN — Sonnet vrací INN (ibuprofen), profil má brand (Ibalgin)
+    // Build medTargetMap pro interakce
     const medTargetMap = {};
-    fableMeds.forEach(m => {
-      const dbEntry = DRUGS_DB[m.name.toLowerCase()];
-      const keys = [m.name.toLowerCase()];
-      if (dbEntry?.inn) keys.push(dbEntry.inn.toLowerCase());
-      (m.targets || []).forEach(tid => {
-        keys.forEach(k => { (medTargetMap[k] = medTargetMap[k] || new Set()).add(tid); });
+    primaryMeds.forEach(m => {
+      [m._nameLow, m._inn].filter(Boolean).forEach(k => {
+        m.targets.forEach(tid => { (medTargetMap[k] = medTargetMap[k] || new Set()).add(tid); });
       });
     });
+
+    // Interakce — deterministicky z drugs.json
     const warningMeds = resolvedInteractions.map(ix => {
       const targets = new Set();
       ix.drugs.forEach(drug => {
-        // Strip INN in parentheses: "Pradaxa (dabigatran)" → "pradaxa"
         const key = drug.replace(/\s*\([^)]*\)/g, '').trim().toLowerCase();
         (medTargetMap[key] || new Set()).forEach(t => targets.add(t));
       });
-      return {
-        name:    ix.drugs.join(' + '),
-        targets: [...targets],
-        effect:  ix.note || '',
-        type:    'warning',
-        reason:  ix.note || '',
-      };
+      return { name: ix.drugs.join(' + '), targets: [...targets], effect: ix.note || '', type: 'warning', reason: ix.note || '' };
     });
-    if (warningMeds.length) {
-      console.log(`[CRT] interakce: ${warningMeds.map(w => w.name).join(', ')}`);
-    }
-    crt.medications_map = [...fableMeds, ...missingMapped, ...warningMeds];
+    if (warningMeds.length) console.log(`[CRT] interakce: ${warningMeds.map(w => w.name).join(', ')}`);
+
+    primaryMeds.forEach(m => {
+      if (m.targets.length) console.log(`[CRT] ${m.name} → ${m.targets.join(', ')}`);
+      else                  console.log(`[CRT] ${m.name} → no state match (lékárna only)`);
+    });
+
+    // Strip internal fields
+    crt.medications_map = [
+      ...primaryMeds.map(({ _nameLow, _inn, _companionFor, ...rest }) => rest),
+      ...warningMeds,
+    ];
   }
 
   // Post-processing: odstraň hrany porušující topologická pravidla
@@ -895,7 +763,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx, modelId) {
   const key = JSON.stringify({
-    _v:          45, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
+    _v:          46, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
     model:       modelId || 'claude-sonnet-5',
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),

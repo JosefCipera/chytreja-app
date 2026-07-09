@@ -1,0 +1,182 @@
+[
+  {
+    "id": "CHRONIC_STRESS",
+    "label": "Chronický stres",
+    "label_layman": "Trvalý stres",
+    "type": "cause",
+    "typical_level": 0,
+    "can_be_root": true,
+    "typical_branch": "L",
+    "med_targets": []
+  },
+  {
+    "id": "DYSLIPIDEMIA",
+    "label": "Dyslipidémie",
+    "label_layman": "Vysoký špatný cholesterol",
+    "type": "cause",
+    "typical_level": 0,
+    "can_be_root": true,
+    "typical_branch": "R",
+    "med_targets": ["torvacard", "sortis", "crestor", "atorvastatin", "rosuvastatin"]
+  },
+  {
+    "id": "SYMPATHETIC_OVERACTIVATION",
+    "label": "Sympatiková hyperaktivace",
+    "label_layman": "Přetížený nervový systém",
+    "type": "cause",
+    "typical_level": 1,
+    "can_be_root": false,
+    "typical_branch": "L",
+    "med_targets": ["magnesium bisglycinát", "magnosolv", "betaloc", "concor", "metoprolol", "bisoprolol"]
+  },
+  {
+    "id": "ATHEROSCLEROSIS",
+    "label": "Ateroskleróza",
+    "label_layman": "Cévní pláty v tepnách",
+    "type": "cause",
+    "typical_level": 1,
+    "can_be_root": false,
+    "typical_branch": "R",
+    "med_targets": ["torvacard", "sortis", "crestor"]
+  },
+  {
+    "id": "ELECTROLYTE_IMBALANCE",
+    "label": "Elektrolytová dysbalance",
+    "label_layman": "Nedostatek draslíku a hořčíku",
+    "type": "cause",
+    "typical_level": 1,
+    "can_be_root": false,
+    "typical_branch": "L",
+    "med_targets": ["kalnormin", "slow-k", "magnesium bisglycinát", "magnosolv"]
+  },
+  {
+    "id": "HYPERURICEMIA",
+    "label": "Hyperurikémie",
+    "label_layman": "Vysoká kyselina močová",
+    "type": "cause",
+    "typical_level": 1,
+    "can_be_root": false,
+    "typical_branch": "R",
+    "med_targets": ["milurit", "allopurinol"]
+  },
+  {
+    "id": "CARDIAC_IRRITABILITY",
+    "label": "Elektrická dráždivost síní",
+    "label_layman": "Dráždivé srdce",
+    "type": "cause",
+    "typical_level": 2,
+    "can_be_root": false,
+    "typical_branch": "L",
+    "med_targets": ["kalnormin", "slow-k", "magnesium bisglycinát", "magnosolv"]
+  },
+  {
+    "id": "VASCULAR_STIFFNESS",
+    "label": "Arteriální rigidita",
+    "label_layman": "Tuhé cévy",
+    "type": "cause",
+    "typical_level": 2,
+    "can_be_root": false,
+    "typical_branch": "R",
+    "med_targets": ["prestarium", "perindopril", "tritace", "amlessa", "norvasc"]
+  },
+  {
+    "id": "ENDOTHELIAL_DYSFUNCTION",
+    "label": "Endoteliální dysfunkce",
+    "label_layman": "Poškozené stěny cév",
+    "type": "cause",
+    "typical_level": 2,
+    "can_be_root": false,
+    "typical_branch": "R",
+    "med_targets": []
+  },
+  {
+    "id": "PREMATURE_CONTRACTIONS",
+    "label": "Komorové extrasystoly",
+    "label_layman": "Předčasné srdeční stahy",
+    "type": "junction",
+    "typical_level": 3,
+    "can_be_root": false,
+    "typical_branch": "C",
+    "med_targets": ["kalnormin", "magnesium bisglycinát", "magnosolv"]
+  },
+  {
+    "id": "HYPERTENSION",
+    "label": "Arteriální hypertenze",
+    "label_layman": "Vysoký krevní tlak",
+    "type": "cause",
+    "typical_level": 3,
+    "can_be_root": true,
+    "typical_branch": "R",
+    "med_targets": ["prestarium", "perindopril", "tritace", "amlessa", "norvasc", "betaloc", "concor"]
+  },
+  {
+    "id": "ATRIAL_FIBRILLATION",
+    "label": "Fibrilace síní",
+    "label_layman": "Nepravidelný srdeční rytmus",
+    "type": "ude",
+    "typical_level": 4,
+    "can_be_root": false,
+    "typical_branch": "C",
+    "med_targets": ["pradaxa", "nolpaza", "xarelto", "warfarin", "kalnormin", "betaloc", "concor"]
+  },
+  {
+    "id": "ERECTILE_DYSFUNCTION",
+    "label": "Erektilní dysfunkce",
+    "label_layman": "Problémy s erekcí",
+    "type": "ude",
+    "typical_level": 4,
+    "can_be_root": false,
+    "typical_branch": "R",
+    "med_targets": ["vizarsin", "cialis"]
+  },
+  {
+    "id": "PALPITATIONS",
+    "label": "Palpitace",
+    "label_layman": "Bušení srdce",
+    "type": "ude",
+    "typical_level": 4,
+    "can_be_root": false,
+    "typical_branch": "L",
+    "med_targets": ["kalnormin", "magnosolv"]
+  },
+  {
+    "id": "FATIGUE_LOW_CAPACITY",
+    "label": "Chronická únava",
+    "label_layman": "Únava a nízká výkonnost",
+    "type": "ude",
+    "typical_level": 4,
+    "can_be_root": false,
+    "typical_branch": "L",
+    "med_targets": []
+  },
+  {
+    "id": "STROKE_RISK",
+    "label": "Riziko cévní mozkové příhody",
+    "label_layman": "Hrozba mrtvice",
+    "type": "ude",
+    "typical_level": 5,
+    "can_be_root": false,
+    "typical_branch": "C",
+    "med_targets": ["pradaxa", "nolpaza", "xarelto", "warfarin", "anopyrin"]
+  },
+  {
+    "id": "CARDIAC_FAILURE_RISK",
+    "label": "Riziko srdečního selhání",
+    "label_layman": "Hrozba srdečního selhání",
+    "type": "ude",
+    "typical_level": 5,
+    "can_be_root": false,
+    "typical_branch": "C",
+    "med_targets": []
+  },
+  {
+    "id": "HEART_ATTACK_RISK",
+    "label": "Riziko infarktu myokardu",
+    "label_layman": "Hrozba infarktu",
+    "type": "ude",
+    "typical_level": 5,
+    "can_be_root": false,
+    "typical_branch": "C",
+    "med_targets": ["anopyrin", "aspirin", "torvacard"]
+  }
+]
