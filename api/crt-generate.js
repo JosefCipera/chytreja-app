@@ -526,10 +526,17 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
     if ((crt.nodes || []).length < before)
       console.log(`[CRT] soft-validation: odstraněno ${before - crt.nodes.length} uzlů`);
 
-    // Kanonické labely ze State Dictionary — eliminuje různé překlady téhož ID
+    // Kanonické hodnoty ze State Dictionary — label, branch, level, type jsou deterministické
+    // GPT-4o přiřazuje špatné branch/level → vis.js udělá separátní podstrom
     const applyStateLabels = n => {
       const def = STATES_DB[n?.id];
-      if (def) { n.label = def.label; n.label_layman = def.label_layman; n.type = def.type; }
+      if (def) {
+        n.label        = def.label;
+        n.label_layman = def.label_layman;
+        n.type         = def.type;
+        n.level        = def.typical_level;   // kanonická hloubka → validateEdges
+        n.branch       = def.typical_branch;  // kanonická větev → vis.js pozice
+      }
     };
     (crt.nodes || []).forEach(applyStateLabels);
     if (crt.root && typeof crt.root === 'object') applyStateLabels(crt.root);
@@ -781,7 +788,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx, modelId) {
   const key = JSON.stringify({
-    _v:          47, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
+    _v:          48, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
     model:       modelId || 'claude-sonnet-5',
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),
