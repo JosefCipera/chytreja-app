@@ -1344,19 +1344,27 @@ function _attachWarningBadges() {
   const warnNodes = allNodes.filter(n => n.behavior_warning);
   if (!warnNodes.length) return;
 
-  const FS = IS_MOBILE ? 24 : 30; // velikost ⚠ glyfu v canvas jednotkách
+  const SZ = IS_MOBILE ? 28 : 38;
 
   _warnDrawFn = function drawWarnings(ctx) {
     if (!_visNetwork) return;
     ctx.save();
-    ctx.font = `${FS}px Inter, system-ui, sans-serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'top';
-    ctx.fillStyle = '#ef4444';
+    ctx.fillStyle = '#dc2626';
     warnNodes.forEach(n => {
       const bb = _visNetwork.getBoundingBox(n.id);
       if (!bb) return;
-      ctx.fillText('⚠', (bb.left + bb.right) / 2, bb.bottom + 6);
+      ctx.beginPath();
+      ctx.moveTo(bb.right - SZ, bb.top);
+      ctx.lineTo(bb.right,      bb.top);
+      ctx.lineTo(bb.right,      bb.top + SZ);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.font = `bold ${Math.round(SZ * 0.44)}px Inter, system-ui, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('⚠', bb.right - SZ * 0.27, bb.top + SZ * 0.33);
+      ctx.fillStyle = '#dc2626';
     });
     ctx.restore();
   };
