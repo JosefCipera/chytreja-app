@@ -563,7 +563,7 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
       // Injektuj stav s nejvyšším typical_level (nejspecifičtější)
       const best = targetStates.reduce((b, d) => (d.typical_level ?? 0) > (b?.typical_level ?? -1) ? d : b, null);
       if (!best) continue;
-      const injNode = { id: best.id, label: best.label, label_layman: best.label_layman, type: best.type, level: best.typical_level, branch: best.typical_branch };
+      const injNode = { id: best.id, label: best.label, label_layman: best.label_layman, type: best.type, level: best.typical_level, branch: best.typical_branch, _injected: true };
       crt.nodes.push(injNode);
       activeIds.add(best.id);
       console.log(`[CRT] med-injekce: ${best.id} (via ${nameLow})`);
@@ -745,6 +745,7 @@ function connectOrphans(nodes, root, edges) {
   allNodes.forEach(n => {
     if (n.id === mainApex.id) return;
     if (n.id === root?.id) return;
+    if (n._injected) return; // injektované uzly nemají kauzální vztah → žádné hrany
     if (!hasSources.has(n.id)) {
       // Orphan — hledej nejbližší vyšší uzel (ne rovnou apex — zabráníme dlouhé diagonále)
       const nextLevel = (n.level ?? 0) + 1;
@@ -772,6 +773,7 @@ function connectSourceless(nodes, root, edges) {
 
   allNodes.forEach(n => {
     if (n.id === root?.id) return;
+    if (n._injected) return; // injektované uzly — žádné vstupní hrany, floating
     if (hasTargets.has(n.id)) return;
 
     const candidates = allNodes.filter(c =>
@@ -816,7 +818,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx, modelId) {
   const key = JSON.stringify({
-    _v:          50, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
+    _v:          51, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
     model:       modelId || 'claude-sonnet-5',
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),
