@@ -727,7 +727,7 @@ function renderTree(data) {
     }
 
     // Opus data: branch L/R/C → fixed x drží sloupce zarovnané
-    const BRANCH_X = { L: -450, C: 0, R: 450 };
+    const BRANCH_X = { L: -450, LC: -225, C: 0, RC: 225, R: 450 };
     const bx = (n.branch && BRANCH_X[n.branch] !== undefined) ? BRANCH_X[n.branch] : undefined;
 
     return {

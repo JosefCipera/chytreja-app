@@ -686,7 +686,9 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
       ...(crt.nodes || []).map(n => n?.id),
       ...(crt.root ? [typeof crt.root === 'string' ? crt.root : crt.root.id] : []),
     ]);
-    (crt.nodes || []).forEach(n => {
+    const allNodesForTC = [...(crt.nodes || [])];
+    if (crt.root && typeof crt.root === 'object') allNodesForTC.push(crt.root);
+    allNodesForTC.forEach(n => {
       const def = STATES_DB[n?.id];
       if (!def?.typical_children) return;
       for (const childId of def.typical_children) {
@@ -856,7 +858,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx, modelId) {
   const key = JSON.stringify({
-    _v:          60, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
+    _v:          61, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
     model:       modelId || 'claude-sonnet-5',
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),

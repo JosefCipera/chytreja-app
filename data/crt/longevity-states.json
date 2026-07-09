@@ -86,9 +86,9 @@
     "label": "Komorové extrasystoly",
     "label_layman": "Předčasné srdeční stahy",
     "type": "junction",
-    "typical_level": 3,
+    "typical_level": 4,
     "can_be_root": false,
-    "typical_branch": "L",
+    "typical_branch": "LC",
     "med_targets": ["kalnormin", "magnesium bisglycinát", "magnosolv"]
   },
   {
@@ -99,7 +99,8 @@
     "typical_level": 3,
     "can_be_root": false,
     "typical_branch": "C",
-    "med_targets": ["prestarium", "perindopril", "tritace", "amlessa", "norvasc"]
+    "med_targets": ["prestarium", "perindopril", "tritace", "amlessa", "norvasc"],
+    "typical_children": ["PREMATURE_CONTRACTIONS", "ENDOTHELIAL_DYSFUNCTION"]
   },
   {
     "id": "HYPERTENSION",
@@ -116,9 +117,9 @@
     "label": "Fibrilace síní",
     "label_layman": "Nepravidelný srdeční rytmus",
     "type": "ude",
-    "typical_level": 4,
+    "typical_level": 5,
     "can_be_root": false,
-    "typical_branch": "L",
+    "typical_branch": "LC",
     "med_targets": ["pradaxa", "nolpaza", "xarelto", "warfarin", "betaloc", "concor"]
   },
   {
@@ -128,7 +129,7 @@
     "type": "cause",
     "typical_level": 4,
     "can_be_root": false,
-    "typical_branch": "C",
+    "typical_branch": "RC",
     "med_targets": []
   },
   {
@@ -138,7 +139,7 @@
     "type": "ude",
     "typical_level": 5,
     "can_be_root": false,
-    "typical_branch": "C",
+    "typical_branch": "RC",
     "med_targets": ["vizarsin", "cialis"]
   },
   {
