@@ -161,6 +161,7 @@
     /* ── Print ── */
     @page { size: A4 landscape; margin: 6mm; }
     #crtPrintContent { display: none; }
+    #crtPrintPanel  { display: none; }
     body.crt-printing > *:not(#crtPrintContent) { display: none !important; }
     body.crt-printing #crtPrintContent {
       display: flex !important;
@@ -176,12 +177,48 @@
       font-size: 9px; color: #888; font-family: sans-serif;
       text-align: right; padding: 3mm 4mm 0;
     }
+    /* Když je panel otevřený — row layout */
+    body.crt-printing #crtPrintContent.has-panel {
+      flex-direction: row;
+      align-items: flex-start;
+    }
+    body.crt-printing #crtPrintContent.has-panel img {
+      width: 62%; height: auto; flex-shrink: 0;
+    }
+    body.crt-printing #crtPrintContent.has-panel #crtPrintPanel {
+      display: block;
+      width: 38%;
+      padding: 6mm 5mm;
+      font-family: Inter, system-ui, sans-serif;
+      font-size: 11.5px;
+      color: #1e293b;
+      overflow: hidden;
+      border-left: 1px solid #e2e8f0;
+      align-self: stretch;
+    }
+    body.crt-printing #crtPrintPanel .cnp-section {
+      border-bottom-color: #e2e8f0;
+      padding: 8px 0;
+    }
+    body.crt-printing #crtPrintPanel .cnp-lbl {
+      color: #64748b;
+    }
+    body.crt-printing #crtPrintPanel .cnp-row {
+      color: #334155;
+    }
+    body.crt-printing #crtPrintPanel .cnp-action {
+      color: #374151;
+      border-color: rgba(245,158,11,0.35);
+    }
     @media print {
       body.crt-printing > *:not(#crtPrintContent) { display: none !important; }
       body.crt-printing #crtPrintContent {
         display: flex !important; position: fixed; inset: 0; background: #fff;
         flex-direction: column; align-items: stretch;
       }
+      body.crt-printing #crtPrintContent.has-panel { flex-direction: row; align-items: flex-start; }
+      body.crt-printing #crtPrintContent.has-panel img { width: 62%; height: auto; }
+      body.crt-printing #crtPrintContent.has-panel #crtPrintPanel { display: block; width: 38%; }
       body.crt-printing #crtPrintContent img { width: 100%; height: auto; display: block; }
     }
 
@@ -328,6 +365,7 @@
 
 <div id="crtPrintContent">
   <img id="crtPrintImg" src="" alt="">
+  <div id="crtPrintPanel"></div>
   <div id="crtPrintFooter"></div>
 </div>
 
@@ -1437,6 +1475,16 @@ window.exportCRTImage = function() {
 window.printCRT = function() {
   if (!_visNetwork) return;
 
+  // Panel — zkopíruj obsah pokud je otevřený
+  const panelEl    = document.getElementById('crtNodePanel');
+  const printPanel = document.getElementById('crtPrintPanel');
+  const printContent = document.getElementById('crtPrintContent');
+  const panelOpen  = panelEl?.classList.contains('open');
+  if (panelOpen && printPanel) {
+    printPanel.innerHTML = document.getElementById('cnpData')?.innerHTML || '';
+    printContent?.classList.add('has-panel');
+  }
+
   // Mobil DPR=3 → canvas limit 16M px → 2244×1587×9 = 32M → failuje → černé uzly.
   // Na mobilu bezpečný rozměr: 1100×780 CSS px × DPR=3 → 3300×2340 = 7.7M px.
   const IS_MOBILE = window.innerWidth < 900;
@@ -1526,6 +1574,8 @@ window.printCRT = function() {
       setTimeout(() => {
         window.print();
         document.body.classList.remove('crt-printing');
+        if (printPanel) printPanel.innerHTML = '';
+        printContent?.classList.remove('has-panel');
       }, 80);
     };
     img.src = dataURL;
