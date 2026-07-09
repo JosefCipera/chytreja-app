@@ -7,7 +7,8 @@
     "typical_level": 0,
     "can_be_root": true,
     "typical_branch": "L",
-    "med_targets": []
+    "med_targets": [],
+    "typical_children": ["DEPRESSION_ANXIETY"]
   },
   {
     "id": "METABOLIC_HEALTH_ROOT",
@@ -18,7 +19,18 @@
     "can_be_root": true,
     "typical_branch": "C",
     "med_targets": [],
-    "typical_children": ["DYSLIPIDEMIA", "HYPERURICEMIA"]
+    "typical_children": ["DYSLIPIDEMIA", "HYPERURICEMIA", "INSULIN_RESISTANCE"]
+  },
+  {
+    "id": "HYPOTHYROIDISM",
+    "label": "Hypothyreóza",
+    "label_layman": "Nedostatečná funkce štítné žlázy",
+    "type": "cause",
+    "typical_level": 0,
+    "can_be_root": true,
+    "typical_branch": "R",
+    "med_targets": ["euthyrox", "letrox", "eltroxin", "levothyroxin"],
+    "typical_children": ["BONE_DENSITY_LOSS"]
   },
   {
     "id": "SYMPATHETIC_OVERACTIVATION",
@@ -31,6 +43,17 @@
     "med_targets": ["magnesium bisglycinát", "magnosolv", "betaloc", "concor", "metoprolol", "bisoprolol"]
   },
   {
+    "id": "DEPRESSION_ANXIETY",
+    "label": "Deprese a úzkost",
+    "label_layman": "Psychická zátěž a nálada",
+    "type": "cause",
+    "typical_level": 1,
+    "can_be_root": false,
+    "typical_branch": "L",
+    "med_targets": ["mirtazapin", "esoprex", "escitalopram", "dulopren", "duloxetin", "sertralin"],
+    "typical_children": ["FATIGUE_LOW_CAPACITY"]
+  },
+  {
     "id": "DYSLIPIDEMIA",
     "label": "Dyslipidémie",
     "label_layman": "Vysoký špatný cholesterol",
@@ -38,7 +61,18 @@
     "typical_level": 1,
     "can_be_root": false,
     "typical_branch": "C",
-    "med_targets": ["torvacard", "sortis", "crestor", "atorvastatin", "rosuvastatin"]
+    "med_targets": ["torvacard", "sortis", "crestor", "atorvastatin", "rosuvastatin", "rosucard"]
+  },
+  {
+    "id": "INSULIN_RESISTANCE",
+    "label": "Inzulínová rezistence",
+    "label_layman": "Necitlivost na inzulín",
+    "type": "cause",
+    "typical_level": 1,
+    "can_be_root": false,
+    "typical_branch": "C",
+    "med_targets": ["sifor", "siofor", "metformin", "glucophage"],
+    "typical_children": ["PERIPHERAL_NEUROPATHY"]
   },
   {
     "id": "HYPERURICEMIA",
@@ -50,6 +84,17 @@
     "typical_branch": "R",
     "med_targets": ["milurit", "allopurinol"],
     "typical_children": ["ENDOTHELIAL_DYSFUNCTION"]
+  },
+  {
+    "id": "BONE_DENSITY_LOSS",
+    "label": "Úbytek kostní hmoty",
+    "label_layman": "Řídnutí kostí",
+    "type": "cause",
+    "typical_level": 1,
+    "can_be_root": false,
+    "typical_branch": "R",
+    "med_targets": ["ibandronat", "ibandronát", "vigantol", "caltrate", "vitamin d3"],
+    "typical_children": ["MUSCULOSKELETAL_DEG"]
   },
   {
     "id": "ELECTROLYTE_IMBALANCE",
@@ -79,7 +124,18 @@
     "typical_level": 2,
     "can_be_root": false,
     "typical_branch": "C",
-    "med_targets": ["torvacard", "sortis", "crestor"]
+    "med_targets": ["torvacard", "sortis", "crestor", "stacyl", "anopyrin"]
+  },
+  {
+    "id": "MUSCULOSKELETAL_DEG",
+    "label": "Degenerace pohybového aparátu",
+    "label_layman": "Opotřebené klouby a páteř",
+    "type": "cause",
+    "typical_level": 2,
+    "can_be_root": false,
+    "typical_branch": "R",
+    "med_targets": ["doreta", "palgotal", "tramadol"],
+    "typical_children": ["GAIT_INSTABILITY"]
   },
   {
     "id": "PREMATURE_CONTRACTIONS",
@@ -99,8 +155,19 @@
     "typical_level": 3,
     "can_be_root": false,
     "typical_branch": "C",
-    "med_targets": ["prestarium", "perindopril", "tritace", "amlessa", "norvasc"],
+    "med_targets": ["prestarium", "perindopril", "tritace", "amlessa", "norvasc", "tezeo"],
     "typical_children": ["PREMATURE_CONTRACTIONS", "ENDOTHELIAL_DYSFUNCTION"]
+  },
+  {
+    "id": "PERIPHERAL_NEUROPATHY",
+    "label": "Periferní neuropatie",
+    "label_layman": "Poškozené nervy v rukou a nohách",
+    "type": "cause",
+    "typical_level": 3,
+    "can_be_root": false,
+    "typical_branch": "LC",
+    "med_targets": ["dulopren", "duloxetin", "lyrica", "pregabalin"],
+    "typical_children": ["GAIT_INSTABILITY"]
   },
   {
     "id": "HYPERTENSION",
@@ -111,6 +178,17 @@
     "can_be_root": true,
     "typical_branch": "R",
     "med_targets": ["prestarium", "perindopril", "tritace", "amlessa", "norvasc", "betaloc", "concor"]
+  },
+  {
+    "id": "FATIGUE_LOW_CAPACITY",
+    "label": "Chronická únava",
+    "label_layman": "Únava a nízká výkonnost",
+    "type": "cause",
+    "typical_level": 3,
+    "can_be_root": false,
+    "typical_branch": "L",
+    "med_targets": [],
+    "typical_children": ["GAIT_INSTABILITY"]
   },
   {
     "id": "ATRIAL_FIBRILLATION",
@@ -133,6 +211,17 @@
     "med_targets": []
   },
   {
+    "id": "GAIT_INSTABILITY",
+    "label": "Nestabilita chůze",
+    "label_layman": "Nejistá chůze a rovnováha",
+    "type": "junction",
+    "typical_level": 4,
+    "can_be_root": false,
+    "typical_branch": "C",
+    "med_targets": ["afexil", "liskantin", "liskantín"],
+    "typical_children": ["FALL_RISK"]
+  },
+  {
     "id": "ERECTILE_DYSFUNCTION",
     "label": "Erektilní dysfunkce",
     "label_layman": "Problémy s erekcí",
@@ -153,13 +242,13 @@
     "med_targets": ["kalnormin", "magnosolv"]
   },
   {
-    "id": "FATIGUE_LOW_CAPACITY",
-    "label": "Chronická únava",
-    "label_layman": "Únava a nízká výkonnost",
+    "id": "FALL_RISK",
+    "label": "Riziko pádu se zlomeninou",
+    "label_layman": "Hrozba pádu a zlomené kosti",
     "type": "ude",
-    "typical_level": 4,
+    "typical_level": 5,
     "can_be_root": false,
-    "typical_branch": "L",
+    "typical_branch": "C",
     "med_targets": []
   },
   {
@@ -170,7 +259,7 @@
     "typical_level": 5,
     "can_be_root": false,
     "typical_branch": "L",
-    "med_targets": ["pradaxa", "nolpaza", "xarelto", "warfarin", "anopyrin"]
+    "med_targets": ["pradaxa", "nolpaza", "xarelto", "warfarin", "anopyrin", "stacyl"]
   },
   {
     "id": "CARDIAC_FAILURE_RISK",
