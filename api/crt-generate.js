@@ -151,7 +151,7 @@ async function fetchContext(userId, role) {
   // 2. Zdravotní profil (diagnózy, labs) + léky + suplementy z user_medications
   const [{ data: profile }, { data: meds }] = await Promise.all([
     supabase.from('user_health_profile')
-      .select('diagnoses, symptoms, family_history, labs, physical, goal_text, doctor_notes, birth_year, sex, medications, supplements')
+      .select('diagnoses, symptoms, family_history, labs, physical, goal_text, doctor_notes, birth_year, sex, medications, supplements, behavior_flags')
       .eq('user_id', userId).single(),
     supabase.from('user_medications')
       .select('name, dose').eq('user_id', userId).eq('active', true),
@@ -712,6 +712,16 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
   // Připoj uzly bez vstupní hrany (orphan source) k nejbližšímu nižšímu uzlu
   crt.edges = connectSourceless(crt.nodes, crt.root, crt.edges);
 
+  // Behavior warnings: připoj personalizované varování z profilu na aktivní uzly
+  const behaviorFlags = profile?.behavior_flags || {};
+  if (Object.keys(behaviorFlags).length) {
+    const allActive = [...(crt.nodes || [])];
+    if (crt.root && typeof crt.root === 'object') allActive.push(crt.root);
+    allActive.forEach(n => {
+      if (behaviorFlags[n.id]) n.behavior_warning = behaviorFlags[n.id];
+    });
+  }
+
   return crt;
 }
 
@@ -868,7 +878,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx, modelId) {
   const key = JSON.stringify({
-    _v:          68, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
+    _v:          69, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
     model:       modelId || 'claude-sonnet-5',
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),

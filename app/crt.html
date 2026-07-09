@@ -1148,6 +1148,12 @@ function buildPanelData(node, ctx, parents, children, meds, supps, contras, hidd
       ).join('')}
     </div>` : '';
 
+  const behaviorWarningHtml = node.behavior_warning ? `
+    <div class="cnp-section" style="border-left:2px solid #ef4444;background:rgba(239,68,68,0.06);border-radius:0 6px 6px 0">
+      <p class="cnp-lbl" style="color:#ef4444;margin-bottom:8px">⚠ upozornění systému</p>
+      <div style="font-size:13px;color:#fca5a5;line-height:1.65">${node.behavior_warning}</div>
+    </div>` : '';
+
   return `
     <div class="cnp-section" style="display:flex;align-items:center;justify-content:space-between">
       <div>
@@ -1162,6 +1168,7 @@ function buildPanelData(node, ctx, parents, children, meds, supps, contras, hidd
     </div>
     ${parentsHtml ? `<div class="cnp-section"><p class="cnp-lbl">způsobeno</p>${parentsHtml}</div>` : ''}
     ${childrenHtml ? `<div class="cnp-section"><p class="cnp-lbl">vede k</p>${childrenHtml}</div>` : ''}
+    ${behaviorWarningHtml}
     ${medHtml}
     ${suppPanelHtml}
     ${suppHtml}
@@ -1319,6 +1326,66 @@ function _buildMedDrawer(forPrint = false) {
     });
     ctx.restore();
   };
+}
+
+// ── Warning badges na canvasu ─────────────────────────────────────────────────
+let _warnDrawFn = null;
+
+function _attachWarningBadges() {
+  if (!_visNetwork || !window._crtData) return;
+  const allNodes = [
+    ...(window._crtData.nodes || []),
+    ...(window._crtData.root && typeof window._crtData.root === 'object' ? [window._crtData.root] : []),
+  ];
+  const warnNodes = allNodes.filter(n => n.behavior_warning);
+  if (!warnNodes.length) return;
+
+  const FONT_SIZE = IS_MOBILE ? 13 : 15;
+  const OFFSET_Y  = 34; // pod uzlem
+
+  _warnDrawFn = function drawWarnings(ctx) {
+    if (!_visNetwork) return;
+    const positions = _visNetwork.getPositions(warnNodes.map(n => n.id));
+    ctx.save();
+    ctx.font = `bold ${FONT_SIZE}px Inter, system-ui, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    warnNodes.forEach(n => {
+      const pos = positions[n.id];
+      if (!pos) return;
+      const text = '⚠';
+      const tw = ctx.measureText(text).width;
+      const ph = FONT_SIZE + 8, pw = tw + 14;
+      const rx = pos.x - pw / 2;
+      const ry = pos.y + OFFSET_Y;
+      const radius = 5;
+
+      ctx.fillStyle = 'rgba(220,38,38,0.15)';
+      ctx.beginPath();
+      ctx.moveTo(rx + radius, ry);
+      ctx.lineTo(rx + pw - radius, ry);
+      ctx.quadraticCurveTo(rx + pw, ry, rx + pw, ry + radius);
+      ctx.lineTo(rx + pw, ry + ph - radius);
+      ctx.quadraticCurveTo(rx + pw, ry + ph, rx + pw - radius, ry + ph);
+      ctx.lineTo(rx + radius, ry + ph);
+      ctx.quadraticCurveTo(rx, ry + ph, rx, ry + ph - radius);
+      ctx.lineTo(rx, ry + radius);
+      ctx.quadraticCurveTo(rx, ry, rx + radius, ry);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#dc2626';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      ctx.fillStyle = '#f87171';
+      ctx.fillText(text, pos.x, ry + ph / 2);
+    });
+    ctx.restore();
+  };
+
+  _visNetwork.on('afterDrawing', _warnDrawFn);
+  _visNetwork.redraw();
 }
 
 // ── Boot ─────────────────────────────────────────────────────────────────────
@@ -1689,7 +1756,12 @@ boot();
 // Re-render při rotaci (landscape/portrait)
 let _lastCrtData = null;
 const _origRenderTree = renderTree;
-window._renderTree = function(data) { _lastCrtData = data; _origRenderTree(data); };
+window._renderTree = function(data) {
+  _lastCrtData = data;
+  if (_warnDrawFn && _visNetwork) { _visNetwork.off('afterDrawing', _warnDrawFn); _warnDrawFn = null; }
+  _origRenderTree(data);
+  setTimeout(() => _attachWarningBadges(), 200);
+};
 const _rerender = () => { if (_lastCrtData) setTimeout(() => _origRenderTree(_lastCrtData), 300); };
 window.addEventListener('resize', _rerender);
 if (screen.orientation) screen.orientation.addEventListener('change', _rerender);
