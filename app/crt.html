@@ -1728,6 +1728,7 @@ async function boot() {
     applyLabelMode(displayData);
     _lastCrtData = displayData;
     renderTree(displayData);
+    setTimeout(() => _attachWarningBadges(), 300);
     document.getElementById('crtLabelBtn').style.display  = '';
     // Top-N (computeTopN) nepodporuje tvar Opus dat (_kbMap/_activeIds chybí) → pill skrýt
     document.getElementById('crtViewPill').style.display  = _isOpusBoot ? 'none' : '';
