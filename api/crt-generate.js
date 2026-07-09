@@ -542,33 +542,31 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
     if (crt.root && typeof crt.root === 'object') applyStateLabels(crt.root);
   }
 
-  // Diagnóza-injekce: pokud UDE stav z diagnóz chybí ve stromě, vlož ho jako isolated leaf
+  // Med-injekce: pokud žádný aktivní stav nemá lék uživatele v med_targets → injektuj stav
+  // Bezpečné: injektuje jen stavy ze STATES_DB, bez AI, bez text-matchingu
   {
-    const DIAG_TO_STATE = {
-      'erektilní dysfunkce': 'ERECTILE_DYSFUNCTION',
-      'ed':                  'ERECTILE_DYSFUNCTION',
-      'erectile dysfunction':'ERECTILE_DYSFUNCTION',
-      'hyperurikémie':       'HYPERURICEMIA',
-      'dna':                 'HYPERURICEMIA',
-      'fibrilace síní':      'ATRIAL_FIBRILLATION',
-      'fap':                 'ATRIAL_FIBRILLATION',
-      'palpitace':           'PALPITATIONS',
-    };
     const activeIds = new Set([
       ...(crt.nodes || []).map(n => n.id),
       ...(crt.root ? [typeof crt.root === 'string' ? crt.root : crt.root.id] : []),
     ]);
-    const diagTexts = (profile.diagnoses || []).map(d => (d.name || d || '').toLowerCase());
-    const sympTexts = (profile.symptoms  || []).map(s => (s.name || s || '').toLowerCase());
-    for (const text of [...diagTexts, ...sympTexts]) {
-      const stateId = DIAG_TO_STATE[text.trim()];
-      if (stateId && !activeIds.has(stateId) && STATES_DB[stateId]) {
-        const def = STATES_DB[stateId];
-        const injNode = { id: stateId, label: def.label, label_layman: def.label_layman, type: def.type, level: def.typical_level, branch: def.typical_branch };
-        crt.nodes.push(injNode);
-        activeIds.add(stateId);
-        console.log(`[CRT] diagnóza-injekce: ${stateId} (${text})`);
-      }
+    for (const m of (profile.medications || [])) {
+      const nameLow = (m.name || m || '').trim().toLowerCase();
+      const inn     = DRUGS_DB[nameLow]?.inn?.toLowerCase();
+      if (!nameLow || DRUGS_DB[nameLow]?.no_canvas) continue;
+
+      // Všechny STATES_DB stavy které mají tento lék v med_targets
+      const targetStates = STATES_ARR.filter(def =>
+        (def.med_targets || []).some(t => t === nameLow || (inn && t === inn))
+      );
+      // Pokud je alespoň jeden stav aktivní → lék je pokryt, přeskočit
+      if (targetStates.some(def => activeIds.has(def.id))) continue;
+      // Injektuj stav s nejvyšším typical_level (nejspecifičtější)
+      const best = targetStates.reduce((b, d) => (d.typical_level ?? 0) > (b?.typical_level ?? -1) ? d : b, null);
+      if (!best) continue;
+      const injNode = { id: best.id, label: best.label, label_layman: best.label_layman, type: best.type, level: best.typical_level, branch: best.typical_branch };
+      crt.nodes.push(injNode);
+      activeIds.add(best.id);
+      console.log(`[CRT] med-injekce: ${best.id} (via ${nameLow})`);
     }
   }
 
@@ -818,7 +816,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx, modelId) {
   const key = JSON.stringify({
-    _v:          49, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
+    _v:          50, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
     model:       modelId || 'claude-sonnet-5',
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),
