@@ -444,7 +444,7 @@ ${hasDoctorNotes
   ? `KAUZÁLNÍ POPIS (zdroj pravdy — přelož přesně, neměň kauzalitu):
 ${profile.doctor_notes.trim()}
 
-Instrukce: Namapuj každou entitu z KAUZÁLNÍHO POPISU na ID ze STATE DICTIONARY. Použij přesně ty kauzální vztahy které popis uvádí. Apex (Level 6) = hlavní riziko vyplývající z popisu.`
+Instrukce: Namapuj každou entitu z KAUZÁLNÍHO POPISU na ID ze STATE DICTIONARY. Zahrň POUZE entity explicitně zmíněné v popisu — neextrapoluj důsledky ani rizika navíc. Apex = poslední entita v popisu (FaP, ED, atd.) — nic nad ní nepřidávej.`
   : `Kauzální popis není k dispozici. Odvoď kauzální řetěz z DIAGNÓZY a LABS. Použij pouze ID ze STATE DICTIONARY.`}
 
 Vrať pouze čistý JSON. Žádný text navíc.`;
@@ -818,7 +818,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx, modelId) {
   const key = JSON.stringify({
-    _v:          52, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
+    _v:          53, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
     model:       modelId || 'claude-sonnet-5',
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),
