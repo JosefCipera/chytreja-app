@@ -733,6 +733,7 @@ function renderTree(data) {
     return {
       id: n.id,
       label: n.label ?? n.id,
+      level: n.level ?? 0,
       ...(bx !== undefined ? { x: bx, fixed: { x: true, y: false } } : {}),
       color: {
         background: bg,
