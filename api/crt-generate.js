@@ -742,6 +742,16 @@ function validateEdges(nodes, root, edges) {
         return false;
       }
     }
+    // Junction uzly (AND-join): povoleny pouze hrany do jejich typical_children
+    if (from.type === 'junction') {
+      const def = STATES_DB[from.id];
+      const allowed = def?.typical_children || [];
+      if (!allowed.includes(e.to)) {
+        console.log(`[CRT validate] odstraněna hrana z junction ${e.from}→${e.to}: není v typical_children [${allowed.join(',')}]`);
+        return false;
+      }
+    }
+
     // Zakázáno: L↔R (přímé křížení větví)
     if ((fb === 'L' && tb === 'R') || (fb === 'R' && tb === 'L')) {
       console.log(`[CRT validate] odstraněna cross-branch hrana: ${e.from}(${fb})→${e.to}(${tb})`);
@@ -858,7 +868,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx, modelId) {
   const key = JSON.stringify({
-    _v:          63, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
+    _v:          64, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
     model:       modelId || 'claude-sonnet-5',
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),
