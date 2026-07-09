@@ -1246,16 +1246,16 @@ function _buildMedDrawer(forPrint = false) {
   const SPACING_Y = 28;
   const FONT_SIZE = IS_MOBILE ? 13 : 16;
 
-  // Root a apex vyloučit z canvasu (podle ID i podle level 0/max)
+  // Vyloučit z canvasu: root uzel a level-0 uzly (příčiny bez léků)
+  // NEVYLUČOVAT maxLevel — UDE uzly (FaP, ED) mají léky které chceme na plátně
   const rootId = typeof window._crtData?.root === 'string' ? window._crtData.root : window._crtData?.root?.id;
   const allCrtNodes = [
     ...(window._crtData?.nodes || []),
     ...(window._crtData?.root && typeof window._crtData.root === 'object' ? [window._crtData.root] : []),
   ];
-  const maxLevel = allCrtNodes.reduce((m, n) => Math.max(m, n.level ?? 0), 0);
   const excludedIds = new Set([
     rootId,
-    ...allCrtNodes.filter(n => (n.level ?? 0) === 0 || (n.level ?? 0) === maxLevel).map(n => n.id),
+    ...allCrtNodes.filter(n => (n.level ?? 0) === 0).map(n => n.id),
   ].filter(Boolean));
 
   // Každý lék/doplněk max 1× na canvasu; interakce (warning) jen do panelu
