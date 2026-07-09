@@ -258,7 +258,7 @@
     "type": "ude",
     "typical_level": 5,
     "can_be_root": false,
-    "typical_branch": "L",
+    "typical_branch": "RC",
     "med_targets": ["pradaxa", "nolpaza", "xarelto", "warfarin", "anopyrin", "stacyl"]
   },
   {
