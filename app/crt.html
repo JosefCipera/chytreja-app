@@ -1344,18 +1344,34 @@ function _attachWarningBadges() {
   const warnNodes = allNodes.filter(n => n.behavior_warning);
   if (!warnNodes.length) return;
 
-  const FS = IS_MOBILE ? 20 : 26;
+  const R = IS_MOBILE ? 14 : 18; // circumradius rovnostranného trojúhelníku
 
   _warnDrawFn = function drawWarnings(ctx) {
     if (!_visNetwork) return;
     ctx.save();
-    ctx.font = `${FS}px sans-serif`;
-    ctx.textAlign = 'right';
-    ctx.textBaseline = 'top';
     warnNodes.forEach(n => {
       const bb = _visNetwork.getBoundingBox(n.id);
       if (!bb) return;
-      ctx.fillText('⚠', bb.right, bb.top - 2);
+      const cx = bb.right, cy = bb.top; // střed ikony = roh uzlu
+
+      // Rovnostranný trojúhelník špičkou nahoru
+      ctx.fillStyle = '#dc2626';
+      ctx.strokeStyle = '#7f1d1d';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(cx,                cy - R);           // vrchol
+      ctx.lineTo(cx + R * 0.866,   cy + R * 0.5);     // vpravo dole
+      ctx.lineTo(cx - R * 0.866,   cy + R * 0.5);     // vlevo dole
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // ! uvnitř
+      ctx.fillStyle = '#fff';
+      ctx.font = `bold ${Math.round(R * 0.9)}px Inter, system-ui, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('!', cx, cy + R * 0.15);
     });
     ctx.restore();
   };
