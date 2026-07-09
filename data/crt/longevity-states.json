@@ -16,8 +16,19 @@
     "type": "cause",
     "typical_level": 0,
     "can_be_root": true,
-    "typical_branch": "R",
+    "typical_branch": "C",
     "med_targets": ["torvacard", "sortis", "crestor", "atorvastatin", "rosuvastatin"]
+  },
+  {
+    "id": "HYPERURICEMIA",
+    "label": "Hyperurikémie",
+    "label_layman": "Vysoká kyselina močová",
+    "type": "cause",
+    "typical_level": 0,
+    "can_be_root": true,
+    "typical_branch": "R",
+    "med_targets": ["milurit", "allopurinol"],
+    "typical_children": ["ENDOTHELIAL_DYSFUNCTION"]
   },
   {
     "id": "SYMPATHETIC_OVERACTIVATION",
@@ -36,7 +47,7 @@
     "type": "cause",
     "typical_level": 1,
     "can_be_root": false,
-    "typical_branch": "R",
+    "typical_branch": "C",
     "med_targets": ["torvacard", "sortis", "crestor"]
   },
   {
@@ -50,17 +61,6 @@
     "med_targets": ["kalnormin", "slow-k", "magnesium bisglycinát", "magnosolv"]
   },
   {
-    "id": "HYPERURICEMIA",
-    "label": "Hyperurikémie",
-    "label_layman": "Vysoká kyselina močová",
-    "type": "cause",
-    "typical_level": 1,
-    "can_be_root": false,
-    "typical_branch": "R",
-    "med_targets": ["milurit", "allopurinol"],
-    "canvas": false
-  },
-  {
     "id": "CARDIAC_IRRITABILITY",
     "label": "Elektrická dráždivost síní",
     "label_layman": "Dráždivé srdce",
@@ -68,7 +68,7 @@
     "typical_level": 2,
     "can_be_root": false,
     "typical_branch": "L",
-    "med_targets": ["kalnormin", "slow-k", "magnesium bisglycinát", "magnosolv"]
+    "med_targets": ["magnesium bisglycinát", "magnosolv"]
   },
   {
     "id": "VASCULAR_STIFFNESS",
@@ -77,18 +77,8 @@
     "type": "cause",
     "typical_level": 2,
     "can_be_root": false,
-    "typical_branch": "R",
+    "typical_branch": "C",
     "med_targets": ["prestarium", "perindopril", "tritace", "amlessa", "norvasc"]
-  },
-  {
-    "id": "ENDOTHELIAL_DYSFUNCTION",
-    "label": "Endoteliální dysfunkce",
-    "label_layman": "Poškozené stěny cév",
-    "type": "cause",
-    "typical_level": 3,
-    "can_be_root": false,
-    "typical_branch": "R",
-    "med_targets": []
   },
   {
     "id": "PREMATURE_CONTRACTIONS",
@@ -97,8 +87,18 @@
     "type": "junction",
     "typical_level": 3,
     "can_be_root": false,
-    "typical_branch": "C",
+    "typical_branch": "L",
     "med_targets": ["kalnormin", "magnesium bisglycinát", "magnosolv"]
+  },
+  {
+    "id": "ENDOTHELIAL_DYSFUNCTION",
+    "label": "Endoteliální dysfunkce",
+    "label_layman": "Poškozené stěny cév",
+    "type": "cause",
+    "typical_level": 3,
+    "can_be_root": false,
+    "typical_branch": "C",
+    "med_targets": ["kalnormin", "vizarsin", "cialis"]
   },
   {
     "id": "HYPERTENSION",
@@ -117,7 +117,7 @@
     "type": "ude",
     "typical_level": 4,
     "can_be_root": false,
-    "typical_branch": "C",
+    "typical_branch": "L",
     "med_targets": ["pradaxa", "nolpaza", "xarelto", "warfarin", "kalnormin", "betaloc", "concor"]
   },
   {
@@ -127,7 +127,7 @@
     "type": "ude",
     "typical_level": 4,
     "can_be_root": false,
-    "typical_branch": "R",
+    "typical_branch": "C",
     "med_targets": ["vizarsin", "cialis"]
   },
   {
@@ -157,7 +157,7 @@
     "type": "ude",
     "typical_level": 5,
     "can_be_root": false,
-    "typical_branch": "C",
+    "typical_branch": "L",
     "med_targets": ["pradaxa", "nolpaza", "xarelto", "warfarin", "anopyrin"]
   },
   {
@@ -167,7 +167,7 @@
     "type": "ude",
     "typical_level": 5,
     "can_be_root": false,
-    "typical_branch": "C",
+    "typical_branch": "L",
     "med_targets": []
   },
   {

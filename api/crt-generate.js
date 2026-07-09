@@ -733,8 +733,8 @@ function validateEdges(nodes, root, edges) {
       console.log(`[CRT validate] odstraněna low-level ${fb}→C hrana: ${e.from}(L${from.level})→${e.to}(C,L${to.level})`);
       return false;
     }
-    // Zakázáno: L nebo R → C s přeskokem > 2 úrovní (diagonála přes celý strom, vizuálně kříží vše)
-    if ((fb === 'L' || fb === 'R') && tb === 'C' && (to.level ?? 0) - (from.level ?? 0) > 2) {
+    // Zakázáno: L nebo R → C s přeskokem > 3 úrovní (skip=3 povolen: HYPERURICEMIA L0→ENDOTHELIAL L3)
+    if ((fb === 'L' || fb === 'R') && tb === 'C' && (to.level ?? 0) - (from.level ?? 0) > 3) {
       console.log(`[CRT validate] odstraněna long-skip ${fb}→C hrana: ${e.from}(L${from.level})→${e.to}(C,L${to.level})`);
       return false;
     }
@@ -833,7 +833,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx, modelId) {
   const key = JSON.stringify({
-    _v:          56, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
+    _v:          57, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
     model:       modelId || 'claude-sonnet-5',
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),
