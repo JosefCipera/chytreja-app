@@ -57,7 +57,8 @@
     "typical_level": 1,
     "can_be_root": false,
     "typical_branch": "R",
-    "med_targets": ["milurit", "allopurinol"]
+    "med_targets": ["milurit", "allopurinol"],
+    "typical_children": ["VASCULAR_STIFFNESS", "ENDOTHELIAL_DYSFUNCTION"]
   },
   {
     "id": "CARDIAC_IRRITABILITY",

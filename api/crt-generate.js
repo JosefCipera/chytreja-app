@@ -566,6 +566,14 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
       const injNode = { id: best.id, label: best.label, label_layman: best.label_layman, type: best.type, level: best.typical_level, branch: best.typical_branch, _injected: true };
       crt.nodes.push(injNode);
       activeIds.add(best.id);
+      // Pokud má typické potomky, propoj injektovaný uzel k prvnímu dostupnému ve stromu
+      const childTarget = (best.typical_children || []).find(cid => activeIds.has(cid));
+      if (childTarget) {
+        crt.edges = crt.edges || [];
+        crt.edges.push({ from: best.id, to: childTarget });
+        injNode._injected = false; // má hranu → není floating, connectOrphans může fungovat
+        console.log(`[CRT] med-injekce hrana: ${best.id} → ${childTarget}`);
+      }
       console.log(`[CRT] med-injekce: ${best.id} (via ${nameLow})`);
     }
   }
@@ -746,6 +754,7 @@ function connectOrphans(nodes, root, edges) {
     if (n.id === mainApex.id) return;
     if (n.id === root?.id) return;
     if (n._injected) return; // injektované uzly nemají kauzální vztah → žádné hrany
+    if (n.type === 'ude') return; // UDE uzly jsou legitimní apex — nepřipojovat k jinému apexu
     if (!hasSources.has(n.id)) {
       // Orphan — hledej nejbližší vyšší uzel (ne rovnou apex — zabráníme dlouhé diagonále)
       const nextLevel = (n.level ?? 0) + 1;
@@ -818,7 +827,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx, modelId) {
   const key = JSON.stringify({
-    _v:          53, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
+    _v:          54, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
     model:       modelId || 'claude-sonnet-5',
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),
