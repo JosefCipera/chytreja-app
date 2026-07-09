@@ -375,6 +375,62 @@ parents (dolů ke kořenům) + children (nahoru k cíli) → zobrazí jen tuto v
 | `imunita_v1.json` | IMUNITA | ✅ v1 hotovo, migrace na v2 pending |
 | `biosystem_v2.json` | všechny | ✅ unified KB — aktivní, Kovářová demo data |
 
+### State Dictionary — deterministická vrstva CRT (Jul 2026)
+
+**Gold standard:** `git tag v0.2-crt-gold-josef` · `api/crt-generate.js` (_v: 61) · `data/crt/longevity-states.json`
+
+GPT-4o je nedeterministický — bez kotvy vytváří různé stromy pro stejného pacienta. State Dictionary je **kanonický slovník** 19 pevných stavů; GPT-4o pouze vybírá, které z nich jsou aktivní pro daného pacienta.
+
+#### Architektura
+
+```
+State Dictionary (19 stavů) = kanonická sada uzlů
+GPT-4o = parser: doctor_notes → subset aktivních ID
+applyStateLabels() = vynucení level/branch/type/label ze slovníku (override AI výstupu)
+typical_children post-processing = garantované hrany bez ohledu na AI výstup
+```
+
+#### 5 větví (BRANCH_X)
+
+```javascript
+const BRANCH_X = { L: -450, LC: -225, C: 0, RC: 225, R: 450 };
+```
+
+LC/RC větve umožňují AND-join přes validateEdges — C→L/R by bylo blokováno, C→LC/RC prochází.
+
+#### Josef — vzorový případ (FaP + ED)
+
+```
+CHRONIC_STRESS (L0)           METABOLIC_HEALTH_ROOT (C0)
+       ↓                               ↓           ↓
+SYMPATHETIC (L1)              DYSLIPIDEMIA (C1)  HYPERURICEMIA (R1)
+ELECTROLYTE (L1)                    ↓                  ↓
+CARDIAC_IRRITABILITY (L2)     ATHEROSCLEROSIS (C2)     |
+       ↓                             ↓                  |
+       └──────────→ VASCULAR_STIFFNESS (C3) ←───────────┘
+                          ↓                ↓
+              PREMATURE_CONTRACTIONS (LC4)  ENDOTHELIAL_DYSFUNCTION (RC4)
+                          ↓                          ↓
+              ATRIAL_FIBRILLATION (LC5)    ERECTILE_DYSFUNCTION (RC5)
+```
+
+AND-join: stresová větev + cévy → PREMATURE_CONTRACTIONS → FaP.
+Symetrická apexová dvojice: FaP (LC5) + ED (RC5).
+
+#### Klíčová pravidla implementace
+
+- **`applyStateLabels`**: spustit po GPT-4o parsování — vynucuje level/branch/type/label ze State Dictionary
+- **`typical_children` post-processing**: přidá garantované hrany pro VŠECHNY aktivní uzly (ne jen injektované)
+- **`connectOrphans`**: přeskakuje `type === 'ude'` — UDE jsou legitimní apex, ne sirotci
+- **`validateEdges` pravidlo**: L/R→C skip > 3 levely (byl > 2, způsoboval chybné blokování)
+- **`canvas: false`**: pro farmakologické uzly bez vizuální reprezentace (medikace bez canvas uzlu)
+- **`level: n.level ?? 0`** v visNode objektech: vis.js bez explicitního level přepočítá vlastní Y-pozice → asymetrie
+- **`_injected: true`** zachovat i po přidání `typical_children` hrany — brání `connectSourceless` v přidání falešného rodiče
+
+#### Znovupoužitelnost
+
+State Dictionary funguje pro jakéhokoliv pacienta. GPT-4o vybere relevantní podmnožinu ze 19 stavů podle `doctor_notes`. Různí pacienti → různé podstromy ze stejného slovníku. Léky se přiřadí deterministicky přes `med_targets` lookup (dedup: nejvyšší `typical_level` aktivního stavu s tímto lékem).
+
 ### CRT zobrazení — Top-N vs Plná mapa
 
 **Default: Top-N** (`git tag v0.2-crt-topn-laik-panel`)
