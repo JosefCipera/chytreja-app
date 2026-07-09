@@ -679,6 +679,29 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
     ];
   }
 
+  // Post-processing: typical_children — přidej hrany které GPT-4o vynechal
+  {
+    const edgeSet = new Set((crt.edges || []).map(e => `${e.from}→${e.to}`));
+    const allActiveIds = new Set([
+      ...(crt.nodes || []).map(n => n?.id),
+      ...(crt.root ? [typeof crt.root === 'string' ? crt.root : crt.root.id] : []),
+    ]);
+    (crt.nodes || []).forEach(n => {
+      const def = STATES_DB[n?.id];
+      if (!def?.typical_children) return;
+      for (const childId of def.typical_children) {
+        if (!allActiveIds.has(childId)) continue;
+        const key = `${n.id}→${childId}`;
+        if (!edgeSet.has(key)) {
+          crt.edges = crt.edges || [];
+          crt.edges.push({ from: n.id, to: childId });
+          edgeSet.add(key);
+          console.log(`[CRT] typical_children hrana: ${n.id} → ${childId}`);
+        }
+      }
+    });
+  }
+
   // Post-processing: odstraň hrany porušující topologická pravidla
   crt.edges = validateEdges(crt.nodes, crt.root, crt.edges || []);
 
@@ -833,7 +856,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx, modelId) {
   const key = JSON.stringify({
-    _v:          58, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
+    _v:          59, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
     model:       modelId || 'claude-sonnet-5',
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),
