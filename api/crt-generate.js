@@ -563,6 +563,12 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
       // Injektuj stav s nejvyšším typical_level (nejspecifičtější)
       const best = targetStates.reduce((b, d) => (d.typical_level ?? 0) > (b?.typical_level ?? -1) ? d : b, null);
       if (!best) continue;
+      if (best.canvas === false) {
+        // pharmacy-only stav — jen med_map, žádný canvas uzel
+        activeIds.add(best.id);
+        console.log(`[CRT] med-injekce (pharmacy only): ${best.id} (via ${nameLow})`);
+        continue;
+      }
       const injNode = { id: best.id, label: best.label, label_layman: best.label_layman, type: best.type, level: best.typical_level, branch: best.typical_branch, _injected: true };
       crt.nodes.push(injNode);
       activeIds.add(best.id);
@@ -827,7 +833,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx, modelId) {
   const key = JSON.stringify({
-    _v:          55, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
+    _v:          56, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
     model:       modelId || 'claude-sonnet-5',
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),
