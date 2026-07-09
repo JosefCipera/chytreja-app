@@ -571,7 +571,7 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
       if (childTarget) {
         crt.edges = crt.edges || [];
         crt.edges.push({ from: best.id, to: childTarget });
-        injNode._injected = false; // má hranu → není floating, connectOrphans může fungovat
+        // _injected zůstává true → connectSourceless nepřidá falešného rodiče
         console.log(`[CRT] med-injekce hrana: ${best.id} → ${childTarget}`);
       }
       console.log(`[CRT] med-injekce: ${best.id} (via ${nameLow})`);
@@ -827,7 +827,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx, modelId) {
   const key = JSON.stringify({
-    _v:          54, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
+    _v:          55, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
     model:       modelId || 'claude-sonnet-5',
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),
