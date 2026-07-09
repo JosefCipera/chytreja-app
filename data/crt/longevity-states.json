@@ -119,7 +119,7 @@
     "typical_level": 4,
     "can_be_root": false,
     "typical_branch": "L",
-    "med_targets": ["pradaxa", "nolpaza", "xarelto", "warfarin", "kalnormin", "betaloc", "concor"]
+    "med_targets": ["pradaxa", "nolpaza", "xarelto", "warfarin", "betaloc", "concor"]
   },
   {
     "id": "ENDOTHELIAL_DYSFUNCTION",
@@ -129,7 +129,7 @@
     "typical_level": 4,
     "can_be_root": false,
     "typical_branch": "C",
-    "med_targets": ["kalnormin"]
+    "med_targets": []
   },
   {
     "id": "ERECTILE_DYSFUNCTION",
