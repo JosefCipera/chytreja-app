@@ -84,7 +84,7 @@
     "label": "Endoteliální dysfunkce",
     "label_layman": "Poškozené stěny cév",
     "type": "cause",
-    "typical_level": 2,
+    "typical_level": 3,
     "can_be_root": false,
     "typical_branch": "R",
     "med_targets": []
