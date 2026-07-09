@@ -569,6 +569,12 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
       let targets = drugToStates[nameLow] || [];
       if (!targets.length && dbEntry?.inn)
         targets = drugToStates[dbEntry.inn.toLowerCase()] || [];
+      // Dedup: pokud lék sedí do více aktivních stavů, vezmi jen ten s nejvyšším levelem
+      if (targets.length > 1) {
+        targets = [targets.reduce((best, sid) =>
+          (STATES_DB[sid]?.typical_level ?? 0) > (STATES_DB[best]?.typical_level ?? 0) ? sid : best
+        )];
+      }
 
       primaryMeds.push({
         name,
@@ -673,9 +679,14 @@ function validateEdges(nodes, root, edges) {
       console.log(`[CRT validate] odstraněna center→branch hrana: ${e.from}(C,L${from.level})→${e.to}(${tb})`);
       return false;
     }
-    // Zakázáno: L nebo R → C junction na levelu < 4 (vizuálně kříží opačnou větev uprostřed stromu)
-    if ((fb === 'L' || fb === 'R') && tb === 'C' && (to.level ?? 0) < 4) {
+    // Zakázáno: L nebo R → C junction na levelu < 3 (příliš nízko — křížení)
+    if ((fb === 'L' || fb === 'R') && tb === 'C' && (to.level ?? 0) < 3) {
       console.log(`[CRT validate] odstraněna low-level ${fb}→C hrana: ${e.from}(L${from.level})→${e.to}(C,L${to.level})`);
+      return false;
+    }
+    // Zakázáno: L nebo R → C s přeskokem > 2 úrovní (diagonála přes celý strom, vizuálně kříží vše)
+    if ((fb === 'L' || fb === 'R') && tb === 'C' && (to.level ?? 0) - (from.level ?? 0) > 2) {
+      console.log(`[CRT validate] odstraněna long-skip ${fb}→C hrana: ${e.from}(L${from.level})→${e.to}(C,L${to.level})`);
       return false;
     }
 
@@ -700,9 +711,16 @@ function connectOrphans(nodes, root, edges) {
     if (n.id === mainApex.id) return;
     if (n.id === root?.id) return;
     if (!hasSources.has(n.id)) {
-      // Orphan — nemá výstupní hranu, připoj k apexu
-      console.log(`[CRT] orphan apex připojen: ${n.id} → ${mainApex.id}`);
-      result.push({ from: n.id, to: mainApex.id });
+      // Orphan — hledej nejbližší vyšší uzel (ne rovnou apex — zabráníme dlouhé diagonále)
+      const nextLevel = (n.level ?? 0) + 1;
+      const candidate = allNodes.find(u =>
+        u.id !== n.id &&
+        (u.level ?? 0) === nextLevel &&
+        (u.branch === n.branch || u.branch === 'C' || n.branch === 'C')
+      );
+      const target = candidate || mainApex;
+      console.log(`[CRT] orphan připojen: ${n.id}(L${n.level}) → ${target.id}(L${target.level ?? '?'})`);
+      result.push({ from: n.id, to: target.id });
     }
   });
 
@@ -763,7 +781,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx, modelId) {
   const key = JSON.stringify({
-    _v:          46, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
+    _v:          47, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
     model:       modelId || 'claude-sonnet-5',
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),
