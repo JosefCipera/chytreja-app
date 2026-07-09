@@ -805,6 +805,10 @@ function renderTree(data) {
   setTimeout(() => {
     if (_visNetwork) _visNetwork.fit({ animation: { duration: 500, easingFunction: 'easeInOutQuad' } });
   }, 150);
+
+  // Badge vždy znovu — _visNetwork byl právě zničen a vytvořen znovu
+  _warnDrawFn = null;
+  setTimeout(() => _attachWarningBadges(), 280);
 }
 
 function addMedPills(data) {
@@ -1150,7 +1154,7 @@ function buildPanelData(node, ctx, parents, children, meds, supps, contras, hidd
 
   const behaviorWarningHtml = node.behavior_warning ? `
     <div class="cnp-section" style="border-left:2px solid #ef4444;background:rgba(239,68,68,0.06);border-radius:0 6px 6px 0">
-      <p class="cnp-lbl" style="color:#ef4444;margin-bottom:8px">⚠ upozornění systému</p>
+      <p class="cnp-lbl" style="color:#ef4444;margin-bottom:8px;font-size:17px">⚠ upozornění systému</p>
       <div style="font-size:13px;color:#fca5a5;line-height:1.65">${node.behavior_warning}</div>
     </div>` : '';
 
@@ -1710,7 +1714,6 @@ async function boot() {
     applyLabelMode(displayData);
     _lastCrtData = displayData;
     renderTree(displayData);
-    setTimeout(() => _attachWarningBadges(), 300);
     document.getElementById('crtLabelBtn').style.display  = '';
     // Top-N (computeTopN) nepodporuje tvar Opus dat (_kbMap/_activeIds chybí) → pill skrýt
     document.getElementById('crtViewPill').style.display  = _isOpusBoot ? 'none' : '';
@@ -1741,9 +1744,7 @@ let _lastCrtData = null;
 const _origRenderTree = renderTree;
 window._renderTree = function(data) {
   _lastCrtData = data;
-  if (_warnDrawFn && _visNetwork) { _visNetwork.off('afterDrawing', _warnDrawFn); _warnDrawFn = null; }
-  _origRenderTree(data);
-  setTimeout(() => _attachWarningBadges(), 200);
+  _origRenderTree(data); // _attachWarningBadges je uvnitř renderTree
 };
 const _rerender = () => { if (_lastCrtData) setTimeout(() => _origRenderTree(_lastCrtData), 300); };
 window.addEventListener('resize', _rerender);
