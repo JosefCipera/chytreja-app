@@ -714,7 +714,7 @@ function renderTree(data) {
   const visNodes = data.nodes.map(n => {
     const ntype = n._type || n.type || 'cause';
     const isApex     = ntype === 'ude' && !edgeSources.has(n.id);
-    const isRoot     = ntype === 'golden_box' || n.type === 'root';
+    const isRoot     = ntype === 'golden_box' || n.type === 'root' || (n.level ?? 99) === 0;
     const isInactive = !!n.inactive;
 
     let bg, border, textColor, bw, dashes;
@@ -905,10 +905,8 @@ function openNodePanel(nodeId) {
   const activeIds = data?._activeIds || new Set((rawData.nodes || []).map(n => n.id));
   const parents  = (node.parents  || []).map(pid => kbMap[pid]).filter(Boolean).filter(p => activeIds.has(p.id));
   const children = (node.children || []).map(cid => kbMap[cid]).filter(Boolean).filter(c => activeIds.has(c.id));
-  const _allLevels = Object.values(kbMap).map(n => n.level ?? 0);
-  const _maxLevel  = _allLevels.length ? Math.max(..._allLevels) : 0;
   const _nodeLevel = node.level ?? 0;
-  const _excludeFromPanel = _nodeLevel === 0 || _nodeLevel === _maxLevel;
+  const _excludeFromPanel = _nodeLevel === 0; // jen root uzly bez léků; UDE apex léky zobrazit
   const meds     = _excludeFromPanel ? [] : medsMap.filter(m => (m.targets || []).includes(nodeId) && m.userHas);
   const supps    = _excludeFromPanel ? [] : suppsMap.filter(s => (s.targets || []).includes(nodeId));
   const contras  = (rawData.contra_map || []).filter(c => c.nodeId === nodeId);

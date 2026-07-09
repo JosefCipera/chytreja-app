@@ -542,6 +542,36 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
     if (crt.root && typeof crt.root === 'object') applyStateLabels(crt.root);
   }
 
+  // Diagnóza-injekce: pokud UDE stav z diagnóz chybí ve stromě, vlož ho jako isolated leaf
+  {
+    const DIAG_TO_STATE = {
+      'erektilní dysfunkce': 'ERECTILE_DYSFUNCTION',
+      'ed':                  'ERECTILE_DYSFUNCTION',
+      'erectile dysfunction':'ERECTILE_DYSFUNCTION',
+      'hyperurikémie':       'HYPERURICEMIA',
+      'dna':                 'HYPERURICEMIA',
+      'fibrilace síní':      'ATRIAL_FIBRILLATION',
+      'fap':                 'ATRIAL_FIBRILLATION',
+      'palpitace':           'PALPITATIONS',
+    };
+    const activeIds = new Set([
+      ...(crt.nodes || []).map(n => n.id),
+      ...(crt.root ? [typeof crt.root === 'string' ? crt.root : crt.root.id] : []),
+    ]);
+    const diagTexts = (profile.diagnoses || []).map(d => (d.name || d || '').toLowerCase());
+    const sympTexts = (profile.symptoms  || []).map(s => (s.name || s || '').toLowerCase());
+    for (const text of [...diagTexts, ...sympTexts]) {
+      const stateId = DIAG_TO_STATE[text.trim()];
+      if (stateId && !activeIds.has(stateId) && STATES_DB[stateId]) {
+        const def = STATES_DB[stateId];
+        const injNode = { id: stateId, label: def.label, label_layman: def.label_layman, type: def.type, level: def.typical_level, branch: def.typical_branch };
+        crt.nodes.push(injNode);
+        activeIds.add(stateId);
+        console.log(`[CRT] diagnóza-injekce: ${stateId} (${text})`);
+      }
+    }
+  }
+
   // medications_map — DETERMINISTICKY z STATES_DB.med_targets, žádné AI
   {
     const activeStateIds = new Set([
@@ -788,7 +818,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx, modelId) {
   const key = JSON.stringify({
-    _v:          48, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
+    _v:          49, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
     model:       modelId || 'claude-sonnet-5',
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),
