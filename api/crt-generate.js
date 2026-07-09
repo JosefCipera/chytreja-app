@@ -824,6 +824,7 @@ function connectSourceless(nodes, root, edges) {
   allNodes.forEach(n => {
     if (n.id === root?.id) return;
     if (n._injected) return; // injektované uzly — žádné vstupní hrany, floating
+    if (n.type === 'ude') return; // UDE jsou legitimní apex — rodiče garantuje typical_children
     if (hasTargets.has(n.id)) return;
 
     const candidates = allNodes.filter(c =>
@@ -868,7 +869,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx, modelId) {
   const key = JSON.stringify({
-    _v:          64, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
+    _v:          65, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
     model:       modelId || 'claude-sonnet-5',
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),
