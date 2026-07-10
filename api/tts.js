@@ -269,17 +269,19 @@ function sanitizeMedAbbr(text) {
 function extractCrtInsights(crtCache) {
   if (!crtCache?.nodes?.length) return null;
   const nodes = crtCache.nodes;
-  // Kořen (root) = nejnižší y, nebo type === 'root'
   const root = nodes.find(n => n.type === 'root') || nodes.reduce((a, b) => (a.y ?? 0) < (b.y ?? 0) ? a : b);
-  // UDE = nejvyšší y, nebo type === 'ude'
   const ude  = nodes.find(n => n.type === 'ude')  || nodes.reduce((a, b) => (a.y ?? 0) > (b.y ?? 0) ? a : b);
-  // Střední uzly — přeskočíme root a ude, seřadíme podle y sestupně (blíže UDE = důležitější)
   const middle = nodes
     .filter(n => n.id !== root?.id && n.id !== ude?.id)
     .sort((a, b) => (b.y ?? 0) - (a.y ?? 0))
     .slice(0, 3)
     .map(n => n.label);
-  return { root: root?.label, ude: ude?.label, middle };
+  // Behavior action: z top-level mapy nebo z uzlů (junction first)
+  const bf = crtCache.behavior_flags || {};
+  const behaviorNode = nodes.find(n => (n.type === 'junction' || n.type === 'ude') && n.behavior_warning)
+    || nodes.find(n => n.behavior_warning);
+  const behaviorAction = Object.values(bf)[0] || behaviorNode?.behavior_warning || null;
+  return { root: root?.label, ude: ude?.label, middle, behaviorAction };
 }
 
 // Jeden briefing = diagnóza + akce, vše v jednom volání s plným kontextem
@@ -304,20 +306,22 @@ async function generateBriefingFull(context) {
     .map(([k, v]) => `${k}: ${v}`)
     .join(', ') : null;
   const cil = profile?.goal_text || null;
+  const crtIns = extractCrtInsights(profile?.crt_cache);
+  const behaviorAction = crtIns?.behaviorAction || null;
   const profileLines = [
     diagnozy && `Diagnózy: ${diagnozy}`,
     laby && `Lab výsledky: ${laby}`,
     cil && `Cíl: ${cil}`,
     killerRisk && `Riziko: ${killerRisk}`,
+    crtIns?.ude && `Hlavní dopad: ${sanitizeMedAbbr(crtIns.ude)}`,
+    behaviorAction && `Okamžitá akce (použij jako 2. větu): ${sanitizeMedAbbr(behaviorAction)}`,
   ].filter(Boolean).join('\n');
 
   const systemPrompt = `Jsi CHJ — osobní průvodce zdravím. Mluvíš přirozeně česky jako kamarád.
 
 Napiš PŘESNĚ DVĚ věty, které na sebe navazují:
 1. věta: co zaostává + dopad — MAX 8 SLOV, žádné "tělo"
-2. věta: jedna konkrétní akce přizpůsobená zdravotnímu stavu — MAX 12 SLOV
-
-Pokud máš k dispozici kauzální řetězec (z CRT), použij ho — první věta může zmínit kořenovou příčinu, druhá věta zasáhne více problémů najednou.
+2. věta: jedna konkrétní akce — MAX 12 SLOV${behaviorAction ? ' (máš zadanou konkrétní akci — použij ji, upravi jen slovosled)' : ''}
 
 Pravidla:
 - Tykání = CHJ mluví K uživateli, ne ZA něj. "Jdi", "udělej", "zalehni" — nikdy "vstanu", "půjdu", "udělám"
@@ -325,11 +329,7 @@ Pravidla:
 - Nikdy nepoužívej lékařské zkratky (FaP, LDL, HRV) — piš celým slovem
 - Zakázaná slova: dekondice, hypertenze, arytmie, arterioskleróza, dyslipidémie — místo toho piš "málo pohybu", "vysoký tlak", "nepravidelný rytmus", "ztuhlé cévy"
 - Žádná anglická slova, žádná pomlčka —
-- Výstup: pouze dvě věty, bez uvozovek, bez číslování
-
-Příklady s CRT kontextem:
-- "Sedavý styl živí LDL i stres zároveň. Dnes půl hodiny chůze zasáhne oboje."
-- "Kondice zaostává, srdce to pocítí. Dnes třicet minut svižné chůze, ne klusu."`;
+- Výstup: pouze dvě věty, bez uvozovek, bez číslování`;
 
   const userPrompt = `Denní doba: ${timeLabel}
 Nejslabší místo: ${bottleneckLabel}

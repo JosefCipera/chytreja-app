@@ -714,15 +714,59 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
 
   // Behavior warnings: připoj personalizované varování z profilu na aktivní uzly
   const behaviorFlags = profile?.behavior_flags || {};
+  const allActive = [...(crt.nodes || [])];
+  if (crt.root && typeof crt.root === 'object') allActive.push(crt.root);
   if (Object.keys(behaviorFlags).length) {
-    const allActive = [...(crt.nodes || [])];
-    if (crt.root && typeof crt.root === 'object') allActive.push(crt.root);
     allActive.forEach(n => {
       if (behaviorFlags[n.id]) n.behavior_warning = behaviorFlags[n.id];
     });
   }
 
+  // Auto-generate behavior warning for the key node (junction or UDE) if not manually set
+  await generateAutoFlag(allActive, profile);
+
   return crt;
+}
+
+// Vygeneruje behaviorální doporučení pro nejdůležitější uzel bez manuálního flagu
+async function generateAutoFlag(allNodes, profile) {
+  // Cíl: junction nebo UDE bez behavior_warning
+  const candidate = allNodes
+    .filter(n => (n.type === 'junction' || n.type === 'ude') && !n.behavior_warning)
+    .sort((a, b) => {
+      if (a.type !== b.type) return a.type === 'junction' ? -1 : 1; // junction first
+      return (b.level ?? 0) - (a.level ?? 0);
+    })[0];
+  if (!candidate) return;
+
+  const diagText = (profile.diagnoses || []).join(', ') || 'neuvedeno';
+  const goal = profile.goal_text || '';
+
+  const userMsg = `Jsi CHJ — průvodce zdravím. Napiš JEDNU větu (max 12 slov) — konkrétní behaviorální akci pro pacienta.
+
+Diagnózy: ${diagText}
+Cíl: ${goal || 'zlepšit zdraví'}
+Klíčový uzel: ${candidate.label || candidate.id} (${candidate.type === 'junction' ? 'konvergenční bod' : 'hlavní projev'})
+
+Jedna věta, čeština, tykání, bez uvozovek:`;
+
+  try {
+    const aiRes = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 80, messages: [{ role: 'user', content: userMsg }] }),
+    });
+    if (!aiRes.ok) throw new Error(`Haiku ${aiRes.status}`);
+    const data = await aiRes.json();
+    const text = (data.content?.[0]?.text || '').trim();
+    if (text) {
+      candidate.behavior_warning = text;
+      candidate._behavior_auto = true;
+      console.log(`[CRT] auto_flag: ${candidate.id} → "${text}"`);
+    }
+  } catch (e) {
+    console.warn('[CRT] auto_flag failed:', e.message);
+  }
 }
 
 // Odstraní cross-branch hrany (L↔R) a hrany jdoucí dolů nebo po stejné úrovni
@@ -981,6 +1025,10 @@ export default async function handler(req, res) {
     // 5. Overlay barev (bez barev — jen mapování stavu pro případné budoucí použití)
     const coloredNodes = overlayColors(allNodes, ctx.metrics);
 
+    // Extrahuj behavior_flags do top-level mapy pro TTS
+    const behaviorFlagsMap = {};
+    coloredNodes.forEach(n => { if (n.behavior_warning) behaviorFlagsMap[n.id] = n.behavior_warning; });
+
     const result = {
       title:      'Kauzální mapa zdraví',
       subtitle:   'Current Reality Tree — generováno z vašich dat',
@@ -989,6 +1037,7 @@ export default async function handler(req, res) {
       and_joins:  crt.and_joins || [],
       injections:      crt.injections || [],
       medications_map: crt.medications_map || [],
+      behavior_flags:  behaviorFlagsMap,
       has_data:        ctx.metrics.length > 0 || !!ctx.profile.diagnoses,
     };
 
