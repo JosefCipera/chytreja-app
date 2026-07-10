@@ -1561,7 +1561,8 @@ window.printCRT = function() {
 <style>
   @page { size: A4 landscape; margin: 7mm; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: Inter, system-ui, sans-serif; background: #fff; color: #1e293b; }
+  body { font-family: Inter, system-ui, sans-serif; background: #fff; color: #1e293b; visibility: hidden; }
+  @media print { body { visibility: visible; } }
   .p-map {
     width: 100%; height: 196mm;
     display: flex; flex-direction: column; justify-content: space-between;
@@ -1586,13 +1587,11 @@ window.printCRT = function() {
 <div class="p-panel">${panelHtml}</div>
 </body></html>`);
     pw.document.close();
-    pw.focus();
-    // Zavři okno ihned po zavření tiskového dialogu
     pw.onafterprint = () => pw.close();
     setTimeout(() => {
       pw.print();
       setTimeout(() => { if (!pw.closed) pw.close(); }, 2000);
-    }, 500);
+    }, 150);
   }, IS_MOBILE ? 1400 : 1000);
 };
 
