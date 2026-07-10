@@ -1458,38 +1458,32 @@ window.exportCRTImage = function() {
   }, 'image/png');
 };
 
-// Tisk mapy — světlé uzly → PNG → @media print overlay (zůstane na stejné stránce)
+// Tisk — nové okno → originální stránka beze změny (žádný flicker)
 window.printCRT = function() {
   if (!_visNetwork) return;
 
-  // Panel — zkopíruj obsah pokud je otevřený
-  const panelEl    = document.getElementById('crtNodePanel');
-  const printPanel = document.getElementById('crtPrintPanel');
-  const printContent = document.getElementById('crtPrintContent');
-  const panelOpen  = panelEl?.classList.contains('open');
-  if (panelOpen && printPanel) {
-    let html = document.getElementById('cnpData')?.innerHTML || '';
-    // Tmavé barvy → čitelné na bílém papíře
-    html = html
-      .replace(/color:#e2e8f0/gi,  'color:#1e293b')   // hodnota (světle šedá → tmavá)
-      .replace(/color:#94a3b8/gi,  'color:#475569')   // sekundární text
-      .replace(/color:#cbd5e1/gi,  'color:#374151')   // světlý text
-      .replace(/color:#4ade80/gi,  'color:#15803d')   // zelená → tmavě zelená
+  // Panel HTML — připrav před resize canvasu
+  const panelOpen = document.getElementById('crtNodePanel')?.classList.contains('open');
+  let panelHtml = '';
+  if (panelOpen) {
+    let h = document.getElementById('cnpData')?.innerHTML || '';
+    h = h
+      .replace(/color:#e2e8f0/gi,  'color:#1e293b')
+      .replace(/color:#94a3b8/gi,  'color:#475569')
+      .replace(/color:#cbd5e1/gi,  'color:#374151')
+      .replace(/color:#4ade80/gi,  'color:#15803d')
       .replace(/color:#22c55e/gi,  'color:#15803d')
-      .replace(/color:#fbbf24/gi,  'color:#92400e')   // žlutá → tmavě hnědá
+      .replace(/color:#fbbf24/gi,  'color:#92400e')
       .replace(/color:#f59e0b/gi,  'color:#b45309')
-      .replace(/color:#fde68a/gi,  'color:#92400e')   // světle žlutá
-      .replace(/color:#fca5a5/gi,  'color:#b91c1c')   // světle červená → tmavá
+      .replace(/color:#fde68a/gi,  'color:#92400e')
+      .replace(/color:#fca5a5/gi,  'color:#b91c1c')
       .replace(/color:#f87171/gi,  'color:#dc2626')
-      .replace(/background:#1e293b/gi, 'background:#e2e8f0')  // progress bar bg
-      .replace(/background:rgba\(15,\s*23,\s*42[^)]*\)/gi,    'background:transparent')
-      .replace(/background:rgba\(26,\s*45,\s*64[^)]*\)/gi,    'background:rgba(245,158,11,0.06)');
-    printPanel.innerHTML = html;
-    printContent?.classList.add('has-panel');
+      .replace(/background:#1e293b/gi, 'background:#e2e8f0')
+      .replace(/background:rgba\(15,\s*23,\s*42[^)]*\)/gi, 'background:transparent')
+      .replace(/background:rgba\(26,\s*45,\s*64[^)]*\)/gi, 'background:rgba(245,158,11,0.06)');
+    panelHtml = h;
   }
 
-  // Mobil DPR=3 → canvas limit 16M px → 2244×1587×9 = 32M → failuje → černé uzly.
-  // Na mobilu bezpečný rozměr: 1100×780 CSS px × DPR=3 → 3300×2340 = 7.7M px.
   const IS_MOBILE = window.innerWidth < 900;
   const PRINT_W = IS_MOBILE ? 1100 : 2244;
   const PRINT_H = IS_MOBILE ?  780 : 1587;
@@ -1498,41 +1492,33 @@ window.printCRT = function() {
   const origW = container.style.width;
   const origH = container.style.height;
 
-  // 1. Ulož původní barvy uzlů a přebarvit na světlé
+  // Světlé barvy uzlů
   const dataset = _visNetwork.body.data.nodes;
   const origColors = {};
   dataset.forEach(n => { origColors[n.id] = { color: n.color, font: n.font }; });
-
-  const printUpdates = dataset.get().map(n => {
+  dataset.update(dataset.get().map(n => {
     const border = n.color?.border || '#4a7a9a';
     const isRoot = border === '#c09a22';
     const isApex = border === '#4ab8d0';
     const bg = isRoot ? '#fffbee' : isApex ? '#eaf8ff' : '#f0f5fa';
-    return {
-      id: n.id,
+    return { id: n.id,
       color: { background: bg, border, highlight: { background: bg, border }, hover: { background: bg, border } },
       font:  { color: '#1a2d40', size: n.font?.size || 22, face: n.font?.face || 'Inter, system-ui' },
     };
-  });
-  dataset.update(printUpdates);
-
-  // Přepni pill drawer na světlý (tiskový) variant
+  }));
   if (_medDrawFn && _pillsAdded) {
     _visNetwork.off('afterDrawing', _medDrawFn);
     _medDrawFn = _buildMedDrawer(true);
     _visNetwork.on('afterDrawing', _medDrawFn);
   }
 
-  // Desktop: skryj container přes opacity aby resize nevytvářel vizuální flicker
-  if (!IS_MOBILE) container.style.opacity = '0';
-
-  // 2. Roztáhni canvas → fit → screenshot
+  // Skryj canvas (opacity) → resize → screenshot
+  container.style.opacity = '0';
   container.style.width  = PRINT_W + 'px';
   container.style.height = PRINT_H + 'px';
   _visNetwork.setSize(PRINT_W + 'px', PRINT_H + 'px');
   _visNetwork.redraw();
   _visNetwork.fit({ animation: false });
-
   setTimeout(() => { _visNetwork.fit({ animation: false }); }, 300);
 
   setTimeout(() => {
@@ -1540,7 +1526,6 @@ window.printCRT = function() {
 
     const restore = () => {
       dataset.update(Object.entries(origColors).map(([id, c]) => ({ id, ...c })));
-      // Obnov tmavý pill drawer
       if (_pillsAdded) {
         if (_medDrawFn) _visNetwork.off('afterDrawing', _medDrawFn);
         _medDrawFn = _buildMedDrawer(false);
@@ -1556,7 +1541,6 @@ window.printCRT = function() {
 
     if (!src) { restore(); return; }
 
-    // 3. Zachyť canvas
     const out = document.createElement('canvas');
     out.width = src.width; out.height = src.height;
     const ctx2 = out.getContext('2d');
@@ -1565,23 +1549,41 @@ window.printCRT = function() {
     ctx2.drawImage(src, 0, 0);
     const dataURL = out.toDataURL('image/png');
 
-    restore();
+    restore(); // vrať původní stav ihned — žádný flicker
 
-    // 4. Vlož obrázek — čekej na onload, pak tiskni
-    const img    = document.getElementById('crtPrintImg');
-    const footer = document.getElementById('crtPrintFooter');
-    if (!img) return;
-    if (footer) footer.textContent = `Kauzální mapa zdraví · CHJ · ${new Date().toLocaleDateString('cs-CZ')}`;
-    img.onload = () => {
-      document.body.classList.add('crt-printing');
-      setTimeout(() => {
-        window.print();
-        document.body.classList.remove('crt-printing');
-        if (printPanel) printPanel.innerHTML = '';
-        printContent?.classList.remove('has-panel');
-      }, 80);
-    };
-    img.src = dataURL;
+    // Otevři nové okno a tiskni z něj
+    const date = new Date().toLocaleDateString('cs-CZ');
+    const pw = window.open('', '_blank');
+    if (!pw) { alert('Povolte vyskakovací okna pro tisk.'); return; }
+    pw.document.write(`<!DOCTYPE html><html><head>
+<meta charset="utf-8">
+<title>Kauzální mapa zdraví · CHJ · ${date}</title>
+<style>
+  @page { size: A4 landscape; margin: 7mm; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Inter, system-ui, sans-serif; background: #fff; color: #1e293b; }
+  .p-map img { width: 100%; height: auto; display: block; }
+  .p-footer { font-size: 9px; color: #94a3b8; text-align: right; padding-top: 3mm; }
+  .p-panel { padding: 10mm 14mm; font-size: 13px; color: #1e293b;
+             ${panelHtml ? 'page-break-before:always;break-before:page;' : 'display:none;'} }
+  .cnp-section { padding: 10px 0; border-bottom: 1px solid #e2e8f0; }
+  .cnp-section:last-child { border-bottom: none; }
+  .cnp-lbl { font-family: monospace; font-size: 10px; letter-spacing: 2px; color: #64748b; text-transform: uppercase; margin: 0 0 8px; }
+  .cnp-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 13px; color: #334155; line-height: 1.4; }
+  .cnp-arr { color: #94a3b8; flex-shrink: 0; }
+  .cnp-action { display: flex; gap: 9px; padding: 10px 12px; background: rgba(245,158,11,0.06); border: 1px solid rgba(245,158,11,0.3); border-radius: 10px; margin-bottom: 7px; font-size: 13px; color: #374151; line-height: 1.45; }
+  .cnp-chip { display: inline-flex; align-items: center; background: rgba(245,158,11,0.06); border: 1px solid rgba(180,83,9,0.35); border-radius: 20px; padding: 4px 13px; font-family: monospace; font-size: 12px; color: #92400e; margin-bottom: 4px; }
+</style>
+</head><body>
+<div class="p-map">
+  <img src="${dataURL}" alt="Kauzální mapa zdraví">
+  <div class="p-footer">Kauzální mapa zdraví · CHJ · ${date}</div>
+</div>
+<div class="p-panel">${panelHtml}</div>
+</body></html>`);
+    pw.document.close();
+    pw.focus();
+    setTimeout(() => { pw.print(); setTimeout(() => pw.close(), 1000); }, 600);
   }, IS_MOBILE ? 1400 : 1000);
 };
 
