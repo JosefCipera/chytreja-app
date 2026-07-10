@@ -314,14 +314,13 @@ async function generateBriefingFull(context) {
     cil && `Cíl: ${cil}`,
     killerRisk && `Riziko: ${killerRisk}`,
     crtIns?.ude && `Hlavní dopad: ${sanitizeMedAbbr(crtIns.ude)}`,
-    behaviorAction && `Okamžitá akce (použij jako 2. větu): ${sanitizeMedAbbr(behaviorAction)}`,
   ].filter(Boolean).join('\n');
 
   const systemPrompt = `Jsi CHJ — osobní průvodce zdravím. Mluvíš přirozeně česky jako kamarád.
 
 Napiš PŘESNĚ DVĚ věty, které na sebe navazují:
 1. věta: co zaostává + dopad — MAX 8 SLOV, žádné "tělo"
-2. věta: jedna konkrétní akce — MAX 12 SLOV${behaviorAction ? ' (máš zadanou konkrétní akci — použij ji, upravi jen slovosled)' : ''}
+2. věta: ${behaviorAction ? `PŘEPIŠ DOSLOVA tuto větu (nic nezměníš): "${sanitizeMedAbbr(behaviorAction)}"` : 'jedna konkrétní akce — MAX 12 SLOV'}
 
 Pravidla:
 - Tykání = CHJ mluví K uživateli, ne ZA něj. "Jdi", "udělej", "zalehni" — nikdy "vstanu", "půjdu", "udělám"
