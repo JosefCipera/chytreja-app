@@ -178,7 +178,12 @@
       text-align: right; padding: 3mm 4mm 0;
     }
     @media print {
-      body.crt-printing > *:not(#crtPrintContent) { display: none !important; }
+      /* Skryj vše kromě print overlay */
+      body.crt-printing .crt-header,
+      body.crt-printing .crt-body,
+      body.crt-printing .crt-tooltip,
+      body.crt-printing #crtNodePanel { display: none !important; }
+
       body.crt-printing #crtPrintContent {
         display: block !important;
         position: static !important;
@@ -187,10 +192,7 @@
       body.crt-printing #crtPrintContent img {
         width: 100%; height: auto; display: block;
       }
-      body.crt-printing #crtPrintContent.has-panel img {
-        page-break-after: always;
-        break-after: page;
-      }
+      /* Jen jeden page-break — před panelem */
       body.crt-printing #crtPrintContent.has-panel #crtPrintPanel {
         display: block;
         page-break-before: always;
