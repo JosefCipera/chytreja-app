@@ -7,11 +7,20 @@
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@300;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/app/css/universe-header.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
   <script src="https://cdn.jsdelivr.net/npm/vis-network@9.1.9/dist/vis-network.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* CHJ Logo */
+    .chj-logo { --fs:19px; --lh:calc(var(--fs)*2); display:flex; flex-direction:row; align-items:center; gap:9px; color:#e2e8f0; }
+    .chj-logo__cursor { flex-shrink:0; width:2px; height:var(--lh); background:currentColor; animation:chj-blink 1.1s step-end infinite; }
+    @keyframes chj-blink { 0%,100%{opacity:1} 50%{opacity:0} }
+    .chj-logo__text { display:flex; flex-direction:column; font-family:'Urbanist',sans-serif; font-size:var(--fs); line-height:0.85; letter-spacing:-0.5px; }
+    .chj-logo__row1 { font-weight:300; }
+    .chj-logo__row2 { font-weight:800; }
+    .chj-logo__ac { position:relative; display:inline-block; line-height:1; }
+    .chj-logo__ac::after { content:""; position:absolute; left:50%; transform:translateX(-50%); width:0.38em; height:0.055em; background:currentColor; top:0.14em; }
 
     body {
       background: #0b0f1a;
