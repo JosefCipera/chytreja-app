@@ -63,6 +63,9 @@
     .dropdown-nav .icon { display:inline-block; width:20px; margin-right:10px; text-align:center; }
     .divider { height:1px; background:#e2e8f0; margin:4px 0; }
     .logout-action { background:#f8fafc; border-top:1px solid #f1f5f9; color:#ef4444; font-weight:500; }
+    .status-row { display:flex; gap:10px; align-items:center; }
+    .badge-free { background:#e0e7ff; color:#4338ca; padding:2px 8px; border-radius:6px; font-size:0.75rem; font-weight:600; }
+    .upgrade-link { color:#4f46e5; text-decoration:underline; font-size:0.85rem; }
     .crt-pill { display:flex; border:1px solid #2a3a4a; border-radius:6px; overflow:hidden; }
     .crt-pill-opt { background:none; border:none; border-right:1px solid #2a3a4a; padding:6px 13px;
       cursor:pointer; font-size:13px; color:#8ba8b8; transition:background .15s,color .15s; }
@@ -369,7 +372,7 @@
         <img src="https://ui-avatars.com/api/?name=U&background=0D8ABC&color=fff" alt="User" class="avatar-large">
         <div class="user-meta">
           <span class="email"></span>
-          <div><span class="badge-free">CHJ</span></div>
+          <div class="status-row"><span class="badge-free">Free</span><a href="#upgrade" class="upgrade-link">upgrade</a></div>
         </div>
       </div>
       <nav class="dropdown-nav">
