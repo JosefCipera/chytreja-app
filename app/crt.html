@@ -1882,7 +1882,7 @@ if (screen.orientation) screen.orientation.addEventListener('change', _rerender)
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js';
 import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js';
-const _fbApp = initializeApp({ apiKey:"AIzaSyAKREZsoBZkA1xOQ5ff3XDmiJ88nwSjeOk", authDomain:"chytre-ja-app.firebaseapp.com", projectId:"chytre-ja-app", storageBucket:"chytre-ja-app.firebasestorage.app", messagingSenderId:"65882611642", appId:"1:65882611642:web:53d82914aa07d6677d4783" }, 'crt-auth');
+const _fbApp = initializeApp({ apiKey:"AIzaSyAKREZsoBZkA1xOQ5ff3XDmiJ88nwSjeOk", authDomain:"chytre-ja-app.firebaseapp.com", projectId:"chytre-ja-app", storageBucket:"chytre-ja-app.firebasestorage.app", messagingSenderId:"65882611642", appId:"1:65882611642:web:53d82914aa07d6677d4783" });
 const _fbAuth = getAuth(_fbApp);
 onAuthStateChanged(_fbAuth, user => {
   if (!user) return;
