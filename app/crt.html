@@ -962,12 +962,16 @@ function addMedPills(data) {
 
 
 // ── Node detail panel ────────────────────────────────────────────────────────
+let _openPanelNodeId = null;
+
 function closeCrtPanel() {
+  _openPanelNodeId = null;
   document.getElementById('crtNodePanel').classList.remove('open');
   if (_visNetwork) _visNetwork.unselectAll();
 }
 
 function openNodePanel(nodeId) {
+  _openPanelNodeId = nodeId;
   const data    = window._crtData;
   const rawData = _rawCrtData || data;
 
@@ -1296,6 +1300,7 @@ window.toggleLabelMode = function() {
   renderTree(data);
   _pillsAdded = false; // renderTree smaže pill nody — reset stavu
   if (_medsVisible) _applyMedsState();
+  if (_openPanelNodeId) openNodePanel(_openPanelNodeId);
   const btn = document.getElementById('crtLabelBtn');
   if (btn) {
     btn.textContent = _labelMode === 'layman' ? '🔬 Expert' : '👤 Laik';
