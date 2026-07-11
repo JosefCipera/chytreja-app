@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
   <title>Kauzální mapa zdraví</title>
   <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@300;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/app/css/universe-header.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
   <script src="https://cdn.jsdelivr.net/npm/vis-network@9.1.9/dist/vis-network.min.js"></script>
   <style>
@@ -312,9 +315,12 @@
 
 <div class="crt-header">
   <button class="crt-back" onclick="goBack()">← Zpět</button>
-  <div style="flex:1">
-    <div class="crt-title" id="crtTitle">Kauzální mapa zdraví</div>
-    <div class="crt-subtitle" id="crtSubtitle">Current Reality Tree</div>
+  <div class="chj-logo" style="flex:1">
+    <div class="chj-logo__cursor"></div>
+    <div class="chj-logo__text">
+      <span class="chj-logo__row1">chytr<span class="chj-logo__ac">e</span></span>
+      <span class="chj-logo__row2">j<span class="chj-logo__ac">a</span></span>
+    </div>
   </div>
   <button class="crt-back" id="crtMedBtn" onclick="toggleMeds()" style="display:none">Léky</button>
   <button class="crt-back" id="crtLabelBtn" onclick="toggleLabelMode()" style="display:none">Expert</button>

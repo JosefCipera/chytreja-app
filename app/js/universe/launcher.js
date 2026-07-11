@@ -887,21 +887,15 @@ function showNavChips() {
     console.log('[CHJ Data] after wait, uid:', window._chjUserId);
     window.openUserDataPanel?.();
   };
-  const chips = _hasHealthData ? [
-    { label: 'IO Mapa',       fn: () => { const uid = window._chjUserId ? `?userId=${window._chjUserId}` : ''; window.location.href = `/io-map.html${uid}`; } },
-    { label: 'Kauzální mapa', fn: () => { window.location.href = '/crt.html?opus=1'; } },
-    { label: 'Vesmír',        fn: () => { const model = localStorage.getItem('currentModel')||'longevity'; const node = {longevity:'dlouhovekost',lehkost:'lh_main',toc:'toc'}[model]||'dlouhovekost'; routeToNode(node); } },
-    { label: 'Data',          fn: _openData },
-  ] : [
-    { label: 'Zadat data',    fn: _openData },
-  ];
-  chips.forEach(({ label, fn }) => {
-    const btn = document.createElement('button');
-    btn.className = 'chjl-nav-chip';
-    btn.textContent = label;
-    btn.addEventListener('click', e => { e.stopPropagation(); console.error('[CHJ chip click]', label); fn(); });
-    wrap.appendChild(btn);
-  });
+  // Nav chips dočasně skryty — navigace přes avatar v záhlaví
+  // const chips = _hasHealthData ? [
+  //   { label: 'IO Mapa',       fn: () => { ... } },
+  //   { label: 'Kauzální mapa', fn: () => { window.location.href = '/crt.html?opus=1'; } },
+  //   { label: 'Vesmír',        fn: () => { ... } },
+  //   { label: 'Data',          fn: _openData },
+  // ] : [
+  //   { label: 'Zadat data',    fn: _openData },
+  // ];
 }
 
 // Volá user-data-panel.js po úspěšném saveZdravi — znovu načte has_health_data a překreslí chips
