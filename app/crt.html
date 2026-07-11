@@ -46,28 +46,23 @@
     }
     .crt-back:hover { border-color: #6a8aaa; color: #c8d8e8; }
 
-    /* ── Avatar ── */
-    .crt-avatar-btn {
-      width: 34px; height: 34px; border-radius: 50%; overflow: hidden;
-      border: 2px solid #334155; background: none; cursor: pointer; padding: 0;
-      transition: border-color .2s;
-    }
-    .crt-avatar-btn:hover { border-color: #3b82f6; }
-    .crt-avatar-btn img { width: 100%; height: 100%; object-fit: cover; display: block; }
-    .crt-avatar-wrap { position: relative; }
-    .crt-dropdown {
-      position: absolute; top: 42px; right: 0; min-width: 180px;
-      background: #1e293b; border: 1px solid #334155; border-radius: 10px;
-      box-shadow: 0 8px 24px rgba(0,0,0,.5); z-index: 9999; overflow: hidden;
-    }
-    .crt-dropdown.hidden { display: none; }
-    .crt-dropdown a, .crt-dropdown button {
-      display: block; width: 100%; padding: 11px 16px; text-align: left;
-      color: #94a3b8; font-size: 13px; background: none; border: none;
-      cursor: pointer; text-decoration: none; transition: background .15s, color .15s;
-    }
-    .crt-dropdown a:hover, .crt-dropdown button:hover { background: #273548; color: #e2e8f0; }
-    .crt-dropdown .crt-dd-divider { height: 1px; background: #334155; margin: 4px 0; }
+    /* Avatar — stejné jako Vesmír */
+    .user-profile-wrapper { position:relative; display:flex; align-items:center; gap:8px; }
+    .avatar-button { background:none; border:2px solid #334155; padding:0; cursor:pointer; border-radius:50%; width:34px; height:34px; overflow:hidden; transition:transform .2s,border-color .2s; flex-shrink:0; }
+    .avatar-button:hover { transform:scale(1.05); border-color:#3b82f6; }
+    .user-avatar { width:100%; height:100%; object-fit:cover; display:block; }
+    .profile-dropdown { position:absolute; top:44px; right:0; width:240px; background:#fff; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,.5); z-index:9999; color:#1e293b; overflow:hidden; border:1px solid #e2e8f0; }
+    .profile-dropdown.hidden { display:none; }
+    .dropdown-header { padding:14px 18px; border-bottom:1px solid #f1f5f9; display:flex; align-items:center; gap:10px; }
+    .avatar-large { width:40px; height:40px; border-radius:50%; }
+    .user-meta { flex:1; }
+    .email { display:block; font-weight:600; color:#1e293b; font-size:13px; margin-bottom:4px; }
+    .badge-free { background:#e0e7ff; color:#4338ca; padding:2px 8px; border-radius:6px; font-size:11px; font-weight:600; }
+    .dropdown-nav a, .logout-action { display:flex; align-items:center; padding:11px 18px; color:#475569; text-decoration:none; font-size:13px; transition:background .15s; border:none; background:none; width:100%; cursor:pointer; text-align:left; }
+    .dropdown-nav a:hover { background:#f8fafc; color:#1e293b; }
+    .dropdown-nav .icon { display:inline-block; width:20px; margin-right:10px; text-align:center; }
+    .divider { height:1px; background:#e2e8f0; margin:4px 0; }
+    .logout-action { background:#f8fafc; border-top:1px solid #f1f5f9; color:#ef4444; font-weight:500; }
     .crt-pill { display:flex; border:1px solid #2a3a4a; border-radius:6px; overflow:hidden; }
     .crt-pill-opt { background:none; border:none; border-right:1px solid #2a3a4a; padding:6px 13px;
       cursor:pointer; font-size:13px; color:#8ba8b8; transition:background .15s,color .15s; }
@@ -346,13 +341,14 @@
 <body>
 
 <div class="crt-header">
-  <div class="chj-logo" style="margin-right:8px">
+  <div class="chj-logo">
     <div class="chj-logo__cursor"></div>
     <div class="chj-logo__text">
       <span class="chj-logo__row1">chytr<span class="chj-logo__ac">e</span></span>
       <span class="chj-logo__row2">j<span class="chj-logo__ac">a</span></span>
     </div>
   </div>
+  <div style="flex:1"></div>
   <span id="crtTitle" style="display:none"></span>
   <span id="crtSubtitle" style="display:none"></span>
   <button class="crt-back" id="crtMedBtn" onclick="toggleMeds()" style="display:none">Léky</button>
@@ -364,15 +360,23 @@
   <button class="crt-back" id="crtExportBtn" onclick="exportCRTImage()" style="display:none">Export</button>
   <button class="crt-back" id="crtPrintBtn" onclick="printCRT()" style="display:none">Tisk</button>
   <button class="crt-back" id="crtRegenBtn" onclick="regenCRT()" style="display:none">↺</button>
-  <div style="flex:1"></div>
-  <div class="crt-avatar-wrap">
-    <button class="crt-avatar-btn" id="crtAvatarBtn" onclick="document.getElementById('crtDropdown').classList.toggle('hidden')">
-      <img id="crtAvatarImg" src="https://ui-avatars.com/api/?name=U&background=0D8ABC&color=fff" alt="Profil">
+  <div class="user-profile-wrapper">
+    <button id="profileBtn" class="avatar-button" onclick="document.getElementById('profileDropdown').classList.toggle('hidden')">
+      <img src="https://ui-avatars.com/api/?name=U&background=0D8ABC&color=fff" alt="Profil" class="user-avatar">
     </button>
-    <div id="crtDropdown" class="crt-dropdown hidden">
-      <a href="/app">← Launcher</a>
-      <div class="crt-dd-divider"></div>
-      <button id="crtLogoutBtn">Odhlásit</button>
+    <div id="profileDropdown" class="profile-dropdown hidden">
+      <div class="dropdown-header">
+        <img src="https://ui-avatars.com/api/?name=U&background=0D8ABC&color=fff" alt="User" class="avatar-large">
+        <div class="user-meta">
+          <span class="email"></span>
+          <div><span class="badge-free">CHJ</span></div>
+        </div>
+      </div>
+      <nav class="dropdown-nav">
+        <a href="/app"><span class="icon">🏠</span> Launcher</a>
+        <div class="divider"></div>
+        <button class="logout-action" onclick="handleLogout()"><span class="icon">⭕</span> Odhlásit</button>
+      </nav>
     </div>
   </div>
 </div>
@@ -1874,19 +1878,19 @@ if (screen.orientation) screen.orientation.addEventListener('change', _rerender)
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js';
 import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js';
-const _fbApp = initializeApp({ apiKey:"AIzaSyDkp0D9p6Fl6LnMqOLSm6iCdQ1VDio8SdQ", authDomain:"chytre-ja-app.firebaseapp.com", projectId:"chytre-ja-app", storageBucket:"chytre-ja-app.firebasestorage.app", messagingSenderId:"266683322244", appId:"1:266683322244:web:a7ace87218e0f7ae08a7c3" }, 'crt-auth');
+const _fbApp = initializeApp({ apiKey:"AIzaSyAKREZsoBZkA1xOQ5ff3XDmiJ88nwSjeOk", authDomain:"chytre-ja-app.firebaseapp.com", projectId:"chytre-ja-app", storageBucket:"chytre-ja-app.firebasestorage.app", messagingSenderId:"65882611642", appId:"1:65882611642:web:53d82914aa07d6677d4783" }, 'crt-auth');
 const _fbAuth = getAuth(_fbApp);
 onAuthStateChanged(_fbAuth, user => {
   if (!user) return;
   const name = user.displayName || user.email?.split('@')[0] || 'U';
   const url = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=0D8ABC&color=fff`;
-  document.getElementById('crtAvatarImg').src = url;
+  document.querySelectorAll('.user-avatar, .avatar-large').forEach(img => img.src = url);
+  const emailEl = document.querySelector('.email');
+  if (emailEl) emailEl.textContent = user.email || '';
 });
-document.getElementById('crtLogoutBtn').addEventListener('click', () => {
-  signOut(_fbAuth).then(() => window.location.href = '/');
-});
+window.handleLogout = () => signOut(_fbAuth).then(() => window.location.href = '/').catch(console.error);
 document.addEventListener('click', e => {
-  if (!e.target.closest('.crt-avatar-wrap')) document.getElementById('crtDropdown').classList.add('hidden');
+  if (!e.target.closest('.user-profile-wrapper')) document.getElementById('profileDropdown')?.classList.add('hidden');
 });
 </script>
 
