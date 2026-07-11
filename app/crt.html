@@ -373,11 +373,10 @@
         </div>
       </div>
       <nav class="dropdown-nav">
-        <a href="/app#data"><span class="icon">👤</span> Já</a>
-        <a href="/app#checkin"><span class="icon">📋</span> Dnešní záznam</a>
+        <a href="#" onclick="openUserDataPanel(); return false;"><span class="icon">👤</span> Já</a>
+        <a href="#" onclick="openDailyCheckin(); return false;"><span class="icon">📋</span> Dnešní záznam</a>
         <a href="/app/medioteka.html"><span class="icon">📚</span> Mediotéka</a>
-        <div class="divider"></div>
-        <a href="/app"><span class="icon">🏠</span> Launcher</a>
+        <a href="#" onclick="openGuide(); return false;"><span class="icon">📖</span> Návod</a>
         <div class="divider"></div>
         <button class="logout-action" onclick="handleLogout()"><span class="icon">⭕</span> Odhlásit</button>
       </nav>
@@ -1882,17 +1881,47 @@ if (screen.orientation) screen.orientation.addEventListener('change', _rerender)
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js';
 import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js';
+import { initUserDataPanel } from '/app/js/universe/user-data-panel.js';
+
 const _fbApp = initializeApp({ apiKey:"AIzaSyAKREZsoBZkA1xOQ5ff3XDmiJ88nwSjeOk", authDomain:"chytre-ja-app.firebaseapp.com", projectId:"chytre-ja-app", storageBucket:"chytre-ja-app.firebasestorage.app", messagingSenderId:"65882611642", appId:"1:65882611642:web:53d82914aa07d6677d4783" });
 const _fbAuth = getAuth(_fbApp);
+window.firebaseAuth = _fbAuth;
+
 onAuthStateChanged(_fbAuth, user => {
-  if (!user) return;
+  if (!user) { window.location.href = '/login'; return; }
+  window._chjUserId = user.uid;
+  localStorage.setItem('chj_uid', user.uid);
   const name = user.displayName || user.email?.split('@')[0] || 'U';
   const url = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=0D8ABC&color=fff`;
   document.querySelectorAll('.user-avatar, .avatar-large').forEach(img => img.src = url);
   const emailEl = document.querySelector('.email');
   if (emailEl) emailEl.textContent = user.email || '';
 });
+
+initUserDataPanel();
+
 window.handleLogout = () => signOut(_fbAuth).then(() => window.location.href = '/').catch(console.error);
+
+window.openDailyCheckin = async () => {
+  document.getElementById('profileDropdown')?.classList.add('hidden');
+  const model = localStorage.getItem('currentModel') || 'longevity';
+  const userId = localStorage.getItem('chj_uid');
+  if (!userId) return;
+  if (model === 'longevity') {
+    const { showReadinessModal } = await import('/app/js/universe/longevity-checkin.js');
+    showReadinessModal(userId, null, true);
+  } else if (model === 'lehkost') {
+    const { showCheckinModal } = await import('/app/js/universe/lehkost-checkin.js');
+    showCheckinModal(userId, () => {}, true);
+  }
+};
+
+window.openGuide = () => {
+  const model = localStorage.getItem('currentModel') || 'longevity';
+  const guideMap = { longevity: '/app/guides/longevity.html', decathlon: '/app/guides/decathlon.html', lehkost: '/app/guides/lehkost.html', toc: '/app/guides/toc.html' };
+  window.open(guideMap[model] || guideMap.longevity, '_blank');
+};
+
 document.addEventListener('click', e => {
   if (!e.target.closest('.user-profile-wrapper')) document.getElementById('profileDropdown')?.classList.add('hidden');
 });
