@@ -13,7 +13,7 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     /* CHJ Logo */
-    .chj-logo { --fs:19px; --lh:calc(var(--fs)*2); display:flex; flex-direction:row; align-items:center; gap:9px; color:#e2e8f0; }
+    .chj-logo { --fs:24px; --lh:calc(var(--fs)*2); display:flex; flex-direction:row; align-items:center; gap:9px; color:#e2e8f0; }
     .chj-logo__cursor { flex-shrink:0; width:2px; height:var(--lh); background:currentColor; animation:chj-blink 1.1s step-end infinite; }
     @keyframes chj-blink { 0%,100%{opacity:1} 50%{opacity:0} }
     .chj-logo__text { display:flex; flex-direction:column; font-family:'Urbanist',sans-serif; font-size:var(--fs); line-height:0.85; letter-spacing:-0.5px; }
@@ -1904,11 +1904,14 @@ window.handleLogout = () => signOut(_fbAuth).then(() => window.location.href = '
 
 window.openDailyCheckin = async () => {
   document.getElementById('profileDropdown')?.classList.add('hidden');
-  const model = localStorage.getItem('currentModel') || 'longevity';
-  const userId = localStorage.getItem('chj_uid');
+  const userId = window._chjUserId || window.firebaseAuth?.currentUser?.uid || localStorage.getItem('chj_uid');
   if (!userId) return;
-  if (model === 'longevity') {
+  const model = localStorage.getItem('currentModel') || 'longevity';
+  if (model === 'longevity' || model === 'decathlon' || !model) {
     const { showReadinessModal } = await import('/app/js/universe/longevity-checkin.js');
+    // Delete today's localStorage guard so force truly forces
+    const today = new Date().toISOString().slice(0, 10);
+    localStorage.removeItem(`lng_readiness_${userId}`);
     showReadinessModal(userId, null, true);
   } else if (model === 'lehkost') {
     const { showCheckinModal } = await import('/app/js/universe/lehkost-checkin.js');

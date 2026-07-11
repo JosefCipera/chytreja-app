@@ -12,16 +12,18 @@ export async function showReadinessModal(userId, onComplete, force = false) {
   const lsKey = `lng_readiness_${userId}`;
   if (!force && localStorage.getItem(lsKey) === today) { onComplete?.(); return; }
 
-  // Check server — in case user used a different device today
-  try {
-    const res  = await fetch(`/api/user?action=readiness&userId=${encodeURIComponent(userId)}`);
-    const json = await res.json();
-    if (json.exists) {
-      localStorage.setItem(lsKey, today); // warm local cache
-      onComplete?.();
-      return;
-    }
-  } catch { /* network error — show modal anyway */ }
+  // Check server — skip when force=true (manual menu trigger should always show modal)
+  if (!force) {
+    try {
+      const res  = await fetch(`/api/user?action=readiness&userId=${encodeURIComponent(userId)}`);
+      const json = await res.json();
+      if (json.exists) {
+        localStorage.setItem(lsKey, today); // warm local cache
+        onComplete?.();
+        return;
+      }
+    } catch { /* network error — show modal anyway */ }
+  }
 
   const modal = _buildModal();
   document.body.appendChild(modal);
