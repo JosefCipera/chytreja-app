@@ -735,6 +735,15 @@
             if (e.data?.type === 'chj:crt:close') window.closeCrtOverlay();
         });
 
+        // Hash-based deep links (e.g. from CRT avatar dropdown)
+        (function handleHashNav() {
+            const hash = window.location.hash;
+            if (!hash) return;
+            history.replaceState(null, '', window.location.pathname);
+            if (hash === '#checkin') setTimeout(() => window.openDailyCheckin?.(), 600);
+            if (hash === '#data')    setTimeout(() => window.openUserDataPanel?.(), 600);
+        })();
+
         function mediaTypeOf(url) {
             if (!url) return 'none';
             const u = url.toLowerCase();
