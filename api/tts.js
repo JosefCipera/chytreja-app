@@ -278,9 +278,11 @@ function extractCrtInsights(crtCache) {
     .map(n => n.label);
   // Behavior action: z top-level mapy nebo z uzlů (junction first)
   const bf = crtCache.behavior_flags || {};
-  const behaviorNode = nodes.find(n => (n.type === 'junction' || n.type === 'ude') && n.behavior_warning)
+  // Junction uzly mají přednost — jsou to akční body, ne dopady
+  const behaviorNode = nodes.find(n => n.type === 'junction' && n.behavior_warning)
     || nodes.find(n => n.behavior_warning);
-  const behaviorAction = Object.values(bf)[0] || behaviorNode?.behavior_warning || null;
+  const bfJunction = Object.entries(bf).find(([id]) => nodes.find(n => n.id === id && n.type === 'junction'));
+  const behaviorAction = bfJunction?.[1] || behaviorNode?.behavior_warning || null;
   return { root: root?.label, ude: ude?.label, middle, behaviorAction };
 }
 

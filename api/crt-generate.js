@@ -730,13 +730,11 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
 
 // Vygeneruje behaviorální doporučení pro nejdůležitější uzel bez manuálního flagu
 async function generateAutoFlag(allNodes, profile) {
-  // Cíl: junction nebo UDE bez behavior_warning
+  // Cíl: pouze junction uzly (AND-join body = akční body) bez behavior_warning
+  // UDE uzly přeskočíme — jsou to dopady, ne místa kde lze ihned zasáhnout
   const candidate = allNodes
-    .filter(n => (n.type === 'junction' || n.type === 'ude') && !n.behavior_warning)
-    .sort((a, b) => {
-      if (a.type !== b.type) return a.type === 'junction' ? -1 : 1; // junction first
-      return (b.level ?? 0) - (a.level ?? 0);
-    })[0];
+    .filter(n => n.type === 'junction' && !n.behavior_warning)
+    .sort((a, b) => (b.level ?? 0) - (a.level ?? 0))[0];
   if (!candidate) return;
 
   const diagText = (profile.diagnoses || []).join(', ') || 'neuvedeno';
