@@ -24,7 +24,7 @@ if (STATES_DB.DEPRESSION_ANXIETY)  STATES_DB.DEPRESSION_ANXIETY.typical_branch  
 
 // ── Modely — měň zde, ne v kódu ──────────────────────────────────────────────
 const MODELS = {
-  crt:       'claude-fable-5',    // generátor CRT stromu
+  crt:       'claude-haiku-4-5',  // generátor CRT stromu
   fallback:  'claude-sonnet-5',   // fallback při safety refusal
   medparse:  'claude-sonnet-5',   // klasifikace léků (primary_indication, companion_for)
   reassign:  'claude-haiku-4-5',  // reassignment root-only léků (rychlý, levný)
