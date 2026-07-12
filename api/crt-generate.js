@@ -1027,12 +1027,12 @@ export default async function handler(req, res) {
     const allNodes = [
       ...(rootEntry ? [rootEntry] : []),
       ...(crt.nodes || []),
-    ];
+    ].filter(n => n?.id); // guard: žádný uzel bez id (prázdný box)
 
     // Debug: log level-0 uzly — najdi zdroj prázdného zlatého boxu
     console.log('[CRT] root=', JSON.stringify({ id: crt.root?.id, label: crt.root?.label, level: crt.root?.level, branch: crt.root?.branch }));
     const lvl0 = allNodes.filter(n => (n.level ?? 99) === 0);
-    console.log('[CRT] level-0 uzly:', lvl0.map(n => `${n.id}|${n.label}|${n.type}|${n.branch}`).join(', '));
+    console.log('[CRT] level-0 uzly:', lvl0.map(n => `${n.id}|${n.label}|${n.label_layman}|${n.type}|${n.branch}`).join(', '));
 
     // 4. Auto-pozicování
     calcPositions(allNodes, crt.edges || []);
