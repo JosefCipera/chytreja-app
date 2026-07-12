@@ -628,10 +628,12 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
         )];
       }
 
+      const indication = resolvedMap[nameLow]?.primary_indication || resolvedMap[dbEntry?.inn?.toLowerCase()]?.primary_indication || dbEntry?.effect || '';
       primaryMeds.push({
         name,
         targets:      [...targets],
         effect:       dbEntry?.effect || '',
+        note:         indication,
         type:         medType(name),
         reason:       dbEntry?.effect || '',
         _nameLow:     nameLow,
@@ -923,7 +925,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx, modelId) {
   const key = JSON.stringify({
-    _v:          70, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
+    _v:          71, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
     model:       modelId || 'claude-sonnet-5',
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),
