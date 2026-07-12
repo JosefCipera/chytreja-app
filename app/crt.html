@@ -787,6 +787,8 @@ async function loadCRTOpus(force = false, model = undefined) {
 const IS_MOBILE = window.innerWidth < 700 || window.screen.width < 700;
 let _visNetwork = null;
 const _pillTooltips = {}; // pill node id → tooltip text
+let _crtMouseX = 0, _crtMouseY = 0;
+document.addEventListener('mousemove', e => { _crtMouseX = e.clientX; _crtMouseY = e.clientY; });
 
 function renderTree(data) {
   window._crtData = data;
@@ -889,24 +891,23 @@ function renderTree(data) {
     openNodePanel(params.nodes[0]);
   });
 
-  // Pill hover tooltip — vlastní implementace (vis.js built-in nefunguje spolehlivě na tmavém pozadí)
-  const _tipEl = document.getElementById('crtTooltip');
-  let _tipX = 0, _tipY = 0;
-  const _canvasEl = document.querySelector('#crtCanvas canvas');
-  if (_canvasEl) {
-    _canvasEl.addEventListener('mousemove', e => { _tipX = e.clientX; _tipY = e.clientY; });
-  }
+  // Pill hover tooltip — vis.js hoverNode event + params.event pro pozici
   _visNetwork.on('hoverNode', params => {
     const nid = String(params.node);
     if (!nid.startsWith('_pill_')) return;
     const tip = _pillTooltips[nid];
     if (!tip) return;
-    _tipEl.textContent = tip;
-    _tipEl.style.display = 'block';
-    _tipEl.style.left = (_tipX + 16) + 'px';
-    _tipEl.style.top  = (_tipY - 10) + 'px';
+    const tipEl = document.getElementById('crtTooltip');
+    if (!tipEl) return;
+    tipEl.textContent = tip;
+    tipEl.style.left = (_crtMouseX + 16) + 'px';
+    tipEl.style.top  = (_crtMouseY - 10) + 'px';
+    tipEl.style.display = 'block';
   });
-  _visNetwork.on('blurNode', () => { _tipEl.style.display = 'none'; });
+  _visNetwork.on('blurNode', () => {
+    const tipEl = document.getElementById('crtTooltip');
+    if (tipEl) tipEl.style.display = 'none';
+  });
 
   setTimeout(() => {
     if (_visNetwork) _visNetwork.fit({ animation: { duration: 500, easingFunction: 'easeInOutQuad' } });
