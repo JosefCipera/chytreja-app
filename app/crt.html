@@ -1228,7 +1228,7 @@ function buildPanelData(node, ctx, parents, children, meds, supps, contras, hidd
       <div style="display:flex;flex-direction:column;gap:6px">
         ${suppMeds.map(s => {
           const noteHtml = s.note ? `<span style="display:block;font-size:12px;color:#86efac;margin-top:2px;font-style:italic">${s.note}</span>` : '';
-          return `<span class="cnp-chip" style="background:rgba(34,197,94,0.07);border-color:rgba(34,197,94,0.35);color:#4ade80;align-self:flex-start;flex-direction:column;align-items:flex-start"><span style="display:flex;align-items:flex-start"><i class="ti ti-leaf" aria-hidden="true" style="opacity:.7;margin-right:6px;margin-top:2px"></i><span style="border-left:1px solid rgba(34,197,94,0.3);padding-left:8px">${s.name}${noteHtml}</span></span></span>`;
+          return `<span class="cnp-chip" style="background:rgba(34,197,94,0.07);border-color:rgba(34,197,94,0.35);color:#4ade80;font-weight:400;align-self:flex-start;flex-direction:column;align-items:flex-start"><span style="display:flex;align-items:flex-start"><i class="ti ti-leaf" aria-hidden="true" style="opacity:.7;margin-right:6px;margin-top:2px"></i><span style="border-left:1px solid rgba(34,197,94,0.3);padding-left:8px">${s.name}${noteHtml}</span></span></span>`;
         }).join('')}
       </div>
     </div>` : '';
@@ -1249,7 +1249,7 @@ function buildPanelData(node, ctx, parents, children, meds, supps, contras, hidd
       <div style="display:flex;flex-direction:column;gap:6px">
         ${supps.map(s => {
           const noteHtml = s.note ? `<span style="display:block;font-size:12px;color:#86efac;margin-top:2px;font-style:italic">${s.note}</span>` : '';
-          return `<span class="cnp-chip" style="background:rgba(34,197,94,0.07);border-color:rgba(34,197,94,0.35);color:#4ade80;align-self:flex-start;flex-direction:column;align-items:flex-start"><span style="display:flex;align-items:flex-start"><i class="ti ti-leaf" aria-hidden="true" style="opacity:.7;margin-right:6px;margin-top:2px"></i><span style="border-left:1px solid rgba(34,197,94,0.3);padding-left:8px">${s.name}${noteHtml}</span></span></span>`;
+          return `<span class="cnp-chip" style="background:rgba(34,197,94,0.07);border-color:rgba(34,197,94,0.35);color:#4ade80;font-weight:400;align-self:flex-start;flex-direction:column;align-items:flex-start"><span style="display:flex;align-items:flex-start"><i class="ti ti-leaf" aria-hidden="true" style="opacity:.7;margin-right:6px;margin-top:2px"></i><span style="border-left:1px solid rgba(34,197,94,0.3);padding-left:8px">${s.name}${noteHtml}</span></span></span>`;
         }).join('')}
       </div>
     </div>` : '';
