@@ -18,6 +18,9 @@ const _dir = dirname(fileURLToPath(import.meta.url));
 const DRUGS_DB   = JSON.parse(readFileSync(join(_dir, '../data/drugs.json'), 'utf8'));
 const STATES_ARR = JSON.parse(readFileSync(join(_dir, '../data/crt/longevity-states.json'), 'utf8'));
 const STATES_DB  = Object.fromEntries(STATES_ARR.map(s => [s.id, s]));
+// Branch override — Nespavost (L) a Psychická zátěž (LC) po swapu, eliminuje křížení šipek
+if (STATES_DB.SLEEP_DISORDER)      STATES_DB.SLEEP_DISORDER.typical_branch      = 'L';
+if (STATES_DB.DEPRESSION_ANXIETY)  STATES_DB.DEPRESSION_ANXIETY.typical_branch  = 'LC';
 
 // ── Modely — měň zde, ne v kódu ──────────────────────────────────────────────
 const MODELS = {
