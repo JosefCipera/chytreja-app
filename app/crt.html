@@ -1291,8 +1291,6 @@ function buildPanelData(node, ctx, parents, children, meds, supps, contras, hidd
       </div>
       <button onclick="closeCrtPanel()" style="background:none;border:none;cursor:pointer;color:#475569;font-size:18px;padding:0;line-height:1;flex-shrink:0" aria-label="Zavřít">✕</button>
     </div>
-    ${parentsHtml ? `<div class="cnp-section">${parentsHtml}</div>` : ''}
-    ${childrenHtml ? `<div class="cnp-section">${childrenHtml}</div>` : ''}
     ${behaviorWarningHtml}
     ${medHtml}
     ${suppPanelHtml}
