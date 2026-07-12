@@ -541,6 +541,7 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
         n.type         = def.type;
         n.level        = def.typical_level;   // kanonická hloubka → validateEdges
         n.branch       = def.typical_branch;  // kanonická větev → vis.js pozice
+        if (def.panel_text) n.panel_text = def.panel_text;
       }
     };
     (crt.nodes || []).forEach(applyStateLabels);
@@ -927,7 +928,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx, modelId) {
   const key = JSON.stringify({
-    _v:          74, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
+    _v:          75, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
     model:       modelId || 'claude-sonnet-5',
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),

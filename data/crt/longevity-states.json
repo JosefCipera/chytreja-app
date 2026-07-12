@@ -19,7 +19,8 @@
     "can_be_root": true,
     "typical_branch": "C",
     "med_targets": [],
-    "typical_children": ["DYSLIPIDEMIA", "HYPERURICEMIA", "INSULIN_RESISTANCE", "OBESITY"]
+    "typical_children": ["DYSLIPIDEMIA", "HYPERURICEMIA", "INSULIN_RESISTANCE", "OBESITY"],
+    "panel_text": "V režimu Medicíny 3.0 dokážeme tyhle symptomy radikálně zmírnit, nebo je dokonce zcela odstranit a zvrátit zpátky. Klíčem je okamžitá změna paliva, ochrana svalů silovým tréninkem a stabilizace glukózy. Pokud hoří tento uzel, hasíme ho jako první, protože přímo pohání poškození nervů a riziko fatálních pádů."
   },
   {
     "id": "HYPOTHYROIDISM",
