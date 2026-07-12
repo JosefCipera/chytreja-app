@@ -891,23 +891,28 @@ function renderTree(data) {
     openNodePanel(params.nodes[0]);
   });
 
-  // Pill hover tooltip — vis.js hoverNode event + params.event pro pozici
-  _visNetwork.on('hoverNode', params => {
-    const nid = String(params.node);
-    if (!nid.startsWith('_pill_')) return;
-    const tip = _pillTooltips[nid];
-    if (!tip) return;
-    const tipEl = document.getElementById('crtTooltip');
-    if (!tipEl) return;
-    tipEl.textContent = tip;
-    tipEl.style.left = (_crtMouseX + 16) + 'px';
-    tipEl.style.top  = (_crtMouseY - 10) + 'px';
-    tipEl.style.display = 'block';
-  });
-  _visNetwork.on('blurNode', () => {
-    const tipEl = document.getElementById('crtTooltip');
-    if (tipEl) tipEl.style.display = 'none';
-  });
+  // Pill hover tooltip — mousemove + getNodeAt (spolehlivé i pro dynamicky přidané uzly)
+  const _crtContainer = document.getElementById('crtCanvas');
+  if (_crtContainer) {
+    _crtContainer.addEventListener('mousemove', e => {
+      const rect = _crtContainer.getBoundingClientRect();
+      const nid  = _visNetwork?.getNodeAt({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+      const tipEl = document.getElementById('crtTooltip');
+      if (!tipEl) return;
+      if (nid && String(nid).startsWith('_pill_') && _pillTooltips[nid]) {
+        tipEl.textContent = _pillTooltips[nid];
+        tipEl.style.left  = (e.clientX + 16) + 'px';
+        tipEl.style.top   = (e.clientY - 10) + 'px';
+        tipEl.style.display = 'block';
+      } else {
+        tipEl.style.display = 'none';
+      }
+    });
+    _crtContainer.addEventListener('mouseleave', () => {
+      const tipEl = document.getElementById('crtTooltip');
+      if (tipEl) tipEl.style.display = 'none';
+    });
+  }
 
   setTimeout(() => {
     if (_visNetwork) _visNetwork.fit({ animation: { duration: 500, easingFunction: 'easeInOutQuad' } });
