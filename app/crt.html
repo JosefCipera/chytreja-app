@@ -786,6 +786,7 @@ async function loadCRTOpus(force = false, model = undefined) {
 // ── vis.js Network renderer ──────────────────────────────────────────────────
 const IS_MOBILE = window.innerWidth < 700 || window.screen.width < 700;
 let _visNetwork = null;
+const _pillTooltips = {}; // pill node id → tooltip text
 
 function renderTree(data) {
   window._crtData = data;
@@ -888,6 +889,25 @@ function renderTree(data) {
     openNodePanel(params.nodes[0]);
   });
 
+  // Pill hover tooltip — vlastní implementace (vis.js built-in nefunguje spolehlivě na tmavém pozadí)
+  const _tipEl = document.getElementById('crtTooltip');
+  let _tipX = 0, _tipY = 0;
+  const _canvasEl = document.querySelector('#crtCanvas canvas');
+  if (_canvasEl) {
+    _canvasEl.addEventListener('mousemove', e => { _tipX = e.clientX; _tipY = e.clientY; });
+  }
+  _visNetwork.on('hoverNode', params => {
+    const nid = String(params.node);
+    if (!nid.startsWith('_pill_')) return;
+    const tip = _pillTooltips[nid];
+    if (!tip) return;
+    _tipEl.textContent = tip;
+    _tipEl.style.display = 'block';
+    _tipEl.style.left = (_tipX + 16) + 'px';
+    _tipEl.style.top  = (_tipY - 10) + 'px';
+  });
+  _visNetwork.on('blurNode', () => { _tipEl.style.display = 'none'; });
+
   setTimeout(() => {
     if (_visNetwork) _visNetwork.fit({ animation: { duration: 500, easingFunction: 'easeInOutQuad' } });
   }, 150);
@@ -932,10 +952,12 @@ function addMedPills(data) {
     items.forEach((item, i) => {
       const nid   = `_pill_${targetId}_${i}`;
       const isMed = item._kind === 'med';
+      const tipText = item.note || item.effect || item.reason || '';
+      if (tipText) _pillTooltips[nid] = tipText;
       pillNodes.push({
         id:    nid,
         label: item.name,
-        title: item.note || item.effect || item.reason || '',
+        title: '',
         // i=0 → stejná Y jako node; i=1 → o SPACING_Y výš; atd.
         x: pos.x + OFFSET_X,
         y: pos.y - i * SPACING_Y,
