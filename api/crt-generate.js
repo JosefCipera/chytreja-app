@@ -91,6 +91,8 @@ function calcPositions(nodes, edges) {
     // osy (rodičova x), ne jeden uzel pevně na ose a druhý vystrčený stranou.
     clusters.forEach(c => {
       if (c.nodes.length > 1) {
+        // Seřaď sourozence v clusteru podle branchRank → L vždy vlevo od LC/C/R
+        c.nodes.sort((a, b) => (branchRank[a.branch ?? 'C'] ?? 1) - (branchRank[b.branch ?? 'C'] ?? 1));
         c.nodes.forEach((node, i) => {
           node.x = c.center + (i - (c.nodes.length - 1) / 2) * MIN_DIST;
         });
