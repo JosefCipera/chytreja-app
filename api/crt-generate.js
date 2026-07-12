@@ -927,7 +927,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx, modelId) {
   const key = JSON.stringify({
-    _v:          73, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
+    _v:          74, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
     model:       modelId || 'claude-sonnet-5',
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),
@@ -1020,8 +1020,12 @@ export default async function handler(req, res) {
     (crt.injections || []).filter(n => n && typeof n === 'object').forEach(n => { n.label = fixLabel(n.label); });
 
     // 3. Sestav seznam všech uzlů
+    // crt.root může být null (Haiku při multi-root vrátí null) → guard na id
+    const rootEntry = (crt.root?.id)
+      ? { ...crt.root, type: 'golden_box', level: crt.root.level ?? 0, branch: crt.root.branch || 'C' }
+      : null;
     const allNodes = [
-      { ...crt.root, type: 'golden_box', level: 0, branch: 'C' },
+      ...(rootEntry ? [rootEntry] : []),
       ...(crt.nodes || []),
     ];
 
