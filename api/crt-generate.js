@@ -246,7 +246,7 @@ async function resolveMedications(meds) {
     const list = unknown.map(m => `${m.name}${m.dose ? ' ' + m.dose : ''}`).join('\n');
     try {
       const text = await haiku(
-        `Jsi farmakologický asistent. Pro každý lék vrať JSON.\nPole: inn, group, effect (česky max 8 slov), primary_indication (česky), companion_for (název léku ke kterému je ochranou, nebo null), is_supplement (true jen volně prodejné vitamíny/minerály).\nVrať POUZE JSON pole:\n[{"name":"...","inn":"...","group":"...","effect":"...","primary_indication":"...","companion_for":null,"is_supplement":false}]\n\nLéky:\n${list}`,
+        `Jsi farmakologický asistent. Pro každý lék vrať JSON.\nPole: inn, group, effect (česky max 8 slov — konkrétní mechanismus/účinek TOHOTO léku, ne indikaci, ne název nemoci; např. "blokuje opioidní receptory, tišení bolesti"), primary_indication (česky, diagnóza/stav), companion_for (název léku ke kterému je ochranou, nebo null), is_supplement (true jen volně prodejné vitamíny/minerály).\nVrať POUZE JSON pole:\n[{"name":"...","inn":"...","group":"...","effect":"...","primary_indication":"...","companion_for":null,"is_supplement":false}]\n\nLéky:\n${list}`,
         1200, MODELS.medparse
       );
       const m = text.match(/\[[\s\S]*\]/);
@@ -628,7 +628,7 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
         )];
       }
 
-      const indication = resolvedMap[nameLow]?.primary_indication || resolvedMap[dbEntry?.inn?.toLowerCase()]?.primary_indication || dbEntry?.effect || '';
+      const indication = resolvedMap[nameLow]?.effect || resolvedMap[dbEntry?.inn?.toLowerCase()]?.effect || dbEntry?.effect || '';
       primaryMeds.push({
         name,
         targets:      [...targets],
@@ -925,7 +925,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx, modelId) {
   const key = JSON.stringify({
-    _v:          71, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
+    _v:          72, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
     model:       modelId || 'claude-sonnet-5',
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),
