@@ -1209,7 +1209,7 @@ function buildPanelData(node, ctx, parents, children, meds, supps, contras, hidd
       <p class="cnp-lbl">léková ochrana</p>
       <div style="display:flex;flex-direction:column;gap:6px">
         ${rxMeds.map(m => {
-          const noteHtml = m.note ? `<span style="display:block;font-size:12px;color:#94a3b8;margin-top:3px;font-style:italic;padding-left:22px">${m.note}</span>` : '';
+          const noteHtml = m.note ? `<span style="display:block;font-size:12px;color:#94a3b8;margin-top:2px;font-style:italic">${m.note}</span>` : '';
           const protocolHtml = m.protocol?.length ? `
             <details style="margin-top:6px;padding-left:22px">
               <summary style="font-size:11px;color:#f59e0b;cursor:pointer;list-style:none;user-select:none">▸ Jak užívat</summary>
@@ -1217,7 +1217,7 @@ function buildPanelData(node, ctx, parents, children, meds, supps, contras, hidd
                 ${m.protocol.map(step => `<div style="font-size:12px;color:#94a3b8;line-height:1.5">${step}</div>`).join('')}
               </div>
             </details>` : '';
-          return `<span class="cnp-chip" style="align-self:flex-start;flex-direction:column;align-items:flex-start"><span style="display:flex;align-items:center"><i class="ti ti-shield" aria-hidden="true" style="opacity:.7;margin-right:6px"></i><span style="border-left:1px solid rgba(245,158,11,0.3);padding-left:8px">${m.name}</span></span>${noteHtml}${protocolHtml}</span>`;
+          return `<span class="cnp-chip" style="align-self:flex-start;flex-direction:column;align-items:flex-start"><span style="display:flex;align-items:flex-start"><i class="ti ti-shield" aria-hidden="true" style="opacity:.7;margin-right:6px;margin-top:2px"></i><span style="border-left:1px solid rgba(245,158,11,0.3);padding-left:8px">${m.name}${noteHtml}${protocolHtml}</span></span></span>`;
         }).join('')}
       </div>
     </div>` : '';
@@ -1227,8 +1227,8 @@ function buildPanelData(node, ctx, parents, children, meds, supps, contras, hidd
       <p class="cnp-lbl" style="color:#4ade80">doplňky stravy</p>
       <div style="display:flex;flex-direction:column;gap:6px">
         ${suppMeds.map(s => {
-          const noteHtml = s.note ? `<span style="display:block;font-size:12px;color:#86efac;margin-top:3px;font-style:italic;padding-left:22px">${s.note}</span>` : '';
-          return `<span class="cnp-chip" style="background:rgba(34,197,94,0.07);border-color:rgba(34,197,94,0.35);color:#4ade80;align-self:flex-start;flex-direction:column;align-items:flex-start"><span style="display:flex;align-items:center"><i class="ti ti-leaf" aria-hidden="true" style="opacity:.7;margin-right:6px"></i><span style="border-left:1px solid rgba(34,197,94,0.3);padding-left:8px">${s.name}</span></span>${noteHtml}</span>`;
+          const noteHtml = s.note ? `<span style="display:block;font-size:12px;color:#86efac;margin-top:2px;font-style:italic">${s.note}</span>` : '';
+          return `<span class="cnp-chip" style="background:rgba(34,197,94,0.07);border-color:rgba(34,197,94,0.35);color:#4ade80;align-self:flex-start;flex-direction:column;align-items:flex-start"><span style="display:flex;align-items:flex-start"><i class="ti ti-leaf" aria-hidden="true" style="opacity:.7;margin-right:6px;margin-top:2px"></i><span style="border-left:1px solid rgba(34,197,94,0.3);padding-left:8px">${s.name}${noteHtml}</span></span></span>`;
         }).join('')}
       </div>
     </div>` : '';
@@ -1248,8 +1248,8 @@ function buildPanelData(node, ctx, parents, children, meds, supps, contras, hidd
       <p class="cnp-lbl">doplňky stravy</p>
       <div style="display:flex;flex-direction:column;gap:6px">
         ${supps.map(s => {
-          const noteHtml = s.note ? `<span style="display:block;font-size:12px;color:#86efac;margin-top:3px;font-style:italic;padding-left:22px">${s.note}</span>` : '';
-          return `<span class="cnp-chip" style="background:rgba(34,197,94,0.07);border-color:rgba(34,197,94,0.35);color:#4ade80;align-self:flex-start;flex-direction:column;align-items:flex-start"><span style="display:flex;align-items:center"><i class="ti ti-leaf" aria-hidden="true" style="opacity:.7;margin-right:6px"></i><span style="border-left:1px solid rgba(34,197,94,0.3);padding-left:8px">${s.name}</span></span>${noteHtml}</span>`;
+          const noteHtml = s.note ? `<span style="display:block;font-size:12px;color:#86efac;margin-top:2px;font-style:italic">${s.note}</span>` : '';
+          return `<span class="cnp-chip" style="background:rgba(34,197,94,0.07);border-color:rgba(34,197,94,0.35);color:#4ade80;align-self:flex-start;flex-direction:column;align-items:flex-start"><span style="display:flex;align-items:flex-start"><i class="ti ti-leaf" aria-hidden="true" style="opacity:.7;margin-right:6px;margin-top:2px"></i><span style="border-left:1px solid rgba(34,197,94,0.3);padding-left:8px">${s.name}${noteHtml}</span></span></span>`;
         }).join('')}
       </div>
     </div>` : '';
@@ -1283,16 +1283,13 @@ function buildPanelData(node, ctx, parents, children, meds, supps, contras, hidd
     </div>` : '';
 
   return `
-    <div class="cnp-section" style="display:flex;align-items:center;justify-content:space-between">
+    <div class="cnp-section" style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
       <div>
-        <div style="font-family:monospace;font-size:10px;letter-spacing:2px;color:#f59e0b">CRT NODE</div>
-        <div style="font-family:monospace;font-size:9px;letter-spacing:1.5px;color:#475569;margin-top:2px">${typeLabel.toUpperCase()}${sd ? ' · <span style="color:' + sd.color + '">' + sd.label + '</span>' : ''}</div>
+        <p style="margin:0;font-size:18px;font-weight:500;color:#e2e8f0;line-height:1.3">${kbLabel(node)}</p>
+        <div style="font-family:monospace;font-size:9px;letter-spacing:1.5px;color:#475569;margin-top:4px">${typeLabel.toUpperCase()}${sd ? ' · <span style="color:' + sd.color + '">' + sd.label + '</span>' : ''}</div>
+        ${valueHtml}
       </div>
-      <button onclick="closeCrtPanel()" style="background:none;border:none;cursor:pointer;color:#475569;font-size:18px;padding:0;line-height:1" aria-label="Zavřít">✕</button>
-    </div>
-    <div class="cnp-section">
-      <p style="margin:0;font-size:18px;font-weight:500;color:#e2e8f0;line-height:1.3">${kbLabel(node)}</p>
-      ${valueHtml}
+      <button onclick="closeCrtPanel()" style="background:none;border:none;cursor:pointer;color:#475569;font-size:18px;padding:0;line-height:1;flex-shrink:0" aria-label="Zavřít">✕</button>
     </div>
     ${parentsHtml ? `<div class="cnp-section"><p class="cnp-lbl">způsobeno</p>${parentsHtml}</div>` : ''}
     ${childrenHtml ? `<div class="cnp-section"><p class="cnp-lbl">vede k</p>${childrenHtml}</div>` : ''}
