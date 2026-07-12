@@ -947,11 +947,12 @@ export default async function handler(req, res) {
 
   // Výběr modelu: Fable default, Sonnet 5 jako fallback při refusal
   const MODEL_MAP = {
+    haiku:   { id: MODELS.crt,       maxTokens: 16000 },
     sonnet5: { id: MODELS.fallback,  thinking: true,  effort: 'low', maxTokens: 16000 },
-    fable:   { id: MODELS.crt,       thinking: true,  effort: 'low', maxTokens: 64000 },
+    fable:   { id: 'claude-fable-5', thinking: true,  effort: 'low', maxTokens: 64000 },
     gpt4o:   { id: 'gpt-4o',         provider: 'openai',             maxTokens: 16000 },
   };
-  const modelCfg = MODEL_MAP[modelParam] || MODEL_MAP.fable;
+  const modelCfg = MODEL_MAP[modelParam] || MODEL_MAP.haiku;
   const fallbackCfg = MODEL_MAP.sonnet5;
 
   if (!userId) return res.status(401).json({ error: 'Přihlaste se pro zobrazení mapy.' });
