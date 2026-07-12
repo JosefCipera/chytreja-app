@@ -1286,13 +1286,13 @@ function buildPanelData(node, ctx, parents, children, meds, supps, contras, hidd
     <div class="cnp-section" style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
       <div>
         <p style="margin:0;font-size:18px;font-weight:500;color:#e2e8f0;line-height:1.3">${kbLabel(node)}</p>
-        <div style="font-family:monospace;font-size:9px;letter-spacing:1.5px;color:#475569;margin-top:4px">${typeLabel.toUpperCase()}${sd ? ' · <span style="color:' + sd.color + '">' + sd.label + '</span>' : ''}</div>
+        ${sd ? `<div style="font-family:monospace;font-size:9px;letter-spacing:1.5px;color:${sd.color};margin-top:4px">${sd.label}</div>` : ''}
         ${valueHtml}
       </div>
       <button onclick="closeCrtPanel()" style="background:none;border:none;cursor:pointer;color:#475569;font-size:18px;padding:0;line-height:1;flex-shrink:0" aria-label="Zavřít">✕</button>
     </div>
-    ${parentsHtml ? `<div class="cnp-section"><p class="cnp-lbl">způsobeno</p>${parentsHtml}</div>` : ''}
-    ${childrenHtml ? `<div class="cnp-section"><p class="cnp-lbl">vede k</p>${childrenHtml}</div>` : ''}
+    ${parentsHtml ? `<div class="cnp-section">${parentsHtml}</div>` : ''}
+    ${childrenHtml ? `<div class="cnp-section">${childrenHtml}</div>` : ''}
     ${behaviorWarningHtml}
     ${medHtml}
     ${suppPanelHtml}
