@@ -50,8 +50,7 @@
     "typical_level": 1,
     "can_be_root": false,
     "typical_branch": "L",
-    "med_targets": ["mirtazapin", "esoprex", "escitalopram", "dulopren", "duloxetin", "sertralin"],
-    "typical_children": ["FATIGUE_LOW_CAPACITY"]
+    "med_targets": ["mirtazapin", "esoprex", "escitalopram", "dulopren", "duloxetin", "sertralin"]
   },
   {
     "id": "SLEEP_DISORDER",
