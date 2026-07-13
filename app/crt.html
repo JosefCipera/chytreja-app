@@ -912,7 +912,7 @@ function renderTree(data) {
     if (!rawData || !_visNetwork) return;
     const subtree = allDescendants(nodeId, rawData);
     const ed = _visNetwork.body.data.edges;
-    if (!_savedEdgeColors) _savedEdgeColors = ed.get().map(e => ({ id: e.id, color: e.color, selectionWidth: e.selectionWidth }));
+    if (!_savedEdgeColors) _savedEdgeColors = ed.get().map(e => ({ id: e.id, color: e.color, width: e.width }));
     ed.update(ed.get().map(e => {
       const inSubtree = subtree.has(String(e.from)) && subtree.has(String(e.to));
       return {
@@ -920,6 +920,7 @@ function renderTree(data) {
         color: inSubtree
           ? { color: '#5a8ab8', highlight: '#5a8ab8', hover: '#5a8ab8' }
           : { color: '#2a4a68', highlight: '#2a4a68', hover: '#2a4a68' },
+        width: inSubtree ? 2.5 : 1,
       };
     }));
   }
