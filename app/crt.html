@@ -889,26 +889,29 @@ function renderTree(data) {
   );
 
   _visNetwork.on('click', params => {
-    if (!params.nodes.length) { closeCrtPanel(); return; }
+    if (!params.nodes.length) { closeCrtPanel(); _visNetwork.unselectAll(); return; }
     if (String(params.nodes[0]).startsWith('_pill_')) return;
     openNodePanel(params.nodes[0]);
   });
 
-  _visNetwork.on('hoverNode', params => {
-    if (String(params.node).startsWith('_pill_')) return;
+  function _selectSubtree(nodeId) {
     const rawData = _rawCrtData || window._crtData;
-    if (!rawData) return;
-    const subtree = new Set([...ancestorsOf(params.node, rawData), ...allDescendants(params.node, rawData)]);
-    const subtreeEdges = (rawData.edges || [])
-      .filter(e => subtree.has(String(e.from)) && subtree.has(String(e.to)))
-      .map((_, i) => `e${i}`);
-    // Najdi správné edge ID přes vis dataset
+    if (!rawData || !_visNetwork) return;
+    const subtree = allDescendants(nodeId, rawData);
     const edgeIds = _visNetwork.body.data.edges.get()
       .filter(e => subtree.has(String(e.from)) && subtree.has(String(e.to)))
       .map(e => e.id);
-    _visNetwork.setSelection({ nodes: [...subtree], edges: edgeIds }, { unselectAll: true, highlightEdges: true });
+    _visNetwork.setSelection({ nodes: [...subtree], edges: edgeIds }, { unselectAll: true });
+  }
+
+  _visNetwork.on('hoverNode', params => {
+    if (String(params.node).startsWith('_pill_')) return;
+    _selectSubtree(params.node);
   });
-  _visNetwork.on('blurNode', () => _visNetwork.unselectAll());
+  _visNetwork.on('blurNode', () => {
+    if (_openPanelNodeId) _selectSubtree(_openPanelNodeId);
+    else _visNetwork.unselectAll();
+  });
 
   // Pill hover tooltip — mousemove + getNodeAt (spolehlivé i pro dynamicky přidané uzly)
   const _crtContainer = document.getElementById('crtCanvas');
