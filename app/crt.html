@@ -887,7 +887,7 @@ function renderTree(data) {
       physics: { enabled: false },
       interaction: {
         dragNodes: false,
-        hover: true,
+        hover: false,
         tooltipDelay: 600,
         navigationButtons: false,
         keyboard: false,
@@ -914,35 +914,47 @@ function renderTree(data) {
     })));
   }
 
-  _visNetwork.on('hoverNode', params => {
-    if (String(params.node).startsWith('_pill_')) return;
-    _selectSubtree(params.node);
-  });
-  _visNetwork.on('blurNode', () => {
-    if (_openPanelNodeId) _selectSubtree(_openPanelNodeId);
-    else _clearSubtree();
-  });
-
-  // Pill hover tooltip — mousemove + getNodeAt (spolehlivé i pro dynamicky přidané uzly)
+  // Hover: mousemove + getNodeAt místo hoverNode/blurNode eventů
+  // hover:false vypne vis.js interní zvýraznění vstupních hran — jen my řídíme barvy
+  let _lastHoverNode = null;
   const _crtContainer = document.getElementById('crtCanvas');
   if (_crtContainer) {
     _crtContainer.addEventListener('mousemove', e => {
       const rect = _crtContainer.getBoundingClientRect();
-      const nid  = _visNetwork?.getNodeAt({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+      const pos  = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+      const nid  = _visNetwork?.getNodeAt(pos);
+
+      // Pill tooltip
       const tipEl = document.getElementById('crtTooltip');
-      if (!tipEl) return;
-      if (nid && String(nid).startsWith('_pill_') && _pillTooltips[nid]) {
-        tipEl.textContent = _pillTooltips[nid];
-        tipEl.style.left  = (e.clientX + 16) + 'px';
-        tipEl.style.top   = (e.clientY - 10) + 'px';
-        tipEl.style.display = 'block';
+      if (tipEl) {
+        if (nid && String(nid).startsWith('_pill_') && _pillTooltips[nid]) {
+          tipEl.textContent = _pillTooltips[nid];
+          tipEl.style.left  = (e.clientX + 16) + 'px';
+          tipEl.style.top   = (e.clientY - 10) + 'px';
+          tipEl.style.display = 'block';
+        } else {
+          tipEl.style.display = 'none';
+        }
+      }
+
+      // Subtree highlight
+      const hlNode = (nid && !String(nid).startsWith('_pill_')) ? String(nid) : null;
+      if (hlNode === _lastHoverNode) return;
+      _lastHoverNode = hlNode;
+      if (_openPanelNodeId) {
+        _selectSubtree(_openPanelNodeId);
+      } else if (hlNode) {
+        _selectSubtree(hlNode);
       } else {
-        tipEl.style.display = 'none';
+        _clearSubtree();
       }
     });
     _crtContainer.addEventListener('mouseleave', () => {
       const tipEl = document.getElementById('crtTooltip');
       if (tipEl) tipEl.style.display = 'none';
+      _lastHoverNode = null;
+      if (_openPanelNodeId) _selectSubtree(_openPanelNodeId);
+      else _clearSubtree();
     });
   }
 
