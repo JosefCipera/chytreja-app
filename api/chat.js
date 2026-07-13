@@ -420,7 +420,7 @@ Dotaz uživatele: ${userQuestion}`;
       const convoRes = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: { 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 280, system: CONVO_SYSTEM, messages: [{ role: 'user', content: CONVO_USER }] }),
+        body: JSON.stringify({ model: 'claude-haiku-4-5', max_tokens: 280, system: CONVO_SYSTEM, messages: [{ role: 'user', content: CONVO_USER }] }),
       });
       const convoData = await convoRes.json();
 
@@ -579,7 +579,7 @@ ${aspirationBlock}
     const aiRes = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 200, system: SYSTEM_PROMPT, messages: [{ role: 'user', content: USER_PROMPT }] }),
+      body: JSON.stringify({ model: 'claude-haiku-4-5', max_tokens: 200, system: SYSTEM_PROMPT, messages: [{ role: 'user', content: USER_PROMPT }] }),
     });
     const aiData = await aiRes.json();
 
