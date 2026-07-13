@@ -50,8 +50,9 @@
     "type": "cause",
     "typical_level": 1,
     "can_be_root": false,
-    "typical_branch": "L",
-    "med_targets": ["mirtazapin", "esoprex", "escitalopram", "dulopren", "duloxetin", "sertralin"]
+    "typical_branch": "LC",
+    "med_targets": ["mirtazapin", "esoprex", "escitalopram", "dulopren", "duloxetin", "sertralin"],
+    "typical_children": ["FATIGUE_LOW_CAPACITY"]
   },
   {
     "id": "SLEEP_DISORDER",
@@ -60,7 +61,7 @@
     "type": "cause",
     "typical_level": 1,
     "can_be_root": false,
-    "typical_branch": "LC",
+    "typical_branch": "L",
     "med_targets": ["zen plus", "melatonin", "zolpidem", "stilnox", "hypnogen", "dormicum"],
     "typical_children": ["FATIGUE_LOW_CAPACITY"]
   },
