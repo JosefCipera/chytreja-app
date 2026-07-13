@@ -891,6 +891,7 @@ function renderTree(data) {
       interaction: {
         dragNodes: false,
         hover: true,
+        hoverConnectedEdges: false,
         tooltipDelay: 600,
         navigationButtons: false,
         keyboard: false,
@@ -917,9 +918,8 @@ function renderTree(data) {
       return {
         id: e.id,
         color: inSubtree
-          ? { color: '#2a4a68', highlight: '#5a8ab8', hover: '#5a8ab8' }
+          ? { color: '#5a8ab8', highlight: '#5a8ab8', hover: '#5a8ab8' }
           : { color: '#2a4a68', highlight: '#2a4a68', hover: '#2a4a68' },
-        selectionWidth: inSubtree ? 1.5 : 0,
       };
     }));
   }
