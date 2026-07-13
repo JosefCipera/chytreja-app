@@ -794,12 +794,21 @@ function validateEdges(nodes, root, edges) {
 
     const fb = from.branch, tb = to.branch;
 
-    // Level skip uvnitř stejné větve (L→L nebo R→R, jump > 1) = redundantní hrana
-    // C→C spine a cross-level junction jsou záměrné, neodstraňovat
+    // Level skip uvnitř stejné větve (L→L nebo R→R, jump > 1) = redundantní POUZE pokud
+    // z from vede hrana na mezilehlý uzel stejné větve (jinak je skip nutný přímý spoj)
     if ((fb === 'L' && tb === 'L') || (fb === 'R' && tb === 'R')) {
-      if ((to.level ?? 0) - (from.level ?? 0) > 1) {
-        console.log(`[CRT validate] odstraněna redundantní same-branch hrana: ${e.from}(${fb},L${from.level})→${e.to}(${tb},L${to.level})`);
-        return false;
+      const levelDiff = (to.level ?? 0) - (from.level ?? 0);
+      if (levelDiff > 1) {
+        const fromLv = from.level ?? 0, toLv = to.level ?? 0;
+        const hasIntermediate = edges.some(e2 => {
+          if (e2.from !== e.from || e2.to === e.to) return false;
+          const mid = nodeById[e2.to];
+          return mid && mid.branch === fb && (mid.level ?? 0) > fromLv && (mid.level ?? 0) < toLv;
+        });
+        if (hasIntermediate) {
+          console.log(`[CRT validate] odstraněna redundantní same-branch hrana: ${e.from}(${fb},L${from.level})→${e.to}(${tb},L${to.level})`);
+          return false;
+        }
       }
     }
     // Junction uzly (AND-join): povoleny pouze hrany do jejich typical_children
@@ -928,7 +937,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx, modelId) {
   const key = JSON.stringify({
-    _v:          75, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
+    _v:          76, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
     model:       modelId || 'claude-sonnet-5',
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),
