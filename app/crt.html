@@ -791,13 +791,7 @@ async function loadCRTOpus(force = false, model = undefined) {
 const IS_MOBILE = window.innerWidth < 700 || window.screen.width < 700;
 let _visNetwork = null;
 const _pillTooltips = {};
-const EDGE_NORMAL    = { color: '#2a4a68', highlight: '#2a4a68', hover: '#4a7aa8' };
-const EDGE_HIGHLIGHT = { color: '#5a8ab8', highlight: '#5a8ab8', hover: '#5a8ab8' };
-let _savedEdgeColors = null;
-function _clearSubtree() {
-  if (!_visNetwork) return;
-  if (_savedEdgeColors) { _visNetwork.body.data.edges.update(_savedEdgeColors); _savedEdgeColors = null; }
-} // pill node id → tooltip text
+// pill node id → tooltip text
 let _crtMouseX = 0, _crtMouseY = 0;
 document.addEventListener('mousemove', e => { _crtMouseX = e.clientX; _crtMouseY = e.clientY; });
 
@@ -887,74 +881,41 @@ function renderTree(data) {
       physics: { enabled: false },
       interaction: {
         dragNodes: false,
-        hover: false,
+        hover: true,
         tooltipDelay: 600,
         navigationButtons: false,
         keyboard: false,
-        selectConnectedEdges: false,
+        selectConnectedEdges: true,
       },
     }
   );
 
   _visNetwork.on('click', params => {
-    if (!params.nodes.length) { closeCrtPanel(); _clearSubtree(); return; }
+    if (!params.nodes.length) { closeCrtPanel(); return; }
     if (String(params.nodes[0]).startsWith('_pill_')) return;
     openNodePanel(params.nodes[0]);
   });
 
-  function _selectSubtree(nodeId) {
-    const rawData = _rawCrtData || window._crtData;
-    if (!rawData || !_visNetwork) return;
-    const subtree = allDescendants(nodeId, rawData);
-    const ed = _visNetwork.body.data.edges;
-    if (!_savedEdgeColors) _savedEdgeColors = ed.get().map(e => ({ id: e.id, color: e.color }));
-    ed.update(ed.get().map(e => ({
-      id: e.id,
-      color: (subtree.has(String(e.from)) && subtree.has(String(e.to))) ? EDGE_HIGHLIGHT : EDGE_NORMAL,
-    })));
-  }
-
-  // Hover: mousemove + getNodeAt místo hoverNode/blurNode eventů
-  // hover:false vypne vis.js interní zvýraznění vstupních hran — jen my řídíme barvy
-  let _lastHoverNode = null;
+  // Pill hover tooltip
   const _crtContainer = document.getElementById('crtCanvas');
   if (_crtContainer) {
     _crtContainer.addEventListener('mousemove', e => {
-      const rect = _crtContainer.getBoundingClientRect();
-      const pos  = { x: e.clientX - rect.left, y: e.clientY - rect.top };
-      const nid  = _visNetwork?.getNodeAt(pos);
-
-      // Pill tooltip
+      const rect  = _crtContainer.getBoundingClientRect();
+      const nid   = _visNetwork?.getNodeAt({ x: e.clientX - rect.left, y: e.clientY - rect.top });
       const tipEl = document.getElementById('crtTooltip');
-      if (tipEl) {
-        if (nid && String(nid).startsWith('_pill_') && _pillTooltips[nid]) {
-          tipEl.textContent = _pillTooltips[nid];
-          tipEl.style.left  = (e.clientX + 16) + 'px';
-          tipEl.style.top   = (e.clientY - 10) + 'px';
-          tipEl.style.display = 'block';
-        } else {
-          tipEl.style.display = 'none';
-        }
-      }
-
-      // Subtree highlight
-      const hlNode = (nid && !String(nid).startsWith('_pill_')) ? String(nid) : null;
-      if (hlNode === _lastHoverNode) return;
-      _lastHoverNode = hlNode;
-      if (_openPanelNodeId) {
-        _selectSubtree(_openPanelNodeId);
-      } else if (hlNode) {
-        _selectSubtree(hlNode);
+      if (!tipEl) return;
+      if (nid && String(nid).startsWith('_pill_') && _pillTooltips[nid]) {
+        tipEl.textContent = _pillTooltips[nid];
+        tipEl.style.left  = (e.clientX + 16) + 'px';
+        tipEl.style.top   = (e.clientY - 10) + 'px';
+        tipEl.style.display = 'block';
       } else {
-        _clearSubtree();
+        tipEl.style.display = 'none';
       }
     });
     _crtContainer.addEventListener('mouseleave', () => {
       const tipEl = document.getElementById('crtTooltip');
       if (tipEl) tipEl.style.display = 'none';
-      _lastHoverNode = null;
-      if (_openPanelNodeId) _selectSubtree(_openPanelNodeId);
-      else _clearSubtree();
     });
   }
 
@@ -1039,7 +1000,7 @@ let _openPanelNodeId = null;
 function closeCrtPanel() {
   _openPanelNodeId = null;
   document.getElementById('crtNodePanel').classList.remove('open');
-  _clearSubtree();
+  if (_visNetwork) _visNetwork.unselectAll();
 }
 
 function openNodePanel(nodeId) {
