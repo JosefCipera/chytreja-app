@@ -896,9 +896,19 @@ function renderTree(data) {
 
   _visNetwork.on('hoverNode', params => {
     if (String(params.node).startsWith('_pill_')) return;
-    highlightSubtree(params.node);
+    const rawData = _rawCrtData || window._crtData;
+    if (!rawData) return;
+    const subtree = new Set([...allAncestors(params.node, rawData), ...allDescendants(params.node, rawData)]);
+    const subtreeEdges = (rawData.edges || [])
+      .filter(e => subtree.has(String(e.from)) && subtree.has(String(e.to)))
+      .map((_, i) => `e${i}`);
+    // Najdi správné edge ID přes vis dataset
+    const edgeIds = _visNetwork.body.data.edges.get()
+      .filter(e => subtree.has(String(e.from)) && subtree.has(String(e.to)))
+      .map(e => e.id);
+    _visNetwork.setSelection({ nodes: [...subtree], edges: edgeIds }, { unselectAll: true, highlightEdges: true });
   });
-  _visNetwork.on('blurNode', () => clearSubtreeHighlight());
+  _visNetwork.on('blurNode', () => _visNetwork.unselectAll());
 
   // Pill hover tooltip — mousemove + getNodeAt (spolehlivé i pro dynamicky přidané uzly)
   const _crtContainer = document.getElementById('crtCanvas');
@@ -1880,39 +1890,21 @@ window.switchToFullMap = function(nodeId) {
 
 // ── Focus Root: zobraz jen podstrom jednoho kořenového uzlu ──────────────────
 let _focusRootId = null;
-let _subtreeHighlightRoot = null;
-let _savedNodeOpacity = null;
-let _savedEdgeColor   = null;
 
-function highlightSubtree(rootId) {
-  if (!_visNetwork || !(_rawCrtData || window._crtData)) return;
-  _subtreeHighlightRoot = rootId;
-  const rawData  = _rawCrtData || window._crtData;
-  const subtree  = allDescendants(rootId, rawData);
-  const nd = _visNetwork.body.data.nodes;
-  const ed = _visNetwork.body.data.edges;
-
-  // Ulož opacity před změnou
-  _savedNodeOpacity = nd.get().map(n => ({ id: n.id, opacity: n.opacity ?? 1 }));
-  _savedEdgeColor   = ed.get().map(e => ({ id: e.id, color: e.color }));
-
-  // Dim uzly mimo podstrom
-  nd.update(nd.get()
-    .filter(n => !subtree.has(String(n.id)) && !String(n.id).startsWith('_pill_'))
-    .map(n => ({ id: n.id, opacity: 0.1 }))
-  );
-  // Dim hrany mimo podstrom
-  ed.update(ed.get()
-    .filter(e => !(subtree.has(String(e.from)) && subtree.has(String(e.to))))
-    .map(e => ({ id: e.id, color: { color: 'rgba(13,26,40,0.15)', highlight: 'rgba(13,26,40,0.15)', hover: 'rgba(13,26,40,0.15)' } }))
-  );
-}
-
-function clearSubtreeHighlight() {
-  if (!_subtreeHighlightRoot || !_visNetwork) return;
-  _subtreeHighlightRoot = null;
-  if (_savedNodeOpacity) { _visNetwork.body.data.nodes.update(_savedNodeOpacity); _savedNodeOpacity = null; }
-  if (_savedEdgeColor)   { _visNetwork.body.data.edges.update(_savedEdgeColor);   _savedEdgeColor   = null; }
+function allAncestors(nodeId, rawData) {
+  const edgesTo = {};
+  (rawData.edges || []).forEach(e => {
+    (edgesTo[e.to] = edgesTo[e.to] || []).push(e.from);
+  });
+  const result = new Set([nodeId]);
+  const queue = [nodeId];
+  while (queue.length) {
+    const cur = queue.shift();
+    for (const parent of (edgesTo[cur] || [])) {
+      if (!result.has(parent)) { result.add(parent); queue.push(parent); }
+    }
+  }
+  return result;
 }
 
 function allDescendants(rootId, rawData) {
