@@ -898,7 +898,7 @@ function renderTree(data) {
     if (String(params.node).startsWith('_pill_')) return;
     const rawData = _rawCrtData || window._crtData;
     if (!rawData) return;
-    const subtree = new Set([...allAncestors(params.node, rawData), ...allDescendants(params.node, rawData)]);
+    const subtree = new Set([...ancestorsOf(params.node, rawData), ...allDescendants(params.node, rawData)]);
     const subtreeEdges = (rawData.edges || [])
       .filter(e => subtree.has(String(e.from)) && subtree.has(String(e.to)))
       .map((_, i) => `e${i}`);
@@ -1891,7 +1891,7 @@ window.switchToFullMap = function(nodeId) {
 // ── Focus Root: zobraz jen podstrom jednoho kořenového uzlu ──────────────────
 let _focusRootId = null;
 
-function allAncestors(nodeId, rawData) {
+function ancestorsOf(nodeId, rawData) {
   const edgesTo = {};
   (rawData.edges || []).forEach(e => {
     (edgesTo[e.to] = edgesTo[e.to] || []).push(e.from);
