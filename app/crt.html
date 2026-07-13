@@ -906,17 +906,21 @@ function renderTree(data) {
   });
 
   function _applyHighlight(nodeId) {
-    if (!_visNetwork) return;
-    const ed  = _visNetwork.body.data.edges;
-    const nid = String(nodeId);
-    if (!_savedEdgeColors) _savedEdgeColors = ed.get().map(e => ({ id: e.id, color: e.color }));
-    ed.update(ed.get().map(e => ({
-      id: e.id,
-      color: String(e.from) === nid
-        ? { color: '#2a4a68', highlight: '#5a8ab8', hover: '#5a8ab8' }
-        : { color: '#2a4a68', highlight: '#2a4a68', hover: '#2a4a68' },
-      selectionWidth: String(e.from) === nid ? 1.5 : 0,
-    })));
+    const rawData = _rawCrtData || window._crtData;
+    if (!rawData || !_visNetwork) return;
+    const subtree = allDescendants(nodeId, rawData);
+    const ed = _visNetwork.body.data.edges;
+    if (!_savedEdgeColors) _savedEdgeColors = ed.get().map(e => ({ id: e.id, color: e.color, selectionWidth: e.selectionWidth }));
+    ed.update(ed.get().map(e => {
+      const inSubtree = subtree.has(String(e.from)) && subtree.has(String(e.to));
+      return {
+        id: e.id,
+        color: inSubtree
+          ? { color: '#2a4a68', highlight: '#5a8ab8', hover: '#5a8ab8' }
+          : { color: '#2a4a68', highlight: '#2a4a68', hover: '#2a4a68' },
+        selectionWidth: inSubtree ? 1.5 : 0,
+      };
+    }));
   }
 
   _visNetwork.on('hoverNode', params => {
