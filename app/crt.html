@@ -918,12 +918,11 @@ function renderTree(data) {
 
   _visNetwork.on('hoverNode', params => {
     if (String(params.node).startsWith('_pill_')) return;
-    if (_openPanelNodeId) return;       // panel otevřen — highlight uzamčen
     _selectSubtree(params.node);
   });
   _visNetwork.on('blurNode', () => {
-    if (_openPanelNodeId) return;       // panel otevřen — nic nemeníme
-    _clearSubtree();
+    if (_openPanelNodeId) _selectSubtree(_openPanelNodeId);
+    else _clearSubtree();
   });
 
   // Pill hover tooltip — mousemove + getNodeAt (spolehlivé i pro dynamicky přidané uzly)
@@ -1031,7 +1030,6 @@ function closeCrtPanel() {
   _openPanelNodeId = null;
   document.getElementById('crtNodePanel').classList.remove('open');
   _clearSubtree();
-  if (_visNetwork) _visNetwork.unselectAll();
 }
 
 function openNodePanel(nodeId) {
