@@ -790,6 +790,12 @@ async function loadCRTOpus(force = false, model = undefined) {
 // ── vis.js Network renderer ──────────────────────────────────────────────────
 const IS_MOBILE = window.innerWidth < 700 || window.screen.width < 700;
 let _visNetwork = null;
+let _savedEdgeColors = null;
+function _clearHighlight() {
+  if (!_visNetwork) return;
+  if (_savedEdgeColors) { _visNetwork.body.data.edges.update(_savedEdgeColors); _savedEdgeColors = null; }
+  _visNetwork.unselectAll();
+}
 const _pillTooltips = {};
 // pill node id → tooltip text
 let _crtMouseX = 0, _crtMouseY = 0;
@@ -896,6 +902,28 @@ function renderTree(data) {
     openNodePanel(params.nodes[0]);
   });
 
+  function _applyHighlight(nodeId) {
+    if (!_visNetwork) return;
+    const ed  = _visNetwork.body.data.edges;
+    const nid = String(nodeId);
+    if (!_savedEdgeColors) _savedEdgeColors = ed.get().map(e => ({ id: e.id, color: e.color }));
+    ed.update(ed.get().map(e => ({
+      id: e.id,
+      color: String(e.from) === nid
+        ? { color: '#2a4a68', highlight: '#5a8ab8', hover: '#5a8ab8' }  // outgoing → zvýrazni
+        : { color: '#2a4a68', highlight: '#2a4a68', hover: '#4a7aa8' }, // ostatní → normální
+    })));
+  }
+
+  _visNetwork.on('hoverNode', params => {
+    if (String(params.node).startsWith('_pill_')) return;
+    _applyHighlight(params.node);
+  });
+  _visNetwork.on('blurNode', () => {
+    if (_openPanelNodeId) _applyHighlight(_openPanelNodeId);
+    else _clearHighlight();
+  });
+
   // Pill hover tooltip
   const _crtContainer = document.getElementById('crtCanvas');
   if (_crtContainer) {
@@ -1000,7 +1028,7 @@ let _openPanelNodeId = null;
 function closeCrtPanel() {
   _openPanelNodeId = null;
   document.getElementById('crtNodePanel').classList.remove('open');
-  if (_visNetwork) _visNetwork.unselectAll();
+  _clearHighlight();
 }
 
 function openNodePanel(nodeId) {
