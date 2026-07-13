@@ -851,6 +851,7 @@ function renderTree(data) {
     id: `e${i}`,
     from: e.from,
     to: e.to,
+    color: { color: '#2a4a68', highlight: '#2a4a68', hover: '#4a7aa8' },
   }));
 
   if (_visNetwork) { _visNetwork.destroy(); _visNetwork = null; }
