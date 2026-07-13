@@ -793,10 +793,7 @@ let _visNetwork = null;
 let _savedEdgeColors = null;
 function _clearHighlight() {
   if (!_visNetwork) return;
-  if (_savedEdgeColors) {
-    _visNetwork.body.data.edges.update(_savedEdgeColors.map(e => ({ id: e.id, color: e.color, width: e.width })));
-    _savedEdgeColors = null;
-  }
+  if (_savedEdgeColors) { _visNetwork.body.data.edges.update(_savedEdgeColors); _savedEdgeColors = null; }
   _visNetwork.unselectAll();
 }
 const _pillTooltips = {};
@@ -909,18 +906,13 @@ function renderTree(data) {
     if (!_visNetwork) return;
     const ed  = _visNetwork.body.data.edges;
     const nid = String(nodeId);
-    if (!_savedEdgeColors) _savedEdgeColors = ed.get().map(e => ({ id: e.id, color: e.color, width: e.width ?? 1 }));
-    ed.update(ed.get().map(e => {
-      const isOutgoing = String(e.from) === nid;
-      const isIncoming = String(e.to)   === nid;
-      return {
-        id: e.id,
-        color: isOutgoing
-          ? { color: '#2a4a68', highlight: '#5a8ab8', hover: '#5a8ab8' }
-          : { color: '#2a4a68', highlight: '#2a4a68', hover: '#2a4a68' },
-        width: isIncoming ? 0.5 : (e.width ?? 1),
-      };
-    }));
+    if (!_savedEdgeColors) _savedEdgeColors = ed.get().map(e => ({ id: e.id, color: e.color }));
+    ed.update(ed.get().map(e => ({
+      id: e.id,
+      color: String(e.from) === nid
+        ? { color: '#2a4a68', highlight: '#5a8ab8', hover: '#5a8ab8' }
+        : { color: '#2a4a68', highlight: '#2a4a68', hover: '#2a4a68' },
+    })));
   }
 
   _visNetwork.on('hoverNode', params => {
