@@ -890,19 +890,37 @@ function renderTree(data) {
   );
 
   _visNetwork.on('click', params => {
-    if (!params.nodes.length) { closeCrtPanel(); _visNetwork.unselectAll(); return; }
+    if (!params.nodes.length) { closeCrtPanel(); _clearSubtree(); return; }
     if (String(params.nodes[0]).startsWith('_pill_')) return;
     openNodePanel(params.nodes[0]);
   });
+
+  const EDGE_NORMAL    = { color: '#2a4a68', highlight: '#2a4a68', hover: '#4a7aa8' };
+  const EDGE_HIGHLIGHT = { color: '#5a8ab8', highlight: '#5a8ab8', hover: '#5a8ab8' };
+  let _savedEdgeColors = null;
 
   function _selectSubtree(nodeId) {
     const rawData = _rawCrtData || window._crtData;
     if (!rawData || !_visNetwork) return;
     const subtree = allDescendants(nodeId, rawData);
-    const edgeIds = _visNetwork.body.data.edges.get()
-      .filter(e => subtree.has(String(e.from)) && subtree.has(String(e.to)))
-      .map(e => e.id);
-    _visNetwork.setSelection({ nodes: [...subtree], edges: edgeIds }, { unselectAll: true });
+    const ed = _visNetwork.body.data.edges;
+
+    // Ulož originální barvy jen pokud ještě nejsou uloženy
+    if (!_savedEdgeColors) _savedEdgeColors = ed.get().map(e => ({ id: e.id, color: e.color }));
+
+    // Nastav barvy hran ručně — vis.js jinak zvýrazní i vstupní hrany přes sousední uzel
+    ed.update(ed.get().map(e => ({
+      id: e.id,
+      color: (subtree.has(String(e.from)) && subtree.has(String(e.to))) ? EDGE_HIGHLIGHT : EDGE_NORMAL,
+    })));
+
+    _visNetwork.setSelection({ nodes: [...subtree], edges: [] }, { unselectAll: true });
+  }
+
+  function _clearSubtree() {
+    if (!_visNetwork) return;
+    _visNetwork.unselectAll();
+    if (_savedEdgeColors) { _visNetwork.body.data.edges.update(_savedEdgeColors); _savedEdgeColors = null; }
   }
 
   _visNetwork.on('hoverNode', params => {
@@ -911,7 +929,7 @@ function renderTree(data) {
   });
   _visNetwork.on('blurNode', () => {
     if (_openPanelNodeId) _selectSubtree(_openPanelNodeId);
-    else _visNetwork.unselectAll();
+    else _clearSubtree();
   });
 
   // Pill hover tooltip — mousemove + getNodeAt (spolehlivé i pro dynamicky přidané uzly)
