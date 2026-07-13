@@ -796,7 +796,6 @@ const EDGE_HIGHLIGHT = { color: '#5a8ab8', highlight: '#5a8ab8', hover: '#5a8ab8
 let _savedEdgeColors = null;
 function _clearSubtree() {
   if (!_visNetwork) return;
-  _visNetwork.unselectAll();
   if (_savedEdgeColors) { _visNetwork.body.data.edges.update(_savedEdgeColors); _savedEdgeColors = null; }
 } // pill node id → tooltip text
 let _crtMouseX = 0, _crtMouseY = 0;
@@ -913,7 +912,6 @@ function renderTree(data) {
       id: e.id,
       color: (subtree.has(String(e.from)) && subtree.has(String(e.to))) ? EDGE_HIGHLIGHT : EDGE_NORMAL,
     })));
-    _visNetwork.setSelection({ nodes: [...subtree], edges: [] }, { unselectAll: true });
   }
 
   _visNetwork.on('hoverNode', params => {
