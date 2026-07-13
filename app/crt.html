@@ -889,10 +889,19 @@ function renderTree(data) {
   );
 
   _visNetwork.on('click', params => {
-    if (!params.nodes.length) { closeCrtPanel(); return; }
-    // Ignoruj klik na pill uzly — ty panel neotvírají
+    if (!params.nodes.length) { clearSubtreeHighlight(); closeCrtPanel(); return; }
     if (String(params.nodes[0]).startsWith('_pill_')) return;
-    openNodePanel(params.nodes[0]);
+    const nodeId = params.nodes[0];
+    const data = window._crtData;
+    const clicked = (data?.nodes || []).find(n => n.id === nodeId) || (data?.root?.id === nodeId ? data.root : null);
+    const isRoot  = clicked && (clicked.level ?? 99) === 0;
+    if (isRoot) {
+      if (_subtreeHighlightRoot === nodeId) clearSubtreeHighlight();
+      else highlightSubtree(nodeId);
+    } else {
+      clearSubtreeHighlight();
+    }
+    openNodePanel(nodeId);
   });
 
   // Pill hover tooltip — mousemove + getNodeAt (spolehlivé i pro dynamicky přidané uzly)
@@ -1875,6 +1884,40 @@ window.switchToFullMap = function(nodeId) {
 
 // ── Focus Root: zobraz jen podstrom jednoho kořenového uzlu ──────────────────
 let _focusRootId = null;
+let _subtreeHighlightRoot = null;
+let _savedNodeOpacity = null;
+let _savedEdgeColor   = null;
+
+function highlightSubtree(rootId) {
+  if (!_visNetwork || !(_rawCrtData || window._crtData)) return;
+  _subtreeHighlightRoot = rootId;
+  const rawData  = _rawCrtData || window._crtData;
+  const subtree  = allDescendants(rootId, rawData);
+  const nd = _visNetwork.body.data.nodes;
+  const ed = _visNetwork.body.data.edges;
+
+  // Ulož opacity před změnou
+  _savedNodeOpacity = nd.get().map(n => ({ id: n.id, opacity: n.opacity ?? 1 }));
+  _savedEdgeColor   = ed.get().map(e => ({ id: e.id, color: e.color }));
+
+  // Dim uzly mimo podstrom
+  nd.update(nd.get()
+    .filter(n => !subtree.has(String(n.id)) && !String(n.id).startsWith('_pill_'))
+    .map(n => ({ id: n.id, opacity: 0.1 }))
+  );
+  // Dim hrany mimo podstrom
+  ed.update(ed.get()
+    .filter(e => !(subtree.has(String(e.from)) && subtree.has(String(e.to))))
+    .map(e => ({ id: e.id, color: { color: 'rgba(13,26,40,0.15)', highlight: 'rgba(13,26,40,0.15)', hover: 'rgba(13,26,40,0.15)' } }))
+  );
+}
+
+function clearSubtreeHighlight() {
+  if (!_subtreeHighlightRoot || !_visNetwork) return;
+  _subtreeHighlightRoot = null;
+  if (_savedNodeOpacity) { _visNetwork.body.data.nodes.update(_savedNodeOpacity); _savedNodeOpacity = null; }
+  if (_savedEdgeColor)   { _visNetwork.body.data.edges.update(_savedEdgeColor);   _savedEdgeColor   = null; }
+}
 
 function allDescendants(rootId, rawData) {
   const edgesFrom = {}; // id → [toId, ...]
