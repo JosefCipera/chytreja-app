@@ -894,7 +894,7 @@ function renderTree(data) {
         tooltipDelay: 600,
         navigationButtons: false,
         keyboard: false,
-        selectConnectedEdges: true,
+        selectConnectedEdges: false,
       },
     }
   );
@@ -902,11 +902,12 @@ function renderTree(data) {
   _visNetwork.on('click', params => {
     if (!params.nodes.length) { closeCrtPanel(); return; }
     if (String(params.nodes[0]).startsWith('_pill_')) return;
+    _applyHighlight(params.nodes[0]);
     openNodePanel(params.nodes[0]);
   });
 
   function _applyHighlight(nodeId) {
-    const rawData = _rawCrtData || window._crtData;
+    const rawData = window._crtData;
     if (!rawData || !_visNetwork) return;
     const subtree = allDescendants(nodeId, rawData);
     const ed = _visNetwork.body.data.edges;
