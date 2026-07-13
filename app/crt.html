@@ -889,20 +889,16 @@ function renderTree(data) {
   );
 
   _visNetwork.on('click', params => {
-    if (!params.nodes.length) { clearSubtreeHighlight(); closeCrtPanel(); return; }
+    if (!params.nodes.length) { closeCrtPanel(); return; }
     if (String(params.nodes[0]).startsWith('_pill_')) return;
-    const nodeId = params.nodes[0];
-    const data = window._crtData;
-    const clicked = (data?.nodes || []).find(n => n.id === nodeId) || (data?.root?.id === nodeId ? data.root : null);
-    const isRoot  = clicked && (clicked.level ?? 99) === 0;
-    if (isRoot) {
-      if (_subtreeHighlightRoot === nodeId) clearSubtreeHighlight();
-      else highlightSubtree(nodeId);
-    } else {
-      clearSubtreeHighlight();
-    }
-    openNodePanel(nodeId);
+    openNodePanel(params.nodes[0]);
   });
+
+  _visNetwork.on('hoverNode', params => {
+    if (String(params.node).startsWith('_pill_')) return;
+    highlightSubtree(params.node);
+  });
+  _visNetwork.on('blurNode', () => clearSubtreeHighlight());
 
   // Pill hover tooltip — mousemove + getNodeAt (spolehlivé i pro dynamicky přidané uzly)
   const _crtContainer = document.getElementById('crtCanvas');
