@@ -852,6 +852,8 @@ function renderTree(data) {
     from: e.from,
     to: e.to,
     color: { color: '#2a4a68', highlight: '#2a4a68', hover: '#4a7aa8' },
+    selectionWidth: 0,
+    hoverWidth: 0,
   }));
 
   if (_visNetwork) { _visNetwork.destroy(); _visNetwork = null; }
@@ -913,6 +915,7 @@ function renderTree(data) {
       color: String(e.from) === nid
         ? { color: '#2a4a68', highlight: '#5a8ab8', hover: '#5a8ab8' }
         : { color: '#2a4a68', highlight: '#2a4a68', hover: '#2a4a68' },
+      selectionWidth: String(e.from) === nid ? 1.5 : 0,
     })));
   }
 
