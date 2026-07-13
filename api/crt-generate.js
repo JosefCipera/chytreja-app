@@ -546,6 +546,11 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
     };
     (crt.nodes || []).forEach(applyStateLabels);
     if (crt.root && typeof crt.root === 'object') applyStateLabels(crt.root);
+    // DEBUG branch swap
+    ['DEPRESSION_ANXIETY','SLEEP_DISORDER','FATIGUE_LOW_CAPACITY'].forEach(id => {
+      const n = (crt.nodes||[]).find(x => x.id === id);
+      if (n) console.log(`[CRT branch] ${id} → branch=${n.branch} level=${n.level}`);
+    });
   }
 
   // Med-injekce: pokud žádný aktivní stav nemá lék uživatele v med_targets → injektuj stav
