@@ -790,7 +790,15 @@ async function loadCRTOpus(force = false, model = undefined) {
 // ── vis.js Network renderer ──────────────────────────────────────────────────
 const IS_MOBILE = window.innerWidth < 700 || window.screen.width < 700;
 let _visNetwork = null;
-const _pillTooltips = {}; // pill node id → tooltip text
+const _pillTooltips = {};
+const EDGE_NORMAL    = { color: '#2a4a68', highlight: '#2a4a68', hover: '#4a7aa8' };
+const EDGE_HIGHLIGHT = { color: '#5a8ab8', highlight: '#5a8ab8', hover: '#5a8ab8' };
+let _savedEdgeColors = null;
+function _clearSubtree() {
+  if (!_visNetwork) return;
+  _visNetwork.unselectAll();
+  if (_savedEdgeColors) { _visNetwork.body.data.edges.update(_savedEdgeColors); _savedEdgeColors = null; }
+} // pill node id → tooltip text
 let _crtMouseX = 0, _crtMouseY = 0;
 document.addEventListener('mousemove', e => { _crtMouseX = e.clientX; _crtMouseY = e.clientY; });
 
@@ -895,41 +903,27 @@ function renderTree(data) {
     openNodePanel(params.nodes[0]);
   });
 
-  const EDGE_NORMAL    = { color: '#2a4a68', highlight: '#2a4a68', hover: '#4a7aa8' };
-  const EDGE_HIGHLIGHT = { color: '#5a8ab8', highlight: '#5a8ab8', hover: '#5a8ab8' };
-  let _savedEdgeColors = null;
-
   function _selectSubtree(nodeId) {
     const rawData = _rawCrtData || window._crtData;
     if (!rawData || !_visNetwork) return;
     const subtree = allDescendants(nodeId, rawData);
     const ed = _visNetwork.body.data.edges;
-
-    // Ulož originální barvy jen pokud ještě nejsou uloženy
     if (!_savedEdgeColors) _savedEdgeColors = ed.get().map(e => ({ id: e.id, color: e.color }));
-
-    // Nastav barvy hran ručně — vis.js jinak zvýrazní i vstupní hrany přes sousední uzel
     ed.update(ed.get().map(e => ({
       id: e.id,
       color: (subtree.has(String(e.from)) && subtree.has(String(e.to))) ? EDGE_HIGHLIGHT : EDGE_NORMAL,
     })));
-
     _visNetwork.setSelection({ nodes: [...subtree], edges: [] }, { unselectAll: true });
-  }
-
-  function _clearSubtree() {
-    if (!_visNetwork) return;
-    _visNetwork.unselectAll();
-    if (_savedEdgeColors) { _visNetwork.body.data.edges.update(_savedEdgeColors); _savedEdgeColors = null; }
   }
 
   _visNetwork.on('hoverNode', params => {
     if (String(params.node).startsWith('_pill_')) return;
+    if (_openPanelNodeId) return;       // panel otevřen — highlight uzamčen
     _selectSubtree(params.node);
   });
   _visNetwork.on('blurNode', () => {
-    if (_openPanelNodeId) _selectSubtree(_openPanelNodeId);
-    else _clearSubtree();
+    if (_openPanelNodeId) return;       // panel otevřen — nic nemeníme
+    _clearSubtree();
   });
 
   // Pill hover tooltip — mousemove + getNodeAt (spolehlivé i pro dynamicky přidané uzly)
@@ -1036,6 +1030,7 @@ let _openPanelNodeId = null;
 function closeCrtPanel() {
   _openPanelNodeId = null;
   document.getElementById('crtNodePanel').classList.remove('open');
+  _clearSubtree();
   if (_visNetwork) _visNetwork.unselectAll();
 }
 
