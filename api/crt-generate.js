@@ -775,14 +775,15 @@ async function generatePanelTexts(allNodes, edges, profile) {
 
   const emptyJson = JSON.stringify(Object.fromEntries(rootDescriptions.map(r => [r.id, '...'])));
 
-  const prompt = `Jsi lékař-kouč. Pro každý kořenový uzel CRT stromu napiš panel_text: 3–4 věty osobně, tykáním, česky.
+  const prompt = `Jsi lékař-kouč. Pro každý kořenový uzel CRT stromu napiš panel_text: 3–4 věty, česky, tykáním.
 
 Pravidla:
-- Příběh: jak tento kořen ZPŮSOBUJE problémy výše v grafu (kauzální řetěz)
-- Konkrétní — zmiň co se děje v těle
-- Hormonální/genetický kořen (štítná žláza, hypothyreóza apod.): nenavrhuj cvičení jako řešení, řeší lékař + léky; popiš co lze zpomalit downstream
-- Žádné fráze: je důležité, musíš, okamžitě, hrozí, měl bys
-- Zakončení: co pacient může ovlivnit (nebo co ne)
+- Celý text v TY formě — ne "tělo", ne "organismus", ale "tvoje tělo", "tvoje nohy", "hůř usínáš", "cítíš se unavená"
+- Příběh: jak tento kořen ZPŮSOBUJE problémy výše v grafu — sleduj kauzální cestu krok za krokem
+- Konkrétní — zmiň co se děje přímo v těle pacienta (nervy, nohy, kosti, srdce...)
+- Konči kauzálním důsledkem — BEZ rad, BEZ "na tomhle máš vliv", BEZ obecných doporučení
+- Hormonální/genetický kořen (štítná žláza): konec = dopad, ne rada
+- Žádné fráze: je důležité, musíš, okamžitě, hrozí, měl bys, máš vliv, dokáže zpomalit
 
 Pacient: ${patientDesc}${diagText ? '. Diagnózy: ' + diagText : ''}.
 
@@ -1016,7 +1017,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx, modelId) {
   const key = JSON.stringify({
-    _v:          78, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
+    _v:          79, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
     model:       modelId || 'claude-sonnet-5',
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),
