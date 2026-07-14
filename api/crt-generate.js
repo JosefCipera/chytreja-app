@@ -447,7 +447,11 @@ ${hasDoctorNotes
 ${profile.doctor_notes.trim()}
 
 Instrukce: Namapuj každou entitu z KAUZÁLNÍHO POPISU na ID ze STATE DICTIONARY. Zahrň POUZE entity explicitně zmíněné v popisu — neextrapoluj důsledky ani rizika navíc. Apex = poslední entita v popisu (FaP, ED, atd.) — nic nad ní nepřidávej.`
-  : `Kauzální popis není k dispozici. Odvoď kauzální řetěz z DIAGNÓZY a LABS. Použij pouze ID ze STATE DICTIONARY.`}
+  : `Kauzální popis není k dispozici. Pravidla pro tento případ:
+1. Zahrň POUZE stavy explicitně zmíněné v DIAGNÓZY nebo LABS výše — žádné odvozené důsledky, žádné spekulace.
+2. Maximálně 5 uzlů celkem (kořen + přímí potomci).
+3. UDE uzly (apex) NEGENERUJ — bez doctor_notes nevíme co je hlavní projev.
+4. HYPERTENSION zahrň jen pokud je explicitně v diagnózách.`}
 
 Vrať pouze čistý JSON. Žádný text navíc.`;
 
@@ -1017,7 +1021,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx, modelId) {
   const key = JSON.stringify({
-    _v:          80, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
+    _v:          81, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
     model:       modelId || 'claude-sonnet-5',
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),
