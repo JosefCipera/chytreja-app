@@ -482,7 +482,7 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
     const data = await res.json();
     const usage = data.usage || {};
     console.log(`[CRT] model=${modelCfg.id} stop=${data.stop_reason} tokens: input=${usage.input_tokens} output=${usage.output_tokens}`);
-    if (data.stop_reason === 'refusal' || (usage.output_tokens != null && usage.output_tokens < 150)) {
+    if (data.stop_reason === 'refusal' || (usage.output_tokens != null && usage.output_tokens < 30)) {
       throw new Error(`Fable refusal: stop=${data.stop_reason} output_tokens=${usage.output_tokens}`);
     }
     const textBlock = (data.content || []).find(b => b.type === 'text' && b.text);
