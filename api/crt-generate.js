@@ -717,6 +717,11 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
   // Připoj uzly bez vstupní hrany (orphan source) k nejbližšímu nižšímu uzlu
   crt.edges = connectSourceless(crt.nodes, crt.root, crt.edges);
 
+  // Personalizovaný panel_text pro kořenové uzly (Sonnet 5)
+  const allActiveForPanel = [...(crt.nodes || [])];
+  if (crt.root && typeof crt.root === 'object') allActiveForPanel.push(crt.root);
+  await generatePanelTexts(allActiveForPanel, crt.edges || [], profile);
+
   // Behavior warnings: připoj personalizované varování z profilu na aktivní uzly
   const behaviorFlags = profile?.behavior_flags || {};
   const allActive = [...(crt.nodes || [])];
@@ -731,6 +736,83 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
   await generateAutoFlag(allActive, profile);
 
   return crt;
+}
+
+// Vygeneruje personalizovaný panel_text pro každý kořenový uzel (Sonnet 5)
+// Příběh: jak kořen ZPŮSOBUJE problémy výše — kauzální řetěz konkrétní pro tohoto pacienta
+async function generatePanelTexts(allNodes, edges, profile) {
+  const rootNodes = allNodes.filter(n => (n.level ?? 99) === 0 && n.id);
+  if (!rootNodes.length) return;
+
+  const nodeById = Object.fromEntries(allNodes.map(n => [n.id, n]));
+  const childrenOf = {};
+  (edges || []).forEach(e => { (childrenOf[e.from] = childrenOf[e.from] || []).push(e.to); });
+
+  // BFS: projdi celou větev od kořene, sesbírej popisky uzlů
+  const tracePath = (rootId) => {
+    const visited = new Set(), queue = [rootId], labels = [];
+    while (queue.length) {
+      const id = queue.shift();
+      if (visited.has(id)) continue;
+      visited.add(id);
+      const n = nodeById[id];
+      if (n) labels.push(n.label_layman || n.label);
+      (childrenOf[id] || []).forEach(cid => { if (!visited.has(cid)) queue.push(cid); });
+    }
+    return labels;
+  };
+
+  const rootDescriptions = rootNodes.map(r => ({
+    id: r.id,
+    label: r.label_layman || r.label,
+    path: tracePath(r.id).join(' → '),
+  }));
+
+  const patientAge  = profile.birth_year ? `${new Date().getFullYear() - profile.birth_year} let` : '';
+  const patientSex  = profile.sex === 'F' ? 'Žena' : profile.sex === 'M' ? 'Muž' : '';
+  const patientDesc = [patientSex, patientAge].filter(Boolean).join(', ') || 'Pacient';
+  const diagText    = (profile.diagnoses || []).join(', ') || '';
+
+  const emptyJson = JSON.stringify(Object.fromEntries(rootDescriptions.map(r => [r.id, '...'])));
+
+  const prompt = `Jsi lékař-kouč. Pro každý kořenový uzel CRT stromu napiš panel_text: 3–4 věty osobně, tykáním, česky.
+
+Pravidla:
+- Příběh: jak tento kořen ZPŮSOBUJE problémy výše v grafu (kauzální řetěz)
+- Konkrétní — zmiň co se děje v těle
+- Hormonální/genetický kořen (štítná žláza, hypothyreóza apod.): nenavrhuj cvičení jako řešení, řeší lékař + léky; popiš co lze zpomalit downstream
+- Žádné fráze: je důležité, musíš, okamžitě, hrozí, měl bys
+- Zakončení: co pacient může ovlivnit (nebo co ne)
+
+Pacient: ${patientDesc}${diagText ? '. Diagnózy: ' + diagText : ''}.
+
+Kořeny a kauzální cesty:
+${rootDescriptions.map(r => `[${r.id}] ${r.label}\nCesta: ${r.path}`).join('\n\n')}
+
+Vrať jen JSON bez markdown: ${emptyJson}`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: 'claude-sonnet-5', max_tokens: 1500, messages: [{ role: 'user', content: prompt }] }),
+    });
+    if (!res.ok) throw new Error(`Sonnet panel_text ${res.status}`);
+    const data = await res.json();
+    const textBlock = (data.content || []).find(b => b.type === 'text');
+    const jsonMatch = (textBlock?.text || '').match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('No JSON in panel_text response');
+    const panelTexts = JSON.parse(jsonMatch[0]);
+    rootNodes.forEach(n => {
+      if (panelTexts[n.id]) {
+        n.panel_text = panelTexts[n.id];
+        console.log(`[CRT] panel_text: ${n.id}`);
+      }
+    });
+  } catch (e) {
+    console.warn('[CRT] panel_text generation failed:', e.message);
+    // fallback: State Dictionary panel_text (aplikováno dříve v applyStateLabels)
+  }
 }
 
 // Vygeneruje behaviorální doporučení pro nejdůležitější uzel bez manuálního flagu
@@ -934,7 +1016,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx, modelId) {
   const key = JSON.stringify({
-    _v:          77, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
+    _v:          78, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
     model:       modelId || 'claude-sonnet-5',
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),
