@@ -778,7 +778,7 @@ async function generatePanelTexts(allNodes, edges, profile) {
   const prompt = `Jsi lékař-kouč. Pro každý kořenový uzel CRT stromu napiš panel_text: 3–4 věty, česky, tykáním.
 
 Pravidla:
-- Celý text v TY formě — ne "tělo", ne "organismus", ale "tvoje tělo", "tvoje nohy", "hůř usínáš", "cítíš se unavená"
+- Celý text v TY formě — "hůř usínáš", "cítíš se unavená", "tvoje tělo". Přivlastňovací zájmena (tvůj/tvoje/tvé) používej max 1–2× v celém textu, ne před každým podstatným jménem.
 - Příběh: jak tento kořen ZPŮSOBUJE problémy výše v grafu — sleduj kauzální cestu krok za krokem
 - Konkrétní — zmiň co se děje přímo v těle pacienta (nervy, nohy, kosti, srdce...)
 - Konči kauzálním důsledkem — BEZ rad, BEZ "na tomhle máš vliv", BEZ obecných doporučení
@@ -1017,7 +1017,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx, modelId) {
   const key = JSON.stringify({
-    _v:          79, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
+    _v:          80, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
     model:       modelId || 'claude-sonnet-5',
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),

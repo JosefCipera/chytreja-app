@@ -79,7 +79,7 @@
   {
     "id": "DYSLIPIDEMIA",
     "label": "Dyslipidémie",
-    "label_layman": "Vysoký špatný cholesterol",
+    "label_layman": "Vysoký LDL cholesterol",
     "type": "cause",
     "typical_level": 1,
     "can_be_root": false,
