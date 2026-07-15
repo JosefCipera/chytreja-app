@@ -412,7 +412,7 @@ async function buildDeterministicCRT(profile) {
   return crt;
 }
 
-async function generateCRT({ metrics, profile, checkins, nodeInputs }, role, modelCfg) {
+async function generateCRT({ metrics, profile, checkins, nodeInputs, _rawAI }, role, modelCfg) {
   // Seřaď uzly od nejhoršího — vezmi všechny RED a YELLOW
   const sorted = [...metrics].sort((a, b) => (a.current_index ?? 100) - (b.current_index ?? 100));
   const worstNodes = sorted
@@ -545,7 +545,11 @@ PRAVIDLA JSON:
   // Gemini návrh: diagnosis keyword lookup → State Dictionary IDs, bez AI
   // DŮLEŽITÉ: nesmí to být early return — post-processing (med-inject, medications_map, validateEdges) musí proběhnout
   let crt;
-  if (!hasDoctorNotes) {
+  if (_rawAI) {
+    // Partial cache hit — přeskočíme Sonnet, použijeme uložený AI výstup
+    crt = JSON.parse(JSON.stringify(_rawAI));
+    console.log('[CRT] _rawAI použit z cache (Sonnet přeskočen)');
+  } else if (!hasDoctorNotes) {
     crt = await buildDeterministicCRT(profile);
   } else {
   const userPrompt = `Přelož lékařský popis do CRT JSON struktury.
@@ -611,6 +615,12 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
     }
   }
   } // end else (hasDoctorNotes)
+
+  // Ulož snapshot raw AI výstupu (před post-processingem) — pro partial cache hit
+  // Ukládáme jen pro doctor_notes cestu (Sonnet); deterministická cesta je vždy rychlá
+  if (!_rawAI && hasDoctorNotes) {
+    crt._raw_ai_snapshot = JSON.parse(JSON.stringify(crt));
+  }
 
   // Transformace nového formátu (root=string, medications_map s target_node_id)
   // na starý formát který očekává renderCRT / handler
@@ -1157,20 +1167,44 @@ function overlayColors(nodes, metrics) {
   });
 }
 
-// Stabilní hash vstupních dat — změna dat = nový hash = nový graf
-function dataHash(ctx, modelId) {
-  const key = JSON.stringify({
-    _v:          92, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
+// Verze cache — dvě nezávislé osy:
+// _v_ai: bump POUZE při změně Sonnet promptu → invaliduje AI generování
+// _v_pp: bump při změně post-processingu (med-inject, validateEdges...) → přeskočí Sonnet, re-run PP
+const _v_ai = 12;
+const _v_pp = 1;
+
+function hashStr(s) {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) { h = (Math.imul(31, h) + s.charCodeAt(i)) | 0; }
+  return String(h >>> 0);
+}
+
+// Hash dat + AI verze — určuje jestli je třeba volat Sonnet
+function aiHash(ctx, modelId) {
+  return hashStr(JSON.stringify({
+    _v_ai,
     model:       modelId || 'claude-sonnet-5',
     diagnoses:   ctx.profile.diagnoses || [],
+    doctor_notes: ctx.profile.doctor_notes || '',
+    labs:        ctx.profile.labs || {},
+    goal:        ctx.profile.goal_text || '',
+    metrics:     ctx.metrics.map(m => `${m.node_id}:${m.state}`).sort(),
+  }));
+}
+
+// Hash dat + obě verze — určuje jestli je platný celý výsledek (včetně PP)
+function dataHash(ctx, modelId) {
+  return hashStr(JSON.stringify({
+    _v_ai,
+    _v_pp,
+    model:       modelId || 'claude-sonnet-5',
+    diagnoses:   ctx.profile.diagnoses || [],
+    doctor_notes: ctx.profile.doctor_notes || '',
     medications: (ctx.profile.medications || []).map(m => m.name),
     labs:        ctx.profile.labs || {},
     goal:        ctx.profile.goal_text || '',
     metrics:     ctx.metrics.map(m => `${m.node_id}:${m.state}`).sort(),
-  });
-  let h = 0;
-  for (let i = 0; i < key.length; i++) { h = (Math.imul(31, h) + key.charCodeAt(i)) | 0; }
-  return String(h >>> 0);
+  }));
 }
 
 export default async function handler(req, res) {
@@ -1196,10 +1230,12 @@ export default async function handler(req, res) {
   try {
     // 1. Načti všechny zdroje dat
     const ctx = userId ? await fetchContext(userId, role) : { metrics: [], profile: {}, checkins: [], nodeInputs: [] };
-    const hash = dataHash(ctx, modelCfg.id);
-    console.log(`[CRT] userId=${userId} role=${role} hash=${hash}`);
+    const hash    = dataHash(ctx, modelCfg.id);
+    const hashAI  = aiHash(ctx, modelCfg.id);
+    console.log(`[CRT] userId=${userId} role=${role} hash=${hash} hashAI=${hashAI}`);
 
-    // 0. Zkus server-side cache — platná pokud hash sedí
+    // 0. Zkus server-side cache
+    let cachedRawAI = null;
     if (userId) {
       const { data: prof } = await supabase
         .from('user_health_profile')
@@ -1208,24 +1244,32 @@ export default async function handler(req, res) {
         .single();
 
       if (!force && prof?.crt_cache && prof?.crt_cache_hash === hash) {
-        console.log('[CRT] cache hit — data nezměněna');
+        console.log('[CRT] full cache hit');
         res.setHeader('Cache-Control', 'no-store');
         return res.json({ ...prof.crt_cache, _cached: true });
       }
+      // Partial hit: AI výstup platný, jen PP se změnil → přeskočíme Sonnet
+      if (!force && prof?.crt_cache?._raw_ai_hash === hashAI && prof?.crt_cache?._raw_ai) {
+        cachedRawAI = prof.crt_cache._raw_ai;
+        console.log('[CRT] partial cache hit — AI přeskočen, re-run PP');
+      }
     }
 
-    console.log(`[CRT] generuji nový strom (data changed) metrics=${ctx.metrics.length} profile=${!!ctx.profile.diagnoses}`);
-
-    // 2. Claude vygeneruje strom — Fable fallback na Sonnet 5 při safety refusal
+    // 2. Claude vygeneruje strom — nebo vezme z AI cache
     let crt;
-    try {
-      crt = await generateCRT(ctx, role, modelCfg);
-    } catch (e) {
-      if (modelCfg.id === 'claude-fable-5' && e.message?.includes('refusal')) {
-        console.warn('[CRT] Fable refusal — přepínám na Sonnet 5');
-        crt = await generateCRT(ctx, role, fallbackCfg);
-      } else {
-        throw e;
+    if (cachedRawAI) {
+      // Re-run jen post-processing na uloženém AI výstupu
+      crt = await generateCRT({ ...ctx, _rawAI: cachedRawAI }, role, modelCfg);
+    } else {
+      try {
+        crt = await generateCRT(ctx, role, modelCfg);
+      } catch (e) {
+        if (modelCfg.id === 'claude-fable-5' && e.message?.includes('refusal')) {
+          console.warn('[CRT] Fable refusal — přepínám na Sonnet 5');
+          crt = await generateCRT(ctx, role, fallbackCfg);
+        } else {
+          throw e;
+        }
       }
     }
 
@@ -1289,10 +1333,12 @@ export default async function handler(req, res) {
       has_data:        ctx.metrics.length > 0 || !!ctx.profile.diagnoses,
     };
 
-    // Ulož do server-side cache — upsert (update selžel tiše pokud řádek neexistuje)
+    // Ulož do server-side cache — včetně raw AI snapshotu pro partial hit
     if (userId) {
+      const rawAIToSave = crt._raw_ai_snapshot || null;
+      const cachePayload = { ...result, _raw_ai: rawAIToSave, _raw_ai_hash: rawAIToSave ? hashAI : null };
       const { error: cacheErr } = await supabase.from('user_health_profile')
-        .upsert({ user_id: userId, crt_cache: result, crt_cache_hash: hash, crt_cache_at: new Date().toISOString() },
+        .upsert({ user_id: userId, crt_cache: cachePayload, crt_cache_hash: hash, crt_cache_at: new Date().toISOString() },
                 { onConflict: 'user_id' });
       if (cacheErr) console.warn('[CRT] cache save failed:', cacheErr.message);
       else console.log('[CRT] cache saved, hash=', hash);
