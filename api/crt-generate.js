@@ -373,6 +373,11 @@ async function buildDeterministicCRT(profile) {
   if (activeIds.has('OBESITY') || activeIds.has('DYSLIPIDEMIA') || activeIds.has('INSULIN_RESISTANCE') || activeIds.has('HYPERURICEMIA')) {
     activeIds.add('METABOLIC_HEALTH_ROOT');
   }
+  // OBESITY bez INSULIN_RESISTANCE → přidej ji (obezita vede k inzulínové rezistenci)
+  // Bez tohoto je OBESITY list bez potomka → connectOrphans ji špatně napojí na jiný apex
+  if (activeIds.has('OBESITY') && !activeIds.has('INSULIN_RESISTANCE')) {
+    activeIds.add('INSULIN_RESISTANCE');
+  }
 
   // Rodičovský řetěz: každý non-root uzel musí mít rodiče v aktivním setu
   // Bez toho by uzly jako NEUROMOTOR_DYS floatovaly a connectSourceless je napojí špatně
@@ -464,6 +469,7 @@ async function generateCRT({ metrics, profile, checkins, nodeInputs, _rawAI }, r
   const diagText     = (profile.diagnoses     || []).join(', ') || 'neuvedeno';
   const sympText     = (profile.symptoms      || []).join(', ') || 'neuvedeno';
   const familyText   = profile.family_history || 'neuvedeno';
+  console.log(`[CRT] profile.medications: ${JSON.stringify((profile.medications || []).map(m => m.name || m))}`);
   const { meds: resolvedMeds, interactions: resolvedInteractions } = await resolveMedications(profile.medications || []);
   const medsText = resolvedMeds.length
     ? resolvedMeds.map(m => {
