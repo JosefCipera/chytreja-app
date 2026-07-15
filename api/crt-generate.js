@@ -150,14 +150,23 @@ async function fetchContext(userId, role) {
   else if (role === 'lehkost') q = q.in('node_id', LEHKOST_NODE_IDS);
   const { data: metrics } = await q;
 
-  // 2. Zdravotní profil (diagnózy, labs) + léky + suplementy z user_medications
-  const [{ data: profile }, { data: meds }] = await Promise.all([
+  // 2. Zdravotní profil (diagnózy, labs) + léky + suplementy z user_medications + základní profil
+  const [{ data: profile }, { data: meds }, { data: userProfile }] = await Promise.all([
     supabase.from('user_health_profile')
       .select('diagnoses, symptoms, family_history, labs, physical, goal_text, doctor_notes, birth_year, sex, medications, supplements, behavior_flags')
       .eq('user_id', userId).single(),
     supabase.from('user_medications')
       .select('name, dose').eq('user_id', userId).eq('active', true),
+    supabase.from('user_profiles')
+      .select('age, gender, height, weight, birth_year')
+      .eq('user_id', userId).maybeSingle(),
   ]);
+  if (profile && userProfile) {
+    if (!profile.birth_year && userProfile.birth_year) profile.birth_year = userProfile.birth_year;
+    if (!profile.sex && userProfile.gender) profile.sex = userProfile.gender;
+    profile._height = userProfile.height;
+    profile._weight = userProfile.weight;
+  }
   if (profile) {
     const profileMeds = (profile.medications || []).map(m => ({ name: typeof m === 'string' ? m : m?.name, dose: m?.dose || '' })).filter(m => m.name);
     const profileSupps = (profile.supplements || []).map(s => ({ name: typeof s === 'string' ? s : s?.name, dose: s?.dose || '', _fromDb: 'supplements' })).filter(s => s.name);
@@ -364,6 +373,14 @@ async function generateCRT({ metrics, profile, checkins, nodeInputs }, role, mod
     .join(', ') || 'neuvedeno';
   const goalText     = profile.goal_text || 'neuvedeno';
   const doctorText   = profile.doctor_notes ? `\nPoznámky od lékaře:\n${profile.doctor_notes.slice(0, 800)}` : '';
+  const bmi = (profile._height && profile._weight)
+    ? (profile._weight / ((profile._height / 100) ** 2)).toFixed(1)
+    : null;
+  const physicalText = [
+    profile._height ? `výška: ${profile._height} cm` : '',
+    profile._weight ? `váha: ${profile._weight} kg` : '',
+    bmi ? `BMI: ${bmi}` : '',
+  ].filter(Boolean).join(', ') || 'neuvedeno';
 
   // Poslední check-in (průměr posledních 7 dní)
   const checkinText = checkins.length
@@ -440,18 +457,20 @@ PRAVIDLA JSON:
   const userPrompt = `Přelož lékařský popis do CRT JSON struktury.
 
 DIAGNÓZY: ${diagText}
-LABS: ${labsText}${sympText !== 'neuvedeno' ? '\nSYMPTOMY: ' + sympText : ''}
+LÉKY: ${medsText}
+LABS: ${labsText}
+FYZICKÉ: ${physicalText}${sympText !== 'neuvedeno' ? '\nSYMPTOMY: ' + sympText : ''}
 
 ${hasDoctorNotes
   ? `KAUZÁLNÍ POPIS (zdroj pravdy — přelož přesně, neměň kauzalitu):
 ${profile.doctor_notes.trim()}
 
 Instrukce: Namapuj každou entitu z KAUZÁLNÍHO POPISU na ID ze STATE DICTIONARY. Zahrň POUZE entity explicitně zmíněné v popisu — neextrapoluj důsledky ani rizika navíc. Apex = poslední entita v popisu (FaP, ED, atd.) — nic nad ní nepřidávej.`
-  : `Kauzální popis není k dispozici. Pravidla pro tento případ:
-1. Zahrň POUZE stavy explicitně zmíněné v DIAGNÓZY nebo LABS výše — žádné odvozené důsledky, žádné spekulace.
-2. Maximálně 5 uzlů celkem (kořen + přímí potomci).
-3. UDE uzly (apex) NEGENERUJ — bez doctor_notes nevíme co je hlavní projev.
-4. HYPERTENSION zahrň jen pokud je explicitně v diagnózách.`}
+  : `Kauzální popis není k dispozici. Odvoď strom z DIAGNÓZY, LÉKŮ a FYZICKÉHO profilu výše. Pravidla:
+1. Zahrň pouze stavy podložené dostupnými daty — žádné spekulace mimo diagnózy/léky/BMI.
+2. Maximálně 7 uzlů celkem včetně 1–2 UDE uzlů (apex) které přirozeně plynout z kořenů.
+3. HYPERTENSION a OBESITY zahrň jen pokud je v diagnózách nebo BMI > 30.
+4. Léky jsou silný signál — pokud uživatel bere lék pro konkrétní stav, ten stav zahrň.`}
 
 Vrať pouze čistý JSON. Žádný text navíc.`;
 
@@ -1021,7 +1040,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx, modelId) {
   const key = JSON.stringify({
-    _v:          81, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
+    _v:          82, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
     model:       modelId || 'claude-sonnet-5',
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),
