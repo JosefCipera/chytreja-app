@@ -377,18 +377,69 @@ parents (dolů ke kořenům) + children (nahoru k cíli) → zobrazí jen tuto v
 
 ### State Dictionary — deterministická vrstva CRT (Jul 2026)
 
-**Gold standard:** `git tag v0.2-crt-gold-josef` · `api/crt-generate.js` (_v: 61) · `data/crt/longevity-states.json`
+**Gold standard:** `git tag v0.2-crt-gold-josef` · `git tag v0.2-crt-gold-kovarova`  
+**Verze:** `api/crt-generate.js` `_v_ai: 12` · `_v_pp: 2` · `data/crt/longevity-states.json` (30 stavů)
 
-GPT-4o je nedeterministický — bez kotvy vytváří různé stromy pro stejného pacienta. State Dictionary je **kanonický slovník** 19 pevných stavů; GPT-4o pouze vybírá, které z nich jsou aktivní pro daného pacienta.
+Sonnet je nedeterministický — bez kotvy vytváří různé stromy pro stejného pacienta. State Dictionary je **kanonický slovník** 30 pevných stavů; Sonnet pouze vybírá, které z nich jsou aktivní pro daného pacienta (podle `doctor_notes`). Bez `doctor_notes` běží čistě deterministický builder bez AI.
 
-#### Architektura
+#### Dvě cesty generování
 
 ```
-State Dictionary (19 stavů) = kanonická sada uzlů
-GPT-4o = parser: doctor_notes → subset aktivních ID
-applyStateLabels() = vynucení level/branch/type/label ze slovníku (override AI výstupu)
-typical_children post-processing = garantované hrany bez ohledu na AI výstup
+WITH doctor_notes:
+  Sonnet (claude-sonnet-5) → subset aktivních ID ze State Dictionary
+  → applyStateLabels() → med-inject → medications_map → typical_children hrany
+  → validateEdges → connectOrphans → connectSourceless → generatePanelTexts → generateAutoFlag
+
+WITHOUT doctor_notes (nový uživatel):
+  buildDeterministicCRT(profile) → keyword lookup v diagnoses/symptoms + BMI výpočet
+  → activeIds ze State Dictionary → parent chain inference (garantuje validní strom)
+  → applyStateLabels() → med-inject → medications_map → typical_children hrany
+  → validateEdges → connectOrphans → connectSourceless
+  (generatePanelTexts se NEspouští — panel_text z State Dictionary)
 ```
+
+#### Split cache versioning
+
+Dva oddělené hashe brání zbytečné regeneraci Sonnetem:
+
+```
+_v_ai  → mění se jen při změně Sonnet promptu nebo logiky parsování
+_v_pp  → mění se při změně post-processingu (label override, med-inject, pravidla)
+
+Partial cache hit: _raw_ai_hash match → Sonnet přeskočen, post-processing z _raw_ai_snapshot
+Full cache miss:   obě nové → Sonnet + post-processing
+```
+
+`_raw_ai_snapshot` = raw Sonnet výstup před post-processingem, uložen do `crt_cache` v DB.
+
+#### buildDeterministicCRT — bez AI (Gemini návrh, implementováno Jul 2026)
+
+Keyword matching ze State Dictionary DIAGNOSIS_KEYWORDS → activeIds. BMI z profilu.
+
+```javascript
+// BMI threshold
+bmi >= 27 → OBESITY
+bmi >= 30 → OBESITY + HYPERTENSION
+
+// Parent chain inference: každý non-root uzel musí mít rodiče v activeIds
+// Reverzní mapa typical_children → while changed: přidej nejnižší-level rodiče
+```
+
+Výsledek: validní kauzální strom i pro uživatele bez jakýchkoliv dat.  
+Nepoužívá AI — deterministický pro stejný profil.
+
+#### BMI-based label pro OBESITY
+
+```
+BMI 25–30: label = "Nadváha",  label_layman = "Nadváha"   (_labelOverride: true)
+BMI ≥ 30:  label = "Obezita",  label_layman = "Obezita"   (ze State Dictionary)
+```
+
+`_labelOverride: true` brání `applyStateLabels` přepsat label ze State Dictionary.
+
+#### Med-inject — ochrana UDE apex
+
+Léky se nikdy neinjektují jako UDE uzly (`def.type !== 'ude'`). UDE apex musí přijít z AI nebo `buildDeterministicCRT`, ne z lékové inference. Fallback pill target = nejvyšší level≥1 aktivní uzel (root a level-0 jsou z pills frontendově vyloučeny).
 
 #### 5 větví (BRANCH_X)
 
@@ -398,8 +449,9 @@ const BRANCH_X = { L: -450, LC: -225, C: 0, RC: 225, R: 450 };
 
 LC/RC větve umožňují AND-join přes validateEdges — C→L/R by bylo blokováno, C→LC/RC prochází.
 
-#### Josef — vzorový případ (FaP + ED)
+#### Tři referenční uživatelé
 
+**Josef** — `git tag v0.2-crt-gold-josef` — FaP + ED (s `doctor_notes`)
 ```
 CHRONIC_STRESS (L0)           METABOLIC_HEALTH_ROOT (C0)
        ↓                               ↓           ↓
@@ -413,23 +465,28 @@ CARDIAC_IRRITABILITY (L2)     ATHEROSCLEROSIS (C2)     |
                           ↓                          ↓
               ATRIAL_FIBRILLATION (LC5)    ERECTILE_DYSFUNCTION (RC5)
 ```
+AND-join: stresová větev + cévy → PREMATURE_CONTRACTIONS → FaP. Symetrická apex dvojice: FaP (LC5) + ED (RC5).
 
-AND-join: stresová větev + cévy → PREMATURE_CONTRACTIONS → FaP.
-Symetrická apexová dvojice: FaP (LC5) + ED (RC5).
+**Kovářová** — `git tag v0.2-crt-gold-kovarova` — geriatrický (s `doctor_notes`)
+3 rooty (L+C+R), AND-join GAIT_INSTABILITY (C4), duální UDE: FALL_RISK (C5) + STROKE_RISK (RC5).
+
+**Nový uživatel** — bez `doctor_notes` — deterministický builder
+Aktivní uzly ze symptomů/diagnóz/BMI. Panel_text z State Dictionary (generický). Léky mapované přes med_targets.
 
 #### Klíčová pravidla implementace
 
-- **`applyStateLabels`**: spustit po GPT-4o parsování — vynucuje level/branch/type/label ze State Dictionary
+- **`applyStateLabels`**: respektuje `_labelOverride: true` — přeskočí labeling pro uzly s příznakem
+- **`applyStateLabels`** spustit po Sonnet/buildDeterministicCRT — vynucuje level/branch/type/label ze State Dictionary
 - **`typical_children` post-processing**: přidá garantované hrany pro VŠECHNY aktivní uzly (ne jen injektované)
-- **`connectOrphans`**: přeskakuje `type === 'ude'` — UDE jsou legitimní apex, ne sirotci
+- **`connectOrphans`**: přeskakuje `type === 'ude'` A `cause` uzly s definovanými `typical_children` (legitimní listy)
 - **`validateEdges` pravidlo**: L/R→C skip > 3 levely (byl > 2, způsoboval chybné blokování)
-- **`canvas: false`**: pro farmakologické uzly bez vizuální reprezentace (medikace bez canvas uzlu)
 - **`level: n.level ?? 0`** v visNode objektech: vis.js bez explicitního level přepočítá vlastní Y-pozice → asymetrie
 - **`_injected: true`** zachovat i po přidání `typical_children` hrany — brání `connectSourceless` v přidání falešného rodiče
+- **`validateEdges` junction lockdown**: junction uzly smí vést POUZE do `typical_children` — blokuje Sonnet extrapolace
 
 #### Znovupoužitelnost
 
-State Dictionary funguje pro jakéhokoliv pacienta. GPT-4o vybere relevantní podmnožinu ze 19 stavů podle `doctor_notes`. Různí pacienti → různé podstromy ze stejného slovníku. Léky se přiřadí deterministicky přes `med_targets` lookup (dedup: nejvyšší `typical_level` aktivního stavu s tímto lékem).
+State Dictionary funguje pro jakéhokoliv pacienta. Sonnet vybere relevantní podmnožinu ze 30 stavů podle `doctor_notes`. Bez `doctor_notes` keyword builder vybere podmnožinu deterministicky. Různí pacienti → různé podstromy ze stejného slovníku. Léky se přiřadí deterministicky přes `med_targets` lookup (dedup: nejvyšší `typical_level` aktivního stavu s tímto lékem).
 
 ### CRT zobrazení — Top-N vs Plná mapa
 
@@ -458,10 +515,10 @@ Barvy léků určuje **systém z dat**, ne AI model:
 | 🟡 žlutá `#fbbf24` | `warning` | Interakce mezi léky (explicitní data) |
 
 **Pipeline:**
-1. `resolveMedications()` (Haiku) → vrátí `is_supplement: true/false` pro každý lék
+1. `resolveMedications()` (Sonnet) → vrátí `is_supplement: true/false` pro každý lék
 2. Post-processing v `crt-generate.js` → `medType(name)`: `is_supplement → 'protects'`, jinak `'treatment'`
-3. Fable určuje pouze `target_node_id` a `label` — **nikdy nerozhoduje o typu/barvě**
-4. Všechny léky z profilu jsou garantovány v `medications_map` (chybějící → fallback na root)
+3. AI určuje pouze `target_node_id` — **nikdy nerozhoduje o typu/barvě**
+4. Všechny léky z profilu jsou garantovány v `medications_map` (chybějící → fallback na nejvyšší level≥1 uzel)
 
 **Pravidlo:** Nikdy nepoužívat AI keyword-matching ani Fable pro určení barev léků.
 
