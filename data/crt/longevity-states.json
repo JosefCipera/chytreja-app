@@ -41,7 +41,8 @@
     "typical_level": 1,
     "can_be_root": false,
     "typical_branch": "L",
-    "med_targets": ["magnesium bisglycinát", "magnosolv", "betaloc", "concor", "metoprolol", "bisoprolol"]
+    "med_targets": ["magnesium bisglycinát", "magnosolv", "betaloc", "concor", "metoprolol", "bisoprolol"],
+    "typical_children": ["NEUROMOTOR_DYS", "DEPRESSION_ANXIETY", "SLEEP_DISORDER"]
   },
   {
     "id": "DEPRESSION_ANXIETY",
@@ -127,7 +128,18 @@
     "typical_level": 1,
     "can_be_root": false,
     "typical_branch": "L",
-    "med_targets": ["kalnormin", "slow-k", "magnesium bisglycinát", "magnosolv"]
+    "med_targets": ["kalnormin", "slow-k", "magnesium bisglycinát", "magnosolv"],
+    "typical_children": ["NEUROMOTOR_DYS", "CARDIAC_IRRITABILITY"]
+  },
+  {
+    "id": "NEUROMOTOR_DYS",
+    "label": "Neurologicko-motorická dysfunkce",
+    "label_layman": "Třes rukou a tenzní bolesti hlavy",
+    "type": "ude",
+    "typical_level": 3,
+    "can_be_root": false,
+    "typical_branch": "L",
+    "med_targets": ["propranolol", "inderal", "primidone", "mysoline", "gabapentin", "neurontin", "topamax", "topiramat", "amitriptylin", "saroten", "nortriptylin"]
   },
   {
     "id": "CARDIAC_IRRITABILITY",
