@@ -327,6 +327,91 @@ async function callGPT4o(systemPrompt, userPrompt, modelCfg) {
   }
 }
 
+// ── Keyword → State Dictionary ID mapping ────────────────────────────────────
+const DIAGNOSIS_KEYWORDS = [
+  { keywords: ['stres', 'stress', 'vyhoření', 'burnout', 'napětí', 'úzkost', 'anxiet'],          id: 'CHRONIC_STRESS' },
+  { keywords: ['obezita', 'nadváha', 'obese', 'overweight'],                                      id: 'OBESITY' },
+  { keywords: ['cholesterol', 'dyslipid', 'ldl', 'lipid'],                                        id: 'DYSLIPIDEMIA' },
+  { keywords: ['hypertenze', 'hypertension', 'vysoký tlak', 'krevní tlak'],                       id: 'HYPERTENSION' },
+  { keywords: ['hypothyreóza', 'hypothyroid', 'štítná žláza', 'tyreoida'],                        id: 'HYPOTHYROIDISM' },
+  { keywords: ['cukrovka', 'diabetes', 'inzulínová rezistence', 'inzulin', 'glukóza'],            id: 'INSULIN_RESISTANCE' },
+  { keywords: ['třes', 'tremor', 'bolest hlavy', 'migréna', 'headache'],                          id: 'NEUROMOTOR_DYS' },
+  { keywords: ['nespavost', 'insomnia', 'spánek', 'sleep', 'porucha spánku'],                     id: 'SLEEP_DISORDER' },
+  { keywords: ['deprese', 'depression', 'úzkost', 'anxiety', 'psychika', 'nálada'],               id: 'DEPRESSION_ANXIETY' },
+  { keywords: ['fibrilace', 'arytmie', 'fap', 'atrial fibrillation'],                             id: 'ATRIAL_FIBRILLATION' },
+  { keywords: ['kyselina močová', 'dna', 'hyperurikémie', 'gout', 'uric'],                        id: 'HYPERURICEMIA' },
+  { keywords: ['kosti', 'osteoporóza', 'osteopenie', 'bone density'],                             id: 'BONE_DENSITY_LOSS' },
+  { keywords: ['klouby', 'artróza', 'artritis', 'páteř', 'ploténka'],                             id: 'MUSCULOSKELETAL_DEG' },
+  { keywords: ['erektilní', 'erectile', 'impotence', 'ed'],                                       id: 'ERECTILE_DYSFUNCTION' },
+];
+
+// Deterministické sestavení CRT z diagnóz + léků (bez AI) — pro nové uživatele
+async function buildDeterministicCRT(profile, ctx) {
+  const allText = [
+    ...(profile.diagnoses || []),
+    ...(profile.symptoms  || []),
+  ].join(' ').toLowerCase();
+
+  const bmi = (profile._height && profile._weight)
+    ? profile._weight / ((profile._height / 100) ** 2) : null;
+
+  // 1. Keyword matching → aktivní State Dictionary IDs
+  const activeIds = new Set();
+  for (const { keywords, id } of DIAGNOSIS_KEYWORDS) {
+    if (keywords.some(kw => allText.includes(kw))) {
+      activeIds.add(id);
+    }
+  }
+  // BMI prahy
+  if (bmi && bmi >= 27) activeIds.add('OBESITY');
+  if (bmi && bmi >= 30) { activeIds.add('OBESITY'); activeIds.add('HYPERTENSION'); }
+
+  // CHRONIC_STRESS jako fallback pokud nic nebylo nalezeno
+  if (activeIds.size === 0) activeIds.add('CHRONIC_STRESS');
+
+  // CHRONIC_STRESS → automaticky přidej SYMPATHETIC_OVERACTIVATION
+  if (activeIds.has('CHRONIC_STRESS')) activeIds.add('SYMPATHETIC_OVERACTIVATION');
+  // OBESITY → METABOLIC_HEALTH_ROOT jako kořen
+  if (activeIds.has('OBESITY') || activeIds.has('DYSLIPIDEMIA') || activeIds.has('INSULIN_RESISTANCE') || activeIds.has('HYPERURICEMIA')) {
+    activeIds.add('METABOLIC_HEALTH_ROOT');
+  }
+  // HYPOTHYROIDISM → BONE_DENSITY_LOSS
+  if (activeIds.has('HYPOTHYROIDISM') && !activeIds.has('BONE_DENSITY_LOSS')) {
+    // ponech jen pokud v diagnózách
+  }
+
+  // 2. Sestav nodes + edges ze State Dictionary
+  const nodes = [];
+  const edges = [];
+  const edgeSet = new Set();
+
+  for (const id of activeIds) {
+    const def = STATES_DB[id];
+    if (!def) continue;
+    nodes.push({
+      id, label: def.label, label_layman: def.label_layman,
+      type: def.type, level: def.typical_level, branch: def.typical_branch,
+    });
+    // typical_children → přidej hrany kde cílový node je také aktivní
+    for (const childId of (def.typical_children || [])) {
+      if (activeIds.has(childId)) {
+        const key = `${id}→${childId}`;
+        if (!edgeSet.has(key)) { edges.push({ from: id, to: childId }); edgeSet.add(key); }
+      }
+    }
+  }
+
+  // Kořen = node s can_be_root:true a nejnižším levelem
+  const roots = nodes.filter(n => STATES_DB[n.id]?.can_be_root).sort((a, b) => (a.level ?? 0) - (b.level ?? 0));
+  const root = roots[0] || nodes[0];
+
+  // Ponech root v nodes — post-processing ho extrahuje s korektním labelem
+  const crt = { root: root?.id, nodes, edges, medications_map: [] };
+
+  console.log(`[CRT] deterministický strom: ${[root?.id, ...crt.nodes.map(n => n.id)].join(', ')}`);
+  return crt;
+}
+
 async function generateCRT({ metrics, profile, checkins, nodeInputs }, role, modelCfg) {
   // Seřaď uzly od nejhoršího — vezmi všechny RED a YELLOW
   const sorted = [...metrics].sort((a, b) => (a.current_index ?? 100) - (b.current_index ?? 100));
@@ -456,6 +541,13 @@ PRAVIDLA JSON:
 
   const hasDoctorNotes = !!(profile.doctor_notes && profile.doctor_notes.trim().length > 20);
 
+  // ── Deterministické sestavení stromu pro nové uživatele (bez doctor_notes) ──
+  // Gemini návrh: diagnosis keyword lookup → State Dictionary IDs, bez AI
+  // DŮLEŽITÉ: nesmí to být early return — post-processing (med-inject, medications_map, validateEdges) musí proběhnout
+  let crt;
+  if (!hasDoctorNotes) {
+    crt = await buildDeterministicCRT(profile, ctx);
+  } else {
   const userPrompt = `Přelož lékařský popis do CRT JSON struktury.
 
 DIAGNÓZY: ${diagText}
@@ -463,23 +555,12 @@ LÉKY: ${medsText}
 LABS: ${labsText}
 FYZICKÉ: ${physicalText}${sympText !== 'neuvedeno' ? '\nSYMPTOMY: ' + sympText : ''}
 
-${hasDoctorNotes
-  ? `KAUZÁLNÍ POPIS (zdroj pravdy — přelož přesně, neměň kauzalitu):
+KAUZÁLNÍ POPIS (zdroj pravdy — přelož přesně, neměň kauzalitu):
 ${profile.doctor_notes.trim()}
 
-Instrukce: Namapuj každou entitu z KAUZÁLNÍHO POPISU na ID ze STATE DICTIONARY. Zahrň POUZE entity explicitně zmíněné v popisu — neextrapoluj důsledky ani rizika navíc. Apex = poslední entita v popisu (FaP, ED, atd.) — nic nad ní nepřidávej.`
-  : `Kauzální popis není k dispozici. Odvoď kauzální strom ze VŠECH dostupných dat: DIAGNÓZY, SYMPTOMY, LÉKY, FYZICKÉ. Každý symptom a diagnóza musí být ve stromu — nevynechávej nic co uživatel uvedl.
-
-PRAVIDLA:
-1. Každý uvedený symptom → musí být uzel (nebo přímá příčina uzlu). Třes rukou, nadváha, únava — vše dostane místo ve stromě.
-2. OBESITY zahrň pokud BMI > 27 nebo uživatel uvádí nadváhu. HYPERTENSION jen pokud je v diagnózách nebo BMI > 30.
-3. Léky jsou silný signál — pokud uživatel bere lék, zahrň stav který lék léčí.
-4. UDE uzly generuj pouze pokud přirozeně plynou z kauzálního řetězu (např. riziko pádu z nestability, bušení srdce z elektrolytové dysbalance).
-5. Žádné spekulace navíc — jen to co data říkají.`}
+Instrukce: Namapuj každou entitu z KAUZÁLNÍHO POPISU na ID ze STATE DICTIONARY. Zahrň POUZE entity explicitně zmíněné v popisu — neextrapoluj důsledky ani rizika navíc. Apex = poslední entita v popisu (FaP, ED, atd.) — nic nad ní nepřidávej.
 
 Vrať pouze čistý JSON. Žádný text navíc.`;
-
-  let crt;
   if (modelCfg.provider === 'openai') {
     crt = await callGPT4o(systemPrompt, userPrompt, modelCfg);
   } else {
@@ -529,6 +610,7 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
       }
     }
   }
+  } // end else (hasDoctorNotes)
 
   // Transformace nového formátu (root=string, medications_map s target_node_id)
   // na starý formát který očekává renderCRT / handler
@@ -1051,7 +1133,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx, modelId) {
   const key = JSON.stringify({
-    _v:          91, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
+    _v:          92, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
     model:       modelId || 'claude-sonnet-5',
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),

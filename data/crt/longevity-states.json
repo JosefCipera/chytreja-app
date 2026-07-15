@@ -8,7 +8,7 @@
     "can_be_root": true,
     "typical_branch": "L",
     "med_targets": [],
-    "typical_children": ["DEPRESSION_ANXIETY", "SLEEP_DISORDER"]
+    "typical_children": ["SYMPATHETIC_OVERACTIVATION", "DEPRESSION_ANXIETY", "SLEEP_DISORDER"]
   },
   {
     "id": "METABOLIC_HEALTH_ROOT",
