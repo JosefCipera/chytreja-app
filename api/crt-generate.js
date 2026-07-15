@@ -21,7 +21,7 @@ const STATES_DB  = Object.fromEntries(STATES_ARR.map(s => [s.id, s]));
 
 // ── Modely — měň zde, ne v kódu ──────────────────────────────────────────────
 const MODELS = {
-  crt:       'claude-haiku-4-5',  // generátor CRT stromu
+  crt:       'claude-sonnet-5',   // generátor CRT stromu (Haiku hallucínoval uzly bez důkazu)
   fallback:  'claude-sonnet-5',   // fallback při safety refusal
   medparse:  'claude-sonnet-5',   // klasifikace léků (primary_indication, companion_for)
   reassign:  'claude-haiku-4-5',  // reassignment root-only léků (rychlý, levný)
@@ -161,21 +161,23 @@ async function fetchContext(userId, role) {
       .select('age, gender, height, weight, birth_year')
       .eq('user_id', userId).maybeSingle(),
   ]);
-  if (profile && userProfile) {
-    if (!profile.birth_year && userProfile.birth_year) profile.birth_year = userProfile.birth_year;
-    if (!profile.sex && userProfile.gender) profile.sex = userProfile.gender;
-    profile._height = userProfile.height;
-    profile._weight = userProfile.weight;
+  // Pokud user_health_profile neexistuje (nový uživatel), vytvoř prázdný objekt — jinak se léky z user_medications ztratí
+  const profileObj = profile || {};
+  if (profileObj && userProfile) {
+    if (!profileObj.birth_year && userProfile.birth_year) profileObj.birth_year = userProfile.birth_year;
+    if (!profileObj.sex && userProfile.gender) profileObj.sex = userProfile.gender;
+    profileObj._height = userProfile.height;
+    profileObj._weight = userProfile.weight;
   }
-  if (profile) {
-    const profileMeds = (profile.medications || []).map(m => ({ name: typeof m === 'string' ? m : m?.name, dose: m?.dose || '' })).filter(m => m.name);
-    const profileSupps = (profile.supplements || []).map(s => ({ name: typeof s === 'string' ? s : s?.name, dose: s?.dose || '', _fromDb: 'supplements' })).filter(s => s.name);
-    const tableMeds   = meds ?? [];
+  {
+    const profileMeds  = (profileObj.medications || []).map(m => ({ name: typeof m === 'string' ? m : m?.name, dose: m?.dose || '' })).filter(m => m.name);
+    const profileSupps = (profileObj.supplements || []).map(s => ({ name: typeof s === 'string' ? s : s?.name, dose: s?.dose || '', _fromDb: 'supplements' })).filter(s => s.name);
+    const tableMeds    = meds ?? [];
     const seen = new Set(tableMeds.map(m => m.name?.toLowerCase()));
     const merged = [...tableMeds, ...profileMeds.filter(m => !seen.has(m.name?.toLowerCase()))];
     const seenAll = new Set(merged.map(m => m.name?.toLowerCase()));
     const mergedSupps = profileSupps.filter(s => !seenAll.has(s.name?.toLowerCase()));
-    profile.medications = [...merged, ...mergedSupps];
+    profileObj.medications = [...merged, ...mergedSupps];
   }
 
   // 3. Poslední check-in (energie, spánek, stres)
@@ -195,7 +197,7 @@ async function fetchContext(userId, role) {
 
   return {
     metrics: metrics || [],
-    profile: profile || {},
+    profile: profileObj,
     checkins: checkins || [],
     nodeInputs: nodeInputs || [],
   };
@@ -1043,7 +1045,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx, modelId) {
   const key = JSON.stringify({
-    _v:          83, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
+    _v:          84, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
     model:       modelId || 'claude-sonnet-5',
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),
