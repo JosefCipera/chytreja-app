@@ -41,7 +41,7 @@
     "typical_level": 1,
     "can_be_root": false,
     "typical_branch": "L",
-    "med_targets": ["magnesium bisglycinát", "magnosolv", "betaloc", "concor", "metoprolol", "bisoprolol"],
+    "med_targets": ["magnesium bisglycinát", "magnosolv", "hořčík", "magnesium", "betaloc", "concor", "metoprolol", "bisoprolol"],
     "typical_children": ["NEUROMOTOR_DYS", "DEPRESSION_ANXIETY", "SLEEP_DISORDER"]
   },
   {
@@ -128,7 +128,7 @@
     "typical_level": 1,
     "can_be_root": false,
     "typical_branch": "L",
-    "med_targets": ["kalnormin", "slow-k", "magnesium bisglycinát", "magnosolv"],
+    "med_targets": ["kalnormin", "slow-k", "draslík", "magnesium bisglycinát", "magnosolv", "hořčík", "magnesium"],
     "typical_children": ["NEUROMOTOR_DYS", "CARDIAC_IRRITABILITY"]
   },
   {
