@@ -447,10 +447,10 @@ Uzly MIMO State Dictionary jsou ZAKÁZÁNY. Pokud lékařský popis zmiňuje sta
 }
 
 PRAVIDLA JSON:
-- "id" musí být přesně ID ze STATE DICTIONARY.
-- "label" a "label_layman" přebírej z STATE DICTIONARY (jsou tam pro každé ID).
-- "type" přebírej z STATE DICTIONARY.
-- "level" a "branch" nastav podle layout pravidel (použij typical_level a typical_branch jako výchozí bod).
+- "id": Pokud STATE DICTIONARY obsahuje přesné ID → použij ho. Pokud symptom/stav nemá odpovídající ID → vytvoř popisné ID (např. TREMOR_HANDS, NEUROMOTOR_DYS, JOINT_PAIN). Nikdy nevynechávej symptom jen proto, že není v dictionary.
+- "label" a "label_layman": Pro ID ze STATE DICTIONARY přebírej odtamtud. Pro vlastní ID napiš výstižný český label (label) a lidový popis (label_layman).
+- "type": Pro ID ze STATE DICTIONARY přebírej. Pro vlastní ID: "cause" pro příčiny, "ude" pro konečné nežádoucí efekty.
+- "level" a "branch" nastav podle layout pravidel (použij typical_level a typical_branch jako výchozí bod, pro vlastní uzly odvoď z kontextu).
 - medications_map NEGENERUJ — léky přiřadí systém deterministicky po tvém výstupu.
 - Rozsah: 8–14 uzlů celkem (včetně root).`;
 
@@ -468,14 +468,14 @@ ${hasDoctorNotes
 ${profile.doctor_notes.trim()}
 
 Instrukce: Namapuj každou entitu z KAUZÁLNÍHO POPISU na ID ze STATE DICTIONARY. Zahrň POUZE entity explicitně zmíněné v popisu — neextrapoluj důsledky ani rizika navíc. Apex = poslední entita v popisu (FaP, ED, atd.) — nic nad ní nepřidávej.`
-  : `Kauzální popis není k dispozici. Odvoď příčinný řetěz z DIAGNÓZY, LÉKŮ a FYZICKÉHO profilu výše.
+  : `Kauzální popis není k dispozici. Odvoď kauzální strom ze VŠECH dostupných dat: DIAGNÓZY, SYMPTOMY, LÉKY, FYZICKÉ. Každý symptom a diagnóza musí být ve stromu — nevynechávej nic co uživatel uvedl.
 
-PRAVIDLA PRO NOVÉHO UŽIVATELE:
-1. Generuj POUZE kořenové a středové uzly (type: cause) — UDE uzly (type: ude) NEGENERUJ. Systém je přidá deterministicky z léků po tvém výstupu.
-2. Maximálně 5 uzlů celkem. Žádné spekulativní řetězy.
-3. HYPERTENSION jen pokud je v diagnózách nebo BMI > 30. OBESITY jen pokud BMI > 30.
-4. Léky jsou signál pro přítomnost kořenového stavu — NErozvíjej downstream bez diagnózy.
-5. Pokud jsou dostupná pouze omezená data (1–2 diagnózy), vygeneruj pouze kořenový uzel a 1 přímý potomek.`}
+PRAVIDLA:
+1. Každý uvedený symptom → musí být uzel (nebo přímá příčina uzlu). Třes rukou, nadváha, únava — vše dostane místo ve stromě.
+2. OBESITY zahrň pokud BMI > 27 nebo uživatel uvádí nadváhu. HYPERTENSION jen pokud je v diagnózách nebo BMI > 30.
+3. Léky jsou silný signál — pokud uživatel bere lék, zahrň stav který lék léčí.
+4. UDE uzly generuj pouze pokud přirozeně plynou z kauzálního řetězu (např. riziko pádu z nestability, bušení srdce z elektrolytové dysbalance).
+5. Žádné spekulace navíc — jen to co data říkají.`}
 
 Vrať pouze čistý JSON. Žádný text navíc.`;
 
@@ -1045,7 +1045,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx, modelId) {
   const key = JSON.stringify({
-    _v:          85, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
+    _v:          86, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
     model:       modelId || 'claude-sonnet-5',
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),
