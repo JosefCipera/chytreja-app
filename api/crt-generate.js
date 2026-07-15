@@ -23,7 +23,7 @@ const STATES_DB  = Object.fromEntries(STATES_ARR.map(s => [s.id, s]));
 const MODELS = {
   crt:       'claude-sonnet-5',   // generátor CRT stromu (Haiku hallucínoval uzly bez důkazu)
   fallback:  'claude-sonnet-5',   // fallback při safety refusal
-  medparse:  'claude-sonnet-5',   // klasifikace léků (primary_indication, companion_for)
+  medparse:  'claude-haiku-4-5',  // klasifikace léků — Haiku stačí pro is_supplement boolean
   reassign:  'claude-haiku-4-5',  // reassignment root-only léků (rychlý, levný)
 };
 // ─────────────────────────────────────────────────────────────────────────────
@@ -745,10 +745,13 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
   // Připoj uzly bez vstupní hrany (orphan source) k nejbližšímu nižšímu uzlu
   crt.edges = connectSourceless(crt.nodes, crt.root, crt.edges);
 
-  // Personalizovaný panel_text pro kořenové uzly (Sonnet 5)
-  const allActiveForPanel = [...(crt.nodes || [])];
-  if (crt.root && typeof crt.root === 'object') allActiveForPanel.push(crt.root);
-  await generatePanelTexts(allActiveForPanel, crt.edges || [], profile);
+  // Personalizovaný panel_text pro kořenové uzly (Sonnet 5) — jen pokud jsou doctor_notes
+  // Bez doctor_notes je strom příliš tenký na smysluplný příběh + šetří 10–15s timeout
+  if (profile.doctor_notes && profile.doctor_notes.trim().length > 20) {
+    const allActiveForPanel = [...(crt.nodes || [])];
+    if (crt.root && typeof crt.root === 'object') allActiveForPanel.push(crt.root);
+    await generatePanelTexts(allActiveForPanel, crt.edges || [], profile);
+  }
 
   // Behavior warnings: připoj personalizované varování z profilu na aktivní uzly
   const behaviorFlags = profile?.behavior_flags || {};
@@ -1045,7 +1048,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx, modelId) {
   const key = JSON.stringify({
-    _v:          87, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
+    _v:          88, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
     model:       modelId || 'claude-sonnet-5',
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),
