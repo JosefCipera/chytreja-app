@@ -346,7 +346,7 @@ const DIAGNOSIS_KEYWORDS = [
 ];
 
 // Deterministické sestavení CRT z diagnóz + léků (bez AI) — pro nové uživatele
-async function buildDeterministicCRT(profile, ctx) {
+async function buildDeterministicCRT(profile) {
   const allText = [
     ...(profile.diagnoses || []),
     ...(profile.symptoms  || []),
@@ -546,7 +546,7 @@ PRAVIDLA JSON:
   // DŮLEŽITÉ: nesmí to být early return — post-processing (med-inject, medications_map, validateEdges) musí proběhnout
   let crt;
   if (!hasDoctorNotes) {
-    crt = await buildDeterministicCRT(profile, ctx);
+    crt = await buildDeterministicCRT(profile);
   } else {
   const userPrompt = `Přelož lékařský popis do CRT JSON struktury.
 
