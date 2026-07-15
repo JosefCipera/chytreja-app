@@ -41,7 +41,7 @@
     "typical_level": 1,
     "can_be_root": false,
     "typical_branch": "L",
-    "med_targets": ["magnesium bisglycinát", "magnosolv", "hořčík", "magnesium", "betaloc", "concor", "metoprolol", "bisoprolol"],
+    "med_targets": ["magnesium bisglycinát", "magnesium bisglycinat", "magnosolv", "hořčík", "magnesium", "betaloc", "concor", "metoprolol", "bisoprolol"],
     "typical_children": ["NEUROMOTOR_DYS", "DEPRESSION_ANXIETY", "SLEEP_DISORDER"]
   },
   {
@@ -128,7 +128,7 @@
     "typical_level": 1,
     "can_be_root": false,
     "typical_branch": "L",
-    "med_targets": ["kalnormin", "slow-k", "draslík", "magnesium bisglycinát", "magnosolv", "hořčík", "magnesium"],
+    "med_targets": ["kalnormin", "slow-k", "draslík", "magnesium bisglycinát", "magnesium bisglycinat", "magnosolv", "hořčík", "magnesium"],
     "typical_children": ["NEUROMOTOR_DYS", "CARDIAC_IRRITABILITY"]
   },
   {
@@ -139,7 +139,7 @@
     "typical_level": 3,
     "can_be_root": false,
     "typical_branch": "L",
-    "med_targets": ["propranolol", "inderal", "primidone", "mysoline", "gabapentin", "neurontin", "topamax", "topiramat", "amitriptylin", "saroten", "nortriptylin"]
+    "med_targets": ["propranolol", "inderal", "primidone", "mysoline", "gabapentin", "neurontin", "topamax", "topiramat", "amitriptylin", "saroten", "nortriptylin", "sibelium", "flunarizin", "flunarizine"]
   },
   {
     "id": "CARDIAC_IRRITABILITY",

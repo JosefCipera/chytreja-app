@@ -817,14 +817,17 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
     });
     if (warningMeds.length) console.log(`[CRT] interakce: ${warningMeds.map(w => w.name).join(', ')}`);
 
-    // Fallback: lék bez shody → root uzel (pilulka se vždy zobrazí)
-    const rootId = typeof crt.root === 'string' ? crt.root : crt.root?.id;
+    // Fallback: lék bez shody → nejvyšší uzel úrovně ≥1 (root a level-0 jsou z pill renderování vyloučeny)
+    const fallbackNode = (crt.nodes || [])
+      .filter(n => (n.level ?? 0) >= 1)
+      .sort((a, b) => (b.level ?? 0) - (a.level ?? 0))[0];
+    const fallbackId = fallbackNode?.id || (typeof crt.root === 'string' ? crt.root : crt.root?.id);
     primaryMeds.forEach(m => {
       if (m.targets.length) {
         console.log(`[CRT] ${m.name} → ${m.targets.join(', ')}`);
-      } else if (rootId) {
-        m.targets = [rootId];
-        console.log(`[CRT] ${m.name} → fallback root ${rootId}`);
+      } else if (fallbackId) {
+        m.targets = [fallbackId];
+        console.log(`[CRT] ${m.name} → fallback ${fallbackId}`);
       } else {
         console.log(`[CRT] ${m.name} → no state match (lékárna only)`);
       }
