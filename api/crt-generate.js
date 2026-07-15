@@ -668,13 +668,13 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
       if (!nameLow || DRUGS_DB[nameLow]?.no_canvas) continue;
 
       // Všechny STATES_DB stavy které mají tento lék v med_targets
+      // UDE uzly se NEinjektují — ty patří do příběhu pacienta (AI/deterministický builder), ne z léků
       const targetStates = STATES_ARR.filter(def =>
+        def.type !== 'ude' &&
         (def.med_targets || []).some(t => t === nameLow || (inn && t === inn))
       );
       if (!targetStates.length) continue;
 
-      // Injektuj VŠECHNY target states (ne jen highest level) — aby se celý řetěz zobrazil
-      // např. kalnormin → ELECTROLYTE_IMBALANCE (L1) + PALPITATIONS (L4)
       for (const stateToInject of targetStates) {
         if (activeIds.has(stateToInject.id)) continue; // již aktivní
         if (stateToInject.canvas === false) {
@@ -828,6 +828,25 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
         }
       }
     });
+  }
+
+  // Odstraň injektované uzly bez vstupní hrany — floatovaly by; pilulka zůstane přes root fallback
+  {
+    const hasIncoming = new Set((crt.edges || []).map(e => e.to));
+    const before = crt.nodes.length;
+    crt.nodes = crt.nodes.filter(n => {
+      if (n._injected && !hasIncoming.has(n.id)) {
+        console.log(`[CRT] injected orphan odstraněn: ${n.id}`);
+        return false;
+      }
+      return true;
+    });
+    if (crt.nodes.length < before) {
+      // Odstraň i hrany vedoucí z odstraněných uzlů
+      const remaining = new Set(crt.nodes.map(n => n.id));
+      if (crt.root) remaining.add(typeof crt.root === 'string' ? crt.root : crt.root.id);
+      crt.edges = (crt.edges || []).filter(e => remaining.has(e.from) && remaining.has(e.to));
+    }
   }
 
   // Post-processing: odstraň hrany porušující topologická pravidla
