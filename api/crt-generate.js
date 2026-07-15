@@ -366,18 +366,39 @@ async function buildDeterministicCRT(profile) {
   if (bmi && bmi >= 27) activeIds.add('OBESITY');
   if (bmi && bmi >= 30) { activeIds.add('OBESITY'); activeIds.add('HYPERTENSION'); }
 
-  // CHRONIC_STRESS jako fallback pokud nic nebylo nalezeno
+  // Fallback: pokud nic nebylo nalezeno, přidej chronický stres
   if (activeIds.size === 0) activeIds.add('CHRONIC_STRESS');
 
-  // CHRONIC_STRESS → automaticky přidej SYMPATHETIC_OVERACTIVATION
-  if (activeIds.has('CHRONIC_STRESS')) activeIds.add('SYMPATHETIC_OVERACTIVATION');
-  // OBESITY → METABOLIC_HEALTH_ROOT jako kořen
+  // Kořenová inference: přidej kořenové uzly pro metabolické stavy
   if (activeIds.has('OBESITY') || activeIds.has('DYSLIPIDEMIA') || activeIds.has('INSULIN_RESISTANCE') || activeIds.has('HYPERURICEMIA')) {
     activeIds.add('METABOLIC_HEALTH_ROOT');
   }
-  // HYPOTHYROIDISM → BONE_DENSITY_LOSS
-  if (activeIds.has('HYPOTHYROIDISM') && !activeIds.has('BONE_DENSITY_LOSS')) {
-    // ponech jen pokud v diagnózách
+
+  // Rodičovský řetěz: každý non-root uzel musí mít rodiče v aktivním setu
+  // Bez toho by uzly jako NEUROMOTOR_DYS floatovaly a connectSourceless je napojí špatně
+  {
+    const reverseMap = {}; // childId → [parentIds]
+    for (const def of STATES_ARR) {
+      for (const childId of (def.typical_children || [])) {
+        (reverseMap[childId] = reverseMap[childId] || []).push(def.id);
+      }
+    }
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const id of [...activeIds]) {
+        if (STATES_DB[id]?.can_be_root) continue;
+        const parents = (reverseMap[id] || []).filter(p => STATES_DB[p]);
+        if (parents.length && !parents.some(p => activeIds.has(p))) {
+          // Přidej rodiče s nejnižším levelem (nejblíže kořenu)
+          const best = parents.sort((a, b) =>
+            (STATES_DB[a]?.typical_level ?? 0) - (STATES_DB[b]?.typical_level ?? 0))[0];
+          activeIds.add(best);
+          console.log(`[CRT] parent inference: ${best} → ${id}`);
+          changed = true;
+        }
+      }
+    }
   }
 
   // 2. Sestav nodes + edges ze State Dictionary
