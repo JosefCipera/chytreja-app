@@ -608,3 +608,8 @@ export function startOnboarding() {
 }
 
 window.startOnboarding = startOnboarding;
+
+// Auto-start pokud přišel redirect z jiné stránky (např. crt.html → Vitalita)
+if (new URLSearchParams(location.search).get('start') === 'onboarding') {
+  window.addEventListener('load', () => setTimeout(startOnboarding, 500));
+}

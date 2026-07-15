@@ -534,6 +534,8 @@ function bindVitalityEvents() {
     closePanel();
     if (typeof window.startOnboarding === 'function') {
       window.startOnboarding();
+    } else {
+      window.location.href = '/app/index.html?start=onboarding';
     }
   });
 }
