@@ -373,11 +373,6 @@ async function buildDeterministicCRT(profile) {
   if (activeIds.has('OBESITY') || activeIds.has('DYSLIPIDEMIA') || activeIds.has('INSULIN_RESISTANCE') || activeIds.has('HYPERURICEMIA')) {
     activeIds.add('METABOLIC_HEALTH_ROOT');
   }
-  // OBESITY bez INSULIN_RESISTANCE → přidej ji (obezita vede k inzulínové rezistenci)
-  // Bez tohoto je OBESITY list bez potomka → connectOrphans ji špatně napojí na jiný apex
-  if (activeIds.has('OBESITY') && !activeIds.has('INSULIN_RESISTANCE')) {
-    activeIds.add('INSULIN_RESISTANCE');
-  }
 
   // Rodičovský řetěz: každý non-root uzel musí mít rodiče v aktivním setu
   // Bez toho by uzly jako NEUROMOTOR_DYS floatovaly a connectSourceless je napojí špatně
@@ -1125,6 +1120,7 @@ function connectOrphans(nodes, root, edges) {
     if (n.id === root?.id) return;
     if (n._injected) return; // injektované uzly nemají kauzální vztah → žádné hrany
     if (n.type === 'ude') return; // UDE uzly jsou legitimní apex — nepřipojovat k jinému apexu
+    if (n.type === 'cause' && (STATES_DB[n.id]?.typical_children?.length ?? 0) > 0) return; // cause s definovanými potomky = jejich downstream jen není aktivní, není to sirotčí stav
     if (!hasSources.has(n.id)) {
       // Orphan — hledej nejbližší vyšší uzel (ne rovnou apex — zabráníme dlouhé diagonále)
       const nextLevel = (n.level ?? 0) + 1;
