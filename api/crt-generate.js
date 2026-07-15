@@ -785,9 +785,17 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
     });
     if (warningMeds.length) console.log(`[CRT] interakce: ${warningMeds.map(w => w.name).join(', ')}`);
 
+    // Fallback: lék bez shody → root uzel (pilulka se vždy zobrazí)
+    const rootId = typeof crt.root === 'string' ? crt.root : crt.root?.id;
     primaryMeds.forEach(m => {
-      if (m.targets.length) console.log(`[CRT] ${m.name} → ${m.targets.join(', ')}`);
-      else                  console.log(`[CRT] ${m.name} → no state match (lékárna only)`);
+      if (m.targets.length) {
+        console.log(`[CRT] ${m.name} → ${m.targets.join(', ')}`);
+      } else if (rootId) {
+        m.targets = [rootId];
+        console.log(`[CRT] ${m.name} → fallback root ${rootId}`);
+      } else {
+        console.log(`[CRT] ${m.name} → no state match (lékárna only)`);
+      }
     });
 
     // Strip internal fields
