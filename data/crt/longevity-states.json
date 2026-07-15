@@ -20,7 +20,7 @@
     "typical_branch": "C",
     "med_targets": [],
     "typical_children": ["DYSLIPIDEMIA", "HYPERURICEMIA", "INSULIN_RESISTANCE", "OBESITY"],
-    "panel_text": "Tvůj krevní cukr roky tiše poškozoval nervy v nohách — proto tě nohy občas neposlouchají. Zároveň cholesterol pomalu ucpával tepny a rostlo riziko mrtvice. Obojí vychází ze stejného místa: z toho, jak tvoje tělo zpracovává energii. Nevzniklo to přes noc a nezmizí přes noc — ale jídlo a pohyb jsou jediné věci, které to mohou zvrátit."
+    "panel_text": "Metabolická dysregulace je tichý proces — tělo roky kompenzuje, než se problémy projeví naplno. Cholesterol, kyselina močová, inzulín: všechny vycházejí ze stejného kořene. Jídlo, pohyb a spánek jsou jediné nástroje, které to mohou zvrátit."
   },
   {
     "id": "HYPOTHYROIDISM",
@@ -69,7 +69,7 @@
   {
     "id": "OBESITY",
     "label": "Obezita",
-    "label_layman": "Nadváha a obezita",
+    "label_layman": "Obezita",
     "type": "cause",
     "typical_level": 1,
     "can_be_root": true,

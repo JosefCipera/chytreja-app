@@ -409,10 +409,17 @@ async function buildDeterministicCRT(profile) {
   for (const id of activeIds) {
     const def = STATES_DB[id];
     if (!def) continue;
-    nodes.push({
+    const node = {
       id, label: def.label, label_layman: def.label_layman,
       type: def.type, level: def.typical_level, branch: def.typical_branch,
-    });
+    };
+    // BMI-based label override: 25–30 = nadváha, ≥30 = obezita
+    if (id === 'OBESITY' && bmi && bmi < 30) {
+      node.label = 'Nadváha';
+      node.label_layman = 'Nadváha';
+      node._labelOverride = true;
+    }
+    nodes.push(node);
     // typical_children → přidej hrany kde cílový node je také aktivní
     for (const childId of (def.typical_children || [])) {
       if (activeIds.has(childId)) {
@@ -673,6 +680,7 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
     // Kanonické hodnoty ze State Dictionary — label, branch, level, type jsou deterministické
     // GPT-4o přiřazuje špatné branch/level → vis.js udělá separátní podstrom
     const applyStateLabels = n => {
+      if (n?._labelOverride) return;
       const def = STATES_DB[n?.id];
       if (def) {
         n.label        = def.label;
@@ -1197,7 +1205,7 @@ function overlayColors(nodes, metrics) {
 // _v_ai: bump POUZE při změně Sonnet promptu → invaliduje AI generování
 // _v_pp: bump při změně post-processingu (med-inject, validateEdges...) → přeskočí Sonnet, re-run PP
 const _v_ai = 12;
-const _v_pp = 1;
+const _v_pp = 2;
 
 function hashStr(s) {
   let h = 0;
