@@ -467,10 +467,13 @@ ${profile.doctor_notes.trim()}
 
 Instrukce: Namapuj každou entitu z KAUZÁLNÍHO POPISU na ID ze STATE DICTIONARY. Zahrň POUZE entity explicitně zmíněné v popisu — neextrapoluj důsledky ani rizika navíc. Apex = poslední entita v popisu (FaP, ED, atd.) — nic nad ní nepřidávej.`
   : `Kauzální popis není k dispozici. Odvoď strom z DIAGNÓZY, LÉKŮ a FYZICKÉHO profilu výše. Pravidla:
-1. Zahrň pouze stavy podložené dostupnými daty — žádné spekulace mimo diagnózy/léky/BMI.
-2. Maximálně 7 uzlů celkem včetně 1–2 UDE uzlů (apex) které přirozeně plynout z kořenů.
+1. Zahrň pouze stavy explicitně podložené daty — žádné odvozené řetězy bez důkazu.
+2. Maximálně 7 uzlů celkem včetně 1–2 UDE uzlů které přímo plynou z kořenů.
 3. HYPERTENSION a OBESITY zahrň jen pokud je v diagnózách nebo BMI > 30.
-4. Léky jsou silný signál — pokud uživatel bere lék pro konkrétní stav, ten stav zahrň.`}
+4. Léky jsou signál pro kořen, NE pro celý kauzální řetěz — nerozvíjej downstream bez diagnózy.
+5. PŘÍSNÝ ZÁKAZ bez explicitní diagnózy nebo antiarytmika/betablokátoru: CARDIAC_IRRITABILITY, PALPITATIONS, ATRIAL_FIBRILLATION, PREMATURE_CONTRACTIONS, CARDIAC_FAILURE_RISK, HEART_ATTACK_RISK.
+6. PŘÍSNÝ ZÁKAZ bez neurologické diagnózy nebo neuropatika: PERIPHERAL_NEUROPATHY, GAIT_INSTABILITY, FALL_RISK.
+7. PŘÍSNÝ ZÁKAZ bez explicitní diagnózy: ERECTILE_DYSFUNCTION, STROKE_RISK.`}
 
 Vrať pouze čistý JSON. Žádný text navíc.`;
 
@@ -1040,7 +1043,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx, modelId) {
   const key = JSON.stringify({
-    _v:          82, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
+    _v:          83, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
     model:       modelId || 'claude-sonnet-5',
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),
