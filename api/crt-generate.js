@@ -647,8 +647,11 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
       if (dbEntry?.no_canvas) { console.log(`[CRT] no_canvas: ${name}`); continue; }
 
       let targets = drugToStates[nameLow] || [];
-      if (!targets.length && dbEntry?.inn)
-        targets = drugToStates[dbEntry.inn.toLowerCase()] || [];
+      // INN fallback: zkus drugs.json INN, pak Haiku-resolved INN (pro léky mimo drugs.json)
+      if (!targets.length) {
+        const inn = dbEntry?.inn || resolvedMap[nameLow]?.inn;
+        if (inn) targets = drugToStates[inn.toLowerCase()] || [];
+      }
       // Dedup: pokud lék sedí do více aktivních stavů, vezmi jen ten s nejvyšším levelem
       if (targets.length > 1) {
         targets = [targets.reduce((best, sid) =>
@@ -1048,7 +1051,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx, modelId) {
   const key = JSON.stringify({
-    _v:          88, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
+    _v:          89, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
     model:       modelId || 'claude-sonnet-5',
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),
