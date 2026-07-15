@@ -7,7 +7,7 @@
     "functions": {
         "api/tools/parse.js":          { "maxDuration": 60 },
         "api/hud-data-bulk.js":        { "includeFiles": "data/crt/**" },
-        "api/crt-generate.js":         { "includeFiles": "data/crt/**", "maxDuration": 60 }
+        "api/crt-generate.js":         { "includeFiles": "data/crt/**", "maxDuration": 120 }
     },
     "headers": [
         {
