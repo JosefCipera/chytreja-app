@@ -468,14 +468,14 @@ ${hasDoctorNotes
 ${profile.doctor_notes.trim()}
 
 Instrukce: Namapuj každou entitu z KAUZÁLNÍHO POPISU na ID ze STATE DICTIONARY. Zahrň POUZE entity explicitně zmíněné v popisu — neextrapoluj důsledky ani rizika navíc. Apex = poslední entita v popisu (FaP, ED, atd.) — nic nad ní nepřidávej.`
-  : `Kauzální popis není k dispozici. Odvoď strom z DIAGNÓZY, LÉKŮ a FYZICKÉHO profilu výše. Pravidla:
-1. Zahrň pouze stavy explicitně podložené daty — žádné odvozené řetězy bez důkazu.
-2. Maximálně 7 uzlů celkem včetně 1–2 UDE uzlů které přímo plynou z kořenů.
-3. HYPERTENSION a OBESITY zahrň jen pokud je v diagnózách nebo BMI > 30.
-4. Léky jsou signál pro kořen, NE pro celý kauzální řetěz — nerozvíjej downstream bez diagnózy.
-5. PŘÍSNÝ ZÁKAZ bez explicitní diagnózy nebo antiarytmika/betablokátoru: CARDIAC_IRRITABILITY, PALPITATIONS, ATRIAL_FIBRILLATION, PREMATURE_CONTRACTIONS, CARDIAC_FAILURE_RISK, HEART_ATTACK_RISK.
-6. PŘÍSNÝ ZÁKAZ bez neurologické diagnózy nebo neuropatika: PERIPHERAL_NEUROPATHY, GAIT_INSTABILITY, FALL_RISK.
-7. PŘÍSNÝ ZÁKAZ bez explicitní diagnózy: ERECTILE_DYSFUNCTION, STROKE_RISK.`}
+  : `Kauzální popis není k dispozici. Odvoď příčinný řetěz z DIAGNÓZY, LÉKŮ a FYZICKÉHO profilu výše.
+
+PRAVIDLA PRO NOVÉHO UŽIVATELE:
+1. Generuj POUZE kořenové a středové uzly (type: cause) — UDE uzly (type: ude) NEGENERUJ. Systém je přidá deterministicky z léků po tvém výstupu.
+2. Maximálně 5 uzlů celkem. Žádné spekulativní řetězy.
+3. HYPERTENSION jen pokud je v diagnózách nebo BMI > 30. OBESITY jen pokud BMI > 30.
+4. Léky jsou signál pro přítomnost kořenového stavu — NErozvíjej downstream bez diagnózy.
+5. Pokud jsou dostupná pouze omezená data (1–2 diagnózy), vygeneruj pouze kořenový uzel a 1 přímý potomek.`}
 
 Vrať pouze čistý JSON. Žádný text navíc.`;
 
@@ -589,29 +589,29 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
       const targetStates = STATES_ARR.filter(def =>
         (def.med_targets || []).some(t => t === nameLow || (inn && t === inn))
       );
-      // Pokud je alespoň jeden stav aktivní → lék je pokryt, přeskočit
-      if (targetStates.some(def => activeIds.has(def.id))) continue;
-      // Injektuj stav s nejvyšším typical_level (nejspecifičtější)
-      const best = targetStates.reduce((b, d) => (d.typical_level ?? 0) > (b?.typical_level ?? -1) ? d : b, null);
-      if (!best) continue;
-      if (best.canvas === false) {
-        // pharmacy-only stav — jen med_map, žádný canvas uzel
-        activeIds.add(best.id);
-        console.log(`[CRT] med-injekce (pharmacy only): ${best.id} (via ${nameLow})`);
-        continue;
+      if (!targetStates.length) continue;
+
+      // Injektuj VŠECHNY target states (ne jen highest level) — aby se celý řetěz zobrazil
+      // např. kalnormin → ELECTROLYTE_IMBALANCE (L1) + PALPITATIONS (L4)
+      for (const stateToInject of targetStates) {
+        if (activeIds.has(stateToInject.id)) continue; // již aktivní
+        if (stateToInject.canvas === false) {
+          activeIds.add(stateToInject.id);
+          console.log(`[CRT] med-injekce (pharmacy only): ${stateToInject.id} (via ${nameLow})`);
+          continue;
+        }
+        const injNode = { id: stateToInject.id, label: stateToInject.label, label_layman: stateToInject.label_layman, type: stateToInject.type, level: stateToInject.typical_level, branch: stateToInject.typical_branch, _injected: true };
+        crt.nodes.push(injNode);
+        activeIds.add(stateToInject.id);
+        // Pokud má typické potomky, propoj k prvnímu dostupnému aktivnímu potomkovi
+        const childTarget = (stateToInject.typical_children || []).find(cid => activeIds.has(cid));
+        if (childTarget) {
+          crt.edges = crt.edges || [];
+          crt.edges.push({ from: stateToInject.id, to: childTarget });
+          console.log(`[CRT] med-injekce hrana: ${stateToInject.id} → ${childTarget}`);
+        }
+        console.log(`[CRT] med-injekce: ${stateToInject.id} (via ${nameLow})`);
       }
-      const injNode = { id: best.id, label: best.label, label_layman: best.label_layman, type: best.type, level: best.typical_level, branch: best.typical_branch, _injected: true };
-      crt.nodes.push(injNode);
-      activeIds.add(best.id);
-      // Pokud má typické potomky, propoj injektovaný uzel k prvnímu dostupnému ve stromu
-      const childTarget = (best.typical_children || []).find(cid => activeIds.has(cid));
-      if (childTarget) {
-        crt.edges = crt.edges || [];
-        crt.edges.push({ from: best.id, to: childTarget });
-        // _injected zůstává true → connectSourceless nepřidá falešného rodiče
-        console.log(`[CRT] med-injekce hrana: ${best.id} → ${childTarget}`);
-      }
-      console.log(`[CRT] med-injekce: ${best.id} (via ${nameLow})`);
     }
   }
 
@@ -1045,7 +1045,7 @@ function overlayColors(nodes, metrics) {
 // Stabilní hash vstupních dat — změna dat = nový hash = nový graf
 function dataHash(ctx, modelId) {
   const key = JSON.stringify({
-    _v:          84, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
+    _v:          85, // bump při změně promptu NEBO layout algoritmu → invaliduje cache
     model:       modelId || 'claude-sonnet-5',
     diagnoses:   ctx.profile.diagnoses || [],
     medications: (ctx.profile.medications || []).map(m => m.name),
