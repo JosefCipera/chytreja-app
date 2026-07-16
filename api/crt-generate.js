@@ -471,7 +471,6 @@ async function generateCRT({ metrics, profile, checkins, nodeInputs, _rawAI }, r
   const diagText     = (profile.diagnoses     || []).join(', ') || 'neuvedeno';
   const sympText     = (profile.symptoms      || []).join(', ') || 'neuvedeno';
   const familyText   = profile.family_history || 'neuvedeno';
-  console.log(`[CRT] profile.medications: ${JSON.stringify((profile.medications || []).map(m => m.name || m))}`);
   const { meds: resolvedMeds, interactions: resolvedInteractions } = await resolveMedications(profile.medications || []);
   const medsText = resolvedMeds.length
     ? resolvedMeds.map(m => {
