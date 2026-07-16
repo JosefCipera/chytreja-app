@@ -1324,6 +1324,48 @@ function buildPanelData(node, ctx, parents, children, meds, supps, contras, hidd
       ).join('')}
     </div>` : '';
 
+  // CRT Actions — daily actionable step for root cause nodes (level 0)
+  let crtActionsHtml = '';
+  if ((node.level ?? 99) === 0) {
+    const pool = (window._crtActionPool || {})[nodeId] || [];
+    if (pool.length > 0) {
+      const today   = new Date().toISOString().slice(0, 10);
+      const doneKey = `crt_done_${today}_${nodeId}`;
+      const idxKey  = `crt_idx_${nodeId}`;
+      const isDone  = localStorage.getItem(doneKey) === '1';
+      const idx     = parseInt(localStorage.getItem(idxKey) || '0', 10);
+      const action  = pool[idx % pool.length];
+      const nextAct = pool[(idx + 1) % pool.length];
+      crtActionsHtml = isDone ? `
+        <div class="cnp-section">
+          <p class="cnp-lbl">dnešní akce</p>
+          <div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:8px;padding:12px 14px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <i class="ti ti-check" style="color:#22c55e;font-size:16px"></i>
+              <span style="font-size:12px;color:#22c55e;font-family:monospace;letter-spacing:0.05em">SPLNĚNO</span>
+            </div>
+            <div style="font-size:11px;color:#475569;margin-top:8px">Zítra: <em style="color:#64748b">${nextAct.title}</em></div>
+          </div>
+        </div>` : `
+        <div class="cnp-section">
+          <p class="cnp-lbl">dnešní akce</p>
+          <div style="background:rgba(6,182,212,0.06);border:1px solid rgba(6,182,212,0.2);border-radius:8px;padding:12px 14px">
+            <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px">
+              <i class="ti ti-${action.icon}" style="color:#22d3ee;font-size:22px;flex-shrink:0;margin-top:1px"></i>
+              <div>
+                <div style="font-size:14px;font-weight:500;color:#e2e8f0;line-height:1.3">${action.title}</div>
+                <div style="font-size:12px;color:#64748b;margin-top:4px;line-height:1.5">${action.desc}</div>
+              </div>
+            </div>
+            <button onclick="completeCrtAction('${nodeId}','${action.id}')"
+              style="width:100%;background:rgba(6,182,212,0.12);border:1px solid rgba(6,182,212,0.35);color:#22d3ee;border-radius:6px;padding:8px;font-size:12px;font-family:monospace;letter-spacing:0.08em;cursor:pointer">
+              ✓ SPLNĚNO
+            </button>
+          </div>
+        </div>`;
+    }
+  }
+
   const behaviorWarningHtml = node.behavior_warning ? `
     <div class="cnp-section" style="border-left:2px solid #ef4444;background:rgba(239,68,68,0.06);border-radius:0 6px 6px 0">
       <p class="cnp-lbl" style="color:#ef4444;margin-bottom:8px;font-size:17px">⚠ upozornění systému</p>
@@ -1354,10 +1396,28 @@ function buildPanelData(node, ctx, parents, children, meds, supps, contras, hidd
     ${warnHtml}
     ${contraHtml}
     ${actionsHtml}
+    ${crtActionsHtml}
   `;
 }
 
 window.closeCrtPanel = closeCrtPanel;
+
+window.completeCrtAction = function(nodeId, actionId) {
+  const today   = new Date().toISOString().slice(0, 10);
+  const doneKey = `crt_done_${today}_${nodeId}`;
+  const idxKey  = `crt_idx_${nodeId}`;
+  localStorage.setItem(doneKey, '1');
+  const idx = parseInt(localStorage.getItem(idxKey) || '0', 10);
+  localStorage.setItem(idxKey, String(idx + 1));
+  if (userId) {
+    fetch('/api/mission-log', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, nodeId, missionId: actionId, actionType: 'crt_action' })
+    }).catch(e => console.warn('[CRT action log]', e));
+  }
+  openNodePanel(nodeId);
+};
 
 let _medsVisible = false;
 let _pillsAdded  = false;
@@ -1982,6 +2042,10 @@ window.exitFocusRoot = function() {
 
 async function boot() {
   try {
+    if (!window._crtActionPool) {
+      try { window._crtActionPool = await fetch('/data/crt/crt-actions.json').then(r => r.json()); }
+      catch(e) { window._crtActionPool = {}; }
+    }
     const data = await loadCRT();
     _rawCrtData = data;
     document.getElementById('crtLoading').classList.add('hidden');

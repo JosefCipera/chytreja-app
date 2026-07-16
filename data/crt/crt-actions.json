@@ -1,0 +1,56 @@
+{
+  "CHRONIC_STRESS": [
+    { "id": "box_breathing",   "title": "Box breathing",              "desc": "4 vdechy — 4 zadržení — 4 výdechy — 4 zadržení, 5 minut", "icon": "wind" },
+    { "id": "procházka_bez_tel","title": "Procházka bez telefonu",    "desc": "20 min venku, telefon doma nebo v kapse na letadle",       "icon": "walk" },
+    { "id": "odpojeni",        "title": "Odpojení od obrazovek",      "desc": "1 hodinu před spaním bez telefonu, tabletu ani TV",        "icon": "device-tv-off" },
+    { "id": "priroda",         "title": "Příroda 30 min",             "desc": "Les, park nebo zahrada — bez sluchátek, jen ticho",        "icon": "trees" },
+    { "id": "zavolej",         "title": "Zavolej blízkému",           "desc": "10 min hovoru s přítelem nebo rodinou — bez textu",        "icon": "phone" },
+    { "id": "dechova_421",     "title": "Dechové cvičení 4-2-1",      "desc": "Vdech 4s, zadržení 2s, výdech 8s — 10 opakování",         "icon": "lungs" },
+    { "id": "bez_emailu",      "title": "Žádné emaily po 20:00",      "desc": "Email aplikace zavřená od 20h do rána",                    "icon": "mail-off" },
+    { "id": "denik",           "title": "Psaní deníku",               "desc": "5 minut — co tě dnes stresovalo a co ti pomohlo",         "icon": "notebook" },
+    { "id": "studena_voda",    "title": "Studená voda na obličej",    "desc": "30 sekund studené vody na tvář — aktivuje bloudivý nerv",  "icon": "droplet" }
+  ],
+
+  "METABOLIC_HEALTH_ROOT": [
+    { "id": "zone2_chuze",     "title": "Zone 2 chůze",               "desc": "20 min střední intenzitou — měl by sis být schopen povídat", "icon": "walk" },
+    { "id": "zone2_kolo",      "title": "Zone 2 kolo",                "desc": "30 min na kole nebo stacionárním kole",                    "icon": "bike" },
+    { "id": "prochazka_obed",  "title": "Procházka po obědě",         "desc": "10 min chůze do 30 minut po jídle — snižuje glykémii",    "icon": "footprint" },
+    { "id": "prochazka_vecere","title": "Procházka po večeři",        "desc": "10 min chůze — pomáhá spalovat večerní sacharidy",        "icon": "moon" },
+    { "id": "bilkoviny_snidane","title": "Bílkoviny k snídani",       "desc": "30 g+ bílkovin — vejce, tvaroh, ryba, řecký jogurt",      "icon": "egg" },
+    { "id": "zelenina",        "title": "Zelenina k obědu i večeři",  "desc": "Polovina talíře zelenina, jíst jako první",                "icon": "salad" },
+    { "id": "stravovaci_okno", "title": "Stravovací okno 12 h",       "desc": "Poslední jídlo nejpozději 3 hodiny před spaním",           "icon": "clock" },
+    { "id": "bez_sacharidu",   "title": "Bez rafinovaných sacharidů", "desc": "Žádný bílý chléb, sladkosti ani sladké nápoje dnes",       "icon": "bread-off" },
+    { "id": "voda_pred_jidlem","title": "Sklenice vody před jídlem",  "desc": "Velká sklenice vody 10 min před každým hlavním jídlem",    "icon": "glass-full" }
+  ],
+
+  "OBESITY": [
+    { "id": "zone2_20",        "title": "Zone 2 pohyb 20 min",        "desc": "Chůze, kolo nebo plavání — střední intenzita, celá hodina nemusí", "icon": "walk" },
+    { "id": "silovy_tren",     "title": "Silový trénink 15 min",      "desc": "Dřepy, kliky a výpady s vlastní váhou — 3 série každé",   "icon": "barbell" },
+    { "id": "zelenina_prvni",  "title": "Zelenina jako první chod",   "desc": "Před každým hlavním jídlem nejdříve zelenina",             "icon": "salad" },
+    { "id": "polovina_sachar", "title": "Poloviční porce sacharidů",  "desc": "Rýže, těstoviny, chléb — dnes poloviční porce než obvykle", "icon": "minus" },
+    { "id": "bez_snacku",      "title": "Vynech jeden snack",         "desc": "Mezi jídly jen voda nebo neslazený čaj",                   "icon": "cookie-off" },
+    { "id": "schody",          "title": "Schody místo výtahu",        "desc": "Celý den bez výtahu — každé patro se počítá",              "icon": "stairs" },
+    { "id": "voda_misto_slad", "title": "Voda místo sladkých nápojů","desc": "Džusy, coly a energeťáky nahradit vodou nebo čajem",       "icon": "droplet" },
+    { "id": "pomale_jezeni",   "title": "Jídlo vsedě, bez obrazovky", "desc": "Pomalé jezení — žvýkej každé sousto, bez telefonu",        "icon": "bowl-chopsticks" }
+  ],
+
+  "HYPERTENSION": [
+    { "id": "zone2_30",        "title": "Zone 2 pohyb 30 min",        "desc": "Chůze nebo kolo střední intenzitou — pravidelný pohyb snižuje TK", "icon": "walk" },
+    { "id": "mene_soli",       "title": "Méně soli dnes",             "desc": "Bez dosalování a bez průmyslových jídel — cíl pod 5 g/den", "icon": "salt" },
+    { "id": "hluboky_dech",    "title": "Hluboký dech 5 min",         "desc": "Prodloužený výdech (2× delší než nádech) — přímo snižuje TK", "icon": "wind" },
+    { "id": "draslík",         "title": "Draslík v jídle",            "desc": "Banán, brambory, fazole nebo špenát — draslík vyrovnává sodík", "icon": "leaf" },
+    { "id": "max_kava",        "title": "Max 2 kávy dnes",            "desc": "Třetí a další káva TK zvyšuje — přejít na bylinkový čaj",  "icon": "coffee" },
+    { "id": "bez_alkoholu",    "title": "Alkohol dnes vynech",        "desc": "I jedno pivo přechodně zvyšuje krevní tlak",               "icon": "beer-off" },
+    { "id": "relaxace",        "title": "Relaxace 15 min",            "desc": "Lehnutí v tichu, žádné podněty — parasympatikus sníží TK",  "icon": "zzz" },
+    { "id": "omega3",          "title": "Omega-3 s jídlem",           "desc": "Pokud bereš doplněk — vzít s největším jídlem dne",        "icon": "fish" }
+  ],
+
+  "HYPOTHYROIDISM": [
+    { "id": "lek_rano",        "title": "Lék ráno nalačno",           "desc": "30 min před snídaní, bez kávy — jinak se nevstřebá",       "icon": "pill" },
+    { "id": "selen",           "title": "Selen dnes",                 "desc": "2 brazilské ořechy nebo tuňák — selen aktivuje tyreoidální hormon", "icon": "nut" },
+    { "id": "jod",             "title": "Jód v jídle",                "desc": "Ryba, vejce nebo mléčné výrobky — základ pro tvorbu hormonů", "icon": "fish" },
+    { "id": "pohyb_stit",      "title": "Pohyb 30 min",               "desc": "Štítná žláza potřebuje aktivaci — chůze nebo kolo",        "icon": "walk" },
+    { "id": "omez_soju",       "title": "Omez sóju a křížatou zeleninu", "desc": "Brokolice, kapusta, sója — dnes méně, blokují vstřebávání hormonů", "icon": "plant-off" },
+    { "id": "teplo",           "title": "Teplé oblečení",             "desc": "Hypotyreoida = špatná termoregulace — netlačit na chlad",  "icon": "shirt" }
+  ]
+}
