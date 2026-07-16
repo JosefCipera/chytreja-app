@@ -660,6 +660,63 @@ Bio (Longevity) = podvozek. TOC = motor. Nesoutěží — špatné Bio dává do
 
 ---
 
+## Architektonický pivot — Vesmír → CRT (Jul 2026)
+
+### Rozhodnutí
+
+Vesmír (planet canvas) se stává **legacy** — zmrazen, nesmazán. Primárním rozhraním je **CRT + Launcher**.
+
+**Důvod:** CRT vyjadřuje stejný model (Constraint Navigation Engine) věrněji — ukazuje kauzální realitu, ne abstraktní planety. Vesmír byl dobrý prototyp; CRT je produkční vrstva.
+
+### Co zůstává aktivní z Vesmíru
+
+| Složka | Stav | Poznámka |
+|--------|------|----------|
+| `mission_log` tabulka | ✅ aktivní | Sdílená — CRT Actions + budoucí disciplíny |
+| `hud-data-bulk.js` | ✅ aktivní | Vitality Score → laser v launcheru |
+| `daily_checkin` tabulka | ✅ aktivní | Voice check-in v launcheru |
+| `node_state_history` | ✅ aktivní | 30denní sparkline (budoucí použití) |
+| `user_metrics` | 🔄 repurpose | Přejde na CRT node tracking |
+| Vesmír canvas (`index.html`) | ❄️ frozen | Zůstane, nevyvíjí se |
+| Dekatlon | ❄️ frozen | Přejde jako fyzická větev CRT (LOW_VO2MAX, MUSCLE_WEAKNESS) |
+| Lehkost | ❄️ frozen | Check-in zůstane, canvas ne |
+
+### Nová architektura — primární flow
+
+```
+Launcher (nebula)
+  │  sleep → tap → laser + briefing (CHJ mluví o největším blokeru)
+  │  text: "mapa" / "co dál" / node name
+  └─→ CRT (crt.html) — hlavní rozhraní
+        │
+        ├── Root uzly (level 0)  → CRT Actions (denní, SECOND_ACTION, history)
+        ├── UDE uzly             → osobní (z onboardingu) + klinické (z diagnóz)
+        ├── Sen (Goal vrstva)    → personalizovaný cíl z user_aspirations
+        └── Panel               → léky, suplementy, behavior_warning
+```
+
+### Onboarding → osobní UDE uzly (TODO)
+
+Odpovědi z onboardingu aktivují UDE uzly v CRT — i pro zdravé uživatele bez diagnóz:
+
+| Onboarding otázka | Špatná odpověď → | CRT UDE uzel |
+|-------------------|------------------|--------------|
+| Vyjít 4 patra bez zadýchání? | ne | `LOW_VO2MAX` |
+| Zvednout vnouče / těžký předmět? | ne | `MUSCLE_WEAKNESS` |
+| Vstat ze země bez opory? | ne | `GAIT_INSTABILITY` ← již v State Dictionary |
+| Zadržet dech 20s? | ne | → CHRONIC_STRESS path |
+
+Tyto UDE uzly se napojí na existující CRT root causes stejně jako klinické UDEs.
+
+### Laser = stav celého systému
+
+```
+Délka laseru  = Vitality Score (z hud-data-bulk, beze změny)
+Barva laseru  = CRT risk level (TODO: zelená → jantarová → červená)
+```
+
+---
+
 ## Verzování
 
 | Verze | Obsah | Status |
@@ -668,9 +725,8 @@ Bio (Longevity) = podvozek. TOC = motor. Nesoutěží — špatné Bio dává do
 | v0.2.0 | HUD panel, vícero vesmírů, Dekaton | ✅ |
 | v0.2.1 | Dekaton 10 disciplín, access model cleanup | ✅ `git tag v0.2.1-dekatlon-working` |
 | v0.2.2 | Lehkost: spark, check-in index, killers, TOC pipe | ✅ `git tag v0.2-lehkost-pre-onboarding` |
-| v0.3.0 | Lehkost MVP: onboarding, trajektorie, týdenní přehled | 🔄 aktivní |
-| v0.4.0 | Energie vesmír (druhá instanciace enginu) | 📋 |
-| v0.5.0 | Health data pipeline (krev, PDF, wearables) | 📋 |
-| v0.6.0 | Push notifikace + ranní briefing | 📋 |
-| v0.7.0 | Claude orchestrátor (místo GPT-4o-mini) | 📋 |
+| v0.3.0 | CRT pivot: osobní UDE z onboardingu, Sen vrstva, laser barva | 🔄 aktivní |
+| v0.4.0 | Health data pipeline (krev, PDF, wearables) | 📋 |
+| v0.5.0 | Voice check-in + ranní briefing (STAV 2 launcher) | 📋 |
+| v0.6.0 | Claude orchestrátor (místo GPT-4o-mini) | 📋 |
 | v1.0.0 | SaaS launch — B2B2C, platební brána | 📋 |
