@@ -345,14 +345,15 @@ const DIAGNOSIS_KEYWORDS = [
   { keywords: ['erektilní', 'erectile', 'impotence', 'ed'],                                       id: 'ERECTILE_DYSFUNCTION' },
 ];
 
-// Mapování Vitalita/Dekatlon longevity metriky → CRT fyzické UDE uzly (post-processing)
+// Vitalita/Dekatlon metriky → jeden konsolidovaný CRT uzel (most mezi metabolickým kořenem a UDE)
+// Jakákoliv fyzická metrika YELLOW/RED → PHYSICAL_DECONDITIONING (nepoletující ostrovy)
 const METRICS_UDE_MAP = [
-  { longevityId: 'vo2max',     udeId: 'LOW_VO2MAX'       },
-  { longevityId: 'vytrvalost', udeId: 'LOW_VO2MAX'       },
-  { longevityId: 'sila',       udeId: 'MUSCLE_WEAKNESS'  },
-  { longevityId: 'mobilita',   udeId: 'MOBILITY_DEFICIT' },
-  { longevityId: 'stabilita',  udeId: 'GAIT_INSTABILITY' },
-  { longevityId: 'rovnovaha',  udeId: 'GAIT_INSTABILITY' },
+  { longevityId: 'vo2max',     udeId: 'PHYSICAL_DECONDITIONING' },
+  { longevityId: 'vytrvalost', udeId: 'PHYSICAL_DECONDITIONING' },
+  { longevityId: 'sila',       udeId: 'PHYSICAL_DECONDITIONING' },
+  { longevityId: 'mobilita',   udeId: 'PHYSICAL_DECONDITIONING' },
+  { longevityId: 'stabilita',  udeId: 'PHYSICAL_DECONDITIONING' },
+  { longevityId: 'rovnovaha',  udeId: 'PHYSICAL_DECONDITIONING' },
 ];
 
 // Deterministické sestavení CRT z diagnóz + léků (bez AI) — pro nové uživatele
@@ -1254,7 +1255,7 @@ function overlayColors(nodes, metrics) {
 // _v_ai: bump POUZE při změně Sonnet promptu → invaliduje AI generování
 // _v_pp: bump při změně post-processingu (med-inject, validateEdges...) → přeskočí Sonnet, re-run PP
 const _v_ai = 12;
-const _v_pp = 5;
+const _v_pp = 6;
 
 function hashStr(s) {
   let h = 0;

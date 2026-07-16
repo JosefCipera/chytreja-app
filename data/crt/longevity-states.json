@@ -19,7 +19,7 @@
     "can_be_root": true,
     "typical_branch": "C",
     "med_targets": [],
-    "typical_children": ["DYSLIPIDEMIA", "HYPERURICEMIA", "INSULIN_RESISTANCE", "OBESITY", "LOW_VO2MAX", "MUSCLE_WEAKNESS"],
+    "typical_children": ["DYSLIPIDEMIA", "HYPERURICEMIA", "INSULIN_RESISTANCE", "OBESITY", "PHYSICAL_DECONDITIONING"],
     "panel_text": "Metabolická dysregulace je tichý proces — tělo roky kompenzuje, než se problémy projeví naplno. Cholesterol, kyselina močová, inzulín: všechny vycházejí ze stejného kořene. Jídlo, pohyb a spánek jsou jediné nástroje, které to mohou zvrátit."
   },
   {
@@ -351,5 +351,17 @@
     "med_targets": [],
     "typical_children": [],
     "panel_text": "Omezený rozsah pohybu v ramenou, kyčlích a páteři predikuje ztrátu funkční nezávislosti. Pohyblivost se ztrácí postupně a nenápadně — ale dá se zvrátit cílenou prací na kloubní mobilitě."
+  },
+  {
+    "id": "PHYSICAL_DECONDITIONING",
+    "label": "Nízká fyzická kondice",
+    "label_layman": "Slabá fyzička",
+    "type": "cause",
+    "typical_level": 2,
+    "can_be_root": false,
+    "typical_branch": "RC",
+    "med_targets": [],
+    "typical_children": ["FATIGUE_LOW_CAPACITY"],
+    "panel_text": "VO2max a svalová síla jsou nejsilnějšími prediktory délky a kvality života — silnějšími než kouření nebo diabetes. Po 35. roce ztrácíme bez intervence 1 % aerobní kapacity ročně. Nízká kondice zvyšuje zátěž srdce při každé námaze a urychluje metabolickou dysregulaci — je to obousměrný vztah."
   }
 ]

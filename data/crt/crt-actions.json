@@ -53,5 +53,16 @@
     { "id": "pohyb_stit",      "title": "Pohyb 30 min",               "desc": "Štítná žláza potřebuje aktivaci — chůze nebo kolo",        "icon": "walk" },
     { "id": "omez_soju",       "title": "Omez sóju a křížatou zeleninu", "desc": "Brokolice, kapusta, sója — dnes méně, blokují vstřebávání hormonů", "icon": "plant-off" },
     { "id": "teplo",           "title": "Teplé oblečení",             "desc": "Hypotyreoida = špatná termoregulace — netlačit na chlad",  "icon": "shirt" }
+  ],
+
+  "PHYSICAL_DECONDITIONING": [
+    { "id": "zone2_20min",     "title": "Zone 2 pohyb 20 min",        "desc": "Chůze, kolo nebo plavání — tempo, při kterém se dá mluvit celou větu", "icon": "walk" },
+    { "id": "silovy_mini",     "title": "Minisilový trénink",         "desc": "Dřepy + kliky + výpady — 2 série každé, bez vybavení",    "icon": "barbell" },
+    { "id": "schody_dnes",     "title": "Schody celý den",            "desc": "Výtah dnes neexistuje — každé patro je trénink VO2max",    "icon": "stairs" },
+    { "id": "protazeni",       "title": "Protažení 10 min",           "desc": "Kyčle, ramena, hrudník — klíčové oblasti pro Dekatlon",   "icon": "stretching" },
+    { "id": "chuze_po_jidle",  "title": "Chůze po každém jídle",      "desc": "10 min po snídani, obědě i večeři — glukóza + kondice",   "icon": "footprint" },
+    { "id": "plav_nebo_jez",   "title": "Plavání nebo kolo 30 min",   "desc": "Aerobní pohyb bez nárazů — šetrné ke kloubům, efektivní pro VO2max", "icon": "swim" },
+    { "id": "odraz_mini",      "title": "Výskoky na místě 30 s",      "desc": "3× 30 sekund výskoků nebo running steps — Dekatlon plyometrie", "icon": "jump-rope" },
+    { "id": "rovnovaha_trink", "title": "Stoj na jedné noze",         "desc": "Při čistění zubů — 60 sekund každá noha, bez podpěry",    "icon": "balance-beam" }
   ]
 }
