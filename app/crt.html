@@ -1316,7 +1316,8 @@ function buildPanelData(node, ctx, parents, children, meds, supps, contras, hidd
   const filteredActions = (detail.actions || []).filter(a =>
     !shieldNames.some(n => a.toLowerCase().includes(n))
   );
-  const actionsHtml = filteredActions.length ? `
+  // Root cause nodes (level 0) — CRT Actions takes over, hide generic KB actions
+  const actionsHtml = filteredActions.length && (node.level ?? 99) !== 0 ? `
     <div class="cnp-section">
       <p class="cnp-lbl">co s tím</p>
       ${filteredActions.map(a =>
