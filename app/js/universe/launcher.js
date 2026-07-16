@@ -522,7 +522,7 @@ const HTML = `
   </div>
   <div class="chjl-input-wrap" id="chjInputWrap">
     <input class="chjl-input" id="chjInput" type="text"
-      placeholder="nebo napiš…" autocomplete="off">
+      placeholder="napiš… (mapa, co dál…)" autocomplete="off">
     <button class="chjl-send" id="chjSend">↵</button>
   </div>
   <div id="chjNavChips" style="display:none;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:10px"></div>
@@ -1258,7 +1258,7 @@ function listenOnce(cb) {
 const MAIN_NODE = { longevity: 'dlouhovekost', lehkost: 'lh_main', toc: 'toc' };
 const HOME_PHRASES = ['chytré já', 'chytre ja', 'přehled', 'hlavní', 'domů', 'domu'];
 const CRT_PHRASES  = ['ukáž', 'ukaz', 'zobraz', 'detail', 'kauzální', 'kauzalni',
-  'příčinu', 'pricinu', 'důvod', 'duvod'];
+  'příčinu', 'pricinu', 'důvod', 'duvod', 'mapa', 'kauzální mapa', 'kauzalni mapa'];
 
 function tryRoute(transcript) {
   const model = localStorage.getItem('currentModel') || 'longevity';
