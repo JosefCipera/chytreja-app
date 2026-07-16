@@ -357,7 +357,7 @@ const METRICS_UDE_MAP = [
 ];
 
 // Deterministické sestavení CRT z diagnóz + léků (bez AI) — pro nové uživatele
-async function buildDeterministicCRT(profile) {
+async function buildDeterministicCRT(profile, metrics = []) {
   const allText = [
     ...(profile.diagnoses || []),
     ...(profile.symptoms  || []),
@@ -376,6 +376,15 @@ async function buildDeterministicCRT(profile) {
   // BMI prahy
   if (bmi && bmi >= 27) activeIds.add('OBESITY');
   if (bmi && bmi >= 30) { activeIds.add('OBESITY'); activeIds.add('HYPERTENSION'); }
+
+  // Fyzická kondice z user_metrics — jakákoliv fyzická metrika YELLOW/RED → INACTIVITY_ROOT větev
+  const PHYSICAL_METRIC_IDS = new Set(['vo2max', 'vytrvalost', 'sila', 'mobilita', 'stabilita', 'rovnovaha']);
+  const hasLowFitness = metrics.some(m => PHYSICAL_METRIC_IDS.has(m.node_id) && (m.state === 'RED' || m.state === 'YELLOW'));
+  if (hasLowFitness) {
+    activeIds.add('INACTIVITY_ROOT');
+    activeIds.add('PHYSICAL_DECONDITIONING');
+    activeIds.add('FATIGUE_LOW_CAPACITY');
+  }
 
   // Fallback: pokud nic nebylo nalezeno, přidej chronický stres
   if (activeIds.size === 0) activeIds.add('CHRONIC_STRESS');
@@ -629,7 +638,7 @@ PRAVIDLA JSON:
     crt = JSON.parse(JSON.stringify(_rawAI));
     console.log('[CRT] _rawAI použit z cache (Sonnet přeskočen)');
   } else if (!hasDoctorNotes) {
-    crt = await buildDeterministicCRT(profile);
+    crt = await buildDeterministicCRT(profile, metrics);
   } else {
   const userPrompt = `Přelož lékařský popis do CRT JSON struktury.
 
@@ -1255,7 +1264,7 @@ function overlayColors(nodes, metrics) {
 // _v_ai: bump POUZE při změně Sonnet promptu → invaliduje AI generování
 // _v_pp: bump při změně post-processingu (med-inject, validateEdges...) → přeskočí Sonnet, re-run PP
 const _v_ai = 12;
-const _v_pp = 6;
+const _v_pp = 7;
 
 function hashStr(s) {
   let h = 0;

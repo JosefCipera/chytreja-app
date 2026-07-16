@@ -357,11 +357,23 @@
     "label": "Nízká fyzická kondice",
     "label_layman": "Slabá fyzička",
     "type": "cause",
-    "typical_level": 2,
+    "typical_level": 1,
     "can_be_root": false,
-    "typical_branch": "RC",
+    "typical_branch": "L",
     "med_targets": [],
     "typical_children": ["FATIGUE_LOW_CAPACITY"],
     "panel_text": "VO2max a svalová síla jsou nejsilnějšími prediktory délky a kvality života — silnějšími než kouření nebo diabetes. Po 35. roce ztrácíme bez intervence 1 % aerobní kapacity ročně. Nízká kondice zvyšuje zátěž srdce při každé námaze a urychluje metabolickou dysregulaci — je to obousměrný vztah."
+  },
+  {
+    "id": "INACTIVITY_ROOT",
+    "label": "Pohybová inaktivita",
+    "label_layman": "Sedavý životní styl",
+    "type": "cause",
+    "typical_level": 0,
+    "can_be_root": true,
+    "typical_branch": "L",
+    "med_targets": [],
+    "typical_children": ["PHYSICAL_DECONDITIONING"],
+    "panel_text": "Pohybová inaktivita je přímou příčinou ztráty aerobní kapacity, svalové síly a rozsahu pohybu. Bez pohybového stimulu tělo ztrácí funkční kapacitu od 35. roku. Tento proces je plně reverzibilní — i mírný pravidelný pohyb ho zastaví a zvrátí."
   }
 ]
