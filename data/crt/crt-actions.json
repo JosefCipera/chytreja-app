@@ -1,6 +1,6 @@
 {
   "CHRONIC_STRESS": [
-    { "id": "box_breathing",   "title": "Čtvercové dýchání",          "desc": "Vdech 4s — zadržení 4s — výdech 4s — pauza 4s, 5 minut. Technika Navy SEALs pro akutní reset pod tlakem.", "icon": "wind" },
+    { "id": "box_breathing",   "title": "Čtvercové dýchání",          "desc": "Vdech 4 s → zadrž 4 s → výdech 4 s → pauza 4 s. Jeden cyklus = 16 sekund, opakuj 5 minut. Technika Navy SEALs pro akutní reset.", "icon": "wind" },
     { "id": "procházka_bez_tel","title": "Procházka bez telefonu",    "desc": "20 min venku, telefon doma nebo v kapse na letadle",       "icon": "walk" },
     { "id": "odpojeni",        "title": "Odpojení od obrazovek",      "desc": "1 hodinu před spaním bez telefonu, tabletu ani TV",        "icon": "device-tv-off" },
     { "id": "priroda",         "title": "Příroda 30 min",             "desc": "Les, park nebo zahrada — bez sluchátek, jen ticho",        "icon": "trees" },
