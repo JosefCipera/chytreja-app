@@ -345,17 +345,18 @@ const DIAGNOSIS_KEYWORDS = [
   { keywords: ['erektilní', 'erectile', 'impotence', 'ed'],                                       id: 'ERECTILE_DYSFUNCTION' },
 ];
 
-// Mapování Vitalita/Dekatlon otázek (node_inputs) → CRT osobní UDE uzly
-const PHYSICAL_UDE_MAP = [
-  { qIds: ['vyjit_4_patra', 'rychla_chuze'],                                              udeId: 'LOW_VO2MAX'       },
-  { qIds: ['vynest_nakup', 'zvednout_vnouce', 'otevrit_zavarovacku'],                     udeId: 'MUSCLE_WEAKNESS'  },
-  { qIds: ['kufr_do_police'],                                                              udeId: 'MOBILITY_DEFICIT' },
-  { qIds: ['vstat_ze_zeme', 'balanc_jedna_noha', 'rovnovaha_zavrene_oci', 'skocit_dopadnout'], udeId: 'GAIT_INSTABILITY' },
+// Mapování Vitalita/Dekatlon longevity metriky → CRT fyzické UDE uzly (post-processing)
+const METRICS_UDE_MAP = [
+  { longevityId: 'vo2max',     udeId: 'LOW_VO2MAX'       },
+  { longevityId: 'vytrvalost', udeId: 'LOW_VO2MAX'       },
+  { longevityId: 'sila',       udeId: 'MUSCLE_WEAKNESS'  },
+  { longevityId: 'mobilita',   udeId: 'MOBILITY_DEFICIT' },
+  { longevityId: 'stabilita',  udeId: 'GAIT_INSTABILITY' },
+  { longevityId: 'rovnovaha',  udeId: 'GAIT_INSTABILITY' },
 ];
-const PHYSICAL_THRESHOLD = 7; // value ≤ 7 (1–10) = YELLOW nebo RED → aktivuj UDE
 
 // Deterministické sestavení CRT z diagnóz + léků (bez AI) — pro nové uživatele
-async function buildDeterministicCRT(profile, nodeInputs = []) {
+async function buildDeterministicCRT(profile) {
   const allText = [
     ...(profile.diagnoses || []),
     ...(profile.symptoms  || []),
@@ -374,21 +375,6 @@ async function buildDeterministicCRT(profile, nodeInputs = []) {
   // BMI prahy
   if (bmi && bmi >= 27) activeIds.add('OBESITY');
   if (bmi && bmi >= 30) { activeIds.add('OBESITY'); activeIds.add('HYPERTENSION'); }
-
-  // Vitalita/Dekatlon onboarding → osobní fyzické UDE uzly
-  if (nodeInputs.length > 0) {
-    for (const { qIds, udeId } of PHYSICAL_UDE_MAP) {
-      const hits = nodeInputs.filter(ni => qIds.includes(ni.question_id));
-      if (hits.some(ni => (ni.value ?? 10) <= PHYSICAL_THRESHOLD)) {
-        activeIds.add(udeId);
-        console.log(`[CRT] physical UDE from Vitalita: ${udeId}`);
-      }
-    }
-    // Fyzické UDEs napojené na METABOLIC_HEALTH_ROOT → zajisti kořen aktivní
-    if (['LOW_VO2MAX', 'MUSCLE_WEAKNESS'].some(id => activeIds.has(id))) {
-      activeIds.add('METABOLIC_HEALTH_ROOT');
-    }
-  }
 
   // Fallback: pokud nic nebylo nalezeno, přidej chronický stres
   if (activeIds.size === 0) activeIds.add('CHRONIC_STRESS');
@@ -462,6 +448,46 @@ async function buildDeterministicCRT(profile, nodeInputs = []) {
 
   console.log(`[CRT] deterministický strom: ${[root?.id, ...crt.nodes.map(n => n.id)].join(', ')}`);
   return crt;
+}
+
+// Vitalita/Dekatlon fyzické UDE uzly — inject na základě user_metrics (obě cesty)
+// Přidá jen uzly, pro které existuje přirozený rodič v aktivním CRT stromu.
+function injectPhysicalUdes(crt, metrics) {
+  if (!metrics || !metrics.length) return;
+
+  const existingIds = new Set([
+    ...(crt.nodes || []).map(n => n.id),
+    crt.root ? (typeof crt.root === 'object' ? crt.root.id : crt.root) : null,
+  ].filter(Boolean));
+
+  const allNodes = () => [
+    ...(crt.nodes || []),
+    ...(crt.root && typeof crt.root === 'object' ? [crt.root] : []),
+  ];
+
+  const udesFromMetrics = new Set();
+  for (const { longevityId, udeId } of METRICS_UDE_MAP) {
+    const m = metrics.find(m => m.node_id === longevityId && (m.state === 'RED' || m.state === 'YELLOW'));
+    if (m && !existingIds.has(udeId)) udesFromMetrics.add(udeId);
+  }
+
+  for (const udeId of udesFromMetrics) {
+    const def = STATES_DB[udeId];
+    if (!def) continue;
+    const parentNode = allNodes().find(n => STATES_DB[n.id]?.typical_children?.includes(udeId));
+    if (!parentNode) {
+      console.log(`[CRT] injectPhysicalUdes: skip ${udeId} — no active parent`);
+      continue;
+    }
+    (crt.nodes = crt.nodes || []).push({
+      id: udeId, label: def.label, label_layman: def.label_layman,
+      type: def.type, level: def.typical_level, branch: def.typical_branch,
+      panel_text: def.panel_text || null, _injected: true,
+    });
+    (crt.edges = crt.edges || []).push({ from: parentNode.id, to: udeId });
+    existingIds.add(udeId);
+    console.log(`[CRT] injectPhysicalUdes: +${udeId} (${def.label}) ← ${parentNode.id}`);
+  }
 }
 
 async function generateCRT({ metrics, profile, checkins, nodeInputs, _rawAI }, role, modelCfg) {
@@ -602,7 +628,7 @@ PRAVIDLA JSON:
     crt = JSON.parse(JSON.stringify(_rawAI));
     console.log('[CRT] _rawAI použit z cache (Sonnet přeskočen)');
   } else if (!hasDoctorNotes) {
-    crt = await buildDeterministicCRT(profile, nodeInputs);
+    crt = await buildDeterministicCRT(profile);
   } else {
   const userPrompt = `Přelož lékařský popis do CRT JSON struktury.
 
@@ -717,6 +743,9 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
     (crt.nodes || []).forEach(applyStateLabels);
     if (crt.root && typeof crt.root === 'object') applyStateLabels(crt.root);
   }
+
+  // Vitalita/Dekatlon fyzické UDE uzly — po obou cestách (Sonnet i deterministická)
+  injectPhysicalUdes(crt, metrics);
 
   // Med-injekce: pokud žádný aktivní stav nemá lék uživatele v med_targets → injektuj stav
   // Bezpečné: injektuje jen stavy ze STATES_DB, bez AI, bez text-matchingu
@@ -1225,7 +1254,7 @@ function overlayColors(nodes, metrics) {
 // _v_ai: bump POUZE při změně Sonnet promptu → invaliduje AI generování
 // _v_pp: bump při změně post-processingu (med-inject, validateEdges...) → přeskočí Sonnet, re-run PP
 const _v_ai = 12;
-const _v_pp = 4;
+const _v_pp = 5;
 
 function hashStr(s) {
   let h = 0;

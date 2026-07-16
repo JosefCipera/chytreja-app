@@ -68,7 +68,7 @@ async function handleOnboarding(req, res) {
       })));
       await db.from('user_metrics').upsert(nodes.map(n => ({
         user_id: userId, node_id: n.nodeId, universe: 'longevity', current_index: n.currentIndex, state: n.state,
-      })), { onConflict: 'user_id,node_id' });
+      })), { onConflict: 'user_id,node_id,universe' });
       await db.from('node_state_history').insert(nodes.map(n => ({
         user_id: userId, node_id: n.nodeId, date: today, state: n.state, current_index: n.currentIndex,
       })));
