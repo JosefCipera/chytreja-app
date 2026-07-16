@@ -917,9 +917,6 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
     });
   }
 
-  // Auto-generate behavior warning for the key node (junction or UDE) if not manually set
-  await generateAutoFlag(allActive, profile);
-
   return crt;
 }
 
@@ -1204,7 +1201,7 @@ function overlayColors(nodes, metrics) {
 // _v_ai: bump POUZE při změně Sonnet promptu → invaliduje AI generování
 // _v_pp: bump při změně post-processingu (med-inject, validateEdges...) → přeskočí Sonnet, re-run PP
 const _v_ai = 12;
-const _v_pp = 2;
+const _v_pp = 3;
 
 function hashStr(s) {
   let h = 0;
