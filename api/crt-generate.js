@@ -345,8 +345,17 @@ const DIAGNOSIS_KEYWORDS = [
   { keywords: ['erektilní', 'erectile', 'impotence', 'ed'],                                       id: 'ERECTILE_DYSFUNCTION' },
 ];
 
+// Mapování Vitalita/Dekatlon otázek (node_inputs) → CRT osobní UDE uzly
+const PHYSICAL_UDE_MAP = [
+  { qIds: ['vyjit_4_patra', 'rychla_chuze'],                                              udeId: 'LOW_VO2MAX'       },
+  { qIds: ['vynest_nakup', 'zvednout_vnouce', 'otevrit_zavarovacku'],                     udeId: 'MUSCLE_WEAKNESS'  },
+  { qIds: ['kufr_do_police'],                                                              udeId: 'MOBILITY_DEFICIT' },
+  { qIds: ['vstat_ze_zeme', 'balanc_jedna_noha', 'rovnovaha_zavrene_oci', 'skocit_dopadnout'], udeId: 'GAIT_INSTABILITY' },
+];
+const PHYSICAL_THRESHOLD = 7; // value ≤ 7 (1–10) = YELLOW nebo RED → aktivuj UDE
+
 // Deterministické sestavení CRT z diagnóz + léků (bez AI) — pro nové uživatele
-async function buildDeterministicCRT(profile) {
+async function buildDeterministicCRT(profile, nodeInputs = []) {
   const allText = [
     ...(profile.diagnoses || []),
     ...(profile.symptoms  || []),
@@ -365,6 +374,21 @@ async function buildDeterministicCRT(profile) {
   // BMI prahy
   if (bmi && bmi >= 27) activeIds.add('OBESITY');
   if (bmi && bmi >= 30) { activeIds.add('OBESITY'); activeIds.add('HYPERTENSION'); }
+
+  // Vitalita/Dekatlon onboarding → osobní fyzické UDE uzly
+  if (nodeInputs.length > 0) {
+    for (const { qIds, udeId } of PHYSICAL_UDE_MAP) {
+      const hits = nodeInputs.filter(ni => qIds.includes(ni.question_id));
+      if (hits.some(ni => (ni.value ?? 10) <= PHYSICAL_THRESHOLD)) {
+        activeIds.add(udeId);
+        console.log(`[CRT] physical UDE from Vitalita: ${udeId}`);
+      }
+    }
+    // Fyzické UDEs napojené na METABOLIC_HEALTH_ROOT → zajisti kořen aktivní
+    if (['LOW_VO2MAX', 'MUSCLE_WEAKNESS'].some(id => activeIds.has(id))) {
+      activeIds.add('METABOLIC_HEALTH_ROOT');
+    }
+  }
 
   // Fallback: pokud nic nebylo nalezeno, přidej chronický stres
   if (activeIds.size === 0) activeIds.add('CHRONIC_STRESS');
@@ -578,7 +602,7 @@ PRAVIDLA JSON:
     crt = JSON.parse(JSON.stringify(_rawAI));
     console.log('[CRT] _rawAI použit z cache (Sonnet přeskočen)');
   } else if (!hasDoctorNotes) {
-    crt = await buildDeterministicCRT(profile);
+    crt = await buildDeterministicCRT(profile, nodeInputs);
   } else {
   const userPrompt = `Přelož lékařský popis do CRT JSON struktury.
 
@@ -1201,7 +1225,7 @@ function overlayColors(nodes, metrics) {
 // _v_ai: bump POUZE při změně Sonnet promptu → invaliduje AI generování
 // _v_pp: bump při změně post-processingu (med-inject, validateEdges...) → přeskočí Sonnet, re-run PP
 const _v_ai = 12;
-const _v_pp = 3;
+const _v_pp = 4;
 
 function hashStr(s) {
   let h = 0;

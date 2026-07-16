@@ -19,7 +19,7 @@
     "can_be_root": true,
     "typical_branch": "C",
     "med_targets": [],
-    "typical_children": ["DYSLIPIDEMIA", "HYPERURICEMIA", "INSULIN_RESISTANCE", "OBESITY"],
+    "typical_children": ["DYSLIPIDEMIA", "HYPERURICEMIA", "INSULIN_RESISTANCE", "OBESITY", "LOW_VO2MAX", "MUSCLE_WEAKNESS"],
     "panel_text": "Metabolická dysregulace je tichý proces — tělo roky kompenzuje, než se problémy projeví naplno. Cholesterol, kyselina močová, inzulín: všechny vycházejí ze stejného kořene. Jídlo, pohyb a spánek jsou jediné nástroje, které to mohou zvrátit."
   },
   {
@@ -170,7 +170,7 @@
     "can_be_root": false,
     "typical_branch": "R",
     "med_targets": ["doreta", "palgotal", "tramadol"],
-    "typical_children": ["GAIT_INSTABILITY"]
+    "typical_children": ["GAIT_INSTABILITY", "MUSCLE_WEAKNESS", "MOBILITY_DEFICIT"]
   },
   {
     "id": "PREMATURE_CONTRACTIONS",
@@ -315,5 +315,41 @@
     "can_be_root": false,
     "typical_branch": "C",
     "med_targets": ["anopyrin", "aspirin", "torvacard"]
+  },
+  {
+    "id": "LOW_VO2MAX",
+    "label": "Nízká aerobní kapacita",
+    "label_layman": "Zadýchávám se při námaze",
+    "type": "ude",
+    "typical_level": 2,
+    "can_be_root": false,
+    "typical_branch": "RC",
+    "med_targets": [],
+    "typical_children": [],
+    "panel_text": "VO2max je nejsilnější prediktor délky života — silnější než kouření, diabetes nebo kardiovaskulární choroby. Každé zvýšení o 1 MET snižuje riziko úmrtí o ~13 %. Aerobní kapacita se dá trénovat v každém věku."
+  },
+  {
+    "id": "MUSCLE_WEAKNESS",
+    "label": "Svalová slabost",
+    "label_layman": "Nemohu zdvihnout co dřív",
+    "type": "ude",
+    "typical_level": 2,
+    "can_be_root": false,
+    "typical_branch": "R",
+    "med_targets": [],
+    "typical_children": [],
+    "panel_text": "Svalová hmota je metabolicky aktivní tkáň — její ztráta (sarkopenie) urychluje metabolickou dysregulaci a zvyšuje riziko pádů a ztráty samostatnosti. Silový trénink je jediná intervence, která ji spolehlivě obnovuje."
+  },
+  {
+    "id": "MOBILITY_DEFICIT",
+    "label": "Omezená pohyblivost",
+    "label_layman": "Tuhé klouby, omezený pohyb",
+    "type": "ude",
+    "typical_level": 3,
+    "can_be_root": false,
+    "typical_branch": "R",
+    "med_targets": [],
+    "typical_children": [],
+    "panel_text": "Omezený rozsah pohybu v ramenou, kyčlích a páteři predikuje ztrátu funkční nezávislosti. Pohyblivost se ztrácí postupně a nenápadně — ale dá se zvrátit cílenou prací na kloubní mobilitě."
   }
 ]
