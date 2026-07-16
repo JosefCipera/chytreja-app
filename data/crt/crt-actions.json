@@ -1,6 +1,6 @@
 {
   "CHRONIC_STRESS": [
-    { "id": "box_breathing",   "title": "Box breathing",              "desc": "4 vdechy — 4 zadržení — 4 výdechy — 4 zadržení, 5 minut", "icon": "wind" },
+    { "id": "box_breathing",   "title": "Čtvercové dýchání",          "desc": "Vdech 4s — zadržení 4s — výdech 4s — pauza 4s, opakuj 5 minut", "icon": "wind" },
     { "id": "procházka_bez_tel","title": "Procházka bez telefonu",    "desc": "20 min venku, telefon doma nebo v kapse na letadle",       "icon": "walk" },
     { "id": "odpojeni",        "title": "Odpojení od obrazovek",      "desc": "1 hodinu před spaním bez telefonu, tabletu ani TV",        "icon": "device-tv-off" },
     { "id": "priroda",         "title": "Příroda 30 min",             "desc": "Les, park nebo zahrada — bez sluchátek, jen ticho",        "icon": "trees" },
@@ -8,7 +8,8 @@
     { "id": "dechova_421",     "title": "Dechové cvičení 4-2-1",      "desc": "Vdech 4s, zadržení 2s, výdech 8s — 10 opakování",         "icon": "lungs" },
     { "id": "bez_emailu",      "title": "Žádné emaily po 20:00",      "desc": "Email aplikace zavřená od 20h do rána",                    "icon": "mail-off" },
     { "id": "denik",           "title": "Psaní deníku",               "desc": "5 minut — co tě dnes stresovalo a co ti pomohlo",         "icon": "notebook" },
-    { "id": "studena_voda",    "title": "Studená voda na obličej",    "desc": "30 sekund studené vody na tvář — aktivuje bloudivý nerv",  "icon": "droplet" }
+    { "id": "studena_voda",    "title": "Studená voda na obličej",    "desc": "30 sekund studené vody na tvář — aktivuje bloudivý nerv",  "icon": "droplet" },
+    { "id": "buteyko_pauza",  "title": "Buteyko kontrolní pauza",    "desc": "Po normálním výdechu — zadrž dech nosem dokud necítíš nutkání nadechnout (cíl 20–40 s)", "icon": "nose" }
   ],
 
   "METABOLIC_HEALTH_ROOT": [
