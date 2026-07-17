@@ -73,7 +73,7 @@
     "type": "cause",
     "typical_level": 1,
     "can_be_root": true,
-    "typical_branch": "C",
+    "typical_branch": "RC",
     "med_targets": ["ozempic", "wegovy", "semaglutid", "saxenda", "liraglutid", "orlistat"],
     "typical_children": ["INSULIN_RESISTANCE"]
   },

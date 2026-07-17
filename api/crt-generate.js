@@ -332,7 +332,7 @@ const DIAGNOSIS_KEYWORDS = [
   { keywords: ['stres', 'stress', 'vyhoření', 'burnout', 'napětí', 'úzkost', 'anxiet'],          id: 'CHRONIC_STRESS' },
   { keywords: ['obezita', 'nadváha', 'obese', 'overweight'],                                      id: 'OBESITY' },
   { keywords: ['cholesterol', 'dyslipid', 'ldl', 'lipid'],                                        id: 'DYSLIPIDEMIA' },
-  { keywords: ['hypertenze', 'hypertension', 'vysoký tlak', 'krevní tlak'],                       id: 'HYPERTENSION' },
+  { keywords: ['hypertenze', 'hypertension', 'vysoký tlak'],                                      id: 'HYPERTENSION' },
   { keywords: ['hypothyreóza', 'hypothyroid', 'štítná žláza', 'tyreoida'],                        id: 'HYPOTHYROIDISM' },
   { keywords: ['cukrovka', 'diabetes', 'inzulínová rezistence', 'inzulin', 'glukóza'],            id: 'INSULIN_RESISTANCE' },
   { keywords: ['třes', 'tremor', 'bolest hlavy', 'migréna', 'headache'],                          id: 'NEUROMOTOR_DYS' },
@@ -1321,7 +1321,7 @@ function overlayColors(nodes, metrics) {
 // _v_ai: bump POUZE při změně Sonnet promptu → invaliduje AI generování
 // _v_pp: bump při změně post-processingu (med-inject, validateEdges...) → přeskočí Sonnet, re-run PP
 const _v_ai = 12;
-const _v_pp = 17;
+const _v_pp = 18;
 
 function hashStr(s) {
   let h = 0;
