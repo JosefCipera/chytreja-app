@@ -1581,12 +1581,9 @@ function _buildMedDrawer(forPrint = false) {
     ctx.textAlign = 'right';
     ctx.textBaseline = 'middle';
 
-    // Fallback: pokud target node není v síti (Top-N filtr), použij root
-    const rootId = window._crtData?.root?.id || window._crtData?.root;
-    const fallbackPos = (rootId && positions[rootId]) || Object.values(positions)[0] || null;
     Object.entries(byNode).forEach(([nodeId, meds]) => {
-      const pos = positions[nodeId] || fallbackPos;
-      if (!pos) return;
+      const pos = positions[nodeId];
+      if (!pos) return; // node filtered out (Top-N) or not yet rendered — skip
       meds.forEach((m, i) => {
         const color  = typeColor[m.type] || typeColor.treatment;
         const text   = m.name;
