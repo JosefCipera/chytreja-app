@@ -42,7 +42,7 @@
     "can_be_root": false,
     "typical_branch": "L",
     "med_targets": ["magnesium bisglycinát", "magnesium bisglycinat", "magnosolv", "hořčík", "magnesium", "betaloc", "concor", "metoprolol", "bisoprolol"],
-    "typical_children": ["NEUROMOTOR_DYS", "DEPRESSION_ANXIETY", "SLEEP_DISORDER"]
+    "typical_children": ["NEUROMOTOR_DYS", "CARDIAC_IRRITABILITY", "DEPRESSION_ANXIETY", "SLEEP_DISORDER"]
   },
   {
     "id": "DEPRESSION_ANXIETY",
@@ -149,7 +149,8 @@
     "typical_level": 2,
     "can_be_root": false,
     "typical_branch": "L",
-    "med_targets": ["magnesium bisglycinát", "magnosolv"]
+    "med_targets": ["magnesium bisglycinát", "magnosolv"],
+    "typical_children": ["ATRIAL_FIBRILLATION"]
   },
   {
     "id": "ATHEROSCLEROSIS",
@@ -191,7 +192,7 @@
     "can_be_root": false,
     "typical_branch": "C",
     "med_targets": ["prestarium", "perindopril", "tritace", "amlessa", "norvasc", "tezeo"],
-    "typical_children": ["PREMATURE_CONTRACTIONS", "ENDOTHELIAL_DYSFUNCTION", "STROKE_RISK"]
+    "typical_children": ["ATRIAL_FIBRILLATION", "ENDOTHELIAL_DYSFUNCTION", "STROKE_RISK"]
   },
   {
     "id": "PERIPHERAL_NEUROPATHY",
@@ -233,7 +234,8 @@
     "typical_level": 5,
     "can_be_root": false,
     "typical_branch": "LC",
-    "med_targets": ["pradaxa", "nolpaza", "xarelto", "warfarin", "betaloc", "concor"]
+    "med_targets": ["pradaxa", "nolpaza", "xarelto", "warfarin", "betaloc", "concor"],
+    "typical_children": ["THREATENED_HEALTHSPAN"]
   },
   {
     "id": "ENDOTHELIAL_DYSFUNCTION",
@@ -264,7 +266,8 @@
     "typical_level": 5,
     "can_be_root": false,
     "typical_branch": "RC",
-    "med_targets": ["vizarsin", "cialis"]
+    "med_targets": ["vizarsin", "cialis"],
+    "typical_children": ["THREATENED_HEALTHSPAN"]
   },
   {
     "id": "PALPITATIONS",
@@ -375,5 +378,29 @@
     "med_targets": [],
     "typical_children": ["PHYSICAL_DECONDITIONING"],
     "panel_text": "Pohybová inaktivita je přímou příčinou ztráty aerobní kapacity, svalové síly a rozsahu pohybu. Bez pohybového stimulu tělo ztrácí funkční kapacitu od 35. roku. Tento proces je plně reverzibilní — i mírný pravidelný pohyb ho zastaví a zvrátí."
+  },
+  {
+    "id": "SEDENTARY_LIFESTYLE_ROOT",
+    "label": "Sedavý způsob života",
+    "label_layman": "Nepohyb a kancelářský život",
+    "type": "cause",
+    "typical_level": 0,
+    "can_be_root": true,
+    "typical_branch": "C",
+    "med_targets": [],
+    "typical_children": ["DYSLIPIDEMIA", "HYPERURICEMIA", "INSULIN_RESISTANCE"],
+    "panel_text": "Sedavý způsob života je nejrozšířenějším, ale nejméně viditelným rizikovým faktorem. 8+ hodin sezení denně zvyšuje LDL cholesterol, kyselinu močovou a inzulínovou rezistenci — nezávisle na dietě. Přestávky na pohyb každých 90 minut tyto markery měřitelně snižují během 4 týdnů."
+  },
+  {
+    "id": "THREATENED_HEALTHSPAN",
+    "label": "Ohrožená zdravá dlouhověkost",
+    "label_layman": "Ohrožený desetiboj a svobodný život",
+    "type": "ude",
+    "typical_level": 6,
+    "can_be_root": false,
+    "typical_branch": "C",
+    "med_targets": [],
+    "typical_children": [],
+    "panel_text": "Fibrilace síní a erektilní dysfunkce jsou viditelné projevy systémové cévní a metabolické dysregulace. Bez intervence tento stav vede ke ztrátě fyzické výkonnosti, kognitivní kapacity a nakonec i funkční nezávislosti — přesně toho, co Dekatlon chrání. Toto je tvůj skutečný protivník."
   }
 ]

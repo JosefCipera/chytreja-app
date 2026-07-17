@@ -343,6 +343,7 @@ const DIAGNOSIS_KEYWORDS = [
   { keywords: ['kosti', 'osteoporóza', 'osteopenie', 'bone density'],                             id: 'BONE_DENSITY_LOSS' },
   { keywords: ['klouby', 'artróza', 'artritis', 'páteř', 'ploténka'],                             id: 'MUSCULOSKELETAL_DEG' },
   { keywords: ['erektilní', 'erectile', 'impotence', 'ed'],                                       id: 'ERECTILE_DYSFUNCTION' },
+  { keywords: ['sedavé zaměstnání', 'sedavý', 'kancelář', 'nepohyb', 'sedí celý den', 'sedentary', 'bez pohybu', 'no exercise'], id: 'SEDENTARY_LIFESTYLE_ROOT' },
 ];
 
 // Vitalita/Dekatlon metriky → jeden konsolidovaný CRT uzel (most mezi metabolickým kořenem a UDE)
@@ -361,6 +362,7 @@ async function buildDeterministicCRT(profile, metrics = []) {
   const allText = [
     ...(profile.diagnoses || []),
     ...(profile.symptoms  || []),
+    profile.doctor_notes || '',
   ].join(' ').toLowerCase();
 
   const bmi = (profile._height && profile._weight)
@@ -389,8 +391,17 @@ async function buildDeterministicCRT(profile, metrics = []) {
   // Fallback: pokud nic nebylo nalezeno, přidej chronický stres
   if (activeIds.size === 0) activeIds.add('CHRONIC_STRESS');
 
-  // Kořenová inference: přidej kořenové uzly pro metabolické stavy
-  if (activeIds.has('OBESITY') || activeIds.has('DYSLIPIDEMIA') || activeIds.has('INSULIN_RESISTANCE') || activeIds.has('HYPERURICEMIA')) {
+  // Sedavý způsob života → přímý metabolický efekt (SEDENTARY nahrazuje METABOLIC_HEALTH_ROOT)
+  if (activeIds.has('SEDENTARY_LIFESTYLE_ROOT')) {
+    activeIds.add('DYSLIPIDEMIA');
+    activeIds.add('HYPERURICEMIA');
+    activeIds.add('INSULIN_RESISTANCE');
+  }
+
+  // Kořenová inference: přidej METABOLIC_HEALTH_ROOT pro klinické metabolické stavy
+  // (přeskočí pokud sedavý životní styl je primárním rootem — ten je specifičtější)
+  if (!activeIds.has('SEDENTARY_LIFESTYLE_ROOT') &&
+      (activeIds.has('OBESITY') || activeIds.has('DYSLIPIDEMIA') || activeIds.has('INSULIN_RESISTANCE') || activeIds.has('HYPERURICEMIA'))) {
     activeIds.add('METABOLIC_HEALTH_ROOT');
   }
 
@@ -462,6 +473,7 @@ async function buildDeterministicCRT(profile, metrics = []) {
 
 // Vitalita/Dekatlon fyzické UDE uzly — inject na základě user_metrics (obě cesty)
 // Přidá jen uzly, pro které existuje přirozený rodič v aktivním CRT stromu.
+// Přeskočí pokud je SEDENTARY_LIFESTYLE_ROOT aktivní — sedavý kořen fyzickou situaci pokrývá.
 function injectPhysicalUdes(crt, metrics) {
   if (!metrics || !metrics.length) return;
 
@@ -469,6 +481,12 @@ function injectPhysicalUdes(crt, metrics) {
     ...(crt.nodes || []).map(n => n.id),
     crt.root ? (typeof crt.root === 'object' ? crt.root.id : crt.root) : null,
   ].filter(Boolean));
+
+  // SEDENTARY_LIFESTYLE_ROOT pokrývá fyzickou situaci kauzálně — PHYSICAL_DECONDITIONING by byl duplikát
+  if (existingIds.has('SEDENTARY_LIFESTYLE_ROOT')) {
+    console.log('[CRT] injectPhysicalUdes: skip — SEDENTARY_LIFESTYLE_ROOT aktivní');
+    return;
+  }
 
   const allNodes = () => [
     ...(crt.nodes || []),
@@ -1264,7 +1282,7 @@ function overlayColors(nodes, metrics) {
 // _v_ai: bump POUZE při změně Sonnet promptu → invaliduje AI generování
 // _v_pp: bump při změně post-processingu (med-inject, validateEdges...) → přeskočí Sonnet, re-run PP
 const _v_ai = 12;
-const _v_pp = 7;
+const _v_pp = 8;
 
 function hashStr(s) {
   let h = 0;
