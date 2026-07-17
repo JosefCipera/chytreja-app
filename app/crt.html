@@ -847,7 +847,7 @@ function renderTree(data) {
     const colKey = `${col3}-${n.level ?? 0}`;
     const _siblings = _colLevelGroups[colKey] || [n.id];
     const _sibIdx   = _siblings.indexOf(n.id);
-    const _sibOff   = _siblings.length > 1 ? (_sibIdx - (_siblings.length - 1) / 2) * 260 : 0;
+    const _sibOff   = _siblings.length > 1 ? (_sibIdx - (_siblings.length - 1) / 2) * 400 : 0;
     const bx = (!IS_MOBILE && n.branch && BRANCH_X[n.branch] !== undefined)
       ? BRANCH_X[n.branch] + _sibOff : undefined;
     const by = (!IS_MOBILE && bx !== undefined) ? -(n.level ?? 0) * COL3_SEP : undefined;
@@ -904,8 +904,8 @@ function renderTree(data) {
         font: { size: IS_MOBILE ? 17 : 22, face: 'Inter, system-ui, sans-serif' },
       },
       edges: {
-        arrows: { to: { enabled: true, scaleFactor: 0.9 } },
-        color: { color: '#2a4a68', highlight: '#5a8ab8', hover: '#4a7aa8' },
+        arrows: { to: { enabled: true, scaleFactor: 1.4, type: 'arrow' } },
+        color: { color: '#3a6a88', highlight: '#5a8ab8', hover: '#4a7aa8', inherit: false },
         smooth: { enabled: false },
         width: 1.5,
       },
