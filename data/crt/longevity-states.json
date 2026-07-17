@@ -95,7 +95,7 @@
     "type": "cause",
     "typical_level": 2,
     "can_be_root": false,
-    "typical_branch": "C",
+    "typical_branch": "RC",
     "med_targets": ["sifor", "siofor", "metformin", "glucophage"],
     "typical_children": []
   },
