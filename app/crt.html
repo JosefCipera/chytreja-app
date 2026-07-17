@@ -815,6 +815,14 @@ function renderTree(data) {
 
   const edgeSources = new Set(data.edges.map(e => e.from));
 
+  // 3-column sibling grouping: sourozenci ve stejném sloupci+levelu → rozestup
+  const _colLevelGroups = {};
+  (data.nodes || []).forEach(n => {
+    const col = (n.branch === 'L' || n.branch === 'LC') ? 'L' : n.branch === 'C' ? 'C' : 'R';
+    const key = `${col}-${n.level ?? 0}`;
+    (_colLevelGroups[key] = _colLevelGroups[key] || []).push(n.id);
+  });
+
   const visNodes = data.nodes.map(n => {
     const ntype = n._type || n.type || 'cause';
     const isApex     = ntype === 'ude' && !edgeSources.has(n.id);
@@ -830,10 +838,17 @@ function renderTree(data) {
       bg = '#1a2d40'; border = '#2a4a60'; textColor = '#a7c7df'; bw = 1.5; dashes = false;
     }
 
-    // Desktop: branch → pevné x sloupce. Mobil: auto-layout (žádný overlap).
-    const BRANCH_X = { L: -450, LC: -225, C: 0, RC: 225, R: 450 };
+    // Desktop: 3 pevné sloupce (L, C, R). Sourozenci ve stejném sloupci+levelu
+    // se rozestoupí symetricky. Mobil: auto-layout (žádný overlap).
+    const BRANCH_X = { L: -500, LC: -500, C: 0, RC: 500, R: 500 };
+    const branchToCol3 = b => (b === 'L' || b === 'LC') ? 'L' : b === 'C' ? 'C' : 'R';
+    const col3 = branchToCol3(n.branch || 'C');
+    const colKey = `${col3}-${n.level ?? 0}`;
+    const _siblings = _colLevelGroups[colKey] || [n.id];
+    const _sibIdx   = _siblings.indexOf(n.id);
+    const _sibOff   = _siblings.length > 1 ? (_sibIdx - (_siblings.length - 1) / 2) * 240 : 0;
     const bx = (!IS_MOBILE && n.branch && BRANCH_X[n.branch] !== undefined)
-      ? BRANCH_X[n.branch] : undefined;
+      ? BRANCH_X[n.branch] + _sibOff : undefined;
 
     return {
       id: n.id,
