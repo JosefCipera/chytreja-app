@@ -270,7 +270,7 @@
     "can_be_root": false,
     "typical_branch": "RC",
     "med_targets": ["vizarsin", "cialis"],
-    "typical_children": []
+    "typical_children": ["THREATENED_HEALTHSPAN"]
   },
   {
     "id": "PALPITATIONS",
