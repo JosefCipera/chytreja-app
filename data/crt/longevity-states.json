@@ -97,7 +97,7 @@
     "can_be_root": false,
     "typical_branch": "C",
     "med_targets": ["sifor", "siofor", "metformin", "glucophage"],
-    "typical_children": []
+    "typical_children": ["HYPERTENSION"]
   },
   {
     "id": "HYPERURICEMIA",
@@ -213,9 +213,10 @@
     "label_layman": "Vysoký krevní tlak",
     "type": "cause",
     "typical_level": 3,
-    "can_be_root": true,
-    "typical_branch": "R",
-    "med_targets": ["prestarium", "perindopril", "tritace", "amlessa", "norvasc", "betaloc", "concor"]
+    "can_be_root": false,
+    "typical_branch": "C",
+    "med_targets": ["prestarium", "perindopril", "tritace", "amlessa", "norvasc", "betaloc", "concor"],
+    "typical_children": ["THREATENED_HEALTHSPAN"]
   },
   {
     "id": "FATIGUE_LOW_CAPACITY",
