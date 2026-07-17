@@ -462,12 +462,9 @@ async function buildDeterministicCRT(profile, metrics = []) {
   for (const id of activeIds) {
     const def = STATES_DB[id];
     if (!def) continue;
-    // CHRONIC_STRESS je child SEDENTARY pokud SEDENTARY aktivní → level 1 (jinak by byl na stejné řadě jako root)
-    const effectiveLevel = (id === 'CHRONIC_STRESS' && activeIds.has('SEDENTARY_LIFESTYLE_ROOT'))
-      ? 1 : def.typical_level;
     const node = {
       id, label: def.label, label_layman: def.label_layman,
-      type: def.type, level: effectiveLevel, branch: def.typical_branch,
+      type: def.type, level: def.typical_level, branch: def.typical_branch,
     };
     // BMI-based label override: 25–30 = nadváha, ≥30 = obezita
     if (id === 'OBESITY' && bmi && bmi < 30) {
@@ -1324,7 +1321,7 @@ function overlayColors(nodes, metrics) {
 // _v_ai: bump POUZE při změně Sonnet promptu → invaliduje AI generování
 // _v_pp: bump při změně post-processingu (med-inject, validateEdges...) → přeskočí Sonnet, re-run PP
 const _v_ai = 12;
-const _v_pp = 13;
+const _v_pp = 14;
 
 function hashStr(s) {
   let h = 0;

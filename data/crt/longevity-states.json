@@ -4,8 +4,8 @@
     "label": "Chronický stres",
     "label_layman": "Trvalý stres",
     "type": "cause",
-    "typical_level": 0,
-    "can_be_root": true,
+    "typical_level": 1,
+    "can_be_root": false,
     "typical_branch": "L",
     "med_targets": [],
     "typical_children": ["CARDIAC_IRRITABILITY", "DEPRESSION_ANXIETY", "SLEEP_DISORDER"]
