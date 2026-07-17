@@ -377,8 +377,8 @@ parents (dolů ke kořenům) + children (nahoru k cíli) → zobrazí jen tuto v
 
 ### State Dictionary — deterministická vrstva CRT (Jul 2026)
 
-**Gold standard:** `git tag v0.2-crt-gold-josef` · `git tag v0.2-crt-gold-kovarova`  
-**Verze:** `api/crt-generate.js` `_v_ai: 12` · `_v_pp: 2` · `data/crt/longevity-states.json` (30 stavů)
+**Gold standard:** `git tag v0.3-crt-gold-josef` · `git tag v0.2-crt-gold-kovarova`  
+**Verze:** `api/crt-generate.js` `_v_pp: 26` · `data/crt/longevity-states.json` (30 stavů)
 
 Sonnet je nedeterministický — bez kotvy vytváří různé stromy pro stejného pacienta. State Dictionary je **kanonický slovník** 30 pevných stavů; Sonnet pouze vybírá, které z nich jsou aktivní pro daného pacienta (podle `doctor_notes`). Bez `doctor_notes` běží čistě deterministický builder bez AI.
 
@@ -451,21 +451,19 @@ LC/RC větve umožňují AND-join přes validateEdges — C→L/R by bylo blokov
 
 #### Tři referenční uživatelé
 
-**Josef** — `git tag v0.2-crt-gold-josef` — FaP + ED (s `doctor_notes`)
+**Josef** — `git tag v0.3-crt-gold-josef` — FaP + ED (deterministický builder, bez `doctor_notes`)
 ```
-CHRONIC_STRESS (L0)           METABOLIC_HEALTH_ROOT (C0)
-       ↓                               ↓           ↓
-SYMPATHETIC (L1)              DYSLIPIDEMIA (C1)  HYPERURICEMIA (R1)
-ELECTROLYTE (L1)                    ↓                  ↓
-CARDIAC_IRRITABILITY (L2)     ATHEROSCLEROSIS (C2)     |
-       ↓                             ↓                  |
-       └──────────→ VASCULAR_STIFFNESS (C3) ←───────────┘
-                          ↓                ↓
-              PREMATURE_CONTRACTIONS (LC4)  ENDOTHELIAL_DYSFUNCTION (RC4)
-                          ↓                          ↓
-              ATRIAL_FIBRILLATION (LC5)    ERECTILE_DYSFUNCTION (RC5)
+             L sloupec (-500)     C sloupec (0)      R sloupec (+500)
+level 0:                          SEDENTARY
+level 1:     CHRONIC_STRESS       OBESITY            DYSLIPIDEMIA
+level 2:     CARDIAC_IRRITABILITY INSULIN_RESISTANCE HYPERURICEMIA  ATHEROSCLEROSIS
+level 3:                          HYPERTENSION                      VASCULAR_STIFFNESS
+level 4:     ATRIAL_FIBRILLATION                     ENDOTHELIAL_DYSFUNCTION
+level 5:     (apex1) RIZIKO_MRTVICE/INFARKTU (C)     (apex2) ERECTILE_DYSFUNCTION (R)
 ```
-AND-join: stresová větev + cévy → PREMATURE_CONTRACTIONS → FaP. Symetrická apex dvojice: FaP (LC5) + ED (RC5).
+Tři přísné sloupce (3-column fixed layout). Dva apices: Riziko mrtvice/infarktu (C5) + ED (R5).
+ENDOTHELIAL_DYSFUNCTION je AND-join: HYPERURICEMIA + VASCULAR_STIFFNESS → ENDOTHELIAL → ED + apex1.
+Layout: hierarchical DU vypnutý, x+y fixováno z branch+level.
 
 **Kovářová** — `git tag v0.2-crt-gold-kovarova` — geriatrický (s `doctor_notes`)
 3 rooty (L+C+R), AND-join GAIT_INSTABILITY (C4), duální UDE: FALL_RISK (C5) + STROKE_RISK (RC5).
