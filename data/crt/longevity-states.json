@@ -397,7 +397,7 @@
   {
     "id": "THREATENED_HEALTHSPAN",
     "label": "Ohrožená zdravá dlouhověkost",
-    "label_layman": "Ohrožený desetiboj a svobodný život",
+    "label_layman": "Ohrožený dlouhý a zdravý věk",
     "type": "ude",
     "typical_level": 6,
     "can_be_root": false,
