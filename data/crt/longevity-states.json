@@ -194,7 +194,7 @@
     "can_be_root": false,
     "typical_branch": "C",
     "med_targets": ["prestarium", "perindopril", "tritace", "amlessa", "norvasc", "tezeo"],
-    "typical_children": ["ATRIAL_FIBRILLATION", "ENDOTHELIAL_DYSFUNCTION", "STROKE_RISK"]
+    "typical_children": ["THREATENED_HEALTHSPAN"]
   },
   {
     "id": "PERIPHERAL_NEUROPATHY",
@@ -270,7 +270,7 @@
     "can_be_root": false,
     "typical_branch": "RC",
     "med_targets": ["vizarsin", "cialis"],
-    "typical_children": ["THREATENED_HEALTHSPAN"]
+    "typical_children": []
   },
   {
     "id": "PALPITATIONS",
