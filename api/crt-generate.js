@@ -775,6 +775,24 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
   // Vitalita/Dekatlon fyzické UDE uzly — po obou cestách (Sonnet i deterministická)
   injectPhysicalUdes(crt, metrics);
 
+  // THREATENED_HEALTHSPAN — apex UDE nad FaP a ED
+  // Sonnet ho nemusí vybrat sám → inject pokud je v aktivním stromu FaP nebo ED
+  {
+    const activeNodeIds = new Set((crt.nodes || []).map(n => n.id));
+    const triggers = ['ATRIAL_FIBRILLATION', 'ERECTILE_DYSFUNCTION'];
+    if (triggers.some(id => activeNodeIds.has(id)) && !activeNodeIds.has('THREATENED_HEALTHSPAN')) {
+      const def = STATES_DB['THREATENED_HEALTHSPAN'];
+      if (def) {
+        (crt.nodes = crt.nodes || []).push({
+          id: 'THREATENED_HEALTHSPAN', label: def.label, label_layman: def.label_layman,
+          type: def.type, level: def.typical_level, branch: def.typical_branch,
+          panel_text: def.panel_text || null,
+        });
+        console.log('[CRT] inject: THREATENED_HEALTHSPAN ← FaP/ED aktivní');
+      }
+    }
+  }
+
   // Med-injekce: pokud žádný aktivní stav nemá lék uživatele v med_targets → injektuj stav
   // Bezpečné: injektuje jen stavy ze STATES_DB, bez AI, bez text-matchingu
   {
@@ -1282,7 +1300,7 @@ function overlayColors(nodes, metrics) {
 // _v_ai: bump POUZE při změně Sonnet promptu → invaliduje AI generování
 // _v_pp: bump při změně post-processingu (med-inject, validateEdges...) → přeskočí Sonnet, re-run PP
 const _v_ai = 12;
-const _v_pp = 8;
+const _v_pp = 9;
 
 function hashStr(s) {
   let h = 0;
