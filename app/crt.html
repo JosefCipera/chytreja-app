@@ -838,23 +838,25 @@ function renderTree(data) {
       bg = '#1a2d40'; border = '#2a4a60'; textColor = '#a7c7df'; bw = 1.5; dashes = false;
     }
 
-    // Desktop: 3 pevné sloupce (L, C, R). Sourozenci ve stejném sloupci+levelu
-    // se rozestoupí symetricky. Mobil: auto-layout (žádný overlap).
-    const BRANCH_X = { L: -500, LC: -500, C: 0, RC: 500, R: 500 };
+    // Desktop: 3 pevné sloupce (L, C, R), hierarchical layout vypnutý.
+    // y fixováno z levelu, x z column+sibling offset. Mobil: hierarchical auto.
+    const BRANCH_X   = { L: -500, LC: -500, C: 0, RC: 500, R: 500 };
+    const COL3_SEP   = 180; // px mezi levely (desktop)
     const branchToCol3 = b => (b === 'L' || b === 'LC') ? 'L' : b === 'C' ? 'C' : 'R';
     const col3 = branchToCol3(n.branch || 'C');
     const colKey = `${col3}-${n.level ?? 0}`;
     const _siblings = _colLevelGroups[colKey] || [n.id];
     const _sibIdx   = _siblings.indexOf(n.id);
-    const _sibOff   = _siblings.length > 1 ? (_sibIdx - (_siblings.length - 1) / 2) * 240 : 0;
+    const _sibOff   = _siblings.length > 1 ? (_sibIdx - (_siblings.length - 1) / 2) * 260 : 0;
     const bx = (!IS_MOBILE && n.branch && BRANCH_X[n.branch] !== undefined)
       ? BRANCH_X[n.branch] + _sibOff : undefined;
+    const by = (!IS_MOBILE && bx !== undefined) ? -(n.level ?? 0) * COL3_SEP : undefined;
 
     return {
       id: n.id,
       label: n.label ?? n.id,
       level: n.level ?? 0,
-      ...(bx !== undefined ? { x: bx, fixed: { x: true, y: false } } : {}),
+      ...(bx !== undefined ? { x: bx, y: by, fixed: { x: true, y: true } } : {}),
       color: {
         background: bg,
         border: border,
@@ -882,19 +884,19 @@ function renderTree(data) {
     container,
     { nodes: new vis.DataSet(visNodes), edges: new vis.DataSet(visEdges) },
     {
-      layout: {
+      layout: IS_MOBILE ? {
         hierarchical: {
           enabled: true,
           direction: 'DU',
           sortMethod: 'directed',
-          levelSeparation: IS_MOBILE ? 110 : 160,
-          nodeSpacing: IS_MOBILE ? 160 : 380,
-          treeSpacing: IS_MOBILE ? 160 : 400,
+          levelSeparation: 110,
+          nodeSpacing: 160,
+          treeSpacing: 160,
           blockShifting: true,
           edgeMinimization: true,
           parentCentralization: true,
         },
-      },
+      } : { randomSeed: 0 },
       nodes: {
         shape: 'box',
         margin: { top: 18, right: 28, bottom: 18, left: 28 },
