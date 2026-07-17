@@ -104,7 +104,7 @@
     "label": "Hyperurikémie",
     "label_layman": "Vysoká kyselina močová",
     "type": "cause",
-    "typical_level": 1,
+    "typical_level": 2,
     "can_be_root": false,
     "typical_branch": "R",
     "med_targets": ["milurit", "allopurinol"],
