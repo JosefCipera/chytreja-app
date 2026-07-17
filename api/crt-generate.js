@@ -379,10 +379,11 @@ async function buildDeterministicCRT(profile, metrics = []) {
   if (bmi && bmi >= 27) activeIds.add('OBESITY');
   if (bmi && bmi >= 30) { activeIds.add('OBESITY'); activeIds.add('HYPERTENSION'); }
 
-  // Fyzická kondice z user_metrics — jakákoliv fyzická metrika YELLOW/RED → INACTIVITY_ROOT větev
+  // Fyzická kondice z user_metrics — jen pokud SEDENTARY_LIFESTYLE_ROOT není aktivní
+  // (SEDENTARY kauzálně pokrývá fyzickou situaci, INACTIVITY_ROOT by byl duplikát a způsoboval by geriatrické uzly)
   const PHYSICAL_METRIC_IDS = new Set(['vo2max', 'vytrvalost', 'sila', 'mobilita', 'stabilita', 'rovnovaha']);
   const hasLowFitness = metrics.some(m => PHYSICAL_METRIC_IDS.has(m.node_id) && (m.state === 'RED' || m.state === 'YELLOW'));
-  if (hasLowFitness) {
+  if (hasLowFitness && !activeIds.has('SEDENTARY_LIFESTYLE_ROOT')) {
     activeIds.add('INACTIVITY_ROOT');
     activeIds.add('PHYSICAL_DECONDITIONING');
     activeIds.add('FATIGUE_LOW_CAPACITY');
@@ -1320,7 +1321,7 @@ function overlayColors(nodes, metrics) {
 // _v_ai: bump POUZE při změně Sonnet promptu → invaliduje AI generování
 // _v_pp: bump při změně post-processingu (med-inject, validateEdges...) → přeskočí Sonnet, re-run PP
 const _v_ai = 12;
-const _v_pp = 10;
+const _v_pp = 11;
 
 function hashStr(s) {
   let h = 0;
