@@ -396,7 +396,7 @@ async function buildDeterministicCRT(profile, metrics = []) {
   if (activeIds.has('SEDENTARY_LIFESTYLE_ROOT')) {
     activeIds.add('DYSLIPIDEMIA');
     activeIds.add('HYPERURICEMIA');
-    activeIds.add('INSULIN_RESISTANCE');
+    activeIds.add('OBESITY'); // OBESITY → INSULIN_RESISTANCE (přes nadváhu, ne přímou šipkou)
   }
 
   // Kořenová inference: přidej METABOLIC_HEALTH_ROOT pro klinické metabolické stavy
@@ -1321,7 +1321,7 @@ function overlayColors(nodes, metrics) {
 // _v_ai: bump POUZE při změně Sonnet promptu → invaliduje AI generování
 // _v_pp: bump při změně post-processingu (med-inject, validateEdges...) → přeskočí Sonnet, re-run PP
 const _v_ai = 12;
-const _v_pp = 16;
+const _v_pp = 17;
 
 function hashStr(s) {
   let h = 0;

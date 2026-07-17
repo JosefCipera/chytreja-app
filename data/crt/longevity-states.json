@@ -391,7 +391,7 @@
     "can_be_root": true,
     "typical_branch": "C",
     "med_targets": [],
-    "typical_children": ["CHRONIC_STRESS", "DYSLIPIDEMIA", "HYPERURICEMIA", "INSULIN_RESISTANCE"],
+    "typical_children": ["CHRONIC_STRESS", "DYSLIPIDEMIA", "HYPERURICEMIA", "OBESITY"],
     "panel_text": "Sedavý způsob života je nejrozšířenějším, ale nejméně viditelným rizikovým faktorem. 8+ hodin sezení denně zvyšuje LDL cholesterol, kyselinu močovou a inzulínovou rezistenci — nezávisle na dietě. Přestávky na pohyb každých 90 minut tyto markery měřitelně snižují během 4 týdnů."
   },
   {
