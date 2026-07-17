@@ -73,7 +73,7 @@
     "type": "cause",
     "typical_level": 1,
     "can_be_root": true,
-    "typical_branch": "RC",
+    "typical_branch": "C",
     "med_targets": ["ozempic", "wegovy", "semaglutid", "saxenda", "liraglutid", "orlistat"],
     "typical_children": ["INSULIN_RESISTANCE"]
   },
@@ -84,7 +84,7 @@
     "type": "cause",
     "typical_level": 1,
     "can_be_root": false,
-    "typical_branch": "C",
+    "typical_branch": "RC",
     "med_targets": ["torvacard", "sortis", "crestor", "atorvastatin", "rosuvastatin", "rosucard"],
     "typical_children": ["ATHEROSCLEROSIS"]
   },
@@ -95,7 +95,7 @@
     "type": "cause",
     "typical_level": 2,
     "can_be_root": false,
-    "typical_branch": "RC",
+    "typical_branch": "C",
     "med_targets": ["sifor", "siofor", "metformin", "glucophage"],
     "typical_children": []
   },
@@ -160,7 +160,7 @@
     "type": "cause",
     "typical_level": 2,
     "can_be_root": false,
-    "typical_branch": "C",
+    "typical_branch": "RC",
     "med_targets": ["torvacard", "sortis", "crestor", "stacyl", "anopyrin"],
     "typical_children": ["VASCULAR_STIFFNESS"]
   },
@@ -192,7 +192,7 @@
     "type": "cause",
     "typical_level": 3,
     "can_be_root": false,
-    "typical_branch": "C",
+    "typical_branch": "RC",
     "med_targets": ["prestarium", "perindopril", "tritace", "amlessa", "norvasc", "tezeo"],
     "typical_children": ["THREATENED_HEALTHSPAN"]
   },
