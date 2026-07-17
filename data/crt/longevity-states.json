@@ -194,7 +194,7 @@
     "can_be_root": false,
     "typical_branch": "RC",
     "med_targets": ["prestarium", "perindopril", "tritace", "amlessa", "norvasc", "tezeo"],
-    "typical_children": ["THREATENED_HEALTHSPAN"]
+    "typical_children": ["ENDOTHELIAL_DYSFUNCTION"]
   },
   {
     "id": "PERIPHERAL_NEUROPATHY",
