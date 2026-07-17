@@ -249,7 +249,7 @@
     "can_be_root": false,
     "typical_branch": "RC",
     "med_targets": [],
-    "typical_children": ["ERECTILE_DYSFUNCTION"]
+    "typical_children": ["ERECTILE_DYSFUNCTION", "THREATENED_HEALTHSPAN"]
   },
   {
     "id": "GAIT_INSTABILITY",
@@ -271,7 +271,7 @@
     "can_be_root": false,
     "typical_branch": "RC",
     "med_targets": ["vizarsin", "cialis"],
-    "typical_children": ["THREATENED_HEALTHSPAN"]
+    "typical_children": []
   },
   {
     "id": "PALPITATIONS",
