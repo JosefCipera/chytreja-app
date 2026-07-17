@@ -8,7 +8,7 @@
     "can_be_root": true,
     "typical_branch": "L",
     "med_targets": [],
-    "typical_children": ["SYMPATHETIC_OVERACTIVATION", "DEPRESSION_ANXIETY", "SLEEP_DISORDER"]
+    "typical_children": ["SYMPATHETIC_OVERACTIVATION", "CARDIAC_IRRITABILITY", "DEPRESSION_ANXIETY", "SLEEP_DISORDER"]
   },
   {
     "id": "METABOLIC_HEALTH_ROOT",
@@ -42,7 +42,7 @@
     "can_be_root": false,
     "typical_branch": "L",
     "med_targets": ["magnesium bisglycinát", "magnesium bisglycinat", "magnosolv", "hořčík", "magnesium", "betaloc", "concor", "metoprolol", "bisoprolol"],
-    "typical_children": ["NEUROMOTOR_DYS", "CARDIAC_IRRITABILITY", "DEPRESSION_ANXIETY", "SLEEP_DISORDER"]
+    "typical_children": ["NEUROMOTOR_DYS", "DEPRESSION_ANXIETY", "SLEEP_DISORDER"]
   },
   {
     "id": "DEPRESSION_ANXIETY",
@@ -85,7 +85,8 @@
     "typical_level": 1,
     "can_be_root": false,
     "typical_branch": "C",
-    "med_targets": ["torvacard", "sortis", "crestor", "atorvastatin", "rosuvastatin", "rosucard"]
+    "med_targets": ["torvacard", "sortis", "crestor", "atorvastatin", "rosuvastatin", "rosucard"],
+    "typical_children": ["ATHEROSCLEROSIS"]
   },
   {
     "id": "INSULIN_RESISTANCE",
@@ -96,7 +97,7 @@
     "can_be_root": false,
     "typical_branch": "C",
     "med_targets": ["sifor", "siofor", "metformin", "glucophage"],
-    "typical_children": ["PERIPHERAL_NEUROPATHY"]
+    "typical_children": []
   },
   {
     "id": "HYPERURICEMIA",
@@ -160,7 +161,8 @@
     "typical_level": 2,
     "can_be_root": false,
     "typical_branch": "C",
-    "med_targets": ["torvacard", "sortis", "crestor", "stacyl", "anopyrin"]
+    "med_targets": ["torvacard", "sortis", "crestor", "stacyl", "anopyrin"],
+    "typical_children": ["VASCULAR_STIFFNESS"]
   },
   {
     "id": "MUSCULOSKELETAL_DEG",
@@ -245,7 +247,8 @@
     "typical_level": 4,
     "can_be_root": false,
     "typical_branch": "RC",
-    "med_targets": []
+    "med_targets": [],
+    "typical_children": ["ERECTILE_DYSFUNCTION"]
   },
   {
     "id": "GAIT_INSTABILITY",

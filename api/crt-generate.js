@@ -432,6 +432,27 @@ async function buildDeterministicCRT(profile, metrics = []) {
     }
   }
 
+  // Downstream kaskáda — lineární (single-child) uzly propagují dopředu automaticky.
+  // Tím DYSLIPIDEMIA→ATHEROSCLEROSIS→VASCULAR_STIFFNESS nevyžaduje explicitní keyword.
+  // Kaskáda platí POUZE pro uzly s přesně 1 typical_child (jinak by se větevné rooty rozrostly).
+  {
+    let cascadeChanged = true;
+    while (cascadeChanged) {
+      cascadeChanged = false;
+      for (const id of [...activeIds]) {
+        const def = STATES_DB[id];
+        const children = def?.typical_children || [];
+        if (children.length !== 1) continue;
+        const childId = children[0];
+        if (STATES_DB[childId] && !activeIds.has(childId)) {
+          activeIds.add(childId);
+          console.log(`[CRT] downstream cascade: ${id} → ${childId}`);
+          cascadeChanged = true;
+        }
+      }
+    }
+  }
+
   // 2. Sestav nodes + edges ze State Dictionary
   const nodes = [];
   const edges = [];
@@ -645,17 +666,17 @@ PRAVIDLA JSON:
 - medications_map NEGENERUJ — léky přiřadí systém deterministicky po tvém výstupu.
 - Rozsah: 8–14 uzlů celkem (včetně root).`;
 
-  const hasDoctorNotes = !!(profile.doctor_notes && profile.doctor_notes.trim().length > 20);
+  // Deterministická cesta = primary pro všechny uživatele.
+  // AI (Sonnet/Fable/GPT-4o) pouze pro explicitní ?model=sonnet5/fable/gpt4o.
+  const useAI = !!(modelCfg.thinking || modelCfg.provider === 'openai');
 
-  // ── Deterministické sestavení stromu pro nové uživatele (bez doctor_notes) ──
-  // Gemini návrh: diagnosis keyword lookup → State Dictionary IDs, bez AI
-  // DŮLEŽITÉ: nesmí to být early return — post-processing (med-inject, medications_map, validateEdges) musí proběhnout
   let crt;
-  if (_rawAI) {
-    // Partial cache hit — přeskočíme Sonnet, použijeme uložený AI výstup
+  if (_rawAI && useAI) {
+    // Partial cache hit — AI výstup z cache, přeskočíme Sonnet
     crt = JSON.parse(JSON.stringify(_rawAI));
     console.log('[CRT] _rawAI použit z cache (Sonnet přeskočen)');
-  } else if (!hasDoctorNotes) {
+  } else if (!useAI) {
+    // PRIMARY: deterministická cesta — všichni uživatelé
     crt = await buildDeterministicCRT(profile, metrics);
   } else {
   const userPrompt = `Přelož lékařský popis do CRT JSON struktury.
@@ -720,11 +741,10 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
       }
     }
   }
-  } // end else (hasDoctorNotes)
+  } // end else (useAI)
 
-  // Ulož snapshot raw AI výstupu (před post-processingem) — pro partial cache hit
-  // Ukládáme jen pro doctor_notes cestu (Sonnet); deterministická cesta je vždy rychlá
-  if (!_rawAI && hasDoctorNotes) {
+  // Ulož snapshot raw AI výstupu — pouze pro explicitní AI cestu (?model=sonnet5/fable/gpt4o)
+  if (useAI && !_rawAI) {
     crt._raw_ai_snapshot = JSON.parse(JSON.stringify(crt));
   }
 
@@ -1300,7 +1320,7 @@ function overlayColors(nodes, metrics) {
 // _v_ai: bump POUZE při změně Sonnet promptu → invaliduje AI generování
 // _v_pp: bump při změně post-processingu (med-inject, validateEdges...) → přeskočí Sonnet, re-run PP
 const _v_ai = 12;
-const _v_pp = 9;
+const _v_pp = 10;
 
 function hashStr(s) {
   let h = 0;
