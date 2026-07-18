@@ -1,0 +1,238 @@
+{
+  "user_id": "ping",
+  "crt_cache_hash": "1823206972",
+  "crt_cache_at": "2026-07-09T08:56:13.414+00:00",
+  "crt_cache": {
+    "edges": [
+      {
+        "to": "DYSLIPIDEMIA",
+        "from": "METABOLIC_HEALTH_ROOT"
+      },
+      {
+        "to": "SYMPATHETIC_OVERACTIVATION",
+        "from": "CHRONIC_STRESS"
+      },
+      {
+        "to": "ATHEROSCLEROSIS",
+        "from": "DYSLIPIDEMIA"
+      },
+      {
+        "to": "CARDIAC_IRRITABILITY",
+        "from": "ELECTROLYTE_IMBALANCE"
+      },
+      {
+        "to": "VASCULAR_STIFFNESS",
+        "from": "ATHEROSCLEROSIS"
+      },
+      {
+        "to": "PREMATURE_CONTRACTIONS",
+        "from": "CARDIAC_IRRITABILITY"
+      },
+      {
+        "to": "ENDOTHELIAL_DYSFUNCTION",
+        "from": "VASCULAR_STIFFNESS"
+      },
+      {
+        "to": "PREMATURE_CONTRACTIONS",
+        "from": "VASCULAR_STIFFNESS"
+      },
+      {
+        "to": "ATRIAL_FIBRILLATION",
+        "from": "PREMATURE_CONTRACTIONS"
+      },
+      {
+        "to": "HEART_ATTACK_RISK",
+        "from": "ENDOTHELIAL_DYSFUNCTION"
+      },
+      {
+        "to": "ATHEROSCLEROSIS",
+        "from": "SYMPATHETIC_OVERACTIVATION"
+      },
+      {
+        "to": "ELECTROLYTE_IMBALANCE",
+        "from": "CHRONIC_STRESS"
+      },
+      {
+        "to": "PALPITATIONS",
+        "from": "VASCULAR_STIFFNESS"
+      }
+    ],
+    "nodes": [
+      {
+        "x": 450,
+        "y": 0,
+        "id": "METABOLIC_HEALTH_ROOT",
+        "type": "golden_box",
+        "label": "Metabolická dysregulace",
+        "level": 0,
+        "_index": null,
+        "_state": "GRAY",
+        "branch": "C",
+        "_isAnchor": true,
+        "label_layman": "Metabolické zdraví"
+      },
+      {
+        "x": -450,
+        "y": 0,
+        "id": "CHRONIC_STRESS",
+        "type": "cause",
+        "label": "Chronický stres",
+        "level": 0,
+        "_index": null,
+        "_state": "GRAY",
+        "branch": "L",
+        "_isAnchor": true,
+        "label_layman": "Trvalý stres"
+      },
+      {
+        "x": 450,
+        "y": 130,
+        "id": "DYSLIPIDEMIA",
+        "type": "cause",
+        "label": "vysoký LDL",
+        "level": 1,
+        "_index": null,
+        "_state": "GRAY",
+        "branch": "C",
+        "_isAnchor": true,
+        "label_layman": "Vysoký špatný cholesterol"
+      },
+      {
+        "x": -675,
+        "y": 130,
+        "id": "SYMPATHETIC_OVERACTIVATION",
+        "type": "cause",
+        "label": "Sympatiková hyperaktivace",
+        "level": 1,
+        "_index": null,
+        "_state": "GRAY",
+        "branch": "L",
+        "_isAnchor": false,
+        "label_layman": "Přetížený nervový systém"
+      },
+      {
+        "x": 450,
+        "y": 260,
+        "id": "ATHEROSCLEROSIS",
+        "type": "cause",
+        "label": "Ateroskleróza",
+        "level": 2,
+        "_index": null,
+        "_state": "GRAY",
+        "branch": "C",
+        "_isAnchor": true,
+        "label_layman": "Cévní pláty v tepnách"
+      },
+      {
+        "x": -225,
+        "y": 130,
+        "id": "ELECTROLYTE_IMBALANCE",
+        "type": "cause",
+        "label": "Elektrolytová dysbalance",
+        "level": 1,
+        "_index": null,
+        "_state": "GRAY",
+        "branch": "L",
+        "_isAnchor": false,
+        "label_layman": "Nedostatek draslíku a hořčíku"
+      },
+      {
+        "x": -225,
+        "y": 260,
+        "id": "CARDIAC_IRRITABILITY",
+        "type": "cause",
+        "label": "Elektrická dráždivost síní",
+        "level": 2,
+        "_index": null,
+        "_state": "GRAY",
+        "branch": "L",
+        "_isAnchor": true,
+        "label_layman": "Dráždivé srdce"
+      },
+      {
+        "x": 450,
+        "y": 390,
+        "id": "VASCULAR_STIFFNESS",
+        "type": "cause",
+        "label": "Arteriální rigidita",
+        "level": 3,
+        "_index": null,
+        "_state": "GRAY",
+        "branch": "C",
+        "_isAnchor": true,
+        "label_layman": "Tuhé cévy"
+      },
+      {
+        "x": 225,
+        "y": 520,
+        "id": "PALPITATIONS",
+        "type": "ude",
+        "label": "Palpitace",
+        "level": 4,
+        "_index": null,
+        "_state": "GRAY",
+        "branch": "L",
+        "_isAnchor": true,
+        "label_layman": "Bušení srdce"
+      },
+      {
+        "x": 675,
+        "y": 520,
+        "id": "ENDOTHELIAL_DYSFUNCTION",
+        "type": "cause",
+        "label": "Endoteliální dysfunkce",
+        "level": 4,
+        "_index": null,
+        "_state": "GRAY",
+        "branch": "RC",
+        "_isAnchor": true,
+        "label_layman": "Poškozené stěny cév"
+      },
+      {
+        "x": 112.5,
+        "y": 520,
+        "id": "PREMATURE_CONTRACTIONS",
+        "type": "junction",
+        "label": "Komorové extrasystoly",
+        "level": 4,
+        "_index": null,
+        "_state": "GRAY",
+        "branch": "LC",
+        "_isAnchor": true,
+        "label_layman": "Předčasné srdeční stahy"
+      },
+      {
+        "x": 112.5,
+        "y": 650,
+        "id": "ATRIAL_FIBRILLATION",
+        "type": "ude",
+        "label": "Fibrilace síní",
+        "level": 5,
+        "_index": null,
+        "_state": "GRAY",
+        "branch": "LC",
+        "_isAnchor": true,
+        "label_layman": "Nepravidelný srdeční rytmus"
+      },
+      {
+        "x": 675,
+        "y": 650,
+        "id": "HEART_ATTACK_RISK",
+        "type": "ude",
+        "label": "Riziko infarktu myokardu",
+        "level": 5,
+        "_index": null,
+        "_state": "GRAY",
+        "branch": "C",
+        "_isAnchor": true,
+        "label_layman": "Hrozba infarktu"
+      }
+    ],
+    "title": "Kauzální mapa zdraví",
+    "has_data": false,
+    "subtitle": "Current Reality Tree — generováno z vašich dat",
+    "and_joins": [],
+    "injections": [],
+    "medications_map": []
+  }
+}

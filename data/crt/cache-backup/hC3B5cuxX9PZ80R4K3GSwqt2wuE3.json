@@ -1,0 +1,264 @@
+{
+  "user_id": "hC3B5cuxX9PZ80R4K3GSwqt2wuE3",
+  "crt_cache_hash": "322969091",
+  "crt_cache_at": "2026-07-18T17:35:54.229+00:00",
+  "crt_cache": {
+    "edges": [
+      {
+        "to": "INSULIN_RESISTANCE",
+        "from": "OBESITY"
+      },
+      {
+        "to": "INSULIN_RESISTANCE",
+        "from": "METABOLIC_HEALTH_ROOT"
+      },
+      {
+        "to": "OBESITY",
+        "from": "METABOLIC_HEALTH_ROOT"
+      },
+      {
+        "to": "MUSCULOSKELETAL_DEG",
+        "from": "BONE_DENSITY_LOSS"
+      },
+      {
+        "to": "NEUROMOTOR_DYS",
+        "from": "SYMPATHETIC_OVERACTIVATION"
+      },
+      {
+        "to": "BONE_DENSITY_LOSS",
+        "from": "HYPOTHYROIDISM"
+      },
+      {
+        "to": "HYPERTENSION",
+        "from": "INSULIN_RESISTANCE"
+      },
+      {
+        "to": "THREATENED_HEALTHSPAN",
+        "from": "HYPERTENSION"
+      },
+      {
+        "to": "SYMPATHETIC_OVERACTIVATION",
+        "from": "OBESITY"
+      }
+    ],
+    "nodes": [
+      {
+        "x": -450,
+        "y": 0,
+        "id": "METABOLIC_HEALTH_ROOT",
+        "type": "golden_box",
+        "label": "Metabolická dysregulace",
+        "level": 0,
+        "_index": null,
+        "_state": "GRAY",
+        "branch": "C",
+        "_isAnchor": true,
+        "panel_text": "Metabolická dysregulace je tichý proces — tělo roky kompenzuje, než se problémy projeví naplno. Cholesterol, kyselina močová, inzulín: všechny vycházejí ze stejného kořene. Jídlo, pohyb a spánek jsou jediné nástroje, které to mohou zvrátit.",
+        "label_layman": "Metabolické zdraví"
+      },
+      {
+        "x": -675,
+        "y": 390,
+        "id": "NEUROMOTOR_DYS",
+        "type": "ude",
+        "label": "Neurologicko-motorická dysfunkce",
+        "level": 3,
+        "_index": null,
+        "_state": "GRAY",
+        "branch": "L",
+        "_isAnchor": true,
+        "label_layman": "Třes rukou a tenzní bolesti hlavy"
+      },
+      {
+        "x": -450,
+        "y": 130,
+        "id": "OBESITY",
+        "type": "cause",
+        "label": "Nadváha",
+        "level": 1,
+        "_index": null,
+        "_state": "GRAY",
+        "branch": "C",
+        "_isAnchor": true,
+        "label_layman": "Nadváha",
+        "_labelOverride": true
+      },
+      {
+        "x": 450,
+        "y": 130,
+        "id": "BONE_DENSITY_LOSS",
+        "type": "cause",
+        "label": "Úbytek kostní hmoty",
+        "level": 1,
+        "_index": null,
+        "_state": "GRAY",
+        "branch": "R",
+        "_isAnchor": true,
+        "label_layman": "Řídnutí kostí"
+      },
+      {
+        "x": -675,
+        "y": 260,
+        "id": "SYMPATHETIC_OVERACTIVATION",
+        "type": "cause",
+        "label": "Sympatiková hyperaktivace",
+        "level": 2,
+        "_index": null,
+        "_state": "GRAY",
+        "branch": "L",
+        "_isAnchor": false,
+        "label_layman": "Přetížený nervový systém"
+      },
+      {
+        "x": 450,
+        "y": 0,
+        "id": "HYPOTHYROIDISM",
+        "type": "cause",
+        "label": "Hypothyreóza",
+        "level": 0,
+        "_index": null,
+        "_state": "GRAY",
+        "branch": "R",
+        "_isAnchor": true,
+        "label_layman": "Nedostatečná funkce štítné žlázy"
+      },
+      {
+        "x": -225,
+        "y": 260,
+        "id": "INSULIN_RESISTANCE",
+        "type": "cause",
+        "label": "Inzulínová rezistence",
+        "level": 2,
+        "_index": null,
+        "_state": "GRAY",
+        "branch": "C",
+        "_isAnchor": true,
+        "label_layman": "Necitlivost na inzulín"
+      },
+      {
+        "x": 450,
+        "y": 390,
+        "id": "MUSCULOSKELETAL_DEG",
+        "type": "cause",
+        "label": "Degenerace pohybového aparátu",
+        "level": 3,
+        "_index": null,
+        "_state": "GRAY",
+        "branch": "R",
+        "_isAnchor": true,
+        "label_layman": "Opotřebené klouby a páteř"
+      },
+      {
+        "x": -225,
+        "y": 390,
+        "id": "HYPERTENSION",
+        "type": "cause",
+        "label": "Arteriální vysoký tlak",
+        "level": 3,
+        "_index": null,
+        "_state": "GRAY",
+        "branch": "C",
+        "_isAnchor": true,
+        "label_layman": "Vysoký krevní tlak"
+      },
+      {
+        "x": -225,
+        "y": 650,
+        "id": "THREATENED_HEALTHSPAN",
+        "type": "ude",
+        "label": "Riziko mrtvice/infarktu",
+        "level": 5,
+        "_index": null,
+        "_state": "GRAY",
+        "branch": "C",
+        "_isAnchor": true,
+        "panel_text": "Fibrilace síní a erektilní dysfunkce jsou viditelné projevy systémové cévní a metabolické dysregulace. Bez intervence tento stav vede ke ztrátě fyzické výkonnosti, kognitivní kapacity a nakonec i funkční nezávislosti — přesně toho, co Dekatlon chrání. Toto je tvůj skutečný protivník.",
+        "label_layman": "Riziko mrtvice/infarktu"
+      },
+      {
+        "x": 0,
+        "y": 260,
+        "id": "CARDIAC_IRRITABILITY",
+        "type": "cause",
+        "label": "Elektrická dráždivost síní",
+        "level": 2,
+        "_index": null,
+        "_state": "GRAY",
+        "branch": "L",
+        "_injected": true,
+        "_isAnchor": false,
+        "label_layman": "Dráždivé srdce"
+      }
+    ],
+    "title": "Kauzální mapa zdraví",
+    "_raw_ai": null,
+    "has_data": true,
+    "subtitle": "Current Reality Tree — generováno z vašich dat",
+    "and_joins": [],
+    "injections": [],
+    "_raw_ai_hash": null,
+    "behavior_flags": {},
+    "medications_map": [
+      {
+        "name": "Sibelium",
+        "note": "snižuje frekvenci a intenzitu migrény",
+        "type": "treatment",
+        "effect": "snižuje frekvenci a intenzitu migrény",
+        "reason": "snižuje frekvenci a intenzitu migrény",
+        "targets": [
+          "NEUROMOTOR_DYS"
+        ]
+      },
+      {
+        "name": "Tritico prolong",
+        "note": "",
+        "type": "treatment",
+        "effect": "",
+        "reason": "",
+        "targets": [
+          "THREATENED_HEALTHSPAN"
+        ]
+      },
+      {
+        "name": "Indometacin čípky",
+        "note": "",
+        "type": "treatment",
+        "effect": "",
+        "reason": "",
+        "targets": [
+          "THREATENED_HEALTHSPAN"
+        ]
+      },
+      {
+        "name": "Chlorella",
+        "note": "",
+        "type": "protects",
+        "effect": "",
+        "reason": "",
+        "targets": [
+          "THREATENED_HEALTHSPAN"
+        ]
+      },
+      {
+        "name": "Magnesium bisglycinat",
+        "note": "",
+        "type": "protects",
+        "effect": "",
+        "reason": "",
+        "targets": [
+          "SYMPATHETIC_OVERACTIVATION"
+        ]
+      },
+      {
+        "name": "Beauty Cooolagen",
+        "note": "",
+        "type": "protects",
+        "effect": "",
+        "reason": "",
+        "targets": [
+          "THREATENED_HEALTHSPAN"
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,359 @@
+{
+  "user_id": "qE09cLyXXGRBRxOBCGNZqTM2XRW2",
+  "crt_cache_hash": "205721089",
+  "crt_cache_at": "2026-07-18T08:42:58.602+00:00",
+  "crt_cache": {
+    "edges": [
+      {
+        "to": "CARDIAC_IRRITABILITY",
+        "from": "CHRONIC_STRESS"
+      },
+      {
+        "to": "ATHEROSCLEROSIS",
+        "from": "DYSLIPIDEMIA"
+      },
+      {
+        "to": "THREATENED_HEALTHSPAN",
+        "from": "HYPERTENSION"
+      },
+      {
+        "to": "THREATENED_HEALTHSPAN",
+        "from": "ATRIAL_FIBRILLATION"
+      },
+      {
+        "to": "CHRONIC_STRESS",
+        "from": "SEDENTARY_LIFESTYLE_ROOT"
+      },
+      {
+        "to": "DYSLIPIDEMIA",
+        "from": "SEDENTARY_LIFESTYLE_ROOT"
+      },
+      {
+        "to": "HYPERURICEMIA",
+        "from": "SEDENTARY_LIFESTYLE_ROOT"
+      },
+      {
+        "to": "OBESITY",
+        "from": "SEDENTARY_LIFESTYLE_ROOT"
+      },
+      {
+        "to": "ENDOTHELIAL_DYSFUNCTION",
+        "from": "HYPERURICEMIA"
+      },
+      {
+        "to": "INSULIN_RESISTANCE",
+        "from": "OBESITY"
+      },
+      {
+        "to": "HYPERTENSION",
+        "from": "INSULIN_RESISTANCE"
+      },
+      {
+        "to": "ATRIAL_FIBRILLATION",
+        "from": "CARDIAC_IRRITABILITY"
+      },
+      {
+        "to": "ERECTILE_DYSFUNCTION",
+        "from": "ENDOTHELIAL_DYSFUNCTION"
+      },
+      {
+        "to": "THREATENED_HEALTHSPAN",
+        "from": "ENDOTHELIAL_DYSFUNCTION"
+      },
+      {
+        "to": "VASCULAR_STIFFNESS",
+        "from": "ATHEROSCLEROSIS"
+      },
+      {
+        "to": "ENDOTHELIAL_DYSFUNCTION",
+        "from": "VASCULAR_STIFFNESS"
+      }
+    ],
+    "nodes": [
+      {
+        "x": 0,
+        "y": 0,
+        "id": "SEDENTARY_LIFESTYLE_ROOT",
+        "type": "golden_box",
+        "label": "Sedentismus",
+        "level": 0,
+        "_index": null,
+        "_state": "GRAY",
+        "branch": "C",
+        "_isAnchor": true,
+        "panel_text": "Když celý den sedíš, tělo zůstává v trvalém stresu a začíná si ukládat víc LDL cholesterolu a kyseliny močové do krve, což vede k nabírání kil. Tahle nadváha dráždí srdeční sval a zároveň se v tepnách usazují cévní pláty, které poškozují stěny cév a dělají tkáně necitlivé na inzulín. Srdce pak bije nepravidelně, cévy tuhnou a přestávají pružně reagovat, což se projevuje i potížemi s erekcí. Výsledkem je zvýšený tlak v cévách a riziko, že dojde k mrtvici nebo infarktu.",
+        "label_layman": "Sedavý způsob života"
+      },
+      {
+        "x": -450,
+        "y": 130,
+        "id": "CHRONIC_STRESS",
+        "type": "cause",
+        "label": "Chronický stres",
+        "level": 1,
+        "_index": null,
+        "_state": "GRAY",
+        "branch": "L",
+        "_isAnchor": true,
+        "label_layman": "Trvalý stres"
+      },
+      {
+        "x": 0,
+        "y": 130,
+        "id": "DYSLIPIDEMIA",
+        "type": "cause",
+        "label": "vysoký LDL",
+        "level": 1,
+        "_index": null,
+        "_state": "GRAY",
+        "branch": "RC",
+        "_isAnchor": true,
+        "label_layman": "Vysoký LDL cholesterol"
+      },
+      {
+        "x": 450,
+        "y": 390,
+        "id": "HYPERTENSION",
+        "type": "cause",
+        "label": "Arteriální vysoký tlak",
+        "level": 3,
+        "_index": null,
+        "_state": "GRAY",
+        "branch": "C",
+        "_isAnchor": true,
+        "label_layman": "Vysoký krevní tlak"
+      },
+      {
+        "x": -450,
+        "y": 520,
+        "id": "ATRIAL_FIBRILLATION",
+        "type": "ude",
+        "label": "Fibrilace síní",
+        "level": 4,
+        "_index": null,
+        "_state": "GRAY",
+        "branch": "LC",
+        "_isAnchor": true,
+        "label_layman": "Nepravidelný srdeční rytmus"
+      },
+      {
+        "x": -225,
+        "y": 650,
+        "id": "ERECTILE_DYSFUNCTION",
+        "type": "ude",
+        "label": "Erektilní dysfunkce",
+        "level": 5,
+        "_index": null,
+        "_state": "GRAY",
+        "branch": "RC",
+        "_isAnchor": true,
+        "label_layman": "Problémy s erekcí"
+      },
+      {
+        "x": 225,
+        "y": 260,
+        "id": "HYPERURICEMIA",
+        "type": "cause",
+        "label": "Hyperurikémie",
+        "level": 2,
+        "_index": null,
+        "_state": "GRAY",
+        "branch": "R",
+        "_isAnchor": true,
+        "label_layman": "Vysoká kyselina močová"
+      },
+      {
+        "x": 450,
+        "y": 130,
+        "id": "OBESITY",
+        "type": "cause",
+        "label": "Nadváha",
+        "level": 1,
+        "_index": null,
+        "_state": "GRAY",
+        "branch": "C",
+        "_isAnchor": true,
+        "label_layman": "Nadváha",
+        "_labelOverride": true
+      },
+      {
+        "x": 450,
+        "y": 260,
+        "id": "INSULIN_RESISTANCE",
+        "type": "cause",
+        "label": "Inzulínová rezistence",
+        "level": 2,
+        "_index": null,
+        "_state": "GRAY",
+        "branch": "C",
+        "_isAnchor": true,
+        "label_layman": "Necitlivost na inzulín"
+      },
+      {
+        "x": -450,
+        "y": 260,
+        "id": "CARDIAC_IRRITABILITY",
+        "type": "cause",
+        "label": "Elektrická dráždivost síní",
+        "level": 2,
+        "_index": null,
+        "_state": "GRAY",
+        "branch": "L",
+        "_isAnchor": true,
+        "label_layman": "Dráždivé srdce"
+      },
+      {
+        "x": 0,
+        "y": 520,
+        "id": "ENDOTHELIAL_DYSFUNCTION",
+        "type": "cause",
+        "label": "Endoteliální dysfunkce",
+        "level": 4,
+        "_index": null,
+        "_state": "GRAY",
+        "branch": "RC",
+        "_isAnchor": true,
+        "label_layman": "Poškozené stěny cév"
+      },
+      {
+        "x": -225,
+        "y": 260,
+        "id": "ATHEROSCLEROSIS",
+        "type": "cause",
+        "label": "Ateroskleróza",
+        "level": 2,
+        "_index": null,
+        "_state": "GRAY",
+        "branch": "RC",
+        "_isAnchor": true,
+        "label_layman": "Cévní pláty v tepnách"
+      },
+      {
+        "x": 225,
+        "y": 650,
+        "id": "THREATENED_HEALTHSPAN",
+        "type": "ude",
+        "label": "Riziko mrtvice/infarktu",
+        "level": 5,
+        "_index": null,
+        "_state": "GRAY",
+        "branch": "C",
+        "_isAnchor": true,
+        "panel_text": "Fibrilace síní a erektilní dysfunkce jsou viditelné projevy systémové cévní a metabolické dysregulace. Bez intervence tento stav vede ke ztrátě fyzické výkonnosti, kognitivní kapacity a nakonec i funkční nezávislosti — přesně toho, co Dekatlon chrání. Toto je tvůj skutečný protivník.",
+        "label_layman": "Riziko mrtvice/infarktu"
+      },
+      {
+        "x": -225,
+        "y": 390,
+        "id": "VASCULAR_STIFFNESS",
+        "type": "cause",
+        "label": "Arteriální rigidita",
+        "level": 3,
+        "_index": null,
+        "_state": "GRAY",
+        "branch": "RC",
+        "_isAnchor": true,
+        "label_layman": "Tuhé cévy"
+      }
+    ],
+    "title": "Kauzální mapa zdraví",
+    "_raw_ai": null,
+    "has_data": true,
+    "subtitle": "Current Reality Tree — generováno z vašich dat",
+    "and_joins": [],
+    "injections": [],
+    "_raw_ai_hash": null,
+    "behavior_flags": {},
+    "medications_map": [
+      {
+        "name": "Kalnormin",
+        "note": "doplňuje draslík, stabilizuje srdeční rytmus",
+        "type": "treatment",
+        "effect": "doplňuje draslík, stabilizuje srdeční rytmus",
+        "reason": "doplňuje draslík, stabilizuje srdeční rytmus",
+        "targets": [
+          "CARDIAC_IRRITABILITY"
+        ]
+      },
+      {
+        "name": "Nolpaza",
+        "note": "chrání žaludeční sliznici",
+        "type": "treatment",
+        "effect": "chrání žaludeční sliznici",
+        "reason": "chrání žaludeční sliznici",
+        "targets": [
+          "ATRIAL_FIBRILLATION"
+        ]
+      },
+      {
+        "name": "Pradaxa",
+        "note": "zabraňuje srážení krve",
+        "type": "treatment",
+        "effect": "zabraňuje srážení krve",
+        "reason": "zabraňuje srážení krve",
+        "targets": [
+          "ATRIAL_FIBRILLATION"
+        ]
+      },
+      {
+        "name": "Torvacard",
+        "note": "snižuje LDL cholesterol v krvi",
+        "type": "treatment",
+        "effect": "snižuje LDL cholesterol v krvi",
+        "reason": "snižuje LDL cholesterol v krvi",
+        "targets": [
+          "ATHEROSCLEROSIS"
+        ]
+      },
+      {
+        "name": "Milurit",
+        "note": "snižuje kyselinu močovou v krvi",
+        "type": "treatment",
+        "effect": "snižuje kyselinu močovou v krvi",
+        "reason": "snižuje kyselinu močovou v krvi",
+        "targets": [
+          "HYPERURICEMIA"
+        ]
+      },
+      {
+        "name": "Vizarsin",
+        "note": "zvyšuje prokrvení a umožňuje erekci",
+        "type": "treatment",
+        "effect": "zvyšuje prokrvení a umožňuje erekci",
+        "reason": "zvyšuje prokrvení a umožňuje erekci",
+        "targets": [
+          "ERECTILE_DYSFUNCTION"
+        ]
+      },
+      {
+        "name": "Magnesium bisglycinát",
+        "note": "doplňuje hořčík ve snadno vstřebatelné formě",
+        "type": "protects",
+        "effect": "doplňuje hořčík ve snadno vstřebatelné formě",
+        "reason": "doplňuje hořčík ve snadno vstřebatelné formě",
+        "targets": [
+          "CARDIAC_IRRITABILITY"
+        ]
+      },
+      {
+        "name": "Magnosolv",
+        "note": "doplňuje hořčík, podporuje svalovou funkci",
+        "type": "protects",
+        "effect": "doplňuje hořčík, podporuje svalovou funkci",
+        "reason": "doplňuje hořčík, podporuje svalovou funkci",
+        "targets": [
+          "CARDIAC_IRRITABILITY"
+        ]
+      },
+      {
+        "name": "Magnesium bisglycinát + Magnosolv",
+        "type": "warning",
+        "effect": "Magnesium bisglycinát a Magnosolv jsou dvě formy hořčíku zároveň. Kombinace může přesáhnout denní doporučenou dávku (400 mg Mg/den) a způsobit průjem nebo nevolnost. Zvol jednu formu, nebo rozděl dávky po konzultaci s lékařem.",
+        "reason": "Magnesium bisglycinát a Magnosolv jsou dvě formy hořčíku zároveň. Kombinace může přesáhnout denní doporučenou dávku (400 mg Mg/den) a způsobit průjem nebo nevolnost. Zvol jednu formu, nebo rozděl dávky po konzultaci s lékařem.",
+        "targets": [
+          "CARDIAC_IRRITABILITY"
+        ]
+      }
+    ]
+  }
+}

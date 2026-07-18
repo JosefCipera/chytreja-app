@@ -5,7 +5,7 @@
     "label_layman": "Trvalý stres",
     "type": "cause",
     "typical_level": 1,
-    "can_be_root": false,
+    "can_be_root": true,
     "typical_branch": "L",
     "med_targets": [],
     "typical_children": ["CARDIAC_IRRITABILITY", "DEPRESSION_ANXIETY", "SLEEP_DISORDER"]
@@ -97,7 +97,7 @@
     "can_be_root": false,
     "typical_branch": "C",
     "med_targets": ["sifor", "siofor", "metformin", "glucophage"],
-    "typical_children": ["HYPERTENSION"]
+    "typical_children": ["HYPERTENSION", "PERIPHERAL_NEUROPATHY"]
   },
   {
     "id": "HYPERURICEMIA",
@@ -195,7 +195,7 @@
     "can_be_root": false,
     "typical_branch": "RC",
     "med_targets": ["prestarium", "perindopril", "tritace", "amlessa", "norvasc", "tezeo"],
-    "typical_children": ["ENDOTHELIAL_DYSFUNCTION"]
+    "typical_children": ["ENDOTHELIAL_DYSFUNCTION", "STROKE_RISK"]
   },
   {
     "id": "PERIPHERAL_NEUROPATHY",
@@ -228,7 +228,7 @@
     "can_be_root": false,
     "typical_branch": "LC",
     "med_targets": [],
-    "typical_children": []
+    "typical_children": ["GAIT_INSTABILITY"]
   },
   {
     "id": "ATRIAL_FIBRILLATION",
@@ -394,7 +394,7 @@
     "can_be_root": true,
     "typical_branch": "C",
     "med_targets": [],
-    "typical_children": ["CHRONIC_STRESS", "DYSLIPIDEMIA", "HYPERURICEMIA", "OBESITY", "BONE_DENSITY_LOSS"],
+    "typical_children": ["DYSLIPIDEMIA", "HYPERURICEMIA", "OBESITY", "BONE_DENSITY_LOSS"],
     "panel_text": "Sedentismus je systémový stav — ne jen málo pohybu, ale chronická absence pohybového stimulu. 8+ hodin sezení denně aktivuje prozánětlivé dráhy, zvyšuje LDL, kyselinu močovou a inzulínovou rezistenci nezávisle na dietě. Každá hodina navíc zvyšuje KV riziko o ~2 %. Přestávky na pohyb každých 90 minut tyto markery měřitelně snižují do 4 týdnů — bez jiné intervence."
   },
   {
