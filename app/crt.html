@@ -1476,8 +1476,7 @@ window.declineCrtSecond = function(nodeId) {
 
 let _medsVisible = false;
 let _pillsAdded  = false;
-// Pilulky pod hranami (beforeDrawing) — šipky nejsou překryty
-const _MED_EVENT = 'beforeDrawing';
+const _MED_EVENT = 'afterDrawing';
 let _labelMode = 'layman'; // 'expert' | 'layman'
 
 // Nastaví label na všech uzlech podle aktuálního módu a překreslí
@@ -1574,14 +1573,6 @@ function _buildMedDrawer(forPrint = false) {
     }
   });
 
-  // Branch lookup — určuje stranu pilulky (L/LC → napravo, ostatní → nalevo)
-  const _allCrtNodes2 = [
-    ...(window._crtData?.nodes || []),
-    ...(window._crtData?.root && typeof window._crtData.root === 'object' ? [window._crtData.root] : []),
-  ];
-  const _nodeBranch = {};
-  _allCrtNodes2.forEach(n => { if (n?.id) _nodeBranch[n.id] = n.branch || 'C'; });
-
   return function drawMeds(ctx) {
     if (!_visNetwork) return;
     const positions = _visNetwork.getPositions();
@@ -1593,10 +1584,12 @@ function _buildMedDrawer(forPrint = false) {
     Object.entries(byNode).forEach(([nodeId, meds]) => {
       const pos = positions[nodeId];
       if (!pos) return; // node filtered out (Top-N) or not yet rendered — skip
-      const branch   = _nodeBranch[nodeId] || 'C';
-      const isEdge   = branch === 'L' || branch === 'LC';
-      const toRight  = branch === 'R'; // R sloupec má sibling offset → pilulky napravo (vlevo by šly pod C uzly)
-      const OFFSET_X = isEdge ? OFFSET_X_EDGE : OFFSET_X_DEFAULT;
+      // Směr pilulky z pozice uzlu — branch pole nemusí být vždy nastavené
+      // pos.x > 100: uzel v pravé části (R/RC se sibling offsetem) → napravo (vlevo by šlo pod C uzly)
+      // pos.x < -100: uzel v levé části (L/LC) → nalevo s malým offsetem (blízko okraje)
+      // pos.x ≈ 0: střed → nalevo s plným offsetem
+      const toRight  = pos.x > 100;
+      const OFFSET_X = pos.x < -100 ? OFFSET_X_EDGE : OFFSET_X_DEFAULT;
       meds.forEach((m, i) => {
         const color  = typeColor[m.type] || typeColor.treatment;
         const text   = m.name;
