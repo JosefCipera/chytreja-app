@@ -1572,29 +1572,39 @@ function _buildMedDrawer(forPrint = false) {
     }
   });
 
+  // Branch lookup — určuje stranu pilulky (L/LC → napravo, ostatní → nalevo)
+  const _allCrtNodes2 = [
+    ...(window._crtData?.nodes || []),
+    ...(window._crtData?.root && typeof window._crtData.root === 'object' ? [window._crtData.root] : []),
+  ];
+  const _nodeBranch = {};
+  _allCrtNodes2.forEach(n => { if (n?.id) _nodeBranch[n.id] = n.branch || 'C'; });
+
   return function drawMeds(ctx) {
     if (!_visNetwork) return;
     const positions = _visNetwork.getPositions();
 
     ctx.save();
-    ctx.font = `bold ${FONT_SIZE}px Inter, system-ui, sans-serif`;
-    ctx.textAlign = 'right';
     ctx.textBaseline = 'middle';
+    ctx.font = `bold ${FONT_SIZE}px Inter, system-ui, sans-serif`;
 
     Object.entries(byNode).forEach(([nodeId, meds]) => {
       const pos = positions[nodeId];
       if (!pos) return; // node filtered out (Top-N) or not yet rendered — skip
+      const branch  = _nodeBranch[nodeId] || 'C';
+      const toRight = (branch === 'L' || branch === 'LC'); // L sloupec je u levého okraje → pill napravo
       meds.forEach((m, i) => {
         const color  = typeColor[m.type] || typeColor.treatment;
         const text   = m.name;
         const tw     = ctx.measureText(text).width;
         const ph     = FONT_SIZE + 10;
         const pw     = tw + 20;
-        const rx     = pos.x - OFFSET_X - pw; // levý kraj pilulky
+        const rx     = toRight ? pos.x + OFFSET_X : pos.x - OFFSET_X - pw;
         const ry     = pos.y - (meds.length - 1) * SPACING_Y / 2 + i * SPACING_Y - ph / 2;
         const radius = ph / 2;
+        const textX  = toRight ? rx + 10 : rx + pw - 10;
 
-        // Pill background: tmavé v normálním pohledu, světlé při tisku
+        // Pill background
         ctx.fillStyle = forPrint ? 'rgba(225,242,255,0.96)' : 'rgba(26,45,64,0.97)';
         ctx.beginPath();
         ctx.moveTo(rx + radius, ry);
@@ -1614,7 +1624,8 @@ function _buildMedDrawer(forPrint = false) {
 
         // Text
         ctx.fillStyle = color;
-        ctx.fillText(text, pos.x - OFFSET_X - 5, pos.y - (meds.length - 1) * SPACING_Y / 2 + i * SPACING_Y);
+        ctx.textAlign = toRight ? 'left' : 'right';
+        ctx.fillText(text, textX, ry + ph / 2);
       });
     });
     ctx.restore();
