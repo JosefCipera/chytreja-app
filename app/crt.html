@@ -788,7 +788,6 @@ async function loadCRTOpus(force = false, model = undefined) {
     throw new Error(`CRT generate ${res.status}${detail ? ': ' + detail : ''}`);
   }
   const data = await res.json();
-  console.log('[CRT] medications_map z API:', (data.medications_map || []).map(m => m.name + '→' + (m.targets||[]).join(',')));
   return data;
 }
 
@@ -1562,7 +1561,6 @@ function _buildMedDrawer(forPrint = false) {
     ...allCrtNodes.filter(n => (n.level ?? 0) === 0).map(n => n.id),
   ].filter(Boolean));
 
-  console.log('[MED] medsMap:', medsMap.length, medsMap.map(m => m.name + '→' + (m.targets||[]).join(',')));
   // Každý lék/doplněk max 1× na canvasu; interakce (warning) jen do panelu
   const byNode = {};
   const seenOnCanvas = new Set();
@@ -1574,7 +1572,6 @@ function _buildMedDrawer(forPrint = false) {
       (byNode[target] = byNode[target] || []).push(m);
     }
   });
-  console.log('[MED] byNode:', JSON.stringify(Object.fromEntries(Object.entries(byNode).map(([k,v]) => [k, v.map(m=>m.name)]))));
 
   // Branch lookup — určuje stranu pilulky (L/LC → napravo, ostatní → nalevo)
   const _allCrtNodes2 = [

@@ -183,7 +183,7 @@
     "typical_level": 4,
     "can_be_root": false,
     "typical_branch": "LC",
-    "med_targets": ["kalnormin", "magnesium bisglycinát", "magnosolv"]
+    "med_targets": []
   },
   {
     "id": "VASCULAR_STIFFNESS",
