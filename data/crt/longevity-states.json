@@ -118,6 +118,7 @@
     "typical_level": 1,
     "can_be_root": false,
     "typical_branch": "R",
+    "condition": { "auto_if": { "gender": "female", "min_age": 50 } },
     "med_targets": ["ibandronat", "ibandronát", "vigantol", "caltrate", "vitamin d3"],
     "typical_children": ["MUSCULOSKELETAL_DEG"]
   },
@@ -270,6 +271,7 @@
     "typical_level": 5,
     "can_be_root": false,
     "typical_branch": "RC",
+    "condition": { "gender": "male" },
     "med_targets": ["vizarsin", "cialis"],
     "typical_children": []
   },
@@ -392,7 +394,7 @@
     "can_be_root": true,
     "typical_branch": "C",
     "med_targets": [],
-    "typical_children": ["CHRONIC_STRESS", "DYSLIPIDEMIA", "HYPERURICEMIA", "OBESITY"],
+    "typical_children": ["CHRONIC_STRESS", "DYSLIPIDEMIA", "HYPERURICEMIA", "OBESITY", "BONE_DENSITY_LOSS"],
     "panel_text": "Sedentismus je systémový stav — ne jen málo pohybu, ale chronická absence pohybového stimulu. 8+ hodin sezení denně aktivuje prozánětlivé dráhy, zvyšuje LDL, kyselinu močovou a inzulínovou rezistenci nezávisle na dietě. Každá hodina navíc zvyšuje KV riziko o ~2 %. Přestávky na pohyb každých 90 minut tyto markery měřitelně snižují do 4 týdnů — bez jiné intervence."
   },
   {

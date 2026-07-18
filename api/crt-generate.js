@@ -368,6 +368,14 @@ async function buildDeterministicCRT(profile, metrics = []) {
   const bmi = (profile._height && profile._weight)
     ? profile._weight / ((profile._height / 100) ** 2) : null;
 
+  // Demografická data pro podmíněnou aktivaci/vyloučení stavů
+  const _sex = (profile.sex || '').toLowerCase().trim();
+  const _age  = profile.birth_year
+    ? (new Date().getFullYear() - parseInt(profile.birth_year))
+    : null;
+  const isMale   = _sex === 'male'   || _sex === 'm' || _sex === 'muž';
+  const isFemale = _sex === 'female' || _sex === 'f' || _sex === 'žena' || _sex === 'woman';
+
   // 1. Keyword matching → aktivní State Dictionary IDs
   const activeIds = new Set();
   for (const { keywords, id } of DIAGNOSIS_KEYWORDS) {
@@ -404,6 +412,26 @@ async function buildDeterministicCRT(profile, metrics = []) {
   if (!activeIds.has('SEDENTARY_LIFESTYLE_ROOT') &&
       (activeIds.has('OBESITY') || activeIds.has('DYSLIPIDEMIA') || activeIds.has('INSULIN_RESISTANCE') || activeIds.has('HYPERURICEMIA'))) {
     activeIds.add('METABOLIC_HEALTH_ROOT');
+  }
+
+  // Auto-aktivace z demografických dat (condition.auto_if)
+  for (const def of STATES_ARR) {
+    if (activeIds.has(def.id)) continue;
+    const ai = def.condition?.auto_if;
+    if (!ai) continue;
+    if (ai.gender === 'female' && !isFemale) continue;
+    if (ai.gender === 'male'   && !isMale)   continue;
+    if (ai.min_age && (!_age || _age < ai.min_age)) continue;
+    activeIds.add(def.id);
+    console.log(`[CRT] auto-activate: ${def.id} (demographics: ${_sex}, age=${_age})`);
+  }
+
+  // Gender exclusion (condition.gender = required gender)
+  for (const sid of [...activeIds]) {
+    const req = STATES_DB[sid]?.condition?.gender;
+    if (!req) continue;
+    if (req === 'male'   && isFemale) { activeIds.delete(sid); continue; }
+    if (req === 'female' && isMale)   { activeIds.delete(sid); continue; }
   }
 
   // Rodičovský řetěz: každý non-root uzel musí mít rodiče v aktivním setu
@@ -1335,7 +1363,7 @@ function overlayColors(nodes, metrics) {
 // _v_ai: bump POUZE při změně Sonnet promptu → invaliduje AI generování
 // _v_pp: bump při změně post-processingu (med-inject, validateEdges...) → přeskočí Sonnet, re-run PP
 const _v_ai = 12;
-const _v_pp = 28;
+const _v_pp = 29;
 
 function hashStr(s) {
   let h = 0;
