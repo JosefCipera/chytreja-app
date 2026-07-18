@@ -776,11 +776,36 @@ async function loadCRT() {
   return result;
 }
 
+const MOCK_PROFILES = {
+  // Jednoduchý vaskulární uživatel: 1 root, 1 apex (ED přes cévy)
+  simple_vascular: {
+    diagnoses: ['dyslipidémie', 'ateroskleróza'],
+    symptoms: [],
+    medications: [{ name: 'rosuvastatin', dose: '10 mg' }],
+    sex: 'male',
+    birth_year: 1975,
+  },
+  // Uživatel jen se stresem a arytmií (bez metabolické větve)
+  stress_only: {
+    diagnoses: ['chronický stres', 'extrasystoly'],
+    symptoms: [],
+    medications: [{ name: 'Kalnormin', dose: '1 tbl' }, { name: 'Magnosolv', dose: '1 sáček' }],
+    sex: 'male',
+    birth_year: 1970,
+  },
+};
+
 async function loadCRTOpus(force = false, model = undefined) {
+  const mockKey = new URLSearchParams(location.search).get('mock');
+  const mockProfile = mockKey ? MOCK_PROFILES[mockKey] : null;
+  const body = mockProfile
+    ? { userId: 'mock', role: userRole, force: true, model, mockProfile }
+    : { userId, role: userRole, force, model };
+
   const res = await fetch('/api/crt-generate', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ userId, role: userRole, force, model }),
+    body: JSON.stringify(body),
   });
   if (!res.ok) {
     let detail = '';

@@ -1402,7 +1402,7 @@ function dataHash(ctx, modelId) {
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { userId, role = 'longevity', force = false, model: modelParam } = req.body || {};
+  const { userId, role = 'longevity', force = false, model: modelParam, mockProfile } = req.body || {};
 
   // Výběr modelu: Fable default, Sonnet 5 jako fallback při refusal
   const MODEL_MAP = {
@@ -1413,6 +1413,23 @@ export default async function handler(req, res) {
   };
   const modelCfg = MODEL_MAP[modelParam] || MODEL_MAP.haiku;
   const fallbackCfg = MODEL_MAP.sonnet5;
+
+  // Dev mock: mockProfile v POST body přeskočí Supabase (jen pokud chybí userId nebo je userId === 'mock')
+  if (mockProfile && (!userId || userId === 'mock')) {
+    const mockCtx = {
+      metrics: [],
+      profile: mockProfile,
+      checkins: [],
+      nodeInputs: [],
+    };
+    try {
+      const result = await generateCRT(mockCtx, role, modelCfg);
+      res.setHeader('Cache-Control', 'no-store');
+      return res.json({ ...result, _mock: true });
+    } catch (e) {
+      return res.status(500).json({ error: e.message });
+    }
+  }
 
   if (!userId) return res.status(401).json({ error: 'Přihlaste se pro zobrazení mapy.' });
 
