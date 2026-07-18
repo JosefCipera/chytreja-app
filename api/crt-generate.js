@@ -433,6 +433,20 @@ async function buildDeterministicCRT(profile, metrics = []) {
     }
   }
 
+  // Post-parent-chain: SEDENTARY_LIFESTYLE_ROOT mohl být přidán parent inference (ne klíčovým slovem).
+  // Explicit block výše (řádky 395-400) proběhl PŘED inference → re-fire pro správnost.
+  // Odstraň METABOLIC_HEALTH_ROOT pokud byl přidán dřív (parent inference OBESITY→METABOLIC_HEALTH_ROOT)
+  // a INACTIVITY_ROOT pokud SEDENTARY nakonec přišel.
+  if (activeIds.has('SEDENTARY_LIFESTYLE_ROOT')) {
+    activeIds.add('DYSLIPIDEMIA');
+    activeIds.add('HYPERURICEMIA');
+    activeIds.add('OBESITY');
+    activeIds.delete('METABOLIC_HEALTH_ROOT');
+    activeIds.delete('INACTIVITY_ROOT');
+    activeIds.delete('PHYSICAL_DECONDITIONING');
+    activeIds.delete('FATIGUE_LOW_CAPACITY');
+  }
+
   // Downstream kaskáda — lineární (single-child) uzly propagují dopředu automaticky.
   // Tím DYSLIPIDEMIA→ATHEROSCLEROSIS→VASCULAR_STIFFNESS nevyžaduje explicitní keyword.
   // Kaskáda platí POUZE pro uzly s přesně 1 typical_child (jinak by se větevné rooty rozrostly).
@@ -1321,7 +1335,7 @@ function overlayColors(nodes, metrics) {
 // _v_ai: bump POUZE při změně Sonnet promptu → invaliduje AI generování
 // _v_pp: bump při změně post-processingu (med-inject, validateEdges...) → přeskočí Sonnet, re-run PP
 const _v_ai = 12;
-const _v_pp = 26;
+const _v_pp = 27;
 
 function hashStr(s) {
   let h = 0;
