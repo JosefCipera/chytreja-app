@@ -1477,6 +1477,8 @@ window.declineCrtSecond = function(nodeId) {
 
 let _medsVisible = false;
 let _pillsAdded  = false;
+// Pilulky pod hranami (beforeDrawing) — šipky nejsou překryty
+const _MED_EVENT = 'beforeDrawing';
 let _labelMode = 'layman'; // 'expert' | 'layman'
 
 // Nastaví label na všech uzlech podle aktuálního módu a překreslí
@@ -1523,11 +1525,11 @@ function _applyMedsState() {
   if (_visNetwork && window._crtData) {
     if (_medsVisible && !_pillsAdded) {
       _medDrawFn = _buildMedDrawer();
-      _visNetwork.on('afterDrawing', _medDrawFn);
+      _visNetwork.on(_MED_EVENT, _medDrawFn);
       _visNetwork.redraw();
       _pillsAdded = true;
     } else if (!_medsVisible && _pillsAdded) {
-      if (_medDrawFn) { _visNetwork.off('afterDrawing', _medDrawFn); _medDrawFn = null; }
+      if (_medDrawFn) { _visNetwork.off(_MED_EVENT, _medDrawFn); _medDrawFn = null; }
       _visNetwork.redraw();
       _pillsAdded = false;
     }
@@ -1784,9 +1786,9 @@ window.printCRT = function() {
     };
   }));
   if (_medDrawFn && _pillsAdded) {
-    _visNetwork.off('afterDrawing', _medDrawFn);
+    _visNetwork.off(_MED_EVENT, _medDrawFn);
     _medDrawFn = _buildMedDrawer(true);
-    _visNetwork.on('afterDrawing', _medDrawFn);
+    _visNetwork.on('afterDrawing', _medDrawFn); // print: pilulky na vrch
   }
 
   // Skryj canvas (opacity) → resize → screenshot
@@ -1804,9 +1806,9 @@ window.printCRT = function() {
     const restore = () => {
       dataset.update(Object.entries(origColors).map(([id, c]) => ({ id, ...c })));
       if (_pillsAdded) {
-        if (_medDrawFn) _visNetwork.off('afterDrawing', _medDrawFn);
+        if (_medDrawFn) _visNetwork.off('afterDrawing', _medDrawFn); // print handler → afterDrawing
         _medDrawFn = _buildMedDrawer(false);
-        _visNetwork.on('afterDrawing', _medDrawFn);
+        _visNetwork.on(_MED_EVENT, _medDrawFn); // restore: zpět na beforeDrawing
       }
       container.style.width   = origW;
       container.style.height  = origH;
