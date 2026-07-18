@@ -788,7 +788,7 @@ async function loadCRTOpus(force = false, model = undefined) {
     throw new Error(`CRT generate ${res.status}${detail ? ': ' + detail : ''}`);
   }
   const data = await res.json();
-  if (model) console.log('[CRT debug] medications_map:', JSON.stringify(data.medications_map?.slice(0,6)));
+  console.log('[CRT] medications_map z API:', (data.medications_map || []).map(m => m.name + '→' + (m.targets||[]).join(',')));
   return data;
 }
 
