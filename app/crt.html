@@ -839,7 +839,7 @@ function renderTree(data) {
 
     // Desktop: 3 pevné sloupce (L, C, R), hierarchical layout vypnutý.
     // y fixováno z levelu, x z column+sibling offset. Mobil: hierarchical auto.
-    const BRANCH_X   = { L: -500, LC: -500, C: 0, RC: 500, R: 500 };
+    const BRANCH_X   = { L: -400, LC: -400, C: 0, RC: 400, R: 400 };
     const COL3_SEP   = 180; // px mezi levely (desktop)
     const branchToCol3 = b => (b === 'L' || b === 'LC') ? 'L' : b === 'C' ? 'C' : 'R';
     const col3 = branchToCol3(n.branch || 'C');
@@ -1545,7 +1545,8 @@ function _buildMedDrawer(forPrint = false) {
   const medsMap  = window._crtData?.medications_map  || [];
   const suppsMap = window._crtData?.supplements_map  || [];
   const typeColor = { treatment: '#f59e0b', protects: '#4ade80', warning: '#fbbf24' };
-  const OFFSET_X  = 140; // canvas jednotky vlevo od okraje uzlu (~node šířka/2 + mezera)
+  const OFFSET_X_DEFAULT = 140;
+  const OFFSET_X_EDGE    = 20; // L/LC uzly jsou na levém okraji → malý offset, jinak off-screen
   const SPACING_Y = 28;
   const FONT_SIZE = IS_MOBILE ? 13 : 16;
 
@@ -1592,8 +1593,10 @@ function _buildMedDrawer(forPrint = false) {
     Object.entries(byNode).forEach(([nodeId, meds]) => {
       const pos = positions[nodeId];
       if (!pos) return; // node filtered out (Top-N) or not yet rendered — skip
-      const branch  = _nodeBranch[nodeId] || 'C';
-      const toRight = (branch === 'L' || branch === 'LC'); // L sloupec je u levého okraje → pill napravo
+      const branch   = _nodeBranch[nodeId] || 'C';
+      const isEdge   = branch === 'L' || branch === 'LC';
+      const toRight  = branch === 'R'; // R sloupec má sibling offset → pilulky napravo (vlevo by šly pod C uzly)
+      const OFFSET_X = isEdge ? OFFSET_X_EDGE : OFFSET_X_DEFAULT;
       meds.forEach((m, i) => {
         const color  = typeColor[m.type] || typeColor.treatment;
         const text   = m.name;
