@@ -1545,7 +1545,6 @@ function _buildMedDrawer(forPrint = false) {
   const suppsMap = window._crtData?.supplements_map  || [];
   const typeColor = { treatment: '#f59e0b', protects: '#4ade80', warning: '#fbbf24' };
   const OFFSET_X_DEFAULT = 140;
-  const OFFSET_X_EDGE    = 60; // L/LC uzly jsou na levém okraji viewportu → menší offset
   const SPACING_Y = 28;
   const FONT_SIZE = IS_MOBILE ? 13 : 16;
 
@@ -1584,11 +1583,8 @@ function _buildMedDrawer(forPrint = false) {
     Object.entries(byNode).forEach(([nodeId, meds]) => {
       const pos = positions[nodeId];
       if (!pos) return; // node filtered out (Top-N) or not yet rendered — skip
-      // Směr pilulky z pozice uzlu:
-      // R sloupec se sibling offsetem leží na x≈200-500 → napravo (vlevo by šlo pod C uzly)
-      // L/LC (x≈-500) a RC (x≈700) → nalevo; pro L/LC menší offset (blízko levého okraje)
-      const toRight  = pos.x > 0 && pos.x < 550;
-      const OFFSET_X = pos.x < -100 ? OFFSET_X_EDGE : OFFSET_X_DEFAULT;
+      const toRight  = false;
+      const OFFSET_X = OFFSET_X_DEFAULT;
       meds.forEach((m, i) => {
         const color  = typeColor[m.type] || typeColor.treatment;
         const text   = m.name;
