@@ -10,6 +10,7 @@ import { join } from 'path';
 // Musí odpovídat hodnotám v api/crt-generate.js
 const _v_ai = 12;
 const _v_pp = 30;
+const DEFAULT_MODEL = 'claude-sonnet-5'; // MODEL_MAP.haiku.id = MODELS.crt = 'claude-sonnet-5'
 
 function hashStr(s) {
   let h = 0;
@@ -50,10 +51,10 @@ for (const file of files) {
   const newHash = hashStr(JSON.stringify({
     _v_ai,
     _v_pp,
-    model:        'claude-haiku-4-5',
+    model:        DEFAULT_MODEL,
     diagnoses:    ctx.profile.diagnoses || [],
     doctor_notes: ctx.profile.doctor_notes || '',
-    medications:  (ctx.profile.medications || []).map(m => typeof m === 'string' ? m : m?.name).filter(Boolean),
+    medications:  (ctx.profile.medications || []).map(m => m.name),
     labs:         ctx.profile.labs || {},
     goal:         ctx.profile.goal_text || '',
     metrics:      ctx.metrics.map(m => `${m.node_id}:${m.state}`).sort(),
