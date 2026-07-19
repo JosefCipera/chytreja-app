@@ -333,11 +333,12 @@ const DIAGNOSIS_KEYWORDS = [
   { keywords: ['obezita', 'nadváha', 'obese', 'overweight'],                                      id: 'OBESITY' },
   { keywords: ['cholesterol', 'dyslipid', 'ldl', 'lipid'],                                        id: 'DYSLIPIDEMIA' },
   { keywords: ['hypertenze', 'hypertension', 'vysoký tlak'],                                      id: 'HYPERTENSION' },
-  { keywords: ['hypothyreóza', 'hypothyroid', 'štítná žláza', 'tyreoida'],                        id: 'HYPOTHYROIDISM' },
+  { keywords: ['hypothyreóza', 'hypothyroid', 'hypothyreoz', 'štítná žláza', 'tyreoida'],          id: 'HYPOTHYROIDISM' },
   { keywords: ['cukrovka', 'diabetes', 'inzulínová rezistence', 'inzulin', 'glukóza'],            id: 'INSULIN_RESISTANCE' },
   { keywords: ['třes', 'tremor', 'bolest hlavy', 'migréna', 'headache'],                          id: 'NEUROMOTOR_DYS' },
   { keywords: ['nespavost', 'insomnia', 'spánek', 'sleep', 'porucha spánku'],                     id: 'SLEEP_DISORDER' },
   { keywords: ['deprese', 'depression', 'úzkost', 'anxiety', 'psychika', 'nálada'],               id: 'DEPRESSION_ANXIETY' },
+  { keywords: ['periferní neuropatie', 'perieferni neuropatie', 'neuropatie', 'peripheral neuropathy'], id: 'PERIPHERAL_NEUROPATHY' },
   { keywords: ['fibrilace', 'arytmie', 'fap', 'atrial fibrillation'],                             id: 'ATRIAL_FIBRILLATION' },
   { keywords: ['kyselina močová', 'dna', 'hyperurikémie', 'gout', 'uric'],                        id: 'HYPERURICEMIA' },
   { keywords: ['kosti', 'osteoporóza', 'osteopenie', 'bone density'],                             id: 'BONE_DENSITY_LOSS' },
@@ -376,10 +377,18 @@ async function buildDeterministicCRT(profile, metrics = []) {
   const isMale   = _sex === 'male'   || _sex === 'm' || _sex === 'muž';
   const isFemale = _sex === 'female' || _sex === 'f' || _sex === 'žena' || _sex === 'woman';
 
+  // Když existují doctor_notes, použij POUZE jejich text pro keyword matching.
+  // Diagnózy mohou přidávat šum (ESENCIALNI_TREMOR → NEUROMOTOR_DYS), který
+  // doctor_notes záměrně nezmínily — lékař popsal relevantní kauzální řetěz.
+  const hasDetailedNotes = !!(profile.doctor_notes && profile.doctor_notes.trim().length > 20);
+  const keywordText = hasDetailedNotes
+    ? profile.doctor_notes.toLowerCase()
+    : allText;
+
   // 1. Keyword matching → aktivní State Dictionary IDs
   const activeIds = new Set();
   for (const { keywords, id } of DIAGNOSIS_KEYWORDS) {
-    if (keywords.some(kw => allText.includes(kw))) {
+    if (keywords.some(kw => keywordText.includes(kw))) {
       activeIds.add(id);
     }
   }
@@ -387,14 +396,23 @@ async function buildDeterministicCRT(profile, metrics = []) {
   if (bmi && bmi >= 27) activeIds.add('OBESITY');
   if (bmi && bmi >= 30) { activeIds.add('OBESITY'); activeIds.add('HYPERTENSION'); }
 
-  // Fyzická kondice z user_metrics — jen pokud SEDENTARY_LIFESTYLE_ROOT není aktivní
-  // (SEDENTARY kauzálně pokrývá fyzickou situaci, INACTIVITY_ROOT by byl duplikát a způsoboval by geriatrické uzly)
+  // Fyzická kondice z user_metrics — pouze pokud nejsou doctor_notes
+  // (doctor_notes popisují přesný kauzální příběh, metriky by přidaly INACTIVITY_ROOT navíc)
   const PHYSICAL_METRIC_IDS = new Set(['vo2max', 'vytrvalost', 'sila', 'mobilita', 'stabilita', 'rovnovaha']);
-  const hasLowFitness = metrics.some(m => PHYSICAL_METRIC_IDS.has(m.node_id) && (m.state === 'RED' || m.state === 'YELLOW'));
+  const hasLowFitness = !hasDetailedNotes && metrics.some(m => PHYSICAL_METRIC_IDS.has(m.node_id) && (m.state === 'RED' || m.state === 'YELLOW'));
   if (hasLowFitness && !activeIds.has('SEDENTARY_LIFESTYLE_ROOT')) {
     activeIds.add('INACTIVITY_ROOT');
     activeIds.add('PHYSICAL_DECONDITIONING');
     activeIds.add('FATIGUE_LOW_CAPACITY');
+  }
+
+  // Literal ID scan: pokud doctor_notes explicitně zmiňují ID ze State Dictionary (STROKE_RISK, GAIT_INSTABILITY…)
+  // Umožňuje lékaři přímo specifikovat uzly — bez AI, deterministicky.
+  if (profile.doctor_notes) {
+    const notesUpper = profile.doctor_notes.toUpperCase();
+    for (const def of STATES_ARR) {
+      if (notesUpper.includes(def.id)) activeIds.add(def.id);
+    }
   }
 
   // Fallback: pokud nic nebylo nalezeno, přidej chronický stres
@@ -819,6 +837,8 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
 
     // Kanonické hodnoty ze State Dictionary — label, branch, level, type jsou deterministické
     // GPT-4o přiřazuje špatné branch/level → vis.js udělá separátní podstrom
+    // Root detekce: uzel bez příchozí hrany + can_be_root → level = 0 (i když typical_level > 0)
+    const nodesWithParent = new Set((crt.edges || []).map(e => e.to));
     const applyStateLabels = n => {
       if (n?._labelOverride) return;
       const def = STATES_DB[n?.id];
@@ -826,7 +846,8 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
         n.label        = def.label;
         n.label_layman = def.label_layman;
         n.type         = def.type;
-        n.level        = def.typical_level;   // kanonická hloubka → validateEdges
+        const isActualRoot = def.can_be_root && !nodesWithParent.has(n.id);
+        n.level        = isActualRoot ? 0 : def.typical_level;  // root → 0, jinak kanonická hloubka
         n.branch       = def.typical_branch;  // kanonická větev → vis.js pozice
         if (def.panel_text) n.panel_text = def.panel_text;
       }
