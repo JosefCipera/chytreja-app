@@ -329,6 +329,7 @@ async function callGPT4o(systemPrompt, userPrompt, modelCfg) {
 
 // ── Keyword → State Dictionary ID mapping ────────────────────────────────────
 const DIAGNOSIS_KEYWORDS = [
+  { keywords: ['inflammaging', 'věkem podmíněný zánět', 'chronický zánět stárnutí'],              id: 'INFLAMMAGING' },
   { keywords: ['stres', 'stress', 'vyhoření', 'burnout', 'napětí', 'úzkost', 'anxiet'],          id: 'CHRONIC_STRESS' },
   { keywords: ['obezita', 'nadváha', 'obese', 'overweight'],                                      id: 'OBESITY' },
   { keywords: ['cholesterol', 'dyslipid', 'ldl', 'lipid'],                                        id: 'DYSLIPIDEMIA' },
@@ -491,6 +492,15 @@ async function buildDeterministicCRT(profile, metrics = []) {
     activeIds.delete('INACTIVITY_ROOT');
     activeIds.delete('PHYSICAL_DECONDITIONING');
     activeIds.delete('FATIGUE_LOW_CAPACITY');
+  }
+
+  // INFLAMMAGING jako super-root pohlcuje METABOLIC_HEALTH_ROOT a CHRONIC_STRESS —
+  // věkem podmíněný zánět je jejich společný upstream kořen, duplikovat by zmatl graf.
+  if (activeIds.has('INFLAMMAGING')) {
+    activeIds.delete('METABOLIC_HEALTH_ROOT');
+    activeIds.delete('CHRONIC_STRESS');
+    activeIds.delete('SEDENTARY_LIFESTYLE_ROOT');
+    console.log('[CRT] INFLAMMAGING active: suppressed METABOLIC_HEALTH_ROOT, CHRONIC_STRESS');
   }
 
   // Downstream kaskáda — lineární (single-child) uzly propagují dopředu automaticky.
