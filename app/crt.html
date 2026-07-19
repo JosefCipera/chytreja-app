@@ -1005,6 +1005,10 @@ function renderTree(data) {
   setTimeout(() => {
     if (_visNetwork) _visNetwork.fit({ animation: { duration: 500, easingFunction: 'easeInOutQuad' } });
   }, 150);
+  // vis.js v9 bug: arrowheads neprenderují při prvním paintu s physics:false + smooth:false.
+  // Redraw po 200ms + po skončení fit animace je spolehlivá oprava.
+  setTimeout(() => { if (_visNetwork) _visNetwork.redraw(); }, 200);
+  setTimeout(() => { if (_visNetwork) _visNetwork.redraw(); }, 700);
 
   // Badge vždy znovu — _visNetwork byl právě zničen a vytvořen znovu
   _warnDrawFn = null;

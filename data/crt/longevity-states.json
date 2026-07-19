@@ -90,9 +90,7 @@
       "duloxetin",
       "sertralin"
     ],
-    "typical_children": [
-      "FATIGUE_LOW_CAPACITY"
-    ]
+    "typical_children": []
   },
   {
     "id": "SLEEP_DISORDER",

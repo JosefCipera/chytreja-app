@@ -15,10 +15,6 @@
         "to": "SLEEP_DISORDER"
       },
       {
-        "from": "DEPRESSION_ANXIETY",
-        "to": "FATIGUE_LOW_CAPACITY"
-      },
-      {
         "from": "SLEEP_DISORDER",
         "to": "FATIGUE_LOW_CAPACITY"
       },
