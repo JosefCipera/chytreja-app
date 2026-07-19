@@ -514,6 +514,14 @@ async function buildDeterministicCRT(profile, metrics = []) {
     }
   }
 
+  // Dedup: STROKE_RISK a THREATENED_HEALTHSPAN jsou ekvivalentní apices —
+  // THREATENED_HEALTHSPAN má bohatší kontext (FaP + ED + mrtvice), preferuj ho.
+  // Pokud jsou oba aktivní (literal scan + HYPERTENSION kaskáda), odstraň STROKE_RISK.
+  if (activeIds.has('THREATENED_HEALTHSPAN') && activeIds.has('STROKE_RISK')) {
+    activeIds.delete('STROKE_RISK');
+    console.log('[CRT] dedup: STROKE_RISK removed — THREATENED_HEALTHSPAN already active');
+  }
+
   // 2. Sestav nodes + edges ze State Dictionary
   const nodes = [];
   const edges = [];

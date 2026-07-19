@@ -8,7 +8,11 @@
     "can_be_root": true,
     "typical_branch": "L",
     "med_targets": [],
-    "typical_children": ["CARDIAC_IRRITABILITY", "DEPRESSION_ANXIETY", "SLEEP_DISORDER"]
+    "typical_children": [
+      "CARDIAC_IRRITABILITY",
+      "DEPRESSION_ANXIETY",
+      "SLEEP_DISORDER"
+    ]
   },
   {
     "id": "METABOLIC_HEALTH_ROOT",
@@ -19,7 +23,12 @@
     "can_be_root": true,
     "typical_branch": "C",
     "med_targets": [],
-    "typical_children": ["DYSLIPIDEMIA", "HYPERURICEMIA", "INSULIN_RESISTANCE", "OBESITY"],
+    "typical_children": [
+      "DYSLIPIDEMIA",
+      "HYPERURICEMIA",
+      "INSULIN_RESISTANCE",
+      "OBESITY"
+    ],
     "panel_text": "Metabolická dysregulace je tichý proces — tělo roky kompenzuje, než se problémy projeví naplno. Cholesterol, kyselina močová, inzulín: všechny vycházejí ze stejného kořene. Jídlo, pohyb a spánek jsou jediné nástroje, které to mohou zvrátit."
   },
   {
@@ -30,8 +39,15 @@
     "typical_level": 0,
     "can_be_root": true,
     "typical_branch": "R",
-    "med_targets": ["euthyrox", "letrox", "eltroxin", "levothyroxin"],
-    "typical_children": ["BONE_DENSITY_LOSS"]
+    "med_targets": [
+      "euthyrox",
+      "letrox",
+      "eltroxin",
+      "levothyroxin"
+    ],
+    "typical_children": [
+      "BONE_DENSITY_LOSS"
+    ]
   },
   {
     "id": "SYMPATHETIC_OVERACTIVATION",
@@ -41,8 +57,22 @@
     "typical_level": 2,
     "can_be_root": false,
     "typical_branch": "L",
-    "med_targets": ["magnesium bisglycinát", "magnesium bisglycinat", "magnosolv", "hořčík", "magnesium", "betaloc", "concor", "metoprolol", "bisoprolol"],
-    "typical_children": ["NEUROMOTOR_DYS", "DEPRESSION_ANXIETY", "SLEEP_DISORDER"]
+    "med_targets": [
+      "magnesium bisglycinát",
+      "magnesium bisglycinat",
+      "magnosolv",
+      "hořčík",
+      "magnesium",
+      "betaloc",
+      "concor",
+      "metoprolol",
+      "bisoprolol"
+    ],
+    "typical_children": [
+      "NEUROMOTOR_DYS",
+      "DEPRESSION_ANXIETY",
+      "SLEEP_DISORDER"
+    ]
   },
   {
     "id": "DEPRESSION_ANXIETY",
@@ -52,8 +82,17 @@
     "typical_level": 1,
     "can_be_root": false,
     "typical_branch": "LC",
-    "med_targets": ["mirtazapin", "esoprex", "escitalopram", "dulopren", "duloxetin", "sertralin"],
-    "typical_children": ["FATIGUE_LOW_CAPACITY"]
+    "med_targets": [
+      "mirtazapin",
+      "esoprex",
+      "escitalopram",
+      "dulopren",
+      "duloxetin",
+      "sertralin"
+    ],
+    "typical_children": [
+      "FATIGUE_LOW_CAPACITY"
+    ]
   },
   {
     "id": "SLEEP_DISORDER",
@@ -63,8 +102,17 @@
     "typical_level": 2,
     "can_be_root": false,
     "typical_branch": "LC",
-    "med_targets": ["zen plus", "melatonin", "zolpidem", "stilnox", "hypnogen", "dormicum"],
-    "typical_children": ["FATIGUE_LOW_CAPACITY"]
+    "med_targets": [
+      "zen plus",
+      "melatonin",
+      "zolpidem",
+      "stilnox",
+      "hypnogen",
+      "dormicum"
+    ],
+    "typical_children": [
+      "FATIGUE_LOW_CAPACITY"
+    ]
   },
   {
     "id": "OBESITY",
@@ -74,8 +122,17 @@
     "typical_level": 1,
     "can_be_root": true,
     "typical_branch": "C",
-    "med_targets": ["ozempic", "wegovy", "semaglutid", "saxenda", "liraglutid", "orlistat"],
-    "typical_children": ["INSULIN_RESISTANCE"]
+    "med_targets": [
+      "ozempic",
+      "wegovy",
+      "semaglutid",
+      "saxenda",
+      "liraglutid",
+      "orlistat"
+    ],
+    "typical_children": [
+      "INSULIN_RESISTANCE"
+    ]
   },
   {
     "id": "DYSLIPIDEMIA",
@@ -85,8 +142,17 @@
     "typical_level": 1,
     "can_be_root": false,
     "typical_branch": "RC",
-    "med_targets": ["torvacard", "sortis", "crestor", "atorvastatin", "rosuvastatin", "rosucard"],
-    "typical_children": ["ATHEROSCLEROSIS"]
+    "med_targets": [
+      "torvacard",
+      "sortis",
+      "crestor",
+      "atorvastatin",
+      "rosuvastatin",
+      "rosucard"
+    ],
+    "typical_children": [
+      "ATHEROSCLEROSIS"
+    ]
   },
   {
     "id": "INSULIN_RESISTANCE",
@@ -96,8 +162,16 @@
     "typical_level": 2,
     "can_be_root": false,
     "typical_branch": "C",
-    "med_targets": ["sifor", "siofor", "metformin", "glucophage"],
-    "typical_children": ["HYPERTENSION", "PERIPHERAL_NEUROPATHY"]
+    "med_targets": [
+      "sifor",
+      "siofor",
+      "metformin",
+      "glucophage"
+    ],
+    "typical_children": [
+      "HYPERTENSION",
+      "PERIPHERAL_NEUROPATHY"
+    ]
   },
   {
     "id": "HYPERURICEMIA",
@@ -107,8 +181,13 @@
     "typical_level": 2,
     "can_be_root": false,
     "typical_branch": "R",
-    "med_targets": ["milurit", "allopurinol"],
-    "typical_children": ["ENDOTHELIAL_DYSFUNCTION"]
+    "med_targets": [
+      "milurit",
+      "allopurinol"
+    ],
+    "typical_children": [
+      "ENDOTHELIAL_DYSFUNCTION"
+    ]
   },
   {
     "id": "BONE_DENSITY_LOSS",
@@ -118,9 +197,22 @@
     "typical_level": 1,
     "can_be_root": false,
     "typical_branch": "R",
-    "condition": { "auto_if": { "gender": "female", "min_age": 50 } },
-    "med_targets": ["ibandronat", "ibandronát", "vigantol", "caltrate", "vitamin d3"],
-    "typical_children": ["MUSCULOSKELETAL_DEG"]
+    "condition": {
+      "auto_if": {
+        "gender": "female",
+        "min_age": 50
+      }
+    },
+    "med_targets": [
+      "ibandronat",
+      "ibandronát",
+      "vigantol",
+      "caltrate",
+      "vitamin d3"
+    ],
+    "typical_children": [
+      "MUSCULOSKELETAL_DEG"
+    ]
   },
   {
     "id": "ELECTROLYTE_IMBALANCE",
@@ -130,8 +222,20 @@
     "typical_level": 2,
     "can_be_root": false,
     "typical_branch": "LC",
-    "med_targets": ["kalnormin", "slow-k", "draslík", "magnesium bisglycinát", "magnesium bisglycinat", "magnosolv", "hořčík", "magnesium"],
-    "typical_children": ["NEUROMOTOR_DYS", "CARDIAC_IRRITABILITY"]
+    "med_targets": [
+      "kalnormin",
+      "slow-k",
+      "draslík",
+      "magnesium bisglycinát",
+      "magnesium bisglycinat",
+      "magnosolv",
+      "hořčík",
+      "magnesium"
+    ],
+    "typical_children": [
+      "NEUROMOTOR_DYS",
+      "CARDIAC_IRRITABILITY"
+    ]
   },
   {
     "id": "NEUROMOTOR_DYS",
@@ -141,7 +245,22 @@
     "typical_level": 3,
     "can_be_root": false,
     "typical_branch": "L",
-    "med_targets": ["propranolol", "inderal", "primidone", "mysoline", "gabapentin", "neurontin", "topamax", "topiramat", "amitriptylin", "saroten", "nortriptylin", "sibelium", "flunarizin", "flunarizine"]
+    "med_targets": [
+      "propranolol",
+      "inderal",
+      "primidone",
+      "mysoline",
+      "gabapentin",
+      "neurontin",
+      "topamax",
+      "topiramat",
+      "amitriptylin",
+      "saroten",
+      "nortriptylin",
+      "sibelium",
+      "flunarizin",
+      "flunarizine"
+    ]
   },
   {
     "id": "CARDIAC_IRRITABILITY",
@@ -151,8 +270,15 @@
     "typical_level": 2,
     "can_be_root": false,
     "typical_branch": "L",
-    "med_targets": ["kalnormin", "magnesium bisglycinát", "magnesium bisglycinat", "magnosolv"],
-    "typical_children": ["ATRIAL_FIBRILLATION"]
+    "med_targets": [
+      "kalnormin",
+      "magnesium bisglycinát",
+      "magnesium bisglycinat",
+      "magnosolv"
+    ],
+    "typical_children": [
+      "ATRIAL_FIBRILLATION"
+    ]
   },
   {
     "id": "ATHEROSCLEROSIS",
@@ -162,8 +288,16 @@
     "typical_level": 2,
     "can_be_root": false,
     "typical_branch": "RC",
-    "med_targets": ["torvacard", "sortis", "crestor", "stacyl", "anopyrin"],
-    "typical_children": ["VASCULAR_STIFFNESS"]
+    "med_targets": [
+      "torvacard",
+      "sortis",
+      "crestor",
+      "stacyl",
+      "anopyrin"
+    ],
+    "typical_children": [
+      "VASCULAR_STIFFNESS"
+    ]
   },
   {
     "id": "MUSCULOSKELETAL_DEG",
@@ -173,8 +307,16 @@
     "typical_level": 3,
     "can_be_root": false,
     "typical_branch": "R",
-    "med_targets": ["doreta", "palgotal", "tramadol"],
-    "typical_children": ["GAIT_INSTABILITY", "MUSCLE_WEAKNESS", "MOBILITY_DEFICIT"]
+    "med_targets": [
+      "doreta",
+      "palgotal",
+      "tramadol"
+    ],
+    "typical_children": [
+      "GAIT_INSTABILITY",
+      "MUSCLE_WEAKNESS",
+      "MOBILITY_DEFICIT"
+    ]
   },
   {
     "id": "PREMATURE_CONTRACTIONS",
@@ -194,8 +336,18 @@
     "typical_level": 3,
     "can_be_root": false,
     "typical_branch": "RC",
-    "med_targets": ["prestarium", "perindopril", "tritace", "amlessa", "norvasc", "tezeo"],
-    "typical_children": ["ENDOTHELIAL_DYSFUNCTION", "STROKE_RISK"]
+    "med_targets": [
+      "prestarium",
+      "perindopril",
+      "tritace",
+      "amlessa",
+      "norvasc",
+      "tezeo"
+    ],
+    "typical_children": [
+      "ENDOTHELIAL_DYSFUNCTION",
+      "THREATENED_HEALTHSPAN"
+    ]
   },
   {
     "id": "PERIPHERAL_NEUROPATHY",
@@ -205,8 +357,15 @@
     "typical_level": 3,
     "can_be_root": false,
     "typical_branch": "LC",
-    "med_targets": ["dulopren", "duloxetin", "lyrica", "pregabalin"],
-    "typical_children": ["GAIT_INSTABILITY"]
+    "med_targets": [
+      "dulopren",
+      "duloxetin",
+      "lyrica",
+      "pregabalin"
+    ],
+    "typical_children": [
+      "GAIT_INSTABILITY"
+    ]
   },
   {
     "id": "HYPERTENSION",
@@ -216,8 +375,21 @@
     "typical_level": 3,
     "can_be_root": false,
     "typical_branch": "C",
-    "med_targets": ["prestarium", "perindopril", "tritace", "amlessa", "norvasc", "betaloc", "concor"],
-    "typical_children": ["THREATENED_HEALTHSPAN"]
+    "med_targets": [
+      "prestarium",
+      "perindopril",
+      "tritace",
+      "amlessa",
+      "norvasc",
+      "betaloc",
+      "concor",
+      "stacyl",
+      "aspirin",
+      "acylpyrin"
+    ],
+    "typical_children": [
+      "THREATENED_HEALTHSPAN"
+    ]
   },
   {
     "id": "FATIGUE_LOW_CAPACITY",
@@ -228,7 +400,9 @@
     "can_be_root": false,
     "typical_branch": "LC",
     "med_targets": [],
-    "typical_children": ["GAIT_INSTABILITY"]
+    "typical_children": [
+      "GAIT_INSTABILITY"
+    ]
   },
   {
     "id": "ATRIAL_FIBRILLATION",
@@ -238,8 +412,17 @@
     "typical_level": 4,
     "can_be_root": false,
     "typical_branch": "LC",
-    "med_targets": ["pradaxa", "nolpaza", "xarelto", "warfarin", "betaloc", "concor"],
-    "typical_children": ["THREATENED_HEALTHSPAN"]
+    "med_targets": [
+      "pradaxa",
+      "nolpaza",
+      "xarelto",
+      "warfarin",
+      "betaloc",
+      "concor"
+    ],
+    "typical_children": [
+      "THREATENED_HEALTHSPAN"
+    ]
   },
   {
     "id": "ENDOTHELIAL_DYSFUNCTION",
@@ -250,7 +433,10 @@
     "can_be_root": false,
     "typical_branch": "RC",
     "med_targets": [],
-    "typical_children": ["ERECTILE_DYSFUNCTION", "THREATENED_HEALTHSPAN"]
+    "typical_children": [
+      "ERECTILE_DYSFUNCTION",
+      "THREATENED_HEALTHSPAN"
+    ]
   },
   {
     "id": "GAIT_INSTABILITY",
@@ -260,8 +446,14 @@
     "typical_level": 4,
     "can_be_root": false,
     "typical_branch": "C",
-    "med_targets": ["afexil", "liskantin", "liskantín"],
-    "typical_children": ["FALL_RISK"]
+    "med_targets": [
+      "afexil",
+      "liskantin",
+      "liskantín"
+    ],
+    "typical_children": [
+      "FALL_RISK"
+    ]
   },
   {
     "id": "ERECTILE_DYSFUNCTION",
@@ -271,8 +463,13 @@
     "typical_level": 5,
     "can_be_root": false,
     "typical_branch": "RC",
-    "condition": { "gender": "male" },
-    "med_targets": ["vizarsin", "cialis"],
+    "condition": {
+      "gender": "male"
+    },
+    "med_targets": [
+      "vizarsin",
+      "cialis"
+    ],
     "typical_children": []
   },
   {
@@ -283,7 +480,10 @@
     "typical_level": 4,
     "can_be_root": false,
     "typical_branch": "L",
-    "med_targets": ["kalnormin", "magnosolv"]
+    "med_targets": [
+      "kalnormin",
+      "magnosolv"
+    ]
   },
   {
     "id": "FALL_RISK",
@@ -303,7 +503,14 @@
     "typical_level": 5,
     "can_be_root": false,
     "typical_branch": "RC",
-    "med_targets": ["pradaxa", "nolpaza", "xarelto", "warfarin", "anopyrin", "stacyl"]
+    "med_targets": [
+      "pradaxa",
+      "nolpaza",
+      "xarelto",
+      "warfarin",
+      "anopyrin",
+      "stacyl"
+    ]
   },
   {
     "id": "CARDIAC_FAILURE_RISK",
@@ -323,7 +530,11 @@
     "typical_level": 5,
     "can_be_root": false,
     "typical_branch": "C",
-    "med_targets": ["anopyrin", "aspirin", "torvacard"]
+    "med_targets": [
+      "anopyrin",
+      "aspirin",
+      "torvacard"
+    ]
   },
   {
     "id": "LOW_VO2MAX",
@@ -370,7 +581,9 @@
     "can_be_root": false,
     "typical_branch": "R",
     "med_targets": [],
-    "typical_children": ["FATIGUE_LOW_CAPACITY"],
+    "typical_children": [
+      "FATIGUE_LOW_CAPACITY"
+    ],
     "panel_text": "VO2max a svalová síla jsou nejsilnějšími prediktory délky a kvality života — silnějšími než kouření nebo diabetes. Po 35. roce ztrácíme bez intervence 1 % aerobní kapacity ročně. Nízká kondice zvyšuje zátěž srdce při každé námaze a urychluje metabolickou dysregulaci — je to obousměrný vztah."
   },
   {
@@ -382,7 +595,9 @@
     "can_be_root": true,
     "typical_branch": "L",
     "med_targets": [],
-    "typical_children": ["PHYSICAL_DECONDITIONING"],
+    "typical_children": [
+      "PHYSICAL_DECONDITIONING"
+    ],
     "panel_text": "Pohybová inaktivita je přímou příčinou ztráty aerobní kapacity, svalové síly a rozsahu pohybu. Bez pohybového stimulu tělo ztrácí funkční kapacitu od 35. roku. Tento proces je plně reverzibilní — i mírný pravidelný pohyb ho zastaví a zvrátí."
   },
   {
@@ -394,7 +609,12 @@
     "can_be_root": true,
     "typical_branch": "C",
     "med_targets": [],
-    "typical_children": ["DYSLIPIDEMIA", "HYPERURICEMIA", "OBESITY", "BONE_DENSITY_LOSS"],
+    "typical_children": [
+      "DYSLIPIDEMIA",
+      "HYPERURICEMIA",
+      "OBESITY",
+      "BONE_DENSITY_LOSS"
+    ],
     "panel_text": "Sedentismus je systémový stav — ne jen málo pohybu, ale chronická absence pohybového stimulu. 8+ hodin sezení denně aktivuje prozánětlivé dráhy, zvyšuje LDL, kyselinu močovou a inzulínovou rezistenci nezávisle na dietě. Každá hodina navíc zvyšuje KV riziko o ~2 %. Přestávky na pohyb každých 90 minut tyto markery měřitelně snižují do 4 týdnů — bez jiné intervence."
   },
   {

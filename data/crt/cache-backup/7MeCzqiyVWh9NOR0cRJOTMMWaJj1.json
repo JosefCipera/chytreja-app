@@ -6,42 +6,298 @@
     "title": "Kauzální mapa zdraví",
     "subtitle": "Current Reality Tree — generováno z vašich dat",
     "edges": [
-      { "from": "CHRONIC_STRESS", "to": "DEPRESSION_ANXIETY" },
-      { "from": "CHRONIC_STRESS", "to": "SLEEP_DISORDER" },
-      { "from": "DEPRESSION_ANXIETY", "to": "FATIGUE_LOW_CAPACITY" },
-      { "from": "SLEEP_DISORDER", "to": "FATIGUE_LOW_CAPACITY" },
-      { "from": "METABOLIC_HEALTH_ROOT", "to": "OBESITY" },
-      { "from": "METABOLIC_HEALTH_ROOT", "to": "DYSLIPIDEMIA" },
-      { "from": "OBESITY", "to": "INSULIN_RESISTANCE" },
-      { "from": "INSULIN_RESISTANCE", "to": "PERIPHERAL_NEUROPATHY" },
-      { "from": "DYSLIPIDEMIA", "to": "ATHEROSCLEROSIS" },
-      { "from": "ATHEROSCLEROSIS", "to": "VASCULAR_STIFFNESS" },
-      { "from": "HYPOTHYROIDISM", "to": "BONE_DENSITY_LOSS" },
-      { "from": "BONE_DENSITY_LOSS", "to": "MUSCULOSKELETAL_DEG" },
-      { "from": "FATIGUE_LOW_CAPACITY", "to": "GAIT_INSTABILITY" },
-      { "from": "PERIPHERAL_NEUROPATHY", "to": "GAIT_INSTABILITY" },
-      { "from": "MUSCULOSKELETAL_DEG", "to": "GAIT_INSTABILITY" },
-      { "from": "GAIT_INSTABILITY", "to": "FALL_RISK" },
-      { "from": "VASCULAR_STIFFNESS", "to": "STROKE_RISK" }
+      {
+        "from": "CHRONIC_STRESS",
+        "to": "DEPRESSION_ANXIETY"
+      },
+      {
+        "from": "CHRONIC_STRESS",
+        "to": "SLEEP_DISORDER"
+      },
+      {
+        "from": "DEPRESSION_ANXIETY",
+        "to": "FATIGUE_LOW_CAPACITY"
+      },
+      {
+        "from": "SLEEP_DISORDER",
+        "to": "FATIGUE_LOW_CAPACITY"
+      },
+      {
+        "from": "METABOLIC_HEALTH_ROOT",
+        "to": "OBESITY"
+      },
+      {
+        "from": "METABOLIC_HEALTH_ROOT",
+        "to": "DYSLIPIDEMIA"
+      },
+      {
+        "from": "OBESITY",
+        "to": "INSULIN_RESISTANCE"
+      },
+      {
+        "from": "INSULIN_RESISTANCE",
+        "to": "PERIPHERAL_NEUROPATHY"
+      },
+      {
+        "from": "DYSLIPIDEMIA",
+        "to": "ATHEROSCLEROSIS"
+      },
+      {
+        "from": "ATHEROSCLEROSIS",
+        "to": "VASCULAR_STIFFNESS"
+      },
+      {
+        "from": "HYPOTHYROIDISM",
+        "to": "BONE_DENSITY_LOSS"
+      },
+      {
+        "from": "BONE_DENSITY_LOSS",
+        "to": "MUSCULOSKELETAL_DEG"
+      },
+      {
+        "from": "FATIGUE_LOW_CAPACITY",
+        "to": "GAIT_INSTABILITY"
+      },
+      {
+        "from": "PERIPHERAL_NEUROPATHY",
+        "to": "GAIT_INSTABILITY"
+      },
+      {
+        "from": "MUSCULOSKELETAL_DEG",
+        "to": "GAIT_INSTABILITY"
+      },
+      {
+        "from": "GAIT_INSTABILITY",
+        "to": "FALL_RISK"
+      },
+      {
+        "from": "VASCULAR_STIFFNESS",
+        "to": "THREATENED_HEALTHSPAN"
+      }
     ],
     "nodes": [
-      { "x": 0, "y": 0, "id": "CHRONIC_STRESS", "type": "cause", "label": "Chronický stres", "level": 0, "_index": null, "_state": "GRAY", "branch": "L", "_isAnchor": true, "label_layman": "Trvalý stres" },
-      { "x": 0, "y": 0, "id": "METABOLIC_HEALTH_ROOT", "type": "cause", "label": "Metabolická dysregulace", "level": 0, "_index": null, "_state": "GRAY", "branch": "C", "_isAnchor": true, "label_layman": "Metabolické zdraví", "panel_text": "Metabolická dysregulace je tichý proces — tělo roky kompenzuje, než se problémy projeví naplno. Cholesterol, kyselina močová, inzulín: všechny vycházejí ze stejného kořene. Jídlo, pohyb a spánek jsou jediné nástroje, které to mohou zvrátit." },
-      { "x": 0, "y": 0, "id": "HYPOTHYROIDISM", "type": "cause", "label": "Hypothyreóza", "level": 0, "_index": null, "_state": "GRAY", "branch": "R", "_isAnchor": true, "label_layman": "Nedostatečná funkce štítné žlázy" },
-      { "x": 0, "y": 0, "id": "DEPRESSION_ANXIETY", "type": "cause", "label": "Deprese a úzkost", "level": 1, "_index": null, "_state": "GRAY", "branch": "LC", "_isAnchor": false, "label_layman": "Psychická zátěž a nálada" },
-      { "x": 0, "y": 0, "id": "OBESITY", "type": "cause", "label": "Obezita", "level": 1, "_index": null, "_state": "GRAY", "branch": "C", "_isAnchor": false, "label_layman": "Obezita" },
-      { "x": 0, "y": 0, "id": "DYSLIPIDEMIA", "type": "cause", "label": "Dyslipidémie", "level": 1, "_index": null, "_state": "GRAY", "branch": "RC", "_isAnchor": false, "label_layman": "Vysoký LDL cholesterol" },
-      { "x": 0, "y": 0, "id": "BONE_DENSITY_LOSS", "type": "cause", "label": "Úbytek kostní hmoty", "level": 1, "_index": null, "_state": "GRAY", "branch": "R", "_isAnchor": false, "label_layman": "Řídnutí kostí" },
-      { "x": 0, "y": 0, "id": "SLEEP_DISORDER", "type": "cause", "label": "Porucha spánku", "level": 2, "_index": null, "_state": "GRAY", "branch": "LC", "_isAnchor": false, "label_layman": "Nespavost a nekvalitní spánek" },
-      { "x": 0, "y": 0, "id": "INSULIN_RESISTANCE", "type": "cause", "label": "Inzulínová rezistence", "level": 2, "_index": null, "_state": "GRAY", "branch": "C", "_isAnchor": false, "label_layman": "Necitlivost na inzulín" },
-      { "x": 0, "y": 0, "id": "ATHEROSCLEROSIS", "type": "cause", "label": "Ateroskleróza", "level": 2, "_index": null, "_state": "GRAY", "branch": "RC", "_isAnchor": false, "label_layman": "Cévní pláty v tepnách" },
-      { "x": 0, "y": 0, "id": "FATIGUE_LOW_CAPACITY", "type": "cause", "label": "Chronická únava", "level": 3, "_index": null, "_state": "GRAY", "branch": "LC", "_isAnchor": false, "label_layman": "Únava a nízká výkonnost" },
-      { "x": 0, "y": 0, "id": "PERIPHERAL_NEUROPATHY", "type": "cause", "label": "Periferní neuropatie", "level": 3, "_index": null, "_state": "GRAY", "branch": "LC", "_isAnchor": false, "label_layman": "Poškozené nervy v rukou a nohách" },
-      { "x": 0, "y": 0, "id": "VASCULAR_STIFFNESS", "type": "cause", "label": "Arteriální rigidita", "level": 3, "_index": null, "_state": "GRAY", "branch": "RC", "_isAnchor": false, "label_layman": "Tuhé cévy" },
-      { "x": 0, "y": 0, "id": "MUSCULOSKELETAL_DEG", "type": "cause", "label": "Degenerace pohybového aparátu", "level": 3, "_index": null, "_state": "GRAY", "branch": "R", "_isAnchor": false, "label_layman": "Opotřebené klouby a páteř" },
-      { "x": 0, "y": 0, "id": "GAIT_INSTABILITY", "type": "junction", "label": "Nestabilita chůze", "level": 4, "_index": null, "_state": "GRAY", "branch": "C", "_isAnchor": false, "label_layman": "Nejistá chůze a rovnováha" },
-      { "x": 0, "y": 0, "id": "FALL_RISK", "type": "ude", "label": "Riziko pádu se zlomeninou", "level": 5, "_index": null, "_state": "GRAY", "branch": "C", "_isAnchor": false, "label_layman": "Hrozba pádu a zlomené kosti" },
-      { "x": 0, "y": 0, "id": "STROKE_RISK", "type": "ude", "label": "Riziko cévní mozkové příhody", "level": 5, "_index": null, "_state": "GRAY", "branch": "RC", "_isAnchor": false, "label_layman": "Hrozba mrtvice" }
+      {
+        "x": 0,
+        "y": 0,
+        "id": "CHRONIC_STRESS",
+        "type": "cause",
+        "label": "Chronický stres",
+        "level": 0,
+        "_index": null,
+        "_state": "GRAY",
+        "branch": "L",
+        "_isAnchor": true,
+        "label_layman": "Trvalý stres"
+      },
+      {
+        "x": 0,
+        "y": 0,
+        "id": "METABOLIC_HEALTH_ROOT",
+        "type": "cause",
+        "label": "Metabolická dysregulace",
+        "level": 0,
+        "_index": null,
+        "_state": "GRAY",
+        "branch": "C",
+        "_isAnchor": true,
+        "label_layman": "Metabolické zdraví",
+        "panel_text": "Metabolická dysregulace je tichý proces — tělo roky kompenzuje, než se problémy projeví naplno. Cholesterol, kyselina močová, inzulín: všechny vycházejí ze stejného kořene. Jídlo, pohyb a spánek jsou jediné nástroje, které to mohou zvrátit."
+      },
+      {
+        "x": 0,
+        "y": 0,
+        "id": "HYPOTHYROIDISM",
+        "type": "cause",
+        "label": "Hypothyreóza",
+        "level": 0,
+        "_index": null,
+        "_state": "GRAY",
+        "branch": "R",
+        "_isAnchor": true,
+        "label_layman": "Nedostatečná funkce štítné žlázy"
+      },
+      {
+        "x": 0,
+        "y": 0,
+        "id": "DEPRESSION_ANXIETY",
+        "type": "cause",
+        "label": "Deprese a úzkost",
+        "level": 1,
+        "_index": null,
+        "_state": "GRAY",
+        "branch": "LC",
+        "_isAnchor": false,
+        "label_layman": "Psychická zátěž a nálada"
+      },
+      {
+        "x": 0,
+        "y": 0,
+        "id": "OBESITY",
+        "type": "cause",
+        "label": "Obezita",
+        "level": 1,
+        "_index": null,
+        "_state": "GRAY",
+        "branch": "C",
+        "_isAnchor": false,
+        "label_layman": "Obezita"
+      },
+      {
+        "x": 0,
+        "y": 0,
+        "id": "DYSLIPIDEMIA",
+        "type": "cause",
+        "label": "Dyslipidémie",
+        "level": 1,
+        "_index": null,
+        "_state": "GRAY",
+        "branch": "RC",
+        "_isAnchor": false,
+        "label_layman": "Vysoký LDL cholesterol"
+      },
+      {
+        "x": 0,
+        "y": 0,
+        "id": "BONE_DENSITY_LOSS",
+        "type": "cause",
+        "label": "Úbytek kostní hmoty",
+        "level": 1,
+        "_index": null,
+        "_state": "GRAY",
+        "branch": "R",
+        "_isAnchor": false,
+        "label_layman": "Řídnutí kostí"
+      },
+      {
+        "x": 0,
+        "y": 0,
+        "id": "SLEEP_DISORDER",
+        "type": "cause",
+        "label": "Porucha spánku",
+        "level": 2,
+        "_index": null,
+        "_state": "GRAY",
+        "branch": "LC",
+        "_isAnchor": false,
+        "label_layman": "Nespavost a nekvalitní spánek"
+      },
+      {
+        "x": 0,
+        "y": 0,
+        "id": "INSULIN_RESISTANCE",
+        "type": "cause",
+        "label": "Inzulínová rezistence",
+        "level": 2,
+        "_index": null,
+        "_state": "GRAY",
+        "branch": "C",
+        "_isAnchor": false,
+        "label_layman": "Necitlivost na inzulín"
+      },
+      {
+        "x": 0,
+        "y": 0,
+        "id": "ATHEROSCLEROSIS",
+        "type": "cause",
+        "label": "Ateroskleróza",
+        "level": 2,
+        "_index": null,
+        "_state": "GRAY",
+        "branch": "RC",
+        "_isAnchor": false,
+        "label_layman": "Cévní pláty v tepnách"
+      },
+      {
+        "x": 0,
+        "y": 0,
+        "id": "FATIGUE_LOW_CAPACITY",
+        "type": "cause",
+        "label": "Chronická únava",
+        "level": 3,
+        "_index": null,
+        "_state": "GRAY",
+        "branch": "LC",
+        "_isAnchor": false,
+        "label_layman": "Únava a nízká výkonnost"
+      },
+      {
+        "x": 0,
+        "y": 0,
+        "id": "PERIPHERAL_NEUROPATHY",
+        "type": "cause",
+        "label": "Periferní neuropatie",
+        "level": 3,
+        "_index": null,
+        "_state": "GRAY",
+        "branch": "LC",
+        "_isAnchor": false,
+        "label_layman": "Poškozené nervy v rukou a nohách"
+      },
+      {
+        "x": 0,
+        "y": 0,
+        "id": "VASCULAR_STIFFNESS",
+        "type": "cause",
+        "label": "Arteriální rigidita",
+        "level": 3,
+        "_index": null,
+        "_state": "GRAY",
+        "branch": "RC",
+        "_isAnchor": false,
+        "label_layman": "Tuhé cévy"
+      },
+      {
+        "x": 0,
+        "y": 0,
+        "id": "MUSCULOSKELETAL_DEG",
+        "type": "cause",
+        "label": "Degenerace pohybového aparátu",
+        "level": 3,
+        "_index": null,
+        "_state": "GRAY",
+        "branch": "R",
+        "_isAnchor": false,
+        "label_layman": "Opotřebené klouby a páteř"
+      },
+      {
+        "x": 0,
+        "y": 0,
+        "id": "GAIT_INSTABILITY",
+        "type": "junction",
+        "label": "Nestabilita chůze",
+        "level": 4,
+        "_index": null,
+        "_state": "GRAY",
+        "branch": "C",
+        "_isAnchor": false,
+        "label_layman": "Nejistá chůze a rovnováha"
+      },
+      {
+        "x": 0,
+        "y": 0,
+        "id": "FALL_RISK",
+        "type": "ude",
+        "label": "Riziko pádu se zlomeninou",
+        "level": 5,
+        "_index": null,
+        "_state": "GRAY",
+        "branch": "C",
+        "_isAnchor": false,
+        "label_layman": "Hrozba pádu a zlomené kosti"
+      },
+      {
+        "x": 0,
+        "y": 0,
+        "id": "THREATENED_HEALTHSPAN",
+        "type": "ude",
+        "label": "Riziko mrtvice/infarktu",
+        "level": 5,
+        "_index": null,
+        "_state": "GRAY",
+        "branch": "RC",
+        "_isAnchor": false,
+        "label_layman": "Riziko mrtvice/infarktu"
+      }
     ],
     "and_joins": [],
     "medications_map": [],
