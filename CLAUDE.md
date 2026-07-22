@@ -486,6 +486,52 @@ Aktivní uzly ze symptomů/diagnóz/BMI. Panel_text z State Dictionary (generick
 
 State Dictionary funguje pro jakéhokoliv pacienta. Sonnet vybere relevantní podmnožinu ze 30 stavů podle `doctor_notes`. Bez `doctor_notes` keyword builder vybere podmnožinu deterministicky. Různí pacienti → různé podstromy ze stejného slovníku. Léky se přiřadí deterministicky přes `med_targets` lookup (dedup: nejvyšší `typical_level` aktivního stavu s tímto lékem).
 
+### CRT epistémický stav uzlu — Confirmed vs Inferred (TODO)
+
+**Záměr:** Každý uzel v CRT má nejen kauzální pozici, ale i epistémický stav — jak moc je jeho přítomnost podložená daty.
+
+#### Dva stavy
+
+| Stav | Vizuál | Kdy |
+|------|--------|-----|
+| **Confirmed** | normální border (cyan/zlatý) | Lab nebo diagnóza od lékaře explicitně potvrzuje |
+| **Inferred** | jantarový dashed border | Kauzální logika nebo demografie naznačuje, ale chybí měření |
+
+#### Pravidlo — jedno konzistentní pravidlo pro všechny uzly
+
+```
+Máš lab data?     → Confirmed
+Máš diagnózu?     → Confirmed
+Ani jedno?        → Inferred
+```
+
+`auto_if: { min_age: 60 }` je spouštěč pro *přidání uzlu do grafu* — **ne** pro jeho epistémický stav. Stav se určuje z dat zvlášť.
+
+#### Příklady
+
+| Uzel | Inferred z | Potvrzení přijde z |
+|------|-----------|-------------------|
+| `INFLAMMAGING` | věk ≥ 60, chybí lab | CRP > 1 mg/L (hs-CRP), IL-6 |
+| `INSULIN_RESISTANCE` | SEDENTARY + OBESITY kauzální řetěz | HOMA-IR, glykovaný hemoglobin (HbA1c) |
+| `ATHEROSCLEROSIS` | DYSLIPIDEMIA kaskáda | koronární CT, ABI index |
+
+#### Panel text pro Inferred uzel
+
+*"Tato hodnota nebyla změřena — tvůj profil (nadváha + sedavý život) naznačuje vysokou pravděpodobnost. Změř [konkrétní lab] pro potvrzení."*
+
+#### Implementace (až přijde čas)
+
+- `_inferred: true` flag na uzlu v buildDeterministicCRT (uzel přišel kaskádou/auto_if, ne z lab/diagnózy)
+- Vizuální styl v `crt.html`: jantarový `#f59e0b` dashed border pro Inferred uzly
+- Confirmed uzly: border zůstává cyan `#4ab8d0` (UDE) nebo zlatý `#c09a22` (root)
+- Budoucí: `confidence_score` (0–1) z Bayesovské inference nad lab daty
+
+#### Hodnota pro produkt
+
+Ukazuje **predikci před diagnózou** — core Medicine 3.0 filozofie. Uživatel vidí kde má mezery v datech a co změřit. Přirozený upsell pro health data pipeline (v0.4.0).
+
+---
+
 ### CRT zobrazení — Top-N vs Plná mapa
 
 **Default: Top-N** (`git tag v0.2-crt-topn-laik-panel`)
