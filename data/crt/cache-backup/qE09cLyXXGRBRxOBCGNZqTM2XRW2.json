@@ -150,17 +150,17 @@
         "label_layman": "Problémy s erekcí"
       },
       {
-        "x": 225,
+        "x": -225,
         "y": 260,
-        "id": "HYPERURICEMIA",
+        "id": "ATHEROSCLEROSIS",
         "type": "cause",
-        "label": "Hyperurikémie",
+        "label": "Ateroskleróza",
         "level": 2,
         "_index": null,
         "_state": "GRAY",
-        "branch": "R",
+        "branch": "RC",
         "_isAnchor": true,
-        "label_layman": "Vysoká kyselina močová"
+        "label_layman": "Cévní pláty v tepnách"
       },
       {
         "x": 450,
@@ -216,17 +216,17 @@
         "label_layman": "Poškozené stěny cév"
       },
       {
-        "x": -225,
+        "x": 225,
         "y": 260,
-        "id": "ATHEROSCLEROSIS",
+        "id": "HYPERURICEMIA",
         "type": "cause",
-        "label": "Ateroskleróza",
+        "label": "Hyperurikémie",
         "level": 2,
         "_index": null,
         "_state": "GRAY",
-        "branch": "RC",
+        "branch": "R",
         "_isAnchor": true,
-        "label_layman": "Cévní pláty v tepnách"
+        "label_layman": "Vysoká kyselina močová"
       },
       {
         "x": 225,
