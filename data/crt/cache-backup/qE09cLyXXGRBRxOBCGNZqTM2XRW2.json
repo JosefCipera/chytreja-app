@@ -221,7 +221,7 @@
         "id": "HYPERURICEMIA",
         "type": "cause",
         "label": "Hyperurikémie",
-        "level": 2,
+        "level": 1,
         "_index": null,
         "_state": "GRAY",
         "branch": "R",
