@@ -390,14 +390,16 @@ async function buildDeterministicCRT(profile, metrics = []) {
 
   // 1. Keyword matching → aktivní State Dictionary IDs
   const activeIds = new Set();
+  const confirmedIds = new Set(); // uzly podložené daty (diagnóza, lab, lék, BMI)
+
   for (const { keywords, id } of DIAGNOSIS_KEYWORDS) {
     if (keywords.some(kw => keywordText.includes(kw))) {
-      activeIds.add(id);
+      activeIds.add(id); confirmedIds.add(id);
     }
   }
-  // BMI prahy
-  if (bmi && bmi >= 27) activeIds.add('OBESITY');
-  if (bmi && bmi >= 30) { activeIds.add('OBESITY'); activeIds.add('HYPERTENSION'); }
+  // BMI prahy — naměřená hodnota → Confirmed
+  if (bmi && bmi >= 27) { activeIds.add('OBESITY'); confirmedIds.add('OBESITY'); }
+  if (bmi && bmi >= 30) { activeIds.add('OBESITY'); confirmedIds.add('OBESITY'); activeIds.add('HYPERTENSION'); confirmedIds.add('HYPERTENSION'); }
 
   // Fyzická kondice z user_metrics — pouze pokud nejsou doctor_notes
   // (doctor_notes popisují přesný kauzální příběh, metriky by přidaly INACTIVITY_ROOT navíc)
@@ -407,6 +409,7 @@ async function buildDeterministicCRT(profile, metrics = []) {
     activeIds.add('INACTIVITY_ROOT');
     activeIds.add('PHYSICAL_DECONDITIONING');
     activeIds.add('FATIGUE_LOW_CAPACITY');
+    // NOT in confirmedIds — odvozeno z app metrik, ne z lab/diagnózy
   }
 
   // Literal ID scan: pokud doctor_notes explicitně zmiňují ID ze State Dictionary (STROKE_RISK, GAIT_INSTABILITY…)
@@ -414,7 +417,7 @@ async function buildDeterministicCRT(profile, metrics = []) {
   if (profile.doctor_notes) {
     const notesUpper = profile.doctor_notes.toUpperCase();
     for (const def of STATES_ARR) {
-      if (notesUpper.includes(def.id)) activeIds.add(def.id);
+      if (notesUpper.includes(def.id)) { activeIds.add(def.id); confirmedIds.add(def.id); }
     }
   }
 
@@ -468,7 +471,7 @@ async function buildDeterministicCRT(profile, metrics = []) {
       if (def.type === 'ude') continue;
       if (activeIds.has(def.id)) continue;
       if ((def.med_targets || []).some(t => medNames.includes(t))) {
-        activeIds.add(def.id);
+        activeIds.add(def.id); confirmedIds.add(def.id); // lék = lékař předepsal → Confirmed
         console.log(`[CRT] med-activate: ${def.id}`);
       }
     }
@@ -561,9 +564,11 @@ async function buildDeterministicCRT(profile, metrics = []) {
   for (const id of activeIds) {
     const def = STATES_DB[id];
     if (!def) continue;
+    const isRootNode = def.can_be_root || (def.typical_level ?? 99) === 0;
     const node = {
       id, label: def.label, label_layman: def.label_layman,
       type: def.type, level: def.typical_level, branch: def.typical_branch,
+      _inferred: isRootNode ? false : !confirmedIds.has(id),
     };
     // BMI-based label override: 25–30 = nadváha, ≥30 = obezita
     if (id === 'OBESITY' && bmi && bmi < 30) {
@@ -1431,7 +1436,7 @@ function overlayColors(nodes, metrics) {
 // _v_ai: bump POUZE při změně Sonnet promptu → invaliduje AI generování
 // _v_pp: bump při změně post-processingu (med-inject, validateEdges...) → přeskočí Sonnet, re-run PP
 const _v_ai = 12;
-const _v_pp = 43;
+const _v_pp = 44;
 
 function hashStr(s) {
   let h = 0;
