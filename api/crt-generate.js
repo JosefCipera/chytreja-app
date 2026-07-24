@@ -348,6 +348,7 @@ const DIAGNOSIS_KEYWORDS = [
   { keywords: ['sedavé zaměstnání', 'sedavý', 'kancelář', 'nepohyb', 'sedí celý den', 'sedentary', 'bez pohybu', 'no exercise'], id: 'SEDENTARY_LIFESTYLE_ROOT' },
   { keywords: ['mrtvice', 'stroke', 'cmp', 'tia', 'cerebrovaskulár', 'ischemická mozkov', 'cévní mozková'], id: 'STROKE_RISK' },
   { keywords: ['pád', 'fall risk', 'nestabilita', 'gait instability', 'riziko pádu'],                       id: 'FALL_RISK' },
+  { keywords: ['únava', 'unava', 'vyčerpání', 'fatigue', 'nízká výkonnost', 'nizka vykonnost', 'slabost'], id: 'FATIGUE_LOW_CAPACITY' },
 ];
 
 // Vitalita/Dekatlon metriky → jeden konsolidovaný CRT uzel (most mezi metabolickým kořenem a UDE)
@@ -1436,7 +1437,7 @@ function overlayColors(nodes, metrics) {
 // _v_ai: bump POUZE při změně Sonnet promptu → invaliduje AI generování
 // _v_pp: bump při změně post-processingu (med-inject, validateEdges...) → přeskočí Sonnet, re-run PP
 const _v_ai = 12;
-const _v_pp = 44;
+const _v_pp = 45;
 
 function hashStr(s) {
   let h = 0;
