@@ -8,9 +8,6 @@
     "can_be_root": true,
     "typical_branch": "C",
     "med_targets": [
-      "stacyl",
-      "aspirin",
-      "acylpyrin",
       "omega-3",
       "kurkumin"
     ],
@@ -391,10 +388,7 @@
       "amlessa",
       "norvasc",
       "betaloc",
-      "concor",
-      "stacyl",
-      "aspirin",
-      "acylpyrin"
+      "concor"
     ],
     "typical_children": [
       "THREATENED_HEALTHSPAN"
@@ -516,9 +510,7 @@
       "pradaxa",
       "nolpaza",
       "xarelto",
-      "warfarin",
-      "anopyrin",
-      "stacyl"
+      "warfarin"
     ]
   },
   {
@@ -539,11 +531,7 @@
     "typical_level": 5,
     "can_be_root": false,
     "typical_branch": "C",
-    "med_targets": [
-      "anopyrin",
-      "aspirin",
-      "torvacard"
-    ]
+    "med_targets": []
   },
   {
     "id": "LOW_VO2MAX",
