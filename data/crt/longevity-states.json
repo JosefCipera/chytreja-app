@@ -99,7 +99,7 @@
     "type": "cause",
     "typical_level": 1,
     "can_be_root": false,
-    "typical_branch": "LC",
+    "typical_branch": "L",
     "med_targets": [
       "mirtazapin",
       "esoprex",
@@ -108,7 +108,9 @@
       "duloxetin",
       "sertralin"
     ],
-    "typical_children": []
+    "typical_children": [
+      "SLEEP_DISORDER"
+    ]
   },
   {
     "id": "SLEEP_DISORDER",
@@ -117,7 +119,7 @@
     "type": "cause",
     "typical_level": 2,
     "can_be_root": false,
-    "typical_branch": "LC",
+    "typical_branch": "L",
     "med_targets": [
       "zen plus",
       "melatonin",

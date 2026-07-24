@@ -1310,6 +1310,12 @@ function validateEdges(nodes, root, edges) {
       console.log(`[CRT validate] odstraněna cross-column hrana: ${e.from}(${fb})→${e.to}(${tb})`);
       return false;
     }
+    // Zakázáno: intra-column křížení (L↔LC nebo R↔RC) — diagonála uvnitř sloupce
+    if ((fb === 'L' && tb === 'LC') || (fb === 'LC' && tb === 'L') ||
+        (fb === 'R' && tb === 'RC') || (fb === 'RC' && tb === 'R')) {
+      console.log(`[CRT validate] odstraněna intra-column diagonální hrana: ${e.from}(${fb})→${e.to}(${tb})`);
+      return false;
+    }
     // Zakázáno: C→L nebo C→R mimo root (center nesmí krmit zpět do větve)
     // Root (level 0) smí startovat obě větve
     if (fb === 'C' && (tb === 'L' || tb === 'R') && (from.level ?? 0) > 0) {
@@ -1423,7 +1429,7 @@ function overlayColors(nodes, metrics) {
 // _v_ai: bump POUZE při změně Sonnet promptu → invaliduje AI generování
 // _v_pp: bump při změně post-processingu (med-inject, validateEdges...) → přeskočí Sonnet, re-run PP
 const _v_ai = 12;
-const _v_pp = 38;
+const _v_pp = 39;
 
 function hashStr(s) {
   let h = 0;
