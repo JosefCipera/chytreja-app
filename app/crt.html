@@ -865,7 +865,7 @@ function renderTree(data) {
 
     let bg, border, textColor, bw, dashes;
     if (isApex) {
-      bg = '#071520'; border = '#4ab8d0'; textColor = '#c8f0ff'; bw = 3; dashes = [8, 5];
+      bg = '#200808'; border = '#c04040'; textColor = '#f0a0a0'; bw = 3; dashes = [8, 5];
     } else if (isRoot) {
       bg = '#12100a'; border = '#c09a22'; textColor = '#d8a830'; bw = 3; dashes = false;
     } else {
@@ -1805,7 +1805,7 @@ window.printCRT = function() {
   dataset.update(dataset.get().map(n => {
     const border = n.color?.border || '#4a7a9a';
     const isRoot = border === '#c09a22';
-    const isApex = border === '#4ab8d0';
+    const isApex = border === '#c04040';
     const bg = isRoot ? '#fffbee' : isApex ? '#eaf8ff' : '#f0f5fa';
     return { id: n.id,
       color: { background: bg, border, highlight: { background: bg, border }, hover: { background: bg, border } },
