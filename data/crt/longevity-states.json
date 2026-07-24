@@ -12,7 +12,6 @@
       "kurkumin"
     ],
     "typical_children": [
-      "INSULIN_RESISTANCE",
       "HYPOTHYROIDISM",
       "OBESITY"
     ],
@@ -229,8 +228,7 @@
       "vitamin d3"
     ],
     "typical_children": [
-      "MUSCULOSKELETAL_DEG",
-      "FALL_RISK"
+      "MUSCULOSKELETAL_DEG"
     ]
   },
   {
@@ -404,9 +402,7 @@
     "can_be_root": false,
     "typical_branch": "LC",
     "med_targets": [],
-    "typical_children": [
-      "GAIT_INSTABILITY"
-    ]
+    "typical_children": []
   },
   {
     "id": "ATRIAL_FIBRILLATION",
