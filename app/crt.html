@@ -860,7 +860,6 @@ function renderTree(data) {
   const visNodes = data.nodes.map(n => {
     const ntype = n._type || n.type || 'cause';
     const isApex     = ntype === 'ude' && !edgeSources.has(n.id);
-    const isUde      = ntype === 'ude' && edgeSources.has(n.id);
     const isRoot     = ntype === 'golden_box' || n.type === 'root' || (n.level ?? 99) === 0;
     const isInactive = !!n.inactive;
 
@@ -869,10 +868,8 @@ function renderTree(data) {
       bg = '#200808'; border = '#c04040'; textColor = '#f0a0a0'; bw = 3; dashes = [8, 5];
     } else if (isRoot) {
       bg = '#12100a'; border = '#c09a22'; textColor = '#d8a830'; bw = 3; dashes = false;
-    } else if (isUde) {
-      bg = '#1a1e28'; border = '#5a6480'; textColor = '#8090a8'; bw = 1.5; dashes = false;
     } else {
-      bg = '#1a2d40'; border = '#2a4a60'; textColor = '#a7c7df'; bw = 1.5; dashes = false;
+      bg = '#1a1e28'; border = '#5a6480'; textColor = '#8090a8'; bw = 1.5; dashes = false;
     }
 
     // Desktop: 3 pevné sloupce (L, C, R), hierarchical layout vypnutý.
