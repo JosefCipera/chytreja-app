@@ -486,49 +486,52 @@ Aktivní uzly ze symptomů/diagnóz/BMI. Panel_text z State Dictionary (generick
 
 State Dictionary funguje pro jakéhokoliv pacienta. Sonnet vybere relevantní podmnožinu ze 30 stavů podle `doctor_notes`. Bez `doctor_notes` keyword builder vybere podmnožinu deterministicky. Různí pacienti → různé podstromy ze stejného slovníku. Léky se přiřadí deterministicky přes `med_targets` lookup (dedup: nejvyšší `typical_level` aktivního stavu s tímto lékem).
 
-### CRT epistémický stav uzlu — Confirmed vs Inferred (TODO)
+### CRT epistémický stav uzlu — Confirmed vs Inferred
 
-**Záměr:** Každý uzel v CRT má nejen kauzální pozici, ale i epistémický stav — jak moc je jeho přítomnost podložená daty.
+**Toto je core value CHJ — predikce před diagnózou.** Každý uzel v CRT má epistémický stav: jak moc je jeho přítomnost podložená daty. Uživatel vidí nejen co ho trápí teď, ale co ho mine s vysokou pravděpodobností — jen je to otázka času.
+
+Příklad: má-li uživatel obezitu + sedavý životní styl, je INSULIN_RESISTANCE téměř jistá — i bez měření. Graf to ukáže šedě jako predikci, s výzvou k ověření.
 
 #### Dva stavy
 
 | Stav | Vizuál | Kdy |
 |------|--------|-----|
-| **Confirmed** | normální border (cyan/zlatý) | Lab nebo diagnóza od lékaře explicitně potvrzuje |
-| **Inferred** | jantarový dashed border | Kauzální logika nebo demografie naznačuje, ale chybí měření |
+| **Confirmed** | modrý border `#2a4a60`, světlý text | Lab nebo diagnóza od lékaře explicitně potvrzuje |
+| **Inferred** | šedý border `#404560`, šedý text, dashed | Kauzální logika naznačuje, ale chybí měření |
 
-#### Pravidlo — jedno konzistentní pravidlo pro všechny uzly
+#### Pravidlo
 
 ```
-Máš lab data?     → Confirmed
-Máš diagnózu?     → Confirmed
-Ani jedno?        → Inferred
+Máš lab data k tomuto uzlu?  → Confirmed
+Máš diagnózu od lékaře?      → Confirmed
+Ani jedno?                   → Inferred (šedý, dashed)
 ```
 
-`auto_if: { min_age: 60 }` je spouštěč pro *přidání uzlu do grafu* — **ne** pro jeho epistémický stav. Stav se určuje z dat zvlášť.
+`auto_if` a `typical_children` kaskáda jsou spouštěče pro *přidání uzlu do grafu* — epistémický stav se určuje zvlášť podle dostupných dat.
 
 #### Příklady
 
 | Uzel | Inferred z | Potvrzení přijde z |
 |------|-----------|-------------------|
-| `INFLAMMAGING` | věk ≥ 60, chybí lab | CRP > 1 mg/L (hs-CRP), IL-6 |
-| `INSULIN_RESISTANCE` | SEDENTARY + OBESITY kauzální řetěz | HOMA-IR, glykovaný hemoglobin (HbA1c) |
+| `INSULIN_RESISTANCE` | OBESITY + SEDENTARY kauzální řetěz | HOMA-IR, HbA1c |
 | `ATHEROSCLEROSIS` | DYSLIPIDEMIA kaskáda | koronární CT, ABI index |
+| `INFLAMMAGING` | věk ≥ 60, chybí lab | hs-CRP > 1 mg/L, IL-6 |
 
 #### Panel text pro Inferred uzel
 
-*"Tato hodnota nebyla změřena — tvůj profil (nadváha + sedavý život) naznačuje vysokou pravděpodobnost. Změř [konkrétní lab] pro potvrzení."*
+*"Tato hodnota nebyla změřena — tvůj profil naznačuje vysokou pravděpodobnost. Změř [konkrétní lab] pro potvrzení."*
 
-#### Implementace (až přijde čas)
+#### Implementace
 
-- `_inferred: true` flag na uzlu v buildDeterministicCRT (uzel přišel kaskádou/auto_if, ne z lab/diagnózy)
-- Vizuální styl v `crt.html`: jantarový `#f59e0b` dashed border pro Inferred uzly
-- Confirmed uzly: border zůstává cyan `#4ab8d0` (UDE) nebo zlatý `#c09a22` (root)
-- Budoucí: `confidence_score` (0–1) z Bayesovské inference nad lab daty
+- `_inferred: true` flag na uzlu v `buildDeterministicCRT` — uzel přišel kaskádou/typical_children, ne z explicitní lab/diagnózy uživatele
+- Confirmed uzly: normální modrý border `#2a4a60`, text `#a7c7df`
+- Inferred uzly: `bg='#1a1d26', border='#404560', textColor='#606888', dashes=[4,4]`
+- Vizuální logika v `crt.html` → `renderTree`: `if (n._inferred) { ... } else { ... }`
+- **Nikdy nešedět root uzly ani apex UDE** — ty mají vždy Confirmed styl (zlatý / červený)
 
 #### Hodnota pro produkt
 
-Ukazuje **predikci před diagnózou** — core Medicine 3.0 filozofie. Uživatel vidí kde má mezery v datech a co změřit. Přirozený upsell pro health data pipeline (v0.4.0).
+**Predikce před diagnózou = core Medicine 3.0 filozofie.** Ukazuje kde má uživatel mezery v datech a co změřit. Přirozený upsell pro health data pipeline (v0.4.0). Odlišuje CHJ od běžných health trackerů.
 
 ---
 
