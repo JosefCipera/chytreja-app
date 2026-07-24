@@ -521,13 +521,16 @@ Ani jedno?                   → Inferred (šedý, dashed)
 
 *"Tato hodnota nebyla změřena — tvůj profil naznačuje vysokou pravděpodobnost. Změř [konkrétní lab] pro potvrzení."*
 
-#### Implementace
+#### Implementace ✅ (Jul 2026, `git tag v0.3-crt-inferred-confirmed`)
 
-- `_inferred: true` flag na uzlu v `buildDeterministicCRT` — uzel přišel kaskádou/typical_children, ne z explicitní lab/diagnózy uživatele
-- Confirmed uzly: normální modrý border `#2a4a60`, text `#a7c7df`
+- `_inferred: true` flag na uzlu v `buildDeterministicCRT` — uzel přišel kaskádou/auto_if/parent_inference
+- Confirmed zdroje: keyword match diagnóz, BMI, literal ID scan v doctor_notes, med-activate
+- Inferred zdroje: SEDENTARY cascade, METABOLIC_HEALTH_ROOT inference, auto_if (věk/pohlaví), parent chain inference, downstream kaskáda
+- Confirmed uzly: modrý border `#2a4a60`, text `#a7c7df`
 - Inferred uzly: `bg='#1a1d26', border='#404560', textColor='#606888', dashes=[4,4]`
-- Vizuální logika v `crt.html` → `renderTree`: `if (n._inferred) { ... } else { ... }`
-- **Nikdy nešedět root uzly ani apex UDE** — ty mají vždy Confirmed styl (zlatý / červený)
+- Root uzly: vždy `_inferred: false` (zlatý, bez ohledu na zdroj)
+- Apex UDE uzly: vždy červené `#c04040` (bez ohledu na `_inferred`)
+- Vizuální logika v `crt.html` → `renderTree`: `if (n._inferred) { šedý } else { modrý }`
 
 #### Hodnota pro produkt
 
