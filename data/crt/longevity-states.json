@@ -352,6 +352,7 @@
       "tezeo"
     ],
     "typical_children": [
+      "STROKE_RISK",
       "ENDOTHELIAL_DYSFUNCTION",
       "THREATENED_HEALTHSPAN"
     ]

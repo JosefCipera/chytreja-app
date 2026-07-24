@@ -912,6 +912,7 @@ function renderTree(data) {
   }));
 
   if (_visNetwork) { _visNetwork.destroy(); _visNetwork = null; }
+  _savedEdgeColors = null;
 
   _visNetwork = new vis.Network(
     container,
@@ -973,9 +974,9 @@ function renderTree(data) {
       return {
         id: e.id,
         color: inSubtree
-          ? { color: '#5a8ab8', highlight: '#5a8ab8', hover: '#5a8ab8' }
-          : { color: '#2a4a68', highlight: '#2a4a68', hover: '#2a4a68' },
-        width: inSubtree ? 3 : 1,
+          ? { color: '#5a9acc', highlight: '#5a9acc', hover: '#5a9acc' }
+          : { color: '#2d5272', highlight: '#2d5272', hover: '#2d5272' },
+        width: inSubtree ? 3 : 1.5,
       };
     }));
   }
