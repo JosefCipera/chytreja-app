@@ -966,7 +966,7 @@ function renderTree(data) {
   function _applyHighlight(nodeId) {
     const rawData = window._crtData;
     if (!rawData || !_visNetwork) return;
-    const subtree = new Set([...ancestorsOf(nodeId, rawData), ...allDescendants(nodeId, rawData)]);
+    const subtree = allDescendants(nodeId, rawData);
     const ed = _visNetwork.body.data.edges;
     if (!_savedEdgeColors) _savedEdgeColors = ed.get().map(e => ({ id: e.id, color: e.color, width: e.width }));
     ed.update(ed.get().map(e => {
