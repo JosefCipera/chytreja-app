@@ -13,7 +13,8 @@
     ],
     "typical_children": [
       "INSULIN_RESISTANCE",
-      "HYPOTHYROIDISM"
+      "HYPOTHYROIDISM",
+      "OBESITY"
     ],
     "panel_text": "Inflammaging je tiché hoření — chronický nízkoúrovňový zánět, který se věkem zesiluje. Poškozuje cévy, kosti i metabolismus najednou. Je to spouštěč obou hlavních rizik: mrtvice i zlomenin.",
     "condition": {
@@ -59,7 +60,7 @@
     "label": "Hypothyreóza",
     "label_layman": "Nedostatečná funkce štítné žlázy",
     "type": "cause",
-    "typical_level": 0,
+    "typical_level": 1,
     "can_be_root": true,
     "typical_branch": "R",
     "med_targets": [
@@ -137,7 +138,7 @@
     "type": "cause",
     "typical_level": 1,
     "can_be_root": true,
-    "typical_branch": "C",
+    "typical_branch": "LC",
     "med_targets": [
       "ozempic",
       "wegovy",
@@ -211,7 +212,7 @@
     "label": "Úbytek kostní hmoty",
     "label_layman": "Řídnutí kostí",
     "type": "cause",
-    "typical_level": 1,
+    "typical_level": 2,
     "can_be_root": false,
     "typical_branch": "R",
     "condition": {
