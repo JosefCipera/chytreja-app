@@ -847,6 +847,15 @@ function renderTree(data) {
     const key = `${col}-${n.level ?? 0}`;
     (_colLevelGroups[key] = _colLevelGroups[key] || []).push(n.id);
   });
+  // Seřaď sourozence v každé skupině podle větve: L→LC→RC→R
+  // → L gets nejlevější pozici, RC dostane center-right (ne R), atd.
+  {
+    const _brRank = { L: 0, LC: 1, C: 2, RC: 3, R: 4 };
+    const _nodeById = Object.fromEntries((data.nodes || []).map(n => [n.id, n]));
+    Object.values(_colLevelGroups).forEach(g => {
+      if (g.length > 1) g.sort((a, b) => (_brRank[_nodeById[a]?.branch] ?? 2) - (_brRank[_nodeById[b]?.branch] ?? 2));
+    });
+  }
 
   const visNodes = data.nodes.map(n => {
     const ntype = n._type || n.type || 'cause';

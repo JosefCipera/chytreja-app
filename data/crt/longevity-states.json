@@ -400,7 +400,7 @@
     "type": "cause",
     "typical_level": 3,
     "can_be_root": false,
-    "typical_branch": "LC",
+    "typical_branch": "L",
     "med_targets": [],
     "typical_children": []
   },
