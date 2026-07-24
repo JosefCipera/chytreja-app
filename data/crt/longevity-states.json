@@ -84,11 +84,6 @@
     "can_be_root": false,
     "typical_branch": "L",
     "med_targets": [
-      "magnesium bisglycinát",
-      "magnesium bisglycinat",
-      "magnosolv",
-      "hořčík",
-      "magnesium",
       "betaloc",
       "concor",
       "metoprolol",
@@ -248,16 +243,7 @@
     "typical_level": 2,
     "can_be_root": false,
     "typical_branch": "LC",
-    "med_targets": [
-      "kalnormin",
-      "slow-k",
-      "draslík",
-      "magnesium bisglycinát",
-      "magnesium bisglycinat",
-      "magnosolv",
-      "hořčík",
-      "magnesium"
-    ],
+    "med_targets": [],
     "typical_children": [
       "NEUROMOTOR_DYS",
       "CARDIAC_IRRITABILITY"
