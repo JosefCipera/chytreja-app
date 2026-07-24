@@ -139,7 +139,7 @@
     "type": "cause",
     "typical_level": 1,
     "can_be_root": true,
-    "typical_branch": "LC",
+    "typical_branch": "C",
     "med_targets": [
       "ozempic",
       "wegovy",
