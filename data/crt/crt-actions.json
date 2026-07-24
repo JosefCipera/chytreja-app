@@ -1,4 +1,58 @@
 {
+  "SEDENTARY_LIFESTYLE_ROOT": [
+    { "id": "procházka_30",      "title": "Procházka 30 min",           "desc": "Střední tempo — měl by sis být schopen povídat. Každá hodina pohybu navíc o ~2 % snižuje KV riziko.", "icon": "walk" },
+    { "id": "vstát_hodinu",      "title": "Vstávej každou hodinu",      "desc": "Nastav budík na 60 min — 2–3 min chůze nebo dřepy neutralizují metabolický efekt sezení.", "icon": "alarm" },
+    { "id": "schody_dnes",       "title": "Schody místo výtahu",        "desc": "Celý den bez výtahu — každé patro je silový i aerobní stimul.", "icon": "stairs" },
+    { "id": "pohyb_po_jidle",    "title": "Pohyb po každém jídle",      "desc": "10 min chůze po snídani, obědě i večeři — snižuje glykemický spike a spaluje kalorie.", "icon": "footprint" },
+    { "id": "zone2_kolo",        "title": "Zone 2 kolo 30 min",         "desc": "Stacionární kolo nebo venku — střední intenzita, srdce 60–70 % maxima.", "icon": "bike" },
+    { "id": "mini_cviceni",      "title": "Mini-cvičení 10 min",        "desc": "Dřepy, kliky, výpady — 3 série každé bez vybavení. Silový stimul spouští metabolické změny hned.", "icon": "barbell" }
+  ],
+
+  "DYSLIPIDEMIA": [
+    { "id": "omega3_ryba",       "title": "Omega-3 ryba nebo doplněk",  "desc": "Losos, makrela nebo sardinky — 2–3× týdně. EPA+DHA 2 g/den snižuje triglyceridy klinicky.", "icon": "fish" },
+    { "id": "rozpustna_vlakn",   "title": "Rozpustná vláknina",         "desc": "Oves, fazole nebo psyllium 7 g — denní porce snižuje LDL o 4–7 % během 4 týdnů.", "icon": "grain" },
+    { "id": "bez_nasc_tuku",     "title": "Bez nasycených tuků dnes",   "desc": "Bez slaniny a plnotučného mléka — nahraď olivovým olejem. Trans-tuky LDL zvyšují dvakrát.", "icon": "droplets" },
+    { "id": "oríšky_hrst",       "title": "Hrst vlašských ořechů",      "desc": "Vlašské ořechy nebo mandle — denní porce snižuje LDL o ~5 %, zdroj omega-3.", "icon": "nut" },
+    { "id": "aerobni_pohyb",     "title": "Aerobní pohyb 30 min",       "desc": "Zone 2 chůze nebo kolo — zvyšuje HDL a snižuje LDL i triglyceridy.", "icon": "run" },
+    { "id": "torvacard_vecer",   "title": "Torvacard dnes večer",       "desc": "Atorvastatin se lépe vstřebává večer — vzít s jídlem, vždy ve stejný čas.", "icon": "pill" }
+  ],
+
+  "HYPERURICEMIA": [
+    { "id": "voda_2l",           "title": "2 litry vody dnes",          "desc": "Dostatečná hydratace zrychluje renální vylučování kyseliny močové — klíčový faktor.", "icon": "droplet" },
+    { "id": "bez_fruktozy",      "title": "Bez fruktózy dnes",          "desc": "Bez sladkých nápojů, džusů a medu — fruktóza přímo stimuluje produkci kyseliny močové.", "icon": "ban" },
+    { "id": "bez_alkoholu_ku",   "title": "Alkohol dnes vynech",        "desc": "Zejména pivo — zvyšuje kyselinu močovou dvěma mechanismy (puriny + blokuje vylučování).", "icon": "beer-off" },
+    { "id": "treseň_celer",      "title": "Třešně nebo celer",          "desc": "Třešňový džus nebo celer — přirozené inhibitory kyseliny močové, výzkumně podloženo.", "icon": "salad" },
+    { "id": "milurit_den",       "title": "Milurit dnes",               "desc": "Allopurinol blokuje xantin oxidázu — vzít ve stejnou dobu každý den s jídlem.", "icon": "pill" },
+    { "id": "pohyb_mirny",       "title": "Mírný pohyb (ne HIIT)",      "desc": "Zone 2 chůze ano — intenzivní HIIT přechodně kyselinu močovou zvyšuje.", "icon": "walk" }
+  ],
+
+  "CARDIAC_IRRITABILITY": [
+    { "id": "magnesium_rano",    "title": "Hořčík ráno",                "desc": "Magnesium bisglycinát nebo Magnosolv — vstřebatelná forma, elektrická stabilita srdce.", "icon": "pill" },
+    { "id": "kalnormin_jidlo",   "title": "Kalnormin s jídlem",         "desc": "Draslík je klíčový pro srdeční rytmus — vzít s jídlem kvůli žaludku.", "icon": "pill" },
+    { "id": "bez_kofeinu_odp",   "title": "Bez kávy po 14:00",          "desc": "Kofein zvyšuje srdeční dráždivost — odpolední káva může spustit epizodu fibrilace.", "icon": "coffee-off" },
+    { "id": "vagus_dech",        "title": "Vagusové dýchání",           "desc": "4 s vdech, 8 s výdech — prodloužený výdech aktivuje bloudivý nerv, stabilizuje rytmus.", "icon": "wind" },
+    { "id": "studena_tvár",      "title": "Studená voda na obličej",    "desc": "30 s studené vody nebo potopení tváře — vagální reflex zpomaluje rytmus.", "icon": "droplet" },
+    { "id": "bez_alkoholu_sr",   "title": "Alkohol vynech",             "desc": "Alkohol je přímý spouštěč fibrilace síní — i jedno pivo může vyvolat epizodu.", "icon": "beer-off" }
+  ],
+
+  "ATHEROSCLEROSIS": [
+    { "id": "omega3_aterosklero", "title": "Omega-3 dnes",              "desc": "EPA+DHA zpomaluje progresi plátů — losos, makrela nebo 2 g doplněk.", "icon": "fish" },
+    { "id": "pohyb_ceva",        "title": "Zone 2 pohyb 30 min",        "desc": "Aerobní pohyb zlepšuje endoteliální funkci a snižuje zánět v cévách.", "icon": "walk" },
+    { "id": "bez_cigaret",       "title": "Bez kouření dnes",           "desc": "Každá cigareta spouští akutní zánět endotelu — jeden z nejvyšších KV rizik.", "icon": "smoking-no" },
+    { "id": "olivovy_olej",      "title": "Olivový olej místo másla",   "desc": "Extra panenský olivový olej — polyfenoly chrání cévy před oxidativním stresem.", "icon": "droplets" },
+    { "id": "boruvky_cuketa",    "title": "Borůvky nebo granátové jablko", "desc": "Antioxidanty snižují oxidaci LDL — základ pro tvorbu plátů.", "icon": "apple" },
+    { "id": "stacyl_den",        "title": "Stacyl dnes",                "desc": "Aspirin zpomaluje agregaci krevních destiček — vzít s jídlem.", "icon": "pill" }
+  ],
+
+  "INSULIN_RESISTANCE": [
+    { "id": "bilkoviny_snid",    "title": "Bílkoviny k snídani 30 g",   "desc": "Vejce, tvaroh nebo řecký jogurt — protein snižuje glykemický spike celého dne.", "icon": "egg" },
+    { "id": "prochazka_obed_ir", "title": "Procházka po obědě 15 min", "desc": "Přesun glukózy do svalů bez inzulínu — snižuje glykémii po jídle o 30–40 %.", "icon": "footprint" },
+    { "id": "bez_sacharidu_ir",  "title": "Bez rafinovaných sacharidů", "desc": "Žádný bílý chléb, sladkosti ani sladké nápoje — inzulín odpočívá.", "icon": "bread-off" },
+    { "id": "silovy_15min",      "title": "Silový trénink 15 min",      "desc": "Svalová hmota je největší sklad glukózy — dřepy a kliky okamžitě zlepší citlivost.", "icon": "barbell" },
+    { "id": "vinegar_pred_jidlem","title": "Ocet před jídlem",          "desc": "1 PL jablečného octa v sklenici vody 10 min před jídlem — snižuje glykemický spike.", "icon": "glass-full" },
+    { "id": "stravovaci_okno",   "title": "Stravovací okno 12 h",       "desc": "Poslední jídlo 3 h před spaním — noční přestávka obnoví inzulínovou citlivost.", "icon": "clock" }
+  ],
+
   "CHRONIC_STRESS": [
     { "id": "box_breathing",   "title": "Čtvercové dýchání",          "desc": "Vdech 4 s → zadrž 4 s → výdech 4 s → pauza 4 s. Jeden cyklus = 16 sekund, opakuj 5 minut. Technika Navy SEALs pro akutní reset.", "icon": "wind" },
     { "id": "procházka_bez_tel","title": "Procházka bez telefonu",    "desc": "20 min venku, telefon doma nebo v kapse na letadle",       "icon": "walk" },

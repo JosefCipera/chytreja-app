@@ -1370,10 +1370,10 @@ function buildPanelData(node, ctx, parents, children, meds, supps, contras, hidd
       ).join('')}
     </div>` : '';
 
-  // CRT Actions — daily actionable step for root cause nodes (level 0)
+  // CRT Actions — daily actionable step for any node with pool entry
   // States: '' → first action | 'ask' → second action offer | 'second' → second action | 'done' → finished
   let crtActionsHtml = '';
-  if ((node.level ?? 99) === 0) {
+  {
     const pool = (window._crtActionPool || {})[nodeId] || [];
     if (pool.length > 0) {
       const today    = new Date().toISOString().slice(0, 10);
