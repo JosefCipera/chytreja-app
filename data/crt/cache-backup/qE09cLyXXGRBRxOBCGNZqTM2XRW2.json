@@ -282,7 +282,7 @@
         "effect": "chrání žaludeční sliznici",
         "reason": "chrání žaludeční sliznici",
         "targets": [
-          "ATRIAL_FIBRILLATION"
+          "THREATENED_HEALTHSPAN"
         ]
       },
       {
@@ -292,7 +292,7 @@
         "effect": "zabraňuje srážení krve",
         "reason": "zabraňuje srážení krve",
         "targets": [
-          "ATRIAL_FIBRILLATION"
+          "THREATENED_HEALTHSPAN"
         ]
       },
       {
@@ -302,7 +302,7 @@
         "effect": "snižuje LDL cholesterol v krvi",
         "reason": "snižuje LDL cholesterol v krvi",
         "targets": [
-          "ATHEROSCLEROSIS"
+          "DYSLIPIDEMIA"
         ]
       },
       {
