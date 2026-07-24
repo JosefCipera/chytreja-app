@@ -824,6 +824,7 @@ function _clearHighlight() {
   if (!_visNetwork) return;
   if (_savedEdgeColors) { _visNetwork.body.data.edges.update(_savedEdgeColors); _savedEdgeColors = null; }
   _visNetwork.unselectAll();
+  _visNetwork.redraw();
 }
 const _pillTooltips = {};
 // pill node id → tooltip text
