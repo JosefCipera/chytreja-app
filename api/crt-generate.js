@@ -453,6 +453,25 @@ async function buildDeterministicCRT(profile, metrics = []) {
     if (req === 'female' && isMale)   { activeIds.delete(sid); continue; }
   }
 
+  // Medication-driven node activation: lék → cílový cause uzel
+  // Pokud uživatel bere Torvacard → DYSLIPIDEMIA aktivní automaticky, bez keywords.
+  // UDE uzly (fibrilace, mrtvice...) se neaktivují přes léky — přijdou z kauzálního řetězu.
+  {
+    const medNames = (profile.medications || []).flatMap(m => {
+      const name = (m.name || m || '').toLowerCase().trim();
+      const inn   = DRUGS_DB[name]?.inn?.toLowerCase();
+      return [name, inn].filter(Boolean);
+    });
+    for (const def of STATES_ARR) {
+      if (def.type === 'ude') continue;
+      if (activeIds.has(def.id)) continue;
+      if ((def.med_targets || []).some(t => medNames.includes(t))) {
+        activeIds.add(def.id);
+        console.log(`[CRT] med-activate: ${def.id}`);
+      }
+    }
+  }
+
   // Rodičovský řetěz: každý non-root uzel musí mít rodiče v aktivním setu
   // Bez toho by uzly jako NEUROMOTOR_DYS floatovaly a connectSourceless je napojí špatně
   {
@@ -1402,7 +1421,7 @@ function overlayColors(nodes, metrics) {
 // _v_ai: bump POUZE při změně Sonnet promptu → invaliduje AI generování
 // _v_pp: bump při změně post-processingu (med-inject, validateEdges...) → přeskočí Sonnet, re-run PP
 const _v_ai = 12;
-const _v_pp = 30;
+const _v_pp = 31;
 
 function hashStr(s) {
   let h = 0;
