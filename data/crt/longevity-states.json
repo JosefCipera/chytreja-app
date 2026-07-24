@@ -390,6 +390,7 @@
       "concor"
     ],
     "typical_children": [
+      "STROKE_RISK",
       "THREATENED_HEALTHSPAN"
     ]
   },

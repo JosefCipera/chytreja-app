@@ -1303,9 +1303,11 @@ function validateEdges(nodes, root, edges) {
       }
     }
 
-    // Zakázáno: L↔R (přímé křížení větví)
-    if ((fb === 'L' && tb === 'R') || (fb === 'R' && tb === 'L')) {
-      console.log(`[CRT validate] odstraněna cross-branch hrana: ${e.from}(${fb})→${e.to}(${tb})`);
+    // Zakázáno: levý sloupec (L/LC) ↔ pravý sloupec (RC/R) — vizuální křížení
+    const isLeft = b => b === 'L' || b === 'LC';
+    const isRight = b => b === 'RC' || b === 'R';
+    if ((isLeft(fb) && isRight(tb)) || (isRight(fb) && isLeft(tb))) {
+      console.log(`[CRT validate] odstraněna cross-column hrana: ${e.from}(${fb})→${e.to}(${tb})`);
       return false;
     }
     // Zakázáno: C→L nebo C→R mimo root (center nesmí krmit zpět do větve)
@@ -1421,7 +1423,7 @@ function overlayColors(nodes, metrics) {
 // _v_ai: bump POUZE při změně Sonnet promptu → invaliduje AI generování
 // _v_pp: bump při změně post-processingu (med-inject, validateEdges...) → přeskočí Sonnet, re-run PP
 const _v_ai = 12;
-const _v_pp = 37;
+const _v_pp = 38;
 
 function hashStr(s) {
   let h = 0;
