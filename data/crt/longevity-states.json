@@ -301,9 +301,6 @@
     "can_be_root": false,
     "typical_branch": "RC",
     "med_targets": [
-      "torvacard",
-      "sortis",
-      "crestor",
       "stacyl",
       "anopyrin"
     ],
