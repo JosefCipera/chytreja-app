@@ -565,12 +565,12 @@ Barvy léků určuje **systém z dat**, ne AI model:
 | 🟡 žlutá `#fbbf24` | `warning` | Interakce mezi léky (explicitní data) |
 
 **Pipeline:**
-1. `resolveMedications()` (Sonnet) → vrátí `is_supplement: true/false` pro každý lék
+1. `resolveMedications()` — **deterministický** lookup v `data/drugs.json`, bez AI; vrátí `is_supplement: true/false` pro každý lék a detekuje interakční páry z `interacts_with`
 2. Post-processing v `crt-generate.js` → `medType(name)`: `is_supplement → 'protects'`, jinak `'treatment'`
-3. AI určuje pouze `target_node_id` — **nikdy nerozhoduje o typu/barvě**
+3. Interakce (`warning` typ): union targets obou léků v páru → warning se zobrazí v panelu **každého uzlu kde je jakýkoliv lék z páru**
 4. Všechny léky z profilu jsou garantovány v `medications_map` (chybějící → fallback na nejvyšší level≥1 uzel)
 
-**Pravidlo:** Nikdy nepoužívat AI keyword-matching ani Fable pro určení barev léků.
+**Pravidlo:** Nikdy nepoužívat AI keyword-matching ani Fable pro určení barev léků. Interakce jsou definovány v `data/drugs.json` (`interacts_with` + `interaction_note`).
 
 ### CRT label mód (Laik / Expert)
 
