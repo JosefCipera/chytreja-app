@@ -78,6 +78,15 @@
     { "id": "voda_pred_jidlem","title": "Sklenice vody před jídlem",  "desc": "Velká sklenice vody 10 min před každým hlavním jídlem",    "icon": "glass-full" }
   ],
 
+  "INFLAMMAGING": [
+    { "id": "omega3_inflam",    "title": "Omega-3 dnes",               "desc": "EPA+DHA 2 g/den — nejsilnější protizánětlivý doplněk. Snižuje IL-6 a TNF-α přímo. Losos, makrela nebo doplněk s jídlem.", "icon": "fish" },
+    { "id": "kurkumin_inflam",  "title": "Kurkumin s pepřem",          "desc": "Kurkumin 500 mg s malým množstvím černého pepře — piperin zvyšuje vstřebání 20×. Blokuje NF-κB cestu zánětu.", "icon": "leaf" },
+    { "id": "zone2_inflam",     "title": "Zone 2 pohyb 30 min",        "desc": "Střední aerobní zátěž snižuje CRP a IL-6 — záněty klesají po každém tréninku. Chůze, kolo, plavání.", "icon": "walk" },
+    { "id": "boruvky_inflam",   "title": "Hrst borůvek nebo granátové jablko", "desc": "Antokyaniny a punikalagins — polyfenoly s prokázaným efektem na hs-CRP. Nejsilnější protizánětlivé ovoce.", "icon": "apple" },
+    { "id": "spánek_inflam",    "title": "Spánek 7–8 h dnes",          "desc": "Jeden týden spánkového deficitu zvyšuje IL-6 o 40 %. Spánek je jediný nástroj na čištění senilních buněk (autofagie).", "icon": "moon" },
+    { "id": "bez_prumys_jidla", "title": "Bez průmyslových potravin",  "desc": "Ultra-processed food obsahuje omega-6, přidaný cukr a emulgátory — tři hlavní spouštěče systémového zánětu. Jeden den čistého jídla stačí.", "icon": "ban" }
+  ],
+
   "OBESITY": [
     { "id": "zone2_20",        "title": "Zone 2 pohyb 20 min",        "desc": "Chůze, kolo nebo plavání — střední intenzita, celá hodina nemusí", "icon": "walk" },
     { "id": "silovy_tren",     "title": "Silový trénink 15 min",      "desc": "Dřepy, kliky a výpady s vlastní váhou — 3 série každé",   "icon": "barbell" },
