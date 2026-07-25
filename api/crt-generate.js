@@ -934,6 +934,10 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
       const inn     = DRUGS_DB[nameLow]?.inn?.toLowerCase();
       if (!nameLow || DRUGS_DB[nameLow]?.no_canvas) continue;
 
+      // Suplementy se NEinjektují jako uzly — zobrazí se jako zelený pill na existujících uzlech
+      const isDrugSupplement = DRUGS_DB[nameLow]?.is_supplement === true;
+      if (isDrugSupplement) continue;
+
       // Všechny STATES_DB stavy které mají tento lék v med_targets
       // UDE uzly se NEinjektují — ty patří do příběhu pacienta (AI/deterministický builder), ne z léků
       const targetStates = STATES_ARR.filter(def =>
@@ -1437,7 +1441,7 @@ function overlayColors(nodes, metrics) {
 // _v_ai: bump POUZE při změně Sonnet promptu → invaliduje AI generování
 // _v_pp: bump při změně post-processingu (med-inject, validateEdges...) → přeskočí Sonnet, re-run PP
 const _v_ai = 12;
-const _v_pp = 49;
+const _v_pp = 50;
 
 function hashStr(s) {
   let h = 0;
