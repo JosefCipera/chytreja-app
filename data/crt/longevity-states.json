@@ -202,7 +202,7 @@
     "type": "cause",
     "typical_level": 2,
     "can_be_root": false,
-    "typical_branch": "R",
+    "typical_branch": "RC",
     "med_targets": [
       "milurit",
       "allopurinol"
@@ -280,7 +280,7 @@
     "type": "cause",
     "typical_level": 2,
     "can_be_root": false,
-    "typical_branch": "RC",
+    "typical_branch": "R",
     "med_targets": [
       "torvacard",
       "sortis",
