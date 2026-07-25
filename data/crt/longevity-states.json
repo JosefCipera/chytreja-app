@@ -202,7 +202,7 @@
     "type": "cause",
     "typical_level": 2,
     "can_be_root": false,
-    "typical_branch": "R",
+    "typical_branch": "RC",
     "med_targets": [
       "milurit",
       "allopurinol"
@@ -228,29 +228,6 @@
     ],
     "typical_children": [
       "MUSCULOSKELETAL_DEG"
-    ]
-  },
-  {
-    "id": "ELECTROLYTE_IMBALANCE",
-    "label": "Elektrolytová dysbalance",
-    "label_layman": "Nedostatek draslíku a hořčíku",
-    "type": "cause",
-    "typical_level": 1,
-    "can_be_root": false,
-    "typical_branch": "L",
-    "med_targets": [
-      "kalnormin",
-      "slow-k",
-      "draslík",
-      "magnesium bisglycinát",
-      "magnesium bisglycinat",
-      "magnosolv",
-      "hořčík",
-      "magnesium"
-    ],
-    "typical_children": [
-      "NEUROMOTOR_DYS",
-      "CARDIAC_IRRITABILITY"
     ]
   },
   {
@@ -303,7 +280,7 @@
     "type": "cause",
     "typical_level": 2,
     "can_be_root": false,
-    "typical_branch": "RC",
+    "typical_branch": "R",
     "med_targets": [
       "torvacard",
       "sortis",
