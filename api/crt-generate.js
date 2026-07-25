@@ -1041,23 +1041,15 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
       });
     });
 
-    // Interakce — jeden záznam per pár, cílený POUZE na uzel prvního léku (ten který "ví" o interakci)
-    // drugs[0] = lék s interacts_with (existující lék), drugs[1] = nový lék — warning patří na uzel drugs[0]
-    const warningMeds = [];
-    const _seenWarn = new Set();
-    resolvedInteractions.forEach(ix => {
-      const pairKey = ix.drugs.slice().sort().join('+');
-      if (_seenWarn.has(pairKey)) return;
-      _seenWarn.add(pairKey);
-      const firstKey = ix.drugs[0].replace(/\s*\([^)]*\)/g, '').trim().toLowerCase();
-      let targets = [...(medTargetMap[firstKey] || new Set())];
-      if (!targets.length && ix.drugs[1]) {
-        const secondKey = ix.drugs[1].replace(/\s*\([^)]*\)/g, '').trim().toLowerCase();
-        targets = [...(medTargetMap[secondKey] || new Set())];
-      }
-      if (!targets.length) return;
-      warningMeds.push({ name: ix.drugs.join(' + '), targets, effect: ix.note || '', type: 'warning', reason: ix.note || '' });
-    });
+    // Interakce — zobrazit na KAŽDÉM uzlu kde je JAKÝKOLIV lék z páru (union targets)
+    const warningMeds = resolvedInteractions.map(ix => {
+      const targets = new Set();
+      ix.drugs.forEach(drug => {
+        const key = drug.replace(/\s*\([^)]*\)/g, '').trim().toLowerCase();
+        (medTargetMap[key] || new Set()).forEach(t => targets.add(t));
+      });
+      return { name: ix.drugs.join(' + '), targets: [...targets], effect: ix.note || '', type: 'warning', reason: ix.note || '' };
+    }).filter(w => w.targets.length);
     if (warningMeds.length) console.log(`[CRT] interakce: ${warningMeds.map(w => `${w.name}→${w.targets.join(',')}`).join(' | ')}`);
 
     // Fallback: lék bez shody → nejvyšší uzel úrovně ≥1 (root a level-0 jsou z pill renderování vyloučeny)
@@ -1445,7 +1437,7 @@ function overlayColors(nodes, metrics) {
 // _v_ai: bump POUZE při změně Sonnet promptu → invaliduje AI generování
 // _v_pp: bump při změně post-processingu (med-inject, validateEdges...) → přeskočí Sonnet, re-run PP
 const _v_ai = 12;
-const _v_pp = 47;
+const _v_pp = 48;
 
 function hashStr(s) {
   let h = 0;
