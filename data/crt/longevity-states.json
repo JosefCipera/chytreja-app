@@ -28,7 +28,7 @@
     "label_layman": "Trvalý stres",
     "type": "cause",
     "typical_level": 1,
-    "can_be_root": true,
+    "can_be_root": false,
     "typical_branch": "L",
     "med_targets": [],
     "typical_children": [
@@ -59,7 +59,7 @@
     "label": "Hypothyreóza",
     "label_layman": "Nedostatečná funkce štítné žlázy",
     "type": "cause",
-    "typical_level": 1,
+    "typical_level": 0,
     "can_be_root": true,
     "typical_branch": "R",
     "med_targets": [
@@ -77,10 +77,15 @@
     "label": "Sympatiková hyperaktivace",
     "label_layman": "Přetížený nervový systém",
     "type": "cause",
-    "typical_level": 2,
+    "typical_level": 1,
     "can_be_root": false,
     "typical_branch": "L",
     "med_targets": [
+      "magnesium bisglycinát",
+      "magnesium bisglycinat",
+      "magnosolv",
+      "hořčík",
+      "magnesium",
       "betaloc",
       "concor",
       "metoprolol",
@@ -99,7 +104,7 @@
     "type": "cause",
     "typical_level": 1,
     "can_be_root": false,
-    "typical_branch": "L",
+    "typical_branch": "LC",
     "med_targets": [
       "mirtazapin",
       "esoprex",
@@ -109,7 +114,7 @@
       "sertralin"
     ],
     "typical_children": [
-      "SLEEP_DISORDER"
+      "FATIGUE_LOW_CAPACITY"
     ]
   },
   {
@@ -117,7 +122,7 @@
     "label": "Porucha spánku",
     "label_layman": "Nespavost a nekvalitní spánek",
     "type": "cause",
-    "typical_level": 2,
+    "typical_level": 1,
     "can_be_root": false,
     "typical_branch": "L",
     "med_targets": [
@@ -187,9 +192,7 @@
       "glucophage"
     ],
     "typical_children": [
-      "HYPERTENSION",
-      "PERIPHERAL_NEUROPATHY",
-      "THREATENED_HEALTHSPAN"
+      "HYPERTENSION"
     ]
   },
   {
@@ -197,7 +200,7 @@
     "label": "Hyperurikémie",
     "label_layman": "Vysoká kyselina močová",
     "type": "cause",
-    "typical_level": 1,
+    "typical_level": 2,
     "can_be_root": false,
     "typical_branch": "R",
     "med_targets": [
@@ -213,15 +216,9 @@
     "label": "Úbytek kostní hmoty",
     "label_layman": "Řídnutí kostí",
     "type": "cause",
-    "typical_level": 2,
+    "typical_level": 1,
     "can_be_root": false,
     "typical_branch": "R",
-    "condition": {
-      "auto_if": {
-        "gender": "female",
-        "min_age": 50
-      }
-    },
     "med_targets": [
       "ibandronat",
       "ibandronát",
@@ -238,10 +235,19 @@
     "label": "Elektrolytová dysbalance",
     "label_layman": "Nedostatek draslíku a hořčíku",
     "type": "cause",
-    "typical_level": 2,
+    "typical_level": 1,
     "can_be_root": false,
-    "typical_branch": "LC",
-    "med_targets": [],
+    "typical_branch": "L",
+    "med_targets": [
+      "kalnormin",
+      "slow-k",
+      "draslík",
+      "magnesium bisglycinát",
+      "magnesium bisglycinat",
+      "magnosolv",
+      "hořčík",
+      "magnesium"
+    ],
     "typical_children": [
       "NEUROMOTOR_DYS",
       "CARDIAC_IRRITABILITY"
@@ -299,6 +305,9 @@
     "can_be_root": false,
     "typical_branch": "RC",
     "med_targets": [
+      "torvacard",
+      "sortis",
+      "crestor",
       "stacyl",
       "anopyrin"
     ],
@@ -311,7 +320,7 @@
     "label": "Degenerace pohybového aparátu",
     "label_layman": "Opotřebené klouby a páteř",
     "type": "cause",
-    "typical_level": 3,
+    "typical_level": 2,
     "can_be_root": false,
     "typical_branch": "R",
     "med_targets": [
@@ -333,7 +342,11 @@
     "typical_level": 4,
     "can_be_root": false,
     "typical_branch": "LC",
-    "med_targets": []
+    "med_targets": [
+      "kalnormin",
+      "magnesium bisglycinát",
+      "magnosolv"
+    ]
   },
   {
     "id": "VASCULAR_STIFFNESS",
@@ -352,9 +365,7 @@
       "tezeo"
     ],
     "typical_children": [
-      "STROKE_RISK",
-      "ENDOTHELIAL_DYSFUNCTION",
-      "THREATENED_HEALTHSPAN"
+      "ENDOTHELIAL_DYSFUNCTION"
     ]
   },
   {
@@ -393,7 +404,6 @@
       "concor"
     ],
     "typical_children": [
-      "STROKE_RISK",
       "THREATENED_HEALTHSPAN"
     ]
   },
@@ -467,9 +477,6 @@
     "typical_level": 5,
     "can_be_root": false,
     "typical_branch": "RC",
-    "condition": {
-      "gender": "male"
-    },
     "med_targets": [
       "vizarsin",
       "cialis"
@@ -511,7 +518,9 @@
       "pradaxa",
       "nolpaza",
       "xarelto",
-      "warfarin"
+      "warfarin",
+      "anopyrin",
+      "stacyl"
     ]
   },
   {
@@ -532,7 +541,11 @@
     "typical_level": 5,
     "can_be_root": false,
     "typical_branch": "C",
-    "med_targets": []
+    "med_targets": [
+      "anopyrin",
+      "aspirin",
+      "torvacard"
+    ]
   },
   {
     "id": "LOW_VO2MAX",
@@ -551,7 +564,7 @@
     "label": "Svalová slabost",
     "label_layman": "Nemohu zdvihnout co dřív",
     "type": "ude",
-    "typical_level": 4,
+    "typical_level": 2,
     "can_be_root": false,
     "typical_branch": "R",
     "med_targets": [],
@@ -577,7 +590,7 @@
     "type": "cause",
     "typical_level": 1,
     "can_be_root": false,
-    "typical_branch": "R",
+    "typical_branch": "L",
     "med_targets": [],
     "typical_children": [
       "FATIGUE_LOW_CAPACITY"
@@ -608,10 +621,10 @@
     "typical_branch": "C",
     "med_targets": [],
     "typical_children": [
+      "CHRONIC_STRESS",
       "DYSLIPIDEMIA",
       "HYPERURICEMIA",
-      "OBESITY",
-      "BONE_DENSITY_LOSS"
+      "OBESITY"
     ],
     "panel_text": "Sedentismus je systémový stav — ne jen málo pohybu, ale chronická absence pohybového stimulu. 8+ hodin sezení denně aktivuje prozánětlivé dráhy, zvyšuje LDL, kyselinu močovou a inzulínovou rezistenci nezávisle na dietě. Každá hodina navíc zvyšuje KV riziko o ~2 %. Přestávky na pohyb každých 90 minut tyto markery měřitelně snižují do 4 týdnů — bez jiné intervence."
   },
@@ -623,13 +636,7 @@
     "typical_level": 5,
     "can_be_root": false,
     "typical_branch": "C",
-    "med_targets": [
-      "pradaxa",
-      "dabigatran",
-      "nolpaza",
-      "pantoprazol",
-      "pantoprazole"
-    ],
+    "med_targets": [],
     "typical_children": [],
     "panel_text": "Fibrilace síní a erektilní dysfunkce jsou viditelné projevy systémové cévní a metabolické dysregulace. Bez intervence tento stav vede ke ztrátě fyzické výkonnosti, kognitivní kapacity a nakonec i funkční nezávislosti — přesně toho, co Dekatlon chrání. Toto je tvůj skutečný protivník."
   }

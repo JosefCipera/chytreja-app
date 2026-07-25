@@ -1437,7 +1437,7 @@ function overlayColors(nodes, metrics) {
 // _v_ai: bump POUZE při změně Sonnet promptu → invaliduje AI generování
 // _v_pp: bump při změně post-processingu (med-inject, validateEdges...) → přeskočí Sonnet, re-run PP
 const _v_ai = 12;
-const _v_pp = 48;
+const _v_pp = 49;
 
 function hashStr(s) {
   let h = 0;
