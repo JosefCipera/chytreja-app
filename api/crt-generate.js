@@ -550,11 +550,13 @@ async function buildDeterministicCRT(profile, metrics = []) {
 
   // INFLAMMAGING jako super-root pohlcuje METABOLIC_HEALTH_ROOT a CHRONIC_STRESS —
   // věkem podmíněný zánět je jejich společný upstream kořen, duplikovat by zmatl graf.
+  // HYPERURICEMIA: SEDENTARY kaskáda ji přidala PŘED tímto blokem — smaž pokud není z dat.
   if (activeIds.has('INFLAMMAGING')) {
     activeIds.delete('METABOLIC_HEALTH_ROOT');
     activeIds.delete('CHRONIC_STRESS');
     activeIds.delete('SEDENTARY_LIFESTYLE_ROOT');
-    console.log('[CRT] INFLAMMAGING active: suppressed METABOLIC_HEALTH_ROOT, CHRONIC_STRESS');
+    if (!confirmedIds.has('HYPERURICEMIA')) activeIds.delete('HYPERURICEMIA');
+    console.log('[CRT] INFLAMMAGING active: suppressed METABOLIC_HEALTH_ROOT, CHRONIC_STRESS, SEDENTARY cascade');
   }
 
   // Downstream kaskáda — lineární (single-child) uzly propagují dopředu automaticky.
@@ -1490,7 +1492,7 @@ function overlayColors(nodes, metrics) {
 // _v_ai: bump POUZE při změně Sonnet promptu → invaliduje AI generování
 // _v_pp: bump při změně post-processingu (med-inject, validateEdges...) → přeskočí Sonnet, re-run PP
 const _v_ai = 12;
-const _v_pp = 62;
+const _v_pp = 63;
 
 function hashStr(s) {
   let h = 0;
