@@ -399,6 +399,18 @@ async function buildDeterministicCRT(profile, metrics = []) {
       activeIds.add(id); confirmedIds.add(id); diagConfirmedIds.add(id);
     }
   }
+
+  // Explicitní diagnózy z profilu → vždy Confirmed (i když keywordText = doctor_notes).
+  // doctor_notes řídí AKTIVACI (filtruje šum), ale confirmed status musí reflektovat diagnózy.
+  if (hasDetailedNotes) {
+    const diagOnlyText = (profile.diagnoses || []).concat(profile.symptoms || []).join(' ').toLowerCase();
+    for (const { keywords, id } of DIAGNOSIS_KEYWORDS) {
+      if (!confirmedIds.has(id) && keywords.some(kw => diagOnlyText.includes(kw))) {
+        confirmedIds.add(id); diagConfirmedIds.add(id);
+        // activeIds záměrně nenastavujeme — aktivaci řídí doctor_notes (keywordText)
+      }
+    }
+  }
   // BMI prahy — naměřená hodnota → Confirmed, ale nekaskáduje (OBESITY→INSULIN_RESISTANCE zůstane Inferred)
   if (bmi && bmi >= 27) { activeIds.add('OBESITY'); confirmedIds.add('OBESITY'); }
   if (bmi && bmi >= 30) { activeIds.add('OBESITY'); confirmedIds.add('OBESITY'); activeIds.add('HYPERTENSION'); confirmedIds.add('HYPERTENSION'); }
@@ -1468,7 +1480,7 @@ function overlayColors(nodes, metrics) {
 // _v_ai: bump POUZE při změně Sonnet promptu → invaliduje AI generování
 // _v_pp: bump při změně post-processingu (med-inject, validateEdges...) → přeskočí Sonnet, re-run PP
 const _v_ai = 12;
-const _v_pp = 59;
+const _v_pp = 60;
 
 function hashStr(s) {
   let h = 0;
