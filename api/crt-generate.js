@@ -392,13 +392,14 @@ async function buildDeterministicCRT(profile, metrics = []) {
   // 1. Keyword matching → aktivní State Dictionary IDs
   const activeIds = new Set();
   const confirmedIds = new Set(); // uzly podložené daty (diagnóza, lab, lék, BMI)
+  const diagConfirmedIds = new Set(); // pouze keyword-matched diagnózy (ne BMI) — kaskáda do potomků
 
   for (const { keywords, id } of DIAGNOSIS_KEYWORDS) {
     if (keywords.some(kw => keywordText.includes(kw))) {
-      activeIds.add(id); confirmedIds.add(id);
+      activeIds.add(id); confirmedIds.add(id); diagConfirmedIds.add(id);
     }
   }
-  // BMI prahy — naměřená hodnota → Confirmed
+  // BMI prahy — naměřená hodnota → Confirmed, ale nekaskáduje (OBESITY→INSULIN_RESISTANCE zůstane Inferred)
   if (bmi && bmi >= 27) { activeIds.add('OBESITY'); confirmedIds.add('OBESITY'); }
   if (bmi && bmi >= 30) { activeIds.add('OBESITY'); confirmedIds.add('OBESITY'); activeIds.add('HYPERTENSION'); confirmedIds.add('HYPERTENSION'); }
 
@@ -548,6 +549,8 @@ async function buildDeterministicCRT(profile, metrics = []) {
         const childId = children[0];
         if (STATES_DB[childId] && !activeIds.has(childId)) {
           activeIds.add(childId);
+          // Kaskáda confirmed statusu jen z keyword-diagnosed uzlů (ne z BMI/symptom inference)
+          if (diagConfirmedIds.has(id)) { confirmedIds.add(childId); diagConfirmedIds.add(childId); }
           console.log(`[CRT] downstream cascade: ${id} → ${childId}`);
           cascadeChanged = true;
         }
@@ -1443,7 +1446,7 @@ function overlayColors(nodes, metrics) {
 // _v_ai: bump POUZE při změně Sonnet promptu → invaliduje AI generování
 // _v_pp: bump při změně post-processingu (med-inject, validateEdges...) → přeskočí Sonnet, re-run PP
 const _v_ai = 12;
-const _v_pp = 56;
+const _v_pp = 57;
 
 function hashStr(s) {
   let h = 0;

@@ -391,8 +391,6 @@
     "can_be_root": false,
     "typical_branch": "LC",
     "med_targets": [
-      "pradaxa",
-      "nolpaza",
       "xarelto",
       "warfarin",
       "betaloc",
@@ -600,7 +598,10 @@
     "typical_level": 5,
     "can_be_root": false,
     "typical_branch": "C",
-    "med_targets": [],
+    "med_targets": [
+      "pradaxa",
+      "nolpaza"
+    ],
     "typical_children": [],
     "panel_text": "Fibrilace síní a erektilní dysfunkce jsou viditelné projevy systémové cévní a metabolické dysregulace. Bez intervence tento stav vede ke ztrátě fyzické výkonnosti, kognitivní kapacity a nakonec i funkční nezávislosti — přesně toho, co Dekatlon chrání. Toto je tvůj skutečný protivník."
   }
