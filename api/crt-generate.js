@@ -558,6 +558,28 @@ async function buildDeterministicCRT(profile, metrics = []) {
     }
   }
 
+  // Propagace diagConfirmedIds přes single-child typical_children — separátní průchod po kaskádě.
+  // Řeší případ kdy parent inference přidal uzel PŘED downstream kaskádou (activeIds.has() = true
+  // → blok se nespustil → confirmedIds nepropagoval). Průchod propaguje z confirmed zdrojů
+  // přes celý lineární řetěz DYSLIPIDEMIA→ATHEROSCLEROSIS→VASCULAR_STIFFNESS→ENDOTHELIAL_DYSFUNCTION.
+  {
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const id of [...diagConfirmedIds]) {
+        const def = STATES_DB[id];
+        const children = def?.typical_children || [];
+        if (children.length !== 1) continue;
+        const childId = children[0];
+        if (activeIds.has(childId) && !diagConfirmedIds.has(childId)) {
+          diagConfirmedIds.add(childId);
+          confirmedIds.add(childId);
+          changed = true;
+        }
+      }
+    }
+  }
+
   // Dedup: STROKE_RISK a THREATENED_HEALTHSPAN jsou ekvivalentní apices —
   // THREATENED_HEALTHSPAN má bohatší kontext (FaP + ED + mrtvice), preferuj ho.
   // Pokud jsou oba aktivní (literal scan + HYPERTENSION kaskáda), odstraň STROKE_RISK.
@@ -1446,7 +1468,7 @@ function overlayColors(nodes, metrics) {
 // _v_ai: bump POUZE při změně Sonnet promptu → invaliduje AI generování
 // _v_pp: bump při změně post-processingu (med-inject, validateEdges...) → přeskočí Sonnet, re-run PP
 const _v_ai = 12;
-const _v_pp = 57;
+const _v_pp = 58;
 
 function hashStr(s) {
   let h = 0;
