@@ -1483,6 +1483,8 @@ function dataHash(ctx, modelId) {
   }));
 }
 
+export { buildDeterministicCRT, STATES_DB, STATES_ARR, DRUGS_DB, DIAGNOSIS_KEYWORDS };
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 

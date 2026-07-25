@@ -1,0 +1,20 @@
+{
+  "diagnoses": [
+    "fibrilace předsíní",
+    "dyslipidémie",
+    "hyperurikémie",
+    "erektilní dysfunkce"
+  ],
+  "symptoms": [],
+  "family_history": "",
+  "doctor_notes": "",
+  "labs": {},
+  "medications": [
+    { "name": "Magnosolv" },
+    { "name": "Magnesium bisglycinát" }
+  ],
+  "_height": 180,
+  "_weight": 88,
+  "birth_year": 1970,
+  "sex": "male"
+}

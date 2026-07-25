@@ -6,7 +6,9 @@
     "scripts": {
         "dev:hud": "vite --open hud.html",
         "build:hud": "vite build",
-        "sync-content": "node scripts/sync-content.js"
+        "sync-content": "node scripts/sync-content.js",
+        "test:crt": "node test/crt-smoke.mjs",
+        "test:crt:update": "node test/crt-smoke.mjs -- --update"
     },
     "dependencies": {
         "@anthropic-ai/sdk": "^0.80.0",
