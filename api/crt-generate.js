@@ -411,8 +411,10 @@ async function buildDeterministicCRT(profile, metrics = []) {
   const METABOLIC_CASCADE_NODES = new Set(['OBESITY', 'INSULIN_RESISTANCE', 'HYPERTENSION']);
 
   for (const { keywords, id } of DIAGNOSIS_KEYWORDS) {
+    // keywordText (doctor_notes): raw keywords — stripDiacritics('třes')='tres' matchuje 'stres' → false positive!
+    const inKeywordText = keywords.some(kw => keywordText.includes(kw));
+    // diagText (seznam diagnóz): stripped — 'hyperurikemie' (bez háčku na serveru) = 'hyperurikémie' (keyword)
     const kws = keywords.map(stripDiacritics);
-    const inKeywordText = kws.some(kw => keywordText.includes(kw));
     const inDiagText    = kws.some(kw => diagText.includes(kw));
     if (inKeywordText) { activeIds.add(id); confirmedIds.add(id); diagConfirmedIds.add(id); }
     else if (inDiagText && !(hasDetailedNotes && METABOLIC_CASCADE_NODES.has(id))) {
@@ -1488,7 +1490,7 @@ function overlayColors(nodes, metrics) {
 // _v_ai: bump POUZE při změně Sonnet promptu → invaliduje AI generování
 // _v_pp: bump při změně post-processingu (med-inject, validateEdges...) → přeskočí Sonnet, re-run PP
 const _v_ai = 12;
-const _v_pp = 61;
+const _v_pp = 62;
 
 function hashStr(s) {
   let h = 0;
