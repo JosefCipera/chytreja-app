@@ -1041,16 +1041,21 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
       });
     });
 
-    // Interakce — deterministicky z drugs.json
-    const warningMeds = resolvedInteractions.map(ix => {
-      const targets = new Set();
+    // Interakce — jeden záznam per lék (ne per pair), aby se varování zobrazovalo jen na uzlu kde daný lék je
+    const warningMeds = [];
+    const _seenWarn = new Set();
+    resolvedInteractions.forEach(ix => {
       ix.drugs.forEach(drug => {
         const key = drug.replace(/\s*\([^)]*\)/g, '').trim().toLowerCase();
-        (medTargetMap[key] || new Set()).forEach(t => targets.add(t));
+        const drugTargets = [...(medTargetMap[key] || new Set())];
+        if (!drugTargets.length) return;
+        const wKey = `${ix.drugs.slice().sort().join('+')}|${drugTargets.slice().sort().join(',')}`;
+        if (_seenWarn.has(wKey)) return;
+        _seenWarn.add(wKey);
+        warningMeds.push({ name: ix.drugs.join(' + '), targets: drugTargets, effect: ix.note || '', type: 'warning', reason: ix.note || '' });
       });
-      return { name: ix.drugs.join(' + '), targets: [...targets], effect: ix.note || '', type: 'warning', reason: ix.note || '' };
     });
-    if (warningMeds.length) console.log(`[CRT] interakce: ${warningMeds.map(w => w.name).join(', ')}`);
+    if (warningMeds.length) console.log(`[CRT] interakce: ${warningMeds.map(w => `${w.name}→${w.targets.join(',')}`).join(' | ')}`);
 
     // Fallback: lék bez shody → nejvyšší uzel úrovně ≥1 (root a level-0 jsou z pill renderování vyloučeny)
     const fallbackNode = (crt.nodes || [])
@@ -1437,7 +1442,7 @@ function overlayColors(nodes, metrics) {
 // _v_ai: bump POUZE při změně Sonnet promptu → invaliduje AI generování
 // _v_pp: bump při změně post-processingu (med-inject, validateEdges...) → přeskočí Sonnet, re-run PP
 const _v_ai = 12;
-const _v_pp = 45;
+const _v_pp = 46;
 
 function hashStr(s) {
   let h = 0;
