@@ -465,9 +465,12 @@ async function buildDeterministicCRT(profile, metrics = []) {
   // Medication-driven node activation: lék → cílový cause uzel
   // Pokud uživatel bere Torvacard → DYSLIPIDEMIA aktivní automaticky, bez keywords.
   // UDE uzly (fibrilace, mrtvice...) se neaktivují přes léky — přijdou z kauzálního řetězu.
+  // Suplementy (is_supplement:true) se NEaktivují jako příčinové uzly — jsou to ochranné pilulky,
+  // ne léky na recept. Magnesium suplementy → NEZAKTIVUJÍ ELECTROLYTE_IMBALANCE.
   {
     const medNames = (profile.medications || []).flatMap(m => {
       const name = (m.name || m || '').toLowerCase().trim();
+      if (DRUGS_DB[name]?.is_supplement) return []; // suplementy neaktivují cause uzly
       const inn   = DRUGS_DB[name]?.inn?.toLowerCase();
       return [name, inn].filter(Boolean);
     });
@@ -1444,7 +1447,7 @@ function overlayColors(nodes, metrics) {
 // _v_ai: bump POUZE při změně Sonnet promptu → invaliduje AI generování
 // _v_pp: bump při změně post-processingu (med-inject, validateEdges...) → přeskočí Sonnet, re-run PP
 const _v_ai = 12;
-const _v_pp = 51;
+const _v_pp = 52;
 
 function hashStr(s) {
   let h = 0;
