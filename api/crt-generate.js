@@ -363,12 +363,17 @@ const METRICS_UDE_MAP = [
 ];
 
 // Deterministické sestavení CRT z diagnóz + léků (bez AI) — pro nové uživatele
+// Odstraní diakritiku — 'hyperurikémie' === 'hyperurikemie', 'hypertenze' === 'hypertenze'
+function stripDiacritics(s) {
+  return s.normalize('NFD').replace(/[̀-ͯ]/g, '');
+}
+
 async function buildDeterministicCRT(profile, metrics = []) {
-  const allText = [
+  const allText = stripDiacritics([
     ...(profile.diagnoses || []),
     ...(profile.symptoms  || []),
     profile.doctor_notes || '',
-  ].join(' ').toLowerCase();
+  ].join(' ').toLowerCase());
 
   const bmi = (profile._height && profile._weight)
     ? profile._weight / ((profile._height / 100) ** 2) : null;
@@ -386,29 +391,32 @@ async function buildDeterministicCRT(profile, metrics = []) {
   // doctor_notes záměrně nezmínily — lékař popsal relevantní kauzální řetěz.
   const hasDetailedNotes = !!(profile.doctor_notes && profile.doctor_notes.trim().length > 20);
   const keywordText = hasDetailedNotes
-    ? profile.doctor_notes.toLowerCase()
+    ? stripDiacritics(profile.doctor_notes.toLowerCase())
     : allText;
+
+  // diagText: vždy jen strukturovaný seznam diagnóz (bez doctor_notes) — zdroj confirmed statusu.
+  // stripDiacritics zajistí shodu "hyperurikemie" === "hyperurikémie".
+  const diagText = stripDiacritics(
+    (profile.diagnoses || []).concat(profile.symptoms || []).join(' ').toLowerCase()
+  );
 
   // 1. Keyword matching → aktivní State Dictionary IDs
   const activeIds = new Set();
   const confirmedIds = new Set(); // uzly podložené daty (diagnóza, lab, lék, BMI)
   const diagConfirmedIds = new Set(); // pouze keyword-matched diagnózy (ne BMI) — kaskáda do potomků
 
-  for (const { keywords, id } of DIAGNOSIS_KEYWORDS) {
-    if (keywords.some(kw => keywordText.includes(kw))) {
-      activeIds.add(id); confirmedIds.add(id); diagConfirmedIds.add(id);
-    }
-  }
+  // Metabolické mezičlánky — confirmed status jen z doctor_notes (keywordText), ne ze surového
+  // seznamu diagnóz. Bez toho "hypertenze" v diagnózách zmodrá HYPERTENSION i když je v CRT
+  // jen odvozený mezičlánek (OBESITY → INSULIN_RESISTANCE → HYPERTENSION).
+  const METABOLIC_CASCADE_NODES = new Set(['OBESITY', 'INSULIN_RESISTANCE', 'HYPERTENSION']);
 
-  // Explicitní diagnózy z profilu → vždy Confirmed (i když keywordText = doctor_notes).
-  // doctor_notes řídí AKTIVACI (filtruje šum), ale confirmed status musí reflektovat diagnózy.
-  if (hasDetailedNotes) {
-    const diagOnlyText = (profile.diagnoses || []).concat(profile.symptoms || []).join(' ').toLowerCase();
-    for (const { keywords, id } of DIAGNOSIS_KEYWORDS) {
-      if (!confirmedIds.has(id) && keywords.some(kw => diagOnlyText.includes(kw))) {
-        confirmedIds.add(id); diagConfirmedIds.add(id);
-        // activeIds záměrně nenastavujeme — aktivaci řídí doctor_notes (keywordText)
-      }
+  for (const { keywords, id } of DIAGNOSIS_KEYWORDS) {
+    const kws = keywords.map(stripDiacritics);
+    const inKeywordText = kws.some(kw => keywordText.includes(kw));
+    const inDiagText    = kws.some(kw => diagText.includes(kw));
+    if (inKeywordText) { activeIds.add(id); confirmedIds.add(id); diagConfirmedIds.add(id); }
+    else if (inDiagText && !(hasDetailedNotes && METABOLIC_CASCADE_NODES.has(id))) {
+      confirmedIds.add(id); diagConfirmedIds.add(id); // confirmed z diagnóz, ale neaktivní (doctor_notes ho nevybraly)
     }
   }
   // BMI prahy — naměřená hodnota → Confirmed, ale nekaskáduje (OBESITY→INSULIN_RESISTANCE zůstane Inferred)
@@ -1480,7 +1488,7 @@ function overlayColors(nodes, metrics) {
 // _v_ai: bump POUZE při změně Sonnet promptu → invaliduje AI generování
 // _v_pp: bump při změně post-processingu (med-inject, validateEdges...) → přeskočí Sonnet, re-run PP
 const _v_ai = 12;
-const _v_pp = 60;
+const _v_pp = 61;
 
 function hashStr(s) {
   let h = 0;
