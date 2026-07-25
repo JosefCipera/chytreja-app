@@ -164,7 +164,7 @@
     "type": "cause",
     "typical_level": 1,
     "can_be_root": false,
-    "typical_branch": "R",
+    "typical_branch": "RC",
     "med_targets": [
       "torvacard",
       "sortis",
@@ -312,20 +312,6 @@
     ]
   },
   {
-    "id": "PREMATURE_CONTRACTIONS",
-    "label": "Komorové extrasystoly",
-    "label_layman": "Předčasné srdeční stahy",
-    "type": "junction",
-    "typical_level": 4,
-    "can_be_root": false,
-    "typical_branch": "LC",
-    "med_targets": [
-      "kalnormin",
-      "magnesium bisglycinát",
-      "magnosolv"
-    ]
-  },
-  {
     "id": "VASCULAR_STIFFNESS",
     "label": "Arteriální rigidita",
     "label_layman": "Tuhé cévy",
@@ -381,7 +367,8 @@
       "concor"
     ],
     "typical_children": [
-      "THREATENED_HEALTHSPAN"
+      "THREATENED_HEALTHSPAN",
+      "ENDOTHELIAL_DYSFUNCTION"
     ]
   },
   {
@@ -453,7 +440,7 @@
     "type": "ude",
     "typical_level": 5,
     "can_be_root": false,
-    "typical_branch": "R",
+    "typical_branch": "RC",
     "med_targets": [
       "vizarsin",
       "cialis"
