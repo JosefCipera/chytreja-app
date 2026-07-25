@@ -1041,19 +1041,22 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
       });
     });
 
-    // Interakce — jeden záznam per lék (ne per pair), aby se varování zobrazovalo jen na uzlu kde daný lék je
+    // Interakce — jeden záznam per pár, cílený POUZE na uzel prvního léku (ten který "ví" o interakci)
+    // drugs[0] = lék s interacts_with (existující lék), drugs[1] = nový lék — warning patří na uzel drugs[0]
     const warningMeds = [];
     const _seenWarn = new Set();
     resolvedInteractions.forEach(ix => {
-      ix.drugs.forEach(drug => {
-        const key = drug.replace(/\s*\([^)]*\)/g, '').trim().toLowerCase();
-        const drugTargets = [...(medTargetMap[key] || new Set())];
-        if (!drugTargets.length) return;
-        const wKey = `${ix.drugs.slice().sort().join('+')}|${drugTargets.slice().sort().join(',')}`;
-        if (_seenWarn.has(wKey)) return;
-        _seenWarn.add(wKey);
-        warningMeds.push({ name: ix.drugs.join(' + '), targets: drugTargets, effect: ix.note || '', type: 'warning', reason: ix.note || '' });
-      });
+      const pairKey = ix.drugs.slice().sort().join('+');
+      if (_seenWarn.has(pairKey)) return;
+      _seenWarn.add(pairKey);
+      const firstKey = ix.drugs[0].replace(/\s*\([^)]*\)/g, '').trim().toLowerCase();
+      let targets = [...(medTargetMap[firstKey] || new Set())];
+      if (!targets.length && ix.drugs[1]) {
+        const secondKey = ix.drugs[1].replace(/\s*\([^)]*\)/g, '').trim().toLowerCase();
+        targets = [...(medTargetMap[secondKey] || new Set())];
+      }
+      if (!targets.length) return;
+      warningMeds.push({ name: ix.drugs.join(' + '), targets, effect: ix.note || '', type: 'warning', reason: ix.note || '' });
     });
     if (warningMeds.length) console.log(`[CRT] interakce: ${warningMeds.map(w => `${w.name}→${w.targets.join(',')}`).join(' | ')}`);
 
@@ -1442,7 +1445,7 @@ function overlayColors(nodes, metrics) {
 // _v_ai: bump POUZE při změně Sonnet promptu → invaliduje AI generování
 // _v_pp: bump při změně post-processingu (med-inject, validateEdges...) → přeskočí Sonnet, re-run PP
 const _v_ai = 12;
-const _v_pp = 46;
+const _v_pp = 47;
 
 function hashStr(s) {
   let h = 0;
