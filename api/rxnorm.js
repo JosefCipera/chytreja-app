@@ -87,17 +87,20 @@ async function translateToCzech(pairs) {
 // ── Main resolve function (exported for crt-generate.js) ─────────────────────
 
 export async function resolveInteractionsRxNorm(medicationNames) {
-  // 1. Map brand → INN → rxcui
-  const meds = await Promise.all(medicationNames.map(async name => {
+  // 1. Map brand → INN → rxcui  (accept both strings and {name, dose} objects)
+  const meds = await Promise.all(medicationNames.map(async raw => {
+    const name = typeof raw === 'string' ? raw : (raw?.name || '');
+    if (!name) return null;
     const key = name.toLowerCase().trim();
-    const db  = DRUGS_DB[key] || {};
-    const inn  = db.inn || name;
+    const db    = DRUGS_DB[key] || {};
+    const inn   = db.inn || name;
     const rxcui = await getRxcui(inn);
     return { name, inn, rxcui, is_supplement: db.is_supplement ?? false, db };
   }));
+  const validMeds = meds.filter(Boolean);
 
   // 2. Get NLM interactions for all rxcuis that resolved
-  const rxcuis = meds.map(m => m.rxcui).filter(Boolean);
+  const rxcuis = validMeds.map(m => m.rxcui).filter(Boolean);
   const groups  = await getNlmInteractions(rxcuis);
   const rawPairs = parseInteractionGroups(groups);
 
@@ -120,7 +123,7 @@ export async function resolveInteractionsRxNorm(medicationNames) {
   let ti = 0;
   const interactions = result.map(r => r || { drugs: translated[ti].drugs, note: translated[ti++].note_cz, severity: translated[ti - 1]?.severity });
 
-  return { meds, interactions };
+  return { meds: validMeds, interactions };
 }
 
 // ── HTTP endpoint ─────────────────────────────────────────────────────────────
