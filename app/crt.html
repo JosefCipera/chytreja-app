@@ -809,6 +809,7 @@ function _initOverlay() {
 function _clearHighlight() {
   if (!_cy) return;
   _cy.edges().style({ 'line-color': '#4a8aaa', 'target-arrow-color': '#4a8aaa', 'width': 2 });
+  _cy.nodes().removeStyle('border-color border-width opacity');
 }
 
 let _crtMouseX = 0, _crtMouseY = 0;
@@ -825,6 +826,16 @@ function _applyHighlight(nodeId) {
       'target-arrow-color':  inSubtree ? '#5a9acc' : '#2d5272',
       'width':               inSubtree ? 3 : 1.5,
     });
+  });
+  _cy.nodes().forEach(n => {
+    const nid = n.id();
+    if (nid === nodeId) {
+      n.style({ 'border-color': '#e0f0ff', 'border-width': 4, 'opacity': 1 });
+    } else if (subtree.has(nid)) {
+      n.style({ 'border-color': '#5a9acc', 'border-width': 2.5, 'opacity': 1 });
+    } else {
+      n.style({ 'opacity': 0.35 });
+    }
   });
 }
 
@@ -959,11 +970,9 @@ function renderTree(data) {
 // ── HTML overlay helpers for med pills + warning badges ───────────────────────
 function _repositionPills() {
   if (!_cy || !_overlayEl) return;
-  const ROW_H    = IS_MOBILE ? 28 : 32;   // pill row height incl. gap
-  const COL_GAP  = 8;
-  const V_OFFSET = 10;                    // gap above node top edge
+  const PILL_H  = IS_MOBILE ? 24 : 26;  // pill row height incl. gap
+  const H_GAP   = IS_MOBILE ? 6 : 8;    // gap between node left edge and pill right edge
 
-  // Group pills by node
   const groups = {};
   _overlayEl.querySelectorAll('.crt-pill-overlay').forEach(pill => {
     const nid = pill.dataset.nodeId;
@@ -974,33 +983,16 @@ function _repositionPills() {
     const cyNode = _cy.getElementById(nid);
     if (!cyNode?.length) { pills.forEach(p => p.style.display = 'none'); return; }
 
-    const pos = cyNode.renderedPosition();
-    const hh  = cyNode.renderedHeight() / 2;
+    const pos   = cyNode.renderedPosition();
+    const hw    = cyNode.renderedWidth()  / 2;
+    const totalH = pills.length * PILL_H;
+    const startY = pos.y - totalH / 2;
 
-    // Split pills into rows of max 3
-    const MAX_PER_ROW = 3;
-    const rows = [];
-    for (let i = 0; i < pills.length; i += MAX_PER_ROW)
-      rows.push(pills.slice(i, i + MAX_PER_ROW));
-
-    const totalRowsH = rows.length * ROW_H;
-    // Pills sit above the node; if too close to viewport top, flip below
-    const nodeTop    = pos.y - hh;
-    const useAbove   = nodeTop > totalRowsH + V_OFFSET + 4;
-    const blockTop   = useAbove
-      ? nodeTop - V_OFFSET - totalRowsH
-      : pos.y + hh + V_OFFSET;
-
-    rows.forEach((row, ri) => {
-      const rowW = row.reduce((s, p) => s + (p.offsetWidth || 90) + COL_GAP, -COL_GAP);
-      let x = pos.x - rowW / 2;
-      row.forEach(pill => {
-        const pw = pill.offsetWidth || 90;
-        pill.style.left    = x + 'px';
-        pill.style.top     = (blockTop + ri * ROW_H) + 'px';
-        pill.style.display = '';
-        x += pw + COL_GAP;
-      });
+    pills.forEach((pill, i) => {
+      const pw = pill.offsetWidth || 80;
+      pill.style.left    = (pos.x - hw - H_GAP - pw) + 'px';
+      pill.style.top     = (startY + i * PILL_H) + 'px';
+      pill.style.display = '';
     });
   });
 }
@@ -1061,7 +1053,7 @@ function _buildPillsHTML() {
       pill.className = 'crt-pill-overlay';
       pill.dataset.nodeId = targetId;
       pill.dataset.idx    = i;
-      pill.style.cssText  = `position:absolute;border-radius:20px;padding:4px 12px;font-size:${IS_MOBILE ? 12 : 14}px;font-weight:700;font-family:Inter,system-ui,sans-serif;color:${color};background:${bg};border:1.5px solid ${border};white-space:nowrap;pointer-events:auto;cursor:default;`;
+      pill.style.cssText  = `position:absolute;border-radius:20px;padding:3px 9px;font-size:${IS_MOBILE ? 11 : 12}px;font-weight:700;font-family:Inter,system-ui,sans-serif;color:${color};background:${bg};border:1.5px solid ${border};white-space:nowrap;pointer-events:auto;cursor:default;`;
       pill.textContent = m.name;
       const tipText = m.note || m.reason || '';
       if (tipText) {
