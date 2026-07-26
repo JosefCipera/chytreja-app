@@ -16,7 +16,7 @@
       "magnesium bisglycinát",
       "magnesium bisglycinate"
     ],
-    "interaction_note": "Pradaxa (dabigatran) spolu s NSAIDy nebo antiagregancii výrazně zvyšuje riziko krvácení. Ibuprofen narušuje sliznici žaludku a inhibuje destičky, čímž zesiluje antikoagulační účinek. Kombinace může způsobit závažné gastrointestinální nebo vnitřní krvácení — neužívat bez konzultace s lékařem. | Hořčík (zejména citrátová forma) zvyšuje pH žaludku a snižuje vstřebávání dabigatranu (Pradaxa) až o 15 %. Slabší antikoagulace u pacienta s fibrilací síní = vyšší riziko mrtvice. Užívej Pradaxu nejméně 2 hodiny před hořčíkem nebo 2 hodiny po něm."
+    "interaction_note": "S NSAIDy (ibuprofen, voltaren): výrazné riziko krvácení. S hořčíkem: snižuje vstřebávání Pradaxy až o 15 % — vzít Pradaxu 2 h před nebo po hořčíku."
   },
   "xarelto": {
     "inn": "rivaroxaban",
@@ -692,7 +692,7 @@
       "magnesium bisglycinate",
       "pradaxa"
     ],
-    "interaction_note": "Magnosolv a Magnesium bisglycinát jsou dvě formy hořčíku zároveň. Kombinace může přesáhnout denní doporučenou dávku (400 mg Mg/den) a způsobit průjem nebo nevolnost. Zvol jednu formu, nebo rozděl dávky po konzultaci s lékařem. | Magnosolv (magnesium-citrát) obsahuje hořčík, který zvyšuje pH žaludku a snižuje vstřebávání dabigatranu (Pradaxa) až o 15 %. U pacienta s fibrilací síní hrozí nedostatečná antikoagulace a riziko mrtvice. Užívej Pradaxu nejméně 2 hodiny před nebo po hořčíku."
+    "interaction_note": "S Pradaxou: snižuje její vstřebávání až o 15 %, oslabuje ochranu před mrtvicí. S druhým hořčíkem: přesáhneš denní dávku (400 mg/den)."
   },
   "magnesium bisglycinát": {
     "inn": "magnesium-bisglycinate",
@@ -705,7 +705,7 @@
       "magnosolv",
       "pradaxa"
     ],
-    "interaction_note": "Magnesium bisglycinát a Magnosolv jsou dvě formy hořčíku zároveň. Kombinace může přesáhnout denní doporučenou dávku (400 mg Mg/den) a způsobit průjem nebo nevolnost. Zvol jednu formu, nebo rozděl dávky po konzultaci s lékařem. | Magnesium bisglycinát obsahuje hořčík, který zvyšuje pH žaludku a snižuje vstřebávání dabigatranu (Pradaxa) až o 15 %. U pacienta s fibrilací síní hrozí nedostatečná antikoagulace a riziko mrtvice. Užívej Pradaxu nejméně 2 hodiny před nebo po hořčíku."
+    "interaction_note": "S Pradaxou: snižuje její vstřebávání, oslabuje ochranu před mrtvicí. S druhým hořčíkem: přesáhneš denní dávku (400 mg/den)."
   },
   "magnesium bisglycinate": {
     "inn": "magnesium-bisglycinate",
@@ -718,7 +718,7 @@
       "magnosolv",
       "pradaxa"
     ],
-    "interaction_note": "Magnesium bisglycinát a Magnosolv jsou dvě formy hořčíku zároveň. Kombinace může přesáhnout denní doporučenou dávku (400 mg Mg/den) a způsobit průjem nebo nevolnost. Zvol jednu formu, nebo rozděl dávky po konzultaci s lékařem. | Magnesium bisglycinát obsahuje hořčík, který zvyšuje pH žaludku a snižuje vstřebávání dabigatranu (Pradaxa) až o 15 %. U pacienta s fibrilací síní hrozí nedostatečná antikoagulace a riziko mrtvice. Užívej Pradaxu nejméně 2 hodiny před nebo po hořčíku."
+    "interaction_note": "S Pradaxou: snižuje její vstřebávání, oslabuje ochranu před mrtvicí. S druhým hořčíkem: přesáhneš denní dávku (400 mg/den)."
   },
   "vitamin d3": {
     "inn": "cholekalciferol",
