@@ -373,7 +373,6 @@
       "SLEEP_DISORDER"
     ],
     "typical_children": [
-      "THREATENED_HEALTHSPAN",
       "ENDOTHELIAL_DYSFUNCTION"
     ]
   },
@@ -402,6 +401,10 @@
       "betaloc",
       "concor"
     ],
+    "sources": [
+      "CARDIAC_IRRITABILITY",
+      "HYPERTENSION"
+    ],
     "typical_children": [
       "THREATENED_HEALTHSPAN"
     ]
@@ -417,7 +420,6 @@
     "med_targets": [],
     "typical_children": [
       "ERECTILE_DYSFUNCTION",
-      "THREATENED_HEALTHSPAN",
       "STROKE_RISK"
     ]
   },
