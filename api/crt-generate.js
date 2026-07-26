@@ -16,6 +16,7 @@ dotenv.config({ path: '.env.local' });
 
 const _dir = dirname(fileURLToPath(import.meta.url));
 const DRUGS_DB   = JSON.parse(readFileSync(join(_dir, '../data/drugs.json'), 'utf8'));
+import { resolveInteractionsRxNorm } from './rxnorm.js';
 const STATES_ARR = JSON.parse(readFileSync(join(_dir, '../data/crt/longevity-states.json'), 'utf8'));
 const STATES_DB  = Object.fromEntries(STATES_ARR.map(s => [s.id, s]));
 
@@ -733,7 +734,7 @@ async function generateCRT({ metrics, profile, checkins, nodeInputs, _rawAI }, r
   const diagText     = (profile.diagnoses     || []).join(', ') || 'neuvedeno';
   const sympText     = (profile.symptoms      || []).join(', ') || 'neuvedeno';
   const familyText   = profile.family_history || 'neuvedeno';
-  const { meds: resolvedMeds, interactions: resolvedInteractions } = await resolveMedications(profile.medications || []);
+  const { meds: resolvedMeds, interactions: resolvedInteractions } = await resolveInteractionsRxNorm(profile.medications || []);
   const medsText = resolvedMeds.length
     ? resolvedMeds.map(m => {
         const parts = [`${m.name} (${m.inn})`];
