@@ -935,17 +935,6 @@ function renderTree(data) {
 
   _cy.one('layoutstop', () => {
     if (!_cy) return;
-    // Center root node horizontally over the graph
-    const d = window._crtData;
-    const rootId = typeof d?.root === 'string' ? d.root : d?.root?.id;
-    if (rootId) {
-      const rootNode = _cy.getElementById(rootId);
-      if (rootNode?.length) {
-        const xs = _cy.nodes().map(n => n.position('x'));
-        const cx = (Math.min(...xs) + Math.max(...xs)) / 2;
-        rootNode.position('x', cx);
-      }
-    }
     _cy.fit(undefined, 40);
   });
 
@@ -983,18 +972,20 @@ function _repositionPills() {
       rows.push(pills.slice(i, i + MAX_PER_ROW));
 
     const totalRowsH = rows.length * ROW_H;
-    // Bottom edge of pill block sits V_OFFSET above node top
-    const blockBottom = pos.y - hh - V_OFFSET;
+    // Pills sit above the node; if too close to viewport top, flip below
+    const nodeTop    = pos.y - hh;
+    const useAbove   = nodeTop > totalRowsH + V_OFFSET + 4;
+    const blockTop   = useAbove
+      ? nodeTop - V_OFFSET - totalRowsH
+      : pos.y + hh + V_OFFSET;
 
     rows.forEach((row, ri) => {
-      // Row width = sum of pill widths + gaps
       const rowW = row.reduce((s, p) => s + (p.offsetWidth || 90) + COL_GAP, -COL_GAP);
       let x = pos.x - rowW / 2;
-      const rowTop = blockBottom - totalRowsH + ri * ROW_H;
       row.forEach(pill => {
         const pw = pill.offsetWidth || 90;
         pill.style.left    = x + 'px';
-        pill.style.top     = rowTop + 'px';
+        pill.style.top     = (blockTop + ri * ROW_H) + 'px';
         pill.style.display = '';
         x += pw + COL_GAP;
       });
