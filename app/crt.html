@@ -835,8 +835,8 @@ function renderTree(data) {
   const edgeSources = new Set(data.edges.map(e => e.from));
 
   // Fixed positions: 5 branches × levels
-  const BRANCH_X     = { L: -400, LC: -200, C: 0, RC: 200, R: 400 };
-  const LEVEL_Y_SCALE = IS_MOBILE ? 110 : 145;
+  const BRANCH_X     = { L: -600, LC: -300, C: 0, RC: 300, R: 600 };
+  const LEVEL_Y_SCALE = IS_MOBILE ? 120 : 150;
   const maxLevel = Math.max(...(data.nodes || []).map(n => n.level ?? 0), 0);
 
   // Sibling grouping per branch+level for horizontal offset
@@ -938,7 +938,7 @@ function renderTree(data) {
     userPanningEnabled:  true,
     userZoomingEnabled:  true,
     autoungrabify:       true,
-    minZoom:             0.15,
+    minZoom:             0.5,
     maxZoom:             3,
     wheelSensitivity:    0.15,
   });
@@ -960,7 +960,12 @@ function renderTree(data) {
   });
   _cy.on('render', _repositionOverlays);
 
-  setTimeout(() => { if (_cy) _cy.fit(undefined, 80); }, 150);
+  setTimeout(() => {
+    if (!_cy) return;
+    _cy.fit(undefined, 60);
+    // Pokud fit zoom < 0.65, ořízni na 0.65 a vycentruj — zachová čitelnost
+    if (_cy.zoom() < 0.65) { _cy.zoom(0.65); _cy.center(); }
+  }, 150);
 
   // Overlays: warning badges + med pills
   _initOverlay();
