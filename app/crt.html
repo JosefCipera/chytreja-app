@@ -907,7 +907,7 @@ function renderTree(data) {
         },
       },
     ],
-    layout: { name: 'elk', animate: false, elk: { algorithm: 'layered', 'elk.direction': 'UP', 'elk.layered.spacing.nodeNodeBetweenLayers': IS_MOBILE ? 90 : 155, 'elk.spacing.nodeNode': IS_MOBILE ? 60 : 120, 'elk.edgeRouting': 'ORTHOGONAL', 'elk.layered.crossingMinimization.strategy': 'LAYER_SWEEP' } },
+    layout: { name: 'elk', animate: false, elk: { algorithm: 'layered', 'elk.direction': 'UP', 'elk.layered.spacing.nodeNodeBetweenLayers': IS_MOBILE ? 90 : 170, 'elk.spacing.nodeNode': IS_MOBILE ? 60 : 150, 'elk.edgeRouting': 'ORTHOGONAL', 'elk.layered.crossingMinimization.strategy': 'LAYER_SWEEP', 'elk.layered.nodePlacement.strategy': 'NETWORK_SIMPLEX' } },
     userPanningEnabled:  true,
     userZoomingEnabled:  true,
     autoungrabify:       true,
@@ -936,6 +936,18 @@ function renderTree(data) {
   _cy.one('layoutstop', () => {
     if (!_cy) return;
     _cy.fit(undefined, 40);
+    // Shift viewport so root node is horizontally centered (pan only, no node move)
+    const d = window._crtData;
+    const rootId = typeof d?.root === 'string' ? d.root : d?.root?.id;
+    if (rootId) {
+      const rootNode = _cy.getElementById(rootId);
+      if (rootNode?.length) {
+        const containerW = _cy.container().offsetWidth;
+        const rootX = rootNode.renderedPosition().x;
+        const shift = containerW / 2 - rootX;
+        if (Math.abs(shift) > 20) _cy.panBy({ x: shift, y: 0 });
+      }
+    }
   });
 
   // Overlays: warning badges + med pills
