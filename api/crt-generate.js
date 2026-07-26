@@ -405,11 +405,6 @@ async function buildDeterministicCRT(profile, metrics = []) {
   const confirmedIds = new Set(); // uzly podložené daty (diagnóza, lab, lék, BMI)
   const diagConfirmedIds = new Set(); // pouze keyword-matched diagnózy (ne BMI) — kaskáda do potomků
 
-  // Metabolické mezičlánky — confirmed status jen z doctor_notes (keywordText), ne ze surového
-  // seznamu diagnóz. Bez toho "hypertenze" v diagnózách zmodrá HYPERTENSION i když je v CRT
-  // jen odvozený mezičlánek (OBESITY → INSULIN_RESISTANCE → HYPERTENSION).
-  const METABOLIC_CASCADE_NODES = new Set(['OBESITY', 'INSULIN_RESISTANCE', 'HYPERTENSION']);
-
   for (const { keywords, id } of DIAGNOSIS_KEYWORDS) {
     // keywordText (doctor_notes): raw keywords — stripDiacritics('třes')='tres' matchuje 'stres' → false positive!
     const inKeywordText = keywords.some(kw => keywordText.includes(kw));
@@ -417,8 +412,8 @@ async function buildDeterministicCRT(profile, metrics = []) {
     const kws = keywords.map(stripDiacritics);
     const inDiagText    = kws.some(kw => diagText.includes(kw));
     if (inKeywordText) { activeIds.add(id); confirmedIds.add(id); diagConfirmedIds.add(id); }
-    else if (inDiagText && !(hasDetailedNotes && METABOLIC_CASCADE_NODES.has(id))) {
-      confirmedIds.add(id); diagConfirmedIds.add(id); // confirmed z diagnóz, ale neaktivní (doctor_notes ho nevybraly)
+    else if (inDiagText) {
+      confirmedIds.add(id); diagConfirmedIds.add(id); // diagnóza lékaře = Confirmed, bez ohledu na kauzální pozici
     }
   }
   // BMI prahy — naměřená hodnota → Confirmed, ale nekaskáduje (OBESITY→INSULIN_RESISTANCE zůstane Inferred)
@@ -1492,7 +1487,7 @@ function overlayColors(nodes, metrics) {
 // _v_ai: bump POUZE při změně Sonnet promptu → invaliduje AI generování
 // _v_pp: bump při změně post-processingu (med-inject, validateEdges...) → přeskočí Sonnet, re-run PP
 const _v_ai = 12;
-const _v_pp = 63;
+const _v_pp = 64;
 
 function hashStr(s) {
   let h = 0;
