@@ -9,8 +9,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@300;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
   <script src="https://cdn.jsdelivr.net/npm/cytoscape@3.28.1/dist/cytoscape.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/dagre@0.8.5/dist/dagre.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/cytoscape-dagre@2.5.0/cytoscape-dagre.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/elkjs@0.9.3/lib/elk.bundled.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/cytoscape-elk@2.2.0/cytoscape-elk.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -907,7 +907,7 @@ function renderTree(data) {
         },
       },
     ],
-    layout: { name: 'dagre', rankDir: 'BT', nodeSep: IS_MOBILE ? 60 : 120, rankSep: IS_MOBILE ? 90 : 155, padding: 50 },
+    layout: { name: 'elk', animate: false, elk: { algorithm: 'layered', 'elk.direction': 'UP', 'elk.layered.spacing.nodeNodeBetweenLayers': IS_MOBILE ? 90 : 155, 'elk.spacing.nodeNode': IS_MOBILE ? 60 : 120, 'elk.edgeRouting': 'ORTHOGONAL', 'elk.layered.crossingMinimization.strategy': 'LAYER_SWEEP' } },
     userPanningEnabled:  true,
     userZoomingEnabled:  true,
     autoungrabify:       true,
