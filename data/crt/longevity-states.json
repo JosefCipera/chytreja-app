@@ -366,6 +366,12 @@
       "betaloc",
       "concor"
     ],
+    "sources": [
+      "INSULIN_RESISTANCE",
+      "VASCULAR_STIFFNESS",
+      "CHRONIC_STRESS",
+      "SLEEP_DISORDER"
+    ],
     "typical_children": [
       "THREATENED_HEALTHSPAN",
       "ENDOTHELIAL_DYSFUNCTION"
