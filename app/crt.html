@@ -835,7 +835,7 @@ function renderTree(data) {
   const edgeSources = new Set(data.edges.map(e => e.from));
 
   // Fixed positions: 5 branches × levels
-  const BRANCH_X     = { L: -500, LC: -500, C: 0, RC: 500, R: 500 };
+  const BRANCH_X     = { L: -520, LC: -260, C: 0, RC: 260, R: 520 };
   const LEVEL_Y_SCALE = IS_MOBILE ? 130 : 180;
   const maxLevel = Math.max(...(data.nodes || []).map(n => n.level ?? 0), 0);
 
@@ -906,9 +906,9 @@ function renderTree(data) {
           'shape':           'rectangle',
           'label':           'data(label)',
           'text-wrap':       'wrap',
-          'text-max-width':  IS_MOBILE ? 120 : 150,
+          'text-max-width':  IS_MOBILE ? 120 : 160,
           'font-family':     'Inter, system-ui, sans-serif',
-          'font-size':       IS_MOBILE ? 11 : 13,
+          'font-size':       IS_MOBILE ? 12 : 14,
           'color':           'data(textColor)',
           'background-color':'data(bg)',
           'border-color':    'data(border)',
@@ -940,6 +940,7 @@ function renderTree(data) {
     autoungrabify:       true,
     minZoom:             0.15,
     maxZoom:             3,
+    wheelSensitivity:    0.15,
   });
 
   _cy.on('tap', 'node', evt => {
