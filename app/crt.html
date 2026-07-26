@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@300;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
-  <script src="https://cdn.jsdelivr.net/npm/vis-network@9.1.9/dist/vis-network.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/cytoscape@3.28.1/dist/cytoscape.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -102,7 +102,7 @@
     }
     .crt-branch-label.right { transform: rotate(0deg); }
 
-    /* ── vis.js Network canvas ── */
+    /* ── Cytoscape canvas container ── */
     #crt-network {
       position: absolute;
       top: 0; left: 0; right: 0; bottom: 0;
@@ -543,9 +543,6 @@ async function fetchUserContext() {
   return res.json();
 }
 
-// ── Layout handled by vis.js Network (hierarchical DU) ───────────────────────
-// calcPositionsELK removed — vis.js computes positions automatically.
-
 // ── Medications ───────────────────────────────────────────────────────────────
 function suppMatches(shield, userSupps) {
   const keywords = [shield.supp, ...(shield.aliases||[])].map(k => k.toLowerCase());
@@ -793,20 +790,41 @@ async function loadCRTOpus(force = false, model = undefined) {
   return data;
 }
 
-// ── vis.js Network renderer ──────────────────────────────────────────────────
+// ── Cytoscape.js renderer ────────────────────────────────────────────────────
 const IS_MOBILE = window.innerWidth < 700 || window.screen.width < 700;
-let _visNetwork = null;
-let _savedEdgeColors = null;
-function _clearHighlight() {
-  if (!_visNetwork) return;
-  if (_savedEdgeColors) { _visNetwork.body.data.edges.update(_savedEdgeColors); _savedEdgeColors = null; }
-  _visNetwork.unselectAll();
-  _visNetwork.redraw();
+let _cy = null;
+let _overlayEl = null;
+
+function _initOverlay() {
+  const container = document.getElementById('crt-network');
+  if (_overlayEl) _overlayEl.remove();
+  _overlayEl = document.createElement('div');
+  _overlayEl.id = 'crt-overlay';
+  _overlayEl.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:hidden;z-index:5;';
+  container.appendChild(_overlayEl);
 }
-const _pillTooltips = {};
-// pill node id → tooltip text
+
+function _clearHighlight() {
+  if (!_cy) return;
+  _cy.edges().style({ 'line-color': '#4a8aaa', 'target-arrow-color': '#4a8aaa', 'width': 2 });
+}
+
 let _crtMouseX = 0, _crtMouseY = 0;
 document.addEventListener('mousemove', e => { _crtMouseX = e.clientX; _crtMouseY = e.clientY; });
+
+function _applyHighlight(nodeId) {
+  const rawData = window._crtData;
+  if (!rawData || !_cy) return;
+  const subtree = allDescendants(nodeId, rawData);
+  _cy.edges().forEach(e => {
+    const inSubtree = subtree.has(e.source().id()) && subtree.has(e.target().id());
+    e.style({
+      'line-color':          inSubtree ? '#5a9acc' : '#2d5272',
+      'target-arrow-color':  inSubtree ? '#5a9acc' : '#2d5272',
+      'width':               inSubtree ? 3 : 1.5,
+    });
+  });
+}
 
 function renderTree(data) {
   window._crtData = data;
@@ -814,263 +832,243 @@ function renderTree(data) {
   document.getElementById('crtSubtitle').textContent = data.subtitle;
 
   const container = document.getElementById('crt-network');
-
   const edgeSources = new Set(data.edges.map(e => e.from));
 
-  // 3-column sibling grouping: sourozenci ve stejném sloupci+levelu → rozestup
-  const _colLevelGroups = {};
+  // Fixed positions: 5 branches × levels
+  const BRANCH_X     = { L: -500, LC: -250, C: 0, RC: 250, R: 500 };
+  const LEVEL_Y_SCALE = IS_MOBILE ? 130 : 160;
+  const maxLevel = Math.max(...(data.nodes || []).map(n => n.level ?? 0), 0);
+
+  // Sibling grouping per branch+level for horizontal offset
+  const branchLevelGroups = {};
   (data.nodes || []).forEach(n => {
-    const col = (n.branch === 'L' || n.branch === 'LC') ? 'L' : n.branch === 'C' ? 'C' : 'R';
-    const key = `${col}-${n.level ?? 0}`;
-    (_colLevelGroups[key] = _colLevelGroups[key] || []).push(n.id);
+    const key = `${n.branch ?? 'C'}-${n.level ?? 0}`;
+    (branchLevelGroups[key] = branchLevelGroups[key] || []).push(n.id);
   });
-  // Seřaď sourozence v každé skupině podle větve: L→LC→RC→R
-  // → L gets nejlevější pozici, RC dostane center-right (ne R), atd.
   {
     const _brRank = { L: 0, LC: 1, C: 2, RC: 3, R: 4 };
-    const _nodeById = Object.fromEntries((data.nodes || []).map(n => [n.id, n]));
-    Object.values(_colLevelGroups).forEach(g => {
-      if (g.length > 1) g.sort((a, b) => (_brRank[_nodeById[a]?.branch] ?? 2) - (_brRank[_nodeById[b]?.branch] ?? 2));
+    const _nById = Object.fromEntries((data.nodes || []).map(n => [n.id, n]));
+    Object.values(branchLevelGroups).forEach(g => {
+      if (g.length > 1) g.sort((a, b) => (_brRank[_nById[a]?.branch] ?? 2) - (_brRank[_nById[b]?.branch] ?? 2));
     });
   }
 
-  const visNodes = data.nodes.map(n => {
+  const cyElements = [];
+
+  data.nodes.forEach(n => {
     const ntype = n._type || n.type || 'cause';
-    const isApex     = ntype === 'ude' && !edgeSources.has(n.id);
-    const isRoot     = ntype === 'golden_box' || n.type === 'root' || (n.level ?? 99) === 0;
-    const isInactive = !!n.inactive;
+    const isApex = ntype === 'ude' && !edgeSources.has(n.id);
+    const isRoot = ntype === 'golden_box' || n.type === 'root' || (n.level ?? 99) === 0;
 
-    let bg, border, textColor, bw, dashes;
+    let bg, border, textColor, bw, borderStyle;
     if (isApex) {
-      bg = '#200808'; border = '#c04040'; textColor = '#f0a0a0'; bw = 3; dashes = [8, 5];
+      bg = '#200808'; border = '#c04040'; textColor = '#f0a0a0'; bw = 3; borderStyle = 'dashed';
     } else if (isRoot) {
-      bg = '#12100a'; border = '#c09a22'; textColor = '#d8a830'; bw = 3; dashes = false;
+      bg = '#12100a'; border = '#c09a22'; textColor = '#d8a830'; bw = 3; borderStyle = 'solid';
     } else if (n._inferred) {
-      bg = '#1a1d26'; border = '#404560'; textColor = '#606888'; bw = 1.5; dashes = [4, 4];
+      bg = '#1a1d26'; border = '#404560'; textColor = '#606888'; bw = 1.5; borderStyle = 'dashed';
     } else {
-      bg = '#1a2d40'; border = '#2a4a60'; textColor = '#a7c7df'; bw = 1.5; dashes = false;
+      bg = '#1a2d40'; border = '#2a4a60'; textColor = '#a7c7df'; bw = 1.5; borderStyle = 'solid';
     }
 
-    // Desktop: 3 pevné sloupce (L, C, R), hierarchical layout vypnutý.
-    // y fixováno z levelu, x z column+sibling offset. Mobil: hierarchical auto.
-    const BRANCH_X   = { L: -500, LC: -500, C: 0, RC: 500, R: 500 };
-    const COL3_SEP   = 180; // px mezi levely (desktop)
-    const branchToCol3 = b => (b === 'L' || b === 'LC') ? 'L' : b === 'C' ? 'C' : 'R';
-    const col3 = branchToCol3(n.branch || 'C');
-    const colKey = `${col3}-${n.level ?? 0}`;
-    const _siblings = _colLevelGroups[colKey] || [n.id];
-    const _sibIdx   = _siblings.indexOf(n.id);
-    const _sibOff   = _siblings.length > 1 ? (_sibIdx - (_siblings.length - 1) / 2) * 400 : 0;
-    const bx = (!IS_MOBILE && n.branch && BRANCH_X[n.branch] !== undefined)
-      ? BRANCH_X[n.branch] + _sibOff : undefined;
-    const by = (!IS_MOBILE && bx !== undefined) ? -(n.level ?? 0) * COL3_SEP : undefined;
+    const branch   = n.branch ?? 'C';
+    const level    = n.level ?? 0;
+    const groupKey = `${branch}-${level}`;
+    const siblings = branchLevelGroups[groupKey] || [n.id];
+    const sibIdx   = siblings.indexOf(n.id);
+    const sibOff   = siblings.length > 1 ? (sibIdx - (siblings.length - 1) / 2) * (IS_MOBILE ? 220 : 300) : 0;
+    const posX = (BRANCH_X[branch] ?? 0) + sibOff;
+    const posY = (maxLevel - level) * LEVEL_Y_SCALE;
 
-    return {
-      id: n.id,
-      label: n.label ?? n.id,
-      level: n.level ?? 0,
-      ...(bx !== undefined ? { x: bx, y: by, fixed: { x: true, y: true } } : {}),
-      color: {
-        background: bg,
-        border: border,
-        highlight: { background: bg, border: isRoot ? border : '#80d8f0' },
-        hover:     { background: bg, border: isRoot ? border : '#60c8e8' },
-      },
-      font: { color: textColor, size: IS_MOBILE ? 17 : 22, face: 'Inter, system-ui, sans-serif' },
-      borderWidth: bw,
-      shapeProperties: { borderDashes: dashes, borderRadius: 8 },
-    };
+    cyElements.push({
+      group: 'nodes',
+      data: { id: n.id, label: n.label ?? n.id, bg, border, textColor, bw, borderStyle },
+      position: { x: posX, y: posY },
+    });
   });
 
-  const visEdges = data.edges.map((e, i) => ({
-    id: `e${i}`,
-    from: e.from,
-    to: e.to,
-    color: { color: '#4a8aaa', highlight: '#7ab8d8', hover: '#6aacc8', inherit: false },
-    width: 2,
-    selectionWidth: 0,
-    hoverWidth: 0,
-  }));
+  data.edges.forEach((e, i) => {
+    cyElements.push({
+      group: 'edges',
+      data: { id: `e${i}`, source: e.from, target: e.to },
+    });
+  });
 
-  if (_visNetwork) { _visNetwork.destroy(); _visNetwork = null; }
-  _savedEdgeColors = null;
+  if (_cy) { _cy.destroy(); _cy = null; }
 
-  _visNetwork = new vis.Network(
+  _cy = cytoscape({
     container,
-    { nodes: new vis.DataSet(visNodes), edges: new vis.DataSet(visEdges) },
-    {
-      layout: IS_MOBILE ? {
-        hierarchical: {
-          enabled: true,
-          direction: 'DU',
-          sortMethod: 'directed',
-          levelSeparation: 110,
-          nodeSpacing: 160,
-          treeSpacing: 160,
-          blockShifting: true,
-          edgeMinimization: true,
-          parentCentralization: true,
+    elements: cyElements,
+    style: [
+      {
+        selector: 'node',
+        style: {
+          'shape':           'rectangle',
+          'label':           'data(label)',
+          'text-wrap':       'wrap',
+          'text-max-width':  IS_MOBILE ? 180 : 260,
+          'font-family':     'Inter, system-ui, sans-serif',
+          'font-size':       IS_MOBILE ? 17 : 22,
+          'color':           'data(textColor)',
+          'background-color':'data(bg)',
+          'border-color':    'data(border)',
+          'border-width':    'data(bw)',
+          'border-style':    'data(borderStyle)',
+          'padding':         IS_MOBILE ? 14 : 18,
+          'text-valign':     'center',
+          'text-halign':     'center',
+          'corner-radius':   8,
+          'min-width':       IS_MOBILE ? 150 : 200,
+          'min-height':      IS_MOBILE ? 44 : 56,
         },
-      } : { randomSeed: 0 },
-      nodes: {
-        shape: 'box',
-        margin: { top: 18, right: 28, bottom: 18, left: 28 },
-        widthConstraint: { minimum: IS_MOBILE ? 180 : 220, maximum: IS_MOBILE ? 260 : 340 },
-        font: { size: IS_MOBILE ? 17 : 22, face: 'Inter, system-ui, sans-serif' },
       },
-      edges: {
-        arrows: { to: { enabled: true, scaleFactor: 1.6, type: 'arrow' } },
-        color: { color: '#4a8aaa', highlight: '#7ab8d8', hover: '#6aacc8', inherit: false },
-        smooth: { enabled: false },
-        width: 2,
+      {
+        selector: 'edge',
+        style: {
+          'curve-style':        'bezier',
+          'target-arrow-shape': 'triangle',
+          'target-arrow-color': '#4a8aaa',
+          'line-color':         '#4a8aaa',
+          'width':              2,
+          'arrow-scale':        1.4,
+        },
       },
-      physics: { enabled: false },
-      interaction: {
-        dragNodes: false,
-        hover: true,
-        hoverConnectedEdges: false,
-        tooltipDelay: 600,
-        navigationButtons: false,
-        keyboard: false,
-        selectConnectedEdges: false,
-      },
-    }
-  );
-
-  _visNetwork.on('click', params => {
-    if (!params.nodes.length) { closeCrtPanel(); return; }
-    if (String(params.nodes[0]).startsWith('_pill_')) return;
-    _applyHighlight(params.nodes[0]);
-    openNodePanel(params.nodes[0]);
+    ],
+    layout:              { name: 'preset' },
+    userPanningEnabled:  true,
+    userZoomingEnabled:  true,
+    autoungrabify:       true,
+    minZoom:             0.15,
+    maxZoom:             3,
   });
 
-  function _applyHighlight(nodeId) {
-    const rawData = window._crtData;
-    if (!rawData || !_visNetwork) return;
-    const subtree = allDescendants(nodeId, rawData);
-    const ed = _visNetwork.body.data.edges;
-    if (!_savedEdgeColors) _savedEdgeColors = ed.get().map(e => ({ id: e.id, color: e.color, width: e.width }));
-    ed.update(ed.get().map(e => {
-      const inSubtree = subtree.has(String(e.from)) && subtree.has(String(e.to));
-      return {
-        id: e.id,
-        color: inSubtree
-          ? { color: '#5a9acc', highlight: '#5a9acc', hover: '#5a9acc' }
-          : { color: '#2d5272', highlight: '#2d5272', hover: '#2d5272' },
-        width: inSubtree ? 3 : 1.5,
-      };
-    }));
-  }
-
-  _visNetwork.on('hoverNode', params => {
-    if (String(params.node).startsWith('_pill_')) return;
-    _applyHighlight(params.node);
+  _cy.on('tap', 'node', evt => {
+    const nid = evt.target.id();
+    _applyHighlight(nid);
+    openNodePanel(nid);
   });
-  _visNetwork.on('blurNode', () => {
+  _cy.on('tap', evt => {
+    if (evt.target === _cy) { closeCrtPanel(); _clearHighlight(); }
+  });
+  _cy.on('mouseover', 'node', evt => {
+    _applyHighlight(evt.target.id());
+  });
+  _cy.on('mouseout', 'node', () => {
     if (_openPanelNodeId) _applyHighlight(_openPanelNodeId);
     else _clearHighlight();
   });
+  _cy.on('render', _repositionOverlays);
 
-  // Pill hover tooltip
-  const _crtContainer = document.getElementById('crtCanvas');
-  if (_crtContainer) {
-    _crtContainer.addEventListener('mousemove', e => {
-      const rect  = _crtContainer.getBoundingClientRect();
-      const nid   = _visNetwork?.getNodeAt({ x: e.clientX - rect.left, y: e.clientY - rect.top });
-      const tipEl = document.getElementById('crtTooltip');
-      if (!tipEl) return;
-      if (nid && String(nid).startsWith('_pill_') && _pillTooltips[nid]) {
-        tipEl.textContent = _pillTooltips[nid];
-        tipEl.style.left  = (e.clientX + 16) + 'px';
-        tipEl.style.top   = (e.clientY - 10) + 'px';
-        tipEl.style.display = 'block';
-      } else {
-        tipEl.style.display = 'none';
-      }
-    });
-    _crtContainer.addEventListener('mouseleave', () => {
-      const tipEl = document.getElementById('crtTooltip');
-      if (tipEl) tipEl.style.display = 'none';
-    });
-  }
+  setTimeout(() => { if (_cy) _cy.fit(undefined, 40); }, 150);
 
-  setTimeout(() => {
-    if (_visNetwork) _visNetwork.fit({ animation: { duration: 500, easingFunction: 'easeInOutQuad' } });
-  }, 150);
-  // vis.js v9 bug: arrowheads neprenderují při prvním paintu s physics:false + smooth:false.
-  // Redraw po 200ms + po skončení fit animace je spolehlivá oprava.
-  setTimeout(() => { if (_visNetwork) _visNetwork.redraw(); }, 200);
-  setTimeout(() => { if (_visNetwork) _visNetwork.redraw(); }, 700);
-
-  // Badge vždy znovu — _visNetwork byl právě zničen a vytvořen znovu
+  // Overlays: warning badges + med pills
+  _initOverlay();
   _warnDrawFn = null;
   setTimeout(() => _attachWarningBadges(), 280);
 }
 
-function addMedPills(data) {
-  if (!_visNetwork) return;
-  const medsMap  = (data.medications_map  || []).filter(m => m.userHas !== false);
-  const suppsMap = (data.supplements_map  || []);
+// ── HTML overlay helpers for med pills + warning badges ───────────────────────
+function _repositionPills() {
+  if (!_cy || !_overlayEl) return;
+  const SPACING_Y = IS_MOBILE ? 32 : 40;
+  const OFFSET_X  = 10; // gap between pill right edge and node left edge
+  _overlayEl.querySelectorAll('.crt-pill-overlay').forEach(pill => {
+    const targetId = pill.dataset.nodeId;
+    const idx      = parseInt(pill.dataset.idx || '0');
+    const cyNode   = _cy.getElementById(targetId);
+    if (!cyNode || !cyNode.length) { pill.style.display = 'none'; return; }
+    const pos = cyNode.renderedPosition();
+    const hw  = cyNode.renderedWidth()  / 2;
+    const hh  = cyNode.renderedHeight() / 2;
+    const pw  = pill.offsetWidth  || 80;
+    const ph  = pill.offsetHeight || 28;
+    // Pills stacked to the left of the node, centred on node midpoint
+    pill.style.left    = (pos.x - hw - pw - OFFSET_X) + 'px';
+    pill.style.top     = (pos.y - ph / 2 + idx * SPACING_Y) + 'px';
+    pill.style.display = '';
+  });
+}
+
+function _repositionWarnings() {
+  if (!_cy || !_overlayEl) return;
+  _overlayEl.querySelectorAll('.crt-warn-badge').forEach(badge => {
+    const nid    = badge.dataset.nodeId;
+    const cyNode = _cy.getElementById(nid);
+    if (!cyNode || !cyNode.length) return;
+    const pos = cyNode.renderedPosition();
+    const hw  = cyNode.renderedWidth()  / 2;
+    const hh  = cyNode.renderedHeight() / 2;
+    badge.style.left = (pos.x + hw - 12) + 'px';
+    badge.style.top  = (pos.y - hh - 12) + 'px';
+  });
+}
+
+function _repositionOverlays() {
+  _repositionPills();
+  _repositionWarnings();
+}
+
+function _buildPillsHTML() {
+  if (!_overlayEl) return;
+  _overlayEl.querySelectorAll('.crt-pill-overlay').forEach(el => el.remove());
+  if (!_medsVisible || !window._crtData) return;
+
+  const medsMap  = (window._crtData.medications_map || []).filter(m => m.userHas !== false);
+  const suppsMap = (window._crtData.supplements_map || []);
   if (!medsMap.length && !suppsMap.length) return;
 
-  const positions = _visNetwork.getPositions();
+  const rootId = typeof window._crtData.root === 'string' ? window._crtData.root : window._crtData.root?.id;
+  const allCrtNodes = window._crtData.nodes || [];
+  const excludedIds = new Set([
+    rootId,
+    ...allCrtNodes.filter(n => (n.level ?? 0) === 0).map(n => n.id),
+  ].filter(Boolean));
 
-  // Seskup léky+doplňky podle target nodu
-  const byTarget = {};
-  medsMap.forEach(m => {
-    (m.targets || []).forEach(tid => {
-      (byTarget[tid] = byTarget[tid] || []).push({ ...m, _kind: 'med' });
-    });
+  const byNode = {};
+  const seenOnCanvas = new Set();
+  [...medsMap, ...suppsMap.map(s => ({ ...s, type: 'protects' }))].forEach(m => {
+    if (!m.name || m.type === 'warning' || seenOnCanvas.has(m.name)) return;
+    const target = (m.targets || []).find(t => !excludedIds.has(t) && _cy?.getElementById(t)?.length);
+    if (target) {
+      seenOnCanvas.add(m.name);
+      (byNode[target] = byNode[target] || []).push(m);
+    }
   });
-  suppsMap.forEach(s => {
-    (s.targets || []).forEach(tid => {
-      (byTarget[tid] = byTarget[tid] || []).push({ ...s, _kind: 'supp' });
-    });
-  });
 
-  // OFFSET_X: pills těsně napravo od nodu (node šířka ~240 canvas jednotek + 16px mezera)
-  const OFFSET_X  = IS_MOBILE ? 130 : 150;
-  // Stack jde NAHORU (menší Y = výš vizuálně v DU layoutu kde root má největší Y)
-  const SPACING_Y = IS_MOBILE ? 40 : 48;
-
-  const pillNodes = [];
-
-  Object.entries(byTarget).forEach(([targetId, items]) => {
-    const pos = positions[targetId];
-    if (!pos) return;
-
-    items.forEach((item, i) => {
-      const nid   = `_pill_${targetId}_${i}`;
-      const isMed = item._kind === 'med';
-      const tipText = item.note || item.effect || item.reason || '';
-      if (tipText) _pillTooltips[nid] = tipText;
-      pillNodes.push({
-        id:    nid,
-        label: item.name,
-        title: '',
-        // i=0 → stejná Y jako node; i=1 → o SPACING_Y výš; atd.
-        x: pos.x + OFFSET_X,
-        y: pos.y - i * SPACING_Y,
-        fixed: { x: true, y: true },
-        shape: 'box',
-        color: {
-          background: isMed ? '#231400' : '#071a0a',
-          border:     isMed ? '#d97706' : '#22c55e',
-          highlight:  { background: isMed ? '#2e1a00' : '#0a2210', border: isMed ? '#f59e0b' : '#4ade80' },
-          hover:      { background: isMed ? '#2e1a00' : '#0a2210', border: isMed ? '#f59e0b' : '#4ade80' },
-        },
-        font: { color: isMed ? '#f59e0b' : '#4ade80', size: IS_MOBILE ? 13 : 16, face: 'Inter, system-ui, sans-serif', bold: true },
-        borderWidth: 2,
-        shapeProperties: { borderRadius: 20 },
-        margin: { top: 7, right: 16, bottom: 7, left: 16 },
-      });
+  Object.entries(byNode).forEach(([targetId, meds]) => {
+    meds.forEach((m, i) => {
+      const isMed  = m.type === 'treatment';
+      const color  = isMed ? '#f59e0b' : '#4ade80';
+      const bg     = isMed ? 'rgba(35,20,0,0.97)' : 'rgba(7,26,10,0.97)';
+      const border = isMed ? '#d97706' : '#22c55e';
+      const pill   = document.createElement('div');
+      pill.className = 'crt-pill-overlay';
+      pill.dataset.nodeId = targetId;
+      pill.dataset.idx    = i;
+      pill.style.cssText  = `position:absolute;border-radius:20px;padding:4px 12px;font-size:${IS_MOBILE ? 12 : 14}px;font-weight:700;font-family:Inter,system-ui,sans-serif;color:${color};background:${bg};border:1.5px solid ${border};white-space:nowrap;pointer-events:auto;cursor:default;`;
+      pill.textContent = m.name;
+      const tipText = m.note || m.reason || '';
+      if (tipText) {
+        const tipEl = document.getElementById('crtTooltip');
+        pill.addEventListener('mouseover', e => {
+          if (!tipEl) return;
+          tipEl.textContent  = tipText;
+          tipEl.style.left   = (e.clientX + 16) + 'px';
+          tipEl.style.top    = (e.clientY - 10) + 'px';
+          tipEl.style.display = 'block';
+        });
+        pill.addEventListener('mouseout', () => { if (tipEl) tipEl.style.display = 'none'; });
+      }
+      _overlayEl.appendChild(pill);
     });
   });
 
-  if (pillNodes.length) {
-    _visNetwork.body.data.nodes.add(pillNodes);
-  }
+  // Position after DOM paint
+  requestAnimationFrame(_repositionPills);
 }
+
+// (addMedPills kept as no-op for KB-path compatibility)
+function addMedPills() {}
 
 
 // ── Node detail panel ────────────────────────────────────────────────────────
@@ -1495,8 +1493,6 @@ window.declineCrtSecond = function(nodeId) {
 };
 
 let _medsVisible = false;
-let _pillsAdded  = false;
-const _MED_EVENT = 'afterDrawing';
 let _labelMode = 'layman'; // 'expert' | 'layman'
 
 // Nastaví label na všech uzlech podle aktuálního módu a překreslí
@@ -1519,7 +1515,6 @@ window.toggleLabelMode = function() {
   if (!data) return;
   applyLabelMode(data);
   renderTree(data);
-  _pillsAdded = false; // renderTree smaže pill nody — reset stavu
   if (_medsVisible) _applyMedsState();
   if (_openPanelNodeId) openNodePanel(_openPanelNodeId);
   const btn = document.getElementById('crtLabelBtn');
@@ -1535,161 +1530,41 @@ window.toggleMeds = function() {
   _applyMedsState();
 };
 
-let _medDrawFn = null;
+let _medDrawFn = null; // kept for print path compatibility
 
 function _applyMedsState() {
   const btn = document.getElementById('crtMedBtn');
-
-  if (_visNetwork && window._crtData) {
-    if (_medsVisible && !_pillsAdded) {
-      _medDrawFn = _buildMedDrawer();
-      _visNetwork.on(_MED_EVENT, _medDrawFn);
-      _visNetwork.redraw();
-      _pillsAdded = true;
-    } else if (!_medsVisible && _pillsAdded) {
-      if (_medDrawFn) { _visNetwork.off(_MED_EVENT, _medDrawFn); _medDrawFn = null; }
-      _visNetwork.redraw();
-      _pillsAdded = false;
-    }
-  }
-
-  // Starý KB path — toggle HTML pill elementy
+  _buildPillsHTML();
+  // Old KB path — toggle HTML pill elements
   document.querySelectorAll('.crt-med-el')
     .forEach(el => el.classList.toggle('crt-med-hidden', !_medsVisible));
-
   if (btn) btn.classList.toggle('active', _medsVisible);
 }
 
-function _buildMedDrawer(forPrint = false) {
-  const medsMap  = window._crtData?.medications_map  || [];
-  const suppsMap = window._crtData?.supplements_map  || [];
-  const typeColor = { treatment: '#f59e0b', protects: '#4ade80', warning: '#fbbf24' };
-  const OFFSET_X_DEFAULT = 140;
-  const SPACING_Y = 28;
-  const FONT_SIZE = IS_MOBILE ? 13 : 16;
-
-  // Vyloučit z canvasu: root uzel a level-0 uzly (příčiny bez léků)
-  // NEVYLUČOVAT maxLevel — UDE uzly (FaP, ED) mají léky které chceme na plátně
-  const rootId = typeof window._crtData?.root === 'string' ? window._crtData.root : window._crtData?.root?.id;
-  const allCrtNodes = [
-    ...(window._crtData?.nodes || []),
-    ...(window._crtData?.root && typeof window._crtData.root === 'object' ? [window._crtData.root] : []),
-  ];
-  const excludedIds = new Set([
-    rootId,
-    ...allCrtNodes.filter(n => (n.level ?? 0) === 0).map(n => n.id),
-  ].filter(Boolean));
-
-  // Každý lék/doplněk max 1× na canvasu; interakce (warning) jen do panelu
-  const byNode = {};
-  const seenOnCanvas = new Set();
-  [...medsMap, ...suppsMap.map(s => ({ ...s, type: 'protects' }))].forEach(m => {
-    if (!m.name || m.type === 'warning' || seenOnCanvas.has(m.name)) return;
-    const target = (m.targets || []).find(t => !excludedIds.has(t));
-    if (target) {
-      seenOnCanvas.add(m.name);
-      (byNode[target] = byNode[target] || []).push(m);
-    }
-  });
-
-  return function drawMeds(ctx) {
-    if (!_visNetwork) return;
-    const positions = _visNetwork.getPositions();
-
-    ctx.save();
-    ctx.textBaseline = 'middle';
-    ctx.font = `bold ${FONT_SIZE}px Inter, system-ui, sans-serif`;
-
-    Object.entries(byNode).forEach(([nodeId, meds]) => {
-      const pos = positions[nodeId];
-      if (!pos) return; // node filtered out (Top-N) or not yet rendered — skip
-      const toRight  = false;
-      const OFFSET_X = OFFSET_X_DEFAULT;
-      meds.forEach((m, i) => {
-        const color  = typeColor[m.type] || typeColor.treatment;
-        const text   = m.name;
-        const tw     = ctx.measureText(text).width;
-        const ph     = FONT_SIZE + 10;
-        const pw     = tw + 20;
-        const rx     = toRight ? pos.x + OFFSET_X : pos.x - OFFSET_X - pw;
-        const ry     = pos.y - (meds.length - 1) * SPACING_Y / 2 + i * SPACING_Y - ph / 2;
-        const radius = ph / 2;
-        const textX  = toRight ? rx + 10 : rx + pw - 10;
-
-        // Pill background
-        ctx.fillStyle = forPrint ? 'rgba(225,242,255,0.96)' : 'rgba(26,45,64,0.97)';
-        ctx.beginPath();
-        ctx.moveTo(rx + radius, ry);
-        ctx.lineTo(rx + pw - radius, ry);
-        ctx.quadraticCurveTo(rx + pw, ry, rx + pw, ry + radius);
-        ctx.lineTo(rx + pw, ry + ph - radius);
-        ctx.quadraticCurveTo(rx + pw, ry + ph, rx + pw - radius, ry + ph);
-        ctx.lineTo(rx + radius, ry + ph);
-        ctx.quadraticCurveTo(rx, ry + ph, rx, ry + ph - radius);
-        ctx.lineTo(rx, ry + radius);
-        ctx.quadraticCurveTo(rx, ry, rx + radius, ry);
-        ctx.closePath();
-        ctx.fill();
-        ctx.strokeStyle = color;
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-
-        // Text
-        ctx.fillStyle = color;
-        ctx.textAlign = toRight ? 'left' : 'right';
-        ctx.fillText(text, textX, ry + ph / 2);
-      });
-    });
-    ctx.restore();
-  };
-}
-
-// ── Warning badges na canvasu ─────────────────────────────────────────────────
-let _warnDrawFn = null;
+// ── Warning badges — HTML overlay ─────────────────────────────────────────────
+let _warnDrawFn = null; // kept for API compatibility
 
 function _attachWarningBadges() {
-  if (!_visNetwork || !window._crtData) return;
-  const allNodes = [
-    ...(window._crtData.nodes || []),
-    ...(window._crtData.root && typeof window._crtData.root === 'object' ? [window._crtData.root] : []),
-  ];
+  if (!_cy || !_overlayEl || !window._crtData) return;
+  const allNodes  = window._crtData.nodes || [];
   const warnNodes = allNodes.filter(n => n.behavior_warning);
   if (!warnNodes.length) return;
 
-  const R = IS_MOBILE ? 14 : 18; // circumradius rovnostranného trojúhelníku
+  _overlayEl.querySelectorAll('.crt-warn-badge').forEach(el => el.remove());
 
-  _warnDrawFn = function drawWarnings(ctx) {
-    if (!_visNetwork) return;
-    ctx.save();
-    warnNodes.forEach(n => {
-      const bb = _visNetwork.getBoundingBox(n.id);
-      if (!bb) return;
-      const cx = bb.right, cy = bb.top; // střed ikony = roh uzlu
+  warnNodes.forEach(n => {
+    if (!_cy.getElementById(n.id).length) return;
+    const badge = document.createElement('div');
+    badge.className    = 'crt-warn-badge';
+    badge.dataset.nodeId = n.id;
+    const sz = IS_MOBILE ? 18 : 22;
+    badge.style.cssText = `position:absolute;width:${sz}px;height:${sz}px;line-height:${sz}px;text-align:center;font-size:${sz - 4}px;font-weight:900;color:#fff;background:#dc2626;border:1.5px solid #7f1d1d;border-radius:3px;pointer-events:none;`;
+    badge.textContent  = '!';
+    badge.title        = n.behavior_warning;
+    _overlayEl.appendChild(badge);
+  });
 
-      // Rovnostranný trojúhelník špičkou nahoru
-      ctx.fillStyle = '#dc2626';
-      ctx.strokeStyle = '#7f1d1d';
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.moveTo(cx,                cy - R);           // vrchol
-      ctx.lineTo(cx + R * 0.866,   cy + R * 0.5);     // vpravo dole
-      ctx.lineTo(cx - R * 0.866,   cy + R * 0.5);     // vlevo dole
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-
-      // ! uvnitř
-      ctx.fillStyle = '#fff';
-      ctx.font = `bold ${Math.round(R * 0.9)}px Inter, system-ui, sans-serif`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('!', cx, cy + R * 0.15);
-    });
-    ctx.restore();
-  };
-
-  _visNetwork.on('afterDrawing', _warnDrawFn);
-  _visNetwork.redraw();
+  _repositionWarnings();
 }
 
 // ── Boot ─────────────────────────────────────────────────────────────────────
@@ -1733,23 +1608,21 @@ async function enrichContraMap(data) {
   } catch (_) {}
 }
 
-// Export mapy jako PNG — vis.js canvas přímý přístup
+// Export mapy jako PNG
 window.exportCRTImage = function() {
-  const canvas = document.querySelector('#crt-network canvas');
-  if (!canvas) return;
-  canvas.toBlob(b => {
-    const a = document.createElement('a');
-    a.download = 'kauzalni-mapa-zdravi.png';
-    a.href = URL.createObjectURL(b);
-    a.click();
-  }, 'image/png');
+  if (!_cy) return;
+  const dataURL = _cy.png({ output: 'base64uri', bg: '#0b0f1a', scale: 2 });
+  const a = document.createElement('a');
+  a.download = 'kauzalni-mapa-zdravi.png';
+  a.href = dataURL;
+  a.click();
 };
 
 // Tisk — nové okno → originální stránka beze změny (žádný flicker)
 window.printCRT = function() {
-  if (!_visNetwork) return;
+  if (!_cy) return;
 
-  // Panel HTML — připrav před resize canvasu
+  // Panel HTML — připrav před snímkem
   const panelOpen = document.getElementById('crtNodePanel')?.classList.contains('open');
   let panelHtml = '';
   if (panelOpen) {
@@ -1771,78 +1644,32 @@ window.printCRT = function() {
     panelHtml = h;
   }
 
-  const IS_MOBILE = window.innerWidth < 900;
-  const PRINT_W = IS_MOBILE ? 1100 : 2244;
-  const PRINT_H = IS_MOBILE ?  780 : 1587;
-
-  const container = document.getElementById('crt-network');
-  const origW = container.style.width;
-  const origH = container.style.height;
-
-  // Světlé barvy uzlů
-  const dataset = _visNetwork.body.data.nodes;
-  const origColors = {};
-  dataset.forEach(n => { origColors[n.id] = { color: n.color, font: n.font }; });
-  dataset.update(dataset.get().map(n => {
-    const border = n.color?.border || '#4a7a9a';
+  // Dočasně světlé barvy uzlů
+  const origStyles = {};
+  _cy.nodes().forEach(node => {
+    const nid = node.id();
+    origStyles[nid] = { bg: node.data('bg'), tc: node.data('textColor') };
+    const border = node.data('border');
     const isRoot = border === '#c09a22';
     const isApex = border === '#c04040';
     const bg = isRoot ? '#fffbee' : isApex ? '#eaf8ff' : '#f0f5fa';
-    return { id: n.id,
-      color: { background: bg, border, highlight: { background: bg, border }, hover: { background: bg, border } },
-      font:  { color: '#1a2d40', size: n.font?.size || 22, face: n.font?.face || 'Inter, system-ui' },
-    };
-  }));
-  if (_medDrawFn && _pillsAdded) {
-    _visNetwork.off(_MED_EVENT, _medDrawFn);
-    _medDrawFn = _buildMedDrawer(true);
-    _visNetwork.on('afterDrawing', _medDrawFn); // print: pilulky na vrch
-  }
+    node.style({ 'background-color': bg, 'color': '#1a2d40' });
+  });
+  _cy.edges().style({ 'line-color': '#4a7a9a', 'target-arrow-color': '#4a7a9a' });
 
-  // Skryj canvas (opacity) → resize → screenshot
-  container.style.opacity = '0';
-  container.style.width  = PRINT_W + 'px';
-  container.style.height = PRINT_H + 'px';
-  _visNetwork.setSize(PRINT_W + 'px', PRINT_H + 'px');
-  _visNetwork.redraw();
-  _visNetwork.fit({ animation: false });
-  setTimeout(() => { _visNetwork.fit({ animation: false }); }, 300);
+  const dataURL = _cy.png({ output: 'base64uri', bg: '#ffffff', scale: 2 });
 
-  setTimeout(() => {
-    const src = document.querySelector('#crt-network canvas');
+  // Obnovimy ihned — žádný flicker
+  _cy.nodes().forEach(node => {
+    const nid = node.id();
+    node.style({ 'background-color': origStyles[nid]?.bg, 'color': origStyles[nid]?.tc });
+  });
+  _cy.edges().style({ 'line-color': '#4a8aaa', 'target-arrow-color': '#4a8aaa' });
 
-    const restore = () => {
-      dataset.update(Object.entries(origColors).map(([id, c]) => ({ id, ...c })));
-      if (_pillsAdded) {
-        if (_medDrawFn) _visNetwork.off('afterDrawing', _medDrawFn); // print handler → afterDrawing
-        _medDrawFn = _buildMedDrawer(false);
-        _visNetwork.on(_MED_EVENT, _medDrawFn); // restore: zpět na beforeDrawing
-      }
-      container.style.width   = origW;
-      container.style.height  = origH;
-      container.style.opacity = '';
-      _visNetwork.setSize(origW || '100%', origH || '100%');
-      _visNetwork.redraw();
-      _visNetwork.fit({ animation: false });
-    };
-
-    if (!src) { restore(); return; }
-
-    const out = document.createElement('canvas');
-    out.width = src.width; out.height = src.height;
-    const ctx2 = out.getContext('2d');
-    ctx2.fillStyle = '#ffffff';
-    ctx2.fillRect(0, 0, out.width, out.height);
-    ctx2.drawImage(src, 0, 0);
-    const dataURL = out.toDataURL('image/png');
-
-    restore(); // vrať původní stav ihned — žádný flicker
-
-    // Otevři nové okno a tiskni z něj
-    const date = new Date().toLocaleDateString('cs-CZ');
-    const pw = window.open('', '_blank');
-    if (!pw) { alert('Povolte vyskakovací okna pro tisk.'); return; }
-    pw.document.write(`<!DOCTYPE html><html><head>
+  const date = new Date().toLocaleDateString('cs-CZ');
+  const pw = window.open('', '_blank');
+  if (!pw) { alert('Povolte vyskakovací okna pro tisk.'); return; }
+  pw.document.write(`<!DOCTYPE html><html><head>
 <meta charset="utf-8">
 <title>Kauzální mapa zdraví · CHJ · ${date}</title>
 <style>
@@ -1873,13 +1700,12 @@ window.printCRT = function() {
 </div>
 <div class="p-panel">${panelHtml}</div>
 </body></html>`);
-    pw.document.close();
-    pw.onafterprint = () => pw.close();
-    setTimeout(() => {
-      pw.print();
-      setTimeout(() => { if (!pw.closed) pw.close(); }, 2000);
-    }, 50);
-  }, IS_MOBILE ? 1400 : 1000);
+  pw.document.close();
+  pw.onafterprint = () => pw.close();
+  setTimeout(() => {
+    pw.print();
+    setTimeout(() => { if (!pw.closed) pw.close(); }, 2000);
+  }, 50);
 };
 
 // ── Top-N: zobraz jen uzly na nejkratší cestě ROOT→každý killer ──────────────
@@ -2163,6 +1989,7 @@ window._crtCacheKey  = CRT_CACHE_KEY;
 window._loadCRT      = loadCRT;
 window._loadCRTOpus  = loadCRTOpus;
 window._renderTree   = renderTree;
+window._destroyCy    = () => { if (_cy) { _cy.destroy(); _cy = null; } };
 
 boot();
 
@@ -2247,7 +2074,7 @@ async function regenCRT() {
   localStorage.removeItem(window._crtCacheKey);
   document.getElementById('crtLoading').textContent = 'Generuji novou mapu…';
   document.getElementById('crtLoading').classList.remove('hidden');
-  if (_visNetwork) { _visNetwork.destroy(); _visNetwork = null; }
+  if (window._destroyCy) window._destroyCy();
   document.getElementById('crtInjections').innerHTML = '';
   try {
     const data = await window._loadCRTOpus(true);
