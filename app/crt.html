@@ -879,20 +879,20 @@ function renderTree(data) {
           'shape':           'rectangle',
           'label':           'data(label)',
           'text-wrap':       'wrap',
-          'text-max-width':  IS_MOBILE ? 115 : 190,
+          'text-max-width':  IS_MOBILE ? 115 : 200,
           'font-family':     'Inter, system-ui, sans-serif',
-          'font-size':       IS_MOBILE ? 13 : 26,
+          'font-size':       IS_MOBILE ? 13 : 30,
           'color':           'data(textColor)',
           'background-color':'data(bg)',
           'border-color':    'data(border)',
           'border-width':    'data(bw)',
           'border-style':    'data(borderStyle)',
-          'padding':         IS_MOBILE ? 10 : 16,
+          'padding':         IS_MOBILE ? 10 : 18,
           'text-valign':     'center',
           'text-halign':     'center',
           'corner-radius':   8,
-          'width':           IS_MOBILE ? 135 : 215,
-          'height':          IS_MOBILE ? 46 : 74,
+          'width':           IS_MOBILE ? 135 : 240,
+          'height':          IS_MOBILE ? 46 : 82,
         },
       },
       {
@@ -907,7 +907,7 @@ function renderTree(data) {
         },
       },
     ],
-    layout:              { name: 'dagre', rankDir: 'BT', nodeSep: IS_MOBILE ? 70 : 150, rankSep: IS_MOBILE ? 100 : 170, padding: 60 },
+    layout:              { name: 'dagre', rankDir: 'BT', nodeSep: IS_MOBILE ? 60 : 120, rankSep: IS_MOBILE ? 90 : 155, padding: 50 },
     userPanningEnabled:  true,
     userZoomingEnabled:  true,
     autoungrabify:       true,
@@ -935,8 +935,7 @@ function renderTree(data) {
 
   setTimeout(() => {
     if (!_cy) return;
-    _cy.fit(undefined, 60);
-    if (_cy.zoom() < 0.75) { _cy.zoom(0.75); _cy.center(); }
+    _cy.fit(undefined, 40);
 
     // Fan out parallel edges from same source so they don't overlap
     const bySource = {};
@@ -948,11 +947,11 @@ function renderTree(data) {
       if (group.length < 2) return;
       const n = group.length;
       group.forEach((e, i) => {
-        const offset = (i - (n - 1) / 2) * 40;
+        const offset = (i - (n - 1) / 2) * 70;
         e.style({
           'curve-style':             'unbundled-bezier',
           'control-point-distances': [offset],
-          'control-point-weights':   [0.3],
+          'control-point-weights':   [0.35],
         });
       });
     });
