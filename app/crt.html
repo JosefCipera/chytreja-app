@@ -9,6 +9,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@300;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
   <script src="https://cdn.jsdelivr.net/npm/cytoscape@3.28.1/dist/cytoscape.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dagre@0.8.5/dist/dagre.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/cytoscape-dagre@2.5.0/cytoscape-dagre.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -834,25 +836,6 @@ function renderTree(data) {
   const container = document.getElementById('crt-network');
   const edgeSources = new Set(data.edges.map(e => e.from));
 
-  // Fixed positions: 5 branches × levels
-  const BRANCH_X     = { L: -600, LC: -300, C: 0, RC: 300, R: 600 };
-  const LEVEL_Y_SCALE = IS_MOBILE ? 120 : 150;
-  const maxLevel = Math.max(...(data.nodes || []).map(n => n.level ?? 0), 0);
-
-  // Sibling grouping per branch+level for horizontal offset
-  const branchLevelGroups = {};
-  (data.nodes || []).forEach(n => {
-    const key = `${n.branch ?? 'C'}-${n.level ?? 0}`;
-    (branchLevelGroups[key] = branchLevelGroups[key] || []).push(n.id);
-  });
-  {
-    const _brRank = { L: 0, LC: 1, C: 2, RC: 3, R: 4 };
-    const _nById = Object.fromEntries((data.nodes || []).map(n => [n.id, n]));
-    Object.values(branchLevelGroups).forEach(g => {
-      if (g.length > 1) g.sort((a, b) => (_brRank[_nById[a]?.branch] ?? 2) - (_brRank[_nById[b]?.branch] ?? 2));
-    });
-  }
-
   const cyElements = [];
 
   data.nodes.forEach(n => {
@@ -871,19 +854,9 @@ function renderTree(data) {
       bg = '#1a2d40'; border = '#2a4a60'; textColor = '#a7c7df'; bw = 1.5; borderStyle = 'solid';
     }
 
-    const branch   = n.branch ?? 'C';
-    const level    = n.level ?? 0;
-    const groupKey = `${branch}-${level}`;
-    const siblings = branchLevelGroups[groupKey] || [n.id];
-    const sibIdx   = siblings.indexOf(n.id);
-    const sibOff   = siblings.length > 1 ? (sibIdx - (siblings.length - 1) / 2) * (IS_MOBILE ? 220 : 300) : 0;
-    const posX = (BRANCH_X[branch] ?? 0) + sibOff;
-    const posY = (maxLevel - level) * LEVEL_Y_SCALE;
-
     cyElements.push({
       group: 'nodes',
       data: { id: n.id, label: n.label ?? n.id, bg, border, textColor, bw, borderStyle },
-      position: { x: posX, y: posY },
     });
   });
 
@@ -934,7 +907,7 @@ function renderTree(data) {
         },
       },
     ],
-    layout:              { name: 'preset' },
+    layout:              { name: 'dagre', rankDir: 'BT', nodeSep: IS_MOBILE ? 60 : 100, rankSep: IS_MOBILE ? 90 : 140, padding: 60 },
     userPanningEnabled:  true,
     userZoomingEnabled:  true,
     autoungrabify:       true,
@@ -965,22 +938,6 @@ function renderTree(data) {
     _cy.fit(undefined, 60);
     if (_cy.zoom() < 0.65) { _cy.zoom(0.65); _cy.center(); }
 
-    // Same-column edge separation: hrany kde source.x ≈ target.x by se překrývaly.
-    // Seskupíme je podle cíle a zakřivíme střídavě doleva/doprava.
-    const byTarget = {};
-    _cy.edges().forEach(e => {
-      const dx = Math.abs(e.source().position().x - e.target().position().x);
-      if (dx < 30) (byTarget[e.target().id()] = byTarget[e.target().id()] || []).push(e);
-    });
-    const offsets = [55, -55, 110, -110];
-    Object.values(byTarget).forEach(group => {
-      if (group.length < 2) return;
-      group.forEach((e, i) => e.style({
-        'curve-style':              'unbundled-bezier',
-        'control-point-distances':  [offsets[i % offsets.length]],
-        'control-point-weights':    [0.5],
-      }));
-    });
   }, 150);
 
   // Overlays: warning badges + med pills
