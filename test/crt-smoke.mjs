@@ -99,6 +99,9 @@ async function runTest(name, profile, metrics = []) {
 // Josef: FaP + ED, bez doctor_notes, magnesium suplementy
 await runTest('josef', loadFixture('josef'));
 
+// Kovářová: geriatrická, INFLAMMAGING root, hypothyreóza, periferní neuropatie
+await runTest('kovarova', loadFixture('kovarova'));
+
 // ── Výsledek ─────────────────────────────────────────────────────────────────
 
 if (!UPDATE) {

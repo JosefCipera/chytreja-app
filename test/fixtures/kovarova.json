@@ -1,0 +1,21 @@
+{
+  "diagnoses": [
+    "hypothyreóza",
+    "dyslipidémie",
+    "hypertenze",
+    "periferní neuropatie",
+    "porucha spánku"
+  ],
+  "symptoms": [],
+  "family_history": "",
+  "doctor_notes": "",
+  "labs": {},
+  "medications": [
+    { "name": "euthyrox" },
+    { "name": "torvacard" }
+  ],
+  "_height": 162,
+  "_weight": 78,
+  "birth_year": 1948,
+  "sex": "female"
+}
