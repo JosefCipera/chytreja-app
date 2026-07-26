@@ -856,9 +856,9 @@ function renderTree(data) {
 
     let bg, border, textColor, bw, borderStyle;
     if (isApex) {
-      bg = '#200808'; border = '#c04040'; textColor = '#f0a0a0'; bw = 3; borderStyle = 'dashed';
+      bg = '#200808'; border = '#c04040'; textColor = '#f0a0a0'; bw = 4; borderStyle = 'dashed';
     } else if (isRoot) {
-      bg = '#12100a'; border = '#c09a22'; textColor = '#d8a830'; bw = 3; borderStyle = 'solid';
+      bg = '#12100a'; border = '#c09a22'; textColor = '#d8a830'; bw = 4; borderStyle = 'solid';
     } else if (n._inferred) {
       bg = '#1a1d26'; border = '#404560'; textColor = '#606888'; bw = 1.5; borderStyle = 'dashed';
     } else {
@@ -946,19 +946,7 @@ function renderTree(data) {
 
   _cy.one('layoutstop', () => {
     if (!_cy) return;
-    _cy.fit(undefined, 40);
-    // Shift viewport so root node is horizontally centered (pan only, no node move)
-    const d = window._crtData;
-    const rootId = typeof d?.root === 'string' ? d.root : d?.root?.id;
-    if (rootId) {
-      const rootNode = _cy.getElementById(rootId);
-      if (rootNode?.length) {
-        const containerW = _cy.container().offsetWidth;
-        const rootX = rootNode.renderedPosition().x;
-        const shift = containerW / 2 - rootX;
-        if (Math.abs(shift) > 20) _cy.panBy({ x: shift, y: 0 });
-      }
-    }
+    _cy.fit(undefined, IS_MOBILE ? 20 : 60);
   });
 
   // Overlays: warning badges + med pills
