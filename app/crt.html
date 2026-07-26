@@ -879,7 +879,7 @@ function renderTree(data) {
           'shape':           'rectangle',
           'label':           'data(label)',
           'text-wrap':       'wrap',
-          'text-max-width':  IS_MOBILE ? 115 : 200,
+          'text-max-width':  IS_MOBILE ? 120 : 230,
           'font-family':     'Inter, system-ui, sans-serif',
           'font-size':       IS_MOBILE ? 13 : 30,
           'color':           'data(textColor)',
@@ -887,12 +887,12 @@ function renderTree(data) {
           'border-color':    'data(border)',
           'border-width':    'data(bw)',
           'border-style':    'data(borderStyle)',
-          'padding':         IS_MOBILE ? 10 : 18,
+          'padding':         IS_MOBILE ? 10 : 20,
           'text-valign':     'center',
           'text-halign':     'center',
           'corner-radius':   8,
-          'width':           IS_MOBILE ? 135 : 240,
-          'height':          IS_MOBILE ? 46 : 82,
+          'width':           IS_MOBILE ? 140 : 270,
+          'height':          IS_MOBILE ? 50 : 96,
         },
       },
       {
@@ -935,6 +935,17 @@ function renderTree(data) {
 
   _cy.one('layoutstop', () => {
     if (!_cy) return;
+    // Center root node horizontally over the graph
+    const d = window._crtData;
+    const rootId = typeof d?.root === 'string' ? d.root : d?.root?.id;
+    if (rootId) {
+      const rootNode = _cy.getElementById(rootId);
+      if (rootNode?.length) {
+        const xs = _cy.nodes().map(n => n.position('x'));
+        const cx = (Math.min(...xs) + Math.max(...xs)) / 2;
+        rootNode.position('x', cx);
+      }
+    }
     _cy.fit(undefined, 40);
   });
 
@@ -947,10 +958,11 @@ function renderTree(data) {
 // ── HTML overlay helpers for med pills + warning badges ───────────────────────
 function _repositionPills() {
   if (!_cy || !_overlayEl) return;
-  const PILL_GAP  = IS_MOBILE ? 30 : 36;
-  const H_OFFSET  = 14;
+  const ROW_H    = IS_MOBILE ? 28 : 32;   // pill row height incl. gap
+  const COL_GAP  = 8;
+  const V_OFFSET = 10;                    // gap above node top edge
 
-  // Group pills by node so we can center the stack
+  // Group pills by node
   const groups = {};
   _overlayEl.querySelectorAll('.crt-pill-overlay').forEach(pill => {
     const nid = pill.dataset.nodeId;
@@ -962,30 +974,30 @@ function _repositionPills() {
     if (!cyNode?.length) { pills.forEach(p => p.style.display = 'none'); return; }
 
     const pos = cyNode.renderedPosition();
-    const hw  = cyNode.renderedWidth()  / 2;
-    const n   = pills.length;
+    const hh  = cyNode.renderedHeight() / 2;
 
-    // Check if a neighbour node sits in the left pill zone at a similar Y
-    const maxPillW = Math.max(...pills.map(p => p.offsetWidth || 90));
-    const leftBlocked = _cy.nodes().some(nb => {
-      if (nb.id() === nid) return false;
-      const np = nb.renderedPosition();
-      const nhw = nb.renderedWidth() / 2;
-      return Math.abs(np.y - pos.y) < 60
-          && np.x < pos.x
-          && (np.x + nhw) > (pos.x - hw - maxPillW - H_OFFSET - 4);
-    });
+    // Split pills into rows of max 3
+    const MAX_PER_ROW = 3;
+    const rows = [];
+    for (let i = 0; i < pills.length; i += MAX_PER_ROW)
+      rows.push(pills.slice(i, i + MAX_PER_ROW));
 
-    pills.forEach((pill, i) => {
-      const pw = pill.offsetWidth  || 90;
-      const ph = pill.offsetHeight || 28;
-      // Center the whole stack on the node's Y
-      const startY = pos.y - (n * PILL_GAP) / 2 + (PILL_GAP - ph) / 2;
-      pill.style.top  = (startY + i * PILL_GAP) + 'px';
-      pill.style.left = leftBlocked
-        ? (pos.x + hw + H_OFFSET) + 'px'               // right side
-        : (pos.x - hw - pw - H_OFFSET) + 'px';          // left side
-      pill.style.display = '';
+    const totalRowsH = rows.length * ROW_H;
+    // Bottom edge of pill block sits V_OFFSET above node top
+    const blockBottom = pos.y - hh - V_OFFSET;
+
+    rows.forEach((row, ri) => {
+      // Row width = sum of pill widths + gaps
+      const rowW = row.reduce((s, p) => s + (p.offsetWidth || 90) + COL_GAP, -COL_GAP);
+      let x = pos.x - rowW / 2;
+      const rowTop = blockBottom - totalRowsH + ri * ROW_H;
+      row.forEach(pill => {
+        const pw = pill.offsetWidth || 90;
+        pill.style.left    = x + 'px';
+        pill.style.top     = rowTop + 'px';
+        pill.style.display = '';
+        x += pw + COL_GAP;
+      });
     });
   });
 }
