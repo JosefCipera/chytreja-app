@@ -963,8 +963,24 @@ function renderTree(data) {
   setTimeout(() => {
     if (!_cy) return;
     _cy.fit(undefined, 60);
-    // Pokud fit zoom < 0.65, ořízni na 0.65 a vycentruj — zachová čitelnost
     if (_cy.zoom() < 0.65) { _cy.zoom(0.65); _cy.center(); }
+
+    // Same-column edge separation: hrany kde source.x ≈ target.x by se překrývaly.
+    // Seskupíme je podle cíle a zakřivíme střídavě doleva/doprava.
+    const byTarget = {};
+    _cy.edges().forEach(e => {
+      const dx = Math.abs(e.source().position().x - e.target().position().x);
+      if (dx < 30) (byTarget[e.target().id()] = byTarget[e.target().id()] || []).push(e);
+    });
+    const offsets = [55, -55, 110, -110];
+    Object.values(byTarget).forEach(group => {
+      if (group.length < 2) return;
+      group.forEach((e, i) => e.style({
+        'curve-style':              'unbundled-bezier',
+        'control-point-distances':  [offsets[i % offsets.length]],
+        'control-point-weights':    [0.5],
+      }));
+    });
   }, 150);
 
   // Overlays: warning badges + med pills
