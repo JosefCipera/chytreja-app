@@ -8,7 +8,8 @@
         "build:hud": "vite build",
         "sync-content": "node scripts/sync-content.js",
         "test:crt": "node test/crt-smoke.mjs",
-        "test:crt:update": "node test/crt-smoke.mjs -- --update"
+        "test:crt:update": "node test/crt-smoke.mjs -- --update",
+        "build:elk": "esbuild scripts/elk-entry.mjs --bundle --format=iife --global-name=cytoscapeElkPlugin --outfile=app/lib/elk-bundle.js --minify"
     },
     "dependencies": {
         "@anthropic-ai/sdk": "^0.80.0",
@@ -20,6 +21,9 @@
         "@sveltejs/vite-plugin-svelte": "^7.0.0",
         "@tailwindcss/vite": "^4.2.2",
         "autoprefixer": "^10.4.27",
+        "cytoscape-elk": "^2.3.0",
+        "elkjs": "^0.12.0",
+        "esbuild": "^0.27.7",
         "postcss": "^8.5.8",
         "svelte": "^5.55.0",
         "tailwindcss": "^4.2.2",

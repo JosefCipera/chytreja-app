@@ -9,8 +9,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@300;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
   <script src="https://cdn.jsdelivr.net/npm/cytoscape@3.28.1/dist/cytoscape.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/dagre@0.8.5/dist/dagre.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/cytoscape-dagre@2.5.0/cytoscape-dagre.js"></script>
+  <script src="/lib/elk-bundle.js"></script>
+  <script>cytoscape.use(cytoscapeElkPlugin.default || cytoscapeElkPlugin);</script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -907,7 +907,7 @@ function renderTree(data) {
         },
       },
     ],
-    layout: { name: 'dagre', rankDir: 'BT', nodeSep: IS_MOBILE ? 60 : 120, rankSep: IS_MOBILE ? 90 : 155, padding: 50 },
+    layout: { name: 'elk', animate: false, elk: { algorithm: 'layered', 'elk.direction': 'UP', 'elk.layered.spacing.nodeNodeBetweenLayers': IS_MOBILE ? 90 : 155, 'elk.spacing.nodeNode': IS_MOBILE ? 60 : 120, 'elk.edgeRouting': 'ORTHOGONAL', 'elk.layered.crossingMinimization.strategy': 'LAYER_SWEEP' } },
     userPanningEnabled:  true,
     userZoomingEnabled:  true,
     autoungrabify:       true,
@@ -933,34 +933,15 @@ function renderTree(data) {
   });
   _cy.on('render', _repositionOverlays);
 
-  setTimeout(() => {
+  _cy.one('layoutstop', () => {
     if (!_cy) return;
     _cy.fit(undefined, 40);
-
-    // Fan out parallel edges from same source so they don't overlap
-    const bySource = {};
-    _cy.edges().forEach(e => {
-      const src = e.source().id();
-      (bySource[src] = bySource[src] || []).push(e);
-    });
-    Object.values(bySource).forEach(group => {
-      if (group.length < 2) return;
-      const n = group.length;
-      group.forEach((e, i) => {
-        const offset = (i - (n - 1) / 2) * 70;
-        e.style({
-          'curve-style':             'unbundled-bezier',
-          'control-point-distances': [offset],
-          'control-point-weights':   [0.35],
-        });
-      });
-    });
-  }, 250);
+  });
 
   // Overlays: warning badges + med pills
   _initOverlay();
   _warnDrawFn = null;
-  setTimeout(() => _attachWarningBadges(), 280);
+  setTimeout(() => _attachWarningBadges(), 800);
 }
 
 // ── HTML overlay helpers for med pills + warning badges ───────────────────────
