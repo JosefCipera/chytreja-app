@@ -835,8 +835,8 @@ function renderTree(data) {
   const edgeSources = new Set(data.edges.map(e => e.from));
 
   // Fixed positions: 5 branches × levels
-  const BRANCH_X     = { L: -500, LC: -250, C: 0, RC: 250, R: 500 };
-  const LEVEL_Y_SCALE = IS_MOBILE ? 130 : 160;
+  const BRANCH_X     = { L: -500, LC: -500, C: 0, RC: 500, R: 500 };
+  const LEVEL_Y_SCALE = IS_MOBILE ? 130 : 180;
   const maxLevel = Math.max(...(data.nodes || []).map(n => n.level ?? 0), 0);
 
   // Sibling grouping per branch+level for horizontal offset
@@ -906,20 +906,20 @@ function renderTree(data) {
           'shape':           'rectangle',
           'label':           'data(label)',
           'text-wrap':       'wrap',
-          'text-max-width':  IS_MOBILE ? 180 : 260,
+          'text-max-width':  IS_MOBILE ? 120 : 150,
           'font-family':     'Inter, system-ui, sans-serif',
-          'font-size':       IS_MOBILE ? 17 : 22,
+          'font-size':       IS_MOBILE ? 11 : 13,
           'color':           'data(textColor)',
           'background-color':'data(bg)',
           'border-color':    'data(border)',
           'border-width':    'data(bw)',
           'border-style':    'data(borderStyle)',
-          'padding':         IS_MOBILE ? 14 : 18,
+          'padding':         IS_MOBILE ? 10 : 14,
           'text-valign':     'center',
           'text-halign':     'center',
           'corner-radius':   8,
-          'min-width':       IS_MOBILE ? 150 : 200,
-          'min-height':      IS_MOBILE ? 44 : 56,
+          'width':           IS_MOBILE ? 140 : 180,
+          'height':          IS_MOBILE ? 44 : 52,
         },
       },
       {
@@ -959,7 +959,7 @@ function renderTree(data) {
   });
   _cy.on('render', _repositionOverlays);
 
-  setTimeout(() => { if (_cy) _cy.fit(undefined, 40); }, 150);
+  setTimeout(() => { if (_cy) _cy.fit(undefined, 80); }, 150);
 
   // Overlays: warning badges + med pills
   _initOverlay();
