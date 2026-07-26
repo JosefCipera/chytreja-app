@@ -795,6 +795,7 @@ async function loadCRTOpus(force = false, model = undefined) {
 
 // ── Cytoscape.js renderer ────────────────────────────────────────────────────
 const IS_MOBILE = window.innerWidth < 700 || window.screen.width < 700;
+const IS_TABLET = !IS_MOBILE && (window.innerWidth < 1200 || /iPad|Android(?!.*Mobile)/i.test(navigator.userAgent));
 let _cy = null;
 let _overlayEl = null;
 
@@ -1045,7 +1046,9 @@ function _buildPillsHTML() {
       pill.className = 'crt-pill-overlay';
       pill.dataset.nodeId = targetId;
       pill.dataset.idx    = i;
-      pill.style.cssText  = `position:absolute;border-radius:20px;padding:3px 9px;font-size:${IS_MOBILE ? 11 : 12}px;font-weight:500;font-family:Inter,system-ui,sans-serif;color:${color};background:${bg};border:1.5px solid ${border};white-space:nowrap;pointer-events:auto;cursor:default;`;
+      const pillFont = IS_MOBILE ? 11 : IS_TABLET ? 10 : 12;
+      const pillPad  = IS_MOBILE || IS_TABLET ? '2px 7px' : '3px 9px';
+      pill.style.cssText  = `position:absolute;border-radius:20px;padding:${pillPad};font-size:${pillFont}px;font-weight:500;font-family:Inter,system-ui,sans-serif;color:${color};background:${bg};border:1.5px solid ${border};white-space:nowrap;pointer-events:auto;cursor:default;`;
       pill.textContent = m.name;
       const tipText = m.note || m.reason || '';
       if (tipText) {
