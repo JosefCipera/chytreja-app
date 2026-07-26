@@ -50,7 +50,7 @@
     "interaction_note": "Warfarin má velmi úzké terapeutické okno. NSAIDy zesilují jeho antikoagulační účinek a zvyšují riziko krvácení. Nutná pravidelná kontrola INR při jakékoli změně medikace."
   },
   "anopyrin": {
-    "inn": "kyselina acetylsalicylová",
+    "inn": "aspirin",
     "group": "antiagregancium",
     "effect": "ředí krev, chrání srdce a cévy",
     "primary_indication": "Kardiovaskulární prevence",
@@ -66,7 +66,7 @@
     "is_supplement": false
   },
   "stacyl": {
-    "inn": "anopyrin",
+    "inn": "aspirin",
     "group": "antiagregancium",
     "effect": "ředí krev, chrání před mrtvicí",
     "primary_indication": "Prevence recidivy CMP",
