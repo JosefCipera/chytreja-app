@@ -947,22 +947,46 @@ function renderTree(data) {
 // ── HTML overlay helpers for med pills + warning badges ───────────────────────
 function _repositionPills() {
   if (!_cy || !_overlayEl) return;
-  const SPACING_Y = IS_MOBILE ? 32 : 40;
-  const OFFSET_X  = 10; // gap between pill right edge and node left edge
+  const PILL_GAP  = IS_MOBILE ? 30 : 36;
+  const H_OFFSET  = 14;
+
+  // Group pills by node so we can center the stack
+  const groups = {};
   _overlayEl.querySelectorAll('.crt-pill-overlay').forEach(pill => {
-    const targetId = pill.dataset.nodeId;
-    const idx      = parseInt(pill.dataset.idx || '0');
-    const cyNode   = _cy.getElementById(targetId);
-    if (!cyNode || !cyNode.length) { pill.style.display = 'none'; return; }
+    const nid = pill.dataset.nodeId;
+    (groups[nid] = groups[nid] || []).push(pill);
+  });
+
+  Object.entries(groups).forEach(([nid, pills]) => {
+    const cyNode = _cy.getElementById(nid);
+    if (!cyNode?.length) { pills.forEach(p => p.style.display = 'none'); return; }
+
     const pos = cyNode.renderedPosition();
     const hw  = cyNode.renderedWidth()  / 2;
-    const hh  = cyNode.renderedHeight() / 2;
-    const pw  = pill.offsetWidth  || 80;
-    const ph  = pill.offsetHeight || 28;
-    // Pills stacked to the left of the node, centred on node midpoint
-    pill.style.left    = (pos.x - hw - pw - OFFSET_X) + 'px';
-    pill.style.top     = (pos.y - ph / 2 + idx * SPACING_Y) + 'px';
-    pill.style.display = '';
+    const n   = pills.length;
+
+    // Check if a neighbour node sits in the left pill zone at a similar Y
+    const maxPillW = Math.max(...pills.map(p => p.offsetWidth || 90));
+    const leftBlocked = _cy.nodes().some(nb => {
+      if (nb.id() === nid) return false;
+      const np = nb.renderedPosition();
+      const nhw = nb.renderedWidth() / 2;
+      return Math.abs(np.y - pos.y) < 60
+          && np.x < pos.x
+          && (np.x + nhw) > (pos.x - hw - maxPillW - H_OFFSET - 4);
+    });
+
+    pills.forEach((pill, i) => {
+      const pw = pill.offsetWidth  || 90;
+      const ph = pill.offsetHeight || 28;
+      // Center the whole stack on the node's Y
+      const startY = pos.y - (n * PILL_GAP) / 2 + (PILL_GAP - ph) / 2;
+      pill.style.top  = (startY + i * PILL_GAP) + 'px';
+      pill.style.left = leftBlocked
+        ? (pos.x + hw + H_OFFSET) + 'px'               // right side
+        : (pos.x - hw - pw - H_OFFSET) + 'px';          // left side
+      pill.style.display = '';
+    });
   });
 }
 
