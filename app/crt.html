@@ -1045,7 +1045,7 @@ function _buildPillsHTML() {
       pill.className = 'crt-pill-overlay';
       pill.dataset.nodeId = targetId;
       pill.dataset.idx    = i;
-      pill.style.cssText  = `position:absolute;border-radius:20px;padding:3px 9px;font-size:${IS_MOBILE ? 11 : 12}px;font-weight:700;font-family:Inter,system-ui,sans-serif;color:${color};background:${bg};border:1.5px solid ${border};white-space:nowrap;pointer-events:auto;cursor:default;`;
+      pill.style.cssText  = `position:absolute;border-radius:20px;padding:3px 9px;font-size:${IS_MOBILE ? 11 : 12}px;font-weight:500;font-family:Inter,system-ui,sans-serif;color:${color};background:${bg};border:1.5px solid ${border};white-space:nowrap;pointer-events:auto;cursor:default;`;
       pill.textContent = m.name;
       const tipText = m.note || m.reason || '';
       if (tipText) {
