@@ -12,11 +12,12 @@
       "voltaren",
       "aspirin",
       "anopyrin",
+      "stacyl",
       "magnosolv",
       "magnesium bisglycinát",
       "magnesium bisglycinate"
     ],
-    "interaction_note": "S NSAIDy (ibuprofen, voltaren): výrazné riziko krvácení. S hořčíkem: snižuje vstřebávání Pradaxy až o 15 % — vzít Pradaxu 2 h před nebo po hořčíku."
+    "interaction_note": "S NSAIDy (ibuprofen, voltaren): výrazné riziko krvácení. S aspirinem/stacylem: zesiluje antiagregační účinek, zvyšuje riziko krvácení — jen na doporučení lékaře. S hořčíkem: snižuje vstřebávání Pradaxy až o 15 % — vzít Pradaxu 2 h před nebo po hořčíku."
   },
   "xarelto": {
     "inn": "rivaroxaban",
@@ -30,9 +31,10 @@
       "ibuprofen",
       "voltaren",
       "aspirin",
-      "anopyrin"
+      "anopyrin",
+      "stacyl"
     ],
-    "interaction_note": "Xarelto (rivaroxaban) spolu s NSAIDy zvyšuje riziko závažného krvácení. Kombinace poškozuje žaludeční sliznici a zesiluje antikoagulaci — konzultujte s lékařem."
+    "interaction_note": "Xarelto (rivaroxaban) spolu s NSAIDy nebo aspirinem zvyšuje riziko závažného krvácení. NSAID narušuje žaludeční sliznici a zesiluje antikoagulaci — konzultujte s lékařem."
   },
   "warfarin": {
     "inn": "warfarin",
@@ -45,9 +47,20 @@
       "ibalgin",
       "ibuprofen",
       "voltaren",
-      "aspirin"
+      "aspirin",
+      "anopyrin",
+      "stacyl",
+      "valproat",
+      "depakine",
+      "convulex",
+      "liskantin",
+      "liskantín",
+      "primidone",
+      "mysoline",
+      "duloxetin",
+      "dulopren"
     ],
-    "interaction_note": "Warfarin má velmi úzké terapeutické okno. NSAIDy zesilují jeho antikoagulační účinek a zvyšují riziko krvácení. Nutná pravidelná kontrola INR při jakékoli změně medikace."
+    "interaction_note": "Warfarin má velmi úzké terapeutické okno. NSAIDy a aspirin zesilují antikoagulaci a zvyšují riziko krvácení. Valproát zesilovač warfarinu. Primidon (liskantin) urychluje jeho odbourávání — snižuje účinek. Duloxetin dále zesiluje krvácivost. Nutná pravidelná kontrola INR při jakékoli změně medikace."
   },
   "anopyrin": {
     "inn": "aspirin",
@@ -55,7 +68,19 @@
     "effect": "ředí krev, chrání srdce a cévy",
     "primary_indication": "Kardiovaskulární prevence",
     "companion_for": null,
-    "is_supplement": false
+    "is_supplement": false,
+    "interacts_with": [
+      "pradaxa",
+      "xarelto",
+      "warfarin",
+      "ibalgin",
+      "ibuprofen",
+      "voltaren",
+      "valproat",
+      "depakine",
+      "convulex"
+    ],
+    "interaction_note": "Aspirin (i v nízké dávce) zesiluje účinek antikoagulancií (Pradaxa, warfarin, Xarelto) a s NSAIDy výrazně zvyšuje riziko žaludečního krvácení. S valproátem zvyšuje jeho hladinu v krvi. Pokud bereš antikoagulancium, konzultuj nasazení aspirinu s lékařem."
   },
   "aspirin": {
     "inn": "kyselina acetylsalicylová",
@@ -63,7 +88,19 @@
     "effect": "ředí krev a tlumí bolest",
     "primary_indication": "Kardiovaskulární prevence",
     "companion_for": null,
-    "is_supplement": false
+    "is_supplement": false,
+    "interacts_with": [
+      "pradaxa",
+      "xarelto",
+      "warfarin",
+      "ibalgin",
+      "ibuprofen",
+      "voltaren",
+      "valproat",
+      "depakine",
+      "convulex"
+    ],
+    "interaction_note": "Aspirin zesiluje účinek antikoagulancií a s NSAIDy výrazně zvyšuje riziko žaludečního krvácení. S valproátem zvyšuje jeho hladinu v krvi. Při antikoagulační terapii konzultovat s lékařem."
   },
   "stacyl": {
     "inn": "aspirin",
@@ -71,7 +108,16 @@
     "effect": "ředí krev, chrání před mrtvicí",
     "primary_indication": "Prevence recidivy CMP",
     "companion_for": null,
-    "is_supplement": false
+    "is_supplement": false,
+    "interacts_with": [
+      "pradaxa",
+      "xarelto",
+      "warfarin",
+      "ibalgin",
+      "ibuprofen",
+      "voltaren"
+    ],
+    "interaction_note": "Stacyl (aspirin) zesiluje účinek antikoagulancií — kombinace s Pradaxou, warfarinem nebo Xareltem výrazně zvyšuje riziko krvácení. S NSAIDy (ibuprofen, voltaren) poškozuje žaludeční sliznici. Kombinaci konzultujte s lékařem."
   },
   "torvacard": {
     "inn": "atorvastatin",
@@ -79,7 +125,13 @@
     "effect": "snižuje LDL cholesterol v krvi",
     "primary_indication": "Vysoký cholesterol",
     "companion_for": null,
-    "is_supplement": false
+    "is_supplement": false,
+    "interacts_with": [
+      "amlessa",
+      "norvasc",
+      "amlodipin"
+    ],
+    "interaction_note": "Atorvastatin spolu s amlodipinem (10 mg) zvyšuje hladinu statinu v krvi — vyšší riziko svalových potíží (myopatie). Informuj lékaře pokud pociťuješ svalové bolesti nebo slabost."
   },
   "sortis": {
     "inn": "atorvastatin",
@@ -87,31 +139,13 @@
     "effect": "snižuje LDL cholesterol v krvi",
     "primary_indication": "Vysoký cholesterol",
     "companion_for": null,
-    "is_supplement": false
-  },
-  "crestor": {
-    "inn": "rosuvastatin",
-    "group": "statin",
-    "effect": "snižuje LDL cholesterol, zvyšuje HDL",
-    "primary_indication": "Vysoký cholesterol",
-    "companion_for": null,
-    "is_supplement": false
-  },
-  "rosucard": {
-    "inn": "rosuvastatin",
-    "group": "statin",
-    "effect": "snižuje LDL cholesterol, zvyšuje HDL",
-    "primary_indication": "Vysoký cholesterol",
-    "companion_for": null,
-    "is_supplement": false
-  },
-  "rosuvastatin": {
-    "inn": "rosuvastatin",
-    "group": "statin",
-    "effect": "snižuje LDL cholesterol, zvyšuje HDL",
-    "primary_indication": "Vysoký cholesterol",
-    "companion_for": null,
-    "is_supplement": false
+    "is_supplement": false,
+    "interacts_with": [
+      "amlessa",
+      "norvasc",
+      "amlodipin"
+    ],
+    "interaction_note": "Atorvastatin spolu s amlodipinem (10 mg) zvyšuje hladinu statinu v krvi — vyšší riziko svalových potíží. Informuj lékaře pokud pociťuješ svalové bolesti nebo slabost."
   },
   "atorvastatin": {
     "inn": "atorvastatin",
@@ -119,7 +153,49 @@
     "effect": "snižuje LDL cholesterol v krvi",
     "primary_indication": "Vysoký cholesterol",
     "companion_for": null,
-    "is_supplement": false
+    "is_supplement": false,
+    "interacts_with": [
+      "amlessa",
+      "norvasc",
+      "amlodipin"
+    ],
+    "interaction_note": "Atorvastatin spolu s amlodipinem (10 mg) zvyšuje hladinu statinu v krvi — vyšší riziko svalových potíží. Informuj lékaře pokud pociťuješ svalové bolesti nebo slabost."
+  },
+  "crestor": {
+    "inn": "rosuvastatin",
+    "group": "statin",
+    "effect": "snižuje LDL cholesterol, zvyšuje HDL",
+    "primary_indication": "Vysoký cholesterol",
+    "companion_for": null,
+    "is_supplement": false,
+    "interacts_with": [
+      "warfarin"
+    ],
+    "interaction_note": "Rosuvastatin mírně zesiluje účinek warfarinu — po nasazení statinu je vhodná kontrola INR."
+  },
+  "rosucard": {
+    "inn": "rosuvastatin",
+    "group": "statin",
+    "effect": "snižuje LDL cholesterol, zvyšuje HDL",
+    "primary_indication": "Vysoký cholesterol",
+    "companion_for": null,
+    "is_supplement": false,
+    "interacts_with": [
+      "warfarin"
+    ],
+    "interaction_note": "Rosuvastatin mírně zesiluje účinek warfarinu — po nasazení statinu je vhodná kontrola INR."
+  },
+  "rosuvastatin": {
+    "inn": "rosuvastatin",
+    "group": "statin",
+    "effect": "snižuje LDL cholesterol, zvyšuje HDL",
+    "primary_indication": "Vysoký cholesterol",
+    "companion_for": null,
+    "is_supplement": false,
+    "interacts_with": [
+      "warfarin"
+    ],
+    "interaction_note": "Rosuvastatin mírně zesiluje účinek warfarinu — po nasazení statinu je vhodná kontrola INR."
   },
   "nolpaza": {
     "inn": "pantoprazol",
@@ -127,7 +203,13 @@
     "effect": "chrání žaludeční sliznici",
     "primary_indication": "Gastroprotekce při antikoagulační terapii",
     "companion_for": "Pradaxa",
-    "is_supplement": false
+    "is_supplement": false,
+    "interacts_with": [
+      "euthyrox",
+      "letrox",
+      "levothyroxin"
+    ],
+    "interaction_note": "Pantoprazol snižuje kyselost žaludku a může zhoršit vstřebávání levothyroxinu (Euthyrox, Letrox). Vzít tabletu štítné žlázy nalačno, nejméně 4 hodiny od IPP."
   },
   "helicid": {
     "inn": "omeprazol",
@@ -135,7 +217,13 @@
     "effect": "snižuje kyselinu v žaludku",
     "primary_indication": "Gastroprotekce / vředy",
     "companion_for": null,
-    "is_supplement": false
+    "is_supplement": false,
+    "interacts_with": [
+      "euthyrox",
+      "letrox",
+      "levothyroxin"
+    ],
+    "interaction_note": "Omeprazol snižuje kyselost žaludku a může zhoršit vstřebávání levothyroxinu. Vzít tabletu štítné žlázy nalačno, nejméně 4 hodiny od IPP."
   },
   "omeprazol": {
     "inn": "omeprazol",
@@ -143,7 +231,13 @@
     "effect": "snižuje kyselinu v žaludku",
     "primary_indication": "Gastroprotekce / vředy",
     "companion_for": null,
-    "is_supplement": false
+    "is_supplement": false,
+    "interacts_with": [
+      "euthyrox",
+      "letrox",
+      "levothyroxin"
+    ],
+    "interaction_note": "Omeprazol snižuje kyselost žaludku a může zhoršit vstřebávání levothyroxinu. Vzít tabletu štítné žlázy nalačno, nejméně 4 hodiny od IPP."
   },
   "pantoprazol": {
     "inn": "pantoprazol",
@@ -151,7 +245,13 @@
     "effect": "chrání žaludeční sliznici",
     "primary_indication": "Gastroprotekce / vředy",
     "companion_for": null,
-    "is_supplement": false
+    "is_supplement": false,
+    "interacts_with": [
+      "euthyrox",
+      "letrox",
+      "levothyroxin"
+    ],
+    "interaction_note": "Pantoprazol snižuje vstřebávání levothyroxinu — vzít tabletu štítné žlázy nejméně 4 hodiny před nebo po IPP."
   },
   "emanera": {
     "inn": "esomeprazol",
@@ -159,7 +259,13 @@
     "effect": "chrání žaludeční sliznici",
     "primary_indication": "Gastroprotekce / vředy",
     "companion_for": null,
-    "is_supplement": false
+    "is_supplement": false,
+    "interacts_with": [
+      "euthyrox",
+      "letrox",
+      "levothyroxin"
+    ],
+    "interaction_note": "Esomeprazol snižuje vstřebávání levothyroxinu — vzít tabletu štítné žlázy nejméně 4 hodiny před nebo po IPP."
   },
   "betaloc": {
     "inn": "metoprolol",
@@ -167,7 +273,12 @@
     "effect": "zpomaluje srdeční frekvenci, snižuje tlak",
     "primary_indication": "Hypertenze / Fibrilace síní",
     "companion_for": null,
-    "is_supplement": false
+    "is_supplement": false,
+    "interacts_with": [
+      "verapamil",
+      "diltiazem"
+    ],
+    "interaction_note": "Beta-blokátory spolu s verapamilem nebo diltiazemem mohou způsobit závažné zpomalení srdce (bradykardie) nebo srdeční blok. Kombinace je riziková — konzultujte s kardiologem."
   },
   "concor": {
     "inn": "bisoprolol",
@@ -175,7 +286,12 @@
     "effect": "zpomaluje srdeční frekvenci, snižuje tlak",
     "primary_indication": "Hypertenze / srdeční selhání",
     "companion_for": null,
-    "is_supplement": false
+    "is_supplement": false,
+    "interacts_with": [
+      "verapamil",
+      "diltiazem"
+    ],
+    "interaction_note": "Beta-blokátory spolu s verapamilem nebo diltiazemem mohou způsobit závažné zpomalení srdce (bradykardie) nebo srdeční blok. Kombinace je riziková — konzultujte s kardiologem."
   },
   "metoprolol": {
     "inn": "metoprolol",
@@ -183,7 +299,12 @@
     "effect": "zpomaluje srdeční frekvenci, snižuje tlak",
     "primary_indication": "Hypertenze / Fibrilace síní",
     "companion_for": null,
-    "is_supplement": false
+    "is_supplement": false,
+    "interacts_with": [
+      "verapamil",
+      "diltiazem"
+    ],
+    "interaction_note": "Beta-blokátory spolu s verapamilem nebo diltiazemem mohou způsobit závažné zpomalení srdce (bradykardie) nebo srdeční blok. Konzultujte s kardiologem."
   },
   "bisoprolol": {
     "inn": "bisoprolol",
@@ -191,7 +312,12 @@
     "effect": "zpomaluje srdeční frekvenci, snižuje tlak",
     "primary_indication": "Hypertenze / srdeční selhání",
     "companion_for": null,
-    "is_supplement": false
+    "is_supplement": false,
+    "interacts_with": [
+      "verapamil",
+      "diltiazem"
+    ],
+    "interaction_note": "Beta-blokátory spolu s verapamilem nebo diltiazemem mohou způsobit závažné zpomalení srdce (bradykardie) nebo srdeční blok. Konzultujte s kardiologem."
   },
   "prestarium": {
     "inn": "perindopril",
@@ -199,7 +325,17 @@
     "effect": "rozšiřuje cévy, snižuje krevní tlak",
     "primary_indication": "Hypertenze",
     "companion_for": null,
-    "is_supplement": false
+    "is_supplement": false,
+    "interacts_with": [
+      "kalnormin",
+      "slow-k",
+      "draslík",
+      "tezeo",
+      "olmesartan",
+      "ibalgin",
+      "ibuprofen"
+    ],
+    "interaction_note": "ACE inhibitory zvyšují hladinu draslíku — kombinace s kaliovými doplňky (Kalnormin, draslík) nebo sartany může vést k hyperkalemii (poruchy srdečního rytmu). NSAIDy snižují účinnost a mohou poškodit ledviny."
   },
   "perindopril": {
     "inn": "perindopril",
@@ -207,7 +343,16 @@
     "effect": "rozšiřuje cévy, snižuje krevní tlak",
     "primary_indication": "Hypertenze",
     "companion_for": null,
-    "is_supplement": false
+    "is_supplement": false,
+    "interacts_with": [
+      "kalnormin",
+      "slow-k",
+      "draslík",
+      "tezeo",
+      "ibalgin",
+      "ibuprofen"
+    ],
+    "interaction_note": "ACE inhibitory zvyšují hladinu draslíku — kombinace s kaliovými doplňky nebo sartany může vést k hyperkalemii. NSAIDy snižují účinnost a mohou poškodit ledviny."
   },
   "tritace": {
     "inn": "ramipril",
@@ -215,7 +360,16 @@
     "effect": "rozšiřuje cévy, snižuje krevní tlak",
     "primary_indication": "Hypertenze / srdeční selhání",
     "companion_for": null,
-    "is_supplement": false
+    "is_supplement": false,
+    "interacts_with": [
+      "kalnormin",
+      "slow-k",
+      "draslík",
+      "tezeo",
+      "ibalgin",
+      "ibuprofen"
+    ],
+    "interaction_note": "ACE inhibitory zvyšují hladinu draslíku — kombinace s kaliovými doplňky nebo sartany může vést k hyperkalemii (poruchy srdečního rytmu). NSAIDy snižují účinnost a mohou poškodit ledviny."
   },
   "amlessa": {
     "inn": "amlodipin",
@@ -223,7 +377,13 @@
     "effect": "rozšiřuje cévy, snižuje krevní tlak",
     "primary_indication": "Hypertenze",
     "companion_for": null,
-    "is_supplement": false
+    "is_supplement": false,
+    "interacts_with": [
+      "torvacard",
+      "sortis",
+      "atorvastatin"
+    ],
+    "interaction_note": "Amlodipin (10 mg) zvyšuje hladinu atorvastatinu v krvi — vyšší riziko svalových potíží (myopatie). Informuj lékaře pokud pociťuješ svalové bolesti nebo slabost."
   },
   "norvasc": {
     "inn": "amlodipin",
@@ -231,7 +391,13 @@
     "effect": "rozšiřuje cévy, snižuje krevní tlak",
     "primary_indication": "Hypertenze",
     "companion_for": null,
-    "is_supplement": false
+    "is_supplement": false,
+    "interacts_with": [
+      "torvacard",
+      "sortis",
+      "atorvastatin"
+    ],
+    "interaction_note": "Amlodipin (10 mg) zvyšuje hladinu atorvastatinu v krvi — vyšší riziko svalových potíží. Informuj lékaře pokud pociťuješ svalové bolesti nebo slabost."
   },
   "kalnormin": {
     "inn": "kalium-chlorid",
@@ -239,7 +405,14 @@
     "effect": "doplňuje draslík, stabilizuje srdeční rytmus",
     "primary_indication": "Srdeční arytmie / hypokalemie",
     "companion_for": null,
-    "is_supplement": false
+    "is_supplement": false,
+    "interacts_with": [
+      "prestarium",
+      "perindopril",
+      "tritace",
+      "tezeo"
+    ],
+    "interaction_note": "Kaliové doplňky spolu s ACE inhibitory (perindopril, ramipril) nebo sartany (olmesartan) mohou způsobit nebezpečně vysokou hladinu draslíku (hyperkalemie) — poruchy srdečního rytmu až srdeční zástava. Kombinaci je nutné pravidelně monitorovat."
   },
   "slow-k": {
     "inn": "kalium-chlorid",
@@ -247,7 +420,14 @@
     "effect": "doplňuje draslík, stabilizuje srdeční rytmus",
     "primary_indication": "Srdeční arytmie / hypokalemie",
     "companion_for": null,
-    "is_supplement": false
+    "is_supplement": false,
+    "interacts_with": [
+      "prestarium",
+      "perindopril",
+      "tritace",
+      "tezeo"
+    ],
+    "interaction_note": "Kaliové doplňky spolu s ACE inhibitory nebo sartany mohou způsobit hyperkalemii — poruchy srdečního rytmu. Kombinaci je nutné monitorovat."
   },
   "milurit": {
     "inn": "allopurinol",
@@ -255,7 +435,11 @@
     "effect": "snižuje kyselinu močovou v krvi",
     "primary_indication": "Dna / hyperurikémie",
     "companion_for": null,
-    "is_supplement": false
+    "is_supplement": false,
+    "interacts_with": [
+      "warfarin"
+    ],
+    "interaction_note": "Allopurinol zesiluje účinek warfarinu — po nasazení je vhodná kontrola INR. Začínat s nízkou dávkou a postupně zvyšovat."
   },
   "allopurinol": {
     "inn": "allopurinol",
@@ -263,7 +447,11 @@
     "effect": "snižuje kyselinu močovou v krvi",
     "primary_indication": "Dna / hyperurikémie",
     "companion_for": null,
-    "is_supplement": false
+    "is_supplement": false,
+    "interacts_with": [
+      "warfarin"
+    ],
+    "interaction_note": "Allopurinol zesiluje účinek warfarinu — po nasazení je vhodná kontrola INR."
   },
   "ibalgin": {
     "inn": "ibuprofen",
@@ -277,9 +465,13 @@
       "pradaxa",
       "xarelto",
       "warfarin",
-      "anopyrin"
+      "anopyrin",
+      "stacyl",
+      "prestarium",
+      "perindopril",
+      "tritace"
     ],
-    "interaction_note": "Ibalgin (ibuprofen) spolu s antikoagulanty nebo antiagregancii výrazně zvyšuje riziko krvácení. NSAID narušuje sliznici žaludku a inhibuje destičky, čímž zesiluje účinek léků na ředění krve. Kombinace může způsobit závažné gastrointestinální nebo vnitřní krvácení — neužívat bez konzultace s lékařem."
+    "interaction_note": "Ibalgin (ibuprofen) spolu s antikoagulanty nebo antiagregancii výrazně zvyšuje riziko krvácení. S ACE inhibitory (Prestarium, Tritace) oslabuje jejich účinnost a může poškodit ledviny. Kombinace s Pradaxou nebo warfarinem může způsobit závažné gastrointestinální nebo vnitřní krvácení — neužívat bez konzultace s lékařem."
   },
   "ibuprofen": {
     "inn": "ibuprofen",
@@ -293,9 +485,13 @@
       "pradaxa",
       "xarelto",
       "warfarin",
-      "anopyrin"
+      "anopyrin",
+      "stacyl",
+      "prestarium",
+      "perindopril",
+      "tritace"
     ],
-    "interaction_note": "Ibuprofen spolu s antikoagulanty výrazně zvyšuje riziko krvácení. Kombinace může způsobit závažné GI nebo vnitřní krvácení."
+    "interaction_note": "Ibuprofen spolu s antikoagulanty výrazně zvyšuje riziko krvácení. S ACE inhibitory oslabuje jejich účinnost a může poškodit ledviny. Kombinaci konzultovat s lékařem."
   },
   "voltaren": {
     "inn": "diklofenak",
@@ -309,9 +505,10 @@
       "pradaxa",
       "xarelto",
       "warfarin",
-      "anopyrin"
+      "anopyrin",
+      "stacyl"
     ],
-    "interaction_note": "Voltaren (diklofenak) spolu s antikoagulanty zvyšuje riziko závažného krvácení. Neužívat bez konzultace s lékařem."
+    "interaction_note": "Voltaren (diklofenak) spolu s antikoagulanty nebo antiagregancii zvyšuje riziko závažného krvácení. Neužívat bez konzultace s lékařem."
   },
   "vizarsin": {
     "inn": "sildenafil",
@@ -396,7 +593,15 @@
     "effect": "nahrazuje hormon štítné žlázy",
     "primary_indication": "Hypothyreóza",
     "companion_for": null,
-    "is_supplement": false
+    "is_supplement": false,
+    "interacts_with": [
+      "omeprazol",
+      "helicid",
+      "pantoprazol",
+      "nolpaza",
+      "emanera"
+    ],
+    "interaction_note": "Levothyroxin se nejlépe vstřebává nalačno. IPP (omeprazol, pantoprazol) snižují kyselost žaludku a zhoršují vstřebávání — vzít nejméně 4 hodiny od IPP. Vápník a železo také blokují vstřebávání."
   },
   "letrox": {
     "inn": "levothyroxin",
@@ -404,7 +609,15 @@
     "effect": "nahrazuje hormon štítné žlázy",
     "primary_indication": "Hypothyreóza",
     "companion_for": null,
-    "is_supplement": false
+    "is_supplement": false,
+    "interacts_with": [
+      "omeprazol",
+      "helicid",
+      "pantoprazol",
+      "nolpaza",
+      "emanera"
+    ],
+    "interaction_note": "Levothyroxin se nejlépe vstřebává nalačno. IPP (omeprazol, pantoprazol) zhoršují vstřebávání — vzít nejméně 4 hodiny od IPP."
   },
   "mirtazapin": {
     "inn": "mirtazapin",
@@ -414,9 +627,13 @@
     "companion_for": null,
     "is_supplement": false,
     "interacts_with": [
-      "tramadol"
+      "tramadol",
+      "doreta",
+      "palgotal",
+      "amitriptylin",
+      "saroten"
     ],
-    "interaction_note": "Mirtazapin spolu s Tramadolem zvyšuje hladinu serotoninu — kombinace může vyvolat serotoninový syndrom (třes, zmatenost, zrychlený tep). Informujte lékaře o všech užívaných lécích."
+    "interaction_note": "Mirtazapin spolu s Tramadolem nebo tricyklickými antidepresivy (amitriptylin) zvyšuje hladinu serotoninu — kombinace může vyvolat serotoninový syndrom (třes, zmatenost, zrychlený tep). Informujte lékaře o všech užívaných lécích."
   },
   "esoprex": {
     "inn": "escitalopram",
@@ -426,9 +643,31 @@
     "companion_for": null,
     "is_supplement": false,
     "interacts_with": [
-      "tramadol"
+      "tramadol",
+      "doreta",
+      "palgotal",
+      "warfarin",
+      "ibalgin",
+      "ibuprofen"
     ],
-    "interaction_note": "Escitalopram spolu s Tramadolem zvyšuje riziko serotoninového syndromu. Tramadol má slabý serotoninergní účinek — v kombinaci s SSRI může dojít k nebezpečné akumulaci serotoninu."
+    "interaction_note": "Escitalopram spolu s Tramadolem zvyšuje riziko serotoninového syndromu. S warfarinem a NSAIDy zesiluje riziko krvácení — SSRI inhibují destičky a prodlužují krvácení."
+  },
+  "escitalopram": {
+    "inn": "escitalopram",
+    "group": "antidepresivum (SSRI)",
+    "effect": "zmírňuje depresi a úzkost",
+    "primary_indication": "Deprese a úzkost",
+    "companion_for": null,
+    "is_supplement": false,
+    "interacts_with": [
+      "tramadol",
+      "doreta",
+      "palgotal",
+      "warfarin",
+      "ibalgin",
+      "ibuprofen"
+    ],
+    "interaction_note": "Escitalopram spolu s Tramadolem zvyšuje riziko serotoninového syndromu. S warfarinem a NSAIDy zesiluje riziko krvácení."
   },
   "dulopren": {
     "inn": "duloxetin",
@@ -436,7 +675,17 @@
     "effect": "tlumí bolest nervů a zlepšuje náladu",
     "primary_indication": "Periferní neuropatie / Deprese",
     "companion_for": null,
-    "is_supplement": false
+    "is_supplement": false,
+    "interacts_with": [
+      "tramadol",
+      "doreta",
+      "palgotal",
+      "warfarin",
+      "ibalgin",
+      "ibuprofen",
+      "voltaren"
+    ],
+    "interaction_note": "Duloxetin spolu s Tramadolem zvyšuje riziko serotoninového syndromu (třes, zmatenost, zrychlený tep). S warfarinem a NSAIDy zesiluje riziko krvácení — SNRI inhibují destičky. Kombinaci hlásit lékaři."
   },
   "duloxetin": {
     "inn": "duloxetin",
@@ -444,7 +693,17 @@
     "effect": "tlumí bolest nervů a zlepšuje náladu",
     "primary_indication": "Periferní neuropatie / Deprese",
     "companion_for": null,
-    "is_supplement": false
+    "is_supplement": false,
+    "interacts_with": [
+      "tramadol",
+      "doreta",
+      "palgotal",
+      "warfarin",
+      "ibalgin",
+      "ibuprofen",
+      "voltaren"
+    ],
+    "interaction_note": "Duloxetin spolu s Tramadolem zvyšuje riziko serotoninového syndromu. S warfarinem a NSAIDy zesiluje riziko krvácení. Kombinaci hlásit lékaři."
   },
   "tramadol": {
     "inn": "tramadol",
@@ -458,9 +717,16 @@
       "esoprex",
       "escitalopram",
       "duloxetin",
-      "dulopren"
+      "dulopren",
+      "amitriptylin",
+      "saroten",
+      "zolpidem",
+      "stilnox",
+      "hypnogen",
+      "gabapentin",
+      "neurontin"
     ],
-    "interaction_note": "Tramadol má slabý serotoninergní účinek — v kombinaci s antidepresivy (SSRI, SNRI, mirtazapin) hrozí serotoninový syndrom. Příznaky: třes, zmatenost, pocení, zrychlený tep. Kombinaci konzultujte s lékařem."
+    "interaction_note": "Tramadol má slabý serotoninergní účinek — v kombinaci s antidepresivy (SSRI, SNRI, mirtazapin, amitriptylin) hrozí serotoninový syndrom. S hypnotiky (zolpidem) a gabapentinem zesiluje útlum CNS — zvýšené riziko útlumu dýchání. Kombinaci konzultujte s lékařem."
   },
   "doreta": {
     "inn": "tramadol+paracetamol",
@@ -468,7 +734,22 @@
     "effect": "tlumí silnou bolest",
     "primary_indication": "Chronická bolest pohybového aparátu",
     "companion_for": null,
-    "is_supplement": false
+    "is_supplement": false,
+    "interacts_with": [
+      "mirtazapin",
+      "esoprex",
+      "escitalopram",
+      "duloxetin",
+      "dulopren",
+      "amitriptylin",
+      "saroten",
+      "zolpidem",
+      "stilnox",
+      "hypnogen",
+      "gabapentin",
+      "neurontin"
+    ],
+    "interaction_note": "Doreta obsahuje tramadol — v kombinaci s antidepresivy (SSRI, SNRI, mirtazapin, amitriptylin) hrozí serotoninový syndrom. S hypnotiky (zolpidem) a gabapentinem zesiluje útlum CNS. Kombinaci konzultujte s lékařem."
   },
   "palgotal": {
     "inn": "tramadol+paracetamol",
@@ -476,7 +757,20 @@
     "effect": "tlumí středně silnou a silnou bolest",
     "primary_indication": "Chronická bolest pohybového aparátu",
     "companion_for": null,
-    "is_supplement": false
+    "is_supplement": false,
+    "interacts_with": [
+      "mirtazapin",
+      "esoprex",
+      "escitalopram",
+      "duloxetin",
+      "dulopren",
+      "amitriptylin",
+      "saroten",
+      "zolpidem",
+      "stilnox",
+      "hypnogen"
+    ],
+    "interaction_note": "Palgotal obsahuje tramadol — v kombinaci s antidepresivy hrozí serotoninový syndrom. S hypnotiky (zolpidem) zesiluje útlum CNS. Kombinaci konzultujte s lékařem."
   },
   "ibandronat": {
     "inn": "ibandronic acid",
@@ -524,7 +818,11 @@
     "effect": "zmírňuje nekontrolovatelný třes rukou",
     "primary_indication": "Esenciální tremor",
     "companion_for": null,
-    "is_supplement": false
+    "is_supplement": false,
+    "interacts_with": [
+      "warfarin"
+    ],
+    "interaction_note": "Primidon (liskantin) je silný induktor jaterních enzymů — urychluje odbourávání warfarinu a snižuje jeho účinnost. Pokud bereš warfarin, je nutná pravidelná kontrola INR při každé změně dávky primidonu."
   },
   "liskantín": {
     "inn": "primidone",
@@ -532,7 +830,11 @@
     "effect": "zmírňuje nekontrolovatelný třes rukou",
     "primary_indication": "Esenciální tremor",
     "companion_for": null,
-    "is_supplement": false
+    "is_supplement": false,
+    "interacts_with": [
+      "warfarin"
+    ],
+    "interaction_note": "Primidon (liskantín) je silný induktor jaterních enzymů — urychluje odbourávání warfarinu a snižuje jeho účinnost. Nutná kontrola INR."
   },
   "tezeo": {
     "inn": "olmesartan",
@@ -540,7 +842,16 @@
     "effect": "snižuje krevní tlak, chrání cévy a ledviny",
     "primary_indication": "Hypertenze",
     "companion_for": null,
-    "is_supplement": false
+    "is_supplement": false,
+    "interacts_with": [
+      "kalnormin",
+      "slow-k",
+      "draslík",
+      "prestarium",
+      "perindopril",
+      "tritace"
+    ],
+    "interaction_note": "Sartany (olmesartan) zvyšují hladinu draslíku — kombinace s kaliovými doplňky nebo ACE inhibitory (Prestarium, Tritace) zvyšuje riziko hyperkalemie (poruchy srdečního rytmu). Kombinace dvou léků na tlak (ARB + ACE) obecně nedoporučována."
   },
   "asolfena": {
     "inn": "solifenacin",
@@ -582,7 +893,18 @@
     "effect": "pomáhá rychle usnout a spát déle",
     "primary_indication": "Insomnie",
     "companion_for": null,
-    "is_supplement": false
+    "is_supplement": false,
+    "interacts_with": [
+      "tramadol",
+      "doreta",
+      "palgotal",
+      "mirtazapin",
+      "gabapentin",
+      "neurontin",
+      "amitriptylin",
+      "saroten"
+    ],
+    "interaction_note": "Zolpidem s jinými tlumivými látkami (tramadol, gabapentin, antidepresiva) zesiluje sedaci a zvyšuje riziko útlumu dýchání a pádů — zvláště u starších. Alkohol je absolutně zakázán."
   },
   "stilnox": {
     "inn": "zolpidem",
@@ -590,7 +912,16 @@
     "effect": "pomáhá rychle usnout a spát déle",
     "primary_indication": "Insomnie",
     "companion_for": null,
-    "is_supplement": false
+    "is_supplement": false,
+    "interacts_with": [
+      "tramadol",
+      "doreta",
+      "palgotal",
+      "mirtazapin",
+      "gabapentin",
+      "amitriptylin"
+    ],
+    "interaction_note": "Stilnox (zolpidem) s tlumivými látkami (tramadol, gabapentin, antidepresiva) zesiluje útlum CNS — riziko pádů a útlumu dýchání. Alkohol zakázán."
   },
   "hypnogen": {
     "inn": "zolpidem",
@@ -598,7 +929,16 @@
     "effect": "pomáhá rychle usnout a spát déle",
     "primary_indication": "Insomnie",
     "companion_for": null,
-    "is_supplement": false
+    "is_supplement": false,
+    "interacts_with": [
+      "tramadol",
+      "doreta",
+      "palgotal",
+      "mirtazapin",
+      "gabapentin",
+      "amitriptylin"
+    ],
+    "interaction_note": "Hypnogen (zolpidem) s tlumivými látkami zesiluje útlum CNS — riziko pádů a útlumu dýchání. Alkohol zakázán."
   },
   "ozempic": {
     "inn": "semaglutid",
@@ -678,7 +1018,14 @@
     "effect": "doplňuje draslík, stabilizuje srdeční rytmus",
     "primary_indication": "Hypokalemie / srdeční arytmie",
     "companion_for": null,
-    "is_supplement": false
+    "is_supplement": false,
+    "interacts_with": [
+      "prestarium",
+      "perindopril",
+      "tritace",
+      "tezeo"
+    ],
+    "interaction_note": "Kaliové doplňky spolu s ACE inhibitory nebo sartany mohou způsobit hyperkalemii — nebezpečně vysokou hladinu draslíku s rizikem poruch srdečního rytmu. Kombinaci monitorovat."
   },
   "magnosolv": {
     "inn": "magnesium-citrát",
@@ -782,7 +1129,17 @@
     "effect": "tlumí bolest a napětí, zlepšuje spánek",
     "primary_indication": "Prevence tenzních bolestí hlavy / deprese",
     "companion_for": null,
-    "is_supplement": false
+    "is_supplement": false,
+    "interacts_with": [
+      "tramadol",
+      "doreta",
+      "palgotal",
+      "mirtazapin",
+      "zolpidem",
+      "stilnox",
+      "hypnogen"
+    ],
+    "interaction_note": "Amitriptylin zesiluje účinek dalších tlumivých léků (tramadol, hypnotika) — zvýšené riziko útlumu CNS a pádů. S mirtazapinem nebo tramadolem hrozí serotoninový syndrom. Anticholinergní účinky (sucho v ústech, zácpa, zmatenost) se zesilují s jinými anticholinergiky."
   },
   "saroten": {
     "inn": "amitriptyline",
@@ -790,7 +1147,16 @@
     "effect": "tlumí bolest a napětí, zlepšuje spánek",
     "primary_indication": "Prevence tenzních bolestí hlavy / deprese",
     "companion_for": null,
-    "is_supplement": false
+    "is_supplement": false,
+    "interacts_with": [
+      "tramadol",
+      "doreta",
+      "palgotal",
+      "mirtazapin",
+      "zolpidem",
+      "stilnox"
+    ],
+    "interaction_note": "Saroten (amitriptylin) zesiluje účinek tramadolu a hypnotik — riziko útlumu CNS a pádů. S mirtazapinem nebo tramadolem hrozí serotoninový syndrom."
   },
   "nortriptylin": {
     "inn": "nortriptyline",
@@ -806,7 +1172,12 @@
     "effect": "zpomaluje srdce, snižuje třes a napětí",
     "primary_indication": "Prevence migrény / esenciální třes",
     "companion_for": null,
-    "is_supplement": false
+    "is_supplement": false,
+    "interacts_with": [
+      "verapamil",
+      "diltiazem"
+    ],
+    "interaction_note": "Propranolol spolu s verapamilem nebo diltiazemem může způsobit závažnou bradykardii nebo srdeční blok. U diabetiků na inzulínu maskuje příznaky hypoglykémie (třes, tachykardie) — zůstává pocení jako varovný signál."
   },
   "inderal": {
     "inn": "propranolol",
@@ -814,7 +1185,12 @@
     "effect": "zpomaluje srdce, snižuje třes a napětí",
     "primary_indication": "Prevence migrény / esenciální třes",
     "companion_for": null,
-    "is_supplement": false
+    "is_supplement": false,
+    "interacts_with": [
+      "verapamil",
+      "diltiazem"
+    ],
+    "interaction_note": "Propranolol spolu s verapamilem nebo diltiazemem může způsobit závažnou bradykardii nebo srdeční blok. U diabetiků maskuje příznaky hypoglykémie."
   },
   "topiramat": {
     "inn": "topiramate",
@@ -838,7 +1214,17 @@
     "effect": "tlumí nervové vzruchy, snižuje třes",
     "primary_indication": "Neuropatická bolest / esenciální třes",
     "companion_for": null,
-    "is_supplement": false
+    "is_supplement": false,
+    "interacts_with": [
+      "tramadol",
+      "doreta",
+      "palgotal",
+      "zolpidem",
+      "stilnox",
+      "hypnogen",
+      "mirtazapin"
+    ],
+    "interaction_note": "Gabapentin s opiáty (tramadol) nebo hypnotiky (zolpidem) výrazně zesiluje útlum CNS — zvýšené riziko útlumu dýchání a pádů, zvláště ve spánku nebo u starších. Kombinaci hlásit lékaři."
   },
   "neurontin": {
     "inn": "gabapentin",
@@ -846,7 +1232,16 @@
     "effect": "tlumí nervové vzruchy, snižuje třes",
     "primary_indication": "Neuropatická bolest / esenciální třes",
     "companion_for": null,
-    "is_supplement": false
+    "is_supplement": false,
+    "interacts_with": [
+      "tramadol",
+      "doreta",
+      "palgotal",
+      "zolpidem",
+      "stilnox",
+      "mirtazapin"
+    ],
+    "interaction_note": "Gabapentin s opiáty nebo hypnotiky zesiluje útlum CNS — riziko útlumu dýchání a pádů. Kombinaci hlásit lékaři."
   },
   "primidone": {
     "inn": "primidone",
@@ -854,7 +1249,11 @@
     "effect": "potlačuje nervové výboje způsobující třes",
     "primary_indication": "Esenciální třes",
     "companion_for": null,
-    "is_supplement": false
+    "is_supplement": false,
+    "interacts_with": [
+      "warfarin"
+    ],
+    "interaction_note": "Primidon je silný induktor jaterních enzymů — urychluje odbourávání warfarinu a snižuje jeho účinnost. Nutná kontrola INR při každé změně dávky."
   },
   "mysoline": {
     "inn": "primidone",
@@ -862,7 +1261,11 @@
     "effect": "potlačuje nervové výboje způsobující třes",
     "primary_indication": "Esenciální třes",
     "companion_for": null,
-    "is_supplement": false
+    "is_supplement": false,
+    "interacts_with": [
+      "warfarin"
+    ],
+    "interaction_note": "Primidon (mysoline) urychluje odbourávání warfarinu — snižuje jeho účinnost. Nutná kontrola INR."
   },
   "valproat": {
     "inn": "valproate",
@@ -870,7 +1273,14 @@
     "effect": "stabilizuje elektrickou aktivitu mozku",
     "primary_indication": "Prevence migrény / epilepsie",
     "companion_for": null,
-    "is_supplement": false
+    "is_supplement": false,
+    "interacts_with": [
+      "aspirin",
+      "anopyrin",
+      "stacyl",
+      "warfarin"
+    ],
+    "interaction_note": "Aspirin (i v nízké dávce) zvyšuje volnou hladinu valproátu v krvi — riziko toxicity. S warfarinem zesiluje riziko krvácení. Informuj lékaře o všech lécích."
   },
   "depakine": {
     "inn": "valproate",
@@ -878,7 +1288,14 @@
     "effect": "stabilizuje elektrickou aktivitu mozku",
     "primary_indication": "Prevence migrény / epilepsie",
     "companion_for": null,
-    "is_supplement": false
+    "is_supplement": false,
+    "interacts_with": [
+      "aspirin",
+      "anopyrin",
+      "stacyl",
+      "warfarin"
+    ],
+    "interaction_note": "Aspirin zvyšuje volnou hladinu valproátu — riziko toxicity. S warfarinem zesiluje krvácivost. Informuj lékaře o všech lécích."
   },
   "convulex": {
     "inn": "valproate",
@@ -886,7 +1303,14 @@
     "effect": "stabilizuje elektrickou aktivitu mozku",
     "primary_indication": "Prevence migrény / epilepsie",
     "companion_for": null,
-    "is_supplement": false
+    "is_supplement": false,
+    "interacts_with": [
+      "aspirin",
+      "anopyrin",
+      "stacyl",
+      "warfarin"
+    ],
+    "interaction_note": "Aspirin zvyšuje hladinu valproátu — riziko toxicity. S warfarinem zesiluje krvácivost."
   },
   "flunarizin": {
     "inn": "flunarizine",
