@@ -286,7 +286,8 @@
       "sortis",
       "crestor",
       "stacyl",
-      "anopyrin"
+      "anopyrin",
+      "aspirin"
     ],
     "typical_children": [
       "VASCULAR_STIFFNESS"
@@ -491,7 +492,8 @@
       "xarelto",
       "warfarin",
       "anopyrin",
-      "stacyl"
+      "stacyl",
+      "aspirin"
     ]
   },
   {
@@ -515,7 +517,8 @@
     "med_targets": [
       "anopyrin",
       "aspirin",
-      "torvacard"
+      "torvacard",
+      "stacyl"
     ]
   },
   {
