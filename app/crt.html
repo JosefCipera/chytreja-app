@@ -1642,18 +1642,22 @@ function _renderIxPanel() {
   }
 
   const items = ix.map(i => {
-    const pair = Array.isArray(i.drugs)
-      ? i.drugs.map(d => d.charAt(0).toUpperCase() + d.slice(1)).join(' + ')
-      : (i.drug || '');
-    const note = i.note || i.reason || '';
-    return `<div class="ix-item">
-      <div class="ix-drugs">${pair}</div>
-      <div style="font-family:monospace;font-size:9px;letter-spacing:1.5px;color:#b45309;margin-bottom:8px">⚡ INTERAKCE</div>
-      <div class="ix-note">${note}</div>
-    </div>`;
+    const drugs = Array.isArray(i.drugs) ? i.drugs : [i.drug || ''];
+    const note  = i.note || i.reason || '';
+    const [dA, dB] = drugs.map(d => d.charAt(0).toUpperCase() + d.slice(1));
+    return `
+      <div class="cnp-section" style="border-left:2px solid #f59e0b">
+        <p class="cnp-lbl" style="color:#f59e0b">⚡ interakce léků</p>
+        <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:8px">
+          <span style="font-size:16px;font-weight:500;color:#fbbf24">${dA}</span>
+          ${dB ? `<span style="font-size:11px;color:#78716c;font-family:monospace">+</span>
+          <span style="font-size:16px;font-weight:500;color:#fbbf24">${dB}</span>` : ''}
+        </div>
+        ${note ? `<p style="margin:0;font-size:13px;color:#fde68a;line-height:1.6">${note}</p>` : ''}
+      </div>`;
   }).join('');
 
-  el.innerHTML = header + `<div class="cnp-section">${items}</div>`;
+  el.innerHTML = header + items;
 }
 
 // ── Boot ─────────────────────────────────────────────────────────────────────
