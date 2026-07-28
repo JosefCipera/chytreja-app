@@ -1654,37 +1654,8 @@ async function enrichContraMap(data) {
       if (_ixPanelOpen) _renderIxPanel();
     }
 
-    // Layer 2: crt-contra — Sonnet pro mapování na uzly
-    const res = await fetch('/api/crt-contra', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user_meds, user_supps }),
-    });
-    if (!res.ok) return;
-    const { interactions } = await res.json();
-    if (!interactions?.length) return;
-
-    // Map Sonnet findings onto CRT nodes via KB shields
-    const kb = data._kb || {};
-    const allShields = [...(kb.medication_shields||[]), ...(kb.supplement_shields||[])];
-    const activeIds = new Set((data.nodes||[]).map(n => n.id));
-    const arrowsById = {};
-    (data._activeArrows||[]).forEach(a => { arrowsById[a.id] = a; });
-
-    const existingContra = data.contra_map || [];
-    data.contra_map = [...existingContra];
-    for (const item of interactions) {
-      const drugL = item.drug.toLowerCase();
-      // Find which node this drug's shield protects
-      let nodeId = null;
-      for (const s of allShields) {
-        const names = [s.med||s.supp, ...(s.aliases||[])].map(k => k.toLowerCase());
-        if (!names.some(k => drugL.includes(k) || k.includes(drugL))) continue;
-        if (s.shields_arrow) { const a = arrowsById[s.shields_arrow]; if (a && activeIds.has(a.to)) { nodeId = a.to; break; } }
-        else if (s.shields_node && activeIds.has(s.shields_node)) { nodeId = s.shields_node; break; }
-      }
-      if (nodeId) data.contra_map.push({ drug: item.drug, reason: item.reason, nodeId });
-    }
+    // crt-contra (Sonnet) záměrně odstraněn — AI halucinuje interakce.
+    // Interakce zobrazujeme pouze z pair_notes (rxnorm Layer 1).
   } catch (_) {}
 }
 
