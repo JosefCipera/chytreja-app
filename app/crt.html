@@ -193,6 +193,25 @@
     .crt-loading.hidden { display: none; }
     .crt-med-hidden { display: none; }
     #crtMedBtn.active { opacity: 1; border-color: #4a9aee; color: #4a9aee; }
+    #crtIxBtn.active  { opacity: 1; border-color: #f59e0b; color: #f59e0b; }
+
+    /* ── Interakce panel ── */
+    #crtIxPanel {
+      display: none;
+      position: fixed; top: 52px; right: 0; bottom: 0;
+      width: min(340px, 100vw);
+      background: #0e1422; border-left: 1px solid #1e3050;
+      overflow-y: auto; z-index: 110; padding: 16px;
+      box-sizing: border-box;
+    }
+    #crtIxPanel.open { display: block; }
+    .ix-item {
+      border: 1px solid #1e3050; border-radius: 8px;
+      padding: 12px 14px; margin-bottom: 10px;
+      background: #111827;
+    }
+    .ix-drugs { font-size: 12px; color: #f59e0b; font-family: monospace; margin-bottom: 6px; }
+    .ix-note  { font-size: 13px; color: #cbd5e1; line-height: 1.55; }
 
     /* ── Print ── */
     @page { size: A4 landscape; margin: 6mm; }
@@ -358,6 +377,7 @@
   <span id="crtTitle" style="display:none"></span>
   <span id="crtSubtitle" style="display:none"></span>
   <button class="crt-back" id="crtMedBtn" onclick="toggleMeds()" style="display:none">Léky</button>
+  <button class="crt-back" id="crtIxBtn"  onclick="toggleIxPanel()" style="display:none">Interakce</button>
   <button class="crt-back" id="crtLabelBtn" onclick="toggleLabelMode()" style="display:none">Expert</button>
   <div id="crtFocusBack" style="display:none;position:fixed;top:0;left:0;right:0;z-index:120;background:rgba(6,182,212,0.08);border-bottom:1px solid rgba(6,182,212,0.25);padding:8px 16px;align-items:center;gap:10px">
     <button onclick="exitFocusRoot()" style="background:rgba(6,182,212,0.12);border:1px solid rgba(6,182,212,0.4);color:#22d3ee;border-radius:6px;padding:4px 12px;font-size:12px;cursor:pointer;font-family:monospace">← Plná mapa</button>
@@ -411,6 +431,15 @@
   </div><!-- /crt-body-inner -->
 
   <div class="crt-injections" id="crtInjections"></div>
+
+  <!-- Interakce přehledový panel -->
+  <div id="crtIxPanel">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <span style="font-size:11px;font-family:monospace;color:#f59e0b;letter-spacing:.08em">⚡ INTERAKCE LÉKŮ</span>
+      <button onclick="toggleIxPanel()" style="background:none;border:none;color:#4a6a8a;cursor:pointer;font-size:18px;line-height:1">×</button>
+    </div>
+    <div id="crtIxList"><div style="color:#3a5a6a;font-size:13px">Načítám…</div></div>
+  </div>
 </div>
 
 <div class="crt-tooltip" id="crtTooltip"></div>
@@ -1570,14 +1599,62 @@ function _attachWarningBadges() {
   _repositionWarnings();
 }
 
+// ── Interakce přehledový panel ────────────────────────────────────────────────
+window._allInteractions = [];
+let _ixPanelOpen = false;
+
+window.toggleIxPanel = function() {
+  _ixPanelOpen = !_ixPanelOpen;
+  const panel = document.getElementById('crtIxPanel');
+  const btn   = document.getElementById('crtIxBtn');
+  panel.classList.toggle('open', _ixPanelOpen);
+  btn?.classList.toggle('active', _ixPanelOpen);
+  if (_ixPanelOpen) _renderIxPanel();
+};
+
+function _renderIxPanel() {
+  const list = document.getElementById('crtIxList');
+  if (!list) return;
+  const ix = window._allInteractions;
+  if (!ix.length) {
+    list.innerHTML = '<div style="color:#3a6a5a;font-size:13px;line-height:1.6">Žádné interakce nebyly nalezeny mezi tvými léky.</div>';
+    return;
+  }
+  list.innerHTML = ix.map(i => {
+    const pair = Array.isArray(i.drugs) ? i.drugs.join(' + ') : (i.drug || '');
+    const note = i.note || i.reason || '';
+    return `<div class="ix-item">
+      <div class="ix-drugs">${pair}</div>
+      <div class="ix-note">${note}</div>
+    </div>`;
+  }).join('');
+}
+
 // ── Boot ─────────────────────────────────────────────────────────────────────
 async function enrichContraMap(data) {
   const ctx = data._ctx || {};
   const user_meds = ctx.meds || [];
   const user_supps = ctx.supps || [];
-  if ([...user_meds, ...user_supps].length < 2) return;
+  const allMeds = [...user_meds, ...user_supps];
+  if (allMeds.length < 2) return;
 
   try {
+    // Layer 1: rxnorm — deterministické pair_notes + Haiku pro neznámé páry
+    const rxRes = await fetch('/api/rxnorm', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ medications: allMeds }),
+    });
+    if (rxRes.ok) {
+      const rxData = await rxRes.json();
+      window._allInteractions = rxData.interactions || [];
+      // Zobraz tlačítko jen pokud jsou interakce
+      const ixBtn = document.getElementById('crtIxBtn');
+      if (ixBtn) ixBtn.style.display = window._allInteractions.length ? '' : 'none';
+      if (_ixPanelOpen) _renderIxPanel();
+    }
+
+    // Layer 2: crt-contra — Sonnet pro mapování na uzly
     const res = await fetch('/api/crt-contra', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
