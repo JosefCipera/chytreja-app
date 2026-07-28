@@ -6,17 +6,14 @@
     "primary_indication": "Fibrilace síní",
     "companion_for": null,
     "is_supplement": false,
-    "interacts_with": ["ibalgin","ibuprofen","voltaren","aspirin","anopyrin","stacyl","magnosolv","magnesium bisglycinát","magnesium bisglycinate"],
+    "interacts_with": ["ibalgin","ibuprofen","voltaren","aspirin","anopyrin","stacyl"],
     "pair_notes": {
-      "ibalgin":               "Ibuprofen s Pradaxou výrazně zvyšuje riziko žaludečního krvácení — při bolesti raději sáhni po paracetamolu.",
-      "ibuprofen":             "Ibuprofen s Pradaxou výrazně zvyšuje riziko žaludečního krvácení — při bolesti raději sáhni po paracetamolu.",
-      "voltaren":              "Diklofenak s Pradaxou výrazně zvyšuje riziko žaludečního krvácení — při bolesti raději sáhni po paracetamolu.",
-      "aspirin":               "Aspirin zesiluje účinek Pradaxy — i drobné zranění může krvácet déle než běžně.",
-      "anopyrin":              "Aspirin zesiluje účinek Pradaxy — i drobné zranění může krvácet déle než běžně.",
-      "stacyl":                "Aspirin zesiluje účinek Pradaxy — i drobné zranění může krvácet déle než běžně.",
-      "magnosolv":             "Hořčík vzít nejméně 2 hodiny od Pradaxy — jinak se Pradaxa hůř vstřebá.",
-      "magnesium bisglycinát": "Hořčík vzít nejméně 2 hodiny od Pradaxy — jinak se Pradaxa hůř vstřebá.",
-      "magnesium bisglycinate":"Hořčík vzít nejméně 2 hodiny od Pradaxy — jinak se Pradaxa hůř vstřebá."
+      "ibalgin":  "Ibuprofen s Pradaxou výrazně zvyšuje riziko žaludečního krvácení — při bolesti raději sáhni po paracetamolu.",
+      "ibuprofen":"Ibuprofen s Pradaxou výrazně zvyšuje riziko žaludečního krvácení — při bolesti raději sáhni po paracetamolu.",
+      "voltaren": "Diklofenak s Pradaxou výrazně zvyšuje riziko žaludečního krvácení — při bolesti raději sáhni po paracetamolu.",
+      "aspirin":  "Aspirin zesiluje účinek Pradaxy — i drobné zranění může krvácet déle než běžně.",
+      "anopyrin": "Aspirin zesiluje účinek Pradaxy — i drobné zranění může krvácet déle než běžně.",
+      "stacyl":   "Aspirin zesiluje účinek Pradaxy — i drobné zranění může krvácet déle než běžně."
     }
   },
   "xarelto": {
@@ -878,11 +875,10 @@
     "primary_indication": "Nedostatek hořčíku / svalové křeče",
     "companion_for": null,
     "is_supplement": true,
-    "interacts_with": ["magnesium bisglycinát","magnesium bisglycinate","pradaxa"],
+    "interacts_with": ["magnesium bisglycinát","magnesium bisglycinate"],
     "pair_notes": {
       "magnesium bisglycinát":  "Dva hořčíkové doplňky zároveň — hlídat celkovou dávku (max 400 mg/den).",
-      "magnesium bisglycinate": "Dva hořčíkové doplňky zároveň — hlídat celkovou dávku (max 400 mg/den).",
-      "pradaxa":                "Hořčík vzít nejméně 2 hodiny od Pradaxy — jinak se Pradaxa hůř vstřebá."
+      "magnesium bisglycinate": "Dva hořčíkové doplňky zároveň — hlídat celkovou dávku (max 400 mg/den)."
     }
   },
   "magnesium bisglycinát": {
@@ -892,10 +888,9 @@
     "primary_indication": "Nedostatek hořčíku / stres",
     "companion_for": "Magnosolv",
     "is_supplement": true,
-    "interacts_with": ["magnosolv","pradaxa"],
+    "interacts_with": ["magnosolv"],
     "pair_notes": {
-      "magnosolv": "Dva hořčíkové doplňky zároveň — hlídat celkovou dávku (max 400 mg/den).",
-      "pradaxa":   "Hořčík vzít nejméně 2 hodiny od Pradaxy — jinak se Pradaxa hůř vstřebá."
+      "magnosolv": "Dva hořčíkové doplňky zároveň — hlídat celkovou dávku (max 400 mg/den)."
     }
   },
   "magnesium bisglycinate": {
@@ -905,10 +900,9 @@
     "primary_indication": "Nedostatek hořčíku / stres",
     "companion_for": "Magnosolv",
     "is_supplement": true,
-    "interacts_with": ["magnosolv","pradaxa"],
+    "interacts_with": ["magnosolv"],
     "pair_notes": {
-      "magnosolv": "Dva hořčíkové doplňky zároveň — hlídat celkovou dávku (max 400 mg/den).",
-      "pradaxa":   "Hořčík vzít nejméně 2 hodiny od Pradaxy — jinak se Pradaxa hůř vstřebá."
+      "magnosolv": "Dva hořčíkové doplňky zároveň — hlídat celkovou dávku (max 400 mg/den)."
     }
   },
   "vitamin d3":  {"inn":"cholekalciferol","group":"vitamín","effect":"pomáhá vstřebávat vápník a posiluje imunitu","primary_indication":"Nedostatek vitamínu D","companion_for":null,"is_supplement":true},
