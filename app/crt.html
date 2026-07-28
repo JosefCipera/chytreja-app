@@ -1619,7 +1619,7 @@ function _renderIxPanel() {
   if (!list) return;
   const ix = window._allInteractions;
   if (!ix.length) {
-    list.innerHTML = '<div style="color:#3a6a5a;font-size:13px;line-height:1.6;padding-top:8px">Mezi tvými léky a doplňky nebyly nalezeny žádné interakce.<br><br><span style="color:#2a4a5a">Máš-li méně než 2 léky v profilu, nelze porovnat.</span></div>';
+    list.innerHTML = '<div style="color:#3a6a5a;font-size:13px;line-height:1.6;padding-top:8px">Mezi tvými léky a doplňky nebyly nalezeny žádné sledované interakce.</div>';
     return;
   }
   list.innerHTML = ix.map(i => {
@@ -1639,7 +1639,12 @@ async function enrichContraMap(data) {
   const ctx = data._ctx || {};
   const user_meds = ctx.meds || [];
   const user_supps = ctx.supps || [];
-  const allMeds = [...user_meds, ...user_supps];
+
+  // Opus path nevrací _ctx — extrahuj léky z medications_map jako fallback
+  let allMeds = [...user_meds, ...user_supps];
+  if (allMeds.length === 0 && (data.medications_map || []).length > 0) {
+    allMeds = data.medications_map.map(m => m.name).filter(Boolean);
+  }
 
   if (allMeds.length < 2) {
     window._allInteractions = [];
