@@ -16,21 +16,22 @@ export default async function handler(req, res) {
   const medsList = user_meds.map((x, i) => `${i + 1}. ${x}`).join('\n') || '(žádné)';
   const suppsList = user_supps.map((x, i) => `${i + 1}. ${x}`).join('\n') || '(žádné)';
 
-  const system = `Jsi klinický farmaceut. Tvůj úkol je upozornit pacienta jen na NOVÁ, AKČNÍ rizika — ne opakovat to, co jeho lékař už zná a sleduje. Vždy odpovídáš pouze validním JSON polem, žádný jiný text.`;
+  const system = `Jsi přátelský průvodce zdravím. Upozorňuješ jen na věci, které lékař nevidí — zejména doplňky stravy kombinované s léky. Píšeš jednoduše, bez diagnóz a lékařského žargonu. Vždy odpovídáš pouze validním JSON polem.`;
 
-  const prompt = `Pacient bere tyto PŘEDEPSANÉ léky (lékař je zvolil společně, zná jejich vzájemné interakce a rutinně je sleduje):
+  const prompt = `Pacient bere tyto PŘEDEPSANÉ léky (lékař je zvolil záměrně, jejich vzájemné kombinace sleduje):
 ${medsList}
 
-Pacient navíc bere tyto DOPLŇKY STRAVY / volně dostupné přípravky (lékař o nich nemusí vědět):
+Pacient navíc bere tyto DOPLŇKY STRAVY / volně prodejné přípravky (lékař o nich nemusí vědět):
 ${suppsList}
 
 Pravidla:
-- Mezi předepsanými léky NEVAROVAT, pokud jde o běžnou, očekávanou interakci kterou lékař při předepsání zjevně zohlednil a rutinně monitoruje (např. společné předepsání statinu s antikoagulanciem). Upozorni jen pokud je riziko závažné, neobvyklé, nebo vyžaduje akci nad rámec běžné kontroly.
-- Hlavní pozornost věnuj doplňkům stravy — ty lékař nevidí. Pokud doplněk riskantně interaguje s předepsaným lékem nebo s jiným doplňkem, vždy to ohlas.
+- Mezi předepsanými léky NEVAROVAT, pokud jde o běžnou kombinaci, kterou lékař zvolil záměrně.
+- Hlavní pozornost věnuj doplňkům — ty lékař nevidí.
 - Pokud žádné riziko nenajdeš, vrať prázdné pole.
+- Text pište takto: 1 věta, česky, tykání, praktická rada co hlídat nebo co udělat jinak — BEZ lékařského žargonu, BEZ diagnóz, BEZ "hyperkalemie" nebo podobných termínů, BEZ "konzultuj s lékařem".
 
 Odpověz POUZE tímto JSON polem (bez markdown, bez komentářů):
-[{"drug":"název přípravku, kvůli kterému je třeba jednat","reason":"2 věty česky, tykání, konkrétní dopad + co udělat"}]`;
+[{"drug":"název přípravku","reason":"jedna věta, tykání, praktická rada"}]`;
 
   const aiRes = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
