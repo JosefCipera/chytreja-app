@@ -35,12 +35,13 @@ function detectManualInteractions(validMeds) {
   validMeds.forEach(medA => {
     const keyA = medA.name.toLowerCase();
     const dbA  = DRUGS_DB[keyA];
-    if (!dbA?.interacts_with || !dbA.interaction_note) return;
+    if (!dbA?.interacts_with) return;
 
     validMeds.forEach(medB => {
       if (medA.name === medB.name) return;
       const keyB = medB.name.toLowerCase();
       const innB = medB.inn?.toLowerCase();
+      const innA = medA.inn?.toLowerCase();
 
       const matches = dbA.interacts_with.some(iw =>
         iw.toLowerCase() === keyB || (innB && iw.toLowerCase() === innB)
@@ -51,15 +52,17 @@ function detectManualInteractions(validMeds) {
       if (seen.has(pairKey)) return;
       seen.add(pairKey);
 
-      // Preferuj kratší (specifičtější) notu — pokud B má notu pro A, použij tu kratší
       const dbB = DRUGS_DB[keyB];
-      let note = dbA.interaction_note;
-      if (dbB?.interaction_note && dbB.interaction_note.length < note.length) {
-        const bMatchesA = dbB.interacts_with?.some(iw =>
-          iw.toLowerCase() === keyA || iw.toLowerCase() === medA.inn?.toLowerCase()
-        );
-        if (bMatchesA) note = dbB.interaction_note;
-      }
+
+      // Pair-specific note from pair_notes (A→B or B→A), fallback to interaction_note
+      const note =
+        dbA.pair_notes?.[keyB] ||
+        dbA.pair_notes?.[innB] ||
+        dbB?.pair_notes?.[keyA] ||
+        dbB?.pair_notes?.[innA] ||
+        dbA.interaction_note ||
+        dbB?.interaction_note ||
+        'Tato kombinace může mít klinicky relevantní interakci — poradit s lékařem.';
 
       pairs.push({ drugs: [medA.name, medB.name], note, severity: 'high' });
     });
@@ -106,7 +109,7 @@ async function detectWithHaiku(validMeds, knownPairKeys) {
 Urči závažné klinické interakce (high nebo moderate severity). Ignoruj triviální nebo hypotetické interakce.
 Vrať názvy léků PŘESNĚ jak jsou uvedeny v seznamu výše (bez závorek s INN).
 Vrať POUZE JSON pole, žádný jiný text:
-[{"drugs": ["přesný název1", "přesný název2"], "severity": "high|moderate", "note": "1-2 věty česky, tykání, bez diagnóz"}]
+[{"drugs": ["přesný název1", "přesný název2"], "severity": "high|moderate", "note": "jedna věta česky, tykání, praktická rada co hlídat nebo co místo toho vzít — bez diagnóz, bez moralizování, bez 'konzultovat s lékařem'"}]
 Pokud žádné závažné interakce nejsou, vrať prázdné pole [].`,
       }],
     });
