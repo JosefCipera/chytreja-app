@@ -15,7 +15,10 @@ async function getRxcui(term) {
   const key = term.toLowerCase().trim();
   if (_rxcuiCache[key]) return _rxcuiCache[key];
   try {
-    const res = await fetch(`${RXNAV}/rxcui.json?name=${encodeURIComponent(term)}&search=1`, { signal: AbortSignal.timeout(4000) });
+    const res = await fetch(
+      `${RXNAV}/rxcui.json?name=${encodeURIComponent(term)}&search=1`,
+      { signal: AbortSignal.timeout(4000) }
+    );
     if (!res.ok) return null;
     const data = await res.json();
     const rxcui = data?.idGroup?.rxnormId?.[0] || null;
@@ -53,8 +56,7 @@ function detectManualInteractions(validMeds) {
       const dbB = DRUGS_DB[keyB];
       const note =
         dbA.pair_notes?.[keyB] || dbA.pair_notes?.[innB] ||
-        dbB?.pair_notes?.[keyA] || dbB?.pair_notes?.[innA] ||
-        null;
+        dbB?.pair_notes?.[keyA] || dbB?.pair_notes?.[innA] || null;
 
       pairs.push({ drugs: [medA.name, medB.name], note, source: 'static' });
     });
@@ -63,64 +65,103 @@ function detectManualInteractions(validMeds) {
   return pairs;
 }
 
-// ── Few-shot příklady pro Haiku — interaction i safe ─────────────────────────
+// ── Layer 2: RxNorm interaction API ──────────────────────────────────────────
 
-const FEW_SHOT_INTERACTION = [
-  { pair: 'Pradaxa + Ibalgin',  note: 'Tato kombinace výrazně zvyšuje riziko žaludečního krvácení — při bolesti raději paracetamol.' },
-  { pair: 'Euthyrox + Nolpaza', note: 'Vzít s odstupem aspoň 4 hodiny od sebe — Euthyrox se jinak hůř vstřebá.' },
-  { pair: 'Concor + Verapamil', note: 'Tato kombinace může zpomalit srdce příliš — řeší kardiolog.' },
-  { pair: 'Pradaxa + Aspirin',  note: 'Zesiluje účinek Pradaxy — i drobné zranění může krvácet déle než běžně.' },
+async function detectRxNormInteractions(validMeds, knownSet, companionSet) {
+  const medsWithRxcui = validMeds.filter(m => m.rxcui);
+  if (medsWithRxcui.length < 2) return [];
+
+  const rxcuis = [...new Set(medsWithRxcui.map(m => m.rxcui))];
+
+  try {
+    const url = `${RXNAV}/interaction/list.json?rxcuis=${rxcuis.join('+')}`;
+    const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+    if (!res.ok) return [];
+
+    const data = await res.json();
+    const groups = data?.fullInteractionTypeGroup || [];
+
+    const results = [];
+    const seen = new Set();
+
+    for (const group of groups) {
+      for (const type of (group.fullInteractionType || [])) {
+        for (const pair of (type.interactionPair || [])) {
+          const concepts = pair.interactionConcept || [];
+          if (concepts.length < 2) continue;
+
+          const innA = concepts[0]?.minConceptItem?.name?.toLowerCase();
+          const innB = concepts[1]?.minConceptItem?.name?.toLowerCase();
+          const desc = pair.description || '';
+          if (!innA || !innB || !desc) continue;
+
+          // Mapuj INN zpět na brand name uživatele
+          const medA = validMeds.find(m =>
+            m.inn?.toLowerCase() === innA || m.name.toLowerCase() === innA
+          );
+          const medB = validMeds.find(m =>
+            m.inn?.toLowerCase() === innB || m.name.toLowerCase() === innB
+          );
+          if (!medA || !medB || medA.name === medB.name) continue;
+
+          const pairKey = [medA.name, medB.name].sort().join('|');
+          if (seen.has(pairKey) || knownSet.has(pairKey) || companionSet.has(pairKey)) continue;
+          seen.add(pairKey);
+
+          results.push({ drugs: [medA.name, medB.name], description: desc });
+        }
+      }
+    }
+
+    return results;
+  } catch (e) {
+    console.warn('[rxnorm] interaction API error:', e.message);
+    return [];
+  }
+}
+
+// ── Layer 3: Haiku — přeložit a zlidštit klinický popis ──────────────────────
+
+const SIMPLIFY_FEW_SHOT = [
+  {
+    en: 'Concurrent use of dabigatran and aspirin may increase the risk of bleeding.',
+    cz: 'Zesiluje účinek Pradaxy — i drobné zranění může krvácet déle než běžně.',
+  },
+  {
+    en: 'Omeprazole may decrease the absorption of levothyroxine when taken simultaneously.',
+    cz: 'Vzít s odstupem aspoň 4 hodiny od sebe — tableta štítné žlázy se jinak hůř vstřebá.',
+  },
+  {
+    en: 'The combination of metoprolol and verapamil may result in excessive bradycardia and AV block.',
+    cz: 'Tato kombinace může zpomalit srdce příliš — řeší kardiolog.',
+  },
+  {
+    en: 'Ibuprofen may increase the anticoagulant effect of warfarin and increase the risk of bleeding.',
+    cz: 'Tato kombinace výrazně zvyšuje riziko krvácení — při bolesti raději paracetamol.',
+  },
 ];
 
-const FEW_SHOT_SAFE = [
-  'Kalnormin + Pradaxa',
-  'Kalnormin + Nolpaza',
-  'Kalnormin + Concor',
-  'Magnesium bisglycinát + Pradaxa',
-  'Vitamin D3 + Warfarin',
-  'Omega-3 + Metformin',
-];
+async function simplifyWithHaiku(rxNormItems) {
+  if (!rxNormItems.length) return [];
 
-// ── Layer 2: Haiku pro neznámé páry ──────────────────────────────────────────
+  const fewShot = SIMPLIFY_FEW_SHOT
+    .map(f => `EN: "${f.en}"\nCZ: "${f.cz}"`)
+    .join('\n\n');
 
-async function detectWithHaiku(unknownPairs) {
-  if (!unknownPairs.length) return [];
-
-  const fewShotInteraction = FEW_SHOT_INTERACTION
-    .map(f => `"${f.pair}" → interaction: "${f.note}"`)
-    .join('\n');
-  const fewShotSafe = FEW_SHOT_SAFE.map(p => `"${p}" → safe`).join('\n');
-
-  const pairsText = unknownPairs
-    .map(([a, b]) => `- ${a} + ${b}`)
+  const items = rxNormItems
+    .map((r, i) => `${i + 1}. ${r.drugs.join(' + ')}: "${r.description}"`)
     .join('\n');
 
-  const prompt = `Jsi přísný bezpečnostní kontrolor lékových interakcí. Tvoje chyba v "interaction" způsobí zbytečný strach pacienta — proto je lepší říct "safe" nebo "unknown" než hádat.
+  const prompt = `Přepiš klinické popisy lékových interakcí do češtiny pro laika.
+Každý přepis musí být přesně 1 věta, česky, tykání, bez diagnóz, bez INN názvů léků (piš "tato kombinace" nebo brand jméno z dvojice), s praktickou radou.
 
-Pravidlo: Označuj "interaction" POUZE pokud jsi si jistý na 95 %+. Ve všech ostatních případech vrať "safe" nebo "unknown".
+Příklady:
+${fewShot}
 
-Možné hodnoty "status":
-- "interaction" — prokazatelná klinická interakce (piš note)
-- "safe"        — žádná klinicky relevantní interakce, nebo běžná kombinace
-- "unknown"     — nemáš spolehlivá data
+Přepiš (vrať POUZE JSON pole):
+${items}
 
-Příklady INTERACTION (pouze takto jasné případy):
-${fewShotInteraction}
-
-Příklady SAFE (i takovéto kombinace jsou safe):
-${fewShotSafe}
-
-Pravidla pro "note":
-- 1 věta, česky, tykání
-- žádné INN názvy (piš brand jméno nebo "tato kombinace")
-- žádný lékařský žargon, žádné diagnózy
-- praktická rada
-
-Páry ke kontrole:
-${pairsText}
-
-Odpověz POUZE validním JSON polem bez markdown:
-[{"pair":"A + B","status":"interaction","note":"..."},{"pair":"C + D","status":"safe"},...]`;
+Formát: [{"idx":1,"note":"..."},{"idx":2,"note":"..."},...]`;
 
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -132,26 +173,27 @@ Odpověz POUZE validním JSON polem bez markdown:
       },
       body: JSON.stringify({
         model: 'claude-haiku-4-5',
-        max_tokens: 1200,
+        max_tokens: 800,
         messages: [{ role: 'user', content: prompt }],
       }),
-      signal: AbortSignal.timeout(20000),
+      signal: AbortSignal.timeout(15000),
     });
 
-    if (!res.ok) throw new Error(`Haiku ${res.status}`);
+    if (!res.ok) return [];
 
     const data = await res.json();
     const raw  = data.content?.[0]?.text?.trim() || '[]';
     const parsed = JSON.parse(raw.replace(/^```json\s*/,'').replace(/\s*```$/,''));
 
-    return parsed.map(item => {
-      const [a, b] = item.pair.split(/\s*\+\s*/);
-      return { drugs: [a?.trim(), b?.trim()].filter(Boolean), status: item.status, note: item.note || null };
-    });
+    return rxNormItems
+      .map((r, i) => {
+        const item = Array.isArray(parsed) && parsed.find(p => p.idx === i + 1);
+        return item?.note ? { ...r, note: item.note, source: 'rxnorm' } : null;
+      })
+      .filter(Boolean);
   } catch (e) {
-    console.warn('[rxnorm] Haiku error:', e.message);
-    // Při chybě: všechny páry označíme jako unknown
-    return unknownPairs.map(([a, b]) => ({ drugs: [a, b], status: 'unknown', note: null }));
+    console.warn('[rxnorm] Haiku simplify error:', e.message);
+    return [];
   }
 }
 
@@ -179,17 +221,21 @@ export async function resolveInteractionsRxNorm(medicationNames) {
       }
     });
   });
-
   const isCompanion = (a, b) => companionSet.has([a, b].sort().join('|'));
 
-  // Layer 1: statické pair_notes (bez companion párů)
+  // Layer 1: statické pair_notes
   const manualPairs = detectManualInteractions(validMeds)
     .filter(p => !isCompanion(p.drugs[0], p.drugs[1]));
   const knownSet = new Set(manualPairs.map(p => [...p.drugs].sort().join('|')));
 
-  // Haiku vypnuto — halucinuje stejný text pro všechny páry, nerozlišuje léky.
-  // Zobrazujeme pouze ověřené pair_notes z drugs.json.
-  const interactions = manualPairs.map(p => ({ ...p, source: 'static' }));
+  // Layer 2+3: RxNorm API → Haiku simplifikace (paralelně s Layer 1)
+  const rxNormRaw  = await detectRxNormInteractions(validMeds, knownSet, companionSet);
+  const rxNormFull = await simplifyWithHaiku(rxNormRaw);
+
+  const interactions = [
+    ...manualPairs,
+    ...rxNormFull,
+  ];
 
   if (interactions.length) {
     console.log(`[rxnorm] interakce (${interactions.length}): ${interactions.map(i => `${i.drugs.join('+')}[${i.source}]`).join(' | ')}`);
