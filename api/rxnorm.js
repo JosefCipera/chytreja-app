@@ -9,7 +9,7 @@ const DRUGS_DB = JSON.parse(readFileSync(join(__dirname, '../data/drugs.json'), 
 const RXNAV = 'https://rxnav.nlm.nih.gov/REST';
 const _rxcuiCache = {};
 
-// ── RxNorm name → rxcui (používá se jen pro identifikaci, ne pro interakce) ───
+// ── RxNorm name → rxcui ───────────────────────────────────────────────────────
 
 async function getRxcui(term) {
   const key = term.toLowerCase().trim();
@@ -24,7 +24,7 @@ async function getRxcui(term) {
   } catch { return null; }
 }
 
-// ── Detekce interakcí z drugs.json (deterministická) ─────────────────────────
+// ── Layer 1: statické pair_notes z drugs.json ─────────────────────────────────
 
 function detectManualInteractions(validMeds) {
   const pairs = [];
@@ -51,32 +51,99 @@ function detectManualInteractions(validMeds) {
       seen.add(pairKey);
 
       const dbB = DRUGS_DB[keyB];
-
-      // Pair-specific note from pair_notes (A→B or B→A), fallback to interaction_note
       const note =
-        dbA.pair_notes?.[keyB] ||
-        dbA.pair_notes?.[innB] ||
-        dbB?.pair_notes?.[keyA] ||
-        dbB?.pair_notes?.[innA] ||
-        dbA.interaction_note ||
-        dbB?.interaction_note ||
-        'Tato kombinace může mít klinicky relevantní interakci — poradit s lékařem.';
+        dbA.pair_notes?.[keyB] || dbA.pair_notes?.[innB] ||
+        dbB?.pair_notes?.[keyA] || dbB?.pair_notes?.[innA] ||
+        null;
 
-      pairs.push({ drugs: [medA.name, medB.name], note, severity: 'high' });
+      pairs.push({ drugs: [medA.name, medB.name], note, source: 'static' });
     });
   });
 
   return pairs;
 }
 
-// AI fallback záměrně odstraněn — AI halucinuje klinické interakce.
-// Zobrazujeme pouze páry ověřené v pair_notes (drugs.json).
-// Neznámý pár = mlčení, ne halucinace.
+// ── Few-shot příklady pro Haiku (tón a formát) ────────────────────────────────
+
+const FEW_SHOT = [
+  { pair: 'Pradaxa + Ibalgin',  note: 'Tato kombinace výrazně zvyšuje riziko žaludečního krvácení — při bolesti raději paracetamol.' },
+  { pair: 'Euthyrox + Nolpaza', note: 'Vzít s odstupem aspoň 4 hodiny od sebe — Euthyrox se jinak hůř vstřebá.' },
+  { pair: 'Concor + Verapamil', note: 'Tato kombinace může zpomalit srdce příliš — řeší kardiolog.' },
+  { pair: 'Pradaxa + Aspirin',  note: 'Zesiluje účinek Pradaxy — i drobné zranění může krvácet déle než běžně.' },
+  { pair: 'Warfarin + Ibalgin', note: 'Tato kombinace výrazně zvyšuje riziko krvácení — při bolesti raději paracetamol.' },
+];
+
+// ── Layer 2: Haiku pro neznámé páry ──────────────────────────────────────────
+
+async function detectWithHaiku(unknownPairs) {
+  if (!unknownPairs.length) return [];
+
+  const fewShotText = FEW_SHOT
+    .map(f => `"${f.pair}" → "${f.note}"`)
+    .join('\n');
+
+  const pairsText = unknownPairs
+    .map(([a, b]) => `- ${a} + ${b}`)
+    .join('\n');
+
+  const prompt = `Jsi bezpečnostní systém lékových interakcí. Pro každý pár níže vrať JSON objekt.
+
+Možné hodnoty "status":
+- "interaction" — klinicky relevantní interakce existuje (piš note)
+- "safe"        — žádná klinicky významná interakce
+- "unknown"     — nemáš spolehlivá data pro tento pár
+
+Pravidla pro "note":
+- 1 věta, česky, tykání
+- žádné INN názvy (piš brand jméno nebo "tato kombinace" / "tento lék")
+- žádný lékařský žargon, žádné diagnózy
+- praktická rada co udělat nebo na co si dát pozor
+
+Příklady správného formátu note:
+${fewShotText}
+
+Páry ke kontrole:
+${pairsText}
+
+Odpověz POUZE validním JSON polem bez markdown:
+[{"pair":"A + B","status":"interaction","note":"..."},{"pair":"C + D","status":"safe"},...]`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': process.env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5',
+        max_tokens: 1200,
+        messages: [{ role: 'user', content: prompt }],
+      }),
+      signal: AbortSignal.timeout(20000),
+    });
+
+    if (!res.ok) throw new Error(`Haiku ${res.status}`);
+
+    const data = await res.json();
+    const raw  = data.content?.[0]?.text?.trim() || '[]';
+    const parsed = JSON.parse(raw.replace(/^```json\s*/,'').replace(/\s*```$/,''));
+
+    return parsed.map(item => {
+      const [a, b] = item.pair.split(/\s*\+\s*/);
+      return { drugs: [a?.trim(), b?.trim()].filter(Boolean), status: item.status, note: item.note || null };
+    });
+  } catch (e) {
+    console.warn('[rxnorm] Haiku error:', e.message);
+    // Při chybě: všechny páry označíme jako unknown
+    return unknownPairs.map(([a, b]) => ({ drugs: [a, b], status: 'unknown', note: null }));
+  }
+}
 
 // ── Main export ───────────────────────────────────────────────────────────────
 
 export async function resolveInteractionsRxNorm(medicationNames) {
-  // 1. Normalizuj vstup (string nebo {name, dose} objekt)
   const validMeds = (await Promise.all(medicationNames.map(async raw => {
     const name = typeof raw === 'string' ? raw : (raw?.name || '');
     if (!name) return null;
@@ -87,12 +154,38 @@ export async function resolveInteractionsRxNorm(medicationNames) {
     return { name, inn, rxcui, is_supplement: db.is_supplement ?? false, db };
   }))).filter(Boolean);
 
-  // 2. Detekuj interakce z drugs.json (deterministické, CZ texty)
+  // Layer 1: statické pair_notes
   const manualPairs = detectManualInteractions(validMeds);
+  const knownSet = new Set(manualPairs.map(p => [...p.drugs].sort().join('|')));
 
-  const interactions = manualPairs;
+  // Layer 2: všechny ostatní páry → Haiku
+  const unknownPairs = [];
+  for (let i = 0; i < validMeds.length; i++) {
+    for (let j = i + 1; j < validMeds.length; j++) {
+      const key = [validMeds[i].name, validMeds[j].name].sort().join('|');
+      if (!knownSet.has(key)) {
+        unknownPairs.push([validMeds[i].name, validMeds[j].name]);
+      }
+    }
+  }
+
+  const haikuResults = await detectWithHaiku(unknownPairs);
+
+  // Merge: statické + AI interakce + AI unknown
+  const UNKNOWN_NOTE = 'Tuto kombinaci nemáme ověřenou — zeptej se svého lékárníka.';
+
+  const interactions = [
+    ...manualPairs.map(p => ({ ...p, source: 'static' })),
+    ...haikuResults
+      .filter(r => r.status === 'interaction')
+      .map(r => ({ drugs: r.drugs, note: r.note, source: 'ai' })),
+    ...haikuResults
+      .filter(r => r.status === 'unknown')
+      .map(r => ({ drugs: r.drugs, note: UNKNOWN_NOTE, source: 'unknown' })),
+  ];
+
   if (interactions.length) {
-    console.log(`[rxnorm] interakce: ${interactions.map(i => i.drugs.join('+')).join(' | ')}`);
+    console.log(`[rxnorm] interakce (${interactions.length}): ${interactions.map(i => `${i.drugs.join('+')}[${i.source}]`).join(' | ')}`);
   }
 
   return { meds: validMeds, interactions };
