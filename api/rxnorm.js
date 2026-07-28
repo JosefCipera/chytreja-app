@@ -201,17 +201,13 @@ export async function resolveInteractionsRxNorm(medicationNames) {
 
   const haikuResults = await detectWithHaiku(unknownPairs);
 
-  // Merge: statické + AI interakce + AI unknown
-  const UNKNOWN_NOTE = 'Tuto kombinaci nemáme ověřenou — zeptej se svého lékárníka.';
+  // Merge: statické pair_notes + AI interakce (unknown = ticho)
 
   const interactions = [
     ...manualPairs.map(p => ({ ...p, source: 'static' })),
     ...haikuResults
       .filter(r => r.status === 'interaction')
       .map(r => ({ drugs: r.drugs, note: r.note, source: 'ai' })),
-    ...haikuResults
-      .filter(r => r.status === 'unknown')
-      .map(r => ({ drugs: r.drugs, note: UNKNOWN_NOTE, source: 'unknown' })),
   ];
 
   if (interactions.length) {

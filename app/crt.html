@@ -1646,14 +1646,10 @@ function _renderIxPanel() {
       ? i.drugs.map(d => d.charAt(0).toUpperCase() + d.slice(1)).join(' + ')
       : (i.drug || '');
     const note = i.note || i.reason || '';
-    const isUnknown = i.source === 'unknown';
-    const tagColor  = isUnknown ? '#475569' : '#b45309';
-    const tagLabel  = isUnknown ? '? NEOVĚŘENO' : '⚡ INTERAKCE';
-    const noteColor = isUnknown ? '#475569' : '';
     return `<div class="ix-item">
       <div class="ix-drugs">${pair}</div>
-      <div style="font-family:monospace;font-size:9px;letter-spacing:1.5px;color:${tagColor};margin-bottom:8px">${tagLabel}</div>
-      <div class="ix-note"${noteColor ? ` style="color:${noteColor}"` : ''}>${note}</div>
+      <div style="font-family:monospace;font-size:9px;letter-spacing:1.5px;color:#b45309;margin-bottom:8px">⚡ INTERAKCE</div>
+      <div class="ix-note">${note}</div>
     </div>`;
   }).join('');
 
