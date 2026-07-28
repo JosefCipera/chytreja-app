@@ -194,6 +194,8 @@
     .crt-med-hidden { display: none; }
     #crtMedBtn.active { opacity: 1; border-color: #4a9aee; color: #4a9aee; }
     #crtIxBtn.active  { opacity: 1; border-color: #f59e0b; color: #f59e0b; }
+    #crtIxBtn.has-ix  { border-color: #b45309; color: #f59e0b; }
+    #crtIxBtn.has-ix.active { border-color: #f59e0b; }
 
     /* ── Interakce panel ── */
     #crtIxPanel {
@@ -377,7 +379,7 @@
   <span id="crtTitle" style="display:none"></span>
   <span id="crtSubtitle" style="display:none"></span>
   <button class="crt-back" id="crtMedBtn" onclick="toggleMeds()" style="display:none">Léky</button>
-  <button class="crt-back" id="crtIxBtn"  onclick="toggleIxPanel()" style="display:none">Interakce</button>
+  <button class="crt-back" id="crtIxBtn"  onclick="toggleIxPanel()">Interakce</button>
   <button class="crt-back" id="crtLabelBtn" onclick="toggleLabelMode()" style="display:none">Expert</button>
   <div id="crtFocusBack" style="display:none;position:fixed;top:0;left:0;right:0;z-index:120;background:rgba(6,182,212,0.08);border-bottom:1px solid rgba(6,182,212,0.25);padding:8px 16px;align-items:center;gap:10px">
     <button onclick="exitFocusRoot()" style="background:rgba(6,182,212,0.12);border:1px solid rgba(6,182,212,0.4);color:#22d3ee;border-radius:6px;padding:4px 12px;font-size:12px;cursor:pointer;font-family:monospace">← Plná mapa</button>
@@ -1617,14 +1619,16 @@ function _renderIxPanel() {
   if (!list) return;
   const ix = window._allInteractions;
   if (!ix.length) {
-    list.innerHTML = '<div style="color:#3a6a5a;font-size:13px;line-height:1.6">Žádné interakce nebyly nalezeny mezi tvými léky.</div>';
+    list.innerHTML = '<div style="color:#3a6a5a;font-size:13px;line-height:1.6;padding-top:8px">Mezi tvými léky a doplňky nebyly nalezeny žádné interakce.<br><br><span style="color:#2a4a5a">Máš-li méně než 2 léky v profilu, nelze porovnat.</span></div>';
     return;
   }
   list.innerHTML = ix.map(i => {
-    const pair = Array.isArray(i.drugs) ? i.drugs.join(' + ') : (i.drug || '');
+    const pair = Array.isArray(i.drugs)
+      ? i.drugs.map(d => d.charAt(0).toUpperCase() + d.slice(1)).join(' + ')
+      : (i.drug || '');
     const note = i.note || i.reason || '';
     return `<div class="ix-item">
-      <div class="ix-drugs">${pair}</div>
+      <div class="ix-drugs">⚡ ${pair}</div>
       <div class="ix-note">${note}</div>
     </div>`;
   }).join('');
@@ -1636,10 +1640,15 @@ async function enrichContraMap(data) {
   const user_meds = ctx.meds || [];
   const user_supps = ctx.supps || [];
   const allMeds = [...user_meds, ...user_supps];
-  if (allMeds.length < 2) return;
+
+  if (allMeds.length < 2) {
+    window._allInteractions = [];
+    if (_ixPanelOpen) _renderIxPanel();
+    return;
+  }
 
   try {
-    // Layer 1: rxnorm — deterministické pair_notes + Haiku pro neznámé páry
+    // Deterministické pair_notes z drugs.json — AI záměrně odstraněno.
     const rxRes = await fetch('/api/rxnorm', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1648,14 +1657,10 @@ async function enrichContraMap(data) {
     if (rxRes.ok) {
       const rxData = await rxRes.json();
       window._allInteractions = rxData.interactions || [];
-      // Zobraz tlačítko jen pokud jsou interakce
       const ixBtn = document.getElementById('crtIxBtn');
-      if (ixBtn) ixBtn.style.display = window._allInteractions.length ? '' : 'none';
+      if (ixBtn) ixBtn.classList.toggle('has-ix', window._allInteractions.length > 0);
       if (_ixPanelOpen) _renderIxPanel();
     }
-
-    // crt-contra (Sonnet) záměrně odstraněn — AI halucinuje interakce.
-    // Interakce zobrazujeme pouze z pair_notes (rxnorm Layer 1).
   } catch (_) {}
 }
 
