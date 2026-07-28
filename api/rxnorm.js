@@ -187,28 +187,9 @@ export async function resolveInteractionsRxNorm(medicationNames) {
     .filter(p => !isCompanion(p.drugs[0], p.drugs[1]));
   const knownSet = new Set(manualPairs.map(p => [...p.drugs].sort().join('|')));
 
-  // Layer 2: zbývající páry → Haiku (bez companion párů)
-  const unknownPairs = [];
-  for (let i = 0; i < validMeds.length; i++) {
-    for (let j = i + 1; j < validMeds.length; j++) {
-      const a = validMeds[i].name, b = validMeds[j].name;
-      const key = [a, b].sort().join('|');
-      if (!knownSet.has(key) && !isCompanion(a, b)) {
-        unknownPairs.push([a, b]);
-      }
-    }
-  }
-
-  const haikuResults = await detectWithHaiku(unknownPairs);
-
-  // Merge: statické pair_notes + AI interakce (unknown = ticho)
-
-  const interactions = [
-    ...manualPairs.map(p => ({ ...p, source: 'static' })),
-    ...haikuResults
-      .filter(r => r.status === 'interaction')
-      .map(r => ({ drugs: r.drugs, note: r.note, source: 'ai' })),
-  ];
+  // Haiku vypnuto — halucinuje stejný text pro všechny páry, nerozlišuje léky.
+  // Zobrazujeme pouze ověřené pair_notes z drugs.json.
+  const interactions = manualPairs.map(p => ({ ...p, source: 'static' }));
 
   if (interactions.length) {
     console.log(`[rxnorm] interakce (${interactions.length}): ${interactions.map(i => `${i.drugs.join('+')}[${i.source}]`).join(' | ')}`);
