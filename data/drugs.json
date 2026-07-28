@@ -8,12 +8,12 @@
     "is_supplement": false,
     "interacts_with": ["ibalgin","ibuprofen","voltaren","aspirin","anopyrin","stacyl"],
     "pair_notes": {
-      "ibalgin":  "Ibuprofen s Pradaxou výrazně zvyšuje riziko žaludečního krvácení — při bolesti raději sáhni po paracetamolu.",
-      "ibuprofen":"Ibuprofen s Pradaxou výrazně zvyšuje riziko žaludečního krvácení — při bolesti raději sáhni po paracetamolu.",
-      "voltaren": "Diklofenak s Pradaxou výrazně zvyšuje riziko žaludečního krvácení — při bolesti raději sáhni po paracetamolu.",
-      "aspirin":  "Aspirin zesiluje účinek Pradaxy — i drobné zranění může krvácet déle než běžně.",
-      "anopyrin": "Aspirin zesiluje účinek Pradaxy — i drobné zranění může krvácet déle než běžně.",
-      "stacyl":   "Aspirin zesiluje účinek Pradaxy — i drobné zranění může krvácet déle než běžně."
+      "ibalgin":  "Tato kombinace výrazně zvyšuje riziko žaludečního krvácení — při bolesti raději paracetamol.",
+      "ibuprofen":"Tato kombinace výrazně zvyšuje riziko žaludečního krvácení — při bolesti raději paracetamol.",
+      "voltaren": "Tato kombinace výrazně zvyšuje riziko žaludečního krvácení — při bolesti raději paracetamol.",
+      "aspirin":  "Zesiluje účinek Pradaxy — i drobné zranění může krvácet déle než běžně.",
+      "anopyrin": "Zesiluje účinek Pradaxy — i drobné zranění může krvácet déle než běžně.",
+      "stacyl":   "Zesiluje účinek Pradaxy — i drobné zranění může krvácet déle než běžně."
     }
   },
   "xarelto": {
@@ -25,12 +25,12 @@
     "is_supplement": false,
     "interacts_with": ["ibalgin","ibuprofen","voltaren","aspirin","anopyrin","stacyl"],
     "pair_notes": {
-      "ibalgin":   "Ibuprofen s Xareltem výrazně zvyšuje riziko krvácení — při bolesti raději paracetamol.",
-      "ibuprofen": "Ibuprofen s Xareltem výrazně zvyšuje riziko krvácení — při bolesti raději paracetamol.",
-      "voltaren":  "Diklofenak s Xareltem výrazně zvyšuje riziko krvácení — při bolesti raději paracetamol.",
-      "aspirin":   "Aspirin zesiluje Xarelto — i drobné zranění může krvácet déle než běžně.",
-      "anopyrin":  "Aspirin zesiluje Xarelto — i drobné zranění může krvácet déle než běžně.",
-      "stacyl":    "Aspirin zesiluje Xarelto — i drobné zranění může krvácet déle než běžně."
+      "ibalgin":  "Tato kombinace výrazně zvyšuje riziko krvácení — při bolesti raději paracetamol.",
+      "ibuprofen":"Tato kombinace výrazně zvyšuje riziko krvácení — při bolesti raději paracetamol.",
+      "voltaren": "Tato kombinace výrazně zvyšuje riziko krvácení — při bolesti raději paracetamol.",
+      "aspirin":  "Zesiluje účinek Xarelta — i drobné zranění může krvácet déle než běžně.",
+      "anopyrin": "Zesiluje účinek Xarelta — i drobné zranění může krvácet déle než běžně.",
+      "stacyl":   "Zesiluje účinek Xarelta — i drobné zranění může krvácet déle než běžně."
     }
   },
   "warfarin": {
@@ -42,21 +42,21 @@
     "is_supplement": false,
     "interacts_with": ["ibalgin","ibuprofen","voltaren","aspirin","anopyrin","stacyl","valproat","depakine","convulex","liskantin","liskantín","primidone","mysoline","duloxetin","dulopren"],
     "pair_notes": {
-      "ibalgin":   "Ibuprofen s warfarinem výrazně zvyšuje riziko krvácení — při bolesti raději paracetamol.",
-      "ibuprofen": "Ibuprofen s warfarinem výrazně zvyšuje riziko krvácení — při bolesti raději paracetamol.",
-      "voltaren":  "Diklofenak s warfarinem výrazně zvyšuje riziko krvácení — při bolesti raději paracetamol.",
-      "aspirin":   "Aspirin zesiluje warfarin — sledovat INR a hlídat krvácení z dásní nebo modřiny.",
-      "anopyrin":  "Aspirin zesiluje warfarin — sledovat INR a hlídat krvácení z dásní nebo modřiny.",
-      "stacyl":    "Aspirin zesiluje warfarin — sledovat INR a hlídat krvácení z dásní nebo modřiny.",
-      "valproat":  "Valproát zesiluje warfarin — po nasazení zkontrolovat INR.",
-      "depakine":  "Valproát zesiluje warfarin — po nasazení zkontrolovat INR.",
-      "convulex":  "Valproát zesiluje warfarin — po nasazení zkontrolovat INR.",
-      "liskantin": "Primidon urychluje odbourávání warfarinu — po každé změně dávky zkontrolovat INR.",
-      "liskantín": "Primidon urychluje odbourávání warfarinu — po každé změně dávky zkontrolovat INR.",
-      "primidone": "Primidon urychluje odbourávání warfarinu — po každé změně dávky zkontrolovat INR.",
-      "mysoline":  "Primidon urychluje odbourávání warfarinu — po každé změně dávky zkontrolovat INR.",
-      "duloxetin": "Duloxetin mírně zvyšuje riziko krvácení u warfarinu — sledovat modřiny a INR.",
-      "dulopren":  "Duloxetin mírně zvyšuje riziko krvácení u warfarinu — sledovat modřiny a INR."
+      "ibalgin":   "Tato kombinace výrazně zvyšuje riziko krvácení — při bolesti raději paracetamol.",
+      "ibuprofen": "Tato kombinace výrazně zvyšuje riziko krvácení — při bolesti raději paracetamol.",
+      "voltaren":  "Tato kombinace výrazně zvyšuje riziko krvácení — při bolesti raději paracetamol.",
+      "aspirin":   "Zesiluje warfarin — sleduj krvácení z dásní nebo neobvyklé modřiny.",
+      "anopyrin":  "Zesiluje warfarin — sleduj krvácení z dásní nebo neobvyklé modřiny.",
+      "stacyl":    "Zesiluje warfarin — sleduj krvácení z dásní nebo neobvyklé modřiny.",
+      "valproat":  "Zesiluje warfarin — po nasazení zkontrolovat INR.",
+      "depakine":  "Zesiluje warfarin — po nasazení zkontrolovat INR.",
+      "convulex":  "Zesiluje warfarin — po nasazení zkontrolovat INR.",
+      "liskantin": "Urychluje odbourávání warfarinu — po každé změně dávky zkontrolovat INR.",
+      "liskantín": "Urychluje odbourávání warfarinu — po každé změně dávky zkontrolovat INR.",
+      "primidone": "Urychluje odbourávání warfarinu — po každé změně dávky zkontrolovat INR.",
+      "mysoline":  "Urychluje odbourávání warfarinu — po každé změně dávky zkontrolovat INR.",
+      "duloxetin": "Mírně zvyšuje riziko krvácení u warfarinu — sledovat modřiny a INR.",
+      "dulopren":  "Mírně zvyšuje riziko krvácení u warfarinu — sledovat modřiny a INR."
     }
   },
   "anopyrin": {
@@ -68,15 +68,15 @@
     "is_supplement": false,
     "interacts_with": ["pradaxa","xarelto","warfarin","ibalgin","ibuprofen","voltaren","valproat","depakine","convulex"],
     "pair_notes": {
-      "pradaxa":  "Aspirin zesiluje účinek Pradaxy — i drobné zranění může krvácet déle než běžně.",
-      "xarelto":  "Aspirin zesiluje Xarelto — i drobné zranění může krvácet déle než běžně.",
-      "warfarin": "Aspirin zesiluje warfarin — sledovat INR a hlídat krvácení z dásní nebo modřiny.",
-      "ibalgin":  "Aspirin s ibuprofenom zvyšuje riziko žaludečního krvácení — tuhle kombinaci nepoužívat.",
-      "ibuprofen":"Aspirin s ibuprofenom zvyšuje riziko žaludečního krvácení — tuhle kombinaci nepoužívat.",
-      "voltaren": "Aspirin s diklofenakem zvyšuje riziko žaludečního krvácení — nepoužívat zároveň.",
-      "valproat": "Aspirin (i v nízké dávce) zvyšuje volnou hladinu valproátu — hlídat závratě a třes.",
-      "depakine": "Aspirin zvyšuje volnou hladinu valproátu — hlídat závratě a třes.",
-      "convulex": "Aspirin zvyšuje volnou hladinu valproátu — hlídat závratě a třes."
+      "pradaxa":  "Zesiluje účinek Pradaxy — i drobné zranění může krvácet déle než běžně.",
+      "xarelto":  "Zesiluje účinek Xarelta — i drobné zranění může krvácet déle než běžně.",
+      "warfarin": "Zesiluje warfarin — sleduj krvácení z dásní nebo neobvyklé modřiny.",
+      "ibalgin":  "Tato kombinace zvyšuje riziko žaludečního krvácení — nepoužívat zároveň.",
+      "ibuprofen":"Tato kombinace zvyšuje riziko žaludečního krvácení — nepoužívat zároveň.",
+      "voltaren": "Tato kombinace zvyšuje riziko žaludečního krvácení — nepoužívat zároveň.",
+      "valproat": "Zvyšuje hladinu Depakinu/Convulexu v krvi — hlídat závratě a třes.",
+      "depakine": "Zvyšuje hladinu Depakinu v krvi — hlídat závratě a třes.",
+      "convulex": "Zvyšuje hladinu Convulexu v krvi — hlídat závratě a třes."
     }
   },
   "aspirin": {
@@ -88,15 +88,15 @@
     "is_supplement": false,
     "interacts_with": ["pradaxa","xarelto","warfarin","ibalgin","ibuprofen","voltaren","valproat","depakine","convulex"],
     "pair_notes": {
-      "pradaxa":  "Aspirin zesiluje účinek Pradaxy — i drobné zranění může krvácet déle než běžně.",
-      "xarelto":  "Aspirin zesiluje Xarelto — i drobné zranění může krvácet déle než běžně.",
-      "warfarin": "Aspirin zesiluje warfarin — sledovat INR a hlídat krvácení z dásní nebo modřiny.",
-      "ibalgin":  "Aspirin s ibuprofenom zvyšuje riziko žaludečního krvácení — tuhle kombinaci nepoužívat.",
-      "ibuprofen":"Aspirin s ibuprofenom zvyšuje riziko žaludečního krvácení — tuhle kombinaci nepoužívat.",
-      "voltaren": "Aspirin s diklofenakem zvyšuje riziko žaludečního krvácení — nepoužívat zároveň.",
-      "valproat": "Aspirin (i v nízké dávce) zvyšuje volnou hladinu valproátu — hlídat závratě a třes.",
-      "depakine": "Aspirin zvyšuje volnou hladinu valproátu — hlídat závratě a třes.",
-      "convulex": "Aspirin zvyšuje volnou hladinu valproátu — hlídat závratě a třes."
+      "pradaxa":  "Zesiluje účinek Pradaxy — i drobné zranění může krvácet déle než běžně.",
+      "xarelto":  "Zesiluje účinek Xarelta — i drobné zranění může krvácet déle než běžně.",
+      "warfarin": "Zesiluje warfarin — sleduj krvácení z dásní nebo neobvyklé modřiny.",
+      "ibalgin":  "Tato kombinace zvyšuje riziko žaludečního krvácení — nepoužívat zároveň.",
+      "ibuprofen":"Tato kombinace zvyšuje riziko žaludečního krvácení — nepoužívat zároveň.",
+      "voltaren": "Tato kombinace zvyšuje riziko žaludečního krvácení — nepoužívat zároveň.",
+      "valproat": "Zvyšuje hladinu Depakinu/Convulexu v krvi — hlídat závratě a třes.",
+      "depakine": "Zvyšuje hladinu Depakinu v krvi — hlídat závratě a třes.",
+      "convulex": "Zvyšuje hladinu Convulexu v krvi — hlídat závratě a třes."
     }
   },
   "stacyl": {
@@ -108,12 +108,12 @@
     "is_supplement": false,
     "interacts_with": ["pradaxa","xarelto","warfarin","ibalgin","ibuprofen","voltaren"],
     "pair_notes": {
-      "pradaxa":  "Aspirin zesiluje účinek Pradaxy — i drobné zranění může krvácet déle než běžně.",
-      "xarelto":  "Aspirin zesiluje Xarelto — i drobné zranění může krvácet déle než běžně.",
-      "warfarin": "Aspirin zesiluje warfarin — sledovat INR a hlídat krvácení z dásní nebo modřiny.",
-      "ibalgin":  "Aspirin s ibuprofenom zvyšuje riziko žaludečního krvácení — nepoužívat zároveň.",
-      "ibuprofen":"Aspirin s ibuprofenom zvyšuje riziko žaludečního krvácení — nepoužívat zároveň.",
-      "voltaren": "Aspirin s diklofenakem zvyšuje riziko žaludečního krvácení — nepoužívat zároveň."
+      "pradaxa":  "Zesiluje účinek Pradaxy — i drobné zranění může krvácet déle než běžně.",
+      "xarelto":  "Zesiluje účinek Xarelta — i drobné zranění může krvácet déle než běžně.",
+      "warfarin": "Zesiluje warfarin — sleduj krvácení z dásní nebo neobvyklé modřiny.",
+      "ibalgin":  "Tato kombinace zvyšuje riziko žaludečního krvácení — nepoužívat zároveň.",
+      "ibuprofen":"Tato kombinace zvyšuje riziko žaludečního krvácení — nepoužívat zároveň.",
+      "voltaren": "Tato kombinace zvyšuje riziko žaludečního krvácení — nepoužívat zároveň."
     }
   },
   "torvacard": {
@@ -125,9 +125,9 @@
     "is_supplement": false,
     "interacts_with": ["amlessa","norvasc","amlodipin"],
     "pair_notes": {
-      "amlessa":  "Amlodipin (10 mg) mírně zvyšuje hladinu atorvastatinu — při svalových bolestech říct lékaři.",
-      "norvasc":  "Amlodipin (10 mg) mírně zvyšuje hladinu atorvastatinu — při svalových bolestech říct lékaři.",
-      "amlodipin":"Amlodipin (10 mg) mírně zvyšuje hladinu atorvastatinu — při svalových bolestech říct lékaři."
+      "amlessa":  "Ve vyšší dávce mírně zvyšuje hladinu statinu v krvi — při svalových bolestech říct lékaři.",
+      "norvasc":  "Ve vyšší dávce mírně zvyšuje hladinu statinu v krvi — při svalových bolestech říct lékaři.",
+      "amlodipin":"Ve vyšší dávce mírně zvyšuje hladinu statinu v krvi — při svalových bolestech říct lékaři."
     }
   },
   "sortis": {
@@ -139,9 +139,9 @@
     "is_supplement": false,
     "interacts_with": ["amlessa","norvasc","amlodipin"],
     "pair_notes": {
-      "amlessa":  "Amlodipin (10 mg) mírně zvyšuje hladinu atorvastatinu — při svalových bolestech říct lékaři.",
-      "norvasc":  "Amlodipin (10 mg) mírně zvyšuje hladinu atorvastatinu — při svalových bolestech říct lékaři.",
-      "amlodipin":"Amlodipin (10 mg) mírně zvyšuje hladinu atorvastatinu — při svalových bolestech říct lékaři."
+      "amlessa":  "Ve vyšší dávce mírně zvyšuje hladinu statinu v krvi — při svalových bolestech říct lékaři.",
+      "norvasc":  "Ve vyšší dávce mírně zvyšuje hladinu statinu v krvi — při svalových bolestech říct lékaři.",
+      "amlodipin":"Ve vyšší dávce mírně zvyšuje hladinu statinu v krvi — při svalových bolestech říct lékaři."
     }
   },
   "atorvastatin": {
@@ -153,9 +153,9 @@
     "is_supplement": false,
     "interacts_with": ["amlessa","norvasc","amlodipin"],
     "pair_notes": {
-      "amlessa":  "Amlodipin (10 mg) mírně zvyšuje hladinu atorvastatinu — při svalových bolestech říct lékaři.",
-      "norvasc":  "Amlodipin (10 mg) mírně zvyšuje hladinu atorvastatinu — při svalových bolestech říct lékaři.",
-      "amlodipin":"Amlodipin (10 mg) mírně zvyšuje hladinu atorvastatinu — při svalových bolestech říct lékaři."
+      "amlessa":  "Ve vyšší dávce mírně zvyšuje hladinu statinu v krvi — při svalových bolestech říct lékaři.",
+      "norvasc":  "Ve vyšší dávce mírně zvyšuje hladinu statinu v krvi — při svalových bolestech říct lékaři.",
+      "amlodipin":"Ve vyšší dávce mírně zvyšuje hladinu statinu v krvi — při svalových bolestech říct lékaři."
     }
   },
   "crestor": {
@@ -167,7 +167,7 @@
     "is_supplement": false,
     "interacts_with": ["warfarin"],
     "pair_notes": {
-      "warfarin": "Rosuvastatin mírně zesiluje warfarin — po nasazení statinu zkontrolovat INR."
+      "warfarin": "Mírně zesiluje warfarin — po nasazení statinu zkontrolovat INR."
     }
   },
   "rosucard": {
@@ -179,7 +179,7 @@
     "is_supplement": false,
     "interacts_with": ["warfarin"],
     "pair_notes": {
-      "warfarin": "Rosuvastatin mírně zesiluje warfarin — po nasazení statinu zkontrolovat INR."
+      "warfarin": "Mírně zesiluje warfarin — po nasazení statinu zkontrolovat INR."
     }
   },
   "rosuvastatin": {
@@ -191,7 +191,7 @@
     "is_supplement": false,
     "interacts_with": ["warfarin"],
     "pair_notes": {
-      "warfarin": "Rosuvastatin mírně zesiluje warfarin — po nasazení statinu zkontrolovat INR."
+      "warfarin": "Mírně zesiluje warfarin — po nasazení statinu zkontrolovat INR."
     }
   },
   "nolpaza": {
@@ -203,9 +203,9 @@
     "is_supplement": false,
     "interacts_with": ["euthyrox","letrox","levothyroxin"],
     "pair_notes": {
-      "euthyrox":    "Tabletu štítné žlázy vzít nejméně 4 hodiny od pantoprazolu — jinak se hůř vstřebá.",
-      "letrox":      "Tabletu štítné žlázy vzít nejméně 4 hodiny od pantoprazolu — jinak se hůř vstřebá.",
-      "levothyroxin":"Tabletu štítné žlázy vzít nejméně 4 hodiny od pantoprazolu — jinak se hůř vstřebá."
+      "euthyrox":    "Vzít s odstupem aspoň 4 hodiny od sebe — tableta štítné žlázy se jinak hůř vstřebá.",
+      "letrox":      "Vzít s odstupem aspoň 4 hodiny od sebe — tableta štítné žlázy se jinak hůř vstřebá.",
+      "levothyroxin":"Vzít s odstupem aspoň 4 hodiny od sebe — tableta štítné žlázy se jinak hůř vstřebá."
     }
   },
   "helicid": {
@@ -217,9 +217,9 @@
     "is_supplement": false,
     "interacts_with": ["euthyrox","letrox","levothyroxin"],
     "pair_notes": {
-      "euthyrox":    "Tabletu štítné žlázy vzít nejméně 4 hodiny od omeprazolu — jinak se hůř vstřebá.",
-      "letrox":      "Tabletu štítné žlázy vzít nejméně 4 hodiny od omeprazolu — jinak se hůř vstřebá.",
-      "levothyroxin":"Tabletu štítné žlázy vzít nejméně 4 hodiny od omeprazolu — jinak se hůř vstřebá."
+      "euthyrox":    "Vzít s odstupem aspoň 4 hodiny od sebe — tableta štítné žlázy se jinak hůř vstřebá.",
+      "letrox":      "Vzít s odstupem aspoň 4 hodiny od sebe — tableta štítné žlázy se jinak hůř vstřebá.",
+      "levothyroxin":"Vzít s odstupem aspoň 4 hodiny od sebe — tableta štítné žlázy se jinak hůř vstřebá."
     }
   },
   "omeprazol": {
@@ -231,9 +231,9 @@
     "is_supplement": false,
     "interacts_with": ["euthyrox","letrox","levothyroxin"],
     "pair_notes": {
-      "euthyrox":    "Tabletu štítné žlázy vzít nejméně 4 hodiny od omeprazolu — jinak se hůř vstřebá.",
-      "letrox":      "Tabletu štítné žlázy vzít nejméně 4 hodiny od omeprazolu — jinak se hůř vstřebá.",
-      "levothyroxin":"Tabletu štítné žlázy vzít nejméně 4 hodiny od omeprazolu — jinak se hůř vstřebá."
+      "euthyrox":    "Vzít s odstupem aspoň 4 hodiny od sebe — tableta štítné žlázy se jinak hůř vstřebá.",
+      "letrox":      "Vzít s odstupem aspoň 4 hodiny od sebe — tableta štítné žlázy se jinak hůř vstřebá.",
+      "levothyroxin":"Vzít s odstupem aspoň 4 hodiny od sebe — tableta štítné žlázy se jinak hůř vstřebá."
     }
   },
   "pantoprazol": {
@@ -245,9 +245,9 @@
     "is_supplement": false,
     "interacts_with": ["euthyrox","letrox","levothyroxin"],
     "pair_notes": {
-      "euthyrox":    "Tabletu štítné žlázy vzít nejméně 4 hodiny od pantoprazolu — jinak se hůř vstřebá.",
-      "letrox":      "Tabletu štítné žlázy vzít nejméně 4 hodiny od pantoprazolu — jinak se hůř vstřebá.",
-      "levothyroxin":"Tabletu štítné žlázy vzít nejméně 4 hodiny od pantoprazolu — jinak se hůř vstřebá."
+      "euthyrox":    "Vzít s odstupem aspoň 4 hodiny od sebe — tableta štítné žlázy se jinak hůř vstřebá.",
+      "letrox":      "Vzít s odstupem aspoň 4 hodiny od sebe — tableta štítné žlázy se jinak hůř vstřebá.",
+      "levothyroxin":"Vzít s odstupem aspoň 4 hodiny od sebe — tableta štítné žlázy se jinak hůř vstřebá."
     }
   },
   "emanera": {
@@ -259,9 +259,9 @@
     "is_supplement": false,
     "interacts_with": ["euthyrox","letrox","levothyroxin"],
     "pair_notes": {
-      "euthyrox":    "Tabletu štítné žlázy vzít nejméně 4 hodiny od esomeprazolu — jinak se hůř vstřebá.",
-      "letrox":      "Tabletu štítné žlázy vzít nejméně 4 hodiny od esomeprazolu — jinak se hůř vstřebá.",
-      "levothyroxin":"Tabletu štítné žlázy vzít nejméně 4 hodiny od esomeprazolu — jinak se hůř vstřebá."
+      "euthyrox":    "Vzít s odstupem aspoň 4 hodiny od sebe — tableta štítné žlázy se jinak hůř vstřebá.",
+      "letrox":      "Vzít s odstupem aspoň 4 hodiny od sebe — tableta štítné žlázy se jinak hůř vstřebá.",
+      "levothyroxin":"Vzít s odstupem aspoň 4 hodiny od sebe — tableta štítné žlázy se jinak hůř vstřebá."
     }
   },
   "betaloc": {
@@ -273,8 +273,8 @@
     "is_supplement": false,
     "interacts_with": ["verapamil","diltiazem"],
     "pair_notes": {
-      "verapamil": "Metoprolol s verapamilem může zpomalit srdce příliš — kombinaci řeší kardiolog.",
-      "diltiazem": "Metoprolol s diltiazemem může zpomalit srdce příliš — kombinaci řeší kardiolog."
+      "verapamil": "Tato kombinace může zpomalit srdce příliš — řeší kardiolog.",
+      "diltiazem": "Tato kombinace může zpomalit srdce příliš — řeší kardiolog."
     }
   },
   "concor": {
@@ -286,8 +286,8 @@
     "is_supplement": false,
     "interacts_with": ["verapamil","diltiazem"],
     "pair_notes": {
-      "verapamil": "Bisoprolol s verapamilem může zpomalit srdce příliš — kombinaci řeší kardiolog.",
-      "diltiazem": "Bisoprolol s diltiazemem může zpomalit srdce příliš — kombinaci řeší kardiolog."
+      "verapamil": "Tato kombinace může zpomalit srdce příliš — řeší kardiolog.",
+      "diltiazem": "Tato kombinace může zpomalit srdce příliš — řeší kardiolog."
     }
   },
   "metoprolol": {
@@ -299,8 +299,8 @@
     "is_supplement": false,
     "interacts_with": ["verapamil","diltiazem"],
     "pair_notes": {
-      "verapamil": "Metoprolol s verapamilem může zpomalit srdce příliš — kombinaci řeší kardiolog.",
-      "diltiazem": "Metoprolol s diltiazemem může zpomalit srdce příliš — kombinaci řeší kardiolog."
+      "verapamil": "Tato kombinace může zpomalit srdce příliš — řeší kardiolog.",
+      "diltiazem": "Tato kombinace může zpomalit srdce příliš — řeší kardiolog."
     }
   },
   "bisoprolol": {
@@ -312,8 +312,8 @@
     "is_supplement": false,
     "interacts_with": ["verapamil","diltiazem"],
     "pair_notes": {
-      "verapamil": "Bisoprolol s verapamilem může zpomalit srdce příliš — kombinaci řeší kardiolog.",
-      "diltiazem": "Bisoprolol s diltiazemem může zpomalit srdce příliš — kombinaci řeší kardiolog."
+      "verapamil": "Tato kombinace může zpomalit srdce příliš — řeší kardiolog.",
+      "diltiazem": "Tato kombinace může zpomalit srdce příliš — řeší kardiolog."
     }
   },
   "prestarium": {
@@ -325,13 +325,13 @@
     "is_supplement": false,
     "interacts_with": ["kalnormin","slow-k","draslík","tezeo","olmesartan","ibalgin","ibuprofen"],
     "pair_notes": {
-      "kalnormin": "Kálium doplňky s ACE inhibitorem mohou zvýšit draslík v krvi — pravidelná kontrola laboratorních hodnot.",
-      "slow-k":    "Kálium doplňky s ACE inhibitorem mohou zvýšit draslík v krvi — pravidelná kontrola.",
-      "draslík":   "Kálium doplňky s ACE inhibitorem mohou zvýšit draslík v krvi — pravidelná kontrola.",
-      "tezeo":     "Kombinace dvou léků na tlak (ACE + sartan) nedoporučována — hlídat funkci ledvin.",
-      "olmesartan":"Kombinace dvou léků na tlak (ACE + sartan) nedoporučována — hlídat funkci ledvin.",
-      "ibalgin":   "Ibuprofen oslabuje účinek ACE inhibitoru a zatěžuje ledviny — raději paracetamol.",
-      "ibuprofen": "Ibuprofen oslabuje účinek ACE inhibitoru a zatěžuje ledviny — raději paracetamol."
+      "kalnormin": "Tato kombinace může zvýšit draslík v krvi — pravidelná kontrola u lékaře.",
+      "slow-k":    "Tato kombinace může zvýšit draslík v krvi — pravidelná kontrola u lékaře.",
+      "draslík":   "Tato kombinace může zvýšit draslík v krvi — pravidelná kontrola u lékaře.",
+      "tezeo":     "Dva léky na tlak dohromady nejsou doporučovány — hlídat funkci ledvin.",
+      "olmesartan":"Dva léky na tlak dohromady nejsou doporučovány — hlídat funkci ledvin.",
+      "ibalgin":   "Tato kombinace oslabuje účinek léku na tlak a zatěžuje ledviny — raději paracetamol.",
+      "ibuprofen": "Tato kombinace oslabuje účinek léku na tlak a zatěžuje ledviny — raději paracetamol."
     }
   },
   "perindopril": {
@@ -343,12 +343,12 @@
     "is_supplement": false,
     "interacts_with": ["kalnormin","slow-k","draslík","tezeo","ibalgin","ibuprofen"],
     "pair_notes": {
-      "kalnormin": "Kálium doplňky s ACE inhibitorem mohou zvýšit draslík v krvi — pravidelná kontrola.",
-      "slow-k":    "Kálium doplňky s ACE inhibitorem mohou zvýšit draslík v krvi — pravidelná kontrola.",
-      "draslík":   "Kálium doplňky s ACE inhibitorem mohou zvýšit draslík v krvi — pravidelná kontrola.",
-      "tezeo":     "Kombinace dvou léků na tlak (ACE + sartan) nedoporučována — hlídat funkci ledvin.",
-      "ibalgin":   "Ibuprofen oslabuje účinek ACE inhibitoru a zatěžuje ledviny — raději paracetamol.",
-      "ibuprofen": "Ibuprofen oslabuje účinek ACE inhibitoru a zatěžuje ledviny — raději paracetamol."
+      "kalnormin": "Tato kombinace může zvýšit draslík v krvi — pravidelná kontrola u lékaře.",
+      "slow-k":    "Tato kombinace může zvýšit draslík v krvi — pravidelná kontrola u lékaře.",
+      "draslík":   "Tato kombinace může zvýšit draslík v krvi — pravidelná kontrola u lékaře.",
+      "tezeo":     "Dva léky na tlak dohromady nejsou doporučovány — hlídat funkci ledvin.",
+      "ibalgin":   "Tato kombinace oslabuje účinek léku na tlak a zatěžuje ledviny — raději paracetamol.",
+      "ibuprofen": "Tato kombinace oslabuje účinek léku na tlak a zatěžuje ledviny — raději paracetamol."
     }
   },
   "tritace": {
@@ -360,12 +360,12 @@
     "is_supplement": false,
     "interacts_with": ["kalnormin","slow-k","draslík","tezeo","ibalgin","ibuprofen"],
     "pair_notes": {
-      "kalnormin": "Kálium doplňky s ACE inhibitorem mohou zvýšit draslík v krvi — pravidelná kontrola.",
-      "slow-k":    "Kálium doplňky s ACE inhibitorem mohou zvýšit draslík v krvi — pravidelná kontrola.",
-      "draslík":   "Kálium doplňky s ACE inhibitorem mohou zvýšit draslík v krvi — pravidelná kontrola.",
-      "tezeo":     "Kombinace dvou léků na tlak (ACE + sartan) nedoporučována — hlídat funkci ledvin.",
-      "ibalgin":   "Ibuprofen oslabuje účinek ACE inhibitoru a zatěžuje ledviny — raději paracetamol.",
-      "ibuprofen": "Ibuprofen oslabuje účinek ACE inhibitoru a zatěžuje ledviny — raději paracetamol."
+      "kalnormin": "Tato kombinace může zvýšit draslík v krvi — pravidelná kontrola u lékaře.",
+      "slow-k":    "Tato kombinace může zvýšit draslík v krvi — pravidelná kontrola u lékaře.",
+      "draslík":   "Tato kombinace může zvýšit draslík v krvi — pravidelná kontrola u lékaře.",
+      "tezeo":     "Dva léky na tlak dohromady nejsou doporučovány — hlídat funkci ledvin.",
+      "ibalgin":   "Tato kombinace oslabuje účinek léku na tlak a zatěžuje ledviny — raději paracetamol.",
+      "ibuprofen": "Tato kombinace oslabuje účinek léku na tlak a zatěžuje ledviny — raději paracetamol."
     }
   },
   "amlessa": {
@@ -377,9 +377,9 @@
     "is_supplement": false,
     "interacts_with": ["torvacard","sortis","atorvastatin"],
     "pair_notes": {
-      "torvacard":   "Amlodipin (10 mg) mírně zvyšuje hladinu atorvastatinu — při svalových bolestech říct lékaři.",
-      "sortis":      "Amlodipin (10 mg) mírně zvyšuje hladinu atorvastatinu — při svalových bolestech říct lékaři.",
-      "atorvastatin":"Amlodipin (10 mg) mírně zvyšuje hladinu atorvastatinu — při svalových bolestech říct lékaři."
+      "torvacard":   "Ve vyšší dávce mírně zvyšuje hladinu statinu v krvi — při svalových bolestech říct lékaři.",
+      "sortis":      "Ve vyšší dávce mírně zvyšuje hladinu statinu v krvi — při svalových bolestech říct lékaři.",
+      "atorvastatin":"Ve vyšší dávce mírně zvyšuje hladinu statinu v krvi — při svalových bolestech říct lékaři."
     }
   },
   "norvasc": {
@@ -391,9 +391,9 @@
     "is_supplement": false,
     "interacts_with": ["torvacard","sortis","atorvastatin"],
     "pair_notes": {
-      "torvacard":   "Amlodipin (10 mg) mírně zvyšuje hladinu atorvastatinu — při svalových bolestech říct lékaři.",
-      "sortis":      "Amlodipin (10 mg) mírně zvyšuje hladinu atorvastatinu — při svalových bolestech říct lékaři.",
-      "atorvastatin":"Amlodipin (10 mg) mírně zvyšuje hladinu atorvastatinu — při svalových bolestech říct lékaři."
+      "torvacard":   "Ve vyšší dávce mírně zvyšuje hladinu statinu v krvi — při svalových bolestech říct lékaři.",
+      "sortis":      "Ve vyšší dávce mírně zvyšuje hladinu statinu v krvi — při svalových bolestech říct lékaři.",
+      "atorvastatin":"Ve vyšší dávce mírně zvyšuje hladinu statinu v krvi — při svalových bolestech říct lékaři."
     }
   },
   "kalnormin": {
@@ -405,10 +405,10 @@
     "is_supplement": false,
     "interacts_with": ["prestarium","perindopril","tritace","tezeo"],
     "pair_notes": {
-      "prestarium":  "Kálium doplňky s ACE inhibitorem mohou zvýšit draslík v krvi — pravidelná kontrola.",
-      "perindopril": "Kálium doplňky s ACE inhibitorem mohou zvýšit draslík v krvi — pravidelná kontrola.",
-      "tritace":     "Kálium doplňky s ACE inhibitorem mohou zvýšit draslík v krvi — pravidelná kontrola.",
-      "tezeo":       "Kálium doplňky s olmesartanem mohou zvýšit draslík v krvi — pravidelná kontrola."
+      "prestarium":  "Tato kombinace může zvýšit draslík v krvi — pravidelná kontrola u lékaře.",
+      "perindopril": "Tato kombinace může zvýšit draslík v krvi — pravidelná kontrola u lékaře.",
+      "tritace":     "Tato kombinace může zvýšit draslík v krvi — pravidelná kontrola u lékaře.",
+      "tezeo":       "Tato kombinace může zvýšit draslík v krvi — pravidelná kontrola u lékaře."
     }
   },
   "slow-k": {
@@ -420,10 +420,10 @@
     "is_supplement": false,
     "interacts_with": ["prestarium","perindopril","tritace","tezeo"],
     "pair_notes": {
-      "prestarium":  "Kálium doplňky s ACE inhibitorem mohou zvýšit draslík v krvi — pravidelná kontrola.",
-      "perindopril": "Kálium doplňky s ACE inhibitorem mohou zvýšit draslík v krvi — pravidelná kontrola.",
-      "tritace":     "Kálium doplňky s ACE inhibitorem mohou zvýšit draslík v krvi — pravidelná kontrola.",
-      "tezeo":       "Kálium doplňky s olmesartanem mohou zvýšit draslík v krvi — pravidelná kontrola."
+      "prestarium":  "Tato kombinace může zvýšit draslík v krvi — pravidelná kontrola u lékaře.",
+      "perindopril": "Tato kombinace může zvýšit draslík v krvi — pravidelná kontrola u lékaře.",
+      "tritace":     "Tato kombinace může zvýšit draslík v krvi — pravidelná kontrola u lékaře.",
+      "tezeo":       "Tato kombinace může zvýšit draslík v krvi — pravidelná kontrola u lékaře."
     }
   },
   "milurit": {
@@ -435,7 +435,7 @@
     "is_supplement": false,
     "interacts_with": ["warfarin"],
     "pair_notes": {
-      "warfarin": "Allopurinol zesiluje warfarin — po nasazení zkontrolovat INR."
+      "warfarin": "Zesiluje warfarin — po nasazení zkontrolovat INR."
     }
   },
   "allopurinol": {
@@ -447,7 +447,7 @@
     "is_supplement": false,
     "interacts_with": ["warfarin"],
     "pair_notes": {
-      "warfarin": "Allopurinol zesiluje warfarin — po nasazení zkontrolovat INR."
+      "warfarin": "Zesiluje warfarin — po nasazení zkontrolovat INR."
     }
   },
   "ibalgin": {
@@ -460,14 +460,14 @@
     "no_canvas": true,
     "interacts_with": ["pradaxa","xarelto","warfarin","anopyrin","stacyl","prestarium","perindopril","tritace"],
     "pair_notes": {
-      "pradaxa":     "Ibuprofen s Pradaxou výrazně zvyšuje riziko žaludečního krvácení — při bolesti raději paracetamol.",
-      "xarelto":     "Ibuprofen s Xareltem výrazně zvyšuje riziko krvácení — při bolesti raději paracetamol.",
-      "warfarin":    "Ibuprofen s warfarinem výrazně zvyšuje riziko krvácení — při bolesti raději paracetamol.",
-      "anopyrin":    "Ibuprofen s aspirinem zvyšuje riziko žaludečního krvácení — tuhle kombinaci nepoužívat.",
-      "stacyl":      "Ibuprofen s aspirinem zvyšuje riziko žaludečního krvácení — tuhle kombinaci nepoužívat.",
-      "prestarium":  "Ibuprofen oslabuje účinek ACE inhibitoru a zatěžuje ledviny — raději paracetamol.",
-      "perindopril": "Ibuprofen oslabuje účinek ACE inhibitoru a zatěžuje ledviny — raději paracetamol.",
-      "tritace":     "Ibuprofen oslabuje účinek ACE inhibitoru a zatěžuje ledviny — raději paracetamol."
+      "pradaxa":     "Tato kombinace výrazně zvyšuje riziko žaludečního krvácení — při bolesti raději paracetamol.",
+      "xarelto":     "Tato kombinace výrazně zvyšuje riziko krvácení — při bolesti raději paracetamol.",
+      "warfarin":    "Tato kombinace výrazně zvyšuje riziko krvácení — při bolesti raději paracetamol.",
+      "anopyrin":    "Tato kombinace zvyšuje riziko žaludečního krvácení — nepoužívat zároveň.",
+      "stacyl":      "Tato kombinace zvyšuje riziko žaludečního krvácení — nepoužívat zároveň.",
+      "prestarium":  "Tato kombinace oslabuje účinek léku na tlak a zatěžuje ledviny — raději paracetamol.",
+      "perindopril": "Tato kombinace oslabuje účinek léku na tlak a zatěžuje ledviny — raději paracetamol.",
+      "tritace":     "Tato kombinace oslabuje účinek léku na tlak a zatěžuje ledviny — raději paracetamol."
     }
   },
   "ibuprofen": {
@@ -480,14 +480,14 @@
     "no_canvas": true,
     "interacts_with": ["pradaxa","xarelto","warfarin","anopyrin","stacyl","prestarium","perindopril","tritace"],
     "pair_notes": {
-      "pradaxa":     "Ibuprofen s Pradaxou výrazně zvyšuje riziko žaludečního krvácení — při bolesti raději paracetamol.",
-      "xarelto":     "Ibuprofen s Xareltem výrazně zvyšuje riziko krvácení — při bolesti raději paracetamol.",
-      "warfarin":    "Ibuprofen s warfarinem výrazně zvyšuje riziko krvácení — při bolesti raději paracetamol.",
-      "anopyrin":    "Ibuprofen s aspirinem zvyšuje riziko žaludečního krvácení — tuhle kombinaci nepoužívat.",
-      "stacyl":      "Ibuprofen s aspirinem zvyšuje riziko žaludečního krvácení — tuhle kombinaci nepoužívat.",
-      "prestarium":  "Ibuprofen oslabuje účinek ACE inhibitoru a zatěžuje ledviny — raději paracetamol.",
-      "perindopril": "Ibuprofen oslabuje účinek ACE inhibitoru a zatěžuje ledviny — raději paracetamol.",
-      "tritace":     "Ibuprofen oslabuje účinek ACE inhibitoru a zatěžuje ledviny — raději paracetamol."
+      "pradaxa":     "Tato kombinace výrazně zvyšuje riziko žaludečního krvácení — při bolesti raději paracetamol.",
+      "xarelto":     "Tato kombinace výrazně zvyšuje riziko krvácení — při bolesti raději paracetamol.",
+      "warfarin":    "Tato kombinace výrazně zvyšuje riziko krvácení — při bolesti raději paracetamol.",
+      "anopyrin":    "Tato kombinace zvyšuje riziko žaludečního krvácení — nepoužívat zároveň.",
+      "stacyl":      "Tato kombinace zvyšuje riziko žaludečního krvácení — nepoužívat zároveň.",
+      "prestarium":  "Tato kombinace oslabuje účinek léku na tlak a zatěžuje ledviny — raději paracetamol.",
+      "perindopril": "Tato kombinace oslabuje účinek léku na tlak a zatěžuje ledviny — raději paracetamol.",
+      "tritace":     "Tato kombinace oslabuje účinek léku na tlak a zatěžuje ledviny — raději paracetamol."
     }
   },
   "voltaren": {
@@ -500,11 +500,11 @@
     "no_canvas": true,
     "interacts_with": ["pradaxa","xarelto","warfarin","anopyrin","stacyl"],
     "pair_notes": {
-      "pradaxa":  "Diklofenak s Pradaxou výrazně zvyšuje riziko žaludečního krvácení — při bolesti raději paracetamol.",
-      "xarelto":  "Diklofenak s Xareltem výrazně zvyšuje riziko krvácení — při bolesti raději paracetamol.",
-      "warfarin": "Diklofenak s warfarinem výrazně zvyšuje riziko krvácení — při bolesti raději paracetamol.",
-      "anopyrin": "Diklofenak s aspirinem zvyšuje riziko žaludečního krvácení — nepoužívat zároveň.",
-      "stacyl":   "Diklofenak s aspirinem zvyšuje riziko žaludečního krvácení — nepoužívat zároveň."
+      "pradaxa":  "Tato kombinace výrazně zvyšuje riziko žaludečního krvácení — při bolesti raději paracetamol.",
+      "xarelto":  "Tato kombinace výrazně zvyšuje riziko krvácení — při bolesti raději paracetamol.",
+      "warfarin": "Tato kombinace výrazně zvyšuje riziko krvácení — při bolesti raději paracetamol.",
+      "anopyrin": "Tato kombinace zvyšuje riziko žaludečního krvácení — nepoužívat zároveň.",
+      "stacyl":   "Tato kombinace zvyšuje riziko žaludečního krvácení — nepoužívat zároveň."
     }
   },
   "vizarsin": {
@@ -516,11 +516,11 @@
     "is_supplement": false,
     "interacts_with": ["nitroglycerin","isosorbid","monoket","nitromint","isoket"],
     "pair_notes": {
-      "nitroglycerin": "Sildenafil s nitráty způsobuje závažný pokles tlaku — absolutně nekombinovát.",
-      "isosorbid":     "Sildenafil s nitráty způsobuje závažný pokles tlaku — absolutně nekombinovát.",
-      "monoket":       "Sildenafil s nitráty způsobuje závažný pokles tlaku — absolutně nekombinovát.",
-      "nitromint":     "Sildenafil s nitráty způsobuje závažný pokles tlaku — absolutně nekombinovát.",
-      "isoket":        "Sildenafil s nitráty způsobuje závažný pokles tlaku — absolutně nekombinovát."
+      "nitroglycerin": "Tato kombinace způsobuje nebezpečný pokles tlaku — absolutně nekombinovát.",
+      "isosorbid":     "Tato kombinace způsobuje nebezpečný pokles tlaku — absolutně nekombinovát.",
+      "monoket":       "Tato kombinace způsobuje nebezpečný pokles tlaku — absolutně nekombinovát.",
+      "nitromint":     "Tato kombinace způsobuje nebezpečný pokles tlaku — absolutně nekombinovát.",
+      "isoket":        "Tato kombinace způsobuje nebezpečný pokles tlaku — absolutně nekombinovát."
     }
   },
   "nitroglycerin": {
@@ -532,9 +532,9 @@
     "is_supplement": false,
     "interacts_with": ["vizarsin","cialis","levitra"],
     "pair_notes": {
-      "vizarsin": "Nitráty se sildenafilem způsobují závažný pokles tlaku — absolutně nekombinovát.",
-      "cialis":   "Nitráty s tadalafilem způsobují závažný pokles tlaku — absolutně nekombinovát.",
-      "levitra":  "Nitráty s vardenafilem způsobují závažný pokles tlaku — absolutně nekombinovát."
+      "vizarsin": "Tato kombinace způsobuje nebezpečný pokles tlaku — absolutně nekombinovát.",
+      "cialis":   "Tato kombinace způsobuje nebezpečný pokles tlaku — absolutně nekombinovát.",
+      "levitra":  "Tato kombinace způsobuje nebezpečný pokles tlaku — absolutně nekombinovát."
     }
   },
   "cialis": {
@@ -546,10 +546,10 @@
     "is_supplement": false,
     "interacts_with": ["nitroglycerin","isosorbid","monoket","nitromint"],
     "pair_notes": {
-      "nitroglycerin": "Tadalafil s nitráty způsobuje závažný pokles tlaku — absolutně nekombinovát.",
-      "isosorbid":     "Tadalafil s nitráty způsobuje závažný pokles tlaku — absolutně nekombinovát.",
-      "monoket":       "Tadalafil s nitráty způsobuje závažný pokles tlaku — absolutně nekombinovát.",
-      "nitromint":     "Tadalafil s nitráty způsobuje závažný pokles tlaku — absolutně nekombinovát."
+      "nitroglycerin": "Tato kombinace způsobuje nebezpečný pokles tlaku — absolutně nekombinovát.",
+      "isosorbid":     "Tato kombinace způsobuje nebezpečný pokles tlaku — absolutně nekombinovát.",
+      "monoket":       "Tato kombinace způsobuje nebezpečný pokles tlaku — absolutně nekombinovát.",
+      "nitromint":     "Tato kombinace způsobuje nebezpečný pokles tlaku — absolutně nekombinovát."
     }
   },
   "metformin":  {"inn":"metformin","group":"biguanid","effect":"snižuje cukr v krvi, pomáhá buňkám využít inzulín","primary_indication":"Diabetes 2. typu","companion_for":null,"is_supplement":false},
@@ -565,11 +565,11 @@
     "is_supplement": false,
     "interacts_with": ["omeprazol","helicid","pantoprazol","nolpaza","emanera"],
     "pair_notes": {
-      "omeprazol":   "Omeprazol brat nejméně 4 hodiny od tablety štítné žlázy — jinak se hůř vstřebá.",
-      "helicid":     "Omeprazol brat nejméně 4 hodiny od tablety štítné žlázy — jinak se hůř vstřebá.",
-      "pantoprazol": "Pantoprazol brat nejméně 4 hodiny od tablety štítné žlázy — jinak se hůř vstřebá.",
-      "nolpaza":     "Pantoprazol brat nejméně 4 hodiny od tablety štítné žlázy — jinak se hůř vstřebá.",
-      "emanera":     "Esomeprazol brat nejméně 4 hodiny od tablety štítné žlázy — jinak se hůř vstřebá."
+      "omeprazol":   "Vzít s odstupem aspoň 4 hodiny od sebe — Euthyrox se jinak hůř vstřebá.",
+      "helicid":     "Vzít s odstupem aspoň 4 hodiny od sebe — Euthyrox se jinak hůř vstřebá.",
+      "pantoprazol": "Vzít s odstupem aspoň 4 hodiny od sebe — Euthyrox se jinak hůř vstřebá.",
+      "nolpaza":     "Vzít s odstupem aspoň 4 hodiny od sebe — Euthyrox se jinak hůř vstřebá.",
+      "emanera":     "Vzít s odstupem aspoň 4 hodiny od sebe — Euthyrox se jinak hůř vstřebá."
     }
   },
   "letrox": {
@@ -581,11 +581,11 @@
     "is_supplement": false,
     "interacts_with": ["omeprazol","helicid","pantoprazol","nolpaza","emanera"],
     "pair_notes": {
-      "omeprazol":   "Omeprazol brat nejméně 4 hodiny od tablety štítné žlázy — jinak se hůř vstřebá.",
-      "helicid":     "Omeprazol brat nejméně 4 hodiny od tablety štítné žlázy — jinak se hůř vstřebá.",
-      "pantoprazol": "Pantoprazol brat nejméně 4 hodiny od tablety štítné žlázy — jinak se hůř vstřebá.",
-      "nolpaza":     "Pantoprazol brat nejméně 4 hodiny od tablety štítné žlázy — jinak se hůř vstřebá.",
-      "emanera":     "Esomeprazol brat nejméně 4 hodiny od tablety štítné žlázy — jinak se hůř vstřebá."
+      "omeprazol":   "Vzít s odstupem aspoň 4 hodiny od sebe — Letrox se jinak hůř vstřebá.",
+      "helicid":     "Vzít s odstupem aspoň 4 hodiny od sebe — Letrox se jinak hůř vstřebá.",
+      "pantoprazol": "Vzít s odstupem aspoň 4 hodiny od sebe — Letrox se jinak hůř vstřebá.",
+      "nolpaza":     "Vzít s odstupem aspoň 4 hodiny od sebe — Letrox se jinak hůř vstřebá.",
+      "emanera":     "Vzít s odstupem aspoň 4 hodiny od sebe — Letrox se jinak hůř vstřebá."
     }
   },
   "mirtazapin": {
@@ -597,11 +597,11 @@
     "is_supplement": false,
     "interacts_with": ["tramadol","doreta","palgotal","amitriptylin","saroten"],
     "pair_notes": {
-      "tramadol":    "Mirtazapin s tramadolem zvyšuje serotonin — při třesu nebo zmatenosti ihned kontaktuj lékaře.",
-      "doreta":      "Mirtazapin s tramadolem zvyšuje serotonin — při třesu nebo zmatenosti ihned kontaktuj lékaře.",
-      "palgotal":    "Mirtazapin s tramadolem zvyšuje serotonin — při třesu nebo zmatenosti ihned kontaktuj lékaře.",
-      "amitriptylin":"Mirtazapin s amitriptylinem zesiluje útlum a zvyšuje serotonin — kombinaci hlásit lékaři.",
-      "saroten":     "Mirtazapin s amitriptylinem zesiluje útlum a zvyšuje serotonin — kombinaci hlásit lékaři."
+      "tramadol":    "Tato kombinace zvyšuje serotonin — při třesu nebo zmatenosti ihned kontaktuj lékaře.",
+      "doreta":      "Tato kombinace zvyšuje serotonin — při třesu nebo zmatenosti ihned kontaktuj lékaře.",
+      "palgotal":    "Tato kombinace zvyšuje serotonin — při třesu nebo zmatenosti ihned kontaktuj lékaře.",
+      "amitriptylin":"Tato kombinace zesiluje útlum — ranní ospalost, nekombinovat s alkoholem.",
+      "saroten":     "Tato kombinace zesiluje útlum — ranní ospalost, nekombinovat s alkoholem."
     }
   },
   "esoprex": {
@@ -613,12 +613,12 @@
     "is_supplement": false,
     "interacts_with": ["tramadol","doreta","palgotal","warfarin","ibalgin","ibuprofen"],
     "pair_notes": {
-      "tramadol": "Escitalopram s tramadolem zvyšuje serotonin — při třesu nebo neklidu kontaktuj lékaře.",
-      "doreta":   "Escitalopram s tramadolem zvyšuje serotonin — při třesu nebo neklidu kontaktuj lékaře.",
-      "palgotal": "Escitalopram s tramadolem zvyšuje serotonin — při třesu nebo neklidu kontaktuj lékaře.",
-      "warfarin": "Escitalopram mírně zvyšuje riziko krvácení u warfarinu — sledovat modřiny.",
-      "ibalgin":  "Escitalopram s ibuprofenom zvyšuje riziko žaludečního krvácení — raději paracetamol.",
-      "ibuprofen":"Escitalopram s ibuprofenom zvyšuje riziko žaludečního krvácení — raději paracetamol."
+      "tramadol": "Tato kombinace zvyšuje serotonin — při třesu nebo neklidu kontaktuj lékaře.",
+      "doreta":   "Tato kombinace zvyšuje serotonin — při třesu nebo neklidu kontaktuj lékaře.",
+      "palgotal": "Tato kombinace zvyšuje serotonin — při třesu nebo neklidu kontaktuj lékaře.",
+      "warfarin": "Mírně zvyšuje riziko krvácení u warfarinu — sledovat modřiny.",
+      "ibalgin":  "Tato kombinace zvyšuje riziko žaludečního krvácení — raději paracetamol.",
+      "ibuprofen":"Tato kombinace zvyšuje riziko žaludečního krvácení — raději paracetamol."
     }
   },
   "escitalopram": {
@@ -630,12 +630,12 @@
     "is_supplement": false,
     "interacts_with": ["tramadol","doreta","palgotal","warfarin","ibalgin","ibuprofen"],
     "pair_notes": {
-      "tramadol": "Escitalopram s tramadolem zvyšuje serotonin — při třesu nebo neklidu kontaktuj lékaře.",
-      "doreta":   "Escitalopram s tramadolem zvyšuje serotonin — při třesu nebo neklidu kontaktuj lékaře.",
-      "palgotal": "Escitalopram s tramadolem zvyšuje serotonin — při třesu nebo neklidu kontaktuj lékaře.",
-      "warfarin": "Escitalopram mírně zvyšuje riziko krvácení u warfarinu — sledovat modřiny.",
-      "ibalgin":  "Escitalopram s ibuprofenom zvyšuje riziko žaludečního krvácení — raději paracetamol.",
-      "ibuprofen":"Escitalopram s ibuprofenom zvyšuje riziko žaludečního krvácení — raději paracetamol."
+      "tramadol": "Tato kombinace zvyšuje serotonin — při třesu nebo neklidu kontaktuj lékaře.",
+      "doreta":   "Tato kombinace zvyšuje serotonin — při třesu nebo neklidu kontaktuj lékaře.",
+      "palgotal": "Tato kombinace zvyšuje serotonin — při třesu nebo neklidu kontaktuj lékaře.",
+      "warfarin": "Mírně zvyšuje riziko krvácení u warfarinu — sledovat modřiny.",
+      "ibalgin":  "Tato kombinace zvyšuje riziko žaludečního krvácení — raději paracetamol.",
+      "ibuprofen":"Tato kombinace zvyšuje riziko žaludečního krvácení — raději paracetamol."
     }
   },
   "dulopren": {
@@ -647,13 +647,13 @@
     "is_supplement": false,
     "interacts_with": ["tramadol","doreta","palgotal","warfarin","ibalgin","ibuprofen","voltaren"],
     "pair_notes": {
-      "tramadol": "Duloxetin s tramadolem zvyšuje serotonin — při třesu nebo neklidu kontaktuj lékaře.",
-      "doreta":   "Duloxetin s tramadolem zvyšuje serotonin — při třesu nebo neklidu kontaktuj lékaře.",
-      "palgotal": "Duloxetin s tramadolem zvyšuje serotonin — při třesu nebo neklidu kontaktuj lékaře.",
-      "warfarin": "Duloxetin mírně zvyšuje riziko krvácení u warfarinu — sledovat modřiny a INR.",
-      "ibalgin":  "Duloxetin s ibuprofenom zvyšuje riziko žaludečního krvácení — raději paracetamol.",
-      "ibuprofen":"Duloxetin s ibuprofenom zvyšuje riziko žaludečního krvácení — raději paracetamol.",
-      "voltaren": "Duloxetin s diklofenakem zvyšuje riziko žaludečního krvácení — raději paracetamol."
+      "tramadol": "Tato kombinace zvyšuje serotonin — při třesu nebo neklidu kontaktuj lékaře.",
+      "doreta":   "Tato kombinace zvyšuje serotonin — při třesu nebo neklidu kontaktuj lékaře.",
+      "palgotal": "Tato kombinace zvyšuje serotonin — při třesu nebo neklidu kontaktuj lékaře.",
+      "warfarin": "Mírně zvyšuje riziko krvácení u warfarinu — sledovat modřiny a INR.",
+      "ibalgin":  "Tato kombinace zvyšuje riziko žaludečního krvácení — raději paracetamol.",
+      "ibuprofen":"Tato kombinace zvyšuje riziko žaludečního krvácení — raději paracetamol.",
+      "voltaren": "Tato kombinace zvyšuje riziko žaludečního krvácení — raději paracetamol."
     }
   },
   "duloxetin": {
@@ -665,13 +665,13 @@
     "is_supplement": false,
     "interacts_with": ["tramadol","doreta","palgotal","warfarin","ibalgin","ibuprofen","voltaren"],
     "pair_notes": {
-      "tramadol": "Duloxetin s tramadolem zvyšuje serotonin — při třesu nebo neklidu kontaktuj lékaře.",
-      "doreta":   "Duloxetin s tramadolem zvyšuje serotonin — při třesu nebo neklidu kontaktuj lékaře.",
-      "palgotal": "Duloxetin s tramadolem zvyšuje serotonin — při třesu nebo neklidu kontaktuj lékaře.",
-      "warfarin": "Duloxetin mírně zvyšuje riziko krvácení u warfarinu — sledovat modřiny a INR.",
-      "ibalgin":  "Duloxetin s ibuprofenom zvyšuje riziko žaludečního krvácení — raději paracetamol.",
-      "ibuprofen":"Duloxetin s ibuprofenom zvyšuje riziko žaludečního krvácení — raději paracetamol.",
-      "voltaren": "Duloxetin s diklofenakem zvyšuje riziko žaludečního krvácení — raději paracetamol."
+      "tramadol": "Tato kombinace zvyšuje serotonin — při třesu nebo neklidu kontaktuj lékaře.",
+      "doreta":   "Tato kombinace zvyšuje serotonin — při třesu nebo neklidu kontaktuj lékaře.",
+      "palgotal": "Tato kombinace zvyšuje serotonin — při třesu nebo neklidu kontaktuj lékaře.",
+      "warfarin": "Mírně zvyšuje riziko krvácení u warfarinu — sledovat modřiny a INR.",
+      "ibalgin":  "Tato kombinace zvyšuje riziko žaludečního krvácení — raději paracetamol.",
+      "ibuprofen":"Tato kombinace zvyšuje riziko žaludečního krvácení — raději paracetamol.",
+      "voltaren": "Tato kombinace zvyšuje riziko žaludečního krvácení — raději paracetamol."
     }
   },
   "tramadol": {
@@ -683,18 +683,18 @@
     "is_supplement": false,
     "interacts_with": ["mirtazapin","esoprex","escitalopram","duloxetin","dulopren","amitriptylin","saroten","zolpidem","stilnox","hypnogen","gabapentin","neurontin"],
     "pair_notes": {
-      "mirtazapin":   "Tramadol s mirtazapinem zvyšuje serotonin — při třesu nebo zmatenosti ihned kontaktuj lékaře.",
-      "esoprex":      "Tramadol s escitalopramem zvyšuje serotonin — při třesu nebo neklidu kontaktuj lékaře.",
-      "escitalopram": "Tramadol s escitalopramem zvyšuje serotonin — při třesu nebo neklidu kontaktuj lékaře.",
-      "duloxetin":    "Tramadol s duloxetinem zvyšuje serotonin — při třesu nebo neklidu kontaktuj lékaře.",
-      "dulopren":     "Tramadol s duloxetinem zvyšuje serotonin — při třesu nebo neklidu kontaktuj lékaře.",
-      "amitriptylin": "Tramadol s amitriptylinem zesiluje útlum a zvyšuje serotonin — kombinaci hlásit lékaři.",
-      "saroten":      "Tramadol s amitriptylinem zesiluje útlum a zvyšuje serotonin — kombinaci hlásit lékaři.",
-      "zolpidem":     "Tramadol se zolpidemem zesiluje útlum — ráno opatrnost, nekombinovat s alkoholem.",
-      "stilnox":      "Tramadol se zolpidemem zesiluje útlum — ráno opatrnost, nekombinovat s alkoholem.",
-      "hypnogen":     "Tramadol se zolpidemem zesiluje útlum — ráno opatrnost, nekombinovat s alkoholem.",
-      "gabapentin":   "Tramadol s gabapentinem zesiluje útlum — riziko pádu zejména v noci.",
-      "neurontin":    "Tramadol s gabapentinem zesiluje útlum — riziko pádu zejména v noci."
+      "mirtazapin":   "Tato kombinace zvyšuje serotonin — při třesu nebo zmatenosti ihned kontaktuj lékaře.",
+      "esoprex":      "Tato kombinace zvyšuje serotonin — při třesu nebo neklidu kontaktuj lékaře.",
+      "escitalopram": "Tato kombinace zvyšuje serotonin — při třesu nebo neklidu kontaktuj lékaře.",
+      "duloxetin":    "Tato kombinace zvyšuje serotonin — při třesu nebo neklidu kontaktuj lékaře.",
+      "dulopren":     "Tato kombinace zvyšuje serotonin — při třesu nebo neklidu kontaktuj lékaře.",
+      "amitriptylin": "Tato kombinace zesiluje útlum a zvyšuje serotonin — říct lékaři.",
+      "saroten":      "Tato kombinace zesiluje útlum a zvyšuje serotonin — říct lékaři.",
+      "zolpidem":     "Tato kombinace zesiluje útlum — ráno opatrnost, nekombinovat s alkoholem.",
+      "stilnox":      "Tato kombinace zesiluje útlum — ráno opatrnost, nekombinovat s alkoholem.",
+      "hypnogen":     "Tato kombinace zesiluje útlum — ráno opatrnost, nekombinovat s alkoholem.",
+      "gabapentin":   "Tato kombinace zesiluje útlum — riziko pádu zejména v noci.",
+      "neurontin":    "Tato kombinace zesiluje útlum — riziko pádu zejména v noci."
     }
   },
   "doreta": {
@@ -706,18 +706,18 @@
     "is_supplement": false,
     "interacts_with": ["mirtazapin","esoprex","escitalopram","duloxetin","dulopren","amitriptylin","saroten","zolpidem","stilnox","hypnogen","gabapentin","neurontin"],
     "pair_notes": {
-      "mirtazapin":   "Tramadol s mirtazapinem zvyšuje serotonin — při třesu nebo zmatenosti ihned kontaktuj lékaře.",
-      "esoprex":      "Tramadol s escitalopramem zvyšuje serotonin — při třesu nebo neklidu kontaktuj lékaře.",
-      "escitalopram": "Tramadol s escitalopramem zvyšuje serotonin — při třesu nebo neklidu kontaktuj lékaře.",
-      "duloxetin":    "Tramadol s duloxetinem zvyšuje serotonin — při třesu nebo neklidu kontaktuj lékaře.",
-      "dulopren":     "Tramadol s duloxetinem zvyšuje serotonin — při třesu nebo neklidu kontaktuj lékaře.",
-      "amitriptylin": "Tramadol s amitriptylinem zesiluje útlum a zvyšuje serotonin — kombinaci hlásit lékaři.",
-      "saroten":      "Tramadol s amitriptylinem zesiluje útlum a zvyšuje serotonin — kombinaci hlásit lékaři.",
-      "zolpidem":     "Tramadol se zolpidemem zesiluje útlum — ráno opatrnost, nekombinovat s alkoholem.",
-      "stilnox":      "Tramadol se zolpidemem zesiluje útlum — ráno opatrnost, nekombinovat s alkoholem.",
-      "hypnogen":     "Tramadol se zolpidemem zesiluje útlum — ráno opatrnost, nekombinovat s alkoholem.",
-      "gabapentin":   "Tramadol s gabapentinem zesiluje útlum — riziko pádu zejména v noci.",
-      "neurontin":    "Tramadol s gabapentinem zesiluje útlum — riziko pádu zejména v noci."
+      "mirtazapin":   "Tato kombinace zvyšuje serotonin — při třesu nebo zmatenosti ihned kontaktuj lékaře.",
+      "esoprex":      "Tato kombinace zvyšuje serotonin — při třesu nebo neklidu kontaktuj lékaře.",
+      "escitalopram": "Tato kombinace zvyšuje serotonin — při třesu nebo neklidu kontaktuj lékaře.",
+      "duloxetin":    "Tato kombinace zvyšuje serotonin — při třesu nebo neklidu kontaktuj lékaře.",
+      "dulopren":     "Tato kombinace zvyšuje serotonin — při třesu nebo neklidu kontaktuj lékaře.",
+      "amitriptylin": "Tato kombinace zesiluje útlum a zvyšuje serotonin — říct lékaři.",
+      "saroten":      "Tato kombinace zesiluje útlum a zvyšuje serotonin — říct lékaři.",
+      "zolpidem":     "Tato kombinace zesiluje útlum — ráno opatrnost, nekombinovat s alkoholem.",
+      "stilnox":      "Tato kombinace zesiluje útlum — ráno opatrnost, nekombinovat s alkoholem.",
+      "hypnogen":     "Tato kombinace zesiluje útlum — ráno opatrnost, nekombinovat s alkoholem.",
+      "gabapentin":   "Tato kombinace zesiluje útlum — riziko pádu zejména v noci.",
+      "neurontin":    "Tato kombinace zesiluje útlum — riziko pádu zejména v noci."
     }
   },
   "palgotal": {
@@ -729,16 +729,16 @@
     "is_supplement": false,
     "interacts_with": ["mirtazapin","esoprex","escitalopram","duloxetin","dulopren","amitriptylin","saroten","zolpidem","stilnox","hypnogen"],
     "pair_notes": {
-      "mirtazapin":   "Tramadol s mirtazapinem zvyšuje serotonin — při třesu nebo zmatenosti ihned kontaktuj lékaře.",
-      "esoprex":      "Tramadol s escitalopramem zvyšuje serotonin — při třesu nebo neklidu kontaktuj lékaře.",
-      "escitalopram": "Tramadol s escitalopramem zvyšuje serotonin — při třesu nebo neklidu kontaktuj lékaře.",
-      "duloxetin":    "Tramadol s duloxetinem zvyšuje serotonin — při třesu nebo neklidu kontaktuj lékaře.",
-      "dulopren":     "Tramadol s duloxetinem zvyšuje serotonin — při třesu nebo neklidu kontaktuj lékaře.",
-      "amitriptylin": "Tramadol s amitriptylinem zesiluje útlum a zvyšuje serotonin — kombinaci hlásit lékaři.",
-      "saroten":      "Tramadol s amitriptylinem zesiluje útlum a zvyšuje serotonin — kombinaci hlásit lékaři.",
-      "zolpidem":     "Tramadol se zolpidemem zesiluje útlum — ráno opatrnost, nekombinovat s alkoholem.",
-      "stilnox":      "Tramadol se zolpidemem zesiluje útlum — ráno opatrnost, nekombinovat s alkoholem.",
-      "hypnogen":     "Tramadol se zolpidemem zesiluje útlum — ráno opatrnost, nekombinovat s alkoholem."
+      "mirtazapin":   "Tato kombinace zvyšuje serotonin — při třesu nebo zmatenosti ihned kontaktuj lékaře.",
+      "esoprex":      "Tato kombinace zvyšuje serotonin — při třesu nebo neklidu kontaktuj lékaře.",
+      "escitalopram": "Tato kombinace zvyšuje serotonin — při třesu nebo neklidu kontaktuj lékaře.",
+      "duloxetin":    "Tato kombinace zvyšuje serotonin — při třesu nebo neklidu kontaktuj lékaře.",
+      "dulopren":     "Tato kombinace zvyšuje serotonin — při třesu nebo neklidu kontaktuj lékaře.",
+      "amitriptylin": "Tato kombinace zesiluje útlum a zvyšuje serotonin — říct lékaři.",
+      "saroten":      "Tato kombinace zesiluje útlum a zvyšuje serotonin — říct lékaři.",
+      "zolpidem":     "Tato kombinace zesiluje útlum — ráno opatrnost, nekombinovat s alkoholem.",
+      "stilnox":      "Tato kombinace zesiluje útlum — ráno opatrnost, nekombinovat s alkoholem.",
+      "hypnogen":     "Tato kombinace zesiluje útlum — ráno opatrnost, nekombinovat s alkoholem."
     }
   },
   "ibandronat":  {"inn":"ibandronic acid","group":"bisfosfonát","effect":"zpomaluje úbytek kostní hmoty","primary_indication":"Osteopenie / osteoporóza","companion_for":null,"is_supplement":false},
@@ -755,7 +755,7 @@
     "is_supplement": false,
     "interacts_with": ["warfarin"],
     "pair_notes": {
-      "warfarin": "Primidon urychluje odbourávání warfarinu — po každé změně dávky zkontrolovat INR."
+      "warfarin": "Urychluje odbourávání warfarinu — po každé změně dávky zkontrolovat INR."
     }
   },
   "liskantín": {
@@ -767,7 +767,7 @@
     "is_supplement": false,
     "interacts_with": ["warfarin"],
     "pair_notes": {
-      "warfarin": "Primidon urychluje odbourávání warfarinu — po každé změně dávky zkontrolovat INR."
+      "warfarin": "Urychluje odbourávání warfarinu — po každé změně dávky zkontrolovat INR."
     }
   },
   "tezeo": {
@@ -779,12 +779,12 @@
     "is_supplement": false,
     "interacts_with": ["kalnormin","slow-k","draslík","prestarium","perindopril","tritace"],
     "pair_notes": {
-      "kalnormin":  "Kálium doplňky s olmesartanem mohou zvýšit draslík v krvi — pravidelná kontrola.",
-      "slow-k":     "Kálium doplňky s olmesartanem mohou zvýšit draslík v krvi — pravidelná kontrola.",
-      "draslík":    "Kálium doplňky s olmesartanem mohou zvýšit draslík v krvi — pravidelná kontrola.",
-      "prestarium": "Kombinace dvou léků na tlak (ARB + ACE) nedoporučována — hlídat funkci ledvin.",
-      "perindopril":"Kombinace dvou léků na tlak (ARB + ACE) nedoporučována — hlídat funkci ledvin.",
-      "tritace":    "Kombinace dvou léků na tlak (ARB + ACE) nedoporučována — hlídat funkci ledvin."
+      "kalnormin":  "Tato kombinace může zvýšit draslík v krvi — pravidelná kontrola u lékaře.",
+      "slow-k":     "Tato kombinace může zvýšit draslík v krvi — pravidelná kontrola u lékaře.",
+      "draslík":    "Tato kombinace může zvýšit draslík v krvi — pravidelná kontrola u lékaře.",
+      "prestarium": "Dva léky na tlak dohromady nejsou doporučovány — hlídat funkci ledvin.",
+      "perindopril":"Dva léky na tlak dohromady nejsou doporučovány — hlídat funkci ledvin.",
+      "tritace":    "Dva léky na tlak dohromady nejsou doporučovány — hlídat funkci ledvin."
     }
   },
   "asolfena":  {"inn":"solifenacin","group":"anticholinergikum","effect":"tlumí hyperaktivní močový měchýř","primary_indication":"Hyperaktivní močový měchýř","companion_for":null,"is_supplement":false,"no_canvas":true},
@@ -800,14 +800,14 @@
     "is_supplement": false,
     "interacts_with": ["tramadol","doreta","palgotal","mirtazapin","gabapentin","neurontin","amitriptylin","saroten"],
     "pair_notes": {
-      "tramadol":    "Zolpidem s tramadolem zesiluje útlum — ráno opatrnost, nekombinovat s alkoholem.",
-      "doreta":      "Zolpidem s tramadolem zesiluje útlum — ráno opatrnost, nekombinovat s alkoholem.",
-      "palgotal":    "Zolpidem s tramadolem zesiluje útlum — ráno opatrnost, nekombinovat s alkoholem.",
-      "mirtazapin":  "Zolpidem s mirtazapinem zesiluje útlum — ráno být opatrný.",
-      "gabapentin":  "Zolpidem s gabapentinem zesiluje útlum — u starších vyšší riziko pádu.",
-      "neurontin":   "Zolpidem s gabapentinem zesiluje útlum — u starších vyšší riziko pádu.",
-      "amitriptylin":"Zolpidem s amitriptylinem zesiluje útlum — ráno opatrnost, riziko pádu.",
-      "saroten":     "Zolpidem s amitriptylinem zesiluje útlum — ráno opatrnost, riziko pádu."
+      "tramadol":    "Tato kombinace zesiluje útlum — ráno opatrnost, nekombinovat s alkoholem.",
+      "doreta":      "Tato kombinace zesiluje útlum — ráno opatrnost, nekombinovat s alkoholem.",
+      "palgotal":    "Tato kombinace zesiluje útlum — ráno opatrnost, nekombinovat s alkoholem.",
+      "mirtazapin":  "Tato kombinace zesiluje útlum — ráno být opatrný.",
+      "gabapentin":  "Tato kombinace zesiluje útlum — u starších vyšší riziko pádu.",
+      "neurontin":   "Tato kombinace zesiluje útlum — u starších vyšší riziko pádu.",
+      "amitriptylin":"Tato kombinace zesiluje útlum — ráno opatrnost, riziko pádu.",
+      "saroten":     "Tato kombinace zesiluje útlum — ráno opatrnost, riziko pádu."
     }
   },
   "stilnox": {
@@ -819,12 +819,12 @@
     "is_supplement": false,
     "interacts_with": ["tramadol","doreta","palgotal","mirtazapin","gabapentin","amitriptylin"],
     "pair_notes": {
-      "tramadol":    "Zolpidem s tramadolem zesiluje útlum — ráno opatrnost, nekombinovat s alkoholem.",
-      "doreta":      "Zolpidem s tramadolem zesiluje útlum — ráno opatrnost, nekombinovat s alkoholem.",
-      "palgotal":    "Zolpidem s tramadolem zesiluje útlum — ráno opatrnost, nekombinovat s alkoholem.",
-      "mirtazapin":  "Zolpidem s mirtazapinem zesiluje útlum — ráno být opatrný.",
-      "gabapentin":  "Zolpidem s gabapentinem zesiluje útlum — u starších vyšší riziko pádu.",
-      "amitriptylin":"Zolpidem s amitriptylinem zesiluje útlum — ráno opatrnost, riziko pádu."
+      "tramadol":    "Tato kombinace zesiluje útlum — ráno opatrnost, nekombinovat s alkoholem.",
+      "doreta":      "Tato kombinace zesiluje útlum — ráno opatrnost, nekombinovat s alkoholem.",
+      "palgotal":    "Tato kombinace zesiluje útlum — ráno opatrnost, nekombinovat s alkoholem.",
+      "mirtazapin":  "Tato kombinace zesiluje útlum — ráno být opatrný.",
+      "gabapentin":  "Tato kombinace zesiluje útlum — u starších vyšší riziko pádu.",
+      "amitriptylin":"Tato kombinace zesiluje útlum — ráno opatrnost, riziko pádu."
     }
   },
   "hypnogen": {
@@ -836,12 +836,12 @@
     "is_supplement": false,
     "interacts_with": ["tramadol","doreta","palgotal","mirtazapin","gabapentin","amitriptylin"],
     "pair_notes": {
-      "tramadol":    "Zolpidem s tramadolem zesiluje útlum — ráno opatrnost, nekombinovat s alkoholem.",
-      "doreta":      "Zolpidem s tramadolem zesiluje útlum — ráno opatrnost, nekombinovat s alkoholem.",
-      "palgotal":    "Zolpidem s tramadolem zesiluje útlum — ráno opatrnost, nekombinovat s alkoholem.",
-      "mirtazapin":  "Zolpidem s mirtazapinem zesiluje útlum — ráno být opatrný.",
-      "gabapentin":  "Zolpidem s gabapentinem zesiluje útlum — u starších vyšší riziko pádu.",
-      "amitriptylin":"Zolpidem s amitriptylinem zesiluje útlum — ráno opatrnost, riziko pádu."
+      "tramadol":    "Tato kombinace zesiluje útlum — ráno opatrnost, nekombinovat s alkoholem.",
+      "doreta":      "Tato kombinace zesiluje útlum — ráno opatrnost, nekombinovat s alkoholem.",
+      "palgotal":    "Tato kombinace zesiluje útlum — ráno opatrnost, nekombinovat s alkoholem.",
+      "mirtazapin":  "Tato kombinace zesiluje útlum — ráno být opatrný.",
+      "gabapentin":  "Tato kombinace zesiluje útlum — u starších vyšší riziko pádu.",
+      "amitriptylin":"Tato kombinace zesiluje útlum — ráno opatrnost, riziko pádu."
     }
   },
   "ozempic":    {"inn":"semaglutid","group":"GLP-1 agonista","effect":"snižuje chuť k jídlu a tělesnou hmotnost","primary_indication":"DM2 / obezita","companion_for":null,"is_supplement":false},
@@ -862,10 +862,10 @@
     "is_supplement": false,
     "interacts_with": ["prestarium","perindopril","tritace","tezeo"],
     "pair_notes": {
-      "prestarium":  "Kálium doplňky s ACE inhibitorem mohou zvýšit draslík v krvi — pravidelná kontrola.",
-      "perindopril": "Kálium doplňky s ACE inhibitorem mohou zvýšit draslík v krvi — pravidelná kontrola.",
-      "tritace":     "Kálium doplňky s ACE inhibitorem mohou zvýšit draslík v krvi — pravidelná kontrola.",
-      "tezeo":       "Kálium doplňky s olmesartanem mohou zvýšit draslík v krvi — pravidelná kontrola."
+      "prestarium":  "Tato kombinace může zvýšit draslík v krvi — pravidelná kontrola u lékaře.",
+      "perindopril": "Tato kombinace může zvýšit draslík v krvi — pravidelná kontrola u lékaře.",
+      "tritace":     "Tato kombinace může zvýšit draslík v krvi — pravidelná kontrola u lékaře.",
+      "tezeo":       "Tato kombinace může zvýšit draslík v krvi — pravidelná kontrola u lékaře."
     }
   },
   "magnosolv": {
@@ -921,13 +921,13 @@
     "is_supplement": false,
     "interacts_with": ["tramadol","doreta","palgotal","mirtazapin","zolpidem","stilnox","hypnogen"],
     "pair_notes": {
-      "tramadol":  "Amitriptylin s tramadolem zesiluje útlum a zvyšuje serotonin — kombinaci hlásit lékaři.",
-      "doreta":    "Amitriptylin s tramadolem zesiluje útlum a zvyšuje serotonin — kombinaci hlásit lékaři.",
-      "palgotal":  "Amitriptylin s tramadolem zesiluje útlum a zvyšuje serotonin — kombinaci hlásit lékaři.",
-      "mirtazapin":"Amitriptylin s mirtazapinem zesiluje útlum — ranní ospalost, nekombinovat s alkoholem.",
-      "zolpidem":  "Amitriptylin se zolpidemem zesiluje útlum — ráno opatrnost, riziko pádu.",
-      "stilnox":   "Amitriptylin se zolpidemem zesiluje útlum — ráno opatrnost, riziko pádu.",
-      "hypnogen":  "Amitriptylin se zolpidemem zesiluje útlum — ráno opatrnost, riziko pádu."
+      "tramadol":  "Tato kombinace zesiluje útlum a zvyšuje serotonin — říct lékaři.",
+      "doreta":    "Tato kombinace zesiluje útlum a zvyšuje serotonin — říct lékaři.",
+      "palgotal":  "Tato kombinace zesiluje útlum a zvyšuje serotonin — říct lékaři.",
+      "mirtazapin":"Tato kombinace zesiluje útlum — ranní ospalost, nekombinovat s alkoholem.",
+      "zolpidem":  "Tato kombinace zesiluje útlum — ráno opatrnost, riziko pádu.",
+      "stilnox":   "Tato kombinace zesiluje útlum — ráno opatrnost, riziko pádu.",
+      "hypnogen":  "Tato kombinace zesiluje útlum — ráno opatrnost, riziko pádu."
     }
   },
   "saroten": {
@@ -939,12 +939,12 @@
     "is_supplement": false,
     "interacts_with": ["tramadol","doreta","palgotal","mirtazapin","zolpidem","stilnox"],
     "pair_notes": {
-      "tramadol":  "Amitriptylin s tramadolem zesiluje útlum a zvyšuje serotonin — kombinaci hlásit lékaři.",
-      "doreta":    "Amitriptylin s tramadolem zesiluje útlum a zvyšuje serotonin — kombinaci hlásit lékaři.",
-      "palgotal":  "Amitriptylin s tramadolem zesiluje útlum a zvyšuje serotonin — kombinaci hlásit lékaři.",
-      "mirtazapin":"Amitriptylin s mirtazapinem zesiluje útlum — ranní ospalost, nekombinovat s alkoholem.",
-      "zolpidem":  "Amitriptylin se zolpidemem zesiluje útlum — ráno opatrnost, riziko pádu.",
-      "stilnox":   "Amitriptylin se zolpidemem zesiluje útlum — ráno opatrnost, riziko pádu."
+      "tramadol":  "Tato kombinace zesiluje útlum a zvyšuje serotonin — říct lékaři.",
+      "doreta":    "Tato kombinace zesiluje útlum a zvyšuje serotonin — říct lékaři.",
+      "palgotal":  "Tato kombinace zesiluje útlum a zvyšuje serotonin — říct lékaři.",
+      "mirtazapin":"Tato kombinace zesiluje útlum — ranní ospalost, nekombinovat s alkoholem.",
+      "zolpidem":  "Tato kombinace zesiluje útlum — ráno opatrnost, riziko pádu.",
+      "stilnox":   "Tato kombinace zesiluje útlum — ráno opatrnost, riziko pádu."
     }
   },
   "nortriptylin": {"inn":"nortriptyline","group":"tricyklické antidepresivum","effect":"tlumí bolest, stabilizuje náladu","primary_indication":"Prevence bolestí hlavy / neuropatická bolest","companion_for":null,"is_supplement":false},
@@ -957,8 +957,8 @@
     "is_supplement": false,
     "interacts_with": ["verapamil","diltiazem"],
     "pair_notes": {
-      "verapamil": "Propranolol s verapamilem může zpomalit srdce příliš — kombinaci řeší kardiolog.",
-      "diltiazem": "Propranolol s diltiazemem může zpomalit srdce příliš — kombinaci řeší kardiolog."
+      "verapamil": "Tato kombinace může zpomalit srdce příliš — řeší kardiolog.",
+      "diltiazem": "Tato kombinace může zpomalit srdce příliš — řeší kardiolog."
     }
   },
   "inderal": {
@@ -970,8 +970,8 @@
     "is_supplement": false,
     "interacts_with": ["verapamil","diltiazem"],
     "pair_notes": {
-      "verapamil": "Propranolol s verapamilem může zpomalit srdce příliš — kombinaci řeší kardiolog.",
-      "diltiazem": "Propranolol s diltiazemem může zpomalit srdce příliš — kombinaci řeší kardiolog."
+      "verapamil": "Tato kombinace může zpomalit srdce příliš — řeší kardiolog.",
+      "diltiazem": "Tato kombinace může zpomalit srdce příliš — řeší kardiolog."
     }
   },
   "topiramat":  {"inn":"topiramate","group":"antiepileptikum","effect":"snižuje frekvenci záchvatů bolesti hlavy","primary_indication":"Prevence migrény","companion_for":null,"is_supplement":false},
@@ -985,13 +985,13 @@
     "is_supplement": false,
     "interacts_with": ["tramadol","doreta","palgotal","zolpidem","stilnox","hypnogen","mirtazapin"],
     "pair_notes": {
-      "tramadol":  "Gabapentin s tramadolem zesiluje útlum — riziko pádu zejména v noci.",
-      "doreta":    "Gabapentin s tramadolem zesiluje útlum — riziko pádu zejména v noci.",
-      "palgotal":  "Gabapentin s tramadolem zesiluje útlum — riziko pádu zejména v noci.",
-      "zolpidem":  "Gabapentin se zolpidemem zesiluje útlum — u starších vyšší riziko pádu.",
-      "stilnox":   "Gabapentin se zolpidemem zesiluje útlum — u starších vyšší riziko pádu.",
-      "hypnogen":  "Gabapentin se zolpidemem zesiluje útlum — u starších vyšší riziko pádu.",
-      "mirtazapin":"Gabapentin s mirtazapinem zesiluje útlum — ranní ospalost, opatrnost při řízení."
+      "tramadol":  "Tato kombinace zesiluje útlum — riziko pádu zejména v noci.",
+      "doreta":    "Tato kombinace zesiluje útlum — riziko pádu zejména v noci.",
+      "palgotal":  "Tato kombinace zesiluje útlum — riziko pádu zejména v noci.",
+      "zolpidem":  "Tato kombinace zesiluje útlum — u starších vyšší riziko pádu.",
+      "stilnox":   "Tato kombinace zesiluje útlum — u starších vyšší riziko pádu.",
+      "hypnogen":  "Tato kombinace zesiluje útlum — u starších vyšší riziko pádu.",
+      "mirtazapin":"Tato kombinace zesiluje útlum — ranní ospalost, opatrnost při řízení."
     }
   },
   "neurontin": {
@@ -1003,12 +1003,12 @@
     "is_supplement": false,
     "interacts_with": ["tramadol","doreta","palgotal","zolpidem","stilnox","mirtazapin"],
     "pair_notes": {
-      "tramadol":  "Gabapentin s tramadolem zesiluje útlum — riziko pádu zejména v noci.",
-      "doreta":    "Gabapentin s tramadolem zesiluje útlum — riziko pádu zejména v noci.",
-      "palgotal":  "Gabapentin s tramadolem zesiluje útlum — riziko pádu zejména v noci.",
-      "zolpidem":  "Gabapentin se zolpidemem zesiluje útlum — u starších vyšší riziko pádu.",
-      "stilnox":   "Gabapentin se zolpidemem zesiluje útlum — u starších vyšší riziko pádu.",
-      "mirtazapin":"Gabapentin s mirtazapinem zesiluje útlum — ranní ospalost, opatrnost při řízení."
+      "tramadol":  "Tato kombinace zesiluje útlum — riziko pádu zejména v noci.",
+      "doreta":    "Tato kombinace zesiluje útlum — riziko pádu zejména v noci.",
+      "palgotal":  "Tato kombinace zesiluje útlum — riziko pádu zejména v noci.",
+      "zolpidem":  "Tato kombinace zesiluje útlum — u starších vyšší riziko pádu.",
+      "stilnox":   "Tato kombinace zesiluje útlum — u starších vyšší riziko pádu.",
+      "mirtazapin":"Tato kombinace zesiluje útlum — ranní ospalost, opatrnost při řízení."
     }
   },
   "primidone": {
@@ -1020,7 +1020,7 @@
     "is_supplement": false,
     "interacts_with": ["warfarin"],
     "pair_notes": {
-      "warfarin": "Primidon urychluje odbourávání warfarinu — po každé změně dávky zkontrolovat INR."
+      "warfarin": "Urychluje odbourávání warfarinu — po každé změně dávky zkontrolovat INR."
     }
   },
   "mysoline": {
@@ -1032,7 +1032,7 @@
     "is_supplement": false,
     "interacts_with": ["warfarin"],
     "pair_notes": {
-      "warfarin": "Primidon urychluje odbourávání warfarinu — po každé změně dávky zkontrolovat INR."
+      "warfarin": "Urychluje odbourávání warfarinu — po každé změně dávky zkontrolovat INR."
     }
   },
   "valproat": {
@@ -1044,10 +1044,10 @@
     "is_supplement": false,
     "interacts_with": ["aspirin","anopyrin","stacyl","warfarin"],
     "pair_notes": {
-      "aspirin":  "Aspirin (i v nízké dávce) zvyšuje volnou hladinu valproátu — hlídat závratě a třes.",
-      "anopyrin": "Aspirin zvyšuje volnou hladinu valproátu — hlídat závratě a třes.",
-      "stacyl":   "Aspirin zvyšuje volnou hladinu valproátu — hlídat závratě a třes.",
-      "warfarin": "Valproát zesiluje warfarin — po nasazení zkontrolovat INR."
+      "aspirin":  "Zesiluje Valproát — hlídat závratě a třes.",
+      "anopyrin": "Zesiluje Valproát — hlídat závratě a třes.",
+      "stacyl":   "Zesiluje Valproát — hlídat závratě a třes.",
+      "warfarin": "Zesiluje warfarin — po nasazení zkontrolovat INR."
     }
   },
   "depakine": {
@@ -1059,10 +1059,10 @@
     "is_supplement": false,
     "interacts_with": ["aspirin","anopyrin","stacyl","warfarin"],
     "pair_notes": {
-      "aspirin":  "Aspirin zvyšuje volnou hladinu valproátu — hlídat závratě a třes.",
-      "anopyrin": "Aspirin zvyšuje volnou hladinu valproátu — hlídat závratě a třes.",
-      "stacyl":   "Aspirin zvyšuje volnou hladinu valproátu — hlídat závratě a třes.",
-      "warfarin": "Valproát zesiluje warfarin — po nasazení zkontrolovat INR."
+      "aspirin":  "Zesiluje Depakine — hlídat závratě a třes.",
+      "anopyrin": "Zesiluje Depakine — hlídat závratě a třes.",
+      "stacyl":   "Zesiluje Depakine — hlídat závratě a třes.",
+      "warfarin": "Zesiluje warfarin — po nasazení zkontrolovat INR."
     }
   },
   "convulex": {
@@ -1074,10 +1074,10 @@
     "is_supplement": false,
     "interacts_with": ["aspirin","anopyrin","stacyl","warfarin"],
     "pair_notes": {
-      "aspirin":  "Aspirin zvyšuje volnou hladinu valproátu — hlídat závratě a třes.",
-      "anopyrin": "Aspirin zvyšuje volnou hladinu valproátu — hlídat závratě a třes.",
-      "stacyl":   "Aspirin zvyšuje volnou hladinu valproátu — hlídat závratě a třes.",
-      "warfarin": "Valproát zesiluje warfarin — po nasazení zkontrolovat INR."
+      "aspirin":  "Zesiluje Convulex — hlídat závratě a třes.",
+      "anopyrin": "Zesiluje Convulex — hlídat závratě a třes.",
+      "stacyl":   "Zesiluje Convulex — hlídat závratě a třes.",
+      "warfarin": "Zesiluje warfarin — po nasazení zkontrolovat INR."
     }
   },
   "flunarizin": {"inn":"flunarizine","group":"blokátor kalciových kanálů","effect":"snižuje frekvenci a intenzitu migrény","primary_indication":"Prevence migrény","companion_for":null,"is_supplement":false},
