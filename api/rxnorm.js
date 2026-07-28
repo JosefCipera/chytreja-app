@@ -63,14 +63,22 @@ function detectManualInteractions(validMeds) {
   return pairs;
 }
 
-// ── Few-shot příklady pro Haiku (tón a formát) ────────────────────────────────
+// ── Few-shot příklady pro Haiku — interaction i safe ─────────────────────────
 
-const FEW_SHOT = [
+const FEW_SHOT_INTERACTION = [
   { pair: 'Pradaxa + Ibalgin',  note: 'Tato kombinace výrazně zvyšuje riziko žaludečního krvácení — při bolesti raději paracetamol.' },
   { pair: 'Euthyrox + Nolpaza', note: 'Vzít s odstupem aspoň 4 hodiny od sebe — Euthyrox se jinak hůř vstřebá.' },
   { pair: 'Concor + Verapamil', note: 'Tato kombinace může zpomalit srdce příliš — řeší kardiolog.' },
   { pair: 'Pradaxa + Aspirin',  note: 'Zesiluje účinek Pradaxy — i drobné zranění může krvácet déle než běžně.' },
-  { pair: 'Warfarin + Ibalgin', note: 'Tato kombinace výrazně zvyšuje riziko krvácení — při bolesti raději paracetamol.' },
+];
+
+const FEW_SHOT_SAFE = [
+  'Kalnormin + Pradaxa',
+  'Kalnormin + Nolpaza',
+  'Kalnormin + Concor',
+  'Magnesium bisglycinát + Pradaxa',
+  'Vitamin D3 + Warfarin',
+  'Omega-3 + Metformin',
 ];
 
 // ── Layer 2: Haiku pro neznámé páry ──────────────────────────────────────────
@@ -78,29 +86,35 @@ const FEW_SHOT = [
 async function detectWithHaiku(unknownPairs) {
   if (!unknownPairs.length) return [];
 
-  const fewShotText = FEW_SHOT
-    .map(f => `"${f.pair}" → "${f.note}"`)
+  const fewShotInteraction = FEW_SHOT_INTERACTION
+    .map(f => `"${f.pair}" → interaction: "${f.note}"`)
     .join('\n');
+  const fewShotSafe = FEW_SHOT_SAFE.map(p => `"${p}" → safe`).join('\n');
 
   const pairsText = unknownPairs
     .map(([a, b]) => `- ${a} + ${b}`)
     .join('\n');
 
-  const prompt = `Jsi bezpečnostní systém lékových interakcí. Pro každý pár níže vrať JSON objekt.
+  const prompt = `Jsi přísný bezpečnostní kontrolor lékových interakcí. Tvoje chyba v "interaction" způsobí zbytečný strach pacienta — proto je lepší říct "safe" nebo "unknown" než hádat.
+
+Pravidlo: Označuj "interaction" POUZE pokud jsi si jistý na 95 %+. Ve všech ostatních případech vrať "safe" nebo "unknown".
 
 Možné hodnoty "status":
-- "interaction" — klinicky relevantní interakce existuje (piš note)
-- "safe"        — žádná klinicky významná interakce
-- "unknown"     — nemáš spolehlivá data pro tento pár
+- "interaction" — prokazatelná klinická interakce (piš note)
+- "safe"        — žádná klinicky relevantní interakce, nebo běžná kombinace
+- "unknown"     — nemáš spolehlivá data
+
+Příklady INTERACTION (pouze takto jasné případy):
+${fewShotInteraction}
+
+Příklady SAFE (i takovéto kombinace jsou safe):
+${fewShotSafe}
 
 Pravidla pro "note":
 - 1 věta, česky, tykání
-- žádné INN názvy (piš brand jméno nebo "tato kombinace" / "tento lék")
+- žádné INN názvy (piš brand jméno nebo "tato kombinace")
 - žádný lékařský žargon, žádné diagnózy
-- praktická rada co udělat nebo na co si dát pozor
-
-Příklady správného formátu note:
-${fewShotText}
+- praktická rada
 
 Páry ke kontrole:
 ${pairsText}
@@ -154,17 +168,33 @@ export async function resolveInteractionsRxNorm(medicationNames) {
     return { name, inn, rxcui, is_supplement: db.is_supplement ?? false, db };
   }))).filter(Boolean);
 
-  // Layer 1: statické pair_notes
-  const manualPairs = detectManualInteractions(validMeds);
+  // Companion páry — záměrně předepsané kombinace, nikdy nezobrazovat jako interakci
+  const companionSet = new Set();
+  validMeds.forEach(m => {
+    const companion = m.db?.companion_for?.toLowerCase();
+    if (!companion) return;
+    validMeds.forEach(n => {
+      if (n.name.toLowerCase() === companion || n.inn?.toLowerCase() === companion) {
+        companionSet.add([m.name, n.name].sort().join('|'));
+      }
+    });
+  });
+
+  const isCompanion = (a, b) => companionSet.has([a, b].sort().join('|'));
+
+  // Layer 1: statické pair_notes (bez companion párů)
+  const manualPairs = detectManualInteractions(validMeds)
+    .filter(p => !isCompanion(p.drugs[0], p.drugs[1]));
   const knownSet = new Set(manualPairs.map(p => [...p.drugs].sort().join('|')));
 
-  // Layer 2: všechny ostatní páry → Haiku
+  // Layer 2: zbývající páry → Haiku (bez companion párů)
   const unknownPairs = [];
   for (let i = 0; i < validMeds.length; i++) {
     for (let j = i + 1; j < validMeds.length; j++) {
-      const key = [validMeds[i].name, validMeds[j].name].sort().join('|');
-      if (!knownSet.has(key)) {
-        unknownPairs.push([validMeds[i].name, validMeds[j].name]);
+      const a = validMeds[i].name, b = validMeds[j].name;
+      const key = [a, b].sort().join('|');
+      if (!knownSet.has(key) && !isCompanion(a, b)) {
+        unknownPairs.push([a, b]);
       }
     }
   }
