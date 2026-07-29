@@ -1619,6 +1619,17 @@ window.toggleIxPanel = function() {
   }
 };
 
+function _ixCategory(note) {
+  const n = (note || '').toLowerCase();
+  if (n.includes('krvácen'))                               return 'riziko krvácení';
+  if (n.includes('zpomal') || n.includes('příliš') && n.includes('srdce')) return 'zpomaluje srdce';
+  if (n.includes('ledvin'))                                return 'zatěžuje ledviny';
+  if (n.includes('draslík'))                               return 'zvyšuje draslík';
+  if (n.includes('tlak'))                                  return 'oslabuje tlak';
+  if (n.includes('žaludek'))                               return 'dráždí žaludek';
+  return 'sledovat u lékaře';
+}
+
 function _renderIxPanel() {
   const mini = document.getElementById('cnpMini');
   const el   = document.getElementById('cnpData');
@@ -1641,19 +1652,28 @@ function _renderIxPanel() {
     return;
   }
 
-  const items = ix.map(i => {
-    const drugs = Array.isArray(i.drugs) ? i.drugs : [i.drug || ''];
-    const note  = i.note || i.reason || '';
-    const [dA, dB] = drugs.map(d => d.charAt(0).toUpperCase() + d.slice(1));
+  // Seskup podle léku — jeden blok na lék
+  const byDrug = {};
+  ix.forEach(i => {
+    const [dA, dB] = (Array.isArray(i.drugs) ? i.drugs : [i.drug || '', ''])
+      .map(d => d.charAt(0).toUpperCase() + d.slice(1));
+    const note = i.note || '';
+    if (dA) { if (!byDrug[dA]) byDrug[dA] = []; byDrug[dA].push({ partner: dB, note }); }
+    if (dB) { if (!byDrug[dB]) byDrug[dB] = []; byDrug[dB].push({ partner: dA, note }); }
+  });
+
+  const SEVERITY = ['riziko krvácení','zpomaluje srdce','zatěžuje ledviny','zvyšuje draslík','oslabuje tlak','dráždí žaludek','sledovat u lékaře'];
+
+  const items = Object.entries(byDrug).map(([drug, pairs]) => {
+    const partners = [...new Set(pairs.map(p => p.partner).filter(Boolean))].join(', ');
+    const cats = pairs.map(p => _ixCategory(p.note));
+    const category = SEVERITY.find(s => cats.includes(s)) || cats[0] || '';
     return `
       <div class="cnp-section" style="border-left:2px solid #f59e0b">
         <p class="cnp-lbl" style="color:#f59e0b">⚡ interakce</p>
-        <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:8px">
-          <span style="font-size:16px;font-weight:500;color:#fbbf24">${dA}</span>
-          ${dB ? `<span style="font-size:11px;color:#78716c;font-family:monospace">+</span>
-          <span style="font-size:16px;font-weight:500;color:#fbbf24">${dB}</span>` : ''}
-        </div>
-        ${note ? `<p style="margin:0;font-size:13px;color:#cbd5e1;line-height:1.6">${note}</p>` : ''}
+        <p style="margin:0 0 3px;font-size:16px;font-weight:500;color:#fbbf24">${drug}</p>
+        ${partners ? `<p style="margin:0 0 6px;font-size:12px;color:#78716c">+ ${partners}</p>` : ''}
+        <p style="margin:0;font-size:13px;color:#cbd5e1">${category}</p>
       </div>`;
   }).join('');
 
