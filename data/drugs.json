@@ -323,7 +323,7 @@
     "primary_indication": "Hypertenze",
     "companion_for": null,
     "is_supplement": false,
-    "interacts_with": ["kalnormin","slow-k","draslík","tezeo","olmesartan","ibalgin","ibuprofen"],
+    "interacts_with": ["kalnormin","slow-k","draslík","tezeo","olmesartan","ibalgin","ibuprofen","aulin","nimesulid","voltaren"],
     "pair_notes": {
       "kalnormin": "Tato kombinace může zvýšit draslík v krvi — pravidelná kontrola u lékaře.",
       "slow-k":    "Tato kombinace může zvýšit draslík v krvi — pravidelná kontrola u lékaře.",
@@ -331,7 +331,31 @@
       "tezeo":     "Dva léky na tlak dohromady nejsou doporučovány — hlídat funkci ledvin.",
       "olmesartan":"Dva léky na tlak dohromady nejsou doporučovány — hlídat funkci ledvin.",
       "ibalgin":   "Tato kombinace oslabuje účinek léku na tlak a zatěžuje ledviny — raději paracetamol.",
-      "ibuprofen": "Tato kombinace oslabuje účinek léku na tlak a zatěžuje ledviny — raději paracetamol."
+      "ibuprofen": "Tato kombinace oslabuje účinek léku na tlak a zatěžuje ledviny — raději paracetamol.",
+      "aulin":     "Aulin oslabuje účinek léku na tlak a zároveň ledviny dostávají víc zabrat — pokud potřebuješ něco na bolest, paracetamol je bezpečnější volba.",
+      "nimesulid": "Tato kombinace oslabuje účinek léku na tlak a zatěžuje ledviny — raději paracetamol.",
+      "voltaren":  "Tato kombinace oslabuje účinek léku na tlak a zatěžuje ledviny — raději paracetamol."
+    }
+  },
+  "prestarium neo": {
+    "inn": "perindopril",
+    "group": "ACE inhibitor",
+    "effect": "rozšiřuje cévy, snižuje krevní tlak",
+    "primary_indication": "Hypertenze",
+    "companion_for": null,
+    "is_supplement": false,
+    "interacts_with": ["kalnormin","slow-k","draslík","tezeo","olmesartan","ibalgin","ibuprofen","aulin","nimesulid","voltaren"],
+    "pair_notes": {
+      "kalnormin": "Tato kombinace může zvýšit draslík v krvi — pravidelná kontrola u lékaře.",
+      "slow-k":    "Tato kombinace může zvýšit draslík v krvi — pravidelná kontrola u lékaře.",
+      "draslík":   "Tato kombinace může zvýšit draslík v krvi — pravidelná kontrola u lékaře.",
+      "tezeo":     "Dva léky na tlak dohromady nejsou doporučovány — hlídat funkci ledvin.",
+      "olmesartan":"Dva léky na tlak dohromady nejsou doporučovány — hlídat funkci ledvin.",
+      "ibalgin":   "Tato kombinace oslabuje účinek léku na tlak a zatěžuje ledviny — raději paracetamol.",
+      "ibuprofen": "Tato kombinace oslabuje účinek léku na tlak a zatěžuje ledviny — raději paracetamol.",
+      "aulin":     "Aulin oslabuje účinek Prestaria na tlak a zároveň ledviny dostávají víc zabrat — pokud potřebuješ něco na bolest, paracetamol je bezpečnější volba.",
+      "nimesulid": "Tato kombinace oslabuje účinek léku na tlak a zatěžuje ledviny — raději paracetamol.",
+      "voltaren":  "Tato kombinace oslabuje účinek léku na tlak a zatěžuje ledviny — raději paracetamol."
     }
   },
   "perindopril": {
@@ -448,6 +472,28 @@
     "interacts_with": ["warfarin"],
     "pair_notes": {
       "warfarin": "Zesiluje warfarin — po nasazení zkontrolovat INR."
+    }
+  },
+  "aulin": {
+    "inn": "nimesulide",
+    "group": "NSAID",
+    "effect": "tlumí bolest a zánět",
+    "primary_indication": "Bolest / zánět",
+    "companion_for": null,
+    "is_supplement": false,
+    "interacts_with": ["prestarium","prestarium neo","perindopril","tritace","tezeo","pradaxa","xarelto","warfarin","aspirin","anopyrin","stacyl"],
+    "pair_notes": {
+      "prestarium":     "Aulin oslabuje účinek Prestaria na tlak a zároveň ledviny dostávají víc zabrat — pokud potřebuješ něco na bolest, paracetamol je bezpečnější volba.",
+      "prestarium neo": "Aulin oslabuje účinek Prestaria na tlak a zároveň ledviny dostávají víc zabrat — pokud potřebuješ něco na bolest, paracetamol je bezpečnější volba.",
+      "perindopril":    "Aulin oslabuje účinek léku na tlak a zároveň ledviny dostávají víc zabrat — pokud potřebuješ něco na bolest, paracetamol je bezpečnější volba.",
+      "tritace":        "Aulin oslabuje účinek léku na tlak a zároveň ledviny dostávají víc zabrat — pokud potřebuješ něco na bolest, paracetamol je bezpečnější volba.",
+      "tezeo":          "Aulin oslabuje účinek léku na tlak a zároveň ledviny dostávají víc zabrat — pokud potřebuješ něco na bolest, paracetamol je bezpečnější volba.",
+      "pradaxa":        "Aulin zvyšuje riziko krvácení u Pradaxy — i malé zranění může krvácet déle, takže na bolest raději paracetamol.",
+      "xarelto":        "Aulin zvyšuje riziko krvácení u Xarelta — i malé zranění může krvácet déle, takže na bolest raději paracetamol.",
+      "warfarin":       "Aulin zesiluje účinek warfarinu a zvyšuje riziko krvácení — na bolest raději paracetamol a informuj lékaře.",
+      "aspirin":        "Dva léky ze stejné skupiny dohromady zatěžují žaludek víc než jeden — kombinovat jen pokud lékař výslovně schválí.",
+      "anopyrin":       "Dva léky ze stejné skupiny dohromady zatěžují žaludek víc než jeden — kombinovat jen pokud lékař výslovně schválí.",
+      "stacyl":         "Dva léky ze stejné skupiny dohromady zatěžují žaludek víc než jeden — kombinovat jen pokud lékař výslovně schválí."
     }
   },
   "ibalgin": {
