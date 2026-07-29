@@ -125,19 +125,19 @@ async function detectRxNormInteractions(validMeds, knownSet, companionSet) {
 const SIMPLIFY_FEW_SHOT = [
   {
     en: 'Concurrent use of dabigatran and aspirin may increase the risk of bleeding.',
-    cz: 'Zesiluje účinek Pradaxy — i drobné zranění může krvácet déle než běžně.',
+    cz: 'Krev se ti pak hůř zastavuje — i malé říznutí nebo modřina může krvácet déle než čekáš, takže na bolest raději sáhni po paracetamolu a o ibuprofenu nebo aspirinu se nejdřív poraď s lékařem.',
   },
   {
     en: 'Omeprazole may decrease the absorption of levothyroxine when taken simultaneously.',
-    cz: 'Vzít s odstupem aspoň 4 hodiny od sebe — tableta štítné žlázy se jinak hůř vstřebá.',
+    cz: 'Tableta štítné žlázy se hůř vstřebá, když ji bereš zároveň s lékem na žaludek — dej si mezi nimi aspoň 4 hodiny, nejlépe tabletu štítné žlázy ráno nalačno a lék na žaludek až pak.',
   },
   {
     en: 'The combination of metoprolol and verapamil may result in excessive bradycardia and AV block.',
-    cz: 'Tato kombinace může zpomalit srdce příliš — řeší kardiolog.',
+    cz: 'Oba léky zpomalují srdce a dohromady to může být příliš — pokud cítíš závratě, neobvyklou únavu nebo bušení srdce, ozvi se lékaři dřív než si dáš další dávku.',
   },
   {
     en: 'Ibuprofen may increase the anticoagulant effect of warfarin and increase the risk of bleeding.',
-    cz: 'Tato kombinace výrazně zvyšuje riziko krvácení — při bolesti raději paracetamol.',
+    cz: 'Ibuprofen zesiluje účinek léku na ředění krve a zároveň dráždí žaludek — na bolest je v tomhle případě bezpečnější paracetamol, a pokud nestačí, poraď se nejdřív s lékárníkem.',
   },
 ];
 
@@ -152,8 +152,9 @@ async function simplifyWithHaiku(rxNormItems) {
     .map((r, i) => `${i + 1}. ${r.drugs.join(' + ')}: "${r.description}"`)
     .join('\n');
 
-  const prompt = `Přepiš klinické popisy lékových interakcí do češtiny pro laika.
-Každý přepis musí být přesně 1 věta, česky, tykání, bez diagnóz, bez INN názvů léků (piš "tato kombinace" nebo brand jméno z dvojice), s praktickou radou.
+  const prompt = `Přepiš klinické popisy lékových interakcí do češtiny pro člověka bez medicínského vzdělání.
+Piš jako lékárník, který mluví s pacientem — lidsky, s pochopením. Tykání.
+Pravidla: 1–2 věty, vysvětli co se může stát v těle nebo co člověk pocítí, dej konkrétní praktickou radu (ne jen "poraď se s lékařem"), bez diagnóz, bez latinských nebo INN názvů léků (piš brand jméno nebo "tato kombinace").
 
 Příklady:
 ${fewShot}
