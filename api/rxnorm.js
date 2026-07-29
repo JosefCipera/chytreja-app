@@ -3,20 +3,98 @@ dotenv.config({ path: '.env.local' });
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { createClient } from '@supabase/supabase-js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DRUGS_DB = JSON.parse(readFileSync(join(__dirname, '../data/drugs.json'), 'utf8'));
 const RXNAV = 'https://rxnav.nlm.nih.gov/REST';
-const _rxcuiCache = {};
+
+const _rxcuiCache = {};   // in-memory per-request cache
+let _supabase = null;
+
+function getSupabase() {
+  if (!_supabase) _supabase = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+  );
+  return _supabase;
+}
+
+// ── INN resolution: drugs.json → Supabase cache → Haiku ──────────────────────
+
+async function lookupInnWithHaiku(brandName) {
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': process.env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5',
+        max_tokens: 30,
+        messages: [{ role: 'user', content:
+          `What is the INN (International Nonproprietary Name / active ingredient) for the drug "${brandName}"?\n` +
+          `Reply with ONLY the INN in English/Latin, lowercase, one word or short phrase. If unknown, reply "unknown".`
+        }],
+      }),
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const text = (data.content?.[0]?.text || '').trim().toLowerCase()
+      .replace(/[^a-z0-9 \-]/g, '').trim();
+    if (!text || text === 'unknown' || text.length > 60) return null;
+    console.log(`[rxnorm] Haiku INN lookup: "${brandName}" → "${text}"`);
+    return text;
+  } catch { return null; }
+}
+
+async function resolveInn(brandName) {
+  const key = brandName.toLowerCase().trim();
+
+  // 1. drugs.json (static, fastest)
+  const db = DRUGS_DB[key];
+  if (db?.inn) return { inn: db.inn, rxcui: null, fromDb: true };
+
+  // 2. Supabase cache
+  try {
+    const { data } = await getSupabase()
+      .from('drug_inn_cache')
+      .select('inn, rxcui')
+      .eq('name', key)
+      .maybeSingle();
+    if (data?.inn) {
+      console.log(`[rxnorm] cache hit: "${key}" → "${data.inn}"`);
+      return { inn: data.inn, rxcui: data.rxcui || null, fromDb: false };
+    }
+  } catch (e) { console.warn('[rxnorm] supabase cache read error:', e.message); }
+
+  // 3. Haiku INN lookup
+  const inn = await lookupInnWithHaiku(brandName);
+  if (inn) {
+    // Save to cache (fire and forget — don't block response)
+    getSupabase()
+      .from('drug_inn_cache')
+      .upsert({ name: key, inn, source: 'haiku', updated_at: new Date().toISOString() })
+      .then(() => {})
+      .catch(() => {});
+    return { inn, rxcui: null, fromDb: false };
+  }
+
+  // 4. Fallback: use brand name as-is (RxNorm might still know it)
+  return { inn: brandName, rxcui: null, fromDb: false };
+}
 
 // ── RxNorm name → rxcui ───────────────────────────────────────────────────────
 
-async function getRxcui(term) {
-  const key = term.toLowerCase().trim();
+async function getRxcui(inn) {
+  const key = inn.toLowerCase().trim();
   if (_rxcuiCache[key]) return _rxcuiCache[key];
   try {
     const res = await fetch(
-      `${RXNAV}/rxcui.json?name=${encodeURIComponent(term)}&search=1`,
+      `${RXNAV}/rxcui.json?name=${encodeURIComponent(inn)}&search=1`,
       { signal: AbortSignal.timeout(4000) }
     );
     if (!res.ok) return null;
@@ -80,7 +158,6 @@ async function detectRxNormInteractions(validMeds, knownSet, companionSet) {
 
     const data = await res.json();
     const groups = data?.fullInteractionTypeGroup || [];
-
     const results = [];
     const seen = new Set();
 
@@ -95,7 +172,6 @@ async function detectRxNormInteractions(validMeds, knownSet, companionSet) {
           const desc = pair.description || '';
           if (!innA || !innB || !desc) continue;
 
-          // Mapuj INN zpět na brand name uživatele
           const medA = validMeds.find(m =>
             m.inn?.toLowerCase() === innA || m.name.toLowerCase() === innA
           );
@@ -201,17 +277,29 @@ Formát: [{"idx":1,"note":"..."},{"idx":2,"note":"..."},...]`;
 // ── Main export ───────────────────────────────────────────────────────────────
 
 export async function resolveInteractionsRxNorm(medicationNames) {
+  // Resolve INN pro každý lék: drugs.json → Supabase cache → Haiku
   const validMeds = (await Promise.all(medicationNames.map(async raw => {
     const name = typeof raw === 'string' ? raw : (raw?.name || '');
     if (!name) return null;
     const key = name.toLowerCase().trim();
     const db  = DRUGS_DB[key] || {};
-    const inn = db.inn || name;
-    const rxcui = await getRxcui(inn);
+
+    const { inn, rxcui: cachedRxcui } = await resolveInn(name);
+    const rxcui = cachedRxcui || await getRxcui(inn);
+
+    // Cache rxcui back to Supabase if newly resolved
+    if (rxcui && !cachedRxcui && !db.inn) {
+      getSupabase()
+        .from('drug_inn_cache')
+        .update({ rxcui, updated_at: new Date().toISOString() })
+        .eq('name', key)
+        .then(() => {}).catch(() => {});
+    }
+
     return { name, inn, rxcui, is_supplement: db.is_supplement ?? false, db };
   }))).filter(Boolean);
 
-  // Companion páry — záměrně předepsané kombinace, nikdy nezobrazovat jako interakci
+  // Companion páry — záměrně předepsané kombinace
   const companionSet = new Set();
   validMeds.forEach(m => {
     const companion = m.db?.companion_for?.toLowerCase();
@@ -229,14 +317,11 @@ export async function resolveInteractionsRxNorm(medicationNames) {
     .filter(p => !isCompanion(p.drugs[0], p.drugs[1]));
   const knownSet = new Set(manualPairs.map(p => [...p.drugs].sort().join('|')));
 
-  // Layer 2+3: RxNorm API → Haiku simplifikace (paralelně s Layer 1)
+  // Layer 2+3: RxNorm API → Haiku simplifikace
   const rxNormRaw  = await detectRxNormInteractions(validMeds, knownSet, companionSet);
   const rxNormFull = await simplifyWithHaiku(rxNormRaw);
 
-  const interactions = [
-    ...manualPairs,
-    ...rxNormFull,
-  ];
+  const interactions = [...manualPairs, ...rxNormFull];
 
   if (interactions.length) {
     console.log(`[rxnorm] interakce (${interactions.length}): ${interactions.map(i => `${i.drugs.join('+')}[${i.source}]`).join(' | ')}`);
