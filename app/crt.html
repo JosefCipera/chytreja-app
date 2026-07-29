@@ -1647,13 +1647,13 @@ function _renderIxPanel() {
     const [dA, dB] = drugs.map(d => d.charAt(0).toUpperCase() + d.slice(1));
     return `
       <div class="cnp-section" style="border-left:2px solid #f59e0b">
-        <p class="cnp-lbl" style="color:#f59e0b">⚡ interakce léků</p>
+        <p class="cnp-lbl" style="color:#f59e0b">⚡ interakce</p>
         <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:8px">
           <span style="font-size:16px;font-weight:500;color:#fbbf24">${dA}</span>
           ${dB ? `<span style="font-size:11px;color:#78716c;font-family:monospace">+</span>
           <span style="font-size:16px;font-weight:500;color:#fbbf24">${dB}</span>` : ''}
         </div>
-        ${note ? `<p style="margin:0;font-size:13px;color:#fde68a;line-height:1.6">${note}</p>` : ''}
+        ${note ? `<p style="margin:0;font-size:13px;color:#cbd5e1;line-height:1.6">${note}</p>` : ''}
       </div>`;
   }).join('');
 
