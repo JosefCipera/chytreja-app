@@ -124,20 +124,20 @@ async function detectRxNormInteractions(validMeds, knownSet, companionSet) {
 
 const SIMPLIFY_FEW_SHOT = [
   {
-    en: 'Concurrent use of dabigatran and aspirin may increase the risk of bleeding.',
-    cz: 'Krev se ti pak hůř zastavuje — i malé říznutí nebo modřina může krvácet déle než čekáš, takže na bolest raději sáhni po paracetamolu a o ibuprofenu nebo aspirinu se nejdřív poraď s lékařem.',
+    en: 'Concurrent use of clarithromycin and simvastatin may increase the risk of myopathy and rhabdomyolysis.',
+    cz: 'Antibiotikum může dočasně zablokovat odbourávání léku na cholesterol, takže se hromadí v těle a svaly mohou začít bolet nebo slabět — ozvi se lékaři, jestli cítíš bolest svalů, a zeptej se ho na alternativu na dobu léčby.',
   },
   {
-    en: 'Omeprazole may decrease the absorption of levothyroxine when taken simultaneously.',
-    cz: 'Tableta štítné žlázy se hůř vstřebá, když ji bereš zároveň s lékem na žaludek — dej si mezi nimi aspoň 4 hodiny, nejlépe tabletu štítné žlázy ráno nalačno a lék na žaludek až pak.',
+    en: 'Calcium supplements may decrease the absorption of levothyroxine when taken at the same time.',
+    cz: 'Vápník váže tabletu štítné žlázy v žaludku a brání jejímu vstřebání — nejjednodušší řešení je vzít tyto dva léky s aspoň čtyřhodinovým odstupem, ideálně štítnou žlázu ráno nalačno.',
   },
   {
-    en: 'The combination of metoprolol and verapamil may result in excessive bradycardia and AV block.',
-    cz: 'Oba léky zpomalují srdce a dohromady to může být příliš — pokud cítíš závratě, neobvyklou únavu nebo bušení srdce, ozvi se lékaři dřív než si dáš další dávku.',
+    en: 'Lithium toxicity may be increased by concurrent use of ibuprofen due to decreased renal clearance.',
+    cz: 'Ibuprofen zpomaluje vylučování lithia ledvinami, takže se může nahromadit na vyšší hladinu než je bezpečné — na bolest nebo horečku je místo ibuprofenu lepší paracetamol a lékař by o tom měl vědět.',
   },
   {
-    en: 'Ibuprofen may increase the anticoagulant effect of warfarin and increase the risk of bleeding.',
-    cz: 'Ibuprofen zesiluje účinek léku na ředění krve a zároveň dráždí žaludek — na bolest je v tomhle případě bezpečnější paracetamol, a pokud nestačí, poraď se nejdřív s lékárníkem.',
+    en: 'Fluconazole may significantly increase the anticoagulant effect of warfarin, increasing bleeding risk.',
+    cz: 'Antifungální lék zpomaluje rozklad léku na ředění krve, takže účinek může být silnější než obvykle — při léčbě plísní sleduj, jestli se ti netvoří modřiny snáz než dřív, a lékaři to řekni co nejdřív.',
   },
 ];
 
