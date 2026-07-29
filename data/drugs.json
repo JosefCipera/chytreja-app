@@ -273,8 +273,8 @@
     "is_supplement": false,
     "interacts_with": ["verapamil","diltiazem"],
     "pair_notes": {
-      "verapamil": "Tato kombinace může zpomalit srdce příliš — řeší kardiolog.",
-      "diltiazem": "Tato kombinace může zpomalit srdce příliš — řeší kardiolog."
+      "verapamil": "Oba léky zpomalují srdce a dohromady to může být příliš — pokud cítíš závratě, neobvyklou únavu nebo bušení srdce, ozvi se lékaři dřív než si dáš další dávku.",
+      "diltiazem": "Oba léky zpomalují srdce a dohromady to může být příliš — pokud cítíš závratě, neobvyklou únavu nebo bušení srdce, ozvi se lékaři dřív než si dáš další dávku."
     }
   },
   "concor": {
@@ -286,8 +286,8 @@
     "is_supplement": false,
     "interacts_with": ["verapamil","diltiazem"],
     "pair_notes": {
-      "verapamil": "Tato kombinace může zpomalit srdce příliš — řeší kardiolog.",
-      "diltiazem": "Tato kombinace může zpomalit srdce příliš — řeší kardiolog."
+      "verapamil": "Oba léky zpomalují srdce a dohromady to může být příliš — pokud cítíš závratě, neobvyklou únavu nebo bušení srdce, ozvi se lékaři dřív než si dáš další dávku.",
+      "diltiazem": "Oba léky zpomalují srdce a dohromady to může být příliš — pokud cítíš závratě, neobvyklou únavu nebo bušení srdce, ozvi se lékaři dřív než si dáš další dávku."
     }
   },
   "metoprolol": {
@@ -299,8 +299,8 @@
     "is_supplement": false,
     "interacts_with": ["verapamil","diltiazem"],
     "pair_notes": {
-      "verapamil": "Tato kombinace může zpomalit srdce příliš — řeší kardiolog.",
-      "diltiazem": "Tato kombinace může zpomalit srdce příliš — řeší kardiolog."
+      "verapamil": "Oba léky zpomalují srdce a dohromady to může být příliš — pokud cítíš závratě, neobvyklou únavu nebo bušení srdce, ozvi se lékaři dřív než si dáš další dávku.",
+      "diltiazem": "Oba léky zpomalují srdce a dohromady to může být příliš — pokud cítíš závratě, neobvyklou únavu nebo bušení srdce, ozvi se lékaři dřív než si dáš další dávku."
     }
   },
   "bisoprolol": {
@@ -312,8 +312,8 @@
     "is_supplement": false,
     "interacts_with": ["verapamil","diltiazem"],
     "pair_notes": {
-      "verapamil": "Tato kombinace může zpomalit srdce příliš — řeší kardiolog.",
-      "diltiazem": "Tato kombinace může zpomalit srdce příliš — řeší kardiolog."
+      "verapamil": "Oba léky zpomalují srdce a dohromady to může být příliš — pokud cítíš závratě, neobvyklou únavu nebo bušení srdce, ozvi se lékaři dřív než si dáš další dávku.",
+      "diltiazem": "Oba léky zpomalují srdce a dohromady to může být příliš — pokud cítíš závratě, neobvyklou únavu nebo bušení srdce, ozvi se lékaři dřív než si dáš další dávku."
     }
   },
   "prestarium": {
@@ -957,8 +957,8 @@
     "is_supplement": false,
     "interacts_with": ["verapamil","diltiazem"],
     "pair_notes": {
-      "verapamil": "Tato kombinace může zpomalit srdce příliš — řeší kardiolog.",
-      "diltiazem": "Tato kombinace může zpomalit srdce příliš — řeší kardiolog."
+      "verapamil": "Oba léky zpomalují srdce a dohromady to může být příliš — pokud cítíš závratě, neobvyklou únavu nebo bušení srdce, ozvi se lékaři dřív než si dáš další dávku.",
+      "diltiazem": "Oba léky zpomalují srdce a dohromady to může být příliš — pokud cítíš závratě, neobvyklou únavu nebo bušení srdce, ozvi se lékaři dřív než si dáš další dávku."
     }
   },
   "inderal": {
@@ -970,8 +970,8 @@
     "is_supplement": false,
     "interacts_with": ["verapamil","diltiazem"],
     "pair_notes": {
-      "verapamil": "Tato kombinace může zpomalit srdce příliš — řeší kardiolog.",
-      "diltiazem": "Tato kombinace může zpomalit srdce příliš — řeší kardiolog."
+      "verapamil": "Oba léky zpomalují srdce a dohromady to může být příliš — pokud cítíš závratě, neobvyklou únavu nebo bušení srdce, ozvi se lékaři dřív než si dáš další dávku.",
+      "diltiazem": "Oba léky zpomalují srdce a dohromady to může být příliš — pokud cítíš závratě, neobvyklou únavu nebo bušení srdce, ozvi se lékaři dřív než si dáš další dávku."
     }
   },
   "topiramat":  {"inn":"topiramate","group":"antiepileptikum","effect":"snižuje frekvenci záchvatů bolesti hlavy","primary_indication":"Prevence migrény","companion_for":null,"is_supplement":false},
