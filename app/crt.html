@@ -951,12 +951,16 @@ function renderTree(data) {
   _cy.on('tap', evt => {
     if (evt.target === _cy) { closeCrtPanel(); _clearHighlight(); }
   });
+  let _hoverTimer = null;
   _cy.on('mouseover', 'node', evt => {
+    clearTimeout(_hoverTimer);
     _applyHighlight(evt.target.id());
   });
   _cy.on('mouseout', 'node', () => {
-    if (_openPanelNodeId) _applyHighlight(_openPanelNodeId);
-    else _clearHighlight();
+    _hoverTimer = setTimeout(() => {
+      if (_openPanelNodeId) _applyHighlight(_openPanelNodeId);
+      else _clearHighlight();
+    }, 50);
   });
   _cy.on('render', _repositionOverlays);
 
