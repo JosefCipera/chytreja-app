@@ -824,6 +824,7 @@ function _initOverlay() {
 
 function _clearHighlight() {
   if (!_cy) return;
+  _cy.edges().style({ 'line-color': '#4a8aaa', 'target-arrow-color': '#4a8aaa', 'width': 2 });
   _cy.nodes().removeStyle('border-color border-width');
 }
 
@@ -831,7 +832,18 @@ let _crtMouseX = 0, _crtMouseY = 0;
 document.addEventListener('mousemove', e => { _crtMouseX = e.clientX; _crtMouseY = e.clientY; });
 
 function _applyHighlight(nodeId) {
-  if (!_cy) return;
+  const rawData = window._crtData;
+  if (!rawData || !_cy) return;
+  const subtree = allDescendants(nodeId, rawData);
+  subtree.add(nodeId);
+  _cy.edges().forEach(e => {
+    const inSubtree = subtree.has(e.source().id()) && subtree.has(e.target().id());
+    e.style({
+      'line-color':         inSubtree ? '#7ab8d8' : '#2d4a5a',
+      'target-arrow-color': inSubtree ? '#7ab8d8' : '#2d4a5a',
+      'width':              inSubtree ? 3 : 1.5,
+    });
+  });
   _cy.nodes().forEach(n => {
     if (n.id() === nodeId) n.style({ 'border-color': '#e0f0ff', 'border-width': 4 });
     else n.removeStyle('border-color border-width');
@@ -933,17 +945,6 @@ function renderTree(data) {
   });
   _cy.on('tap', evt => {
     if (evt.target === _cy) { closeCrtPanel(); _clearHighlight(); }
-  });
-  let _hoverTimer = null;
-  _cy.on('mouseover', 'node', evt => {
-    clearTimeout(_hoverTimer);
-    _applyHighlight(evt.target.id());
-  });
-  _cy.on('mouseout', 'node', () => {
-    _hoverTimer = setTimeout(() => {
-      if (_openPanelNodeId) _applyHighlight(_openPanelNodeId);
-      else _clearHighlight();
-    }, 50);
   });
   _cy.on('render', _repositionOverlays);
 
