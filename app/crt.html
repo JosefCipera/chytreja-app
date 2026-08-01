@@ -824,7 +824,7 @@ function _initOverlay() {
 
 function _clearHighlight() {
   if (!_cy) return;
-  _cy.edges().style({ 'line-color': '#4a8aaa', 'target-arrow-color': '#4a8aaa', 'width': 2 });
+  _cy.edges().removeStyle('line-color target-arrow-color width');
   _cy.nodes().removeStyle('border-color border-width');
 }
 
@@ -838,11 +838,8 @@ function _applyHighlight(nodeId) {
   subtree.add(nodeId);
   _cy.edges().forEach(e => {
     const inSubtree = subtree.has(e.source().id()) && subtree.has(e.target().id());
-    e.style({
-      'line-color':         inSubtree ? '#7ab8d8' : '#2d4a5a',
-      'target-arrow-color': inSubtree ? '#7ab8d8' : '#2d4a5a',
-      'width':              inSubtree ? 3 : 1.5,
-    });
+    if (inSubtree) e.style({ 'line-color': '#7ab8d8', 'target-arrow-color': '#7ab8d8', 'width': 4 });
+    else e.removeStyle('line-color target-arrow-color width');
   });
   _cy.nodes().forEach(n => {
     if (n.id() === nodeId) n.style({ 'border-color': '#e0f0ff', 'border-width': 4 });
@@ -924,8 +921,8 @@ function renderTree(data) {
           'target-arrow-shape': 'triangle',
           'target-arrow-color': '#4a8aaa',
           'line-color':         '#4a8aaa',
-          'width':              2,
-          'arrow-scale':        1.4,
+          'width':              2.5,
+          'arrow-scale':        1.6,
         },
       },
     ],
