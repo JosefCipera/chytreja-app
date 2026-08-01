@@ -342,7 +342,7 @@ const DIAGNOSIS_KEYWORDS = [
   { keywords: ['deprese', 'depression', 'úzkost', 'anxiety', 'psychika', 'nálada'],               id: 'DEPRESSION_ANXIETY' },
   { keywords: ['periferní neuropatie', 'perieferni neuropatie', 'neuropatie', 'peripheral neuropathy'], id: 'PERIPHERAL_NEUROPATHY' },
   { keywords: ['fibrilace', 'arytmie', 'fap', 'atrial fibrillation'],                             id: 'ATRIAL_FIBRILLATION' },
-  { keywords: ['kyselina močová', 'dna', 'hyperurikémie', 'gout', 'uric'],                        id: 'HYPERURICEMIA' },
+  { keywords: ['kyselina močová', 'dna', 'hyperurikémie', 'gout', 'uric', 'milurit', 'allopurinol', 'febuxostat'], id: 'HYPERURICEMIA' },
   { keywords: ['kosti', 'osteoporóza', 'osteopenie', 'bone density'],                             id: 'BONE_DENSITY_LOSS' },
   { keywords: ['klouby', 'artróza', 'artritis', 'páteř', 'ploténka'],                             id: 'MUSCULOSKELETAL_DEG' },
   { keywords: ['erektilní', 'erectile', 'impotence', 'ed'],                                       id: 'ERECTILE_DYSFUNCTION' },
@@ -576,6 +576,28 @@ async function buildDeterministicCRT(profile, metrics = []) {
           diagConfirmedIds.add(childId);
           confirmedIds.add(childId);
           changed = true;
+        }
+      }
+    }
+  }
+
+  // Zpětná inference: Confirmed potomek → Confirmed rodič
+  // "Příčina potvrzeného efektu je také potvrzena" (FaP → CARDIAC_IRRITABILITY, CHRONIC_STRESS → SYMPATHETIC)
+  {
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const [parentId, parentDef] of Object.entries(STATES_DB)) {
+        if (!activeIds.has(parentId) || confirmedIds.has(parentId)) continue;
+        const isParentRoot = parentDef.can_be_root || (parentDef.typical_level ?? 99) === 0;
+        if (isParentRoot) continue; // root nikdy nepropagujeme zpátky
+        const confirmedChild = (parentDef.typical_children || []).some(
+          cid => activeIds.has(cid) && confirmedIds.has(cid)
+        );
+        if (confirmedChild) {
+          confirmedIds.add(parentId);
+          changed = true;
+          console.log(`[CRT] backward inference: ${parentId} confirmed (má confirmed potomka)`);
         }
       }
     }
@@ -1432,7 +1454,7 @@ function overlayColors(nodes, metrics) {
 // _v_ai: bump POUZE při změně Sonnet promptu → invaliduje AI generování
 // _v_pp: bump při změně post-processingu (med-inject, validateEdges...) → přeskočí Sonnet, re-run PP
 const _v_ai = 12;
-const _v_pp = 68;
+const _v_pp = 69;
 
 function hashStr(s) {
   let h = 0;
