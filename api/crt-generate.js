@@ -481,27 +481,8 @@ async function buildDeterministicCRT(profile, metrics = []) {
     if (req === 'female' && isMale)   { activeIds.delete(sid); continue; }
   }
 
-  // Medication-driven node activation: lék → cílový cause uzel
-  // Pokud uživatel bere Torvacard → DYSLIPIDEMIA aktivní automaticky, bez keywords.
-  // UDE uzly (fibrilace, mrtvice...) se neaktivují přes léky — přijdou z kauzálního řetězu.
-  // Suplementy (is_supplement:true) se NEaktivují jako příčinové uzly — jsou to ochranné pilulky,
-  // ne léky na recept. Magnesium suplementy → NEZAKTIVUJÍ ELECTROLYTE_IMBALANCE.
-  {
-    const medNames = (profile.medications || []).flatMap(m => {
-      const name = (m.name || m || '').toLowerCase().trim();
-      if (DRUGS_DB[name]?.is_supplement) return []; // suplementy neaktivují cause uzly
-      const inn   = DRUGS_DB[name]?.inn?.toLowerCase();
-      return [name, inn].filter(Boolean);
-    });
-    for (const def of STATES_ARR) {
-      if (def.type === 'ude') continue;
-      if (activeIds.has(def.id)) continue;
-      if ((def.med_targets || []).some(t => medNames.includes(t))) {
-        activeIds.add(def.id); confirmedIds.add(def.id); // lék = lékař předepsal → Confirmed
-        console.log(`[CRT] med-activate: ${def.id}`);
-      }
-    }
-  }
+  // Léky NEAKTIVUJÍ uzly — zobrazují se jen jako pilulky na existujících uzlech (medications_map).
+  // Uzly pochází výhradně z diagnóz, symptomů a BMI.
 
   // Rodičovský řetěz: každý non-root uzel musí mít rodiče v aktivním setu
   // Bez toho by uzly jako NEUROMOTOR_DYS floatovaly a connectSourceless je napojí špatně
@@ -980,51 +961,7 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
     }
   }
 
-  // Med-injekce: pokud žádný aktivní stav nemá lék uživatele v med_targets → injektuj stav
-  // Bezpečné: injektuje jen stavy ze STATES_DB, bez AI, bez text-matchingu
-  {
-    const activeIds = new Set([
-      ...(crt.nodes || []).map(n => n.id),
-      ...(crt.root ? [typeof crt.root === 'string' ? crt.root : crt.root.id] : []),
-    ]);
-    for (const m of (profile.medications || [])) {
-      const nameLow = (m.name || m || '').trim().toLowerCase();
-      const inn     = DRUGS_DB[nameLow]?.inn?.toLowerCase();
-      if (!nameLow || DRUGS_DB[nameLow]?.no_canvas) continue;
-
-      // Suplementy se NEinjektují jako uzly — zobrazí se jako zelený pill na existujících uzlech
-      const isDrugSupplement = DRUGS_DB[nameLow]?.is_supplement === true;
-      if (isDrugSupplement) continue;
-
-      // Všechny STATES_DB stavy které mají tento lék v med_targets
-      // UDE uzly se NEinjektují — ty patří do příběhu pacienta (AI/deterministický builder), ne z léků
-      const targetStates = STATES_ARR.filter(def =>
-        def.type !== 'ude' &&
-        (def.med_targets || []).some(t => t === nameLow || (inn && t === inn))
-      );
-      if (!targetStates.length) continue;
-
-      for (const stateToInject of targetStates) {
-        if (activeIds.has(stateToInject.id)) continue; // již aktivní
-        if (stateToInject.canvas === false) {
-          activeIds.add(stateToInject.id);
-          console.log(`[CRT] med-injekce (pharmacy only): ${stateToInject.id} (via ${nameLow})`);
-          continue;
-        }
-        const injNode = { id: stateToInject.id, label: stateToInject.label, label_layman: stateToInject.label_layman, type: stateToInject.type, level: stateToInject.typical_level, branch: stateToInject.typical_branch, _injected: true };
-        crt.nodes.push(injNode);
-        activeIds.add(stateToInject.id);
-        // Pokud má typické potomky, propoj k prvnímu dostupnému aktivnímu potomkovi
-        const childTarget = (stateToInject.typical_children || []).find(cid => activeIds.has(cid));
-        if (childTarget) {
-          crt.edges = crt.edges || [];
-          crt.edges.push({ from: stateToInject.id, to: childTarget });
-          console.log(`[CRT] med-injekce hrana: ${stateToInject.id} → ${childTarget}`);
-        }
-        console.log(`[CRT] med-injekce: ${stateToInject.id} (via ${nameLow})`);
-      }
-    }
-  }
+  // Med-injekce uzlů odstraněna — léky nemění strukturu grafu, jen zobrazení pilulek (medications_map níže).
 
   // medications_map — DETERMINISTICKY z STATES_DB.med_targets, žádné AI
   {
@@ -1495,7 +1432,7 @@ function overlayColors(nodes, metrics) {
 // _v_ai: bump POUZE při změně Sonnet promptu → invaliduje AI generování
 // _v_pp: bump při změně post-processingu (med-inject, validateEdges...) → přeskočí Sonnet, re-run PP
 const _v_ai = 12;
-const _v_pp = 66;
+const _v_pp = 67;
 
 function hashStr(s) {
   let h = 0;
