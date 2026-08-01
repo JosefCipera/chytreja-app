@@ -9,6 +9,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@300;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
   <script src="https://cdn.jsdelivr.net/npm/cytoscape@3.28.1/dist/cytoscape.min.js"></script>
+  <script src="/lib/elk-bundle.js"></script>
+  <script>cytoscape.use(cytoscapeElkPlugin.default || cytoscapeElkPlugin);</script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -865,7 +867,6 @@ function renderTree(data) {
     cyElements.push({
       group: 'nodes',
       data:     { id: n.id, label: n.label ?? n.id, bg, border, textColor, bw, borderStyle },
-      position: { x: (n.x ?? 0) * 1.5, y: -(n.y ?? 0) * 1.5 },
     });
   });
 
@@ -916,7 +917,7 @@ function renderTree(data) {
         },
       },
     ],
-    layout: { name: 'preset', animate: false },
+    layout: { name: 'elk', animate: false, elk: { algorithm: 'layered', 'elk.direction': 'UP', 'elk.layered.spacing.nodeNodeBetweenLayers': IS_MOBILE ? 90 : 170, 'elk.spacing.nodeNode': IS_MOBILE ? 60 : 150, 'elk.edgeRouting': 'ORTHOGONAL', 'elk.layered.crossingMinimization.strategy': 'LAYER_SWEEP', 'elk.layered.nodePlacement.strategy': 'NETWORK_SIMPLEX', 'elk.layered.thoroughness': 10, 'elk.layered.crossingMinimization.greedySwitch.activationThreshold': 0 } },
     userPanningEnabled:  true,
     userZoomingEnabled:  true,
     autoungrabify:       true,
