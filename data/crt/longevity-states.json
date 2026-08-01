@@ -92,6 +92,7 @@
       "bisoprolol"
     ],
     "typical_children": [
+      "CHRONIC_STRESS",
       "NEUROMOTOR_DYS",
       "DEPRESSION_ANXIETY",
       "SLEEP_DISORDER"
@@ -595,7 +596,7 @@
     "typical_branch": "C",
     "med_targets": [],
     "typical_children": [
-      "CHRONIC_STRESS",
+      "SYMPATHETIC_OVERACTIVATION",
       "DYSLIPIDEMIA",
       "HYPERURICEMIA",
       "OBESITY"
