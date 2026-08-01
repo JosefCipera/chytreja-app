@@ -583,14 +583,17 @@ async function buildDeterministicCRT(profile, metrics = []) {
 
   // Zpětná inference: Confirmed potomek → Confirmed rodič
   // "Příčina potvrzeného efektu je také potvrzena" (FaP → CARDIAC_IRRITABILITY, CHRONIC_STRESS → SYMPATHETIC)
+  // Výjimky: uzly vyžadující explicitní lab data zůstanou Inferred bez ohledu na potomky.
+  const BACKWARD_INFERENCE_EXCLUDE = new Set(['INSULIN_RESISTANCE']);
   {
     let changed = true;
     while (changed) {
       changed = false;
       for (const [parentId, parentDef] of Object.entries(STATES_DB)) {
         if (!activeIds.has(parentId) || confirmedIds.has(parentId)) continue;
+        if (BACKWARD_INFERENCE_EXCLUDE.has(parentId)) continue;
         const isParentRoot = parentDef.can_be_root || (parentDef.typical_level ?? 99) === 0;
-        if (isParentRoot) continue; // root nikdy nepropagujeme zpátky
+        if (isParentRoot) continue;
         const confirmedChild = (parentDef.typical_children || []).some(
           cid => activeIds.has(cid) && confirmedIds.has(cid)
         );
@@ -1454,7 +1457,7 @@ function overlayColors(nodes, metrics) {
 // _v_ai: bump POUZE při změně Sonnet promptu → invaliduje AI generování
 // _v_pp: bump při změně post-processingu (med-inject, validateEdges...) → přeskočí Sonnet, re-run PP
 const _v_ai = 12;
-const _v_pp = 69;
+const _v_pp = 70;
 
 function hashStr(s) {
   let h = 0;
