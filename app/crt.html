@@ -825,7 +825,7 @@ function _initOverlay() {
 function _clearHighlight() {
   if (!_cy) return;
   _cy.edges().style({ 'line-color': '#4a8aaa', 'target-arrow-color': '#4a8aaa', 'width': 2 });
-  _cy.nodes().removeStyle('border-color border-width opacity');
+  _cy.nodes().removeStyle('border-color border-width');
 }
 
 let _crtMouseX = 0, _crtMouseY = 0;
@@ -846,12 +846,11 @@ function _applyHighlight(nodeId) {
   _cy.nodes().forEach(n => {
     const nid = n.id();
     if (nid === nodeId) {
-      n.style({ 'border-color': '#e0f0ff', 'border-width': 4, 'opacity': 1 });
+      n.style({ 'border-color': '#e0f0ff', 'border-width': 4 });
     } else if (subtree.has(nid)) {
-      n.style({ 'border-color': '#5a9acc', 'border-width': 2.5, 'opacity': 1 });
-    } else {
-      n.style({ 'opacity': 0.35 });
+      n.style({ 'border-color': '#5a9acc', 'border-width': 2.5 });
     }
+    // nevybrané uzly se neztmavují
   });
 }
 
