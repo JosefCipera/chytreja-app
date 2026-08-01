@@ -27,7 +27,7 @@
     "label": "Chronický stres",
     "label_layman": "Trvalý stres",
     "type": "cause",
-    "typical_level": 1,
+    "typical_level": 2,
     "can_be_root": false,
     "typical_branch": "L",
     "med_targets": [],
@@ -261,7 +261,7 @@
     "label": "Elektrická dráždivost síní",
     "label_layman": "Dráždivé srdce",
     "type": "cause",
-    "typical_level": 2,
+    "typical_level": 3,
     "can_be_root": false,
     "typical_branch": "L",
     "med_targets": [
