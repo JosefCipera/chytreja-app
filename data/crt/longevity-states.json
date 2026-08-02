@@ -625,8 +625,8 @@
     "label": "Nízký testosteron",
     "label_layman": "Nízký testosteron",
     "type": "cause",
-    "typical_level": 3,
-    "typical_branch": "LC",
+    "typical_level": 4,
+    "typical_branch": "C",
     "typical_children": [
       "ERECTILE_DYSFUNCTION"
     ],
