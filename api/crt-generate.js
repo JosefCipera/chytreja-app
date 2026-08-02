@@ -35,7 +35,9 @@ const LEHKOST_NODE_IDS  = ['vyziva','kardio','spanek','mysl'];
 // Uzly aktivované z kapacitního testu (fyzické schopnosti) — nesmí spouštět
 // ani rodičovskou inferenci (geriatrické rodiče) ani downstream kaskádu (FALL_RISK...).
 // Jsou to listy grafu: popisují symptom, ne kauzální řetěz.
-const CAPACITY_LEAF_NODES = new Set(['GAIT_INSTABILITY', 'MUSCLE_WEAKNESS', 'LOW_VO2MAX']);
+// LOW_VO2MAX a MUSCLE_WEAKNESS jsou UDE apexy — dostanou rodiče přes SEDENTARY hranu níže.
+// Nesmí ale kaskádovat dál (FATIGUE_LOW_CAPACITY apod.) → zůstávají v set.
+const CAPACITY_LEAF_NODES = new Set(['MUSCLE_WEAKNESS', 'LOW_VO2MAX']);
 
 // Auto-pozicování: barycenter (skutečná pozice rodiče/dítěte přes edges), ne
 // pevné x podle branch nálepky — ta dřív dávala VŠEM uzlům se stejnou
@@ -481,10 +483,9 @@ async function buildDeterministicCRT(profile, metrics = []) {
     activeIds.add('MUSCLE_WEAKNESS');
     console.log('[CRT] MUSCLE_WEAKNESS activated: capacity.lift_20kg=false');
   }
-  if (cap.stand_one_leg === false || cap.rise_from_floor === false) {
-    activeIds.add('GAIT_INSTABILITY');
-    console.log('[CRT] GAIT_INSTABILITY activated: capacity balance/floor');
-  }
+  // GAIT_INSTABILITY je junction pro geriatrický kontext (pád, zlomeniny) — pro non-geriatrické
+  // pacienty test rovnováhy patří do panelu jako warning, ne jako uzel v CRT grafu.
+  // if (cap.stand_one_leg === false || cap.rise_from_floor === false) activeIds.add('GAIT_INSTABILITY');
 
   // Fyzická kondice z user_metrics — pouze pokud nejsou doctor_notes
   // (doctor_notes popisují přesný kauzální příběh, metriky by přidaly INACTIVITY_ROOT navíc)
@@ -721,6 +722,17 @@ async function buildDeterministicCRT(profile, metrics = []) {
       if (activeIds.has(sourceId)) {
         const key = `${sourceId}→${id}`;
         if (!edgeSet.has(key)) { edges.push({ from: sourceId, to: id }); edgeSet.add(key); }
+      }
+    }
+    // Capacity UDE apexy (LOW_VO2MAX, MUSCLE_WEAKNESS) nemají rodiče v typical_children žádného
+    // aktivního uzlu. SEDENTARY (level 0) → tyto UDE je kauzálně správné a validateEdges to propustí
+    // (root level 0 smí mířit do libovolné větve).
+    if (id === 'SEDENTARY_LIFESTYLE_ROOT') {
+      for (const capUde of ['LOW_VO2MAX', 'MUSCLE_WEAKNESS']) {
+        if (activeIds.has(capUde)) {
+          const key = `SEDENTARY_LIFESTYLE_ROOT→${capUde}`;
+          if (!edgeSet.has(key)) { edges.push({ from: 'SEDENTARY_LIFESTYLE_ROOT', to: capUde }); edgeSet.add(key); }
+        }
       }
     }
   }
@@ -1531,7 +1543,7 @@ function overlayColors(nodes, metrics) {
 // _v_ai: bump POUZE při změně Sonnet promptu → invaliduje AI generování
 // _v_pp: bump při změně post-processingu (med-inject, validateEdges...) → přeskočí Sonnet, re-run PP
 const _v_ai = 12;
-const _v_pp = 80; // CAPACITY_LEAF_NODES blokuje i downstream kaskádu (GAIT→FALL_RISK)
+const _v_pp = 81; // GAIT_INSTABILITY odstraněn z capacity; SEDENTARY→capacity UDE hrany
 
 function hashStr(s) {
   let h = 0;
