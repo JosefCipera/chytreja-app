@@ -32,6 +32,11 @@ const MODELS = {
 const DEKATLON_NODE_IDS = ['sila','stabilita','vo2max','kardio','mobilita','vytrvalost','rovnovaha','plyometrie','dychani'];
 const LEHKOST_NODE_IDS  = ['vyziva','kardio','spanek','mysl'];
 
+// Uzly aktivované z kapacitního testu (fyzické schopnosti) — nesmí spouštět
+// ani rodičovskou inferenci (geriatrické rodiče) ani downstream kaskádu (FALL_RISK...).
+// Jsou to listy grafu: popisují symptom, ne kauzální řetěz.
+const CAPACITY_LEAF_NODES = new Set(['GAIT_INSTABILITY', 'MUSCLE_WEAKNESS', 'LOW_VO2MAX']);
+
 // Auto-pozicování: barycenter (skutečná pozice rodiče/dítěte přes edges), ne
 // pevné x podle branch nálepky — ta dřív dávala VŠEM uzlům se stejnou
 // level+branch identické x (jen -spread/+spread/0), takže se při více uzlech
@@ -560,15 +565,12 @@ async function buildDeterministicCRT(profile, metrics = []) {
         (reverseMap[childId] = reverseMap[childId] || []).push(def.id);
       }
     }
-    // Uzly aktivované z kapacitního testu nebo bez kauzálních kořenů v profilu
-    // nesmí přitáhnout geriatrické rodiče (MUSCULOSKELETAL_DEG → osteoporóza, klouby...)
-    const PARENT_INFERENCE_EXCLUDE = new Set(['GAIT_INSTABILITY', 'MUSCLE_WEAKNESS', 'LOW_VO2MAX']);
     let changed = true;
     while (changed) {
       changed = false;
       for (const id of [...activeIds]) {
         if (STATES_DB[id]?.can_be_root) continue;
-        if (PARENT_INFERENCE_EXCLUDE.has(id)) continue;
+        if (CAPACITY_LEAF_NODES.has(id)) continue; // capacity-activated nodes → bez geriatrických rodičů
         const parents = (reverseMap[id] || []).filter(p => STATES_DB[p]);
         if (parents.length && !parents.some(p => activeIds.has(p))) {
           // Přidej rodiče s nejnižším levelem (nejblíže kořenu)
@@ -615,6 +617,7 @@ async function buildDeterministicCRT(profile, metrics = []) {
     while (cascadeChanged) {
       cascadeChanged = false;
       for (const id of [...activeIds]) {
+        if (CAPACITY_LEAF_NODES.has(id)) continue; // capacity-activated nodes jsou listy, nekaskádovat
         const def = STATES_DB[id];
         const children = def?.typical_children || [];
         if (children.length !== 1) continue;
@@ -1528,7 +1531,7 @@ function overlayColors(nodes, metrics) {
 // _v_ai: bump POUZE při změně Sonnet promptu → invaliduje AI generování
 // _v_pp: bump při změně post-processingu (med-inject, validateEdges...) → přeskočí Sonnet, re-run PP
 const _v_ai = 12;
-const _v_pp = 79; // PARENT_INFERENCE_EXCLUDE pro capacity uzly
+const _v_pp = 80; // CAPACITY_LEAF_NODES blokuje i downstream kaskádu (GAIT→FALL_RISK)
 
 function hashStr(s) {
   let h = 0;
