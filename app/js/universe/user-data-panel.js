@@ -183,16 +183,6 @@ function renderZdraviTab() {
       </div>
     </div>
 
-    <div class="udp-section">
-      <div class="udp-section-label">Zpráva od lékaře <span style="font-weight:400;color:#475569;">(volitelné)</span></div>
-      <p style="color:#64748b;font-size:13px;margin:0 0 10px;line-height:1.5;">
-        Opis klíčové části zprávy — CHJ ji použije pro přesnější analýzu.
-      </p>
-      <textarea id="zdravi-doctor-notes" rows="4" class="udp-input"
-        style="width:100%;resize:vertical;font-family:inherit;"
-        placeholder="např. Holter 24h: fibrilace síní 8% času. Echo: EF 58%...">${esc(docNotes)}</textarea>
-    </div>
-
     <div class="udp-save-row">
       <span id="udp-status-zdravi" class="udp-status"></span>
       <button id="btn-save-zdravi" class="udp-save-btn">Uložit</button>
@@ -232,7 +222,6 @@ async function saveZdravi() {
   const diagnoses      = (document.getElementById('zdravi-diagnoses')?.value ?? '').split('\n').map(s => s.trim()).filter(Boolean);
   const symptoms       = (document.getElementById('zdravi-symptoms')?.value   ?? '').split('\n').map(s => s.trim()).filter(Boolean);
   const family_history = (document.getElementById('zdravi-family')?.value     ?? '').trim();
-  const doctor_notes   = (document.getElementById('zdravi-doctor-notes')?.value ?? '').trim();
 
   const labs = {};
   document.querySelectorAll('.lab-field').forEach(inp => {
@@ -254,7 +243,7 @@ async function saveZdravi() {
 
   try {
     const { error: e1 } = await supabase.from('user_health_profile')
-      .upsert({ user_id: userId, diagnoses, symptoms, family_history, supplements, doctor_notes, labs },
+      .upsert({ user_id: userId, diagnoses, symptoms, family_history, supplements, labs },
                { onConflict: 'user_id' });
     if (e1) throw e1;
 
@@ -265,7 +254,7 @@ async function saveZdravi() {
                  { onConflict: 'user_id,name' });
     }
 
-    cachedData = { ...cachedData, diagnoses, symptoms, family_history, supplements, doctor_notes, labs, medications };
+    cachedData = { ...cachedData, diagnoses, symptoms, family_history, supplements, labs, medications };
     setStatus('udp-status-zdravi', 'ok');
     window.chjRefreshHealthData?.();
   } catch (e) {
