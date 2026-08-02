@@ -560,11 +560,15 @@ async function buildDeterministicCRT(profile, metrics = []) {
         (reverseMap[childId] = reverseMap[childId] || []).push(def.id);
       }
     }
+    // Uzly aktivované z kapacitního testu nebo bez kauzálních kořenů v profilu
+    // nesmí přitáhnout geriatrické rodiče (MUSCULOSKELETAL_DEG → osteoporóza, klouby...)
+    const PARENT_INFERENCE_EXCLUDE = new Set(['GAIT_INSTABILITY', 'MUSCLE_WEAKNESS', 'LOW_VO2MAX']);
     let changed = true;
     while (changed) {
       changed = false;
       for (const id of [...activeIds]) {
         if (STATES_DB[id]?.can_be_root) continue;
+        if (PARENT_INFERENCE_EXCLUDE.has(id)) continue;
         const parents = (reverseMap[id] || []).filter(p => STATES_DB[p]);
         if (parents.length && !parents.some(p => activeIds.has(p))) {
           // Přidej rodiče s nejnižším levelem (nejblíže kořenu)
@@ -1524,7 +1528,7 @@ function overlayColors(nodes, metrics) {
 // _v_ai: bump POUZE při změně Sonnet promptu → invaliduje AI generování
 // _v_pp: bump při změně post-processingu (med-inject, validateEdges...) → přeskočí Sonnet, re-run PP
 const _v_ai = 12;
-const _v_pp = 78; // labs + lifestyle + capacity → activeIds
+const _v_pp = 79; // PARENT_INFERENCE_EXCLUDE pro capacity uzly
 
 function hashStr(s) {
   let h = 0;
