@@ -455,7 +455,8 @@
       "vizarsin",
       "cialis"
     ],
-    "typical_children": []
+    "typical_children": [],
+    "panel_text": "ED předchází infarktu o 2–5 let — jsou to dvě tváře stejného problému. Penilní arterie (1–2 mm) jsou menší než koronární (3–4 mm): ateroskleróza se projeví v menších cévách dřív (Montorsi, Circulation 2005). Muž s ED má 60× vyšší riziko infarktu ve srovnání s mužem bez ED ve stejném věku a profilu (Vlachopoulos, J Sex Med 2013). ED není jen otázka kvality života — je to raný varovný signál srdce."
   },
   {
     "id": "PALPITATIONS",
@@ -624,8 +625,8 @@
     "label": "Nízký testosteron",
     "label_layman": "Nízký testosteron",
     "type": "cause",
-    "typical_level": 4,
-    "typical_branch": "C",
+    "typical_level": 3,
+    "typical_branch": "LC",
     "typical_children": [
       "ERECTILE_DYSFUNCTION"
     ],
