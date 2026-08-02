@@ -196,7 +196,7 @@ async function fetchContext(userId, role) {
     .select('energy, sleep_hours, stress, binge, movement_level, weight_kg, date')
     .eq('user_id', userId)
     .order('date', { ascending: false })
-    .limit(7);
+    .limit(14); // 14 dní pro průměr spánku → SLEEP_DISORDER
 
   // 4. Onboarding odpovědi (fyzické limity, node_inputs)
   const { data: nodeInputs } = await supabase
@@ -378,7 +378,7 @@ function stripDiacritics(s) {
   return s.normalize('NFD').replace(/[̀-ͯ]/g, '');
 }
 
-async function buildDeterministicCRT(profile, metrics = []) {
+async function buildDeterministicCRT(profile, metrics = [], checkins = []) {
   const allText = stripDiacritics([
     ...(profile.diagnoses || []),
     ...(profile.symptoms  || []),
@@ -433,34 +433,87 @@ async function buildDeterministicCRT(profile, metrics = []) {
   // Lab hodnoty z user_health_profile.labs (manuální zadání z UI)
   // Confirmed = naměřená hodnota, nekaskáduje (stejná logika jako BMI)
   const labs = profile.labs || {};
-  const hba1c          = labs.hba1c          != null ? parseFloat(labs.hba1c)          : null;
-  const fastingGlucose = labs.fasting_glucose != null ? parseFloat(labs.fasting_glucose) : null;
-  const ldl            = labs.ldl            != null ? parseFloat(labs.ldl)            : null;
-  const triglycerides  = labs.triglycerides  != null ? parseFloat(labs.triglycerides)  : null;
-  const testosterone   = labs.testosterone   != null ? parseFloat(labs.testosterone)   : null;
-  const crp            = labs.crp            != null ? parseFloat(labs.crp)            : null;
+  const hba1c          = labs.hba1c           != null ? parseFloat(labs.hba1c)           : null;
+  const fastingGlucose = labs.fasting_glucose  != null ? parseFloat(labs.fasting_glucose)  : null;
+  const fastingInsulin = labs.fasting_insulin  != null ? parseFloat(labs.fasting_insulin)  : null;
+  const ldl            = labs.ldl             != null ? parseFloat(labs.ldl)             : null;
+  const triglycerides  = labs.triglycerides   != null ? parseFloat(labs.triglycerides)   : null;
+  const apob           = labs.apob            != null ? parseFloat(labs.apob)            : null;
+  const testosterone   = labs.testosterone    != null ? parseFloat(labs.testosterone)    : null;
+  const crp            = labs.crp             != null ? parseFloat(labs.crp)             : null;
+  const hrv            = labs.hrv             != null ? parseFloat(labs.hrv)             : null;
+  const alt            = labs.alt             != null ? parseFloat(labs.alt)             : null;
+  const ast            = labs.ast             != null ? parseFloat(labs.ast)             : null;
 
+  // INSULIN_RESISTANCE — 3 stupně přesnosti (Attia progrese)
+  // Krok 1: pas/výška (lifestyle.waist_cm / profile._height) — nejhrubší proxy
+  const waistCm = (profile.lifestyle || {}).waist_cm != null ? parseFloat((profile.lifestyle || {}).waist_cm) : null;
+  const heightCm = profile._height != null ? parseFloat(profile._height) : null;
+  if (waistCm && heightCm && (waistCm / heightCm) > 0.5) {
+    if (!activeIds.has('INSULIN_RESISTANCE')) activeIds.add('INSULIN_RESISTANCE');
+    if (!activeIds.has('OBESITY')) activeIds.add('OBESITY');
+    console.log('[CRT] INSULIN_RESISTANCE + OBESITY inferred: waist/height > 0.5');
+  }
+  // Krok 2: HbA1c / glukóza nalačno
   if ((hba1c != null && hba1c >= 6.5) || (fastingGlucose != null && fastingGlucose >= 7.0)) {
     activeIds.add('INSULIN_RESISTANCE'); confirmedIds.add('INSULIN_RESISTANCE');
-    console.log('[CRT] INSULIN_RESISTANCE confirmed: lab (HbA1c/glucose)');
+    console.log('[CRT] INSULIN_RESISTANCE confirmed: HbA1c/glucose');
   } else if ((hba1c != null && hba1c >= 5.7) || (fastingGlucose != null && fastingGlucose >= 5.6)) {
     activeIds.add('INSULIN_RESISTANCE');
-    console.log('[CRT] INSULIN_RESISTANCE activated: lab borderline (HbA1c/glucose)');
+    console.log('[CRT] INSULIN_RESISTANCE inferred: HbA1c/glucose borderline');
   }
+  // Krok 3: HOMA-IR (nejpřesnější — vyžaduje lačný inzulín + glukózu)
+  if (fastingInsulin != null && fastingGlucose != null) {
+    const homaIr = (fastingInsulin * fastingGlucose) / 22.5;
+    if (homaIr > 2.5) { activeIds.add('INSULIN_RESISTANCE'); confirmedIds.add('INSULIN_RESISTANCE'); console.log(`[CRT] INSULIN_RESISTANCE confirmed: HOMA-IR ${homaIr.toFixed(2)}`); }
+    else if (homaIr > 1.5) { activeIds.add('INSULIN_RESISTANCE'); console.log(`[CRT] INSULIN_RESISTANCE inferred: HOMA-IR borderline ${homaIr.toFixed(2)}`); }
+  }
+
+  // DYSLIPIDEMIA — LDL/TG + ApoB (Attia preferuje ApoB nad LDL)
   if ((ldl != null && ldl >= 4.1) || (triglycerides != null && triglycerides >= 1.7)) {
     activeIds.add('DYSLIPIDEMIA'); confirmedIds.add('DYSLIPIDEMIA');
-    console.log('[CRT] DYSLIPIDEMIA confirmed: lab (LDL/triglycerides)');
+    console.log('[CRT] DYSLIPIDEMIA confirmed: LDL/TG');
   } else if (ldl != null && ldl >= 3.4) {
     activeIds.add('DYSLIPIDEMIA');
-    console.log('[CRT] DYSLIPIDEMIA activated: lab borderline (LDL)');
+    console.log('[CRT] DYSLIPIDEMIA inferred: LDL borderline');
   }
+  if (apob != null) {
+    if (apob >= 1.2) { activeIds.add('DYSLIPIDEMIA'); confirmedIds.add('DYSLIPIDEMIA'); console.log('[CRT] DYSLIPIDEMIA confirmed: ApoB >= 1.2 g/L'); }
+    else if (apob >= 1.0) { activeIds.add('DYSLIPIDEMIA'); console.log('[CRT] DYSLIPIDEMIA inferred: ApoB borderline'); }
+  }
+
+  // TESTOSTERONE
   if (testosterone != null && testosterone < 12 && isMale) {
     activeIds.add('LOW_TESTOSTERONE'); confirmedIds.add('LOW_TESTOSTERONE');
     console.log('[CRT] LOW_TESTOSTERONE confirmed: lab');
   }
-  if (crp != null && crp > 3) {
-    activeIds.add('CHRONIC_STRESS');
-    console.log('[CRT] CHRONIC_STRESS activated: hs-CRP elevated');
+
+  // hs-CRP — low-grade (1–3) = metabolický zánět (inferred), >3 = systémový (confirmed)
+  // Pozor: hs-CRP ≠ inflammaging (IL-6, TNF-alpha), ale je dobrý proxy pro chronický low-grade zánět
+  if (crp != null) {
+    if (crp > 3)      { activeIds.add('CHRONIC_STRESS'); confirmedIds.add('CHRONIC_STRESS'); console.log('[CRT] CHRONIC_STRESS confirmed: hs-CRP > 3'); }
+    else if (crp >= 1){ activeIds.add('CHRONIC_STRESS'); console.log('[CRT] CHRONIC_STRESS inferred: hs-CRP 1–3 (low-grade zánět)'); }
+  }
+
+  // HRV — autonomní nervový systém, recovery kapacita (Attia top marker)
+  if (hrv != null) {
+    if (hrv < 40)      { activeIds.add('CHRONIC_STRESS'); confirmedIds.add('CHRONIC_STRESS'); console.log('[CRT] CHRONIC_STRESS confirmed: HRV < 40 ms'); }
+    else if (hrv < 50) { activeIds.add('CHRONIC_STRESS'); console.log('[CRT] CHRONIC_STRESS inferred: HRV 40–50 ms'); }
+  }
+
+  // ALT / AST — jaterní zátěž, proxy viscerálního tuku
+  const altThresh = isMale ? 40 : 30;
+  if ((alt != null && alt > altThresh) || (ast != null && ast > 40)) {
+    activeIds.add('METABOLIC_HEALTH_ROOT'); confirmedIds.add('METABOLIC_HEALTH_ROOT');
+    console.log('[CRT] METABOLIC_HEALTH_ROOT confirmed: ALT/AST elevated');
+  }
+
+  // SLEEP — průměr 14 dní z daily_checkin (min. 5 záznamů pro spolehlivost)
+  const sleepCheckins = checkins.filter(c => c.sleep_hours != null);
+  if (sleepCheckins.length >= 5) {
+    const avgSleep = sleepCheckins.reduce((s, c) => s + c.sleep_hours, 0) / sleepCheckins.length;
+    if (avgSleep < 6)      { activeIds.add('SLEEP_DISORDER'); confirmedIds.add('SLEEP_DISORDER'); console.log(`[CRT] SLEEP_DISORDER confirmed: avg ${avgSleep.toFixed(1)}h`); }
+    else if (avgSleep < 7) { activeIds.add('SLEEP_DISORDER'); console.log(`[CRT] SLEEP_DISORDER inferred: avg ${avgSleep.toFixed(1)}h`); }
   }
 
   // Životní styl z user_health_profile.lifestyle (UI přepínače)
@@ -933,7 +986,7 @@ PRAVIDLA JSON:
     console.log('[CRT] _rawAI použit z cache (Sonnet přeskočen)');
   } else if (!useAI) {
     // PRIMARY: deterministická cesta — všichni uživatelé
-    crt = await buildDeterministicCRT(profile, metrics);
+    crt = await buildDeterministicCRT(profile, metrics, ctx.checkins);
   } else {
   const userPrompt = `Přelož lékařský popis do CRT JSON struktury.
 
@@ -1543,7 +1596,7 @@ function overlayColors(nodes, metrics) {
 // _v_ai: bump POUZE při změně Sonnet promptu → invaliduje AI generování
 // _v_pp: bump při změně post-processingu (med-inject, validateEdges...) → přeskočí Sonnet, re-run PP
 const _v_ai = 12;
-const _v_pp = 82; // LOW_VO2MAX→THREATENED_HEALTHSPAN, MUSCLE_WEAKNESS→INSULIN_RESISTANCE (cause, ne ude)
+const _v_pp = 83; // Attia markers: ApoB, HRV, HOMA-IR, ALT/AST, CRP fix, waist/height, sleep from checkins
 
 function hashStr(s) {
   let h = 0;
@@ -1578,6 +1631,10 @@ function dataHash(ctx, modelId) {
     capacity:    ctx.profile.capacity || {},
     goal:        ctx.profile.goal_text || '',
     metrics:     ctx.metrics.map(m => `${m.node_id}:${m.state}`).sort(),
+    sleep_avg:   ctx.checkins && ctx.checkins.length >= 5
+      ? (ctx.checkins.filter(c => c.sleep_hours != null).reduce((s, c) => s + c.sleep_hours, 0) /
+         ctx.checkins.filter(c => c.sleep_hours != null).length).toFixed(1)
+      : null,
   }));
 }
 

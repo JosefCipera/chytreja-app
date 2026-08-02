@@ -103,14 +103,22 @@ function renderTab(tab) {
 // ═══════════════════════════════════════════════════
 
 const LAB_FIELDS = [
-  { key: 'hba1c',           label: 'HbA1c',            unit: '%',      placeholder: '5.4'  },
-  { key: 'fasting_glucose', label: 'Glukóza nalačno',  unit: 'mmol/L', placeholder: '5.1'  },
-  { key: 'ldl',             label: 'LDL cholesterol',  unit: 'mmol/L', placeholder: '3.2'  },
-  { key: 'hdl',             label: 'HDL cholesterol',  unit: 'mmol/L', placeholder: '1.2'  },
-  { key: 'triglycerides',   label: 'Triglyceridy',     unit: 'mmol/L', placeholder: '1.5'  },
-  { key: 'crp',             label: 'hs-CRP',           unit: 'mg/L',   placeholder: '0.8'  },
-  { key: 'testosterone',    label: 'Testosteron',      unit: 'nmol/L', placeholder: '15.0' },
-  { key: 'psa',             label: 'PSA',              unit: 'µg/L',   placeholder: '1.2'  },
+  // Metabolismus — glukóza, inzulín, lipidy
+  { key: 'hba1c',           label: 'HbA1c',            unit: '%',      placeholder: '5.4',  group: 'Metabolismus' },
+  { key: 'fasting_glucose', label: 'Glukóza nalačno',  unit: 'mmol/L', placeholder: '5.1',  group: 'Metabolismus' },
+  { key: 'fasting_insulin', label: 'Inzulín nalačno',  unit: 'mIU/L',  placeholder: '8.0',  group: 'Metabolismus' },
+  { key: 'apob',            label: 'ApoB',             unit: 'g/L',    placeholder: '0.9',  group: 'Metabolismus' },
+  { key: 'ldl',             label: 'LDL cholesterol',  unit: 'mmol/L', placeholder: '3.2',  group: 'Metabolismus' },
+  { key: 'hdl',             label: 'HDL cholesterol',  unit: 'mmol/L', placeholder: '1.2',  group: 'Metabolismus' },
+  { key: 'triglycerides',   label: 'Triglyceridy',     unit: 'mmol/L', placeholder: '1.5',  group: 'Metabolismus' },
+  // Zánět & autonomní nervový systém
+  { key: 'crp',             label: 'hs-CRP',           unit: 'mg/L',   placeholder: '0.8',  group: 'Zánět & ANS' },
+  { key: 'hrv',             label: 'HRV klidová',      unit: 'ms',     placeholder: '45',   group: 'Zánět & ANS' },
+  // Hormony & játra
+  { key: 'testosterone',    label: 'Testosteron',      unit: 'nmol/L', placeholder: '15.0', group: 'Hormony & játra' },
+  { key: 'alt',             label: 'ALT',              unit: 'U/L',    placeholder: '28',   group: 'Hormony & játra' },
+  { key: 'ast',             label: 'AST',              unit: 'U/L',    placeholder: '24',   group: 'Hormony & játra' },
+  { key: 'psa',             label: 'PSA',              unit: 'µg/L',   placeholder: '1.2',  group: 'Hormony & játra' },
 ];
 
 function renderZdraviTab() {
@@ -125,13 +133,21 @@ function renderZdraviTab() {
   const medRows  = meds.length  ? meds.map((m, i)  => renderMedRow(i, m)).join('')  : renderMedRow(0, {});
   const suppRows = supps.length ? supps.map((s, i) => renderSuppRow(i, s)).join('') : renderSuppRow(0, {});
 
-  const labsHtml = LAB_FIELDS.map(f => `
+  let lastGroup = null;
+  const labsHtml = LAB_FIELDS.map(f => {
+    const groupHeader = f.group && f.group !== lastGroup
+      ? (lastGroup = f.group, `<div style="grid-column:1/-1;color:#475569;font-size:11px;font-weight:600;
+           letter-spacing:.08em;text-transform:uppercase;margin-top:10px;padding-top:10px;
+           border-top:1px solid #1e293b;">${f.group}</div>`)
+      : '';
+    return groupHeader + `
     <div style="display:flex;flex-direction:column;gap:4px;">
       <div class="udp-field-label">${f.label} <span style="color:#334155;">(${f.unit})</span></div>
       <input class="udp-input lab-field" data-key="${f.key}" type="number" step="0.1"
              placeholder="${f.placeholder}" value="${esc(labs[f.key] ?? '')}"
              style="width:100%;">
-    </div>`).join('');
+    </div>`;
+  }).join('');
 
   return `
     <div class="udp-section">
@@ -520,6 +536,11 @@ function renderProfilTab() {
                  placeholder="80" min="40" max="200" value="${esc(p.weight ?? '')}">
         </div>
         <div>
+          <div class="udp-field-label">Obvod pasu (cm)</div>
+          <input id="prof-waist" type="number" class="udp-input udp-mini"
+                 placeholder="90" min="50" max="180" value="${esc(ls.waist_cm ?? '')}">
+        </div>
+        <div>
           <div class="udp-field-label">Pohlaví</div>
           <div class="udp-gender-row">
             <button class="udp-gender-btn ${p.gender === 'male'   ? 'active' : ''}" data-gender="male">Muž</button>
@@ -556,8 +577,8 @@ function bindProfilEvents() {
     toggle.addEventListener('click', () => toggle.classList.toggle('udp-toggle-on'));
   });
 
-  // Live BMI recalculation
-  ['prof-height', 'prof-weight'].forEach(id => {
+  // Live BMI + WHR recalculation
+  ['prof-height', 'prof-weight', 'prof-waist'].forEach(id => {
     document.getElementById(id)?.addEventListener('input', updateBmiDisplay);
   });
 
@@ -571,11 +592,17 @@ function updateBmiDisplay() {
   const existing = document.getElementById('udp-bmi-live');
   if (!bmi) { if (existing) existing.remove(); return; }
   const [text, color] = bmiLabel(bmi);
+  const waist = parseFloat(document.getElementById('prof-waist')?.value);
+  const whrVal = (waist && h) ? (waist / h) : null;
+  const whrHtml = whrVal ? ` &nbsp;·&nbsp; <span style="color:#64748b;font-size:13px;">Pas/výška: </span>
+    <span style="font-size:16px;font-weight:600;color:${whrVal > 0.5 ? '#f59e0b' : '#22c55e'};">${whrVal.toFixed(2)}</span>
+    <span style="color:${whrVal > 0.5 ? '#f59e0b' : '#22c55e'};font-size:12px;margin-left:4px;">${whrVal > 0.5 ? '⚠ Riziko' : '✓ OK'}</span>` : '';
   const html = `<div id="udp-bmi-live" style="margin-top:12px;padding:10px 14px;border-radius:8px;
-    background:rgba(255,255,255,0.04);border:1px solid #1e293b;">
+    background:rgba(255,255,255,0.04);border:1px solid #1e293b;display:flex;align-items:center;flex-wrap:wrap;gap:4px;">
     <span style="color:#64748b;font-size:13px;">BMI: </span>
     <span style="font-size:18px;font-weight:700;color:${color};">${bmi.toFixed(1)}</span>
-    <span style="color:${color};font-size:13px;margin-left:8px;">${text}</span>
+    <span style="color:${color};font-size:13px;margin-left:4px;">${text}</span>
+    ${whrHtml}
   </div>`;
   if (existing) existing.outerHTML = html;
   else document.querySelector('.udp-row-4')?.insertAdjacentHTML('afterend', html);
@@ -589,10 +616,12 @@ async function saveProfil() {
   const gender    = document.querySelector('.udp-gender-btn.active')?.dataset.gender ?? null;
   const age       = birthYear ? (new Date().getFullYear() - birthYear) : null;
 
+  const waistCm = parseFloat(document.getElementById('prof-waist')?.value) || null;
   const lifestyle = {};
   document.querySelectorAll('[data-lf-key]').forEach(toggle => {
     lifestyle[toggle.dataset.lfKey] = toggle.classList.contains('udp-toggle-on');
   });
+  if (waistCm) lifestyle.waist_cm = waistCm;
 
   try {
     const profileData = { user_id: userId };
