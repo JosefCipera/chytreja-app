@@ -154,7 +154,7 @@ async function fetchContext(userId, role) {
   // 2. Zdravotní profil (diagnózy, labs) + léky + suplementy z user_medications + základní profil
   const [{ data: profile }, { data: meds }, { data: userProfile }] = await Promise.all([
     supabase.from('user_health_profile')
-      .select('diagnoses, symptoms, family_history, labs, physical, goal_text, doctor_notes, birth_year, sex, medications, supplements, behavior_flags')
+      .select('diagnoses, symptoms, family_history, labs, physical, goal_text, doctor_notes, birth_year, sex, medications, supplements, behavior_flags, lifestyle, capacity')
       .eq('user_id', userId).single(),
     supabase.from('user_medications')
       .select('name, dose').eq('user_id', userId).eq('active', true),
@@ -421,6 +421,65 @@ async function buildDeterministicCRT(profile, metrics = []) {
   // BMI prahy — naměřená hodnota → Confirmed, ale nekaskáduje (OBESITY→INSULIN_RESISTANCE zůstane Inferred)
   if (bmi && bmi >= 27) { activeIds.add('OBESITY'); confirmedIds.add('OBESITY'); }
   if (bmi && bmi >= 30) { activeIds.add('OBESITY'); confirmedIds.add('OBESITY'); activeIds.add('HYPERTENSION'); confirmedIds.add('HYPERTENSION'); }
+
+  // Lab hodnoty z user_health_profile.labs (manuální zadání z UI)
+  // Confirmed = naměřená hodnota, nekaskáduje (stejná logika jako BMI)
+  const labs = profile.labs || {};
+  const hba1c          = labs.hba1c          != null ? parseFloat(labs.hba1c)          : null;
+  const fastingGlucose = labs.fasting_glucose != null ? parseFloat(labs.fasting_glucose) : null;
+  const ldl            = labs.ldl            != null ? parseFloat(labs.ldl)            : null;
+  const triglycerides  = labs.triglycerides  != null ? parseFloat(labs.triglycerides)  : null;
+  const testosterone   = labs.testosterone   != null ? parseFloat(labs.testosterone)   : null;
+  const crp            = labs.crp            != null ? parseFloat(labs.crp)            : null;
+
+  if ((hba1c != null && hba1c >= 6.5) || (fastingGlucose != null && fastingGlucose >= 7.0)) {
+    activeIds.add('INSULIN_RESISTANCE'); confirmedIds.add('INSULIN_RESISTANCE');
+    console.log('[CRT] INSULIN_RESISTANCE confirmed: lab (HbA1c/glucose)');
+  } else if ((hba1c != null && hba1c >= 5.7) || (fastingGlucose != null && fastingGlucose >= 5.6)) {
+    activeIds.add('INSULIN_RESISTANCE');
+    console.log('[CRT] INSULIN_RESISTANCE activated: lab borderline (HbA1c/glucose)');
+  }
+  if ((ldl != null && ldl >= 4.1) || (triglycerides != null && triglycerides >= 1.7)) {
+    activeIds.add('DYSLIPIDEMIA'); confirmedIds.add('DYSLIPIDEMIA');
+    console.log('[CRT] DYSLIPIDEMIA confirmed: lab (LDL/triglycerides)');
+  } else if (ldl != null && ldl >= 3.4) {
+    activeIds.add('DYSLIPIDEMIA');
+    console.log('[CRT] DYSLIPIDEMIA activated: lab borderline (LDL)');
+  }
+  if (testosterone != null && testosterone < 12 && isMale) {
+    activeIds.add('LOW_TESTOSTERONE'); confirmedIds.add('LOW_TESTOSTERONE');
+    console.log('[CRT] LOW_TESTOSTERONE confirmed: lab');
+  }
+  if (crp != null && crp > 3) {
+    activeIds.add('CHRONIC_STRESS');
+    console.log('[CRT] CHRONIC_STRESS activated: hs-CRP elevated');
+  }
+
+  // Životní styl z user_health_profile.lifestyle (UI přepínače)
+  const lifestyle = profile.lifestyle || {};
+  if (lifestyle.sedentary === true && !activeIds.has('SEDENTARY_LIFESTYLE_ROOT')) {
+    activeIds.add('SEDENTARY_LIFESTYLE_ROOT');
+    console.log('[CRT] SEDENTARY_LIFESTYLE_ROOT activated: lifestyle.sedentary');
+  }
+  if (lifestyle.stress_job === true) {
+    activeIds.add('CHRONIC_STRESS');
+    console.log('[CRT] CHRONIC_STRESS activated: lifestyle.stress_job');
+  }
+
+  // Fyzická kapacita z user_health_profile.capacity (fyzický test z UI)
+  const cap = profile.capacity || {};
+  if (cap.climb_4_floors === false) {
+    activeIds.add('LOW_VO2MAX');
+    console.log('[CRT] LOW_VO2MAX activated: capacity.climb_4_floors=false');
+  }
+  if (cap.lift_20kg === false) {
+    activeIds.add('MUSCLE_WEAKNESS');
+    console.log('[CRT] MUSCLE_WEAKNESS activated: capacity.lift_20kg=false');
+  }
+  if (cap.stand_one_leg === false || cap.rise_from_floor === false) {
+    activeIds.add('GAIT_INSTABILITY');
+    console.log('[CRT] GAIT_INSTABILITY activated: capacity balance/floor');
+  }
 
   // Fyzická kondice z user_metrics — pouze pokud nejsou doctor_notes
   // (doctor_notes popisují přesný kauzální příběh, metriky by přidaly INACTIVITY_ROOT navíc)
@@ -1465,7 +1524,7 @@ function overlayColors(nodes, metrics) {
 // _v_ai: bump POUZE při změně Sonnet promptu → invaliduje AI generování
 // _v_pp: bump při změně post-processingu (med-inject, validateEdges...) → přeskočí Sonnet, re-run PP
 const _v_ai = 12;
-const _v_pp = 77;
+const _v_pp = 78; // labs + lifestyle + capacity → activeIds
 
 function hashStr(s) {
   let h = 0;
@@ -1496,6 +1555,8 @@ function dataHash(ctx, modelId) {
     doctor_notes: ctx.profile.doctor_notes || '',
     medications: (ctx.profile.medications || []).map(m => m.name),
     labs:        ctx.profile.labs || {},
+    lifestyle:   ctx.profile.lifestyle || {},
+    capacity:    ctx.profile.capacity || {},
     goal:        ctx.profile.goal_text || '',
     metrics:     ctx.metrics.map(m => `${m.node_id}:${m.state}`).sort(),
   }));
