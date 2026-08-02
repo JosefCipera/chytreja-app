@@ -35,8 +35,9 @@ const LEHKOST_NODE_IDS  = ['vyziva','kardio','spanek','mysl'];
 // Uzly aktivované z kapacitního testu (fyzické schopnosti) — nesmí spouštět
 // ani rodičovskou inferenci (geriatrické rodiče) ani downstream kaskádu (FALL_RISK...).
 // Jsou to listy grafu: popisují symptom, ne kauzální řetěz.
-// LOW_VO2MAX a MUSCLE_WEAKNESS jsou UDE apexy — dostanou rodiče přes SEDENTARY hranu níže.
-// Nesmí ale kaskádovat dál (FATIGUE_LOW_CAPACITY apod.) → zůstávají v set.
+// Uzly z kapacitního testu nesmí dostat geriatrické rodiče přes parent inference
+// (MUSCULOSKELETAL_DEG → osteoporóza, klouby…). Kaskáda do typických dětí je OK:
+// LOW_VO2MAX → THREATENED_HEALTHSPAN, MUSCLE_WEAKNESS → INSULIN_RESISTANCE.
 const CAPACITY_LEAF_NODES = new Set(['MUSCLE_WEAKNESS', 'LOW_VO2MAX']);
 
 // Auto-pozicování: barycenter (skutečná pozice rodiče/dítěte přes edges), ne
@@ -618,7 +619,6 @@ async function buildDeterministicCRT(profile, metrics = []) {
     while (cascadeChanged) {
       cascadeChanged = false;
       for (const id of [...activeIds]) {
-        if (CAPACITY_LEAF_NODES.has(id)) continue; // capacity-activated nodes jsou listy, nekaskádovat
         const def = STATES_DB[id];
         const children = def?.typical_children || [];
         if (children.length !== 1) continue;
@@ -1543,7 +1543,7 @@ function overlayColors(nodes, metrics) {
 // _v_ai: bump POUZE při změně Sonnet promptu → invaliduje AI generování
 // _v_pp: bump při změně post-processingu (med-inject, validateEdges...) → přeskočí Sonnet, re-run PP
 const _v_ai = 12;
-const _v_pp = 81; // GAIT_INSTABILITY odstraněn z capacity; SEDENTARY→capacity UDE hrany
+const _v_pp = 82; // LOW_VO2MAX→THREATENED_HEALTHSPAN, MUSCLE_WEAKNESS→INSULIN_RESISTANCE (cause, ne ude)
 
 function hashStr(s) {
   let h = 0;
