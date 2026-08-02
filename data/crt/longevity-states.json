@@ -424,7 +424,7 @@
     "med_targets": [],
     "typical_children": [
       "ERECTILE_DYSFUNCTION",
-      "STROKE_RISK"
+      "THREATENED_HEALTHSPAN"
     ]
   },
   {
@@ -626,7 +626,7 @@
     "label_layman": "Nízký testosteron",
     "type": "cause",
     "typical_level": 4,
-    "typical_branch": "RC",
+    "typical_branch": "C",
     "typical_children": [
       "ERECTILE_DYSFUNCTION"
     ],
