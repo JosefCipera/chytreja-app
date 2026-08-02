@@ -482,6 +482,13 @@ async function buildDeterministicCRT(profile, metrics = []) {
     if (req === 'female' && isMale)   { activeIds.delete(sid); continue; }
   }
 
+  // ED-implies-male fallback: pokud je ERECTILE_DYSFUNCTION v grafu, pacient je (implicitně) muž.
+  // Aktivuje LOW_TESTOSTERONE i bez explicitního sex pole v profilu.
+  if (activeIds.has('ERECTILE_DYSFUNCTION') && !activeIds.has('LOW_TESTOSTERONE')) {
+    activeIds.add('LOW_TESTOSTERONE');
+    console.log('[CRT] LOW_TESTOSTERONE activated: ERECTILE_DYSFUNCTION implies male patient');
+  }
+
   // Léky NEAKTIVUJÍ uzly — zobrazují se jen jako pilulky na existujících uzlech (medications_map).
   // Uzly pochází výhradně z diagnóz, symptomů a BMI.
 
@@ -1458,7 +1465,7 @@ function overlayColors(nodes, metrics) {
 // _v_ai: bump POUZE při změně Sonnet promptu → invaliduje AI generování
 // _v_pp: bump při změně post-processingu (med-inject, validateEdges...) → přeskočí Sonnet, re-run PP
 const _v_ai = 12;
-const _v_pp = 72;
+const _v_pp = 73;
 
 function hashStr(s) {
   let h = 0;
