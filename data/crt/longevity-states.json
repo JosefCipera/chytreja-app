@@ -399,6 +399,11 @@
     "can_be_root": false,
     "typical_branch": "LC",
     "med_targets": [
+      "pradaxa",
+      "nolpaza",
+      "verapamil",
+      "izoptin",
+      "eliquis",
       "xarelto",
       "warfarin",
       "betaloc",
@@ -409,7 +414,7 @@
       "HYPERTENSION"
     ],
     "typical_children": [
-      "THREATENED_HEALTHSPAN"
+      "HEART_ATTACK_RISK"
     ]
   },
   {
@@ -423,7 +428,7 @@
     "med_targets": [],
     "typical_children": [
       "ERECTILE_DYSFUNCTION",
-      "THREATENED_HEALTHSPAN"
+      "HEART_ATTACK_RISK"
     ]
   },
   {
@@ -512,7 +517,7 @@
   {
     "id": "HEART_ATTACK_RISK",
     "label": "Riziko infarktu myokardu",
-    "label_layman": "Hrozba infarktu",
+    "label_layman": "Hrozba mrtvice nebo infarktu",
     "type": "ude",
     "typical_level": 5,
     "can_be_root": false,
