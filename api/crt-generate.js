@@ -343,6 +343,7 @@ const DIAGNOSIS_KEYWORDS = [
   { keywords: ['periferní neuropatie', 'perieferni neuropatie', 'neuropatie', 'peripheral neuropathy'], id: 'PERIPHERAL_NEUROPATHY' },
   { keywords: ['fibrilace', 'arytmie', 'fap', 'atrial fibrillation'],                             id: 'ATRIAL_FIBRILLATION' },
   { keywords: ['kyselina močová', 'dna', 'hyperurikémie', 'gout', 'uric', 'milurit', 'allopurinol', 'febuxostat'], id: 'HYPERURICEMIA' },
+  { keywords: ['nízký testosteron', 'hypogonadismus', 'testosterone deficiency', 'andropauza', 'androgen deficiency'], id: 'LOW_TESTOSTERONE' },
   { keywords: ['kosti', 'osteoporóza', 'osteopenie', 'bone density'],                             id: 'BONE_DENSITY_LOSS' },
   { keywords: ['klouby', 'artróza', 'artritis', 'páteř', 'ploténka'],                             id: 'MUSCULOSKELETAL_DEG' },
   { keywords: ['erektilní', 'erectile', 'impotence', 'ed'],                                       id: 'ERECTILE_DYSFUNCTION' },
@@ -584,7 +585,7 @@ async function buildDeterministicCRT(profile, metrics = []) {
   // Zpětná inference: Confirmed potomek → Confirmed rodič
   // "Příčina potvrzeného efektu je také potvrzena" (FaP → CARDIAC_IRRITABILITY, CHRONIC_STRESS → SYMPATHETIC)
   // Výjimky: uzly vyžadující explicitní lab data zůstanou Inferred bez ohledu na potomky.
-  const BACKWARD_INFERENCE_EXCLUDE = new Set(['INSULIN_RESISTANCE']);
+  const BACKWARD_INFERENCE_EXCLUDE = new Set(['INSULIN_RESISTANCE', 'LOW_TESTOSTERONE']);
   {
     let changed = true;
     while (changed) {
@@ -1457,7 +1458,7 @@ function overlayColors(nodes, metrics) {
 // _v_ai: bump POUZE při změně Sonnet promptu → invaliduje AI generování
 // _v_pp: bump při změně post-processingu (med-inject, validateEdges...) → přeskočí Sonnet, re-run PP
 const _v_ai = 12;
-const _v_pp = 70;
+const _v_pp = 71;
 
 function hashStr(s) {
   let h = 0;

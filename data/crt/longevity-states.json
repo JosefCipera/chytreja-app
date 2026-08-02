@@ -34,7 +34,8 @@
     "typical_children": [
       "CARDIAC_IRRITABILITY",
       "DEPRESSION_ANXIETY",
-      "SLEEP_DISORDER"
+      "SLEEP_DISORDER",
+      "LOW_TESTOSTERONE"
     ]
   },
   {
@@ -155,7 +156,8 @@
       "orlistat"
     ],
     "typical_children": [
-      "INSULIN_RESISTANCE"
+      "INSULIN_RESISTANCE",
+      "LOW_TESTOSTERONE"
     ]
   },
   {
@@ -617,5 +619,25 @@
     ],
     "typical_children": [],
     "panel_text": "Fibrilace síní a erektilní dysfunkce jsou viditelné projevy systémové cévní a metabolické dysregulace. Bez intervence tento stav vede ke ztrátě fyzické výkonnosti, kognitivní kapacity a nakonec i funkční nezávislosti — přesně toho, co Dekatlon chrání. Toto je tvůj skutečný protivník."
+  },
+  {
+    "id": "LOW_TESTOSTERONE",
+    "label": "Nízký testosteron",
+    "label_layman": "Nízký testosteron",
+    "type": "cause",
+    "typical_level": 4,
+    "typical_branch": "RC",
+    "typical_children": [
+      "ERECTILE_DYSFUNCTION"
+    ],
+    "med_targets": [
+      "testosteron"
+    ],
+    "panel_text": "Testosteron se tvoří hlavně v REM spánku — chronický stres (kortizol) a spánkový deficit ho systematicky snižují. Tukové buňky navíc přeměňují testosteron na estrogen. Výsledek: nízká energie, horší erekce, nižší motivace. Většina mužů to přičte věku — přitom jde o biochemii, ne o stárnutí.",
+    "condition": {
+      "auto_if": {
+        "gender": "male"
+      }
+    }
   }
 ]
