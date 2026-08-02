@@ -986,7 +986,7 @@ PRAVIDLA JSON:
     console.log('[CRT] _rawAI použit z cache (Sonnet přeskočen)');
   } else if (!useAI) {
     // PRIMARY: deterministická cesta — všichni uživatelé
-    crt = await buildDeterministicCRT(profile, metrics, ctx.checkins);
+    crt = await buildDeterministicCRT(profile, metrics, checkins);
   } else {
   const userPrompt = `Přelož lékařský popis do CRT JSON struktury.
 
