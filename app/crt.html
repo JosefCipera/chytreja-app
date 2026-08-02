@@ -824,7 +824,7 @@ function _initOverlay() {
 
 function _clearHighlight() {
   if (!_cy) return;
-  _cy.edges().removeStyle('line-color target-arrow-color width');
+  _cy.edges().removeStyle('line-color target-arrow-color width arrow-scale');
   _cy.nodes().removeStyle('border-color border-width');
 }
 
@@ -838,8 +838,8 @@ function _applyHighlight(nodeId) {
   subtree.add(nodeId);
   _cy.edges().forEach(e => {
     const inSubtree = subtree.has(e.source().id()) && subtree.has(e.target().id());
-    if (inSubtree) e.style({ 'line-color': '#7ab8d8', 'target-arrow-color': '#7ab8d8', 'width': 4 });
-    else e.removeStyle('line-color target-arrow-color width');
+    if (inSubtree) e.style({ 'line-color': '#7ab8d8', 'target-arrow-color': '#7ab8d8', 'width': 6, 'arrow-scale': 2.4 });
+    else e.removeStyle('line-color target-arrow-color width arrow-scale');
   });
   _cy.nodes().forEach(n => {
     if (n.id() === nodeId) n.style({ 'border-color': '#e0f0ff', 'border-width': 4 });
