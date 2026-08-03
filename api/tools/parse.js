@@ -400,18 +400,45 @@ async function handleHealthDoc(req, res, sb) {
     if (!error) savedMedications.push(med.name);
   }
 
-  // Save diagnoses + symptoms to user_health_profile
+  // Save diagnoses + symptoms + labs to user_health_profile
   const newDiagnoses = (parsed.diagnoses || []).filter(d => d?.trim());
   const newSymptoms  = (parsed.symptoms  || []).filter(s => s?.trim());
-  if (newDiagnoses.length || newSymptoms.length) {
+
+  // Map parsed marker names → user_health_profile.labs keys
+  const MARKER_TO_LAB = {
+    'hba1c': 'hba1c', 'hba1': 'hba1c',
+    'glukóza': 'fasting_glucose', 'glukoza': 'fasting_glucose', 'glukóza nalačno': 'fasting_glucose',
+    'inzulín': 'fasting_insulin', 'inzulin': 'fasting_insulin', 'inzulín nalačno': 'fasting_insulin',
+    'apob': 'apob', 'apo b': 'apob',
+    'ldl': 'ldl', 'ldl cholesterol': 'ldl',
+    'hdl': 'hdl', 'hdl cholesterol': 'hdl',
+    'triglyceridy': 'triglycerides', 'triglyceridy': 'triglycerides',
+    'crp': 'crp', 'hs-crp': 'crp', 'hscrp': 'crp',
+    'hrv': 'hrv',
+    'testosteron': 'testosterone',
+    'alt': 'alt',
+    'ast': 'ast',
+    'psa': 'psa',
+  };
+  const newLabs = {};
+  for (const m of (parsed.markers || [])) {
+    if (m.value == null) continue;
+    const key = MARKER_TO_LAB[(m.name || '').toLowerCase().trim()];
+    if (key) newLabs[key] = parseFloat(m.value);
+  }
+
+  const hasUpdates = newDiagnoses.length || newSymptoms.length || Object.keys(newLabs).length;
+  if (hasUpdates) {
     const { data: existingProfile } = await sb.from('user_health_profile')
-      .select('diagnoses, symptoms').eq('user_id', userId).maybeSingle();
+      .select('diagnoses, symptoms, labs').eq('user_id', userId).maybeSingle();
     const existingDx   = existingProfile?.diagnoses || [];
     const existingSx   = existingProfile?.symptoms  || [];
-    const mergedDx = [...new Set([...existingDx, ...newDiagnoses])];
-    const mergedSx = [...new Set([...existingSx, ...newSymptoms])];
+    const existingLabs = existingProfile?.labs      || {};
+    const mergedDx   = [...new Set([...existingDx, ...newDiagnoses])];
+    const mergedSx   = [...new Set([...existingSx, ...newSymptoms])];
+    const mergedLabs = { ...existingLabs, ...newLabs }; // nové hodnoty přepíší starší
     await sb.from('user_health_profile').upsert(
-      { user_id: userId, diagnoses: mergedDx, symptoms: mergedSx, updated_at: new Date().toISOString() },
+      { user_id: userId, diagnoses: mergedDx, symptoms: mergedSx, labs: mergedLabs, updated_at: new Date().toISOString() },
       { onConflict: 'user_id' }
     );
   }
