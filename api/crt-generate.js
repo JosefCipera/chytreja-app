@@ -1607,7 +1607,7 @@ function overlayColors(nodes, metrics) {
 // _v_ai: bump POUZE při změně Sonnet promptu → invaliduje AI generování
 // _v_pp: bump při změně post-processingu (med-inject, validateEdges...) → přeskočí Sonnet, re-run PP
 const _v_ai = 12;
-const _v_pp = 84; // Onboarding capacity: fast_walk_2km, rise_from_floor, balance_eyes_closed, breath_20s → CRT
+const _v_pp = 85; // HYPOTHYROIDISM cascade stop: bone_density_loss odebrán z typical_children
 
 function hashStr(s) {
   let h = 0;

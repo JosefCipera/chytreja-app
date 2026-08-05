@@ -68,9 +68,7 @@
       "eltroxin",
       "levothyroxin"
     ],
-    "typical_children": [
-      "BONE_DENSITY_LOSS"
-    ]
+    "typical_children": []
   },
   {
     "id": "SYMPATHETIC_OVERACTIVATION",
