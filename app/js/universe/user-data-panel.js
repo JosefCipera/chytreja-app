@@ -333,6 +333,7 @@ function renderKondiceTab() {
 
     <div class="udp-save-row">
       <span id="udp-status-kondice" class="udp-status"></span>
+      <button id="btn-reset-kondice" class="udp-save-btn" style="background:#1e293b;color:#94a3b8;border-color:#334155;margin-right:8px;">Smazat vše</button>
       <button id="btn-save-kondice" class="udp-save-btn">Uložit</button>
     </div>`;
 }
@@ -368,6 +369,7 @@ function bindKondiceEvents() {
   });
   bindDelButtons();
   document.getElementById('btn-save-kondice')?.addEventListener('click', saveKondice);
+  document.getElementById('btn-reset-kondice')?.addEventListener('click', resetKondice);
 }
 
 async function saveKondice() {
@@ -412,6 +414,22 @@ async function saveKondice() {
     setStatus('udp-status-kondice', 'ok');
   } catch (e) {
     console.error('saveKondice:', e?.message || e);
+    setStatus('udp-status-kondice', 'error');
+  }
+}
+
+async function resetKondice() {
+  if (!confirm('Smazat všechna data z fyzického testu?')) return;
+  setStatus('udp-status-kondice', 'saving');
+  try {
+    const { error } = await supabase.from('user_health_profile')
+      .upsert({ user_id: userId, capacity: {} }, { onConflict: 'user_id' });
+    if (error) throw error;
+    cachedData.capacity = {};
+    document.querySelectorAll('.udp-yn-btn').forEach(b => b.classList.remove('udp-yn-yes', 'udp-yn-no'));
+    setStatus('udp-status-kondice', 'ok');
+  } catch (e) {
+    console.error('resetKondice:', e?.message || e);
     setStatus('udp-status-kondice', 'error');
   }
 }
