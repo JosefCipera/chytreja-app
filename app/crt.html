@@ -2129,9 +2129,6 @@ onAuthStateChanged(_fbAuth, async user => {
   const emailEl = document.querySelector('.email');
   if (emailEl) emailEl.textContent = user.email || '';
 
-  // Onboarding wizard — zobraz nových uživatelům bez profilu
-  const { checkAndShowOnboarding } = await import('/app/js/universe/onboarding-wizard.js');
-  checkAndShowOnboarding(user.uid);
 });
 
 initUserDataPanel();
