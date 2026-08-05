@@ -527,19 +527,30 @@ async function buildDeterministicCRT(profile, metrics = [], checkins = []) {
     console.log('[CRT] CHRONIC_STRESS activated: lifestyle.stress_job');
   }
 
-  // Fyzická kapacita z user_health_profile.capacity (fyzický test z UI)
+  // Fyzická kapacita z user_health_profile.capacity (fyzický test z onboardingu)
   const cap = profile.capacity || {};
-  if (cap.climb_4_floors === false) {
-    activeIds.add('LOW_VO2MAX');
-    console.log('[CRT] LOW_VO2MAX activated: capacity.climb_4_floors=false');
-  }
+
+  // VO2max / kardio — každý test je samostatný signál; 2× selhání = confirmed
+  const vo2Fails = [cap.climb_4_floors, cap.fast_walk_2km].filter(v => v === false).length;
+  if (vo2Fails >= 2) { activeIds.add('LOW_VO2MAX'); confirmedIds.add('LOW_VO2MAX'); console.log('[CRT] LOW_VO2MAX confirmed: oba aerobní testy selhaly'); }
+  else if (vo2Fails === 1) { activeIds.add('LOW_VO2MAX'); console.log('[CRT] LOW_VO2MAX inferred: jeden aerobní test selhal'); }
+
+  // Svalová síla
   if (cap.lift_20kg === false) {
     activeIds.add('MUSCLE_WEAKNESS');
-    console.log('[CRT] MUSCLE_WEAKNESS activated: capacity.lift_20kg=false');
+    console.log('[CRT] MUSCLE_WEAKNESS activated: lift_20kg=false');
   }
-  // GAIT_INSTABILITY je junction pro geriatrický kontext (pád, zlomeniny) — pro non-geriatrické
-  // pacienty test rovnováhy patří do panelu jako warning, ne jako uzel v CRT grafu.
-  // if (cap.stand_one_leg === false || cap.rise_from_floor === false) activeIds.add('GAIT_INSTABILITY');
+
+  // Mobilita / stabilita — 2 selhání → confirmed; 1 → inferred
+  const mobilityFails = [cap.rise_from_floor, cap.balance_eyes_closed].filter(v => v === false).length;
+  if (mobilityFails >= 2) { activeIds.add('MOBILITY_DEFICIT'); confirmedIds.add('MOBILITY_DEFICIT'); console.log('[CRT] MOBILITY_DEFICIT confirmed: 2 stabilitní testy selhaly'); }
+  else if (mobilityFails === 1) { activeIds.add('MOBILITY_DEFICIT'); console.log('[CRT] MOBILITY_DEFICIT inferred: 1 stabilitní test selhal'); }
+
+  // Dýchání / ANS — špatný breath hold = proxy chronického stresu / nízká HRV
+  if (cap.breath_20s === false) {
+    activeIds.add('CHRONIC_STRESS');
+    console.log('[CRT] CHRONIC_STRESS inferred: breath_20s=false');
+  }
 
   // Fyzická kondice z user_metrics — pouze pokud nejsou doctor_notes
   // (doctor_notes popisují přesný kauzální příběh, metriky by přidaly INACTIVITY_ROOT navíc)
@@ -1596,7 +1607,7 @@ function overlayColors(nodes, metrics) {
 // _v_ai: bump POUZE při změně Sonnet promptu → invaliduje AI generování
 // _v_pp: bump při změně post-processingu (med-inject, validateEdges...) → přeskočí Sonnet, re-run PP
 const _v_ai = 12;
-const _v_pp = 83; // Attia markers: ApoB, HRV, HOMA-IR, ALT/AST, CRP fix, waist/height, sleep from checkins
+const _v_pp = 84; // Onboarding capacity: fast_walk_2km, rise_from_floor, balance_eyes_closed, breath_20s → CRT
 
 function hashStr(s) {
   let h = 0;
