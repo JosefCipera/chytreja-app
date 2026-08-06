@@ -385,7 +385,9 @@
     "can_be_root": false,
     "typical_branch": "L",
     "med_targets": [],
-    "typical_children": ["CARDIAC_FAILURE_RISK"]
+    "typical_children": [
+      "CARDIAC_FAILURE_RISK"
+    ]
   },
   {
     "id": "ATRIAL_FIBRILLATION",
@@ -411,8 +413,7 @@
       "HYPERTENSION"
     ],
     "typical_children": [
-      "HEART_ATTACK_RISK",
-      "STROKE_RISK"
+      "HEART_ATTACK_RISK"
     ]
   },
   {
@@ -536,7 +537,9 @@
     "can_be_root": false,
     "typical_branch": "C",
     "med_targets": [],
-    "typical_children": ["THREATENED_HEALTHSPAN"],
+    "typical_children": [
+      "THREATENED_HEALTHSPAN"
+    ],
     "panel_text": "VO2max je nejsilnější prediktor délky života — silnější než kouření, diabetes nebo kardiovaskulární choroby. Každé zvýšení o 1 MET snižuje riziko úmrtí o ~13 %. Aerobní kapacita se dá trénovat v každém věku."
   },
   {
@@ -548,7 +551,9 @@
     "can_be_root": false,
     "typical_branch": "LC",
     "med_targets": [],
-    "typical_children": ["INSULIN_RESISTANCE"],
+    "typical_children": [
+      "INSULIN_RESISTANCE"
+    ],
     "panel_text": "Svalová hmota je metabolicky aktivní tkáň — sval je primární zásobník glukózy. Svalová slabost (sarkopenie) přímo urychluje inzulínovou rezistenci, metabolickou dysregulaci a zvyšuje kardiovaskulární riziko. Silový trénink je jediná intervence, která ji spolehlivě obnovuje."
   },
   {
