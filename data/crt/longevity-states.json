@@ -216,7 +216,7 @@
     "label_layman": "Řídnutí kostí",
     "type": "cause",
     "typical_level": 1,
-    "can_be_root": false,
+    "can_be_root": true,
     "typical_branch": "R",
     "med_targets": [
       "ibandronat",
@@ -385,7 +385,7 @@
     "can_be_root": false,
     "typical_branch": "L",
     "med_targets": [],
-    "typical_children": []
+    "typical_children": ["CARDIAC_FAILURE_RISK"]
   },
   {
     "id": "ATRIAL_FIBRILLATION",
@@ -411,7 +411,8 @@
       "HYPERTENSION"
     ],
     "typical_children": [
-      "HEART_ATTACK_RISK"
+      "HEART_ATTACK_RISK",
+      "STROKE_RISK"
     ]
   },
   {
