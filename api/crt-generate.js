@@ -709,6 +709,8 @@ async function buildDeterministicCRT(profile, metrics = [], checkins = []) {
   // Řeší případ kdy parent inference přidal uzel PŘED downstream kaskádou (activeIds.has() = true
   // → blok se nespustil → confirmedIds nepropagoval). Průchod propaguje z confirmed zdrojů
   // přes celý lineární řetěz DYSLIPIDEMIA→ATHEROSCLEROSIS→VASCULAR_STIFFNESS→ENDOTHELIAL_DYSFUNCTION.
+  // POZOR: záměrně single-child — multi-child by propagovalo přes SEDENTARY root na INSULIN_RESISTANCE/OBESITY
+  // které jsou v activeIds ale záměrně mimo cascadeEligible (mají být inferred, ne confirmed).
   {
     let changed = true;
     while (changed) {
@@ -716,13 +718,12 @@ async function buildDeterministicCRT(profile, metrics = [], checkins = []) {
       for (const id of [...cascadeEligible]) {
         const def = STATES_DB[id];
         const children = def?.typical_children || [];
-        if (children.length === 0) continue;
-        for (const childId of children) {
-          if (activeIds.has(childId) && !cascadeEligible.has(childId)) {
-            cascadeEligible.add(childId);
-            confirmedIds.add(childId);
-            changed = true;
-          }
+        if (children.length !== 1) continue; // single-child only — zachování inferred stavu
+        const childId = children[0];
+        if (activeIds.has(childId) && !cascadeEligible.has(childId)) {
+          cascadeEligible.add(childId);
+          confirmedIds.add(childId);
+          changed = true;
         }
       }
     }
@@ -1615,7 +1616,7 @@ function overlayColors(nodes, metrics) {
 // _v_ai: bump POUZE při změně Sonnet promptu → invaliduje AI generování
 // _v_pp: bump při změně post-processingu (med-inject, validateEdges...) → přeskočí Sonnet, re-run PP
 const _v_ai = 12;
-const _v_pp = 92; // fix: FATIGUE_LOW_CAPACITY typical_children zpet na prazdne — CARDIAC_FAILURE_RISK nema v Josefove grafu misto
+const _v_pp = 93; // fix: propagation loop zpet na single-child — multi-child potvrzoval INSULIN_RESISTANCE pres SEDENTARY
 
 function hashStr(s) {
   let h = 0;
