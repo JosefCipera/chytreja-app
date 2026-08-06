@@ -729,6 +729,17 @@ async function buildDeterministicCRT(profile, metrics = [], checkins = []) {
     }
   }
 
+  // Uzly které musí zůstat Inferred bez ohledu na výsledek cascade — vyžadují explicitní lab potvrzení.
+  // Tato ochrana se aplikuje jako POSLEDNÍ krok před nastavením _inferred flagu (viz níže).
+  // Přidej sem každý uzel kde "kauzální logika naznačuje, ale chybí měření" = šedý dashed styl.
+  const FORCE_INFERRED = new Set([
+    'INSULIN_RESISTANCE', // vyžaduje HOMA-IR / HbA1c / glukózu — bez lab = vždy inferred
+    'LOW_TESTOSTERONE',   // vyžaduje lab testosteron < 12 nmol/L — ED-implies-male = inferred
+    'HYPERTENSION',       // bez měření TK nebo diagnózy = inferred (sedavý životní styl nestačí)
+  ]);
+  // Odstraň z confirmedIds — cascade mohla přidat přes nepřímou cestu
+  for (const id of FORCE_INFERRED) { confirmedIds.delete(id); }
+
   // Zpětná inference: Confirmed potomek → Confirmed rodič
   // "Příčina potvrzeného efektu je také potvrzena" (FaP → CARDIAC_IRRITABILITY, CHRONIC_STRESS → SYMPATHETIC)
   // Výjimky: uzly vyžadující explicitní lab data zůstanou Inferred bez ohledu na potomky.
@@ -774,7 +785,7 @@ async function buildDeterministicCRT(profile, metrics = [], checkins = []) {
     const node = {
       id, label: def.label, label_layman: def.label_layman,
       type: def.type, level: def.typical_level, branch: def.typical_branch,
-      _inferred: isRootNode ? false : !confirmedIds.has(id),
+      _inferred: isRootNode ? false : (FORCE_INFERRED.has(id) || !confirmedIds.has(id)),
     };
     // BMI-based label override: 25–30 = nadváha, ≥30 = obezita
     if (id === 'OBESITY' && bmi && bmi < 30) {
@@ -1616,7 +1627,7 @@ function overlayColors(nodes, metrics) {
 // _v_ai: bump POUZE při změně Sonnet promptu → invaliduje AI generování
 // _v_pp: bump při změně post-processingu (med-inject, validateEdges...) → přeskočí Sonnet, re-run PP
 const _v_ai = 12;
-const _v_pp = 93; // fix: propagation loop zpet na single-child — multi-child potvrzoval INSULIN_RESISTANCE pres SEDENTARY
+const _v_pp = 94; // feat: FORCE_INFERRED allowlist — IR/testosteron/hypertenze vzdy sedi bez ohledu na cascade
 
 function hashStr(s) {
   let h = 0;
