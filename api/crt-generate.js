@@ -1615,7 +1615,7 @@ function overlayColors(nodes, metrics) {
 // _v_ai: bump POUZE při změně Sonnet promptu → invaliduje AI generování
 // _v_pp: bump při změně post-processingu (med-inject, validateEdges...) → přeskočí Sonnet, re-run PP
 const _v_ai = 12;
-const _v_pp = 91; // fix: ATRIAL_FIBRILLATION → HEART_ATTACK_RISK only (STROKE_RISK je jen pro Kovářovou přes AND-join)
+const _v_pp = 92; // fix: FATIGUE_LOW_CAPACITY typical_children zpet na prazdne — CARDIAC_FAILURE_RISK nema v Josefove grafu misto
 
 function hashStr(s) {
   let h = 0;

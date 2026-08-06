@@ -385,9 +385,7 @@
     "can_be_root": false,
     "typical_branch": "L",
     "med_targets": [],
-    "typical_children": [
-      "CARDIAC_FAILURE_RISK"
-    ]
+    "typical_children": []
   },
   {
     "id": "ATRIAL_FIBRILLATION",
