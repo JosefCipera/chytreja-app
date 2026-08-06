@@ -584,7 +584,7 @@ async function buildDeterministicCRT(profile, metrics = [], checkins = []) {
     activeIds.add('CHRONIC_STRESS');    cascadeEligible.add('CHRONIC_STRESS');
     activeIds.add('DYSLIPIDEMIA');      cascadeEligible.add('DYSLIPIDEMIA');
     activeIds.add('HYPERURICEMIA');     cascadeEligible.add('HYPERURICEMIA');
-    activeIds.add('OBESITY');           cascadeEligible.add('OBESITY');
+    activeIds.add('OBESITY'); // bez cascadeEligible — OBESITY→INSULIN_RESISTANCE by bylo příliš nepřímé
   }
 
   // Kořenová inference: přidej METABOLIC_HEALTH_ROOT pro klinické metabolické stavy
@@ -1611,7 +1611,7 @@ function overlayColors(nodes, metrics) {
 // _v_ai: bump POUZE při změně Sonnet promptu → invaliduje AI generování
 // _v_pp: bump při změně post-processingu (med-inject, validateEdges...) → přeskočí Sonnet, re-run PP
 const _v_ai = 12;
-const _v_pp = 86; // refaktor: Tier 1/2/3 trust levels — capacity+auto_if+lifestyle nezatahují rodiče ani nekaskádují
+const _v_pp = 87; // fix: OBESITY z SEDENTARY cascade bez cascadeEligible → INSULIN_RESISTANCE zůstane inferred
 
 function hashStr(s) {
   let h = 0;
