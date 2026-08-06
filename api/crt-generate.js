@@ -578,6 +578,11 @@ async function buildDeterministicCRT(profile, metrics = [], checkins = []) {
   // Fallback: pokud nic nebylo nalezeno, přidej chronický stres
   if (activeIds.size === 0) activeIds.add('CHRONIC_STRESS');
 
+  // Snapshot před kaskádou — potvrzení přímými daty (keyword/BMI/lab/literal ID scan).
+  // FORCE_INFERRED přepíše jen confirmedIds přidané kaskádou, ne tato "tvrdá" potvrzení.
+  // Příklad: HbA1c ≥ 6.5% → INSULIN_RESISTANCE zůstane modrý; sedavý uzel → šedý.
+  const preCascadeConfirmed = new Set(confirmedIds);
+
   // Sedavý způsob života → přímý metabolický efekt — POUZE pokud je Tier 1 (keyword z diagnóz/notes)
   // Lifestyle toggle (Tier 3) nezatahuje celou kaskádu — pouze zobrazí uzel samotný.
   if (cascadeEligible.has('SEDENTARY_LIFESTYLE_ROOT')) {
@@ -729,16 +734,20 @@ async function buildDeterministicCRT(profile, metrics = [], checkins = []) {
     }
   }
 
-  // Uzly které musí zůstat Inferred bez ohledu na výsledek cascade — vyžadují explicitní lab potvrzení.
-  // Tato ochrana se aplikuje jako POSLEDNÍ krok před nastavením _inferred flagu (viz níže).
-  // Přidej sem každý uzel kde "kauzální logika naznačuje, ale chybí měření" = šedý dashed styl.
+  // Uzly které musí zůstat Inferred pokud nebyly potvrzeny přímými daty (lab/keyword/literal ID).
+  // Cascade mohla tyto uzly dostat do confirmedIds nepřímou cestou — tato ochrana to zruší.
+  // preCascadeConfirmed = snapshot před kaskádou = "tvrdá" potvrzení (HbA1c, diagnóza, lékař).
+  // Příklad: HbA1c ≥ 6.5% → INSULIN_RESISTANCE v preCascadeConfirmed → zůstane modrý (lab).
+  //          Sedavý životní styl → INSULIN_RESISTANCE NENÍ v preCascadeConfirmed → šedý.
   const FORCE_INFERRED = new Set([
     'INSULIN_RESISTANCE', // vyžaduje HOMA-IR / HbA1c / glukózu — bez lab = vždy inferred
     'LOW_TESTOSTERONE',   // vyžaduje lab testosteron < 12 nmol/L — ED-implies-male = inferred
     'HYPERTENSION',       // bez měření TK nebo diagnózy = inferred (sedavý životní styl nestačí)
   ]);
-  // Odstraň z confirmedIds — cascade mohla přidat přes nepřímou cestu
-  for (const id of FORCE_INFERRED) { confirmedIds.delete(id); }
+  // Odstraň z confirmedIds jen pokud nebylo potvrzeno přímými daty
+  for (const id of FORCE_INFERRED) {
+    if (!preCascadeConfirmed.has(id)) confirmedIds.delete(id);
+  }
 
   // Zpětná inference: Confirmed potomek → Confirmed rodič
   // "Příčina potvrzeného efektu je také potvrzena" (FaP → CARDIAC_IRRITABILITY, CHRONIC_STRESS → SYMPATHETIC)
@@ -785,7 +794,7 @@ async function buildDeterministicCRT(profile, metrics = [], checkins = []) {
     const node = {
       id, label: def.label, label_layman: def.label_layman,
       type: def.type, level: def.typical_level, branch: def.typical_branch,
-      _inferred: isRootNode ? false : (FORCE_INFERRED.has(id) || !confirmedIds.has(id)),
+      _inferred: isRootNode ? false : ((FORCE_INFERRED.has(id) && !preCascadeConfirmed.has(id)) || !confirmedIds.has(id)),
     };
     // BMI-based label override: 25–30 = nadváha, ≥30 = obezita
     if (id === 'OBESITY' && bmi && bmi < 30) {
@@ -1627,7 +1636,7 @@ function overlayColors(nodes, metrics) {
 // _v_ai: bump POUZE při změně Sonnet promptu → invaliduje AI generování
 // _v_pp: bump při změně post-processingu (med-inject, validateEdges...) → přeskočí Sonnet, re-run PP
 const _v_ai = 12;
-const _v_pp = 94; // feat: FORCE_INFERRED allowlist — IR/testosteron/hypertenze vzdy sedi bez ohledu na cascade
+const _v_pp = 95; // fix: FORCE_INFERRED respektuje preCascadeConfirmed — lab potvrzeni zustane modre
 
 function hashStr(s) {
   let h = 0;
