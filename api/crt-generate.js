@@ -411,9 +411,10 @@ async function buildDeterministicCRT(profile, metrics = [], checkins = []) {
   );
 
   // 1. Keyword matching → aktivní State Dictionary IDs
-  const activeIds = new Set();
-  const confirmedIds = new Set(); // uzly podložené daty (diagnóza, lab, lék, BMI)
-  const diagConfirmedIds = new Set(); // pouze keyword-matched diagnózy (ne BMI) — kaskáda do potomků
+  const activeIds       = new Set();
+  const confirmedIds    = new Set(); // vizuální: modrý border (podloženo daty)
+  const cascadeEligible = new Set(); // Tier 1: smí spouštět typical_children cascade + parent inference
+  const noInference     = new Set(); // Tier 3: nezatahuje rodiče, nekaskáduje (capacity, auto_if, lifestyle)
 
   for (const { keywords, id } of DIAGNOSIS_KEYWORDS) {
     // keywordText (doctor_notes): raw keywords — stripDiacritics('třes')='tres' matchuje 'stres' → false positive!
@@ -421,9 +422,9 @@ async function buildDeterministicCRT(profile, metrics = [], checkins = []) {
     // diagText (seznam diagnóz): stripped — 'hyperurikemie' (bez háčku na serveru) = 'hyperurikémie' (keyword)
     const kws = keywords.map(stripDiacritics);
     const inDiagText    = kws.some(kw => diagText.includes(kw));
-    if (inKeywordText) { activeIds.add(id); confirmedIds.add(id); diagConfirmedIds.add(id); }
+    if (inKeywordText) { activeIds.add(id); confirmedIds.add(id); cascadeEligible.add(id); }
     else if (inDiagText) {
-      confirmedIds.add(id); diagConfirmedIds.add(id); // diagnóza lékaře = Confirmed, bez ohledu na kauzální pozici
+      confirmedIds.add(id); cascadeEligible.add(id); // diagnóza lékaře = Tier 1, smí kaskádovat
     }
   }
   // BMI prahy — naměřená hodnota → Confirmed, ale nekaskáduje (OBESITY→INSULIN_RESISTANCE zůstane Inferred)
@@ -516,40 +517,39 @@ async function buildDeterministicCRT(profile, metrics = [], checkins = []) {
     else if (avgSleep < 7) { activeIds.add('SLEEP_DISORDER'); console.log(`[CRT] SLEEP_DISORDER inferred: avg ${avgSleep.toFixed(1)}h`); }
   }
 
-  // Životní styl z user_health_profile.lifestyle (UI přepínače)
+  // Životní styl z user_health_profile.lifestyle (UI přepínače) — Tier 3: noInference
   const lifestyle = profile.lifestyle || {};
   if (lifestyle.sedentary === true && !activeIds.has('SEDENTARY_LIFESTYLE_ROOT')) {
     activeIds.add('SEDENTARY_LIFESTYLE_ROOT');
-    console.log('[CRT] SEDENTARY_LIFESTYLE_ROOT activated: lifestyle.sedentary');
+    noInference.add('SEDENTARY_LIFESTYLE_ROOT');
+    console.log('[CRT] SEDENTARY_LIFESTYLE_ROOT activated: lifestyle.sedentary (Tier 3)');
   }
   if (lifestyle.stress_job === true) {
     activeIds.add('CHRONIC_STRESS');
-    console.log('[CRT] CHRONIC_STRESS activated: lifestyle.stress_job');
+    noInference.add('CHRONIC_STRESS');
+    console.log('[CRT] CHRONIC_STRESS activated: lifestyle.stress_job (Tier 3)');
   }
 
-  // Fyzická kapacita z user_health_profile.capacity (fyzický test z onboardingu)
+  // Fyzická kapacita z user_health_profile.capacity — Tier 3: noInference
+  // Zobrazí přesně ten uzel, ale nezatahuje rodiče ani nekaskáduje dál.
   const cap = profile.capacity || {};
 
-  // VO2max / kardio — každý test je samostatný signál; 2× selhání = confirmed
   const vo2Fails = [cap.climb_4_floors, cap.fast_walk_2km].filter(v => v === false).length;
-  if (vo2Fails >= 2) { activeIds.add('LOW_VO2MAX'); confirmedIds.add('LOW_VO2MAX'); console.log('[CRT] LOW_VO2MAX confirmed: oba aerobní testy selhaly'); }
-  else if (vo2Fails === 1) { activeIds.add('LOW_VO2MAX'); console.log('[CRT] LOW_VO2MAX inferred: jeden aerobní test selhal'); }
+  if (vo2Fails >= 2) { activeIds.add('LOW_VO2MAX'); confirmedIds.add('LOW_VO2MAX'); noInference.add('LOW_VO2MAX'); console.log('[CRT] LOW_VO2MAX confirmed (Tier 3): oba aerobní testy selhaly'); }
+  else if (vo2Fails === 1) { activeIds.add('LOW_VO2MAX'); noInference.add('LOW_VO2MAX'); console.log('[CRT] LOW_VO2MAX inferred (Tier 3): jeden aerobní test selhal'); }
 
-  // Svalová síla
   if (cap.lift_20kg === false) {
-    activeIds.add('MUSCLE_WEAKNESS');
-    console.log('[CRT] MUSCLE_WEAKNESS activated: lift_20kg=false');
+    activeIds.add('MUSCLE_WEAKNESS'); noInference.add('MUSCLE_WEAKNESS');
+    console.log('[CRT] MUSCLE_WEAKNESS activated (Tier 3): lift_20kg=false');
   }
 
-  // Mobilita / stabilita — 2 selhání → confirmed; 1 → inferred
   const mobilityFails = [cap.rise_from_floor, cap.balance_eyes_closed].filter(v => v === false).length;
-  if (mobilityFails >= 2) { activeIds.add('MOBILITY_DEFICIT'); confirmedIds.add('MOBILITY_DEFICIT'); console.log('[CRT] MOBILITY_DEFICIT confirmed: 2 stabilitní testy selhaly'); }
-  else if (mobilityFails === 1) { activeIds.add('MOBILITY_DEFICIT'); console.log('[CRT] MOBILITY_DEFICIT inferred: 1 stabilitní test selhal'); }
+  if (mobilityFails >= 2) { activeIds.add('MOBILITY_DEFICIT'); confirmedIds.add('MOBILITY_DEFICIT'); noInference.add('MOBILITY_DEFICIT'); console.log('[CRT] MOBILITY_DEFICIT confirmed (Tier 3): 2 stabilitní testy selhaly'); }
+  else if (mobilityFails === 1) { activeIds.add('MOBILITY_DEFICIT'); noInference.add('MOBILITY_DEFICIT'); console.log('[CRT] MOBILITY_DEFICIT inferred (Tier 3): 1 stabilitní test selhal'); }
 
-  // Dýchání / ANS — špatný breath hold = proxy chronického stresu / nízká HRV
   if (cap.breath_20s === false) {
-    activeIds.add('CHRONIC_STRESS');
-    console.log('[CRT] CHRONIC_STRESS inferred: breath_20s=false');
+    activeIds.add('CHRONIC_STRESS'); noInference.add('CHRONIC_STRESS');
+    console.log('[CRT] CHRONIC_STRESS inferred (Tier 3): breath_20s=false');
   }
 
   // Fyzická kondice z user_metrics — pouze pokud nejsou doctor_notes
@@ -564,25 +564,27 @@ async function buildDeterministicCRT(profile, metrics = [], checkins = []) {
   }
 
   // Literal ID scan: pokud doctor_notes explicitně zmiňují ID ze State Dictionary (STROKE_RISK, GAIT_INSTABILITY…)
-  // Umožňuje lékaři přímo specifikovat uzly — bez AI, deterministicky.
+  // Lékař přímo specifikuje uzel → Tier 1 (cascadeEligible).
   if (profile.doctor_notes) {
     const notesUpper = profile.doctor_notes.toUpperCase();
     for (const def of STATES_ARR) {
-      if (notesUpper.includes(def.id)) { activeIds.add(def.id); confirmedIds.add(def.id); }
+      if (notesUpper.includes(def.id)) {
+        activeIds.add(def.id); confirmedIds.add(def.id); cascadeEligible.add(def.id);
+        noInference.delete(def.id); // případný Tier 3 upgrade na Tier 1
+      }
     }
   }
 
   // Fallback: pokud nic nebylo nalezeno, přidej chronický stres
   if (activeIds.size === 0) activeIds.add('CHRONIC_STRESS');
 
-  // Sedavý způsob života → přímý metabolický efekt (SEDENTARY nahrazuje METABOLIC_HEALTH_ROOT)
-  // CHRONIC_STRESS musí být přidán ZDE — před parent inference, jinak inference zvolí ELECTROLYTE_IMBALANCE
-  // jako rodiče CARDIAC_IRRITABILITY (oba mají level=1, CHRONIC_STRESS není v activeIds)
-  if (activeIds.has('SEDENTARY_LIFESTYLE_ROOT')) {
-    activeIds.add('CHRONIC_STRESS');
-    activeIds.add('DYSLIPIDEMIA');
-    activeIds.add('HYPERURICEMIA');
-    activeIds.add('OBESITY'); // OBESITY → INSULIN_RESISTANCE (přes nadváhu, ne přímou šipkou)
+  // Sedavý způsob života → přímý metabolický efekt — POUZE pokud je Tier 1 (keyword z diagnóz/notes)
+  // Lifestyle toggle (Tier 3) nezatahuje celou kaskádu — pouze zobrazí uzel samotný.
+  if (cascadeEligible.has('SEDENTARY_LIFESTYLE_ROOT')) {
+    activeIds.add('CHRONIC_STRESS');    cascadeEligible.add('CHRONIC_STRESS');
+    activeIds.add('DYSLIPIDEMIA');      cascadeEligible.add('DYSLIPIDEMIA');
+    activeIds.add('HYPERURICEMIA');     cascadeEligible.add('HYPERURICEMIA');
+    activeIds.add('OBESITY');           cascadeEligible.add('OBESITY');
   }
 
   // Kořenová inference: přidej METABOLIC_HEALTH_ROOT pro klinické metabolické stavy
@@ -592,7 +594,8 @@ async function buildDeterministicCRT(profile, metrics = [], checkins = []) {
     activeIds.add('METABOLIC_HEALTH_ROOT');
   }
 
-  // Auto-aktivace z demografických dat (condition.auto_if)
+  // Auto-aktivace z demografických dat (condition.auto_if) — Tier 3: noInference
+  // Demografika je slabý proxy — uzel se zobrazí, ale nezatahuje rodiče ani nekaskáduje.
   for (const def of STATES_ARR) {
     if (activeIds.has(def.id)) continue;
     const ai = def.condition?.auto_if;
@@ -601,7 +604,8 @@ async function buildDeterministicCRT(profile, metrics = [], checkins = []) {
     if (ai.gender === 'male'   && !isMale)   continue;
     if (ai.min_age && (!_age || _age < ai.min_age)) continue;
     activeIds.add(def.id);
-    console.log(`[CRT] auto-activate: ${def.id} (demographics: ${_sex}, age=${_age})`);
+    noInference.add(def.id);
+    console.log(`[CRT] auto-activate (Tier 3): ${def.id} (demographics: ${_sex}, age=${_age})`);
   }
 
   // Gender exclusion (condition.gender = required gender)
@@ -612,18 +616,19 @@ async function buildDeterministicCRT(profile, metrics = [], checkins = []) {
     if (req === 'female' && isMale)   { activeIds.delete(sid); continue; }
   }
 
-  // ED-implies-male fallback: pokud je ERECTILE_DYSFUNCTION v grafu, pacient je (implicitně) muž.
-  // Aktivuje LOW_TESTOSTERONE i bez explicitního sex pole v profilu.
+  // ED-implies-male fallback: ED je Tier 1 → LOW_TESTOSTERONE také Tier 1.
   if (activeIds.has('ERECTILE_DYSFUNCTION') && !activeIds.has('LOW_TESTOSTERONE')) {
     activeIds.add('LOW_TESTOSTERONE');
-    console.log('[CRT] LOW_TESTOSTERONE activated: ERECTILE_DYSFUNCTION implies male patient');
+    cascadeEligible.add('LOW_TESTOSTERONE');
+    noInference.delete('LOW_TESTOSTERONE');
+    console.log('[CRT] LOW_TESTOSTERONE activated (Tier 1): ERECTILE_DYSFUNCTION implies male patient');
   }
 
   // Léky NEAKTIVUJÍ uzly — zobrazují se jen jako pilulky na existujících uzlech (medications_map).
   // Uzly pochází výhradně z diagnóz, symptomů a BMI.
 
-  // Rodičovský řetěz: každý non-root uzel musí mít rodiče v aktivním setu
-  // Bez toho by uzly jako NEUROMOTOR_DYS floatovaly a connectSourceless je napojí špatně
+  // Rodičovský řetěz: Tier 1/2 uzly bez rodiče dostanou nejbližšího rodiče ze State Dictionary.
+  // Tier 3 (noInference) uzly se přeskočí — zobrazí se bez rodiče nebo jako floating root.
   {
     const reverseMap = {}; // childId → [parentIds]
     for (const def of STATES_ARR) {
@@ -636,10 +641,9 @@ async function buildDeterministicCRT(profile, metrics = [], checkins = []) {
       changed = false;
       for (const id of [...activeIds]) {
         if (STATES_DB[id]?.can_be_root) continue;
-        if (CAPACITY_LEAF_NODES.has(id)) continue; // capacity-activated nodes → bez geriatrických rodičů
+        if (noInference.has(id)) continue; // Tier 3: nezatahuj rodiče
         const parents = (reverseMap[id] || []).filter(p => STATES_DB[p]);
         if (parents.length && !parents.some(p => activeIds.has(p))) {
-          // Přidej rodiče s nejnižším levelem (nejblíže kořenu)
           const best = parents.sort((a, b) =>
             (STATES_DB[a]?.typical_level ?? 0) - (STATES_DB[b]?.typical_level ?? 0))[0];
           activeIds.add(best);
@@ -675,30 +679,30 @@ async function buildDeterministicCRT(profile, metrics = [], checkins = []) {
     console.log('[CRT] INFLAMMAGING active: suppressed METABOLIC_HEALTH_ROOT, CHRONIC_STRESS, SEDENTARY cascade');
   }
 
-  // Downstream kaskáda — lineární (single-child) uzly propagují dopředu automaticky.
-  // Tím DYSLIPIDEMIA→ATHEROSCLEROSIS→VASCULAR_STIFFNESS nevyžaduje explicitní keyword.
-  // Kaskáda platí POUZE pro uzly s přesně 1 typical_child (jinak by se větevné rooty rozrostly).
+  // Downstream kaskáda — pouze z Tier 1 (cascadeEligible) uzlů s přesně 1 typical_child.
+  // DYSLIPIDEMIA→ATHEROSCLEROSIS→VASCULAR_STIFFNESS funguje protože DYSLIPIDEMIA je Tier 1.
+  // BMI/capacity uzly nekaskádují — zobrazí se samy, bez downstream řetězu.
   {
     let cascadeChanged = true;
     while (cascadeChanged) {
       cascadeChanged = false;
       for (const id of [...activeIds]) {
+        if (!cascadeEligible.has(id)) continue; // Tier 1 only
         const def = STATES_DB[id];
         const children = def?.typical_children || [];
         if (children.length !== 1) continue;
         const childId = children[0];
         if (STATES_DB[childId] && !activeIds.has(childId)) {
           activeIds.add(childId);
-          // Kaskáda confirmed statusu jen z keyword-diagnosed uzlů (ne z BMI/symptom inference)
-          if (diagConfirmedIds.has(id)) { confirmedIds.add(childId); diagConfirmedIds.add(childId); }
-          console.log(`[CRT] downstream cascade: ${id} → ${childId}`);
+          if (cascadeEligible.has(id)) { confirmedIds.add(childId); cascadeEligible.add(childId); }
+          console.log(`[CRT] downstream cascade (Tier 1): ${id} → ${childId}`);
           cascadeChanged = true;
         }
       }
     }
   }
 
-  // Propagace diagConfirmedIds přes single-child typical_children — separátní průchod po kaskádě.
+  // Propagace cascadeEligible přes single-child typical_children — separátní průchod po kaskádě.
   // Řeší případ kdy parent inference přidal uzel PŘED downstream kaskádou (activeIds.has() = true
   // → blok se nespustil → confirmedIds nepropagoval). Průchod propaguje z confirmed zdrojů
   // přes celý lineární řetěz DYSLIPIDEMIA→ATHEROSCLEROSIS→VASCULAR_STIFFNESS→ENDOTHELIAL_DYSFUNCTION.
@@ -706,13 +710,13 @@ async function buildDeterministicCRT(profile, metrics = [], checkins = []) {
     let changed = true;
     while (changed) {
       changed = false;
-      for (const id of [...diagConfirmedIds]) {
+      for (const id of [...cascadeEligible]) {
         const def = STATES_DB[id];
         const children = def?.typical_children || [];
         if (children.length !== 1) continue;
         const childId = children[0];
-        if (activeIds.has(childId) && !diagConfirmedIds.has(childId)) {
-          diagConfirmedIds.add(childId);
+        if (activeIds.has(childId) && !cascadeEligible.has(childId)) {
+          cascadeEligible.add(childId);
           confirmedIds.add(childId);
           changed = true;
         }
@@ -1607,7 +1611,7 @@ function overlayColors(nodes, metrics) {
 // _v_ai: bump POUZE při změně Sonnet promptu → invaliduje AI generování
 // _v_pp: bump při změně post-processingu (med-inject, validateEdges...) → přeskočí Sonnet, re-run PP
 const _v_ai = 12;
-const _v_pp = 85; // HYPOTHYROIDISM cascade stop: bone_density_loss odebrán z typical_children
+const _v_pp = 86; // refaktor: Tier 1/2/3 trust levels — capacity+auto_if+lifestyle nezatahují rodiče ani nekaskádují
 
 function hashStr(s) {
   let h = 0;
