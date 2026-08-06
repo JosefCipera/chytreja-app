@@ -692,19 +692,20 @@ async function buildDeterministicCRT(profile, metrics = [], checkins = []) {
         if (!cascadeEligible.has(id)) continue; // Tier 1 only
         const def = STATES_DB[id];
         const children = def?.typical_children || [];
-        if (children.length !== 1) continue;
-        const childId = children[0];
-        if (STATES_DB[childId] && !activeIds.has(childId)) {
-          activeIds.add(childId);
-          if (cascadeEligible.has(id)) { confirmedIds.add(childId); cascadeEligible.add(childId); }
-          console.log(`[CRT] downstream cascade (Tier 1): ${id} → ${childId}`);
-          cascadeChanged = true;
+        if (children.length === 0) continue;
+        for (const childId of children) {
+          if (STATES_DB[childId] && !activeIds.has(childId)) {
+            activeIds.add(childId);
+            if (cascadeEligible.has(id)) { confirmedIds.add(childId); cascadeEligible.add(childId); }
+            console.log(`[CRT] downstream cascade (Tier 1): ${id} → ${childId}`);
+            cascadeChanged = true;
+          }
         }
       }
     }
   }
 
-  // Propagace cascadeEligible přes single-child typical_children — separátní průchod po kaskádě.
+  // Propagace cascadeEligible přes typical_children — separátní průchod po kaskádě.
   // Řeší případ kdy parent inference přidal uzel PŘED downstream kaskádou (activeIds.has() = true
   // → blok se nespustil → confirmedIds nepropagoval). Průchod propaguje z confirmed zdrojů
   // přes celý lineární řetěz DYSLIPIDEMIA→ATHEROSCLEROSIS→VASCULAR_STIFFNESS→ENDOTHELIAL_DYSFUNCTION.
@@ -715,12 +716,13 @@ async function buildDeterministicCRT(profile, metrics = [], checkins = []) {
       for (const id of [...cascadeEligible]) {
         const def = STATES_DB[id];
         const children = def?.typical_children || [];
-        if (children.length !== 1) continue;
-        const childId = children[0];
-        if (activeIds.has(childId) && !cascadeEligible.has(childId)) {
-          cascadeEligible.add(childId);
-          confirmedIds.add(childId);
-          changed = true;
+        if (children.length === 0) continue;
+        for (const childId of children) {
+          if (activeIds.has(childId) && !cascadeEligible.has(childId)) {
+            cascadeEligible.add(childId);
+            confirmedIds.add(childId);
+            changed = true;
+          }
         }
       }
     }
@@ -1613,7 +1615,7 @@ function overlayColors(nodes, metrics) {
 // _v_ai: bump POUZE při změně Sonnet promptu → invaliduje AI generování
 // _v_pp: bump při změně post-processingu (med-inject, validateEdges...) → přeskočí Sonnet, re-run PP
 const _v_ai = 12;
-const _v_pp = 89; // fix: HYPERTENSION do SEDENTARY cascade — propojí IR→HYPERTENSION→ENDOTHELIAL řetěz
+const _v_pp = 90; // fix: multi-child downstream cascade — ATRIAL_FIBRILLATION → HEART_ATTACK_RISK + STROKE_RISK
 
 function hashStr(s) {
   let h = 0;
