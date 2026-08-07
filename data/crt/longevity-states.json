@@ -32,8 +32,6 @@
     "med_targets": [],
     "typical_children": [
       "CARDIAC_IRRITABILITY",
-      "DEPRESSION_ANXIETY",
-      "SLEEP_DISORDER",
       "LOW_TESTOSTERONE"
     ]
   },
@@ -91,9 +89,7 @@
     ],
     "typical_children": [
       "CHRONIC_STRESS",
-      "NEUROMOTOR_DYS",
-      "DEPRESSION_ANXIETY",
-      "SLEEP_DISORDER"
+      "NEUROMOTOR_DYS"
     ]
   },
   {
@@ -307,7 +303,6 @@
     ],
     "typical_children": [
       "GAIT_INSTABILITY",
-      "MUSCLE_WEAKNESS",
       "MOBILITY_DEFICIT"
     ]
   },
@@ -425,7 +420,8 @@
     "med_targets": [],
     "typical_children": [
       "ERECTILE_DYSFUNCTION",
-      "HEART_ATTACK_RISK"
+      "HEART_ATTACK_RISK",
+      "STROKE_RISK"
     ]
   },
   {
