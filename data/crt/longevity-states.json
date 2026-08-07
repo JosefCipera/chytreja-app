@@ -420,8 +420,7 @@
     "med_targets": [],
     "typical_children": [
       "ERECTILE_DYSFUNCTION",
-      "HEART_ATTACK_RISK",
-      "STROKE_RISK"
+      "HEART_ATTACK_RISK"
     ]
   },
   {

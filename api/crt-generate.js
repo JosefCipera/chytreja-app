@@ -1636,7 +1636,7 @@ function overlayColors(nodes, metrics) {
 // _v_ai: bump POUZE při změně Sonnet promptu → invaliduje AI generování
 // _v_pp: bump při změně post-processingu (med-inject, validateEdges...) → přeskočí Sonnet, re-run PP
 const _v_ai = 12;
-const _v_pp = 96; // fix: State Dictionary audit — 5 zablokovaných hran smazáno, STROKE_RISK přidán do ENDOTHELIAL_DYSFUNCTION
+const _v_pp = 97; // fix: STROKE_RISK z ENDOTHELIAL_DYSFUNCTION typical_children — aktivuje se jen keyword matchem (mrtvice/TIA/CMP)
 
 function hashStr(s) {
   let h = 0;
