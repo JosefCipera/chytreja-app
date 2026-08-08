@@ -74,7 +74,7 @@
     "label_layman": "Přetížený nervový systém",
     "type": "cause",
     "typical_level": 1,
-    "can_be_root": false,
+    "can_be_root": true,
     "typical_branch": "L",
     "med_targets": [
       "magnesium bisglycinát",
@@ -253,7 +253,7 @@
   {
     "id": "CARDIAC_IRRITABILITY",
     "label": "Elektrická dráždivost síní",
-    "label_layman": "Dráždivé srdce",
+    "label_layman": "Podrážděné srdce",
     "type": "cause",
     "typical_level": 3,
     "can_be_root": false,
@@ -599,7 +599,6 @@
     "typical_branch": "C",
     "med_targets": [],
     "typical_children": [
-      "SYMPATHETIC_OVERACTIVATION",
       "DYSLIPIDEMIA",
       "HYPERURICEMIA",
       "OBESITY"
@@ -609,7 +608,7 @@
   {
     "id": "THREATENED_HEALTHSPAN",
     "label": "Ohrožená délka aktivního života",
-    "label_layman": "Kratší aktivní léta",
+    "label_layman": "Zkrácení aktivního života",
     "type": "ude",
     "typical_level": 5,
     "can_be_root": false,
