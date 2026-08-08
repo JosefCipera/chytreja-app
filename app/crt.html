@@ -2060,7 +2060,7 @@ window.toggleStoryBranch = function() {
   // Seed: všechny L a LC uzly aktivní v grafu
   const storyIds = new Set(
     (_rawCrtData.nodes || [])
-      .filter(n => n.typical_branch === 'L' || n.typical_branch === 'LC')
+      .filter(n => n.branch === 'L' || n.branch === 'LC')
       .map(n => n.id)
   );
   // BFS forward po hranách → dosáhneme apexu (HEART_ATTACK_RISK, ERECTILE_DYSFUNCTION atd.)
