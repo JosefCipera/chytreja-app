@@ -1763,7 +1763,7 @@ window.printCRT = function() {
   });
   _cy.edges().style({ 'line-color': '#4a7a9a', 'target-arrow-color': '#4a7a9a' });
 
-  const dataURL = _cy.png({ output: 'base64uri', bg: '#ffffff', scale: 2 });
+  const dataURL = _cy.png({ output: 'base64uri', bg: '#ffffff', scale: 2, full: true });
 
   // Obnovimy ihned — žádný flicker
   _cy.nodes().forEach(node => {
