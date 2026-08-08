@@ -372,6 +372,7 @@
   <button class="crt-back" id="crtMedBtn" onclick="toggleMeds()" style="display:none">Léky</button>
   <button class="crt-back" id="crtIxBtn"  onclick="toggleIxPanel()">Interakce</button>
   <button class="crt-back" id="crtLabelBtn" onclick="toggleLabelMode()" style="display:none">Expert</button>
+  <button class="crt-back" id="crtStoryBtn" onclick="toggleStoryBranch()" style="display:none">Příběh</button>
   <div id="crtFocusBack" style="display:none;position:fixed;top:0;left:0;right:0;z-index:120;background:rgba(6,182,212,0.08);border-bottom:1px solid rgba(6,182,212,0.25);padding:8px 16px;align-items:center;gap:10px">
     <button onclick="exitFocusRoot()" style="background:rgba(6,182,212,0.12);border:1px solid rgba(6,182,212,0.4);color:#22d3ee;border-radius:6px;padding:4px 12px;font-size:12px;cursor:pointer;font-family:monospace">← Plná mapa</button>
     <span style="font-size:12px;color:#64748b;font-family:monospace">PODSTROM: <span style="color:#22d3ee"></span></span>
@@ -2047,6 +2048,42 @@ window.exitFocusRoot = function() {
   setViewFull();
 };
 
+window.toggleStoryBranch = function() {
+  if (!_rawCrtData) return;
+  const btn = document.getElementById('crtStoryBtn');
+  const isActive = btn?.classList.contains('active');
+  if (isActive) {
+    btn?.classList.remove('active');
+    setViewFull();
+    return;
+  }
+  // Seed: všechny L a LC uzly aktivní v grafu
+  const storyIds = new Set(
+    (_rawCrtData.nodes || [])
+      .filter(n => n.typical_branch === 'L' || n.typical_branch === 'LC')
+      .map(n => n.id)
+  );
+  // BFS forward po hranách → dosáhneme apexu (HEART_ATTACK_RISK, ERECTILE_DYSFUNCTION atd.)
+  const edgesFrom = {};
+  (_rawCrtData.edges || []).forEach(e => {
+    (edgesFrom[e.from] = edgesFrom[e.from] || []).push(e.to);
+  });
+  const queue = [...storyIds];
+  while (queue.length) {
+    const cur = queue.shift();
+    for (const child of (edgesFrom[cur] || [])) {
+      if (!storyIds.has(child)) { storyIds.add(child); queue.push(child); }
+    }
+  }
+  const nodes = (_rawCrtData.nodes || []).filter(n => storyIds.has(n.id));
+  const edges = (_rawCrtData.edges || []).filter(e => storyIds.has(e.from) && storyIds.has(e.to));
+  const filtered = { ..._rawCrtData, nodes, edges, subtitle: `Levá větev · ${nodes.length} uzlů` };
+  applyLabelMode(filtered);
+  _lastCrtData = filtered;
+  renderTree(filtered);
+  btn?.classList.add('active');
+};
+
 async function boot() {
   try {
     if (!window._crtActionPool) {
@@ -2079,6 +2116,7 @@ async function boot() {
     document.getElementById('crtPrintBtn').style.display  = '';
     const hasMeds = (window._crtData?.medications_map || []).length > 0;
     document.getElementById('crtMedBtn').style.display = hasMeds ? '' : 'none';
+    document.getElementById('crtStoryBtn').style.display = '';
     // Nastav aktivní stav pillu
     document.getElementById('crtPillFull').classList.toggle('active', !_topNMode);
     document.getElementById('crtPillTopN').classList.toggle('active',  _topNMode);
