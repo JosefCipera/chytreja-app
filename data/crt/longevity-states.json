@@ -74,7 +74,7 @@
     "label_layman": "Přetížený nervový systém",
     "type": "cause",
     "typical_level": 1,
-    "can_be_root": true,
+    "can_be_root": false,
     "typical_branch": "L",
     "med_targets": [
       "magnesium bisglycinát",
@@ -599,6 +599,7 @@
     "typical_branch": "C",
     "med_targets": [],
     "typical_children": [
+      "SYMPATHETIC_OVERACTIVATION",
       "DYSLIPIDEMIA",
       "HYPERURICEMIA",
       "OBESITY"
