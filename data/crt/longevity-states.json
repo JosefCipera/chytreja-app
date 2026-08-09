@@ -387,7 +387,7 @@
     "label": "Fibrilace síní",
     "label_layman": "Nepravidelný srdeční rytmus",
     "type": "ude",
-    "typical_level": 4,
+    "typical_level": 5,
     "can_be_root": false,
     "typical_branch": "LC",
     "med_targets": [
@@ -405,9 +405,7 @@
       "CARDIAC_IRRITABILITY",
       "HYPERTENSION"
     ],
-    "typical_children": [
-      "HEART_ATTACK_RISK"
-    ]
+    "typical_children": []
   },
   {
     "id": "ENDOTHELIAL_DYSFUNCTION",
@@ -419,8 +417,7 @@
     "typical_branch": "RC",
     "med_targets": [],
     "typical_children": [
-      "ERECTILE_DYSFUNCTION",
-      "HEART_ATTACK_RISK"
+      "ERECTILE_DYSFUNCTION"
     ]
   },
   {
@@ -505,21 +502,6 @@
     "can_be_root": false,
     "typical_branch": "L",
     "med_targets": []
-  },
-  {
-    "id": "HEART_ATTACK_RISK",
-    "label": "Riziko infarktu myokardu",
-    "label_layman": "Hrozba mrtvice nebo infarktu",
-    "type": "ude",
-    "typical_level": 5,
-    "can_be_root": false,
-    "typical_branch": "C",
-    "med_targets": [
-      "anopyrin",
-      "aspirin",
-      "torvacard",
-      "stacyl"
-    ]
   },
   {
     "id": "LOW_VO2MAX",
