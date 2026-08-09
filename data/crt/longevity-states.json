@@ -530,9 +530,7 @@
     "can_be_root": false,
     "typical_branch": "C",
     "med_targets": [],
-    "typical_children": [
-      "THREATENED_HEALTHSPAN"
-    ],
+    "typical_children": [],
     "panel_text": "VO2max je nejsilnější prediktor délky života — silnější než kouření, diabetes nebo kardiovaskulární choroby. Každé zvýšení o 1 MET snižuje riziko úmrtí o ~13 %. Aerobní kapacita se dá trénovat v každém věku."
   },
   {
@@ -605,18 +603,6 @@
       "OBESITY"
     ],
     "panel_text": "Sedentismus je systémový stav — ne jen málo pohybu, ale chronická absence pohybového stimulu. 8+ hodin sezení denně aktivuje prozánětlivé dráhy, zvyšuje LDL, kyselinu močovou a inzulínovou rezistenci nezávisle na dietě. Každá hodina navíc zvyšuje KV riziko o ~2 %. Přestávky na pohyb každých 90 minut tyto markery měřitelně snižují do 4 týdnů — bez jiné intervence."
-  },
-  {
-    "id": "THREATENED_HEALTHSPAN",
-    "label": "Ohrožená délka aktivního života",
-    "label_layman": "Zkrácení aktivního života",
-    "type": "ude",
-    "typical_level": 5,
-    "can_be_root": false,
-    "typical_branch": "LC",
-    "med_targets": [],
-    "typical_children": [],
-    "panel_text": "VO2max je nejsilnější prediktor délky života ze všech měřitelných hodnot — silnější než kouření, cukrovka nebo srdeční choroba. Každý MET navíc znamená 13 % nižší mortalitu. Nízká aerobní kapacita zkracuje aktivní léta — ne smrtí, ale ztrátou schopnosti fungovat naplno."
   },
   {
     "id": "LOW_TESTOSTERONE",
