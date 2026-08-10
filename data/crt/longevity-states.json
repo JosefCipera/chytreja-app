@@ -32,9 +32,7 @@
     "typical_branch": "L",
     "med_targets": [],
     "typical_children": [
-      "CARDIAC_IRRITABILITY",
-      "DEPRESSION_ANXIETY",
-      "SLEEP_DISORDER"
+      "CARDIAC_IRRITABILITY"
     ]
   },
   {
@@ -92,9 +90,7 @@
       "bisoprolol"
     ],
     "typical_children": [
-      "NEUROMOTOR_DYS",
-      "DEPRESSION_ANXIETY",
-      "SLEEP_DISORDER"
+      "NEUROMOTOR_DYS"
     ]
   },
   {
