@@ -66,7 +66,10 @@
       "eltroxin",
       "levothyroxin"
     ],
-    "typical_children": []
+    "typical_children": [
+      "FATIGUE_LOW_CAPACITY",
+      "DYSLIPIDEMIA"
+    ]
   },
   {
     "id": "SYMPATHETIC_OVERACTIVATION",
@@ -387,9 +390,9 @@
     "label": "Fibrilace síní",
     "label_layman": "Nepravidelný srdeční rytmus",
     "type": "ude",
-    "typical_level": 5,
+    "typical_level": 4,
     "can_be_root": false,
-    "typical_branch": "C",
+    "typical_branch": "LC",
     "med_targets": [
       "pradaxa",
       "nolpaza",
@@ -417,7 +420,6 @@
     "typical_branch": "RC",
     "med_targets": [],
     "typical_children": [
-      "ERECTILE_DYSFUNCTION",
       "ATRIAL_FIBRILLATION"
     ]
   },
