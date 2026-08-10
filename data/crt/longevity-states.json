@@ -33,7 +33,7 @@
     "med_targets": [],
     "typical_children": [
       "CARDIAC_IRRITABILITY",
-      "HYPERTENSION"
+      "LOW_TESTOSTERONE"
     ]
   },
   {
@@ -200,7 +200,7 @@
     "type": "cause",
     "typical_level": 2,
     "can_be_root": false,
-    "typical_branch": "R",
+    "typical_branch": "RC",
     "med_targets": [
       "milurit",
       "allopurinol"
@@ -278,7 +278,7 @@
     "type": "cause",
     "typical_level": 2,
     "can_be_root": false,
-    "typical_branch": "RC",
+    "typical_branch": "R",
     "med_targets": [
       "torvacard",
       "sortis",
@@ -384,9 +384,9 @@
     "label": "Fibrilace síní",
     "label_layman": "Nepravidelný srdeční rytmus",
     "type": "ude",
-    "typical_level": 4,
+    "typical_level": 5,
     "can_be_root": false,
-    "typical_branch": "LC",
+    "typical_branch": "C",
     "med_targets": [
       "xarelto",
       "warfarin",
@@ -406,8 +406,28 @@
     "med_targets": [],
     "typical_children": [
       "ERECTILE_DYSFUNCTION",
-      "STROKE_RISK"
+      "ATRIAL_FIBRILLATION"
     ]
+  },
+  {
+    "id": "LOW_TESTOSTERONE",
+    "label": "Nízký testosteron",
+    "label_layman": "Nízký testosteron",
+    "type": "cause",
+    "typical_level": 4,
+    "can_be_root": false,
+    "typical_branch": "C",
+    "med_targets": [],
+    "typical_children": [
+      "ERECTILE_DYSFUNCTION"
+    ],
+    "condition": {
+      "auto_if": {
+        "gender": "male"
+      }
+    },
+    "panel_text": "Chronický stres a kortizol potlačují produkci testosteronu. Nízký testosteron zhoršuje erektilní funkci i kardiovaskulární zdraví.",
+    "DIAGNOSIS_KEYWORDS": ["testosteron", "hypogonadismus", "testosterone"]
   },
   {
     "id": "GAIT_INSTABILITY",
