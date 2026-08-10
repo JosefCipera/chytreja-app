@@ -256,7 +256,7 @@
   {
     "id": "CARDIAC_IRRITABILITY",
     "label": "Elektrická dráždivost síní",
-    "label_layman": "Dráždivé srdce",
+    "label_layman": "Podrážděné srdce",
     "type": "cause",
     "typical_level": 3,
     "can_be_root": false,
