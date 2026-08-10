@@ -514,25 +514,37 @@
     "id": "LOW_VO2MAX",
     "label": "Nízká aerobní kapacita",
     "label_layman": "Zadýchávám se při námaze",
-    "type": "ude",
-    "typical_level": 2,
+    "type": "cause",
+    "typical_level": 3,
     "can_be_root": false,
-    "typical_branch": "RC",
+    "typical_branch": "LC",
     "med_targets": [],
-    "typical_children": [],
+    "typical_children": ["FUNCTIONAL_DECLINE"],
     "panel_text": "VO2max je nejsilnější prediktor délky života — silnější než kouření, diabetes nebo kardiovaskulární choroby. Každé zvýšení o 1 MET snižuje riziko úmrtí o ~13 %. Aerobní kapacita se dá trénovat v každém věku."
   },
   {
     "id": "MUSCLE_WEAKNESS",
     "label": "Svalová slabost",
-    "label_layman": "Nemohu zdvihnout co dřív",
-    "type": "ude",
-    "typical_level": 2,
+    "label_layman": "Slabé svaly",
+    "type": "cause",
+    "typical_level": 1,
     "can_be_root": false,
-    "typical_branch": "R",
+    "typical_branch": "LC",
+    "med_targets": [],
+    "typical_children": ["LOW_VO2MAX"],
+    "panel_text": "Svalová hmota je metabolicky aktivní tkáň — její ztráta (sarkopenie) urychluje metabolickou dysregulaci a zvyšuje riziko pádů. Bez silového stimulu ztrácíme od 35. roku přibližně 1 % svalové hmoty ročně."
+  },
+  {
+    "id": "FUNCTIONAL_DECLINE",
+    "label": "Funkční pokles",
+    "label_layman": "Křehkost",
+    "type": "ude",
+    "typical_level": 5,
+    "can_be_root": false,
+    "typical_branch": "LC",
     "med_targets": [],
     "typical_children": [],
-    "panel_text": "Svalová hmota je metabolicky aktivní tkáň — její ztráta (sarkopenie) urychluje metabolickou dysregulaci a zvyšuje riziko pádů a ztráty samostatnosti. Silový trénink je jediná intervence, která ji spolehlivě obnovuje."
+    "panel_text": "Křehkost není nevyhnutelná — je to výsledek let bez pohybového stimulu. Svalová slabost a nízká aerobní kapacita se navzájem zesilují: slabé svaly snižují VO2max, nízký VO2max ztěžuje trénink svalů. Bez intervence tento kruh pokračuje."
   },
   {
     "id": "MOBILITY_DEFICIT",
@@ -587,7 +599,8 @@
       "SYMPATHETIC_OVERACTIVATION",
       "DYSLIPIDEMIA",
       "HYPERURICEMIA",
-      "OBESITY"
+      "OBESITY",
+      "MUSCLE_WEAKNESS"
     ],
     "panel_text": "Sedentismus je systémový stav — ne jen málo pohybu, ale chronická absence pohybového stimulu. 8+ hodin sezení denně aktivuje prozánětlivé dráhy, zvyšuje LDL, kyselinu močovou a inzulínovou rezistenci nezávisle na dietě. Každá hodina navíc zvyšuje KV riziko o ~2 %. Přestávky na pohyb každých 90 minut tyto markery měřitelně snižují do 4 týdnů — bez jiné intervence."
   }

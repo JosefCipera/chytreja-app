@@ -592,6 +592,7 @@ async function buildDeterministicCRT(profile, metrics = [], checkins = []) {
     activeIds.add('OBESITY');             // inferred, bez cascadeEligible
     activeIds.add('INSULIN_RESISTANCE'); // inferred: sedavý + nadváha naznačují IR
     activeIds.add('HYPERTENSION');       // inferred: IR → hypertenze → ENDOTHELIAL_DYSFUNCTION řetěz
+    activeIds.add('MUSCLE_WEAKNESS');     cascadeEligible.add('MUSCLE_WEAKNESS'); // → LOW_VO2MAX → FUNCTIONAL_DECLINE
   }
 
   // Kořenová inference: přidej METABOLIC_HEALTH_ROOT pro klinické metabolické stavy
@@ -1685,7 +1686,7 @@ function overlayColors(nodes, metrics) {
 // _v_ai: bump POUZE při změně Sonnet promptu → invaliduje AI generování
 // _v_pp: bump při změně post-processingu (med-inject, validateEdges...) → přeskočí Sonnet, re-run PP
 const _v_ai = 12;
-const _v_pp = 109; // panel_text: 3-type architecture (root/story/detail)
+const _v_pp = 110; // FUNCTIONAL_DECLINE (křehkost) UDE: SEDENTARY→MUSCLE_WEAKNESS→LOW_VO2MAX→FUNCTIONAL_DECLINE
 
 function hashStr(s) {
   let h = 0;
