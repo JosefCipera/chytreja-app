@@ -1636,7 +1636,7 @@ function overlayColors(nodes, metrics) {
 // _v_ai: bump POUZE při změně Sonnet promptu → invaliduje AI generování
 // _v_pp: bump při změně post-processingu (med-inject, validateEdges...) → přeskočí Sonnet, re-run PP
 const _v_ai = 12;
-const _v_pp = 101; // Kovářová fix: AFib level5→4 + branch C→LC; ED z ENDOTHELIAL typical_children; HYPOTHYROIDISM children
+const _v_pp = 102; // restore State Dictionary z gold tag + odebran THREATENED_HEALTHSPAN + HEART_ATTACK_RISK
 
 function hashStr(s) {
   let h = 0;

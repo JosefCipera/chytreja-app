@@ -12,12 +12,13 @@
       "kurkumin"
     ],
     "typical_children": [
+      "HYPOTHYROIDISM",
       "OBESITY"
     ],
     "panel_text": "Inflammaging je tiché hoření — chronický nízkoúrovňový zánět, který se věkem zesiluje. Poškozuje cévy, kosti i metabolismus najednou. Je to spouštěč obou hlavních rizik: mrtvice i zlomenin.",
     "condition": {
       "auto_if": {
-        "min_age": 65
+        "min_age": 60
       }
     }
   },
@@ -26,13 +27,14 @@
     "label": "Chronický stres",
     "label_layman": "Trvalý stres",
     "type": "cause",
-    "typical_level": 2,
+    "typical_level": 1,
     "can_be_root": false,
     "typical_branch": "L",
     "med_targets": [],
     "typical_children": [
       "CARDIAC_IRRITABILITY",
-      "LOW_TESTOSTERONE"
+      "DEPRESSION_ANXIETY",
+      "SLEEP_DISORDER"
     ]
   },
   {
@@ -67,8 +69,7 @@
       "levothyroxin"
     ],
     "typical_children": [
-      "FATIGUE_LOW_CAPACITY",
-      "DYSLIPIDEMIA"
+      "BONE_DENSITY_LOSS"
     ]
   },
   {
@@ -91,8 +92,9 @@
       "bisoprolol"
     ],
     "typical_children": [
-      "CHRONIC_STRESS",
-      "NEUROMOTOR_DYS"
+      "NEUROMOTOR_DYS",
+      "DEPRESSION_ANXIETY",
+      "SLEEP_DISORDER"
     ]
   },
   {
@@ -215,7 +217,7 @@
     "label_layman": "Řídnutí kostí",
     "type": "cause",
     "typical_level": 1,
-    "can_be_root": true,
+    "can_be_root": false,
     "typical_branch": "R",
     "med_targets": [
       "ibandronat",
@@ -256,9 +258,9 @@
   {
     "id": "CARDIAC_IRRITABILITY",
     "label": "Elektrická dráždivost síní",
-    "label_layman": "Podrážděné srdce",
+    "label_layman": "Dráždivé srdce",
     "type": "cause",
-    "typical_level": 3,
+    "typical_level": 2,
     "can_be_root": false,
     "typical_branch": "L",
     "med_targets": [
@@ -284,8 +286,7 @@
       "sortis",
       "crestor",
       "stacyl",
-      "anopyrin",
-      "aspirin"
+      "anopyrin"
     ],
     "typical_children": [
       "VASCULAR_STIFFNESS"
@@ -306,6 +307,7 @@
     ],
     "typical_children": [
       "GAIT_INSTABILITY",
+      "MUSCLE_WEAKNESS",
       "MOBILITY_DEFICIT"
     ]
   },
@@ -364,12 +366,6 @@
       "betaloc",
       "concor"
     ],
-    "sources": [
-      "INSULIN_RESISTANCE",
-      "VASCULAR_STIFFNESS",
-      "CHRONIC_STRESS",
-      "SLEEP_DISORDER"
-    ],
     "typical_children": [
       "ENDOTHELIAL_DYSFUNCTION"
     ]
@@ -394,19 +390,10 @@
     "can_be_root": false,
     "typical_branch": "LC",
     "med_targets": [
-      "pradaxa",
-      "nolpaza",
-      "verapamil",
-      "izoptin",
-      "eliquis",
       "xarelto",
       "warfarin",
       "betaloc",
       "concor"
-    ],
-    "sources": [
-      "CARDIAC_IRRITABILITY",
-      "HYPERTENSION"
     ],
     "typical_children": []
   },
@@ -420,7 +407,8 @@
     "typical_branch": "RC",
     "med_targets": [],
     "typical_children": [
-      "ATRIAL_FIBRILLATION"
+      "ERECTILE_DYSFUNCTION",
+      "STROKE_RISK"
     ]
   },
   {
@@ -452,8 +440,7 @@
       "vizarsin",
       "cialis"
     ],
-    "typical_children": [],
-    "panel_text": "Problémy s erekcí nejsou jen otázka ložnice. Tělo ti tím říká, že se něco děje v cévách — a to dřív, než to pocítíš na srdci. Stejný problém, jiné místo."
+    "typical_children": []
   },
   {
     "id": "PALPITATIONS",
@@ -492,8 +479,7 @@
       "xarelto",
       "warfarin",
       "anopyrin",
-      "stacyl",
-      "aspirin"
+      "stacyl"
     ]
   },
   {
@@ -510,10 +496,10 @@
     "id": "LOW_VO2MAX",
     "label": "Nízká aerobní kapacita",
     "label_layman": "Zadýchávám se při námaze",
-    "type": "cause",
-    "typical_level": 4,
+    "type": "ude",
+    "typical_level": 2,
     "can_be_root": false,
-    "typical_branch": "C",
+    "typical_branch": "RC",
     "med_targets": [],
     "typical_children": [],
     "panel_text": "VO2max je nejsilnější prediktor délky života — silnější než kouření, diabetes nebo kardiovaskulární choroby. Každé zvýšení o 1 MET snižuje riziko úmrtí o ~13 %. Aerobní kapacita se dá trénovat v každém věku."
@@ -522,15 +508,13 @@
     "id": "MUSCLE_WEAKNESS",
     "label": "Svalová slabost",
     "label_layman": "Nemohu zdvihnout co dřív",
-    "type": "cause",
-    "typical_level": 1,
+    "type": "ude",
+    "typical_level": 2,
     "can_be_root": false,
-    "typical_branch": "LC",
+    "typical_branch": "R",
     "med_targets": [],
-    "typical_children": [
-      "INSULIN_RESISTANCE"
-    ],
-    "panel_text": "Svalová hmota je metabolicky aktivní tkáň — sval je primární zásobník glukózy. Svalová slabost (sarkopenie) přímo urychluje inzulínovou rezistenci, metabolickou dysregulaci a zvyšuje kardiovaskulární riziko. Silový trénink je jediná intervence, která ji spolehlivě obnovuje."
+    "typical_children": [],
+    "panel_text": "Svalová hmota je metabolicky aktivní tkáň — její ztráta (sarkopenie) urychluje metabolickou dysregulaci a zvyšuje riziko pádů a ztráty samostatnosti. Silový trénink je jediná intervence, která ji spolehlivě obnovuje."
   },
   {
     "id": "MOBILITY_DEFICIT",
@@ -582,31 +566,11 @@
     "typical_branch": "C",
     "med_targets": [],
     "typical_children": [
-      "SYMPATHETIC_OVERACTIVATION",
+      "CHRONIC_STRESS",
       "DYSLIPIDEMIA",
       "HYPERURICEMIA",
       "OBESITY"
     ],
     "panel_text": "Sedentismus je systémový stav — ne jen málo pohybu, ale chronická absence pohybového stimulu. 8+ hodin sezení denně aktivuje prozánětlivé dráhy, zvyšuje LDL, kyselinu močovou a inzulínovou rezistenci nezávisle na dietě. Každá hodina navíc zvyšuje KV riziko o ~2 %. Přestávky na pohyb každých 90 minut tyto markery měřitelně snižují do 4 týdnů — bez jiné intervence."
-  },
-  {
-    "id": "LOW_TESTOSTERONE",
-    "label": "Nízký testosteron",
-    "label_layman": "Nízký testosteron",
-    "type": "cause",
-    "typical_level": 4,
-    "typical_branch": "C",
-    "typical_children": [
-      "ERECTILE_DYSFUNCTION"
-    ],
-    "med_targets": [
-      "testosteron"
-    ],
-    "panel_text": "Testosteron se tvoří hlavně v REM spánku — chronický stres (kortizol) a spánkový deficit ho systematicky snižují. Tukové buňky navíc přeměňují testosteron na estrogen. Výsledek: nízká energie, horší erekce, nižší motivace. Většina mužů to přičte věku — přitom jde o biochemii, ne o stárnutí.",
-    "condition": {
-      "auto_if": {
-        "gender": "male"
-      }
-    }
   }
 ]
