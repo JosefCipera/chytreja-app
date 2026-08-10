@@ -1330,12 +1330,12 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
   // Připoj uzly bez vstupní hrany (orphan source) k nejbližšímu nižšímu uzlu
   crt.edges = connectSourceless(crt.nodes, crt.root, crt.edges);
 
-  // Personalizovaný panel_text pro kořenové uzly (Sonnet 5) — jen pokud jsou doctor_notes
-  // Bez doctor_notes je strom příliš tenký na smysluplný příběh + šetří 10–15s timeout
+  // Personalizovaný panel_text pro všechny uzly (Sonnet 5) — jen pokud jsou doctor_notes
+  // Bez doctor_notes šetří 10–15s timeout; fallback = State Dictionary panel_text
   if (profile.doctor_notes && profile.doctor_notes.trim().length > 20) {
     const allActiveForPanel = [...(crt.nodes || [])];
     if (crt.root && typeof crt.root === 'object') allActiveForPanel.push(crt.root);
-    await generatePanelTexts(allActiveForPanel, crt.edges || [], profile);
+    await generatePanelTexts(allActiveForPanel, crt.edges || [], profile, crt.medications_map || []);
   }
 
   // Behavior warnings: připoj personalizované varování z profilu na aktivní uzly
@@ -1351,19 +1351,31 @@ Vrať pouze čistý JSON. Žádný text navíc.`;
   return crt;
 }
 
-// Vygeneruje personalizovaný panel_text pro každý kořenový uzel (Sonnet 5)
-// Příběh: jak kořen ZPŮSOBUJE problémy výše — kauzální řetěz konkrétní pro tohoto pacienta
-async function generatePanelTexts(allNodes, edges, profile) {
-  const rootNodes = allNodes.filter(n => (n.level ?? 99) === 0 && n.id);
-  if (!rootNodes.length) return;
+// Vygeneruje personalizovaný panel_text pro všechny uzly (Sonnet 5).
+// Tři typy textu — jeden Sonnet call, tři sekce:
+//   root (level=0)   → PÁKA ZMĚNY: životní styl + intervence
+//   ude  (type=ude)  → VÁŠ PŘÍBĚH: plný kauzální řetěz A→B→C
+//   detail (ostatní) → O UZLU: 1-2 věty, jen tato biologická součástka
+async function generatePanelTexts(allNodes, edges, profile, medsMap = []) {
+  if (!allNodes.length) return;
 
-  const nodeById = Object.fromEntries(allNodes.map(n => [n.id, n]));
-  const childrenOf = {};
-  (edges || []).forEach(e => { (childrenOf[e.from] = childrenOf[e.from] || []).push(e.to); });
+  const nodeById  = Object.fromEntries(allNodes.map(n => [n.id, n]));
+  const childrenOf = {}, parentsOf = {};
+  (edges || []).forEach(e => {
+    (childrenOf[e.from] = childrenOf[e.from] || []).push(e.to);
+    (parentsOf[e.to]   = parentsOf[e.to]   || []).push(e.from);
+  });
 
-  // BFS: projdi celou větev od kořene, sesbírej popisky uzlů
-  const tracePath = (rootId) => {
-    const visited = new Set(), queue = [rootId], labels = [];
+  // Léky per uzel z medications_map
+  const medsByNode = {};
+  for (const med of medsMap) {
+    const nid = med.target_node_id || med.node_id;
+    if (nid && med.name) (medsByNode[nid] = medsByNode[nid] || []).push(med.name);
+  }
+
+  // BFS dolů od kořene → popisky uzlů (pro root context)
+  const traceDown = (startId) => {
+    const visited = new Set(), queue = [startId], labels = [];
     while (queue.length) {
       const id = queue.shift();
       if (visited.has(id)) continue;
@@ -1375,41 +1387,80 @@ async function generatePanelTexts(allNodes, edges, profile) {
     return labels;
   };
 
-  const rootDescriptions = rootNodes.map(r => ({
-    id: r.id,
-    label: r.label_layman || r.label,
-    path: tracePath(r.id).join(' → '),
-  }));
+  // BFS nahoru od uzlu → předkové seřazení root→apex (pro UDE příběh)
+  const ancestorChain = (nodeId) => {
+    const visited = new Set(), queue = [nodeId], chain = [];
+    while (queue.length) {
+      const id = queue.shift();
+      if (visited.has(id)) continue;
+      visited.add(id);
+      const n = nodeById[id];
+      if (n) chain.push(n);
+      (parentsOf[id] || []).forEach(pid => { if (!visited.has(pid)) queue.push(pid); });
+    }
+    chain.sort((a, b) => (a.level ?? 0) - (b.level ?? 0));
+    return chain.map(n => n.label_layman || n.label);
+  };
+
+  const rootNodes   = allNodes.filter(n => (n.level ?? 99) === 0 && n.id);
+  const apexNodes   = allNodes.filter(n => n.type === 'ude' && n.id);
+  const detailNodes = allNodes.filter(n => (n.level ?? 99) !== 0 && n.type !== 'ude' && n.id);
+
+  if (!rootNodes.length && !apexNodes.length && !detailNodes.length) return;
 
   const patientAge  = profile.birth_year ? `${new Date().getFullYear() - profile.birth_year} let` : '';
   const patientSex  = profile.sex === 'F' ? 'Žena' : profile.sex === 'M' ? 'Muž' : '';
   const patientDesc = [patientSex, patientAge].filter(Boolean).join(', ') || 'Pacient';
   const diagText    = (profile.diagnoses || []).join(', ') || '';
 
-  const emptyJson = JSON.stringify(Object.fromEntries(rootDescriptions.map(r => [r.id, '...'])));
+  const rootDesc   = rootNodes.map(r => ({ id: r.id, label: r.label_layman || r.label, path: traceDown(r.id).join(' → ') }));
+  const apexDesc   = apexNodes.map(n => ({ id: n.id, label: n.label_layman || n.label, chain: ancestorChain(n.id).join(' → ') }));
+  const detailDesc = detailNodes.map(n => ({ id: n.id, label: n.label_layman || n.label, meds: (medsByNode[n.id] || []).join(', ') }));
 
-  const prompt = `Jsi lékař-kouč. Pro každý kořenový uzel CRT stromu napiš panel_text: 3–4 věty, česky, tykáním.
+  const emptyJson = JSON.stringify({
+    root:   Object.fromEntries(rootDesc.map(r => [r.id, '...'])),
+    story:  Object.fromEntries(apexDesc.map(a => [a.id, '...'])),
+    detail: Object.fromEntries(detailDesc.map(d => [d.id, '...'])),
+  });
 
+  const prompt = `Jsi lékař-kouč. Napiš texty pro panely CRT stromu. Česky, tykání, TY forma.
+
+PACIENT: ${patientDesc}${diagText ? '. Diagnózy: ' + diagText : ''}.
+
+===== TYP 1: PÁKA ZMĚNY (kořenové uzly, level 0) =====
 Pravidla:
-- Celý text v TY formě — "hůř usínáš", "cítíš se unavená", "tvoje tělo". Přivlastňovací zájmena (tvůj/tvoje/tvé) používej max 1–2× v celém textu, ne před každým podstatným jménem.
-- Příběh: jak tento kořen ZPŮSOBUJE problémy výše v grafu — sleduj kauzální cestu krok za krokem
-- Konkrétní — zmiň co se děje přímo v těle pacienta (nervy, nohy, kosti, srdce...)
-- Konči kauzálním důsledkem — BEZ rad, BEZ "na tomhle máš vliv", BEZ obecných doporučení
-- Hormonální/genetický kořen (štítná žláza): konec = dopad, ne rada
-- Žádné fráze: je důležité, musíš, okamžitě, hrozí, měl bys, máš vliv, dokáže zpomalit
+- 2–3 věty, zaměřeno na životní styl a konkrétní intervenci
+- NEPOPISUJ nemoci — piš o chování, pohybu, návycích
+- Zakázané fráze: musíš, okamžitě, hrozí, měl bys, je důležité
 
-Pacient: ${patientDesc}${diagText ? '. Diagnózy: ' + diagText : ''}.
+${rootDesc.map(r => `[${r.id}] ${r.label}\nDopad na: ${r.path}`).join('\n\n')}
 
-Kořeny a kauzální cesty:
-${rootDescriptions.map(r => `[${r.id}] ${r.label}\nCesta: ${r.path}`).join('\n\n')}
+===== TYP 2: VÁŠ PŘÍBĚH (UDE apex uzly — konečné dopady) =====
+Pravidla:
+- 3–4 věty, celý kauzální příběh od kořene k tomuto dopadu
+- Klíčová slova: "protože...", "to vede k...", "a výsledkem je..."
+- Vyprávěj co se děje v těle — NESOUSTŘEĎUJ se na poučky
+- Zakázané fráze: musíš, okamžitě, hrozí, měl bys, je důležité
 
-Vrať jen JSON bez markdown: ${emptyJson}`;
+${apexDesc.map(a => `[${a.id}] ${a.label}\nKauzální řetěz: ${a.chain}`).join('\n\n')}
+
+===== TYP 3: O UZLU (ostatní uzly — jednotlivé biologické součástky) =====
+Pravidla:
+- 1–2 věty, POUZE tento uzel — co to je biologicky
+- NEVYSVĚTLUJ celý strom — jen tuto jednu součástku
+- Pokud jsou léky: přidej větu co lék dělá s tímto uzlem konkrétně
+- Zakázané fráze: musíš, okamžitě, hrozí, měl bys, je důležité
+
+${detailDesc.map(d => `[${d.id}] ${d.label}${d.meds ? ' (léky: ' + d.meds + ')' : ''}`).join('\n')}
+
+Vrať jen JSON bez markdown:
+${emptyJson}`;
 
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'claude-sonnet-5', max_tokens: 1500, messages: [{ role: 'user', content: prompt }] }),
+      body: JSON.stringify({ model: 'claude-sonnet-5', max_tokens: 3000, messages: [{ role: 'user', content: prompt }] }),
     });
     if (!res.ok) throw new Error(`Sonnet panel_text ${res.status}`);
     const data = await res.json();
@@ -1417,12 +1468,10 @@ Vrať jen JSON bez markdown: ${emptyJson}`;
     const jsonMatch = (textBlock?.text || '').match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error('No JSON in panel_text response');
     const panelTexts = JSON.parse(jsonMatch[0]);
-    rootNodes.forEach(n => {
-      if (panelTexts[n.id]) {
-        n.panel_text = panelTexts[n.id];
-        console.log(`[CRT] panel_text: ${n.id}`);
-      }
-    });
+    rootNodes.forEach(n => { if (panelTexts.root?.[n.id])   n.panel_text = panelTexts.root[n.id]; });
+    apexNodes.forEach(n => { if (panelTexts.story?.[n.id])  n.panel_text = panelTexts.story[n.id]; });
+    detailNodes.forEach(n => { if (panelTexts.detail?.[n.id]) n.panel_text = panelTexts.detail[n.id]; });
+    console.log(`[CRT] panel_text: ${Object.keys(panelTexts.root||{}).length}R + ${Object.keys(panelTexts.story||{}).length}A + ${Object.keys(panelTexts.detail||{}).length}D`);
   } catch (e) {
     console.warn('[CRT] panel_text generation failed:', e.message);
     // fallback: State Dictionary panel_text (aplikováno dříve v applyStateLabels)
@@ -1636,7 +1685,7 @@ function overlayColors(nodes, metrics) {
 // _v_ai: bump POUZE při změně Sonnet promptu → invaliduje AI generování
 // _v_pp: bump při změně post-processingu (med-inject, validateEdges...) → přeskočí Sonnet, re-run PP
 const _v_ai = 12;
-const _v_pp = 108; // label_layman CARDIAC_IRRITABILITY: Dráždivé → Podrážděné srdce
+const _v_pp = 109; // panel_text: 3-type architecture (root/story/detail)
 
 function hashStr(s) {
   let h = 0;
