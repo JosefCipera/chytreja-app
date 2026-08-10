@@ -1636,7 +1636,7 @@ function overlayColors(nodes, metrics) {
 // _v_ai: bump POUZE při změně Sonnet promptu → invaliduje AI generování
 // _v_pp: bump při změně post-processingu (med-inject, validateEdges...) → přeskočí Sonnet, re-run PP
 const _v_ai = 12;
-const _v_pp = 103; // CHRONIC_STRESS + SYMPATHETIC: odebrana kaskada DEPRESSION_ANXIETY+SLEEP_DISORDER (jen keyword match)
+const _v_pp = 104; // HYPERURICEMIA branch R, ATHEROSCLEROSIS branch RC — restore gold Josef branch swap
 
 function hashStr(s) {
   let h = 0;
