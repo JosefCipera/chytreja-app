@@ -32,7 +32,8 @@
     "typical_branch": "L",
     "med_targets": [],
     "typical_children": [
-      "CARDIAC_IRRITABILITY"
+      "CARDIAC_IRRITABILITY",
+      "HYPERTENSION"
     ]
   },
   {
@@ -90,6 +91,7 @@
       "bisoprolol"
     ],
     "typical_children": [
+      "CHRONIC_STRESS",
       "NEUROMOTOR_DYS"
     ]
   },
@@ -562,7 +564,7 @@
     "typical_branch": "C",
     "med_targets": [],
     "typical_children": [
-      "CHRONIC_STRESS",
+      "SYMPATHETIC_OVERACTIVATION",
       "DYSLIPIDEMIA",
       "HYPERURICEMIA",
       "OBESITY"
