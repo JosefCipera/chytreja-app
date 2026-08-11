@@ -153,13 +153,5 @@ export async function fetchHealthData(userId) {
   if (sedNode)
     observations.push({ obs_type: 'sedentary_hours_day', value: parseFloat(sedNode.value), unit: 'hours', measured_at: null, source: 'onboarding', confidence: 'estimated' });
 
-  return {
-    person, clinicalHistory, observations,
-    _debug: {
-      physical: hp?.physical ?? null,
-      userProfile_weight: userProfile?.weight ?? null,
-      checkin_count: (checkins || []).length,
-      checkin_sample: (checkins || []).slice(0, 3).map(c => ({ date: c.date, weight_kg: c.weight_kg })),
-    },
-  };
+  return { person, clinicalHistory, observations };
 }

@@ -26,7 +26,7 @@ export const ENGINE_VERSION = '1.0.0';
 export const ENGINE_MASTER  = MASTER;
 
 export async function runEngine(userId) {
-  const { person, clinicalHistory, observations, _debug: _adapterDebug } = await fetchHealthData(userId);
+  const { person, clinicalHistory, observations } = await fetchHealthData(userId);
 
   const activated  = activation(person, clinicalHistory, observations);
   const inferred   = inference(activated, person, clinicalHistory, observations);
@@ -46,6 +46,5 @@ export async function runEngine(userId) {
     decision_relevance: null,
   }));
 
-  const _debug_weight_obs = observations.filter(o => o.obs_type === 'weight_kg');
-  return { person, engine_version: ENGINE_VERSION, evaluated_at: now, node_states, _debug_weight_obs, _adapterDebug };
+  return { person, engine_version: ENGINE_VERSION, evaluated_at: now, node_states };
 }
