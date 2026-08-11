@@ -50,7 +50,8 @@ export async function fetchHealthData(userId) {
       .select('weight_kg, waist_cm, energy, sleep_hours, stress, movement_level, date')
       .eq('user_id', userId)
       .order('date', { ascending: false })
-      .limit(30),
+      .limit(30)
+      .then(r => { console.log('[adapter] daily_checkin rows:', r.data?.length, '| error:', r.error?.message); return r; }),
     supabase.from('node_inputs')
       .select('node_id, question_id, value')
       .eq('user_id', userId),
