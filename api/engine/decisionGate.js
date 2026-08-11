@@ -202,8 +202,16 @@ function identifyBlockingUncertainties(informationNeeds, nodeStates, projections
     }
   }
 
-  // Return only material blockers — non-blockers are implicit in the EVIDENCE_SUFFICIENT decision
-  return all.filter(b => b.is_material_blocker);
+  // Deduplicate by entity_id — multiple INFORMATION_NEEDs may point to the same blocked entity
+  const seenEntities = new Set();
+  const dedupedMaterial = [];
+  for (const b of all) {
+    if (!b.is_material_blocker) continue;
+    if (seenEntities.has(b.entity_id)) continue;
+    seenEntities.add(b.entity_id);
+    dedupedMaterial.push(b);
+  }
+  return dedupedMaterial;
 }
 
 // ── Gate evaluation ───────────────────────────────────────────────────────────
