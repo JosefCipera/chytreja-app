@@ -235,18 +235,17 @@ export function inference(activatedStates, person, clinicalHistory, observations
         {
           type:     'OBSERVATION',
           obs_type: 'validated_strength_assessment',
-          note:     'Validované posouzení svalové síly — klíčový chybějící vstup pro longevity trajectory. ' +
-                    'Příklady: grip strength (dynamometr, EWGSOP2), 30s chair stand test, Five Times Sit-to-Stand.',
+          note:     'Validované posouzení svalové síly (EWGSOP2): handgrip strength (dynamometr) nebo 30s chair stand test — klíčový chybějící vstup pro longevity trajectory inference.',
         },
         {
           type:        'ONBOARDING',
           question_id: 'vynest_nakup',
-          note:        '"Vynést nákup do 3. patra bez zastavení?" — onboarding odpověď chybí',
+          note:        'CHJ Decathlon funkční otázka: "Vynést nákup do 3. patra bez zastavení?" — nevyplněno',
         },
         {
           type:        'ONBOARDING',
           question_id: 'zvednout_vnouce',
-          note:        '"Zvednout vnouče / těžký předmět (10+ kg)?" — onboarding odpověď chybí',
+          note:        'CHJ Decathlon funkční otázka: "Zvednout vnouče / těžký předmět (10+ kg)?" — nevyplněno',
         },
       ],
     });
@@ -272,9 +271,9 @@ export function inference(activatedStates, person, clinicalHistory, observations
         {
           type:     'OBSERVATION',
           obs_type: 'floor_rise_test',
-          note:     'Přímý test: vstání ze země bez opory (ano/ne). ' +
+          note:     'CHJ functional assessment: vstání ze země bez opory (ano/ne). ' +
                     'Dekatlon onboarding: vstat_ze_zeme. ' +
-                    'Princeton IV doporučuje funkční screening u mužů s ED a neurčitým rizikovým profilem.',
+                    '(Bez konkrétního validovaného protokolu — zatím interní CHJ screening.)',
         },
       ],
     });
