@@ -102,6 +102,10 @@ export async function fetchHealthData(userId) {
       alcohol_history: 'unknown',
     },
     capacity: hp?.capacity || {},
+    // Flat map of all onboarding node_inputs: question_id → raw value
+    onboarding_inputs: Object.fromEntries(
+      (nodeInputs || []).map(n => [n.question_id, n.value])
+    ),
   };
 
   // ── OBSERVATIONS ──────────────────────────────────────────────────────────

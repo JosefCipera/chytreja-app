@@ -20,10 +20,121 @@
 export function computeProjections(nodeStates, person, clinicalHistory) {
   const projections = [];
 
-  const cv = cvDiseaseProjection(nodeStates, person, clinicalHistory);
+  const cv    = cvDiseaseProjection(nodeStates, person, clinicalHistory);
   if (cv) projections.push(cv);
 
+  const floor = floorRiseProjection(nodeStates, person, clinicalHistory);
+  if (floor) projections.push(floor);
+
   return projections;
+}
+
+// ── LOSS_OF_FLOOR_RISE_ABILITY — TRAJECTORY_BASED projection ──────────────
+// Target: can the person still rise from the floor without using hands/support?
+// Trajectory requires temporal data: repeated measurements showing a trend.
+// Without trajectory data, risk = 'unknown' — the engine must not fabricate a prediction.
+//
+// Rules applied:
+//   RULE_PHYS_DECOND_FLOOR_v1   — physical deconditioning upstream of floor-rise ability
+//   RULE_NO_STRENGTH_DATA_v1    — LOW_MUSCLE_STRENGTH absent → risk unknown
+//   RULE_NO_TRAJECTORY_DATA_v1  — no temporal functional data → cannot project trajectory
+function floorRiseProjection(nodeStates, person, clinicalHistory) {
+  const byId = Object.fromEntries(nodeStates.map(s => [s.node_id, s]));
+  const evidence     = [];
+  const rule_ids     = [];
+
+  const deconditioning = byId['PHYSICAL_DECONDITIONING'];
+  const lowStrength    = byId['LOW_MUSCLE_STRENGTH'];
+  const reducedReserve = byId['REDUCED_FUNCTIONAL_RESERVE'];
+
+  // ── Upstream signals available ────────────────────────────────────────────
+  if (deconditioning) {
+    evidence.push({
+      node_id:      'PHYSICAL_DECONDITIONING',
+      state:        deconditioning.current_state,
+      confidence:   deconditioning.confidence,
+      relation:     'CONTRIBUTES_TO',
+      note:         'Fyzická dekondice je identifikována jako upstream signál — nedostatečná pro trajectory prediction bez přímých dat síly a funkce.',
+    });
+    rule_ids.push('RULE_PHYS_DECOND_FLOOR_v1');
+  }
+
+  if (lowStrength) {
+    evidence.push({
+      node_id:    'LOW_MUSCLE_STRENGTH',
+      state:      lowStrength.current_state,
+      confidence: lowStrength.confidence,
+      relation:   'CONTRIBUTES_TO',
+    });
+  }
+
+  if (reducedReserve) {
+    evidence.push({
+      node_id:    'REDUCED_FUNCTIONAL_RESERVE',
+      state:      reducedReserve.current_state,
+      confidence: reducedReserve.confidence,
+      relation:   'CONTRIBUTES_TO',
+    });
+  }
+
+  // ── Trajectory requires temporal data ────────────────────────────────────
+  // TRAJECTORY_BASED projection cannot be computed without temporal measurements
+  // showing a direction. A single PREDICTED_CURRENT state is not a trajectory.
+  const hasStrengthData      = !!lowStrength;
+  const hasFloorTestData     = !!(clinicalHistory.onboarding_inputs?.['vstat_ze_zeme']);
+  const hasTemporalFuncData  = false; // no temporal functional observations in current data model
+
+  rule_ids.push('RULE_NO_TRAJECTORY_DATA_v1');
+  if (!hasStrengthData) rule_ids.push('RULE_NO_STRENGTH_DATA_v1');
+
+  // ── risk, horizon, confidence ─────────────────────────────────────────────
+  // Without LOW_MUSCLE_STRENGTH and without trajectory data: risk = 'unknown'.
+  // We cannot compute even a qualitative trajectory direction — direction requires
+  // at least a baseline measurement + time component.
+  const risk       = 'unknown';
+  const horizon    = 'unknown';
+  const confidence = 'unknown';
+
+  return {
+    projection_type: 'TRAJECTORY_BASED',
+    target_node_id:  'LOSS_OF_FLOOR_RISE_ABILITY',
+    risk,
+    risk_basis:      'qualitative_rule',
+    calibrated:      false,
+    horizon,
+    confidence,
+    evidence: evidence.length > 0 ? evidence : [{
+      note: 'Žádné přímé ani inferencované upstream signály pro tento projekční cíl nejsou k dispozici.',
+    }],
+    missing_evidence: [
+      {
+        type:     'OBSERVATION',
+        obs_type: 'floor_rise_test',
+        note:     'Přímý test: vstání ze země bez opory (ano/ne) — Princeton IV doporučuje funkční screening u mužů s ED; Dekatlon: vstat_ze_zeme',
+      },
+      {
+        type:     'OBSERVATION',
+        obs_type: 'validated_strength_assessment',
+        note:     'Validované posouzení svalové síly: grip strength (dynamometr), 30s chair stand test, nebo Five Times Sit-to-Stand — minimální datový požadavek pro trajectory direction',
+      },
+      {
+        type:     'OBSERVATION',
+        obs_type: 'temporal_activity_trend',
+        note:     'Časová řada aktivity (min. 30 denních check-inů) pro určení trajektorie dekondiční dynamiky',
+      },
+    ],
+    rule_ids,
+    explanation:
+      'TRAJECTORY_BASED projekce vyžaduje temporální data — směr trendu, ne jen aktuální stav. ' +
+      (deconditioning
+        ? 'Fyzická dekondice je identifikována jako PREDICTED_CURRENT (z fyzické inaktivity), ' +
+          'ale samotná predikce upstream stavu nestačí pro trajectory projection. '
+        : '') +
+      'LOW_MUSCLE_STRENGTH není aktivována — chybí přímá evidence síly (funkční test nebo validovaný self-report). ' +
+      'Bez záznamu o schopnosti vstát ze země a bez validovaného posouzení svalové síly ' +
+      'nemůže engine určit směr ani riziko ztráty této funkce. ' +
+      'risk=unknown je korektní výsledek při absenci potřebných dat.',
+  };
 }
 
 function cvDiseaseProjection(nodeStates, person, clinicalHistory) {

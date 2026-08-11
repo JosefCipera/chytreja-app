@@ -159,5 +159,48 @@ export function activation(person, clinicalHistory, observations) {
     }
   }
 
+  // ── LOW_MUSCLE_STRENGTH ──────────────────────────────────────────────────
+  // Requires direct evidence from a validated functional test or onboarding self-report
+  // of an inability to perform a strength task. Age alone is NOT sufficient — age is a
+  // risk modifier, not evidence of actual strength loss.
+  //
+  // Onboarding question IDs (Dekatlon / Longevity functional assessment):
+  //   vynest_nakup    = "Vynést nákup do 3. patra bez zastavení?"
+  //   zvednout_vnouce = "Zvednout vnouče / těžký předmět (10+ kg)?"
+  //   vstat_ze_zeme   = "Vstát ze země bez opory?"
+  //
+  // Activation: at least one of these answered negatively ('no', 'false', '0', false)
+  const oi = clinicalHistory.onboarding_inputs || {};
+  const negatives = ['no', 'false', '0', false, 0];
+  const isNeg = v => negatives.includes(v) || v === 'ne';
+
+  const strengthEvidence = [];
+  if (isNeg(oi['vynest_nakup']))
+    strengthEvidence.push({ source: 'ONBOARDING', question_id: 'vynest_nakup', value: oi['vynest_nakup'],
+      note: 'Neunesení nákupu do 3. patra — funkční ukazatel svalové kapacity' });
+  if (isNeg(oi['zvednout_vnouce']))
+    strengthEvidence.push({ source: 'ONBOARDING', question_id: 'zvednout_vnouce', value: oi['zvednout_vnouce'],
+      note: 'Neschopnost zvednout 10+ kg — funkční ukazatel svalové síly' });
+  if (isNeg(oi['vstat_ze_zeme']))
+    strengthEvidence.push({ source: 'ONBOARDING', question_id: 'vstat_ze_zeme', value: oi['vstat_ze_zeme'],
+      note: 'Neschopnost vstát ze země bez opory — přímý funkční výsledek' });
+
+  if (strengthEvidence.length > 0) {
+    states.push({
+      node_id: 'LOW_MUSCLE_STRENGTH',
+      current_state: 'MEASURED',
+      confidence: strengthEvidence.length >= 2 ? 'medium' : 'low',
+      evidence: {
+        direct: strengthEvidence,
+        supporting: [],
+        inferred_from_nodes: [],
+      },
+      missing_evidence: [
+        { type: 'OBSERVATION', obs_type: 'grip_strength', note: 'Síla stisku ruky (dynamometr) — EWGSOP2 referenční marker sarkopenie' },
+        { type: 'OBSERVATION', obs_type: 'chair_stand_30s', note: '30-sekundový chair stand test — validovaný populační marker svalové vytrvalosti' },
+      ],
+    });
+  }
+
   return states;
 }

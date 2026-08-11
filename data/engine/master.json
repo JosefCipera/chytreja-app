@@ -1,6 +1,6 @@
 {
-  "version": "1.0.0",
-  "description": "CHJ Engine v1 — 6-node Master slice. Metabolic + cardiovascular + functional outcome chain.",
+  "version": "1.1.0",
+  "description": "CHJ Engine v1 — 10-node Master. Metabolic + cardiovascular + functional/longevity chains.",
   "nodes": [
     {
       "id": "PHYSICAL_INACTIVITY",
@@ -44,6 +44,38 @@
       "label_en": "Erectile dysfunction",
       "category": "functional_outcome",
       "domain": "cardiovascular"
+    },
+    {
+      "id": "PHYSICAL_DECONDITIONING",
+      "label_cs": "Fyzická dekondice",
+      "label_en": "Physical deconditioning",
+      "category": "biological_state",
+      "domain": "functional",
+      "note": "Progressive loss of fitness from sustained inactivity. Upstream: PHYSICAL_INACTIVITY."
+    },
+    {
+      "id": "LOW_MUSCLE_STRENGTH",
+      "label_cs": "Snížená svalová síla",
+      "label_en": "Low muscle strength",
+      "category": "biological_state",
+      "domain": "musculoskeletal",
+      "note": "Requires direct evidence (functional test or validated self-report). Must NOT be activated from age alone."
+    },
+    {
+      "id": "REDUCED_FUNCTIONAL_RESERVE",
+      "label_cs": "Snížená funkční rezerva",
+      "label_en": "Reduced functional reserve",
+      "category": "mechanism",
+      "domain": "functional",
+      "note": "Downstream of LOW_MUSCLE_STRENGTH. Represents the shrinking buffer between current capacity and functional thresholds."
+    },
+    {
+      "id": "LOSS_OF_FLOOR_RISE_ABILITY",
+      "label_cs": "Ztráta schopnosti vstát ze země",
+      "label_en": "Loss of floor-rise ability",
+      "category": "functional_outcome",
+      "domain": "musculoskeletal",
+      "note": "Projection target. Directly testable: can the person rise from floor without using hands/support? (Dekatlon: vstat_ze_zeme)"
     }
   ],
   "edges": [
@@ -110,6 +142,43 @@
       "evidence_quality": "moderate",
       "time_horizon": "years",
       "note": "ED predikuje budoucí KV příhody epidemiologicky — není příčinou. CARDIOVASCULAR_DISEASE je projekční cíl, ne Master node v tomto slicu."
+    },
+    {
+      "id": "e-phys-decond",
+      "from": "PHYSICAL_INACTIVITY",
+      "to": "PHYSICAL_DECONDITIONING",
+      "relation": "CONTRIBUTES_TO",
+      "strength": "strong",
+      "evidence_quality": "strong",
+      "time_horizon": "months_to_years"
+    },
+    {
+      "id": "e-decond-strength",
+      "from": "PHYSICAL_DECONDITIONING",
+      "to": "LOW_MUSCLE_STRENGTH",
+      "relation": "CONTRIBUTES_TO",
+      "strength": "strong",
+      "evidence_quality": "strong",
+      "time_horizon": "years"
+    },
+    {
+      "id": "e-strength-reserve",
+      "from": "LOW_MUSCLE_STRENGTH",
+      "to": "REDUCED_FUNCTIONAL_RESERVE",
+      "relation": "CONTRIBUTES_TO",
+      "strength": "strong",
+      "evidence_quality": "strong",
+      "time_horizon": "years"
+    },
+    {
+      "id": "e-reserve-floor",
+      "from": "REDUCED_FUNCTIONAL_RESERVE",
+      "to": "LOSS_OF_FLOOR_RISE_ABILITY",
+      "relation": "CONTRIBUTES_TO",
+      "strength": "strong",
+      "evidence_quality": "moderate",
+      "time_horizon": "years",
+      "note": "LOSS_OF_FLOOR_RISE_ABILITY je projekční cíl (longevity slice) — přímá testovatelná funkční ztráta."
     }
   ]
 }

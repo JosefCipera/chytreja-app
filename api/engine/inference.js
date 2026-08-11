@@ -126,5 +126,76 @@ export function inference(activatedStates, person, clinicalHistory, observations
     }
   }
 
+  // ── PHYSICAL_DECONDITIONING ──────────────────────────────────────────────
+  // Inferred from PHYSICAL_INACTIVITY state. Sustained inactivity leads to progressive
+  // loss of cardiovascular and musculoskeletal fitness.
+  // Confidence inherits from upstream: MEASURED inactivity → medium; PREDICTED → low.
+  // Age is used as a contextual accelerator signal only — not a primary activator.
+  if (!stateById['PHYSICAL_DECONDITIONING']) {
+    const inactivity = stateById['PHYSICAL_INACTIVITY'];
+    if (inactivity) {
+      const signals = [{
+        node_id:      'PHYSICAL_INACTIVITY',
+        current_state: inactivity.current_state,
+        role:          'sustained inactivity drives progressive deconditioning over months to years',
+      }];
+
+      const age = person.birth_year ? (new Date().getFullYear() - person.birth_year) : null;
+      if (age && age >= 50) {
+        signals.push({
+          source: 'PERSON',
+          field:  'age',
+          value:  age,
+          role:   'contextual accelerator — deconditioning progresses faster with age; not a primary activator',
+        });
+      }
+
+      states.push({
+        node_id:       'PHYSICAL_DECONDITIONING',
+        current_state: 'PREDICTED_CURRENT',
+        confidence:    inactivity.current_state === 'MEASURED' ? 'medium' : 'low',
+        evidence: {
+          direct: [],
+          supporting: [],
+          inferred_from_nodes: signals,
+        },
+        missing_evidence: [
+          { type: 'OBSERVATION', obs_type: 'vo2max_test',  note: 'VO2max — přímý marker kardiorespirační kondice' },
+          { type: 'OBSERVATION', obs_type: 'steps_day',    note: 'Kroky/den (wearable) pro objektivní měření aktivity v čase' },
+        ],
+      });
+    }
+  }
+
+  // ── REDUCED_FUNCTIONAL_RESERVE ────────────────────────────────────────────
+  // Inferred from LOW_MUSCLE_STRENGTH (activation pass). Represents the shrinking buffer
+  // between current functional capacity and the thresholds for everyday tasks.
+  // Only activates when LOW_MUSCLE_STRENGTH has direct evidence — not from inactivity alone.
+  if (!stateById['REDUCED_FUNCTIONAL_RESERVE']) {
+    const lowStrength = stateById['LOW_MUSCLE_STRENGTH'];
+    if (lowStrength) {
+      states.push({
+        node_id:       'REDUCED_FUNCTIONAL_RESERVE',
+        current_state: 'PREDICTED_CURRENT',
+        confidence:    lowStrength.confidence === 'medium' ? 'medium' : 'low',
+        evidence: {
+          direct: [],
+          supporting: [],
+          inferred_from_nodes: [{
+            node_id:       'LOW_MUSCLE_STRENGTH',
+            current_state: lowStrength.current_state,
+            role:          'reduced strength shrinks the buffer between capacity and functional task thresholds',
+          }],
+        },
+        missing_evidence: [
+          { type: 'OBSERVATION', obs_type: 'tug_test',
+            note: 'Timed Up and Go (TUG) — validovaný marker funkční rezervy a rizika pádu' },
+          { type: 'OBSERVATION', obs_type: 'chair_stand_30s',
+            note: '30-sekundový chair stand test — populační normy pro věkové skupiny' },
+        ],
+      });
+    }
+  }
+
   return states;
 }
