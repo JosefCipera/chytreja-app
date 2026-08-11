@@ -50,8 +50,7 @@ export async function fetchHealthData(userId) {
       .select('weight_kg, waist_cm, energy, sleep_hours, stress, movement_level, date')
       .eq('user_id', userId)
       .order('date', { ascending: false })
-      .limit(30)
-      .then(r => { console.log('[adapter] daily_checkin rows:', r.data?.length, '| error:', r.error?.message); return r; }),
+      .limit(30),
     supabase.from('node_inputs')
       .select('node_id, question_id, value')
       .eq('user_id', userId),
@@ -119,7 +118,12 @@ export async function fetchHealthData(userId) {
       observations.push({ obs_type: 'stress_1_5', value: c.stress, measured_at: c.date, source: 'daily_checkin', confidence: 'confirmed' });
   }
 
-  // Weight from user_profiles (historical onboarding estimate, no date)
+  // Weight from user_health_profile.physical (entered via health profile form, no date)
+  const physicalWeight = hp?.physical?.weight ?? hp?.physical?.weight_kg ?? null;
+  if (physicalWeight != null)
+    observations.push({ obs_type: 'weight_kg', value: parseFloat(physicalWeight), unit: 'kg', measured_at: null, source: 'health_profile', confidence: 'estimated' });
+
+  // Weight from user_profiles (avatar/onboarding estimate, no date, lowest priority)
   if (userProfile?.weight)
     observations.push({ obs_type: 'weight_kg', value: userProfile.weight, unit: 'kg', measured_at: null, source: 'onboarding', confidence: 'estimated' });
 
