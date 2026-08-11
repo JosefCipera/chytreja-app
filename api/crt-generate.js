@@ -427,9 +427,9 @@ async function buildDeterministicCRT(profile, metrics = [], checkins = []) {
       confirmedIds.add(id); cascadeEligible.add(id); // diagnóza lékaře = Tier 1, smí kaskádovat
     }
   }
-  // BMI prahy — naměřená hodnota → Confirmed, ale nekaskáduje (OBESITY→INSULIN_RESISTANCE zůstane Inferred)
-  if (bmi && bmi >= 27) { activeIds.add('OBESITY'); confirmedIds.add('OBESITY'); }
-  if (bmi && bmi >= 30) { activeIds.add('OBESITY'); confirmedIds.add('OBESITY'); activeIds.add('HYPERTENSION'); confirmedIds.add('HYPERTENSION'); }
+  // BMI: pouze label override (nadváha vs. obezita) — nepotvrzuje diagnózu.
+  // OBESITY/HYPERTENSION z BMI bylo odstraněno — BMI samo není klinické potvrzení.
+  // Aktivace OBESITY přichází z keyword matching (diagnózy/notes) nebo SEDENTARY kaskády.
 
   // Lab hodnoty z user_health_profile.labs (manuální zadání z UI)
   // Confirmed = naměřená hodnota, nekaskáduje (stejná logika jako BMI)
@@ -1686,7 +1686,7 @@ function overlayColors(nodes, metrics) {
 // _v_ai: bump POUZE při změně Sonnet promptu → invaliduje AI generování
 // _v_pp: bump při změně post-processingu (med-inject, validateEdges...) → přeskočí Sonnet, re-run PP
 const _v_ai = 12;
-const _v_pp = 110; // FUNCTIONAL_DECLINE (křehkost) UDE: SEDENTARY→MUSCLE_WEAKNESS→LOW_VO2MAX→FUNCTIONAL_DECLINE
+const _v_pp = 111; // odstraněno BMI→confirmed OBESITY/HYPERTENSION (BMI samo není klinické potvrzení)
 
 function hashStr(s) {
   let h = 0;

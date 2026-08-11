@@ -1,0 +1,115 @@
+{
+  "version": "1.0.0",
+  "description": "CHJ Engine v1 — 6-node Master slice. Metabolic + cardiovascular + functional outcome chain.",
+  "nodes": [
+    {
+      "id": "PHYSICAL_INACTIVITY",
+      "label_cs": "Fyzická inaktivita",
+      "label_en": "Physical inactivity",
+      "category": "behavior",
+      "domain": "lifestyle"
+    },
+    {
+      "id": "EXCESS_ADIPOSITY",
+      "label_cs": "Nadměrný tuk",
+      "label_en": "Excess adiposity",
+      "category": "biological_state",
+      "domain": "metabolic",
+      "note": "Broad category — does not map 1:1 to OBESITY. Subcategories (overweight/visceral/obese) require DataDictionary rules with waist_cm, body_fat_pct."
+    },
+    {
+      "id": "INSULIN_RESISTANCE",
+      "label_cs": "Inzulínová rezistence",
+      "label_en": "Insulin resistance",
+      "category": "mechanism",
+      "domain": "metabolic"
+    },
+    {
+      "id": "HYPERTENSION",
+      "label_cs": "Arteriální hypertenze",
+      "label_en": "Arterial hypertension",
+      "category": "disease",
+      "domain": "cardiovascular"
+    },
+    {
+      "id": "ENDOTHELIAL_DYSFUNCTION",
+      "label_cs": "Endoteliální dysfunkce",
+      "label_en": "Endothelial dysfunction",
+      "category": "mechanism",
+      "domain": "cardiovascular"
+    },
+    {
+      "id": "ERECTILE_DYSFUNCTION",
+      "label_cs": "Erektilní dysfunkce",
+      "label_en": "Erectile dysfunction",
+      "category": "functional_outcome",
+      "domain": "cardiovascular"
+    }
+  ],
+  "edges": [
+    {
+      "id": "e-phys-adiposity",
+      "from": "PHYSICAL_INACTIVITY",
+      "to": "EXCESS_ADIPOSITY",
+      "relation": "CONTRIBUTES_TO",
+      "strength": "moderate",
+      "evidence_quality": "strong",
+      "time_horizon": "months"
+    },
+    {
+      "id": "e-phys-ir",
+      "from": "PHYSICAL_INACTIVITY",
+      "to": "INSULIN_RESISTANCE",
+      "relation": "CONTRIBUTES_TO",
+      "strength": "strong",
+      "evidence_quality": "strong",
+      "time_horizon": "years"
+    },
+    {
+      "id": "e-adiposity-ir",
+      "from": "EXCESS_ADIPOSITY",
+      "to": "INSULIN_RESISTANCE",
+      "relation": "CONTRIBUTES_TO",
+      "strength": "strong",
+      "evidence_quality": "strong",
+      "time_horizon": "years"
+    },
+    {
+      "id": "e-ir-htn",
+      "from": "INSULIN_RESISTANCE",
+      "to": "HYPERTENSION",
+      "relation": "CONTRIBUTES_TO",
+      "strength": "moderate",
+      "evidence_quality": "moderate",
+      "time_horizon": "years"
+    },
+    {
+      "id": "e-htn-endothel",
+      "from": "HYPERTENSION",
+      "to": "ENDOTHELIAL_DYSFUNCTION",
+      "relation": "CONTRIBUTES_TO",
+      "strength": "strong",
+      "evidence_quality": "strong",
+      "time_horizon": "years"
+    },
+    {
+      "id": "e-endothel-ed",
+      "from": "ENDOTHELIAL_DYSFUNCTION",
+      "to": "ERECTILE_DYSFUNCTION",
+      "relation": "CONTRIBUTES_TO",
+      "strength": "strong",
+      "evidence_quality": "strong",
+      "time_horizon": "years"
+    },
+    {
+      "id": "e-ed-cv-risk",
+      "from": "ERECTILE_DYSFUNCTION",
+      "to": "CARDIOVASCULAR_DISEASE",
+      "relation": "RISK_MARKER_FOR",
+      "strength": "moderate",
+      "evidence_quality": "moderate",
+      "time_horizon": "years",
+      "note": "ED predikuje budoucí KV příhody epidemiologicky — není příčinou. CARDIOVASCULAR_DISEASE je projekční cíl, ne Master node v tomto slicu."
+    }
+  ]
+}
