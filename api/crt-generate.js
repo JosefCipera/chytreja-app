@@ -173,7 +173,9 @@ async function fetchContext(userId, role) {
   // Pokud user_health_profile neexistuje (nový uživatel), vytvoř prázdný objekt — jinak se léky z user_medications ztratí
   const profileObj = profile || {};
   if (profileObj && userProfile) {
-    if (!profileObj.birth_year && userProfile.birth_year) profileObj.birth_year = userProfile.birth_year;
+    // Canonical birth_year = user_profiles (source of truth per Health Data Model v1).
+    // user_health_profile.birth_year (known conflict: 1971 for Josef) must never win.
+    if (userProfile.birth_year) profileObj.birth_year = userProfile.birth_year;
     if (!profileObj.sex && userProfile.gender) profileObj.sex = userProfile.gender;
     profileObj._height = userProfile.height;
     profileObj._weight = userProfile.weight;
@@ -680,11 +682,18 @@ async function buildDeterministicCRT(profile, metrics = [], checkins = []) {
   // věkem podmíněný zánět je jejich společný upstream kořen, duplikovat by zmatl graf.
   // HYPERURICEMIA: SEDENTARY kaskáda ji přidala PŘED tímto blokem — smaž pokud není z dat.
   if (activeIds.has('INFLAMMAGING')) {
+    // FIX B: Confirmed nodes musí být chráněny před INFLAMMAGING suppression.
+    // CHRONIC_STRESS je confirmed přes keyword match → smaž JEN pokud není potvrzen.
+    // REPORT (unfixed): METABOLIC_HEALTH_ROOT a SEDENTARY_LIFESTYLE_ROOT mají stejný problém —
+    //   METABOLIC_HEALTH_ROOT může být confirmed přes ALT/AST lab hodnoty,
+    //   SEDENTARY_LIFESTYLE_ROOT může být confirmed přes keyword match diagnóz.
+    //   Oba jsou zatím mazány bez ochrany — čeká na explicitní rozhodnutí.
     activeIds.delete('METABOLIC_HEALTH_ROOT');
-    activeIds.delete('CHRONIC_STRESS');
+    if (!confirmedIds.has('CHRONIC_STRESS')) activeIds.delete('CHRONIC_STRESS');
     activeIds.delete('SEDENTARY_LIFESTYLE_ROOT');
     if (!confirmedIds.has('HYPERURICEMIA')) activeIds.delete('HYPERURICEMIA');
-    console.log('[CRT] INFLAMMAGING active: suppressed METABOLIC_HEALTH_ROOT, CHRONIC_STRESS, SEDENTARY cascade');
+    console.log('[CRT] INFLAMMAGING active: suppressed cascade' +
+      (confirmedIds.has('CHRONIC_STRESS') ? ' (CHRONIC_STRESS protected — confirmed)' : ''));
   }
 
   // Downstream kaskáda — pouze z Tier 1 (cascadeEligible) uzlů s přesně 1 typical_child.
@@ -1686,7 +1695,7 @@ function overlayColors(nodes, metrics) {
 // _v_ai: bump POUZE při změně Sonnet promptu → invaliduje AI generování
 // _v_pp: bump při změně post-processingu (med-inject, validateEdges...) → přeskočí Sonnet, re-run PP
 const _v_ai = 12;
-const _v_pp = 111; // odstraněno BMI→confirmed OBESITY/HYPERTENSION (BMI samo není klinické potvrzení)
+const _v_pp = 112; // fix A: canonical birth_year z user_profiles; fix B: CHRONIC_STRESS chráněn před INFLAMMAGING suppression
 
 function hashStr(s) {
   let h = 0;
