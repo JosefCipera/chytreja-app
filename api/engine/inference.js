@@ -197,5 +197,88 @@ export function inference(activatedStates, person, clinicalHistory, observations
     }
   }
 
+  // ── RELEVANT_UNKNOWN detection ────────────────────────────────────────────
+  // Rule: UNKNOWN node state is created ONLY when all three conditions hold:
+  //   1. The node is part of a currently active inference/projection path
+  //   2. Its state cannot be determined from available data
+  //   3. Missing state materially affects inference or projection output
+  //
+  // This is NOT a global scan of all unknown Master nodes.
+  // Nodes outside active paths stay absent from node_states entirely.
+  //
+  // Currently active longevity path:
+  //   PHYSICAL_INACTIVITY → PHYSICAL_DECONDITIONING → LOW_MUSCLE_STRENGTH
+  //   → REDUCED_FUNCTIONAL_RESERVE → LOSS_OF_FLOOR_RISE_ABILITY
+  //
+  // REDUCED_FUNCTIONAL_RESERVE: excluded from UNKNOWN detection for now —
+  //   its absence does not materially change the projection output independently
+  //   of LOW_MUSCLE_STRENGTH (which is already flagged as UNKNOWN).
+
+  const physDecondActive = stateById['PHYSICAL_DECONDITIONING']
+    || states.find(s => s.node_id === 'PHYSICAL_DECONDITIONING');
+
+  // RELEVANT_UNKNOWN: LOW_MUSCLE_STRENGTH
+  // Path: active (PHYSICAL_DECONDITIONING in path)
+  // Data gap: no strength evidence reached activation (onboarding unanswered, no validated test)
+  // Material impact: without LOW_MUSCLE_STRENGTH, trajectory to LOSS_OF_FLOOR_RISE_ABILITY
+  //   cannot be computed — risk stays unknown and the reason is not surfaced to the user.
+  const lowStrengthPresent = stateById['LOW_MUSCLE_STRENGTH']
+    || states.find(s => s.node_id === 'LOW_MUSCLE_STRENGTH');
+
+  if (physDecondActive && !lowStrengthPresent) {
+    states.push({
+      node_id:       'LOW_MUSCLE_STRENGTH',
+      current_state: 'UNKNOWN',
+      confidence:    'unknown',
+      evidence:      { direct: [], supporting: [], inferred_from_nodes: [] },
+      missing_evidence: [
+        {
+          type:     'OBSERVATION',
+          obs_type: 'validated_strength_assessment',
+          note:     'Validované posouzení svalové síly — klíčový chybějící vstup pro longevity trajectory. ' +
+                    'Příklady: grip strength (dynamometr, EWGSOP2), 30s chair stand test, Five Times Sit-to-Stand.',
+        },
+        {
+          type:        'ONBOARDING',
+          question_id: 'vynest_nakup',
+          note:        '"Vynést nákup do 3. patra bez zastavení?" — onboarding odpověď chybí',
+        },
+        {
+          type:        'ONBOARDING',
+          question_id: 'zvednout_vnouce',
+          note:        '"Zvednout vnouče / těžký předmět (10+ kg)?" — onboarding odpověď chybí',
+        },
+      ],
+    });
+  }
+
+  // RELEVANT_UNKNOWN: LOSS_OF_FLOOR_RISE_ABILITY
+  // Path: active (PHYSICAL_DECONDITIONING in path)
+  // Data gap: no floor-rise test and no vstat_ze_zeme onboarding answer
+  // Material impact: this IS the projection target — its unknown state is the direct
+  //   reason the TRAJECTORY_BASED projection carries risk=unknown.
+  const oi = clinicalHistory.onboarding_inputs || {};
+  const hasFloorData = oi['vstat_ze_zeme'] != null;
+  const floorPresent  = stateById['LOSS_OF_FLOOR_RISE_ABILITY']
+    || states.find(s => s.node_id === 'LOSS_OF_FLOOR_RISE_ABILITY');
+
+  if (physDecondActive && !hasFloorData && !floorPresent) {
+    states.push({
+      node_id:       'LOSS_OF_FLOOR_RISE_ABILITY',
+      current_state: 'UNKNOWN',
+      confidence:    'unknown',
+      evidence:      { direct: [], supporting: [], inferred_from_nodes: [] },
+      missing_evidence: [
+        {
+          type:     'OBSERVATION',
+          obs_type: 'floor_rise_test',
+          note:     'Přímý test: vstání ze země bez opory (ano/ne). ' +
+                    'Dekatlon onboarding: vstat_ze_zeme. ' +
+                    'Princeton IV doporučuje funkční screening u mužů s ED a neurčitým rizikovým profilem.',
+        },
+      ],
+    });
+  }
+
   return states;
 }
