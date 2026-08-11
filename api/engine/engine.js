@@ -46,5 +46,6 @@ export async function runEngine(userId) {
     decision_relevance: null,
   }));
 
-  return { person, engine_version: ENGINE_VERSION, evaluated_at: now, node_states };
+  const _debug_weight_obs = observations.filter(o => o.obs_type === 'weight_kg');
+  return { person, engine_version: ENGINE_VERSION, evaluated_at: now, node_states, _debug_weight_obs };
 }
