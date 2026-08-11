@@ -54,16 +54,26 @@ const ACQUISITION_COST = {
   clinician:        'high',
 };
 
-// Urgency: driven by domain of entities that need this evidence.
-// HIGH only when a CV entity is CONFIRMED (or the need is for a CV projection).
+// Urgency: driven by domain and actionability of the needed evidence.
+//
+// HIGH: evidence is needed for a CONFIRMED CV node state — it is actionable for
+//   current management (e.g. bp_systolic for HYPERTENSION already confirmed).
+//   Evidence needed only for a projection or a PREDICTED_CURRENT state is
+//   risk-refinement, not urgently actionable → medium.
+//
+// MEDIUM: metabolic or functional domain, or CV but not confirmed/actionable.
+// LOW: lifestyle/behavioral or other.
 function inferUrgency(neededFor, stateById) {
   let max = 'low';
   for (const n of neededFor) {
     const id = n.entity_id;
     if (CV_ENTITIES.has(id)) {
-      const s = stateById[id];
-      if (s?.current_state === 'CONFIRMED' || n.entity_type === 'PROJECTION')
-        return 'high';                  // can't do better
+      if (n.entity_type === 'NODE_STATE') {
+        const s = stateById[id];
+        // HIGH only when the CV condition is confirmed — evidence is actionable NOW
+        if (s?.current_state === 'CONFIRMED') return 'high';
+      }
+      // CV projection or PREDICTED_CURRENT → risk-refinement, not urgent
       if (max !== 'high') max = 'medium';
     } else if (METABOLIC_NODES.has(id) || FUNCTIONAL_NODES.has(id)) {
       if (max === 'low') max = 'medium';

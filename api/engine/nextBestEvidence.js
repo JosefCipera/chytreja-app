@@ -42,11 +42,18 @@ function buildExpectedEffect(best, nodeStates, projections) {
       effects.push({ entity_type: 'NODE_STATE', entity_id: nf.entity_id, possible_change: change });
     } else if (nf.entity_type === 'PROJECTION') {
       const p = projById[nf.entity_id];
-      const currentRisk = p ? `risk=${p.risk}, confidence=${p.confidence}` : 'neznámý stav';
+      const riskStr = p ? `risk=${p.risk}` : 'risk=unknown';
+      const confStr = p?.confidence ?? 'unknown';
       effects.push({
         entity_type: 'PROJECTION',
         entity_id:   nf.entity_id,
-        possible_change: `${currentRisk} → přesnější risk kategorie nebo vyšší confidence po přepočtu projekce`,
+        // risk_level and confidence are separate axes:
+        //   risk_level  — may change based on the observed value
+        //   confidence  — improves only with completeness of the full evidence set
+        //                 AND a calibrated model; never auto-upgrades from a single observation
+        possible_change:
+          `${riskStr} může změnit kategorii podle naměřené hodnoty. ` +
+          `confidence=${confStr} zůstává — zvýší se až při kompletní sadě evidence a kalibrovaném modelu (calibrated=false).`,
       });
     }
   }
