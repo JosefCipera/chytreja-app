@@ -3,23 +3,25 @@
 // Pipeline:
 //   fetchHealthData(userId)     → {person, clinicalHistory, observations}
 //   activation()                → PERSON_NODE_STATE[] (CONFIRMED + MEASURED)
-//   inference()                 → + PERSON_NODE_STATE[] (PREDICTED_CURRENT)
+//   inference()                 → + PERSON_NODE_STATE[] (PREDICTED_CURRENT + UNKNOWN)
 //   computeProjections()        → PERSON_PROJECTION[] (separate entity, M:N to node_states)
+//   buildInformationNeeds()     → INFORMATION_NEED[] (deduplicated, annotated missing evidence)
+//   selectNextBestEvidence()    → NEXT_BEST_EVIDENCE | null (lexicographic selection, 0 or 1)
 //
 // PERSON_NODE_STATE  = current state of the person (no future_projection field)
 // PERSON_PROJECTION  = future risk projection (separate entity, may reference multiple node_states)
-//
-// Master nodes (v1 slice):
-//   PHYSICAL_INACTIVITY, EXCESS_ADIPOSITY, INSULIN_RESISTANCE,
-//   HYPERTENSION, ENDOTHELIAL_DYSFUNCTION, ERECTILE_DYSFUNCTION
+// INFORMATION_NEED   = deduplicated missing evidence candidate with impact/cost annotation
+// NEXT_BEST_EVIDENCE = the single most valuable missing evidence to acquire next
 
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import { fetchHealthData }       from './adapter.js';
-import { activation }            from './activation.js';
-import { inference }             from './inference.js';
-import { computeProjections }    from './projections.js';
+import { fetchHealthData }           from './adapter.js';
+import { activation }                from './activation.js';
+import { inference }                 from './inference.js';
+import { computeProjections }        from './projections.js';
+import { buildInformationNeeds }     from './informationNeeds.js';
+import { selectNextBestEvidence }    from './nextBestEvidence.js';
 
 const _dir = dirname(fileURLToPath(import.meta.url));
 const MASTER = JSON.parse(readFileSync(join(_dir, '../../data/engine/master.json'), 'utf8'));
@@ -55,5 +57,18 @@ export async function runEngine(userId) {
     engine_version: ENGINE_VERSION,
   }));
 
-  return { person, engine_version: ENGINE_VERSION, evaluated_at: now, node_states, projections };
+  const information_needs  = buildInformationNeeds(node_states, projections);
+  const next_best_evidence = selectNextBestEvidence(
+    information_needs, node_states, projections, ENGINE_VERSION
+  );
+
+  return {
+    person,
+    engine_version:    ENGINE_VERSION,
+    evaluated_at:      now,
+    node_states,
+    projections,
+    information_needs,
+    next_best_evidence,
+  };
 }
