@@ -682,18 +682,21 @@ async function buildDeterministicCRT(profile, metrics = [], checkins = []) {
   // věkem podmíněný zánět je jejich společný upstream kořen, duplikovat by zmatl graf.
   // HYPERURICEMIA: SEDENTARY kaskáda ji přidala PŘED tímto blokem — smaž pokud není z dat.
   if (activeIds.has('INFLAMMAGING')) {
-    // FIX B: Confirmed nodes musí být chráněny před INFLAMMAGING suppression.
-    // CHRONIC_STRESS je confirmed přes keyword match → smaž JEN pokud není potvrzen.
-    // REPORT (unfixed): METABOLIC_HEALTH_ROOT a SEDENTARY_LIFESTYLE_ROOT mají stejný problém —
-    //   METABOLIC_HEALTH_ROOT může být confirmed přes ALT/AST lab hodnoty,
-    //   SEDENTARY_LIFESTYLE_ROOT může být confirmed přes keyword match diagnóz.
-    //   Oba jsou zatím mazány bez ochrany — čeká na explicitní rozhodnutí.
-    activeIds.delete('METABOLIC_HEALTH_ROOT');
-    if (!confirmedIds.has('CHRONIC_STRESS')) activeIds.delete('CHRONIC_STRESS');
-    activeIds.delete('SEDENTARY_LIFESTYLE_ROOT');
-    if (!confirmedIds.has('HYPERURICEMIA')) activeIds.delete('HYPERURICEMIA');
+    // Pravidlo: heuristika nesmí přepsat potvrzený stav.
+    // Žádný uzel v confirmedIds se nemaže — bez ohledu na INFLAMMAGING logiku.
+    //
+    // TODO (Engine v1 tech debt): METABOLIC_HEALTH_ROOT a SEDENTARY_LIFESTYLE_ROOT
+    // nejsou vhodné jako klinicky potvrditelné Master states — jsou to agregátní proxy.
+    // V Engine v1 budou nahrazeny konkrétními entitami (PHYSICAL_INACTIVITY, HEPATIC_STRESS…).
+    // Legacy engine je zmrazen — tento blok zůstane beze změny až do Engine v1 produkce.
+    if (!confirmedIds.has('METABOLIC_HEALTH_ROOT'))    activeIds.delete('METABOLIC_HEALTH_ROOT');
+    if (!confirmedIds.has('CHRONIC_STRESS'))           activeIds.delete('CHRONIC_STRESS');
+    if (!confirmedIds.has('SEDENTARY_LIFESTYLE_ROOT')) activeIds.delete('SEDENTARY_LIFESTYLE_ROOT');
+    if (!confirmedIds.has('HYPERURICEMIA'))            activeIds.delete('HYPERURICEMIA');
+    const protected_ = ['METABOLIC_HEALTH_ROOT','CHRONIC_STRESS','SEDENTARY_LIFESTYLE_ROOT','HYPERURICEMIA']
+      .filter(id => confirmedIds.has(id));
     console.log('[CRT] INFLAMMAGING active: suppressed cascade' +
-      (confirmedIds.has('CHRONIC_STRESS') ? ' (CHRONIC_STRESS protected — confirmed)' : ''));
+      (protected_.length ? ` (protected: ${protected_.join(', ')})` : ''));
   }
 
   // Downstream kaskáda — pouze z Tier 1 (cascadeEligible) uzlů s přesně 1 typical_child.
@@ -1695,7 +1698,7 @@ function overlayColors(nodes, metrics) {
 // _v_ai: bump POUZE při změně Sonnet promptu → invaliduje AI generování
 // _v_pp: bump při změně post-processingu (med-inject, validateEdges...) → přeskočí Sonnet, re-run PP
 const _v_ai = 12;
-const _v_pp = 112; // fix A: canonical birth_year z user_profiles; fix B: CHRONIC_STRESS chráněn před INFLAMMAGING suppression
+const _v_pp = 113; // fix C: METABOLIC_HEALTH_ROOT + SEDENTARY_LIFESTYLE_ROOT chráněny před INFLAMMAGING (confirmedIds pravidlo)
 
 function hashStr(s) {
   let h = 0;
