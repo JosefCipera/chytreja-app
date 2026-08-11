@@ -336,6 +336,21 @@ Přechod z izolovaných KB stromů na **jeden unified kauzální graf** (Goldrat
 | 3 | NC / CSF (Attia) | 4 | Metabolické zdraví, Kardiovaskulární stabilita, Neurokognitivní zachování |
 | 4 | Goal | 5 | Maximální Healthspan & Lifespan |
 
+#### Goal → CSF → NC hierarchie (Attia Medicine 3.0)
+
+**GOAL: Maximální Lifespan + Healthspan** — žít dlouho A dobře.
+
+| CSF | Nutné podmínky (NC) | Pokrytí v CRT |
+|-----|---------------------|---------------|
+| **CSF 1: Kardiovaskulární stabilita** | Kontrola srdečního rytmu / prevence tromboembolie · Optimální lipidový profil · TK <130/80 | ✅ ATRIAL_FIBRILLATION, CARDIAC_IRRITABILITY, HEART_ATTACK_RISK, ATHEROSCLEROSIS, VASCULAR_STIFFNESS |
+| **CSF 2: Metabolické zdraví** | Zdravá tělesná kompozice (sval vs. viscerální tuk) · Inzulínová senzitivita · VO2max a síla | ✅ INSULIN_RESISTANCE, OBESITY, HYPERURICEMIA, DYSLIPIDEMIA |
+| **CSF 3: Vaskulární a endoteliální funkce** | Zdravý endotel (NO produkce, elasticita cév) · Dobrý průtok v periferii | ✅ ENDOTHELIAL_DYSFUNCTION, ERECTILE_DYSFUNCTION |
+| **CSF 4: Funkční kapacita (Healthspan)** | Svalová síla a mobilita · Kognitivní vitalita · Energie a psychická pohoda | ⚠️ částečně (BONE_DENSITY_LOSS) — sarkopenie, LOW_VO2MAX plánováno |
+| **CSF 5: Absence onkologického rizika** | Imunitní surveillance · Nízký chronický zánět | ❌ záměrně vynecháno (v0.4+) |
+| **CSF 6: Neurokognitivní zachování** | Mozková perfuze · Nízký neuroimunitní zánět | ❌ záměrně vynecháno (v0.4+) |
+
+**Bottleneck (Goldratt):** Nízká pohybová aktivita je jeden kořen ovlivňující CSF 1–4 současně. Léky řeší symptomy, ne příčinu. Pohyb + váhový management = nejvyšší leverage.
+
 #### Conditions — na uzlu, ne na hraně
 
 Podmínka (`condition`) je vlastností **uzlu**. Uzel je aktivní pokud splní podmínku.
