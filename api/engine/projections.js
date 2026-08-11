@@ -121,6 +121,8 @@ function cvDiseaseProjection(nodeStates, person, clinicalHistory) {
     projection_type: 'RISK_BASED',
     target_node_id:  'CARDIOVASCULAR_DISEASE',
     risk,
+    risk_basis:      'qualitative_rule',
+    calibrated:      false,
     horizon,
     confidence,
     evidence,
@@ -128,12 +130,12 @@ function cvDiseaseProjection(nodeStates, person, clinicalHistory) {
       {
         type:     'OBSERVATION',
         obs_type: 'lab_apob',
-        note:     'ApoB — silnější aterogenní marker než LDL; klíčový vstup pro SCORE2/ESC kalibraci',
+        note:     'ApoB — doplňkový aterogenní marker; pro SCORE2 jsou standardními vstupy věk/pohlaví/kouření/SBP/total+HDL cholesterol',
       },
       {
         type:     'OBSERVATION',
         obs_type: 'coronary_calcium_score',
-        note:     'CAC skóre — nejsilnější prediktor KV příhody u asymptomatického pacienta (MESA studie)',
+        note:     'CAC skóre — nástroj pro další risk stratification; Princeton IV doporučuje jeho zvážení u vybraných mužů s ED a neurčitým rizikovým profilem',
       },
       {
         type:     'OBSERVATION',
