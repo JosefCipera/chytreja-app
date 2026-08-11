@@ -1,19 +1,37 @@
-// decisionGate.js — DECISION_GATE evaluation (Engine v1)
+// decisionGate.js — DECISION_GATE per-context evaluation (Engine v1)
 //
-// Core question: "Do we know enough for the NEXT DECISION?"
-// NOT: "Do we have a complete health profile?"
+// Core question per context: "Do we know enough for the NEXT DECISION in THIS CONTEXT?"
 //
-// NEED_MORE_EVIDENCE: only when a missing item would change the decision BRANCH
-//   (whether a problem exists, its significance, or which action to take)
-//   AND acquiring it is proportionate to the decision's importance.
+// Each CONTEXT_DECISION_GATE is evaluated independently.
+// A context with EVIDENCE_SUFFICIENT does NOT suppress NEXT_BEST_EVIDENCE
+// for a different context that says NEED_MORE_EVIDENCE.
 //
-// EVIDENCE_SUFFICIENT: when the decision direction is already clear from existing
-//   evidence — even if many missing_evidence items remain in the system.
+// Actionability levels:
+//   SAFETY_CRITICAL     — specific current crisis value / explicit safety rule (NOT just confirmed diagnosis)
+//   RISK_RELEVANT       — confirmed clinically significant risk condition (known direction, no current crisis)
+//   ACTIONABLE          — clear action direction from measured / predicted data
+//   MONITOR             — predicted mechanism node; watch and confirm
+//   NOT_YET_ACTIONABLE  — state unknown; evidence needed before action
 //
-// SAFETY OVERRIDE: if any finding is SAFETY_RELEVANT, never delay for evidence.
+// Status rule per context:
+//   has SAFETY_CRITICAL                        → EVIDENCE_SUFFICIENT (safety override)
+//   has RISK_RELEVANT or ACTIONABLE (any)      → EVIDENCE_SUFFICIENT (direction clear)
+//   no direction-level findings                → NEED_MORE_EVIDENCE
+//
+// Global output is purely aggregate (no global gate decision):
+//   any_context_action_ready: bool
+//   contexts_needing_evidence: string[]
 
-// Domain sets (mirrors informationNeeds.js concept — no shared import to keep modules flat)
-const CV_NODES        = new Set(['HYPERTENSION', 'ENDOTHELIAL_DYSFUNCTION', 'ERECTILE_DYSFUNCTION', 'ATRIAL_FIBRILLATION']);
+import { selectNextBestEvidence } from './nextBestEvidence.js';
+
+// ── Domain sets ───────────────────────────────────────────────────────────────
+// CV nodes: confirmed diagnosis → RISK_RELEVANT
+// All others: confirmed → ACTIONABLE
+
+const CV_NODES = new Set([
+  'HYPERTENSION', 'ENDOTHELIAL_DYSFUNCTION', 'ERECTILE_DYSFUNCTION',
+  'ATRIAL_FIBRILLATION', 'DYSLIPIDEMIA',
+]);
 const METABOLIC_NODES = new Set(['EXCESS_ADIPOSITY', 'INSULIN_RESISTANCE']);
 const FUNCTIONAL_NODES = new Set([
   'PHYSICAL_INACTIVITY', 'PHYSICAL_DECONDITIONING',
@@ -22,48 +40,47 @@ const FUNCTIONAL_NODES = new Set([
 const CV_PROJ_TARGETS   = new Set(['CARDIOVASCULAR_DISEASE']);
 const FUNC_PROJ_TARGETS = new Set(['LOSS_OF_FLOOR_RISE_ABILITY']);
 
-// ── Actionability rules ───────────────────────────────────────────────────────
-
-function nodeDomain(node_id) {
-  if (CV_NODES.has(node_id) || node_id === 'ERECTILE_DYSFUNCTION') return 'cv';
-  if (METABOLIC_NODES.has(node_id))  return 'metabolic';
-  if (FUNCTIONAL_NODES.has(node_id)) return 'functional';
-  return 'other';
-}
+// ── Actionability ─────────────────────────────────────────────────────────────
 
 function nodeActionability(state) {
-  const { node_id, current_state, confidence } = state;
-  if (current_state === 'CONFIRMED')
-    return CV_NODES.has(node_id) ? 'SAFETY_RELEVANT' : 'ACTIONABLE';
-  if (current_state === 'MEASURED')
-    return 'ACTIONABLE';
+  const { node_id, current_state } = state;
+
+  // SAFETY_CRITICAL is not triggered by confirmed diagnosis alone.
+  // It requires a specific current crisis value (e.g. systolic BP > 180 confirmed,
+  // known dangerous arrhythmia episode with active risk) — implemented as future extension.
+
+  if (current_state === 'CONFIRMED') {
+    // Confirmed CV-relevant conditions: direction is known, warrants management
+    return CV_NODES.has(node_id) ? 'RISK_RELEVANT' : 'ACTIONABLE';
+  }
+  if (current_state === 'MEASURED') return 'ACTIONABLE';
+
   if (current_state === 'PREDICTED_CURRENT') {
-    // Behavioral nodes: action direction is clear regardless of measurement precision
+    // Behavioral root nodes: action direction is clear regardless of measurement precision
     if (node_id === 'PHYSICAL_INACTIVITY' || node_id === 'PHYSICAL_DECONDITIONING')
       return 'ACTIONABLE';
     return 'MONITOR';
   }
+
   return 'NOT_YET_ACTIONABLE';
 }
 
 function projectionActionability(proj) {
   if (proj.risk === 'unknown' || proj.confidence === 'unknown') return 'NOT_YET_ACTIONABLE';
-  if (proj.risk === 'elevated') return 'ACTIONABLE'; // direction clear even without calibration
+  if (proj.risk === 'elevated') return 'ACTIONABLE'; // direction clear even uncalibrated
   return 'MONITOR';
 }
 
 function nodeActionReason(state) {
   const { node_id, current_state, confidence } = state;
   const act = nodeActionability(state);
-  if (act === 'SAFETY_RELEVANT')
-    return `Potvrzená diagnóza v KV doméně — vyžaduje aktivní sledování a management`;
-  if (current_state === 'CONFIRMED')
-    return `Potvrzená diagnóza`;
-  if (current_state === 'MEASURED')
-    return `Přímo změřeno — data pro rozhodnutí k dispozici`;
+  if (act === 'RISK_RELEVANT')
+    return `Potvrzená klinicky významná diagnóza — jasný směr managementu (${node_id})`;
+  if (current_state === 'CONFIRMED')   return `Potvrzená diagnóza`;
+  if (current_state === 'MEASURED')    return `Přímo změřeno — data pro rozhodnutí k dispozici`;
   if (current_state === 'PREDICTED_CURRENT') {
     if (node_id === 'PHYSICAL_INACTIVITY')
-      return `Sedavý životní styl identifikován — behaviorální změna indikována bez ohledu na přesnost měření`;
+      return `Sedavý životní styl — behaviorální změna indikována bez ohledu na přesnost měření`;
     if (node_id === 'PHYSICAL_DECONDITIONING')
       return `Fyzická dekondice predikována z inaktivity — pohybová intervence indikována`;
     return `Predikováno z kombinace dat (confidence=${confidence}) — monitorovat, potvrdit přímou evidencí`;
@@ -73,9 +90,9 @@ function nodeActionReason(state) {
 
 function projActionReason(proj) {
   if (proj.risk === 'elevated')
-    return `Směr rizika jasný (elevated) i při nekalibrované projekci — základ pro rozhodnutí existuje`;
+    return `Směr rizika jasný (elevated) i při nekalibrované projekci — základ pro rozhodnutí`;
   if (proj.risk === 'unknown')
-    return `risk=unknown — projekci nelze použít pro rozhodnutí bez dalších dat`;
+    return `risk=unknown — projekce nelze použít pro rozhodnutí bez dalších dat`;
   return `Monitorovat vývoj`;
 }
 
@@ -85,7 +102,7 @@ function projActionReason(proj) {
 function inferDecisionContexts(nodeStates, projections) {
   const contexts = [];
 
-  const cvNodes = nodeStates.filter(s => CV_NODES.has(s.node_id) || s.node_id === 'ERECTILE_DYSFUNCTION');
+  const cvNodes = nodeStates.filter(s => CV_NODES.has(s.node_id));
   const cvProjs = projections.filter(p => CV_PROJ_TARGETS.has(p.target_node_id));
   if (cvNodes.length > 0 || cvProjs.length > 0) {
     contexts.push({
@@ -120,109 +137,19 @@ function inferDecisionContexts(nodeStates, projections) {
   return contexts;
 }
 
-// ── Blocking uncertainties ────────────────────────────────────────────────────
-// Scans high-impact INFORMATION_NEEDs for material blockers.
-//
-// A blocking uncertainty is MATERIAL when:
-//   1. There is an UNKNOWN node state (existence of the problem is undetermined)
-//      OR a projection with risk=unknown (direction is unknown)
-//   2. AND the same domain has NO other ACTIONABLE or SAFETY_RELEVANT finding
-//      (meaning nothing else already determines the decision branch for that domain)
-//
-// If the domain already has an actionable finding, the UNKNOWN adds detail
-// but does not change which branch to take → NOT a material blocker.
+// ── Per-context gate evaluation ───────────────────────────────────────────────
 
-function identifyBlockingUncertainties(informationNeeds, nodeStates, projections) {
-  const stateById = Object.fromEntries(nodeStates.map(s => [s.node_id, s]));
-  const projById  = Object.fromEntries(projections.map(p => [p.target_node_id, p]));
+const DIRECTION_LEVELS = new Set(['SAFETY_CRITICAL', 'RISK_RELEVANT', 'ACTIONABLE']);
 
-  // Domains where the decision direction is already determined
-  const domainsWithAction = new Set();
-  for (const s of nodeStates) {
-    const act = nodeActionability(s);
-    if (act === 'ACTIONABLE' || act === 'SAFETY_RELEVANT') {
-      domainsWithAction.add(nodeDomain(s.node_id));
-    }
-  }
-  for (const p of projections) {
-    if (projectionActionability(p) === 'ACTIONABLE') {
-      if (CV_PROJ_TARGETS.has(p.target_node_id))   domainsWithAction.add('cv');
-      if (FUNC_PROJ_TARGETS.has(p.target_node_id)) domainsWithAction.add('functional');
-    }
-  }
+function evaluateContextGate(ctx, nodeStates, projections, contextNeeds, engineVersion) {
+  const ctxNodeIds = new Set(ctx.active_nodes.map(n => n.node_id));
+  const ctxProjIds = new Set(ctx.active_projections.map(p => p.target));
 
-  const all = [];
-  const seenTypes = new Set();
-
-  for (const need of informationNeeds) {
-    if (need.decision_impact !== 'high') continue;
-    if (seenTypes.has(need.evidence_type)) continue;
-
-    for (const nf of need.needed_for) {
-      const id = nf.entity_id;
-
-      if (nf.entity_type === 'NODE_STATE') {
-        const s = stateById[id];
-        if (s?.current_state !== 'UNKNOWN') continue;
-
-        const domain = nodeDomain(id);
-        const is_material_blocker = !domainsWithAction.has(domain);
-        all.push({
-          evidence_type: need.evidence_type,
-          entity_id:     id,
-          domain,
-          is_material_blocker,
-          reason: is_material_blocker
-            ? `${id} (UNKNOWN) je jedinou evidencí v doméně "${domain}" — bez ní nelze určit existenci problému`
-            : `${id} (UNKNOWN) — doména "${domain}" má jiný ACTIONABLE finding; UNKNOWN neblokuje NEXT DECISION`,
-        });
-        seenTypes.add(need.evidence_type);
-        break;
-      }
-
-      if (nf.entity_type === 'PROJECTION') {
-        const proj = projById[id];
-        if (proj?.risk !== 'unknown') continue;
-
-        const domain = CV_PROJ_TARGETS.has(id) ? 'cv' :
-                       FUNC_PROJ_TARGETS.has(id) ? 'functional' : 'other';
-        const is_material_blocker = !domainsWithAction.has(domain);
-        all.push({
-          evidence_type: need.evidence_type,
-          entity_id:     id,
-          domain,
-          is_material_blocker,
-          reason: is_material_blocker
-            ? `Projekce ${id} (risk=unknown) — směr rizika neurčen a doména "${domain}" nemá jinou actionable evidenci`
-            : `Projekce ${id} (risk=unknown) — doména "${domain}" má jiný ACTIONABLE finding; projekce neblokuje NEXT DECISION`,
-        });
-        seenTypes.add(need.evidence_type);
-        break;
-      }
-    }
-  }
-
-  // Deduplicate by entity_id — multiple INFORMATION_NEEDs may point to the same blocked entity
-  const seenEntities = new Set();
-  const dedupedMaterial = [];
-  for (const b of all) {
-    if (!b.is_material_blocker) continue;
-    if (seenEntities.has(b.entity_id)) continue;
-    seenEntities.add(b.entity_id);
-    dedupedMaterial.push(b);
-  }
-  return dedupedMaterial;
-}
-
-// ── Gate evaluation ───────────────────────────────────────────────────────────
-
-export function evaluateDecisionGate(nodeStates, projections, informationNeeds, engineVersion) {
-  const now = new Date().toISOString();
-
-  const decision_context = inferDecisionContexts(nodeStates, projections);
+  const ctxStates = nodeStates.filter(s => ctxNodeIds.has(s.node_id));
+  const ctxProjs  = projections.filter(p => ctxProjIds.has(p.target_node_id));
 
   const actionable_findings = [
-    ...nodeStates.map(s => ({
+    ...ctxStates.map(s => ({
       entity_type:   'NODE_STATE',
       entity_id:     s.node_id,
       state:         s.current_state,
@@ -230,7 +157,7 @@ export function evaluateDecisionGate(nodeStates, projections, informationNeeds, 
       actionability: nodeActionability(s),
       reason:        nodeActionReason(s),
     })),
-    ...projections.map(p => ({
+    ...ctxProjs.map(p => ({
       entity_type:   'PROJECTION',
       entity_id:     p.target_node_id,
       state:         p.risk,
@@ -240,55 +167,114 @@ export function evaluateDecisionGate(nodeStates, projections, informationNeeds, 
     })),
   ];
 
-  const blocking_uncertainties = identifyBlockingUncertainties(informationNeeds, nodeStates, projections);
-  const hasMaterialBlocker     = blocking_uncertainties.length > 0;
-  const hasSafetyRelevant      = actionable_findings.some(f => f.actionability === 'SAFETY_RELEVANT');
-  const hasActionable          = actionable_findings.some(f =>
-    f.actionability === 'ACTIONABLE' || f.actionability === 'SAFETY_RELEVANT'
-  );
+  const hasSafetyCritical = actionable_findings.some(f => f.actionability === 'SAFETY_CRITICAL');
+  const hasDirection      = actionable_findings.some(f => DIRECTION_LEVELS.has(f.actionability));
 
-  // Count high-impact needs evaluated (for reason transparency)
-  const highImpactNeeds = informationNeeds.filter(n => n.decision_impact === 'high');
+  // Blocking uncertainties exist only when the context has NO direction-level findings.
+  // If direction is already established (RISK_RELEVANT or ACTIONABLE), unknowns refine
+  // but don't change the decision branch — so no blocking.
+  const blocking_uncertainties = [];
 
-  let status, reason;
+  if (!hasDirection) {
+    const seenEntities = new Set();
+    for (const need of contextNeeds) {
+      if (need.decision_impact !== 'high') continue;
+      for (const nf of need.needed_for) {
+        if (!ctxNodeIds.has(nf.entity_id) && !ctxProjIds.has(nf.entity_id)) continue;
+        if (seenEntities.has(nf.entity_id)) continue;
 
-  if (hasSafetyRelevant && !hasMaterialBlocker) {
-    // Safety override: confirmed high-risk condition warrants action now
-    const safetyNodes = actionable_findings
-      .filter(f => f.actionability === 'SAFETY_RELEVANT')
-      .map(f => f.entity_id).join(', ');
-    status = 'EVIDENCE_SUFFICIENT';
-    reason =
-      `Safety override: ${safetyNodes} jsou SAFETY_RELEVANT potvrzené nálezy — ` +
-      `další sběr dat nesmí zdržovat bezpečný postup. ` +
-      `Vyhodnoceno ${highImpactNeeds.length} high-impact INFORMATION_NEED(s): ` +
-      `žádný není materiálním blokerem — každá doména má alespoň jeden ACTIONABLE finding.`;
-  } else if (hasMaterialBlocker) {
-    status = 'NEED_MORE_EVIDENCE';
-    const blockerList = blocking_uncertainties.map(b => `${b.entity_id} (${b.domain})`).join(', ');
-    reason =
-      `Existuje ${blocking_uncertainties.length} materiální bloking uncertainty: ${blockerList}. ` +
-      `Bez ní nelze určit existenci problému nebo volbu akce v dané doméně.`;
-  } else if (hasActionable) {
-    status = 'EVIDENCE_SUFFICIENT';
-    const actionableList = actionable_findings
-      .filter(f => f.actionability === 'ACTIONABLE' || f.actionability === 'SAFETY_RELEVANT')
-      .map(f => f.entity_id).join(', ');
-    reason =
-      `Actionable findings jsou k dispozici: ${actionableList}. ` +
-      `Žádná high-impact blocking uncertainty — každá doména má alespoň jeden ACTIONABLE finding. ` +
-      `Chybějící evidence zpřesňuje detail, nezmění rozhodovací větev.`;
-  } else {
-    status = 'NEED_MORE_EVIDENCE';
-    reason = `Žádný ACTIONABLE finding dosud — více evidence potřeba před zahájením rozhodnutí.`;
+        if (nf.entity_type === 'NODE_STATE') {
+          const s = ctxStates.find(s => s.node_id === nf.entity_id);
+          if (s?.current_state !== 'UNKNOWN') continue;
+          seenEntities.add(nf.entity_id);
+          blocking_uncertainties.push({
+            evidence_type: need.evidence_type,
+            entity_id:     nf.entity_id,
+            reason:        `${nf.entity_id} (UNKNOWN) — žádná jiná direction-level evidence v kontextu ${ctx.id}`,
+          });
+          break;
+        }
+
+        if (nf.entity_type === 'PROJECTION') {
+          const p = ctxProjs.find(p => p.target_node_id === nf.entity_id);
+          if (p?.risk !== 'unknown') continue;
+          seenEntities.add(nf.entity_id);
+          blocking_uncertainties.push({
+            evidence_type: need.evidence_type,
+            entity_id:     nf.entity_id,
+            reason:        `Projekce ${nf.entity_id} (risk=unknown) — žádná jiná direction-level evidence v kontextu ${ctx.id}`,
+          });
+          break;
+        }
+      }
+    }
   }
 
+  // ── Status decision ───────────────────────────────────────────────────────
+  let status, reason;
+
+  if (hasSafetyCritical) {
+    const critical = actionable_findings.filter(f => f.actionability === 'SAFETY_CRITICAL').map(f => f.entity_id).join(', ');
+    status = 'EVIDENCE_SUFFICIENT';
+    reason = `Safety override: SAFETY_CRITICAL nález (${critical}) — okamžitá akce, bez čekání na evidenci.`;
+  } else if (hasDirection) {
+    const dir = actionable_findings.filter(f => DIRECTION_LEVELS.has(f.actionability)).map(f => f.entity_id).join(', ');
+    status = 'EVIDENCE_SUFFICIENT';
+    reason = `Direction je jasný: ${dir}. Chybějící evidence zpřesňuje detail, nemění větev rozhodnutí.`;
+  } else if (blocking_uncertainties.length > 0) {
+    const bl = blocking_uncertainties.map(b => b.entity_id).join(', ');
+    status = 'NEED_MORE_EVIDENCE';
+    reason = `Žádné direction-level findings v kontextu ${ctx.id}. Blocking uncertainty: ${bl}.`;
+  } else {
+    status = 'NEED_MORE_EVIDENCE';
+    reason = `Žádné actionable findings v kontextu ${ctx.id}.`;
+  }
+
+  // ── Per-context NEXT_BEST_EVIDENCE ────────────────────────────────────────
+  // Only generated when this specific context needs more evidence.
+  const next_best_evidence = status === 'NEED_MORE_EVIDENCE'
+    ? selectNextBestEvidence(contextNeeds, ctxStates, ctxProjs, engineVersion)
+    : null;
+
   return {
+    decision_context: ctx,
     status,
-    decision_context,
     blocking_uncertainties,
     actionable_findings,
+    next_best_evidence,
     reason,
+  };
+}
+
+// ── Gate aggregate ────────────────────────────────────────────────────────────
+
+export function evaluateDecisionGate(nodeStates, projections, informationNeeds, engineVersion) {
+  const now = new Date().toISOString();
+
+  const contexts = inferDecisionContexts(nodeStates, projections);
+
+  const context_gates = contexts.map(ctx => {
+    // Filter information needs to those relevant to this context's nodes/projections
+    const ctxNodeIds = new Set(ctx.active_nodes.map(n => n.node_id));
+    const ctxProjIds = new Set(ctx.active_projections.map(p => p.target));
+
+    const contextNeeds = informationNeeds.filter(need =>
+      need.needed_for.some(nf => ctxNodeIds.has(nf.entity_id) || ctxProjIds.has(nf.entity_id))
+    );
+
+    return evaluateContextGate(ctx, nodeStates, projections, contextNeeds, engineVersion);
+  });
+
+  // Global aggregate — never overrides per-context decisions
+  const any_context_action_ready   = context_gates.some(g => g.status === 'EVIDENCE_SUFFICIENT');
+  const contexts_needing_evidence  = context_gates
+    .filter(g => g.status === 'NEED_MORE_EVIDENCE')
+    .map(g => g.decision_context.id);
+
+  return {
+    context_gates,
+    any_context_action_ready,
+    contexts_needing_evidence,
     evaluated_at:   now,
     engine_version: engineVersion,
   };
