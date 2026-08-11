@@ -108,14 +108,19 @@ export function activation(person, clinicalHistory, observations) {
   // BMI is a proxy for adiposity, not a direct measure of body fat.
   // This node does NOT map to OBESITY. Adiposity categories require DataDictionary rules
   // (waist_cm + body_fat_pct thresholds — not yet defined).
+  // Selection rule (Health Data Model v1):
+  // 1. Dated observation always beats undated — regardless of confidence/source.
+  // 2. Among dated: newest measured_at wins.
+  // 3. Among undated (tie on date criterion): higher confidence/source quality wins.
+  // 4. Historical observations are never deleted — only the selected one is used here.
   const weightObs = observations
     .filter(o => o.obs_type === 'weight_kg')
     .sort((a, b) => {
-      if (a.confidence === 'confirmed' && b.confidence !== 'confirmed') return -1;
-      if (b.confidence === 'confirmed' && a.confidence !== 'confirmed') return 1;
-      if (a.measured_at && b.measured_at) return b.measured_at.localeCompare(a.measured_at);
       if (a.measured_at && !b.measured_at) return -1;
       if (!a.measured_at && b.measured_at) return 1;
+      if (a.measured_at && b.measured_at) return b.measured_at.localeCompare(a.measured_at);
+      if (a.confidence === 'confirmed' && b.confidence !== 'confirmed') return -1;
+      if (b.confidence === 'confirmed' && a.confidence !== 'confirmed') return 1;
       return 0;
     });
   const latestWeight = weightObs[0];

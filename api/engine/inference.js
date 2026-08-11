@@ -69,7 +69,7 @@ export function inference(activatedStates, person, clinicalHistory, observations
           inferred_from_nodes: signals,
         },
         missing_evidence: [
-          { type: 'OBSERVATION', obs_type: 'lab_homa_ir', note: 'HOMA-IR (lačný inzulín + glukóza) — nejpřesnější dostupný marker' },
+          { type: 'OBSERVATION', obs_type: 'lab_homa_ir', note: 'HOMA-IR (lačný inzulín + glukóza) — praktický nepřímý odhad inzulinové rezistence; referenční metodou je euglykaemický clamp' },
           { type: 'OBSERVATION', obs_type: 'lab_hba1c',   note: 'HbA1c — 3měsíční průměr glykémie' },
           { type: 'OBSERVATION', obs_type: 'waist_cm',    note: 'Obvod pasu > 94 cm (muž) = metabolický rizikový faktor' },
         ],
@@ -88,7 +88,7 @@ export function inference(activatedStates, person, clinicalHistory, observations
 
     const ed = stateById['ERECTILE_DYSFUNCTION'];
     if (ed?.current_state === 'CONFIRMED') {
-      signals.push({ node_id: 'ERECTILE_DYSFUNCTION', current_state: 'CONFIRMED', role: 'vaskulární ED je z >70 % endoteliálního původu; downstream indicator' });
+      signals.push({ node_id: 'ERECTILE_DYSFUNCTION', current_state: 'CONFIRMED', role: 'ED je uznávaným markerem zvýšeného kardiovaskulárního rizika a může být spojena s endoteliální/vaskulární dysfunkcí; downstream indicator' });
       strength += 2;
     }
 
