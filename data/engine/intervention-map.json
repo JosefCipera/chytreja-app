@@ -1,6 +1,6 @@
 {
-  "version": "0.2",
-  "description": "MASTER_NODE → INTERVENTION_OPTION[] bridge for NEXT_BEST_ACTION v0.1. v0.2: leverage_affinity per (leverage_node, intervention) pair.",
+  "version": "0.3",
+  "description": "MASTER_NODE → INTERVENTION_OPTION[] bridge for NEXT_BEST_ACTION v0.1. v0.2: leverage_affinity per (leverage_node, intervention). v0.3: GAIT_INSTABILITY slice (BALANCE_TRAINING + SAFE_SUPPORTED_MOBILITY).",
   "mappings": {
     "PHYSICAL_INACTIVITY": {
       "interventions": [
@@ -113,6 +113,36 @@
           "tag_filter": ["kardio"],
           "goal_branches": ["SURVIVAL_HEALTHSPAN", "FUNCTIONAL_INDEPENDENCE"],
           "mechanism_targets": ["EXCESS_ADIPOSITY", "PHYSICAL_INACTIVITY", "INSULIN_RESISTANCE"]
+        }
+      ]
+    },
+    "GAIT_INSTABILITY": {
+      "interventions": [
+        {
+          "id": "BALANCE_TRAINING",
+          "target_leverage_node": "GAIT_INSTABILITY",
+          "leverage_affinity": {
+            "level": "PRIMARY",
+            "rationale": "Trénink rovnováhy a stability přímo adresuje nestabilitu chůze — nejsilnější evidence pro snížení rizika pádu u starších osob s neuropatií nebo svalovou slabostí.",
+            "evidence_quality": "strong",
+            "evidence_refs": ["Sherrington et al., Cochrane 2019", "NICE NG147 (2023)"]
+          },
+          "protocol_types": ["BALANCE_PROTOKOL", "STABILITY_PROTOKOL"],
+          "goal_branches": ["FUNCTIONAL_INDEPENDENCE", "SURVIVAL_HEALTHSPAN"],
+          "mechanism_targets": ["GAIT_INSTABILITY", "FALL_RISK", "LOW_MUSCLE_STRENGTH"]
+        },
+        {
+          "id": "SAFE_SUPPORTED_MOBILITY",
+          "target_leverage_node": "GAIT_INSTABILITY",
+          "leverage_affinity": {
+            "level": "CONTRIBUTORY",
+            "rationale": "Vhodně zvolená pomůcka (hůl, chodítko) kompenzuje nestabilitu chůze a umožňuje bezpečný pohyb — podmínka pro adherenci k fyzické aktivitě. Správný výběr závisí na typu a strannosti nestability (DEVICE_FIT).",
+            "evidence_quality": "moderate",
+            "evidence_refs": ["Bateni & Maki, Phys Ther 2005", "NICE NG147 (2023)"]
+          },
+          "protocol_types": ["ASSISTIVE_PROTOKOL"],
+          "goal_branches": ["FUNCTIONAL_INDEPENDENCE"],
+          "mechanism_targets": ["GAIT_INSTABILITY", "FALL_RISK"]
         }
       ]
     }

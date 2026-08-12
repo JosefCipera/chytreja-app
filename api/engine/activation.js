@@ -159,6 +159,28 @@ export function activation(person, clinicalHistory, observations) {
     }
   }
 
+  // ── PERIPHERAL_NEUROPATHY ────────────────────────────────────────────────
+  // Source: CLINICAL_HISTORY.diagnoses (confirmed clinical fact)
+  // Low changeability — management focuses on downstream gait safety, not reversal.
+  // Missing evidence: functional gait/balance assessment to determine clinical impact.
+  const pnDiag = diagById('PERIPHERAL_NEUROPATHY');
+  if (pnDiag) {
+    states.push({
+      node_id: 'PERIPHERAL_NEUROPATHY',
+      current_state: 'CONFIRMED',
+      confidence: 'high',
+      evidence: {
+        direct: [{ source: 'CLINICAL_HISTORY', type: 'DIAGNOSIS', id: 'PERIPHERAL_NEUROPATHY', raw_label: pnDiag.raw_label }],
+        supporting: [],
+        inferred_from_nodes: [],
+      },
+      missing_evidence: [
+        { type: 'OBSERVATION', obs_type: 'tug_test', note: 'TUG test — klinicky validovaný marker mobility a fall risk (NICE NG147); určuje závažnost funkčního dopadu neuropatie' },
+        { type: 'OBSERVATION', obs_type: 'gait_stability', note: 'Sebehodnocení bezpečnosti chůze — nejrychlejší funkční třídění' },
+      ],
+    });
+  }
+
   // ── LOW_MUSCLE_STRENGTH ──────────────────────────────────────────────────
   // Requires direct evidence from a validated functional test or onboarding self-report
   // of an inability to perform a strength task. Age alone is NOT sufficient — age is a
@@ -171,6 +193,31 @@ export function activation(person, clinicalHistory, observations) {
   //
   // Activation: at least one of these answered negatively ('no', 'false', '0', false)
   const oi = clinicalHistory.onboarding_inputs || {};
+
+  // ── FALL_RISK (direct activation) ────────────────────────────────────────
+  // Source: recent_falls observation from onboarding_inputs or observations
+  // A documented fall in the last 12 months = CONFIRMED elevated fall risk (NICE NG147).
+  // Note: recent_falls is FALL_RISK direct evidence; it is NOT sufficient for
+  //       GAIT_INSTABILITY CONFIRMED — that requires direct gait/balance assessment.
+  const recentFalls = oi['recent_falls'];
+  const hasRecentFalls = recentFalls === 'yes' || recentFalls === true || recentFalls === 'true';
+  if (hasRecentFalls) {
+    states.push({
+      node_id: 'FALL_RISK',
+      current_state: 'CONFIRMED',
+      confidence: 'high',
+      evidence: {
+        direct: [{ source: 'ONBOARDING', question_id: 'recent_falls', value: recentFalls, note: 'Pád v posledních 12 měsících — přímý prediktor zvýšeného rizika pádu' }],
+        supporting: [],
+        inferred_from_nodes: [],
+      },
+      missing_evidence: [
+        { type: 'OBSERVATION', obs_type: 'tug_test', note: 'TUG test — klinická validace mobility a fall risk (NICE NG147 doporučuje multifaktoriální assessment po pádu)' },
+        { type: 'OBSERVATION', obs_type: 'gait_stability', note: 'Bezpečnost chůze — základ multifaktoriálního hodnocení pádu' },
+      ],
+    });
+  }
+
   const negatives = ['no', 'false', '0', false, 0];
   const isNeg = v => negatives.includes(v) || v === 'ne';
 

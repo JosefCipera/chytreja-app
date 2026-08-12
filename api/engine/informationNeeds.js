@@ -31,6 +31,7 @@ const FUNCTIONAL_NODES = new Set([
   'PHYSICAL_DECONDITIONING', 'LOW_MUSCLE_STRENGTH',
   'REDUCED_FUNCTIONAL_RESERVE', 'LOSS_OF_FLOOR_RISE_ABILITY',
 ]);
+const MOBILITY_NODES = new Set(['GAIT_INSTABILITY', 'FALL_RISK', 'PERIPHERAL_NEUROPATHY']);
 
 // Acquisition method from evidence type
 function inferAcquisitionMethod(evidenceType, rawType) {
@@ -42,6 +43,9 @@ function inferAcquisitionMethod(evidenceType, rawType) {
   if (['steps_day', 'temporal_activity_trend'].includes(evidenceType)) return 'wearable';
   if (['floor_rise_test', 'validated_strength_assessment', 'grip_strength',
        'chair_stand_30s', 'tug_test'].includes(evidenceType)) return 'functional_test';
+  // Mobility assessment — quick self-report questions
+  if (['gait_stability', 'recent_falls', 'current_assistive_device', 'instability_laterality'].includes(evidenceType))
+    return 'question';
   return 'clinician';
 }
 
@@ -75,6 +79,9 @@ function inferUrgency(neededFor, stateById) {
       }
       // CV projection or PREDICTED_CURRENT → risk-refinement, not urgent
       if (max !== 'high') max = 'medium';
+    } else if (MOBILITY_NODES.has(id)) {
+      // Fall prevention is time-critical — even PREDICTED_CURRENT gait instability warrants urgent assessment
+      return 'high';
     } else if (METABOLIC_NODES.has(id) || FUNCTIONAL_NODES.has(id)) {
       if (max === 'low') max = 'medium';
     }

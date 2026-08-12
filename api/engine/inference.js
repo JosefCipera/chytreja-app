@@ -257,6 +257,102 @@ export function inference(activatedStates, person, clinicalHistory, observations
   // Material impact: this IS the projection target — its unknown state is the direct
   //   reason the TRAJECTORY_BASED projection carries risk=unknown.
   const oi = clinicalHistory.onboarding_inputs || {};
+  const negatives = ['no', 'false', '0', false, 0];
+  const isNeg = v => negatives.includes(v) || v === 'ne';
+
+  // ── GAIT_INSTABILITY ─────────────────────────────────────────────────────
+  // PREDICTED_CURRENT from upstream: PERIPHERAL_NEUROPATHY, LOW_MUSCLE_STRENGTH,
+  // and direct balance-test failures (balanc_jedna_noha, rovnovaha_zavrene_oci).
+  //
+  // Strength threshold: ≥ 2 required to trigger inference.
+  // CONFIRMED requires direct gait/balance evidence in activation.js — not set here.
+  //
+  // Epistemic rules:
+  //   - vstat_ze_zeme NOT used — belongs to floor-rise branch (LOW_MUSCLE_STRENGTH)
+  //   - recent_falls NOT used here — it is direct evidence for FALL_RISK in activation.js;
+  //     here it adds +1 as supporting signal only (does not alone trigger inference)
+  //   - current_assistive_device NOT used — separate observation about support dependency,
+  //     not evidence of gait state
+  if (!stateById['GAIT_INSTABILITY']) {
+    const signals = [];
+    let strength = 0;
+
+    const pn = stateById['PERIPHERAL_NEUROPATHY'];
+    if (pn?.current_state === 'CONFIRMED') {
+      signals.push({
+        node_id: 'PERIPHERAL_NEUROPATHY',
+        current_state: 'CONFIRMED',
+        role: 'Proprioceptivní zpětná vazba narušena periferní neuropatií → nestabilní řízení postury a chůze',
+      });
+      strength += 2;
+    }
+
+    const ms = stateById['LOW_MUSCLE_STRENGTH'];
+    if (ms) {
+      signals.push({
+        node_id: 'LOW_MUSCLE_STRENGTH',
+        current_state: ms.current_state,
+        role: 'Posturální svalová slabost snižuje stabilitu chůze — snížená reaktivní síla při výchylce',
+      });
+      strength += 1;
+    }
+
+    // balanc_jedna_noha: direct balance/gait test (NOT vstat_ze_zeme)
+    if (isNeg(oi['balanc_jedna_noha'])) {
+      signals.push({
+        source: 'ONBOARDING',
+        question_id: 'balanc_jedna_noha',
+        role: 'Selhání testu stoje na jedné noze — přímý marker deficitu rovnováhy a chůze',
+      });
+      strength += 2;
+    }
+
+    if (isNeg(oi['rovnovaha_zavrene_oci'])) {
+      signals.push({
+        source: 'ONBOARDING',
+        question_id: 'rovnovaha_zavrene_oci',
+        role: 'Selhání rovnováhy se zavřenýma očima — deficit propriocepce nebo vestibulárního systému',
+      });
+      strength += 2;
+    }
+
+    // recent_falls: supporting signal only (not sufficient alone)
+    const recentFallsGait = oi['recent_falls'];
+    if (recentFallsGait === 'yes' || recentFallsGait === true || recentFallsGait === 'true') {
+      signals.push({
+        source: 'ONBOARDING',
+        question_id: 'recent_falls',
+        role: 'Pád v posledních 12 měsících — přidruženou evidencí nestability chůze (ne přímá příčina)',
+      });
+      strength += 1;
+    }
+
+    if (strength >= 2) {
+      states.push({
+        node_id: 'GAIT_INSTABILITY',
+        current_state: 'PREDICTED_CURRENT',
+        confidence: strength >= 3 ? 'medium' : 'low',
+        evidence: {
+          direct: [],
+          supporting: [],
+          inferred_from_nodes: signals,
+        },
+        missing_evidence: [
+          { type: 'OBSERVATION', obs_type: 'recent_falls',
+            note: 'Pád v posledních 12 měsících — přímý prediktor FALL_RISK (NICE NG147 triage); supporting evidence pro GAIT_INSTABILITY' },
+          { type: 'OBSERVATION', obs_type: 'gait_stability',
+            note: '"Chodíte bez pomůcky bezpečně?" — nejrychlejší funkční třídění nestability' },
+          { type: 'OBSERVATION', obs_type: 'tug_test',
+            note: 'TUG test — klinicky validovaný marker mobility a fall risk; potřebný pro CONFIRMED stav' },
+          { type: 'OBSERVATION', obs_type: 'current_assistive_device',
+            note: 'Aktuálně používaná pomůcka — materiálně mění výběr akce; samostatná evidence o závislosti na podpoře' },
+          { type: 'OBSERVATION', obs_type: 'instability_laterality',
+            note: 'Bilaterální vs. unilaterální nestabilita — klíčový vstup pro DEVICE_FIT hodnocení' },
+        ],
+      });
+    }
+  }
+
   const hasFloorData = oi['vstat_ze_zeme'] != null;
   const floorPresent  = stateById['LOSS_OF_FLOOR_RISE_ABILITY']
     || states.find(s => s.node_id === 'LOSS_OF_FLOOR_RISE_ABILITY');

@@ -58,6 +58,104 @@ const TAG_BODY_LOAD = {
   sila:       new Set(['lower_back']),   // generic strength → lower-back stabilizer, NOT knee
 };
 
+// ── Person mobility profile ───────────────────────────────────────────────────
+// Derived from node_states + onboarding_inputs.
+// Drives DEVICE_FIT evaluation for ASSISTIVE_PROTOKOL actions.
+
+function computeMobilityProfile(nodeStates, clinicalHistory) {
+  const stateById = Object.fromEntries((nodeStates ?? []).map(s => [s.node_id, s]));
+  const oi = clinicalHistory?.onboarding_inputs ?? {};
+
+  // Instability type from upstream diagnosis
+  let instability_type = 'UNKNOWN';
+  let laterality       = 'UNKNOWN';
+
+  const pn = stateById['PERIPHERAL_NEUROPATHY'];
+  if (pn?.current_state === 'CONFIRMED') {
+    instability_type = 'PROPRIOCEPTIVE';
+    laterality       = 'BILATERAL'; // peripheral neuropathy → symmetric, bilateral by default
+  }
+
+  // Upper body capacity from constraints (set to LIMITED if shoulder constraint exists)
+  // Actual constraint parsing happens in parsePersonConstraints — we pass it through
+  // computeNextBestAction as a parameter; handled at DEVICE_FIT evaluation site.
+
+  // Fall history from onboarding
+  const rawFalls = oi['recent_falls'];
+  let fall_history = 'UNKNOWN';
+  if (rawFalls === 'yes' || rawFalls === true || rawFalls === 'true') fall_history = 'RECENT';
+  else if (rawFalls === 'no' || rawFalls === false || rawFalls === 'false') fall_history = 'NONE_REPORTED';
+
+  // Current device from onboarding
+  const current_device_in_use = oi['current_assistive_device'] ?? 'UNKNOWN';
+
+  return { instability_type, laterality, fall_history, current_device_in_use };
+}
+
+// ── DEVICE_FIT evaluation ─────────────────────────────────────────────────────
+// Evaluates fit between a person's mobility profile and a specific ASSISTIVE_PROTOKOL action.
+// Returns: GOOD | POOR | ACCEPTABLE | UNKNOWN | NEEDS_ASSESSMENT
+//
+// Rules:
+//   NEEDS_ASSESSMENT: recent fall history → multifactorial assessment required (NICE NG147)
+//   UNKNOWN:          instability type or laterality unknown → cannot evaluate fit
+//   POOR:             bilateral deficit → unilateral device; OR upper body demand > capacity
+//                     POOR = model mismatch, NOT clinical contraindication → NEEDS_CLINICAL_CLEARANCE
+//   GOOD:             device support pattern matches bilateral proprioceptive deficit
+//   ACCEPTABLE:       partial match with usable support
+
+function evaluateDeviceFit(action, profile, parsedConstraints) {
+  const { instability_type, laterality, fall_history } = profile;
+  const { modality, support_sides, upper_body_demand } = action;
+
+  // NEEDS_ASSESSMENT: recent falls → NICE NG147 mandates multifactorial assessment
+  if (fall_history === 'RECENT') {
+    return {
+      level: 'NEEDS_ASSESSMENT',
+      reason: 'Recent fall history — NICE NG147: multifactorial falls assessment required before prescribing any assistive device.',
+    };
+  }
+
+  // UNKNOWN profile → cannot evaluate fit
+  if (instability_type === 'UNKNOWN') {
+    return {
+      level: 'UNKNOWN',
+      reason: 'Instability type unknown — cannot evaluate device fit without knowing WHY support is needed (pain, weakness, proprioception, balance disorder).',
+    };
+  }
+
+  if (laterality === 'UNKNOWN' && support_sides !== 'none') {
+    return {
+      level: 'UNKNOWN',
+      reason: 'Instability laterality unknown — bilateral vs. unilateral support need must be clarified before device selection.',
+    };
+  }
+
+  // Upper body demand check — uses parsed constraint keys
+  const hasShoulderConstraint = parsedConstraints.some(c => c.key === 'shoulder' || c.key === 'wrist' || c.key === 'elbow');
+  if (hasShoulderConstraint && (upper_body_demand === 'high' || upper_body_demand === 'medium')) {
+    return {
+      level: 'POOR',
+      reason: `Upper body constraint (${parsedConstraints.find(c => ['shoulder','wrist','elbow'].includes(c.key))?.key}) — this device requires ${upper_body_demand} upper body demand.`,
+    };
+  }
+
+  // Proprioceptive bilateral: needs bilateral symmetric support
+  if (instability_type === 'PROPRIOCEPTIVE' && laterality === 'BILATERAL') {
+    if (support_sides === 'bilateral') {
+      return { level: 'GOOD', reason: 'Bilateral symmetric support matches bilateral proprioceptive deficit.' };
+    }
+    if (support_sides === 'none') {
+      return { level: 'POOR', reason: 'Unaided walking provides no compensation for bilateral proprioceptive deficit — high fall risk.' };
+    }
+    if (support_sides === 'unilateral') {
+      return { level: 'POOR', reason: 'Unilateral support mismatches bilateral proprioceptive deficit — bilateral device preferred. Device mismatch, not a clinical contraindication.' };
+    }
+  }
+
+  return { level: 'UNKNOWN', reason: 'Insufficient mobility profile data for device fit evaluation.' };
+}
+
 // ── Safety gate level ordinal ─────────────────────────────────────────────────
 
 const SAFETY_RANK = {
@@ -130,18 +228,22 @@ function actionLoadsRegion(action, regionKey) {
   return protocolLoad?.has(regionKey) ?? false;
 }
 
+// Walking protocol types that assume unaided gait (unsafe with predicted gait instability)
+const UNAIDED_WALKING_PROTOCOLS = new Set(['KARDIO_PROTOKOL', 'VYTRVALOST_PROTOKOL']);
+
 // ── Safety gate ───────────────────────────────────────────────────────────────
 // Evaluation order:
 //   1. Hard constraint_exclude → CONTRAINDICATED
 //   2. VIGOROUS/HIIT + confirmed CV risk → NEEDS_CLINICAL_CLEARANCE
 //   3. VIGOROUS/HIIT + no clinical history → NEEDS_MORE_EVIDENCE
-//      (cardiac safety cannot be assumed without a documented baseline)
 //   4. Unknown constraint severity + region loads → NEEDS_MORE_EVIDENCE
-//   5. CV risk + non-HIIT resistance → SAFE_WITH_MODIFICATION
-//   6. Constraint × modality × intensity grid (severity × intensity 2D matrix)
-//   7. SAFE
+//   5. ASSISTIVE_PROTOKOL → DEVICE_FIT evaluation
+//   6. Gait instability + unaided aerobic walking → NEEDS_MORE_EVIDENCE
+//   7. CV risk + non-HIIT resistance → SAFE_WITH_MODIFICATION
+//   8. Constraint × modality × intensity grid
+//   9. SAFE
 
-function evaluateSafetyGate(action, parsedConstraints, hasCvRiskRelevant, hasClinicalHistory) {
+function evaluateSafetyGate(action, parsedConstraints, hasCvRiskRelevant, hasClinicalHistory, hasGaitInstability, mobilityProfile) {
   const intensity    = action.intensity ?? 'MODERATE';
   const isHighIntensity = intensity === 'VIGOROUS' || intensity === 'HIGH_INTENSITY_INTERVAL';
   const excludeList  = action.constraint_exclude ?? [];
@@ -194,7 +296,80 @@ function evaluateSafetyGate(action, parsedConstraints, hasCvRiskRelevant, hasCli
     }
   }
 
-  // 5. CV risk + non-HIIT resistance (tier 1–2) → SAFE_WITH_MODIFICATION
+  // 5. ASSISTIVE_PROTOKOL → DEVICE_FIT evaluation
+  // DEVICE_FIT=POOR → NEEDS_CLINICAL_CLEARANCE (device mismatch, not clinical contraindication)
+  // DEVICE_FIT=NEEDS_ASSESSMENT → NEEDS_CLINICAL_CLEARANCE (NICE NG147 post-fall assessment)
+  // DEVICE_FIT=UNKNOWN → NEEDS_MORE_EVIDENCE (profile insufficient)
+  // DEVICE_FIT=GOOD → continue to standard checks
+  if (action.protocol_type === 'ASSISTIVE_PROTOKOL' && mobilityProfile) {
+    const fit = evaluateDeviceFit(action, mobilityProfile, parsedConstraints);
+    if (fit.level === 'NEEDS_ASSESSMENT') {
+      return {
+        level: 'NEEDS_CLINICAL_CLEARANCE',
+        reason: fit.reason,
+        modifications_suggested: [
+          'Zajistit multifaktoriální assessment pádu dle NICE NG147',
+          'Zahrnout fyzioterapeutické hodnocení chůze a rovnováhy',
+          'Pomůcku nezahájit bez výsledku assessmentu',
+        ],
+        device_fit: fit,
+      };
+    }
+    if (fit.level === 'UNKNOWN') {
+      return {
+        level: 'NEEDS_MORE_EVIDENCE',
+        reason: fit.reason,
+        modifications_suggested: ['Doplnit: typ nestability, strannost, kapacita horní končetiny'],
+        device_fit: fit,
+      };
+    }
+    if (fit.level === 'POOR') {
+      return {
+        level: 'NEEDS_CLINICAL_CLEARANCE',
+        reason: fit.reason,
+        modifications_suggested: [
+          'Fyzioterapeutické hodnocení doporučeného typu pomůcky',
+          'Tento model neodpovídá profilu nestability — neznamená to, že pomůcka není vhodná obecně',
+        ],
+        device_fit: fit,
+      };
+    }
+    if (fit.level === 'ACCEPTABLE') {
+      return {
+        level: 'SAFE_WITH_MODIFICATION',
+        reason: fit.reason,
+        modifications_suggested: ['Ověřit s fyzioterapeutem nastavení pomůcky'],
+        device_fit: fit,
+      };
+    }
+    // GOOD → falls through to standard constraint checks below
+    action._device_fit = fit; // carry fit info for candidate output
+  }
+
+  // 6. Gait instability + unaided aerobic walking → NEEDS_MORE_EVIDENCE
+  // Unaided aerobic walking protocols cannot be assumed safe when gait instability is predicted.
+  // Applies to: KARDIO_PROTOKOL, VYTRVALOST_PROTOKOL without explicit support modality,
+  //             and TRAINING_PROTOKOL with walking/movement tags.
+  if (hasGaitInstability) {
+    const isUnaidedWalkingProtocol = UNAIDED_WALKING_PROTOCOLS.has(action.protocol_type)
+      && (action.modality == null || action.modality === 'UNAIDED');
+    const isWalkingTrainingAction = action.protocol_type === 'TRAINING_PROTOKOL'
+      && (action.tags ?? []).some(t => ['kardio', 'pohyb', 'beh'].includes(t));
+
+    if (isUnaidedWalkingProtocol || isWalkingTrainingAction) {
+      return {
+        level: 'NEEDS_MORE_EVIDENCE',
+        reason: 'Predicted gait instability — unaided walking cannot be assumed safe without a gait/balance assessment. Assess stability first.',
+        modifications_suggested: [
+          'Zjistit: chodíte bez pomůcky bezpečně? (gait_stability)',
+          'Zvážit verzi s oporou (ASSISTIVE_PROTOKOL) pokud chůze bez pomůcky není bezpečná',
+          'TUG test pro objektivní klinickou validaci',
+        ],
+      };
+    }
+  }
+
+  // 7. CV risk + non-HIIT resistance (tier 1–2) → SAFE_WITH_MODIFICATION
   if (hasCvRiskRelevant && action.protocol_type === 'SILOVY_PROTOKOL' && !isHighIntensity) {
     return {
       level: 'SAFE_WITH_MODIFICATION',
@@ -207,7 +382,7 @@ function evaluateSafetyGate(action, parsedConstraints, hasCvRiskRelevant, hasCli
     };
   }
 
-  // 6. Constraint × modality × intensity grid
+  // 8. Constraint × modality × intensity grid
   // Severity (rows) × intensity level (cols) → safety outcome.
   // Modality (which region is loaded) already handled by actionLoadsRegion().
   for (const c of parsedConstraints) {
@@ -369,7 +544,7 @@ function computeFeasibility(safety) {
 
 // ── Candidate builder ─────────────────────────────────────────────────────────
 
-function buildCandidates(actionPool, interventions, parsedConstraints, hasCvRiskRelevant, hasClinicalHistory, leverageNodeId) {
+function buildCandidates(actionPool, interventions, parsedConstraints, hasCvRiskRelevant, hasClinicalHistory, leverageNodeId, hasGaitInstability, mobilityProfile) {
   const candidates = [];
 
   for (const action of actionPool) {
@@ -382,7 +557,7 @@ function buildCandidates(actionPool, interventions, parsedConstraints, hasCvRisk
       if (!tags.some(t => intervention.tag_filter.includes(t))) continue;
     }
 
-    const safety               = evaluateSafetyGate(action, parsedConstraints, hasCvRiskRelevant, hasClinicalHistory);
+    const safety               = evaluateSafetyGate(action, parsedConstraints, hasCvRiskRelevant, hasClinicalHistory, hasGaitInstability, mobilityProfile);
     const min_meaningful_effect = evaluateMinMeaningfulEffect(action, intervention);
     const leverage_affinity    = computeLeverageAffinity(intervention);
     const effect_on_leverage   = computeEffectOnLeverage(intervention, leverageNodeId);
@@ -493,6 +668,15 @@ export function computeNextBestAction({
   const hasClinicalHistory = Boolean(clinicalHistory?.clinical_history_documented);
   const parsedConstraints  = parsePersonConstraints(personConstraints);
 
+  // Gait instability flag — triggers safety gate rule for unaided walking protocols
+  const hasGaitInstability = (node_states ?? []).some(s =>
+    s.node_id === 'GAIT_INSTABILITY' &&
+    ['CONFIRMED', 'PREDICTED_CURRENT'].includes(s.current_state)
+  );
+
+  // Mobility profile for DEVICE_FIT evaluation (ASSISTIVE_PROTOKOL actions)
+  const mobilityProfile = computeMobilityProfile(node_states, clinicalHistory);
+
   const candidates = buildCandidates(
     actionPool,
     interventions,
@@ -500,6 +684,8 @@ export function computeNextBestAction({
     hasCvRiskRelevant,
     hasClinicalHistory,
     leverageNodeId,
+    hasGaitInstability,
+    mobilityProfile,
   );
 
   if (candidates.length === 0) {

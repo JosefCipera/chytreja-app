@@ -1,6 +1,6 @@
 {
-  "version": "1.3.0",
-  "description": "CHJ Engine v1 — 13-node Master. Metabolic + cardiovascular + functional/longevity chains. v1.3.0: added ATHEROSCLEROSIS + CARDIOVASCULAR_DISEASE nodes, causal edges DYSLIPIDEMIA/ENDOTHELIAL_DYSFUNCTION→ATHEROSCLEROSIS→CVD.",
+  "version": "1.4.0",
+  "description": "CHJ Engine v1 — 16-node Master. v1.3.0: ATHEROSCLEROSIS + CARDIOVASCULAR_DISEASE. v1.4.0: PERIPHERAL_NEUROPATHY + GAIT_INSTABILITY + FALL_RISK (Functional Mobility slice).",
   "nodes": [
     {
       "id": "PHYSICAL_INACTIVITY",
@@ -114,6 +114,33 @@
       "domain": "musculoskeletal",
       "changeability": "medium",
       "note": "Projection target. Directly testable: can the person rise from floor without using hands/support? (Dekatlon: vstat_ze_zeme)"
+    },
+    {
+      "id": "PERIPHERAL_NEUROPATHY",
+      "label_cs": "Periferní neuropatie",
+      "label_en": "Peripheral neuropathy",
+      "category": "disease",
+      "domain": "neurological",
+      "changeability": "low",
+      "note": "Confirmed clinical diagnosis. Impairs proprioceptive feedback → elevated GAIT_INSTABILITY risk. Management focuses on downstream functional safety, not reversal."
+    },
+    {
+      "id": "GAIT_INSTABILITY",
+      "label_cs": "Nestabilita chůze",
+      "label_en": "Gait instability",
+      "category": "functional_state",
+      "domain": "functional",
+      "changeability": "medium",
+      "note": "Functional state — impaired postural control and gait safety. CONFIRMED requires direct evidence (TUG, balance tests, clinical assessment). PREDICTED_CURRENT from upstream nodes (neuropathy, muscle weakness, balance test failures)."
+    },
+    {
+      "id": "FALL_RISK",
+      "label_cs": "Riziko pádu",
+      "label_en": "Fall risk",
+      "category": "outcome",
+      "domain": "functional",
+      "changeability": "medium",
+      "note": "Downstream outcome of GAIT_INSTABILITY. CONFIRMED when person has documented falls in last 12 months (NICE NG147: recent falls = direct fall risk confirmation requiring multifactorial assessment)."
     }
   ],
   "edges": [
@@ -247,6 +274,36 @@
       "evidence_quality": "strong",
       "time_horizon": "years",
       "note": "Atherosclerotic plaque progression → luminal stenosis → plaque rupture → ACS, MI, stroke. Core causal chain in ESC CVD Prevention Guidelines 2021."
+    },
+    {
+      "id": "e-neuropathy-gait",
+      "from": "PERIPHERAL_NEUROPATHY",
+      "to": "GAIT_INSTABILITY",
+      "relation": "CONTRIBUTES_TO",
+      "strength": "strong",
+      "evidence_quality": "strong",
+      "time_horizon": "months_to_years",
+      "note": "Proprioceptive signal loss from peripheral neuropathy impairs balance control and postural stability. Sherrington et al., Cochrane 2019; NICE NG147."
+    },
+    {
+      "id": "e-strength-gait",
+      "from": "LOW_MUSCLE_STRENGTH",
+      "to": "GAIT_INSTABILITY",
+      "relation": "CONTRIBUTES_TO",
+      "strength": "moderate",
+      "evidence_quality": "strong",
+      "time_horizon": "years",
+      "note": "Postural muscle weakness reduces gait stability and increases sway. Lord et al., J Gerontol 2001."
+    },
+    {
+      "id": "e-gait-fall",
+      "from": "GAIT_INSTABILITY",
+      "to": "FALL_RISK",
+      "relation": "CONTRIBUTES_TO",
+      "strength": "strong",
+      "evidence_quality": "strong",
+      "time_horizon": "months",
+      "note": "Gait instability is the primary proximal cause of falls in older adults. Rubenstein, Age Ageing 2006; NICE NG147."
     }
   ]
 }

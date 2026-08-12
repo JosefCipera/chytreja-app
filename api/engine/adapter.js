@@ -17,6 +17,7 @@ const DIAG_KEYWORDS = [
   { kws: ['prostata', 'bph', 'hyperplazie prostaty', 'benign'],                 id: 'BENIGN_PROSTATIC_HYPERPLASIA' },
   { kws: ['extrasystol'],                                                       id: 'EXTRASYSTOLES' },
   { kws: ['fibrilace predsi', 'flutter', 'af ablace', 'ablace'],                id: 'AF_ABLATION' },
+  { kws: ['neuropati', 'neuropathy', 'polyneuropati', 'polyneuropathy'],        id: 'PERIPHERAL_NEUROPATHY' },
 ];
 
 function mapDiagnosis(rawString) {
@@ -190,7 +191,7 @@ export async function fetchActionPool(protocolTypes) {
   );
   const { data, error } = await supabase
     .from('longevity_actions')
-    .select('id, node_id, label, protocol_type, type, duration, reps, tier, tags, constraint_exclude, intensity')
+    .select('id, node_id, label, protocol_type, type, duration, reps, tier, tags, constraint_exclude, intensity, modality, support_sides, stability_support, upper_body_demand, load_distribution')
     .eq('active', true)
     .in('protocol_type', protocolTypes);
   if (error) throw new Error(`fetchActionPool: ${error.message}`);

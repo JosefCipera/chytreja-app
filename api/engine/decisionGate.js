@@ -37,6 +37,9 @@ const FUNCTIONAL_NODES = new Set([
   'PHYSICAL_INACTIVITY', 'PHYSICAL_DECONDITIONING',
   'LOW_MUSCLE_STRENGTH', 'REDUCED_FUNCTIONAL_RESERVE', 'LOSS_OF_FLOOR_RISE_ABILITY',
 ]);
+const MOBILITY_NODES = new Set([
+  'GAIT_INSTABILITY', 'FALL_RISK', 'PERIPHERAL_NEUROPATHY',
+]);
 const CV_PROJ_TARGETS   = new Set(['CARDIOVASCULAR_DISEASE']);
 const FUNC_PROJ_TARGETS = new Set(['LOSS_OF_FLOOR_RISE_ABILITY']);
 
@@ -50,8 +53,13 @@ function nodeActionability(state) {
   // known dangerous arrhythmia episode with active risk) — implemented as future extension.
 
   if (current_state === 'CONFIRMED') {
-    // Confirmed CV-relevant conditions: direction is known, warrants management
-    return CV_NODES.has(node_id) ? 'RISK_RELEVANT' : 'ACTIONABLE';
+    if (CV_NODES.has(node_id)) return 'RISK_RELEVANT';
+    // PERIPHERAL_NEUROPATHY: informs gait management but is not directly actionable —
+    // the action path goes through gait assessment, not neuropathy treatment
+    if (node_id === 'PERIPHERAL_NEUROPATHY') return 'MONITOR';
+    // FALL_RISK confirmed (documented falls): high-urgency safety finding
+    if (node_id === 'FALL_RISK') return 'RISK_RELEVANT';
+    return 'ACTIONABLE';
   }
   if (current_state === 'MEASURED') return 'ACTIONABLE';
 
@@ -59,6 +67,8 @@ function nodeActionability(state) {
     // Behavioral root nodes: action direction is clear regardless of measurement precision
     if (node_id === 'PHYSICAL_INACTIVITY' || node_id === 'PHYSICAL_DECONDITIONING')
       return 'ACTIONABLE';
+    // GAIT_INSTABILITY CONFIRMED → ACTIONABLE; PREDICTED → MONITOR (assessment needed)
+    if (node_id === 'GAIT_INSTABILITY') return 'MONITOR';
     return 'MONITOR';
   }
 
@@ -131,6 +141,16 @@ function inferDecisionContexts(nodeStates, projections) {
       label: 'Funkční kapacita a pohyb',
       active_nodes:       funcNodes.map(s => ({ node_id: s.node_id, current_state: s.current_state, confidence: s.confidence })),
       active_projections: funcProjs.map(p => ({ target: p.target_node_id, risk: p.risk, confidence: p.confidence })),
+    });
+  }
+
+  const mobilityNodes = nodeStates.filter(s => MOBILITY_NODES.has(s.node_id));
+  if (mobilityNodes.length > 0) {
+    contexts.push({
+      id:    'FUNCTIONAL_MOBILITY',
+      label: 'Funkční mobilita a bezpečnost pohybu',
+      active_nodes:       mobilityNodes.map(s => ({ node_id: s.node_id, current_state: s.current_state, confidence: s.confidence })),
+      active_projections: [],
     });
   }
 
