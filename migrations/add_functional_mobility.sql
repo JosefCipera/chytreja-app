@@ -24,11 +24,12 @@ ALTER TABLE longevity_actions
 -- Unaided:    no support (baseline for comparison — will get NEEDS_MORE_EVIDENCE with gait instability)
 
 INSERT INTO longevity_actions
-  (node_id, label, protocol_type, type, duration, reps, tier, tags, constraint_exclude,
+  (id, node_id, label, protocol_type, type, duration, reps, tier, tags, constraint_exclude,
    intensity, modality, support_sides, stability_support, upper_body_demand, load_distribution, active)
 VALUES
   -- UNAIDED (baseline — NEEDS_MORE_EVIDENCE when gait instability present)
-  ('GAIT_INSTABILITY',
+  (gen_random_uuid(),
+   'rovnovaha',
    'Chůze bez pomůcky — 20 minut',
    'ASSISTIVE_PROTOKOL', 'timed', 1200, null, 1,
    ARRAY['chůze', 'mobilita', 'pohyb'],
@@ -37,7 +38,8 @@ VALUES
    true),
 
   -- ONE_CRUTCH (unilateral support — POOR fit for bilateral proprioceptive deficit)
-  ('GAIT_INSTABILITY',
+  (gen_random_uuid(),
+   'rovnovaha',
    'Chůze s jednou berlou — 20 minut',
    'ASSISTIVE_PROTOKOL', 'timed', 1200, null, 1,
    ARRAY['chůze', 'mobilita', 'berla', 'pomůcka'],
@@ -46,7 +48,8 @@ VALUES
    true),
 
   -- TWO_POLES (bilateral support — GOOD fit for bilateral proprioceptive deficit)
-  ('GAIT_INSTABILITY',
+  (gen_random_uuid(),
+   'rovnovaha',
    'Chůze s dvěma holemi — 20 minut',
    'ASSISTIVE_PROTOKOL', 'timed', 1200, null, 1,
    ARRAY['chůze', 'mobilita', 'hole', 'pomůcka'],
@@ -55,7 +58,8 @@ VALUES
    true),
 
   -- WALKER (bilateral, very high stability — GOOD for severe instability)
-  ('GAIT_INSTABILITY',
+  (gen_random_uuid(),
+   'rovnovaha',
    'Chůze s chodítkem — 20 minut',
    'ASSISTIVE_PROTOKOL', 'timed', 1200, null, 2,
    ARRAY['chůze', 'mobilita', 'chodítko', 'pomůcka'],
