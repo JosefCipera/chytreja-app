@@ -45,12 +45,29 @@ if (nba.status === 'SELECTED') {
   console.log(`  Parsed constraints: ${JSON.stringify(nba.parsed_constraints)}`);
   console.log(`  Viable / non-viable: ${nba.viable_count} / ${nba.non_viable_count}`);
 
-  console.log('\n  Top 5 by selection order:');
-  const ranked = [...nba.all_candidates]
+  console.log('\n  Top 5 viable (selection order — same sort as selectBestCandidate):');
+  const SAFETY_RANK = { SAFE: 5, SAFE_WITH_MODIFICATION: 4, NEEDS_MORE_EVIDENCE: 3, NEEDS_CLINICAL_CLEARANCE: 2, CONTRAINDICATED: 1 };
+  const MME_RANK    = { MEANINGFUL: 3, PLAUSIBLE: 2, UNKNOWN: 1 };
+  const LEV_RANK    = { high: 3, medium: 2, low: 1 };
+  const FEAS_RANK   = { high: 3, medium: 2, low: 1 };
+  const FRIC_RANK   = { low: 3, medium: 2, high: 1 };
+  const TIME_RANK   = { days: 3, days_to_weeks: 2, weeks: 1, months: 0 };
+  const sorted = [...nba.all_candidates]
     .filter(c => ['SAFE','SAFE_WITH_MODIFICATION'].includes(c.safety.level))
+    .sort((a, b) => {
+      let d;
+      d = SAFETY_RANK[b.safety.level] - SAFETY_RANK[a.safety.level]; if (d) return d;
+      d = MME_RANK[b.min_meaningful_effect.level] - MME_RANK[a.min_meaningful_effect.level]; if (d) return d;
+      d = LEV_RANK[b.effect_on_leverage] - LEV_RANK[a.effect_on_leverage]; if (d) return d;
+      d = b.goal_impact.branches.length - a.goal_impact.branches.length; if (d) return d;
+      d = FEAS_RANK[b.feasibility] - FEAS_RANK[a.feasibility]; if (d) return d;
+      d = FRIC_RANK[b.friction] - FRIC_RANK[a.friction]; if (d) return d;
+      return TIME_RANK[b.time_to_feedback] - TIME_RANK[a.time_to_feedback];
+    })
     .slice(0, 5);
-  for (const c of ranked) {
-    console.log(`    ${c.action_id.padEnd(28)} safety=${c.safety.level.padEnd(24)} MME=${c.min_meaningful_effect.level.padEnd(11)} friction=${c.friction}`);
+  for (const c of sorted) {
+    const label = (c.label ?? c.action_id).slice(0, 40).padEnd(42);
+    console.log(`    ${label} safety=${c.safety.level.padEnd(24)} MME=${c.min_meaningful_effect.level.padEnd(11)} friction=${c.friction} ttf=${c.time_to_feedback}`);
   }
 } else {
   console.log(`  reason: ${nba.reason}`);

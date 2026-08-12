@@ -44,7 +44,7 @@ export async function fetchHealthData(userId) {
       .select('birth_year, gender, height, weight')
       .eq('user_id', userId).maybeSingle(),
     supabase.from('user_health_profile')
-      .select('diagnoses, symptoms, medications, supplements, labs, lifestyle, capacity, physical')
+      .select('diagnoses, symptoms, medications, supplements, labs, lifestyle, capacity, physical, doctor_notes')
       .eq('user_id', userId).maybeSingle(),
     supabase.from('daily_checkin')
       .select('weight_kg, waist_cm, energy, sleep_hours, stress, movement_level, date')
@@ -78,6 +78,25 @@ export async function fetchHealthData(userId) {
       return id ? { id, raw_label: rawStr, status: 'confirmed' } : null;
     })
     .filter(Boolean);
+
+  // Bridge: doctor_notes is raw text entered via CRT / health-profile UI.
+  // Parse it with the same DIAG_KEYWORDS and merge into diagnoses (dedup by ID).
+  // This ensures Safety Gate sees confirmed conditions regardless of how they were entered.
+  // Source label 'doctor_notes' preserved for downstream auditability.
+  if (hp?.doctor_notes) {
+    const seenIds = new Set(diagnoses.map(d => d.id));
+    const lines = hp.doctor_notes
+      .split(/[\n,;]+/)
+      .map(s => s.trim())
+      .filter(Boolean);
+    for (const line of lines) {
+      const id = mapDiagnosis(line);
+      if (id && !seenIds.has(id)) {
+        diagnoses.push({ id, raw_label: line, status: 'confirmed', source: 'doctor_notes' });
+        seenIds.add(id);
+      }
+    }
+  }
 
   const medications = (hp?.medications || []).map(m => ({
     substance: typeof m === 'string' ? m : m?.name,

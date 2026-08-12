@@ -210,13 +210,16 @@ function evaluateSafetyGate(action, parsedConstraints, hasCvRiskRelevant) {
 }
 
 // ── Minimum meaningful effect ─────────────────────────────────────────────────
-// Structural gate only. No evidence-based dose thresholds.
-// MEANINGFUL: protocol_type directly maps to the intervention's primary mechanism AND action is primary (not accessory).
-// PLAUSIBLE:  timed/reps action with a mechanism pathway.
-// UNKNOWN:    habit/bool (dose not guaranteed by action type alone).
+// Structural gate only. No evidence-based dose/frequency thresholds in v0.1.
+// MEANINGFUL: reserved for explicit evidence-based MME rules (none defined yet in v0.1).
+// PLAUSIBLE:  timed/reps action — mechanism pathway exists, dose not validated.
+// UNKNOWN:    habit/bool — effect depends on execution consistency alone.
+//
+// Protocol type (KARDIO, SILOVY, VYTRVALOST) is NOT sufficient to claim MEANINGFUL
+// without a validated dose/frequency rule. Use PLAUSIBLE until rules are defined.
 
-function evaluateMinMeaningfulEffect(action, intervention) {
-  const { type, protocol_type } = action;
+function evaluateMinMeaningfulEffect(action, _intervention) {
+  const { type } = action;
 
   if (type === 'habit' || type === 'bool') {
     return {
@@ -225,30 +228,10 @@ function evaluateMinMeaningfulEffect(action, intervention) {
     };
   }
 
-  // Primary aerobic mechanism: KARDIO/VYTRVALOST protocol_type IS the aerobic intervention
-  if (['KARDIO_PROTOKOL', 'VYTRVALOST_PROTOKOL'].includes(protocol_type)) {
-    return {
-      level: 'MEANINGFUL',
-      reason: 'Protocol type directly constitutes the aerobic intervention — mechanism is the activity itself.',
-    };
-  }
-
-  // Primary resistance mechanism: SILOVY_PROTOKOL with strength tags
-  if (protocol_type === 'SILOVY_PROTOKOL') {
-    const tags = action.tags ?? [];
-    if (tags.some(t => ['sila', 'nohy', 'horni', 'plyometrie'].includes(t))) {
-      return {
-        level: 'MEANINGFUL',
-        reason: 'Protocol type directly constitutes the resistance intervention — mechanism is the strength stimulus.',
-      };
-    }
-  }
-
-  // TRAINING_PROTOKOL timed/reps — plausible mechanism
   if (type === 'timed' || type === 'reps') {
     return {
       level: 'PLAUSIBLE',
-      reason: 'Timed or rep-based action with a mechanism pathway — effect plausible but protocol type is mixed-use.',
+      reason: 'Timed/rep-based action with a mechanism pathway. Protocol type alone is not a validated dose rule — MEANINGFUL requires an explicit evidence-based MME rule (not yet defined in v0.1).',
     };
   }
 
@@ -419,9 +402,6 @@ function selectBestCandidate(viable, hasCvRiskContext) {
     }
     const bd = b.goal_impact.branches.length - a.goal_impact.branches.length;
     if (bd !== 0) return bd;
-    // Mechanism breadth: more mechanism targets = broader leverage
-    const mcd = b.goal_impact.mechanism_count - a.goal_impact.mechanism_count;
-    if (mcd !== 0) return mcd;
 
     // 5. Feasibility
     const fd = FEAS_RANK[b.feasibility] - FEAS_RANK[a.feasibility];
