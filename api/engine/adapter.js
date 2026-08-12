@@ -159,3 +159,30 @@ export async function fetchHealthData(userId) {
 
   return { person, clinicalHistory, observations };
 }
+
+export async function fetchActionPool(protocolTypes) {
+  const supabase = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+  );
+  const { data, error } = await supabase
+    .from('longevity_actions')
+    .select('id, node_id, label, protocol_type, type, duration, reps, tier, tags, constraint_exclude')
+    .eq('active', true)
+    .in('protocol_type', protocolTypes);
+  if (error) throw new Error(`fetchActionPool: ${error.message}`);
+  return data ?? [];
+}
+
+export async function fetchPersonConstraints(userId) {
+  const supabase = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+  );
+  const { data, error } = await supabase
+    .from('user_constraints')
+    .select('constraint_type, constraint_key, constraint_value, severity')
+    .eq('user_id', userId);
+  if (error) throw new Error(`fetchPersonConstraints: ${error.message}`);
+  return data ?? [];
+}

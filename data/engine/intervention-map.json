@@ -1,0 +1,72 @@
+{
+  "version": "0.1",
+  "description": "MASTER_NODE → INTERVENTION_OPTION[] bridge for NEXT_BEST_ACTION v0.1. v0.1 covers PHYSICAL_INACTIVITY only.",
+  "mappings": {
+    "PHYSICAL_INACTIVITY": {
+      "interventions": [
+        {
+          "id": "BREAK_UP_SEDENTARY_TIME",
+          "target_leverage_node": "PHYSICAL_INACTIVITY",
+          "protocol_types": ["TRAINING_PROTOKOL"],
+          "tag_filter": ["kardio"],
+          "goal_branches": ["SURVIVAL_HEALTHSPAN", "FUNCTIONAL_INDEPENDENCE"],
+          "mechanism_targets": ["PHYSICAL_INACTIVITY", "INSULIN_RESISTANCE"]
+        },
+        {
+          "id": "AEROBIC_TRAINING",
+          "target_leverage_node": "PHYSICAL_INACTIVITY",
+          "protocol_types": ["KARDIO_PROTOKOL", "VYTRVALOST_PROTOKOL"],
+          "goal_branches": ["SURVIVAL_HEALTHSPAN", "FUNCTIONAL_INDEPENDENCE"],
+          "mechanism_targets": ["PHYSICAL_INACTIVITY", "HYPERTENSION", "INSULIN_RESISTANCE", "ENDOTHELIAL_DYSFUNCTION"]
+        },
+        {
+          "id": "RESISTANCE_TRAINING",
+          "target_leverage_node": "PHYSICAL_INACTIVITY",
+          "protocol_types": ["SILOVY_PROTOKOL"],
+          "goal_branches": ["FUNCTIONAL_INDEPENDENCE", "SURVIVAL_HEALTHSPAN"],
+          "mechanism_targets": ["PHYSICAL_INACTIVITY", "LOW_MUSCLE_STRENGTH", "PHYSICAL_DECONDITIONING", "INSULIN_RESISTANCE"]
+        },
+        {
+          "id": "DAILY_MOVEMENT",
+          "target_leverage_node": "PHYSICAL_INACTIVITY",
+          "protocol_types": ["TRAINING_PROTOKOL"],
+          "goal_branches": ["SURVIVAL_HEALTHSPAN", "FUNCTIONAL_INDEPENDENCE"],
+          "mechanism_targets": ["PHYSICAL_INACTIVITY", "EXCESS_ADIPOSITY", "PHYSICAL_DECONDITIONING"]
+        }
+      ]
+    },
+    "EXCESS_ADIPOSITY": {
+      "interventions": [
+        {
+          "id": "AEROBIC_TRAINING",
+          "target_leverage_node": "EXCESS_ADIPOSITY",
+          "protocol_types": ["KARDIO_PROTOKOL", "VYTRVALOST_PROTOKOL"],
+          "goal_branches": ["SURVIVAL_HEALTHSPAN", "FUNCTIONAL_INDEPENDENCE"],
+          "mechanism_targets": ["EXCESS_ADIPOSITY", "PHYSICAL_INACTIVITY", "HYPERTENSION", "INSULIN_RESISTANCE", "ENDOTHELIAL_DYSFUNCTION"]
+        },
+        {
+          "id": "DAILY_MOVEMENT",
+          "target_leverage_node": "EXCESS_ADIPOSITY",
+          "protocol_types": ["TRAINING_PROTOKOL"],
+          "goal_branches": ["SURVIVAL_HEALTHSPAN", "FUNCTIONAL_INDEPENDENCE"],
+          "mechanism_targets": ["EXCESS_ADIPOSITY", "PHYSICAL_INACTIVITY", "PHYSICAL_DECONDITIONING"]
+        },
+        {
+          "id": "RESISTANCE_TRAINING",
+          "target_leverage_node": "EXCESS_ADIPOSITY",
+          "protocol_types": ["SILOVY_PROTOKOL"],
+          "goal_branches": ["FUNCTIONAL_INDEPENDENCE", "SURVIVAL_HEALTHSPAN"],
+          "mechanism_targets": ["EXCESS_ADIPOSITY", "INSULIN_RESISTANCE", "LOW_MUSCLE_STRENGTH", "PHYSICAL_DECONDITIONING"]
+        },
+        {
+          "id": "BREAK_UP_SEDENTARY_TIME",
+          "target_leverage_node": "EXCESS_ADIPOSITY",
+          "protocol_types": ["TRAINING_PROTOKOL"],
+          "tag_filter": ["kardio"],
+          "goal_branches": ["SURVIVAL_HEALTHSPAN", "FUNCTIONAL_INDEPENDENCE"],
+          "mechanism_targets": ["EXCESS_ADIPOSITY", "PHYSICAL_INACTIVITY", "INSULIN_RESISTANCE"]
+        }
+      ]
+    }
+  }
+}

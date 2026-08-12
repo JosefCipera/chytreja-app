@@ -18,7 +18,7 @@
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import { fetchHealthData }           from './adapter.js';
+import { fetchHealthData, fetchActionPool, fetchPersonConstraints } from './adapter.js';
 import { activation }                from './activation.js';
 import { inference }                 from './inference.js';
 import { computeProjections }        from './projections.js';
@@ -26,10 +26,12 @@ import { buildInformationNeeds }     from './informationNeeds.js';
 import { evaluateDecisionGate }      from './decisionGate.js';
 import { computeSystemLeverage }     from './systemLeverage.js';
 import { computeSystemConstraint }   from './systemConstraint.js';
+import { computeNextBestAction }     from './nextBestAction.js';
 // selectNextBestEvidence is now called inside decisionGate.js per context
 
 const _dir = dirname(fileURLToPath(import.meta.url));
 const MASTER = JSON.parse(readFileSync(join(_dir, '../../data/engine/master.json'), 'utf8'));
+const INTERVENTION_MAP = JSON.parse(readFileSync(join(_dir, '../../data/engine/intervention-map.json'), 'utf8'));
 
 export const ENGINE_VERSION = '1.0.0';
 export const ENGINE_MASTER  = MASTER;
@@ -70,6 +72,30 @@ export async function runEngine(userId) {
   const system_leverage     = computeSystemLeverage(node_states, projections, decision_gate, ENGINE_VERSION);
   const system_constraint   = computeSystemConstraint(node_states, projections, decision_gate, ENGINE_VERSION);
 
+  // NEXT_BEST_ACTION — only when a leverage node is identified and has an intervention map
+  const leverageNodeId = system_leverage.selected?.node_id ?? null;
+  const interventionData = leverageNodeId ? INTERVENTION_MAP.mappings?.[leverageNodeId] : null;
+
+  let next_best_action = { status: 'NOT_COMPUTED', reason: `No intervention map for leverage node: ${leverageNodeId ?? 'none'}` };
+
+  if (interventionData) {
+    const allProtocolTypes = [...new Set(interventionData.interventions.flatMap(i => i.protocol_types))];
+    const [actionPool, personConstraints] = await Promise.all([
+      fetchActionPool(allProtocolTypes),
+      fetchPersonConstraints(userId),
+    ]);
+    next_best_action = computeNextBestAction({
+      leverageNodeId,
+      interventions:    interventionData.interventions,
+      actionPool,
+      personConstraints,
+      clinicalHistory,
+      decisionGate:     decision_gate,
+      node_states,
+      engineVersion:    ENGINE_VERSION,
+    });
+  }
+
   return {
     person,
     engine_version: ENGINE_VERSION,
@@ -80,5 +106,6 @@ export async function runEngine(userId) {
     decision_gate,
     system_leverage,
     system_constraint,
+    next_best_action,
   };
 }
