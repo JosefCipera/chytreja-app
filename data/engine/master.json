@@ -1,6 +1,6 @@
 {
-  "version": "1.2.0",
-  "description": "CHJ Engine v1 — 11-node Master. Metabolic + cardiovascular + functional/longevity chains. v1.2.0: added changeability per node, added DYSLIPIDEMIA node.",
+  "version": "1.3.0",
+  "description": "CHJ Engine v1 — 13-node Master. Metabolic + cardiovascular + functional/longevity chains. v1.3.0: added ATHEROSCLEROSIS + CARDIOVASCULAR_DISEASE nodes, causal edges DYSLIPIDEMIA/ENDOTHELIAL_DYSFUNCTION→ATHEROSCLEROSIS→CVD.",
   "nodes": [
     {
       "id": "PHYSICAL_INACTIVITY",
@@ -59,8 +59,25 @@
       "label_en": "Dyslipidemia",
       "category": "disease",
       "domain": "cardiovascular",
-      "changeability": "high",
-      "note": "MISSING DOWNSTREAM MODEL: causal path DYSLIPIDEMIA → ATHEROSCLEROSIS → CVD is not modeled in this master slice. ATHEROSCLEROSIS node is absent. Until added, causal reach of DYSLIPIDEMIA cannot be evaluated and it cannot be a constraint candidate."
+      "changeability": "high"
+    },
+    {
+      "id": "ATHEROSCLEROSIS",
+      "label_cs": "Ateroskleróza",
+      "label_en": "Atherosclerosis",
+      "category": "mechanism",
+      "domain": "cardiovascular",
+      "changeability": "low",
+      "note": "Chronic arterial wall disease driven by endothelial dysfunction, dyslipidemia, and oxidative stress. Partly slowed by statins; plaque reversal is limited. Upstream of CARDIOVASCULAR_DISEASE."
+    },
+    {
+      "id": "CARDIOVASCULAR_DISEASE",
+      "label_cs": "Kardiovaskulární onemocnění",
+      "label_en": "Cardiovascular disease",
+      "category": "outcome",
+      "domain": "cardiovascular",
+      "changeability": "low",
+      "note": "Terminal outcome of the cardiovascular causal chain. Projection target for RISK_BASED projections. Can be CONFIRMED if person has prior MI, stroke, or established CHD."
     },
     {
       "id": "PHYSICAL_DECONDITIONING",
@@ -200,6 +217,36 @@
       "evidence_quality": "moderate",
       "time_horizon": "years",
       "note": "LOSS_OF_FLOOR_RISE_ABILITY je projekční cíl (longevity slice) — přímá testovatelná funkční ztráta."
+    },
+    {
+      "id": "e-dyslip-athero",
+      "from": "DYSLIPIDEMIA",
+      "to": "ATHEROSCLEROSIS",
+      "relation": "CONTRIBUTES_TO",
+      "strength": "strong",
+      "evidence_quality": "strong",
+      "time_horizon": "years",
+      "note": "Atherogenic dyslipidemia (elevated LDL-P/ApoB, low HDL) promotes subendothelial lipid deposition and plaque formation. ESC/EAS Dyslipidaemia Guidelines 2019."
+    },
+    {
+      "id": "e-endothel-athero",
+      "from": "ENDOTHELIAL_DYSFUNCTION",
+      "to": "ATHEROSCLEROSIS",
+      "relation": "CONTRIBUTES_TO",
+      "strength": "strong",
+      "evidence_quality": "strong",
+      "time_horizon": "years",
+      "note": "Endothelial dysfunction impairs NO bioavailability, increases adhesion molecule expression, and promotes monocyte recruitment — core mechanism of atherosclerotic initiation and progression."
+    },
+    {
+      "id": "e-athero-cvd",
+      "from": "ATHEROSCLEROSIS",
+      "to": "CARDIOVASCULAR_DISEASE",
+      "relation": "CONTRIBUTES_TO",
+      "strength": "strong",
+      "evidence_quality": "strong",
+      "time_horizon": "years",
+      "note": "Atherosclerotic plaque progression → luminal stenosis → plaque rupture → ACS, MI, stroke. Core causal chain in ESC CVD Prevention Guidelines 2021."
     }
   ]
 }

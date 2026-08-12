@@ -1,14 +1,17 @@
-// systemConstraint.js — SYSTEM_CONSTRAINT v0.1 (Engine v1)
+// systemLeverage.js — SYSTEM_LEVERAGE v0.1 (Engine v1)
 //
 // Identifies the most leveraged, changeable, currently active mechanism
 // whose improvement has the highest potential to advance the whole person's
 // system toward health and long-term functional independence.
 //
 // NOT "the worst decision context." A specific MASTER_NODE / mechanism.
+// NOT a TOC constraint — this algorithm finds the current ovlivnitelný node
+// with the highest causal and cross-context leverage. TOC constraint
+// identification requires additional throughput analysis (future layer).
 //
 // Pipeline position: after decisionGate (reads activeContextIds from gate output).
 //
-// Candidate rules:
+// LEVERAGE_CANDIDATE rules:
 //   CONFIRMED + MEASURED + PREDICTED_CURRENT → candidate
 //   UNKNOWN → not a candidate
 //   PERSON_PROJECTION → not a candidate (downstream risk signal, not upstream mechanism)
@@ -18,7 +21,7 @@
 //   RISK_MARKER_FOR does NOT — "treating ED does not causally reduce CVD risk."
 //
 // Selection: ordinal comparison (no numeric weighted score):
-//   1. Safety override — SAFETY_CRITICAL in any gate → constraint defers
+//   1. Safety override — SAFETY_CRITICAL in any gate → leverage defers to safety
 //   2. Eliminate zero-causal-reach candidates (no systemic leverage)
 //   3. Eliminate candidates with unmodeled causal paths (flag as missing_model_elements)
 //   4. Rank: cross_context_leverage → causal_reach → changeability
@@ -30,7 +33,7 @@ import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
-const _dir  = dirname(fileURLToPath(import.meta.url));
+const _dir   = dirname(fileURLToPath(import.meta.url));
 const MASTER = JSON.parse(readFileSync(join(_dir, '../../data/engine/master.json'), 'utf8'));
 
 // --- Constants ---
@@ -191,7 +194,7 @@ function detectMissingModelElements(nodeStates, causalGraph) {
       continue;
     }
 
-    const causalEdges   = causalGraph[state.node_id] ?? [];
+    const causalEdges     = causalGraph[state.node_id] ?? [];
     const riskMarkerEdges = MASTER.edges.filter(e => e.from === state.node_id && e.relation === 'RISK_MARKER_FOR');
 
     if (causalEdges.length === 0) {
@@ -199,7 +202,7 @@ function detectMissingModelElements(nodeStates, causalGraph) {
         missing.push({
           node_id: state.node_id,
           issue:   `Only RISK_MARKER_FOR downstream edges — no causal (CAUSES/CONTRIBUTES_TO) path modeled. ` +
-                   `Treating this node does not causally improve downstream risk. Cannot be a constraint candidate.`,
+                   `Treating this node does not causally improve downstream risk. Cannot be a leverage candidate.`,
         });
       } else {
         missing.push({
@@ -229,7 +232,7 @@ function buildCandidateReason(c, excluded, exclusionReason) {
 // --- Selection (ordinal, no numeric score) ---
 // cross_context_leverage → causal_reach → changeability
 
-function selectConstraint(viable) {
+function selectLeverageCandidate(viable) {
   if (viable.length === 0) return null;
 
   // Prefer candidates with changeability ≥ medium
@@ -253,17 +256,22 @@ function buildExplanation(selected, alternatives, missingElements) {
   const lines = [];
 
   lines.push(
-    `SYSTEM_CONSTRAINT: ${selected.node_id} (${selected.current_state}, confidence=${selected.confidence}).`
+    `SYSTEM_LEVERAGE: ${selected.node_id} (${selected.current_state}, confidence=${selected.confidence}).`
   );
   lines.push(
-    `Kauzální dosah HIGH — ${selected.causal_reach.affected_nodes.length} uzlů downstream přes CAUSES/CONTRIBUTES_TO: ` +
-    selected.causal_reach.edges_used.map(e => `${e.from}→${e.to}(${e.relation})`).join(', ') + '.'
+    `Josefův nejsilnější identifikovaný cross-domain leverage point v aktuálním Masteru.`
   );
   lines.push(
-    `Cross-context leverage HIGH — zasahuje všechny 3 aktivní decision_contexty: ` +
+    `Kauzální dosah ${selected.causal_reach.level.toUpperCase()} — ` +
+    `${selected.causal_reach.affected_nodes.length} uzlů downstream přes CAUSES/CONTRIBUTES_TO: ` +
+    selected.causal_reach.edges_used.map(e => `${e.from}→${e.to}`).join(', ') + '.'
+  );
+  lines.push(
+    `Cross-context leverage ${selected.cross_context_leverage.level.toUpperCase()} — zasahuje ` +
+    `${selected.cross_context_leverage.contexts.length} aktivní decision_context(y): ` +
     selected.cross_context_leverage.contexts.join(', ') + '.'
   );
-  lines.push(`Changeability=${selected.changeability} — behaviorální intervence přímá.`);
+  lines.push(`Changeability=${selected.changeability}.`);
 
   if (alternatives.length > 0) {
     const runner = alternatives[0];
@@ -274,21 +282,12 @@ function buildExplanation(selected, alternatives, missingElements) {
         return `causal_reach ${runner.causal_reach.level} < ${selected.causal_reach.level}`;
       return `changeability ${runner.changeability} < ${selected.changeability}`;
     })();
-    lines.push(`Druhý nejlepší kandidát: ${runner.node_id} — poražen na ${lossReason}.`);
-    if (runner.node_id === 'HYPERTENSION') {
-      lines.push(
-        `Proč ne HYPERTENSION: Potvrzená diagnóza s high threat a high time_sensitivity — ` +
-        `ale zasahuje pouze CURRENT_CV_STATE a kauzálně downstream pouze 2 uzly (ENDOTHELIAL_DYSFUNCTION, ERECTILE_DYSFUNCTION). ` +
-        `Goldratt: fixovat downstream symptom neodstraní constraint — root cause (fyzická inaktivita → IR → HTN) zůstává aktivní. ` +
-        `HTN management je nutný paralelně, ne jako systémový constraint.`
-      );
-    }
+    lines.push(`Druhý nejlepší: ${runner.node_id} — poražen na ${lossReason}.`);
   }
 
   if (missingElements.length > 0) {
     lines.push(
-      `Poznámka k modelu: ${missingElements.map(m => m.node_id).join(', ')} mají nekompletní kauzální model — ` +
-      `causal reach nelze vyhodnotit. Viz missing_model_elements.`
+      `Nekompletní model: ${missingElements.map(m => m.node_id).join(', ')} — viz missing_model_elements.`
     );
   }
 
@@ -297,8 +296,8 @@ function buildExplanation(selected, alternatives, missingElements) {
 
 // --- Main export ---
 
-export function computeSystemConstraint(nodeStates, projections, decisionGate, engineVersion) {
-  const now        = new Date().toISOString();
+export function computeSystemLeverage(nodeStates, projections, decisionGate, engineVersion) {
+  const now         = new Date().toISOString();
   const causalGraph = buildCausalGraph();
 
   // Active contexts from gate
@@ -319,7 +318,7 @@ export function computeSystemConstraint(nodeStates, projections, decisionGate, e
       alternatives:           [],
       selection_basis:        { safety_override: true },
       affected_contexts:      [],
-      explanation:            'SAFETY OVERRIDE: SAFETY_CRITICAL finding present — system constraint deferred to safety gate. Resolve critical finding before constraint evaluation.',
+      explanation:            'SAFETY OVERRIDE: SAFETY_CRITICAL finding present — leverage evaluation deferred to safety gate.',
       missing_model_elements: [],
       engine_version:         engineVersion,
       evaluated_at:           now,
@@ -330,22 +329,19 @@ export function computeSystemConstraint(nodeStates, projections, decisionGate, e
   const missing_model_elements = detectMissingModelElements(nodeStates, causalGraph);
   const missingNodeIds         = new Set(missing_model_elements.map(m => m.node_id));
 
-  // Build all CONSTRAINT_CANDIDATEs
+  // Build all LEVERAGE_CANDIDATEs
   const candidates = [];
 
   for (const state of nodeStates) {
     if (!CANDIDATE_STATES.has(state.current_state)) continue;
 
-    const causalReach = computeCausalReach(state.node_id, causalGraph, projections);
-    const leverage    = computeCrossContextLeverage(state.node_id, causalReach.affected_nodes, activeContextIds);
-    const threat      = computeThreat(state, nodeStates);
-    const timeSens    = computeTimeSensitivity(state, nodeStates);
+    const causalReach   = computeCausalReach(state.node_id, causalGraph, projections);
+    const leverage      = computeCrossContextLeverage(state.node_id, causalReach.affected_nodes, activeContextIds);
+    const threat        = computeThreat(state, nodeStates);
+    const timeSens      = computeTimeSensitivity(state, nodeStates);
     const changeability = getChangeability(state.node_id);
 
-    // Internal exclusion flags (stripped from output)
-    const _excluded_zero_reach = causalReach.level === 'none';
-    const _excluded_missing    = missingNodeIds.has(state.node_id) && causalReach.level === 'none';
-    const _excluded = _excluded_zero_reach; // zero reach = cannot shift system
+    const _excluded = causalReach.level === 'none';
 
     const exclusionReason = _excluded
       ? (missingNodeIds.has(state.node_id)
@@ -359,7 +355,7 @@ export function computeSystemConstraint(nodeStates, projections, decisionGate, e
       confidence:             state.confidence,
       threat,
       time_sensitivity:       timeSens,
-      causal_reach:           {
+      causal_reach: {
         level:                causalReach.level,
         affected_nodes:       causalReach.affected_nodes,
         affected_projections: causalReach.affected_projections,
@@ -372,15 +368,13 @@ export function computeSystemConstraint(nodeStates, projections, decisionGate, e
         { threat, time_sensitivity: timeSens, causal_reach: causalReach, cross_context_leverage: leverage, changeability },
         _excluded, exclusionReason
       ),
-      _excluded, // internal — stripped before output
+      _excluded,
     });
   }
 
-  // Viable candidates: not excluded
   const viable   = candidates.filter(c => !c._excluded);
-  const selected = selectConstraint(viable);
+  const selected = selectLeverageCandidate(viable);
 
-  // Strip internal flag from output candidates
   const outputCandidates = candidates.map(({ _excluded, ...rest }) => rest);
 
   if (!selected) {
@@ -391,14 +385,13 @@ export function computeSystemConstraint(nodeStates, projections, decisionGate, e
       alternatives:           [],
       selection_basis:        { safety_override: false },
       affected_contexts:      [],
-      explanation:            'No viable constraint candidate — all candidates have zero causal reach or unmodeled edges.',
+      explanation:            'No viable leverage candidate — all candidates have zero causal reach or unmodeled edges.',
       missing_model_elements,
       engine_version:         engineVersion,
       evaluated_at:           now,
     };
   }
 
-  // Alternatives: top 2 viable candidates after winner, sorted same way
   const alternatives = viable
     .filter(c => c.node_id !== selected.node_id)
     .sort((a, b) => {
@@ -411,10 +404,8 @@ export function computeSystemConstraint(nodeStates, projections, decisionGate, e
     .slice(0, 2)
     .map(({ _excluded, ...rest }) => rest);
 
-  const { _excluded: _, ...selectedClean } = selected;
-
   return {
-    status:  'IDENTIFIED',
+    status:   'IDENTIFIED',
     selected: {
       node_id:       selected.node_id,
       current_state: selected.current_state,
