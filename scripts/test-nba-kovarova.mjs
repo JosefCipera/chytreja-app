@@ -222,7 +222,7 @@ for (const g of (decision_gate.context_gates ?? [])) {
     const nbe = g.next_best_evidence;
     console.log(`    ▶ NEXT_BEST_EVIDENCE: ${nbe.evidence_type}`);
     console.log(`      urgency=${nbe.urgency} | impact=${nbe.decision_impact} | cost=${nbe.acquisition_cost} | method=${nbe.acquisition_method}`);
-    console.log(`      → ${(nbe.explanation ?? nbe._notes?.[0] ?? '(no explanation)')?.slice(0, 120)}`);
+    console.log(`      → ${(nbe.reason ?? '(no reason)')?.slice(0, 160)}`);
   }
 }
 
@@ -394,7 +394,7 @@ if (gaitInterventionData) {
 
   console.log(`  Mobility profile (ONE_CRUTCH scenario):`);
   console.log(`    instability_type:    PROPRIOCEPTIVE (from PERIPHERAL_NEUROPATHY CONFIRMED)`);
-  console.log(`    laterality:          BILATERAL (peripheral neuropathy → bilateral default)`);
+  console.log(`    laterality:          UNKNOWN (PN infers mechanism, NOT bilateral without direct evidence)`);
   console.log(`    fall_history:        UNKNOWN (no recent_falls data)`);
   console.log(`    current_device:      ONE_CRUTCH`);
   console.log(`\n  GAIT_INSTABILITY intervention pool:`);
@@ -422,18 +422,44 @@ if (gaitInterventionData) {
       const deviceFit = c.safety.device_fit;
       const deviceFitStr = deviceFit ? `DEVICE_FIT=${deviceFit.level}` : '';
       console.log(`    ${(c.label ?? '').slice(0, 45).padEnd(47)} ${c.safety.level.padEnd(24)} ${modality.padEnd(12)} ${deviceFitStr}`);
-      if (c.safety.level === 'NEEDS_CLINICAL_CLEARANCE' && deviceFit) {
-        console.log(`      ↳ ${deviceFit.reason}`);
+      if ((c.safety.level === 'NEEDS_CLINICAL_CLEARANCE' || c.safety.level === 'NEEDS_MORE_EVIDENCE') && deviceFit) {
+        console.log(`      ↳ [${deviceFit.level}] ${deviceFit.reason}`);
+      }
+      if (c.safety.level === 'SAFE_WITH_MODIFICATION') {
+        console.log(`      ↳ ${c.safety.reason?.slice(0, 100)}`);
       }
     }
   }
 
+  // Dynamic verdict derived from engine output
+  const oneCrutchCandidate = nbaOneCrutch.all_candidates?.find(c => {
+    const a = gaitActionPool.find(a => a.id === c.action_id);
+    return a?.modality === 'ONE_CRUTCH';
+  });
+  const twoPoleCandidate = nbaOneCrutch.all_candidates?.find(c => {
+    const a = gaitActionPool.find(a => a.id === c.action_id);
+    return a?.modality === 'TWO_POLES';
+  });
+
   console.log('\n  VERDICT:');
-  console.log('  Engine does NOT say "switch to two poles".');
-  console.log('  For ONE_CRUTCH action: DEVICE_FIT=POOR → NEEDS_CLINICAL_CLEARANCE');
-  console.log('    Reason: unilateral support mismatches bilateral proprioceptive deficit');
-  console.log('    This is a MODEL MISMATCH, not a clinical contraindication.');
-  console.log('    Engine correctly defers to physiotherapist — clinical review required.');
+  if (oneCrutchCandidate) {
+    console.log(`  ONE_CRUTCH: ${oneCrutchCandidate.safety.level} | DEVICE_FIT=${oneCrutchCandidate.safety.device_fit?.level ?? 'n/a'}`);
+    console.log(`    ↳ ${oneCrutchCandidate.safety.device_fit?.reason ?? oneCrutchCandidate.safety.reason}`);
+  }
+  if (twoPoleCandidate) {
+    console.log(`  TWO_POLES:  ${twoPoleCandidate.safety.level} | DEVICE_FIT=${twoPoleCandidate.safety.device_fit?.level ?? 'n/a'}`);
+    console.log(`    ↳ ${twoPoleCandidate.safety.device_fit?.reason ?? twoPoleCandidate.safety.reason}`);
+  }
+  const walkerCandidate = nbaOneCrutch.all_candidates?.find(c => gaitActionPool.find(a => a.id === c.action_id)?.modality === 'WALKER');
+  if (walkerCandidate) {
+    console.log(`  WALKER:     ${walkerCandidate.safety.level} | DEVICE_FIT=${walkerCandidate.safety.device_fit?.level ?? 'n/a'}`);
+    console.log(`    ↳ ${walkerCandidate.safety.device_fit?.reason ?? walkerCandidate.safety.reason}`);
+  }
+  const unaidedCandidate = nbaOneCrutch.all_candidates?.find(c => gaitActionPool.find(a => a.id === c.action_id)?.modality === 'UNAIDED');
+  if (unaidedCandidate) {
+    console.log(`  UNAIDED:    ${unaidedCandidate.safety.level} | DEVICE_FIT=${unaidedCandidate.safety.device_fit?.level ?? 'n/a'}`);
+    console.log(`    ↳ ${unaidedCandidate.safety.device_fit?.reason ?? unaidedCandidate.safety.reason}`);
+  }
 
   if (nbaOneCrutch.status === 'SELECTED') {
     console.log(`\n  Selected (from viable pool): ${nbaOneCrutch.selected?.label ?? 'none'}`);

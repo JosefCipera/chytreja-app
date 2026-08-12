@@ -338,8 +338,6 @@ export function inference(activatedStates, person, clinicalHistory, observations
           inferred_from_nodes: signals,
         },
         missing_evidence: [
-          { type: 'OBSERVATION', obs_type: 'recent_falls',
-            note: 'Pád v posledních 12 měsících — přímý prediktor FALL_RISK (NICE NG147 triage); supporting evidence pro GAIT_INSTABILITY' },
           { type: 'OBSERVATION', obs_type: 'gait_stability',
             note: '"Chodíte bez pomůcky bezpečně?" — nejrychlejší funkční třídění nestability' },
           { type: 'OBSERVATION', obs_type: 'tug_test',
@@ -348,6 +346,35 @@ export function inference(activatedStates, person, clinicalHistory, observations
             note: 'Aktuálně používaná pomůcka — materiálně mění výběr akce; samostatná evidence o závislosti na podpoře' },
           { type: 'OBSERVATION', obs_type: 'instability_laterality',
             note: 'Bilaterální vs. unilaterální nestabilita — klíčový vstup pro DEVICE_FIT hodnocení' },
+        ],
+      });
+    }
+  }
+
+  // RELEVANT_UNKNOWN: FALL_RISK
+  // When GAIT_INSTABILITY is predicted and recent_falls is unanswered,
+  // FALL_RISK state is unknown but materially impacts safety gate and action selection.
+  // recent_falls=yes → FALL_RISK CONFIRMED (activation.js) — a new RISK_RELEVANT finding.
+  // Without this UNKNOWN, recent_falls gets decision_impact=medium (GAIT_INSTABILITY PREDICTED_CURRENT)
+  // instead of high (FALL_RISK UNKNOWN) → NBE incorrectly deprioritizes it.
+  {
+    const gaitPredicted = states.find(s => s.node_id === 'GAIT_INSTABILITY');
+    const fallRiskPresent = stateById['FALL_RISK'] || states.find(s => s.node_id === 'FALL_RISK');
+    const recentFallsAnswered = oi['recent_falls'] != null;
+
+    if (gaitPredicted && !fallRiskPresent && !recentFallsAnswered) {
+      states.push({
+        node_id:       'FALL_RISK',
+        current_state: 'UNKNOWN',
+        confidence:    'unknown',
+        evidence:      { direct: [], supporting: [], inferred_from_nodes: [] },
+        missing_evidence: [
+          {
+            type:        'ONBOARDING',
+            question_id: 'recent_falls',
+            note:        'Pád v posledních 12 měsících — přímý prediktor FALL_RISK CONFIRMED (NICE NG147 triage). ' +
+                         'Bez odpovědi: FALL_RISK neznámý, bezpečnostní třídění a výběr akce nejsou dokončeny.',
+          },
         ],
       });
     }

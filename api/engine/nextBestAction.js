@@ -73,7 +73,9 @@ function computeMobilityProfile(nodeStates, clinicalHistory) {
   const pn = stateById['PERIPHERAL_NEUROPATHY'];
   if (pn?.current_state === 'CONFIRMED') {
     instability_type = 'PROPRIOCEPTIVE';
-    laterality       = 'BILATERAL'; // peripheral neuropathy → symmetric, bilateral by default
+    // laterality stays UNKNOWN — PN infers proprioceptive mechanism but NOT bilateral pattern;
+    // clinical gait assessment or direct laterality question required before device selection.
+    laterality = 'UNKNOWN';
   }
 
   // Upper body capacity from constraints (set to LIMITED if shoulder constraint exists)
@@ -239,9 +241,10 @@ const UNAIDED_WALKING_PROTOCOLS = new Set(['KARDIO_PROTOKOL', 'VYTRVALOST_PROTOK
 //   4. Unknown constraint severity + region loads → NEEDS_MORE_EVIDENCE
 //   5. ASSISTIVE_PROTOKOL → DEVICE_FIT evaluation
 //   6. Gait instability + unaided aerobic walking → NEEDS_MORE_EVIDENCE
-//   7. CV risk + non-HIIT resistance → SAFE_WITH_MODIFICATION
-//   8. Constraint × modality × intensity grid
-//   9. SAFE
+//   7. Balance/stability exercises + gait instability → SAFE_WITH_MODIFICATION (required_capabilities)
+//   8. CV risk + non-HIIT resistance → SAFE_WITH_MODIFICATION
+//   9. Constraint × modality × intensity grid
+//  10. SAFE
 
 function evaluateSafetyGate(action, parsedConstraints, hasCvRiskRelevant, hasClinicalHistory, hasGaitInstability, mobilityProfile) {
   const intensity    = action.intensity ?? 'MODERATE';
@@ -369,7 +372,23 @@ function evaluateSafetyGate(action, parsedConstraints, hasCvRiskRelevant, hasCli
     }
   }
 
-  // 7. CV risk + non-HIIT resistance (tier 1–2) → SAFE_WITH_MODIFICATION
+  // 7. Balance/stability exercises require adequate gait capacity — SAFE_WITH_MODIFICATION when impaired.
+  // Balance and stability exercises ARE the treatment for gait instability (Sherrington et al., Cochrane 2019),
+  // so they are not blocked. But predicted gait instability requires supervised or supported environment.
+  // This covers: single-leg stand, tandem walk, single-leg step-down, unstable surface exercises.
+  if (hasGaitInstability && (action.protocol_type === 'BALANCE_PROTOKOL' || action.protocol_type === 'STABILITY_PROTOKOL')) {
+    return {
+      level: 'SAFE_WITH_MODIFICATION',
+      reason: 'Balance/stability exercise requires adequate gait capacity; gait instability predicted — therapeutic target, but supervised or wall-supported environment required.',
+      modifications_suggested: [
+        'Use stable wall or chair support for all single-leg variants',
+        'Begin with eyes-open only; progress to eyes-closed only when stable',
+        'Supervised or near-support setting for first sessions',
+      ],
+    };
+  }
+
+  // 8. CV risk + non-HIIT resistance (tier 1–2) → SAFE_WITH_MODIFICATION
   if (hasCvRiskRelevant && action.protocol_type === 'SILOVY_PROTOKOL' && !isHighIntensity) {
     return {
       level: 'SAFE_WITH_MODIFICATION',
