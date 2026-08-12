@@ -24,6 +24,7 @@ import { inference }                 from './inference.js';
 import { computeProjections }        from './projections.js';
 import { buildInformationNeeds }     from './informationNeeds.js';
 import { evaluateDecisionGate }      from './decisionGate.js';
+import { computeSystemConstraint }   from './systemConstraint.js';
 // selectNextBestEvidence is now called inside decisionGate.js per context
 
 const _dir = dirname(fileURLToPath(import.meta.url));
@@ -64,7 +65,8 @@ export async function runEngine(userId) {
 
   // decision_gate contains per-context CONTEXT_DECISION_GATE[] with embedded next_best_evidence.
   // Global aggregate: any_context_action_ready + contexts_needing_evidence.
-  const decision_gate = evaluateDecisionGate(node_states, projections, information_needs, ENGINE_VERSION);
+  const decision_gate      = evaluateDecisionGate(node_states, projections, information_needs, ENGINE_VERSION);
+  const system_constraint  = computeSystemConstraint(node_states, projections, decision_gate, ENGINE_VERSION);
 
   return {
     person,
@@ -74,5 +76,6 @@ export async function runEngine(userId) {
     projections,
     information_needs,
     decision_gate,
+    system_constraint,
   };
 }

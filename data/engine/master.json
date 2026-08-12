@@ -1,13 +1,14 @@
 {
-  "version": "1.1.0",
-  "description": "CHJ Engine v1 — 10-node Master. Metabolic + cardiovascular + functional/longevity chains.",
+  "version": "1.2.0",
+  "description": "CHJ Engine v1 — 11-node Master. Metabolic + cardiovascular + functional/longevity chains. v1.2.0: added changeability per node, added DYSLIPIDEMIA node.",
   "nodes": [
     {
       "id": "PHYSICAL_INACTIVITY",
       "label_cs": "Fyzická inaktivita",
       "label_en": "Physical inactivity",
       "category": "behavior",
-      "domain": "lifestyle"
+      "domain": "lifestyle",
+      "changeability": "high"
     },
     {
       "id": "EXCESS_ADIPOSITY",
@@ -15,6 +16,7 @@
       "label_en": "Excess adiposity",
       "category": "biological_state",
       "domain": "metabolic",
+      "changeability": "high",
       "note": "Broad category — does not map 1:1 to OBESITY. Subcategories (overweight/visceral/obese) require DataDictionary rules with waist_cm, body_fat_pct."
     },
     {
@@ -22,28 +24,43 @@
       "label_cs": "Inzulínová rezistence",
       "label_en": "Insulin resistance",
       "category": "mechanism",
-      "domain": "metabolic"
+      "domain": "metabolic",
+      "changeability": "medium"
     },
     {
       "id": "HYPERTENSION",
       "label_cs": "Arteriální hypertenze",
       "label_en": "Arterial hypertension",
       "category": "disease",
-      "domain": "cardiovascular"
+      "domain": "cardiovascular",
+      "changeability": "medium",
+      "note": "Controlled with antihypertensives; structural resolution requires addressing root causes (IR, physical inactivity, excess adiposity)."
     },
     {
       "id": "ENDOTHELIAL_DYSFUNCTION",
       "label_cs": "Endoteliální dysfunkce",
       "label_en": "Endothelial dysfunction",
       "category": "mechanism",
-      "domain": "cardiovascular"
+      "domain": "cardiovascular",
+      "changeability": "medium"
     },
     {
       "id": "ERECTILE_DYSFUNCTION",
       "label_cs": "Erektilní dysfunkce",
       "label_en": "Erectile dysfunction",
       "category": "functional_outcome",
-      "domain": "cardiovascular"
+      "domain": "cardiovascular",
+      "changeability": "medium",
+      "note": "PDE5 inhibitors manage symptom; structural resolution requires upstream endothelial improvement."
+    },
+    {
+      "id": "DYSLIPIDEMIA",
+      "label_cs": "Dyslipidémie",
+      "label_en": "Dyslipidemia",
+      "category": "disease",
+      "domain": "cardiovascular",
+      "changeability": "high",
+      "note": "MISSING DOWNSTREAM MODEL: causal path DYSLIPIDEMIA → ATHEROSCLEROSIS → CVD is not modeled in this master slice. ATHEROSCLEROSIS node is absent. Until added, causal reach of DYSLIPIDEMIA cannot be evaluated and it cannot be a constraint candidate."
     },
     {
       "id": "PHYSICAL_DECONDITIONING",
@@ -51,6 +68,7 @@
       "label_en": "Physical deconditioning",
       "category": "biological_state",
       "domain": "functional",
+      "changeability": "high",
       "note": "Progressive loss of fitness from sustained inactivity. Upstream: PHYSICAL_INACTIVITY."
     },
     {
@@ -59,6 +77,7 @@
       "label_en": "Low muscle strength",
       "category": "biological_state",
       "domain": "musculoskeletal",
+      "changeability": "high",
       "note": "Requires direct evidence (functional test or validated self-report). Must NOT be activated from age alone."
     },
     {
@@ -67,6 +86,7 @@
       "label_en": "Reduced functional reserve",
       "category": "mechanism",
       "domain": "functional",
+      "changeability": "medium",
       "note": "Downstream of LOW_MUSCLE_STRENGTH. Represents the shrinking buffer between current capacity and functional thresholds."
     },
     {
@@ -75,6 +95,7 @@
       "label_en": "Loss of floor-rise ability",
       "category": "functional_outcome",
       "domain": "musculoskeletal",
+      "changeability": "medium",
       "note": "Projection target. Directly testable: can the person rise from floor without using hands/support? (Dekatlon: vstat_ze_zeme)"
     }
   ],
