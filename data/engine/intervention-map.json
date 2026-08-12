@@ -1,12 +1,18 @@
 {
-  "version": "0.1",
-  "description": "MASTER_NODE → INTERVENTION_OPTION[] bridge for NEXT_BEST_ACTION v0.1. v0.1 covers PHYSICAL_INACTIVITY only.",
+  "version": "0.2",
+  "description": "MASTER_NODE → INTERVENTION_OPTION[] bridge for NEXT_BEST_ACTION v0.1. v0.2: leverage_affinity per (leverage_node, intervention) pair.",
   "mappings": {
     "PHYSICAL_INACTIVITY": {
       "interventions": [
         {
           "id": "BREAK_UP_SEDENTARY_TIME",
           "target_leverage_node": "PHYSICAL_INACTIVITY",
+          "leverage_affinity": {
+            "level": "PRIMARY",
+            "rationale": "Přerušení sezení přímočaře adresuje sedentární chování — každý pohybový blok snižuje kontinuální dobu fyzické nečinnosti.",
+            "evidence_quality": "moderate",
+            "evidence_refs": ["Biswas et al., Ann Intern Med 2015 (sedentary time meta-analysis)"]
+          },
           "protocol_types": ["TRAINING_PROTOKOL"],
           "tag_filter": ["kardio"],
           "goal_branches": ["SURVIVAL_HEALTHSPAN", "FUNCTIONAL_INDEPENDENCE"],
@@ -15,6 +21,12 @@
         {
           "id": "AEROBIC_TRAINING",
           "target_leverage_node": "PHYSICAL_INACTIVITY",
+          "leverage_affinity": {
+            "level": "PRIMARY",
+            "rationale": "Aerobní trénink přímo nahrazuje fyzickou nečinnost strukturovanou kardiovaskulární aktivitou. Nejsilnější evidence base pro redukci celkové mortality a zlepšení VO2max u sedentárních jedinců.",
+            "evidence_quality": "strong",
+            "evidence_refs": ["Warburton et al., CMAJ 2006", "Blair et al., JAMA 1995"]
+          },
           "protocol_types": ["KARDIO_PROTOKOL", "VYTRVALOST_PROTOKOL"],
           "goal_branches": ["SURVIVAL_HEALTHSPAN", "FUNCTIONAL_INDEPENDENCE"],
           "mechanism_targets": ["PHYSICAL_INACTIVITY", "HYPERTENSION", "INSULIN_RESISTANCE", "ENDOTHELIAL_DYSFUNCTION"]
@@ -22,6 +34,12 @@
         {
           "id": "RESISTANCE_TRAINING",
           "target_leverage_node": "PHYSICAL_INACTIVITY",
+          "leverage_affinity": {
+            "level": "PRIMARY",
+            "rationale": "Silový trénink přímo adresuje fyzickou nečinnost jako strukturovaná pohybová aktivita. Přidává funkční dimenzi — sílu a neuromuskulární adaptaci — která u inaktivních jedinců koreluje s nezávislostí v ADL.",
+            "evidence_quality": "strong",
+            "evidence_refs": ["Westcott, Curr Sports Med Rep 2012"]
+          },
           "protocol_types": ["SILOVY_PROTOKOL"],
           "goal_branches": ["FUNCTIONAL_INDEPENDENCE", "SURVIVAL_HEALTHSPAN"],
           "mechanism_targets": ["PHYSICAL_INACTIVITY", "LOW_MUSCLE_STRENGTH", "PHYSICAL_DECONDITIONING", "INSULIN_RESISTANCE"]
@@ -29,6 +47,12 @@
         {
           "id": "DAILY_MOVEMENT",
           "target_leverage_node": "PHYSICAL_INACTIVITY",
+          "leverage_affinity": {
+            "level": "PRIMARY",
+            "rationale": "Každodenní pohyb přímo odstraňuje fyzickou nečinnost zvýšením NEAT (non-exercise activity thermogenesis) a celkové pohybové dávky v průběhu dne.",
+            "evidence_quality": "moderate",
+            "evidence_refs": ["Levine, Best Pract Res Clin Endocrinol Metab 2002"]
+          },
           "protocol_types": ["TRAINING_PROTOKOL"],
           "goal_branches": ["SURVIVAL_HEALTHSPAN", "FUNCTIONAL_INDEPENDENCE"],
           "mechanism_targets": ["PHYSICAL_INACTIVITY", "EXCESS_ADIPOSITY", "PHYSICAL_DECONDITIONING"]
@@ -40,6 +64,12 @@
         {
           "id": "AEROBIC_TRAINING",
           "target_leverage_node": "EXCESS_ADIPOSITY",
+          "leverage_affinity": {
+            "level": "PRIMARY",
+            "rationale": "Aerobní trénink přímo mobilizuje tukové zásoby skrze zvýšený energetický výdej a β-oxidaci mastných kyselin. Chronický aerobní deficit vytváří kalorický schodek, který vede k redukci tukové hmoty — zejména viscerálního tuku. Nejsilnější evidence base pro redukci adipozity.",
+            "evidence_quality": "strong",
+            "evidence_refs": ["Donnelly et al., Med Sci Sports Exerc 2009 (ACSM Position Stand)", "Ross & Janssen, Am J Clin Nutr 2001"]
+          },
           "protocol_types": ["KARDIO_PROTOKOL", "VYTRVALOST_PROTOKOL"],
           "goal_branches": ["SURVIVAL_HEALTHSPAN", "FUNCTIONAL_INDEPENDENCE"],
           "mechanism_targets": ["EXCESS_ADIPOSITY", "PHYSICAL_INACTIVITY", "HYPERTENSION", "INSULIN_RESISTANCE", "ENDOTHELIAL_DYSFUNCTION"]
@@ -47,6 +77,12 @@
         {
           "id": "DAILY_MOVEMENT",
           "target_leverage_node": "EXCESS_ADIPOSITY",
+          "leverage_affinity": {
+            "level": "CONTRIBUTORY",
+            "rationale": "Každodenní pohyb zvyšuje NEAT (non-exercise activity thermogenesis), který může tvořit 15–50 % celkového denního energetického výdeje. Kumulativní efekt delších procházek a pohybových aktivit přispívá k redukci adipozity, i když na nižší intenzitě než strukturovaný aerobní trénink.",
+            "evidence_quality": "moderate",
+            "evidence_refs": ["Levine et al., Science 1999 (NEAT)", "Pontzer et al., Curr Biol 2016"]
+          },
           "protocol_types": ["TRAINING_PROTOKOL"],
           "goal_branches": ["SURVIVAL_HEALTHSPAN", "FUNCTIONAL_INDEPENDENCE"],
           "mechanism_targets": ["EXCESS_ADIPOSITY", "PHYSICAL_INACTIVITY", "PHYSICAL_DECONDITIONING"]
@@ -54,6 +90,12 @@
         {
           "id": "RESISTANCE_TRAINING",
           "target_leverage_node": "EXCESS_ADIPOSITY",
+          "leverage_affinity": {
+            "level": "CONTRIBUTORY",
+            "rationale": "Resistenční trénink zachovává a zvyšuje lean mass, čímž zvyšuje bazální metabolismus a příznivě mění tělesnou kompozici (poměr tuk/sval). Přímý účinek na celkovou tukovou hmotu je menší než u aerobního tréninku, ale kompoziční a metabolický benefit je klinicky relevantní — zejména prevence sarkopenie při redukci váhy a zlepšení inzulínové senzitivity skrze svalový glukózový uptake.",
+            "evidence_quality": "moderate",
+            "evidence_refs": ["Willis et al., JAMA Intern Med 2012 (STRRIDE-AT/RT)", "Hunter et al., Am J Clin Nutr 2000"]
+          },
           "protocol_types": ["SILOVY_PROTOKOL"],
           "goal_branches": ["FUNCTIONAL_INDEPENDENCE", "SURVIVAL_HEALTHSPAN"],
           "mechanism_targets": ["EXCESS_ADIPOSITY", "INSULIN_RESISTANCE", "LOW_MUSCLE_STRENGTH", "PHYSICAL_DECONDITIONING"]
@@ -61,6 +103,12 @@
         {
           "id": "BREAK_UP_SEDENTARY_TIME",
           "target_leverage_node": "EXCESS_ADIPOSITY",
+          "leverage_affinity": {
+            "level": "ACCESSORY",
+            "rationale": "Krátké pohybové přestávky při sezení zlepšují postprandiální metabolismus glukózy a citlivost na inzulín — metabolické faktory relevantní pro adipozitu. Přímý vliv na tukovou hmotu při krátkých přestávkách je minimální; hlavní hodnota spočívá v přerušení sedentárního patternu jako podmínky pro adherenci k větším pohybovým dávkám.",
+            "evidence_quality": "emerging",
+            "evidence_refs": ["Dunstan et al., Diabetes Care 2012", "Biswas et al., Ann Intern Med 2015"]
+          },
           "protocol_types": ["TRAINING_PROTOKOL"],
           "tag_filter": ["kardio"],
           "goal_branches": ["SURVIVAL_HEALTHSPAN", "FUNCTIONAL_INDEPENDENCE"],

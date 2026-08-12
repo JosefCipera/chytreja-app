@@ -34,6 +34,7 @@ if (nba.status === 'SELECTED') {
     console.log(`  │    mods:          ${s.safety.modifications_suggested.join(' | ')}`);
   }
   console.log(`  │  MME:             ${s.min_meaningful_effect.level} — ${s.min_meaningful_effect.reason}`);
+  console.log(`  │  leverage_affinity: ${s.leverage_affinity}`);
   console.log(`  │  effect_leverage: ${s.effect_on_leverage}`);
   console.log(`  │  goal_impact:     ${s.goal_impact.branches.join(', ')}`);
   console.log(`  │  feasibility:     ${s.feasibility}`);
@@ -46,18 +47,20 @@ if (nba.status === 'SELECTED') {
   console.log(`  Viable / non-viable: ${nba.viable_count} / ${nba.non_viable_count}`);
 
   console.log('\n  Top 5 viable (selection order — same sort as selectBestCandidate):');
-  const SAFETY_RANK = { SAFE: 5, SAFE_WITH_MODIFICATION: 4, NEEDS_MORE_EVIDENCE: 3, NEEDS_CLINICAL_CLEARANCE: 2, CONTRAINDICATED: 1 };
-  const MME_RANK    = { MEANINGFUL: 3, PLAUSIBLE: 2, UNKNOWN: 1 };
-  const LEV_RANK    = { high: 3, medium: 2, low: 1 };
-  const FEAS_RANK   = { high: 3, medium: 2, low: 1 };
-  const FRIC_RANK   = { low: 3, medium: 2, high: 1 };
-  const TIME_RANK   = { days: 3, days_to_weeks: 2, weeks: 1, months: 0 };
+  const SAFETY_RANK   = { SAFE: 5, SAFE_WITH_MODIFICATION: 4, NEEDS_MORE_EVIDENCE: 3, NEEDS_CLINICAL_CLEARANCE: 2, CONTRAINDICATED: 1 };
+  const MME_RANK      = { MEANINGFUL: 3, PLAUSIBLE: 2, UNKNOWN: 1 };
+  const AFFINITY_RANK = { PRIMARY: 4, CONTRIBUTORY: 3, ACCESSORY: 2, UNKNOWN: 1 };
+  const LEV_RANK      = { high: 3, medium: 2, low: 1 };
+  const FEAS_RANK     = { high: 3, medium: 2, low: 1 };
+  const FRIC_RANK     = { low: 3, medium: 2, high: 1 };
+  const TIME_RANK     = { days: 3, days_to_weeks: 2, weeks: 1, months: 0 };
   const sorted = [...nba.all_candidates]
     .filter(c => ['SAFE','SAFE_WITH_MODIFICATION'].includes(c.safety.level))
     .sort((a, b) => {
       let d;
       d = SAFETY_RANK[b.safety.level] - SAFETY_RANK[a.safety.level]; if (d) return d;
       d = MME_RANK[b.min_meaningful_effect.level] - MME_RANK[a.min_meaningful_effect.level]; if (d) return d;
+      d = AFFINITY_RANK[b.leverage_affinity] - AFFINITY_RANK[a.leverage_affinity]; if (d) return d;
       d = LEV_RANK[b.effect_on_leverage] - LEV_RANK[a.effect_on_leverage]; if (d) return d;
       d = b.goal_impact.branches.length - a.goal_impact.branches.length; if (d) return d;
       d = FEAS_RANK[b.feasibility] - FEAS_RANK[a.feasibility]; if (d) return d;
@@ -67,7 +70,8 @@ if (nba.status === 'SELECTED') {
     .slice(0, 5);
   for (const c of sorted) {
     const label = (c.label ?? c.action_id).slice(0, 40).padEnd(42);
-    console.log(`    ${label} safety=${c.safety.level.padEnd(24)} MME=${c.min_meaningful_effect.level.padEnd(11)} friction=${c.friction} ttf=${c.time_to_feedback}`);
+    const aff = (c.leverage_affinity ?? 'UNKNOWN').padEnd(12);
+    console.log(`    ${label} affinity=${aff} MME=${c.min_meaningful_effect.level.padEnd(11)} friction=${c.friction} ttf=${c.time_to_feedback}`);
   }
 } else {
   console.log(`  reason: ${nba.reason}`);

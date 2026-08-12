@@ -4,8 +4,9 @@
 //   buildCandidates()   → ACTION_CANDIDATE[] from existing longevity_actions
 //   evaluateSafetyGate() per candidate
 //   evaluateMinMeaningfulEffect() per candidate
-//   selectNextBestAction() → ordinal selection: safety → MME → effect_on_leverage
-//                           → goal_impact → feasibility → friction → time_to_feedback
+//   selectNextBestAction() → ordinal selection: safety → MME → leverage_affinity
+//                           → effect_on_leverage → goal_impact → feasibility
+//                           → friction → time_to_feedback
 //
 // Constraint source: user_constraints table (PERSON_ACTION_CONSTRAINT, no new table).
 // Safety gate: separate layer, does NOT replace decisionGate.actionability.
@@ -279,6 +280,10 @@ function assignIntervention(action, interventions) {
 
 // ── Scalar helpers ────────────────────────────────────────────────────────────
 
+function computeLeverageAffinity(intervention) {
+  return intervention?.leverage_affinity?.level ?? 'UNKNOWN';
+}
+
 function computeEffectOnLeverage(intervention, leverageNodeId) {
   if (!intervention) return 'low';
   return intervention.mechanism_targets.includes(leverageNodeId) ? 'high' : 'medium';
@@ -338,6 +343,7 @@ function buildCandidates(actionPool, interventions, parsedConstraints, hasCvRisk
 
     const safety               = evaluateSafetyGate(action, parsedConstraints, hasCvRiskRelevant);
     const min_meaningful_effect = evaluateMinMeaningfulEffect(action, intervention);
+    const leverage_affinity    = computeLeverageAffinity(intervention);
     const effect_on_leverage   = computeEffectOnLeverage(intervention, leverageNodeId);
     const goal_impact          = computeGoalImpact(intervention);
     const feasibility          = computeFeasibility(safety);
@@ -356,6 +362,7 @@ function buildCandidates(actionPool, interventions, parsedConstraints, hasCvRisk
       tier:                 action.tier,
       safety,
       min_meaningful_effect,
+      leverage_affinity,
       effect_on_leverage,
       goal_impact,
       feasibility,
@@ -371,13 +378,15 @@ function buildCandidates(actionPool, interventions, parsedConstraints, hasCvRisk
 }
 
 // ── Ordinal selection ─────────────────────────────────────────────────────────
-// Order: safety → MME → effect_on_leverage → goal_impact (CV-priority) → feasibility → friction → time_to_feedback
+// Order: safety → MME → leverage_affinity → effect_on_leverage → goal_impact
+//        → feasibility → friction → time_to_feedback
 
-const MME_RANK    = { MEANINGFUL: 3, PLAUSIBLE: 2, UNKNOWN: 1 };
-const LEVER_RANK  = { high: 3, medium: 2, low: 1 };
-const FEAS_RANK   = { high: 3, medium: 2, low: 1, none: 0 };
-const FRIC_RANK   = { low: 3, medium: 2, high: 1 };
-const TIME_RANK   = { days: 3, days_to_weeks: 2, weeks: 1, months: 0 };
+const MME_RANK      = { MEANINGFUL: 3, PLAUSIBLE: 2, UNKNOWN: 1 };
+const AFFINITY_RANK = { PRIMARY: 4, CONTRIBUTORY: 3, ACCESSORY: 2, UNKNOWN: 1 };
+const LEVER_RANK    = { high: 3, medium: 2, low: 1 };
+const FEAS_RANK     = { high: 3, medium: 2, low: 1, none: 0 };
+const FRIC_RANK     = { low: 3, medium: 2, high: 1 };
+const TIME_RANK     = { days: 3, days_to_weeks: 2, weeks: 1, months: 0 };
 
 function selectBestCandidate(viable, hasCvRiskContext) {
   if (viable.length === 0) return null;
@@ -391,11 +400,15 @@ function selectBestCandidate(viable, hasCvRiskContext) {
     const md = MME_RANK[b.min_meaningful_effect.level] - MME_RANK[a.min_meaningful_effect.level];
     if (md !== 0) return md;
 
-    // 3. Effect on leverage
+    // 3. Leverage affinity — how directly the intervention acts on the leverage node
+    const afd = AFFINITY_RANK[b.leverage_affinity] - AFFINITY_RANK[a.leverage_affinity];
+    if (afd !== 0) return afd;
+
+    // 4. Effect on leverage
     const ed = LEVER_RANK[b.effect_on_leverage] - LEVER_RANK[a.effect_on_leverage];
     if (ed !== 0) return ed;
 
-    // 4. Goal impact — SURVIVAL_HEALTHSPAN priority when CV risk context active
+    // 5. Goal impact — SURVIVAL_HEALTHSPAN priority when CV risk context active
     if (hasCvRiskContext) {
       const cvd = (b.goal_impact.survival_healthspan ? 1 : 0) - (a.goal_impact.survival_healthspan ? 1 : 0);
       if (cvd !== 0) return cvd;
@@ -403,15 +416,15 @@ function selectBestCandidate(viable, hasCvRiskContext) {
     const bd = b.goal_impact.branches.length - a.goal_impact.branches.length;
     if (bd !== 0) return bd;
 
-    // 5. Feasibility
+    // 6. Feasibility
     const fd = FEAS_RANK[b.feasibility] - FEAS_RANK[a.feasibility];
     if (fd !== 0) return fd;
 
-    // 6. Friction (lower is better → higher FRIC_RANK wins)
+    // 7. Friction (lower is better → higher FRIC_RANK wins)
     const frd = FRIC_RANK[b.friction] - FRIC_RANK[a.friction];
     if (frd !== 0) return frd;
 
-    // 7. Time to feedback (faster is better)
+    // 8. Time to feedback (faster is better)
     return TIME_RANK[b.time_to_feedback] - TIME_RANK[a.time_to_feedback];
   })[0] ?? null;
 }
