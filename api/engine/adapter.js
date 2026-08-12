@@ -125,6 +125,10 @@ export async function fetchHealthData(userId) {
     onboarding_inputs: Object.fromEntries(
       (nodeInputs || []).map(n => [n.question_id, n.value])
     ),
+    // True if user_health_profile row exists — proxy for "person has engaged with health history".
+    // Used by Safety Gate: VIGOROUS/HIIT intensity requires clinical_history_documented = true
+    // to proceed without NEEDS_MORE_EVIDENCE (cardiac safety cannot be assumed without baseline).
+    clinical_history_documented: Boolean(hp),
   };
 
   // ── OBSERVATIONS ──────────────────────────────────────────────────────────
@@ -186,7 +190,7 @@ export async function fetchActionPool(protocolTypes) {
   );
   const { data, error } = await supabase
     .from('longevity_actions')
-    .select('id, node_id, label, protocol_type, type, duration, reps, tier, tags, constraint_exclude')
+    .select('id, node_id, label, protocol_type, type, duration, reps, tier, tags, constraint_exclude, intensity')
     .eq('active', true)
     .in('protocol_type', protocolTypes);
   if (error) throw new Error(`fetchActionPool: ${error.message}`);

@@ -131,11 +131,22 @@ function actionLoadsRegion(action, regionKey) {
 }
 
 // ── Safety gate ───────────────────────────────────────────────────────────────
+// Evaluation order:
+//   1. Hard constraint_exclude → CONTRAINDICATED
+//   2. VIGOROUS/HIIT + confirmed CV risk → NEEDS_CLINICAL_CLEARANCE
+//   3. VIGOROUS/HIIT + no clinical history → NEEDS_MORE_EVIDENCE
+//      (cardiac safety cannot be assumed without a documented baseline)
+//   4. Unknown constraint severity + region loads → NEEDS_MORE_EVIDENCE
+//   5. CV risk + non-HIIT resistance → SAFE_WITH_MODIFICATION
+//   6. Constraint × modality × intensity grid (severity × intensity 2D matrix)
+//   7. SAFE
 
-function evaluateSafetyGate(action, parsedConstraints, hasCvRiskRelevant) {
-  const excludeList = action.constraint_exclude ?? [];
+function evaluateSafetyGate(action, parsedConstraints, hasCvRiskRelevant, hasClinicalHistory) {
+  const intensity    = action.intensity ?? 'MODERATE';
+  const isHighIntensity = intensity === 'VIGOROUS' || intensity === 'HIGH_INTENSITY_INTERVAL';
+  const excludeList  = action.constraint_exclude ?? [];
 
-  // 1. Hard exclusion via constraint_exclude — CONTRAINDICATED regardless of severity
+  // 1. Hard constraint_exclude — CONTRAINDICATED regardless of severity
   for (const c of parsedConstraints) {
     if (excludeList.includes(c.key)) {
       return {
@@ -146,61 +157,91 @@ function evaluateSafetyGate(action, parsedConstraints, hasCvRiskRelevant) {
     }
   }
 
-  // 2. High-intensity resistance or interval training with confirmed CV risk
-  const isHighIntensity = action.tier >= 3 || (action.tags ?? []).includes('interval') || (action.tags ?? []).includes('norsky');
-  if (hasCvRiskRelevant && (action.protocol_type === 'SILOVY_PROTOKOL' || isHighIntensity)) {
+  // 2. VIGOROUS/HIIT + confirmed CV risk → NEEDS_CLINICAL_CLEARANCE
+  if (isHighIntensity && hasCvRiskRelevant) {
     return {
       level: 'NEEDS_CLINICAL_CLEARANCE',
-      reason: 'High-intensity training with confirmed cardiovascular risk (RISK_RELEVANT). Obtain physician clearance before starting.',
+      reason: `${intensity} intensity with confirmed cardiovascular risk. Obtain physician clearance before starting.`,
       modifications_suggested: [
         'Consult cardiologist or GP before beginning',
-        'Start with tier 1–2 intensity first',
-        'Monitor blood pressure response',
+        'Start with LIGHT or MODERATE intensity first',
+        'Monitor blood pressure and heart rate response',
       ],
     };
   }
 
-  // 3. Constraint with unknown severity that would load the body region
+  // 3. VIGOROUS/HIIT + no documented clinical history → NEEDS_MORE_EVIDENCE
+  // Cardiac safety at high intensity cannot be assumed without a baseline health assessment.
+  if (isHighIntensity && !hasClinicalHistory) {
+    return {
+      level: 'NEEDS_MORE_EVIDENCE',
+      reason: `${intensity} intensity requires a documented health baseline — cardiac safety cannot be assumed without one. Complete your health profile (diagnoses, medications, known cardiac history) before attempting ${intensity.toLowerCase().replace('_', ' ')} exercise.`,
+      modifications_suggested: [
+        'Fill in health profile (diagnoses, medications)',
+        'Start with MODERATE intensity actions until baseline is documented',
+      ],
+    };
+  }
+
+  // 4. Unknown constraint severity that would load the body region
   for (const c of parsedConstraints) {
     if (c.severity === null && actionLoadsRegion(action, c.key)) {
       return {
         level: 'NEEDS_MORE_EVIDENCE',
-        reason: `Constraint on "${c.key}" with unknown severity — cannot assess safe loading without more information.`,
-        modifications_suggested: ['Clarify injury severity before proceeding'],
+        reason: `Constraint on "${c.key}" with unknown severity — cannot assess safe loading at ${intensity} intensity without more information.`,
+        modifications_suggested: ['Clarify injury severity (mild / moderate / severe) before proceeding'],
       };
     }
   }
 
-  // 4. Moderate resistance with CV risk (tier 1–2)
-  if (hasCvRiskRelevant && action.protocol_type === 'SILOVY_PROTOKOL') {
+  // 5. CV risk + non-HIIT resistance (tier 1–2) → SAFE_WITH_MODIFICATION
+  if (hasCvRiskRelevant && action.protocol_type === 'SILOVY_PROTOKOL' && !isHighIntensity) {
     return {
       level: 'SAFE_WITH_MODIFICATION',
-      reason: 'Resistance training with confirmed cardiovascular risk. Safe with BP monitoring and no Valsalva maneuver.',
+      reason: 'Resistance training with confirmed cardiovascular risk. Safe with blood pressure monitoring and no Valsalva maneuver.',
       modifications_suggested: [
         'Monitor blood pressure before and after',
-        'Avoid Valsalva (breath-holding)',
+        'Avoid Valsalva (breath-holding during exertion)',
         'Stop if chest pain, severe dyspnea, or dizziness',
       ],
     };
   }
 
-  // 5. Body constraint that loads the region — severity-graded response
+  // 6. Constraint × modality × intensity grid
+  // Severity (rows) × intensity level (cols) → safety outcome.
+  // Modality (which region is loaded) already handled by actionLoadsRegion().
   for (const c of parsedConstraints) {
-    if (actionLoadsRegion(action, c.key)) {
-      const level = c.severity === 'severe'   ? 'NEEDS_CLINICAL_CLEARANCE'
-                  : c.severity === 'moderate' ? 'SAFE_WITH_MODIFICATION'
-                  : 'SAFE'; // mild → proceed; low-impact variants preferred but not required
-      const mods = c.severity === 'mild'
-        ? ['Prefer low-impact variant (e.g. cycling over running)', 'Stop if discomfort increases']
-        : c.severity === 'moderate'
-        ? ['Consult physiotherapist first', 'Avoid high-impact variants', 'Stop immediately if pain increases']
-        : ['Obtain physician clearance before starting'];
-      return {
-        level,
-        reason: `${c.severity ?? 'unknown'} constraint on "${c.key}" — protocol loads this region. ${c.severity === 'mild' ? 'Mild: proceed with preferred low-impact variant.' : 'Requires modification.'}`,
-        modifications_suggested: mods,
-      };
+    if (!actionLoadsRegion(action, c.key)) continue;
+
+    let level;
+    let mods;
+
+    if (c.severity === 'severe') {
+      level = 'NEEDS_CLINICAL_CLEARANCE';
+      mods  = ['Obtain physician or physiotherapist clearance before any loading of this region'];
+    } else if (c.severity === 'moderate') {
+      level = isHighIntensity ? 'NEEDS_CLINICAL_CLEARANCE' : 'SAFE_WITH_MODIFICATION';
+      mods  = isHighIntensity
+        ? ['Obtain physiotherapist clearance before high-intensity loading', 'Consider MODERATE intensity alternative']
+        : ['Consult physiotherapist first', 'Avoid high-impact variants', 'Stop immediately if pain increases'];
+    } else if (c.severity === 'mild') {
+      // mild + VIGOROUS/HIIT → warrants modification (higher joint stress)
+      // mild + MODERATE/LIGHT → proceed; low-impact variant preferred
+      level = isHighIntensity ? 'SAFE_WITH_MODIFICATION' : 'SAFE';
+      mods  = isHighIntensity
+        ? ['Prefer low-impact variant (e.g. cycling over running or uphill)', 'Reduce intensity if discomfort appears', 'Stop if pain increases']
+        : ['Prefer low-impact variant (e.g. cycling over running)', 'Stop if discomfort increases'];
+    } else {
+      // null severity already caught by rule 4; shouldn't reach here
+      level = 'NEEDS_MORE_EVIDENCE';
+      mods  = ['Clarify injury severity before proceeding'];
     }
+
+    return {
+      level,
+      reason: `${c.severity ?? 'unknown'} constraint on "${c.key}" — this modality loads the region at ${intensity} intensity.`,
+      modifications_suggested: mods,
+    };
   }
 
   return {
@@ -328,7 +369,7 @@ function computeFeasibility(safety) {
 
 // ── Candidate builder ─────────────────────────────────────────────────────────
 
-function buildCandidates(actionPool, interventions, parsedConstraints, hasCvRiskRelevant, leverageNodeId) {
+function buildCandidates(actionPool, interventions, parsedConstraints, hasCvRiskRelevant, hasClinicalHistory, leverageNodeId) {
   const candidates = [];
 
   for (const action of actionPool) {
@@ -341,7 +382,7 @@ function buildCandidates(actionPool, interventions, parsedConstraints, hasCvRisk
       if (!tags.some(t => intervention.tag_filter.includes(t))) continue;
     }
 
-    const safety               = evaluateSafetyGate(action, parsedConstraints, hasCvRiskRelevant);
+    const safety               = evaluateSafetyGate(action, parsedConstraints, hasCvRiskRelevant, hasClinicalHistory);
     const min_meaningful_effect = evaluateMinMeaningfulEffect(action, intervention);
     const leverage_affinity    = computeLeverageAffinity(intervention);
     const effect_on_leverage   = computeEffectOnLeverage(intervention, leverageNodeId);
@@ -449,13 +490,15 @@ export function computeNextBestAction({
     (g.actionable_findings ?? []).some(f => f.actionability === 'RISK_RELEVANT')
   );
 
-  const parsedConstraints = parsePersonConstraints(personConstraints);
+  const hasClinicalHistory = Boolean(clinicalHistory?.clinical_history_documented);
+  const parsedConstraints  = parsePersonConstraints(personConstraints);
 
   const candidates = buildCandidates(
     actionPool,
     interventions,
     parsedConstraints,
     hasCvRiskRelevant,
+    hasClinicalHistory,
     leverageNodeId,
   );
 
@@ -494,14 +537,15 @@ export function computeNextBestAction({
   const selected = selectBestCandidate(viable, hasCvRiskRelevant);
 
   return {
-    status:              'SELECTED',
+    status:                       'SELECTED',
     selected,
-    viable_count:        viable.length,
-    non_viable_count:    non_viable.length,
-    parsed_constraints:  parsedConstraints,
-    cv_risk_context:     hasCvRiskRelevant,
-    all_candidates:      candidates,
-    evaluated_at:        now,
-    engine_version:      engineVersion,
+    viable_count:                 viable.length,
+    non_viable_count:             non_viable.length,
+    parsed_constraints:           parsedConstraints,
+    cv_risk_context:              hasCvRiskRelevant,
+    clinical_history_documented:  hasClinicalHistory,
+    all_candidates:               candidates,
+    evaluated_at:                 now,
+    engine_version:               engineVersion,
   };
 }

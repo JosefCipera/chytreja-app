@@ -43,6 +43,7 @@ if (nba.status === 'SELECTED') {
   console.log(`  └────`);
 
   console.log(`\n  CV risk context:   ${nba.cv_risk_context}`);
+  console.log(`  Clinical history:  ${nba.clinical_history_documented}`);
   console.log(`  Parsed constraints: ${JSON.stringify(nba.parsed_constraints)}`);
   console.log(`  Viable / non-viable: ${nba.viable_count} / ${nba.non_viable_count}`);
 
