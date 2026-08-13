@@ -12,7 +12,7 @@
 
 CREATE TABLE IF NOT EXISTS action_assignments (
   id                      uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id                 uuid        NOT NULL,
+  user_id                 text        NOT NULL,
   action_id               text        NOT NULL REFERENCES longevity_actions(id),
   intervention_id         text        NOT NULL,
   selected_leverage_node  text        NOT NULL,

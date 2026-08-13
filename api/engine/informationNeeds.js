@@ -134,12 +134,45 @@ function inferUncertaintyReduction(neededFor, stateById) {
 }
 
 // Merges response-based information needs into the existing needs array.
-// Deduplicates by evidence_type — if a need for that type already exists from
-// node_states/projections, the response-based need is dropped (existing entry covers it).
+//
+// Dedup rule: evidence_type alone does NOT discard a response-derived need.
+// If the same evidence_type already exists from node_states/projections:
+//   → merge: append response reason + RESPONSE_EVALUATION source into the existing entry.
+// If the evidence_type is new: append as a standalone entry.
+//
+// Result: one entry per evidence_type, with sources[] and reasons[] preserving both origins.
 export function mergeResponseNeeds(informationNeeds, responseNeeds) {
-  const existingTypes = new Set(informationNeeds.map(n => n.evidence_type));
-  const toAdd = (responseNeeds ?? []).filter(n => !existingTypes.has(n.evidence_type));
-  return [...informationNeeds, ...toAdd];
+  if (!responseNeeds?.length) return informationNeeds;
+
+  const merged = informationNeeds.map(n => ({ ...n })); // shallow copy
+  const byType = new Map(merged.map(n => [n.evidence_type, n]));
+
+  for (const rn of responseNeeds) {
+    const existing = byType.get(rn.evidence_type);
+
+    if (existing) {
+      // Merge into existing entry — preserve both origins
+      existing.sources = [
+        ...(existing.sources ?? ['BASE_INFORMATION_NEED']),
+        'RESPONSE_EVALUATION',
+      ];
+      existing.reasons = [
+        ...(existing.reasons ?? [existing.explanation].filter(Boolean)),
+        rn.explanation,
+      ];
+      // needed_for: append response entity if not already present
+      const nfKey = e => `${e.entity_type}:${e.entity_id}`;
+      const existingKeys = new Set((existing.needed_for ?? []).map(nfKey));
+      for (const nf of (rn.needed_for ?? [])) {
+        if (!existingKeys.has(nfKey(nf))) existing.needed_for.push(nf);
+      }
+    } else {
+      merged.push({ ...rn, sources: ['RESPONSE_EVALUATION'], reasons: [rn.explanation] });
+      byType.set(rn.evidence_type, merged[merged.length - 1]);
+    }
+  }
+
+  return merged;
 }
 
 export function buildInformationNeeds(nodeStates, projections) {
