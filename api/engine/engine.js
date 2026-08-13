@@ -18,15 +18,16 @@
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import { fetchHealthData, fetchActionPool, fetchPersonConstraints } from './adapter.js';
+import { fetchHealthData, fetchActionPool, fetchPersonConstraints, fetchActionAssignments } from './adapter.js';
 import { activation }                from './activation.js';
 import { inference }                 from './inference.js';
 import { computeProjections }        from './projections.js';
-import { buildInformationNeeds }     from './informationNeeds.js';
+import { buildInformationNeeds, mergeResponseNeeds } from './informationNeeds.js';
 import { evaluateDecisionGate }      from './decisionGate.js';
 import { computeSystemLeverage }     from './systemLeverage.js';
 import { computeSystemConstraint }   from './systemConstraint.js';
 import { computeNextBestAction }     from './nextBestAction.js';
+import { computeInterventionExposure, evaluateResponseEvaluations, buildResponseInformationNeeds } from './adherence.js';
 // selectNextBestEvidence is now called inside decisionGate.js per context
 
 const _dir = dirname(fileURLToPath(import.meta.url));
@@ -64,19 +65,34 @@ export async function runEngine(userId) {
     engine_version: ENGINE_VERSION,
   }));
 
-  const information_needs = buildInformationNeeds(node_states, projections);
+  const information_needs_base = buildInformationNeeds(node_states, projections);
 
   // decision_gate contains per-context CONTEXT_DECISION_GATE[] with embedded next_best_evidence.
   // Global aggregate: any_context_action_ready + contexts_needing_evidence.
-  const decision_gate       = evaluateDecisionGate(node_states, projections, information_needs, ENGINE_VERSION);
-  const system_leverage     = computeSystemLeverage(node_states, projections, decision_gate, ENGINE_VERSION);
-  const system_constraint   = computeSystemConstraint(node_states, projections, decision_gate, ENGINE_VERSION);
+  const decision_gate     = evaluateDecisionGate(node_states, projections, information_needs_base, ENGINE_VERSION);
+  const system_leverage   = computeSystemLeverage(node_states, projections, decision_gate, ENGINE_VERSION);
+  const system_constraint = computeSystemConstraint(node_states, projections, decision_gate, ENGINE_VERSION);
 
   // NEXT_BEST_ACTION — only when a leverage node is identified and has an intervention map
-  const leverageNodeId = system_leverage.selected?.node_id ?? null;
+  const leverageNodeId   = system_leverage.selected?.node_id ?? null;
   const interventionData = leverageNodeId ? INTERVENTION_MAP.mappings?.[leverageNodeId] : null;
 
-  let next_best_action = { status: 'NOT_COMPUTED', reason: `No intervention map for leverage node: ${leverageNodeId ?? 'none'}` };
+  let next_best_action      = { status: 'NOT_COMPUTED', reason: `No intervention map for leverage node: ${leverageNodeId ?? 'none'}` };
+  let intervention_exposure = [];
+  let response_evaluations  = [];
+
+  // ── Feedback Loop v0.1 ──────────────────────────────────────────────────────
+  // Fetch action_assignments regardless of interventionData (exposure may exist
+  // from a previous leverage node selection).
+  const actionAssignments = await fetchActionAssignments(userId, 30);
+  intervention_exposure   = computeInterventionExposure(actionAssignments);
+  response_evaluations    = evaluateResponseEvaluations(
+    intervention_exposure, INTERVENTION_MAP, observations, actionAssignments
+  );
+
+  // Merge INSUFFICIENT_OBSERVATION findings into information_needs
+  const response_info_needs = buildResponseInformationNeeds(response_evaluations);
+  const information_needs   = mergeResponseNeeds(information_needs_base, response_info_needs);
 
   if (interventionData) {
     const allProtocolTypes = [...new Set(interventionData.interventions.flatMap(i => i.protocol_types))];
@@ -93,13 +109,14 @@ export async function runEngine(userId) {
       decisionGate:     decision_gate,
       node_states,
       engineVersion:    ENGINE_VERSION,
+      responseHistory:  response_evaluations,
     });
   }
 
   return {
     person,
-    engine_version: ENGINE_VERSION,
-    evaluated_at:   now,
+    engine_version:       ENGINE_VERSION,
+    evaluated_at:         now,
     node_states,
     projections,
     information_needs,
@@ -107,5 +124,7 @@ export async function runEngine(userId) {
     system_leverage,
     system_constraint,
     next_best_action,
+    intervention_exposure,
+    response_evaluations,
   };
 }

@@ -133,6 +133,15 @@ function inferUncertaintyReduction(neededFor, stateById) {
   return 'low';
 }
 
+// Merges response-based information needs into the existing needs array.
+// Deduplicates by evidence_type — if a need for that type already exists from
+// node_states/projections, the response-based need is dropped (existing entry covers it).
+export function mergeResponseNeeds(informationNeeds, responseNeeds) {
+  const existingTypes = new Set(informationNeeds.map(n => n.evidence_type));
+  const toAdd = (responseNeeds ?? []).filter(n => !existingTypes.has(n.evidence_type));
+  return [...informationNeeds, ...toAdd];
+}
+
 export function buildInformationNeeds(nodeStates, projections) {
   // 1. Collect raw missing_evidence with provenance
   const raw = [];

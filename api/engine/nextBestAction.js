@@ -623,7 +623,7 @@ const FEAS_RANK     = { high: 3, medium: 2, low: 1, none: 0 };
 const FRIC_RANK     = { low: 3, medium: 2, high: 1 };
 const TIME_RANK     = { days: 3, days_to_weeks: 2, weeks: 1, months: 0 };
 
-function selectBestCandidate(viable, hasCvRiskContext) {
+function selectBestCandidate(viable, hasCvRiskContext, responseHistory) {
   if (viable.length === 0) return null;
 
   return viable.slice().sort((a, b) => {
@@ -660,7 +660,23 @@ function selectBestCandidate(viable, hasCvRiskContext) {
     if (frd !== 0) return frd;
 
     // 8. Time to feedback (faster is better)
-    return TIME_RANK[b.time_to_feedback] - TIME_RANK[a.time_to_feedback];
+    const td = TIME_RANK[b.time_to_feedback] - TIME_RANK[a.time_to_feedback];
+    if (td !== 0) return td;
+
+    // 9. Response history tiebreaker — applies only within interventions for the current leverage node.
+    //    CONSISTENT_WITH_EXPECTED_RESPONSE → prefer; NO_RESPONSE_OBSERVED → de-prioritize.
+    //    This step never overrides safety / leverage / affinity ranking (steps 1–8).
+    if (responseHistory?.length > 0) {
+      const score = c => {
+        if (responseHistory.some(r => r.intervention_id === c.intervention_id && r.result === 'CONSISTENT_WITH_EXPECTED_RESPONSE')) return 1;
+        if (responseHistory.some(r => r.intervention_id === c.intervention_id && r.result === 'NO_RESPONSE_OBSERVED')) return -1;
+        return 0;
+      };
+      const rs = score(b) - score(a);
+      if (rs !== 0) return rs;
+    }
+
+    return 0;
   })[0] ?? null;
 }
 
@@ -675,6 +691,7 @@ export function computeNextBestAction({
   decisionGate,
   node_states,
   engineVersion,
+  responseHistory,   // RESPONSE_EVALUATION[] — tiebreaker only, see selectBestCandidate step 9
 }) {
   const now = new Date().toISOString();
 
@@ -739,7 +756,7 @@ export function computeNextBestAction({
     };
   }
 
-  const selected = selectBestCandidate(viable, hasCvRiskRelevant);
+  const selected = selectBestCandidate(viable, hasCvRiskRelevant, responseHistory);
 
   return {
     status:                       'SELECTED',

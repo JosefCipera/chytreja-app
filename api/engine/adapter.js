@@ -210,3 +210,19 @@ export async function fetchPersonConstraints(userId) {
   if (error) throw new Error(`fetchPersonConstraints: ${error.message}`);
   return data ?? [];
 }
+
+export async function fetchActionAssignments(userId, days = 30) {
+  const supabase = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+  );
+  const since = new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
+  const { data, error } = await supabase
+    .from('action_assignments')
+    .select('id, action_id, intervention_id, selected_leverage_node, engine_version, status, assigned_at, completed_at, actual_duration_seconds, actual_reps, assigned_date')
+    .eq('user_id', userId)
+    .gte('assigned_date', since)
+    .order('assigned_date', { ascending: false });
+  if (error) throw new Error(`fetchActionAssignments: ${error.message}`);
+  return data ?? [];
+}

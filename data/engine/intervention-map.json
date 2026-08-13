@@ -1,6 +1,6 @@
 {
-  "version": "0.3",
-  "description": "MASTER_NODE → INTERVENTION_OPTION[] bridge for NEXT_BEST_ACTION v0.1. v0.2: leverage_affinity per (leverage_node, intervention). v0.3: GAIT_INSTABILITY slice (BALANCE_TRAINING + SAFE_SUPPORTED_MOBILITY).",
+  "version": "0.4",
+  "description": "MASTER_NODE → INTERVENTION_OPTION[] bridge for NEXT_BEST_ACTION v0.1. v0.2: leverage_affinity per (leverage_node, intervention). v0.3: GAIT_INSTABILITY slice. v0.4: expected_responses + minimum_exposure_rule for Feedback Loop v0.1.",
   "mappings": {
     "PHYSICAL_INACTIVITY": {
       "interventions": [
@@ -16,7 +16,24 @@
           "protocol_types": ["TRAINING_PROTOKOL"],
           "tag_filter": ["kardio"],
           "goal_branches": ["SURVIVAL_HEALTHSPAN", "FUNCTIONAL_INDEPENDENCE"],
-          "mechanism_targets": ["PHYSICAL_INACTIVITY", "INSULIN_RESISTANCE"]
+          "mechanism_targets": ["PHYSICAL_INACTIVITY", "INSULIN_RESISTANCE"],
+          "expected_responses": [
+            {
+              "response_id": "BREAK_SEDENTARY_activity_level",
+              "target_node": "PHYSICAL_INACTIVITY",
+              "observable_obs_type": "activity_level",
+              "expected_direction": "increase",
+              "horizon_min_days": 7,
+              "horizon_typical_days": 14,
+              "evidence_quality": "moderate",
+              "minimum_exposure_rule": {
+                "min_sessions_completed": 5,
+                "min_calendar_days": 7,
+                "rationale": "Minimálně 5 sezení za 7 dní je nejnižší dávka konzistentně spojená s měřitelnou změnou self-reported aktivity (Dunstan et al., Diabetes Care 2012)."
+              },
+              "evidence_refs": ["Dunstan et al., Diabetes Care 2012", "Biswas et al., Ann Intern Med 2015"]
+            }
+          ]
         },
         {
           "id": "AEROBIC_TRAINING",
@@ -29,7 +46,39 @@
           },
           "protocol_types": ["KARDIO_PROTOKOL", "VYTRVALOST_PROTOKOL"],
           "goal_branches": ["SURVIVAL_HEALTHSPAN", "FUNCTIONAL_INDEPENDENCE"],
-          "mechanism_targets": ["PHYSICAL_INACTIVITY", "HYPERTENSION", "INSULIN_RESISTANCE", "ENDOTHELIAL_DYSFUNCTION"]
+          "mechanism_targets": ["PHYSICAL_INACTIVITY", "HYPERTENSION", "INSULIN_RESISTANCE", "ENDOTHELIAL_DYSFUNCTION"],
+          "expected_responses": [
+            {
+              "response_id": "AEROBIC_activity_level",
+              "target_node": "PHYSICAL_INACTIVITY",
+              "observable_obs_type": "activity_level",
+              "expected_direction": "increase",
+              "horizon_min_days": 7,
+              "horizon_typical_days": 14,
+              "evidence_quality": "strong",
+              "minimum_exposure_rule": {
+                "min_sessions_completed": 5,
+                "min_calendar_days": 7,
+                "rationale": "Minimálně 5 aerobních sezení za 7 dní — nejnižší dávka konzistentně asociovaná s měřitelnou změnou pohybové aktivity v observačních i RCT datech."
+              },
+              "evidence_refs": ["Warburton et al., CMAJ 2006", "Blair et al., JAMA 1995"]
+            },
+            {
+              "response_id": "AEROBIC_bp_systolic",
+              "target_node": "HYPERTENSION",
+              "observable_obs_type": "bp_systolic",
+              "expected_direction": "decrease",
+              "horizon_min_days": 21,
+              "horizon_typical_days": 42,
+              "evidence_quality": "moderate",
+              "minimum_exposure_rule": {
+                "min_sessions_completed": 12,
+                "min_calendar_days": 21,
+                "rationale": "Snížení TK si vyžaduje delší expozici — RCT data ukazují efekt po 3–6 týdnech strukturovaného aerobního tréninku (Whelton et al., Hypertension 2002)."
+              },
+              "evidence_refs": ["Whelton et al., Hypertension 2002"]
+            }
+          ]
         },
         {
           "id": "RESISTANCE_TRAINING",
@@ -42,7 +91,24 @@
           },
           "protocol_types": ["SILOVY_PROTOKOL"],
           "goal_branches": ["FUNCTIONAL_INDEPENDENCE", "SURVIVAL_HEALTHSPAN"],
-          "mechanism_targets": ["PHYSICAL_INACTIVITY", "LOW_MUSCLE_STRENGTH", "PHYSICAL_DECONDITIONING", "INSULIN_RESISTANCE"]
+          "mechanism_targets": ["PHYSICAL_INACTIVITY", "LOW_MUSCLE_STRENGTH", "PHYSICAL_DECONDITIONING", "INSULIN_RESISTANCE"],
+          "expected_responses": [
+            {
+              "response_id": "RESISTANCE_activity_level",
+              "target_node": "PHYSICAL_INACTIVITY",
+              "observable_obs_type": "activity_level",
+              "expected_direction": "increase",
+              "horizon_min_days": 14,
+              "horizon_typical_days": 21,
+              "evidence_quality": "moderate",
+              "minimum_exposure_rule": {
+                "min_sessions_completed": 4,
+                "min_calendar_days": 14,
+                "rationale": "Silový trénink 2–3×/týden za 2 týdny jako minimální dávka pro změnu self-reported aktivity (Westcott, Curr Sports Med Rep 2012)."
+              },
+              "evidence_refs": ["Westcott, Curr Sports Med Rep 2012"]
+            }
+          ]
         },
         {
           "id": "DAILY_MOVEMENT",
@@ -55,7 +121,24 @@
           },
           "protocol_types": ["TRAINING_PROTOKOL"],
           "goal_branches": ["SURVIVAL_HEALTHSPAN", "FUNCTIONAL_INDEPENDENCE"],
-          "mechanism_targets": ["PHYSICAL_INACTIVITY", "EXCESS_ADIPOSITY", "PHYSICAL_DECONDITIONING"]
+          "mechanism_targets": ["PHYSICAL_INACTIVITY", "EXCESS_ADIPOSITY", "PHYSICAL_DECONDITIONING"],
+          "expected_responses": [
+            {
+              "response_id": "DAILY_MOVEMENT_activity_level",
+              "target_node": "PHYSICAL_INACTIVITY",
+              "observable_obs_type": "activity_level",
+              "expected_direction": "increase",
+              "horizon_min_days": 7,
+              "horizon_typical_days": 14,
+              "evidence_quality": "moderate",
+              "minimum_exposure_rule": {
+                "min_sessions_completed": 5,
+                "min_calendar_days": 7,
+                "rationale": "Každodenní pohyb bez struktury — minimální dávka pro detekci změny self-reported aktivity odpovídá 5 aktivním dnům ze 7."
+              },
+              "evidence_refs": ["Levine, Best Pract Res Clin Endocrinol Metab 2002"]
+            }
+          ]
         }
       ]
     },
@@ -72,7 +155,24 @@
           },
           "protocol_types": ["KARDIO_PROTOKOL", "VYTRVALOST_PROTOKOL"],
           "goal_branches": ["SURVIVAL_HEALTHSPAN", "FUNCTIONAL_INDEPENDENCE"],
-          "mechanism_targets": ["EXCESS_ADIPOSITY", "PHYSICAL_INACTIVITY", "HYPERTENSION", "INSULIN_RESISTANCE", "ENDOTHELIAL_DYSFUNCTION"]
+          "mechanism_targets": ["EXCESS_ADIPOSITY", "PHYSICAL_INACTIVITY", "HYPERTENSION", "INSULIN_RESISTANCE", "ENDOTHELIAL_DYSFUNCTION"],
+          "expected_responses": [
+            {
+              "response_id": "AEROBIC_weight_kg",
+              "target_node": "EXCESS_ADIPOSITY",
+              "observable_obs_type": "weight_kg",
+              "expected_direction": "decrease",
+              "horizon_min_days": 21,
+              "horizon_typical_days": 42,
+              "evidence_quality": "strong",
+              "minimum_exposure_rule": {
+                "min_sessions_completed": 10,
+                "min_calendar_days": 21,
+                "rationale": "Měřitelný úbytek váhy z aerobního tréninku vyžaduje minimálně 3 týdny s ≥10 sezeními — kratší expozice neprodukuje spolehlivý váhový efekt (Donnelly et al., ACSM 2009)."
+              },
+              "evidence_refs": ["Donnelly et al., Med Sci Sports Exerc 2009", "Ross & Janssen, Am J Clin Nutr 2001"]
+            }
+          ]
         },
         {
           "id": "DAILY_MOVEMENT",
@@ -85,7 +185,8 @@
           },
           "protocol_types": ["TRAINING_PROTOKOL"],
           "goal_branches": ["SURVIVAL_HEALTHSPAN", "FUNCTIONAL_INDEPENDENCE"],
-          "mechanism_targets": ["EXCESS_ADIPOSITY", "PHYSICAL_INACTIVITY", "PHYSICAL_DECONDITIONING"]
+          "mechanism_targets": ["EXCESS_ADIPOSITY", "PHYSICAL_INACTIVITY", "PHYSICAL_DECONDITIONING"],
+          "expected_responses": []
         },
         {
           "id": "RESISTANCE_TRAINING",
@@ -98,7 +199,8 @@
           },
           "protocol_types": ["SILOVY_PROTOKOL"],
           "goal_branches": ["FUNCTIONAL_INDEPENDENCE", "SURVIVAL_HEALTHSPAN"],
-          "mechanism_targets": ["EXCESS_ADIPOSITY", "INSULIN_RESISTANCE", "LOW_MUSCLE_STRENGTH", "PHYSICAL_DECONDITIONING"]
+          "mechanism_targets": ["EXCESS_ADIPOSITY", "INSULIN_RESISTANCE", "LOW_MUSCLE_STRENGTH", "PHYSICAL_DECONDITIONING"],
+          "expected_responses": []
         },
         {
           "id": "BREAK_UP_SEDENTARY_TIME",
@@ -112,7 +214,8 @@
           "protocol_types": ["TRAINING_PROTOKOL"],
           "tag_filter": ["kardio"],
           "goal_branches": ["SURVIVAL_HEALTHSPAN", "FUNCTIONAL_INDEPENDENCE"],
-          "mechanism_targets": ["EXCESS_ADIPOSITY", "PHYSICAL_INACTIVITY", "INSULIN_RESISTANCE"]
+          "mechanism_targets": ["EXCESS_ADIPOSITY", "PHYSICAL_INACTIVITY", "INSULIN_RESISTANCE"],
+          "expected_responses": []
         }
       ]
     },
@@ -129,7 +232,8 @@
           },
           "protocol_types": ["BALANCE_PROTOKOL", "STABILITY_PROTOKOL"],
           "goal_branches": ["FUNCTIONAL_INDEPENDENCE", "SURVIVAL_HEALTHSPAN"],
-          "mechanism_targets": ["GAIT_INSTABILITY", "FALL_RISK", "LOW_MUSCLE_STRENGTH"]
+          "mechanism_targets": ["GAIT_INSTABILITY", "FALL_RISK", "LOW_MUSCLE_STRENGTH"],
+          "expected_responses": []
         },
         {
           "id": "SAFE_SUPPORTED_MOBILITY",
@@ -142,7 +246,8 @@
           },
           "protocol_types": ["ASSISTIVE_PROTOKOL"],
           "goal_branches": ["FUNCTIONAL_INDEPENDENCE"],
-          "mechanism_targets": ["GAIT_INSTABILITY", "FALL_RISK"]
+          "mechanism_targets": ["GAIT_INSTABILITY", "FALL_RISK"],
+          "expected_responses": []
         }
       ]
     }
