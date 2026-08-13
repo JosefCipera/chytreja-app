@@ -209,6 +209,26 @@ function computeReevaluateAfter(holdResult, holdEval, activeExposure) {
   return null;
 }
 
+// Returns the best safe alternative candidate that is not in active exposure.
+// Used to bypass HOLD when the originally selected intervention was just completed
+// but a health-state change (new symptom/constraint) opens another viable action.
+// General: does not inspect body regions — relies on safety.level from the engine.
+function findAlternativeCandidate(next_best_action, intervention_exposure) {
+  const selectedId = next_best_action?.selected?.intervention_id;
+  const candidates = next_best_action?.all_candidates ?? [];
+  const activeIds = new Set(
+    (intervention_exposure ?? [])
+      .filter(e => e.sessions_completed > 0)
+      .map(e => e.intervention_id)
+  );
+
+  return candidates.find(c =>
+    c.intervention_id !== selectedId
+    && ['SAFE', 'SAFE_WITH_MODIFICATION'].includes(c.safety?.level)
+    && !activeIds.has(c.intervention_id)
+  ) ?? null;
+}
+
 // ── Main export ───────────────────────────────────────────────────────────────
 
 export function computeDailyDecision(engineResult) {
@@ -267,6 +287,31 @@ export function computeDailyDecision(engineResult) {
   // ── 4. HOLD ───────────────────────────────────────────────────────────────────
   const hold = checkHold(next_best_action, response_evaluations, intervention_exposure);
   if (hold) {
+    // Before committing to HOLD: check for a safe alternative without active exposure.
+    // Prevents stale HOLD when health state changed (new symptom/constraint) and the
+    // originally selected intervention was just completed, but others remain viable.
+    const alternative = findAlternativeCandidate(next_best_action, intervention_exposure);
+    if (alternative) {
+      return {
+        mode:         'ACT',
+        primary_item: {
+          action_id:         alternative.action_id,
+          label:             alternative.label,
+          protocol_type:     alternative.protocol_type,
+          intervention_id:   alternative.intervention_id,
+          safety:            alternative.safety,
+          leverage_affinity: alternative.leverage_affinity,
+          goal_impact:       alternative.goal_impact,
+          friction:          alternative.friction,
+          time_to_feedback:  alternative.time_to_feedback,
+        },
+        reason_code:      'ACT_READY',
+        source:           'NBA.all_candidates',
+        reevaluate_after: null,
+        evaluated_at:     now,
+      };
+    }
+
     const sel = next_best_action.selected;
     return {
       mode: 'HOLD',
