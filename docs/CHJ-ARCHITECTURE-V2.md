@@ -12,6 +12,18 @@ CHJ není multi-agent chatbot. Je to **systém specializovaných enginů a agent
 
 V doménách, kde existuje deterministický engine (Health & Longevity), AI sám nerozhoduje — engine rozhoduje. AI komunikuje a drží kontext.
 
+### Vrstvový slovník — přesné role komponent
+
+| Komponenta | Role | Co NENÍ |
+|------------|------|---------|
+| **ENGINE** | Domain reasoning — aktivace, inference, projekce, safety gate, ranking | Nevrací přirozenou řeč |
+| **DAILY_DECISION** | Domain orchestration output — jeden strukturovaný výstup z engine pipeline | Nová klinická inference |
+| **AI ORCHESTRATOR** | Conversation / orchestration layer — routing, formulace otázky, komunikace | Decision-maker kde existuje engine |
+| **VESMÍR** | State map / navigation visualization — zobrazuje stav uzlů, ne rozhoduje | Decision engine |
+| **CRT** | Causal explanation layer — zobrazuje kauzální řetěz, ne generuje akce | Primary action selector |
+
+**Vesmír a CRT jsou vizualizační / explanační vrstvy. Akci vybírá engine → DAILY_DECISION → AI Orchestrator.**
+
 ---
 
 ## 1. Čtyři vrstvy
@@ -163,6 +175,9 @@ DAILY_DECISION
 
 ## 6. DAILY_DECISION — orchestrační kontrakt
 
+> **v0.1 = PASS** · `git tag feat/engine-v1` · test: `scripts/test-daily-decision.mjs` 5/5  
+> Prioritní řetěz je **zamčen** — změna pořadí vyžaduje nový test-pass + nový tag.
+
 `DAILY_DECISION` je interface mezi Health Enginem a AI Orchestratorem.  
 Engine nevrací celý interní reasoning jako primární UX kontrakt — vrací strukturované rozhodnutí.
 
@@ -180,11 +195,11 @@ DAILY_DECISION {
 ### Priorita módů
 
 ```
-SAFETY_CRITICAL  [mode=SAFETY]  — stav osoby, přebíjí celý loop
-  > SAFETY_BLOCKED   [mode=SAFETY]  — žádná viable akce kvůli Safety Gate
-  > ASK_BLOCKING     [mode=ASK]     — NBA nemůže vybrat; evidence by odblokovala
-  > HOLD             [mode=HOLD]    — aktivní intervence, TOO_EARLY nebo INSUF_EXPOSURE
-  > ACT              [mode=ACT]     — NBA selected a viable action
+SAFETY_CRITICAL  [mode=SAFETY]  — stav osoby, přebíjí celý loop       ✅ LOCKED v0.1
+  > SAFETY_BLOCKED   [mode=SAFETY]  — žádná viable akce kvůli Safety Gate  ✅ LOCKED v0.1
+  > ASK_BLOCKING     [mode=ASK]     — NBA nemůže vybrat; evidence by odblokovala ✅ LOCKED v0.1
+  > HOLD             [mode=HOLD]    — aktivní intervence, TOO_EARLY nebo INSUF_EXPOSURE ✅ LOCKED v0.1
+  > ACT              [mode=ACT]     — NBA selected a viable action              ✅ LOCKED v0.1
 ```
 
 ### reason_code values
@@ -323,7 +338,38 @@ AI Orchestrator v1 je aktuálně single-turn chat (chat.js). Napojení na DAILY_
 
 ---
 
-## 11. Co ještě není implementováno
+## 11. Vesmír a CRT — legacy produktová logika
+
+### worstLeaf / recalcParents (Vesmír)
+
+`worstLeaf` a `recalcParents` v `api/hud-data-bulk.js` a `app/js/universe/universe-core.js` jsou **aktuální produktová logika** Vesmíru — správně zobrazují agregovaný stav uzlů a barvu parent uzlů.
+
+**Pro budoucí decision-making jsou superseded.**  
+Decision-making (co uživatel udělá dál) patří do engine pipeline → DAILY_DECISION, ne do Vesmír canvas logiky. Vesmír je state map / vizualizace, ne decision engine.
+
+```
+worstLeaf / recalcParents:
+  ✅ Platné pro: vizualizaci stavu v canvas (barva uzlů, parent agregace)
+  ❌ Superseded pro: výběr next action, ranking intervencí, constraint propagaci
+```
+
+### reevaluate_after — tech debt (parsing z reason stringu)
+
+`computeReevaluateAfter` v `api/engine/dailyDecision.js:189` parsuje `horizon_min_days` z textového reason stringu:
+
+```javascript
+// Tech debt: horizon_min_days by mělo být strukturované pole v response_evaluation,
+// ne parsováno regexem z human-readable reason textu.
+const match = holdEval?.reason?.match(/of (\d+) minimum days/);
+```
+
+**Proč tech debt:** Pokud se změní formát reason stringu (překlad, refaktoring), parsing tiše selže. `horizon_min_days` by mělo být exportováno přímo z `evaluateSingleResponse` jako strukturované pole `holdEval.horizon_min_days`.
+
+**Kdy opravit:** Před v0.4.0 (health data pipeline) — HOLD logika se stane kritičtější až budou reálnější data.
+
+---
+
+## 12. Co ještě není implementováno
 
 | Oblast | Priorita | Poznámka |
 |--------|----------|----------|
