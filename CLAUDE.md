@@ -782,6 +782,18 @@ Barva laseru  = CRT risk level (TODO: zelená → jantarová → červená)
 
 ---
 
+## Engine checkpointy (zamčeno)
+
+| Komponenta | Status | Test |
+|------------|--------|------|
+| Health Engine v1 (`api/engine/engine.js`) | ✅ LOCKED | živý |
+| DAILY_DECISION v0.1 (`api/engine/dailyDecision.js`) | ✅ LOCKED | živý |
+| Health Event Adapter v0.1 (`api/engine/healthEventAdapter.js`) | ✅ **PASS 28/28** | `scripts/test-health-event-adapter.mjs` |
+| node_inputs responsibility | ✅ CLEAN | parse.js = health_doc audit, user.js = odstraněno |
+| AI Orchestrator v0.1 (`api/engine/orchestrator.js`) | 🔄 aktivní | `scripts/test-orchestrator.mjs` |
+
+---
+
 ## Verzování
 
 | Verze | Obsah | Status |
