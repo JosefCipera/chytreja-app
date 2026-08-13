@@ -200,17 +200,10 @@ async function fetchContext(userId, role) {
     .order('date', { ascending: false })
     .limit(14); // 14 dní pro průměr spánku → SLEEP_DISORDER
 
-  // 4. Onboarding odpovědi (fyzické limity, node_inputs)
-  const { data: nodeInputs } = await supabase
-    .from('node_inputs')
-    .select('node_id, question_id, value')
-    .eq('user_id', userId);
-
   return {
-    metrics: metrics || [],
-    profile: profileObj,
+    metrics:  metrics  || [],
+    profile:  profileObj,
     checkins: checkins || [],
-    nodeInputs: nodeInputs || [],
   };
 }
 
@@ -901,7 +894,7 @@ function injectPhysicalUdes(crt, metrics) {
   }
 }
 
-async function generateCRT({ metrics, profile, checkins, nodeInputs, _rawAI }, role, modelCfg) {
+async function generateCRT({ metrics, profile, checkins, _rawAI }, role, modelCfg) {
   // Seřaď uzly od nejhoršího — vezmi všechny RED a YELLOW
   const sorted = [...metrics].sort((a, b) => (a.current_index ?? 100) - (b.current_index ?? 100));
   const worstNodes = sorted
@@ -1763,7 +1756,6 @@ export default async function handler(req, res) {
       metrics: [],
       profile: mockProfile,
       checkins: [],
-      nodeInputs: [],
     };
     try {
       const result = await generateCRT(mockCtx, role, modelCfg);
@@ -1781,7 +1773,7 @@ export default async function handler(req, res) {
 
   try {
     // 1. Načti všechny zdroje dat
-    const ctx = userId ? await fetchContext(userId, role) : { metrics: [], profile: {}, checkins: [], nodeInputs: [] };
+    const ctx = userId ? await fetchContext(userId, role) : { metrics: [], profile: {}, checkins: [] };
     const hash    = dataHash(ctx, modelCfg.id);
     const hashAI  = aiHash(ctx, modelCfg.id);
     console.log(`[CRT] userId=${userId} role=${role} hash=${hash} hashAI=${hashAI}`);
