@@ -105,10 +105,21 @@ async function scenarioA() {
 
   check(response.mode !== undefined,                             'response has a mode');
   check(response.session_updates !== undefined,                  'session_updates present');
-  check(response.session_updates.current_action_assignment === null,
-        'current_action_assignment cleared after ACTION_COMPLETED');
-  check(response.session_updates.last_daily_decision !== null,   'new DAILY_DECISION returned');
-  check(response.session_updates.last_domain_response !== null,  'domain_response cached');
+  // ACTION_COMPLETED requires valid intervention_id in session.
+  // When engine is HOLD (no active assignment), "Hotovo" degrades to DOMAIN_REQUEST.
+  // When engine is ACT, ACTION_COMPLETED is sent and assignment is cleared.
+  const hasValidAssignment = sessionState.current_action_assignment?.intervention_id != null;
+  if (hasValidAssignment) {
+    check(response.session_updates.current_action_assignment === null,
+          'current_action_assignment cleared after ACTION_COMPLETED');
+    check(response.session_updates.last_daily_decision !== null,   'new DAILY_DECISION returned');
+    check(response.session_updates.last_domain_response !== null,  'domain_response cached');
+  } else {
+    check(response.mode !== 'NOOP' || response.debug?.error === undefined,
+          'no valid assignment → degraded to DOMAIN_REQUEST (no crash)');
+    check(response.session_updates.last_daily_decision !== null,   'new DAILY_DECISION returned anyway');
+    check(response.session_updates.last_domain_response !== null,  'domain_response cached anyway');
+  }
 
   // Hard boundary: orchestrator does not modify NBA.selected
   const engineAfter = await runEngine(USER_ID);

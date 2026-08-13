@@ -35,41 +35,56 @@ function getClient() {
 // Claude Haiku: maps Czech natural language → event_type + payload.
 // No health reasoning here — pure classification.
 
-const CLASSIFIER_SYSTEM = `You are a text classifier for CHJ health navigation.
-Your ONLY job: map Czech user input to one event type and extract a minimal payload.
-Do NOT give health advice. Do NOT diagnose. Do NOT infer. Only classify.
+// Tool-based classifier: forces Haiku to call classify_intent tool → guaranteed schema.
+// enum on event_type eliminates "missing event_type" fallback path.
 
-EVENT TYPES:
-ACTION_COMPLETED    — user signals they did the current action ("hotovo", "udělal/a jsem", "splněno")
-ACTION_SKIPPED      — user signals skip ("přeskočím", "dnes ne", "nemůžu", "vynechám")
-ANSWER_TO_EVIDENCE_QUESTION — user answers a pending question (use when pending_question is set)
-NEW_SYMPTOM         — user reports body pain ("bolí mě koleno", "cítím bolest v rameni")
-NEW_MEASUREMENT     — user reports a measurement ("vážím 85 kg", "tlak 140/90")
-NEW_CONSTRAINT      — explicit physical limitation ("nesmím zatěžovat koleno")
-WHY_REQUEST         — user asks why ("proč", "proč mám", "nechápu proč")
-DOMAIN_REQUEST      — asks what to do ("co mám dělat?", "co teď?", "poraď mi")
-USER_PREFERENCE     — expresses preference about approach ("nechci silový trénink")
-GENERAL_HEALTH_REQUEST — health question not fitting above
+const CLASSIFIER_TOOL = {
+  name: 'classify_intent',
+  description: 'Classify Czech health app user input into a structured event. Call this tool for every input.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      event_type: {
+        type: 'string',
+        enum: [
+          'ACTION_COMPLETED', 'ACTION_SKIPPED', 'ANSWER_TO_EVIDENCE_QUESTION',
+          'NEW_SYMPTOM', 'NEW_MEASUREMENT', 'NEW_CONSTRAINT',
+          'WHY_REQUEST', 'DOMAIN_REQUEST', 'USER_PREFERENCE', 'GENERAL_HEALTH_REQUEST',
+        ],
+        description: 'Classified event type',
+      },
+      payload: {
+        type: 'object',
+        description: 'Event-specific payload. Use only fields relevant to the event_type.',
+        properties: {
+          body_part:      { type: 'string',  description: 'Czech body part name for NEW_SYMPTOM' },
+          severity:       { type: 'string',  description: 'mild | moderate | severe (null for NEW_SYMPTOM)' },
+          evidence_type:  { type: 'string',  description: 'From pending_question.evidence_type for ANSWER' },
+          value:          { description: 'Answer value (string or number)' },
+          obs_type:       { type: 'string',  description: 'Observation type for NEW_MEASUREMENT' },
+          unit:           { type: 'string',  description: 'Unit for NEW_MEASUREMENT' },
+          constraint_key: { type: 'string',  description: 'Body region in English for NEW_CONSTRAINT' },
+          text:           { type: 'string',  description: 'Original text for GENERAL_HEALTH_REQUEST / USER_PREFERENCE' },
+        },
+        additionalProperties: false,
+      },
+    },
+    required: ['event_type', 'payload'],
+  },
+};
 
-CLASSIFICATION RULES:
-1. If pending_question is set AND user gives a short answer (yes/no/word/number) → ANSWER_TO_EVIDENCE_QUESTION
-2. If current_action is set AND input means "done/finished" → ACTION_COMPLETED
-3. "proč" anywhere → WHY_REQUEST (unless clearly answering a question)
-4. Body part + pain word → NEW_SYMPTOM
+const CLASSIFIER_SYSTEM = `You are a text classifier for CHJ (Chytré Já) health navigation system.
+Your ONLY job: classify Czech user input and extract payload. No health reasoning. No advice.
 
-PAYLOAD per type (JSON):
-ACTION_COMPLETED:              {}
-ACTION_SKIPPED:                {}
-ANSWER_TO_EVIDENCE_QUESTION:   {"evidence_type": "<from pending_question.evidence_type or null>", "value": "<normalized_answer>"}
-NEW_SYMPTOM:                   {"body_part": "<Czech body part>", "severity": null}
-NEW_MEASUREMENT:               {"obs_type": "<type>", "value": <number>, "unit": "<unit>"}
-NEW_CONSTRAINT:                {"constraint_key": "<body_region_en>", "severity": "<mild|moderate|severe>"}
-WHY_REQUEST:                   {}
-DOMAIN_REQUEST:                {}
-USER_PREFERENCE:               {"text": "<preference>"}
-GENERAL_HEALTH_REQUEST:        {"text": "<original>"}
-
-Respond with ONLY a valid JSON object. No markdown. No explanation.`;
+RULES:
+1. pending_question set + short answer (yes/no/word/number) → ANSWER_TO_EVIDENCE_QUESTION
+2. current_action set + "done/hotovo/splněno/udělal" → ACTION_COMPLETED
+3. current_action set + "přeskočím/nemůžu/dnes ne/vynechám" → ACTION_SKIPPED
+4. "proč" in input → WHY_REQUEST
+5. Body part + pain ("bolí mě", "bolest v") → NEW_SYMPTOM (payload.severity = null)
+6. Measurement number + unit → NEW_MEASUREMENT
+7. "co mám dělat / co teď / poraď" → DOMAIN_REQUEST
+8. Anything else → GENERAL_HEALTH_REQUEST`;
 
 async function classifyIntent(sessionState, userText) {
   const { pending_question, current_action_assignment } = sessionState;
@@ -88,20 +103,19 @@ async function classifyIntent(sessionState, userText) {
 
   try {
     const response = await getClient().messages.create({
-      model: 'claude-haiku-4-5',
-      max_tokens: 256,
-      system: CLASSIFIER_SYSTEM,
-      messages: [{ role: 'user', content: userContent }],
+      model:       'claude-haiku-4-5',
+      max_tokens:  256,
+      system:      CLASSIFIER_SYSTEM,
+      tools:       [CLASSIFIER_TOOL],
+      tool_choice: { type: 'tool', name: 'classify_intent' },
+      messages:    [{ role: 'user', content: userContent }],
     });
 
-    const raw = (response.content[0]?.text ?? '').trim();
-    // Strip markdown code fences if Haiku wraps the JSON
-    const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
-    const parsed = JSON.parse(cleaned);
-    if (!parsed.event_type) throw new Error('missing event_type in response');
-    return { event_type: parsed.event_type, payload: parsed.payload ?? {} };
+    const toolUse = response.content.find(c => c.type === 'tool_use');
+    if (!toolUse) throw new Error('no tool_use block in response');
+    return { event_type: toolUse.input.event_type, payload: toolUse.input.payload ?? {} };
   } catch (err) {
-    console.warn('[orchestrator:classifier] fallback to GENERAL_HEALTH_REQUEST —', err?.message ?? err);
+    console.warn('[orchestrator:classifier] fallback —', err?.message ?? err);
     return { event_type: 'GENERAL_HEALTH_REQUEST', payload: { text: userText } };
   }
 }
@@ -411,7 +425,15 @@ export async function processInput(userId, userText, sessionState = {}) {
   if (isWhy) return buildWhyResponse(state);
 
   // 3. Map classifier event type to adapter-supported type
-  const adapterType = ADAPTER_EVENT_TYPES.has(event_type) ? event_type : 'DOMAIN_REQUEST';
+  let adapterType = ADAPTER_EVENT_TYPES.has(event_type) ? event_type : 'DOMAIN_REQUEST';
+
+  // ACTION events require a valid session assignment (action_id + intervention_id).
+  // If the session has no assignment, degrade to DOMAIN_REQUEST (no valid action to confirm).
+  if ((adapterType === 'ACTION_COMPLETED' || adapterType === 'ACTION_SKIPPED')
+      && (!state.current_action_assignment?.action_id
+          || !state.current_action_assignment?.intervention_id)) {
+    adapterType = 'DOMAIN_REQUEST';
+  }
 
   // 4. Build domain event (use adapter type for the event, keep original for session logic)
   const event = buildEvent({ event_type: adapterType, payload }, state);

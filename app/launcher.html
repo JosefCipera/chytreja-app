@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>CHJ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@300;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #010406;
+      --cyan:      #3ca9bd;
+      --cyan-glow: rgba(0,188,212,0.35);
+      --text:      #e2e8f0;
+      --text-dim:  #8ba8b8;
+      --danger:    #c04040;
+    }
+
+    html, body {
+      height: 100%; background: var(--bg); color: var(--text);
+      font-family: 'Urbanist', -apple-system, BlinkMacSystemFont, sans-serif;
+      overflow: hidden;
+    }
+
+    /* ── Layout ── */
+    #app {
+      display: flex; flex-direction: column;
+      height: 100dvh; padding: env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0);
+    }
+
+    /* ── Header ── */
+    header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 24px 0;
+      flex-shrink: 0;
+    }
+    .logo { font-size: 11px; letter-spacing: 5px; color: #1e4a5c; font-weight: 300; }
+    .mode-badge {
+      font-size: 10px; letter-spacing: 3px; padding: 4px 10px;
+      border: 1px solid #0d3040; border-radius: 20px; color: #2a6a80;
+      text-transform: uppercase; font-weight: 400; transition: all 0.4s;
+    }
+    .mode-badge.act  { border-color: var(--cyan); color: var(--cyan); }
+    .mode-badge.ask  { border-color: #c09a22; color: #c09a22; }
+    .mode-badge.hold { border-color: #4a6a7a; color: #4a6a7a; }
+    .mode-badge.safe { border-color: var(--danger); color: var(--danger); }
+    .mode-badge.explain { border-color: #5a4a7a; color: #9a7ac0; }
+
+    /* ── Stage (main content) ── */
+    main {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 32px 28px; gap: 40px; overflow: hidden;
+    }
+
+    #stage-text {
+      font-size: clamp(20px, 5.5vw, 28px); font-weight: 300;
+      line-height: 1.6; text-align: center; color: var(--text);
+      max-width: 560px; width: 100%;
+      transition: opacity 0.4s, transform 0.4s;
+    }
+    #stage-text.dim { color: var(--text-dim); font-size: clamp(16px,4vw,20px); }
+    #stage-text.danger { color: #d06060; }
+    #stage-text.loading { color: #1e4a5c; }
+
+    /* ── Chips (buttons) ── */
+    #chips {
+      display: flex; flex-wrap: wrap; gap: 14px; justify-content: center;
+      max-width: 560px; width: 100%;
+    }
+    .chip {
+      background: linear-gradient(180deg, rgba(14,52,69,0.85) 0%, rgba(7,30,41,0.95) 100%);
+      border: 1.5px solid var(--cyan); color: var(--text);
+      padding: 14px clamp(18px,8vw,48px);
+      font-size: clamp(14px,4vw,20px); font-weight: 400; letter-spacing: 2px;
+      border-radius: 8px; cursor: pointer; font-family: inherit;
+      box-shadow: 0 0 24px var(--cyan-glow), inset 0 0 10px rgba(0,188,212,0.1);
+      transition: all 0.25s; white-space: nowrap;
+    }
+    .chip:hover, .chip:focus-visible {
+      border-color: #00bcd4;
+      box-shadow: 0 0 40px rgba(0,188,212,0.55), inset 0 0 16px rgba(0,188,212,0.2);
+      transform: scale(1.02);
+    }
+    .chip:active { transform: scale(0.97); }
+    .chip.secondary {
+      border-color: #1e4a5c; color: var(--text-dim);
+      box-shadow: none; background: transparent;
+    }
+    .chip.secondary:hover { border-color: #2a6a80; color: var(--text); }
+    .chip.danger { border-color: var(--danger); color: #e08080; box-shadow: 0 0 24px rgba(192,64,64,0.3); }
+
+    /* ── Input area ── */
+    footer {
+      flex-shrink: 0; padding: 16px 20px 28px;
+      display: flex; flex-direction: column; align-items: center; gap: 12px;
+    }
+    .input-row {
+      display: flex; gap: 10px; align-items: center;
+      width: 100%; max-width: 560px;
+    }
+    #text-input {
+      flex: 1; background: rgba(14,30,42,0.8);
+      border: 1px solid #0d3040; border-radius: 10px;
+      color: var(--text); font-size: 16px; padding: 13px 16px;
+      font-family: inherit; outline: none; transition: border-color 0.2s;
+    }
+    #text-input:focus { border-color: #1e6070; }
+    #text-input::placeholder { color: #1e4a5c; }
+    #text-input:disabled { opacity: 0.4; }
+
+    .icon-btn {
+      width: 48px; height: 48px; border-radius: 10px; border: 1px solid #0d3040;
+      background: rgba(14,30,42,0.8); color: var(--text-dim); font-size: 20px;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s; flex-shrink: 0;
+    }
+    .icon-btn:hover { border-color: var(--cyan); color: var(--cyan); }
+    .icon-btn.active { border-color: var(--cyan); color: var(--cyan); animation: pulse 1.4s infinite; }
+    .icon-btn.send { background: rgba(14,52,69,0.9); border-color: var(--cyan); color: var(--cyan); }
+    .icon-btn.send:hover { box-shadow: 0 0 20px var(--cyan-glow); }
+    .icon-btn:disabled { opacity: 0.3; cursor: default; }
+
+    @keyframes pulse { 0%,100%{box-shadow:0 0 0 0 var(--cyan-glow)} 50%{box-shadow:0 0 0 6px transparent} }
+
+    /* ── Auth overlay ── */
+    #auth-overlay {
+      position: fixed; inset: 0; background: var(--bg);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 20px;
+      z-index: 100;
+    }
+    #auth-overlay.hidden { display: none; }
+    #auth-overlay p { color: var(--text-dim); font-size: 14px; letter-spacing: 1px; }
+    #auth-overlay a {
+      color: var(--cyan); text-decoration: none; font-size: 14px; letter-spacing: 2px;
+    }
+    #auth-overlay a:hover { text-decoration: underline; }
+
+    .hidden { display: none !important; }
+    .fade-in { animation: fadeIn 0.4s ease; }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
+  </style>
+</head>
+<body>
+
+<!-- Auth gate (shown when not logged in) -->
+<div id="auth-overlay">
+  <p style="letter-spacing:5px;font-size:11px;color:#1e4a5c">CHYTRÉ JÁ</p>
+  <p>Přihlášení vyžadováno.</p>
+  <a href="/login">→ Přihlásit se</a>
+</div>
+
+<!-- Main app -->
+<div id="app" class="hidden">
+  <header>
+    <span class="logo">CHYTRÉ JÁ</span>
+    <span class="mode-badge" id="mode-badge">—</span>
+  </header>
+
+  <main>
+    <div id="stage-text" class="loading">…</div>
+    <div id="chips"></div>
+  </main>
+
+  <footer>
+    <div class="input-row">
+      <input id="text-input" type="text" placeholder="Napiš nebo řekni…" autocomplete="off" enterkeyhint="send" />
+      <button id="mic-btn" class="icon-btn" title="Mluvit" aria-label="Mikrofon">●</button>
+      <button id="send-btn" class="icon-btn send" title="Odeslat" aria-label="Odeslat">→</button>
+    </div>
+  </footer>
+</div>
+
+<script type="module">
+  // ── Firebase auth ────────────────────────────────────────────────────────────
+  import { initializeApp }                from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js';
+  import { getAuth, onAuthStateChanged }  from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js';
+
+  const firebaseApp = initializeApp({
+    apiKey:            'AIzaSyAKREZsoBZkA1xOQ5ff3XDmiJ88nwSjeOk',
+    authDomain:        'chytre-ja-app.firebaseapp.com',
+    projectId:         'chytre-ja-app',
+    storageBucket:     'chytre-ja-app.firebasestorage.app',
+    messagingSenderId: '65882611642',
+    appId:             '1:65882611642:web:53d82914aa07d6677d4783',
+  });
+  const auth = getAuth(firebaseApp);
+
+  // ── Dev override: ?userId=xxx bypasses Firebase in local testing ──────────────
+  const urlUserId = new URLSearchParams(location.search).get('userId');
+
+  // ── Session (localStorage) ───────────────────────────────────────────────────
+  const SESSION_KEY       = 'chj_session_v1';
+  const LAST_RESPONSE_KEY = 'chj_last_response_v1';
+
+  function loadSession()    { try { return JSON.parse(localStorage.getItem(SESSION_KEY)       || '{}'); } catch { return {}; } }
+  function loadLastResponse(){ try { return JSON.parse(localStorage.getItem(LAST_RESPONSE_KEY) || 'null'); } catch { return null; } }
+
+  function saveSession(updates) {
+    const merged = { ...loadSession(), ...updates };
+    localStorage.setItem(SESSION_KEY, JSON.stringify(merged));
+    return merged;
+  }
+  function saveLastResponse(r) {
+    // Only persist the presentation-relevant fields, not session_updates (large)
+    localStorage.setItem(LAST_RESPONSE_KEY, JSON.stringify({
+      mode: r.mode, text: r.text, buttons: r.buttons, expects_reply: r.expects_reply,
+    }));
+  }
+
+  // ── UI refs ──────────────────────────────────────────────────────────────────
+  const $stage    = document.getElementById('stage-text');
+  const $chips    = document.getElementById('chips');
+  const $badge    = document.getElementById('mode-badge');
+  const $input    = document.getElementById('text-input');
+  const $sendBtn  = document.getElementById('send-btn');
+  const $micBtn   = document.getElementById('mic-btn');
+  const $app      = document.getElementById('app');
+  const $authOver = document.getElementById('auth-overlay');
+
+  let busy = false;
+
+  // ── Render ───────────────────────────────────────────────────────────────────
+  function render(response) {
+    const { mode, text, buttons = [], expects_reply } = response;
+
+    // Stage text
+    $stage.className = 'fade-in';
+    $stage.textContent = text || '…';
+
+    if (mode === 'HOLD')            $stage.classList.add('dim');
+    if (mode === 'SAFETY_CRITICAL') $stage.classList.add('danger');
+    if (mode === 'EXPLAIN')         $stage.classList.add('dim');
+
+    // Mode badge
+    $badge.textContent = {
+      ACT:             'ACT',
+      ASK:             'ASK',
+      HOLD:            'HOLD',
+      SAFETY_BLOCKED:  'BLOCKED',
+      SAFETY_CRITICAL: 'CRITICAL',
+      EXPLAIN:         'WHY',
+      NOOP:            '—',
+    }[mode] ?? mode;
+
+    $badge.className = 'mode-badge ' + ({
+      ACT:             'act',
+      ASK:             'ask',
+      HOLD:            'hold',
+      SAFETY_BLOCKED:  'safe',
+      SAFETY_CRITICAL: 'safe',
+      EXPLAIN:         'explain',
+    }[mode] ?? '');
+
+    // Chips
+    $chips.innerHTML = '';
+    for (const label of buttons) {
+      const btn = document.createElement('button');
+      btn.className = 'chip' + (label === 'Přeskočit' ? ' secondary' : '')
+                             + (label === 'Zavolat lékaři' ? ' danger' : '');
+      btn.textContent = label;
+      btn.addEventListener('click', () => orchestrate(label));
+      $chips.appendChild(btn);
+    }
+
+    // Input: show for ASK and NOOP; otherwise still visible for free input
+    $input.placeholder = mode === 'ASK' ? 'Odpověz nebo napiš…' : 'Napiš nebo řekni…';
+    if (mode === 'ASK') $input.focus();
+  }
+
+  // ── Orchestrate ──────────────────────────────────────────────────────────────
+  async function orchestrate(userText, userId) {
+    if (busy) return;
+    busy = true;
+    setLoading(true);
+
+    const uid = userId ?? window.__chj_userId;
+    const session = loadSession();
+
+    try {
+      const res = await fetch('/api/orchestrate', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ userId: uid, text: userText, session }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || `HTTP ${res.status}`);
+      }
+
+      const response = await res.json();
+
+      // Persist session
+      if (response.session_updates) saveSession(response.session_updates);
+      saveLastResponse(response);
+
+      render(response);
+    } catch (err) {
+      $stage.textContent = `Chyba: ${err.message}`;
+      $stage.className = 'danger';
+      $badge.textContent = 'ERR';
+      $badge.className = 'mode-badge safe';
+    } finally {
+      busy = false;
+      setLoading(false);
+      $input.value = '';
+    }
+  }
+
+  function setLoading(on) {
+    $input.disabled  = on;
+    $sendBtn.disabled = on;
+    $micBtn.disabled  = on;
+    if (on) {
+      $stage.textContent = '…';
+      $stage.className = 'loading';
+      $chips.innerHTML = '';
+      $badge.textContent = '·';
+      $badge.className = 'mode-badge';
+    }
+  }
+
+  // ── Text input / send ────────────────────────────────────────────────────────
+  $sendBtn.addEventListener('click', () => {
+    const v = $input.value.trim();
+    if (v) orchestrate(v);
+  });
+
+  $input.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      const v = $input.value.trim();
+      if (v) orchestrate(v);
+    }
+  });
+
+  // ── Mic (Web Speech API) ─────────────────────────────────────────────────────
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let recognition = null;
+
+  if (SpeechRecognition) {
+    recognition = new SpeechRecognition();
+    recognition.lang = 'cs-CZ';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    recognition.onresult = e => {
+      const transcript = e.results[0][0].transcript.trim();
+      if (transcript) orchestrate(transcript);
+    };
+    recognition.onend   = () => { $micBtn.classList.remove('active'); };
+    recognition.onerror = () => { $micBtn.classList.remove('active'); };
+
+    $micBtn.addEventListener('click', () => {
+      if ($micBtn.classList.contains('active')) {
+        recognition.stop();
+      } else {
+        $micBtn.classList.add('active');
+        recognition.start();
+      }
+    });
+  } else {
+    $micBtn.style.display = 'none'; // hide if not supported
+  }
+
+  // ── Init ─────────────────────────────────────────────────────────────────────
+  function start(userId) {
+    window.__chj_userId = userId;
+    $authOver.classList.add('hidden');
+    $app.classList.remove('hidden');
+
+    // Restore last response from localStorage (survives reload)
+    const last = loadLastResponse();
+    if (last) {
+      render(last);
+    } else {
+      // Fresh start: ask orchestrator for today's decision
+      orchestrate('Co mám dnes dělat?', userId);
+    }
+  }
+
+  // Auth gating
+  if (urlUserId) {
+    // Dev mode: bypass Firebase auth
+    start(urlUserId);
+  } else {
+    onAuthStateChanged(auth, user => {
+      if (user) {
+        start(user.uid);
+      } else {
+        $authOver.classList.remove('hidden');
+        $app.classList.add('hidden');
+      }
+    });
+  }
+</script>
+</body>
+</html>
