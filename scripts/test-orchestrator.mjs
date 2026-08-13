@@ -321,25 +321,31 @@ async function hardBoundaries() {
   console.log('  state restored ✓');
 }
 
-// ── Scenario E — regression: stale HOLD after health-state change ─────────────
+// ── Scenario E — regression: fresh recomputation after health-state change ─────
 //
-// Repro: ACT → ACTION_COMPLETED → HOLD_TOO_EARLY → NEW_SYMPTOM (unrelated body part)
-//        Expected: DAILY_DECISION freshly recomputed; HOLD bypassed when alternatives exist.
+// Flow: ACT → ACTION_COMPLETED → HOLD → NEW_SYMPTOM
+//
+// Contract (DAILY_DECISION only presents NBA.selected):
+//   - event is persisted
+//   - runEngine() reruns after persistence
+//   - new constraint is in engine input
+//   - NBA recomputes and may legitimately reselect the same safe action
+//   - DAILY_DECISION wraps the fresh NBA output — not a stale cache
+//   - result may legitimately be HOLD again if NBA selects same action with active exposure
 //
 // Assertions:
 //   1. New constraint present in DB after NEW_SYMPTOM
-//   2. last_daily_decision.evaluated_at >= pre-symptom evaluated_at (fresh computation)
-//   3. If HOLD before + safe alternatives exist in all_candidates → mode = ACT (fix verified)
-//   4. If no alternatives → HOLD preserved correctly (no false positive)
+//   2. evaluated_at of post-symptom DAILY_DECISION >= pre-symptom (fresh computation)
+//   3. post-symptom primary_item comes from NBA.selected (not injected by orchestrator)
+//   4. DAILY_DECISION equals correct orchestration of fresh NBA output
 
 async function scenarioE() {
-  sep('E — ACT → ACTION_COMPLETED → HOLD → NEW_SYMPTOM → fresh decision (stale-HOLD regression)');
+  sep('E — ACT → ACTION_COMPLETED → HOLD → NEW_SYMPTOM → fresh recomputation (not stale cache)');
 
   const savedConstraints = await saveConstraints();
-  // Remove knee to ensure a clean slate for this test
-  await sb.from('user_constraints').delete().eq('user_id', USER_ID).eq('constraint_key', 'knee');
+  await sb.from('user_constraints').delete().eq('user_id', USER_ID).eq('constraint_key', 'shoulder');
 
-  // 1. Get engine state and a valid action assignment
+  // 1. Get engine state — need ACT with valid assignment to start the chain
   const engineResult = await runEngine(USER_ID);
   const { computeDailyDecision } = await import('../api/engine/dailyDecision.js');
   const dd = computeDailyDecision(engineResult);
@@ -353,7 +359,7 @@ async function scenarioE() {
     return;
   }
 
-  // 2. Simulate ACTION_COMPLETED via orchestrator (creates intervention exposure in DB)
+  // 2. ACTION_COMPLETED — creates intervention exposure in DB
   const sessionWithAction = {
     current_action_assignment: {
       action_id:       dd.primary_item.action_id,
@@ -372,12 +378,11 @@ async function scenarioE() {
 
   const preEvalAt = completedResponse.session_updates?.last_daily_decision?.evaluated_at ?? null;
 
-  // 3. Send NEW_SYMPTOM for an unrelated body part (shoulder ≠ intervention region)
-  //    Use post-completion session (assignment cleared)
+  // 3. NEW_SYMPTOM — unrelated body part; should trigger persist + engine rerun
   const postCompletionSession = {
-    last_daily_decision:  completedResponse.session_updates?.last_daily_decision  ?? null,
-    last_domain_response: completedResponse.session_updates?.last_domain_response ?? null,
-    pending_question:     null,
+    last_daily_decision:       completedResponse.session_updates?.last_daily_decision  ?? null,
+    last_domain_response:      completedResponse.session_updates?.last_domain_response ?? null,
+    pending_question:          null,
     current_action_assignment: null,
   };
 
@@ -386,74 +391,49 @@ async function scenarioE() {
   );
   showResponse(symptomResponse);
 
-  // Assertion 1: new constraint persisted in DB
+  // Assertion 1: constraint persisted — new evidence IS in engine input on next run
   const { data: shoulderRow } = await sb.from('user_constraints')
     .select('constraint_key, severity')
     .eq('user_id', USER_ID).eq('constraint_key', 'shoulder')
     .maybeSingle();
   check(
     shoulderRow?.constraint_key === 'shoulder',
-    'new evidence (shoulder constraint) present in DB after NEW_SYMPTOM',
+    'new evidence (shoulder constraint) persisted — present in engine input',
     `row: ${JSON.stringify(shoulderRow)}`,
   );
 
-  // Assertion 2: DAILY_DECISION freshly recomputed (evaluated_at >= prior)
+  // Assertion 2: evaluated_at is fresh — runEngine() was called, not stale cache
   const postEvalAt = symptomResponse.session_updates?.last_daily_decision?.evaluated_at ?? null;
   check(
     postEvalAt !== null && (preEvalAt === null || postEvalAt >= preEvalAt),
-    'DAILY_DECISION evaluated_at >= pre-symptom (fresh computation, not stale cache)',
+    'evaluated_at >= pre-symptom — DAILY_DECISION freshly computed after NEW_SYMPTOM',
     `pre: ${preEvalAt}  post: ${postEvalAt}`,
   );
 
-  // Assertion 3/4: check alternative-candidate logic.
-  // Must account for ALL interventions already in active exposure (not just the one just
-  // completed) — prior test runs may have already exercised other interventions.
-  const priorMode = completedResponse.mode;
-  const allCandidates = symptomResponse.session_updates
-    ?.last_domain_response?.explanation_context?.action_context?.all_candidates ?? [];
-
-  // activeIds = interventions with sessions_completed > 0 from the engine result
-  // (same set the fix uses internally)
-  const engineResultAfterSymptom = await runEngine(USER_ID);
-  const activeIds = new Set(
-    (engineResultAfterSymptom.intervention_exposure ?? [])
-      .filter(e => e.sessions_completed > 0)
-      .map(e => e.intervention_id)
+  // Assertion 3: primary_item comes from NBA.selected (DAILY_DECISION presents only NBA.selected)
+  // Verify by checking primary_item.action_id is in all_candidates from the fresh engine run
+  const freshEngine = await runEngine(USER_ID);
+  const freshCandidateIds = new Set(
+    (freshEngine.next_best_action?.all_candidates ?? []).map(c => c.action_id)
   );
-  const selectedIdAfterCompletion = completedResponse.session_updates
-    ?.last_daily_decision?.primary_item?.intervention_id;
-
-  // True alternative: safe, different intervention from the HELD one, NOT already active
-  const hasRealAlternatives = allCandidates.some(c =>
-    c.intervention_id !== selectedIdAfterCompletion
-    && ['SAFE', 'SAFE_WITH_MODIFICATION'].includes(c.safety?.level)
-    && !activeIds.has(c.intervention_id)
+  const postPrimaryId = symptomResponse.session_updates?.last_daily_decision?.primary_item?.action_id;
+  const postMode      = symptomResponse.session_updates?.last_daily_decision?.mode;
+  check(
+    postMode !== 'ACT' || freshCandidateIds.has(postPrimaryId),
+    'primary_item.action_id is from NBA candidates — DAILY_DECISION did not inject a foreign action',
+    `action: ${postPrimaryId}  in_candidates: ${freshCandidateIds.has(postPrimaryId)}`,
   );
 
-  console.log(`  prior mode     : ${priorMode}`);
-  console.log(`  real alts (not in active exposure): ${hasRealAlternatives} (${allCandidates.length} total candidates, ${activeIds.size} interventions active)`);
+  // Assertion 4: DAILY_DECISION correctly wraps fresh NBA — mode is a valid orchestration output
+  // HOLD is a legitimate result if NBA reselects the same action with active exposure.
+  const freshDD = computeDailyDecision(freshEngine);
+  check(
+    symptomResponse.session_updates?.last_daily_decision?.reason_code === freshDD.reason_code,
+    'DAILY_DECISION reason_code matches fresh orchestration of post-symptom NBA',
+    `orchestrator: ${symptomResponse.session_updates?.last_daily_decision?.reason_code}  fresh: ${freshDD.reason_code}`,
+  );
 
-  if (priorMode === 'HOLD' && hasRealAlternatives) {
-    check(
-      symptomResponse.mode === 'ACT',
-      'HOLD bypassed — ACT with alternative safe candidate after health-state change',
-      `actual mode: ${symptomResponse.mode}`,
-    );
-  } else if (priorMode === 'HOLD' && !hasRealAlternatives) {
-    check(
-      symptomResponse.mode === 'HOLD',
-      'HOLD preserved correctly — all safe alternatives already in active exposure (fix does not false-trigger)',
-      `actual mode: ${symptomResponse.mode}`,
-    );
-  } else {
-    console.log(`  ℹ  Prior mode was ${priorMode} — constraint-only assertions apply`);
-    check(
-      symptomResponse.session_updates?.last_daily_decision !== null,
-      'domain_response present after health-state change',
-    );
-  }
-
-  // Clean up shoulder constraint + restore original
+  // Clean up
   await sb.from('user_constraints').delete().eq('user_id', USER_ID).eq('constraint_key', 'shoulder');
   await restoreConstraints(savedConstraints);
   console.log('  state restored ✓');
