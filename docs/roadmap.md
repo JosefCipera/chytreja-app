@@ -54,18 +54,25 @@ Cíl: Aplikace fungující jako nativní na iOS a Android.
 
 ---
 
-## Fáze 3 – Orchestrátor + multi-agent (Q3 2026)
+## Fáze 3 – Engine-First Orchestration (Q3–Q4 2026)
 
-Cíl: CHJ jako master agent s delegováním na specializované agenty.
+> ⚠️ **Superseded — 2026-08-13:** Původní koncept "CHJ Master Agent + specializovaní agenti" byl zamítnut.  
+> Canonical architektura: `docs/CHJ-ARCHITECTURE-V2.md` — engine-first orchestration.  
+> Důvod: v doménách s deterministickými pravidly (Health, Safety Gate) by pure-AI agent neumožňoval auditovatelnost ani správné epistémické zásady.
+
+Cíl: Engine-first orchestration — deterministický Health Engine v1 + AI Orchestrator jako konverzační vrstva.
 
 | Úkol | Stav |
 |------|------|
-| Přechod na Anthropic Claude (Sonnet pro agenty, Haiku pro routing) | ⬜ |
-| MCP protokol – agenti jako nástroje | ⬜ |
-| CHJ Master Agent → Tělo Agent, Mysl Agent, Výživa Agent… | ⬜ |
-| Prediktivní semafor (projekce trendů, ne jen aktuální stav) | ⬜ |
-| Proaktivní briefing ráno (push + hlas) | ⬜ |
-| Hlasové ovládání (Speech-to-Text) | ⬜ |
+| ✅ Přechod na Anthropic Claude Haiku (chat, TTS routing) | ✅ |
+| ✅ Health Engine v1 — activation, inference, projections, Safety Gate | ✅ |
+| ✅ DAILY_DECISION — orchestrační kontrakt (mode + primary_item) | ✅ |
+| ✅ Feedback Loop v0.1 — ACTION_EXECUTION, INTERVENTION_EXPOSURE, RESPONSE_EVALUATION | ✅ |
+| AI Orchestrator napojení na DAILY_DECISION (chat.js → engine výstup) | ⬜ |
+| Voice check-in → strukturovaný vstup do enginu (Launcher STAV 2) | ⬜ |
+| DAILY_DECISION → ElevenLabs briefing (denní hlasové shrnutí) | ⬜ |
+| Prediktivní semafor — již implementováno přes PERSON_PROJECTION + Inferred uzly CRT | ✅ |
+| Hlasové ovládání (Speech-to-Text) — Web Speech API aktivní | ✅ |
 
 ---
 

@@ -1,5 +1,6 @@
 # CHJ Engine v1 — Architecture Document
 
+> **Technický detail Health Engine v1.** Canonical (system-level) architektura → `docs/CHJ-ARCHITECTURE-V2.md`  
 > Stav k: 2026-08-11 · Engine version: `1.0.0`  
 > Referenční commit: `7bcf9ee`
 
