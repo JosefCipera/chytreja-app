@@ -189,8 +189,9 @@
   });
   const auth = getAuth(firebaseApp);
 
-  // ── Dev override: ?userId=xxx bypasses Firebase in local testing ──────────────
-  const urlUserId = new URLSearchParams(location.search).get('userId');
+  // ── Dev override: ?userId=xxx bypasses Firebase on localhost only ───────────
+  const _isLocal = ['localhost', '127.0.0.1'].includes(location.hostname);
+  const urlUserId = _isLocal ? new URLSearchParams(location.search).get('userId') : null;
 
   // ── Session (localStorage) ───────────────────────────────────────────────────
   const SESSION_KEY       = 'chj_session_v1';
@@ -259,8 +260,7 @@
     $chips.innerHTML = '';
     for (const label of buttons) {
       const btn = document.createElement('button');
-      btn.className = 'chip' + (label === 'Přeskočit' ? ' secondary' : '')
-                             + (label === 'Zavolat lékaři' ? ' danger' : '');
+      btn.className = 'chip' + (label === 'Přeskočit' ? ' secondary' : '');
       btn.textContent = label;
       btn.addEventListener('click', () => orchestrate(label));
       $chips.appendChild(btn);

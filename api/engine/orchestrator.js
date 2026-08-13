@@ -301,7 +301,7 @@ function buildSafetyCriticalResponse(dd, sessionUpdates, warnings) {
   return {
     mode:          'SAFETY_CRITICAL',
     text:          'Detekuji stav vyžadující okamžitou pozornost. Kontaktuj lékaře.',
-    buttons:       ['Zavolat lékaři'],
+    buttons:       ['Co mám udělat?'],
     expects_reply: false,
     session_updates: sessionUpdates,
     debug:         { reason_code: dd.reason_code, warnings },
