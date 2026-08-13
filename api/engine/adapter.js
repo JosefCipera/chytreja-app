@@ -39,7 +39,6 @@ export async function fetchHealthData(userId) {
     { data: userProfile },
     { data: hp },
     { data: checkins },
-    { data: nodeInputs },
   ] = await Promise.all([
     supabase.from('user_profiles')
       .select('birth_year, gender, height, weight')
@@ -52,9 +51,6 @@ export async function fetchHealthData(userId) {
       .eq('user_id', userId)
       .order('date', { ascending: false })
       .limit(30),
-    supabase.from('node_inputs')
-      .select('node_id, question_id, value')
-      .eq('user_id', userId),
   ]);
 
   // ── PERSON ────────────────────────────────────────────────────────────────
@@ -122,10 +118,9 @@ export async function fetchHealthData(userId) {
       alcohol_history: 'unknown',
     },
     capacity: hp?.capacity || {},
-    // Flat map of all onboarding node_inputs: question_id → raw value
-    onboarding_inputs: Object.fromEntries(
-      (nodeInputs || []).map(n => [n.question_id, n.value])
-    ),
+    // Canonical source for functional assessment answers: user_health_profile.physical
+    // node_inputs.question_id/value had no write path — migrated to physical in Health Event Adapter v0.1
+    onboarding_inputs: hp?.physical || {},
     // True if user_health_profile row exists — proxy for "person has engaged with health history".
     // Used by Safety Gate: VIGOROUS/HIIT intensity requires clinical_history_documented = true
     // to proceed without NEEDS_MORE_EVIDENCE (cardiac safety cannot be assumed without baseline).
@@ -176,10 +171,10 @@ export async function fetchHealthData(userId) {
       observations.push({ obs_type: obsType, value: parseFloat(labs[key]), unit, measured_at: labs.date || null, source: 'lab_report', confidence: 'estimated' });
   }
 
-  // Sedentary hours from onboarding
-  const sedNode = (nodeInputs || []).find(n => n.question_id === 'sedentary_hours_day');
-  if (sedNode)
-    observations.push({ obs_type: 'sedentary_hours_day', value: parseFloat(sedNode.value), unit: 'hours', measured_at: null, source: 'onboarding', confidence: 'estimated' });
+  // Sedentary hours from physical (written by Health Event Adapter ANSWER events)
+  const sedHours = hp?.physical?.sedentary_hours_day;
+  if (sedHours != null)
+    observations.push({ obs_type: 'sedentary_hours_day', value: parseFloat(sedHours), unit: 'hours', measured_at: null, source: 'physical', confidence: 'estimated' });
 
   return { person, clinicalHistory, observations };
 }
