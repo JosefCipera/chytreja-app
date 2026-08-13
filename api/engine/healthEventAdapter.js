@@ -132,13 +132,11 @@ async function upsertPhysical(supabase, userId, key, value) {
     .maybeSingle();
 
   if (readErr) throw new Error(`upsertPhysical read: ${readErr.message}`);
-  if (!row) return `physical not persisted: no user_health_profile row for ${userId}`;
 
-  const merged = { ...(row.physical || {}), [key]: value };
+  const merged = { ...(row?.physical || {}), [key]: value };
   const { error } = await supabase
     .from('user_health_profile')
-    .update({ physical: merged })
-    .eq('user_id', userId);
+    .upsert({ user_id: userId, physical: merged }, { onConflict: 'user_id' });
 
   if (error) throw new Error(`upsertPhysical write: ${error.message}`);
   return null;
@@ -153,14 +151,12 @@ async function upsertLab(supabase, userId, key, value) {
     .maybeSingle();
 
   if (readErr) throw new Error(`upsertLab read: ${readErr.message}`);
-  if (!row) return `labs not persisted: no user_health_profile row for ${userId}`;
 
   const today = new Date().toISOString().slice(0, 10);
-  const merged = { ...(row.labs || {}), [key]: value, date: today };
+  const merged = { ...(row?.labs || {}), [key]: value, date: today };
   const { error } = await supabase
     .from('user_health_profile')
-    .update({ labs: merged })
-    .eq('user_id', userId);
+    .upsert({ user_id: userId, labs: merged }, { onConflict: 'user_id' });
 
   if (error) throw new Error(`upsertLab write: ${error.message}`);
   return null;
