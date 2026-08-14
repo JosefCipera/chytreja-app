@@ -258,6 +258,15 @@
   let busy = false;
 
   // ── Render ───────────────────────────────────────────────────────────────────
+  function renderIdle() {
+    $stage.className = 'dim fade-in';
+    $stage.textContent = 'Co se dnes děje?';
+    $badge.textContent = '—';
+    $badge.className = 'mode-badge';
+    $chips.innerHTML = '';
+    $input.placeholder = 'Napiš nebo řekni…';
+  }
+
   function render(response) {
     const { mode, text, buttons = [], expects_reply, debug: dbg } = response;
 
@@ -433,12 +442,13 @@
     $app.classList.remove('hidden');
 
     // Restore last response from this user's scoped localStorage (survives reload).
+    // For a truly new user with no saved state, show idle screen and wait for input —
+    // never auto-fire a health query without explicit user action.
     const last = loadLastResponse();
     if (last) {
       render(last);
     } else {
-      // Fresh start: ask orchestrator for today's decision.
-      orchestrate('Co mám dnes dělat?', userId);
+      renderIdle();
     }
   }
 

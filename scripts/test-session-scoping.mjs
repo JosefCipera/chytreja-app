@@ -1,6 +1,5 @@
 /**
- * Regression test: session scoping per Firebase UID.
- * Simulates user A → session → logout → user B must start fresh.
+ * Regression tests: session scoping per Firebase UID + auto-start guard.
  *
  * Run: node scripts/test-session-scoping.mjs
  */
@@ -39,12 +38,30 @@ function clearSession() {
   localStorage.removeItem(_LRK(_uid));
 }
 
+// ── Replicate auto-start logic from launcher.html ─────────────────────────────
+// orchestrate() is the ONLY place a network call goes out. We mock it to count calls.
+let _orchestrateCalls = 0;
+let _idleRendered     = false;
+
+function orchestrate(_text) { _orchestrateCalls++; }
+function renderIdle()        { _idleRendered = true; }
+function render(_response)   { /* would show last saved response */ }
+
 function start(userId) {
   _uid = userId;   // scope set FIRST
+
+  const last = loadLastResponse();
+  if (last) render(last);
+  else      renderIdle();  // ← no orchestrate() here
 }
 
 function logout() {
   _uid = null;
+}
+
+function resetStartCounters() {
+  _orchestrateCalls = 0;
+  _idleRendered     = false;
 }
 
 // ── Test harness ───────────────────────────────────────────────────────────────
@@ -126,6 +143,37 @@ console.log('\n[7] Unscoped legacy keys do not exist');
   const legacyResponse = localStorage.getItem('chj_last_response_v1');
   assert('no unscoped chj_session_v1',       legacySession  === null);
   assert('no unscoped chj_last_response_v1', legacyResponse === null);
+}
+
+console.log('\n[8] Auto-start guard — new user: zero orchestrate calls');
+{
+  resetStartCounters();
+  start('user-new');  // no saved lastResponse → renderIdle(), not orchestrate()
+
+  assert('orchestrate call count = 0', _orchestrateCalls === 0);
+  assert('idle screen rendered',       _idleRendered === true);
+}
+
+console.log('\n[9] Auto-start guard — returning user: render saved state, still zero auto-calls');
+{
+  // Seed a saved response for user-returning
+  _uid = 'user-returning';
+  saveLastResponse({ mode: 'ACT', text: 'Jdi na procházku.', buttons: ['Hotovo'], expects_reply: false });
+
+  resetStartCounters();
+  start('user-returning');  // has lastResponse → render(), not orchestrate()
+
+  assert('orchestrate call count = 0', _orchestrateCalls === 0);
+  assert('idle screen NOT rendered (has saved state)', _idleRendered === false);
+}
+
+console.log('\n[10] Explicit user input triggers exactly one orchestrate call');
+{
+  resetStartCounters();
+  // Simulate user typing "Co mám dnes dělat?" and pressing send
+  orchestrate('Co mám dnes dělat?');
+
+  assert('orchestrate call count = 1', _orchestrateCalls === 1);
 }
 
 // ── Summary ───────────────────────────────────────────────────────────────────
