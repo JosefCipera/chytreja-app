@@ -212,23 +212,31 @@
   const _isLocal = ['localhost', '127.0.0.1'].includes(location.hostname);
   const urlUserId = _isLocal ? new URLSearchParams(location.search).get('userId') : null;
 
-  // ── Session (localStorage) ───────────────────────────────────────────────────
-  const SESSION_KEY       = 'chj_session_v1';
-  const LAST_RESPONSE_KEY = 'chj_last_response_v1';
+  // ── Session (localStorage, scoped per Firebase UID) ─────────────────────────
+  // Keys are namespaced to prevent session leakage between accounts in the same browser.
+  // _uid is set by start() before any session read/write.
+  let _uid = null;
 
-  function loadSession()    { try { return JSON.parse(localStorage.getItem(SESSION_KEY)       || '{}'); } catch { return {}; } }
-  function loadLastResponse(){ try { return JSON.parse(localStorage.getItem(LAST_RESPONSE_KEY) || 'null'); } catch { return null; } }
+  const _SK  = uid => `chj_session_v1:${uid}`;
+  const _LRK = uid => `chj_last_response_v1:${uid}`;
+
+  function loadSession()     { try { return JSON.parse(localStorage.getItem(_SK(_uid))  || '{}');   } catch { return {}; } }
+  function loadLastResponse(){ try { return JSON.parse(localStorage.getItem(_LRK(_uid)) || 'null'); } catch { return null; } }
 
   function saveSession(updates) {
     const merged = { ...loadSession(), ...updates };
-    localStorage.setItem(SESSION_KEY, JSON.stringify(merged));
+    localStorage.setItem(_SK(_uid), JSON.stringify(merged));
     return merged;
   }
   function saveLastResponse(r) {
-    localStorage.setItem(LAST_RESPONSE_KEY, JSON.stringify({
+    localStorage.setItem(_LRK(_uid), JSON.stringify({
       mode: r.mode, text: r.text, buttons: r.buttons, expects_reply: r.expects_reply,
       debug: r.debug ?? null,
     }));
+  }
+  function clearSession() {
+    localStorage.removeItem(_SK(_uid));
+    localStorage.removeItem(_LRK(_uid));
   }
 
   // ── UI refs ──────────────────────────────────────────────────────────────────
@@ -418,16 +426,18 @@
 
   // ── Init ─────────────────────────────────────────────────────────────────────
   function start(userId) {
+    // Scope all session ops to this user BEFORE any read/write.
+    _uid = userId;
     window.__chj_userId = userId;
     $authOver.classList.add('hidden');
     $app.classList.remove('hidden');
 
-    // Restore last response from localStorage (survives reload)
+    // Restore last response from this user's scoped localStorage (survives reload).
     const last = loadLastResponse();
     if (last) {
       render(last);
     } else {
-      // Fresh start: ask orchestrator for today's decision
+      // Fresh start: ask orchestrator for today's decision.
       orchestrate('Co mám dnes dělat?', userId);
     }
   }
@@ -441,6 +451,8 @@
       if (user) {
         start(user.uid);
       } else {
+        // Logout: clear scope so stale session can't bleed into next login.
+        _uid = null;
         $authOver.classList.remove('hidden');
         $app.classList.add('hidden');
       }
