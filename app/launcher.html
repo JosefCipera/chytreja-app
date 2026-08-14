@@ -125,6 +125,23 @@
 
     @keyframes pulse { 0%,100%{box-shadow:0 0 0 0 var(--cyan-glow)} 50%{box-shadow:0 0 0 6px transparent} }
 
+    /* ── Profile link ── */
+    .profile-link {
+      font-size: 10px; letter-spacing: 2px; color: #1e4a5c;
+      text-decoration: none; font-weight: 300; transition: color 0.2s;
+    }
+    .profile-link:hover { color: var(--cyan); }
+
+    /* ── Debug overlay (visible only with ?debug=1) ── */
+    #debug-panel {
+      position: fixed; bottom: 116px; left: 12px; right: 12px;
+      background: rgba(0,4,8,0.96); border: 1px solid #0d3040;
+      border-radius: 8px; padding: 12px 14px; font-size: 10px; line-height: 1.6;
+      color: #3a7a8a; font-family: 'Courier New', monospace;
+      z-index: 20; max-height: 140px; overflow-y: auto;
+      pointer-events: none;
+    }
+
     /* ── Auth overlay ── */
     #auth-overlay {
       position: fixed; inset: 0; background: var(--bg);
@@ -157,8 +174,10 @@
 <div id="app" class="hidden">
   <header>
     <span class="logo">CHYTRÉ JÁ</span>
+    <a href="/crt.html" class="profile-link" title="Zdravotní profil">profil ↗</a>
     <span class="mode-badge" id="mode-badge">—</span>
   </header>
+  <div id="debug-panel" class="hidden"></div>
 
   <main>
     <div id="stage-text" class="loading">…</div>
@@ -206,9 +225,9 @@
     return merged;
   }
   function saveLastResponse(r) {
-    // Only persist the presentation-relevant fields, not session_updates (large)
     localStorage.setItem(LAST_RESPONSE_KEY, JSON.stringify({
       mode: r.mode, text: r.text, buttons: r.buttons, expects_reply: r.expects_reply,
+      debug: r.debug ?? null,
     }));
   }
 
@@ -221,12 +240,18 @@
   const $micBtn   = document.getElementById('mic-btn');
   const $app      = document.getElementById('app');
   const $authOver = document.getElementById('auth-overlay');
+  const $debug    = document.getElementById('debug-panel');
+
+  const _debugMode = new URLSearchParams(location.search).get('debug') === '1';
+
+  // Health profile URL — update to actual health data entry page if needed
+  const PROFILE_URL = '/crt.html';
 
   let busy = false;
 
   // ── Render ───────────────────────────────────────────────────────────────────
   function render(response) {
-    const { mode, text, buttons = [], expects_reply } = response;
+    const { mode, text, buttons = [], expects_reply, debug: dbg } = response;
 
     // Stage text
     $stage.className = 'fade-in';
@@ -262,13 +287,31 @@
       const btn = document.createElement('button');
       btn.className = 'chip' + (label === 'Přeskočit' ? ' secondary' : '');
       btn.textContent = label;
-      btn.addEventListener('click', () => orchestrate(label));
+      if (label === 'Zdravotní profil') {
+        btn.addEventListener('click', () => { window.location.href = PROFILE_URL; });
+      } else {
+        btn.addEventListener('click', () => orchestrate(label));
+      }
       $chips.appendChild(btn);
     }
 
-    // Input: show for ASK and NOOP; otherwise still visible for free input
+    // Input placeholder
     $input.placeholder = mode === 'ASK' ? 'Odpověz nebo napiš…' : 'Napiš nebo řekni…';
     if (mode === 'ASK') $input.focus();
+
+    // Debug overlay — visible only in ?debug=1 mode
+    if (_debugMode && $debug) {
+      $debug.classList.remove('hidden');
+      const lines = [
+        `mode:         ${mode}`,
+        `reason_code:  ${dbg?.reason_code ?? '—'}`,
+        `leverage:     ${dbg?.leverage_node ?? '—'}`,
+        `nba:          ${dbg?.nba_label ?? '—'}`,
+        `warnings:     ${(dbg?.warnings ?? []).join(' | ') || '—'}`,
+        `error:        ${dbg?.error ?? '—'}`,
+      ];
+      $debug.textContent = lines.join('\n');
+    }
   }
 
   // ── Orchestrate ──────────────────────────────────────────────────────────────
@@ -300,10 +343,16 @@
 
       render(response);
     } catch (err) {
-      $stage.textContent = `Chyba: ${err.message}`;
-      $stage.className = 'danger';
+      $stage.textContent = 'Nastala chyba. Zkus to znovu.';
+      $stage.className = 'danger fade-in';
       $badge.textContent = 'ERR';
       $badge.className = 'mode-badge safe';
+      $chips.innerHTML = '';
+      const retryBtn = document.createElement('button');
+      retryBtn.className = 'chip secondary';
+      retryBtn.textContent = 'Zkusit znovu';
+      retryBtn.addEventListener('click', () => orchestrate('Co mám dnes dělat?'));
+      $chips.appendChild(retryBtn);
     } finally {
       busy = false;
       setLoading(false);

@@ -258,11 +258,22 @@ async function routeNewSymptom(supabase, userId, payload) {
     if (region) {
       // Known constraint region → upsert with null severity; Safety Gate decides ASK
       await upsertConstraint(supabase, userId, region, severity ?? null, 'injury');
+      // If symptom_raw carries the full user sentence (compound input like "bolí mě koleno
+      // a mám vysoký tlak"), also store it for DIAG_KEYWORDS matching in adapter.js.
+      const extra = symptom_raw && symptom_raw !== body_part ? symptom_raw : null;
+      if (extra) {
+        const { data: row } = await supabase
+          .from('user_health_profile').select('symptoms').eq('user_id', userId).maybeSingle();
+        const current = Array.isArray(row?.symptoms) ? row.symptoms : [];
+        await supabase.from('user_health_profile')
+          .upsert({ user_id: userId, symptoms: [...current, extra] }, { onConflict: 'user_id' });
+      }
       return null;
     }
   }
 
-  // No mappable body_part → append raw text to symptoms[] for DIAG_KEYWORDS matching
+  // No mappable body_part → store raw text as symptom for DIAG_KEYWORDS matching.
+  // Uses upsert so new users without an existing user_health_profile row are handled correctly.
   const raw = symptom_raw || body_part;
   if (raw) {
     const { data: row } = await supabase
@@ -270,18 +281,14 @@ async function routeNewSymptom(supabase, userId, payload) {
       .select('symptoms')
       .eq('user_id', userId)
       .maybeSingle();
-
-    if (row) {
-      const current = Array.isArray(row.symptoms) ? row.symptoms : [];
-      await supabase
-        .from('user_health_profile')
-        .update({ symptoms: [...current, raw] })
-        .eq('user_id', userId);
-    }
+    const current = Array.isArray(row?.symptoms) ? row.symptoms : [];
+    await supabase
+      .from('user_health_profile')
+      .upsert({ user_id: userId, symptoms: [...current, raw] }, { onConflict: 'user_id' });
   }
 
   return body_part
-    ? `NEW_SYMPTOM: '${body_part}' not mapped to constraint region — stored as text (engine may not read it)`
+    ? `NEW_SYMPTOM: '${body_part}' not mapped to constraint region — stored as text`
     : 'NEW_SYMPTOM: no body_part provided — stored as raw text if symptom_raw present';
 }
 
@@ -368,6 +375,29 @@ export async function applyHealthEvent(userId, event) {
           payload.severity ?? null,
           payload.source_type === 'medical_restriction' ? 'medical_restriction' : 'injury'
         );
+        break;
+      }
+
+      case 'GENERAL_HEALTH_REQUEST': {
+        // Routing only — no clinical reasoning.
+        // Store the full text as a symptom so DIAG_KEYWORDS in adapter.js can extract diagnoses
+        // on the next engine run. Also detect body-part constraints embedded in the text.
+        const text = payload?.text || '';
+        if (text) {
+          const { data: row } = await supabase
+            .from('user_health_profile')
+            .select('symptoms')
+            .eq('user_id', userId)
+            .maybeSingle();
+          const current = Array.isArray(row?.symptoms) ? row.symptoms : [];
+          await supabase
+            .from('user_health_profile')
+            .upsert({ user_id: userId, symptoms: [...current, text] }, { onConflict: 'user_id' });
+          const region = normalizeBodyPart(text);
+          if (region) {
+            await upsertConstraint(supabase, userId, region, null, 'injury');
+          }
+        }
         break;
       }
 

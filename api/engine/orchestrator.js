@@ -130,10 +130,11 @@ RULES:
 2. current_action set + "done/hotovo/splněno/udělal" → ACTION_COMPLETED
 3. current_action set + "přeskočím/nemůžu/dnes ne/vynechám" → ACTION_SKIPPED
 4. "proč" in input → WHY_REQUEST
-5. Body part + pain ("bolí mě", "bolest v") → NEW_SYMPTOM (payload.severity = null)
+5. Simple single-pain statement ONLY — "bolí mě [body part]" or "bolest v [body part]" with no other health facts → NEW_SYMPTOM (payload.body_part = body part, payload.severity = null)
 6. Measurement number + unit → NEW_MEASUREMENT
-7. "co mám dělat / co teď / poraď" → DOMAIN_REQUEST
-8. Anything else → GENERAL_HEALTH_REQUEST`;
+7. "co mám dělat / co teď / poraď / co dál" → DOMAIN_REQUEST
+8. Health declaration with diagnoses, age, medications, or multiple health facts ("mám X", "je mi X let", "trpím X", sentences combining age + diagnoses + pain) → GENERAL_HEALTH_REQUEST (payload.text = full input)
+9. Anything else → GENERAL_HEALTH_REQUEST (payload.text = full input)`;
 
 async function classifyIntent(sessionState, userText) {
   const { pending_question, current_action_assignment } = sessionState;
@@ -299,9 +300,31 @@ function buildActResponse(dd, ctx, sessionUpdates, warnings) {
   };
 }
 
-function buildAskResponse(dd, _ctx, sessionUpdates, warnings) {
+function buildAskResponse(dd, ctx, sessionUpdates, warnings) {
+  // ASK_BLOCKING with null primary_item: engine ran but couldn't generate a specific question.
+  // Two sub-cases based on whether we have any leverage context:
+  if (!dd.primary_item && dd.reason_code === 'ASK_BLOCKING') {
+    const hasLeverageContext = Boolean(ctx?.system_leverage?.node_id);
+
+    const text = hasLeverageContext
+      // Data present but no action available yet — acknowledge and ask for movement data
+      ? 'Díky, beru to v úvahu. Pro konkrétní doporučení potřebuji ještě vědět o pohybových vzorcích — jak aktivní jsi přes den?'
+      // True zero-data — guide toward profile entry
+      : 'Zatím o tobě vím málo. Můžeš mi stručně říct, co je pro tebe zdravotně důležité — věk, diagnózy, omezení nebo co tě dnes trápí.';
+
+    return {
+      mode:          'ASK',
+      text,
+      buttons:       ['Zdravotní profil'],
+      expects_reply: true,
+      session_updates: sessionUpdates,
+      debug:         { reason_code: dd.reason_code, warnings },
+    };
+  }
+
   const question = sessionUpdates.pending_question?.text
     ?? dd.primary_item?.question
+    ?? dd.primary_item?.question_text
     ?? 'Potřebuji více informací. Upřesni prosím.';
 
   return {
@@ -485,11 +508,11 @@ function buildPresentation(eventType, classifiedPayload, result, sessionUpdates)
 }
 
 // ── Adapter-supported event types ────────────────────────────────────────────
-// All other classifier outputs map to DOMAIN_REQUEST for the adapter.
+// GENERAL_HEALTH_REQUEST is now handled (persists text to symptoms for DIAG_KEYWORDS parsing).
 const ADAPTER_EVENT_TYPES = new Set([
   'ACTION_COMPLETED', 'ACTION_SKIPPED', 'ANSWER_TO_EVIDENCE_QUESTION',
   'NEW_SYMPTOM', 'NEW_MEASUREMENT', 'NEW_CONSTRAINT',
-  'USER_PREFERENCE', 'DOMAIN_REQUEST',
+  'USER_PREFERENCE', 'DOMAIN_REQUEST', 'GENERAL_HEALTH_REQUEST',
 ]);
 
 // ── Main export ───────────────────────────────────────────────────────────────
@@ -527,7 +550,12 @@ export async function processInput(userId, userText, sessionState = {}) {
   }
 
   // 4. Build domain event (use adapter type for the event, keep original for session logic)
-  const event = buildEvent({ event_type: adapterType, payload }, state);
+  // Enrich NEW_SYMPTOM with full user text so compound sentences (e.g. "bolí mě koleno a mám
+  // vysoký tlak") carry diagnosis keywords for DIAG_KEYWORDS matching in healthEventAdapter.
+  const enrichedPayload = (adapterType === 'NEW_SYMPTOM' && userText && !payload?.symptom_raw)
+    ? { ...payload, symptom_raw: userText }
+    : payload;
+  const event = buildEvent({ event_type: adapterType, payload: enrichedPayload }, state);
 
   // 5. Persist + run engine via adapter (no direct DB access here)
   const result = await applyHealthEvent(userId, event);
@@ -536,5 +564,17 @@ export async function processInput(userId, userText, sessionState = {}) {
   const sessionUpdates = buildSessionUpdates(event_type, payload, result);
 
   // 7. Build presentation from DOMAIN_RESPONSE only
-  return buildPresentation(event_type, payload, result, sessionUpdates);
+  const presentation = buildPresentation(event_type, payload, result, sessionUpdates);
+
+  // Enrich debug with leverage + NBA label for internal debug overlay (?debug=1).
+  // Never shown to regular users — Launcher gates on query param.
+  const ctx = result.domain_response?.explanation_context;
+  if (presentation.debug && ctx) {
+    presentation.debug.leverage_node = ctx.system_leverage?.node_id
+      ? (NODE_LABEL_CS[ctx.system_leverage.node_id] ?? ctx.system_leverage.node_id)
+      : null;
+    presentation.debug.nba_label = ctx.action_context?.selected?.label ?? null;
+  }
+
+  return presentation;
 }
