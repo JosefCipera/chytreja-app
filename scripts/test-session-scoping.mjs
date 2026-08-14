@@ -42,17 +42,23 @@ function clearSession() {
 // orchestrate() is the ONLY place a network call goes out. We mock it to count calls.
 let _orchestrateCalls = 0;
 let _idleRendered     = false;
+let _renderCalled     = false;
 
 function orchestrate(_text) { _orchestrateCalls++; }
 function renderIdle()        { _idleRendered = true; }
-function render(_response)   { /* would show last saved response */ }
+function render(_r)          { _renderCalled = true; }
 
 function start(userId) {
   _uid = userId;   // scope set FIRST
 
   const last = loadLastResponse();
-  if (last) render(last);
-  else      renderIdle();  // ← no orchestrate() here
+  // ASK is ephemeral — discard stale ASK, show idle instead.
+  if (last && last.mode !== 'ASK') {
+    render(last);
+  } else {
+    if (last?.mode === 'ASK') clearSession();
+    renderIdle();
+  }
 }
 
 function logout() {
@@ -62,6 +68,7 @@ function logout() {
 function resetStartCounters() {
   _orchestrateCalls = 0;
   _idleRendered     = false;
+  _renderCalled     = false;
 }
 
 // ── Test harness ───────────────────────────────────────────────────────────────
@@ -145,26 +152,45 @@ console.log('\n[7] Unscoped legacy keys do not exist');
   assert('no unscoped chj_last_response_v1', legacyResponse === null);
 }
 
-console.log('\n[8] Auto-start guard — new user: zero orchestrate calls');
+console.log('\n[8] Auto-start guard — new user: zero orchestrate calls, idle shown');
 {
   resetStartCounters();
   start('user-new');  // no saved lastResponse → renderIdle(), not orchestrate()
 
   assert('orchestrate call count = 0', _orchestrateCalls === 0);
   assert('idle screen rendered',       _idleRendered === true);
+  assert('render() NOT called',        _renderCalled === false);
 }
 
-console.log('\n[9] Auto-start guard — returning user: render saved state, still zero auto-calls');
+console.log('\n[9] Auto-start guard — returning user with ACT state: render, no orchestrate');
 {
-  // Seed a saved response for user-returning
   _uid = 'user-returning';
   saveLastResponse({ mode: 'ACT', text: 'Jdi na procházku.', buttons: ['Hotovo'], expects_reply: false });
 
   resetStartCounters();
-  start('user-returning');  // has lastResponse → render(), not orchestrate()
+  start('user-returning');  // has ACT lastResponse → render(), not orchestrate()
 
   assert('orchestrate call count = 0', _orchestrateCalls === 0);
-  assert('idle screen NOT rendered (has saved state)', _idleRendered === false);
+  assert('render() called',            _renderCalled === true);
+  assert('idle NOT shown',             _idleRendered === false);
+}
+
+console.log('\n[9b] Stale ASK session — discarded, idle shown, session cleared');
+{
+  _uid = 'user-stale-ask';
+  saveLastResponse({ mode: 'ASK', text: 'Upřesni prosím.', buttons: [], expects_reply: true });
+  saveSession({ pending_question: { text: 'Upřesni prosím.' } });
+
+  resetStartCounters();
+  start('user-stale-ask');
+
+  assert('orchestrate call count = 0',        _orchestrateCalls === 0);
+  assert('idle shown (ASK discarded)',         _idleRendered === true);
+  assert('render() NOT called',               _renderCalled === false);
+  assert('stale session cleared from storage',
+    localStorage.getItem('chj_session_v1:user-stale-ask') === null);
+  assert('stale lastResponse cleared',
+    localStorage.getItem('chj_last_response_v1:user-stale-ask') === null);
 }
 
 console.log('\n[10] Explicit user input triggers exactly one orchestrate call');

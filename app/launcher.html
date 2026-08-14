@@ -442,12 +442,14 @@
     $app.classList.remove('hidden');
 
     // Restore last response from this user's scoped localStorage (survives reload).
-    // For a truly new user with no saved state, show idle screen and wait for input —
-    // never auto-fire a health query without explicit user action.
+    // ASK responses are ephemeral — they require live conversation context.
+    // Restoring a stale ASK produces a detached "Upřesni prosím." with no question,
+    // so we discard it and show idle instead.
     const last = loadLastResponse();
-    if (last) {
+    if (last && last.mode !== 'ASK') {
       render(last);
     } else {
+      if (last?.mode === 'ASK') clearSession();
       renderIdle();
     }
   }
