@@ -7,8 +7,9 @@
 //   C. Josef: "Dnes mě bolí koleno" → NEW_SYMPTOM → constraint → ACT or ASK
 //   D. Josef: last_domain_response cached → "Proč mám dnes jet na kole?" → EXPLAIN
 //   F. Czech modification strings: English modifications_suggested → localized in WHY text
-//   G. WHY concrete content: constraint label from master.json — not generic fallback
+//   G. WHY concrete content: leverage label from master.json — not generic fallback
 //   H. HOLD acknowledgment: NEW_SYMPTOM → HOLD must acknowledge health input
+//   I. WHY semantic: SYSTEM_LEVERAGE != SYSTEM_CONSTRAINT — leverage not labeled as "omezení"
 //
 // Hard boundary tests (9 assertions):
 //   - orchestrator does not modify NBA.selected
@@ -530,20 +531,22 @@ async function scenarioG() {
   const GENERIC_FALLBACK = 'Tato akce cílí na tvůj aktuální systémový bottleneck.';
   const hasConstraint = engineResult.system_constraint?.selected?.node_id != null;
 
-  if (hasConstraint) {
+  const hasLeverage = engineResult.system_leverage?.selected?.node_id != null;
+
+  if (hasLeverage) {
     check(
       response.text !== GENERIC_FALLBACK,
-      'WHY: concrete response — not generic fallback (constraint label resolved from master.json)',
+      'WHY: concrete response — not generic fallback (leverage label resolved from master.json)',
       `text: ${response.text?.slice(0, 120)}`
     );
     check(
-      (response.text ?? '').includes('omezení') || (response.text ?? '').includes('cílí') || (response.text ?? '').includes('Ovlivňuje'),
-      'WHY: text contains concrete engine data (constraint / action reference / goal impact)',
+      (response.text ?? '').includes('páka') || (response.text ?? '').includes('cílí') || (response.text ?? '').includes('omezení'),
+      'WHY: text contains concrete engine data (leverage / action / constraint reference)',
       `text: ${response.text?.slice(0, 120)}`
     );
   } else {
-    // Engine has no constraint identified — fallback is acceptable
-    console.log('  ℹ  No system_constraint from engine — generic WHY text is acceptable');
+    // Engine has no leverage identified — fallback is acceptable
+    console.log('  ℹ  No system_leverage from engine — generic WHY text is acceptable');
     passed += 2;
   }
 }
@@ -587,6 +590,77 @@ async function scenarioH() {
   console.log('  state restored ✓');
 }
 
+// ── Scenario I — WHY: SYSTEM_LEVERAGE !== SYSTEM_CONSTRAINT semantic check ────
+//
+// Regression: leverage point must be framed as "páka", not as "omezení".
+// Tests synthetic domain response where constraint and leverage are clearly different nodes.
+
+async function scenarioI() {
+  sep('I — WHY: SYSTEM_LEVERAGE !== SYSTEM_CONSTRAINT — leverage not labeled as constraint');
+
+  const engineResult = await runEngine(USER_ID);
+  const { computeDailyDecision } = await import('../api/engine/dailyDecision.js');
+  const dd = computeDailyDecision(engineResult);
+
+  // Explicitly different leverage and constraint nodes
+  const syntheticDomainResponse = {
+    domain:         'health',
+    engine_version: engineResult.engine_version,
+    evaluated_at:   engineResult.evaluated_at,
+    daily_decision: dd,
+    explanation_context: {
+      system_leverage:   { node_id: 'PHYSICAL_INACTIVITY', current_state: 'CONFIRMED', confidence: 'high' },
+      system_constraint: { node_id: 'HYPERTENSION',        current_state: 'CONFIRMED', confidence: 'high' },
+      action_context: {
+        ...(engineResult.next_best_action ?? {}),
+        selected: {
+          action_id:        'walking_moderate',
+          label:            'Svižná chůze — 20 minut',
+          intervention_id:  'cardio_low',
+          leverage_affinity: 'high',
+          safety:           { level: 'SAFE', modifications_suggested: [] },
+          goal_impact:      { branches: ['SURVIVAL_HEALTHSPAN', 'FUNCTIONAL_INDEPENDENCE'], survival_healthspan: true, functional_independence: true, mechanism_count: 2 },
+        },
+      },
+      evidence_context: [],
+    },
+  };
+
+  const response = await processInput(USER_ID, 'Proč?', { last_domain_response: syntheticDomainResponse });
+  showResponse(response);
+
+  const text            = response.text ?? '';
+  const leverageLabel   = 'Fyzická inaktivita';    // NODE_LABEL_CS['PHYSICAL_INACTIVITY']
+  const constraintLabel = 'Arteriální hypertenze'; // NODE_LABEL_CS['HYPERTENSION']
+
+  check(response.mode === 'EXPLAIN', 'mode = EXPLAIN');
+
+  // Leverage must appear with "páka" framing, not "omezení"
+  check(
+    text.includes('páka') && text.includes(leverageLabel),
+    'WHY: leverage node framed as "páka" — not silently omitted',
+    `text: ${text.slice(0, 160)}`
+  );
+  check(
+    !text.includes(`omezení: ${leverageLabel}`) && !text.includes(`omezení:${leverageLabel}`),
+    'WHY: leverage label not conflated with "omezení" (semantic correctness)',
+    `text: ${text.slice(0, 160)}`
+  );
+
+  // If constraint appears it must carry "omezení" framing
+  if (text.includes(constraintLabel)) {
+    check(
+      text.includes('omezení'),
+      'WHY: constraint node uses "omezení" framing — not confused with leverage',
+      `text: ${text.slice(0, 160)}`
+    );
+  } else {
+    // Constraint not shown (optional deeper WHY) — acceptable
+    console.log('  ℹ  Constraint not shown in WHY (optional) — semantic check skipped');
+    passed += 1;
+  }
+}
+
 // ── Run ───────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -602,6 +676,7 @@ async function main() {
   await scenarioF();
   await scenarioG();
   await scenarioH();
+  await scenarioI();
 
   const total = passed + failed;
   sep(`Results: ${passed}/${total} passed${failed ? ` — ${failed} FAILED` : ''}`);

@@ -396,25 +396,45 @@ function buildWhyResponse(sessionState) {
   }
 
   const parts = [];
-  const constraint      = ctx.system_constraint;
-  const action          = ctx.action_context?.selected;
+  const leverage    = ctx.system_leverage;
+  const constraint  = ctx.system_constraint;
+  const action      = ctx.action_context?.selected;
 
-  // system_constraint.selected has node_id, not label — look up from master.json
+  // Both selected objects have node_id (not label) — resolve from master.json
+  const leverageLabel   = NODE_LABEL_CS[leverage?.node_id]   ?? null;
   const constraintLabel = NODE_LABEL_CS[constraint?.node_id] ?? null;
   const actionLabel     = action?.label ?? null;
+  const affinity        = action?.leverage_affinity ?? null;
 
-  if (constraintLabel && actionLabel) {
-    parts.push(`${actionLabel} cílí na tvoje hlavní omezení: ${constraintLabel}.`);
-  } else if (constraintLabel) {
-    parts.push(`Hlavní omezení: ${constraintLabel}.`);
+  // Primary: SYSTEM_LEVERAGE — why this area
+  if (leverageLabel) {
+    parts.push(`Teď je největší páka v oblasti: ${leverageLabel}.`);
   }
 
-  // goal_impact is {branches: string[], survival_healthspan: bool, ...} — map to Czech
-  const branches = (action?.goal_impact?.branches ?? [])
-    .map(b => GOAL_BRANCH_CS[b]).filter(Boolean);
-  if (branches.length > 0) parts.push(`Ovlivňuje: ${branches.join(' + ')}.`);
+  // Secondary: action + goal_impact — why this intervention, what it achieves
+  if (actionLabel) {
+    const branches = (action?.goal_impact?.branches ?? [])
+      .map(b => GOAL_BRANCH_CS[b]).filter(Boolean);
+    const verb     = affinity === 'high' ? 'přímo ovlivňuje' : 'ovlivňuje';
+    const goalPart = branches.length > 0
+      ? ` a podporuje ${branches.map(b => b.toLowerCase()).join(' a ')}`
+      : '';
 
-  // Include modification hint if action is safe only with modification
+    if (leverageLabel) {
+      // "Svižná chůze ji přímo ovlivňuje a podporuje zdravé přežití."
+      parts.push(`${actionLabel} ji ${verb}${goalPart}.`);
+    } else if (branches.length > 0) {
+      // No leverage identified — neutral reference to goal
+      parts.push(`${actionLabel} cílí na ${branches.map(b => b.toLowerCase()).join(' a ')}.`);
+    }
+  }
+
+  // Optional: SYSTEM_CONSTRAINT — deeper WHY; shown only when different from leverage
+  if (constraintLabel && constraintLabel !== leverageLabel) {
+    parts.push(`Aktuální hlavní omezení: ${constraintLabel}.`);
+  }
+
+  // Modification hint when action has safety condition
   if (action?.safety?.level === 'SAFE_WITH_MODIFICATION') {
     const mod = action?.safety?.modifications_suggested?.[0];
     if (mod) parts.push(`Doporučená úprava: ${localizeMod(mod)}.`);
