@@ -24,6 +24,55 @@
 
 import Anthropic from '@anthropic-ai/sdk';
 import { applyHealthEvent } from './healthEventAdapter.js';
+import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+// ── Presentation data ─────────────────────────────────────────────────────────
+// master.json node labels (id → label_cs) — loaded once at module init.
+const _dir = dirname(fileURLToPath(import.meta.url));
+const _masterNodes = JSON.parse(
+  readFileSync(join(_dir, '../../data/engine/master.json'), 'utf8')
+).nodes;
+const NODE_LABEL_CS = Object.fromEntries(_masterNodes.map(n => [n.id, n.label_cs]));
+
+// Czech translations of English modification strings from nextBestAction.js.
+// Internal engine metadata stays English; user-facing text is translated here.
+const MODIFICATIONS_CS = {
+  'Monitor blood pressure before and after':
+    'Sleduj krevní tlak před cvičením i po něm',
+  'Avoid Valsalva (breath-holding during exertion)':
+    'Nevydrž dech při cvičení',
+  'Stop if chest pain, severe dyspnea, or dizziness':
+    'Zastav při bolesti na hrudi, dušnosti nebo závratích',
+  'Consult cardiologist or GP before beginning':
+    'Nejprve se poraď s kardiologem nebo svým lékařem',
+  'Start with LIGHT or MODERATE intensity first':
+    'Začni s lehkou nebo střední intenzitou',
+  'Monitor blood pressure and heart rate response':
+    'Sleduj krevní tlak a pulz',
+  'Fill in health profile (diagnoses, medications)':
+    'Doplň zdravotní profil (diagnózy, léky)',
+  'Start with MODERATE intensity actions until baseline is documented':
+    'Začni se střední intenzitou, dokud nemáš zdokumentovaný výchozí stav',
+  'Clarify injury severity (mild / moderate / severe) before proceeding':
+    'Upřesni závažnost zranění (mírné / střední / závažné)',
+  'Use stable wall or chair support for all single-leg variants':
+    'Při cvičení na jedné noze drž stěnu nebo opěradlo',
+  'Begin with eyes-open only; progress to eyes-closed only when stable':
+    'Začni jen s otevřenýma očima; na zavřené oči přejdi až budeš stabilní',
+  'Supervised or near-support setting for first sessions':
+    'První cvičení s dohledem nebo v blízkosti opory',
+};
+
+function localizeMod(s) {
+  return MODIFICATIONS_CS[s] ?? s;
+}
+
+const GOAL_BRANCH_CS = {
+  SURVIVAL_HEALTHSPAN:     'Zdravé přežití',
+  FUNCTIONAL_INDEPENDENCE: 'Funkční samostatnost',
+};
 
 let client;
 function getClient() {
@@ -238,7 +287,7 @@ function buildActResponse(dd, ctx, sessionUpdates, warnings) {
   let text = action?.label ? `${action.label}.` : 'Tvá dnešní akce je připravena.';
 
   const modification = action?.safety?.modifications_suggested?.[0];
-  if (modification) text += ` Úprava: ${modification}.`;
+  if (modification) text += ` Úprava: ${localizeMod(modification)}.`;
 
   return {
     mode:          'ACT',
@@ -265,15 +314,24 @@ function buildAskResponse(dd, _ctx, sessionUpdates, warnings) {
   };
 }
 
-function buildHoldResponse(dd, _ctx, sessionUpdates, warnings) {
-  const label  = dd.primary_item?.label ?? 'Akce';
-  const text   = dd.reason_code === 'HOLD_TOO_EARLY'
+const HEALTH_INPUT_TYPES = new Set([
+  'NEW_SYMPTOM', 'NEW_CONSTRAINT', 'NEW_MEASUREMENT',
+]);
+
+function buildHoldResponse(dd, _ctx, sessionUpdates, warnings, eventType) {
+  const label    = dd.primary_item?.label ?? 'Akce';
+  const holdText = dd.reason_code === 'HOLD_TOO_EARLY'
     ? `${label} — výsledky ještě dozrávají. Počkej na příští hodnocení.`
     : `${label} — potřebuji více opakování pro přehodnocení.`;
 
+  // Acknowledge health input so user knows CHJ processed the new information
+  const ackText = HEALTH_INPUT_TYPES.has(eventType)
+    ? 'Beru novou informaci v úvahu. Po přepočtu se dnešní doporučení nemění. '
+    : '';
+
   return {
     mode:          'HOLD',
-    text,
+    text:          ackText + holdText,
     buttons:       [],
     expects_reply: false,
     session_updates: sessionUpdates,
@@ -338,16 +396,29 @@ function buildWhyResponse(sessionState) {
   }
 
   const parts = [];
-  const constraint = ctx.system_constraint;
-  const leverage   = ctx.system_leverage;
-  const action     = ctx.action_context?.selected;
+  const constraint      = ctx.system_constraint;
+  const action          = ctx.action_context?.selected;
 
-  if (constraint?.label) parts.push(`Hlavní omezení: ${constraint.label}.`);
-  if (leverage?.label)   parts.push(`Nejlepší páka: ${leverage.label}.`);
-  const goalImpact = typeof action?.goal_impact === 'string'
-    ? action.goal_impact
-    : action?.goal_impact?.label ?? null;
-  if (goalImpact) parts.push(`Vliv na cíl: ${goalImpact}.`);
+  // system_constraint.selected has node_id, not label — look up from master.json
+  const constraintLabel = NODE_LABEL_CS[constraint?.node_id] ?? null;
+  const actionLabel     = action?.label ?? null;
+
+  if (constraintLabel && actionLabel) {
+    parts.push(`${actionLabel} cílí na tvoje hlavní omezení: ${constraintLabel}.`);
+  } else if (constraintLabel) {
+    parts.push(`Hlavní omezení: ${constraintLabel}.`);
+  }
+
+  // goal_impact is {branches: string[], survival_healthspan: bool, ...} — map to Czech
+  const branches = (action?.goal_impact?.branches ?? [])
+    .map(b => GOAL_BRANCH_CS[b]).filter(Boolean);
+  if (branches.length > 0) parts.push(`Ovlivňuje: ${branches.join(' + ')}.`);
+
+  // Include modification hint if action is safe only with modification
+  if (action?.safety?.level === 'SAFE_WITH_MODIFICATION') {
+    const mod = action?.safety?.modifications_suggested?.[0];
+    if (mod) parts.push(`Doporučená úprava: ${localizeMod(mod)}.`);
+  }
 
   const text = parts.length > 0
     ? parts.join(' ')
@@ -386,7 +457,7 @@ function buildPresentation(eventType, classifiedPayload, result, sessionUpdates)
   switch (dd.mode) {
     case 'ACT':             return buildActResponse(dd, ctx, sessionUpdates, warnings);
     case 'ASK':             return buildAskResponse(dd, ctx, sessionUpdates, warnings);
-    case 'HOLD':            return buildHoldResponse(dd, ctx, sessionUpdates, warnings);
+    case 'HOLD':            return buildHoldResponse(dd, ctx, sessionUpdates, warnings, eventType);
     case 'SAFETY':          return buildSafetyBlockedResponse(dd, sessionUpdates, warnings);
     case 'SAFETY_CRITICAL': return buildSafetyCriticalResponse(dd, sessionUpdates, warnings);
     default:                return buildFallbackResponse(result, sessionUpdates, warnings);

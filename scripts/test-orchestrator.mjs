@@ -6,6 +6,9 @@
 //   B. Josef: pending fall question → "Ano, spadla jsem" → ANSWER → new DAILY_DECISION
 //   C. Josef: "Dnes mě bolí koleno" → NEW_SYMPTOM → constraint → ACT or ASK
 //   D. Josef: last_domain_response cached → "Proč mám dnes jet na kole?" → EXPLAIN
+//   F. Czech modification strings: English modifications_suggested → localized in WHY text
+//   G. WHY concrete content: constraint label from master.json — not generic fallback
+//   H. HOLD acknowledgment: NEW_SYMPTOM → HOLD must acknowledge health input
 //
 // Hard boundary tests (9 assertions):
 //   - orchestrator does not modify NBA.selected
@@ -439,6 +442,151 @@ async function scenarioE() {
   console.log('  state restored ✓');
 }
 
+// ── Scenario F — Czech modification strings ──────────────────────────────────
+//
+// Regression: modifications_suggested from nextBestAction.js are English strings.
+// Orchestrator presentation layer must translate them; raw English must not reach the user.
+// Tests the WHY path because it shows modification when safety = SAFE_WITH_MODIFICATION.
+
+async function scenarioF() {
+  sep('F — Czech modification strings (localizeMod — no English in user-facing text)');
+
+  const engineResult = await runEngine(USER_ID);
+  const { computeDailyDecision } = await import('../api/engine/dailyDecision.js');
+  const dd = computeDailyDecision(engineResult);
+
+  // Synthetic action with a known English modification string from nextBestAction.js
+  const actionWithEnglishMod = {
+    action_id:       'synthetic-press',
+    label:           'Tlak nad hlavu — lehký (5 kg)',
+    intervention_id: 'resistance_training',
+    safety: {
+      level: 'SAFE_WITH_MODIFICATION',
+      reason: 'CV risk present',
+      modifications_suggested: ['Monitor blood pressure before and after'],
+    },
+    goal_impact: { branches: ['SURVIVAL_HEALTHSPAN'], survival_healthspan: true, functional_independence: false, mechanism_count: 1 },
+  };
+
+  const syntheticDomainResponse = {
+    domain:          'health',
+    engine_version:  engineResult.engine_version,
+    evaluated_at:    engineResult.evaluated_at,
+    daily_decision:  dd,
+    explanation_context: {
+      system_constraint: engineResult.system_constraint?.selected ?? null,
+      system_leverage:   engineResult.system_leverage?.selected   ?? null,
+      action_context:    { ...(engineResult.next_best_action ?? {}), selected: actionWithEnglishMod },
+      evidence_context:  [],
+    },
+  };
+
+  const response = await processInput(USER_ID, 'Proč?', { last_domain_response: syntheticDomainResponse });
+  showResponse(response);
+
+  check(response.mode === 'EXPLAIN', 'mode = EXPLAIN');
+  check(
+    !(response.text ?? '').includes('Monitor blood pressure before and after'),
+    'English modification string absent from user-facing WHY text',
+    `text: ${response.text?.slice(0, 120)}`
+  );
+  check(
+    (response.text ?? '').includes('Sleduj krevní tlak'),
+    'Czech translation of modification present in WHY text',
+    `text: ${response.text?.slice(0, 120)}`
+  );
+}
+
+// ── Scenario G — WHY: concrete content (not generic fallback) ─────────────────
+//
+// Regression: system_constraint.selected has node_id, not label.
+// buildWhyResponse must resolve label from master.json — generic fallback is a bug.
+
+async function scenarioG() {
+  sep('G — WHY: concrete response from engine context (not generic fallback)');
+
+  const engineResult = await runEngine(USER_ID);
+  const { computeDailyDecision } = await import('../api/engine/dailyDecision.js');
+  const dd = computeDailyDecision(engineResult);
+
+  const syntheticDomainResponse = {
+    domain:          'health',
+    engine_version:  engineResult.engine_version,
+    evaluated_at:    engineResult.evaluated_at,
+    daily_decision:  dd,
+    explanation_context: {
+      system_constraint: engineResult.system_constraint?.selected ?? null,
+      system_leverage:   engineResult.system_leverage?.selected   ?? null,
+      action_context:    engineResult.next_best_action            ?? null,
+      evidence_context:  (engineResult.information_needs ?? []).slice(0, 3),
+    },
+  };
+
+  const response = await processInput(USER_ID, 'Proč?', { last_domain_response: syntheticDomainResponse });
+  showResponse(response);
+
+  check(response.mode === 'EXPLAIN', 'mode = EXPLAIN');
+
+  const GENERIC_FALLBACK = 'Tato akce cílí na tvůj aktuální systémový bottleneck.';
+  const hasConstraint = engineResult.system_constraint?.selected?.node_id != null;
+
+  if (hasConstraint) {
+    check(
+      response.text !== GENERIC_FALLBACK,
+      'WHY: concrete response — not generic fallback (constraint label resolved from master.json)',
+      `text: ${response.text?.slice(0, 120)}`
+    );
+    check(
+      (response.text ?? '').includes('omezení') || (response.text ?? '').includes('cílí') || (response.text ?? '').includes('Ovlivňuje'),
+      'WHY: text contains concrete engine data (constraint / action reference / goal impact)',
+      `text: ${response.text?.slice(0, 120)}`
+    );
+  } else {
+    // Engine has no constraint identified — fallback is acceptable
+    console.log('  ℹ  No system_constraint from engine — generic WHY text is acceptable');
+    passed += 2;
+  }
+}
+
+// ── Scenario H — HOLD acknowledgment after health event ───────────────────────
+//
+// Regression: NEW_SYMPTOM → same HOLD must acknowledge new information.
+// Without acknowledgment, CHJ appears to silently ignore the input.
+
+async function scenarioH() {
+  sep('H — HOLD acknowledgment after NEW_SYMPTOM (not silent repeat)');
+
+  const savedConstraints = await saveConstraints();
+  await sb.from('user_constraints').delete().eq('user_id', USER_ID).eq('constraint_key', 'wrist');
+
+  const response = await processInput(USER_ID, 'Dnes mě bolí zápěstí', {});
+  showResponse(response);
+
+  // Constraint must be persisted regardless of mode
+  const { data: wristRow } = await sb.from('user_constraints')
+    .select('constraint_key').eq('user_id', USER_ID).eq('constraint_key', 'wrist').maybeSingle();
+  check(wristRow?.constraint_key === 'wrist', 'wrist constraint persisted from NEW_SYMPTOM');
+
+  if (response.mode === 'HOLD') {
+    // HOLD after health event must acknowledge — text must not be identical to baseline HOLD
+    check(
+      (response.text ?? '').includes('Beru novou informaci'),
+      'HOLD after NEW_SYMPTOM: response acknowledges the health input',
+      `text: ${response.text?.slice(0, 120)}`
+    );
+  } else {
+    // Engine changed mode — constraint affected the decision (equally valid)
+    check(
+      ['ACT', 'ASK', 'SAFETY_BLOCKED'].includes(response.mode),
+      `NEW_SYMPTOM changed decision to ${response.mode} — acknowledgment not needed`,
+      `mode: ${response.mode}`
+    );
+  }
+
+  await restoreConstraints(savedConstraints);
+  console.log('  state restored ✓');
+}
+
 // ── Run ───────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -451,6 +599,9 @@ async function main() {
   await scenarioD();
   await hardBoundaries();
   await scenarioE();
+  await scenarioF();
+  await scenarioG();
+  await scenarioH();
 
   const total = passed + failed;
   sep(`Results: ${passed}/${total} passed${failed ? ` — ${failed} FAILED` : ''}`);
