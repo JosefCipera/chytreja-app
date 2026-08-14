@@ -393,10 +393,9 @@ export function inference(activatedStates, person, clinicalHistory, observations
       missing_evidence: [
         {
           type:     'OBSERVATION',
-          obs_type: 'floor_rise_test',
-          note:     'CHJ functional assessment: vstání ze země bez opory (ano/ne). ' +
-                    'Dekatlon onboarding: vstat_ze_zeme. ' +
-                    '(Bez konkrétního validovaného protokolu — zatím interní CHJ screening.)',
+          obs_type: 'vstat_ze_zeme',
+          note:     'CHJ functional self-report: vstání ze země bez opory (ano/ne). ' +
+                    '(Interní CHJ screening — epistemicky odlišné od klinicky validovaných testů.)',
         },
       ],
     });

@@ -107,11 +107,11 @@ function floorRiseProjection(nodeStates, person, clinicalHistory) {
       note: 'Žádné přímé ani inferencované upstream signály pro tento projekční cíl nejsou k dispozici.',
     }],
     missing_evidence: [
-      {
+      ...(!hasFloorTestData ? [{
         type:     'OBSERVATION',
-        obs_type: 'floor_rise_test',
-        note:     'Přímý test: vstání ze země bez opory (ano/ne) — Princeton IV doporučuje funkční screening u mužů s ED; Dekatlon: vstat_ze_zeme',
-      },
+        obs_type: 'vstat_ze_zeme',
+        note:     'CHJ functional self-report: vstání ze země bez opory (ano/ne) — Princeton IV doporučuje funkční screening u mužů s ED.',
+      }] : []),
       {
         type:     'OBSERVATION',
         obs_type: 'validated_strength_assessment',

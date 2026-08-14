@@ -312,6 +312,69 @@ function registrySmoke() {
   );
 }
 
+// ── S5: vstat_ze_zeme answer closes LOSS_OF_FLOOR_RISE_ABILITY loop ───────────
+// Regression for inference.js bug: rule checked oi['vstat_ze_zeme'] but declared
+// missing_evidence: obs_type='floor_rise_test'. Fix: NBE now declares vstat_ze_zeme.
+// This test verifies the full loop: NBE fires → answer persists → NBE gone.
+
+async function s5_vstat_ze_zeme_closes_loop() {
+  sep('S5 — vstat_ze_zeme answer closes LOSS_OF_FLOOR_RISE_ABILITY loop');
+  console.log('  Regression: inference.js declared floor_rise_test but checked vstat_ze_zeme');
+
+  const savedPhysical = await savePhysical();
+
+  // Seed: sedentary_hours_day → PHYSICAL_INACTIVITY → PHYSICAL_DECONDITIONING active.
+  // vstat_ze_zeme absent → hasFloorData=false → LOSS_OF_FLOOR_RISE_ABILITY should appear.
+  await restorePhysical({ sedentary_hours_day: 10 });
+
+  const { runEngine } = await import('../api/engine/engine.js');
+
+  // Baseline: floor loop open
+  const baseline = await runEngine(USER_ID);
+  const baselineFloor = baseline.node_states.find(s => s.node_id === 'LOSS_OF_FLOOR_RISE_ABILITY');
+  const baselineNbeVstat    = baseline.information_needs?.find(n => n.evidence_type === 'vstat_ze_zeme');
+  const baselineNbeOldName  = baseline.information_needs?.find(n => n.evidence_type === 'floor_rise_test');
+
+  console.log(`  baseline LOSS_OF_FLOOR_RISE_ABILITY : ${baselineFloor?.current_state ?? 'not present'}`);
+  console.log(`  baseline NBE vstat_ze_zeme          : ${baselineNbeVstat ? 'present ✓' : 'absent ✗'}`);
+  console.log(`  baseline NBE floor_rise_test (old)  : ${baselineNbeOldName ? 'present — BUG' : 'absent ✓'}`);
+
+  check(Boolean(baselineFloor),       'baseline: LOSS_OF_FLOOR_RISE_ABILITY present');
+  check(Boolean(baselineNbeVstat),    'baseline: NBE evidence_type = vstat_ze_zeme (correct name after fix)');
+  check(!baselineNbeOldName,          'baseline: NBE floor_rise_test NOT present (old wrong name gone)');
+
+  // Answer vstat_ze_zeme = 'yes' via ANSWER_TO_EVIDENCE_QUESTION
+  const event = {
+    event_type: 'ANSWER_TO_EVIDENCE_QUESTION',
+    event_id:   crypto.randomUUID(),
+    source:     'text',
+    timestamp:  new Date().toISOString(),
+    payload: { evidence_type: 'vstat_ze_zeme', value: 'yes' },
+  };
+  const result = await applyHealthEvent(USER_ID, event);
+  showResult(result);
+
+  // Verify persistence
+  const { data: row } = await sb.from('user_health_profile')
+    .select('physical').eq('user_id', USER_ID).maybeSingle();
+
+  check(result.persistence_status === 'ok',       'persistence_status = ok');
+  check(row?.physical?.vstat_ze_zeme === 'yes',   'physical.vstat_ze_zeme = yes');
+
+  // Fresh engine: loop closed
+  const after = await runEngine(USER_ID);
+  const afterFloor    = after.node_states.find(s => s.node_id === 'LOSS_OF_FLOOR_RISE_ABILITY');
+  const afterNbeVstat = after.information_needs?.find(n => n.evidence_type === 'vstat_ze_zeme');
+
+  check(!afterFloor,    'after: LOSS_OF_FLOOR_RISE_ABILITY gone',
+    `actual: ${afterFloor?.current_state ?? 'not present'}`);
+  check(!afterNbeVstat, 'after: vstat_ze_zeme NBE gone',
+    `still present: ${afterNbeVstat?.evidence_type ?? 'none'}`);
+
+  await restorePhysical(savedPhysical);
+  console.log('  state restored ✓');
+}
+
 // ── Run ───────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -324,6 +387,7 @@ async function main() {
   await s2_knee_severity_answer();
   await s3_fall_history();
   await s4_vynest_nakup();
+  await s5_vstat_ze_zeme_closes_loop();
 
   const total = passed + failed;
   sep(`Results: ${passed}/${total} passed${failed ? ` — ${failed} FAILED` : ''}`);
