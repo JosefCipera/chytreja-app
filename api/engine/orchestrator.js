@@ -250,6 +250,12 @@ const NBE_QUESTION_MAP = {
   vynest_nakup:    'Zvládneš vynést nákup (5 kg) do 2. patra bez zastavení?',
   zvednout_vnouce: 'Zvládneš zvednout dítě nebo těžší předmět ze země bez bolesti?',
   vstat_ze_zeme:   'Dokážeš vstát ze země bez opory rukou?',
+  // Functional tests (clinical / semi-clinical)
+  floor_rise_test: 'Pokud je pro tebe bezpečné jít na zem, zkus si sednout na zem a vstát s co nejmenší oporou. Zvládneš vstát? Pokud si nejsi jistý/á stabilitou, test nedělej sám/sama.',
+  chair_stand_30s: 'Pokud je to pro tebe bezpečné, kolikrát vstaneš ze židle za 30 sekund bez opory rukou? Napiš číslo.',
+  tug_test:        'Máš změřený TUG test — vstát ze židle, ujít 3 m, otočit se a vrátit? Pokud ano, napiš čas v sekundách.',
+  grip_strength:   'Máš změřenou sílu stisku dynamometrem? Pokud ano, napiš hodnotu.',
+  validated_strength_assessment: 'Máš výsledek ověřeného testu svalové síly? Pokud ano, napiš typ testu a výsledek.',
   // Constraint severity
   knee_severity:       'Jak moc tě koleno omezuje? Mírně, středně, nebo výrazně?',
   hip_severity:        'Jak moc tě kyčel omezuje? Mírně, středně, nebo výrazně?',

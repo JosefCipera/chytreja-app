@@ -25,6 +25,11 @@ const NBE_QUESTION_MAP = {
   vynest_nakup:    'Zvládneš vynést nákup (5 kg) do 2. patra bez zastavení?',
   zvednout_vnouce: 'Zvládneš zvednout dítě nebo těžší předmět ze země bez bolesti?',
   vstat_ze_zeme:   'Dokážeš vstát ze země bez opory rukou?',
+  floor_rise_test: 'Pokud je pro tebe bezpečné jít na zem, zkus si sednout na zem a vstát s co nejmenší oporou. Zvládneš vstát? Pokud si nejsi jistý/á stabilitou, test nedělej sám/sama.',
+  chair_stand_30s: 'Pokud je to pro tebe bezpečné, kolikrát vstaneš ze židle za 30 sekund bez opory rukou? Napiš číslo.',
+  tug_test:        'Máš změřený TUG test — vstát ze židle, ujít 3 m, otočit se a vrátit? Pokud ano, napiš čas v sekundách.',
+  grip_strength:   'Máš změřenou sílu stisku dynamometrem? Pokud ano, napiš hodnotu.',
+  validated_strength_assessment: 'Máš výsledek ověřeného testu svalové síly? Pokud ano, napiš typ testu a výsledek.',
   knee_severity:       'Jak moc tě koleno omezuje? Mírně, středně, nebo výrazně?',
   hip_severity:        'Jak moc tě kyčel omezuje? Mírně, středně, nebo výrazně?',
   lower_back_severity: 'Jak moc tě záda omezují? Mírně, středně, nebo výrazně?',
@@ -213,6 +218,71 @@ console.log('\n[7] lab_ldl NBE → lab instruction');
   assert('not forbidden', notForbidden(response.text));
 }
 
+console.log('\n[7b] floor_rise_test → safe-framed instruction');
+{
+  const dd = {
+    mode: 'ASK', reason_code: 'ASK_BLOCKING',
+    primary_item: { type: 'NEXT_BEST_EVIDENCE', evidence_type: 'floor_rise_test', acquisition_method: 'functional_test' },
+  };
+  const { response, sessionUpdates } = simulateAskFlow(dd);
+  assert('floor_rise_test has safe framing', response.text.includes('bezpečné'));
+  assert('floor_rise_test not generic fallback', response.text !== 'Potřebuji výsledek funkčního testu. Zvládneš ho teď?');
+  assert('not forbidden', notForbidden(response.text));
+  assert('response.text === pending_question.text', response.text === sessionUpdates.pending_question?.text);
+}
+
+console.log('\n[7c] validated_strength_assessment → neutral, no implicit chair_stand');
+{
+  const dd = {
+    mode: 'ASK', reason_code: 'ASK_BLOCKING',
+    primary_item: { type: 'NEXT_BEST_EVIDENCE', evidence_type: 'validated_strength_assessment', acquisition_method: 'functional_test' },
+  };
+  const { response } = simulateAskFlow(dd);
+  assert('validated_strength_assessment neutral text', response.text === 'Máš výsledek ověřeného testu svalové síly? Pokud ano, napiš typ testu a výsledek.');
+  assert('does not mention chair stand (would assume specific test)', !response.text.toLowerCase().includes('chair') && !response.text.includes('židle za 30'));
+  assert('not generic fallback', response.text !== 'Potřebuji výsledek funkčního testu. Zvládneš ho teď?');
+  assert('not forbidden', notForbidden(response.text));
+}
+
+console.log('\n[7d] chair_stand_30s → safe-framed count question');
+{
+  const dd = {
+    mode: 'ASK', reason_code: 'ASK_BLOCKING',
+    primary_item: { type: 'NEXT_BEST_EVIDENCE', evidence_type: 'chair_stand_30s', acquisition_method: 'functional_test' },
+  };
+  const { response } = simulateAskFlow(dd);
+  assert('chair_stand_30s asks for count', response.text.includes('30 sekund'));
+  assert('has safe framing', response.text.includes('bezpečné'));
+  assert('not generic fallback', response.text !== 'Potřebuji výsledek funkčního testu. Zvládneš ho teď?');
+  assert('not forbidden', notForbidden(response.text));
+}
+
+console.log('\n[7e] tug_test → clinical framing, no assumption user knows test');
+{
+  const dd = {
+    mode: 'ASK', reason_code: 'ASK_BLOCKING',
+    primary_item: { type: 'NEXT_BEST_EVIDENCE', evidence_type: 'tug_test', acquisition_method: 'functional_test' },
+  };
+  const { response } = simulateAskFlow(dd);
+  assert('tug_test explains test protocol', response.text.includes('3 m'));
+  assert('asks for time in seconds', response.text.includes('sekund'));
+  assert('not generic fallback', response.text !== 'Potřebuji výsledek funkčního testu. Zvládneš ho teď?');
+  assert('not forbidden', notForbidden(response.text));
+}
+
+console.log('\n[7f] grip_strength → dynamometer only, no substitute test');
+{
+  const dd = {
+    mode: 'ASK', reason_code: 'ASK_BLOCKING',
+    primary_item: { type: 'NEXT_BEST_EVIDENCE', evidence_type: 'grip_strength', acquisition_method: 'functional_test' },
+  };
+  const { response } = simulateAskFlow(dd);
+  assert('grip_strength mentions dynamometer', response.text.includes('dynamometrem'));
+  assert('no substitute home test suggested', !response.text.includes('stiskni') && !response.text.includes('pevně'));
+  assert('not generic fallback', response.text !== 'Potřebuji výsledek funkčního testu. Zvládneš ho teď?');
+  assert('not forbidden', notForbidden(response.text));
+}
+
 console.log('\n[8] UNKNOWN evidence_type + known acquisition_method → method fallback, not "Upřesni prosím."');
 {
   const dd = {
@@ -253,6 +323,7 @@ console.log('\n[10] All required evidence_types from spec have explicit mapping'
     'recent_falls', 'fall_history', 'gait_stability',
     'vynest_nakup', 'zvednout_vnouce', 'vstat_ze_zeme',
     'knee_severity', 'lab_hba1c', 'lab_apob', 'lab_ldl',
+    'floor_rise_test', 'chair_stand_30s', 'tug_test', 'grip_strength', 'validated_strength_assessment',
   ];
   for (const et of required) {
     const q = NBE_QUESTION_MAP[et];
