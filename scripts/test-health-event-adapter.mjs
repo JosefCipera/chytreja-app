@@ -375,6 +375,72 @@ async function s5_vstat_ze_zeme_closes_loop() {
   console.log('  state restored ✓');
 }
 
+// ── S6: validated_strength_assessment — availability semantics ─────────────────
+// "Nemám výsledek" must write evidence_availability=NOT_AVAILABLE (not a raw string
+// into physical.validated_strength_assessment). Fresh engine must stop re-asking.
+
+async function s6_validated_strength_availability() {
+  sep('S6 — validated_strength_assessment "Nemám" → availability=NOT_AVAILABLE → NBE gone');
+  console.log('  Regression: "Nemám" closed loop with NOT_AVAILABLE, not raw string persistence');
+
+  const savedPhysical = await savePhysical();
+
+  // Seed: sedentary → PHYSICAL_DECONDITIONING active → LOW_MUSCLE_STRENGTH UNKNOWN
+  // → missing_evidence: validated_strength_assessment → NBE fires.
+  // Clear validated_strength_assessment so we start from a clean state.
+  const seedPhysical = { sedentary_hours_day: 10 };
+  await restorePhysical(seedPhysical);
+
+  const { runEngine } = await import('../api/engine/engine.js');
+
+  // Baseline: validated_strength_assessment NBE should be present
+  const baseline = await runEngine(USER_ID);
+  const baselineNbe = baseline.information_needs?.find(n => n.evidence_type === 'validated_strength_assessment');
+
+  console.log(`  baseline NBE validated_strength_assessment: ${baselineNbe ? 'present ✓' : 'absent ✗'}`);
+  check(Boolean(baselineNbe), 'baseline: validated_strength_assessment NBE present');
+
+  // Answer "Nemám" — should write availability only, no value to physical.validated_strength_assessment
+  const event = {
+    event_type: 'ANSWER_TO_EVIDENCE_QUESTION',
+    event_id:   crypto.randomUUID(),
+    source:     'text',
+    timestamp:  new Date().toISOString(),
+    payload: { evidence_type: 'validated_strength_assessment', value: 'Nemám' },
+  };
+  const result = await applyHealthEvent(USER_ID, event);
+  showResult(result);
+
+  // Verify: availability marker written, no raw value in physical.validated_strength_assessment
+  const { data: row } = await sb.from('user_health_profile')
+    .select('physical').eq('user_id', USER_ID).maybeSingle();
+
+  const availStatus   = row?.physical?.evidence_availability?.validated_strength_assessment;
+  const rawValue      = row?.physical?.validated_strength_assessment;
+
+  console.log(`  evidence_availability.validated_strength_assessment: ${availStatus ?? 'missing'}`);
+  console.log(`  physical.validated_strength_assessment (raw):        ${rawValue ?? 'absent ✓'}`);
+
+  check(result.persistence_status === 'ok',        'persistence_status = ok');
+  check(availStatus === 'NOT_AVAILABLE',            'evidence_availability.validated_strength_assessment = NOT_AVAILABLE');
+  check(rawValue == null,                           'physical.validated_strength_assessment NOT written (no raw string)');
+
+  // Fresh engine: NBE must not re-appear
+  const after = await runEngine(USER_ID);
+  const afterNbe = after.information_needs?.find(n => n.evidence_type === 'validated_strength_assessment');
+
+  console.log(`  after NBE validated_strength_assessment: ${afterNbe ? 'still present — BUG' : 'absent ✓'}`);
+  check(!afterNbe, 'after: validated_strength_assessment NBE gone (availability resolved)',
+    afterNbe ? `still present: evidence_type=${afterNbe.evidence_type}` : '');
+
+  // Verify engine ran and produced node_states (not stuck / not crashed)
+  check(Array.isArray(after.node_states) && after.node_states.length > 0,
+    'after: engine ran and produced node_states (not crashed)');
+
+  await restorePhysical(savedPhysical);
+  console.log('  state restored ✓');
+}
+
 // ── Run ───────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -388,6 +454,7 @@ async function main() {
   await s3_fall_history();
   await s4_vynest_nakup();
   await s5_vstat_ze_zeme_closes_loop();
+  await s6_validated_strength_availability();
 
   const total = passed + failed;
   sep(`Results: ${passed}/${total} passed${failed ? ` — ${failed} FAILED` : ''}`);

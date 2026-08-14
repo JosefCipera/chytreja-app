@@ -97,6 +97,12 @@ export const EVIDENCE_STORAGE_REGISTRY = {
   lab_apob:              { table: 'labs', key: 'apob' },
   lab_testosterone:      { table: 'labs', key: 'testosterone' },
   lab_hrv:               { table: 'labs', key: 'hrv' },
+
+  // ── Functional tests with availability tracking ───────────────────────────
+  // tracks_availability: true → "Nemám" writes evidence_availability only,
+  // never aliased as a clinical negative result in physical[key].
+  // Engine reads availability via clinicalHistory.evidence_availability.
+  validated_strength_assessment: { table: 'physical', key: 'validated_strength_assessment', tracks_availability: true },
 };
 
 // ── Body region normalization ─────────────────────────────────────────────────
@@ -120,6 +126,40 @@ function normalizeBodyPart(bodyPart) {
   return null;
 }
 
+// ── Evidence availability semantics ───────────────────────────────────────────
+// General mechanism for evidence types where "I don't have the result" is a valid
+// epistemic answer (functional tests, lab panels). Prevents immediate NBE re-ask
+// without aliasing "not available" as a clinical value.
+//
+// Storage: user_health_profile.physical.evidence_availability = { [evidenceType]: status }
+// Status values: 'NOT_AVAILABLE' | 'AVAILABLE'
+//
+// Engine reads: clinicalHistory.evidence_availability (added in adapter.js).
+// Inference/projections: treat evidence need as resolved if actual_result exists
+// OR availability != null.
+//
+// To extend to additional evidence types (grip_strength, tug_test, etc.), add
+// tracks_availability: true to their EVIDENCE_STORAGE_REGISTRY entry.
+
+const DIACRITIC_RE = /[̀-ͯ]/g;
+function _stripDiacritics(s) { return s.normalize('NFD').replace(DIACRITIC_RE, ''); }
+
+const NOT_AVAILABLE_TOKENS = new Set([
+  'ne', 'no', 'nemam', 'nemam vysledek', 'nemam vysledek testu',
+  'not available', 'not_available', 'n/a', 'nevim', 'zadny vysledek',
+  'nemam zadny', 'nemam zadny vysledek', 'nemas', 'nic nemam',
+]);
+
+// Returns 'NOT_AVAILABLE' | 'AVAILABLE' | null (null = empty value, nothing to record)
+export function classifyAvailability(value) {
+  if (value == null || value === '') return null;
+  const v = _stripDiacritics(String(value).trim().toLowerCase());
+  if (NOT_AVAILABLE_TOKENS.has(v) || v.startsWith('nemam') || v === 'ne' || v === 'no') {
+    return 'NOT_AVAILABLE';
+  }
+  return 'AVAILABLE';
+}
+
 // ── Persistence helpers ───────────────────────────────────────────────────────
 
 // JSONB read-merge-write: user_health_profile.physical
@@ -139,6 +179,33 @@ async function upsertPhysical(supabase, userId, key, value) {
     .upsert({ user_id: userId, physical: merged }, { onConflict: 'user_id' });
 
   if (error) throw new Error(`upsertPhysical write: ${error.message}`);
+  return null;
+}
+
+// JSONB read-merge-write: physical.evidence_availability sub-object
+async function upsertEvidenceAvailability(supabase, userId, evidenceType, status) {
+  const { data: row, error: readErr } = await supabase
+    .from('user_health_profile')
+    .select('physical')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (readErr) throw new Error(`upsertEvidenceAvailability read: ${readErr.message}`);
+
+  const existing = row?.physical || {};
+  const merged = {
+    ...existing,
+    evidence_availability: {
+      ...(existing.evidence_availability || {}),
+      [evidenceType]: status,
+    },
+  };
+
+  const { error } = await supabase
+    .from('user_health_profile')
+    .upsert({ user_id: userId, physical: merged }, { onConflict: 'user_id' });
+
+  if (error) throw new Error(`upsertEvidenceAvailability write: ${error.message}`);
   return null;
 }
 
@@ -227,7 +294,19 @@ async function routeAnswer(supabase, userId, payload) {
   if (!entry) return `ANSWER: unknown evidence_type '${evidence_type}' — not persisted`;
 
   switch (entry.table) {
-    case 'physical':    return upsertPhysical(supabase, userId, entry.key, value);
+    case 'physical': {
+      if (entry.tracks_availability) {
+        const avail = classifyAvailability(value);
+        if (!avail) return `ANSWER: no usable value for evidence_type '${evidence_type}'`;
+        if (avail === 'NOT_AVAILABLE') {
+          return upsertEvidenceAvailability(supabase, userId, evidence_type, 'NOT_AVAILABLE');
+        }
+        // Actual result: write to physical[key] AND mark AVAILABLE
+        await upsertPhysical(supabase, userId, entry.key, value);
+        return upsertEvidenceAvailability(supabase, userId, evidence_type, 'AVAILABLE');
+      }
+      return upsertPhysical(supabase, userId, entry.key, value);
+    }
     case 'constraints': return upsertConstraint(supabase, userId, entry.key, value, 'injury');
     case 'daily_checkin': return upsertDailyCheckin(supabase, userId, entry.key, value);
     case 'labs':        return upsertLab(supabase, userId, entry.key, value);

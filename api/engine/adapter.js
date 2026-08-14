@@ -121,6 +121,10 @@ export async function fetchHealthData(userId) {
     // Canonical source for functional assessment answers: user_health_profile.physical
     // node_inputs.question_id/value had no write path — migrated to physical in Health Event Adapter v0.1
     onboarding_inputs: hp?.physical || {},
+    // Availability markers for functional tests where "I don't have the result" is valid.
+    // Written by upsertEvidenceAvailability in healthEventAdapter.js.
+    // Inference/projections: evidence need is resolved if actual_result exists OR availability != null.
+    evidence_availability: (hp?.physical?.evidence_availability) || {},
     // True if user_health_profile row exists — proxy for "person has engaged with health history".
     // Used by Safety Gate: VIGOROUS/HIIT intensity requires clinical_history_documented = true
     // to proceed without NEEDS_MORE_EVIDENCE (cardiac safety cannot be assumed without baseline).

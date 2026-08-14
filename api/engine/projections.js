@@ -83,6 +83,8 @@ function floorRiseProjection(nodeStates, person, clinicalHistory) {
   const hasStrengthData      = !!lowStrength;
   const hasFloorTestData     = !!(clinicalHistory.onboarding_inputs?.['vstat_ze_zeme']);
   const hasTemporalFuncData  = false; // no temporal functional observations in current data model
+  const hasValidatedStrengthData = clinicalHistory.onboarding_inputs?.['validated_strength_assessment'] != null
+    || (clinicalHistory.evidence_availability || {})['validated_strength_assessment'] != null;
 
   rule_ids.push('RULE_NO_TRAJECTORY_DATA_v1');
   if (!hasStrengthData) rule_ids.push('RULE_NO_STRENGTH_DATA_v1');
@@ -112,11 +114,11 @@ function floorRiseProjection(nodeStates, person, clinicalHistory) {
         obs_type: 'vstat_ze_zeme',
         note:     'CHJ functional self-report: vstání ze země bez opory (ano/ne) — Princeton IV doporučuje funkční screening u mužů s ED.',
       }] : []),
-      {
+      ...(!hasValidatedStrengthData ? [{
         type:     'OBSERVATION',
         obs_type: 'validated_strength_assessment',
         note:     'Validované posouzení svalové síly: grip strength (dynamometr), 30s chair stand test, nebo Five Times Sit-to-Stand — minimální datový požadavek pro trajectory direction',
-      },
+      }] : []),
       {
         type:     'OBSERVATION',
         obs_type: 'temporal_activity_trend',

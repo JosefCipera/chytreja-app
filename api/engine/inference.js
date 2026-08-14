@@ -226,17 +226,22 @@ export function inference(activatedStates, person, clinicalHistory, observations
     || states.find(s => s.node_id === 'LOW_MUSCLE_STRENGTH');
 
   if (physDecondActive && !lowStrengthPresent) {
+    const oi_strength      = clinicalHistory.onboarding_inputs || {};
+    const ev_avail         = clinicalHistory.evidence_availability || {};
+    const hasValidatedStrength = oi_strength['validated_strength_assessment'] != null
+      || ev_avail['validated_strength_assessment'] != null;
+
     states.push({
       node_id:       'LOW_MUSCLE_STRENGTH',
       current_state: 'UNKNOWN',
       confidence:    'unknown',
       evidence:      { direct: [], supporting: [], inferred_from_nodes: [] },
       missing_evidence: [
-        {
+        ...(!hasValidatedStrength ? [{
           type:     'OBSERVATION',
           obs_type: 'validated_strength_assessment',
           note:     'Validované posouzení svalové síly (EWGSOP2): handgrip strength (dynamometr) nebo 30s chair stand test — klíčový chybějící vstup pro longevity trajectory inference.',
-        },
+        }] : []),
         {
           type:        'ONBOARDING',
           question_id: 'vynest_nakup',
