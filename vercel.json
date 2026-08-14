@@ -107,6 +107,10 @@
             "destination": "/app/login.html"
         },
         {
+            "source": "/launcher",
+            "destination": "/app/launcher.html"
+        },
+        {
             "source": "/api/(.*)",
             "destination": "/api/$1"
         },
