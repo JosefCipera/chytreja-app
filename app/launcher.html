@@ -442,14 +442,15 @@
     $app.classList.remove('hidden');
 
     // Restore last response from this user's scoped localStorage (survives reload).
-    // ASK responses are ephemeral — they require live conversation context.
-    // Restoring a stale ASK produces a detached "Upřesni prosím." with no question,
-    // so we discard it and show idle instead.
+    // ASK presentation is ephemeral — restoring a stale "Upřesni prosím." on login
+    // produces a detached prompt with no context. Discard only the lastResponse entry;
+    // the session itself (pending_question, current_action_assignment, …) is preserved
+    // so the next user message can still be classified correctly (e.g. ANSWER_TO_EVIDENCE_QUESTION).
     const last = loadLastResponse();
     if (last && last.mode !== 'ASK') {
       render(last);
     } else {
-      if (last?.mode === 'ASK') clearSession();
+      if (last?.mode === 'ASK') localStorage.removeItem(_LRK(_uid));
       renderIdle();
     }
   }

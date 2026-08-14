@@ -52,11 +52,11 @@ function start(userId) {
   _uid = userId;   // scope set FIRST
 
   const last = loadLastResponse();
-  // ASK is ephemeral — discard stale ASK, show idle instead.
+  // ASK presentation is ephemeral — discard only lastResponse, keep session intact.
   if (last && last.mode !== 'ASK') {
     render(last);
   } else {
-    if (last?.mode === 'ASK') clearSession();
+    if (last?.mode === 'ASK') localStorage.removeItem(_LRK(_uid));
     renderIdle();
   }
 }
@@ -175,22 +175,40 @@ console.log('\n[9] Auto-start guard — returning user with ACT state: render, n
   assert('idle NOT shown',             _idleRendered === false);
 }
 
-console.log('\n[9b] Stale ASK session — discarded, idle shown, session cleared');
+console.log('\n[9b] Stale ASK lastResponse — idle shown, only lastResponse removed, session preserved');
 {
   _uid = 'user-stale-ask';
   saveLastResponse({ mode: 'ASK', text: 'Upřesni prosím.', buttons: [], expects_reply: true });
-  saveSession({ pending_question: { text: 'Upřesni prosím.' } });
+  saveSession({ pending_question: { text: 'Co tě trápí?' }, current_action_assignment: 'pohyb' });
 
   resetStartCounters();
   start('user-stale-ask');
 
-  assert('orchestrate call count = 0',        _orchestrateCalls === 0);
-  assert('idle shown (ASK discarded)',         _idleRendered === true);
-  assert('render() NOT called',               _renderCalled === false);
-  assert('stale session cleared from storage',
-    localStorage.getItem('chj_session_v1:user-stale-ask') === null);
-  assert('stale lastResponse cleared',
+  assert('orchestrate call count = 0',    _orchestrateCalls === 0);
+  assert('idle shown (ASK presentation discarded)', _idleRendered === true);
+  assert('render() NOT called',           _renderCalled === false);
+  assert('lastResponse key removed',
     localStorage.getItem('chj_last_response_v1:user-stale-ask') === null);
+  assert('session still exists (not wiped)',
+    localStorage.getItem('chj_session_v1:user-stale-ask') !== null);
+
+  // Verify session data intact
+  const s = loadSession();
+  assert('pending_question preserved',          s.pending_question?.text === 'Co tě trápí?');
+  assert('current_action_assignment preserved', s.current_action_assignment === 'pohyb');
+}
+
+console.log('\n[9c] After idle: user replies "Ano" — orchestrate fires once with session intact');
+{
+  // _uid still 'user-stale-ask', session still has pending_question
+  resetStartCounters();
+
+  // Simulate user sending "Ano" — the session with pending_question is available for classifier
+  const sessionBeforeSend = loadSession();
+  orchestrate('Ano');  // in real app this sends { text:'Ano', session: loadSession() }
+
+  assert('orchestrate call count = 1',       _orchestrateCalls === 1);
+  assert('pending_question still in session', sessionBeforeSend.pending_question?.text === 'Co tě trápí?');
 }
 
 console.log('\n[10] Explicit user input triggers exactly one orchestrate call');
