@@ -226,6 +226,72 @@ function bodyPartToEvidenceType(bodyPart) {
   return null;
 }
 
+// ── Evidence question bridge ──────────────────────────────────────────────────
+// Maps NEXT_BEST_EVIDENCE {evidence_type, acquisition_method} → Czech user-facing question.
+// Central function: both buildSessionUpdates and buildAskResponse must use this so
+// pending_question.text and response.text never diverge.
+// Never adds "question"/"question_text" to the NBE engine object — pure presentation bridge.
+
+const NBE_QUESTION_MAP = {
+  // Vitals / anthropometrics
+  weight_kg:       'Kolik teď vážíš?',
+  waist_cm:        'Jaký je tvůj obvod pasu v centimetrech?',
+  bp_systolic:     'Jaký máš aktuálně systolický krevní tlak?',
+  bp_diastolic:    'Jaký máš aktuálně diastolický krevní tlak?',
+  heart_rate:      'Jaký je tvůj klidový tep?',
+  // Activity
+  activity_level:  'Jaký byl dnes tvůj pohyb? Nízký, střední, nebo vysoký?',
+  sedentary_hours_day: 'Kolik hodin denně průměrně sedíš?',
+  // Falls / stability
+  recent_falls:    'Upadl/a jsi během posledních 12 měsíců?',
+  fall_history:    'Upadl/a jsi během posledních 12 měsíců?',
+  gait_stability:  'Cítíš se při běžné chůzi stabilně?',
+  // Functional tests (onboarding)
+  vynest_nakup:    'Zvládneš vynést nákup (5 kg) do 2. patra bez zastavení?',
+  zvednout_vnouce: 'Zvládneš zvednout dítě nebo těžší předmět ze země bez bolesti?',
+  vstat_ze_zeme:   'Dokážeš vstát ze země bez opory rukou?',
+  // Constraint severity
+  knee_severity:       'Jak moc tě koleno omezuje? Mírně, středně, nebo výrazně?',
+  hip_severity:        'Jak moc tě kyčel omezuje? Mírně, středně, nebo výrazně?',
+  lower_back_severity: 'Jak moc tě záda omezují? Mírně, středně, nebo výrazně?',
+  shoulder_severity:   'Jak moc tě rameno omezuje? Mírně, středně, nebo výrazně?',
+  elbow_severity:      'Jak moc tě loket omezuje? Mírně, středně, nebo výrazně?',
+  ankle_foot_severity: 'Jak moc tě kotník nebo chodidlo omezuje? Mírně, středně, nebo výrazně?',
+  wrist_severity:      'Jak moc tě zápěstí omezuje? Mírně, středně, nebo výrazně?',
+  // Labs
+  lab_hba1c:       'Máš k dispozici výsledek HbA1c? Pokud ano, napiš hodnotu.',
+  lab_apob:        'Máš k dispozici výsledek ApoB? Pokud ano, napiš hodnotu.',
+  lab_ldl:         'Máš k dispozici výsledek LDL cholesterolu? Pokud ano, napiš hodnotu.',
+  lab_hdl:         'Máš k dispozici výsledek HDL cholesterolu? Pokud ano, napiš hodnotu.',
+  lab_triglycerides: 'Máš k dispozici výsledek triglyceridů? Pokud ano, napiš hodnotu.',
+  lab_glucose_fasting: 'Máš k dispozici výsledek glykémie nalačno? Pokud ano, napiš hodnotu.',
+  lab_crp:         'Máš k dispozici výsledek CRP (zánětlivý marker)? Pokud ano, napiš hodnotu.',
+  lab_uric_acid:   'Máš k dispozici výsledek kyseliny močové? Pokud ano, napiš hodnotu.',
+  lab_alt:         'Máš k dispozici výsledek ALT (jaterní enzym)? Pokud ano, napiš hodnotu.',
+  lab_ast:         'Máš k dispozici výsledek AST (jaterní enzym)? Pokud ano, napiš hodnotu.',
+  lab_testosterone: 'Máš k dispozici výsledek testosteronu? Pokud ano, napiš hodnotu.',
+  lab_hrv:         'Máš k dispozici výsledek HRV (variabilita srdečního tepu)? Pokud ano, napiš hodnotu.',
+};
+
+// Acquisition-method fallbacks for unknown evidence_type
+const NBE_METHOD_FALLBACK = {
+  question:         'Potřebuji od tebe jednu informaci. Můžeš odpovědět přímo?',
+  home_measurement: 'Potřebuji jedno domácí měření. Máš hodnotu k dispozici?',
+  functional_test:  'Potřebuji výsledek funkčního testu. Zvládneš ho teď?',
+  wearable:         'Máš data z wearablu nebo sporttestru? Jaká je aktuální hodnota?',
+  laboratory:       'Potřebuji laboratorní výsledek. Máš ho k dispozici?',
+  clinician:        'Tuto hodnotu je třeba změřit u lékaře. Máš aktuální výsledek?',
+};
+
+function buildEvidenceQuestion(nbe) {
+  if (!nbe) return null;
+  return NBE_QUESTION_MAP[nbe.evidence_type]
+    ?? NBE_METHOD_FALLBACK[nbe.acquisition_method]
+    ?? (nbe.evidence_type
+        ? `Potřebuji informaci o: ${nbe.evidence_type}. Máš ji k dispozici?`
+        : 'Potřebuji jednu konkrétní informaci. Můžeš mi ji poskytnout?');
+}
+
 // ── Session update builder ────────────────────────────────────────────────────
 
 function buildSessionUpdates(eventType, classifiedPayload, result) {
@@ -252,7 +318,10 @@ function buildSessionUpdates(eventType, classifiedPayload, result) {
   // ASK: set pending_question with evidence_type derived from context
   if (dd?.mode === 'ASK') {
     const item = dd.primary_item;
-    const questionText = item?.question ?? item?.question_text ?? 'Upřesni prosím.';
+    // For NEXT_BEST_EVIDENCE items the engine provides evidence_type/acquisition_method
+    // but no question field. buildEvidenceQuestion is the single source of truth for
+    // converting NBE metadata → Czech user-facing question text.
+    const questionText = item?.question ?? item?.question_text ?? buildEvidenceQuestion(item);
 
     // Derive evidence_type: prefer explicit field, fallback to body_part from triggering event
     const evidenceType = item?.evidence_type
@@ -325,7 +394,8 @@ function buildAskResponse(dd, ctx, sessionUpdates, warnings) {
   const question = sessionUpdates.pending_question?.text
     ?? dd.primary_item?.question
     ?? dd.primary_item?.question_text
-    ?? 'Potřebuji více informací. Upřesni prosím.';
+    ?? buildEvidenceQuestion(dd.primary_item)
+    ?? 'Potřebuji konkrétní informaci. Napiš mi ji.';
 
   return {
     mode:          'ASK',
