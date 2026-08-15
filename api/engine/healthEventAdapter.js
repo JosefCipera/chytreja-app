@@ -102,7 +102,17 @@ export const EVIDENCE_STORAGE_REGISTRY = {
   // tracks_availability: true → "Nemám" writes evidence_availability only,
   // never aliased as a clinical negative result in physical[key].
   // Engine reads availability via clinicalHistory.evidence_availability.
-  validated_strength_assessment: { table: 'physical', key: 'validated_strength_assessment', tracks_availability: true },
+  // evidence_kind determines whether actual value is also persisted (RAW_VALUE)
+  // or only the availability marker (AVAILABILITY_ONLY / DERIVED).
+  // See api/engine/evidenceResolution.js for the engine read contract.
+  validated_strength_assessment: { table: 'physical', key: 'validated_strength_assessment', tracks_availability: true, evidence_kind: 'RAW_VALUE' },
+
+  // ── Wearable / temporal — AVAILABILITY_ONLY & DERIVED ────────────────────
+  // "Nemám" → evidence_availability[type] = NOT_AVAILABLE only.
+  // No single raw value to capture via dialog for these types.
+  // Actual wearable data integration is out of scope for dialog flow (v0.4+).
+  steps_day:               { table: 'physical', key: null, tracks_availability: true, evidence_kind: 'AVAILABILITY_ONLY' },
+  temporal_activity_trend: { table: 'physical', key: null, tracks_availability: true, evidence_kind: 'DERIVED' },
 };
 
 // ── Body region normalization ─────────────────────────────────────────────────
@@ -301,8 +311,11 @@ async function routeAnswer(supabase, userId, payload) {
         if (avail === 'NOT_AVAILABLE') {
           return upsertEvidenceAvailability(supabase, userId, evidence_type, 'NOT_AVAILABLE');
         }
-        // Actual result: write to physical[key] AND mark AVAILABLE
-        await upsertPhysical(supabase, userId, entry.key, value);
+        // RAW_VALUE only: persist actual value alongside the AVAILABLE marker.
+        // AVAILABILITY_ONLY / DERIVED: availability marker is sufficient — no raw value storage.
+        if (entry.evidence_kind === 'RAW_VALUE' && entry.key) {
+          await upsertPhysical(supabase, userId, entry.key, value);
+        }
         return upsertEvidenceAvailability(supabase, userId, evidence_type, 'AVAILABLE');
       }
       return upsertPhysical(supabase, userId, entry.key, value);

@@ -1,3 +1,5 @@
+import { isEvidenceResolved } from './evidenceResolution.js';
+
 // projections.js — PERSON_PROJECTION runtime entities (Engine v1)
 //
 // Architecture: PERSON_PROJECTION is a separate entity from PERSON_NODE_STATE.
@@ -119,11 +121,11 @@ function floorRiseProjection(nodeStates, person, clinicalHistory) {
         obs_type: 'validated_strength_assessment',
         note:     'Validované posouzení svalové síly: grip strength (dynamometr), 30s chair stand test, nebo Five Times Sit-to-Stand — minimální datový požadavek pro trajectory direction',
       }] : []),
-      {
+      ...(!isEvidenceResolved('temporal_activity_trend', clinicalHistory) ? [{
         type:     'OBSERVATION',
         obs_type: 'temporal_activity_trend',
         note:     'Časová řada aktivity (min. 30 denních check-inů) pro určení trajektorie dekondiční dynamiky',
-      },
+      }] : []),
     ],
     rule_ids,
     explanation:

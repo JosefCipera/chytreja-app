@@ -8,6 +8,8 @@
 //   Only these two states come from activation.
 //   PREDICTED_CURRENT and UNKNOWN are handled in inference.js.
 
+import { isEvidenceResolved } from './evidenceResolution.js';
+
 export function activation(person, clinicalHistory, observations) {
   const states = [];
 
@@ -78,7 +80,9 @@ export function activation(person, clinicalHistory, observations) {
         inferred_from_nodes: [],
       },
       missing_evidence: [
-        { type: 'OBSERVATION', obs_type: 'steps_day', note: 'Kroky/den (wearable) pro objektivnější měření aktivity' },
+        ...(!isEvidenceResolved('steps_day', clinicalHistory) ? [
+          { type: 'OBSERVATION', obs_type: 'steps_day', note: 'Kroky/den (wearable) pro objektivnější měření aktivity' },
+        ] : []),
       ],
     });
   } else if (clinicalHistory.lifestyle.sedentary_work || (sedHoursObs && sedHoursObs.value >= 8)) {
@@ -98,7 +102,9 @@ export function activation(person, clinicalHistory, observations) {
       },
       missing_evidence: [
         { type: 'OBSERVATION', obs_type: 'activity_level', note: 'Min. 5 daily check-inů pro určení MEASURED stavu' },
-        { type: 'OBSERVATION', obs_type: 'steps_day', note: 'Kroky/den (wearable)' },
+        ...(!isEvidenceResolved('steps_day', clinicalHistory) ? [
+          { type: 'OBSERVATION', obs_type: 'steps_day', note: 'Kroky/den (wearable)' },
+        ] : []),
       ],
     });
   }

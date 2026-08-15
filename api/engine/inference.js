@@ -12,6 +12,8 @@
 //   This is NOT "ED causes endothelial dysfunction."
 //   It IS "presence of ED + vascular risk factors makes endothelial dysfunction likely."
 
+import { isEvidenceResolved } from './evidenceResolution.js';
+
 export function inference(activatedStates, person, clinicalHistory, observations) {
   const states = [];
   const stateById = Object.fromEntries(activatedStates.map(s => [s.node_id, s]));
@@ -160,8 +162,10 @@ export function inference(activatedStates, person, clinicalHistory, observations
           inferred_from_nodes: signals,
         },
         missing_evidence: [
-          { type: 'OBSERVATION', obs_type: 'vo2max_test',  note: 'VO2max — přímý marker kardiorespirační kondice' },
-          { type: 'OBSERVATION', obs_type: 'steps_day',    note: 'Kroky/den (wearable) pro objektivní měření aktivity v čase' },
+          { type: 'OBSERVATION', obs_type: 'vo2max_test', note: 'VO2max — přímý marker kardiorespirační kondice' },
+          ...(!isEvidenceResolved('steps_day', clinicalHistory) ? [
+            { type: 'OBSERVATION', obs_type: 'steps_day', note: 'Kroky/den (wearable) pro objektivní měření aktivity v čase' },
+          ] : []),
         ],
       });
     }

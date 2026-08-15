@@ -11,6 +11,7 @@
 
 import { createClient }   from '@supabase/supabase-js';
 import { applyHealthEvent, EVIDENCE_STORAGE_REGISTRY } from '../api/engine/healthEventAdapter.js';
+import { EVIDENCE_RESOLUTION_REGISTRY, isEvidenceResolved } from '../api/engine/evidenceResolution.js';
 
 const sb          = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 const USER_ID     = process.argv[2] || 'vPrm5PNzLWWWhi9sSwYVbkb9FaD3'; // Josef default
@@ -441,6 +442,121 @@ async function s6_validated_strength_availability() {
   console.log('  state restored ✓');
 }
 
+// ── S7: wearable NBE — availability semantics (steps_day + temporal_activity_trend) ─
+// Regression for the class of loops where evidence_type had no registry entry at all.
+// steps_day & temporal_activity_trend are AVAILABILITY_ONLY / DERIVED:
+//   "Nemám" → evidence_availability[type] = NOT_AVAILABLE (no raw value written)
+//   fresh engine → NBE does not re-appear
+
+async function s7_wearable_availability() {
+  sep('S7 — wearable NBE "Nemám" → availability=NOT_AVAILABLE → NBE gone');
+  console.log('  Regression: steps_day and temporal_activity_trend loop (EVIDENCE_RESOLUTION_REGISTRY)');
+
+  const savedPhysical = await savePhysical();
+
+  // Seed: sedentary_work + no wearable data → PHYSICAL_INACTIVITY → steps_day NBE
+  // Also triggers LOSS_OF_FLOOR_RISE_ABILITY projection → temporal_activity_trend NBE
+  const seedPhysical = { sedentary_hours_day: 10 };
+  await restorePhysical(seedPhysical);
+
+  const { runEngine } = await import('../api/engine/engine.js');
+
+  // ── Unit checks: registry contracts ─────────────────────────────────────────
+  const stepsReg  = EVIDENCE_STORAGE_REGISTRY['steps_day'];
+  const trenReg   = EVIDENCE_STORAGE_REGISTRY['temporal_activity_trend'];
+  const stepsRes  = EVIDENCE_RESOLUTION_REGISTRY['steps_day'];
+  const trenRes   = EVIDENCE_RESOLUTION_REGISTRY['temporal_activity_trend'];
+
+  check(stepsReg?.tracks_availability === true,           'STORAGE: steps_day tracks_availability=true');
+  check(stepsReg?.evidence_kind === 'AVAILABILITY_ONLY',  'STORAGE: steps_day evidence_kind=AVAILABILITY_ONLY');
+  check(stepsReg?.key === null,                           'STORAGE: steps_day key=null (no raw value column)');
+  check(trenReg?.tracks_availability === true,            'STORAGE: temporal_activity_trend tracks_availability=true');
+  check(trenReg?.evidence_kind === 'DERIVED',             'STORAGE: temporal_activity_trend evidence_kind=DERIVED');
+  check(trenReg?.key === null,                            'STORAGE: temporal_activity_trend key=null');
+
+  check(stepsRes?.evidence_kind === 'AVAILABILITY_ONLY',  'RESOLUTION: steps_day evidence_kind=AVAILABILITY_ONLY');
+  check(trenRes?.evidence_kind === 'DERIVED',             'RESOLUTION: temporal_activity_trend evidence_kind=DERIVED');
+
+  // isEvidenceResolved: without availability set → not resolved
+  const noAvail = { evidence_availability: {} };
+  check(!isEvidenceResolved('steps_day', noAvail),             'isEvidenceResolved: steps_day unset → false');
+  check(!isEvidenceResolved('temporal_activity_trend', noAvail), 'isEvidenceResolved: temporal_activity_trend unset → false');
+
+  // isEvidenceResolved: with availability set → resolved
+  const withAvail = { evidence_availability: { steps_day: 'NOT_AVAILABLE', temporal_activity_trend: 'NOT_AVAILABLE' } };
+  check(isEvidenceResolved('steps_day', withAvail),             'isEvidenceResolved: steps_day NOT_AVAILABLE → true');
+  check(isEvidenceResolved('temporal_activity_trend', withAvail), 'isEvidenceResolved: temporal_activity_trend NOT_AVAILABLE → true');
+
+  // unknown type → false
+  check(!isEvidenceResolved('unknown_obs_type', withAvail), 'isEvidenceResolved: unknown type → false');
+
+  // ── Integration: steps_day full flow ─────────────────────────────────────────
+  const baselineSteps = await runEngine(USER_ID);
+  const baselineNbe = baselineSteps.information_needs?.find(n => n.evidence_type === 'steps_day');
+  console.log(`\n  baseline NBE steps_day: ${baselineNbe ? 'present ✓' : 'absent — may depend on seed data'}`);
+  // Note: NBE may be absent if another higher-priority NBE dominates; the key check is post-answer
+
+  const eventSteps = {
+    event_type: 'ANSWER_TO_EVIDENCE_QUESTION',
+    event_id:   crypto.randomUUID(),
+    source:     'text',
+    timestamp:  new Date().toISOString(),
+    payload: { evidence_type: 'steps_day', value: 'Nemám' },
+  };
+  const resultSteps = await applyHealthEvent(USER_ID, eventSteps);
+  showResult(resultSteps);
+
+  const { data: rowSteps } = await sb.from('user_health_profile')
+    .select('physical').eq('user_id', USER_ID).maybeSingle();
+
+  const stepsAvail = rowSteps?.physical?.evidence_availability?.steps_day;
+  const stepsRaw   = rowSteps?.physical?.steps_day;
+
+  console.log(`  evidence_availability.steps_day: ${stepsAvail ?? 'missing'}`);
+  console.log(`  physical.steps_day (raw):        ${stepsRaw ?? 'absent ✓'}`);
+
+  check(resultSteps.persistence_status === 'ok',   'steps_day: persistence_status = ok');
+  check(stepsAvail === 'NOT_AVAILABLE',             'steps_day: evidence_availability = NOT_AVAILABLE');
+  check(stepsRaw == null,                           'steps_day: no raw value written to physical');
+
+  const afterSteps = await runEngine(USER_ID);
+  const afterNbeSteps = afterSteps.information_needs?.find(n => n.evidence_type === 'steps_day');
+  console.log(`  after NBE steps_day: ${afterNbeSteps ? 'still present — BUG' : 'absent ✓'}`);
+  check(!afterNbeSteps, 'after: steps_day NBE gone');
+
+  // ── Integration: temporal_activity_trend full flow ────────────────────────────
+  const eventTrend = {
+    event_type: 'ANSWER_TO_EVIDENCE_QUESTION',
+    event_id:   crypto.randomUUID(),
+    source:     'text',
+    timestamp:  new Date().toISOString(),
+    payload: { evidence_type: 'temporal_activity_trend', value: 'Nemám' },
+  };
+  const resultTrend = await applyHealthEvent(USER_ID, eventTrend);
+  showResult(resultTrend);
+
+  const { data: rowTrend } = await sb.from('user_health_profile')
+    .select('physical').eq('user_id', USER_ID).maybeSingle();
+
+  const trendAvail = rowTrend?.physical?.evidence_availability?.temporal_activity_trend;
+  const trendRaw   = rowTrend?.physical?.temporal_activity_trend;
+
+  console.log(`  evidence_availability.temporal_activity_trend: ${trendAvail ?? 'missing'}`);
+  console.log(`  physical.temporal_activity_trend (raw):        ${trendRaw ?? 'absent ✓'}`);
+
+  check(resultTrend.persistence_status === 'ok',   'temporal_activity_trend: persistence_status = ok');
+  check(trendAvail === 'NOT_AVAILABLE',             'temporal_activity_trend: evidence_availability = NOT_AVAILABLE');
+  check(trendRaw == null,                           'temporal_activity_trend: no raw value written to physical');
+
+  const afterTrend = await runEngine(USER_ID);
+  const afterNbeTrend = afterTrend.information_needs?.find(n => n.evidence_type === 'temporal_activity_trend');
+  console.log(`  after NBE temporal_activity_trend: ${afterNbeTrend ? 'still present — BUG' : 'absent ✓'}`);
+  check(!afterNbeTrend, 'after: temporal_activity_trend NBE gone');
+
+  await restorePhysical(savedPhysical);
+  console.log('  state restored ✓');
+}
+
 // ── Run ───────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -455,6 +571,7 @@ async function main() {
   await s4_vynest_nakup();
   await s5_vstat_ze_zeme_closes_loop();
   await s6_validated_strength_availability();
+  await s7_wearable_availability();
 
   const total = passed + failed;
   sep(`Results: ${passed}/${total} passed${failed ? ` — ${failed} FAILED` : ''}`);
