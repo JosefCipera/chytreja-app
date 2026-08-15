@@ -73,6 +73,9 @@ export async function runTesterReset(userId, mode, sbClient) {
     .eq('user_id', userId);
   if (hErr) return { status: 500, body: { error: `user_health_profile: ${hErr.message}` } };
 
+  // TRACE diagnostic — remove after Full Reset FAIL root cause confirmed
+  console.log(`[RESET] uid=${userId} deleted_action_assignments=${aCount ?? 0} deleted_constraints=${cCount ?? 0} deleted_mission_log=${mCount ?? 0}`);
+
   return {
     status: 200,
     body: {

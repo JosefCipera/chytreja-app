@@ -51,12 +51,13 @@ export default async function handler(req, res) {
     const response = await processInput(userId, text.trim(), session);
 
     // ── TRACE: query action_assignments for this user ──────────────────────
-    const { data: assignments } = await getSb()
+    const { data: assignments, error: _traceErr } = await getSb()
       .from('action_assignments')
-      .select('action_id, status, created_at, intervention_id')
+      .select('action_id, status, assigned_at, intervention_id')
       .eq('user_id', userId)
-      .order('created_at', { ascending: false })
+      .order('assigned_at', { ascending: false })
       .limit(5);
+    if (_traceErr) console.error(`[trace:${request_id}] assignments query error:`, _traceErr.message);
 
     const assignCount  = assignments?.length ?? 0;
     const latestAssign = assignments?.[0] ?? null;

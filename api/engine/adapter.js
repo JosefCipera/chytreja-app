@@ -223,5 +223,11 @@ export async function fetchActionAssignments(userId, days = 30) {
     .gte('assigned_date', since)
     .order('assigned_date', { ascending: false });
   if (error) throw new Error(`fetchActionAssignments: ${error.message}`);
-  return data ?? [];
+  const rows = data ?? [];
+  // TRACE diagnostic — remove after Full Reset FAIL root cause confirmed
+  const summary = rows.slice(0, 5).map(a =>
+    `${a.intervention_id}/${a.status}/${a.assigned_date}/${a.assigned_at?.slice(0, 16)}`
+  );
+  console.log(`[ORCHESTRATE] uid=${userId} loaded_action_assignments=${rows.length}`, rows.length ? summary : '(clean)');
+  return rows;
 }
