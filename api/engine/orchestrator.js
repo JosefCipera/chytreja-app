@@ -734,5 +734,14 @@ export async function processInput(userId, userText, sessionState = {}) {
     presentation.debug.nba_label = ctx.action_context?.selected?.label ?? null;
   }
 
+  // Trace fields — readable in ?debug=1 overlay and Vercel function logs.
+  if (presentation.debug != null) {
+    presentation.debug.is_hold_follow_up = isHoldFollowUp;
+    presentation.debug.engine_dd_mode    = result.domain_response?.daily_decision?.mode ?? null;
+    presentation.debug.classifier_event  = event_type;
+    presentation.debug.selected_intervention =
+      result.domain_response?.daily_decision?.primary_item?.intervention_id ?? null;
+  }
+
   return presentation;
 }

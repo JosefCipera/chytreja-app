@@ -412,13 +412,25 @@
     // Debug overlay — visible only in ?debug=1 mode
     if (_debugMode && $debug) {
       $debug.classList.remove('hidden');
+      const tr = dbg?._trace ?? {};
       const lines = [
-        `mode:         ${mode}`,
-        `reason_code:  ${dbg?.reason_code ?? '—'}`,
-        `leverage:     ${dbg?.leverage_node ?? '—'}`,
-        `nba:          ${dbg?.nba_label ?? '—'}`,
-        `warnings:     ${(dbg?.warnings ?? []).join(' | ') || '—'}`,
-        `error:        ${dbg?.error ?? '—'}`,
+        `── PRESENTATION ──────────────────`,
+        `mode:           ${mode}`,
+        `reason_code:    ${dbg?.reason_code ?? '—'}`,
+        `leverage:       ${dbg?.leverage_node ?? '—'}`,
+        `nba:            ${dbg?.nba_label ?? '—'}`,
+        `warnings:       ${(dbg?.warnings ?? []).join(' | ') || '—'}`,
+        `── ENGINE ────────────────────────`,
+        `engine_dd_mode: ${dbg?.engine_dd_mode ?? '—'}`,
+        `isHoldFollowUp: ${dbg?.is_hold_follow_up ?? '—'}`,
+        `classifier:     ${dbg?.classifier_event ?? '—'}`,
+        `intervention:   ${dbg?.selected_intervention ?? '—'}`,
+        `── TRACE ─────────────────────────`,
+        `request_id:     ${tr.request_id ?? '—'}`,
+        `commit:         ${tr.commit ?? '—'}`,
+        `deployment:     ${tr.deployment ?? '—'}`,
+        `assignments:    ${tr.action_assignments_count ?? '—'}`,
+        `latest:         ${tr.latest_assignment ? `${tr.latest_assignment.intervention_id} / ${tr.latest_assignment.status}` : 'none'}`,
       ];
       $debug.textContent = lines.join('\n');
     }
@@ -433,12 +445,23 @@
 
     const uid = userId ?? window.__chj_userId;
     const session = loadSession();
+    const _request_id = `c${Date.now().toString(36)}-e${myEpoch}`;
+
+    // ── TRACE: log before every request in ?debug=1 mode ──────────────────
+    if (_debugMode) {
+      console.group(`[CHJ trace] ${_request_id}`);
+      console.log('client.requestEpoch   :', myEpoch);
+      console.log('client.session.dd_mode:', session.last_daily_decision?.mode ?? 'null');
+      console.log('client.session.keys   :', Object.keys(session));
+      console.log('client.text           :', userText);
+      console.log('client.uid            :', uid);
+    }
 
     try {
       const res = await fetch('/api/orchestrate', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ userId: uid, text: userText, session }),
+        body:    JSON.stringify({ userId: uid, text: userText, session, _request_id }),
       });
 
       if (!res.ok) {
@@ -447,6 +470,23 @@
       }
 
       const response = await res.json();
+
+      // ── TRACE: log response before epoch check ──────────────────────────
+      if (_debugMode) {
+        const t = response.debug?._trace ?? {};
+        console.log('server.request_id     :', t.request_id);
+        console.log('server.commit         :', t.commit);
+        console.log('server.deployment     :', t.deployment);
+        console.log('server.engine_dd_mode :', response.debug?.engine_dd_mode);
+        console.log('server.isHoldFollowUp :', response.debug?.is_hold_follow_up);
+        console.log('server.classifier     :', response.debug?.classifier_event);
+        console.log('server.response.mode  :', response.mode);
+        console.log('server.reason_code    :', response.debug?.reason_code);
+        console.log('server.assignments    :', t.action_assignments_count);
+        console.log('server.latest_assign  :', t.latest_assignment);
+        console.log('epoch.my / current    :', myEpoch, '/', requestEpoch, myEpoch !== requestEpoch ? '← STALE — discarding' : '← OK');
+        console.groupEnd();
+      }
 
       // Discard response if a reset invalidated this request while in flight.
       if (myEpoch !== requestEpoch) return;
@@ -457,6 +497,7 @@
 
       render(response);
     } catch (err) {
+      if (_debugMode) console.groupEnd();
       if (myEpoch !== requestEpoch) return;
       $stage.textContent = 'Nastala chyba. Zkus to znovu.';
       $stage.className = 'danger fade-in';
