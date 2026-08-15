@@ -6,7 +6,7 @@ import { createClient } from '@supabase/supabase-js';
 
 const DIAG_KEYWORDS = [
   { kws: ['fibrilace', 'fap', 'atrial fibrillation', 'arytmie'],                id: 'ATRIAL_FIBRILLATION' },
-  { kws: ['hypertenze', 'hypertension', 'vysoký tlak', 'vysoky tlak'],          id: 'HYPERTENSION' },
+  { kws: ['hypertenze', 'hypertension', 'vysoký tlak', 'vysoky tlak', 'krevni tlak', 'tlak krve', 'high blood pressure'], id: 'HYPERTENSION' },
   { kws: ['dyslipid', 'cholesterol', 'ldl', 'hypercholesterol'],                id: 'DYSLIPIDEMIA' },
   { kws: ['hyperurik', 'kyselina mocova', 'kyselina močová', 'gout', 'dna'],    id: 'HYPERURICEMIA' },
   { kws: ['erektil', 'erectile', 'impotence'],                                  id: 'ERECTILE_DYSFUNCTION' },
@@ -20,7 +20,7 @@ const DIAG_KEYWORDS = [
   { kws: ['neuropati', 'neuropathy', 'polyneuropati', 'polyneuropathy'],        id: 'PERIPHERAL_NEUROPATHY' },
 ];
 
-function mapDiagnosis(rawString) {
+export function mapDiagnosis(rawString) {
   const s = rawString.toLowerCase()
     .normalize('NFD').replace(/[̀-ͯ]/g, '');
   for (const { kws, id } of DIAG_KEYWORDS) {

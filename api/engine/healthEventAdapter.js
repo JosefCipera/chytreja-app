@@ -42,6 +42,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { runEngine }           from './engine.js';
 import { computeDailyDecision } from './dailyDecision.js';
+import { mapDiagnosis }         from './adapter.js';
 
 // ── EVIDENCE_STORAGE_REGISTRY ─────────────────────────────────────────────────
 // Deklarativní mapping: evidence_type / obs_type → canonical DB target.
@@ -471,25 +472,58 @@ export async function applyHealthEvent(userId, event) {
       }
 
       case 'GENERAL_HEALTH_REQUEST': {
-        // Routing only — no clinical reasoning.
-        // Store the full text as a symptom so DIAG_KEYWORDS in adapter.js can extract diagnoses
-        // on the next engine run. Also detect body-part constraints embedded in the text.
         const text = payload?.text || '';
-        if (text) {
-          const { data: row } = await supabase
-            .from('user_health_profile')
-            .select('symptoms')
-            .eq('user_id', userId)
-            .maybeSingle();
-          const current = Array.isArray(row?.symptoms) ? row.symptoms : [];
-          await supabase
-            .from('user_health_profile')
-            .upsert({ user_id: userId, symptoms: [...current, text] }, { onConflict: 'user_id' });
-          const region = normalizeBodyPart(text);
-          if (region) {
-            await upsertConstraint(supabase, userId, region, null, 'injury');
+        if (!text) break;
+
+        const { data: hpRow } = await supabase
+          .from('user_health_profile')
+          .select('symptoms, diagnoses')
+          .eq('user_id', userId)
+          .maybeSingle();
+        const currentSymptoms  = Array.isArray(hpRow?.symptoms)  ? hpRow.symptoms  : [];
+        const currentDiagnoses = Array.isArray(hpRow?.diagnoses) ? hpRow.diagnoses : [];
+
+        // Extract age → persist to user_profiles.birth_year (only if not already set)
+        const ageMatch = text.match(/\b(\d{2,3})\s*(?:let|roků|roku)\b/i);
+        if (ageMatch) {
+          const age = parseInt(ageMatch[1], 10);
+          if (age >= 18 && age <= 120) {
+            const birthYear = new Date().getFullYear() - age;
+            const { data: upRow } = await supabase
+              .from('user_profiles').select('birth_year').eq('user_id', userId).maybeSingle();
+            if (!upRow?.birth_year) {
+              await supabase.from('user_profiles').update({ birth_year: birthYear }).eq('user_id', userId);
+            }
           }
         }
+
+        // Extract diagnoses from text segments → persist structurally
+        const segments = text.split(/[.,;!?]+|\s+[ai]\s+/i).map(s => s.trim()).filter(Boolean);
+        const existingIds = new Set(
+          currentDiagnoses
+            .map(d => mapDiagnosis(typeof d === 'string' ? d : (d?.name ?? '')))
+            .filter(Boolean)
+        );
+        const newDiagnoses = [];
+        for (const seg of segments) {
+          const id = mapDiagnosis(seg);
+          if (id && !existingIds.has(id)) {
+            existingIds.add(id);
+            newDiagnoses.push({ name: id, status: 'confirmed', source: 'general_health_request', raw_text: seg });
+          }
+        }
+
+        // Body-part constraints embedded in text
+        const region = normalizeBodyPart(text);
+        if (region) await upsertConstraint(supabase, userId, region, null, 'injury');
+
+        // Upsert: raw text to symptoms (audit trail) + structured diagnoses
+        await supabase.from('user_health_profile').upsert({
+          user_id:  userId,
+          symptoms: [...currentSymptoms, text],
+          ...(newDiagnoses.length > 0 ? { diagnoses: [...currentDiagnoses, ...newDiagnoses] } : {}),
+        }, { onConflict: 'user_id' });
+
         break;
       }
 

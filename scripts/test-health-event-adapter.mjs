@@ -557,6 +557,99 @@ async function s7_wearable_availability() {
   console.log('  state restored ✓');
 }
 
+// ── S8: GENERAL_HEALTH_REQUEST — age + HYPERTENSION persistence ───────────────
+// Regression: "Je mi 61 let, mám vysoký krevní tlak." must extract:
+//   - birth_year = currentYear - 61  → user_profiles
+//   - HYPERTENSION (structurally)    → user_health_profile.diagnoses
+// Raw text must remain in symptoms as audit trail.
+// Fresh engine must not return zero-data ASK_BLOCKING.
+
+async function s8_general_health_request_age_and_diagnosis() {
+  sep('S8 — GENERAL_HEALTH_REQUEST: age + HYPERTENSION persisted structurally');
+  console.log('  Input: "Je mi 61 let, mám vysoký krevní tlak."');
+
+  const TEXT = 'Je mi 61 let, mám vysoký krevní tlak.';
+  const EXPECTED_BIRTH_YEAR = new Date().getFullYear() - 61;
+
+  // Save state
+  const { data: upRow }    = await sb.from('user_profiles').select('birth_year').eq('user_id', USER_ID).maybeSingle();
+  const savedBirthYear     = upRow?.birth_year ?? null;
+  const { data: hpRow }    = await sb.from('user_health_profile').select('symptoms, diagnoses').eq('user_id', USER_ID).maybeSingle();
+  const savedSymptoms      = hpRow?.symptoms  ?? [];
+  const savedDiagnoses     = hpRow?.diagnoses ?? [];
+
+  // Clean state: clear birth_year so extraction is testable
+  await sb.from('user_profiles').update({ birth_year: null }).eq('user_id', USER_ID);
+  await sb.from('user_health_profile').upsert(
+    { user_id: USER_ID, symptoms: [], diagnoses: [] },
+    { onConflict: 'user_id' }
+  );
+
+  const event = {
+    event_type: 'GENERAL_HEALTH_REQUEST',
+    event_id:   crypto.randomUUID(),
+    source:     'text',
+    timestamp:  new Date().toISOString(),
+    payload: { text: TEXT },
+  };
+
+  const result = await applyHealthEvent(USER_ID, event);
+  showResult(result);
+
+  // Read back DB state
+  const { data: afterUp } = await sb.from('user_profiles').select('birth_year').eq('user_id', USER_ID).maybeSingle();
+  const { data: afterHp } = await sb.from('user_health_profile').select('symptoms, diagnoses').eq('user_id', USER_ID).maybeSingle();
+
+  const birthYearSet   = afterUp?.birth_year;
+  const diagnosesAfter = afterHp?.diagnoses ?? [];
+  const symptomsAfter  = afterHp?.symptoms  ?? [];
+
+  const hypertensionEntry = diagnosesAfter.find(d => d?.name === 'HYPERTENSION');
+  const rawTextInSymptoms = symptomsAfter.includes(TEXT);
+
+  console.log(`  birth_year written:             ${birthYearSet ?? 'null'}`);
+  console.log(`  diagnoses[]:                    ${JSON.stringify(diagnosesAfter)}`);
+  console.log(`  HYPERTENSION entry:             ${JSON.stringify(hypertensionEntry ?? 'absent')}`);
+  console.log(`  raw text in symptoms:           ${rawTextInSymptoms}`);
+
+  check(result.persistence_status === 'ok',                             'persistence_status = ok');
+  check(birthYearSet === EXPECTED_BIRTH_YEAR,                           `birth_year = ${EXPECTED_BIRTH_YEAR} (currentYear - 61)`,
+    `actual: ${birthYearSet}`);
+  check(Boolean(hypertensionEntry),                                     'HYPERTENSION in diagnoses[] structurally',
+    `actual diagnoses: ${JSON.stringify(diagnosesAfter)}`);
+  check(hypertensionEntry?.status === 'confirmed',                      'HYPERTENSION status = confirmed');
+  check(hypertensionEntry?.source === 'general_health_request',         'HYPERTENSION source = general_health_request');
+  check(rawTextInSymptoms,                                              'raw text preserved in symptoms[] (audit trail)');
+
+  // Fresh engine: HYPERTENSION node must be active, DD must not be zero-data ASK_BLOCKING
+  const { runEngine } = await import('../api/engine/engine.js');
+  const afterEngine   = await runEngine(USER_ID);
+  const dd            = afterEngine.daily_decision ?? result.domain_response?.daily_decision;
+  const hypertNode    = afterEngine.node_states?.find(s => s.node_id === 'HYPERTENSION');
+
+  console.log(`  engine HYPERTENSION state:      ${hypertNode?.current_state ?? 'not activated'}`);
+  console.log(`  DD mode / reason_code:          ${dd?.mode ?? '?'} / ${dd?.reason_code ?? '?'}`);
+
+  check(
+    Boolean(hypertNode),
+    'HYPERTENSION node_state present in engine output',
+    `actual node_states: ${afterEngine.node_states?.map(s => s.node_id).join(', ')}`
+  );
+  check(
+    !(dd?.mode === 'ASK' && dd?.reason_code === 'ASK_BLOCKING'),
+    'DD no longer zero-data ASK_BLOCKING after HYPERTENSION persisted',
+    `actual: mode=${dd?.mode} reason_code=${dd?.reason_code}`
+  );
+
+  // Restore
+  await sb.from('user_profiles').update({ birth_year: savedBirthYear }).eq('user_id', USER_ID);
+  await sb.from('user_health_profile').upsert(
+    { user_id: USER_ID, symptoms: savedSymptoms, diagnoses: savedDiagnoses },
+    { onConflict: 'user_id' }
+  );
+  console.log('  state restored ✓');
+}
+
 // ── Run ───────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -572,6 +665,7 @@ async function main() {
   await s5_vstat_ze_zeme_closes_loop();
   await s6_validated_strength_availability();
   await s7_wearable_availability();
+  await s8_general_health_request_age_and_diagnosis();
 
   const total = passed + failed;
   sep(`Results: ${passed}/${total} passed${failed ? ` — ${failed} FAILED` : ''}`);
