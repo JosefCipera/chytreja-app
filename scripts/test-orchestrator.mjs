@@ -1317,6 +1317,194 @@ async function scenarioO() {
   );
 }
 
+// ── Scenario P: clearSession(userId) key parity — explicit uid beats _uid ─────
+//
+// Regression for: Full Reset / Session Reset did not clear _LRK when _uid was
+// null or stale. clearSession() now accepts explicit userId; reset handlers
+// pass uid = _uid ?? window.__chj_userId.
+//
+// This test runs in Node (no browser localStorage). It verifies the key
+// construction invariant: clearSession(T0) must target T0's keys, never null's.
+
+function scenarioP() {
+  sep('P — clearSession(userId) key parity: explicit uid, not stale _uid');
+
+  const SK  = uid => `chj_session_v1:${uid}`;
+  const LRK = uid => `chj_last_response_v1:${uid}`;
+
+  const TESTER_UID  = 'vPrm5PNzLWWWhi9sSwYVbkb9FaD3';
+
+  // Simulate: _uid is null/stale (Firebase onAuthStateChanged hasn't fired yet)
+  let module_uid = null;
+
+  // clearSession implementation BEFORE fix (uses module _uid):
+  function clearSessionBroken() {
+    return { sk: SK(module_uid), lrk: LRK(module_uid) };
+  }
+
+  // clearSession implementation AFTER fix (explicit userId param):
+  function clearSessionFixed(userId = module_uid) {
+    return { sk: SK(userId), lrk: LRK(userId) };
+  }
+
+  // Expected keys for Tester UID:
+  const expectedSK  = SK(TESTER_UID);
+  const expectedLRK = LRK(TESTER_UID);
+
+  // P1: broken impl with null _uid targets null-keyed storage (bug)
+  const broken = clearSessionBroken();
+  check(
+    broken.lrk !== expectedLRK,
+    'P1: broken clearSession() with _uid=null targets WRONG key (null-keyed)',
+    `wrong: got ${broken.lrk}, expected mismatch with ${expectedLRK}`
+  );
+
+  // P2: fixed impl with explicit TESTER_UID targets correct LRK key
+  const fixed = clearSessionFixed(TESTER_UID);
+  check(
+    fixed.lrk === expectedLRK,
+    'P2: clearSession(TESTER_UID) targets correct LRK key',
+    `got ${fixed.lrk}`
+  );
+
+  // P3: fixed impl with explicit TESTER_UID targets correct SK key
+  check(
+    fixed.sk === expectedSK,
+    'P3: clearSession(TESTER_UID) targets correct SK key',
+    `got ${fixed.sk}`
+  );
+
+  // P4: reset handler computes uid = _uid ?? window.__chj_userId → not null
+  const window_chj_userId = TESTER_UID;  // set by start() as window.__chj_userId
+  const handlerUid = module_uid ?? window_chj_userId;
+  check(
+    handlerUid === TESTER_UID,
+    'P4: reset handler uid = _uid ?? window.__chj_userId resolves to TESTER_UID when _uid=null',
+    `got ${handlerUid}`
+  );
+
+  // P5: with handler uid, fixed clearSession targets correct LRK
+  const withHandlerUid = clearSessionFixed(handlerUid);
+  check(
+    withHandlerUid.lrk === expectedLRK,
+    'P5: clearSession(handlerUid) removes correct LRK even when module _uid=null',
+    `got ${withHandlerUid.lrk}`
+  );
+
+  // P6: null _uid guard — session reset handler without uid would target wrong key
+  check(
+    SK(null) !== expectedSK && LRK(null) !== expectedLRK,
+    'P6: null uid always produces keys distinct from real userId keys',
+    `null-SK=${SK(null)}`
+  );
+
+  // P7: default param fallback — clearSession() still works when _uid is set
+  module_uid = TESTER_UID;
+  const withDefault = clearSessionFixed();  // no arg → uses default = module_uid
+  check(
+    withDefault.lrk === expectedLRK,
+    'P7: clearSession() default param uses module _uid when set',
+    `got ${withDefault.lrk}`
+  );
+}
+
+// ── Scenario Q: requestEpoch invalidation — stale in-flight request discarded ─
+//
+// Regression for: Full Reset while orchestrate() in flight caused stale response
+// to overwrite renderIdle() DOM and re-populate _SK/_LRK with pre-reset HOLD state.
+//
+// Mechanism: each orchestrate() captures requestEpoch at start; any reset
+// increments requestEpoch and clears busy. On response, request checks
+// myEpoch !== requestEpoch → discards saveSession/saveLastResponse/render.
+//
+// Tests two contracts:
+//   1. Request A (pre-reset) → Full Reset → Request B (post-reset) → A returns late
+//      → A ignored, only B rendered/persisted
+//   2. busy=true → Full Reset → busy=false → next input accepted immediately
+
+function scenarioQ() {
+  sep('Q — requestEpoch invalidation: stale in-flight discarded, fresh accepted');
+
+  // Pure JS simulation of the launcher epoch mechanism (no browser required)
+  let requestEpoch = 0;
+  let busy = false;
+  const rendered = [];
+  const saved    = [];
+
+  function invalidateRequests() {
+    requestEpoch++;
+    busy = false;
+    // setLoading(false) omitted — no DOM in Node
+  }
+
+  // Returns captured epoch or null if busy
+  function orchestrateStart() {
+    if (busy) return null;
+    busy = true;
+    return requestEpoch;  // capture current epoch (not increment — reset is the only incrementor)
+  }
+
+  // Simulates the post-fetch section of orchestrate()
+  function orchestrateFinish(myEpoch, label, sessionMode) {
+    if (myEpoch === null) return 'DROPPED_BUSY';
+    if (myEpoch !== requestEpoch) {
+      // stale — discard saveSession/saveLastResponse/render
+      // finally: myEpoch !== requestEpoch → do NOT set busy=false or clear loading
+      return 'STALE';
+    }
+    // current epoch — persist and render
+    saved.push({ label, sessionMode });
+    rendered.push(label);
+    // finally: owns busy
+    busy = false;
+    return 'RENDERED';
+  }
+
+  // ── Test 1: race condition sequence ──────────────────────────────────────────
+  // Request A: user sent "A co místo toho?" while in HOLD state (pre-reset)
+
+  const epochA = orchestrateStart();
+  check(epochA === 0, 'Q1: request A captures epoch 0 (pre-reset)', `got ${epochA}`);
+  check(busy === true, 'Q2: busy=true while A is in flight', `busy=${busy}`);
+
+  // Full Reset fires while A is still in flight
+  invalidateRequests();
+  check(requestEpoch === 1, 'Q3: Full Reset increments epoch to 1', `got ${requestEpoch}`);
+  check(busy === false, 'Q4: Full Reset clears busy — next input accepted immediately', `busy=${busy}`);
+
+  // Request B: user sends "Co mám dnes dělat?" after reset (clean session)
+  const epochB = orchestrateStart();
+  check(epochB === 1, 'Q5: request B captures epoch 1 (post-reset)', `got ${epochB}`);
+
+  // A returns late from server (computed with pre-reset DB + stale session → HOLD follow-up)
+  const resultA = orchestrateFinish(epochA, 'HOLD follow-up (stale)', 'HOLD');
+  check(resultA === 'STALE', 'Q6: request A (epoch 0 ≠ 1) is STALE — not rendered', `got ${resultA}`);
+  check(!rendered.includes('HOLD follow-up (stale)'),
+    'Q7: HOLD follow-up NOT in rendered list (saveSession/render/saveLastResponse skipped)', `rendered=${JSON.stringify(rendered)}`);
+  check(!saved.some(s => s.sessionMode === 'HOLD'),
+    'Q8: HOLD session NOT saved (stale _SK write blocked)', `saved=${JSON.stringify(saved)}`);
+
+  // B returns from server (clean DB → ACT)
+  const resultB = orchestrateFinish(epochB, 'ACT (fresh post-reset)', 'ACT');
+  check(resultB === 'RENDERED', 'Q9: request B (epoch 1) renders and persists ACT', `got ${resultB}`);
+  check(rendered[0] === 'ACT (fresh post-reset)',
+    'Q10: only ACT is in rendered list (HOLD never appeared)', `rendered=${JSON.stringify(rendered)}`);
+
+  // ── Test 2: busy=true recovery after reset ────────────────────────────────────
+  let busy2 = true;    // simulates orchestrate() in flight
+  let epoch2 = 0;
+
+  function invalidate2() { epoch2++; busy2 = false; }
+
+  invalidate2();
+  check(busy2 === false, 'Q11: Full Reset with busy=true → busy=false (new input accepted)', `busy2=${busy2}`);
+
+  // New orchestrate() after reset: busy=false → proceeds
+  let startResult2 = null;
+  if (!busy2) { busy2 = true; startResult2 = epoch2; }
+  check(startResult2 === 1, 'Q12: new orchestrate() starts immediately after reset, captures epoch 1', `got ${startResult2}`);
+}
+
 // ── Run ───────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -1339,6 +1527,8 @@ async function main() {
   await scenarioM();
   await scenarioN();
   await scenarioO();
+  scenarioP();
+  scenarioQ();
 
   const total = passed + failed;
   sep(`Results: ${passed}/${total} passed${failed ? ` — ${failed} FAILED` : ''}`);

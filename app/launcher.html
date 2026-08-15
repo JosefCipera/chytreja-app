@@ -264,9 +264,21 @@
       debug: r.debug ?? null,
     }));
   }
-  function clearSession() {
-    localStorage.removeItem(_SK(_uid));
-    localStorage.removeItem(_LRK(_uid));
+  function clearSession(userId = _uid) {
+    localStorage.removeItem(_SK(userId));
+    localStorage.removeItem(_LRK(userId));
+  }
+
+  // ── Request invalidation (epoch guard) ────────────────────────────────────────
+  // Prevents in-flight requests from persisting or rendering after a reset.
+  // Each orchestrate() captures the current epoch; any reset increments it.
+  // On response, the request checks its epoch — mismatch means it was superseded.
+  let requestEpoch = 0;
+
+  function invalidateRequests() {
+    requestEpoch++;
+    busy = false;
+    setLoading(false);
   }
 
   // ── UI refs ──────────────────────────────────────────────────────────────────
@@ -301,7 +313,9 @@
 
     // UI/session reset: clears presentation and session, no DB changes
     document.getElementById('btn-session-reset').addEventListener('click', () => {
-      clearSession();
+      const uid = _uid ?? window.__chj_userId;
+      invalidateRequests();
+      clearSession(uid);
       renderIdle();
       testerStatus('session cleared');
     });
@@ -322,7 +336,8 @@
           testerStatus(data.error ?? `HTTP ${res.status}`, false);
           return;
         }
-        clearSession();
+        invalidateRequests();
+        clearSession(uid);
         renderIdle();
         testerStatus(`reset ✓ (a:${data.deleted_action_assignments} m:${data.deleted_mission_log})`);
         console.info('[tester-reset] full reset summary:', data);
@@ -413,6 +428,7 @@
   async function orchestrate(userText, userId) {
     if (busy) return;
     busy = true;
+    const myEpoch = requestEpoch;
     setLoading(true);
 
     const uid = userId ?? window.__chj_userId;
@@ -432,12 +448,16 @@
 
       const response = await res.json();
 
+      // Discard response if a reset invalidated this request while in flight.
+      if (myEpoch !== requestEpoch) return;
+
       // Persist session
       if (response.session_updates) saveSession(response.session_updates);
       saveLastResponse(response);
 
       render(response);
     } catch (err) {
+      if (myEpoch !== requestEpoch) return;
       $stage.textContent = 'Nastala chyba. Zkus to znovu.';
       $stage.className = 'danger fade-in';
       $badge.textContent = 'ERR';
@@ -449,9 +469,13 @@
       retryBtn.addEventListener('click', () => orchestrate('Co mám dnes dělat?'));
       $chips.appendChild(retryBtn);
     } finally {
-      busy = false;
-      setLoading(false);
-      $input.value = '';
+      // Only the current-epoch request owns busy/loading state.
+      // Stale requests (superseded by a reset) must not touch these.
+      if (myEpoch === requestEpoch) {
+        busy = false;
+        setLoading(false);
+        $input.value = '';
+      }
     }
   }
 
@@ -554,7 +578,8 @@
 
   // ── Logout ───────────────────────────────────────────────────────────────────
   document.getElementById('logout-btn').addEventListener('click', async () => {
-    if (_uid) clearSession();
+    invalidateRequests();
+    clearSession(_uid ?? window.__chj_userId);
     if (urlUserId) {
       // Dev bypass: no Firebase session, just go to login
       window.location.href = '/login';
