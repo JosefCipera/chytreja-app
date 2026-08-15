@@ -22,7 +22,7 @@
 //   - ACT: session_updates.current_action_assignment set
 //   - session state flow: pending_question cleared after ANSWER
 
-import { processInput, buildEvent } from '../api/engine/orchestrator.js';
+import { processInput, buildEvent, _buildSessionUpdates_test as buildSessionUpdates } from '../api/engine/orchestrator.js';
 import { runEngine }                from '../api/engine/engine.js';
 import { createClient }             from '@supabase/supabase-js';
 
@@ -753,6 +753,87 @@ async function scenarioJ() {
   console.log('  state restored ✓');
 }
 
+// ── Scenario K — buildSessionUpdates ordering: ANSWER + ASK same turn ─────────
+//
+// Regression for: ANSWER block ran AFTER ASK block → cleared new pending_question.
+// Fix: ANSWER block now runs BEFORE ASK block — ASK always wins (last write).
+//
+// When engine returns ASK immediately after an ANSWER is processed, the new
+// pending_question must be preserved in session_updates so the next turn's
+// Haiku classifier has the context to classify the user's reply correctly.
+//
+// Pure unit tests (no network) using buildSessionUpdates directly.
+
+function scenarioK() {
+  sep('K — buildSessionUpdates ordering: ANSWER + ASK same turn → pending_question preserved');
+
+  // Build a fake result with dd.mode = 'ASK' (engine returned a new question)
+  const fakeAskResult = {
+    domain_response: {
+      daily_decision: {
+        mode: 'ASK',
+        reason_code: 'ASK_BLOCKING',
+        evaluated_at: new Date().toISOString(),
+        primary_item: {
+          type:               'NEXT_BEST_EVIDENCE',
+          evidence_type:      'validated_strength_assessment',
+          acquisition_method: 'functional_test',
+        },
+      },
+    },
+    warnings: [],
+    error: null,
+  };
+
+  // K1: ANSWER + ASK same turn → pending_question = new question (NOT null)
+  const updatesK1 = buildSessionUpdates('ANSWER_TO_EVIDENCE_QUESTION', {}, fakeAskResult);
+  check(
+    updatesK1.pending_question !== null,
+    'K1: ANSWER + ASK same turn → pending_question preserved (not null)',
+    `actual: ${JSON.stringify(updatesK1.pending_question)}`
+  );
+  check(
+    updatesK1.pending_question?.evidence_type === 'validated_strength_assessment',
+    'K1: pending_question.evidence_type = validated_strength_assessment',
+    `actual: ${updatesK1.pending_question?.evidence_type}`
+  );
+
+  // K2: ANSWER + HOLD same turn → pending_question cleared (correct behavior)
+  const fakeHoldResult = {
+    domain_response: {
+      daily_decision: {
+        mode: 'HOLD',
+        reason_code: 'HOLD_TOO_EARLY',
+        evaluated_at: new Date().toISOString(),
+        primary_item: { label: 'Silový trénink' },
+      },
+    },
+    warnings: [],
+    error: null,
+  };
+  const updatesK2 = buildSessionUpdates('ANSWER_TO_EVIDENCE_QUESTION', {}, fakeHoldResult);
+  check(
+    updatesK2.pending_question === null,
+    'K2: ANSWER + HOLD same turn → pending_question cleared (correct)',
+    `actual: ${JSON.stringify(updatesK2.pending_question)}`
+  );
+
+  // K3: ASK alone (no ANSWER) → pending_question set
+  const updatesK3 = buildSessionUpdates('DOMAIN_REQUEST', {}, fakeAskResult);
+  check(
+    updatesK3.pending_question?.evidence_type === 'validated_strength_assessment',
+    'K3: ASK without ANSWER → pending_question set',
+    `actual: ${updatesK3.pending_question?.evidence_type}`
+  );
+
+  // K4: ANSWER alone (engine HOLD, no new question) → pending_question null, no orphan
+  check(
+    updatesK2.current_action_assignment === undefined,
+    'K4: HOLD after ANSWER does not set current_action_assignment',
+    `actual: ${JSON.stringify(updatesK2.current_action_assignment)}`
+  );
+}
+
 // ── Run ───────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -770,6 +851,7 @@ async function main() {
   await scenarioH();
   await scenarioI();
   await scenarioJ();
+  scenarioK();
 
   const total = passed + failed;
   sep(`Results: ${passed}/${total} passed${failed ? ` — ${failed} FAILED` : ''}`);

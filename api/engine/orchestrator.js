@@ -310,6 +310,11 @@ function buildEvidenceQuestion(nbe) {
 
 // ── Session update builder ────────────────────────────────────────────────────
 
+// Exported for unit testing only — not part of the public API.
+export function _buildSessionUpdates_test(eventType, classifiedPayload, result) {
+  return buildSessionUpdates(eventType, classifiedPayload, result);
+}
+
 function buildSessionUpdates(eventType, classifiedPayload, result) {
   const dr = result.domain_response;
   const dd = dr?.daily_decision;
@@ -331,7 +336,14 @@ function buildSessionUpdates(eventType, classifiedPayload, result) {
     updates.pending_question = null;
   }
 
-  // ASK: set pending_question with evidence_type derived from context
+  // Clear pending when answered — runs BEFORE ASK so that if engine immediately
+  // returns a new ASK question in the same turn, the ASK block wins (sets new pending).
+  if (eventType === 'ANSWER_TO_EVIDENCE_QUESTION') {
+    updates.pending_question = null;
+  }
+
+  // ASK: set pending_question with evidence_type derived from context.
+  // This must run AFTER the ANSWER clear so the new question is preserved in session.
   if (dd?.mode === 'ASK') {
     const item = dd.primary_item;
     // For NEXT_BEST_EVIDENCE items the engine provides evidence_type/acquisition_method
@@ -349,11 +361,6 @@ function buildSessionUpdates(eventType, classifiedPayload, result) {
       type:          item?.type ?? 'GENERAL',
     };
     updates.current_action_assignment = null;
-  }
-
-  // Clear pending when answered
-  if (eventType === 'ANSWER_TO_EVIDENCE_QUESTION') {
-    updates.pending_question = null;
   }
 
   // Clear assignment when completed/skipped
