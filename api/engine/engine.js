@@ -86,6 +86,14 @@ export async function runEngine(userId) {
   // from a previous leverage node selection).
   const actionAssignments = await fetchActionAssignments(userId, 30);
   intervention_exposure   = computeInterventionExposure(actionAssignments);
+
+  // action_ids skipped today are ineligible for the remainder of the current day
+  const today = new Date().toISOString().slice(0, 10);
+  const skippedTodayActionIds = new Set(
+    actionAssignments
+      .filter(a => a.status === 'SKIPPED' && a.assigned_date === today)
+      .map(a => a.action_id)
+  );
   response_evaluations    = evaluateResponseEvaluations(
     intervention_exposure, INTERVENTION_MAP, observations, actionAssignments
   );
@@ -102,14 +110,15 @@ export async function runEngine(userId) {
     ]);
     next_best_action = computeNextBestAction({
       leverageNodeId,
-      interventions:    interventionData.interventions,
+      interventions:        interventionData.interventions,
       actionPool,
       personConstraints,
       clinicalHistory,
-      decisionGate:     decision_gate,
+      decisionGate:         decision_gate,
       node_states,
-      engineVersion:    ENGINE_VERSION,
-      responseHistory:  response_evaluations,
+      engineVersion:        ENGINE_VERSION,
+      responseHistory:      response_evaluations,
+      skippedTodayActionIds,
     });
   }
 

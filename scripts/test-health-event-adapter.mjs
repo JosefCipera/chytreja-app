@@ -650,6 +650,122 @@ async function s8_general_health_request_age_and_diagnosis() {
   console.log('  state restored ✓');
 }
 
+// ── S9: SKIPPED action_id ineligible for rest of day; sibling eligible; eligible next day ─
+// Contract: SKIP = "tuto konkrétní akci teď nechci", not "celou intervention".
+// Regression:
+//   ACT action=A → SKIPPED A → fresh runEngine → NBA.selected.action_id != A
+//   A in intervention X, B also in X → skip A does NOT remove B from candidates
+//   No SKIPPED row for today → A eligible again (simulates next day)
+
+async function s9_skip_action_id_ineligible_today() {
+  sep('S9 — SKIPPED action_id ineligible today; sibling in same intervention still eligible');
+
+  const TODAY_STR = new Date().toISOString().slice(0, 10);
+  const savedPhysical  = await savePhysical();
+
+  // Save diagnoses + today's action_assignments
+  const { data: hpRow } = await sb.from('user_health_profile')
+    .select('diagnoses').eq('user_id', USER_ID).maybeSingle();
+  const savedDiagnoses = hpRow?.diagnoses ?? [];
+  const { data: savedAA } = await sb.from('action_assignments')
+    .select('*').eq('user_id', USER_ID).eq('assigned_date', TODAY_STR);
+
+  // Set up: HYPERTENSION + sedentary → activates PHYSICAL_INACTIVITY → BREAK_UP_SEDENTARY_TIME
+  await sb.from('user_health_profile').upsert({
+    user_id:   USER_ID,
+    diagnoses: [{ name: 'HYPERTENSION', status: 'confirmed', source: 'test' }],
+    physical:  { sedentary_hours_day: 9 },
+  }, { onConflict: 'user_id' });
+  await sb.from('action_assignments').delete()
+    .eq('user_id', USER_ID).eq('assigned_date', TODAY_STR);
+
+  const { runEngine } = await import('../api/engine/engine.js');
+
+  // Baseline: confirm action A is selected
+  const before = await runEngine(USER_ID);
+  const selBefore = before.next_best_action?.selected;
+  check(Boolean(selBefore?.action_id), 'baseline: NBA selected an action');
+  console.log(`  baseline selected: ${selBefore?.action_id} (${selBefore?.label})`);
+  console.log(`  baseline intervention: ${selBefore?.intervention_id}`);
+
+  const skippedActionId       = selBefore?.action_id;
+  const skippedInterventionId = selBefore?.intervention_id;
+
+  if (!skippedActionId) {
+    check(false, 'SKIP scenario requires a selected action — aborting S9');
+    await restorePhysical(savedPhysical);
+    return;
+  }
+
+  // Insert SKIPPED row for action A
+  const leverageNodeId = before.system_leverage?.selected?.node_id ?? 'UNKNOWN';
+  await sb.from('action_assignments').insert({
+    user_id:                USER_ID,
+    action_id:              skippedActionId,
+    intervention_id:        skippedInterventionId,
+    selected_leverage_node: leverageNodeId,
+    engine_version:         '1.0.0',
+    status:                 'SKIPPED',
+    assigned_date:          TODAY_STR,
+  });
+
+  // After skip: A must not appear
+  const after = await runEngine(USER_ID);
+  const selAfter      = after.next_best_action?.selected;
+  const candsAfter    = after.next_best_action?.all_candidates ?? [];
+
+  console.log(`  after skip selected: ${selAfter?.action_id ?? 'null'} (${selAfter?.label ?? 'null'})`);
+
+  check(
+    selAfter?.action_id !== skippedActionId,
+    `after skip: NBA.selected.action_id != '${skippedActionId}'`,
+    `actual: ${selAfter?.action_id}`
+  );
+
+  check(
+    !candsAfter.some(c => c.action_id === skippedActionId),
+    `skipped action '${skippedActionId}' absent from all_candidates`,
+    `found in: ${candsAfter.map(c => c.action_id).join(', ')}`
+  );
+
+  // Sibling in same intervention must still be eligible
+  const sibling = candsAfter.find(
+    c => c.intervention_id === skippedInterventionId && c.action_id !== skippedActionId
+  );
+  check(
+    Boolean(sibling),
+    `sibling action in '${skippedInterventionId}' still in candidates after skipping '${skippedActionId}'`,
+    `candsAfter interventions: ${[...new Set(candsAfter.map(c => c.intervention_id))].join(', ')}`
+  );
+  if (sibling) console.log(`  sibling eligible: ${sibling.action_id} (${sibling.label})`);
+
+  // "Next day": delete SKIPPED row → A must reappear in candidates
+  await sb.from('action_assignments').delete()
+    .eq('user_id', USER_ID).eq('assigned_date', TODAY_STR);
+
+  const nextDay      = await runEngine(USER_ID);
+  const candsNextDay = nextDay.next_best_action?.all_candidates ?? [];
+  check(
+    candsNextDay.some(c => c.action_id === skippedActionId),
+    `'${skippedActionId}' eligible again when no SKIPPED row for today (simulates next day)`,
+    `candsNextDay: ${candsNextDay.map(c => c.action_id).join(', ')}`
+  );
+
+  // Restore
+  await sb.from('action_assignments').delete()
+    .eq('user_id', USER_ID).eq('assigned_date', TODAY_STR);
+  if ((savedAA ?? []).length > 0) {
+    const toInsert = (savedAA ?? []).map(({ id: _id, ...rest }) => rest);
+    await sb.from('action_assignments').insert(toInsert);
+  }
+  await sb.from('user_health_profile').upsert({
+    user_id:   USER_ID,
+    diagnoses: savedDiagnoses,
+    physical:  savedPhysical ?? {},
+  }, { onConflict: 'user_id' });
+  console.log('  state restored ✓');
+}
+
 // ── Run ───────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -666,6 +782,7 @@ async function main() {
   await s6_validated_strength_availability();
   await s7_wearable_availability();
   await s8_general_health_request_age_and_diagnosis();
+  await s9_skip_action_id_ineligible_today();
 
   const total = passed + failed;
   sep(`Results: ${passed}/${total} passed${failed ? ` — ${failed} FAILED` : ''}`);

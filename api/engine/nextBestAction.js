@@ -563,10 +563,13 @@ function computeFeasibility(safety) {
 
 // ── Candidate builder ─────────────────────────────────────────────────────────
 
-function buildCandidates(actionPool, interventions, parsedConstraints, hasCvRiskRelevant, hasClinicalHistory, leverageNodeId, hasGaitInstability, mobilityProfile) {
+function buildCandidates(actionPool, interventions, parsedConstraints, hasCvRiskRelevant, hasClinicalHistory, leverageNodeId, hasGaitInstability, mobilityProfile, skippedTodayActionIds) {
   const candidates = [];
 
   for (const action of actionPool) {
+    // action_ids skipped today are ineligible for the remainder of the day
+    if (skippedTodayActionIds?.has(action.id)) continue;
+
     const intervention = assignIntervention(action, interventions);
     if (!intervention) continue;
 
@@ -691,7 +694,8 @@ export function computeNextBestAction({
   decisionGate,
   node_states,
   engineVersion,
-  responseHistory,   // RESPONSE_EVALUATION[] — tiebreaker only, see selectBestCandidate step 9
+  responseHistory,        // RESPONSE_EVALUATION[] — tiebreaker only, see selectBestCandidate step 9
+  skippedTodayActionIds,  // Set<string> — action_ids skipped today, ineligible for rest of day
 }) {
   const now = new Date().toISOString();
 
@@ -722,6 +726,7 @@ export function computeNextBestAction({
     leverageNodeId,
     hasGaitInstability,
     mobilityProfile,
+    skippedTodayActionIds,
   );
 
   if (candidates.length === 0) {
