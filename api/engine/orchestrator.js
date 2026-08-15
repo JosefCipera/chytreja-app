@@ -455,7 +455,20 @@ const HEALTH_INPUT_TYPES = new Set([
   'NEW_SYMPTOM', 'NEW_CONSTRAINT', 'NEW_MEASUREMENT',
 ]);
 
-function buildHoldResponse(dd, _ctx, sessionUpdates, warnings, eventType) {
+function buildHoldResponse(dd, _ctx, sessionUpdates, warnings, eventType, isFollowUp = false) {
+  // Follow-up "co místo toho?" while all candidates still in HOLD:
+  // don't repeat the original action label — explain the system state instead.
+  if (isFollowUp) {
+    return {
+      mode:          'HOLD',
+      text:          'Pro dnešek je hotovo. U vhodných možností ještě čekám na dostatek času nebo dat k vyhodnocení. Vrať se zítra.',
+      buttons:       [],
+      expects_reply: false,
+      session_updates: sessionUpdates,
+      debug:         { reason_code: dd.reason_code, warnings },
+    };
+  }
+
   const label    = dd.primary_item?.label ?? 'Akce';
   const holdText = dd.reason_code === 'HOLD_TOO_EARLY'
     ? `${label} — výsledky ještě dozrávají. Počkej na příští hodnocení.`
@@ -593,7 +606,7 @@ function buildWhyResponse(sessionState) {
 
 // ── Presentation dispatcher ───────────────────────────────────────────────────
 
-function buildPresentation(eventType, classifiedPayload, result, sessionUpdates) {
+function buildPresentation(eventType, classifiedPayload, result, sessionUpdates, isHoldFollowUp = false) {
   if (result.error) {
     return {
       mode:          'NOOP',
@@ -614,7 +627,7 @@ function buildPresentation(eventType, classifiedPayload, result, sessionUpdates)
   switch (dd.mode) {
     case 'ACT':             return buildActResponse(dd, ctx, sessionUpdates, warnings);
     case 'ASK':             return buildAskResponse(dd, ctx, sessionUpdates, warnings);
-    case 'HOLD':            return buildHoldResponse(dd, ctx, sessionUpdates, warnings, eventType);
+    case 'HOLD':            return buildHoldResponse(dd, ctx, sessionUpdates, warnings, eventType, isHoldFollowUp);
     case 'SAFETY':          return buildSafetyBlockedResponse(dd, sessionUpdates, warnings);
     case 'SAFETY_CRITICAL': return buildSafetyCriticalResponse(dd, sessionUpdates, warnings);
     default:                return buildFallbackResponse(result, sessionUpdates, warnings);
@@ -705,7 +718,11 @@ export async function processInput(userId, userText, sessionState = {}) {
   const sessionUpdates = buildSessionUpdates(event_type, payload, result);
 
   // 7. Build presentation from DOMAIN_RESPONSE only
-  const presentation = buildPresentation(event_type, payload, result, sessionUpdates);
+  // HOLD follow-up: user asked "what else?" while previous decision was also HOLD.
+  // Triggers explanatory text instead of repeating the original action label.
+  const isHoldFollowUp = adapterType === 'DOMAIN_REQUEST'
+    && state.last_daily_decision?.mode === 'HOLD';
+  const presentation = buildPresentation(event_type, payload, result, sessionUpdates, isHoldFollowUp);
 
   // Enrich debug with leverage + NBA label for internal debug overlay (?debug=1).
   // Never shown to regular users — Launcher gates on query param.

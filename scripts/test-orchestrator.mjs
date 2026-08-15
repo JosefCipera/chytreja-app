@@ -1223,6 +1223,100 @@ async function scenarioN() {
   }
 }
 
+// ── Scenario O — HOLD follow-up: explanatory text, not duplicate ──────────────
+//
+// Regression: HOLD → "A co můžu dělat místo toho?" → engine again HOLD →
+// buildHoldResponse must NOT repeat the original action label.
+// isHoldFollowUp flag (adapterType=DOMAIN_REQUEST + last_daily_decision.mode=HOLD)
+// triggers explanatory text: "Pro dnešek je hotovo. ... Vrať se zítra."
+//
+// No new action selected, no assignment, no NBA/DD change.
+
+async function scenarioO() {
+  sep('O — HOLD follow-up → explanatory text, not duplicate label');
+
+  // Check live engine state — scenario requires HOLD (e.g. AEROBIC_TRAINING TOO_EARLY)
+  const engineResult = await runEngine(USER_ID);
+  const ddCurrent    = computeDailyDecision(engineResult);
+  console.log(`  current engine mode: ${ddCurrent.mode}  (${ddCurrent.reason_code})`);
+  console.log(`  original label:      "${ddCurrent.primary_item?.label ?? '—'}"`);
+
+  const originalLabel = ddCurrent.primary_item?.label ?? '';
+
+  if (ddCurrent.mode !== 'HOLD') {
+    console.log('  ⚠  Engine is not in HOLD — scenario O requires HOLD state (run after full reset if needed).');
+    console.log('  ℹ  Simulating HOLD follow-up with synthetic last_daily_decision for contract verification.');
+  }
+
+  // Session carries the previous HOLD decision — simulates user already saw original HOLD text
+  const sessionWithHold = {
+    last_daily_decision: {
+      mode:         'HOLD',
+      reason_code:  ddCurrent.reason_code ?? 'HOLD_TOO_EARLY',
+      primary_item: ddCurrent.primary_item ?? { label: 'Svižná chůze nebo kolo — 20 minut (dá se mluvit)' },
+      evaluated_at: ddCurrent.evaluated_at ?? new Date().toISOString(),
+    },
+    last_domain_response:      null,
+    pending_question:          null,
+    current_action_assignment: null,
+  };
+
+  // "Co dál?" — expected DOMAIN_REQUEST; triggers isHoldFollowUp path
+  const r = await processInput(USER_ID, 'Co dál?', sessionWithHold);
+  console.log('\n  [follow-up response]');
+  showResponse(r);
+
+  // O1: mode still HOLD (no new action selected — no NBA/DD change)
+  check(
+    r.mode === 'HOLD',
+    'O1: mode = HOLD (no new action assigned)',
+    `actual: ${r.mode}`
+  );
+
+  // O2: text does NOT repeat original action label
+  const labelFragment = originalLabel.slice(0, 20); // first 20 chars — robust to minor diffs
+  check(
+    !r.text.includes(labelFragment) || labelFragment.length === 0,
+    'O2: text does NOT repeat original action label',
+    `label fragment: "${labelFragment}"  text: "${r.text?.slice(0, 100)}"`
+  );
+
+  // O3: text contains explanatory "Pro dnešek"
+  check(
+    (r.text ?? '').includes('Pro dnešek'),
+    'O3: text contains "Pro dnešek" (explanatory signal)',
+    `actual: ${r.text?.slice(0, 120)}`
+  );
+
+  // O4: text contains "zítra" (return-tomorrow)
+  check(
+    (r.text ?? '').includes('zítra'),
+    'O4: text contains "zítra" (return-tomorrow)',
+    `actual: ${r.text?.slice(0, 120)}`
+  );
+
+  // O5: no buttons (still in HOLD — no chips to offer)
+  check(
+    (r.buttons ?? []).length === 0,
+    'O5: buttons = [] (no chips — HOLD is terminal for today)',
+    `actual: [${(r.buttons ?? []).join(', ')}]`
+  );
+
+  // O6: expects_reply = false
+  check(
+    r.expects_reply === false,
+    'O6: expects_reply = false',
+    `actual: ${r.expects_reply}`
+  );
+
+  // O7: no new current_action_assignment created
+  check(
+    r.session_updates?.current_action_assignment == null,
+    'O7: session_updates.current_action_assignment = null (no new assignment)',
+    `actual: ${JSON.stringify(r.session_updates?.current_action_assignment)}`
+  );
+}
+
 // ── Run ───────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -1244,6 +1338,7 @@ async function main() {
   await scenarioL();
   await scenarioM();
   await scenarioN();
+  await scenarioO();
 
   const total = passed + failed;
   sep(`Results: ${passed}/${total} passed${failed ? ` — ${failed} FAILED` : ''}`);
