@@ -524,7 +524,7 @@
     // detached prompt with no context. Discard lastResponse AND clear pending_question
     // so the first user message after reload is classified as a fresh input (not ANSWER).
     const last = loadLastResponse();
-    if (last && last.mode !== 'ASK') {
+    if (last && last.mode !== 'ASK' && last.mode !== 'HOLD') {
       render(last);
     } else {
       if (last?.mode === 'ASK') {
