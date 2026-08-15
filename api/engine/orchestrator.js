@@ -172,7 +172,7 @@ async function classifyIntent(sessionState, userText) {
 
 // ── Event builder ─────────────────────────────────────────────────────────────
 
-function buildEvent(classified, sessionState) {
+export function buildEvent(classified, sessionState) {
   const { event_type, payload } = classified;
   const event = {
     event_type,
@@ -187,6 +187,16 @@ function buildEvent(classified, sessionState) {
     const a = sessionState.current_action_assignment;
     if (a?.action_id)       event.payload.action_id       = a.action_id;
     if (a?.intervention_id) event.payload.intervention_id = a.intervention_id;
+  }
+
+  // Attach evidence_type from session for answer events.
+  // Haiku classifier may omit evidence_type from payload — session pending_question
+  // is the canonical source. Only fills the gap; never overwrites classifier's value.
+  if (event_type === 'ANSWER_TO_EVIDENCE_QUESTION') {
+    const pq = sessionState.pending_question;
+    if (!event.payload.evidence_type && pq?.evidence_type) {
+      event.payload.evidence_type = pq.evidence_type;
+    }
   }
 
   return event;

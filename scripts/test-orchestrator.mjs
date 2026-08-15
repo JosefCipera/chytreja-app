@@ -22,9 +22,9 @@
 //   - ACT: session_updates.current_action_assignment set
 //   - session state flow: pending_question cleared after ANSWER
 
-import { processInput } from '../api/engine/orchestrator.js';
-import { runEngine }     from '../api/engine/engine.js';
-import { createClient }  from '@supabase/supabase-js';
+import { processInput, buildEvent } from '../api/engine/orchestrator.js';
+import { runEngine }                from '../api/engine/engine.js';
+import { createClient }             from '@supabase/supabase-js';
 
 const sb      = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 const USER_ID = process.argv[2] || 'vPrm5PNzLWWWhi9sSwYVbkb9FaD3'; // Josef default
@@ -661,6 +661,98 @@ async function scenarioI() {
   }
 }
 
+// ── Scenario J — buildEvent evidence_type enrichment ─────────────────────────
+//
+// Regression for: classifier (Haiku) omits evidence_type from ANSWER payload.
+// buildEvent must inject evidence_type from session.pending_question as fallback.
+//
+// Two unit assertions (pure, no network):
+//   J1: classifier omits evidence_type → buildEvent injects from session
+//   J2: classifier provides evidence_type → buildEvent does NOT override (session ignored)
+//
+// One full orchestrator flow assertion:
+//   J3: processInput("Nemám.", session with pending_question) →
+//       availability=NOT_AVAILABLE persisted → fresh engine does not re-ask
+
+async function scenarioJ() {
+  sep('J — buildEvent evidence_type enrichment: omit guard + no-override guard + full flow');
+
+  const sessionWithPending = {
+    pending_question: {
+      text:          'Máš výsledek ověřeného testu svalové síly? Pokud ano, napiš typ testu a výsledek.',
+      evidence_type: 'validated_strength_assessment',
+      type:          'NBE',
+    },
+  };
+
+  // J1 — classifier omits evidence_type → session provides it
+  const eventOmitted = buildEvent(
+    { event_type: 'ANSWER_TO_EVIDENCE_QUESTION', payload: { value: 'Nemám' } },
+    sessionWithPending
+  );
+  check(
+    eventOmitted.payload.evidence_type === 'validated_strength_assessment',
+    'J1: classifier omits evidence_type → buildEvent injects from session.pending_question',
+    `actual: ${eventOmitted.payload.evidence_type}`
+  );
+
+  // J2 — classifier provides evidence_type → session does NOT override
+  const eventWithType = buildEvent(
+    { event_type: 'ANSWER_TO_EVIDENCE_QUESTION', payload: { evidence_type: 'fall_history', value: 'yes' } },
+    sessionWithPending // pending_question.evidence_type = 'validated_strength_assessment' (different)
+  );
+  check(
+    eventWithType.payload.evidence_type === 'fall_history',
+    'J2: classifier provides evidence_type → buildEvent preserves classifier value (session not applied)',
+    `actual: ${eventWithType.payload.evidence_type}`
+  );
+
+  // J3 — full orchestrator flow: "Nemám." → availability=NOT_AVAILABLE → no re-ask
+  const savedPhysical = await savePhysical();
+
+  // Seed: sedentary_hours_day → PHYSICAL_DECONDITIONING → LOW_MUSCLE_STRENGTH UNKNOWN
+  // → validated_strength_assessment in missing_evidence → NBE fires.
+  await sb.from('user_health_profile')
+    .upsert({ user_id: USER_ID, physical: { sedentary_hours_day: 10 } }, { onConflict: 'user_id' });
+
+  const response = await processInput(USER_ID, 'Nemám.', sessionWithPending);
+  showResponse(response);
+
+  check(response.mode !== undefined,
+    'J3: processInput produced a response mode');
+  check(response.session_updates?.pending_question === null,
+    'J3: pending_question cleared after ANSWER');
+
+  // Verify availability persisted (fix injects evidence_type if classifier omitted it)
+  const { data: row } = await sb.from('user_health_profile')
+    .select('physical').eq('user_id', USER_ID).maybeSingle();
+  const avail = row?.physical?.evidence_availability?.validated_strength_assessment;
+  console.log(`  evidence_availability.validated_strength_assessment: ${avail ?? 'absent'}`);
+  check(avail === 'NOT_AVAILABLE',
+    'J3: evidence_availability.validated_strength_assessment = NOT_AVAILABLE',
+    `actual: ${avail}`);
+
+  // Fresh engine: NBE must be gone
+  const fresh = await runEngine(USER_ID);
+  const { computeDailyDecision } = await import('../api/engine/dailyDecision.js');
+  const freshDD = computeDailyDecision(fresh);
+
+  const nbe = fresh.information_needs?.find(n => n.evidence_type === 'validated_strength_assessment');
+  const reAsks = freshDD.mode === 'ASK'
+    && freshDD.primary_item?.evidence_type === 'validated_strength_assessment';
+
+  console.log(`  fresh engine mode: ${freshDD.mode}  primary_item.evidence_type: ${freshDD.primary_item?.evidence_type ?? 'none'}`);
+  check(!nbe,
+    'J3: validated_strength_assessment not in information_needs (NBE resolved)',
+    nbe ? `still present` : '');
+  check(!reAsks,
+    'J3: engine does not immediately re-ask validated_strength_assessment',
+    `mode: ${freshDD.mode}  evidence_type: ${freshDD.primary_item?.evidence_type}`);
+
+  await restorePhysical(savedPhysical);
+  console.log('  state restored ✓');
+}
+
 // ── Run ───────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -677,6 +769,7 @@ async function main() {
   await scenarioG();
   await scenarioH();
   await scenarioI();
+  await scenarioJ();
 
   const total = passed + failed;
   sep(`Results: ${passed}/${total} passed${failed ? ` — ${failed} FAILED` : ''}`);
