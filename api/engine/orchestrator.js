@@ -405,15 +405,29 @@ function buildAskResponse(dd, ctx, sessionUpdates, warnings) {
   if (!dd.primary_item && dd.reason_code === 'ASK_BLOCKING') {
     const hasLeverageContext = Boolean(ctx?.system_leverage?.node_id);
 
-    const text = hasLeverageContext
-      // Data present but no action available yet — acknowledge and ask for movement data
-      ? 'Díky, beru to v úvahu. Pro konkrétní doporučení potřebuji ještě vědět o pohybových vzorcích — jak aktivní jsi přes den?'
-      // True zero-data — guide toward profile entry
-      : 'Zatím o tobě vím málo. Můžeš mi stručně říct, co je pro tebe zdravotně důležité — věk, diagnózy, omezení nebo co tě dnes trápí.';
+    if (hasLeverageContext) {
+      // Data present but PHYSICAL_INACTIVITY not yet activated — ask for sedentary hours.
+      // NBE rule: question must match the data type the engine reads (physical.sedentary_hours_day).
+      // Pending question is set so the answer routes through ANSWER_TO_EVIDENCE_QUESTION
+      // and is persisted to physical — not lost in symptoms[].
+      const text = 'Přibližně kolik hodin za běžný den prosedíš?';
+      return {
+        mode:          'ASK',
+        text,
+        buttons:       [],
+        expects_reply: true,
+        session_updates: {
+          ...sessionUpdates,
+          pending_question: { text, evidence_type: 'sedentary_hours_day', type: 'GENERAL' },
+        },
+        debug: { reason_code: dd.reason_code, warnings },
+      };
+    }
 
+    // True zero-data — guide toward conversational profile entry
     return {
       mode:          'ASK',
-      text,
+      text:          'Zatím o tobě vím málo. Můžeš mi stručně říct, co je pro tebe zdravotně důležité — věk, diagnózy, omezení nebo co tě dnes trápí.',
       buttons:       [],
       expects_reply: true,
       session_updates: sessionUpdates,
@@ -656,6 +670,33 @@ export async function processInput(userId, userText, sessionState = {}) {
     ? { ...payload, symptom_raw: userText }
     : payload;
   const event = buildEvent({ event_type: adapterType, payload: enrichedPayload }, state);
+
+  // 4b. Sedentary hours clarification guard.
+  // NBE rule: a question must match the data type the engine reads — never infer a number
+  // from vague text ("Většinu dne sedím", "hodně", "skoro pořád").
+  // Guard fires only when evidence_type='sedentary_hours_day' AND the user did not say a digit.
+  // If the user said a digit (e.g. "9 hodin") → falls through to normal applyHealthEvent path.
+  if (adapterType === 'ANSWER_TO_EVIDENCE_QUESTION'
+      && event.payload.evidence_type === 'sedentary_hours_day') {
+    const hasExplicitNumber = /\d/.test(userText);
+    const numericValue = parseFloat(String(event.payload.value ?? '').replace(',', '.').trim());
+    const isValidHours  = hasExplicitNumber && !isNaN(numericValue) && numericValue > 0 && numericValue <= 24;
+    if (!isValidHours) {
+      return {
+        mode:          'ASK',
+        text:          'Přibližně kolik hodin denně — třeba 6, 8 nebo 10?',
+        buttons:       [],
+        expects_reply: true,
+        session_updates: {
+          pending_question:          state.pending_question,
+          last_daily_decision:       state.last_daily_decision       ?? null,
+          last_domain_response:      state.last_domain_response      ?? null,
+          current_action_assignment: state.current_action_assignment ?? null,
+        },
+        debug: { reason_code: 'SEDENTARY_HOURS_CLARIFICATION' },
+      };
+    }
+  }
 
   // 5. Persist + run engine via adapter (no direct DB access here)
   const result = await applyHealthEvent(userId, event);

@@ -862,6 +862,107 @@ function scenarioK() {
   );
 }
 
+// ── Scenario L — sedentary_hours_day clarification guard ─────────────────────
+//
+// Regression: "jak aktivní jsi přes den?" fallback had no pending evidence_type →
+// vague answer stored in symptoms → DIAG_KEYWORDS miss → engine re-asks forever.
+//
+// Fix contract:
+//   1. hasLeverageContext=true ASK now asks "Přibližně kolik hodin za běžný den prosedíš?"
+//      with pending_question.evidence_type = 'sedentary_hours_day'
+//   2. Vague answer (no digit) → clarification, nothing persisted
+//   3. Numeric answer → physical.sedentary_hours_day written, pending cleared
+//   4. Fresh engine after numeric answer: same question does not repeat
+
+async function scenarioL() {
+  sep('L — sedentary_hours_day: vague → clarification, numeric → persist, no re-ask');
+
+  const savedPhysical = await savePhysical();
+
+  // Seed: clear sedentary_hours_day to simulate "not yet answered" state
+  const seeded = { ...(savedPhysical ?? {}), sedentary_hours_day: null };
+  await sb.from('user_health_profile').upsert({ user_id: USER_ID, physical: seeded }, { onConflict: 'user_id' });
+
+  const sessionWithPending = {
+    pending_question: {
+      text:          'Přibližně kolik hodin za běžný den prosedíš?',
+      evidence_type: 'sedentary_hours_day',
+      type:          'GENERAL',
+    },
+  };
+
+  // L1 — vague answer (no digit): clarification, nothing written to DB
+  const r1 = await processInput(USER_ID, 'Většinu dne sedím', sessionWithPending);
+  console.log('\n  [L1 — vague answer "Většinu dne sedím"]');
+  showResponse(r1);
+
+  check(r1.mode === 'ASK',
+    'L1: vague answer → mode = ASK (clarification)',
+    `actual: ${r1.mode}`);
+  check(r1.debug?.reason_code === 'SEDENTARY_HOURS_CLARIFICATION',
+    'L1: reason_code = SEDENTARY_HOURS_CLARIFICATION',
+    `actual: ${r1.debug?.reason_code}`);
+  check(r1.session_updates?.pending_question?.evidence_type === 'sedentary_hours_day',
+    'L1: pending_question.evidence_type preserved after clarification',
+    `actual: ${r1.session_updates?.pending_question?.evidence_type}`);
+
+  const { data: afterVague } = await sb.from('user_health_profile')
+    .select('physical').eq('user_id', USER_ID).maybeSingle();
+  check(afterVague?.physical?.sedentary_hours_day == null,
+    'L1: sedentary_hours_day NOT written (no magic number inference)',
+    `actual: ${afterVague?.physical?.sedentary_hours_day}`);
+
+  // L2 — numeric answer "9 hodin" → persisted
+  const sessionAfterClarification = {
+    ...sessionWithPending,           // pending_question still active
+    ...r1.session_updates,           // keep clarification session state
+  };
+
+  const r2 = await processInput(USER_ID, '9 hodin', sessionAfterClarification);
+  console.log('\n  [L2 — numeric answer "9 hodin"]');
+  showResponse(r2);
+
+  check(r2.debug?.reason_code !== 'SEDENTARY_HOURS_CLARIFICATION',
+    'L2: numeric answer does not trigger clarification',
+    `actual reason_code: ${r2.debug?.reason_code}`);
+  check(r2.session_updates?.pending_question === null || r2.session_updates?.pending_question === undefined,
+    'L2: pending_question cleared after numeric answer');
+
+  const { data: afterNumeric } = await sb.from('user_health_profile')
+    .select('physical').eq('user_id', USER_ID).maybeSingle();
+  const storedHours = parseFloat(String(afterNumeric?.physical?.sedentary_hours_day ?? ''));
+  check(!isNaN(storedHours) && storedHours > 0,
+    'L2: physical.sedentary_hours_day written after numeric answer',
+    `actual: ${afterNumeric?.physical?.sedentary_hours_day}`);
+  check(Math.abs(storedHours - 9) < 0.5,
+    'L2: stored value ≈ 9',
+    `actual: ${storedHours}`);
+
+  // L3 — fresh engine: same ASK_BLOCKING + hasLeverageContext does not re-ask sedentary_hours_day
+  // With sedentary_hours_day stored, engine reads it for PHYSICAL_INACTIVITY — not ASK_BLOCKING.
+  const r3 = await processInput(USER_ID, 'Co mám dnes dělat?', {});
+  console.log('\n  [L3 — fresh DOMAIN_REQUEST after answer]');
+  showResponse(r3);
+
+  const pendingAfter = r3.session_updates?.pending_question;
+  check(pendingAfter?.evidence_type !== 'sedentary_hours_day',
+    'L3: sedentary_hours_day not re-asked after persistence',
+    `actual pending evidence_type: ${pendingAfter?.evidence_type}`);
+
+  // Verify sedentary_hours_day is read by fresh engine (node_states contain PHYSICAL_INACTIVITY or no longer top NBE)
+  const fresh = await runEngine(USER_ID);
+  const physInactivity = fresh.node_states?.find(n => n.node_id === 'PHYSICAL_INACTIVITY');
+  console.log(`  PHYSICAL_INACTIVITY state after answer: ${physInactivity?.current_state ?? 'not activated'}`);
+  check(
+    physInactivity?.current_state != null,
+    'L3: PHYSICAL_INACTIVITY activated (engine reads sedentary_hours_day)',
+    `actual: ${physInactivity?.current_state ?? 'absent'}`
+  );
+
+  await restorePhysical(savedPhysical);
+  console.log('  state restored ✓');
+}
+
 // ── Run ───────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -880,6 +981,7 @@ async function main() {
   await scenarioI();
   await scenarioJ();
   scenarioK();
+  await scenarioL();
 
   const total = passed + failed;
   sep(`Results: ${passed}/${total} passed${failed ? ` — ${failed} FAILED` : ''}`);
