@@ -194,7 +194,10 @@
 <div id="app" class="hidden">
   <header>
     <span class="logo">CHYTRÉ JÁ</span>
-    <a href="/crt.html" class="profile-link" title="Zdravotní profil">profil ↗</a>
+    <div style="display:flex;gap:20px;align-items:center">
+      <a href="/crt.html" class="profile-link" title="Zdravotní profil">profil ↗</a>
+      <button id="logout-btn" class="profile-link" style="background:none;border:none;cursor:pointer;padding:0" title="Odhlásit se">odhlásit</button>
+    </div>
     <span class="mode-badge" id="mode-badge">—</span>
   </header>
   <div id="debug-panel" class="hidden"></div>
@@ -222,8 +225,8 @@
 
 <script type="module">
   // ── Firebase auth ────────────────────────────────────────────────────────────
-  import { initializeApp }                from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js';
-  import { getAuth, onAuthStateChanged }  from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js';
+  import { initializeApp }                        from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js';
+  import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js';
 
   const firebaseApp = initializeApp({
     apiKey:            'AIzaSyAKREZsoBZkA1xOQ5ff3XDmiJ88nwSjeOk',
@@ -548,6 +551,22 @@
       }
     });
   }
+
+  // ── Logout ───────────────────────────────────────────────────────────────────
+  document.getElementById('logout-btn').addEventListener('click', async () => {
+    if (_uid) clearSession();
+    if (urlUserId) {
+      // Dev bypass: no Firebase session, just go to login
+      window.location.href = '/login';
+      return;
+    }
+    try {
+      await signOut(auth);
+      // onAuthStateChanged fires → shows auth overlay automatically
+    } catch (err) {
+      console.error('[logout]', err);
+    }
+  });
 </script>
 </body>
 </html>
