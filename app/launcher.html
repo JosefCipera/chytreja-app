@@ -132,6 +132,26 @@
     }
     .profile-link:hover { color: var(--cyan); }
 
+    /* ── Tester panel (visible only with ?tester=1) ── */
+    #tester-panel {
+      position: fixed; bottom: 100px; left: 12px; right: 12px;
+      background: rgba(0,4,8,0.97); border: 1px solid #1a3040;
+      border-radius: 8px; padding: 10px 14px;
+      font-size: 10px; letter-spacing: 1.5px; color: #2a5060;
+      font-family: 'Courier New', monospace;
+      z-index: 25; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    }
+    #tester-panel span { flex: 1; white-space: nowrap; }
+    .tester-btn {
+      font-family: 'Courier New', monospace; font-size: 10px; letter-spacing: 1px;
+      padding: 5px 12px; border-radius: 5px; cursor: pointer;
+      border: 1px solid #1e4a5c; background: transparent; color: #3a7a8a;
+      transition: all 0.2s; white-space: nowrap;
+    }
+    .tester-btn:hover { border-color: #3a7a8a; color: #6abacc; }
+    .tester-btn.danger-btn { border-color: #5a2020; color: #a06060; }
+    .tester-btn.danger-btn:hover { border-color: #a06060; color: #e08080; }
+
     /* ── Debug overlay (visible only with ?debug=1) ── */
     #debug-panel {
       position: fixed; bottom: 116px; left: 12px; right: 12px;
@@ -178,6 +198,13 @@
     <span class="mode-badge" id="mode-badge">—</span>
   </header>
   <div id="debug-panel" class="hidden"></div>
+  <!-- Tester panel: visible only with ?tester=1 in URL — never shown in production -->
+  <div id="tester-panel" class="hidden">
+    <span>TESTER</span>
+    <button class="tester-btn" id="btn-session-reset">Session reset</button>
+    <button class="tester-btn danger-btn" id="btn-full-reset">Full reset ⚠</button>
+    <span id="tester-status" style="color:#1e4a5c;min-width:80px;text-align:right"></span>
+  </div>
 
   <main>
     <div id="stage-text" class="loading">…</div>
@@ -250,10 +277,58 @@
   const $authOver = document.getElementById('auth-overlay');
   const $debug    = document.getElementById('debug-panel');
 
-  const _debugMode = new URLSearchParams(location.search).get('debug') === '1';
+  const _debugMode  = new URLSearchParams(location.search).get('debug')  === '1';
+  const _testerMode = new URLSearchParams(location.search).get('tester') === '1';
 
   // Health profile URL — update to actual health data entry page if needed
   const PROFILE_URL = '/crt.html';
+
+  // ── Tester panel (dev tooling, ?tester=1 only) ────────────────────────────────
+  const $testerPanel  = document.getElementById('tester-panel');
+  const $testerStatus = document.getElementById('tester-status');
+
+  function testerStatus(msg, ok = true) {
+    $testerStatus.textContent = msg;
+    $testerStatus.style.color = ok ? '#3a9a6a' : '#c06060';
+    setTimeout(() => { $testerStatus.textContent = ''; }, 3500);
+  }
+
+  if (_testerMode && $testerPanel) {
+    $testerPanel.classList.remove('hidden');
+
+    // UI/session reset: clears presentation and session, no DB changes
+    document.getElementById('btn-session-reset').addEventListener('click', () => {
+      clearSession();
+      renderIdle();
+      testerStatus('session cleared');
+    });
+
+    // Tester full reset: API call + localStorage clear
+    document.getElementById('btn-full-reset').addEventListener('click', async () => {
+      const uid = _uid ?? window.__chj_userId;
+      if (!uid) { testerStatus('no user', false); return; }
+      testerStatus('resetting…', true);
+      try {
+        const res = await fetch('/api/tester-reset', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ userId: uid, mode: 'full' }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          testerStatus(data.error ?? `HTTP ${res.status}`, false);
+          return;
+        }
+        clearSession();
+        renderIdle();
+        testerStatus(`reset ✓ (a:${data.deleted_action_assignments} m:${data.deleted_mission_log})`);
+        console.info('[tester-reset] full reset summary:', data);
+      } catch (err) {
+        testerStatus('error — check console', false);
+        console.error('[tester-reset]', err);
+      }
+    });
+  }
 
   let busy = false;
 

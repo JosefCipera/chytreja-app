@@ -25,6 +25,8 @@
 import { processInput, buildEvent, _buildSessionUpdates_test as buildSessionUpdates } from '../api/engine/orchestrator.js';
 import { runEngine }                from '../api/engine/engine.js';
 import { createClient }             from '@supabase/supabase-js';
+import { computeDailyDecision }     from '../api/engine/dailyDecision.js';
+import { runTesterReset, TESTER_UIDS } from '../api/tester-reset.js';
 
 const sb      = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 const USER_ID = process.argv[2] || 'vPrm5PNzLWWWhi9sSwYVbkb9FaD3'; // Josef default
@@ -1090,6 +1092,137 @@ async function scenarioM() {
   console.log('  state restored ✓');
 }
 
+// ── Scenario N — tester-reset: full reset clears all engine inputs ─────────────
+//
+// Regression: Reset button (page reload / sign-out) did not clear _LRK, so
+// HOLD presentation survived. Full reset must clear both localStorage (contract)
+// and DB engine inputs so fresh orchestrate() returns first-run ASK, not HOLD.
+//
+// N1: full reset on protected (non-whitelisted) UID → 403
+// N2: UI/session reset (mode=session) → 200, no DB changes
+// N3: full reset on tester UID → 200 + summary fields present
+// N4: after full reset — engine has no action_assignments → NOT HOLD_TOO_EARLY
+// N5: start() contract — _LRK cleared means renderIdle(), not HOLD
+//     (verified via source-code contract assertion, localStorage is browser-only)
+
+async function scenarioN() {
+  sep('N — tester-reset: full reset clears engine inputs + presentation state');
+
+  const TESTER_UID    = USER_ID;
+  const PROTECTED_UID = 'NOT_A_REAL_UID_protected_account_12345';
+
+  // Save full state before test
+  const savedPhysical    = await savePhysical();
+  const savedConstraints = await saveConstraints();
+  const { data: savedHp } = await sb
+    .from('user_health_profile')
+    .select('diagnoses,symptoms,medications,labs,physical,lifestyle,behavior_flags,crt_cache')
+    .eq('user_id', TESTER_UID).maybeSingle();
+  const { data: savedAssignments } = await sb
+    .from('action_assignments').select('*').eq('user_id', TESTER_UID);
+  const { data: savedMissionLog } = await sb
+    .from('mission_log').select('*').eq('user_id', TESTER_UID);
+
+  try {
+    // Seed dirty state: symptom + action_assignment so full reset has something to clear
+    await sb.from('user_health_profile').upsert(
+      { user_id: TESTER_UID, symptoms: ['test_symptom_scenario_N'] },
+      { onConflict: 'user_id' }
+    );
+    const today = new Date().toISOString().slice(0, 10);
+    await sb.from('action_assignments').upsert(
+      { user_id: TESTER_UID, action_id: 'test-action-scenario-N', intervention_id: null,
+        status: 'completed', assigned_date: today, engine_version: 'test' },
+      { onConflict: 'user_id,assigned_date' }
+    );
+
+    // N1 — non-whitelisted UID → 403
+    console.log('\n  [N1 — full reset on non-whitelisted UID]');
+    const r1 = await runTesterReset(PROTECTED_UID, 'full', sb);
+    check(r1.status === 403,
+      'N1: non-whitelisted UID → 403',
+      `actual: ${r1.status}`);
+    check(typeof r1.body.error === 'string',
+      'N1: error message present');
+
+    // N2 — session mode → 200, no DB changes
+    console.log('\n  [N2 — session reset mode (no DB changes)]');
+    const r2 = await runTesterReset(TESTER_UID, 'session', sb);
+    check(r2.status === 200 && r2.body.ok === true,
+      'N2: session mode → 200 ok',
+      `actual: ${r2.status}`);
+    check(r2.body.local_session_cleared === true,
+      'N2: local_session_cleared = true in response');
+
+    const { data: afterSession } = await sb
+      .from('user_health_profile').select('symptoms').eq('user_id', TESTER_UID).maybeSingle();
+    check(
+      Array.isArray(afterSession?.symptoms) && afterSession.symptoms.includes('test_symptom_scenario_N'),
+      'N2: session reset does NOT clear DB symptoms',
+      `actual: ${JSON.stringify(afterSession?.symptoms)}`);
+
+    // N3 — full reset on tester UID → 200 + all summary fields
+    console.log('\n  [N3 — full reset on tester UID]');
+    const r3 = await runTesterReset(TESTER_UID, 'full', sb);
+    const d3 = r3.body;
+    console.log(`  summary: ${JSON.stringify(d3)}`);
+    check(r3.status === 200 && d3.ok === true,
+      'N3: tester UID full reset → 200 ok',
+      `actual: ${r3.status}`);
+    check(typeof d3.deleted_action_assignments === 'number',
+      'N3: deleted_action_assignments in summary',
+      `actual: ${d3.deleted_action_assignments}`);
+    check(typeof d3.deleted_constraints === 'number',
+      'N3: deleted_constraints in summary');
+    check(typeof d3.deleted_mission_log === 'number',
+      'N3: deleted_mission_log in summary');
+    check(d3.health_profile_cleared === true,
+      'N3: health_profile_cleared = true');
+    check(d3.local_session_cleared === false,
+      'N3: local_session_cleared = false (caller responsibility)');
+
+    // N4 — after full reset: action_assignments empty → engine NOT HOLD_TOO_EARLY
+    console.log('\n  [N4 — fresh engine after full reset]');
+    const { data: assignsAfter } = await sb
+      .from('action_assignments').select('action_id').eq('user_id', TESTER_UID);
+    check(
+      !Array.isArray(assignsAfter) || assignsAfter.length === 0,
+      'N4: action_assignments empty after full reset',
+      `actual count: ${assignsAfter?.length}`);
+
+    const engineAfter = await runEngine(TESTER_UID);
+    const ddAfter     = computeDailyDecision(engineAfter);
+    console.log(`  engine mode after full reset: ${ddAfter.mode} (${ddAfter.reason_code})`);
+    check(ddAfter.reason_code !== 'HOLD_TOO_EARLY',
+      'N4: engine NOT HOLD_TOO_EARLY after full reset',
+      `actual: ${ddAfter.reason_code}`);
+
+    // N5 — start() _LRK contract: server signals caller must clear localStorage
+    console.log('\n  [N5 — start() _LRK contract]');
+    check(d3.local_session_cleared === false,
+      'N5: server returns local_session_cleared=false → launcher must call clearSession()');
+    // Positive whitelist check
+    check(TESTER_UIDS.has(TESTER_UID),
+      'N5: TESTER_UID is in TESTER_UIDS whitelist');
+    check(!TESTER_UIDS.has(PROTECTED_UID),
+      'N5: PROTECTED_UID is NOT in TESTER_UIDS whitelist');
+
+  } finally {
+    await restoreConstraints(savedConstraints);
+    await sb.from('action_assignments').delete().eq('user_id', TESTER_UID);
+    if (savedAssignments?.length) await sb.from('action_assignments').insert(savedAssignments);
+    await sb.from('mission_log').delete().eq('user_id', TESTER_UID);
+    if (savedMissionLog?.length) await sb.from('mission_log').insert(savedMissionLog);
+    if (savedHp) {
+      await sb.from('user_health_profile').upsert(
+        { user_id: TESTER_UID, ...savedHp }, { onConflict: 'user_id' }
+      );
+    }
+    await restorePhysical(savedPhysical);
+    console.log('  state restored ✓');
+  }
+}
+
 // ── Run ───────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -1110,6 +1243,7 @@ async function main() {
   scenarioK();
   await scenarioL();
   await scenarioM();
+  await scenarioN();
 
   const total = passed + failed;
   sep(`Results: ${passed}/${total} passed${failed ? ` — ${failed} FAILED` : ''}`);
