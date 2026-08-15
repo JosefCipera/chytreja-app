@@ -14,8 +14,9 @@ import { createClient } from '@supabase/supabase-js';
 // Explicit tester whitelist — only these UIDs may be full-reset.
 // Production and demo accounts are protected by not being listed here.
 export const TESTER_UIDS = new Set([
-  'vPrm5PNzLWWWhi9sSwYVbkb9FaD3', // Josef — Tester 0
+  'u58iRWcMr9bbakFMJYGFGARpi9h1', // Tester 0
   // Add additional tester accounts here when needed
+  // Josef (vPrm5PNzLWWWhi9sSwYVbkb9FaD3) and Kovářová are PROTECTED — never add here
 ]);
 
 // Core reset logic — exported so tests can call it directly without HTTP
