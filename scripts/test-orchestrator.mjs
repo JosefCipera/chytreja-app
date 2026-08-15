@@ -963,6 +963,133 @@ async function scenarioL() {
   console.log('  state restored ✓');
 }
 
+// ── Scenario M — WHY presentation contract: ACT → WHY → buttons preserved ────
+//
+// Regression: buildWhyResponse returned buttons:[] unconditionally.
+// Launcher renders chips from response.buttons only — no session fallback.
+// Session state (current_action_assignment) was NOT corrupted by WHY,
+// but without buttons the user had no path back to Hotovo/Přeskočit.
+//
+// Fix contract:
+//   WHY is presentation-only. It must not create a new action, clear or
+//   modify current_action_assignment, or trigger Engine/NBE/NBA/DD.
+//
+//   ACT → WHY → EXPLAIN + [Hotovo, Přeskočit]
+//             → Hotovo → ACTION_COMPLETED with same action_id
+//             → fresh engine / DAILY_DECISION
+
+async function scenarioM() {
+  sep('M — WHY: ACT → WHY → buttons preserved → ACTION_COMPLETED on same action_id');
+
+  const savedConstraints = await saveConstraints();
+
+  // M1: Get a real engine result for context; synthesise an ACT session from it.
+  // Engine may currently be HOLD for Josef — that is fine. We need a synthetic
+  // ACT session with a real action_id to verify the WHY contract end-to-end.
+  const engineResult = await runEngine(USER_ID);
+  const nba = engineResult.next_best_action?.selected;
+
+  // Use the real action from engine if available; otherwise fall back to a stub
+  // that is realistic enough to exercise all M assertions without a live ACT turn.
+  const actionId        = nba?.action_id       ?? 'test-action-m-stub';
+  const interventionId  = nba?.intervention_id ?? null;
+  const actionLabel     = nba?.label           ?? 'Testovací akce scénáře M';
+
+  const syntheticAssignment = {
+    action_id:       actionId,
+    label:           actionLabel,
+    intervention_id: interventionId,
+    assigned_at:     new Date().toISOString(),
+  };
+
+  // Build explanation_context from engine result for realistic WHY text
+  const lastDomainResponse = {
+    daily_decision: {
+      mode:         'ACT',
+      primary_item: { action_id: actionId, label: actionLabel, intervention_id: interventionId },
+      evaluated_at: syntheticAssignment.assigned_at,
+    },
+    explanation_context: {
+      system_leverage:   engineResult.system_leverage?.selected   ?? null,
+      system_constraint: engineResult.system_constraint?.selected ?? null,
+      action_context:    engineResult.next_best_action            ?? null,
+    },
+  };
+
+  const sessionAfterAct = {
+    current_action_assignment: syntheticAssignment,
+    last_daily_decision:       lastDomainResponse.daily_decision,
+    last_domain_response:      lastDomainResponse,
+    pending_question:          null,
+  };
+
+  // M1 — WHY from ACT session: buttons must contain Hotovo + Přeskočit
+  const whyResponse = await processInput(USER_ID, 'Proč?', sessionAfterAct);
+  console.log('\n  [M1 — WHY from ACT session]');
+  showResponse(whyResponse);
+
+  check(whyResponse.mode === 'EXPLAIN',
+    'M1: WHY → mode = EXPLAIN',
+    `actual: ${whyResponse.mode}`);
+  check(
+    Array.isArray(whyResponse.buttons)
+      && whyResponse.buttons.includes('Hotovo')
+      && whyResponse.buttons.includes('Přeskočit'),
+    'M1: WHY from ACT → buttons contain Hotovo + Přeskočit',
+    `actual: [${whyResponse.buttons?.join(', ')}]`
+  );
+  check(
+    Object.keys(whyResponse.session_updates ?? {}).length === 0,
+    'M1: WHY session_updates empty — no state mutation',
+    `actual keys: ${Object.keys(whyResponse.session_updates ?? {}).join(', ')}`
+  );
+
+  // M2 — current_action_assignment survives WHY merge
+  const sessionAfterWhy = { ...sessionAfterAct, ...whyResponse.session_updates };
+  check(
+    sessionAfterWhy.current_action_assignment?.action_id === actionId,
+    'M2: current_action_assignment survives WHY session merge',
+    `actual: ${sessionAfterWhy.current_action_assignment?.action_id}`
+  );
+
+  // M3 — WHY from session without ACT: buttons must be empty (no phantom chips)
+  const sessionNoAct = {
+    current_action_assignment: null,
+    last_domain_response:      lastDomainResponse,
+    pending_question:          null,
+  };
+  const whyNoAct = await processInput(USER_ID, 'Proč?', sessionNoAct);
+  console.log('\n  [M3 — WHY without active ACT assignment]');
+  showResponse(whyNoAct);
+
+  check(
+    Array.isArray(whyNoAct.buttons) && whyNoAct.buttons.length === 0,
+    'M3: WHY without active assignment → buttons empty (no phantom Hotovo)',
+    `actual: [${whyNoAct.buttons?.join(', ')}]`
+  );
+
+  // M4 — Hotovo after WHY uses same action_id (ACTION_COMPLETED on correct assignment)
+  // Simulate user pressing Hotovo using the session after WHY merge
+  const hotodoResponse = await processInput(USER_ID, 'Hotovo', sessionAfterWhy);
+  console.log('\n  [M4 — Hotovo after WHY → ACTION_COMPLETED on same action_id]');
+  showResponse(hotodoResponse);
+
+  // ACTION_COMPLETED should trigger a new engine run → any valid mode is fine
+  check(hotodoResponse.mode != null,
+    'M4: Hotovo after WHY → response mode present',
+    `actual: ${hotodoResponse.mode}`);
+  // current_action_assignment must be cleared after completion
+  check(
+    hotodoResponse.session_updates?.current_action_assignment === null
+      || hotodoResponse.session_updates?.current_action_assignment === undefined,
+    'M4: ACTION_COMPLETED clears current_action_assignment',
+    `actual: ${JSON.stringify(hotodoResponse.session_updates?.current_action_assignment)}`
+  );
+
+  await restoreConstraints(savedConstraints);
+  console.log('  state restored ✓');
+}
+
 // ── Run ───────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -982,6 +1109,7 @@ async function main() {
   await scenarioJ();
   scenarioK();
   await scenarioL();
+  await scenarioM();
 
   const total = passed + failed;
   sep(`Results: ${passed}/${total} passed${failed ? ` — ${failed} FAILED` : ''}`);

@@ -584,7 +584,7 @@ function buildWhyResponse(sessionState) {
   return {
     mode:          'EXPLAIN',
     text,
-    buttons:       [],
+    buttons:       sessionState.current_action_assignment ? ['Hotovo', 'Přeskočit'] : [],
     expects_reply: false,
     session_updates: {},
     debug:         { source: 'explanation_context' },
