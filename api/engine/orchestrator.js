@@ -346,21 +346,28 @@ function buildSessionUpdates(eventType, classifiedPayload, result) {
   // This must run AFTER the ANSWER clear so the new question is preserved in session.
   if (dd?.mode === 'ASK') {
     const item = dd.primary_item;
-    // For NEXT_BEST_EVIDENCE items the engine provides evidence_type/acquisition_method
-    // but no question field. buildEvidenceQuestion is the single source of truth for
-    // converting NBE metadata → Czech user-facing question text.
-    const questionText = item?.question ?? item?.question_text ?? buildEvidenceQuestion(item);
-
-    // Derive evidence_type: prefer explicit field, fallback to body_part from triggering event
-    const evidenceType = item?.evidence_type
-      ?? (eventType === 'NEW_SYMPTOM' ? bodyPartToEvidenceType(classifiedPayload?.body_part) : null);
-
-    updates.pending_question = {
-      text:          questionText,
-      evidence_type: evidenceType,
-      type:          item?.type ?? 'GENERAL',
-    };
     updates.current_action_assignment = null;
+    if (item) {
+      // For NEXT_BEST_EVIDENCE items the engine provides evidence_type/acquisition_method
+      // but no question field. buildEvidenceQuestion is the single source of truth for
+      // converting NBE metadata → Czech user-facing question text.
+      const questionText = item?.question ?? item?.question_text ?? buildEvidenceQuestion(item);
+
+      // Derive evidence_type: prefer explicit field, fallback to body_part from triggering event
+      const evidenceType = item?.evidence_type
+        ?? (eventType === 'NEW_SYMPTOM' ? bodyPartToEvidenceType(classifiedPayload?.body_part) : null);
+
+      updates.pending_question = {
+        text:          questionText,
+        evidence_type: evidenceType,
+        type:          item?.type ?? 'GENERAL',
+      };
+    } else {
+      // primary_item = null (ASK_BLOCKING zero-data): explicitly clear pending_question
+      // so the launcher's session merge does not preserve any stale pending value.
+      // Next input → GENERAL_HEALTH_REQUEST → stored in symptoms for DIAG_KEYWORDS matching.
+      updates.pending_question = null;
+    }
   }
 
   // Clear assignment when completed/skipped
@@ -407,7 +414,7 @@ function buildAskResponse(dd, ctx, sessionUpdates, warnings) {
     return {
       mode:          'ASK',
       text,
-      buttons:       ['Zdravotní profil'],
+      buttons:       [],
       expects_reply: true,
       session_updates: sessionUpdates,
       debug:         { reason_code: dd.reason_code, warnings },

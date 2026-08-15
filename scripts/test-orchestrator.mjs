@@ -832,6 +832,34 @@ function scenarioK() {
     'K4: HOLD after ANSWER does not set current_action_assignment',
     `actual: ${JSON.stringify(updatesK2.current_action_assignment)}`
   );
+
+  // K5: ASK_BLOCKING with primary_item = null → pending_question stays null (Fix 1 guard)
+  // Regression: zero-data ASK was setting pending_question = {text:null, evidence_type:null}
+  // which caused every subsequent short input to be misclassified as ANSWER_TO_EVIDENCE_QUESTION.
+  const fakeZeroDataResult = {
+    domain_response: {
+      daily_decision: {
+        mode: 'ASK',
+        reason_code: 'ASK_BLOCKING',
+        evaluated_at: new Date().toISOString(),
+        primary_item: null,   // ← zero-data: engine has no specific question
+      },
+    },
+    warnings: [],
+    error: null,
+  };
+  const updatesK5 = buildSessionUpdates('DOMAIN_REQUEST', {}, fakeZeroDataResult);
+  check(
+    updatesK5.pending_question === null,
+    'K5: zero-data ASK_BLOCKING (primary_item=null) → pending_question stays null',
+    `actual: ${JSON.stringify(updatesK5.pending_question)}`
+  );
+  // Verify current_action_assignment is still cleared (ASK always clears it)
+  check(
+    updatesK5.current_action_assignment === null,
+    'K5: zero-data ASK_BLOCKING still clears current_action_assignment',
+    `actual: ${JSON.stringify(updatesK5.current_action_assignment)}`
+  );
 }
 
 // ── Run ───────────────────────────────────────────────────────────────────────
