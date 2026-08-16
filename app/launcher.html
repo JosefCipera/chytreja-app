@@ -444,6 +444,16 @@
 
     // Chips
     $chips.innerHTML = '';
+
+    // ACT: prepend Proč? chip — triggers same path as typing 'Proč?', no new intent
+    if (mode === 'ACT') {
+      const whyBtn = document.createElement('button');
+      whyBtn.className = 'chip secondary';
+      whyBtn.textContent = 'Proč?';
+      whyBtn.addEventListener('click', () => orchestrate('Proč?'));
+      $chips.appendChild(whyBtn);
+    }
+
     for (const label of buttons) {
       const btn = document.createElement('button');
       btn.className = 'chip' + (label === 'Přeskočit' ? ' secondary' : '');
