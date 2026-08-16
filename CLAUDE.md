@@ -1,809 +1,123 @@
-# CLAUDE.md – CHJ (Chytré Já) v0.2.2
+# CLAUDE.md — CHJ Coding Agent Contract
 
-> Instrukce pro Claude Code. Detailní dokumentace pro vývojáře → `HANDBOOK.md`.
-
----
-
-## Co je CHJ
-
-PWA (SaaS) — osobní navigační systém člověka. Každý den najde největší omezení systému člověka a navrhne nejlepší další tah.
-
-**Název:** Chytré Já (CHJ) · **Jazyk:** UI labels anglicky, obsah česky, tykání
-**Tón:** lidský kouč + sci-fi HUD terminál
+> Operační pravidla pro Claude Code. Detailní architektura → canonical dokumenty níže.
 
 ---
 
-## Filozofie — Constraint Navigation Engine
+## 1. Canonical Sources
 
-CHJ není health tracker ani longevity appka.
+| Otázka | Kde najdeš odpověď |
+|--------|--------------------|
+| Product behavior, role vrstev, filozofie, vize | `docs/CHJ-PRODUCT-ARCHITECTURE.md` |
+| Engine contracts, pipeline, evidence, actions, DAILY_DECISION | `docs/CHJ-ENGINE-ARCHITECTURE.md` |
+| Coding-agent operating rules | `CLAUDE.md` (tento soubor) |
 
-**CHJ = decision layer nad životem člověka.**
-
-```
-Každý den:
-1. Najdi největší omezení (bottleneck)
-2. Urči nejlepší další tah (leverage)
-3. Změř adherenci a trajektorii
-4. Opakuj
-```
-
-Lidé nepřijdou kvůli „navigačnímu systému" — přijdou kvůli:
-- chci zhubnout / mít energii / mít kontrolu / přestat začínat znovu
-
-Uvnitř běží **Constraint Navigation Engine**. Navenek vidí **Lehkost / Energii / Výkon**.
-
-**CHJ nekupuje uživatel jako technologii. Kupuje pocit kontroly nad sebou.**
+Nekopíruj obsah canonical dokumentů do kódu ani jiných souborů.
 
 ---
 
-## Vesmíry — jedna filozofie, více realit
-
-Každý vesmír je instanciací stejného engine. Mění se kontext, ne jádro.
-
-```
-Lehkost    → řízení těla (váha, pohyb, jídlo)         ← MVP, aktivní
-Energie    → řízení vitality (spánek, stres, recovery) ← příští
-Výkon      → řízení kapacity (focus, výdrž, manažeři)  ← B2B2C
-Zdraví     → řízení zdraví (markery, suplementy)       ← po validaci enginu
-Longevity  → řízení dlouhověkosti (Medicine 3.0)       ← původní, rozšíření
-TOC        → řízení průtoku (byznys, Goldratt)         ← B2B separátní
-Život      → meta vrstva, syntéza všeho                ← dlouhodobý cíl
-```
-
-### 4 meta uzly — konstantní napříč vesmíry
-
-| Uzel | Co řídí | Constraint příklady |
-|------|---------|-------------------|
-| **Výživa** | energie, impulzy, metabolismus | večerní přejídání, liquid calories |
-| **Pohyb** | aktivita, kapacita, vitalita | low NEAT, stagnace |
-| **Regenerace** | spánek, stres, recovery | spánkový deficit, kortizol |
-| **Mysl** | emoce, focus, impulzy, motivace | stres eating, závislosti |
-
-Constrainty = konkrétní projevy dysbalance meta uzlů.
-
-### Cílové segmenty (B2B2C první)
-
-| Segment | Proč |
-|---------|------|
-| Výkonní profesionálové + majitelé firem | Platí za hodnotu, mají data, zdraví = business |
-| 45+ s nastupujícími omezeními | Prevence a opravy, přirozený downstream |
-| Amatérští sportovci / biohackeři | Early adopters, validátoři, ne jádro businessu |
-
----
-
-## Lehkost — první vesmír (MVP)
-
-**git tag:** `v0.2-lehkost-pre-onboarding`
-
-### Uzly
-`lh_main` (Hra o lehkost) → `lh_vyziva`, `lh_pohyb`, `lh_mysl`, `lh_regenerace`
-
-### Check-in (daily_checkin tabulka)
-Pole: `weight_kg` (volitelné, 2–3×/týden), `energy` (1–5), `sleep_hours`, `binge` (bool), `movement_level` (low/medium/high), `stress` (1–5)
-
-### FLOW KILLERS (5 typů)
-`evening_overeating`, `low_movement`, `sleep_deficit`, `jedení ze stresu`, `víkendové přejídání`
-
-### current_index z check-in dat
-Pro lh_* uzly se index počítá z posledních 14 dní (ne game loop):
-- `lh_pohyb`: % dní s medium/high pohybem
-- `lh_vyziva`: % čistých dní (bez binge)
-- `lh_mysl`: inversní stress průměr (1=100%, 5=0%)
-- `lh_regenerace`: sleep score (8h=100%, <6h=15%)
-- `lh_main`: trend váhy (klesá=vyšší index)
-
-### Spark sekce (nahrazuje baterii v Lehkost)
-14denní sparkline s dashed prognózou (zobrazí se od 5 check-inů). Barva = status_color (zelená/žlutá/červená), čára 7px, tečka 9px.
-
-### Onboarding 3-vrstvý cíl (TODO — chybí)
-```
-1. Identita:   Co chceš získat? (Více energie / Lehčí tělo / Kontrolu...)
-2. Blocker:    Co tě nejvíc brzdí? (Večery / Sladké / Víkendy...)
-3. Trajektorie: Směr (-5 kg / cítit se líp)
-```
-Tato data řídí killer engine, verdikty a HUD trajektorii.
-
-### Co chybí pro MVP testování
-- [ ] Onboarding 3-vrstvý cíl (největší díra)
-- [ ] TARGET TRAJECTORY v HUDu (`-0.4 kg / 14 dní · STABLE DESCENT`)
-- [ ] Týdenní přehled (`BODY FLOW ↑ +6% · Main improvement · Biggest risk`)
-- [ ] Reminder / push notifikace (kontextuální, ne generické)
-
----
-
-## Stack (aktuální)
-
-| Vrstva | Technologie | Poznámka |
-|--------|-------------|----------|
-| **Frontend** | Vanilla JS + HTML/CSS | Žádný framework |
-| **Canvas** | vis.js network | Uzly jako planety |
-| **Backend** | Vercel serverless (Node.js, ESM) | |
-| **AI** | OpenAI GPT-4o-mini | Chat + verdikt |
-| **AI (parser)** | Claude Sonnet | Health Document Parser |
-| **DB** | Supabase (PostgreSQL) | |
-| **Auth** | Firebase | |
-| **TTS** | Web Speech API | Plán: ElevenLabs |
-
----
-
-## Adresářová struktura
-
-```
-app/
-├── index.html
-├── js/universe/
-│   ├── universe-init.js    ← JÁDRO: načítání modelu, access, kaskáda stavů
-│   ├── universe-core.js    ← JÁDRO: canvas rendering, barvy, lock ikony
-│   ├── universe-panel.js   ← HUD panel (detail uzlu)
-│   ├── onboarding.js       ← onboardingové otázky + uložení
-│   ├── hud.js              ← HUD inicializace
-│   └── supabaseClient.js   ← anon key (pouze read)
-├── css/
-└── hud.html
-
-api/
-├── hud-data-bulk.js        ← JÁDRO: výpočet baterie, worstLeaf
-├── chat.js                 ← CHJ AI verdikt
-├── mission-complete.js     ← game loop
-├── mission-log.js          ← záznam kroků
-├── onboarding-save.js      ← uložení onboardingu (service_role)
-├── disciplines.js          ← disciplíny podle node
-└── tools/
-    └── parse.js            ← Health Document Parser (Claude Vision)
-
-data/
-├── index.json              ← seznam vesmírů
-└── universes/
-    ├── longevity/
-    │   ├── models/longevity.json
-    │   └── access/
-    │       ├── access-dekatlon.json   ← role access map
-    │       └── access-demo.json
-    └── toc/
-        └── models/toc.json
-
-migrations/                 ← SQL migrační skripty (spouštět ručně v Supabase)
-.githooks/
-└── pre-push               ← syntax check jádra před pushem
-```
-
----
-
-## JÁDRO vs OBSAH
-
-### ⚠️ JÁDRO — každá změna může shodit appku
-
-| Soubor | Co dělá |
-|--------|---------|
-| `app/js/universe/universe-init.js` | Načítání modelu, access model, kaskáda stavů |
-| `app/js/universe/universe-core.js` | Canvas rendering, barvy uzlů, lock ikony |
-| `api/hud-data-bulk.js` | Výpočet baterie, worstLeaf kaskáda |
-
-**Pravidlo:** před změnou jádra — napiš repro scénář. Po změně — ověř na `dev.iting.cz`.
-**Pre-push hook** automaticky kontroluje syntax těchto souborů.
-
-### ✅ OBSAH — bezpečná zóna
-
-| Soubor/složka | Co dělá |
-|---------------|---------|
-| `data/universes/*/access/*.json` | Kdo vidí co (role access maps) |
-| `app/js/universe/onboarding.js` | Onboardingové otázky |
-| `data/universes/*/models/*.json` | Struktura vesmíru |
-| `migrations/*.sql` | DB změny |
-
----
-
-## Prostředí
+## 2. Environment
 
 | Branch | URL | Účel |
 |--------|-----|------|
-| `main` | dev.iting.cz | Vývoj |
-| `test` | test.iting.cz | Testování |
-| `production` | app.iting.cz | Produkce |
+| `main` | dev.iting.cz | Vývoj — každý push deployuje |
+| `test` | test.iting.cz | Testování před produkcí |
+| `production` | app.iting.cz | Zákazníci |
 | `demo` | demo.iting.cz | Demo |
 
-**Lokální vývoj:** appka vyžaduje Supabase + Firebase — nelze testovat bez backendu.
-Vždy testovat na `dev.iting.cz` po pushnutí.
+**Stack (aktuální):**
+- Frontend: Vanilla JS + HTML/CSS (bez frameworku)
+- Backend: Vercel serverless (Node.js, ESM)
+- AI: `claude-haiku-4-5` (orchestrator, TTS context) · `claude-sonnet-5` (med klasifikace)
+- DB: Supabase (PostgreSQL) · Auth: Firebase · TTS: ElevenLabs (`eleven_multilingual_v2`)
+
+**Lokální dev:** `NODE_TLS_REJECT_UNAUTHORIZED=0 npx vercel dev` → localhost:3001  
+Appka vyžaduje Supabase + Firebase — nelze testovat bez backendu. Vždy ověřit na `dev.iting.cz` po push.
 
 ---
 
-## Datový model
+## 3. Change Discipline
 
-### Tabulky
-
-| Tabulka | Popis |
-|---------|-------|
-| `longevity_nodes` | Uzly vesmíru (id, label, parent, default_priority) |
-| `user_metrics` | Aktuální stav (user_id, node_id, current_index, state, universe) |
-| `node_state_history` | 30denní sparkline historie |
-| `mission_log` | Splněné kroky (user_id, node_id, date, action_type) |
-| `user_aspirations` | Uživatelův sen |
-| `aspiration_requirements` | Sen → required_level, importance_weight |
-| `user_constraints` | Zdravotní omezení |
-| `node_inputs` | Odpovědi z onboardingu (audit) |
-
-### Stav uzlu — single source of truth
-
-```
-current_index ≤ 40  → RED
-current_index ≤ 70  → YELLOW
-current_index > 70  → GREEN
-current_index = 0   → GRAY (žádná data)
-access = 'locked'   → GRAY + 🔒 (záměrně uzamčeno)
-```
-
-**GRAY ≠ LOCKED.** GRAY = bez dat. LOCKED = explicitně uzamčeno rolí.
-Lock ikona se kreslí pouze na `access === 'locked'`, ne na všechny GRAY uzly.
-
-### Parent kaskáda
-
-Parent uzel dostane barvu nejhoršího potomka (worstLeaf — kaskáda až na listy).
+- **Jeden commit = jedna logická změna**
+- Před změnou core/engine: nejdřív reprodukovat problém
+- Prokázaný bug → nejmenší oprava na správné vrstvě
+- Neřešit symptom prezentačním hackem, pokud chyba leží v datovém nebo decision contractu
+- Po změně spustit relevantní regression suite (`scripts/test-*.mjs`)
+- Syntax/runtime error způsobený změnou opravit před další prací
 
 ---
 
-## Access model
+## 4. Engine Protection
 
-Každý vesmír má složku `access/` s JSON soubory per role.
-Soubor definuje které uzly jsou `full` / `locked` / `hidden`.
+Health Engine je **feature-frozen** — ne absolutně locked:
 
-```json
-[
-  { "id": "dlouhovekost", "access": "full", "label": "Vlastní label" },
-  { "id": "telo",         "access": "full" },
-  { "id": "mysl",         "access": "locked" }
-]
+```
+nový mechanismus bez důkazu z MVP    → NE
+reprodukovaný contract/logic bug     → ANO — nejmenší oprava
 ```
 
-**Pravidla:**
-- Uzly **neuvedené** v souboru dostávají `defaultAccess` podle role
-- `dekatlon`, `demo`, `free` → `defaultAccess = 'locked'`
-- `longevity` → `defaultAccess = 'visible'`
-- Soubory jsou servírovány s `no-cache` hlavičkami (vercel.json)
-- Fetch probíhá s `cache: 'no-store'` — žádné inline duplikáty
+Před změnou rozhodovacího core přečíst `docs/CHJ-ENGINE-ARCHITECTURE.md`.
+
+**Hard boundaries (nikdy neporušovat):**
+- Safety Gate se neobchází
+- NBA vybírá action — DAILY_DECISION alternativu z `all_candidates` nevybírá
+- Orchestrator nevyrábí vlastní zdravotní rozhodnutí
+- Presentation layer nemění význam structured decision (action, dávku, safety condition, evidence, decision mode)
+- Session state není health source of truth — persistentní zdravotní fakta jsou v DB
+
+### Chráněné core soubory
+
+| Soubor | Status |
+|--------|--------|
+| `api/engine/engine.js` | 🔒 LOCKED |
+| `api/engine/dailyDecision.js` | 🔒 LOCKED |
+| `api/engine/healthEventAdapter.js` | 🔒 LOCKED — 28/28 pass |
+| `api/engine/orchestrator.js` | 🔒 LOCKED — 31/31 pass |
+| `app/js/universe/universe-init.js` | ⚠️ JÁDRO Vesmír |
+| `app/js/universe/universe-core.js` | ⚠️ JÁDRO Vesmír |
+| `api/hud-data-bulk.js` | ⚠️ JÁDRO Vesmír |
 
 ---
 
-## Role
+## 5. AI Boundary
 
-| Role | Vesmír | Přístup |
-|------|--------|---------|
-| `longevity` | Dlouhověkost | Plný přístup |
-| `dekatlon` | Dlouhověkost | Jen Tělo + 10 disciplín |
-| `demo` | Libovolný | Omezený náhled |
-| `free` | Libovolný | Základní přístup |
+```
+AI:     natural language ↔ structured interpretation / presentation
+Engine: decision
+```
 
-### Dekaton — 10 disciplín (pod uzlem `telo`)
-
-| Uzel | Disciplína | Onboarding otázka |
-|------|-----------|-------------------|
-| `sila` | Síla | vynest_nakup, zvednout_vnouce, otevrit_zavarovacku |
-| `stabilita` | Stabilita | vstat_ze_zeme, balanc_jedna_noha |
-| `vo2max` | VO2max | vyjit_4_patra |
-| `kardio` | Kardio | (bez otázky — data z vo2max/vytrvalost) |
-| `mobilita` | Mobilita | kufr_do_police |
-| `vytrvalost` | Vytrvalost | rychla_chuze |
-| `rovnovaha` | Rovnováha | rovnovaha_zavrene_oci |
-| `plyometrie` | Plyometrie | skocit_dopadnout |
-| `dychani` | Dýchání | zadrzeni_dechu |
+AI nesmí svévolně změnit action, dávku, safety condition, evidence ani decision mode.
 
 ---
 
-## Game Loop
+## 6. Data & Code Rules
 
-- **1 krok/den** = stabilizace (index beze změny)
-- **2 kroky/den** = zlepšení (+5 index)
-- **0 kroků/den** = pokles (−3 index další den)
-- Max 2 kroky/den na uzel, rolling 7denní okno
-
-### Druhá akce
-
-| Stav | Trend | Nabídka |
-|------|-------|---------|
-| RED | DOWN | Vždy |
-| YELLOW | STABLE | 50/50 |
-| GREEN | UP | "Dnes stačí." |
-| streak ≥ 3 | — | Boost offer |
-
----
-
-## Killers (Černí jezdci)
-
-| Killer | HUD label | Oblast |
-|--------|-----------|--------|
-| Kardiovaskulární | SRDCE | srdce, pohyb |
-| Rakovina | IMUNITA | imunita |
-| Neurodegenerace | MOZEK | myšlení |
-| Metabolický syndrom | METABOLISMUS | rovnováha těla |
-
-**Nikdy nepoužívat názvy nemocí.** `KILLER: SRDCE`, ne `KILLER: INFARKT`.
-
----
-
-## CRT — Znalostní báze (KB) a produktová strategie
-
-### ⚠️ Architektura CRT v2 — Integrovaný Biovesmír (Jun 2026)
-
-**Záloha v1:** `git tag v0.2-crt-isolated-kbs-backup`
-
-Přechod z izolovaných KB stromů na **jeden unified kauzální graf** (Goldratt CRT + Attia Medicine 3.0).
-
-#### 4 logická patra (layer mapping)
-
-| Patro | Název | layer | Popis |
-|-------|-------|-------|-------|
-| 1 | Root Causes | 0 | Systémová úzká hrdla (Metabolická dysregulace, Chronický stres CNS) |
-| 2 | Biovesmír / UDE | 1–3 | Biochemie (1), nemoci/stavy (2), symptomy (3) — flexibilní střed |
-| 3 | NC / CSF (Attia) | 4 | Metabolické zdraví, Kardiovaskulární stabilita, Neurokognitivní zachování |
-| 4 | Goal | 5 | Maximální Healthspan & Lifespan |
-
-#### Goal → CSF → NC hierarchie (Attia Medicine 3.0)
-
-**GOAL: Maximální Lifespan + Healthspan** — žít dlouho A dobře.
-
-| CSF | Nutné podmínky (NC) | Pokrytí v CRT |
-|-----|---------------------|---------------|
-| **CSF 1: Kardiovaskulární stabilita** | Kontrola srdečního rytmu / prevence tromboembolie · Optimální lipidový profil · TK <130/80 | ✅ ATRIAL_FIBRILLATION, CARDIAC_IRRITABILITY, HEART_ATTACK_RISK, ATHEROSCLEROSIS, VASCULAR_STIFFNESS |
-| **CSF 2: Metabolické zdraví** | Zdravá tělesná kompozice (sval vs. viscerální tuk) · Inzulínová senzitivita · VO2max a síla | ✅ INSULIN_RESISTANCE, OBESITY, HYPERURICEMIA, DYSLIPIDEMIA |
-| **CSF 3: Vaskulární a endoteliální funkce** | Zdravý endotel (NO produkce, elasticita cév) · Dobrý průtok v periferii | ✅ ENDOTHELIAL_DYSFUNCTION, ERECTILE_DYSFUNCTION |
-| **CSF 4: Funkční kapacita (Healthspan)** | Svalová síla a mobilita · Kognitivní vitalita · Energie a psychická pohoda | ⚠️ částečně (BONE_DENSITY_LOSS) — sarkopenie, LOW_VO2MAX plánováno |
-| **CSF 5: Absence onkologického rizika** | Imunitní surveillance · Nízký chronický zánět | ❌ záměrně vynecháno (v0.4+) |
-| **CSF 6: Neurokognitivní zachování** | Mozková perfuze · Nízký neuroimunitní zánět | ❌ záměrně vynecháno (v0.4+) |
-
-**Bottleneck (Goldratt):** Nízká pohybová aktivita je jeden kořen ovlivňující CSF 1–4 současně. Léky řeší symptomy, ne příčinu. Pohyb + váhový management = nejvyšší leverage.
-
-#### Conditions — na uzlu, ne na hraně
-
-Podmínka (`condition`) je vlastností **uzlu**. Uzel je aktivní pokud splní podmínku.
-Engine renderuje pouze aktivní uzly; hrany se kreslí automaticky mezi aktivními uzly.
-
-```json
-{
-  "id": "INZULREZ_UDE",
-  "label": "Inzulínová rezistence",
-  "layer": 1,
-  "type": "UDE",
-  "condition": { "or": [{ "med": "sifor" }, { "diag": "DIABETES_2_TYPU" }] },
-  "parents": ["METABOLICKA_DYSREG_ROOT"],
-  "children": ["OBEZITA_UDE", "ZANET_UDE", "MOZEK_CSF"]
-}
-```
-
-Šipky nejsou samostatné pole — odvozují se z `parents`/`children` relací.
-
-#### Merge strategie
-
-Engine načítá oddělené soubory (`kardio.json`, `mozek.json`, atd.), při startu je merguje
-do unified mapy v paměti (dedup podle node ID). Sdílené uzly existují v jednom souboru.
-
-#### Moduly (ED, Hubnutí, Energie) = View filtry
-
-UDE uzly v 2. patře master KB. UI filtr: `current_view = "ED"` → engine trasuje
-parents (dolů ke kořenům) + children (nahoru k cíli) → zobrazí jen tuto větev.
-
-### KB soubory (stav)
-
-| Soubor | Killer | Stav |
-|--------|--------|------|
-| `kardio_v1.json` | SRDCE | ✅ v1 hotovo, migrace na v2 pending |
-| `pohybovy_v1.json` | POHYB + METABOLISMUS | ✅ v1 hotovo, migrace na v2 pending |
-| `mozek_v1.json` | MOZEK | ✅ v1 hotovo, migrace na v2 pending |
-| `imunita_v1.json` | IMUNITA | ✅ v1 hotovo, migrace na v2 pending |
-| `biosystem_v2.json` | všechny | ✅ unified KB — aktivní, Kovářová demo data |
-
-### State Dictionary — deterministická vrstva CRT (Jul 2026)
-
-**Gold standard:** `git tag v0.3-crt-gold-josef` · `git tag v0.2-crt-gold-kovarova`  
-**Verze:** `api/crt-generate.js` `_v_pp: 26` · `data/crt/longevity-states.json` (30 stavů)
-
-Sonnet je nedeterministický — bez kotvy vytváří různé stromy pro stejného pacienta. State Dictionary je **kanonický slovník** 30 pevných stavů; Sonnet pouze vybírá, které z nich jsou aktivní pro daného pacienta (podle `doctor_notes`). Bez `doctor_notes` běží čistě deterministický builder bez AI.
-
-#### Dvě cesty generování
-
-```
-WITH doctor_notes:
-  Sonnet (claude-sonnet-5) → subset aktivních ID ze State Dictionary
-  → applyStateLabels() → med-inject → medications_map → typical_children hrany
-  → validateEdges → connectOrphans → connectSourceless → generatePanelTexts → generateAutoFlag
-
-WITHOUT doctor_notes (nový uživatel):
-  buildDeterministicCRT(profile) → keyword lookup v diagnoses/symptoms + BMI výpočet
-  → activeIds ze State Dictionary → parent chain inference (garantuje validní strom)
-  → applyStateLabels() → med-inject → medications_map → typical_children hrany
-  → validateEdges → connectOrphans → connectSourceless
-  (generatePanelTexts se NEspouští — panel_text z State Dictionary)
-```
-
-#### Split cache versioning
-
-Dva oddělené hashe brání zbytečné regeneraci Sonnetem:
-
-```
-_v_ai  → mění se jen při změně Sonnet promptu nebo logiky parsování
-_v_pp  → mění se při změně post-processingu (label override, med-inject, pravidla)
-
-Partial cache hit: _raw_ai_hash match → Sonnet přeskočen, post-processing z _raw_ai_snapshot
-Full cache miss:   obě nové → Sonnet + post-processing
-```
-
-`_raw_ai_snapshot` = raw Sonnet výstup před post-processingem, uložen do `crt_cache` v DB.
-
-#### buildDeterministicCRT — bez AI (Gemini návrh, implementováno Jul 2026)
-
-Keyword matching ze State Dictionary DIAGNOSIS_KEYWORDS → activeIds. BMI z profilu.
-
-```javascript
-// BMI threshold
-bmi >= 27 → OBESITY
-bmi >= 30 → OBESITY + HYPERTENSION
-
-// Parent chain inference: každý non-root uzel musí mít rodiče v activeIds
-// Reverzní mapa typical_children → while changed: přidej nejnižší-level rodiče
-```
-
-Výsledek: validní kauzální strom i pro uživatele bez jakýchkoliv dat.  
-Nepoužívá AI — deterministický pro stejný profil.
-
-#### BMI-based label pro OBESITY
-
-```
-BMI 25–30: label = "Nadváha",  label_layman = "Nadváha"   (_labelOverride: true)
-BMI ≥ 30:  label = "Obezita",  label_layman = "Obezita"   (ze State Dictionary)
-```
-
-`_labelOverride: true` brání `applyStateLabels` přepsat label ze State Dictionary.
-
-#### Med-inject — ochrana UDE apex
-
-Léky se nikdy neinjektují jako UDE uzly (`def.type !== 'ude'`). UDE apex musí přijít z AI nebo `buildDeterministicCRT`, ne z lékové inference. Fallback pill target = nejvyšší level≥1 aktivní uzel (root a level-0 jsou z pills frontendově vyloučeny).
-
-#### 5 větví (BRANCH_X)
-
-```javascript
-const BRANCH_X = { L: -450, LC: -225, C: 0, RC: 225, R: 450 };
-```
-
-LC/RC větve umožňují AND-join přes validateEdges — C→L/R by bylo blokováno, C→LC/RC prochází.
-
-#### Tři referenční uživatelé
-
-**Josef** — `git tag v0.3-crt-gold-josef` — FaP + ED (deterministický builder, bez `doctor_notes`)
-```
-             L sloupec (-500)     C sloupec (0)      R sloupec (+500)
-level 0:                          SEDENTARY
-level 1:     CHRONIC_STRESS       OBESITY            DYSLIPIDEMIA
-level 2:     CARDIAC_IRRITABILITY INSULIN_RESISTANCE HYPERURICEMIA  ATHEROSCLEROSIS
-level 3:                          HYPERTENSION                      VASCULAR_STIFFNESS
-level 4:     ATRIAL_FIBRILLATION                     ENDOTHELIAL_DYSFUNCTION
-level 5:     (apex1) RIZIKO_MRTVICE/INFARKTU (C)     (apex2) ERECTILE_DYSFUNCTION (R)
-```
-Tři přísné sloupce (3-column fixed layout). Dva apices: Riziko mrtvice/infarktu (C5) + ED (R5).
-ENDOTHELIAL_DYSFUNCTION je AND-join: HYPERURICEMIA + VASCULAR_STIFFNESS → ENDOTHELIAL → ED + apex1.
-Layout: hierarchical DU vypnutý, x+y fixováno z branch+level.
-
-**Kovářová** — `git tag v0.2-crt-gold-kovarova` — geriatrický (s `doctor_notes`)
-3 rooty (L+C+R), AND-join GAIT_INSTABILITY (C4), duální UDE: FALL_RISK (C5) + STROKE_RISK (RC5).
-
-**Nový uživatel** — bez `doctor_notes` — deterministický builder
-Aktivní uzly ze symptomů/diagnóz/BMI. Panel_text z State Dictionary (generický). Léky mapované přes med_targets.
-
-#### Klíčová pravidla implementace
-
-- **`applyStateLabels`**: respektuje `_labelOverride: true` — přeskočí labeling pro uzly s příznakem
-- **`applyStateLabels`** spustit po Sonnet/buildDeterministicCRT — vynucuje level/branch/type/label ze State Dictionary
-- **`typical_children` post-processing**: přidá garantované hrany pro VŠECHNY aktivní uzly (ne jen injektované)
-- **`connectOrphans`**: přeskakuje `type === 'ude'` A `cause` uzly s definovanými `typical_children` (legitimní listy)
-- **`validateEdges` pravidlo**: L/R→C skip > 3 levely (byl > 2, způsoboval chybné blokování)
-- **`level: n.level ?? 0`** v visNode objektech: vis.js bez explicitního level přepočítá vlastní Y-pozice → asymetrie
-- **`_injected: true`** zachovat i po přidání `typical_children` hrany — brání `connectSourceless` v přidání falešného rodiče
-- **`validateEdges` junction lockdown**: junction uzly smí vést POUZE do `typical_children` — blokuje Sonnet extrapolace
-
-#### Znovupoužitelnost
-
-State Dictionary funguje pro jakéhokoliv pacienta. Sonnet vybere relevantní podmnožinu ze 30 stavů podle `doctor_notes`. Bez `doctor_notes` keyword builder vybere podmnožinu deterministicky. Různí pacienti → různé podstromy ze stejného slovníku. Léky se přiřadí deterministicky přes `med_targets` lookup (dedup: nejvyšší `typical_level` aktivního stavu s tímto lékem).
-
-### CRT epistémický stav uzlu — Confirmed vs Inferred
-
-**Toto je core value CHJ — predikce před diagnózou.** Každý uzel v CRT má epistémický stav: jak moc je jeho přítomnost podložená daty. Uživatel vidí nejen co ho trápí teď, ale co ho mine s vysokou pravděpodobností — jen je to otázka času.
-
-Příklad: má-li uživatel obezitu + sedavý životní styl, je INSULIN_RESISTANCE téměř jistá — i bez měření. Graf to ukáže šedě jako predikci, s výzvou k ověření.
-
-#### Dva stavy
-
-| Stav | Vizuál | Kdy |
-|------|--------|-----|
-| **Confirmed** | modrý border `#2a4a60`, světlý text | Lab nebo diagnóza od lékaře explicitně potvrzuje |
-| **Inferred** | šedý border `#404560`, šedý text, dashed | Kauzální logika naznačuje, ale chybí měření |
-
-#### Pravidlo
-
-```
-Máš lab data k tomuto uzlu?  → Confirmed
-Máš diagnózu od lékaře?      → Confirmed
-Ani jedno?                   → Inferred (šedý, dashed)
-```
-
-`auto_if` a `typical_children` kaskáda jsou spouštěče pro *přidání uzlu do grafu* — epistémický stav se určuje zvlášť podle dostupných dat.
-
-#### Příklady
-
-| Uzel | Inferred z | Potvrzení přijde z |
-|------|-----------|-------------------|
-| `INSULIN_RESISTANCE` | OBESITY + SEDENTARY kauzální řetěz | HOMA-IR, HbA1c |
-| `ATHEROSCLEROSIS` | DYSLIPIDEMIA kaskáda | koronární CT, ABI index |
-| `INFLAMMAGING` | věk ≥ 60, chybí lab | hs-CRP > 1 mg/L, IL-6 |
-
-#### Panel text pro Inferred uzel
-
-*"Tato hodnota nebyla změřena — tvůj profil naznačuje vysokou pravděpodobnost. Změř [konkrétní lab] pro potvrzení."*
-
-#### Implementace ✅ (Jul 2026, `git tag v0.3-crt-inferred-confirmed`)
-
-- `_inferred: true` flag na uzlu v `buildDeterministicCRT` — uzel přišel kaskádou/auto_if/parent_inference
-- Confirmed zdroje: keyword match diagnóz, BMI, literal ID scan v doctor_notes, med-activate
-- Inferred zdroje: SEDENTARY cascade, METABOLIC_HEALTH_ROOT inference, auto_if (věk/pohlaví), parent chain inference, downstream kaskáda
-- Confirmed uzly: modrý border `#2a4a60`, text `#a7c7df`
-- Inferred uzly: `bg='#1a1d26', border='#404560', textColor='#606888', dashes=[4,4]`
-- Root uzly: vždy `_inferred: false` (zlatý, bez ohledu na zdroj)
-- Apex UDE uzly: vždy červené `#c04040` (bez ohledu na `_inferred`)
-- Vizuální logika v `crt.html` → `renderTree`: `if (n._inferred) { šedý } else { modrý }`
-
-#### Hodnota pro produkt
-
-**Predikce před diagnózou = core Medicine 3.0 filozofie.** Ukazuje kde má uživatel mezery v datech a co změřit. Přirozený upsell pro health data pipeline (v0.4.0). Odlišuje CHJ od běžných health trackerů.
-
----
-
-### CRT zobrazení — Top-N vs Plná mapa
-
-**Default: Top-N** (`git tag v0.2-crt-topn-laik-panel`)
-
-Top-N = BFS nejkratší cesty ROOT → každý aktivní UDE killer, union všech cest.
-
-**Algoritmus `computeTopN` (app/crt.html):**
-1. BFS ze ROOT ke každému UDE → union cest = `topIds`
-2. Bridge pass: layer-1 node → přidá layer-2 child pokud chybí vazba (gap fill, ne rozšíření)
-   - Podmínka: `cid.layer < minTopChild` a `cid.children` má průnik s `topIds`
-3. Filtr hran: jen hrany kde `topIds.has(from) && topIds.has(to)`
-4. Panel data (suplementy, léky, interakce) vždy z `_rawCrtData` — ignoruje Top-N filtr
-
-**Co NENÍ v Top-N (záměrně odstraněno):**
-- Medication pass (byl přidán, pak odebrán — příliš mnoho uzlů u polyfarmace)
-
-### Léky na uzlech CRT — barvy a typy
-
-Barvy léků určuje **systém z dat**, ne AI model:
-
-| Barva | Typ | Kdy |
-|-------|-----|-----|
-| 🟠 amber `#f59e0b` | `treatment` | Lék na předpis (statiny, antikoagulancia, antihypertenziva…) |
-| 🟢 zelená `#4ade80` | `protects` | Suplement / vitamin / minerál (hořčík, D3, omega-3…) |
-| 🟡 žlutá `#fbbf24` | `warning` | Interakce mezi léky (explicitní data) |
-
-**Pipeline:**
-1. `resolveMedications()` — **deterministický** lookup v `data/drugs.json`, bez AI; vrátí `is_supplement: true/false` pro každý lék a detekuje interakční páry z `interacts_with`
-2. Post-processing v `crt-generate.js` → `medType(name)`: `is_supplement → 'protects'`, jinak `'treatment'`
-3. Interakce (`warning` typ): union targets obou léků v páru → warning se zobrazí v panelu **každého uzlu kde je jakýkoliv lék z páru**
-4. Všechny léky z profilu jsou garantovány v `medications_map` (chybějící → fallback na nejvyšší level≥1 uzel)
-
-**Pravidlo:** Nikdy nepoužívat AI keyword-matching ani Fable pro určení barev léků. Interakce jsou definovány v `data/drugs.json` (`interacts_with` + `interaction_note`).
-
-### CRT label mód (Laik / Expert)
-
-- `_labelMode`: `'expert'` (default) | `'layman'`
-- `applyLabelMode(data)`: nastaví `n.label` na všech uzlech v `data.nodes`
-- `kbLabel(kb)`: helper pro panel — čte `label_layman`/`label_expert` z raw KB node
-- `toggleLabelMode()`: parsuje transform z DOM (`svgEl.style.transform`), ukládá střed viewportu jako frakci SVG (`_preservedCenter`), pak re-render
-- `initView()`: pokud existuje `_preservedCenter` — obnoví stejnou frakci středu (funguje i při změně výšky SVG mezi módy)
-
-### Produktová logika (upsell / crosssell)
-
-```
-Free:    1 view filtr (např. Hubnutí)
-Starter: 1 killer plný + lékové štíty
-Pro:     celý Biovesmír + průniky mezi killery + view filtry
-B2B:     API pro lékaře — jejich pacienti, jejich branding
-```
-
-### Pravidla pro tvorbu KB (v2)
-
-- Conditions na uzlu, ne na hraně
-- `parents`/`children` místo `possible_arrows`
-- Lékové štíty: pouze generická léčiva (INN název), ne značkové
-- Medicínský review před nasazením — KB nesmí obsahovat diagnózy ani doporučení
-
----
-
-## CHJ AI — pravidla
-
-- JEDNA VĚTA, max 15 slov
-- Čeština, tykání, žádné diagnózy
-- Žádné akční kroky v textu (akce patří do ACTION sekce)
-- **Zakázaná slova:** musíš, okamžitě, je důležité, měl bys, hrozí, ohrožuje, samostatnost, závislý, pomoc druhých, špatně, trpí
-
----
-
-## API Endpointy
-
-| Endpoint | Metoda | Popis |
-|----------|--------|-------|
-| `/api/chat` | POST | CHJ AI verdikt |
-| `/api/hud-data-bulk` | POST | HUD data (baterie, killer, akce) |
-| `/api/mission-log` | POST | Uložit splněný krok |
-| `/api/mission-complete` | POST | Game loop výpočet |
-| `/api/disciplines` | GET | Disciplíny podle node |
-| `/api/onboarding-save` | POST | Uložit onboarding (service_role) |
-| `/api/tools/parse` | POST | Health Document Parser |
-
----
-
-## Migrace
-
-SQL skripty v `/migrations/`. Spouštět **ručně v Supabase SQL Editoru**.
-Každý soubor má komentář co dělá a proč je bezpečný.
-
-Před spuštěním: přečti komentář, ověř že se dotýká jen správných řádků.
-
----
-
-## Konvence kódu
-
-- ESM moduly (`"type": "module"`)
-- Frontend v `/app/`, API v `/api/`, data v `/data/`
-- Supabase anon key pouze v `app/js/universe/supabaseClient.js` (read-only)
-- Všechny DB zápisy přes API endpointy (service_role zůstává na serveru)
+- **ESM** (`"type": "module"`) — žádné CommonJS
 - `dotenv.config({ path: '.env.local' })` na začátku každé serverless funkce
-- Kód a komentáře: angličtina · UI labels: angličtina · Obsah: čeština
+- Supabase anon key pouze v `app/js/universe/supabaseClient.js` (read-only)
+- Všechny DB zápisy přes serverless API endpointy — service_role klíč zůstává na serveru
+- Žádné inline duplikování dat, která existují v JSON souborech nebo DB
+- Migrace: SQL skripty v `/migrations/` — spouštět ručně v Supabase SQL Editoru; před spuštěním přečíst komentář
 
 ---
 
-## Závazky pro Claude
+## 7. Tester Safety
 
-1. **Jádro se nemění bez repro scénáře** — popsat co se testuje před změnou
-2. **Jedna změna = jeden commit** — ne pět oprav najednou
-3. **Po změně jádra — update HANDBOOK.md** ve stejném commitu
-4. **Nikdy nevytvářet inline duplikát** toho co existuje v JSON/DB
-5. **Syntax error v core = opravit, commitnout, pushovat ihned** — nezanechat broken stav
+`TESTER_UIDS` v `api/tester-reset.js` smí obsahovat pouze skutečné disposable tester účty.
 
----
+**Permanentně chráněné — nikdy nepřidat do `TESTER_UIDS`:**
+- Josef: `vPrm5PNzLWWWhi9sSwYVbkb9FaD3`
+- Kovářová: viz Supabase (není disposable tester)
 
-## Hlasové příkazy (STT) — stav k v0.2.x
-
-- **Aktuální řešení**: Browser `SpeechRecognition` (Web Speech API) — funguje, bez backendu
-- **Flow**: CMD mic → `listenOnce()` → `_tryShowNode()` (client-side matching) → `_openNodeById()`
-- **`_openNodeById` logika**:
-  - 1. úroveň (Tělo, Výživa…): jen `showPanel(node)`, canvas beze změny
-  - 2. úroveň (Kardio…): `openSubUniverse(parent)` bez zoom → `showPanel(node)`
-- **Bez TTS cue**: `handleCmdMicClick` nevolá „Poslouchám" před poslechem (blokuje mikrofon)
-- **Whisper STT** (`/api/voice`): zkoušeno, nefungovalo na Vercel Hobby — odloženo na pozdější verzi
-- **Vercel Hobby limit**: max 12 serverless functions — `snapshot-nodes.js` sloučen do `user.js?action=snapshot`
+Nikdy nezaměnit produkční nebo protected účet za disposable Tester účet.
 
 ---
 
-## CHJ // Human OS — Launcher architektura (v2.0)
+## 8. CHJ Language Rules
 
-### Filozofie
-Voice-First / Zero-UI. Displej je vizuální ozvěnou hlasu.
-Bio (Longevity) = podvozek. TOC = motor. Nesoutěží — špatné Bio dává doporučení, ale neblokuje exekutivu.
+Platí pro CHJ AI výstupy (`api/chat.js`, orchestrator text responses):
 
-### Tři stavy launcheru
-
-#### STAV 1 — Ticho (Ochranný objekt)
-- Absolutní černá. Žádné logo, žádný text, žádný laser.
-- Uprostřed pomalu dýchá temná vesmírná nebula (CSS morfující blob + hvězdy na Canvas 2D).
-- Trigger probuzení: tap nebo hlas (kdo přijde dřív).
-- Noc (0–5h): vždy STAV 1, žádná akce.
-
-#### STAV 2 — Ranní filtr (Probuzení)
-- Spustí se při prvním vstupu po 6h+ neaktivitě (`chj_last_active` timestamp v localStorage).
-- Flow:
-  1. Nebula ustoupí → rozsvítí se branding + laser (délka/barva = Vitality Score)
-  2. CHJ hlasem řekne největší bio hrdlo + co udělat (constraint-first, bez "dobré ráno")
-  3. Hlasový check-in: 3–4 otázky (spánek, energie, nálada) → Claude → `daily_checkin`
-  4. Závěrečné doporučení hlasem
-  5. Zobrazí se `[ Hotovo ]` → tap → STAV 1
-
-#### STAV 3 — Ambient Router (celodenní)
-- Pokud od posledního vstupu < 6h → přeskočí STAV 2, rovnou sem.
-- Dva typy vstupu (hlas nebo text):
-  - **Kontextový** ("Co dál?") → Claude zanalyzuje čas + Bio + TOC → jedna akce
-  - **Specifický povel** ("Zapiš oběd", "Otevři Tělo") → HUD panel / podvesmír → po dokončení → STAV 1
-- Po dokončení akce vždy zpět do STAV 1.
-
-### Tech stack launcheru
-- Launcher shell: Vanilla JS (žádný framework)
-- Nebula objekt: CSS morph + Canvas 2D hvězdy (žádný WebGL)
-- HUD / podvesmíry: Svelte (voláno z STAV 3)
-- Audio: ElevenLabs (`eleven_multilingual_v2`), Charlotte default
-- AI text: Claude Haiku (`claude-haiku-4-5`) přes `/api/tts` context mode
-- Storage: localStorage → IndexedDB (fáze 2)
-
-### Implementační pořadí
-1. ✅ MLUVÍM — CHJ mluví po probuzení (ElevenLabs + Claude Haiku)
-2. 🔄 STAV 1 — nebula objekt (nahradit current sleep state)
-3. 📋 STAV 2 — 6h trigger + hlasový check-in dialog (multi-turn)
-4. 📋 STAV 3 — ambient router
-
----
-
-## Architektonický pivot — Vesmír → CRT (Jul 2026)
-
-### Rozhodnutí
-
-Vesmír (planet canvas) se stává **legacy** — zmrazen, nesmazán. Primárním rozhraním je **CRT + Launcher**.
-
-**Důvod:** CRT vyjadřuje stejný model (Constraint Navigation Engine) věrněji — ukazuje kauzální realitu, ne abstraktní planety. Vesmír byl dobrý prototyp; CRT je produkční vrstva.
-
-### Co zůstává aktivní z Vesmíru
-
-| Složka | Stav | Poznámka |
-|--------|------|----------|
-| `mission_log` tabulka | ✅ aktivní | Sdílená — CRT Actions + budoucí disciplíny |
-| `hud-data-bulk.js` | ✅ aktivní | Vitality Score → laser v launcheru |
-| `daily_checkin` tabulka | ✅ aktivní | Voice check-in v launcheru |
-| `node_state_history` | ✅ aktivní | 30denní sparkline (budoucí použití) |
-| `user_metrics` | 🔄 repurpose | Přejde na CRT node tracking |
-| Vesmír canvas (`index.html`) | ❄️ frozen | Zůstane, nevyvíjí se |
-| Dekatlon | ❄️ frozen | Přejde jako fyzická větev CRT (LOW_VO2MAX, MUSCLE_WEAKNESS) |
-| Lehkost | ❄️ frozen | Check-in zůstane, canvas ne |
-
-### Nová architektura — primární flow
-
-```
-Launcher (nebula)
-  │  sleep → tap → laser + briefing (CHJ mluví o největším blokeru)
-  │  text: "mapa" / "co dál" / node name
-  └─→ CRT (crt.html) — hlavní rozhraní
-        │
-        ├── Root uzly (level 0)  → CRT Actions (denní, SECOND_ACTION, history)
-        ├── UDE uzly             → osobní (z onboardingu) + klinické (z diagnóz)
-        ├── Sen (Goal vrstva)    → personalizovaný cíl z user_aspirations
-        └── Panel               → léky, suplementy, behavior_warning
-```
-
-### Onboarding → osobní UDE uzly (TODO)
-
-Odpovědi z onboardingu aktivují UDE uzly v CRT — i pro zdravé uživatele bez diagnóz:
-
-| Onboarding otázka | Špatná odpověď → | CRT UDE uzel |
-|-------------------|------------------|--------------|
-| Vyjít 4 patra bez zadýchání? | ne | `LOW_VO2MAX` |
-| Zvednout vnouče / těžký předmět? | ne | `MUSCLE_WEAKNESS` |
-| Vstat ze země bez opory? | ne | `GAIT_INSTABILITY` ← již v State Dictionary |
-| Zadržet dech 20s? | ne | → CHRONIC_STRESS path |
-
-Tyto UDE uzly se napojí na existující CRT root causes stejně jako klinické UDEs.
-
-### Laser = stav celého systému
-
-```
-Délka laseru  = Vitality Score (z hud-data-bulk, beze změny)
-Barva laseru  = CRT risk level (TODO: zelená → jantarová → červená)
-```
-
----
-
-## Engine checkpointy (zamčeno)
-
-| Komponenta | Status | Test |
-|------------|--------|------|
-| Health Engine v1 (`api/engine/engine.js`) | ✅ LOCKED | živý |
-| DAILY_DECISION v0.1 (`api/engine/dailyDecision.js`) | ✅ LOCKED | živý |
-| Health Event Adapter v0.1 (`api/engine/healthEventAdapter.js`) | ✅ **PASS 28/28** | `scripts/test-health-event-adapter.mjs` |
-| node_inputs responsibility | ✅ CLEAN | parse.js = health_doc audit, user.js = odstraněno |
-| AI Orchestrator v0.1 (`api/engine/orchestrator.js`) | 🔄 aktivní | `scripts/test-orchestrator.mjs` |
-
----
-
-## Verzování
-
-| Verze | Obsah | Status |
-|-------|-------|--------|
-| v0.1.0 | Semafor, kroky, baterie, onboarding (vanilla JS) | ✅ |
-| v0.2.0 | HUD panel, vícero vesmírů, Dekaton | ✅ |
-| v0.2.1 | Dekaton 10 disciplín, access model cleanup | ✅ `git tag v0.2.1-dekatlon-working` |
-| v0.2.2 | Lehkost: spark, check-in index, killers, TOC pipe | ✅ `git tag v0.2-lehkost-pre-onboarding` |
-| v0.3.0 | CRT pivot: osobní UDE z onboardingu, Sen vrstva, laser barva | 🔄 aktivní |
-| v0.4.0 | Health data pipeline (krev, PDF, wearables) | 📋 |
-| v0.5.0 | Voice check-in + ranní briefing (STAV 2 launcher) | 📋 |
-| v0.6.0 | Claude orchestrátor (místo GPT-4o-mini) | 📋 |
-| v1.0.0 | SaaS launch — B2B2C, platební brána | 📋 |
+- Primární Launcher odpovědi (ACT, ASK, HOLD): jedna věta, max 15 slov — stručnost je princip, ne trest; EXPLAIN nebo SAFETY může použít více vět, pokud je to nutné pro srozumitelnost nebo bezpečnost
+- Čeština, tykání, žádné diagnózy v uživatelské formulaci
+- Žádné akční kroky v textu — akce patří do structured ACTION výstupu
+- **Zakázaná slova:** musíš, okamžitě, je důležité, měl bys, hrozí, ohrožuje, samostatnost, závislý, pomoc druhých, špatně, trpí
