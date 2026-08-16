@@ -472,12 +472,13 @@ Vstup: uživatelský text + session context (pending_question, current_action).
 Výstup: `{ event_type, payload }`.  
 Fallback při chybě: `GENERAL_HEALTH_REQUEST`.
 
-### Session State (stateless endpoint)
+### Session State
 
-Orchestrator endpoint je **stateless** — session state žije u volajícího (Launcher).  
-Caller musí po každém volání mergovat `session_updates` do svého session store.
+Server nemá vlastní persistentní conversational session. Relevantní session state přichází s každým requestem od klienta (Launcher) a vrací se zpět jako `session_updates` — caller je merguje do svého store.
 
-Klíčová session pole:
+Persistentní zdravotní fakta a evidence jsou výhradně v DB (`user_health_profile`, `user_profiles`, `daily_checkin`, `action_assignments`). Session state nesmí suplovat health source of truth — nikdy neobsahuje zdravotní hodnoty, diagnózy ani výsledky měření.
+
+Klíčová session pole (konverzační kontext, ne zdravotní data):
 ```
 last_daily_decision        DAILY_DECISION z předchozího kola
 pending_question           { evidence_type, text } — aktuálně čekající NBE otázka
