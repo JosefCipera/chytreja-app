@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hra o život — Průvodce</title>
+    <title>Jak používat Chytré já — Průvodce</title>
 
     <style>
         * {
@@ -151,71 +151,7 @@
             margin-bottom: 0;
         }
 
-        /* Killer cards */
-        .killer-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin: 12px 0;
-        }
-
-        .killer-card {
-            background: rgba(239, 68, 68, 0.06);
-            border: 1px solid rgba(239, 68, 68, 0.15);
-            border-radius: 10px;
-            padding: 14px;
-        }
-
-        .killer-card .name {
-            font-weight: 600;
-            color: #f87171;
-            font-size: 14px;
-            margin-bottom: 4px;
-        }
-
-        .killer-card .desc {
-            font-size: 13px;
-            color: #94a3b8;
-            line-height: 1.5;
-        }
-
-        /* State indicators */
-        .state-list {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            margin: 12px 0;
-        }
-
-        .state-item {
-            display: flex;
-            align-items: flex-start;
-            gap: 10px;
-            font-size: 14px;
-        }
-
-        .state-dot {
-            width: 14px;
-            height: 14px;
-            border-radius: 50%;
-            flex-shrink: 0;
-            margin-top: 3px;
-        }
-
-        .state-dot.green { background: #22c55e; }
-        .state-dot.yellow { background: #eab308; }
-        .state-dot.red { background: #ef4444; }
-
-        .state-label {
-            color: #e2e8f0;
-            font-weight: 500;
-        }
-
-        .state-desc {
-            color: #94a3b8;
-        }
-
-        /* Gameplay steps */
+        /* Step */
         .step {
             margin-bottom: 16px;
             padding-left: 16px;
@@ -233,57 +169,17 @@
             font-size: 14px;
         }
 
-        .quote {
-            background: rgba(6, 182, 212, 0.06);
-            border-left: 3px solid rgba(6, 182, 212, 0.3);
-            padding: 10px 14px;
-            border-radius: 0 8px 8px 0;
-            margin: 10px 0;
-            font-style: italic;
-            font-size: 14px;
+        /* Inline command chip */
+        .cmd {
+            display: inline-block;
+            background: rgba(6, 182, 212, 0.08);
+            border: 1px solid rgba(6, 182, 212, 0.2);
+            border-radius: 6px;
+            padding: 1px 8px;
+            font-size: 13px;
             color: #a5f3fc;
-        }
-
-        /* Benefits */
-        .benefit-list {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            margin: 8px 0;
-        }
-
-        .benefit-item {
-            display: flex;
-            gap: 10px;
-            font-size: 14px;
-            align-items: flex-start;
-        }
-
-        .benefit-num {
-            background: rgba(37, 99, 235, 0.15);
-            color: #60a5fa;
-            font-weight: 700;
-            font-size: 12px;
-            width: 22px;
-            height: 22px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-            margin-top: 1px;
-        }
-
-        /* Philosophy */
-        .philosophy-note {
-            background: rgba(139, 92, 246, 0.06);
-            border: 1px solid rgba(139, 92, 246, 0.15);
-            border-radius: 10px;
-            padding: 16px;
-            margin-top: 12px;
-            font-size: 14px;
-            color: #c4b5fd;
-            line-height: 1.6;
+            font-family: 'Courier New', monospace;
+            white-space: nowrap;
         }
 
         .bold { color: #e2e8f0; font-weight: 600; }
@@ -298,184 +194,87 @@
 
         <div class="hero">
             <img src="/app/assets/images/logo-192.png" alt="Chytré Já" class="hero-logo">
-            <h1>Hra o život</h1>
-            <p>Hraješ sám za sebe. Cíl je jediný — dožít se svého snu v plné síle.</p>
+            <h1>Jak používat Chytré já</h1>
+            <p>Jedna zpráva. Jedna věc na dnes. Nic víc.</p>
         </div>
 
-        <!-- 1. Čtyři protivníci -->
+        <!-- 1. Jak začít -->
         <div class="section open" data-section>
             <div class="section-header" onclick="toggleSection(this)">
-                <span class="section-icon">⚔️</span>
-                <span class="section-title">Čtyři protivníci</span>
+                <span class="section-icon">💬</span>
+                <span class="section-title">Jak začít</span>
                 <span class="section-arrow">▼</span>
             </div>
             <div class="section-body">
                 <div class="section-content">
-                    <p>Proti tobě stojí čtyři protivníci. Jsou tiší, trpěliví a hrají na čas. Nevidíš je, necítíš je — dokud není pozdě.</p>
-                    <div class="killer-grid">
-                        <div class="killer-card">
-                            <div class="name">METABOLISMUS</div>
-                            <div class="desc">Rozkládá tělo zevnitř, tiše, roky předtím než se projeví.</div>
-                        </div>
-                        <div class="killer-card">
-                            <div class="name">SRDCE</div>
-                            <div class="desc">Čeká na slabé srdce a ucpané cévy.</div>
-                        </div>
-                        <div class="killer-card">
-                            <div class="name">IMUNITA</div>
-                            <div class="desc">Využívá každou slabinu v obraně těla.</div>
-                        </div>
-                        <div class="killer-card">
-                            <div class="name">MOZEK</div>
-                            <div class="desc">Maže paměť, ostrost myšlení, schopnost být naplno přítomný.</div>
-                        </div>
-                    </div>
-                    <p>Nemusíš je všechny porazit. Musíš vědět, který útočí na tebe — a tam zasáhnout.</p>
+                    <p>Napiš nebo řekni <span class="cmd">Co mám dnes dělat?</span></p>
+                    <p>Chytré já ti odpoví jednou větou — co dnes udělat a proč právě to. Žádné grafy, žádné tabulky.</p>
+                    <p>Na začátku se může zeptat na pár věcí o tvém zdraví nebo lécích. Odpověz, jak umíš. Pak dostaneš jedno konkrétní doporučení.</p>
                 </div>
             </div>
         </div>
 
-        <!-- 2. Tvoje území -->
+        <!-- 2. Když se Chytré já ptá -->
         <div class="section" data-section>
             <div class="section-header" onclick="toggleSection(this)">
-                <span class="section-icon">🗺️</span>
-                <span class="section-title">Tvoje území</span>
+                <span class="section-icon">❓</span>
+                <span class="section-title">Když se Chytré já ptá</span>
                 <span class="section-arrow">▼</span>
             </div>
             <div class="section-body">
                 <div class="section-content">
-                    <p>Tvé tělo a hlava jsou rozdělené do oblastí. Každá má svůj stav:</p>
-                    <div class="state-list">
-                        <div class="state-item">
-                            <div class="state-dot green"></div>
-                            <div>
-                                <span class="state-label">Zelená</span> —
-                                <span class="state-desc">držíš to, protivník nemá šanci</span>
-                            </div>
-                        </div>
-                        <div class="state-item">
-                            <div class="state-dot yellow"></div>
-                            <div>
-                                <span class="state-label">Žlutá</span> —
-                                <span class="state-desc">máš rezervy, ale protivník cítí slabinu</span>
-                            </div>
-                        </div>
-                        <div class="state-item">
-                            <div class="state-dot red"></div>
-                            <div>
-                                <span class="state-label">Červená</span> —
-                                <span class="state-desc">tady prohráváš, protivník postupuje</span>
-                            </div>
-                        </div>
+                    <p>Někdy Chytré já potřebuje vědět víc, než může cokoliv doporučit.</p>
+                    <div class="step">
+                        <div class="step-title">Jak odpovídat</div>
+                        <p>Normální větou — nebo stiskni <span class="cmd">Nemám</span> / <span class="cmd">Nevím</span>.</p>
                     </div>
-                    <p>Stav se mění podle toho, co děláš. Každý den. Každé rozhodnutí.</p>
+                    <div class="step">
+                        <div class="step-title">„Nevím" je platná odpověď</div>
+                        <p>Chytré já si ji zapamatuje. Na tu samou věc se znovu ptát nebude.</p>
+                    </div>
+                    <p>Čím víc informací Chytré já má, tím přesnější doporučení dostaneš. Ale žádná odpověď se nepožaduje — jen co víš.</p>
                 </div>
             </div>
         </div>
 
-        <!-- 3. Jak se hraje -->
+        <!-- 3. Když něco doporučí -->
         <div class="section" data-section>
             <div class="section-header" onclick="toggleSection(this)">
-                <span class="section-icon">🎮</span>
-                <span class="section-title">Jak se hraje</span>
+                <span class="section-icon">✅</span>
+                <span class="section-title">Když něco doporučí</span>
                 <span class="section-arrow">▼</span>
             </div>
             <div class="section-body">
                 <div class="section-content">
                     <div class="step">
-                        <div class="step-title">Ráno</div>
-                        <p>Otevřeš appku. CHJ ti řekne, kde jsi nejslabší a kdo na tebe útočí. Žádné grafy, žádné tabulky — jedna věta, přímo.</p>
-                        <div class="quote">Metabolismus ztrácí rytmus — ty běžky v 85 se takhle nepoběží.</div>
+                        <div class="step-title">Splnil/a</div>
+                        <p>Stiskni <span class="cmd">Hotovo</span>. Chytré já zaznamená a posune tě dál.</p>
                     </div>
                     <div class="step">
-                        <div class="step-title">Mise dne</div>
-                        <p>Dostaneš jednu konkrétní věc na dnes. Ne seznam, ne plán na měsíc. Jeden krok.</p>
-                        <div class="quote">Dnešní mise: 30 minut chůze po obědě. Útočíš na METABOLISMUS.</div>
+                        <div class="step-title">Dnes to nejde</div>
+                        <p>Stiskni <span class="cmd">Přeskočit</span>. Chytré já nabídne alternativu nebo počká na zítřek. Přeskočení není selhání.</p>
                     </div>
                     <div class="step">
-                        <div class="step-title">Splnění</div>
-                        <p>Splníš — série roste. Nesplníš — série se přeruší a CHJ to komentuje. Žádné tresty, žádné body — jen pravda.</p>
-                        <div class="quote">3 dny v řadě. METABOLISMUS ztrácí půdu.</div>
+                        <div class="step-title">Chceš vědět proč</div>
+                        <p>Napiš <span class="cmd">Proč?</span> a Chytré já vysvětlí, proč zrovna tuhle věc doporučuje.</p>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- 4. Co tě posouvá -->
+        <!-- 4. Nemusíš se učit aplikaci -->
         <div class="section" data-section>
             <div class="section-header" onclick="toggleSection(this)">
-                <span class="section-icon">📈</span>
-                <span class="section-title">Co tě posouvá</span>
+                <span class="section-icon">🧭</span>
+                <span class="section-title">Nemusíš se učit aplikaci</span>
                 <span class="section-arrow">▼</span>
             </div>
             <div class="section-body">
                 <div class="section-content">
-                    <div class="step">
-                        <div class="step-title">Série</div>
-                        <p>Čím déle držíš sérii, tím víc protivníka tlačíš zpátky. Přerušení není konec — je to restart. Ale každý restart stojí víc síly než pokračování.</p>
-                    </div>
-                    <div class="step">
-                        <div class="step-title">Posun barvy</div>
-                        <p>Když oblast přejde z červené do žluté nebo ze žluté do zelené — to je průlom. CHJ to oslaví. Protivník ztratil pozici.</p>
-                    </div>
-                    <div class="step">
-                        <div class="step-title">Sen na obzoru</div>
-                        <p>Tvůj sen je vždy viditelný. CHJ ti připomíná, jak daleko nebo blízko jsi. Ne čísly — slovy.</p>
-                        <div class="quote">Na ty běžky v 85 to takhle stačit nebude.</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- 5. Co z toho máš -->
-        <div class="section" data-section>
-            <div class="section-header" onclick="toggleSection(this)">
-                <span class="section-icon">💎</span>
-                <span class="section-title">Co z toho máš</span>
-                <span class="section-arrow">▼</span>
-            </div>
-            <div class="section-body">
-                <div class="section-content">
-                    <div class="benefit-list">
-                        <div class="benefit-item">
-                            <div class="benefit-num">1</div>
-                            <div><span class="bold">Víš, kde jsi nejslabší</span> — ne obecně, ale konkrétně, dnes</div>
-                        </div>
-                        <div class="benefit-item">
-                            <div class="benefit-num">2</div>
-                            <div><span class="bold">Víš, kdo na tebe útočí</span> — který z protivníků má nejblíž k výhře</div>
-                        </div>
-                        <div class="benefit-item">
-                            <div class="benefit-num">3</div>
-                            <div><span class="bold">Víš, co udělat</span> — jedna věc, ne dvacet rad z internetu</div>
-                        </div>
-                        <div class="benefit-item">
-                            <div class="benefit-num">4</div>
-                            <div><span class="bold">Vidíš posun</span> — série, barvy, slova CHJ se mění podle tvých činů</div>
-                        </div>
-                        <div class="benefit-item">
-                            <div class="benefit-num">5</div>
-                            <div><span class="bold">Hraješ o svůj sen</span> — ne o body, ne o odznaky — o svůj vlastní život</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- 6. Filosofie -->
-        <div class="section" data-section>
-            <div class="section-header" onclick="toggleSection(this)">
-                <span class="section-icon">🧬</span>
-                <span class="section-title">Filosofie</span>
-                <span class="section-arrow">▼</span>
-            </div>
-            <div class="section-body">
-                <div class="section-content">
-                    <p>Vychází z Medicine 3.0 (Peter Attia, <em>Outlive</em>). Nejde o to žít déle. Jde o to žít déle <span class="bold">dobře</span> — v síle, s jasnou hlavou, se schopností dělat to, co milujete.</p>
-                    <p>Čtyři protivníci zpomalují nebo ukončují 80 % životů. Většinu z toho jde odvrátit. Ne zítra. Dnes.</p>
-                    <div class="philosophy-note">
-                        CHJ ti neříká, co máš dělat. Říká ti, co se stane, když to neuděláš.
-                    </div>
+                    <p>Piš normálně. <span class="bold">„Dnes jsem špatně spal."</span> / <span class="bold">„Bolí mě záda."</span> / <span class="bold">„Nemám čas."</span> — vše funguje.</p>
+                    <p>Nemusíš znát žádné příkazy ani vědět, jak to funguje uvnitř.</p>
+                    <p>Jedno doporučení najednou. Vždy.</p>
+                    <p>Kdykoliv chceš začít znovu — napiš <span class="cmd">Co mám dnes dělat?</span></p>
                 </div>
             </div>
         </div>
@@ -486,9 +285,7 @@
         function toggleSection(header) {
             const section = header.parentElement;
             const wasOpen = section.classList.contains('open');
-            // Close all
             document.querySelectorAll('[data-section]').forEach(s => s.classList.remove('open'));
-            // Open clicked (if it was closed)
             if (!wasOpen) section.classList.add('open');
         }
     </script>
