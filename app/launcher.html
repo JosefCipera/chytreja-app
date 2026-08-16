@@ -125,12 +125,41 @@
 
     @keyframes pulse { 0%,100%{box-shadow:0 0 0 0 var(--cyan-glow)} 50%{box-shadow:0 0 0 6px transparent} }
 
-    /* ── Profile link ── */
-    .profile-link {
-      font-size: 10px; letter-spacing: 2px; color: #4a8a9a;
-      text-decoration: none; font-weight: 300; transition: color 0.2s;
+    /* ── Avatar menu ── */
+    .avatar-wrapper { position: relative; }
+    .avatar-btn {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: #0d2030; border: 1px solid #1e4a5c;
+      color: #4a8a9a; font-size: 11px; font-weight: 600; letter-spacing: 0;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      font-family: inherit; transition: border-color 0.2s, color 0.2s;
     }
-    .profile-link:hover { color: var(--cyan); }
+    .avatar-btn:hover { border-color: var(--cyan); color: var(--cyan); }
+
+    .profile-dropdown {
+      position: absolute; top: calc(100% + 10px); right: 0;
+      background: #060d18; border: 1px solid #1a3040;
+      border-radius: 8px; min-width: 192px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.7);
+      z-index: 50; opacity: 0; pointer-events: none;
+      transform: translateY(-6px); transition: opacity 0.15s, transform 0.15s;
+    }
+    .profile-dropdown.open { opacity: 1; pointer-events: auto; transform: translateY(0); }
+
+    .dropdown-nav { list-style: none; padding: 6px 0; }
+    .dropdown-nav li a,
+    .dropdown-nav li button {
+      display: block; width: 100%; text-align: left;
+      padding: 10px 16px; font-size: 10px; letter-spacing: 2px;
+      color: #6a8898; text-decoration: none; text-transform: uppercase;
+      font-family: inherit; background: none; border: none; cursor: pointer;
+      transition: color 0.15s, background 0.15s;
+    }
+    .dropdown-nav li a:hover,
+    .dropdown-nav li button:hover { color: var(--text); background: rgba(60,169,189,0.07); }
+    .dropdown-nav .logout-action { border-top: 1px solid #1a3040; margin-top: 4px; padding-top: 4px; }
+    .dropdown-nav .logout-action button { color: #7a5a5a; }
+    .dropdown-nav .logout-action button:hover { color: #e08080; background: rgba(192,64,64,0.07); }
 
     /* ── Tester panel (visible only with ?tester=1) ── */
     #tester-panel {
@@ -194,9 +223,15 @@
 <div id="app" class="hidden">
   <header>
     <span class="logo">CHYTRÉ JÁ</span>
-    <div style="display:flex;gap:20px;align-items:center">
-      <a href="/crt.html" class="profile-link" title="Zdravotní profil">profil ↗</a>
-      <button id="logout-btn" class="profile-link" style="background:none;border:none;cursor:pointer;padding:0" title="Odhlásit se">odhlásit</button>
+    <div class="avatar-wrapper">
+      <button class="avatar-btn" id="avatar-btn" aria-label="Menu">?</button>
+      <div class="profile-dropdown" id="profile-dropdown">
+        <ul class="dropdown-nav">
+          <li><a href="/app/medioteka.html" target="_blank">Mediotéka</a></li>
+          <li><a href="/app/guides/longevity.html" target="_blank">Jak používat Chytré já</a></li>
+          <li class="logout-action"><button id="logout-btn">Odhlásit</button></li>
+        </ul>
+      </div>
     </div>
     <span class="mode-badge" id="mode-badge">—</span>
   </header>
@@ -295,8 +330,24 @@
   const _debugMode  = new URLSearchParams(location.search).get('debug')  === '1';
   const _testerMode = new URLSearchParams(location.search).get('tester') === '1';
 
+  function setBadge(text, cls) {
+    $badge.textContent = text;
+    $badge.className = cls;
+    $badge.style.visibility = (_testerMode || _debugMode) ? 'visible' : 'hidden';
+  }
+
   // Health profile URL — update to actual health data entry page if needed
   const PROFILE_URL = '/crt.html';
+
+  // ── Avatar dropdown ────────────────────────────────────────────────────────────
+  const $avatarBtn   = document.getElementById('avatar-btn');
+  const $profileDrop = document.getElementById('profile-dropdown');
+
+  $avatarBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    $profileDrop.classList.toggle('open');
+  });
+  document.addEventListener('click', () => $profileDrop.classList.remove('open'));
 
   // ── Tester panel (dev tooling, ?tester=1 only) ────────────────────────────────
   const $testerPanel  = document.getElementById('tester-panel');
@@ -354,8 +405,7 @@
   function renderIdle() {
     $stage.className = 'dim fade-in';
     $stage.textContent = 'Co se dnes děje?';
-    $badge.textContent = '—';
-    $badge.className = 'mode-badge';
+    setBadge('—', 'mode-badge');
     $chips.innerHTML = '';
     $input.placeholder = 'Napiš nebo řekni…';
   }
@@ -372,24 +422,25 @@
     if (mode === 'EXPLAIN')         $stage.classList.add('dim');
 
     // Mode badge
-    $badge.textContent = {
-      ACT:             'ACT',
-      ASK:             'ASK',
-      HOLD:            'HOLD',
-      SAFETY_BLOCKED:  'BLOCKED',
-      SAFETY_CRITICAL: 'CRITICAL',
-      EXPLAIN:         'WHY',
-      NOOP:            '—',
-    }[mode] ?? mode;
-
-    $badge.className = 'mode-badge ' + ({
-      ACT:             'act',
-      ASK:             'ask',
-      HOLD:            'hold',
-      SAFETY_BLOCKED:  'safe',
-      SAFETY_CRITICAL: 'safe',
-      EXPLAIN:         'explain',
-    }[mode] ?? '');
+    setBadge(
+      ({
+        ACT:             'ACT',
+        ASK:             'ASK',
+        HOLD:            'HOLD',
+        SAFETY_BLOCKED:  'BLOCKED',
+        SAFETY_CRITICAL: 'CRITICAL',
+        EXPLAIN:         'WHY',
+        NOOP:            '—',
+      }[mode] ?? mode),
+      'mode-badge ' + ({
+        ACT:             'act',
+        ASK:             'ask',
+        HOLD:            'hold',
+        SAFETY_BLOCKED:  'safe',
+        SAFETY_CRITICAL: 'safe',
+        EXPLAIN:         'explain',
+      }[mode] ?? ''),
+    );
 
     // Chips
     $chips.innerHTML = '';
@@ -501,8 +552,7 @@
       if (myEpoch !== requestEpoch) return;
       $stage.textContent = 'Nastala chyba. Zkus to znovu.';
       $stage.className = 'danger fade-in';
-      $badge.textContent = 'ERR';
-      $badge.className = 'mode-badge safe';
+      setBadge('ERR', 'mode-badge safe');
       $chips.innerHTML = '';
       const retryBtn = document.createElement('button');
       retryBtn.className = 'chip secondary';
@@ -528,8 +578,7 @@
       $stage.textContent = '…';
       $stage.className = 'loading';
       $chips.innerHTML = '';
-      $badge.textContent = '·';
-      $badge.className = 'mode-badge';
+      setBadge('·', 'mode-badge');
     }
   }
 
@@ -607,6 +656,8 @@
   } else {
     onAuthStateChanged(auth, user => {
       if (user) {
+        const initial = (user.displayName?.[0] || user.email?.[0] || '?').toUpperCase();
+        document.getElementById('avatar-btn').textContent = initial;
         start(user.uid);
       } else {
         // Logout: clear scope so stale session can't bleed into next login.
