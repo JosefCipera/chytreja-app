@@ -201,6 +201,162 @@ sep('T10: Emergency negative cases — isEmergency() = false (static)');
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// T13: classifyTemporalContext — deterministic temporal classification (no API)
+// ─────────────────────────────────────────────────────────────────────────────
+sep('T13: classifyTemporalContext — temporal classification (no API)');
+{
+  const { classifyTemporalContext } = await import('../api/pre-intake.js');
+
+  const cases = [
+    // acute
+    ['od rána se motám',            'acute'],
+    ['od dnes ráno mě bolí hlava',  'acute'],
+    ['začalo mi to dnes',           'acute'],
+    ['náhle se mi točí hlava',      'acute'],
+    ['právě mě bolí záda',          'acute'],
+    ['najednou mám závratě',        'acute'],
+    ['před chvílí jsem upadl',      'acute'],
+    // recent
+    ['od včera se mi špatně dýchá', 'recent'],
+    ['pár dní mi to dělá',          'recent'],
+    ['minulý týden začal kašel',    'recent'],
+    ['nedávno jsem měl chřipku',    'recent'],
+    // chronic
+    ['dlouhodobě trpím bolestí',    'chronic'],
+    ['celý život mám alergii',      'chronic'],
+    ['od roku 2020 mám diabetes',   'chronic'],
+    ['mám chronicky bolavé koleno', 'chronic'],
+    // unknown (no temporal signal)
+    ['bolí mě záda',                'unknown'],
+    ['mám únavu',                   'unknown'],
+    ['cítím se špatně',             'unknown'],
+  ];
+
+  for (const [text, expected] of cases) {
+    const got = classifyTemporalContext(text);
+    check(got === expected, `"${text}" → '${expected}' (got: '${got}')`);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// T14: sanitizeFacts — temporal_context + acute gait guard (no API)
+// ─────────────────────────────────────────────────────────────────────────────
+sep('T14: sanitizeFacts — temporal_context + acute gait guard (no API)');
+{
+  const { sanitizeFacts } = await import('../api/pre-intake.js');
+  const NOW = '2026-08-25T10:00:00.000Z';
+
+  // temporal_context added to new_symptom deferred_facts
+  {
+    const parsed = {
+      outcome: 'AHA', message: 'ok',
+      structured_facts: [],
+      deferred_facts: [
+        { type: 'new_symptom', raw_text: 'od rána se motám', utterance_index: 0, reason: 'non_idempotent_handoff' },
+        { type: 'new_symptom', raw_text: 'mám chronicky bolavé koleno', utterance_index: 1, reason: 'non_idempotent_handoff' },
+        { type: 'new_symptom', raw_text: 'bolí mě záda', utterance_index: 2, reason: 'non_idempotent_handoff' },
+        { type: 'medication_mention', raw_text: 'beru Pradaxu', utterance_index: 3, reason: 'unsupported_structured_persistence' },
+      ],
+    };
+    const { deferred_facts } = sanitizeFacts(parsed, NOW);
+    const mota = deferred_facts.find(f => f.raw_text.includes('motám'));
+    const koleno = deferred_facts.find(f => f.raw_text.includes('koleno'));
+    const zada = deferred_facts.find(f => f.raw_text.includes('záda'));
+    const med = deferred_facts.find(f => f.type === 'medication_mention');
+    check(mota?.temporal_context === 'acute',   'od rána se motám → temporal_context=acute');
+    check(koleno?.temporal_context === 'chronic','chronicky bolavé koleno → temporal_context=chronic');
+    check(zada?.temporal_context === 'unknown',  'bolí mě záda → temporal_context=unknown');
+    check(!med?.temporal_context,                'medication_mention has no temporal_context');
+  }
+
+  // temporal_context from Haiku is preserved if valid
+  {
+    const parsed = {
+      outcome: 'ASK', message: 'ok',
+      structured_facts: [],
+      deferred_facts: [
+        { type: 'new_symptom', raw_text: 'bolí mě záda', utterance_index: 0, reason: 'non_idempotent_handoff', temporal_context: 'recent' },
+      ],
+    };
+    const { deferred_facts } = sanitizeFacts(parsed, NOW);
+    check(deferred_facts[0].temporal_context === 'recent', 'Haiku-supplied temporal_context=recent preserved');
+  }
+
+  // Acute gait guard: new_symptom(acute) + ANSWER(gait_stability) → gait moved to deferred
+  {
+    const parsed = {
+      outcome: 'AHA', message: 'ok',
+      structured_facts: [
+        { event_type: 'ANSWER_TO_EVIDENCE_QUESTION', payload: { evidence_type: 'gait_stability', value: 'ne' }, raw_text: 'Nestabilně.', utterance_index: 1 },
+        { event_type: 'ANSWER_TO_EVIDENCE_QUESTION', payload: { evidence_type: 'recent_falls', value: 'ne' },   raw_text: 'Nespadl jsem.', utterance_index: 2 },
+        { event_type: 'NEW_MEASUREMENT',             payload: { obs_type: 'weight_kg', value: 88 },             raw_text: 'Vážím 88 kg.', utterance_index: 0 },
+      ],
+      deferred_facts: [
+        { type: 'new_symptom', raw_text: 'od rána se motám', utterance_index: 0, reason: 'non_idempotent_handoff' },
+      ],
+    };
+    const { structured_facts, deferred_facts } = sanitizeFacts(parsed, NOW);
+    check(!structured_facts.some(f => f.payload?.evidence_type === 'gait_stability'), 'gait_stability NOT in structured_facts (acute guard)');
+    check(!structured_facts.some(f => f.payload?.evidence_type === 'recent_falls'),   'recent_falls NOT in structured_facts (acute guard)');
+    check(structured_facts.some(f => f.payload?.obs_type === 'weight_kg'),            'weight_kg stays in structured_facts (non-gait)');
+    check(deferred_facts.some(f => f.reason === 'acute_symptom_context'),             'gait evidence moved to deferred with reason=acute_symptom_context');
+    check(deferred_facts.filter(f => f.reason === 'acute_symptom_context').every(f => f.temporal_context === 'acute'),
+      'moved gait facts have temporal_context=acute');
+  }
+
+  // Chronic symptom does NOT trigger acute guard
+  {
+    const parsed = {
+      outcome: 'AHA', message: 'ok',
+      structured_facts: [
+        { event_type: 'ANSWER_TO_EVIDENCE_QUESTION', payload: { evidence_type: 'gait_stability', value: 'ne' }, raw_text: 'Nestabilně.', utterance_index: 1 },
+      ],
+      deferred_facts: [
+        { type: 'new_symptom', raw_text: 'dlouhodobě mám bolesti kloubů', utterance_index: 0, reason: 'non_idempotent_handoff' },
+      ],
+    };
+    const { structured_facts } = sanitizeFacts(parsed, NOW);
+    check(structured_facts.some(f => f.payload?.evidence_type === 'gait_stability'),
+      'gait_stability stays in structured_facts for chronic new_symptom (guard inactive)');
+  }
+
+  // unknown temporal_context does NOT trigger acute guard
+  {
+    const parsed = {
+      outcome: 'AHA', message: 'ok',
+      structured_facts: [
+        { event_type: 'ANSWER_TO_EVIDENCE_QUESTION', payload: { evidence_type: 'gait_stability', value: 'ne' }, raw_text: 'Nestabilně.', utterance_index: 1 },
+      ],
+      deferred_facts: [
+        { type: 'new_symptom', raw_text: 'bolí mě záda', utterance_index: 0, reason: 'non_idempotent_handoff' },
+      ],
+    };
+    const { structured_facts } = sanitizeFacts(parsed, NOW);
+    check(structured_facts.some(f => f.payload?.evidence_type === 'gait_stability'),
+      'gait_stability stays in structured_facts for unknown temporal_context (guard inactive)');
+  }
+
+  // Non-gait evidence types are not affected by acute guard
+  {
+    const parsed = {
+      outcome: 'AHA', message: 'ok',
+      structured_facts: [
+        { event_type: 'ANSWER_TO_EVIDENCE_QUESTION', payload: { evidence_type: 'sedentary_hours_day', value: 8 }, raw_text: '8 hodin.', utterance_index: 1 },
+        { event_type: 'NEW_MEASUREMENT', payload: { obs_type: 'weight_kg', value: 90 }, raw_text: '90 kg.', utterance_index: 0 },
+      ],
+      deferred_facts: [
+        { type: 'new_symptom', raw_text: 'od rána se motám', utterance_index: 0, reason: 'non_idempotent_handoff' },
+      ],
+    };
+    const { structured_facts } = sanitizeFacts(parsed, NOW);
+    check(structured_facts.some(f => f.payload?.evidence_type === 'sedentary_hours_day'),
+      'sedentary_hours_day not affected by acute gait guard');
+    check(structured_facts.some(f => f.payload?.obs_type === 'weight_kg'),
+      'weight_kg not affected by acute gait guard');
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Integration tests — require ANTHROPIC_API_KEY
 // ─────────────────────────────────────────────────────────────────────────────
 

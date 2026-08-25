@@ -48,7 +48,21 @@ export default async function handler(req, res) {
   );
 
   try {
-    const response = await processInput(userId, text.trim(), session);
+    // Fetch pending_clarifications server-side so the orchestrator can apply safety gates
+    // (e.g. acute symptom ACT gate) without trusting client-provided session state.
+    // Client session is the authority for temporal session fields; DB is authority for health facts.
+    const { data: profileRow } = await getSb()
+      .from('user_health_profile')
+      .select('pending_clarifications')
+      .eq('user_id', userId)
+      .maybeSingle();
+    const pendingClarifications = Array.isArray(profileRow?.pending_clarifications)
+      ? profileRow.pending_clarifications
+      : [];
+
+    const sessionWithPending = { ...session, pending_clarifications: pendingClarifications };
+
+    const response = await processInput(userId, text.trim(), sessionWithPending);
 
     // ── TRACE: query action_assignments for this user ──────────────────────
     const { data: assignments, error: _traceErr } = await getSb()

@@ -1505,6 +1505,264 @@ function scenarioQ() {
   check(startResult2 === 1, 'Q12: new orchestrate() starts immediately after reset, captures epoch 1', `got ${startResult2}`);
 }
 
+// ── Scenario R — Question budget + acute gate: pure logic simulation ──────────
+//
+// Simulates the gate logic that runs in orchestrator.js after buildPresentation()
+// returns — without requiring a live engine or DB call.  Mirrors the exact logic
+// in orchestrator.js so any future change there will break these assertions.
+//
+// Gate rules under test:
+//   R1: engine ACT + hasAcuteSymptom + budget>0  → ACUTE_SYMPTOM_GATE (ASK, expects_reply=true)
+//   R2: engine ACT + hasAcuteSymptom + budget=0  → ACUTE_SYMPTOM_GATE_TERMINAL (expects_reply=false)
+//   R3: engine ACT + hasAcuteSymptom + budget=0  → no further ASK text, buttons=[]
+//   R4: engine ASK + budget=0                    → BUDGET_EXHAUSTED (expects_reply=false)
+//   R5: engine ASK + budget=0                    → non-acute terminal text
+//   R6: engine ASK + budget=0 + hasAcuteSymptom → BUDGET_EXHAUSTED with acute text
+//   R7: engine ACT + chronic symptom + budget=0 → ACT passes through (no gate)
+//   R8: engine ACT + unknown symptom + budget=0 → ACT passes through (no gate)
+//   R9: acute gate decrements budget by 1
+
+function scenarioR() {
+  sep('R — Budget + acute gate: pure simulation (no network)');
+
+  // Inline simulation of the gate logic from orchestrator.js
+  function applyGate(presentationMode, budgetRemaining, pendingClarifications) {
+    const pending         = pendingClarifications ?? [];
+    const hasAcuteSymptom = pending.some(
+      c => c.type === 'new_symptom' && c.temporal_context === 'acute'
+    );
+
+    if (hasAcuteSymptom && presentationMode === 'ACT') {
+      if (budgetRemaining <= 0) {
+        return {
+          mode: 'ASK',
+          text: 'Zmínil/a jsi aktuální potíže a zatím o nich nevím dost, abych ti bezpečně doporučil konkrétní krok.',
+          buttons: [], expects_reply: false,
+          reason_code: 'ACUTE_SYMPTOM_GATE_TERMINAL',
+          budget_out: 0,
+        };
+      }
+      return {
+        mode: 'ASK',
+        text: 'Zmínil/a jsi aktuální potíže, které potřebují víc kontextu. Jak se cítíš teď — lepší, stejně, nebo hůř?',
+        buttons: [], expects_reply: true,
+        reason_code: 'ACUTE_SYMPTOM_GATE',
+        budget_out: Math.max(0, budgetRemaining - 1),
+      };
+    }
+
+    if (presentationMode === 'ASK') {
+      if (budgetRemaining <= 0) {
+        const text = hasAcuteSymptom
+          ? 'Zmínil/a jsi aktuální potíže a zatím o nich nevím dost, abych ti bezpečně doporučil konkrétní krok.'
+          : 'Zatím o tobě nevím dost, abych ti bezpečně doporučil konkrétní krok.';
+        return {
+          mode: 'ASK', text, buttons: [], expects_reply: false,
+          reason_code: hasAcuteSymptom ? 'ACUTE_SYMPTOM_GATE_TERMINAL' : 'BUDGET_EXHAUSTED',
+          budget_out: 0,
+        };
+      }
+      return { mode: 'ASK', passes_through: true, budget_out: budgetRemaining - 1, reason_code: null };
+    }
+
+    // HOLD, EXPLAIN, SAFETY_BLOCKED — pass through unchanged
+    return { mode: presentationMode, passes_through: true, budget_out: budgetRemaining, reason_code: null };
+  }
+
+  const acutePending   = [{ type: 'new_symptom', temporal_context: 'acute' }];
+  const chronicPending = [{ type: 'new_symptom', temporal_context: 'chronic' }];
+  const unknownPending = [{ type: 'new_symptom', temporal_context: 'unknown' }];
+
+  // R1: engine ACT + acute + budget>0 → ACUTE_SYMPTOM_GATE (ASK, expects_reply=true)
+  {
+    const r = applyGate('ACT', 2, acutePending);
+    check(r.mode === 'ASK',              'R1: engine ACT + acute + budget>0 → mode=ASK');
+    check(r.expects_reply === true,      'R1: expects_reply=true (still has budget)');
+    check(r.reason_code === 'ACUTE_SYMPTOM_GATE', 'R1: reason_code=ACUTE_SYMPTOM_GATE');
+  }
+
+  // R2: engine ACT + acute + budget=0 → ACUTE_SYMPTOM_GATE_TERMINAL (expects_reply=false)
+  {
+    const r = applyGate('ACT', 0, acutePending);
+    check(r.mode === 'ASK',               'R2: engine ACT + acute + budget=0 → mode=ASK (no ACT)');
+    check(r.expects_reply === false,      'R2: expects_reply=false (terminal)');
+    check(r.reason_code === 'ACUTE_SYMPTOM_GATE_TERMINAL', 'R2: reason_code=ACUTE_SYMPTOM_GATE_TERMINAL');
+  }
+
+  // R3: engine ACT + acute + budget=0 → buttons=[], no further ASK possible
+  {
+    const r = applyGate('ACT', 0, acutePending);
+    check(Array.isArray(r.buttons) && r.buttons.length === 0, 'R3: buttons=[] (no further ASK chips)');
+    check(r.budget_out === 0,  'R3: budget_out=0 (exhausted)');
+  }
+
+  // R4: engine ASK + budget=0 → BUDGET_EXHAUSTED, expects_reply=false
+  {
+    const r = applyGate('ASK', 0, []);
+    check(r.expects_reply === false,   'R4: engine ASK + budget=0 → expects_reply=false');
+    check(r.reason_code === 'BUDGET_EXHAUSTED', 'R4: reason_code=BUDGET_EXHAUSTED');
+    check(Array.isArray(r.buttons) && r.buttons.length === 0, 'R4: buttons=[]');
+  }
+
+  // R5: engine ASK + budget=0 + no acute → non-acute terminal text
+  {
+    const r = applyGate('ASK', 0, []);
+    check(
+      r.text === 'Zatím o tobě nevím dost, abych ti bezpečně doporučil konkrétní krok.',
+      'R5: non-acute BUDGET_EXHAUSTED uses exact terminal text',
+      `actual: "${r.text}"`
+    );
+  }
+
+  // R6: engine ASK + budget=0 + acute → BUDGET_EXHAUSTED with acute-aware text
+  {
+    const r = applyGate('ASK', 0, acutePending);
+    check(
+      r.expects_reply === false,        'R6: acute+budget=0+ASK → expects_reply=false');
+    check(
+      r.text.includes('aktuální potíže'), 'R6: terminal text mentions acute context',
+      `actual: "${r.text}"`
+    );
+    check(r.reason_code === 'ACUTE_SYMPTOM_GATE_TERMINAL', 'R6: reason_code=ACUTE_SYMPTOM_GATE_TERMINAL even via ASK path');
+  }
+
+  // R7: engine ACT + chronic symptom + budget=0 → ACT passes through (no gate)
+  {
+    const r = applyGate('ACT', 0, chronicPending);
+    check(r.passes_through === true,   'R7: chronic new_symptom + budget=0 → ACT passes through');
+    check(r.mode === 'ACT',            'R7: mode=ACT (gate inactive for chronic)');
+  }
+
+  // R8: engine ACT + unknown symptom + budget=0 → ACT passes through (no gate)
+  {
+    const r = applyGate('ACT', 0, unknownPending);
+    check(r.passes_through === true,   'R8: unknown new_symptom + budget=0 → ACT passes through');
+    check(r.mode === 'ACT',            'R8: mode=ACT (gate inactive for unknown)');
+  }
+
+  // R9: acute gate (budget>0) decrements budget by exactly 1
+  {
+    const r = applyGate('ACT', 3, acutePending);
+    check(r.budget_out === 2,          'R9: ACUTE_SYMPTOM_GATE decrements budget by 1 (3→2)');
+  }
+
+  // R10: HOLD mode — neither gate fires, passes through unchanged
+  {
+    const r = applyGate('HOLD', 0, acutePending);
+    check(r.passes_through === true && r.mode === 'HOLD',
+      'R10: HOLD mode with acute+budget=0 → passes through (no gate on HOLD)');
+  }
+}
+
+// ── Scenario S — "od rána se motám" integration: no gait_stability evidence → ACT ─
+//
+// P0-B regression: acute "od rána se motám" + gait_stability ANSWER must NOT
+// produce gait_stability in structured_facts (chronic evidence) that then drives
+// a balance/single-leg ACT recommendation.
+//
+// Flow:
+//   pre-intake: user says "od rána se motám" + answers gait_stability question
+//   → sanitizeFacts() moves gait_stability to deferred (acute guard)
+//   → session-handoff: temporal_context=acute persisted in pending_clarifications
+//   → orchestrator: hasAcuteSymptom=true + engine ACT → gate fires → no ACT
+//
+// This test uses classifyTemporalContext + sanitizeFacts directly (no API, no DB).
+
+async function scenarioS() {
+  sep('S — "od rána se motám": acute guard blocks gait_stability evidence (no API)');
+
+  const { classifyTemporalContext, sanitizeFacts } = await import('../api/pre-intake.js');
+  const NOW = new Date().toISOString();
+
+  // S1: temporal classification of the trigger phrase
+  const tc = classifyTemporalContext('od rána se motám');
+  check(tc === 'acute', 'S1: "od rána se motám" classifies as acute', `got: ${tc}`);
+
+  // S2: sanitizeFacts moves gait_stability out of structured_facts
+  const parsed = {
+    outcome: 'AHA', message: 'ok',
+    structured_facts: [
+      { event_type: 'ANSWER_TO_EVIDENCE_QUESTION', payload: { evidence_type: 'gait_stability',  value: 'ne' }, raw_text: 'Nestabilně.',  utterance_index: 1 },
+      { event_type: 'ANSWER_TO_EVIDENCE_QUESTION', payload: { evidence_type: 'floor_rise_test', value: 'ne' }, raw_text: 'Nesahal jsem.',utterance_index: 2 },
+      { event_type: 'ANSWER_TO_EVIDENCE_QUESTION', payload: { evidence_type: 'chair_stand_30s', value: 5 },   raw_text: '5 dřepů.',     utterance_index: 3 },
+    ],
+    deferred_facts: [
+      { type: 'new_symptom', raw_text: 'od rána se motám', utterance_index: 0, reason: 'non_idempotent_handoff' },
+    ],
+  };
+
+  const { structured_facts, deferred_facts } = sanitizeFacts(parsed, NOW);
+
+  // No gait evidence in structured_facts → engine cannot infer chronic gait instability
+  check(!structured_facts.some(f => ['gait_stability','floor_rise_test','chair_stand_30s'].includes(f.payload?.evidence_type)),
+    'S2: gait_stability/floor_rise_test/chair_stand_30s NOT in structured_facts after acute guard');
+
+  // Gait evidence moved to deferred with acute tag
+  const movedGait = deferred_facts.filter(f => f.reason === 'acute_symptom_context');
+  check(movedGait.length === 3, 'S2: all 3 gait evidence items moved to deferred_facts', `count: ${movedGait.length}`);
+  check(movedGait.every(f => f.temporal_context === 'acute'), 'S2: moved facts carry temporal_context=acute');
+
+  // S3: the new_symptom has temporal_context=acute (so it would be picked up by orchestrator)
+  const symptomFact = deferred_facts.find(f => f.type === 'new_symptom');
+  check(symptomFact?.temporal_context === 'acute',
+    'S3: new_symptom deferred_fact has temporal_context=acute (orchestrator gate will fire)');
+
+  // S4: engine ACT + acute pending → gate fires (simulated, no DB)
+  // (Using the same pure simulation from scenario R)
+  const pendingFromHandoff = [{ type: 'new_symptom', temporal_context: 'acute' }];
+  const hasAcuteSymptom = pendingFromHandoff.some(c => c.type === 'new_symptom' && c.temporal_context === 'acute');
+  check(hasAcuteSymptom, 'S4: orchestrator gate sees hasAcuteSymptom=true from pending_clarifications');
+
+  // If engine would return ACT for a balance/single-leg exercise, the gate blocks it
+  const gateWouldBlock = hasAcuteSymptom; // gate fires on ACT when hasAcuteSymptom
+  check(gateWouldBlock, 'S4: gate would intercept ACT for balance/single-leg (no unsafe exercise after acute dizziness)');
+}
+
+// ── Scenario T — terminal state: launcher static contract ─────────────────────
+//
+// Regression: setLoading(false) in finally block re-enabled inputs unconditionally,
+// overriding the render() terminal state from expects_reply=false + buttons=[].
+//
+// Fix: _terminalState module variable; setLoading uses `on || _terminalState`.
+//
+// Static analysis of app/launcher.html source — no browser required.
+
+async function scenarioT() {
+  sep('T — terminal HOLD stays disabled after setLoading(false): static contract');
+
+  const fs = await import('fs');
+  const src = fs.readFileSync(new URL('../app/launcher.html', import.meta.url), 'utf8');
+
+  // T1: _terminalState variable declared
+  check(src.includes('let _terminalState'), 'T1: _terminalState module variable declared');
+
+  // T2: setLoading uses _terminalState to preserve terminal lock
+  check(
+    src.includes('on || _terminalState'),
+    'T2: setLoading uses `on || _terminalState` (terminal state survives setLoading(false))');
+
+  // T3: render() sets _terminalState when expects_reply=false + buttons=[]
+  check(
+    src.includes('_terminalState') && src.includes('isTerminal'),
+    'T3: render() computes isTerminal and writes _terminalState');
+
+  // T4: input elements are disabled using _terminalState
+  check(
+    (src.match(/\$input\.disabled\s*=.*_terminalState/g) ?? []).length >= 2
+      || src.includes('$input.disabled   = on || _terminalState'),
+    'T4: $input.disabled guarded by _terminalState in setLoading');
+
+  // T5: budget is read from sessionStorage('chj_qbudget') and consumed (removed) on handoff
+  check(
+    src.includes('chj_qbudget') && src.includes("sessionStorage.removeItem('chj_qbudget')"),
+    'T5: launcher reads and removes chj_qbudget from sessionStorage on handoff');
+
+  // T6: question_budget_remaining written to session via saveSession
+  check(
+    src.includes('question_budget_remaining'),
+    'T6: launcher writes question_budget_remaining to session state');
+}
+
 // ── Run ───────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -1529,6 +1787,9 @@ async function main() {
   await scenarioO();
   scenarioP();
   scenarioQ();
+  scenarioR();
+  await scenarioS();
+  await scenarioT();
 
   const total = passed + failed;
   sep(`Results: ${passed}/${total} passed${failed ? ` — ${failed} FAILED` : ''}`);

@@ -27,9 +27,10 @@ const phStart   = launcher.indexOf('if (_isPostHandoff)');
 const replacePos = launcher.indexOf("replaceState({}, '', '/launcher')", phStart);
 const orchPos    = launcher.indexOf("orchestrate('Co mám dnes dělat?')", phStart);
 const returnPos  = launcher.indexOf('return;', phStart);
-// "Rough end of the handoff branch" — 400 chars after the if keyword
-// (the actual branch is ~4 lines / ~140 chars; 400 is generous without crossing next block)
-const phEnd = phStart + 400;
+// "Rough end of the handoff branch" — 700 chars after the if keyword.
+// Branch now includes budget-reading code (chj_qbudget) so it's ~600 chars; 700 is generous
+// without crossing the normal-flow block that follows.
+const phEnd = phStart + 700;
 
 // ── T1: landing.html emits /launcher?handoff=1 after successful handoff ────────
 

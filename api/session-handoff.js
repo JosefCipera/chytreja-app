@@ -86,11 +86,12 @@ export async function appendPendingClarifications(supabase, uid, session_id, ite
   const now = new Date().toISOString();
   const entries = items.map(f => ({
     session_id,
-    type:            String(f.type ?? f.event_type ?? 'general_health_request'),
-    raw_text:        String(f.raw_text ?? ''),
-    utterance_index: Number.isInteger(f.utterance_index) ? f.utterance_index : 0,
-    reason:          String(f.reason ?? 'non_idempotent_handoff'),
-    timestamp:       now,
+    type:             String(f.type ?? f.event_type ?? 'general_health_request'),
+    raw_text:         String(f.raw_text ?? ''),
+    utterance_index:  Number.isInteger(f.utterance_index) ? f.utterance_index : 0,
+    reason:           String(f.reason ?? 'non_idempotent_handoff'),
+    timestamp:        now,
+    temporal_context: typeof f.temporal_context === 'string' ? f.temporal_context : 'unknown',
   }));
 
   const { error: writeErr } = await supabase

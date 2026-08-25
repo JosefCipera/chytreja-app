@@ -724,6 +724,68 @@ export async function processInput(userId, userText, sessionState = {}) {
     && state.last_daily_decision?.mode === 'HOLD';
   const presentation = buildPresentation(event_type, payload, result, sessionUpdates, isHoldFollowUp);
 
+  // ── P0 Safety gates (post-presentation) ──────────────────────────────────────
+  // These gates run after buildPresentation() so they can inspect the final mode.
+  // They never modify health data or engine decisions — only gate presentation output.
+
+  const budgetRemaining = typeof state.question_budget_remaining === 'number'
+    ? state.question_budget_remaining : 3;
+
+  // Acute symptom gate: unresolved acute new_symptom blocks physical exercise ACT.
+  // pending_clarifications is fetched server-side by api/orchestrate.js — never trusted from client.
+  const pending = state.pending_clarifications ?? [];
+  const hasAcuteSymptom = pending.some(
+    c => c.type === 'new_symptom' && c.temporal_context === 'acute'
+  );
+
+  if (hasAcuteSymptom && presentation.mode === 'ACT') {
+    if (budgetRemaining <= 0) {
+      // Budget also exhausted: terminal state acknowledging acute symptom + no questions left.
+      return {
+        mode:          'ASK',
+        text:          'Zmínil/a jsi aktuální potíže a zatím o nich nevím dost, abych ti bezpečně doporučil konkrétní krok.',
+        buttons:       [],
+        expects_reply: false,
+        session_updates: { ...presentation.session_updates, question_budget_remaining: 0 },
+        debug:         { reason_code: 'ACUTE_SYMPTOM_GATE_TERMINAL' },
+      };
+    }
+    // Budget available: ask about the acute symptom (uses one budget slot).
+    return {
+      mode:          'ASK',
+      text:          'Zmínil/a jsi aktuální potíže, které potřebují víc kontextu. Jak se cítíš teď — lepší, stejně, nebo hůř?',
+      buttons:       [],
+      expects_reply: true,
+      session_updates: {
+        ...presentation.session_updates,
+        question_budget_remaining: Math.max(0, budgetRemaining - 1),
+      },
+      debug:         { reason_code: 'ACUTE_SYMPTOM_GATE' },
+    };
+  }
+
+  // Question budget enforcement: limit total ASK rounds across pre-intake + post-handoff.
+  if (presentation.mode === 'ASK') {
+    if (budgetRemaining <= 0) {
+      const text = hasAcuteSymptom
+        ? 'Zmínil/a jsi aktuální potíže a zatím o nich nevím dost, abych ti bezpečně doporučil konkrétní krok.'
+        : 'Zatím o tobě nevím dost, abych ti bezpečně doporučil konkrétní krok.';
+      return {
+        mode:          'ASK',
+        text,
+        buttons:       [],
+        expects_reply: false,
+        session_updates: { ...presentation.session_updates, question_budget_remaining: 0 },
+        debug:         { reason_code: hasAcuteSymptom ? 'ACUTE_SYMPTOM_GATE_TERMINAL' : 'BUDGET_EXHAUSTED' },
+      };
+    }
+    presentation.session_updates = {
+      ...presentation.session_updates,
+      question_budget_remaining: budgetRemaining - 1,
+    };
+  }
+  // ─────────────────────────────────────────────────────────────────────────────
+
   // Enrich debug with leverage + NBA label for internal debug overlay (?debug=1).
   // Never shown to regular users — Launcher gates on query param.
   const ctx = result.domain_response?.explanation_context;

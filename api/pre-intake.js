@@ -32,6 +32,26 @@ const ALLOWED_STRUCTURED_TYPES = new Set([
   'ANSWER_TO_EVIDENCE_QUESTION',
 ]);
 
+// Evidence types that indicate gait/balance/fall state.
+// These must NOT be promoted to chronic structured evidence when elicited in an acute symptom context.
+const GAIT_STABILITY_EVIDENCE_TYPES = new Set([
+  'gait_stability', 'recent_falls', 'fall_history',
+  'floor_rise_test', 'chair_stand_30s', 'tug_test',
+]);
+
+// Deterministic temporal classification — does not depend on Haiku output.
+// Applied server-side to new_symptom deferred_facts as a safety guard.
+export function classifyTemporalContext(rawText) {
+  const t = (rawText ?? '').toLowerCase();
+  if (/od r[aá]na|od dnes|dnes r[aá]no|pr[aá]v[eě]|náhle|najednou|p[rř]ed chv[ií]l[ií]|za[čc]alo (to |mi )?dnes|za[čc]alo mi|z[čc]ista jasna/.test(t))
+    return 'acute';
+  if (/od v[čc]era|minul[ýý] t[ýy]den|p[aá]r dn[íi]|tento t[ýy]den|nedávno|minul[eé] dny/.test(t))
+    return 'recent';
+  if (/dlouhodobě|m[eě]s[íi][cč]|rok[ůu]?|chronicky|v[žz]dy|cel[ýý] [žz]ivot|od roku|po[řr][aá]d m[aá]m/.test(t))
+    return 'chronic';
+  return 'unknown';
+}
+
 const VALID_OUTCOMES = new Set(['ASK', 'AHA', 'NOT_ENOUGH_YET']);
 
 // ── Emergency fail-safe (deterministic, pre-Haiku, no AI judgment) ─────────────
@@ -161,12 +181,21 @@ NOT_ENOUGH_YET — limit dosažen NEBO nedostatek bezpečně propojitelných fak
       "type": "medication_mention | new_symptom | general_health_request",
       "raw_text": "verbatim co uživatel napsal",
       "utterance_index": 0,
-      "reason": "unsupported_structured_persistence | non_idempotent_handoff"
+      "reason": "unsupported_structured_persistence | non_idempotent_handoff",
+      "temporal_context": "acute | recent | chronic | unknown"
     }
   ]
 }
 
-utterance_index = pořadí uživatelovy zprávy v konverzaci (0 = první, 1 = druhá, ...).`;
+utterance_index = pořadí uživatelovy zprávy v konverzaci (0 = první, 1 = druhá, ...).
+
+TEMPORAL CONTEXT PRO new_symptom:
+Přidej temporal_context ke každému new_symptom záznamu:
+- "acute"   — raw_text obsahuje: od rána, od dnes, dnes ráno, právě, náhle, najednou, před chvílí, začalo dnes, začalo mi
+- "recent"  — raw_text obsahuje: od včera, minulý týden, pár dní, tento týden, nedávno
+- "chronic" — raw_text obsahuje: dlouhodobě, měsíc, rok, chronicky, vždy, celý život, od roku
+- "unknown" — jinak (default)
+KRITICKÉ: Pokud je temporal_context "acute" — odpovědi na follow-up otázky o chůzi, stabilitě, rovnováze a pádech MUSÍ být new_symptom v deferred_facts, NIKDY ANSWER_TO_EVIDENCE_QUESTION. Akutní symptom dnes ≠ chronický zdravotní stav.`;
 }
 
 function extractJson(text) {
@@ -182,6 +211,9 @@ function extractJson(text) {
 
 // Validates and sanitizes facts from Haiku output.
 // Moves forbidden event_types from structured_facts to deferred_facts.
+// Adds temporal_context to new_symptom deferred_facts (server-side deterministic classification).
+// Acute gait guard: if an acute new_symptom is present, gait/fall evidence types are
+// moved from structured_facts to deferred_facts — acute context ≠ chronic baseline.
 export function sanitizeFacts(parsed, now) {
   const rawStructured = Array.isArray(parsed?.structured_facts) ? parsed.structured_facts : [];
   const rawDeferred   = Array.isArray(parsed?.deferred_facts)   ? parsed.deferred_facts   : [];
@@ -216,18 +248,59 @@ export function sanitizeFacts(parsed, now) {
     }
   }
 
+  // Assemble deferred_facts and add temporal_context to new_symptom entries.
+  // temporal_context is set by Haiku when present and valid; otherwise derived deterministically.
+  const VALID_TEMPORAL = new Set(['acute', 'recent', 'chronic', 'unknown']);
   const deferred_facts = [
     ...rawDeferred
       .filter(f => f && typeof f === 'object')
-      .map(f => ({
-        type:            String(f.type ?? 'general_health_request'),
-        raw_text:        String(f.raw_text ?? ''),
-        utterance_index: Number.isInteger(f.utterance_index) ? f.utterance_index : 0,
-        reason:          String(f.reason ?? 'non_idempotent_handoff'),
-        timestamp:       now,
-      })),
+      .map(f => {
+        const base = {
+          type:            String(f.type ?? 'general_health_request'),
+          raw_text:        String(f.raw_text ?? ''),
+          utterance_index: Number.isInteger(f.utterance_index) ? f.utterance_index : 0,
+          reason:          String(f.reason ?? 'non_idempotent_handoff'),
+          timestamp:       now,
+        };
+        if (base.type === 'new_symptom') {
+          const haikuTemporal = typeof f.temporal_context === 'string' && VALID_TEMPORAL.has(f.temporal_context)
+            ? f.temporal_context
+            : classifyTemporalContext(base.raw_text);
+          base.temporal_context = haikuTemporal;
+        }
+        return base;
+      }),
     ...overflow_deferred,
   ];
+
+  // Acute gait guard: if any new_symptom is acute, gait/fall ANSWER_TO_EVIDENCE_QUESTION
+  // facts must not be persisted as chronic structured evidence.
+  // Only activates for temporal_context='acute' — chronic/unknown/recent do not trigger.
+  const hasAcuteSymptom = deferred_facts.some(
+    f => f.type === 'new_symptom' && f.temporal_context === 'acute'
+  );
+
+  if (hasAcuteSymptom) {
+    const gaitToDefer = [];
+    const structuredSafe = structured_facts.filter(f => {
+      if (
+        f.event_type === 'ANSWER_TO_EVIDENCE_QUESTION' &&
+        GAIT_STABILITY_EVIDENCE_TYPES.has(f.payload?.evidence_type)
+      ) {
+        gaitToDefer.push({
+          type:            'new_symptom',
+          raw_text:        f.raw_text,
+          utterance_index: f.utterance_index,
+          reason:          'acute_symptom_context',
+          timestamp:       now,
+          temporal_context: 'acute',
+        });
+        return false;
+      }
+      return true;
+    });
+    return { structured_facts: structuredSafe, deferred_facts: [...deferred_facts, ...gaitToDefer] };
+  }
 
   return { structured_facts, deferred_facts };
 }

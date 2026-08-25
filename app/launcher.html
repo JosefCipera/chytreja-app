@@ -402,7 +402,8 @@
     });
   }
 
-  let busy = false;
+  let busy           = false;
+  let _terminalState = false; // true when expects_reply=false + no buttons; survives setLoading(false)
 
   // ── Render ───────────────────────────────────────────────────────────────────
   function renderIdle() {
@@ -472,6 +473,14 @@
     // Input placeholder
     $input.placeholder = mode === 'ASK' ? 'Odpověz nebo napiš…' : 'Napiš nebo řekni…';
     if (mode === 'ASK') $input.focus();
+
+    // Terminal state: expects_reply=false with no chips → disable input/send/mic.
+    // _terminalState persists so setLoading(false) in the finally block cannot re-enable inputs.
+    const isTerminal = !expects_reply && buttons.length === 0;
+    _terminalState    = isTerminal;
+    $input.disabled   = isTerminal;
+    $sendBtn.disabled = isTerminal;
+    $micBtn.disabled  = isTerminal;
 
     // Debug overlay — visible only in ?debug=1 mode
     if (_debugMode && $debug) {
@@ -584,9 +593,11 @@
   }
 
   function setLoading(on) {
-    $input.disabled  = on;
-    $sendBtn.disabled = on;
-    $micBtn.disabled  = on;
+    // When clearing load state (on=false), preserve terminal state from the last render().
+    // This prevents setLoading(false) in the finally block from re-enabling disabled inputs.
+    $input.disabled   = on || _terminalState;
+    $sendBtn.disabled = on || _terminalState;
+    $micBtn.disabled  = on || _terminalState;
     if (on) {
       $stage.textContent = '…';
       $stage.className = 'loading';
@@ -651,6 +662,12 @@
     // URL param is cleared immediately — refresh lands on normal idle flow.
     if (_isPostHandoff) {
       history.replaceState({}, '', '/launcher');
+      // Consume the one-time question budget written by landing.html before redirect.
+      // sessionStorage survives the page navigation but is cleared here so refresh has no stale value.
+      const budgetRaw = parseInt(sessionStorage.getItem('chj_qbudget') ?? '3', 10);
+      sessionStorage.removeItem('chj_qbudget');
+      const budgetRemaining = isNaN(budgetRaw) ? 3 : Math.max(0, Math.min(3, budgetRaw));
+      saveSession({ question_budget_remaining: budgetRemaining });
       orchestrate('Co mám dnes dělat?');
       return;
     }

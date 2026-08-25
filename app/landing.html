@@ -1084,7 +1084,8 @@
   let history         = _saved?.history          ?? [];
   let structuredFacts = _saved?.structured_facts ?? [];
   let deferredFacts   = _saved?.deferred_facts   ?? [];
-  let busy            = false;
+  let busy                     = false;
+  let lastPreIntakeQuestionCount = 0; // tracks question_count from last pre-intake response
 
   // ── UI refs ────────────────────────────────────────────────────────────
   const hero           = document.getElementById('hero');
@@ -1188,6 +1189,7 @@
     if (data.structured_facts?.length) structuredFacts.push(...data.structured_facts);
     if (data.deferred_facts?.length)   deferredFacts.push(...data.deferred_facts);
     if (data.message) history.push({ role: 'assistant', content: data.message });
+    if (typeof data.question_count === 'number') lastPreIntakeQuestionCount = data.question_count;
 
     const outcome = data.outcome;
 
@@ -1235,6 +1237,10 @@
       const data = await res.json();
       if (!data.ok) throw new Error('handoff-nok');
       clearAnonSession(); // success — anon session no longer needed
+      // Write remaining question budget to sessionStorage for launcher to consume once.
+      // question_count from server = actual ASK questions asked (not the final AHA/NOT_ENOUGH_YET).
+      const budgetRemaining = Math.max(0, 3 - lastPreIntakeQuestionCount);
+      sessionStorage.setItem('chj_qbudget', String(budgetRemaining));
       window.location.href = '/launcher?handoff=1';
     } catch {
       showHandoffError(); // anon session stays in localStorage for retry

@@ -511,6 +511,34 @@ section('T14 — missing/invalid body fields → 400');
   }
 }
 
+// ── T15: temporal_context flows through appendPendingClarifications ──────────
+
+section('T15 — temporal_context persisted in pending_clarifications (acute gate input)');
+
+{
+  const sb = createMockSupabase({ sessions: [], pending: [] });
+
+  const acuteItem   = { type: 'new_symptom', raw_text: 'od rána se motám', utterance_index: 0,
+    reason: 'non_idempotent_handoff', temporal_context: 'acute' };
+  const chronicItem = { type: 'new_symptom', raw_text: 'dlouhodobě mám artritidu', utterance_index: 1,
+    reason: 'non_idempotent_handoff', temporal_context: 'chronic' };
+  const noTcItem    = { type: 'medication_mention', raw_text: 'Beru Pradaxu', utterance_index: 2,
+    reason: 'unsupported_structured_persistence' };
+
+  await appendPendingClarifications(sb, UID, SESSION_A, [acuteItem, chronicItem, noTcItem]);
+
+  const stored = sb._state.pending;
+  const acuteStored   = stored.find(f => f.raw_text === 'od rána se motám');
+  const chronicStored = stored.find(f => f.raw_text === 'dlouhodobě mám artritidu');
+  const medStored     = stored.find(f => f.type === 'medication_mention');
+
+  check(acuteStored?.temporal_context === 'acute',    'T15: acute new_symptom preserves temporal_context=acute');
+  check(chronicStored?.temporal_context === 'chronic','T15: chronic new_symptom preserves temporal_context=chronic');
+  check(medStored?.temporal_context === 'unknown',    'T15: medication_mention without temporal_context defaults to unknown');
+  check(stored.every(f => typeof f.temporal_context === 'string'),
+    'T15: all pending items have a string temporal_context field');
+}
+
 // ── Results ────────────────────────────────────────────────────────────────────
 
 console.log(`\n${'─'.repeat(60)}`);
