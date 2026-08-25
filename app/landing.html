@@ -57,7 +57,9 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 20px 28px;
+      padding: 18px 28px;
+      gap: 20px;
+      transition: none;
     }
     .nav-logo {
       font-family: 'Urbanist', sans-serif;
@@ -66,15 +68,87 @@
       letter-spacing: 5px;
       color: var(--text-dim);
       text-decoration: none;
+      flex-shrink: 0;
+      transition: opacity 0.5s ease;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      list-style: none;
+      flex: 1;
+      justify-content: center;
+      transition: opacity 0.4s ease;
+    }
+    .nav-link {
+      font-size: 13px;
+      color: var(--text-dim);
+      text-decoration: none;
+      letter-spacing: 0.3px;
+      white-space: nowrap;
+      transition: color 0.2s;
+    }
+    .nav-link:hover { color: var(--text-mid); }
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-shrink: 0;
+      transition: opacity 0.5s ease;
     }
     .nav-login {
       font-size: 13px;
       color: var(--text-mid);
       text-decoration: none;
       letter-spacing: 0.5px;
+      white-space: nowrap;
       transition: color 0.25s;
     }
     .nav-login:hover { color: var(--text); }
+    .btn-hamburger {
+      display: none;
+      background: none;
+      border: none;
+      color: var(--text-dim);
+      font-size: 20px;
+      line-height: 1;
+      cursor: pointer;
+      padding: 2px 4px;
+      transition: color 0.2s;
+    }
+    .btn-hamburger:hover { color: var(--text-mid); }
+    /* Conv mode: fade marketing nav, keep login reachable */
+    nav.nav-conv .nav-logo    { opacity: 0.12; }
+    nav.nav-conv .nav-links   { opacity: 0; pointer-events: none; }
+    nav.nav-conv .nav-right   { opacity: 0.15; }
+    nav.nav-conv .nav-right:hover { opacity: 0.5; transition: opacity 0.2s; }
+    /* Mobile menu panel */
+    #mobileMenu {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 9;
+      background: rgba(6, 10, 20, 0.97);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 64px 28px 20px;
+      display: flex;
+      flex-direction: column;
+      animation: fadeUp 0.2s ease;
+    }
+    #mobileMenu a {
+      font-size: 15px;
+      color: var(--text-mid);
+      text-decoration: none;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--border);
+      transition: color 0.2s;
+    }
+    #mobileMenu a:last-child { border-bottom: none; }
+    #mobileMenu a:hover { color: var(--text); }
+    @media (max-width: 639px) {
+      .nav-links { display: none; }
+      .btn-hamburger { display: block; }
+    }
 
     /* ── Scroll container ───────────────────────────────────────────────── */
     .scroll-body {
@@ -116,22 +190,35 @@
     }
     .tagline {
       font-family: 'Urbanist', sans-serif;
-      font-size: clamp(17px, 3vw, 22px);
-      font-weight: 300;
+      font-size: clamp(19px, 3.5vw, 26px);
+      font-weight: 600;
       color: var(--text-mid);
-      margin-bottom: 32px;
+      margin-bottom: 18px;
+      text-wrap: balance;
     }
     .desc {
-      font-size: 15px;
+      font-size: 14px;
       color: var(--text-dim);
-      line-height: 1.75;
+      line-height: 1.85;
       margin-bottom: 44px;
-      max-width: 420px;
+      max-width: 400px;
+    }
+    .section-bridge {
+      font-family: 'Urbanist', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      color: var(--accent);
+      opacity: 0.65;
+      margin-bottom: 14px;
     }
     .prompt-hint {
-      font-size: 16px;
-      color: var(--text-mid);
+      font-size: clamp(17px, 3vw, 21px);
+      font-weight: 300;
+      color: var(--text);
       line-height: 1.65;
+      text-wrap: balance;
     }
 
     /* ── Conversation area ──────────────────────────────────────────────── */
@@ -331,10 +418,29 @@
 <div class="cosmic-bg" aria-hidden="true"></div>
 
 <!-- Navigation -->
-<nav>
-  <span class="nav-logo">CHJ</span>
-  <a id="loginLink" href="/login?next=%2Flauncher" class="nav-login">Přihlásit</a>
+<nav id="mainNav">
+  <a class="nav-logo" href="/">CHYTRÉ JÁ</a>
+
+  <ul class="nav-links" aria-label="Navigace">
+    <li><a href="#jak-funguje" class="nav-link">Jak funguje</a></li>
+    <li><a href="#cenik" class="nav-link">Ceník</a></li>
+    <li><a href="#reference" class="nav-link">Reference</a></li>
+    <li><a href="#o-nas" class="nav-link">O nás</a></li>
+  </ul>
+
+  <div class="nav-right">
+    <a id="loginLink" href="/login?next=%2Flauncher" class="nav-login">Přihlásit</a>
+    <button id="menuBtn" class="btn-hamburger" aria-label="Otevřít menu" aria-expanded="false">☰</button>
+  </div>
 </nav>
+
+<!-- Mobile dropdown -->
+<div id="mobileMenu" hidden>
+  <a href="#jak-funguje">Jak funguje</a>
+  <a href="#cenik">Ceník</a>
+  <a href="#reference">Reference</a>
+  <a href="#o-nas">O nás</a>
+</div>
 
 <div class="scroll-body">
 
@@ -342,8 +448,9 @@
   <section id="hero">
     <h1 class="brand">Chytré já</h1>
     <p class="tagline">Pro život, jaký chceš žít.</p>
-    <p class="desc">Postupně tě poznává, propojuje souvislosti a pomáhá ti dělat lepší rozhodnutí na cestě k tomu, co je důležité právě pro tebe.</p>
-    <p class="prompt-hint">Začněme tím nejdůležitějším.<br>Zdraví si přejeme všichni. Co pro něj děláš ty?</p>
+    <p class="desc">Poznává tě, propojuje informace a postupně ti ukazuje, co má smysl řešit právě teď.</p>
+    <p class="section-bridge">Začněme zdravím.</p>
+    <p class="prompt-hint">Zdraví si přejeme všichni.<br>Co pro něj děláš ty?</p>
   </section>
 
   <!-- Conversation area — shown after first message -->
@@ -466,11 +573,13 @@
   const micBtn         = document.getElementById('micBtn');
   const thinkingInd    = document.getElementById('thinkingIndicator');
   const loginLink      = document.getElementById('loginLink');
+  const mainNav        = document.getElementById('mainNav');
 
   // ── UI helpers ─────────────────────────────────────────────────────────
   function enterConv() {
     hero.classList.add('fade-out');
     conv.hidden = false;
+    mainNav.classList.add('nav-conv');
   }
 
   function showMsg(text) {
@@ -699,6 +808,25 @@
     });
     rec.addEventListener('end',   () => micBtn.classList.remove('listening'));
     rec.addEventListener('error', () => micBtn.classList.remove('listening'));
+  }
+
+  // ── Hamburger menu (mobile) ───────────────────────────────────────────
+  const menuBtn    = document.getElementById('menuBtn');
+  const mobileMenu = document.getElementById('mobileMenu');
+  if (menuBtn && mobileMenu) {
+    menuBtn.addEventListener('click', () => {
+      const opening = mobileMenu.hidden;
+      mobileMenu.hidden = !opening;
+      menuBtn.textContent = opening ? '✕' : '☰';
+      menuBtn.setAttribute('aria-expanded', String(opening));
+    });
+    mobileMenu.querySelectorAll('a').forEach(a => {
+      a.addEventListener('click', () => {
+        mobileMenu.hidden = true;
+        menuBtn.textContent = '☰';
+        menuBtn.setAttribute('aria-expanded', 'false');
+      });
+    });
   }
 </script>
 </body>
