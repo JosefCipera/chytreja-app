@@ -72,6 +72,15 @@
             ]
         },
         {
+            "source": "/landing",
+            "headers": [
+                { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate, s-maxage=0" },
+                { "key": "Pragma", "value": "no-cache" },
+                { "key": "Surrogate-Control", "value": "no-store" },
+                { "key": "CDN-Cache-Control", "value": "no-store" }
+            ]
+        },
+        {
             "source": "/",
             "headers": [
                 { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate, s-maxage=0" },
@@ -100,7 +109,11 @@
         },
         {
             "source": "/",
-            "destination": "/app/login.html"
+            "destination": "/app/landing.html"
+        },
+        {
+            "source": "/landing",
+            "destination": "/app/landing.html"
         },
         {
             "source": "/login",

@@ -1,0 +1,12 @@
+{
+  "name": "Chytré já",
+  "short_name": "CHJ",
+  "description": "Pro život, jaký chceš žít.",
+  "start_url": "/launcher",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#060a14",
+  "theme_color": "#060a14",
+  "icons": []
+}
