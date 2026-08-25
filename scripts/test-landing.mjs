@@ -208,6 +208,21 @@ check(launcherSrc.includes('manifest.webmanifest'),
 check(launcherSrc.includes('<link rel="manifest"'),
       'launcher.html has <link rel="manifest"> tag');
 
+// ── T16: #o-nas section — content and no fake content ────────────────────────
+
+section('T16 — #o-nas: about section present, no fake testimonials or fake photos');
+check(landing.includes('id="o-nas"'),                        '#o-nas section exists');
+check(landing.includes('Informací máme dost'),               'o-nas headline present');
+check(landing.includes('Josef Čipera'),                      'Josef Čipera present');
+check(landing.includes('Chytré já nemá rozhodovat za tebe'), 'closing thought present');
+// Photo slot is an HTML comment — no <img> in #o-nas outside of comments (no fake photo)
+const onasSection   = landing.match(/<section id="o-nas"[\s\S]*?<\/section>/)?.[0] || '';
+const onasStripped  = onasSection.replace(/<!--[\s\S]*?-->/g, '');
+check(!onasStripped.includes('<img'),                        'no <img> in #o-nas outside HTML comments (photo not yet added)');
+// No fake testimonials
+check(!landing.includes('"testimonial"') && !landing.includes('placeholder-name'),
+      'no fake testimonial markers in landing');
+
 // ── Results ───────────────────────────────────────────────────────────────────
 
 console.log(`\n${'─'.repeat(60)}`);
