@@ -509,6 +509,80 @@
       .accent-q { font-size: clamp(16px, 5vw, 22px); }
     }
 
+    /* ── Jak funguje ────────────────────────────────────────────────────── */
+    #jak-funguje {
+      max-width: 560px;
+      margin: 0 auto;
+      padding: clamp(72px, 12vh, 112px) 24px clamp(80px, 13vh, 120px);
+      border-top: 1px solid var(--border);
+    }
+    .jf-eyebrow {
+      font-family: 'Urbanist', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 12px;
+    }
+    .jf-heading {
+      font-family: 'Urbanist', sans-serif;
+      font-size: clamp(26px, 5.5vw, 38px);
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.2;
+      text-wrap: balance;
+      margin-bottom: clamp(48px, 7vh, 72px);
+    }
+    .steps {
+      display: flex;
+      flex-direction: column;
+      gap: clamp(40px, 6vh, 60px);
+    }
+    .step {
+      display: grid;
+      grid-template-columns: 28px 1fr;
+      gap: 0 20px;
+    }
+    .step-num {
+      font-family: 'Urbanist', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      color: var(--text-dim);
+      opacity: 0.5;
+      padding-top: 4px;
+      line-height: 1;
+    }
+    .step-body { display: flex; flex-direction: column; gap: 6px; }
+    .step-title {
+      font-family: 'Urbanist', sans-serif;
+      font-size: clamp(17px, 3.2vw, 22px);
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.3;
+    }
+    .step-desc {
+      font-size: 14px;
+      color: var(--text-mid);
+      line-height: 1.85;
+    }
+    .areas {
+      margin-top: 10px;
+      font-size: 13px;
+      color: var(--text-dim);
+      letter-spacing: 0.5px;
+      line-height: 2;
+    }
+    .jf-note {
+      margin-top: clamp(48px, 7vh, 68px);
+      font-size: 13px;
+      color: var(--text-dim);
+      line-height: 1.85;
+      text-align: center;
+      opacity: 0.75;
+    }
+
     [hidden] { display: none !important; }
   </style>
 </head>
@@ -592,6 +666,43 @@
   </section>
 
 </div><!-- /.scroll-body -->
+
+<!-- Jak funguje -->
+<section id="jak-funguje" aria-labelledby="jf-heading">
+  <p class="jf-eyebrow">Jak funguje</p>
+  <h2 class="jf-heading" id="jf-heading">Tři jednoduché kroky.</h2>
+
+  <ol class="steps" role="list">
+
+    <li class="step">
+      <span class="step-num" aria-hidden="true">01</span>
+      <div class="step-body">
+        <h3 class="step-title">Řekneš mi, jak na tom jsi</h3>
+        <p class="step-desc">Nemusíš vědět, na co přesně se ptát ani kam něco zařadit.<br>Prostě začneš mluvit nebo psát.</p>
+      </div>
+    </li>
+
+    <li class="step">
+      <span class="step-num" aria-hidden="true">02</span>
+      <div class="step-body">
+        <h3 class="step-title">Postupně tě poznávám</h3>
+        <p class="step-desc">Propojuji to, co mi říkáš, s tím, co už o tobě vím.</p>
+        <p class="areas">léky · výsledky · pohyb · spánek · jídlo · stres · cíle</p>
+      </div>
+    </li>
+
+    <li class="step">
+      <span class="step-num" aria-hidden="true">03</span>
+      <div class="step-body">
+        <h3 class="step-title">Ukážu ti, co má smysl právě teď</h3>
+        <p class="step-desc">Nezahlcuji tě vším, co bys mohl dělat.<br>Buď navrhnu jeden další krok, nebo se zeptám na to, co potřebuji zjistit dál.<br>Pokud se něco podstatného změní, může se změnit i můj návrh.</p>
+      </div>
+    </li>
+
+  </ol>
+
+  <p class="jf-note">Dnes začínáme zdravím. Postupně může Chytré já provázet i dalšími oblastmi tvého života a práce.</p>
+</section>
 
 <!-- Input bar -->
 <footer id="inputBar">
