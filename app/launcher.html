@@ -329,8 +329,9 @@
   const $authOver = document.getElementById('auth-overlay');
   const $debug    = document.getElementById('debug-panel');
 
-  const _debugMode  = new URLSearchParams(location.search).get('debug')  === '1';
-  const _testerMode = new URLSearchParams(location.search).get('tester') === '1';
+  const _debugMode     = new URLSearchParams(location.search).get('debug')   === '1';
+  const _testerMode    = new URLSearchParams(location.search).get('tester')  === '1';
+  const _isPostHandoff = new URLSearchParams(location.search).get('handoff') === '1';
 
   function setBadge(text, cls) {
     $badge.textContent = text;
@@ -644,6 +645,15 @@
     window.__chj_userId = userId;
     $authOver.classList.add('hidden');
     $app.classList.remove('hidden');
+
+    // Post-handoff: fresh decision without user input.
+    // Signal arrives as ?handoff=1 from landing.html after successful session-handoff.
+    // URL param is cleared immediately — refresh lands on normal idle flow.
+    if (_isPostHandoff) {
+      history.replaceState({}, '', '/launcher');
+      orchestrate('Co mám dnes dělat?');
+      return;
+    }
 
     // Restore last response from this user's scoped localStorage (survives reload).
     // ASK presentation is ephemeral — restoring a stale prompt on login produces a

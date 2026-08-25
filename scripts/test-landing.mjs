@@ -91,7 +91,7 @@ section('T7 — auth → session-handoff → /launcher');
 check(landing.includes('/api/session-handoff'),  '/api/session-handoff fetch present');
 check(landing.includes('Bearer'),                'Authorization Bearer header sent');
 check(landing.includes('getIdToken'),            'Firebase getIdToken() called');
-check(landing.includes("window.location.href = '/launcher'"),  'redirect to /launcher on handoff success');
+check(landing.includes("window.location.href = '/launcher?handoff=1'"),  'redirect to /launcher?handoff=1 on handoff success (post-handoff signal)');
 check(landing.includes('session_id'),            'session_id sent in handoff body');
 check(landing.includes('structured_facts'),      'structured_facts sent');
 check(landing.includes('deferred_facts'),        'deferred_facts sent');

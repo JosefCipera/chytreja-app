@@ -1235,7 +1235,7 @@
       const data = await res.json();
       if (!data.ok) throw new Error('handoff-nok');
       clearAnonSession(); // success — anon session no longer needed
-      window.location.href = '/launcher';
+      window.location.href = '/launcher?handoff=1';
     } catch {
       showHandoffError(); // anon session stays in localStorage for retry
     }
