@@ -1929,6 +1929,118 @@ function scenarioU() {
   }
 }
 
+// ── Scenario V — Acute gate must also block HOLD presentation (no network) ────
+//
+// Regression for: "Dobře." → ACTION_COMPLETED → HOLD presentation → exercise label
+// leaked to user despite hasAcuteSymptom=true.
+// HOLD text template: "${label} — výsledky ještě dozrávají. Počkej na příští hodnocení."
+// Gate must intercept HOLD+acute same as ACT+acute — same terminal contract.
+//
+// V1-V4: acute + HOLD + budget=0 → ACUTE_SYMPTOM_GATE_TERMINAL
+// V5:    response does NOT contain exercise label
+// V6:    response contains "vyšetřit" (actionable)
+// V7:    two-turn simulation: ACT blocked turn 1, HOLD blocked turn 2
+// V8:    non-acute HOLD passes through unchanged
+
+function scenarioV() {
+  sep('V — Acute gate blocks HOLD exercise bypass (no network)');
+
+  const EXERCISE_LABEL = 'Běž 20 minut';
+  const HOLD_RAW_TEXT  = `${EXERCISE_LABEL} — výsledky ještě dozrávají. Počkej na příští hodnocení.`;
+
+  // Inline gate simulation matching orchestrator.js post-presentation gate logic (after fix).
+  function applyGateV(presentationMode, presentationText, budgetRemaining, pendingClarifications) {
+    const pending         = pendingClarifications ?? [];
+    const hasAcuteSymptom = pending.some(
+      c => c.type === 'new_symptom' && c.temporal_context === 'acute'
+    );
+    const ACUTE_TERMINAL_TEXT =
+      'Protože potíže přetrvávají, cvičení ti teď doporučit nechci. Pokud potíže pokračují nebo se zhoršují, nech se dnes vyšetřit.';
+
+    if (hasAcuteSymptom && (presentationMode === 'ACT' || presentationMode === 'HOLD')) {
+      if (budgetRemaining <= 0) {
+        return {
+          mode: 'ASK', text: ACUTE_TERMINAL_TEXT, buttons: [], expects_reply: true,
+          reason_code: 'ACUTE_SYMPTOM_GATE_TERMINAL', budget_out: 0,
+        };
+      }
+      return {
+        mode: 'ASK',
+        text: 'Zmínil/a jsi aktuální potíže, které potřebují víc kontextu. Jak se cítíš teď — lepší, stejně, nebo hůř?',
+        buttons: [], expects_reply: true,
+        reason_code: 'ACUTE_SYMPTOM_GATE', budget_out: Math.max(0, budgetRemaining - 1),
+      };
+    }
+
+    if (presentationMode === 'ASK' && budgetRemaining <= 0) {
+      const text = hasAcuteSymptom
+        ? ACUTE_TERMINAL_TEXT
+        : 'Zatím o tobě nevím dost, abych ti bezpečně doporučil konkrétní krok.';
+      return {
+        mode: 'ASK', text, buttons: [], expects_reply: hasAcuteSymptom ? true : false,
+        reason_code: hasAcuteSymptom ? 'ACUTE_SYMPTOM_GATE_TERMINAL' : 'BUDGET_EXHAUSTED',
+        budget_out: 0,
+      };
+    }
+
+    // Passes through
+    return { mode: presentationMode, text: presentationText, passes_through: true, budget_out: budgetRemaining };
+  }
+
+  const acute    = [{ type: 'new_symptom', temporal_context: 'acute' }];
+  const nonAcute = [];
+
+  // V1–V4: acute + HOLD + budget=0 → ACUTE_SYMPTOM_GATE_TERMINAL contract
+  {
+    const r = applyGateV('HOLD', HOLD_RAW_TEXT, 0, acute);
+    check(r.mode === 'ASK',                                  'V1: HOLD+acute+budget=0 → mode=ASK (not HOLD)');
+    check(r.reason_code === 'ACUTE_SYMPTOM_GATE_TERMINAL',   'V2: reason_code=ACUTE_SYMPTOM_GATE_TERMINAL');
+    check(r.expects_reply === true,                          'V3: expects_reply=true (input stays open)');
+    check(r.buttons.length === 0,                            'V4: buttons=[]');
+  }
+
+  // V5: response does NOT contain the exercise label
+  {
+    const r = applyGateV('HOLD', HOLD_RAW_TEXT, 0, acute);
+    check(!r.text.includes(EXERCISE_LABEL), 'V5: response does NOT leak exercise label to user',
+      `actual text: "${r.text}"`);
+  }
+
+  // V6: response contains "vyšetřit" (actionable next step)
+  {
+    const r = applyGateV('HOLD', HOLD_RAW_TEXT, 0, acute);
+    check(r.text.includes('vyšetřit'), 'V6: response contains "vyšetřit" (actionable)',
+      `actual text: "${r.text}"`);
+  }
+
+  // V7: two-turn simulation — "od rána se motám" → "Dobře."
+  {
+    const pending = [{ type: 'new_symptom', temporal_context: 'acute', raw_text: 'od rana se motam' }];
+
+    // Turn 1: engine returns ACT (exercise), budget=1 → gate fires → asks follow-up
+    const turn1 = applyGateV('ACT', 'Svižná chůze 30 minut', 1, pending);
+    check(turn1.mode === 'ASK',         'V7/turn1: ACT+acute+budget=1 → ASK (gate fires)');
+    check(turn1.expects_reply === true, 'V7/turn1: expects_reply=true (input stays open)');
+    check(turn1.budget_out === 0,       'V7/turn1: budget decremented to 0');
+
+    // Turn 2: "Dobře." → ACTION_COMPLETED → engine returns HOLD with exercise label
+    const turn2 = applyGateV('HOLD', HOLD_RAW_TEXT, turn1.budget_out, pending);
+    check(turn2.mode === 'ASK',                                'V7/turn2: HOLD+acute+budget=0 → ASK (gate blocks)');
+    check(turn2.reason_code === 'ACUTE_SYMPTOM_GATE_TERMINAL', 'V7/turn2: reason_code=ACUTE_SYMPTOM_GATE_TERMINAL');
+    check(turn2.expects_reply === true,                        'V7/turn2: expects_reply=true');
+    check(!turn2.text.includes(EXERCISE_LABEL),                'V7/turn2: exercise label NOT in response');
+    check(turn2.text.includes('vyšetřit'),                     'V7/turn2: response contains "vyšetřit"');
+  }
+
+  // V8: non-acute HOLD passes through unchanged
+  {
+    const r = applyGateV('HOLD', HOLD_RAW_TEXT, 0, nonAcute);
+    check(r.passes_through === true,    'V8: non-acute HOLD passes through gate unchanged');
+    check(r.mode === 'HOLD',            'V8: mode stays HOLD (not intercepted)');
+    check(r.text === HOLD_RAW_TEXT,     'V8: text unchanged (original HOLD text preserved)');
+  }
+}
+
 // ── Run ───────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -1957,6 +2069,7 @@ async function main() {
   await scenarioS();
   await scenarioT();
   scenarioU();
+  scenarioV();
 
   const total = passed + failed;
   sep(`Results: ${passed}/${total} passed${failed ? ` — ${failed} FAILED` : ''}`);

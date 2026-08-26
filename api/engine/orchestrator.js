@@ -738,7 +738,7 @@ export async function processInput(userId, userText, sessionState = {}) {
     c => c.type === 'new_symptom' && c.temporal_context === 'acute'
   );
 
-  if (hasAcuteSymptom && presentation.mode === 'ACT') {
+  if (hasAcuteSymptom && (presentation.mode === 'ACT' || presentation.mode === 'HOLD')) {
     if (budgetRemaining <= 0) {
       // Budget also exhausted: terminal state acknowledging acute symptom + no questions left.
       return {
