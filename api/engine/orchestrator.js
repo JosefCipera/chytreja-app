@@ -768,14 +768,23 @@ export async function processInput(userId, userText, sessionState = {}) {
   // Question budget enforcement: limit total ASK rounds across pre-intake + post-handoff.
   if (presentation.mode === 'ASK') {
     if (budgetRemaining <= 0) {
-      const text = hasAcuteSymptom
-        ? 'Protože potíže přetrvávají, cvičení ti teď doporučit nechci. Pokud potíže pokračují nebo se zhoršují, nech se dnes vyšetřit.'
-        : 'Zatím o tobě nevím dost, abych ti bezpečně doporučil konkrétní krok.';
+      let text;
+      if (hasAcuteSymptom) {
+        text = 'Protože potíže přetrvávají, cvičení ti teď doporučit nechci. Pokud potíže pokračují nebo se zhoršují, nech se dnes vyšetřit.';
+      } else {
+        const _ctx  = result.domain_response?.explanation_context;
+        const _cl   = _ctx?.system_constraint?.node_id ? (NODE_LABEL_CS[_ctx.system_constraint.node_id] ?? null) : null;
+        const _ll   = _ctx?.system_leverage?.node_id   ? (NODE_LABEL_CS[_ctx.system_leverage.node_id]   ?? null) : null;
+        const _node = _cl ?? _ll;
+        text = _node
+          ? `Dobře. Pro začátek mi to stačí. Jako důležitá se ukazuje: ${_node}. Na konkrétní doporučení ale zatím nemám dost podkladů.`
+          : 'Zatím o tobě nevím dost, abych ti bezpečně doporučil konkrétní krok.';
+      }
       return {
         mode:          'ASK',
         text,
         buttons:       [],
-        expects_reply: hasAcuteSymptom ? true : false,
+        expects_reply: true,
         session_updates: {
           ...presentation.session_updates,
           question_budget_remaining: 0,

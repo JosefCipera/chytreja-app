@@ -23,7 +23,7 @@
 //   - session state flow: pending_question cleared after ANSWER
 
 import { processInput, buildEvent, _buildSessionUpdates_test as buildSessionUpdates } from '../api/engine/orchestrator.js';
-import { runEngine }                from '../api/engine/engine.js';
+import { runEngine, ENGINE_MASTER } from '../api/engine/engine.js';
 import { createClient }             from '@supabase/supabase-js';
 import { computeDailyDecision }     from '../api/engine/dailyDecision.js';
 import { runTesterReset, TESTER_UIDS } from '../api/tester-reset.js';
@@ -1557,7 +1557,7 @@ function scenarioR() {
           ? 'Protože potíže přetrvávají, cvičení ti teď doporučit nechci. Pokud potíže pokračují nebo se zhoršují, nech se dnes vyšetřit.'
           : 'Zatím o tobě nevím dost, abych ti bezpečně doporučil konkrétní krok.';
         return {
-          mode: 'ASK', text, buttons: [], expects_reply: false,
+          mode: 'ASK', text, buttons: [], expects_reply: true,
           reason_code: hasAcuteSymptom ? 'ACUTE_SYMPTOM_GATE_TERMINAL' : 'BUDGET_EXHAUSTED',
           budget_out: 0,
         };
@@ -1596,10 +1596,10 @@ function scenarioR() {
     check(r.budget_out === 0,  'R3: budget_out=0 (exhausted)');
   }
 
-  // R4: engine ASK + budget=0 → BUDGET_EXHAUSTED, expects_reply=false
+  // R4: engine ASK + budget=0 → BUDGET_EXHAUSTED, expects_reply=true (input stays open)
   {
     const r = applyGate('ASK', 0, []);
-    check(r.expects_reply === false,   'R4: engine ASK + budget=0 → expects_reply=false');
+    check(r.expects_reply === true,    'R4: engine ASK + budget=0 → expects_reply=true (input stays open)');
     check(r.reason_code === 'BUDGET_EXHAUSTED', 'R4: reason_code=BUDGET_EXHAUSTED');
     check(Array.isArray(r.buttons) && r.buttons.length === 0, 'R4: buttons=[]');
   }
@@ -1614,11 +1614,11 @@ function scenarioR() {
     );
   }
 
-  // R6: engine ASK + budget=0 + acute → BUDGET_EXHAUSTED with acute-aware text
+  // R6: engine ASK + budget=0 + acute → BUDGET_EXHAUSTED with acute-aware text, expects_reply=true
   {
     const r = applyGate('ASK', 0, acutePending);
     check(
-      r.expects_reply === false,        'R6: acute+budget=0+ASK → expects_reply=false');
+      r.expects_reply === true,         'R6: acute+budget=0+ASK → expects_reply=true (ACUTE_SYMPTOM_GATE_TERMINAL, input stays open)');
     check(
       r.text.includes('potíže'), 'R6: terminal text mentions acute context (potíže)',
       `actual: "${r.text}"`
@@ -1889,7 +1889,7 @@ function scenarioU() {
     if (presentationMode === 'ASK' && budgetRemaining <= 0) {
       const text = hasAcuteSymptom ? ACUTE_TERMINAL_TEXT : NON_ACUTE_TERMINAL_TEXT;
       return {
-        mode: 'ASK', text, buttons: [], expects_reply: hasAcuteSymptom ? true : false,
+        mode: 'ASK', text, buttons: [], expects_reply: true,
         reason_code: hasAcuteSymptom ? 'ACUTE_SYMPTOM_GATE_TERMINAL' : 'BUDGET_EXHAUSTED',
         budget_out: 0,
       };
@@ -1953,12 +1953,13 @@ function scenarioU() {
       `actual: "${r.text}"`);
   }
 
-  // U8: non-acute BUDGET_EXHAUSTED text unchanged
+  // U8: non-acute BUDGET_EXHAUSTED fallback text (simulation has no node data → uses fallback)
   {
     const r = applyGate('ASK', 0, []);
-    check(r.text === NON_ACUTE_TERMINAL_TEXT, 'U8: non-acute BUDGET_EXHAUSTED text unchanged',
+    check(r.text === NON_ACUTE_TERMINAL_TEXT, 'U8: non-acute BUDGET_EXHAUSTED fallback text (no node available)',
       `actual: "${r.text}"`);
     check(r.reason_code === 'BUDGET_EXHAUSTED', 'U8: reason_code=BUDGET_EXHAUSTED (not acute)');
+    check(r.expects_reply === true, 'U8: expects_reply=true (input stays open even in fallback)');
   }
 
   // U9: first call (budget=1) → expects_reply=true, NOT terminal
@@ -1988,10 +1989,10 @@ function scenarioU() {
     check(call2.mode === 'ASK',          'U10/call2: mode=ASK (no exercise ACT produced)');
   }
 
-  // U11: non-acute BUDGET_EXHAUSTED stays expects_reply=false (separate contract)
+  // U11: non-acute BUDGET_EXHAUSTED → expects_reply=true (input stays open, no dead-end)
   {
     const r = applyGate('ASK', 0, []);
-    check(r.expects_reply === false, 'U11: non-acute BUDGET_EXHAUSTED → expects_reply=false (input locks)');
+    check(r.expects_reply === true,  'U11: non-acute BUDGET_EXHAUSTED → expects_reply=true (input stays open)');
     check(r.reason_code === 'BUDGET_EXHAUSTED', 'U11: reason_code=BUDGET_EXHAUSTED');
   }
 
@@ -2052,7 +2053,7 @@ function scenarioV() {
         ? ACUTE_TERMINAL_TEXT
         : 'Zatím o tobě nevím dost, abych ti bezpečně doporučil konkrétní krok.';
       return {
-        mode: 'ASK', text, buttons: [], expects_reply: hasAcuteSymptom ? true : false,
+        mode: 'ASK', text, buttons: [], expects_reply: true,
         reason_code: hasAcuteSymptom ? 'ACUTE_SYMPTOM_GATE_TERMINAL' : 'BUDGET_EXHAUSTED',
         budget_out: 0,
       };
@@ -2167,7 +2168,7 @@ function scenarioW() {
     if (presentationMode === 'ASK' && budgetRemaining <= 0) {
       const text = hasAcuteSymptom ? ACUTE_TERMINAL_TEXT : 'Zatím o tobě nevím dost, abych ti bezpečně doporučil konkrétní krok.';
       return {
-        mode: 'ASK', text, buttons: [], expects_reply: hasAcuteSymptom ? true : false,
+        mode: 'ASK', text, buttons: [], expects_reply: true,
         session_updates: {
           ...sessionUpdatesIn,
           question_budget_remaining: 0,
@@ -2249,6 +2250,116 @@ function scenarioW() {
   }
 }
 
+// ── Scenario Y — Non-acute BUDGET_EXHAUSTED: open input + node summary ────────
+//
+// Regression for: non-acute BUDGET_EXHAUSTED returned expects_reply=false,
+// permanently locking the launcher input even for users with no acute symptom.
+//
+// Fix contract:
+//   - expects_reply=true (input stays open — no terminal dead-end)
+//   - if engine found constraint/leverage node → summary text uses NODE_LABEL_CS label
+//   - if no node found → fallback text "Zatím o tobě nevím dost..."
+//   - no new automatic question generated (no "Napiš mi víc...")
+//   - budget stays at 0
+//   - acute branch unchanged (expects_reply=true was already correct)
+//
+// Y1-Y8: node-label summary branch (system_constraint = LOW_MUSCLE_STRENGTH)
+// Y9-Y12: fallback branch (no node available)
+
+function scenarioY() {
+  sep('Y — Non-acute BUDGET_EXHAUSTED: open input + node summary (no network)');
+
+  // Build label map from ENGINE_MASTER (same source as orchestrator.js NODE_LABEL_CS)
+  const testLabelCS = Object.fromEntries((ENGINE_MASTER.nodes ?? []).map(n => [n.id, n.label_cs]));
+
+  const ACUTE_TEXT    = 'Protože potíže přetrvávají, cvičení ti teď doporučit nechci. Pokud potíže pokračují nebo se zhoršují, nech se dnes vyšetřit.';
+  const FALLBACK_TEXT = 'Zatím o tobě nevím dost, abych ti bezpečně doporučil konkrétní krok.';
+
+  // Inline simulation of the updated BUDGET_EXHAUSTED gate (mirrors orchestrator.js).
+  function applyGateY(presentationMode, budgetRemaining, pendingClarifications, explanationCtx) {
+    const pending         = pendingClarifications ?? [];
+    const hasAcuteSymptom = pending.some(c => c.type === 'new_symptom' && c.temporal_context === 'acute');
+
+    if (hasAcuteSymptom && (presentationMode === 'ACT' || presentationMode === 'HOLD')) {
+      if (budgetRemaining <= 0) {
+        return { mode: 'ASK', text: ACUTE_TEXT, buttons: [], expects_reply: true,
+          reason_code: 'ACUTE_SYMPTOM_GATE_TERMINAL', budget_out: 0,
+          session_updates: { question_budget_remaining: 0, current_action_assignment: null } };
+      }
+      return { mode: 'ASK', text: 'Zmínil/a jsi aktuální potíže...', buttons: [], expects_reply: true,
+        reason_code: 'ACUTE_SYMPTOM_GATE', budget_out: Math.max(0, budgetRemaining - 1),
+        session_updates: { question_budget_remaining: Math.max(0, budgetRemaining - 1), current_action_assignment: null } };
+    }
+
+    if (presentationMode === 'ASK' && budgetRemaining <= 0) {
+      let text;
+      if (hasAcuteSymptom) {
+        text = ACUTE_TEXT;
+      } else {
+        const _cl   = explanationCtx?.system_constraint?.node_id ? (testLabelCS[explanationCtx.system_constraint.node_id] ?? null) : null;
+        const _ll   = explanationCtx?.system_leverage?.node_id   ? (testLabelCS[explanationCtx.system_leverage.node_id]   ?? null) : null;
+        const _node = _cl ?? _ll;
+        text = _node
+          ? `Dobře. Pro začátek mi to stačí. Jako důležitá se ukazuje: ${_node}. Na konkrétní doporučení ale zatím nemám dost podkladů.`
+          : FALLBACK_TEXT;
+      }
+      return {
+        mode: 'ASK', text, buttons: [], expects_reply: true,
+        reason_code: hasAcuteSymptom ? 'ACUTE_SYMPTOM_GATE_TERMINAL' : 'BUDGET_EXHAUSTED',
+        budget_out: 0,
+        session_updates: {
+          question_budget_remaining: 0,
+          ...(hasAcuteSymptom ? { current_action_assignment: null } : {}),
+        },
+      };
+    }
+
+    return { mode: presentationMode, passes_through: true, budget_out: budgetRemaining };
+  }
+
+  const noAcute              = [];
+  const LOW_MUSCLE_LABEL     = testLabelCS['LOW_MUSCLE_STRENGTH'];  // 'Snížená svalová síla'
+  const fakeCtxWithConstraint = { system_constraint: { node_id: 'LOW_MUSCLE_STRENGTH' }, system_leverage: null };
+  const fakeCtxNoNode         = { system_constraint: null, system_leverage: null };
+
+  // Y1-Y8: node-label summary branch
+  {
+    const r = applyGateY('ASK', 0, noAcute, fakeCtxWithConstraint);
+    check(r.reason_code === 'BUDGET_EXHAUSTED',
+      'Y1: reason_code=BUDGET_EXHAUSTED');
+    check(r.mode === 'ASK',
+      'Y2: mode=ASK');
+    check(Array.isArray(r.buttons) && r.buttons.length === 0,
+      'Y3: buttons=[]');
+    check(r.expects_reply === true,
+      'Y4: expects_reply=true (input stays open — no dead-end)');
+    check(typeof LOW_MUSCLE_LABEL === 'string' && r.text.includes(LOW_MUSCLE_LABEL),
+      `Y5: text includes node label "${LOW_MUSCLE_LABEL}"`,
+      `actual: "${r.text}"`);
+    check(r.text.includes('nemám dost podkladů'),
+      'Y6: text includes "nemám dost podkladů" (no new question generated)',
+      `actual: "${r.text}"`);
+    check(r.session_updates?.question_budget_remaining === 0,
+      'Y7: question_budget_remaining=0 (budget not reset)');
+    check(!r.text.includes('Napiš') && !r.text.includes('kolik hodin'),
+      'Y8: text contains no implicit new question (no actionable prompt)');
+  }
+
+  // Y9-Y12: fallback branch (no constraint/leverage node)
+  {
+    const r = applyGateY('ASK', 0, noAcute, fakeCtxNoNode);
+    check(r.reason_code === 'BUDGET_EXHAUSTED',
+      'Y9: fallback — reason_code=BUDGET_EXHAUSTED');
+    check(r.expects_reply === true,
+      'Y10: fallback — expects_reply=true (input stays open)');
+    check(r.text === FALLBACK_TEXT,
+      'Y11: fallback text used when no node available',
+      `actual: "${r.text}"`);
+    check(r.mode === 'ASK' && r.buttons.length === 0,
+      'Y12: fallback — mode=ASK, buttons=[]');
+  }
+}
+
 // ── Run ───────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -2280,6 +2391,7 @@ async function main() {
   scenarioU();
   scenarioV();
   scenarioW();
+  scenarioY();
 
   const total = passed + failed;
   sep(`Results: ${passed}/${total} passed${failed ? ` — ${failed} FAILED` : ''}`);
