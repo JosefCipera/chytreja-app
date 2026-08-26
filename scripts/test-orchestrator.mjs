@@ -1536,7 +1536,7 @@ function scenarioR() {
       if (budgetRemaining <= 0) {
         return {
           mode: 'ASK',
-          text: 'Zmínil/a jsi aktuální potíže a zatím o nich nevím dost, abych ti bezpečně doporučil konkrétní krok.',
+          text: 'Protože potíže přetrvávají, cvičení ti teď doporučit nechci. Pokud potíže pokračují nebo se zhoršují, nech se dnes vyšetřit.',
           buttons: [], expects_reply: false,
           reason_code: 'ACUTE_SYMPTOM_GATE_TERMINAL',
           budget_out: 0,
@@ -1554,7 +1554,7 @@ function scenarioR() {
     if (presentationMode === 'ASK') {
       if (budgetRemaining <= 0) {
         const text = hasAcuteSymptom
-          ? 'Zmínil/a jsi aktuální potíže a zatím o nich nevím dost, abych ti bezpečně doporučil konkrétní krok.'
+          ? 'Protože potíže přetrvávají, cvičení ti teď doporučit nechci. Pokud potíže pokračují nebo se zhoršují, nech se dnes vyšetřit.'
           : 'Zatím o tobě nevím dost, abych ti bezpečně doporučil konkrétní krok.';
         return {
           mode: 'ASK', text, buttons: [], expects_reply: false,
@@ -1620,7 +1620,7 @@ function scenarioR() {
     check(
       r.expects_reply === false,        'R6: acute+budget=0+ASK → expects_reply=false');
     check(
-      r.text.includes('aktuální potíže'), 'R6: terminal text mentions acute context',
+      r.text.includes('potíže'), 'R6: terminal text mentions acute context (potíže)',
       `actual: "${r.text}"`
     );
     check(r.reason_code === 'ACUTE_SYMPTOM_GATE_TERMINAL', 'R6: reason_code=ACUTE_SYMPTOM_GATE_TERMINAL even via ASK path');
@@ -1763,6 +1763,157 @@ async function scenarioT() {
     'T6: launcher writes question_budget_remaining to session state');
 }
 
+// ── Scenario U — Acute gate terminal: actionable next step (no network) ──────
+//
+// Regression for: ACUTE_SYMPTOM_GATE_TERMINAL was returning "nevím dost" with
+// no actionable next step. After fix the terminal text must:
+//   - NOT contain "nevím dost"
+//   - contain "vyšetřit" (actionable next step)
+//   - NOT contain an exercise recommendation
+//
+// Covers exact E2E path:
+//   pre-intake 2 ASK → chj_qbudget=1
+//   orchestrate("Co mám dnes dělat?") → budgetRemaining=1, ACT, ACUTE_GATE → budget_out=0, expects_reply=true
+//   orchestrate("stejně") → budgetRemaining=0, ACT, ACUTE_GATE_TERMINAL → expects_reply=false
+//
+// U1-U5: ACUTE_SYMPTOM_GATE_TERMINAL text assertions (ACT path, budget=0)
+// U6-U8: ACUTE_SYMPTOM_GATE_TERMINAL text assertions (ASK path, budget=0)
+// U9:    Non-acute BUDGET_EXHAUSTED text unchanged
+// U10:   Full E2E simulation of the reported failing scenario
+
+const ACUTE_TERMINAL_TEXT =
+  'Protože potíže přetrvávají, cvičení ti teď doporučit nechci. Pokud potíže pokračují nebo se zhoršují, nech se dnes vyšetřit.';
+const NON_ACUTE_TERMINAL_TEXT =
+  'Zatím o tobě nevím dost, abych ti bezpečně doporučil konkrétní krok.';
+
+function scenarioU() {
+  sep('U — Acute gate terminal: actionable next step (no network)');
+
+  // Inline gate simulation — must stay in sync with orchestrator.js P0 safety gates.
+  function applyGate(presentationMode, budgetRemaining, pendingClarifications) {
+    const pending         = pendingClarifications ?? [];
+    const hasAcuteSymptom = pending.some(
+      c => c.type === 'new_symptom' && c.temporal_context === 'acute'
+    );
+
+    if (hasAcuteSymptom && presentationMode === 'ACT') {
+      if (budgetRemaining <= 0) {
+        return {
+          mode: 'ASK', text: ACUTE_TERMINAL_TEXT, buttons: [], expects_reply: false,
+          reason_code: 'ACUTE_SYMPTOM_GATE_TERMINAL', budget_out: 0,
+        };
+      }
+      return {
+        mode: 'ASK',
+        text: 'Zmínil/a jsi aktuální potíže, které potřebují víc kontextu. Jak se cítíš teď — lepší, stejně, nebo hůř?',
+        buttons: [], expects_reply: true,
+        reason_code: 'ACUTE_SYMPTOM_GATE', budget_out: Math.max(0, budgetRemaining - 1),
+      };
+    }
+
+    if (presentationMode === 'ASK' && budgetRemaining <= 0) {
+      const text = hasAcuteSymptom ? ACUTE_TERMINAL_TEXT : NON_ACUTE_TERMINAL_TEXT;
+      return {
+        mode: 'ASK', text, buttons: [], expects_reply: false,
+        reason_code: hasAcuteSymptom ? 'ACUTE_SYMPTOM_GATE_TERMINAL' : 'BUDGET_EXHAUSTED',
+        budget_out: 0,
+      };
+    }
+
+    return { mode: presentationMode, passes_through: true, budget_out: budgetRemaining };
+  }
+
+  const acute = [{ type: 'new_symptom', temporal_context: 'acute' }];
+
+  // U1: terminal text does NOT contain "nevím dost"
+  {
+    const r = applyGate('ACT', 0, acute);
+    check(!r.text.includes('nevím dost'), 'U1: ACUTE_TERMINAL text does NOT contain "nevím dost"',
+      `actual: "${r.text}"`);
+  }
+
+  // U2: terminal text contains "vyšetřit" (actionable next step)
+  {
+    const r = applyGate('ACT', 0, acute);
+    check(r.text.includes('vyšetřit'), 'U2: ACUTE_TERMINAL text contains "vyšetřit" (actionable)',
+      `actual: "${r.text}"`);
+  }
+
+  // U3: terminal text does not start with an exercise recommendation
+  {
+    const r = applyGate('ACT', 0, acute);
+    const isExercise = /^(Kontrolovaný|Svižná|Jdi na procházku|Udělej|Proveď)/i.test(r.text);
+    check(!isExercise, 'U3: terminal text is NOT an exercise recommendation', `actual: "${r.text}"`);
+  }
+
+  // U4: ACT path — expects_reply=false, buttons=[], mode=ASK (no exercise ACT)
+  {
+    const r = applyGate('ACT', 0, acute);
+    check(r.expects_reply === false,       'U4: ACT+acute+budget=0 → expects_reply=false');
+    check(r.buttons.length === 0,          'U4: buttons=[] (no further interaction)');
+    check(r.mode === 'ASK',               'U4: mode=ASK (not ACT — exercise blocked)');
+    check(r.reason_code === 'ACUTE_SYMPTOM_GATE_TERMINAL', 'U4: reason_code=ACUTE_SYMPTOM_GATE_TERMINAL');
+  }
+
+  // U5: exact text match (ACT path)
+  {
+    const r = applyGate('ACT', 0, acute);
+    check(r.text === ACUTE_TERMINAL_TEXT, 'U5: ACUTE_TERMINAL text is exact expected string',
+      `actual:   "${r.text}"\nexpected: "${ACUTE_TERMINAL_TEXT}"`);
+  }
+
+  // U6: ASK path — same terminal contract
+  {
+    const r = applyGate('ASK', 0, acute);
+    check(!r.text.includes('nevím dost'),    'U6: ASK+acute+budget=0 — no "nevím dost"');
+    check(r.text.includes('vyšetřit'),       'U6: ASK+acute+budget=0 — contains "vyšetřit"');
+    check(r.expects_reply === false,         'U6: expects_reply=false');
+    check(r.reason_code === 'ACUTE_SYMPTOM_GATE_TERMINAL', 'U6: reason_code=ACUTE_SYMPTOM_GATE_TERMINAL');
+  }
+
+  // U7: exact text match (ASK path)
+  {
+    const r = applyGate('ASK', 0, acute);
+    check(r.text === ACUTE_TERMINAL_TEXT, 'U7: ASK path uses same ACUTE_TERMINAL_TEXT',
+      `actual: "${r.text}"`);
+  }
+
+  // U8: non-acute BUDGET_EXHAUSTED text unchanged
+  {
+    const r = applyGate('ASK', 0, []);
+    check(r.text === NON_ACUTE_TERMINAL_TEXT, 'U8: non-acute BUDGET_EXHAUSTED text unchanged',
+      `actual: "${r.text}"`);
+    check(r.reason_code === 'BUDGET_EXHAUSTED', 'U8: reason_code=BUDGET_EXHAUSTED (not acute)');
+  }
+
+  // U9: first call (budget=1) → expects_reply=true, NOT terminal
+  {
+    const r = applyGate('ACT', 1, acute);
+    check(r.expects_reply === true,  'U9: budget=1 → expects_reply=true (first question, not terminal)');
+    check(r.budget_out === 0,        'U9: budget_out=0 after first ACUTE_SYMPTOM_GATE');
+  }
+
+  // U10: full E2E path simulation — "od rána se motám" scenario
+  // pre-intake used 2 questions → chj_qbudget=1 → launcher starts with budget=1
+  {
+    const pending = [{ type: 'new_symptom', temporal_context: 'acute', raw_text: 'od rana se motam' }];
+
+    // Step 1: "Co mám dnes dělat?" with budget=1, engine=ACT
+    const call1 = applyGate('ACT', 1, pending);
+    check(call1.expects_reply === true,  'U10/call1: first response asks follow-up (expects_reply=true)');
+    check(call1.budget_out === 0,        'U10/call1: budget decremented to 0');
+    check(call1.mode === 'ASK',          'U10/call1: mode=ASK (exercise blocked by acute gate)');
+
+    // Step 2: "stejně" with budget=0, engine=ACT (no new facts changed the decision)
+    const call2 = applyGate('ACT', call1.budget_out, pending);
+    check(call2.expects_reply === false, 'U10/call2: second response is terminal (budget=0)');
+    check(call2.buttons.length === 0,   'U10/call2: buttons=[] (launcher will lock input)');
+    check(!call2.text.includes('nevím dost'), 'U10/call2: terminal text does NOT deadlock user with "nevím dost"');
+    check(call2.text.includes('vyšetřit'),    'U10/call2: terminal text contains actionable next step');
+    check(call2.mode === 'ASK',         'U10/call2: mode=ASK (no exercise ACT produced)');
+  }
+}
+
 // ── Run ───────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -1790,6 +1941,7 @@ async function main() {
   scenarioR();
   await scenarioS();
   await scenarioT();
+  scenarioU();
 
   const total = passed + failed;
   sep(`Results: ${passed}/${total} passed${failed ? ` — ${failed} FAILED` : ''}`);

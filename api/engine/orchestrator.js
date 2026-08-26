@@ -743,7 +743,7 @@ export async function processInput(userId, userText, sessionState = {}) {
       // Budget also exhausted: terminal state acknowledging acute symptom + no questions left.
       return {
         mode:          'ASK',
-        text:          'Zmínil/a jsi aktuální potíže a zatím o nich nevím dost, abych ti bezpečně doporučil konkrétní krok.',
+        text:          'Protože potíže přetrvávají, cvičení ti teď doporučit nechci. Pokud potíže pokračují nebo se zhoršují, nech se dnes vyšetřit.',
         buttons:       [],
         expects_reply: false,
         session_updates: { ...presentation.session_updates, question_budget_remaining: 0 },
@@ -768,7 +768,7 @@ export async function processInput(userId, userText, sessionState = {}) {
   if (presentation.mode === 'ASK') {
     if (budgetRemaining <= 0) {
       const text = hasAcuteSymptom
-        ? 'Zmínil/a jsi aktuální potíže a zatím o nich nevím dost, abych ti bezpečně doporučil konkrétní krok.'
+        ? 'Protože potíže přetrvávají, cvičení ti teď doporučit nechci. Pokud potíže pokračují nebo se zhoršují, nech se dnes vyšetřit.'
         : 'Zatím o tobě nevím dost, abych ti bezpečně doporučil konkrétní krok.';
       return {
         mode:          'ASK',
