@@ -747,7 +747,7 @@ export async function processInput(userId, userText, sessionState = {}) {
         ...sessionUpdates,
         pending_question: { text: sed_text, evidence_type: 'sedentary_hours_day', type: 'GENERAL' },
       },
-      debug: { reason_code: 'ZERO_DATA_FOLLOWUP', warnings },
+      debug: { reason_code: 'ZERO_DATA_FOLLOWUP', warnings: result.warnings ?? [] },
     };
   }
 

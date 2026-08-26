@@ -24,6 +24,7 @@
 
 import { processInput, buildEvent, _buildSessionUpdates_test as buildSessionUpdates } from '../api/engine/orchestrator.js';
 import { runEngine, ENGINE_MASTER } from '../api/engine/engine.js';
+import { applyHealthEvent }         from '../api/engine/healthEventAdapter.js';
 import { createClient }             from '@supabase/supabase-js';
 import { computeDailyDecision }     from '../api/engine/dailyDecision.js';
 import { runTesterReset, TESTER_UIDS } from '../api/tester-reset.js';
@@ -2469,6 +2470,77 @@ function scenarioZ() {
   }
 }
 
+// ── Scenario Z-real ──────────────────────────────────────────────────────────
+// Regression test: calls real processInput() to verify ZERO_DATA_FOLLOWUP guard
+// fires correctly and does NOT throw ReferenceError from 'warnings' (the bug).
+//
+// Trigger: exhaust all engine NBE gates with positive answers so engine returns
+//   ASK_BLOCKING with primary_item=null (no NBE left). With previous session state
+//   also being zero-data ASK, the guard fires.
+// Regression: before fix, warnings (undefined in processInput scope) crashed server.
+
+async function scenarioZReal() {
+  sep('Z-real — ZERO_DATA_FOLLOWUP: real processInput() must not throw (regression)');
+
+  const UID = `test-zdf-regression-${Date.now()}`;
+  const SED_TEXT = 'Přibližně kolik hodin za běžný den prosedíš?';
+
+  try {
+    // Step 1: exhaust all engine NBE gates with positive answers so pickBestNbe() → null
+    // Sequence determined empirically: each answer opens the next gate until open_gates=0.
+    const evidenceChain = [
+      { evidence_type: 'validated_strength_assessment', value: 'ano' },
+      { evidence_type: 'temporal_activity_trend',       value: 'stable' },
+      { evidence_type: 'gait_stability',                value: 'ano' },
+      { evidence_type: 'vstat_ze_zeme',                 value: 'ano' },
+    ];
+    for (const ans of evidenceChain) {
+      await applyHealthEvent(UID, { event_type: 'ANSWER_TO_EVIDENCE_QUESTION', payload: ans });
+    }
+
+    // Step 2: call processInput() with session state simulating a previous zero-data ASK.
+    // Guard condition: both current AND previous turn are zero-data ASK_BLOCKING.
+    const prevZeroDataDD = { mode: 'ASK', reason_code: 'ASK_BLOCKING', primary_item: null };
+    let r;
+    let threw = false;
+    try {
+      r = await processInput(UID, 'Zdravím', {
+        pending_question:    null,
+        last_daily_decision: prevZeroDataDD,
+        question_budget_remaining: 2,
+        pending_clarifications:   [],
+      });
+    } catch (e) {
+      threw = true;
+      check(false, `Z-real1: processInput() must not throw — got: ${e.constructor.name}: ${e.message}`);
+    }
+
+    if (!threw) {
+      check(r.debug?.reason_code === 'ZERO_DATA_FOLLOWUP',
+        'Z-real1: reason_code=ZERO_DATA_FOLLOWUP (guard fired, fixed line executed)',
+        `actual: "${r.debug?.reason_code}"`);
+      check(r.mode === 'ASK',
+        'Z-real2: mode=ASK',
+        `actual: "${r.mode}"`);
+      check(r.text === SED_TEXT,
+        'Z-real3: text is sedentary_hours_day question',
+        `actual: "${r.text?.slice(0, 80)}"`);
+      check(r.session_updates?.pending_question?.evidence_type === 'sedentary_hours_day',
+        'Z-real4: pending_question.evidence_type=sedentary_hours_day',
+        `actual: "${r.session_updates?.pending_question?.evidence_type}"`);
+      check(r.session_updates?.question_budget_remaining === 1,
+        'Z-real5: budget decremented from 2 to 1 (question costs one slot)',
+        `actual: ${r.session_updates?.question_budget_remaining}`);
+      check(r.expects_reply === true,
+        'Z-real6: expects_reply=true',
+        `actual: ${r.expects_reply}`);
+    }
+  } finally {
+    await sb.from('user_health_profile').delete().eq('user_id', UID);
+    await sb.from('user_constraints').delete().eq('user_id', UID);
+  }
+}
+
 // ── Run ───────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -2502,6 +2574,7 @@ async function main() {
   scenarioW();
   scenarioY();
   scenarioZ();
+  await scenarioZReal();
 
   const total = passed + failed;
   sep(`Results: ${passed}/${total} passed${failed ? ` — ${failed} FAILED` : ''}`);
