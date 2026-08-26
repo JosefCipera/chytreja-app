@@ -617,7 +617,7 @@ function buildCandidates(actionPool, interventions, parsedConstraints, hasCvRisk
 
 // ── Ordinal selection ─────────────────────────────────────────────────────────
 // Order: safety → MME → leverage_affinity → effect_on_leverage → goal_impact
-//        → feasibility → friction → time_to_feedback
+//        → feasibility → tier (asc) → time_to_feedback → friction
 
 const MME_RANK      = { MEANINGFUL: 3, PLAUSIBLE: 2, UNKNOWN: 1 };
 const AFFINITY_RANK = { PRIMARY: 4, CONTRIBUTORY: 3, ACCESSORY: 2, UNKNOWN: 1 };
@@ -658,17 +658,21 @@ function selectBestCandidate(viable, hasCvRiskContext, responseHistory) {
     const fd = FEAS_RANK[b.feasibility] - FEAS_RANK[a.feasibility];
     if (fd !== 0) return fd;
 
-    // 7. Friction (lower is better → higher FRIC_RANK wins)
-    const frd = FRIC_RANK[b.friction] - FRIC_RANK[a.friction];
-    if (frd !== 0) return frd;
+    // 7. Tier — lower tier = more starter-appropriate; prefer tier 1 over tier 2+
+    const trd = (a.tier ?? 99) - (b.tier ?? 99);
+    if (trd !== 0) return trd;
 
     // 8. Time to feedback (faster is better)
     const td = TIME_RANK[b.time_to_feedback] - TIME_RANK[a.time_to_feedback];
     if (td !== 0) return td;
 
-    // 9. Response history tiebreaker — applies only within interventions for the current leverage node.
-    //    CONSISTENT_WITH_EXPECTED_RESPONSE → prefer; NO_RESPONSE_OBSERVED → de-prioritize.
-    //    This step never overrides safety / leverage / affinity ranking (steps 1–8).
+    // 9. Friction (lower is better → higher FRIC_RANK wins)
+    const frd = FRIC_RANK[b.friction] - FRIC_RANK[a.friction];
+    if (frd !== 0) return frd;
+
+    // 10. Response history tiebreaker — applies only within interventions for the current leverage node.
+    //     CONSISTENT_WITH_EXPECTED_RESPONSE → prefer; NO_RESPONSE_OBSERVED → de-prioritize.
+    //     This step never overrides safety / leverage / affinity ranking (steps 1–9).
     if (responseHistory?.length > 0) {
       const score = c => {
         if (responseHistory.some(r => r.intervention_id === c.intervention_id && r.result === 'CONSISTENT_WITH_EXPECTED_RESPONSE')) return 1;
