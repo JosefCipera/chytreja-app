@@ -2541,6 +2541,162 @@ async function scenarioZReal() {
   }
 }
 
+// ── Scenario AC — HOLD after ACTION_COMPLETED: acknowledgment text, not label ──
+//
+// Fix: buildHoldResponse() detects eventType === 'ACTION_COMPLETED' and returns
+// completion acknowledgment instead of the action label holdText.
+//
+// Setup (disposable UID — no dependency on Josef or any live user):
+//   1. Seed user_health_profile.physical.sedentary_hours_day = 10
+//      → activates PHYSICAL_INACTIVITY leverage
+//   2. Seed action_assignments: COMPLETED + intervention_id=BREAK_UP_SEDENTARY_TIME + completed_at=now
+//      → computeInterventionExposure: sessions_completed=1, first_completed_at=now
+//      → evaluateResponseEvaluations: daysSinceFirst=0 < horizon_min_days=7 → TOO_EARLY
+//      → checkHold fires → HOLD
+//   3. runEngine(UID) + computeDailyDecision → verify HOLD before calling processInput
+//
+// AC1: mode === 'HOLD'
+// AC2: text === exact completion ack string
+// AC3: text does NOT contain action label
+// AC4: expects_reply === false
+// AC5: buttons.length === 0
+// AC6 (regression): DOMAIN_REQUEST in HOLD → label holdText preserved, NOT 'Hotovo.'
+
+async function scenarioAC() {
+  sep('AC — HOLD after ACTION_COMPLETED: completion ack, not action label (disposable UID)');
+
+  // Uses a disposable UID — no dependency on Josef or any live user state.
+  //
+  // HOLD seeding via real applyHealthEvent paths (same as production):
+  //   Step 1: ANSWER_TO_EVIDENCE_QUESTION sedentary_hours_day=10
+  //           → user_health_profile upsert → PHYSICAL_INACTIVITY activates
+  //   Step 2: runEngine → ACT mode → extract NBA.selected action + intervention
+  //   Step 3: applyHealthEvent ACTION_COMPLETED (same path as persistActionAssignment in production)
+  //           → action_assignments INSERT → sessions_completed=1
+  //           → evaluateResponseEvaluations → daysSinceFirst=0 < horizon=7 → TOO_EARLY
+  //           → checkHold fires → HOLD
+  //   Step 4: verify HOLD, then call processInput('Hotovo') with the same assignment
+  //   Step 5: assert completion ack text (new branch), not label holdText
+
+  const UID = `test-hold-ac-${Date.now()}`;
+
+  const EXPECTED_TEXT = 'Hotovo. Pro dnešek stačí. Výsledek budeme hodnotit až po několika opakováních.';
+
+  try {
+    // ── Step 1: seed sedentary evidence via real event path ──────────────────
+    await applyHealthEvent(UID, {
+      event_type: 'ANSWER_TO_EVIDENCE_QUESTION',
+      payload: { evidence_type: 'sedentary_hours_day', value: 10 },
+    });
+
+    // ── Step 2: run engine in clean state → expect ACT (no prior assignments) ─
+    const r1 = await runEngine(UID);
+    const dd1 = computeDailyDecision(r1);
+    const nba = r1.next_best_action?.selected;
+
+    console.log(`  step2 engine   : ${dd1.mode} (${dd1.reason_code})`);
+    console.log(`  NBA selected   : ${nba?.action_id ?? '—'} / ${nba?.intervention_id ?? '—'} / tier:${nba?.tier}`);
+
+    if (dd1.mode !== 'ACT' || !nba?.action_id || !nba?.intervention_id) {
+      console.log('  ⚠  Engine not ACT after sedentary seed — cannot establish HOLD via ACTION_COMPLETED');
+      console.log(`  ℹ  mode=${dd1.mode}  nba_action=${nba?.action_id ?? 'none'}`);
+      failed += 8;  // setup + AC1-AC6
+      return;
+    }
+
+    // ── Step 3: seed completed assignment via production code path ────────────
+    // Uses same persistActionAssignment path as the real onHotovo() flow.
+    await applyHealthEvent(UID, {
+      event_type: 'ACTION_COMPLETED',
+      payload: {
+        action_id:              nba.action_id,
+        intervention_id:        nba.intervention_id,
+        selected_leverage_node: r1.system_leverage?.selected?.node_id ?? 'PHYSICAL_INACTIVITY',
+        engine_version:         r1.engine_version,
+      },
+    });
+
+    // ── Step 4: verify HOLD state ────────────────────────────────────────────
+    const r2 = await runEngine(UID);
+    const dd2 = computeDailyDecision(r2);
+
+    console.log(`  step4 engine   : ${dd2.mode}  (${dd2.reason_code})`);
+    console.log(`  primary label  : "${dd2.primary_item?.label ?? '—'}"`);
+    console.log(`  intervention   : ${dd2.primary_item?.intervention_id ?? '—'}`);
+    console.log(`  sessions_comp  : ${r2.intervention_exposure?.find(e => e.intervention_id === nba.intervention_id)?.sessions_completed ?? 0}`);
+
+    check(dd2.mode === 'HOLD',
+      'AC-setup: engine in HOLD after ACTION_COMPLETED (sessions_completed=1, TOO_EARLY)',
+      `actual: ${dd2.mode} (${dd2.reason_code})`);
+    check(dd2.reason_code === 'HOLD_TOO_EARLY',
+      'AC-setup: reason_code = HOLD_TOO_EARLY (horizon not elapsed)',
+      `actual: ${dd2.reason_code}`);
+
+    if (dd2.mode !== 'HOLD' || !dd2.primary_item?.action_id || !dd2.primary_item?.intervention_id) {
+      console.log('  ❌  HOLD state not established — cannot proceed with AC1–AC6');
+      failed += 6;
+      return;
+    }
+
+    const actionLabel = dd2.primary_item.label;
+
+    // ── Step 5: AC1–AC5 — processInput('Hotovo') → HOLD + completion ack ────
+    const sessionState = {
+      current_action_assignment: {
+        action_id:       dd2.primary_item.action_id,
+        label:           actionLabel,
+        intervention_id: dd2.primary_item.intervention_id,
+        assigned_at:     new Date().toISOString(),
+      },
+    };
+
+    const r = await processInput(UID, 'Hotovo', sessionState);
+    console.log('\n  [ACTION_COMPLETED → HOLD presentation]');
+    showResponse(r);
+
+    check(r.mode === 'HOLD',
+      'AC1: mode = HOLD',
+      `actual: ${r.mode}`);
+
+    check(r.text === EXPECTED_TEXT,
+      'AC2: text = exact completion ack (new branch fired)',
+      `actual: "${r.text}"`);
+
+    check(!(r.text ?? '').includes(actionLabel),
+      'AC3: text does NOT contain action label',
+      `label: "${actionLabel}"  text: "${r.text?.slice(0, 80)}"`);
+
+    check(r.expects_reply === false,
+      'AC4: expects_reply = false',
+      `actual: ${r.expects_reply}`);
+
+    check((r.buttons ?? []).length === 0,
+      'AC5: buttons = []',
+      `actual: [${(r.buttons ?? []).join(', ')}]`);
+
+    // ── AC6 regression: DOMAIN_REQUEST in HOLD → label holdText, NOT 'Hotovo.' ─
+    // Still in HOLD (daysSinceFirst < 7) — DOMAIN_REQUEST must not trigger completion ack.
+    const r6 = await processInput(UID, 'Co mám dnes dělat?', {});
+    console.log('\n  [AC6 — DOMAIN_REQUEST in HOLD: label holdText, NOT completion ack]');
+    showResponse(r6);
+
+    if (r6.mode === 'HOLD') {
+      check(!(r6.text ?? '').startsWith('Hotovo.'),
+        'AC6: DOMAIN_REQUEST in HOLD → text does NOT start with "Hotovo." (general holdText preserved)',
+        `actual: "${r6.text?.slice(0, 80)}"`);
+    } else {
+      check(['ACT', 'ASK', 'SAFETY_BLOCKED', 'EXPLAIN'].includes(r6.mode),
+        `AC6: DOMAIN_REQUEST changed mode to ${r6.mode} — "Hotovo." absence guaranteed`);
+    }
+
+  } finally {
+    await sb.from('action_assignments').delete().eq('user_id', UID);
+    await sb.from('user_health_profile').delete().eq('user_id', UID);
+    await sb.from('user_constraints').delete().eq('user_id', UID);
+    console.log('  state restored ✓');
+  }
+}
+
 // ── Run ───────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -2575,6 +2731,7 @@ async function main() {
   scenarioY();
   scenarioZ();
   await scenarioZReal();
+  await scenarioAC();
 
   const total = passed + failed;
   sep(`Results: ${passed}/${total} passed${failed ? ` — ${failed} FAILED` : ''}`);

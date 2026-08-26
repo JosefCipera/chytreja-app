@@ -469,6 +469,18 @@ function buildHoldResponse(dd, _ctx, sessionUpdates, warnings, eventType, isFoll
     };
   }
 
+  // ACTION_COMPLETED → user just finished the action; acknowledge, don't repeat the label
+  if (eventType === 'ACTION_COMPLETED') {
+    return {
+      mode:            'HOLD',
+      text:            'Hotovo. Pro dnešek stačí. Výsledek budeme hodnotit až po několika opakováních.',
+      buttons:         [],
+      expects_reply:   false,
+      session_updates: sessionUpdates,
+      debug:           { reason_code: dd.reason_code, warnings },
+    };
+  }
+
   const label    = dd.primary_item?.label ?? 'Akce';
   const holdText = dd.reason_code === 'HOLD_TOO_EARLY'
     ? `${label} — výsledky ještě dozrávají. Počkej na příští hodnocení.`
