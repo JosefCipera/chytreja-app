@@ -722,7 +722,34 @@ export async function processInput(userId, userText, sessionState = {}) {
   // Triggers explanatory text instead of repeating the original action label.
   const isHoldFollowUp = adapterType === 'DOMAIN_REQUEST'
     && state.last_daily_decision?.mode === 'HOLD';
-  const presentation = buildPresentation(event_type, payload, result, sessionUpdates, isHoldFollowUp);
+  let presentation = buildPresentation(event_type, payload, result, sessionUpdates, isHoldFollowUp);
+
+  // ── ZERO_DATA_FOLLOWUP guard ──────────────────────────────────────────────────
+  // Invariant: user must never receive the same zero-data general-profile text twice in a row.
+  // Condition: this turn AND the previous turn were both zero-data ASK_BLOCKING
+  //   (no primary_item → pending_question not set in session_updates).
+  // Fix: replace with the sedentary_hours_day question, which has a valid evidence_type
+  //   and will be persisted by ANSWER_TO_EVIDENCE_QUESTION on the next turn.
+  // Budget: falls through to the normal budget gate below — costs one budget slot.
+  if (presentation.mode === 'ASK'
+      && presentation.debug?.reason_code === 'ASK_BLOCKING'
+      && !presentation.session_updates?.pending_question
+      && state.last_daily_decision?.mode === 'ASK'
+      && state.last_daily_decision?.reason_code === 'ASK_BLOCKING'
+      && !state.last_daily_decision?.primary_item) {
+    const sed_text = 'Přibližně kolik hodin za běžný den prosedíš?';
+    presentation = {
+      mode:          'ASK',
+      text:          sed_text,
+      buttons:       [],
+      expects_reply: true,
+      session_updates: {
+        ...sessionUpdates,
+        pending_question: { text: sed_text, evidence_type: 'sedentary_hours_day', type: 'GENERAL' },
+      },
+      debug: { reason_code: 'ZERO_DATA_FOLLOWUP', warnings },
+    };
+  }
 
   // ── P0 Safety gates (post-presentation) ──────────────────────────────────────
   // These gates run after buildPresentation() so they can inspect the final mode.

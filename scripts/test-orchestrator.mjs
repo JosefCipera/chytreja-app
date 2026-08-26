@@ -2360,6 +2360,115 @@ function scenarioY() {
   }
 }
 
+// ── Scenario Z ────────────────────────────────────────────────────────────────
+
+function scenarioZ() {
+  sep('Z — Zero-data ASK loop: second response must be specific question (no network)');
+
+  // Inline simulation of ZERO_DATA_FOLLOWUP guard + budget gate.
+  // Models what orchestrator.js does in processInput():
+  //   1. buildPresentation → zero-data ASK (reason_code=ASK_BLOCKING, no pending_question)
+  //   2. ZERO_DATA_FOLLOWUP guard fires when previous turn was also zero-data ASK
+  //   3. presentation replaced with sedentary_hours_day question
+  //   4. budget gate decrements budget (mode=ASK)
+
+  const ZERO_DATA_TEXT = 'Zatím o tobě vím málo. Můžeš mi stručně říct, co je pro tebe zdravotně důležité — věk, diagnózy, omezení nebo co tě dnes trápí.';
+  const SED_TEXT       = 'Přibližně kolik hodin za běžný den prosedíš?';
+
+  function simulateTurn(rawPresentationMode, rawReasonCode, rawPendingQuestion, stateLastDD, budget) {
+    // Simulate buildPresentation output (zero-data ASK_BLOCKING case)
+    let presentation = {
+      mode:          rawPresentationMode,
+      text:          ZERO_DATA_TEXT,
+      buttons:       [],
+      expects_reply: true,
+      session_updates: {
+        last_daily_decision: { mode: rawPresentationMode, reason_code: rawReasonCode, primary_item: null },
+        pending_question:    rawPendingQuestion ?? null,
+      },
+      debug: { reason_code: rawReasonCode, warnings: [] },
+    };
+
+    // ZERO_DATA_FOLLOWUP guard (mirrors orchestrator.js)
+    if (presentation.mode === 'ASK'
+        && presentation.debug?.reason_code === 'ASK_BLOCKING'
+        && !presentation.session_updates?.pending_question
+        && stateLastDD?.mode === 'ASK'
+        && stateLastDD?.reason_code === 'ASK_BLOCKING'
+        && !stateLastDD?.primary_item) {
+      presentation = {
+        mode:          'ASK',
+        text:          SED_TEXT,
+        buttons:       [],
+        expects_reply: true,
+        session_updates: {
+          ...presentation.session_updates,
+          pending_question: { text: SED_TEXT, evidence_type: 'sedentary_hours_day', type: 'GENERAL' },
+        },
+        debug: { reason_code: 'ZERO_DATA_FOLLOWUP', warnings: [] },
+      };
+    }
+
+    // Budget gate (mode=ASK → budget - 1)
+    if (presentation.mode === 'ASK' && budget > 0) {
+      presentation.session_updates = {
+        ...presentation.session_updates,
+        question_budget_remaining: budget - 1,
+      };
+    }
+
+    return presentation;
+  }
+
+  // ── Z1-Z4: first turn (no prior zero-data ASK) → must return general profile text ──
+  {
+    const r = simulateTurn('ASK', 'ASK_BLOCKING', null, null, 3);
+    check(r.mode === 'ASK',
+      'Z1: first zero-data turn → mode=ASK');
+    check(r.text === ZERO_DATA_TEXT,
+      'Z2: first turn → general profile text (guard does not fire)',
+      `actual: "${r.text?.slice(0, 80)}"`);
+    check(!r.session_updates?.pending_question,
+      'Z3: first turn → pending_question not set (zero-data)');
+    check(r.session_updates?.question_budget_remaining === 2,
+      'Z4: first turn → budget decremented to 2',
+      `actual: ${r.session_updates?.question_budget_remaining}`);
+  }
+
+  // ── Z5-Z10: second turn (previous was zero-data ASK) → must switch to sedentary_hours_day ──
+  const prevZeroDataDD = { mode: 'ASK', reason_code: 'ASK_BLOCKING', primary_item: null };
+  {
+    const r = simulateTurn('ASK', 'ASK_BLOCKING', null, prevZeroDataDD, 2);
+    check(r.mode === 'ASK',
+      'Z5: second turn → mode=ASK');
+    check(r.text !== ZERO_DATA_TEXT,
+      'Z6: second turn → text differs from first general-profile text (invariant)',
+      `actual: "${r.text?.slice(0, 80)}"`);
+    check(r.text === SED_TEXT,
+      'Z7: second turn → text is sedentary_hours_day question',
+      `actual: "${r.text?.slice(0, 80)}"`);
+    check(r.debug?.reason_code === 'ZERO_DATA_FOLLOWUP',
+      'Z8: second turn → reason_code=ZERO_DATA_FOLLOWUP',
+      `actual: "${r.debug?.reason_code}"`);
+    check(r.session_updates?.pending_question?.evidence_type === 'sedentary_hours_day',
+      'Z9: second turn → pending_question.evidence_type=sedentary_hours_day',
+      `actual: "${r.session_updates?.pending_question?.evidence_type}"`);
+    check(r.session_updates?.question_budget_remaining === 1,
+      'Z10: second turn → budget decremented (sedentary question costs one slot)',
+      `actual: ${r.session_updates?.question_budget_remaining}`);
+  }
+
+  // ── Z11-Z12: guard does NOT fire if previous turn had a primary_item (specific NBE) ──
+  {
+    const prevWithItem = { mode: 'ASK', reason_code: 'ASK_BLOCKING', primary_item: { evidence_type: 'gait_stability' } };
+    const r = simulateTurn('ASK', 'ASK_BLOCKING', null, prevWithItem, 2);
+    check(r.text === ZERO_DATA_TEXT,
+      'Z11: guard does not fire when previous turn had primary_item (different NBE)');
+    check(r.debug?.reason_code === 'ASK_BLOCKING',
+      'Z12: guard not fired → reason_code stays ASK_BLOCKING');
+  }
+}
+
 // ── Run ───────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -2392,6 +2501,7 @@ async function main() {
   scenarioV();
   scenarioW();
   scenarioY();
+  scenarioZ();
 
   const total = passed + failed;
   sep(`Results: ${passed}/${total} passed${failed ? ` — ${failed} FAILED` : ''}`);
