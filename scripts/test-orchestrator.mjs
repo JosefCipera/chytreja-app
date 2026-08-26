@@ -1799,7 +1799,7 @@ function scenarioU() {
     if (hasAcuteSymptom && presentationMode === 'ACT') {
       if (budgetRemaining <= 0) {
         return {
-          mode: 'ASK', text: ACUTE_TERMINAL_TEXT, buttons: [], expects_reply: false,
+          mode: 'ASK', text: ACUTE_TERMINAL_TEXT, buttons: [], expects_reply: true,
           reason_code: 'ACUTE_SYMPTOM_GATE_TERMINAL', budget_out: 0,
         };
       }
@@ -1814,7 +1814,7 @@ function scenarioU() {
     if (presentationMode === 'ASK' && budgetRemaining <= 0) {
       const text = hasAcuteSymptom ? ACUTE_TERMINAL_TEXT : NON_ACUTE_TERMINAL_TEXT;
       return {
-        mode: 'ASK', text, buttons: [], expects_reply: false,
+        mode: 'ASK', text, buttons: [], expects_reply: hasAcuteSymptom ? true : false,
         reason_code: hasAcuteSymptom ? 'ACUTE_SYMPTOM_GATE_TERMINAL' : 'BUDGET_EXHAUSTED',
         budget_out: 0,
       };
@@ -1846,11 +1846,11 @@ function scenarioU() {
     check(!isExercise, 'U3: terminal text is NOT an exercise recommendation', `actual: "${r.text}"`);
   }
 
-  // U4: ACT path — expects_reply=false, buttons=[], mode=ASK (no exercise ACT)
+  // U4: ACT path — expects_reply=true (input stays open), buttons=[], mode=ASK (no exercise ACT)
   {
     const r = applyGate('ACT', 0, acute);
-    check(r.expects_reply === false,       'U4: ACT+acute+budget=0 → expects_reply=false');
-    check(r.buttons.length === 0,          'U4: buttons=[] (no further interaction)');
+    check(r.expects_reply === true,        'U4: ACT+acute+budget=0 → expects_reply=true (input stays open)');
+    check(r.buttons.length === 0,          'U4: buttons=[] (no guided buttons)');
     check(r.mode === 'ASK',               'U4: mode=ASK (not ACT — exercise blocked)');
     check(r.reason_code === 'ACUTE_SYMPTOM_GATE_TERMINAL', 'U4: reason_code=ACUTE_SYMPTOM_GATE_TERMINAL');
   }
@@ -1862,12 +1862,12 @@ function scenarioU() {
       `actual:   "${r.text}"\nexpected: "${ACUTE_TERMINAL_TEXT}"`);
   }
 
-  // U6: ASK path — same terminal contract
+  // U6: ASK path — same terminal contract, input stays open
   {
     const r = applyGate('ASK', 0, acute);
     check(!r.text.includes('nevím dost'),    'U6: ASK+acute+budget=0 — no "nevím dost"');
     check(r.text.includes('vyšetřit'),       'U6: ASK+acute+budget=0 — contains "vyšetřit"');
-    check(r.expects_reply === false,         'U6: expects_reply=false');
+    check(r.expects_reply === true,          'U6: expects_reply=true (input stays open after safety message)');
     check(r.reason_code === 'ACUTE_SYMPTOM_GATE_TERMINAL', 'U6: reason_code=ACUTE_SYMPTOM_GATE_TERMINAL');
   }
 
@@ -1906,11 +1906,26 @@ function scenarioU() {
 
     // Step 2: "stejně" with budget=0, engine=ACT (no new facts changed the decision)
     const call2 = applyGate('ACT', call1.budget_out, pending);
-    check(call2.expects_reply === false, 'U10/call2: second response is terminal (budget=0)');
-    check(call2.buttons.length === 0,   'U10/call2: buttons=[] (launcher will lock input)');
+    check(call2.expects_reply === true,  'U10/call2: second response NOT terminal — input stays open (expects_reply=true)');
+    check(call2.buttons.length === 0,    'U10/call2: buttons=[] (no guided buttons)');
     check(!call2.text.includes('nevím dost'), 'U10/call2: terminal text does NOT deadlock user with "nevím dost"');
     check(call2.text.includes('vyšetřit'),    'U10/call2: terminal text contains actionable next step');
-    check(call2.mode === 'ASK',         'U10/call2: mode=ASK (no exercise ACT produced)');
+    check(call2.mode === 'ASK',          'U10/call2: mode=ASK (no exercise ACT produced)');
+  }
+
+  // U11: non-acute BUDGET_EXHAUSTED stays expects_reply=false (separate contract)
+  {
+    const r = applyGate('ASK', 0, []);
+    check(r.expects_reply === false, 'U11: non-acute BUDGET_EXHAUSTED → expects_reply=false (input locks)');
+    check(r.reason_code === 'BUDGET_EXHAUSTED', 'U11: reason_code=BUDGET_EXHAUSTED');
+  }
+
+  // U12: acute gate (ACT) with budget=1 still expects_reply=true (first question, not terminal)
+  {
+    const r = applyGate('ACT', 1, acute);
+    check(r.expects_reply === true,  'U12: acute+budget=1 → expects_reply=true (budget not exhausted)');
+    check(r.reason_code === 'ACUTE_SYMPTOM_GATE', 'U12: reason_code=ACUTE_SYMPTOM_GATE (not TERMINAL)');
+    check(r.budget_out === 0,        'U12: budget decremented to 0');
   }
 }
 

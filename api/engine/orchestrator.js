@@ -745,7 +745,7 @@ export async function processInput(userId, userText, sessionState = {}) {
         mode:          'ASK',
         text:          'Protože potíže přetrvávají, cvičení ti teď doporučit nechci. Pokud potíže pokračují nebo se zhoršují, nech se dnes vyšetřit.',
         buttons:       [],
-        expects_reply: false,
+        expects_reply: true,
         session_updates: { ...presentation.session_updates, question_budget_remaining: 0 },
         debug:         { reason_code: 'ACUTE_SYMPTOM_GATE_TERMINAL' },
       };
@@ -774,7 +774,7 @@ export async function processInput(userId, userText, sessionState = {}) {
         mode:          'ASK',
         text,
         buttons:       [],
-        expects_reply: false,
+        expects_reply: hasAcuteSymptom ? true : false,
         session_updates: { ...presentation.session_updates, question_budget_remaining: 0 },
         debug:         { reason_code: hasAcuteSymptom ? 'ACUTE_SYMPTOM_GATE_TERMINAL' : 'BUDGET_EXHAUSTED' },
       };
