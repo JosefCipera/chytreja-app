@@ -746,7 +746,7 @@ export async function processInput(userId, userText, sessionState = {}) {
         text:          'Protože potíže přetrvávají, cvičení ti teď doporučit nechci. Pokud potíže pokračují nebo se zhoršují, nech se dnes vyšetřit.',
         buttons:       [],
         expects_reply: true,
-        session_updates: { ...presentation.session_updates, question_budget_remaining: 0 },
+        session_updates: { ...presentation.session_updates, question_budget_remaining: 0, current_action_assignment: null },
         debug:         { reason_code: 'ACUTE_SYMPTOM_GATE_TERMINAL' },
       };
     }
@@ -759,6 +759,7 @@ export async function processInput(userId, userText, sessionState = {}) {
       session_updates: {
         ...presentation.session_updates,
         question_budget_remaining: Math.max(0, budgetRemaining - 1),
+        current_action_assignment: null,
       },
       debug:         { reason_code: 'ACUTE_SYMPTOM_GATE' },
     };
@@ -775,7 +776,11 @@ export async function processInput(userId, userText, sessionState = {}) {
         text,
         buttons:       [],
         expects_reply: hasAcuteSymptom ? true : false,
-        session_updates: { ...presentation.session_updates, question_budget_remaining: 0 },
+        session_updates: {
+          ...presentation.session_updates,
+          question_budget_remaining: 0,
+          ...(hasAcuteSymptom ? { current_action_assignment: null } : {}),
+        },
         debug:         { reason_code: hasAcuteSymptom ? 'ACUTE_SYMPTOM_GATE_TERMINAL' : 'BUDGET_EXHAUSTED' },
       };
     }

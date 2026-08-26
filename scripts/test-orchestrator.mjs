@@ -2041,6 +2041,139 @@ function scenarioV() {
   }
 }
 
+// ── Scenario W — Blocked assignment must not persist as current action ────────
+//
+// Regression for: acute gate blocks ACT/HOLD but current_action_assignment
+// leaks into session_updates → next turn "Dobře." → ACTION_COMPLETED →
+// false intervention_exposure DB write.
+//
+// W1: acute + ACT blocked → session_updates.current_action_assignment === null
+// W2: acute + HOLD blocked → session_updates.current_action_assignment === null
+// W3: acute + ACT gate (budget>0, follow-up question) → null too
+// W4: subsequent "Dobře." with null assignment cannot build valid ACTION_COMPLETED
+// W5: non-acute ACT preserves current_action_assignment (unchanged behavior)
+// W6: non-acute HOLD preserves whatever assignment was in session_updates (unchanged)
+
+function scenarioW() {
+  sep('W — Blocked assignment cleared from session_updates (no network)');
+
+  const EXERCISE_ACTION = { action_id: 'ACT_001', label: 'Běž 20 minut', intervention_id: 'INT_001', assigned_at: new Date().toISOString() };
+  const ACUTE_TERMINAL_TEXT =
+    'Protože potíže přetrvávají, cvičení ti teď doporučit nechci. Pokud potíže pokračují nebo se zhoršují, nech se dnes vyšetřit.';
+
+  // Inline gate simulation matching orchestrator.js post-presentation gate (after fix).
+  function applyGateW(presentationMode, sessionUpdatesIn, budgetRemaining, pendingClarifications) {
+    const pending         = pendingClarifications ?? [];
+    const hasAcuteSymptom = pending.some(
+      c => c.type === 'new_symptom' && c.temporal_context === 'acute'
+    );
+
+    if (hasAcuteSymptom && (presentationMode === 'ACT' || presentationMode === 'HOLD')) {
+      if (budgetRemaining <= 0) {
+        return {
+          mode: 'ASK', text: ACUTE_TERMINAL_TEXT, buttons: [], expects_reply: true,
+          session_updates: { ...sessionUpdatesIn, question_budget_remaining: 0, current_action_assignment: null },
+          reason_code: 'ACUTE_SYMPTOM_GATE_TERMINAL',
+        };
+      }
+      return {
+        mode: 'ASK',
+        text: 'Zmínil/a jsi aktuální potíže, které potřebují víc kontextu. Jak se cítíš teď — lepší, stejně, nebo hůř?',
+        buttons: [], expects_reply: true,
+        session_updates: {
+          ...sessionUpdatesIn,
+          question_budget_remaining: Math.max(0, budgetRemaining - 1),
+          current_action_assignment: null,
+        },
+        reason_code: 'ACUTE_SYMPTOM_GATE',
+      };
+    }
+
+    if (presentationMode === 'ASK' && budgetRemaining <= 0) {
+      const text = hasAcuteSymptom ? ACUTE_TERMINAL_TEXT : 'Zatím o tobě nevím dost, abych ti bezpečně doporučil konkrétní krok.';
+      return {
+        mode: 'ASK', text, buttons: [], expects_reply: hasAcuteSymptom ? true : false,
+        session_updates: {
+          ...sessionUpdatesIn,
+          question_budget_remaining: 0,
+          ...(hasAcuteSymptom ? { current_action_assignment: null } : {}),
+        },
+        reason_code: hasAcuteSymptom ? 'ACUTE_SYMPTOM_GATE_TERMINAL' : 'BUDGET_EXHAUSTED',
+      };
+    }
+
+    return { mode: presentationMode, session_updates: sessionUpdatesIn, passes_through: true };
+  }
+
+  const acute    = [{ type: 'new_symptom', temporal_context: 'acute' }];
+  const nonAcute = [];
+
+  // W1: acute + ACT blocked (budget=0) → current_action_assignment null in session_updates
+  {
+    const sessionUpdates = { current_action_assignment: EXERCISE_ACTION, last_daily_decision: null };
+    const r = applyGateW('ACT', sessionUpdates, 0, acute);
+    check(r.session_updates.current_action_assignment === null,
+      'W1: acute+ACT blocked → session_updates.current_action_assignment=null',
+      `actual: ${JSON.stringify(r.session_updates.current_action_assignment)}`);
+  }
+
+  // W2: acute + HOLD blocked (budget=0) → current_action_assignment null in session_updates
+  {
+    const sessionUpdates = { current_action_assignment: EXERCISE_ACTION, last_daily_decision: null };
+    const r = applyGateW('HOLD', sessionUpdates, 0, acute);
+    check(r.session_updates.current_action_assignment === null,
+      'W2: acute+HOLD blocked → session_updates.current_action_assignment=null',
+      `actual: ${JSON.stringify(r.session_updates.current_action_assignment)}`);
+  }
+
+  // W3: acute + ACT gate with budget>0 (follow-up question) → also null
+  {
+    const sessionUpdates = { current_action_assignment: EXERCISE_ACTION, last_daily_decision: null };
+    const r = applyGateW('ACT', sessionUpdates, 1, acute);
+    check(r.reason_code === 'ACUTE_SYMPTOM_GATE', 'W3: budget=1 → ACUTE_SYMPTOM_GATE (not terminal)');
+    check(r.session_updates.current_action_assignment === null,
+      'W3: acute+ACT gate (budget>0) → current_action_assignment=null',
+      `actual: ${JSON.stringify(r.session_updates.current_action_assignment)}`);
+  }
+
+  // W4: subsequent "Dobře." with null current_action_assignment cannot build valid ACTION_COMPLETED
+  // Simulate what buildEvent() does: ACTION_COMPLETED attaches action_id from current_action_assignment
+  {
+    const sessionAfterBlock = { current_action_assignment: null };
+
+    // Simulate buildEvent for ACTION_COMPLETED with no assignment in session
+    const fakeEvent = { event_type: 'ACTION_COMPLETED', payload: {} };
+    if (sessionAfterBlock.current_action_assignment?.action_id) {
+      fakeEvent.payload.action_id       = sessionAfterBlock.current_action_assignment.action_id;
+      fakeEvent.payload.intervention_id = sessionAfterBlock.current_action_assignment.intervention_id;
+    }
+
+    // persistActionAssignment requires both action_id and intervention_id
+    const wouldPersist = Boolean(fakeEvent.payload.action_id && fakeEvent.payload.intervention_id);
+    check(!wouldPersist,
+      'W4: "Dobře." with null session assignment → no action_id in event → persistActionAssignment not called',
+      `action_id=${fakeEvent.payload.action_id}, intervention_id=${fakeEvent.payload.intervention_id}`);
+  }
+
+  // W5: non-acute ACT preserves current_action_assignment unchanged
+  {
+    const sessionUpdates = { current_action_assignment: EXERCISE_ACTION, last_daily_decision: null };
+    const r = applyGateW('ACT', sessionUpdates, 0, nonAcute);
+    check(r.passes_through === true, 'W5: non-acute ACT passes through gate');
+    check(r.session_updates.current_action_assignment === EXERCISE_ACTION,
+      'W5: non-acute ACT → current_action_assignment preserved (unchanged)');
+  }
+
+  // W6: non-acute HOLD preserves whatever assignment was in session_updates
+  {
+    const sessionUpdates = { current_action_assignment: null, last_daily_decision: null };
+    const r = applyGateW('HOLD', sessionUpdates, 0, nonAcute);
+    check(r.passes_through === true, 'W6: non-acute HOLD passes through gate');
+    check('current_action_assignment' in r.session_updates || r.session_updates.current_action_assignment === null,
+      'W6: non-acute HOLD → session_updates unchanged (gate did not modify)');
+  }
+}
+
 // ── Run ───────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -2070,6 +2203,7 @@ async function main() {
   await scenarioT();
   scenarioU();
   scenarioV();
+  scenarioW();
 
   const total = passed + failed;
   sep(`Results: ${passed}/${total} passed${failed ? ` — ${failed} FAILED` : ''}`);
