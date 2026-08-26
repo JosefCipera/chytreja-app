@@ -711,15 +711,20 @@
   document.getElementById('logout-btn').addEventListener('click', async () => {
     invalidateRequests();
     clearSession(_uid ?? window.__chj_userId);
+    sessionStorage.removeItem('chj_qbudget');
     if (urlUserId) {
-      // Dev bypass: no Firebase session, just go to login
-      window.location.href = '/login';
+      // Dev bypass: no Firebase session, just clear and redirect
+      window.__chj_userId = null;
+      window.location.href = '/';
       return;
     }
     try {
       await signOut(auth);
-      // onAuthStateChanged fires → shows auth overlay automatically
+      // signOut succeeded — clear global and redirect
+      window.__chj_userId = null;
+      window.location.href = '/';
     } catch (err) {
+      // signOut failed — do not redirect; leave user in current auth state
       console.error('[logout]', err);
     }
   });

@@ -1763,6 +1763,81 @@ async function scenarioT() {
     'T6: launcher writes question_budget_remaining to session state');
 }
 
+// ── Scenario X — Logout handler: static contract ─────────────────────────────
+//
+// Static analysis of app/launcher.html source — no browser required.
+// Invariants:
+//   X1:  clearSession called in logout handler
+//   X2:  sessionStorage.removeItem('chj_qbudget') called in logout handler
+//   X3:  window.__chj_userId = null in logout handler
+//   X4:  signOut(auth) called in logout handler
+//   X5:  redirect to '/' only in success path (after signOut or dev bypass)
+//   X6:  redirect NOT in catch block (no redirect on signOut failure)
+//   X7:  logout handler does NOT call tester-reset endpoint
+//   X8:  logout handler does NOT call /api/tester-reset
+
+async function scenarioX() {
+  sep('X — Logout handler: static contract (no browser)');
+
+  const fs = await import('fs');
+  const src = fs.readFileSync(new URL('../app/launcher.html', import.meta.url), 'utf8');
+
+  // Isolate the logout handler block for targeted assertions.
+  // Everything between the logout-btn listener start and the end of its async arrow function.
+  const logoutStart = src.indexOf("getElementById('logout-btn').addEventListener");
+  const logoutEnd   = src.indexOf('\n  });', logoutStart) + 6;
+  const logoutBlock = logoutStart >= 0 ? src.slice(logoutStart, logoutEnd) : '';
+
+  check(logoutBlock.length > 0, 'X0: logout handler block found in launcher.html');
+
+  // X1: clearSession called
+  check(logoutBlock.includes('clearSession('), 'X1: clearSession() called in logout handler');
+
+  // X2: sessionStorage.removeItem('chj_qbudget')
+  check(
+    logoutBlock.includes("sessionStorage.removeItem('chj_qbudget')"),
+    "X2: sessionStorage.removeItem('chj_qbudget') called in logout handler",
+  );
+
+  // X3: window.__chj_userId = null
+  check(
+    logoutBlock.includes('window.__chj_userId = null'),
+    'X3: window.__chj_userId cleared to null in logout handler',
+  );
+
+  // X4: signOut(auth) called
+  check(logoutBlock.includes('signOut(auth)'), 'X4: signOut(auth) called in logout handler');
+
+  // X5: redirect to '/' exists in logout handler (success path + dev bypass)
+  check(
+    logoutBlock.includes("window.location.href = '/'"),
+    "X5: redirect to '/' present in logout handler",
+  );
+
+  // X6: catch block does NOT contain a redirect to '/'
+  // Isolate catch block: between 'catch' and the closing brace of catch
+  const catchStart = logoutBlock.indexOf('} catch (');
+  const catchEnd   = logoutBlock.lastIndexOf('});');
+  const catchBlock = catchStart >= 0 ? logoutBlock.slice(catchStart, catchEnd) : '';
+  check(
+    !catchBlock.includes("window.location.href = '/'"),
+    "X6: catch block does NOT redirect to '/' (no redirect on signOut failure)",
+    `catch block: "${catchBlock.trim().slice(0, 120)}"`,
+  );
+
+  // X7: logout handler does NOT call tester-reset endpoint
+  check(
+    !logoutBlock.includes('tester-reset'),
+    'X7: logout handler does NOT call tester-reset endpoint',
+  );
+
+  // X8: logout handler does NOT fetch /api/tester-reset
+  check(
+    !logoutBlock.includes('/api/tester-reset'),
+    'X8: logout handler does NOT fetch /api/tester-reset',
+  );
+}
+
 // ── Scenario U — Acute gate terminal: actionable next step (no network) ──────
 //
 // Regression for: ACUTE_SYMPTOM_GATE_TERMINAL was returning "nevím dost" with
@@ -2201,6 +2276,7 @@ async function main() {
   scenarioR();
   await scenarioS();
   await scenarioT();
+  await scenarioX();
   scenarioU();
   scenarioV();
   scenarioW();
