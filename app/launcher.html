@@ -378,6 +378,10 @@
     document.getElementById('btn-full-reset').addEventListener('click', async () => {
       const uid = _uid ?? window.__chj_userId;
       if (!uid) { testerStatus('no user', false); return; }
+      // Guard: if an orchestrate request is in flight, its server-side INSERT into
+      // action_assignments may land AFTER the reset DELETE — creating an orphan COMPLETED
+      // row that causes HOLD_TOO_EARLY on the next engine call.
+      if (busy) { testerStatus('Počkej na odpověď, pak resetuj', false); return; }
       testerStatus('resetting…', true);
       try {
         const res = await fetch('/api/tester-reset', {
@@ -407,6 +411,10 @@
 
   // ── Render ───────────────────────────────────────────────────────────────────
   function renderIdle() {
+    _terminalState = false;
+    $input.disabled   = false;
+    $sendBtn.disabled = false;
+    $micBtn.disabled  = false;
     $stage.className = 'dim fade-in';
     $stage.textContent = 'Co se dnes děje?';
     setBadge('—', 'mode-badge');
