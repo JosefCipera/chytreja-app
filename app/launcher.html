@@ -19,7 +19,7 @@
       --cyan-glow:  rgba(58,203,216,0.22);
       --text:       #ddf0f5;
       --text-dim:   #5a7f92;
-      --text-muted: #1e3448;
+      --text-muted: #2e4a60;
       --gold:       #c09a22;
       --danger:     #c04040;
       --success:    #3aaa70;
@@ -87,7 +87,7 @@
     }
     .logo {
       grid-column: 2;
-      font-size: 10px; letter-spacing: 5px; color: var(--text-dim);
+      font-size: 10px; letter-spacing: 5px; color: #8abac8;
       font-weight: 400; text-transform: uppercase; text-align: center;
     }
     .header-right {
@@ -109,7 +109,7 @@
     .avatar-wrapper { position: relative; }
     .avatar-btn {
       width: 34px; height: 34px; border-radius: 50%;
-      background: var(--surface); border: 1px solid rgba(58,203,216,0.22);
+      background: var(--surface); border: 1px solid rgba(58,203,216,0.42);
       color: var(--cyan); font-size: 13px; font-weight: 500;
       cursor: pointer; display: flex; align-items: center; justify-content: center;
       font-family: inherit; transition: border-color 0.2s, box-shadow 0.2s;
@@ -152,20 +152,20 @@
     #orb {
       width: 150px; height: 150px; border-radius: 50%; flex-shrink: 0;
       background: radial-gradient(circle at 40% 35%,
-        rgba(100,220,240,0.10) 0%,
-        rgba(58,203,216,0.04) 55%,
+        rgba(100,220,240,0.16) 0%,
+        rgba(58,203,216,0.07) 55%,
         transparent 72%
       );
-      border: 1px solid rgba(58,203,216,0.18);
+      border: 1px solid rgba(58,203,216,0.28);
       box-shadow:
-        0 0 40px rgba(58,203,216,0.09),
-        0 0 90px rgba(58,203,216,0.04),
-        inset 0 0 30px rgba(58,203,216,0.04);
+        0 0 45px rgba(58,203,216,0.16),
+        0 0 90px rgba(58,203,216,0.07),
+        inset 0 0 30px rgba(58,203,216,0.06);
       animation: orbPulse 5s ease-in-out infinite;
     }
     @keyframes orbPulse {
-      0%,100% { box-shadow: 0 0 40px rgba(58,203,216,0.09), 0 0 90px rgba(58,203,216,0.04); opacity: 0.7; }
-      50%      { box-shadow: 0 0 65px rgba(58,203,216,0.18), 0 0 130px rgba(58,203,216,0.08); opacity: 1; }
+      0%,100% { box-shadow: 0 0 45px rgba(58,203,216,0.16), 0 0 90px rgba(58,203,216,0.07); opacity: 0.82; }
+      50%      { box-shadow: 0 0 75px rgba(58,203,216,0.28), 0 0 140px rgba(58,203,216,0.12); opacity: 1; }
     }
 
     /* ── Stage label (DNES / ✓) ── */
@@ -185,7 +185,12 @@
     }
     #stage-text.welcome {
       font-size: clamp(26px,7vw,34px); font-weight: 300;
-      line-height: 1.45; color: var(--text); white-space: pre-line;
+      line-height: 1.45; color: var(--text);
+    }
+    #stage-subtitle {
+      font-size: clamp(21px,5.6vw,27px); font-weight: 300;
+      line-height: 1.5; text-align: center; color: #6a90a0;
+      max-width: 520px; width: 100%;
     }
     #stage-text.dim     { color: var(--text-dim); font-size: clamp(16px,4.5vw,20px); }
     #stage-text.danger  { color: #d06060; }
@@ -234,7 +239,7 @@
     #text-input {
       flex: 1;
       background: rgba(12,24,48,0.85);
-      border: 1px solid rgba(58,203,216,0.18);
+      border: 1px solid rgba(58,203,216,0.32);
       border-radius: 14px;
       color: var(--text); font-size: 16px; padding: 14px 18px;
       font-family: inherit; outline: none;
@@ -250,9 +255,9 @@
 
     .icon-btn {
       width: 52px; height: 52px; border-radius: 14px;
-      border: 1px solid rgba(58,203,216,0.18);
+      border: 1px solid rgba(58,203,216,0.30);
       background: rgba(12,24,48,0.85);
-      color: var(--text-dim);
+      color: #7ab8c8;
       cursor: pointer; display: flex; align-items: center; justify-content: center;
       transition: all 0.2s; flex-shrink: 0;
     }
@@ -260,9 +265,10 @@
     .icon-btn:hover { border-color: var(--cyan); color: var(--cyan); }
     .icon-btn.active { border-color: var(--cyan); color: var(--cyan); animation: pulse 1.4s infinite; }
     .icon-btn.send {
-      background: rgba(20,60,80,0.9); border-color: rgba(58,203,216,0.38); color: var(--cyan);
+      background: rgba(20,60,80,0.9); border-color: rgba(58,203,216,0.58); color: var(--cyan);
+      box-shadow: 0 0 10px rgba(58,203,216,0.12);
     }
-    .icon-btn.send:hover { box-shadow: 0 0 18px var(--cyan-glow); border-color: var(--cyan); }
+    .icon-btn.send:hover { box-shadow: 0 0 22px var(--cyan-glow); border-color: var(--cyan); }
     .icon-btn:disabled { opacity: 0.3; cursor: default; }
 
     @keyframes pulse {
@@ -292,8 +298,8 @@
       top: calc(env(safe-area-inset-top, 0px) + 10px);
       left: 12px;
       font-size: 8px; letter-spacing: 2px; font-family: 'Courier New', monospace;
-      color: rgba(58,203,216,0.35); padding: 3px 7px;
-      border: 1px solid rgba(58,203,216,0.10); border-radius: 20px;
+      color: rgba(58,203,216,0.65); padding: 3px 7px;
+      border: 1px solid rgba(58,203,216,0.28); border-radius: 20px;
       pointer-events: none; z-index: 60; text-transform: uppercase;
     }
 
@@ -437,6 +443,7 @@
     <div id="orb" class="hidden"></div>
     <div id="stage-label"></div>
     <div id="stage-text" class="loading">…</div>
+    <div id="stage-subtitle" class="hidden"></div>
     <div id="chips"></div>
   </main>
 
@@ -529,6 +536,7 @@
   // ── New refs (facelift) ──────────────────────────────────────────────────────
   const $orb              = document.getElementById('orb');
   const $stageLabel       = document.getElementById('stage-label');
+  const $stageSub         = document.getElementById('stage-subtitle');
   const $testerModal      = document.getElementById('tester-modal');
   const $testerModalSt    = document.getElementById('tester-modal-status');
   const $testerPill       = document.getElementById('tester-pill');
@@ -669,7 +677,9 @@
     $stageLabel.textContent = '';
     $stageLabel.className   = '';
     $stage.className   = 'welcome fade-in';
-    $stage.textContent = 'Ahoj, jsem Chytré já.\nŘekni mi, jak se dnes máš.';
+    $stage.textContent = 'Ahoj, jsem Chytré já.';
+    $stageSub.textContent = 'Řekni mi, jak se dnes máš.';
+    $stageSub.classList.remove('hidden');
     setBadge('—', 'mode-badge');
     $chips.innerHTML = '';
     $input.placeholder = 'Napiš nebo řekni…';
@@ -678,8 +688,9 @@
   function render(response) {
     const { mode, text, buttons = [], expects_reply, debug: dbg } = response;
 
-    // Hide orb; set stage label by mode
+    // Hide orb and welcome subtitle; set stage label by mode
     $orb.classList.add('hidden');
+    $stageSub.classList.add('hidden');
     $stageLabel.className = '';
     if      (mode === 'ACT')  { $stageLabel.textContent = 'DNES'; }
     else if (mode === 'HOLD') { $stageLabel.textContent = '✓'; $stageLabel.className = 'hold-mark'; }
@@ -856,6 +867,7 @@
     $micBtn.disabled  = on || _terminalState;
     if (on) {
       $orb.classList.add('hidden');
+      $stageSub.classList.add('hidden');
       $stageLabel.textContent = '';
       $stage.textContent = '…';
       $stage.className = 'loading';
