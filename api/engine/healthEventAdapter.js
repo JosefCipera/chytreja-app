@@ -59,6 +59,7 @@ export const EVIDENCE_STORAGE_REGISTRY = {
   balanc_jedna_noha:     { table: 'physical', key: 'balanc_jedna_noha' },
   rovnovaha_zavrene_oci: { table: 'physical', key: 'rovnovaha_zavrene_oci' },
   sedentary_hours_day:   { table: 'physical', key: 'sedentary_hours_day' },
+  fatigue_context:       { table: 'physical', key: 'fatigue_context' },
 
   // Decision: fall_history stored in physical (NOT node_inputs).
   // Rationale: physical is canonical onboarding Q&A store.

@@ -723,6 +723,18 @@ export async function processInput(userId, userText, sessionState = {}) {
     }
   }
 
+  // ── Fatigue context value normalization ──────────────────────────────────────
+  // Fires when the user's answer to the fatigue clarification question is received.
+  // Normalizes free-text answer to canonical enum before routeAnswer persists it.
+  if (adapterType === 'ANSWER_TO_EVIDENCE_QUESTION'
+      && event.payload.evidence_type === 'fatigue_context') {
+    const raw = String(event.payload.value ?? userText).toLowerCase();
+    event.payload.value =
+      /nová|neobvykl|nezvykl|jinak|poprvé|nikdy.{0,8}dřív|zvláštní/.test(raw) ? 'NEW_OR_UNUSUAL'
+      : /běžná|obvykl|normáln|vždy|po.{0,6}námaze|po.{0,6}náročném|tak.jako.vždy/.test(raw) ? 'ROUTINE'
+      : 'UNKNOWN';
+  }
+
   // 5. Persist + run engine via adapter (no direct DB access here)
   const result = await applyHealthEvent(userId, event);
 
@@ -760,6 +772,47 @@ export async function processInput(userId, userText, sessionState = {}) {
         pending_question: { text: sed_text, evidence_type: 'sedentary_hours_day', type: 'GENERAL' },
       },
       debug: { reason_code: 'ZERO_DATA_FOLLOWUP', warnings: result.warnings ?? [] },
+    };
+  }
+
+  // ── Subjective fatigue clarification guard ────────────────────────────────────
+  // Fires when the user says "Jsem unavený/vyčerpaný/…" and the engine returns ASK
+  // (high-urgency NBE like gait_stability dominates), but we haven't yet asked about
+  // the fatigue context (new/unusual vs routine).
+  //
+  // applyHealthEvent already ran — "Jsem unavený." is stored to symptoms[].
+  // This guard replaces the engine-selected NBE with a contextual clarification question
+  // as an EARLY RETURN — bypasses the budget gate (clarification costs 0 budget slots).
+  //
+  // Guards:
+  //   event_type check — prevents firing on ANSWER/WHY turns
+  //   state.fatigue_context — cross-session: skip if already set in DB (via orchestrate.js)
+  //   state.pending_question — in-session: skip if a question is already pending
+  //   presentation.mode === 'ASK' — only intercept when engine wants to ask anyway
+  const SUBJECTIVE_FATIGUE_RE =
+    /\bjsem\s+(unaven[aý]|vyčerpa[ný]|malátný|bez\s+energie)|\bnemám\s+energii\b/i;
+
+  if (event_type === 'GENERAL_HEALTH_REQUEST'
+      && !state.fatigue_context
+      && !state.pending_question
+      && presentation.mode === 'ASK'
+      && SUBJECTIVE_FATIGUE_RE.test(userText)) {
+    const clarText =
+      'Je ta únava něco nového nebo nezvyklého, nebo je to spíš běžná únava po náročném dni?';
+    return {
+      mode:          'ASK',
+      text:          clarText,
+      buttons:       [],
+      expects_reply: true,
+      session_updates: {
+        ...sessionUpdates,
+        pending_question: {
+          text:          clarText,
+          evidence_type: 'fatigue_context',
+          type:          'EVIDENCE',
+        },
+      },
+      debug: { reason_code: 'SUBJECTIVE_FATIGUE_CLARIFICATION', warnings: result.warnings ?? [] },
     };
   }
 

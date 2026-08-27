@@ -97,6 +97,31 @@ Produkt je na `dev.iting.cz` (branch `main`). Engine stack je **feature-frozen a
 
 ---
 
+### 7. Subjective fatigue clarification — `fatigue_context` persistence
+
+**Problém (P1):** `Jsem unavený.` → engine vrátil ASK s otázkou `Cítíš se při běžné chůzi stabilně?` (gait_stability), která nesouvisí se vstupem. Příčina strukturální: "unavený" se ukládá jako raw text do `symptoms[]` bez signálu do enginu, zatímco MOBILITY_NODES (GAIT_INSTABILITY atd.) mají nejvyšší urgency prioritu a dominují v NBE výběru.
+
+**Řešení (TESTER 0.1):** Minimální clarification flow s normalizovaným `fatigue_context` polem:
+
+1. `api/engine/healthEventAdapter.js` — přidán záznam `fatigue_context: { table: 'physical', key: 'fatigue_context' }` do `EVIDENCE_STORAGE_REGISTRY`. Umožňuje `routeAnswer('fatigue_context')` → `upsertPhysical(userId, 'fatigue_context', ...)` bez jakékoli logické změny.
+2. `api/orchestrate.js` — rozšířen SELECT o `physical`, `fatigue_context` injektován do session state server-side (nikoli z klientského session).
+3. `api/engine/orchestrator.js` — dvě přidání (bez mazání):
+   - **Normalization guard** (před `applyHealthEvent`): normalizuje volný text odpovědi na `NEW_OR_UNUSUAL | ROUTINE | UNKNOWN` při `evidence_type === 'fatigue_context'`.
+   - **Post-presentation fatigue clarification guard** (po ZERO_DATA_FOLLOWUP, před P0 budget gate): pokud `GENERAL_HEALTH_REQUEST` + fatigue text + `presentation.mode === 'ASK'` + `fatigue_context` ještě nenastaveno (cross-session) + žádná pending_question v session → vrátí clarification ASK jako **early return, který obchází budget gate** (clarification nestojí žádný budget slot).
+
+**Výsledné chování:**
+- `Jsem unavený.` → `Je ta únava něco nového nebo nezvyklého, nebo je to spíš běžná únava po náročném dni?`
+- Odpověď → normalizace → `physical.fatigue_context = NEW_OR_UNUSUAL | ROUTINE | UNKNOWN` → standardní engine flow
+- Příští session: `fatigue_context` již v DB → guard se nespustí → standardní NBE bez opakování otázky
+
+**Safety Gate poznámka:** `NEW_OR_UNUSUAL` v TESTER 0.1 **nespouští Safety Gate ani medicínskou eskalaci**. Aktuální Safety Gate reaguje výhradně na `pending_clarifications[].type === 'new_symptom' && temporal_context === 'acute'`. `fatigue_context` je pure label v `physical` JSONB — engine neobsahuje activation rule pro tento klíč. Eskalační logika by vyžadovala samostatné engineering rozhodnutí mimo scope TESTER 0.1.
+
+**Testy:**
+- `scripts/test-health-event-adapter.mjs` → S10 přidán → **83/83 pass**
+- `scripts/test-orchestrator.mjs` → scenarioSC (SC-1–SC-6) přidán → **256/271** (15 known N/O baseline beze změny)
+
+---
+
 ## Architektura dokumentace (po 2026-08-27)
 
 | Soubor | Role |

@@ -2697,6 +2697,170 @@ async function scenarioAC() {
   }
 }
 
+// ── Scenario SC — Subjective fatigue clarification guard (no network) ─────────
+//
+// Guards the SUBJECTIVE_FATIGUE_CLARIFICATION early return in orchestrator.js.
+// All assertions are inline simulations — no DB access.
+//
+// SC-1: "Jsem unavený." → mode=ASK, reason_code=SUBJECTIVE_FATIGUE_CLARIFICATION,
+//         pending_question.evidence_type='fatigue_context', budget unchanged
+// SC-2: "Jsem vyčerpaný." → same (regex coverage, different word)
+// SC-3: Turn 2 — pending_question=fatigue_context, answer text containing "nová" →
+//         guard does NOT fire again (adapterType=ANSWER_TO_EVIDENCE_QUESTION)
+// SC-4: state.pending_question already set → guard does NOT fire
+// SC-5: "Jsem nemocný." → guard does NOT fire (not fatigue pattern)
+// SC-6: question_budget_remaining=0 → clarification STILL fires (early return bypasses
+//         budget gate); on next turn (Turn 2) budget gate must handle budget=0
+
+function scenarioSC() {
+  sep('SC — Subjective fatigue clarification guard (no network)');
+
+  const CLARIF_TEXT =
+    'Je ta únava něco nového nebo nezvyklého, nebo je to spíš běžná únava po náročném dni?';
+  const SUBJECTIVE_FATIGUE_RE =
+    /\bjsem\s+(unaven[aý]|vyčerpa[ný]|malátný|bez\s+energie)|\bnemám\s+energii\b/i;
+
+  // Inline simulation of the guard (mirrors orchestrator.js SUBJECTIVE_FATIGUE_CLARIFICATION block).
+  // event_type here is the original classifier type (not adapterType).
+  function applyFatigueGuard({
+    event_type,
+    userText,
+    presentationMode,
+    stateFatigueContext = null,
+    statePendingQuestion = null,
+    sessionUpdates = {},
+    budgetRemaining = 3,
+  }) {
+    // Guard condition (mirrors orchestrator.js)
+    if (event_type === 'GENERAL_HEALTH_REQUEST'
+        && !stateFatigueContext
+        && !statePendingQuestion
+        && presentationMode === 'ASK'
+        && SUBJECTIVE_FATIGUE_RE.test(userText)) {
+      return {
+        mode:          'ASK',
+        text:          CLARIF_TEXT,
+        buttons:       [],
+        expects_reply: true,
+        session_updates: {
+          ...sessionUpdates,
+          pending_question: {
+            text:          CLARIF_TEXT,
+            evidence_type: 'fatigue_context',
+            type:          'EVIDENCE',
+          },
+        },
+        debug: { reason_code: 'SUBJECTIVE_FATIGUE_CLARIFICATION' },
+        budget_unchanged: budgetRemaining, // guard is early return — budget gate not reached
+      };
+    }
+
+    // Pass-through: guard did not fire; budget gate would run next
+    return { mode: presentationMode, guard_fired: false, budget_unchanged: budgetRemaining };
+  }
+
+  // SC-1: "Jsem unavený." — canonical Czech subjective fatigue
+  {
+    const r = applyFatigueGuard({
+      event_type:    'GENERAL_HEALTH_REQUEST',
+      userText:      'Jsem unavený.',
+      presentationMode: 'ASK',
+      budgetRemaining: 3,
+    });
+    check(r.mode === 'ASK',
+      'SC-1: mode=ASK');
+    check(r.debug?.reason_code === 'SUBJECTIVE_FATIGUE_CLARIFICATION',
+      'SC-1: reason_code=SUBJECTIVE_FATIGUE_CLARIFICATION');
+    check(r.session_updates?.pending_question?.evidence_type === 'fatigue_context',
+      'SC-1: pending_question.evidence_type=fatigue_context');
+    check(r.session_updates?.pending_question?.type === 'EVIDENCE',
+      'SC-1: pending_question.type=EVIDENCE');
+    check(r.text === CLARIF_TEXT,
+      'SC-1: text is exact clarification question');
+    check(r.budget_unchanged === 3,
+      'SC-1: budget unchanged (clarification bypasses budget gate)');
+  }
+
+  // SC-2: "Jsem vyčerpaný." — alternate fatigue word
+  {
+    const r = applyFatigueGuard({
+      event_type:    'GENERAL_HEALTH_REQUEST',
+      userText:      'Jsem vyčerpaný.',
+      presentationMode: 'ASK',
+    });
+    check(r.debug?.reason_code === 'SUBJECTIVE_FATIGUE_CLARIFICATION',
+      'SC-2: "Jsem vyčerpaný." → guard fires (regex covers vyčerpaný)');
+    check(r.session_updates?.pending_question?.evidence_type === 'fatigue_context',
+      'SC-2: pending_question.evidence_type=fatigue_context');
+  }
+
+  // SC-3: Turn 2 — ANSWER_TO_EVIDENCE_QUESTION → guard does NOT fire
+  // (event_type check prevents re-firing on the answer turn)
+  {
+    const r = applyFatigueGuard({
+      event_type:    'ANSWER_TO_EVIDENCE_QUESTION', // ← different event_type
+      userText:      'Je to nová únava.',
+      presentationMode: 'ASK',
+    });
+    check(r.guard_fired === false,
+      'SC-3: ANSWER_TO_EVIDENCE_QUESTION → guard does NOT fire (event_type check)');
+    check(r.mode === 'ASK',
+      'SC-3: presentation mode passes through unchanged');
+  }
+
+  // SC-4: state.pending_question already set → guard does NOT fire
+  {
+    const existingQ = { text: 'Cítíš se při chůzi stabilně?', evidence_type: 'gait_stability', type: 'EVIDENCE' };
+    const r = applyFatigueGuard({
+      event_type:         'GENERAL_HEALTH_REQUEST',
+      userText:           'Jsem unavený.',
+      presentationMode:   'ASK',
+      statePendingQuestion: existingQ, // ← already set
+    });
+    check(r.guard_fired === false,
+      'SC-4: state.pending_question already set → guard does NOT fire');
+  }
+
+  // SC-5: "Jsem nemocný." → guard does NOT fire (not a fatigue match)
+  {
+    const r = applyFatigueGuard({
+      event_type:    'GENERAL_HEALTH_REQUEST',
+      userText:      'Jsem nemocný.',
+      presentationMode: 'ASK',
+    });
+    check(r.guard_fired === false,
+      'SC-5: "Jsem nemocný." → guard does NOT fire (not fatigue pattern)');
+  }
+
+  // SC-6: question_budget_remaining=0 → clarification STILL fires (early return before budget gate)
+  {
+    const r = applyFatigueGuard({
+      event_type:    'GENERAL_HEALTH_REQUEST',
+      userText:      'Jsem unavený.',
+      presentationMode: 'ASK',
+      budgetRemaining: 0,
+    });
+    check(r.debug?.reason_code === 'SUBJECTIVE_FATIGUE_CLARIFICATION',
+      'SC-6: budget=0 → clarification STILL fires (early return bypasses budget gate)');
+    check(r.budget_unchanged === 0,
+      'SC-6: budget remains 0 after clarification (not decremented by clarification)');
+    check(r.session_updates?.pending_question?.evidence_type === 'fatigue_context',
+      'SC-6: pending_question set for fatigue_context even with budget=0');
+
+    // Turn 2 with budget=0: ANSWER turn falls through to budget gate → BUDGET_EXHAUSTED
+    // (simulates what would happen after the clarification is answered when budget=0)
+    // Guard does not fire on ANSWER_TO_EVIDENCE_QUESTION → budget gate handles it.
+    const turn2 = applyFatigueGuard({
+      event_type:    'ANSWER_TO_EVIDENCE_QUESTION',
+      userText:      'Je to nová únava.',
+      presentationMode: 'ASK',
+      budgetRemaining: 0,
+    });
+    check(turn2.guard_fired === false,
+      'SC-6 turn2: ANSWER_TO_EVIDENCE_QUESTION → guard does NOT fire (budget gate handles budget=0)');
+  }
+}
+
 // ── Run ───────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -2732,6 +2896,7 @@ async function main() {
   scenarioZ();
   await scenarioZReal();
   await scenarioAC();
+  scenarioSC();
 
   const total = passed + failed;
   sep(`Results: ${passed}/${total} passed${failed ? ` — ${failed} FAILED` : ''}`);

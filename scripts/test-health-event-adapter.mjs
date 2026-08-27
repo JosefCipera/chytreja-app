@@ -766,6 +766,75 @@ async function s9_skip_action_id_ineligible_today() {
   console.log('  state restored ✓');
 }
 
+// ── S10: fatigue_context answer → physical.fatigue_context persisted ──────────
+// Verifies that ANSWER_TO_EVIDENCE_QUESTION with evidence_type='fatigue_context'
+// persists a normalized enum value (NEW_OR_UNUSUAL | ROUTINE | UNKNOWN)
+// to user_health_profile.physical.fatigue_context via routeAnswer().
+// fatigue_context has no engine activation rule — persistence_status must be 'ok'.
+
+async function s10_fatigue_context() {
+  sep('S10 — ANSWER { evidence_type: "fatigue_context" } → physical.fatigue_context persisted');
+  console.log('  Verifies fatigue_context entry in EVIDENCE_STORAGE_REGISTRY wires up routeAnswer');
+
+  check(
+    Boolean(EVIDENCE_STORAGE_REGISTRY.fatigue_context),
+    'EVIDENCE_STORAGE_REGISTRY has fatigue_context key'
+  );
+  check(
+    EVIDENCE_STORAGE_REGISTRY.fatigue_context?.table === 'physical',
+    'fatigue_context table = physical'
+  );
+  check(
+    EVIDENCE_STORAGE_REGISTRY.fatigue_context?.key === 'fatigue_context',
+    'fatigue_context key = fatigue_context'
+  );
+
+  const savedPhysical = await savePhysical();
+
+  // Ensure clean state — remove any prior fatigue_context
+  await restorePhysical({ ...(savedPhysical || {}), fatigue_context: undefined });
+
+  const event = {
+    event_type: 'ANSWER_TO_EVIDENCE_QUESTION',
+    event_id:   crypto.randomUUID(),
+    source:     'text',
+    timestamp:  new Date().toISOString(),
+    payload: { evidence_type: 'fatigue_context', value: 'NEW_OR_UNUSUAL' },
+  };
+
+  const result = await applyHealthEvent(USER_ID, event);
+  showResult(result);
+
+  const { data: row } = await sb.from('user_health_profile')
+    .select('physical').eq('user_id', USER_ID).maybeSingle();
+
+  const storedValue = row?.physical?.fatigue_context;
+  console.log(`  physical.fatigue_context: ${storedValue ?? 'missing'}`);
+
+  check(result.persistence_status === 'ok',                      'persistence_status = ok');
+  check(['NEW_OR_UNUSUAL', 'ROUTINE', 'UNKNOWN'].includes(storedValue),
+    `physical.fatigue_context ∈ enum (got: ${storedValue})`);
+  check(storedValue === 'NEW_OR_UNUSUAL',                        'stored value matches sent value');
+
+  // Test ROUTINE value
+  const event2 = {
+    event_type: 'ANSWER_TO_EVIDENCE_QUESTION',
+    event_id:   crypto.randomUUID(),
+    source:     'text',
+    timestamp:  new Date().toISOString(),
+    payload: { evidence_type: 'fatigue_context', value: 'ROUTINE' },
+  };
+  const result2 = await applyHealthEvent(USER_ID, event2);
+  const { data: row2 } = await sb.from('user_health_profile')
+    .select('physical').eq('user_id', USER_ID).maybeSingle();
+
+  check(result2.persistence_status === 'ok',                     'ROUTINE: persistence_status = ok');
+  check(row2?.physical?.fatigue_context === 'ROUTINE',           'ROUTINE: physical.fatigue_context = ROUTINE');
+
+  await restorePhysical(savedPhysical);
+  console.log('  state restored ✓');
+}
+
 // ── Run ───────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -783,6 +852,7 @@ async function main() {
   await s7_wearable_availability();
   await s8_general_health_request_age_and_diagnosis();
   await s9_skip_action_id_ineligible_today();
+  await s10_fatigue_context();
 
   const total = passed + failed;
   sep(`Results: ${passed}/${total} passed${failed ? ` — ${failed} FAILED` : ''}`);

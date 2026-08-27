@@ -53,14 +53,15 @@ export default async function handler(req, res) {
     // Client session is the authority for temporal session fields; DB is authority for health facts.
     const { data: profileRow } = await getSb()
       .from('user_health_profile')
-      .select('pending_clarifications')
+      .select('pending_clarifications, physical')
       .eq('user_id', userId)
       .maybeSingle();
     const pendingClarifications = Array.isArray(profileRow?.pending_clarifications)
       ? profileRow.pending_clarifications
       : [];
+    const fatigueContext = profileRow?.physical?.fatigue_context ?? null;
 
-    const sessionWithPending = { ...session, pending_clarifications: pendingClarifications };
+    const sessionWithPending = { ...session, pending_clarifications: pendingClarifications, fatigue_context: fatigueContext };
 
     const response = await processInput(userId, text.trim(), sessionWithPending);
 
