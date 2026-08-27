@@ -72,7 +72,7 @@ Před změnou rozhodovacího core přečíst `docs/CHJ-ENGINE-ARCHITECTURE.md`.
 | `api/engine/engine.js` | 🔒 LOCKED |
 | `api/engine/dailyDecision.js` | 🔒 LOCKED |
 | `api/engine/healthEventAdapter.js` | 🔒 LOCKED — 28/28 pass |
-| `api/engine/orchestrator.js` | 🔒 LOCKED — 31/31 pass |
+| `api/engine/orchestrator.js` | 🔒 LOCKED — 31/31 unit/contract pass; broader suite 240/255, 15 known N/O baseline |
 | `app/js/universe/universe-init.js` | ⚠️ JÁDRO Vesmír |
 | `app/js/universe/universe-core.js` | ⚠️ JÁDRO Vesmír |
 | `api/hud-data-bulk.js` | ⚠️ JÁDRO Vesmír |

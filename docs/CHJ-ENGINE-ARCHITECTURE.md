@@ -2,7 +2,7 @@
 
 > **Canonical technical contract.** Stav k: 2026-08-16 · Engine version: `1.0.0`  
 > Produktová ústava: `docs/CHJ-PRODUCT-ARCHITECTURE.md`  
-> Vychází z: `docs/CHJ-ARCHITECTURE-V1.md` (2026-08-11)
+> Vychází z: `docs/archive/CHJ-ARCHITECTURE-V1.md` (2026-08-11)
 
 ---
 
@@ -328,6 +328,25 @@ actual_reps             integer | null
 - Anchor pro Response Evaluation (`first_completed_at`)
 - Neaktivuje `HOLD` samotné — HOLD vyžaduje splněnou `minimum_exposure_rule`
 
+### NBA Ranking Policy (zamčeno — engine.js LOCKED)
+
+Kandidáti jsou řazeni lexikograficky v tomto pořadí:
+
+```
+1. safety_score DESC          ← SAFE > CONTRAINDICATED (eliminační krok)
+2. MME score DESC             ← minimum_movement_equivalent weight
+3. leverage_affinity DESC     ← shoda s vybraným leverage node
+4. effect_on_leverage DESC    ← očekávaný efekt na leverage node
+5. goal_impact DESC           ← dopad na uživatelův cíl
+6. feasibility DESC           ← proveditelnost vzhledem k omezením
+7. tier ASC                   ← starter (nižší číslo) má přednost před advanced
+8. time_to_feedback ASC       ← rychlejší feedback = výše
+9. friction ASC               ← nižší friction = výše
+10. response_history bonus    ← CONSISTENT_WITH_EXPECTED_RESPONSE jako tiebreaker
+```
+
+`tier` reprezentuje progression/starter suitability — nižší tier = vhodnější pro začátek. Při shodné relevanci dostane starter tier přednost, aby nový uživatel dostal co nejdřív pozitivní zpětnou smyčku.
+
 ### SKIPPED
 
 - Nepočítá se jako `sessions_completed` — nepostupuje exposure
@@ -485,6 +504,12 @@ pending_question           { evidence_type, text } — aktuálně čekající NB
 current_action_assignment  { action_id, intervention_id, label } — přiřazená akce
 ```
 
+### Behaviorální garance (post 2026-08-27, LOCKED)
+
+**ZERO_DATA_FOLLOWUP guard:** Pokud uživatelův vstup neobsahuje žádná zdravotní data interpretovatelná jako event, orchestrátor nevolá engine — vrátí cílené ASK na konkrétní pending evidence question místo opakovaného generic loopu. Zabraňuje nekonečné zero-data ASK smyčce.
+
+**ACTION_COMPLETED → HOLD:** Pokud `event_type === 'ACTION_COMPLETED'` a engine vrátí `mode=HOLD`, orchestrátor vrátí potvrzení dokončení akce (`Hotovo. Pro dnešek stačí. Výsledek budeme hodnotit až po několika opakováních.`) — ne generický HOLD label akce. Text není přeformulací rozhodnutí, jen rozlišuje kontext eventu.
+
 ### Hard boundaries orchestratoru
 
 - Nesmí měnit `PERSON_NODE_STATE`
@@ -558,7 +583,8 @@ api/
 ### Presentation / Integration Layer (mimo Engine Core)
 
 ```
-app/js/universe/launcher.js   ← shell, ElevenLabs TTS, session state, volá /api/orchestrate
+app/js/universe/launcher.js   ← Nebula UI shell, ElevenLabs TTS, session state, volá /api/orchestrate
+app/launcher.html             ← text UI launcher; canonical /api/orchestrate flow; tester panel (?tester=1)
 api/chat.js                   ← legacy CHJ AI verdikt (starý flow, mimo engine pipeline)
 api/tts.js                    ← ElevenLabs TTS (Mode A: text→audio, Mode B: context→Haiku→audio)
 api/hud-data-bulk.js          ← Vitality Score pro Vesmír / Launcher laser — mimo engine
@@ -600,7 +626,7 @@ Léky: Pradaxa (antikoagulans), Betaloc/Concor (betablokátor). BMI ~26.1.
 | LOW_MUSCLE_STRENGTH | UNKNOWN | unknown |
 | LOSS_OF_FLOOR_RISE_ABILITY | UNKNOWN | unknown |
 
-Josefovy tři CONTEXT_DECISION_GATE jsou všechny `EVIDENCE_SUFFICIENT` — viz původní `CHJ-ARCHITECTURE-V1.md` pro detail.
+Josefovy tři CONTEXT_DECISION_GATE jsou všechny `EVIDENCE_SUFFICIENT` — viz `docs/archive/CHJ-ARCHITECTURE-V1.md` pro detail.
 
 ---
 

@@ -1,8 +1,8 @@
 # CHJ Product Architecture — Zamčená ústava
 
 > **Canonical product architecture document.** Stav k: 2026-08-15  
-> Vychází z: `docs/CHJ-ARCHITECTURE-V2.md` (2026-08-13)  
-> Technický detail Health Engine: `docs/CHJ-ARCHITECTURE-V1.md`
+> Vychází z: `docs/archive/CHJ-ARCHITECTURE-V2.md` (2026-08-13)  
+> Technický detail Health Engine: `docs/archive/CHJ-ARCHITECTURE-V1.md`
 
 ---
 
@@ -228,7 +228,7 @@ Microsoft/Copilot může být v budoucnu:
 
 ---
 
-## 10. MVP Status — Health Engine v0.1 (2026-08)
+## 10. MVP Status — Health Engine v1 / ENGINE_VERSION 1.0.0 (2026-08)
 
 Health Engine je **feature-frozen**, ne absolutně locked:
 
@@ -289,6 +289,10 @@ api/
     ├── nextBestAction.js     ← computeNextBestAction (safety-filtered, ranked)
     └── adherence.js          ← Feedback Loop v0.1
 
+app/
+├── launcher.html             ← text UI launcher; canonical /api/orchestrate flow; tester panel (?tester=1)
+└── js/universe/launcher.js  ← Nebula UI shell, ElevenLabs TTS, session state, volá /api/orchestrate
+
 data/engine/
 ├── master.json               ← Master slice (MASTER_NODE[], MASTER_EDGE[])
 └── intervention-map.json     ← interventions + expected_responses + minimum_exposure_rule
@@ -299,10 +303,13 @@ data/engine/
 | Dokument | Obsah | Stav |
 |----------|-------|------|
 | `docs/CHJ-PRODUCT-ARCHITECTURE.md` | Toto — product constitution | ✅ aktuální |
-| `docs/CHJ-ARCHITECTURE-V1.md` | Health Engine v1 technický detail | ✅ aktuální |
-| `docs/checkpoints/2026-08-12-engine-v1.md` | Engine v1 checkpoint | ✅ historický záznam |
-| `docs/roadmap.md` | Produktová roadmapa | ⚠️ Fáze 3 superseded |
-| `CLAUDE.md` | Instrukce pro Claude Code | ✅ aktuální (potřebuje zkrátit) |
+| `docs/CHJ-ENGINE-ARCHITECTURE.md` | Canonical engine contract — pipeline, contracts, DAILY_DECISION | ✅ aktuální |
+| `docs/DEVLOG.md` | Aktuální handoff — stav 2026-08-27, E2E průchod, open issues | ✅ aktuální |
+| `docs/archive/CHJ-ARCHITECTURE-V1.md` | Health Engine v1 technický detail | 📦 archiv |
+| `docs/archive/CHJ-ARCHITECTURE-V2.md` | System-level bridge dokument | 📦 archiv |
+| `docs/archive/roadmap.md` | Produktová roadmapa Fáze 1–5 | 📦 archiv |
+| `docs/checkpoints/2026-08-12-engine-v1.md` | Engine v1 checkpoint | 📦 historický záznam |
+| `CLAUDE.md` | Instrukce pro Claude Code | ✅ aktuální |
 
 ### Known Tech Debt
 
