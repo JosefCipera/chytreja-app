@@ -15,6 +15,7 @@ import { createClient } from '@supabase/supabase-js';
 // Production and demo accounts are protected by not being listed here.
 export const TESTER_UIDS = new Set([
   'u58iRWcMr9bbakFMJYGFGARpi9h1', // Tester 0
+  'e0ZYA3auBYUh9TOOtqQPqbkIcrJ2', // Tester 1
   // Add additional tester accounts here when needed
   // Josef (vPrm5PNzLWWWhi9sSwYVbkb9FaD3) and Kovářová are PROTECTED — never add here
 ]);
