@@ -29,8 +29,15 @@ import { createClient }             from '@supabase/supabase-js';
 import { computeDailyDecision }     from '../api/engine/dailyDecision.js';
 import { runTesterReset, TESTER_UIDS } from '../api/tester-reset.js';
 
-const sb      = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
-const USER_ID = process.argv[2] || 'vPrm5PNzLWWWhi9sSwYVbkb9FaD3'; // Josef default
+const sb       = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+const USER_ID  = process.argv[2] || `test-orch-${Date.now()}`; // ephemeral by default
+const EPHEMERAL = !process.argv[2];
+
+const SEED_HP = {
+  physical: { sedentary_hours_day: 8, steps_day: 4000 },
+  diagnoses: [], symptoms: [], medications: [], lifestyle: {},
+};
+const SEED_UP = { birth_year: 1975 };
 
 let passed = 0;
 let failed = 0;
@@ -1109,30 +1116,56 @@ async function scenarioM() {
 async function scenarioN() {
   sep('N — tester-reset: full reset clears engine inputs + presentation state');
 
-  const TESTER_UID    = USER_ID;
+  // N1-N2: use USER_ID (N1 uses PROTECTED_UID; N2 session mode has no whitelist check)
+  const N12_UID       = USER_ID;
+  // N3-N5: TEMPORARY EXCEPTION — full reset requires TESTER_UIDS membership.
+  //   Tester 0 state is snapshot/restored in finally so automated runs leave no side effects.
+  const TESTER_0      = 'u58iRWcMr9bbakFMJYGFGARpi9h1';
   const PROTECTED_UID = 'NOT_A_REAL_UID_protected_account_12345';
 
-  // Save full state before test
-  const savedPhysical    = await savePhysical();
+  // Save N12_UID health profile (N2 dirty-state seed restore; global finally covers ephemeral)
   const savedConstraints = await saveConstraints();
-  const { data: savedHp } = await sb
+  const { data: savedN12Hp } = await sb
     .from('user_health_profile')
     .select('diagnoses,symptoms,medications,labs,physical,lifestyle,behavior_flags,crt_cache')
-    .eq('user_id', TESTER_UID).maybeSingle();
-  const { data: savedAssignments } = await sb
-    .from('action_assignments').select('*').eq('user_id', TESTER_UID);
-  const { data: savedMissionLog } = await sb
-    .from('mission_log').select('*').eq('user_id', TESTER_UID);
+    .eq('user_id', N12_UID).maybeSingle();
+
+  // Snapshot Tester 0 state before N3-N5 mutations
+  const { data: t0Hp } = await sb
+    .from('user_health_profile')
+    .select('diagnoses,symptoms,medications,labs,physical,lifestyle,behavior_flags,crt_cache')
+    .eq('user_id', TESTER_0).maybeSingle();
+  const { data: t0Assignments } = await sb
+    .from('action_assignments').select('*').eq('user_id', TESTER_0);
+  const { data: t0MissionLog }  = await sb
+    .from('mission_log').select('*').eq('user_id', TESTER_0);
+  const { data: t0Constraints } = await sb
+    .from('user_constraints').select('*').eq('user_id', TESTER_0);
+
+  async function restoreT0() {
+    await sb.from('action_assignments').delete().eq('user_id', TESTER_0);
+    if (t0Assignments?.length) await sb.from('action_assignments').insert(t0Assignments);
+    await sb.from('mission_log').delete().eq('user_id', TESTER_0);
+    if (t0MissionLog?.length) await sb.from('mission_log').insert(t0MissionLog);
+    await sb.from('user_constraints').delete().eq('user_id', TESTER_0);
+    if (t0Constraints?.length) await sb.from('user_constraints').insert(t0Constraints);
+    if (t0Hp) await sb.from('user_health_profile').upsert({ user_id: TESTER_0, ...t0Hp }, { onConflict: 'user_id' });
+  }
 
   try {
-    // Seed dirty state: symptom + action_assignment so full reset has something to clear
+    // Seed dirty state for N12_UID (N2 verifies session reset does NOT clear it)
     await sb.from('user_health_profile').upsert(
-      { user_id: TESTER_UID, symptoms: ['test_symptom_scenario_N'] },
+      { user_id: N12_UID, symptoms: ['test_symptom_scenario_N'] },
+      { onConflict: 'user_id' }
+    );
+    // Seed dirty state for TESTER_0 (N3 needs something to clear)
+    await sb.from('user_health_profile').upsert(
+      { user_id: TESTER_0, symptoms: ['test_symptom_scenario_N'] },
       { onConflict: 'user_id' }
     );
     const today = new Date().toISOString().slice(0, 10);
     await sb.from('action_assignments').upsert(
-      { user_id: TESTER_UID, action_id: 'test-action-scenario-N', intervention_id: null,
+      { user_id: TESTER_0, action_id: 'test-action-scenario-N', intervention_id: null,
         status: 'completed', assigned_date: today, engine_version: 'test' },
       { onConflict: 'user_id,assigned_date' }
     );
@@ -1146,9 +1179,9 @@ async function scenarioN() {
     check(typeof r1.body.error === 'string',
       'N1: error message present');
 
-    // N2 — session mode → 200, no DB changes
+    // N2 — session mode → 200, no DB changes (session mode has no whitelist check)
     console.log('\n  [N2 — session reset mode (no DB changes)]');
-    const r2 = await runTesterReset(TESTER_UID, 'session', sb);
+    const r2 = await runTesterReset(N12_UID, 'session', sb);
     check(r2.status === 200 && r2.body.ok === true,
       'N2: session mode → 200 ok',
       `actual: ${r2.status}`);
@@ -1156,19 +1189,19 @@ async function scenarioN() {
       'N2: local_session_cleared = true in response');
 
     const { data: afterSession } = await sb
-      .from('user_health_profile').select('symptoms').eq('user_id', TESTER_UID).maybeSingle();
+      .from('user_health_profile').select('symptoms').eq('user_id', N12_UID).maybeSingle();
     check(
       Array.isArray(afterSession?.symptoms) && afterSession.symptoms.includes('test_symptom_scenario_N'),
       'N2: session reset does NOT clear DB symptoms',
       `actual: ${JSON.stringify(afterSession?.symptoms)}`);
 
-    // N3 — full reset on tester UID → 200 + all summary fields
-    console.log('\n  [N3 — full reset on tester UID]');
-    const r3 = await runTesterReset(TESTER_UID, 'full', sb);
+    // N3 — full reset on Tester 0 (whitelisted) → 200 + all summary fields
+    console.log('\n  [N3 — full reset on Tester 0 (whitelisted)]');
+    const r3 = await runTesterReset(TESTER_0, 'full', sb);
     const d3 = r3.body;
     console.log(`  summary: ${JSON.stringify(d3)}`);
     check(r3.status === 200 && d3.ok === true,
-      'N3: tester UID full reset → 200 ok',
+      'N3: Tester 0 full reset → 200 ok',
       `actual: ${r3.status}`);
     check(typeof d3.deleted_action_assignments === 'number',
       'N3: deleted_action_assignments in summary',
@@ -1182,16 +1215,16 @@ async function scenarioN() {
     check(d3.local_session_cleared === false,
       'N3: local_session_cleared = false (caller responsibility)');
 
-    // N4 — after full reset: action_assignments empty → engine NOT HOLD_TOO_EARLY
-    console.log('\n  [N4 — fresh engine after full reset]');
+    // N4 — after full reset: Tester 0 action_assignments empty → engine NOT HOLD_TOO_EARLY
+    console.log('\n  [N4 — fresh engine after Tester 0 full reset]');
     const { data: assignsAfter } = await sb
-      .from('action_assignments').select('action_id').eq('user_id', TESTER_UID);
+      .from('action_assignments').select('action_id').eq('user_id', TESTER_0);
     check(
       !Array.isArray(assignsAfter) || assignsAfter.length === 0,
       'N4: action_assignments empty after full reset',
       `actual count: ${assignsAfter?.length}`);
 
-    const engineAfter = await runEngine(TESTER_UID);
+    const engineAfter = await runEngine(TESTER_0);
     const ddAfter     = computeDailyDecision(engineAfter);
     console.log(`  engine mode after full reset: ${ddAfter.mode} (${ddAfter.reason_code})`);
     check(ddAfter.reason_code !== 'HOLD_TOO_EARLY',
@@ -1202,24 +1235,19 @@ async function scenarioN() {
     console.log('\n  [N5 — start() _LRK contract]');
     check(d3.local_session_cleared === false,
       'N5: server returns local_session_cleared=false → launcher must call clearSession()');
-    // Positive whitelist check
-    check(TESTER_UIDS.has(TESTER_UID),
-      'N5: TESTER_UID is in TESTER_UIDS whitelist');
+    check(TESTER_UIDS.has(TESTER_0),
+      'N5: TESTER_0 is in TESTER_UIDS whitelist');
     check(!TESTER_UIDS.has(PROTECTED_UID),
       'N5: PROTECTED_UID is NOT in TESTER_UIDS whitelist');
 
   } finally {
+    // Restore N12_UID state (non-ephemeral path; ephemeral path covered by main() finally)
     await restoreConstraints(savedConstraints);
-    await sb.from('action_assignments').delete().eq('user_id', TESTER_UID);
-    if (savedAssignments?.length) await sb.from('action_assignments').insert(savedAssignments);
-    await sb.from('mission_log').delete().eq('user_id', TESTER_UID);
-    if (savedMissionLog?.length) await sb.from('mission_log').insert(savedMissionLog);
-    if (savedHp) {
-      await sb.from('user_health_profile').upsert(
-        { user_id: TESTER_UID, ...savedHp }, { onConflict: 'user_id' }
-      );
+    if (savedN12Hp) {
+      await sb.from('user_health_profile').upsert({ user_id: N12_UID, ...savedN12Hp }, { onConflict: 'user_id' });
     }
-    await restorePhysical(savedPhysical);
+    // Restore Tester 0 state
+    await restoreT0();
     console.log('  state restored ✓');
   }
 }
@@ -1333,7 +1361,7 @@ function scenarioP() {
   const SK  = uid => `chj_session_v1:${uid}`;
   const LRK = uid => `chj_last_response_v1:${uid}`;
 
-  const TESTER_UID  = 'vPrm5PNzLWWWhi9sSwYVbkb9FaD3';
+  const TESTER_UID  = 'test-localstorage-user';
 
   // Simulate: _uid is null/stale (Firebase onAuthStateChanged hasn't fired yet)
   let module_uid = null;
@@ -2999,43 +3027,58 @@ async function main() {
   console.log(`\nAI Orchestrator v0.1 — End-to-End Tests`);
   console.log(`User: ${USER_ID}  |  Date: ${new Date().toISOString().slice(0, 10)}`);
 
-  await scenarioA();
-  await scenarioB();
-  await scenarioC();
-  await scenarioD();
-  await hardBoundaries();
-  await scenarioE();
-  await scenarioF();
-  await scenarioG();
-  await scenarioH();
-  await scenarioI();
-  await scenarioJ();
-  scenarioK();
-  await scenarioL();
-  await scenarioM();
-  await scenarioN();
-  await scenarioO();
-  scenarioP();
-  scenarioQ();
-  scenarioR();
-  await scenarioS();
-  await scenarioT();
-  await scenarioX();
-  scenarioU();
-  scenarioV();
-  scenarioW();
-  scenarioY();
-  scenarioZ();
-  await scenarioZReal();
-  await scenarioAC();
-  scenarioSC();
-  scenarioSCR();
-  await scenarioSCE2E();
-  await scenarioSCStability();
+  if (EPHEMERAL) {
+    await sb.from('user_health_profile').upsert({ user_id: USER_ID, ...SEED_HP }, { onConflict: 'user_id' });
+    await sb.from('user_profiles').upsert({ user_id: USER_ID, ...SEED_UP }, { onConflict: 'user_id' });
+  }
 
-  const total = passed + failed;
-  sep(`Results: ${passed}/${total} passed${failed ? ` — ${failed} FAILED` : ''}`);
-  process.exit(failed > 0 ? 1 : 0);
+  try {
+    await scenarioA();
+    await scenarioB();
+    await scenarioC();
+    await scenarioD();
+    await hardBoundaries();
+    await scenarioE();
+    await scenarioF();
+    await scenarioG();
+    await scenarioH();
+    await scenarioI();
+    await scenarioJ();
+    scenarioK();
+    await scenarioL();
+    await scenarioM();
+    await scenarioN();
+    await scenarioO();
+    scenarioP();
+    scenarioQ();
+    scenarioR();
+    await scenarioS();
+    await scenarioT();
+    await scenarioX();
+    scenarioU();
+    scenarioV();
+    scenarioW();
+    scenarioY();
+    scenarioZ();
+    await scenarioZReal();
+    await scenarioAC();
+    scenarioSC();
+    scenarioSCR();
+    await scenarioSCE2E();
+    await scenarioSCStability();
+
+    const total = passed + failed;
+    sep(`Results: ${passed}/${total} passed${failed ? ` — ${failed} FAILED` : ''}`);
+    process.exitCode = failed > 0 ? 1 : 0;
+  } finally {
+    if (EPHEMERAL) {
+      await sb.from('mission_log').delete().eq('user_id', USER_ID);
+      await sb.from('action_assignments').delete().eq('user_id', USER_ID);
+      await sb.from('user_constraints').delete().eq('user_id', USER_ID);
+      await sb.from('user_health_profile').delete().eq('user_id', USER_ID);
+      await sb.from('user_profiles').delete().eq('user_id', USER_ID);
+    }
+  }
 }
 
 main().catch(err => { console.error(err); process.exit(1); });

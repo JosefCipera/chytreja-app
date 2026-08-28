@@ -8,12 +8,21 @@
 //   HOLD_TOO_EARLY      — real Josef DB, short-exposure assignments (< 7-day horizon)
 //   ACT_READY           — real Josef DB, no assignments
 
+// Ephemeral test UID seeded with a sedentary profile; deleted in finally.
+import dotenv from 'dotenv';
+dotenv.config({ path: '.env.local' });
 import { createClient } from '@supabase/supabase-js';
 import { runEngine }    from '../api/engine/engine.js';
 import { computeDailyDecision } from '../api/engine/dailyDecision.js';
 
 const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
-const JOSEF_USER_ID = 'vPrm5PNzLWWWhi9sSwYVbkb9FaD3';
+const TEST_UID = process.argv[2] || `test-dd-${Date.now()}`;
+
+const SEED_HP = {
+  physical: { sedentary_hours_day: 8, steps_day: 4000 },
+  diagnoses: [], symptoms: [], medications: [], lifestyle: {},
+};
+const SEED_UP = { birth_year: 1975 };
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -75,6 +84,13 @@ function run(label, dd, expectedMode, expectedCode) {
   const ok = assertMode(dd, expectedMode, expectedCode, label);
   if (ok) passed++; else failed++;
 }
+
+async function main() {
+  // Seed ephemeral user so Cases 4 & 5 can call runEngine()
+  await sb.from('user_health_profile').upsert({ user_id: TEST_UID, ...SEED_HP }, { onConflict: 'user_id' });
+  await sb.from('user_profiles').upsert({ user_id: TEST_UID, ...SEED_UP }, { onConflict: 'user_id' });
+
+  try {
 
 // ── CASE 1: SAFETY_CRITICAL ───────────────────────────────────────────────────
 // Synthetic: HYPERTENSION flips to SAFETY_CRITICAL (future engine extension mocked here).
@@ -192,37 +208,47 @@ run('ASK_BLOCKING', ask, 'ASK', 'ASK_BLOCKING');
 console.log(`  primary_item.type: ${ask.primary_item?.type}`);
 console.log(`  question: "${ask.primary_item?.question ?? ask.primary_item?.evidence_type}"`);
 
-// ── CASE 4: HOLD_TOO_EARLY — real Josef DB ────────────────────────────────────
-// Insert 3 COMPLETED AEROBIC_TRAINING assignments from 3 days ago (first_completed_at < 7-day horizon).
-// Expected: TOO_EARLY for all response_evals → HOLD_TOO_EARLY.
+// ── CASE 4: HOLD_TOO_EARLY ────────────────────────────────────────────────────
+// Seed COMPLETED assignments for all interventions viable on the ephemeral sedentary profile
+// (AEROBIC_TRAINING, BREAK_UP_SEDENTARY_TIME, STRENGTH_TRAINING) so all response_evals
+// return TOO_EARLY → HOLD_TOO_EARLY.
 
-sep('CASE 4 — HOLD_TOO_EARLY (real Josef DB)');
-console.log('  Setup: 3 COMPLETED AEROBIC assignments from 3 days ago (horizon_min=7 days)...');
+sep('CASE 4 — HOLD_TOO_EARLY');
+console.log('  Setup: completed assignments for all viable interventions (days 3, 2, 1 ago)...');
 
 let holdInsertedIds = [];
 
 try {
-  const { data: act } = await sb.from('longevity_actions')
-    .select('id').eq('protocol_type', 'KARDIO_PROTOKOL').eq('active', true).limit(1).single();
+  const { data: kardioAct }   = await sb.from('longevity_actions').select('id').eq('protocol_type', 'KARDIO_PROTOKOL').eq('active', true).limit(1).single();
+  const { data: trainingAct } = await sb.from('longevity_actions').select('id').eq('protocol_type', 'TRAINING_PROTOKOL').eq('active', true).limit(1).single();
+  const { data: silovyAct }   = await sb.from('longevity_actions').select('id').eq('protocol_type', 'SILOVY_PROTOKOL').eq('active', true).limit(1).single();
 
-  const rows = [3, 2, 1].map(d => ({
-    user_id:                JOSEF_USER_ID,
-    action_id:              act.id,
-    intervention_id:        'AEROBIC_TRAINING',
-    selected_leverage_node: 'PHYSICAL_INACTIVITY',
-    engine_version:         '1.0.0',
-    status:                 'COMPLETED',
-    assigned_at:            tsAgo(d),
-    completed_at:           tsAgo(d),
-    actual_duration_seconds: 1200,
-    assigned_date:          daysAgo(d),
-  }));
+  const seeds = [
+    { action_id: kardioAct?.id,   intervention_id: 'AEROBIC_TRAINING' },
+    { action_id: trainingAct?.id, intervention_id: 'BREAK_UP_SEDENTARY_TIME' },
+    { action_id: silovyAct?.id,   intervention_id: 'STRENGTH_TRAINING' },
+  ].filter(s => s.action_id);
+
+  const rows = seeds.flatMap(({ action_id, intervention_id }) =>
+    [3, 2, 1].map(d => ({
+      user_id:                TEST_UID,
+      action_id,
+      intervention_id,
+      selected_leverage_node: 'PHYSICAL_INACTIVITY',
+      engine_version:         '1.0.0',
+      status:                 'COMPLETED',
+      assigned_at:            tsAgo(d),
+      completed_at:           tsAgo(d),
+      actual_duration_seconds: 1200,
+      assigned_date:          daysAgo(d),
+    }))
+  );
 
   const { data: inserted } = await sb.from('action_assignments').insert(rows).select('id');
   holdInsertedIds = inserted.map(r => r.id);
-  console.log(`  Inserted ${holdInsertedIds.length} assignments (days 3, 2, 1 ago).`);
+  console.log(`  Inserted ${holdInsertedIds.length} assignments (${seeds.length} interventions × 3 days).`);
 
-  const engineResult = await runEngine(JOSEF_USER_ID);
+  const engineResult = await runEngine(TEST_UID);
   const dd = computeDailyDecision(engineResult);
   run('HOLD_TOO_EARLY', dd, 'HOLD', 'HOLD_TOO_EARLY');
 
@@ -242,7 +268,7 @@ try {
 sep('CASE 5 — ACT_READY (real Josef DB, no assignments)');
 console.log('  Running engine with no action_assignments...');
 
-const engineResult5 = await runEngine(JOSEF_USER_ID);
+const engineResult5 = await runEngine(TEST_UID);
 const dd5 = computeDailyDecision(engineResult5);
 run('ACT_READY', dd5, 'ACT', 'ACT_READY');
 
@@ -253,15 +279,24 @@ if (dd5.mode === 'ACT') {
   console.log(`  safety:          ${p?.safety?.level}`);
 }
 
-// ── Results ────────────────────────────────────────────────────────────────────
+  // ── Results ──────────────────────────────────────────────────────────────────
 
-sep('RESULTS');
-const total = passed + failed;
-console.log(`  ${passed}/${total} passed`);
-if (failed > 0) {
-  console.log(`  ❌ ${failed} case(s) failed`);
-  process.exitCode = 1;
-} else {
-  console.log('  All cases passed.');
+  sep('RESULTS');
+  const total = passed + failed;
+  console.log(`  ${passed}/${total} passed`);
+  if (failed > 0) {
+    console.log(`  ❌ ${failed} case(s) failed`);
+    process.exitCode = 1;
+  } else {
+    console.log('  All cases passed.');
+  }
+  console.log();
+
+  } finally {
+    await sb.from('action_assignments').delete().eq('user_id', TEST_UID);
+    await sb.from('user_health_profile').delete().eq('user_id', TEST_UID);
+    await sb.from('user_profiles').delete().eq('user_id', TEST_UID);
+  }
 }
-console.log();
+
+main().catch(err => { console.error(err); process.exitCode = 1; });

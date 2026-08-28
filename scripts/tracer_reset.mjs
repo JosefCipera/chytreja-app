@@ -15,7 +15,13 @@ import { runEngine }        from '../api/engine/engine.js';
 import { computeDailyDecision } from '../api/engine/dailyDecision.js';
 
 const sb      = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
-const USER_ID = process.argv[2] || 'vPrm5PNzLWWWhi9sSwYVbkb9FaD3';
+// Explicit userId required — no default. This tracer reads live user state.
+// Run: node --env-file=.env.local scripts/tracer_reset.mjs <userId>
+const USER_ID = process.argv[2];
+if (!USER_ID) {
+  console.error('Usage: node --env-file=.env.local scripts/tracer_reset.mjs <userId>');
+  process.exit(1);
+}
 
 function sep(s) { console.log(`\n${'─'.repeat(64)}\n  ${s}\n${'─'.repeat(64)}`); }
 function row(k, v) { console.log(`  ${k.padEnd(38)} ${JSON.stringify(v)}`); }

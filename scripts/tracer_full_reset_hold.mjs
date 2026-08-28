@@ -11,13 +11,24 @@
 //   6. DOM persistence vs localStorage state
 //   7. DB state po full resetu
 
+// TEMPORARY EXCEPTION — TESTER_UIDS REQUIRED:
+//   runTesterReset() requires the UID to be in TESTER_UIDS whitelist.
+//   Without explicit userId, defaults to Tester 0 (u58iRWcMr9bbakFMJYGFGARpi9h1).
+//   Tester 0 state is snapshot/restored in try/finally so automated runs
+//   leave no permanent side effects.
+
+import dotenv from 'dotenv';
+dotenv.config({ path: '.env.local' });
 import { createClient }     from '@supabase/supabase-js';
 import { runTesterReset }   from '../api/tester-reset.js';
 import { runEngine }        from '../api/engine/engine.js';
 import { computeDailyDecision } from '../api/engine/dailyDecision.js';
 
-const sb      = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
-const USER_ID = process.argv[2] || 'vPrm5PNzLWWWhi9sSwYVbkb9FaD3';
+const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+
+// Tester 0 is the only allowed default — it is in TESTER_UIDS.
+const TESTER_0 = 'u58iRWcMr9bbakFMJYGFGARpi9h1';
+const USER_ID  = process.argv[2] || TESTER_0;
 
 function sep(s) { console.log(`\n${'─'.repeat(68)}\n  ${s}\n${'─'.repeat(68)}`); }
 function row(k, v) { console.log(`  ${String(k).padEnd(46)} ${JSON.stringify(v)}`); }
@@ -218,6 +229,38 @@ console.log(`
     localStorage.getItem("chj_last_response_v1:${USER_ID}") === null ← expected
 `);
 
+// ── Snapshot Tester 0 state ───────────────────────────────────────────────────
+sep('SNAPSHOT — save Tester 0 state before test');
+
+const { data: savedHp } = await sb
+  .from('user_health_profile')
+  .select('diagnoses,symptoms,medications,labs,physical,lifestyle,behavior_flags,crt_cache')
+  .eq('user_id', USER_ID).maybeSingle();
+const { data: savedAssignments } = await sb
+  .from('action_assignments').select('*').eq('user_id', USER_ID);
+const { data: savedMissionLog } = await sb
+  .from('mission_log').select('*').eq('user_id', USER_ID);
+const { data: savedConstraints } = await sb
+  .from('user_constraints').select('*').eq('user_id', USER_ID);
+
+row('  saved action_assignments count', savedAssignments?.length ?? 0);
+row('  saved mission_log count',        savedMissionLog?.length ?? 0);
+
+async function restoreState() {
+  await sb.from('action_assignments').delete().eq('user_id', USER_ID);
+  if (savedAssignments?.length) await sb.from('action_assignments').insert(savedAssignments);
+  await sb.from('mission_log').delete().eq('user_id', USER_ID);
+  if (savedMissionLog?.length) await sb.from('mission_log').insert(savedMissionLog);
+  await sb.from('user_constraints').delete().eq('user_id', USER_ID);
+  if (savedConstraints?.length) await sb.from('user_constraints').insert(savedConstraints);
+  if (savedHp) {
+    await sb.from('user_health_profile').upsert({ user_id: USER_ID, ...savedHp }, { onConflict: 'user_id' });
+  }
+  console.log('  State restored ✓');
+}
+
+try {
+
 // ── TRACE 2+7: /api/tester-reset full → 200 + DB state ───────────────────────
 sep('TRACE 2+7 — /api/tester-reset full reset: live API call + DB state before/after');
 
@@ -345,6 +388,11 @@ console.log(`
       }
     Reset handler: clearSession(uid) where uid = _uid ?? window.__chj_userId
 `);
+
+} finally {
+  sep('RESTORE — Tester 0 state');
+  await restoreState();
+}
 
 console.log('\n' + '═'.repeat(68));
 console.log('  TRACER DONE — verify hypotheses with browser console commands above');

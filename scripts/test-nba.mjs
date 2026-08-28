@@ -1,11 +1,29 @@
-// test-nba.mjs — NEXT_BEST_ACTION v0.1 integration test (Josef)
+// test-nba.mjs — NEXT_BEST_ACTION v0.1 integration test
 // Run: node --env-file=.env.local scripts/test-nba.mjs
+//
+// Uses an ephemeral test UID seeded with a minimal sedentary profile.
+// DB rows are deleted in finally regardless of test outcome.
 
+import dotenv from 'dotenv';
+dotenv.config({ path: '.env.local' });
+import { createClient } from '@supabase/supabase-js';
 import { runEngine } from '../api/engine/engine.js';
 
-const JOSEF_ID = 'vPrm5PNzLWWWhi9sSwYVbkb9FaD3';
+const sb       = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+const TEST_UID = `test-nba-${Date.now()}`;
 
-const result = await runEngine(JOSEF_ID);
+// Minimal sedentary fixture — activates PHYSICAL_INACTIVITY so NBA selects an action
+const SEED_HP = {
+  physical: { sedentary_hours_day: 8, steps_day: 4000 },
+  diagnoses: [], symptoms: [], medications: [], lifestyle: {},
+};
+const SEED_UP = { birth_year: 1975 };
+
+async function run() {
+  await sb.from('user_health_profile').upsert({ user_id: TEST_UID, ...SEED_HP }, { onConflict: 'user_id' });
+  await sb.from('user_profiles').upsert({ user_id: TEST_UID, ...SEED_UP }, { onConflict: 'user_id' });
+
+  const result = await runEngine(TEST_UID);
 
 const nba = result.next_best_action;
 const lev = result.system_leverage;
@@ -79,4 +97,12 @@ if (nba.status === 'SELECTED') {
   if (nba.next_best_question) console.log(`  next_best_question: ${nba.next_best_question}`);
 }
 
-console.log('\n══════════════════════════════════════════\n');
+  console.log('\n══════════════════════════════════════════\n');
+}
+
+try {
+  await run();
+} finally {
+  await sb.from('user_health_profile').delete().eq('user_id', TEST_UID);
+  await sb.from('user_profiles').delete().eq('user_id', TEST_UID);
+}

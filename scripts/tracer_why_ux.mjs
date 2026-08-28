@@ -2,15 +2,31 @@
 // Repro: ACT → user: "Proč?" → EXPLAIN → Hotovo/Přeskočit chips gone
 // Run: node --env-file=.env.local scripts/tracer_why_ux.mjs [userId]
 
+// Ephemeral test UID seeded with sedentary profile; deleted in finally.
+import dotenv from 'dotenv';
+dotenv.config({ path: '.env.local' });
 import { createClient }                              from '@supabase/supabase-js';
 import { processInput, _buildSessionUpdates_test as buildSessionUpdates } from '../api/engine/orchestrator.js';
 import { runEngine }                                 from '../api/engine/engine.js';
 import { computeDailyDecision }                      from '../api/engine/dailyDecision.js';
 
-const sb      = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
-const USER_ID = process.argv[2] || 'vPrm5PNzLWWWhi9sSwYVbkb9FaD3';
+const sb       = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+const USER_ID  = process.argv[2] || `test-why-${Date.now()}`;
+const EPHEMERAL = !process.argv[2];
+
+const SEED_HP = {
+  physical: { sedentary_hours_day: 8, steps_day: 4000 },
+  diagnoses: [], symptoms: [], medications: [], lifestyle: {},
+};
+const SEED_UP = { birth_year: 1975 };
 
 function sep(s) { console.log(`\n${'─'.repeat(64)}\n  ${s}\n${'─'.repeat(64)}`); }
+
+async function run() {
+  if (EPHEMERAL) {
+    await sb.from('user_health_profile').upsert({ user_id: USER_ID, ...SEED_HP }, { onConflict: 'user_id' });
+    await sb.from('user_profiles').upsert({ user_id: USER_ID, ...SEED_UP }, { onConflict: 'user_id' });
+  }
 
 // ── STEP 1: Get a real engine response ────────────────────────────────────────
 sep('STEP 1 — engine run → get last_domain_response / last_daily_decision');
@@ -106,6 +122,16 @@ console.log('    saveLastResponse() caches EXPLAIN → on page reload launcher s
 console.log('    Fix: also save action context so reload can restore ACT view.');
 console.log('    Can be addressed in a follow-up (Fix 3 equivalent).');
 
-console.log('\n' + '═'.repeat(64));
-console.log('  TRACER DONE');
-console.log('═'.repeat(64));
+  console.log('\n' + '═'.repeat(64));
+  console.log('  TRACER DONE');
+  console.log('═'.repeat(64));
+} // end run()
+
+try {
+  await run();
+} finally {
+  if (EPHEMERAL) {
+    await sb.from('user_health_profile').delete().eq('user_id', USER_ID);
+    await sb.from('user_profiles').delete().eq('user_id', USER_ID);
+  }
+}

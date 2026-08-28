@@ -14,8 +14,15 @@ import { applyHealthEvent, EVIDENCE_STORAGE_REGISTRY } from '../api/engine/healt
 import { EVIDENCE_RESOLUTION_REGISTRY, isEvidenceResolved } from '../api/engine/evidenceResolution.js';
 
 const sb          = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
-const USER_ID     = process.argv[2] || 'vPrm5PNzLWWWhi9sSwYVbkb9FaD3'; // Josef default
+const USER_ID     = process.argv[2] || `test-hea-${Date.now()}`; // ephemeral by default
+const EPHEMERAL   = !process.argv[2];
 const TODAY       = new Date().toISOString().slice(0, 10);
+
+const SEED_HP = {
+  physical: { sedentary_hours_day: 8, steps_day: 4000 },
+  diagnoses: [], symptoms: [], medications: [], lifestyle: {},
+};
+const SEED_UP = { birth_year: 1975 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -841,22 +848,36 @@ async function main() {
   console.log(`\nHealth Event Adapter v0.1 — Integration Tests`);
   console.log(`User: ${USER_ID}  |  Date: ${TODAY}`);
 
-  registrySmoke();
+  if (EPHEMERAL) {
+    await sb.from('user_health_profile').upsert({ user_id: USER_ID, ...SEED_HP }, { onConflict: 'user_id' });
+    await sb.from('user_profiles').upsert({ user_id: USER_ID, ...SEED_UP }, { onConflict: 'user_id' });
+  }
 
-  await s1_knee_symptom();
-  await s2_knee_severity_answer();
-  await s3_fall_history();
-  await s4_vynest_nakup();
-  await s5_vstat_ze_zeme_closes_loop();
-  await s6_validated_strength_availability();
-  await s7_wearable_availability();
-  await s8_general_health_request_age_and_diagnosis();
-  await s9_skip_action_id_ineligible_today();
-  await s10_fatigue_context();
+  try {
+    registrySmoke();
 
-  const total = passed + failed;
-  sep(`Results: ${passed}/${total} passed${failed ? ` — ${failed} FAILED` : ''}`);
-  process.exit(failed > 0 ? 1 : 0);
+    await s1_knee_symptom();
+    await s2_knee_severity_answer();
+    await s3_fall_history();
+    await s4_vynest_nakup();
+    await s5_vstat_ze_zeme_closes_loop();
+    await s6_validated_strength_availability();
+    await s7_wearable_availability();
+    await s8_general_health_request_age_and_diagnosis();
+    await s9_skip_action_id_ineligible_today();
+    await s10_fatigue_context();
+
+    const total = passed + failed;
+    sep(`Results: ${passed}/${total} passed${failed ? ` — ${failed} FAILED` : ''}`);
+    process.exitCode = failed > 0 ? 1 : 0;
+  } finally {
+    if (EPHEMERAL) {
+      await sb.from('action_assignments').delete().eq('user_id', USER_ID);
+      await sb.from('user_constraints').delete().eq('user_id', USER_ID);
+      await sb.from('user_health_profile').delete().eq('user_id', USER_ID);
+      await sb.from('user_profiles').delete().eq('user_id', USER_ID);
+    }
+  }
 }
 
 main().catch(err => { console.error(err); process.exit(1); });

@@ -25,15 +25,31 @@
 // Viz: api/engine/orchestrator.js → buildHoldResponse(isFollowUp=true)
 //      scripts/test-orchestrator.mjs → scenario O
 
+// Ephemeral test UID seeded with sedentary profile; deleted in finally.
+import dotenv from 'dotenv';
+dotenv.config({ path: '.env.local' });
 import { createClient }          from '@supabase/supabase-js';
 import { runEngine }             from '../api/engine/engine.js';
 import { computeDailyDecision }  from '../api/engine/dailyDecision.js';
 
-const sb      = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
-const USER_ID = process.argv[2] || 'vPrm5PNzLWWWhi9sSwYVbkb9FaD3';
+const sb       = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+const USER_ID  = process.argv[2] || `test-hold-alt-${Date.now()}`;
+const EPHEMERAL = !process.argv[2];
+
+const SEED_HP = {
+  physical: { sedentary_hours_day: 8, steps_day: 4000 },
+  diagnoses: [], symptoms: [], medications: [], lifestyle: {},
+};
+const SEED_UP = { birth_year: 1975 };
 
 function sep(s) { console.log(`\n${'─'.repeat(60)}\n  ${s}\n${'─'.repeat(60)}`); }
 function row(k, v) { console.log(`  ${String(k).padEnd(40)} ${JSON.stringify(v)}`); }
+
+async function run() {
+  if (EPHEMERAL) {
+    await sb.from('user_health_profile').upsert({ user_id: USER_ID, ...SEED_HP }, { onConflict: 'user_id' });
+    await sb.from('user_profiles').upsert({ user_id: USER_ID, ...SEED_UP }, { onConflict: 'user_id' });
+  }
 
 sep('HOLD alternative audit (re-run to refresh)');
 
@@ -67,9 +83,19 @@ for (const c of candidates) {
   console.log(`  ${eligible ? '✅' : '❌'}  ${c.action_id?.padEnd(32)} safe=${isSafe} exposure=${!!exposure} allHoldable=${allHoldable} eligible=${eligible}`);
 }
 
-console.log(`\n  Eligible alternatives: ${eligibleCount} / ${candidates.length}`);
-if (eligibleCount === 0) {
-  console.log('  → Možnost C nemůže nabídnout nic — HOLD drží celý pool.');
-} else {
-  console.log('  → Možnost C by mohla nabídnout alternativu.');
+  console.log(`\n  Eligible alternatives: ${eligibleCount} / ${candidates.length}`);
+  if (eligibleCount === 0) {
+    console.log('  → Možnost C nemůže nabídnout nic — HOLD drží celý pool.');
+  } else {
+    console.log('  → Možnost C by mohla nabídnout alternativu.');
+  }
+} // end run()
+
+try {
+  await run();
+} finally {
+  if (EPHEMERAL) {
+    await sb.from('user_health_profile').delete().eq('user_id', USER_ID);
+    await sb.from('user_profiles').delete().eq('user_id', USER_ID);
+  }
 }
