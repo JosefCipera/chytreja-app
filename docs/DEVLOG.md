@@ -144,6 +144,35 @@ Produkt je na `dev.iting.cz` (branch `main`). Engine stack je **feature-frozen a
 
 ---
 
+### 9. Phantom `floorRiseProjection` — budget-burning NBE bez možnosti ACT
+
+**Root cause:** `floorRiseProjection()` v `api/engine/projections.js` vracela projekci vždy, i když žádné upstream node_states (PHYSICAL_DECONDITIONING, LOW_MUSCLE_STRENGTH, REDUCED_FUNCTIONAL_RESERVE) nebyly přítomné. Tím vznikal phantom `LONGEVITY_FUNCTION` kontext s `NEED_MORE_EVIDENCE` statusem, který generoval 3 NBE otázky (`validated_strength_assessment`, `temporal_activity_trend`, `vstat_ze_zeme`) a spotřeboval celý question budget — bez jakékoli možnosti dosáhnout NBA a ACT (projekce s `risk='unknown'` bez upstream uzlů nemůže vybrat leverage node).
+
+**Symptom:** Nový uživatel s fatigue vstupem: `"Jsem unavený."` → fatigue clarification → 3 funkční testy → `BUDGET_EXHAUSTED "Zatím o tobě nevím dost"`. Přitom jedinou otázkou, která by odblokovala ACT, je `sedentary_hours_day`.
+
+**Řešení:** Minimální guard konzistentní s `cvDiseaseProjection` (která tento guard měla od začátku):
+
+```javascript
+// api/engine/projections.js — floorRiseProjection()
+if (evidence.length === 0) return null;
+```
+
+Bez upstream evidence → funkce vrátí `null` → `computeProjections` ji nevloží → žádný phantom kontext → engine přejde do `ASK_BLOCKING null` path → `ZERO_DATA_FOLLOWUP` guard se spustí po 2 turnech → `"Přibližně kolik hodin za běžný den prosedíš?"` → `sedentary_hours_day = 8` → `PHYSICAL_INACTIVITY PREDICTED_CURRENT` → leverage → NBA SELECTED → **ACT**.
+
+S upstream evidence (PHYSICAL_DECONDITIONING aktivní): `evidence.length > 0` → guard se nespustí → projekce vznikne beze změny.
+
+**Dotčené soubory:** `api/engine/projections.js` · `scripts/test-floor-projection-fix.mjs` (nový, 15/15 pass)
+
+**Nedotčeno:** `engine.js`, `dailyDecision.js`, `healthEventAdapter.js`, `orchestrator.js`, Safety Gate, NBA selection.
+
+**Testy po fixu:**
+- `scripts/test-health-event-adapter.mjs` → **83/83 pass** (beze změny)
+- `scripts/test-nba-policy.mjs` → **10/10 pass** (beze změny)
+- `scripts/test-orchestrator.mjs` → **306/321** (15 known N/O baseline beze změny)
+- `scripts/test-floor-projection-fix.mjs` → **15/15 pass** (nový)
+
+---
+
 ## Architektura dokumentace (po 2026-08-27)
 
 | Soubor | Role |

@@ -91,6 +91,12 @@ function floorRiseProjection(nodeStates, person, clinicalHistory) {
   rule_ids.push('RULE_NO_TRAJECTORY_DATA_v1');
   if (!hasStrengthData) rule_ids.push('RULE_NO_STRENGTH_DATA_v1');
 
+  // ── Require at least one upstream signal ─────────────────────────────────
+  // Without upstream evidence, the projection has no clinical basis — risk would
+  // always be 'unknown' and the missing_evidence list would drive NBE questions
+  // that cannot lead to ACT (no leverage node, no NBA). Same guard as cvDiseaseProjection.
+  if (evidence.length === 0) return null;
+
   // ── risk, horizon, confidence ─────────────────────────────────────────────
   // Without LOW_MUSCLE_STRENGTH and without trajectory data: risk = 'unknown'.
   // We cannot compute even a qualitative trajectory direction — direction requires
