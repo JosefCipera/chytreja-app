@@ -41,6 +41,7 @@ const SEED_UP = { birth_year: 1975 };
 
 let passed = 0;
 let failed = 0;
+let skipped = 0;
 
 function sep(label) {
   console.log(`\n${'─'.repeat(64)}\n  ${label}\n${'─'.repeat(64)}`);
@@ -54,6 +55,11 @@ function check(condition, label, detail = '') {
     console.log(`  ❌  ${label}${detail ? `\n      ${detail}` : ''}`);
     failed++;
   }
+}
+
+function skip(count, label) {
+  console.log(`  ⚪  SKIP (×${count}): ${label}`);
+  skipped += count;
 }
 
 function showResponse(r) {
@@ -294,8 +300,7 @@ async function hardBoundaries() {
       'ACT: session_updates.current_action_assignment set with action_id'
     );
   } else {
-    console.log(`  ℹ  Engine not in ACT mode (${actResponse.mode}) — skipping ACT boundary checks`);
-    passed += 2; // count as passing (engine state, not orchestrator issue)
+    skip(2, `B1: engine not in ACT mode (${actResponse.mode}) — ACT boundary checks not applicable`);
   }
 
   // B2: No diagnosis language in orchestrator response text
@@ -327,8 +332,7 @@ async function hardBoundaries() {
           'ASK mode: orchestrator does not pre-answer the question',
           `text: ${askCheckResult.text?.slice(0, 60)}`);
   } else {
-    console.log(`  ℹ  Engine resolved without ASK (${askCheckResult.mode}) — constraint wasn't blocking`);
-    passed += 2;
+    skip(2, `B3: engine resolved without ASK (${askCheckResult.mode}) — knee-constraint ASK checks not applicable`);
   }
 
   await restoreConstraints(savedConstraints);
@@ -367,8 +371,7 @@ async function scenarioE() {
   console.log(`  initial mode   : ${dd.mode}  (${dd.reason_code})`);
 
   if (dd.mode !== 'ACT' || !dd.primary_item?.action_id || !dd.primary_item?.intervention_id) {
-    console.log('  ⚠  Engine not in ACT mode with valid assignment — skipping (4 auto-pass)');
-    passed += 4;
+    skip(5, 'E: engine not in ACT mode with valid assignment — ACT chain assertions not applicable');
     await restoreConstraints(savedConstraints);
     return;
   }
@@ -555,9 +558,7 @@ async function scenarioG() {
       `text: ${response.text?.slice(0, 120)}`
     );
   } else {
-    // Engine has no leverage identified — fallback is acceptable
-    console.log('  ℹ  No system_leverage from engine — generic WHY text is acceptable');
-    passed += 2;
+    skip(2, 'G: no system_leverage from engine — concrete WHY checks not applicable');
   }
 }
 
@@ -665,9 +666,7 @@ async function scenarioI() {
       `text: ${text.slice(0, 160)}`
     );
   } else {
-    // Constraint not shown (optional deeper WHY) — acceptable
-    console.log('  ℹ  Constraint not shown in WHY (optional) — semantic check skipped');
-    passed += 1;
+    skip(1, 'I: constraint not shown in WHY (optional deeper check) — framing check not applicable');
   }
 }
 
@@ -3068,7 +3067,7 @@ async function main() {
     await scenarioSCStability();
 
     const total = passed + failed;
-    sep(`Results: ${passed}/${total} passed${failed ? ` — ${failed} FAILED` : ''}`);
+    sep(`Results: ${passed}/${total} passed${failed ? ` — ${failed} FAILED` : ''}${skipped ? ` (${skipped} skipped — engine-state dependent)` : ''}`);
     process.exitCode = failed > 0 ? 1 : 0;
   } finally {
     if (EPHEMERAL) {
