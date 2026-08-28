@@ -22,7 +22,7 @@
 //   - ACT: session_updates.current_action_assignment set
 //   - session state flow: pending_question cleared after ANSWER
 
-import { processInput, buildEvent, _buildSessionUpdates_test as buildSessionUpdates } from '../api/engine/orchestrator.js';
+import { processInput, buildEvent, _buildSessionUpdates_test as buildSessionUpdates, FATIGUE_STANDALONE_RE } from '../api/engine/orchestrator.js';
 import { runEngine, ENGINE_MASTER } from '../api/engine/engine.js';
 import { applyHealthEvent }         from '../api/engine/healthEventAdapter.js';
 import { createClient }             from '@supabase/supabase-js';
@@ -2713,12 +2713,10 @@ async function scenarioAC() {
 //         budget gate); on next turn (Turn 2) budget gate must handle budget=0
 
 function scenarioSC() {
-  sep('SC — Subjective fatigue clarification guard (no network)');
+  sep('SC — Subjective fatigue clarification guard (inline simulation)');
 
   const CLARIF_TEXT =
-    'Je ta únava něco nového nebo nezvyklého, nebo je to spíš běžná únava po náročném dni?';
-  const SUBJECTIVE_FATIGUE_RE =
-    /\bjsem\s+(unaven[aý]|vyčerpa[ný]|malátný|bez\s+energie)|\bnemám\s+energii\b/i;
+    'Je ta únava něco nového nebo nezvýklého, nebo je to spíš běžná únava po náročném dni?';
 
   // Inline simulation of the guard (mirrors orchestrator.js SUBJECTIVE_FATIGUE_CLARIFICATION block).
   // event_type here is the original classifier type (not adapterType).
@@ -2736,7 +2734,7 @@ function scenarioSC() {
         && !stateFatigueContext
         && !statePendingQuestion
         && presentationMode === 'ASK'
-        && SUBJECTIVE_FATIGUE_RE.test(userText)) {
+        && FATIGUE_STANDALONE_RE.test(userText.trim())) {
       return {
         mode:          'ASK',
         text:          CLARIF_TEXT,
@@ -2861,6 +2859,140 @@ function scenarioSC() {
   }
 }
 
+// ── Scenario SC-R — FATIGUE_STANDALONE_RE regex unit tests (no network) ──────
+//
+// Directly tests FATIGUE_STANDALONE_RE imported from orchestrator.js.
+// SC-R1–SC-R10:  5 required phrases + 5 variants must match
+// SC-R11–SC-R15: compound / non-fatigue statements must NOT match
+// SC-R16–SC-R20: pre-classifier bypass conditions (pure logic)
+
+function scenarioSCR() {
+  sep('SC-R — FATIGUE_STANDALONE_RE regex unit tests (no network)');
+
+  const shouldMatch = [
+    ['Jsem unavený.',   'SC-R1: "Jsem unavený." matches (canonical phrase 1)'],
+    ['Jsem unavená.',   'SC-R2: "Jsem unavená." matches (feminine unavený)'],
+    ['Cítím únavu.',    'SC-R3: "Cítím únavu." matches (canonical phrase 3)'],
+    ['Nemám energii.',  'SC-R4: "Nemám energii." matches (canonical phrase 4)'],
+    ['Jsem vyčerpaný.', 'SC-R5: "Jsem vyčerpaný." matches (canonical phrase 5)'],
+    ['Jsem vyčerpaná.', 'SC-R6: "Jsem vyčerpaná." matches (feminine vyčerpaný)'],
+    ['Jsem malátný.',   'SC-R7: "Jsem malátný." matches'],
+    ['Jsem malátná.',   'SC-R8: "Jsem malátná." matches (feminine)'],
+    ['Mám únavu.',      'SC-R9: "Mám únavu." matches'],
+    ['Jsem unavený',    'SC-R10: "Jsem unavený" (no punct) matches'],
+  ];
+  for (const [phrase, label] of shouldMatch) {
+    check(FATIGUE_STANDALONE_RE.test(phrase.trim()), label, `phrase: "${phrase}"`);
+  }
+
+  const shouldNotMatch = [
+    ['Jsem unavený a bolí mě na hrudi.',     'SC-R11: compound + chest pain NOT matched (safety path)'],
+    ['Jsem unavený, mám horečku.',           'SC-R12: compound + fever NOT matched'],
+    ['Cítím únavu a mám teplotu.',           'SC-R13: compound + temperature NOT matched'],
+    ['Bolí mě hlava a jsem unavený.',        'SC-R14: reversed compound NOT matched (no fatigue prefix)'],
+    ['Jsem nemocný.',                        'SC-R15: "Jsem nemocný." NOT matched (not fatigue)'],
+  ];
+  for (const [phrase, label] of shouldNotMatch) {
+    check(!FATIGUE_STANDALONE_RE.test(phrase.trim()), label, `phrase: "${phrase}"`);
+  }
+
+  // Pre-classifier bypass: pending_question / current_action_assignment block the guard
+  const preClassifierWouldFire = (pendingQ, currAction, phrase) =>
+    !pendingQ && !currAction && FATIGUE_STANDALONE_RE.test(phrase.trim());
+
+  check( preClassifierWouldFire(null, null, 'Jsem unavený.'),             'SC-R16: no pending_q + no action → pre-classifier fires');
+  check(!preClassifierWouldFire({ evidence_type: 'gait_stability' }, null, 'Jsem unavený.'), 'SC-R17: pending_question set → pre-classifier bypassed');
+  check(!preClassifierWouldFire(null, { action_id: 'X' }, 'Jsem unavený.'), 'SC-R18: current_action_assignment set → pre-classifier bypassed');
+  check(!preClassifierWouldFire(null, null, 'Jsem unavený a bolí mě na hrudi.'), 'SC-R19: compound → pre-classifier does NOT fire (Haiku handles it)');
+  check(!preClassifierWouldFire(null, null, 'Hotovo'),                    'SC-R20: "Hotovo" → pre-classifier does NOT fire');
+}
+
+// ── Scenario SC-E2E — 5 fatigue phrases via real processInput (async) ─────────
+//
+// Disposable UID — no Josef, no Kovářová.
+// 5 phrases × 4 assertions = 20 assertions.
+// Pre-classifier guard eliminates Haiku non-determinism → result deterministic.
+
+async function scenarioSCE2E() {
+  sep('SC-E2E — fatigue clarification: 5 phrases via real processInput (disposable UID)');
+
+  const UID = `test-fatigue-e2e-${Date.now()}`;
+  const PHRASES = [
+    'Jsem unavený.',
+    'Jsem unavená.',
+    'Cítím únavu.',
+    'Nemám energii.',
+    'Jsem vyčerpaný.',
+  ];
+
+  try {
+    for (let i = 0; i < PHRASES.length; i++) {
+      const phrase = PHRASES[i];
+      const pfx = `SC-E2E-${i + 1}: "${phrase}"`;
+      const r = await processInput(UID, phrase, {
+        pending_question:          null,
+        current_action_assignment: null,
+        fatigue_context:           null,
+        question_budget_remaining: 3,
+        pending_clarifications:    [],
+        last_daily_decision:       null,
+        last_domain_response:      null,
+      });
+      check(r.mode === 'ASK',
+        `${pfx} → mode=ASK`, `actual: ${r.mode}`);
+      check(r.debug?.reason_code === 'SUBJECTIVE_FATIGUE_CLARIFICATION',
+        `${pfx} → reason_code=SUBJECTIVE_FATIGUE_CLARIFICATION`, `actual: ${r.debug?.reason_code}`);
+      check(r.session_updates?.pending_question?.evidence_type === 'fatigue_context',
+        `${pfx} → pending_question.evidence_type=fatigue_context`, `actual: ${r.session_updates?.pending_question?.evidence_type}`);
+      check(r.expects_reply === true,
+        `${pfx} → expects_reply=true`, `actual: ${r.expects_reply}`);
+    }
+  } finally {
+    await sb.from('user_health_profile').delete().eq('user_id', UID);
+    await sb.from('user_constraints').delete().eq('user_id', UID);
+    await sb.from('action_assignments').delete().eq('user_id', UID);
+  }
+}
+
+// ── Scenario SC-Stability — 10× "Jsem unavený." must always fire clarification ─
+//
+// With pre-classifier guard, Haiku is never called → result is 100% deterministic.
+// All 10 consecutive processInput calls must return SUBJECTIVE_FATIGUE_CLARIFICATION.
+
+async function scenarioSCStability() {
+  sep('SC-Stability — 10× "Jsem unavený." determinism check (disposable UID)');
+
+  const UID = `test-fatigue-stability-${Date.now()}`;
+  const PHRASE = 'Jsem unavený.';
+  let allPass = true;
+
+  try {
+    for (let i = 1; i <= 10; i++) {
+      const r = await processInput(UID, PHRASE, {
+        pending_question:          null,
+        current_action_assignment: null,
+        fatigue_context:           null,
+        question_budget_remaining: 3,
+        pending_clarifications:    [],
+        last_daily_decision:       null,
+        last_domain_response:      null,
+      });
+      const ok = r.debug?.reason_code === 'SUBJECTIVE_FATIGUE_CLARIFICATION';
+      if (!ok) allPass = false;
+      check(ok,
+        `SC-Stability-${i}: run ${i}/10 → SUBJECTIVE_FATIGUE_CLARIFICATION`,
+        `reason_code: ${r.debug?.reason_code}  mode: ${r.mode}`);
+    }
+    if (allPass) {
+      console.log(`  10/10 PASS — pre-classifier eliminates Haiku non-determinism`);
+    }
+  } finally {
+    await sb.from('user_health_profile').delete().eq('user_id', UID);
+    await sb.from('user_constraints').delete().eq('user_id', UID);
+    await sb.from('action_assignments').delete().eq('user_id', UID);
+  }
+}
+
 // ── Run ───────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -2897,6 +3029,9 @@ async function main() {
   await scenarioZReal();
   await scenarioAC();
   scenarioSC();
+  scenarioSCR();
+  await scenarioSCE2E();
+  await scenarioSCStability();
 
   const total = passed + failed;
   sep(`Results: ${passed}/${total} passed${failed ? ` — ${failed} FAILED` : ''}`);

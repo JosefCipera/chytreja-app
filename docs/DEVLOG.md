@@ -122,6 +122,28 @@ Produkt je na `dev.iting.cz` (branch `main`). Engine stack je **feature-frozen a
 
 ---
 
+### 8. Pre-classifier fatigue guard — deterministická klasifikace standalone fatigue
+
+**Root cause:** Haiku classifier (`classifyIntent`) porušoval vlastní pravidlo 5 pro standalone fatigue vstupy (`"Jsem unavený."`) — místo `GENERAL_HEALTH_REQUEST` vracel `NEW_SYMPTOM` v ~50 % volání. Post-presentation fatigue clarification guard (§7) závisel na `event_type === 'GENERAL_HEALTH_REQUEST'` → nefiroval při NEW_SYMPTOM → uživatel dostával gait_stability otázku místo fatigue clarification.
+
+**Řešení:** Exportovaný `FATIGUE_STANDALONE_RE` (`^...$` anchored regex) sdílený dvěma guard body:
+
+1. **Pre-classifier guard** (vložen před `classifyIntent` v `processInput`) — short-circuits Haiku pro standalone fatigue formulace; vrací deterministicky `GENERAL_HEALTH_REQUEST`. Podmínky: `!pending_question && !current_action_assignment && FATIGUE_STANDALONE_RE.test(userText.trim())`.
+2. **Post-presentation guard** (§7) — nahrazen inline `SUBJECTIVE_FATIGUE_RE` sdíleným `FATIGUE_STANDALONE_RE`; pokrytí rozšířeno o `"Cítím únavu."` a `"Nemám energii."` (starý regex tyto tvary neznal).
+
+**Compound zdravotní výroky zachovány:** `^...$` anchor zajišťuje, že `"Jsem unavený a bolí mě na hrudi."` neodpovídá → projde přes Haiku a standardní safety/symptom flow beze změny.
+
+**Dotčené soubory:** `api/engine/orchestrator.js` (export + pre-classifier guard + post-presentation update) · `scripts/test-orchestrator.mjs` (import + scenarioSC update + scenarioSCR + scenarioSCE2E + scenarioSCStability)
+
+**Nedotčeno:** `engine.js`, `dailyDecision.js`, Safety Gate, `healthEventAdapter.js`, `orchestrate.js`, launcher.
+
+**Testy:**
+- `scripts/test-health-event-adapter.mjs` → **83/83 pass** (beze změny)
+- `scripts/test-orchestrator.mjs` → **306/321** (15 known N/O baseline beze změny; +50 nových SC assertions)
+- **Fatigue stability: 10/10** — 10 po sobě jdoucích `processInput("Jsem unavený.")` → vždy `SUBJECTIVE_FATIGUE_CLARIFICATION`; Haiku se pro tyto vstupy nevolá
+
+---
+
 ## Architektura dokumentace (po 2026-08-27)
 
 | Soubor | Role |

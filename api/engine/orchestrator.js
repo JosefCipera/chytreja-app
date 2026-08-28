@@ -74,6 +74,13 @@ const GOAL_BRANCH_CS = {
   FUNCTIONAL_INDEPENDENCE: 'Funkční samostatnost',
 };
 
+// ── Fatigue standalone matcher ────────────────────────────────────────────────
+// Anchored ^...$ — compound statements ("Jsem unavený a bolí mě na hrudi")
+// do NOT match and flow to Haiku / safety path normally.
+// Shared by pre-classifier guard and post-presentation fatigue clarification guard.
+export const FATIGUE_STANDALONE_RE =
+  /^(jsem\s+(unaven[aáý]|vyčerpan[aáý]|malátný|malátná|bez\s+energie)|cítím\s+(únavu|vyčerpání|malátnost)|nemám\s+energii|mám\s+(únavu|vyčerpání))[\s.,!?]*$/i;
+
 let client;
 function getClient() {
   if (!client) client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -668,7 +675,22 @@ export async function processInput(userId, userText, sessionState = {}) {
   };
 
   // 1. Classify intent
-  const { event_type, payload } = await classifyIntent(state, userText);
+  // Pre-classifier guard: short-circuits Haiku for pure subjective fatigue statements.
+  // Haiku is non-deterministic for these inputs — returns NEW_SYMPTOM ~50% of calls
+  // despite rule 5 requiring "bolí mě [body part]". FATIGUE_STANDALONE_RE is anchored
+  // ^...$ so compound statements ("Jsem unavený a bolí mě na hrudi") do NOT match
+  // and still reach Haiku and the standard safety/symptom flow.
+  // Guard is skipped when pending_question or current_action_assignment is set —
+  // those flows own the turn.
+  let classified;
+  if (!state.pending_question
+      && !state.current_action_assignment
+      && FATIGUE_STANDALONE_RE.test(userText.trim())) {
+    classified = { event_type: 'GENERAL_HEALTH_REQUEST', payload: { text: userText } };
+  } else {
+    classified = await classifyIntent(state, userText);
+  }
+  const { event_type, payload } = classified;
 
   // 2. WHY: use only cached context, no engine call
   // Also catch WHY via raw text fallback in case classifier missed it
@@ -789,14 +811,11 @@ export async function processInput(userId, userText, sessionState = {}) {
   //   state.fatigue_context — cross-session: skip if already set in DB (via orchestrate.js)
   //   state.pending_question — in-session: skip if a question is already pending
   //   presentation.mode === 'ASK' — only intercept when engine wants to ask anyway
-  const SUBJECTIVE_FATIGUE_RE =
-    /\bjsem\s+(unaven[aý]|vyčerpa[ný]|malátný|bez\s+energie)|\bnemám\s+energii\b/i;
-
   if (event_type === 'GENERAL_HEALTH_REQUEST'
       && !state.fatigue_context
       && !state.pending_question
       && presentation.mode === 'ASK'
-      && SUBJECTIVE_FATIGUE_RE.test(userText)) {
+      && FATIGUE_STANDALONE_RE.test(userText.trim())) {
     const clarText =
       'Je ta únava něco nového nebo nezvyklého, nebo je to spíš běžná únava po náročném dni?';
     return {
