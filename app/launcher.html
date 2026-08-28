@@ -196,6 +196,7 @@
     #stage-text.danger  { color: #d06060; }
     #stage-text.loading { color: var(--text-muted); }
     #stage-text.hold-glow { color: #7accaa; }
+    #stage-text.explain { color: var(--text); }
 
     /* ── Chips ── */
     #chips {
@@ -277,7 +278,7 @@
     }
 
     .input-hint {
-      font-size: 11px; color: #58778b; letter-spacing: 0.4px; font-weight: 300;
+      font-size: 11px; color: #8aabb8; letter-spacing: 0.4px; font-weight: 300;
     }
 
     /* ── Debug panel ── */
@@ -702,7 +703,7 @@
 
     if (mode === 'HOLD')            { $stage.classList.add('dim'); $stage.classList.add('hold-glow'); }
     if (mode === 'SAFETY_CRITICAL') $stage.classList.add('danger');
-    if (mode === 'EXPLAIN')         $stage.classList.add('dim');
+    if (mode === 'EXPLAIN')         $stage.classList.add('explain');
 
     // Mode badge
     setBadge(
