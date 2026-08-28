@@ -405,6 +405,7 @@
         <span class="modal-title">Tester nástroje</span>
         <span class="modal-version">TEST 0.1</span>
       </div>
+      <div id="tester-diag" style="font-size:10px;font-family:'Courier New',monospace;color:#4a7a8a;text-align:left;margin:4px 0 12px;line-height:1.9;word-break:break-all;"></div>
       <button id="btn-modal-full-reset" class="modal-btn danger">Full reset — začít znovu</button>
       <div id="tester-modal-status" class="modal-status"></div>
       <button id="btn-modal-close" class="modal-btn secondary">Zavřít</button>
@@ -637,6 +638,11 @@
       $menuTesterBtn.addEventListener('click', () => {
         $profileDrop.classList.remove('open');
         $testerModal.classList.remove('hidden');
+        const $diag = document.getElementById('tester-diag');
+        if ($diag) $diag.textContent =
+          `uid:   ${window.__chj_userId ?? '—'}\n` +
+          `fb:    ${auth.currentUser?.uid ?? '—'}\n` +
+          `build: 762728f`;
       });
     }
 
