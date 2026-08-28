@@ -26,6 +26,47 @@ Produkt je na `dev.iting.cz` (branch `main`). Engine stack je **feature-frozen a
 
 ## Práce z 28. 8. 2026
 
+### P0 Security Incident — Exposed service_role key (CLOSED)
+
+**Nález:** Hardcoded Supabase `service_role` JWT (projekt `pionxzqtxcughvfbgadi`, masked: `eyJhbG…vmFI`) byl přítomen ve dvou git-tracked souborech:
+- `app/dashboards/minidashboard-access-demo.html` — **veřejně dostupný** přes `https://dev.iting.cz/dashboards/minidashboard-access-demo.html`
+- `supabase-upload/supabase-upload.js` — git-tracked, ale mimo Vercel serving
+
+Klíč byl přítomen v git historii od commitu `6b1e476` (bezpečnostní fix `89427b7` z roku 2026 opravil `supabaseClient.js`, ale tyto dva soubory přehlédl) a ve 4 lokálních Claude worktrees.
+
+**Containment (`cef4d25`, 2026-08-28):**
+- `app/dashboards/minidashboard-access-demo.html` — smazán z repozitáře
+- `supabase-upload/supabase-upload.js` — hardcoded klíč nahrazen `process.env.SUPABASE_SERVICE_ROLE_KEY` + dotenv
+- Secret scan HEAD: 0 nálezů po commitu
+- Regression testy: `test-pre-intake.mjs` 137/137 PASS · `test-launcher-static.mjs` 10/10 PASS
+
+**Rotace klíče:**
+- Vytvořen nový `sb_secret_…` klíč v Supabase dashboard (vedle legacy JWT — bez výpadku)
+- `SUPABASE_SERVICE_ROLE_KEY` aktualizován ve Vercel env (Production + Preview + Development)
+- Všechny browser klienty již používaly `sb_publishable_w29DE…` (nový formát) — žádná změna v kódu nutná
+- Deployment `cef4d25` na `dev.iting.cz` ověřen přes Vercel debug trace
+
+**Deaktivace legacy JWT:**
+- Supabase → Settings → API Keys → "Disable JWT-based API keys" — provedeno 2026-08-28
+- Dependency audit před akcí: žádný aktivní kód nepoužíval legacy JWT anon ani service_role pro tento projekt
+
+**Post-rotation verification (2026-08-28):**
+
+| Test | Výsledek |
+|------|----------|
+| `dev.iting.cz` Launcher | HTTP 200 ✅ |
+| `/api/orchestrate` POST | HTTP 200, validní ASK response ✅ |
+| `/api/hud-data-bulk` POST | HTTP 400 (správná validace) ✅ |
+| `/api/crt-generate` POST | HTTP 200, CRT data ✅ |
+| Smazaný soubor `/dashboards/minidashboard-access-demo.html` | HTTP 404 ✅ |
+| Starý legacy `service_role` JWT (masked: `eyJhbG…vmFI`) | HTTP **401 — ODMÍTNUT** ✅ |
+
+**> P0 EXPOSED SERVICE_ROLE INCIDENT = CLOSED**
+
+**Otevřené (nízká priorita, klíč neplatný):** Git history rewrite (commity `6b1e476`, `0956e76`, `462994b`, `e814e27`) — deferred, repo je privátní.
+
+---
+
 ### Identity cleanup + test baseline stabilizace
 
 **Test infrastructure audit** (`ff3337b`, `bd91ff8`):
