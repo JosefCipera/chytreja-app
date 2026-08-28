@@ -1,11 +1,11 @@
 # CHJ DEVLOG — Aktuální stav vývoje
 
 > Handoff dokument pro nové Claude session. Stručný přehled: co funguje, co bylo opraveno, co zůstává otevřené.
-> Aktualizováno: 2026-08-27 · Canonical docs → `CHJ-ENGINE-ARCHITECTURE.md`, `CHJ-PRODUCT-ARCHITECTURE.md`, `CLAUDE.md`
+> Aktualizováno: 2026-08-28 · Canonical docs → `CHJ-ENGINE-ARCHITECTURE.md`, `CHJ-PRODUCT-ARCHITECTURE.md`, `CLAUDE.md`
 
 ---
 
-## Current status (2026-08-27)
+## Current status (2026-08-28)
 
 Produkt je na `dev.iting.cz` (branch `main`). Engine stack je **feature-frozen a locked**.
 
@@ -14,12 +14,32 @@ Produkt je na `dev.iting.cz` (branch `main`). Engine stack je **feature-frozen a
 | Health Engine v1 (`api/engine/engine.js`) | 🔒 LOCKED |
 | DAILY_DECISION (`api/engine/dailyDecision.js`) | 🔒 LOCKED |
 | Health Event Adapter (`api/engine/healthEventAdapter.js`) | 🔒 LOCKED — 28/28 pass |
-| AI Orchestrator (`api/engine/orchestrator.js`) | 🔒 LOCKED — 31/31 pass (240/255 E2E, 15 known N/O baseline) |
+| AI Orchestrator (`api/engine/orchestrator.js`) | 🔒 LOCKED — 31/31 pass |
+| Orchestrator E2E suite (`scripts/test-orchestrator.mjs`) | ✅ **312/312 PASS · 9 SKIP = 321 kontrolních bodů** |
 | Launcher UI (`app/launcher.html`) | ✅ aktivní, busy guard + renderIdle fix |
 | Tester Reset (`api/tester-reset.js`) | ✅ funkční, `TESTER_UIDS` obsahuje Tester 0 + Tester 1 |
 
 **Ověřený E2E průchod (2026-08-27) — PASS:**
 `ASK → 3 evidence otázky → BUDGET_EXHAUSTED summary → spontánní sedentary_hours → ACT (Jdi na procházku 20 minut) → WHY → Hotovo → HOLD`
+
+---
+
+## Práce z 28. 8. 2026
+
+### Identity cleanup + test baseline stabilizace
+
+**Test infrastructure audit** (`ff3337b`, `bd91ff8`):
+- Migrovány všechny test/tracer skripty z `vPrm5...` (smazaný Firebase účet) na ephemeral UID nebo Tester 0 se snapshot/restore.
+- Opravena non-deterministická podmínka `passed += N` → explicitní `skip(count, label)`.
+- **Nový baseline:** `312/312 PASS · 9 SKIP = 321 kontrolních bodů** (dříve `306/321` se 15 known N/O failures).
+- Příčina původní anomálie `321 vs 320`: `scenarioE` měl guard `passed += 4` ale normální cesta má 5 asserci → +1 s vPrm5 v ACT mode.
+
+**Supabase identity cleanup** (`migrations/20260828_orphan_cleanup.sql`):
+- Smazáno **3 914 řádků** ze 11 tabulek (z 19 skenovaných), 20 UID.
+- Delete set: `vPrm5...` (Josef old/AUTH DELETED), `mfiTH...` (TOC seed), 9 identity-audit orphanů, 8 SAFE SCRIPT fake UID, 2 leaked ephemeral.
+- Hard-fail guard: průnik protected × delete set ověřen programaticky před každým DELETE.
+- POST-VERIFY: 0 řádků ve všech 19 user-scoped tabulkách. 7 ACTIVE UID nedotčeno.
+- Regression testy po cleanupuo: **312/312 PASS**, nulová test-* pollution.
 
 ---
 
