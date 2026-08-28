@@ -3,6 +3,7 @@
 import dotenv from "dotenv";
 dotenv.config({ path: '.env.local' });
 import { createClient } from "@supabase/supabase-js";
+import { requireAuth }  from './lib/requireAuth.js';
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -17,11 +18,14 @@ export default async function (req, res) {
 
 // ── POST: save completed mission ──────────────────────────────────
 async function handlePost(req, res) {
+  const auth = await requireAuth(req, res);
+  if (!auth) return;
   try {
-    const { userId, nodeId, missionId, actionType } = req.body || {};
+    const { nodeId, missionId, actionType } = req.body || {};
+    const userId = auth.uid;
 
-    if (!userId || !missionId) {
-      return res.status(400).json({ error: 'Missing userId or missionId' });
+    if (!missionId) {
+      return res.status(400).json({ error: 'Missing missionId' });
     }
 
     const today = new Date().toISOString().split('T')[0];
@@ -52,9 +56,10 @@ async function handlePost(req, res) {
 
 // ── GET: streak + today's missions ────────────────────────────────
 async function handleGet(req, res) {
+  const auth = await requireAuth(req, res);
+  if (!auth) return;
   try {
-    const { userId } = req.query;
-    if (!userId) return res.status(400).json({ error: 'Missing userId' });
+    const userId = auth.uid;
 
     const today = new Date().toISOString().split('T')[0];
 

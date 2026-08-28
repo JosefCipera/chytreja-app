@@ -11,6 +11,7 @@
 import dotenv from "dotenv";
 dotenv.config({ path: '.env.local' });
 import { createClient } from "@supabase/supabase-js";
+import { requireAuth }  from './lib/requireAuth.js';
 
 // ── CONFIG ───────────────────────────────────────────
 const INDEX_IMPROVE = 5;   // +5 for 2 steps in a day
@@ -33,10 +34,14 @@ export default async function (req, res) {
     process.env.SUPABASE_SERVICE_ROLE_KEY
   );
 
+  const auth = await requireAuth(req, res);
+  if (!auth) return;
+
   try {
-    const { userId, nodeId } = req.body || {};
-    if (!userId || !nodeId) {
-      return res.status(400).json({ error: 'Missing userId or nodeId' });
+    const { nodeId } = req.body || {};
+    const userId = auth.uid;
+    if (!nodeId) {
+      return res.status(400).json({ error: 'Missing nodeId' });
     }
 
     const today = new Date().toISOString().split('T')[0];

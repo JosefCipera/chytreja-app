@@ -11,6 +11,7 @@ dotenv.config({ path: '.env.local' });
 
 import { createClient } from '@supabase/supabase-js';
 import { processInput } from './engine/orchestrator.js';
+import { requireAuth }  from './lib/requireAuth.js';
 
 export const config = { maxDuration: 30 };
 
@@ -27,12 +28,13 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { userId, text, session = {}, _request_id } = req.body ?? {};
+  const auth = await requireAuth(req, res);
+  if (!auth) return;
+
+  const { text, session = {}, _request_id } = req.body ?? {};
+  const userId = auth.uid;
   const request_id = _request_id ?? `srv-${Date.now().toString(36)}`;
 
-  if (!userId || typeof userId !== 'string') {
-    return res.status(400).json({ error: 'userId required' });
-  }
   if (!text || typeof text !== 'string') {
     return res.status(400).json({ error: 'text required' });
   }

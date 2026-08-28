@@ -5,6 +5,7 @@
 import dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' });
 import { createClient } from '@supabase/supabase-js';
+import { requireAuth }  from './lib/requireAuth.js';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { join, dirname } from 'path';
@@ -910,8 +911,10 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
 
   try {
-  const { userId, nodes: nodesParam = 'telo,mysl,zdravi,vyziva', role, universe: universeParam } = req.query;
-  if (!userId) return res.status(400).json({ error: 'userId required' });
+  const auth = await requireAuth(req, res);
+  if (!auth) return;
+  const { nodes: nodesParam = 'telo,mysl,zdravi,vyziva', role, universe: universeParam } = req.query;
+  const userId = auth.uid;
 
   const nodeIds = nodesParam.split(',').map(n => n.trim()).filter(Boolean).slice(0, 8);
   const universe = universeParam || 'longevity';

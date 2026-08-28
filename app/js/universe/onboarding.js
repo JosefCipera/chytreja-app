@@ -3,6 +3,7 @@
 // =====================================================
 
 import { supabase } from './supabaseClient.js';
+import { authFetch } from './authFetch.js';
 
 // =====================================================
 // QUESTIONS
@@ -514,7 +515,7 @@ async function saveOnboarding() {
       nodeId, state, currentIndex: nodeIndexMap[nodeId] ?? 0,
     }));
 
-    const saveRes = await fetch('/api/user?action=onboarding', {
+    const saveRes = await authFetch('/api/user?action=onboarding', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId, nodes: allNodeEntries, primaryGoal }),

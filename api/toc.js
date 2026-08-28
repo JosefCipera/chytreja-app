@@ -6,6 +6,7 @@
 import dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' });
 import { createClient } from '@supabase/supabase-js';
+import { requireAuth }  from './lib/requireAuth.js';
 
 function sb() {
   return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
@@ -14,8 +15,15 @@ function sb() {
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   if (req.method === 'OPTIONS') return res.status(204).end();
+
+  const auth = await requireAuth(req, res);
+  if (!auth) return;
+
+  // Inject authoritative uid so all sub-handlers use it regardless of query/body
+  if (req.query) req.query.userId = auth.uid;
+  if (req.body)  req.body.userId  = auth.uid;
 
   const route = req.query.route || (req.body && req.body.route);
 

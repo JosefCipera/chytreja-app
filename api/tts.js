@@ -12,6 +12,8 @@
 import dotenv from "dotenv";
 dotenv.config({ path: '.env.local' });
 
+import { requireAuth } from './lib/requireAuth.js';
+
 // Czech voice — eleven_multilingual_v2 model supports Czech natively
 // Override via ELEVENLABS_VOICE_ID env var or voiceId in request body
 
@@ -477,6 +479,19 @@ export default async function handler(req, res) {
   // Musí přijít buď text nebo context
   if (!text && !context) {
     return res.status(400).json({ error: 'Missing text or context' });
+  }
+
+  // Mode B with userId: user data is fetched → require auth to prevent IDOR.
+  // Mode A (text only) and context without userId: public, no auth needed.
+  const contextUserId = context?.userId || null;
+  if (contextUserId) {
+    // Put userId at top level so requireAuth can compare it against the token uid.
+    if (!req.body) req.body = {};
+    req.body.userId = contextUserId;
+    const auth = await requireAuth(req, res);
+    if (!auth) return;
+    // Replace with server-authoritative uid before passing to generators.
+    context.userId = auth.uid;
   }
 
   const elevenKey = process.env.ELEVENLABS_API_KEY;

@@ -11,6 +11,7 @@
 
 import 'dotenv/config';
 import { createClient } from '@supabase/supabase-js';
+import { requireAuth }  from './lib/requireAuth.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -22,18 +23,30 @@ export default async function handler(req, res) {
     process.env.SUPABASE_SERVICE_ROLE_KEY
   );
 
-  const { action, subscription, userId, title, body, url } = req.body;
+  const { action, subscription, userId: _bodyUserId, title, body, url } = req.body;
 
   // ─── Uložit Push subscription ───────────────────────────────────
+  // Endpoint registration is device-level — no auth needed for anonymous subscriptions.
+  // If caller claims a userId, verify identity to prevent registering under another
+  // user's UID (attacker could otherwise receive that user's push notifications).
   if (action === 'subscribe') {
     if (!subscription) return res.status(400).json({ error: 'Missing subscription' });
+
+    // Resolve the userId to store: null for anonymous, auth.uid when userId claimed.
+    let subscribeUserId = null;
+    if (_bodyUserId) {
+      req.body.userId = _bodyUserId; // expose at top level for requireAuth
+      const auth = await requireAuth(req, res);
+      if (!auth) return;
+      subscribeUserId = auth.uid;
+    }
 
     const { error } = await supabase
       .from('push_subscriptions')
       .upsert({
         endpoint: subscription.endpoint,
         subscription: JSON.stringify(subscription),
-        user_id: userId || null,
+        user_id: subscribeUserId,
         updated_at: new Date().toISOString(),
       }, { onConflict: 'endpoint' });
 
@@ -85,8 +98,11 @@ export default async function handler(req, res) {
       }
     }
 
-    // Pro send: najdi subscription uživatele v DB
-    if (action === 'send' && userId) {
+    // Pro send: najdi subscription uživatele v DB — vyžaduje auth
+    if (action === 'send') {
+      const auth = await requireAuth(req, res);
+      if (!auth) return;
+      const userId = auth.uid;
       const { data: subs, error } = await supabase
         .from('push_subscriptions')
         .select('subscription')

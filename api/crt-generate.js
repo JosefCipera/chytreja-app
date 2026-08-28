@@ -9,6 +9,7 @@
 // =====================================================
 
 import dotenv from 'dotenv';
+import { requireAuth }  from './lib/requireAuth.js';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
@@ -1738,7 +1739,13 @@ export { buildDeterministicCRT, STATES_DB, STATES_ARR, DRUGS_DB, DIAGNOSIS_KEYWO
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { userId, role = 'longevity', force = false, model: modelParam, mockProfile } = req.body || {};
+  const { role = 'longevity', force = false, model: modelParam, mockProfile } = req.body || {};
+
+  // Auth: mockProfile without userId allowed for dev testing; all real requests require auth
+  const isMock = mockProfile && !(req.body?.userId);
+  const auth = isMock ? { uid: 'mock' } : await requireAuth(req, res);
+  if (!auth) return;
+  const userId = auth.uid;
 
   // Výběr modelu: Fable default, Sonnet 5 jako fallback při refusal
   const MODEL_MAP = {

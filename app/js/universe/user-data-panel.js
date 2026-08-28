@@ -4,6 +4,7 @@
 // =====================================================
 
 import { supabase } from './supabaseClient.js';
+import { authFetch } from './authFetch.js';
 
 // ─── State ────────────────────────────────────────
 let activeTab  = 'zdravi';
@@ -907,7 +908,7 @@ function bindCheckInEvents() {
     const hrv     = parseInt(hrvSlider?.value ?? 0);
     setStatus('chk-status', 'saving');
     try {
-      const res = await fetch('/api/user?action=readiness', {
+      const res = await authFetch('/api/user?action=readiness', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId, energie, spanek_hod: spanek, hrv: hrv > 0 ? hrv : null }),
@@ -978,7 +979,7 @@ function bindDocumentsEvents() {
         reader.onerror = reject;
         reader.readAsDataURL(selectedFile);
       });
-      const res = await fetch('/api/tools/parse', {
+      const res = await authFetch('/api/tools/parse', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId, fileBase64: base64, mediaType: selectedFile.type, fileName: selectedFile.name }),
@@ -1071,7 +1072,7 @@ function bindUltrahumanEvents() {
     importBtn.disabled = true; importBtn.textContent = 'Importuji…'; importBtn.style.color = '#94a3b8';
     try {
       const csvText = await selectedFile.text();
-      const res = await fetch('/api/tools/parse', {
+      const res = await authFetch('/api/tools/parse', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId, csvText, source: 'ultrahuman' }),

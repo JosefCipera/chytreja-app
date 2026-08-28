@@ -2,12 +2,22 @@ import dotenv from "dotenv";
 dotenv.config({ path: '.env.local' });
 
 import { createClient } from "@supabase/supabase-js";
+import { requireAuth }  from './lib/requireAuth.js';
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Only POST" });
 
-  const { nodeId, state, userId } = req.body;
+  const { nodeId, state, userId: rawUserId } = req.body;
   if (!nodeId) return res.status(400).json({ error: "nodeId required" });
+
+  // userId is optional (used only for AI ranking context).
+  // When provided, verify identity to prevent reading another user's aspiration/bottleneck.
+  let userId = null;
+  if (rawUserId) {
+    const auth = await requireAuth(req, res);
+    if (!auth) return;
+    userId = auth.uid;
+  }
 
   const supabase = createClient(
     process.env.SUPABASE_URL,

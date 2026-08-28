@@ -9,6 +9,7 @@ dotenv.config({ path: '.env.local' });
 
 import Anthropic from '@anthropic-ai/sdk';
 import { createClient } from '@supabase/supabase-js';
+import { requireAuth }  from './lib/requireAuth.js';
 
 const MODEL = 'claude-haiku-4-5';
 
@@ -147,8 +148,10 @@ export default async function handler(req, res) {
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
     const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
-    const { nodeId, userId: bodyUserId } = req.body || {};
-    const userId = bodyUserId || 'demo-user-123';
+    const auth = await requireAuth(req, res);
+    if (!auth) return;
+    const { nodeId } = req.body || {};
+    const userId = auth.uid;
 
     // 1. Check cache — if already decided today for this node, return cached
     const today = new Date().toISOString().split('T')[0];

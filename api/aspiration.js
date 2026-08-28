@@ -8,6 +8,7 @@ import dotenv from "dotenv";
 dotenv.config({ path: '.env.local' });
 
 import { createClient } from "@supabase/supabase-js";
+import { requireAuth }  from './lib/requireAuth.js';
 
 // Fallback data – used when DB tables are empty
 // Represents "Běžky v 85" aspiration requirements per node
@@ -32,7 +33,10 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Only GET allowed' });
   }
 
-  const { userId = 'demo-user-123', nodeId } = req.query;
+  const auth = await requireAuth(req, res);
+  if (!auth) return;
+  const userId = auth.uid;
+  const { nodeId } = req.query;
 
   if (!nodeId) {
     return res.status(400).json({ error: 'nodeId missing' });

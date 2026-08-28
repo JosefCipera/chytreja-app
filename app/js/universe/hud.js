@@ -5,6 +5,7 @@
 
 import { calcBioAge, KILLER_TEXTS, NODE_KILLERS } from './game-engine.js';
 import { runSkill } from './skill-router.js';
+import { authFetch } from './authFetch.js';
 
 // ── ELEMENTS ────────────────────────────────────────────
 let els = {};
@@ -194,7 +195,7 @@ async function fetchBioAge(uid) {
 
 async function fetchStreak(uid) {
   try {
-    const resp = await fetch(`/api/mission-log?userId=${uid}`);
+    const resp = await authFetch(`/api/mission-log?userId=${uid}`);
     const data = await resp.json();
     return data.streak || 0;
   } catch { return 0; }

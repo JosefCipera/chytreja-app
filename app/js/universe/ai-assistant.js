@@ -1,5 +1,7 @@
 console.log("ASSISTANT JS LOADED - API VERSION");
 
+import { authFetch } from './authFetch.js';
+
 // ======================================
 // AI ASISTENT – PANEL CHAT (API VERSION)
 // ======================================
@@ -58,12 +60,14 @@ async function callAI(userQuestion = null) {
   try {
     console.log("📡 Calling /api/chat with:", { nodeId: currentNodeId, userQuestion });
 
-    const res = await fetch('/api/chat', {
+    const userId = window.firebaseAuth?.currentUser?.uid || 'demo-user-123';
+    const res = await authFetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         nodeId: currentNodeId,
-        userQuestion: userQuestion
+        userQuestion,
+        userId,
       })
     });
 

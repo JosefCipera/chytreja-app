@@ -29,7 +29,7 @@ import {
 } from './data-layer.js';
 
 import { aiSpeak } from './universe-voice.js';
-
+import { authFetch } from './authFetch.js';
 import { runSkill, hasSkill } from './skill-router.js';
 
 // Game constants + data fetching imported from modules (see imports above)
@@ -736,7 +736,7 @@ async function openResourcesViewer(node) {
   const userId = window.firebaseAuth?.currentUser?.uid || null;
   let all = [];
   try {
-    const resp = await fetch('/api/sources', {
+    const resp = await authFetch('/api/sources', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ nodeId: node.id, state: node.state, userId }),
@@ -1398,7 +1398,7 @@ async function showGameOfLife(node, options = {}) {
 
       // Save to mission_log + game loop (background — UI already updated)
       try {
-        const resp = await fetch('/api/mission-log', {
+        const resp = await authFetch('/api/mission-log', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -1413,7 +1413,7 @@ async function showGameOfLife(node, options = {}) {
 
         // GAME LOOP — check impact (update feedback if state changed)
         try {
-          const glResp = await fetch('/api/mission-complete', {
+          const glResp = await authFetch('/api/mission-complete', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ userId, nodeId: node.id }),
@@ -1605,7 +1605,7 @@ async function showGameOfLife(node, options = {}) {
                           secDone.style.display = 'none';
                           if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
                           try {
-                            await fetch('/api/mission-log', {
+                            await authFetch('/api/mission-log', {
                               method: 'POST',
                               headers: { 'Content-Type': 'application/json' },
                               body: JSON.stringify({
@@ -1615,7 +1615,7 @@ async function showGameOfLife(node, options = {}) {
                                 actionType: secondMission.action_type || secondMission.type,
                               }),
                             });
-                            const glResp2 = await fetch('/api/mission-complete', {
+                            const glResp2 = await authFetch('/api/mission-complete', {
                               method: 'POST',
                               headers: { 'Content-Type': 'application/json' },
                               body: JSON.stringify({ userId, nodeId: secondChild.id }),
@@ -1876,7 +1876,7 @@ async function showGameOfLife(node, options = {}) {
       if (e.key === 'Escape') { closeAct(); document.removeEventListener('keydown', escAct); }
     });
     try {
-      const res = await fetch('/api/orchestrator', {
+      const res = await authFetch('/api/orchestrator', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1928,7 +1928,7 @@ async function showGameOfLife(node, options = {}) {
       if (e.key === 'Escape') { closeRef(); document.removeEventListener('keydown', escRef); }
     });
     try {
-      const res = await fetch('/api/orchestrator', {
+      const res = await authFetch('/api/orchestrator', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

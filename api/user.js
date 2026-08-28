@@ -5,12 +5,20 @@ import dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' });
 import { createClient } from '@supabase/supabase-js';
 import Anthropic from '@anthropic-ai/sdk';
+import { requireAuth }  from './lib/requireAuth.js';
 
 function sb() {
   return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 }
 
 export default async function handler(req, res) {
+  const auth = await requireAuth(req, res);
+  if (!auth) return;
+  // Inject authoritative uid so all sub-handlers get correct userId
+  if (req.body)                      req.body.userId  = auth.uid;
+  if (req.query.userId !== undefined) req.query.userId = auth.uid;
+  else                                req.query.userId = auth.uid;
+
   const action = req.query.action;
 
   if (action === 'profile')             return handleProfile(req, res);

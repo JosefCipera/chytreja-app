@@ -3,6 +3,8 @@
 // Mirrors the pattern of lehkost-checkin.js but for user_readiness data.
 // API: GET/POST /api/user?action=readiness
 
+import { authFetch } from './authFetch.js';
+
 export async function showReadinessModal(userId, onComplete, force = false) {
   // Skip for demo user
   if (!userId || userId === 'demo-user-123') { onComplete?.(); return; }
@@ -15,7 +17,7 @@ export async function showReadinessModal(userId, onComplete, force = false) {
   // Check server — skip when force=true (manual menu trigger should always show modal)
   if (!force) {
     try {
-      const res  = await fetch(`/api/user?action=readiness&userId=${encodeURIComponent(userId)}`);
+      const res  = await authFetch(`/api/user?action=readiness&userId=${encodeURIComponent(userId)}`);
       const json = await res.json();
       if (json.exists) {
         localStorage.setItem(lsKey, today); // warm local cache
@@ -38,7 +40,7 @@ export async function showReadinessModal(userId, onComplete, force = false) {
     btn.textContent = 'Ukládám…';
 
     try {
-      const res = await fetch('/api/user?action=readiness', {
+      const res = await authFetch('/api/user?action=readiness', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({ userId, ...data }),
@@ -50,7 +52,7 @@ export async function showReadinessModal(userId, onComplete, force = false) {
 
       // Invalidate CRT cache on background — data changed, map should reflect it
       const uid = userId;
-      fetch('/api/user?action=crt', {
+      authFetch('/api/user?action=crt', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: uid, force: true }),

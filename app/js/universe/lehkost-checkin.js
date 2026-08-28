@@ -2,6 +2,8 @@
 // Ranní check-in modal pro vesmír "Hra o lehkost"
 // ~15 sekund, 6 vstupů, uloží do /api/lehkost?action=checkin
 
+import { authFetch } from './authFetch.js';
+
 export function showCheckinModal(userId, onComplete, force = false) {
   // Nezobrazuj pokud dnes už proběhl — pokud není force=true (ruční trigger z menu)
   const today = new Date().toISOString().slice(0, 10);
@@ -26,7 +28,7 @@ export function showCheckinModal(userId, onComplete, force = false) {
     btn.textContent = 'Ukládám…';
 
     try {
-      const res = await fetch('/api/user?action=checkin', {
+      const res = await authFetch('/api/user?action=checkin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId, ...data }),

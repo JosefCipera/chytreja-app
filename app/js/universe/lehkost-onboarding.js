@@ -6,6 +6,8 @@
 // Saves to: user_profiles (lh_identity, lh_blocker, lh_target_kg, lh_target_note)
 // Trigger:  call showLehkostOnboarding(userId, onComplete) when lh_identity is null
 
+import { authFetch } from './authFetch.js';
+
 const IDENTITY_OPTIONS = [
   { id: 'energie',     label: 'Více energie',    icon: '⚡' },
   { id: 'zhubnout',   label: 'Zhubnout',        icon: '⚖️' },
@@ -35,7 +37,7 @@ export async function checkLehkostOnboarding(userId) {
   // Returns true if onboarding is needed (lh_identity not set)
   // Falls back to false on any error (API/DB not ready) — never blocks the user
   try {
-    const res = await fetch(`/api/user?action=profile&userId=${userId}`);
+    const res = await authFetch(`/api/user?action=profile&userId=${userId}`);
     if (!res.ok) return false; // migrace ještě neproběhla → pustit dál
     const data = await res.json();
     return !data?.lh_identity;
@@ -310,7 +312,7 @@ async function _finish() {
   if (btn) { btn.textContent = 'Ukládám…'; btn.style.opacity = '0.6'; }
 
   try {
-    const res = await fetch(`/api/user?action=lehkost-onboarding`, {
+    const res = await authFetch(`/api/user?action=lehkost-onboarding`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

@@ -475,6 +475,7 @@
   // ── Firebase auth ────────────────────────────────────────────────────────────
   import { initializeApp }                        from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js';
   import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js';
+  import { authFetch }                            from '/app/js/universe/authFetch.js';
 
   const firebaseApp = initializeApp({
     apiKey:            'AIzaSyAKREZsoBZkA1xOQ5ff3XDmiJ88nwSjeOk',
@@ -485,6 +486,7 @@
     appId:             '1:65882611642:web:53d82914aa07d6677d4783',
   });
   const auth = getAuth(firebaseApp);
+  window.firebaseAuth = auth; // needed by authFetch.js
 
   // ── Dev override: ?userId=xxx bypasses Firebase on localhost only ───────────
   const _isLocal = ['localhost', '127.0.0.1'].includes(location.hostname);
@@ -812,7 +814,7 @@
     }
 
     try {
-      const res = await fetch('/api/orchestrate', {
+      const res = await authFetch('/api/orchestrate', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({ userId: uid, text: userText, session, _request_id }),

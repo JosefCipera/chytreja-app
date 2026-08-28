@@ -6,6 +6,7 @@ import dotenv from "dotenv";
 dotenv.config({ path: '.env.local' });
 
 import { createClient } from "@supabase/supabase-js";
+import { requireAuth }  from './lib/requireAuth.js';
 
 // Fallback aspiration data – matches api/aspiration.js
 const BEZKY_V_85 = {
@@ -102,9 +103,13 @@ export default async function (req, res) {
       process.env.SUPABASE_SERVICE_ROLE_KEY
     );
 
+    // userId from context is untrusted — use auth.uid instead
+    const auth = await requireAuth(req, res);
+    if (!auth) return;
+
     const { nodeId, userQuestion, context } = req.body;
 
-    const userId = context?.userId || 'demo-user-123';
+    const userId = auth.uid;
     const isSubNode = nodeId !== 'dlouhovekost';
 
     // ✅ Bottleneck fetch

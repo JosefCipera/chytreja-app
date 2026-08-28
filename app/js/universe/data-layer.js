@@ -1,6 +1,8 @@
 // === DATA LAYER — Supabase queries, trend fetching, chart drawing ===
 // Extracted from universe-panel.js during refactoring
 
+import { authFetch } from './authFetch.js';
+
 // =====================================================
 // DATA FETCHING
 // =====================================================
@@ -8,7 +10,7 @@
 export async function fetchAspiration(userId, nodeId) {
   if (nodeId === 'dlouhovekost') return null;
   try {
-    const res = await fetch(`/api/aspiration?userId=${encodeURIComponent(userId)}&nodeId=${encodeURIComponent(nodeId)}`);
+    const res = await authFetch(`/api/aspiration?userId=${encodeURIComponent(userId)}&nodeId=${encodeURIComponent(nodeId)}`);
     if (!res.ok) return null;
     const data = await res.json();
     return data.aspiration || null;

@@ -903,7 +903,7 @@ window.chjRefreshHealthData = async function() {
   const uid = getUid();
   if (!uid) return;
   try {
-    const res = await fetch(`/api/hud-data-bulk?nodes=lh_main&userId=${uid}&universe=longevity`);
+    const res = await (window.authFetch || fetch)(`/api/hud-data-bulk?nodes=lh_main&userId=${uid}&universe=longevity`);
     if (!res.ok) return;
     const bulk = await res.json();
     const newHasData = bulk.has_health_data === true;
@@ -918,7 +918,7 @@ async function refreshBio() {
   const userId = getUid();
   if (!userId) return;
   try {
-    const res = await fetch(`/api/hud-data-bulk?nodes=dlouhovekost&userId=${userId}&universe=longevity`);
+    const res = await (window.authFetch || fetch)(`/api/hud-data-bulk?nodes=dlouhovekost&userId=${userId}&universe=longevity`);
     if (!res.ok) return;
     const json = await res.json();
     const d = json['dlouhovekost'];
@@ -1430,7 +1430,7 @@ async function _doDialog() {
     if (_recognition) { try { _recognition.stop(); } catch(_) {} _recognition = null; }
 
     try {
-      const res = await fetch('/api/user?action=dialog', {
+      const res = await (window.authFetch || fetch)('/api/user?action=dialog', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId, role, messages }),
@@ -1669,7 +1669,7 @@ async function onTextSend() {
 
   try {
     const userId = getUid() || '';
-    const res = await fetch('/api/chat', {
+    const res = await (window.authFetch || fetch)('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message: text, userId, nodeId: 'lh_main', mode: 'launcher' }),
@@ -1720,7 +1720,7 @@ function onHotovo(e) {
   if (userId) {
     const model = localStorage.getItem('currentModel') || 'longevity';
     const nodeId = model === 'lehkost' ? 'lh_main' : 'dlouhovekost';
-    fetch('/api/mission-complete', {
+    (window.authFetch || fetch)('/api/mission-complete', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId, nodeId }),

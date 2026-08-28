@@ -11,6 +11,7 @@ dotenv.config({ path: '.env.local' });
 
 import Anthropic from '@anthropic-ai/sdk';
 import { createClient } from '@supabase/supabase-js';
+import { requireAuth } from '../lib/requireAuth.js';
 
 // ══════════════════════════════════════════════════════════════
 // SECTION A — ULTRAHUMAN CSV PARSER
@@ -458,6 +459,12 @@ async function handleHealthDoc(req, res, sb) {
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
+
+  const auth = await requireAuth(req, res);
+  if (!auth) return;
+
+  // Inject authoritative uid into body so sub-handlers use it
+  req.body.userId = auth.uid;
 
   const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 

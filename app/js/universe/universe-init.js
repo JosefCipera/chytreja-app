@@ -7,6 +7,7 @@ const ORBIT_ZONES = [
   [500, 600],
   [620, 740]
 ];
+import { authFetch } from "./authFetch.js";
 import { renderUniverse, getViewState, updateMetricsAndRedraw } from "./universe-core.js";
 import { showPanel } from "./universe-panel.js";
 import { initUserDataPanel } from "./user-data-panel.js?v=20260426a";
@@ -232,7 +233,7 @@ async function warmAgentCache() {
   // Run all nodes in parallel — total time = slowest single call (~6-8 s)
   await Promise.all(MAIN_NODES.map(async (nid) => {
     try {
-      const orchRes = await fetch('/api/orchestrator', {
+      const orchRes = await authFetch('/api/orchestrator', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: 'Co mám dnes dělat?', nodeId: nid, userId }),
@@ -520,7 +521,7 @@ async function loadModel(modelName, role = 'longevity') {
       // ── CRT override — force RED on universe nodes with active CRT causes ──
       // Fetches _crt_states from hud-data-bulk (one call, parallel-safe, no extra DB query).
       try {
-        const crtRes = await fetch(`/api/hud-data-bulk?userId=${encodeURIComponent(userId)}&nodes=dlouhovekost&role=${encodeURIComponent(role)}&universe=${encodeURIComponent(metricsUniverse)}`);
+        const crtRes = await authFetch(`/api/hud-data-bulk?userId=${encodeURIComponent(userId)}&nodes=dlouhovekost&role=${encodeURIComponent(role)}&universe=${encodeURIComponent(metricsUniverse)}`);
         if (crtRes.ok) {
           const crtBulk = await crtRes.json();
           const crtStates = crtBulk._crt_states || {};
@@ -792,7 +793,7 @@ window.upgradeToLongevity = async function () {
   if (!uid || uid === 'demo-user-123') return;
 
   // Server-side write — anon key cannot UPSERT (RLS blocks it)
-  const profileRes = await fetch('/api/user?action=profile', {
+  const profileRes = await authFetch('/api/user?action=profile', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ userId: uid, primaryGoal: 'longevity' }),
