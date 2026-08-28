@@ -1,6 +1,0 @@
-klic,hodnota,popis
-LV,90,Limit vytížení kapacity pracoviště v %
-KP,60,Počet dnů pro kapacitní plán
-GD,-30,Zobrazení Gantta do dneška ve dnech
-GO,90,Zobrazení Gantta ode dneška ve dnech
-GT,1,Interval tiků v Ganttově diagramu v dnech (1/2/3/7/10/14)

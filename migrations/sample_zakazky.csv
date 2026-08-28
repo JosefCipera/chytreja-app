@@ -1,3 +1,0 @@
-id_zakazky,nazev_zakazky,termin_dodani,prubeznа_doba,vyrobit_ks,odvedeno_ks,stav,typ_zakazky,brusky,soustruhy,ohyb,laser,svarovani
-TEST-001,Testovací zakázka (DBR),2026-05-13,10,50,0,plánovaná,výroba,12,8,5,0,15
-TEST-002,Testovací zakázka 2 (DBR),2026-05-20,8,40,0,plánovaná,výroba,10,0,0,20,12
