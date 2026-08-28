@@ -8,12 +8,14 @@
 const { createClient } = require('@supabase/supabase-js');
 const fs = require('fs');
 const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../.env.local') });
 
 // =====================================================
 // 🔐 KONFIGURACE
 // =====================================================
-const SUPABASE_URL = 'https://pionxzqtxcughvfbgadi.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBpb254enF0eGN1Z2h2ZmJnYWRpIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NzMxOTk2NiwiZXhwIjoyMDgyODk1OTY2fQ.lFAHdBtREF7TfM5UHuzbBkQQN3fdU_ac9Y-MJxCvmFI';
+const SUPABASE_URL = process.env.SUPABASE_URL || 'https://pionxzqtxcughvfbgadi.supabase.co';
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+if (!SUPABASE_KEY) { console.error('SUPABASE_SERVICE_ROLE_KEY není nastaven v .env.local'); process.exit(1); }
 const BUCKET_NAME = 'sokrates-content';
 
 // Cesty k souborům na disku
