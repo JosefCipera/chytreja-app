@@ -1038,15 +1038,17 @@ async function showGameOfLife(node, options = {}) {
     if (worst) bottleneckLabel = NODE_LABELS[worst.id] || worst.label || worst.id;
 
     // Fetch aspiration label
-    if (userId !== 'demo-user-123' && window.supabaseClient) {
+    if (userId !== 'demo-user-123') {
       try {
-        const { data: aspRow } = await window.supabaseClient
-          .from('user_aspirations').select('aspiration_type').eq('user_id', userId).maybeSingle();
-        const GOAL_LABELS = {
-          bezky_v_85: 'Běžky v 85', ironman_v_70: 'Ironman v 70',
-          vnouci: 'Hrát si s vnouky', samostatnost_v_90: 'Samostatnost v 90',
-        };
-        if (aspRow?.aspiration_type) goalLabel = GOAL_LABELS[aspRow.aspiration_type] || null;
+        const aspRes = await authFetch('/api/user?action=aspiration-type');
+        if (aspRes.ok) {
+          const { aspiration_type } = await aspRes.json();
+          const GOAL_LABELS = {
+            bezky_v_85: 'Běžky v 85', ironman_v_70: 'Ironman v 70',
+            vnouci: 'Hrát si s vnouky', samostatnost_v_90: 'Samostatnost v 90',
+          };
+          if (aspiration_type) goalLabel = GOAL_LABELS[aspiration_type] || null;
+        }
       } catch (e) { /* ignore */ }
     }
 

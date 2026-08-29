@@ -38,8 +38,10 @@ export default async function handler(req, res) {
   if (action === 'update-decathlon')    return handleUpdateDecathlon(req, res);
   if (action === 'wizard-step')         return handleWizardStep(req, res);
   if (action === 'full-profile')        return handleFullProfile(req, res);
+  if (action === 'node-history')        return handleNodeHistory(req, res);
+  if (action === 'aspiration-type')     return handleAspirationType(req, res);
 
-  return res.status(400).json({ error: 'action required: profile | onboarding | readiness | snapshot | checkin | body-flow | lehkost-agent | dialog | health-profile | crt-context | save-zdravi | save-kondice | save-profil | update-decathlon | wizard-step | full-profile' });
+  return res.status(400).json({ error: 'action required: profile | onboarding | readiness | snapshot | checkin | body-flow | lehkost-agent | dialog | health-profile | crt-context | save-zdravi | save-kondice | save-profil | update-decathlon | wizard-step | full-profile | node-history' });
 }
 
 
@@ -723,6 +725,38 @@ async function handleFullProfile(req, res) {
   });
 }
 
+// ── GET ?action=node-history ──────────────────────────────────────
+// Returns last 30 days of node_state_history for a single node.
+// Response: { data: [{date, state, current_index}] } — same shape as raw Supabase result.
+// userId always from auth.uid; nodeId validated server-side.
+async function handleNodeHistory(req, res) {
+  if (req.method !== 'GET') return res.status(405).json({ error: 'GET only' });
+  const userId = req.query.userId;
+  if (!userId) return res.status(400).json({ error: 'userId required' });
+
+  const { nodeId } = req.query;
+  if (!nodeId) return res.status(400).json({ error: 'nodeId required' });
+  if (!/^[a-z0-9_]+$/.test(nodeId) || nodeId.length > 64) {
+    return res.status(400).json({ error: 'nodeId invalid' });
+  }
+
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  const dateFilter = thirtyDaysAgo.toISOString().slice(0, 10);
+
+  const { data, error } = await sb()
+    .from('node_state_history')
+    .select('date, state, current_index')
+    .eq('user_id', userId)
+    .eq('node_id', nodeId)
+    .gte('date', dateFilter)
+    .order('date', { ascending: true });
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.setHeader('Cache-Control', 'no-store');
+  return res.json({ data: data ?? [] });
+}
+
 // ── POST ?action=save-zdravi ─────────────────────────────────────
 // Replaces health-profile fields + soft-deletes medications then re-upserts active list.
 async function handleSaveZdravi(req, res) {
@@ -903,6 +937,25 @@ async function handleWizardStep(req, res) {
   }
 
   return res.status(400).json({ error: 'step must be 1, 2, or 3' });
+}
+
+// ── GET ?action=aspiration-type ──────────────────────────────────
+// Returns { aspiration_type } for the authenticated user.
+// No nodeId — reads user_aspirations directly by user_id.
+async function handleAspirationType(req, res) {
+  if (req.method !== 'GET') return res.status(405).json({ error: 'GET only' });
+  const userId = req.query.userId; // auth.uid injected by main handler
+  if (!userId) return res.status(400).json({ error: 'userId required' });
+
+  res.setHeader('Cache-Control', 'no-store');
+  const { data, error } = await sb()
+    .from('user_aspirations')
+    .select('aspiration_type')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (error) return res.status(500).json({ error: error.message });
+  return res.json({ aspiration_type: data?.aspiration_type ?? null });
 }
 
 async function handleCrtContext(req, res) {

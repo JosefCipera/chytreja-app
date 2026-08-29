@@ -146,26 +146,16 @@ export function drawIndexLabel(ctx, index, color) {
 }
 
 export async function fetchTrend(userId, nodeId, nodeState) {
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-  const dateFilter = thirtyDaysAgo.toISOString().split('T')[0];
+  const EMPTY = { text: 'Stabilní', numeric: [], lineColor: '#64748b', trendColor: '#64748b', arrow: '→', dataLength: 0 };
 
-  const { data, error } = await window.supabaseClient
-    .from('node_state_history')
-    .select('date, state, current_index')
-    .eq('user_id', userId)
-    .eq('node_id', nodeId)
-    .gte('date', dateFilter)
-    .order('date', { ascending: true });
+  let data;
+  try {
+    const res = await authFetch(`/api/user?action=node-history&nodeId=${encodeURIComponent(nodeId)}`);
+    if (!res.ok) return EMPTY;
+    ({ data } = await res.json());
+  } catch { return EMPTY; }
 
-  if (error) console.error('Trend error:', error);
-
-  if (!data || data.length === 0) {
-    return {
-      text: 'Stabilní', numeric: [], lineColor: '#64748b',
-      trendColor: '#64748b', arrow: '→', dataLength: 0
-    };
-  }
+  if (!data || data.length === 0) return EMPTY;
 
   // Use current_index if available, fallback to state mapping
   const numeric = data.map(d =>

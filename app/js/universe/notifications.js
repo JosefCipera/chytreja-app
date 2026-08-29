@@ -9,6 +9,8 @@
 // Pro "closed app" notifikace (Web Push):
 //   → potřeba VAPID klíče + backend /api/notify (viz níže)
 
+import { authFetch } from './authFetch.js';
+
 const ICON = '/app/assets/images/logo-192.png';
 
 // ─── 1. Požádat o oprávnění ───────────────────────────────────────
@@ -121,33 +123,14 @@ const REMINDER_TEXTS = {
  */
 export async function checkAndRemind(userId) {
   if (!userId || userId === 'demo-user-123') return;
-  if (!window.supabaseClient) return;
 
   try {
-    const sb = window.supabaseClient;
-    const today = new Date().toISOString().split('T')[0];
+    const res = await authFetch(`/api/mission-log?userId=${encodeURIComponent(userId)}`);
+    if (!res.ok) return;
+    const { streak = 0, todayMissions = [] } = await res.json();
 
-    // 1. Check if any mission done today
-    const { data: todayMissions } = await sb
-      .from('mission_log')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('date', today)
-      .limit(1);
+    const donToday = todayMissions.length > 0;
 
-    const donToday = todayMissions?.length > 0;
-
-    // 2. Get streak (consecutive days before today)
-    const { data: recentDays } = await sb
-      .from('mission_log')
-      .select('date')
-      .eq('user_id', userId)
-      .order('date', { ascending: false })
-      .limit(30);
-
-    const streak = _calcStreak(recentDays?.map(r => r.date) || [], today);
-
-    // 3. Decide message
     let message;
     if (donToday) {
       message = REMINDER_TEXTS.allDone;
@@ -157,43 +140,11 @@ export async function checkAndRemind(userId) {
       message = REMINDER_TEXTS.noMission(streak);
     }
 
-    // 4. Show toast
     _showToast(message, donToday ? 'green' : streak >= 3 ? 'amber' : 'blue');
 
   } catch (e) {
     console.warn('🔔 Reminder check failed:', e.message);
   }
-}
-
-/** Calculate consecutive days streak ending yesterday (or today if done). */
-function _calcStreak(dates, today) {
-  if (!dates.length) return 0;
-  const unique = [...new Set(dates)].sort().reverse();
-  let streak = 0;
-  let expected = new Date(today);
-
-  // If today is done, count from today; otherwise from yesterday
-  if (unique[0] === today) {
-    streak = 1;
-    expected.setDate(expected.getDate() - 1);
-    for (let i = 1; i < unique.length; i++) {
-      const expectedStr = expected.toISOString().split('T')[0];
-      if (unique[i] === expectedStr) {
-        streak++;
-        expected.setDate(expected.getDate() - 1);
-      } else break;
-    }
-  } else {
-    expected.setDate(expected.getDate() - 1);
-    for (const d of unique) {
-      const expectedStr = expected.toISOString().split('T')[0];
-      if (d === expectedStr) {
-        streak++;
-        expected.setDate(expected.getDate() - 1);
-      } else break;
-    }
-  }
-  return streak;
 }
 
 /** Show a floating toast banner at the top of the screen. */
