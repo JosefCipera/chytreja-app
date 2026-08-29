@@ -60,7 +60,7 @@
                                 if (!bf) return;
                                 console.log('đź’Ş BODY FLOW:', bf.score);
                                 // Invaliduj HUD cache pro lh_ uzly a re-render canvas
-                                const LH_IDS = ['lh_main','lh_vyziva','lh_pohyb','lh_mysl','lh_regenerace'];
+                                const LH_IDS = ['lh_main', 'lh_vyziva', 'lh_pohyb', 'lh_mysl', 'lh_regenerace'];
                                 LH_IDS.forEach(id => {
                                     if (window._hudCache) delete window._hudCache[id];
                                 });
@@ -84,10 +84,10 @@
         window.openGuide = () => {
             const model = window.CURRENT_MODEL || 'longevity';
             const guideMap = {
-                longevity:  '/app/guides/longevity.html',
-                decathlon:  '/app/guides/decathlon.html',
-                lehkost:    '/app/guides/lehkost.html',
-                toc:        '/app/guides/toc.html',
+                longevity: '/app/guides/longevity.html',
+                decathlon: '/app/guides/decathlon.html',
+                lehkost: '/app/guides/lehkost.html',
+                toc: '/app/guides/toc.html',
             };
             const url = guideMap[model] || guideMap.longevity;
             window.open(url, '_blank');
@@ -107,7 +107,7 @@
                 const { showCheckinModal } = await import('/app/js/universe/lehkost-checkin.js');
                 showCheckinModal(userId, (bodyFlow) => {
                     if (!bodyFlow) return;
-                    const LH_IDS = ['lh_main','lh_vyziva','lh_pohyb','lh_mysl','lh_regenerace'];
+                    const LH_IDS = ['lh_main', 'lh_vyziva', 'lh_pohyb', 'lh_mysl', 'lh_regenerace'];
                     LH_IDS.forEach(id => { if (window._hudCache) delete window._hudCache[id]; });
                     if (window.refreshUniverseData) window.refreshUniverseData();
                 }, true); // force=true
@@ -131,6 +131,8 @@
 
     <!-- PWA -->
     <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="icon" href="/app/favicon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/app/assets/icons/apple-touch-icon-180.png">
     <meta name="theme-color" content="#0f172a">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -187,6 +189,7 @@
             font-size: 0.85em;
             margin: 8px 0 16px;
         }
+
         /* === Mic tlaÄŤĂ­tko === */
         #voice-mic-btn {
             position: fixed;
@@ -205,41 +208,75 @@
             justify-content: center;
             transition: transform 0.15s ease, box-shadow 0.2s ease, border-color 0.2s ease;
         }
+
         #voice-mic-btn:hover {
             transform: scale(1.08);
             box-shadow: 0 0 28px rgba(80, 140, 255, 0.4);
         }
+
         #voice-mic-btn[data-state="listening"] {
             border-color: rgba(239, 68, 68, 0.7);
             box-shadow: 0 0 24px rgba(239, 68, 68, 0.35);
             animation: mic-pulse 1s ease-in-out infinite;
         }
+
         #voice-mic-btn[data-state="thinking"] {
             border-color: rgba(147, 197, 253, 0.5);
             box-shadow: 0 0 24px rgba(147, 197, 253, 0.3);
         }
+
         #voice-mic-btn[data-state="speaking"] {
             border-color: rgba(59, 130, 246, 0.8);
             animation: mic-pulse-blue 1.1s ease-in-out infinite;
         }
-        .mic-icon { font-size: 22px; line-height: 1; }
+
+        .mic-icon {
+            font-size: 22px;
+            line-height: 1;
+        }
+
         @keyframes mic-pulse {
-            0%, 100% { box-shadow: 0 0 24px rgba(239, 68, 68, 0.35); }
-            50%       { box-shadow: 0 0 38px rgba(239, 68, 68, 0.6); }
+
+            0%,
+            100% {
+                box-shadow: 0 0 24px rgba(239, 68, 68, 0.35);
+            }
+
+            50% {
+                box-shadow: 0 0 38px rgba(239, 68, 68, 0.6);
+            }
         }
+
         @keyframes mic-pulse-blue {
-            0%, 100% { box-shadow: 0 0 18px rgba(59, 130, 246, 0.3); }
-            50%       { box-shadow: 0 0 32px rgba(59, 130, 246, 0.7); }
+
+            0%,
+            100% {
+                box-shadow: 0 0 18px rgba(59, 130, 246, 0.3);
+            }
+
+            50% {
+                box-shadow: 0 0 32px rgba(59, 130, 246, 0.7);
+            }
         }
+
         /* CHJ bubliny â€“ fade-in + slide-up pro animovanĂ© 3-vÄ›tovĂ˝ briefing */
         @keyframes chjFadeIn {
-            from { opacity: 0; transform: translateY(8px); }
-            to   { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
+
         /* Posunout mic btn nahoru kdyĹľ je panel otevĹ™enĂ˝ */
         body.panel-open #voice-mic-btn {
             bottom: 80px;
         }
+
         /* === Header mic tlaÄŤĂ­tko â€” TTS indikĂˇtor (speaking state) === */
         #header-mic-btn {
             height: 38px;
@@ -257,10 +294,12 @@
             transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
             flex-shrink: 0;
         }
+
         #header-mic-btn:hover {
             background: rgba(71, 85, 105, 0.85);
             border-color: #64748b;
         }
+
         /* SPEAKING â€“ modrĂˇ pulsujĂ­cĂ­ zĂˇĹ™e (TTS ÄŤte) */
         #header-mic-btn[data-state="speaking"] {
             border-color: rgba(59, 130, 246, 0.8);
@@ -285,32 +324,52 @@
             transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
             flex-shrink: 0;
         }
+
         #cmd-mic-btn:hover {
             background: rgba(34, 197, 94, 0.12);
             border-color: rgba(34, 197, 94, 0.6);
             color: #22c55e;
         }
+
         #cmd-mic-btn[data-state="listening"] {
             border-color: rgba(34, 197, 94, 0.85);
             color: #22c55e;
             animation: header-pulse-green 1.1s ease-in-out infinite;
         }
+
         #cmd-mic-btn[data-state="speaking"] {
             border-color: rgba(59, 130, 246, 0.8);
             color: #60a5fa;
             animation: header-pulse-blue 1.1s ease-in-out infinite;
         }
+
         #cmd-mic-btn[data-state="thinking"] {
             border-color: rgba(147, 197, 253, 0.55);
             color: #93c5fd;
         }
+
         @keyframes header-pulse-green {
-            0%, 100% { box-shadow: 0 0 8px rgba(34, 197, 94, 0.3); }
-            50%       { box-shadow: 0 0 20px rgba(34, 197, 94, 0.7); }
+
+            0%,
+            100% {
+                box-shadow: 0 0 8px rgba(34, 197, 94, 0.3);
+            }
+
+            50% {
+                box-shadow: 0 0 20px rgba(34, 197, 94, 0.7);
+            }
         }
+
         @keyframes header-pulse-blue {
-            0%, 100% { box-shadow: 0 0 8px rgba(59, 130, 246, 0.3); }
-            50%       { box-shadow: 0 0 20px rgba(59, 130, 246, 0.7); }
+
+            0%,
+            100% {
+                box-shadow: 0 0 8px rgba(59, 130, 246, 0.3);
+            }
+
+            50% {
+                box-shadow: 0 0 20px rgba(59, 130, 246, 0.7);
+            }
         }
     </style>
 </head>
@@ -372,7 +431,8 @@
                 </div>
                 <nav class="dropdown-nav">
                     <a href="#" onclick="openUserDataPanel(); return false;"><i class="icon">đź‘¤</i> Já</a>
-                    <a href="#" onclick="openDailyCheckin(); return false;" id="checkin-menu-item"><i class="icon">đź“‹</i> Dnešní záznam</a>
+                    <a href="#" onclick="openDailyCheckin(); return false;" id="checkin-menu-item"><i
+                            class="icon">đź“‹</i> Dnešní záznam</a>
                     <a href="/app/medioteka.html"><i class="icon">đź“š</i> Mediotéka</a>
                     <a href="#" onclick="openGuide(); return false;"><i class="icon">đź“–</i> Návod</a>
                     <div class="divider"></div>
@@ -383,7 +443,6 @@
             </div>
         </div>
     </header>
-
     <!-- Plátno sítě -->
     <div id="network"></div>
 
@@ -474,7 +533,6 @@
             }
         }).observe(document.body, { childList: true });
     </script>
-
     <!-- Service Worker -->
     <script>
         if ('serviceWorker' in navigator) {
@@ -492,7 +550,8 @@
     <style>
         #hud-fetch-loader {
             position: fixed;
-            top: 0; right: 0;
+            top: 0;
+            right: 0;
             width: 3px;
             height: 100%;
             background: linear-gradient(180deg, #06b6d4 0%, #22c55e 60%, #06b6d4 100%);
@@ -502,13 +561,22 @@
             pointer-events: none;
             transition: opacity 0.15s ease;
         }
+
         #hud-fetch-loader.active {
             opacity: 1;
             animation: hud-loader-pulse 0.8s ease-in-out infinite alternate;
         }
+
         @keyframes hud-loader-pulse {
-            from { opacity: 0.5; box-shadow: 0 0 6px rgba(6,182,212,0.4); }
-            to   { opacity: 1;   box-shadow: 0 0 14px rgba(6,182,212,0.9); }
+            from {
+                opacity: 0.5;
+                box-shadow: 0 0 6px rgba(6, 182, 212, 0.4);
+            }
+
+            to {
+                opacity: 1;
+                box-shadow: 0 0 14px rgba(6, 182, 212, 0.9);
+            }
         }
     </style>
     <div id="hud-fetch-loader"></div>
@@ -543,13 +611,13 @@
 
     <script>
         // â”€â”€ HUD node data cache â€” prefetched on login â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-        window._hudCache   = {};   // { nodeId: data }
+        window._hudCache = {};   // { nodeId: data }
         window._hudPending = {};   // { nodeId: Promise } â€” in-flight fetches
-        window._hudOpen    = false;
-        window._hudUserId  = null;
+        window._hudOpen = false;
+        window._hudUserId = null;
 
         // Prefetch data for a list of nodes into cache
-        window.prefetchHudNodes = async function(userId, nodeIds) {
+        window.prefetchHudNodes = async function (userId, nodeIds) {
             if (!userId || !nodeIds.length) return;
             window._hudUserId = userId;
             const missing = nodeIds.filter(id => !window._hudCache[id] && !window._hudPending[id]);
@@ -581,23 +649,23 @@
         };
 
         // Prefetch children of a node one level down (lazy, on node open)
-        window.prefetchHudChildren = function(userId, parentNodeId) {
+        window.prefetchHudChildren = function (userId, parentNodeId) {
             const CHILDREN = {
-                dlouhovekost: ['telo','mysl','zdravi','vyziva'],
-                telo:   ['sila','kardio','stabilita','vo2max','mobilita','vytrvalost','rovnovaha','plyometrie','dychani'],
-                zdravi: ['metabolicke','spanek','imunitni'],
-                mysl:   ['emoce','smysl','stres','kognitivni'],
-                vyziva: ['bilkoviny','glukoza_vyziva','hydratace'],
+                dlouhovekost: ['telo', 'mysl', 'zdravi', 'vyziva'],
+                telo: ['sila', 'kardio', 'stabilita', 'vo2max', 'mobilita', 'vytrvalost', 'rovnovaha', 'plyometrie', 'dychani'],
+                zdravi: ['metabolicke', 'spanek', 'imunitni'],
+                mysl: ['emoce', 'smysl', 'stres', 'kognitivni'],
+                vyziva: ['bilkoviny', 'glukoza_vyziva', 'hydratace'],
             };
             const children = CHILDREN[parentNodeId] || [];
             if (children.length) window.prefetchHudNodes(userId, children);
         };
 
-        window.openHudOverlay = async function(userId, nodeId) {
+        window.openHudOverlay = async function (userId, nodeId) {
             const overlay = document.getElementById('hud-overlay');
-            const wrap    = document.getElementById('hud-panel-wrap');
-            const iframe  = document.getElementById('hud-iframe');
-            const loader  = document.getElementById('hud-fetch-loader');
+            const wrap = document.getElementById('hud-panel-wrap');
+            const iframe = document.getElementById('hud-iframe');
+            const loader = document.getElementById('hud-fetch-loader');
 
             // Close vanilla panel if open (e.g. after clicking a gray node)
             if (typeof window.closePanel === 'function') window.closePanel();
@@ -637,7 +705,7 @@
                         const _r = localStorage.getItem('userRole') || 'pro';
                         const _univ2 = window.CURRENT_MODEL || 'longevity';
                         const url = `/api/hud-data-bulk?userId=${encodeURIComponent(userId)}&nodes=${encodeURIComponent(nodeId)}&role=${encodeURIComponent(_r)}&universe=${encodeURIComponent(_univ2)}`;
-                        const res  = await fetch(url);
+                        const res = await fetch(url);
                         const bulk = await res.json();
                         data = bulk[nodeId] || null;
                         if (data) window._hudCache[nodeId] = data; // warm cache for next open
@@ -670,9 +738,9 @@
 
         window._hudOverlayOpen = false;  // tracks Svelte HUD visibility for canvas click guard
 
-        window.closeHudOverlay = function() {
+        window.closeHudOverlay = function () {
             const overlay = document.getElementById('hud-overlay');
-            const wrap    = document.getElementById('hud-panel-wrap');
+            const wrap = document.getElementById('hud-panel-wrap');
             window._hudOverlayOpen = false;
             wrap.style.transform = 'translateX(100%)';
             // Keep iframe alive â€” just hide overlay; _hudOpen stays true so no reload on reopen
@@ -692,39 +760,39 @@
             };
             window.speechSynthesis.speak(utt);
         }
-        window.openToolOverlay = function(url) {
+        window.openToolOverlay = function (url) {
             const overlay = document.getElementById('tool-overlay');
-            const iframe  = document.getElementById('tool-iframe');
+            const iframe = document.getElementById('tool-iframe');
             iframe.src = url;
             overlay.style.display = 'block';
         };
-        window.closeToolOverlay = function() {
+        window.closeToolOverlay = function () {
             const overlay = document.getElementById('tool-overlay');
-            const iframe  = document.getElementById('tool-iframe');
+            const iframe = document.getElementById('tool-iframe');
             overlay.style.display = 'none';
             iframe.src = '';
         };
 
-        window.openCrtOverlay = function() {
+        window.openCrtOverlay = function () {
             window.closeHudOverlay();
             const overlay = document.getElementById('crt-overlay');
-            const iframe  = document.getElementById('crt-iframe');
-            const userId  = window._hudUserId || '';
+            const iframe = document.getElementById('crt-iframe');
+            const userId = window._hudUserId || '';
             const hdr = document.getElementById('appHeader');
             if (hdr) hdr.style.display = 'none';
             overlay.style.display = 'block';
             iframe.src = `/app/crt.html?userId=${encodeURIComponent(userId)}`;
         };
-        window.closeCrtOverlay = function() {
+        window.closeCrtOverlay = function () {
             const overlay = document.getElementById('crt-overlay');
-            const iframe  = document.getElementById('crt-iframe');
+            const iframe = document.getElementById('crt-iframe');
             overlay.style.display = 'none';
             iframe.src = '';
             const hdr = document.getElementById('appHeader');
             if (hdr) hdr.style.display = '';
         };
 
-        window.addEventListener('message', function(e) {
+        window.addEventListener('message', function (e) {
             if (e.data === 'chj:hud:close') window.closeHudOverlay();
             if (e.data === 'chj:tool:close') window.closeToolOverlay();
             if (e.data?.type === 'chj:tool:open') window.openToolOverlay(e.data.url);
@@ -732,7 +800,7 @@
             if (e.data?.type === 'chj:source:open') openSourceViewer(e.data.source);
             if (e.data?.type === 'chj:tts:speak') _runTopTTS(e.data.text, e.data.lang);
             if (e.data?.type === 'chj:tts:stop') { if ('speechSynthesis' in window) window.speechSynthesis.cancel(); }
-            if (e.data?.type === 'chj:crt:open')  window.openCrtOverlay();
+            if (e.data?.type === 'chj:crt:open') window.openCrtOverlay();
             if (e.data?.type === 'chj:crt:close') window.closeCrtOverlay();
         });
 
@@ -742,7 +810,7 @@
             if (!hash) return;
             history.replaceState(null, '', window.location.pathname);
             if (hash === '#checkin') setTimeout(() => window.openDailyCheckin?.(), 600);
-            if (hash === '#data')    setTimeout(() => window.openUserDataPanel?.(), 600);
+            if (hash === '#data') setTimeout(() => window.openUserDataPanel?.(), 600);
         })();
 
         function mediaTypeOf(url) {
@@ -769,7 +837,7 @@
             if (_hdr) _hdr.style.display = 'none';
             const urlType = source.url ? mediaTypeOf(source.url) : 'none';
             // Use source.type as fallback when URL gives no hint (e.g. url='#')
-            const KNOWN = ['md','article','video','audio','pdf','image'];
+            const KNOWN = ['md', 'article', 'video', 'audio', 'pdf', 'image'];
             const t = (urlType === 'iframe' && source.type && KNOWN.includes(source.type))
                 ? source.type : urlType;
             if (t === 'iframe') { if (source.url && source.url !== '#') window.open(source.url, '_blank'); return; }
@@ -809,7 +877,7 @@
                 wrap.style.cssText = 'position:fixed;inset:0;background:rgba(2,6,14,0.98);z-index:26000;display:flex;flex-direction:column;overflow:hidden;opacity:0;transition:opacity 0.22s;padding-top:max(env(safe-area-inset-top,0px),8px);padding-bottom:max(env(safe-area-inset-bottom,0px),8px);';
             }
 
-            const shortId = id => { if (!id) return '???'; const s = String(id), d = s.indexOf('-'); return d > 0 ? s.slice(0,d).toUpperCase() : s; };
+            const shortId = id => { if (!id) return '???'; const s = String(id), d = s.indexOf('-'); return d > 0 ? s.slice(0, d).toUpperCase() : s; };
             const isMdType = (t === 'md' || t === 'article');
 
             if (isMdType && !document.getElementById('_chj-md-css')) {
@@ -826,13 +894,12 @@
             headerInfo.style.cssText = 'font-family:monospace;font-size:11px;letter-spacing:0.08em;color:#64748b;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
             headerInfo.innerHTML = `[MED_ID:&nbsp;${shortId(source.med_id)}]&nbsp;&nbsp;Â·&nbsp;&nbsp;${source.journal || ''}, ${source.year || ''}`;
             header.appendChild(headerInfo);
-
             let _mdTtsOn = false;
             if (isMdType) {
                 const btnStyle = 'background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);border-radius:6px;cursor:pointer;padding:5px 9px;-webkit-tap-highlight-color:transparent;flex-shrink:0;font-size:15px;line-height:1;color:#e2e8f0;margin-left:4px;min-width:44px;min-height:44px;';
                 const printBtn = document.createElement('button');
                 printBtn.textContent = 'đź–¨'; printBtn.title = 'Tisk'; printBtn.style.cssText = btnStyle;
-                const doPrint = () => { const el = document.querySelector('.md-il'); if (!el) return; const iframe = document.createElement('iframe'); iframe.style.cssText = 'position:fixed;width:0;height:0;border:none;top:-9999px;'; document.body.appendChild(iframe); const doc = iframe.contentDocument; doc.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${source.title||''}</title><style>body{font-family:system-ui,sans-serif;padding:24px;max-width:780px;margin:0 auto;color:#1e293b;line-height:1.7;font-size:15px}</style></head><body>${el.innerHTML}</body></html>`); doc.close(); iframe.contentWindow.focus(); iframe.contentWindow.print(); setTimeout(() => document.body.removeChild(iframe), 1000); };
+                const doPrint = () => { const el = document.querySelector('.md-il'); if (!el) return; const iframe = document.createElement('iframe'); iframe.style.cssText = 'position:fixed;width:0;height:0;border:none;top:-9999px;'; document.body.appendChild(iframe); const doc = iframe.contentDocument; doc.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${source.title || ''}</title><style>body{font-family:system-ui,sans-serif;padding:24px;max-width:780px;margin:0 auto;color:#1e293b;line-height:1.7;font-size:15px}</style></head><body>${el.innerHTML}</body></html>`); doc.close(); iframe.contentWindow.focus(); iframe.contentWindow.print(); setTimeout(() => document.body.removeChild(iframe), 1000); };
                 printBtn.addEventListener('click', doPrint);
                 printBtn.addEventListener('touchend', (e) => { e.preventDefault(); doPrint(); });
                 header.appendChild(printBtn);
@@ -843,10 +910,10 @@
                     let blob, fname;
                     if (source.script_cz) {
                         // Lehkost â€” obsah v DB, vytvoĹ™ soubor ze script_cz
-                        fname = (source.title || 'clanek').toLowerCase().replace(/[^a-z0-9]+/g,'-').slice(0,40) + '.md';
+                        fname = (source.title || 'clanek').toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 40) + '.md';
                         blob = new Blob([source.script_cz], { type: 'text/markdown' });
                     } else {
-                        fname = (source.url||'').split('/').pop() || 'dokument.md';
+                        fname = (source.url || '').split('/').pop() || 'dokument.md';
                         blob = await fetch(source.url).then(r => r.blob());
                     }
                     const burl = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = burl; a.download = fname; a.click(); setTimeout(() => URL.revokeObjectURL(burl), 2000);
@@ -857,12 +924,11 @@
 
                 const ttsBtn = document.createElement('button');
                 ttsBtn.textContent = 'đź”Š'; ttsBtn.title = 'Přehrát'; ttsBtn.style.cssText = btnStyle;
-                const doTTS = () => { if (_mdTtsOn) { speechSynthesis.cancel(); _mdTtsOn = false; ttsBtn.textContent = 'đź”Š'; return; } const el = document.querySelector('.md-il'); if (!el) return; const txt = el.innerText.replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu,'').trim(); if (!txt) return; _mdTtsOn = true; ttsBtn.textContent = 'âŹą'; speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(txt); u.lang = 'cs-CZ'; u.rate = 1.05; u.pitch = 1.1; const sv = () => { const cz = speechSynthesis.getVoices().find(v => /cs[-_]CZ/i.test(v.lang)); if (cz) u.voice = cz; }; sv(); if (!u.voice) speechSynthesis.addEventListener('voiceschanged', sv, {once:true}); u.onend = u.onerror = () => { _mdTtsOn = false; ttsBtn.textContent = 'đź”Š'; }; speechSynthesis.speak(u); };
+                const doTTS = () => { if (_mdTtsOn) { speechSynthesis.cancel(); _mdTtsOn = false; ttsBtn.textContent = 'đź”Š'; return; } const el = document.querySelector('.md-il'); if (!el) return; const txt = el.innerText.replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, '').trim(); if (!txt) return; _mdTtsOn = true; ttsBtn.textContent = 'âŹą'; speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(txt); u.lang = 'cs-CZ'; u.rate = 1.05; u.pitch = 1.1; const sv = () => { const cz = speechSynthesis.getVoices().find(v => /cs[-_]CZ/i.test(v.lang)); if (cz) u.voice = cz; }; sv(); if (!u.voice) speechSynthesis.addEventListener('voiceschanged', sv, { once: true }); u.onend = u.onerror = () => { _mdTtsOn = false; ttsBtn.textContent = 'đź”Š'; }; speechSynthesis.speak(u); };
                 ttsBtn.addEventListener('click', doTTS);
                 ttsBtn.addEventListener('touchend', (e) => { e.preventDefault(); doTTS(); });
                 header.appendChild(ttsBtn);
             }
-
             const closeBtn = document.createElement('button');
             closeBtn.textContent = 'âś•'; closeBtn.title = 'Zavřít';
             closeBtn.style.cssText = 'color:#94a3b8;background:none;border:none;cursor:pointer;padding:8px 4px 8px 10px;font-size:20px;line-height:1;-webkit-tap-highlight-color:transparent;min-width:44px;min-height:44px;flex-shrink:0;';
@@ -880,7 +946,7 @@
                 if (t === 'youtube') contentDiv.innerHTML = `<iframe src="${youtubeEmbed(source.url)}" style="width:100%;height:100%;border:none;" allow="autoplay;encrypted-media" allowfullscreen></iframe>`;
                 else if (t === 'video') contentDiv.innerHTML = `<video src="${source.url}" controls autoplay style="width:100%;height:100%;background:#000;"></video>`;
                 else if (t === 'audio') contentDiv.innerHTML = `<audio controls autoplay style="width:90%;accent-color:#06b6d4;"><source src="${source.url}"></audio>`;
-                else if (t === 'pdf') contentDiv.innerHTML = `<iframe src="${pdfEmbed(source.url)}" style="width:100%;height:100%;border:none;" title="${source.title||''}"></iframe>`;
+                else if (t === 'pdf') contentDiv.innerHTML = `<iframe src="${pdfEmbed(source.url)}" style="width:100%;height:100%;border:none;" title="${source.title || ''}"></iframe>`;
             } else {
                 const noUrl = !source.url || source.url === '#';
                 const isFetchable = source.url && (
@@ -890,7 +956,7 @@
                 );
                 if (source.script_cz) {
                     // MĂˇ ÄŤeskĂ˝ markdown obsah â€” zobrazit pĹ™Ă­mo, bez fetch
-                    const convert = window.CHJ_convertMd || (s => `<p>${s.replace(/\n/g,'<br>')}</p>`);
+                    const convert = window.CHJ_convertMd || (s => `<p>${s.replace(/\n/g, '<br>')}</p>`);
                     contentDiv.innerHTML = `<div class="md-il">${convert(source.script_cz)}</div>`;
                 } else if (noUrl) {
                     contentDiv.innerHTML = '<div style="color:#475569;padding:24px;text-align:center;font-size:13px;font-family:monospace;">OBSAH PĹIPRAVUJEME</div>';
@@ -901,7 +967,7 @@
                         const res = await fetch(source.url);
                         if (!res.ok) throw new Error(res.status);
                         const md = await res.text();
-                        const convert = window.CHJ_convertMd || (s => `<p>${s.replace(/\n/g,'<br>')}</p>`);
+                        const convert = window.CHJ_convertMd || (s => `<p>${s.replace(/\n/g, '<br>')}</p>`);
                         contentDiv.innerHTML = `<div class="md-il">${convert(md)}</div>`;
                     })().catch(err => { contentDiv.innerHTML = `<div style="color:#f87171;padding:24px;font-family:monospace;font-size:13px;">CHYBA: ${err.message}</div>`; });
                 } else {
@@ -924,7 +990,7 @@
             }));
         }
 
-        window.closeSourceViewer = function() {
+        window.closeSourceViewer = function () {
             const v = document.getElementById('source-viewer');
             if (!v) return;
             const _hdr = document.getElementById('appHeader');

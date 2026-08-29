@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Chytré já</title>
   <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/app/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/app/assets/icons/apple-touch-icon-180.png">
   <meta name="theme-color" content="#060a14">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@300;600;800&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
@@ -62,14 +64,36 @@
       transition: none;
     }
     .nav-logo {
-      font-family: 'Urbanist', sans-serif;
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 5px;
       color: var(--text-dim);
       text-decoration: none;
       flex-shrink: 0;
       transition: opacity 0.5s ease;
+    }
+    .nav-logo .chj-logo {
+      --fs: 18px;
+      display: flex; flex-direction: row; align-items: center; gap: 10px;
+      color: inherit;
+    }
+    .nav-logo .chj-logo__cursor {
+      flex-shrink: 0; width: 2px; height: calc(var(--fs) * 2);
+      background: currentColor;
+      animation: chj-blink 1.1s step-end infinite;
+    }
+    @keyframes chj-blink { 0%,100%{opacity:1} 50%{opacity:0} }
+    .nav-logo .chj-logo__text {
+      display: flex; flex-direction: column;
+      font-family: 'Urbanist', sans-serif;
+      font-size: var(--fs);
+      line-height: 0.85; letter-spacing: -0.5px;
+    }
+    .nav-logo .chj-logo__row1 { font-weight: 300; }
+    .nav-logo .chj-logo__row2 { font-weight: 800; }
+    .nav-logo .chj-logo__ac   { position: relative; display: inline-block; line-height: 1; }
+    .nav-logo .chj-logo__ac::after {
+      content: ''; position: absolute;
+      top: 0.14em; left: 50%; transform: translateX(-50%);
+      width: 0.38em; height: 0.055em;
+      background: currentColor;
     }
     .nav-links {
       display: flex;
@@ -818,7 +842,15 @@
 
 <!-- Navigation -->
 <nav id="mainNav">
-  <a class="nav-logo" href="/">CHYTRÉ JÁ</a>
+  <a class="nav-logo" href="/">
+    <span class="chj-logo" aria-label="Chytré já">
+      <span class="chj-logo__cursor" aria-hidden="true"></span>
+      <span class="chj-logo__text">
+        <span class="chj-logo__row1">chytr<span class="chj-logo__ac">e</span></span>
+        <span class="chj-logo__row2">j<span class="chj-logo__ac">a</span></span>
+      </span>
+    </span>
+  </a>
 
   <ul class="nav-links" aria-label="Navigace">
     <li><a href="#jak-funguje" class="nav-link">Jak funguje</a></li>
