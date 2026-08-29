@@ -3,7 +3,6 @@
 // Zdraví | Kondice | Profil | Sen | Data
 // =====================================================
 
-import { supabase } from './supabaseClient.js';
 import { authFetch } from './authFetch.js';
 
 // ─── State ────────────────────────────────────────
@@ -33,38 +32,26 @@ window.initUserDataPanel = initUserDataPanel;
 async function loadAndRender() {
   renderSkeleton();
 
-  const [profileRes, constraintsRes, decathlonRes, healthRes, medsRes] = await Promise.all([
-    supabase.from('user_profiles')
-      .select('age, gender, height, weight, birth_year')
-      .eq('user_id', userId).maybeSingle(),
-    supabase.from('user_constraints')
-      .select('constraint_type, constraint_key, constraint_value, severity')
-      .eq('user_id', userId),
-    supabase.from('user_decathlon')
-      .select('goal_key, label, target_age')
-      .eq('user_id', userId).eq('active', true).maybeSingle(),
-    supabase.from('user_health_profile')
-      .select('diagnoses, symptoms, family_history, supplements, doctor_notes, lifestyle, capacity, labs')
-      .eq('user_id', userId).maybeSingle(),
-    supabase.from('user_medications')
-      .select('name, dose, active')
-      .eq('user_id', userId).eq('active', true),
-  ]);
+  const res = await authFetch('/api/user?action=full-profile');
+  if (!res.ok) {
+    console.error('loadAndRender: full-profile failed', res.status);
+    return;
+  }
+  const data = await res.json();
 
-  const h = healthRes.data ?? {};
   cachedData = {
-    profile:        profileRes.data   ?? {},
-    constraints:    constraintsRes.data ?? [],
-    decathlon:      decathlonRes.data ?? {},
-    diagnoses:      h.diagnoses      ?? [],
-    symptoms:       h.symptoms       ?? [],
-    family_history: h.family_history ?? '',
-    supplements:    h.supplements    ?? [],
-    doctor_notes:   h.doctor_notes   ?? '',
-    lifestyle:      h.lifestyle      ?? {},
-    capacity:       h.capacity       ?? {},
-    labs:           h.labs           ?? {},
-    medications:    medsRes.data     ?? [],
+    profile:        data.profile        ?? {},
+    constraints:    data.constraints    ?? [],
+    decathlon:      data.decathlon      ?? {},
+    diagnoses:      data.diagnoses      ?? [],
+    symptoms:       data.symptoms       ?? [],
+    family_history: data.family_history ?? '',
+    supplements:    data.supplements    ?? [],
+    doctor_notes:   data.doctor_notes   ?? '',
+    lifestyle:      data.lifestyle      ?? {},
+    capacity:       data.capacity       ?? {},
+    labs:           data.labs           ?? {},
+    medications:    data.medications    ?? [],
   };
 
   renderTab(activeTab);

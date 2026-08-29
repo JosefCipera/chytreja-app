@@ -3,17 +3,14 @@
 // Uloží data do user_profiles + user_health_profile (diagnoses, capacity, lifestyle)
 // přes Supabase anon client (RLS pending).
 
-import { supabase } from './supabaseClient.js';
 import { authFetch } from './authFetch.js';
 
 export async function checkAndShowOnboarding(userId) {
   if (!userId) return;
-  const { data } = await supabase
-    .from('user_profiles')
-    .select('age')
-    .eq('user_id', userId)
-    .maybeSingle();
-  if (data?.age) return;
+  const res = await authFetch('/api/user?action=full-profile');
+  if (!res.ok) return;
+  const data = await res.json();
+  if (data.profile?.age) return;
   _showWizard(userId);
 }
 

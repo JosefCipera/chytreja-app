@@ -37,8 +37,9 @@ export default async function handler(req, res) {
   if (action === 'save-profil')         return handleSaveProfil(req, res);
   if (action === 'update-decathlon')    return handleUpdateDecathlon(req, res);
   if (action === 'wizard-step')         return handleWizardStep(req, res);
+  if (action === 'full-profile')        return handleFullProfile(req, res);
 
-  return res.status(400).json({ error: 'action required: profile | onboarding | readiness | snapshot | checkin | body-flow | lehkost-agent | dialog | health-profile | crt-context | save-zdravi | save-kondice | save-profil | update-decathlon | wizard-step' });
+  return res.status(400).json({ error: 'action required: profile | onboarding | readiness | snapshot | checkin | body-flow | lehkost-agent | dialog | health-profile | crt-context | save-zdravi | save-kondice | save-profil | update-decathlon | wizard-step | full-profile' });
 }
 
 
@@ -675,6 +676,51 @@ function normLabs(raw) {
     out[nk] = typeof v === 'string' ? (isNaN(v) ? v : parseFloat(v)) : v;
   });
   return out;
+}
+
+// ── GET ?action=full-profile ─────────────────────────────────────
+// Returns all user-data-panel data in one call.
+// Response shape mirrors the cachedData object in user-data-panel.js exactly.
+async function handleFullProfile(req, res) {
+  if (req.method !== 'GET') return res.status(405).json({ error: 'GET only' });
+  const userId = req.query.userId; // auth.uid injected by main handler
+  if (!userId) return res.status(400).json({ error: 'userId required' });
+
+  res.setHeader('Cache-Control', 'no-store');
+  const db = sb();
+  const [profileRes, constraintsRes, decathlonRes, healthRes, medsRes] = await Promise.all([
+    db.from('user_profiles')
+      .select('age, gender, height, weight, birth_year')
+      .eq('user_id', userId).maybeSingle(),
+    db.from('user_constraints')
+      .select('constraint_type, constraint_key, constraint_value, severity')
+      .eq('user_id', userId),
+    db.from('user_decathlon')
+      .select('goal_key, label, target_age')
+      .eq('user_id', userId).eq('active', true).maybeSingle(),
+    db.from('user_health_profile')
+      .select('diagnoses, symptoms, family_history, supplements, doctor_notes, lifestyle, capacity, labs')
+      .eq('user_id', userId).maybeSingle(),
+    db.from('user_medications')
+      .select('name, dose, active')
+      .eq('user_id', userId).eq('active', true),
+  ]);
+
+  const h = healthRes.data ?? {};
+  return res.json({
+    profile:        profileRes.data   ?? {},
+    constraints:    constraintsRes.data ?? [],
+    decathlon:      decathlonRes.data ?? {},
+    diagnoses:      h.diagnoses      ?? [],
+    symptoms:       h.symptoms       ?? [],
+    family_history: h.family_history ?? '',
+    supplements:    h.supplements    ?? [],
+    doctor_notes:   h.doctor_notes   ?? '',
+    lifestyle:      h.lifestyle      ?? {},
+    capacity:       h.capacity       ?? {},
+    labs:           h.labs           ?? {},
+    medications:    medsRes.data     ?? [],
+  });
 }
 
 // ── POST ?action=save-zdravi ─────────────────────────────────────
