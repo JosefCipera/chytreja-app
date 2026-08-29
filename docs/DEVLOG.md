@@ -1,7 +1,7 @@
 # CHJ DEVLOG — Aktuální stav vývoje
 
 > Handoff dokument pro nové Claude session. Stručný přehled: co funguje, co bylo opraveno, co zůstává otevřené.
-> Aktualizováno: 2026-08-28 · Canonical docs → `CHJ-ENGINE-ARCHITECTURE.md`, `CHJ-PRODUCT-ARCHITECTURE.md`, `CLAUDE.md`
+> Aktualizováno: 2026-08-29 · Canonical docs → `CHJ-ENGINE-ARCHITECTURE.md`, `CHJ-PRODUCT-ARCHITECTURE.md`, `CLAUDE.md`
 
 ---
 
@@ -81,6 +81,79 @@ Klíč byl přítomen v git historii od commitu `6b1e476` (bezpečnostní fix `8
 - Hard-fail guard: průnik protected × delete set ověřen programaticky před každým DELETE.
 - POST-VERIFY: 0 řádků ve všech 19 user-scoped tabulkách. 7 ACTIVE UID nedotčeno.
 - Regression testy po cleanupuo: **312/312 PASS**, nulová test-* pollution.
+
+---
+
+---
+
+## Práce z 28.–29. 8. 2026 (pokračování)
+
+### P1A Authorization Foundation — IDOR fix (CLOSED)
+
+**Problém:** Systémový IDOR — všechny user-scoped API endpointy přijímaly `userId` z `req.body` / `req.query` bez ověření Firebase identity. Útočník s platným nebo žádným tokenem mohl číst/zapisovat data libovolného uživatele pouhou změnou `userId` v requestu.
+
+**Rozsah:** 14 endpointů, 12 frontend modulů.
+
+**Oprava (commit `16e7ac7`, 2026-08-29):**
+
+Nové soubory:
+- `api/lib/requireAuth.js` — Firebase Admin `verifyIdToken` middleware; server-authoritative `auth.uid`; demo bypass pouze pro pevné `demo-user-123`; žádný deployed impersonation bypass — testy mockují `verifyIdToken` přes `_hooks`
+- `app/js/universe/authFetch.js` — frontend auth-aware fetch; `window.authFetch` global pro non-module skripty (launcher.js)
+- `scripts/test-auth-security.mjs` — 8 bezpečnostních scénářů, mock-only
+- `scripts/test-demo-abuse.mjs` — 9 demo bypass abuse scénářů
+
+Zabezpečené endpointy (všechny nyní používají `auth.uid` pro DB queries, nikdy `req.body.userId`):
+`orchestrate`, `orchestrator`, `hud-data-bulk`, `mission-log`, `mission-complete`, `aspiration`, `chat`, `engine-v1`, `tts` (podmíněně), `sources` (podmíněně), `crt-generate`, `user` (injection pattern přes sub-handlery), `toc`, `tools/parse`, `notify` (subscribe: auth vyžadována při claimed userId)
+
+Záměrně public (beze změny): `pre-intake`, `crt-contra`, `rxnorm`, `tester-reset` (TESTER_UIDS whitelist)
+
+**Bezpečnostní architektura:**
+- `auth.uid` vždy pochází z Firebase tokenu — klient nemůže přepsat
+- Demo bypass: `userId === 'demo-user-123'` → `auth.uid = demo-user-123` pro všechny DB queries; reálná data nedostupná
+- TEST_AUTH_BYPASS odstraněn — produkční i dev/preview endpointy nemají impersonation bypass
+- `notify.js` subscribe: reálný userId v těle vyžaduje odpovídající Firebase token (oprava: útočník nemůže zaregistrovat push endpoint pod cizím UID)
+
+**Regression testy (lokální, před pushem):**
+
+| Suite | Výsledek |
+|-------|---------|
+| `test-auth-security.mjs` | **8/8 PASS** |
+| `test-demo-abuse.mjs` | **9/9 PASS** |
+| `test-pre-intake.mjs` | **137/137 PASS** |
+| `test-launcher-static.mjs` | **10/10 PASS** |
+| `test-orchestrator.mjs` | **312/312 PASS · 9 SKIP** |
+
+**Live smoke test na `dev.iting.cz` (2026-08-29):**
+
+| Test | Výsledek |
+|------|---------|
+| `app/launcher.html` loads | ✅ HTTP 200 |
+| `app/` (index) loads | ✅ HTTP 200 |
+| POST `/api/pre-intake` (public, bez auth) | ✅ HTTP 200 (správná validace vstupu) |
+| POST `/api/orchestrate` (bez tokenu, reálný userId) | ✅ HTTP 401 |
+| POST `/api/hud-data-bulk` (bez tokenu) | ✅ HTTP 401 |
+| POST `/api/mission-log` (bez tokenu) | ✅ HTTP 401 |
+| POST `/api/chat` (bez tokenu) | ✅ HTTP 401 |
+| GET `/api/user?action=profile` (bez tokenu) | ✅ HTTP 401 |
+| GET `/api/hud-data-bulk?userId=…` (bez tokenu) | ✅ HTTP 401 |
+| POST `/api/orchestrate` (neplatný token) | ✅ HTTP 401 |
+| POST `/api/hud-data-bulk` (neplatný token) | ✅ HTTP 401 |
+| POST `/api/chat` (neplatný token) | ✅ HTTP 401 |
+| POST `/api/orchestrate` (demo-user-123, bez tokenu) | ✅ HTTP 200 — demo ASK response |
+| POST `/api/orchestrate` (Josef UID `vPrm5…`, bez tokenu) | ✅ HTTP 401 |
+| POST `/api/notify` subscribe (real UID, bez tokenu) | ✅ HTTP 404 (viz níže) |
+| POST `/api/notify` subscribe (anonymous, bez userId) | ✅ HTTP 200 (anon subscription OK) |
+
+Poznámka k 404 pro `/api/aspiration` a `/api/notify`: Vercel vrací `X-Vercel-Error: NOT_FOUND` — jde o pre-existing deployment issue (obě funkce byly v commitu `1850aaa` před P1A a pravděpodobně nikdy neprocházely přes Vercel routing). Auth kód v obou souborech je správný; endpointy jsou momentálně nedostupné. Vyžaduje separátní Vercel deployment/routing audit — není bezpečnostní regrese P1A.
+
+Authenticated user → 200 a token A + userId B → 403 nelze ověřit live bez reálného Firebase ID tokenu — pokryto unit testy (`test-auth-security.mjs` scénáře 3–5).
+
+**> P1A AUTHORIZATION FOUNDATION = CLOSED**
+
+**Otevřené (separátní úkoly):**
+- **P1B:** Přímé private Supabase volání z frontendu → přesunout za API endpointy (`user.js` nové actions)
+- **P2:** RLS lockdown — `migrations/20260429_enable_rls.sql` připravena, nespuštěna v Supabase
+- **Vercel routing audit:** `/api/aspiration` + `/api/notify` → 404 NOT_FOUND, pre-existing, vyšetřit
 
 ---
 
