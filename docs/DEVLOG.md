@@ -5,6 +5,52 @@
 
 ---
 
+## Práce z 29. 8. 2026 (pokračování)
+
+### P1B.1 Private WRITE Migration — CLOSED (`2c296ce`)
+
+**Cíl:** Odstranit všechny browser-direct Supabase WRITE operace z `user-data-panel.js` a `onboarding-wizard.js`.
+
+**Co bylo migrováno — 5 nových API actions v `api/user.js`:**
+
+| Action | Tabulky | Sémantika |
+|---|---|---|
+| `save-zdravi` | `user_health_profile` + `user_medications` | REPLACE HP fields; deactivate-all + re-upsert meds s dose |
+| `save-kondice` | `user_health_profile` + `user_constraints` | REPLACE capacity; DELETE+INSERT injuries (jen pokud `injuries` přítomno); returns fresh constraints |
+| `save-profil` | `user_profiles` + `user_health_profile` | partial upsert profiles (jen non-null); REPLACE lifestyle; returns fresh profile |
+| `update-decathlon` | `user_decathlon` | soft-delete all + insert new active; priority:5 hardcoded |
+| `wizard-step` (1/2/3) | `user_profiles`, `user_health_profile`, `user_medications` | step1: UPSERT/MERGE; step2: APPEND diagnoses + upsert meds; step3: MERGE capacity |
+
+**Klíčové bezpečnostní vlastnosti:**
+- Všechny handlery: `user_id` výhradně z `auth.uid` (main handler injection), nikdy z client payload
+- Žádný `{...req.body}` spread do DB
+- Cross-user attack (body.userId ≠ token.uid) → 403 z requireAuth
+- `priority`, `active`, `constraint_type`, `constraint_key`, `id`, `role`, `primary_goal` — klientem neinjektovatelné
+
+**Oprava C (resetKondice):** Původní `resetKondice` mazal pouze capacity, nedotýkal se injury constraints. Handler `save-kondice` nyní provede DELETE constraints **pouze pokud je pole `injuries` explicitně v payloadu** — `resetKondice` posílá `{ capacity: {} }` bez `injuries` → constraints nedotčeny.
+
+**Parity:** 8/8 migrací 1:1 s původním browser kódem.
+
+**Zbývající browser Supabase calls (P1B.2):** 5× SELECT v `loadAndRender()` v `user-data-panel.js` + 1× SELECT v `checkAndShowOnboarding()` v `onboarding-wizard.js` — pouze READ, vše v rozsahu P1B.2.
+
+**Test výsledky:**
+- P1B.1 writes (36 testů): **36/36 PASS**
+- auth-security: **8/8 PASS**
+- demo-abuse: **9/9 PASS**
+- pre-intake: **137/137 PASS**
+- launcher-static: **10/10 PASS**
+- orchestrator: **312/312 PASS · 9 SKIP**
+
+**Live smoke test na `dev.iting.cz` (demo-user-123, 2026-08-29): 26/26 PASS**
+- save-zdravi/save-kondice/save-profil/update-decathlon/wizard-step 1-3: 200 OK
+- 401 bez tokenu pro všechny nové actions: PASS
+- 405 GET pro všechny nové actions: PASS
+- `resetKondice` injury constraint SURVIVED po capacity resetu: **PASS** (Oprava C verified live)
+- Josef UID bez tokenu → 401 (protected): PASS
+- orchestrate demo → 200 s response: PASS
+
+---
+
 ## Current status (2026-08-28)
 
 Produkt je na `dev.iting.cz` (branch `main`). Engine stack je **feature-frozen a locked**.
