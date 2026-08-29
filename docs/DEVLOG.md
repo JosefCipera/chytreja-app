@@ -7,6 +7,47 @@
 
 ## Práce z 29. 8. 2026 (pokračování)
 
+### P1B.2a Private READ Migration — CLOSED (`4a1ec57`)
+
+**Cíl:** Odstranit zbývající browser-direct Supabase SELECT operace z `user-data-panel.js` a `onboarding-wizard.js`.
+
+**Co bylo migrováno — 1 nový API action v `api/user.js`:**
+
+| Action | Tabulky | Sémantika |
+|---|---|---|
+| `GET full-profile` | `user_profiles`, `user_constraints`, `user_decathlon`, `user_health_profile`, `user_medications` | 5 parallel queries; vrací přesnou strukturu `cachedData` z `loadAndRender()` |
+
+**Změny:**
+- `handleFullProfile`: GET only, 5 paralelních Supabase queries, response shape = přesný `cachedData` kontrakt (12 klíčů)
+- `user-data-panel.js` `loadAndRender()`: nahrazena 5 browser-direct SELECTů → `authFetch('/api/user?action=full-profile')`; `supabase` import odstraněn
+- `onboarding-wizard.js` `checkAndShowOnboarding()`: nahrazen 1 browser-direct SELECT → `authFetch('/api/user?action=full-profile')`, kontrola `data.profile?.age`; `supabase` import odstraněn
+
+**Klíčové bezpečnostní vlastnosti:**
+- `userId` výhradně z `auth.uid` (main handler injection) — žádný arbitrary userId v query param
+- GET only (POST → 405), žádný `{...req.query}` spread do DB
+- Demo bypass zachován: `userId=demo-user-123` bez tokenu → 200 (standardní chování)
+
+**Test výsledky:**
+- P1B.2a reads (10 testů): **10/10 PASS**
+- P1B.1 writes: **36/36 PASS** (regrese OK)
+- auth-security: **8/8 PASS**
+- orchestrator: **312/312 PASS · 9 SKIP** (canonical baseline)
+
+**Live smoke test na `dev.iting.cz` (2026-08-29):**
+- `GET /api/user?action=full-profile&userId=demo-user-123` → **200**, všech 12 klíčů ✓
+- Response: profile.age=55, constraint, decathlon, diagnoses, medications (active only) — reálná tester data ✓
+- POST → **405** ✓
+- victim uid bez tokenu → **401** ✓
+- orchestrate demo → **200** ✓
+- `user-data-panel.js` deployed: bez supabase importu, bez `.from()` ✓
+- `onboarding-wizard.js` deployed: bez supabase importu, bez `.from()` ✓
+- Žádný přímý request na privátní Supabase tabulky z browser cesty potvrzen inspekcí deployed JS
+
+**Scope P1B.2a (pouze tyto 2 soubory):** `user-data-panel.js`, `onboarding-wizard.js`.
+P1B.2b (`hud.js`, `data-layer.js`, `universe-panel.js`, `notifications.js`) — deferred.
+
+---
+
 ### P1B.1 Private WRITE Migration — CLOSED (`2c296ce`)
 
 **Cíl:** Odstranit všechny browser-direct Supabase WRITE operace z `user-data-panel.js` a `onboarding-wizard.js`.
