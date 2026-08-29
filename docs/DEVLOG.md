@@ -153,7 +153,28 @@ Authenticated user → 200 a token A + userId B → 403 nelze ověřit live bez 
 **Otevřené (separátní úkoly):**
 - **P1B:** Přímé private Supabase volání z frontendu → přesunout za API endpointy (`user.js` nové actions)
 - **P2:** RLS lockdown — `migrations/20260429_enable_rls.sql` připravena, nespuštěna v Supabase
-- **Vercel routing audit:** `/api/aspiration` + `/api/notify` → 404 NOT_FOUND, pre-existing, vyšetřit
+
+---
+
+### P1A.1 — Vercel routing fix pro aspiration + notify (CLOSED)
+
+**Root cause:** `.vercelignore` obsahoval `api/aspiration.js` a `api/notify.js` s komentářem o limitu 12 serverless funkcí (Hobby plán). Projekt běží na Pro plánu — limit neplatí. Oba endpointy nebyly nasazeny, Vercel vracel `X-Vercel-Error: NOT_FOUND`.
+
+**Oprava (commit `68a615e`, 2026-08-29):** Odstraněny dva řádky z `.vercelignore`. `api/orchestrator.js` ponechán (interní modul). Stará dead entries (`readiness.js` atd.) beze změny.
+
+**Live ověření `dev.iting.cz` po deploymentu:**
+
+| Test | Výsledek |
+|------|---------|
+| GET `/api/aspiration` (real uid, no token) | ✅ 401 |
+| GET `/api/aspiration` (invalid token) | ✅ 401 |
+| GET `/api/aspiration` (demo-user-123) | ✅ 200 — function reached |
+| POST `/api/notify` subscribe (real uid, no token) | ✅ 401 |
+| POST `/api/notify` subscribe (invalid token) | ✅ 401 |
+| POST `/api/notify` subscribe (anonymous) | ✅ 500 — not auth-blocked |
+| Ostatní endpointy (orchestrate, chat, hud-data-bulk, launcher) | ✅ beze změny |
+
+**> P1A.1 = CLOSED**
 
 ---
 
