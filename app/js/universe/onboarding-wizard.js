@@ -4,6 +4,7 @@
 // přes Supabase anon client (RLS pending).
 
 import { supabase } from './supabaseClient.js';
+import { authFetch } from './authFetch.js';
 
 export async function checkAndShowOnboarding(userId) {
   if (!userId) return;
@@ -85,53 +86,36 @@ function _showWizard(userId) {
       const height = parseInt(overlay.querySelector('#onb-height')?.value) || null;
       const weight = parseFloat(overlay.querySelector('#onb-weight')?.value) || null;
       const waist  = parseFloat(overlay.querySelector('#onb-waist')?.value) || null;
-      if (age || height || weight) {
-        await supabase.from('user_profiles').upsert(
-          { user_id: userId, age, height, weight, gender: state.gender, updated_at: new Date().toISOString() },
-          { onConflict: 'user_id' }
-        );
-      }
-      if (waist) {
-        const { data: hp } = await supabase.from('user_health_profile').select('lifestyle').eq('user_id', userId).maybeSingle();
-        const lifestyle = { ...(hp?.lifestyle || {}), waist_cm: waist };
-        await supabase.from('user_health_profile').upsert(
-          { user_id: userId, lifestyle, updated_at: new Date().toISOString() },
-          { onConflict: 'user_id' }
-        );
+      if (age || height || weight || waist) {
+        await authFetch('/api/user?action=wizard-step', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ step: 1, age, height, weight, gender: state.gender, waist }),
+        });
       }
     }
     if (step === 2) {
-      const dx = overlay.querySelector('#onb-diagnoses')?.value.split('\n').map(s => s.trim()).filter(Boolean) || [];
+      const dx   = overlay.querySelector('#onb-diagnoses')?.value.split('\n').map(s => s.trim()).filter(Boolean) || [];
       const meds = overlay.querySelector('#onb-meds')?.value.split('\n').map(s => s.trim()).filter(Boolean) || [];
-      if (dx.length) {
-        const { data: hp } = await supabase.from('user_health_profile').select('diagnoses').eq('user_id', userId).maybeSingle();
-        const merged = [...new Set([...(hp?.diagnoses || []), ...dx])];
-        await supabase.from('user_health_profile').upsert(
-          { user_id: userId, diagnoses: merged, updated_at: new Date().toISOString() },
-          { onConflict: 'user_id' }
-        );
-      }
-      for (const name of meds) {
-        await supabase.from('user_medications').upsert(
-          { user_id: userId, name, active: true },
-          { onConflict: 'user_id,name' }
-        );
+      if (dx.length || meds.length) {
+        await authFetch('/api/user?action=wizard-step', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ step: 2, diagnoses: dx, medications: meds }),
+        });
       }
     }
   }
 
   async function _save() {
-    // uložit step 3 (kapacita) + zavřít
     if (Object.keys(state.cap).length) {
-      const { data: hp } = await supabase.from('user_health_profile').select('capacity').eq('user_id', userId).maybeSingle();
-      const capacity = { ...(hp?.capacity || {}), ...state.cap };
-      await supabase.from('user_health_profile').upsert(
-        { user_id: userId, capacity, updated_at: new Date().toISOString() },
-        { onConflict: 'user_id' }
-      );
+      await authFetch('/api/user?action=wizard-step', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ step: 3, capacity: state.cap }),
+      });
     }
     overlay.remove();
-    // refreshni CRT
     if (typeof window.loadCRT === 'function') window.loadCRT(true);
     else window.location.reload();
   }

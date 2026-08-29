@@ -32,8 +32,13 @@ export default async function handler(req, res) {
   if (action === 'dialog')              return handleDialog(req, res);
   if (action === 'health-profile')      return handleHealthProfile(req, res);
   if (action === 'crt-context')         return handleCrtContext(req, res);
+  if (action === 'save-zdravi')         return handleSaveZdravi(req, res);
+  if (action === 'save-kondice')        return handleSaveKondice(req, res);
+  if (action === 'save-profil')         return handleSaveProfil(req, res);
+  if (action === 'update-decathlon')    return handleUpdateDecathlon(req, res);
+  if (action === 'wizard-step')         return handleWizardStep(req, res);
 
-  return res.status(400).json({ error: 'action required: profile | onboarding | readiness | snapshot | checkin | body-flow | lehkost-agent | dialog | health-profile | crt-context' });
+  return res.status(400).json({ error: 'action required: profile | onboarding | readiness | snapshot | checkin | body-flow | lehkost-agent | dialog | health-profile | crt-context | save-zdravi | save-kondice | save-profil | update-decathlon | wizard-step' });
 }
 
 
@@ -670,6 +675,188 @@ function normLabs(raw) {
     out[nk] = typeof v === 'string' ? (isNaN(v) ? v : parseFloat(v)) : v;
   });
   return out;
+}
+
+// ── POST ?action=save-zdravi ─────────────────────────────────────
+// Replaces health-profile fields + soft-deletes medications then re-upserts active list.
+async function handleSaveZdravi(req, res) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
+  const userId = req.body?.userId;
+  if (!userId) return res.status(400).json({ error: 'userId required' });
+
+  const { diagnoses = [], symptoms = [], family_history = '', supplements = [], labs = {}, medications = [] } = req.body;
+
+  const db = sb();
+  const { error: e1 } = await db.from('user_health_profile')
+    .upsert({ user_id: userId, diagnoses, symptoms, family_history, supplements, labs }, { onConflict: 'user_id' });
+  if (e1) return res.status(500).json({ error: e1.message });
+
+  // Deactivate all existing, then re-upsert current list with dose
+  await db.from('user_medications').update({ active: false }).eq('user_id', userId);
+  for (const med of medications) {
+    if (!med.name) continue;
+    await db.from('user_medications')
+      .upsert({ user_id: userId, name: med.name, dose: med.dose ?? null, active: true }, { onConflict: 'user_id,name' });
+  }
+
+  return res.json({ ok: true });
+}
+
+// ── POST ?action=save-kondice ────────────────────────────────────
+// Replaces capacity; hard-deletes injury constraints then re-inserts.
+// Returns fresh constraints for client cache update.
+async function handleSaveKondice(req, res) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
+  const userId = req.body?.userId;
+  if (!userId) return res.status(400).json({ error: 'userId required' });
+
+  const { capacity = {} } = req.body;
+  // Only touch injury constraints when the caller explicitly sends the `injuries` array.
+  // resetKondice sends only { capacity: {} } → constraints untouched (original behaviour).
+  const hasInjuries = 'injuries' in req.body;
+  const injuries = hasInjuries ? (req.body.injuries || []) : [];
+
+  const db = sb();
+  const { error: e1 } = await db.from('user_health_profile')
+    .upsert({ user_id: userId, capacity }, { onConflict: 'user_id' });
+  if (e1) return res.status(500).json({ error: e1.message });
+
+  if (hasInjuries) {
+    await db.from('user_constraints').delete().eq('user_id', userId).eq('constraint_type', 'injury');
+    for (let i = 0; i < injuries.length; i++) {
+      await db.from('user_constraints').insert({
+        user_id: userId,
+        constraint_type: 'injury',
+        constraint_key: `injury_${i}`,
+        constraint_value: JSON.stringify({ location: injuries[i].location, restriction: injuries[i].restriction }),
+        severity: injuries[i].severity,
+      });
+    }
+  }
+
+  const { data: constraints } = await db.from('user_constraints').select('*').eq('user_id', userId);
+  return res.json({ ok: true, constraints: constraints ?? [] });
+}
+
+// ── POST ?action=save-profil ─────────────────────────────────────
+// Upserts only provided non-null profile fields + replaces lifestyle.
+// Returns fresh user_profiles row for client cache update.
+async function handleSaveProfil(req, res) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
+  const userId = req.body?.userId;
+  if (!userId) return res.status(400).json({ error: 'userId required' });
+
+  const { birth_year, age, gender, height, weight, lifestyle } = req.body;
+  const db = sb();
+
+  const profileData = { user_id: userId };
+  if (birth_year != null) profileData.birth_year = birth_year;
+  if (age        != null) profileData.age         = age;
+  if (gender)             profileData.gender      = gender;
+  if (height     != null) profileData.height      = height;
+  if (weight     != null) profileData.weight      = weight;
+
+  const { error: pe } = await db.from('user_profiles').upsert(profileData, { onConflict: 'user_id' });
+  if (pe) console.warn('[save-profil] user_profiles upsert:', pe.message);
+
+  if (lifestyle !== undefined) {
+    const { error: le } = await db.from('user_health_profile')
+      .upsert({ user_id: userId, lifestyle }, { onConflict: 'user_id' });
+    if (le) console.warn('[save-profil] lifestyle upsert:', le.message);
+  }
+
+  const { data: freshProfile } = await db.from('user_profiles')
+    .select('age, gender, height, weight, birth_year').eq('user_id', userId).maybeSingle();
+  return res.json({ ok: true, profile: freshProfile ?? {}, profileError: pe?.message ?? null });
+}
+
+// ── POST ?action=update-decathlon ────────────────────────────────
+// Deactivates all decathlon rows then inserts new active goal.
+async function handleUpdateDecathlon(req, res) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
+  const userId = req.body?.userId;
+  if (!userId) return res.status(400).json({ error: 'userId required' });
+
+  const { goal_key, label, target_age, pillar_weights } = req.body;
+  if (!goal_key || !label) return res.status(400).json({ error: 'goal_key and label required' });
+
+  const db = sb();
+  await db.from('user_decathlon').update({ active: false }).eq('user_id', userId);
+  const { error } = await db.from('user_decathlon').insert({
+    user_id: userId, goal_key, label,
+    target_age: target_age ?? 85, priority: 5,
+    pillar_weights: pillar_weights ?? {}, active: true,
+  });
+  if (error) return res.status(500).json({ error: error.message });
+  return res.json({ ok: true });
+}
+
+// ── POST ?action=wizard-step ─────────────────────────────────────
+// Onboarding wizard steps 1–3. Each step has distinct merge semantics:
+//   step 1: UPSERT demographics + MERGE waist into lifestyle
+//   step 2: APPEND diagnoses (union) + UPSERT medications (no deactivation, no dose)
+//   step 3: MERGE capacity into existing (not replace)
+async function handleWizardStep(req, res) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
+  const userId = req.body?.userId;
+  if (!userId) return res.status(400).json({ error: 'userId required' });
+
+  const { step } = req.body;
+  const db = sb();
+
+  if (step === 1) {
+    const { age, height, weight, gender, waist } = req.body;
+    if (age || height || weight) {
+      await db.from('user_profiles').upsert(
+        { user_id: userId, age, height, weight, gender, updated_at: new Date().toISOString() },
+        { onConflict: 'user_id' }
+      );
+    }
+    if (waist) {
+      const { data: hp } = await db.from('user_health_profile').select('lifestyle').eq('user_id', userId).maybeSingle();
+      const lifestyle = { ...(hp?.lifestyle || {}), waist_cm: waist };
+      await db.from('user_health_profile').upsert(
+        { user_id: userId, lifestyle, updated_at: new Date().toISOString() },
+        { onConflict: 'user_id' }
+      );
+    }
+    return res.json({ ok: true });
+  }
+
+  if (step === 2) {
+    const { diagnoses = [], medications = [] } = req.body;
+    if (diagnoses.length) {
+      const { data: hp } = await db.from('user_health_profile').select('diagnoses').eq('user_id', userId).maybeSingle();
+      const merged = [...new Set([...(hp?.diagnoses || []), ...diagnoses])];
+      await db.from('user_health_profile').upsert(
+        { user_id: userId, diagnoses: merged, updated_at: new Date().toISOString() },
+        { onConflict: 'user_id' }
+      );
+    }
+    for (const name of medications) {
+      if (!name) continue;
+      await db.from('user_medications').upsert(
+        { user_id: userId, name, active: true },
+        { onConflict: 'user_id,name' }
+      );
+    }
+    return res.json({ ok: true });
+  }
+
+  if (step === 3) {
+    const { capacity = {} } = req.body;
+    if (Object.keys(capacity).length) {
+      const { data: hp } = await db.from('user_health_profile').select('capacity').eq('user_id', userId).maybeSingle();
+      const merged = { ...(hp?.capacity || {}), ...capacity };
+      await db.from('user_health_profile').upsert(
+        { user_id: userId, capacity: merged, updated_at: new Date().toISOString() },
+        { onConflict: 'user_id' }
+      );
+    }
+    return res.json({ ok: true });
+  }
+
+  return res.status(400).json({ error: 'step must be 1, 2, or 3' });
 }
 
 async function handleCrtContext(req, res) {

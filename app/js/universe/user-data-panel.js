@@ -259,17 +259,12 @@ async function saveZdravi() {
   })).filter(s => s.name);
 
   try {
-    const { error: e1 } = await supabase.from('user_health_profile')
-      .upsert({ user_id: userId, diagnoses, symptoms, family_history, supplements, labs },
-               { onConflict: 'user_id' });
-    if (e1) throw e1;
-
-    await supabase.from('user_medications').update({ active: false }).eq('user_id', userId);
-    for (const med of medications) {
-      await supabase.from('user_medications')
-        .upsert({ user_id: userId, name: med.name, dose: med.dose, active: true },
-                 { onConflict: 'user_id,name' });
-    }
+    const res = await authFetch('/api/user?action=save-zdravi', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ diagnoses, symptoms, family_history, supplements, labs, medications }),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
     cachedData = { ...cachedData, diagnoses, symptoms, family_history, supplements, labs, medications };
     setStatus('udp-status-zdravi', 'ok');
@@ -392,25 +387,14 @@ async function saveKondice() {
   })).filter(r => r.location || r.restriction);
 
   try {
-    const { error: e1 } = await supabase.from('user_health_profile')
-      .upsert({ user_id: userId, capacity }, { onConflict: 'user_id' });
-    if (e1) throw e1;
-
-    await supabase.from('user_constraints').delete()
-      .eq('user_id', userId).eq('constraint_type', 'injury');
-    for (let i = 0; i < rows.length; i++) {
-      await supabase.from('user_constraints').insert({
-        user_id: userId,
-        constraint_type: 'injury',
-        constraint_key:  `injury_${i}`,
-        constraint_value: JSON.stringify({ location: rows[i].location, restriction: rows[i].restriction }),
-        severity: rows[i].severity,
-      });
-    }
-
-    const { data: freshConstraints } = await supabase.from('user_constraints')
-      .select('*').eq('user_id', userId);
-    cachedData.constraints = freshConstraints ?? [];
+    const res = await authFetch('/api/user?action=save-kondice', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ capacity, injuries: rows }),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    cachedData.constraints = data.constraints ?? [];
     cachedData.capacity = capacity;
     setStatus('udp-status-kondice', 'ok');
   } catch (e) {
@@ -423,9 +407,13 @@ async function resetKondice() {
   if (!confirm('Smazat všechna data z fyzického testu?')) return;
   setStatus('udp-status-kondice', 'saving');
   try {
-    const { error } = await supabase.from('user_health_profile')
-      .upsert({ user_id: userId, capacity: {} }, { onConflict: 'user_id' });
-    if (error) throw error;
+    // Send only capacity — no injuries field so existing constraints are untouched (original behaviour).
+    const res = await authFetch('/api/user?action=save-kondice', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ capacity: {} }),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     cachedData.capacity = {};
     document.querySelectorAll('.udp-yn-btn').forEach(b => b.classList.remove('udp-yn-yes', 'udp-yn-no'));
     setStatus('udp-status-kondice', 'ok');
@@ -643,24 +631,14 @@ async function saveProfil() {
   if (waistCm) lifestyle.waist_cm = waistCm;
 
   try {
-    const profileData = { user_id: userId };
-    if (birthYear !== null) profileData.birth_year = birthYear;
-    if (age !== null)       profileData.age         = age;
-    if (gender)             profileData.gender      = gender;
-    if (height !== null)    profileData.height      = height;
-    if (weight !== null)    profileData.weight      = weight;
-
-    const { error: pe } = await supabase.from('user_profiles')
-      .upsert(profileData, { onConflict: 'user_id' });
-    if (pe) console.warn('profile upsert:', pe.message);
-
-    const { error: le } = await supabase.from('user_health_profile')
-      .upsert({ user_id: userId, lifestyle }, { onConflict: 'user_id' });
-    if (le) console.warn('lifestyle upsert:', le.message);
-
-    const { data: freshProfile } = await supabase.from('user_profiles')
-      .select('age, gender, height, weight, birth_year').eq('user_id', userId).maybeSingle();
-    cachedData.profile   = freshProfile ?? {};
+    const res = await authFetch('/api/user?action=save-profil', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ birth_year: birthYear, age, gender, height, weight, lifestyle }),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    cachedData.profile   = data.profile ?? {};
     cachedData.lifestyle = lifestyle;
     setStatus('udp-status-profil', 'ok');
   } catch (e) {
@@ -747,12 +725,12 @@ async function saveAspirations() {
 
   setStatus('udp-status-sen', 'saving');
   try {
-    await supabase.from('user_decathlon').update({ active: false }).eq('user_id', userId);
-    const { error } = await supabase.from('user_decathlon').insert({
-      user_id: userId, goal_key: goal.key, label: goal.label,
-      target_age: targetAge, priority: 5, pillar_weights: goal.pillar_weights, active: true,
+    const res = await authFetch('/api/user?action=update-decathlon', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ goal_key: goal.key, label: goal.label, target_age: targetAge, pillar_weights: goal.pillar_weights }),
     });
-    if (error) throw error;
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     cachedData.decathlon = { goal_key: goal.key, label: goal.label, target_age: targetAge };
     setStatus('udp-status-sen', 'ok');
   } catch (e) {
