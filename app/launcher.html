@@ -81,14 +81,17 @@
 
     /* ── Header ── */
     header {
-      display: grid;
-      grid-template-columns: 1fr auto 1fr;
+      display: flex;
       align-items: center;
+      justify-content: flex-end;
       padding: 20px 20px 0;
       flex-shrink: 0;
     }
     .logo {
-      grid-column: 2;
+      position: absolute;
+      left: 50%; transform: translateX(-50%);
+      top: clamp(180px, calc(10dvh + 120px), 220px);
+      z-index: 2;
       display: flex; justify-content: center; align-items: center;
     }
     .logo .chj-logo {
@@ -118,8 +121,7 @@
       background: currentColor;
     }
     .header-right {
-      grid-column: 3;
-      display: flex; align-items: center; justify-content: flex-end; gap: 10px;
+      display: flex; align-items: center; gap: 10px;
     }
     .mode-badge {
       font-size: 9px; letter-spacing: 2px; padding: 3px 8px;
@@ -278,7 +280,7 @@
       border-color: rgba(58,203,216,0.45);
       box-shadow: 0 0 0 3px rgba(58,203,216,0.07);
     }
-    #text-input::placeholder { color: #6f8fa3; }
+    #text-input::placeholder { color: #8aabb8; }
     #text-input:disabled { opacity: 0.35; }
 
     .icon-btn {
@@ -305,7 +307,7 @@
     }
 
     .input-hint {
-      font-size: 11px; color: #8aabb8; letter-spacing: 0.4px; font-weight: 300;
+      font-size: 11px; color: #a8c0cc; letter-spacing: 0.4px; font-weight: 300;
     }
 
     /* ── Debug panel ── */
@@ -408,6 +410,9 @@
       #stage-text { font-size: clamp(16px,4.5vw,20px); }
       #stage-text.welcome { font-size: clamp(22px,6vw,28px); }
     }
+    @media (max-width: 480px) {
+      .logo { top: clamp(150px, calc(10dvh + 90px), 190px); }
+    }
   </style>
 </head>
 <body>
@@ -448,16 +453,6 @@
   </div>
 
   <header>
-    <div><!-- spacer --></div>
-    <div class="logo">
-      <span class="chj-logo" aria-label="Chytré já">
-        <span class="chj-logo__cursor" aria-hidden="true"></span>
-        <span class="chj-logo__text">
-          <span class="chj-logo__row1">chytr<span class="chj-logo__ac">e</span></span>
-          <span class="chj-logo__row2">j<span class="chj-logo__ac">a</span></span>
-        </span>
-      </span>
-    </div>
     <div class="header-right">
       <div class="avatar-wrapper">
         <button class="avatar-btn" id="avatar-btn" aria-label="Menu">?</button>
@@ -475,6 +470,16 @@
   </header>
 
   <div id="debug-panel" class="hidden"></div>
+
+  <div class="logo">
+    <span class="chj-logo" aria-label="Chytré já">
+      <span class="chj-logo__cursor" aria-hidden="true"></span>
+      <span class="chj-logo__text">
+        <span class="chj-logo__row1">chytr<span class="chj-logo__ac">e</span></span>
+        <span class="chj-logo__row2">j<span class="chj-logo__ac">a</span></span>
+      </span>
+    </span>
+  </div>
 
   <main>
     <div id="orb" class="hidden"></div>

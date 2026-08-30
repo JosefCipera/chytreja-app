@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Chytré Já</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Urbanist:wght@300;800&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -143,10 +143,45 @@
     }
 
     #registerPanel { display: none; }
+
+    /* ── CHJ wordmark (kanonická geometrie) ── */
+    .login-wordmark {
+      display: flex; flex-direction: row; align-items: center;
+      justify-content: center; gap: 9px;
+      color: #8abac8; margin-bottom: 28px;
+    }
+    .login-wordmark__cursor {
+      flex-shrink: 0; width: 2px; height: calc(20px * 2);
+      background: currentColor;
+      animation: lw-blink 1.1s step-end infinite;
+    }
+    @keyframes lw-blink { 0%,100%{opacity:1} 50%{opacity:0} }
+    .login-wordmark__text {
+      display: flex; flex-direction: column;
+      font-family: 'Urbanist', sans-serif;
+      font-size: 20px; line-height: 0.85; letter-spacing: -0.5px;
+    }
+    .login-wordmark__row1 { font-weight: 300; }
+    .login-wordmark__row2 { font-weight: 800; }
+    .login-wordmark__ac { position: relative; display: inline-block; line-height: 1; }
+    .login-wordmark__ac::after {
+      content: ''; position: absolute;
+      top: 0.14em; left: 50%; transform: translateX(-50%);
+      width: 0.38em; height: 0.055em; background: currentColor;
+    }
   </style>
 </head>
 <body>
   <div class="card">
+
+    <!-- CHJ wordmark -->
+    <div class="login-wordmark" aria-label="Chytré já">
+      <span class="login-wordmark__cursor" aria-hidden="true"></span>
+      <span class="login-wordmark__text">
+        <span class="login-wordmark__row1">chytr<span class="login-wordmark__ac">e</span></span>
+        <span class="login-wordmark__row2">j<span class="login-wordmark__ac">a</span></span>
+      </span>
+    </div>
 
     <!-- PŘIHLÁŠENÍ -->
     <div id="loginPanel">
