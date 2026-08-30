@@ -87,11 +87,15 @@
       padding: 20px 20px 0;
       flex-shrink: 0;
     }
+    .brand-orb-unit {
+      position: relative;
+      display: flex; justify-content: center;
+    }
+    .brand-orb-unit:has(#orb.hidden) .logo { visibility: hidden; }
     .logo {
       position: absolute;
-      left: 50%; transform: translateX(-50%);
-      top: clamp(180px, calc(10dvh + 120px), 220px);
-      z-index: 2;
+      left: 50%; bottom: calc(100% + 40px);
+      transform: translateX(-50%);
       display: flex; justify-content: center; align-items: center;
     }
     .logo .chj-logo {
@@ -410,9 +414,6 @@
       #stage-text { font-size: clamp(16px,4.5vw,20px); }
       #stage-text.welcome { font-size: clamp(22px,6vw,28px); }
     }
-    @media (max-width: 480px) {
-      .logo { top: clamp(150px, calc(10dvh + 90px), 190px); }
-    }
   </style>
 </head>
 <body>
@@ -471,18 +472,19 @@
 
   <div id="debug-panel" class="hidden"></div>
 
-  <div class="logo">
-    <span class="chj-logo" aria-label="Chytré já">
-      <span class="chj-logo__cursor" aria-hidden="true"></span>
-      <span class="chj-logo__text">
-        <span class="chj-logo__row1">chytr<span class="chj-logo__ac">e</span></span>
-        <span class="chj-logo__row2">j<span class="chj-logo__ac">a</span></span>
-      </span>
-    </span>
-  </div>
-
   <main>
-    <div id="orb" class="hidden"></div>
+    <div class="brand-orb-unit">
+      <div class="logo">
+        <span class="chj-logo" aria-label="Chytré já">
+          <span class="chj-logo__cursor" aria-hidden="true"></span>
+          <span class="chj-logo__text">
+            <span class="chj-logo__row1">chytr<span class="chj-logo__ac">e</span></span>
+            <span class="chj-logo__row2">j<span class="chj-logo__ac">a</span></span>
+          </span>
+        </span>
+      </div>
+      <div id="orb" class="hidden"></div>
+    </div>
     <div id="stage-label"></div>
     <div id="stage-text" class="loading">…</div>
     <div id="stage-subtitle" class="hidden"></div>
