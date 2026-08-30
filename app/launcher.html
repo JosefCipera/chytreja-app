@@ -9,7 +9,7 @@
   <link rel="apple-touch-icon" href="/app/assets/icons/apple-touch-icon-180.png">
   <meta name="theme-color" content="#060d1a">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500&family=Urbanist:wght@300;800&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -89,8 +89,33 @@
     }
     .logo {
       grid-column: 2;
-      font-size: 10px; letter-spacing: 5px; color: #8abac8;
-      font-weight: 400; text-transform: uppercase; text-align: center;
+      display: flex; justify-content: center; align-items: center;
+    }
+    .logo .chj-logo {
+      --fs: 32px;
+      display: flex; flex-direction: row; align-items: center; gap: 9px;
+      color: #8abac8;
+    }
+    .logo .chj-logo__cursor {
+      flex-shrink: 0; width: 2px; height: calc(var(--fs) * 2);
+      background: currentColor;
+      animation: chj-blink 1.1s step-end infinite;
+    }
+    @keyframes chj-blink { 0%,100%{opacity:1} 50%{opacity:0} }
+    .logo .chj-logo__text {
+      display: flex; flex-direction: column;
+      font-family: 'Urbanist', sans-serif;
+      font-size: var(--fs);
+      line-height: 0.85; letter-spacing: -0.5px;
+    }
+    .logo .chj-logo__row1 { font-weight: 300; }
+    .logo .chj-logo__row2 { font-weight: 800; }
+    .logo .chj-logo__ac   { position: relative; display: inline-block; line-height: 1; }
+    .logo .chj-logo__ac::after {
+      content: ''; position: absolute;
+      top: 0.14em; left: 50%; transform: translateX(-50%);
+      width: 0.38em; height: 0.055em;
+      background: currentColor;
     }
     .header-right {
       grid-column: 3;
@@ -424,7 +449,15 @@
 
   <header>
     <div><!-- spacer --></div>
-    <span class="logo">Chytré já</span>
+    <div class="logo">
+      <span class="chj-logo" aria-label="Chytré já">
+        <span class="chj-logo__cursor" aria-hidden="true"></span>
+        <span class="chj-logo__text">
+          <span class="chj-logo__row1">chytr<span class="chj-logo__ac">e</span></span>
+          <span class="chj-logo__row2">j<span class="chj-logo__ac">a</span></span>
+        </span>
+      </span>
+    </div>
     <div class="header-right">
       <div class="avatar-wrapper">
         <button class="avatar-btn" id="avatar-btn" aria-label="Menu">?</button>
@@ -687,10 +720,9 @@
     $orb.classList.remove('hidden');
     $stageLabel.textContent = '';
     $stageLabel.className   = '';
-    $stage.className   = 'welcome fade-in';
-    $stage.textContent = 'Ahoj, jsem Chytré já.';
-    $stageSub.textContent = 'Řekni mi, jak se dnes máš.';
-    $stageSub.classList.remove('hidden');
+    $stage.className   = 'fade-in';
+    $stage.textContent = 'Co chceš řešit?';
+    $stageSub.classList.add('hidden');
     setBadge('—', 'mode-badge');
     $chips.innerHTML = '';
     $input.placeholder = 'Napiš nebo řekni…';
