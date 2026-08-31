@@ -107,6 +107,60 @@ Public content reads zůstávají záměrně (`longevity_nodes`, `longevity_arti
 
 ---
 
+### P2 Wave 3C — ENGINE PRIVATE DATA — ✅ CLOSED (`20260831_wave3c_engine_private_rls.sql`)
+
+**Datum:** 2026-08-31
+
+**Scope:** 4 tabulky — engine/check-in private user data.
+
+`daily_checkin` · `node_state_history` · `node_inputs` · `user_readiness`
+
+**Pre-flight (live DB + fresh HEAD scan):**
+- Row counts baseline: `daily_checkin` = 2 · `node_state_history` = 548 · `node_inputs` = 20 · `user_readiness` = 65
+- RLS OFF 4/4, anon/authenticated měli full table privileges (arwdDxtm)
+- PRIVATE browser-direct access = 0
+- Aktivní runtime callers používají Firebase auth + server-side service_role
+
+**Critical finding:**
+- `node_state_history` měla dormant permissive policy: `"Allow read by user_id"`
+- role = `public`, command = `SELECT`, `USING(true)` — žádný user_id filtr
+- Policy by po prostém `ENABLE RLS` umožnila cross-user SELECT všech 548 řádků
+- Policy odstraněna atomicky PŘED `ENABLE RLS` v téže transakci
+
+**Co bylo provedeno:**
+- `DROP POLICY "Allow read by user_id" ON public.node_state_history` ✓
+- `REVOKE ALL PRIVILEGES ON TABLE … FROM anon, authenticated` — 4/4 ✓
+- `ENABLE ROW LEVEL SECURITY` — 4/4 ✓
+- Zero CREATE/DROP POLICY (kromě DROP výše), zero GRANT, zero DML
+- service_role untouched; functions/RPC/triggers/views nedotčeny
+
+**Post-migration verifikace (live DB, 2026-08-31):**
+- RLS ON 4/4 ✓
+- Zero policies 4/4 — dangerous `"Allow read by user_id"` = GONE ✓
+- Raw ACL: `{postgres=arwdDxtm/postgres, service_role=arwdDxtm/postgres}` na 4/4 ✓
+- Effective SELECT/INSERT/UPDATE/DELETE = false pro anon i authenticated — všech 32 kombinací ✓
+- anon SELECT → **ERROR 42501** na 4/4 ✓
+- service_role row counts = 2 / 548 / 20 / 65 — data nedotčena ✓
+- FK `node_state_history.node_id → longevity_nodes.id ON DELETE CASCADE` zachován ✓
+- Triggers = 0 (beze změny) ✓
+
+**Relevantní DB funkce:**
+`compute_leaf_state`, `compute_trend`, `create_daily_snapshots`, `update_all_node_states`
+— všechny zůstaly SECURITY INVOKER; definice i EXECUTE grants beze změny.
+RPC/function EXECUTE hardening zůstává separátní pozdější scope (Wave 3F).
+
+**HTTP runtime smoke = NOT TESTED** (platný Firebase tester token nebyl v session).
+Static runtime-path verification = PASS.
+
+**Rollback note:**
+- Obnovení anon/auth grantů = SECURITY-REGRESSIVE (znovu otevírá private data)
+- Obnovení `"Allow read by user_id" TO public USING(true)` = CRITICALLY SECURITY-UNSAFE
+- Žádný rollback nebyl proveden.
+
+**Verdict: P2 Wave 3C CLOSED.**
+
+---
+
 ### P2 Wave 3A — LOW-RISK PRIVATE DATA — ✅ CLOSED (`20260831_wave3a_low_risk_private_rls.sql`)
 
 **Datum:** 2026-08-31
