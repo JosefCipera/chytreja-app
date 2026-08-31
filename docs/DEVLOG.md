@@ -81,6 +81,32 @@ Public content reads zůstávají záměrně (`longevity_nodes`, `longevity_arti
 
 ---
 
+### P2 Wave 3 Prelude — PRIVATE VIEW EXPOSURE — ✅ CLOSED (`20260831_wave3_prelude_private_views.sql`)
+
+**Datum:** 2026-08-31
+
+**Scope:** 2 views s explicitními anon/authenticated privileges na soukromá data.
+
+**Nález:**
+- `user_bottlenecks` a `v_vitality_dashboard` měly plné anon/authenticated ACL (`arwdDxtm`)
+- Příčina: PostgreSQL 17 view bez `security_invoker` option → grant-level check na underlying tables používá view owner (postgres), nikoli invoking role — přímý grant REVOKE na table by view neochránil
+- Před opravou: anon SELECT na `user_bottlenecks` procházel, vracela 0 rows (datová podmínka, ne bezpečnostní blokace)
+- Před opravou: anon SELECT na `v_vitality_dashboard` procházel a vracel **126 rows** — aktivní exposure celé tabulky `user_metrics` přes anon key
+
+**Co bylo provedeno:**
+- `REVOKE ALL PRIVILEGES ON TABLE user_bottlenecks FROM anon, authenticated` ✓
+- `REVOKE ALL PRIVILEGES ON TABLE v_vitality_dashboard FROM anon, authenticated` ✓
+- Žádné RLS/policy/function/table/data změny
+
+**Verifikace (live DB, 2026-08-31):**
+- anon SELECT `user_bottlenecks` → **ERROR 42501 permission denied** ✓
+- anon SELECT `v_vitality_dashboard` → **ERROR 42501 permission denied** ✓
+- authenticated SELECT obou views → **ERROR 42501** ✓
+- service_role row counts: `user_bottlenecks` = 0, `v_vitality_dashboard` = 126 ✓
+- Raw ACL: pouze `postgres` a `service_role` zachovány ✓
+
+---
+
 ### P2 Wave 1 — PUBLIC CONTENT RLS — ✅ CLOSED (`20260831_wave1_public_content_rls.sql`)
 
 **Datum:** 2026-08-31
