@@ -107,7 +107,40 @@ Public content reads zůstávají záměrně (`longevity_nodes`, `longevity_arti
 
 **Poznámky:**
 - `migrations/20260429_enable_rls.sql` zůstává **SUPERSEDED / DO NOT RUN**
-- Wave 2 (deprecated legacy tables: `knowledge_nodes`, `nodes`) — plánováno
+- Wave 2 (deprecated legacy tables: `knowledge_nodes`, `nodes`) — viz níže ✅
+- Wave 3 (private user tables) — vyžaduje samostatné plánování
+
+---
+
+### P2 Wave 2 — SERVER-ONLY / DEPRECATED RLS — ✅ CLOSED (`20260831_wave2_server_only_rls.sql`)
+
+**Datum:** 2026-08-31
+
+**Scope:** 7 tabulek — server-only (TOC, RxNorm cache) + deprecated legacy. Žádná privátní user data nedotčena.
+
+**Nově RLS ON (5 tabulek):**
+`toc_zakazky`, `toc_pracoviste`, `toc_parametry` — server-only (api/toc.js, service_role)
+`knowledge_nodes`, `nodes` — deprecated legacy, žádní aktivní calleři
+
+**Již chráněné — pouze grant cleanup (2 tabulky):**
+`drug_inn_cache` — RLS ON + `service_role_all` policy zachována
+`toc_hlavni_plan` — RLS ON + zero public policies zachovány
+
+**Co bylo provedeno:**
+- anon/authenticated table privileges = **zero** na 7/7 tabulkách (REVOKE ALL incl. SELECT) ✓
+- RLS enabled: **7/7** ✓ (5 nově + 2 zachovány)
+- public policies pro anon/authenticated: **zero** (Wave 2 tabulky jsou server-only) ✓
+- `drug_inn_cache` `service_role_all` policy: zachována beze změny ✓
+
+**Verifikace (live DB, 2026-08-31):**
+- anon SELECT `toc_zakazky` → **ERROR 42501 permission denied** ✓
+- service_role row counts 7/7 → přesná shoda pre/post, data nedotčena ✓
+- `drug_inn_cache`: 10 řádků, service_role readable ✓
+- TOC READ service_role DB path (`api/toc.js` → 50+5+5+15 řádků) verified ✓
+- RxNorm cache service_role DB path (`api/rxnorm.js`) verified ✓
+- TOC WRITE runtime: **NOT tested** — static service_role path verified; runtime test by mutoval produkční data
+
+**Poznámky:**
 - Wave 3 (private user tables) — vyžaduje samostatné plánování
 
 ---
