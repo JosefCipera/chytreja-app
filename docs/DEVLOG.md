@@ -81,6 +81,37 @@ Public content reads zůstávají záměrně (`longevity_nodes`, `longevity_arti
 
 ---
 
+### P2 Wave 1 — PUBLIC CONTENT RLS — ✅ CLOSED (`20260831_wave1_public_content_rls.sql`)
+
+**Datum:** 2026-08-31
+
+**Scope:** 12 public content tables — žádná privátní user data nedotčena.
+
+**Tabulky:**
+`longevity_nodes`, `longevity_articles`, `longevity_media`, `longevity_actions`,
+`universe_nodes`, `aspiration_requirements`, `node_riders`,
+`node_articles`, `node_media`, `node_docs`, `onboarding_questions`, `universes`
+
+**Co bylo provedeno:**
+- RLS enabled: **12/12** ✓
+- anon/authenticated grants: sníženy na **SELECT only** (REVOKE INSERT/UPDATE/DELETE/TRUNCATE/TRIGGER/REFERENCES) ✓
+- SELECT policies: **12 policies `USING(true)`** pro anon, authenticated ✓
+
+**Verifikace (live DB, 2026-08-31):**
+- anon SELECT 12/12 tabulek → data dostupná (row counts zachovány) ✓
+- REST publishable/anon path → data čitelná ✓
+- anon INSERT attempt → **ERROR 42501 permission denied** ✓
+- authenticated DB role SELECT → data čitelná ✓
+- service_role přístup k privátním tabulkám → nezměněn ✓
+- žádná privátní tabulka nedotčena ✓
+
+**Poznámky:**
+- `migrations/20260429_enable_rls.sql` zůstává **SUPERSEDED / DO NOT RUN**
+- Wave 2 (deprecated legacy tables: `knowledge_nodes`, `nodes`) — plánováno
+- Wave 3 (private user tables) — vyžaduje samostatné plánování
+
+---
+
 ## Práce z 29. 8. 2026 (pokračování)
 
 ### P1B.2a Private READ Migration — CLOSED (`4a1ec57`)
