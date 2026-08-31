@@ -107,6 +107,46 @@ Public content reads zůstávají záměrně (`longevity_nodes`, `longevity_arti
 
 ---
 
+### P2 Wave 3 Pilot — USER_BIOMETRICS RLS — ✅ CLOSED (`20260831_wave3_pilot_user_biometrics_rls.sql`)
+
+**Datum:** 2026-08-31
+
+**Scope:** 1 tabulka — `public.user_biometrics` — první private user-data tabulka v P2 Wave 3.
+
+**Pre-flight stav (před migrací):**
+- row count: 2
+- RLS: OFF, zero policies (zero dormant), zero FK/triggers/functions/views závislostí
+- Raw ACL: anon/authenticated měly plné `arwdDxtm` granty
+- Jediný HEAD caller: `api/chat.js` — service_role klient + Firebase `requireAuth` + SELECT only (3 sloupce, `.maybeSingle()`)
+- PRIVATE browser-direct access: 0
+- 0-rows handling v calleru ověřen staticky (`latestBio?.waist_cm` — graceful null)
+
+**Co bylo provedeno:**
+- `REVOKE ALL PRIVILEGES ON TABLE user_biometrics FROM anon, authenticated` ✓
+- `ENABLE ROW LEVEL SECURITY` ✓
+- Žádné CREATE/DROP POLICY, žádné GRANT, žádné DML, žádné jiné DB objekty
+
+**Verifikace (live DB, 2026-08-31):**
+- `rowsecurity = true` ✓
+- policies = **0** ✓
+- anon/authenticated explicit privileges = **zero** (information_schema: 0 řádků) ✓
+- `has_table_privilege` effective SELECT/INSERT pro anon i authenticated = **false** ✓
+- PUBLIC grants = **zero** (žádný prázdný grantee v relacl) ✓
+- Raw ACL po migraci: `{postgres=arwdDxtm/postgres, service_role=arwdDxtm/postgres}` ✓
+- anon SELECT → **ERROR 42501 permission denied** (grant-layer denial) ✓
+- authenticated access blocked (effective privileges = false) ✓
+- service_role SELECT COUNT = **2** — data nedotčena ✓
+
+**HTTP /api/chat runtime smoke:** NOT TESTED — platný Firebase tester token nebyl dostupný v session. Static runtime-path verification PASS (service_role klient, `requireAuth` enforcement, graceful 0-rows handling).
+
+**Rollback (pouze pro emergency, nebyl proveden):**
+```sql
+ALTER TABLE public.user_biometrics DISABLE ROW LEVEL SECURITY;
+GRANT ALL PRIVILEGES ON TABLE public.user_biometrics TO anon, authenticated;
+```
+
+---
+
 ### P2 Wave 1 — PUBLIC CONTENT RLS — ✅ CLOSED (`20260831_wave1_public_content_rls.sql`)
 
 **Datum:** 2026-08-31
