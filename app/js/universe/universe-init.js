@@ -13,7 +13,7 @@ import { showPanel } from "./universe-panel.js";
 import { initUserDataPanel } from "./user-data-panel.js?v=20260426a";
 import { listenOnce, handleVoiceInput, proactiveGreeting, aiSpeakPromise } from "./universe-voice.js";
 import { requestCHJPermission, checkAndRemind } from "./notifications.js";
-import { initHUD, hideHUD, showHUD } from "./hud.js?v=20260319a";
+import { hideHUD, showHUD } from "./hud.js?v=20260319a";
 
 // Supabase setup
 const { createClient } = window.supabase;
@@ -443,10 +443,6 @@ async function loadAndRenderModel(modelName, role) {
   // TODO v0.3: morning check-in per universe — needs user profile → universe mapping
   // longevity-checkin.js + lehkost-checkin.js are ready, trigger from user profile
 
-  // HUD init — bio-age, streak, mission overlay on main screen
-  // (700ms čeká na inicializaci vis.js sítě)
-  // HUD disabled — panel is primary UI now
-  // setTimeout(() => initHUD(), 700);
 
   // Načti user constraints do window.USER_CONSTRAINTS (pro discipline offer)
   (async () => {
