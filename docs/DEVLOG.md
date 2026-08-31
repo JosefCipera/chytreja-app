@@ -1,7 +1,83 @@
 # CHJ DEVLOG — Aktuální stav vývoje
 
 > Handoff dokument pro nové Claude session. Stručný přehled: co funguje, co bylo opraveno, co zůstává otevřené.
-> Aktualizováno: 2026-08-29 · Canonical docs → `CHJ-ENGINE-ARCHITECTURE.md`, `CHJ-PRODUCT-ARCHITECTURE.md`, `CLAUDE.md`
+> Aktualizováno: 2026-08-31 · Canonical docs → `CHJ-ENGINE-ARCHITECTURE.md`, `CHJ-PRODUCT-ARCHITECTURE.md`, `CLAUDE.md`
+
+---
+
+## Práce z 31. 8. 2026
+
+### P1B PRIVATE DATA PATH — ✅ CLOSED (`99c65c0`)
+
+**Cíl P1B:** Odstranit všechny browser-direct přístupy na privátní Supabase tabulky/RPC z frontend JS.
+
+**Výsledek: PRIVATE browser Supabase accesses = 0**
+
+Fresh scan `app/js/**` po commitu `99c65c0`:
+- Žádný `supabaseClient.from(user_*)` — 0 nálezů
+- Žádný `supabase.from(user_*)` — 0 nálezů
+- Žádný `.rpc(...)` — 0 nálezů
+
+Public content reads zůstávají záměrně (`longevity_nodes`, `longevity_articles`, `longevity_media`, `longevity_docs`, `universe_nodes`) — strukturální data aplikace, ne user data. Migrují se v P2 (RLS).
+
+**Scope P1B uzavřen v 5 commitech:**
+
+| Fáze | Commit | Co |
+|------|--------|----|
+| P1B.1 writes | `2c296ce` | 5 nových API actions (`save-zdravi/kondice/profil`, `update-decathlon`, `wizard-step`) |
+| P1B.2a reads | `4a1ec57` | `user-data-panel.js`, `onboarding-wizard.js` → `authFetch full-profile` |
+| P1B.2b reads | `3e2e6df` | `notifications.js`, `data-layer.js`, `universe-panel.js` |
+| P1B.2b+ dead HUD | `dab1752` | `hud.js` dead `initHUD()` větev + `universe-init.js` dead HUD import |
+| P1B.2c reads | `99c65c0` | `universe-init.js` 6 private accesses → authorized API |
+
+---
+
+### P1B.2c Private READ Migration — CLOSED (`99c65c0`)
+
+**Migrované call sites v `universe-init.js`:**
+
+| # | Řádek | Původní | Nová cesta |
+|---|-------|---------|-----------|
+| 1 | ~174 | `supabaseClient.user_metrics` | `authFetch universe-metrics` |
+| 2 | ~452 | `supabaseClient.user_constraints (injury)` | `authFetch full-profile` + filter `constraint_type==='injury'` |
+| 3 | ~501 | `supabaseClient.user_metrics SELECT *` | `authFetch universe-metrics` |
+| 4 | ~680 | `supabaseClient.user_metrics` | `authFetch universe-metrics` |
+| 5 | ~761 | `supabaseClient.user_profiles.primary_goal` | `authFetch profile` (raw data, mapování zůstalo na klientu) |
+| 6 | ~1033 | `supabaseClient.rpc calculate_vitality_score` | DEAD → smazáno |
+
+**Nová API action v `api/user.js`:**
+- `GET /api/user?action=universe-metrics&universe={universe}` → `{ metrics: [{ node_id, current_index, target_index, priority }] }`
+- userId výhradně z `auth.uid`, žádná business logika na serveru
+
+**Klíčové bezpečnostní vlastnosti:**
+- mapování `primary_goal → role` zůstalo beze změny na klientu
+- fallbacky a localStorage chování zachovány přesně
+- demo guard (`uid === 'demo-user-123'`) zachován
+
+**Test baseline (2026-08-31):**
+
+| Suite | Výsledek |
+|-------|---------|
+| orchestrator | **312/312 PASS · 9 SKIP** |
+| p1b-writes | **36/36 PASS** |
+| p1b2a-reads | **10/10 PASS** |
+| p1b2b-reads | **35/35 PASS** |
+| auth-security | **8/8 PASS** |
+| demo-abuse | **9/9 PASS** |
+| launcher-static | **10/10 PASS** |
+
+**Live smoke test `dev.iting.cz` (2026-08-31):**
+- `GET /api/user?action=universe-metrics` bez tokenu → **401** ✓
+- `GET /api/user?action=profile` bez tokenu → **401** ✓
+- `GET /api/user?action=full-profile` bez tokenu → **401** ✓
+- `POST /api/orchestrate` bez tokenu → **401** ✓
+- Launcher page load → **200** ✓
+- Chrome extension nedostupná — ověření načtení Vesmíru + metrics path vyžaduje manuální test s přihlášeným testerem
+
+**Poznámka — P2 RLS:**
+- `migrations/20260429_enable_rls.sql` je **SUPERSEDED / DO NOT RUN**
+- P2 (RLS na privátní tabulky) bude mít vlastní nové migrační skripty
+- Nezačínat P2 bez nového plánování
 
 ---
 
