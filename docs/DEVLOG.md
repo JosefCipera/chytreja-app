@@ -107,6 +107,51 @@ Public content reads zůstávají záměrně (`longevity_nodes`, `longevity_arti
 
 ---
 
+### P2 Wave 3A — LOW-RISK PRIVATE DATA — ✅ CLOSED (`20260831_wave3a_low_risk_private_rls.sql`)
+
+**Datum:** 2026-08-31
+
+**Scope:** 3 tabulky — low-risk private data, zero active runtime callers.
+
+`user_supplements` · `user_fitness_tests` · `user_integrations`
+
+**Pre-flight (live DB + fresh HEAD scan):**
+- Row counts baseline: `user_supplements` = 6 · `user_fitness_tests` = 8 · `user_integrations` = 4
+- RLS OFF 3/3, dormant policies = 0
+- PUBLIC grants = 0, FK = 0, triggers = 0
+- DB functions/RPC dependencies = 0, view dependencies = 0
+- Active runtime callers = 0 (fresh scan `api/`, `app/`, `scripts/`)
+- PRIVATE browser-direct access = 0
+
+**Co bylo provedeno:**
+- `REVOKE ALL PRIVILEGES ON TABLE … FROM anon, authenticated` — 3/3 ✓
+- `ENABLE ROW LEVEL SECURITY` — 3/3 ✓
+- Zero CREATE/DROP POLICY, zero DML, service_role untouched
+
+**Post-migration verifikace (live DB, 2026-08-31):**
+- RLS ON 3/3 ✓
+- Zero policies 3/3 ✓
+- Zero explicit anon/auth grants 3/3 ✓
+- Effective SELECT + INSERT = false pro anon i authenticated 3/3 ✓
+- PUBLIC grants = zero ✓
+- Raw ACL po migraci: `{postgres=arwdDxtm/postgres, service_role=arwdDxtm/postgres}` na 3/3 ✓
+- anon SELECT → **ERROR 42501** na 3/3 ✓
+- authenticated access blocked (effective privileges = false) ✓
+- service_role SELECT zachován, row counts = 6 / 8 / 4 — data nedotčena ✓
+- HTTP runtime smoke = NOT APPLICABLE (zero active runtime callers)
+
+**Rollback (pouze pro emergency, nebyl proveden):**
+```sql
+ALTER TABLE public.user_supplements DISABLE ROW LEVEL SECURITY;
+GRANT ALL PRIVILEGES ON TABLE public.user_supplements TO anon, authenticated;
+ALTER TABLE public.user_fitness_tests DISABLE ROW LEVEL SECURITY;
+GRANT ALL PRIVILEGES ON TABLE public.user_fitness_tests TO anon, authenticated;
+ALTER TABLE public.user_integrations DISABLE ROW LEVEL SECURITY;
+GRANT ALL PRIVILEGES ON TABLE public.user_integrations TO anon, authenticated;
+```
+
+---
+
 ### P2 Wave 3 Pilot — USER_BIOMETRICS RLS — ✅ CLOSED (`20260831_wave3_pilot_user_biometrics_rls.sql`)
 
 **Datum:** 2026-08-31
