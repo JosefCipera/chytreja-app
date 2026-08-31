@@ -170,12 +170,8 @@ window.refreshUniverseData = async function() {
   if (!window.MAIN_UNIVERSE_DATA) return;
 
   try {
-    const userId = await getCurrentUserId();
-    const { data: metrics } = await window.supabaseClient
-      .from('user_metrics')
-      .select('node_id, current_index, state')
-      .eq('user_id', userId)
-      .eq('universe', window.CURRENT_MODEL || 'longevity');
+    const _umRes1 = await authFetch(`/api/user?action=universe-metrics&universe=${encodeURIComponent(window.CURRENT_MODEL || 'longevity')}`);
+    const metrics = _umRes1.ok ? (await _umRes1.json()).metrics : null;
 
     if (!metrics) return;
 
@@ -448,12 +444,9 @@ async function loadAndRenderModel(modelName, role) {
   (async () => {
     const uid = window.firebaseAuth?.currentUser?.uid;
     if (!uid || uid === 'demo-user-123') return;
-    const { data } = await window.supabaseClient
-      .from('user_constraints')
-      .select('constraint_key, constraint_value, severity')
-      .eq('user_id', uid)
-      .eq('constraint_type', 'injury');
-    window.USER_CONSTRAINTS = data || [];
+    const _fpRes = await authFetch('/api/user?action=full-profile');
+    const _fpData = _fpRes.ok ? await _fpRes.json() : null;
+    window.USER_CONSTRAINTS = (_fpData?.constraints ?? []).filter(c => c.constraint_type === 'injury');
     console.log(`✅ USER_CONSTRAINTS: ${window.USER_CONSTRAINTS.length} záznamů`);
   })();
 
@@ -497,13 +490,9 @@ async function loadModel(modelName, role = 'longevity') {
 
       // Lehkost je filtr na longevity — metrics jsou v universe='longevity'
       const metricsUniverse = (role === 'lehkost') ? 'longevity' : modelName;
-      const { data: metrics, error: metricsError } = await window.supabaseClient
-        .from('user_metrics')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('universe', metricsUniverse);
-
-      if (metricsError) throw metricsError;
+      const _umRes3 = await authFetch(`/api/user?action=universe-metrics&universe=${encodeURIComponent(metricsUniverse)}`);
+      if (!_umRes3.ok) throw new Error(`universe-metrics HTTP ${_umRes3.status}`);
+      const metrics = (await _umRes3.json()).metrics ?? [];
       console.log(`   ✓ Metrics: ${metrics.length}`);
       // ✅ PŘIDEJ — vytvoř mapu node_id → state
       const metricsMap = new Map(metrics.map(m => [m.node_id, m]));
@@ -675,12 +664,8 @@ async function loadModel(modelName, role = 'longevity') {
 
     // Load metrics from Supabase (same user_metrics table, filtered by universe)
     try {
-      const userId = await getCurrentUserId();
-      const { data: metrics } = await window.supabaseClient
-        .from('user_metrics')
-        .select('node_id, current_index, state')
-        .eq('user_id', userId)
-        .eq('universe', modelName);
+      const _umRes4 = await authFetch(`/api/user?action=universe-metrics&universe=${encodeURIComponent(modelName)}`);
+      const metrics = _umRes4.ok ? (await _umRes4.json()).metrics ?? [] : [];
 
       if (metrics && metrics.length > 0) {
         const metricsMap = new Map(metrics.map(m => [m.node_id, m]));
@@ -757,14 +742,11 @@ async function getUserMode() {
 
   // Přihlášený uživatel: vždy čti z DB — primary_goal je zdroj pravdy
   try {
-    const { data, error } = await window.supabaseClient
-      .from('user_profiles')
-      .select('primary_goal')
-      .eq('user_id', uid)
-      .maybeSingle();
+    const _profileRes = await authFetch('/api/user?action=profile');
+    const data = _profileRes.ok ? await _profileRes.json() : null;
 
-    if (error || !data) {
-      console.warn('⚠️ getUserMode: fallback → longevity', error?.message);
+    if (!data) {
+      console.warn('⚠️ getUserMode: fallback → longevity');
       localStorage.setItem('userRole', 'longevity');
       return 'longevity';
     }
@@ -1023,25 +1005,5 @@ function updateHeaderColor(role) {
   header.style.background = colors[role] || "rgba(15,23,42,0.9)";
 }
 
-// =====================================================
-// 🔋 BONUS: Load Vitality Score
-// =====================================================
-window.loadVitalityScore = async function () {
-  const userId = await getCurrentUserId();
-  const universe = window.CURRENT_MODEL;
-
-  const { data, error } = await window.supabaseClient.rpc('calculate_vitality_score', {
-    p_user_id: userId,
-    p_universe: universe
-  });
-
-  if (error) {
-    console.error("❌ Vitality Score error:", error);
-    return null;
-  }
-
-  console.log("🔋 Vitality Score:", data[0]);
-  return data[0];
-};
 // Expose for launcher.js — universe switch before node routing
 window._loadAndRenderModel = loadAndRenderModel;

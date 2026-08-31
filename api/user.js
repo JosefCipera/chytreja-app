@@ -40,8 +40,9 @@ export default async function handler(req, res) {
   if (action === 'full-profile')        return handleFullProfile(req, res);
   if (action === 'node-history')        return handleNodeHistory(req, res);
   if (action === 'aspiration-type')     return handleAspirationType(req, res);
+  if (action === 'universe-metrics')    return handleUniverseMetrics(req, res);
 
-  return res.status(400).json({ error: 'action required: profile | onboarding | readiness | snapshot | checkin | body-flow | lehkost-agent | dialog | health-profile | crt-context | save-zdravi | save-kondice | save-profil | update-decathlon | wizard-step | full-profile | node-history' });
+  return res.status(400).json({ error: 'action required: profile | onboarding | readiness | snapshot | checkin | body-flow | lehkost-agent | dialog | health-profile | crt-context | save-zdravi | save-kondice | save-profil | update-decathlon | wizard-step | full-profile | node-history | universe-metrics' });
 }
 
 
@@ -957,6 +958,29 @@ async function handleAspirationType(req, res) {
   if (error) return res.status(500).json({ error: error.message });
   return res.json({ aspiration_type: data?.aspiration_type ?? null });
 }
+
+// ── GET ?action=universe-metrics&universe=... ─────────────────────
+// Returns raw user_metrics for a given universe. No business logic.
+// userId is ALWAYS from auth.uid (injected by main handler) — never from client.
+async function handleUniverseMetrics(req, res) {
+  if (req.method !== 'GET') return res.status(405).json({ error: 'GET only' });
+  const userId = req.query.userId; // auth.uid injected by main handler
+  if (!userId) return res.status(400).json({ error: 'userId required' });
+
+  const { universe } = req.query;
+  if (!universe) return res.status(400).json({ error: 'universe required' });
+
+  res.setHeader('Cache-Control', 'no-store');
+  const { data, error } = await sb()
+    .from('user_metrics')
+    .select('node_id, current_index, target_index, priority')
+    .eq('user_id', userId)
+    .eq('universe', universe);
+
+  if (error) return res.status(500).json({ error: error.message });
+  return res.json({ metrics: data ?? [] });
+}
+
 
 async function handleCrtContext(req, res) {
   const userId = req.query.userId || req.body?.userId;
