@@ -796,7 +796,7 @@ async function loadCRT() {
 async function loadCRTOpus(force = false, model = undefined) {
   const body = { userId, role: userRole, force, model };
 
-  const res = await fetch('/api/crt-generate', {
+  const res = await (window.authFetch ?? fetch)('/api/crt-generate', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -2139,8 +2139,7 @@ window._loadCRT      = loadCRT;
 window._loadCRTOpus  = loadCRTOpus;
 window._renderTree   = renderTree;
 window._destroyCy    = () => { if (_cy) { _cy.destroy(); _cy = null; } };
-
-boot();
+window._crtBoot      = boot;
 
 // Re-render při rotaci (landscape/portrait)
 let _lastCrtData = null;
@@ -2172,7 +2171,7 @@ onAuthStateChanged(_fbAuth, async user => {
   document.querySelectorAll('.user-avatar, .avatar-large').forEach(img => img.src = url);
   const emailEl = document.querySelector('.email');
   if (emailEl) emailEl.textContent = user.email || '';
-
+  window._crtBoot?.();
 });
 
 initUserDataPanel();
