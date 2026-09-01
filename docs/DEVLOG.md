@@ -1,7 +1,33 @@
 # CHJ DEVLOG — Aktuální stav vývoje
 
 > Handoff dokument pro nové Claude session. Stručný přehled: co funguje, co bylo opraveno, co zůstává otevřené.
-> Aktualizováno: 2026-08-31 · Canonical docs → `CHJ-ENGINE-ARCHITECTURE.md`, `CHJ-PRODUCT-ARCHITECTURE.md`, `CLAUDE.md`
+> Aktualizováno: 2026-09-01 · Canonical docs → `CHJ-ENGINE-ARCHITECTURE.md`, `CHJ-PRODUCT-ARCHITECTURE.md`, `CLAUDE.md`
+
+---
+
+## Práce z 1. 9. 2026
+
+### P0–P2 EXIT / GOOD STATE BACKUP — ✅ CLOSED
+
+**Datum:** 2026-09-01
+
+**Záloha:**
+- PostgreSQL 17.11 `pg_dump` custom format (gzip) z Supabase project `pionxzqtxcughvfbgadi`
+- GOOD STATE dump vytvořen, archive verified via `pg_restore --list` (1000 TOC entries)
+- Obsah: schema + TABLE DATA + functions + views + triggers + policies + RLS + ACL + sequences + constraints + indexes
+- SHA-256 checksum: verified (MATCH)
+- Restore test: NOT YET PERFORMED
+- Supabase FREE plán nemá scheduled project backups
+- Dump obsahuje private user data — uložen mimo git repo, nikdy commitovat
+
+**P0–P2 status:**
+- P0: CLOSED — zero private browser Supabase access
+- P1B: CLOSED — private reads/writes přes authorized serverless API
+- P2: CLOSED — 20/20 primárních privátních tabulek zamčeno (RLS ON + REVOKE anon/authenticated)
+
+**Product development: GO.** Zbývající hygiene items jsou non-blocking pre-production tasks.
+
+**Disaster recovery:** `docs/DISASTER-RECOVERY.md`
 
 ---
 

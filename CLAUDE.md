@@ -121,3 +121,45 @@ Platí pro CHJ AI výstupy (`api/chat.js`, orchestrator text responses):
 - Čeština, tykání, žádné diagnózy v uživatelské formulaci
 - Žádné akční kroky v textu — akce patří do structured ACTION výstupu
 - **Zakázaná slova:** musíš, okamžitě, je důležité, měl bys, hrozí, ohrožuje, samostatnost, závislý, pomoc druhých, špatně, trpí
+
+---
+
+## 9. Security Model
+
+### Auth Chain
+
+```
+Firebase Auth
+→ requireAuth (api/*.js)
+→ authoritative auth.uid (Firebase identity — klient nemůže podstrčit jiný userId)
+→ serverless API (Vercel)
+→ Supabase service_role (DB reads/writes)
+→ private browser Supabase access = 0
+```
+
+**Principy:**
+- Firebase identity je autorita pro private API — `auth.uid` z ověřeného Firebase JWT, ne klientský `userId`
+- Client-supplied `userId` není autoritativní — `api/user.js` řádky 14–20 přepisují `userId` hodnotou z Firebase tokenu
+- `SUPABASE_SERVICE_ROLE_KEY` pouze server-side — nikdy frontend
+- Private user tables nejsou přímo přístupné browseru — veškerý přístup přes serverless API
+- Public content (`longevity_nodes`, `universe_nodes` atd.) může mít browser SELECT v souladu s RLS policies
+- `auth.uid()` v Supabase PostgreSQL = NULL pro Firebase JWT — není CHJ private identity model
+
+### P0–P2 Security Program Status
+
+**P0–P2: CLOSED. Product development: GO.**
+
+Dokončeno:
+- P0: Browser-direct private Supabase access odstraněn (0 private browser Supabase calls)
+- P1B: Private browser read/write cesty migrovány na authorized serverless API
+- P2: 20/20 primárních privátních tabulek zamčeno (RLS ON + REVOKE anon/authenticated)
+
+Zbývající položky (pre-production/hygiene, **ne blocker product developmentu**):
+- `crt-generate.js` mock unauthenticated AI cost path
+- `tester-reset.js` authentication hardening
+- Extra-private ACL + demo-policy hygiene (6 tabulek)
+- RPC EXECUTE grant hygiene
+- MAINTAIN + public grant hygiene
+- Restore test databázové zálohy
+
+Nepouštět se do jejich implementace bez explicitního product rozhodnutí.
