@@ -107,6 +107,66 @@ Public content reads zůstávají záměrně (`longevity_nodes`, `longevity_arti
 
 ---
 
+### P2 Wave 3D — LOG / HISTORY PRIVATE DATA — ✅ CLOSED (`20260901_wave3d_log_history_private_rls.sql`)
+
+**Datum:** 2026-09-01
+
+**Scope:** 3 tabulky — log / history private user data.
+
+| Tabulka | Řádky (baseline) |
+|---|---|
+| `vitality_score_history` | 18 |
+| `mission_log` | 13 |
+| `orchestrator_log` | 146 |
+
+**Pre-flight (live DB, 2026-09-01):**
+- Baseline rows: 18 / 13 / 146
+- RLS OFF 3/3, FORCE RLS OFF 3/3
+- Zero live policies 3/3
+- anon/authenticated měli full table ACL (`arwdDxtm`) na všech 3
+- Zero PUBLIC grants
+- PRIVATE direct browser access = 0 (universe-panel.js volá `/api/mission-log` přes API proxy, nikoli přímý Supabase přístup)
+- Aktivní API callers (`api/mission-log.js`, `api/mission-complete.js`, `api/orchestrator.js`, `api/hud-data-bulk.js`, `api/user.js`) používají Firebase `requireAuth` + server-side `service_role`
+
+**Historical note:**
+- Superseded migrace `20260429_enable_rls.sql` obsahovala `USING(true)` policies pro `mission_log` a `orchestrator_log` (`"phase1_read_mission_log"`, `"phase1_read_orchestrator_log"`) — tyto by po ENABLE RLS vystavily všechny řádky cross-user
+- Tyto policies v LIVE DB neexistovaly (migrace nebyla spuštěna) — confirmed live `pg_policies` query
+- Žádný DROP POLICY proto nebyl potřeba
+
+**Applied:**
+- `REVOKE ALL PRIVILEGES FROM anon, authenticated` — 3/3
+- `ENABLE ROW LEVEL SECURITY` — 3/3
+- Zero CREATE POLICY, zero DROP POLICY, zero GRANT, zero DML
+- `service_role` untouched, functions/RPC/triggers/views untouched
+
+**Post-verifikace (live DB, 2026-09-01):**
+- RLS ON 3/3, FORCE RLS OFF 3/3
+- Zero policies 3/3
+- Raw ACL: pouze `postgres` + `service_role` na všech 3
+- anon grants = zero, authenticated grants = zero, PUBLIC grants = zero
+- Effective anon/auth CRUD: **24/24 kombinací = false**
+- Anon SELECT: **3/3 ERROR 42501 permission denied**
+- Service_role access preserved (BYPASSRLS)
+- Row counts unchanged: `vitality_score_history` = 18, `mission_log` = 13, `orchestrator_log` = 146
+- Data untouched
+- `orchestrator_log.node_id → longevity_nodes.id ON DELETE SET NULL` preserved
+- Triggers = 0, Views = 0
+
+**DB functions dotýkající se `vitality_score_history`:**
+- `calculate_vitality_score(p_user_id text, p_universe text)` — SECURITY INVOKER, owner=postgres
+- `recompute_vitality(p_user_id text, p_universe text)` — SECURITY INVOKER, owner=postgres
+- Obě funkce zachovány beze změny, EXECUTE granty nezměněny
+- Po lockdownu: anon volání těchto funkcí = denied na tabulce (INVOKER) — zero runtime dopad (žádný API endpoint tyto funkce nevolá)
+
+**HTTP runtime smoke:** NOT TESTED — platný Firebase tester token nebyl k dispozici.  
+Static runtime-path verification = PASS. Service_role DB verification = PASS.
+
+**Rollback:** Žádný rollback nebyl proveden. Obnovení anon/auth grantů nebo DISABLE RLS by bylo SECURITY-REGRESSIVE.
+
+**Verdict: P2 Wave 3D CLOSED.**
+
+---
+
 ### P2 Wave 3C — ENGINE PRIVATE DATA — ✅ CLOSED (`20260831_wave3c_engine_private_rls.sql`)
 
 **Datum:** 2026-08-31
