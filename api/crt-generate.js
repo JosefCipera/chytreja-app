@@ -717,6 +717,15 @@ async function buildDeterministicCRT(profile, metrics = [], checkins = []) {
     }
   }
 
+  // Post-cascade gender exclusion — kaskáda mohla přidat gender-specifické uzly (napr.
+  // CHRONIC_STRESS→LOW_TESTOSTERONE, ENDOTHELIAL_DYSFUNCTION→ERECTILE_DYSFUNCTION) bez kontroly pohlaví.
+  for (const sid of [...activeIds]) {
+    const req = STATES_DB[sid]?.condition?.gender;
+    if (!req) continue;
+    if (req === 'male'   && isFemale) { activeIds.delete(sid); cascadeEligible.delete(sid); continue; }
+    if (req === 'female' && isMale)   { activeIds.delete(sid); cascadeEligible.delete(sid); continue; }
+  }
+
   // Propagace cascadeEligible přes typical_children — separátní průchod po kaskádě.
   // Řeší případ kdy parent inference přidal uzel PŘED downstream kaskádou (activeIds.has() = true
   // → blok se nespustil → confirmedIds nepropagoval). Průchod propaguje z confirmed zdrojů
@@ -1692,7 +1701,7 @@ function overlayColors(nodes, metrics) {
 // _v_ai: bump POUZE při změně Sonnet promptu → invaliduje AI generování
 // _v_pp: bump při změně post-processingu (med-inject, validateEdges...) → přeskočí Sonnet, re-run PP
 const _v_ai = 12;
-const _v_pp = 113; // fix C: METABOLIC_HEALTH_ROOT + SEDENTARY_LIFESTYLE_ROOT chráněny před INFLAMMAGING (confirmedIds pravidlo)
+const _v_pp = 114; // fix D: post-cascade gender exclusion (LOW_TESTOSTERONE + ERECTILE_DYSFUNCTION cascade bypass)
 
 function hashStr(s) {
   let h = 0;

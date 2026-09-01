@@ -422,6 +422,7 @@
       "ERECTILE_DYSFUNCTION"
     ],
     "condition": {
+      "gender": "male",
       "auto_if": {
         "gender": "male"
       }
