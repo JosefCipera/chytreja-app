@@ -107,6 +107,68 @@ Public content reads zůstávají záměrně (`longevity_nodes`, `longevity_arti
 
 ---
 
+### P2 Wave 3E — ASPIRATIONS / DECATHLON PRIVATE DATA — ✅ CLOSED (`20260901_wave3e_aspirations_decathlon_private_rls.sql`)
+
+**Datum:** 2026-09-01
+
+**Scope:** 2 tabulky — aspiration + decathlon private user data.
+
+| Tabulka | Řádky (baseline) |
+|---|---|
+| `user_aspirations` | 2 |
+| `user_decathlon` | 17 |
+
+**Pre-flight (live DB, 2026-09-01):**
+- Baseline rows: 2 / 17
+- RLS OFF 2/2, FORCE RLS OFF 2/2
+- Zero policies 2/2
+- anon/authenticated měli full table ACL (`arwdDxtm`) na obou
+- Zero PUBLIC grants
+- Zero FK na obou tabulkách
+- Zero triggers na obou tabulkách
+- PRIVATE direct browser access = 0
+- Aktivní API callers (`api/aspiration.js`, `api/user.js`, `api/chat.js`, `api/sources.js`, `api/orchestrator.js`) používají Firebase `requireAuth` + server-side `service_role`
+- `api/user.js` main handler (řádky 14–20) vkládá `auth.uid` do `req.body.userId` / `req.query.userId` před každým sub-handlerem — klient nemůže podstrčit jiný `userId`
+- Zero DB functions dotýkajících se těchto tabulek přímo
+
+**user_bottlenecks view (pre-Wave 3E):**
+- View závisí na `user_aspirations` + `user_metrics`
+- View ACL = `{postgres, service_role}` — anon/auth SELECT již REVOKE'd v Wave 3 Prelude
+- service_role má BYPASSRLS → lockdown `user_aspirations` server-side view path neovlivní
+
+**Applied:**
+- `REVOKE ALL PRIVILEGES FROM anon, authenticated` — 2/2
+- `ENABLE ROW LEVEL SECURITY` — 2/2
+- Zero CREATE POLICY, zero DROP POLICY, zero GRANT, zero DML
+- `service_role` untouched, functions/views/triggers untouched
+- `user_bottlenecks` view definition/ACL nedotčena
+
+**Post-verifikace (live DB, 2026-09-01):**
+- RLS ON 2/2, FORCE RLS OFF 2/2
+- Zero policies 2/2
+- Raw ACL: pouze `postgres` + `service_role` na obou
+- anon grants = zero, authenticated grants = zero, PUBLIC grants = zero
+- Effective anon/auth CRUD: **16/16 kombinací = false**
+- Service_role access preserved (BYPASSRLS): asp_sel=true, dec_sel=true
+- Row counts unchanged: `user_aspirations` = 2, `user_decathlon` = 17
+- FK = 0, triggers = 0
+
+**user_bottlenecks post-verifikace:**
+- ACL unchanged: `{postgres=arwdDxtm/postgres, service_role=arwdDxtm/postgres}`
+- anon SELECT = false, authenticated SELECT = false
+- service_role SELECT = true
+- Empirický `SELECT COUNT(*) FROM public.user_bottlenecks` proběhl bez chyby (result = 0 — datová podmínka)
+- Server-side view path preserved
+
+**HTTP runtime smoke:** NOT TESTED — platný Firebase tester token nebyl k dispozici.
+Static runtime-path verification = PASS. Service_role DB verification = PASS.
+
+**Rollback:** Žádný rollback nebyl proveden. Obnovení anon/auth grantů nebo DISABLE RLS by bylo SECURITY-REGRESSIVE.
+
+**Verdict: P2 Wave 3E CLOSED.**
+
+---
+
 ### P2 Wave 3D — LOG / HISTORY PRIVATE DATA — ✅ CLOSED (`20260901_wave3d_log_history_private_rls.sql`)
 
 **Datum:** 2026-09-01
