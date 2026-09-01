@@ -107,6 +107,81 @@ Public content reads zůstávají záměrně (`longevity_nodes`, `longevity_arti
 
 ---
 
+### P2 Wave 3F — CORE PRIVATE DATA — ✅ CLOSED (`20260901_wave3f_core_private_rls.sql`)
+
+**Datum:** 2026-09-01
+
+**Scope:** 3 tabulky — core private user data.
+
+| Tabulka | Řádky (baseline) |
+|---|---|
+| `user_profiles` | 6 |
+| `user_metrics` | 126 |
+| `user_node_weights` | 80 |
+
+**Pre-flight (live DB, 2026-09-01):**
+- Baseline rows: 6 / 126 / 80
+- RLS OFF 3/3, FORCE RLS OFF 3/3
+- PRIVATE direct browser access = 0
+- Aktivní API callers (`api/user.js`, `api/mission-complete.js`, `api/hud-data-bulk.js`, `api/orchestrator.js`, onboarding/init flows) používají Firebase `requireAuth` + server-side `service_role`
+- `api/user.js` main handler (řádky 14–20) vkládá `auth.uid` do `req.body.userId` / `req.query.userId` — klient nemůže podstrčit jiný `userId`
+
+**Dormant policies (6 celkem):**
+- `user_profiles` = 2 dormant policies
+- `user_metrics` = 3 dormant policies
+- `user_node_weights` = 1 dormant policy
+- Všechny policies používaly `auth.uid()::text = user_id` (Supabase auth — nekompatibilní s Firebase JWT, kde `auth.uid()` = NULL)
+- SELECT/ALL policies s `OR user_id = 'demo-user-123'` expozicí demo-user-123 dat při ENABLE RLS (podmínka `demo-user-123` prošla pro anon)
+- `user_node_weights` ALL policy = write risk na demo datech
+- Všech 6 policies bylo nutné DROP před ENABLE RLS v jedné atomické transakci
+
+**Function gate (19/19 inspektováno):**
+- 19/19 funkcí v public schema = SECURITY INVOKER
+- Zero SECURITY DEFINER funkcí v public schema
+- Zero INVOKER → DEFINER bypass chain
+- PUBLIC EXECUTE + explicitní anon/authenticated EXECUTE granty existují na funkcích
+- EXECUTE granty NEBYLY změněny ve Wave 3F — samostatný budoucí hygiene task
+- Po lockdownu: anon volání INVOKER funkcí dotýkajících se zamčených tabulek → ERROR 42501 (blokace na tabulce)
+
+**Závislosti:**
+- `trg_sync_state` na `user_metrics` → `sync_user_metrics_state()` (SECURITY INVOKER, in-memory `NEW.state` only, zero table reads) — beze změny po lockdownu
+- `user_bottlenecks` závisí na `user_metrics`
+- `v_vitality_dashboard` závisí na `user_metrics` + `user_node_weights`
+- View ACL = `{postgres, service_role}` only (REVOKE'd v Wave 3 Prelude)
+- Empirický service_role přístup přes obě views po lockdownu ověřen
+
+**Applied (atomicky v jedné transakci):**
+1. DROP 6 dormant policies
+2. `REVOKE ALL PRIVILEGES FROM anon, authenticated` — 3/3
+3. `ENABLE ROW LEVEL SECURITY` — 3/3
+- Zero CREATE POLICY, zero GRANT, zero DML
+- `service_role` untouched, functions/views/triggers untouched
+- EXECUTE granty beze změny
+
+**Post-verifikace (live DB, 2026-09-01):**
+- RLS ON 3/3, FORCE RLS OFF 3/3
+- Zero policies 3/3 (6/6 dormant policies odstraněno)
+- Raw ACL: pouze `{postgres=arwdDxtm/postgres, service_role=arwdDxtm/postgres}` na všech 3
+- anon grants = zero, authenticated grants = zero, PUBLIC table grants = zero
+- Effective anon/auth CRUD: **24/24 kombinací = false**
+- Row counts unchanged: `user_profiles` = 6, `user_metrics` = 126, `user_node_weights` = 80
+- Service_role SELECT/count preserved na všech 3
+- `trg_sync_state` beze změny (BEFORE INSERT+UPDATE, SECURITY INVOKER, in-memory)
+- `user_bottlenecks` ACL/owner/reloptions beze změny; service_role empirical COUNT = 0 (datová podmínka)
+- `v_vitality_dashboard` ACL/owner/reloptions beze změny; service_role empirical COUNT = 126
+- Function spot-check (5/5): SECURITY INVOKER, proacl beze změny
+
+**HTTP runtime smoke:** NOT TESTED — platný Firebase tester token nebyl k dispozici.
+Static runtime-path verification = PASS. Service_role DB verification = PASS.
+
+**Rollback:** Žádný rollback nebyl proveden. DISABLE RLS, obnovení dormant policies nebo anon/auth grantů by bylo SECURITY-REGRESSIVE.
+
+**Verdict: P2 Wave 3F CORE CLOSED.**
+
+**Primary private table program: 20/20 primárních privátních tabulek zamčeno.**
+
+---
+
 ### P2 Wave 3E — ASPIRATIONS / DECATHLON PRIVATE DATA — ✅ CLOSED (`20260901_wave3e_aspirations_decathlon_private_rls.sql`)
 
 **Datum:** 2026-09-01
