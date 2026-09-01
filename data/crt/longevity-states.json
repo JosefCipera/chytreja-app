@@ -458,7 +458,10 @@
       "vizarsin",
       "cialis"
     ],
-    "typical_children": []
+    "typical_children": [],
+    "condition": {
+      "gender": "male"
+    }
   },
   {
     "id": "PALPITATIONS",
