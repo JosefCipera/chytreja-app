@@ -782,7 +782,8 @@ export async function processInput(userId, userText, sessionState = {}) {
       && !presentation.session_updates?.pending_question
       && state.last_daily_decision?.mode === 'ASK'
       && state.last_daily_decision?.reason_code === 'ASK_BLOCKING'
-      && !state.last_daily_decision?.primary_item) {
+      && !state.last_daily_decision?.primary_item
+      && event_type !== 'ANSWER_TO_EVIDENCE_QUESTION') {
     const sed_text = 'Přibližně kolik hodin za běžný den prosedíš?';
     presentation = {
       mode:          'ASK',

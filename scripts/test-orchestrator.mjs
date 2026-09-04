@@ -972,6 +972,99 @@ async function scenarioL() {
   console.log('  state restored ✓');
 }
 
+// ── Scenario LA — ZERO_DATA_FOLLOWUP does not re-ask after ANSWER ────────────
+//
+// Regression (live Tester0 2026-09-04): "Přibližně kolik hodin za běžný den prosedíš?"
+// → user: "Asi 7 hodin" → value 7 persisted → engine still INSUFFICIENT_MODEL
+// → ZERO_DATA_FOLLOWUP fired again → same sedentary question repeated immediately.
+//
+// Root cause: ZERO_DATA_FOLLOWUP guard did not exclude ANSWER_TO_EVIDENCE_QUESTION turns.
+//
+// Fix contract:
+//   1. Hedged numeric answer ("Asi 7 hodin") → persisted as 7, sedentary question NOT repeated.
+//   2. Response after answer is not empty and is not the already-answered question.
+//   3. ZERO_DATA_FOLLOWUP still fires for a non-answer second zero-data turn (original intent).
+
+async function scenarioLA() {
+  sep('LA — ZERO_DATA_FOLLOWUP: does NOT re-ask sedentary question after ANSWER_TO_EVIDENCE_QUESTION');
+
+  const savedPhysical = await savePhysical();
+
+  // LA1 — ANSWER_TO_EVIDENCE_QUESTION with hedged numeric ("Asi 7 hodin")
+  // Simulates the live bug: session has pending_question + last_daily_decision from a prior
+  // ZERO_DATA_FOLLOWUP turn (ASK_BLOCKING, primary_item=null). Engine profile is minimal
+  // so engine still returns INSUFFICIENT_MODEL/ASK_BLOCKING after the answer is persisted.
+  const seeded = { ...(savedPhysical ?? {}), sedentary_hours_day: null };
+  await sb.from('user_health_profile').upsert({ user_id: USER_ID, physical: seeded }, { onConflict: 'user_id' });
+
+  const sessionWithPendingSedentary = {
+    pending_question: {
+      text:          'Přibližně kolik hodin za běžný den prosedíš?',
+      evidence_type: 'sedentary_hours_day',
+      type:          'GENERAL',
+    },
+    last_daily_decision: {
+      mode:         'ASK',
+      reason_code:  'ASK_BLOCKING',
+      primary_item: null,
+    },
+  };
+
+  const rLA1 = await processInput(USER_ID, 'Asi 7 hodin', sessionWithPendingSedentary);
+  console.log('\n  [LA1 — "Asi 7 hodin" with pending sedentary question + prior ASK_BLOCKING]');
+  showResponse(rLA1);
+
+  check(rLA1.debug?.reason_code !== 'ZERO_DATA_FOLLOWUP',
+    'LA1: ZERO_DATA_FOLLOWUP does NOT fire on ANSWER_TO_EVIDENCE_QUESTION turn',
+    `actual reason_code: ${rLA1.debug?.reason_code}`);
+
+  const pendingLA1 = rLA1.session_updates?.pending_question;
+  check(pendingLA1?.evidence_type !== 'sedentary_hours_day',
+    'LA1: sedentary_hours_day question NOT set in pending_question after answer',
+    `actual pending evidence_type: ${pendingLA1?.evidence_type ?? 'null'}`);
+
+  const { data: afterLA1 } = await sb.from('user_health_profile')
+    .select('physical').eq('user_id', USER_ID).maybeSingle();
+  const storedLA1 = parseFloat(String(afterLA1?.physical?.sedentary_hours_day ?? ''));
+  check(!isNaN(storedLA1) && storedLA1 > 0,
+    'LA1: physical.sedentary_hours_day written despite ZERO_DATA_FOLLOWUP guard change',
+    `actual: ${afterLA1?.physical?.sedentary_hours_day}`);
+
+  check(rLA1.mode !== undefined && rLA1.text && rLA1.text.length > 0,
+    'LA1: response is non-empty (mode + text present)',
+    `mode: ${rLA1.mode}, text length: ${rLA1.text?.length ?? 0}`);
+
+  // LA2 — ZERO_DATA_FOLLOWUP still fires for non-answer second zero-data turn (original intent)
+  // Simulate: two consecutive DOMAIN_REQUEST turns both hit ASK_BLOCKING with no primary_item.
+  // The second turn must still trigger ZERO_DATA_FOLLOWUP (guard must not be over-suppressed).
+  const sessionConsecutiveAskBlocking = {
+    pending_question: null,
+    last_daily_decision: {
+      mode:         'ASK',
+      reason_code:  'ASK_BLOCKING',
+      primary_item: null,
+    },
+  };
+
+  // Use a minimal seed so engine stays INSUFFICIENT_MODEL
+  const minimalSeeded = { sedentary_hours_day: null };
+  await sb.from('user_health_profile').upsert({ user_id: USER_ID, physical: minimalSeeded }, { onConflict: 'user_id' });
+
+  const rLA2 = await processInput(USER_ID, 'Co mám dělat?', sessionConsecutiveAskBlocking);
+  console.log('\n  [LA2 — non-answer second zero-data turn → ZERO_DATA_FOLLOWUP must still fire]');
+  showResponse(rLA2);
+
+  check(rLA2.debug?.reason_code === 'ZERO_DATA_FOLLOWUP',
+    'LA2: ZERO_DATA_FOLLOWUP fires for consecutive non-answer ASK_BLOCKING turns (original intent preserved)',
+    `actual reason_code: ${rLA2.debug?.reason_code}`);
+  check(rLA2.session_updates?.pending_question?.evidence_type === 'sedentary_hours_day',
+    'LA2: pending_question set to sedentary_hours_day for non-answer followup',
+    `actual: ${rLA2.session_updates?.pending_question?.evidence_type ?? 'null'}`);
+
+  await restorePhysical(savedPhysical);
+  console.log('  state restored ✓');
+}
+
 // ── Scenario M — WHY presentation contract: ACT → WHY → buttons preserved ────
 //
 // Regression: buildWhyResponse returned buttons:[] unconditionally.
@@ -3045,6 +3138,7 @@ async function main() {
     await scenarioJ();
     scenarioK();
     await scenarioL();
+    await scenarioLA();
     await scenarioM();
     await scenarioN();
     await scenarioO();
