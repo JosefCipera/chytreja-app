@@ -71,6 +71,7 @@ export async function runTesterReset(userId, mode, sbClient) {
     .update({
       diagnoses: null, symptoms: null, medications: null, labs: null,
       physical: null, lifestyle: null, behavior_flags: null, crt_cache: null,
+      pending_clarifications: null,
     })
     .eq('user_id', userId);
   if (hErr) return { status: 500, body: { error: `user_health_profile: ${hErr.message}` } };
