@@ -19,7 +19,8 @@ function lexRank(a, b) {
   return diff(URGENCY_RANK, 'urgency')
       || diff(IMPACT_RANK,  'decision_impact')
       || diff(UNCERT_RANK,  'uncertainty_reduction')
-      || diff(COST_RANK,    'acquisition_cost');
+      || diff(COST_RANK,    'acquisition_cost')
+      || (a.priority ?? 999) - (b.priority ?? 999);
 }
 
 function buildExpectedEffect(best, nodeStates, projections) {

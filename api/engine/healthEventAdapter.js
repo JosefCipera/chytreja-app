@@ -115,6 +115,12 @@ export const EVIDENCE_STORAGE_REGISTRY = {
   // Actual wearable data integration is out of scope for dialog flow (v0.4+).
   steps_day:               { table: 'physical', key: null, tracks_availability: true, evidence_kind: 'AVAILABILITY_ONLY' },
   temporal_activity_trend: { table: 'physical', key: null, tracks_availability: true, evidence_kind: 'DERIVED' },
+
+  // ── Bootstrap PROFILE evidence → user_profiles ────────────────────────────
+  // Narrow unlock: structured ANSWER_TO_EVIDENCE_QUESTION path for bootstrap questions.
+  // write_if_null_only: true — never overwrite an existing birth_year.
+  // transform: 'age_to_birth_year' — converts age answer (e.g. 58) → birth year (e.g. 1968).
+  birth_year: { table: 'user_profiles', key: 'birth_year', write_if_null_only: true, transform: 'age_to_birth_year' },
 };
 
 // ── Body region normalization ─────────────────────────────────────────────────
@@ -273,6 +279,25 @@ async function upsertConstraint(supabase, userId, constraintKey, severity, const
   return null;
 }
 
+// UPSERT into user_profiles — only writes when the target field is currently null.
+// Narrow unlock: supports birth_year structured bootstrap answer.
+// Never overwrites existing data (write_if_null_only contract).
+async function upsertUserProfile(supabase, userId, key, value) {
+  const { data: row, error: readErr } = await supabase
+    .from('user_profiles')
+    .select(key)
+    .eq('user_id', userId)
+    .maybeSingle();
+  if (readErr) throw new Error(`upsertUserProfile read: ${readErr.message}`);
+  if (row?.[key] != null) return null; // already set — do not overwrite
+  const { error } = await supabase
+    .from('user_profiles')
+    .update({ [key]: value })
+    .eq('user_id', userId);
+  if (error) throw new Error(`upsertUserProfile write: ${error.message}`);
+  return null;
+}
+
 // INSERT into action_assignments
 async function persistActionAssignment(supabase, userId, payload, status) {
   if (!payload.action_id)        throw new Error('ACTION event: missing action_id');
@@ -325,6 +350,19 @@ async function routeAnswer(supabase, userId, payload) {
     case 'constraints': return upsertConstraint(supabase, userId, entry.key, value, 'injury');
     case 'daily_checkin': return upsertDailyCheckin(supabase, userId, entry.key, value);
     case 'labs':        return upsertLab(supabase, userId, entry.key, value);
+    case 'user_profiles': {
+      // Narrow unlock: supports bootstrap evidence_types that write to user_profiles.
+      // Currently: birth_year only (transform: age_to_birth_year).
+      let finalValue = value;
+      if (entry.transform === 'age_to_birth_year') {
+        const age = parseInt(String(value ?? '').replace(',', '.').trim(), 10);
+        if (isNaN(age) || age < 10 || age > 120) {
+          return `ANSWER: birth_year transform failed — invalid age '${value}'`;
+        }
+        finalValue = new Date().getFullYear() - age;
+      }
+      return upsertUserProfile(supabase, userId, entry.key, finalValue);
+    }
     default:            return `ANSWER: no persist handler for table '${entry.table}'`;
   }
 }

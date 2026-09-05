@@ -1034,9 +1034,11 @@ async function scenarioLA() {
     'LA1: response is non-empty (mode + text present)',
     `mode: ${rLA1.mode}, text length: ${rLA1.text?.length ?? 0}`);
 
-  // LA2 — ZERO_DATA_FOLLOWUP still fires for non-answer second zero-data turn (original intent)
-  // Simulate: two consecutive DOMAIN_REQUEST turns both hit ASK_BLOCKING with no primary_item.
-  // The second turn must still trigger ZERO_DATA_FOLLOWUP (guard must not be over-suppressed).
+  // LA2 — Second zero-data turn: BOOTSTRAP takes over (supersedes ZERO_DATA_FOLLOWUP)
+  // BOOTSTRAP V1 fires whenever node_states=[] — it synthesizes a gate and selects the
+  // first bootstrap question (birth_year). The ZERO_DATA_FOLLOWUP guard cannot fire
+  // because BOOTSTRAP always sets pending_question (guard condition requires !pending_question).
+  // Updated: asserts BOOTSTRAP behavior instead of old ZERO_DATA_FOLLOWUP behavior.
   const sessionConsecutiveAskBlocking = {
     pending_question: null,
     last_daily_decision: {
@@ -1046,20 +1048,20 @@ async function scenarioLA() {
     },
   };
 
-  // Use a minimal seed so engine stays INSUFFICIENT_MODEL
+  // Use a minimal seed so engine has no clinical node_states → BOOTSTRAP fires
   const minimalSeeded = { sedentary_hours_day: null };
   await sb.from('user_health_profile').upsert({ user_id: USER_ID, physical: minimalSeeded }, { onConflict: 'user_id' });
 
   const rLA2 = await processInput(USER_ID, 'Co mám dělat?', sessionConsecutiveAskBlocking);
-  console.log('\n  [LA2 — non-answer second zero-data turn → ZERO_DATA_FOLLOWUP must still fire]');
+  console.log('\n  [LA2 — second zero-data turn → BOOTSTRAP fires (birth_year), not ZERO_DATA_FOLLOWUP]');
   showResponse(rLA2);
 
-  check(rLA2.debug?.reason_code === 'ZERO_DATA_FOLLOWUP',
-    'LA2: ZERO_DATA_FOLLOWUP fires for consecutive non-answer ASK_BLOCKING turns (original intent preserved)',
+  check(rLA2.debug?.reason_code !== 'ZERO_DATA_FOLLOWUP',
+    'LA2: ZERO_DATA_FOLLOWUP does NOT fire — BOOTSTRAP has pending_question (guard condition false)',
     `actual reason_code: ${rLA2.debug?.reason_code}`);
-  check(rLA2.session_updates?.pending_question?.evidence_type === 'sedentary_hours_day',
-    'LA2: pending_question set to sedentary_hours_day for non-answer followup',
-    `actual: ${rLA2.session_updates?.pending_question?.evidence_type ?? 'null'}`);
+  check(rLA2.mode === 'ASK',
+    'LA2: mode = ASK (BOOTSTRAP question selected)',
+    `actual: ${rLA2.mode}`);
 
   await restorePhysical(savedPhysical);
   console.log('  state restored ✓');
@@ -2600,14 +2602,18 @@ function scenarioZ() {
 // Regression: before fix, warnings (undefined in processInput scope) crashed server.
 
 async function scenarioZReal() {
-  sep('Z-real — ZERO_DATA_FOLLOWUP: real processInput() must not throw (regression)');
+  sep('Z-real — BOOTSTRAP fires after functional NBE exhausted: processInput() must not throw');
+
+  // Original purpose: verify processInput() does not crash when ZERO_DATA_FOLLOWUP guard fires.
+  // Updated: BOOTSTRAP V1 now fires for zero-data users (node_states=[]) instead of
+  // ZERO_DATA_FOLLOWUP. After exhausting functional evidence, birth_year is still a
+  // valid BOOTSTRAP candidate (stored in user_profiles, not physical) → BOOTSTRAP fires.
+  // Contract retained: processInput() must not throw, and the response must be well-formed.
 
   const UID = `test-zdf-regression-${Date.now()}`;
-  const SED_TEXT = 'Přibližně kolik hodin za běžný den prosedíš?';
 
   try {
-    // Step 1: exhaust all engine NBE gates with positive answers so pickBestNbe() → null
-    // Sequence determined empirically: each answer opens the next gate until open_gates=0.
+    // Step 1: exhaust functional NBE gates with positive answers (same sequence as before)
     const evidenceChain = [
       { evidence_type: 'validated_strength_assessment', value: 'ano' },
       { evidence_type: 'temporal_activity_trend',       value: 'stable' },
@@ -2618,8 +2624,7 @@ async function scenarioZReal() {
       await applyHealthEvent(UID, { event_type: 'ANSWER_TO_EVIDENCE_QUESTION', payload: ans });
     }
 
-    // Step 2: call processInput() with session state simulating a previous zero-data ASK.
-    // Guard condition: both current AND previous turn are zero-data ASK_BLOCKING.
+    // Step 2: call processInput() — BOOTSTRAP fires with birth_year question
     const prevZeroDataDD = { mode: 'ASK', reason_code: 'ASK_BLOCKING', primary_item: null };
     let r;
     let threw = false;
@@ -2629,6 +2634,7 @@ async function scenarioZReal() {
         last_daily_decision: prevZeroDataDD,
         question_budget_remaining: 2,
         pending_clarifications:   [],
+        person_birth_year:         null,
       });
     } catch (e) {
       threw = true;
@@ -2636,20 +2642,20 @@ async function scenarioZReal() {
     }
 
     if (!threw) {
-      check(r.debug?.reason_code === 'ZERO_DATA_FOLLOWUP',
-        'Z-real1: reason_code=ZERO_DATA_FOLLOWUP (guard fired, fixed line executed)',
+      check(r.debug?.reason_code !== 'ZERO_DATA_FOLLOWUP',
+        'Z-real1: BOOTSTRAP fires instead of ZERO_DATA_FOLLOWUP (node_states=[], birth_year still a candidate)',
         `actual: "${r.debug?.reason_code}"`);
       check(r.mode === 'ASK',
         'Z-real2: mode=ASK',
         `actual: "${r.mode}"`);
-      check(r.text === SED_TEXT,
-        'Z-real3: text is sedentary_hours_day question',
+      check(r.text === 'Kolik ti je let?',
+        'Z-real3: text is bootstrap birth_year question (BOOTSTRAP took over from ZERO_DATA_FOLLOWUP)',
         `actual: "${r.text?.slice(0, 80)}"`);
-      check(r.session_updates?.pending_question?.evidence_type === 'sedentary_hours_day',
-        'Z-real4: pending_question.evidence_type=sedentary_hours_day',
+      check(r.session_updates?.pending_question?.evidence_type === 'birth_year',
+        'Z-real4: pending_question.evidence_type=birth_year (BOOTSTRAP)',
         `actual: "${r.session_updates?.pending_question?.evidence_type}"`);
       check(r.session_updates?.question_budget_remaining === 1,
-        'Z-real5: budget decremented from 2 to 1 (question costs one slot)',
+        'Z-real5: budget decremented from 2 to 1 (BOOTSTRAP ASK costs one slot)',
         `actual: ${r.session_updates?.question_budget_remaining}`);
       check(r.expects_reply === true,
         'Z-real6: expects_reply=true',
@@ -3113,6 +3119,591 @@ async function scenarioSCStability() {
   }
 }
 
+// ── Bootstrap scenarios (BS-A … BS-E) ────────────────────────────────────────
+//
+// Verify the BOOTSTRAP NBE V1 loop that replaces hardcoded zero-data onboarding.
+//
+// BS-A: clean ephemeral user + longevity goal → first response = "Kolik ti je let?"
+//        NOT the generic "Zatím o tobě vím málo..." fallback
+// BS-B: answer "58" → birth_year persisted → age question not repeated next turn
+// BS-C: user_profiles.birth_year already set → age question skipped on first turn
+// BS-D: "Nechci uvést." → age deferred → next bootstrap question immediately →
+//        budget NOT decremented
+// BS-E: real clinical node/context exists → BOOTSTRAP absent → normal NBE/NBA
+
+async function scenarioBS_A() {
+  sep('BS-A — clean user + longevity goal → first response is "Kolik ti je let?" (BOOTSTRAP)');
+
+  const UID = `test-bootstrap-a-${Date.now()}`;
+  try {
+    // Ensure user exists in user_health_profile (empty) and user_profiles (no birth_year)
+    await sb.from('user_health_profile').upsert(
+      { user_id: UID, diagnoses: [], symptoms: [], medications: [], labs: [], physical: {}, lifestyle: {} },
+      { onConflict: 'user_id' }
+    );
+    await sb.from('user_profiles').upsert(
+      { user_id: UID, birth_year: null },
+      { onConflict: 'user_id' }
+    );
+
+    const r = await processInput(UID, 'Nevím. Chtěl bych hlavně zůstat co nejdéle zdravý.', {
+      pending_question:          null,
+      current_action_assignment: null,
+      question_budget_remaining: 3,
+      pending_clarifications:    [],
+      last_daily_decision:       null,
+      last_domain_response:      null,
+      person_birth_year:         null,
+    });
+    console.log('\n  [BS-A response]');
+    showResponse(r);
+
+    check(r.mode === 'ASK',
+      'BS-A1: mode = ASK',
+      `actual: ${r.mode}`);
+    check(r.text === 'Kolik ti je let?',
+      'BS-A2: text = "Kolik ti je let?" (birth_year bootstrap question)',
+      `actual: "${r.text}"`);
+    check(r.session_updates?.pending_question?.evidence_type === 'birth_year',
+      'BS-A3: pending_question.evidence_type = birth_year',
+      `actual: ${r.session_updates?.pending_question?.evidence_type}`);
+    check(r.session_updates?.pending_question?.type === 'BOOTSTRAP',
+      'BS-A4: pending_question.type = BOOTSTRAP',
+      `actual: ${r.session_updates?.pending_question?.type}`);
+    check(r.expects_reply === true,
+      'BS-A5: expects_reply = true',
+      `actual: ${r.expects_reply}`);
+
+    const GENERIC_FALLBACK = 'Zatím o tobě vím málo';
+    check(!r.text.includes(GENERIC_FALLBACK),
+      'BS-A6: response does NOT contain generic fallback text',
+      `actual: "${r.text?.slice(0, 80)}"`);
+    check(r.debug?.reason_code !== 'ZERO_DATA_FOLLOWUP',
+      'BS-A7: ZERO_DATA_FOLLOWUP guard was NOT triggered (bypassed by BOOTSTRAP)',
+      `actual reason_code: ${r.debug?.reason_code}`);
+  } finally {
+    await sb.from('user_health_profile').delete().eq('user_id', UID);
+    await sb.from('user_profiles').delete().eq('user_id', UID);
+  }
+}
+
+async function scenarioBS_B() {
+  sep('BS-B — answer "58" → birth_year persisted → age question not repeated next turn');
+
+  const UID = `test-bootstrap-b-${Date.now()}`;
+  try {
+    await sb.from('user_health_profile').upsert(
+      { user_id: UID, diagnoses: [], symptoms: [], medications: [], labs: [], physical: {}, lifestyle: {} },
+      { onConflict: 'user_id' }
+    );
+    await sb.from('user_profiles').upsert(
+      { user_id: UID, birth_year: null },
+      { onConflict: 'user_id' }
+    );
+
+    // Session state: pending bootstrap question for birth_year
+    const sessionWithBootstrapQ = {
+      pending_question: { text: 'Kolik ti je let?', evidence_type: 'birth_year', type: 'BOOTSTRAP' },
+      current_action_assignment: null,
+      question_budget_remaining: 3,
+      pending_clarifications:    [],
+      last_daily_decision:       null,
+      last_domain_response:      null,
+      person_birth_year:         null,
+    };
+
+    // BS-B1: answer "58" → birth_year persisted
+    const r1 = await processInput(UID, '58', sessionWithBootstrapQ);
+    console.log('\n  [BS-B1 — answer "58"]');
+    showResponse(r1);
+
+    // Verify DB write
+    const { data: profile } = await sb.from('user_profiles').select('birth_year').eq('user_id', UID).maybeSingle();
+    const expectedYear = new Date().getFullYear() - 58;
+    check(profile?.birth_year === expectedYear,
+      `BS-B1: birth_year persisted to user_profiles (expected ${expectedYear})`,
+      `actual: ${profile?.birth_year}`);
+
+    // BS-B2: next response is NOT "Kolik ti je let?" again
+    check(r1.session_updates?.pending_question?.evidence_type !== 'birth_year',
+      'BS-B2: pending_question.evidence_type is NOT birth_year after answer (no repeat)',
+      `actual: ${r1.session_updates?.pending_question?.evidence_type}`);
+    check(r1.text !== 'Kolik ti je let?',
+      'BS-B3: response text is NOT "Kolik ti je let?" (age question not repeated)',
+      `actual: "${r1.text?.slice(0, 80)}"`);
+    check(r1.mode !== null && r1.mode !== undefined,
+      'BS-B4: response has a valid mode',
+      `actual: ${r1.mode}`);
+  } finally {
+    await sb.from('user_health_profile').delete().eq('user_id', UID);
+    await sb.from('user_profiles').delete().eq('user_id', UID);
+  }
+}
+
+async function scenarioBS_C() {
+  sep('BS-C — birth_year already known → age question skipped on first turn');
+
+  const UID = `test-bootstrap-c-${Date.now()}`;
+  try {
+    // User with known birth_year (1966)
+    await sb.from('user_health_profile').upsert(
+      { user_id: UID, diagnoses: [], symptoms: [], medications: [], labs: [], physical: {}, lifestyle: {} },
+      { onConflict: 'user_id' }
+    );
+    await sb.from('user_profiles').upsert(
+      { user_id: UID, birth_year: 1966 },
+      { onConflict: 'user_id' }
+    );
+
+    const r = await processInput(UID, 'Chci zůstat co nejdéle zdravý.', {
+      pending_question:          null,
+      current_action_assignment: null,
+      question_budget_remaining: 3,
+      pending_clarifications:    [],
+      last_daily_decision:       null,
+      last_domain_response:      null,
+      person_birth_year:         1966,  // injected by orchestrate.js server-side
+    });
+    console.log('\n  [BS-C response]');
+    showResponse(r);
+
+    check(r.text !== 'Kolik ti je let?',
+      'BS-C1: response is NOT "Kolik ti je let?" (skip_if_known fired for known birth_year)',
+      `actual: "${r.text?.slice(0, 80)}"`);
+    check(r.session_updates?.pending_question?.evidence_type !== 'birth_year',
+      'BS-C2: pending_question.evidence_type is NOT birth_year',
+      `actual: ${r.session_updates?.pending_question?.evidence_type}`);
+    check(r.mode === 'ASK',
+      'BS-C3: still asks — a different bootstrap question is selected',
+      `actual: ${r.mode}`);
+  } finally {
+    await sb.from('user_health_profile').delete().eq('user_id', UID);
+    await sb.from('user_profiles').delete().eq('user_id', UID);
+  }
+}
+
+async function scenarioBS_D() {
+  sep('BS-D — "Nechci uvést." → age deferred → next bootstrap question → budget unchanged');
+
+  const UID = `test-bootstrap-d-${Date.now()}`;
+  try {
+    await sb.from('user_health_profile').upsert(
+      { user_id: UID, diagnoses: [], symptoms: [], medications: [], labs: [], physical: {}, lifestyle: {} },
+      { onConflict: 'user_id' }
+    );
+    await sb.from('user_profiles').upsert(
+      { user_id: UID, birth_year: null },
+      { onConflict: 'user_id' }
+    );
+
+    const BUDGET_BEFORE = 3;
+    const sessionWithBootstrapQ = {
+      pending_question: { text: 'Kolik ti je let?', evidence_type: 'birth_year', type: 'BOOTSTRAP' },
+      current_action_assignment: null,
+      question_budget_remaining: BUDGET_BEFORE,
+      pending_clarifications:    [],
+      last_daily_decision:       null,
+      last_domain_response:      null,
+      person_birth_year:         null,
+    };
+
+    const r = await processInput(UID, 'Nechci uvést.', sessionWithBootstrapQ);
+    console.log('\n  [BS-D response — "Nechci uvést."]');
+    showResponse(r);
+
+    // Birth_year must NOT be persisted (refusal, not answer)
+    const { data: profile } = await sb.from('user_profiles').select('birth_year').eq('user_id', UID).maybeSingle();
+    check(profile?.birth_year == null,
+      'BS-D1: birth_year NOT persisted after refusal',
+      `actual: ${profile?.birth_year}`);
+
+    check(r.mode === 'ASK',
+      'BS-D2: mode = ASK (next bootstrap question returned immediately)',
+      `actual: ${r.mode}`);
+    check(r.session_updates?.pending_question?.evidence_type !== 'birth_year',
+      'BS-D3: pending_question.evidence_type is NOT birth_year (deferred, not repeated)',
+      `actual: ${r.session_updates?.pending_question?.evidence_type}`);
+    check(r.session_updates?.pending_question?.type === 'BOOTSTRAP',
+      'BS-D4: next pending_question.type = BOOTSTRAP',
+      `actual: ${r.session_updates?.pending_question?.type}`);
+
+    // Budget must NOT be decremented for a refusal
+    const budgetAfter = r.session_updates?.question_budget_remaining ?? BUDGET_BEFORE;
+    check(budgetAfter === BUDGET_BEFORE,
+      `BS-D5: question_budget_remaining unchanged after refusal (${BUDGET_BEFORE} → ${budgetAfter})`,
+      `actual: ${budgetAfter}`);
+
+    check(r.debug?.reason_code === 'BOOTSTRAP_SKIP_NEXT',
+      'BS-D6: reason_code = BOOTSTRAP_SKIP_NEXT (early return via skip/defer path)',
+      `actual: ${r.debug?.reason_code}`);
+    check(r.debug?.skipped === 'birth_year',
+      'BS-D7: debug.skipped = birth_year',
+      `actual: ${r.debug?.skipped}`);
+  } finally {
+    await sb.from('user_health_profile').delete().eq('user_id', UID);
+    await sb.from('user_profiles').delete().eq('user_id', UID);
+  }
+}
+
+async function scenarioBS_E() {
+  sep('BS-E — real clinical node exists → BOOTSTRAP absent → normal NBE/NBA active');
+
+  const UID = `test-bootstrap-e-${Date.now()}`;
+  try {
+    // Seed HYPERTENSION clinical node by adding a diagnosis
+    await sb.from('user_health_profile').upsert(
+      {
+        user_id:     UID,
+        diagnoses:   ['HYPERTENSION'],
+        symptoms:    [],
+        medications: [],
+        labs:        [],
+        physical:    { sedentary_hours_day: 8, steps_day: 4000 },
+        lifestyle:   {},
+      },
+      { onConflict: 'user_id' }
+    );
+    await sb.from('user_profiles').upsert(
+      { user_id: UID, birth_year: null },
+      { onConflict: 'user_id' }
+    );
+
+    const r = await processInput(UID, 'Chci zůstat zdravý.', {
+      pending_question:          null,
+      current_action_assignment: null,
+      question_budget_remaining: 3,
+      pending_clarifications:    [],
+      last_daily_decision:       null,
+      last_domain_response:      null,
+      person_birth_year:         null,
+    });
+    console.log('\n  [BS-E response — clinical node HYPERTENSION seeded]');
+    showResponse(r);
+
+    // With clinical context, BOOTSTRAP should not fire — engine has real node_states
+    check(r.text !== 'Kolik ti je let?',
+      'BS-E1: response is NOT "Kolik ti je let?" (BOOTSTRAP bypassed — clinical context active)',
+      `actual: "${r.text?.slice(0, 80)}"`);
+    check(r.debug?.reason_code !== 'BOOTSTRAP_SKIP_NEXT',
+      'BS-E2: reason_code is NOT BOOTSTRAP_SKIP_NEXT (normal pipeline)',
+      `actual: ${r.debug?.reason_code}`);
+
+    // Engine result for this user should have node_states (not empty)
+    const engineResult = await import('../api/engine/engine.js');
+    const eng = await engineResult.runEngine(UID);
+    const hasNodeStates = eng.node_states?.length > 0;
+    check(hasNodeStates,
+      'BS-E3: engine produces non-empty node_states for user with HYPERTENSION diagnosis',
+      `actual node_states count: ${eng.node_states?.length ?? 0}`);
+
+    // Mode should be one of the normal modes (ACT, ASK, HOLD)
+    check(['ACT', 'ASK', 'HOLD'].includes(r.mode),
+      `BS-E4: mode is a normal mode (ACT/ASK/HOLD) — not a BOOTSTRAP error`,
+      `actual: ${r.mode}`);
+  } finally {
+    await sb.from('user_health_profile').delete().eq('user_id', UID);
+    await sb.from('user_profiles').delete().eq('user_id', UID);
+    await sb.from('action_assignments').delete().eq('user_id', UID);
+  }
+}
+
+// ── Bootstrap clinical_context scenarios (BS-CC1 … BS-CC5) ────────────────────
+//
+// BS-CC1: known birth_year (age ~58), no diagnoses → first bootstrap = clinical_context
+//         (NOT a functional question) — clinical_context urgency=high beats functional medium
+// BS-CC2: clinical_context answer "Mám vysoký tlak" → HYPERTENSION extracted to diagnoses
+//         → engine now has clinical nodes → no longer pure BOOTSTRAP mode
+// BS-CC3: clinical_context answer "Ne." → no diagnoses persisted, clinical_context
+//         session-resolved via skipped_bootstrap_types → next question is functional
+// BS-CC4: "nevím" to clinical_context → BOOTSTRAP_REFUSAL_RE defer → next bootstrap
+//         → budget NOT decremented
+// BS-CC5: age 82 (both clinical_context and recent_falls boosted to high urgency)
+//         → clinical_context wins on priority=2 < recent_falls priority=3 (tie-break)
+
+async function scenarioBS_CC1() {
+  sep('BS-CC1 — known birth_year (age~58), no diagnoses → bootstrap = clinical_context question');
+
+  const currentYear = new Date().getFullYear();
+  const birthYear58 = currentYear - 58;
+  const UID = `test-bootstrap-cc1-${Date.now()}`;
+  try {
+    await sb.from('user_health_profile').upsert(
+      { user_id: UID, diagnoses: [], symptoms: [], medications: [], labs: {}, physical: {}, lifestyle: {} },
+      { onConflict: 'user_id' }
+    );
+    await sb.from('user_profiles').upsert(
+      { user_id: UID, birth_year: birthYear58 },
+      { onConflict: 'user_id' }
+    );
+
+    const r = await processInput(UID, 'Chci zůstat co nejdéle zdravý.', {
+      pending_question:          null,
+      current_action_assignment: null,
+      question_budget_remaining: 3,
+      pending_clarifications:    [],
+      last_daily_decision:       null,
+      last_domain_response:      null,
+      person_birth_year:         birthYear58,
+    });
+    console.log('\n  [BS-CC1 response]');
+    showResponse(r);
+
+    check(r.mode === 'ASK',
+      'BS-CC1-1: mode = ASK',
+      `actual: ${r.mode}`);
+    check(r.session_updates?.pending_question?.evidence_type === 'clinical_context',
+      'BS-CC1-2: pending_question.evidence_type = clinical_context (not a functional question)',
+      `actual: ${r.session_updates?.pending_question?.evidence_type}`);
+    check(r.session_updates?.pending_question?.type === 'BOOTSTRAP',
+      'BS-CC1-3: pending_question.type = BOOTSTRAP',
+      `actual: ${r.session_updates?.pending_question?.type}`);
+    check(r.text?.includes('léčíš') || r.text?.includes('bereš') || r.text?.includes('léky'),
+      'BS-CC1-4: response text contains clinical_context question text',
+      `actual: "${r.text?.slice(0, 100)}"`);
+  } finally {
+    await sb.from('user_health_profile').delete().eq('user_id', UID);
+    await sb.from('user_profiles').delete().eq('user_id', UID);
+  }
+}
+
+async function scenarioBS_CC2() {
+  sep('BS-CC2 — answer "Mám vysoký tlak" → HYPERTENSION in diagnoses → engine runs with clinical context');
+
+  const currentYear = new Date().getFullYear();
+  const birthYear58 = currentYear - 58;
+  const UID = `test-bootstrap-cc2-${Date.now()}`;
+  try {
+    await sb.from('user_health_profile').upsert(
+      { user_id: UID, diagnoses: [], symptoms: [], medications: [], labs: {}, physical: {}, lifestyle: {} },
+      { onConflict: 'user_id' }
+    );
+    await sb.from('user_profiles').upsert(
+      { user_id: UID, birth_year: birthYear58 },
+      { onConflict: 'user_id' }
+    );
+
+    const sessionWithClinicalQ = {
+      pending_question:          { text: 'Léčíš se s něčím nebo bereš pravidelně nějaké léky?', evidence_type: 'clinical_context', type: 'BOOTSTRAP' },
+      current_action_assignment: null,
+      question_budget_remaining: 3,
+      pending_clarifications:    [],
+      last_daily_decision:       null,
+      last_domain_response:      null,
+      person_birth_year:         birthYear58,
+    };
+
+    const r = await processInput(UID, 'Mám vysoký tlak.', sessionWithClinicalQ);
+    console.log('\n  [BS-CC2 response]');
+    showResponse(r);
+
+    // Verify HYPERTENSION was extracted and persisted
+    const { data: hp } = await sb.from('user_health_profile').select('diagnoses').eq('user_id', UID).maybeSingle();
+    const diagIds = (hp?.diagnoses ?? []).map(d => typeof d === 'string' ? d : d?.name);
+    check(diagIds.includes('HYPERTENSION'),
+      'BS-CC2-1: HYPERTENSION persisted to diagnoses via existing free-text extractor',
+      `actual diagnoses: ${JSON.stringify(diagIds)}`);
+
+    check(r.mode !== null && r.mode !== undefined,
+      'BS-CC2-2: response has a valid mode (engine ran and produced a decision)',
+      `actual: ${r.mode}`);
+    check(r.session_updates?.pending_question?.evidence_type !== 'clinical_context',
+      'BS-CC2-3: clinical_context NOT re-asked (answered turn is cleared)',
+      `actual: ${r.session_updates?.pending_question?.evidence_type}`);
+  } finally {
+    await sb.from('user_health_profile').delete().eq('user_id', UID);
+    await sb.from('user_profiles').delete().eq('user_id', UID);
+    await sb.from('action_assignments').delete().eq('user_id', UID);
+  }
+}
+
+async function scenarioBS_CC3() {
+  sep('BS-CC3 — "Ne." → NO DB writes (no symptom/diagnosis/medication) → session-resolved → next functional question');
+
+  const currentYear = new Date().getFullYear();
+  const birthYear58 = currentYear - 58;
+  const UID = `test-bootstrap-cc3-${Date.now()}`;
+  const BUDGET_BEFORE = 3;
+  try {
+    await sb.from('user_health_profile').upsert(
+      { user_id: UID, diagnoses: [], symptoms: [], medications: [], labs: {}, physical: {}, lifestyle: {} },
+      { onConflict: 'user_id' }
+    );
+    await sb.from('user_profiles').upsert(
+      { user_id: UID, birth_year: birthYear58 },
+      { onConflict: 'user_id' }
+    );
+
+    const sessionWithClinicalQ = {
+      pending_question:          { text: 'Léčíš se s něčím nebo bereš pravidelně nějaké léky?', evidence_type: 'clinical_context', type: 'BOOTSTRAP' },
+      current_action_assignment: null,
+      question_budget_remaining: BUDGET_BEFORE,
+      pending_clarifications:    [],
+      last_daily_decision:       null,
+      last_domain_response:      null,
+      person_birth_year:         birthYear58,
+      skipped_bootstrap_types:   [],
+    };
+
+    const r = await processInput(UID, 'Ne.', sessionWithClinicalQ);
+    console.log('\n  [BS-CC3 response]');
+    showResponse(r);
+
+    // ── PRIMARY REGRESSION: NO DB writes ───────────────────────────────────────
+    const { data: hp } = await sb.from('user_health_profile')
+      .select('diagnoses, symptoms, medications')
+      .eq('user_id', UID).maybeSingle();
+
+    const diagIds  = (hp?.diagnoses   ?? []).map(d => typeof d === 'string' ? d : d?.name).filter(Boolean);
+    const symptoms = hp?.symptoms  ?? [];
+    const meds     = hp?.medications ?? [];
+
+    check(diagIds.length === 0,
+      'BS-CC3-1a: no diagnoses persisted after "Ne." (no DB write)',
+      `actual diagnoses: ${JSON.stringify(diagIds)}`);
+    check(symptoms.length === 0,
+      'BS-CC3-1b: no symptoms persisted after "Ne." (no DB write) — "Ne." must NOT appear in symptoms',
+      `actual symptoms: ${JSON.stringify(symptoms)}`);
+    check(meds.length === 0,
+      'BS-CC3-1c: no medications persisted after "Ne." (no DB write)',
+      `actual medications: ${JSON.stringify(meds)}`);
+
+    // ── Session state ──────────────────────────────────────────────────────────
+    check(r.session_updates?.pending_question?.evidence_type !== 'clinical_context',
+      'BS-CC3-2: clinical_context NOT re-asked after "Ne."',
+      `actual: ${r.session_updates?.pending_question?.evidence_type}`);
+
+    const skipped = r.session_updates?.skipped_bootstrap_types ?? [];
+    check(skipped.includes('clinical_context'),
+      'BS-CC3-3: clinical_context in skipped_bootstrap_types (session-resolved)',
+      `actual skipped: ${JSON.stringify(skipped)}`);
+
+    check(r.mode === 'ASK',
+      'BS-CC3-4: mode = ASK (next bootstrap question)',
+      `actual: ${r.mode}`);
+
+    const nextType = r.session_updates?.pending_question?.evidence_type;
+    const functionalTypes = ['recent_falls', 'vstat_ze_zeme', 'gait_stability', 'vynest_nakup'];
+    check(functionalTypes.includes(nextType),
+      `BS-CC3-5: next question is a functional bootstrap candidate (one of ${functionalTypes.join('/')})`,
+      `actual: ${nextType}`);
+
+    // Budget decrements — "Ne." is a definitive answer, not a skip/defer
+    const budgetAfter = r.session_updates?.question_budget_remaining ?? BUDGET_BEFORE;
+    check(budgetAfter === BUDGET_BEFORE - 1,
+      `BS-CC3-6: budget decremented (expected ${BUDGET_BEFORE - 1}, got ${budgetAfter})`,
+      `actual: ${budgetAfter}`);
+
+    // reason_code confirms the early-return path (no engine call)
+    check(r.debug?.reason_code === 'BOOTSTRAP_CLINICAL_NEGATIVE',
+      'BS-CC3-7: reason_code = BOOTSTRAP_CLINICAL_NEGATIVE (early-return, no GHR call)',
+      `actual: ${r.debug?.reason_code}`);
+  } finally {
+    await sb.from('user_health_profile').delete().eq('user_id', UID);
+    await sb.from('user_profiles').delete().eq('user_id', UID);
+  }
+}
+
+async function scenarioBS_CC4() {
+  sep('BS-CC4 — "nevím" to clinical_context → BOOTSTRAP_REFUSAL_RE defer → budget unchanged');
+
+  const currentYear = new Date().getFullYear();
+  const birthYear58 = currentYear - 58;
+  const UID = `test-bootstrap-cc4-${Date.now()}`;
+  try {
+    await sb.from('user_health_profile').upsert(
+      { user_id: UID, diagnoses: [], symptoms: [], medications: [], labs: {}, physical: {}, lifestyle: {} },
+      { onConflict: 'user_id' }
+    );
+    await sb.from('user_profiles').upsert(
+      { user_id: UID, birth_year: birthYear58 },
+      { onConflict: 'user_id' }
+    );
+
+    const BUDGET_BEFORE = 3;
+    const sessionWithClinicalQ = {
+      pending_question:          { text: 'Léčíš se s něčím nebo bereš pravidelně nějaké léky?', evidence_type: 'clinical_context', type: 'BOOTSTRAP' },
+      current_action_assignment: null,
+      question_budget_remaining: BUDGET_BEFORE,
+      pending_clarifications:    [],
+      last_daily_decision:       null,
+      last_domain_response:      null,
+      person_birth_year:         birthYear58,
+      skipped_bootstrap_types:   [],
+    };
+
+    const r = await processInput(UID, 'Nevím.', sessionWithClinicalQ);
+    console.log('\n  [BS-CC4 response]');
+    showResponse(r);
+
+    check(r.mode === 'ASK',
+      'BS-CC4-1: mode = ASK (next bootstrap question after defer)',
+      `actual: ${r.mode}`);
+    check(r.session_updates?.pending_question?.evidence_type !== 'clinical_context',
+      'BS-CC4-2: clinical_context NOT re-asked (deferred)',
+      `actual: ${r.session_updates?.pending_question?.evidence_type}`);
+    check(r.session_updates?.pending_question?.type === 'BOOTSTRAP',
+      'BS-CC4-3: next pending_question.type = BOOTSTRAP',
+      `actual: ${r.session_updates?.pending_question?.type}`);
+    const budgetAfter = r.session_updates?.question_budget_remaining ?? BUDGET_BEFORE;
+    check(budgetAfter === BUDGET_BEFORE,
+      `BS-CC4-4: budget NOT decremented after defer (expected ${BUDGET_BEFORE}, got ${budgetAfter})`,
+      `actual: ${budgetAfter}`);
+    const skipped = r.session_updates?.skipped_bootstrap_types ?? [];
+    check(skipped.includes('clinical_context'),
+      'BS-CC4-5: clinical_context in skipped_bootstrap_types after defer',
+      `actual skipped: ${JSON.stringify(skipped)}`);
+  } finally {
+    await sb.from('user_health_profile').delete().eq('user_id', UID);
+    await sb.from('user_profiles').delete().eq('user_id', UID);
+  }
+}
+
+async function scenarioBS_CC5() {
+  sep('BS-CC5 — age 82 → clinical_context wins over recent_falls (both high urgency, priority tie-break)');
+
+  const currentYear = new Date().getFullYear();
+  const birthYear82 = currentYear - 82;
+  const UID = `test-bootstrap-cc5-${Date.now()}`;
+  try {
+    await sb.from('user_health_profile').upsert(
+      { user_id: UID, diagnoses: [], symptoms: [], medications: [], labs: {}, physical: {}, lifestyle: {} },
+      { onConflict: 'user_id' }
+    );
+    await sb.from('user_profiles').upsert(
+      { user_id: UID, birth_year: birthYear82 },
+      { onConflict: 'user_id' }
+    );
+
+    const r = await processInput(UID, 'Chci zůstat zdravý co nejdéle.', {
+      pending_question:          null,
+      current_action_assignment: null,
+      question_budget_remaining: 3,
+      pending_clarifications:    [],
+      last_daily_decision:       null,
+      last_domain_response:      null,
+      person_birth_year:         birthYear82,
+    });
+    console.log('\n  [BS-CC5 response]');
+    showResponse(r);
+
+    check(r.mode === 'ASK',
+      'BS-CC5-1: mode = ASK',
+      `actual: ${r.mode}`);
+    // At age 82: recent_falls gets urgency_floor_age_gte=65 boost → high urgency,
+    // BUT clinical_context also has urgency=high and priority=2 < recent_falls priority=3.
+    // clinical_context must win the tie-break.
+    check(r.session_updates?.pending_question?.evidence_type === 'clinical_context',
+      'BS-CC5-2: clinical_context wins over recent_falls at age 82 (priority tie-break: 2 < 3)',
+      `actual: ${r.session_updates?.pending_question?.evidence_type}`);
+    check(r.session_updates?.pending_question?.type === 'BOOTSTRAP',
+      'BS-CC5-3: pending_question.type = BOOTSTRAP',
+      `actual: ${r.session_updates?.pending_question?.type}`);
+  } finally {
+    await sb.from('user_health_profile').delete().eq('user_id', UID);
+    await sb.from('user_profiles').delete().eq('user_id', UID);
+  }
+}
+
 // ── Run ───────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -3159,6 +3750,16 @@ async function main() {
     scenarioSCR();
     await scenarioSCE2E();
     await scenarioSCStability();
+    await scenarioBS_A();
+    await scenarioBS_B();
+    await scenarioBS_C();
+    await scenarioBS_D();
+    await scenarioBS_E();
+    await scenarioBS_CC1();
+    await scenarioBS_CC2();
+    await scenarioBS_CC3();
+    await scenarioBS_CC4();
+    await scenarioBS_CC5();
 
     const total = passed + failed;
     sep(`Results: ${passed}/${total} passed${failed ? ` — ${failed} FAILED` : ''}${skipped ? ` (${skipped} skipped — engine-state dependent)` : ''}`);

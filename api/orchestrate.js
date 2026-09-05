@@ -53,17 +53,32 @@ export default async function handler(req, res) {
     // Fetch pending_clarifications server-side so the orchestrator can apply safety gates
     // (e.g. acute symptom ACT gate) without trusting client-provided session state.
     // Client session is the authority for temporal session fields; DB is authority for health facts.
-    const { data: profileRow } = await getSb()
-      .from('user_health_profile')
-      .select('pending_clarifications, physical')
-      .eq('user_id', userId)
-      .maybeSingle();
+    const [{ data: profileRow }, { data: personRow }] = await Promise.all([
+      getSb()
+        .from('user_health_profile')
+        .select('pending_clarifications, physical')
+        .eq('user_id', userId)
+        .maybeSingle(),
+      // Narrow unlock: inject birth_year/sex so orchestrator bootstrap skip/defer handler
+      // can filter candidates without a DB call inside the locked orchestrator layer.
+      getSb()
+        .from('user_profiles')
+        .select('birth_year, gender')
+        .eq('user_id', userId)
+        .maybeSingle(),
+    ]);
     const pendingClarifications = Array.isArray(profileRow?.pending_clarifications)
       ? profileRow.pending_clarifications
       : [];
     const fatigueContext = profileRow?.physical?.fatigue_context ?? null;
 
-    const sessionWithPending = { ...session, pending_clarifications: pendingClarifications, fatigue_context: fatigueContext };
+    const sessionWithPending = {
+      ...session,
+      pending_clarifications: pendingClarifications,
+      fatigue_context:        fatigueContext,
+      person_birth_year:      personRow?.birth_year ?? null,
+      person_sex:             personRow?.gender     ?? null,
+    };
 
     const response = await processInput(userId, text.trim(), sessionWithPending);
 

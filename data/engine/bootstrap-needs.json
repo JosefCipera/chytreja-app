@@ -1,0 +1,77 @@
+[
+  {
+    "evidence_type": "birth_year",
+    "category": "PROFILE",
+    "acquisition_method": "question",
+    "acquisition_cost": "very_low",
+    "urgency": "high",
+    "decision_impact": "high",
+    "uncertainty_reduction": "high",
+    "priority": 1,
+    "skip_if_known": "birth_year",
+    "needed_for": [{ "entity_type": "BOOTSTRAP", "entity_id": "PERSON_PROFILE" }]
+  },
+  {
+    "evidence_type": "clinical_context",
+    "category": "CLINICAL",
+    "acquisition_method": "question",
+    "acquisition_cost": "very_low",
+    "urgency": "high",
+    "decision_impact": "high",
+    "uncertainty_reduction": "high",
+    "priority": 2,
+    "needed_for": [{ "entity_type": "BOOTSTRAP", "entity_id": "CLINICAL_PROFILE" }]
+  },
+  {
+    "evidence_type": "recent_falls",
+    "category": "FUNCTIONAL",
+    "acquisition_method": "question",
+    "acquisition_cost": "very_low",
+    "urgency": "medium",
+    "decision_impact": "high",
+    "uncertainty_reduction": "high",
+    "priority": 3,
+    "skip_if_known": "recent_falls",
+    "needed_for": [{ "entity_type": "BOOTSTRAP", "entity_id": "FUNCTIONAL_SAFETY" }],
+    "urgency_floor_age_gte": 65
+  },
+  {
+    "evidence_type": "vstat_ze_zeme",
+    "category": "FUNCTIONAL",
+    "acquisition_method": "question",
+    "acquisition_cost": "very_low",
+    "urgency": "medium",
+    "decision_impact": "high",
+    "uncertainty_reduction": "high",
+    "priority": 4,
+    "skip_if_known": "vstat_ze_zeme",
+    "needed_for": [{ "entity_type": "BOOTSTRAP", "entity_id": "FUNCTIONAL_CAPACITY" }],
+    "urgency_floor_age_gte": 70
+  },
+  {
+    "evidence_type": "gait_stability",
+    "category": "FUNCTIONAL",
+    "acquisition_method": "question",
+    "acquisition_cost": "very_low",
+    "urgency": "medium",
+    "decision_impact": "high",
+    "uncertainty_reduction": "medium",
+    "priority": 5,
+    "skip_if_known": "gait_stability",
+    "needed_for": [{ "entity_type": "BOOTSTRAP", "entity_id": "FUNCTIONAL_SAFETY" }],
+    "urgency_floor_age_gte": 65
+  },
+  {
+    "evidence_type": "vynest_nakup",
+    "category": "FUNCTIONAL",
+    "acquisition_method": "question",
+    "acquisition_cost": "very_low",
+    "urgency": "medium",
+    "decision_impact": "medium",
+    "uncertainty_reduction": "medium",
+    "priority": 6,
+    "skip_if_known": "vynest_nakup",
+    "needed_for": [{ "entity_type": "BOOTSTRAP", "entity_id": "FUNCTIONAL_CAPACITY" }],
+    "urgency_floor_age_gte": 65
+  }
+]

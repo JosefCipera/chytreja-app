@@ -69,7 +69,13 @@ export async function runEngine(userId) {
 
   // decision_gate contains per-context CONTEXT_DECISION_GATE[] with embedded next_best_evidence.
   // Global aggregate: any_context_action_ready + contexts_needing_evidence.
-  const decision_gate     = evaluateDecisionGate(node_states, projections, information_needs_base, ENGINE_VERSION);
+  // Narrow unlock: pass person context so decisionGate can synthesize BOOTSTRAP context
+  // when nodeStates=[] and apply age-based candidate ranking.
+  const decision_gate     = evaluateDecisionGate(node_states, projections, information_needs_base, ENGINE_VERSION, {
+    birth_year:       person.birth_year,
+    sex:              person.sex,
+    resolved_physical: Object.keys(clinicalHistory.onboarding_inputs ?? {}),
+  });
   const system_leverage   = computeSystemLeverage(node_states, projections, decision_gate, ENGINE_VERSION);
   const system_constraint = computeSystemConstraint(node_states, projections, decision_gate, ENGINE_VERSION);
 

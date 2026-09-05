@@ -22,7 +22,21 @@
 //   any_context_action_ready: bool
 //   contexts_needing_evidence: string[]
 
+import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 import { selectNextBestEvidence } from './nextBestEvidence.js';
+
+const _dir = dirname(fileURLToPath(import.meta.url));
+let _bootstrapNeeds = null;
+function getBootstrapNeeds() {
+  if (!_bootstrapNeeds) {
+    _bootstrapNeeds = JSON.parse(
+      readFileSync(join(_dir, '../../data/engine/bootstrap-needs.json'), 'utf8')
+    );
+  }
+  return _bootstrapNeeds;
+}
 
 // ── Domain sets ───────────────────────────────────────────────────────────────
 // CV nodes: confirmed diagnosis → RISK_RELEVANT
@@ -266,9 +280,55 @@ function evaluateContextGate(ctx, nodeStates, projections, contextNeeds, engineV
   };
 }
 
+// ── BOOTSTRAP context synthesis ───────────────────────────────────────────────
+// Fires ONLY when nodeStates.length === 0 (no clinical context exists).
+// Selects the highest-value onboarding question from the declarative candidate list.
+// personContext: { birth_year, sex, resolved_physical, skipped_types }
+//   resolved_physical: keys already present in physical (answered in a previous session)
+//   skipped_types:     evidence_types deferred by the user this session
+
+function synthesizeBootstrapGate(personContext, engineVersion) {
+  const { birth_year, resolved_physical = [], skipped_types = [] } = personContext;
+  const age = birth_year ? (new Date().getFullYear() - birth_year) : null;
+  const skippedSet = new Set(skipped_types);
+
+  const candidates = getBootstrapNeeds()
+    .filter(c => {
+      if (c.skip_if_known === 'birth_year' && birth_year != null) return false;
+      if (c.skip_if_known !== 'birth_year' && resolved_physical.includes(c.skip_if_known)) return false;
+      return !skippedSet.has(c.evidence_type);
+    })
+    .map(c => {
+      let urgency = c.urgency;
+      if (age !== null && c.urgency_floor_age_gte && age >= c.urgency_floor_age_gte && urgency !== 'high') {
+        urgency = 'high';
+      }
+      return { ...c, urgency };
+    });
+
+  const nbe = selectNextBestEvidence(candidates, [], [], engineVersion);
+  if (!nbe) return null;
+
+  return {
+    decision_context: {
+      id:    'BOOTSTRAP',
+      label: 'Základní znalost osoby',
+      active_nodes:       [],
+      active_projections: [],
+    },
+    status:               'NEED_MORE_EVIDENCE',
+    blocking_uncertainties: [],
+    actionable_findings:    [],
+    next_best_evidence:     nbe,
+    reason:                 'Žádné klinické uzly — onboarding bootstrap otázka pro základní znalost osoby.',
+  };
+}
+
 // ── Gate aggregate ────────────────────────────────────────────────────────────
 
-export function evaluateDecisionGate(nodeStates, projections, informationNeeds, engineVersion) {
+// personContext (optional): { birth_year, sex, resolved_physical, skipped_types }
+// Narrow unlock: engine.js passes person data to enable BOOTSTRAP context synthesis.
+export function evaluateDecisionGate(nodeStates, projections, informationNeeds, engineVersion, personContext = {}) {
   const now = new Date().toISOString();
 
   const contexts = inferDecisionContexts(nodeStates, projections);
@@ -284,6 +344,12 @@ export function evaluateDecisionGate(nodeStates, projections, informationNeeds, 
 
     return evaluateContextGate(ctx, nodeStates, projections, contextNeeds, engineVersion);
   });
+
+  // BOOTSTRAP: synthesized only when no clinical contexts exist (nodeStates.length === 0)
+  if (nodeStates.length === 0) {
+    const bootstrapGate = synthesizeBootstrapGate(personContext, engineVersion);
+    if (bootstrapGate) context_gates.push(bootstrapGate);
+  }
 
   // Global aggregate — never overrides per-context decisions
   const any_context_action_ready   = context_gates.some(g => g.status === 'EVIDENCE_SUFFICIENT');

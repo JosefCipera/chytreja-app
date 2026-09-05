@@ -658,13 +658,10 @@
         }
         invalidateRequests();
         clearSession(uid);
-        renderIdle();
-        testerStatus(`reset ✓ (a:${data.deleted_action_assignments} m:${data.deleted_mission_log})`);
+        sessionStorage.removeItem('chj_qbudget');
         console.info('[tester-reset] full reset summary:', data);
-        // Auto-close modal after success
-        if ($testerModal && !$testerModal.classList.contains('hidden')) {
-          setTimeout(() => $testerModal.classList.add('hidden'), 1800);
-        }
+        testerStatus(`reset ✓ — restarting…`, true);
+        setTimeout(() => location.reload(), 1200);
       } catch (err) {
         testerStatus('error — check console', false);
         console.error('[tester-reset]', err);

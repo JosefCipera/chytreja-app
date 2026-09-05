@@ -24,6 +24,7 @@
 
 import Anthropic from '@anthropic-ai/sdk';
 import { applyHealthEvent } from './healthEventAdapter.js';
+import { selectNextBestEvidence } from './nextBestEvidence.js';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
@@ -35,6 +36,12 @@ const _masterNodes = JSON.parse(
   readFileSync(join(_dir, '../../data/engine/master.json'), 'utf8')
 ).nodes;
 const NODE_LABEL_CS = Object.fromEntries(_masterNodes.map(n => [n.id, n.label_cs]));
+
+// Narrow unlock: bootstrap candidate list for skip/defer handling and override detection.
+const _bootstrapNeeds = JSON.parse(
+  readFileSync(join(_dir, '../../data/engine/bootstrap-needs.json'), 'utf8')
+);
+const BOOTSTRAP_TYPES = new Set(_bootstrapNeeds.map(n => n.evidence_type));
 
 // Czech translations of English modification strings from nextBestAction.js.
 // Internal engine metadata stays English; user-facing text is translated here.
@@ -250,6 +257,10 @@ function bodyPartToEvidenceType(bodyPart) {
 // Never adds "question"/"question_text" to the NBE engine object — pure presentation bridge.
 
 const NBE_QUESTION_MAP = {
+  // Bootstrap PROFILE evidence (narrow unlock)
+  birth_year:       'Kolik ti je let?',
+  // Bootstrap CLINICAL evidence (narrow unlock) — answer routes through GENERAL_HEALTH_REQUEST
+  clinical_context: 'Léčíš se s něčím nebo bereš pravidelně nějaké léky?',
   // Vitals / anthropometrics
   weight_kg:       'Kolik teď vážíš?',
   waist_cm:        'Jaký je tvůj obvod pasu v centimetrech?',
@@ -367,7 +378,8 @@ function buildSessionUpdates(eventType, classifiedPayload, result) {
       updates.pending_question = {
         text:          questionText,
         evidence_type: evidenceType,
-        type:          item?.type ?? 'GENERAL',
+        // Narrow unlock: BOOTSTRAP context_id takes precedence over engine's generic NBE type.
+        type:          item?.context_id === 'BOOTSTRAP' ? 'BOOTSTRAP' : (item?.type ?? 'GENERAL'),
       };
     } else {
       // primary_item = null (ASK_BLOCKING zero-data): explicitly clear pending_question
@@ -710,12 +722,143 @@ export async function processInput(userId, userText, sessionState = {}) {
     adapterType = 'DOMAIN_REQUEST';
   }
 
+  // ── Bootstrap refusal pre-classifier override (narrow unlock) ───────────────
+  // Haiku may classify Czech refusal phrases ("Nechci uvést.", "Nevím.") as
+  // ANSWER_TO_EVIDENCE_QUESTION when a BOOTSTRAP pending_question is set — it sees
+  // a pending question and treats any reply as an answer. Override to USER_PREFERENCE
+  // so the skip/defer early-return path below fires reliably.
+  // Only fires when a BOOTSTRAP evidence_type is the active pending question.
+  const BOOTSTRAP_REFUSAL_RE = /^(nev[ií]m|nechci|p[rř]esko[cč]it|skip)\b/i;
+  if (BOOTSTRAP_TYPES.has(state.pending_question?.evidence_type)
+      && BOOTSTRAP_REFUSAL_RE.test(userText.trim())) {
+    adapterType = 'USER_PREFERENCE';
+  }
+
+  // ── Bootstrap clinical_context answer routing (narrow unlock) ───────────────
+  // clinical_context answers cannot flow through ANSWER_TO_EVIDENCE_QUESTION
+  // (no EVIDENCE_STORAGE_REGISTRY entry).
+  //
+  // Negative answers ("Ne.", "Nemám.", "Nic.", "Neberu."): EARLY RETURN — no DB
+  // write of any kind (no diagnosis, no symptom, no medication). Marks
+  // clinical_context session-resolved and selects next bootstrap candidate.
+  // Budget IS decremented (definitive answer, not a refusal).
+  //
+  // Substantive answers ("Mám vysoký tlak", "Beru Prestarium"): route through
+  // GENERAL_HEALTH_REQUEST so the existing free-text clinical extractor handles
+  // diagnoses persistence. No second parser created.
+  let _clinicalContextRouted = false; // flag: re-point enrichedPayload to { text: userText }
+  if (adapterType === 'ANSWER_TO_EVIDENCE_QUESTION'
+      && state.pending_question?.evidence_type === 'clinical_context') {
+    // Detect unambiguously negative answers — e.g. "Ne.", "Nemám.", "Nic.", "Žádné."
+    if (/^\s*(ne|nem[aá]m|nic|n[eě]beru|žádn[éý][^a-z]|žádná)\s*[.,!]?\s*$/i.test(userText.trim())) {
+      // EARLY RETURN — no applyHealthEvent call, no DB write.
+      const newSkipped   = [...(state.skipped_bootstrap_types ?? []), 'clinical_context'];
+      const skippedSet   = new Set(newSkipped);
+      const birthYrKnown = state.person_birth_year != null;
+      const available    = _bootstrapNeeds.filter(c => {
+        if (c.skip_if_known === 'birth_year' && birthYrKnown) return false;
+        return !skippedSet.has(c.evidence_type);
+      });
+      const next        = selectNextBestEvidence(available, [], [], '1.0.0');
+      const budgetAfter = Math.max(0,
+        (typeof state.question_budget_remaining === 'number' ? state.question_budget_remaining : 3) - 1
+      );
+      const baseUpdates = {
+        last_daily_decision:       state.last_daily_decision       ?? null,
+        last_domain_response:      state.last_domain_response      ?? null,
+        current_action_assignment: null,
+        skipped_bootstrap_types:   newSkipped,
+        question_budget_remaining: budgetAfter,
+      };
+      if (next) {
+        const questionText = buildEvidenceQuestion(next);
+        return {
+          mode:          'ASK',
+          text:          questionText,
+          buttons:       [],
+          expects_reply: true,
+          session_updates: {
+            ...baseUpdates,
+            pending_question: { text: questionText, evidence_type: next.evidence_type, type: 'BOOTSTRAP' },
+          },
+          debug: { reason_code: 'BOOTSTRAP_CLINICAL_NEGATIVE', skipped: 'clinical_context' },
+        };
+      }
+      return {
+        mode:          'ASK',
+        text:          'Dobře. Pokud chceš, řekni mi něco o svém zdraví nebo co tě trápí.',
+        buttons:       [],
+        expects_reply: true,
+        session_updates: { ...baseUpdates, pending_question: null },
+        debug: { reason_code: 'BOOTSTRAP_EXHAUSTED_AFTER_CLINICAL_NEGATIVE' },
+      };
+    }
+    // Substantive answer — route through existing free-text clinical extraction
+    adapterType = 'GENERAL_HEALTH_REQUEST';
+    _clinicalContextRouted = true;
+  }
+
+  // ── Bootstrap skip/defer (narrow unlock) ─────────────────────────────────────
+  // Fires when the user declines a bootstrap question ("nevím", "nechci uvést", etc.).
+  // Classifier returns USER_PREFERENCE for declination inputs.
+  // Immediately selects the next-best bootstrap candidate from the declarative list.
+  // Budget NOT decremented (refusal is not forward progress).
+  // EARLY RETURN — skips applyHealthEvent and the normal budget gate.
+  if (adapterType === 'USER_PREFERENCE' && BOOTSTRAP_TYPES.has(state.pending_question?.evidence_type)) {
+    const deferredType = state.pending_question.evidence_type;
+    const newSkipped   = [...(state.skipped_bootstrap_types ?? []), deferredType];
+    const skippedSet   = new Set(newSkipped);
+    const birthYrKnown = state.person_birth_year != null;
+
+    const available = _bootstrapNeeds.filter(c => {
+      if (c.skip_if_known === 'birth_year' && birthYrKnown) return false;
+      return !skippedSet.has(c.evidence_type);
+    });
+
+    const next = selectNextBestEvidence(available, [], [], '1.0.0');
+    const baseUpdates = {
+      last_daily_decision:       state.last_daily_decision       ?? null,
+      last_domain_response:      state.last_domain_response      ?? null,
+      current_action_assignment: null,
+      skipped_bootstrap_types:   newSkipped,
+      question_budget_remaining: typeof state.question_budget_remaining === 'number'
+        ? state.question_budget_remaining
+        : 3,
+    };
+
+    if (next) {
+      const questionText = buildEvidenceQuestion(next);
+      return {
+        mode:          'ASK',
+        text:          questionText,
+        buttons:       [],
+        expects_reply: true,
+        session_updates: {
+          ...baseUpdates,
+          pending_question: { text: questionText, evidence_type: next.evidence_type, type: 'BOOTSTRAP' },
+        },
+        debug: { reason_code: 'BOOTSTRAP_SKIP_NEXT', skipped: deferredType },
+      };
+    }
+    // No more bootstrap candidates available
+    return {
+      mode:          'ASK',
+      text:          'Dobře. Pokud chceš, řekni mi něco o svém zdraví nebo co tě trápí.',
+      buttons:       [],
+      expects_reply: true,
+      session_updates: { ...baseUpdates, pending_question: null },
+      debug: { reason_code: 'BOOTSTRAP_EXHAUSTED_AFTER_SKIP', skipped: deferredType },
+    };
+  }
+
   // 4. Build domain event (use adapter type for the event, keep original for session logic)
   // Enrich NEW_SYMPTOM with full user text so compound sentences (e.g. "bolí mě koleno a mám
   // vysoký tlak") carry diagnosis keywords for DIAG_KEYWORDS matching in healthEventAdapter.
-  const enrichedPayload = (adapterType === 'NEW_SYMPTOM' && userText && !payload?.symptom_raw)
-    ? { ...payload, symptom_raw: userText }
-    : payload;
+  const enrichedPayload = _clinicalContextRouted
+    ? { text: userText }
+    : (adapterType === 'NEW_SYMPTOM' && userText && !payload?.symptom_raw)
+      ? { ...payload, symptom_raw: userText }
+      : payload;
   const event = buildEvent({ event_type: adapterType, payload: enrichedPayload }, state);
 
   // 4b. Sedentary hours clarification guard.
@@ -769,6 +912,43 @@ export async function processInput(userId, userText, sessionState = {}) {
   const isHoldFollowUp = adapterType === 'DOMAIN_REQUEST'
     && state.last_daily_decision?.mode === 'HOLD';
   let presentation = buildPresentation(event_type, payload, result, sessionUpdates, isHoldFollowUp);
+
+  // ── Bootstrap skipped-type override ──────────────────────────────────────────
+  // If the engine selected a bootstrap question that the user has already deferred
+  // this session, override with the next available non-skipped bootstrap candidate.
+  // Needed because skipped_bootstrap_types is session-local (not persisted to DB)
+  // so the engine cannot filter them out itself.
+  // Uses the effective skipped set: sessionUpdates may have added new types this turn
+  // (e.g. clinical_context marked session-resolved after a negative "Ne." answer).
+  const effectiveSkipped = sessionUpdates.skipped_bootstrap_types ?? state.skipped_bootstrap_types ?? [];
+  if (presentation.mode === 'ASK'
+      && Array.isArray(effectiveSkipped)
+      && effectiveSkipped.length > 0) {
+    const pendingEvType  = presentation.session_updates?.pending_question?.evidence_type;
+    const isBootstrapCtx = result.domain_response?.daily_decision?.primary_item?.context_id === 'BOOTSTRAP';
+    if (pendingEvType && isBootstrapCtx && effectiveSkipped.includes(pendingEvType)) {
+      const skippedSet   = new Set(effectiveSkipped);
+      const birthYrKnown = state.person_birth_year != null;
+      const available    = _bootstrapNeeds.filter(c => {
+        if (c.skip_if_known === 'birth_year' && birthYrKnown) return false;
+        return !skippedSet.has(c.evidence_type);
+      });
+      const next = selectNextBestEvidence(available, [], [], '1.0.0');
+      if (next) {
+        const questionText = buildEvidenceQuestion(next);
+        presentation = {
+          ...presentation,
+          text: questionText,
+          session_updates: {
+            ...presentation.session_updates,
+            pending_question: { text: questionText, evidence_type: next.evidence_type, type: 'BOOTSTRAP' },
+            skipped_bootstrap_types: effectiveSkipped,
+          },
+          debug: { ...presentation.debug, reason_code: 'BOOTSTRAP_SKIP_OVERRIDE' },
+        };
+      }
+    }
+  }
 
   // ── ZERO_DATA_FOLLOWUP guard ──────────────────────────────────────────────────
   // Invariant: user must never receive the same zero-data general-profile text twice in a row.
