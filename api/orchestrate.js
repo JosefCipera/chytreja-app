@@ -78,6 +78,9 @@ export default async function handler(req, res) {
       fatigue_context:        fatigueContext,
       person_birth_year:      personRow?.birth_year ?? null,
       person_sex:             personRow?.gender     ?? null,
+      // Narrow unlock: keys already present in physical → bootstrap candidate eligibility filter.
+      // physical is already fetched above; no extra DB round-trip.
+      resolved_physical:      Object.keys(profileRow?.physical ?? {}),
     };
 
     const response = await processInput(userId, text.trim(), sessionWithPending);

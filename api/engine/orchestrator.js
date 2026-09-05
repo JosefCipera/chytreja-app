@@ -43,6 +43,20 @@ const _bootstrapNeeds = JSON.parse(
 );
 const BOOTSTRAP_TYPES = new Set(_bootstrapNeeds.map(n => n.evidence_type));
 
+// Single source of bootstrap candidate eligibility used by all continuation paths.
+// Mirrors the filter in synthesizeBootstrapGate (decisionGate.js) — both must stay in sync.
+//   birthYrKnown:    person_birth_year != null
+//   resolvedPhysical: Object.keys(physical) — keys already answered in a previous or same turn
+//   skippedSet:      Set of evidence_types refused/skipped this session
+function filterBootstrapCandidates(needs, { birthYrKnown, resolvedPhysical = [], skippedSet }) {
+  return needs.filter(c => {
+    if (c.skip_if_known === 'birth_year' && birthYrKnown)                                      return false;
+    if (c.skip_if_known && c.skip_if_known !== 'birth_year'
+        && resolvedPhysical.includes(c.skip_if_known))                                         return false;
+    return !skippedSet.has(c.evidence_type);
+  });
+}
+
 // Czech translations of English modification strings from nextBestAction.js.
 // Internal engine metadata stays English; user-facing text is translated here.
 const MODIFICATIONS_CS = {
@@ -755,20 +769,21 @@ export async function processInput(userId, userText, sessionState = {}) {
       const newSkipped   = [...(state.skipped_bootstrap_types ?? []), 'clinical_context'];
       const skippedSet   = new Set(newSkipped);
       const birthYrKnown = state.person_birth_year != null;
-      const available    = _bootstrapNeeds.filter(c => {
-        if (c.skip_if_known === 'birth_year' && birthYrKnown) return false;
-        return !skippedSet.has(c.evidence_type);
+      const available    = filterBootstrapCandidates(_bootstrapNeeds, {
+        birthYrKnown,
+        resolvedPhysical: state.resolved_physical ?? [],
+        skippedSet,
       });
       const next        = selectNextBestEvidence(available, [], [], '1.0.0');
-      const budgetAfter = Math.max(0,
-        (typeof state.question_budget_remaining === 'number' ? state.question_budget_remaining : 3) - 1
-      );
+      // Bootstrap questions do not consume the clinical question budget.
+      // Budget is preserved as-is; it applies only to non-Bootstrap ASK turns.
       const baseUpdates = {
         last_daily_decision:       state.last_daily_decision       ?? null,
         last_domain_response:      state.last_domain_response      ?? null,
         current_action_assignment: null,
         skipped_bootstrap_types:   newSkipped,
-        question_budget_remaining: budgetAfter,
+        question_budget_remaining: typeof state.question_budget_remaining === 'number'
+          ? state.question_budget_remaining : 3,
       };
       if (next) {
         const questionText = buildEvidenceQuestion(next);
@@ -810,9 +825,10 @@ export async function processInput(userId, userText, sessionState = {}) {
     const skippedSet   = new Set(newSkipped);
     const birthYrKnown = state.person_birth_year != null;
 
-    const available = _bootstrapNeeds.filter(c => {
-      if (c.skip_if_known === 'birth_year' && birthYrKnown) return false;
-      return !skippedSet.has(c.evidence_type);
+    const available = filterBootstrapCandidates(_bootstrapNeeds, {
+      birthYrKnown,
+      resolvedPhysical: state.resolved_physical ?? [],
+      skippedSet,
     });
 
     const next = selectNextBestEvidence(available, [], [], '1.0.0');
@@ -929,9 +945,17 @@ export async function processInput(userId, userText, sessionState = {}) {
     if (pendingEvType && isBootstrapCtx && effectiveSkipped.includes(pendingEvType)) {
       const skippedSet   = new Set(effectiveSkipped);
       const birthYrKnown = state.person_birth_year != null;
-      const available    = _bootstrapNeeds.filter(c => {
-        if (c.skip_if_known === 'birth_year' && birthYrKnown) return false;
-        return !skippedSet.has(c.evidence_type);
+      // state.resolved_physical is injected before applyHealthEvent writes to DB.
+      // If this turn answered a bootstrap evidence_type, it is now in the DB but not yet
+      // in state.resolved_physical. Augment with the just-answered key so the override
+      // does not immediately re-select the answer we just received.
+      const justAnswered = (adapterType === 'ANSWER_TO_EVIDENCE_QUESTION' && event.payload.evidence_type)
+        ? [event.payload.evidence_type]
+        : [];
+      const available    = filterBootstrapCandidates(_bootstrapNeeds, {
+        birthYrKnown,
+        resolvedPhysical: [...(state.resolved_physical ?? []), ...justAnswered],
+        skippedSet,
       });
       const next = selectNextBestEvidence(available, [], [], '1.0.0');
       if (next) {
@@ -1058,7 +1082,10 @@ export async function processInput(userId, userText, sessionState = {}) {
   }
 
   // Question budget enforcement: limit total ASK rounds across pre-intake + post-handoff.
-  if (presentation.mode === 'ASK') {
+  // Bootstrap questions are exempt — Bootstrap terminates by its own candidate-exhaustion
+  // and model-sufficiency conditions, not by a question count.
+  const isBootstrapQuestion = presentation.session_updates?.pending_question?.type === 'BOOTSTRAP';
+  if (presentation.mode === 'ASK' && !isBootstrapQuestion) {
     if (budgetRemaining <= 0) {
       let text;
       if (hasAcuteSymptom) {

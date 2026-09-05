@@ -2654,8 +2654,10 @@ async function scenarioZReal() {
       check(r.session_updates?.pending_question?.evidence_type === 'birth_year',
         'Z-real4: pending_question.evidence_type=birth_year (BOOTSTRAP)',
         `actual: "${r.session_updates?.pending_question?.evidence_type}"`);
-      check(r.session_updates?.question_budget_remaining === 1,
-        'Z-real5: budget decremented from 2 to 1 (BOOTSTRAP ASK costs one slot)',
+      // Bootstrap questions do not consume the clinical budget — gate is bypassed.
+      // Budget stays at whatever the session carries (2 here), or absent (= not decremented).
+      check((r.session_updates?.question_budget_remaining ?? 2) === 2,
+        'Z-real5: budget NOT decremented by Bootstrap ASK (Bootstrap questions exempt)',
         `actual: ${r.session_updates?.question_budget_remaining}`);
       check(r.expects_reply === true,
         'Z-real6: expects_reply=true',
@@ -3587,10 +3589,12 @@ async function scenarioBS_CC3() {
       `BS-CC3-5: next question is a functional bootstrap candidate (one of ${functionalTypes.join('/')})`,
       `actual: ${nextType}`);
 
-    // Budget decrements — "Ne." is a definitive answer, not a skip/defer
+    // Bootstrap questions do not consume the clinical budget. The BOOTSTRAP_CLINICAL_NEGATIVE
+    // early-return explicitly preserves budget_remaining; the next question is also Bootstrap,
+    // so the budget gate is bypassed there too.
     const budgetAfter = r.session_updates?.question_budget_remaining ?? BUDGET_BEFORE;
-    check(budgetAfter === BUDGET_BEFORE - 1,
-      `BS-CC3-6: budget decremented (expected ${BUDGET_BEFORE - 1}, got ${budgetAfter})`,
+    check(budgetAfter === BUDGET_BEFORE,
+      `BS-CC3-6: budget NOT decremented (Bootstrap questions exempt from clinical budget gate)`,
       `actual: ${budgetAfter}`);
 
     // reason_code confirms the early-return path (no engine call)
@@ -3807,6 +3811,172 @@ async function scenarioBS_BY2() {
   }
 }
 
+// ── Bootstrap end-to-end chain (BS-E2E) ──────────────────────────────────────
+//
+// Carries real session state through the complete zero-data bootstrap sequence
+// that was broken in production:
+//
+//   goal → birth_year → 58 → clinical_context → Ne. → recent_falls → Ne. → vstat_ze_zeme
+//
+// Proves:
+//   - budget=3 never causes BUDGET_EXHAUSTED during Bootstrap
+//   - clinical budget is preserved (= 3) throughout all 4 Bootstrap turns
+//   - recent_falls not repeated after being answered
+//   - ordinary non-Bootstrap ASK still consumes clinical budget
+//   - safety gates retain precedence (covered by existing BS-E)
+
+async function scenarioBS_E2E_CHAIN() {
+  sep('BS-E2E — full zero-data bootstrap chain: goal→birth_year→clinical_ctx→recent_falls→vstat_ze_zeme');
+
+  const UID = `test-bootstrap-e2e-${Date.now()}`;
+  try {
+    // Setup: health profile only — NO user_profiles row (exercises INSERT path too).
+    await sb.from('user_health_profile').upsert(
+      { user_id: UID, diagnoses: [], symptoms: [], medications: [], labs: [], physical: {}, lifestyle: {} },
+      { onConflict: 'user_id' }
+    );
+
+    // Helper: reads live resolved_physical from DB exactly as api/orchestrate.js does.
+    async function liveSession(session) {
+      const [{ data: hp }, { data: up }] = await Promise.all([
+        sb.from('user_health_profile').select('physical').eq('user_id', UID).maybeSingle(),
+        sb.from('user_profiles').select('birth_year, gender').eq('user_id', UID).maybeSingle(),
+      ]);
+      return {
+        ...session,
+        person_birth_year:  up?.birth_year  ?? null,
+        person_sex:         up?.gender      ?? null,
+        resolved_physical:  Object.keys(hp?.physical ?? {}),
+        pending_clarifications: [],
+        fatigue_context:    null,
+      };
+    }
+
+    // ── Turn 1: first goal message ────────────────────────────────────────────
+    console.log('\n  [T1 — first goal message]');
+    let session = await liveSession({
+      pending_question:          null,
+      current_action_assignment: null,
+      question_budget_remaining: 3,  // explicit starting value
+      pending_clarifications:    [],
+      last_daily_decision:       null,
+      last_domain_response:      null,
+      skipped_bootstrap_types:   [],
+    });
+    const r1 = await processInput(UID, 'Nevím. Chtěl bych hlavně zůstat co nejdéle zdravý.', session);
+    showResponse(r1);
+
+    check(r1.mode === 'ASK',                                  'E2E-T1-1: mode=ASK');
+    check(r1.session_updates?.pending_question?.evidence_type === 'birth_year',
+      'E2E-T1-2: pending_question.evidence_type = birth_year');
+    check(r1.session_updates?.pending_question?.type === 'BOOTSTRAP',
+      'E2E-T1-3: pending_question.type = BOOTSTRAP');
+    // Budget gate is skipped for Bootstrap questions — question_budget_remaining may be absent
+    // from session_updates (not decremented). Caller's session carries it forward unchanged.
+    check((r1.session_updates?.question_budget_remaining ?? 3) === 3,
+      'E2E-T1-4: clinical budget unchanged (= 3, or absent = not decremented) after Bootstrap question',
+      `actual: ${r1.session_updates?.question_budget_remaining}`);
+
+    // ── Turn 2: answer "58" → birth_year persisted ────────────────────────────
+    console.log('\n  [T2 — answer "58"]');
+    session = await liveSession({ ...session, ...r1.session_updates });
+    const r2 = await processInput(UID, '58', session);
+    showResponse(r2);
+
+    const { data: profileT2 } = await sb.from('user_profiles').select('birth_year').eq('user_id', UID).maybeSingle();
+    const expectedBY = new Date().getFullYear() - 58;
+    check(profileT2?.birth_year === expectedBY,
+      `E2E-T2-1: birth_year = ${expectedBY} in DB`,
+      `actual: ${profileT2?.birth_year}`);
+    check(r2.session_updates?.pending_question?.evidence_type === 'clinical_context',
+      'E2E-T2-2: pending_question.evidence_type = clinical_context');
+    check(r2.session_updates?.pending_question?.type === 'BOOTSTRAP',
+      'E2E-T2-3: pending_question.type = BOOTSTRAP');
+    check((r2.session_updates?.question_budget_remaining ?? 3) === 3,
+      'E2E-T2-4: clinical budget still 3 (or absent = not decremented) after Bootstrap question',
+      `actual: ${r2.session_updates?.question_budget_remaining}`);
+
+    // ── Turn 3: "Ne." to clinical_context ────────────────────────────────────
+    console.log('\n  [T3 — "Ne." to clinical_context]');
+    session = await liveSession({ ...session, ...r2.session_updates });
+    const r3 = await processInput(UID, 'Ne.', session);
+    showResponse(r3);
+
+    check(r3.mode === 'ASK',                                  'E2E-T3-1: mode=ASK');
+    check(r3.session_updates?.pending_question?.evidence_type === 'recent_falls',
+      'E2E-T3-2: pending_question.evidence_type = recent_falls (not repeated clinical_context)');
+    check(r3.session_updates?.pending_question?.type === 'BOOTSTRAP',
+      'E2E-T3-3: pending_question.type = BOOTSTRAP');
+    check(r3.session_updates?.question_budget_remaining === 3,
+      'E2E-T3-4: clinical budget still 3 — BOOTSTRAP_CLINICAL_NEGATIVE must NOT decrement',
+      `actual: ${r3.session_updates?.question_budget_remaining}`);
+    check(r3.debug?.reason_code === 'BOOTSTRAP_CLINICAL_NEGATIVE',
+      'E2E-T3-5: reason_code = BOOTSTRAP_CLINICAL_NEGATIVE');
+
+    // ── Turn 4: "Ne." to recent_falls ────────────────────────────────────────
+    console.log('\n  [T4 — "Ne." to recent_falls]');
+    session = await liveSession({ ...session, ...r3.session_updates });
+    const r4 = await processInput(UID, 'Ne.', session);
+    showResponse(r4);
+
+    // Primary assertions: no BUDGET_EXHAUSTED, no recent_falls repeat
+    check(r4.mode !== 'NOOP',                                 'E2E-T4-1: mode is not NOOP');
+    check(r4.debug?.reason_code !== 'BUDGET_EXHAUSTED',
+      'E2E-T4-2: reason_code is NOT BUDGET_EXHAUSTED (budget gate must not fire for Bootstrap)',
+      `actual: ${r4.debug?.reason_code}`);
+    check(r4.session_updates?.pending_question?.evidence_type !== 'recent_falls',
+      'E2E-T4-3: recent_falls NOT repeated (resolvedPhysical filter applied)',
+      `actual: ${r4.session_updates?.pending_question?.evidence_type}`);
+    check(r4.mode === 'ASK',
+      'E2E-T4-4: mode=ASK (another Bootstrap question returned)',
+      `actual: ${r4.mode}`);
+    check(r4.session_updates?.pending_question?.type === 'BOOTSTRAP',
+      'E2E-T4-5: pending_question.type = BOOTSTRAP');
+    check(r4.session_updates?.pending_question?.evidence_type === 'vstat_ze_zeme',
+      'E2E-T4-6: next Bootstrap = vstat_ze_zeme (priority 4, first unanswered after filtering)',
+      `actual: ${r4.session_updates?.pending_question?.evidence_type}`);
+    check((r4.session_updates?.question_budget_remaining ?? 3) === 3,
+      'E2E-T4-7: clinical budget still 3 (or absent = not decremented) throughout entire Bootstrap sequence',
+      `actual: ${r4.session_updates?.question_budget_remaining}`);
+
+    // ── Clinical budget integrity: non-Bootstrap ASK consumes budget ──────────
+    // Simulate a non-Bootstrap ASK by setting up a state where the engine returns
+    // a regular NBE question (not Bootstrap). Use the existing mainline user with
+    // clinical context so engine runs the normal clinical path with budget = 3.
+    console.log('\n  [T-budget — verify non-Bootstrap ASK still decrements clinical budget]');
+    const budgetSession = {
+      pending_question:          null,
+      current_action_assignment: null,
+      question_budget_remaining: 3,
+      pending_clarifications:    [],
+      last_daily_decision:       null,
+      last_domain_response:      null,
+      skipped_bootstrap_types:   [],
+      person_birth_year:         1975,  // known → Bootstrap asks clinical, not birth_year
+      person_sex:                null,
+      resolved_physical:         [],
+    };
+    // Use the shared mainline USER_ID (has seeded clinical data → engine produces non-Bootstrap ASK or ACT).
+    // We don't assert on the exact evidence_type here — just that budget decremented if mode=ASK.
+    const rb = await processInput(USER_ID, 'Co mám dělat?', budgetSession);
+    if (rb.mode === 'ASK' && rb.session_updates?.pending_question?.type !== 'BOOTSTRAP') {
+      check(
+        typeof rb.session_updates?.question_budget_remaining === 'number'
+        && rb.session_updates.question_budget_remaining === 2,
+        'E2E-budget-1: non-Bootstrap ASK decrements budget from 3 → 2',
+        `actual: ${rb.session_updates?.question_budget_remaining}`,
+      );
+    } else {
+      // Engine returned ACT or Bootstrap (mainline user may have enough data) — budget check N/A.
+      check(true, `E2E-budget-1: SKIP — engine returned mode=${rb.mode} (not non-Bootstrap ASK)`);
+    }
+
+  } finally {
+    await sb.from('user_health_profile').delete().eq('user_id', UID);
+    await sb.from('user_profiles').delete().eq('user_id', UID);
+  }
+}
+
 // ── Run ───────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -3865,6 +4035,7 @@ async function main() {
     await scenarioBS_CC5();
     await scenarioBS_BY1();
     await scenarioBS_BY2();
+    await scenarioBS_E2E_CHAIN();
 
     const total = passed + failed;
     sep(`Results: ${passed}/${total} passed${failed ? ` — ${failed} FAILED` : ''}${skipped ? ` (${skipped} skipped — engine-state dependent)` : ''}`);
