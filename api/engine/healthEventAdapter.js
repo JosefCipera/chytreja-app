@@ -282,6 +282,7 @@ async function upsertConstraint(supabase, userId, constraintKey, severity, const
 // UPSERT into user_profiles — only writes when the target field is currently null.
 // Narrow unlock: supports birth_year structured bootstrap answer.
 // Never overwrites existing data (write_if_null_only contract).
+// Handles no-row case: creates the row with user_id + requested field when missing.
 async function upsertUserProfile(supabase, userId, key, value) {
   const { data: row, error: readErr } = await supabase
     .from('user_profiles')
@@ -289,12 +290,28 @@ async function upsertUserProfile(supabase, userId, key, value) {
     .eq('user_id', userId)
     .maybeSingle();
   if (readErr) throw new Error(`upsertUserProfile read: ${readErr.message}`);
-  if (row?.[key] != null) return null; // already set — do not overwrite
-  const { error } = await supabase
-    .from('user_profiles')
-    .update({ [key]: value })
-    .eq('user_id', userId);
-  if (error) throw new Error(`upsertUserProfile write: ${error.message}`);
+
+  // write_if_null_only: row exists and field already has a value — do not overwrite.
+  if (row != null && row[key] != null) return null;
+
+  if (row == null) {
+    // No row exists yet — INSERT minimal row. Duplicate-key race (concurrent writes)
+    // is treated as success: the first writer already set the value.
+    const { error } = await supabase
+      .from('user_profiles')
+      .insert({ user_id: userId, [key]: value });
+    if (error) {
+      if (error.code === '23505') return null; // duplicate key — concurrent write, value set
+      throw new Error(`upsertUserProfile insert: ${error.message}`);
+    }
+  } else {
+    // Row exists but field is null — UPDATE only the requested field.
+    const { error } = await supabase
+      .from('user_profiles')
+      .update({ [key]: value })
+      .eq('user_id', userId);
+    if (error) throw new Error(`upsertUserProfile update: ${error.message}`);
+  }
   return null;
 }
 

@@ -3704,6 +3704,109 @@ async function scenarioBS_CC5() {
   }
 }
 
+// ── Bootstrap birth_year write-contract tests (BS-BY1, BS-BY2) ───────────────
+//
+// BS-BY1: no user_profiles row at all → answer "58" → row CREATED → birth_year=<year>
+//         → next bootstrap is clinical_context (not birth_year again)
+// BS-BY2: user_profiles row exists with birth_year already set → later answer "58"
+//         → existing value NOT overwritten (write_if_null_only contract preserved)
+
+async function scenarioBS_BY1() {
+  sep('BS-BY1 — no user_profiles row → answer "58" → row created, birth_year persisted, no repeat');
+
+  const UID = `test-bootstrap-by1-${Date.now()}`;
+  try {
+    // Create health profile but intentionally NO user_profiles row.
+    await sb.from('user_health_profile').upsert(
+      { user_id: UID, diagnoses: [], symptoms: [], medications: [], labs: [], physical: {}, lifestyle: {} },
+      { onConflict: 'user_id' }
+    );
+    // Verify no user_profiles row exists before the test.
+    const { data: pre } = await sb.from('user_profiles').select('birth_year').eq('user_id', UID).maybeSingle();
+    check(pre == null,
+      'BS-BY1-pre: no user_profiles row before test (correct precondition)',
+      `actual row: ${JSON.stringify(pre)}`);
+
+    const sessionWithBootstrapQ = {
+      pending_question: { text: 'Kolik ti je let?', evidence_type: 'birth_year', type: 'BOOTSTRAP' },
+      current_action_assignment: null,
+      question_budget_remaining: 3,
+      pending_clarifications:    [],
+      last_daily_decision:       null,
+      last_domain_response:      null,
+      person_birth_year:         null,
+    };
+
+    const r = await processInput(UID, '58', sessionWithBootstrapQ);
+    console.log('\n  [BS-BY1 — answer "58" with no pre-existing user_profiles row]');
+    showResponse(r);
+
+    // Verify row was CREATED with correct birth_year.
+    const { data: profile } = await sb.from('user_profiles').select('birth_year').eq('user_id', UID).maybeSingle();
+    const expectedYear = new Date().getFullYear() - 58;
+    check(profile != null,
+      'BS-BY1-1: user_profiles row created (INSERT path)',
+      'actual: no row');
+    check(profile?.birth_year === expectedYear,
+      `BS-BY1-2: birth_year = ${expectedYear} (age 58 converted correctly)`,
+      `actual: ${profile?.birth_year}`);
+
+    // Verify birth_year question is NOT repeated.
+    check(r.session_updates?.pending_question?.evidence_type !== 'birth_year',
+      'BS-BY1-3: pending_question.evidence_type is NOT birth_year (no repeat)',
+      `actual: ${r.session_updates?.pending_question?.evidence_type}`);
+    check(r.mode != null,
+      'BS-BY1-4: response has a valid mode',
+      `actual: ${r.mode}`);
+  } finally {
+    await sb.from('user_health_profile').delete().eq('user_id', UID);
+    await sb.from('user_profiles').delete().eq('user_id', UID);
+  }
+}
+
+async function scenarioBS_BY2() {
+  sep('BS-BY2 — user_profiles row with birth_year set → second answer → NOT overwritten');
+
+  const UID = `test-bootstrap-by2-${Date.now()}`;
+  const ORIGINAL_YEAR = 1970;
+  try {
+    await sb.from('user_health_profile').upsert(
+      { user_id: UID, diagnoses: [], symptoms: [], medications: [], labs: [], physical: {}, lifestyle: {} },
+      { onConflict: 'user_id' }
+    );
+    await sb.from('user_profiles').upsert(
+      { user_id: UID, birth_year: ORIGINAL_YEAR },
+      { onConflict: 'user_id' }
+    );
+
+    const sessionWithBootstrapQ = {
+      pending_question: { text: 'Kolik ti je let?', evidence_type: 'birth_year', type: 'BOOTSTRAP' },
+      current_action_assignment: null,
+      question_budget_remaining: 3,
+      pending_clarifications:    [],
+      last_daily_decision:       null,
+      last_domain_response:      null,
+      person_birth_year:         ORIGINAL_YEAR,
+    };
+
+    // Answer "58" — but birth_year is already 1970; must NOT overwrite.
+    const r = await processInput(UID, '58', sessionWithBootstrapQ);
+    console.log('\n  [BS-BY2 — answer "58" when birth_year already = 1970]');
+    showResponse(r);
+
+    const { data: profile } = await sb.from('user_profiles').select('birth_year').eq('user_id', UID).maybeSingle();
+    check(profile?.birth_year === ORIGINAL_YEAR,
+      `BS-BY2-1: birth_year NOT overwritten — still ${ORIGINAL_YEAR} (write_if_null_only preserved)`,
+      `actual: ${profile?.birth_year}`);
+    check(r.mode != null,
+      'BS-BY2-2: response has a valid mode',
+      `actual: ${r.mode}`);
+  } finally {
+    await sb.from('user_health_profile').delete().eq('user_id', UID);
+    await sb.from('user_profiles').delete().eq('user_id', UID);
+  }
+}
+
 // ── Run ───────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -3760,6 +3863,8 @@ async function main() {
     await scenarioBS_CC3();
     await scenarioBS_CC4();
     await scenarioBS_CC5();
+    await scenarioBS_BY1();
+    await scenarioBS_BY2();
 
     const total = passed + failed;
     sep(`Results: ${passed}/${total} passed${failed ? ` — ${failed} FAILED` : ''}${skipped ? ` (${skipped} skipped — engine-state dependent)` : ''}`);
