@@ -17,7 +17,7 @@ export const TESTER_UIDS = new Set([
   'u58iRWcMr9bbakFMJYGFGARpi9h1', // Tester 0
   'e0ZYA3auBYUh9TOOtqQPqbkIcrJ2', // Tester 1
   // Add additional tester accounts here when needed
-  // Josef (vPrm5PNzLWWWhi9sSwYVbkb9FaD3) and Kovářová are PROTECTED — never add here
+  // Josef (qE09cLyXXGRBRxOBCGNZqTM2XRW2) and Kovářová are PROTECTED — never add here
 ]);
 
 // Core reset logic — exported so tests can call it directly without HTTP
@@ -76,7 +76,15 @@ export async function runTesterReset(userId, mode, sbClient) {
     .eq('user_id', userId);
   if (hErr) return { status: 500, body: { error: `user_health_profile: ${hErr.message}` } };
 
-  // TRACE diagnostic — remove after Full Reset FAIL root cause confirmed
+  // 5. user_profiles — clear Bootstrap-persisted fields; preserve row, mode, and all other fields.
+  // birth_year is written by Bootstrap NBE v1 (upsertUserProfile) and must be cleared on Full Reset
+  // so the next clean session starts from zero-knowledge Bootstrap state.
+  const { error: upErr } = await sb
+    .from('user_profiles')
+    .update({ birth_year: null })
+    .eq('user_id', userId);
+  if (upErr) return { status: 500, body: { error: `user_profiles: ${upErr.message}` } };
+
   console.log(`[RESET] uid=${userId} deleted_action_assignments=${aCount ?? 0} deleted_constraints=${cCount ?? 0} deleted_mission_log=${mCount ?? 0}`);
 
   return {
@@ -89,6 +97,7 @@ export async function runTesterReset(userId, mode, sbClient) {
       deleted_constraints:        cCount ?? 0,
       deleted_mission_log:        mCount ?? 0,
       health_profile_cleared:     true,
+      user_profiles_birth_year_cleared: true,
       local_session_cleared:      false, // caller must clear localStorage
     },
   };

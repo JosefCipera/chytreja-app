@@ -73,8 +73,19 @@ async function getProfile() {
   return data;
 }
 
+async function getUserProfile() {
+  const { data, error } = await sb
+    .from('user_profiles')
+    .select('birth_year, mode, gender')
+    .eq('user_id', EPHEMERAL_UID)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return data;
+}
+
 async function cleanup() {
   await sb.from('user_health_profile').delete().eq('user_id', EPHEMERAL_UID);
+  await sb.from('user_profiles').delete().eq('user_id', EPHEMERAL_UID);
   TESTER_UIDS.delete(EPHEMERAL_UID);
 }
 
@@ -131,12 +142,57 @@ async function testSessionReset() {
   check(result.body?.local_session_cleared === true, 'Session Reset body.local_session_cleared = true');
 }
 
+// ── Test: Full Reset clears user_profiles.birth_year ─────────────────────────
+// Regression: Bootstrap NBE v1 persists birth_year to user_profiles; Full Reset
+// must clear it so the next clean session starts with zero-knowledge Bootstrap.
+
+async function testUserProfilesBirthYearReset() {
+  sep('Full Reset — clears user_profiles.birth_year, preserves row and mode');
+
+  // Seed user_profiles with birth_year=1968, mode='dekatlon' (mirrors Tester0 live state)
+  await sb.from('user_profiles').upsert({
+    user_id:    EPHEMERAL_UID,
+    birth_year: 1968,
+    mode:       'dekatlon',
+  }, { onConflict: 'user_id' });
+
+  const before = await getUserProfile();
+  check(before?.birth_year === 1968,
+    'Seed: user_profiles.birth_year = 1968',
+    `actual: ${before?.birth_year}`);
+  check(before?.mode === 'dekatlon',
+    'Seed: user_profiles.mode = dekatlon',
+    `actual: ${before?.mode}`);
+
+  // Run Full Reset
+  const result = await runTesterReset(EPHEMERAL_UID, 'full', sb);
+  check(result.status === 200,
+    'Full Reset returns 200',
+    `actual: ${result.status}`);
+  check(result.body?.user_profiles_birth_year_cleared === true,
+    'Full Reset body.user_profiles_birth_year_cleared = true');
+
+  // Verify: row still exists, birth_year=null, mode preserved
+  const after = await getUserProfile();
+  check(after != null,
+    'user_profiles row still exists after Full Reset (not deleted)');
+  check(after?.birth_year == null,
+    'user_profiles.birth_year = null after Full Reset',
+    `actual: ${after?.birth_year}`);
+  check(after?.mode === 'dekatlon',
+    'user_profiles.mode preserved (dekatlon unchanged)',
+    `actual: ${after?.mode}`);
+  check(after?.gender == null,
+    'user_profiles.gender untouched (null, not modified)',
+    `actual: ${after?.gender}`);
+}
+
 // ── Test: Protected UID rejected ─────────────────────────────────────────────
 
 async function testProtectedRejected() {
   sep('Full Reset — protected UID (Josef) rejected');
 
-  const JOSEF = 'vPrm5PNzLWWWhi9sSwYVbkb9FaD3';
+  const JOSEF = 'qE09cLyXXGRBRxOBCGNZqTM2XRW2';
   const result = await runTesterReset(JOSEF, 'full', sb);
   check(result.status === 403, 'Full Reset on protected UID returns 403',
     `actual: ${result.status}`);
@@ -151,6 +207,7 @@ async function main() {
   try {
     await testSessionReset();
     await testFullReset();
+    await testUserProfilesBirthYearReset();
     await testProtectedRejected();
 
     const total = passed + failed;
