@@ -3522,7 +3522,7 @@ async function scenarioBS_CC3() {
   sep('BS-CC3 — "Ne." → NO DB writes (no symptom/diagnosis/medication) → session-resolved → next functional question');
 
   const currentYear = new Date().getFullYear();
-  const birthYear58 = currentYear - 58;
+  const birthYear68 = currentYear - 68;
   const UID = `test-bootstrap-cc3-${Date.now()}`;
   const BUDGET_BEFORE = 3;
   try {
@@ -3531,7 +3531,7 @@ async function scenarioBS_CC3() {
       { onConflict: 'user_id' }
     );
     await sb.from('user_profiles').upsert(
-      { user_id: UID, birth_year: birthYear58 },
+      { user_id: UID, birth_year: birthYear68 },
       { onConflict: 'user_id' }
     );
 
@@ -3542,7 +3542,7 @@ async function scenarioBS_CC3() {
       pending_clarifications:    [],
       last_daily_decision:       null,
       last_domain_response:      null,
-      person_birth_year:         birthYear58,
+      person_birth_year:         birthYear68,
       skipped_bootstrap_types:   [],
     };
 
@@ -3584,7 +3584,8 @@ async function scenarioBS_CC3() {
       `actual: ${r.mode}`);
 
     const nextType = r.session_updates?.pending_question?.evidence_type;
-    const functionalTypes = ['recent_falls', 'vstat_ze_zeme', 'gait_stability', 'vynest_nakup'];
+    // For 68yo: recent_falls (floor=65, passes), vstat_ze_zeme (floor=70, filtered), vynest_nakup (floor=65, passes)
+    const functionalTypes = ['recent_falls', 'vynest_nakup'];
     check(functionalTypes.includes(nextType),
       `BS-CC3-5: next question is a functional bootstrap candidate (one of ${functionalTypes.join('/')})`,
       `actual: ${nextType}`);
@@ -3611,7 +3612,7 @@ async function scenarioBS_CC4() {
   sep('BS-CC4 — "nevím" to clinical_context → BOOTSTRAP_REFUSAL_RE defer → budget unchanged');
 
   const currentYear = new Date().getFullYear();
-  const birthYear58 = currentYear - 58;
+  const birthYear68 = currentYear - 68;
   const UID = `test-bootstrap-cc4-${Date.now()}`;
   try {
     await sb.from('user_health_profile').upsert(
@@ -3619,7 +3620,7 @@ async function scenarioBS_CC4() {
       { onConflict: 'user_id' }
     );
     await sb.from('user_profiles').upsert(
-      { user_id: UID, birth_year: birthYear58 },
+      { user_id: UID, birth_year: birthYear68 },
       { onConflict: 'user_id' }
     );
 
@@ -3631,7 +3632,7 @@ async function scenarioBS_CC4() {
       pending_clarifications:    [],
       last_daily_decision:       null,
       last_domain_response:      null,
-      person_birth_year:         birthYear58,
+      person_birth_year:         birthYear68,
       skipped_bootstrap_types:   [],
     };
 
@@ -3811,12 +3812,302 @@ async function scenarioBS_BY2() {
   }
 }
 
+// ── Bootstrap age-gate regression (BS-AGE) ───────────────────────────────────
+//
+// Verifies the urgency_floor_age_gte filter-out behavior added in TESTER 0.1:
+//   - Candidates below their age floor are removed from the pool entirely
+//   - At exactly the floor age, the candidate passes (age >= floor)
+//   - Unknown age (null) → no filtering applied at all
+//   - gait_stability removed from bootstrap-needs.json → never offered
+
+async function scenarioBS_AGE_A() {
+  sep('BS-AGE-A — 58yo → age-gated functional Bootstrap questions NOT offered (all filtered)');
+
+  const currentYear = new Date().getFullYear();
+  const birthYear58 = currentYear - 58;
+  const UID = `test-bootstrap-age-a-${Date.now()}`;
+  try {
+    await sb.from('user_health_profile').upsert(
+      { user_id: UID, diagnoses: [], symptoms: [], medications: [], labs: {}, physical: {}, lifestyle: {} },
+      { onConflict: 'user_id' }
+    );
+    await sb.from('user_profiles').upsert(
+      { user_id: UID, birth_year: birthYear58 },
+      { onConflict: 'user_id' }
+    );
+
+    const session = {
+      pending_question:          null,
+      current_action_assignment: null,
+      question_budget_remaining: 3,
+      pending_clarifications:    [],
+      last_daily_decision:       null,
+      last_domain_response:      null,
+      person_birth_year:         birthYear58,
+      skipped_bootstrap_types:   ['clinical_context'],
+    };
+
+    const r = await processInput(UID, 'Chtěl bych být zdravý.', session);
+    console.log('\n  [BS-AGE-A response]');
+    showResponse(r);
+
+    // For 58yo: recent_falls (floor=65), vstat_ze_zeme (floor=70), vynest_nakup (floor=65)
+    // all filtered. gait_stability removed from JSON. No functional Bootstrap question offered.
+    const nextType = r.session_updates?.pending_question?.evidence_type;
+    const filteredTypes = ['recent_falls', 'vstat_ze_zeme', 'vynest_nakup', 'gait_stability'];
+    check(!filteredTypes.includes(nextType),
+      `BS-AGE-A-1: 58yo → NO age-gated functional Bootstrap question (${filteredTypes.join('/')} all filtered)`,
+      `actual: ${nextType}`);
+  } finally {
+    await sb.from('user_health_profile').delete().eq('user_id', UID);
+    await sb.from('user_profiles').delete().eq('user_id', UID);
+  }
+}
+
+async function scenarioBS_AGE_B() {
+  sep('BS-AGE-B — 65yo → recent_falls offered (urgency_floor_age_gte=65, 65>=65 passes)');
+
+  const currentYear = new Date().getFullYear();
+  const birthYear65 = currentYear - 65;
+  const UID = `test-bootstrap-age-b-${Date.now()}`;
+  try {
+    await sb.from('user_health_profile').upsert(
+      { user_id: UID, diagnoses: [], symptoms: [], medications: [], labs: {}, physical: {}, lifestyle: {} },
+      { onConflict: 'user_id' }
+    );
+    await sb.from('user_profiles').upsert(
+      { user_id: UID, birth_year: birthYear65 },
+      { onConflict: 'user_id' }
+    );
+
+    const session = {
+      pending_question:          null,
+      current_action_assignment: null,
+      question_budget_remaining: 3,
+      pending_clarifications:    [],
+      last_daily_decision:       null,
+      last_domain_response:      null,
+      person_birth_year:         birthYear65,
+      skipped_bootstrap_types:   ['clinical_context'],
+    };
+
+    const r = await processInput(UID, 'Chtěl bych být zdravý.', session);
+    console.log('\n  [BS-AGE-B response]');
+    showResponse(r);
+
+    check(r.mode === 'ASK',
+      'BS-AGE-B-1: mode = ASK',
+      `actual: ${r.mode}`);
+    check(r.session_updates?.pending_question?.evidence_type === 'recent_falls',
+      'BS-AGE-B-2: recent_falls offered for 65yo (floor=65, 65>=65 → passes)',
+      `actual: ${r.session_updates?.pending_question?.evidence_type}`);
+    check(r.session_updates?.pending_question?.type === 'BOOTSTRAP',
+      'BS-AGE-B-3: type = BOOTSTRAP',
+      `actual: ${r.session_updates?.pending_question?.type}`);
+  } finally {
+    await sb.from('user_health_profile').delete().eq('user_id', UID);
+    await sb.from('user_profiles').delete().eq('user_id', UID);
+  }
+}
+
+async function scenarioBS_AGE_C() {
+  sep('BS-AGE-C — 65yo → vstat_ze_zeme NOT offered (floor=70 > 65), vynest_nakup offered instead');
+
+  const currentYear = new Date().getFullYear();
+  const birthYear65 = currentYear - 65;
+  const UID = `test-bootstrap-age-c-${Date.now()}`;
+  try {
+    await sb.from('user_health_profile').upsert(
+      { user_id: UID, diagnoses: [], symptoms: [], medications: [], labs: {}, physical: {}, lifestyle: {} },
+      { onConflict: 'user_id' }
+    );
+    await sb.from('user_profiles').upsert(
+      { user_id: UID, birth_year: birthYear65 },
+      { onConflict: 'user_id' }
+    );
+
+    // resolved_physical in session: recent_falls already answered → filtered from Bootstrap pool
+    const session = {
+      pending_question:          null,
+      current_action_assignment: null,
+      question_budget_remaining: 3,
+      pending_clarifications:    [],
+      last_daily_decision:       null,
+      last_domain_response:      null,
+      person_birth_year:         birthYear65,
+      skipped_bootstrap_types:   ['clinical_context'],
+      resolved_physical:         ['recent_falls'],
+    };
+
+    const r = await processInput(UID, 'Chtěl bych být zdravý.', session);
+    console.log('\n  [BS-AGE-C response]');
+    showResponse(r);
+
+    // vstat_ze_zeme floor=70 > 65 → filtered. Next is vynest_nakup (floor=65, 65>=65).
+    check(r.session_updates?.pending_question?.evidence_type !== 'vstat_ze_zeme',
+      'BS-AGE-C-1: vstat_ze_zeme NOT offered for 65yo (floor=70, 65<70 → filtered)',
+      `actual: ${r.session_updates?.pending_question?.evidence_type}`);
+    check(r.session_updates?.pending_question?.evidence_type === 'vynest_nakup',
+      'BS-AGE-C-2: vynest_nakup offered instead (floor=65, 65>=65 → passes)',
+      `actual: ${r.session_updates?.pending_question?.evidence_type}`);
+    check(r.session_updates?.pending_question?.type === 'BOOTSTRAP',
+      'BS-AGE-C-3: type = BOOTSTRAP',
+      `actual: ${r.session_updates?.pending_question?.type}`);
+  } finally {
+    await sb.from('user_health_profile').delete().eq('user_id', UID);
+    await sb.from('user_profiles').delete().eq('user_id', UID);
+  }
+}
+
+async function scenarioBS_AGE_D() {
+  sep('BS-AGE-D — 70yo → vstat_ze_zeme offered (urgency_floor_age_gte=70, 70>=70 exactly on floor)');
+
+  const currentYear = new Date().getFullYear();
+  const birthYear70 = currentYear - 70;
+  const UID = `test-bootstrap-age-d-${Date.now()}`;
+  try {
+    await sb.from('user_health_profile').upsert(
+      { user_id: UID, diagnoses: [], symptoms: [], medications: [], labs: {}, physical: {}, lifestyle: {} },
+      { onConflict: 'user_id' }
+    );
+    await sb.from('user_profiles').upsert(
+      { user_id: UID, birth_year: birthYear70 },
+      { onConflict: 'user_id' }
+    );
+
+    // resolved_physical: recent_falls already answered → filtered; next = vstat_ze_zeme (priority 4)
+    const session = {
+      pending_question:          null,
+      current_action_assignment: null,
+      question_budget_remaining: 3,
+      pending_clarifications:    [],
+      last_daily_decision:       null,
+      last_domain_response:      null,
+      person_birth_year:         birthYear70,
+      skipped_bootstrap_types:   ['clinical_context'],
+      resolved_physical:         ['recent_falls'],
+    };
+
+    const r = await processInput(UID, 'Chtěl bych být zdravý.', session);
+    console.log('\n  [BS-AGE-D response]');
+    showResponse(r);
+
+    check(r.mode === 'ASK',
+      'BS-AGE-D-1: mode = ASK',
+      `actual: ${r.mode}`);
+    check(r.session_updates?.pending_question?.evidence_type === 'vstat_ze_zeme',
+      'BS-AGE-D-2: vstat_ze_zeme offered for 70yo (floor=70, 70>=70 → exactly on floor, passes)',
+      `actual: ${r.session_updates?.pending_question?.evidence_type}`);
+    check(r.session_updates?.pending_question?.type === 'BOOTSTRAP',
+      'BS-AGE-D-3: type = BOOTSTRAP',
+      `actual: ${r.session_updates?.pending_question?.type}`);
+  } finally {
+    await sb.from('user_health_profile').delete().eq('user_id', UID);
+    await sb.from('user_profiles').delete().eq('user_id', UID);
+  }
+}
+
+async function scenarioBS_AGE_E() {
+  sep('BS-AGE-E — unknown age (birth_year null, both skipped) → age-gated candidates NOT filtered');
+
+  const UID = `test-bootstrap-age-e-${Date.now()}`;
+  try {
+    await sb.from('user_health_profile').upsert(
+      { user_id: UID, diagnoses: [], symptoms: [], medications: [], labs: {}, physical: {}, lifestyle: {} },
+      { onConflict: 'user_id' }
+    );
+    await sb.from('user_profiles').upsert(
+      { user_id: UID, birth_year: null },
+      { onConflict: 'user_id' }
+    );
+
+    // birth_year and clinical_context both deferred → next = recent_falls
+    // age=null → `age !== null` is false → age filter condition never fires → recent_falls NOT filtered
+    const session = {
+      pending_question:          null,
+      current_action_assignment: null,
+      question_budget_remaining: 3,
+      pending_clarifications:    [],
+      last_daily_decision:       null,
+      last_domain_response:      null,
+      person_birth_year:         null,
+      skipped_bootstrap_types:   ['birth_year', 'clinical_context'],
+    };
+
+    const r = await processInput(UID, 'Chtěl bych být zdravý.', session);
+    console.log('\n  [BS-AGE-E response]');
+    showResponse(r);
+
+    check(r.mode === 'ASK',
+      'BS-AGE-E-1: mode = ASK (Bootstrap offered despite unknown age)',
+      `actual: ${r.mode}`);
+    check(r.session_updates?.pending_question?.type === 'BOOTSTRAP',
+      'BS-AGE-E-2: pending_question.type = BOOTSTRAP',
+      `actual: ${r.session_updates?.pending_question?.type}`);
+    check(r.session_updates?.pending_question?.evidence_type === 'recent_falls',
+      'BS-AGE-E-3: recent_falls offered (age=null → no age filter, candidate passes)',
+      `actual: ${r.session_updates?.pending_question?.evidence_type}`);
+  } finally {
+    await sb.from('user_health_profile').delete().eq('user_id', UID);
+    await sb.from('user_profiles').delete().eq('user_id', UID);
+  }
+}
+
+async function scenarioBS_AGE_F() {
+  sep('BS-AGE-F — gait_stability NOT in Bootstrap candidates (removed from bootstrap-needs.json)');
+
+  const currentYear = new Date().getFullYear();
+  const birthYear68 = currentYear - 68;
+  const UID = `test-bootstrap-age-f-${Date.now()}`;
+  try {
+    await sb.from('user_health_profile').upsert(
+      { user_id: UID, diagnoses: [], symptoms: [], medications: [], labs: {}, physical: {}, lifestyle: {} },
+      { onConflict: 'user_id' }
+    );
+    await sb.from('user_profiles').upsert(
+      { user_id: UID, birth_year: birthYear68 },
+      { onConflict: 'user_id' }
+    );
+
+    // For 68yo, recent_falls answered → vstat_ze_zeme (68<70 filtered) → gait_stability (removed)
+    // → vynest_nakup (68>=65 → passes) is the next Bootstrap candidate
+    const session = {
+      pending_question:          null,
+      current_action_assignment: null,
+      question_budget_remaining: 3,
+      pending_clarifications:    [],
+      last_daily_decision:       null,
+      last_domain_response:      null,
+      person_birth_year:         birthYear68,
+      skipped_bootstrap_types:   ['clinical_context'],
+      resolved_physical:         ['recent_falls'],
+    };
+
+    const r = await processInput(UID, 'Chtěl bych být zdravý.', session);
+    console.log('\n  [BS-AGE-F response]');
+    showResponse(r);
+
+    check(r.session_updates?.pending_question?.evidence_type !== 'gait_stability',
+      'BS-AGE-F-1: gait_stability NOT offered (removed from bootstrap-needs.json)',
+      `actual: ${r.session_updates?.pending_question?.evidence_type}`);
+    check(r.session_updates?.pending_question?.evidence_type === 'vynest_nakup',
+      'BS-AGE-F-2: vynest_nakup offered as next Bootstrap (fills the gait_stability priority gap)',
+      `actual: ${r.session_updates?.pending_question?.evidence_type}`);
+    check(r.session_updates?.pending_question?.type === 'BOOTSTRAP',
+      'BS-AGE-F-3: type = BOOTSTRAP',
+      `actual: ${r.session_updates?.pending_question?.type}`);
+  } finally {
+    await sb.from('user_health_profile').delete().eq('user_id', UID);
+    await sb.from('user_profiles').delete().eq('user_id', UID);
+  }
+}
+
 // ── Bootstrap end-to-end chain (BS-E2E) ──────────────────────────────────────
 //
 // Carries real session state through the complete zero-data bootstrap sequence
 // that was broken in production:
 //
-//   goal → birth_year → 58 → clinical_context → Ne. → recent_falls → Ne. → vstat_ze_zeme
+//   goal → birth_year → 70 → clinical_context → Ne. → recent_falls → Ne. → vstat_ze_zeme
 //
 // Proves:
 //   - budget=3 never causes BUDGET_EXHAUSTED during Bootstrap
@@ -3877,14 +4168,14 @@ async function scenarioBS_E2E_CHAIN() {
       'E2E-T1-4: clinical budget unchanged (= 3, or absent = not decremented) after Bootstrap question',
       `actual: ${r1.session_updates?.question_budget_remaining}`);
 
-    // ── Turn 2: answer "58" → birth_year persisted ────────────────────────────
-    console.log('\n  [T2 — answer "58"]');
+    // ── Turn 2: answer "70" → birth_year persisted ────────────────────────────
+    console.log('\n  [T2 — answer "70"]');
     session = await liveSession({ ...session, ...r1.session_updates });
-    const r2 = await processInput(UID, '58', session);
+    const r2 = await processInput(UID, '70', session);
     showResponse(r2);
 
     const { data: profileT2 } = await sb.from('user_profiles').select('birth_year').eq('user_id', UID).maybeSingle();
-    const expectedBY = new Date().getFullYear() - 58;
+    const expectedBY = new Date().getFullYear() - 70;
     check(profileT2?.birth_year === expectedBY,
       `E2E-T2-1: birth_year = ${expectedBY} in DB`,
       `actual: ${profileT2?.birth_year}`);
@@ -4035,6 +4326,12 @@ async function main() {
     await scenarioBS_CC5();
     await scenarioBS_BY1();
     await scenarioBS_BY2();
+    await scenarioBS_AGE_A();
+    await scenarioBS_AGE_B();
+    await scenarioBS_AGE_C();
+    await scenarioBS_AGE_D();
+    await scenarioBS_AGE_E();
+    await scenarioBS_AGE_F();
     await scenarioBS_E2E_CHAIN();
 
     const total = passed + failed;

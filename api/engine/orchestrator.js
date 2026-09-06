@@ -46,13 +46,15 @@ const BOOTSTRAP_TYPES = new Set(_bootstrapNeeds.map(n => n.evidence_type));
 // Single source of bootstrap candidate eligibility used by all continuation paths.
 // Mirrors the filter in synthesizeBootstrapGate (decisionGate.js) — both must stay in sync.
 //   birthYrKnown:    person_birth_year != null
+//   age:             currentYear - person_birth_year (null if unknown)
 //   resolvedPhysical: Object.keys(physical) — keys already answered in a previous or same turn
 //   skippedSet:      Set of evidence_types refused/skipped this session
-function filterBootstrapCandidates(needs, { birthYrKnown, resolvedPhysical = [], skippedSet }) {
+function filterBootstrapCandidates(needs, { birthYrKnown, age = null, resolvedPhysical = [], skippedSet }) {
   return needs.filter(c => {
     if (c.skip_if_known === 'birth_year' && birthYrKnown)                                      return false;
     if (c.skip_if_known && c.skip_if_known !== 'birth_year'
         && resolvedPhysical.includes(c.skip_if_known))                                         return false;
+    if (age !== null && c.urgency_floor_age_gte && age < c.urgency_floor_age_gte)              return false;
     return !skippedSet.has(c.evidence_type);
   });
 }
@@ -769,8 +771,10 @@ export async function processInput(userId, userText, sessionState = {}) {
       const newSkipped   = [...(state.skipped_bootstrap_types ?? []), 'clinical_context'];
       const skippedSet   = new Set(newSkipped);
       const birthYrKnown = state.person_birth_year != null;
+      const age          = state.person_birth_year ? (new Date().getFullYear() - state.person_birth_year) : null;
       const available    = filterBootstrapCandidates(_bootstrapNeeds, {
         birthYrKnown,
+        age,
         resolvedPhysical: state.resolved_physical ?? [],
         skippedSet,
       });
@@ -824,9 +828,11 @@ export async function processInput(userId, userText, sessionState = {}) {
     const newSkipped   = [...(state.skipped_bootstrap_types ?? []), deferredType];
     const skippedSet   = new Set(newSkipped);
     const birthYrKnown = state.person_birth_year != null;
+    const age          = state.person_birth_year ? (new Date().getFullYear() - state.person_birth_year) : null;
 
     const available = filterBootstrapCandidates(_bootstrapNeeds, {
       birthYrKnown,
+      age,
       resolvedPhysical: state.resolved_physical ?? [],
       skippedSet,
     });
@@ -945,6 +951,7 @@ export async function processInput(userId, userText, sessionState = {}) {
     if (pendingEvType && isBootstrapCtx && effectiveSkipped.includes(pendingEvType)) {
       const skippedSet   = new Set(effectiveSkipped);
       const birthYrKnown = state.person_birth_year != null;
+      const age          = state.person_birth_year ? (new Date().getFullYear() - state.person_birth_year) : null;
       // state.resolved_physical is injected before applyHealthEvent writes to DB.
       // If this turn answered a bootstrap evidence_type, it is now in the DB but not yet
       // in state.resolved_physical. Augment with the just-answered key so the override
@@ -954,6 +961,7 @@ export async function processInput(userId, userText, sessionState = {}) {
         : [];
       const available    = filterBootstrapCandidates(_bootstrapNeeds, {
         birthYrKnown,
+        age,
         resolvedPhysical: [...(state.resolved_physical ?? []), ...justAnswered],
         skippedSet,
       });

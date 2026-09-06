@@ -49,19 +49,6 @@
     "urgency_floor_age_gte": 70
   },
   {
-    "evidence_type": "gait_stability",
-    "category": "FUNCTIONAL",
-    "acquisition_method": "question",
-    "acquisition_cost": "very_low",
-    "urgency": "medium",
-    "decision_impact": "high",
-    "uncertainty_reduction": "medium",
-    "priority": 5,
-    "skip_if_known": "gait_stability",
-    "needed_for": [{ "entity_type": "BOOTSTRAP", "entity_id": "FUNCTIONAL_SAFETY" }],
-    "urgency_floor_age_gte": 65
-  },
-  {
     "evidence_type": "vynest_nakup",
     "category": "FUNCTIONAL",
     "acquisition_method": "question",

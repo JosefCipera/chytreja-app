@@ -296,6 +296,7 @@ function synthesizeBootstrapGate(personContext, engineVersion) {
     .filter(c => {
       if (c.skip_if_known === 'birth_year' && birth_year != null) return false;
       if (c.skip_if_known !== 'birth_year' && resolved_physical.includes(c.skip_if_known)) return false;
+      if (age !== null && c.urgency_floor_age_gte && age < c.urgency_floor_age_gte) return false;
       return !skippedSet.has(c.evidence_type);
     })
     .map(c => {
