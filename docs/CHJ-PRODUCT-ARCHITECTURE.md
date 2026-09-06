@@ -6,6 +6,37 @@
 
 ---
 
+## ★ CHJ LONGEVITY — 5 NEMĚNNÝCH PRODUKTOVÝCH PRINCIPŮ
+
+> Tyto principy jsou nadřazené všem implementačním rozhodnutím. Každá navržená změna — nová otázka, nový node, nový datový zdroj, nové chování — musí projít tímto filtrem. Pokud navržená změna odporuje některému principu, neimplementuj ji bez explicitního product rozhodnutí.
+
+**1. NEŘEŠÍME CELÉ ZDRAVÍ.**
+CHJ řeší longevity: co člověku nejpravděpodobněji vezme roky života nebo roky soběstačnosti. Ne každá diagnóza, abnormalita nebo zdravotní údaj patří do modelu.
+
+**2. NEVYTVÁŘÍME KAŽDÉHO ČLOVĚKA OD NULY.**
+Základem jsou vzorové kauzální cesty nejvýznamnějších longevity problémů, vytvářené a ověřované mimo jiné na referenčních případech Josef a Kovářová. Tyto vzory postupně zpřesňujeme a pouze podle potřeby doplňujeme.
+
+**3. OSOBNÍ CRT SE SKLÁDÁ ZE ZNÁMÝCH LONGEVITY KAUZÁLNÍCH CEST.**
+Evidence konkrétního člověka určuje, které části vzorových cest jsou relevantní, potvrzené, pravděpodobné nebo neznámé. CRT má pomáhat vidět i kauzální cesty k problémům, které člověk ještě nemá nebo o nich neví.
+
+**4. NEHLEDÁME VŠECHNY PROBLÉMY. HLEDÁME CONSTRAINT.**
+TOC nad osobním CRT hledá místo / kauzální cestu, kde zásah může nejvíce zlepšit očekávanou longevity a dlouhodobou funkčnost člověka. Výstupem CHJ nemá být seznam všeho špatného, ale priorita a největší páka.
+
+**5. DISCOVERY NENÍ SBĚR ZDRAVOTNÍ ANAMNÉZY. DISCOVERY JE HLEDÁNÍ CONSTRAINTU V PROSTORU ZNÁMÝCH LONGEVITY KAUZÁLNÍCH CEST.**
+CHJ se ptá pouze tehdy, když odpověď může změnit výběr, pořadí nebo ověření constraintu. Více dostupných dat má znamenat méně otázek a přesnější rozhodnutí — nikoli rozšiřování CHJ na obecný zdravotní systém.
+
+---
+
+**NOVÁ DATA NEJSOU DŮVODEM ROZŠIŘOVAT MODEL.**
+Nový model přidáváme pouze tehdy, když nám chybí významná longevity kauzální cesta.
+
+**NOVÁ OTÁZKA NEVZNIKÁ PROTO, ŽE JE ZDRAVOTNĚ ZAJÍMAVÁ.**
+Vzniká pouze tehdy, když její odpověď může změnit rozhodnutí o longevity constraintu.
+
+**NPEZ, laboratoře, wearables, dokumentace a další zdroje chápej pouze jako zdroje evidence pro tento model, nikoli jako důvod změnit CHJ na univerzální zdravotní aplikaci.**
+
+---
+
 ## Stručně
 
 CHJ není dashboard ani graf. Je to **navigátor**.
