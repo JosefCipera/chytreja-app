@@ -59,6 +59,24 @@ function filterBootstrapCandidates(needs, { birthYrKnown, age = null, resolvedPh
   });
 }
 
+// Detects compound Czech negative answers to the clinical_context Bootstrap question.
+// Catches multi-clause negatives like "Ne, s ničím se neléčím a žádné léky neberu."
+// that the simple one-token end-anchored regex cannot match.
+// Positive guard fires first: if the text contains explicit drug intake or treatment,
+// the answer is mixed and must go through the free-text clinical extraction path.
+function isCompoundClinicalNegative(text) {
+  const t = text.toLowerCase();
+  if (/\bberu\s+(?!nic\b|žádn)/.test(t)) return false;       // "beru Amlodipin", "beru léky na"
+  if (/\bléčím se s\s+(?!ničím)/.test(t)) return false;      // "léčím se s diabetem"
+  return (
+    /(?:se\s+neléčím|neléčím\s+se)/.test(t) ||              // both Czech word orders; \b before non-ASCII ž unsafe
+    /\bnic\s+neberu\b|\bneberu\s+nic\b|\bneberu\s+žádn/.test(t) ||
+    /(?:^|\s)žádn[éý]\s+léky?(?:\s|[,.!?]|$)/.test(t) ||   // \b broken before ž (non-ASCII \w)
+    /(?:^|\s)žádnou\s+diagnózu|(?:^|\s)žádné\s+diagnózy/.test(t) ||
+    /\bnem[aá]m\s+žádn/.test(t)
+  );
+}
+
 // Czech translations of English modification strings from nextBestAction.js.
 // Internal engine metadata stays English; user-facing text is translated here.
 const MODIFICATIONS_CS = {
@@ -750,6 +768,15 @@ export async function processInput(userId, userText, sessionState = {}) {
     adapterType = 'USER_PREFERENCE';
   }
 
+  // Pre-classifier override: compound clinical negative with pending clinical_context.
+  // Haiku may classify compound sentences ("Ne, s ničím se neléčím a žádné léky neberu.")
+  // as GENERAL_HEALTH_REQUEST even when pending_question is set — bypassing the routing
+  // block below. Force ANSWER_TO_EVIDENCE_QUESTION so the negative-detection path fires.
+  if (state.pending_question?.evidence_type === 'clinical_context'
+      && isCompoundClinicalNegative(userText)) {
+    adapterType = 'ANSWER_TO_EVIDENCE_QUESTION';
+  }
+
   // ── Bootstrap clinical_context answer routing (narrow unlock) ───────────────
   // clinical_context answers cannot flow through ANSWER_TO_EVIDENCE_QUESTION
   // (no EVIDENCE_STORAGE_REGISTRY entry).
@@ -765,8 +792,10 @@ export async function processInput(userId, userText, sessionState = {}) {
   let _clinicalContextRouted = false; // flag: re-point enrichedPayload to { text: userText }
   if (adapterType === 'ANSWER_TO_EVIDENCE_QUESTION'
       && state.pending_question?.evidence_type === 'clinical_context') {
-    // Detect unambiguously negative answers — e.g. "Ne.", "Nemám.", "Nic.", "Žádné."
-    if (/^\s*(ne|nem[aá]m|nic|n[eě]beru|žádn[éý][^a-z]|žádná)\s*[.,!]?\s*$/i.test(userText.trim())) {
+    // Detect unambiguously negative answers — simple: "Ne.", "Nemám.", "Nic.", "Žádné."
+    // or compound: "Ne, s ničím se neléčím a žádné léky pravidelně neberu."
+    if (/^\s*(ne|nem[aá]m|nic|n[eě]beru|žádn[éý][^a-z]|žádná)\s*[.,!]?\s*$/i.test(userText.trim())
+        || isCompoundClinicalNegative(userText)) {
       // EARLY RETURN — no applyHealthEvent call, no DB write.
       const newSkipped   = [...(state.skipped_bootstrap_types ?? []), 'clinical_context'];
       const skippedSet   = new Set(newSkipped);

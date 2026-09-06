@@ -3608,6 +3608,110 @@ async function scenarioBS_CC3() {
   }
 }
 
+async function scenarioBS_CC3B() {
+  sep('BS-CC3B — compound negative to clinical_context → BOOTSTRAP_CLINICAL_NEGATIVE (real user phrasing)');
+
+  // The bug: simple regex only caught "Ne.", "Nemám." etc.
+  // Real users write compound negatives — those must also fire BOOTSTRAP_CLINICAL_NEGATIVE.
+  // Mixed answers ("Ne, vlastně beru léky na tlak.") must NOT fire it — stay on GHR path.
+
+  const CLINICAL_Q = { text: 'Léčíš se s něčím nebo bereš pravidelně nějaké léky?', evidence_type: 'clinical_context', type: 'BOOTSTRAP' };
+
+  // ── Shared helper: run one clinical_context answer, return reason_code ──────
+  async function runClinicalAnswer(uid, birthYear, answer) {
+    const session = {
+      pending_question:          CLINICAL_Q,
+      current_action_assignment: null,
+      question_budget_remaining: 3,
+      pending_clarifications:    [],
+      last_daily_decision:       null,
+      last_domain_response:      null,
+      person_birth_year:         birthYear,
+      skipped_bootstrap_types:   [],
+    };
+    return processInput(uid, answer, session);
+  }
+
+  const currentYear = new Date().getFullYear();
+  const birthYear58 = currentYear - 58;
+  const birthYear68 = currentYear - 68; // 68yo: recent_falls passes (65 floor), vstat filtered (70 floor)
+  const UID = `test-bootstrap-cc3b-${Date.now()}`;
+
+  try {
+    await sb.from('user_health_profile').upsert(
+      { user_id: UID, diagnoses: [], symptoms: [], medications: [], labs: {}, physical: {}, lifestyle: {} },
+      { onConflict: 'user_id' }
+    );
+    await sb.from('user_profiles').upsert(
+      { user_id: UID, birth_year: birthYear68 },
+      { onConflict: 'user_id' }
+    );
+
+    // ── Negative cases: must fire BOOTSTRAP_CLINICAL_NEGATIVE ────────────────
+    const negCases = [
+      'Ne.',
+      'Ne, s ničím se neléčím a žádné léky pravidelně neberu.',
+      'S ničím se neléčím a nic neberu.',
+      'Nemám žádnou diagnózu ani pravidelné léky.',
+    ];
+    for (const answer of negCases) {
+      const r = await runClinicalAnswer(UID, birthYear68, answer);
+      check(r.debug?.reason_code === 'BOOTSTRAP_CLINICAL_NEGATIVE',
+        `BS-CC3B-neg: "${answer.slice(0, 60)}" → BOOTSTRAP_CLINICAL_NEGATIVE`,
+        `actual reason_code: ${r.debug?.reason_code}`);
+    }
+
+    // ── Positive cases: must NOT fire BOOTSTRAP_CLINICAL_NEGATIVE ────────────
+    const posCases = [
+      'Ne, vlastně beru léky na tlak.',
+      'Ne, jen beru Amlodipin.',
+    ];
+    for (const answer of posCases) {
+      const r = await runClinicalAnswer(UID, birthYear68, answer);
+      check(r.debug?.reason_code !== 'BOOTSTRAP_CLINICAL_NEGATIVE',
+        `BS-CC3B-pos: "${answer.slice(0, 60)}" → NOT BOOTSTRAP_CLINICAL_NEGATIVE (GHR path)`,
+        `actual reason_code: ${r.debug?.reason_code}`);
+    }
+
+    // ── E2E regression: 58yo compound negative → clinical_context not repeated ─
+    // Create fresh ephemeral user to avoid stale DB state from positive-case extraction
+    const E2E_UID = `test-bootstrap-cc3b-e2e-${Date.now()}`;
+    await sb.from('user_health_profile').upsert(
+      { user_id: E2E_UID, diagnoses: [], symptoms: [], medications: [], labs: {}, physical: {}, lifestyle: {} },
+      { onConflict: 'user_id' }
+    );
+    await sb.from('user_profiles').upsert(
+      { user_id: E2E_UID, birth_year: birthYear58 },
+      { onConflict: 'user_id' }
+    );
+
+    try {
+      const r = await runClinicalAnswer(E2E_UID, birthYear58,
+        'Ne, s ničím se neléčím a žádné léky pravidelně neberu.');
+
+      check(r.debug?.reason_code?.startsWith('BOOTSTRAP_CLINICAL_NEGATIVE')
+        || r.debug?.reason_code === 'BOOTSTRAP_EXHAUSTED_AFTER_CLINICAL_NEGATIVE',
+        'BS-CC3B-E2E-1: compound negative fires BOOTSTRAP_CLINICAL_NEGATIVE path (not GHR)',
+        `actual: ${r.debug?.reason_code}`);
+      const evType = r.session_updates?.pending_question?.evidence_type;
+      check(evType !== 'clinical_context',
+        'BS-CC3B-E2E-2: clinical_context NOT repeated after compound negative (58yo)',
+        `actual: ${evType}`);
+      const ageGated = ['recent_falls', 'vstat_ze_zeme', 'vynest_nakup', 'gait_stability'];
+      check(!ageGated.includes(evType),
+        `BS-CC3B-E2E-3: no age-gated functional Bootstrap candidate for 58yo (all filtered)`,
+        `actual: ${evType}`);
+    } finally {
+      await sb.from('user_health_profile').delete().eq('user_id', E2E_UID);
+      await sb.from('user_profiles').delete().eq('user_id', E2E_UID);
+    }
+
+  } finally {
+    await sb.from('user_health_profile').delete().eq('user_id', UID);
+    await sb.from('user_profiles').delete().eq('user_id', UID);
+  }
+}
+
 async function scenarioBS_CC4() {
   sep('BS-CC4 — "nevím" to clinical_context → BOOTSTRAP_REFUSAL_RE defer → budget unchanged');
 
@@ -4322,6 +4426,7 @@ async function main() {
     await scenarioBS_CC1();
     await scenarioBS_CC2();
     await scenarioBS_CC3();
+    await scenarioBS_CC3B();
     await scenarioBS_CC4();
     await scenarioBS_CC5();
     await scenarioBS_BY1();
