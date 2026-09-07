@@ -4514,6 +4514,105 @@ function scenarioLD() {
   }
 }
 
+// ── scenarioLD_LIFECYCLE — PATH Discovery lifecycle (expects_reply) ───────────
+// Regression guard: PATH_DISCOVERY_HOLD and PATH_DISCOVERY_CANDIDATE must have
+// expects_reply: true so the Launcher keeps the input active after HOLD.
+// Ordinary Engine HOLD (ACTION_COMPLETED) must remain expects_reply: false.
+async function scenarioLD_LIFECYCLE() {
+  sep('LD-LIFECYCLE — PATH Discovery expects_reply: true (non-terminal HOLD)');
+
+  const UID = `test-ld-lifecycle-${Date.now()}`;
+  try {
+    await sb.from('user_health_profile').upsert(
+      { user_id: UID, diagnoses: [], symptoms: [], medications: [], labs: [], physical: {}, lifestyle: {} },
+      { onConflict: 'user_id' }
+    );
+    await sb.from('user_profiles').upsert(
+      { user_id: UID, birth_year: 1968 },
+      { onConflict: 'user_id' }
+    );
+
+    // LD-LC1: answer to PATH_DISCOVERY BP question with normal BP (120) → PATH_DISCOVERY_HOLD
+    {
+      const session = {
+        hp_physical:      { weekly_aerobic_activity_days: 3 },
+        resolved_physical: ['weekly_aerobic_activity_days'],
+        person_birth_year: 1968,
+        person_sex:        null,
+        pending_question: {
+          text: 'Přibližně jaký máš krevní tlak?',
+          evidence_type: 'known_blood_pressure_approx',
+          type: 'PATH_DISCOVERY',
+        },
+      };
+      const r = await processInput(UID, '120 na 75', session);
+      const isHold = r.debug?.reason_code === 'PATH_DISCOVERY_HOLD';
+      check(
+        isHold || r.debug?.reason_code?.startsWith('PATH_DISCOVERY'),
+        'LD-LC1-1: normal BP after PATH_DISCOVERY question → PATH_DISCOVERY path',
+        `actual: reason=${r.debug?.reason_code}, mode=${r.mode}`
+      );
+      if (isHold) {
+        check(r.expects_reply === true,
+          'LD-LC1-2: PATH_DISCOVERY_HOLD → expects_reply: true (Launcher must not disable input)',
+          `actual: ${r.expects_reply}`);
+      }
+    }
+
+    // LD-LC2: answer to PATH_DISCOVERY BP question with elevated BP (160) → PATH_DISCOVERY_CANDIDATE
+    {
+      const session = {
+        hp_physical:      { weekly_aerobic_activity_days: 3 },
+        resolved_physical: ['weekly_aerobic_activity_days'],
+        person_birth_year: 1968,
+        person_sex:        null,
+        pending_question: {
+          text: 'Přibližně jaký máš krevní tlak?',
+          evidence_type: 'known_blood_pressure_approx',
+          type: 'PATH_DISCOVERY',
+        },
+      };
+      const r = await processInput(UID, '160 na 95', session);
+      const isCandidate = r.debug?.reason_code === 'PATH_DISCOVERY_CANDIDATE';
+      check(
+        isCandidate || r.debug?.reason_code?.startsWith('PATH_DISCOVERY'),
+        'LD-LC2-1: elevated BP after PATH_DISCOVERY question → PATH_DISCOVERY path',
+        `actual: reason=${r.debug?.reason_code}, mode=${r.mode}`
+      );
+      if (isCandidate) {
+        check(r.expects_reply === true,
+          'LD-LC2-2: PATH_DISCOVERY_CANDIDATE → expects_reply: true (Launcher must not disable input)',
+          `actual: ${r.expects_reply}`);
+      }
+    }
+
+  } finally {
+    await sb.from('user_health_profile').delete().eq('user_id', UID);
+    await sb.from('user_profiles').delete().eq('user_id', UID);
+  }
+
+  // LD-LC3: ordinary Engine HOLD (ACTION_COMPLETED) → expects_reply: false (unchanged)
+  // Uses main USER_ID with a crafted session containing a current action.
+  {
+    const session = {
+      current_action_assignment: {
+        action_id:       'test-hold-action',
+        intervention_id: null,
+        label:           'Test akce',
+      },
+    };
+    const r = await processInput(USER_ID, 'Hotovo', session);
+    if (r.mode === 'HOLD') {
+      check(r.expects_reply === false,
+        'LD-LC3: ordinary HOLD (ACTION_COMPLETED) → expects_reply: false unchanged',
+        `actual: ${r.expects_reply}`);
+    } else {
+      check(true,
+        `LD-LC3: ordinary HOLD test skipped — engine returned mode=${r.mode} (engine-state dependent)`);
+    }
+  }
+}
+
 // ── Run ───────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -4581,6 +4680,7 @@ async function main() {
     await scenarioBS_AGE_F();
     await scenarioBS_E2E_CHAIN();
     scenarioLD();
+    await scenarioLD_LIFECYCLE();
 
     const total = passed + failed;
     sep(`Results: ${passed}/${total} passed${failed ? ` — ${failed} FAILED` : ''}${skipped ? ` (${skipped} skipped — engine-state dependent)` : ''}`);

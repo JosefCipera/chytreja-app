@@ -860,7 +860,7 @@ export async function processInput(userId, userText, sessionState = {}) {
           mode:          'HOLD',
           text:          `Na základě toho, co víš, stojí za bližší pohled: ${_pdSignal1.label_cs}.`,
           buttons:       [],
-          expects_reply: false,
+          expects_reply: true,
           session_updates: { ...baseUpdates, pending_question: null },
           debug: { reason_code: 'PATH_DISCOVERY_CANDIDATE', path_id: _pdSignal1.path_id },
         };
@@ -869,7 +869,7 @@ export async function processInput(userId, userText, sessionState = {}) {
         mode:          'HOLD',
         text:          _pdSignal1.text,
         buttons:       [],
-        expects_reply: false,
+        expects_reply: true,
         session_updates: { ...baseUpdates, pending_question: null },
         debug: { reason_code: 'PATH_DISCOVERY_HOLD', after: 'BOOTSTRAP_EXHAUSTED_AFTER_CLINICAL_NEGATIVE' },
       };
@@ -944,7 +944,7 @@ export async function processInput(userId, userText, sessionState = {}) {
         mode:          'HOLD',
         text:          `Na základě toho, co víš, stojí za bližší pohled: ${_pdSignal2.label_cs}.`,
         buttons:       [],
-        expects_reply: false,
+        expects_reply: true,
         session_updates: { ...baseUpdates, pending_question: null },
         debug: { reason_code: 'PATH_DISCOVERY_CANDIDATE', path_id: _pdSignal2.path_id },
       };
@@ -953,7 +953,7 @@ export async function processInput(userId, userText, sessionState = {}) {
       mode:          'HOLD',
       text:          _pdSignal2.text,
       buttons:       [],
-      expects_reply: false,
+      expects_reply: true,
       session_updates: { ...baseUpdates, pending_question: null },
       debug: { reason_code: 'PATH_DISCOVERY_HOLD', after: 'BOOTSTRAP_EXHAUSTED_AFTER_SKIP', skipped: deferredType },
     };
@@ -976,7 +976,7 @@ export async function processInput(userId, userText, sessionState = {}) {
       mode:          'HOLD',
       text:          _pdHoldText,
       buttons:       [],
-      expects_reply: false,
+      expects_reply: true,
       session_updates: { ..._pdBase, pending_question: null },
       debug: { reason_code: 'PATH_DISCOVERY_HOLD_USER_DECLINED' },
     };
@@ -1172,7 +1172,7 @@ export async function processInput(userId, userText, sessionState = {}) {
         mode:          'HOLD',
         text:          `Na základě toho, co víš, stojí za bližší pohled: ${_pdNext.label_cs}.`,
         buttons:       [],
-        expects_reply: false,
+        expects_reply: true,
         session_updates: { ..._pdBaseUpd, pending_question: null },
         debug: { reason_code: 'PATH_DISCOVERY_CANDIDATE', path_id: _pdNext.path_id },
       };
@@ -1181,7 +1181,7 @@ export async function processInput(userId, userText, sessionState = {}) {
       mode:          'HOLD',
       text:          _pdNext.text,
       buttons:       [],
-      expects_reply: false,
+      expects_reply: true,
       session_updates: { ..._pdBaseUpd, pending_question: null },
       debug: { reason_code: 'PATH_DISCOVERY_HOLD' },
     };
