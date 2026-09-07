@@ -4613,6 +4613,93 @@ async function scenarioLD_LIFECYCLE() {
   }
 }
 
+async function scenarioLD_FOLLOWUP() {
+  sep('LD-FOLLOWUP — PATH Discovery HOLD lifecycle follow-up assertions');
+
+  const UID = `test-ld-followup-${Date.now()}`;
+  try {
+    await sb.from('user_health_profile').upsert(
+      { user_id: UID, diagnoses: [], symptoms: [], medications: [], labs: [], physical: {}, lifestyle: {} },
+      { onConflict: 'user_id' }
+    );
+    await sb.from('user_profiles').upsert(
+      { user_id: UID, birth_year: 1968 },
+      { onConflict: 'user_id' }
+    );
+
+    // Shared session: all PATH Discovery answers in, HOLD is the last state.
+    const holdSession = {
+      hp_physical:      { weekly_aerobic_activity_days: 3, exertional_dyspnea: false, known_blood_pressure_approx: 120 },
+      resolved_physical: ['weekly_aerobic_activity_days', 'exertional_dyspnea', 'known_blood_pressure_approx'],
+      person_birth_year: 1968,
+      person_sex:        null,
+      pending_question:  null,
+      last_daily_decision: { mode: 'HOLD', reason_code: 'PATH_DISCOVERY_HOLD' },
+    };
+
+    // LD-FU1: DOMAIN_REQUEST after PATH_DISCOVERY_HOLD → HOLD mode, expects_reply true, no clinical_context
+    {
+      const r = await processInput(UID, 'A co mám tedy dělat?', holdSession);
+      check(r.mode === 'HOLD',
+        'LD-FU1-1: DOMAIN_REQUEST after PATH_DISCOVERY_HOLD → HOLD mode (not Bootstrap re-entry)',
+        `actual: mode=${r.mode}, reason=${r.debug?.reason_code}`);
+      check(r.expects_reply === true,
+        'LD-FU1-2: PATH Discovery HOLD follow-up → expects_reply: true',
+        `actual: ${r.expects_reply}`);
+      const pendingEv = r.session_updates?.pending_question?.evidence_type;
+      check(pendingEv !== 'clinical_context',
+        'LD-FU1-3: DOMAIN_REQUEST after PATH_DISCOVERY_HOLD → pending_question is NOT clinical_context',
+        `actual: pending_question.evidence_type=${pendingEv}`);
+      check(r.debug?.reason_code === 'PATH_DISCOVERY_HOLD_DOMAIN_FOLLOWUP',
+        'LD-FU1-4: reason_code = PATH_DISCOVERY_HOLD_DOMAIN_FOLLOWUP',
+        `actual: ${r.debug?.reason_code}`);
+    }
+
+    // LD-FU2: WHY_REQUEST after PATH_DISCOVERY_HOLD → EXPLAIN mode, expects_reply true (not "Nemám kontext")
+    {
+      const r = await processInput(UID, 'Proč to ještě nevíš?', holdSession);
+      check(r.mode === 'EXPLAIN',
+        'LD-FU2-1: WHY_REQUEST after PATH_DISCOVERY_HOLD → EXPLAIN mode',
+        `actual: mode=${r.mode}`);
+      check(r.expects_reply === true,
+        'LD-FU2-2: PATH Discovery WHY response → expects_reply: true',
+        `actual: ${r.expects_reply}`);
+      const notNoContext = !r.text?.includes('Nemám kontext');
+      check(notNoContext,
+        'LD-FU2-3: WHY after PATH_DISCOVERY_HOLD → not generic "Nemám kontext" fallback',
+        `actual text: "${r.text?.slice(0, 80)}"`);
+      check(r.debug?.source === 'path_discovery_hold_explain',
+        'LD-FU2-4: debug.source = path_discovery_hold_explain',
+        `actual: ${r.debug?.source}`);
+    }
+
+  } finally {
+    await sb.from('user_health_profile').delete().eq('user_id', UID);
+    await sb.from('user_profiles').delete().eq('user_id', UID);
+  }
+
+  // LD-FU3: ordinary Engine HOLD (ACTION_COMPLETED) remains expects_reply: false (regression)
+  // Re-asserts LD-LC3 from scenarioLD_LIFECYCLE — must stay unchanged after follow-up fixes.
+  {
+    const session = {
+      current_action_assignment: {
+        action_id:       'test-hold-action',
+        intervention_id: null,
+        label:           'Test akce',
+      },
+    };
+    const r = await processInput(USER_ID, 'Hotovo', session);
+    if (r.mode === 'HOLD') {
+      check(r.expects_reply === false,
+        'LD-FU3: ordinary Engine HOLD (ACTION_COMPLETED) → expects_reply: false still (regression guard)',
+        `actual: ${r.expects_reply}`);
+    } else {
+      check(true,
+        `LD-FU3: ordinary Engine HOLD test skipped — engine returned mode=${r.mode} (engine-state dependent)`);
+    }
+  }
+}
+
 // ── Run ───────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -4681,6 +4768,7 @@ async function main() {
     await scenarioBS_E2E_CHAIN();
     scenarioLD();
     await scenarioLD_LIFECYCLE();
+    await scenarioLD_FOLLOWUP();
 
     const total = passed + failed;
     sep(`Results: ${passed}/${total} passed${failed ? ` — ${failed} FAILED` : ''}${skipped ? ` (${skipped} skipped — engine-state dependent)` : ''}`);

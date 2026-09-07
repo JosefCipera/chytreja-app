@@ -44,6 +44,11 @@ const _bootstrapNeeds = JSON.parse(
 );
 const BOOTSTRAP_TYPES = new Set(_bootstrapNeeds.map(n => n.evidence_type));
 
+// Discovery hold text — canonical system explanation for PATH_DISCOVERY_HOLD WHY response.
+const DISCOVERY_HOLD_TEXT = JSON.parse(
+  readFileSync(join(_dir, '../../data/engine/longevity-discovery.json'), 'utf8')
+).hold_text;
+
 // PATH Discovery evidence types — used for normalization guards and post-answer routing.
 const PATH_DISCOVERY_TYPES = new Set([
   'weekly_aerobic_activity_days',
@@ -600,6 +605,20 @@ function buildFallbackResponse(result, sessionUpdates, warnings) {
   };
 }
 
+// ── PATH Discovery WHY response ───────────────────────────────────────────────
+// Fired when user asks WHY and last_daily_decision identifies PATH Discovery HOLD.
+// Returns the canonical hold_text as EXPLAIN — no new clinical inference.
+function buildPathDiscoveryWhyResponse(_state) {
+  return {
+    mode:          'EXPLAIN',
+    text:          DISCOVERY_HOLD_TEXT,
+    buttons:       [],
+    expects_reply: true,
+    session_updates: {},
+    debug:         { source: 'path_discovery_hold_explain' },
+  };
+}
+
 // ── WHY response (no engine call) ─────────────────────────────────────────────
 // Uses only cached explanation_context from last_domain_response.
 // No new clinical inference, no new engine call.
@@ -751,7 +770,12 @@ export async function processInput(userId, userText, sessionState = {}) {
   const textLower = userText.toLowerCase();
   const isWhy = event_type === 'WHY_REQUEST'
     || (textLower.startsWith('proč') || textLower.startsWith('proc'));
-  if (isWhy) return buildWhyResponse(state);
+  if (isWhy) {
+    if (state.last_daily_decision?.reason_code?.startsWith('PATH_DISCOVERY_HOLD')) {
+      return buildPathDiscoveryWhyResponse(state);
+    }
+    return buildWhyResponse(state);
+  }
 
   // 3. Map classifier event type to adapter-supported type
   let adapterType = ADAPTER_EVENT_TYPES.has(event_type) ? event_type : 'DOMAIN_REQUEST';
@@ -762,6 +786,26 @@ export async function processInput(userId, userText, sessionState = {}) {
       && (!state.current_action_assignment?.action_id
           || !state.current_action_assignment?.intervention_id)) {
     adapterType = 'DOMAIN_REQUEST';
+  }
+
+  // ── PATH Discovery HOLD follow-up (DOMAIN_REQUEST) ───────────────────────────
+  // After PATH Discovery exhausts all paths, a DOMAIN_REQUEST must not re-enter Bootstrap.
+  // Return the honest HOLD state; conversation stays open.
+  if (adapterType === 'DOMAIN_REQUEST'
+      && state.last_daily_decision?.reason_code?.startsWith('PATH_DISCOVERY_HOLD')) {
+    return {
+      mode:          'HOLD',
+      text:          'Dosavadní odpovědi neukázaly na prioritní longevitní cestu. Hlásíš-li novou diagnózu nebo symptomy, řekni mi.',
+      buttons:       [],
+      expects_reply: true,
+      session_updates: {
+        last_daily_decision:       state.last_daily_decision,
+        last_domain_response:      state.last_domain_response ?? null,
+        current_action_assignment: null,
+        pending_question:          null,
+      },
+      debug: { reason_code: 'PATH_DISCOVERY_HOLD_DOMAIN_FOLLOWUP' },
+    };
   }
 
   // ── Bootstrap refusal pre-classifier override (narrow unlock) ───────────────
@@ -870,7 +914,7 @@ export async function processInput(userId, userText, sessionState = {}) {
         text:          _pdSignal1.text,
         buttons:       [],
         expects_reply: true,
-        session_updates: { ...baseUpdates, pending_question: null },
+        session_updates: { ...baseUpdates, pending_question: null, last_daily_decision: { mode: 'HOLD', reason_code: 'PATH_DISCOVERY_HOLD' } },
         debug: { reason_code: 'PATH_DISCOVERY_HOLD', after: 'BOOTSTRAP_EXHAUSTED_AFTER_CLINICAL_NEGATIVE' },
       };
     }
@@ -954,7 +998,7 @@ export async function processInput(userId, userText, sessionState = {}) {
       text:          _pdSignal2.text,
       buttons:       [],
       expects_reply: true,
-      session_updates: { ...baseUpdates, pending_question: null },
+      session_updates: { ...baseUpdates, pending_question: null, last_daily_decision: { mode: 'HOLD', reason_code: 'PATH_DISCOVERY_HOLD' } },
       debug: { reason_code: 'PATH_DISCOVERY_HOLD', after: 'BOOTSTRAP_EXHAUSTED_AFTER_SKIP', skipped: deferredType },
     };
   }
@@ -964,14 +1008,14 @@ export async function processInput(userId, userText, sessionState = {}) {
   // without enough evidence no path can be promoted to CANDIDATE.
   if (adapterType === 'USER_PREFERENCE' && state.pending_question?.type === 'PATH_DISCOVERY') {
     const _pdBase = {
-      last_daily_decision:       state.last_daily_decision       ?? null,
+      last_daily_decision:       { mode: 'HOLD', reason_code: 'PATH_DISCOVERY_HOLD_USER_DECLINED' },
       last_domain_response:      state.last_domain_response      ?? null,
       current_action_assignment: null,
       skipped_bootstrap_types:   state.skipped_bootstrap_types   ?? [],
       question_budget_remaining: typeof state.question_budget_remaining === 'number'
         ? state.question_budget_remaining : 3,
     };
-    const _pdHoldText = 'Z toho, co zatím vím, nevidím jasný constraint. Metabolickou cestu ale bez laboratorních výsledků neumím dostatečně posoudit.';
+    const _pdHoldText = DISCOVERY_HOLD_TEXT;
     return {
       mode:          'HOLD',
       text:          _pdHoldText,
@@ -1182,7 +1226,7 @@ export async function processInput(userId, userText, sessionState = {}) {
       text:          _pdNext.text,
       buttons:       [],
       expects_reply: true,
-      session_updates: { ..._pdBaseUpd, pending_question: null },
+      session_updates: { ..._pdBaseUpd, pending_question: null, last_daily_decision: { mode: 'HOLD', reason_code: 'PATH_DISCOVERY_HOLD' } },
       debug: { reason_code: 'PATH_DISCOVERY_HOLD' },
     };
   }
