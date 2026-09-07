@@ -51,16 +51,42 @@ export function inference(activatedStates, person, clinicalHistory, observations
       strength += 1;
     }
 
+    // Fasting glucose — WHO IFG lower bound 6.1 mmol/L (not ADA 5.6).
+    let glucoseContrib = 0;
     const glucoseObs = observations.filter(o => o.obs_type === 'lab_glucose_fasting');
     if (glucoseObs.length > 0) {
       const maxGlucose = Math.max(...glucoseObs.map(o => o.value));
-      if (maxGlucose >= 5.6) {
-        signals.push({ source: 'OBSERVATION', obs_type: 'lab_glucose_fasting', value: maxGlucose, note: maxGlucose >= 7.0 ? 'Diabetické rozmezí' : 'Prediabetické rozmezí' });
-        strength += maxGlucose >= 7.0 ? 2 : 1;
+      if (maxGlucose >= 6.1) {
+        signals.push({ source: 'OBSERVATION', obs_type: 'lab_glucose_fasting', value: maxGlucose,
+          note: maxGlucose >= 7.0
+            ? 'Diabetické rozmezí — hepatická IR (WHO ≥7.0 mmol/L)'
+            : 'Porušená lačná glykémie — hepatická IR (WHO IFG 6.1–6.9 mmol/L)' });
+        glucoseContrib = maxGlucose >= 7.0 ? 2 : 1;
       }
     }
 
-    if (strength >= 2) {
+    // HbA1c — stored in %, thresholds: 6.0% = 42 mmol/mol (WHO elevated risk), 6.5% = 48 mmol/mol (WHO diabetes).
+    // CHJ inference: elevated glycaemia is a consequence of IR; elevated HbA1c raises the probability IR is present.
+    let hba1cContrib = 0;
+    const hba1cObs = observations.filter(o => o.obs_type === 'lab_hba1c');
+    if (hba1cObs.length > 0) {
+      const maxHba1c = Math.max(...hba1cObs.map(o => o.value));
+      if (maxHba1c >= 6.0) {
+        signals.push({ source: 'OBSERVATION', obs_type: 'lab_hba1c', value: maxHba1c,
+          note: maxHba1c >= 6.5
+            ? 'HbA1c diabetické rozmezí (≥6.5% / 48 mmol/mol) — CHJ inference: chronická hyperglykémie → IR'
+            : 'HbA1c zvýšené (6.0–6.4% / 42–47 mmol/mol, WHO rizikové pásmo) — CHJ inference: IR' });
+        hba1cContrib = maxHba1c >= 6.5 ? 2 : 1;
+      }
+    }
+
+    // No double-counting: correlated glycaemic markers contribute only their stronger signal.
+    const glycaemicContrib = Math.max(glucoseContrib, hba1cContrib);
+    strength += glycaemicContrib;
+
+    // Trigger: a glycaemic lab alone is sufficient (direct biomarker of IR consequence).
+    // Without lab evidence, combined lifestyle/clinical signal strength must reach ≥ 2.
+    if (strength >= 2 || glycaemicContrib >= 1) {
       states.push({
         node_id: 'INSULIN_RESISTANCE',
         current_state: 'PREDICTED_CURRENT',
@@ -72,8 +98,8 @@ export function inference(activatedStates, person, clinicalHistory, observations
         },
         missing_evidence: [
           { type: 'OBSERVATION', obs_type: 'lab_homa_ir', note: 'HOMA-IR (lačný inzulín + glukóza) — praktický nepřímý odhad inzulinové rezistence; referenční metodou je euglykaemický clamp' },
-          { type: 'OBSERVATION', obs_type: 'lab_hba1c',   note: 'HbA1c — 3měsíční průměr glykémie' },
-          { type: 'OBSERVATION', obs_type: 'waist_cm',    note: 'Obvod pasu > 94 cm (muž) = metabolický rizikový faktor' },
+          ...(hba1cContrib === 0 ? [{ type: 'OBSERVATION', obs_type: 'lab_hba1c', note: 'HbA1c — 3měsíční průměr glykémie; ≥6.0% (42 mmol/mol) = zvýšené riziko (WHO)' }] : []),
+          { type: 'OBSERVATION', obs_type: 'waist_cm', note: 'Obvod pasu > 94 cm (muž) = metabolický rizikový faktor' },
         ],
       });
     }

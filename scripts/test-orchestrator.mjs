@@ -4700,6 +4700,184 @@ async function scenarioLD_FOLLOWUP() {
   }
 }
 
+// ── IR — HbA1c + Fasting Glucose → INSULIN_RESISTANCE inference ──────────────
+
+async function scenarioIR() {
+  sep('IR — HbA1c and Fasting Glucose inference for INSULIN_RESISTANCE');
+
+  // IR-1: HbA1c prediabetic range (6.1% = ~43 mmol/mol) alone → IR PREDICTED_CURRENT
+  {
+    const UID = `test-ir-1-${Date.now()}`;
+    await sb.from('user_health_profile').upsert(
+      { user_id: UID, diagnoses: [], symptoms: [], medications: [], labs: { hba1c: 6.1 }, physical: {}, lifestyle: {} },
+      { onConflict: 'user_id' });
+    await sb.from('user_profiles').upsert({ user_id: UID, birth_year: 1968 }, { onConflict: 'user_id' });
+    try {
+      const eng = await runEngine(UID);
+      const ir = eng.node_states?.find(n => n.node_id === 'INSULIN_RESISTANCE');
+      check(ir?.current_state === 'PREDICTED_CURRENT',
+        'IR-1: HbA1c 6.1% (43 mmol/mol) alone → INSULIN_RESISTANCE PREDICTED_CURRENT',
+        `actual: ${ir?.current_state ?? 'absent'}`);
+    } finally {
+      await sb.from('user_health_profile').delete().eq('user_id', UID);
+      await sb.from('user_profiles').delete().eq('user_id', UID);
+    }
+  }
+
+  // IR-2: HbA1c diabetic range (6.7% = ~50 mmol/mol) alone → IR PREDICTED_CURRENT
+  {
+    const UID = `test-ir-2-${Date.now()}`;
+    await sb.from('user_health_profile').upsert(
+      { user_id: UID, diagnoses: [], symptoms: [], medications: [], labs: { hba1c: 6.7 }, physical: {}, lifestyle: {} },
+      { onConflict: 'user_id' });
+    await sb.from('user_profiles').upsert({ user_id: UID, birth_year: 1968 }, { onConflict: 'user_id' });
+    try {
+      const eng = await runEngine(UID);
+      const ir = eng.node_states?.find(n => n.node_id === 'INSULIN_RESISTANCE');
+      check(ir?.current_state === 'PREDICTED_CURRENT',
+        'IR-2: HbA1c 6.7% (50 mmol/mol) alone → INSULIN_RESISTANCE PREDICTED_CURRENT',
+        `actual: ${ir?.current_state ?? 'absent'}`);
+    } finally {
+      await sb.from('user_health_profile').delete().eq('user_id', UID);
+      await sb.from('user_profiles').delete().eq('user_id', UID);
+    }
+  }
+
+  // IR-3: FPG prediabetic range (6.2 mmol/L, WHO IFG) alone → IR PREDICTED_CURRENT
+  {
+    const UID = `test-ir-3-${Date.now()}`;
+    await sb.from('user_health_profile').upsert(
+      { user_id: UID, diagnoses: [], symptoms: [], medications: [], labs: { fasting_glucose: 6.2 }, physical: {}, lifestyle: {} },
+      { onConflict: 'user_id' });
+    await sb.from('user_profiles').upsert({ user_id: UID, birth_year: 1968 }, { onConflict: 'user_id' });
+    try {
+      const eng = await runEngine(UID);
+      const ir = eng.node_states?.find(n => n.node_id === 'INSULIN_RESISTANCE');
+      check(ir?.current_state === 'PREDICTED_CURRENT',
+        'IR-3: FPG 6.2 mmol/L (WHO IFG) alone → INSULIN_RESISTANCE PREDICTED_CURRENT',
+        `actual: ${ir?.current_state ?? 'absent'}`);
+    } finally {
+      await sb.from('user_health_profile').delete().eq('user_id', UID);
+      await sb.from('user_profiles').delete().eq('user_id', UID);
+    }
+  }
+
+  // IR-4: FPG diabetic range (7.1 mmol/L) alone → IR PREDICTED_CURRENT
+  {
+    const UID = `test-ir-4-${Date.now()}`;
+    await sb.from('user_health_profile').upsert(
+      { user_id: UID, diagnoses: [], symptoms: [], medications: [], labs: { fasting_glucose: 7.1 }, physical: {}, lifestyle: {} },
+      { onConflict: 'user_id' });
+    await sb.from('user_profiles').upsert({ user_id: UID, birth_year: 1968 }, { onConflict: 'user_id' });
+    try {
+      const eng = await runEngine(UID);
+      const ir = eng.node_states?.find(n => n.node_id === 'INSULIN_RESISTANCE');
+      check(ir?.current_state === 'PREDICTED_CURRENT',
+        'IR-4: FPG 7.1 mmol/L (diabetic) alone → INSULIN_RESISTANCE PREDICTED_CURRENT',
+        `actual: ${ir?.current_state ?? 'absent'}`);
+    } finally {
+      await sb.from('user_health_profile').delete().eq('user_id', UID);
+      await sb.from('user_profiles').delete().eq('user_id', UID);
+    }
+  }
+
+  // IR-5: HbA1c + FPG both prediabetic — max contribution used, not sum; both signals appear in evidence
+  {
+    const UID = `test-ir-5-${Date.now()}`;
+    await sb.from('user_health_profile').upsert(
+      { user_id: UID, diagnoses: [], symptoms: [], medications: [], labs: { hba1c: 6.1, fasting_glucose: 6.2 }, physical: {}, lifestyle: {} },
+      { onConflict: 'user_id' });
+    await sb.from('user_profiles').upsert({ user_id: UID, birth_year: 1968 }, { onConflict: 'user_id' });
+    try {
+      const eng = await runEngine(UID);
+      const ir = eng.node_states?.find(n => n.node_id === 'INSULIN_RESISTANCE');
+      check(ir?.current_state === 'PREDICTED_CURRENT',
+        'IR-5: HbA1c 6.1% + FPG 6.2 → INSULIN_RESISTANCE PREDICTED_CURRENT',
+        `actual: ${ir?.current_state ?? 'absent'}`);
+      const signals = ir?.evidence?.inferred_from_nodes ?? [];
+      const hasHba1c = signals.some(s => s.obs_type === 'lab_hba1c');
+      const hasFpg   = signals.some(s => s.obs_type === 'lab_glucose_fasting');
+      check(hasHba1c && hasFpg,
+        'IR-5b: both lab_hba1c and lab_glucose_fasting appear in inferred_from_nodes (evidence traceability)',
+        `hba1c in signals: ${hasHba1c}, fpg in signals: ${hasFpg}`);
+      check(ir?.current_state !== 'MEASURED',
+        'IR-5c: ceiling = PREDICTED_CURRENT, not MEASURED (no double-counting can escalate status)',
+        `actual: ${ir?.current_state}`);
+    } finally {
+      await sb.from('user_health_profile').delete().eq('user_id', UID);
+      await sb.from('user_profiles').delete().eq('user_id', UID);
+    }
+  }
+
+  // IR-6: normal HbA1c (5.8%) and normal FPG (5.5 mmol/L) → IR NOT activated for blank user
+  {
+    const UID = `test-ir-6-${Date.now()}`;
+    await sb.from('user_health_profile').upsert(
+      { user_id: UID, diagnoses: [], symptoms: [], medications: [], labs: { hba1c: 5.8, fasting_glucose: 5.5 }, physical: {}, lifestyle: {} },
+      { onConflict: 'user_id' });
+    await sb.from('user_profiles').upsert({ user_id: UID, birth_year: 1968 }, { onConflict: 'user_id' });
+    try {
+      const eng = await runEngine(UID);
+      const ir = eng.node_states?.find(n => n.node_id === 'INSULIN_RESISTANCE');
+      check(!ir || ir.current_state === 'UNKNOWN',
+        'IR-6: normal HbA1c 5.8% + FPG 5.5 → INSULIN_RESISTANCE not activated (no glycaemic signal, no other evidence)',
+        `actual: ${ir?.current_state ?? 'absent'}`);
+    } finally {
+      await sb.from('user_health_profile').delete().eq('user_id', UID);
+      await sb.from('user_profiles').delete().eq('user_id', UID);
+    }
+  }
+
+  // IR-7: no lab case reaches MEASURED — diabetic FPG + diabetic HbA1c together still PREDICTED_CURRENT
+  {
+    const UID = `test-ir-7-${Date.now()}`;
+    await sb.from('user_health_profile').upsert(
+      { user_id: UID, diagnoses: [], symptoms: [], medications: [], labs: { hba1c: 8.0, fasting_glucose: 9.5 }, physical: {}, lifestyle: {} },
+      { onConflict: 'user_id' });
+    await sb.from('user_profiles').upsert({ user_id: UID, birth_year: 1968 }, { onConflict: 'user_id' });
+    try {
+      const eng = await runEngine(UID);
+      const ir = eng.node_states?.find(n => n.node_id === 'INSULIN_RESISTANCE');
+      check(ir?.current_state === 'PREDICTED_CURRENT',
+        'IR-7a: HbA1c 8.0% + FPG 9.5 → INSULIN_RESISTANCE PREDICTED_CURRENT (not MEASURED)',
+        `actual: ${ir?.current_state ?? 'absent'}`);
+      check(ir?.current_state !== 'MEASURED',
+        'IR-7b: no lab combination can reach MEASURED — ceiling is PREDICTED_CURRENT',
+        `actual: ${ir?.current_state}`);
+    } finally {
+      await sb.from('user_health_profile').delete().eq('user_id', UID);
+      await sb.from('user_profiles').delete().eq('user_id', UID);
+    }
+  }
+
+  // IR-8: regression — existing adiposity+inactivity IR inference path unaffected (no labs)
+  // A user with EXCESS_ADIPOSITY (BMI 30) + sedentary work → IR PREDICTED_CURRENT via existing path
+  {
+    const UID = `test-ir-8-${Date.now()}`;
+    await sb.from('user_health_profile').upsert(
+      { user_id: UID,
+        diagnoses: [], symptoms: [], medications: [], labs: {}, lifestyle: { sedentary: true },
+        physical: {} },
+      { onConflict: 'user_id' });
+    await sb.from('user_profiles').upsert({ user_id: UID, birth_year: 1968, weight: 95, height: 178 }, { onConflict: 'user_id' });
+    try {
+      const eng = await runEngine(UID);
+      const adiposity = eng.node_states?.find(n => n.node_id === 'EXCESS_ADIPOSITY');
+      const ir        = eng.node_states?.find(n => n.node_id === 'INSULIN_RESISTANCE');
+      check(adiposity?.current_state === 'MEASURED',
+        'IR-8a: BMI 30 user → EXCESS_ADIPOSITY MEASURED (regression: adiposity activation unchanged)',
+        `actual: ${adiposity?.current_state ?? 'absent'}`);
+      // adiposity MEASURED → high confidence → contributes +2 to IR strength; threshold ≥2 met
+      check(ir?.current_state === 'PREDICTED_CURRENT',
+        'IR-8b: EXCESS_ADIPOSITY MEASURED → INSULIN_RESISTANCE PREDICTED_CURRENT (existing path, no labs)',
+        `actual: ${ir?.current_state ?? 'absent'}`);
+    } finally {
+      await sb.from('user_health_profile').delete().eq('user_id', UID);
+      await sb.from('user_profiles').delete().eq('user_id', UID);
+    }
+  }
+}
+
 // ── Run ───────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -4769,6 +4947,7 @@ async function main() {
     scenarioLD();
     await scenarioLD_LIFECYCLE();
     await scenarioLD_FOLLOWUP();
+    await scenarioIR();
 
     const total = passed + failed;
     sep(`Results: ${passed}/${total} passed${failed ? ` — ${failed} FAILED` : ''}${skipped ? ` (${skipped} skipped — engine-state dependent)` : ''}`);
