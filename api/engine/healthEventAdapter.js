@@ -61,6 +61,11 @@ export const EVIDENCE_STORAGE_REGISTRY = {
   sedentary_hours_day:   { table: 'physical', key: 'sedentary_hours_day' },
   fatigue_context:       { table: 'physical', key: 'fatigue_context' },
 
+  // PATH Discovery evidence (TESTER 0.1) — raw scalars in user_health_profile.physical
+  weekly_aerobic_activity_days: { table: 'physical', key: 'weekly_aerobic_activity_days' },
+  exertional_dyspnea:           { table: 'physical', key: 'exertional_dyspnea' },
+  known_blood_pressure_approx:  { table: 'physical', key: 'known_blood_pressure_approx' },
+
   // Decision: fall_history stored in physical (NOT node_inputs).
   // Rationale: physical is canonical onboarding Q&A store.
   // activation.js checks oi['recent_falls']; oi = hp.physical.

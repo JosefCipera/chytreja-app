@@ -366,3 +366,97 @@ export function evaluateDecisionGate(nodeStates, projections, informationNeeds, 
     engine_version: engineVersion,
   };
 }
+
+// ── PATH DISCOVERY synthesis ──────────────────────────────────────────────────
+// Evaluates longevity candidate paths from persistent physical evidence.
+//
+// State machine per path: UNRESOLVED → NEEDS_EVIDENCE → CANDIDATE
+// NOT_SUPPORTED is deliberately absent (epistemic conservatism for TESTER 0.1):
+//   absence of positive signal ≠ path ruled out; path stays UNRESOLVED.
+//
+// Returns one of:
+//   { type: 'ASK',       question_cs, evidence_type }
+//   { type: 'CANDIDATE', path_id, label_cs }
+//   { type: 'HOLD',      text }
+//
+// physicalData: actual physical values object { key: value } from user_health_profile.physical.
+
+let _discoveryConfig = null;
+function getDiscoveryConfig() {
+  if (!_discoveryConfig) {
+    _discoveryConfig = JSON.parse(
+      readFileSync(join(_dir, '../../data/engine/longevity-discovery.json'), 'utf8')
+    );
+  }
+  return _discoveryConfig;
+}
+
+function evalDiscoveryCondition(value, condition) {
+  if (!condition) return false;
+  const num = Number(value);
+  if ('gt'  in condition) return num > condition.gt;
+  if ('lte' in condition) return num <= condition.lte;
+  if ('eq'  in condition) {
+    if (condition.eq === true)  return value === true || value === 'true' || value === 1;
+    if (condition.eq === false) return value === false || value === 'false' || value === 0;
+    return num === Number(condition.eq);
+  }
+  return false;
+}
+
+// Returns { state: 'CANDIDATE' | 'NEEDS_QUESTION' | 'EXHAUSTED', question? }
+function evaluatePathState(path, physical) {
+  let active = true; // gate for multi-step paths: next step only executed if this is true
+
+  for (const step of path.evidence_steps) {
+    if (!active) break;
+
+    const key      = step.evidence_type;
+    const answered = key in physical;
+
+    if (!answered) {
+      return { state: 'NEEDS_QUESTION', question: { question_cs: step.question_cs, evidence_type: key } };
+    }
+
+    const value = physical[key];
+
+    if (step.candidate_if !== null && evalDiscoveryCondition(value, step.candidate_if)) {
+      return { state: 'CANDIDATE' };
+    }
+
+    if (step.needs_evidence_if !== null) {
+      // Condition met → continue to next step (NEEDS_EVIDENCE); not met → path exhausted
+      active = evalDiscoveryCondition(value, step.needs_evidence_if);
+    }
+    // If needs_evidence_if is null and candidate_if didn't match → this step is terminal, exhausted
+  }
+
+  return { state: 'EXHAUSTED' };
+}
+
+export function synthesizePathDiscovery(physicalData) {
+  const cfg      = getDiscoveryConfig();
+  const physical = physicalData ?? {};
+
+  let firstQuestion = null;
+
+  for (const pathId of cfg.nbe_order) {
+    const path = cfg.paths.find(p => p.id === pathId);
+    if (!path) continue;
+
+    const result = evaluatePathState(path, physical);
+
+    if (result.state === 'CANDIDATE') {
+      return { type: 'CANDIDATE', path_id: pathId, label_cs: path.label_cs };
+    }
+    if (result.state === 'NEEDS_QUESTION' && !firstQuestion) {
+      firstQuestion = result.question;
+    }
+  }
+
+  if (firstQuestion) {
+    return { type: 'ASK', question_cs: firstQuestion.question_cs, evidence_type: firstQuestion.evidence_type };
+  }
+
+  return { type: 'HOLD', text: cfg.hold_text };
+}

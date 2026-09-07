@@ -25,6 +25,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { applyHealthEvent } from './healthEventAdapter.js';
 import { selectNextBestEvidence } from './nextBestEvidence.js';
+import { synthesizePathDiscovery } from './decisionGate.js';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
@@ -42,6 +43,13 @@ const _bootstrapNeeds = JSON.parse(
   readFileSync(join(_dir, '../../data/engine/bootstrap-needs.json'), 'utf8')
 );
 const BOOTSTRAP_TYPES = new Set(_bootstrapNeeds.map(n => n.evidence_type));
+
+// PATH Discovery evidence types — used for normalization guards and post-answer routing.
+const PATH_DISCOVERY_TYPES = new Set([
+  'weekly_aerobic_activity_days',
+  'exertional_dyspnea',
+  'known_blood_pressure_approx',
+]);
 
 // Single source of bootstrap candidate eligibility used by all continuation paths.
 // Mirrors the filter in synthesizeBootstrapGate (decisionGate.js) — both must stay in sync.
@@ -832,13 +840,38 @@ export async function processInput(userId, userText, sessionState = {}) {
           debug: { reason_code: 'BOOTSTRAP_CLINICAL_NEGATIVE', skipped: 'clinical_context' },
         };
       }
+      // Bootstrap exhausted — attempt PATH Discovery before generic fallback.
+      const _pdSignal1 = synthesizePathDiscovery(state.hp_physical ?? {});
+      if (_pdSignal1.type === 'ASK') {
+        return {
+          mode:          'ASK',
+          text:          _pdSignal1.question_cs,
+          buttons:       [],
+          expects_reply: true,
+          session_updates: {
+            ...baseUpdates,
+            pending_question: { text: _pdSignal1.question_cs, evidence_type: _pdSignal1.evidence_type, type: 'PATH_DISCOVERY' },
+          },
+          debug: { reason_code: 'PATH_DISCOVERY_QUESTION', after: 'BOOTSTRAP_EXHAUSTED_AFTER_CLINICAL_NEGATIVE' },
+        };
+      }
+      if (_pdSignal1.type === 'CANDIDATE') {
+        return {
+          mode:          'HOLD',
+          text:          `Na základě toho, co víš, stojí za bližší pohled: ${_pdSignal1.label_cs}.`,
+          buttons:       [],
+          expects_reply: false,
+          session_updates: { ...baseUpdates, pending_question: null },
+          debug: { reason_code: 'PATH_DISCOVERY_CANDIDATE', path_id: _pdSignal1.path_id },
+        };
+      }
       return {
-        mode:          'ASK',
-        text:          'Dobře. Pokud chceš, řekni mi něco o svém zdraví nebo co tě trápí.',
+        mode:          'HOLD',
+        text:          _pdSignal1.text,
         buttons:       [],
-        expects_reply: true,
+        expects_reply: false,
         session_updates: { ...baseUpdates, pending_question: null },
-        debug: { reason_code: 'BOOTSTRAP_EXHAUSTED_AFTER_CLINICAL_NEGATIVE' },
+        debug: { reason_code: 'PATH_DISCOVERY_HOLD', after: 'BOOTSTRAP_EXHAUSTED_AFTER_CLINICAL_NEGATIVE' },
       };
     }
     // Substantive answer — route through existing free-text clinical extraction
@@ -891,14 +924,61 @@ export async function processInput(userId, userText, sessionState = {}) {
         debug: { reason_code: 'BOOTSTRAP_SKIP_NEXT', skipped: deferredType },
       };
     }
-    // No more bootstrap candidates available
+    // No more bootstrap candidates — attempt PATH Discovery before generic fallback.
+    const _pdSignal2 = synthesizePathDiscovery(state.hp_physical ?? {});
+    if (_pdSignal2.type === 'ASK') {
+      return {
+        mode:          'ASK',
+        text:          _pdSignal2.question_cs,
+        buttons:       [],
+        expects_reply: true,
+        session_updates: {
+          ...baseUpdates,
+          pending_question: { text: _pdSignal2.question_cs, evidence_type: _pdSignal2.evidence_type, type: 'PATH_DISCOVERY' },
+        },
+        debug: { reason_code: 'PATH_DISCOVERY_QUESTION', after: 'BOOTSTRAP_EXHAUSTED_AFTER_SKIP', skipped: deferredType },
+      };
+    }
+    if (_pdSignal2.type === 'CANDIDATE') {
+      return {
+        mode:          'HOLD',
+        text:          `Na základě toho, co víš, stojí za bližší pohled: ${_pdSignal2.label_cs}.`,
+        buttons:       [],
+        expects_reply: false,
+        session_updates: { ...baseUpdates, pending_question: null },
+        debug: { reason_code: 'PATH_DISCOVERY_CANDIDATE', path_id: _pdSignal2.path_id },
+      };
+    }
     return {
-      mode:          'ASK',
-      text:          'Dobře. Pokud chceš, řekni mi něco o svém zdraví nebo co tě trápí.',
+      mode:          'HOLD',
+      text:          _pdSignal2.text,
       buttons:       [],
-      expects_reply: true,
+      expects_reply: false,
       session_updates: { ...baseUpdates, pending_question: null },
-      debug: { reason_code: 'BOOTSTRAP_EXHAUSTED_AFTER_SKIP', skipped: deferredType },
+      debug: { reason_code: 'PATH_DISCOVERY_HOLD', after: 'BOOTSTRAP_EXHAUSTED_AFTER_SKIP', skipped: deferredType },
+    };
+  }
+
+  // ── PATH Discovery user preference (decline) ─────────────────────────────────
+  // Fires when user declines a PATH_DISCOVERY question. Skip to HOLD immediately —
+  // without enough evidence no path can be promoted to CANDIDATE.
+  if (adapterType === 'USER_PREFERENCE' && state.pending_question?.type === 'PATH_DISCOVERY') {
+    const _pdBase = {
+      last_daily_decision:       state.last_daily_decision       ?? null,
+      last_domain_response:      state.last_domain_response      ?? null,
+      current_action_assignment: null,
+      skipped_bootstrap_types:   state.skipped_bootstrap_types   ?? [],
+      question_budget_remaining: typeof state.question_budget_remaining === 'number'
+        ? state.question_budget_remaining : 3,
+    };
+    const _pdHoldText = 'Z toho, co zatím vím, nevidím jasný constraint. Metabolickou cestu ale bez laboratorních výsledků neumím dostatečně posoudit.';
+    return {
+      mode:          'HOLD',
+      text:          _pdHoldText,
+      buttons:       [],
+      expects_reply: false,
+      session_updates: { ..._pdBase, pending_question: null },
+      debug: { reason_code: 'PATH_DISCOVERY_HOLD_USER_DECLINED' },
     };
   }
 
@@ -951,6 +1031,97 @@ export async function processInput(userId, userText, sessionState = {}) {
       : 'UNKNOWN';
   }
 
+  // ── PATH Discovery normalization guards ──────────────────────────────────────
+  // Each guard fires only for its specific evidence_type when in a PATH_DISCOVERY context.
+  // Guards normalize free-text answers to canonical scalar values before persistence.
+  if (adapterType === 'ANSWER_TO_EVIDENCE_QUESTION'
+      && PATH_DISCOVERY_TYPES.has(event.payload.evidence_type)
+      && state.pending_question?.type === 'PATH_DISCOVERY') {
+
+    const rawPD = String(event.payload.value ?? userText);
+
+    if (event.payload.evidence_type === 'weekly_aerobic_activity_days') {
+      const CZECH_DAYS = { nula: 0, žádný: 0, žádné: 0, nikdy: 0, jeden: 1, jednou: 1,
+                           dva: 2, dvakrát: 2, tři: 3, třikrát: 3, čtyři: 4,
+                           pět: 5, šest: 6, sedm: 7 };
+      const numMatch = rawPD.match(/\b([0-7])\b/);
+      let days = numMatch ? parseInt(numMatch[1]) : undefined;
+      if (days === undefined) {
+        const lower = rawPD.toLowerCase();
+        for (const [word, val] of Object.entries(CZECH_DAYS)) {
+          if (lower.includes(word)) { days = val; break; }
+        }
+      }
+      if (days === undefined || isNaN(days) || days < 0 || days > 7) {
+        return {
+          mode:          'ASK',
+          text:          'Přibližně kolik dní týdně — třeba 0, 1, 2 nebo více?',
+          buttons:       [],
+          expects_reply: true,
+          session_updates: {
+            pending_question:          state.pending_question,
+            last_daily_decision:       state.last_daily_decision       ?? null,
+            last_domain_response:      state.last_domain_response      ?? null,
+            current_action_assignment: state.current_action_assignment ?? null,
+          },
+          debug: { reason_code: 'PATH_DISCOVERY_DAYS_CLARIFICATION' },
+        };
+      }
+      event.payload.value = days;
+    }
+
+    if (event.payload.evidence_type === 'exertional_dyspnea') {
+      const lower = rawPD.toLowerCase();
+      const YES = /\b(ano|jo|trochu|někdy|občas|dochází|dušnost|zadýchám|zadýchávám|dýchám hůř|hůř dýchám)\b/.test(lower);
+      const NO  = /\b(ne|nemám|nedochází|vůbec)\b/.test(lower);
+      if (!YES && !NO) {
+        return {
+          mode:          'ASK',
+          text:          'Dochází ti při chůzi nebo mírném úsilí dech? Ano nebo ne?',
+          buttons:       [],
+          expects_reply: true,
+          session_updates: {
+            pending_question:          state.pending_question,
+            last_daily_decision:       state.last_daily_decision       ?? null,
+            last_domain_response:      state.last_domain_response      ?? null,
+            current_action_assignment: state.current_action_assignment ?? null,
+          },
+          debug: { reason_code: 'PATH_DISCOVERY_DYSPNEA_CLARIFICATION' },
+        };
+      }
+      event.payload.value = YES;
+    }
+
+    if (event.payload.evidence_type === 'known_blood_pressure_approx') {
+      const UNKNOWN_BP = /nevím|neznám|nezměřil|nepamatuju|nemám.*tlakoměr|nenapadá/i.test(rawPD);
+      if (UNKNOWN_BP) {
+        // DEVLOG: known_blood_pressure_approx = 0 is an UNKNOWN sentinel, not a physiological measurement.
+        // Must never be interpreted as NODE_EVIDENCE. Replace with explicit unknown/skip semantics later.
+        event.payload.value = 0;
+      } else {
+        // Extract systolic from "140/90" or a bare 2–3 digit number
+        const bpMatch = rawPD.match(/(\d{2,3})\s*\/\s*\d{2,3}/) || rawPD.match(/\b(1\d{2}|[6-9]\d)\b/);
+        const syst = bpMatch ? parseInt(bpMatch[1]) : NaN;
+        if (isNaN(syst) || syst < 60 || syst > 250) {
+          return {
+            mode:          'ASK',
+            text:          'Zadej přibližný systolický (horní) tlak — třeba 120, 140 nebo 160. Pokud nevíš, napiš "nevím".',
+            buttons:       [],
+            expects_reply: true,
+            session_updates: {
+              pending_question:          state.pending_question,
+              last_daily_decision:       state.last_daily_decision       ?? null,
+              last_domain_response:      state.last_domain_response      ?? null,
+              current_action_assignment: state.current_action_assignment ?? null,
+            },
+            debug: { reason_code: 'PATH_DISCOVERY_BP_CLARIFICATION' },
+          };
+        }
+        event.payload.value = syst;
+      }
+    }
+  }
+
   // 5. Persist + run engine via adapter (no direct DB access here)
   const result = await applyHealthEvent(userId, event);
 
@@ -963,6 +1134,58 @@ export async function processInput(userId, userText, sessionState = {}) {
   const isHoldFollowUp = adapterType === 'DOMAIN_REQUEST'
     && state.last_daily_decision?.mode === 'HOLD';
   let presentation = buildPresentation(event_type, payload, result, sessionUpdates, isHoldFollowUp);
+
+  // ── PATH Discovery answer override ───────────────────────────────────────────
+  // Fires after applyHealthEvent persisted the answer to a PATH_DISCOVERY question.
+  // Re-evaluates path states with the just-answered value merged in, then returns
+  // the appropriate response: next question, CANDIDATE, or HOLD.
+  // Budget exempt — PATH Discovery questions are not part of the clinical question budget.
+  if (adapterType === 'ANSWER_TO_EVIDENCE_QUESTION'
+      && state.pending_question?.type === 'PATH_DISCOVERY') {
+    const _pdAnsweredKey = event.payload.evidence_type;
+    const _pdAnsweredVal = event.payload.value;
+    const _pdUpdated = { ...(state.hp_physical ?? {}), [_pdAnsweredKey]: _pdAnsweredVal };
+    const _pdNext = synthesizePathDiscovery(_pdUpdated);
+    const _pdBaseUpd = {
+      last_daily_decision:       state.last_daily_decision       ?? null,
+      last_domain_response:      state.last_domain_response      ?? null,
+      current_action_assignment: null,
+      skipped_bootstrap_types:   state.skipped_bootstrap_types   ?? [],
+      question_budget_remaining: typeof state.question_budget_remaining === 'number'
+        ? state.question_budget_remaining : 3,
+    };
+    if (_pdNext.type === 'ASK') {
+      return {
+        mode:          'ASK',
+        text:          _pdNext.question_cs,
+        buttons:       [],
+        expects_reply: true,
+        session_updates: {
+          ..._pdBaseUpd,
+          pending_question: { text: _pdNext.question_cs, evidence_type: _pdNext.evidence_type, type: 'PATH_DISCOVERY' },
+        },
+        debug: { reason_code: 'PATH_DISCOVERY_NEXT' },
+      };
+    }
+    if (_pdNext.type === 'CANDIDATE') {
+      return {
+        mode:          'HOLD',
+        text:          `Na základě toho, co víš, stojí za bližší pohled: ${_pdNext.label_cs}.`,
+        buttons:       [],
+        expects_reply: false,
+        session_updates: { ..._pdBaseUpd, pending_question: null },
+        debug: { reason_code: 'PATH_DISCOVERY_CANDIDATE', path_id: _pdNext.path_id },
+      };
+    }
+    return {
+      mode:          'HOLD',
+      text:          _pdNext.text,
+      buttons:       [],
+      expects_reply: false,
+      session_updates: { ..._pdBaseUpd, pending_question: null },
+      debug: { reason_code: 'PATH_DISCOVERY_HOLD' },
+    };
+  }
 
   // ── Bootstrap skipped-type override ──────────────────────────────────────────
   // If the engine selected a bootstrap question that the user has already deferred
@@ -1121,8 +1344,9 @@ export async function processInput(userId, userText, sessionState = {}) {
   // Question budget enforcement: limit total ASK rounds across pre-intake + post-handoff.
   // Bootstrap questions are exempt — Bootstrap terminates by its own candidate-exhaustion
   // and model-sufficiency conditions, not by a question count.
-  const isBootstrapQuestion = presentation.session_updates?.pending_question?.type === 'BOOTSTRAP';
-  if (presentation.mode === 'ASK' && !isBootstrapQuestion) {
+  const isBootstrapQuestion    = presentation.session_updates?.pending_question?.type === 'BOOTSTRAP';
+  const isPathDiscoveryQuestion = presentation.session_updates?.pending_question?.type === 'PATH_DISCOVERY';
+  if (presentation.mode === 'ASK' && !isBootstrapQuestion && !isPathDiscoveryQuestion) {
     if (budgetRemaining <= 0) {
       let text;
       if (hasAcuteSymptom) {

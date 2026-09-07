@@ -1,0 +1,37 @@
+{
+  "_schema": "longevity-discovery/v1",
+  "nbe_order": ["ACTIVITY_FUNCTION", "METABOLIC_CV"],
+  "hold_text": "Z toho, co zatím vím, nevidím jasný constraint. Metabolickou cestu ale bez laboratorních výsledků neumím dostatečně posoudit.",
+  "paths": [
+    {
+      "id": "ACTIVITY_FUNCTION",
+      "label_cs": "Fyzická aktivita a funkční kapacita",
+      "evidence_steps": [
+        {
+          "evidence_type": "weekly_aerobic_activity_days",
+          "question_cs": "Kolik dní v týdnu se věnuješ aerobnímu pohybu aspoň 30 minut — třeba chůze, kolo nebo plavání?",
+          "needs_evidence_if": { "lte": 1 },
+          "candidate_if": null
+        },
+        {
+          "evidence_type": "exertional_dyspnea",
+          "question_cs": "Dochází ti při běžné chůzi nebo mírném úsilí dech, i když ostatní stejnou aktivitu zvládají bez potíží?",
+          "needs_evidence_if": null,
+          "candidate_if": { "eq": true }
+        }
+      ]
+    },
+    {
+      "id": "METABOLIC_CV",
+      "label_cs": "Metabolická a kardiovaskulární cesta",
+      "evidence_steps": [
+        {
+          "evidence_type": "known_blood_pressure_approx",
+          "question_cs": "Víš přibližně, jaký máš krevní tlak? Pokud ano, kolik bylo naposled?",
+          "needs_evidence_if": null,
+          "candidate_if": { "gt": 140 }
+        }
+      ]
+    }
+  ]
+}

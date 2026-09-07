@@ -23,6 +23,7 @@
 //   - session state flow: pending_question cleared after ANSWER
 
 import { processInput, buildEvent, _buildSessionUpdates_test as buildSessionUpdates, FATIGUE_STANDALONE_RE } from '../api/engine/orchestrator.js';
+import { synthesizePathDiscovery } from '../api/engine/decisionGate.js';
 import { runEngine, ENGINE_MASTER } from '../api/engine/engine.js';
 import { applyHealthEvent }         from '../api/engine/healthEventAdapter.js';
 import { createClient }             from '@supabase/supabase-js';
@@ -3689,9 +3690,13 @@ async function scenarioBS_CC3B() {
       const r = await runClinicalAnswer(E2E_UID, birthYear58,
         'Ne, s ničím se neléčím a žádné léky pravidelně neberu.');
 
+      // After PATH Discovery was added, 58yo Bootstrap exhaustion now leads to
+      // PATH_DISCOVERY_QUESTION rather than the old generic fallback text.
+      // Both old and new reason codes are valid outcomes here.
       check(r.debug?.reason_code?.startsWith('BOOTSTRAP_CLINICAL_NEGATIVE')
-        || r.debug?.reason_code === 'BOOTSTRAP_EXHAUSTED_AFTER_CLINICAL_NEGATIVE',
-        'BS-CC3B-E2E-1: compound negative fires BOOTSTRAP_CLINICAL_NEGATIVE path (not GHR)',
+        || r.debug?.reason_code === 'BOOTSTRAP_EXHAUSTED_AFTER_CLINICAL_NEGATIVE'
+        || r.debug?.reason_code === 'PATH_DISCOVERY_QUESTION',
+        'BS-CC3B-E2E-1: compound negative fires BOOTSTRAP_CLINICAL_NEGATIVE or PATH_DISCOVERY path (not GHR)',
         `actual: ${r.debug?.reason_code}`);
       const evType = r.session_updates?.pending_question?.evidence_type;
       check(evType !== 'clinical_context',
@@ -4372,6 +4377,143 @@ async function scenarioBS_E2E_CHAIN() {
   }
 }
 
+// ── scenarioLD — TESTER 0.1 PATH Discovery ───────────────────────────────────
+// Unit tests for synthesizePathDiscovery() (pure, no DB).
+// E2E tests for Bootstrap → PATH Discovery transition (ephemeral UID).
+function scenarioLD() {
+  sep('PATH Discovery — unit tests (synthesizePathDiscovery)');
+
+  // LD-U1: Empty physical → ask first path question (ACTIVITY_FUNCTION)
+  {
+    const sig = synthesizePathDiscovery({});
+    check(sig.type === 'ASK',                                    'LD-U1-1: empty physical → type=ASK');
+    check(sig.evidence_type === 'weekly_aerobic_activity_days',  'LD-U1-2: first question = weekly_aerobic_activity_days');
+  }
+
+  // LD-U2: activity_days=0 (≤1) → NEEDS_EVIDENCE → ask dyspnea
+  {
+    const sig = synthesizePathDiscovery({ weekly_aerobic_activity_days: 0 });
+    check(sig.type === 'ASK',                          'LD-U2-1: days=0 → type=ASK (NEEDS_EVIDENCE)');
+    check(sig.evidence_type === 'exertional_dyspnea', 'LD-U2-2: next question = exertional_dyspnea');
+  }
+
+  // LD-U3: activity_days=1 (boundary ≤1) → NEEDS_EVIDENCE → ask dyspnea
+  {
+    const sig = synthesizePathDiscovery({ weekly_aerobic_activity_days: 1 });
+    check(sig.type === 'ASK',                          'LD-U3-1: days=1 → type=ASK (boundary NEEDS_EVIDENCE)');
+    check(sig.evidence_type === 'exertional_dyspnea', 'LD-U3-2: next question = exertional_dyspnea');
+  }
+
+  // LD-U4: activity_days=2 (>1, no NEEDS_EVIDENCE) → skip ACTIVITY_FUNCTION → ask METABOLIC_CV
+  {
+    const sig = synthesizePathDiscovery({ weekly_aerobic_activity_days: 2 });
+    check(sig.type === 'ASK',                              'LD-U4-1: days=2 → type=ASK (ACTIVITY_FUNCTION exhausted)');
+    check(sig.evidence_type === 'known_blood_pressure_approx',
+      'LD-U4-2: next question = known_blood_pressure_approx (METABOLIC_CV path)',
+      `actual: ${sig.evidence_type}`);
+  }
+
+  // LD-U5: days=1 + dyspnea=true → CANDIDATE ACTIVITY_FUNCTION
+  {
+    const sig = synthesizePathDiscovery({ weekly_aerobic_activity_days: 1, exertional_dyspnea: true });
+    check(sig.type === 'CANDIDATE',                  'LD-U5-1: days=1 + dyspnea=true → CANDIDATE');
+    check(sig.path_id === 'ACTIVITY_FUNCTION',       'LD-U5-2: path_id = ACTIVITY_FUNCTION');
+    check(typeof sig.label_cs === 'string' && sig.label_cs.length > 0,
+      'LD-U5-3: label_cs present');
+  }
+
+  // LD-U6: days=1 + dyspnea=false → ACTIVITY_FUNCTION exhausted → ask METABOLIC_CV question
+  {
+    const sig = synthesizePathDiscovery({ weekly_aerobic_activity_days: 1, exertional_dyspnea: false });
+    check(sig.type === 'ASK',                              'LD-U6-1: days=1 + dyspnea=false → ASK (no CANDIDATE)');
+    check(sig.evidence_type === 'known_blood_pressure_approx',
+      'LD-U6-2: next question = known_blood_pressure_approx',
+      `actual: ${sig.evidence_type}`);
+  }
+
+  // LD-U7: activity_days=3, bp=150 → CANDIDATE METABOLIC_CV
+  {
+    const sig = synthesizePathDiscovery({ weekly_aerobic_activity_days: 3, known_blood_pressure_approx: 150 });
+    check(sig.type === 'CANDIDATE',              'LD-U7-1: days=3 + bp=150 → CANDIDATE');
+    check(sig.path_id === 'METABOLIC_CV',        'LD-U7-2: path_id = METABOLIC_CV');
+  }
+
+  // LD-U8: activity_days=3, bp=120 → HOLD (no candidate)
+  {
+    const sig = synthesizePathDiscovery({ weekly_aerobic_activity_days: 3, known_blood_pressure_approx: 120 });
+    check(sig.type === 'HOLD',                  'LD-U8-1: days=3 + bp=120 → HOLD (no candidate)');
+    check(typeof sig.text === 'string' && sig.text.length > 0, 'LD-U8-2: HOLD text present');
+  }
+
+  // LD-U9: boundary — bp=141 (>140) → CANDIDATE METABOLIC_CV
+  {
+    const sig = synthesizePathDiscovery({ weekly_aerobic_activity_days: 3, known_blood_pressure_approx: 141 });
+    check(sig.type === 'CANDIDATE',              'LD-U9-1: bp=141 → CANDIDATE (>140 boundary)');
+    check(sig.path_id === 'METABOLIC_CV',        'LD-U9-2: path_id = METABOLIC_CV');
+  }
+
+  // LD-U10: boundary — bp=140 (not >140) → HOLD
+  {
+    const sig = synthesizePathDiscovery({ weekly_aerobic_activity_days: 3, known_blood_pressure_approx: 140 });
+    check(sig.type === 'HOLD',                  'LD-U10-1: bp=140 → HOLD (not >140, boundary)');
+  }
+
+  // LD-U11: days=1 + dyspnea=true + bp=120 → first CANDIDATE wins (ACTIVITY_FUNCTION)
+  {
+    const sig = synthesizePathDiscovery({ weekly_aerobic_activity_days: 1, exertional_dyspnea: true, known_blood_pressure_approx: 120 });
+    check(sig.type === 'CANDIDATE',              'LD-U11-1: ACTIVITY_FUNCTION candidate found first');
+    check(sig.path_id === 'ACTIVITY_FUNCTION',   'LD-U11-2: path_id = ACTIVITY_FUNCTION (not METABOLIC_CV)');
+  }
+
+  // LD-U12: SEMANTIC SEPARATION — normal BP answered, no activity answer yet
+  //         BP evidence does NOT affect ACTIVITY_FUNCTION path state.
+  //         ACTIVITY_FUNCTION question must still be asked (its evidence is independent).
+  {
+    const sig = synthesizePathDiscovery({ known_blood_pressure_approx: 120 });
+    check(sig.type === 'ASK',                              'LD-U12-1: normal BP answered + no activity → ASK');
+    check(sig.evidence_type === 'weekly_aerobic_activity_days',
+      'LD-U12-2: METABOLIC_CV evidence does NOT contaminate ACTIVITY_FUNCTION path (still asks activity)',
+      `actual: ${sig.evidence_type}`);
+  }
+
+  // LD-U13: SEMANTIC SEPARATION — normal BP (≤140) must NOT rule out METABOLIC_CV
+  //         Path stays UNRESOLVED/awaits more evidence — never NOT_SUPPORTED.
+  //         days=2 (no NEEDS_EVIDENCE), bp=130: HOLD expected (not any error or CANDIDATE).
+  {
+    const sig = synthesizePathDiscovery({ weekly_aerobic_activity_days: 2, known_blood_pressure_approx: 130 });
+    check(sig.type === 'HOLD',                  'LD-U13-1: normal BP → HOLD (not NOT_SUPPORTED, epistemic conservatism)');
+    check(sig.type !== 'CANDIDATE',             'LD-U13-2: normal BP alone does NOT produce CANDIDATE');
+  }
+
+  // LD-U14: SEMANTIC SEPARATION — good activity (≥2 days) does NOT suppress METABOLIC_CV path
+  //         METABOLIC_CV question must still be asked after ACTIVITY_FUNCTION exhaustion.
+  {
+    const sig = synthesizePathDiscovery({ weekly_aerobic_activity_days: 4 });
+    check(sig.type === 'ASK',                              'LD-U14-1: good activity does NOT suppress METABOLIC_CV question');
+    check(sig.evidence_type === 'known_blood_pressure_approx',
+      'LD-U14-2: METABOLIC_CV question still asked after ACTIVITY_FUNCTION exhausted',
+      `actual: ${sig.evidence_type}`);
+  }
+
+  // LD-U15: activity_days=2, bp=150 → CANDIDATE METABOLIC_CV
+  //         ACTIVITY_FUNCTION exhausted (days≥2), METABOLIC_CV finds candidate.
+  {
+    const sig = synthesizePathDiscovery({ weekly_aerobic_activity_days: 2, known_blood_pressure_approx: 150 });
+    check(sig.type === 'CANDIDATE',              'LD-U15-1: ACTIVITY exhausted + bp=150 → CANDIDATE METABOLIC_CV');
+    check(sig.path_id === 'METABOLIC_CV',        'LD-U15-2: path_id = METABOLIC_CV');
+  }
+
+  // LD-U16: all evidence answered, no positive signal → HOLD
+  {
+    const sig = synthesizePathDiscovery({
+      weekly_aerobic_activity_days: 1,
+      exertional_dyspnea: false,
+      known_blood_pressure_approx: 135,
+    });
+    check(sig.type === 'HOLD',                  'LD-U16-1: all evidence answered, no candidate → HOLD');
+  }
+}
+
 // ── Run ───────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -4438,6 +4580,7 @@ async function main() {
     await scenarioBS_AGE_E();
     await scenarioBS_AGE_F();
     await scenarioBS_E2E_CHAIN();
+    scenarioLD();
 
     const total = passed + failed;
     sep(`Results: ${passed}/${total} passed${failed ? ` — ${failed} FAILED` : ''}${skipped ? ` (${skipped} skipped — engine-state dependent)` : ''}`);

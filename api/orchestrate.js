@@ -81,6 +81,8 @@ export default async function handler(req, res) {
       // Narrow unlock: keys already present in physical → bootstrap candidate eligibility filter.
       // physical is already fetched above; no extra DB round-trip.
       resolved_physical:      Object.keys(profileRow?.physical ?? {}),
+      // PATH Discovery: actual physical values (not just keys) for synthesizePathDiscovery evaluation.
+      hp_physical:            profileRow?.physical ?? {},
     };
 
     const response = await processInput(userId, text.trim(), sessionWithPending);
