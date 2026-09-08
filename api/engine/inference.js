@@ -84,9 +84,9 @@ export function inference(activatedStates, person, clinicalHistory, observations
     const glycaemicContrib = Math.max(glucoseContrib, hba1cContrib);
     strength += glycaemicContrib;
 
-    // Trigger: a glycaemic lab alone is sufficient (direct biomarker of IR consequence).
-    // Without lab evidence, combined lifestyle/clinical signal strength must reach ≥ 2.
-    if (strength >= 2 || glycaemicContrib >= 1) {
+    // Uniform threshold ≥ 2 applies to all signals. Diabetic-range lab alone (+2) meets it.
+    // Prediabetic lab (+1) requires one corroborating signal to reach threshold.
+    if (strength >= 2) {
       states.push({
         node_id: 'INSULIN_RESISTANCE',
         current_state: 'PREDICTED_CURRENT',

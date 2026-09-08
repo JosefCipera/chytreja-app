@@ -4705,7 +4705,7 @@ async function scenarioLD_FOLLOWUP() {
 async function scenarioIR() {
   sep('IR — HbA1c and Fasting Glucose inference for INSULIN_RESISTANCE');
 
-  // IR-1: HbA1c prediabetic range (6.1% = ~43 mmol/mol) alone → IR PREDICTED_CURRENT
+  // IR-1: HbA1c prediabetic range (6.1% = ~43 mmol/mol) alone → IR NOT activated (strength=1, threshold=2)
   {
     const UID = `test-ir-1-${Date.now()}`;
     await sb.from('user_health_profile').upsert(
@@ -4715,8 +4715,29 @@ async function scenarioIR() {
     try {
       const eng = await runEngine(UID);
       const ir = eng.node_states?.find(n => n.node_id === 'INSULIN_RESISTANCE');
+      check(!ir || ir.current_state === 'UNKNOWN',
+        'IR-1: HbA1c 6.1% (43 mmol/mol) alone → INSULIN_RESISTANCE NOT activated (strength=1 < threshold 2)',
+        `actual: ${ir?.current_state ?? 'absent'}`);
+    } finally {
+      await sb.from('user_health_profile').delete().eq('user_id', UID);
+      await sb.from('user_profiles').delete().eq('user_id', UID);
+    }
+  }
+
+  // IR-1b: HbA1c 6.1% + one independent contributor (HYPERTENSION) → IR PREDICTED_CURRENT (strength=2)
+  {
+    const UID = `test-ir-1b-${Date.now()}`;
+    await sb.from('user_health_profile').upsert(
+      { user_id: UID,
+        diagnoses: [{ name: 'hypertenze' }], symptoms: [], medications: [],
+        labs: { hba1c: 6.1 }, physical: {}, lifestyle: {} },
+      { onConflict: 'user_id' });
+    await sb.from('user_profiles').upsert({ user_id: UID, birth_year: 1968 }, { onConflict: 'user_id' });
+    try {
+      const eng = await runEngine(UID);
+      const ir = eng.node_states?.find(n => n.node_id === 'INSULIN_RESISTANCE');
       check(ir?.current_state === 'PREDICTED_CURRENT',
-        'IR-1: HbA1c 6.1% (43 mmol/mol) alone → INSULIN_RESISTANCE PREDICTED_CURRENT',
+        'IR-1b: HbA1c 6.1% + HYPERTENSION → INSULIN_RESISTANCE PREDICTED_CURRENT (1+1=2 ≥ threshold)',
         `actual: ${ir?.current_state ?? 'absent'}`);
     } finally {
       await sb.from('user_health_profile').delete().eq('user_id', UID);
@@ -4743,7 +4764,7 @@ async function scenarioIR() {
     }
   }
 
-  // IR-3: FPG prediabetic range (6.2 mmol/L, WHO IFG) alone → IR PREDICTED_CURRENT
+  // IR-3: FPG prediabetic range (6.2 mmol/L, WHO IFG) alone → IR NOT activated (strength=1, threshold=2)
   {
     const UID = `test-ir-3-${Date.now()}`;
     await sb.from('user_health_profile').upsert(
@@ -4753,8 +4774,29 @@ async function scenarioIR() {
     try {
       const eng = await runEngine(UID);
       const ir = eng.node_states?.find(n => n.node_id === 'INSULIN_RESISTANCE');
+      check(!ir || ir.current_state === 'UNKNOWN',
+        'IR-3: FPG 6.2 mmol/L (WHO IFG) alone → INSULIN_RESISTANCE NOT activated (strength=1 < threshold 2)',
+        `actual: ${ir?.current_state ?? 'absent'}`);
+    } finally {
+      await sb.from('user_health_profile').delete().eq('user_id', UID);
+      await sb.from('user_profiles').delete().eq('user_id', UID);
+    }
+  }
+
+  // IR-3b: FPG 6.2 + one independent contributor (HYPERTENSION) → IR PREDICTED_CURRENT (strength=2)
+  {
+    const UID = `test-ir-3b-${Date.now()}`;
+    await sb.from('user_health_profile').upsert(
+      { user_id: UID,
+        diagnoses: [{ name: 'hypertenze' }], symptoms: [], medications: [],
+        labs: { fasting_glucose: 6.2 }, physical: {}, lifestyle: {} },
+      { onConflict: 'user_id' });
+    await sb.from('user_profiles').upsert({ user_id: UID, birth_year: 1968 }, { onConflict: 'user_id' });
+    try {
+      const eng = await runEngine(UID);
+      const ir = eng.node_states?.find(n => n.node_id === 'INSULIN_RESISTANCE');
       check(ir?.current_state === 'PREDICTED_CURRENT',
-        'IR-3: FPG 6.2 mmol/L (WHO IFG) alone → INSULIN_RESISTANCE PREDICTED_CURRENT',
+        'IR-3b: FPG 6.2 + HYPERTENSION → INSULIN_RESISTANCE PREDICTED_CURRENT (1+1=2 ≥ threshold)',
         `actual: ${ir?.current_state ?? 'absent'}`);
     } finally {
       await sb.from('user_health_profile').delete().eq('user_id', UID);
@@ -4781,7 +4823,7 @@ async function scenarioIR() {
     }
   }
 
-  // IR-5: HbA1c + FPG both prediabetic — max contribution used, not sum; both signals appear in evidence
+  // IR-5: HbA1c 6.1% + FPG 6.2 both prediabetic — max(1,1)=1, not sum; strength=1 < 2 → NOT activated
   {
     const UID = `test-ir-5-${Date.now()}`;
     await sb.from('user_health_profile').upsert(
@@ -4791,18 +4833,12 @@ async function scenarioIR() {
     try {
       const eng = await runEngine(UID);
       const ir = eng.node_states?.find(n => n.node_id === 'INSULIN_RESISTANCE');
-      check(ir?.current_state === 'PREDICTED_CURRENT',
-        'IR-5: HbA1c 6.1% + FPG 6.2 → INSULIN_RESISTANCE PREDICTED_CURRENT',
+      check(!ir || ir.current_state === 'UNKNOWN',
+        'IR-5: HbA1c 6.1% + FPG 6.2 (both mild) → NOT activated (glycaemicContrib=max(1,1)=1, strength=1 < 2)',
         `actual: ${ir?.current_state ?? 'absent'}`);
-      const signals = ir?.evidence?.inferred_from_nodes ?? [];
-      const hasHba1c = signals.some(s => s.obs_type === 'lab_hba1c');
-      const hasFpg   = signals.some(s => s.obs_type === 'lab_glucose_fasting');
-      check(hasHba1c && hasFpg,
-        'IR-5b: both lab_hba1c and lab_glucose_fasting appear in inferred_from_nodes (evidence traceability)',
-        `hba1c in signals: ${hasHba1c}, fpg in signals: ${hasFpg}`);
-      check(ir?.current_state !== 'MEASURED',
-        'IR-5c: ceiling = PREDICTED_CURRENT, not MEASURED (no double-counting can escalate status)',
-        `actual: ${ir?.current_state}`);
+      check(!ir || ir.current_state !== 'MEASURED',
+        'IR-5b: mild dual labs cannot reach MEASURED — ceiling is PREDICTED_CURRENT even if activated',
+        `actual: ${ir?.current_state ?? 'absent'}`);
     } finally {
       await sb.from('user_health_profile').delete().eq('user_id', UID);
       await sb.from('user_profiles').delete().eq('user_id', UID);
@@ -4844,6 +4880,12 @@ async function scenarioIR() {
       check(ir?.current_state !== 'MEASURED',
         'IR-7b: no lab combination can reach MEASURED — ceiling is PREDICTED_CURRENT',
         `actual: ${ir?.current_state}`);
+      const signals = ir?.evidence?.inferred_from_nodes ?? [];
+      const hasHba1c = signals.some(s => s.obs_type === 'lab_hba1c');
+      const hasFpg   = signals.some(s => s.obs_type === 'lab_glucose_fasting');
+      check(hasHba1c && hasFpg,
+        'IR-7c: both lab_hba1c and lab_glucose_fasting appear in inferred_from_nodes (evidence traceability)',
+        `hba1c in signals: ${hasHba1c}, fpg in signals: ${hasFpg}`);
     } finally {
       await sb.from('user_health_profile').delete().eq('user_id', UID);
       await sb.from('user_profiles').delete().eq('user_id', UID);
