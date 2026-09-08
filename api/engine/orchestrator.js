@@ -135,6 +135,26 @@ const GOAL_BRANCH_CS = {
 export const FATIGUE_STANDALONE_RE =
   /^(jsem\s+(unaven[aáý]|vyčerpan[aáý]|malátný|malátná|bez\s+energie)|cítím\s+(únavu|vyčerpání|malátnost)|nemám\s+energii|mám\s+(únavu|vyčerpání))[\s.,!?]*$/i;
 
+// ── Pre-classifier deterministic routing ──────────────────────────────────────
+// Regexes shared between pre-classifier guards (pre-Haiku) and post-classifier
+// overrides (post-Haiku). Defined at module level so guards can reference them
+// before classifyIntent is called.
+
+// Bootstrap refusal — mirrors the previously inline-defined guard.
+// Anchored ^ so partial matches (e.g. "nevím, ale mám vysoký tlak") do NOT fire.
+export const BOOTSTRAP_REFUSAL_RE = /^(nev[ií]m|nechci|p[rř]esko[cč]it|skip)\b/i;
+
+// Action completion / skip — canonical button vocabulary ("Hotovo", "Přeskočit")
+// plus obvious synonyms from CLASSIFIER_SYSTEM rules 2–3.
+// Anchored ^...$ to prevent matching within longer health sentences.
+const ACTION_COMPLETION_RE = /^(hotovo|splněno|udělal[ao]?|dokončeno)[\s.,!?]*$/i;
+const ACTION_SKIP_RE = /^(p[rř]esko[cč][ií][mt]?|vynech[aá][mt]|dnes\s+ne|nem[uůo]žu)[\s.,!?]*$/i;
+
+// Bootstrap yes/no — used for recent_falls, vstat_ze_zeme, vynest_nakup.
+// Conservative: only matches clear affirmative/negative words so that symptom
+// statements ("bolí mě koleno") do NOT pre-route as a yes/no BOOTSTRAP answer.
+const BOOTSTRAP_YESNO_RE = /\b(ano|jo|jj|jasně|zvládnu|zvládl[ao]?|upadl[ao]?|ne|nene|nezvládnu|nem[uůo]žu|nedokážu|neupadl[ao]?)\b/i;
+
 let client;
 function getClient() {
   if (!client) client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -748,21 +768,92 @@ export async function processInput(userId, userText, sessionState = {}) {
   };
 
   // 1. Classify intent
-  // Pre-classifier guard: short-circuits Haiku for pure subjective fatigue statements.
-  // Haiku is non-deterministic for these inputs — returns NEW_SYMPTOM ~50% of calls
-  // despite rule 5 requiring "bolí mě [body part]". FATIGUE_STANDALONE_RE is anchored
-  // ^...$ so compound statements ("Jsem unavený a bolí mě na hrudi") do NOT match
-  // and still reach Haiku and the standard safety/symptom flow.
-  // Guard is skipped when pending_question or current_action_assignment is set —
-  // those flows own the turn.
-  let classified;
+  // Pre-classifier guards run in priority order before calling Haiku.
+  // Each guard short-circuits the classifier when application state makes the
+  // intent sufficiently deterministic. Guards are exclusive: first match wins.
+  // If no guard fires, classifyIntent (Haiku) is called as usual.
+  let classified = null;
+
+  // Guard A: Fatigue standalone — Haiku is non-deterministic (~50% NEW_SYMPTOM).
+  // FATIGUE_STANDALONE_RE is anchored ^...$ so compound statements do NOT match.
+  // Skipped when pending_question or current_action_assignment owns the turn.
   if (!state.pending_question
       && !state.current_action_assignment
       && FATIGUE_STANDALONE_RE.test(userText.trim())) {
     classified = { event_type: 'GENERAL_HEALTH_REQUEST', payload: { text: userText } };
-  } else {
+  }
+
+  // Guard B: ACTION_COMPLETED / ACTION_SKIPPED
+  // Fires only when a valid assignment (action_id + intervention_id) exists AND input
+  // matches the canonical button/synonym vocabulary. Mismatched input (new symptom,
+  // health declaration) does NOT match and falls through to the classifier.
+  if (!classified
+      && state.current_action_assignment?.action_id
+      && state.current_action_assignment?.intervention_id) {
+    const _trimmed = userText.trim();
+    if (ACTION_COMPLETION_RE.test(_trimmed)) {
+      classified = { event_type: 'ACTION_COMPLETED', payload: {} };
+    } else if (ACTION_SKIP_RE.test(_trimmed)) {
+      classified = { event_type: 'ACTION_SKIPPED', payload: {} };
+    }
+  }
+
+  // Guard C: BOOTSTRAP pending question (non-clinical_context, non-refusal)
+  // Routes the answer before the classifier for tightly constrained scalar types.
+  // Only fires when input matches the expected format for the evidence type:
+  //   birth_year       → any input containing a digit
+  //   recent_falls     → clear yes/no
+  //   vstat_ze_zeme    → clear yes/no
+  //   vynest_nakup     → clear yes/no
+  // Unrecognised input (symptom sentence, free text) falls through to classifier.
+  // clinical_context uses its own routing path — not touched here.
+  if (!classified
+      && state.pending_question?.type === 'BOOTSTRAP'
+      && state.pending_question?.evidence_type !== 'clinical_context'
+      && !BOOTSTRAP_REFUSAL_RE.test(userText.trim())) {
+    const _ev = state.pending_question.evidence_type;
+    const _trimmed = userText.trim();
+    if (_ev === 'birth_year' && /\d/.test(_trimmed)) {
+      classified = { event_type: 'ANSWER_TO_EVIDENCE_QUESTION', payload: { evidence_type: _ev, value: _trimmed } };
+    } else if ((_ev === 'recent_falls' || _ev === 'vstat_ze_zeme' || _ev === 'vynest_nakup')
+               && BOOTSTRAP_YESNO_RE.test(_trimmed)) {
+      classified = { event_type: 'ANSWER_TO_EVIDENCE_QUESTION', payload: { evidence_type: _ev, value: _trimmed } };
+    }
+    // No match for this evidence type or input pattern → fall through to classifier.
+  }
+
+  // Guard D: PATH_DISCOVERY pending question (non-refusal, format-validated)
+  // Only pre-routes when input matches the expected answer format for the specific
+  // evidence type. Mismatched input (e.g. "bolí mě koleno" when aerobic days is
+  // pending) does NOT match and falls through to the classifier so it can route it
+  // as NEW_SYMPTOM. The downstream normalization guards (lines ~1081-1167) run
+  // after applyHealthEvent and reject unrecognised values with a clarification ASK —
+  // no false evidence is ever persisted.
+  if (!classified
+      && state.pending_question?.type === 'PATH_DISCOVERY'
+      && !BOOTSTRAP_REFUSAL_RE.test(userText.trim())) {
+    const _ev = state.pending_question.evidence_type;
+    const _trimmed = userText.trim();
+    let _pdMatch = false;
+    if (_ev === 'weekly_aerobic_activity_days') {
+      _pdMatch = /\b[0-7]\b/.test(_trimmed)
+        || /\b(nula|žádn|nikdy|jednou|dvakrát|třikrát|čtyři|pět|šest|sedm)\b/i.test(_trimmed);
+    } else if (_ev === 'exertional_dyspnea') {
+      _pdMatch = /\b(ano|jo|ne|nemám|nedochází|vůbec|trochu|někdy|občas|zadýchám|zadýchávám|dýchám\s+hůř|hůř\s+dýchám)\b/i.test(_trimmed);
+    } else if (_ev === 'known_blood_pressure_approx') {
+      _pdMatch = /\d{2,3}/.test(_trimmed)
+        || /nevím|neznám|nezměřil|nepamatuju|nemám.*tlakoměr/i.test(_trimmed);
+    }
+    if (_pdMatch) {
+      classified = { event_type: 'ANSWER_TO_EVIDENCE_QUESTION', payload: { evidence_type: _ev, value: _trimmed } };
+    }
+  }
+
+  // Fall through: AI classifier (Haiku). Called only when no guard fired above.
+  if (!classified) {
     classified = await classifyIntent(state, userText);
   }
+
   const { event_type, payload } = classified;
 
   // 2. WHY: use only cached context, no engine call
@@ -808,13 +899,13 @@ export async function processInput(userId, userText, sessionState = {}) {
     };
   }
 
-  // ── Bootstrap refusal pre-classifier override (narrow unlock) ───────────────
-  // Haiku may classify Czech refusal phrases ("Nechci uvést.", "Nevím.") as
-  // ANSWER_TO_EVIDENCE_QUESTION when a BOOTSTRAP pending_question is set — it sees
-  // a pending question and treats any reply as an answer. Override to USER_PREFERENCE
-  // so the skip/defer early-return path below fires reliably.
-  // Only fires when a BOOTSTRAP evidence_type is the active pending question.
-  const BOOTSTRAP_REFUSAL_RE = /^(nev[ií]m|nechci|p[rř]esko[cč]it|skip)\b/i;
+  // ── Bootstrap refusal post-classifier override (narrow unlock) ──────────────
+  // Safety net: Haiku may classify Czech refusal phrases ("Nechci uvést.", "Nevím.")
+  // as ANSWER_TO_EVIDENCE_QUESTION when a BOOTSTRAP pending_question is set.
+  // Guard C (pre-classifier) already excludes refusals from deterministic routing,
+  // but this override keeps the post-classifier path correct for any refusal text
+  // that reached Haiku and was misclassified.
+  // BOOTSTRAP_REFUSAL_RE is defined at module level and reused here.
   if (BOOTSTRAP_TYPES.has(state.pending_question?.evidence_type)
       && BOOTSTRAP_REFUSAL_RE.test(userText.trim())) {
     adapterType = 'USER_PREFERENCE';

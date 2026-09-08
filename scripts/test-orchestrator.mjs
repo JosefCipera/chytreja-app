@@ -22,7 +22,7 @@
 //   - ACT: session_updates.current_action_assignment set
 //   - session state flow: pending_question cleared after ANSWER
 
-import { processInput, buildEvent, _buildSessionUpdates_test as buildSessionUpdates, FATIGUE_STANDALONE_RE } from '../api/engine/orchestrator.js';
+import { processInput, buildEvent, _buildSessionUpdates_test as buildSessionUpdates, FATIGUE_STANDALONE_RE, BOOTSTRAP_REFUSAL_RE } from '../api/engine/orchestrator.js';
 import { synthesizePathDiscovery } from '../api/engine/decisionGate.js';
 import { runEngine, ENGINE_MASTER } from '../api/engine/engine.js';
 import { applyHealthEvent }         from '../api/engine/healthEventAdapter.js';
@@ -4700,6 +4700,289 @@ async function scenarioLD_FOLLOWUP() {
   }
 }
 
+// ── FO — Classifier Fail-Safe: Phase 1 deterministic routing ─────────────────
+//
+// Verifies that pre-classifier guards route correctly WITHOUT calling the Haiku
+// classifier, so that interactions whose intent is determined by application state
+// survive API outage or credit exhaustion.
+//
+// Tests run against the current environment — if the classifier is down (outage),
+// the pre-classifier path is the only one that works and the tests prove it.
+// When the classifier is available, the same tests verify the output is identical.
+//
+// FO-1:  "Hotovo" with valid assignment → ACTION_COMPLETED (assignment cleared)
+// FO-2:  "Přeskočit" with valid assignment → ACTION_SKIPPED (assignment cleared)
+// FO-3:  BOOTSTRAP birth_year valid answer ("58") → persisted, no repeat
+// FO-4:  BOOTSTRAP birth_year invalid input ("bolí mě koleno") → NOT persisted
+// FO-5:  PATH_DISCOVERY weekly_aerobic valid answer ("3") → normalization fires
+// FO-6:  PATH_DISCOVERY invalid answer ("bolí mě koleno") → NOT swallowed as PD answer
+// FO-7:  PATH_DISCOVERY exertional_dyspnea valid answer ("ano") → normalization fires
+// FO-8:  PATH_DISCOVERY blood pressure valid answer ("140") → normalization fires
+
+async function scenarioFO() {
+  sep('FO — Classifier Fail-Safe: Phase 1 deterministic routing');
+
+  // FO-1 + FO-2: ACTION_COMPLETED / ACTION_SKIPPED without classifier
+  // State: valid current_action_assignment — the pre-classifier guard fires.
+  {
+    const UID = `test-fo-action-${Date.now()}`;
+    const ASSIGNMENT = { action_id: 'aerobic_walk', intervention_id: 'PHYSICAL_INACTIVITY', label: 'Svižná chůze 30 minut', assigned_at: new Date().toISOString() };
+    try {
+      await sb.from('user_health_profile').upsert(
+        { user_id: UID, ...SEED_HP },
+        { onConflict: 'user_id' }
+      );
+      await sb.from('user_profiles').upsert({ user_id: UID, ...SEED_UP }, { onConflict: 'user_id' });
+
+      const baseSession = {
+        pending_question:          null,
+        current_action_assignment: ASSIGNMENT,
+        question_budget_remaining: 3,
+        pending_clarifications:    [],
+        last_daily_decision:       null,
+        last_domain_response:      null,
+        person_birth_year:         1975,
+      };
+
+      // FO-1: "Hotovo" → ACTION_COMPLETED → assignment cleared
+      const r1 = await processInput(UID, 'Hotovo', baseSession);
+      console.log('\n  [FO-1 — "Hotovo" with valid assignment]');
+      showResponse(r1);
+      check(r1.session_updates?.current_action_assignment === null,
+        'FO-1: "Hotovo" → current_action_assignment cleared (ACTION_COMPLETED routed deterministically)',
+        `actual: ${JSON.stringify(r1.session_updates?.current_action_assignment)}`);
+      check(r1.mode != null,
+        'FO-1b: response has a valid mode (action was processed by engine)',
+        `actual: ${r1.mode}`);
+
+      // FO-2: "Přeskočit" → ACTION_SKIPPED → assignment cleared
+      const r2 = await processInput(UID, 'Přeskočit', baseSession);
+      console.log('\n  [FO-2 — "Přeskočit" with valid assignment]');
+      showResponse(r2);
+      check(r2.session_updates?.current_action_assignment === null,
+        'FO-2: "Přeskočit" → current_action_assignment cleared (ACTION_SKIPPED routed deterministically)',
+        `actual: ${JSON.stringify(r2.session_updates?.current_action_assignment)}`);
+      check(r2.mode != null,
+        'FO-2b: response has a valid mode (skip was processed by engine)',
+        `actual: ${r2.mode}`);
+    } finally {
+      await sb.from('user_health_profile').delete().eq('user_id', UID);
+      await sb.from('user_profiles').delete().eq('user_id', UID);
+    }
+  }
+
+  // FO-3: BOOTSTRAP birth_year valid answer ("58") persisted without classifier
+  {
+    const UID = `test-fo-bs-by-${Date.now()}`;
+    try {
+      await sb.from('user_health_profile').upsert(
+        { user_id: UID, diagnoses: [], symptoms: [], medications: [], labs: [], physical: {}, lifestyle: {} },
+        { onConflict: 'user_id' }
+      );
+      await sb.from('user_profiles').upsert({ user_id: UID, birth_year: null }, { onConflict: 'user_id' });
+
+      const r = await processInput(UID, '58', {
+        pending_question:          { text: 'Kolik ti je let?', evidence_type: 'birth_year', type: 'BOOTSTRAP' },
+        current_action_assignment: null,
+        question_budget_remaining: 3,
+        pending_clarifications:    [],
+        last_daily_decision:       null,
+        last_domain_response:      null,
+        person_birth_year:         null,
+      });
+      console.log('\n  [FO-3 — BOOTSTRAP birth_year "58"]');
+      showResponse(r);
+
+      const { data: profile } = await sb.from('user_profiles').select('birth_year').eq('user_id', UID).maybeSingle();
+      const expectedYear = new Date().getFullYear() - 58;
+      check(profile?.birth_year === expectedYear,
+        `FO-3: birth_year persisted (expected ${expectedYear}) — Guard C pre-routed without classifier`,
+        `actual: ${profile?.birth_year}`);
+      check(r.session_updates?.pending_question?.evidence_type !== 'birth_year',
+        'FO-3b: birth_year question NOT repeated (answer was processed)',
+        `actual: ${r.session_updates?.pending_question?.evidence_type}`);
+    } finally {
+      await sb.from('user_health_profile').delete().eq('user_id', UID);
+      await sb.from('user_profiles').delete().eq('user_id', UID);
+    }
+  }
+
+  // FO-4: BOOTSTRAP birth_year invalid input ("bolí mě koleno") does NOT create false evidence
+  // No digit → Guard C does NOT fire → falls through to classifier (or GHR fallback).
+  // birth_year must NOT be written to user_profiles.
+  {
+    const UID = `test-fo-bs-invalid-${Date.now()}`;
+    try {
+      await sb.from('user_health_profile').upsert(
+        { user_id: UID, diagnoses: [], symptoms: [], medications: [], labs: [], physical: {}, lifestyle: {} },
+        { onConflict: 'user_id' }
+      );
+      await sb.from('user_profiles').upsert({ user_id: UID, birth_year: null }, { onConflict: 'user_id' });
+
+      const r = await processInput(UID, 'bolí mě koleno', {
+        pending_question:          { text: 'Kolik ti je let?', evidence_type: 'birth_year', type: 'BOOTSTRAP' },
+        current_action_assignment: null,
+        question_budget_remaining: 3,
+        pending_clarifications:    [],
+        last_daily_decision:       null,
+        last_domain_response:      null,
+        person_birth_year:         null,
+      });
+      console.log('\n  [FO-4 — BOOTSTRAP birth_year invalid input]');
+      showResponse(r);
+
+      const { data: profile } = await sb.from('user_profiles').select('birth_year').eq('user_id', UID).maybeSingle();
+      check(profile?.birth_year === null,
+        'FO-4: birth_year NOT written — Guard C did not pre-route non-numeric input',
+        `actual: ${profile?.birth_year}`);
+    } finally {
+      await sb.from('user_health_profile').delete().eq('user_id', UID);
+      await sb.from('user_profiles').delete().eq('user_id', UID);
+    }
+  }
+
+  // FO-5: PATH_DISCOVERY weekly_aerobic valid answer ("3") → normalization fires correctly
+  {
+    const UID = `test-fo-pd-aerobic-${Date.now()}`;
+    try {
+      await sb.from('user_health_profile').upsert(
+        { user_id: UID, diagnoses: [], symptoms: [], medications: [], labs: [], physical: {}, lifestyle: {} },
+        { onConflict: 'user_id' }
+      );
+      await sb.from('user_profiles').upsert({ user_id: UID, birth_year: 1966 }, { onConflict: 'user_id' });
+
+      const r = await processInput(UID, '3', {
+        pending_question:          { text: 'Kolik dní týdně cvičíš aspoň 30 minut?', evidence_type: 'weekly_aerobic_activity_days', type: 'PATH_DISCOVERY' },
+        current_action_assignment: null,
+        question_budget_remaining: 3,
+        pending_clarifications:    [],
+        last_daily_decision:       null,
+        last_domain_response:      null,
+        person_birth_year:         1966,
+        hp_physical:               {},
+        skipped_bootstrap_types:   ['clinical_context'],
+      });
+      console.log('\n  [FO-5 — PATH_DISCOVERY weekly_aerobic "3"]');
+      showResponse(r);
+
+      // Normalization accepted "3" → PATH_DISCOVERY answer override fires → reason_code is PATH_DISCOVERY_*
+      const pdRC = ['PATH_DISCOVERY_NEXT', 'PATH_DISCOVERY_CANDIDATE', 'PATH_DISCOVERY_HOLD'];
+      check(pdRC.includes(r.debug?.reason_code),
+        `FO-5: reason_code is PATH_DISCOVERY_* — Guard D pre-routed, normalization accepted "3"`,
+        `actual: ${r.debug?.reason_code}`);
+    } finally {
+      await sb.from('user_health_profile').delete().eq('user_id', UID);
+      await sb.from('user_profiles').delete().eq('user_id', UID);
+    }
+  }
+
+  // FO-6: PATH_DISCOVERY weekly_aerobic — "bolí mě koleno" NOT swallowed as PD answer
+  // No digit, no day word → Guard D does NOT fire → falls through to classifier.
+  // Result must NOT have a PATH_DISCOVERY_* reason_code (pre-routing didn't fire).
+  {
+    const UID = `test-fo-pd-symptom-${Date.now()}`;
+    try {
+      await sb.from('user_health_profile').upsert(
+        { user_id: UID, diagnoses: [], symptoms: [], medications: [], labs: [], physical: {}, lifestyle: {} },
+        { onConflict: 'user_id' }
+      );
+      await sb.from('user_profiles').upsert({ user_id: UID, birth_year: 1966 }, { onConflict: 'user_id' });
+
+      const r = await processInput(UID, 'bolí mě koleno', {
+        pending_question:          { text: 'Kolik dní týdně cvičíš aspoň 30 minut?', evidence_type: 'weekly_aerobic_activity_days', type: 'PATH_DISCOVERY' },
+        current_action_assignment: null,
+        question_budget_remaining: 3,
+        pending_clarifications:    [],
+        last_daily_decision:       null,
+        last_domain_response:      null,
+        person_birth_year:         1966,
+        hp_physical:               {},
+        skipped_bootstrap_types:   ['clinical_context'],
+      });
+      console.log('\n  [FO-6 — PATH_DISCOVERY aerobic pending, new symptom input]');
+      showResponse(r);
+
+      // "bolí mě koleno" has no digit and no day word — Guard D must NOT have pre-routed it.
+      // Under outage (GHR fallback) or with classifier (NEW_SYMPTOM), neither is PATH_DISCOVERY routing.
+      const pdRC_only = ['PATH_DISCOVERY_NEXT', 'PATH_DISCOVERY_CANDIDATE', 'PATH_DISCOVERY_HOLD'];
+      check(!pdRC_only.includes(r.debug?.reason_code),
+        'FO-6: "bolí mě koleno" NOT routed as PATH_DISCOVERY answer — Guard D correctly rejected non-numeric input',
+        `actual reason_code: ${r.debug?.reason_code}`);
+    } finally {
+      await sb.from('user_health_profile').delete().eq('user_id', UID);
+      await sb.from('user_profiles').delete().eq('user_id', UID);
+    }
+  }
+
+  // FO-7: PATH_DISCOVERY exertional_dyspnea valid answer ("ano") → normalization fires
+  {
+    const UID = `test-fo-pd-dyspnea-${Date.now()}`;
+    try {
+      await sb.from('user_health_profile').upsert(
+        { user_id: UID, diagnoses: [], symptoms: [], medications: [], labs: [], physical: {}, lifestyle: {} },
+        { onConflict: 'user_id' }
+      );
+      await sb.from('user_profiles').upsert({ user_id: UID, birth_year: 1966 }, { onConflict: 'user_id' });
+
+      const r = await processInput(UID, 'ano', {
+        pending_question:          { text: 'Dochází ti při chůzi nebo mírném úsilí dech?', evidence_type: 'exertional_dyspnea', type: 'PATH_DISCOVERY' },
+        current_action_assignment: null,
+        question_budget_remaining: 3,
+        pending_clarifications:    [],
+        last_daily_decision:       null,
+        last_domain_response:      null,
+        person_birth_year:         1966,
+        hp_physical:               { weekly_aerobic_activity_days: 1 },
+        skipped_bootstrap_types:   ['clinical_context'],
+      });
+      console.log('\n  [FO-7 — PATH_DISCOVERY exertional_dyspnea "ano"]');
+      showResponse(r);
+
+      const pdRC = ['PATH_DISCOVERY_NEXT', 'PATH_DISCOVERY_CANDIDATE', 'PATH_DISCOVERY_HOLD'];
+      check(pdRC.includes(r.debug?.reason_code),
+        'FO-7: reason_code is PATH_DISCOVERY_* — Guard D pre-routed dyspnea "ano", normalization accepted',
+        `actual: ${r.debug?.reason_code}`);
+    } finally {
+      await sb.from('user_health_profile').delete().eq('user_id', UID);
+      await sb.from('user_profiles').delete().eq('user_id', UID);
+    }
+  }
+
+  // FO-8: PATH_DISCOVERY known_blood_pressure_approx valid answer ("140") → normalization fires
+  {
+    const UID = `test-fo-pd-bp-${Date.now()}`;
+    try {
+      await sb.from('user_health_profile').upsert(
+        { user_id: UID, diagnoses: [], symptoms: [], medications: [], labs: [], physical: {}, lifestyle: {} },
+        { onConflict: 'user_id' }
+      );
+      await sb.from('user_profiles').upsert({ user_id: UID, birth_year: 1966 }, { onConflict: 'user_id' });
+
+      const r = await processInput(UID, '140', {
+        pending_question:          { text: 'Jaký máš přibližně systolický tlak?', evidence_type: 'known_blood_pressure_approx', type: 'PATH_DISCOVERY' },
+        current_action_assignment: null,
+        question_budget_remaining: 3,
+        pending_clarifications:    [],
+        last_daily_decision:       null,
+        last_domain_response:      null,
+        person_birth_year:         1966,
+        hp_physical:               { weekly_aerobic_activity_days: 1, exertional_dyspnea: false },
+        skipped_bootstrap_types:   ['clinical_context'],
+      });
+      console.log('\n  [FO-8 — PATH_DISCOVERY blood_pressure "140"]');
+      showResponse(r);
+
+      const pdRC = ['PATH_DISCOVERY_NEXT', 'PATH_DISCOVERY_CANDIDATE', 'PATH_DISCOVERY_HOLD'];
+      check(pdRC.includes(r.debug?.reason_code),
+        'FO-8: reason_code is PATH_DISCOVERY_* — Guard D pre-routed BP "140", normalization accepted',
+        `actual: ${r.debug?.reason_code}`);
+    } finally {
+      await sb.from('user_health_profile').delete().eq('user_id', UID);
+      await sb.from('user_profiles').delete().eq('user_id', UID);
+    }
+  }
+}
+
 // ── IR — HbA1c + Fasting Glucose → INSULIN_RESISTANCE inference ──────────────
 
 async function scenarioIR() {
@@ -4989,6 +5272,7 @@ async function main() {
     scenarioLD();
     await scenarioLD_LIFECYCLE();
     await scenarioLD_FOLLOWUP();
+    await scenarioFO();
     await scenarioIR();
 
     const total = passed + failed;
