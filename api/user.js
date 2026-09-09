@@ -890,7 +890,7 @@ async function handleWizardStep(req, res) {
     if (age || height || weight) {
       const birth_year = age ? (new Date().getFullYear() - age) : null;
       const { error: pe } = await db.from('user_profiles').upsert(
-        { user_id: userId, age, birth_year, height, weight, gender, updated_at: new Date().toISOString() },
+        { user_id: userId, age, birth_year, height, weight, gender },
         { onConflict: 'user_id' }
       );
       if (pe) return res.status(500).json({ error: `user_profiles upsert: ${pe.message}` });
