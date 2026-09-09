@@ -889,18 +889,20 @@ async function handleWizardStep(req, res) {
     const { age, height, weight, gender, waist } = req.body;
     if (age || height || weight) {
       const birth_year = age ? (new Date().getFullYear() - age) : null;
-      await db.from('user_profiles').upsert(
+      const { error: pe } = await db.from('user_profiles').upsert(
         { user_id: userId, age, birth_year, height, weight, gender, updated_at: new Date().toISOString() },
         { onConflict: 'user_id' }
       );
+      if (pe) return res.status(500).json({ error: `user_profiles upsert: ${pe.message}` });
     }
     if (waist) {
       const { data: hp } = await db.from('user_health_profile').select('lifestyle').eq('user_id', userId).maybeSingle();
       const lifestyle = { ...(hp?.lifestyle || {}), waist_cm: waist };
-      await db.from('user_health_profile').upsert(
+      const { error: he } = await db.from('user_health_profile').upsert(
         { user_id: userId, lifestyle, updated_at: new Date().toISOString() },
         { onConflict: 'user_id' }
       );
+      if (he) console.warn('[wizard-step-1] lifestyle upsert:', he.message);
     }
     return res.json({ ok: true });
   }
@@ -930,10 +932,11 @@ async function handleWizardStep(req, res) {
     if (Object.keys(capacity).length) {
       const { data: hp } = await db.from('user_health_profile').select('capacity').eq('user_id', userId).maybeSingle();
       const merged = { ...(hp?.capacity || {}), ...capacity };
-      await db.from('user_health_profile').upsert(
+      const { error: ce } = await db.from('user_health_profile').upsert(
         { user_id: userId, capacity: merged, updated_at: new Date().toISOString() },
         { onConflict: 'user_id' }
       );
+      if (ce) return res.status(500).json({ error: `capacity upsert: ${ce.message}` });
     }
     return res.json({ ok: true });
   }

@@ -52,14 +52,18 @@ function _showWizard(userId) {
   skipBtn.addEventListener('click', () => _advance(true));
   nextBtn.addEventListener('click', () => _advance(false));
 
-  function _advance(skip) {
-    if (state.step === 3 || skip) {
-      if (!skip) _save();
-      else if (state.step < 3) { goTo(state.step + 1); return; }
-      else _save();
+  async function _advance(skip) {
+    if (skip && state.step < 3) { goTo(state.step + 1); return; }
+    if (state.step === 3 || skip) { await _save(); return; }
+    nextBtn.disabled = true;
+    const ok = await _save_partial(state.step);
+    nextBtn.disabled = false;
+    if (!ok) {
+      const orig = nextBtn.textContent;
+      nextBtn.textContent = 'Chyba — zkus znovu';
+      setTimeout(() => { nextBtn.textContent = orig; }, 3000);
       return;
     }
-    _save_partial(state.step);
     goTo(state.step + 1);
   }
 
@@ -84,33 +88,49 @@ function _showWizard(userId) {
       const weight = parseFloat(overlay.querySelector('#onb-weight')?.value) || null;
       const waist  = parseFloat(overlay.querySelector('#onb-waist')?.value) || null;
       if (age || height || weight || waist) {
-        await authFetch('/api/user?action=wizard-step', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ step: 1, age, height, weight, gender: state.gender, waist }),
-        });
+        try {
+          const res = await authFetch('/api/user?action=wizard-step', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ step: 1, age, height, weight, gender: state.gender, waist }),
+          });
+          if (!res.ok) return false;
+        } catch { return false; }
       }
     }
     if (step === 2) {
       const dx   = overlay.querySelector('#onb-diagnoses')?.value.split('\n').map(s => s.trim()).filter(Boolean) || [];
       const meds = overlay.querySelector('#onb-meds')?.value.split('\n').map(s => s.trim()).filter(Boolean) || [];
       if (dx.length || meds.length) {
-        await authFetch('/api/user?action=wizard-step', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ step: 2, diagnoses: dx, medications: meds }),
-        });
+        try {
+          const res = await authFetch('/api/user?action=wizard-step', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ step: 2, diagnoses: dx, medications: meds }),
+          });
+          if (!res.ok) return false;
+        } catch { return false; }
       }
     }
+    return true;
   }
 
   async function _save() {
     if (Object.keys(state.cap).length) {
-      await authFetch('/api/user?action=wizard-step', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ step: 3, capacity: state.cap }),
-      });
+      let res;
+      try {
+        res = await authFetch('/api/user?action=wizard-step', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ step: 3, capacity: state.cap }),
+        });
+      } catch { res = { ok: false }; }
+      if (!res.ok) {
+        const orig = nextBtn.textContent;
+        nextBtn.textContent = 'Chyba — zkus znovu';
+        setTimeout(() => { nextBtn.textContent = orig; }, 3000);
+        return;
+      }
     }
     overlay.remove();
     if (typeof window.loadCRT === 'function') window.loadCRT(true);
