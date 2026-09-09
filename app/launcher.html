@@ -518,6 +518,7 @@
   import { initializeApp }                        from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js';
   import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js';
   import { authFetch }                            from '/app/js/universe/authFetch.js';
+  import { checkAndShowOnboarding }              from '/app/js/universe/onboarding-wizard.js';
 
   const firebaseApp = initializeApp({
     apiKey:            'AIzaSyAKREZsoBZkA1xOQ5ff3XDmiJ88nwSjeOk',
@@ -972,6 +973,8 @@
     window.__chj_userId = userId;
     $authOver.classList.add('hidden');
     $app.classList.remove('hidden');
+
+    checkAndShowOnboarding(userId).catch(e => console.warn('[onboarding]', e));
 
     if (_isPostHandoff) {
       history.replaceState({}, '', '/launcher');

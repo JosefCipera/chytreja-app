@@ -888,8 +888,9 @@ async function handleWizardStep(req, res) {
   if (step === 1) {
     const { age, height, weight, gender, waist } = req.body;
     if (age || height || weight) {
+      const birth_year = age ? (new Date().getFullYear() - age) : null;
       await db.from('user_profiles').upsert(
-        { user_id: userId, age, height, weight, gender, updated_at: new Date().toISOString() },
+        { user_id: userId, age, birth_year, height, weight, gender, updated_at: new Date().toISOString() },
         { onConflict: 'user_id' }
       );
     }
