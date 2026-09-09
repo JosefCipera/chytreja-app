@@ -150,10 +150,36 @@ export const BOOTSTRAP_REFUSAL_RE = /^(nev[ií]m|nechci|p[rř]esko[cč]it|skip)\
 const ACTION_COMPLETION_RE = /^(hotovo|splněno|udělal[ao]?|dokončeno)[\s.,!?]*$/i;
 const ACTION_SKIP_RE = /^(p[rř]esko[cč][ií][mt]?|vynech[aá][mt]|dnes\s+ne|nem[uůo]žu)[\s.,!?]*$/i;
 
-// Bootstrap yes/no — used for recent_falls, vstat_ze_zeme, vynest_nakup.
-// Conservative: only matches clear affirmative/negative words so that symptom
-// statements ("bolí mě koleno") do NOT pre-route as a yes/no BOOTSTRAP answer.
-const BOOTSTRAP_YESNO_RE = /\b(ano|jo|jj|jasně|zvládnu|zvládl[ao]?|upadl[ao]?|ne|nene|nezvládnu|nem[uůo]žu|nedokážu|neupadl[ao]?)\b/i;
+// Compound-input signal: coordinating "but/because" conjunctions that open a new
+// clause. If present, the input is NOT a pure scalar answer and must fall through
+// to the classifier so the full text (including the additional health info) is preserved.
+const COMPOUND_SIGNAL_RE = /\bale\b|\bprotože\b|\bjenže\b|\bavšak\b|\bpřičemž\b/i;
+
+// birth_year: full-input anchored parser.
+// Accepts only bare 2–3 digit age integers (e.g. "58", "58 let.") —
+// the only forms that survive downstream parseInt() + age-range check (10–120).
+// Natural-sentence forms ("Je mi 58 let.", "Narozen v roce 1958.") and 4-digit years
+// ("1968" → age 1968 > 120) are intentionally excluded and fall through to the classifier.
+const BIRTH_YEAR_FULL_RE = /^\d{2,3}(?:\s+let[ao]?)?\s*[.,!?]*$/i;
+
+// Bootstrap yes/no — anchored full-input parser.
+// Accepts "ne", "ano", "Ne, vůbec.", "neupadla jsem.", "zvládl jsem.", "Zvládnu to."
+// Rejects compound inputs (caught upstream by COMPOUND_SIGNAL_RE).
+const BOOTSTRAP_YESNO_FULL_RE = /^(?:ano|jo|jj|jasně|zvládnu(?:\s+to)?|zvládl[ao]?\s*(?:jsem(?:\s+to)?|to)?|upadl[ao]?\s*(?:jsem)?|ne|nene|nezvládnu(?:\s+to)?|nem[uůo]žu|nedokážu|neupadl[ao]?\s*(?:jsem)?)(?:\s*,\s*(?:vůbec(?:\s+ne)?|ani\s+jednou|naprosto(?:\s+ne)?|určitě(?:\s+ne)?|samozřejmě(?:\s+ne)?|naštěstí(?:\s+ne)?|bohužel(?:\s+ano)?|absolutně(?:\s+ne)?))?\s*[.,!?]*$/i;
+
+// PATH_DISCOVERY: aerobic days — anchored full-input parser.
+// Accepts "3", "3 dny", "třikrát", "Chodím třikrát týdně.", "nula", "nikdy"
+// "3x" / "3×" (digit immediately followed by x/×) are excluded: downstream
+// /\b([0-7])\b/ has no word boundary between "3" and "x" → normalization fails.
+const AEROBIC_DAYS_FULL_RE = /^(?:(?:chodím|cvičím|sportuji|hýbám\s+se|trénuji|jezdím)\s+)?(?:(?:asi|zhruba|tak)\s+)?(?:\d(?:\s*(?:krát|dny?|dní|den))?(?:\s+(?:týdně|za\s+týden))?|nula|žádn[ýéá]?|nikdy|jednou|dvakrát|třikrát|čtyřikrát|pětkrát|šestkrát|sedmkrát|jeden\s+den|dva\s+dny|tři\s+dny|čtyři\s+dny|pět\s+dní|šest\s+dní|sedm\s+dní)(?:\s+(?:týdně|za\s+týden))?\s*[.,!?]*$/i;
+
+// PATH_DISCOVERY: exertional dyspnea — anchored full-input parser.
+// Accepts "ano", "ne", "Ano, zadýchávám se.", "Ne, vůbec.", "trochu"
+const DYSPNEA_FULL_RE = /^(?:ano|jo|ne|nemám|nedochází|vůbec|trochu|někdy|občas|zadýchám\s+se|zadýchávám\s+se|dýchám\s+hůř|hůř\s+dýchám)(?:\s*,\s*(?:vůbec(?:\s+ne)?|trochu|někdy|občas|zadýchám\s+se|zadýchávám\s+se|dýchám\s+hůř|ano|ne|naprosto\s+ne|vůbec\s+ne))?\s*[.,!?]*$/i;
+
+// PATH_DISCOVERY: blood pressure — anchored full-input parser.
+// Accepts "120/80", "140", "Tlak mám asi 120/80.", "nevím", "neznám", "Nepamatuju si."
+const BP_FULL_RE = /^(?:(?:tlak\s+(?:mám|je|mívám|bývá)(?:\s+(?:asi|zhruba|tak|přibližně))?\s+)|(?:asi|zhruba|tak|přibližně)\s+)?(?:\d{2,3}(?:\/\d{2,3})?|nevím|neznám|nezměřil[ao]?|nepamatuju(?:\s+si)?|nemám.*tlakoměr|nenapadá)\s*[.,!?]*$/i;
 
 let client;
 function getClient() {
@@ -800,12 +826,13 @@ export async function processInput(userId, userText, sessionState = {}) {
 
   // Guard C: BOOTSTRAP pending question (non-clinical_context, non-refusal)
   // Routes the answer before the classifier for tightly constrained scalar types.
-  // Only fires when input matches the expected format for the evidence type:
-  //   birth_year       → any input containing a digit
-  //   recent_falls     → clear yes/no
-  //   vstat_ze_zeme    → clear yes/no
-  //   vynest_nakup     → clear yes/no
-  // Unrecognised input (symptom sentence, free text) falls through to classifier.
+  // Fires ONLY when the ENTIRE input is safely interpretable as the expected scalar:
+  //   birth_year       → full-input year expression (BIRTH_YEAR_FULL_RE)
+  //   recent_falls     → full-input yes/no expression (BOOTSTRAP_YESNO_FULL_RE)
+  //   vstat_ze_zeme    → full-input yes/no expression
+  //   vynest_nakup     → full-input yes/no expression
+  // Compound inputs ("58 a bolí mě...") are rejected by anchored regex / COMPOUND_SIGNAL_RE
+  // and fall through to the classifier with the FULL ORIGINAL TEXT intact.
   // clinical_context uses its own routing path — not touched here.
   if (!classified
       && state.pending_question?.type === 'BOOTSTRAP'
@@ -813,36 +840,39 @@ export async function processInput(userId, userText, sessionState = {}) {
       && !BOOTSTRAP_REFUSAL_RE.test(userText.trim())) {
     const _ev = state.pending_question.evidence_type;
     const _trimmed = userText.trim();
-    if (_ev === 'birth_year' && /\d/.test(_trimmed)) {
+    if (_ev === 'birth_year'
+        && !COMPOUND_SIGNAL_RE.test(_trimmed)
+        && BIRTH_YEAR_FULL_RE.test(_trimmed)) {
       classified = { event_type: 'ANSWER_TO_EVIDENCE_QUESTION', payload: { evidence_type: _ev, value: _trimmed } };
     } else if ((_ev === 'recent_falls' || _ev === 'vstat_ze_zeme' || _ev === 'vynest_nakup')
-               && BOOTSTRAP_YESNO_RE.test(_trimmed)) {
+               && !COMPOUND_SIGNAL_RE.test(_trimmed)
+               && BOOTSTRAP_YESNO_FULL_RE.test(_trimmed)) {
       classified = { event_type: 'ANSWER_TO_EVIDENCE_QUESTION', payload: { evidence_type: _ev, value: _trimmed } };
     }
-    // No match for this evidence type or input pattern → fall through to classifier.
+    // No match → fall through to classifier with full original text.
   }
 
-  // Guard D: PATH_DISCOVERY pending question (non-refusal, format-validated)
-  // Only pre-routes when input matches the expected answer format for the specific
-  // evidence type. Mismatched input (e.g. "bolí mě koleno" when aerobic days is
-  // pending) does NOT match and falls through to the classifier so it can route it
-  // as NEW_SYMPTOM. The downstream normalization guards (lines ~1081-1167) run
-  // after applyHealthEvent and reject unrecognised values with a clarification ASK —
-  // no false evidence is ever persisted.
+  // Guard D: PATH_DISCOVERY pending question (format-validated)
+  // Fires ONLY when the ENTIRE input is safely interpretable as the expected scalar.
+  // COMPOUND_SIGNAL_RE rejects any input with "ale/protože/jenže/avšak/přičemž" — the
+  // classifier then handles the full text so no additional health info is silently discarded.
+  // Anchored per-type parsers further ensure no partial substring matches.
+  // Note: BOOTSTRAP_REFUSAL_RE is intentionally NOT applied here — the typed scalar grammars
+  // take precedence. For PATH_DISCOVERY, "Nevím." is a valid BP answer (matched by BP_FULL_RE)
+  // and "nechci"/"přeskočit" fail all three parsers and naturally fall through to the classifier.
   if (!classified
-      && state.pending_question?.type === 'PATH_DISCOVERY'
-      && !BOOTSTRAP_REFUSAL_RE.test(userText.trim())) {
+      && state.pending_question?.type === 'PATH_DISCOVERY') {
     const _ev = state.pending_question.evidence_type;
     const _trimmed = userText.trim();
     let _pdMatch = false;
-    if (_ev === 'weekly_aerobic_activity_days') {
-      _pdMatch = /\b[0-7]\b/.test(_trimmed)
-        || /\b(nula|žádn|nikdy|jednou|dvakrát|třikrát|čtyři|pět|šest|sedm)\b/i.test(_trimmed);
-    } else if (_ev === 'exertional_dyspnea') {
-      _pdMatch = /\b(ano|jo|ne|nemám|nedochází|vůbec|trochu|někdy|občas|zadýchám|zadýchávám|dýchám\s+hůř|hůř\s+dýchám)\b/i.test(_trimmed);
-    } else if (_ev === 'known_blood_pressure_approx') {
-      _pdMatch = /\d{2,3}/.test(_trimmed)
-        || /nevím|neznám|nezměřil|nepamatuju|nemám.*tlakoměr/i.test(_trimmed);
+    if (!COMPOUND_SIGNAL_RE.test(_trimmed)) {
+      if (_ev === 'weekly_aerobic_activity_days') {
+        _pdMatch = AEROBIC_DAYS_FULL_RE.test(_trimmed);
+      } else if (_ev === 'exertional_dyspnea') {
+        _pdMatch = DYSPNEA_FULL_RE.test(_trimmed);
+      } else if (_ev === 'known_blood_pressure_approx') {
+        _pdMatch = BP_FULL_RE.test(_trimmed);
+      }
     }
     if (_pdMatch) {
       classified = { event_type: 'ANSWER_TO_EVIDENCE_QUESTION', payload: { evidence_type: _ev, value: _trimmed } };

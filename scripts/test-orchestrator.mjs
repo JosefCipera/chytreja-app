@@ -4983,6 +4983,238 @@ async function scenarioFO() {
   }
 }
 
+// ── FO2 — Phase 1 Scalar Grammar: Class A (pure scalar) + Class B (compound rejection) ──
+//
+// Class A: prove each accepted scalar form bypasses the classifier AND that
+//          downstream normalization persists the correct evidence value.
+// Class B: prove each compound input does NOT trigger a deterministic guard;
+//          the full original text reaches the normal (classifier/fallback) path.
+//
+// G1–G3 FIX (applied): grammars narrowed to what downstream can actually consume.
+//   A-BY-2: Guard C falls through ("Je mi 58." not in narrowed regex) → birth_year=null expected
+//   A-BY-3: Guard C falls through; engine extracts via GENERAL_HEALTH_REQUEST → birth_year=THIS_YEAR-58
+//   A-BY-4: Guard C falls through ("1968" = 4 digits, excluded) → birth_year=null expected
+//   A-PA-3: Guard D falls through ("3x" removed from regex) → reason_code ≠ PATH_DISCOVERY_*
+
+async function scenarioFO2() {
+  sep('FO2 — Phase 1 Scalar Grammar Contract: Class A + Class B');
+
+  const THIS_YEAR = new Date().getFullYear();
+  const pdRC      = ['PATH_DISCOVERY_NEXT', 'PATH_DISCOVERY_CANDIDATE', 'PATH_DISCOVERY_HOLD'];
+
+  // ── Helpers ──────────────────────────────────────────────────────────────────
+
+  async function byTest(label, input, expectedYear) {
+    const UID = `test-fo2-by-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`;
+    try {
+      await sb.from('user_health_profile').upsert(
+        { user_id: UID, diagnoses: [], symptoms: [], medications: [], labs: [], physical: {}, lifestyle: {} },
+        { onConflict: 'user_id' });
+      await sb.from('user_profiles').upsert({ user_id: UID, birth_year: null }, { onConflict: 'user_id' });
+      await processInput(UID, input, {
+        pending_question:          { text: 'Kolik ti je let?', evidence_type: 'birth_year', type: 'BOOTSTRAP' },
+        current_action_assignment: null,
+        question_budget_remaining: 3,
+        pending_clarifications:    [],
+        last_daily_decision:       null,
+        last_domain_response:      null,
+        person_birth_year:         null,
+      });
+      const { data: p } = await sb.from('user_profiles').select('birth_year').eq('user_id', UID).maybeSingle();
+      check(p?.birth_year === expectedYear,
+        `${label}: birth_year=${expectedYear} — Guard C + downstream normalized`,
+        `actual: ${p?.birth_year}`);
+    } finally {
+      await sb.from('user_health_profile').delete().eq('user_id', UID);
+      await sb.from('user_profiles').delete().eq('user_id', UID);
+    }
+  }
+
+  async function ynTest(label, input, evidenceType, expectFieldSet) {
+    const UID = `test-fo2-yn-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`;
+    const key = evidenceType; // registry maps evidence_type 1:1 to physical key
+    try {
+      await sb.from('user_health_profile').upsert(
+        { user_id: UID, diagnoses: [], symptoms: [], medications: [], labs: [], physical: {}, lifestyle: {} },
+        { onConflict: 'user_id' });
+      await sb.from('user_profiles').upsert({ user_id: UID, birth_year: 1960 }, { onConflict: 'user_id' });
+      await processInput(UID, input, {
+        pending_question:          { text: 'Otázka', evidence_type: evidenceType, type: 'BOOTSTRAP' },
+        current_action_assignment: null,
+        question_budget_remaining: 3,
+        pending_clarifications:    [],
+        last_daily_decision:       null,
+        last_domain_response:      null,
+        person_birth_year:         1960,
+      });
+      const { data: hp } = await sb.from('user_health_profile').select('physical').eq('user_id', UID).maybeSingle();
+      const fieldSet = hp?.physical?.[key] !== undefined;
+      check(fieldSet === expectFieldSet,
+        `${label}: physical.${key} ${expectFieldSet ? 'SET (Guard C fired)' : 'NOT SET (Guard C correctly rejected)'}`,
+        `actual physical: ${JSON.stringify(hp?.physical)}`);
+    } finally {
+      await sb.from('user_health_profile').delete().eq('user_id', UID);
+      await sb.from('user_profiles').delete().eq('user_id', UID);
+    }
+  }
+
+  async function pdTest(label, input, evidenceType, prevPhysical, expectRouted) {
+    const UID = `test-fo2-pd-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`;
+    try {
+      await sb.from('user_health_profile').upsert(
+        { user_id: UID, diagnoses: [], symptoms: [], medications: [], labs: [], physical: prevPhysical ?? {}, lifestyle: {} },
+        { onConflict: 'user_id' });
+      await sb.from('user_profiles').upsert({ user_id: UID, birth_year: 1966 }, { onConflict: 'user_id' });
+      const r = await processInput(UID, input, {
+        pending_question:          { text: 'Otázka', evidence_type: evidenceType, type: 'PATH_DISCOVERY' },
+        current_action_assignment: null,
+        question_budget_remaining: 3,
+        pending_clarifications:    [],
+        last_daily_decision:       null,
+        last_domain_response:      null,
+        person_birth_year:         1966,
+        hp_physical:               prevPhysical ?? {},
+        skipped_bootstrap_types:   ['clinical_context'],
+      });
+      if (expectRouted) {
+        check(pdRC.includes(r.debug?.reason_code),
+          `${label}: reason_code=PATH_DISCOVERY_* — Guard D pre-routed, downstream accepted`,
+          `actual: ${r.debug?.reason_code}`);
+      } else {
+        check(!pdRC.includes(r.debug?.reason_code),
+          `${label}: Guard D did NOT pre-route — reason_code ≠ PATH_DISCOVERY_*`,
+          `actual: ${r.debug?.reason_code}`);
+      }
+    } finally {
+      await sb.from('user_health_profile').delete().eq('user_id', UID);
+      await sb.from('user_profiles').delete().eq('user_id', UID);
+    }
+  }
+
+  // ── A-BY: birth_year ─────────────────────────────────────────────────────────
+  console.log('\n  === A-BY: birth_year ===');
+  // BY-1: bare integer — reference case, Guard C + downstream OK
+  await byTest('FO2-A-BY-1: "58"', '58', THIS_YEAR - 58);
+  // BY-2: sentence without "let" — Guard C correctly falls through (G1: narrowed regex
+  //        requires bare digits; downstream parseInt("Je mi 58.") = NaN anyway).
+  //        Engine GENERAL_HEALTH_REQUEST fallback also can't extract → birth_year stays null.
+  await byTest('FO2-A-BY-2: "Je mi 58."', 'Je mi 58.', null);
+  // BY-3: sentence with "let" — Guard C falls through; engine extracts age via GENERAL_HEALTH_REQUEST
+  await byTest('FO2-A-BY-3: "Je mi 58 let."', 'Je mi 58 let.', THIS_YEAR - 58);
+  // BY-4: 4-digit year — Guard C correctly falls through (G1: 4 digits excluded from ^\d{2,3};
+  //        downstream age-range check also fails: 1968 > 120). birth_year stays null.
+  await byTest('FO2-A-BY-4: "1968"', '1968', null);
+
+  // ── A-YN: BOOTSTRAP yes/no ──────────────────────────────────────────────────
+  console.log('\n  === A-YN: BOOTSTRAP yes/no ===');
+  await ynTest('FO2-A-YN-1: "Ano." (recent_falls)',     'Ano.',           'recent_falls',  true);
+  await ynTest('FO2-A-YN-2: "Ne." (recent_falls)',      'Ne.',            'recent_falls',  true);
+  await ynTest('FO2-A-YN-3: "Upadla jsem." (recent_falls)',  'Upadla jsem.',   'recent_falls',  true);
+  await ynTest('FO2-A-YN-4: "Neupadla jsem." (recent_falls)', 'Neupadla jsem.', 'recent_falls',  true);
+  await ynTest('FO2-A-YN-5: "Zvládnu to." (vstat_ze_zeme)',   'Zvládnu to.',    'vstat_ze_zeme', true);
+  await ynTest('FO2-A-YN-6: "Nezvládnu to." (vynest_nakup)',  'Nezvládnu to.',  'vynest_nakup',  true);
+
+  // ── A-PA: weekly_aerobic_activity_days ──────────────────────────────────────
+  console.log('\n  === A-PA: weekly_aerobic_activity_days ===');
+  // PA-1: bare digit — Guard D + downstream OK
+  await pdTest('FO2-A-PA-1: "3"',          '3',             'weekly_aerobic_activity_days', {},   true);
+  // PA-2: digit + "dny" — digit word boundary present (space before "dny") → downstream OK
+  await pdTest('FO2-A-PA-2: "3 dny"',      '3 dny',         'weekly_aerobic_activity_days', {},   true);
+  // PA-3: "3x týdně" — Guard D correctly falls through (G2: digit+x removed from regex;
+  //        /\b3\b/ would fail anyway — no boundary between "3" and "x").
+  await pdTest('FO2-A-PA-3: "3x týdně"',   '3x týdně',      'weekly_aerobic_activity_days', {},   false);
+  // PA-4: word form — CZECH_DAYS has "třikrát: 3" → downstream OK
+  await pdTest('FO2-A-PA-4: "třikrát týdně"', 'třikrát týdně', 'weekly_aerobic_activity_days', {}, true);
+
+  // ── A-PD: exertional_dyspnea ────────────────────────────────────────────────
+  console.log('\n  === A-PD: exertional_dyspnea ===');
+  const prevAerobic = { weekly_aerobic_activity_days: 1 };
+  await pdTest('FO2-A-PD-1: "Ano."',            'Ano.',             'exertional_dyspnea', prevAerobic, true);
+  await pdTest('FO2-A-PD-2: "Ne."',             'Ne.',              'exertional_dyspnea', prevAerobic, true);
+  await pdTest('FO2-A-PD-3: "Zadýchávám se."',  'Zadýchávám se.',   'exertional_dyspnea', prevAerobic, true);
+  await pdTest('FO2-A-PD-4: "Trochu."',         'Trochu.',          'exertional_dyspnea', prevAerobic, true);
+
+  // ── A-PB: known_blood_pressure_approx ───────────────────────────────────────
+  console.log('\n  === A-PB: known_blood_pressure_approx ===');
+  const prevAD = { weekly_aerobic_activity_days: 1, exertional_dyspnea: false };
+  await pdTest('FO2-A-PB-1: "120/80"',          '120/80',           'known_blood_pressure_approx', prevAD, true);
+  await pdTest('FO2-A-PB-2: "140"',             '140',              'known_blood_pressure_approx', prevAD, true);
+  await pdTest('FO2-A-PB-3: "Nevím."',          'Nevím.',           'known_blood_pressure_approx', prevAD, true);
+  await pdTest('FO2-A-PB-4: "Neznám."',         'Neznám.',          'known_blood_pressure_approx', prevAD, true);
+  await pdTest('FO2-A-PB-5: "Nepamatuju si."',  'Nepamatuju si.',   'known_blood_pressure_approx', prevAD, true);
+  await pdTest('FO2-A-PB-6: "Nemám tlakoměr."', 'Nemám tlakoměr.',  'known_blood_pressure_approx', prevAD, true);
+
+  // ── B: Compound rejection ────────────────────────────────────────────────────
+  console.log('\n  === B: Compound rejection — deterministic guards must NOT consume these ===');
+
+  // B-1: birth_year — "a" (not in COMPOUND_SIGNAL_RE) but anchored BIRTH_YEAR_FULL_RE rejects trailing text
+  {
+    const UID = `test-fo2-b1-${Date.now()}`;
+    try {
+      await sb.from('user_health_profile').upsert(
+        { user_id: UID, diagnoses: [], symptoms: [], medications: [], labs: [], physical: {}, lifestyle: {} },
+        { onConflict: 'user_id' });
+      await sb.from('user_profiles').upsert({ user_id: UID, birth_year: null }, { onConflict: 'user_id' });
+      await processInput(UID, 'Je mi 58 a bolí mě na hrudi.', {
+        pending_question:          { text: 'Kolik ti je let?', evidence_type: 'birth_year', type: 'BOOTSTRAP' },
+        current_action_assignment: null,
+        question_budget_remaining: 3,
+        pending_clarifications:    [],
+        last_daily_decision:       null,
+        last_domain_response:      null,
+        person_birth_year:         null,
+      });
+      const { data: p } = await sb.from('user_profiles').select('birth_year').eq('user_id', UID).maybeSingle();
+      check(p?.birth_year === null,
+        'FO2-B-1: "Je mi 58 a bolí mě na hrudi." → birth_year NOT written — Guard C rejected compound input',
+        `actual: ${p?.birth_year} (non-null = Guard C swallowed compound turn — BUG)`);
+    } finally {
+      await sb.from('user_health_profile').delete().eq('user_id', UID);
+      await sb.from('user_profiles').delete().eq('user_id', UID);
+    }
+  }
+
+  // B-2: BOOTSTRAP yes/no — "ale" caught by COMPOUND_SIGNAL_RE → recent_falls NOT written
+  {
+    const UID = `test-fo2-b2-${Date.now()}`;
+    try {
+      await sb.from('user_health_profile').upsert(
+        { user_id: UID, diagnoses: [], symptoms: [], medications: [], labs: [], physical: {}, lifestyle: {} },
+        { onConflict: 'user_id' });
+      await sb.from('user_profiles').upsert({ user_id: UID, birth_year: 1960 }, { onConflict: 'user_id' });
+      await processInput(UID, 'Ne, ale zadýchávám se do schodů.', {
+        pending_question:          { text: 'Upadl/a jsi?', evidence_type: 'recent_falls', type: 'BOOTSTRAP' },
+        current_action_assignment: null,
+        question_budget_remaining: 3,
+        pending_clarifications:    [],
+        last_daily_decision:       null,
+        last_domain_response:      null,
+        person_birth_year:         1960,
+      });
+      const { data: hp } = await sb.from('user_health_profile').select('physical').eq('user_id', UID).maybeSingle();
+      check(hp?.physical?.recent_falls === undefined,
+        'FO2-B-2: "Ne, ale zadýchávám se do schodů." → recent_falls NOT written — COMPOUND_SIGNAL_RE fired',
+        `actual physical: ${JSON.stringify(hp?.physical)} (non-undefined = Guard C swallowed compound turn — BUG)`);
+    } finally {
+      await sb.from('user_health_profile').delete().eq('user_id', UID);
+      await sb.from('user_profiles').delete().eq('user_id', UID);
+    }
+  }
+
+  // B-3 through B-5: PATH_DISCOVERY compound — Guard D must NOT fire
+  await pdTest('FO2-B-3: "120/80, ale při chůzi mě bolí na hrudi." (BP)',
+    '120/80, ale při chůzi mě bolí na hrudi.',
+    'known_blood_pressure_approx', prevAD, false);
+
+  await pdTest('FO2-B-4: "3 dny, ale při námaze mě píchá na hrudi." (aerobic)',
+    '3 dny, ale při námaze mě píchá na hrudi.',
+    'weekly_aerobic_activity_days', {}, false);
+
+  await pdTest('FO2-B-5: "Ne, ale poslední týden mám bušení srdce." (dyspnea)',
+    'Ne, ale poslední týden mám bušení srdce.',
+    'exertional_dyspnea', prevAerobic, false);
+}
+
 // ── IR — HbA1c + Fasting Glucose → INSULIN_RESISTANCE inference ──────────────
 
 async function scenarioIR() {
@@ -5273,6 +5505,7 @@ async function main() {
     await scenarioLD_LIFECYCLE();
     await scenarioLD_FOLLOWUP();
     await scenarioFO();
+    await scenarioFO2();
     await scenarioIR();
 
     const total = passed + failed;
