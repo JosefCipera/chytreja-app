@@ -10,7 +10,7 @@ export async function checkAndShowOnboarding(userId) {
   const res = await authFetch('/api/user?action=full-profile');
   if (!res.ok) return;
   const data = await res.json();
-  if (data.profile?.age) return;
+  if (data.profile?.age || data.profile?.birth_year) return;
   _showWizard(userId);
 }
 
