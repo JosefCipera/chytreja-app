@@ -1540,11 +1540,21 @@ export async function processInput(userId, userText, sessionState = {}) {
       // constraint/leverage context has an unresolved GUIDED_NOW_TESTS evidence in its
       // information needs, surface that home-performable test instead of the generic block.
       // Uses existing NBE_QUESTION_MAP text — no Czech copy duplicated here.
+      // TEMP DIAG [STOP #4] — hoist evidence lookup so _diag captures it regardless of adapterType
+      const _diagEvidenceCtx = result.domain_response?.explanation_context?.evidence_context ?? [];
+      const _diagGuidedNow   = _diagEvidenceCtx.find(n => GUIDED_NOW_TESTS.has(n.evidence_type));
+      const _diag = {
+        build:                  process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? 'local',
+        adapterType,
+        budgetRemaining,
+        evidence_context_types: _diagEvidenceCtx.map(n => n.evidence_type),
+        guided_now_tests:       [...GUIDED_NOW_TESTS],
+        guided_now_found:       _diagGuidedNow?.evidence_type ?? null,
+        pre_gate_pending_q:     presentation.session_updates?.pending_question?.evidence_type ?? null,
+      };
       if (adapterType === 'DOMAIN_REQUEST') {
-        const evidenceCtx = result.domain_response?.explanation_context?.evidence_context ?? [];
-        const guidedNow   = evidenceCtx.find(n => GUIDED_NOW_TESTS.has(n.evidence_type));
-        if (guidedNow) {
-          const gText = buildEvidenceQuestion(guidedNow);
+        if (_diagGuidedNow) {
+          const gText = buildEvidenceQuestion(_diagGuidedNow);
           return {
             mode:          'ASK',
             text:          gText,
@@ -1553,9 +1563,9 @@ export async function processInput(userId, userText, sessionState = {}) {
             session_updates: {
               ...presentation.session_updates,
               question_budget_remaining: 0,
-              pending_question: { text: gText, evidence_type: guidedNow.evidence_type, type: 'GENERAL' },
+              pending_question: { text: gText, evidence_type: _diagGuidedNow.evidence_type, type: 'GENERAL' },
             },
-            debug: { reason_code: 'GUIDED_NOW_SUBSTITUTION' },
+            debug: { reason_code: 'GUIDED_NOW_SUBSTITUTION', _diag },
           };
         }
       }
@@ -1574,7 +1584,7 @@ export async function processInput(userId, userText, sessionState = {}) {
           ...presentation.session_updates,
           question_budget_remaining: 0,
         },
-        debug:         { reason_code: 'BUDGET_EXHAUSTED' },
+        debug:         { reason_code: 'BUDGET_EXHAUSTED', _diag },
       };
     }
     presentation.session_updates = {
