@@ -193,6 +193,14 @@ const DYSPNEA_FULL_RE = /^(?:ano|jo|ne|nemám|nedochází|vůbec|trochu|někdy|o
 // Accepts "120/80", "140", "Tlak mám asi 120/80.", "nevím", "neznám", "Nepamatuju si."
 const BP_FULL_RE = /^(?:(?:tlak\s+(?:mám|je|mívám|bývá)(?:\s+(?:asi|zhruba|tak|přibližně))?\s+)|(?:asi|zhruba|tak|přibližně)\s+)?(?:\d{2,3}(?:\/\d{2,3})?|nevím|neznám|nezměřil[ao]?|nepamatuju(?:\s+si)?|nemám.*tlakoměr|nenapadá)\s*[.,!?]*$/i;
 
+// Guard E: explicit navigation / action-request phrases → DOMAIN_REQUEST.
+// Haiku misclassifies "Co mám dělat?" as GENERAL_HEALTH_REQUEST when a pending_question
+// is in the session context (session context overrides rule 7 toward rule 9).
+// Anchored ^...[\s.,!?]*$: compound inputs ("co mám dělat, ale bolí mě...") are rejected
+// because ", ale bolí..." cannot match [\s.,!?]*$ — COMPOUND_SIGNAL_RE not needed.
+export const DOMAIN_REQUEST_NAV_RE =
+  /^(?:co\s+(?:tedy\s+|teď\s+)?mám\s+(?:teď\s+)?u?dělat|co\s+(?:teď|dál|doporuč(?:uješ)?)|poraď(?:\s+mi)?)[\s.,!?]*$/i;
+
 let client;
 function getClient() {
   if (!client) client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -890,6 +898,14 @@ export async function processInput(userId, userText, sessionState = {}) {
     if (_pdMatch) {
       classified = { event_type: 'ANSWER_TO_EVIDENCE_QUESTION', payload: { evidence_type: _ev, value: _trimmed } };
     }
+  }
+
+  // Guard E: explicit navigation / action-request phrases → DOMAIN_REQUEST.
+  // Fires only when no prior guard matched. Catches "Co mám dělat?", "Co tedy mám udělat?",
+  // "Co teď?", "Co dál?", "Poraď mi." before Haiku, which misclassifies these as
+  // GENERAL_HEALTH_REQUEST when pending_question is present in the session context.
+  if (!classified && DOMAIN_REQUEST_NAV_RE.test(userText.trim())) {
+    classified = { event_type: 'DOMAIN_REQUEST', payload: {} };
   }
 
   // Fall through: AI classifier (Haiku). Called only when no guard fired above.
