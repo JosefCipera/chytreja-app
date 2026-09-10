@@ -113,9 +113,38 @@ export const EVIDENCE_STORAGE_REGISTRY = {
   // or only the availability marker (AVAILABILITY_ONLY / DERIVED).
   // See api/engine/evidenceResolution.js for the engine read contract.
   validated_strength_assessment: { table: 'physical', key: 'validated_strength_assessment', tracks_availability: true, evidence_kind: 'RAW_VALUE' },
-  tug_test:                      { table: 'physical', key: 'tug_test',                      tracks_availability: true, evidence_kind: 'RAW_VALUE' },
-  chair_stand_30s:               { table: 'physical', key: 'chair_stand_30s',               tracks_availability: true, evidence_kind: 'RAW_VALUE' },
-  grip_strength:                 { table: 'physical', key: 'grip_strength',                 tracks_availability: true, evidence_kind: 'RAW_VALUE' },
+  tug_test: {
+    table: 'physical', key: 'tug_test', tracks_availability: true, evidence_kind: 'RAW_VALUE',
+    // Positive float (seconds). Full-string numeric only — rejects unit strings ("14.2s"), trailing text ("25 kg").
+    // Czech decimal comma accepted. Zero not valid (time must be positive).
+    parse: (raw) => {
+      const s = String(raw).trim().replace(',', '.');
+      if (!/^\d+(\.\d+)?$/.test(s)) return null;
+      const n = parseFloat(s);
+      return n > 0 ? n : null;
+    },
+  },
+  chair_stand_30s: {
+    table: 'physical', key: 'chair_stand_30s', tracks_availability: true, evidence_kind: 'RAW_VALUE',
+    // Non-negative integer (repetition count). Strict: no decimals, no units, no whitespace.
+    // Zero valid (cannot stand at all).
+    parse: (raw) => {
+      const s = String(raw).trim();
+      if (!/^\d+$/.test(s)) return null;
+      const n = parseInt(s, 10);
+      return n >= 0 ? n : null;
+    },
+  },
+  grip_strength: {
+    table: 'physical', key: 'grip_strength', tracks_availability: true, evidence_kind: 'RAW_VALUE',
+    // Positive float (kg). Same numeric grammar as tug_test. Rejects unit-bearing strings ("25 kg").
+    parse: (raw) => {
+      const s = String(raw).trim().replace(',', '.');
+      if (!/^\d+(\.\d+)?$/.test(s)) return null;
+      const n = parseFloat(s);
+      return n > 0 ? n : null;
+    },
+  },
 
   // ── Wearable / temporal — AVAILABILITY_ONLY & DERIVED ────────────────────
   // "Nemám" → evidence_availability[type] = NOT_AVAILABLE only.
@@ -367,7 +396,15 @@ async function routeAnswer(supabase, userId, payload) {
         // RAW_VALUE only: persist actual value alongside the AVAILABLE marker.
         // AVAILABILITY_ONLY / DERIVED: availability marker is sufficient — no raw value storage.
         if (entry.evidence_kind === 'RAW_VALUE' && entry.key) {
-          await upsertPhysical(supabase, userId, entry.key, value);
+          if (entry.parse) {
+            const parsed = entry.parse(value);
+            if (parsed === null) {
+              return `ANSWER: invalid value '${value}' for '${evidence_type}' — not persisted`;
+            }
+            await upsertPhysical(supabase, userId, entry.key, parsed);
+          } else {
+            await upsertPhysical(supabase, userId, entry.key, value);
+          }
         }
         return upsertEvidenceAvailability(supabase, userId, evidence_type, 'AVAILABLE');
       }
