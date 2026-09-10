@@ -218,10 +218,8 @@ export function inference(activatedStates, person, clinicalHistory, observations
           }],
         },
         missing_evidence: [
-          { type: 'OBSERVATION', obs_type: 'tug_test',
-            note: 'Timed Up and Go (TUG) — validovaný marker funkční rezervy a rizika pádu' },
-          { type: 'OBSERVATION', obs_type: 'chair_stand_30s',
-            note: '30-sekundový chair stand test — populační normy pro věkové skupiny' },
+          ...(!isEvidenceResolved('tug_test',        clinicalHistory) ? [{ type: 'OBSERVATION', obs_type: 'tug_test',        note: 'Timed Up and Go (TUG) — validovaný marker funkční rezervy a rizika pádu' }] : []),
+          ...(!isEvidenceResolved('chair_stand_30s', clinicalHistory) ? [{ type: 'OBSERVATION', obs_type: 'chair_stand_30s', note: '30-sekundový chair stand test — populační normy pro věkové skupiny' }] : []),
         ],
       });
     }
@@ -375,8 +373,7 @@ export function inference(activatedStates, person, clinicalHistory, observations
         missing_evidence: [
           { type: 'OBSERVATION', obs_type: 'gait_stability',
             note: '"Chodíte bez pomůcky bezpečně?" — nejrychlejší funkční třídění nestability' },
-          { type: 'OBSERVATION', obs_type: 'tug_test',
-            note: 'TUG test — klinicky validovaný marker mobility a fall risk; potřebný pro CONFIRMED stav' },
+          ...(!isEvidenceResolved('tug_test', clinicalHistory) ? [{ type: 'OBSERVATION', obs_type: 'tug_test', note: 'TUG test — klinicky validovaný marker mobility a fall risk; potřebný pro CONFIRMED stav' }] : []),
           { type: 'OBSERVATION', obs_type: 'current_assistive_device',
             note: 'Aktuálně používaná pomůcka — materiálně mění výběr akce; samostatná evidence o závislosti na podpoře' },
           { type: 'OBSERVATION', obs_type: 'instability_laterality',

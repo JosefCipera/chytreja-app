@@ -34,6 +34,29 @@ export const EVIDENCE_RESOLUTION_REGISTRY = {
     tracks_availability: true,
     acquisition_method:  'wearable',
   },
+
+  // ── Functional tests ─────────────────────────────────────────────────────────
+  tug_test: {
+    evidence_kind:       'RAW_VALUE',
+    value_source:        'physical',
+    value_key:           'tug_test',
+    tracks_availability: true,
+    acquisition_method:  'self_report',
+  },
+  chair_stand_30s: {
+    evidence_kind:       'RAW_VALUE',
+    value_source:        'physical',
+    value_key:           'chair_stand_30s',
+    tracks_availability: true,
+    acquisition_method:  'self_report',
+  },
+  grip_strength: {
+    evidence_kind:       'RAW_VALUE',
+    value_source:        'physical',
+    value_key:           'grip_strength',
+    tracks_availability: true,
+    acquisition_method:  'self_report',
+  },
 };
 
 /**

@@ -113,6 +113,9 @@ export const EVIDENCE_STORAGE_REGISTRY = {
   // or only the availability marker (AVAILABILITY_ONLY / DERIVED).
   // See api/engine/evidenceResolution.js for the engine read contract.
   validated_strength_assessment: { table: 'physical', key: 'validated_strength_assessment', tracks_availability: true, evidence_kind: 'RAW_VALUE' },
+  tug_test:                      { table: 'physical', key: 'tug_test',                      tracks_availability: true, evidence_kind: 'RAW_VALUE' },
+  chair_stand_30s:               { table: 'physical', key: 'chair_stand_30s',               tracks_availability: true, evidence_kind: 'RAW_VALUE' },
+  grip_strength:                 { table: 'physical', key: 'grip_strength',                 tracks_availability: true, evidence_kind: 'RAW_VALUE' },
 
   // ── Wearable / temporal — AVAILABILITY_ONLY & DERIVED ────────────────────
   // "Nemám" → evidence_availability[type] = NOT_AVAILABLE only.
@@ -176,8 +179,9 @@ const NOT_AVAILABLE_TOKENS = new Set([
 // Returns 'NOT_AVAILABLE' | 'AVAILABLE' | null (null = empty value, nothing to record)
 export function classifyAvailability(value) {
   if (value == null || value === '') return null;
-  const v = _stripDiacritics(String(value).trim().toLowerCase());
-  if (NOT_AVAILABLE_TOKENS.has(v) || v.startsWith('nemam') || v === 'ne' || v === 'no') {
+  const v = _stripDiacritics(String(value).trim().toLowerCase()).replace(/[.,!?]+$/, '');
+  if (NOT_AVAILABLE_TOKENS.has(v) || v.startsWith('nemam') || v === 'ne' || v === 'no'
+      || v.split(/[\s,]+/)[0] === 'ne') {
     return 'NOT_AVAILABLE';
   }
   return 'AVAILABLE';
