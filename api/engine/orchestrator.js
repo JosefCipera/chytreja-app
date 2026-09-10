@@ -56,6 +56,18 @@ const PATH_DISCOVERY_TYPES = new Set([
   'known_blood_pressure_approx',
 ]);
 
+// Evidence types where the test can be performed at home right now:
+//   - no equipment beyond a standard chair
+//   - complete in under 2 minutes
+//   - safe for unsupervised first attempt (no floor contact required, no dynamometer)
+//   - a write path exists in EVIDENCE_STORAGE_REGISTRY + EVIDENCE_RESOLUTION_REGISTRY
+// Alpha scope: chair_stand_30s only.
+//   tug_test: inquiry phrasing (prior measurement), setup/stopwatch required → excluded
+//   grip_strength: dynamometer required → excluded
+//   floor_rise_test: safety caveat + no write path → excluded
+//   validated_strength_assessment: clinician-administered, inquiry phrasing → excluded
+export const GUIDED_NOW_TESTS = new Set(['chair_stand_30s']);
+
 // Single source of bootstrap candidate eligibility used by all continuation paths.
 // Mirrors the filter in synthesizeBootstrapGate (decisionGate.js) — both must stay in sync.
 //   birthYrKnown:    person_birth_year != null
@@ -425,6 +437,7 @@ function buildEvidenceQuestion(nbe) {
 export function _buildSessionUpdates_test(eventType, classifiedPayload, result) {
   return buildSessionUpdates(eventType, classifiedPayload, result);
 }
+
 
 function buildSessionUpdates(eventType, classifiedPayload, result) {
   const dr = result.domain_response;
@@ -1509,33 +1522,59 @@ export async function processInput(userId, userText, sessionState = {}) {
   // Question budget enforcement: limit total ASK rounds across pre-intake + post-handoff.
   // Bootstrap questions are exempt — Bootstrap terminates by its own candidate-exhaustion
   // and model-sufficiency conditions, not by a question count.
-  const isBootstrapQuestion    = presentation.session_updates?.pending_question?.type === 'BOOTSTRAP';
+  const isBootstrapQuestion     = presentation.session_updates?.pending_question?.type === 'BOOTSTRAP';
   const isPathDiscoveryQuestion = presentation.session_updates?.pending_question?.type === 'PATH_DISCOVERY';
   if (presentation.mode === 'ASK' && !isBootstrapQuestion && !isPathDiscoveryQuestion) {
     if (budgetRemaining <= 0) {
-      let text;
       if (hasAcuteSymptom) {
-        text = 'Protože potíže přetrvávají, cvičení ti teď doporučit nechci. Pokud potíže pokračují nebo se zhoršují, nech se dnes vyšetřit.';
-      } else {
-        const _ctx  = result.domain_response?.explanation_context;
-        const _cl   = _ctx?.system_constraint?.node_id ? (NODE_LABEL_CS[_ctx.system_constraint.node_id] ?? null) : null;
-        const _ll   = _ctx?.system_leverage?.node_id   ? (NODE_LABEL_CS[_ctx.system_leverage.node_id]   ?? null) : null;
-        const _node = _cl ?? _ll;
-        text = _node
-          ? `Dobře. Pro začátek mi to stačí. Jako důležitá se ukazuje: ${_node}. Na konkrétní doporučení ale zatím nemám dost podkladů.`
-          : 'Zatím o tobě nevím dost, abych ti bezpečně doporučil konkrétní krok.';
+        return {
+          mode:          'ASK',
+          text:          'Protože potíže přetrvávají, cvičení ti teď doporučit nechci. Pokud potíže pokračují nebo se zhoršují, nech se dnes vyšetřit.',
+          buttons:       [],
+          expects_reply: true,
+          session_updates: { ...presentation.session_updates, question_budget_remaining: 0, current_action_assignment: null },
+          debug:         { reason_code: 'ACUTE_SYMPTOM_GATE_TERMINAL' },
+        };
       }
+      // Guided-now substitution: when budget is exhausted on a DOMAIN_REQUEST and the
+      // constraint/leverage context has an unresolved GUIDED_NOW_TESTS evidence in its
+      // information needs, surface that home-performable test instead of the generic block.
+      // Uses existing NBE_QUESTION_MAP text — no Czech copy duplicated here.
+      if (adapterType === 'DOMAIN_REQUEST') {
+        const evidenceCtx = result.domain_response?.explanation_context?.evidence_context ?? [];
+        const guidedNow   = evidenceCtx.find(n => GUIDED_NOW_TESTS.has(n.evidence_type));
+        if (guidedNow) {
+          const gText = buildEvidenceQuestion(guidedNow);
+          return {
+            mode:          'ASK',
+            text:          gText,
+            buttons:       [],
+            expects_reply: true,
+            session_updates: {
+              ...presentation.session_updates,
+              question_budget_remaining: 0,
+              pending_question: { text: gText, evidence_type: guidedNow.evidence_type, type: 'GENERAL' },
+            },
+            debug: { reason_code: 'GUIDED_NOW_SUBSTITUTION' },
+          };
+        }
+      }
+      const _ctx  = result.domain_response?.explanation_context;
+      const _cl   = _ctx?.system_constraint?.node_id ? (NODE_LABEL_CS[_ctx.system_constraint.node_id] ?? null) : null;
+      const _ll   = _ctx?.system_leverage?.node_id   ? (NODE_LABEL_CS[_ctx.system_leverage.node_id]   ?? null) : null;
+      const _node = _cl ?? _ll;
       return {
         mode:          'ASK',
-        text,
+        text:          _node
+          ? `Dobře. Pro začátek mi to stačí. Jako důležitá se ukazuje: ${_node}. Na konkrétní doporučení ale zatím nemám dost podkladů.`
+          : 'Zatím o tobě nevím dost, abych ti bezpečně doporučil konkrétní krok.',
         buttons:       [],
         expects_reply: true,
         session_updates: {
           ...presentation.session_updates,
           question_budget_remaining: 0,
-          ...(hasAcuteSymptom ? { current_action_assignment: null } : {}),
         },
-        debug:         { reason_code: hasAcuteSymptom ? 'ACUTE_SYMPTOM_GATE_TERMINAL' : 'BUDGET_EXHAUSTED' },
+        debug:         { reason_code: 'BUDGET_EXHAUSTED' },
       };
     }
     presentation.session_updates = {
