@@ -1,6 +1,6 @@
 // Onboarding wizard — 3-step modal pro nové uživatele
 // Ukáže se pokud user_profiles.age není vyplněno.
-// Uloží data do user_profiles + user_health_profile (diagnoses, capacity, lifestyle)
+// Uloží data do user_profiles + user_health_profile (diagnoses, physical, lifestyle)
 // přes Supabase anon client (RLS pending).
 
 import { authFetch } from './authFetch.js';
@@ -21,7 +21,7 @@ function _showWizard(userId) {
   document.body.appendChild(overlay);
 
   // state
-  const state = { step: 1, cap: {}, gender: 'male' };
+  const state = { step: 1, physical: {}, gender: 'male' };
 
   const dots   = [null, overlay.querySelector('#onb-dot1'), overlay.querySelector('#onb-dot2'), overlay.querySelector('#onb-dot3')];
   const lines  = [null, overlay.querySelector('#onb-line1'), overlay.querySelector('#onb-line2')];
@@ -38,14 +38,14 @@ function _showWizard(userId) {
     });
   });
 
-  // capacity pills
-  overlay.querySelectorAll('[data-cap]').forEach(el => {
+  // physical / canonical functional assessment pills
+  overlay.querySelectorAll('[data-phys]').forEach(el => {
     el.addEventListener('click', () => {
-      const key = el.dataset.cap;
+      const key = el.dataset.phys;
       const val = el.dataset.val === 'true';
-      overlay.querySelectorAll(`[data-cap="${key}"]`).forEach(x => x.classList.remove('onb-yes', 'onb-no'));
+      overlay.querySelectorAll(`[data-phys="${key}"]`).forEach(x => x.classList.remove('onb-yes', 'onb-no'));
       el.classList.add(val ? 'onb-yes' : 'onb-no');
-      state.cap[key] = val;
+      state.physical[key] = val;
     });
   });
 
@@ -116,13 +116,13 @@ function _showWizard(userId) {
   }
 
   async function _save() {
-    if (Object.keys(state.cap).length) {
+    if (Object.keys(state.physical).length) {
       let res;
       try {
         res = await authFetch('/api/user?action=wizard-step', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ step: 3, capacity: state.cap }),
+          body: JSON.stringify({ step: 3, physical: state.physical }),
         });
       } catch { res = { ok: false }; }
       if (!res.ok) {
@@ -229,45 +229,38 @@ function _html() {
     <p class="onb-sub">Odpovídej jak jsi na tom teď — ne jak chceš být.</p>
 
     <div class="onb-qa">
-      <div class="onb-q">Vyjedeš čtyři patra bez zadýchání?</div>
-      <div class="onb-pills">
-        <div class="onb-pill" data-cap="climb_4_floors" data-val="true">Ano</div>
-        <div class="onb-pill" data-cap="climb_4_floors" data-val="false">Ne</div>
-      </div>
-    </div>
-    <div class="onb-qa">
-      <div class="onb-q">Ujdeš 2 km rychlou chůzí bez zastávky?</div>
-      <div class="onb-pills">
-        <div class="onb-pill" data-cap="fast_walk_2km" data-val="true">Ano</div>
-        <div class="onb-pill" data-cap="fast_walk_2km" data-val="false">Ne</div>
-      </div>
-    </div>
-    <div class="onb-qa">
-      <div class="onb-q">Zvedneš 20 kg ze země bez problémů?</div>
-      <div class="onb-pills">
-        <div class="onb-pill" data-cap="lift_20kg" data-val="true">Ano</div>
-        <div class="onb-pill" data-cap="lift_20kg" data-val="false">Ne</div>
-      </div>
-    </div>
-    <div class="onb-qa">
       <div class="onb-q">Vstaneš ze země bez opory rukou?</div>
       <div class="onb-pills">
-        <div class="onb-pill" data-cap="rise_from_floor" data-val="true">Ano</div>
-        <div class="onb-pill" data-cap="rise_from_floor" data-val="false">Ne</div>
+        <div class="onb-pill" data-phys="vstat_ze_zeme" data-val="true">Ano</div>
+        <div class="onb-pill" data-phys="vstat_ze_zeme" data-val="false">Ne</div>
+      </div>
+    </div>
+    <div class="onb-qa">
+      <div class="onb-q">Zvedneš vnouče nebo malé dítě ze země?</div>
+      <div class="onb-pills">
+        <div class="onb-pill" data-phys="zvednout_vnouce" data-val="true">Ano</div>
+        <div class="onb-pill" data-phys="zvednout_vnouce" data-val="false">Ne</div>
+      </div>
+    </div>
+    <div class="onb-qa">
+      <div class="onb-q">Zvládneš vynést nákup (5 kg) do 2. patra bez zastavení?</div>
+      <div class="onb-pills">
+        <div class="onb-pill" data-phys="vynest_nakup" data-val="true">Ano</div>
+        <div class="onb-pill" data-phys="vynest_nakup" data-val="false">Ne</div>
+      </div>
+    </div>
+    <div class="onb-qa">
+      <div class="onb-q">Upadl/a jsi za poslední rok?</div>
+      <div class="onb-pills">
+        <div class="onb-pill" data-phys="recent_falls" data-val="true">Ano</div>
+        <div class="onb-pill" data-phys="recent_falls" data-val="false">Ne</div>
       </div>
     </div>
     <div class="onb-qa">
       <div class="onb-q">Vydržíš stát na jedné noze 10 sekund se zavřenýma očima?</div>
       <div class="onb-pills">
-        <div class="onb-pill" data-cap="balance_eyes_closed" data-val="true">Ano</div>
-        <div class="onb-pill" data-cap="balance_eyes_closed" data-val="false">Ne</div>
-      </div>
-    </div>
-    <div class="onb-qa">
-      <div class="onb-q">Zadržíš dech na 20 sekund bez potíží?</div>
-      <div class="onb-pills">
-        <div class="onb-pill" data-cap="breath_20s" data-val="true">Ano</div>
-        <div class="onb-pill" data-cap="breath_20s" data-val="false">Ne</div>
+        <div class="onb-pill" data-phys="rovnovaha_zavrene_oci" data-val="true">Ano</div>
+        <div class="onb-pill" data-phys="rovnovaha_zavrene_oci" data-val="false">Ne</div>
       </div>
     </div>
   </div>

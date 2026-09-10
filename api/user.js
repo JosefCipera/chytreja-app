@@ -928,15 +928,15 @@ async function handleWizardStep(req, res) {
   }
 
   if (step === 3) {
-    const { capacity = {} } = req.body;
-    if (Object.keys(capacity).length) {
-      const { data: hp } = await db.from('user_health_profile').select('capacity').eq('user_id', userId).maybeSingle();
-      const merged = { ...(hp?.capacity || {}), ...capacity };
+    const { physical = {} } = req.body;
+    if (Object.keys(physical).length) {
+      const { data: hp } = await db.from('user_health_profile').select('physical').eq('user_id', userId).maybeSingle();
+      const merged = { ...(hp?.physical || {}), ...physical };
       const { error: ce } = await db.from('user_health_profile').upsert(
-        { user_id: userId, capacity: merged, updated_at: new Date().toISOString() },
+        { user_id: userId, physical: merged },
         { onConflict: 'user_id' }
       );
-      if (ce) return res.status(500).json({ error: `capacity upsert: ${ce.message}` });
+      if (ce) return res.status(500).json({ error: `physical upsert: ${ce.message}` });
     }
     return res.json({ ok: true });
   }

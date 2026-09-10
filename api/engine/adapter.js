@@ -134,6 +134,11 @@ export async function fetchHealthData(userId) {
   // ── OBSERVATIONS ──────────────────────────────────────────────────────────
   const observations = [];
 
+  // Onboarding waist stored in lifestyle.waist_cm — route to observations so activation sees it.
+  if (lifestyle.waist_cm != null)
+    observations.push({ obs_type: 'waist_cm', value: lifestyle.waist_cm, unit: 'cm',
+      measured_at: null, source: 'onboarding', confidence: 'estimated' });
+
   for (const c of (checkins || [])) {
     if (c.weight_kg != null)
       observations.push({ obs_type: 'weight_kg', value: c.weight_kg, unit: 'kg', measured_at: c.date, source: 'daily_checkin', confidence: 'confirmed' });
