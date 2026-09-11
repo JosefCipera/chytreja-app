@@ -607,8 +607,8 @@
       opacity: 0.75;
     }
 
-    /* ── Prvních 200 / Zakladatelé ─────────────────────────────────────── */
-    #cenik {
+    /* ── Zakladatelé Chytrého já (sekce 05) ────────────────────────────── */
+    #zakladatele {
       position: relative;
       overflow: hidden;
       max-width: 560px;
@@ -839,142 +839,131 @@
       padding: clamp(72px, 12vh, 112px) 24px clamp(80px, 13vh, 120px);
       border-top: 1px solid var(--border);
     }
-    .fork-root {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      max-width: 400px;
-      margin: 0 auto clamp(36px, 6vh, 52px);
-    }
-    .fork-today-node {
-      display: inline-block;
-      padding: 10px 20px;
+    /* Společná karta DNES */
+    .story-now {
       border: 1px solid var(--border);
-      border-radius: 8px;
-      font-family: 'Urbanist', sans-serif;
-      font-size: clamp(14px, 2.8vw, 17px);
-      font-weight: 500;
-      color: var(--text-mid);
-      text-align: center;
-      position: relative;
-      margin-top: 22px;
+      border-radius: 14px;
+      padding: clamp(20px, 3.5vh, 28px) clamp(18px, 4vw, 28px);
+      background: rgba(255, 255, 255, 0.025);
+      margin-bottom: 12px;
     }
-    .fork-today-node::before {
-      content: 'DNES';
-      position: absolute;
-      top: -20px;
-      left: 50%;
-      transform: translateX(-50%);
-      font-size: 9px;
+    .story-now-label {
+      font-size: 10px;
       font-weight: 600;
       letter-spacing: 3px;
+      text-transform: uppercase;
       color: var(--text-dim);
+      margin-bottom: 8px;
     }
-    .fork-connector {
-      width: 1px;
-      flex-shrink: 0;
-      height: 28px;
-      background: linear-gradient(to bottom, var(--border), rgba(60, 169, 189, 0.5));
-    }
-    .fork-chj-badge {
-      padding: 7px 16px;
-      border: 1px solid rgba(60, 169, 189, 0.38);
-      border-radius: 20px;
-      background: rgba(60, 169, 189, 0.06);
-      font-size: 11px;
-      color: var(--accent);
-      text-align: center;
-      line-height: 1.5;
-      letter-spacing: 0.2px;
-    }
-    .fork-badge-to-split {
-      width: 1px;
-      height: 20px;
-      background: rgba(60, 169, 189, 0.35);
-      flex-shrink: 0;
-    }
-    .fork-split-row {
-      display: flex;
-      width: 100%;
-      align-items: flex-start;
-      position: relative;
-    }
-    .fork-split-row::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 25%;
-      right: 25%;
-      height: 1px;
-      background: var(--border);
-    }
-    .fork-arm {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding-top: 24px;
-      position: relative;
-    }
-    .fork-arm::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 1px;
-      height: 24px;
-    }
-    .fork-arm-bad::before  { background: rgba(192, 64, 64, 0.35); }
-    .fork-arm-good::before { background: rgba(60, 169, 189, 0.4); }
-    .fork-arm-label {
+    .story-now-text {
       font-family: 'Urbanist', sans-serif;
-      font-size: 13px;
-      font-weight: 600;
-      text-align: center;
-      margin-bottom: 12px;
-      line-height: 1.3;
+      font-size: clamp(16px, 3.2vw, 20px);
+      font-weight: 500;
+      color: var(--text-mid);
+      margin-bottom: 14px;
     }
-    .fork-arm-bad  .fork-arm-label { color: var(--text-dim); }
-    .fork-arm-good .fork-arm-label { color: var(--accent); }
-    .fork-steps {
+    .story-chj-line {
       display: flex;
-      flex-direction: column;
-      align-items: center;
+      align-items: baseline;
       gap: 10px;
-      width: 100%;
+      flex-wrap: wrap;
     }
-    .fork-step-item {
-      font-size: 12px;
-      line-height: 1.4;
+    .story-chj-tag {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--accent);
+      opacity: 0.7;
+      flex-shrink: 0;
+    }
+    .story-chj-text {
+      font-family: 'Urbanist', sans-serif;
+      font-size: clamp(14px, 2.8vw, 17px);
+      font-weight: 600;
+      color: var(--accent);
+    }
+    /* Fork arrow */
+    .story-fork-arrow {
       text-align: center;
+      font-size: 11px;
+      color: var(--text-dim);
+      letter-spacing: 2px;
+      opacity: 0.5;
+      margin: 4px 0;
+      user-select: none;
+    }
+    /* Two future cards */
+    .story-futures {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: clamp(10px, 2vw, 16px);
+      margin-bottom: clamp(36px, 6vh, 52px);
+    }
+    .story-card {
+      border-radius: 14px;
+      padding: clamp(18px, 3vh, 26px) clamp(16px, 3vw, 22px);
       display: flex;
       flex-direction: column;
-      align-items: center;
+      gap: 10px;
+    }
+    .story-card-bad {
+      border: 1px solid rgba(192, 64, 64, 0.22);
+      background: rgba(192, 64, 64, 0.04);
+    }
+    .story-card-good {
+      border: 1px solid rgba(60, 169, 189, 0.28);
+      background: rgba(60, 169, 189, 0.05);
+    }
+    .story-card-label {
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+    .story-card-bad  .story-card-label { color: rgba(192, 64, 64, 0.6); }
+    .story-card-good .story-card-label { color: rgba(60, 169, 189, 0.7); }
+    .story-moment {
+      display: flex;
+      flex-direction: column;
       gap: 4px;
     }
-    .fork-step-item::before { content: '↓'; font-size: 10px; color: var(--text-dim); }
-    .fork-arm-bad  .fork-step-item { color: var(--text-dim); }
-    .fork-arm-good .fork-step-item { color: var(--text-mid); }
-    .fork-step-final {
-      font-family: 'Urbanist', sans-serif;
-      font-size: 13px;
+    .story-moment-when {
+      font-size: 10px;
       font-weight: 600;
-      padding: 5px 14px;
-      border-radius: 6px;
-      margin-top: 4px;
-      text-align: center;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
     }
-    .fork-arm-bad  .fork-step-final { color: #c04040; border: 1px solid rgba(192, 64, 64, 0.3); background: rgba(192, 64, 64, 0.05); }
-    .fork-arm-good .fork-step-final { color: var(--accent); border: 1px solid rgba(60, 169, 189, 0.3); background: rgba(60, 169, 189, 0.05); }
-    .priklad-note {
+    .story-card-bad  .story-moment-when { color: rgba(192, 64, 64, 0.5); }
+    .story-card-good .story-moment-when { color: rgba(60, 169, 189, 0.6); }
+    .story-moment-text {
+      font-size: clamp(13px, 2.4vw, 15px);
+      line-height: 1.55;
+    }
+    .story-card-bad  .story-moment-text { color: var(--text-dim); }
+    .story-card-good .story-moment-text { color: var(--text-mid); }
+    /* Note below cards */
+    .priklad-note-main {
+      font-family: 'Urbanist', sans-serif;
+      font-size: clamp(15px, 2.8vw, 18px);
+      font-weight: 500;
+      color: var(--text);
+      line-height: 1.55;
+      text-align: center;
+      margin-bottom: 10px;
+    }
+    .priklad-note-sub {
       font-size: 13px;
       color: var(--text-dim);
       line-height: 1.85;
       text-align: center;
-      opacity: 0.8;
-      max-width: 420px;
-      margin: 0 auto;
+      opacity: 0.75;
+    }
+    @media (max-width: 479px) {
+      .story-futures {
+        grid-template-columns: 1fr;
+      }
     }
 
     /* ── Co teď? (sekce 04) ──────────────────────────────────────────────── */
@@ -1042,11 +1031,12 @@
       line-height: 1.75;
     }
     .co-ted-closing {
-      font-size: 13px;
-      color: var(--text-dim);
-      line-height: 1.85;
+      font-family: 'Urbanist', sans-serif;
+      font-size: clamp(16px, 3vw, 20px);
+      font-weight: 500;
+      color: var(--text-mid);
+      line-height: 1.55;
       text-align: center;
-      opacity: 0.8;
     }
 
     [hidden] { display: none !important; }
@@ -1175,31 +1165,47 @@
   <p class="jf-eyebrow">Příklad · Zdraví</p>
   <h2 class="jf-heading" id="priklad-heading">Zatím jsi v pohodě.<br>Ale směr už může být špatný.</h2>
 
-  <div class="fork-root">
-    <div class="fork-today-node">Mám nadváhu, ale nic mi není.</div>
-    <div class="fork-connector"></div>
-    <div class="fork-chj-badge">CHJ: Tady má smysl změnit směr.</div>
-    <div class="fork-badge-to-split"></div>
-    <div class="fork-split-row">
-      <div class="fork-arm fork-arm-bad">
-        <p class="fork-arm-label">Pokračuji<br>stejně</p>
-        <div class="fork-steps">
-          <span class="fork-step-item">riziko roste</span>
-          <span class="fork-step-item">možná prediabetes</span>
-          <p class="fork-step-final">diabetes</p>
-        </div>
-      </div>
-      <div class="fork-arm fork-arm-good">
-        <p class="fork-arm-label">Změním<br>směr</p>
-        <div class="fork-steps">
-          <span class="fork-step-item">riziko klesá</span>
-          <p class="fork-step-final">jiná budoucnost</p>
-        </div>
-      </div>
+  <!-- Společná karta: výchozí stav + CHJ zásah -->
+  <div class="story-now">
+    <p class="story-now-label">Dnes</p>
+    <p class="story-now-text">Mám nadváhu, ale nic mi není.</p>
+    <div class="story-chj-line">
+      <span class="story-chj-tag">CHJ</span>
+      <span class="story-chj-text">Tady má smysl změnit směr.</span>
     </div>
   </div>
 
-  <p class="priklad-note">Chytré já tě hlídá a upozorní tě, když je čas změnit směr.<br>Ne až když máš problém. Když ještě můžeš změnit, kam směřuješ.</p>
+  <p class="story-fork-arrow" aria-hidden="true">↓ &nbsp; dvě možné budoucnosti &nbsp; ↓</p>
+
+  <!-- Dvě alternativní budoucnosti -->
+  <div class="story-futures" role="list">
+
+    <div class="story-card story-card-bad" role="listitem">
+      <p class="story-card-label">Pokračuji stejně</p>
+      <div class="story-moment">
+        <span class="story-moment-when">Za pár let</span>
+        <p class="story-moment-text">Beru sice prášky, ale jinak jsem v pohodě.</p>
+      </div>
+      <div class="story-moment">
+        <span class="story-moment-when">Později</span>
+        <p class="story-moment-text">Nevěřil jsem, že si jednou budu muset píchat inzulín.</p>
+      </div>
+    </div>
+
+    <div class="story-card story-card-good" role="listitem">
+      <p class="story-card-label">Změním směr</p>
+      <div class="story-moment">
+        <p class="story-moment-text">Riziko klesá.</p>
+      </div>
+      <div class="story-moment">
+        <p class="story-moment-text">Měním svou možnou budoucnost.</p>
+      </div>
+    </div>
+
+  </div>
+
+  <p class="priklad-note-main">Chytré já tě hlídá a upozorní tě, když je čas změnit směr.</p>
+  <p class="priklad-note-sub">Ne až když máš problém. Když ještě můžeš změnit, kam směřuješ.</p>
 </section>
 
 <!-- Co teď? -->
