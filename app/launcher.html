@@ -986,6 +986,11 @@
       return;
     }
 
+    // Reset per-conversation session fields on every page load.
+    // session_skipped_evidence is intentionally conversation-scoped: deferred tests
+    // should become eligible again in the next conversation (F5/new visit).
+    saveSession({ session_skipped_evidence: [] });
+
     const last = loadLastResponse();
     if (last && last.mode !== 'ASK' && last.mode !== 'HOLD') {
       render(last);

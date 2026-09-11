@@ -156,6 +156,23 @@ export const FATIGUE_STANDALONE_RE =
 // Anchored ^ so partial matches (e.g. "nevím, ale mám vysoký tlak") do NOT fire.
 export const BOOTSTRAP_REFUSAL_RE = /^(nev[ií]m|nechci|p[rř]esko[cč]it|skip)\b/i;
 
+// Guard F1: Temporal-refusal detection for evidence questions.
+// Applied to _stripDiacritics(payload.value).toLowerCase() after parse rejection is confirmed.
+//
+// _NEGATION: inability verbs — insufficient alone (no temporal word = permanent inability → re-ask)
+// _TEMPORAL: explicit temporal/situational words — paired with a negation verb to confirm deferral
+// _DEFERRAL: standalone deferral words + compound temporal negations — safe without a negation verb
+//
+// hasDigit guard: pure-deferral branch is skipped when the input contains a digit
+//   so that "14 pozdeji" is treated as a formatting error (F1b re-ask), not temporal refusal.
+//   A negation+temporal combination still fires regardless of digits ("12 ted nemohu").
+export const EVIDENCE_REFUSAL_NEGATION_RE =
+  /\b(?:nemuzu|nemohu|neudelam|nedam|nechci|nejde|neumim|nedokazu)\b/;
+export const EVIDENCE_REFUSAL_TEMPORAL_RE =
+  /\b(?:ted|dnes|dneska|momentalne|zatim|nyni|prave|pozdeji|jindy|priste|zitra)\b/;
+export const EVIDENCE_REFUSAL_DEFERRAL_RE =
+  /\b(?:pozdeji|jindy|priste|zitra|dnes\s+ne|ne\s+dnes|ted\s+ne|ne\s+ted)\b/;
+
 // Action completion / skip — canonical button vocabulary ("Hotovo", "Přeskočit")
 // plus obvious synonyms from CLASSIFIER_SYSTEM rules 2–3.
 // Anchored ^...$ to prevent matching within longer health sentences.
@@ -1319,6 +1336,71 @@ export async function processInput(userId, userText, sessionState = {}) {
   // 5. Persist + run engine via adapter (no direct DB access here)
   const result = await applyHealthEvent(userId, event);
 
+  // ── Guard F1: Invalid-answer follow-through split ─────────────────────────────
+  // Fires only when STOP #5A parse rejection produced an 'ANSWER: invalid value' warning.
+  //
+  // F1a — temporal refusal (e.g. "Nemůžu ho teď udělat."):
+  //   → HOLD + append evidence_type to session_skipped_evidence, clear pending_question.
+  //   No DB write, no evidence-availability change, budget unchanged.
+  //
+  // F1b — formatting error or unrecognized answer (e.g. "14 kg", "abc"):
+  //   → re-ask with preserved pending_question (like SEDENTARY_HOURS_CLARIFICATION).
+  //   No suppression, no DB write, budget unchanged.
+  //
+  // "Nemůžu to udělat" (no temporal marker) → F1b — permanent inability, not suppressed.
+  if (adapterType === 'ANSWER_TO_EVIDENCE_QUESTION'
+      && result.warnings?.some(w => typeof w === 'string' && w.startsWith('ANSWER: invalid value'))) {
+    const _rawVal   = String(event.payload.value ?? userText).trim();
+    const _stripped = _rawVal.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+    const _hasDigit = /\d/.test(_stripped);
+    const _isTemporal =
+      (!_hasDigit && EVIDENCE_REFUSAL_DEFERRAL_RE.test(_stripped)) ||
+      (EVIDENCE_REFUSAL_NEGATION_RE.test(_stripped) && EVIDENCE_REFUSAL_TEMPORAL_RE.test(_stripped));
+
+    const _evType = event.payload.evidence_type ?? state.pending_question?.evidence_type ?? null;
+    const _baseSession = {
+      last_daily_decision:       state.last_daily_decision       ?? null,
+      last_domain_response:      state.last_domain_response      ?? null,
+      current_action_assignment: state.current_action_assignment ?? null,
+      skipped_bootstrap_types:   state.skipped_bootstrap_types   ?? [],
+      question_budget_remaining: typeof state.question_budget_remaining === 'number'
+        ? state.question_budget_remaining : 3,
+    };
+
+    if (_isTemporal && _evType) {
+      // F1a: explicit temporal refusal — acknowledge and suppress for this session
+      const _skipped = [...(state.session_skipped_evidence ?? [])];
+      if (!_skipped.includes(_evType)) _skipped.push(_evType);
+      return {
+        mode:          'HOLD',
+        text:          'Dobře, necháme to na později. Až budeš moct, uděláme test a podle výsledku vyberu další krok.',
+        buttons:       [],
+        expects_reply: true,
+        session_updates: {
+          ..._baseSession,
+          pending_question:         null,
+          session_skipped_evidence: _skipped,
+        },
+        debug: { reason_code: 'EVIDENCE_TEMPORAL_REFUSAL', evidence_type: _evType },
+      };
+    }
+
+    // F1b: formatting error or permanent-inability phrase — re-ask with preserved pending_question
+    const _reaskText = state.pending_question?.text
+      ?? buildEvidenceQuestion({ evidence_type: _evType });
+    return {
+      mode:          'ASK',
+      text:          _reaskText,
+      buttons:       [],
+      expects_reply: true,
+      session_updates: {
+        ..._baseSession,
+        pending_question: state.pending_question ?? null,
+      },
+      debug: { reason_code: 'EVIDENCE_INVALID_REASK', evidence_type: _evType, raw_value: _rawVal },
+    };
+  }
+
   // 6. Build session updates (use original classifier event_type for session logic)
   const sessionUpdates = buildSessionUpdates(event_type, payload, result);
 
@@ -1494,6 +1576,32 @@ export async function processInput(userId, userText, sessionState = {}) {
     };
   }
 
+  // ── Guard F2: session-skipped evidence suppression ────────────────────────────
+  // Single suppression point covering BOTH budget > 0 AND budget = 0 (GUIDED_NOW) paths.
+  // Fires when buildPresentation selected an ASK for an evidence_type the user explicitly
+  // deferred this session via F1a (session_skipped_evidence). Suppresses the re-ask and
+  // returns HOLD acknowledging the deferred state — no re-ask, no budget decrement.
+  //
+  // Runs after all presentation-mutation guards so pending_question.evidence_type is final.
+  const _sessionSkipped = state.session_skipped_evidence ?? [];
+  if (presentation.mode === 'ASK' && _sessionSkipped.length > 0) {
+    const _pendingEvType = presentation.session_updates?.pending_question?.evidence_type;
+    if (_pendingEvType && _sessionSkipped.includes(_pendingEvType)) {
+      return {
+        mode:          'HOLD',
+        text:          'Odložený test zatím přeskakuji. Napiš mi, až budeš moct ho udělat — pak doporučení zpřesním.',
+        buttons:       [],
+        expects_reply: true,
+        session_updates: {
+          ...presentation.session_updates,
+          pending_question:         null,
+          session_skipped_evidence: _sessionSkipped,
+        },
+        debug: { reason_code: 'EVIDENCE_SKIPPED_SUPPRESSION', evidence_type: _pendingEvType },
+      };
+    }
+  }
+
   // ── P0 Safety gates (post-presentation) ──────────────────────────────────────
   // These gates run after buildPresentation() so they can inspect the final mode.
   // They never modify health data or engine decisions — only gate presentation output.
@@ -1570,6 +1678,24 @@ export async function processInput(userId, userText, sessionState = {}) {
       };
       if (adapterType === 'DOMAIN_REQUEST') {
         if (_diagGuidedNow) {
+          // F2 inside GUIDED_NOW: if this evidence was deferred this session, suppress
+          // (same semantics as the post-buildPresentation F2 guard above, but covering
+          // the budget=0 early-return path where the guard above cannot intercept).
+          if (_sessionSkipped.includes(_diagGuidedNow.evidence_type)) {
+            return {
+              mode:          'HOLD',
+              text:          'Odložený test zatím přeskakuji. Napiš mi, až budeš moct ho udělat — pak doporučení zpřesním.',
+              buttons:       [],
+              expects_reply: true,
+              session_updates: {
+                ...presentation.session_updates,
+                pending_question:         null,
+                question_budget_remaining: 0,
+                session_skipped_evidence: _sessionSkipped,
+              },
+              debug: { reason_code: 'EVIDENCE_SKIPPED_SUPPRESSION', evidence_type: _diagGuidedNow.evidence_type, _diag },
+            };
+          }
           const gText = buildEvidenceQuestion(_diagGuidedNow);
           return {
             mode:          'ASK',
