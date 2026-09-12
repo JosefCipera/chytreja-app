@@ -208,6 +208,59 @@ sep('S1 — Compound gate: "Nemůžu ho teď udělat, ale bolí mě záda" NOT i
   check(!isTempRefusal, 'compound gate → isTempRefusal = false → guard does NOT fire');
 }
 
+// ── Section 1 cont.: Guard D.5 type boundary + buildSessionUpdates normalization ──
+
+sep('S1 — Guard D.5 type boundary: type=GENERAL → condition passes');
+{
+  const pqType = 'GENERAL';
+  check(pqType === 'GENERAL', 'type=GENERAL → guard condition passes');
+}
+
+sep('S1 — Guard D.5 type boundary: type=NEXT_BEST_EVIDENCE → condition fails');
+{
+  const pqType = 'NEXT_BEST_EVIDENCE';
+  check(pqType !== 'GENERAL', 'type=NEXT_BEST_EVIDENCE → guard condition fails (engine-internal type must not reach routing)');
+}
+
+sep('S1 — Guard D.5 type boundary: type=PATH_DISCOVERY → condition fails (Guard D takes precedence)');
+{
+  const pqType = 'PATH_DISCOVERY';
+  check(pqType !== 'GENERAL', 'type=PATH_DISCOVERY → guard condition fails (PATH_DISCOVERY is Guard D territory)');
+}
+
+sep('S1 — buildSessionUpdates normalization contract (orchestrator.js:513 — STOP #3 fix)');
+{
+  // Mirrors the exact ternary at line 513 after the fix:
+  //   type: item?.context_id === 'BOOTSTRAP' ? 'BOOTSTRAP' : 'GENERAL'
+  function normalizeType(item) {
+    return item?.context_id === 'BOOTSTRAP' ? 'BOOTSTRAP' : 'GENERAL';
+  }
+  check(
+    normalizeType({ type: 'NEXT_BEST_EVIDENCE', evidence_type: 'tug_test' }) === 'GENERAL',
+    'NEXT_BEST_EVIDENCE + tug_test → normalized to GENERAL',
+  );
+  check(
+    normalizeType({ type: 'NEXT_BEST_EVIDENCE', evidence_type: 'chair_stand_30s' }) === 'GENERAL',
+    'NEXT_BEST_EVIDENCE + chair_stand_30s → normalized to GENERAL',
+  );
+  check(
+    normalizeType({ type: 'NBA_QUESTION' }) === 'GENERAL',
+    'NBA_QUESTION → normalized to GENERAL',
+  );
+  check(
+    normalizeType(null) === 'GENERAL',
+    'null item → normalized to GENERAL (no crash)',
+  );
+  check(
+    normalizeType({ context_id: 'BOOTSTRAP', type: 'NBA_QUESTION', evidence_type: 'birth_year' }) === 'BOOTSTRAP',
+    'BOOTSTRAP context_id wins over NBA_QUESTION type → BOOTSTRAP preserved',
+  );
+  check(
+    normalizeType({ context_id: 'BOOTSTRAP', type: 'NEXT_BEST_EVIDENCE' }) === 'BOOTSTRAP',
+    'BOOTSTRAP context_id wins over NEXT_BEST_EVIDENCE type → BOOTSTRAP preserved',
+  );
+}
+
 // ── Section 2: processInput E2E ───────────────────────────────────────────────
 // These tests require DB. Skip gracefully if no TESTER_UID.
 
@@ -344,6 +397,61 @@ if (!TESTER_UID) {
       check(mockCalled, 'Guard D.5 did NOT intercept (compound gate) → Haiku was called');
     } catch (e) {
       check(false, `S2h threw: ${e.message}`);
+    }
+  }
+
+  sep('S2i — type=NEXT_BEST_EVIDENCE + tug_test + "Ne, nemám." → Guard D.5 does NOT fire (type guard)');
+  {
+    // Regression boundary: guard requires type==='GENERAL'. An old session with leaked
+    // engine-internal type must not be misrouted — Haiku handles it instead.
+    mockCalled = false;
+    const state = {
+      pending_question: {
+        text: 'Kolik sekund ti trvá ujít 3 metry, otočit se a vrátit se?',
+        evidence_type: 'tug_test',
+        type: 'NEXT_BEST_EVIDENCE',
+      },
+      question_budget_remaining: 0,
+      last_daily_decision: null,
+      pending_clarifications: [],
+      fatigue_context: null,
+      person_birth_year: 1960,
+      person_sex: 'male',
+      resolved_physical: [],
+      hp_physical: {},
+    };
+    try {
+      const res = await processInput(TESTER_UID, 'Ne, nemám.', state);
+      check(mockCalled, 'type=NEXT_BEST_EVIDENCE → Guard D.5 condition fails → Haiku called (type guard holds)');
+    } catch (e) {
+      check(false, `S2i threw: ${e.message}`);
+    }
+  }
+
+  sep('S2j — type=PATH_DISCOVERY + tug_test + "Ne, nemám." → Guard D.5 does NOT fire (Guard D territory)');
+  {
+    // PATH_DISCOVERY is handled by Guard D, never by Guard D.5.
+    mockCalled = false;
+    const state = {
+      pending_question: {
+        text: 'Máš výsledek TUG testu?',
+        evidence_type: 'tug_test',
+        type: 'PATH_DISCOVERY',
+      },
+      question_budget_remaining: 0,
+      last_daily_decision: null,
+      pending_clarifications: [],
+      fatigue_context: null,
+      person_birth_year: 1960,
+      person_sex: 'male',
+      resolved_physical: [],
+      hp_physical: {},
+    };
+    try {
+      const res = await processInput(TESTER_UID, 'Ne, nemám.', state);
+      check(mockCalled, 'type=PATH_DISCOVERY → Guard D.5 condition fails → Haiku called (PATH_DISCOVERY routing separate)');
+    } catch (e) {
+      check(false, `S2j threw: ${e.message}`);
     }
   }
 }

@@ -510,7 +510,8 @@ function buildSessionUpdates(eventType, classifiedPayload, result) {
         text:          questionText,
         evidence_type: evidenceType,
         // Narrow unlock: BOOTSTRAP context_id takes precedence over engine's generic NBE type.
-        type:          item?.context_id === 'BOOTSTRAP' ? 'BOOTSTRAP' : (item?.type ?? 'GENERAL'),
+        // Engine-internal types (NEXT_BEST_EVIDENCE, NBA_QUESTION) must not propagate to routing.
+        type:          item?.context_id === 'BOOTSTRAP' ? 'BOOTSTRAP' : 'GENERAL',
       };
     } else {
       // primary_item = null (ASK_BLOCKING zero-data): explicitly clear pending_question
