@@ -956,6 +956,32 @@ export async function processInput(userId, userText, sessionState = {}) {
     }
   }
 
+  // Guard D.6: sedentary_hours_day scalar — pre-Haiku deterministic routing.
+  // Root of STOP #6: "8 hodin" triggers Haiku Rule 6 (number + unit → NEW_MEASUREMENT).
+  // routeMeasurement for table='physical' returns a warning and writes nothing, so
+  // physical.sedentary_hours_day stays null and the question repeats indefinitely.
+  //
+  // This guard intercepts before Haiku for type=GENERAL + evidence_type=sedentary_hours_day.
+  // Regex accepts: "8", "8 hodin", "8 h", "8 hod", "8,5 hodin", "7.5", "0 hodin".
+  // Vague answers ("hodně", "většinu dne") produce no regex match → fall to Haiku.
+  // Value is normalized to a number (not the raw string) so upsertPhysical writes 8, not "8 hodin".
+  // Range [0, 24] is syntactic (hours in a day) — no clinical threshold introduced.
+  if (!classified
+      && state.pending_question?.type === 'GENERAL'
+      && state.pending_question?.evidence_type === 'sedentary_hours_day') {
+    const _D6trimmed   = userText.trim();
+    const _D6hourMatch = /^\s*(\d+(?:[.,]\d+)?)\s*(?:hodin[ay]?|hod|h)?\s*$/i.exec(_D6trimmed);
+    if (_D6hourMatch) {
+      const _D6val = parseFloat(_D6hourMatch[1].replace(',', '.'));
+      if (!isNaN(_D6val) && _D6val >= 0 && _D6val <= 24) {
+        classified = {
+          event_type: 'ANSWER_TO_EVIDENCE_QUESTION',
+          payload: { evidence_type: 'sedentary_hours_day', value: _D6val },
+        };
+      }
+    }
+  }
+
   // Guard E: explicit navigation / action-request phrases → DOMAIN_REQUEST.
   // Fires only when no prior guard matched. Catches "Co mám dělat?", "Co tedy mám udělat?",
   // "Co teď?", "Co dál?", "Poraď mi." before Haiku, which misclassifies these as
