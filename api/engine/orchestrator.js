@@ -184,6 +184,17 @@ const ACTION_SKIP_RE = /^(p[rř]esko[cč][ií][mt]?|vynech[aá][mt]|dnes\s+ne|ne
 // to the classifier so the full text (including the additional health info) is preserved.
 const COMPOUND_SIGNAL_RE = /\bale\b|\bprotože\b|\bjenže\b|\bavšak\b|\bpřičemž\b/i;
 
+// Guard B.1 — compound inability detection.
+// B1_INABILITY_RE: unanchored; matches "nemůžu" + up to 3 tokens + "udělat/dělat".
+//   \S+ (not \w+) handles Czech special chars (ě,ů,ž,á…) in intervening words.
+// B1_REASON_RE: health/causal signals that must fall through to AI.
+//   kvůli — causal preposition (always introduces a reason: "kvůli kolenu")
+//   bolí  — pain verb (always NEW_SYMPTOM context: "bolí mě záda")
+//   Kept separate from COMPOUND_SIGNAL_RE — that is shared with Guard C (bootstrap)
+//   and adding pain/causal signals there could block unrelated bootstrap flows.
+const B1_INABILITY_RE = /nem[uůo]žu(?:\s+\S+){0,3}\s+(?:ud[eě]lat|d[eě]lat)/i;
+const B1_REASON_RE    = /\bkvůli\b|\bbolí/i;
+
 // birth_year: full-input anchored parser.
 // Accepts only bare 2–3 digit age integers (e.g. "58", "58 let.") —
 // the only forms that survive downstream parseInt() + age-range check (10–120).
@@ -861,6 +872,22 @@ export async function processInput(userId, userText, sessionState = {}) {
     } else if (ACTION_SKIP_RE.test(_trimmed)) {
       classified = { event_type: 'ACTION_SKIPPED', payload: {} };
     }
+  }
+
+  // Guard B.1: compound inability without health reason → ACTION_SKIPPED
+  // Type A: "Nemůžu to teď udělat." / "Co mám dělat, když to teď nemůžu udělat?"
+  // Type B (falls through to AI):
+  //   "Nemůžu to udělat, protože mě bolí rameno." → COMPOUND_SIGNAL_RE (protože)
+  //   "Teď to nemůžu udělat, bolí mě záda."       → B1_REASON_RE (bolí)
+  //   "Nemůžu to dělat kvůli kolenu."             → B1_REASON_RE (kvůli)
+  //   "Nemůžu to udělat, ale zkusím zítra."       → COMPOUND_SIGNAL_RE (ale)
+  if (!classified
+      && state.current_action_assignment?.action_id
+      && state.current_action_assignment?.intervention_id
+      && B1_INABILITY_RE.test(userText.trim())
+      && !COMPOUND_SIGNAL_RE.test(userText.trim())
+      && !B1_REASON_RE.test(userText.trim())) {
+    classified = { event_type: 'ACTION_SKIPPED', payload: {} };
   }
 
   // Guard C: BOOTSTRAP pending question (non-clinical_context, non-refusal)
