@@ -223,6 +223,48 @@ check(!onasStripped.includes('<img'),                        'no <img> in #o-nas
 check(!landing.includes('"testimonial"') && !landing.includes('placeholder-name'),
       'no fake testimonial markers in landing');
 
+// ── T17: sticky input scroll-hide — IntersectionObserver + CSS class ─────────
+//
+// Verifies the scroll-based hide/show added in STOP sticky-inbox:
+//   - CSS class #inputBar.input-bar--out { display: none } exists
+//   - IntersectionObserver observes .scroll-body
+//   - input-bar--out toggled on !e.isIntersecting
+//   - Existing inputBar.hidden branches (AHA, SAFETY) are untouched
+
+section('T17 — sticky input scroll-hide contract');
+check(
+  landing.includes('#inputBar.input-bar--out') && landing.includes('display: none'),
+  'CSS: #inputBar.input-bar--out { display: none } present'
+);
+check(
+  landing.includes('IntersectionObserver'),
+  'IntersectionObserver present in landing.html'
+);
+check(
+  landing.includes('.scroll-body') && landing.includes('IntersectionObserver'),
+  'IntersectionObserver observes .scroll-body'
+);
+check(
+  landing.includes('input-bar--out') && landing.includes('!e.isIntersecting'),
+  'input-bar--out toggled on !e.isIntersecting'
+);
+// Existing hidden branches must remain — check AHA/SAFETY still sets inputBar.hidden
+check(
+  /URGENT_SAFETY_EXIT[\s\S]{0,400}inputBar\.hidden\s*=\s*true/.test(landing),
+  'inputBar.hidden = true still present in URGENT_SAFETY_EXIT branch (unchanged)'
+);
+check(
+  /AHA[\s\S]{0,600}setInputEnabled\(false\)/.test(landing),
+  'setInputEnabled(false) still called in AHA branch (hidden logic unchanged)'
+);
+// The JS observer callback must NOT use inputBar.hidden — only classList.toggle
+// Match `new IntersectionObserver` to skip any CSS/HTML comments that mention the term.
+const observerJsBlock = landing.match(/new IntersectionObserver[\s\S]{0,300}/)?.[0] || '';
+check(
+  !!observerJsBlock && !observerJsBlock.includes('inputBar.hidden'),
+  'JS IntersectionObserver callback does NOT touch inputBar.hidden (uses classList only)'
+);
+
 // ── Results ───────────────────────────────────────────────────────────────────
 
 console.log(`\n${'─'.repeat(60)}`);

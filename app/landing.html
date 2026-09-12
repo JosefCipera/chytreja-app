@@ -445,6 +445,9 @@
       padding: 16px 24px max(24px, env(safe-area-inset-bottom));
       background: linear-gradient(transparent, var(--bg) 36%);
     }
+    /* Scroll-based hide: added/removed by IntersectionObserver on .scroll-body.
+       Does not touch inputBar.hidden — AHA/SAFETY logic is unaffected. */
+    #inputBar.input-bar--out { display: none; }
     .input-wrap {
       max-width: 580px;
       margin: 0 auto;
@@ -1389,6 +1392,11 @@
   const safetyText     = document.getElementById('safetyText');
   const inputBar       = document.getElementById('inputBar');
   const msgInput       = document.getElementById('msgInput');
+  // Hide input when user scrolls past the hero/conv area into the landing sections below.
+  // Uses a CSS class so it never conflicts with inputBar.hidden (AHA/SAFETY logic).
+  new IntersectionObserver(([e]) => {
+    inputBar.classList.toggle('input-bar--out', !e.isIntersecting);
+  }, { threshold: 0 }).observe(document.querySelector('.scroll-body'));
   const sendBtn        = document.getElementById('sendBtn');
   const micBtn         = document.getElementById('micBtn');
   const thinkingInd    = document.getElementById('thinkingIndicator');
