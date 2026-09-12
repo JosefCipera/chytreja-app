@@ -225,10 +225,12 @@ check(!landing.includes('"testimonial"') && !landing.includes('placeholder-name'
 
 // ── T17: sticky input scroll-hide — IntersectionObserver + CSS class ─────────
 //
-// Verifies the scroll-based hide/show added in STOP sticky-inbox:
+// Contract (revised after visual acceptance fix):
 //   - CSS class #inputBar.input-bar--out { display: none } exists
-//   - IntersectionObserver observes .scroll-body
-//   - input-bar--out toggled on !e.isIntersecting
+//   - IntersectionObserver observes #jak-funguje (not .scroll-body)
+//   - input-bar--out toggled on e.isIntersecting (positive: hide when #jak-funguje enters viewport)
+//   - Hero visible / #jak-funguje below fold → input visible (e.isIntersecting=false → class absent)
+//   - #jak-funguje enters viewport → input hidden (e.isIntersecting=true → class added)
 //   - Existing inputBar.hidden branches (AHA, SAFETY) are untouched
 
 section('T17 — sticky input scroll-hide contract');
@@ -241,12 +243,13 @@ check(
   'IntersectionObserver present in landing.html'
 );
 check(
-  landing.includes('.scroll-body') && landing.includes('IntersectionObserver'),
-  'IntersectionObserver observes .scroll-body'
+  landing.includes("getElementById('jak-funguje')") && landing.includes('IntersectionObserver'),
+  'IntersectionObserver observes #jak-funguje'
 );
 check(
-  landing.includes('input-bar--out') && landing.includes('!e.isIntersecting'),
-  'input-bar--out toggled on !e.isIntersecting'
+  landing.includes('input-bar--out') && landing.includes('e.isIntersecting') &&
+  !landing.includes('!e.isIntersecting'),
+  'input-bar--out toggled on e.isIntersecting (positive — hides when #jak-funguje enters)'
 );
 // Existing hidden branches must remain — check AHA/SAFETY still sets inputBar.hidden
 check(
