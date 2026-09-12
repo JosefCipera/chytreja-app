@@ -57,6 +57,25 @@ export const EVIDENCE_RESOLUTION_REGISTRY = {
     tracks_availability: true,
     acquisition_method:  'self_report',
   },
+
+  // ── Gait / balance self-report ───────────────────────────────────────────────
+  // "Cítíš se při běžné chůzi stabilně?" — yes/no, written to physical.gait_stability.
+  // Resolved when ANY value is present (including 'Ne.' / 'Ano.') — the question has
+  // been answered; we stop asking regardless of the polarity.
+  // tracks_availability: false — physical[key] is the canonical source, no
+  // separate availability marker needed (unlike functional tests where "I don't have
+  // the result" is a distinct NOT_AVAILABLE state).
+  //
+  // MODEL GAP (separate from STOP #8 loop fix): physical.gait_stability = 'Ne.'
+  // is not yet read as a +1 signal in inference.js GAIT_INSTABILITY strength counter.
+  // Tracked as data-contract debt — do not fix here.
+  gait_stability: {
+    evidence_kind:       'RAW_VALUE',
+    value_source:        'physical',
+    value_key:           'gait_stability',
+    tracks_availability: false,
+    acquisition_method:  'question',
+  },
 };
 
 /**

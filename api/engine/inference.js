@@ -371,9 +371,8 @@ export function inference(activatedStates, person, clinicalHistory, observations
           inferred_from_nodes: signals,
         },
         missing_evidence: [
-          { type: 'OBSERVATION', obs_type: 'gait_stability',
-            note: '"Chodíte bez pomůcky bezpečně?" — nejrychlejší funkční třídění nestability' },
-          ...(!isEvidenceResolved('tug_test', clinicalHistory) ? [{ type: 'OBSERVATION', obs_type: 'tug_test', note: 'TUG test — klinicky validovaný marker mobility a fall risk; potřebný pro CONFIRMED stav' }] : []),
+          ...(!isEvidenceResolved('gait_stability', clinicalHistory) ? [{ type: 'OBSERVATION', obs_type: 'gait_stability', note: '"Chodíte bez pomůcky bezpečně?" — nejrychlejší funkční třídění nestability' }] : []),
+          ...(!isEvidenceResolved('tug_test',        clinicalHistory) ? [{ type: 'OBSERVATION', obs_type: 'tug_test',       note: 'TUG test — klinicky validovaný marker mobility a fall risk; potřebný pro CONFIRMED stav' }] : []),
           { type: 'OBSERVATION', obs_type: 'current_assistive_device',
             note: 'Aktuálně používaná pomůcka — materiálně mění výběr akce; samostatná evidence o závislosti na podpoře' },
           { type: 'OBSERVATION', obs_type: 'instability_laterality',

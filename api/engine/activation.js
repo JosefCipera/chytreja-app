@@ -181,8 +181,8 @@ export function activation(person, clinicalHistory, observations) {
         inferred_from_nodes: [],
       },
       missing_evidence: [
-        ...(!isEvidenceResolved('tug_test', clinicalHistory)        ? [{ type: 'OBSERVATION', obs_type: 'tug_test',       note: 'TUG test — klinicky validovaný marker mobility a fall risk (NICE NG147); určuje závažnost funkčního dopadu neuropatie' }] : []),
-        { type: 'OBSERVATION', obs_type: 'gait_stability', note: 'Sebehodnocení bezpečnosti chůze — nejrychlejší funkční třídění' },
+        ...(!isEvidenceResolved('tug_test',        clinicalHistory) ? [{ type: 'OBSERVATION', obs_type: 'tug_test',        note: 'TUG test — klinicky validovaný marker mobility a fall risk (NICE NG147); určuje závažnost funkčního dopadu neuropatie' }] : []),
+        ...(!isEvidenceResolved('gait_stability',  clinicalHistory) ? [{ type: 'OBSERVATION', obs_type: 'gait_stability',  note: 'Sebehodnocení bezpečnosti chůze — nejrychlejší funkční třídění' }] : []),
       ],
     });
   }
@@ -218,8 +218,8 @@ export function activation(person, clinicalHistory, observations) {
         inferred_from_nodes: [],
       },
       missing_evidence: [
-        ...(!isEvidenceResolved('tug_test', clinicalHistory)        ? [{ type: 'OBSERVATION', obs_type: 'tug_test',       note: 'TUG test — klinická validace mobility a fall risk (NICE NG147 doporučuje multifaktoriální assessment po pádu)' }] : []),
-        { type: 'OBSERVATION', obs_type: 'gait_stability', note: 'Bezpečnost chůze — základ multifaktoriálního hodnocení pádu' },
+        ...(!isEvidenceResolved('tug_test',        clinicalHistory) ? [{ type: 'OBSERVATION', obs_type: 'tug_test',        note: 'TUG test — klinická validace mobility a fall risk (NICE NG147 doporučuje multifaktoriální assessment po pádu)' }] : []),
+        ...(!isEvidenceResolved('gait_stability',  clinicalHistory) ? [{ type: 'OBSERVATION', obs_type: 'gait_stability',  note: 'Bezpečnost chůze — základ multifaktoriálního hodnocení pádu' }] : []),
       ],
     });
   }
