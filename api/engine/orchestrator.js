@@ -917,6 +917,44 @@ export async function processInput(userId, userText, sessionState = {}) {
     }
   }
 
+  // Guard D.5: GENERAL functional-evidence answer guard.
+  // Fires only when pending_question.type === 'GENERAL' AND evidence_type is one of the
+  // audited functional RAW_VALUE evidence types set by GUIDED_NOW_SUBSTITUTION.
+  // Covers three closed-form patterns deterministically before Haiku:
+  //   1. NOT_AVAILABLE expressions (canonical token set from classifyAvailability)
+  //   2. Explicit temporal refusal (STOP #5B regexes + COMPOUND_SIGNAL_RE gate)
+  //   3. Strict numeric scalar (digits/comma/period/space only — rejects "14 kg", "Mám BMI 28")
+  // Everything else (context switches, compound health statements) falls through to Haiku.
+  const FUNCTIONAL_EVIDENCE_TYPES_D5 = new Set([
+    'tug_test', 'chair_stand_30s', 'grip_strength', 'validated_strength_assessment',
+  ]);
+  if (!classified
+      && state.pending_question?.type === 'GENERAL'
+      && FUNCTIONAL_EVIDENCE_TYPES_D5.has(state.pending_question?.evidence_type)) {
+    const _ev = state.pending_question.evidence_type;
+    const _trimmed = userText.trim();
+    const _stripped = _trimmed.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[.,!?]+$/, '');
+    const NOT_AVAIL_TOKENS_D5 = new Set([
+      'ne', 'no', 'nemam', 'nemam vysledek', 'nemam vysledek testu',
+      'not available', 'not_available', 'n/a', 'nevim', 'zadny vysledek',
+      'nemam zadny', 'nemam zadny vysledek', 'nemas', 'nic nemam',
+    ]);
+    const _isNotAvailable = NOT_AVAIL_TOKENS_D5.has(_stripped)
+      || _stripped.startsWith('nemam')
+      || _stripped === 'ne'
+      || _stripped === 'no'
+      || _stripped.split(/[\s,]+/)[0] === 'ne';
+    const _hasDigitD5 = /\d/.test(_stripped);
+    const _isTempRefusal = !COMPOUND_SIGNAL_RE.test(_trimmed) && (
+      (!_hasDigitD5 && EVIDENCE_REFUSAL_DEFERRAL_RE.test(_stripped))
+      || (EVIDENCE_REFUSAL_NEGATION_RE.test(_stripped) && EVIDENCE_REFUSAL_TEMPORAL_RE.test(_stripped))
+    );
+    const _isStrictNumeric = /^\s*\d[\d\s.,]*\s*$/.test(_trimmed);
+    if (_isNotAvailable || _isTempRefusal || _isStrictNumeric) {
+      classified = { event_type: 'ANSWER_TO_EVIDENCE_QUESTION', payload: { evidence_type: _ev, value: _trimmed } };
+    }
+  }
+
   // Guard E: explicit navigation / action-request phrases → DOMAIN_REQUEST.
   // Fires only when no prior guard matched. Catches "Co mám dělat?", "Co tedy mám udělat?",
   // "Co teď?", "Co dál?", "Poraď mi." before Haiku, which misclassifies these as
