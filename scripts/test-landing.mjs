@@ -272,6 +272,34 @@ check(
   'JS IntersectionObserver callback does NOT touch inputBar.hidden (uses classList only)'
 );
 
+// ── T18: readability — informational text ≥ 14px ─────────────────────────────
+
+section('T18 — readability: informational text selectors at 14px');
+const assertSize = (selector, expected) =>
+  check(
+    landing.includes(`${selector} {`) &&
+    landing.match(new RegExp(`${selector.replace('.', '\\.').replace('#', '\\#')}\\s*\\{[^}]*font-size:\\s*${expected}`))?.[0] !== undefined,
+    `${selector}: font-size ${expected}`
+  );
+assertSize('.areas',           '14px');
+assertSize('.jf-note',         '14px');
+assertSize('.benefit-desc',    '14px');
+assertSize('.offer-sub',       '14px');
+assertSize('.founder-soon',    '14px');
+assertSize('.priklad-note-sub','14px');
+assertSize('#authErrMsg',      '14px');
+check(
+  landing.includes('.story-moment-text') &&
+  /\.story-moment-text\s*\{[^}]*font-size:\s*clamp\(14px/.test(landing),
+  '.story-moment-text: font-size clamp(14px, ...)'
+);
+// Verify decorative labels were NOT touched
+check(/\.story-card-label\s*\{[^}]*font-size:\s*9px/.test(landing),  '.story-card-label stays 9px (decorative)');
+check(/\.chj-card-eyebrow\s*\{[^}]*font-size:\s*10px/.test(landing), '.chj-card-eyebrow stays 10px (decorative)');
+check(/\.step-num\s*\{[^}]*font-size:\s*11px/.test(landing),         '.step-num stays 11px (decorative)');
+check(/\.cenik-fine\s*\{[^}]*font-size:\s*12px/.test(landing),       '.cenik-fine stays 12px (fine print)');
+check(/\.btn-link-sm\s*\{[^}]*font-size:\s*13px/.test(landing),      '.btn-link-sm stays 13px (action link)');
+
 // ── Results ───────────────────────────────────────────────────────────────────
 
 console.log(`\n${'─'.repeat(60)}`);
