@@ -246,10 +246,14 @@ check(
   landing.includes("getElementById('jak-funguje')") && landing.includes('IntersectionObserver'),
   'IntersectionObserver observes #jak-funguje'
 );
+// Three decisive states — all must be covered by the expression:
+// 1. isIntersecting=false, top>0  → element below viewport (user above) → input VISIBLE
+// 2. isIntersecting=true           → element in viewport                 → input HIDDEN
+// 3. isIntersecting=false, top<=0 → element above viewport (user past)  → input HIDDEN
+// Expression: e.isIntersecting || e.boundingClientRect.top <= 0
 check(
-  landing.includes('input-bar--out') && landing.includes('e.isIntersecting') &&
-  !landing.includes('!e.isIntersecting'),
-  'input-bar--out toggled on e.isIntersecting (positive — hides when #jak-funguje enters)'
+  landing.includes('e.isIntersecting || e.boundingClientRect.top <= 0'),
+  'toggle condition covers all 3 states: (isIntersecting) || (top<=0 when past element)'
 );
 // Existing hidden branches must remain — check AHA/SAFETY still sets inputBar.hidden
 check(
