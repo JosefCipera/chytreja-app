@@ -37,12 +37,13 @@ export default async function handler(req, res) {
   if (action === 'save-profil')         return handleSaveProfil(req, res);
   if (action === 'update-decathlon')    return handleUpdateDecathlon(req, res);
   if (action === 'wizard-step')         return handleWizardStep(req, res);
+  if (action === 'wizard-complete')     return handleWizardComplete(req, res);
   if (action === 'full-profile')        return handleFullProfile(req, res);
   if (action === 'node-history')        return handleNodeHistory(req, res);
   if (action === 'aspiration-type')     return handleAspirationType(req, res);
   if (action === 'universe-metrics')    return handleUniverseMetrics(req, res);
 
-  return res.status(400).json({ error: 'action required: profile | onboarding | readiness | snapshot | checkin | body-flow | lehkost-agent | dialog | health-profile | crt-context | save-zdravi | save-kondice | save-profil | update-decathlon | wizard-step | full-profile | node-history | universe-metrics' });
+  return res.status(400).json({ error: 'action required: profile | onboarding | readiness | snapshot | checkin | body-flow | lehkost-agent | dialog | health-profile | crt-context | save-zdravi | save-kondice | save-profil | update-decathlon | wizard-step | wizard-complete | full-profile | node-history | universe-metrics' });
 }
 
 
@@ -693,7 +694,7 @@ async function handleFullProfile(req, res) {
   const db = sb();
   const [profileRes, constraintsRes, decathlonRes, healthRes, medsRes] = await Promise.all([
     db.from('user_profiles')
-      .select('age, gender, height, weight, birth_year')
+      .select('age, gender, height, weight, birth_year, onboarding_completed')
       .eq('user_id', userId).maybeSingle(),
     db.from('user_constraints')
       .select('constraint_type, constraint_key, constraint_value, severity')
@@ -942,6 +943,23 @@ async function handleWizardStep(req, res) {
   }
 
   return res.status(400).json({ error: 'step must be 1, 2, or 3' });
+}
+
+// ── POST ?action=wizard-complete ─────────────────────────────────
+// Marks onboarding as completed for the authenticated user.
+// Uses UPSERT so users who skipped Step 1 (no user_profiles row yet) are handled safely.
+// Called by onboarding-wizard.js _save() as the final operation before overlay removal.
+async function handleWizardComplete(req, res) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
+  const userId = req.body?.userId;
+  if (!userId) return res.status(400).json({ error: 'userId required' });
+
+  const { error } = await sb()
+    .from('user_profiles')
+    .upsert({ user_id: userId, onboarding_completed: true }, { onConflict: 'user_id' });
+
+  if (error) return res.status(500).json({ error: error.message });
+  return res.json({ ok: true });
 }
 
 // ── GET ?action=aspiration-type ──────────────────────────────────

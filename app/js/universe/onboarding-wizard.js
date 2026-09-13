@@ -8,9 +8,13 @@ import { authFetch } from './authFetch.js';
 export async function checkAndShowOnboarding(userId) {
   if (!userId) return;
   const res = await authFetch('/api/user?action=full-profile');
-  if (!res.ok) return;
+  if (!res.ok) {
+    // Fail-open: API error must not be interpreted as "onboarding done".
+    _showWizard(userId);
+    return;
+  }
   const data = await res.json();
-  if (data.profile?.age || data.profile?.birth_year) return;
+  if (data.profile?.onboarding_completed === true) return;
   _showWizard(userId);
 }
 
@@ -131,6 +135,21 @@ function _showWizard(userId) {
         setTimeout(() => { nextBtn.textContent = orig; }, 3000);
         return;
       }
+    }
+    // Persist onboarding_completed flag. Overlay is removed ONLY after confirmed success.
+    // UPSERT: safe even when user skipped Step 1 (no user_profiles row exists yet).
+    let completeRes;
+    try {
+      completeRes = await authFetch('/api/user?action=wizard-complete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+    } catch { completeRes = { ok: false }; }
+    if (!completeRes.ok) {
+      const orig = nextBtn.textContent;
+      nextBtn.textContent = 'Chyba — zkus znovu';
+      setTimeout(() => { nextBtn.textContent = orig; }, 3000);
+      return;
     }
     overlay.remove();
     if (typeof window.loadCRT === 'function') window.loadCRT(true);
