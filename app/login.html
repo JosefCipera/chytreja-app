@@ -196,7 +196,7 @@
   </style>
 </head>
 <body>
-  <div class="card">
+  <div class="card" hidden>
 
     <!-- CHJ wordmark -->
     <div class="login-wordmark" aria-label="Chytré já">
@@ -285,12 +285,14 @@
     const provider = new GoogleAuthProvider();
 
     const _next = new URLSearchParams(location.search).get('next') || '/launcher';
-    onAuthStateChanged(auth, user => { if (user) window.location.href = _next; });
-
-    if (window.location.hash === '#register') {
-      document.getElementById('loginPanel').style.display = 'none';
-      document.getElementById('registerPanel').style.display = 'block';
-    }
+    onAuthStateChanged(auth, user => {
+      if (user) { window.location.href = _next; return; }
+      if (window.location.hash === '#register') {
+        document.getElementById('loginPanel').style.display = 'none';
+        document.getElementById('registerPanel').style.display = 'block';
+      }
+      document.querySelector('.card').hidden = false;
+    });
 
     window.showRegister = () => {
       document.getElementById('loginPanel').style.display = 'none';
