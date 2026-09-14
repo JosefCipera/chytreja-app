@@ -1638,6 +1638,7 @@
 
     if (outcome === 'AHA' || outcome === 'NOT_ENOUGH_YET') {
       emailLoginLink.href = '/login?next=' + encodeURIComponent('/landing?handoff=1');
+      saveAnonSession(); // persist before user navigates to email registration
       authCta.hidden      = false;
       setInputEnabled(false);
       return;
