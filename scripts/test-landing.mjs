@@ -290,11 +290,11 @@ assertSize('.priklad-note-sub','14px');
 assertSize('#authErrMsg',      '14px');
 check(
   landing.includes('.story-moment-text') &&
-  /\.story-moment-text\s*\{[^}]*font-size:\s*clamp\(14px/.test(landing),
-  '.story-moment-text: font-size clamp(14px, ...)'
+  /\.story-moment-text\s*\{[^}]*font-size:\s*16px/.test(landing),
+  '.story-moment-text: font-size 16px'
 );
 // Verify decorative labels were NOT touched
-check(/\.story-card-label\s*\{[^}]*font-size:\s*9px/.test(landing),  '.story-card-label stays 9px (decorative)');
+check(/\.story-card-label\s*\{[^}]*font-size:\s*11px/.test(landing),  '.story-card-label 11px (readable diagram label)');
 check(/\.chj-card-eyebrow\s*\{[^}]*font-size:\s*10px/.test(landing), '.chj-card-eyebrow stays 10px (decorative)');
 check(/\.step-num\s*\{[^}]*font-size:\s*11px/.test(landing),         '.step-num stays 11px (decorative)');
 check(/\.cenik-fine\s*\{[^}]*font-size:\s*12px/.test(landing),       '.cenik-fine stays 12px (fine print)');

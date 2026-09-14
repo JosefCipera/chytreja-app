@@ -614,7 +614,7 @@
     #zakladatele {
       position: relative;
       overflow: hidden;
-      max-width: 560px;
+      max-width: 800px;
       margin: 0 auto;
       padding: clamp(72px, 12vh, 112px) 24px clamp(80px, 13vh, 120px);
       border-top: 1px solid var(--border);
@@ -641,6 +641,7 @@
       color: var(--text);
       line-height: 1.15;
       text-wrap: balance;
+      margin-top: clamp(60px, 10vh, 88px);
       margin-bottom: 18px;
     }
     .cenik-intro {
@@ -649,6 +650,9 @@
       line-height: 1.85;
       max-width: 440px;
       margin-bottom: clamp(40px, 6vh, 60px);
+    }
+    .cenik-intro--tight {
+      margin-bottom: 10px;
     }
     .cenik-offer {
       margin-bottom: clamp(40px, 6vh, 56px);
@@ -743,6 +747,125 @@
       font-size: 14px;
       color: var(--text-dim);
       line-height: 1.6;
+    }
+    .flow-schema {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      margin-bottom: clamp(40px, 6vh, 60px);
+      overflow-x: auto;
+      width: 100%;
+    }
+    .flow-row {
+      display: flex;
+      align-items: baseline;
+      flex-wrap: nowrap;
+      white-space: nowrap;
+      min-width: max-content;
+    }
+    .flow-step {
+      font-family: 'Urbanist', sans-serif;
+      font-size: 17px;
+      font-weight: 600;
+      letter-spacing: 0;
+      text-transform: none;
+      color: var(--text);
+      opacity: 1;
+      line-height: 1.5;
+      white-space: nowrap;
+    }
+    .flow-arrow {
+      font-size: 17px;
+      color: var(--accent);
+      margin: 0 12px;
+      opacity: 0.7;
+      line-height: 1.5;
+      flex-shrink: 0;
+    }
+    @media (max-width: 479px) {
+      .flow-row {
+        white-space: normal;
+        flex-wrap: wrap;
+      }
+      .flow-step {
+        white-space: normal;
+      }
+    }
+    .founder-lead {
+      font-family: 'Urbanist', sans-serif;
+      font-size: clamp(20px, 4.2vw, 30px);
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.3;
+      text-wrap: balance;
+      max-width: 480px;
+      margin-bottom: clamp(36px, 5vh, 52px);
+    }
+    .founder-lead--chapter {
+      margin-top: clamp(60px, 10vh, 88px);
+    }
+    .founder-offer {
+      margin-top: clamp(48px, 8vh, 72px);
+      padding-top: clamp(36px, 6vh, 52px);
+      border-top: 1px solid rgba(140, 140, 140, 0.12);
+    }
+    .offer-tag {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-top: 6px;
+      margin-bottom: 14px;
+    }
+    .offer-compare {
+      font-size: 14px;
+      color: var(--text-mid);
+      line-height: 1.6;
+      margin-top: 6px;
+      margin-bottom: 4px;
+    }
+    .offer-desc {
+      font-size: 14px;
+      color: var(--text-mid);
+      line-height: 1.75;
+      max-width: 400px;
+      margin-top: 12px;
+      margin-bottom: clamp(28px, 5vh, 40px);
+    }
+    .priklad-wrap {
+      margin-bottom: clamp(40px, 6vh, 60px);
+    }
+    .priklad-eyebrow {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 20px;
+    }
+    .priklad-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .priklad-item {
+      display: grid;
+      grid-template-columns: 16px 1fr;
+      gap: 0 14px;
+      align-items: start;
+    }
+    .priklad-dash {
+      font-size: 13px;
+      color: var(--text-dim);
+      padding-top: 2px;
+      line-height: 1.7;
+    }
+    .priklad-text {
+      font-size: 14px;
+      color: var(--text-mid);
+      line-height: 1.75;
     }
     .cenik-fine {
       margin-top: 16px;
@@ -845,10 +968,11 @@
     /* Společná karta DNES */
     .story-now {
       border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: clamp(20px, 3.5vh, 28px) clamp(18px, 4vw, 28px);
-      background: rgba(255, 255, 255, 0.025);
+      border-radius: 8px;
+      padding: 8px clamp(16px, 3vw, 22px);
+      background: rgba(255, 255, 255, 0.018);
       margin-bottom: 12px;
+      display: inline-block;
     }
     .story-now-label {
       font-size: 10px;
@@ -856,7 +980,6 @@
       letter-spacing: 3px;
       text-transform: uppercase;
       color: var(--text-dim);
-      margin-bottom: 8px;
     }
     .story-now-text {
       font-family: 'Urbanist', sans-serif;
@@ -889,11 +1012,11 @@
     /* Fork arrow */
     .story-fork-arrow {
       text-align: center;
-      font-size: 11px;
+      font-size: 12px;
       color: var(--text-dim);
-      letter-spacing: 2px;
-      opacity: 0.5;
-      margin: 4px 0;
+      letter-spacing: 1.5px;
+      opacity: 0.75;
+      margin: 8px 0;
       user-select: none;
     }
     /* Two future cards */
@@ -905,10 +1028,10 @@
     }
     .story-card {
       border-radius: 14px;
-      padding: clamp(18px, 3vh, 26px) clamp(16px, 3vw, 22px);
+      padding: clamp(22px, 3.5vh, 32px) clamp(20px, 3.5vw, 28px);
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 14px;
     }
     .story-card-bad {
       border: 1px solid rgba(192, 64, 64, 0.22);
@@ -919,14 +1042,14 @@
       background: rgba(60, 169, 189, 0.05);
     }
     .story-card-label {
-      font-size: 9px;
+      font-size: 11px;
       font-weight: 600;
       letter-spacing: 2.5px;
       text-transform: uppercase;
       margin-bottom: 2px;
     }
-    .story-card-bad  .story-card-label { color: rgba(192, 64, 64, 0.6); }
-    .story-card-good .story-card-label { color: rgba(60, 169, 189, 0.7); }
+    .story-card-bad  .story-card-label { color: rgba(192, 64, 64, 0.75); }
+    .story-card-good .story-card-label { color: rgba(60, 169, 189, 0.85); }
     .story-moment {
       display: flex;
       flex-direction: column;
@@ -941,11 +1064,19 @@
     .story-card-bad  .story-moment-when { color: rgba(192, 64, 64, 0.5); }
     .story-card-good .story-moment-when { color: rgba(60, 169, 189, 0.6); }
     .story-moment-text {
-      font-size: clamp(14px, 2.4vw, 15px);
+      font-size: 16px;
       line-height: 1.55;
     }
-    .story-card-bad  .story-moment-text { color: var(--text-dim); }
+    .story-card-bad  .story-moment-text { color: var(--text-mid); }
     .story-card-good .story-moment-text { color: var(--text-mid); }
+    .story-card-bad  .story-moment:last-child .story-moment-text {
+      font-weight: 600;
+      color: rgba(192, 64, 64, 0.85);
+    }
+    .story-card-good .story-moment:last-child .story-moment-text {
+      font-weight: 600;
+      color: rgba(60, 169, 189, 0.9);
+    }
     /* Note below cards */
     .priklad-note-main {
       font-family: 'Urbanist', sans-serif;
@@ -971,7 +1102,7 @@
 
     /* ── Co teď? (sekce 04) ──────────────────────────────────────────────── */
     #co-ted {
-      max-width: 560px;
+      max-width: 640px;
       margin: 0 auto;
       padding: clamp(72px, 12vh, 112px) 24px clamp(80px, 13vh, 120px);
       border-top: 1px solid var(--border);
@@ -1015,7 +1146,7 @@
     }
     .chj-card-step {
       font-family: 'Urbanist', sans-serif;
-      font-size: clamp(16px, 3vw, 20px);
+      font-size: clamp(17px, 3.2vw, 22px);
       font-weight: 600;
       color: var(--accent);
       margin-bottom: clamp(20px, 3vh, 28px);
@@ -1029,7 +1160,7 @@
       margin-bottom: 6px;
     }
     .chj-card-why {
-      font-size: 13px;
+      font-size: 14px;
       color: var(--text-mid);
       line-height: 1.75;
     }
@@ -1165,58 +1296,44 @@
 
 <!-- Příklad · Zdraví -->
 <section id="priklad" aria-labelledby="priklad-heading">
-  <p class="jf-eyebrow">Příklad · Zdraví</p>
-  <h2 class="jf-heading" id="priklad-heading">Zatím jsi v pohodě.<br>Ale směr už může být špatný.</h2>
+  <h2 class="jf-heading" id="priklad-heading">Možná jsi zatím v pohodě. Ale uvnitř už to tak být nemusí.</h2>
 
-  <!-- Společná karta: výchozí stav + CHJ zásah -->
   <div class="story-now">
     <p class="story-now-label">Dnes</p>
-    <p class="story-now-text">Mám nadváhu, ale nic mi není.</p>
-    <div class="story-chj-line">
-      <span class="story-chj-tag">CHJ</span>
-      <span class="story-chj-text">Tady má smysl změnit směr.</span>
-    </div>
+    <p class="story-now-text">Tady právě jsi.</p>
   </div>
 
   <p class="story-fork-arrow" aria-hidden="true">↓ &nbsp; dvě možné budoucnosti &nbsp; ↓</p>
 
-  <!-- Dvě alternativní budoucnosti -->
   <div class="story-futures" role="list">
 
     <div class="story-card story-card-bad" role="listitem">
-      <p class="story-card-label">Pokračuji stejně</p>
+      <p class="story-card-label">Pokračuju stejně</p>
       <div class="story-moment">
-        <span class="story-moment-when">Za pár let</span>
-        <p class="story-moment-text">Beru sice prášky, ale jinak jsem v pohodě.</p>
+        <p class="story-moment-text">Možná je všechno v pořádku.</p>
       </div>
       <div class="story-moment">
-        <span class="story-moment-when">Později</span>
-        <p class="story-moment-text">Nevěřil jsem, že si jednou budu muset píchat inzulín.</p>
+        <p class="story-moment-text">Nebo už se rodí budoucí problém.</p>
       </div>
     </div>
 
     <div class="story-card story-card-good" role="listitem">
-      <p class="story-card-label">Změním směr</p>
+      <p class="story-card-label">Chytré já hlídá směr</p>
       <div class="story-moment">
-        <p class="story-moment-text">Riziko klesá.</p>
+        <p class="story-moment-text">Hledá, co se začíná měnit.</p>
       </div>
       <div class="story-moment">
-        <p class="story-moment-text">Měním svou možnou budoucnost.</p>
+        <p class="story-moment-text">A upozorní mě, když nastane čas něco udělat.</p>
       </div>
     </div>
 
   </div>
-
-  <p class="priklad-note-main">Chytré já tě hlídá a upozorní tě, když je čas změnit směr.</p>
-  <p class="priklad-note-sub">Ne až když máš problém. Když ještě můžeš změnit, kam směřuješ.</p>
 </section>
 
 <!-- Co teď? -->
 <section id="co-ted" aria-labelledby="co-ted-heading">
   <p class="jf-eyebrow">Co teď?</p>
   <h2 class="jf-heading" id="co-ted-heading">Co má největší smysl udělat právě teď?</h2>
-  <p class="co-ted-intro">Chytré já hledá jednu věc, která tě může nejvíc posunout k tvému cíli.</p>
-
   <div class="chj-card">
     <p class="chj-card-eyebrow">Teď je nejdůležitější</p>
     <p class="chj-card-area">Pohyb</p>
@@ -1226,63 +1343,69 @@
     <p class="chj-card-why">Protože právě tady můžeš nejvíc ovlivnit směr, kterým jdeš.</p>
   </div>
 
-  <p class="co-ted-closing">Když se změníš ty, změní se i další krok.</p>
 </section>
 
 <!-- Zakladatelé Chytrého já -->
 <section id="zakladatele" aria-labelledby="cenik-heading">
   <div class="cenik-bg-num" aria-hidden="true">#001–#200</div>
 
-  <p class="jf-eyebrow">Zakladatelé Chytrého já</p>
-  <h2 class="cenik-heading" id="cenik-heading">Staň se zakladatelem Chytrého já.</h2>
-  <p class="cenik-intro">Hledáme prvních 200 lidí, se kterými Chytré já vytvoříme.<br>Dostaneš funkční první verzi svého Chytrého já. A pokud budeš chtít, můžeš ovlivnit, co se Chytré já naučí dál.</p>
+  <p class="founder-lead">Některé problémy nevidíš. Jiné nechceš vidět. A s dalšími si nevíš rady.</p>
 
-  <div class="cenik-offer">
-    <p class="offer-main">Chytré já navždy.</p>
-    <p class="offer-price">9 900 Kč · jednou</p>
+  <div class="priklad-wrap">
+    <p class="priklad-eyebrow">Příklady</p>
+    <ul class="priklad-list">
+      <li class="priklad-item">
+        <span class="priklad-dash" aria-hidden="true">—</span>
+        <p class="priklad-text"><strong>„Zjistili mi arytmii. K doktorům jsem nechodil."</strong><br>O pár let později: cévní mozková příhoda.<br>Následky: zhoršení paměti, kardiostimulátor, zákaz řízení auta.</p>
+      </li>
+      <li class="priklad-item">
+        <span class="priklad-dash" aria-hidden="true">—</span>
+        <p class="priklad-text"><strong>„Cukr mám trochu vyšší. Ale nic mi není."</strong><br>Roky bez výrazných potíží. Mezitím se mohou postupně poškozovat cévy, srdce, ledviny, nervy nebo zrak.</p>
+      </li>
+      <li class="priklad-item">
+        <span class="priklad-dash" aria-hidden="true">—</span>
+        <p class="priklad-text"><strong>„Beru léky tak, jak mi je předepsali."</strong><br>Léky, volně prodejné přípravky a doplňky mohou mít nevhodné kombinace nebo se vzájemně ovlivňovat.</p>
+      </li>
+      <li class="priklad-item">
+        <span class="priklad-dash" aria-hidden="true">—</span>
+        <p class="priklad-text"><strong>„Začal jsem cvičit. Dělám něco pro své zdraví."</strong><br>Nevhodně zvolené cvičení může být vzhledem k věku, zdravotnímu stavu nebo omezením spíš problém než pomoc.</p>
+      </li>
+    </ul>
   </div>
 
-  <p class="benefits-title">Jako zakladatel získáš:</p>
-  <ul class="benefits">
-    <li class="benefit">
-      <span class="benefit-mark" aria-hidden="true">—</span>
-      <div>
-        <p class="benefit-name">Funkční Chytré já</p>
-        <p class="benefit-desc">Začneš ho skutečně používat ve svém životě.</p>
-      </div>
-    </li>
-    <li class="benefit">
-      <span class="benefit-mark" aria-hidden="true">—</span>
-      <div>
-        <p class="benefit-name">Chytré já navždy</p>
-        <p class="benefit-desc">Za základní osobní Chytré já už nebudeš platit pravidelné předplatné.</p>
-      </div>
-    </li>
-    <li class="benefit">
-      <span class="benefit-mark" aria-hidden="true">—</span>
-      <div>
-        <p class="benefit-name">Budeš u jeho vývoje</p>
-        <p class="benefit-desc">Pokud budeš chtít, tvoje zkušenosti budou ovlivňovat, co se Chytré já naučí dál.</p>
-      </div>
-    </li>
-    <li class="benefit">
-      <span class="benefit-mark" aria-hidden="true">—</span>
-      <div>
-        <p class="benefit-name">Mezi prvními</p>
-        <p class="benefit-desc">Nové možnosti si vyzkoušíš dřív než ostatní.</p>
-      </div>
-    </li>
-    <li class="benefit">
-      <span class="benefit-mark" aria-hidden="true">—</span>
-      <div>
-        <p class="benefit-name">Zakladatel #001–#200</p>
-        <p class="benefit-desc">Tvoje místo mezi prvními 200 zůstane tvoje.</p>
-      </div>
-    </li>
-  </ul>
+  <p class="founder-lead founder-lead--chapter">Právě proto vzniklo Chytré já.</p>
 
-  <button class="btn-found" id="founderBtn" disabled>Chci být mezi prvními →</button>
-  <p class="founder-soon">Registraci Zakladatelů spustíme brzy.</p>
+  <div class="flow-schema" aria-label="Jak Chytré já pracuje">
+    <div class="flow-row">
+      <span class="flow-step">Poznám tě</span>
+      <span class="flow-arrow" aria-hidden="true">→</span>
+      <span class="flow-step">Pochopím, čeho chceš dosáhnout</span>
+      <span class="flow-arrow" aria-hidden="true">→</span>
+      <span class="flow-step">Najdu, co ti nejvíc brání</span>
+      <span class="flow-arrow" aria-hidden="true">→</span>
+    </div>
+    <div class="flow-row">
+      <span class="flow-step">Doporučím nejlepší další krok</span>
+      <span class="flow-arrow" aria-hidden="true">→</span>
+      <span class="flow-step">Sleduji, co se mění</span>
+      <span class="flow-arrow" aria-hidden="true">→</span>
+      <span class="flow-step">Vedu tě dál</span>
+    </div>
+  </div>
+
+  <h2 class="cenik-heading" id="cenik-heading">Staň se zakladatelem Chytrého já.</h2>
+  <p class="cenik-intro cenik-intro--tight">Můžeš být mezi prvními, kdo bude Chytré já skutečně používat.</p>
+  <p class="cenik-intro">A není to jen aplikace. Je to tvoje druhé, digitální já — které tě poznává, hlídá souvislosti a pomáhá ti držet správný směr.</p>
+
+  <div class="founder-offer">
+    <p class="offer-main">Chytré já navždy.</p>
+    <p class="offer-tag">Zakladatel #001–#200</p>
+    <p class="offer-price">9 900 Kč · jednou</p>
+    <p class="offer-compare">místo běžného předplatného <strong>490 Kč měsíčně</strong></p>
+    <p class="offer-desc">Základní osobní Chytré já bez pravidelného předplatného.<br>S možností podílet se na dalším vývoji.</p>
+    <button class="btn-found" id="founderBtn" disabled>Chci být Zakladatelem →</button>
+    <p class="founder-soon">Registraci Zakladatelů spustíme brzy.</p>
+  </div>
 </section>
 
 <!-- Kdo za tím stojí -->
