@@ -129,6 +129,19 @@
       transition: color 0.25s;
     }
     .nav-login:hover { color: var(--text); }
+    .nav-register {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--accent);
+      text-decoration: none;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+      border: 1px solid rgba(60, 169, 189, 0.35);
+      border-radius: 6px;
+      padding: 5px 12px;
+      transition: color 0.25s, border-color 0.25s;
+    }
+    .nav-register:hover { color: var(--text); border-color: rgba(60, 169, 189, 0.7); }
     .btn-hamburger {
       display: none;
       background: none;
@@ -1200,6 +1213,7 @@
   </ul>
 
   <div class="nav-right">
+    <a href="/login#register" class="nav-register">Vyzkoušet Chytré já</a>
     <a id="loginLink" href="/login?next=%2Flauncher" class="nav-login">Přihlásit</a>
     <button id="menuBtn" class="btn-hamburger" aria-label="Otevřít menu" aria-expanded="false">☰</button>
   </div>

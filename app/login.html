@@ -43,6 +43,10 @@
       text-align: center;
       margin-bottom: 28px;
     }
+    #registerPanel .subtitle {
+      font-size: 15px;
+      color: #94a3b8;
+    }
 
     input[type="email"], input[type="password"] {
       width: 100%;
@@ -115,15 +119,35 @@
     .btn-google:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.18); }
     .btn-google:disabled { opacity: 0.5; cursor: default; }
 
-    .terms {
-      text-align: center;
+    .terms-check {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: 12px;
+      color: #64748b;
+      line-height: 1.5;
+      margin-top: 16px;
+      cursor: pointer;
+    }
+    .terms-check input[type="checkbox"] {
+      margin: 0;
+      margin-top: 1px;
+      flex-shrink: 0;
+      width: 16px;
+      height: 16px;
+      accent-color: #2563eb;
+      cursor: pointer;
+    }
+    .terms-check a { color: #3b82f6; text-decoration: none; }
+    .terms-check a:hover { text-decoration: underline; }
+    .terms-privacy {
       font-size: 12px;
       color: #4b5563;
-      margin-top: 16px;
-      line-height: 1.5;
+      margin-top: 8px;
+      text-align: center;
     }
-    .terms a { color: #3b82f6; text-decoration: none; }
-    .terms a:hover { text-decoration: underline; }
+    .terms-privacy a { color: #3b82f6; text-decoration: none; }
+    .terms-privacy a:hover { text-decoration: underline; }
 
     .switch-link {
       text-align: center;
@@ -232,7 +256,11 @@
         Google
       </button>
 
-      <p class="terms">Registrací souhlasíš s <a href="#">podmínkami</a> a <a href="#">zpracováním údajů</a>.</p>
+      <label class="terms-check">
+        <input type="checkbox" id="termsCheck">
+        Souhlasím s <a href="/obchodni-podminky" target="_blank">Obchodními podmínkami</a>.
+      </label>
+      <p class="terms-privacy"><a href="/ochrana-osobnich-udaju" target="_blank">Informace o zpracování osobních údajů</a></p>
       <div class="switch-link">Máš účet? <a href="#" onclick="showLogin(); return false;">Přihlásit</a></div>
       <div class="error" id="regErr"></div>
     </div>
@@ -292,11 +320,16 @@
       }
     };
 
+    function termsAccepted() {
+      return document.getElementById('termsCheck').checked;
+    }
+
     window.registerEmail = async () => {
       const email = document.getElementById('regEmail').value.trim();
       const pass  = document.getElementById('regPass').value;
       const pass2 = document.getElementById('regPass2').value;
       const err   = document.getElementById('regErr');
+      if (!termsAccepted()) { err.textContent = 'Je nutné odsouhlasit Obchodní podmínky.'; return; }
       if (!email || !pass) { err.textContent = 'Zadej email a heslo.'; return; }
       if (pass.length < 6) { err.textContent = 'Heslo musí mít alespoň 6 znaků.'; return; }
       if (pass !== pass2) { err.textContent = 'Hesla se neshodují.'; return; }
@@ -310,7 +343,11 @@
     };
 
     window.signInGoogle = async () => {
-      const err = document.getElementById('loginErr') || document.getElementById('regErr');
+      const isRegister = document.getElementById('registerPanel').style.display !== 'none';
+      const err = isRegister ? document.getElementById('regErr') : document.getElementById('loginErr');
+      if (isRegister && !termsAccepted()) {
+        err.textContent = 'Je nutné odsouhlasit Obchodní podmínky.'; return;
+      }
       setLoading(true);
       try {
         await signInWithPopup(auth, provider);

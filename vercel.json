@@ -124,6 +124,14 @@
             "destination": "/app/launcher.html"
         },
         {
+            "source": "/obchodni-podminky",
+            "destination": "/app/obchodni-podminky.html"
+        },
+        {
+            "source": "/ochrana-osobnich-udaju",
+            "destination": "/app/ochrana-osobnich-udaju.html"
+        },
+        {
             "source": "/api/(.*)",
             "destination": "/api/$1"
         },
