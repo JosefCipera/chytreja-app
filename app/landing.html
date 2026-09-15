@@ -1532,6 +1532,7 @@
   // Hide input as soon as #jak-funguje enters the viewport (user left hero area).
   // Uses a CSS class so it never conflicts with inputBar.hidden (AHA/SAFETY logic).
   new IntersectionObserver(([e]) => {
+    if (inputBar.contains(document.activeElement)) return;
     inputBar.classList.toggle('input-bar--out', e.isIntersecting || e.boundingClientRect.top <= 0);
   }, { threshold: 0 }).observe(document.getElementById('jak-funguje'));
   const sendBtn        = document.getElementById('sendBtn');
