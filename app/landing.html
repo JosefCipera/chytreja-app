@@ -461,6 +461,31 @@
     /* Scroll-based hide: added/removed by IntersectionObserver on .scroll-body.
        Does not touch inputBar.hidden — AHA/SAFETY logic is unaffected. */
     #inputBar.input-bar--out { display: none; }
+
+    /* ── Conversation mode layout lock ──────────────────────────────────── */
+    /* Activated by enterConv() via document.documentElement.classList.add('conv-mode').
+       Locks page to viewport height, hides marketing sections, makes .scroll-body
+       the sole scrollable container, and anchors #inputBar as a flex item. */
+    html.conv-mode { height: 100dvh; overflow: hidden; }
+    html.conv-mode body {
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    html.conv-mode #jak-funguje,
+    html.conv-mode #priklad,
+    html.conv-mode #co-ted,
+    html.conv-mode #zakladatele,
+    html.conv-mode #o-nas { display: none; }
+    html.conv-mode .scroll-body {
+      flex: 1;
+      overflow-y: auto;
+      min-height: 0;
+    }
+    html.conv-mode #inputBar {
+      position: relative;
+      flex-shrink: 0;
+    }
     .input-wrap {
       max-width: 580px;
       margin: 0 auto;
@@ -1532,6 +1557,7 @@
   // Hide input as soon as #jak-funguje enters the viewport (user left hero area).
   // Uses a CSS class so it never conflicts with inputBar.hidden (AHA/SAFETY logic).
   new IntersectionObserver(([e]) => {
+    if (document.documentElement.classList.contains('conv-mode')) return;
     if (inputBar.contains(document.activeElement)) return;
     inputBar.classList.toggle('input-bar--out', e.isIntersecting || e.boundingClientRect.top <= 0);
   }, { threshold: 0 }).observe(document.getElementById('jak-funguje'));
@@ -1540,9 +1566,12 @@
   const thinkingInd    = document.getElementById('thinkingIndicator');
   const loginLink      = document.getElementById('loginLink');
   const mainNav        = document.getElementById('mainNav');
+  const scrollBody     = document.querySelector('.scroll-body');
 
   // ── UI helpers ─────────────────────────────────────────────────────────
   function enterConv() {
+    document.documentElement.classList.add('conv-mode');
+    inputBar.classList.remove('input-bar--out');
     hero.classList.add('fade-out');
     conv.hidden = false;
     mainNav.classList.add('nav-conv');
@@ -1553,6 +1582,11 @@
     msgBox.classList.remove('fade-in');
     void msgBox.offsetWidth; // reflow to restart animation
     msgBox.classList.add('fade-in');
+    // In conv-mode, scroll to top so the new question is readable from its beginning.
+    // Single-message display (replace, not append) — top is always message start.
+    if (document.documentElement.classList.contains('conv-mode')) {
+      scrollBody.scrollTop = 0;
+    }
   }
 
   function setInputEnabled(on) {

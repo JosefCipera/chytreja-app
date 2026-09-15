@@ -300,6 +300,126 @@ check(/\.step-num\s*\{[^}]*font-size:\s*11px/.test(landing),         '.step-num 
 check(/\.cenik-fine\s*\{[^}]*font-size:\s*12px/.test(landing),       '.cenik-fine stays 12px (fine print)');
 check(/\.btn-link-sm\s*\{[^}]*font-size:\s*13px/.test(landing),      '.btn-link-sm stays 13px (action link)');
 
+// ── T19: conversation mode — conv-mode CSS + JS contract ─────────────────────
+//
+// Contract:
+//   - CSS: html.conv-mode locks viewport, hides marketing sections
+//   - enterConv() adds conv-mode class and removes input-bar--out
+//   - IntersectionObserver has conv-mode early return (before focus guard)
+//   - AHA/SAFETY can still hide inputBar via hidden (html attribute — not CSS class)
+//   - Reload with history calls enterConv() → conv-mode activated
+
+section('T19 — conversation mode: conv-mode CSS + JS contract');
+
+// CSS: html.conv-mode viewport lock
+check(
+  landing.includes('html.conv-mode') && landing.includes('height: 100dvh'),
+  'CSS: html.conv-mode sets height: 100dvh'
+);
+check(
+  /html\.conv-mode\s+body\s*\{[^}]*overflow:\s*hidden/.test(landing) ||
+  /html\.conv-mode body\s*\{[^}]*overflow:\s*hidden/.test(landing),
+  'CSS: html.conv-mode body sets overflow: hidden'
+);
+check(
+  /html\.conv-mode body\s*\{[^}]*display:\s*flex/.test(landing) ||
+  /html\.conv-mode\s+body\s*\{[^}]*display:\s*flex/.test(landing),
+  'CSS: html.conv-mode body sets display: flex'
+);
+
+// CSS: marketing sections hidden in conv-mode
+const marketingSections = ['#jak-funguje', '#priklad', '#co-ted', '#zakladatele', '#o-nas'];
+for (const id of marketingSections) {
+  check(
+    landing.includes(`html.conv-mode ${id}`) || landing.includes(`html.conv-mode\n    ${id}`),
+    `CSS: html.conv-mode hides ${id}`
+  );
+}
+
+// CSS: .scroll-body becomes scrollable container in conv-mode
+check(
+  /html\.conv-mode \.scroll-body\s*\{[^}]*overflow-y:\s*auto/.test(landing),
+  'CSS: html.conv-mode .scroll-body { overflow-y: auto }'
+);
+check(
+  /html\.conv-mode \.scroll-body\s*\{[^}]*min-height:\s*0/.test(landing),
+  'CSS: html.conv-mode .scroll-body { min-height: 0 } (prevents flex overflow)'
+);
+check(
+  /html\.conv-mode \.scroll-body\s*\{[^}]*flex:\s*1/.test(landing),
+  'CSS: html.conv-mode .scroll-body { flex: 1 }'
+);
+
+// CSS: #inputBar becomes a static flex item in conv-mode (not sticky)
+check(
+  /html\.conv-mode #inputBar\s*\{[^}]*position:\s*relative/.test(landing),
+  'CSS: html.conv-mode #inputBar { position: relative } (reset from sticky)'
+);
+check(
+  /html\.conv-mode #inputBar\s*\{[^}]*flex-shrink:\s*0/.test(landing),
+  'CSS: html.conv-mode #inputBar { flex-shrink: 0 }'
+);
+
+// JS: enterConv() adds conv-mode class to documentElement
+const enterConvBlock = landing.match(/function enterConv\(\)[\s\S]{0,400}/)?.[0] || '';
+check(
+  enterConvBlock.includes("classList.add('conv-mode')"),
+  "enterConv() adds 'conv-mode' to documentElement"
+);
+// JS: enterConv() removes input-bar--out (ensures inputBar visible on activation)
+check(
+  enterConvBlock.includes("classList.remove('input-bar--out')"),
+  "enterConv() removes 'input-bar--out' from inputBar"
+);
+
+// JS: IntersectionObserver has conv-mode guard BEFORE focus guard (order matters)
+const ioBlock = landing.match(/new IntersectionObserver[\s\S]{0,400}/)?.[0] || '';
+const convModeGuardIdx  = ioBlock.indexOf('conv-mode');
+const focusGuardIdx     = ioBlock.indexOf('inputBar.contains');
+check(
+  convModeGuardIdx !== -1 && focusGuardIdx !== -1 && convModeGuardIdx < focusGuardIdx,
+  'IO: conv-mode guard appears before focus guard (correct order)'
+);
+check(
+  /document\.documentElement\.classList\.contains\('conv-mode'\)/.test(ioBlock),
+  'IO: conv-mode guard checks documentElement.classList.contains("conv-mode")'
+);
+
+// JS: focus guard (f817c337) preserved unchanged
+check(
+  ioBlock.includes('inputBar.contains(document.activeElement)'),
+  'IO: f817c337 focus guard preserved'
+);
+
+// JS: AHA/SAFETY can still hide inputBar via .hidden (html attribute — independent of CSS class)
+check(
+  landing.includes('inputBar.hidden = true'),
+  'inputBar.hidden = true still present (AHA/SAFETY path, independent of CSS class)'
+);
+check(
+  /showHandoffPending[\s\S]{0,200}inputBar\.hidden\s*=\s*true/.test(landing) ||
+  /inputBar\.hidden\s*=\s*true[\s\S]{0,600}showHandoffPending/.test(landing),
+  'showHandoffPending() sets inputBar.hidden = true (AHA flow unaffected by conv-mode CSS)'
+);
+
+// JS: reload with history calls enterConv() → conv-mode activated
+const reloadBlock = landing.match(/history\.length > 0[\s\S]{0,300}/)?.[0] || '';
+check(
+  reloadBlock.includes('enterConv()'),
+  'reload with history > 0 calls enterConv() (conv-mode activated on resume)'
+);
+
+// JS: showMsg scrolls scroll-body to top in conv-mode
+const showMsgBlock = landing.match(/function showMsg\(text\)[\s\S]{0,600}/)?.[0] || '';
+check(
+  showMsgBlock.includes('conv-mode') && showMsgBlock.includes('scrollTop = 0'),
+  'showMsg() scrolls scrollBody to top in conv-mode'
+);
+check(
+  showMsgBlock.includes('conv-mode') && !showMsgBlock.includes('scrollTop = scrollHeight'),
+  'showMsg() uses scrollTop=0 (not scrollHeight — would skip message start for long answers)'
+);
+
 // ── Results ───────────────────────────────────────────────────────────────────
 
 console.log(`\n${'─'.repeat(60)}`);
