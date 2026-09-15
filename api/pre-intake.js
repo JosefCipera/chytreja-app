@@ -54,6 +54,11 @@ export function classifyTemporalContext(rawText) {
 
 const VALID_OUTCOMES = new Set(['ASK', 'AHA', 'NOT_ENOUGH_YET']);
 
+// Canonical values for activity_level in daily_checkin.movement_level.
+// DB constraint: CHECK (movement_level IN ('low','medium','high')).
+// Any other value causes a Supabase check-constraint violation (STOP #16).
+const VALID_ACTIVITY_LEVELS = new Set(['low', 'medium', 'high']);
+
 // ── Emergency fail-safe (deterministic, pre-Haiku, no AI judgment) ─────────────
 //
 // Conservative: ambiguous single signals (omdlel, bolí na hrudi, špatně mluvím)
@@ -139,13 +144,14 @@ ${questionCount >= MAX_QUESTIONS ? 'POZOR: Limit otázek dosažen. NESMÍŠ vrá
 
 ═══ structured_facts[] — POVOLENÉ event_type ═══
 NEW_MEASUREMENT             — uživatel uvede explicitní číselnou hodnotu
-  payload: { "obs_type": "weight_kg|lab_ldl|lab_hdl|lab_hba1c|lab_glucose_fasting|lab_crp|lab_uric_acid|lab_apob|stress_1_5|sleep_hours|activity_level|steps_day", "value": číslo }
+  payload: { "obs_type": "weight_kg|lab_ldl|lab_hdl|lab_hba1c|lab_glucose_fasting|lab_crp|lab_uric_acid|lab_apob|stress_1_5|sleep_hours|steps_day", "value": číslo }
 
 NEW_CONSTRAINT              — uživatel explicitně uvede fyzické omezení nebo úraz
   payload: { "affected_area": "koleno|záda|rameno|kyčel|...", "source_type": "injury|medical_restriction" }
 
 ANSWER_TO_EVIDENCE_QUESTION — uživatel přímo odpovídá na konkrétní otázku o evidenci
-  payload: { "evidence_type": "vstat_ze_zeme|gait_stability|recent_falls|vynest_nakup|...", "value": odpověď }
+  payload: { "evidence_type": "vstat_ze_zeme|gait_stability|recent_falls|vynest_nakup|activity_level|...", "value": odpověď }
+  POZOR activity_level: value MUSÍ být přesně "low"|"medium"|"high" (anglicky, lowercase) — nikdy číslo ani český překlad
 
 ═══ deferred_facts[] — VŽDY tyto typy ═══
 medication_mention   — JAKÁKOLIV zmínka o léku, dávce, medikaci
@@ -224,6 +230,16 @@ export function sanitizeFacts(parsed, now) {
   for (const f of rawStructured) {
     if (!f || typeof f !== 'object') continue;
     if (ALLOWED_STRUCTURED_TYPES.has(f.event_type)) {
+      // activity_level boundary guard — prevents DB check-constraint violation.
+      // NEW_MEASUREMENT path: activity_level is categorical (low|medium|high), never numeric.
+      //   Drop as defense-in-depth; prompt no longer allows this obs_type.
+      if (f.event_type === 'NEW_MEASUREMENT' && f.payload?.obs_type === 'activity_level') continue;
+      // ANSWER_TO_EVIDENCE_QUESTION path: only canonical values survive to persistence.
+      //   Non-canonical value (Czech word, number, wrong casing) → drop silently.
+      if (f.event_type === 'ANSWER_TO_EVIDENCE_QUESTION' &&
+          f.payload?.evidence_type === 'activity_level' &&
+          !VALID_ACTIVITY_LEVELS.has(f.payload?.value)) continue;
+
       structured_facts.push({
         event_type:      f.event_type,
         payload:         (f.payload && typeof f.payload === 'object') ? f.payload : {},

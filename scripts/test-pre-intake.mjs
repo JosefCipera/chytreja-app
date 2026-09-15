@@ -357,6 +357,77 @@ sep('T14: sanitizeFacts — temporal_context + acute gait guard (no API)');
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// T15: activity_level boundary validation — no API key (STOP #16 regression)
+// ─────────────────────────────────────────────────────────────────────────────
+sep('T15: activity_level boundary validation (STOP #16 regression, no API)');
+{
+  const { sanitizeFacts } = await import('../api/pre-intake.js');
+  const NOW = '2026-09-15T12:00:00.000Z';
+
+  // NEW_MEASUREMENT with obs_type=activity_level must be dropped (defense-in-depth)
+  {
+    const parsed = {
+      outcome: 'AHA', message: 'ok',
+      structured_facts: [
+        { event_type: 'NEW_MEASUREMENT', payload: { obs_type: 'activity_level', value: 1 },      raw_text: 'Moc se nehýbám.', utterance_index: 0 },
+        { event_type: 'NEW_MEASUREMENT', payload: { obs_type: 'activity_level', value: 'nízký' }, raw_text: 'Nízká aktivita.', utterance_index: 0 },
+        { event_type: 'NEW_MEASUREMENT', payload: { obs_type: 'weight_kg',      value: 88 },      raw_text: 'Vážím 88 kg.',    utterance_index: 1 },
+      ],
+      deferred_facts: [],
+    };
+    const { structured_facts } = sanitizeFacts(parsed, NOW);
+    check(!structured_facts.some(f => f.event_type === 'NEW_MEASUREMENT' && f.payload?.obs_type === 'activity_level'),
+      'NEW_MEASUREMENT activity_level (numeric) dropped — no DB write');
+    check(!structured_facts.some(f => f.event_type === 'NEW_MEASUREMENT' && f.payload?.value === 'nízký'),
+      'NEW_MEASUREMENT activity_level (Czech string) dropped');
+    check(structured_facts.some(f => f.payload?.obs_type === 'weight_kg'),
+      'weight_kg NEW_MEASUREMENT passes through unaffected');
+  }
+
+  // ANSWER_TO_EVIDENCE_QUESTION with activity_level: canonical values pass through
+  {
+    for (const val of ['low', 'medium', 'high']) {
+      const parsed = {
+        outcome: 'AHA', message: 'ok',
+        structured_facts: [
+          { event_type: 'ANSWER_TO_EVIDENCE_QUESTION', payload: { evidence_type: 'activity_level', value: val }, raw_text: `Pohyb: ${val}.`, utterance_index: 0 },
+        ],
+        deferred_facts: [],
+      };
+      const { structured_facts } = sanitizeFacts(parsed, NOW);
+      check(structured_facts.some(f => f.payload?.evidence_type === 'activity_level' && f.payload?.value === val),
+        `ANSWER activity_level="${val}" passes through (canonical)`);
+    }
+  }
+
+  // ANSWER_TO_EVIDENCE_QUESTION with activity_level: non-canonical values dropped
+  {
+    const nonCanonical = [
+      ['nízký',    'Czech masculine'],
+      ['nízká',    'Czech feminine'],
+      ['střední',  'Czech medium'],
+      ['vysoký',   'Czech high'],
+      [1,          'numeric 1'],
+      [3,          'numeric 3'],
+      ['Low',      'wrong casing'],
+      ['minimal',  'English synonym'],
+    ];
+    for (const [val, label] of nonCanonical) {
+      const parsed = {
+        outcome: 'AHA', message: 'ok',
+        structured_facts: [
+          { event_type: 'ANSWER_TO_EVIDENCE_QUESTION', payload: { evidence_type: 'activity_level', value: val }, raw_text: `Pohyb: ${val}.`, utterance_index: 0 },
+        ],
+        deferred_facts: [],
+      };
+      const { structured_facts } = sanitizeFacts(parsed, NOW);
+      check(!structured_facts.some(f => f.payload?.evidence_type === 'activity_level'),
+        `ANSWER activity_level="${val}" (${label}) dropped — no DB write`);
+    }
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Integration tests — require ANTHROPIC_API_KEY
 // ─────────────────────────────────────────────────────────────────────────────
 
