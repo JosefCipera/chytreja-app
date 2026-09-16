@@ -68,12 +68,12 @@ export const TEMPORAL_SCOPES = {
 
 // ── Global pre-processing: speaker certainty ──────────────────────────────────
 // Detects whether the speaker hedges the whole utterance.
-// "Myslím, že" / "zdá se mi" / "asi" → UNCERTAIN.
+// "asi" is NOT here: it marks numerical approximation (precision=APPROXIMATE),
+// not epistemic uncertainty about whether the assertion holds.
 
 const UNCERTAINTY_PATTERNS = [
   /myslím,?\s+(že|si)\b/i,
   /zdá\s+se\s+mi\b/i,
-  /\basi\b/i,
   /\bmožná\b/i,
   /\bsnad\b/i,
   /\btuším\b/i,
@@ -186,19 +186,27 @@ const EXTRACTORS = [
   },
 
   // ── SELF_REPORTED_MEASUREMENT: body weight with value ────────────────────────
+  // "Vážím 95 kilo."      → precision = EXACT,        speaker_certainty = ASSERTED
+  // "Vážím asi 95 kilo."  → precision = APPROXIMATE,  speaker_certainty = ASSERTED
+  // "Myslím, že vážím 95 kilo." → precision = EXACT,  speaker_certainty = UNCERTAIN
+  //
+  // "asi" modifies the number (precision), not the assertion itself.
+  // precision and speaker_certainty are independent: the word "asi" carries
+  // precision information only; speaker_certainty comes from UNCERTAINTY_PATTERNS.
   {
-    match: text => /vážím\s+\d/i.test(text),
+    match: text => /vážím\s+(?:asi\s+)?\d/i.test(text),
     extract: text => {
-      const m = text.match(/vážím\s+(\d+(?:[.,]\d+)?)\s*(kilo|kg|kilogramů)?/i);
+      const m = text.match(/vážím\s+(asi\s+)?(\d+(?:[.,]\d+)?)\s*(kilo|kg|kilogramů)?/i);
       if (!m) return null;
-      const val = parseFloat(m[1].replace(',', '.'));
+      const isApproximate = !!m[1];
+      const val = parseFloat(m[2].replace(',', '.'));
       return {
         claim_type: CLAIM_TYPES.SELF_REPORTED_MEASUREMENT,
         subject:    'body_weight',
         entity:     { ref: 'self', type: ENTITY_TYPES.PERSON_SELF },
         value:      val,
         unit:       'kg',
-        precision:  PRECISION.EXACT,
+        precision:  isApproximate ? PRECISION.APPROXIMATE : PRECISION.EXACT,
         temporal:   { scope: TEMPORAL_SCOPES.CURRENT, explicit: false },
       };
     },

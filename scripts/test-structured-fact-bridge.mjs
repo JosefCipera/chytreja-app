@@ -481,6 +481,96 @@ sep('NEG: Contract schema — all facts have required fields');
     'NEG-SCHEMA: all entity.types are from locked set');
 }
 
+// ── STOP17: precision ≠ speaker_certainty — independence proof ────────────────
+
+sep('T17-A: "Vážím asi 95 kilo." → APPROXIMATE + ASSERTED');
+
+{
+  const facts = extract('Vážím asi 95 kilo.');
+  const f = facts.find(f => f.claim_type === CLAIM_TYPES.SELF_REPORTED_MEASUREMENT);
+  check(!!f,
+    'T17-A-1: claim_type = SELF_REPORTED_MEASUREMENT');
+  check(f?.value === 95,
+    'T17-A-2: value = 95', String(f?.value));
+  check(f?.unit === 'kg',
+    'T17-A-3: unit = kg', f?.unit);
+  check(f?.precision === PRECISION.APPROXIMATE,
+    'T17-A-4: precision = APPROXIMATE ("asi" modifies the number)', f?.precision);
+  check(f?.speaker_certainty === SPEAKER_CERTAINTY.ASSERTED,
+    'T17-A-5: speaker_certainty = ASSERTED ("asi" does NOT hedge the assertion)', f?.speaker_certainty);
+}
+
+sep('T17-B: "Vážím 95 kilo." → EXACT + ASSERTED');
+
+{
+  const facts = extract('Vážím 95 kilo.');
+  const f = facts.find(f => f.claim_type === CLAIM_TYPES.SELF_REPORTED_MEASUREMENT);
+  check(!!f,
+    'T17-B-1: claim_type = SELF_REPORTED_MEASUREMENT');
+  check(f?.value === 95,
+    'T17-B-2: value = 95', String(f?.value));
+  check(f?.precision === PRECISION.EXACT,
+    'T17-B-3: precision = EXACT', f?.precision);
+  check(f?.speaker_certainty === SPEAKER_CERTAINTY.ASSERTED,
+    'T17-B-4: speaker_certainty = ASSERTED', f?.speaker_certainty);
+}
+
+sep('T17-C: "Myslím, že vážím 95 kilo." → EXACT + UNCERTAIN');
+
+{
+  const facts = extract('Myslím, že vážím 95 kilo.');
+  const f = facts.find(f => f.claim_type === CLAIM_TYPES.SELF_REPORTED_MEASUREMENT);
+  check(!!f,
+    'T17-C-1: claim_type = SELF_REPORTED_MEASUREMENT');
+  check(f?.value === 95,
+    'T17-C-2: value = 95', String(f?.value));
+  check(f?.precision === PRECISION.EXACT,
+    'T17-C-3: precision = EXACT (95 is exact; "myslím, že" hedges the assertion, not the number)', f?.precision);
+  check(f?.speaker_certainty === SPEAKER_CERTAINTY.UNCERTAIN,
+    'T17-C-4: speaker_certainty = UNCERTAIN (from "myslím, že")', f?.speaker_certainty);
+}
+
+sep('T17-D: "Zdá se mi, že mám vysoký tlak." → QUALITATIVE + UNCERTAIN');
+
+{
+  const facts = extract('Zdá se mi, že mám vysoký tlak.');
+  const f = facts.find(f => f.subject === 'blood_pressure');
+  check(!!f,
+    'T17-D-1: blood_pressure fact extracted');
+  check(f?.precision === PRECISION.QUALITATIVE,
+    'T17-D-2: precision = QUALITATIVE', f?.precision);
+  check(f?.speaker_certainty === SPEAKER_CERTAINTY.UNCERTAIN,
+    'T17-D-3: speaker_certainty = UNCERTAIN (from "zdá se mi")', f?.speaker_certainty);
+}
+
+sep('T17-GUARD: APPROXIMATE does NOT imply UNCERTAIN');
+
+{
+  // The semantic independence guard:
+  // "asi" → precision=APPROXIMATE, speaker_certainty=ASSERTED
+  // "myslím, že" → precision unchanged, speaker_certainty=UNCERTAIN
+  // These are orthogonal dimensions.
+  const approxFact = extract('Vážím asi 95 kilo.')
+    .find(f => f.claim_type === CLAIM_TYPES.SELF_REPORTED_MEASUREMENT);
+  const uncertainFact = extract('Myslím, že vážím 95 kilo.')
+    .find(f => f.claim_type === CLAIM_TYPES.SELF_REPORTED_MEASUREMENT);
+
+  check(
+    approxFact?.precision === PRECISION.APPROXIMATE &&
+    approxFact?.speaker_certainty === SPEAKER_CERTAINTY.ASSERTED,
+    'T17-GUARD-1: APPROXIMATE + ASSERTED coexist ("asi" → precision only)',
+  );
+  check(
+    uncertainFact?.precision === PRECISION.EXACT &&
+    uncertainFact?.speaker_certainty === SPEAKER_CERTAINTY.UNCERTAIN,
+    'T17-GUARD-2: EXACT + UNCERTAIN coexist ("myslím, že" → certainty only)',
+  );
+  check(
+    approxFact?.speaker_certainty !== SPEAKER_CERTAINTY.UNCERTAIN,
+    'T17-GUARD-3: APPROXIMATE does NOT force UNCERTAIN — they are independent',
+  );
+}
+
 // ── Results ────────────────────────────────────────────────────────────────────
 
 console.log('\n══ STRUCTURED FACT BRIDGE #1 TESTS ════════════════════════');
