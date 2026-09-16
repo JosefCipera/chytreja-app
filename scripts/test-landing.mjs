@@ -609,6 +609,59 @@ check(
   'CSS: #ze-zivota hidden in conv-mode'
 );
 
+// ── T22: T0 Step 3 — duplicate examples removed, flow retained ───────────────
+
+section('T22 — T0 Step 3: duplicate examples removed, Právě proto + flow retained');
+
+// A) Old duplicate headline removed
+check(
+  !landing.includes('Některé problémy nevidíš'),
+  'old duplicate headline "Některé problémy nevidíš" removed'
+);
+// B) Old four examples removed
+check(
+  !landing.includes('Zjistili mi arytmii'),
+  'old example (arytmie) removed'
+);
+check(
+  !landing.includes('Cukr mám trochu vyšší'),
+  'old example (cukr) removed'
+);
+check(
+  !landing.includes('Beru léky tak, jak mi je předepsali'),
+  'old example (léky) removed'
+);
+check(
+  !landing.includes('Začal jsem cvičit. Dělám něco pro své zdraví'),
+  'old example (cvičení) removed'
+);
+// C) "Právě proto" kept
+check(
+  landing.includes('Právě proto vzniklo Chytré já'),
+  '"Právě proto vzniklo Chytré já." retained'
+);
+// D) Flow schema kept
+check(
+  landing.includes('Poznám tě') && landing.includes('Vedu tě dál'),
+  'flow schema (Poznám tě → Vedu tě dál) retained'
+);
+check(
+  landing.includes('flow-schema'),
+  '.flow-schema element retained'
+);
+// E) Ze života section unchanged
+check(
+  landing.includes('id="ze-zivota"') && landing.includes('Bereš několik léků'),
+  '#ze-zivota from T0 Step 2 unchanged'
+);
+// Removed CSS classes must not appear in HTML (orphaned selectors still ok in CSS)
+check(
+  !landing.includes('class="priklad-wrap"') &&
+  !landing.includes('class="priklad-list"') &&
+  !landing.includes('class="priklad-item"'),
+  'removed HTML classes (priklad-wrap/list/item) no longer in HTML'
+);
+
 // ── Results ───────────────────────────────────────────────────────────────────
 
 console.log(`\n${'─'.repeat(60)}`);
