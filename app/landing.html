@@ -473,6 +473,7 @@
       flex-direction: column;
     }
     html.conv-mode #jak-funguje,
+    html.conv-mode #ze-zivota,
     html.conv-mode #priklad,
     html.conv-mode #co-ted,
     html.conv-mode #zakladatele,
@@ -1269,6 +1270,42 @@
       .hero-desc { display: none; }
       .btn-try { font-size: 15px; padding: 13px 30px; }
     }
+
+    /* ── Ze života (T0 Step 2) ─────────────────────────────────────────── */
+    #ze-zivota {
+      max-width: 560px;
+      margin: 0 auto;
+      padding: clamp(72px, 12vh, 112px) 24px clamp(80px, 13vh, 120px);
+      border-top: 1px solid var(--border);
+    }
+    .chj-quotes {
+      display: flex;
+      flex-direction: column;
+      gap: clamp(28px, 5vh, 40px);
+      margin-bottom: clamp(56px, 9vh, 80px);
+    }
+    .chj-quote {
+      font-family: 'Urbanist', sans-serif;
+      font-size: clamp(16px, 3vw, 20px);
+      font-weight: 300;
+      color: var(--text-mid);
+      line-height: 1.65;
+      text-wrap: balance;
+      padding-left: 20px;
+      border-left: 2px solid rgba(60, 169, 189, 0.22);
+    }
+    .ze-zivota-cta {
+      text-align: center;
+    }
+    .ze-zivota-cta-heading {
+      font-family: 'Urbanist', sans-serif;
+      font-size: clamp(18px, 3.5vw, 24px);
+      font-weight: 500;
+      color: var(--text);
+      line-height: 1.4;
+      text-wrap: balance;
+      margin-bottom: 24px;
+    }
   </style>
 </head>
 <body>
@@ -1361,38 +1398,63 @@
 
 </div><!-- /.scroll-body -->
 
-<!-- Jak funguje -->
+<!-- Jak mě chrání? -->
 <section id="jak-funguje" aria-labelledby="jf-heading">
-  <p class="jf-eyebrow">Jak Chytré já funguje</p>
-  <h2 class="jf-heading" id="jf-heading">Tři jednoduché kroky.</h2>
+  <p class="jf-eyebrow">Jak mě chrání?</p>
+  <h2 class="jf-heading" id="jf-heading">Neřešíme jen to, co je vidět.</h2>
 
   <ol class="steps" role="list">
 
     <li class="step">
       <span class="step-num" aria-hidden="true">01</span>
       <div class="step-body">
-        <h3 class="step-title">Poznám tě a to, kam chceš dojít</h3>
-        <p class="step-desc">Postupně si skládám tvůj obraz a zjišťuji, kde právě jsi.</p>
+        <h3 class="step-title">Vidím celek</h3>
+        <p class="step-desc">Dávám do souvislostí to, co se děje s tebou a kolem tebe.</p>
       </div>
     </li>
 
     <li class="step">
       <span class="step-num" aria-hidden="true">02</span>
       <div class="step-body">
-        <h3 class="step-title">Dívám se i dopředu</h3>
-        <p class="step-desc">Dávám věci do souvislostí a sleduji, kam směřuješ.</p>
+        <h3 class="step-title">Hledám příčinu</h3>
+        <p class="step-desc">Neřeším jen příznak. Hledám, co za ním může skutečně být.</p>
       </div>
     </li>
 
     <li class="step">
       <span class="step-num" aria-hidden="true">03</span>
       <div class="step-body">
-        <h3 class="step-title">Doporučím ti nejlepší další krok</h3>
-        <p class="step-desc">Vyberu jednu věc, která tě může nejvíc posunout k tvému cíli.</p>
+        <h3 class="step-title">Dívám se dopředu</h3>
+        <p class="step-desc">Sleduji, kam směřuješ, a upozorním tě, když má smysl změnit směr.</p>
+      </div>
+    </li>
+
+    <li class="step">
+      <span class="step-num" aria-hidden="true">04</span>
+      <div class="step-body">
+        <h3 class="step-title">Hlídám tvoje rozhodnutí</h3>
+        <p class="step-desc">Když něco nedává smysl vzhledem k tomu, co o tobě vím a čeho chceš dosáhnout, řeknu ti to.</p>
       </div>
     </li>
 
   </ol>
+</section>
+
+<!-- Ze života (T0 Step 2) -->
+<section id="ze-zivota">
+  <p class="jf-eyebrow">Ze života</p>
+
+  <div class="chj-quotes">
+    <p class="chj-quote">„Bereš několik léků. Některé se mohou navzájem ovlivňovat. Tohle bych prověřil."</p>
+    <p class="chj-quote">„Chceš zhubnout. Ale možná není hlavní problém v tom, co jíš. Nejdřív zjistíme, co tě skutečně brzdí."</p>
+    <p class="chj-quote">„Dnes jsou tvoje hodnoty v pořádku. Jejich vývoj ale ukazuje, že za pár let už být nemusí."</p>
+    <p class="chj-quote">„Chceš začít víc cvičit. Podle toho, co o tobě vím, bych teď ale začal něčím jiným."</p>
+  </div>
+
+  <div class="ze-zivota-cta">
+    <p class="ze-zivota-cta-heading">Co by Chytré já řeklo tobě?</p>
+    <button id="secBtn" class="btn-try">Vyzkoušet na sobě</button>
+  </div>
 </section>
 
 <!-- Příklad · Zdraví -->
@@ -1885,6 +1947,15 @@
   // The greeting is displayed via showMsg() only — NOT pushed to history,
   // so it is never sent to /api/pre-intake as a user message.
   document.getElementById('tryBtn').addEventListener('click', () => {
+    enterConv();
+    showMsg('S čím ti mohu pomoci?');
+    setInputEnabled(true);
+    msgInput.focus();
+  });
+
+  // ── Secondary CTA — „Vyzkoušet na sobě" (Ze života) ─────────────────
+  // Same entry flow as tryBtn — both lead to identical conversation mode.
+  document.getElementById('secBtn').addEventListener('click', () => {
     enterConv();
     showMsg('S čím ti mohu pomoci?');
     setInputEnabled(true);

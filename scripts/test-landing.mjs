@@ -328,7 +328,7 @@ check(
 );
 
 // CSS: marketing sections hidden in conv-mode
-const marketingSections = ['#jak-funguje', '#priklad', '#co-ted', '#zakladatele', '#o-nas'];
+const marketingSections = ['#jak-funguje', '#ze-zivota', '#priklad', '#co-ted', '#zakladatele', '#o-nas'];
 for (const id of marketingSections) {
   check(
     landing.includes(`html.conv-mode ${id}`) || landing.includes(`html.conv-mode\n    ${id}`),
@@ -565,6 +565,48 @@ check(
 check(
   landing.includes('.btn-learn'),
   'CSS: .btn-learn class defined'
+);
+
+// ── T21: T0 Step 2 — Jak mě chrání? + Ze života ──────────────────────────────
+
+section('T21 — T0 Step 2: Jak mě chrání? + Ze života');
+
+// #jak-funguje new content
+check(
+  landing.includes('class="jf-eyebrow">Jak mě chrání?'),
+  '#jak-funguje: eyebrow "Jak mě chrání?" present'
+);
+check(
+  landing.includes('Neřešíme jen to, co je vidět.'),
+  '#jak-funguje: heading present'
+);
+check(landing.includes('Vidím celek'),             '#jak-funguje: step 01 present');
+check(landing.includes('Hledám příčinu'),          '#jak-funguje: step 02 present');
+check(landing.includes('Dívám se dopředu'),        '#jak-funguje: step 03 present');
+check(landing.includes('Hlídám tvoje rozhodnutí'), '#jak-funguje: step 04 present');
+
+// #ze-zivota section
+check(landing.includes('id="ze-zivota"'),          '#ze-zivota section exists');
+check(landing.includes('>Ze života<'),             '#ze-zivota: eyebrow present');
+check(landing.includes('Bereš několik léků'),      '#ze-zivota: quote 1 (léky) present');
+check(landing.includes('Co by Chytré já řeklo tobě?'), '#ze-zivota: CTA heading present');
+check(landing.includes('id="secBtn"'),             '#ze-zivota: secBtn exists');
+check(landing.includes('Vyzkoušet na sobě'),       '#ze-zivota: button text present');
+
+// secBtn uses same conv entry as tryBtn — match the addEventListener call
+const secBtnBlock = landing.match(/getElementById\('secBtn'\)\.addEventListener[\s\S]{0,400}/)?.[0] || '';
+check(secBtnBlock.includes('enterConv()'),         'secBtn handler calls enterConv()');
+check(
+  secBtnBlock.includes('showMsg(') &&
+  (secBtnBlock.includes("'S čím ti mohu pomoci?'") || secBtnBlock.includes('"S čím ti mohu pomoci?"')),
+  'secBtn shows same initial CHJ message as tryBtn'
+);
+check(!secBtnBlock.includes('history.push'),       'secBtn does NOT push to history');
+
+// #ze-zivota must be hidden in conv-mode
+check(
+  landing.includes('html.conv-mode #ze-zivota'),
+  'CSS: #ze-zivota hidden in conv-mode'
 );
 
 // ── Results ───────────────────────────────────────────────────────────────────
