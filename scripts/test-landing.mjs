@@ -34,7 +34,7 @@ section('T1 — landing.html: exists and has required content');
 check(landing.length > 100,                           'landing.html exists and is non-empty');
 check(landing.includes('Chytré já'),                  'contains "Chytré já"');
 check(landing.includes('Pro život, jaký chceš žít'),  'tagline present');
-check(landing.includes('Zdraví si přejeme všichni'),  'opening prompt present');
+check(landing.includes('Chci to vyzkoušet'),           'hero CTA button present');
 check(landing.includes('Chceš, abych si tě pamatoval'), 'auth CTA text present');
 check(landing.includes('Přihlásit'),                  '"Přihlásit" nav link present');
 check(landing.includes('Řekni mi'),                   'input placeholder present');
@@ -455,6 +455,116 @@ check(
 check(
   landing.includes('history.length > 0') && landing.includes('enterConv()'),
   'reload with history > 0 calls enterConv() (ASK-saved session enables this path)'
+);
+
+// ── T20: T0 Step 1 — hero CTA entry flow ─────────────────────────────────────
+//
+// Contract:
+//   - Hero has new protection question + description + two CTA buttons
+//   - #inputBar starts hidden via HTML attribute (not CSS class)
+//   - enterConv() sets inputBar.hidden = false before removing input-bar--out
+//   - tryBtn handler: enterConv() → showMsg('S čím ti mohu pomoci?') → NOT sent to pre-intake
+//   - "Jak mě chrání?" is a plain anchor to #jak-funguje — no conv mode trigger
+
+section('T20 — T0 Step 1: hero CTA entry flow');
+
+// Hero content
+check(
+  landing.includes('Chceš být pod ochranou Chytrého já?'),
+  'hero: protection question present'
+);
+check(
+  landing.includes('Chytré já vidí tvůj život jako celek'),
+  'hero: description text present'
+);
+check(
+  landing.includes('Chci to vyzkoušet'),
+  'hero: try button text present'
+);
+check(
+  landing.includes('Jak mě chrání?'),
+  'hero: learn more link text present'
+);
+check(
+  landing.includes('hero-cta-group'),
+  'hero: .hero-cta-group container present'
+);
+check(
+  landing.includes('class="btn-try"'),
+  'hero: btn-try class applied to button'
+);
+check(
+  landing.includes('class="btn-learn"'),
+  'hero: btn-learn class applied to link'
+);
+
+// "Jak mě chrání?" must be a plain anchor — no conv mode side effect
+check(
+  landing.includes('href="#jak-funguje"') && landing.includes('btn-learn'),
+  '"Jak mě chrání?" is an anchor to #jak-funguje (scroll only, no JS handler)'
+);
+
+// inputBar starts hidden
+check(
+  landing.includes('id="inputBar" hidden'),
+  '#inputBar has HTML hidden attribute (not visible on initial landing)'
+);
+
+// enterConv() unhides inputBar BEFORE removing class
+const enterConvT20 = landing.match(/function enterConv\(\)[\s\S]{0,500}/)?.[0] || '';
+check(
+  enterConvT20.includes('inputBar.hidden = false'),
+  'enterConv() sets inputBar.hidden = false'
+);
+const hiddenFalseIdx = enterConvT20.indexOf('inputBar.hidden = false');
+const removeOutIdx   = enterConvT20.indexOf("classList.remove('input-bar--out')");
+check(
+  hiddenFalseIdx !== -1 && removeOutIdx !== -1 && hiddenFalseIdx < removeOutIdx,
+  'enterConv(): inputBar.hidden = false before classList.remove (correct order)'
+);
+
+// tryBtn handler contract — match the addEventListener call, not the HTML element
+const tryBtnBlock = landing.match(/getElementById\('tryBtn'\)\.addEventListener[\s\S]{0,400}/)?.[0] || '';
+check(
+  tryBtnBlock.includes('enterConv()'),
+  'tryBtn handler calls enterConv()'
+);
+check(
+  tryBtnBlock.includes('showMsg('),
+  'tryBtn handler calls showMsg()'
+);
+check(
+  tryBtnBlock.includes("'S čím ti mohu pomoci?'") ||
+  tryBtnBlock.includes('"S čím ti mohu pomoci?"'),
+  "tryBtn shows 'S čím ti mohu pomoci?' as initial CHJ message"
+);
+// Initial greeting must NOT be pushed to history
+check(
+  !tryBtnBlock.includes('history.push'),
+  'tryBtn does NOT push to history (initial greeting never sent to pre-intake)'
+);
+// setInputEnabled(true) called after enterConv
+check(
+  tryBtnBlock.includes('setInputEnabled(true)'),
+  'tryBtn calls setInputEnabled(true) after enterConv()'
+);
+
+// CSS classes present
+check(
+  landing.includes('.hero-protection'),
+  'CSS: .hero-protection class defined'
+);
+check(
+  landing.includes('.hero-desc'),
+  'CSS: .hero-desc class defined'
+);
+check(
+  landing.includes('.btn-try'),
+  'CSS: .btn-try class defined'
+);
+check(
+  landing.includes('.btn-learn'),
+  'CSS: .btn-learn class defined'
 );
 
 // ── Results ───────────────────────────────────────────────────────────────────

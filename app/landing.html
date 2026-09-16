@@ -1213,6 +1213,62 @@
     }
 
     [hidden] { display: none !important; }
+
+    /* ── Hero CTA buttons (T0 Step 1 entry flow) ────────────────────────── */
+    .hero-protection {
+      font-family: 'Urbanist', sans-serif;
+      font-size: clamp(20px, 4.2vw, 28px);
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.3;
+      text-wrap: balance;
+      margin-bottom: 14px;
+    }
+    .hero-desc {
+      font-size: 14px;
+      color: var(--text-dim);
+      line-height: 1.8;
+      max-width: 400px;
+      margin-bottom: 32px;
+      text-wrap: balance;
+    }
+    .hero-cta-group {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+    }
+    .btn-try {
+      padding: 14px 36px;
+      background: rgba(60, 169, 189, 0.10);
+      border: 1px solid rgba(60, 169, 189, 0.30);
+      border-radius: 32px;
+      color: var(--accent);
+      font-size: 16px;
+      font-family: 'Inter', sans-serif;
+      font-weight: 500;
+      cursor: pointer;
+      letter-spacing: 0.2px;
+      transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+    }
+    .btn-try:hover {
+      background: rgba(60, 169, 189, 0.18);
+      border-color: rgba(60, 169, 189, 0.48);
+      box-shadow: 0 0 24px rgba(60, 169, 189, 0.10);
+    }
+    .btn-learn {
+      font-size: 14px;
+      color: var(--text-dim);
+      text-decoration: none;
+      letter-spacing: 0.2px;
+      transition: color 0.2s;
+    }
+    .btn-learn:hover { color: var(--text-mid); }
+    @media (max-width: 639px) {
+      .hero-desc { display: none; }
+      .btn-try { font-size: 15px; padding: 13px 30px; }
+    }
   </style>
 </head>
 <body>
@@ -1262,7 +1318,12 @@
     <!-- Light core — visual presence of Chytré já -->
     <div class="core" aria-hidden="true"></div>
 
-    <p class="headline-q">Co je pro tebe teď důležité?</p>
+    <p class="hero-protection">Chceš být pod ochranou Chytrého já?</p>
+    <p class="hero-desc">Chytré já vidí tvůj život jako celek. Hlídá, kam směřuješ, hledá příčiny problémů a pomáhá ti vyhnout se rozhodnutím, která tě odvádějí od toho, co chceš.</p>
+    <div class="hero-cta-group">
+      <button id="tryBtn" class="btn-try">Chci to vyzkoušet</button>
+      <a href="#jak-funguje" class="btn-learn">Jak mě chrání? ↓</a>
+    </div>
   </section>
 
   <!-- Conversation area — shown after first message -->
@@ -1473,8 +1534,8 @@
 
 </section>
 
-<!-- Input bar -->
-<footer id="inputBar">
+<!-- Input bar — hidden until enterConv() is called (T0 entry flow) -->
+<footer id="inputBar" hidden>
   <div class="input-wrap">
     <input id="msgInput" type="text" placeholder="Řekni mi…" autocomplete="off" enterkeyhint="send" maxlength="500" aria-label="Vaše odpověď">
     <button id="micBtn" class="btn-icon" aria-label="Nahrát hlas" title="Nahrát hlas" hidden>
@@ -1572,6 +1633,7 @@
   // ── UI helpers ─────────────────────────────────────────────────────────
   function enterConv() {
     document.documentElement.classList.add('conv-mode');
+    inputBar.hidden = false;
     inputBar.classList.remove('input-bar--out');
     hero.classList.add('fade-out');
     conv.hidden = false;
@@ -1817,6 +1879,17 @@
     rec.addEventListener('end',   () => micBtn.classList.remove('listening'));
     rec.addEventListener('error', () => micBtn.classList.remove('listening'));
   }
+
+  // ── Hero CTA — „Chci to vyzkoušet" ───────────────────────────────────
+  // Activates conversation mode and shows the initial CHJ greeting.
+  // The greeting is displayed via showMsg() only — NOT pushed to history,
+  // so it is never sent to /api/pre-intake as a user message.
+  document.getElementById('tryBtn').addEventListener('click', () => {
+    enterConv();
+    showMsg('S čím ti mohu pomoci?');
+    setInputEnabled(true);
+    msgInput.focus();
+  });
 
   // ── Hamburger menu (mobile) ───────────────────────────────────────────
   const menuBtn    = document.getElementById('menuBtn');
