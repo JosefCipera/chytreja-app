@@ -420,6 +420,43 @@ check(
   'showMsg() uses scrollTop=0 (not scrollHeight — would skip message start for long answers)'
 );
 
+// CSS: overscroll-behavior: none prevents pull-to-refresh in conv-mode
+check(
+  /html\.conv-mode \.scroll-body\s*\{[^}]*overscroll-behavior:\s*none/.test(landing),
+  'CSS: html.conv-mode .scroll-body { overscroll-behavior: none } (blocks pull-to-refresh)'
+);
+
+// JS: ASK branch calls saveAnonSession() before re-enabling input
+// Must appear in: outcome === 'ASK' comment block before setInputEnabled(true)
+const askBlock2 = landing.match(/outcome === ['"]ASK['"][\s\S]{0,300}/)?.[0] || '';
+check(
+  askBlock2.includes('saveAnonSession()'),
+  'ASK branch calls saveAnonSession() (session persisted for reload recovery)'
+);
+// saveAnonSession on ASK must come BEFORE setInputEnabled(true) to guarantee persistence
+const askSaveIdx = askBlock2.indexOf('saveAnonSession()');
+const askEnableIdx = askBlock2.indexOf('setInputEnabled(true)');
+check(
+  askSaveIdx !== -1 && askEnableIdx !== -1 && askSaveIdx < askEnableIdx,
+  'ASK: saveAnonSession() called before setInputEnabled(true) (order correct)'
+);
+
+// JS: AHA branch still calls saveAnonSession() (not removed)
+const ahaBlock = landing.match(/outcome === ['"]AHA['"] \|\| outcome === ['"]NOT_ENOUGH_YET['"][\s\S]{0,300}/)?.[0] ||
+                 landing.match(/AHA[\s\S]{0,300}saveAnonSession[\s\S]{0,50}authCta/)?.[0] || '';
+check(
+  landing.match(/AHA[\s\S]{0,200}saveAnonSession\(\)/) !== null ||
+  landing.match(/saveAnonSession\(\)[\s\S]{0,200}authCta\.hidden\s*=\s*false/) !== null,
+  'AHA branch still calls saveAnonSession() (not removed by ASK fix)'
+);
+
+// JS: reload with ASK history restores via enterConv() (existing T14 assertion covers this,
+// but verify the restore block now has saveAnonSession in play via the history.length check)
+check(
+  landing.includes('history.length > 0') && landing.includes('enterConv()'),
+  'reload with history > 0 calls enterConv() (ASK-saved session enables this path)'
+);
+
 // ── Results ───────────────────────────────────────────────────────────────────
 
 console.log(`\n${'─'.repeat(60)}`);

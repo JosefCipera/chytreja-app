@@ -481,6 +481,7 @@
       flex: 1;
       overflow-y: auto;
       min-height: 0;
+      overscroll-behavior: none;
     }
     html.conv-mode #inputBar {
       position: relative;
@@ -1680,6 +1681,7 @@
     }
 
     // outcome === 'ASK': keep conversation going
+    saveAnonSession(); // persist after each exchange so reload can restore conversation
     setInputEnabled(true);
     msgInput.focus();
   }
