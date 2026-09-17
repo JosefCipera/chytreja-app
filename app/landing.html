@@ -300,6 +300,100 @@
       50%       { opacity: 0.58; transform: scale(1.05) rotate(180deg); }
     }
 
+    /* ── Planet section ─────────────────────────────────────────────────── */
+    .planet-section {
+      display: grid;
+      grid-template-areas: "left planet right";
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: 20px;
+      width: 100%;
+      margin: 20px 0 28px;
+    }
+    .planet-section .core { margin: 0; }
+    .features-col {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .features-col--left  { grid-area: left;  align-items: flex-end; }
+    .features-col--right { grid-area: right; align-items: flex-start; }
+    .planet-wrap {
+      grid-area: planet;
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-shrink: 0;
+      padding-bottom: 22px;
+    }
+    .planet-state {
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      white-space: nowrap;
+      opacity: 0.7;
+    }
+    .feature-pill {
+      font-size: 12px;
+      color: var(--text-dim);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 20px;
+      padding: 5px 12px;
+      white-space: nowrap;
+      background: rgba(255, 255, 255, 0.025);
+      letter-spacing: 0.1px;
+    }
+
+    /* ── World switcher ──────────────────────────────────────────────────── */
+    .world-switcher {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      margin-bottom: 24px;
+    }
+    .world-sep {
+      font-size: 13px;
+      color: var(--text-dim);
+      opacity: 0.35;
+      padding: 0 2px;
+      user-select: none;
+    }
+    .world-tab {
+      background: none;
+      border: none;
+      font-size: 13px;
+      font-family: 'Inter', sans-serif;
+      color: var(--text-dim);
+      cursor: default;
+      padding: 4px 7px;
+      border-radius: 6px;
+      letter-spacing: 0.1px;
+    }
+    .world-tab--active {
+      color: var(--text);
+      font-weight: 500;
+    }
+    .world-tab--future {
+      opacity: 0.45;
+      font-style: italic;
+    }
+
+    /* ── CTA hint ────────────────────────────────────────────────────────── */
+    .hero-cta-hint {
+      font-size: 13px;
+      color: var(--text-dim);
+      opacity: 0.65;
+      margin: 0;
+    }
+
     /* ── Question block ─────────────────────────────────────────────────── */
     .section-bridge {
       font-family: 'Urbanist', sans-serif;
@@ -566,8 +660,25 @@
       .core {
         width: clamp(120px, 32vw, 150px);
         height: clamp(120px, 32vw, 150px);
-        margin: 32px auto 36px;
+        margin: 0 auto;
       }
+      .planet-section {
+        grid-template-areas: "planet" "left" "right";
+        grid-template-columns: 1fr;
+        margin: 14px 0 18px;
+        gap: 8px;
+      }
+      .planet-wrap { padding-bottom: 20px; }
+      .features-col {
+        flex-direction: row;
+        gap: 8px;
+        justify-content: center;
+        align-items: center;
+      }
+      .feature-pill { font-size: 11px; padding: 4px 10px; }
+      .world-switcher { margin-bottom: 18px; }
+      .world-tab { font-size: 12px; padding: 3px 5px; }
+      .world-sep { font-size: 12px; }
       .section-bridge { margin-bottom: 10px; }
       .headline-q {
         font-size: clamp(18px, 5.5vw, 24px);
@@ -1316,16 +1427,41 @@
   <!-- Hero — initial state -->
   <section id="hero">
     <h1 class="brand">Chytré já</h1>
-    <p class="tagline">Pro život, jaký chceš žít.</p>
+    <p class="tagline">Pomáhá chránit tvůj život.</p>
 
-    <!-- Light core — visual presence of Chytré já -->
-    <div class="core" aria-hidden="true"></div>
+    <!-- Planet with state and orbiting features -->
+    <div class="planet-section">
+      <div class="features-col features-col--left">
+        <span class="feature-pill">Hlídá rizika</span>
+        <span class="feature-pill">Odhaluje příčiny</span>
+      </div>
 
-    <p class="hero-protection">Chceš být pod ochranou Chytrého já?</p>
-    <p class="hero-desc">Chytré já vidí tvůj život jako celek. Hlídá, kam směřuješ, hledá příčiny problémů a pomáhá ti vyhnout se rozhodnutím, která tě odvádějí od toho, co chceš.</p>
+      <div class="planet-wrap">
+        <div class="core" aria-hidden="true"></div>
+        <p class="planet-state">ZDRAVÍ — DNES</p>
+      </div>
+
+      <div class="features-col features-col--right">
+        <span class="feature-pill">Léky a interakce</span>
+        <span class="feature-pill">Varuje včas</span>
+      </div>
+    </div>
+
+    <!-- World switcher -->
+    <div class="world-switcher" role="group" aria-label="Světy Chytrého já">
+      <button class="world-tab world-tab--active">Zdraví</button>
+      <span class="world-sep" aria-hidden="true">·</span>
+      <button class="world-tab">Produktivita</button>
+      <span class="world-sep" aria-hidden="true">·</span>
+      <button class="world-tab">Byznys</button>
+      <span class="world-sep" aria-hidden="true">·</span>
+      <button class="world-tab world-tab--future">Další?</button>
+    </div>
+
+    <!-- CTA -->
     <div class="hero-cta-group">
-      <button id="tryBtn" class="btn-try">Chci to vyzkoušet</button>
-      <a href="#jak-funguje" class="btn-learn">Jak mě chrání? ↓</a>
+      <button id="tryBtn" class="btn-try">Chci to vyzkoušet →</button>
+      <p class="hero-cta-hint">Začni tím, co právě řešíš.</p>
     </div>
   </section>
 
