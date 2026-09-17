@@ -341,49 +341,51 @@
       opacity: 0.7;
     }
     .feature-pill {
-      font-size: 12px;
-      color: var(--text-dim);
-      border: 1px solid rgba(255, 255, 255, 0.07);
+      font-size: 13px;
+      color: var(--text-mid);
+      border: 1px solid rgba(255, 255, 255, 0.10);
       border-radius: 20px;
-      padding: 5px 12px;
+      padding: 5px 13px;
       white-space: nowrap;
-      background: rgba(255, 255, 255, 0.025);
+      background: rgba(255, 255, 255, 0.04);
       letter-spacing: 0.1px;
     }
 
-    /* ── World switcher ──────────────────────────────────────────────────── */
+    /* ── World switcher — 4-dot carousel ────────────────────────────────── */
     .world-switcher {
       display: flex;
+      flex-direction: column;
       align-items: center;
-      justify-content: center;
-      gap: 2px;
+      gap: 8px;
       margin-bottom: 24px;
     }
-    .world-sep {
-      font-size: 13px;
-      color: var(--text-dim);
-      opacity: 0.35;
-      padding: 0 2px;
-      user-select: none;
+    .world-dots {
+      display: flex;
+      align-items: center;
+      gap: 12px;
     }
-    .world-tab {
-      background: none;
+    .world-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
       border: none;
-      font-size: 13px;
+      background: rgba(255, 255, 255, 0.16);
+      cursor: pointer;
+      padding: 0;
+      flex-shrink: 0;
+      transition: background 0.25s, transform 0.25s;
+    }
+    .world-dot--active {
+      background: var(--accent);
+      transform: scale(1.3);
+    }
+    .world-label {
       font-family: 'Inter', sans-serif;
-      color: var(--text-dim);
-      cursor: default;
-      padding: 4px 7px;
-      border-radius: 6px;
-      letter-spacing: 0.1px;
-    }
-    .world-tab--active {
-      color: var(--text);
-      font-weight: 500;
-    }
-    .world-tab--future {
-      opacity: 0.45;
-      font-style: italic;
+      font-size: 13px;
+      font-weight: 400;
+      color: var(--text-mid);
+      letter-spacing: 0.3px;
+      margin: 0;
     }
 
     /* ── CTA hint ────────────────────────────────────────────────────────── */
@@ -675,10 +677,9 @@
         justify-content: center;
         align-items: center;
       }
-      .feature-pill { font-size: 11px; padding: 4px 10px; }
+      .feature-pill { font-size: 12px; padding: 5px 11px; }
       .world-switcher { margin-bottom: 18px; }
-      .world-tab { font-size: 12px; padding: 3px 5px; }
-      .world-sep { font-size: 12px; }
+      .world-dot { width: 7px; height: 7px; }
       .section-bridge { margin-bottom: 10px; }
       .headline-q {
         font-size: clamp(18px, 5.5vw, 24px);
@@ -1447,15 +1448,15 @@
       </div>
     </div>
 
-    <!-- World switcher -->
-    <div class="world-switcher" role="group" aria-label="Světy Chytrého já">
-      <button class="world-tab world-tab--active">Zdraví</button>
-      <span class="world-sep" aria-hidden="true">·</span>
-      <button class="world-tab">Produktivita</button>
-      <span class="world-sep" aria-hidden="true">·</span>
-      <button class="world-tab">Byznys</button>
-      <span class="world-sep" aria-hidden="true">·</span>
-      <button class="world-tab world-tab--future">Další?</button>
+    <!-- World switcher — 4-dot carousel -->
+    <div class="world-switcher">
+      <div class="world-dots" role="tablist" aria-label="Světy Chytrého já">
+        <button class="world-dot world-dot--active" role="tab" aria-selected="true"  data-world="0" aria-label="Zdraví"></button>
+        <button class="world-dot"                   role="tab" aria-selected="false" data-world="1" aria-label="Produktivita"></button>
+        <button class="world-dot"                   role="tab" aria-selected="false" data-world="2" aria-label="Byznys"></button>
+        <button class="world-dot"                   role="tab" aria-selected="false" data-world="3" aria-label="Další"></button>
+      </div>
+      <p class="world-label" id="worldLabel">Zdraví</p>
     </div>
 
     <!-- CTA -->
@@ -2039,6 +2040,31 @@
     setInputEnabled(true);
     msgInput.focus();
   });
+
+  // ── World switcher ────────────────────────────────────────────────────
+  {
+    const WORLDS = [
+      { label: 'Zdraví',       state: 'ZDRAVÍ — DNES' },
+      { label: 'Produktivita', state: 'PRODUKTIVITA — ZKOUMÁME' },
+      { label: 'Byznys',       state: 'BYZNYS — PLÁNUJEME' },
+      { label: 'Další?',       state: 'DALŠÍ?' },
+    ];
+    const dots        = document.querySelectorAll('.world-dot');
+    const worldLbl    = document.getElementById('worldLabel');
+    const planetSt    = document.querySelector('.planet-state');
+
+    dots.forEach(dot => {
+      dot.addEventListener('click', () => {
+        const idx = parseInt(dot.dataset.world, 10);
+        dots.forEach((d, i) => {
+          d.classList.toggle('world-dot--active', i === idx);
+          d.setAttribute('aria-selected', String(i === idx));
+        });
+        if (worldLbl)  worldLbl.textContent  = WORLDS[idx].label;
+        if (planetSt)  planetSt.textContent  = WORLDS[idx].state;
+      });
+    });
+  }
 
   // ── Hamburger menu (mobile) ───────────────────────────────────────────
   const menuBtn    = document.getElementById('menuBtn');
