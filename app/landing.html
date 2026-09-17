@@ -1473,15 +1473,25 @@
       padding: clamp(72px,12vh,112px) 24px clamp(80px,13vh,120px);
       border-top: 1px solid var(--border);
     }
+    .jv-heading {
+      font-family: 'Urbanist', sans-serif;
+      font-size: clamp(26px,5.5vw,38px);
+      font-weight: 800;
+      color: var(--text);
+      line-height: 1.15;
+      letter-spacing: -0.3px;
+      text-wrap: balance;
+      margin-bottom: 14px;
+    }
     .jv-meta {
       font-family: 'Urbanist', sans-serif;
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: 2.5px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 1.5px;
       text-transform: uppercase;
       color: var(--text-dim);
-      opacity: 0.55;
-      margin: 6px 0 clamp(32px,5vh,48px);
+      opacity: 0.5;
+      margin: 0 0 clamp(36px,6vh,52px);
     }
     /* Causal path */
     .jv-path {
@@ -1489,28 +1499,25 @@
       flex-direction: column;
       align-items: flex-start;
       margin-bottom: clamp(32px,5vh,44px);
+      padding-left: 4px;
     }
     .jv-node {
       font-family: 'Urbanist', sans-serif;
-      font-size: clamp(14px,2.6vw,16px);
+      font-size: clamp(18px,3.6vw,22px);
       font-weight: 600;
       color: var(--text-mid);
-      border: 1px solid rgba(255,255,255,0.09);
-      border-radius: 8px;
-      padding: 10px 18px;
-      background: rgba(255,255,255,0.025);
-      letter-spacing: 0.2px;
+      letter-spacing: 0.1px;
+      line-height: 1.3;
+      padding: 2px 0;
     }
     .jv-node--ude {
-      color: rgba(192,64,64,0.88);
-      border-color: rgba(192,64,64,0.24);
-      background: rgba(192,64,64,0.04);
+      color: rgba(192,64,64,0.9);
     }
     .jv-arrow {
-      font-size: 16px;
+      font-size: 20px;
       color: var(--text-dim);
-      opacity: 0.3;
-      padding: 5px 0 5px 22px;
+      opacity: 0.28;
+      padding: 8px 0 8px 2px;
       line-height: 1;
       user-select: none;
     }
@@ -1784,7 +1791,7 @@
 
 <!-- Někdy stačí změnit jednu věc (Section 4) -->
 <section id="jedna-vec" aria-labelledby="jedna-vec-heading">
-  <p class="jf-eyebrow" id="jedna-vec-heading">Někdy stačí změnit jednu věc</p>
+  <h2 class="jv-heading" id="jedna-vec-heading">Někdy stačí změnit jednu věc.</h2>
   <p class="jv-meta">Příklad ze života · žena, 82 let</p>
 
   <div class="jv-path" role="img" aria-label="Kauzální cesta: Periferní neuropatie vede k nestabilitě při chůzi, která vede k riziku pádu a zlomeniny">
