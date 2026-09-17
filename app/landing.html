@@ -1422,34 +1422,48 @@
       padding: clamp(72px, 12vh, 112px) 24px clamp(80px, 13vh, 120px);
       border-top: 1px solid var(--border);
     }
-    .chj-quotes {
+    .conv-demo {
       display: flex;
       flex-direction: column;
-      gap: clamp(28px, 5vh, 40px);
-      margin-bottom: clamp(56px, 9vh, 80px);
+      gap: 18px;
+      margin-bottom: clamp(44px, 6vh, 64px);
     }
-    .chj-quote {
+    .conv-turn { display: flex; flex-direction: column; gap: 3px; }
+    .conv-turn--user { align-items: flex-end; }
+    .conv-role {
       font-family: 'Urbanist', sans-serif;
-      font-size: clamp(16px, 3vw, 20px);
-      font-weight: 300;
-      color: var(--text-mid);
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      opacity: 0.45;
+    }
+    .conv-turn--chj .conv-role { opacity: 0.65; }
+    .conv-msg {
+      font-size: clamp(14px, 2.8vw, 16px);
       line-height: 1.65;
-      text-wrap: balance;
-      padding-left: 20px;
-      border-left: 2px solid rgba(60, 169, 189, 0.22);
+      color: var(--text-dim);
+      max-width: 84%;
+      margin: 0;
     }
-    .ze-zivota-cta {
-      text-align: center;
-    }
-    .ze-zivota-cta-heading {
+    .conv-turn--chj .conv-msg { color: var(--text-mid); max-width: 90%; }
+    .conv-turn--last .conv-msg  { color: var(--text); }
+    .ze-zivota-cta { text-align: center; }
+    .btn-conv-cta {
       font-family: 'Urbanist', sans-serif;
-      font-size: clamp(18px, 3.5vw, 24px);
+      font-size: 14px;
       font-weight: 500;
-      color: var(--text);
-      line-height: 1.4;
-      text-wrap: balance;
-      margin-bottom: 24px;
+      color: var(--text-mid);
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 24px;
+      padding: 10px 24px;
+      cursor: pointer;
+      letter-spacing: 0.3px;
+      transition: color 0.2s, border-color 0.2s;
     }
+    .btn-conv-cta:hover { color: var(--text); border-color: rgba(255,255,255,0.28); }
   </style>
 </head>
 <body>
@@ -1598,16 +1612,42 @@
 <section id="ze-zivota">
   <p class="jf-eyebrow">Ze života</p>
 
-  <div class="chj-quotes">
-    <p class="chj-quote">„Bereš několik léků. Některé se mohou navzájem ovlivňovat. Tohle bych prověřil."</p>
-    <p class="chj-quote">„Chceš zhubnout. Ale možná není hlavní problém v tom, co jíš. Nejdřív zjistíme, co tě skutečně brzdí."</p>
-    <p class="chj-quote">„Dnes jsou tvoje hodnoty v pořádku. Jejich vývoj ale ukazuje, že za pár let už být nemusí."</p>
-    <p class="chj-quote">„Chceš začít víc cvičit. Podle toho, co o tobě vím, bych teď ale začal něčím jiným."</p>
+  <div class="conv-demo" aria-label="Ukázka rozhovoru s Chytrým já">
+
+    <div class="conv-turn conv-turn--user">
+      <span class="conv-role" aria-hidden="true">Ty</span>
+      <p class="conv-msg">„Chci zhubnout."</p>
+    </div>
+
+    <div class="conv-turn conv-turn--chj">
+      <span class="conv-role" aria-hidden="true">Chytré já</span>
+      <p class="conv-msg">„Co tě k tomu vede?"</p>
+    </div>
+
+    <div class="conv-turn conv-turn--user">
+      <span class="conv-role" aria-hidden="true">Ty</span>
+      <p class="conv-msg">„Mám nadváhu, zadýchávám se a necítím se dobře."</p>
+    </div>
+
+    <div class="conv-turn conv-turn--chj">
+      <span class="conv-role" aria-hidden="true">Chytré já</span>
+      <p class="conv-msg">„Abych našel skutečnou příčinu a mohl ti dobře poradit, potřebuji se o tobě dozvědět víc. Jdeš se mnou do toho?"</p>
+    </div>
+
+    <div class="conv-turn conv-turn--user">
+      <span class="conv-role" aria-hidden="true">Ty</span>
+      <p class="conv-msg">„Jo."</p>
+    </div>
+
+    <div class="conv-turn conv-turn--chj conv-turn--last">
+      <span class="conv-role" aria-hidden="true">Chytré já</span>
+      <p class="conv-msg">„Začneme tím zadýcháváním. Kdy ho nejvíc pociťuješ?"</p>
+    </div>
+
   </div>
 
   <div class="ze-zivota-cta">
-    <p class="ze-zivota-cta-heading">Co by Chytré já řeklo tobě?</p>
-    <button id="secBtn" class="btn-try">Vyzkoušet na sobě</button>
+    <button id="secBtn" class="btn-conv-cta">Pokračovat v rozhovoru →</button>
   </div>
 </section>
 
