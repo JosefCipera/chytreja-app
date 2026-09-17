@@ -564,27 +564,30 @@ section('Goal path audit — all 16 master nodes');
   const causalGraph = buildCausalGraph(MASTER);
 
   // Nodes expected to have a Goal path (causal path to a Gateway):
+  // Gateway nodes (CVD, LFRA) have a 0-hop self-path — mirrors Engine's computeGoalImpact()
+  // which places the start node in predecessors with null, then finds it reachable as a gateway.
+  // 0-hop: pathEdges=[], minEQRank=3 (sentinel), causal_relevance='high'.
   const HAS_GOAL_PATH = new Set([
-    'PHYSICAL_INACTIVITY',    // → CVD and → LOSS_OF_FLOOR_RISE_ABILITY
-    'EXCESS_ADIPOSITY',       // → CVD (via IR→HTN→...)
-    'INSULIN_RESISTANCE',     // → CVD (via HTN→...)
-    'HYPERTENSION',           // → CVD (via ENDOTHEL→ATHERO→CVD)
-    'ENDOTHELIAL_DYSFUNCTION',// → CVD (via ATHERO→CVD)
-    'DYSLIPIDEMIA',           // → CVD (via ATHERO→CVD)
-    'ATHEROSCLEROSIS',        // → CVD (1 hop)
-    'PHYSICAL_DECONDITIONING',// → LOSS_OF_FLOOR_RISE_ABILITY (via LMS→RFR→...)
-    'LOW_MUSCLE_STRENGTH',    // → LOSS_OF_FLOOR_RISE_ABILITY (via RFR→...)
-    'REDUCED_FUNCTIONAL_RESERVE', // → LOSS_OF_FLOOR_RISE_ABILITY (1 hop)
+    'PHYSICAL_INACTIVITY',       // → CVD and → LOSS_OF_FLOOR_RISE_ABILITY
+    'EXCESS_ADIPOSITY',          // → CVD (via IR→HTN→...)
+    'INSULIN_RESISTANCE',        // → CVD (via HTN→...)
+    'HYPERTENSION',              // → CVD (via ENDOTHEL→ATHERO→CVD)
+    'ENDOTHELIAL_DYSFUNCTION',   // → CVD (via ATHERO→CVD)
+    'DYSLIPIDEMIA',              // → CVD (via ATHERO→CVD)
+    'ATHEROSCLEROSIS',           // → CVD (1 hop)
+    'PHYSICAL_DECONDITIONING',   // → LOSS_OF_FLOOR_RISE_ABILITY (via LMS→RFR→...)
+    'LOW_MUSCLE_STRENGTH',       // → LOSS_OF_FLOOR_RISE_ABILITY (via RFR→...)
+    'REDUCED_FUNCTIONAL_RESERVE',// → LOSS_OF_FLOOR_RISE_ABILITY (1 hop)
+    'CARDIOVASCULAR_DISEASE',    // 0-hop self-path to CV gateway (Engine parity)
+    'LOSS_OF_FLOOR_RISE_ABILITY',// 0-hop self-path to Functional gateway (Engine parity)
   ]);
 
   // Nodes expected to have NO Goal path:
   const NO_GOAL_PATH = new Set([
-    'ERECTILE_DYSFUNCTION',   // RISK_MARKER_FOR only — not causal
-    'PERIPHERAL_NEUROPATHY',  // → GAIT_INSTABILITY → FALL_RISK (leaf, not a Gateway)
-    'GAIT_INSTABILITY',       // → FALL_RISK (leaf)
-    'FALL_RISK',              // leaf — no outgoing causal edges
-    'CARDIOVASCULAR_DISEASE', // IS a gateway (no path to another gateway from itself)
-    'LOSS_OF_FLOOR_RISE_ABILITY', // IS a gateway
+    'ERECTILE_DYSFUNCTION',  // RISK_MARKER_FOR only — not causal
+    'PERIPHERAL_NEUROPATHY', // → GAIT_INSTABILITY → FALL_RISK (leaf, not a Gateway)
+    'GAIT_INSTABILITY',      // → FALL_RISK (leaf)
+    'FALL_RISK',             // leaf — no outgoing causal edges
   ]);
 
   for (const node of MASTER.nodes) {
@@ -601,6 +604,20 @@ section('Goal path audit — all 16 master nodes');
   assert(pi.breadth === 2, 'GoalPath-c: PHYSICAL_INACTIVITY breadth=2');
   assert(pi.threatens_branches.includes('SURVIVAL_HEALTHSPAN'),      'GoalPath-d: SURVIVAL_HEALTHSPAN');
   assert(pi.threatens_branches.includes('FUNCTIONAL_INDEPENDENCE'),  'GoalPath-e: FUNCTIONAL_INDEPENDENCE');
+
+  // 0-hop self-path: gateway nodes have causal_relevance='high' and breadth=1
+  // (mirrors Engine sentinel: empty pathEdges → minEQRank=3 → 'high')
+  const cvd  = computeGoalPath('CARDIOVASCULAR_DISEASE',     causalGraph);
+  assert(cvd.hasGoalPath,                                    'GoalPath-f: CVD 0-hop hasGoalPath');
+  assert(cvd.causal_relevance === 'high',                    'GoalPath-g: CVD 0-hop causal_relevance=high (sentinel)');
+  assert(cvd.breadth === 1,                                  'GoalPath-h: CVD breadth=1');
+  assert(cvd.threatens_branches.includes('SURVIVAL_HEALTHSPAN'), 'GoalPath-i: CVD threatens SURVIVAL_HEALTHSPAN');
+
+  const lfra = computeGoalPath('LOSS_OF_FLOOR_RISE_ABILITY', causalGraph);
+  assert(lfra.hasGoalPath,                                   'GoalPath-j: LFRA 0-hop hasGoalPath');
+  assert(lfra.causal_relevance === 'high',                   'GoalPath-k: LFRA 0-hop causal_relevance=high (sentinel)');
+  assert(lfra.breadth === 1,                                 'GoalPath-l: LFRA breadth=1');
+  assert(lfra.threatens_branches.includes('FUNCTIONAL_INDEPENDENCE'), 'GoalPath-m: LFRA threatens FUNCTIONAL_INDEPENDENCE');
 }
 
 // ── Summary ───────────────────────────────────────────────────────────────────

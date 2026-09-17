@@ -90,8 +90,11 @@ function computeGoalPath(nodeId, causalGraph) {
   let best_path_rank = 0;
 
   for (const gatewayId of GOAL_GATEWAY_IDS) {
-    // Gateway must be reachable AND must not be the starting node itself.
-    if (!predecessors.has(gatewayId) || gatewayId === nodeId) continue;
+    // Gateway must be reachable via BFS (includes 0-hop when nodeId IS the gateway).
+    // Mirror: computeGoalImpact() in systemConstraint.js has no self-exclusion guard —
+    // a gateway node placed in predecessors as the BFS root (null predecessor) is treated
+    // as having a 0-hop path to itself, producing causal_relevance='high' (sentinel rank 3).
+    if (!predecessors.has(gatewayId)) continue;
 
     // Reconstruct path backward from gateway to nodeId, compute minimum edge quality.
     // Mirrors path reconstruction in systemConstraint.js computeGoalImpact.
