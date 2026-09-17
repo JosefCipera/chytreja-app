@@ -712,31 +712,6 @@
         margin-bottom: 0;
       }
       .hero-cta-group { margin-top: 40px; }
-      /* Section 2 — horizontal path */
-      #jak-funguje { max-width: 780px; }
-      .jf-path {
-        flex-direction: row;
-        align-items: flex-start;
-        padding-left: 0;
-        padding-top: 28px;
-        border-top: 1px solid rgba(255,255,255,0.07);
-      }
-      .jf-step {
-        flex: 1;
-        padding-bottom: 0;
-        padding: 0 20px;
-        text-align: center;
-      }
-      /* Dot on top border */
-      .jf-step::before {
-        left: 50%;
-        top: -31px;
-        transform: translateX(-50%);
-      }
-      /* No vertical line on desktop — border-top is the connector */
-      .jf-step:not(:last-child)::after { display: none; }
-      .jf-step-label { font-size: 12px; }
-      .jf-step--focal .jf-step-label { font-size: 13px; }
     }
 
     /* ── Jak funguje ────────────────────────────────────────────────────── */
@@ -827,6 +802,30 @@
       color: var(--text-dim);
       line-height: 1.8;
       margin: 0;
+    }
+    /* Section 2 — desktop: horizontal path (must follow base styles) */
+    @media (min-width: 640px) {
+      #jak-funguje { max-width: 780px; }
+      .jf-path {
+        flex-direction: row;
+        align-items: flex-start;
+        padding-left: 0;
+        padding-top: 28px;
+        border-top: 1px solid rgba(255,255,255,0.07);
+      }
+      .jf-step {
+        flex: 1;
+        padding: 0 20px;
+        text-align: center;
+      }
+      .jf-step::before {
+        left: 50%;
+        top: -31px;
+        transform: translateX(-50%);
+      }
+      .jf-step:not(:last-child)::after { display: none; }
+      .jf-step-label { font-size: 12px; }
+      .jf-step--focal .jf-step-label { font-size: 13px; }
     }
 
     /* ── Zakladatelé Chytrého já (sekce 05) ────────────────────────────── */
