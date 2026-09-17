@@ -570,6 +570,7 @@
     }
     html.conv-mode #jak-funguje,
     html.conv-mode #ze-zivota,
+    html.conv-mode #jedna-vec,
     html.conv-mode #priklad,
     html.conv-mode #co-ted,
     html.conv-mode #zakladatele,
@@ -1464,6 +1465,136 @@
       transition: color 0.2s, border-color 0.2s;
     }
     .btn-conv-cta:hover { color: var(--text); border-color: rgba(255,255,255,0.28); }
+
+    /* ── Někdy stačí změnit jednu věc (Section 4) ──────────────────────── */
+    #jedna-vec {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: clamp(72px,12vh,112px) 24px clamp(80px,13vh,120px);
+      border-top: 1px solid var(--border);
+    }
+    .jv-meta {
+      font-family: 'Urbanist', sans-serif;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      opacity: 0.55;
+      margin: 6px 0 clamp(32px,5vh,48px);
+    }
+    /* Causal path */
+    .jv-path {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      margin-bottom: clamp(32px,5vh,44px);
+    }
+    .jv-node {
+      font-family: 'Urbanist', sans-serif;
+      font-size: clamp(14px,2.6vw,16px);
+      font-weight: 600;
+      color: var(--text-mid);
+      border: 1px solid rgba(255,255,255,0.09);
+      border-radius: 8px;
+      padding: 10px 18px;
+      background: rgba(255,255,255,0.025);
+      letter-spacing: 0.2px;
+    }
+    .jv-node--ude {
+      color: rgba(192,64,64,0.88);
+      border-color: rgba(192,64,64,0.24);
+      background: rgba(192,64,64,0.04);
+    }
+    .jv-arrow {
+      font-size: 16px;
+      color: var(--text-dim);
+      opacity: 0.3;
+      padding: 5px 0 5px 22px;
+      line-height: 1;
+      user-select: none;
+    }
+    /* AHA text */
+    .jv-aha {
+      font-family: 'Urbanist', sans-serif;
+      font-size: clamp(18px,3.8vw,24px);
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.35;
+      margin-bottom: clamp(28px,4vh,40px);
+    }
+    /* Comparison */
+    .jv-compare {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: clamp(12px,2vw,18px);
+      margin-bottom: clamp(20px,3vh,28px);
+    }
+    .jv-compare-card {
+      border-radius: 12px;
+      padding: clamp(18px,3vh,26px) clamp(16px,3vw,22px);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .jv-compare-card--dim {
+      border: 1px solid rgba(255,255,255,0.07);
+      background: rgba(255,255,255,0.015);
+    }
+    .jv-compare-card--bright {
+      border: 1px solid rgba(60,169,189,0.26);
+      background: rgba(60,169,189,0.04);
+    }
+    .jv-compare-title {
+      font-family: 'Urbanist', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+    }
+    .jv-compare-card--dim  .jv-compare-title { color: var(--text-dim); }
+    .jv-compare-card--bright .jv-compare-title { color: var(--accent); }
+    .jv-compare-props {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .jv-compare-props li {
+      font-size: clamp(13px,2.4vw,15px);
+      line-height: 1.5;
+      color: var(--text-dim);
+    }
+    .jv-compare-card--bright .jv-compare-props li { color: var(--text-mid); }
+    /* Doctor note */
+    .jv-doctor-note {
+      font-size: clamp(13px,2.4vw,15px);
+      color: var(--text-dim);
+      line-height: 1.8;
+      margin-bottom: clamp(40px,6vh,56px);
+      opacity: 0.75;
+    }
+    /* Closing pointa */
+    .jv-pointa {
+      border-top: 1px solid rgba(255,255,255,0.06);
+      padding-top: clamp(28px,4vh,40px);
+    }
+    .jv-pointa-main {
+      font-family: 'Urbanist', sans-serif;
+      font-size: clamp(17px,3.4vw,21px);
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 10px;
+      text-wrap: balance;
+    }
+    .jv-pointa-sub {
+      font-size: clamp(14px,2.5vw,16px);
+      color: var(--text-mid);
+      line-height: 1.75;
+    }
+    @media (max-width: 479px) {
+      .jv-compare { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
@@ -1648,6 +1779,46 @@
 
   <div class="ze-zivota-cta">
     <button id="secBtn" class="btn-conv-cta">Pokračovat v rozhovoru →</button>
+  </div>
+</section>
+
+<!-- Někdy stačí změnit jednu věc (Section 4) -->
+<section id="jedna-vec" aria-labelledby="jedna-vec-heading">
+  <p class="jf-eyebrow" id="jedna-vec-heading">Někdy stačí změnit jednu věc</p>
+  <p class="jv-meta">Příklad ze života · žena, 82 let</p>
+
+  <div class="jv-path" role="img" aria-label="Kauzální cesta: Periferní neuropatie vede k nestabilitě při chůzi, která vede k riziku pádu a zlomeniny">
+    <div class="jv-node">Periferní neuropatie</div>
+    <div class="jv-arrow" aria-hidden="true">↓</div>
+    <div class="jv-node">Nestabilita při chůzi</div>
+    <div class="jv-arrow" aria-hidden="true">↓</div>
+    <div class="jv-node jv-node--ude">Riziko pádu a zlomeniny</div>
+  </div>
+
+  <p class="jv-aha">Přitom používá jen jednu hůl.</p>
+
+  <div class="jv-compare" role="list" aria-label="Srovnání pomůcek">
+    <div class="jv-compare-card jv-compare-card--dim" role="listitem">
+      <p class="jv-compare-title">Jedna hůl</p>
+      <ul class="jv-compare-props">
+        <li>jednostranná opora</li>
+        <li>střední podpora stability</li>
+      </ul>
+    </div>
+    <div class="jv-compare-card jv-compare-card--bright" role="listitem">
+      <p class="jv-compare-title">Dvě hole</p>
+      <ul class="jv-compare-props">
+        <li>oboustranná opora</li>
+        <li>vysoká podpora stability</li>
+      </ul>
+    </div>
+  </div>
+
+  <p class="jv-doctor-note">Dvě hole jí už doporučuje i lékař. Přesto stále používá jen jednu.</p>
+
+  <div class="jv-pointa">
+    <p class="jv-pointa-main">Velká změna nemusí být složitá.</p>
+    <p class="jv-pointa-sub">Chytré já hledá místo, kde může jednoduchý krok nejvíc změnit další vývoj.</p>
   </div>
 </section>
 
