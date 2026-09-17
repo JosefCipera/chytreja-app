@@ -688,6 +688,31 @@
       .accent-q { font-size: clamp(16px, 5vw, 22px); }
     }
 
+    /* ── Desktop hero — proporce a vertikální rytmus ────────────────────── */
+    @media (min-width: 640px) {
+      #hero { max-width: 760px; }
+      .planet-section .core {
+        width: clamp(210px, 36vw, 284px);
+        height: clamp(210px, 36vw, 284px);
+      }
+      .planet-section {
+        gap: 40px;
+        margin: 28px 0 0;
+      }
+      .planet-wrap { padding-bottom: 30px; }
+      .planet-state {
+        font-size: 11px;
+        letter-spacing: 3px;
+        color: var(--text-mid);
+        opacity: 1;
+      }
+      .world-switcher {
+        margin-top: 20px;
+        margin-bottom: 0;
+      }
+      .hero-cta-group { margin-top: 40px; }
+    }
+
     /* ── Jak funguje ────────────────────────────────────────────────────── */
     #jak-funguje {
       max-width: 560px;
