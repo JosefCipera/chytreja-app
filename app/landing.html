@@ -569,6 +569,7 @@
       flex-direction: column;
     }
     html.conv-mode #jak-funguje,
+    html.conv-mode #trajektorie,
     html.conv-mode #ze-zivota,
     html.conv-mode #jedna-vec,
     html.conv-mode #neradi-naslepo,
@@ -1744,6 +1745,88 @@
       .pz-layout { flex-direction: column; }
       .pz-photo { width: clamp(80px,25vw,120px); }
     }
+    #trajektorie {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: clamp(72px,12vh,112px) 24px clamp(80px,13vh,120px);
+      border-top: 1px solid var(--border);
+    }
+    .tr-heading {
+      font-family: 'Urbanist', sans-serif;
+      font-size: clamp(26px,5.5vw,38px);
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.2;
+      text-wrap: balance;
+      margin-bottom: 16px;
+    }
+    .tr-sub {
+      font-size: clamp(15px,2.8vw,17px);
+      color: var(--text-mid);
+      line-height: 1.7;
+      margin-bottom: clamp(48px,8vh,72px);
+    }
+    .tr-track {
+      display: flex;
+      align-items: flex-end;
+      position: relative;
+      margin-bottom: clamp(32px,5vh,48px);
+    }
+    .tr-track::before {
+      content: '';
+      position: absolute;
+      left: 0; right: 0;
+      bottom: 3px;
+      height: 1px;
+      background: linear-gradient(to right,
+        transparent 0%,
+        rgba(255,255,255,0.07) 10%,
+        rgba(255,255,255,0.07) 50%,
+        rgba(185,68,52,0.22) 90%,
+        transparent 100%
+      );
+      pointer-events: none;
+    }
+    .tr-node {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: clamp(14px,2.5vh,20px);
+    }
+    .tr-label {
+      font-family: 'Urbanist', sans-serif;
+      font-size: clamp(10px,2vw,12px);
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      text-align: center;
+      line-height: 1.35;
+    }
+    .tr-node--future .tr-label { color: var(--text-mid); }
+    .tr-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.16);
+      position: relative;
+      z-index: 1;
+      flex-shrink: 0;
+    }
+    .tr-node--mid .tr-dot { background: rgba(255,255,255,0.24); }
+    .tr-node--future .tr-dot {
+      background: rgba(185,68,52,0.52);
+      box-shadow: 0 0 10px rgba(185,68,52,0.18);
+    }
+    .tr-caption {
+      font-size: clamp(14px,2.6vw,16px);
+      color: var(--text-mid);
+      line-height: 1.75;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      padding-top: clamp(22px,3.5vh,32px);
+      max-width: 480px;
+    }
   </style>
 </head>
 <body>
@@ -1886,6 +1969,27 @@
     </div>
 
   </div>
+</section>
+
+<!-- Trajektorie (Section 2B) -->
+<section id="trajektorie" aria-labelledby="tr-heading">
+  <h2 class="tr-heading" id="tr-heading">Možná jsi dnes v pohodě.</h2>
+  <p class="tr-sub">Ale směr, kterým jdeš, už může ukazovat budoucí problém.</p>
+  <div class="tr-track" role="img" aria-label="Časová trajektorie: Dnes, Pokračuju stejně, Budoucnost">
+    <div class="tr-node tr-node--now">
+      <p class="tr-label">Dnes</p>
+      <div class="tr-dot"></div>
+    </div>
+    <div class="tr-node tr-node--mid">
+      <p class="tr-label">Pokračuju<br>stejně</p>
+      <div class="tr-dot"></div>
+    </div>
+    <div class="tr-node tr-node--future">
+      <p class="tr-label">Budoucnost</p>
+      <div class="tr-dot"></div>
+    </div>
+  </div>
+  <p class="tr-caption">Chytré já sleduje, co se mění, a upozorní tě, když nastane čas něco udělat.</p>
 </section>
 
 <!-- Ze života (T0 Step 2) -->
