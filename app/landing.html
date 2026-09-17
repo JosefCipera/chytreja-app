@@ -712,6 +712,31 @@
         margin-bottom: 0;
       }
       .hero-cta-group { margin-top: 40px; }
+      /* Section 2 — horizontal path */
+      #jak-funguje { max-width: 780px; }
+      .jf-path {
+        flex-direction: row;
+        align-items: flex-start;
+        padding-left: 0;
+        padding-top: 28px;
+        border-top: 1px solid rgba(255,255,255,0.07);
+      }
+      .jf-step {
+        flex: 1;
+        padding-bottom: 0;
+        padding: 0 20px;
+        text-align: center;
+      }
+      /* Dot on top border */
+      .jf-step::before {
+        left: 50%;
+        top: -31px;
+        transform: translateX(-50%);
+      }
+      /* No vertical line on desktop — border-top is the connector */
+      .jf-step:not(:last-child)::after { display: none; }
+      .jf-step-label { font-size: 12px; }
+      .jf-step--focal .jf-step-label { font-size: 13px; }
     }
 
     /* ── Jak funguje ────────────────────────────────────────────────────── */
@@ -739,53 +764,69 @@
       text-wrap: balance;
       margin-bottom: clamp(48px, 7vh, 72px);
     }
-    .steps {
+    /* Path — mobile: vertical */
+    .jf-path {
       display: flex;
       flex-direction: column;
-      gap: clamp(40px, 6vh, 60px);
+      padding-left: 28px;
     }
-    .step {
-      display: grid;
-      grid-template-columns: 28px 1fr;
-      gap: 0 20px;
+    .jf-step {
+      position: relative;
+      padding-bottom: 36px;
     }
-    .step-num {
+    .jf-step:last-child { padding-bottom: 0; }
+    /* Dot on left axis */
+    .jf-step::before {
+      content: '';
+      position: absolute;
+      left: -21px;
+      top: 3px;
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.14);
+      box-sizing: border-box;
+    }
+    .jf-step--focal::before {
+      background: rgba(255,255,255,0.32);
+      box-shadow: 0 0 8px rgba(255,255,255,0.10);
+    }
+    /* Vertical line between dots */
+    .jf-step:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      left: -18px;
+      top: 13px;
+      bottom: 0;
+      width: 1px;
+      background: linear-gradient(to bottom, rgba(255,255,255,0.07) 70%, transparent);
+    }
+    .jf-num {
       font-family: 'Urbanist', sans-serif;
-      font-size: 11px;
-      font-weight: 600;
+      font-size: 9px;
+      font-weight: 700;
       letter-spacing: 1px;
       color: var(--text-dim);
-      opacity: 0.5;
-      padding-top: 4px;
+      opacity: 0.42;
+      margin: 0 0 7px;
       line-height: 1;
     }
-    .step-body { display: flex; flex-direction: column; gap: 6px; }
-    .step-title {
+    .jf-step--focal .jf-num { opacity: 0.75; }
+    .jf-step-label {
       font-family: 'Urbanist', sans-serif;
-      font-size: clamp(17px, 3.2vw, 22px);
+      font-size: 13px;
       font-weight: 600;
-      color: var(--text);
-      line-height: 1.3;
-    }
-    .step-desc {
-      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
       color: var(--text-mid);
-      line-height: 1.85;
+      line-height: 1.3;
+      margin: 0 0 7px;
     }
-    .areas {
-      margin-top: 10px;
+    .jf-step--focal .jf-step-label { color: var(--text); font-size: 14px; }
+    .jf-step-desc {
       font-size: 14px;
       color: var(--text-dim);
-      letter-spacing: 0.5px;
-      line-height: 2;
-    }
-    .jf-note {
-      margin-top: clamp(48px, 7vh, 68px);
-      font-size: 14px;
-      color: var(--text-dim);
-      line-height: 1.85;
-      text-align: center;
-      opacity: 0.75;
+      line-height: 1.8;
+      margin: 0;
     }
 
     /* ── Zakladatelé Chytrého já (sekce 05) ────────────────────────────── */
@@ -1527,46 +1568,31 @@
 
 </div><!-- /.scroll-body -->
 
-<!-- Jak mě chrání? -->
+<!-- Jak tě Chytré já chrání? -->
 <section id="jak-funguje" aria-labelledby="jf-heading">
-  <p class="jf-eyebrow">Jak mě chrání?</p>
-  <h2 class="jf-heading" id="jf-heading">Neřešíme jen to, co je vidět.</h2>
+  <h2 class="jf-heading" id="jf-heading">Jak tě Chytré já chrání?</h2>
 
-  <ol class="steps" role="list">
+  <div class="jf-path" role="list">
 
-    <li class="step">
-      <span class="step-num" aria-hidden="true">01</span>
-      <div class="step-body">
-        <h3 class="step-title">Vidím celek</h3>
-        <p class="step-desc">Dávám do souvislostí to, co se děje s tebou a kolem tebe.</p>
-      </div>
-    </li>
+    <div class="jf-step" role="listitem">
+      <p class="jf-num" aria-hidden="true">01</p>
+      <p class="jf-step-label">Poznává tě</p>
+      <p class="jf-step-desc">Co chceš. Jak jsi na tom se zdravím. Co pro sebe děláš.</p>
+    </div>
 
-    <li class="step">
-      <span class="step-num" aria-hidden="true">02</span>
-      <div class="step-body">
-        <h3 class="step-title">Hledám příčinu</h3>
-        <p class="step-desc">Neřeším jen příznak. Hledám, co za ním může skutečně být.</p>
-      </div>
-    </li>
+    <div class="jf-step jf-step--focal" role="listitem">
+      <p class="jf-num" aria-hidden="true">02</p>
+      <p class="jf-step-label">Hledá největší příčinu</p>
+      <p class="jf-step-desc">Co nejvíc zhoršuje tvůj stav a brání ti dosáhnout cíle.</p>
+    </div>
 
-    <li class="step">
-      <span class="step-num" aria-hidden="true">03</span>
-      <div class="step-body">
-        <h3 class="step-title">Dívám se dopředu</h3>
-        <p class="step-desc">Sleduji, kam směřuješ, a upozorním tě, když má smysl změnit směr.</p>
-      </div>
-    </li>
+    <div class="jf-step" role="listitem">
+      <p class="jf-num" aria-hidden="true">03</p>
+      <p class="jf-step-label">Pomáhá ti dobrat se k cíli</p>
+      <p class="jf-step-desc">Doporučí ti krok, který ti nejvíc pomůže.</p>
+    </div>
 
-    <li class="step">
-      <span class="step-num" aria-hidden="true">04</span>
-      <div class="step-body">
-        <h3 class="step-title">Hlídám tvoje rozhodnutí</h3>
-        <p class="step-desc">Když něco nedává smysl vzhledem k tomu, co o tobě vím a čeho chceš dosáhnout, řeknu ti to.</p>
-      </div>
-    </li>
-
-  </ol>
+  </div>
 </section>
 
 <!-- Ze života (T0 Step 2) -->
