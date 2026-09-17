@@ -572,6 +572,7 @@
     html.conv-mode #ze-zivota,
     html.conv-mode #jedna-vec,
     html.conv-mode #neradi-naslepo,
+    html.conv-mode #proc-vzniklo,
     html.conv-mode #priklad,
     html.conv-mode #co-ted,
     html.conv-mode #zakladatele,
@@ -1669,6 +1670,80 @@
         border-bottom: 1px solid rgba(255,255,255,0.05);
       }
     }
+    #proc-vzniklo {
+      max-width: 840px;
+      margin: 0 auto;
+      padding: clamp(72px,12vh,112px) 24px clamp(80px,13vh,120px);
+      border-top: 1px solid var(--border);
+    }
+    .pz-eyebrow {
+      font-family: 'Urbanist', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      opacity: 0.5;
+      margin: 0 0 clamp(36px,6vh,52px);
+    }
+    .pz-layout {
+      display: flex;
+      gap: clamp(36px,5vw,64px);
+      align-items: flex-start;
+    }
+    .pz-photo {
+      flex-shrink: 0;
+      width: clamp(120px,18vw,180px);
+    }
+    .pz-img {
+      width: 100%;
+      border-radius: 6px;
+      display: block;
+      aspect-ratio: 3/4;
+      object-fit: cover;
+      background: rgba(255,255,255,0.04);
+    }
+    .pz-body { flex: 1; }
+    .pz-text {
+      font-size: clamp(15px,2.6vw,17px);
+      color: var(--text-mid);
+      line-height: 1.8;
+      margin-bottom: 1em;
+    }
+    .pz-em {
+      color: var(--text);
+      font-weight: 600;
+    }
+    .pz-question {
+      font-family: 'Urbanist', sans-serif;
+      font-size: clamp(20px,3.8vw,28px);
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.3;
+      text-wrap: balance;
+      margin: clamp(24px,3.5vh,36px) 0;
+    }
+    .pz-sig {
+      margin-top: clamp(32px,5vh,48px);
+      padding-top: clamp(20px,3vh,28px);
+      border-top: 1px solid rgba(255,255,255,0.06);
+    }
+    .pz-sig-name {
+      font-family: 'Urbanist', sans-serif;
+      font-size: clamp(16px,2.8vw,19px);
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+    .pz-sig-title {
+      font-size: clamp(13px,2.2vw,14px);
+      color: var(--text-dim);
+      letter-spacing: 0.3px;
+    }
+    @media (max-width: 639px) {
+      .pz-layout { flex-direction: column; }
+      .pz-photo { width: clamp(80px,25vw,120px); }
+    }
   </style>
 </head>
 <body>
@@ -1919,6 +1994,28 @@
   </div>
 
   <p class="ns-conclusion">Když něco neví, zeptá se. Když si není jisté, netváří se, že ví.</p>
+</section>
+
+<!-- Proč Chytré já vzniklo (Section 6) -->
+<section id="proc-vzniklo" aria-labelledby="pz-heading">
+  <p class="pz-eyebrow">Proč Chytré já vzniklo</p>
+  <div class="pz-layout">
+    <div class="pz-photo">
+      <img src="/app/assets/images/josef.jpg" alt="Josef Čipera, zakladatel Chytrého já" class="pz-img" loading="lazy">
+    </div>
+    <div class="pz-body">
+      <p class="pz-text">Celý život se zabývám tím, jak najít skutečnou příčinu problému a změnit právě to, co má největší účinek.</p>
+      <p class="pz-text">Ve firmách jsem znovu a znovu viděl snahu řídit nejlépe všechno. <span class="pz-em">A přitom stačilo nalézt jedinou věc.</span></p>
+      <p class="pz-text">Pak mě napadlo:</p>
+      <h2 class="pz-question" id="pz-heading">Proč stejný princip nepoužít i na vlastní život?</h2>
+      <p class="pz-text">Máme lékaře, výsledky vyšetření, hodinky a dnes i umělou inteligenci. Přesto je často na člověku, aby si všechny souvislosti poskládal sám a rozhodl se, co má právě teď největší smysl udělat.</p>
+      <p class="pz-text">Proto vzniká Chytré já.</p>
+      <div class="pz-sig">
+        <p class="pz-sig-name">Josef Čipera</p>
+        <p class="pz-sig-title">zakladatel Chytrého já</p>
+      </div>
+    </div>
+  </div>
 </section>
 
 <!-- Příklad · Zdraví -->
