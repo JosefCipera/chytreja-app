@@ -26,6 +26,7 @@
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { GOAL_GATEWAYS, GOAL_GATEWAY_IDS } from './goalGateways.js';
 
 const _dir   = dirname(fileURLToPath(import.meta.url));
 const MASTER = JSON.parse(readFileSync(join(_dir, '../../data/engine/master.json'), 'utf8'));
@@ -54,21 +55,9 @@ const GOAL_MODEL = {
   },
 };
 
-// Gateway nodes — last MASTER nodes before Goal branches.
-// Defines how the Master causal graph connects to Goal terminal threats.
-// RISK_MARKER_FOR edges are not represented here.
-const GOAL_GATEWAYS = {
-  CARDIOVASCULAR_DISEASE: {
-    pathway_threat:  'ASCVD',
-    terminal_threats: ['PREMATURE_MORTALITY', 'MAJOR_MORBIDITY'],
-    branch:           'SURVIVAL_HEALTHSPAN',
-  },
-  LOSS_OF_FLOOR_RISE_ABILITY: {
-    pathway_threat:  'FRAILTY_FUNCTIONAL_DECLINE',
-    terminal_threats: ['LOSS_OF_INDEPENDENCE'],
-    branch:           'FUNCTIONAL_INDEPENDENCE',
-  },
-};
+// Gateway nodes — imported from goalGateways.js (single source of truth).
+// GOAL_GATEWAYS defines how the Master causal graph connects to Goal terminal threats.
+// GOAL_GATEWAY_IDS is the derived exclusion set (Goal Gateways are NOT candidates).
 
 // Missing evidence catalog — keyed by node_id that requires it.
 // Used when finalists are tied and specific personal data would resolve selection.
@@ -473,6 +462,26 @@ export function computeSystemConstraint(nodeStates, projections, decisionGate, e
         node_id: state.node_id,
         issue:   'Active in person state but not defined in master.json — cannot evaluate Goal impact.',
       });
+    }
+
+    // Clause 3: Goal Gateway nodes are NOT constraint candidates.
+    // Clause 5: 0-hop Goal path is preserved — computeGoalImpact is still called.
+    if (GOAL_GATEWAY_IDS.has(state.node_id)) {
+      const goalImpact = computeGoalImpact(state.node_id, causalGraph);
+      candidates.push({
+        node_id:             state.node_id,
+        current_state:       state.current_state,
+        confidence:          state.confidence,
+        goal_impact:         goalImpact,
+        goal_threat_severity: 'none',
+        time_sensitivity:    computeTimeSensitivity(state, nodeStates),
+        evidence_quality:    computeEvidenceQuality(state),
+        causal_relevance:    'none',
+        breadth:             goalImpact.threatens_branches.length,
+        exclusion_reason:    '_goalGateway',
+        _excluded:           true,
+      });
+      continue;
     }
 
     const goalImpact       = computeGoalImpact(state.node_id, causalGraph);

@@ -179,16 +179,27 @@ for (const candidateId of PATH_CANDIDATES) {
   );
 
   // Engine considers B viable if it appears in candidates and is NOT excluded.
-  const engineCandidates = oracleResult.candidates ?? [];
-  const bCandidate       = engineCandidates.find(c => c.node_id === candidateId);
-  const engineHasPath    = bCandidate != null && bCandidate.exclusion_reason == null;
+  // Three-category rule: gateway-excluded nodes have _goalGateway exclusion_reason —
+  // parity holds when readiness also reports hasGoalPath=true (0-hop preserved).
+  const engineCandidates  = oracleResult.candidates ?? [];
+  const bCandidate        = engineCandidates.find(c => c.node_id === candidateId);
+  const isGatewayExclusion = bCandidate?.exclusion_reason === '_goalGateway';
 
-  const match = rdyHasPath === engineHasPath;
+  let match;
+  let engineHasPath;
+  if (isGatewayExclusion) {
+    match         = rdyHasPath === true;
+    engineHasPath = false; // excluded as gateway, not a viable candidate
+  } else {
+    engineHasPath = bCandidate != null && bCandidate.exclusion_reason == null;
+    match         = rdyHasPath === engineHasPath;
+  }
   if (match) pathPass++; else pathFail++;
 
   const icon = match ? '✅' : '❌';
-  const rdy  = rdyHasPath    ? 'has-Goal-path   ' : 'no-Goal-path    ';
-  const eng  = engineHasPath ? 'viable-candidate' : 'excluded        ';
+  const rdy  = rdyHasPath      ? 'has-Goal-path   ' : 'no-Goal-path    ';
+  const eng  = isGatewayExclusion ? 'gateway-excluded'
+             : engineHasPath      ? 'viable-candidate' : 'excluded        ';
   console.log(`  ${icon} ${candidateId.padEnd(34)} rdyPath:${rdy}  engViable:${eng}`);
 }
 console.log(`\n  Path parity — Pass: ${pathPass} / ${PATH_CANDIDATES.length}  Fail: ${pathFail}`);

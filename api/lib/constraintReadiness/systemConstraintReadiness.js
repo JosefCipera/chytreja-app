@@ -24,6 +24,7 @@
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { GOAL_GATEWAYS, GOAL_GATEWAY_IDS } from '../../engine/goalGateways.js';
 
 const _dir   = dirname(fileURLToPath(import.meta.url));
 const MASTER = JSON.parse(readFileSync(join(_dir, '../../../data/engine/master.json'), 'utf8'));
@@ -34,14 +35,11 @@ const MASTER = JSON.parse(readFileSync(join(_dir, '../../../data/engine/master.j
 // RISK_MARKER_FOR explicitly excluded: it does not establish a causal path to Goal.
 const CAUSAL_RELATIONS = new Set(['CAUSES', 'CONTRIBUTES_TO']);
 
-// Identical to keys of GOAL_GATEWAYS in systemConstraint.js.
-const GOAL_GATEWAY_IDS = new Set(['CARDIOVASCULAR_DISEASE', 'LOSS_OF_FLOOR_RISE_ABILITY']);
-
-// Branch membership for each gateway — mirrors systemConstraint.js GOAL_GATEWAYS.
-const GATEWAY_BRANCH = {
-  CARDIOVASCULAR_DISEASE:   'SURVIVAL_HEALTHSPAN',
-  LOSS_OF_FLOOR_RISE_ABILITY: 'FUNCTIONAL_INDEPENDENCE',
-};
+// GOAL_GATEWAY_IDS imported from goalGateways.js (single source of truth).
+// Branch membership derived from GOAL_GATEWAYS — mirrors systemConstraint.js.
+const GATEWAY_BRANCH = Object.fromEntries(
+  Object.entries(GOAL_GATEWAYS).map(([id, gw]) => [id, gw.branch])
+);
 
 // Identical ranking maps to systemConstraint.js SEVERITY_RANK and EQ_RANK.
 const SEVERITY_RANK = { high: 3, medium: 2, low: 1, none: 0 };
@@ -238,6 +236,9 @@ export function evaluateSystemConstraintReadiness(nodeStates, systemConstraintRe
   const materialNodeIds = [];
 
   for (const unknown of unknownNodes) {
+    // Clause 6: Goal Gateway UNKNOWN is never a MATERIAL_COMPETING_UNKNOWN.
+    if (GOAL_GATEWAY_IDS.has(unknown.node_id)) continue;
+
     // Condition A: must have a causal path to a Goal gateway.
     const goalPath = computeGoalPath(unknown.node_id, causalGraph);
     if (!goalPath.hasGoalPath) continue;

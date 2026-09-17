@@ -620,6 +620,80 @@ section('Goal path audit — all 16 master nodes');
   assert(lfra.threatens_branches.includes('FUNCTIONAL_INDEPENDENCE'), 'GoalPath-m: LFRA threatens FUNCTIONAL_INDEPENDENCE');
 }
 
+// ── G: Gateway ≠ Constraint assertions ───────────────────────────────────────
+// Verifies the locked 7-clause contract via Engine output.
+{
+  console.log('\n── G: Gateway ≠ Constraint ─────────────────────────────────────');
+
+  const EMPTY_DG = { blocking_uncertainties: [] };
+
+  // G1: CVD CONFIRMED → excluded with exclusion_reason='_goalGateway', _excluded not in output
+  const cvdConfirmed = computeSystemConstraint(
+    [{ node_id: 'CARDIOVASCULAR_DISEASE', current_state: 'CONFIRMED', confidence: 0.9 },
+     { node_id: 'HYPERTENSION',           current_state: 'CONFIRMED', confidence: 0.9 }],
+    [], EMPTY_DG, '1.0'
+  );
+  const cvdCand = (cvdConfirmed.candidates ?? []).find(c => c.node_id === 'CARDIOVASCULAR_DISEASE');
+  assert(cvdCand != null,                              'G1a: CVD CONFIRMED appears in candidates[]');
+  assert(cvdCand?.exclusion_reason === '_goalGateway', 'G1b: CVD exclusion_reason=_goalGateway');
+  assert(cvdConfirmed.selected?.node_id !== 'CARDIOVASCULAR_DISEASE', 'G1c: CVD is NOT selected');
+
+  // G2: LFRA CONFIRMED → excluded with exclusion_reason='_goalGateway'
+  const lfraConfirmed = computeSystemConstraint(
+    [{ node_id: 'LOSS_OF_FLOOR_RISE_ABILITY', current_state: 'CONFIRMED', confidence: 0.9 },
+     { node_id: 'HYPERTENSION',               current_state: 'CONFIRMED', confidence: 0.9 }],
+    [], EMPTY_DG, '1.0'
+  );
+  const lfraCand = (lfraConfirmed.candidates ?? []).find(c => c.node_id === 'LOSS_OF_FLOOR_RISE_ABILITY');
+  assert(lfraCand != null,                               'G2a: LFRA CONFIRMED appears in candidates[]');
+  assert(lfraCand?.exclusion_reason === '_goalGateway',  'G2b: LFRA exclusion_reason=_goalGateway');
+  assert(lfraConfirmed.selected?.node_id !== 'LOSS_OF_FLOOR_RISE_ABILITY', 'G2c: LFRA is NOT selected');
+
+  // G3: CVD CONFIRMED 0-hop Goal path preserved (goal_impact.threatens_branches non-empty)
+  assert((cvdCand?.goal_impact?.threatens_branches?.length ?? 0) > 0,
+    'G3: CVD 0-hop goal_impact preserved in candidates[] entry');
+
+  // G4: CVD UNKNOWN → readiness does NOT flag as MATERIAL_COMPETING_UNKNOWN (Clause 6)
+  const cvdUnknown = evaluateSystemConstraintReadiness(
+    [{ node_id: 'CARDIOVASCULAR_DISEASE', current_state: 'UNKNOWN',   confidence: 0 },
+     { node_id: 'HYPERTENSION',           current_state: 'CONFIRMED', confidence: 0.9 }],
+    { status: 'IDENTIFIED',
+      selected: { node_id: 'HYPERTENSION', goal_threat_severity: 'high',
+                  time_sensitivity: 'high', evidence_quality: 'high',
+                  causal_relevance: 'high', breadth: 2 } }
+  );
+  const cvdBlocking = (cvdUnknown.unmet_requirements ?? [])
+    .some(r => r.type === 'UNRESOLVED_COMPETING_CANDIDATE' &&
+               (r.blocking_node_ids ?? []).includes('CARDIOVASCULAR_DISEASE'));
+  assert(!cvdBlocking, 'G4: CVD UNKNOWN is NOT flagged as MATERIAL_COMPETING_UNKNOWN');
+
+  // G5: LFRA UNKNOWN → readiness does NOT flag as MATERIAL_COMPETING_UNKNOWN (Clause 6)
+  const lfraUnknown = evaluateSystemConstraintReadiness(
+    [{ node_id: 'LOSS_OF_FLOOR_RISE_ABILITY', current_state: 'UNKNOWN',   confidence: 0 },
+     { node_id: 'HYPERTENSION',               current_state: 'CONFIRMED', confidence: 0.9 }],
+    { status: 'IDENTIFIED',
+      selected: { node_id: 'HYPERTENSION', goal_threat_severity: 'high',
+                  time_sensitivity: 'high', evidence_quality: 'high',
+                  causal_relevance: 'high', breadth: 2 } }
+  );
+  const lfraBlocking = (lfraUnknown.unmet_requirements ?? [])
+    .some(r => r.type === 'UNRESOLVED_COMPETING_CANDIDATE' &&
+               (r.blocking_node_ids ?? []).includes('LOSS_OF_FLOOR_RISE_ABILITY'));
+  assert(!lfraBlocking, 'G5: LFRA UNKNOWN is NOT flagged as MATERIAL_COMPETING_UNKNOWN');
+
+  // G6: Non-gateway UNKNOWN with Goal path IS still eligible as MATERIAL_COMPETING_UNKNOWN
+  const hyperUnknown = evaluateSystemConstraintReadiness(
+    [{ node_id: 'HYPERTENSION', current_state: 'UNKNOWN',   confidence: 0 },
+     { node_id: 'DYSLIPIDEMIA', current_state: 'CONFIRMED', confidence: 0.9 }],
+    { status: 'IDENTIFIED',
+      selected: { node_id: 'DYSLIPIDEMIA', goal_threat_severity: 'high',
+                  time_sensitivity: 'medium', evidence_quality: 'high',
+                  causal_relevance: 'high', breadth: 1 } }
+  );
+  // HYPERTENSION UNKNOWN should remain eligible (not silently skipped by gateway filter)
+  assert(hyperUnknown !== undefined, 'G6: non-gateway UNKNOWN (HYPERTENSION) still evaluated by R-COND-3');
+}
+
 // ── Summary ───────────────────────────────────────────────────────────────────
 
 console.log(`\n${'═'.repeat(60)}`);
