@@ -18,11 +18,11 @@ import dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' });
 
 import Anthropic from '@anthropic-ai/sdk';
-import { isEmergency, EMERGENCY_MESSAGE } from './pre-intake.js';
-import { extractEvidenceFromHistory }      from './lib/nbq/evidenceExtractor.js';
+import { isEmergency, EMERGENCY_MESSAGE }              from './pre-intake.js';
+import { extractEvidenceFromHistory }                  from './lib/nbq/evidenceExtractor.js';
 import { computeHypothesisState, extractUserIntention } from './lib/nbq/hypothesisState.js';
-import { selectInformationNeed }           from './lib/nbq/nbqSelector.js';
-import { INFORMATION_NEEDS }               from './lib/nbq/scenarioEvidenceMap.js';
+import { selectInformationNeed }                       from './lib/nbq/nbqSelector.js';
+import { buildWordingPrompt, buildOpenPrompt }         from './lib/nbq/nbqPromptBuilders.js';
 
 export const config = { maxDuration: 30 };
 
@@ -35,59 +35,6 @@ function getClient() {
   return _client;
 }
 
-// Haiku's sole role: formulate one natural question from the INFORMATION_NEED.
-// Haiku does NOT decide what to ask — that is the NBQ selector's job.
-function buildWordingPrompt(informationNeedKey, history) {
-  const need = INFORMATION_NEEDS[informationNeedKey];
-  const recentContext = history
-    .slice(-6)
-    .map(m => `${m.role === 'user' ? 'Uživatel' : 'CHJ'}: ${m.content}`)
-    .join('\n');
-
-  return {
-    system: `Jsi CHJ asistent. Tvoje JEDINÁ ÚLOHA je formulovat JEDNU přirozenou otázku v češtině (tykání).
-
-INFORMATION NEED: ${need?.description ?? informationNeedKey}
-
-Pravidla:
-- Napiš PŘESNĚ JEDNU otázku, maximálně jednu větu
-- Tykej
-- Nepoužívej diagnózy ani lékařské závěry
-- Nepřidávej žádnou druhou otázku ani doplnění
-- Nepiš nic jiného než samotnou otázku (žádné uvozování, žádné vysvětlení)`,
-    messages: [
-      {
-        role: 'user',
-        content: `Kontext rozhovoru:\n${recentContext}\n\nFormuluj otázku pro INFORMATION NEED.`,
-      },
-    ],
-  };
-}
-
-// Open question prompt — used when no specific hypothesis has evidence yet.
-function buildOpenPrompt(history) {
-  const recentContext = history
-    .slice(-4)
-    .map(m => `${m.role === 'user' ? 'Uživatel' : 'CHJ'}: ${m.content}`)
-    .join('\n');
-
-  return {
-    system: `Jsi CHJ asistent. Uživatel sdělil záměr, ale zatím nemáme žádné konkrétní zdravotní informace.
-Tvoje JEDINÁ ÚLOHA je formulovat JEDNU otevřenou otázku v češtině (tykání), která zjistí, co stojí za tímto záměrem.
-
-Pravidla:
-- Přesně JEDNA otázka, jedna věta
-- Tykej
-- Nepoužívej diagnózy ani lékařské závěry
-- Nepiš nic jiného než samotnou otázku`,
-    messages: [
-      {
-        role: 'user',
-        content: `Kontext:\n${recentContext}\n\nFormuluj otevřenou otázku.`,
-      },
-    ],
-  };
-}
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
