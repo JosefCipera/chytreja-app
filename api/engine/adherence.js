@@ -19,11 +19,36 @@
 //      safety / leverage / affinity ranking.
 
 // ── INTERVENTION_EXPOSURE ─────────────────────────────────────────────────────
+//
+// A row counts toward exposure only when its day (assigned_date, fallback
+// completed_at date — UTC, same convention as skippedTodayActionIds) is a valid
+// YYYY-MM-DD calendar date not later than the decision date. Invalid and future
+// rows are ignored. sessions_completed = number of UNIQUE completed days: several
+// COMPLETED rows of one intervention on one day count as one session.
 
-export function computeInterventionExposure(assignments) {
+const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+function toUtcDay(value) {
+  if (typeof value !== 'string') return null;
+  const day = value.slice(0, 10);
+  if (!DAY_RE.test(day)) return null;
+  const d = new Date(`${day}T00:00:00Z`);
+  return !isNaN(d) && d.toISOString().slice(0, 10) === day ? day : null;
+}
+
+function rowDay(a) {
+  return toUtcDay(a.assigned_date) ?? toUtcDay(a.completed_at);
+}
+
+// asOf: decision time (Date | ISO string). Defaults to now — production callers omit it.
+export function computeInterventionExposure(assignments, asOf = new Date()) {
+  const today = new Date(asOf).toISOString().slice(0, 10);
   const byIntervention = new Map();
 
   for (const a of (assignments ?? [])) {
+    const day = rowDay(a);
+    if (!day || day > today) continue; // invalid or future row — not exposure yet
+
     if (!byIntervention.has(a.intervention_id)) {
       byIntervention.set(a.intervention_id, {
         intervention_id:    a.intervention_id,
@@ -31,7 +56,7 @@ export function computeInterventionExposure(assignments) {
         all:                [],
       });
     }
-    byIntervention.get(a.intervention_id).all.push(a);
+    byIntervention.get(a.intervention_id).all.push({ ...a, _day: day });
   }
 
   const result = [];
@@ -40,7 +65,7 @@ export function computeInterventionExposure(assignments) {
     const completed = all.filter(a => a.status === 'COMPLETED');
     const skipped   = all.filter(a => a.status === 'SKIPPED');
 
-    const dates = all.map(a => a.assigned_date).sort();
+    const dates = all.map(a => a._day).sort();
     const periodStart = dates[0];
     const periodEnd   = dates[dates.length - 1];
     const calendarDays = Math.max(1,
@@ -51,10 +76,13 @@ export function computeInterventionExposure(assignments) {
       (sum, a) => sum + (a.actual_duration_seconds ?? 0), 0
     );
 
+    // Unique completed days — used for sessions_completed and by DAILY_DECISION to hold
+    // only for the rest of a completion day.
+    const completed_days = [...new Set(completed.map(a => a._day))].sort();
+
     // First completed timestamp — used as temporal anchor for observation filtering
     const completedAts = completed
-      .map(a => a.completed_at)
-      .filter(Boolean)
+      .map(a => a.completed_at ?? `${a._day}T00:00:00.000Z`)
       .sort();
     const first_completed_at = completedAts[0] ?? null;
 
@@ -65,10 +93,12 @@ export function computeInterventionExposure(assignments) {
       period_end:             periodEnd,
       calendar_days_in_period: calendarDays,
       sessions_assigned:      all.length,
-      sessions_completed:     completed.length,
+      sessions_completed:     completed_days.length,
       sessions_skipped:       skipped.length,
       total_actual_duration_s: totalActualDuration,
       first_completed_at,
+      completed_days,
+      last_completed_date:    completed_days[completed_days.length - 1] ?? null,
     });
   }
 
@@ -127,7 +157,7 @@ function evaluateDirection(observations, expected_direction, obs_type) {
 
 // ── Single response evaluation ────────────────────────────────────────────────
 
-function evaluateSingleResponse(exposure, expectedResponse, observations, firstCompletedAt) {
+function evaluateSingleResponse(exposure, expectedResponse, observations, firstCompletedAt, asOf) {
   const {
     response_id,
     target_node,
@@ -149,7 +179,7 @@ function evaluateSingleResponse(exposure, expectedResponse, observations, firstC
     };
   }
 
-  const daysSinceFirst = (Date.now() - new Date(firstCompletedAt)) / 86400000;
+  const daysSinceFirst = (new Date(asOf) - new Date(firstCompletedAt)) / 86400000;
 
   if (daysSinceFirst < horizon_min_days) {
     return {
@@ -230,7 +260,10 @@ function findIntervention(interventionMap, intervention_id) {
   return null;
 }
 
-export function evaluateResponseEvaluations(exposures, interventionMap, observations, rawAssignments) {
+// asOf: decision time (Date | ISO string). Defaults to now — production callers omit it.
+// rawAssignments is kept for signature compatibility; the anchor comes from the exposure,
+// which already excludes invalid and future rows.
+export function evaluateResponseEvaluations(exposures, interventionMap, observations, rawAssignments, asOf = new Date()) {
   const results = [];
 
   for (const exposure of (exposures ?? [])) {
@@ -238,17 +271,13 @@ export function evaluateResponseEvaluations(exposures, interventionMap, observat
     if (!interventionDef?.expected_responses?.length) continue;
 
     // First completed timestamp for this intervention
-    const completedAts = (rawAssignments ?? [])
-      .filter(a => a.intervention_id === exposure.intervention_id && a.status === 'COMPLETED' && a.completed_at)
-      .map(a => a.completed_at)
-      .sort();
-    const firstCompletedAt = completedAts[0] ?? null;
+    const firstCompletedAt = exposure.first_completed_at ?? null;
 
     for (const expectedResponse of interventionDef.expected_responses) {
       results.push({
         intervention_id:  exposure.intervention_id,
         leverage_node_id: exposure.leverage_node_id,
-        ...evaluateSingleResponse(exposure, expectedResponse, observations, firstCompletedAt),
+        ...evaluateSingleResponse(exposure, expectedResponse, observations, firstCompletedAt, asOf),
       });
     }
   }

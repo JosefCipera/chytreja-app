@@ -168,12 +168,12 @@ computeSystemConstraint(node_states, projections, decision_gate, ENGINE_VERSION)
   → SYSTEM_CONSTRAINT { bottleneck_node_id, ... }
 
   ▼ ── Feedback Loop ──────────────────────────────────────────────────────────
-computeInterventionExposure(actionAssignments)
+computeInterventionExposure(actionAssignments, asOf?)
   → INTERVENTION_EXPOSURE[]
 
 skippedTodayActionIds = Set of action_ids with status=SKIPPED on assigned_date=today
 
-evaluateResponseEvaluations(exposure, INTERVENTION_MAP, observations, assignments)
+evaluateResponseEvaluations(exposure, INTERVENTION_MAP, observations, assignments, asOf?)
   → RESPONSE_EVALUATION[]
 
 buildResponseInformationNeeds(response_evaluations)
@@ -187,9 +187,12 @@ computeNextBestAction({ leverageNodeId, interventions, actionPool, personConstra
   → NEXT_BEST_ACTION { status, selected, all_candidates, ... }
 
   ▼ dailyDecision.js
-computeDailyDecision(engineOutput)
+computeDailyDecision(engineOutput, asOf?)
   → DAILY_DECISION { mode, primary_item, reason_code, source, reevaluate_after, evaluated_at }
 ```
+
+`asOf` = volitelný čas rozhodnutí (Date / ISO string). Produkce ho nepředává — default je aktuální čas;
+testy předávají pevný UTC čas, aby výsledek nezávisel na hodinách ani na přechodu přes půlnoc.
 
 ---
 
@@ -324,9 +327,17 @@ actual_reps             integer | null
 
 ### COMPLETED
 
-- Počítá se jako `sessions_completed` v INTERVENTION_EXPOSURE
+- Počítá se do `sessions_completed` v INTERVENTION_EXPOSURE — **po unikátních dokončených dnech**:
+  více COMPLETED řádků téže intervention v jednom dni = jedna session (`completed_days`)
+- Řádek s neplatným datem (ne platné `YYYY-MM-DD`) nebo s dnem pozdějším než čas rozhodnutí se do
+  expozice nezapočítá (ani do `sessions_assigned`, periody a `first_completed_at`)
 - Anchor pro Response Evaluation (`first_completed_at`)
-- Neaktivuje `HOLD` samotné — HOLD vyžaduje splněnou `minimum_exposure_rule`
+- Množina dokončených dnů (`completed_days`, UTC `assigned_date`, fallback datum `completed_at`) řídí
+  `HOLD_DONE_TODAY`: rozhoduje, zda obsahuje dnešní UTC den (ne lexikograficky poslední datum —
+  poškozený nebo budoucí řádek tak nemůže zamaskovat dnešní dokončení);
+  pro zbytek tohoto dne se tatáž intervention znovu nenabízí; další den ji NBA a Safety Gate
+  vyhodnotí znovu a vznikne běžný ACT — opakuje se, dokud se nesplní `minimum_exposure_rule`
+  a horizon, a Response Evaluation se tak vůbec může dostat k vyhodnocení
 
 ### NBA Ranking Policy (zamčeno — engine.js LOCKED)
 
@@ -354,7 +365,7 @@ Kandidáti jsou řazeni lexikograficky v tomto pořadí:
 - **Exact `action_id` je pro zbytek aktuálního dne ineligible** (filtr v `buildCandidates` přes `skippedTodayActionIds`)
 - Sibling akce ve stejné intervention mohou zůstat eligible
 - Zítra může být stejná akce znovu nabídnuta
-- **SKIPPED SAMO O SOBĚ NETRIGGERUJE HOLD** — `checkHold` vyžaduje `sessions_completed > 0`
+- **SKIPPED SAMO O SOBĚ NETRIGGERUJE HOLD** — `checkHold` vyžaduje COMPLETED session dnes
 
 ---
 
@@ -367,7 +378,10 @@ ACTION_EXECUTION       — co bylo přiřazeno a provedeno (action_assignments)
   ↓
 INTERVENTION_EXPOSURE  — behaviorální agregát per intervention_id
   { sessions_completed, sessions_skipped, sessions_assigned,
-    calendar_days_in_period, total_actual_duration_s, first_completed_at }
+    calendar_days_in_period, total_actual_duration_s, first_completed_at,
+    completed_days, last_completed_date }
+  sessions_completed = počet unikátních platných dnů s COMPLETED (= completed_days.length);
+  jen řádky s platným dnem ≤ datum rozhodnutí (asOf)
   ↓
 RESPONSE_EVALUATION    — porovnání expected_response vs. actual HEALTH_OBSERVATION
   TOO_EARLY             — žádná completed session (first_completed_at = null)
@@ -381,10 +395,16 @@ RESPONSE_EVALUATION    — porovnání expected_response vs. actual HEALTH_OBSER
 `CONSISTENT_WITH_EXPECTED_RESPONSE` ovlivňuje NBA ranking pouze jako tiebreaker v rámci aktuálního leverage node.  
 AI Orchestrator nesmí přeformulovat toto jako „intervence způsobila změnu."
 
-### HOLD_TOO_EARLY — přesná sémantika
+### HOLD_DONE_TODAY — přesná sémantika (od 2026-09-27)
 
-`HOLD_TOO_EARLY` znamená, že **aktuální intervention** čeká na dostatek času nebo dat.  
-**Není** globální zákaz jiné činnosti. Pokud existuje jiná eligible akce pro jiný leverage node nebo jiný kontext, engine ji může vybrat.
+`HOLD_DONE_TODAY` znamená, že **aktuálně vybraná intervention** už byla dnes dokončena — druhé
+splnění téže intervention ve stejný den se nenabízí. `reevaluate_after` = zítřek.
+**Není** globální zákaz jiné činnosti: pokud NBA po nové evidenci vybere jinou intervention, vznikne ACT.
+
+`TOO_EARLY` a `INSUFFICIENT_EXPOSURE` zůstávají výsledky RESPONSE_EVALUATION, ale **neblokují ACT**.
+Dříve z nich vznikal `HOLD_TOO_EARLY` / `HOLD_INSUF_EXPOSURE`, jenže HOLD nenesl akci ani tlačítka
+Hotovo/Přeskočit — opakování požadovaná `minimum_exposure_rule` nešla zapsat a smyčka se k vyhodnocení
+nikdy nedostala (reprodukováno na chůzi, `BREAK_UP_SEDENTARY_TIME`).
 
 ---
 
@@ -409,7 +429,7 @@ DAILY_DECISION {
 SAFETY_CRITICAL   [mode=SAFETY]  — person-state signal, přebíjí celý loop    ✅ v0.1
   > SAFETY_BLOCKED  [mode=SAFETY]  — všichni kandidáti CONTRAINDICATED/CLINICAL_CLEARANCE
   > ASK_BLOCKING    [mode=ASK]     — NBA.status ∈ {NEED_MORE_EVIDENCE, NO_CANDIDATES, NOT_COMPUTED}
-  > HOLD            [mode=HOLD]    — HOLD_TOO_EARLY nebo HOLD_INSUF_EXPOSURE
+  > HOLD            [mode=HOLD]    — HOLD_DONE_TODAY (vybraná intervention dnes dokončena)
   > ACT             [mode=ACT]     — NBA selected viable action
 ```
 
@@ -420,8 +440,9 @@ SAFETY_CRITICAL   [mode=SAFETY]  — person-state signal, přebíjí celý loop 
 | `SAFETY_CRITICAL` | SAFETY | SAFETY_CRITICAL actionability v decision_gate — v1 zatím netriggerováno |
 | `SAFETY_BLOCKED` | SAFETY | Všichni kandidáti CONTRAINDICATED nebo NEEDS_CLINICAL_CLEARANCE |
 | `ASK_BLOCKING` | ASK | NBA.status ∈ {NEED_MORE_EVIDENCE, NO_CANDIDATES, NOT_COMPUTED} |
-| `HOLD_TOO_EARLY` | HOLD | horizon_min_days neuplynul od první completed session |
-| `HOLD_INSUF_EXPOSURE` | HOLD | Horizon uplynul, minimum_exposure_rule nesplněna |
+| `HOLD_DONE_TODAY` | HOLD | Vybraná intervention má dnes COMPLETED session; `reevaluate_after` = zítřek |
+| ~~`HOLD_TOO_EARLY`~~ | — | Od 2026-09-27 se nevydává (TOO_EARLY je jen výsledek RESPONSE_EVALUATION) |
+| ~~`HOLD_INSUF_EXPOSURE`~~ | — | Od 2026-09-27 se nevydává (INSUFFICIENT_EXPOSURE je jen výsledek RESPONSE_EVALUATION) |
 | `ACT_READY` | ACT | NBA selected viable action |
 
 **DAILY_DECISION prezentuje pouze `NBA.selected` — nikdy `all_candidates`.**
@@ -509,6 +530,8 @@ current_action_assignment  { action_id, intervention_id, label } — přiřazen�
 **ZERO_DATA_FOLLOWUP guard:** Pokud uživatelův vstup neobsahuje žádná zdravotní data interpretovatelná jako event, orchestrátor nevolá engine — vrátí cílené ASK na konkrétní pending evidence question místo opakovaného generic loopu. Zabraňuje nekonečné zero-data ASK smyčce.
 
 **ACTION_COMPLETED → HOLD:** Pokud `event_type === 'ACTION_COMPLETED'` a engine vrátí `mode=HOLD`, orchestrátor vrátí potvrzení dokončení akce (`Hotovo. Pro dnešek stačí. Výsledek budeme hodnotit až po několika opakováních.`) — ne generický HOLD label akce. Text není přeformulací rozhodnutí, jen rozlišuje kontext eventu.
+
+**HOLD_DONE_TODAY (post 2026-09-27):** Při dalším vstupu téhož dne orchestrátor vrátí `Pro dnešek stačí. Zítra pokračujeme.` bez tlačítek (u zdravotního vstupu s potvrzením přijetí informace). Každý HOLD nastaví `session_updates.current_action_assignment = null` — i zastaralé přiřazení držené klientem se vynuluje, takže druhé „Hotovo“ téhož dne nelze zapsat. Další den engine vrátí běžný ACT — orchestrátor nastaví nový `current_action_assignment` a tlačítka Hotovo / Přeskočit.
 
 ### Hard boundaries orchestratoru
 
@@ -643,7 +666,7 @@ Health Engine je **feature-frozen**:
 
 | Oblast | Popis | Kdy opravit |
 |--------|-------|-------------|
-| **`computeReevaluateAfter`** | Parsuje `horizon_min_days` regexem z reason stringu; pokud se změní formát stringu, parsing tiše selže. Správně by mělo být strukturované pole z `evaluateSingleResponse`. | Před v0.4.0 |
+| ~~`computeReevaluateAfter`~~ | ✅ Odstraněno 2026-09-27 — `reevaluate_after` pro `HOLD_DONE_TODAY` je vždy zítřek, regex parsing reason stringu už neexistuje. | — |
 | **ATRIAL_FIBRILLATION** | FaP je v Josefově profilu diagnostikována, ale aktuálně netransformuje na aktivní uzel — chybí v Master slice | v0.3.x |
 | **CV projekce kalibrace** | `calibrated=false` — numerické vstupy (ApoB, LP(a), CAC) nejsou zapojeny do risk kvantifikace | v0.4.0 |
 | **Věkové / pohlavní auto_if** | Age ≥ 60 + sex-specific risk factors nejsou v Engine v1 implementovány | v0.4.0 |

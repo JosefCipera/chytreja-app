@@ -113,7 +113,7 @@ Tyto principy jsou neměnné — platí pro engine, orchestrátor i AI language 
 - **`Přeskočit` odmítá konkrétní action_id, ne celou intervention.** Sibling akce ve stejné intervenci zůstávají eligible.
 - **`UNKNOWN`, `NOT_AVAILABLE`, skutečná hodnota a inferred state nejsou totéž.** Engine musí rozlišovat — jiný epistémický stav, jiné rozhodnutí.
 - **CHJ nesmí odhadovat měření z vágního textu, pokud engine potřebuje číslo.** Freetext → structured event (diagnosis, age, constraint). Nikdy → odhadnutá numerická observace.
-- **Když je příliš brzo na vyhodnocení, správnou akcí je HOLD.** `HOLD_TOO_EARLY` není chyba — je to korektní výstup s omezenou evidencí.
+- **Když je příliš brzo na vyhodnocení, správnou akcí je pokračovat v opakování, ne čekat.** Vyhodnocení (TOO_EARLY / INSUFFICIENT_EXPOSURE) nesmí blokovat opakování, které `minimum_exposure_rule` vyžaduje. HOLD (`HOLD_DONE_TODAY`) znamená jen „pro dnešek hotovo" — druhé splnění téže intervence ve stejný den se nenabízí, další den se nabídne znovu. *(Upraveno 2026-09-27.)*
 
 ---
 
@@ -179,7 +179,7 @@ DAILY_DECISION {
 SAFETY_CRITICAL  [mode=SAFETY]  — stav osoby, přebíjí celý loop
   > SAFETY_BLOCKED   [mode=SAFETY]  — žádná viable akce kvůli Safety Gate
   > ASK_BLOCKING     [mode=ASK]     — NBA nemůže vybrat; evidence by odblokovala
-  > HOLD             [mode=HOLD]    — aktivní intervence, TOO_EARLY nebo INSUF_EXPOSURE
+  > HOLD             [mode=HOLD]    — vybraná intervence dnes dokončena (HOLD_DONE_TODAY); zítra znovu ACT
   > ACT              [mode=ACT]     — NBA selected a viable action
 ```
 
@@ -344,7 +344,7 @@ data/engine/
 
 ### Known Tech Debt
 
-**`computeReevaluateAfter`** v `api/engine/dailyDecision.js` parsuje `horizon_min_days` regexem z textového reason stringu. Pokud se změní formát stringu, parsing tiše selže. `horizon_min_days` by mělo být exportováno jako strukturované pole z `evaluateSingleResponse`. Opravit před v0.4.0.
+~~**`computeReevaluateAfter`**~~ — ✅ odstraněno 2026-09-27 spolu s opravou opakovací smyčky (`reevaluate_after` pro `HOLD_DONE_TODAY` = zítřek).
 
 ---
 
