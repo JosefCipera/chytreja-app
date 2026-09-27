@@ -9,12 +9,9 @@
 import dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' });
 
-import Anthropic                               from '@anthropic-ai/sdk';
-import { createClient }                        from '@supabase/supabase-js';
-import { processInput }                        from './engine/orchestrator.js';
-import { requireAuth }                         from './lib/requireAuth.js';
-import { evaluateGate }                        from './lib/nbq/evidenceGate.js';
-import { buildWordingPrompt, buildOpenPrompt } from './lib/nbq/nbqPromptBuilders.js';
+import { createClient } from '@supabase/supabase-js';
+import { processInput } from './engine/orchestrator.js';
+import { requireAuth }  from './lib/requireAuth.js';
 
 export const config = { maxDuration: 30 };
 
@@ -24,72 +21,6 @@ let _sb = null;
 function getSb() {
   if (!_sb) _sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
   return _sb;
-}
-
-let _ai = null;
-function getAI() {
-  if (!_ai) _ai = new Anthropic();
-  return _ai;
-}
-
-// Intercepts ACT responses for GENERAL_HEALTH_REQUEST when evidence is insufficient.
-// traceData is the already-fetched action_assignments context so _trace is complete in both paths.
-// Returns a replacement ASK response, or null to pass ACT through.
-async function runNbqGate(response, session, userText, traceData) {
-  if (response.mode !== 'ACT' || response.debug?.classifier_event !== 'GENERAL_HEALTH_REQUEST') {
-    return null;
-  }
-
-  const prevMessages = Array.isArray(session.nbq_messages) ? session.nbq_messages : [];
-  const gate = evaluateGate(prevMessages, userText);
-
-  if (gate.outcome === 'URGENT_EXIT' || gate.outcome === 'STOP_QUESTIONING') {
-    return null;
-  }
-
-  const messagesWithCurrent = [
-    ...prevMessages,
-    { role: 'user', content: userText },
-  ];
-
-  const prompt = gate.outcome === 'OPEN_INFORMATION_NEED'
-    ? buildOpenPrompt(messagesWithCurrent)
-    : buildWordingPrompt(gate.information_need, messagesWithCurrent);
-
-  let questionText;
-  try {
-    const resp = await getAI().messages.create({
-      model: 'claude-haiku-4-5', max_tokens: 256,
-      system: prompt.system, messages: prompt.messages,
-    });
-    questionText = resp.content?.[0]?.text?.trim() ?? '';
-  } catch (err) {
-    console.error('[nbq-gate] Haiku error:', err.message);
-    return null;
-  }
-
-  return {
-    mode:          'ASK',
-    text:          questionText,
-    buttons:       [],
-    expects_reply: true,
-    session_updates: {
-      ...(response.session_updates ?? {}),
-      current_action_assignment: null,   // gate blocked ACT; unsubstantiated assignment must not enter session
-      nbq_messages: [
-        ...messagesWithCurrent,
-        { role: 'assistant', content: questionText },
-      ],
-    },
-    debug: {
-      ...response.debug,
-      nbq_gate: {
-        outcome:          gate.outcome,
-        information_need: gate.information_need ?? null,
-      },
-      _trace: traceData,
-    },
-  };
 }
 
 export default async function handler(req, res) {
@@ -119,12 +50,17 @@ export default async function handler(req, res) {
   );
 
   try {
+    // Fetch pending_clarifications server-side so the orchestrator can apply safety gates
+    // (e.g. acute symptom ACT gate) without trusting client-provided session state.
+    // Client session is the authority for temporal session fields; DB is authority for health facts.
     const [{ data: profileRow }, { data: personRow }] = await Promise.all([
       getSb()
         .from('user_health_profile')
         .select('pending_clarifications, physical')
         .eq('user_id', userId)
         .maybeSingle(),
+      // Narrow unlock: inject birth_year/sex so orchestrator bootstrap skip/defer handler
+      // can filter candidates without a DB call inside the locked orchestrator layer.
       getSb()
         .from('user_profiles')
         .select('birth_year, gender')
@@ -142,13 +78,16 @@ export default async function handler(req, res) {
       fatigue_context:        fatigueContext,
       person_birth_year:      personRow?.birth_year ?? null,
       person_sex:             personRow?.gender     ?? null,
+      // Narrow unlock: keys already present in physical → bootstrap candidate eligibility filter.
+      // physical is already fetched above; no extra DB round-trip.
       resolved_physical:      Object.keys(profileRow?.physical ?? {}),
+      // PATH Discovery: actual physical values (not just keys) for synthesizePathDiscovery evaluation.
       hp_physical:            profileRow?.physical ?? {},
     };
 
     const response = await processInput(userId, text.trim(), sessionWithPending);
 
-    // ── Query action_assignments — needed for _trace in ALL response paths ──
+    // ── TRACE: query action_assignments for this user ──────────────────────
     const { data: assignments, error: _traceErr } = await getSb()
       .from('action_assignments')
       .select('action_id, status, assigned_at, intervention_id')
@@ -159,30 +98,6 @@ export default async function handler(req, res) {
 
     const assignCount  = assignments?.length ?? 0;
     const latestAssign = assignments?.[0] ?? null;
-    const traceData    = {
-      request_id,
-      commit:                   COMMIT,
-      deployment:               process.env.VERCEL_URL ?? 'local',
-      action_assignments_count: assignCount,
-      latest_assignment:        latestAssign ? {
-        intervention_id: latestAssign.intervention_id,
-        status:          latestAssign.status,
-        created_at:      latestAssign.created_at,
-      } : null,
-    };
-
-    // ── NBQ Gate ───────────────────────────────────────────────────────────
-    const nbqIntercept = await runNbqGate(response, session, text.trim(), traceData);
-    if (nbqIntercept) {
-      console.log(
-        `[trace:${request_id}] OUT`,
-        `mode=ASK(nbq-gate)`,
-        `nbq_outcome=${nbqIntercept.debug.nbq_gate.outcome}`,
-        `need=${nbqIntercept.debug.nbq_gate.information_need ?? '—'}`,
-      );
-      return res.status(200).json(nbqIntercept);
-    }
-    // ──────────────────────────────────────────────────────────────────────
 
     console.log(
       `[trace:${request_id}] OUT`,
@@ -196,7 +111,23 @@ export default async function handler(req, res) {
       `latestStatus=${latestAssign?.status ?? 'none'}`,
     );
 
-    return res.status(200).json({ ...response, debug: { ...response.debug, _trace: traceData } });
+    // ── Augment debug with trace fields ────────────────────────────────────
+    const debug = {
+      ...response.debug,
+      _trace: {
+        request_id,
+        commit:    COMMIT,
+        deployment: process.env.VERCEL_URL ?? 'local',
+        action_assignments_count: assignCount,
+        latest_assignment: latestAssign ? {
+          intervention_id: latestAssign.intervention_id,
+          status:          latestAssign.status,
+          created_at:      latestAssign.created_at,
+        } : null,
+      },
+    };
+
+    return res.status(200).json({ ...response, debug });
   } catch (err) {
     console.error(`[trace:${request_id}] ERROR:`, err?.message ?? err);
     return res.status(500).json({ error: 'Internal error', detail: err?.message });
