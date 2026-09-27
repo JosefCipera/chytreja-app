@@ -8,7 +8,7 @@
 //   Only these two states come from activation.
 //   PREDICTED_CURRENT and UNKNOWN are handled in inference.js.
 
-import { isEvidenceResolved } from './evidenceResolution.js';
+import { isEvidenceResolved, readYesNo } from './evidenceResolution.js';
 
 export function activation(person, clinicalHistory, observations) {
   const states = [];
@@ -206,7 +206,7 @@ export function activation(person, clinicalHistory, observations) {
   // Note: recent_falls is FALL_RISK direct evidence; it is NOT sufficient for
   //       GAIT_INSTABILITY CONFIRMED — that requires direct gait/balance assessment.
   const recentFalls = oi['recent_falls'];
-  const hasRecentFalls = recentFalls === 'yes' || recentFalls === true || recentFalls === 'true';
+  const hasRecentFalls = readYesNo(recentFalls) === 'yes';
   if (hasRecentFalls) {
     states.push({
       node_id: 'FALL_RISK',
@@ -224,8 +224,7 @@ export function activation(person, clinicalHistory, observations) {
     });
   }
 
-  const negatives = ['no', 'false', '0', false, 0];
-  const isNeg = v => negatives.includes(v) || v === 'ne';
+  const isNeg = v => readYesNo(v) === 'no';
 
   const strengthEvidence = [];
   if (isNeg(oi['vynest_nakup']))
