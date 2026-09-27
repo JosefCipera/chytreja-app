@@ -895,13 +895,13 @@ Authenticated user → 200 a token A + userId B → 403 nelze ověřit live bez 
 
 ### 6. Nový tester UID v TESTER_UIDS
 
-**Problém:** Nový tester account `e0ZYA3auBYUh9TOOtqQPqbkIcrJ2` (Tester 1) nebyl v `TESTER_UIDS` whitelist → Full Reset vracel `403` → orphan COMPLETED row přežil všechny UI resety → HOLD_TOO_EARLY při každém spuštění.
+**Problém:** Nový tester account Tester 1 nebyl v `TESTER_UIDS` whitelist → Full Reset vracel `403` → orphan COMPLETED row přežil všechny UI resety → HOLD_TOO_EARLY při každém spuštění.
 
 **Oprava:** Přidán do `TESTER_UIDS` jako Tester 1.
 
 **Commit:** `00f0ce1` · Soubor: `api/tester-reset.js`
 
-**Chráněné UID (nikdy nepřidat):** Josef `vPrm5PNzLWWWhi9sSwYVbkb9FaD3`, Kovářová (viz Supabase).
+**Chráněné účty (nikdy nepřidat):** Chráněný produkční účet Josef — nikdy nepřidávat do TESTER_UIDS a nikdy na něm nespouštět tester reset. Kovářová (viz Supabase).
 
 ---
 
@@ -1039,13 +1039,94 @@ NBQ integrace (`b27e8692`) **nezpůsobila regresi** v orchestrator baseline. FO2
 
 Read-only audit existujících engine `INFORMATION_NEEDS` (výstup `buildInformationNeeds()`) proti acceptance scénářům A–D. **Žádný nový mechanismus** dokud audit neprokáže konkrétní gap s MVP důkazem.
 
+### X5 — yes/no polarita při čtení evidence — ✅ CLOSED (`66c31b2`, PR #4, nasazeno `bfb3edd`)
+
+**Kontext:** Read-only audit acceptance scénářů A–D proti `docs/CHJ-MASTER-LOCK-2026-08-23.md` §13
+(dokumenty doplněny do repa v PR #3, `1136960`). X5 byla první reprodukovaná překážka scénáře A — Funkční síla.
+
+**Původní chyba (X5):**
+- Odpovědi na ano/ne otázky se ukládají do `user_health_profile.physical` buď kanonicky (`'yes'`, `'no'`, `true`…),
+  nebo jako surová odpověď uživatele — Guard C v orchestrátoru ukládá bootstrap odpověď doslovně (`"Ne."`, `"Ano."`).
+- `activation.js`, `inference.js` a `nextBestAction.js` porovnávaly pouze přesné kanonické tokeny.
+- Důsledky:
+  - `vstat_ze_zeme = "Ne."` neaktivovalo LOW_MUSCLE_STRENGTH,
+  - `recent_falls = "Ano."` neaktivovalo FALL_RISK; zároveň zmizel i FALL_RISK UNKNOWN, takže nahlášený pád se ztratil úplně.
+- Otázka se přitom považovala za zodpovězenou (`!= null`) a už se znovu nepoložila → evidence byla tiše ztracena.
+
+**Oprava:**
+- `api/engine/evidenceResolution.js`: nová čistá funkce `readYesNo(value)` → `'yes' | 'no' | null`. Úzká obecná polarita:
+  - `yes`: yes / ano / true / jo / boolean `true`,
+  - `no`: ne / false / 0 / nene / boolean `false` / číslo `0`,
+  - `no` jen jako přesný kanonický token; české „No.“ → `null`,
+  - tolerance velikosti písmen, okolních mezer a koncové interpunkce.
+- Volné věty se záměrně neinterpretují: „Upadla jsem“, „Nezvládnu“, „Nemůžu“, „Ano, ale jen s oporou“, „Spíš ne“, „Nevím“ → `null`.
+- Použito v:
+  - `activation.js`: `hasRecentFalls`, `isNeg` pro `vynest_nakup`, `zvednout_vnouce`, `vstat_ze_zeme`,
+  - `inference.js`: `isNeg` pro `balanc_jedna_noha`, `rovnovaha_zavrene_oci` a signál `recent_falls` pro GAIT_INSTABILITY,
+  - `nextBestAction.js`: `computeMobilityProfile().fall_history`.
+- Oprava je pouze na straně čtení: uložená data se nemigrují a opravené čtení pokryje i starší záznamy.
+- Beze změny zůstaly:
+  - model a priority: master slice, inferenční pravidla, intervention-map, pořadí NBA, DAILY_DECISION, Safety Gate,
+  - kontroly „zodpovězeno“ (`!= null`), `gait_stability` a zápisová cesta.
+- Žádný LOCKED soubor nebyl změněn.
+- Záměrný vedlejší efekt v NBA: uložené `'ne'`, `'0'` a `0` u `recent_falls` dávají nově `fall_history = NONE_REPORTED` (dříve `UNKNOWN`).
+
+**Commity / PR:**
+- `66c31b2` fix(engine): read yes/no evidence answers through one shared polarity reader (X5) — PR #4
+- merge do `main`: `bfb3edd`; Vercel `chytreja-app-develop` = „Deployment has completed“; debug overlay na `dev.iting.cz` potvrdil `commit: bfb3edd`
+
+**Testy:**
+- `scripts/test-yesno-polarity.mjs` (nový, bez DB): **70/70 PASS**; na původním kódu **39 FAIL**, což potvrzuje, že test chybu reprodukuje.
+  Pokrývá tabulku `readYesNo`, „Ne.“ → LOW_MUSCLE_STRENGTH MEASURED, „Ano.“ → FALL_RISK CONFIRMED, kanonické hodnoty beze změny,
+  volné a nejednoznačné věty → `null`, paritu celé pipeline (surová ≡ kanonická odpověď) a paritu NBA.
+- Regrese bez DB: gait-stability-resolution 29/29, system-constraint-readiness PASS, system-constraint-readiness-parity PASS,
+  domain-evidence-adapter 68/68, nbe-question-bridge 84/84, bridge-person-model-integration 132/132, person-model 86/86,
+  structured-fact-bridge 143/143.
+- Nespuštěno (chybí `.env.local` a `node_modules`): `test-health-event-adapter`, `test-orchestrator`, `test-nba-policy`, `test-nba-kovarova`.
+
+**Live test na `dev.iting.cz` (commit `bfb3edd`):**
+
+| Tok | Účet | Vstupy | Výsledek |
+|-----|------|--------|----------|
+| A — „Ne.“ na vstávání ze země | Tester 103 | úvodní věta → `72` → `Ne.` → `Ne.` → **`Ne.`** | **PASS** — aplikace: „Přibližně kolik hodin za běžný den prosedíš?“ (bootstrap nepokračoval na `vynest_nakup`). DB: `vstat_ze_zeme = "Ne."`, `recent_falls = "Ne."`, žádná neočekávaná data. Engine nad těmito daty: LOW_MUSCLE_STRENGTH MEASURED, REDUCED_FUNCTIONAL_RESERVE PREDICTED_CURRENT, constraint i leverage LOW_MUSCLE_STRENGTH, FALL_RISK žádný. |
+| B — „Ano.“ na nedávný pád | Tester 104 | úvodní věta → `72` → `Ne.` → **`Ano.`** | **PASS** — aplikace: „Zatím o tobě vím málo…“, otázka na vstávání ze země se neobjevila. DB: `recent_falls = "Ano."`. Engine nad těmito daty: FALL_RISK CONFIRMED (`evidence.direct` = `"Ano."`). |
+
+Stav uzlů u obou toků ověřen lokálním během čisté pipeline (kód shodný s `origin/main`) nad daty přečtenými z DB. `/api/engine-v1` na devu volán nebyl.
+
+**Co X5 NEUZAVÍRÁ:**
+- **Acceptance scénář A (Funkční síla) není hotový.** Funkční omezení nově mění model (constraint LOW_MUSCLE_STRENGTH), ale nevede ke konkrétní akci:
+  - LOW_MUSCLE_STRENGTH nemá mapování v `data/engine/intervention-map.json`,
+  - NBA proto skončí NOT_COMPUTED a DAILY_DECISION je ASK_BLOCKING bez otázky,
+  - otázku na hodiny sezení doplňuje orchestrátor jako fallback, ne engine z INFORMATION_NEEDS.
+- **Navazující mezera po potvrzeném pádu.** FALL_RISK CONFIRMED nemá v master slice navazující vazbu (CAUSES / CONTRIBUTES_TO),
+  takže nevznikne leverage ani NBA a uživatel po nahlášení pádu dostane obecné „Zatím o tobě vím málo…“.
+  Z pohledu bezpečnosti i UX je to slabé. Řešení vyžaduje produktové rozhodnutí; v rámci X5 se neřešilo.
+
+**Zjištění k testovacím účtům:**
+- **Full reset funguje jen pro UID v `TESTER_UIDS`** (`api/tester-reset.js`). Pro ostatní vrací 403 a nezapíše nic.
+  Seznam obsahuje Tester 0 a druhé UID. Druhé UID v allowlistu se nepodařilo přiřadit k dostupnému testovacímu účtu.
+  Tester 2 ani Tester 103 a 104 v seznamu nejsou.
+- **Full reset nemaže onboardingová data.**
+  - V `user_profiles` nuluje jen `birth_year`; `age`, `gender`, `height`, `weight` a `onboarding_completed` ponechá.
+  - Ponechá také `daily_checkin`, `doctor_notes`, `supplements`, `capacity` a `user_medications`.
+  - Vyplněný onboarding wizard (výška a váha) proto po resetu dál vytváří EXCESS_ADIPOSITY a bootstrap otázky se nespustí.
+    Reprodukováno na Testerovi 0: 165 cm / 86 kg → BMI 31,6 → okamžitě ACT.
+- **Spolehlivý čistý stav pro live test** = nový účet s celým onboardingem přeskočeným. Po přeskočení vznikne jen řádek profilu
+  s `onboarding_completed = true` bez demografie. Bez podpory Full resetu je nový účet použitelný jen pro jeden nezávislý testovací scénář.
+
 ---
 
 ## Open issues / Next
 
 | Priorita | Issue | Poznámka |
 |----------|-------|----------|
-| P1 QA | Read-only audit engine INFORMATION_NEEDS vs. acceptance scénáře A–D | Před jakoukoliv další prací na discovery/NBQ — viz sekce 2026-09-27 |
+| P1 QA | Read-only audit engine INFORMATION_NEEDS vs. acceptance scénáře A–D | ✅ Proveden 2026-09-27 proti Master Lock §13; první překážka X5 opravena (PR #4) — zbývající nálezy viz řádky níže |
+| P1 | Scénář A — funkční omezení nevede k akci | LOW_MUSCLE_STRENGTH nemá mapování v intervention-map → NBA NOT_COMPUTED → ASK bez otázky; vyžaduje rozhodnutí |
+| P1 Safety/UX | Odpověď po potvrzeném pádu | FALL_RISK CONFIRMED → žádná leverage → „Zatím o tobě vím málo…“; vyžaduje produktové rozhodnutí |
+| P1 QA | Full reset nemaže onboardingová data + funguje jen pro `TESTER_UIDS` | `age`/`gender`/`height`/`weight` přežijí reset; nové testovací účty nelze resetovat — pro live testy zatím nové účty s přeskočeným onboardingem |
+| P2 | Scénář B — NBE nepředběhne lifestyle akci | rozpor Master Lock §13 B se zamčeným prioritním řetězcem DAILY_DECISION; produktové rozhodnutí |
+| P2 | Scénář C — léky se v enginu nečtou | `clinicalHistory.medications` nevyužity; nový mechanismus = produktové rozhodnutí |
+| P3 | Scénář D — pořadí akcí při úplné shodě kandidátů | `fetchActionPool` bez ORDER BY + NBA tie → `action_id` závisí na pořadí řádků DB (label zatím shodný) |
 | P1 UX | Tester tools v avatar menu bez `?tester=1` | Whitelistovaný tester by měl vidět Full reset automaticky po auth; potřeba `GET /api/tester-check` nebo inline UID check po Firebase auth |
 | P1 QA | Orchestrator FO2 failures (6/519 pre-existing, nondeterministická) | Race condition v DB cleanup; zdokumentovat a oddělit od funkčních regresí |
 | Tech debt | `README.md` zastaralý | Popisuje GPT-4o-mini + vis-network epoch (Q1 2026); určen k pozdější aktualizaci — neodráží současný stack |
