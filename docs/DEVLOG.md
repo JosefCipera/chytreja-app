@@ -997,12 +997,57 @@ S upstream evidence (PHYSICAL_DECONDITIONING aktivní): `evidence.length > 0` �
 
 ---
 
+## Práce z 2026-09-27
+
+### NBQ integration experiment — reverted
+
+#### Stav nasazení
+
+| Větev | Commit | Stav |
+|-------|--------|------|
+| `main` (live) | `b1b0682c` | ✅ Stabilní, nasazeno na `dev.iting.cz` |
+| Reverted | `b27e8692` | ❌ Revertováno — viz níže |
+| Izolovaný NBQ prototyp | `894497d5` | 📦 Zůstává v git historii — není nasazen, není v `main` |
+
+#### Co bylo otestováno
+
+Live TRACE (`dev.iting.cz`) potvrdil, že NBQ otázky se uživateli zobrazily a konverzace probíhala. Evidence extrahovaná z konverzace (`evidenceExtractor.js`) však **nikdy nevstoupila do Health Enginu**. Engine rozhodoval ze stavu před konverzací. Výsledná akce zůstala:
+
+```
+EXCESS_ADIPOSITY → RESISTANCE_TRAINING → Kontrolovaný sestup z bedny
+```
+
+#### Příčina revertu
+
+**Paralelní hypothesis model.** `hypothesisState.js` udržoval uzly `LOW_VO2MAX`, `OBESITY`, `SEDENTARY_LIFESTYLE_ROOT`, `INACTIVITY_ROOT` jako vlastní rozhodovací vrstvu mimo engine. `evidenceGate.js` hodnotil "dostatečnost evidence" nezávisle na engine `INFORMATION_NEEDS` a `fresh-decision` pipeline. Evidence extrahovaná z NBQ konverzace nikdy nepersistovala do DB → engine ji při `fetchHealthData()` nenašel.
+
+Porušené principy (viz `docs/CHJ-PRODUCT-ARCHITECTURE.md §0`):
+- **Princip 5:** Discovery hledá constraint v prostoru engine INFORMATION_NEEDS — NBQ hledal evidence v paralelním hypothesis prostoru
+- **Engine-first:** Jeden Health Engine jako jediný decision maker — NBQ byl druhý decision model
+- **Fresh decision:** Evidence musí vstoupit přes DB → engine — evidence zůstala v session/memory
+
+#### Testy — oprava tvrzení
+
+NBQ integrace (`b27e8692`) **nezpůsobila regresi** v orchestrator baseline. FO2 selhání (6 failed ze 519) jsou **pre-existing a nondeterministická** — způsobena race condition v DB cleanup při paralelním běhu testů; existovala před NBQ integrací i po revertu. Baseline `b1b0682c`: **513/519** (6 FO2 pre-existing).
+
+#### Co nebylo implementováno
+
+- **Variant 3** (engine-integrated NBQ bez paralelního modelu) nebyla schválena ani implementována — zůstala jako read-only architektonický návrh
+- **Alpha není připravena pro Tester #1** — dalším krokem je audit před jakýmkoliv nástrojem pro testující
+
+#### Další krok
+
+Read-only audit existujících engine `INFORMATION_NEEDS` (výstup `buildInformationNeeds()`) proti acceptance scénářům A–D. **Žádný nový mechanismus** dokud audit neprokáže konkrétní gap s MVP důkazem.
+
+---
+
 ## Open issues / Next
 
 | Priorita | Issue | Poznámka |
 |----------|-------|----------|
+| P1 QA | Read-only audit engine INFORMATION_NEEDS vs. acceptance scénáře A–D | Před jakoukoliv další prací na discovery/NBQ — viz sekce 2026-09-27 |
 | P1 UX | Tester tools v avatar menu bez `?tester=1` | Whitelistovaný tester by měl vidět Full reset automaticky po auth; potřeba `GET /api/tester-check` nebo inline UID check po Firebase auth |
-| P1 QA | Orchestrator 15 known baseline failures (240/255) | Prověřit: jsou to skutečné N/O edge cases nebo latentní bugy? Zdokumentovat konkrétní scénáře. |
+| P1 QA | Orchestrator FO2 failures (6/519 pre-existing, nondeterministická) | Race condition v DB cleanup; zdokumentovat a oddělit od funkčních regresí |
 | Tech debt | `README.md` zastaralý | Popisuje GPT-4o-mini + vis-network epoch (Q1 2026); určen k pozdější aktualizaci — neodráží současný stack |
 | Tech debt | TRACE log v `api/engine/adapter.js` | `fetchActionAssignments` loguje diagnostic trace (`[ORCHESTRATE] loaded_action_assignments=...`) — bylo záměrné pro root-cause analýzu, může být odstraněno |
 | Budoucí | Orchestrator `USER_PREFERENCE` persistence | Zachyceno, ale session neukládá (záměr v0.1); v0.2 by mělo persistovat do DB |
