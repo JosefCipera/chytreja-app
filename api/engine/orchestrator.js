@@ -496,6 +496,12 @@ function buildSessionUpdates(eventType, classifiedPayload, result) {
     updates.pending_question = null;
   }
 
+  // HOLD (HOLD_DONE_TODAY): nothing may be completed again today — drop any stale
+  // assignment still held by the client so a second "Hotovo" cannot be recorded.
+  if (dd?.mode === 'HOLD') {
+    updates.current_action_assignment = null;
+  }
+
   // Clear pending when answered — runs BEFORE ASK so that if engine immediately
   // returns a new ASK question in the same turn, the ASK block wins (sets new pending).
   if (eventType === 'ANSWER_TO_EVIDENCE_QUESTION') {
@@ -618,6 +624,23 @@ const HEALTH_INPUT_TYPES = new Set([
 ]);
 
 function buildHoldResponse(dd, _ctx, sessionUpdates, warnings, eventType, isFollowUp = false) {
+  // HOLD_DONE_TODAY: the intervention was already completed today — no second session
+  // today; the same intervention is offered again tomorrow. ACTION_COMPLETED keeps its
+  // own acknowledgment below.
+  if (dd.reason_code === 'HOLD_DONE_TODAY' && eventType !== 'ACTION_COMPLETED') {
+    const ackText = HEALTH_INPUT_TYPES.has(eventType)
+      ? 'Beru novou informaci v úvahu. Po přepočtu se dnešní doporučení nemění. '
+      : '';
+    return {
+      mode:          'HOLD',
+      text:          ackText + 'Pro dnešek stačí. Zítra pokračujeme.',
+      buttons:       [],
+      expects_reply: false,
+      session_updates: sessionUpdates,
+      debug:         { reason_code: dd.reason_code, warnings },
+    };
+  }
+
   // Follow-up "co místo toho?" while all candidates still in HOLD:
   // don't repeat the original action label — explain the system state instead.
   if (isFollowUp) {

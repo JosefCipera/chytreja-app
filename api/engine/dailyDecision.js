@@ -10,9 +10,13 @@
 //   SAFETY_CRITICAL      — SAFETY_CRITICAL actionability in decision_gate (person state signal)
 //   SAFETY_BLOCKED       — all action candidates non-viable due to safety gate (not a crisis)
 //   ASK_BLOCKING         — NBA cannot select any action; evidence would unblock
-//   HOLD_TOO_EARLY       — active intervention, horizon not yet elapsed
-//   HOLD_INSUF_EXPOSURE  — horizon elapsed but minimum exposure rule not met
+//   HOLD_DONE_TODAY      — selected intervention already completed today; offer it again tomorrow
 //   ACT_READY            — NBA selected a viable action
+//
+// HOLD_TOO_EARLY / HOLD_INSUF_EXPOSURE are no longer emitted: TOO_EARLY and
+// INSUFFICIENT_EXPOSURE remain RESPONSE_EVALUATION results, but they must not block
+// the repetitions that minimum_exposure_rule requires. Repetition is limited to one
+// completed session per intervention per day.
 
 // ── Internal helpers ──────────────────────────────────────────────────────────
 
@@ -141,77 +145,44 @@ function checkAskBlocking(next_best_action, decision_gate) {
   };
 }
 
-// HOLD: NBA selected an action AND that same intervention has active exposure
-// AND all response_evals for it are TOO_EARLY or INSUFFICIENT_EXPOSURE.
+// HOLD: NBA selected an action AND that same intervention already has a COMPLETED
+// session today (UTC date). The hold lasts only for the rest of the day — the next day
+// NBA and the Safety Gate run again and the intervention is offered as a normal ACT,
+// until minimum_exposure_rule and the response horizon are reached.
 // Returns hold context or null.
-function checkHold(next_best_action, response_evaluations, intervention_exposure) {
+function checkHold(next_best_action, response_evaluations, intervention_exposure, now) {
   if (next_best_action?.status !== 'SELECTED') return null;
   const selectedInterventionId = next_best_action.selected?.intervention_id;
   if (!selectedInterventionId) return null;
 
-  // Must have active exposure for the selected intervention
-  const activeExposure = (intervention_exposure ?? []).find(
-    e => e.intervention_id === selectedInterventionId && e.sessions_completed > 0
+  const today = now.slice(0, 10);
+  // Membership in the set of valid completed days — not the lexicographically last date,
+  // so a corrupted or future-dated row cannot mask today's completion.
+  const exposure = (intervention_exposure ?? []).find(
+    e => e.intervention_id === selectedInterventionId
+      && (e.completed_days ?? [e.last_completed_date]).includes(today)
   );
-  if (!activeExposure) return null;
+  if (!exposure) return null;
 
-  // All response_evals for this intervention must be in the holdable set
-  const HOLDABLE = new Set(['TOO_EARLY', 'INSUFFICIENT_EXPOSURE']);
-  const evalsForIntervention = (response_evaluations ?? []).filter(
+  const evals = (response_evaluations ?? []).filter(
     r => r.intervention_id === selectedInterventionId
   );
-  if (evalsForIntervention.length === 0) return null;
-  if (!evalsForIntervention.every(r => HOLDABLE.has(r.result))) return null;
 
-  // TOO_EARLY takes priority when both are present (earlier temporal signal)
-  const holdResult = evalsForIntervention.some(r => r.result === 'TOO_EARLY')
-    ? 'TOO_EARLY'
-    : 'INSUFFICIENT_EXPOSURE';
-
-  const holdEval = evalsForIntervention.find(r => r.result === holdResult);
-  const reevaluate_after = computeReevaluateAfter(holdResult, holdEval, activeExposure);
+  const tomorrow = new Date(`${today}T00:00:00Z`);
+  tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
 
   return {
-    hold_result:    holdResult,
-    evals:          evalsForIntervention,
-    exposure:       activeExposure,
-    reevaluate_after,
+    evals,
+    exposure,
+    reevaluate_after: tomorrow.toISOString().slice(0, 10),
   };
-}
-
-// Computes reevaluate_after date for HOLD.
-// TOO_EARLY:          parse horizon_min_days from reason string + add to first_completed_at
-// INSUFFICIENT_EXPOSURE: use exposure_detail.min_calendar_days_required to estimate
-function computeReevaluateAfter(holdResult, holdEval, activeExposure) {
-  if (holdResult === 'TOO_EARLY' && activeExposure?.first_completed_at) {
-    // reason: "X of Y minimum days elapsed since first completed session."
-    const match = holdEval?.reason?.match(/of (\d+) minimum days/);
-    if (match) {
-      const horizonDays = parseInt(match[1], 10);
-      const base = new Date(activeExposure.first_completed_at);
-      base.setDate(base.getDate() + horizonDays);
-      return base.toISOString().slice(0, 10);
-    }
-  }
-
-  if (holdResult === 'INSUFFICIENT_EXPOSURE') {
-    const detail = holdEval?.exposure_detail;
-    if (detail) {
-      const daysRemaining = Math.max(0,
-        detail.min_calendar_days_required - detail.calendar_days
-      );
-      const today = new Date();
-      today.setDate(today.getDate() + daysRemaining + 1);
-      return today.toISOString().slice(0, 10);
-    }
-  }
-
-  return null;
 }
 
 // ── Main export ───────────────────────────────────────────────────────────────
 
-export function computeDailyDecision(engineResult) {
+// asOf (optional): decision time as Date or ISO string — defaults to the current time.
+// Tests pass a fixed UTC time; production callers omit it.
+export function computeDailyDecision(engineResult, asOf = new Date()) {
   const {
     decision_gate,
     next_best_action,
@@ -219,7 +190,7 @@ export function computeDailyDecision(engineResult) {
     intervention_exposure,
   } = engineResult;
 
-  const now = new Date().toISOString();
+  const now = new Date(asOf).toISOString();
 
   // ── 1. SAFETY_CRITICAL ────────────────────────────────────────────────────────
   const safetyCritical = checkSafetyCritical(decision_gate);
@@ -265,7 +236,7 @@ export function computeDailyDecision(engineResult) {
   // From here: NBA.status === 'SELECTED' with a non-null selected action
 
   // ── 4. HOLD ───────────────────────────────────────────────────────────────────
-  const hold = checkHold(next_best_action, response_evaluations, intervention_exposure);
+  const hold = checkHold(next_best_action, response_evaluations, intervention_exposure, now);
   if (hold) {
     const sel = next_best_action.selected;
     return {
@@ -276,16 +247,15 @@ export function computeDailyDecision(engineResult) {
         protocol_type:   sel?.protocol_type,
         intervention_id: sel?.intervention_id,
         safety:          sel?.safety,
-        response_result: hold.hold_result,
+        response_result: hold.evals[0]?.result ?? null,
         exposure_summary: {
-          sessions_completed: hold.exposure.sessions_completed,
-          first_completed_at: hold.exposure.first_completed_at,
+          sessions_completed:  hold.exposure.sessions_completed,
+          first_completed_at:  hold.exposure.first_completed_at,
+          last_completed_date: hold.exposure.last_completed_date,
         },
       },
-      reason_code:      hold.hold_result === 'TOO_EARLY'
-        ? 'HOLD_TOO_EARLY'
-        : 'HOLD_INSUF_EXPOSURE',
-      source:           'RESPONSE_EVALUATION + NBA.selected',
+      reason_code:      'HOLD_DONE_TODAY',
+      source:           'INTERVENTION_EXPOSURE + NBA.selected',
       reevaluate_after: hold.reevaluate_after,
       evaluated_at:     now,
     };

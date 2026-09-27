@@ -1322,8 +1322,8 @@ async function scenarioN() {
     const engineAfter = await runEngine(TESTER_0);
     const ddAfter     = computeDailyDecision(engineAfter);
     console.log(`  engine mode after full reset: ${ddAfter.mode} (${ddAfter.reason_code})`);
-    check(ddAfter.reason_code !== 'HOLD_TOO_EARLY',
-      'N4: engine NOT HOLD_TOO_EARLY after full reset',
+    check(ddAfter.mode !== 'HOLD',
+      'N4: engine NOT HOLD after full reset',
       `actual: ${ddAfter.reason_code}`);
 
     // N5 — start() _LRK contract: server signals caller must clear localStorage
@@ -1414,7 +1414,7 @@ async function scenarioO() {
 
   // O4: text contains "zítra" (return-tomorrow)
   check(
-    (r.text ?? '').includes('zítra'),
+    /zítra/i.test(r.text ?? ''),
     'O4: text contains "zítra" (return-tomorrow)',
     `actual: ${r.text?.slice(0, 120)}`
   );
@@ -2755,10 +2755,10 @@ async function scenarioAC() {
     console.log(`  sessions_comp  : ${r2.intervention_exposure?.find(e => e.intervention_id === nba.intervention_id)?.sessions_completed ?? 0}`);
 
     check(dd2.mode === 'HOLD',
-      'AC-setup: engine in HOLD after ACTION_COMPLETED (sessions_completed=1, TOO_EARLY)',
+      'AC-setup: engine in HOLD after ACTION_COMPLETED (completed today)',
       `actual: ${dd2.mode} (${dd2.reason_code})`);
-    check(dd2.reason_code === 'HOLD_TOO_EARLY',
-      'AC-setup: reason_code = HOLD_TOO_EARLY (horizon not elapsed)',
+    check(dd2.reason_code === 'HOLD_DONE_TODAY',
+      'AC-setup: reason_code = HOLD_DONE_TODAY (intervention completed today)',
       `actual: ${dd2.reason_code}`);
 
     if (dd2.mode !== 'HOLD' || !dd2.primary_item?.action_id || !dd2.primary_item?.intervention_id) {
@@ -2804,14 +2804,14 @@ async function scenarioAC() {
       `actual: [${(r.buttons ?? []).join(', ')}]`);
 
     // ── AC6 regression: DOMAIN_REQUEST in HOLD → label holdText, NOT 'Hotovo.' ─
-    // Still in HOLD (daysSinceFirst < 7) — DOMAIN_REQUEST must not trigger completion ack.
+    // Still in HOLD (completed today) — DOMAIN_REQUEST must not trigger completion ack.
     const r6 = await processInput(UID, 'Co mám dnes dělat?', {});
     console.log('\n  [AC6 — DOMAIN_REQUEST in HOLD: label holdText, NOT completion ack]');
     showResponse(r6);
 
     if (r6.mode === 'HOLD') {
       check(!(r6.text ?? '').startsWith('Hotovo.'),
-        'AC6: DOMAIN_REQUEST in HOLD → text does NOT start with "Hotovo." (general holdText preserved)',
+        'AC6: DOMAIN_REQUEST in HOLD → text does NOT start with "Hotovo." (HOLD_DONE_TODAY text)',
         `actual: "${r6.text?.slice(0, 80)}"`);
     } else {
       check(['ACT', 'ASK', 'SAFETY_BLOCKED', 'EXPLAIN'].includes(r6.mode),

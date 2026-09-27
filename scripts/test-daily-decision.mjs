@@ -5,7 +5,8 @@
 //   SAFETY_CRITICAL     — synthetic fixture
 //   SAFETY_BLOCKED      — synthetic fixture
 //   ASK_BLOCKING        — synthetic fixture (realistic gait+constraint scenario)
-//   HOLD_TOO_EARLY      — real Josef DB, short-exposure assignments (< 7-day horizon)
+//   HOLD_DONE_TODAY     — ephemeral DB profile, selected intervention completed today
+//   ACT_READY (repeat)  — ephemeral DB profile, completions only on previous days → offered again
 //   ACT_READY           — real Josef DB, no assignments
 
 // Ephemeral test UID seeded with a sedentary profile; deleted in finally.
@@ -208,12 +209,14 @@ run('ASK_BLOCKING', ask, 'ASK', 'ASK_BLOCKING');
 console.log(`  primary_item.type: ${ask.primary_item?.type}`);
 console.log(`  question: "${ask.primary_item?.question ?? ask.primary_item?.evidence_type}"`);
 
-// ── CASE 4: HOLD_TOO_EARLY ────────────────────────────────────────────────────
+// ── CASE 4: HOLD_DONE_TODAY / repetition ─────────────────────────────────────
 // Seed COMPLETED assignments for all interventions viable on the ephemeral sedentary profile
-// (AEROBIC_TRAINING, BREAK_UP_SEDENTARY_TIME, STRENGTH_TRAINING) so all response_evals
-// return TOO_EARLY → HOLD_TOO_EARLY.
+// (AEROBIC_TRAINING, BREAK_UP_SEDENTARY_TIME, STRENGTH_TRAINING) on days 3, 2, 1 ago.
+//   4a: no session today → the selected intervention is offered again (ACT_READY) — repetitions
+//       required by minimum_exposure_rule must stay possible (previously HOLD_TOO_EARLY).
+//   4b: + a session today for each → HOLD_DONE_TODAY (no second session the same day).
 
-sep('CASE 4 — HOLD_TOO_EARLY');
+sep('CASE 4 — repetition (ACT_READY) and HOLD_DONE_TODAY');
 console.log('  Setup: completed assignments for all viable interventions (days 3, 2, 1 ago)...');
 
 let holdInsertedIds = [];
@@ -248,9 +251,28 @@ try {
   holdInsertedIds = inserted.map(r => r.id);
   console.log(`  Inserted ${holdInsertedIds.length} assignments (${seeds.length} interventions × 3 days).`);
 
+  const engineResult4a = await runEngine(TEST_UID);
+  const dd4a = computeDailyDecision(engineResult4a);
+  run('ACT_READY (repeat, no session today)', dd4a, 'ACT', 'ACT_READY');
+
+  const todayRows = seeds.map(({ action_id, intervention_id }) => ({
+    user_id:                TEST_UID,
+    action_id,
+    intervention_id,
+    selected_leverage_node: 'PHYSICAL_INACTIVITY',
+    engine_version:         '1.0.0',
+    status:                 'COMPLETED',
+    assigned_at:            tsAgo(0),
+    completed_at:           tsAgo(0),
+    actual_duration_seconds: 1200,
+    assigned_date:          daysAgo(0),
+  }));
+  const { data: insertedToday } = await sb.from('action_assignments').insert(todayRows).select('id');
+  holdInsertedIds = holdInsertedIds.concat(insertedToday.map(r => r.id));
+
   const engineResult = await runEngine(TEST_UID);
   const dd = computeDailyDecision(engineResult);
-  run('HOLD_TOO_EARLY', dd, 'HOLD', 'HOLD_TOO_EARLY');
+  run('HOLD_DONE_TODAY', dd, 'HOLD', 'HOLD_DONE_TODAY');
 
   const re = engineResult.response_evaluations;
   console.log(`  response_evaluations: ${re.length} total`);
