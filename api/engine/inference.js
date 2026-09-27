@@ -12,7 +12,7 @@
 //   This is NOT "ED causes endothelial dysfunction."
 //   It IS "presence of ED + vascular risk factors makes endothelial dysfunction likely."
 
-import { isEvidenceResolved } from './evidenceResolution.js';
+import { isEvidenceResolved, readYesNo } from './evidenceResolution.js';
 
 export function inference(activatedStates, person, clinicalHistory, observations) {
   const states = [];
@@ -290,8 +290,7 @@ export function inference(activatedStates, person, clinicalHistory, observations
   // Material impact: this IS the projection target — its unknown state is the direct
   //   reason the TRAJECTORY_BASED projection carries risk=unknown.
   const oi = clinicalHistory.onboarding_inputs || {};
-  const negatives = ['no', 'false', '0', false, 0];
-  const isNeg = v => negatives.includes(v) || v === 'ne';
+  const isNeg = v => readYesNo(v) === 'no';
 
   // ── GAIT_INSTABILITY ─────────────────────────────────────────────────────
   // PREDICTED_CURRENT from upstream: PERIPHERAL_NEUROPATHY, LOW_MUSCLE_STRENGTH,
@@ -351,7 +350,7 @@ export function inference(activatedStates, person, clinicalHistory, observations
 
     // recent_falls: supporting signal only (not sufficient alone)
     const recentFallsGait = oi['recent_falls'];
-    if (recentFallsGait === 'yes' || recentFallsGait === true || recentFallsGait === 'true') {
+    if (readYesNo(recentFallsGait) === 'yes') {
       signals.push({
         source: 'ONBOARDING',
         question_id: 'recent_falls',

@@ -12,6 +12,8 @@
 // Safety gate: separate layer, does NOT replace decisionGate.actionability.
 // Candidate pool: ONLY from existing longevity_actions rows (not hand-crafted).
 
+import { readYesNo } from './evidenceResolution.js';
+
 // ── Constraint keyword mapping ────────────────────────────────────────────────
 // Same categories as hud-data-bulk.js; normalized to canonical body-region keys.
 
@@ -85,8 +87,9 @@ function computeMobilityProfile(nodeStates, clinicalHistory) {
   // Fall history from onboarding
   const rawFalls = oi['recent_falls'];
   let fall_history = 'UNKNOWN';
-  if (rawFalls === 'yes' || rawFalls === true || rawFalls === 'true') fall_history = 'RECENT';
-  else if (rawFalls === 'no' || rawFalls === false || rawFalls === 'false') fall_history = 'NONE_REPORTED';
+  const fallPolarity = readYesNo(rawFalls);
+  if (fallPolarity === 'yes') fall_history = 'RECENT';
+  else if (fallPolarity === 'no') fall_history = 'NONE_REPORTED';
 
   // Current device from onboarding
   const current_device_in_use = oi['current_assistive_device'] ?? 'UNKNOWN';
