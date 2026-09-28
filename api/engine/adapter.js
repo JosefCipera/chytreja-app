@@ -47,7 +47,7 @@ export async function fetchHealthData(userId) {
       .select('diagnoses, symptoms, medications, supplements, labs, lifestyle, capacity, physical, doctor_notes')
       .eq('user_id', userId).maybeSingle(),
     supabase.from('daily_checkin')
-      .select('weight_kg, waist_cm, energy, sleep_hours, stress, movement_level, date')
+      .select('weight_kg, energy, sleep_hours, stress, movement_level, date')
       .eq('user_id', userId)
       .order('date', { ascending: false })
       .limit(30),
@@ -142,8 +142,6 @@ export async function fetchHealthData(userId) {
   for (const c of (checkins || [])) {
     if (c.weight_kg != null)
       observations.push({ obs_type: 'weight_kg', value: c.weight_kg, unit: 'kg', measured_at: c.date, source: 'daily_checkin', confidence: 'confirmed' });
-    if (c.waist_cm != null)
-      observations.push({ obs_type: 'waist_cm', value: c.waist_cm, unit: 'cm', measured_at: c.date, source: 'daily_checkin', confidence: 'confirmed' });
     if (c.movement_level != null)
       observations.push({ obs_type: 'activity_level', value: c.movement_level, measured_at: c.date, source: 'daily_checkin', confidence: 'confirmed' });
     if (c.stress != null)

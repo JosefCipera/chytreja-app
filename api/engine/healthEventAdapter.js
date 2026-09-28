@@ -87,9 +87,14 @@ export const EVIDENCE_STORAGE_REGISTRY = {
   // UNIQUE (user_id, date, universe) — upsert merges into today's row
   activity_level:        { table: 'daily_checkin', key: 'movement_level' },
   weight_kg:             { table: 'daily_checkin', key: 'weight_kg' },
-  waist_cm:              { table: 'daily_checkin', key: 'waist_cm' },
   stress_1_5:            { table: 'daily_checkin', key: 'stress' },
   sleep_hours:           { table: 'daily_checkin', key: 'sleep_hours' },
+
+  // ── Waist → user_health_profile.lifestyle JSONB ────────────────────────────
+  // daily_checkin has no waist_cm column (never migrated) — canonical store is
+  // lifestyle, the same JSONB key onboarding already writes and adapter.js
+  // already reads (adapter.js: lifestyle.waist_cm → observation obs_type 'waist_cm').
+  waist_cm:              { table: 'lifestyle', key: 'waist_cm' },
 
   // ── Lab measurements → user_health_profile.labs JSONB ────────────────────
   lab_ldl:               { table: 'labs', key: 'ldl' },
@@ -235,6 +240,27 @@ async function upsertPhysical(supabase, userId, key, value) {
     .upsert({ user_id: userId, physical: merged }, { onConflict: 'user_id' });
 
   if (error) throw new Error(`upsertPhysical write: ${error.message}`);
+  return null;
+}
+
+// JSONB read-merge-write: user_health_profile.lifestyle
+// Mirrors upsertPhysical() — same table, different JSONB column. Canonical store
+// for waist_cm (onboarding already writes here; adapter.js already reads it).
+async function upsertLifestyle(supabase, userId, key, value) {
+  const { data: row, error: readErr } = await supabase
+    .from('user_health_profile')
+    .select('lifestyle')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (readErr) throw new Error(`upsertLifestyle read: ${readErr.message}`);
+
+  const merged = { ...(row?.lifestyle || {}), [key]: value };
+  const { error } = await supabase
+    .from('user_health_profile')
+    .upsert({ user_id: userId, lifestyle: merged }, { onConflict: 'user_id' });
+
+  if (error) throw new Error(`upsertLifestyle write: ${error.message}`);
   return null;
 }
 
@@ -412,6 +438,7 @@ async function routeAnswer(supabase, userId, payload) {
     }
     case 'constraints': return upsertConstraint(supabase, userId, entry.key, value, 'injury');
     case 'daily_checkin': return upsertDailyCheckin(supabase, userId, entry.key, value);
+    case 'lifestyle':   return upsertLifestyle(supabase, userId, entry.key, value);
     case 'labs':        return upsertLab(supabase, userId, entry.key, value);
     case 'user_profiles': {
       // Narrow unlock: supports bootstrap evidence_types that write to user_profiles.
@@ -439,6 +466,7 @@ async function routeMeasurement(supabase, userId, payload) {
 
   switch (entry.table) {
     case 'daily_checkin': return upsertDailyCheckin(supabase, userId, entry.key, value);
+    case 'lifestyle':      return upsertLifestyle(supabase, userId, entry.key, value);
     case 'labs':          return upsertLab(supabase, userId, entry.key, value);
     default:
       return `NEW_MEASUREMENT: obs_type '${obs_type}' → table '${entry.table}' is not a time-series target`;
