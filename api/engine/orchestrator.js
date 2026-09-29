@@ -818,11 +818,13 @@ function buildWhyResponse(sessionState) {
       : '';
 
     if (leverageLabel) {
-      // "Svižná chůze ji přímo ovlivňuje a podporuje zdravé přežití."
-      parts.push(`${actionLabel} ji ${verb}${goalPart}.`);
+      // "Tato akce ji přímo ovlivňuje a podporuje zdravé přežití."
+      // Fixed subject, not actionLabel: action labels are free text (can be an imperative
+      // sentence, e.g. "...skonči") and are not safe to splice as a sentence subject.
+      parts.push(`Tato akce ji ${verb}${goalPart}.`);
     } else if (branches.length > 0) {
       // No leverage identified — neutral reference to goal
-      parts.push(`${actionLabel} cílí na ${branches.map(b => b.toLowerCase()).join(' a ')}.`);
+      parts.push(`Tato akce cílí na ${branches.map(b => b.toLowerCase()).join(' a ')}.`);
     }
   }
 
@@ -849,6 +851,11 @@ function buildWhyResponse(sessionState) {
     session_updates: {},
     debug:         { source: 'explanation_context' },
   };
+}
+
+// Exported for unit testing only — not part of the public API.
+export function _buildWhyResponse_test(sessionState) {
+  return buildWhyResponse(sessionState);
 }
 
 // ── Presentation dispatcher ───────────────────────────────────────────────────
