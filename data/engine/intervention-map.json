@@ -219,6 +219,25 @@
         }
       ]
     },
+    "LOW_MUSCLE_STRENGTH": {
+      "interventions": [
+        {
+          "id": "FUNCTIONAL_STRENGTH_TRAINING",
+          "target_leverage_node": "LOW_MUSCLE_STRENGTH",
+          "leverage_affinity": {
+            "level": "PRIMARY",
+            "rationale": "Podpořené vstávání ze židle trénuje přesně tu svalovou skupinu, jejíž slabost byla potvrzena (neschopnost vstát ze země bez opory) — nejnižší bezpečná dávka pro potvrzenou funkční slabost, s oporou (židle, zeď), ne volný pohyb.",
+            "evidence_quality": "moderate",
+            "evidence_refs": ["Rikli & Jones, 30-second chair stand test, J Aging Phys Act 1999", "NICE NG16/NG194 frailty exercise guidance"]
+          },
+          "protocol_types": ["FUNKCNI_SILOVY_PROTOKOL"],
+          "tag_filter": ["sit_to_stand"],
+          "goal_branches": ["FUNCTIONAL_INDEPENDENCE", "SURVIVAL_HEALTHSPAN"],
+          "mechanism_targets": ["LOW_MUSCLE_STRENGTH", "REDUCED_FUNCTIONAL_RESERVE"],
+          "expected_responses": []
+        }
+      ]
+    },
     "GAIT_INSTABILITY": {
       "interventions": [
         {

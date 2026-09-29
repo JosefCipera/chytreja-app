@@ -35,13 +35,20 @@ const CONSTRAINT_KEYWORDS = {
 // SILOVY_PROTOKOL = null → derive from tags (shoulder press ≠ box jump in knee load).
 // TRAINING_PROTOKOL = null → derive from tags.
 const PROTOCOL_BODY_LOAD = {
-  KARDIO_PROTOKOL:     new Set(['knee', 'ankle_foot']),
-  VYTRVALOST_PROTOKOL: new Set(['knee', 'ankle_foot']),
-  SILOVY_PROTOKOL:     null, // per-action via tags — overhead press ≠ box jump
-  TRAINING_PROTOKOL:   null, // per-action via tags
-  BALANCE_PROTOKOL:    new Set(['ankle_foot', 'knee']),
-  PREVENTION_PROTOKOL: new Set(),
+  KARDIO_PROTOKOL:         new Set(['knee', 'ankle_foot']),
+  VYTRVALOST_PROTOKOL:     new Set(['knee', 'ankle_foot']),
+  SILOVY_PROTOKOL:         null, // per-action via tags — overhead press ≠ box jump
+  FUNKCNI_SILOVY_PROTOKOL: null, // per-action via tags — same joint-load derivation as SILOVY_PROTOKOL
+  TRAINING_PROTOKOL:       null, // per-action via tags
+  BALANCE_PROTOKOL:        new Set(['ankle_foot', 'knee']),
+  PREVENTION_PROTOKOL:     new Set(),
 };
+
+// SILOVY_PROTOKOL_FAMILY: protocol types that are strength training for Safety Gate purposes
+// (CV-risk modification eligibility, time-to-feedback) even though they are kept as distinct
+// protocol_type values so the NBA candidate pool for one leverage node's intervention cannot
+// silently absorb another leverage node's actions (see FUNKCNI_SILOVY_PROTOKOL / C3).
+const SILOVY_PROTOKOL_FAMILY = new Set(['SILOVY_PROTOKOL', 'FUNKCNI_SILOVY_PROTOKOL']);
 
 // TAG_BODY_LOAD: region sets per tag. 'sila' → lower_back only (NOT knee — strength
 // exercises vary widely; only explicitly leg/plyometric tags → knee).
@@ -394,7 +401,7 @@ function evaluateSafetyGate(action, parsedConstraints, hasCvRiskRelevant, hasCli
   // 8. CV risk + non-HIIT resistance (tier 1–2) → SAFE_WITH_MODIFICATION
   // A more restrictive joint-load result (e.g. severe constraint → NEEDS_CLINICAL_CLEARANCE)
   // must not be masked by the CV modification; otherwise the CV result stays unchanged.
-  if (hasCvRiskRelevant && action.protocol_type === 'SILOVY_PROTOKOL' && !isHighIntensity) {
+  if (hasCvRiskRelevant && SILOVY_PROTOKOL_FAMILY.has(action.protocol_type) && !isHighIntensity) {
     const cvResult = {
       level: 'SAFE_WITH_MODIFICATION',
       reason: 'Resistance training with confirmed cardiovascular risk. Safe with blood pressure monitoring and no Valsalva maneuver.',
@@ -568,7 +575,7 @@ function computeFriction(action) {
 function computeTimeToFeedback(action) {
   const { protocol_type } = action;
   if (['KARDIO_PROTOKOL', 'VYTRVALOST_PROTOKOL'].includes(protocol_type)) return 'days_to_weeks';
-  if (protocol_type === 'SILOVY_PROTOKOL') return 'weeks';
+  if (SILOVY_PROTOKOL_FAMILY.has(protocol_type)) return 'weeks';
   const tags = action.tags ?? [];
   if (tags.some(t => CARDIO_TAGS.has(t))) return 'days';
   return 'days_to_weeks';
