@@ -245,7 +245,7 @@ const UNAIDED_WALKING_PROTOCOLS = new Set(['KARDIO_PROTOKOL', 'VYTRVALOST_PROTOK
 //   5. ASSISTIVE_PROTOKOL → DEVICE_FIT evaluation
 //   6. Gait instability + unaided aerobic walking → NEEDS_MORE_EVIDENCE
 //   7. Balance/stability exercises + gait instability → SAFE_WITH_MODIFICATION (required_capabilities)
-//   8. CV risk + non-HIIT resistance → SAFE_WITH_MODIFICATION
+//   8. CV risk + non-HIIT resistance → SAFE_WITH_MODIFICATION (unless the grid result is stricter)
 //   9. Constraint × modality × intensity grid
 //  10. SAFE
 
@@ -392,8 +392,10 @@ function evaluateSafetyGate(action, parsedConstraints, hasCvRiskRelevant, hasCli
   }
 
   // 8. CV risk + non-HIIT resistance (tier 1–2) → SAFE_WITH_MODIFICATION
+  // A more restrictive joint-load result (e.g. severe constraint → NEEDS_CLINICAL_CLEARANCE)
+  // must not be masked by the CV modification; otherwise the CV result stays unchanged.
   if (hasCvRiskRelevant && action.protocol_type === 'SILOVY_PROTOKOL' && !isHighIntensity) {
-    return {
+    const cvResult = {
       level: 'SAFE_WITH_MODIFICATION',
       reason: 'Resistance training with confirmed cardiovascular risk. Safe with blood pressure monitoring and no Valsalva maneuver.',
       modifications_suggested: [
@@ -402,11 +404,30 @@ function evaluateSafetyGate(action, parsedConstraints, hasCvRiskRelevant, hasCli
         'Stop if chest pain, severe dyspnea, or dizziness',
       ],
     };
+    const jointResult = evaluateJointLoad(action, parsedConstraints, intensity, isHighIntensity);
+    if (jointResult && SAFETY_RANK[jointResult.level] < SAFETY_RANK[cvResult.level]) return jointResult;
+    return cvResult;
   }
 
-  // 8. Constraint × modality × intensity grid
-  // Severity (rows) × intensity level (cols) → safety outcome.
-  // Modality (which region is loaded) already handled by actionLoadsRegion().
+  // 9. Constraint × modality × intensity grid
+  const jointResult = evaluateJointLoad(action, parsedConstraints, intensity, isHighIntensity);
+  if (jointResult) return jointResult;
+
+  return {
+    level: 'SAFE',
+    reason: 'No relevant constraints or safety concerns identified.',
+    modifications_suggested: [],
+  };
+}
+
+// Constraint × modality × intensity grid.
+// Severity (rows) × intensity level (cols) → safety outcome per constraint whose region the
+// action loads. Returns the most restrictive outcome (SAFETY_RANK) so input order cannot lower
+// the safety level; on equal level the first outcome is kept (deterministic text priority).
+// null when no constraint region is loaded.
+// Modality (which region is loaded) already handled by actionLoadsRegion().
+function evaluateJointLoad(action, parsedConstraints, intensity, isHighIntensity) {
+  let worst = null;
   for (const c of parsedConstraints) {
     if (!actionLoadsRegion(action, c.key)) continue;
 
@@ -434,18 +455,15 @@ function evaluateSafetyGate(action, parsedConstraints, hasCvRiskRelevant, hasCli
       mods  = ['Clarify injury severity before proceeding'];
     }
 
-    return {
+    const result = {
       level,
       reason: `${c.severity ?? 'unknown'} constraint on "${c.key}" — this modality loads the region at ${intensity} intensity.`,
       modifications_suggested: mods,
     };
+    if (!worst || SAFETY_RANK[result.level] < SAFETY_RANK[worst.level]) worst = result;
   }
 
-  return {
-    level: 'SAFE',
-    reason: 'No relevant constraints or safety concerns identified.',
-    modifications_suggested: [],
-  };
+  return worst;
 }
 
 // ── Minimum meaningful effect ─────────────────────────────────────────────────
