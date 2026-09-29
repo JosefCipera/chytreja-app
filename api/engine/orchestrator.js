@@ -129,10 +129,39 @@ const MODIFICATIONS_CS = {
     'Začni jen s otevřenýma očima; na zavřené oči přejdi až budeš stabilní',
   'Supervised or near-support setting for first sessions':
     'První cvičení s dohledem nebo v blízkosti opory',
+  'Obtain physician or physiotherapist clearance before any loading of this region':
+    'Před zátěží této oblasti potřebuješ souhlas lékaře nebo fyzioterapeuta',
+  'Obtain physiotherapist clearance before high-intensity loading':
+    'Před vysokou intenzitou potřebuješ souhlas fyzioterapeuta',
+  'Consider MODERATE intensity alternative':
+    'Zvaž variantu se střední intenzitou',
+  'Consult physiotherapist first':
+    'Nejprve se poraď s fyzioterapeutem',
+  'Avoid high-impact variants':
+    'Vyhni se variantám s vysokým dopadem',
+  'Stop immediately if pain increases':
+    'Přestaň hned, pokud bolest zesílí',
+  'Prefer low-impact variant (e.g. cycling over running or uphill)':
+    'Dej přednost variantě s nižším dopadem (např. kolo místo běhu nebo kopce)',
+  'Reduce intensity if discomfort appears':
+    'Sniž intenzitu, pokud se objeví nepříjemný pocit',
+  'Stop if pain increases':
+    'Přestaň, pokud bolest zesílí',
+  'Prefer low-impact variant (e.g. cycling over running)':
+    'Dej přednost variantě s nižším dopadem (např. kolo místo běhu)',
+  'Stop if discomfort increases':
+    'Přestaň, pokud nepříjemný pocit zesílí',
+  'Clarify injury severity before proceeding':
+    'Upřesni závažnost zranění, než budeš pokračovat',
 };
 
 function localizeMod(s) {
   return MODIFICATIONS_CS[s] ?? s;
+}
+
+// Exported for unit testing only — not part of the public API.
+export function _localizeMod_test(s) {
+  return localizeMod(s);
 }
 
 const GOAL_BRANCH_CS = {
@@ -474,6 +503,11 @@ export function _buildSessionUpdates_test(eventType, classifiedPayload, result) 
   return buildSessionUpdates(eventType, classifiedPayload, result);
 }
 
+// Exported for unit testing only — not part of the public API.
+export function _buildActResponse_test(dd, ctx, sessionUpdates, warnings) {
+  return buildActResponse(dd, ctx, sessionUpdates, warnings);
+}
+
 
 function buildSessionUpdates(eventType, classifiedPayload, result) {
   const dr = result.domain_response;
@@ -554,8 +588,10 @@ function buildActResponse(dd, ctx, sessionUpdates, warnings) {
   const action = dd.primary_item;
   let text = action?.label ? `${action.label}.` : 'Tvá dnešní akce je připravena.';
 
-  const modification = action?.safety?.modifications_suggested?.[0];
-  if (modification) text += ` Úprava: ${localizeMod(modification)}.`;
+  if (action?.safety?.level === 'SAFE_WITH_MODIFICATION') {
+    const modification = action?.safety?.modifications_suggested?.[0];
+    if (modification) text += ` Úprava: ${localizeMod(modification)}.`;
+  }
 
   return {
     mode:          'ACT',
