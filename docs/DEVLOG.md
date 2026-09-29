@@ -1116,6 +1116,45 @@ Stav uzlů u obou toků ověřen lokálním během čisté pipeline (kód shodn�
 
 ---
 
+## Práce z 28.–29. 9. 2026
+
+### PR #6 — mezidenní opakovací smyčka — ✅ CLOSED (`246bcd2c`, merge `79d76595`)
+
+**Oprava:** Po dokončení akce (Hotovo) vzniká `HOLD_DONE_TODAY` platný jen do konce dne, ne trvale.
+- Splnění akce se počítá po unikátních UTC dnech — engine tak rozlišuje "dnes hotovo" od "hotovo obecně".
+- Po `Hotovo` se `current_action_assignment` nastaví na `null` (`HOLD` stav ho neponechává), takže engine nezůstává zaseknutý na jedné dokončené instanci.
+- Následující UTC den se stejná intervence znovu nabídne jako `ACT` — opakovací smyčka pro pravidelné akce (např. denní procházka) tím funguje napříč dny, ne jen jednou.
+
+**Live test na `dev.iting.cz`:** Ověřeno tři dny po sobě (27., 28., 29. 9.) na stejném scénáři: „Jdi na procházku 20 minut" → Hotovo → aplikace bezprostředně zobrazí „Hotovo. Pro dnešek stačí. Výsledek budeme hodnotit až po několika opakováních." → při dalším dotazu tentýž den zobrazí „Pro dnešek stačí. Zítra pokračujeme." (bez tlačítek) → následující den znovu nabídne stejnou akci jako `ACT` s tlačítky → po opětovném Hotovo znovu správný `HOLD`. Mezidenní opakovací smyčka je LIVE PASS.
+
+### PR #7 — `waist_cm` datový kontrakt — ✅ CLOSED (`eab05bc4`, merge `a2d6bf0a`)
+
+**Chyba:** `daily_checkin.waist_cm` nikdy neexistoval jako sloupec (nikdy nemigrován), ale `api/engine/adapter.js` ho selektoval a `EVIDENCE_STORAGE_REGISTRY` do něj zapisoval. SELECT proto vracel Supabase 400, a protože se v `adapter.js` výsledek destrukturoval bez kontroly `error`, spadl tím beze stopy **celý** check-in dotaz — engine ztrácel váhu, aktivitu i stres, ne jen obvod pasu.
+
+**Oprava:**
+- `waist_cm` odstraněn ze SELECTu `daily_checkin` i z mrtvého per-řádkového mapování.
+- `waist_cm` se nově ukládá do existujícího `user_health_profile.lifestyle.waist_cm` (stejný JSONB klíč, který už zapisuje onboarding) — přidán `upsertLifestyle()` handler podle vzoru `upsertPhysical()`.
+- `adapter.js` už `lifestyle.waist_cm` četl do observation beze změny — engine tuto hodnotu vidí okamžitě po uložení, otázka na obvod pasu se po zodpovězení neopakuje.
+- Žádná migrace, žádná změna `user_biometrics`.
+
+**Testy:** nový cílený `scripts/test-waist-evidence-relocation.mjs` 28/28 PASS; regrese `test-onboarding-contract.mjs` 28/28, `test-domain-evidence-adapter.mjs` 68/68, `test-nbe-question-bridge.mjs` 84/84, `test-health-event-adapter.mjs` (live DB) 83/83.
+
+**Live log na `dev.iting.cz` (29. 9., Supabase edge_logs):** poslední skutečný (ne testovací) běh potvrdil dotaz
+```
+GET /rest/v1/daily_checkin?select=weight_kg,energy,sleep_hours,stress,movement_level,date&...
+```
+bez `waist_cm`, **HTTP 200**, následovaný úspěšnou celou orchestrate sekvencí (`user_profiles`, `user_health_profile`, `action_assignments`, `user_constraints` — vše `200`). Check-in data jsou enginu znovu dostupná.
+
+### Uzavřeno — další krok
+
+PR #6 i PR #7 jsou uzavřené nálezy, oba potvrzené živým provozem na `dev.iting.cz`. Dalším hlavním krokem není další bugfix v datovém kontraktu, ale Founder tok:
+
+```
+LOW_MUSCLE_STRENGTH → FUNCTIONAL_STRENGTH_TRAINING → bezpečná konkrétní akce → opakování → kontrolní měření
+```
+
+---
+
 ## Open issues / Next
 
 | Priorita | Issue | Poznámka |
