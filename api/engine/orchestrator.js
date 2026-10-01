@@ -169,6 +169,23 @@ const GOAL_BRANCH_CS = {
   FUNCTIONAL_INDEPENDENCE: 'Funkční samostatnost',
 };
 
+// Cautious, qualitative wording only — never a number, never a claim of personal certainty.
+// Used by buildTrajectoryResponse (causal_context carries 'unknown' risk/confidence far more
+// often than a resolved value — these maps must render that honestly, not paper over it).
+const RISK_LEVEL_CS = {
+  unknown: 'zatím nejasné',
+  low:     'nízké',
+  medium:  'střední',
+  high:    'zvýšené',
+};
+
+const CONFIDENCE_CS = {
+  unknown: 'zatím nejistý',
+  low:     'orientační',
+  medium:  'středně podložený',
+  high:    'dobře podložený',
+};
+
 // ── Fatigue standalone matcher ────────────────────────────────────────────────
 // Anchored ^...$ — compound statements ("Jsem unavený a bolí mě na hrudi")
 // do NOT match and flow to Haiku / safety path normally.
@@ -858,6 +875,94 @@ export function _buildWhyResponse_test(sessionState) {
   return buildWhyResponse(sessionState);
 }
 
+// ── "Kam směřuji?" response (no engine call) ───────────────────────────────────
+// Uses only cached causal_context from last_domain_response (same contract as buildWhyResponse —
+// read-only exposure of already-computed systemLeverage.selection_basis.causal_reach).
+// Deliberately qualitative: risk/confidence are rendered via RISK_LEVEL_CS/CONFIDENCE_CS,
+// never as a number, and the response always frames this as a causal possibility, not a
+// personal prognosis — even when the underlying data has a resolved (non-'unknown') value.
+function buildTrajectoryResponse(sessionState) {
+  const ctx = sessionState.last_domain_response?.explanation_context;
+  const cc  = ctx?.causal_context;
+
+  if (!cc || (cc.affected_nodes ?? []).length === 0) {
+    return {
+      mode:          'EXPLAIN',
+      text:          'Zatím nemám dost dat na to, kam by tato oblast mohla dál směřovat.',
+      buttons:       sessionState.current_action_assignment ? ['Hotovo', 'Přeskočit'] : [],
+      expects_reply: false,
+      session_updates: {},
+      debug:         { source: 'causal_context_no_data' },
+    };
+  }
+
+  const projByTarget = new Map((cc.affected_projections ?? []).map(p => [p.target, p]));
+  const nodeLines = cc.affected_nodes.map(nodeId => {
+    const label = NODE_LABEL_CS[nodeId] ?? nodeId;
+    const proj = projByTarget.get(nodeId);
+    if (!proj) return label;
+    const riskText = RISK_LEVEL_CS[proj.risk] ?? 'neurčené';
+    const confText = CONFIDENCE_CS[proj.confidence] ?? 'neurčený';
+    return `${label} (riziko: ${riskText}, odhad: ${confText})`;
+  });
+
+  const text =
+    `Pokud se tato oblast nezmění, podle kauzálního modelu může časem souviset s: ${nodeLines.join(', ')}. ` +
+    'Jde o možnou souvislost z modelu, ne o jistou předpověď pro tebe osobně.';
+
+  return {
+    mode:          'EXPLAIN',
+    text,
+    buttons:       sessionState.current_action_assignment ? ['Hotovo', 'Přeskočit'] : [],
+    expects_reply: false,
+    session_updates: {},
+    debug:         { source: 'causal_context' },
+  };
+}
+
+// Exported for unit testing only — not part of the public API.
+export function _buildTrajectoryResponse_test(sessionState) {
+  return buildTrajectoryResponse(sessionState);
+}
+
+// ── "Co tím změním?" response (no engine call) ──────────────────────────────────
+// Uses only cached action_context.selected.mechanism_targets from last_domain_response.
+// Effect is read from the intervention's own mechanism_targets — never derived from the
+// action's label text.
+function buildMechanismResponse(sessionState) {
+  const ctx    = sessionState.last_domain_response?.explanation_context;
+  const action = ctx?.action_context?.selected;
+  const targets = action?.mechanism_targets ?? [];
+
+  if (!action || targets.length === 0) {
+    return {
+      mode:          'EXPLAIN',
+      text:          'Zatím nemám k této akci uložený konkrétní mechanismus účinku.',
+      buttons:       sessionState.current_action_assignment ? ['Hotovo', 'Přeskočit'] : [],
+      expects_reply: false,
+      session_updates: {},
+      debug:         { source: 'mechanism_targets_no_data' },
+    };
+  }
+
+  const labels = targets.map(id => NODE_LABEL_CS[id] ?? id);
+  const text = `Tato akce cílí na: ${labels.join(', ')}.`;
+
+  return {
+    mode:          'EXPLAIN',
+    text,
+    buttons:       sessionState.current_action_assignment ? ['Hotovo', 'Přeskočit'] : [],
+    expects_reply: false,
+    session_updates: {},
+    debug:         { source: 'mechanism_targets' },
+  };
+}
+
+// Exported for unit testing only — not part of the public API.
+export function _buildMechanismResponse_test(sessionState) {
+  return buildMechanismResponse(sessionState);
+}
+
 // ── Presentation dispatcher ───────────────────────────────────────────────────
 
 function buildPresentation(eventType, classifiedPayload, result, sessionUpdates, isHoldFollowUp = false) {
@@ -1083,6 +1188,18 @@ export async function processInput(userId, userText, sessionState = {}) {
     classified = { event_type: 'DOMAIN_REQUEST', payload: {} };
   }
 
+  // Guard F: fixed UI chips "Kam směřuji?" / "Co tím změním?" — exact match only.
+  // These are deterministic, UI-generated button labels (app/launcher.html), never free user
+  // text — must not be classified by the LLM, same reasoning as Guard B for Hotovo/Přeskočit.
+  if (!classified) {
+    const _trimmedF = userText.trim();
+    if (_trimmedF === 'Kam směřuji?') {
+      classified = { event_type: 'TRAJECTORY_REQUEST', payload: {} };
+    } else if (_trimmedF === 'Co tím změním?') {
+      classified = { event_type: 'MECHANISM_REQUEST', payload: {} };
+    }
+  }
+
   // Fall through: AI classifier (Haiku). Called only when no guard fired above.
   if (!classified) {
     classified = await classifyIntent(state, userText);
@@ -1100,6 +1217,15 @@ export async function processInput(userId, userText, sessionState = {}) {
       return buildPathDiscoveryWhyResponse(state);
     }
     return buildWhyResponse(state);
+  }
+
+  // 2.5 "Kam směřuji?" / "Co tím změním?" — same no-engine-call contract as WHY.
+  // Reached only via Guard F (exact chip-text match) — never via the AI classifier.
+  if (event_type === 'TRAJECTORY_REQUEST') {
+    return buildTrajectoryResponse(state);
+  }
+  if (event_type === 'MECHANISM_REQUEST') {
+    return buildMechanismResponse(state);
   }
 
   // 3. Map classifier event type to adapter-supported type
