@@ -164,54 +164,108 @@ export function _localizeMod_test(s) {
   return localizeMod(s);
 }
 
+// Goal branch, cautious/casual form — used in buildWhyResponse's primary sentence.
+// GOAL_BRANCH_CS (clinical) kept for any other existing reader of the old label.
 const GOAL_BRANCH_CS = {
   SURVIVAL_HEALTHSPAN:     'Zdravé přežití',
   FUNCTIONAL_INDEPENDENCE: 'Funkční samostatnost',
 };
+const GOAL_BRANCH_CASUAL_CS = {
+  SURVIVAL_HEALTHSPAN:     'tvoje zdraví',
+  FUNCTIONAL_INDEPENDENCE: 'tvoji soběstačnost',
+};
+
+// ── "Proč?" wording table ───────────────────────────────────────────────────────
+// Possessive/attributive form of each producible node, for "Protože <X> teď nejvíc
+// ovlivňuje <goal>." A node with no entry falls back to a neutral generic subject.
+const WHY_SUBJECT_CS = {
+  EXCESS_ADIPOSITY:           'tvůj tuk',
+  LOW_MUSCLE_STRENGTH:        'tvoje svalová síla',
+  PHYSICAL_INACTIVITY:        'tvůj nedostatek pohybu',
+  PHYSICAL_DECONDITIONING:    'tvoje celková kondice',
+  REDUCED_FUNCTIONAL_RESERVE: 'síla, kterou máš do zásoby',
+  LOSS_OF_FLOOR_RISE_ABILITY: 'to, jak zvládáš základní pohyby',
+  GAIT_INSTABILITY:           'tvoje jistota při chůzi',
+  FALL_RISK:                  'tvoje riziko pádu',
+  PERIPHERAL_NEUROPATHY:      'snížené čití v nohách',
+  HYPERTENSION:                'tvůj krevní tlak',
+  ENDOTHELIAL_DYSFUNCTION:    'stav tvých cév',
+  ERECTILE_DYSFUNCTION:       'tvoje schopnost erekce',
+  INSULIN_RESISTANCE:         'tvoje citlivost na inzulín',
+};
 
 // ── "Kam směřuji?" wording tables ───────────────────────────────────────────────
 // Curated per leverage node — natural Czech verb/case agreement cannot be generated
-// mechanically from NODE_LABEL_CS, so each entry is hand-written. A node with no entry
-// here falls back to the generic "not enough data" response rather than broken grammar.
-// subject: the leverage node as a sentence subject.
-// nextStep: the verb + first causal-step object, written as one phrase ("může postupně <nextStep>").
+// mechanically from NODE_LABEL_CS, so each entry is hand-written, grounded in the real
+// first causal-step edge in master.json. A node with no entry here falls back to the
+// generic "not enough data" response rather than broken grammar. Terminal nodes with no
+// outgoing causal edge (LOSS_OF_FLOOR_RISE_ABILITY, FALL_RISK, ERECTILE_DYSFUNCTION) are
+// intentionally absent — there is no further step to describe.
+// nextStep: verb + object, continuing "Může se ti <nextStep>...".
 const CAUSAL_STEP_CS = {
-  EXCESS_ADIPOSITY:    { subject: 'Nadměrný tuk',            nextStep: 'zhoršovat citlivost na inzulín' },
-  LOW_MUSCLE_STRENGTH: { subject: 'Pokles svalové síly',      nextStep: 'snižovat funkční rezervu' },
-  PHYSICAL_INACTIVITY: { subject: 'Dlouhodobý nedostatek pohybu', nextStep: 'zvyšovat množství tělesného tuku' },
+  EXCESS_ADIPOSITY:           { nextStep: 'zhoršovat citlivost na inzulín' },
+  LOW_MUSCLE_STRENGTH:        { nextStep: 'snižovat tvoje rezervy síly' },
+  PHYSICAL_INACTIVITY:        { nextStep: 'zvyšovat množství tělesného tuku' },
+  PHYSICAL_DECONDITIONING:    { nextStep: 'snižovat tvoje svalová síla' },
+  REDUCED_FUNCTIONAL_RESERVE: { nextStep: 'ztěžovat základní pohyby, jako je vstávání' },
+  GAIT_INSTABILITY:           { nextStep: 'zvyšovat riziko, že upadneš' },
+  PERIPHERAL_NEUROPATHY:      { nextStep: 'zhoršovat jistota tvé chůze' },
+  HYPERTENSION:               { nextStep: 'zatěžovat stěny tvých cév' },
+  ENDOTHELIAL_DYSFUNCTION:    { nextStep: 'zhoršovat prokrvení v těle' },
+  INSULIN_RESISTANCE:         { nextStep: 'zvyšovat tvůj krevní tlak' },
 };
 
 // Only two Goal Gateways exist in the model today (api/engine/goalGateways.js) — this table
-// is exhaustive over that closed set, not a per-scenario special case. Each gateway has a
-// "solo" phrase (used when it's the only reachable gateway, combined with the causal step
-// in one sentence) and a "dual" verb+object pair (used when both gateways are reachable,
-// as a second sentence listing both).
+// is exhaustive over that closed set, not a per-scenario special case. One transitive
+// verb+object phrase per gateway, reused in both the single- and dual-gateway sentence forms.
 const GOAL_GATEWAY_PHRASE_CS = {
-  CARDIOVASCULAR_DISEASE: {
-    solo: 'a tím přispívat k vyššímu riziku nemocí srdce a cév',
-    dualVerb: 'růst', dualObject: 'riziko nemocí srdce a cév',
-  },
-  LOSS_OF_FLOOR_RISE_ABILITY: {
-    solo: 'a ohrozit schopnost zvládat běžné fyzické úkony — například vstát ze země bez cizí pomoci',
-    dualVerb: 'zhoršovat', dualObject: 'schopnost zvládat běžné fyzické úkony',
-  },
+  CARDIOVASCULAR_DISEASE:     'zvyšovat riziko nemocí srdce a cév',
+  LOSS_OF_FLOOR_RISE_ABILITY: 'ohrožovat schopnost zvládat běžné fyzické úkony — například vstát ze země bez cizí pomoci',
 };
 
-const TRAJECTORY_DISCLAIMER = 'Je to možný směr vývoje, ne jistá předpověď.';
-
-// ── "Co tím změním?" wording table ──────────────────────────────────────────────
-// Accusative-case plain-language phrase per node, used as both the primary subject
-// ("Neřešíš jen X") and secondary object ("působí na Y"). A mechanism_targets entry with
-// no phrase here is skipped as a secondary target — it has no good lay equivalent
-// (e.g. ENDOTHELIAL_DYSFUNCTION), not shown as raw clinical language.
+// ── "Co tím změním?" wording tables ─────────────────────────────────────────────
+// Primary target: verb + direct object, used in "<action> ti pomůže <verb> <object>".
+const MECHANISM_PRIMARY_CS = {
+  EXCESS_ADIPOSITY:    { verb: 'snížit',  object: 'množství tuku' },
+  LOW_MUSCLE_STRENGTH: { verb: 'posílit', object: 'svalovou sílu' },
+  PHYSICAL_INACTIVITY: { verb: 'zvýšit',  object: 'pohybovou aktivitu' },
+  GAIT_INSTABILITY:    { verb: 'zlepšit', object: 'jistotu chůze' },
+};
+// Secondary targets: plain accusative noun phrase, listed after "ale zároveň zlepšit …".
+// A mechanism_targets entry with no phrase here is skipped — it has no good lay equivalent,
+// never shown as raw clinical language.
 const MECHANISM_TARGET_CS = {
-  EXCESS_ADIPOSITY:           'nadměrný tuk',
+  EXCESS_ADIPOSITY:           'množství tuku',
   LOW_MUSCLE_STRENGTH:        'svalovou sílu',
   PHYSICAL_INACTIVITY:        'pohybovou aktivitu',
   INSULIN_RESISTANCE:         'citlivost na inzulín',
   HYPERTENSION:               'krevní tlak',
-  REDUCED_FUNCTIONAL_RESERVE: 'tvoji funkční rezervu',
+  REDUCED_FUNCTIONAL_RESERVE: 'celkovou tělesnou odolnost',
+  ENDOTHELIAL_DYSFUNCTION:    'prokrvení a stav cév',
+  FALL_RISK:                  'riziko pádu',
+  GAIT_INSTABILITY:           'jistotu chůze',
+  PHYSICAL_DECONDITIONING:    'celkovou fyzickou kondici',
 };
+
+// Action labels in longevity_actions are imperative instructions ("Jdi na procházku…",
+// "Udělej dřepy…"), not noun-phrase titles — using one as a sentence subject ("Jdi na
+// procházku ti pomůže…") is broken Czech, the same problem the C4 cut fixed for "Proč?".
+// Only labels that do NOT start with a known imperative verb are safe to use as a subject;
+// everything else falls back to "Tato akce". Grounded in the real active action pool, not
+// exhaustive — a future action with an unlisted imperative verb will still read awkwardly
+// until added here.
+const IMPERATIVE_FIRST_WORDS = new Set([
+  'jdi', 'udělej', 'drž', 'vstaň', 'vstań', 'stůj', 'stoj', 'vypij', 'vezmi', 'nesněz',
+  'zapiš', 'napiš', 'medituj', 'protáhni', 'protahni', 'přidej', 'choď', 'sleduj',
+  'žádný', 'žádné', 'proveď', 'vypni', 'lehni', 'větrání', 'změř', 'pojmenuj', 'naplánuj',
+  'zkontroluj', 'vizualizuj', 'pozoruj', 'vstávej', 'vyjdi', 'zavři', 'přečti', 'běž',
+  'pracuj', 'nejez', 'vis', 'dýchej', 'spát', 'odpočinek',
+]);
+function isSafeActionSubject(label) {
+  if (!label) return false;
+  const first = label.trim().split(/\s+/)[0]?.toLowerCase().replace(/[.,!?;:]+$/, '');
+  return first ? !IMPERATIVE_FIRST_WORDS.has(first) : false;
+}
 
 // ── Fatigue standalone matcher ────────────────────────────────────────────────
 // Anchored ^...$ — compound statements ("Jsem unavený a bolí mě na hrudi")
@@ -841,40 +895,27 @@ function buildWhyResponse(sessionState) {
   const constraint  = ctx.system_constraint;
   const action      = ctx.action_context?.selected;
 
-  // Both selected objects have node_id (not label) — resolve from master.json
-  const leverageLabel   = NODE_LABEL_CS[leverage?.node_id]   ?? null;
-  const constraintLabel = NODE_LABEL_CS[constraint?.node_id] ?? null;
-  const actionLabel     = action?.label ?? null;
-  const affinity        = action?.leverage_affinity ?? null;
+  // Possessive/casual form for the primary sentence; raw clinical label only as a last-resort
+  // fallback (kept so a node outside WHY_SUBJECT_CS still produces a comprehensible sentence
+  // rather than silently dropping the whole response).
+  const leverageSubject   = WHY_SUBJECT_CS[leverage?.node_id]   ?? NODE_LABEL_CS[leverage?.node_id]   ?? null;
+  const constraintSubject = WHY_SUBJECT_CS[constraint?.node_id] ?? NODE_LABEL_CS[constraint?.node_id] ?? null;
 
-  // Primary: SYSTEM_LEVERAGE — why this area
-  if (leverageLabel) {
-    parts.push(`Teď je největší páka v oblasti: ${leverageLabel}.`);
-  }
-
-  // Secondary: action + goal_impact — why this intervention, what it achieves
-  if (actionLabel) {
+  // Primary: leverage + the known user goal (goal branches already selected deterministically
+  // on the action's own goal_impact — no new inference, no invented personal goal such as a
+  // target age; that data does not exist in explanation_context today, so it is never guessed).
+  if (leverageSubject) {
     const branches = (action?.goal_impact?.branches ?? [])
-      .map(b => GOAL_BRANCH_CS[b]).filter(Boolean);
-    const verb     = affinity === 'high' ? 'přímo ovlivňuje' : 'ovlivňuje';
-    const goalPart = branches.length > 0
-      ? ` a podporuje ${branches.map(b => b.toLowerCase()).join(' a ')}`
-      : '';
-
-    if (leverageLabel) {
-      // "Tato akce ji přímo ovlivňuje a podporuje zdravé přežití."
-      // Fixed subject, not actionLabel: action labels are free text (can be an imperative
-      // sentence, e.g. "...skonči") and are not safe to splice as a sentence subject.
-      parts.push(`Tato akce ji ${verb}${goalPart}.`);
-    } else if (branches.length > 0) {
-      // No leverage identified — neutral reference to goal
-      parts.push(`Tato akce cílí na ${branches.map(b => b.toLowerCase()).join(' a ')}.`);
-    }
+      .map(b => GOAL_BRANCH_CASUAL_CS[b]).filter(Boolean);
+    const goalPhrase = branches.length > 0
+      ? branches.join(' a ')
+      : 'tvůj aktuální zdravotní stav';
+    parts.push(`Protože ${leverageSubject} teď nejvíc ovlivňuje ${goalPhrase}.`);
   }
 
   // Optional: SYSTEM_CONSTRAINT — deeper WHY; shown only when different from leverage
-  if (constraintLabel && constraintLabel !== leverageLabel) {
-    parts.push(`Aktuální hlavní omezení: ${constraintLabel}.`);
+  if (constraintSubject && constraintSubject !== leverageSubject) {
+    parts.push(`Zároveň hraje roli ${constraintSubject}.`);
   }
 
   // Modification hint when action has safety condition
@@ -885,7 +926,7 @@ function buildWhyResponse(sessionState) {
 
   const text = parts.length > 0
     ? parts.join(' ')
-    : 'Tato akce cílí na tvůj aktuální systémový bottleneck.';
+    : 'Tahle doporučená akce teď nejvíc odpovídá tvému aktuálnímu zdravotnímu stavu.';
 
   return {
     mode:          'EXPLAIN',
@@ -905,10 +946,11 @@ export function _buildWhyResponse_test(sessionState) {
 // ── "Kam směřuji?" response (no engine call) ───────────────────────────────────
 // Uses only cached causal_context + goal_gateway_context from last_domain_response (same
 // contract as buildWhyResponse — read-only exposure of already-computed engine output).
-// Narrative shape: current problem → first causal step → reachable Goal Gateway(s), using
-// ONLY goal_gateway_context.gateway_nodes_reached (computeGoalImpact in systemConstraint.js,
+// Narrative shape: leverage → first causal step → reachable Goal Gateway(s), using ONLY
+// goal_gateway_context.gateway_nodes_reached (computeGoalImpact in systemConstraint.js,
 // already computed generically per node). No gateway reachable → no human-stake clause at
-// all — never invented. "může", never "stane se"; closing disclaimer always present.
+// all — never invented. Always "může" (never "stane se"); no separate disclaimer sentence —
+// "může" already carries the caution, so appending one restates it redundantly.
 function buildTrajectoryResponse(sessionState) {
   const ctx = sessionState.last_domain_response?.explanation_context;
   const cc  = ctx?.causal_context;
@@ -932,16 +974,13 @@ function buildTrajectoryResponse(sessionState) {
   let text;
   if (reached.length === 0) {
     // No modeled Goal Gateway reachable from this node — show the causal step only.
-    text = `${step.subject} může postupně ${step.nextStep}.`;
+    text = `Může se ti ${step.nextStep}.`;
   } else if (reached.length === 1) {
-    const gw = GOAL_GATEWAY_PHRASE_CS[reached[0]];
-    text = `${step.subject} může postupně ${step.nextStep} ${gw.solo}.`;
+    text = `Může se ti ${step.nextStep} a ${GOAL_GATEWAY_PHRASE_CS[reached[0]]}.`;
   } else {
     const [gw1, gw2] = reached.map(id => GOAL_GATEWAY_PHRASE_CS[id]);
-    text = `${step.subject} může ${step.nextStep}. ` +
-      `Tím může postupně ${gw1.dualVerb} ${gw1.dualObject} a zároveň se ${gw2.dualVerb} ${gw2.dualObject}.`;
+    text = `Může se ti ${step.nextStep}. Tím ti pak může zároveň ${gw1} a ${gw2}.`;
   }
-  text += ` ${TRAJECTORY_DISCLAIMER}`;
 
   return {
     mode:          'EXPLAIN',
@@ -964,12 +1003,15 @@ export function _buildTrajectoryResponse_test(sessionState) {
 // action's label text. Primary = mechanism_targets[0] (the leverage node itself, by
 // existing convention in every intervention-map.json entry). Secondary = up to 3 further
 // targets that have a plain-language phrase in MECHANISM_TARGET_CS — entries with no good
-// lay equivalent (e.g. ENDOTHELIAL_DYSFUNCTION) are skipped, not shown as clinical jargon.
+// lay equivalent are skipped, not shown as clinical jargon. Subject is the action's own
+// label when it's safe to use as a sentence subject (see isSafeActionSubject); falls back
+// to "Tato akce" for imperative-instruction labels — the same splicing problem the C4 cut
+// fixed for "Proč?", now also guarded here.
 function buildMechanismResponse(sessionState) {
   const ctx    = sessionState.last_domain_response?.explanation_context;
   const action = ctx?.action_context?.selected;
   const targets = action?.mechanism_targets ?? [];
-  const primary = targets.length > 0 ? MECHANISM_TARGET_CS[targets[0]] : null;
+  const primary = targets.length > 0 ? MECHANISM_PRIMARY_CS[targets[0]] : null;
 
   if (!action || targets.length === 0 || !primary) {
     return {
@@ -982,6 +1024,7 @@ function buildMechanismResponse(sessionState) {
     };
   }
 
+  const subject = isSafeActionSubject(action.label) ? action.label : 'Tato akce';
   const secondary = targets.slice(1)
     .map(id => MECHANISM_TARGET_CS[id])
     .filter(Boolean)
@@ -989,14 +1032,14 @@ function buildMechanismResponse(sessionState) {
 
   let text;
   if (secondary.length === 0) {
-    text = `Tato akce cílí přímo na ${primary}.`;
+    text = `${subject} ti pomůže ${primary.verb} ${primary.object}.`;
   } else if (secondary.length === 1) {
-    text = `Neřešíš jen ${primary}. Tato akce současně působí i na ${secondary[0]}.`;
+    text = `${subject} ti pomůže nejen ${primary.verb} ${primary.object}, ale zároveň zlepšit i ${secondary[0]}.`;
   } else {
     const last = secondary[secondary.length - 1];
     const rest = secondary.slice(0, -1).join(', ');
-    text = `Neřešíš jen ${primary}. Tato akce současně působí na ${rest} a ${last}. ` +
-      'Jednou věcí tak ovlivňuješ několik problémů najednou.';
+    text = `${subject} ti pomůže nejen ${primary.verb} ${primary.object}, ale zároveň zlepšit ${rest} a ${last}. ` +
+      'Ovlivňuješ tak několik problémů najednou.';
   }
 
   return {

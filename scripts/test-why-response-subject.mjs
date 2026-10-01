@@ -1,19 +1,24 @@
-// test-why-response-subject.mjs — C4: buildWhyResponse uses a fixed subject, not actionLabel
+// test-why-response-subject.mjs — buildWhyResponse never splices the raw action label as subject
 //
-// Regression: buildWhyResponse spliced the raw action label as the grammatical subject of
-// "<label> ji ovlivňuje..." / "<label> cílí na...". Action labels are free text and can be an
-// imperative sentence (e.g. sit_to_stand_supported: "...nejistotě skonči"), which breaks the
-// sentence: "...skonči ji ovlivňuje..." is not valid Czech. Fix: both branches now use the
-// fixed subject "Tato akce" — actionLabel is still read, but only to gate whether the sentence
-// is added at all, never interpolated into the text.
+// Original C4 regression: buildWhyResponse spliced the raw action label as the grammatical
+// subject of "<label> ji ovlivňuje..." / "<label> cílí na...". Action labels are free text and
+// can be an imperative sentence (e.g. sit_to_stand_supported: "...nejistotě skonči"), which
+// breaks the sentence: "...skonči ji ovlivňuje..." is not valid Czech.
+//
+// This cut (human-language "Proč?") replaced the two-sentence "Teď je největší páka..." /
+// "Tato akce ji ovlivňuje..." construction entirely: the sentence subject is now always the
+// LEVERAGE (or constraint) node's human phrase (WHY_SUBJECT_CS, falling back to NODE_LABEL_CS)
+// — the action label itself is never read as a subject candidate at all, so the original bug
+// class is structurally impossible, not just avoided by a fallback string. These tests assert
+// that invariant directly against the new wording.
 //
 // No DB, no network — real orchestrator.js (_buildWhyResponse_test, _buildActResponse_test).
 //
 // Sections:
-//   W1  exact live output for LOW_MUSCLE_STRENGTH / sit_to_stand_supported
-//   W2  imperative label text does not appear anywhere in the WHY text
-//   W3  ordinary noun-phrase label also uses "Tato akce" (fix is general, not conditional on label shape)
-//   W4  no-leverage branch uses "Tato akce cílí na…"
+//   W1  exact live output for LOW_MUSCLE_STRENGTH / sit_to_stand_supported (new human text)
+//   W2  imperative action label text never appears anywhere in the WHY text
+//   W3  ordinary noun-phrase action label also never appears (subject is never the label)
+//   W4  no-leverage branch → generic fallback sentence, no label spliced in either
 //   W5  buildActResponse (ACT text) is unaffected — still splices the raw label as before
 //
 // Run: node scripts/test-why-response-subject.mjs
@@ -64,8 +69,7 @@ sep('W1 — exact live output for LOW_MUSCLE_STRENGTH / sit_to_stand_supported')
 {
   const state = sessionState(sitToStandAction, { leverage: { node_id: 'LOW_MUSCLE_STRENGTH' } });
   const response = buildWhyResponse(state);
-  const expected = 'Teď je největší páka v oblasti: Snížená svalová síla. ' +
-    'Tato akce ji ovlivňuje a podporuje funkční samostatnost a zdravé přežití.';
+  const expected = 'Protože tvoje svalová síla teď nejvíc ovlivňuje tvoji soběstačnost a tvoje zdraví.';
   check(response.text === expected, 'W1: exact text match',
     `expected: ${expected}\n      actual:   ${response.text}`);
 }
@@ -77,31 +81,32 @@ sep('W2 — imperative label text does not appear anywhere in the WHY text');
   const response = buildWhyResponse(state);
   check(!response.text.includes(IMPERATIVE_LABEL),
     'W2: raw imperative label absent from WHY text', `text: ${response.text}`);
-  check(!response.text.includes('skonči ji'),
-    'W2: no broken "...skonči ji ovlivňuje" fragment', `text: ${response.text}`);
-  check(response.text.includes('Tato akce ji ovlivňuje'),
-    'W2: fixed subject "Tato akce ji ovlivňuje" present', `text: ${response.text}`);
+  check(!response.text.includes('skonči'),
+    'W2: no broken "...skonči..." fragment', `text: ${response.text}`);
+  check(response.text.includes('tvoje svalová síla'),
+    'W2: subject is the leverage node phrase, not the action label', `text: ${response.text}`);
 }
 
-// ── W3 — ordinary noun-phrase label also uses "Tato akce" ─────────────────────
-// The fix must be unconditional — not "only rewrite when the label looks imperative".
-sep('W3 — ordinary noun-phrase label also rewritten to "Tato akce" (fix is general)');
+// ── W3 — ordinary noun-phrase label is also never spliced ─────────────────────
+// The fix must be unconditional — the action label is never read as a subject candidate,
+// regardless of whether it looks imperative or not.
+sep('W3 — ordinary noun-phrase label also never spliced in (subject is never the label)');
 {
   const state = sessionState(pressAction, { leverage: { node_id: 'PHYSICAL_INACTIVITY' } });
   const response = buildWhyResponse(state);
   check(!response.text.includes(NOUN_LABEL),
-    'W3: even a normal noun-phrase label is not spliced into the sentence', `text: ${response.text}`);
-  check(response.text.includes('Tato akce ji ovlivňuje'),
-    'W3: fixed subject used identically for a noun-phrase label', `text: ${response.text}`);
+    'W3: noun-phrase label is not spliced into the sentence', `text: ${response.text}`);
+  check(response.text.includes('tvůj nedostatek pohybu'),
+    'W3: subject is the leverage node phrase', `text: ${response.text}`);
 }
 
-// ── W4 — no-leverage branch uses "Tato akce cílí na…" ──────────────────────────
-sep('W4 — no leverage identified → "Tato akce cílí na…"');
+// ── W4 — no-leverage branch → generic fallback, no label spliced in ───────────
+sep('W4 — no leverage identified → generic fallback sentence, no crash');
 {
   const state = sessionState(pressAction, { leverage: null });
   const response = buildWhyResponse(state);
-  check(response.text.includes('Tato akce cílí na'),
-    'W4: fallback-branch sentence uses "Tato akce cílí na…"', `text: ${response.text}`);
+  check(response.text === 'Tahle doporučená akce teď nejvíc odpovídá tvému aktuálnímu zdravotnímu stavu.',
+    'W4: exact generic fallback text when no leverage subject is available', `text: ${response.text}`);
   check(!response.text.includes(NOUN_LABEL),
     'W4: label still not spliced in the no-leverage branch', `text: ${response.text}`);
 }
