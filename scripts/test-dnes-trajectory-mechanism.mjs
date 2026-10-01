@@ -1,4 +1,4 @@
-// test-dnes-trajectory-mechanism.mjs — "Proč?" / "Kam směřuji?" / "Co tím změním?" on the DNES screen
+// test-dnes-trajectory-mechanism.mjs — "Proč?" / "Kam směřuješ?" / "Co tím změníš?" on the DNES screen
 //
 // Exposes already-computed Decision Engine output to the user, read-only — no new health
 // model, no new decision logic. All three builders read ONLY cached explanation_context /
@@ -6,12 +6,12 @@
 //
 //   - "Proč?": leverage (+ constraint) + known user goal branch(es), humanized. No invented
 //     personal goal (e.g. a target age) — that data does not exist in explanation_context.
-//   - "Kam směřuji?": current problem → first causal step → reachable Goal Gateway(s), using
+//   - "Kam směřuješ?": current problem → first causal step → reachable Goal Gateway(s), using
 //     ONLY goal_gateway_context.gateway_nodes_reached (computeGoalImpact in systemConstraint.js
 //     — see goalGateways.js for the two gateways: CARDIOVASCULAR_DISEASE,
 //     LOSS_OF_FLOOR_RISE_ABILITY). No gateway reachable → no human-stake clause. "může", never
 //     "stane se"; no separate disclaimer sentence appended.
-//   - "Co tím změním?": primary mechanism target (mechanism_targets[0]) + up to 3 secondary
+//   - "Co tím změníš?": primary mechanism target (mechanism_targets[0]) + up to 3 secondary
 //     targets with a plain-language phrase — never a flat dump, never derived from the action's
 //     label text. Subject is the action's real label when safe, else "Tato akce" (imperative
 //     action labels are not safe sentence subjects — same fix as the C4 WHY cut).
@@ -44,9 +44,9 @@
 //   M8  non-imperative (noun-phrase) action label IS used as the real sentence subject
 //   S1  EXCESS_ADIPOSITY — exact required texts for all three views
 //   S2  LOW_MUSCLE_STRENGTH — texts for all three views, grammatically sound
-//   G1  Guard F routes "Kam směřuji?" deterministically, through the real processInput
+//   G1  Guard F routes "Kam směřuješ?" deterministically, through the real processInput
 //       dispatcher, without reaching the AI classifier or any engine/DB call
-//   G2  same for "Co tím změním?"
+//   G2  same for "Co tím změníš?"
 //
 // Run: node scripts/test-dnes-trajectory-mechanism.mjs
 
@@ -197,7 +197,7 @@ sep('W8 — no forbidden jargon in WHY text across all producible nodes');
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// "Kam směřuji?"
+// "Kam směřuješ?"
 // ══════════════════════════════════════════════════════════════════════════════
 
 sep('T1 — no causal_context / no curated causal step → graceful fallback, no crash');
@@ -286,7 +286,7 @@ sep('T6 — no forbidden jargon in trajectory text across curated producible nod
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// "Co tím změním?"
+// "Co tím změníš?"
 // ══════════════════════════════════════════════════════════════════════════════
 
 sep('M1 — no mechanism_targets → graceful fallback, no crash');
@@ -430,7 +430,7 @@ sep('S1 — EXCESS_ADIPOSITY, exact required texts for all three views');
     leverageNodeId: 'EXCESS_ADIPOSITY', affected_nodes: ['INSULIN_RESISTANCE'], gateways: ['CARDIOVASCULAR_DISEASE'],
   });
   check(buildTrajectoryResponse(trajCtx).text === 'Může se ti zhoršovat citlivost na inzulín a zvyšovat riziko nemocí srdce a cév.',
-    'S1: Kam směřuji? — exact required text');
+    'S1: Kam směřuješ? — exact required text');
 
   const mechCtx = ctxFor({
     action: {
@@ -440,7 +440,7 @@ sep('S1 — EXCESS_ADIPOSITY, exact required texts for all three views');
   });
   check(buildMechanismResponse(mechCtx).text === 'Svižná chůze nebo kolo — 20 minut (dá se mluvit) ti pomůže nejen snížit množství tuku, ' +
     'ale zároveň zlepšit pohybovou aktivitu, krevní tlak a citlivost na inzulín. Ovlivňuješ tak několik problémů najednou.',
-    'S1: Co tím změním? — exact required text');
+    'S1: Co tím změníš? — exact required text');
 }
 
 sep('S2 — LOW_MUSCLE_STRENGTH, texts for all three views');
@@ -457,7 +457,7 @@ sep('S2 — LOW_MUSCLE_STRENGTH, texts for all three views');
   });
   check(buildTrajectoryResponse(trajCtx).text ===
     'Může se ti snižovat síla potřebná pro běžné fyzické úkony — například vstát ze země bez cizí pomoci.',
-    'S2: Kam směřuji? — exact text');
+    'S2: Kam směřuješ? — exact text');
 
   const mechCtx = ctxFor({
     action: {
@@ -468,7 +468,7 @@ sep('S2 — LOW_MUSCLE_STRENGTH, texts for all three views');
   });
   check(buildMechanismResponse(mechCtx).text ===
     'Cvičení ti pomůže nejen zvýšit svalovou sílu, ale zároveň zlepšit schopnost zvládat běžné fyzické úkony.',
-    'S2: Co tím změním? — exact text (imperative label → intervention type-name subject)');
+    'S2: Co tím změníš? — exact text (imperative label → intervention type-name subject)');
 }
 
 // ── G1 / G2 ───────────────────────────────────────────────────────────────────
@@ -483,13 +483,13 @@ sep('G1/G2 — Guard F routes both chip texts deterministically, no AI classifie
     action: { label: 'Svižná chůze nebo kolo — 20 minut (dá se mluvit)', mechanism_targets: ['EXCESS_ADIPOSITY'] },
   });
 
-  const rTraj = await processInput('test-guard-f', 'Kam směřuji?', sessionState);
+  const rTraj = await processInput('test-guard-f', 'Kam směřuješ?', sessionState);
   check(rTraj.mode === 'EXPLAIN' && rTraj.text.includes('citlivost na inzulín'),
-    'G1: "Kam směřuji?" routed to buildTrajectoryResponse via Guard F', `text: ${rTraj.text}`);
+    'G1: "Kam směřuješ?" routed to buildTrajectoryResponse via Guard F', `text: ${rTraj.text}`);
 
-  const rMech = await processInput('test-guard-f', 'Co tím změním?', sessionState);
+  const rMech = await processInput('test-guard-f', 'Co tím změníš?', sessionState);
   check(rMech.mode === 'EXPLAIN' && rMech.text.includes('množství tuku'),
-    'G2: "Co tím změním?" routed to buildMechanismResponse via Guard F', `text: ${rMech.text}`);
+    'G2: "Co tím změníš?" routed to buildMechanismResponse via Guard F', `text: ${rMech.text}`);
 }
 
 // ── Summary ───────────────────────────────────────────────────────────────────

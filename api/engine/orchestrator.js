@@ -202,7 +202,7 @@ const WHY_SUBJECT_CS = {
   INSULIN_RESISTANCE:         'tvoje citlivost na inzulín',
 };
 
-// ── "Kam směřuji?" wording tables ───────────────────────────────────────────────
+// ── "Kam směřuješ?" wording tables ───────────────────────────────────────────────
 // Curated per leverage node — natural Czech verb/case agreement cannot be generated
 // mechanically from NODE_LABEL_CS, so each entry is hand-written, grounded in the real
 // first causal-step edge in master.json. A node with no entry here falls back to the
@@ -235,7 +235,7 @@ const GOAL_GATEWAY_PHRASE_CS = {
   LOSS_OF_FLOOR_RISE_ABILITY: 'ohrožovat schopnost zvládat běžné fyzické úkony — například vstát ze země bez cizí pomoci',
 };
 
-// ── "Co tím změním?" wording tables ─────────────────────────────────────────────
+// ── "Co tím změníš?" wording tables ─────────────────────────────────────────────
 // Primary target: verb + direct object, used in "<action> ti pomůže <verb> <object>".
 const MECHANISM_PRIMARY_CS = {
   EXCESS_ADIPOSITY:    { verb: 'snížit',  object: 'množství tuku' },
@@ -260,7 +260,7 @@ const MECHANISM_TARGET_CS = {
 };
 
 // Short human type-name per intervention_id (api/engine/intervention-map.json — a closed,
-// stable set of 7 ids today). Used as the "Co tím změním?" sentence subject in place of the
+// stable set of 7 ids today). Used as the "Co tím změníš?" sentence subject in place of the
 // raw action label, which is often an imperative instruction label unsafe as a subject (see
 // isSafeActionSubject below). This never changes the action itself — only how it is named in
 // this one sentence — and names the TYPE of intervention, not a new medical claim.
@@ -274,7 +274,7 @@ const INTERVENTION_TYPE_LABEL_CS = {
   SAFE_SUPPORTED_MOBILITY:      'Bezpečný pohyb s oporou',
 };
 
-// Per-intervention override for the "Co tím změním?" primary verb/object and secondary
+// Per-intervention override for the "Co tím změníš?" primary verb/object and secondary
 // phrase(s) — used when the generic MECHANISM_PRIMARY_CS/MECHANISM_TARGET_CS wording needs an
 // intervention-specific tweak (verb choice, or a secondary phrase that already reads as a
 // capability clause rather than a plain noun, where the connective "i" would read redundant).
@@ -988,7 +988,7 @@ export function _buildWhyResponse_test(sessionState) {
   return buildWhyResponse(sessionState);
 }
 
-// ── "Kam směřuji?" response (no engine call) ───────────────────────────────────
+// ── "Kam směřuješ?" response (no engine call) ───────────────────────────────────
 // Uses only cached causal_context + goal_gateway_context from last_domain_response (same
 // contract as buildWhyResponse — read-only exposure of already-computed engine output).
 // Narrative shape: leverage → first causal step → reachable Goal Gateway(s), using ONLY
@@ -1043,7 +1043,7 @@ export function _buildTrajectoryResponse_test(sessionState) {
   return buildTrajectoryResponse(sessionState);
 }
 
-// ── "Co tím změním?" response (no engine call) ──────────────────────────────────
+// ── "Co tím změníš?" response (no engine call) ──────────────────────────────────
 // Uses only cached action_context.selected.mechanism_targets from last_domain_response.
 // Effect is read from the intervention's own mechanism_targets — never derived from the
 // action's label text. Primary = mechanism_targets[0] (the leverage node itself, by
@@ -1337,14 +1337,14 @@ export async function processInput(userId, userText, sessionState = {}) {
     classified = { event_type: 'DOMAIN_REQUEST', payload: {} };
   }
 
-  // Guard F: fixed UI chips "Kam směřuji?" / "Co tím změním?" — exact match only.
+  // Guard F: fixed UI chips "Kam směřuješ?" / "Co tím změníš?" — exact match only.
   // These are deterministic, UI-generated button labels (app/launcher.html), never free user
   // text — must not be classified by the LLM, same reasoning as Guard B for Hotovo/Přeskočit.
   if (!classified) {
     const _trimmedF = userText.trim();
-    if (_trimmedF === 'Kam směřuji?') {
+    if (_trimmedF === 'Kam směřuješ?') {
       classified = { event_type: 'TRAJECTORY_REQUEST', payload: {} };
-    } else if (_trimmedF === 'Co tím změním?') {
+    } else if (_trimmedF === 'Co tím změníš?') {
       classified = { event_type: 'MECHANISM_REQUEST', payload: {} };
     }
   }
@@ -1368,7 +1368,7 @@ export async function processInput(userId, userText, sessionState = {}) {
     return buildWhyResponse(state);
   }
 
-  // 2.5 "Kam směřuji?" / "Co tím změním?" — same no-engine-call contract as WHY.
+  // 2.5 "Kam směřuješ?" / "Co tím změníš?" — same no-engine-call contract as WHY.
   // Reached only via Guard F (exact chip-text match) — never via the AI classifier.
   if (event_type === 'TRAJECTORY_REQUEST') {
     return buildTrajectoryResponse(state);

@@ -233,8 +233,11 @@
 
     /* ── Chips ── */
     #chips {
-      display: flex; flex-wrap: wrap; gap: 12px; justify-content: center;
+      display: flex; flex-direction: column; align-items: center; gap: 20px;
       max-width: 520px; width: 100%;
+    }
+    .chip-group {
+      display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; width: 100%;
     }
     .chip {
       background: rgba(58,203,216,0.07);
@@ -781,38 +784,48 @@
     // Chips
     $chips.innerHTML = '';
 
-    // The three "Proč? / Kam směřuji? / Co tím změním?" nav chips. Shown after an ACT
+    // The three "Proč? / Kam směřuješ? / Co tím změníš?" nav chips. Shown after an ACT
     // response (first time) and again after any of the three EXPLAIN answers, so the user
     // never has to use the browser Back button or retype a chip label to switch views.
     // activeSource marks the currently-open view (derived from debug.source) — a visual
     // marker only; all three stay clickable regardless of which one is active.
+    // Rendered as its own chip-group row, visually separated (via #chips' column gap) from
+    // the Hotovo/Přeskočit group below it.
     const NAV_CHIPS = [
       { label: 'Proč?',            sources: ['explanation_context'] },
-      { label: 'Kam směřuji?',     sources: ['causal_context', 'causal_context_no_data'] },
-      { label: 'Co tím změním?',   sources: ['mechanism_targets', 'mechanism_targets_no_data'] },
+      { label: 'Kam směřuješ?',    sources: ['causal_context', 'causal_context_no_data'] },
+      { label: 'Co tím změníš?',   sources: ['mechanism_targets', 'mechanism_targets_no_data'] },
     ];
     const hasActiveAction = mode === 'ACT' || (mode === 'EXPLAIN' && buttons.length > 0);
     if (hasActiveAction) {
+      const navGroup = document.createElement('div');
+      navGroup.className = 'chip-group';
       for (const { label, sources } of NAV_CHIPS) {
         const btn = document.createElement('button');
         const isActive = sources.includes(dbg?.source);
         btn.className = 'chip secondary' + (isActive ? ' active' : '');
         btn.textContent = label;
         btn.addEventListener('click', () => orchestrate(label));
-        $chips.appendChild(btn);
+        navGroup.appendChild(btn);
       }
+      $chips.appendChild(navGroup);
     }
 
-    for (const label of buttons) {
-      const btn = document.createElement('button');
-      btn.className = 'chip' + (label === 'Přeskočit' ? ' secondary' : '');
-      btn.textContent = label;
-      if (label === 'Zdravotní profil') {
-        btn.addEventListener('click', () => { window.location.href = PROFILE_URL; });
-      } else {
-        btn.addEventListener('click', () => orchestrate(label));
+    if (buttons.length > 0) {
+      const btnGroup = document.createElement('div');
+      btnGroup.className = 'chip-group';
+      for (const label of buttons) {
+        const btn = document.createElement('button');
+        btn.className = 'chip' + (label === 'Přeskočit' ? ' secondary' : '');
+        btn.textContent = label;
+        if (label === 'Zdravotní profil') {
+          btn.addEventListener('click', () => { window.location.href = PROFILE_URL; });
+        } else {
+          btn.addEventListener('click', () => orchestrate(label));
+        }
+        btnGroup.appendChild(btn);
       }
-      $chips.appendChild(btn);
+      $chips.appendChild(btnGroup);
     }
 
     $input.placeholder = mode === 'ASK' ? 'Odpověz nebo napiš…' : 'Napiš nebo řekni…';
