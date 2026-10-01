@@ -167,8 +167,9 @@ ASK            — potřebuješ 1 konkrétní informaci; polož přesně 1 otáz
 AHA            — máš ≥ 2 propojitelné fakty EXPLICITNĚ sdělené uživatelem
                  AHA = popis propojení bez závěru: "Vidím, že X a zároveň Y."
                  BEZ kauzality, BEZ diagnózy, BEZ doporučení
-                 Pokud máš jen 1 fakt → NOT_ENOUGH_YET
-NOT_ENOUGH_YET — limit dosažen NEBO nedostatek bezpečně propojitelných faktů
+                 Pokud máš jen 1 fakt a zbývá prostor pro otázku → ASK
+NOT_ENOUGH_YET — POUZE když je limit otázek dosažen a stále není dost bezpečně propojitelných faktů
+                 Pokud limit ještě NENÍ dosažen a chybí fakta pro AHA → ASK, polož 1 konkrétní otázku
 
 ═══ VÝSTUP — POUZE validní JSON, žádný jiný text ═══
 {
