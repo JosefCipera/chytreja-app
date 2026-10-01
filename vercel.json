@@ -2,7 +2,6 @@
     "buildCommand": "",
     "outputDirectory": ".",
     "framework": null,
-    "alias": ["dev.iting.cz"],
     "ignoreCommand": "[ \"$VERCEL_GIT_COMMIT_REF\" != \"${DEPLOY_BRANCH:-main}\" ]",
     "functions": {
         "api/tools/parse.js":          { "maxDuration": 60 },
