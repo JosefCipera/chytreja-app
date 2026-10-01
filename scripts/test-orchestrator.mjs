@@ -542,7 +542,7 @@ async function scenarioG() {
 
   check(response.mode === 'EXPLAIN', 'mode = EXPLAIN');
 
-  const GENERIC_FALLBACK = 'Tato akce cílí na tvůj aktuální systémový bottleneck.';
+  const GENERIC_FALLBACK = 'Tahle doporučená akce teď nejvíc odpovídá tvému aktuálnímu zdravotnímu stavu.';
   const hasConstraint = engineResult.system_constraint?.selected?.node_id != null;
 
   const hasLeverage = engineResult.system_leverage?.selected?.node_id != null;
@@ -550,12 +550,12 @@ async function scenarioG() {
   if (hasLeverage) {
     check(
       response.text !== GENERIC_FALLBACK,
-      'WHY: concrete response — not generic fallback (leverage label resolved from master.json)',
+      'WHY: concrete response — not generic fallback (leverage subject resolved to human phrase)',
       `text: ${response.text?.slice(0, 120)}`
     );
     check(
-      (response.text ?? '').includes('páka') || (response.text ?? '').includes('cílí') || (response.text ?? '').includes('omezení'),
-      'WHY: text contains concrete engine data (leverage / action / constraint reference)',
+      (response.text ?? '').startsWith('Protože') && (response.text ?? '').includes('ovlivňuje'),
+      'WHY: text contains concrete engine data (human-phrased leverage sentence)',
       `text: ${response.text?.slice(0, 120)}`
     );
   } else {
@@ -642,28 +642,28 @@ async function scenarioI() {
   showResponse(response);
 
   const text            = response.text ?? '';
-  const leverageLabel   = 'Fyzická inaktivita';    // NODE_LABEL_CS['PHYSICAL_INACTIVITY']
-  const constraintLabel = 'Arteriální hypertenze'; // NODE_LABEL_CS['HYPERTENSION']
+  const leveragePhrase   = 'tvůj nedostatek pohybu'; // WHY_SUBJECT_CS['PHYSICAL_INACTIVITY']
+  const constraintPhrase = 'tvůj krevní tlak';        // WHY_SUBJECT_CS['HYPERTENSION']
 
   check(response.mode === 'EXPLAIN', 'mode = EXPLAIN');
 
-  // Leverage must appear with "páka" framing, not "omezení"
+  // Leverage drives the primary sentence ("Protože <leverage> ovlivňuje ...")
   check(
-    text.includes('páka') && text.includes(leverageLabel),
-    'WHY: leverage node framed as "páka" — not silently omitted',
+    text.startsWith('Protože') && text.includes(leveragePhrase),
+    'WHY: leverage node drives the primary sentence — not silently omitted',
     `text: ${text.slice(0, 160)}`
   );
   check(
-    !text.includes(`omezení: ${leverageLabel}`) && !text.includes(`omezení:${leverageLabel}`),
-    'WHY: leverage label not conflated with "omezení" (semantic correctness)',
+    !text.startsWith(`Protože ${constraintPhrase}`),
+    'WHY: leverage subject not conflated with constraint subject (semantic correctness)',
     `text: ${text.slice(0, 160)}`
   );
 
-  // If constraint appears it must carry "omezení" framing
-  if (text.includes(constraintLabel)) {
+  // If constraint appears it must carry its own "Zároveň hraje roli" clause, not be the primary subject
+  if (text.includes(constraintPhrase)) {
     check(
-      text.includes('omezení'),
-      'WHY: constraint node uses "omezení" framing — not confused with leverage',
+      text.includes(`Zároveň hraje roli ${constraintPhrase}`),
+      'WHY: constraint node uses "Zároveň hraje roli" framing — not confused with leverage',
       `text: ${text.slice(0, 160)}`
     );
   } else {

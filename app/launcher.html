@@ -260,6 +260,11 @@
     }
     .chip.secondary:hover { border-color: rgba(90,127,146,0.5); color: var(--text); }
     .chip.danger { border-color: var(--danger); color: #e08080; }
+    .chip.active {
+      background: rgba(58,203,216,0.12);
+      border-color: rgba(58,203,216,0.55);
+      color: var(--text);
+    }
 
     /* ── Footer / input ── */
     footer {
@@ -776,24 +781,26 @@
     // Chips
     $chips.innerHTML = '';
 
-    if (mode === 'ACT') {
-      const whyBtn = document.createElement('button');
-      whyBtn.className = 'chip secondary';
-      whyBtn.textContent = 'Proč?';
-      whyBtn.addEventListener('click', () => orchestrate('Proč?'));
-      $chips.appendChild(whyBtn);
-
-      const whereBtn = document.createElement('button');
-      whereBtn.className = 'chip secondary';
-      whereBtn.textContent = 'Kam směřuji?';
-      whereBtn.addEventListener('click', () => orchestrate('Kam směřuji?'));
-      $chips.appendChild(whereBtn);
-
-      const whatBtn = document.createElement('button');
-      whatBtn.className = 'chip secondary';
-      whatBtn.textContent = 'Co tím změním?';
-      whatBtn.addEventListener('click', () => orchestrate('Co tím změním?'));
-      $chips.appendChild(whatBtn);
+    // The three "Proč? / Kam směřuji? / Co tím změním?" nav chips. Shown after an ACT
+    // response (first time) and again after any of the three EXPLAIN answers, so the user
+    // never has to use the browser Back button or retype a chip label to switch views.
+    // activeSource marks the currently-open view (derived from debug.source) — a visual
+    // marker only; all three stay clickable regardless of which one is active.
+    const NAV_CHIPS = [
+      { label: 'Proč?',            sources: ['explanation_context'] },
+      { label: 'Kam směřuji?',     sources: ['causal_context', 'causal_context_no_data'] },
+      { label: 'Co tím změním?',   sources: ['mechanism_targets', 'mechanism_targets_no_data'] },
+    ];
+    const hasActiveAction = mode === 'ACT' || (mode === 'EXPLAIN' && buttons.length > 0);
+    if (hasActiveAction) {
+      for (const { label, sources } of NAV_CHIPS) {
+        const btn = document.createElement('button');
+        const isActive = sources.includes(dbg?.source);
+        btn.className = 'chip secondary' + (isActive ? ' active' : '');
+        btn.textContent = label;
+        btn.addEventListener('click', () => orchestrate(label));
+        $chips.appendChild(btn);
+      }
     }
 
     for (const label of buttons) {
