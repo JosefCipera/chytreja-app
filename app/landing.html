@@ -2494,22 +2494,10 @@
       return;
     }
 
-    try {
-      const result = await signInWithPopup(auth, googleProvider);
-      showHandoffPending();
-      await triggerHandoff(result.user);
-    } catch (e) {
-      authBtn.disabled = false;
-      if (e.code === 'auth/popup-closed-by-user' || e.code === 'auth/cancelled-popup-request') {
-        // User dismissed — no error message needed
-      } else if (e.code === 'auth/popup-blocked') {
-        authErrMsg.textContent = 'Popup byl zablokován. Použij přihlášení e-mailem.';
-        authErrMsg.hidden = false;
-      } else {
-        authErrMsg.textContent = 'Přihlášení selhalo. Zkus to znovu.';
-        authErrMsg.hidden = false;
-      }
-    }
+    // Primary CTA follows the established email auth flow.
+    // Persist the anonymous conversation before leaving landing so handoff can resume it.
+    saveAnonSession();
+    window.location.href = '/login?next=' + encodeURIComponent('/landing?handoff=1');
   });
 
   retryBtn.addEventListener('click', async () => {
