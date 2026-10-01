@@ -165,6 +165,26 @@ sep('W7 — SAFE_WITH_MODIFICATION → modification clause appended');
     'W7: modification clause present and translated', `text: ${r.text}`);
 }
 
+sep('W9 — FUNCTIONAL_INDEPENDENCE+SURVIVAL_HEALTHSPAN pair drops the repeated possessive');
+{
+  const r = buildWhyResponse(ctxFor({
+    leverageNodeId: 'LOW_MUSCLE_STRENGTH',
+    action: { label: 'x', goal_impact: { branches: ['FUNCTIONAL_INDEPENDENCE', 'SURVIVAL_HEALTHSPAN'] } },
+  }));
+  check(r.text === 'Protože tvoje svalová síla teď nejvíc ovlivňuje tvoji soběstačnost a zdraví.',
+    'W9: curated pair phrase used, no "tvoje zdraví" repeat', `text: ${r.text}`);
+}
+
+sep('W10 — the reverse branch order is NOT in GOAL_BRANCH_PAIR_CS — generic join unaffected');
+{
+  const r = buildWhyResponse(ctxFor({
+    leverageNodeId: 'EXCESS_ADIPOSITY',
+    action: { label: 'x', goal_impact: { branches: ['SURVIVAL_HEALTHSPAN', 'FUNCTIONAL_INDEPENDENCE'] } },
+  }));
+  check(r.text === 'Protože tvůj tuk teď nejvíc ovlivňuje tvoje zdraví a tvoji soběstačnost.',
+    'W10: EXCESS_ADIPOSITY branch order unaffected by the curated pair table', `text: ${r.text}`);
+}
+
 sep('W8 — no forbidden jargon in WHY text across all producible nodes');
 {
   for (const nodeId of PRODUCIBLE_NODES) {
@@ -210,6 +230,26 @@ sep('T3 — no Goal Gateway reachable → causal step only, no human-stake claus
     'T3: exact text — no gateway clause fabricated when none reachable', `text: ${r.text}`);
   check(!r.text.includes('riziku') && !r.text.includes('ohrozit') && !r.text.includes('ohrožovat'),
     'T3: no gateway wording leaked in', `text: ${r.text}`);
+}
+
+sep('T3b — LOW_MUSCLE_STRENGTH: suppressGateway drops the redundant LOSS_OF_FLOOR_RISE_ABILITY append');
+{
+  const r = buildTrajectoryResponse(ctxFor({
+    leverageNodeId: 'LOW_MUSCLE_STRENGTH', affected_nodes: ['REDUCED_FUNCTIONAL_RESERVE'], gateways: ['LOSS_OF_FLOOR_RISE_ABILITY'],
+  }));
+  check(r.text === 'Může se ti snižovat síla potřebná pro běžné fyzické úkony — například vstát ze země bez cizí pomoci.',
+    'T3b: exact required text — gateway not duplicated', `text: ${r.text}`);
+  check((r.text.match(/běžné fyzické úkony/g) ?? []).length === 1,
+    'T3b: "běžné fyzické úkony" appears exactly once, not duplicated', `text: ${r.text}`);
+}
+
+sep('T3c — LOW_MUSCLE_STRENGTH: a different, non-suppressed gateway still appends normally');
+{
+  const r = buildTrajectoryResponse(ctxFor({
+    leverageNodeId: 'LOW_MUSCLE_STRENGTH', affected_nodes: ['REDUCED_FUNCTIONAL_RESERVE'], gateways: ['CARDIOVASCULAR_DISEASE'],
+  }));
+  check(r.text === 'Může se ti snižovat síla potřebná pro běžné fyzické úkony — například vstát ze země bez cizí pomoci a zvyšovat riziko nemocí srdce a cév.',
+    'T3c: non-suppressed gateway appended normally (suppression is gateway-specific, not blanket)', `text: ${r.text}`);
 }
 
 sep('T4 — both Goal Gateways reachable → two-sentence form, both named');
@@ -318,6 +358,61 @@ sep('M8 — non-imperative (noun-phrase) action label used as the real sentence 
     'M8: real action label used as subject', `text: ${r.text}`);
 }
 
+sep('M9 — imperative label + known intervention_id → human type-name subject, not "Tato akce"');
+{
+  const r = buildMechanismResponse(ctxFor({
+    action: {
+      label: 'Vstaň 5× ze židle u zdi s oporou rukou; při bolesti, závrati či nejistotě skonči',
+      intervention_id: 'FUNCTIONAL_STRENGTH_TRAINING',
+      mechanism_targets: ['LOW_MUSCLE_STRENGTH'],
+    },
+  }));
+  check(r.text.startsWith('Cvičení ti pomůže'),
+    'M9: intervention type-name used instead of "Tato akce" fallback', `text: ${r.text}`);
+  check(!r.text.includes('Tato akce'), 'M9: no "Tato akce" fallback when intervention_id is known', `text: ${r.text}`);
+}
+
+sep('M10 — intervention_id with no INTERVENTION_TYPE_LABEL_CS entry still falls back to "Tato akce"');
+{
+  const r = buildMechanismResponse(ctxFor({
+    action: {
+      label: 'Jdi na procházku 20 minut',
+      intervention_id: 'SOME_UNLISTED_INTERVENTION',
+      mechanism_targets: ['PHYSICAL_INACTIVITY'],
+    },
+  }));
+  check(r.text.startsWith('Tato akce ti pomůže'), 'M10: unlisted intervention_id falls back to "Tato akce"', `text: ${r.text}`);
+}
+
+sep('M11 — FUNCTIONAL_STRENGTH_TRAINING override: verb/secondary phrase and no "i" filler');
+{
+  const r = buildMechanismResponse(ctxFor({
+    action: {
+      label: 'Nějaká akce',
+      intervention_id: 'FUNCTIONAL_STRENGTH_TRAINING',
+      mechanism_targets: ['LOW_MUSCLE_STRENGTH', 'REDUCED_FUNCTIONAL_RESERVE'],
+    },
+  }));
+  check(r.text === 'Nějaká akce ti pomůže nejen zvýšit svalovou sílu, ale zároveň zlepšit schopnost zvládat běžné fyzické úkony.',
+    'M11: override verb/object/secondary used, "i" dropped', `text: ${r.text}`);
+}
+
+sep('M12 — mechanism override is scoped to its own intervention_id only');
+{
+  // A different intervention mapped to the same leverage node (LOW_MUSCLE_STRENGTH via
+  // BALANCE_TRAINING's mechanism_targets) must NOT pick up FUNCTIONAL_STRENGTH_TRAINING's
+  // override — confirms the override is keyed by intervention_id, not by node.
+  const r = buildMechanismResponse(ctxFor({
+    action: {
+      label: 'Nějaká akce',
+      intervention_id: 'BALANCE_TRAINING',
+      mechanism_targets: ['GAIT_INSTABILITY', 'FALL_RISK', 'LOW_MUSCLE_STRENGTH'],
+    },
+  }));
+  check(!r.text.includes('zvýšit svalovou sílu') && !r.text.includes('schopnost zvládat běžné fyzické úkony'),
+    'M12: FUNCTIONAL_STRENGTH_TRAINING override not applied to a different intervention_id', `text: ${r.text}`);
+}
+
 // ══════════════════════════════════════════════════════════════════════════════
 // S1 / S2 — full scenario texts across all three views
 // ══════════════════════════════════════════════════════════════════════════════
@@ -354,24 +449,26 @@ sep('S2 — LOW_MUSCLE_STRENGTH, texts for all three views');
     leverageNodeId: 'LOW_MUSCLE_STRENGTH',
     action: { label: 'x', goal_impact: { branches: ['FUNCTIONAL_INDEPENDENCE', 'SURVIVAL_HEALTHSPAN'] } },
   });
-  check(buildWhyResponse(whyCtx).text === 'Protože tvoje svalová síla teď nejvíc ovlivňuje tvoji soběstačnost a tvoje zdraví.',
+  check(buildWhyResponse(whyCtx).text === 'Protože tvoje svalová síla teď nejvíc ovlivňuje tvoji soběstačnost a zdraví.',
     'S2: Proč? — exact text');
 
   const trajCtx = ctxFor({
     leverageNodeId: 'LOW_MUSCLE_STRENGTH', affected_nodes: ['REDUCED_FUNCTIONAL_RESERVE'], gateways: ['LOSS_OF_FLOOR_RISE_ABILITY'],
   });
   check(buildTrajectoryResponse(trajCtx).text ===
-    'Může se ti snižovat tvoje rezervy síly a ohrožovat schopnost zvládat běžné fyzické úkony — například vstát ze země bez cizí pomoci.',
+    'Může se ti snižovat síla potřebná pro běžné fyzické úkony — například vstát ze země bez cizí pomoci.',
     'S2: Kam směřuji? — exact text');
 
   const mechCtx = ctxFor({
     action: {
       label: 'Vstaň 5× ze židle u zdi s oporou rukou; při bolesti, závrati či nejistotě skonči',
+      intervention_id: 'FUNCTIONAL_STRENGTH_TRAINING',
       mechanism_targets: ['LOW_MUSCLE_STRENGTH', 'REDUCED_FUNCTIONAL_RESERVE'],
     },
   });
-  check(buildMechanismResponse(mechCtx).text === 'Tato akce ti pomůže nejen posílit svalovou sílu, ale zároveň zlepšit i celkovou tělesnou odolnost.',
-    'S2: Co tím změním? — exact text (imperative label → "Tato akce" subject)');
+  check(buildMechanismResponse(mechCtx).text ===
+    'Cvičení ti pomůže nejen zvýšit svalovou sílu, ale zároveň zlepšit schopnost zvládat běžné fyzické úkony.',
+    'S2: Co tím změním? — exact text (imperative label → intervention type-name subject)');
 }
 
 // ── G1 / G2 ───────────────────────────────────────────────────────────────────

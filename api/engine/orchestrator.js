@@ -174,6 +174,14 @@ const GOAL_BRANCH_CASUAL_CS = {
   SURVIVAL_HEALTHSPAN:     'tvoje zdraví',
   FUNCTIONAL_INDEPENDENCE: 'tvoji soběstačnost',
 };
+// Hand-curated 2-branch joins where natural Czech drops the repeated possessive pronoun on
+// the second noun ("tvoji soběstačnost a zdraví", not "...a tvoje zdraví"). Keyed by
+// "branch1+branch2" in the exact order goal_impact.branches lists them. A pair with no entry
+// here falls back to the generic join (both possessives kept) — e.g. EXCESS_ADIPOSITY's
+// SURVIVAL_HEALTHSPAN+FUNCTIONAL_INDEPENDENCE order is intentionally NOT in this table.
+const GOAL_BRANCH_PAIR_CS = {
+  'FUNCTIONAL_INDEPENDENCE+SURVIVAL_HEALTHSPAN': 'tvoji soběstačnost a zdraví',
+};
 
 // ── "Proč?" wording table ───────────────────────────────────────────────────────
 // Possessive/attributive form of each producible node, for "Protože <X> teď nejvíc
@@ -204,7 +212,11 @@ const WHY_SUBJECT_CS = {
 // nextStep: verb + object, continuing "Může se ti <nextStep>...".
 const CAUSAL_STEP_CS = {
   EXCESS_ADIPOSITY:           { nextStep: 'zhoršovat citlivost na inzulín' },
-  LOW_MUSCLE_STRENGTH:        { nextStep: 'snižovat tvoje rezervy síly' },
+  // This node's causal step already names the concrete stake (floor-rise ability) in lay
+  // terms, so the generic LOSS_OF_FLOOR_RISE_ABILITY gateway phrase would repeat "běžné
+  // fyzické úkony" if appended on top — suppressGateway drops that one gateway's generic
+  // append for this node only; a second, different gateway (if ever reached) still appends.
+  LOW_MUSCLE_STRENGTH:        { nextStep: 'snižovat síla potřebná pro běžné fyzické úkony — například vstát ze země bez cizí pomoci', suppressGateway: 'LOSS_OF_FLOOR_RISE_ABILITY' },
   PHYSICAL_INACTIVITY:        { nextStep: 'zvyšovat množství tělesného tuku' },
   PHYSICAL_DECONDITIONING:    { nextStep: 'snižovat tvoje svalová síla' },
   REDUCED_FUNCTIONAL_RESERVE: { nextStep: 'ztěžovat základní pohyby, jako je vstávání' },
@@ -245,6 +257,34 @@ const MECHANISM_TARGET_CS = {
   FALL_RISK:                  'riziko pádu',
   GAIT_INSTABILITY:           'jistotu chůze',
   PHYSICAL_DECONDITIONING:    'celkovou fyzickou kondici',
+};
+
+// Short human type-name per intervention_id (api/engine/intervention-map.json — a closed,
+// stable set of 7 ids today). Used as the "Co tím změním?" sentence subject in place of the
+// raw action label, which is often an imperative instruction label unsafe as a subject (see
+// isSafeActionSubject below). This never changes the action itself — only how it is named in
+// this one sentence — and names the TYPE of intervention, not a new medical claim.
+const INTERVENTION_TYPE_LABEL_CS = {
+  FUNCTIONAL_STRENGTH_TRAINING: 'Cvičení',
+  AEROBIC_TRAINING:             'Rychlá chůze',
+  BALANCE_TRAINING:             'Cvičení rovnováhy',
+  RESISTANCE_TRAINING:          'Posilovací cvičení',
+  DAILY_MOVEMENT:               'Pohyb během dne',
+  BREAK_UP_SEDENTARY_TIME:      'Pohybová přestávka',
+  SAFE_SUPPORTED_MOBILITY:      'Bezpečný pohyb s oporou',
+};
+
+// Per-intervention override for the "Co tím změním?" primary verb/object and secondary
+// phrase(s) — used when the generic MECHANISM_PRIMARY_CS/MECHANISM_TARGET_CS wording needs an
+// intervention-specific tweak (verb choice, or a secondary phrase that already reads as a
+// capability clause rather than a plain noun, where the connective "i" would read redundant).
+// Falls back to the generic tables when no override exists for the intervention_id.
+const MECHANISM_OVERRIDE_CS = {
+  FUNCTIONAL_STRENGTH_TRAINING: {
+    primary:    { verb: 'zvýšit', object: 'svalovou sílu' },
+    secondary:  ['schopnost zvládat běžné fyzické úkony'],
+    joinWithI:  false,
+  },
 };
 
 // Action labels in longevity_actions are imperative instructions ("Jdi na procházku…",
@@ -905,11 +945,16 @@ function buildWhyResponse(sessionState) {
   // on the action's own goal_impact — no new inference, no invented personal goal such as a
   // target age; that data does not exist in explanation_context today, so it is never guessed).
   if (leverageSubject) {
-    const branches = (action?.goal_impact?.branches ?? [])
-      .map(b => GOAL_BRANCH_CASUAL_CS[b]).filter(Boolean);
-    const goalPhrase = branches.length > 0
-      ? branches.join(' a ')
-      : 'tvůj aktuální zdravotní stav';
+    const branches = (action?.goal_impact?.branches ?? []).filter(b => GOAL_BRANCH_CASUAL_CS[b]);
+    let goalPhrase;
+    if (branches.length === 0) {
+      goalPhrase = 'tvůj aktuální zdravotní stav';
+    } else if (branches.length === 1) {
+      goalPhrase = GOAL_BRANCH_CASUAL_CS[branches[0]];
+    } else {
+      goalPhrase = GOAL_BRANCH_PAIR_CS[branches.join('+')]
+        ?? branches.map(b => GOAL_BRANCH_CASUAL_CS[b]).join(' a ');
+    }
     parts.push(`Protože ${leverageSubject} teď nejvíc ovlivňuje ${goalPhrase}.`);
   }
 
@@ -969,7 +1014,8 @@ function buildTrajectoryResponse(sessionState) {
   }
 
   const reached = (ctx?.goal_gateway_context?.gateway_nodes_reached ?? [])
-    .filter(id => GOAL_GATEWAY_PHRASE_CS[id]);
+    .filter(id => GOAL_GATEWAY_PHRASE_CS[id])
+    .filter(id => id !== step.suppressGateway);
 
   let text;
   if (reached.length === 0) {
@@ -1011,7 +1057,8 @@ function buildMechanismResponse(sessionState) {
   const ctx    = sessionState.last_domain_response?.explanation_context;
   const action = ctx?.action_context?.selected;
   const targets = action?.mechanism_targets ?? [];
-  const primary = targets.length > 0 ? MECHANISM_PRIMARY_CS[targets[0]] : null;
+  const override = action?.intervention_id ? MECHANISM_OVERRIDE_CS[action.intervention_id] : null;
+  const primary = override?.primary ?? (targets.length > 0 ? MECHANISM_PRIMARY_CS[targets[0]] : null);
 
   if (!action || targets.length === 0 || !primary) {
     return {
@@ -1024,17 +1071,25 @@ function buildMechanismResponse(sessionState) {
     };
   }
 
-  const subject = isSafeActionSubject(action.label) ? action.label : 'Tato akce';
-  const secondary = targets.slice(1)
+  // The real action label stays the subject whenever it's already safe to use as one
+  // (unchanged from before). Only when it is NOT safe — an imperative instruction label —
+  // do we now prefer a deterministic human type-name from the selected intervention's closed
+  // id set over the generic "Tato akce" fallback; same action, no new medical meaning, just a
+  // more specific way of naming it than "Tato akce" when the real label can't be spliced in.
+  const subject = isSafeActionSubject(action.label)
+    ? action.label
+    : (INTERVENTION_TYPE_LABEL_CS[action.intervention_id] ?? 'Tato akce');
+  const secondary = override?.secondary ?? targets.slice(1)
     .map(id => MECHANISM_TARGET_CS[id])
     .filter(Boolean)
     .slice(0, 3);
+  const joinWithI = override?.joinWithI ?? true;
 
   let text;
   if (secondary.length === 0) {
     text = `${subject} ti pomůže ${primary.verb} ${primary.object}.`;
   } else if (secondary.length === 1) {
-    text = `${subject} ti pomůže nejen ${primary.verb} ${primary.object}, ale zároveň zlepšit i ${secondary[0]}.`;
+    text = `${subject} ti pomůže nejen ${primary.verb} ${primary.object}, ale zároveň zlepšit ${joinWithI ? 'i ' : ''}${secondary[0]}.`;
   } else {
     const last = secondary[secondary.length - 1];
     const rest = secondary.slice(0, -1).join(', ');
