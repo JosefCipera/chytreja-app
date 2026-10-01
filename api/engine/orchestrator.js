@@ -169,6 +169,50 @@ const GOAL_BRANCH_CS = {
   FUNCTIONAL_INDEPENDENCE: 'Funkční samostatnost',
 };
 
+// ── "Kam směřuji?" wording tables ───────────────────────────────────────────────
+// Curated per leverage node — natural Czech verb/case agreement cannot be generated
+// mechanically from NODE_LABEL_CS, so each entry is hand-written. A node with no entry
+// here falls back to the generic "not enough data" response rather than broken grammar.
+// subject: the leverage node as a sentence subject.
+// nextStep: the verb + first causal-step object, written as one phrase ("může postupně <nextStep>").
+const CAUSAL_STEP_CS = {
+  EXCESS_ADIPOSITY:    { subject: 'Nadměrný tuk',            nextStep: 'zhoršovat citlivost na inzulín' },
+  LOW_MUSCLE_STRENGTH: { subject: 'Pokles svalové síly',      nextStep: 'snižovat funkční rezervu' },
+  PHYSICAL_INACTIVITY: { subject: 'Dlouhodobý nedostatek pohybu', nextStep: 'zvyšovat množství tělesného tuku' },
+};
+
+// Only two Goal Gateways exist in the model today (api/engine/goalGateways.js) — this table
+// is exhaustive over that closed set, not a per-scenario special case. Each gateway has a
+// "solo" phrase (used when it's the only reachable gateway, combined with the causal step
+// in one sentence) and a "dual" verb+object pair (used when both gateways are reachable,
+// as a second sentence listing both).
+const GOAL_GATEWAY_PHRASE_CS = {
+  CARDIOVASCULAR_DISEASE: {
+    solo: 'a tím přispívat k vyššímu riziku nemocí srdce a cév',
+    dualVerb: 'růst', dualObject: 'riziko nemocí srdce a cév',
+  },
+  LOSS_OF_FLOOR_RISE_ABILITY: {
+    solo: 'a ohrozit schopnost zvládat běžné fyzické úkony — například vstát ze země bez cizí pomoci',
+    dualVerb: 'zhoršovat', dualObject: 'schopnost zvládat běžné fyzické úkony',
+  },
+};
+
+const TRAJECTORY_DISCLAIMER = 'Je to možný směr vývoje, ne jistá předpověď.';
+
+// ── "Co tím změním?" wording table ──────────────────────────────────────────────
+// Accusative-case plain-language phrase per node, used as both the primary subject
+// ("Neřešíš jen X") and secondary object ("působí na Y"). A mechanism_targets entry with
+// no phrase here is skipped as a secondary target — it has no good lay equivalent
+// (e.g. ENDOTHELIAL_DYSFUNCTION), not shown as raw clinical language.
+const MECHANISM_TARGET_CS = {
+  EXCESS_ADIPOSITY:           'nadměrný tuk',
+  LOW_MUSCLE_STRENGTH:        'svalovou sílu',
+  PHYSICAL_INACTIVITY:        'pohybovou aktivitu',
+  INSULIN_RESISTANCE:         'citlivost na inzulín',
+  HYPERTENSION:               'krevní tlak',
+  REDUCED_FUNCTIONAL_RESERVE: 'tvoji funkční rezervu',
+};
+
 // ── Fatigue standalone matcher ────────────────────────────────────────────────
 // Anchored ^...$ — compound statements ("Jsem unavený a bolí mě na hrudi")
 // do NOT match and flow to Haiku / safety path normally.
@@ -858,6 +902,118 @@ export function _buildWhyResponse_test(sessionState) {
   return buildWhyResponse(sessionState);
 }
 
+// ── "Kam směřuji?" response (no engine call) ───────────────────────────────────
+// Uses only cached causal_context + goal_gateway_context from last_domain_response (same
+// contract as buildWhyResponse — read-only exposure of already-computed engine output).
+// Narrative shape: current problem → first causal step → reachable Goal Gateway(s), using
+// ONLY goal_gateway_context.gateway_nodes_reached (computeGoalImpact in systemConstraint.js,
+// already computed generically per node). No gateway reachable → no human-stake clause at
+// all — never invented. "může", never "stane se"; closing disclaimer always present.
+function buildTrajectoryResponse(sessionState) {
+  const ctx = sessionState.last_domain_response?.explanation_context;
+  const cc  = ctx?.causal_context;
+  const leverageNodeId = ctx?.system_leverage?.node_id;
+  const step = leverageNodeId ? CAUSAL_STEP_CS[leverageNodeId] : null;
+
+  if (!cc || (cc.affected_nodes ?? []).length === 0 || !step) {
+    return {
+      mode:          'EXPLAIN',
+      text:          'Zatím nemám dost dat na to, kam by tato oblast mohla dál směřovat.',
+      buttons:       sessionState.current_action_assignment ? ['Hotovo', 'Přeskočit'] : [],
+      expects_reply: false,
+      session_updates: {},
+      debug:         { source: 'causal_context_no_data' },
+    };
+  }
+
+  const reached = (ctx?.goal_gateway_context?.gateway_nodes_reached ?? [])
+    .filter(id => GOAL_GATEWAY_PHRASE_CS[id]);
+
+  let text;
+  if (reached.length === 0) {
+    // No modeled Goal Gateway reachable from this node — show the causal step only.
+    text = `${step.subject} může postupně ${step.nextStep}.`;
+  } else if (reached.length === 1) {
+    const gw = GOAL_GATEWAY_PHRASE_CS[reached[0]];
+    text = `${step.subject} může postupně ${step.nextStep} ${gw.solo}.`;
+  } else {
+    const [gw1, gw2] = reached.map(id => GOAL_GATEWAY_PHRASE_CS[id]);
+    text = `${step.subject} může ${step.nextStep}. ` +
+      `Tím může postupně ${gw1.dualVerb} ${gw1.dualObject} a zároveň se ${gw2.dualVerb} ${gw2.dualObject}.`;
+  }
+  text += ` ${TRAJECTORY_DISCLAIMER}`;
+
+  return {
+    mode:          'EXPLAIN',
+    text,
+    buttons:       sessionState.current_action_assignment ? ['Hotovo', 'Přeskočit'] : [],
+    expects_reply: false,
+    session_updates: {},
+    debug:         { source: 'causal_context', gateways_reached: reached },
+  };
+}
+
+// Exported for unit testing only — not part of the public API.
+export function _buildTrajectoryResponse_test(sessionState) {
+  return buildTrajectoryResponse(sessionState);
+}
+
+// ── "Co tím změním?" response (no engine call) ──────────────────────────────────
+// Uses only cached action_context.selected.mechanism_targets from last_domain_response.
+// Effect is read from the intervention's own mechanism_targets — never derived from the
+// action's label text. Primary = mechanism_targets[0] (the leverage node itself, by
+// existing convention in every intervention-map.json entry). Secondary = up to 3 further
+// targets that have a plain-language phrase in MECHANISM_TARGET_CS — entries with no good
+// lay equivalent (e.g. ENDOTHELIAL_DYSFUNCTION) are skipped, not shown as clinical jargon.
+function buildMechanismResponse(sessionState) {
+  const ctx    = sessionState.last_domain_response?.explanation_context;
+  const action = ctx?.action_context?.selected;
+  const targets = action?.mechanism_targets ?? [];
+  const primary = targets.length > 0 ? MECHANISM_TARGET_CS[targets[0]] : null;
+
+  if (!action || targets.length === 0 || !primary) {
+    return {
+      mode:          'EXPLAIN',
+      text:          'Zatím nemám k této akci uložený konkrétní mechanismus účinku.',
+      buttons:       sessionState.current_action_assignment ? ['Hotovo', 'Přeskočit'] : [],
+      expects_reply: false,
+      session_updates: {},
+      debug:         { source: 'mechanism_targets_no_data' },
+    };
+  }
+
+  const secondary = targets.slice(1)
+    .map(id => MECHANISM_TARGET_CS[id])
+    .filter(Boolean)
+    .slice(0, 3);
+
+  let text;
+  if (secondary.length === 0) {
+    text = `Tato akce cílí přímo na ${primary}.`;
+  } else if (secondary.length === 1) {
+    text = `Neřešíš jen ${primary}. Tato akce současně působí i na ${secondary[0]}.`;
+  } else {
+    const last = secondary[secondary.length - 1];
+    const rest = secondary.slice(0, -1).join(', ');
+    text = `Neřešíš jen ${primary}. Tato akce současně působí na ${rest} a ${last}. ` +
+      'Jednou věcí tak ovlivňuješ několik problémů najednou.';
+  }
+
+  return {
+    mode:          'EXPLAIN',
+    text,
+    buttons:       sessionState.current_action_assignment ? ['Hotovo', 'Přeskočit'] : [],
+    expects_reply: false,
+    session_updates: {},
+    debug:         { source: 'mechanism_targets', secondary_count: secondary.length },
+  };
+}
+
+// Exported for unit testing only — not part of the public API.
+export function _buildMechanismResponse_test(sessionState) {
+  return buildMechanismResponse(sessionState);
+}
+
 // ── Presentation dispatcher ───────────────────────────────────────────────────
 
 function buildPresentation(eventType, classifiedPayload, result, sessionUpdates, isHoldFollowUp = false) {
@@ -1083,6 +1239,18 @@ export async function processInput(userId, userText, sessionState = {}) {
     classified = { event_type: 'DOMAIN_REQUEST', payload: {} };
   }
 
+  // Guard F: fixed UI chips "Kam směřuji?" / "Co tím změním?" — exact match only.
+  // These are deterministic, UI-generated button labels (app/launcher.html), never free user
+  // text — must not be classified by the LLM, same reasoning as Guard B for Hotovo/Přeskočit.
+  if (!classified) {
+    const _trimmedF = userText.trim();
+    if (_trimmedF === 'Kam směřuji?') {
+      classified = { event_type: 'TRAJECTORY_REQUEST', payload: {} };
+    } else if (_trimmedF === 'Co tím změním?') {
+      classified = { event_type: 'MECHANISM_REQUEST', payload: {} };
+    }
+  }
+
   // Fall through: AI classifier (Haiku). Called only when no guard fired above.
   if (!classified) {
     classified = await classifyIntent(state, userText);
@@ -1100,6 +1268,15 @@ export async function processInput(userId, userText, sessionState = {}) {
       return buildPathDiscoveryWhyResponse(state);
     }
     return buildWhyResponse(state);
+  }
+
+  // 2.5 "Kam směřuji?" / "Co tím změním?" — same no-engine-call contract as WHY.
+  // Reached only via Guard F (exact chip-text match) — never via the AI classifier.
+  if (event_type === 'TRAJECTORY_REQUEST') {
+    return buildTrajectoryResponse(state);
+  }
+  if (event_type === 'MECHANISM_REQUEST') {
+    return buildMechanismResponse(state);
   }
 
   // 3. Map classifier event type to adapter-supported type

@@ -782,6 +782,18 @@
       whyBtn.textContent = 'Proč?';
       whyBtn.addEventListener('click', () => orchestrate('Proč?'));
       $chips.appendChild(whyBtn);
+
+      const whereBtn = document.createElement('button');
+      whereBtn.className = 'chip secondary';
+      whereBtn.textContent = 'Kam směřuji?';
+      whereBtn.addEventListener('click', () => orchestrate('Kam směřuji?'));
+      $chips.appendChild(whereBtn);
+
+      const whatBtn = document.createElement('button');
+      whatBtn.className = 'chip secondary';
+      whatBtn.textContent = 'Co tím změním?';
+      whatBtn.addEventListener('click', () => orchestrate('Co tím změním?'));
+      $chips.appendChild(whatBtn);
     }
 
     for (const label of buttons) {

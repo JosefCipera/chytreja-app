@@ -529,6 +529,18 @@ function buildDomainResponse(engineResult) {
       system_leverage:   engineResult.system_leverage?.selected   ?? null,
       action_context:    engineResult.next_best_action            ?? null,
       evidence_context:  (engineResult.information_needs ?? []).slice(0, 3),
+      // Additive, read-only exposure of already-computed causal reach — does not
+      // change system_leverage selection or any other decision. See buildWhyResponse's
+      // sibling builders (buildTrajectoryResponse / buildMechanismResponse) in orchestrator.js.
+      causal_context:    engineResult.system_leverage?.selection_basis?.causal_reach ?? null,
+      // Additive, read-only: which of the two existing Goal Gateways (CARDIOVASCULAR_DISEASE /
+      // LOSS_OF_FLOOR_RISE_ABILITY — see api/engine/goalGateways.js) the leverage node's own
+      // causal path actually reaches. computeGoalImpact() in systemConstraint.js already
+      // computes this generically for every node_state candidate; this just reads the entry
+      // that matches the leverage node instead of only the system_constraint winner.
+      goal_gateway_context: (engineResult.system_constraint?.candidates ?? [])
+        .find(c => c.node_id === engineResult.system_leverage?.selected?.node_id)
+        ?.goal_impact ?? null,
     },
   };
 }

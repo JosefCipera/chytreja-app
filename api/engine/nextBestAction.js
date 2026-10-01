@@ -631,6 +631,7 @@ function buildCandidates(actionPool, interventions, parsedConstraints, hasCvRisk
       leverage_affinity,
       effect_on_leverage,
       goal_impact,
+      mechanism_targets:    intervention.mechanism_targets ?? [],
       feasibility,
       friction,
       time_to_feedback,
