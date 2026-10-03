@@ -106,3 +106,62 @@
 .founder-story-page .founder-interest{margin:20px 7% 0;padding:40px 0 55px}
 .founder-story-page .opening-note{line-height:1.8}
 }
+
+/* Founder vision: the number belongs to the atmosphere, not a sales card. */
+.vision-opening{position:relative;isolation:isolate;grid-template-columns:1.6fr 1fr;overflow:hidden}
+.founder-watermark{position:absolute;z-index:-1;right:0;top:65px;font-size:clamp(90px,14vw,190px);font-weight:400;letter-spacing:-10px;color:#9ba8bb0c;white-space:nowrap;pointer-events:none}
+.vision-opening>div{position:relative}
+.vision-opening .founder-intro{max-width:570px}
+.vision-price{border-left:1px solid #8b9fb334;padding:35px 0 35px 35px}
+.vision-price h2{font-size:27px;margin:14px 0 24px}
+.vision-price>strong{font-size:clamp(35px,4vw,50px);font-weight:500;letter-spacing:-2px;color:#c4d8ee}
+.vision-price p:not(.eyebrow){font-size:14px;color:#a9bdd6;line-height:1.9}
+.vision-price small{font-size:12px;color:#8fa5bf}
+.chapter-stage{font-size:11px!important;color:#839ebd!important;letter-spacing:1.3px;margin-bottom:10px!important}
+.story-link{font-size:14px;color:#a9ccf1;display:inline-block;padding:5px 0;border-bottom:1px solid #8babca4d}
+.founder-model-demo{max-width:1150px;padding:50px 35px;margin:0 auto;border-top:1px solid #7899bd2c}
+.founder-model-demo h2{font-size:clamp(28px,3vw,38px)}
+.demo-intro{font-size:16px;line-height:1.9;color:#adc0d9;max-width:750px}
+.demo-tabs{display:flex;flex-wrap:wrap;gap:25px;border-bottom:1px solid #7899bd36;margin:35px 0 20px}
+.demo-tabs button{border:0;border-bottom:2px solid transparent;background:none;color:#8ea7c5;font-size:15px;padding:12px 0}
+.demo-tabs button[aria-selected="true"]{color:#e4edff;border-color:#a4c8ed}
+.demo-instruction{font-size:13px;color:#99afca;line-height:1.8}
+.demo-layout{display:grid;grid-template-columns:1.25fr 1fr;gap:65px;align-items:center}
+.demo-explanation{border-left:1px solid #7899bd36;padding-left:30px}
+.demo-explanation h3{font-size:23px;line-height:1.5;font-weight:500;margin:18px 0}
+.demo-explanation p{font-size:15px;line-height:1.9;color:#a9bfd8}
+.demo-caption{font-size:12px;color:#8da4bf;line-height:1.8;max-width:800px;margin-top:30px}
+.crt-map{display:flex;flex-direction:column;align-items:center;padding:30px 0}
+.crt-map button{min-height:65px;padding:12px 17px;color:#c9d9ed;background:#14263a;border:1px solid #526a855f;border-radius:8px;font-size:14px;line-height:1.55;max-width:220px;width:65%}
+.crt-map button[aria-pressed="true"]{background:#203b54;border-color:#adcdec;color:#fff}
+.crt-start{display:flex;justify-content:space-between;width:100%;gap:25px}
+.crt-start button{width:46%}
+.crt-join{width:54%;height:45px;position:relative;border-left:1px solid #6686a6;border-right:1px solid #6686a6;border-bottom:1px solid #6686a6;margin-bottom:27px}
+.crt-join:after{content:"↓";position:absolute;left:calc(50% - 7px);bottom:-28px;color:#89a6c6;font-size:21px}
+.crt-arrow{color:#89a6c6;font-size:23px;line-height:37px}
+.universe-space{height:420px;position:relative;background:radial-gradient(ellipse,#1f3b552b,transparent 65%)}
+.universe-space svg{position:absolute;width:100%;height:100%;inset:0;pointer-events:none}
+.universe-space path{stroke:#637e9b;stroke-width:.25;fill:none}
+.orbit-node{position:absolute;transform:translate(-50%,-50%);width:112px;height:112px;border-radius:50%;border:1px solid #6c8aaa80;background:#101e30;color:#becfe3;font-size:14px;line-height:1.5;padding:8px;overflow-wrap:anywhere}
+.orbit-node[aria-pressed="true"]{border-color:#a8c7e7;background:#203b54;color:#fff}
+.orbit-node-0{left:50%;top:50%;width:130px;height:130px}
+.orbit-node-1{left:20%;top:24%}.orbit-node-2{left:80%;top:24%}.orbit-node-3{left:20%;top:76%}.orbit-node-4{left:80%;top:76%}
+.universe-back{background:none;border:0;border-bottom:1px solid #7899bd70;color:#aecae9;padding:10px 0;font-size:13px;margin-top:10px}
+.founder-model-demo [hidden]{display:none}
+.reality-copy .chapter-detail{font-size:13px;line-height:1.9;color:#8fa8c6}
+@media(max-width:760px){
+.vision-opening{grid-template-columns:1fr}
+.founder-watermark{font-size:100px;letter-spacing:-6px;top:80px;right:8px}
+.vision-price{border-left:0;border-top:1px solid #8b9fb334;margin-top:35px;padding:22px 0 0}
+.vision-price h2{font-size:24px;margin-bottom:14px}
+.founder-model-demo{padding:35px 7%}
+.demo-layout{grid-template-columns:1fr;gap:20px}
+.demo-explanation{border-left:0;border-top:1px solid #7899bd36;padding:20px 0 0}
+.demo-explanation h3{font-size:22px}
+.demo-tabs{gap:20px}.demo-tabs button{font-size:13px}
+.crt-start{gap:15px}.crt-map button{font-size:13px;padding:10px}
+.universe-space{height:360px}
+.orbit-node{width:88px;height:88px;font-size:13px}
+.orbit-node-0{width:110px;height:110px}
+}
+@media(prefers-reduced-motion:reduce){.founder-vision-page *{scroll-behavior:auto}}
