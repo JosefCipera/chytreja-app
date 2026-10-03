@@ -51,3 +51,7 @@
 .leverage,.action{background:#182b3b;border-color:#4e637680}.leverage strong,.leverage p,.action p{color:#bdcddd}.action>strong{background:#2d465a;color:#e1ebf7}.benefits li:before{color:#9bb6c9}
 .steps .art{filter:saturate(.38) brightness(.86)}.steps .future-art{filter:saturate(.35) brightness(.9)}
 @media(max-width:700px){.steps .art{filter:saturate(.22) brightness(.84)}.steps .future-art{filter:saturate(.2) brightness(.86)}}
+
+/* Secondary example label, no mobile dead-end loop control. */
+.how-heading{font-size:17px;font-weight:400;line-height:1.6;letter-spacing:0;color:#9db2cc;margin:0 auto 25px;max-width:650px;padding:0 10px}.foundations{margin-top:35px}
+@media(max-width:700px){.how-heading{font-size:15px;line-height:1.65;margin-bottom:24px;padding:0 6px}.foundations{margin-top:30px}}
