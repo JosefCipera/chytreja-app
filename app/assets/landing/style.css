@@ -55,3 +55,54 @@
 /* Secondary example label, no mobile dead-end loop control. */
 .how-heading{font-size:17px;font-weight:400;line-height:1.6;letter-spacing:0;color:#9db2cc;margin:0 auto 25px;max-width:650px;padding:0 10px}.foundations{margin-top:35px}
 @media(max-width:700px){.how-heading{font-size:15px;line-height:1.65;margin-bottom:24px;padding:0 6px}.foundations{margin-top:30px}}
+
+/* The five steps form one sequence on a shared surface. */
+.steps{gap:24px}
+.steps .step{background:transparent;border:0;border-radius:0;padding-top:14px;overflow:visible}
+.steps .step-head{position:relative}
+.steps .step:not(:last-child) .step-head:after{content:"→";position:absolute;right:-22px;top:8px;color:#617d9b;font-size:20px}
+.steps .step-description{min-height:55px;margin-top:10px}
+.steps .art1,.steps .art4{border-radius:10px}
+@media(max-width:1100px){.steps .step:not(:last-child) .step-head:after{content:none}}
+@media(max-width:700px){
+.steps{gap:46px}
+.steps .step{padding:0 0 30px;border-bottom:1px solid #7795bc26}
+.steps .step:last-child{border-bottom:0;padding-bottom:0}
+.steps .step-description{min-height:0;margin:10px 0 20px 59px}
+.steps .road-scene,.steps .cause-scene{margin-left:0;margin-right:0}
+.steps .step-head:before{content:"";position:absolute;left:21px;top:-41px;height:27px;border-left:1px solid #617d9b70}
+.steps .step:first-child .step-head:before{content:none}
+}
+/* Founders: a continuous editorial story, with one symbolic membership pass. */
+.founder-story-page .founder-opening{gap:65px;padding-bottom:65px}
+.founder-story-page .founder-opening h1{font-size:clamp(36px,4vw,54px)}
+.founder-story-page .founder-pass{box-shadow:none;background:linear-gradient(135deg,#182d45,#101c2d);border-color:#637b984d}
+.founder-story-page .founder-pass h2{font-size:24px;letter-spacing:-.5px;margin:0}
+.founder-narrative,.founder-reality{max-width:1150px;margin:auto;padding:55px 35px}
+.story-intro{max-width:800px}
+.story-intro h2,.founder-reality h2{font-size:clamp(28px,3vw,38px)}
+.story-intro>p:not(.eyebrow),.reality-copy p{font-size:16px;line-height:1.9;color:#adc0d9}
+.story-chapters{max-width:900px;margin:45px 0 0 auto}
+.story-chapter{display:grid;grid-template-columns:60px 1fr;gap:30px;padding:35px 0;border-top:1px solid #7596c02e}
+.chapter-number{font-size:21px;font-weight:400;color:#7d9fc6;padding-top:3px}
+.story-chapter h3{font-size:25px;line-height:1.45;font-weight:500;margin-bottom:18px}
+.story-chapter p{font-size:16px;line-height:1.9;color:#adc0d9;margin:0 0 15px;max-width:740px}
+.story-chapter strong,.reality-copy strong{font-weight:500;color:#e1ebf9}
+.story-chapter .chapter-detail{font-size:13px;line-height:1.8;color:#92a9c5}
+.founder-reality{border-top:1px solid #7596c02e}
+.reality-copy{max-width:780px;margin:25px 0 0 auto}
+.founder-story-page .founder-faq{padding-top:30px;max-width:950px}
+.founder-story-page .founder-interest{background:none;max-width:1050px;margin:25px auto 0;border-top:1px solid #7596c02e}
+.founder-story-page .founder-interest h2{font-size:clamp(29px,3.4vw,40px)}
+.founder-story-page .primary-cta{box-shadow:none}
+@media(max-width:760px){
+.founder-narrative,.founder-reality{padding:30px 7%}
+.story-chapters{margin-top:25px}
+.story-chapter{grid-template-columns:30px 1fr;gap:15px;padding:28px 0}
+.story-chapter h3{font-size:22px}
+.chapter-number{font-size:17px;padding-top:4px}
+.story-chapter p,.reality-copy p{font-size:15px}
+.founder-story-page .founder-opening{padding-bottom:35px}
+.founder-story-page .founder-interest{margin:20px 7% 0;padding:40px 0 55px}
+.founder-story-page .opening-note{line-height:1.8}
+}
