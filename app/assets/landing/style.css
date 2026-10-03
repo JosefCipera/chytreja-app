@@ -167,8 +167,8 @@
 @media(prefers-reduced-motion:reduce){.founder-vision-page *{scroll-behavior:auto}}
 
 /* Consistent founder signature beneath the offer, on both marketing pages. */
-.vision-price .founder-edition{font-size:clamp(36px,4vw,52px);font-weight:400;letter-spacing:-2px;line-height:1.3;color:#78879b;margin:32px 0 0}
+.vision-price p.founder-edition{font-size:clamp(36px,4vw,52px);font-weight:400;letter-spacing:-2px;line-height:1.3;color:#78879b;margin:32px 0 0}
 .founders-teaser .vision-price{text-align:left}
 .founders-teaser .vision-price h2{font-size:27px}
 .founder-app-entry{text-align:center;max-width:1050px;margin:25px auto;padding:25px 7%}
-@media(max-width:760px){.vision-price .founder-edition{font-size:40px;margin-top:25px}.founders-teaser .vision-price{margin-top:35px}}
+@media(max-width:760px){.vision-price p.founder-edition{font-size:40px;margin-top:25px}.founders-teaser .vision-price{margin-top:35px}}
