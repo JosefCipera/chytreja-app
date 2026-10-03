@@ -41,3 +41,13 @@
 .example-note{max-width:760px;margin:0 auto 25px;text-align:center;font-size:13px;line-height:1.7;color:#92a9c9}.try-app{max-width:850px;margin:35px auto 15px;border-top:1px solid #789ccb25;background:radial-gradient(ellipse at center,#142f5050,transparent 70%);padding-top:45px;padding-bottom:40px}.try-app h2{font-size:27px;line-height:1.45;font-weight:500;letter-spacing:-.6px;margin:0 15px 24px}.try-app .primary-cta{font-size:19px;padding:17px 38px}.try-note{font-size:12px;color:#8ca8cc;margin:16px 0 0}@media(max-width:700px){.example-note{font-size:12px;margin:0 5px 23px}.try-app h2{font-size:23px;margin-bottom:23px}.try-app .primary-cta{font-size:17px;padding:16px 30px}.try-app{margin-top:25px;padding-top:35px;padding-bottom:30px}}
 
 .how-heading{text-align:center;font-size:25px;line-height:1.4;font-weight:500;letter-spacing:-.6px;margin:0 15px 12px}@media(max-width:700px){.how-heading{font-size:23px}}
+
+/* A quiet shared palette; red and green only distinguish outcomes. */
+.steps .number{background:#315875;color:#e3edfa;box-shadow:none}
+.steps .input-icon{background:#223a50;color:#adbed3}
+.risk strong,.risk-growing strong,.risk-now strong{background:#283d51;color:#e1e8f1;border-color:#65758b}
+.risk span,.risk-growing span,.risk-now span{background:#101b2eeb;border-color:#53617680}
+.causes span,.causes span:nth-of-type(n+2){background:#1d2b40eb;border-color:#64748b60}.causes b{color:#92a8c1}
+.leverage,.action{background:#182b3b;border-color:#4e637680}.leverage strong,.leverage p,.action p{color:#bdcddd}.action>strong{background:#2d465a;color:#e1ebf7}.benefits li:before{color:#9bb6c9}
+.steps .art{filter:saturate(.38) brightness(.86)}.steps .future-art{filter:saturate(.35) brightness(.9)}
+@media(max-width:700px){.steps .art{filter:saturate(.22) brightness(.84)}.steps .future-art{filter:saturate(.2) brightness(.86)}}
