@@ -749,7 +749,9 @@
     $stageSub.classList.add('hidden');
     $stageLabel.className = '';
     if      (mode === 'ACT')  { $stageLabel.textContent = 'DNES'; }
-    else if (mode === 'HOLD') { $stageLabel.textContent = '✓'; $stageLabel.className = 'hold-mark'; }
+    else if (mode === 'HOLD' && dbg?.reason_code === 'HOLD_DONE_TODAY') {
+      $stageLabel.textContent = '✓'; $stageLabel.className = 'hold-mark';
+    }
     else                      { $stageLabel.textContent = ''; }
 
     // Stage text
@@ -831,7 +833,8 @@
     $input.placeholder = mode === 'ASK' ? 'Odpověz nebo napiš…' : 'Napiš nebo řekni…';
     if (mode === 'ASK') $input.focus();
 
-    const isTerminal  = !expects_reply && buttons.length === 0;
+    // HOLD ends today's action, not the conversation. New input must remain possible.
+    const isTerminal  = mode !== 'HOLD' && !expects_reply && buttons.length === 0;
     _terminalState    = isTerminal;
     $input.disabled   = isTerminal;
     $sendBtn.disabled = isTerminal;
