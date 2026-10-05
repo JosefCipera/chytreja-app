@@ -8,8 +8,9 @@ import crypto from 'node:crypto';
 
 let events = [];
 const dd = { mode: 'ASK', reason_code: 'ASK_BLOCKING', primary_item: null };
+let engineDecision = dd;
 const result = () => ({ persistence_status: 'ok', engine_called: true, warnings: [], domain_response: {
-  daily_decision: dd, explanation_context: { system_leverage: { node_id: 'LOW_MUSCLE_STRENGTH' } },
+  daily_decision: engineDecision, explanation_context: { system_leverage: { node_id: 'LOW_MUSCLE_STRENGTH' } },
 } });
 class AI { messages = { create: async () => ({ content: [{ type: 'tool_use', input: { event_type: 'DOMAIN_REQUEST', payload: {} } }] }) }; }
 const mocks = {
@@ -52,3 +53,16 @@ assert.match(known.text, /Údaj o sezení už mám/);
 const unknown = await processInput('isolated-test', 'Co mám dělat?', { question_budget_remaining: 3 });
 assert.equal(unknown.session_updates.pending_question.evidence_type, 'sedentary_hours_day');
 console.log('PASS: six scalar answers, known DB value on next turn, unknown value still asked; ASK preserved.');
+engineDecision = {mode: 'HOLD', reason_code: 'HOLD_SKIPPED_TODAY', primary_item: null};
+const hold = await processInput('isolated-test', 'Co mám dělat?', {
+  question_budget_remaining: 0,
+  current_action_assignment: {action_id: 'old', intervention_id: 'old'},
+});
+assert.equal(hold.mode, 'HOLD');
+assert.equal(hold.debug.reason_code, 'HOLD_SKIPPED_TODAY');
+assert.equal(hold.session_updates.current_action_assignment, null);
+assert.equal(hold.session_updates.pending_question, null);
+assert.equal(hold.buttons.length, 0);
+assert.match(hold.text, /přeskočil/);
+assert.doesNotMatch(hold.text, /hotovo|podkladů|prosedíš/i);
+console.log('PASS: exhausted question budget does not override skipped-action HOLD.');
