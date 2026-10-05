@@ -295,7 +295,9 @@ const MECHANISM_OVERRIDE_CS = {
 // Action labels in longevity_actions are imperative instructions ("Jdi na procházku…",
 // "Udělej dřepy…"), not noun-phrase titles — using one as a sentence subject ("Jdi na
 // procházku ti při pravidelném opakování může pomoci…") is broken Czech, the same problem the C4 cut fixed for "Proč?".
-// Only labels that do NOT start with a known imperative verb are safe to use as a subject;
+// Known intervention types always use their type name. For unknown types, numeric
+// prefixes and sentence punctuation also disqualify a label as a subject.
+// Only remaining labels that do NOT start with a known imperative verb may be subjects;
 // everything else falls back to "Tato akce". Grounded in the real active action pool, not
 // exhaustive — a future action with an unlisted imperative verb will still read awkwardly
 // until added here.
@@ -307,7 +309,7 @@ const IMPERATIVE_FIRST_WORDS = new Set([
   'pracuj', 'nejez', 'vis', 'dýchej', 'spát', 'odpočinek',
 ]);
 function isSafeActionSubject(label) {
-  if (!label) return false;
+  if (!label || /^\s*\d/.test(label) || /[.!?;\n]/.test(label)) return false;
   const first = label.trim().split(/\s+/)[0]?.toLowerCase().replace(/[.,!?;:]+$/, '');
   return first ? !IMPERATIVE_FIRST_WORDS.has(first) : false;
 }
@@ -1123,14 +1125,10 @@ function buildMechanismResponse(sessionState) {
     };
   }
 
-  // The real action label stays the subject whenever it's already safe to use as one
-  // (unchanged from before). Only when it is NOT safe — an imperative instruction label —
-  // do we now prefer a deterministic human type-name from the selected intervention's closed
-  // id set over the generic "Tato akce" fallback; same action, no new medical meaning, just a
-  // more specific way of naming it than "Tato akce" when the real label can't be spliced in.
-  const subject = isSafeActionSubject(action.label)
-    ? action.label
-    : (INTERVENTION_TYPE_LABEL_CS[action.intervention_id] ?? 'Tato akce');
+  // Prefer the intervention name: instructions are not grammatical subjects.
+  // Only unknown intervention types may use a short noun-phrase label.
+  const subject = INTERVENTION_TYPE_LABEL_CS[action.intervention_id]
+    ?? (isSafeActionSubject(action.label) ? action.label : 'Tato akce');
   const secondary = override?.secondary ?? targets.slice(1)
     .map(id => MECHANISM_TARGET_CS[id])
     .filter(Boolean)
