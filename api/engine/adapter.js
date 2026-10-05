@@ -3,6 +3,7 @@
 // Does NOT change DB schema. Enforces canonical birth_year from user_profiles.
 
 import { createClient } from '@supabase/supabase-js';
+import { applyActionInstructions } from './actionInstructions.js';
 
 const DIAG_KEYWORDS = [
   { kws: ['fibrilace', 'fap', 'atrial fibrillation', 'arytmie'],                id: 'ATRIAL_FIBRILLATION' },
@@ -197,7 +198,7 @@ export async function fetchActionPool(protocolTypes) {
     .eq('active', true)
     .in('protocol_type', protocolTypes);
   if (error) throw new Error(`fetchActionPool: ${error.message}`);
-  return data ?? [];
+  return applyActionInstructions(data ?? []);
 }
 
 export async function fetchPersonConstraints(userId) {
