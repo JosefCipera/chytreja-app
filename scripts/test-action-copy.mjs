@@ -30,3 +30,21 @@ assert.ok(!reason.text.includes('nejvíc')&&!reason.text.includes('opěradla')&&
 assert.ok(mechanism(session).text.includes('při pravidelném opakování může pomoci'));
 assert.equal(localize('Avoid Valsalva (breath-holding during exertion)'),'Nezadržuj dech při cvičení');
 console.log('PASS: balance dose unchanged, all three safety conditions once, no duplicate WHY instructions, conditional repeated benefit.');
+
+const chairCopy = JSON.parse(fs.readFileSync(new URL('../data/engine/action-instructions.json', import.meta.url), 'utf8')).sit_to_stand_supported.label;
+const chairSession = label => ({
+  current_action_assignment: {action_id:'sit_to_stand_supported'},
+  last_domain_response: {explanation_context:{action_context:{selected:{
+    label, intervention_id:'FUNCTIONAL_STRENGTH_TRAINING',
+    mechanism_targets:['LOW_MUSCLE_STRENGTH','REDUCED_FUNCTIONAL_RESERVE'],
+  }}}},
+});
+const expectedBenefit = 'Cvičení ti při pravidelném opakování může pomoci nejen zvýšit svalovou sílu, ale zároveň zlepšit schopnost zvládat běžné fyzické úkony.';
+for(const label of [chairCopy,'5× pomalu vstaň ze židle','Pomalu vstaň ze židle','Vstávání ze židle']){
+  assert.equal(mechanism(chairSession(label)).text, expectedBenefit);
+}
+const unknownInstruction = chairSession(chairCopy);
+unknownInstruction.last_domain_response.explanation_context.action_context.selected.intervention_id='UNKNOWN_TYPE';
+assert.ok(mechanism(unknownInstruction).text.startsWith('Tato akce ti '));
+assert.ok(!mechanism(unknownInstruction).text.includes(chairCopy));
+console.log('PASS: actual catalog instruction (numeric, multi-sentence) never becomes an explanation subject; known type independent of label, unknown instruction falls back safely.');
