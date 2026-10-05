@@ -809,6 +809,16 @@ const HEALTH_INPUT_TYPES = new Set([
 ]);
 
 function buildHoldResponse(dd, _ctx, sessionUpdates, warnings, eventType, isFollowUp = false) {
+  if (dd.reason_code === 'HOLD_SKIPPED_TODAY') {
+    return {
+      mode: 'HOLD',
+      text: 'Dnešní dostupné akce jsi přeskočil. Zítra je vyhodnotím znovu.',
+      buttons: [], expects_reply: false,
+      session_updates: { ...sessionUpdates, pending_question: null },
+      debug: { reason_code: dd.reason_code, warnings },
+    };
+  }
+
   // HOLD_DONE_TODAY: the intervention was already completed today — no second session
   // today; the same intervention is offered again tomorrow. ACTION_COMPLETED keeps its
   // own acknowledgment below.
