@@ -108,9 +108,9 @@ const MODIFICATIONS_CS = {
   'Monitor blood pressure before and after':
     'Sleduj krevní tlak před cvičením i po něm',
   'Avoid Valsalva (breath-holding during exertion)':
-    'Nevydrž dech při cvičení',
+    'Nezadržuj dech při cvičení',
   'Stop if chest pain, severe dyspnea, or dizziness':
-    'Zastav při bolesti na hrudi, dušnosti nebo závratích',
+    'Přestaň při bolesti na hrudi, výrazné dušnosti nebo závratích',
   'Consult cardiologist or GP before beginning':
     'Nejprve se poraď s kardiologem nebo svým lékařem',
   'Start with LIGHT or MODERATE intensity first':
@@ -124,11 +124,11 @@ const MODIFICATIONS_CS = {
   'Clarify injury severity (mild / moderate / severe) before proceeding':
     'Upřesni závažnost zranění (mírné / střední / závažné)',
   'Use stable wall or chair support for all single-leg variants':
-    'Při cvičení na jedné noze drž stěnu nebo opěradlo',
+    'Při cvičení na jedné noze se přidržuj stěny nebo opěradla stabilní židle',
   'Begin with eyes-open only; progress to eyes-closed only when stable':
-    'Začni jen s otevřenýma očima; na zavřené oči přejdi až budeš stabilní',
+    'Začni s otevřenýma očima. Oči zavři až tehdy, když bezpečně udržíš rovnováhu',
   'Supervised or near-support setting for first sessions':
-    'První cvičení s dohledem nebo v blízkosti opory',
+    'Při prvních cvičeních měj někoho u sebe nebo cvič v blízkosti pevné opory',
   'Obtain physician or physiotherapist clearance before any loading of this region':
     'Před zátěží této oblasti potřebuješ souhlas lékaře nebo fyzioterapeuta',
   'Obtain physiotherapist clearance before high-intensity loading':
@@ -138,22 +138,28 @@ const MODIFICATIONS_CS = {
   'Consult physiotherapist first':
     'Nejprve se poraď s fyzioterapeutem',
   'Avoid high-impact variants':
-    'Vyhni se variantám s vysokým dopadem',
+    'Vyhni se cvičení s tvrdými dopady',
   'Stop immediately if pain increases':
     'Přestaň hned, pokud bolest zesílí',
   'Prefer low-impact variant (e.g. cycling over running or uphill)':
-    'Dej přednost variantě s nižším dopadem (např. kolo místo běhu nebo kopce)',
+    'Zvol pohyb bez tvrdých dopadů, například jízdu na kole místo běhu nebo chůze do kopce',
   'Reduce intensity if discomfort appears':
     'Sniž intenzitu, pokud se objeví nepříjemný pocit',
   'Stop if pain increases':
     'Přestaň, pokud bolest zesílí',
   'Prefer low-impact variant (e.g. cycling over running)':
-    'Dej přednost variantě s nižším dopadem (např. kolo místo běhu)',
+    'Zvol pohyb bez tvrdých dopadů, například jízdu na kole místo běhu',
   'Stop if discomfort increases':
     'Přestaň, pokud nepříjemný pocit zesílí',
   'Clarify injury severity before proceeding':
     'Upřesni závažnost zranění, než budeš pokračovat',
 };
+
+// Preserve instruction punctuation without adding a second full stop.
+function sentence(value) {
+  const text = value.trim();
+  return /[.!?…]$/.test(text) ? text : `${text}.`;
+}
 
 function localizeMod(s) {
   return MODIFICATIONS_CS[s] ?? s;
@@ -184,8 +190,7 @@ const GOAL_BRANCH_PAIR_CS = {
 };
 
 // ── "Proč?" wording table ───────────────────────────────────────────────────────
-// Possessive/attributive form of each producible node, for "Protože <X> teď nejvíc
-// ovlivňuje <goal>." A node with no entry falls back to a neutral generic subject.
+// Nominative phrases for the optional constraint sentence.
 const WHY_SUBJECT_CS = {
   EXCESS_ADIPOSITY:           'tvůj tuk',
   LOW_MUSCLE_STRENGTH:        'tvoje svalová síla',
@@ -236,7 +241,7 @@ const GOAL_GATEWAY_PHRASE_CS = {
 };
 
 // ── "Co tím změníš?" wording tables ─────────────────────────────────────────────
-// Primary target: verb + direct object, used in "<action> ti pomůže <verb> <object>".
+// Primary target: verb + direct object, used in "<action> ti při pravidelném opakování může pomoci <verb> <object>".
 const MECHANISM_PRIMARY_CS = {
   EXCESS_ADIPOSITY:    { verb: 'snížit',  object: 'množství tuku' },
   LOW_MUSCLE_STRENGTH: { verb: 'posílit', object: 'svalovou sílu' },
@@ -289,7 +294,7 @@ const MECHANISM_OVERRIDE_CS = {
 
 // Action labels in longevity_actions are imperative instructions ("Jdi na procházku…",
 // "Udělej dřepy…"), not noun-phrase titles — using one as a sentence subject ("Jdi na
-// procházku ti pomůže…") is broken Czech, the same problem the C4 cut fixed for "Proč?".
+// procházku ti při pravidelném opakování může pomoci…") is broken Czech, the same problem the C4 cut fixed for "Proč?".
 // Only labels that do NOT start with a known imperative verb are safe to use as a subject;
 // everything else falls back to "Tato akce". Grounded in the real active action pool, not
 // exhaustive — a future action with an unlisted imperative verb will still read awkwardly
@@ -724,11 +729,13 @@ function buildSessionUpdates(eventType, classifiedPayload, result) {
 
 function buildActResponse(dd, ctx, sessionUpdates, warnings) {
   const action = dd.primary_item;
-  let text = action?.label ? `${action.label}.` : 'Tvá dnešní akce je připravena.';
+  let text = action?.label ? sentence(action.label) : 'Tvá dnešní akce je připravena.';
 
   if (action?.safety?.level === 'SAFE_WITH_MODIFICATION') {
-    const modification = action?.safety?.modifications_suggested?.[0];
-    if (modification) text += ` Úprava: ${localizeMod(modification)}.`;
+    const modifications = [...new Set((action.safety.modifications_suggested ?? [])
+      .filter(mod => typeof mod === 'string' && mod.trim())
+      .map(mod => sentence(localizeMod(mod))))];
+    if (modifications.length) text += ` ${modifications.join(' ')}`;
   }
 
   return {
@@ -937,6 +944,23 @@ function buildPathDiscoveryWhyResponse(_state) {
 // Uses only cached explanation_context from last_domain_response.
 // No new clinical inference, no new engine call.
 
+// Accusative phrases for a focus, without asserting a confirmed diagnosis or ranking.
+const WHY_FOCUS_CS = {
+  "EXCESS_ADIPOSITY": "množství tělesného tuku",
+  "LOW_MUSCLE_STRENGTH": "tvoji svalovou sílu",
+  "PHYSICAL_INACTIVITY": "pravidelný pohyb",
+  "PHYSICAL_DECONDITIONING": "tvoji celkovou kondici",
+  "REDUCED_FUNCTIONAL_RESERVE": "sílu potřebnou pro běžné činnosti",
+  "LOSS_OF_FLOOR_RISE_ABILITY": "zvládání základních pohybů",
+  "GAIT_INSTABILITY": "jistotu při chůzi",
+  "FALL_RISK": "prevenci pádů",
+  "PERIPHERAL_NEUROPATHY": "snížené čití v nohách",
+  "HYPERTENSION": "tvůj krevní tlak",
+  "ENDOTHELIAL_DYSFUNCTION": "stav tvých cév",
+  "ERECTILE_DYSFUNCTION": "tvoji schopnost erekce",
+  "INSULIN_RESISTANCE": "tvoji citlivost na inzulín"
+};
+
 function buildWhyResponse(sessionState) {
   const ctx = sessionState.last_domain_response?.explanation_context;
 
@@ -956,15 +980,11 @@ function buildWhyResponse(sessionState) {
   const constraint  = ctx.system_constraint;
   const action      = ctx.action_context?.selected;
 
-  // Possessive/casual form for the primary sentence; raw clinical label only as a last-resort
-  // fallback (kept so a node outside WHY_SUBJECT_CS still produces a comprehensible sentence
-  // rather than silently dropping the whole response).
+  // Read the selected engine nodes; never splice the instruction into WHY.
   const leverageSubject   = WHY_SUBJECT_CS[leverage?.node_id]   ?? NODE_LABEL_CS[leverage?.node_id]   ?? null;
   const constraintSubject = WHY_SUBJECT_CS[constraint?.node_id] ?? NODE_LABEL_CS[constraint?.node_id] ?? null;
 
-  // Primary: leverage + the known user goal (goal branches already selected deterministically
-  // on the action's own goal_impact — no new inference, no invented personal goal such as a
-  // target age; that data does not exist in explanation_context today, so it is never guessed).
+  // Use the action’s modeled goal branches without inventing a personal goal.
   if (leverageSubject) {
     const branches = (action?.goal_impact?.branches ?? []).filter(b => GOAL_BRANCH_CASUAL_CS[b]);
     let goalPhrase;
@@ -976,7 +996,8 @@ function buildWhyResponse(sessionState) {
       goalPhrase = GOAL_BRANCH_PAIR_CS[branches.join('+')]
         ?? branches.map(b => GOAL_BRANCH_CASUAL_CS[b]).join(' a ');
     }
-    parts.push(`Protože ${leverageSubject} teď nejvíc ovlivňuje ${goalPhrase}.`);
+    const focus = WHY_FOCUS_CS[leverage?.node_id];
+    if (focus) parts.push(`Podle dostupných údajů se teď zaměřujeme na ${focus}. Cílem je podpořit ${goalPhrase}.`);
   }
 
   // Optional: SYSTEM_CONSTRAINT — deeper WHY; shown only when different from leverage
@@ -984,15 +1005,10 @@ function buildWhyResponse(sessionState) {
     parts.push(`Zároveň hraje roli ${constraintSubject}.`);
   }
 
-  // Modification hint when action has safety condition
-  if (action?.safety?.level === 'SAFE_WITH_MODIFICATION') {
-    const mod = action?.safety?.modifications_suggested?.[0];
-    if (mod) parts.push(`Doporučená úprava: ${localizeMod(mod)}.`);
-  }
-
+  // Safety instructions belong to ACT, not to the reason for selecting it.
   const text = parts.length > 0
     ? parts.join(' ')
-    : 'Tahle doporučená akce teď nejvíc odpovídá tvému aktuálnímu zdravotnímu stavu.';
+    : 'Zatím nemám dost podkladů k vysvětlení, proč byla tato akce vybrána.';
 
   return {
     mode:          'EXPLAIN',
@@ -1108,14 +1124,14 @@ function buildMechanismResponse(sessionState) {
 
   let text;
   if (secondary.length === 0) {
-    text = `${subject} ti pomůže ${primary.verb} ${primary.object}.`;
+    text = `${subject} ti při pravidelném opakování může pomoci ${primary.verb} ${primary.object}.`;
   } else if (secondary.length === 1) {
-    text = `${subject} ti pomůže nejen ${primary.verb} ${primary.object}, ale zároveň zlepšit ${joinWithI ? 'i ' : ''}${secondary[0]}.`;
+    text = `${subject} ti při pravidelném opakování může pomoci nejen ${primary.verb} ${primary.object}, ale zároveň zlepšit ${joinWithI ? 'i ' : ''}${secondary[0]}.`;
   } else {
     const last = secondary[secondary.length - 1];
     const rest = secondary.slice(0, -1).join(', ');
-    text = `${subject} ti pomůže nejen ${primary.verb} ${primary.object}, ale zároveň zlepšit ${rest} a ${last}. ` +
-      'Ovlivňuješ tak několik problémů najednou.';
+    text = `${subject} ti při pravidelném opakování může pomoci nejen ${primary.verb} ${primary.object}, ale zároveň zlepšit ${rest} a ${last}. ` +
+      'Pravidelným opakováním tak můžeš podpořit několik oblastí najednou.';
   }
 
   return {
