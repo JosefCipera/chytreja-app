@@ -109,7 +109,7 @@ sep('W1 — no explanation_context → graceful fallback, no crash');
 sep('W2 — leverage known, no goal branches → generic goal-state fallback');
 {
   const r = buildWhyResponse(ctxFor({ leverageNodeId: 'EXCESS_ADIPOSITY', action: { label: 'x', goal_impact: { branches: [] } } }));
-  check(r.text === 'Protože tvůj tuk teď nejvíc ovlivňuje tvůj aktuální zdravotní stav.',
+  check(r.text === 'Podle dostupných údajů se teď zaměřujeme na množství tělesného tuku. Cílem je podpořit tvůj aktuální zdravotní stav.',
     'W2: exact fallback-goal text', `text: ${r.text}`);
 }
 
@@ -119,7 +119,7 @@ sep('W3 — leverage + single goal branch → one-sentence human form');
     leverageNodeId: 'EXCESS_ADIPOSITY',
     action: { label: 'x', goal_impact: { branches: ['SURVIVAL_HEALTHSPAN'] } },
   }));
-  check(r.text === 'Protože tvůj tuk teď nejvíc ovlivňuje tvoje zdraví.',
+  check(r.text === 'Podle dostupných údajů se teď zaměřujeme na množství tělesného tuku. Cílem je podpořit tvoje zdraví.',
     'W3: exact single-branch text', `text: ${r.text}`);
 }
 
@@ -129,7 +129,7 @@ sep('W4 — leverage + both goal branches → joined with "a"');
     leverageNodeId: 'EXCESS_ADIPOSITY',
     action: { label: 'x', goal_impact: { branches: ['SURVIVAL_HEALTHSPAN', 'FUNCTIONAL_INDEPENDENCE'] } },
   }));
-  check(r.text === 'Protože tvůj tuk teď nejvíc ovlivňuje tvoje zdraví a tvoji soběstačnost.',
+  check(r.text === 'Podle dostupných údajů se teď zaměřujeme na množství tělesného tuku. Cílem je podpořit tvoje zdraví a tvoji soběstačnost.',
     'W4: EXCESS_ADIPOSITY exact required text', `text: ${r.text}`);
 }
 
@@ -139,7 +139,7 @@ sep('W5 — constraint present and different from leverage → extra clause');
     leverageNodeId: 'EXCESS_ADIPOSITY', constraintNodeId: 'LOW_MUSCLE_STRENGTH',
     action: { label: 'x', goal_impact: { branches: ['SURVIVAL_HEALTHSPAN'] } },
   }));
-  check(r.text === 'Protože tvůj tuk teď nejvíc ovlivňuje tvoje zdraví. Zároveň hraje roli tvoje svalová síla.',
+  check(r.text === 'Podle dostupných údajů se teď zaměřujeme na množství tělesného tuku. Cílem je podpořit tvoje zdraví. Zároveň hraje roli tvoje svalová síla.',
     'W5: exact constraint-clause text', `text: ${r.text}`);
 }
 
@@ -152,7 +152,7 @@ sep('W6 — constraint same as leverage → no duplicate clause');
   check(!r.text.includes('Zároveň hraje roli'), 'W6: no duplicate constraint clause', `text: ${r.text}`);
 }
 
-sep('W7 — SAFE_WITH_MODIFICATION → modification clause appended');
+sep('W7 — SAFE_WITH_MODIFICATION → no repeated safety instructions in WHY');
 {
   const r = buildWhyResponse(ctxFor({
     leverageNodeId: 'EXCESS_ADIPOSITY',
@@ -161,8 +161,8 @@ sep('W7 — SAFE_WITH_MODIFICATION → modification clause appended');
       safety: { level: 'SAFE_WITH_MODIFICATION', modifications_suggested: ['Stop if pain increases'] },
     },
   }));
-  check(r.text.endsWith('Doporučená úprava: Přestaň, pokud bolest zesílí.'),
-    'W7: modification clause present and translated', `text: ${r.text}`);
+  check(!r.text.includes('Přestaň') && !r.text.includes('Doporučená úprava:'),
+    'W7: safety instructions stay in ACT, absent from WHY', `text: ${r.text}`);
 }
 
 sep('W9 — FUNCTIONAL_INDEPENDENCE+SURVIVAL_HEALTHSPAN pair drops the repeated possessive');
@@ -171,7 +171,7 @@ sep('W9 — FUNCTIONAL_INDEPENDENCE+SURVIVAL_HEALTHSPAN pair drops the repeated 
     leverageNodeId: 'LOW_MUSCLE_STRENGTH',
     action: { label: 'x', goal_impact: { branches: ['FUNCTIONAL_INDEPENDENCE', 'SURVIVAL_HEALTHSPAN'] } },
   }));
-  check(r.text === 'Protože tvoje svalová síla teď nejvíc ovlivňuje tvoji soběstačnost a zdraví.',
+  check(r.text === 'Podle dostupných údajů se teď zaměřujeme na tvoji svalovou sílu. Cílem je podpořit tvoji soběstačnost a zdraví.',
     'W9: curated pair phrase used, no "tvoje zdraví" repeat', `text: ${r.text}`);
 }
 
@@ -181,7 +181,7 @@ sep('W10 — the reverse branch order is NOT in GOAL_BRANCH_PAIR_CS — generic 
     leverageNodeId: 'EXCESS_ADIPOSITY',
     action: { label: 'x', goal_impact: { branches: ['SURVIVAL_HEALTHSPAN', 'FUNCTIONAL_INDEPENDENCE'] } },
   }));
-  check(r.text === 'Protože tvůj tuk teď nejvíc ovlivňuje tvoje zdraví a tvoji soběstačnost.',
+  check(r.text === 'Podle dostupných údajů se teď zaměřujeme na množství tělesného tuku. Cílem je podpořit tvoje zdraví a tvoji soběstačnost.',
     'W10: EXCESS_ADIPOSITY branch order unaffected by the curated pair table', `text: ${r.text}`);
 }
 
@@ -299,13 +299,13 @@ sep('M1 — no mechanism_targets → graceful fallback, no crash');
 sep('M2 — 0 secondary targets → single-sentence form');
 {
   const r = buildMechanismResponse(ctxFor({ action: { label: 'Nějaká akce', mechanism_targets: ['LOW_MUSCLE_STRENGTH'] } }));
-  check(r.text === 'Nějaká akce ti pomůže posílit svalovou sílu.', 'M2: exact single-target text', `text: ${r.text}`);
+  check(r.text === 'Nějaká akce ti při pravidelném opakování může pomoci posílit svalovou sílu.', 'M2: exact single-target text', `text: ${r.text}`);
 }
 
 sep('M3 — 1 secondary target → "...ale zároveň zlepšit i Y."');
 {
   const r = buildMechanismResponse(ctxFor({ action: { label: 'Nějaká akce', mechanism_targets: ['LOW_MUSCLE_STRENGTH', 'REDUCED_FUNCTIONAL_RESERVE'] } }));
-  check(r.text === 'Nějaká akce ti pomůže nejen posílit svalovou sílu, ale zároveň zlepšit i celkovou tělesnou odolnost.',
+  check(r.text === 'Nějaká akce ti při pravidelném opakování může pomoci nejen posílit svalovou sílu, ale zároveň zlepšit i celkovou tělesnou odolnost.',
     'M3: exact one-secondary text', `text: ${r.text}`);
 }
 
@@ -317,8 +317,8 @@ sep('M4 — 2-3 secondary targets, capped at 3');
       mechanism_targets: ['EXCESS_ADIPOSITY', 'PHYSICAL_INACTIVITY', 'HYPERTENSION', 'INSULIN_RESISTANCE', 'ENDOTHELIAL_DYSFUNCTION'],
     },
   }));
-  check(r.text === 'Svižná chůze nebo kolo — 20 minut (dá se mluvit) ti pomůže nejen snížit množství tuku, ' +
-    'ale zároveň zlepšit pohybovou aktivitu, krevní tlak a citlivost na inzulín. Ovlivňuješ tak několik problémů najednou.',
+  check(r.text === 'Svižná chůze nebo kolo — 20 minut (dá se mluvit) ti při pravidelném opakování může pomoci nejen snížit množství tuku, ' +
+    'ale zároveň zlepšit pohybovou aktivitu, krevní tlak a citlivost na inzulín. Pravidelným opakováním tak můžeš podpořit několik oblastí najednou.',
     'M4: exact capped-at-3 text (5 real mechanism_targets, 1 skipped, 1 would-be-4th never reached)', `text: ${r.text}`);
 }
 
@@ -337,7 +337,7 @@ sep('M6 — a mechanism target with no plain-language phrase is skipped, not sho
 {
   const r = buildMechanismResponse(ctxFor({ action: { label: 'Nějaká akce', mechanism_targets: ['LOW_MUSCLE_STRENGTH', 'PERIPHERAL_NEUROPATHY'] } }));
   assertNoJargon(r.text, 'M6');
-  check(r.text === 'Nějaká akce ti pomůže posílit svalovou sílu.',
+  check(r.text === 'Nějaká akce ti při pravidelném opakování může pomoci posílit svalovou sílu.',
     'M6: falls back to single-target form since the only secondary has no phrase', `text: ${r.text}`);
 }
 
@@ -346,7 +346,7 @@ sep('M7 — imperative action label falls back to "Tato akce" as subject');
   const r = buildMechanismResponse(ctxFor({
     action: { label: 'Jdi na procházku 20 minut', mechanism_targets: ['PHYSICAL_INACTIVITY'] },
   }));
-  check(r.text.startsWith('Tato akce ti pomůže'), 'M7: imperative label replaced by "Tato akce"', `text: ${r.text}`);
+  check(r.text.startsWith('Tato akce ti při pravidelném opakování může pomoci'), 'M7: imperative label replaced by "Tato akce"', `text: ${r.text}`);
 }
 
 sep('M8 — non-imperative (noun-phrase) action label used as the real sentence subject');
@@ -354,7 +354,7 @@ sep('M8 — non-imperative (noun-phrase) action label used as the real sentence 
   const r = buildMechanismResponse(ctxFor({
     action: { label: 'Svižná chůze nebo kolo — 20 minut (dá se mluvit)', mechanism_targets: ['EXCESS_ADIPOSITY'] },
   }));
-  check(r.text.startsWith('Svižná chůze nebo kolo — 20 minut (dá se mluvit) ti pomůže'),
+  check(r.text.startsWith('Svižná chůze nebo kolo — 20 minut (dá se mluvit) ti při pravidelném opakování může pomoci'),
     'M8: real action label used as subject', `text: ${r.text}`);
 }
 
@@ -367,7 +367,7 @@ sep('M9 — imperative label + known intervention_id → human type-name subject
       mechanism_targets: ['LOW_MUSCLE_STRENGTH'],
     },
   }));
-  check(r.text.startsWith('Cvičení ti pomůže'),
+  check(r.text.startsWith('Cvičení ti při pravidelném opakování může pomoci'),
     'M9: intervention type-name used instead of "Tato akce" fallback', `text: ${r.text}`);
   check(!r.text.includes('Tato akce'), 'M9: no "Tato akce" fallback when intervention_id is known', `text: ${r.text}`);
 }
@@ -381,7 +381,7 @@ sep('M10 — intervention_id with no INTERVENTION_TYPE_LABEL_CS entry still fall
       mechanism_targets: ['PHYSICAL_INACTIVITY'],
     },
   }));
-  check(r.text.startsWith('Tato akce ti pomůže'), 'M10: unlisted intervention_id falls back to "Tato akce"', `text: ${r.text}`);
+  check(r.text.startsWith('Tato akce ti při pravidelném opakování může pomoci'), 'M10: unlisted intervention_id falls back to "Tato akce"', `text: ${r.text}`);
 }
 
 sep('M11 — FUNCTIONAL_STRENGTH_TRAINING override: verb/secondary phrase and no "i" filler');
@@ -393,7 +393,7 @@ sep('M11 — FUNCTIONAL_STRENGTH_TRAINING override: verb/secondary phrase and no
       mechanism_targets: ['LOW_MUSCLE_STRENGTH', 'REDUCED_FUNCTIONAL_RESERVE'],
     },
   }));
-  check(r.text === 'Nějaká akce ti pomůže nejen zvýšit svalovou sílu, ale zároveň zlepšit schopnost zvládat běžné fyzické úkony.',
+  check(r.text === 'Nějaká akce ti při pravidelném opakování může pomoci nejen zvýšit svalovou sílu, ale zároveň zlepšit schopnost zvládat běžné fyzické úkony.',
     'M11: override verb/object/secondary used, "i" dropped', `text: ${r.text}`);
 }
 
@@ -423,7 +423,7 @@ sep('S1 — EXCESS_ADIPOSITY, exact required texts for all three views');
     leverageNodeId: 'EXCESS_ADIPOSITY',
     action: { label: 'Svižná chůze nebo kolo — 20 minut (dá se mluvit)', goal_impact: { branches: ['SURVIVAL_HEALTHSPAN', 'FUNCTIONAL_INDEPENDENCE'] } },
   });
-  check(buildWhyResponse(whyCtx).text === 'Protože tvůj tuk teď nejvíc ovlivňuje tvoje zdraví a tvoji soběstačnost.',
+  check(buildWhyResponse(whyCtx).text === 'Podle dostupných údajů se teď zaměřujeme na množství tělesného tuku. Cílem je podpořit tvoje zdraví a tvoji soběstačnost.',
     'S1: Proč? — exact required text');
 
   const trajCtx = ctxFor({
@@ -438,8 +438,8 @@ sep('S1 — EXCESS_ADIPOSITY, exact required texts for all three views');
       mechanism_targets: ['EXCESS_ADIPOSITY', 'PHYSICAL_INACTIVITY', 'HYPERTENSION', 'INSULIN_RESISTANCE', 'ENDOTHELIAL_DYSFUNCTION'],
     },
   });
-  check(buildMechanismResponse(mechCtx).text === 'Svižná chůze nebo kolo — 20 minut (dá se mluvit) ti pomůže nejen snížit množství tuku, ' +
-    'ale zároveň zlepšit pohybovou aktivitu, krevní tlak a citlivost na inzulín. Ovlivňuješ tak několik problémů najednou.',
+  check(buildMechanismResponse(mechCtx).text === 'Svižná chůze nebo kolo — 20 minut (dá se mluvit) ti při pravidelném opakování může pomoci nejen snížit množství tuku, ' +
+    'ale zároveň zlepšit pohybovou aktivitu, krevní tlak a citlivost na inzulín. Pravidelným opakováním tak můžeš podpořit několik oblastí najednou.',
     'S1: Co tím změníš? — exact required text');
 }
 
@@ -449,7 +449,7 @@ sep('S2 — LOW_MUSCLE_STRENGTH, texts for all three views');
     leverageNodeId: 'LOW_MUSCLE_STRENGTH',
     action: { label: 'x', goal_impact: { branches: ['FUNCTIONAL_INDEPENDENCE', 'SURVIVAL_HEALTHSPAN'] } },
   });
-  check(buildWhyResponse(whyCtx).text === 'Protože tvoje svalová síla teď nejvíc ovlivňuje tvoji soběstačnost a zdraví.',
+  check(buildWhyResponse(whyCtx).text === 'Podle dostupných údajů se teď zaměřujeme na tvoji svalovou sílu. Cílem je podpořit tvoji soběstačnost a zdraví.',
     'S2: Proč? — exact text');
 
   const trajCtx = ctxFor({
@@ -467,7 +467,7 @@ sep('S2 — LOW_MUSCLE_STRENGTH, texts for all three views');
     },
   });
   check(buildMechanismResponse(mechCtx).text ===
-    'Cvičení ti pomůže nejen zvýšit svalovou sílu, ale zároveň zlepšit schopnost zvládat běžné fyzické úkony.',
+    'Cvičení ti při pravidelném opakování může pomoci nejen zvýšit svalovou sílu, ale zároveň zlepšit schopnost zvládat běžné fyzické úkony.',
     'S2: Co tím změníš? — exact text (imperative label → intervention type-name subject)');
 }
 
