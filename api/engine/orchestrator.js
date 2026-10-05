@@ -426,6 +426,7 @@ const CLASSIFIER_TOOL = {
           'ACTION_COMPLETED', 'ACTION_SKIPPED', 'ANSWER_TO_EVIDENCE_QUESTION',
           'NEW_SYMPTOM', 'NEW_MEASUREMENT', 'NEW_CONSTRAINT',
           'WHY_REQUEST', 'DOMAIN_REQUEST', 'USER_PREFERENCE', 'GENERAL_HEALTH_REQUEST',
+          'UNSUPPORTED_REQUEST', 'SCOPE_CLARIFICATION',
         ],
         description: 'Classified event type',
       },
@@ -441,6 +442,7 @@ const CLASSIFIER_TOOL = {
           unit:           { type: 'string',  description: 'Unit for NEW_MEASUREMENT' },
           constraint_key: { type: 'string',  description: 'Body region in English for NEW_CONSTRAINT' },
           text:           { type: 'string',  description: 'Original text for GENERAL_HEALTH_REQUEST / USER_PREFERENCE' },
+          unsupported_kind: { type: 'string', enum: ['general', 'medical'], description: 'medical for an unsupported symptom/disease request; general for other unsupported topics' },
         },
         additionalProperties: false,
       },
@@ -452,7 +454,16 @@ const CLASSIFIER_TOOL = {
 const CLASSIFIER_SYSTEM = `You are a text classifier for CHJ (Chytré Já) health navigation system.
 Your ONLY job: classify Czech user input and extract payload. No health reasoning. No advice.
 
-RULES:
+SCOPE — check the user's requested help before applying intent rules:
+Supported: everyday movement / sitting less, excess body fat through movement, functional muscle strength, balance / gait stability.
+A request to diagnose, treat, explain or predict a different condition (including syncope, heart rhythm problems, sleep, mental health), prescribe a diet/medication, or solve business/other topics → UNSUPPORTED_REQUEST. payload.unsupported_kind = medical for symptoms/disease/medication, general otherwise.
+Examples: "Co s mou synkopou?" → UNSUPPORTED_REQUEST medical; "Proč mám arytmii?" → UNSUPPORTED_REQUEST medical; "Chci lépe spát" → UNSUPPORTED_REQUEST general; "Pomoz mi s výrobou" → UNSUPPORTED_REQUEST general.
+Do not use unrelated profile facts to substitute a supported goal. Supported facts used for risk context or answers to pending questions (blood pressure, diagnoses, medications, measurements) may continue through the existing evidence/safety path. A simple pain report remains NEW_SYMPTOM (a safety signal, never advice for treating pain).
+If the requested help is unclear or unrelated input cannot be interpreted, → SCOPE_CLARIFICATION. Never guess a supported request.
+Examples: "Chci zlepšit kondici" / "Přibral jsem" / "Hůř vstávám ze země" / "Jsem nejistý při chůzi" → GENERAL_HEALTH_REQUEST.
+User age/diagnosis/background without a requested treatment can be GENERAL_HEALTH_REQUEST; the engine determines relevance.
+
+RULES (only for a supported request, evidence answer or existing app control):
 1. pending_question set + short answer (yes/no/word/number) → ANSWER_TO_EVIDENCE_QUESTION
 2. current_action set + "done/hotovo/splněno/udělal" → ACTION_COMPLETED
 3. current_action set + "přeskočím/nemůžu/dnes ne/vynechám" → ACTION_SKIPPED
@@ -461,7 +472,7 @@ RULES:
 6. Measurement number + unit → NEW_MEASUREMENT
 7. "co mám dělat / co teď / poraď / co dál" → DOMAIN_REQUEST
 8. Health declaration with diagnoses, age, medications, or multiple health facts ("mám X", "je mi X let", "trpím X", sentences combining age + diagnoses + pain) → GENERAL_HEALTH_REQUEST (payload.text = full input)
-9. Anything else → GENERAL_HEALTH_REQUEST (payload.text = full input)`;
+9. Other clearly supported statements → GENERAL_HEALTH_REQUEST (payload.text = full input); unclear input → SCOPE_CLARIFICATION`;
 
 async function classifyIntent(sessionState, userText) {
   const { pending_question, current_action_assignment } = sessionState;
@@ -490,10 +501,13 @@ async function classifyIntent(sessionState, userText) {
 
     const toolUse = response.content.find(c => c.type === 'tool_use');
     if (!toolUse) throw new Error('no tool_use block in response');
+    if (!CLASSIFIER_TOOL.input_schema.properties.event_type.enum.includes(toolUse.input?.event_type)) {
+      throw new Error('invalid classifier event');
+    }
     return { event_type: toolUse.input.event_type, payload: toolUse.input.payload ?? {} };
   } catch (err) {
     console.warn('[orchestrator:classifier] fallback —', err?.message ?? err);
-    return { event_type: 'GENERAL_HEALTH_REQUEST', payload: { text: userText } };
+    return { event_type: 'SCOPE_CLARIFICATION', payload: {} };
   }
 }
 
@@ -659,6 +673,7 @@ function buildSessionUpdates(eventType, classifiedPayload, result) {
   const updates = {
     last_daily_decision:  dd   ?? null,
     last_domain_response: dr   ?? null,
+    unsupported_request: null,
   };
 
   // ACT: set current_action_assignment, clear pending
@@ -1187,6 +1202,39 @@ const ADAPTER_EVENT_TYPES = new Set([
   'USER_PREFERENCE', 'DOMAIN_REQUEST', 'GENERAL_HEALTH_REQUEST',
 ]);
 
+// Scope is an interpretation boundary, not a clinical decision. An unsupported
+// request must never fall through to an unrelated recommendation from old profile data.
+function hasUnsupportedMedicalTopic(text) {
+  const normalized = text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  // These narrow, explicit denials do not constitute a positive medical report.
+  const positive = normalized
+    .replace(/\b(?:nemam|nemel jsem|neprodelal jsem)\s+(?:zadnou?\s+)?(?:synkop\w*|symkop\w*|arytmi\w*|fibrilac\w*)/g, '')
+    .replace(/\b(?:nikdy jsem neomdlel|nikdy jsem nebyl v bezvedomi)\b/g, '');
+  return /\b(?:synkop\w*|symkop\w*|syncope|bezvedom\w*|omdlel\w*|omdlev\w*|mdlob\w*|arytmi\w*|fibrilac\w*|kardiostimulator\w*)\b/.test(positive)
+    || /\b(?:ztrat\w*|ztrac\w*|vypad\w*)\s+(?:(?:jsem|mi|se mi|mu|ji)\s+)?vedomi\b/.test(positive)
+    || /\bbolest\w*\s+na\s+hrudi\b/.test(positive);
+}
+
+function buildUnsupportedResponse(kind = 'general', unclear = false) {
+  const text = unclear
+    ? 'Zatím nerozumím, s čím chceš pomoci. Chceš řešit pohyb, nadváhu, svalovou sílu nebo rovnováhu?'
+    : 'S tímhle ti zatím neumím spolehlivě pomoci. Chytré já teď podporuje pohyb, nadváhu, svalovou sílu a rovnováhu.'
+      + (kind === 'medical' ? ' Tyto zdravotní potíže řeš s lékařem; vhodnou zátěž ti tady neumím posoudit.' : '');
+  return {
+    mode: 'HOLD', text, buttons: [], expects_reply: true,
+    session_updates: {
+      pending_question: null,
+      current_action_assignment: null,
+      last_domain_response: null,
+      last_daily_decision: { mode: 'HOLD', reason_code: unclear ? 'SCOPE_UNCLEAR' : 'UNSUPPORTED_REQUEST', primary_item: null },
+      // Retain a medical scope refusal in this conversation: changing the goal to
+      // exercise does not establish that the unsupported condition is safe for exercise.
+      unsupported_request: { kind },
+    },
+    debug: { source: 'input_scope', reason_code: unclear ? 'SCOPE_UNCLEAR' : 'UNSUPPORTED_REQUEST' },
+  };
+}
+
 // ── Main export ───────────────────────────────────────────────────────────────
 // Stateless: caller owns session state and merges session_updates.
 
@@ -1199,6 +1247,17 @@ export async function processInput(userId, userText, sessionState = {}) {
     last_domain_response:      null,
     ...sessionState,
   };
+
+  // An explicit unsupported medical report takes precedence over pending questions,
+  // action controls and explanation chips, so none can turn it into an exercise.
+  if (hasUnsupportedMedicalTopic(userText) || state.unsupported_request?.kind === 'medical') {
+    return buildUnsupportedResponse('medical');
+  }
+  if (state.unsupported_request && (
+      DOMAIN_REQUEST_NAV_RE.test(userText.trim())
+      || /^(?:proč\??|proc\??|kam směřuješ\??|co tím změníš\??|hotovo|přeskočit|ano|ne|ok)$/i.test(userText.trim()))) {
+    return buildUnsupportedResponse(state.unsupported_request.kind);
+  }
 
   // 1. Classify intent
   // Pre-classifier guards run in priority order before calling Haiku.
@@ -1392,6 +1451,11 @@ export async function processInput(userId, userText, sessionState = {}) {
   }
 
   const { event_type, payload } = classified;
+
+  if (event_type === 'UNSUPPORTED_REQUEST') {
+    return buildUnsupportedResponse(payload?.unsupported_kind === 'medical' ? 'medical' : 'general');
+  }
+  if (event_type === 'SCOPE_CLARIFICATION') return buildUnsupportedResponse('general', true);
 
   // 2. WHY: use only cached context, no engine call
   // Also catch WHY via raw text fallback in case classifier missed it
