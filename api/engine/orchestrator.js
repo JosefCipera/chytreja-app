@@ -741,11 +741,22 @@ function buildActResponse(dd, ctx, sessionUpdates, warnings) {
   };
 }
 
-function buildAskResponse(dd, ctx, sessionUpdates, warnings) {
+function buildAskResponse(dd, ctx, sessionUpdates, warnings, sedentaryHoursKnown = false) {
   // ASK_BLOCKING with null primary_item: engine ran but couldn't generate a specific question.
   // Two sub-cases based on whether we have any leverage context:
   if (!dd.primary_item && dd.reason_code === 'ASK_BLOCKING') {
     const hasLeverageContext = Boolean(ctx?.system_leverage?.node_id);
+
+    if (hasLeverageContext && sedentaryHoursKnown) {
+      return {
+        mode:          'ASK',
+        text:          'Údaj o sezení už mám. Pro další konkrétní krok zatím nemám dost podkladů.',
+        buttons:       [],
+        expects_reply: true,
+        session_updates: { ...sessionUpdates, pending_question: null },
+        debug: { reason_code: dd.reason_code, warnings },
+      };
+    }
 
     if (hasLeverageContext) {
       // Data present but PHYSICAL_INACTIVITY not yet activated — ask for sedentary hours.
@@ -1114,7 +1125,7 @@ export function _buildMechanismResponse_test(sessionState) {
 
 // ── Presentation dispatcher ───────────────────────────────────────────────────
 
-function buildPresentation(eventType, classifiedPayload, result, sessionUpdates, isHoldFollowUp = false) {
+function buildPresentation(eventType, classifiedPayload, result, sessionUpdates, isHoldFollowUp = false, sedentaryHoursKnown = false) {
   if (result.error) {
     return {
       mode:          'NOOP',
@@ -1134,7 +1145,7 @@ function buildPresentation(eventType, classifiedPayload, result, sessionUpdates,
 
   switch (dd.mode) {
     case 'ACT':             return buildActResponse(dd, ctx, sessionUpdates, warnings);
-    case 'ASK':             return buildAskResponse(dd, ctx, sessionUpdates, warnings);
+    case 'ASK':             return buildAskResponse(dd, ctx, sessionUpdates, warnings, sedentaryHoursKnown);
     case 'HOLD':            return buildHoldResponse(dd, ctx, sessionUpdates, warnings, eventType, isHoldFollowUp);
     case 'SAFETY':          return buildSafetyBlockedResponse(dd, sessionUpdates, warnings);
     case 'SAFETY_CRITICAL': return buildSafetyCriticalResponse(dd, sessionUpdates, warnings);
@@ -1645,7 +1656,7 @@ export async function processInput(userId, userText, sessionState = {}) {
       && event.payload.evidence_type === 'sedentary_hours_day') {
     const hasExplicitNumber = /\d/.test(userText);
     const numericValue = parseFloat(String(event.payload.value ?? '').replace(',', '.').trim());
-    const isValidHours  = hasExplicitNumber && !isNaN(numericValue) && numericValue > 0 && numericValue <= 24;
+    const isValidHours  = hasExplicitNumber && !isNaN(numericValue) && numericValue >= 0 && numericValue <= 24;
     if (!isValidHours) {
       return {
         mode:          'ASK',
@@ -1842,7 +1853,14 @@ export async function processInput(userId, userText, sessionState = {}) {
   // Triggers explanatory text instead of repeating the original action label.
   const isHoldFollowUp = adapterType === 'DOMAIN_REQUEST'
     && state.last_daily_decision?.mode === 'HOLD';
-  let presentation = buildPresentation(event_type, payload, result, sessionUpdates, isHoldFollowUp);
+  // DB facts are injected by /api/orchestrate. Include this turn's successfully
+  // persisted answer because the injected snapshot predates applyHealthEvent.
+  const sedentaryHoursKnown = state.hp_physical?.sedentary_hours_day != null
+    || (adapterType === 'ANSWER_TO_EVIDENCE_QUESTION'
+        && event.payload.evidence_type === 'sedentary_hours_day'
+        && result.persistence_status === 'ok'
+        && !(result.warnings ?? []).some(w => typeof w === 'string' && w.startsWith('ANSWER:')));
+  let presentation = buildPresentation(event_type, payload, result, sessionUpdates, isHoldFollowUp, sedentaryHoursKnown);
 
   // ── PATH Discovery answer override ───────────────────────────────────────────
   // Fires after applyHealthEvent persisted the answer to a PATH_DISCOVERY question.
@@ -1956,7 +1974,8 @@ export async function processInput(userId, userText, sessionState = {}) {
       && state.last_daily_decision?.mode === 'ASK'
       && state.last_daily_decision?.reason_code === 'ASK_BLOCKING'
       && !state.last_daily_decision?.primary_item
-      && event_type !== 'ANSWER_TO_EVIDENCE_QUESTION') {
+      && event_type !== 'ANSWER_TO_EVIDENCE_QUESTION'
+      && !sedentaryHoursKnown) {
     const sed_text = 'Přibližně kolik hodin za běžný den prosedíš?';
     presentation = {
       mode:          'ASK',
