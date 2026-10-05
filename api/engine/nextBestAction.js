@@ -763,8 +763,16 @@ export function computeNextBestAction({
   );
 
   if (candidates.length === 0) {
+    // Distinguish an empty model/action pool from today's explicit skips.
+    // Reuse the same candidate builder and Safety Gate; never invent alternatives.
+    const unskippedCandidates = skippedTodayActionIds?.size
+      ? buildCandidates(actionPool, interventions, parsedConstraints, hasCvRiskRelevant,
+          hasClinicalHistory, leverageNodeId, hasGaitInstability, mobilityProfile, new Set())
+      : [];
+    const skippedViable = unskippedCandidates.some(c => VIABLE_SAFETY.has(c.safety.level));
     return {
       status:         'NO_CANDIDATES',
+      reason_code:    skippedViable ? 'ALL_ACTIONS_SKIPPED_TODAY' : null,
       reason:         `No longevity_actions matched protocol_types for ${leverageNodeId} intervention map.`,
       selected:       null,
       all_candidates: [],
