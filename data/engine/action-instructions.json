@@ -1,0 +1,8 @@
+{
+  "sit_to_stand_supported": {
+    "protocol_type": "FUNKCNI_SILOVY_PROTOKOL",
+    "reps": 5,
+    "source_label": "Vstaň 5× ze židle u zdi s oporou rukou; při bolesti, závrati či nejistotě skonči",
+    "label": "5× pomalu vstaň ze židle a zase si sedni. Podle potřeby si pomáhej rukama o područky. Použij pevnou židli, která neklouže. Při bolesti, závrati nebo nejistotě přestaň."
+  }
+}
