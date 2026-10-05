@@ -218,6 +218,19 @@ export function computeDailyDecision(engineResult, asOf = new Date()) {
     };
   }
 
+  // No evidence can restore an action explicitly skipped for today.
+  // This is not completion; only the exhausted daily candidate pool triggers HOLD.
+  if (next_best_action?.status === 'NO_CANDIDATES'
+      && next_best_action.reason_code === 'ALL_ACTIONS_SKIPPED_TODAY') {
+    const tomorrow = new Date(now);
+    tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+    return {
+      mode: 'HOLD', primary_item: null, reason_code: 'HOLD_SKIPPED_TODAY',
+      source: 'NBA.skippedTodayActionIds',
+      reevaluate_after: tomorrow.toISOString().slice(0, 10), evaluated_at: now,
+    };
+  }
+
   // ── 3. ASK_BLOCKING ───────────────────────────────────────────────────────────
   const askBlocking = checkAskBlocking(next_best_action, decision_gate);
   if (askBlocking) {
