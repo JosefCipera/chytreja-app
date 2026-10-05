@@ -393,7 +393,7 @@ sep('M11 — FUNCTIONAL_STRENGTH_TRAINING override: verb/secondary phrase and no
       mechanism_targets: ['LOW_MUSCLE_STRENGTH', 'REDUCED_FUNCTIONAL_RESERVE'],
     },
   }));
-  check(r.text === 'Nějaká akce ti při pravidelném opakování může pomoci nejen zvýšit svalovou sílu, ale zároveň zlepšit schopnost zvládat běžné fyzické úkony.',
+  check(r.text === 'Cvičení ti při pravidelném opakování může pomoci nejen zvýšit svalovou sílu, ale zároveň zlepšit schopnost zvládat běžné fyzické úkony.',
     'M11: override verb/object/secondary used, "i" dropped', `text: ${r.text}`);
 }
 
