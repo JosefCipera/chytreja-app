@@ -172,3 +172,7 @@
 .founders-teaser .vision-price h2{font-size:27px}
 .founder-app-entry{text-align:center;max-width:1050px;margin:25px auto;padding:25px 7%}
 @media(max-width:760px){.vision-price p.founder-edition{font-size:40px;margin-top:25px}.founders-teaser .vision-price{margin-top:35px}}
+
+/* Homepage: try immediately, then follow the five-step story. */
+.top-try{text-align:center;margin:-16px auto 50px}.top-try .primary-cta{padding:17px 38px}
+@media(max-width:700px){.top-try{margin:0 auto 38px}.top-try .primary-cta{padding:16px 30px}}
