@@ -69,7 +69,7 @@ sep('W1 — exact live output for LOW_MUSCLE_STRENGTH / sit_to_stand_supported')
 {
   const state = sessionState(sitToStandAction, { leverage: { node_id: 'LOW_MUSCLE_STRENGTH' } });
   const response = buildWhyResponse(state);
-  const expected = 'Protože tvoje svalová síla teď nejvíc ovlivňuje tvoji soběstačnost a zdraví.';
+  const expected = 'Podle dostupných údajů se teď zaměřujeme na tvoji svalovou sílu. Cílem je podpořit tvoji soběstačnost a zdraví.';
   check(response.text === expected, 'W1: exact text match',
     `expected: ${expected}\n      actual:   ${response.text}`);
 }
@@ -83,7 +83,7 @@ sep('W2 — imperative label text does not appear anywhere in the WHY text');
     'W2: raw imperative label absent from WHY text', `text: ${response.text}`);
   check(!response.text.includes('skonči'),
     'W2: no broken "...skonči..." fragment', `text: ${response.text}`);
-  check(response.text.includes('tvoje svalová síla'),
+  check(response.text.includes('tvoji svalovou sílu'),
     'W2: subject is the leverage node phrase, not the action label', `text: ${response.text}`);
 }
 
@@ -96,7 +96,7 @@ sep('W3 — ordinary noun-phrase label also never spliced in (subject is never t
   const response = buildWhyResponse(state);
   check(!response.text.includes(NOUN_LABEL),
     'W3: noun-phrase label is not spliced into the sentence', `text: ${response.text}`);
-  check(response.text.includes('tvůj nedostatek pohybu'),
+  check(response.text.includes('pravidelný pohyb'),
     'W3: subject is the leverage node phrase', `text: ${response.text}`);
 }
 
@@ -105,7 +105,7 @@ sep('W4 — no leverage identified → generic fallback sentence, no crash');
 {
   const state = sessionState(pressAction, { leverage: null });
   const response = buildWhyResponse(state);
-  check(response.text === 'Tahle doporučená akce teď nejvíc odpovídá tvému aktuálnímu zdravotnímu stavu.',
+  check(response.text === 'Zatím nemám dost podkladů k vysvětlení, proč byla tato akce vybrána.',
     'W4: exact generic fallback text when no leverage subject is available', `text: ${response.text}`);
   check(!response.text.includes(NOUN_LABEL),
     'W4: label still not spliced in the no-leverage branch', `text: ${response.text}`);
