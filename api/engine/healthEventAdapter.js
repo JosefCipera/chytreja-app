@@ -529,6 +529,9 @@ function buildDomainResponse(engineResult) {
       system_leverage:   engineResult.system_leverage?.selected   ?? null,
       action_context:    engineResult.next_best_action            ?? null,
       evidence_context:  (engineResult.information_needs ?? []).slice(0, 3),
+      // Read-only provenance for WHY, from the exact node selected by the engine.
+      leverage_evidence: (engineResult.node_states ?? [])
+        .find(node => node.node_id === engineResult.system_leverage?.selected?.node_id)?.evidence ?? null,
       // Additive, read-only exposure of already-computed causal reach — does not
       // change system_leverage selection or any other decision. See buildWhyResponse's
       // sibling builders (buildTrajectoryResponse / buildMechanismResponse) in orchestrator.js.
@@ -544,6 +547,8 @@ function buildDomainResponse(engineResult) {
     },
   };
 }
+
+export { buildDomainResponse as _buildDomainResponse_test };
 
 function makeResult(persistence_status, engine_called, domain_response, warnings = [], error = null) {
   return { persistence_status, engine_called, domain_response: domain_response ?? null, warnings, error };
