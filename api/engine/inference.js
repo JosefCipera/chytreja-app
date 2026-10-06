@@ -334,6 +334,7 @@ export function inference(activatedStates, person, clinicalHistory, observations
       signals.push({
         source: 'ONBOARDING',
         question_id: 'balanc_jedna_noha',
+        value: oi['balanc_jedna_noha'],
         role: 'Selhání testu stoje na jedné noze — přímý marker deficitu rovnováhy a chůze',
       });
       strength += 2;
@@ -343,6 +344,7 @@ export function inference(activatedStates, person, clinicalHistory, observations
       signals.push({
         source: 'ONBOARDING',
         question_id: 'rovnovaha_zavrene_oci',
+        value: oi['rovnovaha_zavrene_oci'],
         role: 'Selhání rovnováhy se zavřenýma očima — deficit propriocepce nebo vestibulárního systému',
       });
       strength += 2;
@@ -354,6 +356,7 @@ export function inference(activatedStates, person, clinicalHistory, observations
       signals.push({
         source: 'ONBOARDING',
         question_id: 'recent_falls',
+        value: oi['recent_falls'],
         role: 'Pád v posledních 12 měsících — přidruženou evidencí nestability chůze (ne přímá příčina)',
       });
       strength += 1;
