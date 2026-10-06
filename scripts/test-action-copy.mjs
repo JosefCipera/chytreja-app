@@ -39,7 +39,7 @@ const chairSession = label => ({
     mechanism_targets:['LOW_MUSCLE_STRENGTH','REDUCED_FUNCTIONAL_RESERVE'],
   }}}},
 });
-const expectedBenefit = 'Cvičení ti při pravidelném opakování může pomoci nejen zvýšit svalovou sílu, ale zároveň zlepšit schopnost zvládat běžné fyzické úkony.';
+const expectedBenefit = 'Cvičení ti při pravidelném opakování může pomoci zvýšit svalovou sílu a zlepšit schopnost zvládat běžné fyzické úkony.';
 for(const label of [chairCopy,'5× pomalu vstaň ze židle','Pomalu vstaň ze židle','Vstávání ze židle']){
   assert.equal(mechanism(chairSession(label)).text, expectedBenefit);
 }

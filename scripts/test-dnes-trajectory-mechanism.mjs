@@ -305,7 +305,7 @@ sep('M2 — 0 secondary targets → single-sentence form');
 sep('M3 — 1 secondary target → "...ale zároveň zlepšit i Y."');
 {
   const r = buildMechanismResponse(ctxFor({ action: { label: 'Nějaká akce', mechanism_targets: ['LOW_MUSCLE_STRENGTH', 'REDUCED_FUNCTIONAL_RESERVE'] } }));
-  check(r.text === 'Nějaká akce ti při pravidelném opakování může pomoci nejen posílit svalovou sílu, ale zároveň zlepšit i celkovou tělesnou odolnost.',
+  check(r.text === 'Nějaká akce ti při pravidelném opakování může pomoci posílit svalovou sílu a zlepšit celkovou tělesnou odolnost.',
     'M3: exact one-secondary text', `text: ${r.text}`);
 }
 
@@ -317,8 +317,8 @@ sep('M4 — 2-3 secondary targets, capped at 3');
       mechanism_targets: ['EXCESS_ADIPOSITY', 'PHYSICAL_INACTIVITY', 'HYPERTENSION', 'INSULIN_RESISTANCE', 'ENDOTHELIAL_DYSFUNCTION'],
     },
   }));
-  check(r.text === 'Svižná chůze nebo kolo — 20 minut (dá se mluvit) ti při pravidelném opakování může pomoci nejen snížit množství tuku, ' +
-    'ale zároveň zlepšit pohybovou aktivitu, krevní tlak a citlivost na inzulín. Pravidelným opakováním tak můžeš podpořit několik oblastí najednou.',
+  check(r.text === 'Svižná chůze nebo kolo — 20 minut (dá se mluvit) ti při pravidelném opakování může pomoci snížit množství tuku, ' +
+    'zvýšit pohybovou aktivitu, snížit krevní tlak a zlepšit citlivost na inzulín.',
     'M4: exact capped-at-3 text (5 real mechanism_targets, 1 skipped, 1 would-be-4th never reached)', `text: ${r.text}`);
 }
 
@@ -393,7 +393,7 @@ sep('M11 — FUNCTIONAL_STRENGTH_TRAINING override: verb/secondary phrase and no
       mechanism_targets: ['LOW_MUSCLE_STRENGTH', 'REDUCED_FUNCTIONAL_RESERVE'],
     },
   }));
-  check(r.text === 'Cvičení ti při pravidelném opakování může pomoci nejen zvýšit svalovou sílu, ale zároveň zlepšit schopnost zvládat běžné fyzické úkony.',
+  check(r.text === 'Cvičení ti při pravidelném opakování může pomoci zvýšit svalovou sílu a zlepšit schopnost zvládat běžné fyzické úkony.',
     'M11: override verb/object/secondary used, "i" dropped', `text: ${r.text}`);
 }
 
@@ -438,8 +438,8 @@ sep('S1 — EXCESS_ADIPOSITY, exact required texts for all three views');
       mechanism_targets: ['EXCESS_ADIPOSITY', 'PHYSICAL_INACTIVITY', 'HYPERTENSION', 'INSULIN_RESISTANCE', 'ENDOTHELIAL_DYSFUNCTION'],
     },
   });
-  check(buildMechanismResponse(mechCtx).text === 'Svižná chůze nebo kolo — 20 minut (dá se mluvit) ti při pravidelném opakování může pomoci nejen snížit množství tuku, ' +
-    'ale zároveň zlepšit pohybovou aktivitu, krevní tlak a citlivost na inzulín. Pravidelným opakováním tak můžeš podpořit několik oblastí najednou.',
+  check(buildMechanismResponse(mechCtx).text === 'Svižná chůze nebo kolo — 20 minut (dá se mluvit) ti při pravidelném opakování může pomoci snížit množství tuku, ' +
+    'zvýšit pohybovou aktivitu, snížit krevní tlak a zlepšit citlivost na inzulín.',
     'S1: Co tím změníš? — exact required text');
 }
 
@@ -467,7 +467,7 @@ sep('S2 — LOW_MUSCLE_STRENGTH, texts for all three views');
     },
   });
   check(buildMechanismResponse(mechCtx).text ===
-    'Cvičení ti při pravidelném opakování může pomoci nejen zvýšit svalovou sílu, ale zároveň zlepšit schopnost zvládat běžné fyzické úkony.',
+    'Cvičení ti při pravidelném opakování může pomoci zvýšit svalovou sílu a zlepšit schopnost zvládat běžné fyzické úkony.',
     'S2: Co tím změníš? — exact text (imperative label → intervention type-name subject)');
 }
 
