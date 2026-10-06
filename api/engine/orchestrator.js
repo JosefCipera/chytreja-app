@@ -246,22 +246,52 @@ const MECHANISM_PRIMARY_CS = {
   EXCESS_ADIPOSITY:    { verb: 'snížit',  object: 'množství tuku' },
   LOW_MUSCLE_STRENGTH: { verb: 'posílit', object: 'svalovou sílu' },
   PHYSICAL_INACTIVITY: { verb: 'zvýšit',  object: 'pohybovou aktivitu' },
-  GAIT_INSTABILITY:    { verb: 'zlepšit', object: 'jistotu chůze' },
+  GAIT_INSTABILITY:    { verb: 'zlepšit', object: 'jistotu při chůzi' },
 };
-// Secondary targets: plain accusative noun phrase, listed after "ale zároveň zlepšit …".
+// Secondary targets carry their own verb + object; never apply one verb to all effects.
 // A mechanism_targets entry with no phrase here is skipped — it has no good lay equivalent,
 // never shown as raw clinical language.
 const MECHANISM_TARGET_CS = {
-  EXCESS_ADIPOSITY:           'množství tuku',
-  LOW_MUSCLE_STRENGTH:        'svalovou sílu',
-  PHYSICAL_INACTIVITY:        'pohybovou aktivitu',
-  INSULIN_RESISTANCE:         'citlivost na inzulín',
-  HYPERTENSION:               'krevní tlak',
-  REDUCED_FUNCTIONAL_RESERVE: 'celkovou tělesnou odolnost',
-  ENDOTHELIAL_DYSFUNCTION:    'prokrvení a stav cév',
-  FALL_RISK:                  'riziko pádu',
-  GAIT_INSTABILITY:           'jistotu chůze',
-  PHYSICAL_DECONDITIONING:    'celkovou fyzickou kondici',
+  "EXCESS_ADIPOSITY": {
+    "verb": "snížit",
+    "object": "množství tuku"
+  },
+  "LOW_MUSCLE_STRENGTH": {
+    "verb": "posílit",
+    "object": "svalovou sílu"
+  },
+  "PHYSICAL_INACTIVITY": {
+    "verb": "zvýšit",
+    "object": "pohybovou aktivitu"
+  },
+  "INSULIN_RESISTANCE": {
+    "verb": "zlepšit",
+    "object": "citlivost na inzulín"
+  },
+  "HYPERTENSION": {
+    "verb": "snížit",
+    "object": "krevní tlak"
+  },
+  "REDUCED_FUNCTIONAL_RESERVE": {
+    "verb": "zlepšit",
+    "object": "celkovou tělesnou odolnost"
+  },
+  "ENDOTHELIAL_DYSFUNCTION": {
+    "verb": "zlepšit",
+    "object": "prokrvení a stav cév"
+  },
+  "FALL_RISK": {
+    "verb": "snížit",
+    "object": "riziko pádu"
+  },
+  "GAIT_INSTABILITY": {
+    "verb": "zlepšit",
+    "object": "jistotu při chůzi"
+  },
+  "PHYSICAL_DECONDITIONING": {
+    "verb": "zlepšit",
+    "object": "celkovou fyzickou kondici"
+  }
 };
 
 // Short human type-name per intervention_id (api/engine/intervention-map.json — a closed,
@@ -287,8 +317,7 @@ const INTERVENTION_TYPE_LABEL_CS = {
 const MECHANISM_OVERRIDE_CS = {
   FUNCTIONAL_STRENGTH_TRAINING: {
     primary:    { verb: 'zvýšit', object: 'svalovou sílu' },
-    secondary:  ['schopnost zvládat běžné fyzické úkony'],
-    joinWithI:  false,
+    secondary:  [{ verb: 'zlepšit', object: 'schopnost zvládat běžné fyzické úkony' }],
   },
 };
 
@@ -401,7 +430,7 @@ const BP_FULL_RE = /^(?:(?:tlak\s+(?:mám|je|mívám|bývá)(?:\s+(?:asi|zhruba|
 // Anchored ^...[\s.,!?]*$: compound inputs ("co mám dělat, ale bolí mě...") are rejected
 // because ", ale bolí..." cannot match [\s.,!?]*$ — COMPOUND_SIGNAL_RE not needed.
 export const DOMAIN_REQUEST_NAV_RE =
-  /^(?:co\s+(?:tedy\s+|teď\s+)?mám\s+(?:teď\s+)?u?dělat|co\s+(?:teď|dál|doporuč(?:uješ)?)|poraď(?:\s+mi)?)[\s.,!?]*$/i;
+  /^(?:co\s+(?:tedy\s+|teď\s+)?mám\s+(?:teď\s+)?u?dělat|co\s+(?:teď|ted|dál|dal|doporuč(?:uješ)?)|poraď(?:\s+mi)?)[\s.,!?]*$/i;
 
 let client;
 function getClient() {
@@ -978,6 +1007,29 @@ const WHY_FOCUS_CS = {
   "INSULIN_RESISTANCE": "tvoji citlivost na inzulín"
 };
 
+// Explain only evidence attached to the selected leverage node; no clinical inference here.
+function whyEvidencePhrase(ctx) {
+  const e = ctx.leverage_evidence;
+  const facts = [...(e?.direct ?? []), ...(e?.supporting ?? []), ...(e?.inferred_from_nodes ?? [])];
+  const no = value => value === false || value === 0
+    || (typeof value === 'string' && /^(ne|no|false|0)$/i.test(value.trim()));
+  const questions = {
+    rovnovaha_zavrene_oci: 'neudržíš stoj na jedné noze se zavřenýma očima',
+    balanc_jedna_noha: 'neudržíš stoj na jedné noze',
+    vstat_ze_zeme: 'nevstaneš ze země bez opory rukou',
+    vynest_nakup: 'nezvládneš vynést nákup bez zastavení',
+    zvednout_vnouce: 'nezvládneš zvednout malé dítě ze země',
+  };
+  const answer = facts.find(f => f.source === 'ONBOARDING' && questions[f.question_id] && no(f.value));
+  if (answer) return `V onboardingu jsi uvedl, že ${questions[answer.question_id]}.`;
+  const sitting = facts.find(f => f.obs_type === 'sedentary_hours_day' && typeof f.value === 'number' && Number.isFinite(f.value));
+  if (sitting) return `Uvádíš, že běžně prosedíš ${sitting.value} hodin denně.`;
+  if (facts.some(f => f.field === 'sedentary_work' && f.value === true)) return 'Uvádíš sedavou práci.';
+  if (facts.some(f => f.obs_type === 'activity_level' && typeof f.summary === 'string')) return 'V denních záznamech opakovaně uvádíš málo pohybu.';
+  if (facts.some(f => f.obs_type === 'weight_kg' && typeof f.value === 'number' && typeof f.height_cm === 'number')) return 'Vycházím ze zadané výšky a hmotnosti.';
+  return null;
+}
+
 function buildWhyResponse(sessionState) {
   const ctx = sessionState.last_domain_response?.explanation_context;
 
@@ -1014,7 +1066,10 @@ function buildWhyResponse(sessionState) {
         ?? branches.map(b => GOAL_BRANCH_CASUAL_CS[b]).join(' a ');
     }
     const focus = WHY_FOCUS_CS[leverage?.node_id];
-    if (focus) parts.push(`Podle dostupných údajů se teď zaměřujeme na ${focus}. Cílem je podpořit ${goalPhrase}.`);
+    const evidencePhrase = whyEvidencePhrase(ctx);
+    if (focus) parts.push(evidencePhrase
+      ? `${evidencePhrase} Proto se teď zaměřujeme na ${focus}. Cílem je podpořit ${goalPhrase}.`
+      : `Podle dostupných údajů se teď zaměřujeme na ${focus}. Cílem je podpořit ${goalPhrase}.`);
   }
 
   // Optional: SYSTEM_CONSTRAINT — deeper WHY; shown only when different from leverage
@@ -1129,23 +1184,13 @@ function buildMechanismResponse(sessionState) {
   // Only unknown intervention types may use a short noun-phrase label.
   const subject = INTERVENTION_TYPE_LABEL_CS[action.intervention_id]
     ?? (isSafeActionSubject(action.label) ? action.label : 'Tato akce');
-  const secondary = override?.secondary ?? targets.slice(1)
-    .map(id => MECHANISM_TARGET_CS[id])
-    .filter(Boolean)
-    .slice(0, 3);
-  const joinWithI = override?.joinWithI ?? true;
-
-  let text;
-  if (secondary.length === 0) {
-    text = `${subject} ti při pravidelném opakování může pomoci ${primary.verb} ${primary.object}.`;
-  } else if (secondary.length === 1) {
-    text = `${subject} ti při pravidelném opakování může pomoci nejen ${primary.verb} ${primary.object}, ale zároveň zlepšit ${joinWithI ? 'i ' : ''}${secondary[0]}.`;
-  } else {
-    const last = secondary[secondary.length - 1];
-    const rest = secondary.slice(0, -1).join(', ');
-    text = `${subject} ti při pravidelném opakování může pomoci nejen ${primary.verb} ${primary.object}, ale zároveň zlepšit ${rest} a ${last}. ` +
-      'Pravidelným opakováním tak můžeš podpořit několik oblastí najednou.';
-  }
+  const secondary = override?.secondary ?? [...new Set(targets.slice(1))]
+    .filter(id => id !== targets[0])
+    .map(id => MECHANISM_TARGET_CS[id]).filter(Boolean).slice(0, 3);
+  const phrases = [primary, ...secondary].map(effect => `${effect.verb} ${effect.object}`);
+  const joined = phrases.length === 1 ? phrases[0]
+    : `${phrases.slice(0, -1).join(', ')} a ${phrases.at(-1)}`;
+  const text = `${subject} ti při pravidelném opakování může pomoci ${joined}.`;
 
   return {
     mode:          'EXPLAIN',
@@ -1227,7 +1272,7 @@ function buildUnsupportedResponse(kind = 'general', unclear = false) {
       last_daily_decision: { mode: 'HOLD', reason_code: unclear ? 'SCOPE_UNCLEAR' : 'UNSUPPORTED_REQUEST', primary_item: null },
       // Retain a medical scope refusal in this conversation: changing the goal to
       // exercise does not establish that the unsupported condition is safe for exercise.
-      unsupported_request: { kind },
+      unsupported_request: unclear ? null : { kind },
     },
     debug: { source: 'input_scope', reason_code: unclear ? 'SCOPE_UNCLEAR' : 'UNSUPPORTED_REQUEST' },
   };
@@ -1251,7 +1296,7 @@ export async function processInput(userId, userText, sessionState = {}) {
   if (hasUnsupportedMedicalTopic(userText) || state.unsupported_request?.kind === 'medical') {
     return buildUnsupportedResponse('medical');
   }
-  if (state.unsupported_request && (
+  if (state.unsupported_request && state.last_daily_decision?.reason_code !== 'SCOPE_UNCLEAR' && (
       DOMAIN_REQUEST_NAV_RE.test(userText.trim())
       || /^(?:proč\??|proc\??|kam směřuješ\??|co tím změníš\??|hotovo|přeskočit|ano|ne|ok)$/i.test(userText.trim()))) {
     return buildUnsupportedResponse(state.unsupported_request.kind);
