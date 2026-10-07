@@ -16,3 +16,20 @@ node --experimental-vm-modules scripts/ai-tester/run-floor-rise.mjs --live
 Output is JSON containing PASS, FAIL or BLOCKED per case. Exit codes: 0 = all pass, 1 = failures, 2 = blocked without failures. A missing API key is BLOCKED before any request. Never describe a probe result as a live language-understanding result. Fixture engine responses are not findings about actual recommendation selection.
 
 Baseline on 2026-10-07, main `9f3e6dc`: two structured facts absent when injected as GENERAL_HEALTH_REQUEST; ambiguous clarification blocked. Live classifier evaluation was not performed because the local environment had no Anthropic key. No app behavior was changed by this suite.
+
+
+# Full-catalog gait matrix
+
+`run-gait-matrix.mjs --live` runs 22 synthetic scenarios through the actual orchestrator, event adapter and complete engine. Six clean spoken formulations, stable/negated/third-person/historical/hypothetical/uncertain statements, the tester137 profile shape, recent falls, low strength, three knee severities, a combined profile and unsupported syncope are covered. Separate journeys verify Hotovo, same-day return, duplicate completion prevention, Přeskočit, an alternative assignment and its completion. No audio transcription or browser/authentication flow is tested.
+
+```sh
+node --experimental-vm-modules scripts/ai-tester/run-gait-matrix.mjs --live
+```
+
+The runner reads only public `longevity_actions` via the existing browser publishable key. It selects every active row with pagination, including the exact engine columns. Profiles, constraints, action assignments and all writes are isolated in memory; it never requests private user tables from Supabase. Catalog failure or classifier outage is BLOCKED, not a pass. Reports include catalog count, capture time and SHA-256; `AI_TESTER_CATALOG_OUT` saves the public snapshot alongside results in CI. Credentials are never included. A provided plain-array snapshot can be used with `--catalog=/path/catalog.json`; without `--live` the classifier is injected, which is not evidence of language understanding.
+
+CI runs on relevant pull requests and main pushes. Superseded runs on the same branch are cancelled. Reports expire after seven days; scripts, requirements and app fixes remain in git. Missing Anthropic secrets (including external-fork PRs) produce BLOCKED, not a live result.
+
+The matrix reproduced missing joint-load protection for STABILITY_PROTOKOL, balance safety masking stricter knee conditions, and post-skip assignment loss. A second journey assertion reproduced reoffering the same 30-second single-leg stand under another catalog ID. The reviewed skip-equivalence group in `data/engine/action-equivalents.json` contains only those two known rows; it does not infer exercise equivalence or merge doses using AI.
+
+Passing means these explicit interpretation, decision/presentation and persistence contracts hold. It does not establish clinical efficacy, dose suitability, all possible dialogue branches, or readiness for external testers. The public catalog currently includes a more challenging unstable-surface exercise after skipping the initial balance action; clinical suitability of that progression is outside these assertions and remains a review item.
