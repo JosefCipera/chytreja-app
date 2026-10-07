@@ -54,6 +54,7 @@ const variants = [
 ];
 const scenarios = [
   ...variants.map((text, i) => ({ id: `spoken-${i + 1}`, text, report: true })),
+  ...[1, 2].map(i => ({ id: `spoken-stagger-repeat-${i}`, text: variants[2], report: true })),
   { id: 'stable', text: 'Chodím jistě a bez problémů.', report: false },
   { id: 'negated', text: 'Nejsem při chůzi nejistý.', report: false },
   { id: 'third-person', text: 'Můj otec je nejistý při chůzi.', report: null },
