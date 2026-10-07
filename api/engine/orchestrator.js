@@ -559,6 +559,14 @@ export function buildEvent(classified, sessionState) {
     const a = sessionState.current_action_assignment;
     if (a?.action_id)       event.payload.action_id       = a.action_id;
     if (a?.intervention_id) event.payload.intervention_id = a.intervention_id;
+    // Preserve the leverage of the action actually offered, not a newly selected node.
+    // Older sessions lack assignment metadata; recover only from the matching cached action.
+    const ctx = sessionState.last_domain_response?.explanation_context;
+    const selected = ctx?.action_context?.selected;
+    const matches = a?.action_id && a?.intervention_id
+      && selected?.action_id === a.action_id && selected?.intervention_id === a.intervention_id;
+    event.payload.selected_leverage_node = a?.selected_leverage_node
+      ?? (matches ? ctx?.system_leverage?.node_id ?? null : null);
   }
 
   // Attach evidence_type from session for answer events.
@@ -714,6 +722,7 @@ function buildSessionUpdates(eventType, classifiedPayload, result) {
       action_id:       item.action_id,
       label:           item.label,
       intervention_id: item.intervention_id ?? null,
+      selected_leverage_node: dr?.explanation_context?.system_leverage?.node_id ?? null,
       assigned_at:     dd.evaluated_at,
     } : null;
     updates.pending_question = null;
