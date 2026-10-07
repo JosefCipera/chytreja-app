@@ -120,6 +120,7 @@ function checkAskBlocking(next_best_action, decision_gate) {
       primary_item: {
         type:     'NBA_QUESTION',
         question: next_best_action.next_best_question,
+        evidence_type: next_best_action.next_best_evidence_type ?? null,
       },
       nba_status: nbaStatus,
     };
