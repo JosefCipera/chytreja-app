@@ -779,8 +779,9 @@ function buildSessionUpdates(eventType, classifiedPayload, result) {
     }
   }
 
-  // Clear assignment when completed/skipped
-  if (eventType === 'ACTION_COMPLETED' || eventType === 'ACTION_SKIPPED') {
+  // Consumed assignment must be cleared, but preserve a new NBA-selected ACT
+  // after a skip; its controls need the newly issued assignment to work.
+  if ((eventType === 'ACTION_COMPLETED' || eventType === 'ACTION_SKIPPED') && dd?.mode !== 'ACT') {
     updates.current_action_assignment = null;
   }
 
