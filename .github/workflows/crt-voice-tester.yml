@@ -6,6 +6,7 @@ on:
     branches:
       - qa/crt-floor-rise-baseline
       - qa/gait-real-engine
+      - qa/gait-full-catalog-matrix
     paths:
       - scripts/ai-tester/**
       - api/engine/**
@@ -41,6 +42,14 @@ jobs:
         run: |
           mkdir -p ai-tester-results
           node --experimental-vm-modules scripts/ai-tester/run-gait.mjs --live > ai-tester-results/gait.json
+      - name: Evaluate full-catalog gait matrix
+        if: always()
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          AI_TESTER_CATALOG_OUT: ai-tester-results/catalog-snapshot.json
+        run: |
+          mkdir -p ai-tester-results
+          node --experimental-vm-modules scripts/ai-tester/run-gait-matrix.mjs --live > ai-tester-results/gait-matrix.json
       - name: Save PASS, FAIL or BLOCKED report
         if: always()
         uses: actions/upload-artifact@v4
