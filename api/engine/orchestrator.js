@@ -1021,7 +1021,7 @@ function whyEvidencePhrase(ctx) {
     zvednout_vnouce: 'nezvládneš zvednout malé dítě ze země',
   };
   const answer = facts.find(f => f.source === 'ONBOARDING' && questions[f.question_id] && no(f.value));
-  if (answer) return `V onboardingu jsi uvedl, že ${questions[answer.question_id]}.`;
+  if (answer) return `Podle tvé odpovědi v onboardingu ${questions[answer.question_id]}.`;
   const sitting = facts.find(f => f.obs_type === 'sedentary_hours_day' && typeof f.value === 'number' && Number.isFinite(f.value));
   if (sitting) return `Uvádíš, že běžně prosedíš ${sitting.value} hodin denně.`;
   if (facts.some(f => f.field === 'sedentary_work' && f.value === true)) return 'Uvádíš sedavou práci.';
