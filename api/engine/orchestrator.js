@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 30838)
-Total output lines: 2365
-
 // orchestrator.js — AI Orchestrator v0.1
 //
 // Thin orchestration layer over locked contracts:
@@ -1143,7 +1140,73 @@ function buildTrajectoryResponse(sessionState) {
     text = `Může se ti ${step.nextStep} a ${GOAL_GATEWAY_PHRASE_CS[reached[0]]}.`;
   } else {
     const [gw1, gw2] = reached.map(id => GOAL_GATEWAY_PHRASE_CS[id]);
-    text = `Může se…838 tokens truncated…}
+    text = `Může se ti ${step.nextStep}. Tím ti pak může zároveň ${gw1} a ${gw2}.`;
+  }
+
+  return {
+    mode:          'EXPLAIN',
+    text,
+    buttons:       sessionState.current_action_assignment ? ['Hotovo', 'Přeskočit'] : [],
+    expects_reply: false,
+    session_updates: {},
+    debug:         { source: 'causal_context', gateways_reached: reached },
+  };
+}
+
+// Exported for unit testing only — not part of the public API.
+export function _buildTrajectoryResponse_test(sessionState) {
+  return buildTrajectoryResponse(sessionState);
+}
+
+// ── "Co tím změníš?" response (no engine call) ──────────────────────────────────
+// Uses only cached action_context.selected.mechanism_targets from last_domain_response.
+// Effect is read from the intervention's own mechanism_targets — never derived from the
+// action's label text. Primary = mechanism_targets[0] (the leverage node itself, by
+// existing convention in every intervention-map.json entry). Secondary = up to 3 further
+// targets that have a plain-language phrase in MECHANISM_TARGET_CS — entries with no good
+// lay equivalent are skipped, not shown as clinical jargon. Subject is the action's own
+// label when it's safe to use as a sentence subject (see isSafeActionSubject); falls back
+// to "Tato akce" for imperative-instruction labels — the same splicing problem the C4 cut
+// fixed for "Proč?", now also guarded here.
+function buildMechanismResponse(sessionState) {
+  const ctx    = sessionState.last_domain_response?.explanation_context;
+  const action = ctx?.action_context?.selected;
+  const targets = action?.mechanism_targets ?? [];
+  const override = action?.intervention_id ? MECHANISM_OVERRIDE_CS[action.intervention_id] : null;
+  const primary = override?.primary ?? (targets.length > 0 ? MECHANISM_PRIMARY_CS[targets[0]] : null);
+
+  if (!action || targets.length === 0 || !primary) {
+    return {
+      mode:          'EXPLAIN',
+      text:          'Zatím nemám k této akci uložený konkrétní mechanismus účinku.',
+      buttons:       sessionState.current_action_assignment ? ['Hotovo', 'Přeskočit'] : [],
+      expects_reply: false,
+      session_updates: {},
+      debug:         { source: 'mechanism_targets_no_data' },
+    };
+  }
+
+  // Prefer the intervention name: instructions are not grammatical subjects.
+  // Only unknown intervention types may use a short noun-phrase label.
+  const subject = INTERVENTION_TYPE_LABEL_CS[action.intervention_id]
+    ?? (isSafeActionSubject(action.label) ? action.label : 'Tato akce');
+  const secondary = override?.secondary ?? [...new Set(targets.slice(1))]
+    .filter(id => id !== targets[0])
+    .map(id => MECHANISM_TARGET_CS[id]).filter(Boolean).slice(0, 3);
+  const phrases = [primary, ...secondary].map(effect => `${effect.verb} ${effect.object}`);
+  const joined = phrases.length === 1 ? phrases[0]
+    : `${phrases.slice(0, -1).join(', ')} a ${phrases.at(-1)}`;
+  const text = `${subject} ti při pravidelném opakování může pomoci ${joined}.`;
+
+  return {
+    mode:          'EXPLAIN',
+    text,
+    buttons:       sessionState.current_action_assignment ? ['Hotovo', 'Přeskočit'] : [],
+    expects_reply: false,
+    session_updates: {},
+    debug:         { source: 'mechanism_targets', secondary_count: secondary.length },
+  };
+}
 
 // Exported for unit testing only — not part of the public API.
 export function _buildMechanismResponse_test(sessionState) {
