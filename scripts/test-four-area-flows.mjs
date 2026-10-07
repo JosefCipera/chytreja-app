@@ -41,20 +41,28 @@ const scenarios=[
  {node:'LOW_MUSCLE_STRENGTH',input:'Hůř vstávám ze země.',physical:{vstat_ze_zeme:false},observations:[{obs_type:'weight_kg',value:72}],type:'FUNCTIONAL_STRENGTH_TRAINING',targets:['LOW_MUSCLE_STRENGTH','REDUCED_FUNCTIONAL_RESERVE'],why:'nevstaneš ze země bez opory rukou'},
  {node:'PHYSICAL_INACTIVITY',input:'Celý den sedím.',physical:{sedentary_hours_day:9},observations:[{obs_type:'weight_kg',value:72},{obs_type:'sedentary_hours_day',value:9}],type:'BREAK_UP_SEDENTARY_TIME',targets:['PHYSICAL_INACTIVITY','INSULIN_RESISTANCE'],why:'prosedíš 9 hodin denně'},
  {node:'EXCESS_ADIPOSITY',input:'Přibral jsem.',physical:{},observations:[{obs_type:'weight_kg',value:95}],type:'AEROBIC_TRAINING',targets:['EXCESS_ADIPOSITY','PHYSICAL_INACTIVITY','HYPERTENSION','INSULIN_RESISTANCE'],why:'ze zadané výšky a hmotnosti'},
+ {node:'LOW_MUSCLE_STRENGTH',input:'chci zhubnout',person:{birth_year:1958,sex:'female',height_cm:165},goal:'WEIGHT_LOSS',physical:{vstat_ze_zeme:false,zvednout_vnouce:true,vynest_nakup:true,rovnovaha_zavrene_oci:false},observations:[{obs_type:'weight_kg',value:71},{obs_type:'waist_cm',value:81}],type:'FUNCTIONAL_STRENGTH_TRAINING',targets:['LOW_MUSCLE_STRENGTH','REDUCED_FUNCTIONAL_RESERVE'],why:'nevstaneš ze země bez opory rukou'},
 ];
 for(const f of scenarios){
  completed=false;
- const person={birth_year:1956,sex:'male',height_cm:175};
+ const person=f.person ?? {birth_year:1956,sex:'male',height_cm:175};
  const history={diagnoses:[],onboarding_inputs:f.physical,lifestyle:{},evidence_availability:{}};
  const activated=activation(person,history,f.observations);
  const nodes=[...activated,...inference(activated,person,history,f.observations)];
  assert.ok(nodes.some(n=>n.node_id===f.node),'Actual activation/inference must generate fixture node');
  const action={action_id:'fixture-'+f.node,label:'Testovací cvik',intervention_id:f.type,mechanism_targets:f.targets,goal_impact:{branches:['FUNCTIONAL_INDEPENDENCE','SURVIVAL_HEALTHSPAN']},safety:{level:'SAFE',modifications_suggested:[]}};
  engineResult={node_states:nodes,system_leverage:{selected:{node_id:f.node},selection_basis:{causal_reach:{affected_nodes:['TEST_CAUSAL_STEP']}}},system_constraint:{selected:null,candidates:[]},next_best_action:{status:'SELECTED',selected:action,all_candidates:[action]},decision_gate:{context_gates:[]}};
- let session={};
- const send=async(text)=>{const r=await presentation.processInput('isolated',text,session);session={...session,...r.session_updates};return r;};
- assert.equal((await send(f.input)).mode,'ACT');
+ let session={person_goal:f.goal ?? null};
+ const send=async(text)=>{const r=await presentation.processInput('isolated',text,{...session,explicit_goal_request:!!f.goal && text===f.input});session={...session,...r.session_updates};return r;};
+ const act=await send(f.input);assert.equal(act.mode,'ACT');
  const reason=await send('Proč?');assert.ok(reason.text.includes(f.why),reason.text);
+ if(f.goal){
+  assert.match(act.text,/Chceš zhubnout\. Dnes začínáme krokem pro tvoji svalovou sílu\./);
+  assert.match(reason.text,/Chceš zhubnout\./);
+  assert.match(reason.text,/není to samo o sobě plán hubnutí/);
+  assert.doesNotMatch(reason.text,/jsi uvedl/);
+  assert.equal(session.current_action_assignment.intervention_id,'FUNCTIONAL_STRENGTH_TRAINING');
+ }
  assert.equal((await send('Kam směřuješ?')).mode,'EXPLAIN');
  const benefit=await send('Co tím změníš?');
  assert.ok(benefit.text.includes('při pravidelném opakování může pomoci'));

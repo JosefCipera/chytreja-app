@@ -554,6 +554,15 @@ function makeResult(persistence_status, engine_called, domain_response, warnings
   return { persistence_status, engine_called, domain_response: domain_response ?? null, warnings, error };
 }
 
+// Explicit supported intent, not a symptom or a clinical conclusion.
+// Full-string matching keeps negation, quoted wishes and mixed medical inputs out.
+export function parseSupportedGoal(text) {
+  if (typeof text !== 'string') return null;
+  const normalized = text.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[.!?]+$/, '').trim();
+  return /^(?:chci|chtel bych|chtela bych) (?:zhubnout|snizit (?:vahu|hmotnost))$/.test(normalized)
+    ? 'WEIGHT_LOSS' : null;
+}
+
 // ── Main export ───────────────────────────────────────────────────────────────
 
 export async function applyHealthEvent(userId, event) {
@@ -621,6 +630,13 @@ export async function applyHealthEvent(userId, event) {
       case 'GENERAL_HEALTH_REQUEST': {
         const text = payload?.text || '';
         if (!text) break;
+
+        if (parseSupportedGoal(text)) {
+          const { error } = await supabase.from('user_health_profile')
+            .upsert({ user_id: userId, goal_text: text }, { onConflict: 'user_id' });
+          if (error) throw new Error(`persist goal: ${error.message}`);
+          break;
+        }
 
         const { data: hpRow } = await supabase
           .from('user_health_profile')

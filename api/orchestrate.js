@@ -10,6 +10,7 @@ import dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' });
 
 import { createClient } from '@supabase/supabase-js';
+import { parseSupportedGoal } from './engine/healthEventAdapter.js';
 import { processInput } from './engine/orchestrator.js';
 import { requireAuth }  from './lib/requireAuth.js';
 
@@ -56,7 +57,7 @@ export default async function handler(req, res) {
     const [{ data: profileRow }, { data: personRow }] = await Promise.all([
       getSb()
         .from('user_health_profile')
-        .select('pending_clarifications, physical')
+        .select('pending_clarifications, physical, goal_text, symptoms')
         .eq('user_id', userId)
         .maybeSingle(),
       // Narrow unlock: inject birth_year/sex so orchestrator bootstrap skip/defer handler
@@ -78,6 +79,14 @@ export default async function handler(req, res) {
       fatigue_context:        fatigueContext,
       person_birth_year:      personRow?.birth_year ?? null,
       person_sex:             personRow?.gender     ?? null,
+      explicit_goal_request:  parseSupportedGoal(text) !== null,
+      // Server-owned personal intent for communication only, never an engine override.
+      // Legacy fallback reads old explicit wishes stored in symptoms without migrating data.
+      person_goal: parseSupportedGoal(text)
+        ?? parseSupportedGoal(profileRow?.goal_text)
+        ?? (profileRow?.goal_text == null && Array.isArray(profileRow?.symptoms)
+          ? [...profileRow.symptoms].reverse().map(parseSupportedGoal).find(Boolean) ?? null
+          : null),
       // Narrow unlock: keys already present in physical → bootstrap candidate eligibility filter.
       // physical is already fetched above; no extra DB round-trip.
       resolved_physical:      Object.keys(profileRow?.physical ?? {}),

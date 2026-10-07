@@ -1045,6 +1045,7 @@ function buildWhyResponse(sessionState) {
   }
 
   const parts = [];
+  if (sessionState.person_goal === 'WEIGHT_LOSS') parts.push('Chceš zhubnout.');
   const leverage    = ctx.system_leverage;
   const constraint  = ctx.system_constraint;
   const action      = ctx.action_context?.selected;
@@ -1075,6 +1076,11 @@ function buildWhyResponse(sessionState) {
   // Optional: SYSTEM_CONSTRAINT — deeper WHY; shown only when different from leverage
   if (constraintSubject && constraintSubject !== leverageSubject) {
     parts.push(`Zároveň hraje roli ${constraintSubject}.`);
+  }
+
+  if (sessionState.person_goal === 'WEIGHT_LOSS' && leverage?.node_id
+      && leverage.node_id !== 'EXCESS_ADIPOSITY') {
+    parts.push('Dnešní doporučení řeší tuto prioritu; není to samo o sobě plán hubnutí.');
   }
 
   // Safety instructions belong to ACT, not to the reason for selecting it.
@@ -1486,6 +1492,12 @@ export async function processInput(userId, userText, sessionState = {}) {
     } else if (_trimmedF === 'Co tím změníš?') {
       classified = { event_type: 'MECHANISM_REQUEST', payload: {} };
     }
+  }
+
+  // Endpoint recognizes only a full explicit supported wish. Existing safety and
+  // pending-answer guards above retain precedence; no engine decision is changed.
+  if (!classified && state.explicit_goal_request === true) {
+    classified = { event_type: 'GENERAL_HEALTH_REQUEST', payload: { text: userText } };
   }
 
   // Fall through: AI classifier (Haiku). Called only when no guard fired above.
@@ -2338,6 +2350,15 @@ export async function processInput(userId, userText, sessionState = {}) {
     presentation.debug.classifier_event  = event_type;
     presentation.debug.selected_intervention =
       result.domain_response?.daily_decision?.primary_item?.intervention_id ?? null;
+  }
+
+  // Acknowledge personal intent without modifying the selected action, dose or safety.
+  if (presentation.mode === 'ACT' && state.person_goal === 'WEIGHT_LOSS') {
+    const focus = WHY_FOCUS_CS[ctx?.system_leverage?.node_id];
+    const intro = ctx?.system_leverage?.node_id !== 'EXCESS_ADIPOSITY' && focus
+      ? `Chceš zhubnout. Dnes začínáme krokem pro ${focus}.`
+      : 'Chceš zhubnout.';
+    presentation.text = `${intro} ${presentation.text}`;
   }
 
   return presentation;
