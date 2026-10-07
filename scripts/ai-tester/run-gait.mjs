@@ -29,8 +29,9 @@ const gait=engineResult.node_states.find(n=>n.node_id==='GAIT_INSTABILITY');
 const candidate=engineResult.next_best_action.all_candidates?.find(c=>c.action_id==='step_down');
 const recorded=health.physical.gait_stability===false||health.physical.gait_instability_reported===true;
 const reasons=gait?.evidence;
+const consumed=[...(reasons?.direct??[]),...(reasons?.supporting??[]),...(reasons?.inferred_from_nodes??[])].some(f=>['gait_stability','gait_instability_reported'].includes(f.question_id??f.field));
 const cases=[
- {id:'spoken-gait-fact',status:recorded?'PASS':'FAIL',expected:'Current instability reaches a structured functional field without diagnosis',actual:{classification:inputClassification,physical:health.physical,symptoms:health.symptoms,gait_evidence:reasons}},
+ {id:'spoken-gait-fact',status:recorded&&consumed?'PASS':'FAIL',expected:'Current instability reaches a structured functional field and is consumed by the engine without diagnosis',actual:{classification:inputClassification,physical:health.physical,symptoms:health.symptoms,gait_evidence:reasons}},
  {id:'step-down-safety',status:!candidate?'BLOCKED':candidate.safety.level==='SAFE'?'FAIL':'PASS',expected:'Single-leg step-down with predicted gait instability is not unconditionally SAFE',actual:candidate?.safety??'Candidate absent'},
  {id:'priority-explanation',status:engineResult.system_leverage.selected?.node_id==='GAIT_INSTABILITY'||/nejist|chůz|chuz/i.test(why.text)?'PASS':'FAIL',expected:'If a different priority is selected, acknowledge the expressed gait problem',actual:why.text},
 ];
