@@ -9,6 +9,7 @@ on:
       - scripts/test-skip-progression.mjs
       - scripts/test-skipped-exhaustion.mjs
       - api/orchestrate.js
+      - scripts/test-blocking-evidence.mjs
       - scripts/test-action-bridge.mjs
       - scripts/test-personal-goal.mjs
       - api/engine/**
@@ -24,6 +25,7 @@ on:
     paths:
       - scripts/ai-tester/**
       - api/orchestrate.js
+      - scripts/test-blocking-evidence.mjs
       - scripts/test-action-bridge.mjs
       - scripts/test-personal-goal.mjs
       - api/engine/**
@@ -54,6 +56,7 @@ jobs:
         run: npm ci --ignore-scripts
       - name: Verify deterministic skip contracts
         run: |
+          node scripts/test-blocking-evidence.mjs
           node scripts/test-action-bridge.mjs
           node --experimental-vm-modules scripts/test-personal-goal.mjs
           node --experimental-vm-modules scripts/test-why-control.mjs
