@@ -27,6 +27,14 @@ engineResult=await engine.runEngine('isolated-tester137');
 const why=await entry.namespace.processInput('isolated-tester137','Proč?',response.session_updates);
 const gait=engineResult.node_states.find(n=>n.node_id==='GAIT_INSTABILITY');
 const candidate=engineResult.next_best_action.all_candidates?.find(c=>c.action_id==='step_down');
+// Keep testing the independent step-down safety guard even when the current
+// target-specific bridge correctly defers it before candidate construction.
+const mapping=JSON.parse(fs.readFileSync(new URL('../../data/engine/intervention-map.json',import.meta.url),'utf8')).mappings;
+const nba=cache.get(new URL('../../api/engine/nextBestAction.js',import.meta.url).href).namespace;
+const guardResult=nba.computeNextBestAction({leverageNodeId:'PHYSICAL_INACTIVITY',interventions:mapping.PHYSICAL_INACTIVITY.interventions,actionPool:[stepDown],personConstraints:[],clinicalHistory:{clinical_history_documented:true,onboarding_inputs:health.physical},decisionGate:engineResult.decision_gate,node_states:engineResult.node_states,engineVersion:'1.0.0'});
+const guardCandidate=guardResult.all_candidates.find(c=>c.action_id==='step_down');
+const adiposityBridge=mapping.EXCESS_ADIPOSITY.interventions.find(i=>i.id==='RESISTANCE_TRAINING');
+const deliberatelyDeferred=engineResult.system_leverage.selected?.node_id==='EXCESS_ADIPOSITY' && Array.isArray(adiposityBridge.allowed_action_ids) && !adiposityBridge.allowed_action_ids.includes(stepDown.id);
 const recorded=health.physical.gait_stability===false||health.physical.gait_instability_reported===true;
 const reasons=gait?.evidence;
 const consumed=[...(reasons?.direct??[]),...(reasons?.supporting??[]),...(reasons?.inferred_from_nodes??[])].some(f=>['gait_stability','gait_instability_reported'].includes(f.question_id??f.field));
@@ -40,7 +48,7 @@ const polaritySafe=reportOnly?.current_state==='PREDICTED_CURRENT'
 const cases=[
  {id:'self-report-polarity',status:polaritySafe?'PASS':'FAIL',expected:'Self-report alone remains predicted; negative/missing report does not create a gait finding or erase independent balance evidence'},
  {id:'spoken-gait-fact',status:recorded&&consumed?'PASS':'FAIL',expected:'Current instability reaches a structured functional field and is consumed by the engine without diagnosis',actual:{classification:inputClassification,physical:health.physical,symptoms:health.symptoms,gait_evidence:reasons}},
- {id:'step-down-safety',status:!candidate?'BLOCKED':candidate.safety.level==='NEEDS_CLINICAL_CLEARANCE'&&engineResult.next_best_action.selected?.action_id!=='step_down'?'PASS':'FAIL',expected:'Single-leg step-down with predicted gait instability is not unconditionally SAFE',actual:candidate?.safety??'Candidate absent'},
+ {id:'step-down-safety',status:((candidate?.safety.level==='NEEDS_CLINICAL_CLEARANCE'||(!candidate&&deliberatelyDeferred))&&engineResult.next_best_action.selected?.action_id!=='step_down'&&guardCandidate?.safety.level==='NEEDS_CLINICAL_CLEARANCE'&&!guardResult.selected)?'PASS':'FAIL',expected:'Unreviewed adiposity bridge defers step-down; independent gait safety guard still requires clearance on an eligible target',actual:{candidate:candidate?.safety??null,deliberatelyDeferred,independentGuard:guardCandidate?.safety??null}},
  {id:'priority-explanation',status:engineResult.system_leverage.selected?.node_id==='GAIT_INSTABILITY'||/nejist|chůz|chuz/i.test(why.text)?'PASS':'FAIL',expected:'If a different priority is selected, acknowledge the expressed gait problem',actual:why.text},
 ];
 console.log(JSON.stringify({mode:live?'live_classifier_real_engine':'injected_classifier_real_engine',limitations:['Fixture database; no live account accessed','Restricted catalog fixture, not full production action ranking','Unknown catalog fields kept null; unconditional safety classification can still be checked','No clinical efficacy or exercise dose validation'],profile,health,engine:{nodes:engineResult.node_states,leverage:engineResult.system_leverage,constraint:engineResult.system_constraint,decision_gate:engineResult.decision_gate,nba:engineResult.next_best_action},response:{mode:response.mode,text:response.text},cases},null,2));

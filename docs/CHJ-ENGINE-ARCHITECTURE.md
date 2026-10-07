@@ -339,6 +339,12 @@ actual_reps             integer | null
   vyhodnotí znovu a vznikne běžný ACT — opakuje se, dokud se nesplní `minimum_exposure_rule`
   a horizon, a Response Evaluation se tak vůbec může dostat k vyhodnocení
 
+### Target-specific catalog bridge
+
+An intervention may declare `allowed_action_ids`. Absence preserves its existing protocol/tag mapping; an explicit empty list admits no catalog actions for that target. This eligibility filter runs before Safety Gate/ranking; membership never overrides safety. Intervention-level evidence is not evidence that every exercise sharing its protocol has been reviewed for that target.
+
+For `EXCESS_ADIPOSITY → RESISTANCE_TRAINING`, the reviewed action list is currently empty: localized fixed-load overhead presses and step-downs must not become an automatic adiposity prescription solely from `SILOVY_PROTOKOL`. These are deferred catalog mappings, not clinical contraindications. Aerobic/other existing paths and functional-strength mappings are unchanged; if no viable alternative exists, normal DD ASK/SAFETY contracts apply. Adding an action requires a reviewed target-specific bridge; this change does not approve doses or establish clinical efficacy.
+
 ### NBA Ranking Policy (zamčeno — engine.js LOCKED)
 
 Kandidáti jsou řazeni lexikograficky v tomto pořadí:

@@ -163,6 +163,7 @@ async function isolated(scenario, branch = null) {
   }
   const selected = initialEngine.next_best_action.selected;
   if (weightLoss && scenario.goal) {
+    if (initialEngine.system_leverage.selected?.node_id === 'EXCESS_ADIPOSITY') check('no-unreviewed-resistance-for-adiposity', !(initialEngine.next_best_action.all_candidates ?? []).some(c => c.intervention_id === 'RESISTANCE_TRAINING'), selected?.action_id);
     check('goal-canonical-storage', health.goal_text === scenario.text, health.goal_text);
     check('goal-not-diagnosis', !health.diagnoses.length && !health.symptoms.length, { diagnoses: health.diagnoses, symptoms: health.symptoms });
     check('authoritative-uid', writes.every(w => w.row.user_id === uid), writes.map(w => w.row.user_id));
