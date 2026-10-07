@@ -206,6 +206,7 @@ async function isolated(scenario, branch = null) {
     const answer = branch === 'gait-yes' ? 'Ano' : branch === 'gait-no' ? 'Ne' : 'Nevím';
     response = await turn(answer);
     const snapshot = structuredClone(health);
+    check('gait-answer-polarity', branch === 'gait-yes' ? health.physical.gait_stability === true : branch === 'gait-no' ? health.physical.gait_stability === false : health.physical.gait_stability === 'Nevím', health.physical.gait_stability);
     check('gait-answer-persisted', health.physical.gait_stability != null || health.physical.evidence_availability?.gait_stability != null, snapshot.physical);
     check('gait-no-invented-clearance', response.mode === 'SAFETY_BLOCKED' && !session.current_action_assignment && assignments.length === 0, { mode: response.mode, text: response.text });
     const follow = await turn('Co dál?');
