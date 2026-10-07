@@ -5,6 +5,7 @@ on:
   pull_request:
     paths:
       - scripts/ai-tester/**
+      - scripts/test-why-control.mjs
       - scripts/test-skip-progression.mjs
       - scripts/test-skipped-exhaustion.mjs
       - api/engine/**
@@ -47,6 +48,7 @@ jobs:
         run: npm ci --ignore-scripts
       - name: Verify deterministic skip contracts
         run: |
+          node --experimental-vm-modules scripts/test-why-control.mjs
           node scripts/test-skip-progression.mjs
           node scripts/test-skipped-exhaustion.mjs
       - name: Evaluate three clean transcripts
