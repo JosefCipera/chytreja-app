@@ -42,3 +42,6 @@ Passing means these explicit interpretation, decision/presentation and persisten
 `node scripts/test-skip-progression.mjs` verifies same/lower-tier alternatives, intervention-local ceilings, unknown tier handling, exhaustion with nonviable candidates remaining, next-day reavailability and preservation of safety/necessary-evidence priority. It needs no network or API credential and runs before AI tests in CI.
 
 The policy is a conservative CHJ eligibility rule: skipping is not evidence of capability. [NICE NG249, falls-prevention exercise recommendations](https://www.nice.org.uk/guidance/ng249/chapter/Recommendations) describe individually tailored progression; they do not prescribe this software tier ceiling or validate the catalog's individual exercises. Catalog metadata and clinical appropriateness remain separate from passing this regression.
+
+
+`node --experimental-vm-modules scripts/test-why-control.mjs` verifies that exact WHY controls read cached explanations without an AI/engine call, including a classifier outage. Medical scope rejection retains precedence. This regression was added after a real workflow misclassified `Proč?` as SCOPE_CLARIFICATION while the full 25-scenario matrix passed.
