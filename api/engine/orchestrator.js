@@ -457,7 +457,7 @@ const CLASSIFIER_TOOL = {
           'ACTION_COMPLETED', 'ACTION_SKIPPED', 'ANSWER_TO_EVIDENCE_QUESTION',
           'NEW_SYMPTOM', 'NEW_MEASUREMENT', 'NEW_CONSTRAINT',
           'WHY_REQUEST', 'DOMAIN_REQUEST', 'USER_PREFERENCE', 'GENERAL_HEALTH_REQUEST',
-          'UNSUPPORTED_REQUEST', 'SCOPE_CLARIFICATION',
+          'UNSUPPORTED_REQUEST', 'SCOPE_CLARIFICATION', 'FUNCTIONAL_CLARIFICATION',
         ],
         description: 'Classified event type',
       },
@@ -468,7 +468,8 @@ const CLASSIFIER_TOOL = {
           body_part:      { type: 'string',  description: 'Czech body part name for NEW_SYMPTOM' },
           severity:       { type: 'string',  description: 'mild | moderate | severe (null for NEW_SYMPTOM)' },
           evidence_type:  { type: 'string',  description: 'From pending_question.evidence_type for ANSWER' },
-          value:          { description: 'Answer value (string or number)' },
+          value:          { description: 'Answer value (string, number or boolean); explicit floor-rise ability uses boolean' },
+          clarification_kind: { type: 'string', enum: ['chair_or_floor', 'floor_rise_ability'], description: 'Fixed functional clarification; no clinical inference' },
           obs_type:       { type: 'string',  description: 'Observation type for NEW_MEASUREMENT' },
           unit:           { type: 'string',  description: 'Unit for NEW_MEASUREMENT' },
           constraint_key: { type: 'string',  description: 'Body region in English for NEW_CONSTRAINT' },
@@ -491,8 +492,15 @@ A request to diagnose, treat, explain or predict a different condition (includin
 Examples: "Co s mou synkopou?" → UNSUPPORTED_REQUEST medical; "Proč mám arytmii?" → UNSUPPORTED_REQUEST medical; "Chci lépe spát" → UNSUPPORTED_REQUEST general; "Pomoz mi s výrobou" → UNSUPPORTED_REQUEST general.
 Do not use unrelated profile facts to substitute a supported goal. Supported facts used for risk context or answers to pending questions (blood pressure, diagnoses, medications, measurements) may continue through the existing evidence/safety path. A simple pain report remains NEW_SYMPTOM (a safety signal, never advice for treating pain).
 If the requested help is unclear or unrelated input cannot be interpreted, → SCOPE_CLARIFICATION. Never guess a supported request.
-Examples: "Chci zlepšit kondici" / "Přibral jsem" / "Hůř vstávám ze země" / "Jsem nejistý při chůzi" → GENERAL_HEALTH_REQUEST.
+Examples: "Chci zlepšit kondici" / "Přibral jsem" / "Jsem nejistý při chůzi" → GENERAL_HEALTH_REQUEST.
 User age/diagnosis/background without a requested treatment can be GENERAL_HEALTH_REQUEST; the engine determines relevance.
+
+FUNCTIONAL FACTS — interpretation only, take precedence over generic health declarations:
+- An explicit CURRENT FIRST-PERSON statement about rising FROM THE FLOOR WITHOUT HAND SUPPORT → ANSWER_TO_EVIDENCE_QUESTION, evidence_type="vstat_ze_zeme", value=true if able, false if unable. This also applies without a pending question. "Ze země bez pomoci rukou nevstanu." → false; "Ze země vstanu bez opory rukou." → true. Requiring hand support to rise from the floor → false.
+- Do not infer inability without hand support from general difficulty, chair statements, another person's report, past ability or an uncertain/hypothetical statement.
+- A current difficulty rising without a clear chair/floor context ("Špatně se mi vstává.") → FUNCTIONAL_CLARIFICATION, clarification_kind="chair_or_floor". Do not persist a functional fact.
+- pending_question.type=FUNCTIONAL_CONTEXT + user clarifies chair or floor → FUNCTIONAL_CLARIFICATION, clarification_kind="floor_rise_ability". This asks the existing ability question, never infers a yes/no fact from the location alone.
+- Explicit third-person or historical floor-rise statements stay GENERAL_HEALTH_REQUEST; do not translate them into the user's current physical facts.
 
 RULES (only for a supported request, evidence answer or existing app control):
 1. pending_question set + short answer (yes/no/word/number) → ANSWER_TO_EVIDENCE_QUESTION
@@ -1520,6 +1528,34 @@ export async function processInput(userId, userText, sessionState = {}) {
     return buildUnsupportedResponse(payload?.unsupported_kind === 'medical' ? 'medical' : 'general');
   }
   if (event_type === 'SCOPE_CLARIFICATION') return buildUnsupportedResponse('general', true);
+
+  // Fixed clarification for functional meaning, not an engine-generated clinical question.
+  if (event_type === 'FUNCTIONAL_CLARIFICATION') {
+    const kind = payload?.clarification_kind;
+    const isLocation = kind === 'chair_or_floor';
+    const isAbility = kind === 'floor_rise_ability' && state.pending_question?.type === 'FUNCTIONAL_CONTEXT';
+    if (!isLocation && !isAbility) return buildUnsupportedResponse('general', true);
+    const budget = typeof state.question_budget_remaining === 'number' ? state.question_budget_remaining : 3;
+    const updates = { current_action_assignment: null, last_domain_response: null, last_daily_decision: null };
+    if (budget <= 0) return {
+      mode: 'HOLD', text: 'Bez upřesnění vstávání zatím nemám podklad pro doporučení.',
+      buttons: [], expects_reply: true,
+      session_updates: { ...updates, pending_question: null, question_budget_remaining: 0 },
+      debug: { reason_code: 'FUNCTIONAL_CLARIFICATION_BUDGET' },
+    };
+    const text = isLocation ? 'Myslíš vstávání ze židle, nebo ze země?'
+      : buildEvidenceQuestion({ evidence_type: 'vstat_ze_zeme' });
+    return {
+      mode: 'ASK', text, buttons: [], expects_reply: true,
+      session_updates: {
+        ...updates, question_budget_remaining: budget - 1,
+        pending_question: isLocation
+          ? { text, type: 'FUNCTIONAL_CONTEXT', evidence_type: null }
+          : { text, type: 'GENERAL', evidence_type: 'vstat_ze_zeme' },
+      },
+      debug: { reason_code: 'FUNCTIONAL_CLARIFICATION', clarification_kind: kind },
+    };
+  }
 
   // 2. WHY: use only cached context, no engine call
   // Also catch WHY via raw text fallback in case classifier missed it
