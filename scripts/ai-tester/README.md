@@ -20,7 +20,7 @@ Baseline on 2026-10-07, main `9f3e6dc`: two structured facts absent when injecte
 
 # Full-catalog gait matrix
 
-`run-gait-matrix.mjs --live` runs 24 synthetic scenarios (including two repeats of intermittent staggering) through the actual orchestrator, event adapter and complete engine. Six clean spoken formulations, stable/negated/third-person/historical/hypothetical/uncertain statements, the tester137 profile shape, recent falls, low strength, three knee severities, a combined profile and unsupported syncope are covered. Separate journeys verify Hotovo, same-day return, duplicate completion prevention, Přeskočit, an alternative assignment and its completion. No audio transcription or browser/authentication flow is tested.
+`run-gait-matrix.mjs --live` runs 25 synthetic scenarios (including two repeats of intermittent staggering) through the actual orchestrator, event adapter and complete engine. Six clean spoken formulations, stable/negated/third-person/historical/hypothetical/uncertain statements, the tester137 profile shape, recent falls, low strength, three knee severities, a combined profile and unsupported syncope are covered. Separate journeys verify Hotovo, same-day return, duplicate completion prevention, Přeskočit, an alternative assignment and its completion. No audio transcription or browser/authentication flow is tested.
 
 ```sh
 node --experimental-vm-modules scripts/ai-tester/run-gait-matrix.mjs --live
@@ -34,4 +34,11 @@ The live classifier also intermittently misclassified a staggered-walking descri
 
 The matrix reproduced missing joint-load protection for STABILITY_PROTOKOL, balance safety masking stricter knee conditions, and post-skip assignment loss. A second journey assertion reproduced reoffering the same 30-second single-leg stand under another catalog ID. The reviewed skip-equivalence group in `data/engine/action-equivalents.json` contains only those two known rows; it does not infer exercise equivalence or merge doses using AI.
 
-Passing means these explicit interpretation, decision/presentation and persistence contracts hold. It does not establish clinical efficacy, dose suitability, all possible dialogue branches, or readiness for external testers. The public catalog currently includes a more challenging unstable-surface exercise after skipping the initial balance action; clinical suitability of that progression is outside these assertions and remains a review item.
+Passing means these explicit interpretation, decision/presentation and persistence contracts hold. It does not establish clinical efficacy, dose suitability, all possible dialogue branches, or readiness for external testers. The repeated-skip journey reproduced escalation to an unstable surface, longer stance and closed eyes, followed by an irrelevant assessment loop. It now checks the explicit product rule that skipping cannot raise catalog tier, rejects repeated equivalent exercises, checks bounded same-day exhaustion, inactive controls after HOLD and expiry of prior-day skips. This tier policy is not a clinical assessment of each exercise.
+
+
+## Skip progression regression
+
+`node scripts/test-skip-progression.mjs` verifies same/lower-tier alternatives, intervention-local ceilings, unknown tier handling, exhaustion with nonviable candidates remaining, next-day reavailability and preservation of safety/necessary-evidence priority. It needs no network or API credential and runs before AI tests in CI.
+
+The policy is a conservative CHJ eligibility rule: skipping is not evidence of capability. [NICE NG249, falls-prevention exercise recommendations](https://www.nice.org.uk/guidance/ng249/chapter/Recommendations) describe individually tailored progression; they do not prescribe this software tier ceiling or validate the catalog's individual exercises. Catalog metadata and clinical appropriateness remain separate from passing this regression.
