@@ -1,0 +1,42 @@
+name: CRT voice transcript tester
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - qa/crt-floor-rise-baseline
+    paths:
+      - scripts/ai-tester/**
+      - .github/workflows/crt-voice-tester.yml
+
+permissions:
+  contents: read
+
+jobs:
+  floor-rise:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install dependencies without lifecycle scripts
+        run: npm ci --ignore-scripts
+      - name: Evaluate three clean transcripts
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          mkdir -p ai-tester-results
+          node --experimental-vm-modules scripts/ai-tester/run-floor-rise.mjs --live > ai-tester-results/floor-rise.json
+      - name: Save PASS, FAIL or BLOCKED report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: floor-rise-report
+          path: ai-tester-results/floor-rise.json
+          if-no-files-found: warn
+          retention-days: 7
