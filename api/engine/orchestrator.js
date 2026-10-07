@@ -1472,6 +1472,21 @@ export async function processInput(userId, userText, sessionState = {}) {
     }
   }
 
+  // Exact replies to a typed gait question are dialogue controls, not new
+  // symptoms. Preserve uncertainty as the raw answer; never turn it into false.
+  // Full-string matching leaves compound health/scope inputs to existing guards.
+  if (!classified && state.pending_question?.type === 'GENERAL'
+      && state.pending_question?.evidence_type === 'gait_stability') {
+    const answer = userText.trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase().replace(/[.!?]+$/, '').trim();
+    if (['ano', 'ne', 'nevim'].includes(answer)) {
+      classified = { event_type: 'ANSWER_TO_EVIDENCE_QUESTION', payload: {
+        evidence_type: 'gait_stability',
+        value: answer === 'ano' ? true : answer === 'ne' ? false : userText.trim(),
+      } };
+    }
+  }
+
   // Guard D.6: sedentary_hours_day scalar — pre-Haiku deterministic routing.
   // Root of STOP #6: "8 hodin" triggers Haiku Rule 6 (number + unit → NEW_MEASUREMENT).
   // routeMeasurement for table='physical' returns a warning and writes nothing, so
