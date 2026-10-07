@@ -775,7 +775,7 @@ export function computeNextBestAction({
   // Mobility profile for DEVICE_FIT evaluation (ASSISTIVE_PROTOKOL actions)
   const mobilityProfile = computeMobilityProfile(node_states, clinicalHistory);
 
-  const candidates = buildCandidates(
+  let candidates = buildCandidates(
     actionPool,
     interventions,
     parsedConstraints,
@@ -787,13 +787,30 @@ export function computeNextBestAction({
     skippedTodayActionIds,
   );
 
+  // Skipping is not evidence of capacity or readiness to progress. Derive the
+  // daily ceiling from the actual catalog rows skipped today, never client state.
+  // The same/lower-tier alternatives retain the unchanged safety/ranking policy.
+  const unskippedCandidates = skippedTodayActionIds?.size
+    ? buildCandidates(actionPool, interventions, parsedConstraints, hasCvRiskRelevant,
+        hasClinicalHistory, leverageNodeId, hasGaitInstability, mobilityProfile, new Set())
+    : [];
+  const tierCeilings = new Map();
+  for (const reference of unskippedCandidates) {
+    if (!skippedTodayActionIds?.has(reference.action_id)) continue;
+    const tier = Number.isFinite(reference.tier) && reference.tier >= 1 ? reference.tier : 0;
+    tierCeilings.set(reference.intervention_id, Math.min(tierCeilings.get(reference.intervention_id) ?? Infinity, tier));
+  }
+  const deferredProgression = candidates.filter(c => tierCeilings.has(c.intervention_id)
+    && !(Number.isFinite(c.tier) && c.tier >= 1 && c.tier <= tierCeilings.get(c.intervention_id)));
+  candidates = candidates.filter(c => !deferredProgression.includes(c));
+  const progressionPolicy = {
+    tier_ceilings: Object.fromEntries(tierCeilings),
+    deferred_action_ids: deferredProgression.map(c => c.action_id),
+  };
+
   if (candidates.length === 0) {
     // Distinguish an empty model/action pool from today's explicit skips.
     // Reuse the same candidate builder and Safety Gate; never invent alternatives.
-    const unskippedCandidates = skippedTodayActionIds?.size
-      ? buildCandidates(actionPool, interventions, parsedConstraints, hasCvRiskRelevant,
-          hasClinicalHistory, leverageNodeId, hasGaitInstability, mobilityProfile, new Set())
-      : [];
     const skippedViable = unskippedCandidates.some(c => VIABLE_SAFETY.has(c.safety.level));
     return {
       status:         'NO_CANDIDATES',
@@ -801,6 +818,7 @@ export function computeNextBestAction({
       reason:         `No longevity_actions matched protocol_types for ${leverageNodeId} intervention map.`,
       selected:       null,
       all_candidates: [],
+      progression_policy: progressionPolicy,
       evaluated_at:   now,
       engine_version: engineVersion,
     };
@@ -809,6 +827,19 @@ export function computeNextBestAction({
   // Partition by viable safety
   const viable       = candidates.filter(c => VIABLE_SAFETY.has(c.safety.level));
   const non_viable   = candidates.filter(c => !VIABLE_SAFETY.has(c.safety.level));
+
+  // Non-viable device/assessment candidates may remain after all eligible
+  // starter actions were skipped. They are not new same-day alternatives.
+  // Keep their safety outcomes visible: DAILY_DECISION still checks safety first.
+  if (viable.length === 0 && unskippedCandidates.some(c =>
+      skippedTodayActionIds?.has(c.action_id) && VIABLE_SAFETY.has(c.safety.level))) {
+    return {
+      status: 'NO_CANDIDATES', reason_code: 'ALL_ACTIONS_SKIPPED_TODAY',
+      reason: 'No eligible same-or-lower-tier action remains after today’s skips.',
+      selected: null, all_candidates: candidates, progression_policy: progressionPolicy,
+      evaluated_at: now, engine_version: engineVersion,
+    };
+  }
 
   // If all non-viable due to NEEDS_MORE_EVIDENCE → request evidence
   const allNeedEvidence = non_viable.length > 0 &&
@@ -838,6 +869,7 @@ export function computeNextBestAction({
     cv_risk_context:              hasCvRiskRelevant,
     clinical_history_documented:  hasClinicalHistory,
     all_candidates:               candidates,
+    progression_policy:           progressionPolicy,
     evaluated_at:                 now,
     engine_version:               engineVersion,
   };
