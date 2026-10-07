@@ -80,6 +80,15 @@
             ]
         },
         {
+            "source": "/home-v2",
+            "headers": [
+                { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate, s-maxage=0" },
+                { "key": "Pragma", "value": "no-cache" },
+                { "key": "Surrogate-Control", "value": "no-store" },
+                { "key": "CDN-Cache-Control", "value": "no-store" }
+            ]
+        },
+        {
             "source": "/zakladatele(/?)",
             "headers": [
                 { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate, s-maxage=0" },
@@ -122,6 +131,10 @@
         {
             "source": "/landing",
             "destination": "/app/landing.html"
+        },
+        {
+            "source": "/home-v2",
+            "destination": "/app/home-v2.html"
         },
         {
             "source": "/zakladatele",
