@@ -12,6 +12,10 @@ on:
       - api/engine/**
       - .github/workflows/crt-voice-tester.yml
 
+concurrency:
+  group: crt-voice-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
