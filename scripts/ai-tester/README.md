@@ -45,3 +45,12 @@ The policy is a conservative CHJ eligibility rule: skipping is not evidence of c
 
 
 `node --experimental-vm-modules scripts/test-why-control.mjs` verifies that exact WHY controls read cached explanations without an AI/engine call, including a classifier outage. Medical scope rejection retains precedence. This regression was added after a real workflow misclassified `Proč?` as SCOPE_CLARIFICATION while the full 25-scenario matrix passed.
+
+
+# Weight-loss endpoint matrix
+
+`node --experimental-vm-modules scripts/ai-tester/run-gait-matrix.mjs --live --weight-loss` reuses the isolated full-engine/catalog driver for 13 scenarios: normal BMI, overweight, a woman's explicit wish, the tester136 profile shape, low strength, reported gait instability, three knee severities, combined limitations, a mixed syncope request, and separate completion/skip journeys.
+
+This mode calls the actual `api/orchestrate.js` endpoint, with Firebase authentication mocked to the fixture UID. Its real server hydration, exact-goal parser, persistent goal writes, orchestrator and engine execute. Checks cover canonical goal storage without invented symptoms/diagnoses, authoritative UID, read-only WHY, server restoration after a forged client goal, acknowledgement of weight loss and explanation when another priority is selected, known tester136 strength/action selection, decision/presentation consistency and existing safety/persistence contracts. Normal BMI is not turned into measured excess adiposity merely because the user wishes to lose weight. No private account is read or altered.
+
+Exact recognized wishes intentionally bypass Haiku in the actual server; a live run is not evidence of arbitrary weight-loss language understanding. Only inputs that reach the existing classifier use the real model. Microphone, real authentication and clinical exercise/dose validation are not tested. `review_required` explicitly flags the observed fixed 5 kg overhead press selected for some weight-loss profiles. Software PASS does not approve its relevance or dose. Ranking and catalog remain unchanged by this QA addition.
