@@ -1,0 +1,43 @@
+.s2-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:16px;--amber:#f0a030;--green:#41df89;--cyan:#39b7c8;--line:#8fa6c8}
+.s2-card{display:flex;flex-direction:column;min-width:0;border-radius:18px;padding:20px 16px 18px;background:linear-gradient(180deg,#111d32,#0b1323);border:1px solid #aecfff14}
+.s2-head{display:flex;align-items:center;gap:11px;min-height:44px}
+.s2-n{flex:0 0 34px;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;border:1.5px solid var(--cyan);color:var(--cyan);font-size:17px;font-weight:600}
+.s2-card h3{font-size:19px;line-height:1.25;font-weight:600;letter-spacing:-.4px;margin:0}
+.s2-lead{font-size:14px;line-height:1.6;color:#aac1e3;margin:12px 0 16px;min-height:22px}
+.s2-chips{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.s2-chips li{display:flex;align-items:center;gap:10px;font-size:14px;padding:11px 12px;border:1px solid #5784b636;border-radius:8px;background:#14263aeb;color:#d8e9ff}
+.s2-chips i{width:22px;height:22px;flex:0 0 22px;color:var(--cyan)}
+.s2-chips svg{width:100%;height:100%;display:block}
+.s2-foot{font-size:13px;line-height:1.7;color:#9db6d8;margin:auto 0 0;padding-top:18px}
+.s2-pill{display:inline-block;align-self:flex-start;font-size:12px;line-height:1.3;padding:5px 11px;border-radius:14px;border:1px solid #ffffff22;margin:0 0 10px}
+.s2-pill.amber{color:#ffd9a1;background:#f0a03018;border-color:#f0a03060}
+.s2-pill.green{color:#a8f1c6;background:#41df8918;border-color:#41df8960}
+.s2-chart{width:100%;height:auto;display:block;margin:0 0 6px}
+.s2-chart .axis{stroke:var(--line);stroke-width:1}
+.s2-chart .tick{fill:var(--line)}
+.s2-chart text{fill:#b4c8e6;font-size:9.5px;font-family:inherit}
+.s2-chart .up{fill:none;stroke:var(--amber);stroke-width:2.2;stroke-dasharray:5 4}
+.s2-chart .down{fill:none;stroke:var(--green);stroke-width:2.4}
+.s2-chart .dot-a{fill:var(--amber)}.s2-chart .dot-g{fill:var(--green)}.s2-chart .dot-n{fill:var(--line)}
+.s2-block{border-radius:10px;padding:12px 13px;margin-top:12px;border:1px solid #ffffff18;background:#ffffff08}
+.s2-block strong{display:block;font-size:13px;font-weight:600;margin-bottom:6px}
+.s2-block ul{margin:0;padding-left:18px;font-size:13px;line-height:1.65;color:#d3e2f8}
+.s2-block.amber{border-color:#f0a03050;background:#f0a0300d}.s2-block.amber strong{color:#ffd9a1}
+.s2-block.green{border-color:#41df8950;background:#41df890d}.s2-block.green strong{color:#a8f1c6}
+.s2-chain{display:grid;justify-items:stretch;gap:0}
+.s2-chain .box{font-size:14px;line-height:1.35;text-align:center;padding:11px 8px;border-radius:9px;border:1px solid #6e84ad55;background:#212840e8;color:#e3eafa}
+.s2-chain .box.lever{border-color:#41df8980;background:#103825c0;color:#d5f8e4}
+.s2-chain .box.hazard{border-color:#f0a03080;background:#3a2a12c0;color:#ffe6c2}
+.s2-chain .arrow{text-align:center;color:var(--line);font-size:18px;line-height:24px}
+.s2-tag{display:block;font-size:11px;letter-spacing:.4px;text-transform:uppercase;color:#7ff0ad;margin-bottom:3px}
+.s2-action{border-radius:12px;padding:16px 14px;border:1px solid #41df8960;background:#103825c0}
+.s2-action small{display:block;font-size:11px;letter-spacing:.5px;text-transform:uppercase;color:#7ff0ad;margin-bottom:6px}
+.s2-action h4{font-size:21px;margin:0 0 4px;font-weight:600}
+.s2-action p{font-size:14px;color:#cfeadc;margin:0}
+.s2-list{list-style:none;margin:16px 0 0;padding:0}
+.s2-list li{position:relative;font-size:14px;line-height:1.55;padding-left:22px;margin:7px 0;color:#dbe8fb}
+.s2-list li:before{content:'✓';position:absolute;left:0;color:var(--green);font-weight:700}
+.s2-legend{display:flex;flex-wrap:wrap;gap:6px 8px;margin:2px 0 4px}
+.s2-legend .s2-pill{margin:0}
+@media(max-width:1100px) and (min-width:701px){.s2-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;max-width:820px;margin:auto}.s2-card:last-child{grid-column:1/-1;max-width:400px;justify-self:center;width:100%}}
+@media(max-width:700px){.s2-grid{grid-template-columns:1fr;max-width:430px;margin:auto;gap:20px}.s2-card{padding:22px 18px 20px}.s2-card h3{font-size:22px}.s2-n{flex-basis:38px;width:38px;height:38px;font-size:19px}.s2-lead{font-size:16px;min-height:0}.s2-chips li,.s2-chain .box,.s2-list li{font-size:16px}.s2-block strong,.s2-block ul,.s2-foot,.s2-pill{font-size:14px}.s2-chart text{font-size:10px}}
