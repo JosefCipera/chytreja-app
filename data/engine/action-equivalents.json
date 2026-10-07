@@ -1,0 +1,8 @@
+{
+  "skip_groups": [
+    {
+      "id": "single_leg_stand_30s",
+      "action_ids": ["b3f9b408-47a5-4529-bfbb-906a2324813b", "rovnovaha_stoj_1"]
+    }
+  ]
+}
