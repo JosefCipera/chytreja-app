@@ -112,8 +112,12 @@ async function isolated(scenario, branch = null) {
     const q = { select() { return q; }, eq(key, value) { if (key !== 'user_id') filters.push(r => r[key] === value); return q; }, in(key, values) { filters.push(r => values.includes(r[key])); return q; }, gte(key, value) { filters.push(r => r[key] >= value); return q; }, order() { return q; }, limit() { return q; }, maybeSingle() { single = true; return Promise.resolve(result()); }, single() { single = true; return Promise.resolve(result()); }, upsert(row) { return mutate('upsert', row); }, insert(row) { return mutate('insert', row); }, then(resolve, reject) { return Promise.resolve(result()).then(resolve, reject); } };
     return q;
   } };
-  let classifierFailure = null;
+  let classifierFailure = null, currentInput = null;
   class AI { messages = { create: async args => {
+    if (!live && weightLoss && session.pending_question && branch?.startsWith('gait-')) {
+      const input = { event_type: 'ANSWER_TO_EVIDENCE_QUESTION', payload: { evidence_type: session.pending_question.evidence_type, value: currentInput === 'Ano' ? true : currentInput === 'Ne' ? false : currentInput } };
+      calls.push(input); return { content: [{ type: 'tool_use', input }] };
+    }
     if (!live) {
       const input = { event_type: scenario.report === null ? 'GENERAL_HEALTH_REQUEST' : 'ANSWER_TO_EVIDENCE_QUESTION', payload: scenario.report === null ? { text: scenario.text } : { evidence_type: 'gait_instability_reported', value: scenario.report } };
       calls.push(input); return { content: [{ type: 'tool_use', input }] };
@@ -133,6 +137,7 @@ async function isolated(scenario, branch = null) {
   const engine = cache.get(new URL('api/engine/engine.js', sourceRoot).href).namespace;
   let session = {};
   async function turn(text) {
+    currentInput = text;
     let r;
     if (weightLoss) {
       let status;
@@ -172,7 +177,7 @@ async function isolated(scenario, branch = null) {
     check('why-acknowledges-goal', /Chceš zhubnout/.test(why.text), why.text);
     check('why-read-only', writes.length === before, writes.length - before);
     const leverage = initialEngine.system_leverage.selected?.node_id;
-    if (scenario.id === 'tester136-shape' || scenario.id.startsWith('journey-')) check('known-strength-priority', leverage === 'LOW_MUSCLE_STRENGTH' && selected?.action_id === 'sit_to_stand_supported', { leverage, action: selected?.action_id });
+    if (scenario.id === 'tester136-shape' || (scenario.id.startsWith('journey-') && !branch?.startsWith('gait-'))) check('known-strength-priority', leverage === 'LOW_MUSCLE_STRENGTH' && selected?.action_id === 'sit_to_stand_supported', { leverage, action: selected?.action_id });
     if (leverage && leverage !== 'EXCESS_ADIPOSITY') check('why-distinguishes-priority-from-weight-plan', /není to samo o sobě plán hubnutí/.test(why.text), why.text);
     if (scenario.id === 'normal-bmi') check('wish-not-adiposity-evidence', !initialEngine.node_states.some(n => n.node_id === 'EXCESS_ADIPOSITY' && ['MEASURED', 'CONFIRMED'].includes(n.current_state)), initialEngine.node_states.find(n => n.node_id === 'EXCESS_ADIPOSITY'));
     session = { ...session, person_goal: 'FORGED' };
@@ -196,7 +201,18 @@ async function isolated(scenario, branch = null) {
     }
   }
   if (scenario.unsupported) check('unsupported-no-action', response.mode !== 'ACT' && !session.current_action_assignment && writes.length === 0, { mode: response.mode, text: response.text, writes: writes.length });
-  if (branch) {
+  if (branch?.startsWith('gait-')) {
+    check('gait-question-typed', response.mode === 'ASK' && session.pending_question?.evidence_type === 'gait_stability' && !/závažné/.test(response.text), { mode: response.mode, pending: session.pending_question });
+    const answer = branch === 'gait-yes' ? 'Ano' : branch === 'gait-no' ? 'Ne' : 'Nevím';
+    response = await turn(answer);
+    const snapshot = structuredClone(health);
+    check('gait-answer-persisted', health.physical.gait_stability != null || health.physical.evidence_availability?.gait_stability != null, snapshot.physical);
+    check('gait-no-invented-clearance', response.mode === 'SAFETY_BLOCKED' && !session.current_action_assignment && assignments.length === 0, { mode: response.mode, text: response.text });
+    const follow = await turn('Co dál?');
+    check('gait-no-repeat-after-answer', follow.mode !== 'ASK' && !session.pending_question && !session.current_action_assignment, { mode: follow.mode, text: follow.text });
+    if (classifierFailure) return { id: scenario.id, branch, status: 'BLOCKED', reason: classifierFailure, turns, checks };
+  }
+  if (branch && !branch.startsWith('gait-')) {
     // Only answer existing questions whose true fixture values are known. Never
     // fabricate clearance or health evidence merely to force an ACT.
     const answers = { recent_falls: health.physical.recent_falls ? 'Ano' : 'Ne', fall_history: health.physical.recent_falls ? 'Ano' : 'Ne', vstat_ze_zeme: health.physical.vstat_ze_zeme ? 'Ano' : 'Ne', gait_stability: 'Ne', current_assistive_device: 'Žádná', instability_laterality: 'Obě strany', knee_severity: constraints.find(c => c.constraint_key === 'knee')?.severity };
@@ -269,8 +285,8 @@ for (const scenario of scenarios) {
   console.error('MATRIX', scenario.id);
   try { results.push(await isolated(scenario)); } catch (error) { results.push({ id: scenario.id, status: 'BLOCKED', reason: error.message }); }
 }
-for (const branch of (weightLoss ? ['done', 'skip'] : ['done', 'skip', 'repeat'])) {
-  const scenario = scenarios.find(s => s.id === (weightLoss ? 'tester136-shape' : 'spoken-1'));
+for (const branch of (weightLoss ? ['done', 'skip', 'gait-yes', 'gait-no', 'gait-unknown'] : ['done', 'skip', 'repeat'])) {
+  const scenario = scenarios.find(s => s.id === (weightLoss ? (branch.startsWith('gait-') ? 'weight-gait' : 'tester136-shape') : 'spoken-1'));
   try { results.push(await isolated({ ...scenario, id: 'journey-' + branch }, branch)); } catch (error) { results.push({ id: 'journey-' + branch, status: 'BLOCKED', reason: error.message }); }
 }
 const counts = Object.fromEntries(['PASS', 'FAIL', 'BLOCKED'].map(s => [s, results.filter(r => r.status === s).length]));
