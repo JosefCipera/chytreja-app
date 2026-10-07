@@ -5,10 +5,10 @@ on:
   push:
     branches:
       - qa/crt-floor-rise-baseline
+      - qa/gait-real-engine
     paths:
       - scripts/ai-tester/**
-      - api/engine/orchestrator.js
-      - api/engine/healthEventAdapter.js
+      - api/engine/**
       - .github/workflows/crt-voice-tester.yml
 
 permissions:
@@ -34,11 +34,18 @@ jobs:
         run: |
           mkdir -p ai-tester-results
           node --experimental-vm-modules scripts/ai-tester/run-floor-rise.mjs --live > ai-tester-results/floor-rise.json
+      - name: Evaluate gait with full engine
+        if: always()
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          mkdir -p ai-tester-results
+          node --experimental-vm-modules scripts/ai-tester/run-gait.mjs --live > ai-tester-results/gait.json
       - name: Save PASS, FAIL or BLOCKED report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: floor-rise-report
-          path: ai-tester-results/floor-rise.json
+          name: crt-voice-reports
+          path: ai-tester-results/*.json
           if-no-files-found: warn
           retention-days: 7

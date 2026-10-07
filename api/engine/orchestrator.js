@@ -492,10 +492,11 @@ A request to diagnose, treat, explain or predict a different condition (includin
 Examples: "Co s mou synkopou?" → UNSUPPORTED_REQUEST medical; "Proč mám arytmii?" → UNSUPPORTED_REQUEST medical; "Chci lépe spát" → UNSUPPORTED_REQUEST general; "Pomoz mi s výrobou" → UNSUPPORTED_REQUEST general.
 Do not use unrelated profile facts to substitute a supported goal. Supported facts used for risk context or answers to pending questions (blood pressure, diagnoses, medications, measurements) may continue through the existing evidence/safety path. A simple pain report remains NEW_SYMPTOM (a safety signal, never advice for treating pain).
 If the requested help is unclear or unrelated input cannot be interpreted, → SCOPE_CLARIFICATION. Never guess a supported request.
-Examples: "Chci zlepšit kondici" / "Přibral jsem" / "Jsem nejistý při chůzi" → GENERAL_HEALTH_REQUEST.
+Examples: "Chci zlepšit kondici" / "Přibral jsem" → GENERAL_HEALTH_REQUEST.
 User age/diagnosis/background without a requested treatment can be GENERAL_HEALTH_REQUEST; the engine determines relevance.
 
 FUNCTIONAL FACTS — interpretation only, take precedence over generic health declarations:
+- An explicit CURRENT FIRST-PERSON report of unsteady walking ("Jsem nejistý při chůzi.") → ANSWER_TO_EVIDENCE_QUESTION, evidence_type="gait_instability_reported", value=true. Explicit current stable walking → the same evidence_type, value=false. This is a self-report, never a diagnosis. Do not extract this fact from third-person, historical, hypothetical or uncertain statements.
 - An explicit CURRENT FIRST-PERSON statement about rising FROM THE FLOOR WITHOUT HAND SUPPORT → ANSWER_TO_EVIDENCE_QUESTION, evidence_type="vstat_ze_zeme", value=true if able, false if unable. This also applies without a pending question. "Ze země bez pomoci rukou nevstanu." → false; "Ze země vstanu bez opory rukou." → true. Requiring hand support to rise from the floor → false.
 - Do not infer inability without hand support from general difficulty, chair statements, another person's report, past ability or an uncertain/hypothetical statement.
 - A current difficulty rising without a clear chair/floor context ("Špatně se mi vstává.") → FUNCTIONAL_CLARIFICATION, clarification_kind="chair_or_floor". Do not persist a functional fact.
@@ -1062,6 +1063,11 @@ function buildWhyResponse(sessionState) {
   }
 
   const parts = [];
+  const gaitFacts = ctx.reported_gait_evidence;
+  if ([...(gaitFacts?.direct ?? []), ...(gaitFacts?.supporting ?? []), ...(gaitFacts?.inferred_from_nodes ?? [])]
+      .some(f => f.question_id === 'gait_instability_reported' && f.value === true)) {
+    parts.push('Uvádíš nejistotu při chůzi.');
+  }
   if (sessionState.person_goal === 'WEIGHT_LOSS') parts.push('Chceš zhubnout.');
   const leverage    = ctx.system_leverage;
   const constraint  = ctx.system_constraint;

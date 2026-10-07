@@ -309,6 +309,13 @@ export function inference(activatedStates, person, clinicalHistory, observations
     const signals = [];
     let strength = 0;
 
+    // Current self-report is evidence of possible instability, not a diagnosis.
+    if (readYesNo(oi.gait_instability_reported) === 'yes') {
+      signals.push({ source: 'SELF_REPORT', question_id: 'gait_instability_reported',
+        value: true, role: 'Uživatel uvádí aktuální nejistotu při chůzi' });
+      strength += 2;
+    }
+
     const pn = stateById['PERIPHERAL_NEUROPATHY'];
     if (pn?.current_state === 'CONFIRMED') {
       signals.push({

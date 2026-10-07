@@ -56,6 +56,7 @@ export const EVIDENCE_STORAGE_REGISTRY = {
   zvednout_vnouce:       { table: 'physical', key: 'zvednout_vnouce' },
   vstat_ze_zeme:         { table: 'physical', key: 'vstat_ze_zeme' },
   gait_stability:        { table: 'physical', key: 'gait_stability' },
+  gait_instability_reported: { table: 'physical', key: 'gait_instability_reported' },
   balanc_jedna_noha:     { table: 'physical', key: 'balanc_jedna_noha' },
   rovnovaha_zavrene_oci: { table: 'physical', key: 'rovnovaha_zavrene_oci' },
   sedentary_hours_day:   { table: 'physical', key: 'sedentary_hours_day' },
@@ -530,6 +531,8 @@ function buildDomainResponse(engineResult) {
       action_context:    engineResult.next_best_action            ?? null,
       evidence_context:  (engineResult.information_needs ?? []).slice(0, 3),
       // Read-only provenance for WHY, from the exact node selected by the engine.
+      reported_gait_evidence: (engineResult.node_states ?? [])
+        .find(node => node.node_id === 'GAIT_INSTABILITY')?.evidence ?? null,
       leverage_evidence: (engineResult.node_states ?? [])
         .find(node => node.node_id === engineResult.system_leverage?.selected?.node_id)?.evidence ?? null,
       // Additive, read-only exposure of already-computed causal reach — does not

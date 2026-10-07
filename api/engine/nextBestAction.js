@@ -382,6 +382,16 @@ function evaluateSafetyGate(action, parsedConstraints, hasCvRiskRelevant, hasCli
     }
   }
 
+  // Conservative eligibility guard: a single-leg descent is not interchangeable
+  // with supported balance practice. Require individual assessment when unstable.
+  if (hasGaitInstability && action.id === 'step_down') {
+    return {
+      level: 'NEEDS_CLINICAL_CLEARANCE',
+      reason: 'Single-leg step-down with gait instability requires an individual assessment of stability and suitable support.',
+      modifications_suggested: [],
+    };
+  }
+
   // 7. Balance/stability exercises require adequate gait capacity — SAFE_WITH_MODIFICATION when impaired.
   // Balance and stability exercises ARE the treatment for gait instability (Sherrington et al., Cochrane 2019),
   // so they are not blocked. But predicted gait instability requires supervised or supported environment.
