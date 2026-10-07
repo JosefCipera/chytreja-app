@@ -5,6 +5,8 @@ on:
   pull_request:
     paths:
       - scripts/ai-tester/**
+      - scripts/test-skip-progression.mjs
+      - scripts/test-skipped-exhaustion.mjs
       - api/engine/**
       - data/engine/**
       - app/js/universe/supabaseClient.js
@@ -43,6 +45,10 @@ jobs:
           cache: npm
       - name: Install dependencies without lifecycle scripts
         run: npm ci --ignore-scripts
+      - name: Verify deterministic skip contracts
+        run: |
+          node scripts/test-skip-progression.mjs
+          node scripts/test-skipped-exhaustion.mjs
       - name: Evaluate three clean transcripts
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
