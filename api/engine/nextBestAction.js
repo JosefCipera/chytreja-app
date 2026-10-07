@@ -626,6 +626,12 @@ function buildCandidates(actionPool, interventions, parsedConstraints, hasCvRisk
     const intervention = assignIntervention(action, interventions);
     if (!intervention) continue;
 
+    // Optional target-specific reviewed bridge. Empty means no reviewed actions;
+    // absent preserves existing mapping. Never infer exercise suitability from
+    // a broad protocol when this intervention declares an explicit allowlist.
+    if (Array.isArray(intervention.allowed_action_ids)
+      && !intervention.allowed_action_ids.includes(action.id)) continue;
+
     // Apply tag_filter if intervention specifies one (BREAK_UP_SEDENTARY_TIME → only kardio-tagged actions)
     if (intervention.tag_filter?.length > 0) {
       const tags = action.tags ?? [];
