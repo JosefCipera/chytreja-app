@@ -363,9 +363,11 @@ Kandidáti jsou řazeni lexikograficky v tomto pořadí:
 - Nepočítá se jako `sessions_completed` — nepostupuje exposure
 - Počítá se jako `sessions_skipped` (informační)
 - **Exact `action_id` je pro zbytek aktuálního dne ineligible** (filtr v `buildCandidates` přes `skippedTodayActionIds`)
-- Sibling akce ve stejné intervention mohou zůstat eligible
+- Sibling akce ve stejné intervention mohou zůstat eligible, ale jen na stejném nebo nižším katalogovém `tier` než akce přeskočené dnes (policy od 2026-10-07). SKIPPED není evidence progrese ani lepší funkční kapacity.
+- Denní strop se odvozuje z persistentních dnešních SKIPPED `action_id` a jejich řádků katalogu, nikoli ze session. Platí per intervention; při více přeskočeních se použije nejnižší tier. Neznámý tier nedává oprávnění postoupit. Vyšší/neurčené varianty jsou odložené kandidáty (`progression_policy`), nikoli klinicky kontraindikované cviky.
+- Po vyčerpání dnešních eligible/viable alternativ vrátí NBA `NO_CANDIDATES` / `ALL_ACTIONS_SKIPPED_TODAY`; DD po standardní prioritní kontrole bezpečnosti vrátí `HOLD_SKIPPED_TODAY`. Přítomnost neviable kandidátů pro pomůcky sama neotevírá další assessment loop po odmítnutí dostupných cviků.
 - Zítra může být stejná akce znovu nabídnuta
-- **SKIPPED SAMO O SOBĚ NETRIGGERUJE HOLD** — `checkHold` vyžaduje COMPLETED session dnes
+- **SKIPPED není COMPLETED.** Jedno přeskočení neznamená `HOLD_DONE_TODAY`; `HOLD_SKIPPED_TODAY` znamená vyčerpání dnešních eligible možností. Safety Gate, klinická priorita a nezbytná nová evidence zůstávají nad tímto ukončením nabídky.
 
 ---
 
