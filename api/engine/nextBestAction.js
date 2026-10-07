@@ -13,6 +13,8 @@
 // Candidate pool: ONLY from existing longevity_actions rows (not hand-crafted).
 
 import { readYesNo } from './evidenceResolution.js';
+import { readFileSync } from 'node:fs';
+const ACTION_EQUIVALENTS = JSON.parse(readFileSync(new URL('../../data/engine/action-equivalents.json', import.meta.url), 'utf8'));
 
 // ── Constraint keyword mapping ────────────────────────────────────────────────
 // Same categories as hud-data-bulk.js; normalized to canonical body-region keys.
@@ -41,6 +43,7 @@ const PROTOCOL_BODY_LOAD = {
   FUNKCNI_SILOVY_PROTOKOL: null, // per-action via tags — same joint-load derivation as SILOVY_PROTOKOL
   TRAINING_PROTOKOL:       null, // per-action via tags
   BALANCE_PROTOKOL:        new Set(['ankle_foot', 'knee']),
+  STABILITY_PROTOKOL:      new Set(['ankle_foot', 'knee']),
   PREVENTION_PROTOKOL:     new Set(),
 };
 
@@ -397,7 +400,7 @@ function evaluateSafetyGate(action, parsedConstraints, hasCvRiskRelevant, hasCli
   // so they are not blocked. But predicted gait instability requires supervised or supported environment.
   // This covers: single-leg stand, tandem walk, single-leg step-down, unstable surface exercises.
   if (hasGaitInstability && (action.protocol_type === 'BALANCE_PROTOKOL' || action.protocol_type === 'STABILITY_PROTOKOL')) {
-    return {
+    const balanceResult = {
       level: 'SAFE_WITH_MODIFICATION',
       reason: 'Balance/stability exercise requires adequate gait capacity; gait instability predicted — therapeutic target, but supervised or wall-supported environment required.',
       modifications_suggested: [
@@ -406,6 +409,12 @@ function evaluateSafetyGate(action, parsedConstraints, hasCvRiskRelevant, hasCli
         'Supervised or near-support setting for first sessions',
       ],
     };
+    const jointResult = evaluateJointLoad(action, parsedConstraints, intensity, isHighIntensity);
+    if (jointResult && SAFETY_RANK[jointResult.level] < SAFETY_RANK[balanceResult.level]) return jointResult;
+    if (jointResult) balanceResult.modifications_suggested = [...new Set([
+      ...balanceResult.modifications_suggested, ...jointResult.modifications_suggested,
+    ])];
+    return balanceResult;
   }
 
   // 8. CV risk + non-HIIT resistance (tier 1–2) → SAFE_WITH_MODIFICATION
@@ -603,10 +612,16 @@ function computeFeasibility(safety) {
 
 function buildCandidates(actionPool, interventions, parsedConstraints, hasCvRiskRelevant, hasClinicalHistory, leverageNodeId, hasGaitInstability, mobilityProfile, skippedTodayActionIds) {
   const candidates = [];
+  const unavailableActionIds = new Set(skippedTodayActionIds ?? []);
+  for (const group of ACTION_EQUIVALENTS.skip_groups) {
+    if (group.action_ids.some(id => unavailableActionIds.has(id))) {
+      for (const id of group.action_ids) unavailableActionIds.add(id);
+    }
+  }
 
   for (const action of actionPool) {
     // action_ids skipped today are ineligible for the remainder of the day
-    if (skippedTodayActionIds?.has(action.id)) continue;
+    if (unavailableActionIds.has(action.id)) continue;
 
     const intervention = assignIntervention(action, interventions);
     if (!intervention) continue;
