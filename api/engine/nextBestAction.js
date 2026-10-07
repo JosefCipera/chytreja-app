@@ -12,7 +12,7 @@
 // Safety gate: separate layer, does NOT replace decisionGate.actionability.
 // Candidate pool: ONLY from existing longevity_actions rows (not hand-crafted).
 
-import { readYesNo } from './evidenceResolution.js';
+import { readYesNo, isEvidenceResolved } from './evidenceResolution.js';
 import { readFileSync } from 'node:fs';
 const ACTION_EQUIVALENTS = JSON.parse(readFileSync(new URL('../../data/engine/action-equivalents.json', import.meta.url), 'utf8'));
 
@@ -259,7 +259,7 @@ const UNAIDED_WALKING_PROTOCOLS = new Set(['KARDIO_PROTOKOL', 'VYTRVALOST_PROTOK
 //   9. Constraint × modality × intensity grid
 //  10. SAFE
 
-function evaluateSafetyGate(action, parsedConstraints, hasCvRiskRelevant, hasClinicalHistory, hasGaitInstability, mobilityProfile) {
+function evaluateSafetyGate(action, parsedConstraints, hasCvRiskRelevant, hasClinicalHistory, hasGaitInstability, mobilityProfile, clinicalHistory) {
   const intensity    = action.intensity ?? 'MODERATE';
   const isHighIntensity = intensity === 'VIGOROUS' || intensity === 'HIGH_INTENSITY_INTERVAL';
   const excludeList  = action.constraint_exclude ?? [];
@@ -306,6 +306,7 @@ function evaluateSafetyGate(action, parsedConstraints, hasCvRiskRelevant, hasCli
     if (c.severity === null && actionLoadsRegion(action, c.key)) {
       return {
         level: 'NEEDS_MORE_EVIDENCE',
+        blocking_evidence: { evidence_type: `${c.key}_severity`, question: `Jak závažné je omezení v oblasti: ${c.raw_location}? (lehké / střední / závažné)` },
         reason: `Constraint on "${c.key}" with unknown severity — cannot assess safe loading at ${intensity} intensity without more information.`,
         modifications_suggested: ['Clarify injury severity (mild / moderate / severe) before proceeding'],
       };
@@ -373,8 +374,16 @@ function evaluateSafetyGate(action, parsedConstraints, hasCvRiskRelevant, hasCli
       && (action.tags ?? []).some(t => ['kardio', 'pohyb', 'beh'].includes(t));
 
     if (isUnaidedWalkingProtocol || isWalkingTrainingAction) {
+      // An answered self-report resolves the dialogue, not clinical suitability.
+      // Persistent instability still blocks walking; do not re-ask or infer clearance.
+      if (isEvidenceResolved('gait_stability', clinicalHistory)) return {
+        level: 'NEEDS_CLINICAL_CLEARANCE',
+        reason: 'Gait self-report has been answered, but the active instability finding remains. Individual assessment is required before prescribing unaided walking.',
+        modifications_suggested: [],
+      };
       return {
         level: 'NEEDS_MORE_EVIDENCE',
+        blocking_evidence: { evidence_type: 'gait_stability', question: 'Cítíš se při běžné chůzi stabilně?' },
         reason: 'Predicted gait instability — unaided walking cannot be assumed safe without a gait/balance assessment. Assess stability first.',
         modifications_suggested: [
           'Zjistit: chodíte bez pomůcky bezpečně? (gait_stability)',
@@ -610,7 +619,7 @@ function computeFeasibility(safety) {
 
 // ── Candidate builder ─────────────────────────────────────────────────────────
 
-function buildCandidates(actionPool, interventions, parsedConstraints, hasCvRiskRelevant, hasClinicalHistory, leverageNodeId, hasGaitInstability, mobilityProfile, skippedTodayActionIds) {
+function buildCandidates(actionPool, interventions, parsedConstraints, hasCvRiskRelevant, hasClinicalHistory, leverageNodeId, hasGaitInstability, mobilityProfile, skippedTodayActionIds, clinicalHistory) {
   const candidates = [];
   const unavailableActionIds = new Set(skippedTodayActionIds ?? []);
   for (const group of ACTION_EQUIVALENTS.skip_groups) {
@@ -638,7 +647,7 @@ function buildCandidates(actionPool, interventions, parsedConstraints, hasCvRisk
       if (!tags.some(t => intervention.tag_filter.includes(t))) continue;
     }
 
-    const safety               = evaluateSafetyGate(action, parsedConstraints, hasCvRiskRelevant, hasClinicalHistory, hasGaitInstability, mobilityProfile);
+    const safety               = evaluateSafetyGate(action, parsedConstraints, hasCvRiskRelevant, hasClinicalHistory, hasGaitInstability, mobilityProfile, clinicalHistory);
     const min_meaningful_effect = evaluateMinMeaningfulEffect(action, intervention);
     const leverage_affinity    = computeLeverageAffinity(intervention);
     const effect_on_leverage   = computeEffectOnLeverage(intervention, leverageNodeId);
@@ -791,6 +800,7 @@ export function computeNextBestAction({
     hasGaitInstability,
     mobilityProfile,
     skippedTodayActionIds,
+    clinicalHistory,
   );
 
   // Skipping is not evidence of capacity or readiness to progress. Derive the
@@ -798,7 +808,7 @@ export function computeNextBestAction({
   // The same/lower-tier alternatives retain the unchanged safety/ranking policy.
   const unskippedCandidates = skippedTodayActionIds?.size
     ? buildCandidates(actionPool, interventions, parsedConstraints, hasCvRiskRelevant,
-        hasClinicalHistory, leverageNodeId, hasGaitInstability, mobilityProfile, new Set())
+        hasClinicalHistory, leverageNodeId, hasGaitInstability, mobilityProfile, new Set(), clinicalHistory)
     : [];
   const tierCeilings = new Map();
   for (const reference of unskippedCandidates) {
@@ -853,10 +863,12 @@ export function computeNextBestAction({
     non_viable.every(c => c.safety.level === 'NEEDS_MORE_EVIDENCE');
 
   if (allNeedEvidence) {
+    const blockingEvidence = non_viable.find(c => c.safety.blocking_evidence)?.safety.blocking_evidence;
     return {
       status:          'NEED_MORE_EVIDENCE',
-      reason:          'All candidates blocked by unknown constraint severity. Clarify injury status to proceed.',
-      next_best_question: 'Jak závažné je tvé omezení pohybu? (lehké / střední / závažné)',
+      reason:          'No viable candidate; clarify the actual blocking evidence before proceeding.',
+      next_best_evidence_type: blockingEvidence?.evidence_type ?? null,
+      next_best_question: blockingEvidence?.question ?? 'Jak závažné je tvé omezení pohybu? (lehké / střední / závažné)',
       selected:        null,
       all_candidates:  candidates,
       evaluated_at:    now,
