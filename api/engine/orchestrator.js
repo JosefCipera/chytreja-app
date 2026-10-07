@@ -1506,12 +1506,14 @@ export async function processInput(userId, userText, sessionState = {}) {
     classified = { event_type: 'DOMAIN_REQUEST', payload: {} };
   }
 
-  // Guard F: fixed UI chips "Kam směřuješ?" / "Co tím změníš?" — exact match only.
+  // Guard F: fixed UI chips, including WHY — exact match only.
   // These are deterministic, UI-generated button labels (app/launcher.html), never free user
   // text — must not be classified by the LLM, same reasoning as Guard B for Hotovo/Přeskočit.
   if (!classified) {
     const _trimmedF = userText.trim();
-    if (_trimmedF === 'Kam směřuješ?') {
+    if (/^(?:proč|proc)\??$/i.test(_trimmedF)) {
+      classified = { event_type: 'WHY_REQUEST', payload: {} };
+    } else if (_trimmedF === 'Kam směřuješ?') {
       classified = { event_type: 'TRAJECTORY_REQUEST', payload: {} };
     } else if (_trimmedF === 'Co tím změníš?') {
       classified = { event_type: 'MECHANISM_REQUEST', payload: {} };

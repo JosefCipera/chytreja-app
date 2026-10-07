@@ -169,7 +169,36 @@ async function isolated(scenario, branch = null) {
       seen.add(key); response = await turn(answers[key]);
     }
     if (response.mode !== 'ACT') checks.push({ id: branch + '-journey', status: 'BLOCKED', actual: { reason: 'No ACT reachable using known fixture evidence', mode: response.mode, pending: session.pending_question } });
-    else {
+    else if (branch === 'repeat') {
+      const seen = new Set();
+      let ceiling = Infinity;
+      const group30 = new Set(['b3f9b408-47a5-4529-bfbb-906a2324813b', 'rovnovaha_stoj_1']);
+      for (let i = 0; response.mode === 'ACT' && i < 16; i++) {
+        const assigned = session.current_action_assignment;
+        const item = session.last_daily_decision?.primary_item;
+        const row = catalog.find(a => a.id === item?.action_id);
+        const exercise = group30.has(row?.id) ? 'single-leg-30s' : row?.id;
+        check(`repeat-${i}-assignment`, Boolean(assigned?.action_id) && assigned.action_id === item?.action_id, assigned);
+        check(`repeat-${i}-no-equivalent`, !seen.has(exercise), exercise);
+        check(`repeat-${i}-no-progression`, Number.isFinite(row?.tier) && row.tier <= ceiling, { tier: row?.tier, maximum_after_skip: Number.isFinite(ceiling) ? ceiling : null, label: row?.label });
+        seen.add(exercise); ceiling = Math.min(ceiling, row?.tier ?? Infinity);
+        response = await turn('Přeskočit');
+      }
+      check('repeat-stops-with-hold', response.mode === 'HOLD' && !session.current_action_assignment && !session.pending_question, { mode: response.mode, text: response.text });
+      check('repeat-skips-not-completed', assignments.length === seen.size && assignments.every(a => a.status === 'SKIPPED'), assignments);
+      check('repeat-clear-stop-message', /dnes|dnešní|dnešn|dne[sš]|zítra/i.test(response.text) && !/hotovo|splnil/i.test(response.text), response.text);
+      const count = assignments.length;
+      await turn('Hotovo');
+      const next = await turn('Co dál?');
+      check('repeat-no-false-completion', assignments.length === count, assignments.length);
+      check('repeat-same-day-return', next.mode === 'HOLD' && !session.current_action_assignment, { mode: next.mode, text: next.text });
+      // Simulate records from yesterday in the isolated DB, not a live clock/DB edit.
+      const yesterday = new Date(); yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+      for (const record of assignments) record.assigned_date = yesterday.toISOString().slice(0, 10);
+      session = {};
+      const tomorrow = await turn('Co dál?');
+      check('previous-day-skips-expire', tomorrow.mode === 'ACT' && group30.has(session.current_action_assignment?.action_id), { mode: tomorrow.mode, action: session.current_action_assignment?.action_id });
+    } else {
       const assigned = structuredClone(session.current_action_assignment);
       response = await turn(branch === 'done' ? 'Hotovo' : 'Přeskočit');
       const recorded = assignments[0];
@@ -202,7 +231,7 @@ for (const scenario of scenarios) {
   console.error('MATRIX', scenario.id);
   try { results.push(await isolated(scenario)); } catch (error) { results.push({ id: scenario.id, status: 'BLOCKED', reason: error.message }); }
 }
-for (const branch of ['done', 'skip']) {
+for (const branch of ['done', 'skip', 'repeat']) {
   const scenario = scenarios.find(s => s.id === 'spoken-1');
   try { results.push(await isolated({ ...scenario, id: 'journey-' + branch }, branch)); } catch (error) { results.push({ id: 'journey-' + branch, status: 'BLOCKED', reason: error.message }); }
 }
