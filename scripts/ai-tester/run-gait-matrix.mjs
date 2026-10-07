@@ -185,6 +185,11 @@ async function isolated(scenario, branch = null) {
         check('skipped-not-offered-again', session.current_action_assignment?.action_id !== assigned.action_id, { mode: response.mode, next: session.current_action_assignment?.action_id ?? null });
         const equivalents = new Set(['b3f9b408-47a5-4529-bfbb-906a2324813b', 'rovnovaha_stoj_1']);
         check('skipped-equivalent-not-offered-again', !(response.mode === 'ACT' && equivalents.has(assigned.action_id) && equivalents.has(nextItem?.action_id)), { skipped: assigned.action_id, offered: nextItem?.action_id ?? null, text: response.text });
+        if (response.mode === 'ACT') {
+          const replacement = structuredClone(session.current_action_assignment);
+          await turn('Hotovo');
+          check('replacement-can-be-completed', assignments.length === 2 && assignments[1].status === 'COMPLETED' && assignments[1].action_id === replacement?.action_id, assignments);
+        }
       }
     }
   }
