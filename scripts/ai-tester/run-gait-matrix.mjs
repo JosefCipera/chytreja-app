@@ -180,9 +180,11 @@ async function isolated(scenario, branch = null) {
         const next = await turn('Co dál?');
         check('same-day-return', next.mode === 'HOLD' && !session.current_action_assignment, { mode: next.mode, text: next.text });
       } else {
+        const nextItem = session.last_daily_decision?.primary_item;
+        check('next-act-has-assignment', response.mode !== 'ACT' || session.current_action_assignment?.action_id === nextItem?.action_id, { mode: response.mode, engine: nextItem?.action_id, assignment: session.current_action_assignment });
         check('skipped-not-offered-again', session.current_action_assignment?.action_id !== assigned.action_id, { mode: response.mode, next: session.current_action_assignment?.action_id ?? null });
         const equivalents = new Set(['b3f9b408-47a5-4529-bfbb-906a2324813b', 'rovnovaha_stoj_1']);
-        check('skipped-equivalent-not-offered-again', !(equivalents.has(assigned.action_id) && equivalents.has(session.current_action_assignment?.action_id)), { skipped: assigned.action_id, offered: session.current_action_assignment?.action_id ?? null, text: response.text });
+        check('skipped-equivalent-not-offered-again', !(response.mode === 'ACT' && equivalents.has(assigned.action_id) && equivalents.has(nextItem?.action_id)), { skipped: assigned.action_id, offered: nextItem?.action_id ?? null, text: response.text });
       }
     }
   }
