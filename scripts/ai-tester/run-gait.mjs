@@ -30,9 +30,17 @@ const candidate=engineResult.next_best_action.all_candidates?.find(c=>c.action_i
 const recorded=health.physical.gait_stability===false||health.physical.gait_instability_reported===true;
 const reasons=gait?.evidence;
 const consumed=[...(reasons?.direct??[]),...(reasons?.supporting??[]),...(reasons?.inferred_from_nodes??[])].some(f=>['gait_stability','gait_instability_reported'].includes(f.question_id??f.field));
+const infer=cache.get(new URL('../../api/engine/inference.js',import.meta.url).href).namespace.inference;
+const inferGait=physical=>infer([],profile,{diagnoses:[],onboarding_inputs:physical},[]).find(n=>n.node_id==='GAIT_INSTABILITY');
+const reportOnly=inferGait({gait_instability_reported:true});
+const polaritySafe=reportOnly?.current_state==='PREDICTED_CURRENT'
+  && reportOnly.evidence.inferred_from_nodes.some(f=>f.source==='SELF_REPORT')
+  && !inferGait({gait_instability_reported:false}) && !inferGait({})
+  && inferGait({gait_instability_reported:false,rovnovaha_zavrene_oci:false})?.current_state==='PREDICTED_CURRENT';
 const cases=[
+ {id:'self-report-polarity',status:polaritySafe?'PASS':'FAIL',expected:'Self-report alone remains predicted; negative/missing report does not create a gait finding or erase independent balance evidence'},
  {id:'spoken-gait-fact',status:recorded&&consumed?'PASS':'FAIL',expected:'Current instability reaches a structured functional field and is consumed by the engine without diagnosis',actual:{classification:inputClassification,physical:health.physical,symptoms:health.symptoms,gait_evidence:reasons}},
- {id:'step-down-safety',status:!candidate?'BLOCKED':candidate.safety.level==='SAFE'?'FAIL':'PASS',expected:'Single-leg step-down with predicted gait instability is not unconditionally SAFE',actual:candidate?.safety??'Candidate absent'},
+ {id:'step-down-safety',status:!candidate?'BLOCKED':candidate.safety.level==='NEEDS_CLINICAL_CLEARANCE'&&engineResult.next_best_action.selected?.action_id!=='step_down'?'PASS':'FAIL',expected:'Single-leg step-down with predicted gait instability is not unconditionally SAFE',actual:candidate?.safety??'Candidate absent'},
  {id:'priority-explanation',status:engineResult.system_leverage.selected?.node_id==='GAIT_INSTABILITY'||/nejist|chůz|chuz/i.test(why.text)?'PASS':'FAIL',expected:'If a different priority is selected, acknowledge the expressed gait problem',actual:why.text},
 ];
 console.log(JSON.stringify({mode:live?'live_classifier_real_engine':'injected_classifier_real_engine',limitations:['Fixture database; no live account accessed','Restricted catalog fixture, not full production action ranking','Unknown catalog fields kept null; unconditional safety classification can still be checked','No clinical efficacy or exercise dose validation'],profile,health,engine:{nodes:engineResult.node_states,leverage:engineResult.system_leverage,constraint:engineResult.system_constraint,decision_gate:engineResult.decision_gate,nba:engineResult.next_best_action},response:{mode:response.mode,text:response.text},cases},null,2));
