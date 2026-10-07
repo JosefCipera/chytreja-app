@@ -345,6 +345,12 @@ An intervention may declare `allowed_action_ids`. Absence preserves its existing
 
 For `EXCESS_ADIPOSITY → RESISTANCE_TRAINING`, the reviewed action list is currently empty: localized fixed-load overhead presses and step-downs must not become an automatic adiposity prescription solely from `SILOVY_PROTOKOL`. These are deferred catalog mappings, not clinical contraindications. Aerobic/other existing paths and functional-strength mappings are unchanged; if no viable alternative exists, normal DD ASK/SAFETY contracts apply. Adding an action requires a reviewed target-specific bridge; this change does not approve doses or establish clinical efficacy.
 
+### Blocking evidence question contract
+
+Safety results may carry `blocking_evidence: {evidence_type, question}`. When NBA needs evidence, it forwards the actual blocking question/type as `next_best_question` and `next_best_evidence_type`; DD preserves this metadata in `NBA_QUESTION`. Orchestrator stores the typed pending question using its existing contract. Gait stability must not become a generic injury-severity question, and an unknown region severity retains its region-specific evidence key.
+
+For active gait instability and otherwise blocked unaided walking, unresolved `gait_stability` asks the existing canonical stability question. Once this evidence is resolved (including NOT_AVAILABLE), it is not asked again. An answer alone does not clear the active gait finding or prove walking suitability: those candidates retain `NEEDS_CLINICAL_CLEARANCE` pending individual assessment. Other viable candidates still follow normal NBA ranking; this is a conservative CHJ eligibility policy, not a clinical diagnosis or a universal medical rule.
+
 ### NBA Ranking Policy (zamčeno — engine.js LOCKED)
 
 Kandidáti jsou řazeni lexikograficky v tomto pořadí:
