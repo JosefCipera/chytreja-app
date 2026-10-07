@@ -110,7 +110,7 @@ Tyto principy jsou neměnné — platí pro engine, orchestrátor i AI language 
 
 - **`Nemám` je informace.** Evidence může mít stav `NOT_AVAILABLE` — to není chybějící pole, je to datový bod.
 - **`Hotovo` je evidence o provedení, ne gamifikační body.** COMPLETED = behavioral fact, ne reward trigger.
-- **`Přeskočit` odmítá konkrétní action_id, ne celou intervention.** Sibling akce ve stejné intervenci zůstávají eligible.
+- **`Přeskočit` odmítá konkrétní action_id, ne celou intervention.** Sibling akce ve stejné intervenci zůstávají eligible na stejné nebo nižší katalogové obtížnosti; přeskočení není důvod zvyšovat obtížnost. Po vyčerpání vhodných dnešních možností CHJ nabídku ukončí a další den znovu vyhodnotí.
 - **`UNKNOWN`, `NOT_AVAILABLE`, skutečná hodnota a inferred state nejsou totéž.** Engine musí rozlišovat — jiný epistémický stav, jiné rozhodnutí.
 - **CHJ nesmí odhadovat měření z vágního textu, pokud engine potřebuje číslo.** Freetext → structured event (diagnosis, age, constraint). Nikdy → odhadnutá numerická observace.
 - **Když je příliš brzo na vyhodnocení, správnou akcí je pokračovat v opakování, ne čekat.** Vyhodnocení (TOO_EARLY / INSUFFICIENT_EXPOSURE) nesmí blokovat opakování, které `minimum_exposure_rule` vyžaduje. HOLD (`HOLD_DONE_TODAY`) znamená jen „pro dnešek hotovo" — druhé splnění téže intervence ve stejný den se nenabízí, další den se nabídne znovu. *(Upraveno 2026-09-27.)*
