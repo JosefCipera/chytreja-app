@@ -2,18 +2,28 @@ name: CRT voice transcript tester
 
 on:
   workflow_dispatch:
+  pull_request:
+    paths:
+      - scripts/ai-tester/**
+      - api/engine/**
+      - data/engine/**
+      - app/js/universe/supabaseClient.js
+      - .github/workflows/crt-voice-tester.yml
   push:
     branches:
+      - main
       - qa/crt-floor-rise-baseline
       - qa/gait-real-engine
       - qa/gait-full-catalog-matrix
     paths:
       - scripts/ai-tester/**
       - api/engine/**
+      - data/engine/**
+      - app/js/universe/supabaseClient.js
       - .github/workflows/crt-voice-tester.yml
 
 concurrency:
-  group: crt-voice-${{ github.ref }}
+  group: crt-voice-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 
 permissions:
