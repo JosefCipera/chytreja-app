@@ -7,6 +7,8 @@ on:
       - qa/crt-floor-rise-baseline
     paths:
       - scripts/ai-tester/**
+      - api/engine/orchestrator.js
+      - api/engine/healthEventAdapter.js
       - .github/workflows/crt-voice-tester.yml
 
 permissions:
