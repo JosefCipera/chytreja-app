@@ -2,14 +2,29 @@ name: CRT voice transcript tester
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - qa/crt-floor-rise-baseline
-      - qa/gait-real-engine
+  pull_request:
     paths:
       - scripts/ai-tester/**
       - api/engine/**
+      - data/engine/**
+      - app/js/universe/supabaseClient.js
       - .github/workflows/crt-voice-tester.yml
+  push:
+    branches:
+      - main
+      - qa/crt-floor-rise-baseline
+      - qa/gait-real-engine
+      - qa/gait-full-catalog-matrix
+    paths:
+      - scripts/ai-tester/**
+      - api/engine/**
+      - data/engine/**
+      - app/js/universe/supabaseClient.js
+      - .github/workflows/crt-voice-tester.yml
+
+concurrency:
+  group: crt-voice-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -41,6 +56,14 @@ jobs:
         run: |
           mkdir -p ai-tester-results
           node --experimental-vm-modules scripts/ai-tester/run-gait.mjs --live > ai-tester-results/gait.json
+      - name: Evaluate full-catalog gait matrix
+        if: always()
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          AI_TESTER_CATALOG_OUT: ai-tester-results/catalog-snapshot.json
+        run: |
+          mkdir -p ai-tester-results
+          node --experimental-vm-modules scripts/ai-tester/run-gait-matrix.mjs --live > ai-tester-results/gait-matrix.json
       - name: Save PASS, FAIL or BLOCKED report
         if: always()
         uses: actions/upload-artifact@v4
