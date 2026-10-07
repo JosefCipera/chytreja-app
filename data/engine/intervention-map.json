@@ -191,6 +191,8 @@
         {
           "id": "RESISTANCE_TRAINING",
           "target_leverage_node": "EXCESS_ADIPOSITY",
+          "allowed_action_ids": [],
+          "action_eligibility_rationale": "Intervention-level evidence does not approve individual catalog exercises for this target. No current resistance action has been reviewed for this adiposity pathway. Empty allowlist defers these actions until a target-specific bridge is reviewed; this is a CHJ catalog policy, not a clinical contraindication.",
           "leverage_affinity": {
             "level": "CONTRIBUTORY",
             "rationale": "Resistenční trénink zachovává a zvyšuje lean mass, čímž zvyšuje bazální metabolismus a příznivě mění tělesnou kompozici (poměr tuk/sval). Přímý účinek na celkovou tukovou hmotu je menší než u aerobního tréninku, ale kompoziční a metabolický benefit je klinicky relevantní — zejména prevence sarkopenie při redukci váhy a zlepšení inzulínové senzitivity skrze svalový glukózový uptake.",
