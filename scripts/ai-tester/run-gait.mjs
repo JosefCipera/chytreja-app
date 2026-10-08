@@ -44,9 +44,11 @@ const reportOnly=inferGait({gait_instability_reported:true});
 const polaritySafe=reportOnly?.current_state==='PREDICTED_CURRENT'
   && reportOnly.evidence.inferred_from_nodes.some(f=>f.source==='SELF_REPORT')
   && !inferGait({gait_instability_reported:false}) && !inferGait({})
-  && inferGait({gait_instability_reported:false,rovnovaha_zavrene_oci:false})?.current_state==='PREDICTED_CURRENT';
+  && !inferGait({gait_instability_reported:false,rovnovaha_zavrene_oci:false})
+  && inferGait({gait_instability_reported:false,balanc_jedna_noha:false})?.current_state==='PREDICTED_CURRENT'
+  && inferGait({gait_stability:false})?.current_state==='PREDICTED_CURRENT';
 const cases=[
- {id:'self-report-polarity',status:polaritySafe?'PASS':'FAIL',expected:'Self-report alone remains predicted; negative/missing report does not create a gait finding or erase independent balance evidence'},
+ {id:'self-report-polarity',status:polaritySafe?'PASS':'FAIL',expected:'Current adverse gait report remains predicted; eyes-closed-only is supporting, while independent one-leg evidence and negative ordinary-gait answer remain active'},
  {id:'spoken-gait-fact',status:recorded&&consumed?'PASS':'FAIL',expected:'Current instability reaches a structured functional field and is consumed by the engine without diagnosis',actual:{classification:inputClassification,physical:health.physical,symptoms:health.symptoms,gait_evidence:reasons}},
  {id:'step-down-safety',status:((candidate?.safety.level==='NEEDS_CLINICAL_CLEARANCE'||(!candidate&&deliberatelyDeferred))&&engineResult.next_best_action.selected?.action_id!=='step_down'&&guardCandidate?.safety.level==='NEEDS_CLINICAL_CLEARANCE'&&!guardResult.selected)?'PASS':'FAIL',expected:'Unreviewed adiposity bridge defers step-down; independent gait safety guard still requires clearance on an eligible target',actual:{candidate:candidate?.safety??null,deliberatelyDeferred,independentGuard:guardCandidate?.safety??null}},
  {id:'priority-explanation',status:engineResult.system_leverage.selected?.node_id==='GAIT_INSTABILITY'||/nejist|chůz|chuz/i.test(why.text)?'PASS':'FAIL',expected:'If a different priority is selected, acknowledge the expressed gait problem',actual:why.text},
