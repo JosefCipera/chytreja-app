@@ -10,6 +10,7 @@ on:
       - scripts/test-skipped-exhaustion.mjs
       - api/orchestrate.js
       - scripts/test-adiposity-entry-intensity.mjs
+      - scripts/reproduce-eyes-closed-gait.mjs
       - scripts/test-blocking-evidence.mjs
       - scripts/test-action-bridge.mjs
       - scripts/test-personal-goal.mjs
@@ -27,6 +28,7 @@ on:
       - scripts/ai-tester/**
       - api/orchestrate.js
       - scripts/test-adiposity-entry-intensity.mjs
+      - scripts/reproduce-eyes-closed-gait.mjs
       - scripts/test-blocking-evidence.mjs
       - scripts/test-action-bridge.mjs
       - scripts/test-personal-goal.mjs
@@ -59,6 +61,7 @@ jobs:
       - name: Verify deterministic skip contracts
         run: |
           node scripts/test-adiposity-entry-intensity.mjs
+          node scripts/reproduce-eyes-closed-gait.mjs
           node scripts/test-blocking-evidence.mjs
           node scripts/test-action-bridge.mjs
           node --experimental-vm-modules scripts/test-personal-goal.mjs
