@@ -353,6 +353,16 @@ Safety results may carry `blocking_evidence: {evidence_type, question}`. When NB
 
 For active gait instability and otherwise blocked unaided walking, unresolved `gait_stability` asks the existing canonical stability question. Once this evidence is resolved (including NOT_AVAILABLE), it is not asked again. An answer alone does not clear the active gait finding or prove walking suitability: those candidates retain `NEEDS_CLINICAL_CLEARANCE` pending individual assessment. Other viable candidates still follow normal NBA ranking; this is a conservative CHJ eligibility policy, not a clinical diagnosis or a universal medical rule.
 
+### Eyes-closed balance versus ordinary gait (2026-10-08)
+
+The onboarding self-report `rovnovaha_zavrene_oci=false` is a supporting signal (+1) for predicted gait instability, not a direct gait assessment or a proprioceptive/vestibular diagnosis. It cannot reach the existing inference threshold (2) alone. Its raw stored value is retained. Independent adverse signals and combinations (including muscle weakness or recent falls) keep the existing inference/safety path; confirmed gait findings are never removed.
+
+A canonical `gait_stability` answer interpreted as `no` is an independent current self-report (+2). A `yes` answer is not clinical clearance and does not cancel another adverse report or assessed finding. Unknown answers do not invent instability or clearance. In the synthetic weight-loss fixture with only the eyes-closed answer negative, NBA no longer asks a non-discriminating gait question and follows its ordinary action eligibility checks.
+
+This is an internal evidence-specificity correction, not a validated clinical scoring instrument or authorization for a particular person to exercise. CDC STEADI's [4-Stage Balance Test](https://www.cdc.gov/steadi/media/pdfs/STEADI-Assessment-4Stage-508.pdf) is an assessed static-balance protocol with eyes open; it is not interchangeable with this unsupervised onboarding answer. That source does not validate the CHJ +1/+2 scoring or a walking dose.
+
+Regression: `scripts/reproduce-eyes-closed-gait.mjs` now asserts corrected behavior and retained independent safety blockers; the full weight-loss endpoint matrix includes eyes-closed-only, stable and unstable ordinary-gait fixtures.
+
 ### NBA Ranking Policy (zamčeno — engine.js LOCKED)
 
 Kandidáti jsou řazeni lexikograficky v tomto pořadí:

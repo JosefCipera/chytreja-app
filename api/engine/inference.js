@@ -294,7 +294,7 @@ export function inference(activatedStates, person, clinicalHistory, observations
 
   // ── GAIT_INSTABILITY ─────────────────────────────────────────────────────
   // PREDICTED_CURRENT from upstream: PERIPHERAL_NEUROPATHY, LOW_MUSCLE_STRENGTH,
-  // and direct balance-test failures (balanc_jedna_noha, rovnovaha_zavrene_oci).
+  // direct balance-test failure (balanc_jedna_noha), and supporting eyes-closed evidence.
   //
   // Strength threshold: ≥ 2 required to trigger inference.
   // CONFIRMED requires direct gait/balance evidence in activation.js — not set here.
@@ -313,6 +313,15 @@ export function inference(activatedStates, person, clinicalHistory, observations
     if (readYesNo(oi.gait_instability_reported) === 'yes') {
       signals.push({ source: 'SELF_REPORT', question_id: 'gait_instability_reported',
         value: true, role: 'Uživatel uvádí aktuální nejistotu při chůzi' });
+      strength += 2;
+    }
+
+    // A negative answer to the canonical ordinary-walking question is an
+    // independent current self-report. A positive answer is not clearance
+    // and never cancels another report or a confirmed finding.
+    if (readYesNo(oi.gait_stability) === 'no') {
+      signals.push({ source: 'SELF_REPORT', question_id: 'gait_stability',
+        value: oi.gait_stability, role: 'Uživatel se při běžné chůzi necítí stabilně' });
       strength += 2;
     }
 
@@ -347,14 +356,19 @@ export function inference(activatedStates, person, clinicalHistory, observations
       strength += 2;
     }
 
+    // A self-reported eyes-closed task is not a direct assessment of ordinary
+    // gait and does not establish a proprioceptive/vestibular diagnosis.
+    // Keep it as supporting evidence (+1); it cannot activate gait instability
+    // alone. Independent gait reports, assessed findings and combined signals
+    // retain their existing safety path.
     if (isNeg(oi['rovnovaha_zavrene_oci'])) {
       signals.push({
         source: 'ONBOARDING',
         question_id: 'rovnovaha_zavrene_oci',
         value: oi['rovnovaha_zavrene_oci'],
-        role: 'Selhání rovnováhy se zavřenýma očima — deficit propriocepce nebo vestibulárního systému',
+        role: 'Uživatel neuvádí zvládnutí rovnováhy se zavřenýma očima — podpůrný údaj, nikoli nález nestability běžné chůze',
       });
-      strength += 2;
+      strength += 1;
     }
 
     // recent_falls: supporting signal only (not sufficient alone)

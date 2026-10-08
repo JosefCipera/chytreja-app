@@ -79,6 +79,9 @@ const weightScenarios = [
   { id: 'tester136-shape', text: 'Chci zhubnout.', goal: true, profile: { birth_year: 1958, gender: 'female', height: 165, weight: 71 }, lifestyle: { waist_cm: 81 }, physical: { vstat_ze_zeme: false, rovnovaha_zavrene_oci: false } },
   { id: 'weight-low-strength', text: 'Chci zhubnout.', goal: true, profile: { weight: 88 }, physical: { vstat_ze_zeme: false } },
   { id: 'weight-gait', text: 'Chci zhubnout.', goal: true, profile: { weight: 88 }, physical: { gait_instability_reported: true } },
+  { id: 'weight-eyes-closed-only', text: 'Chci zhubnout.', goal: true, profile: { weight: 88 }, physical: { rovnovaha_zavrene_oci: false } },
+  { id: 'weight-eyes-closed-stable', text: 'Chci zhubnout.', goal: true, profile: { weight: 88 }, physical: { rovnovaha_zavrene_oci: false, gait_stability: true } },
+  { id: 'weight-eyes-closed-unstable', text: 'Chci zhubnout.', goal: true, profile: { weight: 88 }, physical: { rovnovaha_zavrene_oci: false, gait_stability: false } },
   ...[null, 'moderate', 'severe'].map(severity => ({ id: 'weight-knee-' + (severity ?? 'unknown'), text: 'Chci zhubnout.', goal: true, profile: { weight: 88 }, constraints: [{ constraint_type: 'physical', constraint_key: 'knee', constraint_value: 'koleno', severity }] })),
   { id: 'weight-combined', text: 'Chci zhubnout.', goal: true, profile: { gender: 'female', height: 165, weight: 91 }, lifestyle: { waist_cm: 104 }, physical: { recent_falls: true, vstat_ze_zeme: false, gait_instability_reported: true }, constraints: [{ constraint_type: 'physical', constraint_key: 'knee', constraint_value: 'koleno', severity: 'moderate' }] },
   { id: 'weight-syncope', text: 'Chci zhubnout a mám synkopu.', goal: false, report: null, unsupported: true },
@@ -173,6 +176,16 @@ async function isolated(scenario, branch = null) {
       const chosen = catalog.find(a => a.id === selected?.action_id);
       check('no-vigorous-adiposity-entry', !chosen || !['VIGOROUS', 'HIGH_INTENSITY_INTERVAL'].includes(chosen.intensity), { action: chosen?.id, intensity: chosen?.intensity });
       if (scenario.id === 'overweight' || scenario.id === 'female-wish') check('moderate-entry-alternative', chosen?.id === '380bb59c-6c0c-40e4-973d-20c5447ef4b2' && chosen.intensity === 'MODERATE', chosen?.id);
+    }
+    if (['weight-eyes-closed-only', 'weight-eyes-closed-stable'].includes(scenario.id)) {
+      check('eyes-closed-not-gait-diagnosis', !gait, gait?.evidence ?? null);
+      check('eyes-closed-no-futile-question', response.mode === 'ACT' && !session.pending_question, { mode: response.mode, pending: session.pending_question });
+      check('eyes-closed-moderate-entry', selected?.action_id === '380bb59c-6c0c-40e4-973d-20c5447ef4b2', selected?.action_id);
+      check('eyes-closed-answer-preserved', health.physical.rovnovaha_zavrene_oci === false, health.physical);
+    }
+    if (scenario.id === 'weight-eyes-closed-unstable') {
+      check('negative-gait-answer-consumed', gaitFacts.some(f => f.question_id === 'gait_stability' && f.value === false), gait?.evidence);
+      check('negative-gait-safety-preserved', response.mode === 'SAFETY_BLOCKED' && !session.current_action_assignment && assignments.length === 0, { mode: response.mode, text: response.text });
     }
     check('goal-canonical-storage', health.goal_text === scenario.text, health.goal_text);
     check('goal-not-diagnosis', !health.diagnoses.length && !health.symptoms.length, { diagnoses: health.diagnoses, symptoms: health.symptoms });
