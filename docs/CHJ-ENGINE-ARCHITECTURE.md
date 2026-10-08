@@ -345,6 +345,8 @@ An intervention may declare `allowed_action_ids`. Absence preserves its existing
 
 For `EXCESS_ADIPOSITY → RESISTANCE_TRAINING`, the reviewed action list is currently empty: localized fixed-load overhead presses and step-downs must not become an automatic adiposity prescription solely from `SILOVY_PROTOKOL`. These are deferred catalog mappings, not clinical contraindications. Aerobic/other existing paths and functional-strength mappings are unchanged; if no viable alternative exists, normal DD ASK/SAFETY contracts apply. Adding an action requires a reviewed target-specific bridge; this change does not approve doses or establish clinical efficacy.
 
+The adiposity aerobic bridge additionally declares `allowed_intensities: ["LIGHT", "MODERATE"]`. A declared intensity list admits only explicit matching catalog metadata; missing/unrecognized intensity is deferred. This is an automatic-admission policy, not a clinical contraindication or individualized dose approval. It prevents a tier-1 vigorous uphill walk from being the default on this path; other targets, ordinal ranking and Safety Gate remain unchanged. Review findings: [2026-10-08 action review](QA-ACTION-REVIEW-2026-10-08.md).
+
 ### Blocking evidence question contract
 
 Safety results may carry `blocking_evidence: {evidence_type, question}`. When NBA needs evidence, it forwards the actual blocking question/type as `next_best_question` and `next_best_evidence_type`; DD preserves this metadata in `NBA_QUESTION`. Orchestrator stores the typed pending question using its existing contract. Gait stability must not become a generic injury-severity question, and an unknown region severity retains its region-specific evidence key.
