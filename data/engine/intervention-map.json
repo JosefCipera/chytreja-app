@@ -147,6 +147,8 @@
         {
           "id": "AEROBIC_TRAINING",
           "target_leverage_node": "EXCESS_ADIPOSITY",
+          "allowed_intensities": ["LIGHT", "MODERATE"],
+          "action_eligibility_rationale": "Automatic adiposity entry actions use only explicit light/moderate catalog intensity. Vigorous/HIIT and missing intensity are deferred pending a reviewed individualized training path. This is a conservative CHJ entry policy, not a medical contraindication or proof of dose suitability.",
           "leverage_affinity": {
             "level": "PRIMARY",
             "rationale": "Aerobní trénink přímo mobilizuje tukové zásoby skrze zvýšený energetický výdej a β-oxidaci mastných kyselin. Chronický aerobní deficit vytváří kalorický schodek, který vede k redukci tukové hmoty — zejména viscerálního tuku. Nejsilnější evidence base pro redukci adipozity.",
