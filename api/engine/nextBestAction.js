@@ -641,6 +641,11 @@ function buildCandidates(actionPool, interventions, parsedConstraints, hasCvRisk
     if (Array.isArray(intervention.allowed_action_ids)
       && !intervention.allowed_action_ids.includes(action.id)) continue;
 
+    // Target-specific entry policy: a protocol or tier does not establish
+    // readiness for vigorous exercise. Missing intensity is not approval.
+    if (Array.isArray(intervention.allowed_intensities)
+      && !intervention.allowed_intensities.includes(action.intensity)) continue;
+
     // Apply tag_filter if intervention specifies one (BREAK_UP_SEDENTARY_TIME → only kardio-tagged actions)
     if (intervention.tag_filter?.length > 0) {
       const tags = action.tags ?? [];
