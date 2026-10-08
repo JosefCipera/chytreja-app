@@ -68,3 +68,8 @@ The subsequent blocking-evidence fix replaces the generic injury question with t
 Dialogue resolution does not establish clinical suitability: if the instability remains active and no viable alternative exists, existing safety presentation stops prescribing unaided walking pending individual assessment. This is a conservative product policy, not a diagnosis or dose validation. The earlier generic-question wording limitation is addressed for gait and region severity; other question and clinical-validation limitations remain.
 
 The initial live run reproduced Nevím being classified as SCOPE_UNCLEAR and not persisted. Exact Ano/Ne/Nevím answers now route only while a GENERAL gait_stability question is pending, after existing medical/safety guards. Nevím is preserved as raw uncertainty, not a false negative or clearance.
+
+
+## Adiposity entry intensity
+
+The source review in [docs/QA-ACTION-REVIEW-2026-10-08.md](../../docs/QA-ACTION-REVIEW-2026-10-08.md) reproduced a tier-1 VIGOROUS uphill walk being selected for a weight-loss request despite no documented vigorous-training readiness. The adiposity aerobic bridge now admits explicit LIGHT/MODERATE catalog intensity. `node scripts/test-adiposity-entry-intensity.mjs` checks vigorous/HIIT/missing/invalid metadata deferral, permitted intensities, safety precedence, skip and unchanged other targets. The endpoint matrix verifies the existing moderate 20-minute conversational-effort alternative for its overweight fixtures. This does not individually validate that duration, balance dosing or clinical readiness; unresolved review findings are recorded in the audit.
