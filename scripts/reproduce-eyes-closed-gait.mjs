@@ -56,4 +56,33 @@ assert.equal(pending.decision.primary_item.evidence_type, 'gait_stability');
 const knee = evaluate({ rovnovaha_zavrene_oci: false, gait_stability: true }, [], [{ constraint_value: 'koleno', severity: null }]);
 assert.equal(knee.decision.mode, 'ASK');
 assert.equal(knee.decision.primary_item.evidence_type, 'knee_severity');
+
+const floorProxy = [{ node_id: 'LOW_MUSCLE_STRENGTH', current_state: 'MEASURED',
+ confidence: 'low', evidence: { direct: [{ question_id: 'vstat_ze_zeme', value: false }] } }];
+const stablePhysical = { vstat_ze_zeme: false, rovnovaha_zavrene_oci: false, gait_stability: true, recent_falls: false };
+const resolvedProxy = evaluate(stablePhysical, floorProxy);
+assert.equal(gait(resolvedProxy), undefined, 'Stable gait and no falls reconcile only indirect floor-rise/eyes-closed proxies');
+assert.equal(resolvedProxy.states.find(s => s.node_id === 'LOW_MUSCLE_STRENGTH'), floorProxy[0], 'Strength finding remains intact');
+assert.equal(resolvedProxy.decision.mode, 'ACT');
+for (const patch of [
+ { gait_stability: false }, { gait_stability: 'Nevím' }, { gait_stability: undefined },
+ { recent_falls: true }, { recent_falls: undefined }, { gait_instability_reported: true },
+ { balanc_jedna_noha: false },
+]) {
+ const result = evaluate({ ...stablePhysical, ...patch }, floorProxy);
+ assert.ok(gait(result), 'Independent adverse or unresolved evidence retains inference');
+ assert.equal(result.nba.selected, null);
+}
+for (const independent of [
+ { node_id: 'PERIPHERAL_NEUROPATHY', current_state: 'CONFIRMED' },
+ { node_id: 'GAIT_INSTABILITY', current_state: 'CONFIRMED' },
+]) {
+ const result = evaluate(stablePhysical, [...floorProxy, independent]);
+ assert.ok(gait(result)); assert.equal(result.nba.selected, null);
+}
+const measuredStrength = [{ ...floorProxy[0], evidence: { direct: [{ obs_type: 'grip_strength', value: 10 }] } }];
+assert.ok(gait(evaluate(stablePhysical, measuredStrength)), 'Measured strength is not the floor-rise-only proxy');
+const joint = evaluate(stablePhysical, floorProxy, [{ constraint_value: 'koleno', severity: 'severe' }]);
+assert.equal(joint.nba.selected, null, 'Reconciled gait does not bypass independent joint safety');
+
 console.log('PASS: eyes-closed-only proxy cannot establish gait instability; negative ordinary-gait self-report, independent findings, combined signals and region constraints retain safety. Fixture eligibility is not individual clinical clearance.');
