@@ -383,7 +383,23 @@ export function inference(activatedStates, person, clinicalHistory, observations
       strength += 1;
     }
 
-    if (strength >= 2) {
+    // The floor-rise proxy concerns strength, and the eyes-closed task concerns
+    // a different balance condition. Do not turn only these two indirect
+    // signals into current gait instability against an explicit stable-gait
+    // answer and a negative recent-fall answer. Retain both source facts.
+    // Any independent gait/balance finding, fall, neuropathy or stronger
+    // strength evidence keeps the ordinary inference and safety path.
+    const floorRiseOnlyStrength = ms?.current_state === 'MEASURED'
+      && ms.confidence === 'low'
+      && (ms.evidence?.direct?.length ?? 0) > 0
+      && ms.evidence.direct.every(e => e.question_id === 'vstat_ze_zeme' && isNeg(e.value));
+    const stableGaitAgainstOnlyProxies = floorRiseOnlyStrength
+      && readYesNo(oi.gait_stability) === 'yes'
+      && readYesNo(oi.recent_falls) === 'no'
+      && signals.every(s => s.node_id === 'LOW_MUSCLE_STRENGTH'
+        || s.question_id === 'rovnovaha_zavrene_oci');
+
+    if (strength >= 2 && !stableGaitAgainstOnlyProxies) {
       states.push({
         node_id: 'GAIT_INSTABILITY',
         current_state: 'PREDICTED_CURRENT',
