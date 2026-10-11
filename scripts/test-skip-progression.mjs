@@ -61,8 +61,8 @@ assert.equal(run({ actionPool: [timed('known', 1200), timed('missing', null)], s
 
 
 const walkIds = ['chuze_20min', 'chůze_20min', 'telo_chůze'];
-const walkPool = [...walkIds.map(id => ({ ...timed(id, 1200, 'LIGHT'), protocol_type: 'TRAINING_PROTOKOL' })), { ...timed('distinct-15-minutes', 900, 'LIGHT'), protocol_type: 'TRAINING_PROTOKOL' }];
-const walkInput = { actionPool: walkPool, interventions: [{ id: 'WALK_FIXTURE', protocol_types: ['TRAINING_PROTOKOL'], mechanism_targets: ['LOW_MUSCLE_STRENGTH'], goal_branches: [] }] };
+const walkPool = [...walkIds.map(id => ({ ...timed(id, 1200, 'LIGHT'), protocol_type: 'TRAINING_PROTOKOL', tags: ['kardio'] })), { ...timed('distinct-15-minutes', 900, 'LIGHT'), protocol_type: 'TRAINING_PROTOKOL', tags: ['kardio'] }];
+const walkInput = { actionPool: walkPool, interventions: [{ id: 'BREAK_UP_SEDENTARY_TIME', protocol_types: ['TRAINING_PROTOKOL'], mechanism_targets: ['LOW_MUSCLE_STRENGTH'], goal_branches: [] }] };
 for (const skippedId of walkIds) {
  const result = run({ ...walkInput, skippedTodayActionIds: new Set([skippedId]) });
  assert.ok(result.all_candidates.every(c => !walkIds.includes(c.action_id)), 'Every alias suppresses the whole same-day walk group');
