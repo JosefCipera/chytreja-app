@@ -86,6 +86,13 @@ const weightScenarios = [
   { id: 'weight-combined', text: 'Chci zhubnout.', goal: true, profile: { gender: 'female', height: 165, weight: 91 }, lifestyle: { waist_cm: 104 }, physical: { recent_falls: true, vstat_ze_zeme: false, gait_instability_reported: true }, constraints: [{ constraint_type: 'physical', constraint_key: 'knee', constraint_value: 'koleno', severity: 'moderate' }] },
   { id: 'weight-syncope', text: 'Chci zhubnout a mám synkopu.', goal: false, report: null, unsupported: true },
 ];
+const fullFloorProxyProfile = { birth_year: 1957, gender: 'male', height: 180, weight: 96 };
+for (const answer of [true, false, undefined]) weightScenarios.push({
+ id: 'floor-proxy-gait-' + (answer === true ? 'stable' : answer === false ? 'unstable' : 'unanswered'),
+ text: 'Chci zhubnout.', goal: true, profile: fullFloorProxyProfile, lifestyle: { waist_cm: 98 },
+ physical: { recent_falls: false, vynest_nakup: true, vstat_ze_zeme: false,
+  zvednout_vnouce: true, rovnovaha_zavrene_oci: false, gait_stability: answer },
+});
 const scenarios = weightLoss ? weightScenarios : gaitScenarios;
 
 async function isolated(scenario, branch = null) {
@@ -186,6 +193,17 @@ async function isolated(scenario, branch = null) {
     if (scenario.id === 'weight-eyes-closed-unstable') {
       check('negative-gait-answer-consumed', gaitFacts.some(f => f.question_id === 'gait_stability' && f.value === false), gait?.evidence);
       check('negative-gait-safety-preserved', response.mode === 'SAFETY_BLOCKED' && !session.current_action_assignment && assignments.length === 0, { mode: response.mode, text: response.text });
+    }
+    if (scenario.id.startsWith('floor-proxy-gait-')) {
+      check('floor-proxy-strength-retained', initialEngine.node_states.some(n => n.node_id === 'LOW_MUSCLE_STRENGTH'), initialEngine.node_states.map(n => n.node_id));
+      check('floor-proxy-inputs-retained', health.physical.vstat_ze_zeme === false && health.physical.rovnovaha_zavrene_oci === false && health.physical.recent_falls === false, health.physical);
+      if (scenario.id.endsWith('-stable')) {
+        check('stable-gait-reconciles-only-proxies', !gait && response.mode === 'ACT' && !session.pending_question, { gait: gait?.evidence, mode: response.mode });
+        check('stable-gait-moderate-entry', selected?.action_id === '380bb59c-6c0c-40e4-973d-20c5447ef4b2', selected?.action_id);
+      } else {
+        check('unresolved-or-negative-gait-retains-inference', Boolean(gait), gait?.evidence);
+        check('unresolved-or-negative-no-prescription', response.mode !== 'ACT' && !session.current_action_assignment, { mode: response.mode });
+      }
     }
     check('goal-canonical-storage', health.goal_text === scenario.text, health.goal_text);
     check('goal-not-diagnosis', !health.diagnoses.length && !health.symptoms.length, { diagnoses: health.diagnoses, symptoms: health.symptoms });
