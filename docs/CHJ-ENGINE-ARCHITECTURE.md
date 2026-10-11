@@ -363,6 +363,16 @@ This is an internal evidence-specificity correction, not a validated clinical sc
 
 Regression: `scripts/reproduce-eyes-closed-gait.mjs` now asserts corrected behavior and retained independent safety blockers; the full weight-loss endpoint matrix includes eyes-closed-only, stable and unstable ordinary-gait fixtures.
 
+### Stable ordinary gait and indirect functional proxies (2026-10-11)
+
+Reproduced on the reported synthetic profile (male 1957, 180 cm, 96 kg, waist 98): floor-rise=false, eyes-closed balance=false, ordinary gait stable=true, recent falls=false. The two indirect supporting signals previously still activated predicted gait instability and blocked every aerobic candidate.
+
+Inference now reconciles this narrow proxy-only combination with the explicit ordinary-gait and fall answers. Suppression requires LOW_MUSCLE_STRENGTH to be the low-confidence MEASURED floor-rise-only proxy, stable gait=yes, recent falls=no, and all inference signals to consist only of that strength proxy and the eyes-closed answer. Source values and the strength node remain unchanged. No session value substitutes for persistent evidence.
+
+Independent gait self-report, a negative gait-stability answer, one-leg balance findings, neuropathy, recent/unknown falls, unknown gait, other measured strength evidence and CONFIRMED gait retain their existing paths. NBA safety and action ranking are unchanged. This is an internal evidence-specificity policy, not validated clinical clearance or dose validation. A stable self-report is not a universal permission to exercise.
+
+Regression covers the full reported profile and negative/unanswered gait variants through the real endpoint with isolated database fixtures, plus independent findings and body-region safety in the pure inference/NBA suite.
+
 ### NBA Ranking Policy (zamčeno — engine.js LOCKED)
 
 Kandidáti jsou řazeni lexikograficky v tomto pořadí:
