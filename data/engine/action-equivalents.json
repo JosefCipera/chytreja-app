@@ -2,7 +2,18 @@
   "skip_groups": [
     {
       "id": "single_leg_stand_30s",
-      "action_ids": ["b3f9b408-47a5-4529-bfbb-906a2324813b", "rovnovaha_stoj_1"]
+      "action_ids": [
+        "b3f9b408-47a5-4529-bfbb-906a2324813b",
+        "rovnovaha_stoj_1"
+      ]
+    },
+    {
+      "id": "walk_20min",
+      "action_ids": [
+        "chuze_20min",
+        "chůze_20min",
+        "telo_chůze"
+      ]
     }
   ]
 }

@@ -313,10 +313,22 @@ async function isolated(scenario, branch = null) {
         }
         const equivalents = new Set(['b3f9b408-47a5-4529-bfbb-906a2324813b', 'rovnovaha_stoj_1']);
         check('skipped-equivalent-not-offered-again', !(response.mode === 'ACT' && equivalents.has(assigned.action_id) && equivalents.has(nextItem?.action_id)), { skipped: assigned.action_id, offered: nextItem?.action_id ?? null, text: response.text });
+        if (scenario.id === 'floor-proxy-skip' && response.mode === 'ACT') {
+          const walkAliases = new Set(['chuze_20min', 'chůze_20min', 'telo_chůze']);
+          check('walk-alias-journey-reached', walkAliases.has(session.current_action_assignment?.action_id), session.current_action_assignment?.action_id);
+          const skippedWalk = structuredClone(session.current_action_assignment);
+          response = await turn('Přeskočit');
+          check('second-skip-persisted', assignments.length === 2 && assignments[1].action_id === skippedWalk.action_id && assignments[1].status === 'SKIPPED', assignments);
+          check('no-walk-alias-after-second-skip', response.mode !== 'ACT' || !walkAliases.has(session.current_action_assignment?.action_id), { mode: response.mode, assignment: session.current_action_assignment, text: response.text });
+          const follow = await turn('Co dál?');
+          response = follow;
+          check('no-walk-alias-on-return', follow.mode !== 'ACT' || !walkAliases.has(session.current_action_assignment?.action_id), { mode: follow.mode, assignment: session.current_action_assignment });
+        }
         if (response.mode === 'ACT') {
           const replacement = structuredClone(session.current_action_assignment);
+          const countBeforeComplete = assignments.length;
           await turn('Hotovo');
-          check('replacement-can-be-completed', assignments.length === 2 && assignments[1].status === 'COMPLETED' && assignments[1].action_id === replacement?.action_id, assignments);
+          check('replacement-can-be-completed', assignments.length === countBeforeComplete + 1 && assignments.at(-1).status === 'COMPLETED' && assignments.at(-1).action_id === replacement?.action_id, assignments);
         }
       }
     }
