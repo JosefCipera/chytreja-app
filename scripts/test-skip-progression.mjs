@@ -37,7 +37,7 @@ assert.ok(unrelated.all_candidates.some(c => c.action_id === 'other')); // Ceili
 const evidenceOnly = { ...action('assess', 1), constraint_exclude: [], intensity: 'HIGH_INTENSITY_INTERVAL' };
 const noBaseline = run({ actionPool: [starter, evidenceOnly], clinicalHistory: { clinical_history_documented: false, onboarding_inputs: {} }, skippedTodayActionIds: new Set(['starter']) });
 assert.equal(noBaseline.status, 'NO_CANDIDATES');
-assert.equal(noBaseline.all_candidates[0].safety.level, 'NEEDS_MORE_EVIDENCE');
+assert.ok(noBaseline.progression_policy.deferred_action_ids.includes('assess')); // Higher intensity is not a same-day alternative.
 assert.equal(daily(noBaseline).mode, 'HOLD'); // No irrelevant assessment loop after available actions were declined.
 
 const severe = run({ personConstraints: [{ constraint_value: 'koleno', severity: 'severe' }], skippedTodayActionIds: new Set(['starter']) });
@@ -47,4 +47,16 @@ assert.equal(daily(unknownSeverity).mode, 'ASK'); // New necessary evidence is n
 const acute = computeDailyDecision({ next_best_action: exhausted, decision_gate: { context_gates: [{ decision_context: { id: 'acute' }, actionable_findings: [{ actionability: 'SAFETY_CRITICAL', node_id: 'acute' }] }] } });
 assert.equal(acute.mode, 'SAFETY');
 assert.equal(daily(run({ actionPool: [], skippedTodayActionIds: new Set(['starter']) })).mode, 'ASK');
+
+const timed = (id, seconds, intensity = 'MODERATE') => ({ ...action(id, 1), type: 'timed', reps: null, duration: seconds, intensity });
+const durationInput = { actionPool: [timed('20-minutes', 1200), timed('30-minutes', 1800), timed('shorter', 600)], skippedTodayActionIds: new Set(['20-minutes']) };
+assert.equal(run(durationInput).selected.action_id, 'shorter');
+assert.ok(run(durationInput).progression_policy.deferred_action_ids.includes('30-minutes'));
+const noLongerAlternative = run({ ...durationInput, actionPool: durationInput.actionPool.slice(0, 2) });
+assert.equal(daily(noLongerAlternative).reason_code, 'HOLD_SKIPPED_TODAY');
+const higherIntensity = run({ actionPool: [timed('light', 1200, 'LIGHT'), timed('moderate', 600)], skippedTodayActionIds: new Set(['light']) });
+assert.equal(higherIntensity.selected, null, 'Shorter duration does not compensate for greater intensity');
+assert.equal(run({ actionPool: [starter, { ...same, reps: 10 }], skippedTodayActionIds: new Set(['starter']) }).selected, null);
+assert.equal(run({ actionPool: [timed('known', 1200), timed('missing', null)], skippedTodayActionIds: new Set(['known']) }).selected, null);
+
 console.log('PASS: same/lower-tier alternatives, exhaustion, next-day reset, unknown tiers, intervention-local ceiling, evidence-only remainder, safety and necessary-evidence priority.');
