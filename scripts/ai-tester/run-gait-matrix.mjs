@@ -304,6 +304,13 @@ async function isolated(scenario, branch = null) {
         const nextItem = session.last_daily_decision?.primary_item;
         check('next-act-has-assignment', response.mode !== 'ACT' || session.current_action_assignment?.action_id === nextItem?.action_id, { mode: response.mode, engine: nextItem?.action_id, assignment: session.current_action_assignment });
         check('skipped-not-offered-again', session.current_action_assignment?.action_id !== assigned.action_id, { mode: response.mode, next: session.current_action_assignment?.action_id ?? null });
+        if (scenario.id === 'floor-proxy-skip') {
+          const previousRow = catalog.find(a => a.id === assigned.action_id);
+          const nextRow = catalog.find(a => a.id === nextItem?.action_id);
+          check('20-to-30-minutes-never-after-skip', response.mode !== 'ACT' || (nextRow?.type === 'timed' && Number.isFinite(nextRow.duration) && nextRow.duration <= previousRow.duration), { previous: previousRow?.duration, next: nextRow?.duration, mode: response.mode });
+          const ranks = { LIGHT: 1, MODERATE: 2, VIGOROUS: 3, HIGH_INTENSITY_INTERVAL: 4 };
+          check('skip-never-increases-intensity', response.mode !== 'ACT' || (ranks[nextRow?.intensity] > 0 && ranks[nextRow.intensity] <= ranks[previousRow?.intensity]), { previous: previousRow?.intensity, next: nextRow?.intensity });
+        }
         const equivalents = new Set(['b3f9b408-47a5-4529-bfbb-906a2324813b', 'rovnovaha_stoj_1']);
         check('skipped-equivalent-not-offered-again', !(response.mode === 'ACT' && equivalents.has(assigned.action_id) && equivalents.has(nextItem?.action_id)), { skipped: assigned.action_id, offered: nextItem?.action_id ?? null, text: response.text });
         if (response.mode === 'ACT') {
@@ -325,6 +332,11 @@ for (const scenario of scenarios) {
 for (const branch of (weightLoss ? ['done', 'skip', 'gait-yes', 'gait-no', 'gait-unknown'] : ['done', 'skip', 'repeat'])) {
   const scenario = scenarios.find(s => s.id === (weightLoss ? (branch.startsWith('gait-') ? 'weight-gait' : 'tester136-shape') : 'spoken-1'));
   try { results.push(await isolated({ ...scenario, id: 'journey-' + branch }, branch)); } catch (error) { results.push({ id: 'journey-' + branch, status: 'BLOCKED', reason: error.message }); }
+}
+if (weightLoss) {
+  const fixture = scenarios.find(s => s.id === 'floor-proxy-gait-stable');
+  try { results.push(await isolated({ ...fixture, id: 'floor-proxy-skip' }, 'skip')); }
+  catch (error) { results.push({ id: 'floor-proxy-skip', status: 'BLOCKED', reason: error.message }); }
 }
 const counts = Object.fromEntries(['PASS', 'FAIL', 'BLOCKED'].map(s => [s, results.filter(r => r.status === s).length]));
 console.log(JSON.stringify({ suite: weightLoss ? 'weight_loss_endpoint' : 'gait', mode: live ? 'live_classifier_full_engine_public_catalog' : 'injected_classifier_full_engine_public_catalog', catalog: catalogMeta, counts, limitations: ['All user profiles and writes are synthetic and isolated in memory', 'No browser, authentication or microphone/audio transcription test', 'No clinical efficacy or exercise dose validation', ...(weightLoss ? ['Real endpoint hydration, but Firebase authentication is mocked', 'Exact weight wishes use the existing server parser and bypass Haiku; live mode exercises AI only for inputs reaching classification', 'Review-required catalog choices do not become clinically approved through PASS'] : []), 'BLOCKED journeys are not counted as passing'], results }, null, 2));
