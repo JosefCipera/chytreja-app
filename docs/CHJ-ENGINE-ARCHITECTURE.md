@@ -373,6 +373,14 @@ Independent gait self-report, a negative gait-stability answer, one-leg balance 
 
 Regression covers the full reported profile and negative/unanswered gait variants through the real endpoint with isolated database fixtures, plus independent findings and body-region safety in the pure inference/NBA suite.
 
+### Dose admission after a same-day skip (2026-10-11)
+
+Tier alone did not prevent a 20-minute aerobic action being replaced with a same-tier 30-minute action. Candidates now carry catalog dose metadata (`type`, `duration`, `reps`, `intensity`). For each skipped reference within the same intervention, an eligible replacement must retain the tier ceiling, have a known non-increasing intensity and comparable non-increasing dose: positive timed seconds or positive repetition count. Missing/unknown or different dose units do not authorize progression. Catalog habit-to-habit alternatives without a numeric dose remain comparable only at a known non-increasing intensity.
+
+The strictest applicable skipped reference applies for the rest of the current UTC day; the existing persisted skip set supplies references. Ceilings remain intervention-local. If no eligible action remains, existing exhausted-skip behavior applies. Dose admission is an internal non-progression policy, not clinical dose/effect validation; external load, sets and movement complexity are not proven equivalent by these fields.
+
+Regression includes the complete synthetic floor-rise/eyes-closed stable-gait profile: moderate 20-minute entry → skip must not yield 30 minutes or increased intensity; a permitted alternative can still be completed. Pure tests cover duration, repetitions, intensity, missing dose, exhaustion and tomorrow reset.
+
 ### NBA Ranking Policy (zamčeno — engine.js LOCKED)
 
 Kandidáti jsou řazeni lexikograficky v tomto pořadí:

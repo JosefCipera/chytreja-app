@@ -671,6 +671,7 @@ function buildCandidates(actionPool, interventions, parsedConstraints, hasCvRisk
       protocol_type:        action.protocol_type,
       label:                action.label,
       tier:                 action.tier,
+      dose:                 { type: action.type, duration: action.duration, reps: action.reps, intensity: action.intensity },
       safety,
       min_meaningful_effect,
       leverage_affinity,
@@ -821,8 +822,27 @@ export function computeNextBestAction({
     const tier = Number.isFinite(reference.tier) && reference.tier >= 1 ? reference.tier : 0;
     tierCeilings.set(reference.intervention_id, Math.min(tierCeilings.get(reference.intervention_id) ?? Infinity, tier));
   }
+  const skippedReferences = unskippedCandidates.filter(c => skippedTodayActionIds?.has(c.action_id));
+  const intensityOrder = { LIGHT: 1, MODERATE: 2, VIGOROUS: 3, HIGH_INTENSITY_INTERVAL: 4 };
+  function doseDoesNotIncrease(candidate, reference) {
+    const a = candidate.dose, b = reference.dose;
+    if (!a || !b) return false;
+    const ai = intensityOrder[a.intensity], bi = intensityOrder[b.intensity];
+    if (!ai || !bi || ai > bi) return false;
+    // Different or missing dose units cannot establish a non-increasing dose.
+    if (a.type !== b.type) return false;
+    if (b.type === 'timed') return Number.isFinite(a.duration) && a.duration > 0
+      && Number.isFinite(b.duration) && b.duration > 0 && a.duration <= b.duration;
+    if (b.type === 'reps') return Number.isFinite(a.reps) && a.reps > 0
+      && Number.isFinite(b.reps) && b.reps > 0 && a.reps <= b.reps;
+    // No numeric dose was prescribed for these catalog habit actions.
+    return a.type === 'habit' && a.duration == null && b.duration == null
+      && a.reps == null && b.reps == null;
+  }
   const deferredProgression = candidates.filter(c => tierCeilings.has(c.intervention_id)
-    && !(Number.isFinite(c.tier) && c.tier >= 1 && c.tier <= tierCeilings.get(c.intervention_id)));
+    && (!(Number.isFinite(c.tier) && c.tier >= 1 && c.tier <= tierCeilings.get(c.intervention_id))
+      || skippedReferences.some(ref => ref.intervention_id === c.intervention_id
+        && !doseDoesNotIncrease(c, ref))));
   candidates = candidates.filter(c => !deferredProgression.includes(c));
   const progressionPolicy = {
     tier_ceilings: Object.fromEntries(tierCeilings),

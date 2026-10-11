@@ -4,7 +4,7 @@ import { computeNextBestAction } from '../api/engine/nextBestAction.js';
 import { computeDailyDecision } from '../api/engine/dailyDecision.js';
 
 const interventions = JSON.parse(fs.readFileSync(new URL('../data/engine/intervention-map.json', import.meta.url))).mappings.LOW_MUSCLE_STRENGTH.interventions;
-const action = { id: 'sit_to_stand_supported', label: 'Vstaň 5× ze židle s oporou.', protocol_type: 'FUNKCNI_SILOVY_PROTOKOL', tags: ['sit_to_stand'], tier: 1, constraint_exclude: [] };
+const action = { id: 'sit_to_stand_supported', label: 'Vstaň 5× ze židle s oporou.', protocol_type: 'FUNKCNI_SILOVY_PROTOKOL', tags: ['sit_to_stand'], tier: 1, constraint_exclude: [], type: 'reps', reps: 5, intensity: 'LIGHT' };
 const input = { leverageNodeId: 'LOW_MUSCLE_STRENGTH', interventions, actionPool: [action], personConstraints: [], clinicalHistory: { clinical_history_documented: true, onboarding_inputs: { vstat_ze_zeme: false } }, decisionGate: { context_gates: [] }, node_states: [], engineVersion: '1.0.0' };
 const before = computeNextBestAction(input);
 assert.equal(before.status, 'SELECTED');
