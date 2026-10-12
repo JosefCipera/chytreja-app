@@ -117,7 +117,7 @@ export async function runCombinationJourney({ scenario, initialPhysical, initial
         seenActions.add(identity);
         const previous = skippedByIntervention.get(assigned?.intervention_id) ?? [];
         check('skip-tier-nonincrease-' + i, previous.every(p => Number.isFinite(row?.tier) && row.tier <= p.tier), { tier: row?.tier, previous: previous.map(p => p.tier) });
-        check('skip-dose-nonincrease-' + i, previous.every(p => ranks[row?.intensity] && ranks[row.intensity] <= ranks[p.intensity] && row.type === p.type && (row.type === 'timed' ? row.duration <= p.duration : row.type === 'reps' ? row.reps <= p.reps : row.type === 'habit')), { type: row?.type, duration: row?.duration, reps: row?.reps, intensity: row?.intensity });
+        check('skip-dose-nonincrease-' + i, previous.every(p => ranks[row?.intensity] && ranks[row.intensity] <= ranks[p.intensity] && row.type === p.type && (row.type === 'timed' ? Number.isFinite(row.duration) && row.duration > 0 && Number.isFinite(p.duration) && p.duration > 0 && row.duration <= p.duration : row.type === 'reps' ? Number.isFinite(row.reps) && row.reps > 0 && Number.isFinite(p.reps) && p.reps > 0 && row.reps <= p.reps : row.type === 'habit' && row.duration == null && row.reps == null && p.duration == null && p.reps == null)), { type: row?.type, duration: row?.duration, reps: row?.reps, intensity: row?.intensity });
         previous.push(row); skippedByIntervention.set(assigned?.intervention_id, previous);
         response = await turn('Přeskočit');
         check('skip-write-' + i, getAssignments().length === i + 1 && getAssignments().at(-1).status === 'SKIPPED' && getAssignments().at(-1).action_id === assigned.action_id, getAssignments().at(-1));
