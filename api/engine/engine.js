@@ -27,7 +27,7 @@ import { evaluateDecisionGate }      from './decisionGate.js';
 import { computeSystemLeverage }     from './systemLeverage.js';
 import { computeSystemConstraint }   from './systemConstraint.js';
 import { computeNextBestAction }     from './nextBestAction.js';
-import { findAvailableLeverage }     from './leverageFallback.js';
+import { findAvailableLeverage }     from './dailyDecision.js';
 import { computeInterventionExposure, evaluateResponseEvaluations, buildResponseInformationNeeds } from './adherence.js';
 // selectNextBestEvidence is now called inside decisionGate.js per context
 
@@ -109,11 +109,13 @@ export async function runEngine(userId) {
   const response_info_needs = buildResponseInformationNeeds(response_evaluations);
   const information_needs   = mergeResponseNeeds(information_needs_base, response_info_needs);
 
+  let constraintsSnapshot;
   async function evaluateLeverage(nodeId, data) {
+    constraintsSnapshot ??= fetchPersonConstraints(userId);
     const allProtocolTypes = [...new Set(data.interventions.flatMap(i => i.protocol_types))];
     const [actionPool, personConstraints] = await Promise.all([
       fetchActionPool(allProtocolTypes),
-      fetchPersonConstraints(userId),
+      constraintsSnapshot,
     ]);
     return computeNextBestAction({
       leverageNodeId:        nodeId,
