@@ -42,7 +42,7 @@ export function checkCrtInputContracts({ scenario, initialPhysical, health, init
   check('weight-wish-is-not-adiposity-measurement', scenario.profile.weight === 88
     ? adiposity?.current_state === 'MEASURED'
     : !['MEASURED', 'CONFIRMED'].includes(adiposity?.current_state), adiposity?.current_state ?? null);
-  const leverage = initialEngine.system_leverage.selected?.node_id;
+  const leverage = (initialEngine.action_leverage ?? initialEngine.system_leverage).selected?.node_id;
   if (leverage) {
     check('leverage-has-recorded-evidence', states.some(n => n.node_id === leverage && n.current_state !== 'UNKNOWN'), leverage);
     const reached = new Set(), queue = [leverage];
@@ -62,7 +62,7 @@ export function checkCrtInputContracts({ scenario, initialPhysical, health, init
   }
 }
 
-export async function runCombinationJourney({ scenario, initialPhysical, initialEngine, onboarding, getHealth, getSession, getWrites, getCalls, getAssignments, turn, check, catalog, response }) {
+export async function runCombinationJourney({ scenario, initialPhysical, initialEngine, onboarding, getCurrentEngine, getHealth, getSession, getWrites, getCalls, getAssignments, turn, check, catalog, response }) {
   const reviews = [];
   check('actual-onboarding-handlers', onboarding?.removed && onboarding?.reloaded, onboarding);
   checkCrtInputContracts({ scenario, initialPhysical, health: getHealth(), initialEngine, session: getSession(), check });
@@ -81,8 +81,23 @@ export async function runCombinationJourney({ scenario, initialPhysical, initial
     seenQuestions.add(key); response = await turn(answer);
   }
   const assignment = structuredClone(getSession().current_action_assignment);
+  const currentEngine = await getCurrentEngine();
+  checkCrtInputContracts({ scenario, initialPhysical, health: getHealth(), initialEngine: currentEngine,
+    session: getSession(), check: (id, ok, actual) => check('after-clarification-' + id, ok, actual) });
   const healthBefore = structuredClone(getHealth()), writeCount = getWrites().length, callCount = getCalls().length;
   if (response.mode === 'ACT') {
+    const context = getSession().last_domain_response?.explanation_context;
+    const f = currentEngine.action_fallback;
+    check('active-action-still-viable', ['SAFE', 'SAFE_WITH_MODIFICATION'].includes(currentEngine.next_best_action.selected?.safety?.level)
+      && currentEngine.next_best_action.selected.action_id === assignment?.action_id, currentEngine.next_best_action.selected?.action_id);
+    if (f?.status === 'SELECTED') {
+      check('fallback-retains-primary-block', f.primary_node_id === currentEngine.system_leverage.selected?.node_id
+        && f.primary_decision.reason_code === 'SAFETY_BLOCKED' && f.primary_decision.primary_item.blocked_candidates.length > 0
+        && f.primary_decision.primary_item.blocked_candidates.every(c => ['CONTRAINDICATED', 'NEEDS_CLINICAL_CLEARANCE'].includes(c.safety_level)), f.primary_node_id);
+      check('fallback-explains-actual-action-branch', context.system_leverage.node_id === currentEngine.action_leverage.selected.node_id
+        && context.system_priority.node_id === currentEngine.system_leverage.selected.node_id && context.action_fallback.status === 'SELECTED', context.system_leverage);
+      reviews.push({ code: 'CHECKED_ALTERNATIVE', primary: f.primary_node_id, action_branch: f.selected_node_id });
+    }
     for (const text of ['Proč?', 'Kam směřuješ?', 'Co tím změníš?']) {
       const r = await turn(text);
       check('explanation-mode-' + text, r.mode === 'EXPLAIN' && Boolean(r.text) && r.text.length > 10, { mode: r.mode, text: r.text });
@@ -92,7 +107,7 @@ export async function runCombinationJourney({ scenario, initialPhysical, initial
       }
       if (text === 'Kam směřuješ?') {
         const meanings = { LOW_MUSCLE_STRENGTH: /síla|síly|sílu|vstát/, GAIT_INSTABILITY: /upadneš|pádu/, EXCESS_ADIPOSITY: /inzulín|srdce|cév/ };
-        const meaning = meanings[initialEngine.system_leverage.selected?.node_id];
+        const meaning = meanings[getSession().last_domain_response?.explanation_context?.system_leverage?.node_id];
         check('trajectory-matches-selected-crt-branch', !meaning || meaning.test(r.text), r.text);
         check('trajectory-is-possibility', /může/i.test(r.text), r.text);
       }
