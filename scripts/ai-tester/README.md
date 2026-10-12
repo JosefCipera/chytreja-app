@@ -73,3 +73,13 @@ The initial live run reproduced Nevím being classified as SCOPE_UNCLEAR and not
 ## Adiposity entry intensity
 
 The source review in [docs/QA-ACTION-REVIEW-2026-10-08.md](../../docs/QA-ACTION-REVIEW-2026-10-08.md) reproduced a tier-1 VIGOROUS uphill walk being selected for a weight-loss request despite no documented vigorous-training readiness. The adiposity aerobic bridge now admits explicit LIGHT/MODERATE catalog intensity. `node scripts/test-adiposity-entry-intensity.mjs` checks vigorous/HIIT/missing/invalid metadata deferral, permitted intensities, safety precedence, skip and unchanged other targets. The endpoint matrix verifies the existing moderate 20-minute conversational-effort alternative for its overweight fixtures. This does not individually validate that duration, balance dosing or clinical readiness; unresolved review findings are recorded in the audit.
+
+
+## Conversation controls and actual onboarding handlers (2026-10-12)
+
+Every turn of the gait and weight-loss matrices now executes the production launcher render/loading functions in an isolated DOM model. Non-critical responses must retain text, send and microphone controls. The tester143-shaped synthetic journey uses the actual onboarding pill handlers and request serialization, then the real orchestration endpoint with mocked Firebase and in-memory records: reported gait uncertainty → stability question → Ne → blocked → clickable Proč? → read-only safety explanation → Co dál? → still blocked, no prescription. The profile dimensions are a synthetic fixture, not a read of tester143's live records.
+
+`node scripts/test-launcher-hold-input.mjs` checks busy controls, restored older block responses without buttons, HOLD, ASK, ACT, EXPLAIN, NOOP, and the existing buttonless critical terminal. The original renderer fails this regression on SAFETY_BLOCKED. `node scripts/test-onboarding-combinations.mjs` traverses all 32 combinations of the five actual physical-answer pills, unanswered fields, and physical-save/completion-save failures. Wizard API requests are mocked and no account is created or changed.
+
+These checks run automatically in the existing CI workflow alongside real Haiku classification and the full-catalog engine matrices. Local snapshot run: gait 25 PASS, endpoint 24 PASS; all turns checked through the production renderer. This is behavior-level integration against a DOM model, not browser layout, real authentication, microphone recording or a complete end-to-end registration test. It does not approve medical protocols, remove safety gates or validate exercise dose. Further real failures should be added as reproducible isolated journeys rather than requiring repeated manual account creation.
+
