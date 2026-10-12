@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { findAvailableLeverage } from '../api/engine/leverageFallback.js';
+import { findAvailableLeverage } from '../api/engine/dailyDecision.js';
 const blocked = { status: 'NO_VIABLE_ACTIONS', selected: null, all_candidates: [{ action_id: 'walk', label: 'Walking', safety: { level: 'NEEDS_CLINICAL_CLEARANCE', reason: 'Needs assessment' } }] };
 const safe = { status: 'SELECTED', selected: { action_id: 'supported', intervention_id: 'BALANCE', safety: { level: 'SAFE_WITH_MODIFICATION' } }, all_candidates: [{ action_id: 'supported', safety: { level: 'SAFE_WITH_MODIFICATION' } }] };
 const candidate = (node_id, level) => ({ node_id, current_state: 'PREDICTED_CURRENT', confidence: 'low', causal_reach: { level, affected_nodes: ['FALL_RISK'], edges_used: [] }, cross_context_leverage: { level: 'low', contexts: ['FUNCTIONAL_MOBILITY'] }, changeability: 'medium' });
