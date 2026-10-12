@@ -7,6 +7,7 @@ on:
       - app/launcher.html
       - scripts/test-launcher-hold-input.mjs
       - scripts/test-onboarding-combinations.mjs
+      - scripts/test-crt-contract-mutations.mjs
       - app/js/universe/onboarding-wizard.js
       - scripts/ai-tester/**
       - scripts/test-why-control.mjs
@@ -32,6 +33,7 @@ on:
       - app/launcher.html
       - scripts/test-launcher-hold-input.mjs
       - scripts/test-onboarding-combinations.mjs
+      - scripts/test-crt-contract-mutations.mjs
       - app/js/universe/onboarding-wizard.js
       - scripts/ai-tester/**
       - api/orchestrate.js
@@ -70,6 +72,7 @@ jobs:
         run: |
           node scripts/test-launcher-hold-input.mjs
           node scripts/test-onboarding-combinations.mjs
+          node scripts/test-crt-contract-mutations.mjs
           node scripts/test-adiposity-entry-intensity.mjs
           node scripts/reproduce-eyes-closed-gait.mjs
           node scripts/test-blocking-evidence.mjs
@@ -107,12 +110,24 @@ jobs:
         run: |
           mkdir -p ai-tester-results
           node --experimental-vm-modules scripts/ai-tester/run-gait-matrix.mjs --live --weight-loss > ai-tester-results/weight-loss.json
+      - name: Evaluate CRT combination journeys without AI calls
+        if: always()
+        env:
+          AI_TESTER_CATALOG_OUT: ai-tester-results/combinations-catalog-snapshot.json
+        run: |
+          mkdir -p ai-tester-results
+          node --experimental-vm-modules scripts/ai-tester/run-gait-matrix.mjs --crt-combinations > ai-tester-results/crt-combinations.json
+      - name: Summarize CRT product review separately from PASS
+        if: always()
+        run: |
+          node scripts/ai-tester/summarize-crt-combinations.mjs ai-tester-results/crt-combinations.json > ai-tester-results/crt-combinations-summary.md
+          cat ai-tester-results/crt-combinations-summary.md >> "$GITHUB_STEP_SUMMARY"
       - name: Save PASS, FAIL or BLOCKED report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: crt-voice-reports
-          path: ai-tester-results/*.json
+          path: ai-tester-results/*
           if-no-files-found: warn
           retention-days: 7
 
