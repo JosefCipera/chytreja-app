@@ -1076,6 +1076,10 @@ function buildWhyResponse(sessionState) {
     parts.push('Uvádíš nejistotu při chůzi.');
   }
   if (sessionState.person_goal === 'WEIGHT_LOSS') parts.push('Chceš zhubnout.');
+  if (ctx.action_fallback?.status === 'SELECTED') {
+    const priority = NODE_LABEL_CS[ctx.system_priority?.node_id];
+    if (priority) parts.push(`Aktivitu pro hlavní prioritu (${priority.toLowerCase()}) teď bezpečnostní pravidla nepovolují.`);
+  }
   const leverage    = ctx.system_leverage;
   const constraint  = ctx.system_constraint;
   const action      = ctx.action_context?.selected;
@@ -1104,7 +1108,8 @@ function buildWhyResponse(sessionState) {
   }
 
   // Optional: SYSTEM_CONSTRAINT — deeper WHY; shown only when different from leverage
-  if (constraintSubject && constraintSubject !== leverageSubject) {
+  if (constraintSubject && constraintSubject !== leverageSubject
+      && !(ctx.action_fallback?.status === 'SELECTED' && constraint?.node_id === ctx.system_priority?.node_id)) {
     parts.push(`Zároveň hraje roli ${constraintSubject}.`);
   }
 
