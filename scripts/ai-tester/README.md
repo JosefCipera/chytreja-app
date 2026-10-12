@@ -83,3 +83,15 @@ Every turn of the gait and weight-loss matrices now executes the production laun
 
 These checks run automatically in the existing CI workflow alongside real Haiku classification and the full-catalog engine matrices. Local snapshot run: gait 25 PASS, endpoint 24 PASS; all turns checked through the production renderer. This is behavior-level integration against a DOM model, not browser layout, real authentication, microphone recording or a complete end-to-end registration test. It does not approve medical protocols, remove safety gates or validate exercise dose. Further real failures should be added as reproducible isolated journeys rather than requiring repeated manual account creation.
 
+
+
+## CRT combinatorial journeys (2026-10-12)
+
+`node --experimental-vm-modules scripts/ai-tester/run-gait-matrix.mjs --crt-combinations` traverses all 32 binary physical-answer combinations at two fixed weight/waist profiles, with weight-loss and gait requests, Ano/Ne/Nevím gait answers, and completion/skip branches: 768 journeys over 64 profiles. Some branches coincide when no question or action is reached. This mode explicitly rejects `--live`: it injects deterministic intentions and makes no classifier API requests. The separate live matrices still test language interpretation.
+
+The real wizard handlers, orchestration endpoint, whole engine, public catalog and production render/loading functions execute against isolated profile/API/DOM models. Contracts are declared in `crt-combination-contracts.mjs`: preserve actual answers and provenance, don't convert wishes into measurements or self-reports into confirmed diagnoses, require real model edges/goal paths and the correct action bridge, keep WHY/trajectory/mechanism read-only and tied to the selected branch, prevent duplicate completion and equivalent/escalated same-intervention skips, preserve safety blocks, and retain conversation controls. Unknown measurements/clinical answers are not invented just to force an action; pending evidence is reported for review. `test-crt-contract-mutations.mjs` proves the oracle rejects invented measurements, source evidence, edges and goal paths.
+
+`node scripts/ai-tester/summarize-crt-combinations.mjs report.json` separates product-review items from software PASS. CI retains the JSON, exact public snapshot and readable summary as artifacts and puts the summary on the workflow page. The first local snapshot run found 62 walking-only benefit explanations for a walking-or-cycling action; the aerobic intervention subject now says “Tato aktivita”. Provenance notes now reflect the actual 5 kg / second-floor and small-child questions rather than old third-floor / 10+ kg descriptions. Decision/ranking/safety/dose logic is unchanged.
+
+See [the review](../../docs/QA-CRT-COMBINATIONS-2026-10-12.md) for observed branch differences and remaining product questions. Graph consistency is not evidence that the graph, selected priority, exercise protocol or starting dose is clinically correct. Registrations, real authentication, browser layout and microphone recording remain outside this suite.
+

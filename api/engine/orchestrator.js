@@ -301,7 +301,7 @@ const MECHANISM_TARGET_CS = {
 // this one sentence — and names the TYPE of intervention, not a new medical claim.
 const INTERVENTION_TYPE_LABEL_CS = {
   FUNCTIONAL_STRENGTH_TRAINING: 'Cvičení',
-  AEROBIC_TRAINING:             'Rychlá chůze',
+  AEROBIC_TRAINING:             'Tato aktivita',
   BALANCE_TRAINING:             'Cvičení rovnováhy',
   RESISTANCE_TRAINING:          'Posilovací cvičení',
   DAILY_MOVEMENT:               'Pohyb během dne',
@@ -2444,4 +2444,5 @@ export async function processInput(userId, userText, sessionState = {}) {
 
   return presentation;
 }
+
 

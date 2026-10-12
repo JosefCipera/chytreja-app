@@ -6,12 +6,15 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { createLauncherHarness } from './launcher-render-harness.mjs';
 import { runOnboardingFixture } from './onboarding-harness.mjs';
+import { combinationScenarios, runCombinationJourney } from './crt-combination-contracts.mjs';
 const live = process.argv.includes('--live');
-const weightLoss = process.argv.includes('--weight-loss');
+const combinations = process.argv.includes('--crt-combinations');
+const weightLoss = process.argv.includes('--weight-loss') || combinations;
 const catalogArg = process.argv.find(a => a.startsWith('--catalog='));
 const sourceRoot = new URL('../../', import.meta.url);
 let catalog, catalogMeta;
 try {
+  if (combinations && live) throw Error('Combinations use deterministic intent injection; run the separate live language suites instead');
   if (live && !process.env.ANTHROPIC_API_KEY) throw Error('ANTHROPIC_API_KEY unavailable');
   if (catalogArg) {
     catalog = JSON.parse(fs.readFileSync(catalogArg.slice(10), 'utf8'));
@@ -95,8 +98,8 @@ for (const answer of [true, false, undefined]) weightScenarios.push({
  physical: { recent_falls: false, vynest_nakup: true, vstat_ze_zeme: false,
   zvednout_vnouce: true, rovnovaha_zavrene_oci: false, gait_stability: answer },
 });
-const scenarios = weightLoss ? weightScenarios : gaitScenarios;
-if (weightLoss) scenarios.push({ id: 'tester143-ui', text: variants[0], report: true,
+const scenarios = combinations ? combinationScenarios() : weightLoss ? weightScenarios : gaitScenarios;
+if (weightLoss && !combinations) scenarios.push({ id: 'tester143-ui', text: variants[0], report: true,
   profile: { weight: 88 }, lifestyle: { waist_cm: 99 },
   physical: { recent_falls: false, vynest_nakup: true, vstat_ze_zeme: true,
     zvednout_vnouce: true, rovnovaha_zavrene_oci: false }, uiJourney: true });
@@ -106,7 +109,7 @@ async function isolated(scenario, branch = null) {
   const profile = { user_id: uid, ...baseProfile, ...scenario.profile };
   let health = { ...structuredClone(baseHealth), user_id: uid, lifestyle: { ...baseHealth.lifestyle, ...scenario.lifestyle }, physical: { ...baseHealth.physical, ...scenario.physical } };
   let onboarding = null;
-  if (scenario.uiJourney) {
+  if (scenario.uiJourney || scenario.comboJourney) {
     onboarding = await runOnboardingFixture(health.physical);
     if (!onboarding.removed || !onboarding.reloaded || JSON.stringify(onboarding.physical) !== JSON.stringify(health.physical)) throw Error('Onboarding fixture did not save the expected answers');
     health.physical = structuredClone(onboarding.physical);
@@ -136,6 +139,14 @@ async function isolated(scenario, branch = null) {
   } };
   let classifierFailure = null, currentInput = null;
   class AI { messages = { create: async args => {
+    if (scenario.comboJourney && !live) {
+      const input = session.pending_question && ['Ano', 'Ne', 'Nevím', 'Nemám výsledek'].includes(currentInput)
+        ? { event_type: 'ANSWER_TO_EVIDENCE_QUESTION', payload: { evidence_type: session.pending_question.evidence_type, value: currentInput === 'Ano' ? true : currentInput === 'Ne' ? false : currentInput } }
+        : currentInput === 'Co dál?'
+          ? { event_type: 'DOMAIN_REQUEST', payload: { domain: 'health' } }
+          : { event_type: scenario.report === true ? 'ANSWER_TO_EVIDENCE_QUESTION' : 'GENERAL_HEALTH_REQUEST', payload: scenario.report === true ? { evidence_type: 'gait_instability_reported', value: true } : { text: currentInput } };
+      calls.push(input); return { content: [{ type: 'tool_use', input }] };
+    }
     if (!live && session.pending_question && (branch?.startsWith('gait-') || scenario.uiJourney)) {
       const input = { event_type: 'ANSWER_TO_EVIDENCE_QUESTION', payload: { evidence_type: session.pending_question.evidence_type, value: currentInput === 'Ano' ? true : currentInput === 'Ne' ? false : currentInput } };
       calls.push(input); return { content: [{ type: 'tool_use', input }] };
@@ -250,6 +261,13 @@ async function isolated(scenario, branch = null) {
     }
   }
   if (scenario.unsupported) check('unsupported-no-action', response.mode !== 'ACT' && !session.current_action_assignment && writes.length === 0, { mode: response.mode, text: response.text, writes: writes.length });
+  let productReview = [];
+  if (scenario.comboJourney) {
+    const result = await runCombinationJourney({ scenario, initialPhysical, initialEngine, onboarding,
+      getHealth: () => health, getSession: () => session, getWrites: () => writes,
+      getCalls: () => calls, getAssignments: () => assignments, turn, check, catalog, response });
+    response = result.response; productReview = result.reviews;
+  }
   if (scenario.uiJourney) {
     check('actual-onboarding-handlers', onboarding?.removed && onboarding?.reloaded, onboarding);
     check('gait-question-before-block', response.mode === 'ASK' && session.pending_question?.evidence_type === 'gait_stability', { mode: response.mode, pending: session.pending_question });
@@ -366,23 +384,23 @@ async function isolated(scenario, branch = null) {
   for (const [i, t] of turns.entries()) {
     if (t.mode !== 'SAFETY_CRITICAL') check(`ui-${i}-conversation-open`, t.ui.input_enabled && t.ui.send_enabled && t.ui.microphone_enabled, { mode: t.mode, ui: t.ui });
   }
-  return { id: scenario.id, branch, status: checks.some(c => c.status === 'FAIL') ? 'FAIL' : checks.some(c => c.status === 'BLOCKED') ? 'BLOCKED' : 'PASS', profile, physical: initialPhysical, constraints, classification: initialClassification, leverage: initialEngine.system_leverage.selected, engine_action: selected, candidate_count: initialEngine.next_best_action.all_candidates?.length ?? 0, review_required: weightLoss && scenario.goal && /5 kg/.test(selected?.label ?? '') ? ['Catalog chooses a fixed-load overhead press for a weight-loss request; goal relevance and dose suitability require separate review, not validated by passing software contracts'] : [], turns, assignments, checks };
+  return { id: scenario.id, branch, status: checks.some(c => c.status === 'FAIL') ? 'FAIL' : checks.some(c => c.status === 'BLOCKED') ? 'BLOCKED' : 'PASS', matrix: scenario.matrix, product_review: productReview, profile, physical: initialPhysical, constraints, classification: initialClassification, leverage: initialEngine.system_leverage.selected, engine_action: selected, candidate_count: initialEngine.next_best_action.all_candidates?.length ?? 0, review_required: weightLoss && scenario.goal && /5 kg/.test(selected?.label ?? '') ? ['Catalog chooses a fixed-load overhead press selected for a weight-loss request; separate relevance/dose review is required'] : [], turns, assignments, checks };
 }
 const results = [];
 for (const scenario of scenarios) {
   console.error('MATRIX', scenario.id);
-  try { results.push(await isolated(scenario)); } catch (error) { results.push({ id: scenario.id, status: 'BLOCKED', reason: error.message }); }
+  try { results.push(structuredClone(await isolated(scenario))); } catch (error) { results.push({ id: scenario.id, status: 'BLOCKED', reason: error.message }); }
 }
-for (const branch of (weightLoss ? ['done', 'skip', 'gait-yes', 'gait-no', 'gait-unknown'] : ['done', 'skip', 'repeat'])) {
+for (const branch of (combinations ? [] : weightLoss ? ['done', 'skip', 'gait-yes', 'gait-no', 'gait-unknown'] : ['done', 'skip', 'repeat'])) {
   const scenario = scenarios.find(s => s.id === (weightLoss ? (branch.startsWith('gait-') ? 'weight-gait' : 'tester136-shape') : 'spoken-1'));
   try { results.push(await isolated({ ...scenario, id: 'journey-' + branch }, branch)); } catch (error) { results.push({ id: 'journey-' + branch, status: 'BLOCKED', reason: error.message }); }
 }
-if (weightLoss) {
+if (weightLoss && !combinations) {
   const fixture = scenarios.find(s => s.id === 'floor-proxy-gait-stable');
   try { results.push(await isolated({ ...fixture, id: 'floor-proxy-skip' }, 'skip')); }
   catch (error) { results.push({ id: 'floor-proxy-skip', status: 'BLOCKED', reason: error.message }); }
 }
 const counts = Object.fromEntries(['PASS', 'FAIL', 'BLOCKED'].map(s => [s, results.filter(r => r.status === s).length]));
-console.log(JSON.stringify({ suite: weightLoss ? 'weight_loss_endpoint' : 'gait', mode: live ? 'live_classifier_full_engine_public_catalog' : 'injected_classifier_full_engine_public_catalog', catalog: catalogMeta, counts, limitations: ['All user profiles and writes are synthetic and isolated in memory', 'No browser, authentication or microphone/audio transcription test', 'No clinical efficacy or exercise dose validation', ...(weightLoss ? ['Real endpoint hydration, but Firebase authentication is mocked', 'Exact weight wishes use the existing server parser and bypass Haiku; live mode exercises AI only for inputs reaching classification', 'Review-required catalog choices do not become clinically approved through PASS'] : []), 'BLOCKED journeys are not counted as passing'], results }, null, 2));
+console.log(JSON.stringify({ suite: combinations ? 'crt_combinations_endpoint' : weightLoss ? 'weight_loss_endpoint' : 'gait', mode: live ? 'live_classifier_full_engine_public_catalog' : 'injected_classifier_full_engine_public_catalog', catalog: catalogMeta, counts, limitations: ['All user profiles and writes are synthetic and isolated in memory', 'No browser, authentication or microphone/audio transcription test', 'No clinical efficacy or exercise dose validation', ...(combinations ? ['768 journeys over 64 profiles and two intents; some answer/outcome branches coincide when no question/action is reached', 'Product review flags are separate from software PASS; priority correctness is not assumed from engine output'] : []), ...(weightLoss ? ['Real endpoint hydration, but Firebase authentication is mocked', 'Exact weight wishes use the existing server parser and bypass Haiku; live mode exercises AI only for inputs reaching classification', 'Review-required catalog choices do not become clinically approved through PASS'] : []), 'BLOCKED journeys are not counted as passing'], results }, null, 2));
 process.exitCode = counts.FAIL ? 1 : counts.BLOCKED ? 2 : 0;
 

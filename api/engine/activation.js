@@ -193,8 +193,8 @@ export function activation(person, clinicalHistory, observations) {
   // risk modifier, not evidence of actual strength loss.
   //
   // Onboarding question IDs (Dekatlon / Longevity functional assessment):
-  //   vynest_nakup    = "Vynést nákup do 3. patra bez zastavení?"
-  //   zvednout_vnouce = "Zvednout vnouče / těžký předmět (10+ kg)?"
+  //   vynest_nakup    = "Vynést nákup (5 kg) do 2. patra bez zastavení?"
+  //   zvednout_vnouce = "Zvednout vnouče nebo malé dítě ze země?"
   //   vstat_ze_zeme   = "Vstát ze země bez opory?"
   //
   // Activation: at least one of these answered negatively ('no', 'false', '0', false)
@@ -229,10 +229,10 @@ export function activation(person, clinicalHistory, observations) {
   const strengthEvidence = [];
   if (isNeg(oi['vynest_nakup']))
     strengthEvidence.push({ source: 'ONBOARDING', question_id: 'vynest_nakup', value: oi['vynest_nakup'],
-      note: 'Neunesení nákupu do 3. patra — funkční ukazatel svalové kapacity' });
+      note: 'Neunesení nákupu (5 kg) do 2. patra bez zastavení — funkční ukazatel svalové kapacity' });
   if (isNeg(oi['zvednout_vnouce']))
     strengthEvidence.push({ source: 'ONBOARDING', question_id: 'zvednout_vnouce', value: oi['zvednout_vnouce'],
-      note: 'Neschopnost zvednout 10+ kg — funkční ukazatel svalové síly' });
+      note: 'Neschopnost zvednout vnouče nebo malé dítě ze země — funkční ukazatel svalové síly' });
   if (isNeg(oi['vstat_ze_zeme']))
     strengthEvidence.push({ source: 'ONBOARDING', question_id: 'vstat_ze_zeme', value: oi['vstat_ze_zeme'],
       note: 'Neschopnost vstát ze země bez opory — přímý funkční výsledek' });
@@ -256,3 +256,4 @@ export function activation(person, clinicalHistory, observations) {
 
   return states;
 }
+
