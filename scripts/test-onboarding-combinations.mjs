@@ -9,6 +9,10 @@ for (let mask = 0; mask < 32; mask++) {
   assert.equal(r.requests.at(-1).url, '/api/user?action=wizard-complete');
 }
 const empty = await runOnboardingFixture({});
+for (const person of [{ age: 67, height: 178, weight: 72, gender: 'male', waist: 84 }, { age: 69, height: 165, weight: 71, gender: 'female', waist: 81 }]) {
+  const r = await runOnboardingFixture({}, null, person);
+  assert.deepEqual(r.profile, { step: 1, ...person }, 'Actual wizard saves the supplied profile, not a hard-coded default');
+}
 assert.equal(empty.physical, undefined, 'Unanswered questions are not fabricated');
 assert.equal(empty.removed, true);
 for (const failure of ['physical', 'complete']) {

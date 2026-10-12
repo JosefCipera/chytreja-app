@@ -104,14 +104,22 @@ if (weightLoss && !combinations) scenarios.push({ id: 'tester143-ui', text: vari
   physical: { recent_falls: false, vynest_nakup: true, vstat_ze_zeme: true,
     zvednout_vnouce: true, rovnovaha_zavrene_oci: false }, uiJourney: true });
 
+if (weightLoss && !combinations) {
+  const fixture = scenarios.find(s => s.id === 'tester143-ui');
+  scenarios.push({ ...fixture, id: 'tester143-medical-stop', medicalAfterFallback: true });
+}
+
 async function isolated(scenario, branch = null) {
   const uid = `isolated-${scenario.id}${branch ? '-' + branch : ''}`;
   const profile = { user_id: uid, ...baseProfile, ...scenario.profile };
   let health = { ...structuredClone(baseHealth), user_id: uid, lifestyle: { ...baseHealth.lifestyle, ...scenario.lifestyle }, physical: { ...baseHealth.physical, ...scenario.physical } };
   let onboarding = null;
   if (scenario.uiJourney || scenario.comboJourney) {
-    onboarding = await runOnboardingFixture(health.physical);
+    onboarding = await runOnboardingFixture(health.physical, null, { age: new Date().getUTCFullYear() - profile.birth_year,
+      height: profile.height, weight: profile.weight, gender: profile.gender, waist: health.lifestyle.waist_cm });
     if (!onboarding.removed || !onboarding.reloaded || JSON.stringify(onboarding.physical) !== JSON.stringify(health.physical)) throw Error('Onboarding fixture did not save the expected answers');
+    if (onboarding.profile?.height !== profile.height || onboarding.profile.weight !== profile.weight
+        || onboarding.profile.gender !== profile.gender || onboarding.profile.waist !== health.lifestyle.waist_cm) throw Error('Wizard and engine profile fixtures differ');
     health.physical = structuredClone(onboarding.physical);
   }
   const constraints = structuredClone(scenario.constraints ?? []);
@@ -185,6 +193,17 @@ async function isolated(scenario, branch = null) {
   const initialEngine = await engine.runEngine(uid);
   const checks = [];
   function check(id, ok, actual) { checks.push({ id, status: ok ? 'PASS' : 'FAIL', actual }); }
+  function safeFallback(r) {
+    const ctx = session.last_domain_response?.explanation_context;
+    const f = ctx?.action_fallback, action = ctx?.action_context?.selected;
+    const blocked = f?.primary_decision?.primary_item?.blocked_candidates ?? [];
+    return r.mode === 'ACT' && f?.status === 'SELECTED' && f.primary_decision.reason_code === 'SAFETY_BLOCKED'
+      && f.primary_node_id === initialEngine.system_leverage.selected?.node_id && f.selected_node_id !== f.primary_node_id
+      && f.selected_node_id === ctx.system_leverage?.node_id && blocked.length > 0
+      && blocked.every(c => ['CONTRAINDICATED', 'NEEDS_CLINICAL_CLEARANCE'].includes(c.safety_level))
+      && ['SAFE', 'SAFE_WITH_MODIFICATION'].includes(action?.safety?.level)
+      && action.action_id !== 'step_down' && action.action_id === session.current_action_assignment?.action_id;
+  }
   if (classifierFailure) return { id: scenario.id, status: 'BLOCKED', reason: classifierFailure, turns, checks: [] };
   const gait = initialEngine.node_states.find(n => n.node_id === 'GAIT_INSTABILITY');
   const gaitFacts = [...(gait?.evidence?.direct ?? []), ...(gait?.evidence?.supporting ?? []), ...(gait?.evidence?.inferred_from_nodes ?? [])];
@@ -216,7 +235,7 @@ async function isolated(scenario, branch = null) {
     }
     if (scenario.id === 'weight-eyes-closed-unstable') {
       check('negative-gait-answer-consumed', gaitFacts.some(f => f.question_id === 'gait_stability' && f.value === false), gait?.evidence);
-      check('negative-gait-safety-preserved', response.mode === 'SAFETY_BLOCKED' && !session.current_action_assignment && assignments.length === 0, { mode: response.mode, text: response.text });
+      check('negative-gait-primary-block-retained', safeFallback(response) && assignments.length === 0, { mode: response.mode, text: response.text });
     }
     if (scenario.id.startsWith('floor-proxy-gait-')) {
       check('floor-proxy-strength-retained', initialEngine.node_states.some(n => n.node_id === 'LOW_MUSCLE_STRENGTH'), initialEngine.node_states.map(n => n.node_id));
@@ -226,7 +245,7 @@ async function isolated(scenario, branch = null) {
         check('stable-gait-moderate-entry', selected?.action_id === '380bb59c-6c0c-40e4-973d-20c5447ef4b2', selected?.action_id);
       } else {
         check('unresolved-or-negative-gait-retains-inference', Boolean(gait), gait?.evidence);
-        check('unresolved-or-negative-no-prescription', response.mode !== 'ACT' && !session.current_action_assignment, { mode: response.mode });
+        check('unresolved-asks-negative-uses-checked-fallback', scenario.id.endsWith('-unstable') ? safeFallback(response) : response.mode !== 'ACT' && !session.current_action_assignment, { mode: response.mode });
       }
     }
     check('goal-canonical-storage', health.goal_text === scenario.text, health.goal_text);
@@ -264,6 +283,7 @@ async function isolated(scenario, branch = null) {
   let productReview = [];
   if (scenario.comboJourney) {
     const result = await runCombinationJourney({ scenario, initialPhysical, initialEngine, onboarding,
+      getCurrentEngine: () => engine.runEngine(uid),
       getHealth: () => health, getSession: () => session, getWrites: () => writes,
       getCalls: () => calls, getAssignments: () => assignments, turn, check, catalog, response });
     response = result.response; productReview = result.reviews;
@@ -273,16 +293,21 @@ async function isolated(scenario, branch = null) {
     check('gait-question-before-block', response.mode === 'ASK' && session.pending_question?.evidence_type === 'gait_stability', { mode: response.mode, pending: session.pending_question });
     response = await turn('Ne');
     check('negative-answer-stored', health.physical.gait_stability === false, health.physical);
-    check('block-without-prescription', response.mode === 'SAFETY_BLOCKED' && assignments.length === 0 && !session.current_action_assignment, { mode: response.mode, assignments });
-    check('block-explains-walking', /chůzi bez opory/.test(response.text) && /nejistot/.test(response.text), response.text);
+    check('primary-block-alternative-checked', safeFallback(response) && assignments.length === 0 && health.physical.gait_stability === false, { mode: response.mode, assignments });
     check('block-has-why-chip', ui.click('Proč?') === 'Proč?', turns.at(-1).ui);
     const writesBefore = writes.length;
     const callsBefore = calls.length;
     const why = await turn('Proč?');
     check('blocked-why-read-only', writes.length === writesBefore && calls.length === callsBefore, { writes: writes.length - writesBefore, classifier_calls: calls.length - callsBefore });
-    check('why-retains-block', why.mode === 'SAFETY_BLOCKED' && /chůzi bez opory/.test(why.text) && !session.current_action_assignment, why.text);
+    check('why-explains-fallback-without-clearance', why.mode === 'EXPLAIN' && /hlavní prioritu.*nepovolují/.test(why.text) && /nejistot/.test(why.text) && Boolean(session.current_action_assignment), why.text);
     const next = await turn('Co dál?');
-    check('follow-up-keeps-safety', next.mode === 'SAFETY_BLOCKED' && assignments.length === 0 && !session.pending_question && !session.current_action_assignment, { mode: next.mode, assignments });
+    check('follow-up-keeps-primary-block-and-alternative', safeFallback(next) && assignments.length === 0 && !session.pending_question, { mode: next.mode, assignments });
+    if (scenario.medicalAfterFallback) {
+      const stopped = await turn('Mám synkopu.');
+      check('medical-report-stops-fallback', stopped.mode === 'HOLD' && session.unsupported_request?.kind === 'medical' && !session.current_action_assignment && !session.last_domain_response, stopped.text);
+      const again = await turn('Chci zhubnout.');
+      check('medical-stop-cannot-be-bypassed-by-new-goal', again.mode === 'HOLD' && session.unsupported_request?.kind === 'medical' && !session.current_action_assignment && assignments.length === 0, again.text);
+    }
   }
   if (branch?.startsWith('gait-')) {
     check('gait-question-typed', response.mode === 'ASK' && session.pending_question?.evidence_type === 'gait_stability' && !/závažné/.test(response.text), { mode: response.mode, pending: session.pending_question });
@@ -291,9 +316,9 @@ async function isolated(scenario, branch = null) {
     const snapshot = structuredClone(health);
     check('gait-answer-polarity', branch === 'gait-yes' ? health.physical.gait_stability === true : branch === 'gait-no' ? health.physical.gait_stability === false : health.physical.gait_stability === 'Nevím', health.physical.gait_stability);
     check('gait-answer-persisted', health.physical.gait_stability != null || health.physical.evidence_availability?.gait_stability != null, snapshot.physical);
-    check('gait-no-invented-clearance', response.mode === 'SAFETY_BLOCKED' && !session.current_action_assignment && assignments.length === 0, { mode: response.mode, text: response.text });
+    check('gait-no-invented-clearance', safeFallback(response) && assignments.length === 0, { mode: response.mode, text: response.text });
     const follow = await turn('Co dál?');
-    check('gait-no-repeat-after-answer', follow.mode !== 'ASK' && !session.pending_question && !session.current_action_assignment, { mode: follow.mode, text: follow.text });
+    check('gait-no-repeat-after-answer', safeFallback(follow) && !session.pending_question, { mode: follow.mode, text: follow.text });
     if (classifierFailure) return { id: scenario.id, branch, status: 'BLOCKED', reason: classifierFailure, turns, checks };
   }
   if (branch && !branch.startsWith('gait-')) {
@@ -403,4 +428,5 @@ if (weightLoss && !combinations) {
 const counts = Object.fromEntries(['PASS', 'FAIL', 'BLOCKED'].map(s => [s, results.filter(r => r.status === s).length]));
 console.log(JSON.stringify({ suite: combinations ? 'crt_combinations_endpoint' : weightLoss ? 'weight_loss_endpoint' : 'gait', mode: live ? 'live_classifier_full_engine_public_catalog' : 'injected_classifier_full_engine_public_catalog', catalog: catalogMeta, counts, limitations: ['All user profiles and writes are synthetic and isolated in memory', 'No browser, authentication or microphone/audio transcription test', 'No clinical efficacy or exercise dose validation', ...(combinations ? ['768 journeys over 64 profiles and two intents; some answer/outcome branches coincide when no question/action is reached', 'Product review flags are separate from software PASS; priority correctness is not assumed from engine output'] : []), ...(weightLoss ? ['Real endpoint hydration, but Firebase authentication is mocked', 'Exact weight wishes use the existing server parser and bypass Haiku; live mode exercises AI only for inputs reaching classification', 'Review-required catalog choices do not become clinically approved through PASS'] : []), 'BLOCKED journeys are not counted as passing'], results }, null, 2));
 process.exitCode = counts.FAIL ? 1 : counts.BLOCKED ? 2 : 0;
+
 

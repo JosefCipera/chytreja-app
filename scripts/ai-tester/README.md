@@ -95,3 +95,15 @@ The real wizard handlers, orchestration endpoint, whole engine, public catalog a
 
 See [the review](../../docs/QA-CRT-COMBINATIONS-2026-10-12.md) for observed branch differences and remaining product questions. Graph consistency is not evidence that the graph, selected priority, exercise protocol or starting dose is clinically correct. Registrations, real authentication, browser layout and microphone recording remain outside this suite.
 
+
+
+## Available action branch after primary safety block (2026-10-12)
+
+The original systemic priority remains in `engine.system_leverage`. When its exact Daily Decision is SAFETY_BLOCKED, `findAvailableLeverage` evaluates other already-evidenced, modeled leverage candidates in the existing alternative order. Each uses the unchanged NBA with the same person facts, constraints, all node states, evidence, response history and today's skips. There is no fallback before a required answer, for missing models/candidates, after primary ACT/HOLD, or under a critical safety override. An unavailable alternative is not prescribed. A completed/skipped alternative stops the branch search for today instead of hopping to another intervention.
+
+`action_leverage` records the branch actually supporting the day's action; `action_fallback` retains the primary blocked decision and ordered attempts. Cached WHY, causal/goal paths, mechanism and assigned leverage refer to that actual branch, while `system_priority` keeps the global priority visible. WHY explains why its action is unavailable. Safety gates, dose, catalog and systemic ranking are not relaxed.
+
+`node scripts/test-leverage-fallback.mjs` verifies eligibility/order, all-unavailable behavior and critical/evidence/skip/completion precedence. The endpoint suite now has 25 journeys, requiring the reported tester143-shaped case to keep the primary walking block while offering a checked alternative, and requiring a subsequent syncope report to stop the conversation's exercise offer even after a new goal. Combination journeys additionally validate the actual branch after clarification against real model edges, supported intervention and the current NBA. Onboarding fixture profiles now serialize their supplied demographic/body inputs rather than a fixed default, with explicit parity checks.
+
+Local snapshot: 768 combination, 25 endpoint and 25 gait journeys PASS. 322 combination journeys used a checked alternative, representing 54 profile/request pairs (49 functional-strength branches and five gait branches); three profile/request pairs still await clinical-context answers outside the current synthetic fixture. These are software results, not clinical approval of individual catalog protocols. See [the policy and validation review](../../docs/QA-AVAILABLE-LEVERAGE-2026-10-12.md).
+
