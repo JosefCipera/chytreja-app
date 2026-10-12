@@ -3,7 +3,7 @@
 import fs from 'node:fs';
 import vm from 'node:vm';
 
-export async function runOnboardingFixture(physical, failAction = null) {
+export async function runOnboardingFixture(physical, failAction = null, person = {}) {
   const source = fs.readFileSync(new URL('../../app/js/universe/onboarding-wizard.js', import.meta.url), 'utf8')
     .replace("import { authFetch } from './authFetch.js';", '')
     .replace('export async function checkAndShowOnboarding', 'async function checkAndShowOnboarding');
@@ -48,7 +48,10 @@ export async function runOnboardingFixture(physical, failAction = null) {
     } });
   vm.runInContext(source, ctx);
   await vm.runInContext("checkAndShowOnboarding('isolated-onboarding')", ctx);
-  for (const [key, value] of Object.entries({ 'onb-age': '67', 'onb-height': '178', 'onb-weight': '88', 'onb-waist': '99' })) ids.get(key).value = value;
+  for (const [key, value] of Object.entries({ 'onb-age': person.age ?? 67, 'onb-height': person.height ?? 178, 'onb-weight': person.weight ?? 88, 'onb-waist': person.waist ?? 99 })) ids.get(key).value = String(value);
+  const gender = pills.find(e => e.dataset.gender === (person.gender ?? 'male'));
+  if (!gender) throw Error('Missing gender pill');
+  gender.listeners.click();
   await ids.get('onb-next').listeners.click();
   await ids.get('onb-next').listeners.click();
   for (const [key, value] of Object.entries(physical)) {
@@ -57,5 +60,5 @@ export async function runOnboardingFixture(physical, failAction = null) {
     pill.listeners.click();
   }
   await ids.get('onb-next').listeners.click();
-  return { physical: requests.find(r => r.body?.step === 3)?.body.physical, requests, removed, reloaded };
+  return { profile: requests.find(r => r.body?.step === 1)?.body, physical: requests.find(r => r.body?.step === 3)?.body.physical, requests, removed, reloaded };
 }
