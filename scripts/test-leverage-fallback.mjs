@@ -13,7 +13,7 @@ assert.equal(r.nba, safe);
 visited = [];
 r = await findAvailableLeverage({ ...input, evaluate: async id => { visited.push(id); return id === 'BEST' ? blocked : safe; } });
 assert.deepEqual(visited, ['BEST', 'LOWER']); assert.equal(r.actionLeverage.selected.node_id, 'LOWER');
-for (const primaryNba of [safe, { status: 'NEED_MORE_EVIDENCE', selected: null, all_candidates: [{ safety: { level: 'NEEDS_MORE_EVIDENCE' } }] }, { status: 'SKIPPED_EXHAUSTED', selected: null, all_candidates: [] }, { status: 'NO_CANDIDATES', all_candidates: [] }]) {
+for (const primaryNba of [safe, { status: 'NEED_MORE_EVIDENCE', selected: null, all_candidates: [{ safety: { level: 'NEEDS_MORE_EVIDENCE' } }] }, { status: 'NO_CANDIDATES', reason_code: 'ALL_ACTIONS_SKIPPED_TODAY', selected: null, all_candidates: [] }, { status: 'NO_CANDIDATES', all_candidates: [] }]) {
   let called = false;
   r = await findAvailableLeverage({ ...input, primaryNba, evaluate: async () => { called = true; return safe; } });
   assert.equal(called, false); assert.equal(r.nba, primaryNba); assert.equal(r.fallback, null);
@@ -28,8 +28,8 @@ visited = [];
 r = await findAvailableLeverage({ ...input, interventionExposure: [{ intervention_id: 'BALANCE', completed_days: [today] }], evaluate: async id => { visited.push(id); return safe; } });
 assert.deepEqual(visited, ['BEST']); assert.equal(r.actionLeverage.selected.node_id, 'BEST');
 visited = [];
-r = await findAvailableLeverage({ ...input, evaluate: async id => { visited.push(id); return { status: 'SKIPPED_EXHAUSTED', selected: null, all_candidates: [] }; } });
-assert.deepEqual(visited, ['BEST']); assert.equal(r.nba.status, 'SKIPPED_EXHAUSTED');
+r = await findAvailableLeverage({ ...input, evaluate: async id => { visited.push(id); return { status: 'NO_CANDIDATES', reason_code: 'ALL_ACTIONS_SKIPPED_TODAY', selected: null, all_candidates: [] }; } });
+assert.deepEqual(visited, ['BEST']); assert.equal(r.nba.reason_code, 'ALL_ACTIONS_SKIPPED_TODAY');
 r = await findAvailableLeverage({ ...input, evaluate: async () => blocked });
 assert.equal(r.fallback.status, 'UNAVAILABLE'); assert.equal(r.nba, blocked); assert.equal(r.actionLeverage, leverage);
 r = await findAvailableLeverage({ ...input, evaluate: async () => ({ ...safe, selected: { ...safe.selected, safety: { level: 'CONTRAINDICATED' } } }) });
