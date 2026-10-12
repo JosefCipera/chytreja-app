@@ -1,30 +1,29 @@
-import fs from 'node:fs';
-import vm from 'node:vm';
 import assert from 'node:assert/strict';
-const html = fs.readFileSync(new URL('../app/launcher.html', import.meta.url), 'utf8');
-const render = html.slice(html.indexOf('  function render(response)'), html.indexOf('  // ── Orchestrate'));
-const loading = html.slice(html.indexOf('  function setLoading(on)'), html.indexOf('  function setLoading(on)') + 1000);
-// Extract the actual function, respecting nested braces.
-function functionBody(source) {
-  let depth = 0; let seen = false;
-  for(let i=0;i<source.length;i++) { if(source[i]==='{') { depth++; seen=true; } else if(source[i]==='}' && --depth===0 && seen) return source.slice(0,i+1); }
-  throw new Error('Missing function');
+import { createLauncherHarness } from './ai-tester/launcher-render-harness.mjs';
+const ui = createLauncherHarness();
+const enabled = (state, expected, label) => {
+  for (const key of ['input_enabled', 'send_enabled', 'microphone_enabled'])
+    assert.equal(state[key], expected, label + ': ' + key);
+};
+for (const response of [
+  { mode: 'HOLD', debug: { reason_code: 'HOLD_DONE_TODAY' } },
+  { mode: 'HOLD', debug: { reason_code: 'HOLD_SKIPPED_TODAY' } },
+  { mode: 'SAFETY_BLOCKED' }, // Persisted response from before the fix has no buttons.
+  { mode: 'SAFETY_BLOCKED', buttons: ['Proč?'], expects_reply: true },
+  { mode: 'EXPLAIN' }, // No current action is not a reason to disable questions.
+  { mode: 'NOOP' },
+  { mode: 'ASK', expects_reply: true },
+  { mode: 'ACT', buttons: ['Hotovo', 'Přeskočit'] },
+]) {
+  const state = ui.render({ text: 'Test', buttons: [], expects_reply: false, ...response });
+  enabled(state, true, response.mode);
+  assert.equal(state.label, response.debug?.reason_code === 'HOLD_DONE_TODAY' ? '✓' : response.mode === 'ACT' ? 'DNES' : '');
+  enabled(ui.loading(true), false, 'request in progress');
+  enabled(ui.loading(false), true, 'request finished');
 }
-const element = () => ({disabled: false, classList:{add(){},remove(){}},focus(){},appendChild(){},addEventListener(){}});
-const nodes = Object.fromEntries(['$orb','$stageSub','$stageLabel','$stage','$chips','$input','$sendBtn','$micBtn'].map(k=>[k,element()]));
-const ctx = vm.createContext({...nodes, _terminalState:false, _debugMode:false, setBadge(){}, document:{createElement:element}});
-vm.runInContext(render + '\n' + functionBody(loading),ctx);
-for (const reason of ['HOLD_DONE_TODAY','HOLD_SKIPPED_TODAY']) {
-  ctx.response={mode:'HOLD',text:'Test',buttons:[],expects_reply:false,debug:{reason_code:reason}};
-  vm.runInContext('render(response); setLoading(false);',ctx);
-  for(const name of ['$input','$sendBtn','$micBtn']) assert.equal(nodes[name].disabled,false,name+' locked after '+reason);
-  assert.equal(nodes.$stageLabel.textContent,reason==='HOLD_DONE_TODAY'?'✓':'');
-  vm.runInContext('setLoading(true);',ctx);
-  assert.equal(nodes.$input.disabled,true,'Input must lock during request');
-  vm.runInContext('setLoading(false);',ctx);
-  assert.equal(nodes.$input.disabled,false,'Input must unlock after request');
-}
-ctx.response={mode:'SAFETY_CRITICAL',text:'Test',buttons:[],expects_reply:false};
-vm.runInContext('render(response); setLoading(false);',ctx);
-assert.equal(nodes.$input.disabled,true,'Safety terminal behavior unchanged');
-console.log('PASS: actual launcher render/loading functions; HOLD input unlocked, busy locked, skipped checkmark removed, safety unchanged.');
+assert.equal(ui.render({ mode: 'SAFETY_BLOCKED', text: 'Test', buttons: ['Proč?'], expects_reply: true }).chips.includes('Proč?'), true);
+assert.equal(ui.click('Proč?'), 'Proč?');
+enabled(ui.render({ mode: 'SAFETY_CRITICAL', text: 'Test', buttons: [], expects_reply: false }), false, 'critical terminal unchanged');
+enabled(ui.render({ mode: 'SAFETY_BLOCKED', text: 'Restored', buttons: [], expects_reply: false }), true, 'restored legacy block unlocks terminal');
+console.log('PASS: production launcher render/loading; blocked, explain, noop, ask, act and hold controls remain available; busy and critical terminal remain locked; WHY chip submits.');
+
