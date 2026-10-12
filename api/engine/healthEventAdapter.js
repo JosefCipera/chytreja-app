@@ -527,25 +527,27 @@ function buildDomainResponse(engineResult) {
     daily_decision,
     explanation_context: {
       system_constraint: engineResult.system_constraint?.selected ?? null,
-      system_leverage:   engineResult.system_leverage?.selected   ?? null,
+      system_leverage:   (engineResult.action_leverage ?? engineResult.system_leverage)?.selected ?? null,
+      system_priority:   engineResult.system_leverage?.selected ?? null,
+      action_fallback:   engineResult.action_fallback ?? null,
       action_context:    engineResult.next_best_action            ?? null,
       evidence_context:  (engineResult.information_needs ?? []).slice(0, 3),
       // Read-only provenance for WHY, from the exact node selected by the engine.
       reported_gait_evidence: (engineResult.node_states ?? [])
         .find(node => node.node_id === 'GAIT_INSTABILITY')?.evidence ?? null,
       leverage_evidence: (engineResult.node_states ?? [])
-        .find(node => node.node_id === engineResult.system_leverage?.selected?.node_id)?.evidence ?? null,
+        .find(node => node.node_id === (engineResult.action_leverage ?? engineResult.system_leverage)?.selected?.node_id)?.evidence ?? null,
       // Additive, read-only exposure of already-computed causal reach — does not
       // change system_leverage selection or any other decision. See buildWhyResponse's
       // sibling builders (buildTrajectoryResponse / buildMechanismResponse) in orchestrator.js.
-      causal_context:    engineResult.system_leverage?.selection_basis?.causal_reach ?? null,
+      causal_context:    (engineResult.action_leverage ?? engineResult.system_leverage)?.selection_basis?.causal_reach ?? null,
       // Additive, read-only: which of the two existing Goal Gateways (CARDIOVASCULAR_DISEASE /
       // LOSS_OF_FLOOR_RISE_ABILITY — see api/engine/goalGateways.js) the leverage node's own
       // causal path actually reaches. computeGoalImpact() in systemConstraint.js already
       // computes this generically for every node_state candidate; this just reads the entry
       // that matches the leverage node instead of only the system_constraint winner.
       goal_gateway_context: (engineResult.system_constraint?.candidates ?? [])
-        .find(c => c.node_id === engineResult.system_leverage?.selected?.node_id)
+        .find(c => c.node_id === (engineResult.action_leverage ?? engineResult.system_leverage)?.selected?.node_id)
         ?.goal_impact ?? null,
     },
   };
@@ -706,3 +708,4 @@ export async function applyHealthEvent(userId, event) {
     return makeResult('error', false, null, warnings, err.message);
   }
 }
+
