@@ -27,6 +27,7 @@ import { evaluateDecisionGate }      from './decisionGate.js';
 import { computeSystemLeverage }     from './systemLeverage.js';
 import { computeSystemConstraint }   from './systemConstraint.js';
 import { computeNextBestAction }     from './nextBestAction.js';
+import { findAvailableLeverage }     from './leverageFallback.js';
 import { computeInterventionExposure, evaluateResponseEvaluations, buildResponseInformationNeeds } from './adherence.js';
 // selectNextBestEvidence is now called inside decisionGate.js per context
 
@@ -108,15 +109,15 @@ export async function runEngine(userId) {
   const response_info_needs = buildResponseInformationNeeds(response_evaluations);
   const information_needs   = mergeResponseNeeds(information_needs_base, response_info_needs);
 
-  if (interventionData) {
-    const allProtocolTypes = [...new Set(interventionData.interventions.flatMap(i => i.protocol_types))];
+  async function evaluateLeverage(nodeId, data) {
+    const allProtocolTypes = [...new Set(data.interventions.flatMap(i => i.protocol_types))];
     const [actionPool, personConstraints] = await Promise.all([
       fetchActionPool(allProtocolTypes),
       fetchPersonConstraints(userId),
     ]);
-    next_best_action = computeNextBestAction({
-      leverageNodeId,
-      interventions:        interventionData.interventions,
+    return computeNextBestAction({
+      leverageNodeId:        nodeId,
+      interventions:        data.interventions,
       actionPool,
       personConstraints,
       clinicalHistory,
@@ -127,6 +128,11 @@ export async function runEngine(userId) {
       skippedTodayActionIds,
     });
   }
+  if (interventionData) next_best_action = await evaluateLeverage(leverageNodeId, interventionData);
+  const available = await findAvailableLeverage({ systemLeverage: system_leverage, primaryNba: next_best_action,
+    decisionGate: decision_gate, responseEvaluations: response_evaluations, interventionExposure: intervention_exposure,
+    mappings: INTERVENTION_MAP.mappings, evaluate: evaluateLeverage });
+  next_best_action = available.nba;
 
   return {
     person,
@@ -137,9 +143,12 @@ export async function runEngine(userId) {
     information_needs,
     decision_gate,
     system_leverage,
+    action_leverage:       available.actionLeverage,
+    action_fallback:       available.fallback,
     system_constraint,
     next_best_action,
     intervention_exposure,
     response_evaluations,
   };
 }
+
