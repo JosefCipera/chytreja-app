@@ -4,6 +4,10 @@ on:
   workflow_dispatch:
   pull_request:
     paths:
+      - app/launcher.html
+      - scripts/test-launcher-hold-input.mjs
+      - scripts/test-onboarding-combinations.mjs
+      - app/js/universe/onboarding-wizard.js
       - scripts/ai-tester/**
       - scripts/test-why-control.mjs
       - scripts/test-skip-progression.mjs
@@ -25,6 +29,10 @@ on:
       - qa/gait-real-engine
       - qa/gait-full-catalog-matrix
     paths:
+      - app/launcher.html
+      - scripts/test-launcher-hold-input.mjs
+      - scripts/test-onboarding-combinations.mjs
+      - app/js/universe/onboarding-wizard.js
       - scripts/ai-tester/**
       - api/orchestrate.js
       - scripts/test-adiposity-entry-intensity.mjs
@@ -60,6 +68,8 @@ jobs:
         run: npm ci --ignore-scripts
       - name: Verify deterministic skip contracts
         run: |
+          node scripts/test-launcher-hold-input.mjs
+          node scripts/test-onboarding-combinations.mjs
           node scripts/test-adiposity-entry-intensity.mjs
           node scripts/reproduce-eyes-closed-gait.mjs
           node scripts/test-blocking-evidence.mjs
@@ -105,3 +115,4 @@ jobs:
           path: ai-tester-results/*.json
           if-no-files-found: warn
           retention-days: 7
+
