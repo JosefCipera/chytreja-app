@@ -955,15 +955,21 @@ function buildHoldResponse(dd, _ctx, sessionUpdates, warnings, eventType, isFoll
 
 function buildSafetyBlockedResponse(dd, sessionUpdates, warnings) {
   const worst = dd.primary_item?.worst_safety_level;
-  const text  = worst === 'CONTRAINDICATED'
-    ? 'Tato aktivita není s tvým aktuálním stavem vhodná. Konzultuj lékaře.'
-    : 'Před touto aktivitou je potřeba souhlas lékaře.';
+  const blocked = dd.primary_item?.blocked_candidates ?? [];
+  // Translate only the exact existing gate result; never invent a clinical cause.
+  const gaitOnly = blocked.length > 0 && blocked.every(c => c.reason ===
+    'Gait self-report has been answered, but the active instability finding remains. Individual assessment is required before prescribing unaided walking.');
+  const text = gaitOnly
+    ? 'Aktivity založené na chůzi bez opory ti teď nemohu doporučit kvůli údajům o nejistotě při chůzi. Vhodnou zátěž je potřeba nejprve posoudit s lékařem nebo fyzioterapeutem.'
+    : worst === 'CONTRAINDICATED'
+      ? 'Zvažované aktivity nejsou podle bezpečnostních pravidel aplikace s tvým aktuálním stavem vhodné. Poraď se s lékařem.'
+      : 'Zvažované aktivity teď nemohu doporučit bez posouzení lékařem. Můžeš se zeptat na důvod nebo napsat, co dalšího chceš řešit.';
 
   return {
     mode:          'SAFETY_BLOCKED',
     text,
-    buttons:       [],
-    expects_reply: false,
+    buttons:       ['Proč?'],
+    expects_reply: true,
     session_updates: sessionUpdates,
     debug:         { reason_code: dd.reason_code, warnings },
   };
@@ -1587,6 +1593,12 @@ export async function processInput(userId, userText, sessionState = {}) {
   const isWhy = event_type === 'WHY_REQUEST'
     || (textLower.startsWith('proč') || textLower.startsWith('proc'));
   if (isWhy) {
+    // A blocked decision must explain its own safety result, not an older action.
+    if (state.last_daily_decision?.reason_code === 'SAFETY_BLOCKED') {
+      const response = buildSafetyBlockedResponse(state.last_daily_decision, {}, []);
+      if (state.person_goal === 'WEIGHT_LOSS') response.text = 'Chceš zhubnout. ' + response.text;
+      return response;
+    }
     if (state.last_daily_decision?.reason_code?.startsWith('PATH_DISCOVERY_HOLD')) {
       return buildPathDiscoveryWhyResponse(state);
     }
@@ -2432,3 +2444,4 @@ export async function processInput(userId, userText, sessionState = {}) {
 
   return presentation;
 }
+

@@ -833,8 +833,9 @@
     $input.placeholder = mode === 'ASK' ? 'Odpověz nebo napiš…' : 'Napiš nebo řekni…';
     if (mode === 'ASK') $input.focus();
 
-    // HOLD ends today's action, not the conversation. New input must remain possible.
-    const isTerminal  = mode !== 'HOLD' && !expects_reply && buttons.length === 0;
+    // An action can end or be blocked without ending the conversation.
+    // Keep questions and voice available; only the existing critical terminal stays locked.
+    const isTerminal  = mode === 'SAFETY_CRITICAL' && !expects_reply && buttons.length === 0;
     _terminalState    = isTerminal;
     $input.disabled   = isTerminal;
     $sendBtn.disabled = isTerminal;
@@ -1076,3 +1077,4 @@
 </script>
 </body>
 </html>
+
