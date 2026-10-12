@@ -21,7 +21,7 @@ const lines = [
   ...[...byOutcome].map(([key, n]) => `| ${key} | ${n} |`), '',
   '| K posouzení produktu | Profilů × požadavků | Příklad |', '|---|---:|---|',
   ...[...reviews].map(([key, r]) => `| ${key} | ${r.profiles.size} | ${r.example} |`), '',
-  'ASSESSMENT_STOP: bezpečnostní pravidlo ukončilo nabídku aktivit. GAIT_REQUEST_ADIPOSITY_PRIORITY: požadavek na nejistotu chůze vedl k prioritě tuku. EVIDENCE_PENDING / UNMODELED_EVIDENCE: žádný výsledek měření nevymýšlíme, požadavek zůstává k doplnění. Tyto položky jsou produktové otázky, nikoli automaticky softwarové chyby.', '',
+  'CHECKED_ALTERNATIVE: jiná akční větev prošla stejnými bezpečnostními a evidenčními pravidly; globální priorita a její blokace zůstaly zaznamenané. ASSESSMENT_STOP: žádná přípustná alternativa, blokace trvá. GAIT_REQUEST_ADIPOSITY_PRIORITY: globální priorita zůstává tuk; dostupnost dnešního kroku se hodnotí samostatně. EVIDENCE_PENDING / UNMODELED_EVIDENCE: požadavek zůstává k doplnění bez vymýšlení výsledků měření. Tyto položky nejsou klinickým schválením ani automaticky softwarovou chybou.', '',
   'PASS ověřuje zadané údaje, grafové vazby, propojení intervence, čtení vysvětlení, zápisy Hotovo/Přeskočit, návrat a dostupnost ovládání. Nepotvrzuje správnost klinické priority, dávky ani účinnost. Klasifikátor je v této kombinatorické sadě injektovaný; reálná AI se ověřuje v oddělených live sadách. Onboarding, API a DOM používají izolovaná data; registrace a skutečný prohlížeč nejsou testovány.',
 ];
 console.log(lines.join('\n'));
