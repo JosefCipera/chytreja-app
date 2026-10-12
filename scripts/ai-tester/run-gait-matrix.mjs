@@ -125,8 +125,10 @@ async function isolated(scenario, branch = null) {
   const constraints = structuredClone(scenario.constraints ?? []);
   const assignments = [];
   const calls = [], writes = [], turns = [];
+  let constraintsReads = 0;
   const tables = new Set(['user_profiles', 'user_health_profile', 'user_constraints', 'action_assignments', 'daily_checkin', 'longevity_actions']);
   const db = { from(table) {
+    if (table === 'user_constraints') constraintsReads++;
     if (!tables.has(table)) throw Error('Unexpected table: ' + table);
     const filters = [];
     let single = false;
@@ -190,9 +192,12 @@ async function isolated(scenario, branch = null) {
   let response = await turn(scenario.text);
   const initialClassification = calls[0] ?? null;
   const initialPhysical = structuredClone(health.physical);
+  const constraintsBefore = constraintsReads;
   const initialEngine = await engine.runEngine(uid);
+  const initialConstraintReads = constraintsReads - constraintsBefore;
   const checks = [];
   function check(id, ok, actual) { checks.push({ id, status: ok ? 'PASS' : 'FAIL', actual }); }
+  check('one-constraint-snapshot-per-evaluation', initialConstraintReads <= 1, initialConstraintReads);
   function safeFallback(r) {
     const ctx = session.last_domain_response?.explanation_context;
     const f = ctx?.action_fallback, action = ctx?.action_context?.selected;
@@ -283,7 +288,12 @@ async function isolated(scenario, branch = null) {
   let productReview = [];
   if (scenario.comboJourney) {
     const result = await runCombinationJourney({ scenario, initialPhysical, initialEngine, onboarding,
-      getCurrentEngine: () => engine.runEngine(uid),
+      getCurrentEngine: async () => {
+        const before = constraintsReads;
+        const current = await engine.runEngine(uid);
+        check('one-constraint-snapshot-after-clarification', constraintsReads - before <= 1, constraintsReads - before);
+        return current;
+      },
       getHealth: () => health, getSession: () => session, getWrites: () => writes,
       getCalls: () => calls, getAssignments: () => assignments, turn, check, catalog, response });
     response = result.response; productReview = result.reviews;
