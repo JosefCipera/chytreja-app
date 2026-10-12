@@ -8,6 +8,7 @@ on:
       - scripts/test-launcher-hold-input.mjs
       - scripts/test-onboarding-combinations.mjs
       - scripts/test-crt-contract-mutations.mjs
+      - scripts/test-leverage-fallback.mjs
       - app/js/universe/onboarding-wizard.js
       - scripts/ai-tester/**
       - scripts/test-why-control.mjs
@@ -34,6 +35,7 @@ on:
       - scripts/test-launcher-hold-input.mjs
       - scripts/test-onboarding-combinations.mjs
       - scripts/test-crt-contract-mutations.mjs
+      - scripts/test-leverage-fallback.mjs
       - app/js/universe/onboarding-wizard.js
       - scripts/ai-tester/**
       - api/orchestrate.js
@@ -73,6 +75,7 @@ jobs:
           node scripts/test-launcher-hold-input.mjs
           node scripts/test-onboarding-combinations.mjs
           node scripts/test-crt-contract-mutations.mjs
+          node scripts/test-leverage-fallback.mjs
           node scripts/test-adiposity-entry-intensity.mjs
           node scripts/reproduce-eyes-closed-gait.mjs
           node scripts/test-blocking-evidence.mjs
