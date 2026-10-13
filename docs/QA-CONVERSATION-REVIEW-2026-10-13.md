@@ -18,7 +18,7 @@ Výsledek softwarových kontrol: PASS.
 
 **Uživatel:** Ne
 
-**Chytré já:** Chceš zhubnout. Dnes začínáme krokem pro jistotu při chůzi. Stůj na jedné noze 30 sekund. Při cvičení na jedné noze se přidržuj stěny nebo opěradla stabilní židle. Začni s otevřenýma očima. Oči zavři až tehdy, když bezpečně udržíš rovnováhu. Při prvních cvičeních měj někoho u sebe nebo cvič v blízkosti pevné opory.
+**Chytré já:** Chceš zhubnout. Dnes začínáme krokem pro jistotu při chůzi. Stůj na jedné noze 30 sekund. Při cvičení na jedné noze se přidržuj stěny nebo opěradla stabilní židle. Po celou dobu měj oči otevřené. Při bolesti, závrati nebo ztrátě rovnováhy přestaň. Při prvních cvičeních měj někoho u sebe nebo cvič v blízkosti pevné opory.
 
 **Uživatel:** Proč?
 
@@ -26,7 +26,7 @@ Výsledek softwarových kontrol: PASS.
 
 **Uživatel:** Co dál?
 
-**Chytré já:** Chceš zhubnout. Dnes začínáme krokem pro jistotu při chůzi. Stůj na jedné noze 30 sekund. Při cvičení na jedné noze se přidržuj stěny nebo opěradla stabilní židle. Začni s otevřenýma očima. Oči zavři až tehdy, když bezpečně udržíš rovnováhu. Při prvních cvičeních měj někoho u sebe nebo cvič v blízkosti pevné opory.
+**Chytré já:** Chceš zhubnout. Dnes začínáme krokem pro jistotu při chůzi. Stůj na jedné noze 30 sekund. Při cvičení na jedné noze se přidržuj stěny nebo opěradla stabilní židle. Po celou dobu měj oči otevřené. Při bolesti, závrati nebo ztrátě rovnováhy přestaň. Při prvních cvičeních měj někoho u sebe nebo cvič v blízkosti pevné opory.
 
 ## Oprava odpovědi o vstávání ze země
 
@@ -116,7 +116,7 @@ Výsledek softwarových kontrol: PASS.
 
 **Uživatel:** Co dál?
 
-**Chytré já:** Chceš zhubnout. Dnes začínáme krokem pro jistotu při chůzi. Stůj na jedné noze 30 sekund. Při cvičení na jedné noze se přidržuj stěny nebo opěradla stabilní židle. Začni s otevřenýma očima. Oči zavři až tehdy, když bezpečně udržíš rovnováhu. Při prvních cvičeních měj někoho u sebe nebo cvič v blízkosti pevné opory.
+**Chytré já:** Chceš zhubnout. Dnes začínáme krokem pro jistotu při chůzi. Stůj na jedné noze 30 sekund. Při cvičení na jedné noze se přidržuj stěny nebo opěradla stabilní židle. Po celou dobu měj oči otevřené. Při bolesti, závrati nebo ztrátě rovnováhy přestaň. Při prvních cvičeních měj někoho u sebe nebo cvič v blízkosti pevné opory.
 
 **Uživatel:** Mám synkopu.
 
@@ -140,7 +140,7 @@ Výsledek softwarových kontrol: PASS.
 
 **Uživatel:** Ne
 
-**Chytré já:** Chceš zhubnout. Dnes začínáme krokem pro jistotu při chůzi. Stůj na jedné noze 30 sekund. Při cvičení na jedné noze se přidržuj stěny nebo opěradla stabilní židle. Začni s otevřenýma očima. Oči zavři až tehdy, když bezpečně udržíš rovnováhu. Při prvních cvičeních měj někoho u sebe nebo cvič v blízkosti pevné opory.
+**Chytré já:** Chceš zhubnout. Dnes začínáme krokem pro jistotu při chůzi. Stůj na jedné noze 30 sekund. Při cvičení na jedné noze se přidržuj stěny nebo opěradla stabilní židle. Po celou dobu měj oči otevřené. Při bolesti, závrati nebo ztrátě rovnováhy přestaň. Při prvních cvičeních měj někoho u sebe nebo cvič v blízkosti pevné opory.
 
 **Uživatel:** Proč?
 
@@ -148,12 +148,12 @@ Výsledek softwarových kontrol: PASS.
 
 **Uživatel:** Co dál?
 
-**Chytré já:** Chceš zhubnout. Dnes začínáme krokem pro jistotu při chůzi. Stůj na jedné noze 30 sekund. Při cvičení na jedné noze se přidržuj stěny nebo opěradla stabilní židle. Začni s otevřenýma očima. Oči zavři až tehdy, když bezpečně udržíš rovnováhu. Při prvních cvičeních měj někoho u sebe nebo cvič v blízkosti pevné opory.
+**Chytré já:** Chceš zhubnout. Dnes začínáme krokem pro jistotu při chůzi. Stůj na jedné noze 30 sekund. Při cvičení na jedné noze se přidržuj stěny nebo opěradla stabilní židle. Po celou dobu měj oči otevřené. Při bolesti, závrati nebo ztrátě rovnováhy přestaň. Při prvních cvičeních měj někoho u sebe nebo cvič v blízkosti pevné opory.
 
 ## Co posoudit
 
 - Po opravě odpovědi aplikace přestává používat původní slabost jako důvod. Je pokračování otázkou na nemoci a léky srozumitelné?
-- Při nejistotě chůze model může nabídnout rovnovážné cvičení. Znění, opora, délka a pokyn zavírat oči vyžadují samostatnou odbornou kontrolu.
+- Při nejistotě chůze model může nabídnout rovnovážné cvičení. Pokyn zavírat oči je odstraněn; varianty se zavřenýma očima a na nestabilní podložce při nejisté chůzi vyžadují individuální posouzení. Vhodnost a délka základního cviku pro konkrétního člověka tím nejsou klinicky schválené.
 - Po hlášení synkopy doporučení zmizí a návrat k hubnutí je neobnoví v tomto rozhovoru. Trvání blokace přes odhlášení není tímto testem ověřeno.
 - Po „Pro dnešek stačí“ aplikace další cvik tentýž den nenabízí. Nové údaje přijímá, i po vymazání stavu klienta; následující den se doporučení vyhodnotí znovu.
 - Po přeskočení akce se původní akce znovu nenabízí a není označena za splněnou.
