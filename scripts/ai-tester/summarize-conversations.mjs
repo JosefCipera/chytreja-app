@@ -8,11 +8,14 @@ console.log('Počet výsledků: ' + JSON.stringify(r.counts) + '\n');
 for (const x of r.results) {
   console.log('## ' + titles[x.id] + '\n');
   console.log('Výsledek softwarových kontrol: ' + x.status + '.\n');
+  let lastDay = null;
   for (const t of x.turns ?? []) {
+    if (t.simulated_day && lastDay && t.simulated_day !== lastDay) console.log('**Následující den v simulaci (' + t.simulated_day + ').**\n');
+    lastDay = t.simulated_day ?? lastDay;
     console.log('**Uživatel:** ' + t.input + '\n');
     console.log('**Chytré já:** ' + t.text + '\n');
   }
   for (const flag of x.product_review ?? []) console.log('**K posouzení:** ' + flag.code + ' — ' + flag.text + '\n');
 }
 console.log('## Co posoudit\n');
-console.log('- Po opravě odpovědi aplikace přestává používat původní slabost jako důvod. Je pokračování otázkou na nemoci a léky srozumitelné?\n- Při nejistotě chůze model může nabídnout rovnovážné cvičení. Znění, opora, délka a pokyn zavírat oči vyžadují samostatnou odbornou kontrolu.\n- Po hlášení synkopy doporučení zmizí a návrat k hubnutí je neobnoví v tomto rozhovoru. Trvání blokace přes odhlášení není tímto testem ověřeno.\n- Po „Pro dnešek stačí“ může nová informace nabídnout jiný cvik. Je to požadovaná denní politika?\n- Po přeskočení akce se původní akce znovu nenabízí a není označena za splněnou.\n');
+console.log('- Po opravě odpovědi aplikace přestává používat původní slabost jako důvod. Je pokračování otázkou na nemoci a léky srozumitelné?\n- Při nejistotě chůze model může nabídnout rovnovážné cvičení. Znění, opora, délka a pokyn zavírat oči vyžadují samostatnou odbornou kontrolu.\n- Po hlášení synkopy doporučení zmizí a návrat k hubnutí je neobnoví v tomto rozhovoru. Trvání blokace přes odhlášení není tímto testem ověřeno.\n- Po „Pro dnešek stačí“ aplikace další cvik tentýž den nenabízí. Nové údaje přijímá, i po vymazání stavu klienta; následující den se doporučení vyhodnotí znovu.\n- Po přeskočení akce se původní akce znovu nenabízí a není označena za splněnou.\n');

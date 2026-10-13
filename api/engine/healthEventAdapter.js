@@ -392,6 +392,15 @@ async function upsertUserProfile(supabase, userId, key, value) {
 async function persistActionAssignment(supabase, userId, payload, status) {
   if (!payload.action_id)        throw new Error('ACTION event: missing action_id');
   if (!payload.intervention_id)  throw new Error('ACTION event: missing intervention_id');
+  // A restored/stale client assignment must not create a second completion today.
+  if (status === 'COMPLETED') {
+    const { data: completed, error: readError } = await supabase.from('action_assignments')
+      .select('id').eq('user_id', userId).eq('status', 'COMPLETED')
+      .eq('assigned_date', new Date().toISOString().slice(0, 10)).limit(1).maybeSingle();
+    if (readError) throw new Error(`read daily completion: ${readError.message}`);
+    if (completed) return 'ACTION_COMPLETED: day already completed — no additional completion persisted';
+  }
+
 
   const { error } = await supabase
     .from('action_assignments')
@@ -604,7 +613,8 @@ export async function applyHealthEvent(userId, event) {
     let warning;
     switch (event_type) {
       case 'ACTION_COMPLETED':
-        await persistActionAssignment(supabase, userId, payload || {}, 'COMPLETED');
+        warning = await persistActionAssignment(supabase, userId, payload || {}, 'COMPLETED');
+        if (warning) warnings.push(warning);
         break;
 
       case 'ACTION_SKIPPED':

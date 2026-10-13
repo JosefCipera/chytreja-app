@@ -9,7 +9,7 @@ export function conversationScenarios() {
   }));
 }
 
-export async function runConversationJourney({ scenario, response, turn, check, getSession, getHealth, getAssignments, getWrites, getEngine, catalog }) {
+export async function runConversationJourney({ scenario, response, turn, check, getSession, getHealth, getAssignments, getWrites, getEngine, catalog, resetSession, advanceDay }) {
   const initial = structuredClone(getSession().current_action_assignment);
   if (scenario.goal) check('journey-goal-recorded', getHealth().goal_text === scenario.text, getHealth().goal_text);
   check('journey-authoritative-uid', getWrites().every(w => w.row.user_id?.startsWith('isolated-')), getWrites().length);
@@ -59,6 +59,7 @@ export async function runConversationJourney({ scenario, response, turn, check, 
     const why = await explain();
     check('why-acknowledges-new-report', /nejistotu při chůzi/.test(why.text), why.text);
     if (scenario.id === 'return-after-done') {
+      check('completed-day-does-not-offer-another-exercise', response.mode !== 'ACT' && !getSession().current_action_assignment, response);
       check('completed-action-not-offered-again', getSession().current_action_assignment?.action_id !== initial.action_id, getSession().current_action_assignment);
       check('new-fact-no-second-completion', getAssignments().length === 1 && getAssignments()[0].status === 'COMPLETED', getAssignments());
     }
@@ -67,6 +68,19 @@ export async function runConversationJourney({ scenario, response, turn, check, 
       check('skip-not-converted-to-completion', getAssignments().length === 1 && getAssignments()[0].status === 'SKIPPED', getAssignments());
     }
     response = await turn('Co dál?'); await safe('after-return');
+    if (scenario.id === 'return-after-done') {
+      resetSession({ current_action_assignment: initial });
+      response = await turn('Hotovo');
+      check('stale-completion-ack-is-honest', /už máš potvrzenou/.test(response.text), response.text);
+      check('stale-screen-cannot-complete-twice', getAssignments().length === 1 && !getSession().current_action_assignment, getAssignments());
+      resetSession({}); response = await turn('Co dál?');
+      check('completed-day-survives-client-state-reset', response.mode !== 'ACT' && !getSession().current_action_assignment && getAssignments().length === 1, response);
+      advanceDay(); response = await turn('Co dál?');
+      check('next-day-evaluates-again', response.mode === 'ACT' && Boolean(getSession().current_action_assignment) && getAssignments().length === 1, response);
+      await safe('next-day');
+      response = await turn('Mám synkopu.');
+      check('medical-scope-still-active-after-day-policy', response.mode === 'HOLD' && getSession().unsupported_request?.kind === 'medical' && !getSession().current_action_assignment, response);
+    }
   }
   return response;
 }

@@ -10,13 +10,13 @@
 //   SAFETY_CRITICAL      — SAFETY_CRITICAL actionability in decision_gate (person state signal)
 //   SAFETY_BLOCKED       — all action candidates non-viable due to safety gate (not a crisis)
 //   ASK_BLOCKING         — NBA cannot select any action; evidence would unblock
-//   HOLD_DONE_TODAY      — selected intervention already completed today; offer it again tomorrow
+//   HOLD_DONE_TODAY      — an action already completed today; evaluate again tomorrow
 //   ACT_READY            — NBA selected a viable action
 //
 // HOLD_TOO_EARLY / HOLD_INSUF_EXPOSURE are no longer emitted: TOO_EARLY and
 // INSUFFICIENT_EXPOSURE remain RESPONSE_EVALUATION results, but they must not block
 // the repetitions that minimum_exposure_rule requires. Repetition is limited to one
-// completed session per intervention per day.
+// completed action across interventions per day.
 
 // ── Internal helpers ──────────────────────────────────────────────────────────
 
@@ -146,7 +146,7 @@ function checkAskBlocking(next_best_action, decision_gate) {
   };
 }
 
-// HOLD: NBA selected an action AND that same intervention already has a COMPLETED
+// HOLD: NBA selected an action AND any intervention already has a COMPLETED
 // session today (UTC date). The hold lasts only for the rest of the day — the next day
 // NBA and the Safety Gate run again and the intervention is offered as a normal ACT,
 // until minimum_exposure_rule and the response horizon are reached.
@@ -160,13 +160,12 @@ function checkHold(next_best_action, response_evaluations, intervention_exposure
   // Membership in the set of valid completed days — not the lexicographically last date,
   // so a corrupted or future-dated row cannot mask today's completion.
   const exposure = (intervention_exposure ?? []).find(
-    e => e.intervention_id === selectedInterventionId
-      && (e.completed_days ?? [e.last_completed_date]).includes(today)
+    e => (e.completed_days ?? [e.last_completed_date]).includes(today)
   );
   if (!exposure) return null;
 
   const evals = (response_evaluations ?? []).filter(
-    r => r.intervention_id === selectedInterventionId
+    r => r.intervention_id === exposure.intervention_id
   );
 
   const tomorrow = new Date(`${today}T00:00:00Z`);
@@ -263,6 +262,7 @@ export function computeDailyDecision(engineResult, asOf = new Date()) {
         safety:          sel?.safety,
         response_result: hold.evals[0]?.result ?? null,
         exposure_summary: {
+          completed_intervention_id: hold.exposure.intervention_id,
           sessions_completed:  hold.exposure.sessions_completed,
           first_completed_at:  hold.exposure.first_completed_at,
           last_completed_date: hold.exposure.last_completed_date,

@@ -179,7 +179,9 @@ async function isolated(scenario, branch = null) {
       return response;
     } catch (error) { classifierFailure = error.message; throw error; }
   } }; }
-  const context = vm.createContext({ console: { ...console, log: (...args) => console.error(...args) }, process, crypto, Date, Set, Map, JSON, URL });
+  let fixtureClock = Date.now();
+  class FixtureDate extends Date { constructor(...args) { super(...(args.length ? args : [fixtureClock])); } static now() { return fixtureClock; } }
+  const context = vm.createContext({ console: { ...console, log: (...args) => console.error(...args) }, process, crypto, Date: conversations ? FixtureDate : Date, Set, Map, JSON, URL });
   const cache = new Map();
   const mocks = { '@anthropic-ai/sdk': { default: AI }, '@supabase/supabase-js': { createClient: () => db }, dotenv: { default: { config() {} } }, 'fixture-auth': { requireAuth: async () => ({ uid }) }, fs, url, path };
   function moduleFor(file) { if (cache.has(file.href)) return cache.get(file.href); const m = new vm.SourceTextModule(fs.readFileSync(file, 'utf8'), { context, identifier: file.href, initializeImportMeta(meta) { meta.url = file.href; } }); cache.set(file.href, m); return m; }
@@ -196,7 +198,7 @@ async function isolated(scenario, branch = null) {
       const res = { status(code) { status = code; return res; }, json(value) { r = value; return value; } };
       await entry.namespace.default({ method: 'POST', body: { text, userId: 'forged-client-uid', session } }, res);
       if (status !== 200) throw Error('Endpoint status ' + status + ': ' + JSON.stringify(r));
-    } else r = await entry.namespace.processInput(uid, text, session); session = { ...session, ...r.session_updates }; turns.push({ input: text, mode: r.mode, text: r.text, buttons: r.buttons, pending: session.pending_question, action: session.current_action_assignment, debug: r.debug, ui: ui.render(r) }); return r; }
+    } else r = await entry.namespace.processInput(uid, text, session); session = { ...session, ...r.session_updates }; turns.push({ ...(conversations ? { simulated_day: new FixtureDate().toISOString().slice(0, 10) } : {}), input: text, mode: r.mode, text: r.text, buttons: r.buttons, pending: session.pending_question, action: session.current_action_assignment, debug: r.debug, ui: ui.render(r) }); return r; }
   let response = await turn(scenario.text);
   const initialClassification = calls[0] ?? null;
   const initialPhysical = structuredClone(health.physical);
@@ -295,7 +297,7 @@ async function isolated(scenario, branch = null) {
   if (scenario.unsupported) check('unsupported-no-action', response.mode !== 'ACT' && !session.current_action_assignment && writes.length === 0, { mode: response.mode, text: response.text, writes: writes.length });
   let productReview = [];
   if (scenario.conversationJourney) {
-    response = await runConversationJourney({ scenario, response, turn, check, getSession: () => session, getHealth: () => health, getAssignments: () => assignments, getWrites: () => writes, catalog, getEngine: () => engine.runEngine(uid) });
+    response = await runConversationJourney({ scenario, response, turn, check, getSession: () => session, getHealth: () => health, getAssignments: () => assignments, getWrites: () => writes, catalog, getEngine: () => engine.runEngine(uid), resetSession: value => { session = structuredClone(value ?? {}); }, advanceDay: () => { fixtureClock += 86400000; } });
   }
   if (scenario.comboJourney) {
     const result = await runCombinationJourney({ scenario, initialPhysical, initialEngine, onboarding,
@@ -310,7 +312,6 @@ async function isolated(scenario, branch = null) {
       getCalls: () => calls, getAssignments: () => assignments, turn, check, catalog, response });
     response = result.response; productReview = result.reviews;
   }
-  if (scenario.conversationJourney && scenario.id === 'return-after-done' && turns.some((t, i) => t.mode === 'ACT' && turns.slice(0, i).some(p => p.input === 'Hotovo'))) productReview.push({ code: 'REOPENED_DAY_AFTER_NEW_FACT', text: 'A new gait report can open a different intervention after the app said today was finished; daily-dose policy requires product review.' });
   if (scenario.uiJourney) {
     check('actual-onboarding-handlers', onboarding?.removed && onboarding?.reloaded, onboarding);
     check('gait-question-before-block', response.mode === 'ASK' && session.pending_question?.evidence_type === 'gait_stability', { mode: response.mode, pending: session.pending_question });
