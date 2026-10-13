@@ -5,6 +5,7 @@ on:
   pull_request:
     paths:
       - app/launcher.html
+      - scripts/test-retry-ui.mjs
       - scripts/test-launcher-hold-input.mjs
       - scripts/test-onboarding-combinations.mjs
       - scripts/test-crt-contract-mutations.mjs
@@ -32,6 +33,7 @@ on:
       - qa/gait-full-catalog-matrix
     paths:
       - app/launcher.html
+      - scripts/test-retry-ui.mjs
       - scripts/test-launcher-hold-input.mjs
       - scripts/test-onboarding-combinations.mjs
       - scripts/test-crt-contract-mutations.mjs
@@ -77,6 +79,7 @@ jobs:
           node scripts/test-crt-contract-mutations.mjs
           node scripts/test-leverage-fallback.mjs
           node --experimental-vm-modules scripts/test-action-copy.mjs
+          node --experimental-vm-modules scripts/test-retry-ui.mjs
           node scripts/test-adiposity-entry-intensity.mjs
           node scripts/reproduce-eyes-closed-gait.mjs
           node scripts/test-blocking-evidence.mjs
@@ -140,6 +143,11 @@ jobs:
           node --experimental-vm-modules scripts/ai-tester/run-gait-matrix.mjs --conversation-changes --live > ai-tester-results/conversation-changes.json
           node scripts/ai-tester/summarize-conversations.mjs ai-tester-results/conversation-changes.json > ai-tester-results/conversation-review.md
           cat ai-tester-results/conversation-review.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Evaluate injected classifier outages and recovery
+        if: always()
+        run: |
+          mkdir -p ai-tester-results
+          node --experimental-vm-modules scripts/ai-tester/run-gait-matrix.mjs --classifier-outage > ai-tester-results/classifier-outage.json
       - name: Summarize CRT product review separately from PASS
         if: always()
         run: |
