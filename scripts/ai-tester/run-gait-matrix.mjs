@@ -6,9 +6,10 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { createLauncherHarness } from './launcher-render-harness.mjs';
 import { runOnboardingFixture } from './onboarding-harness.mjs';
-import { combinationScenarios, runCombinationJourney } from './crt-combination-contracts.mjs';
+import { combinationScenarios, clinicalDiscoveryScenarios, runCombinationJourney } from './crt-combination-contracts.mjs';
 const live = process.argv.includes('--live');
-const combinations = process.argv.includes('--crt-combinations');
+const clinicalDiscovery = process.argv.includes('--clinical-discovery');
+const combinations = process.argv.includes('--crt-combinations') || clinicalDiscovery;
 const weightLoss = process.argv.includes('--weight-loss') || combinations;
 const catalogArg = process.argv.find(a => a.startsWith('--catalog='));
 const sourceRoot = new URL('../../', import.meta.url);
@@ -98,7 +99,7 @@ for (const answer of [true, false, undefined]) weightScenarios.push({
  physical: { recent_falls: false, vynest_nakup: true, vstat_ze_zeme: false,
   zvednout_vnouce: true, rovnovaha_zavrene_oci: false, gait_stability: answer },
 });
-const scenarios = combinations ? combinationScenarios() : weightLoss ? weightScenarios : gaitScenarios;
+const scenarios = clinicalDiscovery ? clinicalDiscoveryScenarios() : combinations ? combinationScenarios() : weightLoss ? weightScenarios : gaitScenarios;
 if (weightLoss && !combinations) scenarios.push({ id: 'tester143-ui', text: variants[0], report: true,
   profile: { weight: 88 }, lifestyle: { waist_cm: 99 },
   physical: { recent_falls: false, vynest_nakup: true, vstat_ze_zeme: true,
@@ -436,7 +437,7 @@ if (weightLoss && !combinations) {
   catch (error) { results.push({ id: 'floor-proxy-skip', status: 'BLOCKED', reason: error.message }); }
 }
 const counts = Object.fromEntries(['PASS', 'FAIL', 'BLOCKED'].map(s => [s, results.filter(r => r.status === s).length]));
-console.log(JSON.stringify({ suite: combinations ? 'crt_combinations_endpoint' : weightLoss ? 'weight_loss_endpoint' : 'gait', mode: live ? 'live_classifier_full_engine_public_catalog' : 'injected_classifier_full_engine_public_catalog', catalog: catalogMeta, counts, limitations: ['All user profiles and writes are synthetic and isolated in memory', 'No browser, authentication or microphone/audio transcription test', 'No clinical efficacy or exercise dose validation', ...(combinations ? ['768 journeys over 64 profiles and two intents; some answer/outcome branches coincide when no question/action is reached', 'Product review flags are separate from software PASS; priority correctness is not assumed from engine output'] : []), ...(weightLoss ? ['Real endpoint hydration, but Firebase authentication is mocked', 'Exact weight wishes use the existing server parser and bypass Haiku; live mode exercises AI only for inputs reaching classification', 'Review-required catalog choices do not become clinically approved through PASS'] : []), 'BLOCKED journeys are not counted as passing'], results }, null, 2));
+console.log(JSON.stringify({ suite: clinicalDiscovery ? 'clinical_discovery_endpoint' : combinations ? 'crt_combinations_endpoint' : weightLoss ? 'weight_loss_endpoint' : 'gait', mode: live ? 'live_classifier_full_engine_public_catalog' : 'injected_classifier_full_engine_public_catalog', catalog: catalogMeta, counts, limitations: ['All user profiles and writes are synthetic and isolated in memory', 'No browser, authentication or microphone/audio transcription test', 'No clinical efficacy or exercise dose validation', ...(combinations ? [clinicalDiscovery ? 'Explicit synthetic clinical/discovery answers; injected classification only' : '768 journeys over 64 profiles and two intents; some answer/outcome branches coincide when no question/action is reached', 'Product review flags are separate from software PASS; priority correctness is not assumed from engine output'] : []), ...(weightLoss ? ['Real endpoint hydration, but Firebase authentication is mocked', 'Exact weight wishes use the existing server parser and bypass Haiku; live mode exercises AI only for inputs reaching classification', 'Review-required catalog choices do not become clinically approved through PASS'] : []), 'BLOCKED journeys are not counted as passing'], results }, null, 2));
 process.exitCode = counts.FAIL ? 1 : counts.BLOCKED ? 2 : 0;
 
 

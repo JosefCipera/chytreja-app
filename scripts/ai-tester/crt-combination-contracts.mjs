@@ -14,10 +14,23 @@ export function combinationScenarios() {
         text: intent === 'weight' ? 'Chci zhubnout.' : 'Jsem nejistý při chůzi.',
         goal: intent === 'weight', report: intent === 'gait' ? true : null,
         profile: { weight }, lifestyle: { waist_cm: weight === 72 ? 84 : 99 }, physical,
+        // Explicit synthetic answers; empty records are not medical clearance.
+        discoveryAnswers: { clinical_context: 'Ne', weekly_aerobic_activity_days: '0', exertional_dyspnea: 'Ne', known_blood_pressure_approx: 'Nevím', sedentary_hours_day: '7' },
         comboJourney: true, matrix: { mask, intent, gaitAnswer: answer, outcome },
       });
   }
   return cases;
+}
+export function clinicalDiscoveryScenarios() {
+  const seed = combinationScenarios().find(s => s.id === 'crt-7-72-weight-Ano-done');
+  return [
+    ['no-positive-signal', {}],
+    ['active-unknown-pressure', { weekly_aerobic_activity_days: '3' }],
+    ['active-known-pressure', { weekly_aerobic_activity_days: '3', known_blood_pressure_approx: '120/80' }],
+    ['high-pressure', { weekly_aerobic_activity_days: '3', known_blood_pressure_approx: '150/90' }],
+    ['dyspnea', { exertional_dyspnea: 'Ano' }],
+  ].map(([id, answers]) => ({ ...structuredClone(seed), id: 'discovery-' + id,
+    discoveryAnswers: { ...seed.discoveryAnswers, ...answers }, discoveryJourney: true }));
 }
 export function checkCrtInputContracts({ scenario, initialPhysical, health, initialEngine, session, check }) {
   const states = initialEngine.node_states;
@@ -67,18 +80,26 @@ export async function runCombinationJourney({ scenario, initialPhysical, initial
   check('actual-onboarding-handlers', onboarding?.removed && onboarding?.reloaded, onboarding);
   checkCrtInputContracts({ scenario, initialPhysical, health: getHealth(), initialEngine, session: getSession(), check });
   const seenQuestions = new Set();
-  for (let i = 0; response.mode === 'ASK' && i < 6; i++) {
+  for (let i = 0; response.mode === 'ASK' && i < 10; i++) {
     const key = getSession().pending_question?.evidence_type;
     check('ask-has-typed-pending-' + i, Boolean(key) && !getSession().current_action_assignment, getSession().pending_question);
     if (!key) break;
     check('no-repeated-resolved-question-' + i, !seenQuestions.has(key), key);
     if (seenQuestions.has(key)) break;
-    const answer = key === 'gait_stability' ? scenario.matrix.gaitAnswer
+    const answer = scenario.discoveryAnswers?.[key] ?? (key === 'gait_stability' ? scenario.matrix.gaitAnswer
       : ['recent_falls', 'fall_history'].includes(key) ? (getHealth().physical.recent_falls ? 'Ano' : 'Ne')
       : key === 'vstat_ze_zeme' ? (getHealth().physical.vstat_ze_zeme ? 'Ano' : 'Ne')
-      : ['tug_test', 'chair_stand_30s', 'grip_strength', 'validated_strength_assessment'].includes(key) ? 'Nemám výsledek' : null;
+      : ['tug_test', 'chair_stand_30s', 'grip_strength', 'validated_strength_assessment'].includes(key) ? 'Nemám výsledek' : null);
     if (!answer) { reviews.push({ code: 'UNMODELED_EVIDENCE', question: key, text: response.text }); break; }
-    seenQuestions.add(key); response = await turn(answer);
+    seenQuestions.add(key);
+    const callsBefore = getCalls().length;
+    response = await turn(answer);
+    if (key === 'clinical_context') check('clinical-negative-no-invented-diagnoses-or-medication', getHealth().diagnoses.length === 0 && getHealth().medications.length === 0, getHealth());
+    if (['weekly_aerobic_activity_days', 'exertional_dyspnea', 'known_blood_pressure_approx', 'sedentary_hours_day'].includes(key)) {
+      check('typed-discovery-bypasses-classifier-' + key, getCalls().length === callsBefore, getCalls().length - callsBefore);
+      const expected = key === 'exertional_dyspnea' ? answer === 'Ano' : key === 'known_blood_pressure_approx' ? answer === 'Nevím' ? 0 : Number(answer.split('/')[0]) : Number(answer);
+      check('typed-discovery-stored-' + key, getHealth().physical[key] === expected, getHealth().physical[key]);
+    }
   }
   const assignment = structuredClone(getSession().current_action_assignment);
   const currentEngine = await getCurrentEngine();
@@ -154,7 +175,24 @@ export async function runCombinationJourney({ scenario, initialPhysical, initial
     reviews.push({ code: 'EVIDENCE_PENDING', question: getSession().pending_question?.evidence_type, text: response.text });
     check('pending-evidence-no-prescription', !getSession().current_action_assignment && getAssignments().length === 0, { mode: response.mode });
   } else if (response.mode === 'HOLD') {
+    const discoveryReason = response.debug?.reason_code;
+    const discoveryText = response.text;
+    if (scenario.discoveryJourney) {
+      check('discovery-ends-without-prescribing', !getSession().current_action_assignment && getAssignments().length === 0, response);
+      check('discovery-has-resolved-questions', !getSession().pending_question, getSession().pending_question);
+      const before = { calls: getCalls().length, writes: getWrites().length, health: JSON.stringify(getHealth()) };
+      const why = await turn('Proč?');
+      check('discovery-why-retains-result', why.mode === 'EXPLAIN' && why.text === discoveryText, why.text);
+      check('discovery-why-is-observational', getCalls().length === before.calls && getWrites().length === before.writes && JSON.stringify(getHealth()) === before.health, before);
+
+    }
     response = await turn('Co dál?');
+    if (scenario.discoveryJourney) {
+      check('discovery-return-keeps-hold', response.mode === 'HOLD' && !getSession().pending_question, { mode: response.mode, original: discoveryReason, pending: getSession().pending_question });
+      check('discovery-signals-not-invented-diagnoses', getHealth().diagnoses.length === 0, getHealth().diagnoses);
+      response = await turn('Mám synkopu.');
+      check('new-medical-fact-still-handled', response.mode === 'HOLD' && getSession().unsupported_request?.kind === 'medical' && !getSession().current_action_assignment, response);
+    }
     check('hold-no-false-completion', getAssignments().length === 0 && !getSession().current_action_assignment, { mode: response.mode });
   } else check('recognized-initial-outcome', false, { mode: response.mode, text: response.text });
   if (scenario.report && initialEngine.system_leverage.selected?.node_id === 'EXCESS_ADIPOSITY') reviews.push({ code: 'GAIT_REQUEST_ADIPOSITY_PRIORITY', text: 'A gait request selects adiposity by the current ranking; judge this product choice separately from software PASS.' });

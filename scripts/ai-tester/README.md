@@ -107,3 +107,10 @@ The original systemic priority remains in `engine.system_leverage`. When its exa
 
 Local snapshot: 768 combination, 25 endpoint and 25 gait journeys PASS. 322 combination journeys used a checked alternative, representing 54 profile/request pairs (49 functional-strength branches and five gait branches); three profile/request pairs still await clinical-context answers outside the current synthetic fixture. These are software results, not clinical approval of individual catalog protocols. See [the policy and validation review](../../docs/QA-AVAILABLE-LEVERAGE-2026-10-12.md).
 
+
+
+## Clinical/discovery continuation (2026-10-13)
+
+The 768 CRT journeys now provide explicit synthetic negative clinical-context answers, aerobic days, dyspnea, blood pressure availability and sitting time when requested. Empty stored records are not treated as medical clearance. The existing parsers route numeric answers; typed storage and classifier bypass are checked.
+
+Run `node --experimental-vm-modules scripts/ai-tester/run-gait-matrix.mjs --clinical-discovery` for five additional endpoint journeys: no positive signal, active/unknown pressure, active/known pressure, higher reported pressure and reported dyspnea. These tests verify question resolution, observational WHY, preserved HOLD on return, no invented diagnosis/prescription and handling a new syncope statement. This suite uses injected classification and synthetic records, not clinical validation. CI saves `clinical-discovery.json` alongside the other reports.
