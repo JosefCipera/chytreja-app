@@ -87,7 +87,7 @@ export function checkCrtInputContracts({ scenario, initialPhysical, health, init
   }
 }
 
-export async function runCombinationJourney({ scenario, initialPhysical, initialEngine, onboarding, getCurrentEngine, getHealth, getSession, getWrites, getCalls, getAssignments, turn, check, catalog, response }) {
+export async function runCombinationJourney({ scenario, initialPhysical, initialEngine, onboarding, getCurrentEngine, getObservations, getHealth, getSession, getWrites, getCalls, getAssignments, turn, check, catalog, response }) {
   const reviews = [];
   check('actual-onboarding-handlers', onboarding?.removed && onboarding?.reloaded, onboarding);
   checkCrtInputContracts({ scenario, initialPhysical, health: getHealth(), initialEngine, session: getSession(), check });
@@ -223,7 +223,11 @@ export async function runCombinationJourney({ scenario, initialPhysical, initial
     }
     if (scenario.bpJourney) {
       check('bp-return-no-repeat', getSession().pending_question?.evidence_type !== 'bp_systolic', getSession().pending_question);
-      if (['Nevím', 'Nemám změřeno'].includes(scenario.discoveryAnswers.bp_systolic)) {
+      if (!['Nevím', 'Nemám změřeno'].includes(scenario.discoveryAnswers.bp_systolic)) {
+        response = await turn('Nevím');
+        check('old-pressure-not-used-after-unavailable', !(await getObservations()).some(o => o.obs_type === 'bp_systolic') && getHealth().physical.evidence_availability.bp_systolic === 'NOT_AVAILABLE' && !getSession().current_action_assignment, getHealth().physical);
+      }
+      if (getHealth().physical.evidence_availability.bp_systolic === 'NOT_AVAILABLE') {
         response = await turn('120');
         check('missing-bp-can-be-supplied-later', getHealth().physical.bp_systolic === 120 && getHealth().physical.evidence_availability.bp_systolic === 'AVAILABLE' && getSession().pending_question?.evidence_type !== 'bp_systolic', getHealth().physical);
       }
