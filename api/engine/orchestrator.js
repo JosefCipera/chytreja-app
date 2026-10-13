@@ -1003,7 +1003,7 @@ function buildFallbackResponse(result, sessionUpdates, warnings) {
 function buildPathDiscoveryWhyResponse(_state) {
   return {
     mode:          'EXPLAIN',
-    text:          DISCOVERY_HOLD_TEXT,
+    text:          _state.last_daily_decision?.discovery_text ?? DISCOVERY_HOLD_TEXT,
     buttons:       [],
     expects_reply: true,
     session_updates: {},
@@ -1637,7 +1637,7 @@ export async function processInput(userId, userText, sessionState = {}) {
       && state.last_daily_decision?.reason_code?.startsWith('PATH_DISCOVERY_HOLD')) {
     return {
       mode:          'HOLD',
-      text:          'Dosavadní odpovědi neukázaly na prioritní longevitní cestu. Hlásíš-li novou diagnózu nebo symptomy, řekni mi.',
+      text:          state.last_daily_decision.discovery_text ?? 'Dosavadní odpovědi neukázaly na prioritní longevitní cestu. Hlásíš-li novou diagnózu nebo symptomy, řekni mi.',
       buttons:       [],
       expects_reply: true,
       session_updates: {
@@ -1747,7 +1747,14 @@ export async function processInput(userId, userText, sessionState = {}) {
           text:          `Na základě toho, co víš, stojí za bližší pohled: ${_pdSignal1.label_cs}.`,
           buttons:       [],
           expects_reply: true,
-          session_updates: { ...baseUpdates, pending_question: null },
+          session_updates: {
+          ...baseUpdates, pending_question: null,
+          last_daily_decision: {
+            mode: 'HOLD', reason_code: 'PATH_DISCOVERY_HOLD_CANDIDATE',
+            path_id: _pdSignal1.path_id,
+            discovery_text: `Na základě toho, co víš, stojí za bližší pohled: ${_pdSignal1.label_cs}.`,
+          },
+        },
           debug: { reason_code: 'PATH_DISCOVERY_CANDIDATE', path_id: _pdSignal1.path_id },
         };
       }
@@ -1831,7 +1838,14 @@ export async function processInput(userId, userText, sessionState = {}) {
         text:          `Na základě toho, co víš, stojí za bližší pohled: ${_pdSignal2.label_cs}.`,
         buttons:       [],
         expects_reply: true,
-        session_updates: { ...baseUpdates, pending_question: null },
+        session_updates: {
+          ...baseUpdates, pending_question: null,
+          last_daily_decision: {
+            mode: 'HOLD', reason_code: 'PATH_DISCOVERY_HOLD_CANDIDATE',
+            path_id: _pdSignal2.path_id,
+            discovery_text: `Na základě toho, co víš, stojí za bližší pohled: ${_pdSignal2.label_cs}.`,
+          },
+        },
         debug: { reason_code: 'PATH_DISCOVERY_CANDIDATE', path_id: _pdSignal2.path_id },
       };
     }
@@ -2131,7 +2145,14 @@ export async function processInput(userId, userText, sessionState = {}) {
         text:          `Na základě toho, co víš, stojí za bližší pohled: ${_pdNext.label_cs}.`,
         buttons:       [],
         expects_reply: true,
-        session_updates: { ..._pdBaseUpd, pending_question: null },
+        session_updates: {
+          ..._pdBaseUpd, pending_question: null,
+          last_daily_decision: {
+            mode: 'HOLD', reason_code: 'PATH_DISCOVERY_HOLD_CANDIDATE',
+            path_id: _pdNext.path_id,
+            discovery_text: `Na základě toho, co víš, stojí za bližší pohled: ${_pdNext.label_cs}.`,
+          },
+        },
         debug: { reason_code: 'PATH_DISCOVERY_CANDIDATE', path_id: _pdNext.path_id },
       };
     }
