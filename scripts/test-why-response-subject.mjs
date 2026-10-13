@@ -105,7 +105,7 @@ sep('W4 — no leverage identified → generic fallback sentence, no crash');
 {
   const state = sessionState(pressAction, { leverage: null });
   const response = buildWhyResponse(state);
-  check(response.text === 'Zatím nemám dost podkladů k vysvětlení, proč byla tato akce vybrána.',
+  check(response.text === 'Zatím nemám dost podkladů pro konkrétní doporučení. Potřebuji doplnit další údaje.',
     'W4: exact generic fallback text when no leverage subject is available', `text: ${response.text}`);
   check(!response.text.includes(NOUN_LABEL),
     'W4: label still not spliced in the no-leverage branch', `text: ${response.text}`);
@@ -126,3 +126,4 @@ console.log(`\n${'═'.repeat(70)}`);
 console.log(`  test-why-response-subject: ${passed} passed, ${failed} failed`);
 console.log(`${'═'.repeat(70)}`);
 process.exit(failed > 0 ? 1 : 0);
+

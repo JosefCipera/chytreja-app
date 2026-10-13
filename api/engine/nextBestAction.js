@@ -404,17 +404,29 @@ function evaluateSafetyGate(action, parsedConstraints, hasCvRiskRelevant, hasCli
     };
   }
 
+  // Advanced sensory/surface variants need individual assessment when gait is unstable.
+  // A generic support instruction cannot convert a closed-eye/unstable-surface task into an entry exercise.
+  if (hasGaitInstability && ['BALANCE_PROTOKOL', 'STABILITY_PROTOKOL'].includes(action.protocol_type)
+      && (['85b4146c-13ae-45ee-b7c7-0f0d253282cf', 'rovnovaha_stoj_2', '0a6f4105-4861-4250-b988-c148e8143513'].includes(action.id)
+        || /zavřen|zavren|eyes.?closed|closed.?eyes|nestabiln|unstable/i.test(action.label ?? ''))) {
+    return { level: 'NEEDS_CLINICAL_CLEARANCE',
+      reason: 'Closed-eye or unstable-surface balance with gait instability requires individual assessment.',
+      modifications_suggested: [],
+    };
+  }
+
   // 7. Balance/stability exercises require adequate gait capacity — SAFE_WITH_MODIFICATION when impaired.
   // Balance and stability exercises ARE the treatment for gait instability (Sherrington et al., Cochrane 2019),
   // so they are not blocked. But predicted gait instability requires supervised or supported environment.
-  // This covers: single-leg stand, tandem walk, single-leg step-down, unstable surface exercises.
+  // This covers: single-leg stand, tandem walk, supported entry balance tasks; advanced sensory/surface tasks are gated above.
   if (hasGaitInstability && (action.protocol_type === 'BALANCE_PROTOKOL' || action.protocol_type === 'STABILITY_PROTOKOL')) {
     const balanceResult = {
       level: 'SAFE_WITH_MODIFICATION',
       reason: 'Balance/stability exercise requires adequate gait capacity; gait instability predicted — therapeutic target, but supervised or wall-supported environment required.',
       modifications_suggested: [
         'Use stable wall or chair support for all single-leg variants',
-        'Begin with eyes-open only; progress to eyes-closed only when stable',
+        'Keep eyes open throughout',
+        'Stop if pain, dizziness, or loss of balance occurs',
         'Supervised or near-support setting for first sessions',
       ],
     };
@@ -917,3 +929,4 @@ export function computeNextBestAction({
     engine_version:               engineVersion,
   };
 }
+

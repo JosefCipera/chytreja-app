@@ -139,3 +139,14 @@ Josef approved: after Hotovo, no additional exercise that day, including another
 The five-conversation suite now checks this policy, a restored stale assignment, empty client state, and a simulated next day with a controlled VM clock. Stale sequential completion requests do not write another completion. The read-before-write persistence guard is not an atomic database uniqueness guarantee for simultaneous requests. Real login/logout and clinical exercise suitability remain outside these software checks.
 
 The earlier REOPENED_DAY_AFTER_NEW_FACT product flag is resolved. The review snapshot is updated with exact new responses and labels for simulated day changes. Balance protocol wording/support/dose/closing eyes remains pending professional review; no protocol change or clinical approval is made by this patch.
+
+
+## Eyes-open balance entry and source check (2026-10-13)
+
+Remove automatic progression to closed eyes from current and legacy localized safety text. With active gait instability, known closed-eye and unstable-surface tasks (and newly named variants matching those characteristics) require individual assessment. Supported entry tasks retain stable support, eyes open and a stop condition. Catalogue durations/ranking/exposure remain unchanged; the legacy 30-second prescription is not clinically certified by this patch.
+
+Primary sources checked:
+- HSE, NHS-adapted balance guidance: https://www2.hse.ie/living-well/exercise/exercise-at-home/balance-exercises/ — stable support and a one-leg hold of 5–10 seconds, three on each leg. This differs from the existing catalogue's single 30-second hold; it does not validate that dose.
+- NICE NG249: https://www.nice.org.uk/guidance/ng249/chapter/Recommendations/ and https://www.nice.org.uk/guidance/ng249/chapter/Rationale-and-impact — falls exercise programmes should be based on assessment, individualised and delivered by appropriately trained professionals. Population guidance does not establish suitability for an individual.
+
+`test-action-copy.mjs` now verifies current/legacy eye instructions and assessment gates for known and new advanced variants. It is wired into CI. Its pre-existing WHY fallback expectation was updated to the wording introduced in PR59. All ACT transcripts are checked for the removed auto-eye-closing instruction; the five-conversation snapshot is refreshed. Professional review of individual suitability/dose remains a separate requirement, not a missing software test.
