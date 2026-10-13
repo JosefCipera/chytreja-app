@@ -550,8 +550,8 @@ async function classifyIntent(sessionState, userText) {
     }
     return { event_type: toolUse.input.event_type, payload: toolUse.input.payload ?? {} };
   } catch (err) {
-    console.warn('[orchestrator:classifier] fallback —', err?.message ?? err);
-    return { event_type: 'SCOPE_CLARIFICATION', payload: {} };
+    console.warn('[orchestrator:classifier] unavailable', err?.status ?? 'transport_or_invalid_response');
+    return { event_type: 'CLASSIFIER_UNAVAILABLE', payload: {} };
   }
 }
 
@@ -1337,6 +1337,7 @@ function buildUnsupportedResponse(kind = 'general', unclear = false) {
       // Retain a medical scope refusal in this conversation: changing the goal to
       // exercise does not establish that the unsupported condition is safe for exercise.
       unsupported_request: unclear ? null : { kind },
+      pending_ai_retry: null,
     },
     debug: { source: 'input_scope', reason_code: unclear ? 'SCOPE_UNCLEAR' : 'UNSUPPORTED_REQUEST' },
   };
@@ -1345,7 +1346,57 @@ function buildUnsupportedResponse(kind = 'general', unclear = false) {
 // ── Main export ───────────────────────────────────────────────────────────────
 // Stateless: caller owns session state and merges session_updates.
 
+function buildClassifierUnavailable(state, originalText, draftText = originalText, waiting = false) {
+  const previous = state.pending_ai_retry;
+  return {
+    mode: 'HOLD',
+    text: waiting ? 'Předchozí zpráva ještě čeká na zpracování. Nejprve klepni na „Zkusit znovu“. Nový text ti ponechám rozepsaný.'
+      : 'Zpracování zprávy je teď dočasně nedostupné. Zprávu mám připravenou k opakování. Klepni na „Zkusit znovu“.',
+    buttons: ['Zkusit znovu'], expects_reply: true, draft_text: draftText,
+    session_updates: {
+      pending_question: state.pending_question ?? null,
+      current_action_assignment: null, last_domain_response: null,
+      last_daily_decision: { mode: 'HOLD', reason_code: 'CLASSIFIER_UNAVAILABLE' },
+      pending_ai_retry: previous ?? { text: originalText, requested_at: new Date().toISOString(),
+        context: { pending_question: state.pending_question ?? null, current_action_assignment: state.current_action_assignment ?? null } },
+    },
+    debug: { reason_code: 'CLASSIFIER_UNAVAILABLE' },
+  };
+}
+
 export async function processInput(userId, userText, sessionState = {}) {
+  // Medical scope guards take precedence over retry and cannot restore an old action.
+  if (hasUnsupportedMedicalTopic(userText) || sessionState.unsupported_request?.kind === 'medical')
+    return processInputCore(userId, userText, sessionState);
+  const retry = sessionState.pending_ai_retry;
+  if (retry) {
+    const valid = typeof retry.text === 'string' && retry.text.trim() && retry.text.length <= 20000
+      && retry.text.trim().toLowerCase() !== 'zkusit znovu';
+    if (!valid) return { ...buildUnsupportedResponse('general', true),
+      text: 'Nemám zprávu připravenou k opakování. Napiš mi prosím, co chceš řešit.' };
+    if (userText.trim().toLowerCase() !== 'zkusit znovu')
+      return buildClassifierUnavailable(sessionState, retry.text, userText, true);
+    const actionReply = ACTION_COMPLETION_RE.test(retry.text.trim()) || ACTION_SKIP_RE.test(retry.text.trim());
+    const requested = Date.parse(retry.requested_at ?? '');
+    if (actionReply && (!Number.isFinite(requested) || new Date(requested).toISOString().slice(0, 10) !== new Date().toISOString().slice(0, 10))) {
+      return { mode: 'HOLD', text: 'Potvrzení staré akce znovu neodesílám. Klepni na „Co dál?“ pro aktuální doporučení.',
+        buttons: ['Co dál?'], expects_reply: true,
+        session_updates: { pending_ai_retry: null, pending_question: null, current_action_assignment: null, last_domain_response: null,
+          last_daily_decision: { mode: 'HOLD', reason_code: 'STALE_ACTION_RETRY' } }, debug: { reason_code: 'STALE_ACTION_RETRY' } };
+    }
+    const original = { ...sessionState, pending_question: retry.context?.pending_question ?? null,
+      current_action_assignment: retry.context?.current_action_assignment ?? null, pending_ai_retry: null };
+    const response = await processInputCore(userId, retry.text, original);
+    // A successful result clears the retained request; another outage keeps it intact.
+    if (response.debug?.reason_code === 'CLASSIFIER_UNAVAILABLE') {
+      response.session_updates.pending_ai_retry = retry;
+    } else response.session_updates = { ...response.session_updates, pending_ai_retry: null };
+    return response;
+  }
+  return processInputCore(userId, userText, sessionState);
+}
+
+async function processInputCore(userId, userText, sessionState = {}) {
   const state = {
     active_domain:            'health',
     pending_question:          null,
@@ -1594,6 +1645,7 @@ export async function processInput(userId, userText, sessionState = {}) {
 
   const { event_type, payload } = classified;
 
+  if (event_type === 'CLASSIFIER_UNAVAILABLE') return buildClassifierUnavailable(state, userText);
   if (event_type === 'UNSUPPORTED_REQUEST') {
     return buildUnsupportedResponse(payload?.unsupported_kind === 'medical' ? 'medical' : 'general');
   }
