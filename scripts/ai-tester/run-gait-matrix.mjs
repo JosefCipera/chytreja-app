@@ -4,14 +4,16 @@ import fs from 'node:fs';
 import url from 'node:url';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import { conversationScenarios, runConversationJourney } from './conversation-journeys.mjs';
 import { createLauncherHarness } from './launcher-render-harness.mjs';
 import { runOnboardingFixture } from './onboarding-harness.mjs';
 import { combinationScenarios, clinicalDiscoveryScenarios, bloodPressureScenarios, runCombinationJourney } from './crt-combination-contracts.mjs';
+const conversations = process.argv.includes('--conversation-changes');
 const live = process.argv.includes('--live');
 const bloodPressure = process.argv.includes('--blood-pressure');
 const clinicalDiscovery = process.argv.includes('--clinical-discovery');
 const combinations = process.argv.includes('--crt-combinations') || clinicalDiscovery || bloodPressure;
-const weightLoss = process.argv.includes('--weight-loss') || combinations;
+const weightLoss = process.argv.includes('--weight-loss') || combinations || conversations;
 const catalogArg = process.argv.find(a => a.startsWith('--catalog='));
 const sourceRoot = new URL('../../', import.meta.url);
 let catalog, catalogMeta;
@@ -100,13 +102,13 @@ for (const answer of [true, false, undefined]) weightScenarios.push({
  physical: { recent_falls: false, vynest_nakup: true, vstat_ze_zeme: false,
   zvednout_vnouce: true, rovnovaha_zavrene_oci: false, gait_stability: answer },
 });
-const scenarios = bloodPressure ? bloodPressureScenarios() : clinicalDiscovery ? clinicalDiscoveryScenarios() : combinations ? combinationScenarios() : weightLoss ? weightScenarios : gaitScenarios;
-if (weightLoss && !combinations) scenarios.push({ id: 'tester143-ui', text: variants[0], report: true,
+const scenarios = conversations ? conversationScenarios() : bloodPressure ? bloodPressureScenarios() : clinicalDiscovery ? clinicalDiscoveryScenarios() : combinations ? combinationScenarios() : weightLoss ? weightScenarios : gaitScenarios;
+if (weightLoss && !combinations && !conversations) scenarios.push({ id: 'tester143-ui', text: variants[0], report: true,
   profile: { weight: 88 }, lifestyle: { waist_cm: 99 },
   physical: { recent_falls: false, vynest_nakup: true, vstat_ze_zeme: true,
     zvednout_vnouce: true, rovnovaha_zavrene_oci: false }, uiJourney: true });
 
-if (weightLoss && !combinations) {
+if (weightLoss && !combinations && !conversations) {
   const fixture = scenarios.find(s => s.id === 'tester143-ui');
   scenarios.push({ ...fixture, id: 'tester143-medical-stop', medicalAfterFallback: true });
 }
@@ -116,7 +118,7 @@ async function isolated(scenario, branch = null) {
   const profile = { user_id: uid, ...baseProfile, ...scenario.profile };
   let health = { ...structuredClone(baseHealth), user_id: uid, lifestyle: { ...baseHealth.lifestyle, ...scenario.lifestyle }, physical: { ...baseHealth.physical, ...scenario.physical } };
   let onboarding = null;
-  if (scenario.uiJourney || scenario.comboJourney) {
+  if (scenario.uiJourney || scenario.comboJourney || scenario.conversationJourney) {
     onboarding = await runOnboardingFixture(health.physical, null, { age: new Date().getUTCFullYear() - profile.birth_year,
       height: profile.height, weight: profile.weight, gender: profile.gender, waist: health.lifestyle.waist_cm });
     if (!onboarding.removed || !onboarding.reloaded || JSON.stringify(onboarding.physical) !== JSON.stringify(health.physical)) throw Error('Onboarding fixture did not save the expected answers');
@@ -151,8 +153,12 @@ async function isolated(scenario, branch = null) {
   } };
   let classifierFailure = null, currentInput = null;
   class AI { messages = { create: async args => {
-    if (scenario.comboJourney && !live) {
-      const input = session.pending_question && (['Ano', 'Ne', 'Nevím', 'Nemám výsledek', 'Nemám změřeno'].includes(currentInput) || session.pending_question.evidence_type === 'bp_systolic')
+    if ((scenario.comboJourney || scenario.conversationJourney) && !live) {
+      const input = scenario.conversationJourney && currentInput === 'Jsem nejistý při chůzi.'
+        ? { event_type: 'ANSWER_TO_EVIDENCE_QUESTION', payload: { evidence_type: 'gait_instability_reported', value: true } }
+        : scenario.conversationJourney && currentInput === 'Oprava: ze země vstanu bez opory rukou.'
+          ? { event_type: 'ANSWER_TO_EVIDENCE_QUESTION', payload: { evidence_type: 'vstat_ze_zeme', value: true } }
+        : session.pending_question && (['Ano', 'Ne', 'Nevím', 'Nemám výsledek', 'Nemám změřeno'].includes(currentInput) || session.pending_question.evidence_type === 'bp_systolic')
         ? { event_type: 'ANSWER_TO_EVIDENCE_QUESTION', payload: { evidence_type: session.pending_question.evidence_type, value: currentInput === 'Ano' ? true : currentInput === 'Ne' ? false : currentInput } }
         : currentInput === 'Co dál?'
           ? { event_type: 'DOMAIN_REQUEST', payload: { domain: 'health' } }
@@ -227,7 +233,7 @@ async function isolated(scenario, branch = null) {
     response = { ...response };
   }
   const selected = initialEngine.next_best_action.selected;
-  if (weightLoss && scenario.goal) {
+  if (weightLoss && scenario.goal && !conversations) {
     if (initialEngine.system_leverage.selected?.node_id === 'EXCESS_ADIPOSITY') check('no-unreviewed-resistance-for-adiposity', !(initialEngine.next_best_action.all_candidates ?? []).some(c => c.intervention_id === 'RESISTANCE_TRAINING'), selected?.action_id);
     if (initialEngine.system_leverage.selected?.node_id === 'EXCESS_ADIPOSITY') {
       const chosen = catalog.find(a => a.id === selected?.action_id);
@@ -288,6 +294,9 @@ async function isolated(scenario, branch = null) {
   }
   if (scenario.unsupported) check('unsupported-no-action', response.mode !== 'ACT' && !session.current_action_assignment && writes.length === 0, { mode: response.mode, text: response.text, writes: writes.length });
   let productReview = [];
+  if (scenario.conversationJourney) {
+    response = await runConversationJourney({ scenario, response, turn, check, getSession: () => session, getHealth: () => health, getAssignments: () => assignments, getWrites: () => writes, catalog, getEngine: () => engine.runEngine(uid) });
+  }
   if (scenario.comboJourney) {
     const result = await runCombinationJourney({ scenario, initialPhysical, initialEngine, onboarding,
       getCurrentEngine: async () => {
@@ -301,6 +310,7 @@ async function isolated(scenario, branch = null) {
       getCalls: () => calls, getAssignments: () => assignments, turn, check, catalog, response });
     response = result.response; productReview = result.reviews;
   }
+  if (scenario.conversationJourney && scenario.id === 'return-after-done' && turns.some((t, i) => t.mode === 'ACT' && turns.slice(0, i).some(p => p.input === 'Hotovo'))) productReview.push({ code: 'REOPENED_DAY_AFTER_NEW_FACT', text: 'A new gait report can open a different intervention after the app said today was finished; daily-dose policy requires product review.' });
   if (scenario.uiJourney) {
     check('actual-onboarding-handlers', onboarding?.removed && onboarding?.reloaded, onboarding);
     check('gait-question-before-block', response.mode === 'ASK' && session.pending_question?.evidence_type === 'gait_stability', { mode: response.mode, pending: session.pending_question });
@@ -429,17 +439,17 @@ for (const scenario of scenarios) {
   console.error('MATRIX', scenario.id);
   try { results.push(structuredClone(await isolated(scenario))); } catch (error) { results.push({ id: scenario.id, status: 'BLOCKED', reason: error.message }); }
 }
-for (const branch of (combinations ? [] : weightLoss ? ['done', 'skip', 'gait-yes', 'gait-no', 'gait-unknown'] : ['done', 'skip', 'repeat'])) {
+for (const branch of ((combinations || conversations) ? [] : weightLoss ? ['done', 'skip', 'gait-yes', 'gait-no', 'gait-unknown'] : ['done', 'skip', 'repeat'])) {
   const scenario = scenarios.find(s => s.id === (weightLoss ? (branch.startsWith('gait-') ? 'weight-gait' : 'tester136-shape') : 'spoken-1'));
   try { results.push(await isolated({ ...scenario, id: 'journey-' + branch }, branch)); } catch (error) { results.push({ id: 'journey-' + branch, status: 'BLOCKED', reason: error.message }); }
 }
-if (weightLoss && !combinations) {
+if (weightLoss && !combinations && !conversations) {
   const fixture = scenarios.find(s => s.id === 'floor-proxy-gait-stable');
   try { results.push(await isolated({ ...fixture, id: 'floor-proxy-skip' }, 'skip')); }
   catch (error) { results.push({ id: 'floor-proxy-skip', status: 'BLOCKED', reason: error.message }); }
 }
 const counts = Object.fromEntries(['PASS', 'FAIL', 'BLOCKED'].map(s => [s, results.filter(r => r.status === s).length]));
-console.log(JSON.stringify({ suite: bloodPressure ? 'blood_pressure_endpoint' : clinicalDiscovery ? 'clinical_discovery_endpoint' : combinations ? 'crt_combinations_endpoint' : weightLoss ? 'weight_loss_endpoint' : 'gait', mode: live ? 'live_classifier_full_engine_public_catalog' : 'injected_classifier_full_engine_public_catalog', catalog: catalogMeta, counts, limitations: ['All user profiles and writes are synthetic and isolated in memory', 'No browser, authentication or microphone/audio transcription test', 'No clinical efficacy or exercise dose validation', ...(combinations ? [(clinicalDiscovery || bloodPressure) ? 'Explicit synthetic clinical/discovery answers; injected classification only' : '768 journeys over 64 profiles and two intents; some answer/outcome branches coincide when no question/action is reached', 'Product review flags are separate from software PASS; priority correctness is not assumed from engine output'] : []), ...(weightLoss ? ['Real endpoint hydration, but Firebase authentication is mocked', 'Exact weight wishes use the existing server parser and bypass Haiku; live mode exercises AI only for inputs reaching classification', 'Review-required catalog choices do not become clinically approved through PASS'] : []), 'BLOCKED journeys are not counted as passing'], results }, null, 2));
+console.log(JSON.stringify({ suite: conversations ? 'conversation_changes_endpoint' : bloodPressure ? 'blood_pressure_endpoint' : clinicalDiscovery ? 'clinical_discovery_endpoint' : combinations ? 'crt_combinations_endpoint' : weightLoss ? 'weight_loss_endpoint' : 'gait', mode: live ? 'live_classifier_full_engine_public_catalog' : 'injected_classifier_full_engine_public_catalog', catalog: catalogMeta, counts, limitations: ['All user profiles and writes are synthetic and isolated in memory', 'No browser, authentication or microphone/audio transcription test', 'No clinical efficacy or exercise dose validation', ...(combinations ? [(clinicalDiscovery || bloodPressure) ? 'Explicit synthetic clinical/discovery answers; injected classification only' : '768 journeys over 64 profiles and two intents; some answer/outcome branches coincide when no question/action is reached', 'Product review flags are separate from software PASS; priority correctness is not assumed from engine output'] : []), ...(weightLoss ? ['Real endpoint hydration, but Firebase authentication is mocked', 'Exact weight wishes use the existing server parser and bypass Haiku; live mode exercises AI only for inputs reaching classification', 'Review-required catalog choices do not become clinically approved through PASS'] : []), 'BLOCKED journeys are not counted as passing'], results }, null, 2));
 process.exitCode = counts.FAIL ? 1 : counts.BLOCKED ? 2 : 0;
 
 
