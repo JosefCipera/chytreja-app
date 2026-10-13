@@ -153,6 +153,11 @@ async function isolated(scenario, branch = null) {
     const q = { select() { return q; }, eq(key, value) { if (key !== 'user_id') filters.push(r => r[key] === value); return q; }, in(key, values) { filters.push(r => values.includes(r[key])); return q; }, gte(key, value) { filters.push(r => r[key] >= value); return q; }, order() { return q; }, limit() { return q; }, maybeSingle() { single = true; return Promise.resolve(result()); }, single() { single = true; return Promise.resolve(result()); }, upsert(row) { return mutate('upsert', row); }, insert(row) { return mutate('insert', row); }, then(resolve, reject) { return Promise.resolve(result()).then(resolve, reject); } };
     return q;
   } };
+  // Explicit synthetic prior-conversation facts are applied after wizard parity
+  // checks; never claim these fields came from onboarding controls.
+  if (scenario.conversationJourney && scenario.priorPhysical) {
+    health.physical = { ...health.physical, ...scenario.priorPhysical };
+  }
   let classifierFailure = null, currentInput = null, injectedFault = null;
   class AI { messages = { create: async args => {
     const classifierText = outages ? args.messages.at(-1).content.split('[Input]\n').at(-1) : currentInput;
@@ -169,6 +174,8 @@ async function isolated(scenario, branch = null) {
         ? { event_type: 'ANSWER_TO_EVIDENCE_QUESTION', payload: { evidence_type: session.pending_question.evidence_type, value: classifierText } }
         : (scenario.conversationJourney || scenario.outageJourney) && classifierText === 'Jsem nejistý při chůzi.'
         ? { event_type: 'ANSWER_TO_EVIDENCE_QUESTION', payload: { evidence_type: 'gait_instability_reported', value: true } }
+        : scenario.conversationJourney && classifierText === 'Při běžné chůzi se cítím stabilně.'
+          ? { event_type: 'ANSWER_TO_EVIDENCE_QUESTION', payload: { evidence_type: 'gait_instability_reported', value: false } }
         : scenario.conversationJourney && classifierText === 'Oprava: ze země vstanu bez opory rukou.'
           ? { event_type: 'ANSWER_TO_EVIDENCE_QUESTION', payload: { evidence_type: 'vstat_ze_zeme', value: true } }
         : session.pending_question && (['Ano', 'Ne', 'Nevím', 'Nemám výsledek', 'Nemám změřeno'].includes(classifierText) || session.pending_question.evidence_type === 'bp_systolic')
@@ -285,7 +292,7 @@ async function isolated(scenario, branch = null) {
     check('why-read-only', writes.length === before, writes.length - before);
     const leverage = initialEngine.system_leverage.selected?.node_id;
     if (scenario.id === 'tester136-shape' || (scenario.id.startsWith('journey-') && !branch?.startsWith('gait-'))) check('known-strength-priority', leverage === 'LOW_MUSCLE_STRENGTH' && selected?.action_id === 'sit_to_stand_supported', { leverage, action: selected?.action_id });
-    if (leverage && leverage !== 'EXCESS_ADIPOSITY' && response.mode !== 'SAFETY_BLOCKED') check('why-distinguishes-priority-from-weight-plan', /není to samo o sobě plán hubnutí/.test(why.text), why.text);
+    if (leverage && leverage !== 'EXCESS_ADIPOSITY' && response.mode !== 'SAFETY_BLOCKED') check('why-distinguishes-priority-from-weight-plan', /Samotné hubnutí tento krok neřeší/.test(why.text), why.text);
     if (scenario.id === 'normal-bmi') check('wish-not-adiposity-evidence', !initialEngine.node_states.some(n => n.node_id === 'EXCESS_ADIPOSITY' && ['MEASURED', 'CONFIRMED'].includes(n.current_state)), initialEngine.node_states.find(n => n.node_id === 'EXCESS_ADIPOSITY'));
     session = { ...session, person_goal: 'FORGED' };
     const reloadWhy = await turn('Proč?');
