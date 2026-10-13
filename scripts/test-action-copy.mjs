@@ -28,10 +28,39 @@ const legacy = act({ primary_item: { ...action, safety: { level: 'SAFE_WITH_MODI
 assert.ok(!/Oči zavři/.test(legacy.text), 'Legacy cached instruction must not prescribe closing eyes');
 assert.ok(/oči otevřené/.test(legacy.text));
 assert.equal(r.mode,'ACT');assert.equal(r.buttons.join(','),'Hotovo,Přeskočit');
+assert.ok(r.text.length < 265, 'Mobile entry instruction retains four safety conditions concisely');
 const session={current_action_assignment:{action_id:'test'},last_domain_response:{explanation_context:{system_leverage:{node_id:'GAIT_INSTABILITY'},action_context:{selected:action}}}};
 const reason=why(session);
 assert.ok(reason.text.includes('jistotu při chůzi'));
 assert.ok(!reason.text.includes('nejvíc')&&!reason.text.includes('opěradla')&&!reason.text.includes('Úprava'));
+const proxySession = structuredClone(session);
+proxySession.person_goal = 'WEIGHT_LOSS';
+const proxyContext = proxySession.last_domain_response.explanation_context;
+proxyContext.system_priority = { node_id: 'EXCESS_ADIPOSITY' };
+proxyContext.action_fallback = { status: 'SELECTED' };
+proxyContext.leverage_evidence = { direct: [], inferred_from_nodes: [
+  { node_id: 'LOW_MUSCLE_STRENGTH', current_state: 'MEASURED' },
+  { source: 'ONBOARDING', question_id: 'rovnovaha_zavrene_oci', value: false },
+] };
+const proxyWhy = why(proxySession);
+assert.ok(/Údaje o síle a rovnováze/.test(proxyWhy.text));
+assert.ok(/Samy nepotvrzují nejistotu při běžné chůzi/.test(proxyWhy.text));
+assert.ok(!/Uvádíš nejistotu|Proto.*jistotu při chůzi/.test(proxyWhy.text));
+assert.ok(/hlavní prioritu.*nepovolují/.test(proxyWhy.text));
+assert.ok(/Samotné hubnutí tento krok neřeší/.test(proxyWhy.text));
+assert.ok(proxyWhy.text.length < 350, 'Concise fallback preserves reason and scope');
+for (const report of [
+  { question_id: 'gait_instability_reported', value: true },
+  { question_id: 'gait_stability', value: ' NE ' },
+]) {
+  const adverse = structuredClone(proxySession);
+  adverse.last_domain_response.explanation_context.leverage_evidence.inferred_from_nodes.push(report);
+  assert.ok(!why(adverse).text.includes('Samy nepotvrzují'), 'An actual adverse report is not denied');
+}
+const confirmed = structuredClone(proxySession);
+confirmed.last_domain_response.explanation_context.leverage_evidence.direct.push({ obs_type: 'gait_assessment', value: 'abnormal' });
+assert.ok(!why(confirmed).text.includes('Samy nepotvrzují'), 'Direct gait assessment is not denied');
+console.log('PASS: inferred balance WHY exposes combined sources, remains conditional and concise, retains actual adverse reports and direct findings.');
 assert.ok(mechanism(session).text.includes('při pravidelném opakování může pomoci'));
 assert.equal(localize('Avoid Valsalva (breath-holding during exertion)'),'Nezadržuj dech při cvičení');
 console.log('PASS: balance dose unchanged, all safety conditions once, no duplicate WHY instructions, conditional repeated benefit.');
