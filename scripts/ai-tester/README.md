@@ -121,3 +121,12 @@ Run `node --experimental-vm-modules scripts/ai-tester/run-gait-matrix.mjs --clin
 `node --experimental-vm-modules scripts/ai-tester/run-gait-matrix.mjs --blood-pressure` exercises nine isolated endpoint journeys: current upper pressure (120, 120/80, 150), unknown/unmeasured answers, invalid data followed by a valid value, and three approximate-discovery replies. Checks cover numeric persistence, availability-only unknowns, late value entry, no repeated resolved question, no invented hypertension, and unchanged medical scope guards. Reports are saved as `blood-pressure.json` in CI.
 
 The 768 combination journeys now explicitly answer missing current pressure with an unavailable marker. A self-reported reading has estimated confidence and no fabricated measurement date. Recording an answer does not remove the model's unmet evidence needs or authorize exercise: a repeated pressure ASK becomes an honest HOLD while keeping the conversation open. Live language suites remain separate; these journeys use injected classification and synthetic profiles.
+
+
+## Conversation changes (2026-10-13)
+
+`run-gait-matrix.mjs --conversation-changes` runs five isolated endpoint journeys: weight → gait topic change, explicit floor-rise answer correction, new syncope statement during an action, a new report after completion, and topic change after skipping. `--live` uses the real classifier for messages reaching it; exact navigation and supported goals still use server parsers. CI executes the live suite and creates `conversation-review.md` with `summarize-conversations.mjs`, also included in the workflow summary.
+
+Checks cover persisted new/corrected facts, removed obsolete strength evidence, cleared stale assignment, current safe action, explanatory reads, preserved completion/skip records and medical refusal that remains active within the same conversation. The saved `docs/QA-CONVERSATION-REVIEW-2026-10-13.md` is the local injected-classifier snapshot with exact app responses. CI's live-classifier report is a separate artifact.
+
+Software PASS is separate from product/clinical review: `REOPENED_DAY_AFTER_NEW_FACT` flags another intervention offered after “today is finished”; balance exercise wording, support, dose and closing the eyes need professional review. No browser login/logout, real speech transcription or clinical suitability is established by these tests.

@@ -1121,7 +1121,7 @@ function buildWhyResponse(sessionState) {
   // Safety instructions belong to ACT, not to the reason for selecting it.
   const text = parts.length > 0
     ? parts.join(' ')
-    : 'Zatím nemám dost podkladů k vysvětlení, proč byla tato akce vybrána.';
+    : 'Zatím nemám dost podkladů pro konkrétní doporučení. Potřebuji doplnit další údaje.';
 
   return {
     mode:          'EXPLAIN',
