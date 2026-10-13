@@ -43,6 +43,7 @@ import { createClient } from '@supabase/supabase-js';
 import { runEngine }           from './engine.js';
 import { computeDailyDecision } from './dailyDecision.js';
 import { mapDiagnosis }         from './adapter.js';
+import { readYesNo }            from './evidenceResolution.js';
 
 // ── EVIDENCE_STORAGE_REGISTRY ─────────────────────────────────────────────────
 // Deklarativní mapping: evidence_type / obs_type → canonical DB target.
@@ -244,6 +245,15 @@ async function upsertPhysical(supabase, userId, key, value) {
   if (readErr) throw new Error(`upsertPhysical read: ${readErr.message}`);
 
   const merged = { ...(row?.physical || {}), [key]: value };
+  // An explicit current stable-walking statement (report=false) corrects an
+  // older negative walking answer too. A new adverse/intermittent report is
+  // not an answer to the ordinary-walking question, and a positive answer
+  // to that question alone never retracts the independent adverse report.
+  // Unknown answers are not clearance and do not erase existing facts.
+  if (key === 'gait_instability_reported' && readYesNo(value) === 'no') {
+    merged.gait_instability_reported = false;
+    merged.gait_stability = true;
+  }
   const { error } = await supabase
     .from('user_health_profile')
     .upsert({ user_id: userId, physical: merged }, { onConflict: 'user_id' });
