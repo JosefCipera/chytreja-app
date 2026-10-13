@@ -76,6 +76,7 @@ jobs:
           node scripts/test-onboarding-combinations.mjs
           node scripts/test-crt-contract-mutations.mjs
           node scripts/test-leverage-fallback.mjs
+          node --experimental-vm-modules scripts/test-action-copy.mjs
           node scripts/test-adiposity-entry-intensity.mjs
           node scripts/reproduce-eyes-closed-gait.mjs
           node scripts/test-blocking-evidence.mjs
