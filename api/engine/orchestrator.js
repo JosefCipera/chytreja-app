@@ -1113,7 +1113,7 @@ function buildWhyResponse(sessionState) {
   const gaitFacts = ctx.reported_gait_evidence;
   if ([...(gaitFacts?.direct ?? []), ...(gaitFacts?.supporting ?? []), ...(gaitFacts?.inferred_from_nodes ?? [])]
       .some(f => f.question_id === 'gait_instability_reported' && f.value === true)
-      && ctx.system_leverage?.node_id !== 'GAIT_INSTABILITY') {
+      && whyEvidencePhrase(ctx) !== 'Uvádíš nejistotu při chůzi.') {
     parts.push('Uvádíš nejistotu při chůzi.');
   }
   if (sessionState.person_goal === 'WEIGHT_LOSS') parts.push('Chceš zhubnout.');
