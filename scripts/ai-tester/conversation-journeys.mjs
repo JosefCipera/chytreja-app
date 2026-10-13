@@ -8,7 +8,7 @@ export function conversationScenarios() {
     physical: { ...physical, ...(id === 'answer-correction' ? { vstat_ze_zeme: false } : {}),
       ...(id === 'stable-gait-correction' ? { zvednout_vnouce: false, rovnovaha_zavrene_oci: false } : {}) },
     // Previous conversation facts, not answers available in the onboarding wizard.
-    priorPhysical: id === 'stable-gait-correction' ? { gait_stability: true, gait_instability_reported: true } : {},
+    priorPhysical: id === 'stable-gait-correction' ? { gait_stability: false, gait_instability_reported: true } : {},
   }));
 }
 
@@ -33,6 +33,7 @@ export async function runConversationJourney({ scenario, response, turn, check, 
     check('initial-why-retains-actual-gait-report', /Uvádíš nejistotu při chůzi/.test(before.text), before.text);
     response = await turn('Při běžné chůzi se cítím stabilně.');
     check('stable-correction-retained', getHealth().physical.gait_instability_reported === false, getHealth().physical);
+    check('stable-correction-reconciles-previous-walking-answer', getHealth().physical.gait_stability === true, getHealth().physical);
     check('correction-preserves-other-answers', getHealth().physical.zvednout_vnouce === false
       && getHealth().physical.rovnovaha_zavrene_oci === false, getHealth().physical);
     await safe('after-stable-correction');
