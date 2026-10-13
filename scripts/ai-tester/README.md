@@ -130,3 +130,12 @@ The 768 combination journeys now explicitly answer missing current pressure with
 Checks cover persisted new/corrected facts, removed obsolete strength evidence, cleared stale assignment, current safe action, explanatory reads, preserved completion/skip records and medical refusal that remains active within the same conversation. The saved `docs/QA-CONVERSATION-REVIEW-2026-10-13.md` is the local injected-classifier snapshot with exact app responses. CI's live-classifier report is a separate artifact.
 
 Software PASS is separate from product/clinical review: `REOPENED_DAY_AFTER_NEW_FACT` flags another intervention offered after “today is finished”; balance exercise wording, support, dose and closing the eyes need professional review. No browser login/logout, real speech transcription or clinical suitability is established by these tests.
+
+
+## Approved completed-day policy (2026-10-13)
+
+Josef approved: after Hotovo, no additional exercise that day, including another intervention selected after new health input. New facts and corrections are still stored, blocking questions may still be asked, and safety/unsupported-medical rules remain higher priority. Daily decisions now use any recorded completed intervention for HOLD_DONE_TODAY, rather than only the newly selected intervention. The next day is evaluated normally using the existing UTC assignment-day convention.
+
+The five-conversation suite now checks this policy, a restored stale assignment, empty client state, and a simulated next day with a controlled VM clock. Stale sequential completion requests do not write another completion. The read-before-write persistence guard is not an atomic database uniqueness guarantee for simultaneous requests. Real login/logout and clinical exercise suitability remain outside these software checks.
+
+The earlier REOPENED_DAY_AFTER_NEW_FACT product flag is resolved. The review snapshot is updated with exact new responses and labels for simulated day changes. Balance protocol wording/support/dose/closing eyes remains pending professional review; no protocol change or clinical approval is made by this patch.
