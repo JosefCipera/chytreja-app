@@ -126,7 +126,11 @@ const MODIFICATIONS_CS = {
   'Use stable wall or chair support for all single-leg variants':
     'Při cvičení na jedné noze se přidržuj stěny nebo opěradla stabilní židle',
   'Begin with eyes-open only; progress to eyes-closed only when stable':
-    'Začni s otevřenýma očima. Oči zavři až tehdy, když bezpečně udržíš rovnováhu',
+    'Po celou dobu měj oči otevřené',
+  'Keep eyes open throughout':
+    'Po celou dobu měj oči otevřené',
+  'Stop if pain, dizziness, or loss of balance occurs':
+    'Při bolesti, závrati nebo ztrátě rovnováhy přestaň',
   'Supervised or near-support setting for first sessions':
     'Při prvních cvičeních měj někoho u sebe nebo cvič v blízkosti pevné opory',
   'Obtain physician or physiotherapist clearance before any loading of this region':
