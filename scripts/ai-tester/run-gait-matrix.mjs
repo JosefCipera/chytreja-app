@@ -431,6 +431,8 @@ async function isolated(scenario, branch = null) {
   }
   if (classifierFailure) return { id: scenario.id, branch, status: 'BLOCKED', reason: classifierFailure, turns, checks };
   for (const [i, t] of turns.entries()) {
+    if (t.mode === 'ACT') check(`ui-${i}-no-unassessed-eye-closing`, !/Oči zavři/.test(t.text), t.text);
+
     if (t.mode !== 'SAFETY_CRITICAL') check(`ui-${i}-conversation-open`, t.ui.input_enabled && t.ui.send_enabled && t.ui.microphone_enabled, { mode: t.mode, ui: t.ui });
   }
   return { id: scenario.id, branch, status: checks.some(c => c.status === 'FAIL') ? 'FAIL' : checks.some(c => c.status === 'BLOCKED') ? 'BLOCKED' : 'PASS', matrix: scenario.matrix, product_review: productReview, profile, physical: initialPhysical, constraints, classification: initialClassification, leverage: initialEngine.system_leverage.selected, engine_action: selected, candidate_count: initialEngine.next_best_action.all_candidates?.length ?? 0, review_required: weightLoss && scenario.goal && /5 kg/.test(selected?.label ?? '') ? ['Catalog chooses a fixed-load overhead press selected for a weight-loss request; separate relevance/dose review is required'] : [], turns, assignments, checks };
