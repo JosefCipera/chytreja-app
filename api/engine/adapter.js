@@ -181,7 +181,8 @@ export async function fetchHealthData(userId) {
 
   // Current user-reported pressure, separate from approximate discovery answers.
   const reportedBp = hp?.physical?.bp_systolic;
-  if (typeof reportedBp === 'number' && Number.isFinite(reportedBp) && reportedBp >= 60 && reportedBp <= 250)
+  if (hp?.physical?.evidence_availability?.bp_systolic !== 'NOT_AVAILABLE'
+      && typeof reportedBp === 'number' && Number.isFinite(reportedBp) && reportedBp >= 60 && reportedBp <= 250)
     observations.push({ obs_type: 'bp_systolic', value: reportedBp, unit: 'mmHg', measured_at: null, source: 'self_report', confidence: 'estimated' });
 
   // Sedentary hours from physical (written by Health Event Adapter ANSWER events)
