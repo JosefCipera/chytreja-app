@@ -296,6 +296,7 @@ async function isolated(scenario, branch = null) {
         check('one-constraint-snapshot-after-clarification', constraintsReads - before <= 1, constraintsReads - before);
         return current;
       },
+      getObservations: async () => (await cache.get(new URL('api/engine/adapter.js', sourceRoot).href).namespace.fetchHealthData(uid)).observations,
       getHealth: () => health, getSession: () => session, getWrites: () => writes,
       getCalls: () => calls, getAssignments: () => assignments, turn, check, catalog, response });
     response = result.response; productReview = result.reviews;
