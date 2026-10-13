@@ -125,6 +125,11 @@ jobs:
         run: |
           mkdir -p ai-tester-results
           node --experimental-vm-modules scripts/ai-tester/run-gait-matrix.mjs --clinical-discovery > ai-tester-results/clinical-discovery.json
+      - name: Evaluate blood-pressure reply and availability journeys
+        if: always()
+        run: |
+          mkdir -p ai-tester-results
+          node --experimental-vm-modules scripts/ai-tester/run-gait-matrix.mjs --blood-pressure > ai-tester-results/blood-pressure.json
       - name: Summarize CRT product review separately from PASS
         if: always()
         run: |
