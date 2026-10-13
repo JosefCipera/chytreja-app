@@ -130,6 +130,15 @@ jobs:
         run: |
           mkdir -p ai-tester-results
           node --experimental-vm-modules scripts/ai-tester/run-gait-matrix.mjs --blood-pressure > ai-tester-results/blood-pressure.json
+      - name: Evaluate conversation changes with live classification
+        if: always()
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          mkdir -p ai-tester-results
+          node --experimental-vm-modules scripts/ai-tester/run-gait-matrix.mjs --conversation-changes --live > ai-tester-results/conversation-changes.json
+          node scripts/ai-tester/summarize-conversations.mjs ai-tester-results/conversation-changes.json > ai-tester-results/conversation-review.md
+          cat ai-tester-results/conversation-review.md >> "$GITHUB_STEP_SUMMARY"
       - name: Summarize CRT product review separately from PASS
         if: always()
         run: |
