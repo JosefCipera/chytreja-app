@@ -6,6 +6,7 @@ import fs from 'node:fs';
 import url from 'node:url';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import { readYesNo } from '../../api/engine/evidenceResolution.js';
 const live=process.argv.includes('--live');
 const probe=process.argv.includes('--probe');
 if(live===probe)throw Error('Choose exactly one: --live or --probe');
@@ -28,7 +29,7 @@ let health,writes,observedEvent,classification,currentInput,classifierError,engi
 const db={from(table){if(table!=='user_health_profile')throw Error('Unexpected table: '+table);const q={select(){return q;},eq(){return q;},maybeSingle:async()=>({data:health,error:null}),upsert:async row=>{writes.push(row);health={...health,...row};return {error:null};}};return q;}};
 const adapter=await isolated(new URL('../../api/engine/healthEventAdapter.js',import.meta.url),{
  '@supabase/supabase-js':{createClient:()=>db},'./engine.js':{runEngine:async()=>{engineCalls++;return {}; }},
- './dailyDecision.js':{computeDailyDecision:()=>({mode:'HOLD',reason_code:'FIXTURE_ENGINE'})},'./adapter.js':{mapDiagnosis:()=>null},
+ './dailyDecision.js':{computeDailyDecision:()=>({mode:'HOLD',reason_code:'FIXTURE_ENGINE'})},'./adapter.js':{mapDiagnosis:()=>null}, './evidenceResolution.js':{readYesNo},
 });
 class InstrumentedAI{
  messages={create:async args=>{

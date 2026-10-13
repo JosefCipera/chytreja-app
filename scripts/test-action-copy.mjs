@@ -56,6 +56,8 @@ for (const report of [
   const adverse = structuredClone(proxySession);
   adverse.last_domain_response.explanation_context.leverage_evidence.inferred_from_nodes.push(report);
   assert.ok(!why(adverse).text.includes('Samy nepotvrzují'), 'An actual adverse report is not denied');
+  assert.ok(why(adverse).text.includes('Uvádíš nejistotu při chůzi.'), 'Use actual walking report before eyes-closed proxy');
+  assert.ok(!why(adverse).text.includes('se zavřenýma očima'), 'Do not substitute a different balance task for the walking report');
 }
 const confirmed = structuredClone(proxySession);
 confirmed.last_domain_response.explanation_context.leverage_evidence.direct.push({ obs_type: 'gait_assessment', value: 'abnormal' });

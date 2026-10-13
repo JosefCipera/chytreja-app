@@ -2,6 +2,7 @@
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import fs from 'node:fs';
+import { readYesNo } from '../api/engine/evidenceResolution.js';
 const context=vm.createContext({console,process,Date,Set,Map,JSON});
 async function isolated(file,mocks){
  const m=new vm.SourceTextModule(fs.readFileSync(file,'utf8'),{context});
@@ -13,6 +14,7 @@ const db={from(table){const q={select(){return q;},eq(){return q;},order(){retur
 const adapter=await isolated(new URL('../api/engine/healthEventAdapter.js',import.meta.url),{
  '@supabase/supabase-js':{createClient:()=>db},'./engine.js':{runEngine:async()=>{engineCalls++;return {}; }},
  './dailyDecision.js':{computeDailyDecision:()=>({mode:'HOLD'})},'./adapter.js':{mapDiagnosis:()=>null},
+ './evidenceResolution.js': { readYesNo },
 });
 for(const text of ['chci zhubnout','Chci zhubnout.','Chtěla bych snížit váhu'])assert.equal(adapter.parseSupportedGoal(text),'WEIGHT_LOSS');
 for(const text of ['nechci zhubnout','chci zhubnout a mám synkopu','přibral jsem','říkala: chci zhubnout','chci zlepšit kondici'])assert.equal(adapter.parseSupportedGoal(text),null);
@@ -43,3 +45,36 @@ profile={physical:{},goal_text:null,symptoms:[]};
 assert.equal(await request('Proč?'),null,'Client cannot forge personal goal');
 assert.equal(captured.state.explicit_goal_request,false);
 console.log('PASS: exact intent, negation/mixed-input rejection, canonical storage, failed write, read-only legacy hydration and server authority.');
+
+// Explicit current stable-walking correction reconciles the older negative
+// question answer, without erasing independent symptoms or assessed findings.
+for (const value of [false, 'Ne', 'no', 0]) {
+ profile = { physical: { gait_stability: false, gait_instability_reported: true,
+   rovnovaha_zavrene_oci: false, recent_falls: true, tug_test: 19 }, diagnoses: ['fixture-clinical-finding'] };
+ writes = [];
+ r = await adapter.applyHealthEvent('fixture', { event_type: 'ANSWER_TO_EVIDENCE_QUESTION', payload: { evidence_type: 'gait_instability_reported', value } });
+ assert.equal(r.persistence_status, 'ok');
+ assert.equal(writes.length, 1, 'Explicit correction uses one physical write');
+ const row = writes[0].row;
+ assert.equal(row.physical.gait_stability, true);
+ assert.equal(row.physical.gait_instability_reported, false);
+ assert.equal(row.physical.rovnovaha_zavrene_oci, false);
+ assert.equal(row.physical.recent_falls, true);
+ assert.equal(row.physical.tug_test, 19);
+ assert.equal(row.diagnoses, undefined, 'A stable self-report does not erase diagnosis');
+}
+for (const [key,value] of [['gait_stability',true],['gait_stability','Ano'],
+ ['gait_stability',false],['gait_stability','Nevím'],['gait_instability_reported','Nevím'],
+ ['gait_instability_reported',true]]) {
+ profile = { physical: { gait_stability: false, gait_instability_reported: true, recent_falls: true } };
+ writes = [];
+ await adapter.applyHealthEvent('fixture', { event_type: 'ANSWER_TO_EVIDENCE_QUESTION', payload: { evidence_type: key, value } });
+ const other = key === 'gait_stability' ? 'gait_instability_reported' : 'gait_stability';
+ assert.equal(writes[0].row.physical[other], profile.physical[other], 'Unknown/question answer does not retract independent symptoms or answer another question');
+}
+failWrite = true;
+const beforeFailedCorrection = engineCalls;
+r = await adapter.applyHealthEvent('fixture', { event_type: 'ANSWER_TO_EVIDENCE_QUESTION', payload: { evidence_type: 'gait_instability_reported', value: false } });
+assert.equal(r.persistence_status, 'error');
+assert.equal(engineCalls, beforeFailedCorrection, 'Failed correction never produces an engine decision');
+console.log('PASS: explicit stable walking corrects stale answer in one write; independent reports, uncertainty, falls, assessments, diagnoses and failed writes preserve safety.');

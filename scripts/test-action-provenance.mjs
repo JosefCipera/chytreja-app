@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import url from 'node:url';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import { readYesNo } from '../api/engine/evidenceResolution.js';
 const context=vm.createContext({console,process,crypto,Date,Set,Map,JSON});
 async function isolated(file,mocks){
  const m=new vm.SourceTextModule(fs.readFileSync(file,'utf8'),{context,identifier:file.href,initializeImportMeta(meta){meta.url=file.href;}});
@@ -14,7 +15,7 @@ async function isolated(file,mocks){
 let rows=[];
 const adapter=await isolated(new URL('../api/engine/healthEventAdapter.js',import.meta.url),{
  '@supabase/supabase-js':{createClient:()=>({from(table){assert.equal(table,'action_assignments');return {insert:async row=>{rows.push(row);return {error:null};}};}})},
- './engine.js':{runEngine:async()=>({})},'./dailyDecision.js':{computeDailyDecision:()=>({mode:'HOLD',reason_code:'HOLD_DONE_TODAY'})},'./adapter.js':{mapDiagnosis:()=>null},
+ './engine.js':{runEngine:async()=>({})},'./dailyDecision.js':{computeDailyDecision:()=>({mode:'HOLD',reason_code:'HOLD_DONE_TODAY'})},'./adapter.js':{mapDiagnosis:()=>null}, './evidenceResolution.js':{readYesNo},
 });
 class AI{messages={create(){throw Error('Completion chips must bypass AI');}};}
 const presentation=await isolated(new URL('../api/engine/orchestrator.js',import.meta.url),{
