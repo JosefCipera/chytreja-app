@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { findAvailableLeverage } from '../api/engine/dailyDecision.js';
+import { findAvailableLeverage, computeDailyDecision } from '../api/engine/dailyDecision.js';
 const blocked = { status: 'NO_VIABLE_ACTIONS', selected: null, all_candidates: [{ action_id: 'walk', label: 'Walking', safety: { level: 'NEEDS_CLINICAL_CLEARANCE', reason: 'Needs assessment' } }] };
 const safe = { status: 'SELECTED', selected: { action_id: 'supported', intervention_id: 'BALANCE', safety: { level: 'SAFE_WITH_MODIFICATION' } }, all_candidates: [{ action_id: 'supported', safety: { level: 'SAFE_WITH_MODIFICATION' } }] };
 const candidate = (node_id, level) => ({ node_id, current_state: 'PREDICTED_CURRENT', confidence: 'low', causal_reach: { level, affected_nodes: ['FALL_RISK'], edges_used: [] }, cross_context_leverage: { level: 'low', contexts: ['FUNCTIONAL_MOBILITY'] }, changeability: 'medium' });
@@ -37,3 +37,19 @@ assert.equal(r.fallback.status, 'UNAVAILABLE', 'Inconsistent candidate metadata 
 r = await findAvailableLeverage({ ...input, systemLeverage: { ...leverage, candidates: [{ ...candidate('BEST', 'none') }, { ...candidate('LOWER', 'high'), current_state: 'UNKNOWN' }] }, evaluate: async () => { throw Error('Excluded candidate must not be evaluated'); } });
 assert.equal(r.fallback.attempts.length, 0);
 console.log('PASS: ordered availability fallback preserves primary priority, critical/evidence/skip/completion gates and unavailable alternatives.');
+
+// Approved daily policy applies across interventions, with safety/evidence ahead of ACT.
+const asOf = '2026-10-13T08:00:00Z';
+const completed = [{ intervention_id: 'OTHER', completed_days: ['2026-10-13'], sessions_completed: 1 }];
+const dayInput = { next_best_action: safe, decision_gate: { context_gates: [] }, intervention_exposure: completed };
+const held = computeDailyDecision(dayInput, asOf);
+assert.equal(held.reason_code, 'HOLD_DONE_TODAY');
+assert.equal(held.primary_item.exposure_summary.completed_intervention_id, 'OTHER');
+assert.equal(computeDailyDecision(dayInput, '2026-10-14T08:00:00Z').mode, 'ACT');
+assert.equal(computeDailyDecision({ ...dayInput, intervention_exposure: [{ intervention_id: 'OTHER', completed_days: ['2026-10-14'] }] }, asOf).mode, 'ACT');
+assert.equal(computeDailyDecision({ ...dayInput, intervention_exposure: [{ intervention_id: 'OTHER', completed_days: [] }] }, asOf).mode, 'ACT');
+assert.equal(computeDailyDecision({ ...dayInput, next_best_action: blocked }, asOf).reason_code, 'SAFETY_BLOCKED');
+assert.equal(computeDailyDecision({ ...dayInput, next_best_action: { status: 'NEED_MORE_EVIDENCE', selected: null, all_candidates: [] } }, asOf).mode, 'ASK');
+const criticalGate = { context_gates: [{ decision_context: { id: 'health' }, actionable_findings: [{ entity_id: 'critical', actionability: 'SAFETY_CRITICAL' }] }] };
+assert.equal(computeDailyDecision({ ...dayInput, decision_gate: criticalGate }, asOf).reason_code, 'SAFETY_CRITICAL');
+console.log('PASS: any completed intervention closes the exercise day, while tomorrow and safety/evidence remain active.');
