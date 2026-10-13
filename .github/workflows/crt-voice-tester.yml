@@ -120,6 +120,11 @@ jobs:
         run: |
           mkdir -p ai-tester-results
           node --experimental-vm-modules scripts/ai-tester/run-gait-matrix.mjs --crt-combinations > ai-tester-results/crt-combinations.json
+      - name: Evaluate resolved clinical discovery journeys
+        if: always()
+        run: |
+          mkdir -p ai-tester-results
+          node --experimental-vm-modules scripts/ai-tester/run-gait-matrix.mjs --clinical-discovery > ai-tester-results/clinical-discovery.json
       - name: Summarize CRT product review separately from PASS
         if: always()
         run: |
