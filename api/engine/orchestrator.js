@@ -891,12 +891,12 @@ function buildHoldResponse(dd, _ctx, sessionUpdates, warnings, eventType, isFoll
     };
   }
 
-  // HOLD_DONE_TODAY: the intervention was already completed today — no second session
-  // today; the same intervention is offered again tomorrow. ACTION_COMPLETED keeps its
+  // HOLD_DONE_TODAY: an action was already completed today — no second exercise
+  // today; tomorrow the engine evaluates the available interventions again. ACTION_COMPLETED keeps its
   // own acknowledgment below.
   if (dd.reason_code === 'HOLD_DONE_TODAY' && eventType !== 'ACTION_COMPLETED') {
-    const ackText = HEALTH_INPUT_TYPES.has(eventType)
-      ? 'Beru novou informaci v úvahu. Po přepočtu se dnešní doporučení nemění. '
+    const ackText = (HEALTH_INPUT_TYPES.has(eventType) || ['ANSWER_TO_EVIDENCE_QUESTION', 'GENERAL_HEALTH_REQUEST'].includes(eventType))
+      ? 'Novou informaci jsem přijal. Dnešní akci už máš hotovou, další cvik dnes nenabízím. '
       : '';
     return {
       mode:          'HOLD',
@@ -918,6 +918,13 @@ function buildHoldResponse(dd, _ctx, sessionUpdates, warnings, eventType, isFoll
       expects_reply: false,
       session_updates: sessionUpdates,
       debug:         { reason_code: dd.reason_code, warnings },
+    };
+  }
+
+  if (warnings.some(w => String(w).startsWith('ACTION_COMPLETED: day already completed'))) {
+    return { mode: 'HOLD', text: 'Dnešní akci už máš potvrzenou. Pro dnešek stačí.',
+      buttons: [], expects_reply: true, session_updates: { ...sessionUpdates, pending_question: null, current_action_assignment: null },
+      debug: { reason_code: dd.reason_code, warnings },
     };
   }
 
@@ -1066,6 +1073,18 @@ function buildWhyResponse(sessionState) {
       expects_reply: false,
       session_updates: {},
       debug:         { source: 'no_cached_context' },
+    };
+  }
+
+  if (sessionState.last_daily_decision?.reason_code === 'HOLD_DONE_TODAY'
+      && !sessionState.current_action_assignment) {
+    const gait = ctx.reported_gait_evidence;
+    const reported = [...(gait?.direct ?? []), ...(gait?.supporting ?? []), ...(gait?.inferred_from_nodes ?? [])]
+      .some(f => f.question_id === 'gait_instability_reported' && f.value === true);
+    return { mode: 'EXPLAIN',
+      text: (reported ? 'Uvádíš nejistotu při chůzi. ' : '')
+        + 'Dnešní akci už máš hotovou. Nové údaje beru v úvahu při dalším vyhodnocení; další cvik dnes nenabízím.',
+      buttons: [], expects_reply: true, session_updates: {}, debug: { source: 'completed_day_explain' },
     };
   }
 
