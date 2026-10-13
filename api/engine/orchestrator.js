@@ -124,7 +124,7 @@ const MODIFICATIONS_CS = {
   'Clarify injury severity (mild / moderate / severe) before proceeding':
     'Upřesni závažnost zranění (mírné / střední / závažné)',
   'Use stable wall or chair support for all single-leg variants':
-    'Při cvičení na jedné noze se přidržuj stěny nebo opěradla stabilní židle',
+    'Přidržuj se stěny nebo stabilní židle',
   'Begin with eyes-open only; progress to eyes-closed only when stable':
     'Po celou dobu měj oči otevřené',
   'Keep eyes open throughout':
@@ -132,7 +132,7 @@ const MODIFICATIONS_CS = {
   'Stop if pain, dizziness, or loss of balance occurs':
     'Při bolesti, závrati nebo ztrátě rovnováhy přestaň',
   'Supervised or near-support setting for first sessions':
-    'Při prvních cvičeních měj někoho u sebe nebo cvič v blízkosti pevné opory',
+    'Zpočátku cvič s někým nebo u pevné opory',
   'Obtain physician or physiotherapist clearance before any loading of this region':
     'Před zátěží této oblasti potřebuješ souhlas lékaře nebo fyzioterapeuta',
   'Obtain physiotherapist clearance before high-intensity loading':
@@ -1049,6 +1049,18 @@ function whyEvidencePhrase(ctx) {
   const facts = [...(e?.direct ?? []), ...(e?.supporting ?? []), ...(e?.inferred_from_nodes ?? [])];
   const no = value => value === false || value === 0
     || (typeof value === 'string' && /^(ne|no|false|0)$/i.test(value.trim()));
+  // A modeled gait inference is not the user's report of unstable walking.
+  // Expose its combined sources instead of presenting the eyes-closed proxy
+  // alone as the reason. Do not alter inference, dose or safety in the UI.
+  if (ctx.system_leverage?.node_id === 'GAIT_INSTABILITY' && !e?.direct?.length
+      && !facts.some(f => f.question_id === 'gait_instability_reported' && f.value === true)
+      && !facts.some(f => f.question_id === 'gait_stability' && no(f.value))) {
+    const strength = facts.some(f => f.node_id === 'LOW_MUSCLE_STRENGTH');
+    const balance = facts.some(f => ['rovnovaha_zavrene_oci', 'balanc_jedna_noha'].includes(f.question_id));
+    const onlyProxies = facts.every(f => f.node_id === 'LOW_MUSCLE_STRENGTH'
+      || ['rovnovaha_zavrene_oci', 'balanc_jedna_noha'].includes(f.question_id));
+    if (strength && balance && onlyProxies) return 'Údaje o síle a rovnováze naznačují možné omezení rovnováhy. Samy nepotvrzují nejistotu při běžné chůzi.';
+  }
   const questions = {
     rovnovaha_zavrene_oci: 'neudržíš stoj na jedné noze se zavřenýma očima',
     balanc_jedna_noha: 'neudržíš stoj na jedné noze',
@@ -1101,7 +1113,7 @@ function buildWhyResponse(sessionState) {
   if (sessionState.person_goal === 'WEIGHT_LOSS') parts.push('Chceš zhubnout.');
   if (ctx.action_fallback?.status === 'SELECTED') {
     const priority = NODE_LABEL_CS[ctx.system_priority?.node_id];
-    if (priority) parts.push(`Aktivitu pro hlavní prioritu (${priority.toLowerCase()}) teď bezpečnostní pravidla nepovolují.`);
+    if (priority) parts.push('Aktivitu pro hlavní prioritu teď bezpečnostní pravidla nepovolují.');
   }
   const leverage    = ctx.system_leverage;
   const constraint  = ctx.system_constraint;
@@ -1125,8 +1137,10 @@ function buildWhyResponse(sessionState) {
     }
     const focus = WHY_FOCUS_CS[leverage?.node_id];
     const evidencePhrase = whyEvidencePhrase(ctx);
+    const inferredBalance = leverage.node_id === 'GAIT_INSTABILITY'
+      && evidencePhrase?.includes('Samy nepotvrzují nejistotu při běžné chůzi.');
     if (focus) parts.push(evidencePhrase
-      ? `${evidencePhrase} Proto se teď zaměřujeme na ${focus}. Cílem je podpořit ${goalPhrase}.`
+      ? `${evidencePhrase} Proto se dnes zaměřujeme na ${inferredBalance ? 'rovnováhu' : focus}.${ctx.action_fallback?.status === 'SELECTED' ? '' : ` Cílem je podpořit ${goalPhrase}.`}`
       : `Podle dostupných údajů se teď zaměřujeme na ${focus}. Cílem je podpořit ${goalPhrase}.`);
   }
 
@@ -1138,7 +1152,7 @@ function buildWhyResponse(sessionState) {
 
   if (sessionState.person_goal === 'WEIGHT_LOSS' && leverage?.node_id
       && leverage.node_id !== 'EXCESS_ADIPOSITY') {
-    parts.push('Dnešní doporučení řeší tuto prioritu; není to samo o sobě plán hubnutí.');
+    parts.push('Samotné hubnutí tento krok neřeší.');
   }
 
   // Safety instructions belong to ACT, not to the reason for selecting it.
@@ -2573,8 +2587,10 @@ async function processInputCore(userId, userText, sessionState = {}) {
   // Acknowledge personal intent without modifying the selected action, dose or safety.
   if (presentation.mode === 'ACT' && state.person_goal === 'WEIGHT_LOSS') {
     const focus = WHY_FOCUS_CS[ctx?.system_leverage?.node_id];
+    const inferredBalance = ctx?.system_leverage?.node_id === 'GAIT_INSTABILITY'
+      && whyEvidencePhrase(ctx)?.includes('Samy nepotvrzují nejistotu při běžné chůzi.');
     const intro = ctx?.system_leverage?.node_id !== 'EXCESS_ADIPOSITY' && focus
-      ? `Chceš zhubnout. Dnes začínáme krokem pro ${focus}.`
+      ? (inferredBalance ? 'Chceš zhubnout. Dnes začínáme rovnováhou.' : `Chceš zhubnout. Dnes začínáme krokem pro ${focus}.`)
       : 'Chceš zhubnout.';
     presentation.text = `${intro} ${presentation.text}`;
   }
