@@ -1,8 +1,8 @@
 import fs from 'node:fs';
 const r = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
-if (r.suite !== 'conversation_changes_endpoint' || r.results.length !== 5) throw Error('Expected five conversation journeys');
-const titles = { 'goal-change': 'Změna tématu: hubnutí → nejistota při chůzi', 'answer-correction': 'Oprava odpovědi o vstávání ze země', 'new-medical-fact': 'Nová informace o synkopě', 'return-after-done': 'Nová potíž po dokončení dnešní akce', 'change-after-skip': 'Změna tématu po přeskočení akce' };
-console.log('# Pět průchodů Chytrým já k posouzení\n');
+if (r.suite !== 'conversation_changes_endpoint' || r.results.length !== 6) throw Error('Expected six conversation journeys');
+const titles = { 'goal-change': 'Změna tématu: hubnutí → nejistota při chůzi', 'answer-correction': 'Oprava odpovědi o vstávání ze země', 'new-medical-fact': 'Nová informace o synkopě', 'return-after-done': 'Nová potíž po dokončení dnešní akce', 'change-after-skip': 'Změna tématu po přeskočení akce', 'stable-gait-correction': 'Oprava nejistoty na stabilní běžnou chůzi' };
+console.log('# Šest průchodů Chytrým já k posouzení\n');
 console.log(`Režim: ${r.mode}. Automatické průchody skutečným aplikačním kódem nad syntetickými profily; autentizace a databázové zápisy jsou simulované. Nejde o klinické schválení doporučení.\n`);
 console.log('Počet výsledků: ' + JSON.stringify(r.counts) + '\n');
 for (const x of r.results) {

@@ -1,11 +1,14 @@
 export function conversationScenarios() {
   const physical = { recent_falls: false, vynest_nakup: true, vstat_ze_zeme: true, zvednout_vnouce: true, rovnovaha_zavrene_oci: true };
-  return ['goal-change', 'answer-correction', 'new-medical-fact', 'return-after-done', 'change-after-skip'].map(id => ({
+  return ['goal-change', 'answer-correction', 'new-medical-fact', 'return-after-done', 'change-after-skip', 'stable-gait-correction'].map(id => ({
     id, conversationJourney: true, goal: id !== 'answer-correction', report: null,
     text: id === 'answer-correction' ? 'Chci zlepšit kondici.' : 'Chci zhubnout.',
     profile: { weight: id === 'answer-correction' ? 72 : 88 },
     lifestyle: { waist_cm: id === 'answer-correction' ? 84 : 99 },
-    physical: { ...physical, ...(id === 'answer-correction' ? { vstat_ze_zeme: false } : {}) },
+    physical: { ...physical, ...(id === 'answer-correction' ? { vstat_ze_zeme: false } : {}),
+      ...(id === 'stable-gait-correction' ? { zvednout_vnouce: false, rovnovaha_zavrene_oci: false } : {}) },
+    // Previous conversation facts, not answers available in the onboarding wizard.
+    priorPhysical: id === 'stable-gait-correction' ? { gait_stability: true, gait_instability_reported: true } : {},
   }));
 }
 
@@ -25,7 +28,23 @@ export async function runConversationJourney({ scenario, response, turn, check, 
     check('changed-context-why-read-only', getWrites().length === before.writes && JSON.stringify(getHealth()) === before.health && JSON.stringify(getSession().current_action_assignment) === before.action, why.text);
     return why;
   };
-  if (scenario.id === 'answer-correction') {
+  if (scenario.id === 'stable-gait-correction') {
+    const before = await explain();
+    check('initial-why-retains-actual-gait-report', /Uvádíš nejistotu při chůzi/.test(before.text), before.text);
+    response = await turn('Při běžné chůzi se cítím stabilně.');
+    check('stable-correction-retained', getHealth().physical.gait_instability_reported === false, getHealth().physical);
+    check('correction-preserves-other-answers', getHealth().physical.zvednout_vnouce === false
+      && getHealth().physical.rovnovaha_zavrene_oci === false, getHealth().physical);
+    await safe('after-stable-correction');
+    const why = await explain();
+    check('why-removes-corrected-gait-report', !/Uvádíš nejistotu při chůzi/.test(why.text), why.text);
+    const node = getSession().last_domain_response?.explanation_context?.system_leverage?.node_id;
+    check('why-retains-actual-selected-source', node === 'GAIT_INSTABILITY'
+      ? /Údaje o síle a rovnováze/.test(why.text) && /Samy nepotvrzují nejistotu při běžné chůzi/.test(why.text)
+      : node === 'LOW_MUSCLE_STRENGTH' && /nezvládneš zvednout malé dítě/.test(why.text), { node, text: why.text });
+    check('concise-why-mobile', why.text.length < 350, why.text);
+    check('correction-not-a-diagnosis-or-completion', getHealth().diagnoses.length === 0 && getAssignments().length === 0, getAssignments());
+  } else if (scenario.id === 'answer-correction') {
     const before = await explain();
     check('initial-why-uses-floor-answer', /nevstaneš ze země/.test(before.text), before.text);
     response = await turn('Oprava: ze země vstanu bez opory rukou.');
