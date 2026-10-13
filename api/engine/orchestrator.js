@@ -422,7 +422,7 @@ const DYSPNEA_FULL_RE = /^(?:ano|jo|ne|nemám|nedochází|vůbec|trochu|někdy|o
 
 // PATH_DISCOVERY: blood pressure — anchored full-input parser.
 // Accepts "120/80", "140", "Tlak mám asi 120/80.", "nevím", "neznám", "Nepamatuju si."
-const BP_FULL_RE = /^(?:(?:tlak\s+(?:mám|je|mívám|bývá)(?:\s+(?:asi|zhruba|tak|přibližně))?\s+)|(?:asi|zhruba|tak|přibližně)\s+)?(?:\d{2,3}(?:\/\d{2,3})?|nevím|neznám|nezměřil[ao]?|nepamatuju(?:\s+si)?|nemám.*tlakoměr|nenapadá)\s*[.,!?]*$/i;
+const BP_FULL_RE = /^(?:(?:tlak\s+(?:mám|je|mívám|bývá)(?:\s+(?:asi|zhruba|tak|přibližně))?\s+)|(?:asi|zhruba|tak|přibližně)\s+)?(?:\d{2,3}(?:\/\d{2,3})?|nevím|neznám|nezměřil[ao]?|nepamatuju(?:\s+si)?|nemám\s+změřeno|nemám.*tlakoměr|nenapadá)\s*[.,!?]*$/i;
 
 // Guard E: explicit navigation / action-request phrases → DOMAIN_REQUEST.
 // Haiku misclassifies "Co mám dělat?" as GENERAL_HEALTH_REQUEST when a pending_question
@@ -1445,6 +1445,18 @@ export async function processInput(userId, userText, sessionState = {}) {
     }
   }
 
+  // Upper pressure: strict whole-input replies only; compound health facts stay on the normal route.
+  if (!classified && (state.pending_question?.type === 'GENERAL' && state.pending_question?.evidence_type === 'bp_systolic'
+        || state.last_daily_decision?.reason_code === 'BP_EVIDENCE_RECORDED')
+      && !COMPOUND_SIGNAL_RE.test(userText.trim())) {
+    const raw = userText.trim();
+    if (/^(?:\d{2,3}(?:\s*\/\s*\d{2,3})?|nevím|nemám\s+(?:změřeno|výsledek))\s*[.!?]*$/i.test(raw)) {
+      classified = { event_type: 'ANSWER_TO_EVIDENCE_QUESTION', payload: {
+        evidence_type: 'bp_systolic', value: raw.replace(/[.!?]+$/, ''),
+      } };
+    }
+  }
+
   // Guard D.5: GENERAL functional-evidence answer guard.
   // Fires only when pending_question.type === 'GENERAL' AND evidence_type is one of the
   // audited functional RAW_VALUE evidence types set by GUIDED_NOW_SUBSTITUTION.
@@ -1993,7 +2005,7 @@ export async function processInput(userId, userText, sessionState = {}) {
     }
 
     if (event.payload.evidence_type === 'known_blood_pressure_approx') {
-      const UNKNOWN_BP = /nevím|neznám|nezměřil|nepamatuju|nemám.*tlakoměr|nenapadá/i.test(rawPD);
+      const UNKNOWN_BP = /nevím|neznám|nezměřil|nepamatuju|nemám\s+změřeno|nemám.*tlakoměr|nenapadá/i.test(rawPD);
       if (UNKNOWN_BP) {
         // DEVLOG: known_blood_pressure_approx = 0 is an UNKNOWN sentinel, not a physiological measurement.
         // Must never be interpreted as NODE_EVIDENCE. Replace with explicit unknown/skip semantics later.
@@ -2303,6 +2315,30 @@ export async function processInput(userId, userText, sessionState = {}) {
         },
         debug: { reason_code: 'EVIDENCE_SKIPPED_SUPPRESSION', evidence_type: _pendingEvType },
       };
+    }
+  }
+
+  // The model may still need pressure context for a projected risk after recording a reply.
+  // Keep that unmet need; suppress only repeated dialogue, never grant exercise clearance.
+  if (presentation.mode === 'ASK'
+      && presentation.session_updates?.pending_question?.evidence_type === 'bp_systolic') {
+    const answeredNow = adapterType === 'ANSWER_TO_EVIDENCE_QUESTION'
+      && event.payload.evidence_type === 'bp_systolic'
+      && result.persistence_status === 'ok';
+    const availability = answeredNow
+      ? (/^(?:nevím|nemám)/i.test(String(event.payload.value)) ? 'NOT_AVAILABLE' : 'AVAILABLE')
+      : state.hp_physical?.evidence_availability?.bp_systolic;
+    const known = state.hp_physical?.bp_systolic != null;
+    if (answeredNow || known || availability === 'NOT_AVAILABLE') {
+      presentation.mode = 'HOLD';
+      presentation.text = availability === 'NOT_AVAILABLE'
+        ? 'Aktuální krevní tlak nemáš změřený. Bez tohoto údaje ti teď konkrétní doporučení nedám. Až budeš mít hodnotu, můžeš ji doplnit.'
+        : 'Hodnotu krevního tlaku mám uloženou. Pro konkrétní doporučení zatím nemám dost podkladů.';
+      presentation.buttons = [];
+      presentation.expects_reply = true;
+      presentation.session_updates.pending_question = null;
+      presentation.session_updates.current_action_assignment = null;
+      presentation.session_updates.last_daily_decision = { mode: 'HOLD', reason_code: 'BP_EVIDENCE_RECORDED' };
     }
   }
 

@@ -179,6 +179,12 @@ export async function fetchHealthData(userId) {
       observations.push({ obs_type: obsType, value: parseFloat(labs[key]), unit, measured_at: labs.date || null, source: 'lab_report', confidence: 'estimated' });
   }
 
+  // Current user-reported pressure, separate from approximate discovery answers.
+  const reportedBp = hp?.physical?.bp_systolic;
+  if (hp?.physical?.evidence_availability?.bp_systolic !== 'NOT_AVAILABLE'
+      && typeof reportedBp === 'number' && Number.isFinite(reportedBp) && reportedBp >= 60 && reportedBp <= 250)
+    observations.push({ obs_type: 'bp_systolic', value: reportedBp, unit: 'mmHg', measured_at: null, source: 'self_report', confidence: 'estimated' });
+
   // Sedentary hours from physical (written by Health Event Adapter ANSWER events)
   const sedHours = hp?.physical?.sedentary_hours_day;
   if (sedHours != null)
@@ -235,3 +241,4 @@ export async function fetchActionAssignments(userId, days = 30) {
   console.log(`[ORCHESTRATE] uid=${userId} loaded_action_assignments=${rows.length}`, rows.length ? summary : '(clean)');
   return rows;
 }
+

@@ -62,6 +62,14 @@ export const EVIDENCE_STORAGE_REGISTRY = {
   sedentary_hours_day:   { table: 'physical', key: 'sedentary_hours_day' },
   fatigue_context:       { table: 'physical', key: 'fatigue_context' },
 
+  // Self-reported upper pressure; one reading does not confirm hypertension.
+  bp_systolic: { table: 'physical', key: 'bp_systolic', tracks_availability: true, evidence_kind: 'RAW_VALUE',
+    parse: value => {
+      const match = String(value).trim().match(/^(\d{2,3})(?:\s*\/\s*\d{2,3})?$/);
+      const n = match ? Number(match[1]) : NaN;
+      return Number.isFinite(n) && n >= 60 && n <= 250 ? n : null;
+    },
+  },
   // PATH Discovery evidence (TESTER 0.1) — raw scalars in user_health_profile.physical
   weekly_aerobic_activity_days: { table: 'physical', key: 'weekly_aerobic_activity_days' },
   exertional_dyspnea:           { table: 'physical', key: 'exertional_dyspnea' },
