@@ -1049,6 +1049,11 @@ function whyEvidencePhrase(ctx) {
   const facts = [...(e?.direct ?? []), ...(e?.supporting ?? []), ...(e?.inferred_from_nodes ?? [])];
   const no = value => value === false || value === 0
     || (typeof value === 'string' && /^(ne|no|false|0)$/i.test(value.trim()));
+  if (ctx.system_leverage?.node_id === 'GAIT_INSTABILITY'
+      && facts.some(f => (f.question_id === 'gait_instability_reported' && f.value === true)
+        || (f.question_id === 'gait_stability' && no(f.value)))) {
+    return 'Uvádíš nejistotu při chůzi.';
+  }
   // A modeled gait inference is not the user's report of unstable walking.
   // Expose its combined sources instead of presenting the eyes-closed proxy
   // alone as the reason. Do not alter inference, dose or safety in the UI.
@@ -1107,7 +1112,8 @@ function buildWhyResponse(sessionState) {
   const parts = [];
   const gaitFacts = ctx.reported_gait_evidence;
   if ([...(gaitFacts?.direct ?? []), ...(gaitFacts?.supporting ?? []), ...(gaitFacts?.inferred_from_nodes ?? [])]
-      .some(f => f.question_id === 'gait_instability_reported' && f.value === true)) {
+      .some(f => f.question_id === 'gait_instability_reported' && f.value === true)
+      && ctx.system_leverage?.node_id !== 'GAIT_INSTABILITY') {
     parts.push('Uvádíš nejistotu při chůzi.');
   }
   if (sessionState.person_goal === 'WEIGHT_LOSS') parts.push('Chceš zhubnout.');
