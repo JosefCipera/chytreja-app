@@ -114,3 +114,10 @@ Local snapshot: 768 combination, 25 endpoint and 25 gait journeys PASS. 322 comb
 The 768 CRT journeys now provide explicit synthetic negative clinical-context answers, aerobic days, dyspnea, blood pressure availability and sitting time when requested. Empty stored records are not treated as medical clearance. The existing parsers route numeric answers; typed storage and classifier bypass are checked.
 
 Run `node --experimental-vm-modules scripts/ai-tester/run-gait-matrix.mjs --clinical-discovery` for five additional endpoint journeys: no positive signal, active/unknown pressure, active/known pressure, higher reported pressure and reported dyspnea. These tests verify question resolution, observational WHY, preserved HOLD on return, no invented diagnosis/prescription and handling a new syncope statement. This suite uses injected classification and synthetic records, not clinical validation. CI saves `clinical-discovery.json` alongside the other reports.
+
+
+## Blood-pressure reply contracts (2026-10-13)
+
+`node --experimental-vm-modules scripts/ai-tester/run-gait-matrix.mjs --blood-pressure` exercises nine isolated endpoint journeys: current upper pressure (120, 120/80, 150), unknown/unmeasured answers, invalid data followed by a valid value, and three approximate-discovery replies. Checks cover numeric persistence, availability-only unknowns, late value entry, no repeated resolved question, no invented hypertension, and unchanged medical scope guards. Reports are saved as `blood-pressure.json` in CI.
+
+The 768 combination journeys now explicitly answer missing current pressure with an unavailable marker. A self-reported reading has estimated confidence and no fabricated measurement date. Recording an answer does not remove the model's unmet evidence needs or authorize exercise: a repeated pressure ASK becomes an honest HOLD while keeping the conversation open. Live language suites remain separate; these journeys use injected classification and synthetic profiles.
