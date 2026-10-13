@@ -15,7 +15,7 @@ export function combinationScenarios() {
         goal: intent === 'weight', report: intent === 'gait' ? true : null,
         profile: { weight }, lifestyle: { waist_cm: weight === 72 ? 84 : 99 }, physical,
         // Explicit synthetic answers; empty records are not medical clearance.
-        discoveryAnswers: { clinical_context: 'Ne', weekly_aerobic_activity_days: '0', exertional_dyspnea: 'Ne', known_blood_pressure_approx: 'Nevím', sedentary_hours_day: '7' },
+        discoveryAnswers: { bp_systolic: 'Nemám změřeno', clinical_context: 'Ne', weekly_aerobic_activity_days: '0', exertional_dyspnea: 'Ne', known_blood_pressure_approx: 'Nevím', sedentary_hours_day: '7' },
         comboJourney: true, matrix: { mask, intent, gaitAnswer: answer, outcome },
       });
   }
@@ -31,6 +31,18 @@ export function clinicalDiscoveryScenarios() {
     ['dyspnea', { exertional_dyspnea: 'Ano' }],
   ].map(([id, answers]) => ({ ...structuredClone(seed), id: 'discovery-' + id,
     discoveryAnswers: { ...seed.discoveryAnswers, ...answers }, discoveryJourney: true }));
+}
+export function bloodPressureScenarios() {
+  const seed = combinationScenarios().find(s => s.id === 'crt-31-72-weight-Ano-done');
+  const current = ['120', '120/80', '150', 'Nevím', 'Nemám změřeno'].map((answer, i) => ({
+    ...structuredClone(seed), id: 'bp-current-' + i, bpJourney: true,
+    discoveryAnswers: { ...seed.discoveryAnswers, bp_systolic: answer },
+  }));
+  const discovery = combinationScenarios().find(s => s.id === 'crt-7-72-weight-Ano-done');
+  return [...current, { ...structuredClone(seed), id: 'bp-invalid-then-valid', bpJourney: true, bpInvalid: true, discoveryAnswers: { ...seed.discoveryAnswers, bp_systolic: '120' } }, ...['120/80', 'Nevím', 'Nemám změřeno'].map((answer, i) => ({
+    ...structuredClone(discovery), id: 'bp-approx-' + i, discoveryJourney: true,
+    discoveryAnswers: { ...discovery.discoveryAnswers, known_blood_pressure_approx: answer },
+  }))];
 }
 export function checkCrtInputContracts({ scenario, initialPhysical, health, initialEngine, session, check }) {
   const states = initialEngine.node_states;
@@ -79,6 +91,13 @@ export async function runCombinationJourney({ scenario, initialPhysical, initial
   const reviews = [];
   check('actual-onboarding-handlers', onboarding?.removed && onboarding?.reloaded, onboarding);
   checkCrtInputContracts({ scenario, initialPhysical, health: getHealth(), initialEngine, session: getSession(), check });
+  if (scenario.bpInvalid) {
+    for (const invalid of ['999', '120 kg']) {
+      const before = getWrites().length;
+      response = await turn(invalid);
+      check('invalid-bp-not-persisted-' + invalid, response.mode === 'ASK' && getSession().pending_question?.evidence_type === 'bp_systolic' && getWrites().length === before && getHealth().physical.bp_systolic == null, response);
+    }
+  }
   const seenQuestions = new Set();
   for (let i = 0; response.mode === 'ASK' && i < 10; i++) {
     const key = getSession().pending_question?.evidence_type;
@@ -92,12 +111,20 @@ export async function runCombinationJourney({ scenario, initialPhysical, initial
       : ['tug_test', 'chair_stand_30s', 'grip_strength', 'validated_strength_assessment'].includes(key) ? 'Nemám výsledek' : null);
     if (!answer) { reviews.push({ code: 'UNMODELED_EVIDENCE', question: key, text: response.text }); break; }
     seenQuestions.add(key);
+    if (scenario.bpJourney && key === 'bp_systolic') check('current-bp-question-reached', true, response.text);
     const callsBefore = getCalls().length;
     response = await turn(answer);
+    if (key === 'bp_systolic') {
+      const known = /^\d/.test(answer);
+      check('bp-answer-no-classifier', getCalls().length === callsBefore, getCalls().length - callsBefore);
+      check('bp-value-or-unavailable', known ? getHealth().physical.bp_systolic === Number(answer.split('/')[0]) && getHealth().physical.evidence_availability?.bp_systolic === 'AVAILABLE' : getHealth().physical.bp_systolic == null && getHealth().physical.evidence_availability?.bp_systolic === 'NOT_AVAILABLE', { physical: getHealth().physical.bp_systolic, availability: getHealth().physical.evidence_availability });
+      check('bp-does-not-repeat-resolved-question', getSession().pending_question?.evidence_type !== key, getSession().pending_question);
+      check('bp-not-invented-hypertension', getHealth().diagnoses.length === 0, getHealth().diagnoses);
+    }
     if (key === 'clinical_context') check('clinical-negative-no-invented-diagnoses-or-medication', getHealth().diagnoses.length === 0 && getHealth().medications.length === 0, getHealth());
     if (['weekly_aerobic_activity_days', 'exertional_dyspnea', 'known_blood_pressure_approx', 'sedentary_hours_day'].includes(key)) {
       check('typed-discovery-bypasses-classifier-' + key, getCalls().length === callsBefore, getCalls().length - callsBefore);
-      const expected = key === 'exertional_dyspnea' ? answer === 'Ano' : key === 'known_blood_pressure_approx' ? answer === 'Nevím' ? 0 : Number(answer.split('/')[0]) : Number(answer);
+      const expected = key === 'exertional_dyspnea' ? answer === 'Ano' : key === 'known_blood_pressure_approx' ? ['Nevím', 'Nemám změřeno'].includes(answer) ? 0 : Number(answer.split('/')[0]) : Number(answer);
       check('typed-discovery-stored-' + key, getHealth().physical[key] === expected, getHealth().physical[key]);
     }
   }
@@ -105,6 +132,7 @@ export async function runCombinationJourney({ scenario, initialPhysical, initial
   const currentEngine = await getCurrentEngine();
   checkCrtInputContracts({ scenario, initialPhysical, health: getHealth(), initialEngine: currentEngine,
     session: getSession(), check: (id, ok, actual) => check('after-clarification-' + id, ok, actual) });
+  if (scenario.bpJourney) check('single-pressure-reading-not-confirmed-hypertension', !currentEngine.node_states.some(n => n.node_id === 'HYPERTENSION' && n.current_state === 'CONFIRMED'), currentEngine.node_states.find(n => n.node_id === 'HYPERTENSION'));
   const healthBefore = structuredClone(getHealth()), writeCount = getWrites().length, callCount = getCalls().length;
   if (response.mode === 'ACT') {
     const context = getSession().last_domain_response?.explanation_context;
@@ -192,6 +220,13 @@ export async function runCombinationJourney({ scenario, initialPhysical, initial
       check('discovery-signals-not-invented-diagnoses', getHealth().diagnoses.length === 0, getHealth().diagnoses);
       response = await turn('Mám synkopu.');
       check('new-medical-fact-still-handled', response.mode === 'HOLD' && getSession().unsupported_request?.kind === 'medical' && !getSession().current_action_assignment, response);
+    }
+    if (scenario.bpJourney) {
+      check('bp-return-no-repeat', getSession().pending_question?.evidence_type !== 'bp_systolic', getSession().pending_question);
+      if (['Nevím', 'Nemám změřeno'].includes(scenario.discoveryAnswers.bp_systolic)) {
+        response = await turn('120');
+        check('missing-bp-can-be-supplied-later', getHealth().physical.bp_systolic === 120 && getHealth().physical.evidence_availability.bp_systolic === 'AVAILABLE' && getSession().pending_question?.evidence_type !== 'bp_systolic', getHealth().physical);
+      }
     }
     check('hold-no-false-completion', getAssignments().length === 0 && !getSession().current_action_assignment, { mode: response.mode });
   } else check('recognized-initial-outcome', false, { mode: response.mode, text: response.text });
