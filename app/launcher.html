@@ -743,6 +743,7 @@
 
   function render(response) {
     const { mode, text, buttons = [], expects_reply, debug: dbg } = response;
+    if (typeof response.draft_text === 'string') $input.value = response.draft_text;
 
     // Hide orb and welcome subtitle; set stage label by mode
     $orb.classList.add('hidden');
@@ -877,6 +878,7 @@
 
     const uid = userId ?? window.__chj_userId;
     const session = loadSession();
+    let retainedInput = userText === 'Zkusit znovu' && $input.value && $input.value !== session.pending_ai_retry?.text ? $input.value : null;
     const _request_id = `c${Date.now().toString(36)}-e${myEpoch}`;
 
     if (_debugMode) {
@@ -920,6 +922,7 @@
 
       if (myEpoch !== requestEpoch) return;
 
+      if (typeof response.draft_text === 'string') retainedInput = response.draft_text;
       if (response.session_updates) saveSession(response.session_updates);
       saveLastResponse(response);
 
@@ -927,20 +930,22 @@
     } catch (err) {
       if (_debugMode) console.groupEnd();
       if (myEpoch !== requestEpoch) return;
-      $stage.textContent = 'Nastala chyba. Zkus to znovu.';
-      $stage.className = 'danger fade-in';
-      setBadge('ERR', 'mode-badge safe');
-      $chips.innerHTML = '';
-      const retryBtn = document.createElement('button');
-      retryBtn.className = 'chip secondary';
-      retryBtn.textContent = 'Zkusit znovu';
-      retryBtn.addEventListener('click', () => orchestrate('Co mám dnes dělat?'));
-      $chips.appendChild(retryBtn);
+      const retry = session.pending_ai_retry ?? { text: userText, requested_at: new Date().toISOString(),
+        context: { pending_question: session.pending_question ?? null, current_action_assignment: session.current_action_assignment ?? null } };
+      const failure = { mode: 'HOLD', text: 'Spojení se nepodařilo. Zpráva je připravená k opakování.',
+        buttons: ['Zkusit znovu'], expects_reply: true, draft_text: retry.text,
+        session_updates: { pending_ai_retry: retry, pending_question: retry.context?.pending_question ?? null,
+          current_action_assignment: null, last_domain_response: null,
+          last_daily_decision: { mode: 'HOLD', reason_code: 'REQUEST_UNAVAILABLE' } } };
+      retainedInput = retry.text;
+      saveSession(failure.session_updates);
+      saveLastResponse(failure);
+      render(failure);
     } finally {
       if (myEpoch === requestEpoch) {
         busy = false;
         setLoading(false);
-        $input.value = '';
+        $input.value = retainedInput ?? '';
       }
     }
   }

@@ -392,6 +392,14 @@ async function upsertUserProfile(supabase, userId, key, value) {
 async function persistActionAssignment(supabase, userId, payload, status) {
   if (!payload.action_id)        throw new Error('ACTION event: missing action_id');
   if (!payload.intervention_id)  throw new Error('ACTION event: missing intervention_id');
+  // Retrying a request whose response was lost must not record the same skip twice.
+  if (status === 'SKIPPED') {
+    const { data: skipped, error: readError } = await supabase.from('action_assignments')
+      .select('id').eq('user_id', userId).eq('status', 'SKIPPED').eq('action_id', payload.action_id)
+      .eq('assigned_date', new Date().toISOString().slice(0, 10)).limit(1).maybeSingle();
+    if (readError) throw new Error(`read prior skip: ${readError.message}`);
+    if (skipped) return 'ACTION_SKIPPED: action already skipped today — no additional skip persisted';
+  }
   // A restored/stale client assignment must not create a second completion today.
   if (status === 'COMPLETED') {
     const { data: completed, error: readError } = await supabase.from('action_assignments')
@@ -618,7 +626,8 @@ export async function applyHealthEvent(userId, event) {
         break;
 
       case 'ACTION_SKIPPED':
-        await persistActionAssignment(supabase, userId, payload || {}, 'SKIPPED');
+        warning = await persistActionAssignment(supabase, userId, payload || {}, 'SKIPPED');
+        if (warning) warnings.push(warning);
         break;
 
       case 'ANSWER_TO_EVIDENCE_QUESTION':

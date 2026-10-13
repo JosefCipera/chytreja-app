@@ -150,3 +150,14 @@ Primary sources checked:
 - NICE NG249: https://www.nice.org.uk/guidance/ng249/chapter/Recommendations/ and https://www.nice.org.uk/guidance/ng249/chapter/Rationale-and-impact — falls exercise programmes should be based on assessment, individualised and delivered by appropriately trained professionals. Population guidance does not establish suitability for an individual.
 
 `test-action-copy.mjs` now verifies current/legacy eye instructions and assessment gates for known and new advanced variants. It is wired into CI. Its pre-existing WHY fallback expectation was updated to the wording introduced in PR59. All ACT transcripts are checked for the removed auto-eye-closing instruction; the five-conversation snapshot is refreshed. Professional review of individual suitability/dose remains a separate requirement, not a missing software test.
+
+
+## Classifier and transport outage recovery (2026-10-13)
+
+Provider errors/malformed classifier responses now return a technical HOLD with Zkusit znovu, rather than SCOPE_UNCLEAR. Preserve original input and pending question/budget in the existing per-user client conversation state; clear stale action/explanation. Until that request is processed, navigation/completion/new goals do not revive old exercise. Explicit unsupported medical topics still take precedence and clear retry.
+
+The retry wrapper replays the original text and only the original temporal question/assignment context; server-owned health fields remain fresh. Successful processing clears retry; another failure retains it. The launcher retains input for 200 technical responses and transport/non-200 errors, persists its failure response for restoration, and preserves later unsent drafts. No new server-side health-data queue is created; recovery is local to that browser conversation, not across devices or discarded client storage.
+
+Run `run-gait-matrix.mjs --classifier-outage` for six injected fault/recovery/scope journeys without provider calls. Real live-provider failures remain BLOCKED in the separate live suites. The tests also cover repeated skip after a lost response and a prior-day action confirmation, which must not become a new completion. Sequential duplicate skips are suppressed with read-before-write; this is not a database-atomic concurrency guarantee.
+
+`test-retry-ui.mjs` executes the production launcher request handler with mocked authFetch/storage/DOM: transport error, HTTP error, server technical response, chip wiring, restored request and draft retention. This is not real browser, authentication or microphone/ASR testing. CI now runs both suites. Medical eligibility and exercise protocols are unchanged.

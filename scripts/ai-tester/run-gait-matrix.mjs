@@ -4,21 +4,23 @@ import fs from 'node:fs';
 import url from 'node:url';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import { outageScenarios, runOutageJourney } from './outage-journeys.mjs';
 import { conversationScenarios, runConversationJourney } from './conversation-journeys.mjs';
 import { createLauncherHarness } from './launcher-render-harness.mjs';
 import { runOnboardingFixture } from './onboarding-harness.mjs';
 import { combinationScenarios, clinicalDiscoveryScenarios, bloodPressureScenarios, runCombinationJourney } from './crt-combination-contracts.mjs';
+const outages = process.argv.includes('--classifier-outage');
 const conversations = process.argv.includes('--conversation-changes');
 const live = process.argv.includes('--live');
 const bloodPressure = process.argv.includes('--blood-pressure');
 const clinicalDiscovery = process.argv.includes('--clinical-discovery');
 const combinations = process.argv.includes('--crt-combinations') || clinicalDiscovery || bloodPressure;
-const weightLoss = process.argv.includes('--weight-loss') || combinations || conversations;
+const weightLoss = process.argv.includes('--weight-loss') || combinations || conversations || outages;
 const catalogArg = process.argv.find(a => a.startsWith('--catalog='));
 const sourceRoot = new URL('../../', import.meta.url);
 let catalog, catalogMeta;
 try {
-  if (combinations && live) throw Error('Combinations use deterministic intent injection; run the separate live language suites instead');
+  if ((combinations || outages) && live) throw Error('Combinations use deterministic intent injection; run the separate live language suites instead');
   if (live && !process.env.ANTHROPIC_API_KEY) throw Error('ANTHROPIC_API_KEY unavailable');
   if (catalogArg) {
     catalog = JSON.parse(fs.readFileSync(catalogArg.slice(10), 'utf8'));
@@ -102,13 +104,13 @@ for (const answer of [true, false, undefined]) weightScenarios.push({
  physical: { recent_falls: false, vynest_nakup: true, vstat_ze_zeme: false,
   zvednout_vnouce: true, rovnovaha_zavrene_oci: false, gait_stability: answer },
 });
-const scenarios = conversations ? conversationScenarios() : bloodPressure ? bloodPressureScenarios() : clinicalDiscovery ? clinicalDiscoveryScenarios() : combinations ? combinationScenarios() : weightLoss ? weightScenarios : gaitScenarios;
-if (weightLoss && !combinations && !conversations) scenarios.push({ id: 'tester143-ui', text: variants[0], report: true,
+const scenarios = outages ? outageScenarios() : conversations ? conversationScenarios() : bloodPressure ? bloodPressureScenarios() : clinicalDiscovery ? clinicalDiscoveryScenarios() : combinations ? combinationScenarios() : weightLoss ? weightScenarios : gaitScenarios;
+if (weightLoss && !combinations && !conversations && !outages) scenarios.push({ id: 'tester143-ui', text: variants[0], report: true,
   profile: { weight: 88 }, lifestyle: { waist_cm: 99 },
   physical: { recent_falls: false, vynest_nakup: true, vstat_ze_zeme: true,
     zvednout_vnouce: true, rovnovaha_zavrene_oci: false }, uiJourney: true });
 
-if (weightLoss && !combinations && !conversations) {
+if (weightLoss && !combinations && !conversations && !outages) {
   const fixture = scenarios.find(s => s.id === 'tester143-ui');
   scenarios.push({ ...fixture, id: 'tester143-medical-stop', medicalAfterFallback: true });
 }
@@ -151,22 +153,33 @@ async function isolated(scenario, branch = null) {
     const q = { select() { return q; }, eq(key, value) { if (key !== 'user_id') filters.push(r => r[key] === value); return q; }, in(key, values) { filters.push(r => values.includes(r[key])); return q; }, gte(key, value) { filters.push(r => r[key] >= value); return q; }, order() { return q; }, limit() { return q; }, maybeSingle() { single = true; return Promise.resolve(result()); }, single() { single = true; return Promise.resolve(result()); }, upsert(row) { return mutate('upsert', row); }, insert(row) { return mutate('insert', row); }, then(resolve, reject) { return Promise.resolve(result()).then(resolve, reject); } };
     return q;
   } };
-  let classifierFailure = null, currentInput = null;
+  let classifierFailure = null, currentInput = null, injectedFault = null;
   class AI { messages = { create: async args => {
-    if ((scenario.comboJourney || scenario.conversationJourney) && !live) {
-      const input = scenario.conversationJourney && currentInput === 'Jsem nejistý při chůzi.'
+    const classifierText = outages ? args.messages.at(-1).content.split('[Input]\n').at(-1) : currentInput;
+    if (outages && injectedFault) {
+      calls.push({ injected_fault: injectedFault });
+      if (injectedFault === 'malformed') return { content: [] };
+      if (injectedFault === 'unclear') return { content: [{ type: 'tool_use', input: { event_type: 'SCOPE_CLARIFICATION', payload: {} } }] };
+      const error = new Error('Simulated classifier outage'); error.status = injectedFault === 'billing' ? 400 : injectedFault === 'server' ? 503 : undefined;
+      throw error;
+    }
+
+    if ((scenario.comboJourney || scenario.conversationJourney || scenario.outageJourney) && !live) {
+      const input = scenario.outageJourney && session.pending_question && classifierText === 'Občas se při chůzi musím přidržet.'
+        ? { event_type: 'ANSWER_TO_EVIDENCE_QUESTION', payload: { evidence_type: session.pending_question.evidence_type, value: classifierText } }
+        : (scenario.conversationJourney || scenario.outageJourney) && classifierText === 'Jsem nejistý při chůzi.'
         ? { event_type: 'ANSWER_TO_EVIDENCE_QUESTION', payload: { evidence_type: 'gait_instability_reported', value: true } }
-        : scenario.conversationJourney && currentInput === 'Oprava: ze země vstanu bez opory rukou.'
+        : scenario.conversationJourney && classifierText === 'Oprava: ze země vstanu bez opory rukou.'
           ? { event_type: 'ANSWER_TO_EVIDENCE_QUESTION', payload: { evidence_type: 'vstat_ze_zeme', value: true } }
-        : session.pending_question && (['Ano', 'Ne', 'Nevím', 'Nemám výsledek', 'Nemám změřeno'].includes(currentInput) || session.pending_question.evidence_type === 'bp_systolic')
-        ? { event_type: 'ANSWER_TO_EVIDENCE_QUESTION', payload: { evidence_type: session.pending_question.evidence_type, value: currentInput === 'Ano' ? true : currentInput === 'Ne' ? false : currentInput } }
-        : currentInput === 'Co dál?'
+        : session.pending_question && (['Ano', 'Ne', 'Nevím', 'Nemám výsledek', 'Nemám změřeno'].includes(classifierText) || session.pending_question.evidence_type === 'bp_systolic')
+        ? { event_type: 'ANSWER_TO_EVIDENCE_QUESTION', payload: { evidence_type: session.pending_question.evidence_type, value: classifierText === 'Ano' ? true : classifierText === 'Ne' ? false : classifierText } }
+        : classifierText === 'Co dál?'
           ? { event_type: 'DOMAIN_REQUEST', payload: { domain: 'health' } }
-          : { event_type: scenario.report === true ? 'ANSWER_TO_EVIDENCE_QUESTION' : 'GENERAL_HEALTH_REQUEST', payload: scenario.report === true ? { evidence_type: 'gait_instability_reported', value: true } : { text: currentInput } };
+          : { event_type: scenario.report === true ? 'ANSWER_TO_EVIDENCE_QUESTION' : 'GENERAL_HEALTH_REQUEST', payload: scenario.report === true ? { evidence_type: 'gait_instability_reported', value: true } : { text: classifierText } };
       calls.push(input); return { content: [{ type: 'tool_use', input }] };
     }
     if (!live && session.pending_question && (branch?.startsWith('gait-') || scenario.uiJourney)) {
-      const input = { event_type: 'ANSWER_TO_EVIDENCE_QUESTION', payload: { evidence_type: session.pending_question.evidence_type, value: currentInput === 'Ano' ? true : currentInput === 'Ne' ? false : currentInput } };
+      const input = { event_type: 'ANSWER_TO_EVIDENCE_QUESTION', payload: { evidence_type: session.pending_question.evidence_type, value: classifierText === 'Ano' ? true : classifierText === 'Ne' ? false : classifierText } };
       calls.push(input); return { content: [{ type: 'tool_use', input }] };
     }
     if (!live) {
@@ -235,7 +248,7 @@ async function isolated(scenario, branch = null) {
     response = { ...response };
   }
   const selected = initialEngine.next_best_action.selected;
-  if (weightLoss && scenario.goal && !conversations) {
+  if (weightLoss && scenario.goal && !conversations && !outages) {
     if (initialEngine.system_leverage.selected?.node_id === 'EXCESS_ADIPOSITY') check('no-unreviewed-resistance-for-adiposity', !(initialEngine.next_best_action.all_candidates ?? []).some(c => c.intervention_id === 'RESISTANCE_TRAINING'), selected?.action_id);
     if (initialEngine.system_leverage.selected?.node_id === 'EXCESS_ADIPOSITY') {
       const chosen = catalog.find(a => a.id === selected?.action_id);
@@ -296,6 +309,7 @@ async function isolated(scenario, branch = null) {
   }
   if (scenario.unsupported) check('unsupported-no-action', response.mode !== 'ACT' && !session.current_action_assignment && writes.length === 0, { mode: response.mode, text: response.text, writes: writes.length });
   let productReview = [];
+  if (scenario.outageJourney) response = await runOutageJourney({ scenario, turn, check, setFault: value => { injectedFault = value; }, getSession: () => session, getHealth: () => health, getWrites: () => writes, getCalls: () => calls, getAssignments: () => assignments, ui });
   if (scenario.conversationJourney) {
     response = await runConversationJourney({ scenario, response, turn, check, getSession: () => session, getHealth: () => health, getAssignments: () => assignments, getWrites: () => writes, catalog, getEngine: () => engine.runEngine(uid), resetSession: value => { session = structuredClone(value ?? {}); }, advanceDay: () => { fixtureClock += 86400000; } });
   }
@@ -442,17 +456,17 @@ for (const scenario of scenarios) {
   console.error('MATRIX', scenario.id);
   try { results.push(structuredClone(await isolated(scenario))); } catch (error) { results.push({ id: scenario.id, status: 'BLOCKED', reason: error.message }); }
 }
-for (const branch of ((combinations || conversations) ? [] : weightLoss ? ['done', 'skip', 'gait-yes', 'gait-no', 'gait-unknown'] : ['done', 'skip', 'repeat'])) {
+for (const branch of ((combinations || conversations || outages) ? [] : weightLoss ? ['done', 'skip', 'gait-yes', 'gait-no', 'gait-unknown'] : ['done', 'skip', 'repeat'])) {
   const scenario = scenarios.find(s => s.id === (weightLoss ? (branch.startsWith('gait-') ? 'weight-gait' : 'tester136-shape') : 'spoken-1'));
   try { results.push(await isolated({ ...scenario, id: 'journey-' + branch }, branch)); } catch (error) { results.push({ id: 'journey-' + branch, status: 'BLOCKED', reason: error.message }); }
 }
-if (weightLoss && !combinations && !conversations) {
+if (weightLoss && !combinations && !conversations && !outages) {
   const fixture = scenarios.find(s => s.id === 'floor-proxy-gait-stable');
   try { results.push(await isolated({ ...fixture, id: 'floor-proxy-skip' }, 'skip')); }
   catch (error) { results.push({ id: 'floor-proxy-skip', status: 'BLOCKED', reason: error.message }); }
 }
 const counts = Object.fromEntries(['PASS', 'FAIL', 'BLOCKED'].map(s => [s, results.filter(r => r.status === s).length]));
-console.log(JSON.stringify({ suite: conversations ? 'conversation_changes_endpoint' : bloodPressure ? 'blood_pressure_endpoint' : clinicalDiscovery ? 'clinical_discovery_endpoint' : combinations ? 'crt_combinations_endpoint' : weightLoss ? 'weight_loss_endpoint' : 'gait', mode: live ? 'live_classifier_full_engine_public_catalog' : 'injected_classifier_full_engine_public_catalog', catalog: catalogMeta, counts, limitations: ['All user profiles and writes are synthetic and isolated in memory', 'No browser, authentication or microphone/audio transcription test', 'No clinical efficacy or exercise dose validation', ...(combinations ? [(clinicalDiscovery || bloodPressure) ? 'Explicit synthetic clinical/discovery answers; injected classification only' : '768 journeys over 64 profiles and two intents; some answer/outcome branches coincide when no question/action is reached', 'Product review flags are separate from software PASS; priority correctness is not assumed from engine output'] : []), ...(weightLoss ? ['Real endpoint hydration, but Firebase authentication is mocked', 'Exact weight wishes use the existing server parser and bypass Haiku; live mode exercises AI only for inputs reaching classification', 'Review-required catalog choices do not become clinically approved through PASS'] : []), 'BLOCKED journeys are not counted as passing'], results }, null, 2));
+console.log(JSON.stringify({ suite: outages ? 'classifier_outage_endpoint' : conversations ? 'conversation_changes_endpoint' : bloodPressure ? 'blood_pressure_endpoint' : clinicalDiscovery ? 'clinical_discovery_endpoint' : combinations ? 'crt_combinations_endpoint' : weightLoss ? 'weight_loss_endpoint' : 'gait', mode: live ? 'live_classifier_full_engine_public_catalog' : 'injected_classifier_full_engine_public_catalog', catalog: catalogMeta, counts, limitations: ['All user profiles and writes are synthetic and isolated in memory', 'No browser, authentication or microphone/audio transcription test', 'No clinical efficacy or exercise dose validation', ...(combinations ? [(clinicalDiscovery || bloodPressure) ? 'Explicit synthetic clinical/discovery answers; injected classification only' : '768 journeys over 64 profiles and two intents; some answer/outcome branches coincide when no question/action is reached', 'Product review flags are separate from software PASS; priority correctness is not assumed from engine output'] : []), ...(weightLoss ? ['Real endpoint hydration, but Firebase authentication is mocked', 'Exact weight wishes use the existing server parser and bypass Haiku; live mode exercises AI only for inputs reaching classification', 'Review-required catalog choices do not become clinically approved through PASS'] : []), 'BLOCKED journeys are not counted as passing'], results }, null, 2));
 process.exitCode = counts.FAIL ? 1 : counts.BLOCKED ? 2 : 0;
 
 
