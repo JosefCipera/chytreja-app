@@ -115,6 +115,8 @@ const activityFixtures = [
  { id: 'chair-joint-fixture', label: 'Vstaň ze židle', protocol_type: 'FUNKCNI_SILOVY_PROTOKOL', tags: ['nohy'], aerobic: false },
  { id: 'balance-joint-fixture', label: 'Stůj na jedné noze', protocol_type: 'BALANCE_PROTOKOL', tags: [], aerobic: false },
  { id: 'cycling-joint-fixture', label: 'Jízda na kole', protocol_type: 'KARDIO_PROTOKOL', tags: ['kardio'], aerobic: false },
+ { id: 'daily-walk-joint-fixture', label: 'Jdi na procházku', protocol_type: 'TRAINING_PROTOKOL', tags: ['kardio'], aerobic: true },
+ { id: 'trunk-joint-fixture', label: 'Trunk exercise', protocol_type: 'TRAINING_PROTOKOL', tags: ['nohy'], aerobic: false },
 ];
 function jointCandidate(a, severity, intensity = 'LIGHT', more = []) {
  const fixture = { ...baseAction, ...a, intensity };
