@@ -124,6 +124,10 @@
       width: 0.38em; height: 0.055em;
       background: currentColor;
     }
+    .back-to-web{margin-right:auto;color:var(--text-dim);font-size:13px;text-decoration:none;padding:8px 0}
+    .back-to-web:hover{color:var(--text)}
+    .back-to-web:focus-visible{outline:2px solid var(--cyan);outline-offset:4px}
+    #auth-overlay a.auth-back{border:0;padding:8px;font-size:13px;letter-spacing:0}
     .header-right {
       display: flex; align-items: center; gap: 10px;
     }
@@ -441,6 +445,7 @@
   <p class="auth-logo">Chytré já</p>
   <p>Přihlášení vyžadováno.</p>
   <a href="/login">Přihlásit se</a>
+  <a class="auth-back" href="/#top">← Na web</a>
 </div>
 
 <!-- Main app -->
@@ -472,6 +477,7 @@
   </div>
 
   <header>
+    <a class="back-to-web" href="/#top">← Na web</a>
     <div class="header-right">
       <div class="avatar-wrapper">
         <button class="avatar-btn" id="avatar-btn" aria-label="Menu">?</button>
