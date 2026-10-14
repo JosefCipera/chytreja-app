@@ -24,3 +24,14 @@
 .contact-done p{margin:0;font-size:20px;color:#8ee6b0;line-height:1.5}
 @media(min-width:700px){.contact-row{grid-template-columns:1fr 1fr}}
 @media(max-width:700px){.contact{padding:45px 18px 60px}.contact-actions .primary-cta{width:100%}}
+
+.contact-directory{margin:0 0 48px}
+.contact-directory h2{margin-bottom:24px}
+.contact-directory dl{margin:0}
+.contact-directory dl>div{display:grid;grid-template-columns:minmax(0,190px) minmax(0,1fr);gap:12px;padding:16px 0;border-bottom:1px solid #7194c418}
+.contact-directory dt{font-size:16px;font-weight:600;color:#c5d6f0}
+.contact-directory dd{margin:0;color:#8ea8cc;font-size:15px;line-height:1.65}
+.contact-directory a{color:#7fc4e4;text-decoration:underline;overflow-wrap:anywhere}
+.contact-directory a:hover{color:var(--cyan)}
+.contact-directory a:focus-visible{outline:2px solid var(--cyan);outline-offset:3px}
+@media(max-width:520px){.contact-directory dl>div{grid-template-columns:minmax(0,1fr);gap:4px}.contact-directory{margin-bottom:36px}}
