@@ -3,6 +3,8 @@ on:
   pull_request:
     paths:
       - 'app/home-v2.html'
+      - 'app/obchodni-podminky.html'
+      - 'app/ochrana-osobnich-udaju.html'
       - 'app/login.html'
       - 'app/launcher.html'
       - 'app/js/universe/onboarding-wizard.js'
