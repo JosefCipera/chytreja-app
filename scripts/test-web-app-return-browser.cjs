@@ -31,7 +31,8 @@ const server=http.createServer((req,res)=>{
   const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
   const atHome=async()=>{await page.waitForURL(base+'/#top');await page.waitForFunction(()=>scrollY<2);};
   await page.goto(base+'/');
-  await page.locator('.footer-top a').click();await atHome();
+  assert.equal(await page.locator('.footer-top').count(),0);
+  await page.locator('.site-footer').scrollIntoViewIfNeeded();
   await page.locator('.home-header .logo').click();await atHome();
   // Guest can leave login, registration, and app auth gate, without any auth API.
   for(const route of ['/login','/login#register']){
