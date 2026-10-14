@@ -1,0 +1,18 @@
+/* Homepage navigation only; shared founder-page header stays independent. */
+html{scroll-padding-top:100px}
+.home-header{position:sticky;top:0;z-index:50;min-height:80px;padding:16px max(3%,calc((100% - 1200px)/2));gap:30px;background:#080c18f5;border-bottom:1px solid #7194c418}
+.home-header .logo{flex-shrink:0}
+.home-header .home-nav{display:flex;align-items:center;gap:26px;margin-left:auto;font-size:13px}
+.home-nav>a{white-space:nowrap;padding:10px 0;color:#95add2}
+.home-nav>a:hover{color:#e4edff}
+.home-nav .home-login{margin-left:36px;padding:9px 16px;border:1px solid #375168;border-radius:6px;color:#bdd6ef}
+.home-menu-toggle{display:none}
+@media(max-width:1050px){
+ .home-header{padding:16px 7%;min-height:76px;gap:16px;flex-wrap:wrap}
+ .home-menu-toggle{display:block;margin-left:auto;padding:8px 14px;background:transparent;border:1px solid #375168;border-radius:6px;color:#bdd6ef}
+ .home-header .home-nav{display:none;position:absolute;top:100%;left:0;right:0;margin:0;padding:16px 7% 24px;background:#080c18;border-bottom:1px solid #375168;max-height:calc(100dvh - 76px);overflow-y:auto;align-items:stretch;gap:2px;flex-direction:column;font-size:15px}
+ .home-header .home-nav.is-open{display:flex}
+ .home-nav>a{padding:12px 0}
+ .home-nav .home-login{margin:18px 0 0;align-self:flex-start;padding:9px 16px}
+}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
