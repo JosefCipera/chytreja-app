@@ -20,10 +20,15 @@ const server=http.createServer((req,res)=>{
   await page.setViewportSize(size);await page.goto(base+'/');await page.evaluate(()=>document.fonts.ready);
   const layout=await page.evaluate(()=>{
    const selectors={origin:'.origin-story>h2',faq:'#faq-nadpis',directory:'#kontakty-nadpis',form:'#kontakt-nadpis',input:'#contact-name',button:'#contact-submit',list:'.faq-list',details:'.contact-directory dl',formBody:'#contact-form'};
-   return{referenceWidth:document.querySelector('.origin-story>h2').getBoundingClientRect().width,bodyWidth:document.querySelector('.faq-list').getBoundingClientRect().width,positions:Object.fromEntries(Object.entries(selectors).map(([k,s])=>[k,document.querySelector(s).getBoundingClientRect().left])),overflow:document.documentElement.scrollWidth-innerWidth,footer:getComputedStyle(document.querySelector('.site-footer')).textAlign};
+   const rect=s=>document.querySelector(s).getBoundingClientRect();
+   return{gapAboveContacts:rect('#kontakty-nadpis').top-rect('.faq-list').bottom,gapAfterContacts:rect('#kontakt-nadpis').top-rect('.contact-directory dl').bottom,referenceWidth:document.querySelector('.origin-story>h2').getBoundingClientRect().width,bodyWidth:document.querySelector('.faq-list').getBoundingClientRect().width,positions:Object.fromEntries(Object.entries(selectors).map(([k,s])=>[k,document.querySelector(s).getBoundingClientRect().left])),overflow:document.documentElement.scrollWidth-innerWidth,footer:getComputedStyle(document.querySelector('.site-footer')).textAlign};
   });
-  for(const key of ['origin','faq','directory','form'])assert.ok(Math.abs(layout.positions[key]-layout.positions.origin)<2,'Section heading edge '+JSON.stringify({size,key,layout}));
-  for(const key of ['list','details','formBody','input','button'])assert.ok(Math.abs(layout.positions[key]-layout.positions.list)<2,'Inset body edge '+JSON.stringify({size,key,layout}));
+  for(const key of ['origin','faq','directory','form','formBody','input','button'])assert.ok(Math.abs(layout.positions[key]-layout.positions.origin)<2,'Section heading edge '+JSON.stringify({size,key,layout}));
+  for(const key of ['list','details'])assert.ok(Math.abs(layout.positions[key]-layout.positions.list)<2,'Inset body edge '+JSON.stringify({size,key,layout}));
+  assert.ok(layout.gapAboveContacts>=(size.width<=700?140:220),'Whitespace above contacts '+JSON.stringify(layout));
+  assert.ok(layout.gapAfterContacts>=(size.width<=520?96:140),'Whitespace before form '+JSON.stringify(layout));
+  assert.equal(await page.locator('.contact-directory a[href^="tel:"]').count(),0);
+  for(const phone of ['+420 724 166 988','+420 723 999 152'])assert.ok((await page.locator('.contact-directory').innerText()).includes(phone));
   assert.ok(layout.bodyWidth<=721,'Narrow content column');
   assert.ok(Math.abs(layout.positions.list+layout.bodyWidth/2-layout.positions.origin-layout.referenceWidth/2)<2,'Bodies centered within wider heading section');
   if(size.width>=1100)assert.ok(layout.positions.list>layout.positions.origin+100,'Desktop bodies visibly inset from headings');
@@ -38,6 +43,6 @@ const server=http.createServer((req,res)=>{
   console.log('PASS landing layout '+JSON.stringify({size,...layout}));
  }
  assert.equal(posts,0);assert.deepEqual(errors,[]);
- console.log('PASS: actual Chromium geometry at 1920/1280/390px; section headings share outer left edge; narrower FAQ/directory/form bodies are inset and share an inner edge; FAQ keyboard works; no overflow; footer centered; no form submissions.');
+ console.log('PASS: actual Chromium geometry at 1920/1280/390px; section headings share outer left edge; FAQ/directory bodies remain inset; whole form shares heading left edge; contacts have whitespace above and below; phones are plain text; FAQ keyboard works; no overflow; footer centered; no form submissions.');
 }finally{if(browser)await browser.close();await new Promise(r=>server.close(r));}
 })().catch(e=>{console.error(e);process.exitCode=1});
