@@ -16,3 +16,6 @@ html{scroll-padding-top:100px}
  .home-nav .home-login{margin:18px 0 0;align-self:flex-start;padding:9px 16px}
 }
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+
+.site-footer .footer-top{margin:18px 0;color:#7fa1c7;font-size:13px}
+.site-footer .footer-top a{display:inline-block;padding:8px}
