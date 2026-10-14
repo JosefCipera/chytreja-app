@@ -41,17 +41,26 @@ Průběžné hledání názvů souborů consent/privacy/terms/delete/purge/reten
 7. **Produkt a právní posouzení:** posoudit skutečný zamýšlený účel, profilování a dopady výstupů; potřebu DPIA a případně pověřence určit podle skutečného rozsahu. Samotná věta „nenahrazuje lékaře“ nerozhoduje o zařazení produktu podle předpisů pro zdravotnické prostředky. Odborná validace CRT a cviků je samostatně nedokončená.
 8. **Staré podmínky:** Sokrates, GoPay, storna seminářů a data 2018/2020 nepatří do nové aplikační verze. Nezavádět novou garanci, předplatné, výluku spotřebitelských práv ani zánik zakoupeného přístupu jednostranně.
 
-## Návrh provozních pravidel k rozhodnutí (NEJSOU zavedena)
+## Pravidla schválená Josefem 14. 10. 2026 v 19:17 Europe/Prague
 
-- Testování: zatím bezplatné, jen 18+, placené používání až po samostatném přijetí konkrétní nabídky; věkový režim odpovídajícím způsobem zavést.
-- Profil a historie: po dobu využívání účtu. Neaktivitu navrhuji vyhodnotit po 24 měsících, upozornit a dát 30 dní na reakci, poté účet uzavřít. Potvrdit s ohledem na dlouhodobý smysl CHJ.
-- Ukončení účtu / odvolání zdravotního souhlasu: ihned zastavit další nepřípustné zpracování; provozní kopie vymazat bez zbytečného odkladu, cílově do 30 dnů. Nezaměňovat se zákonnou lhůtou na odpověď na žádost. Skutečný doběh záloh nejprve ověřit a konkrétně uvést.
-- Provozní logy: navrhuji nejvýše 7 dnů, bez textu zpráv, diagnóz a dokumentů. Musí odpovídat zvolenému tarifu/log drains; delší cílené bezpečnostní uchování jen s doloženým důvodem a podmínkami pro citlivý obsah.
-- Obecné dotazy: navrhuji smazat do 12 měsíců od vyřízení, pokud nepokračuje konkrétní smluvní jednání nebo není doložen jiný nutný důvod.
-- Nezávazný zájem o Zakladatele: nejvýše 12 měsíců od poslední komunikace, nebo dříve na žádost. Nepřidávat ho automaticky do newsletteru.
-- Důkaz souhlasu a řešení právních nároků: minimalizované údaje a právně odůvodněná konkrétní lhůta; nevytvářet bez posouzení neomezený zdravotní archiv „pro jistotu“.
+Schválení v konverzaci: „jj souhlas“ po konkrétním předložení dvou bodů. Nejde o souhlas jednotlivých uživatelů se zpracováním údajů.
 
-Schválení pravidel neznamená, že již fungují. Poté je nutné je zavést, ověřit a teprve přepsat příslušné poznámky ve veřejném textu na faktické informace.
+- Současné testování je bezplatné, pro osoby od 18 let. Samotná registrace nezakládá placené předplatné; platba vyžaduje samostatné přijetí konkrétní nabídky.
+- Profil a historie se uchovávají po dobu používání účtu.
+- Po zrušení účtu výmaz provozních dat bez zbytečného odkladu, nejpozději do 30 dnů. Nejde o lhůtu pro všechny zálohy a všechny poskytovatele; tyto délky se musí samostatně zjistit.
+- Po 24 měsících neaktivity upozornění a dalších 30 dnů na reakci před uzavřením neaktivního účtu.
+
+**Stav implementace:** schválená pravidla jsou promítnuta do draftů podmínek a privacy. Nejsou tímto commitem spuštěna, nebyl nasazen cron, neodeslalo se upozornění a nebyl smazán ani resetován žádný účet. Před účinností je nutné dokončit doložitelné přijetí/18+ pravidlo, consent gate, definici aktivity, evidenci upozornění, idempotentní výmaz a zálohový postup.
+
+## Ostatní návrhy — dosud neschválené a nezavedené
+
+- Odvolání zdravotního souhlasu: zastavit nepřípustné zpracování a vyřešit výmaz v rozsahu, který vyžaduje právo a zvolený účel. Nezaměňovat s prostým odhlášením. Odlišit proces žádosti od zákonné lhůty na odpověď.
+- Provozní logy: návrh nejvýše 7 dnů, bez textu zpráv, diagnóz a dokumentů; ověřit skutečný tarif/log drains.
+- Obecné dotazy: návrh 12 měsíců od vyřízení, pokud nepokračuje konkrétní smluvní jednání nebo není doložen jiný nutný důvod.
+- Nezávazný zájem o Zakladatele: návrh nejvýše 12 měsíců od poslední komunikace nebo dříve na žádost, bez automatického přihlášení k newsletteru.
+- Důkaz souhlasu a právní nároky: minimalizovaná evidence s konkrétní právně odůvodněnou lhůtou; nevytvářet neomezený zdravotní archiv.
+
+Schválení účtu/profilu neznamená schválení těchto ostatních lhůt. Přesný stav záloh a poskytovatelů dále zůstává neověřený.
 
 ## Přesné zadání pro read-only ověření konzolí (lze předat Claudeovi)
 
