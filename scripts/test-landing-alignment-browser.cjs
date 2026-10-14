@@ -12,12 +12,34 @@ const server=http.createServer((req,res)=>{
 });
 (async()=>{let browser;try{
  await new Promise(r=>server.listen(0,'127.0.0.1',r));const base='http://127.0.0.1:'+server.address().port;
- browser=await chromium.launch({headless:true});const context=await browser.newContext();let posts=0;
+ browser=await chromium.launch({headless:true});const context=await browser.newContext({reducedMotion:'reduce'});let posts=0;
  await context.route('**/*',r=>{if(r.request().method()==='POST')posts++;return r.request().url().startsWith(base)?r.continue():r.abort();});
  const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
  const out=process.env.AI_TESTER_BROWSER_OUT||'/tmp/chj-landing-alignment';fs.mkdirSync(out,{recursive:true});
- for(const size of [{width:1920,height:1080},{width:1280,height:800},{width:390,height:844}]){
+ for(const size of [{width:1920,height:1080},{width:1280,height:800},{width:1024,height:800},{width:768,height:1024},{width:390,height:844}]){
   await page.setViewportSize(size);await page.goto(base+'/');await page.evaluate(()=>document.fonts.ready);
+  const toggle=page.locator('.home-menu-toggle'),nav=page.locator('.home-nav');
+  const mobile=size.width<=1050;
+  assert.equal(await toggle.isVisible(),mobile);
+  assert.equal(await nav.locator('a').allTextContents().then(x=>x.join('|')),'Jak to funguje|Proč Chytré já|Zakladatelé|Časté otázky|Kontakt|Přihlásit se');
+  assert.equal(await page.locator('.home-login').getAttribute('href'),'/login');
+  if(mobile){
+   assert.equal(await nav.isVisible(),false);
+   await toggle.click();assert.equal(await toggle.getAttribute('aria-expanded'),'true');
+   await page.keyboard.press('Escape');assert.equal(await toggle.getAttribute('aria-expanded'),'false');
+   assert.equal(await toggle.evaluate(e=>document.activeElement===e),true);
+  }else{
+   assert.ok(await page.locator('.home-login').evaluate(e=>parseFloat(getComputedStyle(e).marginLeft))>=32);
+  }
+  for(const id of ['jak-to-funguje','o-mne','zakladatele','faq','kontakt']){
+   if(mobile)await toggle.click();
+   await nav.locator('a[href="#'+id+'"]').click();
+   if(mobile)assert.equal(await toggle.getAttribute('aria-expanded'),'false');
+   const target=await page.locator('#'+id).evaluate(e=>({top:e.getBoundingClientRect().top,headerBottom:document.querySelector('.home-header').getBoundingClientRect().bottom}));
+   assert.ok(target.top>=target.headerBottom-1,'Anchor visible below sticky header '+JSON.stringify({size,id,target}));
+   assert.ok(Math.abs(await page.locator('.home-header').evaluate(e=>e.getBoundingClientRect().top))<1);
+  }
+  await page.screenshot({path:path.join(out,'navigation-'+size.width+'.png')});
   const layout=await page.evaluate(()=>{
    const selectors={origin:'.origin-story>h2',faq:'#faq-nadpis',directory:'#kontakty-nadpis',form:'#kontakt-nadpis',input:'#contact-name',button:'#contact-submit',list:'.faq-list',details:'.contact-directory dl',formBody:'#contact-form'};
    const rect=s=>document.querySelector(s).getBoundingClientRect();
