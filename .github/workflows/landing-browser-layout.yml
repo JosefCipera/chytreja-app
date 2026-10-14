@@ -3,6 +3,10 @@ on:
   pull_request:
     paths:
       - 'app/home-v2.html'
+      - 'app/cookies.html'
+      - 'app/ochrana-osobnich-udaju.html'
+      - 'app/obchodni-podminky.html'
+      - 'scripts/test-document-return-browser.cjs'
       - 'app/login.html'
       - 'app/launcher.html'
       - 'app/js/universe/onboarding-wizard.js'
@@ -29,6 +33,7 @@ jobs:
           "$RUNNER_TEMP/chj-browser-qa/node_modules/.bin/playwright" install --with-deps chromium
           NODE_PATH="$RUNNER_TEMP/chj-browser-qa/node_modules" node scripts/test-landing-alignment-browser.cjs
           NODE_PATH="$RUNNER_TEMP/chj-browser-qa/node_modules" node scripts/test-web-app-return-browser.cjs
+          NODE_PATH="$RUNNER_TEMP/chj-browser-qa/node_modules" node scripts/test-document-return-browser.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
