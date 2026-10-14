@@ -153,6 +153,8 @@ const MODIFICATIONS_CS = {
     'Přestaň, pokud bolest zesílí',
   'Prefer low-impact variant (e.g. cycling over running)':
     'Zvol pohyb bez tvrdých dopadů, například jízdu na kole místo běhu',
+  'Prefer a lower-load variant of this activity':
+    'Zvol šetrnější variantu této aktivity',
   'Stop if discomfort increases':
     'Přestaň, pokud nepříjemný pocit zesílí',
   'Clarify injury severity before proceeding':
@@ -800,7 +802,9 @@ function buildActResponse(dd, ctx, sessionUpdates, warnings) {
   const action = dd.primary_item;
   let text = action?.label ? sentence(action.label) : 'Tvá dnešní akce je připravena.';
 
-  if (action?.safety?.level === 'SAFE_WITH_MODIFICATION') {
+  // SAFE may carry advisory joint-load adjustments too; do not silently drop
+  // those already-computed instructions. Eligibility/level is unchanged.
+  if (['SAFE', 'SAFE_WITH_MODIFICATION'].includes(action?.safety?.level)) {
     const modifications = [...new Set((action.safety.modifications_suggested ?? [])
       .filter(mod => typeof mod === 'string' && mod.trim())
       .map(mod => sentence(localizeMod(mod))))];
