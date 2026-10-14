@@ -162,6 +162,9 @@ function _html() {
 <style>
 #onb-overlay{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem}
 #onb-box{background:#0f1117;border:0.5px solid #1e293b;border-radius:14px;padding:2rem;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;color:#e2e8f0;font-family:inherit}
+.onb-home{display:inline-block;margin-bottom:1.2rem;padding:6px 0;font-size:13px;color:#94a3b8;text-decoration:none}
+.onb-home:hover{color:#e2e8f0}
+.onb-home:focus-visible{outline:2px solid #60a5fa;outline-offset:4px}
 .onb-progress{display:flex;align-items:center;gap:8px;margin-bottom:2rem}
 .onb-dot{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;flex-shrink:0}
 .onb-dot-active{background:#0f3460;color:#60a5fa;border:1.5px solid #3b82f6}
@@ -197,6 +200,7 @@ function _html() {
 .onb-active{display:block}
 </style>
 <div id="onb-box">
+  <a class="onb-home" href="/#top">← Na web</a>
   <div class="onb-progress">
     <div class="onb-dot onb-dot-active" id="onb-dot1">1</div>
     <div class="onb-line" id="onb-line1"></div>
