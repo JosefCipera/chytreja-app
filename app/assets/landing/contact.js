@@ -68,13 +68,23 @@
       signal: controller ? controller.signal : undefined
     }).then(function (res) {
       return res.json().catch(function () { return null; }).then(function (body) {
-        if (!res.ok || (body && body.ok === false)) throw new Error('server');
+        if (!res.ok || !body || typeof body !== 'object' || Array.isArray(body)
+          || body.ok === false || (Array.isArray(body.errors) && body.errors.length)) throw new Error('server');
       });
     }).then(function () {
       form.hidden = true;
       done.hidden = false;
       done.setAttribute('tabindex', '-1');
       done.focus();
+      setTimeout(function () {
+        done.hidden = true;
+        form.reset();
+        form.hidden = false;
+        button.disabled = false;
+        button.removeAttribute('aria-busy');
+        button.textContent = LABEL;
+        setStatus('', '');
+      }, 8000);
     }).catch(function () {
       setStatus('Zprávu se nepodařilo odeslat. Tvůj text zůstal vyplněný, zkus to prosím znovu. Případně napiš na info@iting.cz.', 'error');
     }).then(function () {
