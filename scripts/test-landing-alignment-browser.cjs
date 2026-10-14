@@ -19,10 +19,14 @@ const server=http.createServer((req,res)=>{
  for(const size of [{width:1920,height:1080},{width:1280,height:800},{width:390,height:844}]){
   await page.setViewportSize(size);await page.goto(base+'/');await page.evaluate(()=>document.fonts.ready);
   const layout=await page.evaluate(()=>{
-   const selectors={origin:'.origin-story>h2',faq:'#faq-nadpis',directory:'#kontakty-nadpis',form:'#kontakt-nadpis',input:'#contact-name',button:'#contact-submit'};
-   return{positions:Object.fromEntries(Object.entries(selectors).map(([k,s])=>[k,document.querySelector(s).getBoundingClientRect().left])),overflow:document.documentElement.scrollWidth-innerWidth,footer:getComputedStyle(document.querySelector('.site-footer')).textAlign};
+   const selectors={origin:'.origin-story>h2',faq:'#faq-nadpis',directory:'#kontakty-nadpis',form:'#kontakt-nadpis',input:'#contact-name',button:'#contact-submit',list:'.faq-list',details:'.contact-directory dl',formBody:'#contact-form'};
+   return{referenceWidth:document.querySelector('.origin-story>h2').getBoundingClientRect().width,bodyWidth:document.querySelector('.faq-list').getBoundingClientRect().width,positions:Object.fromEntries(Object.entries(selectors).map(([k,s])=>[k,document.querySelector(s).getBoundingClientRect().left])),overflow:document.documentElement.scrollWidth-innerWidth,footer:getComputedStyle(document.querySelector('.site-footer')).textAlign};
   });
-  for(const [key,x] of Object.entries(layout.positions))assert.ok(Math.abs(x-layout.positions.origin)<2,'Shared content edge '+JSON.stringify({size,key,layout}));
+  for(const key of ['origin','faq','directory','form'])assert.ok(Math.abs(layout.positions[key]-layout.positions.origin)<2,'Section heading edge '+JSON.stringify({size,key,layout}));
+  for(const key of ['list','details','formBody','input','button'])assert.ok(Math.abs(layout.positions[key]-layout.positions.list)<2,'Inset body edge '+JSON.stringify({size,key,layout}));
+  assert.ok(layout.bodyWidth<=721,'Narrow content column');
+  assert.ok(Math.abs(layout.positions.list+layout.bodyWidth/2-layout.positions.origin-layout.referenceWidth/2)<2,'Bodies centered within wider heading section');
+  if(size.width>=1100)assert.ok(layout.positions.list>layout.positions.origin+100,'Desktop bodies visibly inset from headings');
   assert.ok(layout.overflow<=1,'No horizontal overflow '+JSON.stringify({size,layout}));
   assert.equal(layout.footer,'center');
   const faq=page.locator('#faq-q1');await faq.focus();await faq.press('Enter');assert.equal(await faq.getAttribute('aria-expanded'),'true');assert.equal(await page.locator('#faq-a1').isVisible(),true);
@@ -34,6 +38,6 @@ const server=http.createServer((req,res)=>{
   console.log('PASS landing layout '+JSON.stringify({size,...layout}));
  }
  assert.equal(posts,0);assert.deepEqual(errors,[]);
- console.log('PASS: actual Chromium geometry at 1920/1280/390px; origin/FAQ/directory/form/button share left edge; FAQ keyboard works; no overflow; footer centered; no form submissions.');
+ console.log('PASS: actual Chromium geometry at 1920/1280/390px; section headings share outer left edge; narrower FAQ/directory/form bodies are inset and share an inner edge; FAQ keyboard works; no overflow; footer centered; no form submissions.');
 }finally{if(browser)await browser.close();await new Promise(r=>server.close(r));}
 })().catch(e=>{console.error(e);process.exitCode=1});
