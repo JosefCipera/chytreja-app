@@ -67,7 +67,7 @@ const server=http.createServer((_req,res)=>{res.writeHead(200,{'Content-Type':'t
   await page.click('#mic-btn');await page.evaluate(()=>window.__voice('Nová zpráva'));
   await page.waitForFunction(()=>document.getElementById('input-echo-text').textContent==='Nová zpráva');
   assert.equal(await page.evaluate(()=>window.__requests.at(-1).userId),'fixture-b');
-  await page.reload();await page.waitForFunction(()=>document.getElementById('stage-text').textContent==='Co chceš řešit?');
+  await page.reload();await page.waitForFunction(()=>window.__chj_userId==='fixture-a');
   await page.evaluate(()=>window.__switchUser('fixture-b'));await page.waitForFunction(()=>document.getElementById('input-echo-text').textContent==='Nová zpráva');
   await page.getByRole('button',{name:'Menu',exact:true}).click();await page.getByRole('button',{name:'Odhlásit se',exact:true}).click();
   await page.waitForFunction(()=>!document.getElementById('auth-overlay').classList.contains('hidden'));
