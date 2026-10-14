@@ -3,9 +3,9 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('n
 const {chromium}=require('playwright');
 const prelude=`
 const initializeApp=()=>({});
-const getAuth=()=>({currentUser:{uid:'fixture-a',displayName:'Fixture'}});
+const getAuth=()=>({currentUser:sessionStorage.getItem('fixture-signed-out')?null:{uid:'fixture-a',displayName:'Fixture'}});
 function onAuthStateChanged(auth,cb){window.__switchUser=uid=>{auth.currentUser=uid?{uid,displayName:'Fixture'}:null;cb(auth.currentUser);};queueMicrotask(()=>cb(auth.currentUser));}
-const signOut=async()=>window.__switchUser(null),checkAndShowOnboarding=async()=>{};
+const signOut=async()=>{sessionStorage.setItem('fixture-signed-out','1');window.__switchUser(null);},checkAndShowOnboarding=async()=>{};
 window.__requests=[];window.__hold=false;
 window.__reply={mode:'ACT',text:'5× pomalu vstaň ze židle a zase si sedni. Podle potřeby si pomáhej rukama o područky. Použij pevnou židli, která neklouže. Při bolesti, závrati nebo nejistotě přestaň.',buttons:['Hotovo','Přeskočit'],expects_reply:false};
 const authFetch=async(_url,init)=>{window.__requests.push(JSON.parse(init.body));if(window.__hold)await new Promise(resolve=>window.__release=resolve);return{ok:true,json:async()=>structuredClone(window.__reply)};};
@@ -70,6 +70,7 @@ const server=http.createServer((_req,res)=>{res.writeHead(200,{'Content-Type':'t
   await page.reload();await page.waitForFunction(()=>window.__chj_userId==='fixture-a');
   await page.evaluate(()=>window.__switchUser('fixture-b'));await page.waitForFunction(()=>document.getElementById('input-echo-text').textContent==='Nová zpráva');
   await page.getByRole('button',{name:'Menu',exact:true}).click();await page.getByRole('button',{name:'Odhlásit se',exact:true}).click();
+  await page.waitForURL(base+'/');
   await page.waitForFunction(()=>!document.getElementById('auth-overlay').classList.contains('hidden'));
   assert.equal(await page.locator('#input-echo-text').textContent(),'');
   assert.equal(await page.evaluate(()=>localStorage.getItem('chj_last_response_v1:fixture-b')),null);
