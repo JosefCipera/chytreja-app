@@ -39,9 +39,12 @@ const server=http.createServer((req,res)=>{
   // A document opened by another document returns to that immediate caller.
   await page.locator('.footer-links a[href="/cookies"]').click();await page.waitForURL(base+'/cookies');
   await page.locator('main a[href="/ochrana-osobnich-udaju"]').scrollIntoViewIfNeeded();
-  const cookieY=await page.evaluate(()=>scrollY);
+  await page.locator('main a[href="/ochrana-osobnich-udaju"]').evaluate(link=>link.addEventListener('click',()=>sessionStorage.setItem('fixture-cookie-click-y',String(scrollY)),{once:true}));
   await page.locator('main a[href="/ochrana-osobnich-udaju"]').click();await page.waitForURL(base+'/ochrana-osobnich-udaju');
-  await page.locator('[data-document-back]').click();await page.waitForURL(base+'/cookies');await page.waitForFunction(y=>Math.abs(scrollY-y)<3,cookieY);
+  const cookieY=await page.evaluate(()=>Number(sessionStorage.getItem('fixture-cookie-click-y')));
+  await page.locator('[data-document-back]').click();await page.waitForURL(base+'/cookies');
+  console.log('Nested document scroll '+JSON.stringify({size,expected:cookieY,actual:await page.evaluate(()=>scrollY)}));
+  await page.waitForFunction(y=>Math.abs(scrollY-y)<3,cookieY);
   await page.locator('[data-document-back]').click();await page.waitForURL(base+'/');
   // New tabs with noopener close to the untouched caller (form state survives).
   await page.locator('#contact-name').fill('Offline fixture');
