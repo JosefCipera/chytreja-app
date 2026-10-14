@@ -6,6 +6,8 @@ on:
     paths:
       - app/launcher.html
       - scripts/test-retry-ui.mjs
+      - scripts/test-input-echo.mjs
+      - scripts/test-launcher-input-browser.cjs
       - scripts/test-launcher-hold-input.mjs
       - scripts/test-onboarding-combinations.mjs
       - scripts/test-crt-contract-mutations.mjs
@@ -35,6 +37,8 @@ on:
     paths:
       - app/launcher.html
       - scripts/test-retry-ui.mjs
+      - scripts/test-input-echo.mjs
+      - scripts/test-launcher-input-browser.cjs
       - scripts/test-launcher-hold-input.mjs
       - scripts/test-onboarding-combinations.mjs
       - scripts/test-crt-contract-mutations.mjs
@@ -63,7 +67,7 @@ permissions:
 jobs:
   floor-rise:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with:
@@ -82,6 +86,7 @@ jobs:
           node scripts/test-leverage-fallback.mjs
           node --experimental-vm-modules scripts/test-action-copy.mjs
           node --experimental-vm-modules scripts/test-retry-ui.mjs
+          node scripts/test-input-echo.mjs
           node scripts/test-adiposity-entry-intensity.mjs
           node scripts/reproduce-eyes-closed-gait.mjs
           node scripts/test-blocking-evidence.mjs
@@ -91,6 +96,14 @@ jobs:
           node --experimental-vm-modules scripts/test-why-control.mjs
           node scripts/test-skip-progression.mjs
           node scripts/test-skipped-exhaustion.mjs
+      - name: Verify Launcher input echo in Chromium
+        env:
+          AI_TESTER_BROWSER_OUT: ai-tester-results/input-echo-browser
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund --package-lock=false --prefix "$RUNNER_TEMP/chj-browser-qa" playwright@1.56.1
+          "$RUNNER_TEMP/chj-browser-qa/node_modules/.bin/playwright" install --with-deps chromium
+          NODE_PATH="$RUNNER_TEMP/chj-browser-qa/node_modules" node scripts/test-launcher-input-browser.cjs
+
       - name: Evaluate three clean transcripts
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
