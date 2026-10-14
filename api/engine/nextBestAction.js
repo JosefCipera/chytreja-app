@@ -112,7 +112,7 @@ function computeMobilityProfile(nodeStates, clinicalHistory) {
 // Returns: GOOD | POOR | ACCEPTABLE | UNKNOWN | NEEDS_ASSESSMENT
 //
 // Rules:
-//   NEEDS_ASSESSMENT: recent fall history → multifactorial assessment required (NICE NG147)
+//   NEEDS_ASSESSMENT: recent fall history → CHJ conservatively requires device assessment
 //   UNKNOWN:          instability type or laterality unknown → cannot evaluate fit
 //   POOR:             bilateral deficit → unilateral device; OR upper body demand > capacity
 //                     POOR = model mismatch, NOT clinical contraindication → NEEDS_CLINICAL_CLEARANCE
@@ -123,11 +123,11 @@ function evaluateDeviceFit(action, profile, parsedConstraints) {
   const { instability_type, laterality, fall_history } = profile;
   const { modality, support_sides, upper_body_demand } = action;
 
-  // NEEDS_ASSESSMENT: recent falls → NICE NG147 mandates multifactorial assessment
+  // Internal conservative device-selection policy, not a NICE mandate after every fall.
   if (fall_history === 'RECENT') {
     return {
       level: 'NEEDS_ASSESSMENT',
-      reason: 'Recent fall history — NICE NG147: multifactorial falls assessment required before prescribing any assistive device.',
+      reason: 'Recent fall history — CHJ device-selection policy requires individual assessment before offering an assistive device.',
     };
   }
 
@@ -315,7 +315,7 @@ function evaluateSafetyGate(action, parsedConstraints, hasCvRiskRelevant, hasCli
 
   // 5. ASSISTIVE_PROTOKOL → DEVICE_FIT evaluation
   // DEVICE_FIT=POOR → NEEDS_CLINICAL_CLEARANCE (device mismatch, not clinical contraindication)
-  // DEVICE_FIT=NEEDS_ASSESSMENT → NEEDS_CLINICAL_CLEARANCE (NICE NG147 post-fall assessment)
+  // DEVICE_FIT=NEEDS_ASSESSMENT → NEEDS_CLINICAL_CLEARANCE (internal CHJ device-selection policy)
   // DEVICE_FIT=UNKNOWN → NEEDS_MORE_EVIDENCE (profile insufficient)
   // DEVICE_FIT=GOOD → continue to standard checks
   if (action.protocol_type === 'ASSISTIVE_PROTOKOL' && mobilityProfile) {
@@ -325,7 +325,7 @@ function evaluateSafetyGate(action, parsedConstraints, hasCvRiskRelevant, hasCli
         level: 'NEEDS_CLINICAL_CLEARANCE',
         reason: fit.reason,
         modifications_suggested: [
-          'Zajistit multifaktoriální assessment pádu dle NICE NG147',
+          'Zajistit odborné posouzení chůze, rovnováhy a vhodnosti pomůcky',
           'Zahrnout fyzioterapeutické hodnocení chůze a rovnováhy',
           'Pomůcku nezahájit bez výsledku assessmentu',
         ],
@@ -416,13 +416,13 @@ function evaluateSafetyGate(action, parsedConstraints, hasCvRiskRelevant, hasCli
   }
 
   // 7. Balance/stability exercises require adequate gait capacity — SAFE_WITH_MODIFICATION when impaired.
-  // Balance and stability exercises ARE the treatment for gait instability (Sherrington et al., Cochrane 2019),
-  // so they are not blocked. But predicted gait instability requires supervised or supported environment.
+  // Fall-prevention exercise evidence is not blanket treatment/clearance for every gait disorder.
+  // This existing CHJ entry policy keeps supported basic tasks available; individual dose remains unvalidated.
   // This covers: single-leg stand, tandem walk, supported entry balance tasks; advanced sensory/surface tasks are gated above.
   if (hasGaitInstability && (action.protocol_type === 'BALANCE_PROTOKOL' || action.protocol_type === 'STABILITY_PROTOKOL')) {
     const balanceResult = {
       level: 'SAFE_WITH_MODIFICATION',
-      reason: 'Balance/stability exercise requires adequate gait capacity; gait instability predicted — therapeutic target, but supervised or wall-supported environment required.',
+      reason: 'CHJ supported balance entry policy: modeled gait instability requires a supervised or supported setting; this is not individual clinical clearance or dose validation.',
       modifications_suggested: [
         'Use stable wall or chair support for all single-leg variants',
         'Keep eyes open throughout',
@@ -474,6 +474,13 @@ function evaluateSafetyGate(action, parsedConstraints, hasCvRiskRelevant, hasCli
 // null when no constraint region is loaded.
 // Modality (which region is loaded) already handled by actionLoadsRegion().
 function evaluateJointLoad(action, parsedConstraints, intensity, isHighIntensity) {
+  // Cycling is a relevant alternative to locomotor aerobic impact, not to
+  // chair rises, strength or balance tasks (even if they load the same joint).
+  const locomotorAerobic = ['KARDIO_PROTOKOL', 'VYTRVALOST_PROTOKOL', 'TRAINING_PROTOKOL'].includes(action.protocol_type)
+    && /(?:^|[^\p{L}])(?:chůz|chuz|procház|prochaz|běh|beh|walk|run|hiking|turistik|klus|sprint)/iu.test(action.label ?? '');
+  const lowerLoad = locomotorAerobic
+    ? (isHighIntensity ? 'Prefer low-impact variant (e.g. cycling over running or uphill)' : 'Prefer low-impact variant (e.g. cycling over running)')
+    : 'Prefer a lower-load variant of this activity';
   let worst = null;
   for (const c of parsedConstraints) {
     if (!actionLoadsRegion(action, c.key)) continue;
@@ -494,8 +501,8 @@ function evaluateJointLoad(action, parsedConstraints, intensity, isHighIntensity
       // mild + MODERATE/LIGHT → proceed; low-impact variant preferred
       level = isHighIntensity ? 'SAFE_WITH_MODIFICATION' : 'SAFE';
       mods  = isHighIntensity
-        ? ['Prefer low-impact variant (e.g. cycling over running or uphill)', 'Reduce intensity if discomfort appears', 'Stop if pain increases']
-        : ['Prefer low-impact variant (e.g. cycling over running)', 'Stop if discomfort increases'];
+        ? [lowerLoad, 'Reduce intensity if discomfort appears', 'Stop if pain increases']
+        : [lowerLoad, 'Stop if discomfort increases'];
     } else {
       // null severity already caught by rule 4; shouldn't reach here
       level = 'NEEDS_MORE_EVIDENCE';

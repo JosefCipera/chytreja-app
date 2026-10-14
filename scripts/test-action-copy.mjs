@@ -107,3 +107,47 @@ for (const a of advanced) {
 assert.ok(result.selected.safety.modifications_suggested.includes('Keep eyes open throughout'));
 assert.ok(!result.selected.safety.modifications_suggested.some(m => /progress to eyes-closed/.test(m)));
 console.log('PASS: closed-eye and unstable-surface variants require assessment; entry instructions keep eyes open.');
+
+// Relevant joint-load advice must also survive SAFE presentation. Eligibility,
+// hard exclusions and the severity grid remain unchanged.
+const activityFixtures = [
+ { id: 'walking-joint-fixture', label: 'Svižná chůze nebo kolo', protocol_type: 'KARDIO_PROTOKOL', tags: ['kardio'], aerobic: true },
+ { id: 'chair-joint-fixture', label: 'Vstaň ze židle', protocol_type: 'FUNKCNI_SILOVY_PROTOKOL', tags: ['nohy'], aerobic: false },
+ { id: 'balance-joint-fixture', label: 'Stůj na jedné noze', protocol_type: 'BALANCE_PROTOKOL', tags: [], aerobic: false },
+ { id: 'cycling-joint-fixture', label: 'Jízda na kole', protocol_type: 'KARDIO_PROTOKOL', tags: ['kardio'], aerobic: false },
+ { id: 'daily-walk-joint-fixture', label: 'Jdi na procházku', protocol_type: 'TRAINING_PROTOKOL', tags: ['kardio'], aerobic: true },
+ { id: 'trunk-joint-fixture', label: 'Trunk exercise', protocol_type: 'TRAINING_PROTOKOL', tags: ['sila','nohy'], aerobic: false },
+];
+function jointCandidate(a, severity, intensity = 'LIGHT', more = []) {
+ const fixture = { ...baseAction, ...a, intensity };
+ const interventionId = fixture.protocol_type === 'TRAINING_PROTOKOL'
+   ? (fixture.tags.includes('kardio') ? 'DAILY_MOVEMENT' : 'RESISTANCE_TRAINING') : 'JOINT_TEXT_FIXTURE';
+ const r = computeNextBestAction({ leverageNodeId:'LOW_MUSCLE_STRENGTH',
+  interventions:[{id:interventionId,protocol_types:[fixture.protocol_type],mechanism_targets:['LOW_MUSCLE_STRENGTH'],goal_branches:[]}],
+  actionPool:[fixture], personConstraints:[{constraint_value:'kotník',severity},...more],
+  clinicalHistory:{clinical_history_documented:true,onboarding_inputs:{}}, decisionGate:{context_gates:[]}, node_states:[],engineVersion:'1.0.0' });
+ return r.all_candidates[0];
+}
+for (const fixture of activityFixtures) {
+ for (const [severity,intensity,level] of [
+  ['mild','LIGHT','SAFE'],['mild','MODERATE','SAFE'],['mild','VIGOROUS','SAFE_WITH_MODIFICATION'],
+  ['moderate','LIGHT','SAFE_WITH_MODIFICATION'],['moderate','VIGOROUS','NEEDS_CLINICAL_CLEARANCE'],
+  ['severe','LIGHT','NEEDS_CLINICAL_CLEARANCE'],[null,'LIGHT','NEEDS_MORE_EVIDENCE'],
+ ]) {
+  const candidate = jointCandidate(fixture,severity,intensity);
+  assert.equal(candidate.safety.level,level, 'Text changes cannot relax the severity grid');
+  if (severity === 'mild') {
+   const advice = candidate.safety.modifications_suggested.join(' ');
+   assert.equal(/cycling/.test(advice),fixture.aerobic, 'Cycling examples belong only to locomotor aerobic activities');
+   const shown = act({primary_item:candidate},{},{},[]).text;
+   assert.ok(shown.includes(intensity === 'VIGOROUS' ? 'Přestaň, pokud bolest zesílí' : 'Přestaň, pokud nepříjemný pocit zesílí'));
+   assert.ok(!/Prefer |Stop if/.test(shown), 'Advice is localized');
+   if(!fixture.aerobic) assert.ok(!/kole|běhu/.test(shown.slice(shown.indexOf('.')+1)), 'No unrelated cycling/running instruction');
+  }
+ }
+ assert.equal(jointCandidate(fixture,'mild','LIGHT',[{constraint_value:'kotník',severity:'severe'}]).safety.level,'NEEDS_CLINICAL_CLEARANCE');
+ assert.equal(jointCandidate({...fixture,constraint_exclude:['ankle_foot']},'mild').safety.level,'CONTRAINDICATED');
+}
+const safeAdvice = act({primary_item:{label:'Testovací aktivita',safety:{level:'SAFE',modifications_suggested:['Stop if discomfort increases','Stop if discomfort increases']}}},{},{},[]);
+assert.equal(safeAdvice.text.split('Přestaň, pokud nepříjemný pocit zesílí').length,2,'SAFE advice is rendered once');
+console.log('PASS: SAFE advice visible once, locomotor examples relevant, mild/moderate/severe/unknown and combined constraints retain safety levels.');

@@ -181,7 +181,7 @@ export function activation(person, clinicalHistory, observations) {
         inferred_from_nodes: [],
       },
       missing_evidence: [
-        ...(!isEvidenceResolved('tug_test',        clinicalHistory) ? [{ type: 'OBSERVATION', obs_type: 'tug_test',        note: 'TUG test — klinicky validovaný marker mobility a fall risk (NICE NG147); určuje závažnost funkčního dopadu neuropatie' }] : []),
+        ...(!isEvidenceResolved('tug_test',        clinicalHistory) ? [{ type: 'OBSERVATION', obs_type: 'tug_test',        note: 'TUG — doplňující měření mobility; zdejší chybějící údaj není potvrzený nález' }] : []),
         ...(!isEvidenceResolved('gait_stability',  clinicalHistory) ? [{ type: 'OBSERVATION', obs_type: 'gait_stability',  note: 'Sebehodnocení bezpečnosti chůze — nejrychlejší funkční třídění' }] : []),
       ],
     });
@@ -202,7 +202,7 @@ export function activation(person, clinicalHistory, observations) {
 
   // ── FALL_RISK (direct activation) ────────────────────────────────────────
   // Source: recent_falls observation from onboarding_inputs or observations
-  // A documented fall in the last 12 months = CONFIRMED elevated fall risk (NICE NG147).
+  // CHJ internally marks a documented fall in the last 12 months as CONFIRMED fall risk; this is not a NICE definition.
   // Note: recent_falls is FALL_RISK direct evidence; it is NOT sufficient for
   //       GAIT_INSTABILITY CONFIRMED — that requires direct gait/balance assessment.
   const recentFalls = oi['recent_falls'];
@@ -218,7 +218,7 @@ export function activation(person, clinicalHistory, observations) {
         inferred_from_nodes: [],
       },
       missing_evidence: [
-        ...(!isEvidenceResolved('tug_test',        clinicalHistory) ? [{ type: 'OBSERVATION', obs_type: 'tug_test',        note: 'TUG test — klinická validace mobility a fall risk (NICE NG147 doporučuje multifaktoriální assessment po pádu)' }] : []),
+        ...(!isEvidenceResolved('tug_test',        clinicalHistory) ? [{ type: 'OBSERVATION', obs_type: 'tug_test',        note: 'TUG — doplňující měření mobility; pád je důvod k posouzení, jeho rozsah závisí na dalších okolnostech' }] : []),
         ...(!isEvidenceResolved('gait_stability',  clinicalHistory) ? [{ type: 'OBSERVATION', obs_type: 'gait_stability',  note: 'Bezpečnost chůze — základ multifaktoriálního hodnocení pádu' }] : []),
       ],
     });

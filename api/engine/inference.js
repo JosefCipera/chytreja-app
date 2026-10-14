@@ -442,7 +442,7 @@ export function inference(activatedStates, person, clinicalHistory, observations
           {
             type:        'ONBOARDING',
             question_id: 'recent_falls',
-            note:        'Pád v posledních 12 měsících — přímý prediktor FALL_RISK CONFIRMED (NICE NG147 triage). ' +
+            note:        'Pád v posledních 12 měsících — CHJ jej interně označuje FALL_RISK CONFIRMED; nejde o definici či triáž předepsanou NICE. ' +
                          'Bez odpovědi: FALL_RISK neznámý, bezpečnostní třídění a výběr akce nejsou dokončeny.',
           },
         ],
