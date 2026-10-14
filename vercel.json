@@ -126,7 +126,7 @@
         },
         {
             "source": "/",
-            "destination": "/app/home.html"
+            "destination": "/app/home-v2.html"
         },
         {
             "source": "/landing",
