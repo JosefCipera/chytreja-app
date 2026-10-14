@@ -17,6 +17,12 @@ const server=http.createServer((req,res)=>{
  res.writeHead(200,{'Content-Type':{'.html':'text/html; charset=utf-8','.css':'text/css','.js':'text/javascript','.svg':'image/svg+xml','.jpg':'image/jpeg','.png':'image/png'}[ext]||'application/octet-stream'});res.end(data);
  }catch{res.writeHead(404);res.end();}
 });
+async function closeDocument(doc){
+ const closed=doc.waitForEvent('close');
+ try{await doc.locator('[data-document-back]').click({noWaitAfter:true});}
+ catch(error){if(!doc.isClosed())throw error;} // Closing the clicked tab can precede the click acknowledgement.
+ await closed;
+}
 (async()=>{let browser;try{
  await new Promise(r=>server.listen(0,'127.0.0.1',r));const base='http://127.0.0.1:'+server.address().port;
  browser=await chromium.launch({headless:true});
@@ -50,14 +56,13 @@ const server=http.createServer((req,res)=>{
   await page.locator('#contact-name').fill('Offline fixture');
   const popupPromise=page.waitForEvent('popup');
   await page.locator('.contact-note a[href="/ochrana-osobnich-udaju"]').click();
-  const contactDoc=await popupPromise;await contactDoc.waitForLoadState();const closed=contactDoc.waitForEvent('close');
-  await contactDoc.locator('[data-document-back]').click();await closed;
+  const contactDoc=await popupPromise;await contactDoc.waitForLoadState();await closeDocument(contactDoc);
   assert.equal(await page.locator('#contact-name').inputValue(),'Offline fixture');
   await page.goto(base+'/login#register');
   await page.locator('#regEmail').fill('fixture@example.test');await page.locator('#regPass').fill('fixture-password');
   for(const route of ['/obchodni-podminky','/ochrana-osobnich-udaju']){
    const popup=page.waitForEvent('popup');await page.locator('#registerPanel a[href="'+route+'"]').click();
-   const doc=await popup;await doc.waitForLoadState();const closing=doc.waitForEvent('close');await doc.locator('[data-document-back]').click();await closing;
+   const doc=await popup;await doc.waitForLoadState();await closeDocument(doc);
    assert.equal(page.url(),base+'/login#register');
    assert.equal(await page.locator('#registerPanel').isVisible(),true);
    assert.equal(await page.locator('#regEmail').inputValue(),'fixture@example.test');
