@@ -211,6 +211,7 @@
 
     /* ── Stage text ── */
     #stage-text {
+      min-height: 0; overflow-y: auto;
       font-size: clamp(18px,5vw,24px); font-weight: 300;
       line-height: 1.65; text-align: center; color: var(--text);
       max-width: 520px; width: 100%;
@@ -274,11 +275,20 @@
       flex-shrink: 0; padding: 14px 20px 24px;
       display: flex; flex-direction: column; align-items: center; gap: 10px;
     }
+    .input-echo {
+      width: 100%; max-width: 520px; flex-shrink: 0;
+      padding: 8px 12px; border-left: 2px solid rgba(58,203,216,0.35);
+      color: var(--text); font-size: 14px; line-height: 1.5;
+      text-align: left; overflow-wrap: anywhere;
+    }
+    .input-echo__label { font-size: 11px; color: #a8c0cc; }
+    #input-echo-text { margin-top: 3px; max-height: 6em; overflow-y: auto; white-space: pre-wrap; }
     .input-row {
       display: flex; gap: 10px; align-items: center;
       width: 100%; max-width: 520px;
     }
     #text-input {
+      min-width: 0;
       flex: 1;
       background: rgba(12,24,48,0.85);
       border: 1px solid rgba(58,203,216,0.32);
@@ -500,6 +510,10 @@
   </main>
 
   <footer>
+    <div id="input-echo" class="input-echo hidden" role="status" aria-live="polite">
+      <div id="input-echo-label" class="input-echo__label"></div>
+      <p id="input-echo-text"></p>
+    </div>
     <div class="input-row">
       <button id="mic-btn" class="icon-btn" title="Mluvit" aria-label="Mikrofon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
@@ -561,6 +575,8 @@
     localStorage.setItem(_LRK(_uid), JSON.stringify({
       mode: r.mode, text: r.text, buttons: r.buttons, expects_reply: r.expects_reply,
       debug: r.debug ?? null,
+      input_echo: r.input_echo ?? null,
+      retry_input_echo: r.retry_input_echo ?? null,
     }));
   }
   function clearSession(userId = _uid) {
@@ -582,6 +598,9 @@
   const $chips    = document.getElementById('chips');
   const $badge    = document.getElementById('mode-badge');
   const $input    = document.getElementById('text-input');
+  const $inputEcho = document.getElementById('input-echo');
+  const $inputEchoLabel = document.getElementById('input-echo-label');
+  const $inputEchoText = document.getElementById('input-echo-text');
   const $sendBtn  = document.getElementById('send-btn');
   const $micBtn   = document.getElementById('mic-btn');
   const $app      = document.getElementById('app');
@@ -725,7 +744,15 @@
   let _terminalState = false;
 
   // ── Render ───────────────────────────────────────────────────────────────────
+  function renderInputEcho(echo) {
+    const text = typeof echo?.text === 'string' ? echo.text : '';
+    $inputEchoText.textContent = text;
+    $inputEchoLabel.textContent = echo?.source === 'voice' ? 'Přepis hlasu' : 'Tvoje zpráva';
+    $inputEcho.classList.toggle('hidden', !text.trim());
+  }
+
   function renderIdle() {
+    renderInputEcho(null);
     _terminalState = false;
     $input.disabled   = false;
     $sendBtn.disabled = false;
@@ -743,6 +770,7 @@
 
   function render(response) {
     const { mode, text, buttons = [], expects_reply, debug: dbg } = response;
+    renderInputEcho(response.input_echo);
     if (typeof response.draft_text === 'string') $input.value = response.draft_text;
 
     // Hide orb and welcome subtitle; set stage label by mode
@@ -870,14 +898,22 @@
   }
 
   // ── Orchestrate ──────────────────────────────────────────────────────────────
-  async function orchestrate(userText, userId) {
-    if (busy) return;
+  async function orchestrate(userText, userId, inputSource = null) {
+    const uid = userId ?? window.__chj_userId;
+    if (busy || !uid) return;
     busy = true;
     const myEpoch = requestEpoch;
     setLoading(true);
 
-    const uid = userId ?? window.__chj_userId;
     const session = loadSession();
+    // Only a direct typed/voice submission replaces the echo. Navigation and
+    // retry chips retain the original utterance; this metadata stays client-side.
+    const previousResponse = loadLastResponse();
+    const retryEcho = previousResponse?.retry_input_echo ?? (session.pending_ai_retry?.text
+      ? { text: session.pending_ai_retry.text, source: 'text' } : null);
+    const inputEcho = inputSource ? { text: userText, source: inputSource }
+      : (userText === 'Zkusit znovu' ? retryEcho : null) ?? previousResponse?.input_echo ?? null;
+    renderInputEcho(inputEcho);
     let retainedInput = userText === 'Zkusit znovu' && $input.value && $input.value !== session.pending_ai_retry?.text ? $input.value : null;
     const _request_id = `c${Date.now().toString(36)}-e${myEpoch}`;
 
@@ -922,6 +958,11 @@
 
       if (myEpoch !== requestEpoch) return;
 
+      response.input_echo = inputEcho;
+      const pendingRetry = response.session_updates && 'pending_ai_retry' in response.session_updates
+        ? response.session_updates.pending_ai_retry : session.pending_ai_retry;
+      response.retry_input_echo = pendingRetry?.text
+        ? retryEcho ?? (inputEcho?.text === pendingRetry.text ? inputEcho : { text: pendingRetry.text, source: 'text' }) : null;
       if (typeof response.draft_text === 'string') retainedInput = response.draft_text;
       if (response.session_updates) saveSession(response.session_updates);
       saveLastResponse(response);
@@ -932,7 +973,9 @@
       if (myEpoch !== requestEpoch) return;
       const retry = session.pending_ai_retry ?? { text: userText, requested_at: new Date().toISOString(),
         context: { pending_question: session.pending_question ?? null, current_action_assignment: session.current_action_assignment ?? null } };
-      const failure = { mode: 'HOLD', text: 'Spojení se nepodařilo. Zpráva je připravená k opakování.',
+      const failure = { mode: 'HOLD', input_echo: inputEcho,
+        retry_input_echo: retryEcho ?? (inputEcho?.text === retry.text ? inputEcho : { text: retry.text, source: 'text' }),
+        text: 'Spojení se nepodařilo. Zpráva je připravená k opakování.',
         buttons: ['Zkusit znovu'], expects_reply: true, draft_text: retry.text,
         session_updates: { pending_ai_retry: retry, pending_question: retry.context?.pending_question ?? null,
           current_action_assignment: null, last_domain_response: null,
@@ -968,14 +1011,14 @@
   // ── Text input / send ────────────────────────────────────────────────────────
   $sendBtn.addEventListener('click', () => {
     const v = $input.value.trim();
-    if (v) orchestrate(v);
+    if (v) orchestrate(v, undefined, 'text');
   });
 
   $input.addEventListener('keydown', e => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       const v = $input.value.trim();
-      if (v) orchestrate(v);
+      if (v) orchestrate(v, undefined, 'text');
     }
   });
 
@@ -983,26 +1026,41 @@
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   let recognition = null;
 
+  function stopRecognition() {
+    const old = recognition;
+    recognition = null; // Ignore delayed callbacks before aborting the old instance.
+    $micBtn.classList.remove('active');
+    if (old) { try { old.abort(); } catch { /* Delayed callbacks are already invalidated. */ } }
+  }
+
   if (SpeechRecognition) {
-    recognition = new SpeechRecognition();
-    recognition.lang = 'cs-CZ';
-    recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
-
-    recognition.onresult = e => {
-      const transcript = e.results[0][0].transcript.trim();
-      if (transcript) orchestrate(transcript);
-    };
-    recognition.onend   = () => { $micBtn.classList.remove('active'); };
-    recognition.onerror = () => { $micBtn.classList.remove('active'); };
-
     $micBtn.addEventListener('click', () => {
-      if ($micBtn.classList.contains('active')) {
-        recognition.stop();
-      } else {
-        $micBtn.classList.add('active');
-        recognition.start();
-      }
+      if (!_uid || busy || _terminalState) return;
+      if (recognition) { recognition.stop(); return; }
+      const current = new SpeechRecognition();
+      recognition = current;
+      const owner = { uid: _uid, epoch: requestEpoch };
+      let submitted = false;
+      current.lang = 'cs-CZ';
+      current.interimResults = false;
+      current.maxAlternatives = 1;
+      current.onresult = e => {
+        if (current !== recognition || submitted || busy || _terminalState || owner.uid !== _uid || owner.epoch !== requestEpoch) return;
+        const transcript = e.results[0][0].transcript.trim();
+        if (transcript) {
+          submitted = true;
+          return orchestrate(transcript, undefined, 'voice');
+        }
+      };
+      const ended = () => {
+        if (current !== recognition) return;
+        recognition = null;
+        $micBtn.classList.remove('active');
+      };
+      current.onend = ended;
+      current.onerror = ended;
+      $micBtn.classList.add('active');
+      try { current.start(); } catch { ended(); }
     });
   } else {
     $micBtn.style.display = 'none';
@@ -1010,6 +1068,12 @@
 
   // ── Init ─────────────────────────────────────────────────────────────────────
   function start(userId) {
+    if (_uid !== userId) {
+      invalidateRequests();
+      stopRecognition();
+      renderInputEcho(null);
+      $input.value = '';
+    }
     _uid = userId;
     window.__chj_userId = userId;
     $authOver.classList.add('hidden');
@@ -1041,6 +1105,7 @@
         saveSession({ pending_question: null });
       }
       renderIdle();
+      renderInputEcho(last?.input_echo);
     }
   }
 
@@ -1054,7 +1119,12 @@
         document.getElementById('avatar-btn').textContent = initial;
         start(user.uid);
       } else {
+        invalidateRequests();
+        stopRecognition();
+        renderInputEcho(null);
+        $input.value = '';
         _uid = null;
+        window.__chj_userId = null;
         $authOver.classList.remove('hidden');
         $app.classList.add('hidden');
       }
@@ -1064,6 +1134,8 @@
   // ── Logout ───────────────────────────────────────────────────────────────────
   document.getElementById('logout-btn').addEventListener('click', async () => {
     invalidateRequests();
+    stopRecognition();
+    renderInputEcho(null);
     clearSession(_uid ?? window.__chj_userId);
     sessionStorage.removeItem('chj_qbudget');
     if (urlUserId) {
