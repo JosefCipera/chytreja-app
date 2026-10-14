@@ -44,6 +44,10 @@ Toto znění musí doprovázet skutečné informace o příjemcích, zemích a l
 - Mobil, klávesnice a hlasový vstup neobcházejí informační krok.
 - Testovací reset nemaže doklad bez souhlasu a není vydáván za úplný výmaz účtu.
 
+## Schválená pravidla účtu a retence
+
+Josef 14. 10. 2026 v 19:17 Europe/Prague schválil bezplatné testování pro 18+, oddělené přijetí případné placené nabídky, uchování profilu během používání účtu, výmaz provozních dat nejpozději do 30 dnů od zrušení a upozornění po 24 měsících neaktivity s 30 dny na reakci. Schválení nezahrnuje neověřené lhůty záloh/poskytovatelů ani ostatní navrhované lhůty korespondence/logů. Nejde o existující souhlas koncových uživatelů ani doklad implementace.
+
 ## Retence a výmaz — potřebné před zveřejněním
 
 Použít odsouhlasenou tabulku z DATA-PROCESSING-INVENTORY-2026-10-14.md; nejdříve potvrdit technické možnosti. Připravit dry-run výmazu pouze pro syntetické fixtures a zálohový postup obnovy bez návratu dříve vymazaných dat. Živý účet se nemaže v rámci tohoto úkolu.
