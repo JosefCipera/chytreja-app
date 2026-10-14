@@ -4,7 +4,8 @@ const {chromium}=require('playwright');
 const root=path.resolve(__dirname,'..');
 const server=http.createServer((req,res)=>{
  const pathname=decodeURIComponent(new URL(req.url,'http://fixture').pathname);
- const file=path.resolve(root,'.'+(pathname==='/'?'/app/home-v2.html':pathname));
+ const routes={'/':'/app/home-v2.html','/obchodni-podminky':'/app/obchodni-podminky.html','/ochrana-osobnich-udaju':'/app/ochrana-osobnich-udaju.html','/cookies':'/app/cookies.html'};
+ const file=path.resolve(root,'.'+(routes[pathname]||pathname));
  if(!file.startsWith(root+path.sep)){res.writeHead(403);res.end();return;}
  try{const data=fs.readFileSync(file),ext=path.extname(file);
  res.writeHead(200,{'Content-Type':{'.html':'text/html; charset=utf-8','.css':'text/css','.js':'text/javascript','.svg':'image/svg+xml','.jpg':'image/jpeg','.png':'image/png'}[ext]||'application/octet-stream'});res.end(data);
@@ -64,7 +65,29 @@ const server=http.createServer((req,res)=>{
   await page.locator('#kontakt-nadpis').scrollIntoViewIfNeeded();await page.screenshot({path:path.join(out,'form-'+size.width+'.png')});
   console.log('PASS landing layout '+JSON.stringify({size,...layout}));
  }
+ for(const width of [1280,390]){
+  await page.setViewportSize({width,height:844});
+  for(const route of ['/obchodni-podminky','/ochrana-osobnich-udaju']){
+   const response=await page.goto(base+route);assert.equal(response.status(),200);
+   await page.locator('h1').waitFor();
+   assert.ok((await page.title()).includes('Chytré já'));
+   assert.equal(await page.locator('.draft-notice').count(),1);
+   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'Legal page must fit viewport');
+   for(const link of await page.locator('.legal-toc a').all()){
+    const hash=await link.getAttribute('href');await link.click();
+    const position=await page.locator(hash).evaluate(e=>({top:e.getBoundingClientRect().top,header:document.querySelector('.legal-header').getBoundingClientRect().bottom}));
+    assert.ok(position.top>=position.header-1,'Legal anchor visible '+JSON.stringify({route,width,hash,position}));
+   }
+   await page.evaluate(()=>scrollTo(0,0));
+   await page.screenshot({path:path.join(out,'legal-'+route.slice(1)+'-'+width+'.png')});
+   for(const href of await page.locator('.legal-footer a').evaluateAll(links=>links.map(a=>a.getAttribute('href')))){
+    assert.equal((await page.request.get(base+href.split('#')[0])).status(),200,'Legal navigation '+href);
+   }
+   await page.locator('.legal-header .brand').click();await page.waitForURL(base+'/#top');
+  }
+ }
  assert.equal(posts,0);assert.deepEqual(errors,[]);
+ console.log('PASS: draft legal pages fit mobile/desktop; table scrolling contained; anchors below header; return and policy links resolve. Rendering checks do not validate legal sufficiency.');
  console.log('PASS: actual Chromium geometry at 1920/1280/390px; section headings share outer left edge; FAQ/directory bodies remain inset; whole form shares heading left edge; contacts have whitespace above and below; phones are plain text; FAQ keyboard works; no overflow; footer centered; no form submissions.');
 }finally{if(browser)await browser.close();await new Promise(r=>server.close(r));}
 })().catch(e=>{console.error(e);process.exitCode=1});
