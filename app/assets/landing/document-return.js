@@ -1,6 +1,19 @@
 // Use the browser's real history so URL fragment, scroll and caller UI are retained.
 // No account data, storage, API requests or arbitrary return-URL parameter.
 (() => {
+ const scrollKey='chjDocumentScroll';
+ const rememberScroll=()=>{
+  try{history.replaceState({...history.state,[scrollKey]:{x:scrollX,y:scrollY}},'');}
+  catch{/* Navigation still works if history state is unavailable. */}
+ };
+ const restoreScroll=()=>{
+  const position=history.state?.[scrollKey];
+  if(!Number.isFinite(position?.x)||!Number.isFinite(position?.y))return;
+  // Apply after the browser restores focus and its own saved scroll position.
+  requestAnimationFrame(()=>requestAnimationFrame(()=>scrollTo(position.x,position.y)));
+ };
+ addEventListener('pagehide',rememberScroll);
+ addEventListener('pageshow',restoreScroll);
  const back=document.querySelector('[data-document-back]');
  if(!back)return;
  let previous=null;
