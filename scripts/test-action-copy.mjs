@@ -116,12 +116,14 @@ const activityFixtures = [
  { id: 'balance-joint-fixture', label: 'Stůj na jedné noze', protocol_type: 'BALANCE_PROTOKOL', tags: [], aerobic: false },
  { id: 'cycling-joint-fixture', label: 'Jízda na kole', protocol_type: 'KARDIO_PROTOKOL', tags: ['kardio'], aerobic: false },
  { id: 'daily-walk-joint-fixture', label: 'Jdi na procházku', protocol_type: 'TRAINING_PROTOKOL', tags: ['kardio'], aerobic: true },
- { id: 'trunk-joint-fixture', label: 'Trunk exercise', protocol_type: 'TRAINING_PROTOKOL', tags: ['nohy'], aerobic: false },
+ { id: 'trunk-joint-fixture', label: 'Trunk exercise', protocol_type: 'TRAINING_PROTOKOL', tags: ['sila','nohy'], aerobic: false },
 ];
 function jointCandidate(a, severity, intensity = 'LIGHT', more = []) {
  const fixture = { ...baseAction, ...a, intensity };
+ const interventionId = fixture.protocol_type === 'TRAINING_PROTOKOL'
+   ? (fixture.tags.includes('kardio') ? 'DAILY_MOVEMENT' : 'RESISTANCE_TRAINING') : 'JOINT_TEXT_FIXTURE';
  const r = computeNextBestAction({ leverageNodeId:'LOW_MUSCLE_STRENGTH',
-  interventions:[{id:'JOINT_TEXT_FIXTURE',protocol_types:[fixture.protocol_type],mechanism_targets:['LOW_MUSCLE_STRENGTH'],goal_branches:[]}],
+  interventions:[{id:interventionId,protocol_types:[fixture.protocol_type],mechanism_targets:['LOW_MUSCLE_STRENGTH'],goal_branches:[]}],
   actionPool:[fixture], personConstraints:[{constraint_value:'kotník',severity},...more],
   clinicalHistory:{clinical_history_documented:true,onboarding_inputs:{}}, decisionGate:{context_gates:[]}, node_states:[],engineVersion:'1.0.0' });
  return r.all_candidates[0];
