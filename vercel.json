@@ -161,6 +161,10 @@
             "destination": "/app/ochrana-osobnich-udaju.html"
         },
         {
+            "source": "/cookies",
+            "destination": "/app/cookies.html"
+        },
+        {
             "source": "/api/(.*)",
             "destination": "/api/$1"
         },

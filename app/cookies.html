@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Cookies a úložiště prohlížeče | Chytré já</title>
+<link rel="icon" href="/app/assets/landing/favicon.svg">
+<style>
+:root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:#0b1220;color:#cbd5e1;font:16px/1.7 system-ui,sans-serif}main{max-width:840px;margin:auto;padding:32px 22px 64px}h1,h2{color:#c5d6f0;line-height:1.3}h1{font-size:clamp(27px,5vw,36px);margin:32px 0 12px}h2{font-size:21px;margin-top:32px}a{color:#7fc4e4;overflow-wrap:anywhere}a:focus-visible{outline:2px solid #39b7c8;outline-offset:4px}code{overflow-wrap:anywhere;color:#c5d6f0}li{margin-bottom:12px}.date{font-size:14px;color:#8ea8cc}.back{display:inline-block}footer{margin-top:36px;border-top:1px solid #7194c430;padding-top:20px}
+</style>
+</head>
+<body><main>
+<a class="back" href="/#kontakt">← Zpět na Chytré já</a>
+<h1>Cookies a úložiště prohlížeče</h1>
+<p class="date">Informace k úvodnímu webu, přihlášení a rozhovoru v aplikaci. Aktualizováno 14. října 2026.</p>
+<p>Vedle souborů cookies může prohlížeč uchovávat údaje i v dalších úložištích. Níže popisujeme, co při používání těchto částí Chytrého já ukládáme a jak to můžeš spravovat.</p>
+
+<h2>Úvodní stránka</h2>
+<p>Na úvodní stránku nyní nevkládáme analytické ani reklamní měřicí skripty. Rozbalování častých otázek a kontaktní formulář samy neukládají volbu do cookies ani do místního úložiště. Proto zde nenajdeš přepínače pro povolení analytiky nebo reklamy.</p>
+
+<h2>Přihlášení</h2>
+<p>Přihlášení zajišťuje Firebase Authentication. Tato služba používá úložiště prohlížeče pro uchování přihlašovacího stavu. Díky tomu můžeš zůstat přihlášený i po obnovení stránky. Konkrétní použité úložiště závisí na prohlížeči a jeho nastavení.</p>
+
+<h2>Pokračování rozhovoru</h2>
+<p>V místním úložišti <code>localStorage</code> uchováváme stav rozhovoru a poslední odpověď pro konkrétní uživatelský účet. Mohou obsahovat tvoji zprávu či přepis hlasu a doporučení aplikace. Slouží k navázání po obnovení stránky.</p>
+<ul>
+<li><code>chj_session_v1:…</code> — stav probíhajícího rozhovoru.</li>
+<li><code>chj_last_response_v1:…</code> — poslední odpověď a zobrazená zadaná zpráva.</li>
+</ul>
+<p>Tyto položky nemají nastavenou pevnou dobu vypršení. Odhlášení z obrazovky rozhovoru je odstraní pro právě přihlášený účet; odstranit je můžeš také vymazáním dat webu v prohlížeči. Přepnutí na jiný účet samo není vymazáním všech uložených údajů.</p>
+<p>Pro technický průběh rozhovoru používáme také dočasné úložiště <code>sessionStorage</code> v dané kartě. Jeho obsah může aplikace odstranit dříve; jinak se běžně odstraní se zavřením karty.</p>
+
+<h2>Kontaktní formulář a poskytovatelé</h2>
+<p>Po odeslání formuláře předáváme službě Formspree jméno, e-mail, zprávu a adresu stránky, ze které byla zpráva odeslána. Nejde o analytický měřicí skript načítaný při otevření stránky. Technické síťové údaje při spojení mohou zpracovávat také poskytovatelé hostingu a přihlášení.</p>
+<p>Podrobnosti o zpracování osobních údajů patří do <a href="/ochrana-osobnich-udaju">zásad ochrany osobních údajů</a>. Informace poskytovatelů: <a href="https://firebase.google.com/support/privacy">Firebase</a> a <a href="https://formspree.io/legal/privacy-policy/">Formspree</a>.</p>
+
+<h2>Jak údaje v prohlížeči spravovat</h2>
+<p>V nastavení soukromí svého prohlížeče můžeš zobrazit nebo odstranit cookies a další data tohoto webu. Vymazání může odhlásit účet a odstranit místní stav rozhovoru. Samo o sobě nevymaže údaje uložené na serveru ani již odeslanou kontaktní zprávu.</p>
+<p>Pokud v budoucnu přidáme volitelné analytické nebo marketingové sledování vyžadující souhlas, doplníme před jeho spuštěním odpovídající volbu a tyto informace aktualizujeme.</p>
+<footer>Dotazy k fungování aplikace: <a href="mailto:podpora@iting.cz">podpora@iting.cz</a>.<br>Provozovatel: ITING s.r.o.</footer>
+</main></body></html>
