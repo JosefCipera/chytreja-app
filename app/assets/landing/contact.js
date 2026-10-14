@@ -86,7 +86,7 @@
         setStatus('', '');
       }, 8000);
     }).catch(function () {
-      setStatus('Zprávu se nepodařilo odeslat. Tvůj text zůstal vyplněný, zkus to prosím znovu. Případně napiš na info@iting.cz.', 'error');
+      setStatus('Zprávu se nepodařilo odeslat. Tvůj text zůstal vyplněný, zkus to prosím znovu. Případně napiš na podpora@iting.cz.', 'error');
     }).then(function () {
       if (timer) clearTimeout(timer);
       busy = false;
