@@ -477,7 +477,7 @@ function evaluateJointLoad(action, parsedConstraints, intensity, isHighIntensity
   // Cycling is a relevant alternative to locomotor aerobic impact, not to
   // chair rises, strength or balance tasks (even if they load the same joint).
   const locomotorAerobic = ['KARDIO_PROTOKOL', 'VYTRVALOST_PROTOKOL', 'TRAINING_PROTOKOL'].includes(action.protocol_type)
-    && /chůz|chuz|běh|beh|walk|run|hiking|turistik|klus/i.test(action.label ?? '');
+    && /(?:^|[^\p{L}])(?:chůz|chuz|procház|prochaz|běh|beh|walk|run|hiking|turistik|klus|sprint)/iu.test(action.label ?? '');
   const lowerLoad = locomotorAerobic
     ? (isHighIntensity ? 'Prefer low-impact variant (e.g. cycling over running or uphill)' : 'Prefer low-impact variant (e.g. cycling over running)')
     : 'Prefer a lower-load variant of this activity';
