@@ -1,0 +1,33 @@
+name: Landing browser layout
+on:
+  pull_request:
+    paths:
+      - 'app/home-v2.html'
+      - 'app/assets/landing/**'
+      - 'scripts/test-landing-alignment-browser.cjs'
+      - '.github/workflows/landing-browser-layout.yml'
+permissions:
+  contents: read
+jobs:
+  landing:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify actual landing in Chromium
+        env:
+          AI_TESTER_BROWSER_OUT: landing-browser-results
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund --package-lock=false --prefix "$RUNNER_TEMP/chj-browser-qa" playwright@1.56.1
+          "$RUNNER_TEMP/chj-browser-qa/node_modules/.bin/playwright" install --with-deps chromium
+          NODE_PATH="$RUNNER_TEMP/chj-browser-qa/node_modules" node scripts/test-landing-alignment-browser.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: landing-browser-results
+          path: landing-browser-results/
+          if-no-files-found: warn
+          retention-days: 7
