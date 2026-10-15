@@ -25,7 +25,7 @@ Registry discovery is a starting inventory, NOT proof of a complete live schema.
 
 Storage uses a reviewed manifest. Every actual Supabase bucket needs a classification. Owned-object support currently requires the exact UID/ prefix; shared objects are retained. Unknown buckets, ownership layouts or Firebase Storage use stop automatic completion. The adapter does not infer that a Firebase Storage bucket is unused from the absence of known calls.
 
-The recovery worker processes one leased job, uses CRON_SECRET, and exposes no health content. UI continuations are not sufficient operational recovery on their own. No cron tariff or schedule was assumed or enabled.
+The recovery worker processes one leased job, uses CRON_SECRET, and exposes no health content. UI continuations are not sufficient operational recovery on their own. An opt-in dev recovery workflow and an aggregate-only monitor are now prepared; neither schedule execution nor alert delivery has been activated or verified. Both scheduled and user-driven erasure require the independent CHJ_PRIVACY_ERASURE_READY flag. See [recovery and monitoring](PRIVACY-RECOVERY-2026-10-15.md) for switches, limits and activation order.
 
 Application logging of raw inputs/profiles/AI output was suppressed in the changed API modules. Previously recorded platform logs are not retroactively erased by this code. Historical unguarded clients/direct database paths are restricted by the migration and may require separate feature repairs.
 
@@ -42,8 +42,8 @@ Browser cleanup targets reviewed current Launcher keys for the current UID and i
 7. Configure CHJ_PRIVACY_STORAGE_MANIFEST server-side and verify service-role/Firebase privileges. Example shape ONLY, not an actual inventory:
    {"reviewed":true,"firebase":"not-used","buckets":[{"name":"reviewed-example","scope":"health","prefix":"{uid}/"}]}
    Empty buckets or firebase:not-used are valid only after real verification. Firebase Storage in use requires an implemented, tested adapter before activation.
-8. Configure and monitor authenticated privacy-worker retries. Alert on failures, jobs older than the approved operational deadline and external_review backlog. The agreed live operational-data deadline is 30 days after termination; a pending UI does not discharge it.
-9. Set CHJ_PRIVACY_READY=1 only after the preceding checks. Missing configuration intentionally disables protected processing and new consent collection.
+8. Configure and verify authenticated privacy-worker retries, the separate monitor secret, operator review and actual alarm delivery according to [PRIVACY-RECOVERY-2026-10-15.md](PRIVACY-RECOVERY-2026-10-15.md). Verify an independent missing-run check too. Defaults keep execution and the repository scheduler off. Alert on failures, pending review and requests approaching/exceeding the approved deadline. The agreed live operational-data deadline is 30 days after termination; a pending UI does not discharge it.
+9. Set CHJ_PRIVACY_READY=1 only after the preceding checks. This controls protected processing and new consent collection; it does not enable erasure execution. CHJ_PRIVACY_ERASURE_READY and the repository recovery flag are separate, enabled only after the isolated rehearsal and operational recovery/alert verification described above. Do not use any flag to bypass unresolved mixed profile, environment or storage findings.
 10. Run one disposable synthetic end-to-end account on the actual dev stack: declined consent, affirmative grant, reopen app, withdrawal, stopped late request, deletion confirmation, Firebase removal, row/object checks and retained status. Never use real patient data or reset an existing user's account for this.
 
 ## External review and completion
