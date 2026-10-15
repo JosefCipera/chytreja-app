@@ -1,7 +1,10 @@
+import {erasureReady} from './privacyWorkerAuth.js';
 import { randomUUID } from 'node:crypto';
 import { privacyRpc } from './privacyStore.js';
 import { eraseJob,makeStorageAdapter } from './privacyErasure.js';
-export async function runPrivacyJob({db,identity,jobId=null,manifest=null}) {
+export async function runPrivacyJob({db,identity,jobId=null,manifest=null,ready=erasureReady}) {
+ // This also covers user-driven continuation, not only the scheduled endpoint.
+ if(!ready())return {stage:'pending',error_code:'ERASURE_NOT_READY'};
  const lease=randomUUID(),job=await privacyRpc('chj_privacy_claim_job',{p_lease:lease,p_job:jobId},db);
  if(!job)return {stage:'busy'};
  const advance=async(j,l,stage)=>privacyRpc('chj_privacy_job_step',{p_job:j.id,p_lease:l,p_stage:stage},db);

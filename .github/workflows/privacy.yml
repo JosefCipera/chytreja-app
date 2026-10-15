@@ -8,6 +8,8 @@ on:
       - 'app/soukromi.html'
       - 'migrations/20261015_health_consent_and_erasure.sql'
       - 'scripts/test-privacy*'
+      - 'scripts/privacy-recovery.mjs'
+      - '.github/workflows/privacy-recovery.yml'
       - '.github/workflows/privacy.yml'
 permissions:
   contents: read

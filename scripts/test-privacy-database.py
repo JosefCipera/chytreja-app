@@ -84,3 +84,21 @@ assert sql("select count(*) from indirect_private where user_id='fixture-a'")=='
 assert sql("select value from user_profiles where user_id='fixture-b'")=='B'
 sql("select chj_privacy_job_step('"+job['id']+"','00000000-0000-0000-0000-000000000099','complete')",False)
 print('PASS isolated PostgreSQL: no historic consent, RLS, permissions, epochs, withdrawal/regrant, owner isolation, FK order, unknown dependents and stale leases.')
+
+# Monitoring is aggregate-only and cannot be invoked by browser roles.
+sql("set role anon; select chj_privacy_monitor()",False)
+sql("set role authenticated; select chj_privacy_monitor()",False)
+sql("""insert into chj_privacy_jobs(uid,kind,stage,requested_at) values
+('fixture-monitor-account','account','external_review',now()-interval '31 days'),
+('fixture-monitor-health','health','external_review',now()-interval '32 days'),
+('fixture-monitor-recent','account','queued',now()-interval '29 days');
+insert into chj_privacy_jobs(uid,kind,attempts,last_error_code) values('fixture-monitor-failure','health',3,'ERASURE_RETRY_REQUIRED');""")
+summary=json.loads(sql("set role service_role;select chj_privacy_monitor()"))
+assert summary['schema_version']=='privacy-queue-v1'
+assert summary['overdue_accounts']==1
+assert summary['external_review']==2
+assert summary['repeated_failures']==1
+assert summary['oldest_pending_hours']>=32*24
+assert 'fixture' not in json.dumps(summary)
+assert 'uid' not in summary and 'receipt_hash' not in summary and 'last_error_code' not in summary
+print('PASS isolated aggregate queue monitor: private roles, pending/failures/external review, account deadline and no identities.')

@@ -250,5 +250,26 @@ END $$;
 REVOKE ALL ON FUNCTION public.chj_privacy_claim_job(uuid,uuid),public.chj_privacy_job_step(uuid,uuid,text),public.chj_privacy_job_error(uuid,uuid,text),public.chj_privacy_finish_external_review(uuid,boolean) FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.chj_privacy_claim_job(uuid,uuid),public.chj_privacy_job_step(uuid,uuid,text),public.chj_privacy_job_error(uuid,uuid,text),public.chj_privacy_finish_external_review(uuid,boolean) TO service_role;
 
+
+-- Operational counts only. No UID, receipt, job identifier, text or payload.
+CREATE OR REPLACE FUNCTION public.chj_privacy_monitor() RETURNS jsonb
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog,public AS $$
+ SELECT jsonb_build_object(
+  'schema_version','privacy-queue-v1',
+  'pending',count(*),
+  'runnable',count(*) FILTER(WHERE stage<>'external_review' AND (locked_until IS NULL OR locked_until<now())),
+  'leased',count(*) FILTER(WHERE stage<>'external_review' AND locked_until>=now()),
+  'expired_leases',count(*) FILTER(WHERE stage<>'external_review' AND locked_until<now() AND lease_id IS NOT NULL),
+  'retrying',count(*) FILTER(WHERE last_error_code IS NOT NULL),
+  'repeated_failures',count(*) FILTER(WHERE last_error_code IS NOT NULL AND attempts>=3),
+  'external_review',count(*) FILTER(WHERE stage='external_review'),
+  'overdue_accounts',count(*) FILTER(WHERE kind='account' AND requested_at<now()-interval '30 days'),
+  'oldest_pending_hours',COALESCE(GREATEST(0,floor(extract(epoch FROM now()-min(requested_at))/3600))::bigint,0),
+  'oldest_external_review_hours',COALESCE(GREATEST(0,floor(extract(epoch FROM now()-min(requested_at) FILTER(WHERE stage='external_review'))/3600))::bigint,0)
+ ) FROM public.chj_privacy_jobs WHERE stage<>'complete';
+$$;
+REVOKE ALL ON FUNCTION public.chj_privacy_monitor() FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.chj_privacy_monitor() TO service_role;
+
 SELECT public.chj_privacy_refresh_registry();
 COMMIT;

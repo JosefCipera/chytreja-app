@@ -6,6 +6,10 @@ import {createClient} from '../api/lib/privacySupabase.js';
 import {HEALTH_VERSION,TERMS_VERSION,POLICY_VERSION} from '../api/lib/privacyStore.js';
 import {makePrivacyHandler} from '../api/privacy.js';
 import {eraseJob,makeStorageAdapter} from '../api/lib/privacyErasure.js';
+import {runPrivacyJob} from '../api/lib/privacyQueue.js';
+import {makePrivacyWorker} from '../api/privacy-worker.js';
+import {makePrivacyMonitor,sanitizeQueueSummary} from '../api/privacy-monitor.js';
+import {runRecovery} from './privacy-recovery.mjs';
 const active=()=>({status:'active',epoch:1,adult:true,health_version:HEALTH_VERSION,terms_version:TERMS_VERSION,policy_version:POLICY_VERSION,cleanup_pending:false});
 const res=()=>({code:200,body:null,setHeader(){},status(n){this.code=n;return this;},json(v){this.body=v;return this;},send(v){this.body=v;return this;},end(){return this;}});
 let passed=0;
@@ -125,6 +129,65 @@ await test('storage erases only reviewed owned health objects, retaining other o
  assert.deepEqual([...files.get('health')],['fixture-b/other.txt']);assert.deepEqual([...files.get('account')],['fixture-a/receipt.txt']);
  await makeStorageAdapter({db,manifest}).erase('fixture-a','account');assert.equal(files.get('account').size,0);
  await assert.rejects(()=>makeStorageAdapter({db,manifest:{...manifest,buckets:[]}}).erase('fixture-a'),{code:'STORAGE_REVIEW_REQUIRED'});
+});
+
+
+const metrics=(patch={})=>({schema_version:'privacy-queue-v1',pending:0,runnable:0,leased:0,expired_leases:0,retrying:0,repeated_failures:0,external_review:0,overdue_accounts:0,oldest_pending_hours:0,oldest_external_review_hours:0,review_alert_hours:24,...patch});
+await test('all erasure continuation is gated before claiming a job',async()=>{
+ let calls=0;const db={rpc:async()=>{calls++;return {data:null};}};
+ assert.deepEqual(await runPrivacyJob({db,identity:{},ready:()=>false}),{stage:'pending',error_code:'ERASURE_NOT_READY'});
+ assert.equal(calls,0);
+ assert.deepEqual(await runPrivacyJob({db,identity:{},ready:()=>true}),{stage:'busy'});
+ assert.equal(calls,1);
+});
+await test('worker authenticates and gates before reading backend or identity config',async()=>{
+ let touched=0;const handler=makePrivacyWorker({db:()=>{touched++;throw Error();},identity:()=>{touched++;throw Error();},secret:()=> 'fixture-worker',ready:()=>false});
+ let r=res();await handler({method:'POST',headers:{}},r);assert.equal(r.code,401);assert.equal(touched,0);
+ r=res();await handler({method:'POST',headers:{authorization:'Bearer fixture-worker'}},r);assert.equal(r.code,503);assert.equal(r.body.code,'ERASURE_NOT_READY');assert.equal(touched,0);
+});
+await test('monitor has independent authorization and returns aggregate whitelist only',async()=>{
+ let reads=0;
+ const handler=makePrivacyMonitor({secret:()=> 'fixture-monitor',db:()=>({}),rpc:async()=>{reads++;return metrics({uid:'fixture-private-id',receipt_hash:'private-hash',raw_payload:{body:'private-health'}});}});
+ let r=res();await handler({method:'GET',headers:{authorization:'Bearer fixture-worker'}},r);assert.equal(r.code,401);assert.equal(reads,0);
+ r=res();await handler({method:'POST',headers:{authorization:'Bearer fixture-monitor'}},r);assert.equal(r.code,405);assert.equal(reads,0);
+ r=res();await handler({method:'GET',headers:{authorization:'Bearer fixture-monitor'}},r);assert.equal(r.code,200);assert.equal(reads,1);
+ assert.equal(JSON.stringify(r.body).includes('private'),false);
+ assert.equal(r.body.attention,false);
+});
+await test('monitor distinguishes backlog warnings, overdue accounts, repeated failures and outages',async()=>{
+ assert.deepEqual(sanitizeQueueSummary(metrics({external_review:1})).warnings,['EXTERNAL_REVIEW_PENDING']);
+ assert.equal(sanitizeQueueSummary(metrics({external_review:1})).attention,false);
+ for(const raw of [metrics({repeated_failures:1}),metrics({overdue_accounts:1})]){
+  const r=res();await makePrivacyMonitor({secret:()=> 'x',db:()=>({}),rpc:async()=>raw})({method:'GET',headers:{authorization:'Bearer x'}},r);assert.equal(r.code,503);assert.equal(r.body.code,'PRIVACY_QUEUE_ATTENTION');
+ }
+ assert.equal(sanitizeQueueSummary(metrics({oldest_pending_hours:24})).attention,true);
+ assert.equal(sanitizeQueueSummary(metrics({oldest_pending_hours:24}),{reviewHours:48}).attention,false);
+ assert.throws(()=>sanitizeQueueSummary(metrics({pending:'0'})));
+ const r=res();await makePrivacyMonitor({secret:()=> 'x',db:()=>({}),rpc:async()=>{throw Error('fixture-private-diagnostic');}})({method:'GET',headers:{authorization:'Bearer x'}},r);
+ assert.equal(r.code,503);assert.equal(JSON.stringify(r.body).includes('private'),false);
+});
+await test('scheduler is opt-in, bounded to dev and refuses redirect following',async()=>{
+ let calls=0;const fetchImpl=async()=>{calls++;throw Error('must not run');};
+ assert.equal((await runRecovery({enabled:'0',fetchImpl})).skipped,true);
+ await assert.rejects(()=>runRecovery({enabled:'1',workerToken:'w',monitorToken:'m',origin:'https://app.iting.cz',fetchImpl}),{code:'RECOVERY_CONFIGURATION_REQUIRED'});
+ assert.equal(calls,0);
+ const seen=[];let workerCalls=0;
+ const report=await runRecovery({enabled:'1',workerToken:'worker-fixture',monitorToken:'monitor-fixture',fetchImpl:async(url,init)=>{
+  assert.equal(init.redirect,'error');seen.push(url);
+  if(url.endsWith('/privacy-worker')){assert.equal(init.headers.Authorization,'Bearer worker-fixture');workerCalls++;return Response.json({stage:workerCalls===1?'external_review':'busy'});}
+  assert.equal(init.headers.Authorization,'Bearer monitor-fixture');
+  return Response.json({...metrics({pending:1,external_review:1}),code:'PRIVACY_QUEUE_SUMMARY',uid:'private'});
+ }});
+ assert.equal(workerCalls,2);assert.equal(report.processed,1);assert.equal(JSON.stringify(report).includes('private'),false);assert.ok(seen.every(url=>new URL(url).origin==='https://dev.iting.cz'));
+});
+await test('scheduler still checks monitor after failed work and reports only safe errors',async()=>{
+ let monitorRead=false;
+ await assert.rejects(()=>runRecovery({enabled:'1',workerToken:'w',monitorToken:'m',fetchImpl:async url=>{
+  if(url.endsWith('/privacy-worker'))return Response.json({error:'fixture-private'}, {status:503});
+  monitorRead=true;return Response.json({...metrics(),code:'PRIVACY_QUEUE_SUMMARY'});
+ }}),{code:'WORKER_UNAVAILABLE'});
+ assert.equal(monitorRead,true);
+ await assert.rejects(()=>runRecovery({enabled:'1',workerToken:'w',monitorToken:'m',fetchImpl:async url=>url.endsWith('/privacy-worker')?Response.json({stage:'busy'}):Response.json({...metrics({overdue_accounts:1}),code:'PRIVACY_QUEUE_ATTENTION'},{status:503})}),{code:'PRIVACY_QUEUE_ATTENTION'});
 });
 
 console.log('PASS privacy unit/integration boundaries: '+passed+' cases; no real accounts or network calls.');
