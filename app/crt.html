@@ -1083,6 +1083,7 @@ function _buildPillsHTML() {
         pill.tabIndex = 0;
         pill.setAttribute('aria-label', m.name + ' — zobrazit interakce');
         const openInteractions = () => {
+          document.getElementById('crtTooltip').style.display = 'none';
           if (!_ixPanelOpen) window.toggleIxPanel();
         };
         pill.addEventListener('click', openInteractions);

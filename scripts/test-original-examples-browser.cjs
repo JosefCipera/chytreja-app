@@ -78,6 +78,11 @@ const routes = JSON.parse(read('vercel.json')).rewrites;
    assert.ok((await page.locator('#cnpData').textContent()).includes('Mirtazapin'));
    assert.ok((await page.locator('#cnpData').textContent()).includes('Palgotal'));
    assert.equal(await page.locator('#cnpData .cnp-lbl').count(),6);
+   await page.waitForFunction(()=>{
+     const panel=document.getElementById('crtNodePanel'),r=panel.getBoundingClientRect();
+     return r.width>0 && r.height>0 && r.top>=0 && r.right<=innerWidth+1 && r.bottom<=innerHeight+1;
+   });
+   assert.equal(await page.locator('#crtTooltip').isVisible(),false);
    await page.screenshot({path:path.join(out,'original-interactions-'+width+'.png')});
    await page.getByRole('button',{name:'Zavřít',exact:true}).click();
    await page.getByRole('button',{name:'Léky',exact:true}).click();
