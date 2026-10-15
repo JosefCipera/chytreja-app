@@ -11,14 +11,14 @@ class DataSet {
 }
 const noop=()=>{};
 async function check(file,width){
- const errors=[],networks=[],elements=new Map(),drawnTexts=[],stops=[],timers=new Map();let timerId=0;
+ const errors=[],networks=[],elements=new Map(),drawnTexts=[],stops=[],timers=new Map(),windowEvents={},orientationEvents={};let timerId=0;
  const flush=()=>{for(let i=0;timers.size&&i<20;i++){const batch=[...timers.values()];timers.clear();batch.forEach(fn=>fn());}};
  const gradient={addColorStop:(at,color)=>stops.push(color)};
  const ctx=new Proxy({canvas:{width:1280,height:800},createRadialGradient:()=>gradient,createLinearGradient:()=>gradient,measureText:s=>({width:s.length*8}),fillText:s=>drawnTexts.push(s)},{get:(o,k)=>k in o?o[k]:noop,set:(o,k,v)=>(o[k]=v,true)});
  const element=id=>{
   if(elements.has(id))return elements.get(id);
   const classes=new Set();const children=[];
-  const e={id,children,style:{},textContent:'',innerHTML:'',classList:{add:(...xs)=>xs.forEach(x=>classes.add(x)),remove:(...xs)=>xs.forEach(x=>classes.delete(x)),toggle:noop,contains:x=>classes.has(x)},appendChild:x=>children.push(x),append:(...xs)=>children.push(...xs),remove:noop,replaceChildren:()=>children.splice(0),addEventListener:noop,setAttribute:noop,getAttribute:()=>null,querySelectorAll:()=>[],querySelector:()=>null,getBoundingClientRect:()=>({left:0,top:0,width:width,height:800}),getContext:()=>ctx,offsetWidth:width,offsetHeight:800};
+  const e={id,children,contentWindow:{},showModal(){this.open=true},close(){this.open=false},style:{},textContent:'',innerHTML:'',classList:{add:(...xs)=>xs.forEach(x=>classes.add(x)),remove:(...xs)=>xs.forEach(x=>classes.delete(x)),toggle:noop,contains:x=>classes.has(x)},appendChild:x=>children.push(x),append:(...xs)=>children.push(...xs),remove:noop,replaceChildren:()=>children.splice(0),addEventListener:noop,setAttribute:noop,getAttribute:()=>null,querySelectorAll:()=>[],querySelector:()=>null,getBoundingClientRect:()=>({left:0,top:0,width:width,height:800}),getContext:()=>ctx,offsetWidth:width,offsetHeight:800};
   elements.set(id,e);return e;
  };
  class Network {
@@ -27,13 +27,13 @@ async function check(file,width){
   getPositions(ids){return Object.fromEntries(this.body.data.nodes.get().filter(n=>!ids||ids.includes(n.id)).map(n=>[n.id,{x:n.x||0,y:n.y||0}]));}
   canvasToDOM(p){return p;} DOMtoCanvas(p){return p;} getScale(){return 1;} getViewPosition(){return{x:0,y:0};}
  }
- const sandbox={console:{log:noop,warn:noop,error:(...s)=>errors.push(s.join(' '))},URLSearchParams,structuredClone,Map,Set,JSON,Date,Math,Promise,Blob,
+ const sandbox={console:{log:noop,warn:noop,error:(...s)=>errors.push(s.join(' '))},URLSearchParams,URL,structuredClone,Map,Set,JSON,Date,Math,Promise,Blob,
   document:{getElementById:element,createElement:tag=>element('new-'+tag+'-'+Math.random()),querySelectorAll:()=>[],addEventListener:noop,body:element('body'),head:element('head')},
-  navigator:{userAgent:'archive-contract-test'},screen:{width,height:800,orientation:{addEventListener:noop}},
-  location:{search:'?opus=1',origin:'https://archive.invalid'},history:{back:noop},parent:{postMessage:noop},
+  navigator:{userAgent:'archive-contract-test'},screen:{width,height:800,orientation:{addEventListener:(type,fn)=>(orientationEvents[type]||=[]).push(fn)}},
+  location:{search:'?opus=1',origin:'https://archive.invalid',href:'https://archive.invalid/ukazka/vesmir.html'},history:{back:noop},parent:{postMessage:noop},
   localStorage:{getItem(){throw Error('Unexpected localStorage read');},setItem(){throw Error('Unexpected localStorage write');}},
   sessionStorage:{setItem(){throw Error('Unexpected sessionStorage write');}},
-  fetch(){throw Error('Unexpected network request');},setTimeout:fn=>{timers.set(++timerId,fn);return timerId;},clearTimeout:id=>timers.delete(id),requestAnimationFrame:()=>0,cancelAnimationFrame:noop,addEventListener:noop,innerWidth:width,innerHeight:800,vis:{Network,DataSet}};
+  fetch(){throw Error('Unexpected network request');},setTimeout:fn=>{timers.set(++timerId,fn);return timerId;},clearTimeout:id=>timers.delete(id),requestAnimationFrame:()=>0,cancelAnimationFrame:noop,addEventListener:(type,fn)=>(windowEvents[type]||=[]).push(fn),innerWidth:width,innerHeight:800,vis:{Network,DataSet}};
  sandbox.window=sandbox;
  const context=vm.createContext(sandbox);
  const html=fs.readFileSync('../../app/ukazka/'+file,'utf8');
@@ -83,12 +83,22 @@ async function check(file,width){
   for(const node of sandbox.ARCHIVE_UNIVERSE){
    const data=perNode[node.id];assert.equal(data.node_label,node.label);
    assert.equal(data.killer.description,node.definition||'');
-   assert.equal(data.sources.length,0,'No unverified study citations');
-   if(data.action_origin){actions.add(data.action.id);count++;const sql=data.action_origin.split('/').at(-1);assert.ok(fs.readFileSync('archive-originals/'+sql,'utf8').includes(data.action.label),'Action text must be verbatim in historical catalogue');}
-   else assert.equal(data.action.id,'unavailable');
+   for(const source of data.sources){assert.equal(source.status,'ARCHIV');assert.ok(source.url.startsWith('sources/'));assert.ok(fs.existsSync('../../app/ukazka/'+source.url));}
+   if(data.action_origin){count++;} for(const action of data.catalogue){actions.add(action.id);const original=action.source.split('/').at(-1);assert.ok(fs.readFileSync('archive-originals/'+original,'utf8').includes(action.label),'Action text must be verbatim in historical catalogue');}
+   if(!data.action_origin)assert.equal(data.action.id,'unavailable');
    assert.ok(data.action.id!=='plank_60s','No shared test plank');
   }
-  assert.equal(count,10);assert.equal(actions.size,10);
+  assert.equal(count,29);assert.equal(actions.size,70);assert.equal(Object.values(perNode).reduce((sum,n)=>sum+n.sources.length,0),73);
+  const catalogueScript=[...hud.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m=>m[1]).find(s=>s.includes('new MutationObserver(install)'));
+  assert.ok(catalogueScript);
+  for(const data of Object.values(perNode)){
+   const children=[];const host={append:el=>children.push(el)};
+   const create=()=>({children:[],style:{},append(...xs){this.children.push(...xs)}});
+   vm.runInNewContext(catalogueScript,{URLSearchParams,location:{search:'?nodeId='+encodeURIComponent(data.node_id)},window:{ARCHIVE_HUD_DATA:perNode},document:{querySelector:()=>host,createElement:create},MutationObserver:class{observe(){}disconnect(){}}});
+   assert.equal(children.length,data.catalogue.length>1?1:0,'Additional actions only when present');
+   if(children.length)assert.equal(children[0].children[1].children.length,data.catalogue.length-1);
+  }
+
   assert.ok(hud.includes('.hud-shell .p-4.space-y-4>div:first-child{display:none}'),'No fake personal metrics');
   assert.ok(hud.includes('.hud-shell .hud-c4 button{display:none!important}'),'Catalogue actions cannot be completed');
   assert.ok(hud.includes("connect-src 'none'"),'HUD API remains disconnected');
@@ -104,8 +114,28 @@ async function check(file,width){
   assert.equal(element('hud-iframe').src,'hud.html?dev=1&nodeId=biomarkery&nodeLabel='+encodeURIComponent('Biomarkery'));assert.equal(sandbox._hudOverlayOpen,true);
   fire(networks.at(-1),'click',[]);assert.equal(sandbox._hudOverlayOpen,false);
   fire(networks.at(-1),'click',[]);assert.ok(networks.at(-1).body.data.nodes.getIds().includes('dlouhovekost'),'Return to root');
+  const source=perNode.stabilita.sources[0];
+  const send=(data,frame)=>{for(const fn of windowEvents.message||[])fn({origin:'https://archive.invalid',source:element(frame).contentWindow,data});};
+  send({type:'chj:source:open',source},'hud-iframe');
+  assert.equal(element('archive-source').open,true);assert.ok(element('archive-source-frame').src.endsWith(source.url));
+  send({type:'archive:source:close'},'archive-source-frame');assert.equal(element('archive-source').open,false);
+  send({type:'chj:source:open',source:{url:'https://evil.invalid/'}},'hud-iframe');assert.equal(element('archive-source').open,false);
   assert.match(fs.readFileSync('../../app/ukazka/universe-core.css','utf8'),/#sidePanel\.visible\s*\{[^}]*opacity:\s*1/s);
  }
+ if(file==='vesmir.html'){
+  for(const fn of networks.at(-1).events.doubleClick||[])fn({nodes:['telo']});flush();
+  assert.ok(networks.at(-1).body.data.nodes.getIds().includes('sila'));
+ }
+ const beforeRotation=networks.length;
+ sandbox.innerWidth=844;sandbox.innerHeight=390;
+ for(const fn of orientationEvents.change||[])fn();flush();
+ assert.ok(networks.length>beforeRotation,file+' must rebuild on orientation change');
+ assert.deepEqual(errors,[],file+' rotation runtime errors');
+ const beforeResize=networks.length;
+ sandbox.innerWidth=390;sandbox.innerHeight=844;
+ for(const fn of windowEvents.resize||[])fn();flush();
+ assert.ok(networks.length>beforeResize,file+' must rebuild on viewport resize');
+ if(file==='vesmir.html'){assert.ok(networks.at(-1).body.data.nodes.getIds().includes('sila'),'Preserve current sub-universe across rotation');assert.ok(!networks.at(-1).body.data.nodes.getIds().includes('dlouhovekost'));}
  console.log('PASS',file,width,'historical renderer,',nodes.length,'render records,',drawnTexts.length,'drawn texts, no network/account storage');
 }
 (async()=>{for(const width of [1280,390])for(const file of ['crt-kovarova.html','crt-josef.html','vesmir.html'])await check(file,width);})().catch(e=>{console.error(e);process.exitCode=1;});

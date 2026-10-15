@@ -58,6 +58,12 @@ for name,tag,cachepath in [
         body=body.replace('async function loadCRTOpus(force = false, model = undefined) {','async function loadCRTOpus(force = false, model = undefined) {\n  return structuredClone(window.ARCHIVE_MODEL);')
         body=body.replace('async function enrichContraMap(data) {','async function enrichContraMap(data) {\n  return;')
         body=body.replace('let _medsVisible = false;','let _medsVisible = true;')
+        body=body.replace('let _lastCrtData = null;', 'let _lastCrtData = structuredClone(window.ARCHIVE_MODEL);')
+        old_resize='const _rerender = () => { if (_lastCrtData) setTimeout(() => _origRenderTree(_lastCrtData), 300); };'
+        new_resize="let _archiveResizeTimer; const _rerender=()=>{clearTimeout(_archiveResizeTimer);_archiveResizeTimer=setTimeout(()=>{if(_lastCrtData)_origRenderTree(_lastCrtData)},180)};"
+        assert old_resize in body if 'const _rerender' in body else True
+        body=body.replace(old_resize,new_resize)
+
         body=body.replace('    enrichContraMap(data);','    _applyMedsState();\n    enrichContraMap(data);')
         body=body.replace('async function regenCRT() {','async function regenCRT() {\n  return;')
         for declaration in ['window.completeCrtAction = function(nodeId, actionId, isSecond) {','window.acceptCrtSecond = function(nodeId) {','window.declineCrtSecond = function(nodeId) {']:
@@ -117,8 +123,8 @@ for name in asset_names:
     (DIST/'assets'/name).write_text(asset)
 # Keep native components. Supply per-node archived descriptions/catalogue entries.
 from content import make_content
-hud_data=make_content(PROJECT,model_data)
-(DIST/'content-provenance.json').write_text(json.dumps({key:{'action_id':v['action']['id'],'origin':v['action_origin']} for key,v in hud_data.items()},ensure_ascii=False,indent=2))
+hud_data=make_content(PROJECT,model_data,DIST)
+(DIST/'content-provenance.json').write_text(json.dumps({key:{'action_id':v['action']['id'],'origin':v['action_origin'],'actions':v['catalogue'],'sources':v['sources']} for key,v in hud_data.items()},ensure_ascii=False,indent=2))
 hud_script='hud-DNhFxP-v.js'
 original_bundle=(DIST/'assets'/hud_script).read_text()
 old_data='let e=c&&!l&&n()?n():oe;'
@@ -145,6 +151,26 @@ html,body,#hud-root{width:100%;max-width:100%;margin:0;overflow-x:hidden}
 .hud-shell p,.hud-shell span{overflow-wrap:anywhere}
 @media(max-width:480px){.hud-shell{border-radius:0!important}}
 </style></head>''',1)
+hud=hud.replace('</head>', '''<style>
+#archive-catalogue{border-top:1px solid #304054;padding-top:12px;color:#b9cce0;font-size:14px}#archive-catalogue summary{cursor:pointer;padding:10px 0}#archive-catalogue li{margin:10px 0;line-height:1.5}
+</style><script>
+(function(){
+ const id=new URLSearchParams(location.search).get('nodeId')||'dlouhovekost';
+ const data=window.ARCHIVE_HUD_DATA[id];
+ const install=()=>{
+  const host=document.querySelector('#hud-root .p-4.space-y-4');
+  if(!host)return;
+  observer.disconnect();
+  const others=(data?.catalogue||[]).filter(a=>a.id!==data.action.id);
+  if(!others.length)return;
+  const details=document.createElement('details');details.id='archive-catalogue';
+  const summary=document.createElement('summary');summary.textContent='Další ukázkové akce ('+others.length+')';details.append(summary);
+  const list=document.createElement('ul');others.forEach(a=>{const li=document.createElement('li');li.textContent=a.label;list.append(li)});details.append(list);
+  const note=document.createElement('p');note.textContent='Původní katalog. Výběr vhodné akce pro tebe provádí aplikace podle tvých údajů.';note.style.color='#91a5bc';details.append(note);if(host.children?.[2])host.insertBefore(details,host.children[2]);else host.append(details);
+ };
+ const observer=new MutationObserver(install);observer.observe(document,{childList:true,subtree:true});install();
+})();
+</script></head>''',1)
 (DIST/'hud.html').write_text(hud)
 universe=universe.replace('</head>','''<style id="archive-hud-width">
 #hud-overlay{justify-content:flex-end!important}
@@ -184,20 +210,39 @@ function showPanel(node){
 }
 window.closeHudOverlay=closePanel;
 window.addEventListener('message',e=>{
- if(e.origin!==location.origin||e.source!==document.getElementById('hud-iframe').contentWindow)return;
+ if(e.origin!==location.origin)return;
+ const sourceDialog=document.getElementById('archive-source');
+ if(e.source===document.getElementById('archive-source-frame').contentWindow&&e.data?.type==='archive:source:close'){sourceDialog.close();return;}
+ if(e.source!==document.getElementById('hud-iframe').contentWindow)return;
  if(e.data==='chj:hud:close')closePanel();
+ if(e.data?.type==='chj:source:open'){
+  const url=new URL(e.data.source?.url||'',location.href);
+  if(url.origin!==location.origin||!url.pathname.startsWith('/ukazka/sources/')||!url.pathname.endsWith('.html'))return;
+  document.getElementById('archive-source-frame').src=url.href;
+  sourceDialog.showModal();
+ }
 });
 '''
 boot='''
 const root=ARCHIVE_UNIVERSE.find(n=>n.id==='dlouhovekost');
 window.MAIN_UNIVERSE_DATA=ARCHIVE_UNIVERSE;
 renderUniverse(ARCHIVE_UNIVERSE,ARCHIVE_UNIVERSE.filter(n=>n.id===root.id||n.parent===root.id),root.id);
+let _archiveUniverseResizeTimer;
+function archiveResizeUniverse(){
+ clearTimeout(_archiveUniverseResizeTimer);
+ _archiveUniverseResizeTimer=setTimeout(()=>{
+  if(lastRenderedNodes.length)renderUniverse(ARCHIVE_UNIVERSE,[...lastRenderedNodes],currentCenter);
+ },180);
+}
+window.addEventListener('resize',archiveResizeUniverse);
+if(screen.orientation)screen.orientation.addEventListener('change',archiveResizeUniverse);
 document.getElementById('closePanel').onclick=closePanel;
 document.getElementById('closePanel').textContent='×';
 document.getElementById('closePanel').setAttribute('aria-label','Zavřít panel');
 '''
 code='<script>window.ARCHIVE_UNIVERSE='+safe_json(json.loads(model))+';</script><script type="module">'+panel+core+boot+'</script>'
-pos=universe.rfind('</body>');universe=universe[:pos]+code+universe[pos:]
+source_viewer='''<style>#archive-source{padding:0;border:1px solid #40536d;border-radius:14px;width:min(820px,94vw);height:90dvh;background:#0b1220;color:#d4e3f4}#archive-source::backdrop{background:#020617d9}#archive-source-frame{border:0;width:100%;height:100%}</style><dialog id="archive-source"><iframe title="Původní text modelu" id="archive-source-frame"></iframe></dialog>'''
+pos=universe.rfind('</body>');universe=universe[:pos]+source_viewer+code+universe[pos:]
 (DIST/'vesmir.html').write_text(universe)
 provenance['universe']={'source_tag':tag,'renderer_source_sha256':hashlib.sha256(core.encode()).hexdigest(),'nodes':len(json.loads(model)),'original_renderer':True,'account_services':False,'panel':'native Svelte HUD with archived node descriptions and SQL catalogue actions, no personal metrics or live results','hud_assets':asset_names}
 (PROJECT/'PROVENANCE.json').write_text(json.dumps(provenance,ensure_ascii=False,indent=2))
@@ -205,6 +250,7 @@ provenance['universe']={'source_tag':tag,'renderer_source_sha256':hashlib.sha256
 # The three-way launcher is new and deliberately separate from the archived views.
 index='''<!doctype html><html lang="cs"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><base href="/ukazka/"><title>Chytré já — ukázka souvislostí</title><meta name="robots" content="noindex"><style>
 *{box-sizing:border-box}html,body{height:100%;margin:0;background:#0b0f1a;color:#cbd5e1;font:14px system-ui,sans-serif}body{display:flex;flex-direction:column}header{padding:12px 16px;border-bottom:1px solid #263449;display:flex;gap:12px;align-items:center;flex-wrap:wrap}strong{margin-right:auto;color:#e2e8f0}nav{display:flex;gap:8px;flex-wrap:wrap}button{background:transparent;color:#a7c7df;border:1px solid #344b64;border-radius:7px;padding:9px 14px;cursor:pointer;font:inherit}button[aria-pressed=true]{background:#182c40;color:#fff;border-color:#79b1d9}small{font-size:12px;color:#94a3b8}iframe{flex:1;min-height:0;width:100%;border:0}footer{padding:7px 16px;color:#64748b;font-size:11px}@media(max-width:600px){header{gap:8px;padding:10px}strong{width:100%}nav button{padding:8px 10px}}
+@media(orientation:landscape) and (max-height:500px){header{padding:5px 10px;gap:6px}header strong,header small{display:none}nav button{padding:6px 10px;font-size:12px}footer{padding:4px 10px;font-size:10px}footer #origin{display:none}}
 </style></head><body><header><strong>Chytré já · prozkoumej souvislosti</strong><nav aria-label="Archivní pohledy"><button data-view="kovarova" aria-pressed="true">CRT Kovářová</button><button data-view="josef" aria-pressed="false">CRT Josef</button><button data-view="vesmir" aria-pressed="false">Vesmír Dlouhověkosti</button></nav><small>Ukázkové případy · bez osobního výpočtu</small></header><iframe title="Historická aplikace" src="crt-kovarova.html?opus=1" sandbox="allow-scripts allow-same-origin allow-downloads allow-modals"></iframe><footer><a href="/zakladatele/#pod-povrch" style="color:#b8cfe2">← Zpět k Zakladatelům</a> · Ukázka není osobní doporučení ani lékařská diagnóza. <span id="origin">CRT: v0.2-crt-gold-kovarova. Nový přepínač slouží pouze k otevření archivních pohledů. Online účty a AI nejsou připojené.</span></footer><script>
 const files={kovarova:'crt-kovarova.html?opus=1',josef:'crt-josef.html?opus=1',vesmir:'vesmir.html'};
 function select(view){if(!files[view])return;document.querySelector('iframe').src=files[view];document.querySelectorAll('[data-view]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.view===view)));document.getElementById('origin').textContent=view==='kovarova'?'CRT: v0.2-crt-gold-kovarova · historický vzhled, uložená data.':view==='josef'?'CRT: v0.3-crt-gold-josef · historický vzhled, uložená data.':'Vesmír a jeho původní renderer: v0.3-crt-gold-josef · bez osobních indexů.';history.replaceState(null,'','#'+view);}

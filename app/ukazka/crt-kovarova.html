@@ -1808,13 +1808,13 @@ window._renderTree   = renderTree;
 boot();
 
 // Re-render při rotaci (landscape/portrait)
-let _lastCrtData = null;
+let _lastCrtData = structuredClone(window.ARCHIVE_MODEL);
 const _origRenderTree = renderTree;
 window._renderTree = function(data) {
   _lastCrtData = data;
   _origRenderTree(data); // _attachWarningBadges je uvnitř renderTree
 };
-const _rerender = () => { if (_lastCrtData) setTimeout(() => _origRenderTree(_lastCrtData), 300); };
+let _archiveResizeTimer; const _rerender=()=>{clearTimeout(_archiveResizeTimer);_archiveResizeTimer=setTimeout(()=>{if(_lastCrtData)_origRenderTree(_lastCrtData)},180)};
 window.addEventListener('resize', _rerender);
 if (screen.orientation) screen.orientation.addEventListener('change', _rerender);
 </script>

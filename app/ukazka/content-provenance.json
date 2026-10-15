@@ -1,162 +1,1364 @@
 {
   "dlouhovekost": {
     "action_id": "unavailable",
-    "origin": null
+    "origin": null,
+    "actions": [],
+    "sources": [
+      {
+        "med_id": "marginal-decade-attia",
+        "type": "article",
+        "title": "⏳ Strategie: Poslední dekáda života (Peter Attia)",
+        "url": "sources/dlouhovekost--marginal-decade-attia.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/dlouhovekost/marginal-decade-attia.md"
+      },
+      {
+        "med_id": "stolety-desetibojar",
+        "type": "article",
+        "title": "Stoletý desetibojař – co to znamená",
+        "url": "sources/dlouhovekost--stolety-desetibojar.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/dlouhovekost/stolety-desetibojar.md"
+      }
+    ]
   },
   "zdravi": {
     "action_id": "krev_check",
-    "origin": "v0.3-crt-gold-josef:migrations/add_longevity_actions.sql"
+    "origin": "v0.3-crt-gold-josef:migrations/add_longevity_actions.sql",
+    "actions": [
+      {
+        "id": "vitamind",
+        "node_id": "zdravi",
+        "label": "Vezmi vitamín D",
+        "source": "v0.3-crt-gold-josef:migrations/add_longevity_actions.sql"
+      },
+      {
+        "id": "krev_check",
+        "node_id": "zdravi",
+        "label": "Naplánuj krevní odběr",
+        "source": "v0.3-crt-gold-josef:migrations/add_longevity_actions.sql"
+      }
+    ],
+    "sources": [
+      {
+        "med_id": "prevence-metabolismus-markery",
+        "type": "article",
+        "title": "Prevence, metabolismus a krevní markery",
+        "url": "sources/zdravi--prevence-metabolismus-markery.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/zdravi/prevence-metabolismus-markery.md"
+      }
+    ]
   },
   "metabolicke": {
     "action_id": "pust_12h",
-    "origin": "v0.3-crt-gold-josef:migrations/add_longevity_actions.sql"
+    "origin": "v0.3-crt-gold-josef:migrations/add_longevity_actions.sql",
+    "actions": [
+      {
+        "id": "pust_12h",
+        "node_id": "metabolicke",
+        "label": "Drž půst 12 hodin",
+        "source": "v0.3-crt-gold-josef:migrations/add_longevity_actions.sql"
+      },
+      {
+        "id": "pust_16h",
+        "node_id": "metabolicke",
+        "label": "Drž půst 16 hodin",
+        "source": "v0.3-crt-gold-josef:migrations/add_longevity_actions.sql"
+      },
+      {
+        "id": "seed-metabolicke-21",
+        "node_id": "metabolicke",
+        "label": "Změř obvod pasu",
+        "source": "v0.3-crt-gold-josef:scripts/seed-missing.mjs"
+      },
+      {
+        "id": "seed-metabolicke-22",
+        "node_id": "metabolicke",
+        "label": "Procházka 10 minut po každém jídle",
+        "source": "v0.3-crt-gold-josef:scripts/seed-missing.mjs"
+      }
+    ],
+    "sources": [
+      {
+        "med_id": "glukozova-variabilita",
+        "type": "article",
+        "title": "Glukózová variabilita: proč záleží na výkyvech, ne jen průměru",
+        "url": "sources/metabolicke--glukozova-variabilita.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/metabolicke/glukozova-variabilita.md"
+      },
+      {
+        "med_id": "insulinova-rezistence-koren-problemu",
+        "type": "article",
+        "title": "Inzulínová rezistence: kořen mnoha problémů",
+        "url": "sources/metabolicke--insulinova-rezistence-koren-problemu.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/metabolicke/insulinova-rezistence-koren-problemu.md"
+      },
+      {
+        "med_id": "inzulinova-senzitivita",
+        "type": "article",
+        "title": "Inzulinová senzitivita: základ metabolického zdraví",
+        "url": "sources/metabolicke--inzulinova-senzitivita.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/metabolicke/inzulinova-senzitivita.md"
+      },
+      {
+        "med_id": "metabolicka-flexibilita",
+        "type": "article",
+        "title": "Metabolická flexibilita jako základ dlouhověkosti",
+        "url": "sources/metabolicke--metabolicka-flexibilita.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/metabolicke/metabolicka-flexibilita.md"
+      },
+      {
+        "med_id": "metabolicky-syndrom-pet-signalu",
+        "type": "article",
+        "title": "Metabolický syndrom: pět signálů, jeden problém",
+        "url": "sources/metabolicke--metabolicky-syndrom-pet-signalu.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/metabolicke/metabolicky-syndrom-pet-signalu.md"
+      }
+    ]
   },
   "imunitni": {
-    "action_id": "unavailable",
-    "origin": null
+    "action_id": "seed-imunitni-19",
+    "origin": "v0.3-crt-gold-josef:scripts/seed-missing.mjs",
+    "actions": [
+      {
+        "id": "seed-imunitni-19",
+        "node_id": "imunitni",
+        "label": "Studená sprcha 30s na závěr",
+        "source": "v0.3-crt-gold-josef:scripts/seed-missing.mjs"
+      },
+      {
+        "id": "seed-imunitni-20",
+        "node_id": "imunitni",
+        "label": "Choď spát před půlnocí 7 dní v řadě",
+        "source": "v0.3-crt-gold-josef:scripts/seed-missing.mjs"
+      }
+    ],
+    "sources": [
+      {
+        "med_id": "crp-zanetlive-markery",
+        "type": "article",
+        "title": "CRP a hs-CRP: co říkají zánětlivé markery",
+        "url": "sources/imunitni--crp-zanetlive-markery.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/imunitni/crp-zanetlive-markery.md"
+      },
+      {
+        "med_id": "imunita-a-starnuti-inflammaging",
+        "type": "article",
+        "title": "Imunita a stárnutí: inflammaging",
+        "url": "sources/imunitni--imunita-a-starnuti-inflammaging.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/imunitni/imunita-a-starnuti-inflammaging.md"
+      },
+      {
+        "med_id": "inflammaging-zanet-motor-starnuti",
+        "type": "article",
+        "title": "Inflammaging: zánět jako motor stárnutí",
+        "url": "sources/imunitni--inflammaging-zanet-motor-starnuti.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/imunitni/inflammaging-zanet-motor-starnuti.md"
+      },
+      {
+        "med_id": "jak-pohyb-a-spanek-siliji-imunitu",
+        "type": "article",
+        "title": "Jak pohyb a spánek silí imunitu",
+        "url": "sources/imunitni--jak-pohyb-a-spanek-siliji-imunitu.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/imunitni/jak-pohyb-a-spanek-siliji-imunitu.md"
+      },
+      {
+        "med_id": "pohyb-a-imunita",
+        "type": "article",
+        "title": "Pohyb a imunita: proč cvičení snižuje riziko infekcí",
+        "url": "sources/imunitni--pohyb-a-imunita.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/imunitni/pohyb-a-imunita.md"
+      }
+    ]
   },
   "nervovy_system": {
     "action_id": "ns_pohyb",
-    "origin": "v0.3-crt-gold-josef:migrations/add_missing_node_actions.sql"
+    "origin": "v0.3-crt-gold-josef:migrations/add_missing_node_actions.sql",
+    "actions": [
+      {
+        "id": "ns_dech_box",
+        "node_id": "nervovy_system",
+        "label": "Box breathing: 4-4-4-4 — 5 kol",
+        "source": "v0.3-crt-gold-josef:migrations/add_missing_node_actions.sql"
+      },
+      {
+        "id": "ns_studena_sprcha",
+        "node_id": "nervovy_system",
+        "label": "Konec sprchy studenou vodou — alespoň 30 sekund",
+        "source": "v0.3-crt-gold-josef:migrations/add_missing_node_actions.sql"
+      },
+      {
+        "id": "ns_pohyb",
+        "node_id": "nervovy_system",
+        "label": "Dnes alespoň 20 minut aerobního pohybu",
+        "source": "v0.3-crt-gold-josef:migrations/add_missing_node_actions.sql"
+      },
+      {
+        "id": "seed-nervovy_system-23",
+        "node_id": "nervovy_system",
+        "label": "Physiological sigh 5x po stresu",
+        "source": "v0.3-crt-gold-josef:scripts/seed-missing.mjs"
+      },
+      {
+        "id": "seed-nervovy_system-24",
+        "node_id": "nervovy_system",
+        "label": "Ranní světlo — 10 minut venku po probuzení",
+        "source": "v0.3-crt-gold-josef:scripts/seed-missing.mjs"
+      }
+    ],
+    "sources": [
+      {
+        "med_id": "autonomni-nervovy-system-jak-ho-treovat",
+        "type": "article",
+        "title": "Autonomní nervový systém: jak ho trénovat",
+        "url": "sources/nervovy_system--autonomni-nervovy-system-jak-ho-treovat.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/nervovy_system/autonomni-nervovy-system-jak-ho-treovat.md"
+      },
+      {
+        "med_id": "bdnf-jak-pohyb-chrani-mozek",
+        "type": "article",
+        "title": "BDNF: jak pohyb chrání tvůj mozek",
+        "url": "sources/nervovy_system--bdnf-jak-pohyb-chrani-mozek.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/nervovy_system/bdnf-jak-pohyb-chrani-mozek.md"
+      },
+      {
+        "med_id": "neuroplasticita-mozek-ktery-se-meni",
+        "type": "article",
+        "title": "Neuroplasticita: mozek, který se mění",
+        "url": "sources/nervovy_system--neuroplasticita-mozek-ktery-se-meni.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/nervovy_system/neuroplasticita-mozek-ktery-se-meni.md"
+      },
+      {
+        "med_id": "neuroplasticita-mozek-se-meni",
+        "type": "article",
+        "title": "Neuroplasticita: mozek se mění až do stáří",
+        "url": "sources/nervovy_system--neuroplasticita-mozek-se-meni.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/nervovy_system/neuroplasticita-mozek-se-meni.md"
+      },
+      {
+        "med_id": "parasympatikus-regeneracni-nastroj",
+        "type": "article",
+        "title": "Autonomní nervový systém: parasympatikus jako regenerační nástroj",
+        "url": "sources/nervovy_system--parasympatikus-regeneracni-nastroj.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/nervovy_system/parasympatikus-regeneracni-nastroj.md"
+      }
+    ]
   },
   "spanek": {
     "action_id": "spanek_bez_obrazovky",
-    "origin": "v0.3-crt-gold-josef:migrations/add_missing_node_actions.sql"
+    "origin": "v0.3-crt-gold-josef:migrations/add_missing_node_actions.sql",
+    "actions": [
+      {
+        "id": "spanek_bez_obrazovky",
+        "node_id": "spanek",
+        "label": "Vypni obrazovky hodinu před spánkem",
+        "source": "v0.3-crt-gold-josef:migrations/add_missing_node_actions.sql"
+      },
+      {
+        "id": "spanek_cas",
+        "node_id": "spanek",
+        "label": "Lehni si dnes ve stejný čas jako včera",
+        "source": "v0.3-crt-gold-josef:migrations/add_missing_node_actions.sql"
+      },
+      {
+        "id": "spanek_teplota",
+        "node_id": "spanek",
+        "label": "Větrání — vychlaď ložnici před spánkem",
+        "source": "v0.3-crt-gold-josef:migrations/add_missing_node_actions.sql"
+      }
+    ],
+    "sources": [
+      {
+        "med_id": "cirkadiani-rytmus-svetlo-spanek",
+        "type": "article",
+        "title": "Cirkadiánní rytmus: jak světlo řídí tvůj spánek",
+        "url": "sources/spanek--cirkadiani-rytmus-svetlo-spanek.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/spanek/cirkadiani-rytmus-svetlo-spanek.md"
+      },
+      {
+        "med_id": "proc-spanek-neni-lenistvim",
+        "type": "article",
+        "title": "Proč spánek není leností",
+        "url": "sources/spanek--proc-spanek-neni-lenistvim.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/spanek/proc-spanek-neni-lenistvim.md"
+      },
+      {
+        "med_id": "proc-spime-walkerova-veda",
+        "type": "article",
+        "title": "Proč spíme: věda za Walkerovými 8 hodinami",
+        "url": "sources/spanek--proc-spime-walkerova-veda.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/spanek/proc-spime-walkerova-veda.md"
+      },
+      {
+        "med_id": "spanek-a-mozek-glymfatika-a-alzheimer",
+        "type": "article",
+        "title": "Spánek a mozek: glymfatika a prevence neurodegenerace",
+        "url": "sources/spanek--spanek-a-mozek-glymfatika-a-alzheimer.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/spanek/spanek-a-mozek-glymfatika-a-alzheimer.md"
+      },
+      {
+        "med_id": "spanek-deprivace-co-se-deje",
+        "type": "article",
+        "title": "Spánková deprivace: co se děje po 24 hodinách bez spánku",
+        "url": "sources/spanek--spanek-deprivace-co-se-deje.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/spanek/spanek-deprivace-co-se-deje.md"
+      }
+    ]
   },
   "biomarkery": {
     "action_id": "unavailable",
-    "origin": null
+    "origin": null,
+    "actions": [],
+    "sources": []
   },
   "glukoza": {
     "action_id": "unavailable",
-    "origin": null
+    "origin": null,
+    "actions": [],
+    "sources": []
   },
   "bilirubin": {
     "action_id": "unavailable",
-    "origin": null
+    "origin": null,
+    "actions": [],
+    "sources": []
   },
   "leukocyty": {
     "action_id": "unavailable",
-    "origin": null
+    "origin": null,
+    "actions": [],
+    "sources": []
   },
   "erytrocyty": {
     "action_id": "unavailable",
-    "origin": null
+    "origin": null,
+    "actions": [],
+    "sources": []
   },
   "souhrn_biomarkery": {
     "action_id": "unavailable",
-    "origin": null
+    "origin": null,
+    "actions": [],
+    "sources": []
   },
   "obnova": {
-    "action_id": "unavailable",
-    "origin": null
+    "action_id": "seed-obnova-25",
+    "origin": "v0.3-crt-gold-josef:scripts/seed-missing.mjs",
+    "actions": [
+      {
+        "id": "seed-obnova-25",
+        "node_id": "obnova",
+        "label": "NSDR — lehni si na 20 minut",
+        "source": "v0.3-crt-gold-josef:scripts/seed-missing.mjs"
+      },
+      {
+        "id": "seed-obnova-26",
+        "node_id": "obnova",
+        "label": "Sauna 15 minut",
+        "source": "v0.3-crt-gold-josef:scripts/seed-missing.mjs"
+      }
+    ],
+    "sources": []
   },
   "telo": {
     "action_id": "chůze_20min",
-    "origin": "v0.3-crt-gold-josef:migrations/add_longevity_actions.sql"
+    "origin": "v0.3-crt-gold-josef:migrations/add_longevity_actions.sql",
+    "actions": [
+      {
+        "id": "plank_30s",
+        "node_id": "telo",
+        "label": "Drž plank 30 sekund",
+        "source": "v0.3-crt-gold-josef:migrations/add_longevity_actions.sql"
+      },
+      {
+        "id": "plank_60s",
+        "node_id": "telo",
+        "label": "Drž plank 60 sekund",
+        "source": "v0.3-crt-gold-josef:migrations/add_longevity_actions.sql"
+      },
+      {
+        "id": "plank_90s",
+        "node_id": "telo",
+        "label": "Drž plank 90 sekund",
+        "source": "v0.3-crt-gold-josef:migrations/add_longevity_actions.sql"
+      },
+      {
+        "id": "drepy_s0",
+        "node_id": "telo",
+        "label": "Udělej dřepy",
+        "source": "v0.3-crt-gold-josef:migrations/add_longevity_actions.sql"
+      },
+      {
+        "id": "drepy_s1",
+        "node_id": "telo",
+        "label": "Udělej dřepy",
+        "source": "v0.3-crt-gold-josef:migrations/add_longevity_actions.sql"
+      },
+      {
+        "id": "kliky_t1",
+        "node_id": "telo",
+        "label": "Udělej kliky",
+        "source": "v0.3-crt-gold-josef:migrations/add_longevity_actions.sql"
+      },
+      {
+        "id": "kliky_t2",
+        "node_id": "telo",
+        "label": "Udělej kliky",
+        "source": "v0.3-crt-gold-josef:migrations/add_longevity_actions.sql"
+      },
+      {
+        "id": "chůze_20min",
+        "node_id": "telo",
+        "label": "Jdi na procházku 20 minut",
+        "source": "v0.3-crt-gold-josef:migrations/add_longevity_actions.sql"
+      },
+      {
+        "id": "run_20min",
+        "node_id": "telo",
+        "label": "Běž 20 minut",
+        "source": "v0.3-crt-gold-josef:migrations/add_longevity_actions.sql"
+      },
+      {
+        "id": "protazeni",
+        "node_id": "telo",
+        "label": "Protáhni se 10 minut",
+        "source": "v0.3-crt-gold-josef:migrations/add_longevity_actions.sql"
+      }
+    ],
+    "sources": [
+      {
+        "med_id": "sila-a-svaly-jako-pojistka",
+        "type": "article",
+        "title": "Síla a svaly jako pojistka na stáří",
+        "url": "sources/telo--sila-a-svaly-jako-pojistka.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/telo/sila-a-svaly-jako-pojistka.md"
+      },
+      {
+        "med_id": "svaly-organ-dlouhovekosti",
+        "type": "article",
+        "title": "Svalová hmota jako orgán dlouhověkosti",
+        "url": "sources/telo--svaly-organ-dlouhovekosti.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/telo/svaly-organ-dlouhovekosti.md"
+      },
+      {
+        "med_id": "zone2-pruvodce",
+        "type": "article",
+        "title": "Zone 2 trénink: Kompletní průvodce",
+        "url": "sources/telo--zone2-pruvodce.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/telo/zone2-pruvodce.md"
+      }
+    ]
   },
   "sila": {
-    "action_id": "unavailable",
-    "origin": null
+    "action_id": "shoulder_press_light",
+    "origin": "v0.3-crt-gold-josef:migrations/add_overhead_and_plyometrie.sql",
+    "actions": [
+      {
+        "id": "shoulder_press_light",
+        "node_id": "sila",
+        "label": "Tlak nad hlavu — lehký (5 kg)",
+        "source": "v0.3-crt-gold-josef:migrations/add_overhead_and_plyometrie.sql"
+      },
+      {
+        "id": "shoulder_press_med",
+        "node_id": "sila",
+        "label": "Tlak nad hlavu — střední (10 kg)",
+        "source": "v0.3-crt-gold-josef:migrations/add_overhead_and_plyometrie.sql"
+      },
+      {
+        "id": "shoulder_press_heavy",
+        "node_id": "sila",
+        "label": "Overhead press — silový (15+ kg)",
+        "source": "v0.3-crt-gold-josef:migrations/add_overhead_and_plyometrie.sql"
+      }
+    ],
+    "sources": [
+      {
+        "med_id": "dead-hang-grip-sila",
+        "type": "article",
+        "title": "Dead hang: grip síla jako prediktor dlouhověkosti",
+        "url": "sources/sila--dead-hang-grip-sila.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/sila/dead-hang-grip-sila.md"
+      },
+      {
+        "med_id": "farmers-carry-jeden-cvik-pro-telo",
+        "type": "article",
+        "title": "Farmer's carry: jeden cvik pro celé tělo",
+        "url": "sources/sila--farmers-carry-jeden-cvik-pro-telo.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/sila/farmers-carry-jeden-cvik-pro-telo.md"
+      },
+      {
+        "med_id": "hustota-kosti-budovat-a-zachovat",
+        "type": "article",
+        "title": "Hustota kostí: jak ji budovat a zachovat každý den",
+        "url": "sources/sila--hustota-kosti-budovat-a-zachovat.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/sila/hustota-kosti-budovat-a-zachovat.md"
+      },
+      {
+        "med_id": "mekky-dopad-plyometrie-technika",
+        "type": "article",
+        "title": "Měkký dopad: jak trénovat bezpečně výbušnou sílu",
+        "url": "sources/sila--mekky-dopad-plyometrie-technika.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/sila/mekky-dopad-plyometrie-technika.md"
+      },
+      {
+        "med_id": "mobilita-ramen-hrudni-patere",
+        "type": "article",
+        "title": "Mobilita ramen: hrudní páteř jako základ pohybu nad hlavou",
+        "url": "sources/sila--mobilita-ramen-hrudni-patere.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/sila/mobilita-ramen-hrudni-patere.md"
+      },
+      {
+        "med_id": "rdl-rumunsky-mrtvy-tah",
+        "type": "article",
+        "title": "RDL: rumunský mrtvý tah pro zdravá záda a silné nohy",
+        "url": "sources/sila--rdl-rumunsky-mrtvy-tah.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/sila/rdl-rumunsky-mrtvy-tah.md"
+      },
+      {
+        "med_id": "rotatorova-manzeta-zdrava-ramena",
+        "type": "article",
+        "title": "Rotátorová manžeta: jak udržet ramena zdravá dekády",
+        "url": "sources/sila--rotatorova-manzeta-zdrava-ramena.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/sila/rotatorova-manzeta-zdrava-ramena.md"
+      },
+      {
+        "med_id": "sarkopenie-tichy-zlodej",
+        "type": "article",
+        "title": "Sarkopenie: tichý zloděj pohybu",
+        "url": "sources/sila--sarkopenie-tichy-zlodej.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/sila/sarkopenie-tichy-zlodej.md"
+      },
+      {
+        "med_id": "sila-jako-pojistka-dlouhovekosti",
+        "type": "article",
+        "title": "Síla jako pojistka dlouhověkosti",
+        "url": "sources/sila--sila-jako-pojistka-dlouhovekosti.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/sila/sila-jako-pojistka-dlouhovekosti.md"
+      },
+      {
+        "med_id": "skoc-dopadni-plyometrie",
+        "type": "article",
+        "title": "Skoč, dopadni, zůstaň silný — plyometrie pro kosti i reakci",
+        "url": "sources/sila--skoc-dopadni-plyometrie.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/sila/skoc-dopadni-plyometrie.md"
+      },
+      {
+        "med_id": "zvedni-kufr-nad-hlavu",
+        "type": "article",
+        "title": "Zvedni kufr nad hlavu — bez bolesti, v každém věku",
+        "url": "sources/sila--zvedni-kufr-nad-hlavu.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/sila/zvedni-kufr-nad-hlavu.md"
+      }
+    ]
   },
   "vytrvalost": {
     "action_id": "vytr_zona2_30",
-    "origin": "v0.3-crt-gold-josef:migrations/add_missing_node_actions.sql"
+    "origin": "v0.3-crt-gold-josef:migrations/add_missing_node_actions.sql",
+    "actions": [
+      {
+        "id": "vytr_zona2_30",
+        "node_id": "vytrvalost",
+        "label": "Zone 2: 30 minut v mírném tempu (mluvíš, ale ne snadno)",
+        "source": "v0.3-crt-gold-josef:migrations/add_missing_node_actions.sql"
+      },
+      {
+        "id": "vytr_zona2_45",
+        "node_id": "vytrvalost",
+        "label": "Zone 2: 45 minut v mírném tempu",
+        "source": "v0.3-crt-gold-josef:migrations/add_missing_node_actions.sql"
+      },
+      {
+        "id": "vytr_4x4",
+        "node_id": "vytrvalost",
+        "label": "Norský 4×4: 4 minuty naplno, 3 minuty klus — 4×",
+        "source": "v0.3-crt-gold-josef:migrations/add_missing_node_actions.sql"
+      }
+    ],
+    "sources": [
+      {
+        "med_id": "jak-zvysit-vo2max-plan",
+        "type": "article",
+        "title": "Jak zvýšit VO2max: praktický plán na 12 týdnů",
+        "url": "sources/vytrvalost--jak-zvysit-vo2max-plan.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/vytrvalost/jak-zvysit-vo2max-plan.md"
+      },
+      {
+        "med_id": "norsky-4x4-vo2max-protokol",
+        "type": "article",
+        "title": "Norský 4×4: nejefektivnější VO2max protokol",
+        "url": "sources/vytrvalost--norsky-4x4-vo2max-protokol.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/vytrvalost/norsky-4x4-vo2max-protokol.md"
+      },
+      {
+        "med_id": "vo2max-cislo-ktere-rozhoduje",
+        "type": "article",
+        "title": "VO2max: číslo, které rozhoduje o délce života",
+        "url": "sources/vytrvalost--vo2max-cislo-ktere-rozhoduje.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/vytrvalost/vo2max-cislo-ktere-rozhoduje.md"
+      },
+      {
+        "med_id": "vytrvalost-huberman",
+        "type": "article",
+        "title": "🏃‍♂️ Manuál vytrvalosti: Jak hacknout únavu (Andrew Huberman)",
+        "url": "sources/vytrvalost--vytrvalost-huberman.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/vytrvalost/vytrvalost-huberman.md"
+      },
+      {
+        "med_id": "zona2-zaklad-aerobniho-zdravi",
+        "type": "article",
+        "title": "Zóna 2: základ aerobního zdraví",
+        "url": "sources/vytrvalost--zona2-zaklad-aerobniho-zdravi.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/vytrvalost/zona2-zaklad-aerobniho-zdravi.md"
+      },
+      {
+        "med_id": "zone2-v-praxi-intenzita",
+        "type": "article",
+        "title": "Zone 2 v praxi: jak poznat správnou intenzitu",
+        "url": "sources/vytrvalost--zone2-v-praxi-intenzita.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/vytrvalost/zone2-v-praxi-intenzita.md"
+      }
+    ]
   },
   "mobilita": {
-    "action_id": "unavailable",
-    "origin": null
+    "action_id": "seed-mobilita-27",
+    "origin": "v0.3-crt-gold-josef:scripts/seed-missing.mjs",
+    "actions": [
+      {
+        "id": "seed-mobilita-27",
+        "node_id": "mobilita",
+        "label": "Protahni boky a hrudník 15 minut",
+        "source": "v0.3-crt-gold-josef:scripts/seed-missing.mjs"
+      },
+      {
+        "id": "seed-mobilita-28",
+        "node_id": "mobilita",
+        "label": "Jóga základní sekvence 20 minut",
+        "source": "v0.3-crt-gold-josef:scripts/seed-missing.mjs"
+      }
+    ],
+    "sources": [
+      {
+        "med_id": "frc-protokol-pohyblivost",
+        "type": "article",
+        "title": "FRC protokol: jak cvičit pohyblivost vědecky",
+        "url": "sources/mobilita--frc-protokol-pohyblivost.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/mobilita/frc-protokol-pohyblivost.md"
+      },
+      {
+        "med_id": "hip-flexor-a-hrudni-patere",
+        "type": "article",
+        "title": "Hip flexor a hrudní páteř: dva klíče pohyblivosti",
+        "url": "sources/mobilita--hip-flexor-a-hrudni-patere.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/mobilita/hip-flexor-a-hrudni-patere.md"
+      },
+      {
+        "med_id": "klouby-a-chrupavky-jak-je-udrzet",
+        "type": "article",
+        "title": "Klouby a chrupavky: jak je udržet funkční",
+        "url": "sources/mobilita--klouby-a-chrupavky-jak-je-udrzet.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/mobilita/klouby-a-chrupavky-jak-je-udrzet.md"
+      },
+      {
+        "med_id": "mobilita-neznamena-jen-strecink",
+        "type": "article",
+        "title": "Mobilita neznamená jen strečink",
+        "url": "sources/mobilita--mobilita-neznamena-jen-strecink.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/mobilita/mobilita-neznamena-jen-strecink.md"
+      },
+      {
+        "med_id": "pohyblivost-vs-stabilita",
+        "type": "article",
+        "title": "Pohyblivost vs. stabilita: proč potřebuješ oboje",
+        "url": "sources/mobilita--pohyblivost-vs-stabilita.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/mobilita/pohyblivost-vs-stabilita.md"
+      },
+      {
+        "med_id": "ranni-kloubni-rutina",
+        "type": "article",
+        "title": "Ranní kloubní rutina: 10 minut pro celé tělo",
+        "url": "sources/mobilita--ranni-kloubni-rutina.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/mobilita/ranni-kloubni-rutina.md"
+      }
+    ]
   },
   "stabilita": {
     "action_id": "unavailable",
-    "origin": null
+    "origin": null,
+    "actions": [],
+    "sources": [
+      {
+        "med_id": "bolesti-zad-a-jak-jim-predchazet",
+        "type": "article",
+        "title": "Bolesti zad: jak jim předcházet a co s nimi dělat",
+        "url": "sources/stabilita--bolesti-zad-a-jak-jim-predchazet.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/stabilita/bolesti-zad-a-jak-jim-predchazet.md"
+      },
+      {
+        "med_id": "core-neni-bricho",
+        "type": "article",
+        "title": "Core není břicho: jak funguje skutečná stabilizace",
+        "url": "sources/stabilita--core-neni-bricho.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/stabilita/core-neni-bricho.md"
+      },
+      {
+        "med_id": "dns-stabilita-jak-miminko",
+        "type": "article",
+        "title": "DNS: jak trénovat stabilitu jako miminko",
+        "url": "sources/stabilita--dns-stabilita-jak-miminko.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/stabilita/dns-stabilita-jak-miminko.md"
+      },
+      {
+        "med_id": "mcgill-big-3-zaklad-zdravych-zad",
+        "type": "article",
+        "title": "McGill Big 3: základ zdravých zad",
+        "url": "sources/stabilita--mcgill-big-3-zaklad-zdravych-zad.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/stabilita/mcgill-big-3-zaklad-zdravych-zad.md"
+      },
+      {
+        "med_id": "stabilita-zaklad-ktery-vsechno-drzi",
+        "type": "article",
+        "title": "Stabilita: základ, který všechno drží",
+        "url": "sources/stabilita--stabilita-zaklad-ktery-vsechno-drzi.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/stabilita/stabilita-zaklad-ktery-vsechno-drzi.md"
+      },
+      {
+        "med_id": "stoj-na-jedne-noze-test-i-trenink",
+        "type": "article",
+        "title": "Stoj na jedné noze: test i trénink v jednom",
+        "url": "sources/stabilita--stoj-na-jedne-noze-test-i-trenink.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/stabilita/stoj-na-jedne-noze-test-i-trenink.md"
+      }
+    ]
   },
   "rovnovaha": {
     "action_id": "rovnovaha_habit",
-    "origin": "v0.3-crt-gold-josef:migrations/add_missing_node_actions.sql"
+    "origin": "v0.3-crt-gold-josef:migrations/add_missing_node_actions.sql",
+    "actions": [
+      {
+        "id": "rovnovaha_stoj_1",
+        "node_id": "rovnovaha",
+        "label": "Stůj 30 sekund na jedné noze",
+        "source": "v0.3-crt-gold-josef:migrations/add_missing_node_actions.sql"
+      },
+      {
+        "id": "rovnovaha_stoj_2",
+        "node_id": "rovnovaha",
+        "label": "Stůj 30 s na jedné noze — se zavřenýma očima",
+        "source": "v0.3-crt-gold-josef:migrations/add_missing_node_actions.sql"
+      },
+      {
+        "id": "rovnovaha_habit",
+        "node_id": "rovnovaha",
+        "label": "Proveď dnes rovnovážné cvičení",
+        "source": "v0.3-crt-gold-josef:migrations/add_missing_node_actions.sql"
+      }
+    ],
+    "sources": [
+      {
+        "med_id": "propriocepce-smysl-ktery-zachranuje-zivot",
+        "type": "article",
+        "title": "Propriocepce: smysl, který zachraňuje život",
+        "url": "sources/rovnovaha--propriocepce-smysl-ktery-zachranuje-zivot.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/rovnovaha/propriocepce-smysl-ktery-zachranuje-zivot.md"
+      },
+      {
+        "med_id": "rovnovaha-a-pad-nejvetsi-riziko-stari",
+        "type": "article",
+        "title": "Rovnováha a pád: největší riziko stáří",
+        "url": "sources/rovnovaha--rovnovaha-a-pad-nejvetsi-riziko-stari.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/rovnovaha/rovnovaha-a-pad-nejvetsi-riziko-stari.md"
+      },
+      {
+        "med_id": "stoj-na-jedne-noze-test-i-trenink",
+        "type": "article",
+        "title": "Stoj na jedné noze: test i trénink v jednom",
+        "url": "sources/rovnovaha--stoj-na-jedne-noze-test-i-trenink.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/rovnovaha/stoj-na-jedne-noze-test-i-trenink.md"
+      },
+      {
+        "med_id": "vestibularni-system-a-rovnovaha",
+        "type": "article",
+        "title": "Vestibulární systém a rovnováha ve středním věku",
+        "url": "sources/rovnovaha--vestibularni-system-a-rovnovaha.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/rovnovaha/vestibularni-system-a-rovnovaha.md"
+      }
+    ]
   },
   "kardio": {
     "action_id": "unavailable",
-    "origin": null
+    "origin": null,
+    "actions": [],
+    "sources": [
+      {
+        "med_id": "apob-a-ateroskleroze-co-opravdu-skodi-cevam",
+        "type": "article",
+        "title": "ApoB a ateroskleróza: co opravdu škodí cévám",
+        "url": "sources/kardio--apob-a-ateroskleroze-co-opravdu-skodi-cevam.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/kardio/apob-a-ateroskleroze-co-opravdu-skodi-cevam.md"
+      },
+      {
+        "med_id": "apob-a-ldl-zdravi-srdce",
+        "type": "article",
+        "title": "ApoB a LDL: co říká krev o zdraví srdce",
+        "url": "sources/kardio--apob-a-ldl-zdravi-srdce.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/kardio/apob-a-ldl-zdravi-srdce.md"
+      },
+      {
+        "med_id": "hrv-okno-do-srdce",
+        "type": "article",
+        "title": "HRV: okno do tvého srdce a nervového systému",
+        "url": "sources/kardio--hrv-okno-do-srdce.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/kardio/hrv-okno-do-srdce.md"
+      },
+      {
+        "med_id": "jak-trenovat-srdce-4-zony",
+        "type": "article",
+        "title": "Jak trénovat srdce pro dlouhověkost: 4 zóny",
+        "url": "sources/kardio--jak-trenovat-srdce-4-zony.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/kardio/jak-trenovat-srdce-4-zony.md"
+      },
+      {
+        "med_id": "srdce-jako-sval-ktery-trenujes",
+        "type": "article",
+        "title": "Srdce jako sval, který trénuješ",
+        "url": "sources/kardio--srdce-jako-sval-ktery-trenujes.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/kardio/srdce-jako-sval-ktery-trenujes.md"
+      }
+    ]
   },
   "plyometrie": {
-    "action_id": "unavailable",
-    "origin": null
+    "action_id": "step_down",
+    "origin": "v0.3-crt-gold-josef:migrations/add_overhead_and_plyometrie.sql",
+    "actions": [
+      {
+        "id": "step_down",
+        "node_id": "plyometrie",
+        "label": "Step-down: řízený dopad z bedny",
+        "source": "v0.3-crt-gold-josef:migrations/add_overhead_and_plyometrie.sql"
+      },
+      {
+        "id": "jump_squat",
+        "node_id": "plyometrie",
+        "label": "Jump squat: dřep s výskokem",
+        "source": "v0.3-crt-gold-josef:migrations/add_overhead_and_plyometrie.sql"
+      },
+      {
+        "id": "box_jump",
+        "node_id": "plyometrie",
+        "label": "Box jump: výskok na bednu (40 cm)",
+        "source": "v0.3-crt-gold-josef:migrations/add_overhead_and_plyometrie.sql"
+      }
+    ],
+    "sources": []
   },
   "dychani": {
-    "action_id": "unavailable",
-    "origin": null
+    "action_id": "seed-dychani-0",
+    "origin": "v0.3-crt-gold-josef:scripts/seed-missing.mjs",
+    "actions": [
+      {
+        "id": "seed-dychani-0",
+        "node_id": "dychani",
+        "label": "Nosní dýchání 5 minut vědomě",
+        "source": "v0.3-crt-gold-josef:scripts/seed-missing.mjs"
+      }
+    ],
+    "sources": []
   },
   "nosni_dychani": {
-    "action_id": "unavailable",
-    "origin": null
+    "action_id": "seed-nosni_dychani-1",
+    "origin": "v0.3-crt-gold-josef:scripts/seed-missing.mjs",
+    "actions": [
+      {
+        "id": "seed-nosni_dychani-1",
+        "node_id": "nosni_dychani",
+        "label": "Zavři ústa a dýchej nosem 10 nádechů",
+        "source": "v0.3-crt-gold-josef:scripts/seed-missing.mjs"
+      }
+    ],
+    "sources": []
   },
   "dechova_koherence": {
-    "action_id": "unavailable",
-    "origin": null
+    "action_id": "seed-dechova_koherence-3",
+    "origin": "v0.3-crt-gold-josef:scripts/seed-missing.mjs",
+    "actions": [
+      {
+        "id": "seed-dechova_koherence-3",
+        "node_id": "dechova_koherence",
+        "label": "Dechová koherence 5 min (5s nádech/5s výdech)",
+        "source": "v0.3-crt-gold-josef:scripts/seed-missing.mjs"
+      },
+      {
+        "id": "seed-dechova_koherence-4",
+        "node_id": "dechova_koherence",
+        "label": "Dechová koherence 10 minut",
+        "source": "v0.3-crt-gold-josef:scripts/seed-missing.mjs"
+      }
+    ],
+    "sources": []
   },
   "butejko": {
-    "action_id": "unavailable",
-    "origin": null
+    "action_id": "seed-butejko-2",
+    "origin": "v0.3-crt-gold-josef:scripts/seed-missing.mjs",
+    "actions": [
+      {
+        "id": "seed-butejko-2",
+        "node_id": "butejko",
+        "label": "Buteyko: zadržení dechu po výdechu",
+        "source": "v0.3-crt-gold-josef:scripts/seed-missing.mjs"
+      }
+    ],
+    "sources": []
   },
   "mysl": {
     "action_id": "meditace_5",
-    "origin": "v0.3-crt-gold-josef:migrations/add_longevity_actions.sql"
+    "origin": "v0.3-crt-gold-josef:migrations/add_longevity_actions.sql",
+    "actions": [
+      {
+        "id": "dech_4min",
+        "node_id": "mysl",
+        "label": "Dechové cvičení 4 minuty",
+        "source": "v0.3-crt-gold-josef:migrations/add_longevity_actions.sql"
+      },
+      {
+        "id": "meditace_5",
+        "node_id": "mysl",
+        "label": "Medituj 5 minut",
+        "source": "v0.3-crt-gold-josef:migrations/add_longevity_actions.sql"
+      },
+      {
+        "id": "meditace_10",
+        "node_id": "mysl",
+        "label": "Medituj 10 minut",
+        "source": "v0.3-crt-gold-josef:migrations/add_longevity_actions.sql"
+      },
+      {
+        "id": "spanek_prep",
+        "node_id": "mysl",
+        "label": "Příprava na spánek",
+        "source": "v0.3-crt-gold-josef:migrations/add_longevity_actions.sql"
+      }
+    ],
+    "sources": [
+      {
+        "med_id": "mozek-na-dlouhou-trat",
+        "type": "article",
+        "title": "Mozek na dlouhou trať",
+        "url": "sources/mysl--mozek-na-dlouhou-trat.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/mysl/mozek-na-dlouhou-trat.md"
+      },
+      {
+        "med_id": "smysl",
+        "type": "article",
+        "title": "Proč je smysl největší zdroj energie",
+        "url": "sources/mysl--smysl.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/mysl/smysl.md"
+      },
+      {
+        "med_id": "stres",
+        "type": "article",
+        "title": "Adaptace místo vyhýbání se stresu",
+        "url": "sources/mysl--stres.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/mysl/stres.md"
+      }
+    ]
   },
   "stres": {
     "action_id": "stres_pauza",
-    "origin": "v0.3-crt-gold-josef:migrations/add_missing_node_actions.sql"
+    "origin": "v0.3-crt-gold-josef:migrations/add_missing_node_actions.sql",
+    "actions": [
+      {
+        "id": "stres_dech",
+        "node_id": "stres",
+        "label": "Dechové cvičení: 4 s nádech, 8 s výdech — 5×",
+        "source": "v0.3-crt-gold-josef:migrations/add_missing_node_actions.sql"
+      },
+      {
+        "id": "stres_pauza",
+        "node_id": "stres",
+        "label": "Udělej si 5minutovou pauzu bez telefonu",
+        "source": "v0.3-crt-gold-josef:migrations/add_missing_node_actions.sql"
+      },
+      {
+        "id": "stres_priroda",
+        "node_id": "stres",
+        "label": "Vyjdi ven — alespoň 10 minut v přírodě nebo na čerstvém vzduchu",
+        "source": "v0.3-crt-gold-josef:migrations/add_missing_node_actions.sql"
+      }
+    ],
+    "sources": [
+      {
+        "med_id": "allostatic-load-chronicky-stres",
+        "type": "article",
+        "title": "Allostatic load: co dělá chronický stres s tělem",
+        "url": "sources/stres--allostatic-load-chronicky-stres.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/stres/allostatic-load-chronicky-stres.md"
+      },
+      {
+        "med_id": "chronicky-stres-a-co-dela-s-telem",
+        "type": "article",
+        "title": "Chronický stres a co dělá s tělem",
+        "url": "sources/stres--chronicky-stres-a-co-dela-s-telem.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/stres/chronicky-stres-a-co-dela-s-telem.md"
+      },
+      {
+        "med_id": "hrv-meritko-stresu",
+        "type": "article",
+        "title": "HRV jako měřítko stresu: co čísla říkají",
+        "url": "sources/stres--hrv-meritko-stresu.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/stres/hrv-meritko-stresu.md"
+      },
+      {
+        "med_id": "kortizol-a-dlouhovekost",
+        "type": "article",
+        "title": "Kortizol a dlouhověkost: kdy je přítel, kdy nepřítel",
+        "url": "sources/stres--kortizol-a-dlouhovekost.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/stres/kortizol-a-dlouhovekost.md"
+      },
+      {
+        "med_id": "kortizol-pritel-i-nepritel",
+        "type": "article",
+        "title": "Kortizol: přítel i nepřítel",
+        "url": "sources/stres--kortizol-pritel-i-nepritel.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/stres/kortizol-pritel-i-nepritel.md"
+      }
+    ]
   },
   "smysl": {
     "action_id": "unavailable",
-    "origin": null
+    "origin": null,
+    "actions": [],
+    "sources": []
   },
   "soustredeni": {
-    "action_id": "unavailable",
-    "origin": null
+    "action_id": "seed-soustredeni-7",
+    "origin": "v0.3-crt-gold-josef:scripts/seed-missing.mjs",
+    "actions": [
+      {
+        "id": "seed-soustredeni-7",
+        "node_id": "soustredeni",
+        "label": "Hluboká práce 25 minut bez rušení (Pomodoro)",
+        "source": "v0.3-crt-gold-josef:scripts/seed-missing.mjs"
+      },
+      {
+        "id": "seed-soustredeni-8",
+        "node_id": "soustredeni",
+        "label": "Hluboká práce 50 minut bez rušení",
+        "source": "v0.3-crt-gold-josef:scripts/seed-missing.mjs"
+      }
+    ],
+    "sources": []
   },
   "vdecnost": {
-    "action_id": "unavailable",
-    "origin": null
+    "action_id": "seed-vdecnost-9",
+    "origin": "v0.3-crt-gold-josef:scripts/seed-missing.mjs",
+    "actions": [
+      {
+        "id": "seed-vdecnost-9",
+        "node_id": "vdecnost",
+        "label": "Napiš 3 věci za co jsi vděčný",
+        "source": "v0.3-crt-gold-josef:scripts/seed-missing.mjs"
+      }
+    ],
+    "sources": []
   },
   "meditace": {
-    "action_id": "unavailable",
-    "origin": null
+    "action_id": "seed-meditace-5",
+    "origin": "v0.3-crt-gold-josef:scripts/seed-missing.mjs",
+    "actions": [
+      {
+        "id": "seed-meditace-5",
+        "node_id": "meditace",
+        "label": "Meditace všímavosti 5 minut",
+        "source": "v0.3-crt-gold-josef:scripts/seed-missing.mjs"
+      },
+      {
+        "id": "seed-meditace-6",
+        "node_id": "meditace",
+        "label": "Meditace všímavosti 15 minut",
+        "source": "v0.3-crt-gold-josef:scripts/seed-missing.mjs"
+      }
+    ],
+    "sources": []
   },
   "emoce": {
-    "action_id": "unavailable",
-    "origin": null
+    "action_id": "seed-emoce-11",
+    "origin": "v0.3-crt-gold-josef:scripts/seed-missing.mjs",
+    "actions": [
+      {
+        "id": "seed-emoce-11",
+        "node_id": "emoce",
+        "label": "Pojmenuj emoci a zapiš ji",
+        "source": "v0.3-crt-gold-josef:scripts/seed-missing.mjs"
+      }
+    ],
+    "sources": []
   },
   "klid": {
-    "action_id": "unavailable",
-    "origin": null
+    "action_id": "seed-klid-10",
+    "origin": "v0.3-crt-gold-josef:scripts/seed-missing.mjs",
+    "actions": [
+      {
+        "id": "seed-klid-10",
+        "node_id": "klid",
+        "label": "Procházka bez telefonu 15 minut",
+        "source": "v0.3-crt-gold-josef:scripts/seed-missing.mjs"
+      }
+    ],
+    "sources": []
   },
   "vyziva": {
     "action_id": "protein_check",
-    "origin": "v0.3-crt-gold-josef:migrations/add_longevity_actions.sql"
+    "origin": "v0.3-crt-gold-josef:migrations/add_longevity_actions.sql",
+    "actions": [
+      {
+        "id": "protein_check",
+        "node_id": "vyziva",
+        "label": "Zkontroluj příjem proteinu",
+        "source": "v0.3-crt-gold-josef:migrations/add_longevity_actions.sql"
+      },
+      {
+        "id": "zelenina",
+        "node_id": "vyziva",
+        "label": "Přidej zeleninu k jídlu",
+        "source": "v0.3-crt-gold-josef:migrations/add_longevity_actions.sql"
+      }
+    ],
+    "sources": [
+      {
+        "med_id": "jist-pro-sto-let",
+        "type": "article",
+        "title": "Jíst pro sto let",
+        "url": "sources/vyziva--jist-pro-sto-let.html",
+        "lang": "cs",
+        "status": "ARCHIV",
+        "origin": "v0.3-crt-gold-josef:app/content/longevity/clanky/vyziva/jist-pro-sto-let.md"
+      }
+    ]
   },
   "pust": {
     "action_id": "unavailable",
-    "origin": null
+    "origin": null,
+    "actions": [],
+    "sources": []
   },
   "bílkoviny": {
-    "action_id": "unavailable",
-    "origin": null
+    "action_id": "seed-bílkoviny-14",
+    "origin": "v0.3-crt-gold-josef:scripts/seed-missing.mjs",
+    "actions": [
+      {
+        "id": "seed-bílkoviny-14",
+        "node_id": "bílkoviny",
+        "label": "Přidej 30g proteinu ke snídani",
+        "source": "v0.3-crt-gold-josef:scripts/seed-missing.mjs"
+      },
+      {
+        "id": "seed-bílkoviny-15",
+        "node_id": "bílkoviny",
+        "label": "Zkontroluj celkový příjem bílkovin (1.6g/kg)",
+        "source": "v0.3-crt-gold-josef:scripts/seed-missing.mjs"
+      }
+    ],
+    "sources": []
   },
   "glukoza_vyziva": {
-    "action_id": "unavailable",
-    "origin": null
+    "action_id": "seed-glukoza_vyziva-18",
+    "origin": "v0.3-crt-gold-josef:scripts/seed-missing.mjs",
+    "actions": [
+      {
+        "id": "seed-glukoza_vyziva-18",
+        "node_id": "glukoza_vyziva",
+        "label": "Procházka 10 minut po jídle",
+        "source": "v0.3-crt-gold-josef:scripts/seed-missing.mjs"
+      }
+    ],
+    "sources": []
   },
   "mikronutrienty": {
-    "action_id": "unavailable",
-    "origin": null
+    "action_id": "seed-mikronutrienty-16",
+    "origin": "v0.3-crt-gold-josef:scripts/seed-missing.mjs",
+    "actions": [
+      {
+        "id": "seed-mikronutrienty-16",
+        "node_id": "mikronutrienty",
+        "label": "Vezmi Omega-3 a Vitamin D",
+        "source": "v0.3-crt-gold-josef:scripts/seed-missing.mjs"
+      }
+    ],
+    "sources": []
   },
   "hydratace": {
-    "action_id": "unavailable",
-    "origin": null
+    "action_id": "seed-hydratace-12",
+    "origin": "v0.3-crt-gold-josef:scripts/seed-missing.mjs",
+    "actions": [
+      {
+        "id": "seed-hydratace-12",
+        "node_id": "hydratace",
+        "label": "Vypij 2 sklenice vody ráno",
+        "source": "v0.3-crt-gold-josef:scripts/seed-missing.mjs"
+      },
+      {
+        "id": "seed-hydratace-13",
+        "node_id": "hydratace",
+        "label": "Sleduj příjem vody celý den (cíl 2L)",
+        "source": "v0.3-crt-gold-josef:scripts/seed-missing.mjs"
+      }
+    ],
+    "sources": []
   },
   "casovani_jidel": {
-    "action_id": "unavailable",
-    "origin": null
+    "action_id": "seed-casovani_jidel-17",
+    "origin": "v0.3-crt-gold-josef:scripts/seed-missing.mjs",
+    "actions": [
+      {
+        "id": "seed-casovani_jidel-17",
+        "node_id": "casovani_jidel",
+        "label": "Nejez 3 hodiny před spaním",
+        "source": "v0.3-crt-gold-josef:scripts/seed-missing.mjs"
+      }
+    ],
+    "sources": []
   }
 }
