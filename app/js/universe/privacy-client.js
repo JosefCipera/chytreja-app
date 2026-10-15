@@ -1,12 +1,15 @@
 import {initializeApp,getApps,getApp} from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js';
 import {getAuth,signOut,EmailAuthProvider,reauthenticateWithCredential,reauthenticateWithPopup,GoogleAuthProvider} from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js';
-export const privacyAuth=getAuth(getApps().length?getApp():initializeApp({
+const privacyApp=getApps().length?getApp():initializeApp({
       apiKey:        "AIzaSyAKREZsoBZkA1xOQ5ff3XDmiJ88nwSjeOk",
       authDomain:    "chytre-ja-app.firebaseapp.com",
       projectId:     "chytre-ja-app",
       storageBucket: "chytre-ja-app.firebasestorage.app",
+      messagingSenderId: '65882611642',
       appId:         "1:65882611642:web:53d82914aa07d6677d4783",
-    }));
+    });
+window.chjFirebaseApp=privacyApp;
+export const privacyAuth=getAuth(privacyApp);
 export const receiptKey='chj_privacy_erasure_receipt';
 const channel=typeof BroadcastChannel==='function'?new BroadcastChannel('chj-privacy'):null;
 export function clearHealthLocal(uid) {

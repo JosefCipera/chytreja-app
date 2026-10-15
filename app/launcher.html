@@ -550,14 +550,14 @@
   import { authFetch }                            from '/app/js/universe/authFetch.js';
   import { checkAndShowOnboarding }              from '/app/js/universe/onboarding-wizard.js';
 
-  const firebaseApp = initializeApp({
+  const firebaseApp = (window.chjFirebaseApp ?? initializeApp({
     apiKey:            'AIzaSyAKREZsoBZkA1xOQ5ff3XDmiJ88nwSjeOk',
     authDomain:        'chytre-ja-app.firebaseapp.com',
     projectId:         'chytre-ja-app',
     storageBucket:     'chytre-ja-app.firebasestorage.app',
     messagingSenderId: '65882611642',
     appId:             '1:65882611642:web:53d82914aa07d6677d4783',
-  });
+  }));
   const auth = getAuth(firebaseApp);
   window.firebaseAuth = auth; // needed by authFetch.js
 

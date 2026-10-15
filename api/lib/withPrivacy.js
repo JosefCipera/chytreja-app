@@ -1,6 +1,7 @@
 import { requireAuth } from './requireAuth.js';
 import { privacyContext } from './privacyContext.js';
 import { configured, permitted, privacyStatus } from './privacyStore.js';
+const privateHeaders=['X-CHJ-Text'];
 const safeError={error:'Nejdřív nastav soukromí svého účtu.',code:'PRIVACY_REQUIRED'};
 export function withPrivacy(handler,{scope='health',identify=requireAuth,status=privacyStatus,ready=configured}={}) {
  return async function privacyProtected(req,res) {
@@ -27,6 +28,7 @@ export function withPrivacy(handler,{scope='health',identify=requireAuth,status=
     sending=true;
     try{
      if(!permitted(current,scope)||Number(current.epoch)!==actor.epoch){
+      for(const header of privateHeaders)res.removeHeader?.(header);
       res.status(403);return originals.json?originals.json(safeError):originals.end();
      }
      return original(...args);

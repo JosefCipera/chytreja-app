@@ -88,7 +88,7 @@ BEGIN
    OR h->>'x-chj-privacy-epoch' IS DISTINCT FROM a.epoch::text THEN
   RAISE EXCEPTION 'PRIVACY_WRITE_BLOCKED' USING ERRCODE='42501';
  END IF;
- IF required_scope='health' AND (a.status<>'active' OR a.adult IS NOT TRUE OR a.health_version IS DISTINCT FROM 'health-2026-10-15-v1' OR h->>'x-chj-privacy-scope' IS DISTINCT FROM 'health') THEN
+ IF required_scope='health' AND (a.status<>'active' OR a.adult IS NOT TRUE OR a.health_version IS DISTINCT FROM 'health-2026-10-15-v1' OR a.terms_version IS DISTINCT FROM 'terms-2026-10-15-v1' OR a.policy_version IS DISTINCT FROM 'privacy-2026-10-15-v1' OR h->>'x-chj-privacy-scope' IS DISTINCT FROM 'health') THEN
   RAISE EXCEPTION 'HEALTH_CONSENT_REQUIRED' USING ERRCODE='42501';
  END IF;
  -- Changing a row's owner is never an allowed side effect of an app request.
