@@ -1,0 +1,542 @@
+{
+  "crt": {
+    "title": "CRT modelového profilu Kovářová",
+    "nodes": [
+      {
+        "id": "ATHEROSCLEROSIS",
+        "label": "Cévní pláty v tepnách",
+        "level": 2,
+        "branch": "R",
+        "type": "cause"
+      },
+      {
+        "id": "BONE_DENSITY_LOSS",
+        "label": "Řídnutí kostí",
+        "level": 1,
+        "branch": "R",
+        "type": "cause"
+      },
+      {
+        "id": "DYSLIPIDEMIA",
+        "label": "Vysoký LDL cholesterol",
+        "level": 1,
+        "branch": "RC",
+        "type": "cause"
+      },
+      {
+        "id": "ENDOTHELIAL_DYSFUNCTION",
+        "label": "Poškozené stěny cév",
+        "level": 4,
+        "branch": "RC",
+        "type": "cause"
+      },
+      {
+        "id": "FALL_RISK",
+        "label": "Hrozba pádu a zlomené kosti",
+        "level": 5,
+        "branch": "C",
+        "type": "ude"
+      },
+      {
+        "id": "GAIT_INSTABILITY",
+        "label": "Nejistá chůze a rovnováha",
+        "level": 4,
+        "branch": "C",
+        "type": "junction"
+      },
+      {
+        "id": "HYPERTENSION",
+        "label": "Vysoký krevní tlak",
+        "level": 3,
+        "branch": "C",
+        "type": "cause"
+      },
+      {
+        "id": "HYPOTHYROIDISM",
+        "label": "Nedostatečná funkce štítné žlázy",
+        "level": 0,
+        "branch": "R",
+        "type": "cause"
+      },
+      {
+        "id": "INFLAMMAGING",
+        "label": "Věkem podmíněný zánět",
+        "level": 0,
+        "branch": "C",
+        "type": "cause"
+      },
+      {
+        "id": "INSULIN_RESISTANCE",
+        "label": "Necitlivost na inzulín",
+        "level": 2,
+        "branch": "C",
+        "type": "cause"
+      },
+      {
+        "id": "MUSCULOSKELETAL_DEG",
+        "label": "Opotřebené klouby a páteř",
+        "level": 2,
+        "branch": "R",
+        "type": "cause"
+      },
+      {
+        "id": "OBESITY",
+        "label": "Obezita",
+        "level": 1,
+        "branch": "C",
+        "type": "cause"
+      },
+      {
+        "id": "PERIPHERAL_NEUROPATHY",
+        "label": "Poškozené nervy v rukou a nohách",
+        "level": 3,
+        "branch": "LC",
+        "type": "cause"
+      },
+      {
+        "id": "VASCULAR_STIFFNESS",
+        "label": "Tuhé cévy",
+        "level": 3,
+        "branch": "RC",
+        "type": "cause"
+      }
+    ],
+    "edges": [
+      {
+        "from": "ATHEROSCLEROSIS",
+        "to": "VASCULAR_STIFFNESS"
+      },
+      {
+        "from": "BONE_DENSITY_LOSS",
+        "to": "MUSCULOSKELETAL_DEG"
+      },
+      {
+        "from": "DYSLIPIDEMIA",
+        "to": "ATHEROSCLEROSIS"
+      },
+      {
+        "from": "GAIT_INSTABILITY",
+        "to": "FALL_RISK"
+      },
+      {
+        "from": "HYPERTENSION",
+        "to": "ENDOTHELIAL_DYSFUNCTION"
+      },
+      {
+        "from": "HYPOTHYROIDISM",
+        "to": "BONE_DENSITY_LOSS"
+      },
+      {
+        "from": "INFLAMMAGING",
+        "to": "HYPOTHYROIDISM"
+      },
+      {
+        "from": "INFLAMMAGING",
+        "to": "OBESITY"
+      },
+      {
+        "from": "INSULIN_RESISTANCE",
+        "to": "HYPERTENSION"
+      },
+      {
+        "from": "MUSCULOSKELETAL_DEG",
+        "to": "GAIT_INSTABILITY"
+      },
+      {
+        "from": "OBESITY",
+        "to": "INSULIN_RESISTANCE"
+      },
+      {
+        "from": "PERIPHERAL_NEUROPATHY",
+        "to": "GAIT_INSTABILITY"
+      },
+      {
+        "from": "VASCULAR_STIFFNESS",
+        "to": "ENDOTHELIAL_DYSFUNCTION"
+      },
+      {
+        "from": "VASCULAR_STIFFNESS",
+        "to": "HYPERTENSION"
+      }
+    ]
+  },
+  "universe": [
+    {
+      "id": "dlouhovekost",
+      "label": "Dlouhověkost",
+      "definition": "Dlouhověkost není jen o délce života, ale o jeho kvalitě. Je to strategie, jak řídit zdraví, tělo, mysl a výživu tak, abychom byli funkční, silní a duševně odolní i ve vyšším věku.",
+      "color": "#2563eb",
+      "related": [
+        "zdravi",
+        "telo",
+        "mysl",
+        "vyziva"
+      ]
+    },
+    {
+      "id": "zdravi",
+      "label": "Zdraví",
+      "definition": "Zdraví je aktuální stav těla i mysli – to, co lze měřit a sledovat. Ukazuje, jak efektivně fungují návyky, spánek a trénink.",
+      "color": "#22c55e",
+      "parent": "dlouhovekost",
+      "related": [
+        "spanek",
+        "biomarkery",
+        "obnova",
+        "kardiovaskularni",
+        "metabolicke",
+        "imunitni",
+        "nervovy_system"
+      ]
+    },
+    {
+      "id": "metabolicke",
+      "label": "Metabolické zdraví",
+      "definition": "Glukóza, inzulin, lipidy – klíčové ukazatele efektivity metabolismu. Cílem je stabilita, ne extrémy.",
+      "color": "#4ade80",
+      "parent": "zdravi",
+      "related": [
+        "glukoza",
+        "hba1c",
+        "inzulin",
+        "tg",
+        "hdl"
+      ]
+    },
+    {
+      "id": "imunitni",
+      "label": "Imunitní rovnováha",
+      "definition": "Vyvážená imunita chrání před infekcemi i chronickým zánětem. Sleduj CRP, WBC a regeneraci po zátěži.",
+      "color": "#22c55e",
+      "parent": "zdravi",
+      "related": []
+    },
+    {
+      "id": "nervovy_system",
+      "label": "Nervový systém",
+      "definition": "Autonomní nervový systém řídí adaptaci – rovnováhu mezi stresem a regenerací. HRV ukazuje, jak efektivně to zvládá.",
+      "color": "#15803d",
+      "parent": "zdravi",
+      "related": []
+    },
+    {
+      "id": "spanek",
+      "label": "Spánek",
+      "definition": "Kvalitní spánek je základní pilíř regenerace. Ovlivňuje hormony, imunitu i psychiku.",
+      "color": "#16a34a",
+      "parent": "zdravi",
+      "related": []
+    },
+    {
+      "id": "biomarkery",
+      "label": "Biomarkery",
+      "definition": "Krevní a močové ukazatele odhalují, jak tělo reaguje na výživu, regeneraci a zátěž.",
+      "color": "#15803d",
+      "parent": "zdravi",
+      "related": [
+        "glukoza",
+        "bilirubin",
+        "leukocyty",
+        "erytrocyty",
+        "souhrn_biomarkery"
+      ]
+    },
+    {
+      "id": "glukoza",
+      "label": "S_Glukóza",
+      "definition": "Hladina glukózy v krvi.",
+      "color": "#22c55e",
+      "parent": "biomarkery",
+      "related": []
+    },
+    {
+      "id": "bilirubin",
+      "label": "S_Bilirubin",
+      "definition": "Ukazatel funkce jater a rozkladu červených krvinek.",
+      "color": "#f97316",
+      "parent": "biomarkery",
+      "related": []
+    },
+    {
+      "id": "leukocyty",
+      "label": "B_Leukocyty",
+      "definition": "Počet bílých krvinek – marker zánětu nebo imunitní reakce.",
+      "color": "#f97316",
+      "parent": "biomarkery",
+      "related": []
+    },
+    {
+      "id": "erytrocyty",
+      "label": "U_Erytrocyty",
+      "definition": "Počet červených krvinek v moči – zvýšení může ukazovat na podráždění nebo zánět močových cest.",
+      "color": "#ef4444",
+      "parent": "biomarkery",
+      "related": []
+    },
+    {
+      "id": "souhrn_biomarkery",
+      "label": "Souhrn biomarkerů",
+      "definition": "Shrnutí výsledků laboratorních testů – kolik hodnot je v normě a kolik mimo.",
+      "color": "#0ea5e9",
+      "parent": "biomarkery",
+      "related": []
+    },
+    {
+      "id": "obnova",
+      "label": "Obnova",
+      "definition": "Regenerace po zátěži je klíčová. Bez obnovy není růst ani adaptace.",
+      "color": "#10b981",
+      "parent": "zdravi",
+      "related": [
+        "sila",
+        "vytrvalost",
+        "mobilita",
+        "dychani"
+      ]
+    },
+    {
+      "id": "telo",
+      "label": "Tělo",
+      "definition": "Tělo je motor dlouhověkosti. Posiluj sílu, výdrž a stabilitu – tři pilíře, které rozhodují o tom, jak budeš žít po padesátce i déle.",
+      "color": "#f59e0b",
+      "parent": "dlouhovekost",
+      "related": [
+        "sila",
+        "vytrvalost",
+        "mobilita",
+        "stabilita",
+        "rovnovaha",
+        "kardio",
+        "plyometrie",
+        "dychani"
+      ]
+    },
+    {
+      "id": "sila",
+      "label": "Síla",
+      "definition": "Základní schopnost těla překonávat odpor. Klíčová pro soběstačnost a prevenci pádů. Udržuj svalovou hmotu i po 50. roce života.",
+      "color": "#fbbf24",
+      "parent": "telo",
+      "related": []
+    },
+    {
+      "id": "vytrvalost",
+      "label": "Výdrž",
+      "definition": "Schopnost vykonávat fyzickou aktivitu delší dobu. Cíl: VO₂max v horní třetině věkového rozmezí.",
+      "color": "#f59e0b",
+      "parent": "telo",
+      "related": []
+    },
+    {
+      "id": "mobilita",
+      "label": "Mobilita",
+      "definition": "Rozsah pohybu a pružnost těla. Umožňuje bezpečný pohyb, regeneraci a výkon bez zranění.",
+      "color": "#fcd34d",
+      "parent": "telo",
+      "related": []
+    },
+    {
+      "id": "stabilita",
+      "label": "Stabilita",
+      "definition": "Schopnost kontrolovat pohyb a udržet rovnováhu při zátěži. Klíčová pro koordinaci a prevenci pádů.",
+      "color": "#fbbf24",
+      "parent": "telo",
+      "related": []
+    },
+    {
+      "id": "rovnovaha",
+      "label": "Rovnováha",
+      "definition": "Zahrnuje propriocepci a koordinaci. Trénuj postoj, dech a spojení těla s myslí.",
+      "color": "#fbbf24",
+      "parent": "telo",
+      "related": []
+    },
+    {
+      "id": "kardio",
+      "label": "Kardio a oběh",
+      "definition": "Zdraví srdce a cév – základ výdrže i regenerace. Sleduj tlak, tep, HRV a VO₂max.",
+      "color": "#f59e0b",
+      "parent": "telo",
+      "related": []
+    },
+    {
+      "id": "plyometrie",
+      "label": "Plyometrie",
+      "definition": "Výbušná síla a hustota kostí. Seskočit a ustát dopad — klíč k prevenci zlomenin a reakční síle v každém věku.",
+      "color": "#fbbf24",
+      "parent": "telo",
+      "related": []
+    },
+    {
+      "id": "dychani",
+      "label": "Dýchání",
+      "definition": "Způsob, jakým dýcháš, ovlivňuje výkon, spánek i stres. Správné dýchání zlepšuje okysličení, regeneraci i parasympatickou rovnováhu.",
+      "color": "#fbbf24",
+      "parent": "telo",
+      "related": [
+        "nosni_dychani",
+        "dechova_koherence",
+        "butejko"
+      ]
+    },
+    {
+      "id": "nosni_dychani",
+      "label": "Nosní dýchání",
+      "definition": "Dýchej nosem – filtruje, ohřívá a zvlhčuje vzduch, zvyšuje hladinu CO₂ a podporuje produkci NO.",
+      "color": "#FDE68A",
+      "parent": "dychani",
+      "related": []
+    },
+    {
+      "id": "dechova_koherence",
+      "label": "Dechová koherence",
+      "definition": "Pomalé rytmické dýchání (cca 6 dechů/min) pro synchronizaci srdeční a mozkové aktivity.",
+      "color": "#FEF3C7",
+      "parent": "dychani",
+      "related": []
+    },
+    {
+      "id": "butejko",
+      "label": "Buteyko metoda",
+      "definition": "Technika zaměřená na snížení ventilace a zvýšení tolerance CO₂, která podporuje klid a rovnováhu nervového systému.",
+      "color": "#FEF08A",
+      "parent": "dychani",
+      "related": []
+    },
+    {
+      "id": "mysl",
+      "label": "Mysl",
+      "definition": "Psychická odolnost, klid a smysl jsou neoddělitelnou součástí dlouhověkosti. Bez zdravé mysli se žádný plán dlouhodobě neudrží.",
+      "color": "#a855f7",
+      "parent": "dlouhovekost",
+      "related": [
+        "stres",
+        "smysl",
+        "soustredeni",
+        "vdecnost",
+        "meditace",
+        "emoce",
+        "klid"
+      ]
+    },
+    {
+      "id": "stres",
+      "label": "Stres",
+      "definition": "Zvládání stresu je klíčové. Nejde o jeho odstranění, ale o schopnost adaptace a návratu do rovnováhy.",
+      "color": "#c084fc",
+      "parent": "mysl",
+      "related": []
+    },
+    {
+      "id": "smysl",
+      "label": "Smysl",
+      "definition": "Smysl dává životu směr. Když víš proč, zvládneš jakékoliv jak.",
+      "color": "#d8b4fe",
+      "parent": "mysl",
+      "related": []
+    },
+    {
+      "id": "soustredeni",
+      "label": "Soustředění",
+      "definition": "Schopnost věnovat pozornost jedné věci určuje kvalitu práce i života. Trénuj pozornost jako sval.",
+      "color": "#c084fc",
+      "parent": "mysl",
+      "related": []
+    },
+    {
+      "id": "vdecnost",
+      "label": "Vděčnost",
+      "definition": "Vděčnost mění biochemii mozku – snižuje úzkost, zlepšuje spánek a posiluje psychickou odolnost.",
+      "color": "#a855f7",
+      "parent": "mysl",
+      "related": []
+    },
+    {
+      "id": "meditace",
+      "label": "Meditace",
+      "definition": "Trénink klidu a přítomnosti. Podporuje regeneraci mozku, snižuje kortizol a zvyšuje HRV.",
+      "color": "#a855f7",
+      "parent": "mysl",
+      "related": []
+    },
+    {
+      "id": "emoce",
+      "label": "Emoce",
+      "definition": "Schopnost rozpoznat a zdravě zpracovat emoce je klíčem k mentální rovnováze. Nepotlačuj, pozoruj.",
+      "color": "#b794f4",
+      "parent": "mysl",
+      "related": []
+    },
+    {
+      "id": "klid",
+      "label": "Klid",
+      "definition": "Klid není pasivita. Je to aktivní stav bdělé rovnováhy, ve kterém tělo regeneruje a mysl se čistí.",
+      "color": "#a78bfa",
+      "parent": "mysl",
+      "related": []
+    },
+    {
+      "id": "vyziva",
+      "label": "Výživa",
+      "definition": "Jídlo není cíl, ale nástroj. Výživa dlouhověkosti stojí na bílkovinách, stabilní glukóze a chytrých půstech, které podporují metabolickou flexibilitu.",
+      "color": "#ef4444",
+      "parent": "dlouhovekost",
+      "related": [
+        "pust",
+        "bílkoviny",
+        "glukoza_vyziva",
+        "mikronutrienty",
+        "hydratace",
+        "casovani_jidel"
+      ]
+    },
+    {
+      "id": "pust",
+      "label": "Půst",
+      "definition": "Půst zlepšuje metabolickou flexibilitu, autofagii a citlivost na inzulin. Nejde o hladovění, ale o řízený odpočinek metabolismu.",
+      "color": "#f87171",
+      "parent": "vyziva",
+      "related": []
+    },
+    {
+      "id": "bílkoviny",
+      "label": "Bílkoviny",
+      "definition": "Klíčový stavební materiál pro svaly, hormony i enzymy. Cíl: 1.6–2.2 g/kg/den, rozloženo do 3–4 jídel.",
+      "color": "#fca5a5",
+      "parent": "vyziva",
+      "related": []
+    },
+    {
+      "id": "glukoza_vyziva",
+      "label": "Glukóza (výživa)",
+      "definition": "Stabilní hladina cukru = stabilní energie. Vyhýbej se výkyvům po jídle – sleduj, jak reaguješ na různé potraviny.",
+      "color": "#ef9a9a",
+      "parent": "vyziva",
+      "related": []
+    },
+    {
+      "id": "mikronutrienty",
+      "label": "Mikronutrienty",
+      "definition": "Vitaminy a minerály jsou klíčem k buněčné rovnováze. Nedostatek hořčíku, zinku či vitamínu D narušuje regeneraci.",
+      "color": "#fb7185",
+      "parent": "vyziva",
+      "related": []
+    },
+    {
+      "id": "hydratace",
+      "label": "Hydratace",
+      "definition": "Voda je médium života. Nedostatek tekutin zhoršuje kognici, regeneraci i detoxikaci. Sleduj barvu moči, ne jen pocit žízně.",
+      "color": "#fca5a5",
+      "parent": "vyziva",
+      "related": []
+    },
+    {
+      "id": "casovani_jidel",
+      "label": "Časování jídel",
+      "definition": "Načasování jídla ovlivňuje metabolismus, spánek i regeneraci. Jez větší jídla dříve a nech tělu klid před spaním.",
+      "color": "#f87171",
+      "parent": "vyziva",
+      "related": []
+    }
+  ]
+}
