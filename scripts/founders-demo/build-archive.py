@@ -166,7 +166,7 @@ hud=hud.replace('</head>', '''<style>
   const details=document.createElement('details');details.id='archive-catalogue';
   const summary=document.createElement('summary');summary.textContent='Další ukázkové akce ('+others.length+')';details.append(summary);
   const list=document.createElement('ul');others.forEach(a=>{const li=document.createElement('li');li.textContent=a.label;list.append(li)});details.append(list);
-  const note=document.createElement('p');note.textContent='Původní katalog. Výběr vhodné akce pro tebe provádí aplikace podle tvých údajů.';note.style.color='#91a5bc';details.append(note);host.append(details);
+  const note=document.createElement('p');note.textContent='Původní katalog. Výběr vhodné akce pro tebe provádí aplikace podle tvých údajů.';note.style.color='#91a5bc';details.append(note);if(host.children?.[2])host.insertBefore(details,host.children[2]);else host.append(details);
  };
  const observer=new MutationObserver(install);observer.observe(document,{childList:true,subtree:true});install();
 })();
