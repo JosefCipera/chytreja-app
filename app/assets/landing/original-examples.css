@@ -8,6 +8,7 @@
 .public-example #network { top:102px; height:calc(100dvh - 102px); }
 .public-example #sidePanel { top:102px; height:calc(100dvh - 102px); }
 .public-example .example-toolbar { position:relative; z-index:130; }
+.public-example .crt-header { flex-wrap:wrap; }
 .public-example #crtTitle { display:inline !important; font-size:13px; }
 .example-open-area { margin:16px 0; padding:10px 14px; border:1px solid #425c77; border-radius:8px; background:#132437; color:#c8d8e8; font:inherit; cursor:pointer; }
 .example-panel-note { color:#94a3b8; font-size:13px; line-height:1.6; margin-top:24px; }
