@@ -184,7 +184,7 @@ REVOKE ALL ON FUNCTION public.chj_privacy_status(text),public.chj_privacy_change
 GRANT EXECUTE ON FUNCTION public.chj_privacy_status(text),public.chj_privacy_change(text,text,text,text,text,boolean,text),public.chj_privacy_refresh_registry(),public.chj_privacy_schema_check(),public.chj_privacy_purge_rows(text,text) TO service_role;
 
 CREATE OR REPLACE FUNCTION public.chj_privacy_claim_job(p_lease uuid,p_job uuid DEFAULT NULL) RETURNS jsonb
-LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,public AS $
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,public AS $$
 DECLARE j public.chj_privacy_jobs;
 BEGIN
  DELETE FROM public.chj_privacy_jobs WHERE kind='account' AND stage='complete' AND uid='' AND updated_at<now()-interval '30 days';
@@ -193,9 +193,9 @@ BEGIN
  IF j.id IS NULL THEN RETURN NULL; END IF;
  UPDATE public.chj_privacy_jobs SET lease_id=p_lease,locked_until=now()+interval '3 minutes',attempts=attempts+1,updated_at=now() WHERE id=j.id RETURNING * INTO j;
  RETURN to_jsonb(j)-'receipt_hash';
-END $;
+END $$;
 CREATE OR REPLACE FUNCTION public.chj_privacy_job_step(p_job uuid,p_lease uuid,p_stage text) RETURNS boolean
-LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,public AS $
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,public AS $$
 DECLARE j public.chj_privacy_jobs;
 BEGIN
  SELECT * INTO j FROM public.chj_privacy_jobs WHERE id=p_job AND lease_id=p_lease AND locked_until>now() FOR UPDATE;
@@ -203,18 +203,18 @@ BEGIN
  IF p_stage NOT IN ('identity','external_review','complete') OR (p_stage='complete' AND j.kind<>'health') THEN RAISE EXCEPTION 'INVALID_JOB_STEP'; END IF;
  UPDATE public.chj_privacy_jobs SET stage=p_stage,updated_at=now(),locked_until=CASE WHEN p_stage IN ('external_review','complete') THEN NULL ELSE locked_until END,last_error_code=NULL WHERE id=p_job;
  RETURN true;
-END $;
+END $$;
 CREATE OR REPLACE FUNCTION public.chj_privacy_job_error(p_job uuid,p_lease uuid,p_code text) RETURNS boolean
-LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,public AS $
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,public AS $$
 BEGIN
  IF p_code NOT IN ('STORAGE_REVIEW_REQUIRED','STORAGE_UNAVAILABLE','ERASURE_RETRY_REQUIRED') THEN RAISE EXCEPTION 'INVALID_ERROR_CODE'; END IF;
  UPDATE public.chj_privacy_jobs SET last_error_code=p_code,locked_until=now()+interval '5 minutes',updated_at=now() WHERE id=p_job AND lease_id=p_lease;
  RETURN FOUND;
-END $;
+END $$;
 -- Only an operator who has actually checked external copies may finish an account request.
 -- Never call this automatically after the local database/Firebase work.
 CREATE OR REPLACE FUNCTION public.chj_privacy_finish_external_review(p_job uuid,p_verified boolean) RETURNS boolean
-LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,public AS $
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,public AS $$
 DECLARE j public.chj_privacy_jobs;
 BEGIN
  IF p_verified IS NOT TRUE THEN RAISE EXCEPTION 'EXTERNAL_REVIEW_REQUIRED'; END IF;
@@ -227,7 +227,7 @@ BEGIN
  -- Keep a status-only receipt, with no account identifier, for 30 days.
  UPDATE public.chj_privacy_jobs SET uid='',stage='complete',external_reviewed_at=now(),updated_at=now(),lease_id=NULL,locked_until=NULL WHERE id=j.id;
  RETURN true;
-END $;
+END $$;
 REVOKE ALL ON FUNCTION public.chj_privacy_claim_job(uuid,uuid),public.chj_privacy_job_step(uuid,uuid,text),public.chj_privacy_job_error(uuid,uuid,text),public.chj_privacy_finish_external_review(uuid,boolean) FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.chj_privacy_claim_job(uuid,uuid),public.chj_privacy_job_step(uuid,uuid,text),public.chj_privacy_job_error(uuid,uuid,text),public.chj_privacy_finish_external_review(uuid,boolean) TO service_role;
 

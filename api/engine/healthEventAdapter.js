@@ -39,7 +39,7 @@
 //   explanation_context: { system_constraint, system_leverage, action_context, evidence_context }
 // }
 
-import { createClient } from '../lib/privacySupabase.js';
+import { createClient } from '@supabase/supabase-js';
 import { runEngine }           from './engine.js';
 import { computeDailyDecision } from './dailyDecision.js';
 import { mapDiagnosis }         from './adapter.js';
@@ -608,8 +608,7 @@ export function parseSupportedGoal(text) {
 export async function applyHealthEvent(userId, event) {
   const supabase = createClient(
     process.env.SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-  );
+    process.env.SUPABASE_SERVICE_ROLE_KEY,{global:{fetch:(...args)=>(globalThis[Symbol.for('chj.privacy.fetch')]??fetch)(...args)}});
 
   const { event_type, payload } = event;
   const warnings = [];

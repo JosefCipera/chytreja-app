@@ -3,6 +3,7 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('n
 const {chromium}=require('playwright');
 const root=path.resolve(__dirname,'..'),read=p=>fs.readFileSync(path.join(root,p),'utf8');
 const authFixture=`
+const ensureHealthPrivacy=async()=>true;
 const initializeApp=()=>({});
 const getAuth=()=>({currentUser:sessionStorage.getItem('fixture-signed-in')?{uid:'return-fixture',displayName:'Fixture'}:null});
 const onAuthStateChanged=(auth,cb)=>queueMicrotask(()=>cb(auth.currentUser));
@@ -10,7 +11,7 @@ const signOut=async()=>{throw new Error('Return navigation must not sign out');}
 const authFetch=async(url,init)=>{if(init?.method&&init.method!=='GET')throw new Error('Unexpected fixture write');return {ok:true,json:async()=>({profile:{onboarding_completed:!sessionStorage.getItem('fixture-onboarding')}})};};
 `;
 const wizard=read('app/js/universe/onboarding-wizard.js').replace(/^import .*;\r?\n/gm,'').replace('export async function','async function');
-const launcher=read('app/launcher.html').replace(/^  import .*;\r?\n/gm,'').replace('<script type="module">','<script type="module">\n'+authFixture+'\n'+wizard);
+const launcher=read('app/launcher.html').replace("<style>html:not([data-chj-privacy-ready]) body{visibility:hidden}</style><script type=\"module\" src=\"/app/js/universe/privacy-guard.js?v=1\"></script>",'').replace(/^  import .*;\r?\n/gm,'').replace('<script type="module">','<script type="module">\n'+authFixture+'\n'+wizard);
 const login=read('app/login.html').replace(/    import[\s\S]*?from 'https:\/\/www.gstatic.com\/firebasejs\/[^']+';\r?\n/g,'').replace('<script type="module">','<script type="module">\n'+authFixture+`
 const GoogleAuthProvider=class{};
 const signInWithPopup=async()=>{},signInWithEmailAndPassword=async()=>{},createUserWithEmailAndPassword=async()=>{};

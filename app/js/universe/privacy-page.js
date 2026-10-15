@@ -3,13 +3,14 @@ import {privacyAuth,privacyRequest,validHealth,clearHealthLocal,blockHealth,fres
 const $=id=>document.getElementById(id);
 let state=null,busy=false;
 function message(text,error=false){$('privacy-status').textContent=text;$('privacy-status').classList.toggle('error',error);}
-function loading(on){busy=on;for(const b of document.querySelectorAll('button'))b.disabled=on;}
+function loading(on){busy=on;for(const b of document.querySelectorAll('button'))b.disabled=on;if(!on&&state)$('grant-consent').disabled=!state.ready||state.cleanup_pending;}
 function returnUrl(){
  let raw;try{raw=sessionStorage.getItem('chj_privacy_return:'+privacyAuth.currentUser?.uid);}catch{}
  try{const u=new URL(raw||'/launcher',location.origin);if(u.origin===location.origin&&!/^\/(api|login|soukromi)(\/|$)/.test(u.pathname))return u.pathname+u.search+u.hash;}catch{}
  return '/launcher';
 }
 function show(current){
+ if(!state||state.epoch!==current.epoch||state.status!==current.status)for(const id of ['adult-check','terms-check','health-check'])$(id).checked=false;
  state=current;$('privacy-login').hidden=true;$('privacy-controls').hidden=false;
  $('privacy-summary').textContent=validHealth(current)?'Zdravotní personalizace je zapnutá.':current.status==='deleting'?'Účet čeká na výmaz. Přístup k osobním datům je zablokovaný.':'Zdravotní personalizace je vypnutá.';
  $('consent-panel').hidden=validHealth(current)||current.status==='deleting';
@@ -76,3 +77,5 @@ onAuthStateChanged(privacyAuth,async user=>{
  if(!user){$('privacy-controls').hidden=true;$('privacy-login').hidden=false;return;}
  await refresh();
 });
+
+window.addEventListener('chj-privacy-blocked',()=>refresh());

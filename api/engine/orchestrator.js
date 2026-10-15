@@ -1,4 +1,3 @@
-import { privacyConsole as console } from '../lib/privacyConsole.js';
 // orchestrator.js — AI Orchestrator v0.1
 //
 // Thin orchestration layer over locked contracts:

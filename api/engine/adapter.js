@@ -1,9 +1,8 @@
-import { privacyConsole as console } from '../lib/privacyConsole.js';
 // adapter.js — Health Data Model v1 translation layer
 // Reads from current Supabase tables, returns {person, clinicalHistory, observations}.
 // Does NOT change DB schema. Enforces canonical birth_year from user_profiles.
 
-import { createClient } from '../lib/privacySupabase.js';
+import { createClient } from '@supabase/supabase-js';
 import { applyActionInstructions } from './actionInstructions.js';
 
 const DIAG_KEYWORDS = [
@@ -34,8 +33,7 @@ export function mapDiagnosis(rawString) {
 export async function fetchHealthData(userId) {
   const supabase = createClient(
     process.env.SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-  );
+    process.env.SUPABASE_SERVICE_ROLE_KEY,{global:{fetch:(...args)=>(globalThis[Symbol.for('chj.privacy.fetch')]??fetch)(...args)}});
 
   const [
     { data: userProfile },
@@ -197,8 +195,7 @@ export async function fetchHealthData(userId) {
 export async function fetchActionPool(protocolTypes) {
   const supabase = createClient(
     process.env.SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-  );
+    process.env.SUPABASE_SERVICE_ROLE_KEY,{global:{fetch:(...args)=>(globalThis[Symbol.for('chj.privacy.fetch')]??fetch)(...args)}});
   const { data, error } = await supabase
     .from('longevity_actions')
     .select('id, node_id, label, protocol_type, type, duration, reps, tier, tags, constraint_exclude, intensity, modality, support_sides, stability_support, upper_body_demand, load_distribution')
@@ -211,8 +208,7 @@ export async function fetchActionPool(protocolTypes) {
 export async function fetchPersonConstraints(userId) {
   const supabase = createClient(
     process.env.SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-  );
+    process.env.SUPABASE_SERVICE_ROLE_KEY,{global:{fetch:(...args)=>(globalThis[Symbol.for('chj.privacy.fetch')]??fetch)(...args)}});
   const { data, error } = await supabase
     .from('user_constraints')
     .select('constraint_type, constraint_key, constraint_value, severity')
@@ -224,8 +220,7 @@ export async function fetchPersonConstraints(userId) {
 export async function fetchActionAssignments(userId, days = 30) {
   const supabase = createClient(
     process.env.SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-  );
+    process.env.SUPABASE_SERVICE_ROLE_KEY,{global:{fetch:(...args)=>(globalThis[Symbol.for('chj.privacy.fetch')]??fetch)(...args)}});
   const since = new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
   const { data, error } = await supabase
     .from('action_assignments')
@@ -239,7 +234,7 @@ export async function fetchActionAssignments(userId, days = 30) {
   const summary = rows.slice(0, 5).map(a =>
     `${a.intervention_id}/${a.status}/${a.assigned_date}/${a.assigned_at?.slice(0, 16)}`
   );
-  console.log(`[ORCHESTRATE] uid=${userId} loaded_action_assignments=${rows.length}`, rows.length ? summary : '(clean)');
+  // Do not log user identifiers or personal action rows.
   return rows;
 }
 

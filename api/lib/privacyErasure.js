@@ -23,7 +23,7 @@ export function makeStorageAdapter({db,manifest}) {
    const rule=known.get(bucket.name);if(!rule)throw Object.assign(Error('Unknown bucket'),{code:'STORAGE_REVIEW_REQUIRED'});
    if(rule.scope==='shared'||(kind==='health'&&rule.scope==='account'))continue;
    if(!['health','account'].includes(rule.scope)||rule.prefix!=='{uid}/')throw Object.assign(Error('Unknown ownership rule'),{code:'STORAGE_REVIEW_REQUIRED'});
-   const root=uid+'/';let count=0;
+   const root=encodeURIComponent(uid)+'/';let count=0;
    async function removeTree(prefix) {
     for(;;){
      const {data:rows,error:listing}=await db.storage.from(bucket.name).list(prefix,{limit:100,offset:0});
@@ -39,7 +39,7 @@ export function makeStorageAdapter({db,manifest}) {
      if(files.length){const {error:deleting}=await db.storage.from(bucket.name).remove(files);if(deleting)throw Object.assign(Error('Storage deletion failed'),{code:'STORAGE_UNAVAILABLE'});}
      count+=rows.length;if(count>100000)throw Object.assign(Error('Storage requires manual continuation'),{code:'STORAGE_REVIEW_REQUIRED'});
      // Some storage APIs return empty directory markers. Re-listing must progress.
-     if(!files.length&&rows.every(r=>!r.id))return;
+
     }
    }
    await removeTree(root);
