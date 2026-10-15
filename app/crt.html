@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
   <title>Kauzální mapa zdraví</title>
+  <script>window.CHJ_CRT_EXAMPLE = new URLSearchParams(location.search).get('vzor') === 'kovarova'; if (window.CHJ_CRT_EXAMPLE) document.documentElement.classList.add('public-example');</script>
+  <link rel="stylesheet" href="/app/assets/landing/original-examples.css?v=1">
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="icon" href="/app/favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/app/assets/icons/apple-touch-icon-180.png">
@@ -352,13 +354,14 @@
 
   </style>
   <script>
-    if ('serviceWorker' in navigator) {
+    if (!window.CHJ_CRT_EXAMPLE && 'serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(r => r.unregister()));
       caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
     }
   </script>
 </head>
 <body>
+<div class="example-toolbar" hidden id="example-toolbar"><span>Vzor Kovářová · ukázková data</span><a href="/app/?vzor=dlouhovekost">Vesmír Dlouhověkosti</a><a href="/#ukazky" data-example-return>← Zpět na web</a></div>
 
 <div class="crt-header">
   <div class="chj-logo">
@@ -446,14 +449,15 @@
 </div>
 
 <script type="module">
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+// Renderer shared by personal CRT and the stored Kovářová example.
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 const SUPABASE_URL = 'https://pzbbmfzdjkqpzopnsmxb.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB6YmJtZnpkamtxcHpvcG5zbXhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MDc4MzQ3MzMsImV4cCI6MjAyMzQxMDczM30.mMSZuLFTHxVrpk1bCr5pDEKcTKdNS7q6Gj_bGVV_Hb4';
 
-let userId = new URLSearchParams(location.search).get('userId') || localStorage.getItem('chj_uid') || null;
-const userRole = localStorage.getItem('userRoleOverride') || localStorage.getItem('userRole') || 'longevity';
+const isExample = window.CHJ_CRT_EXAMPLE === true;
+let userId = isExample ? null : new URLSearchParams(location.search).get('userId') || localStorage.getItem('chj_uid') || null;
+const userRole = isExample ? 'longevity' : localStorage.getItem('userRoleOverride') || localStorage.getItem('userRole') || 'longevity';
 var CRT_CACHE_KEY = 'chj_crt_' + userId;
 window.CRT_CACHE_KEY = CRT_CACHE_KEY;
 
@@ -557,6 +561,7 @@ function normLabs(raw) {
   return out;
 }
 async function fetchUserContext() {
+  if (isExample) return { labs:{}, checkin:{}, diagnoses:[], symptoms:[], meds:[] };
   if (!userId) return { labs:{}, checkin:{}, diagnoses:[], symptoms:[], meds:[] };
   const res = await fetch(`/api/user?action=crt-context&userId=${userId}`);
   if (!res.ok) return { labs:{}, checkin:{}, diagnoses:[], symptoms:[], meds:[] };
@@ -650,6 +655,11 @@ const _CANONICAL_ROOT_ID = 'ROOT_K';
 const KB_FILES_V2 = [_KB_STORY_MAP.story];
 
 async function loadCRT() {
+  if (isExample) {
+    const res = await fetch('/app/assets/examples/crt-kovarova.json');
+    if (!res.ok) throw new Error('Vzor Kovářové se nepodařilo načíst.');
+    return res.json();
+  }
   const forceRegen = new URLSearchParams(location.search).get('force') === '1';
   const modelParam = new URLSearchParams(location.search).get('model') || undefined;
   // Fable generátor = default pro všechny (včetně crt.html bez parametrů)
@@ -794,6 +804,7 @@ async function loadCRT() {
 }
 
 async function loadCRTOpus(force = false, model = undefined) {
+  if (isExample) return loadCRT();
   const body = { userId, role: userRole, force, model };
 
   const res = await (window.authFetch ?? fetch)('/api/crt-generate', {
@@ -938,6 +949,7 @@ function renderTree(data) {
     wheelSensitivity:    0.15,
   });
 
+  if (isExample) window._crtExampleCy = _cy;
   _cy.on('tap', 'node', evt => {
     const nid = evt.target.id();
     _applyHighlight(nid);
@@ -1383,7 +1395,7 @@ function buildPanelData(node, ctx, parents, children, meds, supps, contras, hidd
   // States: '' → first action | 'ask' → second action offer | 'second' → second action | 'done' → finished
   let crtActionsHtml = '';
   {
-    const pool = (window._crtActionPool || {})[nodeId] || [];
+    const pool = isExample ? [] : (window._crtActionPool || {})[nodeId] || [];
     if (pool.length > 0) {
       const today    = new Date().toISOString().slice(0, 10);
       const stateKey = `crt_state_${today}_${nodeId}`;
@@ -1488,6 +1500,7 @@ function buildPanelData(node, ctx, parents, children, meds, supps, contras, hidd
 window.closeCrtPanel = closeCrtPanel;
 
 window.completeCrtAction = function(nodeId, actionId, isSecond) {
+  if (isExample) return;
   const today    = new Date().toISOString().slice(0, 10);
   const stateKey = `crt_state_${today}_${nodeId}`;
   const idxKey   = `crt_idx_${nodeId}`;
@@ -1505,12 +1518,14 @@ window.completeCrtAction = function(nodeId, actionId, isSecond) {
 };
 
 window.acceptCrtSecond = function(nodeId) {
+  if (isExample) return;
   const today = new Date().toISOString().slice(0, 10);
   localStorage.setItem(`crt_state_${today}_${nodeId}`, 'second');
   openNodePanel(nodeId);
 };
 
 window.declineCrtSecond = function(nodeId) {
+  if (isExample) return;
   const today = new Date().toISOString().slice(0, 10);
   localStorage.setItem(`crt_state_${today}_${nodeId}`, 'done');
   openNodePanel(nodeId);
@@ -1687,6 +1702,7 @@ function _renderIxPanel() {
 
 // ── Boot ─────────────────────────────────────────────────────────────────────
 async function enrichContraMap(data) {
+  if (isExample) return;
   const ctx = data._ctx || {};
   const user_meds = ctx.meds || [];
   const user_supps = ctx.supps || [];
@@ -2092,6 +2108,7 @@ window.toggleStoryBranch = function() {
 
 async function boot() {
   try {
+    if (isExample) window._crtActionPool = {};
     if (!window._crtActionPool) {
       try { window._crtActionPool = await fetch('/data/crt/crt-actions.json').then(r => r.json()); }
       catch(e) { window._crtActionPool = {}; }
@@ -2154,9 +2171,15 @@ if (screen.orientation) screen.orientation.addEventListener('change', _rerender)
 </script>
 
 <script type="module">
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js';
-import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js';
-import { initUserDataPanel } from '/app/js/universe/user-data-panel.js';
+if (window.CHJ_CRT_EXAMPLE) {
+  document.getElementById('example-toolbar').hidden = false;
+  document.title = 'CRT Kovářové — Chytré já';
+  await import('/app/js/examples/example-return.js');
+  window._crtBoot?.();
+} else {
+const { initializeApp } = await import('https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js');
+const { getAuth, onAuthStateChanged, signOut } = await import('https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js');
+const { initUserDataPanel } = await import('/app/js/universe/user-data-panel.js');
 
 const _fbApp = initializeApp({ apiKey:"AIzaSyAKREZsoBZkA1xOQ5ff3XDmiJ88nwSjeOk", authDomain:"chytre-ja-app.firebaseapp.com", projectId:"chytre-ja-app", storageBucket:"chytre-ja-app.firebasestorage.app", messagingSenderId:"65882611642", appId:"1:65882611642:web:53d82914aa07d6677d4783" });
 const _fbAuth = getAuth(_fbApp);
@@ -2204,6 +2227,8 @@ window.openGuide = () => {
 document.addEventListener('click', e => {
   if (!e.target.closest('.user-profile-wrapper')) document.getElementById('profileDropdown')?.classList.add('hidden');
 });
+
+}
 </script>
 
 <script>
@@ -2217,6 +2242,7 @@ function goBack() {
 }
 
 async function regenCRT() {
+  if (window.CHJ_CRT_EXAMPLE) return;
   const btn = document.getElementById('crtRegenBtn');
   btn.textContent = '↻ Generuji…';
   btn.disabled = true;

@@ -1,0 +1,191 @@
+{
+  "title": "CRT Kovářové",
+  "subtitle": "Uložený modelový strom",
+  "nodes": [
+    {
+      "id": "ATHEROSCLEROSIS",
+      "label": "Ateroskleróza",
+      "label_expert": "Ateroskleróza",
+      "label_layman": "Cévní pláty v tepnách",
+      "type": "cause",
+      "level": 2,
+      "branch": "R"
+    },
+    {
+      "id": "BONE_DENSITY_LOSS",
+      "label": "Úbytek kostní hmoty",
+      "label_expert": "Úbytek kostní hmoty",
+      "label_layman": "Řídnutí kostí",
+      "type": "cause",
+      "level": 1,
+      "branch": "R"
+    },
+    {
+      "id": "DYSLIPIDEMIA",
+      "label": "Dyslipidémie",
+      "label_expert": "Dyslipidémie",
+      "label_layman": "Vysoký LDL cholesterol",
+      "type": "cause",
+      "level": 1,
+      "branch": "RC"
+    },
+    {
+      "id": "ENDOTHELIAL_DYSFUNCTION",
+      "label": "Endoteliální dysfunkce",
+      "label_expert": "Endoteliální dysfunkce",
+      "label_layman": "Poškozené stěny cév",
+      "type": "cause",
+      "level": 4,
+      "branch": "RC"
+    },
+    {
+      "id": "FALL_RISK",
+      "label": "Riziko pádu se zlomeninou",
+      "label_expert": "Riziko pádu se zlomeninou",
+      "label_layman": "Hrozba pádu a zlomené kosti",
+      "type": "ude",
+      "level": 5,
+      "branch": "C"
+    },
+    {
+      "id": "GAIT_INSTABILITY",
+      "label": "Nestabilita chůze",
+      "label_expert": "Nestabilita chůze",
+      "label_layman": "Nejistá chůze a rovnováha",
+      "type": "junction",
+      "level": 4,
+      "branch": "C"
+    },
+    {
+      "id": "HYPERTENSION",
+      "label": "Arteriální hypertenze",
+      "label_expert": "Arteriální hypertenze",
+      "label_layman": "Vysoký krevní tlak",
+      "type": "cause",
+      "level": 3,
+      "branch": "C"
+    },
+    {
+      "id": "HYPOTHYROIDISM",
+      "label": "Hypothyreóza",
+      "label_expert": "Hypothyreóza",
+      "label_layman": "Nedostatečná funkce štítné žlázy",
+      "type": "cause",
+      "level": 0,
+      "branch": "R"
+    },
+    {
+      "id": "INFLAMMAGING",
+      "label": "Inflammaging",
+      "label_expert": "Inflammaging",
+      "label_layman": "Věkem podmíněný zánět",
+      "type": "cause",
+      "level": 0,
+      "branch": "C"
+    },
+    {
+      "id": "INSULIN_RESISTANCE",
+      "label": "Inzulínová rezistence",
+      "label_expert": "Inzulínová rezistence",
+      "label_layman": "Necitlivost na inzulín",
+      "type": "cause",
+      "level": 2,
+      "branch": "C"
+    },
+    {
+      "id": "MUSCULOSKELETAL_DEG",
+      "label": "Degenerace pohybového aparátu",
+      "label_expert": "Degenerace pohybového aparátu",
+      "label_layman": "Opotřebené klouby a páteř",
+      "type": "cause",
+      "level": 2,
+      "branch": "R"
+    },
+    {
+      "id": "OBESITY",
+      "label": "Obezita",
+      "label_expert": "Obezita",
+      "label_layman": "Obezita",
+      "type": "cause",
+      "level": 1,
+      "branch": "C"
+    },
+    {
+      "id": "PERIPHERAL_NEUROPATHY",
+      "label": "Periferní neuropatie",
+      "label_expert": "Periferní neuropatie",
+      "label_layman": "Poškozené nervy v rukou a nohách",
+      "type": "cause",
+      "level": 3,
+      "branch": "LC"
+    },
+    {
+      "id": "VASCULAR_STIFFNESS",
+      "label": "Arteriální rigidita",
+      "label_expert": "Arteriální rigidita",
+      "label_layman": "Tuhé cévy",
+      "type": "cause",
+      "level": 3,
+      "branch": "RC"
+    }
+  ],
+  "edges": [
+    {
+      "from": "ATHEROSCLEROSIS",
+      "to": "VASCULAR_STIFFNESS"
+    },
+    {
+      "from": "BONE_DENSITY_LOSS",
+      "to": "MUSCULOSKELETAL_DEG"
+    },
+    {
+      "from": "DYSLIPIDEMIA",
+      "to": "ATHEROSCLEROSIS"
+    },
+    {
+      "from": "GAIT_INSTABILITY",
+      "to": "FALL_RISK"
+    },
+    {
+      "from": "HYPERTENSION",
+      "to": "ENDOTHELIAL_DYSFUNCTION"
+    },
+    {
+      "from": "HYPOTHYROIDISM",
+      "to": "BONE_DENSITY_LOSS"
+    },
+    {
+      "from": "INFLAMMAGING",
+      "to": "HYPOTHYROIDISM"
+    },
+    {
+      "from": "INFLAMMAGING",
+      "to": "OBESITY"
+    },
+    {
+      "from": "INSULIN_RESISTANCE",
+      "to": "HYPERTENSION"
+    },
+    {
+      "from": "MUSCULOSKELETAL_DEG",
+      "to": "GAIT_INSTABILITY"
+    },
+    {
+      "from": "OBESITY",
+      "to": "INSULIN_RESISTANCE"
+    },
+    {
+      "from": "PERIPHERAL_NEUROPATHY",
+      "to": "GAIT_INSTABILITY"
+    },
+    {
+      "from": "VASCULAR_STIFFNESS",
+      "to": "ENDOTHELIAL_DYSFUNCTION"
+    },
+    {
+      "from": "VASCULAR_STIFFNESS",
+      "to": "HYPERTENSION"
+    }
+  ],
+  "medications_map": []
+}
