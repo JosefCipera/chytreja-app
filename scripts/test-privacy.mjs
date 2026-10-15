@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 import {withPrivacy} from '../api/lib/withPrivacy.js';
-import {privacyContext} from '../api/lib/privacyContext.js';
+import {makeScopedFetch,privacyContext} from '../api/lib/privacyContext.js';
 import {createClient} from '../api/lib/privacySupabase.js';
 import {HEALTH_VERSION,TERMS_VERSION,POLICY_VERSION} from '../api/lib/privacyStore.js';
 import {makePrivacyHandler} from '../api/privacy.js';
@@ -100,4 +100,31 @@ await test('withdrawal keeps external copies pending and preserves identity',asy
  const result=await eraseJob({id:'job',uid:'fixture-a',kind:'health'},{db:{rpc:async()=>({data:{}})},lease:'fixture-lease',storage:{erase:async()=>{}},identity:{deleteUser:async()=>{throw Error('must preserve account');}},advance:async(_j,_l,s)=>steps.push(s)});
  assert.equal(result.stage,'external_review');assert.equal(result.all_copies_erased,false);assert.deepEqual(steps,['external_review']);
 });
+
+await test('external fetch strips actor and spoofed privacy headers',async()=>{
+ const seen=[];const transport=makeScopedFetch(async(url,init)=>{seen.push(Object.fromEntries(init.headers));return new Response('[]');},'https://fixture.invalid');
+ await privacyContext.run({uid:'fixture-a',epoch:9,scope:'health'},()=>transport('https://external.invalid/rest/v1/data',{headers:{'x-chj-privacy-uid':'spoof','x-chj-privacy-epoch':'1','x-chj-privacy-scope':'health'}}));
+ assert.equal(seen[0]['x-chj-privacy-uid'],undefined);assert.equal(seen[0]['x-chj-privacy-epoch'],undefined);
+});
+await test('late blocked audio clears its private transcript header even on status outage',async()=>{
+ for(const offline of [false,true]){
+  let checks=0;const headers=new Map(),reply=res();reply.setHeader=(k,v)=>headers.set(k.toLowerCase(),v);reply.removeHeader=k=>headers.delete(k.toLowerCase());
+  const status=async()=>{checks++;if(checks>1){if(offline)throw Error('offline');return {...active(),status:'withdrawn',epoch:2};}return active();};
+  await withPrivacy(async(_q,r)=>{r.setHeader('X-CHJ-Text','synthetic-private-transcript');r.setHeader('Content-Type','audio/mpeg');return r.send(Buffer.from('fixture audio'));},{identify:identity,status,ready:()=>true})(request,reply);
+  assert.ok([403,503].includes(reply.code));assert.equal(headers.has('x-chj-text'),false);assert.equal(headers.has('content-type'),false);assert.equal(JSON.stringify(reply.body).includes('private-transcript'),false);
+ }
+});
+await test('storage erases only reviewed owned health objects, retaining other owner and account files',async()=>{
+ const files=new Map([['health',new Set(['fixture-a/root.txt','fixture-a/nested/one.txt','fixture-b/other.txt'])],['account',new Set(['fixture-a/receipt.txt'])]]);
+ const db={storage:{listBuckets:async()=>({data:[{name:'health'},{name:'account'}]}),from:bucket=>({
+  list:async(prefix)=>{const base=prefix.replace(/\/$/,'')+'/';const entries=new Map();for(const key of files.get(bucket)){if(!key.startsWith(base))continue;const rest=key.slice(base.length),slash=rest.indexOf('/');entries.set(slash<0?rest:rest.slice(0,slash),slash<0?'fixture-object-id':null);}return {data:[...entries].map(([name,id])=>({name,id}))};},
+  remove:async(keys)=>{for(const key of keys)files.get(bucket).delete(key);return {error:null};}
+ })}};
+ const manifest={reviewed:true,firebase:'not-used',buckets:[{name:'health',scope:'health',prefix:'{uid}/'},{name:'account',scope:'account',prefix:'{uid}/'}]};
+ await makeStorageAdapter({db,manifest}).erase('fixture-a','health');
+ assert.deepEqual([...files.get('health')],['fixture-b/other.txt']);assert.deepEqual([...files.get('account')],['fixture-a/receipt.txt']);
+ await makeStorageAdapter({db,manifest}).erase('fixture-a','account');assert.equal(files.get('account').size,0);
+ await assert.rejects(()=>makeStorageAdapter({db,manifest:{...manifest,buckets:[]}}).erase('fixture-a'),{code:'STORAGE_REVIEW_REQUIRED'});
+});
+
 console.log('PASS privacy unit/integration boundaries: '+passed+' cases; no real accounts or network calls.');

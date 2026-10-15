@@ -1,7 +1,7 @@
 import { requireAuth } from './requireAuth.js';
 import { privacyContext } from './privacyContext.js';
 import { configured, permitted, privacyStatus } from './privacyStore.js';
-const privateHeaders=['X-CHJ-Text'];
+const privateHeaders=['X-CHJ-Text','Content-Type','Content-Length'];
 const safeError={error:'Nejdřív nastav soukromí svého účtu.',code:'PRIVACY_REQUIRED'};
 export function withPrivacy(handler,{scope='health',identify=requireAuth,status=privacyStatus,ready=configured}={}) {
  return async function privacyProtected(req,res) {
@@ -23,7 +23,7 @@ export function withPrivacy(handler,{scope='health',identify=requireAuth,status=
    pending=(async()=>{
     let current;
     try{current=await status(actor.uid);}catch{
-     sending=true;try{res.status(503);return originals.json?originals.json({error:'Soukromí teď nelze ověřit.',code:'PRIVACY_UNAVAILABLE'}):originals.end();}finally{sending=false;}
+     sending=true;try{for(const header of privateHeaders)res.removeHeader?.(header);res.status(503);return originals.json?originals.json({error:'Soukromí teď nelze ověřit.',code:'PRIVACY_UNAVAILABLE'}):originals.end();}finally{sending=false;}
     }
     sending=true;
     try{
