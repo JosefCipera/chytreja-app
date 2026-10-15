@@ -21,8 +21,13 @@ function show(current){
  $('cleanup-notice').hidden=!current.cleanup_pending;
 }
 async function refresh(){
- if(!privacyAuth.currentUser)return;
- try{show(await privacyRequest('status'));}catch(error){message('Nastavení soukromí teď nelze načíst. Zkus to znovu.',true);}
+ const uid=privacyAuth.currentUser?.uid;
+ if(!uid||sessionStorage.getItem(receiptKey))return;
+ try{
+  const current=await privacyRequest('status');
+  if(privacyAuth.currentUser?.uid!==uid||sessionStorage.getItem(receiptKey))return;
+  show(current);
+ }catch(error){message('Nastavení soukromí teď nelze načíst. Zkus to znovu.',true);}
 }
 async function deletionStatus(run=false){
  const receipt=sessionStorage.getItem(receiptKey);if(!receipt)return false;
