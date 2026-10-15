@@ -43,6 +43,7 @@ const http=require('node:http'),fs=require('node:fs'),path=require('node:path'),
   await page.locator('#grant-consent').click();await page.waitForFunction(()=>document.getElementById('privacy-status').textContent.includes('Potvrď'));
   assert.equal(calls.filter(c=>c.action==='grant').length,0);
   for(const id of ['adult-check','terms-check','health-check'])await page.locator('#'+id).check();
+  assert.equal(await page.locator('#privacy-status').textContent(),'');
   await page.screenshot({path:path.join(out,'consent-mobile.png'),fullPage:true});
   await page.locator('#grant-consent').click();await page.waitForURL('**/launcher');
   assert.equal(calls.filter(c=>c.action==='grant').length,1);
@@ -68,6 +69,7 @@ const http=require('node:http'),fs=require('node:fs'),path=require('node:path'),
   await page.locator('#delete-password').fill('fixture-password-only');await page.locator('#delete-account').click();
   await page.waitForFunction(()=>document.getElementById('deletion-status').textContent.includes('úplný výmaz zatím nepotvrzujeme'));
   assert.equal(calls.filter(c=>c.action==='delete').length,1);
+  assert.equal(await page.locator('#privacy-status').textContent(),'');
   assert.ok(!JSON.stringify(calls).includes('fixture-password-only'));
   assert.equal(await page.locator('#privacy-controls').isVisible(),false);
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);

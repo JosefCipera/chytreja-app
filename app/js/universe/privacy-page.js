@@ -31,6 +31,7 @@ async function refresh(){
 }
 async function deletionStatus(run=false){
  const receipt=sessionStorage.getItem(receiptKey);if(!receipt)return false;
+ message('');
  $('privacy-controls').hidden=true;$('privacy-login').hidden=true;$('deletion-panel').hidden=false;
  try{
   const data=await privacyRequest(run?'continue-delete':'deletion-status',{receipt});
@@ -40,6 +41,9 @@ async function deletionStatus(run=false){
  }catch{$('deletion-status').textContent='Stav žádosti teď nelze ověřit. Žádost tím není zrušená. Zkus kontrolu znovu nebo napiš na info@iting.cz.';}
  return true;
 }
+for(const id of ['adult-check','terms-check','health-check'])$(id).addEventListener('change',()=>{
+ if(['adult-check','terms-check','health-check'].every(key=>$(key).checked)&&$('privacy-status').textContent.startsWith('Potvrď jednotlivé volby'))message('');
+});
 $('grant-consent').addEventListener('click',async()=>{
  if(busy||!state?.ready)return;
  if(!['adult-check','terms-check','health-check'].every(id=>$(id).checked)){message('Potvrď jednotlivé volby. Zdravotní souhlas není součástí obchodních podmínek.',true);return;}
