@@ -36,6 +36,17 @@ sql(headers('fixture-a',1)+"update user_profiles set value='late' where user_id=
 sql(grant,False)
 lease="'00000000-0000-0000-0000-000000000001'"
 job=json.loads(sql("select chj_privacy_claim_job("+lease+")"))
+# The real user_profiles table is mixed: never treat it as a deletable health row.
+assert sql("select withdrawal_mode from chj_privacy_registry where table_name='user_profiles'")=='review'
+sql("select chj_privacy_purge_rows('fixture-a','health')",False)
+assert sql("select value from user_profiles where user_id='fixture-a'")=='A updated'
+assert sql("select count(*) from action_assignments where user_id='fixture-a'")=='1'
+assert json.loads(sql("select chj_privacy_status('fixture-a')"))['cleanup_pending'] is True
+# Pure fixture has ONLY user_id/value, no live account/contact fields.
+# Explicitly classify that synthetic table solely to exercise the generic purge.
+# This is not a proposed live override for mixed user_profiles.
+sql("update chj_privacy_registry set withdrawal_mode='delete' where table_name='user_profiles'")
+
 # A health withdrawal must never silently cascade into retained account scope.
 sql("select chj_privacy_purge_rows('fixture-a','health')",False)
 assert sql("select value from toc_fixture where user_id='fixture-a'")=='keep account workspace'

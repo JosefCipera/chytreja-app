@@ -28,6 +28,9 @@ CREATE TABLE IF NOT EXISTS public.chj_privacy_registry (
  scope text NOT NULL CHECK(scope IN ('health','account')),
  PRIMARY KEY(schema_name,table_name)
 );
+-- Mixed/unreviewed tables must not be dropped wholesale on health withdrawal.
+ALTER TABLE public.chj_privacy_registry ADD COLUMN IF NOT EXISTS withdrawal_mode text NOT NULL DEFAULT 'delete' CHECK(withdrawal_mode IN ('delete','review'));
+UPDATE public.chj_privacy_registry SET withdrawal_mode='review' WHERE schema_name='public' AND table_name='user_profiles';
 ALTER TABLE public.chj_privacy_accounts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.chj_privacy_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.chj_privacy_jobs ENABLE ROW LEVEL SECURITY;
@@ -106,8 +109,10 @@ BEGIN
   WHERE n.nspname='public' AND c.relkind IN ('r','p') AND c.relname NOT LIKE 'chj_privacy_%' AND a.attname='user_id'
  LOOP
   scope_name:=CASE WHEN r.table_name LIKE 'toc_%' THEN 'account' ELSE 'health' END;
-  INSERT INTO public.chj_privacy_registry VALUES(r.schema_name,r.table_name,r.owner_column,scope_name)
-   ON CONFLICT(schema_name,table_name) DO UPDATE SET owner_column=EXCLUDED.owner_column;
+  INSERT INTO public.chj_privacy_registry(schema_name,table_name,owner_column,scope,withdrawal_mode)
+   VALUES(r.schema_name,r.table_name,r.owner_column,scope_name,CASE WHEN r.table_name='user_profiles' THEN 'review' ELSE 'delete' END)
+   ON CONFLICT(schema_name,table_name) DO UPDATE SET owner_column=EXCLUDED.owner_column,
+    withdrawal_mode=CASE WHEN EXCLUDED.table_name='user_profiles' THEN 'review' ELSE chj_privacy_registry.withdrawal_mode END;
   EXECUTE format('ALTER TABLE %I.%I ENABLE ROW LEVEL SECURITY',r.schema_name,r.table_name);
   EXECUTE format('DROP POLICY IF EXISTS chj_privacy_no_direct_access ON %I.%I',r.schema_name,r.table_name);
   EXECUTE format('CREATE POLICY chj_privacy_no_direct_access ON %I.%I AS RESTRICTIVE FOR ALL TO anon,authenticated USING(false) WITH CHECK(false)',r.schema_name,r.table_name);
@@ -143,6 +148,11 @@ BEGIN
  SELECT * INTO a FROM public.chj_privacy_accounts WHERE uid=p_uid FOR UPDATE;
  IF a.uid IS NULL OR (p_kind='account' AND a.status<>'deleting') OR (p_kind='health' AND a.status NOT IN ('withdrawn','deleting')) THEN RAISE EXCEPTION 'PURGE_NOT_REQUESTED'; END IF;
  IF (public.chj_privacy_schema_check()->>'ready')::boolean IS NOT TRUE THEN RAISE EXCEPTION 'PRIVACY_SCHEMA_UNREVIEWED'; END IF;
+ -- No guessed field cleanup for the live mixed account/health profile.
+ -- This check precedes every row deletion and every internal-write bypass.
+ IF p_kind='health' AND EXISTS(SELECT 1 FROM public.chj_privacy_registry WHERE scope='health' AND withdrawal_mode='review') THEN
+  RAISE EXCEPTION 'PRIVACY_WITHDRAWAL_SCOPE_UNREVIEWED';
+ END IF;
  -- Check cross-user FK edges before deleting: never cascade into another owner.
  FOR fk IN SELECT * FROM pg_constraint WHERE contype='f' LOOP
   SELECT * INTO parent FROM public.chj_privacy_registry WHERE to_regclass(format('%I.%I',schema_name,table_name))=fk.confrelid;
