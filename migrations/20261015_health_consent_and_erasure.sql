@@ -154,6 +154,11 @@ BEGIN
   JOIN pg_attribute pa ON pa.attrelid=fk.confrelid AND pa.attnum=pair.pa_num;
   EXECUTE format('SELECT EXISTS(SELECT 1 FROM %I.%I p JOIN %I.%I c ON %s WHERE p.%I::text=$1 AND c.%I::text IS DISTINCT FROM $1)',parent.schema_name,parent.table_name,child.schema_name,child.table_name,join_sql,parent.owner_column,child.owner_column) INTO conflict USING p_uid;
   IF conflict THEN RAISE EXCEPTION 'PRIVACY_CROSS_OWNER_REFERENCE'; END IF;
+  -- Withdrawal must not cascade from a health row into retained account data.
+  IF p_kind='health' AND parent.scope='health' AND child.scope='account' THEN
+   EXECUTE format('SELECT EXISTS(SELECT 1 FROM %I.%I p JOIN %I.%I c ON %s WHERE p.%I::text=$1)',parent.schema_name,parent.table_name,child.schema_name,child.table_name,join_sql,parent.owner_column) INTO conflict USING p_uid;
+   IF conflict THEN RAISE EXCEPTION 'PRIVACY_SCOPE_DEPENDENCY_UNREVIEWED'; END IF;
+  END IF;
  END LOOP;
  PERFORM set_config('chj.privacy_internal','1',true);
  -- Retry non-cascading FK order, but never swallow a final failure.

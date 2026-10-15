@@ -11,11 +11,14 @@ assert sql('select current_database()')=='privacy_fixture'
 sql("""CREATE ROLE anon NOLOGIN; CREATE ROLE authenticated NOLOGIN; CREATE ROLE service_role NOLOGIN BYPASSRLS;
 CREATE TABLE public.user_profiles(user_id text primary key,value text);
 CREATE TABLE public.action_assignments(id serial primary key,user_id text not null references user_profiles(user_id),value text);
+CREATE TABLE public.toc_fixture(id serial primary key,user_id text not null references user_profiles(user_id) ON DELETE CASCADE,value text);
 INSERT INTO user_profiles VALUES('fixture-a','A'),('fixture-b','B');
+INSERT INTO toc_fixture(user_id,value) VALUES('fixture-a','keep account workspace');
 INSERT INTO action_assignments(user_id,value) VALUES('fixture-a','A action'),('fixture-b','B action');
 GRANT SELECT,INSERT,UPDATE,DELETE ON user_profiles,action_assignments TO anon,authenticated,service_role;
 GRANT USAGE,SELECT ON ALL SEQUENCES IN SCHEMA public TO anon,authenticated,service_role;""")
 sql(pathlib.Path('migrations/20261015_health_consent_and_erasure.sql').read_text())
+sql(pathlib.Path('scripts/privacy-preflight.sql').read_text())
 assert json.loads(sql("select chj_privacy_status('fixture-a')"))['status']=='pending'
 assert sql("select count(*) from user_profiles")=='2'
 sql("set role anon; select chj_privacy_status('fixture-a');",False)
@@ -33,6 +36,12 @@ sql(headers('fixture-a',1)+"update user_profiles set value='late' where user_id=
 sql(grant,False)
 lease="'00000000-0000-0000-0000-000000000001'"
 job=json.loads(sql("select chj_privacy_claim_job("+lease+")"))
+# A health withdrawal must never silently cascade into retained account scope.
+sql("select chj_privacy_purge_rows('fixture-a','health')",False)
+assert sql("select value from toc_fixture where user_id='fixture-a'")=='keep account workspace'
+assert sql("select count(*) from user_profiles where user_id='fixture-a'")=='1'
+# Resolve this deliberately incompatible fixture relationship explicitly.
+sql("delete from toc_fixture where user_id='fixture-a'")
 sql("select chj_privacy_purge_rows('fixture-a','health')")
 assert sql("select count(*) from user_profiles where user_id='fixture-a'")=='0'
 assert sql("select value from user_profiles where user_id='fixture-b'")=='B'
