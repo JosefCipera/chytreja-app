@@ -21,3 +21,10 @@
  .public-example #sidePanel { top:auto; bottom:0; max-height:65dvh; height:auto; }
  .public-example #crtTitle { display:none !important; }
 }
+
+/* Existing pill overlays, with interaction markers from the stored rule results. */
+.public-example .crt-pill-interaction { border-color:#f87171 !important; color:#fecaca !important; cursor:pointer !important; }
+.public-example .crt-pill-interaction:focus-visible { outline:2px solid #f8fafc; outline-offset:3px; }
+.public-example #crtTooltip { white-space:pre-line; max-width:360px; }
+.public-example .crt-injections { flex-wrap:wrap; gap:8px; align-items:center; color:#94a3b8; font:12px/1.5 system-ui,sans-serif; }
+.public-example .crt-unanchored-med { display:inline-block; border:1px solid #64748b; border-radius:20px; padding:2px 8px; color:#cbd5e1; }

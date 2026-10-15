@@ -1,191 +1,468 @@
 {
   "title": "CRT Kovářové",
-  "subtitle": "Uložený modelový strom",
+  "subtitle": "Úplný uložený příklad s léky a doplňky",
   "nodes": [
     {
-      "id": "ATHEROSCLEROSIS",
-      "label": "Ateroskleróza",
-      "label_expert": "Ateroskleróza",
-      "label_layman": "Cévní pláty v tepnách",
-      "type": "cause",
-      "level": 2,
-      "branch": "R"
+      "id": "SEDENTARY_LIFESTYLE_ROOT",
+      "type": "golden_box",
+      "label": "Sedentismus",
+      "label_layman": "Sedavý způsob života",
+      "level": 0,
+      "branch": "C",
+      "panel_text": "Když dlouho sedíš, tělo zůstává ve stálém napětí, které zvedá LDL cholesterol a kyselinu močovou v krvi, a spolu s nedostatkem pohybu to vede k nárůstu váhy a řídnutí kostí. Tahle zátěž se podepisuje na náladě a na usínání, takže nervový systém zůstává přetížený a v tepnách se tvoří pláty, které poškozují cévní stěny a snižují citlivost na inzulín. Klouby a páteř se pak rychleji opotřebovávají, cítíš se unavená a bez energie, objevuje se třes rukou a tenzní bolesti hlavy, zatímco cévy tuhnou a tlak stoupá. Výsledkem je nejistá chůze a horší rovnováha při každém kroku."
     },
     {
-      "id": "BONE_DENSITY_LOSS",
-      "label": "Úbytek kostní hmoty",
-      "label_expert": "Úbytek kostní hmoty",
-      "label_layman": "Řídnutí kostí",
+      "id": "CHRONIC_STRESS",
       "type": "cause",
+      "label": "Chronický stres",
+      "label_layman": "Trvalý stres",
       "level": 1,
-      "branch": "R"
+      "branch": "L"
+    },
+    {
+      "id": "OBESITY",
+      "type": "cause",
+      "label": "Obezita",
+      "label_layman": "Obezita",
+      "level": 1,
+      "branch": "C"
     },
     {
       "id": "DYSLIPIDEMIA",
-      "label": "Dyslipidémie",
-      "label_expert": "Dyslipidémie",
-      "label_layman": "Vysoký LDL cholesterol",
       "type": "cause",
+      "label": "vysoký LDL",
+      "label_layman": "Vysoký LDL cholesterol",
       "level": 1,
       "branch": "RC"
     },
     {
-      "id": "ENDOTHELIAL_DYSFUNCTION",
-      "label": "Endoteliální dysfunkce",
-      "label_expert": "Endoteliální dysfunkce",
-      "label_layman": "Poškozené stěny cév",
+      "id": "INSULIN_RESISTANCE",
       "type": "cause",
-      "level": 4,
-      "branch": "RC"
+      "label": "Inzulínová rezistence",
+      "label_layman": "Necitlivost na inzulín",
+      "level": 2,
+      "branch": "C"
     },
     {
-      "id": "FALL_RISK",
-      "label": "Riziko pádu se zlomeninou",
-      "label_expert": "Riziko pádu se zlomeninou",
-      "label_layman": "Hrozba pádu a zlomené kosti",
+      "id": "NEUROMOTOR_DYS",
       "type": "ude",
-      "level": 5,
-      "branch": "C"
+      "label": "Neurologicko-motorická dysfunkce",
+      "label_layman": "Třes rukou a tenzní bolesti hlavy",
+      "level": 3,
+      "branch": "L"
     },
     {
-      "id": "GAIT_INSTABILITY",
-      "label": "Nestabilita chůze",
-      "label_expert": "Nestabilita chůze",
-      "label_layman": "Nejistá chůze a rovnováha",
-      "type": "junction",
-      "level": 4,
-      "branch": "C"
+      "id": "SLEEP_DISORDER",
+      "type": "cause",
+      "label": "Porucha spánku",
+      "label_layman": "Nespavost a nekvalitní spánek",
+      "level": 2,
+      "branch": "LC"
+    },
+    {
+      "id": "DEPRESSION_ANXIETY",
+      "type": "cause",
+      "label": "Deprese a úzkost",
+      "label_layman": "Psychická zátěž a nálada",
+      "level": 1,
+      "branch": "LC"
+    },
+    {
+      "id": "BONE_DENSITY_LOSS",
+      "type": "cause",
+      "label": "Úbytek kostní hmoty",
+      "label_layman": "Řídnutí kostí",
+      "level": 1,
+      "branch": "R"
     },
     {
       "id": "HYPERTENSION",
-      "label": "Arteriální hypertenze",
-      "label_expert": "Arteriální hypertenze",
-      "label_layman": "Vysoký krevní tlak",
       "type": "cause",
+      "label": "Arteriální vysoký tlak",
+      "label_layman": "Vysoký krevní tlak",
       "level": 3,
       "branch": "C"
     },
     {
-      "id": "HYPOTHYROIDISM",
-      "label": "Hypothyreóza",
-      "label_expert": "Hypothyreóza",
-      "label_layman": "Nedostatečná funkce štítné žlázy",
+      "id": "SYMPATHETIC_OVERACTIVATION",
       "type": "cause",
-      "level": 0,
-      "branch": "R"
-    },
-    {
-      "id": "INFLAMMAGING",
-      "label": "Inflammaging",
-      "label_expert": "Inflammaging",
-      "label_layman": "Věkem podmíněný zánět",
-      "type": "cause",
-      "level": 0,
-      "branch": "C"
-    },
-    {
-      "id": "INSULIN_RESISTANCE",
-      "label": "Inzulínová rezistence",
-      "label_expert": "Inzulínová rezistence",
-      "label_layman": "Necitlivost na inzulín",
-      "type": "cause",
+      "label": "Sympatiková hyperaktivace",
+      "label_layman": "Přetížený nervový systém",
       "level": 2,
-      "branch": "C"
+      "branch": "L"
     },
     {
-      "id": "MUSCULOSKELETAL_DEG",
-      "label": "Degenerace pohybového aparátu",
-      "label_expert": "Degenerace pohybového aparátu",
-      "label_layman": "Opotřebené klouby a páteř",
+      "id": "HYPERURICEMIA",
       "type": "cause",
+      "label": "Hyperurikémie",
+      "label_layman": "Vysoká kyselina močová",
       "level": 2,
       "branch": "R"
     },
     {
-      "id": "OBESITY",
-      "label": "Obezita",
-      "label_expert": "Obezita",
-      "label_layman": "Obezita",
+      "id": "ATHEROSCLEROSIS",
       "type": "cause",
-      "level": 1,
-      "branch": "C"
+      "label": "Ateroskleróza",
+      "label_layman": "Cévní pláty v tepnách",
+      "level": 2,
+      "branch": "RC"
     },
     {
-      "id": "PERIPHERAL_NEUROPATHY",
-      "label": "Periferní neuropatie",
-      "label_expert": "Periferní neuropatie",
-      "label_layman": "Poškozené nervy v rukou a nohách",
+      "id": "FATIGUE_LOW_CAPACITY",
       "type": "cause",
+      "label": "Chronická únava",
+      "label_layman": "Únava a nízká výkonnost",
       "level": 3,
       "branch": "LC"
     },
     {
-      "id": "VASCULAR_STIFFNESS",
-      "label": "Arteriální rigidita",
-      "label_expert": "Arteriální rigidita",
-      "label_layman": "Tuhé cévy",
+      "id": "MUSCULOSKELETAL_DEG",
       "type": "cause",
+      "label": "Degenerace pohybového aparátu",
+      "label_layman": "Opotřebené klouby a páteř",
+      "level": 3,
+      "branch": "R"
+    },
+    {
+      "id": "THREATENED_HEALTHSPAN",
+      "type": "ude",
+      "label": "Riziko mrtvice/infarktu",
+      "label_layman": "Riziko mrtvice/infarktu",
+      "level": 5,
+      "branch": "C",
+      "panel_text": "Fibrilace síní a erektilní dysfunkce jsou viditelné projevy systémové cévní a metabolické dysregulace. Bez intervence tento stav vede ke ztrátě fyzické výkonnosti, kognitivní kapacity a nakonec i funkční nezávislosti — přesně toho, co Dekatlon chrání. Toto je tvůj skutečný protivník."
+    },
+    {
+      "id": "ENDOTHELIAL_DYSFUNCTION",
+      "type": "cause",
+      "label": "Endoteliální dysfunkce",
+      "label_layman": "Poškozené stěny cév",
+      "level": 4,
+      "branch": "RC"
+    },
+    {
+      "id": "VASCULAR_STIFFNESS",
+      "type": "cause",
+      "label": "Arteriální rigidita",
+      "label_layman": "Tuhé cévy",
       "level": 3,
       "branch": "RC"
+    },
+    {
+      "id": "GAIT_INSTABILITY",
+      "type": "junction",
+      "label": "Nestabilita chůze",
+      "label_layman": "Nejistá chůze a rovnováha",
+      "level": 4,
+      "branch": "C",
+      "behavior_warning": "Choď pouze s oběma berlemi — nejistá chůze je největší riziko."
     }
   ],
   "edges": [
     {
-      "from": "ATHEROSCLEROSIS",
-      "to": "VASCULAR_STIFFNESS"
+      "to": "SLEEP_DISORDER",
+      "from": "CHRONIC_STRESS"
     },
     {
-      "from": "BONE_DENSITY_LOSS",
-      "to": "MUSCULOSKELETAL_DEG"
+      "to": "INSULIN_RESISTANCE",
+      "from": "OBESITY"
     },
     {
-      "from": "DYSLIPIDEMIA",
-      "to": "ATHEROSCLEROSIS"
+      "to": "ATHEROSCLEROSIS",
+      "from": "DYSLIPIDEMIA"
     },
     {
-      "from": "GAIT_INSTABILITY",
-      "to": "FALL_RISK"
+      "to": "HYPERTENSION",
+      "from": "INSULIN_RESISTANCE"
     },
     {
-      "from": "HYPERTENSION",
-      "to": "ENDOTHELIAL_DYSFUNCTION"
+      "to": "FATIGUE_LOW_CAPACITY",
+      "from": "SLEEP_DISORDER"
     },
     {
-      "from": "HYPOTHYROIDISM",
-      "to": "BONE_DENSITY_LOSS"
+      "to": "FATIGUE_LOW_CAPACITY",
+      "from": "DEPRESSION_ANXIETY"
     },
     {
-      "from": "INFLAMMAGING",
-      "to": "HYPOTHYROIDISM"
+      "to": "MUSCULOSKELETAL_DEG",
+      "from": "BONE_DENSITY_LOSS"
     },
     {
-      "from": "INFLAMMAGING",
-      "to": "OBESITY"
+      "to": "THREATENED_HEALTHSPAN",
+      "from": "HYPERTENSION"
     },
     {
-      "from": "INSULIN_RESISTANCE",
-      "to": "HYPERTENSION"
+      "to": "CHRONIC_STRESS",
+      "from": "SEDENTARY_LIFESTYLE_ROOT"
     },
     {
-      "from": "MUSCULOSKELETAL_DEG",
-      "to": "GAIT_INSTABILITY"
+      "to": "DYSLIPIDEMIA",
+      "from": "SEDENTARY_LIFESTYLE_ROOT"
     },
     {
-      "from": "OBESITY",
-      "to": "INSULIN_RESISTANCE"
+      "to": "HYPERURICEMIA",
+      "from": "SEDENTARY_LIFESTYLE_ROOT"
     },
     {
-      "from": "PERIPHERAL_NEUROPATHY",
-      "to": "GAIT_INSTABILITY"
+      "to": "OBESITY",
+      "from": "SEDENTARY_LIFESTYLE_ROOT"
     },
     {
-      "from": "VASCULAR_STIFFNESS",
-      "to": "ENDOTHELIAL_DYSFUNCTION"
+      "to": "BONE_DENSITY_LOSS",
+      "from": "SEDENTARY_LIFESTYLE_ROOT"
     },
     {
-      "from": "VASCULAR_STIFFNESS",
-      "to": "HYPERTENSION"
+      "to": "NEUROMOTOR_DYS",
+      "from": "SYMPATHETIC_OVERACTIVATION"
+    },
+    {
+      "to": "ENDOTHELIAL_DYSFUNCTION",
+      "from": "HYPERURICEMIA"
+    },
+    {
+      "to": "VASCULAR_STIFFNESS",
+      "from": "ATHEROSCLEROSIS"
+    },
+    {
+      "to": "THREATENED_HEALTHSPAN",
+      "from": "ENDOTHELIAL_DYSFUNCTION"
+    },
+    {
+      "to": "ENDOTHELIAL_DYSFUNCTION",
+      "from": "VASCULAR_STIFFNESS"
+    },
+    {
+      "to": "GAIT_INSTABILITY",
+      "from": "MUSCULOSKELETAL_DEG"
+    },
+    {
+      "to": "GAIT_INSTABILITY",
+      "from": "FATIGUE_LOW_CAPACITY"
+    },
+    {
+      "to": "DEPRESSION_ANXIETY",
+      "from": "SEDENTARY_LIFESTYLE_ROOT"
+    },
+    {
+      "to": "SYMPATHETIC_OVERACTIVATION",
+      "from": "CHRONIC_STRESS"
     }
   ],
-  "medications_map": []
+  "medications_map": [
+    {
+      "name": "Mirtazapin",
+      "note": "zlepšuje náladu a spánek",
+      "type": "treatment",
+      "effect": "zlepšuje náladu a spánek",
+      "reason": "zlepšuje náladu a spánek",
+      "targets": [
+        "DEPRESSION_ANXIETY"
+      ]
+    },
+    {
+      "name": "Tezeo",
+      "note": "snižuje krevní tlak, chrání cévy a ledviny",
+      "type": "treatment",
+      "effect": "snižuje krevní tlak, chrání cévy a ledviny",
+      "reason": "snižuje krevní tlak, chrání cévy a ledviny",
+      "targets": [
+        "VASCULAR_STIFFNESS"
+      ]
+    },
+    {
+      "name": "Doreta",
+      "note": "tlumí silnou bolest",
+      "type": "treatment",
+      "effect": "tlumí silnou bolest",
+      "reason": "tlumí silnou bolest",
+      "targets": [
+        "MUSCULOSKELETAL_DEG"
+      ]
+    },
+    {
+      "name": "Palgotal",
+      "note": "tlumí středně silnou a silnou bolest",
+      "type": "treatment",
+      "effect": "tlumí středně silnou a silnou bolest",
+      "reason": "tlumí středně silnou a silnou bolest",
+      "targets": [
+        "MUSCULOSKELETAL_DEG"
+      ]
+    },
+    {
+      "name": "Liskantín",
+      "note": "zmírňuje nekontrolovatelný třes rukou",
+      "type": "treatment",
+      "effect": "zmírňuje nekontrolovatelný třes rukou",
+      "reason": "zmírňuje nekontrolovatelný třes rukou",
+      "targets": [
+        "GAIT_INSTABILITY"
+      ]
+    },
+    {
+      "name": "Afexil",
+      "note": "tlumí závratě a poruchy rovnováhy",
+      "type": "treatment",
+      "effect": "tlumí závratě a poruchy rovnováhy",
+      "reason": "tlumí závratě a poruchy rovnováhy",
+      "targets": [
+        "GAIT_INSTABILITY"
+      ]
+    },
+    {
+      "name": "Ibandronát",
+      "note": "zpomaluje úbytek kostní hmoty",
+      "type": "treatment",
+      "effect": "zpomaluje úbytek kostní hmoty",
+      "reason": "zpomaluje úbytek kostní hmoty",
+      "targets": [
+        "BONE_DENSITY_LOSS"
+      ]
+    },
+    {
+      "name": "Vigantol",
+      "note": "podporuje vstřebávání vápníku a pevnost kostí",
+      "type": "protects",
+      "effect": "podporuje vstřebávání vápníku a pevnost kostí",
+      "reason": "podporuje vstřebávání vápníku a pevnost kostí",
+      "targets": [
+        "BONE_DENSITY_LOSS"
+      ]
+    },
+    {
+      "name": "Caltrate",
+      "note": "stavební materiál kostí, podpora hustoty",
+      "type": "protects",
+      "effect": "stavební materiál kostí, podpora hustoty",
+      "reason": "stavební materiál kostí, podpora hustoty",
+      "targets": [
+        "BONE_DENSITY_LOSS"
+      ]
+    },
+    {
+      "name": "Euthyrox",
+      "note": "nahrazuje hormon štítné žlázy",
+      "type": "treatment",
+      "effect": "nahrazuje hormon štítné žlázy",
+      "reason": "nahrazuje hormon štítné žlázy",
+      "targets": [
+        "HYPOTHYROIDISM"
+      ]
+    },
+    {
+      "name": "Sifor",
+      "note": "snižuje cukr v krvi, pomáhá buňkám využít inzulín",
+      "type": "treatment",
+      "effect": "snižuje cukr v krvi, pomáhá buňkám využít inzulín",
+      "reason": "snižuje cukr v krvi, pomáhá buňkám využít inzulín",
+      "targets": [
+        "INSULIN_RESISTANCE"
+      ]
+    },
+    {
+      "name": "Rosucard",
+      "note": "snižuje LDL cholesterol, zvyšuje HDL",
+      "type": "treatment",
+      "effect": "snižuje LDL cholesterol, zvyšuje HDL",
+      "reason": "snižuje LDL cholesterol, zvyšuje HDL",
+      "targets": [
+        "DYSLIPIDEMIA"
+      ]
+    },
+    {
+      "name": "Stacyl",
+      "note": "ředí krev, chrání před mrtvicí",
+      "type": "treatment",
+      "effect": "ředí krev, chrání před mrtvicí",
+      "reason": "ředí krev, chrání před mrtvicí",
+      "targets": [
+        "ATHEROSCLEROSIS"
+      ]
+    },
+    {
+      "name": "Dulopren",
+      "note": "tlumí bolest nervů a zlepšuje náladu",
+      "type": "treatment",
+      "effect": "tlumí bolest nervů a zlepšuje náladu",
+      "reason": "tlumí bolest nervů a zlepšuje náladu",
+      "targets": [
+        "PERIPHERAL_NEUROPATHY"
+      ]
+    },
+    {
+      "name": "Esoprex",
+      "note": "zmírňuje depresi a úzkost",
+      "type": "treatment",
+      "effect": "zmírňuje depresi a úzkost",
+      "reason": "zmírňuje depresi a úzkost",
+      "targets": [
+        "DEPRESSION_ANXIETY"
+      ]
+    },
+    {
+      "name": "Zen plus",
+      "note": "bylinné zklidnění, podpora spánku",
+      "type": "protects",
+      "effect": "bylinné zklidnění, podpora spánku",
+      "reason": "bylinné zklidnění, podpora spánku",
+      "targets": [
+        "SLEEP_DISORDER"
+      ]
+    }
+  ],
+  "interactions": [
+    {
+      "drugs": [
+        "Mirtazapin",
+        "Doreta"
+      ],
+      "note": "Tato kombinace zvyšuje serotonin — při třesu nebo zmatenosti ihned kontaktuj lékaře.",
+      "source": "static"
+    },
+    {
+      "drugs": [
+        "Mirtazapin",
+        "Palgotal"
+      ],
+      "note": "Tato kombinace zvyšuje serotonin — při třesu nebo zmatenosti ihned kontaktuj lékaře.",
+      "source": "static"
+    },
+    {
+      "drugs": [
+        "Doreta",
+        "Dulopren"
+      ],
+      "note": "Tato kombinace zvyšuje serotonin — při třesu nebo neklidu kontaktuj lékaře.",
+      "source": "static"
+    },
+    {
+      "drugs": [
+        "Doreta",
+        "Esoprex"
+      ],
+      "note": "Tato kombinace zvyšuje serotonin — při třesu nebo neklidu kontaktuj lékaře.",
+      "source": "static"
+    },
+    {
+      "drugs": [
+        "Palgotal",
+        "Dulopren"
+      ],
+      "note": "Tato kombinace zvyšuje serotonin — při třesu nebo neklidu kontaktuj lékaře.",
+      "source": "static"
+    },
+    {
+      "drugs": [
+        "Palgotal",
+        "Esoprex"
+      ],
+      "note": "Tato kombinace zvyšuje serotonin — při třesu nebo neklidu kontaktuj lékaře.",
+      "source": "static"
+    }
+  ],
+  "_source": {
+    "graph_commit": "58e472bcc5b3b7fc63433cf8fc11cf8169304150",
+    "interaction_rules_commit": "f45fa84b1691b08812af844828a2c4662a5f7a78",
+    "interaction_rules": "data/drugs.json; api/rxnorm.js:detectManualInteractions"
+  }
 }

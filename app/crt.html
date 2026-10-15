@@ -1075,7 +1075,22 @@ function _buildPillsHTML() {
       const pillPad  = IS_MOBILE || IS_TABLET ? '2px 7px' : '3px 9px';
       pill.style.cssText  = `position:absolute;border-radius:20px;padding:${pillPad};font-size:${pillFont}px;font-weight:500;font-family:Inter,system-ui,sans-serif;color:${color};background:${bg};border:1.5px solid ${border};white-space:nowrap;pointer-events:auto;cursor:default;`;
       pill.textContent = m.name;
-      const tipText = m.note || m.reason || '';
+      const related = isExample ? (window._allInteractions || []).filter(ix => ix.drugs?.includes(m.name)) : [];
+      if (related.length) {
+        pill.classList.add('crt-pill-interaction');
+        pill.textContent += ' ⚠';
+        pill.setAttribute('role', 'button');
+        pill.tabIndex = 0;
+        pill.setAttribute('aria-label', m.name + ' — zobrazit interakce');
+        const openInteractions = () => {
+          if (!_ixPanelOpen) window.toggleIxPanel();
+        };
+        pill.addEventListener('click', openInteractions);
+        pill.addEventListener('keydown', event => {
+          if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openInteractions(); }
+        });
+      }
+      const tipText = [m.note || m.reason || '', ...related.map(ix => ix.drugs.join(' + ') + ': ' + ix.note)].filter(Boolean).join('\n');
       if (tipText) {
         const tipEl = document.getElementById('crtTooltip');
         pill.addEventListener('mouseover', e => {
@@ -1531,7 +1546,7 @@ window.declineCrtSecond = function(nodeId) {
   openNodePanel(nodeId);
 };
 
-let _medsVisible = false;
+let _medsVisible = isExample;
 let _labelMode = 'layman'; // 'expert' | 'layman'
 
 // Nastaví label na všech uzlech podle aktuálního módu a překreslí
@@ -1673,7 +1688,7 @@ function _renderIxPanel() {
   // Top 3 páry podle závažnosti, bez duplicit
   const sorted = [...ix]
     .sort((a, b) => _ixSeverity(a.note) - _ixSeverity(b.note))
-    .slice(0, 3);
+    .slice(0, isExample ? ix.length : 3);
 
   const items = sorted.map(i => {
     const drugs = Array.isArray(i.drugs) ? i.drugs : [i.drug || ''];
@@ -1702,7 +1717,12 @@ function _renderIxPanel() {
 
 // ── Boot ─────────────────────────────────────────────────────────────────────
 async function enrichContraMap(data) {
-  if (isExample) return;
+  if (isExample) {
+    window._allInteractions = data.interactions || [];
+    document.getElementById('crtIxBtn')?.classList.toggle('has-ix', window._allInteractions.length > 0);
+    if (_ixPanelOpen) _renderIxPanel();
+    return;
+  }
   const ctx = data._ctx || {};
   const user_meds = ctx.meds || [];
   const user_supps = ctx.supps || [];
@@ -2144,6 +2164,26 @@ async function boot() {
     document.getElementById('crtPillFull').classList.toggle('active', !_topNMode);
     document.getElementById('crtPillTopN').classList.toggle('active',  _topNMode);
     enrichContraMap(data); // async na raw datech, doplní se při přepnutí na plnou mapu
+    if (isExample) {
+      _applyMedsState();
+      // Preserve the archived graph: never invent a target for an unanchored medicine.
+      const nodeIds = new Set(data.nodes.map(n => n.id));
+      const unanchored = (data.medications_map || []).filter(m => !(m.targets || []).some(id => nodeIds.has(id)));
+      const footer = document.getElementById('crtInjections');
+      footer.replaceChildren();
+      if (unanchored.length) {
+        const label = document.createElement('span');
+        label.textContent = 'Bez vazby v uloženém grafu: ';
+        footer.append(label);
+        for (const medicine of unanchored) {
+          const pill = document.createElement('span');
+          pill.className = 'crt-unanchored-med';
+          pill.textContent = medicine.name;
+          pill.title = medicine.note || medicine.reason || '';
+          footer.append(pill);
+        }
+      }
+    }
   } catch (e) {
     document.getElementById('crtLoading').textContent = 'Chyba načítání: ' + e.message;
     console.error('[CRT]', e);
