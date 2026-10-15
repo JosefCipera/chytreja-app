@@ -11,15 +11,6 @@
     },
     "headers": [
         {
-            "source": "/ukazka/(.*)",
-            "headers": [
-                {
-                    "key": "Cache-Control",
-                    "value": "no-cache, no-store, must-revalidate, s-maxage=0"
-                }
-            ]
-        },
-        {
             "source": "/(.*\\.html)",
             "headers": [
                 { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate, s-maxage=0" },
@@ -117,22 +108,6 @@
         }
     ],
     "rewrites": [
-        {
-            "source": "/ukazka/crt",
-            "destination": "/app/ukazka.html"
-        },
-        {
-            "source": "/ukazka/crt/",
-            "destination": "/app/ukazka.html"
-        },
-        {
-            "source": "/ukazka/vesmir",
-            "destination": "/app/ukazka.html"
-        },
-        {
-            "source": "/ukazka/vesmir/",
-            "destination": "/app/ukazka.html"
-        },
         {
             "source": "/hud",
             "destination": "/app/hud.html"
