@@ -15,7 +15,8 @@ import { listenOnce, handleVoiceInput, proactiveGreeting, aiSpeakPromise } from 
 import { requestCHJPermission, checkAndRemind } from "./notifications.js";
 import { hideHUD, showHUD } from "./hud.js?v=20260319a";
 
-// Supabase setup
+// Supabase setup — the normal app waits for its SDK; public examples never load it.
+if (window.CHJ_SUPABASE_READY) await window.CHJ_SUPABASE_READY;
 const { createClient } = window.supabase;
 const SUPABASE_URL = 'https://pionxzqtxcughvfbgadi.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_w29DE53nrdGnNEvBn68kzg_ujje7u5Y';

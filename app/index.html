@@ -14,7 +14,17 @@
     <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@200;300&display=swap" rel="stylesheet">
 
     <!-- Supabase -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+    if (!window.CHJ_UNIVERSE_EXAMPLE) {
+      window.CHJ_SUPABASE_READY = new Promise((resolve, reject) => {
+        const sdk = document.createElement('script');
+        sdk.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+        sdk.onload = resolve;
+        sdk.onerror = () => reject(new Error('Supabase SDK se nepodařilo načíst.'));
+        document.head.append(sdk);
+      });
+    }
+    </script>
 
     <!-- Firebase Auth -->
     <script type="module">

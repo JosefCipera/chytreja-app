@@ -70,8 +70,7 @@ const routes = JSON.parse(read('vercel.json')).rewrites;
    assert.ok((await page.locator('#cnpData').textContent()).includes('Hrozba pádu'));
    assert.equal(await page.locator('button:has-text("SPLNĚNO")').count(),0);
    await page.evaluate(()=>{window.completeCrtAction('FALL_RISK','test',false);window.acceptCrtSecond('FALL_RISK');window.declineCrtSecond('FALL_RISK');window.regenCRT();});
-   // The already-loaded Supabase SDK checks its debug switch; no account/session/model keys may be read.
-   assert.deepEqual(await page.evaluate(()=>window.__storageReads.filter(k=>k!=='supabase.gotrue-js.locks.debug')),[]);
+   assert.deepEqual(await page.evaluate(()=>window.__storageReads),[]);
    assert.deepEqual(await page.evaluate(()=>window.__storageWrites),[]);
    await page.getByRole('button',{name:'Zavřít',exact:true}).click();
    await page.getByRole('button',{name:'Expert',exact:true}).click();
@@ -88,8 +87,7 @@ const routes = JSON.parse(read('vercel.json')).rewrites;
    await page.waitForTimeout(700);
    await page.screenshot({path:path.join(out,'original-universe-'+width+'.png')});
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
-   // The already-loaded Supabase SDK checks its debug switch; no account/session/model keys may be read.
-   assert.deepEqual(await page.evaluate(()=>window.__storageReads.filter(k=>k!=='supabase.gotrue-js.locks.debug')),[]);
+   assert.deepEqual(await page.evaluate(()=>window.__storageReads),[]);
    assert.deepEqual(await page.evaluate(()=>window.__storageWrites),[]);
    assert.equal(await page.evaluate(()=>JSON.stringify({...localStorage})===window.__initialStorage),true);
    // Direct URL survives reload and ignores an unrelated saved universe/UID.

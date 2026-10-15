@@ -8,6 +8,7 @@ on:
       - 'app/js/examples/**'
       - 'app/assets/examples/**'
       - 'app/js/universe/universe-core.js'
+      - 'app/js/universe/universe-init.js'
       - 'app/js/universe/launcher.js'
       - 'scripts/test-original-examples-browser.cjs'
       - 'app/zakladatele.html'
