@@ -915,8 +915,7 @@ if (!window.CHJ_UNIVERSE_EXAMPLE) {
                 const btnStyle = 'background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);border-radius:6px;cursor:pointer;padding:5px 9px;-webkit-tap-highlight-color:transparent;flex-shrink:0;font-size:15px;line-height:1;color:#e2e8f0;margin-left:4px;min-width:44px;min-height:44px;';
                 const printBtn = document.createElement('button');
                 printBtn.textContent = 'đź–¨'; printBtn.title = 'Tisk'; printBtn.style.cssText = btnStyle;
-                const doPrint = () => { const el = document.querySelector('.md-il'); if (!el) return; const iframe = document.createElement('iframe'); iframe.style.cssText = 'position:fixed;width:0;height:0;border:none;top:-9999px;'; document.body.appendChild(iframe); const doc = iframe.contentDocument; doc.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${source.title || ''}</title><style>body{font-family:system-ui,sans-serif;padding:24px;max-width:780px;margin:0 auto;color:#1e293b;line-height:1.7;font-size:15px}</style></head><body>${el.innerHTML}<script type="module">if (window.CHJ_UNIVERSE_EXAMPLE) await import("/app/js/examples/universe-example.js");</script>
-</body></html>`); doc.close(); iframe.contentWindow.focus(); iframe.contentWindow.print(); setTimeout(() => document.body.removeChild(iframe), 1000); };
+                const doPrint = () => { const el = document.querySelector('.md-il'); if (!el) return; const iframe = document.createElement('iframe'); iframe.style.cssText = 'position:fixed;width:0;height:0;border:none;top:-9999px;'; document.body.appendChild(iframe); const doc = iframe.contentDocument; doc.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${source.title || ''}</title><style>body{font-family:system-ui,sans-serif;padding:24px;max-width:780px;margin:0 auto;color:#1e293b;line-height:1.7;font-size:15px}</style></head><body>${el.innerHTML}</body></html>`); doc.close(); iframe.contentWindow.focus(); iframe.contentWindow.print(); setTimeout(() => document.body.removeChild(iframe), 1000); };
                 printBtn.addEventListener('click', doPrint);
                 printBtn.addEventListener('touchend', (e) => { e.preventDefault(); doPrint(); });
                 header.appendChild(printBtn);
@@ -1026,6 +1025,7 @@ if (!window.CHJ_UNIVERSE_EXAMPLE) {
             style="background: #1e293b; padding: 40px; border-radius: 16px; max-width: 600px; width: 90%; color: #fff;">
         </div>
     </div>
+<script type="module">if (window.CHJ_UNIVERSE_EXAMPLE) await import("/app/js/examples/universe-example.js");</script>
 </body>
 
 </html>
