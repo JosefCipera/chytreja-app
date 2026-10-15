@@ -1,3 +1,5 @@
+import { withPrivacy } from './lib/withPrivacy.js';
+import { privacyConsole as console } from './lib/privacyConsole.js';
 // api/orchestrate.js — AI Orchestrator v0.1 endpoint
 //
 // POST { userId, text, session?, _request_id? }
@@ -9,7 +11,7 @@
 import dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' });
 
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from './lib/privacySupabase.js';
 import { parseSupportedGoal } from './engine/healthEventAdapter.js';
 import { processInput } from './engine/orchestrator.js';
 import { requireAuth }  from './lib/requireAuth.js';
@@ -24,7 +26,7 @@ function getSb() {
   return _sb;
 }
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -142,3 +144,5 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Internal error', detail: err?.message });
   }
 }
+
+export default withPrivacy(handler,{scope:'health'});

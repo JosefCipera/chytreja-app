@@ -1,9 +1,11 @@
+import { withPrivacy } from './lib/withPrivacy.js';
+import { privacyConsole as console } from './lib/privacyConsole.js';
 // /api/user — user-profile, onboarding, readiness, snapshot, lehkost, dialog, health-profile, crt-context
 // Route: ?action=profile | onboarding | lehkost-onboarding | readiness | snapshot | body-flow | checkin | lehkost-agent | dialog | health-profile | crt-context
 
 import dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' });
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from './lib/privacySupabase.js';
 import Anthropic from '@anthropic-ai/sdk';
 import { requireAuth }  from './lib/requireAuth.js';
 
@@ -11,7 +13,7 @@ function sb() {
   return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 }
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   const auth = await requireAuth(req, res);
   if (!auth) return;
   // Inject authoritative uid so all sub-handlers get correct userId
@@ -1034,3 +1036,5 @@ async function handleCrtContext(req, res) {
   res.setHeader('Cache-Control','no-store');
   res.json(ctx);
 }
+
+export default withPrivacy(handler,{scope:'health'});

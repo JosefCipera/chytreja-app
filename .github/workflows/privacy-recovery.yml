@@ -1,0 +1,29 @@
+name: Privacy recovery (dev, opt-in)
+on:
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: privacy-dev-recovery
+  cancel-in-progress: false
+jobs:
+  recover:
+    if: github.ref == 'refs/heads/main' && vars.CHJ_PRIVACY_RECOVERY_ENABLED == '1'
+    environment: privacy-dev
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Continue requested erasures and check aggregate queue status
+        env:
+          CHJ_PRIVACY_RECOVERY_ENABLED: ${{ vars.CHJ_PRIVACY_RECOVERY_ENABLED }}
+          PRIVACY_DEV_WORKER_TOKEN: ${{ secrets.PRIVACY_DEV_WORKER_TOKEN }}
+          PRIVACY_DEV_MONITOR_TOKEN: ${{ secrets.PRIVACY_DEV_MONITOR_TOKEN }}
+        run: node scripts/privacy-recovery.mjs

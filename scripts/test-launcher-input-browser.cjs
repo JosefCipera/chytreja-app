@@ -2,6 +2,7 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),http=require('node:http');
 const {chromium}=require('playwright');
 const prelude=`
+const ensureHealthPrivacy=async()=>true;
 const initializeApp=()=>({});
 const getAuth=()=>({currentUser:sessionStorage.getItem('fixture-signed-out')?null:{uid:'fixture-a',displayName:'Fixture'}});
 function onAuthStateChanged(auth,cb){window.__switchUser=uid=>{auth.currentUser=uid?{uid,displayName:'Fixture'}:null;cb(auth.currentUser);};queueMicrotask(()=>cb(auth.currentUser));}
@@ -13,7 +14,7 @@ window.__recognizers=[];
 window.SpeechRecognition=class{constructor(){window.__recognizers.push(this);}start(){}stop(){this.onend?.();}abort(){this.onend?.();}};
 window.__voice=async text=>{const r=window.__recognizers.at(-1),p=r.onresult({results:[[{transcript:text}]]});r.onend();await p;};
 `;
-const html=fs.readFileSync(path.join(__dirname,'../app/launcher.html'),'utf8').replace(/^  import .*;\r?\n/gm,'').replace('<script type="module">','<script type="module">\n'+prelude);
+const html=fs.readFileSync(path.join(__dirname,'../app/launcher.html'),'utf8').replace("<style>html:not([data-chj-privacy-ready]) body{visibility:hidden}</style><script type=\"module\" src=\"/app/js/universe/privacy-guard.js?v=1\"></script>",'').replace(/^  import .*;\r?\n/gm,'').replace('<script type="module">','<script type="module">\n'+prelude);
 const server=http.createServer((_req,res)=>{res.writeHead(200,{'Content-Type':'text/html; charset=utf-8'});res.end(html);});
 (async()=>{
  let browser;

@@ -1,9 +1,11 @@
+import { withPrivacy } from './lib/withPrivacy.js';
+import { privacyConsole as console } from './lib/privacyConsole.js';
 import dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' });
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from './lib/privacySupabase.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DRUGS_DB = JSON.parse(readFileSync(join(__dirname, '../data/drugs.json'), 'utf8'));
@@ -332,7 +334,7 @@ export async function resolveInteractionsRxNorm(medicationNames) {
 
 // ── HTTP endpoint ─────────────────────────────────────────────────────────────
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
   const { medications } = req.body || {};
   if (!Array.isArray(medications) || !medications.length)
@@ -345,3 +347,5 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: err.message });
   }
 }
+
+export default withPrivacy(handler,{scope:'health'});

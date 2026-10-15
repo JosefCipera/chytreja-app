@@ -608,8 +608,7 @@ export function parseSupportedGoal(text) {
 export async function applyHealthEvent(userId, event) {
   const supabase = createClient(
     process.env.SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-  );
+    process.env.SUPABASE_SERVICE_ROLE_KEY,{global:{fetch:(...args)=>(globalThis[Symbol.for('chj.privacy.fetch')]??fetch)(...args)}});
 
   const { event_type, payload } = event;
   const warnings = [];

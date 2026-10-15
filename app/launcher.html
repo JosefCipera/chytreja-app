@@ -437,7 +437,7 @@
       #stage-text.welcome { font-size: clamp(22px,6vw,28px); }
     }
   </style>
-</head>
+<style>html:not([data-chj-privacy-ready]) body{visibility:hidden}</style><script type="module" src="/app/js/universe/privacy-guard.js?v=1"></script></head>
 <body>
 
 <!-- Auth gate (shown when not logged in) -->
@@ -486,6 +486,7 @@
             <li id="menu-tester-item" class="hidden">
               <button id="menu-tester-btn">Tester nástroje</button>
             </li>
+            <li><a href="/soukromi">Soukromí a účet</a></li>
             <li class="logout-action"><button id="logout-btn">Odhlásit se</button></li>
           </ul>
         </div>
@@ -545,17 +546,18 @@
   // ── Firebase auth ────────────────────────────────────────────────────────────
   import { initializeApp }                        from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js';
   import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js';
+  import { ensureHealthPrivacy } from '/app/js/universe/privacy-client.js';
   import { authFetch }                            from '/app/js/universe/authFetch.js';
   import { checkAndShowOnboarding }              from '/app/js/universe/onboarding-wizard.js';
 
-  const firebaseApp = initializeApp({
+  const firebaseApp = (window.chjFirebaseApp ?? initializeApp({
     apiKey:            'AIzaSyAKREZsoBZkA1xOQ5ff3XDmiJ88nwSjeOk',
     authDomain:        'chytre-ja-app.firebaseapp.com',
     projectId:         'chytre-ja-app',
     storageBucket:     'chytre-ja-app.firebasestorage.app',
     messagingSenderId: '65882611642',
     appId:             '1:65882611642:web:53d82914aa07d6677d4783',
-  });
+  }));
   const auth = getAuth(firebaseApp);
   window.firebaseAuth = auth; // needed by authFetch.js
 
@@ -1073,7 +1075,11 @@
   }
 
   // ── Init ─────────────────────────────────────────────────────────────────────
-  function start(userId) {
+  let privacyStartEpoch=0;
+  async function start(userId) {
+    const privacyEpoch=++privacyStartEpoch;
+    if(!await ensureHealthPrivacy(auth.currentUser))return;
+    if(privacyEpoch!==privacyStartEpoch)return;
     if (_uid !== userId) {
       invalidateRequests();
       stopRecognition();
@@ -1137,6 +1143,12 @@
     });
   }
 
+  window.addEventListener('chj-privacy-blocked',event=>{
+    if(event.detail?.uid!==(_uid??window.__chj_userId))return;
+    privacyStartEpoch++;invalidateRequests();stopRecognition();renderInputEcho(null);
+    clearSession(_uid??window.__chj_userId);$input.value='';
+    $app.classList.add('hidden');
+  });
   // ── Logout ───────────────────────────────────────────────────────────────────
   document.getElementById('logout-btn').addEventListener('click', async () => {
     invalidateRequests();
