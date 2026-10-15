@@ -36,7 +36,9 @@ job=json.loads(sql("select chj_privacy_claim_job("+lease+")"))
 sql("select chj_privacy_purge_rows('fixture-a','health')")
 assert sql("select count(*) from user_profiles where user_id='fixture-a'")=='0'
 assert sql("select value from user_profiles where user_id='fixture-b'")=='B'
-sql("select chj_privacy_job_step('"+job['id']+"',"+lease+",'complete')")
+sql("select chj_privacy_job_step('"+job['id']+"',"+lease+",'external_review')")
+sql("select chj_privacy_finish_external_review('"+job['id']+"',false)",False)
+sql("select chj_privacy_finish_external_review('"+job['id']+"',true)")
 assert json.loads(sql(grant))['epoch']==3
 sql(headers('fixture-a',1)+"insert into user_profiles values('fixture-a','stale epoch')",False)
 sql(headers('fixture-a',3)+"insert into user_profiles values('fixture-a','A fresh')")

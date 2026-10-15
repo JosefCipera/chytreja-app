@@ -95,4 +95,9 @@ await test('erasure preserves external review; Firebase not-found is idempotent'
  const result=await eraseJob({id:'job',uid:'fixture-a',kind:'account'},{db:{rpc:async()=>({data:{}})},lease:'fixture-lease',storage:{erase:async()=>{}},identity:{revokeRefreshTokens:async()=>{throw {code:'auth/user-not-found'};},deleteUser:async()=>{throw {code:'auth/user-not-found'};}},advance:async(_j,_l,s)=>steps.push(s)});
  assert.equal(result.stage,'external_review');assert.equal(result.all_copies_erased,false);assert.deepEqual(steps,['identity','external_review']);
 });
+await test('withdrawal keeps external copies pending and preserves identity',async()=>{
+ const steps=[];
+ const result=await eraseJob({id:'job',uid:'fixture-a',kind:'health'},{db:{rpc:async()=>({data:{}})},lease:'fixture-lease',storage:{erase:async()=>{}},identity:{deleteUser:async()=>{throw Error('must preserve account');}},advance:async(_j,_l,s)=>steps.push(s)});
+ assert.equal(result.stage,'external_review');assert.equal(result.all_copies_erased,false);assert.deepEqual(steps,['external_review']);
+});
 console.log('PASS privacy unit/integration boundaries: '+passed+' cases; no real accounts or network calls.');

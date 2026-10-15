@@ -47,7 +47,7 @@ END $$;
 
 CREATE OR REPLACE FUNCTION public.chj_privacy_change(p_uid text,p_action text,p_health text DEFAULT NULL,p_terms text DEFAULT NULL,p_policy text DEFAULT NULL,p_adult boolean DEFAULT false,p_receipt_hash text DEFAULT NULL) RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,public AS $$
-DECLARE a public.chj_privacy_accounts; job public.chj_privacy_jobs; kind text;
+DECLARE a public.chj_privacy_accounts; job public.chj_privacy_jobs; job_kind text;
 BEGIN
  PERFORM pg_advisory_xact_lock(hashtextextended(p_uid,8152026));
  IF p_uid IS NULL OR length(p_uid) NOT BETWEEN 1 AND 128 THEN RAISE EXCEPTION 'INVALID_UID'; END IF;
@@ -61,11 +61,11 @@ BEGIN
   INSERT INTO public.chj_privacy_events(uid,event,health_version,terms_version,policy_version) VALUES(p_uid,'grant',p_health,p_terms,p_policy);
   RETURN public.chj_privacy_status(p_uid);
  ELSIF p_action IN ('withdraw','delete') THEN
-  kind:=CASE WHEN p_action='delete' THEN 'account' ELSE 'health' END;
+  job_kind:=CASE WHEN p_action='delete' THEN 'account' ELSE 'health' END;
   IF p_action='delete' AND (p_receipt_hash IS NULL OR length(p_receipt_hash)<>64) THEN RAISE EXCEPTION 'INVALID_RECEIPT'; END IF;
   UPDATE public.chj_privacy_accounts SET status=CASE WHEN p_action='delete' THEN 'deleting' ELSE 'withdrawn' END,epoch=epoch+1,withdrawn_at=now(),updated_at=now() WHERE uid=p_uid;
   INSERT INTO public.chj_privacy_events(uid,event) VALUES(p_uid,CASE WHEN p_action='delete' THEN 'delete_request' ELSE 'withdraw' END);
-  INSERT INTO public.chj_privacy_jobs(uid,kind,receipt_hash) VALUES(p_uid,kind,p_receipt_hash)
+  INSERT INTO public.chj_privacy_jobs(uid,kind,receipt_hash) VALUES(p_uid,job_kind,p_receipt_hash)
    ON CONFLICT(uid,kind) WHERE stage<>'complete' DO UPDATE SET receipt_hash=COALESCE(EXCLUDED.receipt_hash,chj_privacy_jobs.receipt_hash),updated_at=now() RETURNING * INTO job;
   RETURN public.chj_privacy_status(p_uid)||jsonb_build_object('job_id',job.id);
  END IF;
@@ -127,7 +127,7 @@ BEGIN
  FROM pg_constraint c JOIN public.chj_privacy_registry p ON c.confrelid=to_regclass(format('%I.%I',p.schema_name,p.table_name))
  WHERE c.contype='f' AND NOT EXISTS(SELECT 1 FROM public.chj_privacy_registry child WHERE to_regclass(format('%I.%I',child.schema_name,child.table_name))=c.conrelid);
  SELECT COALESCE(jsonb_agg(c.relname),'[]') INTO stale FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
- JOIN pg_attribute a ON a.attrelid=c.oid AND a.attname='user_id' AND NOT a.attisdropped
+ JOIN pg_attribute a ON a.attrelid=c.oid AND a.attname IN ('user_id','owner_id','firebase_uid','firebase_user_id','uid') AND NOT a.attisdropped
  WHERE n.nspname='public' AND c.relkind IN ('r','p') AND c.relname NOT LIKE 'chj_privacy_%'
  AND NOT EXISTS(SELECT 1 FROM public.chj_privacy_registry r WHERE r.schema_name=n.nspname AND r.table_name=c.relname);
  RETURN jsonb_build_object('unreviewed_dependents',uncovered,'unregistered_tables',stale,'ready',uncovered='[]'::jsonb AND stale='[]'::jsonb);
@@ -200,7 +200,7 @@ DECLARE j public.chj_privacy_jobs;
 BEGIN
  SELECT * INTO j FROM public.chj_privacy_jobs WHERE id=p_job AND lease_id=p_lease AND locked_until>now() FOR UPDATE;
  IF j.id IS NULL THEN RAISE EXCEPTION 'STALE_JOB_LEASE'; END IF;
- IF p_stage NOT IN ('identity','external_review','complete') OR (p_stage='complete' AND j.kind<>'health') THEN RAISE EXCEPTION 'INVALID_JOB_STEP'; END IF;
+ IF p_stage NOT IN ('identity','external_review') THEN RAISE EXCEPTION 'INVALID_JOB_STEP'; END IF;
  UPDATE public.chj_privacy_jobs SET stage=p_stage,updated_at=now(),locked_until=CASE WHEN p_stage IN ('external_review','complete') THEN NULL ELSE locked_until END,last_error_code=NULL WHERE id=p_job;
  RETURN true;
 END $$;
@@ -211,16 +211,20 @@ BEGIN
  UPDATE public.chj_privacy_jobs SET last_error_code=p_code,locked_until=now()+interval '5 minutes',updated_at=now() WHERE id=p_job AND lease_id=p_lease;
  RETURN FOUND;
 END $$;
--- Only an operator who has actually checked external copies may finish an account request.
+-- Only an operator who has actually checked external copies may finish a request.
 -- Never call this automatically after the local database/Firebase work.
 CREATE OR REPLACE FUNCTION public.chj_privacy_finish_external_review(p_job uuid,p_verified boolean) RETURNS boolean
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,public AS $$
 DECLARE j public.chj_privacy_jobs;
 BEGIN
  IF p_verified IS NOT TRUE THEN RAISE EXCEPTION 'EXTERNAL_REVIEW_REQUIRED'; END IF;
- SELECT * INTO j FROM public.chj_privacy_jobs WHERE id=p_job AND kind='account' AND stage='external_review' FOR UPDATE;
+ SELECT * INTO j FROM public.chj_privacy_jobs WHERE id=p_job AND stage='external_review' FOR UPDATE;
  IF j.id IS NULL THEN RAISE EXCEPTION 'REVIEW_NOT_PENDING'; END IF;
- PERFORM public.chj_privacy_purge_rows(j.uid,'account');
+ PERFORM public.chj_privacy_purge_rows(j.uid,j.kind);
+ IF j.kind='health' THEN
+  UPDATE public.chj_privacy_jobs SET stage='complete',external_reviewed_at=now(),updated_at=now(),lease_id=NULL,locked_until=NULL WHERE id=j.id;
+  RETURN true;
+ END IF;
  DELETE FROM public.chj_privacy_events WHERE uid=j.uid;
  DELETE FROM public.chj_privacy_accounts WHERE uid=j.uid;
  DELETE FROM public.chj_privacy_jobs WHERE uid=j.uid AND id<>j.id;

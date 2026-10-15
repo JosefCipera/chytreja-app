@@ -1,11 +1,11 @@
 import { privacyRpc } from './privacyStore.js';
 // Stages are resumable. A failure never gets converted into "fully erased".
-export async function eraseJob(job,{db,identity,storage,lease,advance,finishHealth}) {
+export async function eraseJob(job,{db,identity,storage,lease,advance}) {
  await privacyRpc('chj_privacy_purge_rows',{p_uid:job.uid,p_kind:job.kind},db);
  await storage.erase(job.uid,job.kind);
  if(job.kind==='health') {
-  await finishHealth(job,lease);
-  return {stage:'complete'};
+  await advance(job,lease,'external_review');
+  return {stage:'external_review',live_health_data_erased:true,all_copies_erased:false};
  }
  await advance(job,lease,'identity');
  try{await identity.revokeRefreshTokens(job.uid);}catch(error){if(error.code!=='auth/user-not-found')throw error;}

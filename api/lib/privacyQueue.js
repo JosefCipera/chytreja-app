@@ -6,7 +6,7 @@ export async function runPrivacyJob({db,identity,jobId=null,manifest=null}) {
  if(!job)return {stage:'busy'};
  const advance=async(j,l,stage)=>privacyRpc('chj_privacy_job_step',{p_job:j.id,p_lease:l,p_stage:stage},db);
  try{
-  return await eraseJob(job,{db,lease,identity,storage:makeStorageAdapter({db,manifest}),advance,finishHealth:async(j,l)=>advance(j,l,'complete')});
+  return await eraseJob(job,{db,lease,identity,storage:makeStorageAdapter({db,manifest}),advance});
  }catch(error){
   const code=['STORAGE_REVIEW_REQUIRED','STORAGE_UNAVAILABLE'].includes(error.code)?error.code:'ERASURE_RETRY_REQUIRED';
   await privacyRpc('chj_privacy_job_error',{p_job:job.id,p_lease:lease,p_code:code},db).catch(()=>{});
