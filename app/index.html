@@ -5,6 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Chytré já</title>
+    <script>window.CHJ_UNIVERSE_EXAMPLE = new URLSearchParams(location.search).get('vzor') === 'dlouhovekost'; if (window.CHJ_UNIVERSE_EXAMPLE) document.documentElement.classList.add('public-example');</script>
+    <link rel="stylesheet" href="/app/assets/landing/original-examples.css?v=1">
     <!-- build: 20260402a -->
 
     <!-- Fonts -->
@@ -12,12 +14,24 @@
     <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@200;300&display=swap" rel="stylesheet">
 
     <!-- Supabase -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+    if (!window.CHJ_UNIVERSE_EXAMPLE) {
+      window.CHJ_SUPABASE_READY = new Promise((resolve, reject) => {
+        const sdk = document.createElement('script');
+        sdk.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+        sdk.onload = resolve;
+        sdk.onerror = () => reject(new Error('Supabase SDK se nepodařilo načíst.'));
+        document.head.append(sdk);
+      });
+    }
+    </script>
 
     <!-- Firebase Auth -->
     <script type="module">
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js';
-        import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js';
+if (!window.CHJ_UNIVERSE_EXAMPLE) {
+
+        const { initializeApp } = await import('https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js');
+        const { getAuth, onAuthStateChanged, signOut } = await import('https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js');
 
         const app = initializeApp({
             apiKey: "AIzaSyAKREZsoBZkA1xOQ5ff3XDmiJ88nwSjeOk",
@@ -116,9 +130,11 @@
 
         // Expose auth for other scripts
         window.firebaseAuth = auth;
-    </script>
+    
+}
+</script>
 
-    <script type="module" src="./js/universe/onboarding.js?v=20260419b"></script>
+    <script type="module">if (!window.CHJ_UNIVERSE_EXAMPLE) await import("./js/universe/onboarding.js?v=20260419b");</script>
 
     <!-- Knihovny -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vis-network@9.1.9/dist/vis-network.min.css">
@@ -375,6 +391,7 @@
 </head>
 
 <body>
+<div class="example-toolbar" hidden id="example-toolbar"><span>Dlouhověkost · mapa oblastí bez osobních dat</span><a href="/crt.html?vzor=kovarova">CRT Kovářové</a><a href="/#ukazky" data-example-return>← Zpět na web</a></div>
     <script src="/app/js/universe/launcher.js?v=20260614b"></script>
 
     <!-- Horní lišta -->
@@ -488,8 +505,10 @@
     </aside>
 
     <script type="module">
-        import { supabase } from './js/universe/supabaseClient.js?v=20260401b';
-        import { updateRecommendations } from './js/universe/universe-panel.js?v=20260401b';
+if (!window.CHJ_UNIVERSE_EXAMPLE) {
+
+        const { supabase } = await import('./js/universe/supabaseClient.js?v=20260401b');
+        const { updateRecommendations } = await import('./js/universe/universe-panel.js?v=20260401b');
 
         window.addEventListener('DOMContentLoaded', async () => {
             supabase.auth.onAuthStateChange((event, session) => {
@@ -499,21 +518,24 @@
                 }
             });
         });
-    </script>
+    
+}
+</script>
 
-    <script type="module" src="/app/js/universe/authFetch.js?v=20260828a"></script>
-    <script type="module" src="/app/js/universe/universe-viewers.js?v=20260401b"></script>
-    <script type="module" src="/app/js/universe/universe-access.js?v=20260401b"></script>
-    <script type="module" src="/app/js/universe/universe-core.js?v=20260401b"></script>
-    <script type="module" src="/app/js/universe/universe-init.js?v=20260605a"></script>
-    <script type="module" src="/app/js/universe/user-data-panel.js?v=20260614b"></script>
-    <script type="module" src="/app/js/universe/ai-assistant.js?v=20260401b"></script>
-    <script type="module" src="/app/js/universe/universe-panel.js?v=20260401b"></script>
+    <script type="module">if (!window.CHJ_UNIVERSE_EXAMPLE) await import("/app/js/universe/authFetch.js?v=20260828a");</script>
+    <script type="module">if (!window.CHJ_UNIVERSE_EXAMPLE) await import("/app/js/universe/universe-viewers.js?v=20260401b");</script>
+    <script type="module">if (!window.CHJ_UNIVERSE_EXAMPLE) await import("/app/js/universe/universe-access.js?v=20260401b");</script>
+    <script type="module">if (!window.CHJ_UNIVERSE_EXAMPLE) await import("/app/js/universe/universe-core.js?v=20260401b");</script>
+    <script type="module">if (!window.CHJ_UNIVERSE_EXAMPLE) await import("/app/js/universe/universe-init.js?v=20260605a");</script>
+    <script type="module">if (!window.CHJ_UNIVERSE_EXAMPLE) await import("/app/js/universe/user-data-panel.js?v=20260614b");</script>
+    <script type="module">if (!window.CHJ_UNIVERSE_EXAMPLE) await import("/app/js/universe/ai-assistant.js?v=20260401b");</script>
+    <script type="module">if (!window.CHJ_UNIVERSE_EXAMPLE) await import("/app/js/universe/universe-panel.js?v=20260401b");</script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <!-- Launcher (launcher.js) manages its own lifecycle â€” no splash fallback needed -->
 
     <!-- Hide app header when any modal opens â€” works regardless of JS cache version -->
-    <script>
+    <script>if (!window.CHJ_UNIVERSE_EXAMPLE) {
+
         new MutationObserver(mutations => {
             for (const m of mutations) {
                 for (const node of m.addedNodes) {
@@ -532,9 +554,11 @@
                 }
             }
         }).observe(document.body, { childList: true });
-    </script>
+    
+}</script>
     <!-- Service Worker -->
-    <script>
+    <script>if (!window.CHJ_UNIVERSE_EXAMPLE) {
+
         if ('serviceWorker' in navigator) {
             // SW je doÄŤasnÄ› vypnutĂ˝ â€” odregistruj vĹˇe co ještě bÄ›ĹľĂ­
             navigator.serviceWorker.getRegistrations().then(regs => {
@@ -542,7 +566,8 @@
             });
             caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
         }
-    </script>
+    
+}</script>
 
     <!-- Onboarding Modal -->
 
@@ -609,7 +634,8 @@
         <iframe id="crt-iframe" src="" style="width:100%; height:100%; border:none;"></iframe>
     </div>
 
-    <script>
+    <script>if (!window.CHJ_UNIVERSE_EXAMPLE) {
+
         // â”€â”€ HUD node data cache â€” prefetched on login â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         window._hudCache = {};   // { nodeId: data }
         window._hudPending = {};   // { nodeId: Promise } â€” in-flight fetches
@@ -1000,7 +1026,8 @@
             document.getElementById('source-backdrop')?.remove();
             setTimeout(() => v.remove(), 300);
         };
-    </script>
+    
+}</script>
 
     <div id="mediaModal"
         style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 10000; display: none; align-items: center; justify-content: center;">
@@ -1008,6 +1035,7 @@
             style="background: #1e293b; padding: 40px; border-radius: 16px; max-width: 600px; width: 90%; color: #fff;">
         </div>
     </div>
+<script type="module">if (window.CHJ_UNIVERSE_EXAMPLE) await import("/app/js/examples/universe-example.js");</script>
 </body>
 
 </html>

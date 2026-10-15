@@ -3,6 +3,14 @@ on:
   pull_request:
     paths:
       - 'app/home-v2.html'
+      - 'app/crt.html'
+      - 'app/index.html'
+      - 'app/js/examples/**'
+      - 'app/assets/examples/**'
+      - 'app/js/universe/universe-core.js'
+      - 'app/js/universe/universe-init.js'
+      - 'app/js/universe/launcher.js'
+      - 'scripts/test-original-examples-browser.cjs'
       - 'app/zakladatele.html'
       - 'vercel.json'
       - 'app/cookies.html'
@@ -36,6 +44,7 @@ jobs:
           NODE_PATH="$RUNNER_TEMP/chj-browser-qa/node_modules" node scripts/test-landing-alignment-browser.cjs
           NODE_PATH="$RUNNER_TEMP/chj-browser-qa/node_modules" node scripts/test-web-app-return-browser.cjs
           NODE_PATH="$RUNNER_TEMP/chj-browser-qa/node_modules" node scripts/test-document-return-browser.cjs
+          NODE_PATH="$RUNNER_TEMP/chj-browser-qa/node_modules" node scripts/test-original-examples-browser.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
