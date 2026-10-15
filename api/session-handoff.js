@@ -1,3 +1,5 @@
+import { withPrivacy } from './lib/withPrivacy.js';
+import { privacyConsole as console } from './lib/privacyConsole.js';
 // api/session-handoff.js — CHJ Session Handoff v0.1
 //
 // POST /api/session-handoff
@@ -23,7 +25,7 @@
 import dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' });
 
-import { createClient }     from '@supabase/supabase-js';
+import { createClient }     from './lib/privacySupabase.js';
 import { getAdminAuth }      from './lib/firebaseAdmin.js';
 import { applyHealthEvent }  from './engine/healthEventAdapter.js';
 
@@ -203,7 +205,7 @@ function defaultCreateSupabase() {
 
 // _hooks is used ONLY in tests (verifyIdToken, createSupabase, applyFn override).
 // Vercel calls handler(req, res) → _hooks = {} → all real implementations used.
-export default async function handler(req, res, _hooks = {}) {
+async function handler(req, res, _hooks = {}) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -251,3 +253,5 @@ export default async function handler(req, res, _hooks = {}) {
     return res.status(500).json({ error: 'Handoff failed — safe to retry', details: err.message });
   }
 }
+
+export default withPrivacy(handler,{scope:'health'});

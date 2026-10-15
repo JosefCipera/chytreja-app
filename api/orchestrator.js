@@ -1,3 +1,5 @@
+import { withPrivacy } from './lib/withPrivacy.js';
+import { privacyConsole as console } from './lib/privacyConsole.js';
 // =====================================================
 // API: /api/orchestrator.js — CHJ Master Agent (fast)
 // Architecture: pre-fetch all data → single Haiku call → save
@@ -8,7 +10,7 @@ import dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' });
 
 import Anthropic from '@anthropic-ai/sdk';
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from './lib/privacySupabase.js';
 import { requireAuth }  from './lib/requireAuth.js';
 
 const MODEL = 'claude-haiku-4-5';
@@ -141,7 +143,7 @@ function fallbackDecision(ctx) {
 }
 
 // ── MAIN HANDLER ──────────────────────────────────────
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
   try {
@@ -269,3 +271,5 @@ Rozhodni které disciplíně dát dnes prioritu.`.trim();
     return res.status(500).json({ error: e.message });
   }
 }
+
+export default withPrivacy(handler,{scope:'health'});

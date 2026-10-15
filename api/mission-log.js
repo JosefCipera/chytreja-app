@@ -1,8 +1,10 @@
+import { withPrivacy } from './lib/withPrivacy.js';
+import { privacyConsole as console } from './lib/privacyConsole.js';
 // POST /api/mission-log  — save completed mission
 // GET  /api/mission-log?userId=...  — return streak + today's completed missions
 import dotenv from "dotenv";
 dotenv.config({ path: '.env.local' });
-import { createClient } from "@supabase/supabase-js";
+import { createClient } from "./lib/privacySupabase.js";
 import { requireAuth }  from './lib/requireAuth.js';
 
 const supabase = createClient(
@@ -10,7 +12,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-export default async function (req, res) {
+async function privacyEndpoint(req, res) {
   if (req.method === 'POST') return handlePost(req, res);
   if (req.method === 'GET')  return handleGet(req, res);
   return res.status(405).json({ error: 'Method not allowed' });
@@ -118,3 +120,5 @@ async function computeStreak(userId) {
 
   return streak;
 }
+
+export default withPrivacy(privacyEndpoint,{scope:'health'});

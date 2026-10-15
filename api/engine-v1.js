@@ -1,3 +1,5 @@
+import { withPrivacy } from './lib/withPrivacy.js';
+import { privacyConsole as console } from './lib/privacyConsole.js';
 // POST /api/engine-v1 { userId }
 // Returns PERSON_NODE_STATE[] from CHJ Engine v1.
 // Runs parallel to old CRT engine — does NOT affect crt-generate.js output.
@@ -10,7 +12,7 @@ dotenv.config({ path: '.env.local' });
 import { runEngine } from './engine/engine.js';
 import { requireAuth } from './lib/requireAuth.js';
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
   const auth = await requireAuth(req, res);
   if (!auth) return;
@@ -23,3 +25,5 @@ export default async function handler(req, res) {
     res.status(500).json({ error: err.message });
   }
 }
+
+export default withPrivacy(handler,{scope:'health'});

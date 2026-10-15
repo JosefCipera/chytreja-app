@@ -1,3 +1,5 @@
+import { withPrivacy } from './lib/withPrivacy.js';
+import { privacyConsole as console } from './lib/privacyConsole.js';
 // =====================================================
 // API ENDPOINT: /api/chat.js - Chytré já
 // =====================================================
@@ -5,7 +7,7 @@
 import dotenv from "dotenv";
 dotenv.config({ path: '.env.local' });
 
-import { createClient } from "@supabase/supabase-js";
+import { createClient } from "./lib/privacySupabase.js";
 import { requireAuth }  from './lib/requireAuth.js';
 
 // Fallback aspiration data – matches api/aspiration.js
@@ -86,7 +88,7 @@ async function fetchAspirationData(supabase, userId, nodeId) {
   }
 }
 
-export default async function (req, res) {
+async function privacyEndpoint(req, res) {
   try {
     if (req.method !== "POST") {
       return res.status(405).json({ error: "Only POST allowed" });
@@ -628,3 +630,5 @@ ${aspirationBlock}
     });
   }
 }
+
+export default withPrivacy(privacyEndpoint,{scope:'health'});

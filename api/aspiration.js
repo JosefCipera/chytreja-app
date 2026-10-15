@@ -1,3 +1,4 @@
+import { withPrivacy } from './lib/withPrivacy.js';
 // =====================================================
 // API ENDPOINT: /api/aspiration.js
 // GET /api/aspiration?userId=...&nodeId=...
@@ -7,7 +8,7 @@
 import dotenv from "dotenv";
 dotenv.config({ path: '.env.local' });
 
-import { createClient } from "@supabase/supabase-js";
+import { createClient } from "./lib/privacySupabase.js";
 import { requireAuth }  from './lib/requireAuth.js';
 
 // Fallback data – used when DB tables are empty
@@ -28,7 +29,7 @@ const BEZKY_V_85 = {
   }
 };
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Only GET allowed' });
   }
@@ -121,3 +122,5 @@ export default async function handler(req, res) {
     }
   });
 }
+
+export default withPrivacy(handler,{scope:'health'});

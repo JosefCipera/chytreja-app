@@ -1,3 +1,5 @@
+import { withPrivacy } from '../lib/withPrivacy.js';
+import { privacyConsole as console } from '../lib/privacyConsole.js';
 // POST /api/tools/parse
 // Unified parser — routes by `source` field:
 //   source: 'ultrahuman'  → Ultrahuman Ring CSV import
@@ -10,7 +12,7 @@ import dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' });
 
 import Anthropic from '@anthropic-ai/sdk';
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '../lib/privacySupabase.js';
 import { requireAuth } from '../lib/requireAuth.js';
 
 // ══════════════════════════════════════════════════════════════
@@ -457,7 +459,7 @@ async function handleHealthDoc(req, res, sb) {
 // MAIN HANDLER — routes by source field
 // ══════════════════════════════════════════════════════════════
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
   const auth = await requireAuth(req, res);
@@ -479,3 +481,5 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: e.message });
   }
 }
+
+export default withPrivacy(handler,{scope:'health'});

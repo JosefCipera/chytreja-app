@@ -1,3 +1,5 @@
+import { withPrivacy } from './lib/withPrivacy.js';
+import { privacyConsole as console } from './lib/privacyConsole.js';
 // =====================================================
 // API ENDPOINT: /api/tts.js — ElevenLabs Text-to-Speech
 //
@@ -176,7 +178,7 @@ const NODE_KILLER_RISK = {
 async function fetchBottleneck(userId, role) {
   if (!userId) return null;
   try {
-    const { createClient } = await import('@supabase/supabase-js');
+    const { createClient } = await import('./lib/privacySupabase.js');
     const supabase = createClient(
       process.env.SUPABASE_URL,
       process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -238,7 +240,7 @@ function getUniverseContext(role) {
 async function fetchHealthProfile(userId) {
   if (!userId) return null;
   try {
-    const { createClient } = await import('@supabase/supabase-js');
+    const { createClient } = await import('./lib/privacySupabase.js');
     const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
     const { data } = await supabase
       .from('user_health_profile')
@@ -469,7 +471,7 @@ Jedna věta, jedna akce, čistá čeština:`;
 
 // ── Main handler ─────────────────────────────────────────────────────────────
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -570,3 +572,5 @@ export default async function handler(req, res) {
     res.status(500).json({ error: 'TTS fetch failed' });
   }
 }
+
+export default withPrivacy(handler,{scope:'health'});

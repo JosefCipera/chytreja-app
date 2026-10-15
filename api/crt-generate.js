@@ -1,3 +1,5 @@
+import { withPrivacy } from './lib/withPrivacy.js';
+import { privacyConsole as console } from './lib/privacyConsole.js';
 // =====================================================
 // API ENDPOINT: /api/crt-generate.js
 // POST { userId, role }
@@ -146,7 +148,7 @@ function calcPositions(nodes, edges) {
 }
 
 async function fetchContext(userId, role) {
-  const { createClient } = await import('@supabase/supabase-js');
+  const { createClient } = await import('./lib/privacySupabase.js');
   const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
   // 1. Metriky uzlů
@@ -1745,7 +1747,7 @@ function dataHash(ctx, modelId) {
 
 export { buildDeterministicCRT, STATES_DB, STATES_ARR, DRUGS_DB, DIAGNOSIS_KEYWORDS };
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const { role = 'longevity', force = false, model: modelParam, mockProfile } = req.body || {};
@@ -1784,7 +1786,7 @@ export default async function handler(req, res) {
 
   if (!userId) return res.status(401).json({ error: 'Přihlaste se pro zobrazení mapy.' });
 
-  const { createClient } = await import('@supabase/supabase-js');
+  const { createClient } = await import('./lib/privacySupabase.js');
   const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
   try {
@@ -1912,3 +1914,5 @@ export default async function handler(req, res) {
     res.status(500).json({ error: 'CRT generation failed', detail: e.message });
   }
 }
+
+export default withPrivacy(handler,{scope:'health'});

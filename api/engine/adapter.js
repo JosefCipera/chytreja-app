@@ -1,8 +1,9 @@
+import { privacyConsole as console } from '../lib/privacyConsole.js';
 // adapter.js — Health Data Model v1 translation layer
 // Reads from current Supabase tables, returns {person, clinicalHistory, observations}.
 // Does NOT change DB schema. Enforces canonical birth_year from user_profiles.
 
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '../lib/privacySupabase.js';
 import { applyActionInstructions } from './actionInstructions.js';
 
 const DIAG_KEYWORDS = [

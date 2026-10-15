@@ -39,7 +39,7 @@
 //   explanation_context: { system_constraint, system_leverage, action_context, evidence_context }
 // }
 
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '../lib/privacySupabase.js';
 import { runEngine }           from './engine.js';
 import { computeDailyDecision } from './dailyDecision.js';
 import { mapDiagnosis }         from './adapter.js';

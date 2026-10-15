@@ -1,3 +1,5 @@
+import { withPrivacy } from './lib/withPrivacy.js';
+import { privacyConsole as console } from './lib/privacyConsole.js';
 // api/notify.js – CHJ notifikační endpoint
 // POST /api/notify
 //
@@ -10,10 +12,10 @@
 //   VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_EMAIL
 
 import 'dotenv/config';
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from './lib/privacySupabase.js';
 import { requireAuth }  from './lib/requireAuth.js';
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -131,3 +133,5 @@ export default async function handler(req, res) {
 
   return res.status(400).json({ error: 'Unknown action. Use: subscribe | send | test' });
 }
+
+export default withPrivacy(handler,{scope:'health'});

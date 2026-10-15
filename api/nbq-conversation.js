@@ -1,3 +1,5 @@
+import { withPrivacy } from './lib/withPrivacy.js';
+import { privacyConsole as console } from './lib/privacyConsole.js';
 // api/nbq-conversation.js — CHJ NBQ Prototype #1
 //
 // POST { history: [{role, content}], known_facts?: {}, structured_facts?: [] }
@@ -89,7 +91,7 @@ Pravidla:
   };
 }
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const { history = [], known_facts = {}, structured_facts = [] } = req.body ?? {};
@@ -178,3 +180,5 @@ export default async function handler(req, res) {
     question_count:     questionCount + 1,
   });
 }
+
+export default withPrivacy(handler,{scope:'health'});

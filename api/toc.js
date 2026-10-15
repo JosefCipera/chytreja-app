@@ -1,3 +1,5 @@
+import { withPrivacy } from './lib/withPrivacy.js';
+import { privacyConsole as console } from './lib/privacyConsole.js';
 // /api/toc — všechny TOC endpointy v jednom souboru
 // Route: ?route=zakazky | hlavni-plan | plan | import
 //
@@ -5,14 +7,14 @@
 
 import dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' });
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from './lib/privacySupabase.js';
 import { requireAuth }  from './lib/requireAuth.js';
 
 function sb() {
   return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 }
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -447,3 +449,5 @@ function splitCsvRow(line,delim=',') {
 }
 function num(v,def=0){ const n=parseFloat(v); return isNaN(n)?def:n; }
 function int(v,def=0){ const n=parseInt(v,10); return isNaN(n)?def:n; }
+
+export default withPrivacy(handler,{scope:'account'});
