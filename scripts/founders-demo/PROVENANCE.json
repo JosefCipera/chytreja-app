@@ -1,0 +1,30 @@
+{
+  "kovarova": {
+    "renderer_tag": "v0.2-crt-gold-kovarova",
+    "renderer_commit": "f9a82e228581afa2db781b90141cbc0602fd6038",
+    "original_source_sha256": "41fa92e57dfa1e0f41fce21d4433e3ed714f2bdb54fa7ca87498eb8c000bc9a0",
+    "data_commit": "58e472bcc5b3b7fc63433cf8fc11cf8169304150",
+    "nodes": 19,
+    "medications": 16
+  },
+  "josef": {
+    "renderer_tag": "v0.3-crt-gold-josef",
+    "renderer_commit": "e616bcd8a4ee87608aac7c284368f60bf2e2e58e",
+    "original_source_sha256": "ac54c2bb42e6e4ad01dbb325363725f4c410519a023ac1ba7b339a1e93c4e4cd",
+    "data_commit": "58e472bcc5b3b7fc63433cf8fc11cf8169304150",
+    "nodes": 14,
+    "medications": 9
+  },
+  "universe": {
+    "source_tag": "v0.3-crt-gold-josef",
+    "renderer_source_sha256": "b8f8fcede0d0d3955d78aa1b3d19cd6eb8d241a0759292e9948e70408887fd97",
+    "nodes": 40,
+    "original_renderer": true,
+    "account_services": false,
+    "panel": "native Svelte HUD with archived node descriptions and SQL catalogue actions, no personal metrics or live results",
+    "hud_assets": [
+      "hud-DNhFxP-v.js",
+      "hud-Bs1_vt3L.css"
+    ]
+  }
+}

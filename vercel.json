@@ -10,6 +10,9 @@
         "api/engine-v1.js":            { "includeFiles": "data/engine/**", "maxDuration": 30 }
     },
     "headers": [
+        { "source": "/ukazka/:path*", "headers": [
+            { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
+        ] },
         {
             "source": "/(.*\\.html)",
             "headers": [
@@ -108,6 +111,8 @@
         }
     ],
     "rewrites": [
+        { "source": "/ukazka", "destination": "/app/ukazka/index.html" },
+        { "source": "/ukazka/", "destination": "/app/ukazka/index.html" },
         {
             "source": "/hud",
             "destination": "/app/hud.html"

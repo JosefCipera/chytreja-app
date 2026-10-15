@@ -1,0 +1,162 @@
+{
+  "dlouhovekost": {
+    "action_id": "unavailable",
+    "origin": null
+  },
+  "zdravi": {
+    "action_id": "krev_check",
+    "origin": "v0.3-crt-gold-josef:migrations/add_longevity_actions.sql"
+  },
+  "metabolicke": {
+    "action_id": "pust_12h",
+    "origin": "v0.3-crt-gold-josef:migrations/add_longevity_actions.sql"
+  },
+  "imunitni": {
+    "action_id": "unavailable",
+    "origin": null
+  },
+  "nervovy_system": {
+    "action_id": "ns_pohyb",
+    "origin": "v0.3-crt-gold-josef:migrations/add_missing_node_actions.sql"
+  },
+  "spanek": {
+    "action_id": "spanek_bez_obrazovky",
+    "origin": "v0.3-crt-gold-josef:migrations/add_missing_node_actions.sql"
+  },
+  "biomarkery": {
+    "action_id": "unavailable",
+    "origin": null
+  },
+  "glukoza": {
+    "action_id": "unavailable",
+    "origin": null
+  },
+  "bilirubin": {
+    "action_id": "unavailable",
+    "origin": null
+  },
+  "leukocyty": {
+    "action_id": "unavailable",
+    "origin": null
+  },
+  "erytrocyty": {
+    "action_id": "unavailable",
+    "origin": null
+  },
+  "souhrn_biomarkery": {
+    "action_id": "unavailable",
+    "origin": null
+  },
+  "obnova": {
+    "action_id": "unavailable",
+    "origin": null
+  },
+  "telo": {
+    "action_id": "chůze_20min",
+    "origin": "v0.3-crt-gold-josef:migrations/add_longevity_actions.sql"
+  },
+  "sila": {
+    "action_id": "unavailable",
+    "origin": null
+  },
+  "vytrvalost": {
+    "action_id": "vytr_zona2_30",
+    "origin": "v0.3-crt-gold-josef:migrations/add_missing_node_actions.sql"
+  },
+  "mobilita": {
+    "action_id": "unavailable",
+    "origin": null
+  },
+  "stabilita": {
+    "action_id": "unavailable",
+    "origin": null
+  },
+  "rovnovaha": {
+    "action_id": "rovnovaha_habit",
+    "origin": "v0.3-crt-gold-josef:migrations/add_missing_node_actions.sql"
+  },
+  "kardio": {
+    "action_id": "unavailable",
+    "origin": null
+  },
+  "plyometrie": {
+    "action_id": "unavailable",
+    "origin": null
+  },
+  "dychani": {
+    "action_id": "unavailable",
+    "origin": null
+  },
+  "nosni_dychani": {
+    "action_id": "unavailable",
+    "origin": null
+  },
+  "dechova_koherence": {
+    "action_id": "unavailable",
+    "origin": null
+  },
+  "butejko": {
+    "action_id": "unavailable",
+    "origin": null
+  },
+  "mysl": {
+    "action_id": "meditace_5",
+    "origin": "v0.3-crt-gold-josef:migrations/add_longevity_actions.sql"
+  },
+  "stres": {
+    "action_id": "stres_pauza",
+    "origin": "v0.3-crt-gold-josef:migrations/add_missing_node_actions.sql"
+  },
+  "smysl": {
+    "action_id": "unavailable",
+    "origin": null
+  },
+  "soustredeni": {
+    "action_id": "unavailable",
+    "origin": null
+  },
+  "vdecnost": {
+    "action_id": "unavailable",
+    "origin": null
+  },
+  "meditace": {
+    "action_id": "unavailable",
+    "origin": null
+  },
+  "emoce": {
+    "action_id": "unavailable",
+    "origin": null
+  },
+  "klid": {
+    "action_id": "unavailable",
+    "origin": null
+  },
+  "vyziva": {
+    "action_id": "protein_check",
+    "origin": "v0.3-crt-gold-josef:migrations/add_longevity_actions.sql"
+  },
+  "pust": {
+    "action_id": "unavailable",
+    "origin": null
+  },
+  "bílkoviny": {
+    "action_id": "unavailable",
+    "origin": null
+  },
+  "glukoza_vyziva": {
+    "action_id": "unavailable",
+    "origin": null
+  },
+  "mikronutrienty": {
+    "action_id": "unavailable",
+    "origin": null
+  },
+  "hydratace": {
+    "action_id": "unavailable",
+    "origin": null
+  },
+  "casovani_jidel": {
+    "action_id": "unavailable",
+    "origin": null
+  }
+}

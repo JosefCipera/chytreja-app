@@ -1,0 +1,961 @@
+﻿<!DOCTYPE html>
+<html lang="cs">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Archiv — Vesmír Dlouhověkosti</title>
+    <!-- build: 20260402a -->
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@200;300&display=swap" rel="stylesheet">
+
+    <!-- Supabase -->
+    
+
+    <!-- Firebase Auth -->
+    
+
+    
+
+    <!-- Knihovny -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vis-network@9.1.9/dist/vis-network.min.css">
+    <script src="vendor/vis-network.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+    <!-- Styly -->
+    <link rel="stylesheet" href="universe-core.css">
+    <link rel="stylesheet" href="universe-header.css">
+
+    <!-- PWA -->
+    
+    <meta name="theme-color" content="#0f172a">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Chytré já">
+
+    <style>
+        .battery-section {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin: 32px 0;
+        }
+
+        .battery {
+            width: 30px;
+            height: 140px;
+            border: 2px solid #06b6d4;
+            border-radius: 6px;
+            background: rgba(6, 182, 212, 0.05);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.3);
+        }
+
+        .battery-fill {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 38%;
+            background: linear-gradient(180deg, #22d3ee, #06b6d4);
+            box-shadow: 0 0 30px rgba(6, 182, 212, 0.8);
+        }
+
+        .wave-section {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin: 24px 0;
+            height: 40px;
+            align-items: center;
+        }
+
+        .wave {
+            width: 4px;
+            background: linear-gradient(180deg, #06b6d4, #0891b2);
+            border-radius: 2px;
+        }
+
+        .sokrates-text {
+            text-align: center;
+            color: #06b6d4;
+            font-size: 0.85em;
+            margin: 8px 0 16px;
+        }
+        /* === Mic tlaÄŤĂ­tko === */
+        #voice-mic-btn {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: rgba(15, 23, 42, 0.92);
+            border: 1.5px solid rgba(80, 120, 200, 0.4);
+            box-shadow: 0 0 18px rgba(80, 120, 255, 0.2);
+            cursor: pointer;
+            z-index: 500;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.15s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+        }
+        #voice-mic-btn:hover {
+            transform: scale(1.08);
+            box-shadow: 0 0 28px rgba(80, 140, 255, 0.4);
+        }
+        #voice-mic-btn[data-state="listening"] {
+            border-color: rgba(239, 68, 68, 0.7);
+            box-shadow: 0 0 24px rgba(239, 68, 68, 0.35);
+            animation: mic-pulse 1s ease-in-out infinite;
+        }
+        #voice-mic-btn[data-state="thinking"] {
+            border-color: rgba(147, 197, 253, 0.5);
+            box-shadow: 0 0 24px rgba(147, 197, 253, 0.3);
+        }
+        #voice-mic-btn[data-state="speaking"] {
+            border-color: rgba(59, 130, 246, 0.8);
+            animation: mic-pulse-blue 1.1s ease-in-out infinite;
+        }
+        .mic-icon { font-size: 22px; line-height: 1; }
+        @keyframes mic-pulse {
+            0%, 100% { box-shadow: 0 0 24px rgba(239, 68, 68, 0.35); }
+            50%       { box-shadow: 0 0 38px rgba(239, 68, 68, 0.6); }
+        }
+        @keyframes mic-pulse-blue {
+            0%, 100% { box-shadow: 0 0 18px rgba(59, 130, 246, 0.3); }
+            50%       { box-shadow: 0 0 32px rgba(59, 130, 246, 0.7); }
+        }
+        /* CHJ bubliny â€“ fade-in + slide-up pro animovanĂ© 3-vÄ›tovĂ˝ briefing */
+        @keyframes chjFadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        /* Posunout mic btn nahoru kdyĹľ je panel otevĹ™enĂ˝ */
+        body.panel-open #voice-mic-btn {
+            bottom: 80px;
+        }
+        /* === Header mic tlaÄŤĂ­tko â€” TTS indikĂˇtor (speaking state) === */
+        #header-mic-btn {
+            height: 38px;
+            min-width: 38px;
+            padding: 0 8px;
+            border-radius: 9999px;
+            background: rgba(51, 65, 85, 0.65);
+            border: 2px solid #475569;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 15px;
+            white-space: nowrap;
+            transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+            flex-shrink: 0;
+        }
+        #header-mic-btn:hover {
+            background: rgba(71, 85, 105, 0.85);
+            border-color: #64748b;
+        }
+        /* SPEAKING â€“ modrĂˇ pulsujĂ­cĂ­ zĂˇĹ™e (TTS ÄŤte) */
+        #header-mic-btn[data-state="speaking"] {
+            border-color: rgba(59, 130, 246, 0.8);
+            animation: header-pulse-blue 1.1s ease-in-out infinite;
+        }
+
+        /* === Hlasový příkaz â€” novĂ© tlaÄŤĂ­tko === */
+        #cmd-mic-btn {
+            height: 38px;
+            min-width: 38px;
+            padding: 0 10px;
+            border-radius: 9999px;
+            background: rgba(15, 23, 42, 0.75);
+            border: 2px solid rgba(34, 197, 94, 0.35);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 15px;
+            color: #94a3b8;
+            white-space: nowrap;
+            transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+            flex-shrink: 0;
+        }
+        #cmd-mic-btn:hover {
+            background: rgba(34, 197, 94, 0.12);
+            border-color: rgba(34, 197, 94, 0.6);
+            color: #22c55e;
+        }
+        #cmd-mic-btn[data-state="listening"] {
+            border-color: rgba(34, 197, 94, 0.85);
+            color: #22c55e;
+            animation: header-pulse-green 1.1s ease-in-out infinite;
+        }
+        #cmd-mic-btn[data-state="speaking"] {
+            border-color: rgba(59, 130, 246, 0.8);
+            color: #60a5fa;
+            animation: header-pulse-blue 1.1s ease-in-out infinite;
+        }
+        #cmd-mic-btn[data-state="thinking"] {
+            border-color: rgba(147, 197, 253, 0.55);
+            color: #93c5fd;
+        }
+        @keyframes header-pulse-green {
+            0%, 100% { box-shadow: 0 0 8px rgba(34, 197, 94, 0.3); }
+            50%       { box-shadow: 0 0 20px rgba(34, 197, 94, 0.7); }
+        }
+        @keyframes header-pulse-blue {
+            0%, 100% { box-shadow: 0 0 8px rgba(59, 130, 246, 0.3); }
+            50%       { box-shadow: 0 0 20px rgba(59, 130, 246, 0.7); }
+        }
+    </style>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' data:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https:; font-src 'self' data: https:; img-src 'self' data: https:; connect-src 'none'; frame-src 'self'; object-src 'none'; base-uri 'self'"><meta name="robots" content="noindex"><style>.user-profile-wrapper,#crtRegenBtn,#cmd-mic-btn,#header-mic-btn,.header-controls{display:none!important}</style><style id="archive-hud-width">
+#hud-overlay{justify-content:flex-end!important}
+#hud-panel-wrap{width:min(520px,100vw)!important;max-width:100vw!important;flex:0 0 auto;margin-left:auto!important;margin-right:0!important}
+</style></head>
+
+<body>
+    
+
+    <!-- Horní lišta -->
+    <header id="appHeader" class="app-header">
+        <div id="appTitle" class="chj-logo">
+            <div class="chj-logo__cursor"></div>
+            <div class="chj-logo__text">
+                <span class="chj-logo__row1">chytr<span class="chj-logo__ac">e</span></span>
+                <span class="chj-logo__row2">j<span class="chj-logo__ac">a</span></span>
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="header-controls" style="display:none;">
+                <label for="modelSelector">Vesmír:</label>
+                <select id="modelSelector"></select>
+                <label for="roleSelect">Produkt:</label>
+                <select id="roleSelect">
+                    <option value="demo">Demo</option>
+                    <option value="free">Free</option>
+                    <option value="pro">Pro</option>
+                    <option value="dekatlon">Dekatlon</option>
+                    <option value="lehkost">Hubnutí</option>
+                    <option value="user">User</option>
+                </select>
+                <label id="hideGrayLabel" style="display:none; align-items:center; gap:5px; cursor:pointer;">
+                    <input type="checkbox" id="hideGrayToggle"> Skrýt šedé
+                </label>
+            </div>
+        </div>
+        <div class="user-profile-wrapper">
+            <button id="cmd-mic-btn" title="Hlasový příkaz" aria-label="Ĺekni příkaz">
+                <span id="cmd-mic-icon">đźŽ¤</span>
+                <span id="cmd-mic-label" style="font-size:12px;font-family:monospace;letter-spacing:0.05em;">CMD</span>
+            </button>
+            <button id="header-mic-btn" title="Přehrát odpověď" aria-label="TTS přehrávač">
+                <span class="header-mic-icon">đź”Š</span>
+            </button>
+            <button id="profileBtn" class="avatar-button">
+                <img src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" alt="Profil"
+                    class="user-avatar">
+            </button>
+
+            <div id="profileDropdown" class="profile-dropdown hidden">
+                <div class="dropdown-header">
+                    <img src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" alt="User"
+                        class="avatar-large">
+                    <div class="user-meta">
+                        <span class="email">cipera@iting.cz</span>
+                        <div class="status-row">
+                            <span class="badge-free">Free</span>
+                            <a href="#upgrade" class="upgrade-link">upgrade</a>
+                        </div>
+                    </div>
+                </div>
+                <nav class="dropdown-nav">
+                    <a href="#" onclick="openUserDataPanel(); return false;"><i class="icon">đź‘¤</i> Já</a>
+                    <a href="#" onclick="openDailyCheckin(); return false;" id="checkin-menu-item"><i class="icon">đź“‹</i> Dnešní záznam</a>
+                    <a href="/app/medioteka.html"><i class="icon">đź“š</i> Mediotéka</a>
+                    <a href="#" onclick="openGuide(); return false;"><i class="icon">đź“–</i> Návod</a>
+                    <div class="divider"></div>
+                    <button onclick="handleLogout()" class="logout-action">
+                        <i class="icon">â­•</i> Odhlásit
+                    </button>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Plátno sítě -->
+    <div id="network"></div>
+
+    <!-- Postranní panel -->
+    <aside id="sidePanel">
+        <div class="panel-header">
+            <div class="panel-node-row">
+                <div id="nodeTitle" class="panel-node-title">
+                    <i class="fa-solid fa-circle-nodes"></i> Uzlový název
+                </div>
+                <button class="panel-close" id="closePanel">âś–</button>
+            </div>
+        </div>
+
+        <div class="panel-content">
+            <div class="ai-intelligence-zone">
+                <!-- <h3
+                    style="color:#83B0E3; font-size:18px; margin:0 0 15px 0; display:flex; align-items:center; gap:10px;">
+                    âšˇ Zeptejte se
+                </h3>
+               <h3 class="panel-section-title"><i class="fa-solid fa-brain"></i> Chytré já</h3> -->
+                <div id="ai-integrated-msgs" class="ai-prediction-text"></div>
+                <div id="aiPanelSection" style="display:flex; margin-top:20px;">
+                    <input id="aiPanelInput" type="text" placeholder="Zeptej se Chytrého já…" />
+                    <button id="ai-send"><i class="fa-solid fa-paper-plane"></i></button>
+                </div>
+            </div>
+            <!--
+            <hr class="panel-divider">
+
+            <div id="tasksSection" class="panel-section">
+                <h3 class="panel-section-title"><i class="fa-solid fa-bolt"></i> Akce</h3>
+                <ul id="tasksList" class="tasks-list"></ul>
+            </div>
+
+            <hr class="panel-divider">
+
+            <div id="resourcesSection" class="panel-section">
+                <h3 class="panel-section-title"><i class="fa-solid fa-file-lines"></i> Hodnoty</h3>
+                <ul id="resourcesList" class="resources-list"></ul>
+            </div>-->
+        </div>
+    </aside>
+
+    
+
+    
+    
+    
+    
+    
+    
+    
+    
+    <!-- Launcher (launcher.js) manages its own lifecycle â€” no splash fallback needed -->
+
+    <!-- Hide app header when any modal opens â€” works regardless of JS cache version -->
+    
+
+    <!-- Service Worker -->
+    
+
+    <!-- Onboarding Modal -->
+
+    <!-- HUD fetch loader â€” thin bar at the right edge while data is being fetched -->
+    <style>
+        #hud-fetch-loader {
+            position: fixed;
+            top: 0; right: 0;
+            width: 3px;
+            height: 100%;
+            background: linear-gradient(180deg, #06b6d4 0%, #22c55e 60%, #06b6d4 100%);
+            background-size: 100% 200%;
+            opacity: 0;
+            z-index: 6000;
+            pointer-events: none;
+            transition: opacity 0.15s ease;
+        }
+        #hud-fetch-loader.active {
+            opacity: 1;
+            animation: hud-loader-pulse 0.8s ease-in-out infinite alternate;
+        }
+        @keyframes hud-loader-pulse {
+            from { opacity: 0.5; box-shadow: 0 0 6px rgba(6,182,212,0.4); }
+            to   { opacity: 1;   box-shadow: 0 0 14px rgba(6,182,212,0.9); }
+        }
+    </style>
+    <div id="hud-fetch-loader"></div>
+
+    <!-- HUD Overlay â€” Svelte HUD panel (same as index.html) -->
+    <div id="hud-overlay" style="
+        display: none; position: fixed; inset: 0; z-index: 5000;
+        background: transparent; align-items: stretch; justify-content: flex-end;
+        pointer-events: none;
+    ">
+        <div id="hud-panel-wrap" style="
+            width: 100%; max-width: 420px;
+            height: calc(100dvh - 84px - env(safe-area-inset-top, 0px));
+            margin-top: calc(56px + env(safe-area-inset-top, 0px) + 12px); margin-bottom: 16px; margin-right: 0;
+            transform: translateX(100%);
+            transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+            overflow: hidden; border-radius: 20px 0 0 20px; pointer-events: auto;
+        ">
+            <iframe id="hud-iframe" src="" style="width:100%; height:100%; border:none;" allow="microphone"></iframe>
+        </div>
+    </div>
+
+    <!-- Tool Overlay â€” full-screen iframe for TOC tool pages (toc-vyroba, etc.) -->
+    <div id="tool-overlay" style="display:none; position:fixed; inset:0; z-index:11000; background:#080e1a;">
+        <iframe id="tool-iframe" src="" style="width:100%; height:100%; border:none;"></iframe>
+    </div>
+
+    <!-- CRT Overlay — replaces canvas, opened via PROČ? button in HUD panel -->
+    <div id="crt-overlay" style="display:none; position:fixed; inset:0; z-index:6000; background:#0b0f1a;">
+        <iframe id="crt-iframe" src="" style="width:100%; height:100%; border:none;"></iframe>
+    </div>
+
+    
+
+    <div id="mediaModal"
+        style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 10000; display: none; align-items: center; justify-content: center;">
+        <div id="modalContent"
+            style="background: #1e293b; padding: 40px; border-radius: 16px; max-width: 600px; width: 90%; color: #fff;">
+        </div>
+    </div>
+<script>window.ARCHIVE_UNIVERSE=[{"id": "dlouhovekost", "label": "Dlouhověkost", "icon": "🧬", "definition": "Dlouhověkost není jen o délce života, ale o jeho kvalitě. Je to strategie, jak řídit zdraví, tělo, mysl a výživu tak, abychom byli funkční, silní a duševně odolní i ve vyšším věku.", "color": "#4f6eb4", "related": ["zdravi", "telo", "mysl", "vyziva"], "articles": [{"title": "Jak přemýšlet o dlouhověkosti", "url": "../content/docs/dlouhovekost/uvod.md", "summary": "Peter Attia chápe dlouhověkost jako inženýrský problém – plánuj, měř a optimalizuj. Není to dieta ani cvičení, ale systém řízení života."}]}, {"id": "zdravi", "label": "Zdraví", "icon": "⚕️", "definition": "Zdraví je aktuální stav těla i mysli – to, co lze měřit a sledovat. Ukazuje, jak efektivně fungují návyky, spánek a trénink.", "color": "#46a469", "parent": "dlouhovekost", "related": ["spanek", "biomarkery", "obnova", "kardiovaskularni", "metabolicke", "imunitni", "nervovy_system"], "media": [{"type": "video", "title": "Tok, ne vytížení", "url": "https://www.youtube.com/embed/r2xvPjNDaVw", "summary": "Drum–Buffer–Rope: jednoduchý princip, který řídí výrobu podle úzkého místa a vytváří stabilní tok zakázek."}, {"type": "audio", "title": "Eliška – ukázka", "summary": "Test přehrávání audia.", "url": "../media/audio/eliska.mp3"}, {"type": "image", "title": "Kouč – obrázek", "summary": "Ukázka obrázku nebo gifu.", "url": "../media/images/kouc-192.png"}], "docs": [{"title": "Úvod do zdraví (MD)", "summary": "Markdown testovací dokument.", "url": "../content/docs/dlouhovekost/zdravi/spanek/zaklady-zdravi.md"}, {"title": "Zdravý spánek – PDF", "summary": "Test PDF dokumentu.", "url": "../media/pdf/kuchta.pdf"}], "articles": [{"title": "Zdraví jako zrcadlo tvých návyků", "url": "../content/docs/dlouhovekost/zdravi/zaklady-zdravi.md", "summary": "Zdraví není dar, ale důsledek. Sleduj biomarkery, spánek, tlak a VO₂max – každý ukazuje, jak tělo zvládá zátěž."}]}, {"id": "metabolicke", "label": "Metabolické zdraví", "icon": "🟩", "definition": "Glukóza, inzulin, lipidy – klíčové ukazatele efektivity metabolismu. Cílem je stabilita, ne extrémy.", "color": "#5bb97d", "parent": "zdravi", "related": ["glukoza", "hba1c", "inzulin", "tg", "hdl"], "articles": [{"title": "Metabolická flexibilita jako základ dlouhověkosti", "url": "../content/docs/dlouhovekost/zdravi/metabolicke-zdravi.md", "summary": "Metabolické zdraví znamená schopnost těla přepínat mezi spalováním cukrů a tuků bez výkyvů energie."}]}, {"id": "imunitni", "label": "Imunitní rovnováha", "icon": "🛡️", "definition": "Vyvážená imunita chrání před infekcemi i chronickým zánětem. Sleduj CRP, WBC a regeneraci po zátěži.", "color": "#46a469", "parent": "zdravi"}, {"id": "nervovy_system", "label": "Nervový systém", "icon": "🧠", "definition": "Autonomní nervový systém řídí adaptaci – rovnováhu mezi stresem a regenerací. HRV ukazuje, jak efektivně to zvládá.", "color": "#46a469", "parent": "zdravi"}, {"id": "spanek", "label": "Spánek", "icon": "🌙", "definition": "Kvalitní spánek je základní pilíř regenerace. Ovlivňuje hormony, imunitu i psychiku.", "color": "#46a469", "parent": "zdravi", "articles": [{"title": "Proč je spánek základ dlouhověkosti", "url": "../content/docs/dlouhovekost/zdravi/spanek/spanek.md", "summary": "Spánek není pasivní stav. Je to aktivní proces obnovy těla i mysli, který rozhoduje o zdraví i výkonu."}], "media": [{"type": "video", "title": "Dr. Peter Attia – Why Sleep Is the Most Powerful Longevity Tool", "url": "https://www.youtube.com/embed/8d5du-Q5a5A", "summary": "Krátký úsek z podcastu The Drive, kde Attia vysvětluje, jak spánek ovlivňuje hormony, metabolismus a dlouhověkost."}, {"type": "audio", "title": "Předspánková relaxace (3 minuty)", "url": "../media/audio/eliska.mp3", "summary": "Krátká řízená relaxace, která pomáhá zklidnit dech a připravit mozek na spánek."}], "docs": [{"type": "pdf", "title": "Zásady zdravého spánku – přehled", "url": "../media/pdf/kuchta.pdf", "summary": "Jednostránkový přehled doporučení: délka spánku, světlo, teplota, rutina, kofein, obrazovky."}]}, {"id": "biomarkery", "label": "Biomarkery", "icon": "📊", "definition": "Krevní a močové ukazatele odhalují, jak tělo reaguje na výživu, regeneraci a zátěž.", "color": "#46a469", "parent": "zdravi", "related": ["glukoza", "bilirubin", "leukocyty", "erytrocyty", "souhrn_biomarkery"]}, {"id": "glukoza", "label": "S_Glukóza", "icon": "🩸", "definition": "Hladina glukózy v krvi.", "parent": "biomarkery", "value": 5.3, "unit": "mmol/l", "range": "3.6–5.6", "status": "v normě", "color": "#46a469", "history": [{"date": "2025-09-20", "value": 5.7}, {"date": "2025-09-27", "value": 5.4}, {"date": "2025-10-10", "value": 5.2}, {"date": "2025-10-25", "value": 5.3}]}, {"id": "bilirubin", "label": "S_Bilirubin", "icon": "🧪", "definition": "Ukazatel funkce jater a rozkladu červených krvinek.", "parent": "biomarkery", "value": 30.7, "unit": "µmol/l", "range": "3–20", "status": "nad normu", "color": "#cfad32"}, {"id": "leukocyty", "label": "B_Leukocyty", "icon": "🧬", "definition": "Počet bílých krvinek – marker zánětu nebo imunitní reakce.", "parent": "biomarkery", "value": 14.1, "unit": "10⁹/l", "range": "4–10", "status": "nad normu", "color": "#cfad32"}, {"id": "erytrocyty", "label": "U_Erytrocyty", "icon": "🩸", "definition": "Počet červených krvinek v moči – zvýšení může ukazovat na podráždění nebo zánět močových cest.", "parent": "biomarkery", "value": 16, "unit": "počet/µl", "range": "0–10", "status": "nad normu", "color": "#d24541"}, {"id": "souhrn_biomarkery", "label": "Souhrn biomarkerů", "icon": "📘", "definition": "Shrnutí výsledků laboratorních testů – kolik hodnot je v normě a kolik mimo.", "parent": "biomarkery", "color": "#4687a4", "evaluation": {"celkem": 4, "v_norme": 1, "mimo_normu": 3, "stav": "Zvýšené odchylky – doporučeno konzultovat životní styl a případně lékaře."}, "articles": [{"title": "Jak interpretovat laboratorní výsledky", "url": "../content/docs/dlouhovekost/zdravi/biomarkery/souhrn.md", "summary": "Souhrn biomarkerů ukazuje, kde tělo reaguje mimo optimální rovnováhu. Klíčem je dlouhodobé sledování trendů, ne jednorázová hodnota."}]}, {"id": "obnova", "label": "Obnova", "icon": "🔄", "definition": "Regenerace po zátěži je klíčová. Bez obnovy není růst ani adaptace.", "color": "#46a485", "parent": "zdravi", "related": ["sila", "vytrvalost", "mobilita", "dychani"]}, {"id": "telo", "label": "Tělo", "icon": "💪", "definition": "Tělo je motor dlouhověkosti. Posiluj sílu, výdrž a stabilitu – tři pilíře, které rozhodují o tom, jak budeš žít po padesátce i déle.", "color": "#c5a42e", "parent": "dlouhovekost", "related": ["sila", "vytrvalost", "mobilita", "stabilita", "rovnovaha", "kardio", "plyometrie", "dychani"], "articles": [{"title": "Centenarian Decathlon: připrav se na stovku", "url": "../content/docs/dlouhovekost/telo/centenarian-decathlon.md", "summary": "Attia učí, že tělo je třeba trénovat pro soběstačnost – ne pro výkon, ale pro život. Cvič tak, abys mohl žít aktivně i v 90."}]}, {"id": "sila", "label": "Síla", "icon": "🏋️", "definition": "Základní schopnost těla překonávat odpor. Klíčová pro soběstačnost a prevenci pádů. Udržuj svalovou hmotu i po 50. roce života.", "color": "#d2b23f", "parent": "telo", "articles": [{"title": "Proč je síla klíčem k dlouhověkosti", "url": "../content/docs/dlouhovekost/telo/sila.md", "summary": "Svaly nejsou jen estetika – chrání tělo, podporují metabolismus a stabilizují klouby."}]}, {"id": "vytrvalost", "label": "Výdrž", "icon": "🏃‍♂️", "definition": "Schopnost vykonávat fyzickou aktivitu delší dobu. Cíl: VO₂max v horní třetině věkového rozmezí.", "color": "#c5a42e", "parent": "telo", "articles": [{"title": "Aerobní kapacita jako ukazatel dlouhověkosti", "url": "../content/docs/dlouhovekost/telo/vytrvalost.md", "summary": "Attia považuje VO₂max za nejdůležitější biomarker dlouhověkosti – trénuj zóny 2 a 5."}]}, {"id": "mobilita", "label": "Mobilita", "icon": "🤸", "definition": "Rozsah pohybu a pružnost těla. Umožňuje bezpečný pohyb, regeneraci a výkon bez zranění.", "color": "#d2b241", "parent": "telo"}, {"id": "stabilita", "label": "Stabilita", "icon": "🧍‍♂️", "definition": "Schopnost kontrolovat pohyb a udržet rovnováhu při zátěži. Klíčová pro koordinaci a prevenci pádů.", "color": "#d2b23f", "parent": "telo"}, {"id": "rovnovaha", "label": "Rovnováha", "icon": "⚖️", "definition": "Zahrnuje propriocepci a koordinaci. Trénuj postoj, dech a spojení těla s myslí.", "color": "#d2b23f", "parent": "telo"}, {"id": "kardio", "label": "Kardio a oběh", "icon": "❤️", "definition": "Zdraví srdce a cév – základ výdrže i regenerace. Sleduj tlak, tep, HRV a VO₂max.", "color": "#c5a42e", "parent": "telo"}, {"id": "plyometrie", "label": "Plyometrie", "icon": "⚡", "definition": "Výbušná síla a hustota kostí. Seskočit a ustát dopad — klíč k prevenci zlomenin a reakční síle v každém věku.", "color": "#d2b23f", "parent": "telo"}, {"id": "dychani", "label": "Dýchání", "icon": "🌬️", "definition": "Způsob, jakým dýcháš, ovlivňuje výkon, spánek i stres. Správné dýchání zlepšuje okysličení, regeneraci i parasympatickou rovnováhu.", "color": "#d2b23f", "parent": "telo", "related": ["nosni_dychani", "dechova_koherence", "butejko"], "metrics": [{"id": "resp_rate", "label": "Respirační frekvence", "unit": "dechů/min", "range": "8–14", "desc": "Optimální klidová frekvence; méně znamená efektivnější ventilaci."}, {"id": "co2_tolerance", "label": "CO₂ tolerance (control pause)", "unit": "s", "range": "20–40", "desc": "Delší výdrž po výdechu značí lepší rovnováhu a odolnost vůči stresu."}, {"id": "ei_ratio", "label": "Poměr výdech/nádech", "unit": "–", "range": "≥ 1,2", "desc": "Delší výdech stimuluje parasympatikus a zlepšuje regeneraci."}], "articles": [{"title": "Dech jako nástroj dlouhověkosti", "url": "../content/docs/dlouhovekost/telo/dychani/uvod.md", "summary": "Jak vědomé dýchání ovlivňuje regeneraci, stres i kvalitu spánku."}]}, {"id": "nosni_dychani", "label": "Nosní dýchání", "icon": "👃", "definition": "Dýchej nosem – filtruje, ohřívá a zvlhčuje vzduch, zvyšuje hladinu CO₂ a podporuje produkci NO.", "color": "#d2b241", "parent": "dychani", "articles": [{"title": "Význam nosního dýchání", "url": "../content/docs/dlouhovekost/telo/dychani/nosni-dychani.md", "summary": "Dýchání nosem zlepšuje okysličení, výkon i regeneraci."}]}, {"id": "dechova_koherence", "label": "Dechová koherence", "icon": "〰️", "definition": "Pomalé rytmické dýchání (cca 6 dechů/min) pro synchronizaci srdeční a mozkové aktivity.", "color": "#d2b241", "parent": "dychani", "articles": [{"title": "Koherentní dýchání a HRV", "url": "../content/docs/dlouhovekost/telo/dychani/dechova-koherence.md", "summary": "Jak koherentní dech stimuluje parasympatikus a zlepšuje HRV."}]}, {"id": "butejko", "label": "Buteyko metoda", "icon": "🫁", "definition": "Technika zaměřená na snížení ventilace a zvýšení tolerance CO₂, která podporuje klid a rovnováhu nervového systému.", "color": "#d2b241", "parent": "dychani", "articles": [{"title": "Principy Buteyko metody", "url": "../content/docs/dlouhovekost/telo/dychani/buteyko.md", "summary": "Buteyko metoda učí tělo dýchat jemněji, tišeji a s větším respektem k CO₂."}]}, {"id": "mysl", "label": "Mysl", "icon": "🧘", "definition": "Psychická odolnost, klid a smysl jsou neoddělitelnou součástí dlouhověkosti. Bez zdravé mysli se žádný plán dlouhodobě neudrží.", "color": "#8b5bb9", "parent": "dlouhovekost", "related": ["stres", "smysl", "soustredeni", "vdecnost", "meditace", "emoce", "klid"], "articles": [{"title": "Jak trénovat mentální odolnost", "url": "../content/docs/dlouhovekost/mysl/odolnost.md", "summary": "Odolnost a klid jsou dovednosti – trénuj je jako svaly. Dýchej, piš vděčnost, buď přítomen. Každý den o 1 % lepší."}]}, {"id": "stres", "label": "Stres", "icon": "⚡", "definition": "Zvládání stresu je klíčové. Nejde o jeho odstranění, ale o schopnost adaptace a návratu do rovnováhy.", "color": "#8a5bb9", "parent": "mysl", "articles": [{"title": "Adaptace místo vyhýbání se stresu", "url": "../content/docs/dlouhovekost/mysl/stres.md", "summary": "Cílem není život bez stresu, ale rychlejší návrat do klidu – pomocí dechu, pohybu a rituálů."}]}, {"id": "smysl", "label": "Smysl", "icon": "🎯", "definition": "Smysl dává životu směr. Když víš proč, zvládneš jakékoliv jak.", "color": "#885bb9", "parent": "mysl", "articles": [{"title": "Proč je smysl největší zdroj energie", "url": "../content/docs/dlouhovekost/mysl/smysl.md", "summary": "Smysl redukuje stres, zlepšuje regeneraci i imunitu. Je to kompas dlouhověkosti."}]}, {"id": "soustredeni", "label": "Soustředění", "icon": "🎯", "definition": "Schopnost věnovat pozornost jedné věci určuje kvalitu práce i života. Trénuj pozornost jako sval.", "color": "#8a5bb9", "parent": "mysl"}, {"id": "vdecnost", "label": "Vděčnost", "icon": "💜", "definition": "Vděčnost mění biochemii mozku – snižuje úzkost, zlepšuje spánek a posiluje psychickou odolnost.", "color": "#8b5bb9", "parent": "mysl"}, {"id": "meditace", "label": "Meditace", "icon": "🧘‍♂️", "definition": "Trénink klidu a přítomnosti. Podporuje regeneraci mozku, snižuje kortizol a zvyšuje HRV.", "color": "#8b5bb9", "parent": "mysl", "media": [{"type": "audio", "title": "Krátká meditace 5 minut – Dech a klid", "url": "../media/dlouhovekost/mysl/meditace_5min.mp3", "summary": "Vedená dechová meditace pro zklidnění nervové soustavy a snížení napětí."}]}, {"id": "emoce", "label": "Emoce", "icon": "💖", "definition": "Schopnost rozpoznat a zdravě zpracovat emoce je klíčem k mentální rovnováze. Nepotlačuj, pozoruj.", "color": "#7d5bb9", "parent": "mysl"}, {"id": "klid", "label": "Klid", "icon": "🌿", "definition": "Klid není pasivita. Je to aktivní stav bdělé rovnováhy, ve kterém tělo regeneruje a mysl se čistí.", "color": "#725bb9", "parent": "mysl"}, {"id": "vyziva", "label": "Výživa", "icon": "🥗", "definition": "Jídlo není cíl, ale nástroj. Výživa dlouhověkosti stojí na bílkovinách, stabilní glukóze a chytrých půstech, které podporují metabolickou flexibilitu.", "color": "#d24541", "parent": "dlouhovekost", "related": ["pust", "bílkoviny", "glukoza_vyziva", "mikronutrienty", "hydratace", "casovani_jidel"], "articles": [{"title": "Jak jíst pro dlouhověkost", "url": "../content/docs/dlouhovekost/vyziva/principy-vyzivy.md", "summary": "Jez pro sílu a regeneraci – ne pro uspokojení. Kvalita bílkovin, kontrola cukru, pravidelné půsty a klid při jídle jsou klíčové."}]}, {"id": "pust", "label": "Půst", "icon": "⏳", "definition": "Půst zlepšuje metabolickou flexibilitu, autofagii a citlivost na inzulin. Nejde o hladovění, ale o řízený odpočinek metabolismu.", "color": "#d24541", "parent": "vyziva", "articles": [{"title": "Jak začít s půstem bezpečně", "url": "../content/docs/dlouhovekost/vyziva/pust.md", "summary": "Od 12hodinového okna po delší protokoly – půst je nástroj, ne soutěž. Důležitá je konzistence a regenerace."}]}, {"id": "bílkoviny", "label": "Bílkoviny", "icon": "🥚", "definition": "Klíčový stavební materiál pro svaly, hormony i enzymy. Cíl: 1.6–2.2 g/kg/den, rozloženo do 3–4 jídel.", "color": "#d24541", "parent": "vyziva", "articles": [{"title": "Jak spočítat denní příjem bílkovin", "url": "../content/docs/dlouhovekost/vyziva/bilkoviny.md", "summary": "Protein je základ regenerace a prevence ztráty svalové hmoty s věkem. Kvalita > kvantita."}]}, {"id": "glukoza_vyziva", "label": "Glukóza (výživa)", "icon": "🍬", "definition": "Stabilní hladina cukru = stabilní energie. Vyhýbej se výkyvům po jídle – sleduj, jak reaguješ na různé potraviny.", "color": "#ce4a46", "parent": "vyziva", "articles": [{"title": "Glykémie a výživa v praxi", "url": "../content/docs/dlouhovekost/vyziva/glukoza-vyziva.md", "summary": "Používej glukometr nebo CGM pro zpětnou vazbu – cílem je stabilní energie, ne extrémy."}]}, {"id": "mikronutrienty", "label": "Mikronutrienty", "icon": "💊", "definition": "Vitaminy a minerály jsou klíčem k buněčné rovnováze. Nedostatek hořčíku, zinku či vitamínu D narušuje regeneraci.", "color": "#d24541", "parent": "vyziva", "articles": [{"title": "Drobnosti s velkým dopadem", "url": "../content/docs/dlouhovekost/vyziva/mikronutrienty.md", "summary": "Optimalizace mikronutrientů zlepšuje výkon, spánek i imunitu. Suplementuj až po měření."}]}, {"id": "hydratace", "label": "Hydratace", "icon": "💧", "definition": "Voda je médium života. Nedostatek tekutin zhoršuje kognici, regeneraci i detoxikaci. Sleduj barvu moči, ne jen pocit žízně.", "color": "#d24541", "parent": "vyziva", "articles": [{"title": "Jak pít chytře", "url": "../content/docs/dlouhovekost/vyziva/hydratace.md", "summary": "Dbej na rovnováhu elektrolytů. Při zátěži doplň sodík a hořčík, ne jen vodu."}]}, {"id": "casovani_jidel", "label": "Časování jídel", "icon": "⏰", "definition": "Načasování jídla ovlivňuje metabolismus, spánek i regeneraci. Jez větší jídla dříve a nech tělu klid před spaním.", "color": "#d24541", "parent": "vyziva"}];</script><script type="module">
+const ARCHIVE_UNIVERSE=window.ARCHIVE_UNIVERSE;
+function archiveNodeRGB(node, stateColors){
+ if(stateColors[node.state])return stateColors[node.state];
+ const color=typeof node.color==='string'?node.color:node.color?.background;
+ if(/^#[0-9a-f]{6}$/i.test(color||''))return [1,3,5].map(i=>parseInt(color.slice(i,i+2),16)).join(',');
+ return '148,163,184';
+}
+function closePanel(){
+ document.getElementById('hud-overlay').style.display='none';
+ document.getElementById('hud-panel-wrap').style.transform='translateX(100%)';
+ document.getElementById('sidePanel').classList.remove('open','visible');
+ window._hudOverlayOpen=false;
+ document.body.classList.remove('panel-open');
+}
+function showPanel(node){
+ const overlay=document.getElementById('hud-overlay');
+ const frame=document.getElementById('hud-iframe');
+ // Native dev=1 is the original bundled demonstration, without account/API.
+ frame.src='hud.html?dev=1&nodeId='+encodeURIComponent(node.id)+'&nodeLabel='+encodeURIComponent(node.label);
+ frame.title='Ukázka oblasti — '+node.label;
+ overlay.style.display='flex';
+ document.getElementById('hud-panel-wrap').style.transform='translateX(0)';
+ window._hudOverlayOpen=true;
+ document.body.classList.add('panel-open');
+ const label=document.getElementById('headerNodeLabel');
+ if(label){label.textContent=node.label+' • ukázka modelu';label.classList.add('visible');}
+}
+window.closeHudOverlay=closePanel;
+window.addEventListener('message',e=>{
+ if(e.origin!==location.origin||e.source!==document.getElementById('hud-iframe').contentWindow)return;
+ if(e.data==='chj:hud:close')closePanel();
+});
+// === UNIVERSE-CORE.JS ===
+
+
+
+const el = {
+  network: document.getElementById("network"),
+  side: document.getElementById("sidePanel")
+};
+
+let network;
+let isSubUniverse = false;
+let currentCenter = null;
+
+const universeHistory = [];
+let lastRenderedNodes = [];
+
+// ── 🌌 Star field + nebula (drawn once on load) ──────────────────────────────
+(function initStarField() {
+  const canvas = document.createElement('canvas');
+  canvas.id = 'star-field';
+  document.body.appendChild(canvas);
+
+  function resize() {
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight - 56;
+    draw();
+  }
+
+  function draw() {
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Stars
+    for (let i = 0; i < 180; i++) {
+      const x  = Math.random() * canvas.width;
+      const y  = Math.random() * canvas.height;
+      const r  = Math.random() * 1.3;
+      const op = 0.15 + Math.random() * 0.55;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255,255,255,${op})`;
+      ctx.fill();
+    }
+
+    // Nebula blobs
+    [
+      { x: 0.20, y: 0.30, r: 220, c: '6,182,212',   o: 0.07 },
+      { x: 0.80, y: 0.72, r: 260, c: '139,92,246',  o: 0.08 },
+      { x: 0.58, y: 0.08, r: 180, c: '34,197,94',   o: 0.05 },
+      { x: 0.08, y: 0.82, r: 160, c: '99,102,241',  o: 0.06 },
+    ].forEach(n => {
+      const nx = n.x * canvas.width;
+      const ny = n.y * canvas.height;
+      const g  = ctx.createRadialGradient(nx, ny, 0, nx, ny, n.r);
+      g.addColorStop(0, `rgba(${n.c},${n.o})`);
+      g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(nx, ny, n.r, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }
+
+  resize();
+  window.addEventListener('resize', resize);
+  if (screen.orientation) screen.orientation.addEventListener('change', () => setTimeout(resize, 300));
+})();
+
+// ── 🌌 Subtle breathing animation only (no tilt) ─────────────────────────────
+(function initBreathing() {
+  const net = document.getElementById('network');
+  if (net) net.classList.add('breathing');
+})();
+
+// 🌌 Vykreslení hlavní nebo podsítě
+export function getViewState() {
+  return { centerId: currentCenter, nodes: [...lastRenderedNodes] };
+}
+
+// Zvýrazní uzel na canvasu a vystředí na něj (pro hlasové příkazy)
+export function focusNode(nodeId) {
+  if (!network) return false;
+  network.selectNodes([nodeId]);
+  network.focus(nodeId, { scale: 1.4, animation: { duration: 500, easingFunction: 'easeInOutQuad' } });
+  return true;
+}
+
+// Update metrics in-place + force redraw — no network destroy/recreate
+export function updateMetricsAndRedraw(metricsMap) {
+  if (!network || !lastRenderedNodes.length) return;
+
+  const colors = { GREEN: '#22c55e', YELLOW: '#eab308', RED: '#ef4444', GRAY: '#64748b' };
+  const nodeUpdates = [];
+
+  lastRenderedNodes.forEach(node => {
+    const metric = metricsMap.get(node.id);
+    if (!metric) return;
+    node.current_index = metric.current_index ?? node.current_index;
+    const idx = node.current_index;
+    // Preserve GRAY for locked nodes — access overrides data
+    if (node.access === 'locked') return;
+    // Only update if user has activity
+    if (idx > 0 || node.state !== 'GRAY') {
+      node.state = idx <= 40 ? 'RED' : idx <= 70 ? 'YELLOW' : 'GREEN';
+    }
+    const col = colors[node.state];
+    nodeUpdates.push({
+      id: node.id,
+      color: {
+        background: col,
+        border: col,
+        highlight: { background: lighten(col, 0.25), border: col }
+      }
+    });
+  });
+
+  if (nodeUpdates.length) {
+    network.body.data.nodes.update(nodeUpdates);
+  }
+  network.redraw(); // triggers afterDrawing with updated current_index
+}
+
+export function renderUniverse(DATA, subset = null, forcedMainId = null) {
+
+  const nodes = [];
+  const edges = [];
+  const seen = new Set();
+  const source = subset || DATA;
+  // 🧼 znič předchozí síť
+  if (network && typeof network.destroy === "function") {
+    network.destroy();
+  }
+
+  // 🧠 dynamický hlavní uzel
+  let centerNode = null;
+
+  if (forcedMainId) {
+    centerNode = source.find(n => n.id === forcedMainId);
+  }
+
+  if (!centerNode && currentCenter) {
+    centerNode = source.find(n => n.id === currentCenter);
+  }
+
+  if (!centerNode) {
+    centerNode = source.find(n => !n.parent) || source[0];
+  }
+
+  const mainId = centerNode?.id;
+
+  // 🔹 Vytvoř uzly + hrany
+  source.forEach(it => {
+    const isMain = it.id === mainId;
+    nodes.push(makeNode(it, isMain));
+
+    if (it.parent) {
+      const parentExists = source.some(p => p.id === it.parent);
+      if (parentExists) {
+        const key = [it.parent, it.id].sort().join("::");
+        if (!seen.has(key)) {
+          seen.add(key);
+          edges.push(makeEdge(it.parent, it.id));
+        }
+      }
+    }
+  });
+
+  // 🔸 DataSety
+  const nodesDS = new vis.DataSet(nodes);
+  const edgesDS = new vis.DataSet(edges);
+
+  // ⚙️ Nastavení vzhledu a fyziky
+  const options = {
+    nodes: { shadow: true },
+    edges: {
+      smooth: { enabled: true, type: "dynamic", roundness: 0.55 },
+      dashes: true,
+      width: 1.6,
+      color: { color: "#6b7280" }
+    },
+    physics: {
+      enabled: true,
+      barnesHut: {
+        gravitationalConstant: -40000,  // Silnější odpuzování = uzly dál od sebe
+        springLength: 320,              // Delší pružiny = více prostoru
+        springConstant: 0.03,
+        avoidOverlap: 1.0               // Plné zabránění překrytí klikatelné plochy
+      },
+      stabilization: {
+        enabled: true,
+        iterations: 300,                // Více iterací = lepší rozmístění
+        fit: true,
+        updateInterval: 10
+      }
+    }
+  };
+
+  // 🌌 Vykreslení nové sítě
+  network = new vis.Network(el.network, { nodes: nodesDS, edges: edgesDS }, options);
+
+  // 🌠 Depth glow halos – drawn BEFORE vis.js nodes (behind them)
+  const allIds    = source.map(n => n.id);
+  const colorMap  = { GREEN: '34,197,94', YELLOW: '234,179,8', RED: '239,68,68', GRAY: '100,116,139' };
+
+  network.on("beforeDrawing", (ctx) => {
+    const positions  = network.getPositions(allIds);
+    const centerPos  = positions[mainId];
+    if (!centerPos) return;
+
+    source.forEach(node => {
+      const pos = positions[node.id];
+      if (!pos) return;
+
+      const isMain = node.id === mainId;
+      const dist   = Math.sqrt(
+        Math.pow(pos.x - centerPos.x, 2) +
+        Math.pow(pos.y - centerPos.y, 2)
+      );
+
+      // Closer to center = depthFactor closer to 1 (brighter, bigger halo)
+      const depthFactor = isMain ? 1.0 : Math.max(0.3, 1 - dist / 480);
+      const rgb         = archiveNodeRGB(node, colorMap);
+      const baseR       = isMain ? 120 : 80;
+      const glowR       = baseR * (0.45 + 0.55 * depthFactor);
+
+      const g = ctx.createRadialGradient(pos.x, pos.y, 0, pos.x, pos.y, glowR);
+      g.addColorStop(0,   `rgba(${rgb},${(0.22 * depthFactor).toFixed(3)})`);
+      g.addColorStop(0.5, `rgba(${rgb},${(0.09 * depthFactor).toFixed(3)})`);
+      g.addColorStop(1,   'rgba(0,0,0,0)');
+
+      ctx.save();
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(pos.x, pos.y, glowR, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    });
+  });
+
+  // 🔮 Sphere shading + 🔒 lock emojis — single afterDrawing pass
+  const lockedIds = source.filter(n => n.access === 'locked').map(n => n.id);
+
+  // Fixed node radii matching makeNode() — avoids bbox including label text width
+  const NODE_RADIUS = { main: 62, child: 46 };
+
+  network.on("afterDrawing", (ctx) => {
+    const positions = network.getPositions(allIds);
+
+    // ── Sphere shading over each vis.js flat circle ──
+    source.forEach(node => {
+      const pos = positions[node.id];
+      if (!pos) return;
+
+      const isMain  = node.id === mainId;
+      const radius  = isMain ? NODE_RADIUS.main : NODE_RADIUS.child;
+      const isGray  = node.state === 'GRAY';
+
+      const [r, g, b] = archiveNodeRGB(node, colorMap).split(',').map(Number);
+
+      // Gray nodes: subtle shading only (avoid "lead ball" look)
+      const hiBoost  = isGray ? 35  : 70;
+      const shBoost  = isGray ? 30  : 60;
+
+      // Light source: small offset top-left
+      const lx = pos.x - radius * 0.28;
+      const ly = pos.y - radius * 0.30;
+
+      // Sphere gradient
+      const sph = ctx.createRadialGradient(lx, ly, 0, pos.x, pos.y, radius * 1.02);
+      sph.addColorStop(0,    `rgb(${Math.min(255,r+hiBoost)},${Math.min(255,g+hiBoost)},${Math.min(255,b+hiBoost)})`);
+      sph.addColorStop(0.45, `rgb(${r},${g},${b})`);
+      sph.addColorStop(1,    `rgb(${Math.max(0,r-shBoost)},${Math.max(0,g-shBoost)},${Math.max(0,b-shBoost)})`);
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
+      ctx.fillStyle = sph;
+      ctx.fill();
+
+      // Specular highlight — smaller, softer
+      if (!isGray) {
+        const sx   = pos.x - radius * 0.30;
+        const sy   = pos.y - radius * 0.32;
+        const spec = ctx.createRadialGradient(sx, sy, 0, sx, sy, radius * 0.30);
+        spec.addColorStop(0,   'rgba(255,255,255,0.42)');
+        spec.addColorStop(0.6, 'rgba(255,255,255,0.06)');
+        spec.addColorStop(1,   'rgba(255,255,255,0)');
+        ctx.fillStyle = spec;
+        ctx.fill();
+      }
+
+      // Thin rim
+      ctx.strokeStyle = `rgba(${Math.min(255,r+40)},${Math.min(255,g+40)},${Math.min(255,b+40)},0.40)`;
+      ctx.lineWidth   = isMain ? 2 : 1.5;
+      ctx.stroke();
+
+      ctx.restore();
+    });
+
+    // ── Progress potentiometer under each node ──
+    source.forEach(node => {
+      const pos = positions[node.id];
+      if (!pos || node.state === 'GRAY') return;
+
+      // potentiometer removed — battery in HUD panel is the single source
+    });
+
+    // ── Lock emojis on access=locked nodes only (GRAY without access=locked = no data, not locked) ──
+    const currentLocked = source.filter(n => n.access === 'locked').map(n => n.id);
+    if (currentLocked.length) {
+      const lockPos = network.getPositions(currentLocked);
+      ctx.save();
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.font = '20px serif';
+      currentLocked.forEach(id => {
+        const pos = lockPos[id];
+        if (pos) ctx.fillText('🔒', pos.x, pos.y);
+      });
+      ctx.restore();
+    }
+  });
+
+  // ✨ Vycentrování s animací
+  setTimeout(() => network.fit({ animation: true }), 300);
+
+  // 🖱️ Klik – otevře panel nebo návrat
+  let clickTimer = null;
+  network.on("click", params => {
+    if (clickTimer) {
+      clearTimeout(clickTimer);
+      clickTimer = null;
+    }
+
+    clickTimer = setTimeout(() => {
+      clickTimer = null;
+
+      if (!params.nodes.length) {
+        const panelWasOpen = document.getElementById("sidePanel")?.classList.contains("open");
+        const hudOverlayWasOpen = !!window._hudOverlayOpen;
+        closePanel();
+        window.closeHudOverlay?.();
+        // Návrat o úroveň výš jen pokud žádný panel nebyl otevřený
+        if (!panelWasOpen && !hudOverlayWasOpen && currentCenter) {
+          smoothReturnToUniverse(DATA);
+        }
+        return;
+      }
+
+      const id = params.nodes[0];
+      const node = findNodeById(DATA, id);
+      if (node) showPanel(node);
+    }, 220);
+  });
+
+  // 👆 Dvojklik = vstup do podsítě
+  network.on("doubleClick", params => {
+    if (clickTimer) {
+      clearTimeout(clickTimer);
+      clickTimer = null;
+    }
+
+    closePanel();
+
+    if (!params.nodes.length) return;
+    const id = params.nodes[0];
+    const node = findNodeById(DATA, id);
+    if (!node) return;
+    if (node.access === 'locked') return;  // locked nodes: single-click shows locked panel, double-click does nothing
+    openSubUniverse(DATA, node);
+  });
+
+  lastRenderedNodes = [...source];
+}
+
+// === Pomocné funkce ===
+
+function makeNode(it, isMain) {
+  const isMobile = window.innerWidth < 768;
+  // Semafor barvy podle state
+  const stateColors = {
+    'GREEN': '#22c55e',
+    'YELLOW': '#eab308',
+    'RED': '#ef4444',
+    'GRAY': '#64748b'
+  };
+
+  // Použij state color pokud existuje, jinak fallback
+  const baseColor = stateColors[it.state] ||
+    (typeof it.color === "string" ? it.color : (it.color && it.color.background)) ||
+    "#1e293b";
+
+  const borderColor =
+    (typeof it.color === "object" && it.color && it.color.border)
+      ? it.color.border
+      : baseColor;
+
+  const isLocked = it.state === 'GRAY';
+
+  return {
+    id: it.id,
+    label: it.label,
+    color: {
+      background: baseColor,
+      border: borderColor,
+      highlight: {
+        background: lighten(baseColor, 0.25),
+        border: borderColor
+      }
+    },
+    shape: "dot",
+    size: isMain ? 62 : 46,
+    font: {
+      color: "#fff",
+      size: isMain ? (isMobile ? 34 : 28) : (isMobile ? 26 : 22),
+      face: "Inter, sans-serif",
+      strokeWidth: 4,
+      strokeColor: "rgba(0,0,0,0.9)"
+    },
+    borderWidth: 3,
+    shadow: true,
+    fixed: false
+  };
+}
+
+function makeEdge(from, to) {
+  const direction = Math.random() > 0.5 ? "curvedCW" : "curvedCCW";
+  const roundness = 0.25 + Math.random() * 0.2;
+  return {
+    id: [from, to].sort().join("::"),
+    from,
+    to,
+    color: { color: "#6b7280" },
+    dashes: true,
+    width: 1.6,
+    smooth: { enabled: true, type: direction, roundness }
+  };
+}
+
+function findNodeById(DATA, id) {
+  return DATA.find(n => n.id === id) || null;
+}
+
+// === Podsíť ===
+export function openSubUniverse(DATA, centerNode) {
+  const children = DATA.filter(n => n.parent === centerNode.id);
+  if (children.length === 0) return;
+
+  // 🔹 Ulož aktuální stav
+  if (currentCenter) {
+    universeHistory.push({
+      centerId: currentCenter,
+      nodes: [...lastRenderedNodes]
+    });
+  }
+
+  currentCenter = centerNode.id;
+  isSubUniverse = true;
+
+  console.log('📥 Opening sub-universe:', centerNode.id);
+  console.log('📚 History depth:', universeHistory.length);
+
+  renderUniverse(DATA, [centerNode, ...children], centerNode.id);
+}
+
+function smoothReturnToUniverse(DATA) {
+  console.log('🔙 Smooth return');
+
+  if (universeHistory.length === 0) {
+    // Vrať se na root
+    currentCenter = null;
+    isSubUniverse = false;
+    const root = DATA.find(n => !n.parent);
+    const firstLevel = DATA.filter(n => n.id === root.id || n.parent === root.id);
+    console.log('🏠 Back to root');
+    renderUniverse(DATA, firstLevel, root.id);
+    return;
+  }
+
+  // Vytáhni předchozí stav
+  const prev = universeHistory.pop();
+  currentCenter = prev.centerId;
+  isSubUniverse = universeHistory.length > 0;
+
+  console.log('📤 Restored:', currentCenter);
+
+  // ⭐ OPRAVA 2: přidán setTimeout
+  setTimeout(() => {
+    renderUniverse(DATA, prev.nodes, prev.centerId);
+  }, 50);
+}
+
+function lighten(hex, percent) {
+  if (typeof hex !== "string") return "#64748b";
+  const num = parseInt(hex.replace("#", ""), 16);
+  const amt = Math.round(2.55 * percent * 100);
+  const R = (num >> 16) + amt;
+  const G = (num >> 8 & 0x00FF) + amt;
+  const B = (num & 0x0000FF) + amt;
+  return "#" + (
+    0x1000000 +
+    (R < 255 ? (R < 1 ? 0 : R) : 255) * 0x10000 +
+    (G < 255 ? (G < 1 ? 0 : G) : 255) * 0x100 +
+    (B < 255 ? (B < 1 ? 0 : B) : 255)
+  ).toString(16).slice(1);
+}
+const root=ARCHIVE_UNIVERSE.find(n=>n.id==='dlouhovekost');
+window.MAIN_UNIVERSE_DATA=ARCHIVE_UNIVERSE;
+renderUniverse(ARCHIVE_UNIVERSE,ARCHIVE_UNIVERSE.filter(n=>n.id===root.id||n.parent===root.id),root.id);
+document.getElementById('closePanel').onclick=closePanel;
+document.getElementById('closePanel').textContent='×';
+document.getElementById('closePanel').setAttribute('aria-label','Zavřít panel');
+</script></body>
+
+</html>
