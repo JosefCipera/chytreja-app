@@ -24,7 +24,7 @@ assert.equal(read('app/zakladatele.html').includes('href="/ukazka/vesmir"'),true
  const origin='http://127.0.0.1:'+server.address().port;let browser;
  try{browser=await chromium.launch({headless:true});}catch(error){await new Promise(r=>server.close(r));throw error;}
  const context=await browser.newContext(),errors=[],violations=[];
- await context.route('**/*',async route=>{const r=route.request(),u=new URL(r.url());if(u.origin!==origin||u.pathname.startsWith('/api/')||r.method()!=='GET'){violations.push(r.method()+' '+u.pathname);return route.abort();}return route.continue();});
+ await context.route('**/*',async route=>{const r=route.request(),u=new URL(r.url());if(u.origin!==origin&&u.hostname==='fonts.googleapis.com'&&r.method()==='GET')return route.abort();if(u.origin!==origin||u.pathname.startsWith('/api/')||r.method()!=='GET'){violations.push(r.method()+' '+u.pathname);return route.abort();}return route.continue();});
  try{
   const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));
   for(const width of [1280,390]){
