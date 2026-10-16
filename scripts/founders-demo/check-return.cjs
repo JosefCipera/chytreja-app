@@ -29,3 +29,16 @@ for(const page of ['crt-kovarova.html','crt-josef.html','vesmir.html']){
 console.log('PASS: caller sections, all three graph returns, direct/reloaded URLs, fallback and hostile target/message rejection');
 
 assert.ok(fs.readFileSync(require('node:path').join(__dirname,'../../app/ukazka/index.html'),'utf8').includes("location.pathname+location.search+'#'+view"),'Graph switching preserves returnTo despite base href');
+// Help follows the chosen view, closes on view switch/Escape, and keeps caller query.
+{
+ const html=fs.readFileSync(require('node:path').join(__dirname,'../../app/ukazka/index.html'),'utf8');
+ const code=[...html.matchAll(/<script([^>]*)>([\s\S]*?)<\/script>/g)].filter(m=>!m[1].includes('src='))[0][2];
+ const crt={},universe={},help={open:true},frame={},events={},historyURLs=[];
+ const context={document:{getElementById:id=>id==='demo-help-crt'?crt:universe,querySelector:s=>s==='iframe'?frame:help,querySelectorAll:()=>[],addEventListener:(name,fn)=>events[name]=fn},addEventListener(){},location:{pathname:'/ukazka/',search:'?returnTo=%2Fhome-intro-preview.html%23ukazky',hash:'#kovarova'},history:{replaceState:(_,__,url)=>historyURLs.push(url)}};
+ context.window=context;vm.runInNewContext(code,context);
+ context.select('vesmir');assert.equal(crt.hidden,true);assert.equal(universe.hidden,false);assert.equal(help.open,false);
+ help.open=true;context.select('josef');assert.equal(crt.hidden,false);assert.equal(universe.hidden,true);assert.equal(help.open,false);
+ help.open=true;events.keydown({key:'Escape'});assert.equal(help.open,false);
+ assert.ok(historyURLs.every(url=>url.includes('?returnTo=')));
+ console.log('PASS: contextual graph help, view switching, Escape and preserved caller query');
+}
