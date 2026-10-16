@@ -56,10 +56,16 @@ async function check(file,width){
   const start=old.indexOf('function renderTree(data) {');
   const tail=old.slice(start),end=tail.slice(10).search(/^function /m)+10;
   assert.ok(end>10);
-  const expectedRenderer=tail.slice(0,end)
+  let expectedRenderer=tail.slice(0,end)
    .replace("_savedEdgeColors = ed.get().map(e => ({ id: e.id, color: e.color, width: e.width }))", "_savedEdgeColors = ed.get().map(e => ({ id: e.id, color: structuredClone(e.color), width: Number.isFinite(e.width) ? e.width : 2 }))")
    .replace("color: { color: '#2a4a68', highlight: '#2a4a68', hover: '#4a7aa8' },", "color: { color: '#4a8aaa', highlight: '#7ab8d8', hover: '#6aacc8', inherit: false, opacity: 1 },");
+  expectedRenderer=expectedRenderer.replace('arrows: { to: { enabled: true, scaleFactor: 0.9 } },',"arrows: { to: { enabled: true, scaleFactor: 1.6, type: 'arrow' } },");
+  expectedRenderer=expectedRenderer.replace("color: { color: '#2a4a68', highlight: '#5a8ab8', hover: '#4a7aa8' },","color: { color: '#4a8aaa', highlight: '#7ab8d8', hover: '#6aacc8', inherit: false },");
+  expectedRenderer=expectedRenderer.replace('smooth: { enabled: false },\n        width: 1.5,','smooth: { enabled: false },\n        width: 2,');
   assert.ok(html.includes(expectedRenderer),'Historical renderer changed beyond reviewed hover fix');
+  assert.equal(networks[0].options.edges.width,2,'Both CRTs use same edge width');
+  assert.equal(networks[0].options.edges.arrows.to.scaleFactor,1.6,'Both CRTs use same arrow size');
+  assert.equal(networks[0].options.edges.color.color,'#4a8aaa','Both CRTs use same edge color');
   if(file==='crt-josef.html'){
    const edges=networks[0].body.data.edges;
    const baseline=JSON.stringify(edges.get().map(e=>({id:e.id,color:e.color,width:e.width??2})));

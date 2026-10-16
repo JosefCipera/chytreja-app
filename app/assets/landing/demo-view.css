@@ -14,3 +14,5 @@
 @media(max-width:600px){.demo-logo{min-width:70px}.demo-logo-text{font-size:22px}.demo-logo-cursor{height:36px}}
 @media(orientation:landscape) and (max-height:500px){.demo-logo-text{font-size:18px}.demo-logo-cursor{height:30px}.demo-inner-back{padding:6px 10px;font-size:12px}}
 @media(prefers-reduced-motion:reduce){.demo-logo-cursor{animation:none}}
+
+.demo-embedded #crtTitle,.demo-embedded #crtSubtitle{display:none!important}
