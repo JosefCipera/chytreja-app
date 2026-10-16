@@ -63,6 +63,6 @@ Cena v nabídce zůstává 9 900 Kč s DPH jednorázově, bez předplatného, pr
 
 ## Doplnění 16. 10. — zamčení orientace PWA
 
-V aktuálním manifestu bylo `orientation: "portrait"`; všechny vstupy PWA odkazují na `/manifest.webmanifest`, který se stávajícím pravidlem obslouží `app/manifest.webmanifest`. Na žádné jiné explicitní volání orientation.lock v prohledaném aplikačním kódu jsme nenarazili. Manifest je nyní nastavený na `any`; pro obě cesty manifestu je doplněné no-cache/must-revalidate. Start URL, scope, ikony a přihlášení se nemění.
+V aktuálním manifestu bylo `orientation: "portrait"`; všechny vstupy PWA odkazují na `/manifest.webmanifest`, který se stávajícím pravidlem obslouží `app/manifest.webmanifest`. Na žádné jiné explicitní volání orientation.lock v prohledaném aplikačním kódu jsme nenarazili. V draft PR #89 je navržené `any` a no-cache/must-revalidate pro obě cesty manifestu; změna není sloučená ani nasazená. Start URL, scope, ikony a přihlášení se nemění.
 
-Jde o konkrétní odstraněnou blokaci instalované PWA, nikoli o důkaz, že byla jedinou příčinou uživatelova pozorování. Nevíme zatím, zda včera testoval PWA nebo běžný prohlížeč. Po nasazení je nutné potvrzení skutečného otočení na zařízení; může do něj vstupovat také nastavení otáčení systému. Žádnou úspěšnou kontrolu fyzického telefonu zatím netvrdit.
+Uživatel 16. 10. výslovně potvrdil běžný prohlížeč a to, že na výšku zůstává celá stránka i ovládání, nikoli jen graf. Zamčení manifestu PWA tedy jeho pozorování nevysvětluje. Nejprve zkontrolovat automatické otáčení systému; čekáme na jeho potvrzení. PR #89 je z tohoto důvodu draft a není prezentován jako oprava nahlášeného problému.
