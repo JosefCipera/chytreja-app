@@ -302,7 +302,7 @@
 
   </style>
   
-<link rel="stylesheet" href="/app/assets/landing/demo-view.css?v=1"><meta http-equiv="Content-Security-Policy" content="default-src 'self' data:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https:; font-src 'self' data: https:; img-src 'self' data: https:; connect-src 'none'; frame-src 'self'; object-src 'none'; base-uri 'self'"><meta name="robots" content="noindex"><style>.user-profile-wrapper,#crtRegenBtn,#cmd-mic-btn,#header-mic-btn,.header-controls{display:none!important}</style></head>
+<link rel="stylesheet" href="/app/assets/landing/demo-view.css?v=3"><meta http-equiv="Content-Security-Policy" content="default-src 'self' data:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https:; font-src 'self' data: https:; img-src 'self' data: https:; connect-src 'none'; frame-src 'self'; object-src 'none'; base-uri 'self'"><meta name="robots" content="noindex"><style>.user-profile-wrapper,#crtRegenBtn,#cmd-mic-btn,#header-mic-btn,.header-controls{display:none!important}</style></head>
 <body>
 
 <div class="crt-header">
@@ -801,10 +801,10 @@ function renderTree(data) {
         font: { size: IS_MOBILE ? 17 : 22, face: 'Inter, system-ui, sans-serif' },
       },
       edges: {
-        arrows: { to: { enabled: true, scaleFactor: 0.9 } },
-        color: { color: '#2a4a68', highlight: '#5a8ab8', hover: '#4a7aa8' },
+        arrows: { to: { enabled: true, scaleFactor: 1.6, type: 'arrow' } },
+        color: { color: '#4a8aaa', highlight: '#7ab8d8', hover: '#6aacc8', inherit: false },
         smooth: { enabled: false },
-        width: 1.5,
+        width: 2,
       },
       physics: { enabled: false },
       interaction: {

@@ -32,7 +32,7 @@ def common_head(s,title):
     s=re.sub(r'<link[^>]+(?:manifest|apple-touch-icon)[^>]*>','',s)
     s=re.sub(r'src="https://ui-avatars\.com/[^\"]*"','src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs="',s)
     extra='<meta http-equiv="Content-Security-Policy" content="'+CSP+'"><meta name="robots" content="noindex"><style>.user-profile-wrapper,#crtRegenBtn,#cmd-mic-btn,#header-mic-btn,.header-controls{display:none!important}</style>'
-    if title!='Chytré já — ukázka oblastí':extra='<link rel="stylesheet" href="/app/assets/landing/demo-view.css?v=1">'+extra
+    if title!='Chytré já — ukázka oblastí':extra='<link rel="stylesheet" href="/app/assets/landing/demo-view.css?v=3">'+extra
     return s.replace('</head>',extra+'</head>',1)
 
 provenance={}
@@ -64,6 +64,9 @@ for name,tag,cachepath in [
         new_resize="let _archiveResizeTimer; const _rerender=()=>{clearTimeout(_archiveResizeTimer);_archiveResizeTimer=setTimeout(()=>{if(_lastCrtData)_origRenderTree(_lastCrtData)},180)};"
         assert old_resize in body if 'const _rerender' in body else True
         body=body.replace(old_resize,new_resize)
+        body=body.replace('arrows: { to: { enabled: true, scaleFactor: 0.9 } },',"arrows: { to: { enabled: true, scaleFactor: 1.6, type: 'arrow' } },")
+        body=body.replace("color: { color: '#2a4a68', highlight: '#5a8ab8', hover: '#4a7aa8' },","color: { color: '#4a8aaa', highlight: '#7ab8d8', hover: '#6aacc8', inherit: false },")
+        body=body.replace('smooth: { enabled: false },\n        width: 1.5,','smooth: { enabled: false },\n        width: 2,')
         # Snapshot independent edge styles and explicit widths before hover changes.
         body=body.replace("_savedEdgeColors = ed.get().map(e => ({ id: e.id, color: e.color, width: e.width }))", "_savedEdgeColors = ed.get().map(e => ({ id: e.id, color: structuredClone(e.color), width: Number.isFinite(e.width) ? e.width : 2 }))")
         body=body.replace("color: { color: '#2a4a68', highlight: '#2a4a68', hover: '#4a7aa8' },", "color: { color: '#4a8aaa', highlight: '#7ab8d8', hover: '#6aacc8', inherit: false, opacity: 1 },")
@@ -253,7 +256,7 @@ provenance['universe']={'source_tag':tag,'renderer_source_sha256':hashlib.sha256
 (PROJECT/'PROVENANCE.json').write_text(json.dumps(provenance,ensure_ascii=False,indent=2))
 
 # The three-way launcher is new and deliberately separate from the archived views.
-index='''<!doctype html><html lang="cs"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><base href="/ukazka/"><title>Chytré já — ukázka souvislostí</title><link rel="stylesheet" href="/app/assets/landing/demo-view.css?v=2"><meta name="robots" content="noindex"><style>
+index='''<!doctype html><html lang="cs"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><base href="/ukazka/"><title>Chytré já — ukázka souvislostí</title><link rel="stylesheet" href="/app/assets/landing/demo-view.css?v=3"><meta name="robots" content="noindex"><style>
 *{box-sizing:border-box}html,body{height:100%;margin:0;background:#0b0f1a;color:#cbd5e1;font:14px system-ui,sans-serif}body{display:flex;flex-direction:column}header{padding:12px 16px;border-bottom:1px solid #263449;display:flex;gap:12px;align-items:center;flex-wrap:wrap}strong{margin-right:auto;color:#e2e8f0}nav{display:flex;gap:8px;flex-wrap:wrap}button{background:transparent;color:#a7c7df;border:1px solid #344b64;border-radius:7px;padding:9px 14px;cursor:pointer;font:inherit}button[aria-pressed=true]{background:#182c40;color:#fff;border-color:#79b1d9}small{font-size:12px;color:#94a3b8}iframe{flex:1;min-height:0;width:100%;border:0}footer{padding:7px 16px;color:#64748b;font-size:11px}@media(max-width:600px){header{gap:8px;padding:10px}strong{width:100%}nav button{padding:8px 10px}}
 @media(orientation:landscape) and (max-height:500px){header{padding:5px 10px;gap:6px}header strong,header small{display:none}nav button{padding:6px 10px;font-size:12px}footer{padding:4px 10px;font-size:10px}footer #origin{display:none}}
 </style></head><body><header><a class="demo-logo" href="/" aria-label="Chytré já — zpět"><span class="demo-logo-cursor" aria-hidden="true"></span><span class="demo-logo-text" aria-hidden="true"><span>chytr<span class="demo-logo-ac">e</span></span><b>j<span class="demo-logo-ac">a</span></b></span></a><nav aria-label="Archivní pohledy"><button data-view="kovarova" aria-pressed="true">Žena, 83 let</button><button data-view="josef" aria-pressed="false">Muž, 59 let</button><button data-view="vesmir" aria-pressed="false">Vesmír Dlouhověkosti</button></nav><small>Ukázkové případy · bez osobního výpočtu</small></header><iframe title="Historická aplikace" src="crt-kovarova.html?opus=1" sandbox="allow-scripts allow-same-origin allow-downloads allow-modals"></iframe><script>
