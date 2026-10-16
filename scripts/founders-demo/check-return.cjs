@@ -27,3 +27,5 @@ for(const page of ['crt-kovarova.html','crt-josef.html','vesmir.html']){
  const direct=run('/ukazka/'+page+'?returnTo=%2Fhome-v2%23ukazky');direct.context.goBack();assert.deepEqual(direct.assigned,['/home-v2#ukazky']);
 }
 console.log('PASS: caller sections, all three graph returns, direct/reloaded URLs, fallback and hostile target/message rejection');
+
+assert.ok(fs.readFileSync(require('node:path').join(__dirname,'../../app/ukazka/index.html'),'utf8').includes("location.pathname+location.search+'#'+view"),'Graph switching preserves returnTo despite base href');
