@@ -1,0 +1,14 @@
+/* Shared branding for the three isolated examples. */
+.demo-logo{display:flex;align-items:center;gap:8px;margin-right:auto;min-width:78px;color:#e2e8f0;text-decoration:none}
+.demo-logo-cursor{width:2px;height:40px;background:currentColor;animation:demo-logo-blink 1.1s step-end infinite}
+.demo-logo-text{display:flex;flex-direction:column;font:300 24px/.85 'Urbanist',system-ui,sans-serif;letter-spacing:-1px}
+.demo-logo-text b{font-weight:800}
+@keyframes demo-logo-blink{0%,100%{opacity:1}50%{opacity:0}}
+.demo-inner-back{display:inline-block;color:#bdd8ee;text-decoration:none;font:14px system-ui,sans-serif;border:1px solid #405875;border-radius:6px;padding:8px 12px;white-space:nowrap;margin-right:14px}
+.demo-inner-back:hover{color:#fff;border-color:#7aa9ce}
+.demo-embedded .crt-header>.chj-logo,.demo-embedded #appTitle,.demo-embedded .crt-header>button[onclick="goBack()"]{display:none!important}
+.demo-embedded #appHeader{padding-left:16px}
+.demo-logo:focus-visible,.demo-inner-back:focus-visible{outline:2px solid #ffc270;outline-offset:4px}
+@media(max-width:600px){.demo-logo{min-width:70px}.demo-logo-text{font-size:22px}.demo-logo-cursor{height:36px}}
+@media(orientation:landscape) and (max-height:500px){.demo-logo-text{font-size:18px}.demo-logo-cursor{height:30px}.demo-inner-back{padding:6px 10px;font-size:12px}}
+@media(prefers-reduced-motion:reduce){.demo-logo-cursor{animation:none}}
