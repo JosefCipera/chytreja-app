@@ -5,7 +5,7 @@
   "start_url": "/launcher",
   "scope": "/",
   "display": "standalone",
-  "orientation": "portrait",
+  "orientation": "any",
   "background_color": "#163052",
   "theme_color": "#060a14",
   "icons": [

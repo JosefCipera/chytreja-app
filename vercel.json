@@ -10,6 +10,12 @@
         "api/engine-v1.js":            { "includeFiles": "data/engine/**", "maxDuration": 30 }
     },
     "headers": [
+        { "source": "/manifest.webmanifest", "headers": [
+            { "key": "Cache-Control", "value": "no-cache, must-revalidate" }
+        ] },
+        { "source": "/app/manifest.webmanifest", "headers": [
+            { "key": "Cache-Control", "value": "no-cache, must-revalidate" }
+        ] },
         { "source": "/ukazka/:path*", "headers": [
             { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
         ] },

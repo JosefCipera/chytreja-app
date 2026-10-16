@@ -44,7 +44,7 @@ Oprava v PR #87:
 
 Prošly offline VM kontroly pro šířky 1280/390, syntetické otočení na 844×390 a návrat, zachování podsítě, původ léků/akcí, rozbalení katalogu, bezpečné otevření čtečky a izolace od sítě/úložiště účtu. Živě v desktopovém prohlížeči byly ověřeny oba CRT, odlišné akce podle uzlu, rozbalovací katalog, článek Stoletý desetibojař a návrat. Vercel develop hlásil úspěšné nasazení.
 
-Skutečné fyzické otočení telefonu po PR #87 ještě uživatel nepotvrdil. Zítra začít obnovením stránky a touto kontrolou; netvrdit, že je už hotová.
+Uživatel 15. 10. ve 20:41 potvrdil, že se grafy na skutečném mobilu stále neotáčejí. Tato chyba tedy nebyla opravou v PR #87 vyřešená. Automatický test přepočtu grafů neověřoval zamčení orientace samotné PWA.
 
 ## Zdroje a další práce
 
@@ -60,3 +60,9 @@ Zítřejší směr:
 4. Pozdější osobní propojení: dnešní krok → CRT přes „Proč?“ → Vesmír jako širší přehled, vše nad stejnými daty a enginem. Toto úplné propojení není hotové a ukázka ho nenahrazuje.
 
 Cena v nabídce zůstává 9 900 Kč s DPH jednorázově, bez předplatného, prvních 200 Zakladatelů; změny rozsahu/slibů ani zahájení plateb dnes nejsou provedené. Privacy audit PR #81 zůstává výslovně pozastavený.
+
+## Doplnění 16. 10. — zamčení orientace PWA
+
+V aktuálním manifestu bylo `orientation: "portrait"`; všechny vstupy PWA odkazují na `/manifest.webmanifest`, který se stávajícím pravidlem obslouží `app/manifest.webmanifest`. Na žádné jiné explicitní volání orientation.lock v prohledaném aplikačním kódu jsme nenarazili. Manifest je nyní nastavený na `any`; pro obě cesty manifestu je doplněné no-cache/must-revalidate. Start URL, scope, ikony a přihlášení se nemění.
+
+Jde o konkrétní odstraněnou blokaci instalované PWA, nikoli o důkaz, že byla jedinou příčinou uživatelova pozorování. Nevíme zatím, zda včera testoval PWA nebo běžný prohlížeč. Po nasazení je nutné potvrzení skutečného otočení na zařízení; může do něj vstupovat také nastavení otáčení systému. Žádnou úspěšnou kontrolu fyzického telefonu zatím netvrdit.
