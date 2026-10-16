@@ -335,7 +335,7 @@
 
   </style>
   
-<meta http-equiv="Content-Security-Policy" content="default-src 'self' data:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https:; font-src 'self' data: https:; img-src 'self' data: https:; connect-src 'none'; frame-src 'self'; object-src 'none'; base-uri 'self'"><meta name="robots" content="noindex"><style>.user-profile-wrapper,#crtRegenBtn,#cmd-mic-btn,#header-mic-btn,.header-controls{display:none!important}</style></head>
+<link rel="stylesheet" href="/app/assets/landing/demo-view.css?v=1"><meta http-equiv="Content-Security-Policy" content="default-src 'self' data:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https:; font-src 'self' data: https:; img-src 'self' data: https:; connect-src 'none'; frame-src 'self'; object-src 'none'; base-uri 'self'"><meta name="robots" content="noindex"><style>.user-profile-wrapper,#crtRegenBtn,#cmd-mic-btn,#header-mic-btn,.header-controls{display:none!important}</style></head>
 <body>
 
 <div class="crt-header">
@@ -869,7 +869,7 @@ function renderTree(data) {
     id: `e${i}`,
     from: e.from,
     to: e.to,
-    color: { color: '#2a4a68', highlight: '#2a4a68', hover: '#4a7aa8' },
+    color: { color: '#4a8aaa', highlight: '#7ab8d8', hover: '#6aacc8', inherit: false, opacity: 1 },
     selectionWidth: 0,
     hoverWidth: 0,
   }));
@@ -930,7 +930,7 @@ function renderTree(data) {
     if (!rawData || !_visNetwork) return;
     const subtree = allDescendants(nodeId, rawData);
     const ed = _visNetwork.body.data.edges;
-    if (!_savedEdgeColors) _savedEdgeColors = ed.get().map(e => ({ id: e.id, color: e.color, width: e.width }));
+    if (!_savedEdgeColors) _savedEdgeColors = ed.get().map(e => ({ id: e.id, color: structuredClone(e.color), width: Number.isFinite(e.width) ? e.width : 2 }));
     ed.update(ed.get().map(e => {
       const inSubtree = subtree.has(String(e.from)) && subtree.has(String(e.to));
       return {
@@ -2193,5 +2193,5 @@ async function regenCRT() {
 }
 </script>
 
-<script>window.goBack=function(){parent.postMessage({archiveReturn:true},location.origin)};document.addEventListener("click",function(e){const a=e.target.closest("a");if(a&&a.origin!==location.origin)e.preventDefault();});</script><script src="/app/assets/landing/demo-navigation.js?v=1" defer></script></body>
+<script>window.goBack=function(){parent.postMessage({archiveReturn:true},location.origin)};document.addEventListener("click",function(e){const a=e.target.closest("a");if(a&&a.origin!==location.origin)e.preventDefault();});</script><script src="/app/assets/landing/demo-navigation.js?v=2" defer></script></body>
 </html>

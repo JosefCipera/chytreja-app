@@ -26,12 +26,13 @@
  };
  const frame=document.querySelector('iframe[title="Historická aplikace"]');
  if(frame){
-  const header=document.querySelector('header');
-  const link=document.createElement('a');link.href=returnTo;link.textContent='← Zpět';link.setAttribute('aria-label','Zpět na stránku, odkud byla ukázka otevřena');
-  link.style.cssText='color:#c8e4fa;text-decoration:none;border:1px solid #405875;border-radius:7px;padding:8px 12px;white-space:nowrap;';
-  header.insertBefore(link,header.firstChild);
+  const logo=document.querySelector('header .demo-logo');if(logo)logo.href=returnTo;
   const footer=document.querySelector('footer a');if(footer){footer.href=returnTo;footer.textContent='← Zpět';}
   window.addEventListener('message',event=>{if(event.origin===origin&&event.source===frame.contentWindow&&event.data?.archiveReturn===true)back();});
+ }else if(window.parent!==window){
+  document.documentElement.classList.add('demo-embedded');
+  const header=document.querySelector('.crt-header')||document.querySelector('#appHeader');
+  if(header){const link=document.createElement('a');link.href=returnTo;link.className='demo-inner-back';link.textContent='← Zpět';link.addEventListener('click',event=>{event.preventDefault();window.goBack();});header.insertBefore(link,header.firstChild);}
  }else if(window.parent===window){
   const link=document.createElement('a');link.href=returnTo;link.textContent='← Zpět';link.style.cssText='position:fixed;top:10px;left:10px;z-index:100000;color:#c8e4fa;background:#101e30;border:1px solid #405875;border-radius:7px;padding:10px 14px;text-decoration:none;font:14px system-ui;';document.body.appendChild(link);
  }

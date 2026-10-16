@@ -55,7 +55,20 @@ async function check(file,width){
   for(const m of old.matchAll(/<style>([\s\S]*?)<\/style>/g))assert.ok(html.includes(m[0]),'Original CRT style block changed');
   const start=old.indexOf('function renderTree(data) {');
   const tail=old.slice(start),end=tail.slice(10).search(/^function /m)+10;
-  assert.ok(end>10);assert.ok(html.includes(tail.slice(0,end)),'Historical graph renderer changed');
+  assert.ok(end>10);
+  const expectedRenderer=tail.slice(0,end)
+   .replace("_savedEdgeColors = ed.get().map(e => ({ id: e.id, color: e.color, width: e.width }))", "_savedEdgeColors = ed.get().map(e => ({ id: e.id, color: structuredClone(e.color), width: Number.isFinite(e.width) ? e.width : 2 }))")
+   .replace("color: { color: '#2a4a68', highlight: '#2a4a68', hover: '#4a7aa8' },", "color: { color: '#4a8aaa', highlight: '#7ab8d8', hover: '#6aacc8', inherit: false, opacity: 1 },");
+  assert.ok(html.includes(expectedRenderer),'Historical renderer changed beyond reviewed hover fix');
+  if(file==='crt-josef.html'){
+   const edges=networks[0].body.data.edges;
+   const baseline=JSON.stringify(edges.get().map(e=>({id:e.id,color:e.color,width:e.width??2})));
+   for(let pass=0;pass<5;pass++){
+    for(const fn of networks[0].events.hoverNode||[])fn({node:'OBESITY'});
+    for(const fn of networks[0].events.blurNode||[])fn();
+    assert.equal(JSON.stringify(edges.get().map(e=>({id:e.id,color:e.color,width:e.width}))),baseline,'Hover/leave restores exact edge colors and explicit widths');
+   }
+  }
  }
  if(file==='vesmir.html'){
   const fire=(net,event,ids)=>{for(const fn of net.events[event]||[])fn({nodes:ids});flush();};

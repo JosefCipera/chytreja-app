@@ -32,6 +32,7 @@ def common_head(s,title):
     s=re.sub(r'<link[^>]+(?:manifest|apple-touch-icon)[^>]*>','',s)
     s=re.sub(r'src="https://ui-avatars\.com/[^\"]*"','src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs="',s)
     extra='<meta http-equiv="Content-Security-Policy" content="'+CSP+'"><meta name="robots" content="noindex"><style>.user-profile-wrapper,#crtRegenBtn,#cmd-mic-btn,#header-mic-btn,.header-controls{display:none!important}</style>'
+    if title!='Chytré já — ukázka oblastí':extra='<link rel="stylesheet" href="/app/assets/landing/demo-view.css?v=1">'+extra
     return s.replace('</head>',extra+'</head>',1)
 
 provenance={}
@@ -63,6 +64,10 @@ for name,tag,cachepath in [
         new_resize="let _archiveResizeTimer; const _rerender=()=>{clearTimeout(_archiveResizeTimer);_archiveResizeTimer=setTimeout(()=>{if(_lastCrtData)_origRenderTree(_lastCrtData)},180)};"
         assert old_resize in body if 'const _rerender' in body else True
         body=body.replace(old_resize,new_resize)
+        # Snapshot independent edge styles and explicit widths before hover changes.
+        body=body.replace("_savedEdgeColors = ed.get().map(e => ({ id: e.id, color: e.color, width: e.width }))", "_savedEdgeColors = ed.get().map(e => ({ id: e.id, color: structuredClone(e.color), width: Number.isFinite(e.width) ? e.width : 2 }))")
+        body=body.replace("color: { color: '#2a4a68', highlight: '#2a4a68', hover: '#4a7aa8' },", "color: { color: '#4a8aaa', highlight: '#7ab8d8', hover: '#6aacc8', inherit: false, opacity: 1 },")
+
 
         body=body.replace('    enrichContraMap(data);','    _applyMedsState();\n    enrichContraMap(data);')
         body=body.replace('async function regenCRT() {','async function regenCRT() {\n  return;')
@@ -77,7 +82,7 @@ for name,tag,cachepath in [
     code=code.replace('<head>','<head>'+seed,1)
     # Only the transport and external account controls change; renderer/styles above stay original.
     tail='<script>window.goBack=function(){parent.postMessage({archiveReturn:true},location.origin)};document.addEventListener("click",function(e){const a=e.target.closest("a");if(a&&a.origin!==location.origin)e.preventDefault();});</script>'
-    pos=code.rfind('</body>');code=code[:pos]+tail+'<script src="/app/assets/landing/demo-navigation.js?v=1" defer></script>'+code[pos:]
+    pos=code.rfind('</body>');code=code[:pos]+tail+'<script src="/app/assets/landing/demo-navigation.js?v=2" defer></script>'+code[pos:]
     (DIST/('crt-'+name+'.html')).write_text(code)
     pinned={'kovarova':'f9a82e228581afa2db781b90141cbc0602fd6038','josef':'e616bcd8a4ee87608aac7c284368f60bf2e2e58e'}
     provenance[name]={'renderer_tag':tag,'renderer_commit':pinned[name],'original_source_sha256':hashlib.sha256(src.encode()).hexdigest(),'data_commit':'58e472bcc5b3b7fc63433cf8fc11cf8169304150','nodes':len(data['nodes']),'medications':len(data['medications_map'])}
@@ -242,19 +247,19 @@ document.getElementById('closePanel').setAttribute('aria-label','Zavřít panel'
 '''
 code='<script>window.ARCHIVE_UNIVERSE='+safe_json(json.loads(model))+';</script><script type="module">'+panel+core+boot+'</script>'
 source_viewer='''<style>#archive-source{padding:0;border:1px solid #40536d;border-radius:14px;width:min(820px,94vw);height:90dvh;background:#0b1220;color:#d4e3f4}#archive-source::backdrop{background:#020617d9}#archive-source-frame{border:0;width:100%;height:100%}</style><dialog id="archive-source"><iframe title="Původní text modelu" id="archive-source-frame"></iframe></dialog>'''
-pos=universe.rfind('</body>');universe=universe[:pos]+source_viewer+code+'<script src="/app/assets/landing/demo-navigation.js?v=1" defer></script>'+universe[pos:]
+pos=universe.rfind('</body>');universe=universe[:pos]+source_viewer+code+'<script src="/app/assets/landing/demo-navigation.js?v=2" defer></script>'+universe[pos:]
 (DIST/'vesmir.html').write_text(universe)
 provenance['universe']={'source_tag':tag,'renderer_source_sha256':hashlib.sha256(core.encode()).hexdigest(),'nodes':len(json.loads(model)),'original_renderer':True,'account_services':False,'panel':'native Svelte HUD with archived node descriptions and SQL catalogue actions, no personal metrics or live results','hud_assets':asset_names}
 (PROJECT/'PROVENANCE.json').write_text(json.dumps(provenance,ensure_ascii=False,indent=2))
 
 # The three-way launcher is new and deliberately separate from the archived views.
-index='''<!doctype html><html lang="cs"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><base href="/ukazka/"><title>Chytré já — ukázka souvislostí</title><meta name="robots" content="noindex"><style>
+index='''<!doctype html><html lang="cs"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><base href="/ukazka/"><title>Chytré já — ukázka souvislostí</title><link rel="stylesheet" href="/app/assets/landing/demo-view.css?v=1"><meta name="robots" content="noindex"><style>
 *{box-sizing:border-box}html,body{height:100%;margin:0;background:#0b0f1a;color:#cbd5e1;font:14px system-ui,sans-serif}body{display:flex;flex-direction:column}header{padding:12px 16px;border-bottom:1px solid #263449;display:flex;gap:12px;align-items:center;flex-wrap:wrap}strong{margin-right:auto;color:#e2e8f0}nav{display:flex;gap:8px;flex-wrap:wrap}button{background:transparent;color:#a7c7df;border:1px solid #344b64;border-radius:7px;padding:9px 14px;cursor:pointer;font:inherit}button[aria-pressed=true]{background:#182c40;color:#fff;border-color:#79b1d9}small{font-size:12px;color:#94a3b8}iframe{flex:1;min-height:0;width:100%;border:0}footer{padding:7px 16px;color:#64748b;font-size:11px}@media(max-width:600px){header{gap:8px;padding:10px}strong{width:100%}nav button{padding:8px 10px}}
 @media(orientation:landscape) and (max-height:500px){header{padding:5px 10px;gap:6px}header strong,header small{display:none}nav button{padding:6px 10px;font-size:12px}footer{padding:4px 10px;font-size:10px}footer #origin{display:none}}
-</style></head><body><header><strong>Chytré já · prozkoumej souvislosti</strong><nav aria-label="Archivní pohledy"><button data-view="kovarova" aria-pressed="true">Žena, 83 let</button><button data-view="josef" aria-pressed="false">Muž, 59 let</button><button data-view="vesmir" aria-pressed="false">Vesmír Dlouhověkosti</button></nav><small>Ukázkové případy · bez osobního výpočtu</small></header><iframe title="Historická aplikace" src="crt-kovarova.html?opus=1" sandbox="allow-scripts allow-same-origin allow-downloads allow-modals"></iframe><footer><a href="/zakladatele/#pod-povrch" style="color:#b8cfe2">← Zpět k Zakladatelům</a> · Ukázka není osobní doporučení ani lékařská diagnóza. <span id="origin">CRT: v0.2-crt-gold-kovarova. Nový přepínač slouží pouze k otevření archivních pohledů. Online účty a AI nejsou připojené.</span></footer><script>
+</style></head><body><header><a class="demo-logo" href="/" aria-label="Chytré já — zpět"><span class="demo-logo-cursor" aria-hidden="true"></span><span class="demo-logo-text" aria-hidden="true"><span>chytré</span><b>já</b></span></a><nav aria-label="Archivní pohledy"><button data-view="kovarova" aria-pressed="true">Žena, 83 let</button><button data-view="josef" aria-pressed="false">Muž, 59 let</button><button data-view="vesmir" aria-pressed="false">Vesmír Dlouhověkosti</button></nav><small>Ukázkové případy · bez osobního výpočtu</small></header><iframe title="Historická aplikace" src="crt-kovarova.html?opus=1" sandbox="allow-scripts allow-same-origin allow-downloads allow-modals"></iframe><footer><a href="/zakladatele/#pod-povrch" style="color:#b8cfe2">← Zpět k Zakladatelům</a> · Ukázka není osobní doporučení ani lékařská diagnóza. <span id="origin">CRT: v0.2-crt-gold-kovarova. Nový přepínač slouží pouze k otevření archivních pohledů. Online účty a AI nejsou připojené.</span></footer><script>
 const files={kovarova:'crt-kovarova.html?opus=1',josef:'crt-josef.html?opus=1',vesmir:'vesmir.html'};
 function select(view){if(!files[view])return;document.querySelector('iframe').src=files[view];document.querySelectorAll('[data-view]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.view===view)));document.getElementById('origin').textContent=view==='kovarova'?'CRT: v0.2-crt-gold-kovarova · historický vzhled, uložená data.':view==='josef'?'CRT: v0.3-crt-gold-josef · historický vzhled, uložená data.':'Vesmír a jeho původní renderer: v0.3-crt-gold-josef · bez osobních indexů.';history.replaceState(null,'',location.pathname+location.search+'#'+view);}
 document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>select(b.dataset.view));window.addEventListener('message',e=>{if(e.origin===location.origin&&e.source===document.querySelector('iframe').contentWindow&&files[e.data?.archiveView])select(e.data.archiveView)});if(files[location.hash.slice(1)])select(location.hash.slice(1));
 </script></body></html>'''
-(DIST/'index.html').write_text(index.replace('</body>','<script src="/app/assets/landing/demo-navigation.js?v=1" defer></script></body>'))
+(DIST/'index.html').write_text(index.replace('</body>','<script src="/app/assets/landing/demo-navigation.js?v=2" defer></script></body>'))
 print(json.dumps({'built':list(provenance),'views':3,'live_database':False},ensure_ascii=False))
