@@ -44,7 +44,9 @@ Oprava v PR #87:
 
 Prošly offline VM kontroly pro šířky 1280/390, syntetické otočení na 844×390 a návrat, zachování podsítě, původ léků/akcí, rozbalení katalogu, bezpečné otevření čtečky a izolace od sítě/úložiště účtu. Živě v desktopovém prohlížeči byly ověřeny oba CRT, odlišné akce podle uzlu, rozbalovací katalog, článek Stoletý desetibojař a návrat. Vercel develop hlásil úspěšné nasazení.
 
-Skutečné fyzické otočení telefonu po PR #87 ještě uživatel nepotvrdil. Zítra začít obnovením stránky a touto kontrolou; netvrdit, že je už hotová.
+Aktualizace 16. 10. 2026: uživatel testoval v běžném prohlížeči a celá stránka zůstávala na výšku. Následně zjistil, že měl vypnuté automatické otáčení telefonu. Po jeho zapnutí potvrdil, že otáčení funguje. Kontrola na skutečném telefonu je tím potvrzená uživatelem; další oprava aplikace kvůli tomuto hlášení nebyla nasazena.
+
+PR #89 (`fix/pwa-allow-rotation`) zůstává draft a není nasazený. Navrhuje samostatné zlepšení orientace instalované PWA; není opravou právě ověřeného chování běžného prohlížeče.
 
 ## Zdroje a další práce
 
@@ -54,7 +56,7 @@ Skutečné fyzické otočení telefonu po PR #87 ještě uživatel nepotvrdil. Z
 - Mediotéka existuje v aktuálním repu: `app/medioteka.html`, `app/js/universe/medioteka.js`, `app/css/medioteka.css`, `data/medioteka.json`. Zatím byly ověřené jen cesty, nikoli její aktuální funkčnost, obsah či vhodnost k nabídce. Obnovovat skutečnou existující Mediotéku, nevymýšlet její náhradu.
 
 Zítřejší směr:
-1. Projít mobil/rotaci a obsah nejdůležitějších uzlů desetibojaře.
+1. Rotace na mobilu potvrzena 16. 10.; pokračovat obsahem a nabídkou, tuto kontrolu neopakovat bez nového problému.
 2. Z nabídky udělat ucelenou Mafia Offer; nesklouznout k seznamu funkcí. Zachovat příběh a skutečné ukázky.
 3. Posoudit Mediotéku jako doplněk a teprve pak rozhodnout o začlenění.
 4. Pozdější osobní propojení: dnešní krok → CRT přes „Proč?“ → Vesmír jako širší přehled, vše nad stejnými daty a enginem. Toto úplné propojení není hotové a ukázka ho nenahrazuje.
