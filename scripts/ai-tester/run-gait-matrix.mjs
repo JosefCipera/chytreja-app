@@ -288,7 +288,7 @@ async function isolated(scenario, branch = null) {
     check('authoritative-uid', writes.every(w => w.row.user_id === uid), writes.map(w => w.row.user_id));
     const before = writes.length;
     const why = await turn('Proč?');
-    check('why-acknowledges-goal', /Chceš zhubnout/.test(why.text), why.text);
+    check('why-avoids-duplicate-goal', !/Chceš zhubnout/.test(why.text), why.text);
     check('why-read-only', writes.length === before, writes.length - before);
     const leverage = initialEngine.system_leverage.selected?.node_id;
     if (scenario.id === 'tester136-shape' || (scenario.id.startsWith('journey-') && !branch?.startsWith('gait-'))) check('known-strength-priority', leverage === 'LOW_MUSCLE_STRENGTH' && selected?.action_id === 'sit_to_stand_supported', { leverage, action: selected?.action_id });
@@ -296,7 +296,8 @@ async function isolated(scenario, branch = null) {
     if (scenario.id === 'normal-bmi') check('wish-not-adiposity-evidence', !initialEngine.node_states.some(n => n.node_id === 'EXCESS_ADIPOSITY' && ['MEASURED', 'CONFIRMED'].includes(n.current_state)), initialEngine.node_states.find(n => n.node_id === 'EXCESS_ADIPOSITY'));
     session = { ...session, person_goal: 'FORGED' };
     const reloadWhy = await turn('Proč?');
-    check('goal-rehydrated-server-side', /Chceš zhubnout/.test(reloadWhy.text), reloadWhy.text);
+    check('why-independent-of-forged-client-goal', reloadWhy.text === why.text, reloadWhy.text);
+    if (leverage && leverage !== 'EXCESS_ADIPOSITY' && response.mode !== 'SAFETY_BLOCKED') check('server-goal-retains-weight-plan-boundary', /Samotné hubnutí tento krok neřeší/.test(reloadWhy.text), reloadWhy.text);
   }
   check('engine-presentation-contract', response.mode !== 'ACT' || session.current_action_assignment?.action_id === selected?.action_id, { mode: response.mode, rendered: session.current_action_assignment?.action_id ?? null, engine: selected?.action_id ?? null });
   if (selected) {
@@ -344,7 +345,7 @@ async function isolated(scenario, branch = null) {
     const callsBefore = calls.length;
     const why = await turn('Proč?');
     check('blocked-why-read-only', writes.length === writesBefore && calls.length === callsBefore, { writes: writes.length - writesBefore, classifier_calls: calls.length - callsBefore });
-    check('why-explains-fallback-without-clearance', why.mode === 'EXPLAIN' && /hlavní prioritu.*nepovolují/.test(why.text) && /nejistot/.test(why.text) && Boolean(session.current_action_assignment), why.text);
+    check('why-explains-fallback-without-clearance', why.mode === 'EXPLAIN' && /Aktivita zaměřená na množství tělesného tuku teď nesplňuje bezpečnostní podmínky/.test(why.text) && /nejistot/.test(why.text) && Boolean(session.current_action_assignment), why.text);
     const next = await turn('Co dál?');
     check('follow-up-keeps-primary-block-and-alternative', safeFallback(next) && assignments.length === 0 && !session.pending_question, { mode: next.mode, assignments });
     if (scenario.medicalAfterFallback) {

@@ -903,12 +903,12 @@ function buildHoldResponse(dd, _ctx, sessionUpdates, warnings, eventType, isFoll
   // today; tomorrow the engine evaluates the available interventions again. ACTION_COMPLETED keeps its
   // own acknowledgment below.
   if (dd.reason_code === 'HOLD_DONE_TODAY' && eventType !== 'ACTION_COMPLETED') {
-    const ackText = (HEALTH_INPUT_TYPES.has(eventType) || ['ANSWER_TO_EVIDENCE_QUESTION', 'GENERAL_HEALTH_REQUEST'].includes(eventType))
-      ? 'Novou informaci jsem přijal. Dnešní akci už máš hotovou, další cvik dnes nenabízím. '
+    const ackText = HEALTH_INPUT_TYPES.has(eventType)
+      ? 'Nové údaje zohledním při dalším vyhodnocení. '
       : '';
     return {
       mode:          'HOLD',
-      text:          ackText + 'Pro dnešek stačí. Zítra pokračujeme.',
+      text:          ackText + 'Pro dnešek máš hotovo. Zítra otevři Chytré já a doporučení znovu vyhodnotíme.',
       buttons:       [],
       expects_reply: false,
       session_updates: sessionUpdates,
@@ -1120,10 +1120,10 @@ function buildWhyResponse(sessionState) {
       && whyEvidencePhrase(ctx) !== 'Uvádíš nejistotu při chůzi.') {
     parts.push('Uvádíš nejistotu při chůzi.');
   }
-  if (sessionState.person_goal === 'WEIGHT_LOSS') parts.push('Chceš zhubnout.');
   if (ctx.action_fallback?.status === 'SELECTED') {
-    const priority = NODE_LABEL_CS[ctx.system_priority?.node_id];
-    if (priority) parts.push('Aktivitu pro hlavní prioritu teď bezpečnostní pravidla nepovolují.');
+    const priority = WHY_FOCUS_CS[ctx.system_priority?.node_id];
+    if (priority) parts.push(`Aktivita zaměřená na ${priority} teď nesplňuje bezpečnostní podmínky.`);
+    else parts.push('Původní aktivita teď nesplňuje bezpečnostní podmínky.');
   }
   const leverage    = ctx.system_leverage;
   const constraint  = ctx.system_constraint;
@@ -1712,7 +1712,6 @@ async function processInputCore(userId, userText, sessionState = {}) {
     // A blocked decision must explain its own safety result, not an older action.
     if (state.last_daily_decision?.reason_code === 'SAFETY_BLOCKED') {
       const response = buildSafetyBlockedResponse(state.last_daily_decision, {}, []);
-      if (state.person_goal === 'WEIGHT_LOSS') response.text = 'Chceš zhubnout. ' + response.text;
       return response;
     }
     if (state.last_daily_decision?.reason_code?.startsWith('PATH_DISCOVERY_HOLD')) {
