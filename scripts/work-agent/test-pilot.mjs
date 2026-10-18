@@ -21,3 +21,7 @@ assert.equal(validateReview(good,rules).verdict,'RETURN');
 for(const bad of [{...good,verdict:'ACCEPT'},{...good,findings:[]},{...good,findings:[{...good.findings[0],evidence_ref:'invented'}]}])assert.throws(()=>validateReview(bad,rules));
 assert.equal(Object.keys(MATRIX).length,4);
 console.log('PASS: missing/forged/contradictory evidence cannot pass; live and independent review are separate; open decisions block delivery; unverifiable AI reviews rejected.');
+
+const clinicalAccept={...good,verdict:'ACCEPT',findings:[{...good.findings[0],resolution:'clinical_decision'}]};
+assert.equal(validateReview(clinicalAccept,rules).verdict,'ACCEPT');
+assert.equal(deliveryStatus({...input,review:clinicalAccept}),'NEEDS_DECISION','Technical review cannot approve a medical decision');

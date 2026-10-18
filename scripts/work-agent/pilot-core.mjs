@@ -34,7 +34,8 @@ export function deliveryStatus({checks,live,decisions,review}){
   if(Object.values(checks).some(x=>x.status==='FAIL'))return 'NEEDS_REPAIR';
   if(Object.values(checks).some(x=>x.status!=='PASS')||live.status!=='PASS')return 'BLOCKED_EVIDENCE';
   if(!review||review.verdict==='BLOCKED')return 'AWAITING_INDEPENDENT_REVIEW';
-  if(review.verdict==='RETURN')return review.findings?.some(f=>['code_change','more_evidence'].includes(f.resolution))?'NEEDS_REPAIR':'NEEDS_DECISION';
+  const unresolved=(review.findings??[]).filter(f=>f.severity!=='MINOR');
+  if(review.verdict==='RETURN'||unresolved.length)return unresolved.some(f=>['code_change','more_evidence'].includes(f.resolution))?'NEEDS_REPAIR':'NEEDS_DECISION';
   if(decisions.some(x=>x.status==='OPEN'))return 'NEEDS_DECISION';
   return 'CANDIDATE_FOR_JOSEF';
 }
@@ -45,7 +46,7 @@ export function validateReview(value, {acceptanceIds,evidenceRefs}) {
     if(!['BLOCKER','MAJOR','MINOR'].includes(f.severity)||!['code_change','product_decision','clinical_decision','more_evidence'].includes(f.resolution)
       || !acceptanceIds.includes(f.acceptance_id)||!evidenceRefs.includes(f.evidence_ref)||typeof f.explanation!=='string'||!f.explanation.trim())throw Error('Unverifiable review finding');
   }
-  if(value.verdict==='ACCEPT'&&value.findings.some(f=>f.severity!=='MINOR'))throw Error('ACCEPT contradicts unresolved findings');
+  if(value.verdict==='ACCEPT'&&value.findings.some(f=>f.severity!=='MINOR'&&['code_change','more_evidence'].includes(f.resolution)))throw Error('ACCEPT contradicts unresolved findings');
   if(value.verdict==='RETURN'&&!value.findings.length)throw Error('RETURN without a concrete finding');
   return value;
 }
