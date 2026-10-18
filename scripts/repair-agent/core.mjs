@@ -23,13 +23,25 @@ export function inspectFile(root,args,task){
   const lines=fs.readFileSync(file,'utf8').split('\n');
   if(typeof args.query==='string'&&args.query.length){
     if(args.query.length>200)throw Error('Query too long');
-    return lines.flatMap((s,i)=>s.toLowerCase().includes(args.query.toLowerCase())?[`${i+1}: ${s}`]:[]).slice(0,24).join('\n').slice(0,18000);
+    return 'FILE_SHA256 '+sha(fs.readFileSync(file))+'\n'+lines.flatMap((s,i)=>s.toLowerCase().includes(args.query.toLowerCase())?[`${i+1}: ${s}`]:[]).slice(0,24).join('\n').slice(0,18000);
   }
   const start=args.start??1,count=args.count??60;
   if(!Number.isInteger(start)||start<1||!Number.isInteger(count)||count<1||count>80)throw Error('Invalid line range');
-  return lines.slice(start-1,start-1+count).map((s,i)=>`${start+i}: ${s}`).join('\n').slice(0,18000);
+  return 'FILE_SHA256 '+sha(fs.readFileSync(file))+'\n'+lines.slice(start-1,start-1+count).map((s,i)=>`${start+i}: ${s}`).join('\n').slice(0,18000);
 }
 export function validateVerdict(input){
   if(!input||!['ACCEPT','RETURN','BLOCKED'].includes(input.verdict)||typeof input.reason!=='string'||!input.reason.trim()||input.reason.length>2500)throw Error('Invalid independent review');
   return input;
+}
+
+export function replaceLines(root,args,task,state){
+  const file=safeFile(root,args.path,task.editable),before=fs.readFileSync(file,'utf8');
+  if(state.edits>=task.limits.edits)throw Error('Edit budget exhausted');
+  if(args.expected_sha256!==sha(before))throw Error('Stale file hash; inspect current source');
+  const lines=before.split('\n');
+  if(!Number.isInteger(args.start)||!Number.isInteger(args.end)||args.start<1||args.end<args.start||args.end>lines.length||args.end-args.start>40
+     ||!Array.isArray(args.lines)||args.lines.length>40||args.lines.some(s=>typeof s!=='string'||s.includes('\n'))||args.lines.join('\n').length>6000)throw Error('Invalid line edit');
+  lines.splice(args.start-1,args.end-args.start+1,...args.lines);
+  const after=lines.join('\n');if(after===before)throw Error('Empty edit');
+  fs.writeFileSync(file,after);state.edits++;return {status:'EDITED',sha256:sha(after),edits:state.edits};
 }

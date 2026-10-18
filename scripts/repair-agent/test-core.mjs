@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';import os from 'node:os';import path from 'node:path';
-import {replaceUnique,inspectFile,safeFile,validateVerdict} from './core.mjs';
+import {replaceUnique,replaceLines,inspectFile,sha,safeFile,validateVerdict} from './core.mjs';
 const root=fs.mkdtempSync(path.join(os.tmpdir(),'repair-test-'));
 try{
  fs.writeFileSync(path.join(root,'a.js'),'one\ntwo\n');fs.writeFileSync(path.join(root,'sealed.js'),'sealed');
@@ -11,7 +11,8 @@ try{
  assert.equal(state.edits,0);
  assert.match(inspectFile(root,{path:'a.js',query:'two'},task),/2: two/);
  assert.throws(()=>inspectFile(root,{path:'a.js',count:81},task));
- replaceUnique(root,{path:'a.js',old:'two',new:'three'},task,state);
+ assert.throws(()=>replaceLines(root,{path:'a.js',expected_sha256:'stale',start:2,end:2,lines:['three']},task,state));
+ replaceLines(root,{path:'a.js',expected_sha256:sha(fs.readFileSync(path.join(root,'a.js'))),start:2,end:2,lines:['three']},task,state);
  assert.match(fs.readFileSync(path.join(root,'a.js'),'utf8'),/three/);
  assert.throws(()=>replaceUnique(root,{path:'a.js',old:'one',new:'changed'},task,state));
  fs.symlinkSync(path.join(root,'sealed.js'),path.join(root,'link'));

@@ -6,7 +6,7 @@ Navazuje na draft PR #110. Ten umí kontroly a oponenturu; implementaci dělal C
 
 Známá historická chyba: „Co mám dělat zítra?“ po denním ukončení končilo jako nerozpoznaný vstup. V dočasné kopii se vrátí historická regrese. Worker dostane popis chování a první chybový výstup, nikoli opravný diff nebo čistý soubor. Základní kontroly musí nejdřív projít na čisté verzi a potom selhat na poškozené. Bez tohoto důkazu se model vůbec nespustí.
 
-AI má povolené nástroje `inspect`, `replace`, `check`, `submit`. Soubor ke změně: `api/engine/orchestrator.js`; automatická konečná kontrola navíc přijme pouze změnu regulárního výrazu pro navigaci. Ostatní kód musí zůstat bitově stejný. Jde o úzce vymezený programový pokus, ne univerzální oprávnění měnit engine.
+AI má povolené nástroje `inspect`, `replace`, `edit_lines`, `check`, `submit`. Soubor ke změně: `api/engine/orchestrator.js`; automatická konečná kontrola navíc přijme pouze změnu regulárního výrazu pro navigaci. Ostatní kód musí zůstat bitově stejný. Jde o úzce vymezený programový pokus, ne univerzální oprávnění měnit engine.
 
 Při odevzdání běží nezávisle na tvrzení workera:
 
@@ -30,3 +30,9 @@ Chybějící klíč, Docker, katalog, neplatné review, vyčerpaný rozpočet ne
 Automaticky v PR z větve `agent/gait-repair-worker`, workflow `Isolated gait repair worker`. Používá existující GitHub secret; klíč se nikam nekopíruje. Kód ani diff se automaticky necommituje, nemerguje a nenasazuje.
 
 Artefakt `gait-repair-experiment` uchovává 14 dní: report, kroky nástrojů, oddělená review, spotřebu, jednotlivé výsledky, otisky, skutečný `candidate.patch` a výsledný zdroj. Trvalé shrnutí ověřeného běhu doplní lead do tohoto adresáře. Původní `main` i dev zůstávají stejné. Historická chyba je už v main opravená; tento patch je důkaz schopnosti realizátora, ne nový důvod znovu přepisovat aplikaci.
+
+## První běh a oprava řadiče
+
+Běh 39151687747 (commit 9c5c82bf) skončil BLOCKED po 12 pracovních API voláních, 0 edits a 0 review. Čistý baseline PASS; historická regrese správně zachycena. Worker četl příliš mnoho zdrojů a jeho poslední exact-text edit byl odmítnut. Žádná oprava aplikace nevznikla. Spotřeba: 156 201 vstupních a 1 575 výstupních tokenů.
+
+Lead následně opravil nástrojový protokol: zdroj se vrací jako doslovný text místo další JSON escapované vrstvy, odmítnuté edity se ukládají, čtení poskytuje otisk souboru a přibyl edit řádků podmíněný shodou otisku. Worker dostává zbývající rozpočet a pokyn k cílenému hledání. Zadání aplikace, mutace, zapečetěné testy i limity zůstaly stejné. Opravný regex realizátorovi nedodáváme. Další běh je nový explicitně zaznamenaný pokus, ne skrytý retry API.
