@@ -1337,7 +1337,7 @@ const ADAPTER_EVENT_TYPES = new Set([
 
 // Scope is an interpretation boundary, not a clinical decision. An unsupported
 // request must never fall through to an unrelated recommendation from old profile data.
-function hasUnsupportedMedicalTopic(text) {
+export function hasUnsupportedMedicalTopic(text) {
   const normalized = text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   // These narrow, explicit denials do not constitute a positive medical report.
   const positive = normalized
