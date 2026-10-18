@@ -11,7 +11,7 @@ dotenv.config({ path: '.env.local' });
 
 import { createClient } from '@supabase/supabase-js';
 import { parseSupportedGoal } from './engine/healthEventAdapter.js';
-import { processInput } from './engine/orchestrator.js';
+import { processInput, hasUnsupportedMedicalTopic } from './engine/orchestrator.js';
 import { requireAuth }  from './lib/requireAuth.js';
 
 export const config = { maxDuration: 30 };
@@ -54,7 +54,7 @@ export default async function handler(req, res) {
     // Fetch pending_clarifications server-side so the orchestrator can apply safety gates
     // (e.g. acute symptom ACT gate) without trusting client-provided session state.
     // Client session is the authority for temporal session fields; DB is authority for health facts.
-    const [{ data: profileRow }, { data: personRow }] = await Promise.all([
+    const [{ data: profileRow, error: healthReadError }, { data: personRow }] = await Promise.all([
       getSb()
         .from('user_health_profile')
         .select('pending_clarifications, physical, goal_text, symptoms')
@@ -68,6 +68,27 @@ export default async function handler(req, res) {
         .eq('user_id', userId)
         .maybeSingle(),
     ]);
+    // Reported medical scope is a durable health fact, not client session state.
+    // Keep the user's wording in the existing symptoms field; do not diagnose or
+    // interpret it as clearance. A failed read/write must not become permission
+    // to resume exercise recommendations.
+    if (healthReadError) {
+      return res.status(503).json({ error: 'Health context unavailable; retry required' });
+    }
+    const symptoms = Array.isArray(profileRow?.symptoms) ? [...profileRow.symptoms] : [];
+    const incomingMedicalReport = hasUnsupportedMedicalTopic(text);
+    if (incomingMedicalReport && !symptoms.includes(text.trim())) {
+      symptoms.push(text.trim());
+      const { error: medicalWriteError } = await getSb()
+        .from('user_health_profile')
+        .upsert({ user_id: userId, symptoms }, { onConflict: 'user_id' });
+      if (medicalWriteError) {
+        return res.status(503).json({ error: 'Health report not saved; retry required' });
+      }
+    }
+    const storedMedicalReport = symptoms.some(value =>
+      typeof value === 'string' && hasUnsupportedMedicalTopic(value));
+
     const pendingClarifications = Array.isArray(profileRow?.pending_clarifications)
       ? profileRow.pending_clarifications
       : [];
@@ -75,6 +96,9 @@ export default async function handler(req, res) {
 
     const sessionWithPending = {
       ...session,
+      // A caller cannot clear a saved medical report by changing the session.
+      unsupported_request: storedMedicalReport
+        ? { kind: 'medical' } : session.unsupported_request,
       pending_clarifications: pendingClarifications,
       fatigue_context:        fatigueContext,
       person_birth_year:      personRow?.birth_year ?? null,

@@ -318,7 +318,12 @@ async function isolated(scenario, branch = null) {
       if (knee.severity === 'moderate') check('balance-knee-modifications', selected.safety.modifications_suggested?.some(m => /pain increases/i.test(m)), selected.safety);
     }
   }
-  if (scenario.unsupported) check('unsupported-no-action', response.mode !== 'ACT' && !session.current_action_assignment && writes.length === 0, { mode: response.mode, text: response.text, writes: writes.length });
+  if (scenario.unsupported) {
+    check('unsupported-no-action', response.mode !== 'ACT' && !session.current_action_assignment && assignments.length === 0, { mode: response.mode, text: response.text, assignments });
+    check('unsupported-only-persists-original-report', weightLoss
+      ? writes.length === 1 && writes.every(w => w.table === 'user_health_profile' && w.method === 'upsert' && Object.keys(w.row).sort().join(',') === 'symptoms,user_id') && health.symptoms.includes(scenario.text) && health.diagnoses.length === 0
+      : writes.length === 0, writes);
+  }
   let productReview = [];
   if (scenario.outageJourney) response = await runOutageJourney({ scenario, turn, check, setFault: value => { injectedFault = value; }, getSession: () => session, getHealth: () => health, getWrites: () => writes, getCalls: () => calls, getAssignments: () => assignments, ui });
   if (scenario.conversationJourney) {

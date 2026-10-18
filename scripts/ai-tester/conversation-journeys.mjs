@@ -1,6 +1,6 @@
 export function conversationScenarios() {
   const physical = { recent_falls: false, vynest_nakup: true, vstat_ze_zeme: true, zvednout_vnouce: true, rovnovaha_zavrene_oci: true };
-  return ['goal-change', 'answer-correction', 'new-medical-fact', 'return-after-done', 'change-after-skip', 'stable-gait-correction'].map(id => ({
+  return ['goal-change', 'answer-correction', 'new-medical-fact', 'medical-session-after-skip', 'return-after-done', 'change-after-skip', 'stable-gait-correction'].map(id => ({
     id, conversationJourney: true, goal: id !== 'answer-correction', report: null,
     text: id === 'answer-correction' ? 'Chci zlepšit kondici.' : 'Chci zhubnout.',
     profile: { weight: id === 'answer-correction' ? 72 : 88 },
@@ -28,7 +28,19 @@ export async function runConversationJourney({ scenario, response, turn, check, 
     check('changed-context-why-read-only', getWrites().length === before.writes && JSON.stringify(getHealth()) === before.health && JSON.stringify(getSession().current_action_assignment) === before.action, why.text);
     return why;
   };
-  if (scenario.id === 'stable-gait-correction') {
+  if (scenario.id === 'medical-session-after-skip') {
+    for (let i = 0; response.mode === 'ACT' && i < 16; i++) response = await turn('Přeskočit');
+    check('all-skipped-before-medical-report', response.debug?.reason_code === 'HOLD_SKIPPED_TODAY' && getAssignments().length > 0 && getAssignments().every(a => a.status === 'SKIPPED'), response);
+    const before = getAssignments().length;
+    response = await turn('Mám synkopu.');
+    check('medical-report-stored-as-report', getHealth().symptoms.includes('Mám synkopu.') && getHealth().diagnoses.length === 0, getHealth());
+    for (const nextDay of [false, true]) {
+      if (nextDay) advanceDay();
+      resetSession({unsupported_request:null});
+      response = await turn('Chci zhubnout.');
+      check('medical-survives-skipped-relogin-' + nextDay, response.debug?.reason_code === 'UNSUPPORTED_REQUEST' && /lékařem/.test(response.text) && !getSession().current_action_assignment && getAssignments().length === before, response);
+    }
+  } else if (scenario.id === 'stable-gait-correction') {
     const before = await explain();
     check('initial-why-retains-actual-gait-report', /Uvádíš nejistotu při chůzi/.test(before.text), before.text);
     response = await turn('Při běžné chůzi se cítím stabilně.');
@@ -62,6 +74,11 @@ export async function runConversationJourney({ scenario, response, turn, check, 
     await explain();
     await turn('Chci zhubnout.'); response = await turn('Hotovo');
     check('medical-stop-not-bypassed', response.mode === 'HOLD' && getAssignments().length === 0 && !getSession().current_action_assignment, response);
+    check('medical-input-durable-without-diagnosis', getHealth().symptoms.includes('Mám synkopu.') && getHealth().diagnoses.length === 0, getHealth());
+    resetSession({unsupported_request:null});
+    response = await turn('Chci zhubnout.');
+    check('medical-stop-survives-new-session', response.debug?.reason_code === 'UNSUPPORTED_REQUEST' && /lékařem/.test(response.text) && !getSession().current_action_assignment && getAssignments().length === 0, response);
+
   } else {
     if (scenario.id === 'return-after-done') {
       await turn('Hotovo'); response = await turn('Co dál?');
