@@ -1,6 +1,6 @@
 export function conversationScenarios() {
   const physical = { recent_falls: false, vynest_nakup: true, vstat_ze_zeme: true, zvednout_vnouce: true, rovnovaha_zavrene_oci: true };
-  return ['goal-change', 'answer-correction', 'new-medical-fact', 'medical-session-after-skip', 'return-after-done', 'change-after-skip', 'stable-gait-correction'].map(id => ({
+  return ['goal-change', 'answer-correction', 'new-medical-fact', 'unsupported-topic-return', 'medical-question-return', 'medical-conversation-open', 'medical-session-after-skip', 'return-after-done', 'change-after-skip', 'stable-gait-correction'].map(id => ({
     id, conversationJourney: true, goal: id !== 'answer-correction', report: null,
     text: id === 'answer-correction' ? 'Chci zlepšit kondici.' : 'Chci zhubnout.',
     profile: { weight: id === 'answer-correction' ? 72 : 88 },
@@ -28,7 +28,36 @@ export async function runConversationJourney({ scenario, response, turn, check, 
     check('changed-context-why-read-only', getWrites().length === before.writes && JSON.stringify(getHealth()) === before.health && JSON.stringify(getSession().current_action_assignment) === before.action, why.text);
     return why;
   };
-  if (scenario.id === 'medical-session-after-skip') {
+  if (['unsupported-topic-return', 'medical-question-return', 'medical-conversation-open'].includes(scenario.id)) {
+    const reported = scenario.id === 'medical-conversation-open';
+    const medicalQuestion = scenario.id === 'medical-question-return';
+    response = await turn(reported ? 'Mám synkopu.' : medicalQuestion ? 'Co je synkopa?' : 'Chci se naučit anglicky.');
+    check('unsupported-turn-remains-open', response.mode === 'HOLD' && response.expects_reply === true && !getSession().current_action_assignment, response);
+    check('question-is-not-a-health-report', reported
+      ? getHealth().symptoms.includes('Mám synkopu.') && getSession().reported_medical_limitation === true
+      : getHealth().symptoms.length === 0 && !getSession().reported_medical_limitation, getHealth());
+    const firstRefusal = response.text;
+    response = await turn('Co Chytré já umí?');
+    check('help-after-refusal-not-same-refusal', response.mode === 'EXPLAIN' && response.text !== firstRefusal && /jeden konkrétní krok/.test(response.text) && response.expects_reply === true, response);
+    response = await turn(reported ? 'Proč nenabízíš cvičení?' : 'Proč?');
+    check('reason-after-refusal-explains', response.mode === 'EXPLAIN' && response.text !== firstRefusal && response.expects_reply === true, response);
+    response = await turn('Co dál?');
+    check('navigation-after-refusal-is-help', response.mode === 'EXPLAIN' && response.debug?.reason_code === 'SCOPE_HELP', response);
+    if (reported) {
+      response = await turn('Chci se naučit anglicky.');
+      check('other-topic-gets-its-own-scope-response', response.mode === 'HOLD' && getSession().unsupported_request?.kind === 'general' && !/lékařem/.test(response.text) && getSession().reported_medical_limitation === true, response);
+    }
+    response = await turn('Chci zhubnout.');
+    check('supported-request-after-unsupported-topic', reported
+      ? response.debug?.reason_code === 'MEDICAL_ACTIVITY_LIMIT' && !getSession().current_action_assignment
+      : response.mode === 'ACT' && Boolean(getSession().current_action_assignment), response);
+    resetSession({reported_medical_limitation:false,unsupported_request:{kind:'medical'}});
+    response = await turn('Chci zhubnout.');
+    check('fresh-session-uses-reported-fact-not-old-refusal', reported
+      ? response.debug?.reason_code === 'MEDICAL_ACTIVITY_LIMIT' && !getSession().current_action_assignment
+      : response.mode === 'ACT' && Boolean(getSession().current_action_assignment), response);
+    check('scope-navigation-never-completes-action', getAssignments().length === 0, getAssignments());
+  } else if (scenario.id === 'medical-session-after-skip') {
     for (let i = 0; response.mode === 'ACT' && i < 16; i++) response = await turn('Přeskočit');
     check('all-skipped-before-medical-report', response.debug?.reason_code === 'HOLD_SKIPPED_TODAY' && getAssignments().length > 0 && getAssignments().every(a => a.status === 'SKIPPED'), response);
     const before = getAssignments().length;
@@ -38,7 +67,7 @@ export async function runConversationJourney({ scenario, response, turn, check, 
       if (nextDay) advanceDay();
       resetSession({unsupported_request:null});
       response = await turn('Chci zhubnout.');
-      check('medical-survives-skipped-relogin-' + nextDay, response.debug?.reason_code === 'UNSUPPORTED_REQUEST' && /lékařem/.test(response.text) && !getSession().current_action_assignment && getAssignments().length === before, response);
+      check('medical-survives-skipped-relogin-' + nextDay, response.debug?.reason_code === 'MEDICAL_ACTIVITY_LIMIT' && /lékařem/.test(response.text) && !getSession().current_action_assignment && getAssignments().length === before, response);
     }
   } else if (scenario.id === 'stable-gait-correction') {
     const before = await explain();
@@ -70,14 +99,14 @@ export async function runConversationJourney({ scenario, response, turn, check, 
     check('why-does-not-reuse-corrected-answer', !/nevstaneš ze země/.test(why.text), why.text);
   } else if (scenario.id === 'new-medical-fact') {
     response = await turn('Mám synkopu.');
-    check('medical-fact-clears-action-and-cache', response.mode === 'HOLD' && getSession().unsupported_request?.kind === 'medical' && !getSession().current_action_assignment && !getSession().last_domain_response, response);
+    check('medical-fact-clears-action-and-cache', response.mode === 'HOLD' && getSession().reported_medical_limitation === true && !getSession().current_action_assignment && !getSession().last_domain_response, response);
     await explain();
     await turn('Chci zhubnout.'); response = await turn('Hotovo');
     check('medical-stop-not-bypassed', response.mode === 'HOLD' && getAssignments().length === 0 && !getSession().current_action_assignment, response);
     check('medical-input-durable-without-diagnosis', getHealth().symptoms.includes('Mám synkopu.') && getHealth().diagnoses.length === 0, getHealth());
     resetSession({unsupported_request:null});
     response = await turn('Chci zhubnout.');
-    check('medical-stop-survives-new-session', response.debug?.reason_code === 'UNSUPPORTED_REQUEST' && /lékařem/.test(response.text) && !getSession().current_action_assignment && getAssignments().length === 0, response);
+    check('medical-stop-survives-new-session', response.debug?.reason_code === 'MEDICAL_ACTIVITY_LIMIT' && /lékařem/.test(response.text) && !getSession().current_action_assignment && getAssignments().length === 0, response);
 
   } else {
     if (scenario.id === 'return-after-done') {
@@ -127,7 +156,7 @@ export async function runConversationJourney({ scenario, response, turn, check, 
       check('next-day-evaluates-again', response.mode === 'ACT' && Boolean(getSession().current_action_assignment) && getAssignments().length === 1, response);
       await safe('next-day');
       response = await turn('Mám synkopu.');
-      check('medical-scope-still-active-after-day-policy', response.mode === 'HOLD' && getSession().unsupported_request?.kind === 'medical' && !getSession().current_action_assignment, response);
+      check('medical-scope-still-active-after-day-policy', response.mode === 'HOLD' && getSession().reported_medical_limitation === true && !getSession().current_action_assignment, response);
     }
   }
   return response;
