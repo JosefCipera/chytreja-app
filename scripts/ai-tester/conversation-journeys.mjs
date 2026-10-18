@@ -100,6 +100,12 @@ export async function runConversationJourney({ scenario, response, turn, check, 
       check('stale-screen-cannot-complete-twice', getAssignments().length === 1 && !getSession().current_action_assignment, getAssignments());
       resetSession({}); response = await turn('Co dál?');
       check('completed-day-survives-client-state-reset', response.mode !== 'ACT' && !getSession().current_action_assignment && getAssignments().length === 1, response);
+      for (const question of ['Co mám dělat zítra?', 'Co mam delat zitra?', 'Co zítra?', 'Co zitra?']) {
+        resetSession({last_daily_decision:{mode:'HOLD',reason_code:'SCOPE_UNCLEAR'}});
+        response = await turn(question);
+        check('done-tomorrow-after-reset-' + question, response.debug?.reason_code === 'HOLD_DONE_TODAY' && /Zítra otevři Chytré já/.test(response.text) && !/nerozumím/.test(response.text) && getAssignments().length === 1, response);
+      }
+
       advanceDay(); response = await turn('Co dál?');
       check('next-day-evaluates-again', response.mode === 'ACT' && Boolean(getSession().current_action_assignment) && getAssignments().length === 1, response);
       await safe('next-day');

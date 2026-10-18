@@ -165,3 +165,12 @@ const normalWeight = structuredClone(reported);
 normalWeight.last_domain_response.explanation_context.system_leverage = {node_id:'EXCESS_ADIPOSITY'};
 normalWeight.last_domain_response.explanation_context.action_fallback = null;
 assert.doesNotMatch(why(normalWeight).text, /Chceš zhubnout|bezpečnostní podmínky/);
+
+// Tomorrow navigation is deterministic, but compound health/unsupported inputs
+// must remain outside the exact navigation guard.
+for (const text of ['Co mám dělat zítra?', 'Co mam delat zitra?', 'Co zítra?', 'Co zitra?', 'Co mám udělat zítra?']) {
+  assert.ok(mod.namespace.DOMAIN_REQUEST_NAV_RE.test(text), text);
+}
+for (const text of ['Co mám dělat zítra, bolí mě na hrudi.', 'Co zítra s angličtinou?', 'Co zítra, mám synkopu.']) {
+  assert.ok(!mod.namespace.DOMAIN_REQUEST_NAV_RE.test(text), text);
+}
