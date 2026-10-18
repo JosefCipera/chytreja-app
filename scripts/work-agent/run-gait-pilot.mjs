@@ -49,7 +49,7 @@ if(reportsPath && liveChecks.every(Boolean) && process.env.GITHUB_ACTIONS==='tru
 const dirty=spawnSync('git',['status','--porcelain','--','api','app','data','scripts','work-items'],{cwd:root,encoding:'utf8'}).stdout.trim().length>0;
 const selected={gait:new Set(['spoken-1','third-person','historical','hypothetical','tester137-profile','low-strength','recent-fall','knee-unknown','knee-severe','combined','journey-repeat']),conversation:new Set(['stable-gait-correction','medical-conversation-open','medical-session-after-skip','return-after-done','unsupported-topic-return'])};
 for(const id of ['gait','conversation']){
- evidence.transcripts[id]=(raw[id]?.results??[]).filter(c=>selected[id].has(c.id)).map(c=>({id:c.id,status:c.status,profile:c.profile,physical:c.physical,constraints:c.constraints,classification:c.classification,leverage:c.leverage,review:c.product_review,
+ evidence.transcripts[id]=(raw[id]?.results??[]).filter(c=>selected[id].has(c.id)).map(c=>({id:c.id,status:c.status,profile:c.profile,physical:c.physical,constraints:c.constraints,classification:c.classification,candidate_safety:c.candidate_safety,leverage:c.leverage,review:c.product_review,
   turns:(c.turns??[]).map(t=>({input:t.input,mode:t.mode,text:t.text,reason:t.debug?.reason_code}))}));
 }
 const report={task:contract.id,contract_version:contract.version,created_at:new Date().toISOString(),commit:sha,dirty,
@@ -63,7 +63,7 @@ evidence.report=report;
 const sources=['scripts/work-agent/pilot-core.mjs','work-items/gait-v1/contract.json','docs/FOUR-ENTRY-ACTIONS-CLINICAL-REVIEW-2026-10-14.md'];
 for(const p of sources)evidence.source[p]={text:fs.readFileSync(path.join(root,p),'utf8')};
 fs.writeFileSync(path.join(out,'report.json'),JSON.stringify(report,null,2));
-fs.writeFileSync(path.join(out,'review-bundle.json'),JSON.stringify(evidence,null,2));
+fs.writeFileSync(path.join(out,'review-bundle.json'),JSON.stringify(evidence));
 const lines=['# Pilot: nejistota při chůzi',`Stav: **${report.delivery_status}**`, `Commit: ${sha}; pracovní změny: ${dirty}`,`Jazyková evidence: ${live.status}`,'',
  ...Object.entries(checks).map(([id,c])=>`- ${id}: ${c.status}${c.counts?' '+JSON.stringify(c.counts):''}`),'','## Rozhodnutí',...contract.open_decisions.map(d=>`- ${d.id} (${d.status}): ${d.question}`),'','Žádné nové nasazení ani úpravy účtů tímto během neproběhly.'];
 fs.writeFileSync(path.join(out,'summary.md'),lines.join('\n')+'\n');

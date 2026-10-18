@@ -25,3 +25,7 @@ console.log('PASS: missing/forged/contradictory evidence cannot pass; live and i
 const clinicalAccept={...good,verdict:'ACCEPT',findings:[{...good.findings[0],resolution:'clinical_decision'}]};
 assert.equal(validateReview(clinicalAccept,rules).verdict,'ACCEPT');
 assert.equal(deliveryStatus({...input,review:clinicalAccept}),'NEEDS_DECISION','Technical review cannot approve a medical decision');
+
+assert.equal(validateReview({...good,findings:JSON.stringify(good.findings)},rules).verdict,'RETURN');
+assert.throws(()=>validateReview({...good,findings:'not JSON'},rules));
+assert.throws(()=>validateReview({...good,findings:JSON.stringify([{...good.findings[0],evidence_ref:'unseen-source'}])},rules));

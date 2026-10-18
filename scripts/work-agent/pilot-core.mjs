@@ -41,7 +41,12 @@ export function deliveryStatus({checks,live,decisions,review}){
 }
 
 export function validateReview(value, {acceptanceIds,evidenceRefs}) {
-  if(!value || !['ACCEPT','RETURN','BLOCKED'].includes(value.verdict) || !Array.isArray(value.findings) || typeof value.summary!=='string') throw Error('Malformed review');
+  // Some tool replies encode the array as JSON text. Decode exactly once and
+  // still enforce the full schema; never repair unknown IDs or invented refs.
+  if(value && typeof value.findings==='string' && value.findings.length<=20000){
+    try{value={...value,findings:JSON.parse(value.findings)};}catch{throw Error('Malformed review');}
+  }
+  if(!value || !['ACCEPT','RETURN','BLOCKED'].includes(value.verdict) || (!Array.isArray(value.findings)||value.findings.length>4) || typeof value.summary!=='string') throw Error('Malformed review');
   for(const f of value.findings){
     if(!['BLOCKER','MAJOR','MINOR'].includes(f.severity)||!['code_change','product_decision','clinical_decision','more_evidence'].includes(f.resolution)
       || !acceptanceIds.includes(f.acceptance_id)||!evidenceRefs.includes(f.evidence_ref)||typeof f.explanation!=='string'||!f.explanation.trim())throw Error('Unverifiable review finding');
