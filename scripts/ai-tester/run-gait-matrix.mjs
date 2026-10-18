@@ -212,13 +212,16 @@ async function isolated(scenario, branch = null) {
   const ui = createLauncherHarness();
   async function turn(text) {
     currentInput = text;
+    const classifierCallsBeforeTurn = calls.length;
     let r;
     if (weightLoss) {
       let status;
       const res = { status(code) { status = code; return res; }, json(value) { r = value; return value; } };
       await entry.namespace.default({ method: 'POST', body: { text, userId: 'forged-client-uid', session } }, res);
       if (status !== 200) throw Error('Endpoint status ' + status + ': ' + JSON.stringify(r));
-    } else r = await entry.namespace.processInput(uid, text, session); session = { ...session, ...r.session_updates }; turns.push({ ...(conversations ? { simulated_day: new FixtureDate().toISOString().slice(0, 10) } : {}), input: text, mode: r.mode, text: r.text, buttons: r.buttons, pending: session.pending_question, action: session.current_action_assignment, debug: r.debug, ui: ui.render(r) }); return r; }
+    } else r = await entry.namespace.processInput(uid, text, session);
+    if (/^(?:Co mám dělat zítra\?|Co mam delat zitra\?|Co zítra\?|Co zitra\?)$/i.test(text) && calls.length !== classifierCallsBeforeTurn) throw Error('Tomorrow navigation unexpectedly called classifier: ' + text);
+    session = { ...session, ...r.session_updates }; turns.push({ ...(conversations ? { simulated_day: new FixtureDate().toISOString().slice(0, 10) } : {}), input: text, mode: r.mode, text: r.text, buttons: r.buttons, pending: session.pending_question, action: session.current_action_assignment, debug: r.debug, ui: ui.render(r) }); return r; }
   let response = await turn(scenario.text);
   const initialClassification = calls[0] ?? null;
   const initialPhysical = structuredClone(health.physical);
@@ -401,6 +404,12 @@ async function isolated(scenario, branch = null) {
       const next = await turn('Co dál?');
       check('repeat-no-false-completion', assignments.length === count, assignments.length);
       check('repeat-same-day-return', next.mode === 'HOLD' && !session.current_action_assignment, { mode: next.mode, text: next.text });
+      for (const question of ['Co mám dělat zítra?', 'Co mam delat zitra?', 'Co zítra?', 'Co zitra?']) {
+        session = {};
+        const answer = await turn(question);
+        check('skipped-tomorrow-' + question, answer.debug?.reason_code === 'HOLD_SKIPPED_TODAY' && /přeskočil/.test(answer.text) && !/hotovo|nerozumím/.test(answer.text) && assignments.length === count && assignments.every(a => a.status === 'SKIPPED'), answer);
+      }
+
       // Simulate records from yesterday in the isolated DB, not a live clock/DB edit.
       const yesterday = new Date(); yesterday.setUTCDate(yesterday.getUTCDate() - 1);
       for (const record of assignments) record.assigned_date = yesterday.toISOString().slice(0, 10);

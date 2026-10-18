@@ -431,12 +431,14 @@ const DYSPNEA_FULL_RE = /^(?:ano|jo|ne|nemám|nedochází|vůbec|trochu|někdy|o
 const BP_FULL_RE = /^(?:(?:tlak\s+(?:mám|je|mívám|bývá)(?:\s+(?:asi|zhruba|tak|přibližně))?\s+)|(?:asi|zhruba|tak|přibližně)\s+)?(?:\d{2,3}(?:\/\d{2,3})?|nevím|neznám|nezměřil[ao]?|nepamatuju(?:\s+si)?|nemám\s+změřeno|nemám.*tlakoměr|nenapadá)\s*[.,!?]*$/i;
 
 // Guard E: explicit navigation / action-request phrases → DOMAIN_REQUEST.
+// Tomorrow questions are navigation too: bypass classification, then let the
+// persisted daily decision distinguish completed, skipped and available actions.
 // Haiku misclassifies "Co mám dělat?" as GENERAL_HEALTH_REQUEST when a pending_question
 // is in the session context (session context overrides rule 7 toward rule 9).
 // Anchored ^...[\s.,!?]*$: compound inputs ("co mám dělat, ale bolí mě...") are rejected
 // because ", ale bolí..." cannot match [\s.,!?]*$ — COMPOUND_SIGNAL_RE not needed.
 export const DOMAIN_REQUEST_NAV_RE =
-  /^(?:co\s+(?:tedy\s+|teď\s+)?mám\s+(?:teď\s+)?u?dělat|co\s+(?:teď|ted|dál|dal|doporuč(?:uješ)?)|poraď(?:\s+mi)?)[\s.,!?]*$/i;
+  /^(?:co\s+(?:tedy\s+|teď\s+)?mám\s+(?:teď\s+)?u?dělat|co\s+(?:teď|ted|dál|dal|doporuč(?:uješ)?)|co\s+(?:(?:mám|mam)\s+(?:u?dělat|u?delat)\s+)?(?:zítra|zitra)|poraď(?:\s+mi)?)[\s.,!?]*$/i;
 
 let client;
 function getClient() {
