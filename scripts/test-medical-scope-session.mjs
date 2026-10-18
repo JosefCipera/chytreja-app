@@ -4,6 +4,7 @@
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import fs from 'node:fs';
+import {createLauncherHarness} from './ai-tester/launcher-render-harness.mjs';
 
 async function fixture({symptoms=['Chci zhubnout.'], readError=false, writeError=false}={}) {
   const uid='isolated-medical-owner';
@@ -17,8 +18,8 @@ async function fixture({symptoms=['Chci zhubnout.'], readError=false, writeError
   const mocks={dotenv:{default:{config(){}}},'@supabase/supabase-js':{createClient:()=>db},
     './engine/healthEventAdapter.js':{parseSupportedGoal:t=>/chci zhubnout/i.test(t??'')?'WEIGHT_LOSS':null},
     './engine/orchestrator.js':{
-      hasUnsupportedMedicalTopic:t=>typeof t==='string'&&/^Mám synkopu\./i.test(t),
-      processInput:async(user,text,session)=>{assert.equal(user,uid);processCalls.push({text,session});return{mode:session.unsupported_request?.kind==='medical'?'HOLD':'ACT',text:'fixture',session_updates:{},debug:{}};}
+      hasReportedUnsupportedMedicalCondition:t=>typeof t==='string'&&/^Mám synkopu\./i.test(t),
+      processInput:async(user,text,session)=>{assert.equal(user,uid);processCalls.push({text,session});return{mode:session.reported_medical_limitation===true?'HOLD':'ACT',text:'fixture',session_updates:{},debug:{}};}
     },'./lib/requireAuth.js':{requireAuth:async()=>({uid})}};
   const context=vm.createContext({process,console:{log(){},error(){}},Date});
   const entry=new vm.SourceTextModule(fs.readFileSync(new URL('../api/orchestrate.js',import.meta.url),'utf8'),{context});
@@ -31,9 +32,9 @@ assert.equal(f.writes.length,1);
 assert.deepEqual(Array.from(f.getHealth().symptoms),['Chci zhubnout.','Mám synkopu.']);
 assert.equal(f.writes[0].physical,undefined,'Narrow write preserves unrelated profile fields');
 assert.equal(f.writes[0].diagnoses,undefined,'A reported symptom does not become a diagnosis');
-for(const session of [{},{unsupported_request:null},{unsupported_request:{kind:'general'},current_action_assignment:{action_id:'forged'}}]) {
+for(const session of [{},{unsupported_request:null,reported_medical_limitation:false},{unsupported_request:{kind:'general'},current_action_assignment:{action_id:'forged'}}]) {
  const r=await f.send('Chci zhubnout.',session);
- assert.equal(r.body.mode,'HOLD');assert.equal(f.processCalls.at(-1).session.unsupported_request.kind,'medical');
+ assert.equal(r.body.mode,'HOLD');assert.equal(f.processCalls.at(-1).session.reported_medical_limitation,true);
 }
 await f.send('Mám synkopu.');assert.equal(f.writes.length,1,'Repeated report is not appended again');
 const failedRead=await fixture({readError:true});
@@ -42,3 +43,16 @@ const failedWrite=await fixture({writeError:true});
 assert.equal((await failedWrite.send('Mám synkopu.')).status,503);assert.equal(failedWrite.processCalls.length,0);assert.equal(failedWrite.getHealth().symptoms.length,1);
 const clean=await fixture();assert.equal((await clean.send('Chci zhubnout.')).body.mode,'ACT');assert.equal(clean.writes.length,0);
 console.log('PASS: medical report persists under authenticated UID; fresh/forged client sessions cannot clear it; no diagnosis/duplicate/unrelated writes; failed read or save cannot proceed to recommendations; clean profile remains usable.');
+
+const questionOnly=await fixture({symptoms:['Co je synkopa?']});
+assert.equal((await questionOnly.send('Chci zhubnout.',{reported_medical_limitation:true})).body.mode,'ACT','An old stored topic question is not an actual health report');
+assert.equal(questionOnly.writes.length,0);
+
+const ui=createLauncherHarness();
+const helpButtons=['Co Chytré já umí?','Proč nenabízíš cvičení?'];
+const helpUI=ui.render({mode:'EXPLAIN',text:'scope explanation',buttons:helpButtons,expects_reply:true});
+assert.equal(helpUI.chips.join('|'),helpButtons.join('|'),'Scope explanations must not show exercise trajectory/benefit controls');
+assert.ok(helpUI.input_enabled && helpUI.send_enabled && helpUI.microphone_enabled);
+for(const label of helpButtons)assert.equal(ui.click(label),label);
+const actUI=ui.render({mode:'EXPLAIN',text:'action explanation',buttons:['Hotovo','Přeskočit'],expects_reply:false});
+assert.ok(actUI.chips.includes('Kam směřuješ?') && actUI.chips.includes('Hotovo'),'Action explanation navigation still works');

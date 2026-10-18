@@ -1348,11 +1348,48 @@ export function hasUnsupportedMedicalTopic(text) {
     || /\bbolest\w*\s+na\s+hrudi\b/.test(positive);
 }
 
-function buildUnsupportedResponse(kind = 'general', unclear = false) {
+// A question about a condition is not a declaration that the user has it.
+// Persist only narrow explicit first-person reports, never hypotheses/third parties.
+export function hasReportedUnsupportedMedicalCondition(text) {
+  if (typeof text !== 'string' || !hasUnsupportedMedicalTopic(text)) return false;
+  const plain = text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  if (/\b(?:kdyby|co kdyz|pokud bych|kdybych)\b/.test(plain)) return false;
+  return plain.split(/(?<=[.!?;])\s*/).some(clause => {
+    if (/\?\s*$/.test(clause) || /^(?:co|proc|jak|muze|muzu|vysvetli)\b/.test(clause.trim())) return false;
+    return /(?:^|\ba\s+|\bale\s+)(?:mam|mel jsem|mela jsem|prodelal jsem|prodelala jsem|trpim|lecim se s)\s+(?:(?:diagnostikovanou|potvrzenou|opakovanou)\s+)?(?:synkop\w*|symkop\w*|arytmi\w*|fibrilac\w*|kardiostimulator\w*|mdlob\w*|bolest\w*\s+na\s+hrudi)\b/.test(clause.trim())
+      || /^(?:(?:dnes|vcera|nedavno)\s+)?(?:omdlel(?:a)?\s+jsem|jsem\s+omdlel(?:a)?|ztratil(?:a)?\s+jsem\s+vedomi)\b/.test(clause.trim());
+  });
+}
+
+const scopeText = text => text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().replace(/[.!?]+$/, '').trim();
+const SCOPE_HELP_TEXTS = new Set(['co chytre ja umi', 'co je chytre ja', 'co umis', 'co vsechno umis', 'co umis dalsiho', 's cim mi pomuzes', 's cim mi muzes pomoci', 'co muzu resit', 'na co se muzu ptat', 'jake dotazy muzu pokladat', 'muzu se zeptat na neco jineho', 'jak to funguje', 'jak funguje chytre ja', 'jak pokracovat']);
+const SCOPE_LIMIT_WHY_TEXTS = new Set(['proc nenabizis cviceni', 'proc mi nedoporucis cviceni']);
+
+function buildScopeHelp(state) {
+  return { mode: 'EXPLAIN', expects_reply: true, buttons: [],
+    session_updates: state.reported_medical_limitation === true
+      ? { current_action_assignment: null, pending_question: null, last_domain_response: null } : {},
+    text: 'Pomáhám s pohybem, nadváhou, svalovou silou a rovnováhou. Vybírám jeden konkrétní krok a vysvětluji proč.'
+      + (state.reported_medical_limitation === true
+        ? ' Po nahlášené zdravotní potíži ti tu zátěž neumím posoudit. Můžeš se dál ptát na fungování aplikace nebo důvod omezení.'
+        : ' Napiš, co chceš řešit.'),
+    debug: { reason_code: 'SCOPE_HELP' } };
+}
+
+function buildMedicalActivityLimit() {
+  const response = buildUnsupportedResponse('medical', false, true);
+  return { ...response,
+    text: 'Kvůli nahlášené zdravotní potíži ti vhodnou pohybovou aktivitu neumím bezpečně vybrat. Zátěž prober s lékařem. V rozhovoru ale můžeš pokračovat a ptát se na fungování Chytrého já.',
+    buttons: ['Co Chytré já umí?', 'Proč nenabízíš cvičení?'],
+    debug: { source: 'medical_activity_scope', reason_code: 'MEDICAL_ACTIVITY_LIMIT' } };
+}
+
+function buildUnsupportedResponse(kind = 'general', unclear = false, reportedMedical = false) {
   const text = unclear
     ? 'Zatím nerozumím, s čím chceš pomoci. Chceš řešit pohyb, nadváhu, svalovou sílu nebo rovnováhu?'
     : 'S tímhle ti zatím neumím spolehlivě pomoci. Chytré já teď podporuje pohyb, nadváhu, svalovou sílu a rovnováhu.'
-      + (kind === 'medical' ? ' Tyto zdravotní potíže řeš s lékařem; vhodnou zátěž ti tady neumím posoudit.' : '');
+      + (kind === 'medical' ? ' Zdravotní potíže řeš s lékařem; vhodnou zátěž ti tady neumím posoudit.' : '')
+      + ' Můžeš napsat jiný dotaz.';
   return {
     mode: 'HOLD', text, buttons: [], expects_reply: true,
     session_updates: {
@@ -1360,8 +1397,8 @@ function buildUnsupportedResponse(kind = 'general', unclear = false) {
       current_action_assignment: null,
       last_domain_response: null,
       last_daily_decision: { mode: 'HOLD', reason_code: unclear ? 'SCOPE_UNCLEAR' : 'UNSUPPORTED_REQUEST', primary_item: null },
-      // Retain a medical scope refusal in this conversation: changing the goal to
-      // exercise does not establish that the unsupported condition is safe for exercise.
+      ...(reportedMedical ? { reported_medical_limitation: true } : {}),
+      // This describes the last unsupported turn, not a lock on later questions.
       unsupported_request: unclear ? null : { kind },
       pending_ai_retry: null,
     },
@@ -1391,8 +1428,9 @@ function buildClassifierUnavailable(state, originalText, draftText = originalTex
 }
 
 export async function processInput(userId, userText, sessionState = {}) {
-  // Medical scope guards take precedence over retry and cannot restore an old action.
-  if (hasUnsupportedMedicalTopic(userText) || sessionState.unsupported_request?.kind === 'medical')
+  // A new medical topic preempts retry; saved activity limits are enforced in
+  // the health path below, including replayed requests. Unrelated retries work.
+  if (hasUnsupportedMedicalTopic(userText))
     return processInputCore(userId, userText, sessionState);
   const retry = sessionState.pending_ai_retry;
   if (retry) {
@@ -1432,15 +1470,35 @@ async function processInputCore(userId, userText, sessionState = {}) {
     ...sessionState,
   };
 
-  // An explicit unsupported medical report takes precedence over pending questions,
-  // action controls and explanation chips, so none can turn it into an exercise.
-  if (hasUnsupportedMedicalTopic(userText) || state.unsupported_request?.kind === 'medical') {
-    return buildUnsupportedResponse('medical');
+  const medicalLimit = state.reported_medical_limitation === true;
+  if (hasUnsupportedMedicalTopic(userText)) {
+    return buildUnsupportedResponse('medical', false,
+      medicalLimit || hasReportedUnsupportedMedicalCondition(userText));
   }
-  if (state.unsupported_request && state.last_daily_decision?.reason_code !== 'SCOPE_UNCLEAR' && (
-      DOMAIN_REQUEST_NAV_RE.test(userText.trim())
-      || /^(?:proč\??|proc\??|kam směřuješ\??|co tím změníš\??|hotovo|přeskočit|ano|ne|ok)$/i.test(userText.trim()))) {
-    return buildUnsupportedResponse(state.unsupported_request.kind);
+  const normalizedScopeText = scopeText(userText);
+  if (SCOPE_HELP_TEXTS.has(normalizedScopeText)) return buildScopeHelp(state);
+  if (SCOPE_LIMIT_WHY_TEXTS.has(normalizedScopeText) && medicalLimit) {
+    return { ...buildMedicalActivityLimit(), mode: 'EXPLAIN',
+      text: 'Uvedl jsi zdravotní potíž, u které Chytré já zatím neumí posoudit vhodnou zátěž. Proto ti nevybírá cvičení; to prober s lékařem. Ostatní otázky můžeš dál pokládat.' };
+  }
+  if (state.unsupported_request || medicalLimit) {
+    if (DOMAIN_REQUEST_NAV_RE.test(userText.trim())) return buildScopeHelp(state);
+    if (/^(?:proc|proc ne)$/.test(normalizedScopeText)) {
+      if (state.unsupported_request?.kind === 'general') return {
+        ...buildScopeHelp(state), text: 'Tuto oblast Chytré já zatím nepodporuje. Můžeš napsat jiný dotaz nebo se zeptat, co už umí.' };
+      if (medicalLimit) return { ...buildMedicalActivityLimit(), mode: 'EXPLAIN',
+        text: 'Uvedl jsi zdravotní potíž. Chytré já zatím neumí posoudit vhodnou zátěž při těchto potížích; prober ji s lékařem. Rozhovor tím nekončí.' };
+      return { ...buildScopeHelp(state), text: 'Na takové zdravotní otázky zatím neumím spolehlivě odpovědět. Můžeš se zeptat na podporované oblasti nebo fungování aplikace.' };
+    }
+  }
+  if (medicalLimit) {
+    // A stale assignment/retry must not restore exercise, but unrelated questions
+    // still reach scope classification below. The report itself stays durable.
+    state.current_action_assignment = null;
+    state.pending_question = null;
+    state.last_domain_response = null;
+    if (ACTION_COMPLETION_RE.test(userText.trim()) || ACTION_SKIP_RE.test(userText.trim())
+        || normalizedScopeText === 'zkusit znovu') return buildMedicalActivityLimit();
   }
 
   // 1. Classify intent
@@ -1676,6 +1734,8 @@ async function processInputCore(userId, userText, sessionState = {}) {
     return buildUnsupportedResponse(payload?.unsupported_kind === 'medical' ? 'medical' : 'general');
   }
   if (event_type === 'SCOPE_CLARIFICATION') return buildUnsupportedResponse('general', true);
+  // Unsupported questions can continue; only the health/action path is restricted.
+  if (medicalLimit) return buildMedicalActivityLimit();
 
   // Fixed clarification for functional meaning, not an engine-generated clinical question.
   if (event_type === 'FUNCTIONAL_CLARIFICATION') {

@@ -11,7 +11,7 @@ dotenv.config({ path: '.env.local' });
 
 import { createClient } from '@supabase/supabase-js';
 import { parseSupportedGoal } from './engine/healthEventAdapter.js';
-import { processInput, hasUnsupportedMedicalTopic } from './engine/orchestrator.js';
+import { processInput, hasReportedUnsupportedMedicalCondition } from './engine/orchestrator.js';
 import { requireAuth }  from './lib/requireAuth.js';
 
 export const config = { maxDuration: 30 };
@@ -76,7 +76,7 @@ export default async function handler(req, res) {
       return res.status(503).json({ error: 'Health context unavailable; retry required' });
     }
     const symptoms = Array.isArray(profileRow?.symptoms) ? [...profileRow.symptoms] : [];
-    const incomingMedicalReport = hasUnsupportedMedicalTopic(text);
+    const incomingMedicalReport = hasReportedUnsupportedMedicalCondition(text);
     if (incomingMedicalReport && !symptoms.includes(text.trim())) {
       symptoms.push(text.trim());
       const { error: medicalWriteError } = await getSb()
@@ -87,7 +87,7 @@ export default async function handler(req, res) {
       }
     }
     const storedMedicalReport = symptoms.some(value =>
-      typeof value === 'string' && hasUnsupportedMedicalTopic(value));
+      typeof value === 'string' && hasReportedUnsupportedMedicalCondition(value));
 
     const pendingClarifications = Array.isArray(profileRow?.pending_clarifications)
       ? profileRow.pending_clarifications
@@ -97,8 +97,7 @@ export default async function handler(req, res) {
     const sessionWithPending = {
       ...session,
       // A caller cannot clear a saved medical report by changing the session.
-      unsupported_request: storedMedicalReport
-        ? { kind: 'medical' } : session.unsupported_request,
+      reported_medical_limitation: storedMedicalReport,
       pending_clarifications: pendingClarifications,
       fatigue_context:        fatigueContext,
       person_birth_year:      personRow?.birth_year ?? null,

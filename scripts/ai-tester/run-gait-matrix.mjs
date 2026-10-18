@@ -180,6 +180,8 @@ async function isolated(scenario, branch = null) {
           ? { event_type: 'ANSWER_TO_EVIDENCE_QUESTION', payload: { evidence_type: 'vstat_ze_zeme', value: true } }
         : session.pending_question && (['Ano', 'Ne', 'Nevím', 'Nemám výsledek', 'Nemám změřeno'].includes(classifierText) || session.pending_question.evidence_type === 'bp_systolic')
         ? { event_type: 'ANSWER_TO_EVIDENCE_QUESTION', payload: { evidence_type: session.pending_question.evidence_type, value: classifierText === 'Ano' ? true : classifierText === 'Ne' ? false : classifierText } }
+        : classifierText === 'Chci se naučit anglicky.'
+          ? { event_type: 'UNSUPPORTED_REQUEST', payload: { unsupported_kind: 'general' } }
         : classifierText === 'Co dál?'
           ? { event_type: 'DOMAIN_REQUEST', payload: { domain: 'health' } }
           : { event_type: scenario.report === true ? 'ANSWER_TO_EVIDENCE_QUESTION' : 'GENERAL_HEALTH_REQUEST', payload: scenario.report === true ? { evidence_type: 'gait_instability_reported', value: true } : { text: classifierText } };
@@ -358,9 +360,9 @@ async function isolated(scenario, branch = null) {
     check('follow-up-keeps-primary-block-and-alternative', safeFallback(next) && assignments.length === 0 && !session.pending_question, { mode: next.mode, assignments });
     if (scenario.medicalAfterFallback) {
       const stopped = await turn('Mám synkopu.');
-      check('medical-report-stops-fallback', stopped.mode === 'HOLD' && session.unsupported_request?.kind === 'medical' && !session.current_action_assignment && !session.last_domain_response, stopped.text);
+      check('medical-report-stops-fallback', stopped.mode === 'HOLD' && session.reported_medical_limitation === true && !session.current_action_assignment && !session.last_domain_response, stopped.text);
       const again = await turn('Chci zhubnout.');
-      check('medical-stop-cannot-be-bypassed-by-new-goal', again.mode === 'HOLD' && session.unsupported_request?.kind === 'medical' && !session.current_action_assignment && assignments.length === 0, again.text);
+      check('medical-stop-cannot-be-bypassed-by-new-goal', again.mode === 'HOLD' && session.reported_medical_limitation === true && !session.current_action_assignment && assignments.length === 0, again.text);
     }
   }
   if (branch?.startsWith('gait-')) {

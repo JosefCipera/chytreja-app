@@ -833,7 +833,8 @@
       { label: 'Kam směřuješ?',    sources: ['causal_context', 'causal_context_no_data'] },
       { label: 'Co tím změníš?',   sources: ['mechanism_targets', 'mechanism_targets_no_data'] },
     ];
-    const hasActiveAction = mode === 'ACT' || (mode === 'EXPLAIN' && buttons.length > 0);
+    const hasActiveAction = mode === 'ACT'
+      || (mode === 'EXPLAIN' && buttons.some(label => label === 'Hotovo' || label === 'Přeskočit'));
     if (hasActiveAction) {
       const navGroup = document.createElement('div');
       navGroup.className = 'chip-group';

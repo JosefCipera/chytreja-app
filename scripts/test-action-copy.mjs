@@ -174,3 +174,11 @@ for (const text of ['Co mám dělat zítra?', 'Co mam delat zitra?', 'Co zítra?
 for (const text of ['Co mám dělat zítra, bolí mě na hrudi.', 'Co zítra s angličtinou?', 'Co zítra, mám synkopu.']) {
   assert.ok(!mod.namespace.DOMAIN_REQUEST_NAV_RE.test(text), text);
 }
+
+// Condition discussion, hypotheses and third-party stories are not reports.
+for (const text of ['Mám synkopu.', 'Mam arytmii.', 'Chci zhubnout a mám synkopu.', 'Včera jsem omdlel.', 'Prodělal jsem synkopu.', 'Měl jsem synkopu.']) {
+  assert.ok(mod.namespace.hasReportedUnsupportedMedicalCondition(text), text);
+}
+for (const text of ['Co je synkopa?', 'Co s mou synkopou?', 'Mám synkopu?', 'Kdybych měl synkopu.', 'Co když mám synkopu?', 'Můj otec má synkopu.', 'Nemám synkopu.', 'Mám dotaz na synkopu.']) {
+  assert.ok(!mod.namespace.hasReportedUnsupportedMedicalCondition(text), text);
+}

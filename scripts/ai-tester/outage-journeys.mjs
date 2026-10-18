@@ -31,7 +31,7 @@ export async function runOutageJourney({ scenario, turn, check, setFault, getSes
   if (scenario.fault === 'medical-priority') {
     const calls = getCalls().length;
     response = await turn('Mám synkopu.');
-    check('medical-topic-precedes-retry', response.mode === 'HOLD' && getSession().unsupported_request?.kind === 'medical' && !getSession().pending_ai_retry && getCalls().length === calls, response);
+    check('medical-topic-precedes-retry', response.mode === 'HOLD' && getSession().reported_medical_limitation === true && !getSession().pending_ai_retry && getCalls().length === calls, response);
     response = await turn('Zkusit znovu');
     check('retry-cannot-bypass-medical-refusal', response.mode === 'HOLD' && !getSession().current_action_assignment && getCalls().length === calls, response);
     return response;
