@@ -66,6 +66,11 @@ export async function runConversationJourney({ scenario, response, turn, check, 
     if (scenario.id === 'return-after-done') {
       await turn('Hotovo'); response = await turn('Co dál?');
       check('done-return-retains-completion', response.mode === 'HOLD' && getAssignments().length === 1 && getAssignments()[0].status === 'COMPLETED', getAssignments());
+      response = await turn('Co mám dělat zítra?');
+      check('tomorrow-explains-return', response.mode === 'HOLD' && /Zítra otevři Chytré já/.test(response.text) && !getSession().current_action_assignment, response);
+      response = await turn('Chci zhubnout.');
+      check('repeated-goal-no-false-new-information', response.mode === 'HOLD' && !/Novou informaci|Nové údaje/.test(response.text) && /Pro dnešek máš hotovo/.test(response.text) && getAssignments().length === 1, response);
+
     }
     if (scenario.id === 'change-after-skip') {
       response = await turn('Přeskočit');

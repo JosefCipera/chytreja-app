@@ -46,7 +46,8 @@ const proxyWhy = why(proxySession);
 assert.ok(/Údaje o síle a rovnováze/.test(proxyWhy.text));
 assert.ok(/Samy nepotvrzují nejistotu při běžné chůzi/.test(proxyWhy.text));
 assert.ok(!/Uvádíš nejistotu|Proto.*jistotu při chůzi/.test(proxyWhy.text));
-assert.ok(/hlavní prioritu.*nepovolují/.test(proxyWhy.text));
+assert.match(proxyWhy.text, /Aktivita zaměřená na množství tělesného tuku teď nesplňuje bezpečnostní podmínky/);
+assert.doesNotMatch(proxyWhy.text, /Chceš zhubnout|hlavní prioritu/);
 assert.ok(/Samotné hubnutí tento krok neřeší/.test(proxyWhy.text));
 assert.ok(proxyWhy.text.length < 350, 'Concise fallback preserves reason and scope');
 for (const report of [
@@ -151,3 +152,16 @@ for (const fixture of activityFixtures) {
 const safeAdvice = act({primary_item:{label:'Testovací aktivita',safety:{level:'SAFE',modifications_suggested:['Stop if discomfort increases','Stop if discomfort increases']}}},{},{},[]);
 assert.equal(safeAdvice.text.split('Přestaň, pokud nepříjemný pocit zesílí').length,2,'SAFE advice is rendered once');
 console.log('PASS: SAFE advice visible once, locomotor examples relevant, mild/moderate/severe/unknown and combined constraints retain safety levels.');
+
+// The actual reported walking scenario: WHY must name the unavailable focus,
+// retain the user's evidence, and never claim the fallback is a weight-loss plan.
+const reported = structuredClone(proxySession);
+reported.last_domain_response.explanation_context.leverage_evidence = {direct:[{question_id:'gait_instability_reported',value:true}]};
+const reportedWhy = why(reported).text;
+assert.match(reportedWhy, /množství tělesného tuku/);
+assert.match(reportedWhy, /Uvádíš nejistotu při chůzi/);
+assert.match(reportedWhy, /Samotné hubnutí tento krok neřeší/);
+const normalWeight = structuredClone(reported);
+normalWeight.last_domain_response.explanation_context.system_leverage = {node_id:'EXCESS_ADIPOSITY'};
+normalWeight.last_domain_response.explanation_context.action_fallback = null;
+assert.doesNotMatch(why(normalWeight).text, /Chceš zhubnout|bezpečnostní podmínky/);
