@@ -30,7 +30,7 @@ failWrite=false;writes=[];
 const endpoint=await isolated(new URL('../api/orchestrate.js',import.meta.url),{
  dotenv:{default:{config(){}}},'@supabase/supabase-js':{createClient:()=>db},
  './engine/healthEventAdapter.js':{parseSupportedGoal:adapter.parseSupportedGoal},
- './engine/orchestrator.js':{processInput:async(uid,text,state)=>{captured={uid,text,state};return {mode:'HOLD',debug:{}};}},
+ './engine/orchestrator.js':{hasReportedUnsupportedMedicalCondition:()=>false,processInput:async(uid,text,state)=>{captured={uid,text,state};return {mode:'HOLD',debug:{}};}},
  './lib/requireAuth.js':{requireAuth:async()=>({uid:'fixture'})},
 });
 const res={status(code){assert.equal(code,200);return res;},json(value){return value;}};
