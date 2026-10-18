@@ -7,7 +7,8 @@ const opt=n=>process.argv.find(x=>x.startsWith(n+'='))?.slice(n.length+1);
 const repo=process.cwd(),out=path.resolve(opt('--out')??'/tmp/chj-repair-output');
 fs.mkdirSync(out,{recursive:true});
 const task=JSON.parse(fs.readFileSync('work-items/gait-repair/task.json','utf8'));
-const state={task:task.id,status:'BLOCKED',worker_calls:0,review_calls:0,edits:0,checks:0,input_chars:0,usage:[],events:[],rounds:[]};
+const models={worker:'claude-sonnet-4-6',review:'claude-haiku-4-5'};
+const state={task:task.id,models,status:'BLOCKED',worker_calls:0,review_calls:0,edits:0,checks:0,input_chars:0,usage:[],events:[],rounds:[]};
 let root;
 const save=()=>fs.writeFileSync(path.join(out,'report.json'),JSON.stringify(state,null,2));
 const log=(kind,detail)=>{state.events.push({at:new Date().toISOString(),kind,...detail});save();};
@@ -19,10 +20,12 @@ function container(script,flags=[]){
  const r=run('docker',args,{env:childEnv});
  const result={script,args:flags,status:r.status===0?'PASS':'FAIL',exit_code:r.status,error:r.error?.code??null,output:(r.stdout+'\n'+r.stderr).slice(-16000)};
  // Preserve full reports as evidence; send bounded failure tails to the worker.
- fs.writeFileSync(path.join(out,`check-${state.events.length}-${path.basename(script)}-${sha(JSON.stringify(flags)).slice(0,8)}.json`),JSON.stringify(result,null,2));
+ let matrix=null;try{const parsed=JSON.parse(r.stdout);matrix={suite:parsed.suite,mode:parsed.mode,counts:parsed.counts,case_count:parsed.results?.length};}catch{}
+ result.matrix=matrix;result.stdout_sha256=sha(r.stdout??'');result.stderr_sha256=sha(r.stderr??'');
+ fs.writeFileSync(path.join(out,`check-${state.events.length}-${path.basename(script)}-${sha(JSON.stringify(flags)).slice(0,8)}.json`),JSON.stringify({...result,stdout:r.stdout,stderr:r.stderr},null,2));
  return result;
 }
-const publicCheck=r=>({script:r.script,status:r.status,exit_code:r.exit_code,output:r.status==='PASS'?r.output.slice(-800):r.output.slice(-5000)});
+const publicCheck=r=>({script:r.script,status:r.status,exit_code:r.exit_code,matrix:r.matrix,stdout_sha256:r.stdout_sha256,output:r.status==='PASS'?r.output.slice(-800):r.output.slice(-5000)});
 function checks(full=false){
  if(state.checks>=task.limits.checks)throw Error('Check budget exhausted');state.checks++;
  const results=[container('scripts/repair-agent/navigation-check.mjs')];
@@ -48,8 +51,8 @@ async function ask(ai,payload,role){
  if(size>task.limits.history_chars||state.input_chars+size>task.limits.total_input_chars)throw Error('Input budget exhausted');
  if(state[role+'_calls']>=task.limits[role+'_calls'])throw Error(role+' call budget exhausted');
  state.input_chars+=size;state[role+'_calls']++;save();
- const response=await ai.messages.create({model:'claude-haiku-4-5',max_tokens:task.limits.max_output_tokens,...payload});
- state.usage.push({role,usage:response.usage,stop_reason:response.stop_reason});save();return response;
+ const response=await ai.messages.create({model:models[role],max_tokens:task.limits.max_output_tokens,...payload});
+ state.usage.push({role,model:models[role],usage:response.usage,stop_reason:response.stop_reason});save();return response;
 }
 const tool=(name,description,properties,required)=>({name,description,input_schema:{type:'object',additionalProperties:false,properties,required}});
 const workerTools=[

@@ -13,7 +13,9 @@ Při odevzdání běží nezávisle na tvrzení workera:
 - osm kladných, pět záporných a šest skutečných `processInput` sond;
 - stávající kontrakty copy, zdravotního hlášení, denního přeskočení/vyčerpání a ovládání;
 - izolovaná engine matice chůze, změn konverzace a výpadků klasifikátoru;
-- nový Claude API reviewer bez historie uvažování realizátora: zadání, skutečný diff a zapečetěné výsledky. Není to jiná předplacená chatová aplikace; jde o samostatný request se stejným modelem `claude-haiku-4-5`.
+- nový Claude API reviewer bez historie uvažování realizátora: zadání, skutečný diff a zapečetěné výsledky. Není to jiná předplacená chatová aplikace; jde o samostatný request s modelem `claude-haiku-4-5`.
+
+Realizátor od třetího běhu: `claude-sonnet-4-6`. Reviewer: `claude-haiku-4-5`, oddělený kontext.
 
 Jazyková klasifikace v těchto regresích je **injektovaná**, nikoli nový live test porozumění. Zde se měří samostatná programová oprava. Live jazykové důkazy jsou v předchozím pilotu, nelze je přejmenovat na nový běh.
 
@@ -36,3 +38,5 @@ Artefakt `gait-repair-experiment` uchovává 14 dní: report, kroky nástrojů, 
 Běh 39151687747 (commit 9c5c82bf) skončil BLOCKED po 12 pracovních API voláních, 0 edits a 0 review. Čistý baseline PASS; historická regrese správně zachycena. Worker četl příliš mnoho zdrojů a jeho poslední exact-text edit byl odmítnut. Žádná oprava aplikace nevznikla. Spotřeba: 156 201 vstupních a 1 575 výstupních tokenů.
 
 Lead následně opravil nástrojový protokol: zdroj se vrací jako doslovný text místo další JSON escapované vrstvy, odmítnuté edity se ukládají, čtení poskytuje otisk souboru a přibyl edit řádků podmíněný shodou otisku. Worker dostává zbývající rozpočet a pokyn k cílenému hledání. Zadání aplikace, mutace, zapečetěné testy i limity zůstaly stejné. Opravný regex realizátorovi nedodáváme. Další běh je nový explicitně zaznamenaný pokus, ne skrytý retry API.
+
+Druhý běh 39151917627 (be72f96f) znovu BLOCKED: 12 pracovních volání, 0 edits, 0 review, spotřeba 88 536 / 805 tokenů. Haiku ani s opravenými nástroji v rozpočtu nedodal patch. Není vydáván za úspěšného realizátora. Pro třetí a poslední pokus tohoto experimentu je implementace svěřena Sonnetu 4.6 (pevné API ID ověřené v oficiální dokumentaci https://platform.claude.com/docs/en/models/sonnet-4-6/overview), levnější Haiku zůstává reviewerem. Limity, mutace a testy se nemění. Zároveň se opravil nedostatek sběru důkazů: artefakt uchovává celé stdout/stderr, ne pouze posledních 16 kB; review dostává i strukturované počty scénářů a otisky.
