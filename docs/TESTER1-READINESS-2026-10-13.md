@@ -1,5 +1,7 @@
 # Připravenost Chytrého já pro tester1 — 2026-10-13
 
+> Doplnění 18. 10. 2026: aktuální funkční výsledky a otevřené návraty jsou v [checkpointu](CHECKPOINT-2026-10-18-APP-TESTING.md). Připravené je [zadání omezeného testu rozhraní](TESTER1-ZADANI-2026-10-18.md), bez provádění cviků na smyšleném profilu. Následující text zachycuje stav 13. 10.; nové podklady neznamenají klinické schválení.
+
 Stav podkladů: main `366b8c5a48e514e28f757888df8c63b3dba51351`; běhový kód po PR #64 `ef84e0c4b0136af3ae0bb31adaa6cdea57fc3d8c`. Rozhodnutí pro tuto chvíli: **ještě nepředávat tester1 k samostatnému používání zdravotních doporučení**. Dokončit omezený vstupní průchod, bez přidávání dalších modulů. Tento dokument popisuje důkazy a otevřené podmínky; sám je neuzavírá.
 
 ## Co je a není doložené
