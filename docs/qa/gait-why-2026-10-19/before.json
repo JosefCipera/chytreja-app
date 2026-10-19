@@ -1,0 +1,84 @@
+{
+  "source": "Unmodified orchestrator, offline public snapshot",
+  "profile": {
+    "user_id": "isolated-tester137-profile",
+    "birth_year": 1959,
+    "gender": "male",
+    "height": 178,
+    "weight": 88
+  },
+  "leverage": {
+    "node_id": "EXCESS_ADIPOSITY",
+    "current_state": "MEASURED",
+    "confidence": "medium"
+  },
+  "turns": [
+    {
+      "input": "Jsem nejistý při chůzi.",
+      "mode": "ASK",
+      "text": "Cítíš se při běžné chůzi stabilně?",
+      "buttons": [],
+      "pending": {
+        "text": "Cítíš se při běžné chůzi stabilně?",
+        "evidence_type": "gait_stability",
+        "type": "GENERAL"
+      },
+      "action": null,
+      "debug": {
+        "reason_code": "ASK_BLOCKING",
+        "warnings": [],
+        "leverage_node": "Nadměrný tuk",
+        "nba_label": null,
+        "is_hold_follow_up": false,
+        "engine_dd_mode": "ASK",
+        "classifier_event": "ANSWER_TO_EVIDENCE_QUESTION",
+        "selected_intervention": null
+      },
+      "ui": {
+        "input_enabled": true,
+        "send_enabled": true,
+        "microphone_enabled": true,
+        "label": "",
+        "text": "Cítíš se při běžné chůzi stabilně?",
+        "echo": "",
+        "echo_label": "Tvoje zpráva",
+        "echo_visible": false,
+        "draft": "",
+        "chips": []
+      }
+    },
+    {
+      "input": "Proč?",
+      "mode": "EXPLAIN",
+      "text": "Uvádíš nejistotu při chůzi. Vycházím ze zadané výšky a hmotnosti. Proto se dnes zaměřujeme na množství tělesného tuku. Cílem je podpořit tvůj aktuální zdravotní stav.",
+      "buttons": [],
+      "pending": {
+        "text": "Cítíš se při běžné chůzi stabilně?",
+        "evidence_type": "gait_stability",
+        "type": "GENERAL"
+      },
+      "action": null,
+      "debug": {
+        "source": "explanation_context"
+      },
+      "ui": {
+        "input_enabled": true,
+        "send_enabled": true,
+        "microphone_enabled": true,
+        "label": "",
+        "text": "Uvádíš nejistotu při chůzi. Vycházím ze zadané výšky a hmotnosti. Proto se dnes zaměřujeme na množství tělesného tuku. Cílem je podpořit tvůj aktuální zdravotní stav.",
+        "echo": "",
+        "echo_label": "Tvoje zpráva",
+        "echo_visible": false,
+        "draft": "",
+        "chips": []
+      }
+    }
+  ],
+  "catalog": {
+    "source": "provided public catalog snapshot",
+    "captured_at": null,
+    "rows": 152,
+    "sha256": "2f7effafdfb682138862e27d97f1a6a9a901d0ba641c0404228c545f3d157384"
+  }
+}

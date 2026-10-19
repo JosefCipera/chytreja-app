@@ -1,0 +1,50 @@
+name: Real gait explanation repair
+on:
+  pull_request:
+    paths:
+      - scripts/repair-agent/**
+      - work-items/gait-why/**
+      - .github/workflows/gait-why-worker.yml
+permissions:
+  contents: read
+concurrency:
+  group: real-gait-why-${{ github.head_ref }}
+  cancel-in-progress: true
+jobs:
+  repair:
+    if: github.head_ref == 'agent/gait-why-context' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Verify controller boundaries
+        run: |
+          node scripts/repair-agent/test-core.mjs
+          node scripts/repair-agent/test-phases.mjs
+          node scripts/repair-agent/test-gait-why-oracle.mjs
+      - name: Snapshot public catalog without model credential
+        env:
+          AI_TESTER_CATALOG_OUT: /tmp/repair-catalog.json
+        run: node --experimental-vm-modules scripts/ai-tester/run-gait-matrix.mjs --classifier-outage > /tmp/why-outage-baseline.json
+      - run: docker pull node:22-bookworm-slim
+      - name: Actual defect diagnosis, repair, regressions and independent review
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: node scripts/repair-agent/run-gait-why.mjs --live --catalog=/tmp/repair-catalog.json --out=gait-why-results
+      - name: Save summary
+        if: always()
+        run: |
+          if test -f gait-why-results/summary.md; then cat gait-why-results/summary.md >> "$GITHUB_STEP_SUMMARY"; fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: real-gait-why-repair
+          path: gait-why-results/
+          retention-days: 14

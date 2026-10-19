@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';import os from 'node:os';import path from 'node:path';
-import {replaceUnique,replaceLines,inspectFile,sha,safeFile,validateVerdict} from './core.mjs';
+import {replaceUnique,replaceLines,inspectFile,sha,safeFile,validateVerdict,numberedExcerpt} from './core.mjs';
 const root=fs.mkdtempSync(path.join(os.tmpdir(),'repair-test-'));
 try{
  fs.writeFileSync(path.join(root,'a.js'),'one\ntwo\n');fs.writeFileSync(path.join(root,'sealed.js'),'sealed');
@@ -20,5 +20,11 @@ try{
  assert.throws(()=>validateVerdict({verdict:'PASS',reason:'ok'}));
  assert.throws(()=>validateVerdict({verdict:'ACCEPT',reason:''}));
  assert.equal(validateVerdict({verdict:'RETURN',reason:'Specific defect'}).verdict,'RETURN');
+ assert.equal(numberedExcerpt('prefix\nbody\nend','body'),'2: body');
+ assert.equal(numberedExcerpt('prefix\ninserted\nbody\nend','body'),'3: body');
+ assert.throws(()=>numberedExcerpt('source','missing'));
+ const another={edits:0};
+ replaceLines(root,{path:'a.js',expected_sha256:sha(fs.readFileSync(path.join(root,'a.js'))),start:2,end:2,lines:'literal $&\nnext'},task,another);
+ assert.equal(fs.readFileSync(path.join(root,'a.js'),'utf8'),'one\nliteral $&\nnext\n');
  console.log('PASS: immutable allowlists, unique edits, budgets, symlink rejection, range bounds and strict review verdict.');
 }finally{fs.rmSync(root,{recursive:true,force:true});}
