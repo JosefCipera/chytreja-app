@@ -1,0 +1,12 @@
+{
+  "status": "PASS",
+  "candidate_sha256": "9966a118630e8c7dc78844b0b19a4e3eb53d8a9d64370ca8e237f5ef4766e9b7",
+  "patch_sha256": "ba4f78ebd1789ad47f9d6587667f82b587348cd7bbfe662cff105cb6ba377e82",
+  "outside_buildWhyResponse": "bitwise identical",
+  "focus_predicate": "EXCESS_ADIPOSITY and actual walking evidence only",
+  "ranking": "EXCESS_ADIPOSITY unchanged",
+  "mode": "ASK unchanged",
+  "assignments": [],
+  "text_length": 204,
+  "note": "Candidate module not executed on host; full app probes ran in networkless credential-free Docker"
+}

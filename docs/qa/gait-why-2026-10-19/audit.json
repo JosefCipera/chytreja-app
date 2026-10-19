@@ -1,0 +1,1998 @@
+{
+  "status": "REPAIR_CANDIDATE",
+  "attempts": [
+    {
+      "task": "gait-why-context-1",
+      "kind": "real_software_defect",
+      "controller_revision": 3,
+      "status": "NEEDS_REPAIR",
+      "commit": "73e7849a6d949b9a2dfd001d5c49ec1304a2784a",
+      "models": {
+        "worker": "claude-sonnet-4-6",
+        "review": "claude-haiku-4-5"
+      },
+      "worker_calls": 10,
+      "review_calls": 0,
+      "edits": 4,
+      "existing_regressions": "PASS",
+      "reproduction": "FAIL",
+      "blocker": null,
+      "catalog_sha256": "2f7effafdfb682138862e27d97f1a6a9a901d0ba641c0404228c545f3d157384",
+      "clean_source_sha256": "482eff2e4297b8a42b91c7efbcb7bdb246feec1f3a3d8f450b9a80f28282e4a1",
+      "final_source_sha256": "33f5f2b6f1fd3f728d58499e8934919da80c6cc2a6b4b440b97fdc459006b2a1",
+      "diagnosis": {
+        "cause": "In `buildWhyResponse` (orchestrator.js:1120–1156), when `gait_instability_reported=true` (or `gait_stability=false`) is present AND the selected focus is `EXCESS_ADIPOSITY`, the gait prefix \"Uvádíš nejistotu při chůzi.\" is prepended (line 1121–1123), but the focus sentence built at line 1154–1155 is simply: `\"${evidencePhrase} Proto se dnes zaměřujeme na množství tělesného tuku. Cílem je podpořit tvůj aktuální zdravotní stav.\"` — it never says that the adiposity focus does NOT explain or assess the cause of the walking problem. The contract regex (gait-why-contract.mjs:7) requires one of: neřeší / nevysvětluje / neobjasňuje / nenahrazuje / neposuzuje / nezjišťuje / neurčuje / neznamená / není…(vysvětlení|posouzení|vyšetření) / příčin…(neznám|zatím ne|nemám). None of those words appear in the produced text, so `assertGaitScope` throws. The failure is exclusively in the text assembled at orchestrator.js:1154–1155 for the combination: focus=EXCESS_ADIPOSITY + real gait report present.",
+        "plan": "In `buildWhyResponse`, at the point where the focus sentence is assembled (orchestrator.js lines 1154–1156), detect when: (a) a real gait report is present (the gait prefix was already pushed), AND (b) the selected leverage node is NOT `GAIT_INSTABILITY` (i.e. the focus is something other than gait, e.g. EXCESS_ADIPOSITY). In that specific combination, append a short Czech clause that explicitly states the chosen focus does not explain/assess the cause of the walking difficulty — satisfying the contract regex — while keeping the total text ≤ 400 characters. No other logic, engine rules, buttons, actions, doses, or tests change. Concretely: after the focus sentence is pushed, if the gait prefix was added AND leverage.node_id !== 'GAIT_INSTABILITY', append \" Zaměření na tuk příčinu nejistoty při chůzi nevysvětluje ani nenahrazuje její posouzení.\" as a trailing clause inside the same string (or as a separate push), keeping total ≤ 400 chars. Only the string literal inside orchestrator.js lines 1154–1156 is touched.",
+        "evidence_refs": [
+          "scripts/repair-agent/gait-why-contract.mjs:7",
+          "scripts/repair-agent/gait-why-check.mjs:11-15",
+          "api/engine/orchestrator.js:1120-1124",
+          "api/engine/orchestrator.js:1150-1156"
+        ]
+      },
+      "phases": [
+        {
+          "name": "diagnosis",
+          "limit": 4,
+          "calls": 4,
+          "inspections": 5
+        },
+        {
+          "name": "implementation",
+          "limit": 3,
+          "calls": 2,
+          "inspections": 0
+        },
+        {
+          "name": "feedback",
+          "limit": 2,
+          "calls": 2,
+          "inspections": 0
+        },
+        {
+          "name": "feedback",
+          "limit": 2,
+          "calls": 2,
+          "inspections": 0
+        }
+      ],
+      "usage": [
+        {
+          "role": "worker",
+          "model": "claude-sonnet-4-6",
+          "usage": {
+            "input_tokens": 2633,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 0,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 0
+            },
+            "output_tokens": 98,
+            "service_tier": "standard",
+            "inference_geo": "global",
+            "speed": "standard"
+          },
+          "stop_reason": "tool_use"
+        },
+        {
+          "role": "worker",
+          "model": "claude-sonnet-4-6",
+          "usage": {
+            "input_tokens": 4388,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 0,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 0
+            },
+            "output_tokens": 113,
+            "service_tier": "standard",
+            "inference_geo": "global",
+            "speed": "standard"
+          },
+          "stop_reason": "tool_use"
+        },
+        {
+          "role": "worker",
+          "model": "claude-sonnet-4-6",
+          "usage": {
+            "input_tokens": 5193,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 0,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 0
+            },
+            "output_tokens": 78,
+            "service_tier": "standard",
+            "inference_geo": "global",
+            "speed": "standard"
+          },
+          "stop_reason": "tool_use"
+        },
+        {
+          "role": "worker",
+          "model": "claude-sonnet-4-6",
+          "usage": {
+            "input_tokens": 6979,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 0,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 0
+            },
+            "output_tokens": 741,
+            "service_tier": "standard",
+            "inference_geo": "global",
+            "speed": "standard"
+          },
+          "stop_reason": "tool_use"
+        },
+        {
+          "role": "worker",
+          "model": "claude-sonnet-4-6",
+          "usage": {
+            "input_tokens": 7571,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 0,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 0
+            },
+            "output_tokens": 355,
+            "service_tier": "standard",
+            "inference_geo": "global",
+            "speed": "standard"
+          },
+          "stop_reason": "tool_use"
+        },
+        {
+          "role": "worker",
+          "model": "claude-sonnet-4-6",
+          "usage": {
+            "input_tokens": 8095,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 0,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 0
+            },
+            "output_tokens": 331,
+            "service_tier": "standard",
+            "inference_geo": "global",
+            "speed": "standard"
+          },
+          "stop_reason": "tool_use"
+        },
+        {
+          "role": "worker",
+          "model": "claude-sonnet-4-6",
+          "usage": {
+            "input_tokens": 11586,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 0,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 0
+            },
+            "output_tokens": 348,
+            "service_tier": "standard",
+            "inference_geo": "global",
+            "speed": "standard"
+          },
+          "stop_reason": "tool_use"
+        },
+        {
+          "role": "worker",
+          "model": "claude-sonnet-4-6",
+          "usage": {
+            "input_tokens": 12107,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 0,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 0
+            },
+            "output_tokens": 780,
+            "service_tier": "standard",
+            "inference_geo": "global",
+            "speed": "standard"
+          },
+          "stop_reason": "tool_use"
+        },
+        {
+          "role": "worker",
+          "model": "claude-sonnet-4-6",
+          "usage": {
+            "input_tokens": 11595,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 0,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 0
+            },
+            "output_tokens": 367,
+            "service_tier": "standard",
+            "inference_geo": "global",
+            "speed": "standard"
+          },
+          "stop_reason": "tool_use"
+        },
+        {
+          "role": "worker",
+          "model": "claude-sonnet-4-6",
+          "usage": {
+            "input_tokens": 12070,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 0,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 0
+            },
+            "output_tokens": 340,
+            "service_tier": "standard",
+            "inference_geo": "global",
+            "speed": "standard"
+          },
+          "stop_reason": "tool_use"
+        }
+      ],
+      "head_sha": "5268beb0684520681af3e95501be8f3984772858",
+      "run_id": 39236188244,
+      "artifact_id": 12179692137,
+      "events": [
+        {
+          "at": "2026-10-19T10:16:12.760Z",
+          "kind": "phase_started",
+          "name": "diagnosis",
+          "limit": 4,
+          "calls": 0,
+          "inspections": 0
+        },
+        {
+          "at": "2026-10-19T10:16:14.680Z",
+          "kind": "worker_tool",
+          "phase": "diagnosis",
+          "name": "inspect",
+          "input": {
+            "path": "scripts/repair-agent/gait-why-contract.mjs"
+          }
+        },
+        {
+          "at": "2026-10-19T10:16:14.681Z",
+          "kind": "worker_tool",
+          "phase": "diagnosis",
+          "name": "inspect",
+          "input": {
+            "path": "scripts/repair-agent/gait-why-check.mjs"
+          }
+        },
+        {
+          "at": "2026-10-19T10:16:17.150Z",
+          "kind": "worker_tool",
+          "phase": "diagnosis",
+          "name": "inspect",
+          "input": {
+            "path": "scripts/repair-agent/gait-why-journey-check.mjs"
+          }
+        },
+        {
+          "at": "2026-10-19T10:16:17.153Z",
+          "kind": "worker_tool",
+          "phase": "diagnosis",
+          "name": "inspect",
+          "input": {
+            "path": "api/engine/orchestrator.js",
+            "query": "buildWhyResponse"
+          }
+        },
+        {
+          "at": "2026-10-19T10:16:20.815Z",
+          "kind": "worker_tool",
+          "phase": "diagnosis",
+          "name": "inspect",
+          "input": {
+            "path": "api/engine/orchestrator.js",
+            "start": 1092,
+            "count": 80
+          }
+        },
+        {
+          "at": "2026-10-19T10:16:37.500Z",
+          "kind": "diagnosis",
+          "value": {
+            "cause": "In `buildWhyResponse` (orchestrator.js:1120–1156), when `gait_instability_reported=true` (or `gait_stability=false`) is present AND the selected focus is `EXCESS_ADIPOSITY`, the gait prefix \"Uvádíš nejistotu při chůzi.\" is prepended (line 1121–1123), but the focus sentence built at line 1154–1155 is simply: `\"${evidencePhrase} Proto se dnes zaměřujeme na množství tělesného tuku. Cílem je podpořit tvůj aktuální zdravotní stav.\"` — it never says that the adiposity focus does NOT explain or assess the cause of the walking problem. The contract regex (gait-why-contract.mjs:7) requires one of: neřeší / nevysvětluje / neobjasňuje / nenahrazuje / neposuzuje / nezjišťuje / neurčuje / neznamená / není…(vysvětlení|posouzení|vyšetření) / příčin…(neznám|zatím ne|nemám). None of those words appear in the produced text, so `assertGaitScope` throws. The failure is exclusively in the text assembled at orchestrator.js:1154–1155 for the combination: focus=EXCESS_ADIPOSITY + real gait report present.",
+            "plan": "In `buildWhyResponse`, at the point where the focus sentence is assembled (orchestrator.js lines 1154–1156), detect when: (a) a real gait report is present (the gait prefix was already pushed), AND (b) the selected leverage node is NOT `GAIT_INSTABILITY` (i.e. the focus is something other than gait, e.g. EXCESS_ADIPOSITY). In that specific combination, append a short Czech clause that explicitly states the chosen focus does not explain/assess the cause of the walking difficulty — satisfying the contract regex — while keeping the total text ≤ 400 characters. No other logic, engine rules, buttons, actions, doses, or tests change. Concretely: after the focus sentence is pushed, if the gait prefix was added AND leverage.node_id !== 'GAIT_INSTABILITY', append \" Zaměření na tuk příčinu nejistoty při chůzi nevysvětluje ani nenahrazuje její posouzení.\" as a trailing clause inside the same string (or as a separate push), keeping total ≤ 400 chars. Only the string literal inside orchestrator.js lines 1154–1156 is touched.",
+            "evidence_refs": [
+              "scripts/repair-agent/gait-why-contract.mjs:7",
+              "scripts/repair-agent/gait-why-check.mjs:11-15",
+              "api/engine/orchestrator.js:1120-1124",
+              "api/engine/orchestrator.js:1150-1156"
+            ]
+          }
+        },
+        {
+          "at": "2026-10-19T10:16:37.500Z",
+          "kind": "phase_finished",
+          "name": "diagnosis",
+          "limit": 4,
+          "calls": 4,
+          "inspections": 5,
+          "completed": true,
+          "edits": 0
+        },
+        {
+          "at": "2026-10-19T10:16:37.509Z",
+          "kind": "phase_started",
+          "name": "implementation",
+          "limit": 3,
+          "calls": 0,
+          "inspections": 0
+        },
+        {
+          "at": "2026-10-19T10:16:44.379Z",
+          "kind": "worker_tool",
+          "phase": "implementation",
+          "name": "edit_lines",
+          "input": {
+            "path": "api/engine/orchestrator.js",
+            "expected_sha256": "482eff2e4297b8a42b91c7efbcb7bdb246feec1f3a3d8f450b9a80f28282e4a1",
+            "start": 1154,
+            "end": 1156,
+            "lines": [
+              "    if (focus) parts.push(evidencePhrase",
+              "      ? `${evidencePhrase} Proto se dnes zaměřujeme na ${inferredBalance ? 'rovnováhu' : focus}.${ctx.action_fallback?.status === 'SELECTED' ? '' : ` Cílem je podpořit ${goalPhrase}.`}${parts.length > 0 && leverage?.node_id !== 'GAIT_INSTABILITY' ? ' Zaměření na tuk příčinu nejistoty při chůzi nevysvětluje ani nenahrazuje její posouzení.' : ''}`",
+              "      : `Podle dostupných údajů se teď zaměřujeme na ${focus}. Cílem je podpořit ${goalPhrase}.`);"
+            ]
+          },
+          "result": {
+            "status": "EDITED",
+            "sha256": "8f7c9f2e474da4b3c1caec339ff6834edcd2ee4225b43e54ad20d5346b3838bb",
+            "edits": 1
+          }
+        },
+        {
+          "at": "2026-10-19T10:16:52.674Z",
+          "kind": "phase_finished",
+          "name": "implementation",
+          "limit": 3,
+          "calls": 2,
+          "inspections": 0,
+          "completed": true,
+          "edits": 1
+        },
+        {
+          "at": "2026-10-19T10:16:58.265Z",
+          "kind": "phase_started",
+          "name": "feedback",
+          "limit": 2,
+          "calls": 0,
+          "inspections": 0
+        },
+        {
+          "at": "2026-10-19T10:17:07.031Z",
+          "kind": "worker_tool",
+          "phase": "feedback",
+          "name": "edit_lines",
+          "input": {
+            "path": "api/engine/orchestrator.js",
+            "expected_sha256": "8f7c9f2e474da4b3c1caec339ff6834edcd2ee4225b43e54ad20d5346b3838bb",
+            "start": 1154,
+            "end": 1156,
+            "lines": [
+              "    if (focus) parts.push(evidencePhrase",
+              "      ? `${evidencePhrase} Proto se dnes zaměřujeme na ${inferredBalance ? 'rovnováhu' : focus}.${ctx.action_fallback?.status === 'SELECTED' ? '' : ` Cílem je podpořit ${goalPhrase}.`}${parts.length > 0 && leverage?.node_id !== 'GAIT_INSTABILITY' ? ' Zaměření na tuk nevysvětluje příčinu nejistoty při chůzi ani nenahrazuje její posouzení.' : ''}`",
+              "      : `Podle dostupných údajů se teď zaměřujeme na ${focus}. Cílem je podpořit ${goalPhrase}.`);"
+            ]
+          },
+          "result": {
+            "status": "EDITED",
+            "sha256": "3383ea0c1d0b4a64f59c2b15c6b9357ca0b22ef8bece501ea6319637db07c5b4",
+            "edits": 2
+          }
+        },
+        {
+          "at": "2026-10-19T10:17:23.888Z",
+          "kind": "phase_finished",
+          "name": "feedback",
+          "limit": 2,
+          "calls": 2,
+          "inspections": 0,
+          "completed": true,
+          "edits": 1
+        },
+        {
+          "at": "2026-10-19T10:17:29.510Z",
+          "kind": "phase_started",
+          "name": "feedback",
+          "limit": 2,
+          "calls": 0,
+          "inspections": 0
+        },
+        {
+          "at": "2026-10-19T10:17:38.194Z",
+          "kind": "worker_tool",
+          "phase": "feedback",
+          "name": "edit_lines",
+          "input": {
+            "path": "api/engine/orchestrator.js",
+            "expected_sha256": "3383ea0c1d0b4a64f59c2b15c6b9357ca0b22ef8bece501ea6319637db07c5b4",
+            "start": 1120,
+            "end": 1124,
+            "lines": [
+              "  const gaitReported = [...(gaitFacts?.direct ?? []), ...(gaitFacts?.supporting ?? []), ...(gaitFacts?.inferred_from_nodes ?? [])]",
+              "    .some(f => (f.question_id === 'gait_instability_reported' && f.value === true)",
+              "              || (f.question_id === 'gait_stability' && (f.value === false || (typeof f.value === 'string' && f.value.trim().toUpperCase() === 'NE'))));",
+              "  if (gaitReported && whyEvidencePhrase(ctx) !== 'Uvádíš nejistotu při chůzi.') {",
+              "    parts.push('Uvádíš nejistotu při chůzi.');",
+              "  }"
+            ]
+          },
+          "result": {
+            "status": "EDITED",
+            "sha256": "6096126e8f72d62cc64ce147319e1be1deb08bb0275d5758912499f9662e386e",
+            "edits": 3
+          }
+        },
+        {
+          "at": "2026-10-19T10:17:44.601Z",
+          "kind": "worker_tool",
+          "phase": "feedback",
+          "name": "edit_lines",
+          "input": {
+            "path": "api/engine/orchestrator.js",
+            "expected_sha256": "6096126e8f72d62cc64ce147319e1be1deb08bb0275d5758912499f9662e386e",
+            "start": 1154,
+            "end": 1156,
+            "lines": [
+              "    if (focus) parts.push(evidencePhrase",
+              "      ? `${evidencePhrase} Proto se dnes zaměřujeme na ${inferredBalance ? 'rovnováhu' : focus}.${ctx.action_fallback?.status === 'SELECTED' ? '' : ` Cílem je podpořit ${goalPhrase}.`}${gaitReported && leverage?.node_id !== 'GAIT_INSTABILITY' ? ' Zaměření na tuk nevysvětluje příčinu nejistoty při chůzi ani nenahrazuje její posouzení.' : ''}`",
+              "      : `Podle dostupných údajů se teď zaměřujeme na ${focus}. Cílem je podpořit ${goalPhrase}.`);"
+            ]
+          },
+          "result": {
+            "status": "EDITED",
+            "sha256": "33f5f2b6f1fd3f728d58499e8934919da80c6cc2a6b4b440b97fdc459006b2a1",
+            "edits": 4
+          }
+        },
+        {
+          "at": "2026-10-19T10:17:44.601Z",
+          "kind": "phase_finished",
+          "name": "feedback",
+          "limit": 2,
+          "calls": 2,
+          "inspections": 0,
+          "completed": true,
+          "edits": 2
+        }
+      ],
+      "rounds": [
+        {
+          "round": 1,
+          "validation": {
+            "status": "FAIL",
+            "results": [
+              {
+                "script": "scripts/repair-agent/gait-why-check.mjs",
+                "status": "FAIL",
+                "exit_code": 1,
+                "matrix": null,
+                "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+              },
+              {
+                "script": "scripts/repair-agent/gait-why-journey-check.mjs",
+                "status": "PASS",
+                "exit_code": 0,
+                "matrix": {
+                  "counts": {
+                    "PASS": 25,
+                    "FAIL": 0,
+                    "BLOCKED": 0
+                  }
+                },
+                "stdout_sha256": "ab122e019004afa92be14541fd10a89d50c733ad2208e814895d008ac6c6bbe6"
+              },
+              {
+                "script": "scripts/repair-agent/navigation-check.mjs",
+                "status": "PASS",
+                "exit_code": 0,
+                "matrix": {},
+                "stdout_sha256": "a8ae94b21ed337b4ad0a8b20d58c2879adc36480fe2116e80f32f4758b596c3c"
+              },
+              {
+                "script": "scripts/test-action-copy.mjs",
+                "status": "PASS",
+                "exit_code": 0,
+                "matrix": null,
+                "stdout_sha256": "ebba72298355de21d959dd2ea7e89103f732dc8f8f9c3174ab52863899038bb7"
+              },
+              {
+                "script": "scripts/test-medical-scope-session.mjs",
+                "status": "PASS",
+                "exit_code": 0,
+                "matrix": null,
+                "stdout_sha256": "154e7679086db4011e70f779ae106850cd41dca65cf5d3692ac7a390f5c283ef"
+              },
+              {
+                "script": "scripts/test-skip-progression.mjs",
+                "status": "PASS",
+                "exit_code": 0,
+                "matrix": null,
+                "stdout_sha256": "337545078858971736e81fd2d76f5a54cb1d0de3dc7e3b3ee1a0d273d67399bd"
+              },
+              {
+                "script": "scripts/test-skipped-exhaustion.mjs",
+                "status": "PASS",
+                "exit_code": 0,
+                "matrix": null,
+                "stdout_sha256": "30b6f198ed3a26b61c9463f71a22005f01ced2b4e40537740e31a69b2e460f3f"
+              },
+              {
+                "script": "scripts/test-launcher-hold-input.mjs",
+                "status": "PASS",
+                "exit_code": 0,
+                "matrix": null,
+                "stdout_sha256": "24b6a056268ad0cc2d25dc9ce08481b645c65e92b8a3e5c9450ed2a6489427b5"
+              },
+              {
+                "script": "scripts/ai-tester/run-gait-matrix.mjs",
+                "status": "PASS",
+                "exit_code": 0,
+                "matrix": {
+                  "suite": "gait",
+                  "mode": "injected_classifier_full_engine_public_catalog",
+                  "counts": {
+                    "PASS": 25,
+                    "FAIL": 0,
+                    "BLOCKED": 0
+                  },
+                  "case_count": 25
+                },
+                "stdout_sha256": "9526e26c1fc886132ca1a44d5f0a5fed7d368effa195d2c87582f486cfe3ed5a"
+              },
+              {
+                "script": "scripts/ai-tester/run-gait-matrix.mjs",
+                "status": "PASS",
+                "exit_code": 0,
+                "matrix": {
+                  "suite": "weight_loss_endpoint",
+                  "mode": "injected_classifier_full_engine_public_catalog",
+                  "counts": {
+                    "PASS": 25,
+                    "FAIL": 0,
+                    "BLOCKED": 0
+                  },
+                  "case_count": 25
+                },
+                "stdout_sha256": "1126795ff744bb96a4fa742d89e1466c9d49b760ecd8609d511ccd5bb4036b7d"
+              },
+              {
+                "script": "scripts/ai-tester/run-gait-matrix.mjs",
+                "status": "PASS",
+                "exit_code": 0,
+                "matrix": {
+                  "suite": "conversation_changes_endpoint",
+                  "mode": "injected_classifier_full_engine_public_catalog",
+                  "counts": {
+                    "PASS": 10,
+                    "FAIL": 0,
+                    "BLOCKED": 0
+                  },
+                  "case_count": 10
+                },
+                "stdout_sha256": "717b702a456c23b754802822d90d39194c532d190a5674be9202402b065fbee7"
+              },
+              {
+                "script": "scripts/ai-tester/run-gait-matrix.mjs",
+                "status": "PASS",
+                "exit_code": 0,
+                "matrix": {
+                  "suite": "classifier_outage_endpoint",
+                  "mode": "injected_classifier_full_engine_public_catalog",
+                  "counts": {
+                    "PASS": 6,
+                    "FAIL": 0,
+                    "BLOCKED": 0
+                  },
+                  "case_count": 6
+                },
+                "stdout_sha256": "dbb5e7e88060c48821e6233c5559d2b6e62e2de6cce6bf3f124b6d2e54938aff"
+              }
+            ],
+            "scope": "PASS",
+            "patch_sha256": "f4a254561ce7ba4b533a14285a51bea0219057ff9ead9255174a0b6cd79c1a8b"
+          },
+          "review": {
+            "verdict": "NOT_RUN",
+            "reason": "Sealed checks or scope failed"
+          }
+        },
+        {
+          "round": 2,
+          "validation": {
+            "status": "FAIL",
+            "results": [
+              {
+                "script": "scripts/repair-agent/gait-why-check.mjs",
+                "status": "FAIL",
+                "exit_code": 1,
+                "matrix": null,
+                "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+              },
+              {
+                "script": "scripts/repair-agent/gait-why-journey-check.mjs",
+                "status": "PASS",
+                "exit_code": 0,
+                "matrix": {
+                  "counts": {
+                    "PASS": 25,
+                    "FAIL": 0,
+                    "BLOCKED": 0
+                  }
+                },
+                "stdout_sha256": "b0589cfb877186005a211d9bf6cb336150bfd048c8f8e9dd7ab9a85bb0e2110d"
+              },
+              {
+                "script": "scripts/repair-agent/navigation-check.mjs",
+                "status": "PASS",
+                "exit_code": 0,
+                "matrix": {},
+                "stdout_sha256": "a8ae94b21ed337b4ad0a8b20d58c2879adc36480fe2116e80f32f4758b596c3c"
+              },
+              {
+                "script": "scripts/test-action-copy.mjs",
+                "status": "PASS",
+                "exit_code": 0,
+                "matrix": null,
+                "stdout_sha256": "ebba72298355de21d959dd2ea7e89103f732dc8f8f9c3174ab52863899038bb7"
+              },
+              {
+                "script": "scripts/test-medical-scope-session.mjs",
+                "status": "PASS",
+                "exit_code": 0,
+                "matrix": null,
+                "stdout_sha256": "154e7679086db4011e70f779ae106850cd41dca65cf5d3692ac7a390f5c283ef"
+              },
+              {
+                "script": "scripts/test-skip-progression.mjs",
+                "status": "PASS",
+                "exit_code": 0,
+                "matrix": null,
+                "stdout_sha256": "337545078858971736e81fd2d76f5a54cb1d0de3dc7e3b3ee1a0d273d67399bd"
+              },
+              {
+                "script": "scripts/test-skipped-exhaustion.mjs",
+                "status": "PASS",
+                "exit_code": 0,
+                "matrix": null,
+                "stdout_sha256": "30b6f198ed3a26b61c9463f71a22005f01ced2b4e40537740e31a69b2e460f3f"
+              },
+              {
+                "script": "scripts/test-launcher-hold-input.mjs",
+                "status": "PASS",
+                "exit_code": 0,
+                "matrix": null,
+                "stdout_sha256": "24b6a056268ad0cc2d25dc9ce08481b645c65e92b8a3e5c9450ed2a6489427b5"
+              },
+              {
+                "script": "scripts/ai-tester/run-gait-matrix.mjs",
+                "status": "PASS",
+                "exit_code": 0,
+                "matrix": {
+                  "suite": "gait",
+                  "mode": "injected_classifier_full_engine_public_catalog",
+                  "counts": {
+                    "PASS": 25,
+                    "FAIL": 0,
+                    "BLOCKED": 0
+                  },
+                  "case_count": 25
+                },
+                "stdout_sha256": "7c6da6650dd5bc0653f2707925c1e3c5c811ab183e97a089d6b1fd332c8c25ff"
+              },
+              {
+                "script": "scripts/ai-tester/run-gait-matrix.mjs",
+                "status": "PASS",
+                "exit_code": 0,
+                "matrix": {
+                  "suite": "weight_loss_endpoint",
+                  "mode": "injected_classifier_full_engine_public_catalog",
+                  "counts": {
+                    "PASS": 25,
+                    "FAIL": 0,
+                    "BLOCKED": 0
+                  },
+                  "case_count": 25
+                },
+                "stdout_sha256": "286afda3b3b26c25150089ae99241ad6a37669a0c9b8d291ef8cc258c9e52821"
+              },
+              {
+                "script": "scripts/ai-tester/run-gait-matrix.mjs",
+                "status": "PASS",
+                "exit_code": 0,
+                "matrix": {
+                  "suite": "conversation_changes_endpoint",
+                  "mode": "injected_classifier_full_engine_public_catalog",
+                  "counts": {
+                    "PASS": 10,
+                    "FAIL": 0,
+                    "BLOCKED": 0
+                  },
+                  "case_count": 10
+                },
+                "stdout_sha256": "ccde8b1c26d5d05710e8f9c35f66608868f54529b69a4b3d2e9ff60e1cd5b7c6"
+              },
+              {
+                "script": "scripts/ai-tester/run-gait-matrix.mjs",
+                "status": "PASS",
+                "exit_code": 0,
+                "matrix": {
+                  "suite": "classifier_outage_endpoint",
+                  "mode": "injected_classifier_full_engine_public_catalog",
+                  "counts": {
+                    "PASS": 6,
+                    "FAIL": 0,
+                    "BLOCKED": 0
+                  },
+                  "case_count": 6
+                },
+                "stdout_sha256": "a3a175c37cbd4ed7190b12de980b15fd8e5955a1cb9c1036a522f5f09dfe93b4"
+              }
+            ],
+            "scope": "PASS",
+            "patch_sha256": "35e615304e9e3b313f28d80a1d8dcf0a58fb477823cace89acb3060087e85326"
+          },
+          "review": {
+            "verdict": "NOT_RUN",
+            "reason": "Sealed checks or scope failed"
+          }
+        },
+        {
+          "round": 3,
+          "validation": {
+            "status": "FAIL",
+            "results": [
+              {
+                "script": "scripts/repair-agent/gait-why-check.mjs",
+                "status": "FAIL",
+                "exit_code": 1,
+                "matrix": null,
+                "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+              },
+              {
+                "script": "scripts/repair-agent/gait-why-journey-check.mjs",
+                "status": "FAIL",
+                "exit_code": 1,
+                "matrix": null,
+                "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+              },
+              {
+                "script": "scripts/repair-agent/navigation-check.mjs",
+                "status": "FAIL",
+                "exit_code": 1,
+                "matrix": null,
+                "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+              },
+              {
+                "script": "scripts/test-action-copy.mjs",
+                "status": "FAIL",
+                "exit_code": 1,
+                "matrix": null,
+                "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+              },
+              {
+                "script": "scripts/test-medical-scope-session.mjs",
+                "status": "PASS",
+                "exit_code": 0,
+                "matrix": null,
+                "stdout_sha256": "154e7679086db4011e70f779ae106850cd41dca65cf5d3692ac7a390f5c283ef"
+              },
+              {
+                "script": "scripts/test-skip-progression.mjs",
+                "status": "PASS",
+                "exit_code": 0,
+                "matrix": null,
+                "stdout_sha256": "337545078858971736e81fd2d76f5a54cb1d0de3dc7e3b3ee1a0d273d67399bd"
+              },
+              {
+                "script": "scripts/test-skipped-exhaustion.mjs",
+                "status": "PASS",
+                "exit_code": 0,
+                "matrix": null,
+                "stdout_sha256": "30b6f198ed3a26b61c9463f71a22005f01ced2b4e40537740e31a69b2e460f3f"
+              },
+              {
+                "script": "scripts/test-launcher-hold-input.mjs",
+                "status": "PASS",
+                "exit_code": 0,
+                "matrix": null,
+                "stdout_sha256": "24b6a056268ad0cc2d25dc9ce08481b645c65e92b8a3e5c9450ed2a6489427b5"
+              },
+              {
+                "script": "scripts/ai-tester/run-gait-matrix.mjs",
+                "status": "FAIL",
+                "exit_code": 2,
+                "matrix": {
+                  "suite": "gait",
+                  "mode": "injected_classifier_full_engine_public_catalog",
+                  "counts": {
+                    "PASS": 0,
+                    "FAIL": 0,
+                    "BLOCKED": 25
+                  },
+                  "case_count": 25
+                },
+                "stdout_sha256": "018dcacfd752757ae356c3ebea19bc3d891e2137f2d9fa27e9569b891de015d5"
+              },
+              {
+                "script": "scripts/ai-tester/run-gait-matrix.mjs",
+                "status": "FAIL",
+                "exit_code": 2,
+                "matrix": {
+                  "suite": "weight_loss_endpoint",
+                  "mode": "injected_classifier_full_engine_public_catalog",
+                  "counts": {
+                    "PASS": 0,
+                    "FAIL": 0,
+                    "BLOCKED": 25
+                  },
+                  "case_count": 25
+                },
+                "stdout_sha256": "f352831b8a6ff88341c426c84813637d7bf1f3e2778a8519530561a83768cafb"
+              },
+              {
+                "script": "scripts/ai-tester/run-gait-matrix.mjs",
+                "status": "FAIL",
+                "exit_code": 2,
+                "matrix": {
+                  "suite": "conversation_changes_endpoint",
+                  "mode": "injected_classifier_full_engine_public_catalog",
+                  "counts": {
+                    "PASS": 0,
+                    "FAIL": 0,
+                    "BLOCKED": 10
+                  },
+                  "case_count": 10
+                },
+                "stdout_sha256": "21d3fde1edea6c80b55d099fc75362175681080c348e89a513a6a6dc3002b4bf"
+              },
+              {
+                "script": "scripts/ai-tester/run-gait-matrix.mjs",
+                "status": "FAIL",
+                "exit_code": 2,
+                "matrix": {
+                  "suite": "classifier_outage_endpoint",
+                  "mode": "injected_classifier_full_engine_public_catalog",
+                  "counts": {
+                    "PASS": 0,
+                    "FAIL": 0,
+                    "BLOCKED": 6
+                  },
+                  "case_count": 6
+                },
+                "stdout_sha256": "0216186f0f5d97947639ef2aceb223ac05de7cadf29eb75f250cd63647f800cf"
+              }
+            ],
+            "scope": "PASS",
+            "patch_sha256": "69229286b4dc97e331a085be0633d0034666e33eba910195c901f2106f32d595"
+          },
+          "review": {
+            "verdict": "NOT_RUN",
+            "reason": "Sealed checks or scope failed"
+          }
+        }
+      ]
+    },
+    {
+      "task": "gait-why-context-1",
+      "kind": "real_software_defect",
+      "controller_revision": 3,
+      "status": "BLOCKED",
+      "commit": "efa802796a98dfffa8c61724983f4262f986997d",
+      "models": {
+        "worker": "claude-sonnet-4-6",
+        "review": "claude-haiku-4-5"
+      },
+      "worker_calls": 10,
+      "review_calls": 0,
+      "edits": 2,
+      "existing_regressions": "PASS",
+      "reproduction": "FAIL",
+      "blocker": {
+        "reason": "Implementation budget exhausted without an edit",
+        "http_status": null
+      },
+      "catalog_sha256": "2f7effafdfb682138862e27d97f1a6a9a901d0ba641c0404228c545f3d157384",
+      "clean_source_sha256": "482eff2e4297b8a42b91c7efbcb7bdb246feec1f3a3d8f450b9a80f28282e4a1",
+      "final_source_sha256": "5b1c8accf09d520215ccb3c3a385c959a37a235a98770cc196ecf62ecc306787",
+      "diagnosis": null,
+      "phases": null,
+      "usage": [
+        {
+          "role": "worker",
+          "model": "claude-sonnet-4-6",
+          "usage": {
+            "input_tokens": 2633,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 0,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 0
+            },
+            "output_tokens": 111,
+            "service_tier": "standard",
+            "inference_geo": "global",
+            "speed": "standard"
+          },
+          "stop_reason": "tool_use"
+        },
+        {
+          "role": "worker",
+          "model": "claude-sonnet-4-6",
+          "usage": {
+            "input_tokens": 3286,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 0,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 0
+            },
+            "output_tokens": 78,
+            "service_tier": "standard",
+            "inference_geo": "global",
+            "speed": "standard"
+          },
+          "stop_reason": "tool_use"
+        },
+        {
+          "role": "worker",
+          "model": "claude-sonnet-4-6",
+          "usage": {
+            "input_tokens": 5068,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 0,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 0
+            },
+            "output_tokens": 114,
+            "service_tier": "standard",
+            "inference_geo": "global",
+            "speed": "standard"
+          },
+          "stop_reason": "tool_use"
+        },
+        {
+          "role": "worker",
+          "model": "claude-sonnet-4-6",
+          "usage": {
+            "input_tokens": 6689,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 0,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 0
+            },
+            "output_tokens": 820,
+            "service_tier": "standard",
+            "inference_geo": "global",
+            "speed": "standard"
+          },
+          "stop_reason": "tool_use"
+        },
+        {
+          "role": "worker",
+          "model": "claude-sonnet-4-6",
+          "usage": {
+            "input_tokens": 8109,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 0,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 0
+            },
+            "output_tokens": 414,
+            "service_tier": "standard",
+            "inference_geo": "global",
+            "speed": "standard"
+          },
+          "stop_reason": "tool_use"
+        },
+        {
+          "role": "worker",
+          "model": "claude-sonnet-4-6",
+          "usage": {
+            "input_tokens": 11265,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 0,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 0
+            },
+            "output_tokens": 429,
+            "service_tier": "standard",
+            "inference_geo": "global",
+            "speed": "standard"
+          },
+          "stop_reason": "tool_use"
+        },
+        {
+          "role": "worker",
+          "model": "claude-sonnet-4-6",
+          "usage": {
+            "input_tokens": 13295,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 0,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 0
+            },
+            "output_tokens": 411,
+            "service_tier": "standard",
+            "inference_geo": "global",
+            "speed": "standard"
+          },
+          "stop_reason": "tool_use"
+        },
+        {
+          "role": "worker",
+          "model": "claude-sonnet-4-6",
+          "usage": {
+            "input_tokens": 16424,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 0,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 0
+            },
+            "output_tokens": 1986,
+            "service_tier": "standard",
+            "inference_geo": "global",
+            "speed": "standard"
+          },
+          "stop_reason": "tool_use"
+        },
+        {
+          "role": "worker",
+          "model": "claude-sonnet-4-6",
+          "usage": {
+            "input_tokens": 13275,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 0,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 0
+            },
+            "output_tokens": 391,
+            "service_tier": "standard",
+            "inference_geo": "global",
+            "speed": "standard"
+          },
+          "stop_reason": "tool_use"
+        },
+        {
+          "role": "worker",
+          "model": "claude-sonnet-4-6",
+          "usage": {
+            "input_tokens": 16259,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 0,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 0
+            },
+            "output_tokens": 1137,
+            "service_tier": "standard",
+            "inference_geo": "global",
+            "speed": "standard"
+          },
+          "stop_reason": "tool_use"
+        }
+      ],
+      "head_sha": "c6a6a73074d82b7344466cc38a7657cefb658fe9",
+      "run_id": 39236761526,
+      "artifact_id": 12178988758,
+      "events": [
+        {
+          "at": "2026-10-19T10:20:53.993Z",
+          "kind": "phase_started",
+          "name": "diagnosis",
+          "limit": 4,
+          "calls": 0,
+          "inspections": 0
+        },
+        {
+          "at": "2026-10-19T10:20:55.974Z",
+          "kind": "worker_tool",
+          "phase": "diagnosis",
+          "name": "inspect",
+          "input": {
+            "path": "api/engine/orchestrator.js",
+            "query": "buildWhyResponse"
+          }
+        },
+        {
+          "at": "2026-10-19T10:20:55.974Z",
+          "kind": "worker_tool",
+          "phase": "diagnosis",
+          "name": "inspect",
+          "input": {
+            "path": "scripts/repair-agent/gait-why-contract.mjs"
+          }
+        },
+        {
+          "at": "2026-10-19T10:20:57.621Z",
+          "kind": "worker_tool",
+          "phase": "diagnosis",
+          "name": "inspect",
+          "input": {
+            "path": "api/engine/orchestrator.js",
+            "start": 1092,
+            "count": 80
+          }
+        },
+        {
+          "at": "2026-10-19T10:20:59.900Z",
+          "kind": "worker_tool",
+          "phase": "diagnosis",
+          "name": "inspect",
+          "input": {
+            "path": "api/engine/orchestrator.js",
+            "query": "whyEvidencePhrase"
+          }
+        },
+        {
+          "at": "2026-10-19T10:20:59.900Z",
+          "kind": "worker_tool",
+          "phase": "diagnosis",
+          "name": "inspect",
+          "input": {
+            "path": "scripts/repair-agent/gait-why-check.mjs"
+          }
+        },
+        {
+          "at": "2026-10-19T10:21:17.297Z",
+          "kind": "diagnosis",
+          "value": {
+            "cause": "In `buildWhyResponse` (orchestrator.js:1154-1156), when the engine selects EXCESS_ADIPOSITY as leverage and a real gait report is present (gait_instability_reported=true or gait_stability=false), the `evidencePhrase` returned by `whyEvidencePhrase` is \"Uvádíš nejistotu při chůzi.\" and it is prepended verbatim, producing the text: \"Uvádíš nejistotu při chůzi. Proto se dnes zaměřujeme na množství tělesného tuku. Cílem je podpořit tvůj aktuální zdravotní stav.\" This text names the gait concern and names the adiposity focus, but it never states that the adiposity focus does NOT explain or assess the cause of the walking problem. The contract regex at gait-why-contract.mjs:7 requires one of: neřeší / nevysvětluje / neobjasňuje / nenahrazuje / neposuzuje / nezjišťuje / neurčuje / neznamená / není…(vysvětlení|posouzení|vyšetření) / příčin…(neznám|zatím ne|nemám). No such phrase appears in the generated sentence, so `assertGaitScope` throws ERR_ASSERTION \"Explicitly distinguish this focus from explaining/assessing the walking problem\". The non-report branch (line 20 of the check script) expects the original unchanged text for non-true gait facts, so the fix must be scoped solely to the case where EXCESS_ADIPOSITY is the leverage node AND a real gait report is present.",
+            "plan": "In `buildWhyResponse`, at orchestrator.js:1154-1156, inside the `if (focus) parts.push(...)` block, add a special-case branch: when `leverage.node_id === 'EXCESS_ADIPOSITY'` AND `evidencePhrase` is truthy (meaning a real gait report was detected), append an explicit disclaimer sentence that the adiposity focus does not explain or assess the cause of the walking uncertainty. Concretely, change the sentence appended to `parts` so that for EXCESS_ADIPOSITY with a real gait evidencePhrase it becomes: `${evidencePhrase} Příčinu nejistoty při chůzi tím neposuzuji. Vycházím ze zadané výšky a hmotnosti. Proto se dnes zaměřujeme na ${focus}. Cílem je podpořit ${goalPhrase}.` — keeping total length ≤ 400 chars, naming gait concern, naming adiposity focus, and explicitly distinguishing the focus from assessing the walking problem. The non-report path (no evidencePhrase) and all other leverage nodes remain unchanged.",
+            "evidence_refs": [
+              "api/engine/orchestrator.js:1154-1156",
+              "api/engine/orchestrator.js:1139-1157",
+              "api/engine/orchestrator.js:1118-1124",
+              "scripts/repair-agent/gait-why-contract.mjs:7",
+              "scripts/repair-agent/gait-why-check.mjs:11-20",
+              "scripts/repair-agent/gait-why-check.mjs:20"
+            ]
+          }
+        },
+        {
+          "at": "2026-10-19T10:21:17.297Z",
+          "kind": "phase_finished",
+          "name": "diagnosis",
+          "limit": 4,
+          "calls": 4,
+          "inspections": 5,
+          "completed": true,
+          "edits": 0
+        },
+        {
+          "at": "2026-10-19T10:21:17.306Z",
+          "kind": "phase_started",
+          "name": "implementation",
+          "limit": 3,
+          "calls": 0,
+          "inspections": 0
+        },
+        {
+          "at": "2026-10-19T10:21:25.629Z",
+          "kind": "worker_tool",
+          "phase": "implementation",
+          "name": "edit_lines",
+          "input": {
+            "path": "api/engine/orchestrator.js",
+            "expected_sha256": "482eff2e4297b8a42b91c7efbcb7bdb246feec1f3a3d8f450b9a80f28282e4a1",
+            "start": 1154,
+            "end": 1156,
+            "lines": [
+              "    if (focus) parts.push(evidencePhrase",
+              "      ? (leverage.node_id === 'EXCESS_ADIPOSITY'",
+              "        ? `${evidencePhrase} Příčinu nejistoty při chůzi tím neposuzuji. Vycházím ze zadané výšky a hmotnosti. Proto se dnes zaměřujeme na ${focus}.${ctx.action_fallback?.status === 'SELECTED' ? '' : ` Cílem je podpořit ${goalPhrase}.`}`",
+              "        : `${evidencePhrase} Proto se dnes zaměřujeme na ${inferredBalance ? 'rovnováhu' : focus}.${ctx.action_fallback?.status === 'SELECTED' ? '' : ` Cílem je podpořit ${goalPhrase}.`}`)",
+              "      : `Vycházím ze zadané výšky a hmotnosti. Proto se dnes zaměřujeme na ${focus}. Cílem je podpořit ${goalPhrase}.`);"
+            ]
+          },
+          "result": {
+            "status": "EDITED",
+            "sha256": "e296ea151611df71fb640a5e4598bced5226de3143da7bd863cfb6e1577c1215",
+            "edits": 1,
+            "current_state": {
+              "path": "api/engine/orchestrator.js",
+              "sha256": "e296ea151611df71fb640a5e4598bced5226de3143da7bd863cfb6e1577c1215",
+              "current_excerpt": "1092: function buildWhyResponse(sessionState) {\n1093:   const ctx = sessionState.last_domain_response?.explanation_context;\n1094: \n1095:   if (!ctx) {\n1096:     return {\n1097:       mode:          'EXPLAIN',\n1098:       text:          'Nemám kontext předchozího doporučení. Zeptej se znovu po akci.',\n1099:       buttons:       [],\n1100:       expects_reply: false,\n1101:       session_updates: {},\n1102:       debug:         { source: 'no_cached_context' },\n1103:     };\n1104:   }\n1105: \n1106:   if (sessionState.last_daily_decision?.reason_code === 'HOLD_DONE_TODAY'\n1107:       && !sessionState.current_action_assignment) {\n1108:     const gait = ctx.reported_gait_evidence;\n1109:     const reported = [...(gait?.direct ?? []), ...(gait?.supporting ?? []), ...(gait?.inferred_from_nodes ?? [])]\n1110:       .some(f => f.question_id === 'gait_instability_reported' && f.value === true);\n1111:     return { mode: 'EXPLAIN',\n1112:       text: (reported ? 'Uvádíš nejistotu při chůzi. ' : '')\n1113:         + 'Dnešní akci už máš hotovou. Nové údaje beru v úvahu při dalším vyhodnocení; další cvik dnes nenabízím.',\n1114:       buttons: [], expects_reply: true, session_updates: {}, debug: { source: 'completed_day_explain' },\n1115:     };\n1116:   }\n1117: \n1118:   const parts = [];\n1119:   const gaitFacts = ctx.reported_gait_evidence;\n1120:   if ([...(gaitFacts?.direct ?? []), ...(gaitFacts?.supporting ?? []), ...(gaitFacts?.inferred_from_nodes ?? [])]\n1121:       .some(f => f.question_id === 'gait_instability_reported' && f.value === true)\n1122:       && whyEvidencePhrase(ctx) !== 'Uvádíš nejistotu při chůzi.') {\n1123:     parts.push('Uvádíš nejistotu při chůzi.');\n1124:   }\n1125:   if (ctx.action_fallback?.status === 'SELECTED') {\n1126:     const priority = WHY_FOCUS_CS[ctx.system_priority?.node_id];\n1127:     if (priority) parts.push(`Aktivita zaměřená na ${priority} teď nesplňuje bezpečnostní podmínky.`);\n1128:     else parts.push('Původní aktivita teď nesplňuje bezpečnostní podmínky.');\n1129:   }\n1130:   const leverage    = ctx.system_leverage;\n1131:   const constraint  = ctx.system_constraint;\n1132:   const action      = ctx.action_context?.selected;\n1133: \n1134:   // Read the selected engine nodes; never splice the instruction into WHY.\n1135:   const leverageSubject   = WHY_SUBJECT_CS[leverage?.node_id]   ?? NODE_LABEL_CS[leverage?.node_id]   ?? null;\n1136:   const constraintSubject = WHY_SUBJECT_CS[constraint?.node_id] ?? NODE_LABEL_CS[constraint?.node_id] ?? null;\n1137: \n1138:   // Use the action’s modeled goal branches without inventing a personal goal.\n1139:   if (leverageSubject) {\n1140:     const branches = (action?.goal_impact?.branches ?? []).filter(b => GOAL_BRANCH_CASUAL_CS[b]);\n1141:     let goalPhrase;\n1142:     if (branches.length === 0) {\n1143:       goalPhrase = 'tvůj aktuální zdravotní stav';\n1144:     } else if (branches.length === 1) {\n1145:       goalPhrase = GOAL_BRANCH_CASUAL_CS[branches[0]];\n1146:     } else {\n1147:       goalPhrase = GOAL_BRANCH_PAIR_CS[branches.join('+')]\n1148:         ?? branches.map(b => GOAL_BRANCH_CASUAL_CS[b]).join(' a ');\n1149:     }\n1150:     const focus = WHY_FOCUS_CS[leverage?.node_id];\n1151:     const evidencePhrase = whyEvidencePhrase(ctx);\n1152:     const inferredBalance = leverage.node_id === 'GAIT_INSTABILITY'\n1153:       && evidencePhrase?.includes('Samy nepotvrzují nejistotu při běžné chůzi.');\n1154:     if (focus) parts.push(evidencePhrase\n1155:       ? (leverage.node_id === 'EXCESS_ADIPOSITY'\n1156:         ? `${evidencePhrase} Příčinu nejistoty při chůzi tím neposuzuji. Vycházím ze zadané výšky a hmotnosti. Proto se dnes zaměřujeme na ${focus}.${ctx.action_fallback?.status === 'SELECTED' ? '' : ` Cílem je podpořit ${goalPhrase}.`}`\n1157:         : `${evidencePhrase} Proto se dnes zaměřujeme na ${inferredBalance ? 'rovnováhu' : focus}.${ctx.action_fallback?.status === 'SELECTED' ? '' : ` Cílem je podpořit ${goalPhrase}.`}`)\n1158:       : `Vycházím ze zadané výšky a hmotnosti. Proto se dnes zaměřujeme na ${focus}. Cílem je podpořit ${goalPhrase}.`);\n1159:   }\n1160: \n1161:   // Optional: SYSTEM_CONSTRAINT — deeper WHY; shown only when different from leverage\n1162:   if (constraintSubject && constraintSubject !== leverageSubject\n1163:       && !(ctx.action_fallback?.status === 'SELECTED' && constraint?.node_id === ctx.system_priority?.node_id)) {\n1164:     parts.push(`Zároveň hraje roli ${constraintSubject}.`);\n1165:   }\n1166: \n1167:   if (sessionState.person_goal === 'WEIGHT_LOSS' && leverage?.node_id\n1168:       && leverage.node_id !== 'EXCESS_ADIPOSITY') {\n1169:     parts.push('Samotné hubnutí tento krok neřeší.');\n1170:   }\n1171: \n1172:   // Safety instructions belong to ACT, not to the reason for selecting it.\n1173:   const text = parts.length > 0\n1174:     ? parts.join(' ')\n1175:     : 'Zatím nemám dost podkladů pro konkrétní doporučení. Potřebuji doplnit další údaje.';\n1176: \n1177:   return {\n1178:     mode:          'EXPLAIN',\n1179:     text,\n1180:     buttons:       sessionState.current_action_assignment ? ['Hotovo', 'Přeskočit'] : [],\n1181:     expects_reply: false,\n1182:     session_updates: {},\n1183:     debug:         { source: 'explanation_context' },\n1184:   };\n1185: }\n1186: \n1187: ",
+              "patch": "--- a/api/engine/orchestrator.js\n+++ b/api/engine/orchestrator.js\n@@ -1152,8 +1152,10 @@\n     const inferredBalance = leverage.node_id === 'GAIT_INSTABILITY'\n       && evidencePhrase?.includes('Samy nepotvrzují nejistotu při běžné chůzi.');\n     if (focus) parts.push(evidencePhrase\n-      ? `${evidencePhrase} Proto se dnes zaměřujeme na ${inferredBalance ? 'rovnováhu' : focus}.${ctx.action_fallback?.status === 'SELECTED' ? '' : ` Cílem je podpořit ${goalPhrase}.`}`\n-      : `Podle dostupných údajů se teď zaměřujeme na ${focus}. Cílem je podpořit ${goalPhrase}.`);\n+      ? (leverage.node_id === 'EXCESS_ADIPOSITY'\n+        ? `${evidencePhrase} Příčinu nejistoty při chůzi tím neposuzuji. Vycházím ze zadané výšky a hmotnosti. Proto se dnes zaměřujeme na ${focus}.${ctx.action_fallback?.status === 'SELECTED' ? '' : ` Cílem je podpořit ${goalPhrase}.`}`\n+        : `${evidencePhrase} Proto se dnes zaměřujeme na ${inferredBalance ? 'rovnováhu' : focus}.${ctx.action_fallback?.status === 'SELECTED' ? '' : ` Cílem je podpořit ${goalPhrase}.`}`)\n+      : `Vycházím ze zadané výšky a hmotnosti. Proto se dnes zaměřujeme na ${focus}. Cílem je podpořit ${goalPhrase}.`);\n   }\n \n   // Optional: SYSTEM_CONSTRAINT — deeper WHY; shown only when different from leverage\n"
+            }
+          }
+        },
+        {
+          "at": "2026-10-19T10:21:35.739Z",
+          "kind": "phase_finished",
+          "name": "implementation",
+          "limit": 3,
+          "calls": 2,
+          "inspections": 0,
+          "completed": true,
+          "edits": 1
+        },
+        {
+          "at": "2026-10-19T10:21:41.105Z",
+          "kind": "phase_started",
+          "name": "feedback",
+          "limit": 2,
+          "calls": 0,
+          "inspections": 0
+        },
+        {
+          "at": "2026-10-19T10:21:50.960Z",
+          "kind": "worker_tool",
+          "phase": "feedback",
+          "name": "edit_lines",
+          "input": {
+            "path": "api/engine/orchestrator.js",
+            "expected_sha256": "e296ea151611df71fb640a5e4598bced5226de3143da7bd863cfb6e1577c1215",
+            "start": 1154,
+            "end": 1158,
+            "lines": [
+              "    if (focus) parts.push(evidencePhrase",
+              "      ? (leverage.node_id === 'EXCESS_ADIPOSITY'",
+              "        ? `${evidencePhrase} Příčinu nejistoty tím neposuzuji. Vycházím ze zadané výšky a hmotnosti. Proto se dnes zaměřujeme na ${focus}.${ctx.action_fallback?.status === 'SELECTED' ? '' : ` Cílem je podpořit ${goalPhrase}.`}`",
+              "        : `${evidencePhrase} Proto se dnes zaměřujeme na ${inferredBalance ? 'rovnováhu' : focus}.${ctx.action_fallback?.status === 'SELECTED' ? '' : ` Cílem je podpořit ${goalPhrase}.`}`)",
+              "      : `Vycházím ze zadané výšky a hmotnosti. Proto se dnes zaměřujeme na ${focus}. Cílem je podpořit ${goalPhrase}.`);"
+            ]
+          },
+          "result": {
+            "status": "EDITED",
+            "sha256": "5b1c8accf09d520215ccb3c3a385c959a37a235a98770cc196ecf62ecc306787",
+            "edits": 2,
+            "current_state": {
+              "path": "api/engine/orchestrator.js",
+              "sha256": "5b1c8accf09d520215ccb3c3a385c959a37a235a98770cc196ecf62ecc306787",
+              "current_excerpt": "1092: function buildWhyResponse(sessionState) {\n1093:   const ctx = sessionState.last_domain_response?.explanation_context;\n1094: \n1095:   if (!ctx) {\n1096:     return {\n1097:       mode:          'EXPLAIN',\n1098:       text:          'Nemám kontext předchozího doporučení. Zeptej se znovu po akci.',\n1099:       buttons:       [],\n1100:       expects_reply: false,\n1101:       session_updates: {},\n1102:       debug:         { source: 'no_cached_context' },\n1103:     };\n1104:   }\n1105: \n1106:   if (sessionState.last_daily_decision?.reason_code === 'HOLD_DONE_TODAY'\n1107:       && !sessionState.current_action_assignment) {\n1108:     const gait = ctx.reported_gait_evidence;\n1109:     const reported = [...(gait?.direct ?? []), ...(gait?.supporting ?? []), ...(gait?.inferred_from_nodes ?? [])]\n1110:       .some(f => f.question_id === 'gait_instability_reported' && f.value === true);\n1111:     return { mode: 'EXPLAIN',\n1112:       text: (reported ? 'Uvádíš nejistotu při chůzi. ' : '')\n1113:         + 'Dnešní akci už máš hotovou. Nové údaje beru v úvahu při dalším vyhodnocení; další cvik dnes nenabízím.',\n1114:       buttons: [], expects_reply: true, session_updates: {}, debug: { source: 'completed_day_explain' },\n1115:     };\n1116:   }\n1117: \n1118:   const parts = [];\n1119:   const gaitFacts = ctx.reported_gait_evidence;\n1120:   if ([...(gaitFacts?.direct ?? []), ...(gaitFacts?.supporting ?? []), ...(gaitFacts?.inferred_from_nodes ?? [])]\n1121:       .some(f => f.question_id === 'gait_instability_reported' && f.value === true)\n1122:       && whyEvidencePhrase(ctx) !== 'Uvádíš nejistotu při chůzi.') {\n1123:     parts.push('Uvádíš nejistotu při chůzi.');\n1124:   }\n1125:   if (ctx.action_fallback?.status === 'SELECTED') {\n1126:     const priority = WHY_FOCUS_CS[ctx.system_priority?.node_id];\n1127:     if (priority) parts.push(`Aktivita zaměřená na ${priority} teď nesplňuje bezpečnostní podmínky.`);\n1128:     else parts.push('Původní aktivita teď nesplňuje bezpečnostní podmínky.');\n1129:   }\n1130:   const leverage    = ctx.system_leverage;\n1131:   const constraint  = ctx.system_constraint;\n1132:   const action      = ctx.action_context?.selected;\n1133: \n1134:   // Read the selected engine nodes; never splice the instruction into WHY.\n1135:   const leverageSubject   = WHY_SUBJECT_CS[leverage?.node_id]   ?? NODE_LABEL_CS[leverage?.node_id]   ?? null;\n1136:   const constraintSubject = WHY_SUBJECT_CS[constraint?.node_id] ?? NODE_LABEL_CS[constraint?.node_id] ?? null;\n1137: \n1138:   // Use the action’s modeled goal branches without inventing a personal goal.\n1139:   if (leverageSubject) {\n1140:     const branches = (action?.goal_impact?.branches ?? []).filter(b => GOAL_BRANCH_CASUAL_CS[b]);\n1141:     let goalPhrase;\n1142:     if (branches.length === 0) {\n1143:       goalPhrase = 'tvůj aktuální zdravotní stav';\n1144:     } else if (branches.length === 1) {\n1145:       goalPhrase = GOAL_BRANCH_CASUAL_CS[branches[0]];\n1146:     } else {\n1147:       goalPhrase = GOAL_BRANCH_PAIR_CS[branches.join('+')]\n1148:         ?? branches.map(b => GOAL_BRANCH_CASUAL_CS[b]).join(' a ');\n1149:     }\n1150:     const focus = WHY_FOCUS_CS[leverage?.node_id];\n1151:     const evidencePhrase = whyEvidencePhrase(ctx);\n1152:     const inferredBalance = leverage.node_id === 'GAIT_INSTABILITY'\n1153:       && evidencePhrase?.includes('Samy nepotvrzují nejistotu při běžné chůzi.');\n1154:     if (focus) parts.push(evidencePhrase\n1155:       ? (leverage.node_id === 'EXCESS_ADIPOSITY'\n1156:         ? `${evidencePhrase} Příčinu nejistoty tím neposuzuji. Vycházím ze zadané výšky a hmotnosti. Proto se dnes zaměřujeme na ${focus}.${ctx.action_fallback?.status === 'SELECTED' ? '' : ` Cílem je podpořit ${goalPhrase}.`}`\n1157:         : `${evidencePhrase} Proto se dnes zaměřujeme na ${inferredBalance ? 'rovnováhu' : focus}.${ctx.action_fallback?.status === 'SELECTED' ? '' : ` Cílem je podpořit ${goalPhrase}.`}`)\n1158:       : `Vycházím ze zadané výšky a hmotnosti. Proto se dnes zaměřujeme na ${focus}. Cílem je podpořit ${goalPhrase}.`);\n1159:   }\n1160: \n1161:   // Optional: SYSTEM_CONSTRAINT — deeper WHY; shown only when different from leverage\n1162:   if (constraintSubject && constraintSubject !== leverageSubject\n1163:       && !(ctx.action_fallback?.status === 'SELECTED' && constraint?.node_id === ctx.system_priority?.node_id)) {\n1164:     parts.push(`Zároveň hraje roli ${constraintSubject}.`);\n1165:   }\n1166: \n1167:   if (sessionState.person_goal === 'WEIGHT_LOSS' && leverage?.node_id\n1168:       && leverage.node_id !== 'EXCESS_ADIPOSITY') {\n1169:     parts.push('Samotné hubnutí tento krok neřeší.');\n1170:   }\n1171: \n1172:   // Safety instructions belong to ACT, not to the reason for selecting it.\n1173:   const text = parts.length > 0\n1174:     ? parts.join(' ')\n1175:     : 'Zatím nemám dost podkladů pro konkrétní doporučení. Potřebuji doplnit další údaje.';\n1176: \n1177:   return {\n1178:     mode:          'EXPLAIN',\n1179:     text,\n1180:     buttons:       sessionState.current_action_assignment ? ['Hotovo', 'Přeskočit'] : [],\n1181:     expects_reply: false,\n1182:     session_updates: {},\n1183:     debug:         { source: 'explanation_context' },\n1184:   };\n1185: }\n1186: \n1187: ",
+              "patch": "--- a/api/engine/orchestrator.js\n+++ b/api/engine/orchestrator.js\n@@ -1152,8 +1152,10 @@\n     const inferredBalance = leverage.node_id === 'GAIT_INSTABILITY'\n       && evidencePhrase?.includes('Samy nepotvrzují nejistotu při běžné chůzi.');\n     if (focus) parts.push(evidencePhrase\n-      ? `${evidencePhrase} Proto se dnes zaměřujeme na ${inferredBalance ? 'rovnováhu' : focus}.${ctx.action_fallback?.status === 'SELECTED' ? '' : ` Cílem je podpořit ${goalPhrase}.`}`\n-      : `Podle dostupných údajů se teď zaměřujeme na ${focus}. Cílem je podpořit ${goalPhrase}.`);\n+      ? (leverage.node_id === 'EXCESS_ADIPOSITY'\n+        ? `${evidencePhrase} Příčinu nejistoty tím neposuzuji. Vycházím ze zadané výšky a hmotnosti. Proto se dnes zaměřujeme na ${focus}.${ctx.action_fallback?.status === 'SELECTED' ? '' : ` Cílem je podpořit ${goalPhrase}.`}`\n+        : `${evidencePhrase} Proto se dnes zaměřujeme na ${inferredBalance ? 'rovnováhu' : focus}.${ctx.action_fallback?.status === 'SELECTED' ? '' : ` Cílem je podpořit ${goalPhrase}.`}`)\n+      : `Vycházím ze zadané výšky a hmotnosti. Proto se dnes zaměřujeme na ${focus}. Cílem je podpořit ${goalPhrase}.`);\n   }\n \n   // Optional: SYSTEM_CONSTRAINT — deeper WHY; shown only when different from leverage\n"
+            }
+          }
+        },
+        {
+          "at": "2026-10-19T10:22:26.994Z",
+          "kind": "phase_finished",
+          "name": "feedback",
+          "limit": 2,
+          "calls": 2,
+          "inspections": 0,
+          "completed": true,
+          "edits": 1
+        },
+        {
+          "at": "2026-10-19T10:22:32.351Z",
+          "kind": "phase_started",
+          "name": "feedback",
+          "limit": 2,
+          "calls": 0,
+          "inspections": 0
+        },
+        {
+          "at": "2026-10-19T10:22:41.413Z",
+          "kind": "tool_rejected",
+          "phase": "feedback",
+          "name": "edit_lines",
+          "input": {
+            "path": "api/engine/orchestrator.js",
+            "expected_sha256": "5b1c8accf09d520215ccb3c3a385c959a37a235a98770cc196ecf62ecc306787",
+            "start": 1154,
+            "end": 1158,
+            "lines": "\n    if (focus) parts.push(evidencePhrase\n      ? (leverage.node_id === 'EXCESS_ADIPOSITY'\n        ? `${evidencePhrase} Příčinu nejistoty při chůzi neposuzuji. Vycházím ze zadané výšky a hmotnosti. Proto se dnes zaměřujeme na ${focus}.${ctx.action_fallback?.status === 'SELECTED' ? '' : ` Cílem je podpořit ${goalPhrase}.`}`\n        : `${evidencePhrase} Proto se dnes zaměřujeme na ${inferredBalance ? 'rovnováhu' : focus}.${ctx.action_fallback?.status === 'SELECTED' ? '' : ` Cílem je podpořit ${goalPhrase}.`}`)\n      : `Podle dostupných údajů se teď zaměřujeme na ${focus}. Cílem je podpořit ${goalPhrase}.`);\n"
+          },
+          "reason": "Invalid line edit"
+        },
+        {
+          "at": "2026-10-19T10:22:54.838Z",
+          "kind": "tool_rejected",
+          "phase": "feedback",
+          "name": "edit_lines",
+          "input": {
+            "path": "api/engine/orchestrator.js",
+            "expected_sha256": "5b1c8accf09d520215ccb3c3a385c959a37a235a98770cc196ecf62ecc306787",
+            "start": 1118,
+            "end": 1158,
+            "lines": "\n  const parts = [];\n  const gaitFacts = ctx.reported_gait_evidence;\n  const gaitReported = [...(gaitFacts?.direct ?? []), ...(gaitFacts?.supporting ?? []), ...(gaitFacts?.inferred_from_nodes ?? [])]\n    .some(f => (f.question_id === 'gait_instability_reported' && f.value === true)\n            || (f.question_id === 'gait_stability' && (f.value === false || (typeof f.value === 'string' && f.value.trim().toUpperCase() === 'NE'))));\n  if (gaitReported\n      && whyEvidencePhrase(ctx) !== 'Uvádíš nejistotu při chůzi.') {\n    parts.push('Uvádíš nejistotu při chůzi.');\n  }\n  if (ctx.action_fallback?.status === 'SELECTED') {\n    const priority = WHY_FOCUS_CS[ctx.system_priority?.node_id];\n    if (priority) parts.push(`Aktivita zaměřená na ${priority} teď nesplňuje bezpečnostní podmínky.`);\n    else parts.push('Původní aktivita teď nesplňuje bezpečnostní podmínky.');\n  }\n  const leverage    = ctx.system_leverage;\n  const constraint  = ctx.system_constraint;\n  const action      = ctx.action_context?.selected;\n\n  // Read the selected engine nodes; never splice the instruction into WHY.\n  const leverageSubject   = WHY_SUBJECT_CS[leverage?.node_id]   ?? NODE_LABEL_CS[leverage?.node_id]   ?? null;\n  const constraintSubject = WHY_SUBJECT_CS[constraint?.node_id] ?? NODE_LABEL_CS[constraint?.node_id] ?? null;\n\n  // Use the action's modeled goal branches without inventing a personal goal.\n  if (leverageSubject) {\n    const branches = (action?.goal_impact?.branches ?? []).filter(b => GOAL_BRANCH_CASUAL_CS[b]);\n    let goalPhrase;\n    if (branches.length === 0) {\n      goalPhrase = 'tvůj aktuální zdravotní stav';\n    } else if (branches.length === 1) {\n      goalPhrase = GOAL_BRANCH_CASUAL_CS[branches[0]];\n    } else {\n      goalPhrase = GOAL_BRANCH_PAIR_CS[branches.join('+')]\n        ?? branches.map(b => GOAL_BRANCH_CASUAL_CS[b]).join(' a ');\n    }\n    const focus = WHY_FOCUS_CS[leverage?.node_id];\n    const evidencePhrase = whyEvidencePhrase(ctx);\n    const inferredBalance = leverage.node_id === 'GAIT_INSTABILITY'\n      && evidencePhrase?.includes('Samy nepotvrzují nejistotu při běžné chůzi.');\n    if (focus) parts.push(evidencePhrase\n      ? (leverage.node_id === 'EXCESS_ADIPOSITY'\n        ? `${evidencePhrase} Příčinu nejistoty při chůzi neposuzuji. Vycházím ze zadané výšky a hmotnosti. Proto se dnes zaměřujeme na ${focus}.${ctx.action_fallback?.status === 'SELECTED' ? '' : ` Cílem je podpořit ${goalPhrase}.`}`\n        : `${evidencePhrase} Proto se dnes zaměřujeme na ${inferredBalance ? 'rovnováhu' : focus}.${ctx.action_fallback?.status === 'SELECTED' ? '' : ` Cílem je podpořit ${goalPhrase}.`}`)\n      : `Podle dostupných údajů se teď zaměřujeme na ${focus}. Cílem je podpořit ${goalPhrase}.`);\n  }\n"
+          },
+          "reason": "Invalid line edit"
+        },
+        {
+          "at": "2026-10-19T10:22:54.847Z",
+          "kind": "phase_finished",
+          "name": "feedback",
+          "limit": 2,
+          "calls": 2,
+          "inspections": 0,
+          "completed": false,
+          "edits": 0
+        }
+      ],
+      "rounds": []
+    },
+    {
+      "task": "gait-why-context-1",
+      "kind": "real_software_defect",
+      "controller_revision": 3,
+      "status": "REPAIR_CANDIDATE",
+      "commit": "8991da806647032d22fbc98c0cf270b3bd7f3218",
+      "models": {
+        "worker": "claude-sonnet-4-6",
+        "review": "claude-haiku-4-5"
+      },
+      "worker_calls": 8,
+      "review_calls": 1,
+      "edits": 2,
+      "existing_regressions": "PASS",
+      "reproduction": "FAIL",
+      "blocker": null,
+      "catalog_sha256": "2f7effafdfb682138862e27d97f1a6a9a901d0ba641c0404228c545f3d157384",
+      "clean_source_sha256": "482eff2e4297b8a42b91c7efbcb7bdb246feec1f3a3d8f450b9a80f28282e4a1",
+      "final_source_sha256": "9966a118630e8c7dc78844b0b19a4e3eb53d8a9d64370ca8e237f5ef4766e9b7",
+      "diagnosis": {
+        "cause": "In `buildWhyResponse` (orchestrator.js:1154–1156), when `leverage.node_id === 'EXCESS_ADIPOSITY'` and a real gait report is present (`reported_gait_evidence.direct` contains `gait_instability_reported=true` or `gait_stability=false`), `whyEvidencePhrase(ctx)` returns `'Uvádíš nejistotu při chůzi.'` and the assembled text becomes:\n\n  \"Uvádíš nejistotu při chůzi. Vycházím ze zadané výšky a hmotnosti. Proto se dnes zaměřujeme na množství tělesného tuku. Cílem je podpořit tvůj aktuální zdravotní stav.\"\n\nThis text never contains any phrase matching the contract regex at gait-why-contract.mjs:7 (`neřeší|nevysvětluje|nenahrazuje|neposuzuje|příčin.*neznám` etc.), so `assertGaitScope` fails with \"Explicitly distinguish this focus from explaining/assessing the walking problem\".\n\nThe root cause: line 1155 concatenates the evidence phrase and focus phrase but never adds a sentence that explicitly separates the adiposity focus from explaining or assessing the cause of the walking problem. The contract requires such a distinguishing clause whenever the selected focus is `EXCESS_ADIPOSITY` (adiposity/tuk) AND a genuine gait report is present.",
+        "plan": "In `buildWhyResponse` at orchestrator.js line 1154–1156, after the string that names the `EXCESS_ADIPOSITY` focus is assembled (i.e. when `focus` is set, `evidencePhrase` is non-empty, and the gait evidence phrase carries real walking concern while `leverage.node_id === 'EXCESS_ADIPOSITY'`), append one short Czech sentence that explicitly states the adiposity focus does not explain/assess the cause of the walking instability — matching at least one alternative in the contract regex. Specifically: when `leverage.node_id === 'EXCESS_ADIPOSITY'` and `evidencePhrase` is truthy (meaning a gait concern was surfaced), add `\" Příčinu nejisté chůze tím neposuzuji.\"` after the focus sentence, keeping total text ≤ 400 characters. No other logic, safety rules, buttons, session writes, or engine behaviour are changed.",
+        "evidence_refs": [
+          "scripts/repair-agent/gait-why-contract.mjs:7",
+          "api/engine/orchestrator.js:1154-1156",
+          "api/engine/orchestrator.js:1118-1124",
+          "scripts/repair-agent/gait-why-check.mjs:11-15",
+          "scripts/repair-agent/gait-why-check.mjs:18-20"
+        ]
+      },
+      "phases": [
+        {
+          "name": "diagnosis",
+          "limit": 4,
+          "calls": 4,
+          "inspections": 5
+        },
+        {
+          "name": "implementation",
+          "limit": 3,
+          "calls": 2,
+          "inspections": 0
+        },
+        {
+          "name": "feedback",
+          "limit": 2,
+          "calls": 2,
+          "inspections": 0
+        }
+      ],
+      "usage": [
+        {
+          "role": "worker",
+          "model": "claude-sonnet-4-6",
+          "usage": {
+            "input_tokens": 2705,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 0,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 0
+            },
+            "output_tokens": 111,
+            "service_tier": "standard",
+            "inference_geo": "global",
+            "speed": "standard"
+          },
+          "stop_reason": "tool_use"
+        },
+        {
+          "role": "worker",
+          "model": "claude-sonnet-4-6",
+          "usage": {
+            "input_tokens": 3398,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 0,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 0
+            },
+            "output_tokens": 126,
+            "service_tier": "standard",
+            "inference_geo": "global",
+            "speed": "standard"
+          },
+          "stop_reason": "tool_use"
+        },
+        {
+          "role": "worker",
+          "model": "claude-sonnet-4-6",
+          "usage": {
+            "input_tokens": 6545,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 0,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 0
+            },
+            "output_tokens": 100,
+            "service_tier": "standard",
+            "inference_geo": "global",
+            "speed": "standard"
+          },
+          "stop_reason": "tool_use"
+        },
+        {
+          "role": "worker",
+          "model": "claude-sonnet-4-6",
+          "usage": {
+            "input_tokens": 6835,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 0,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 0
+            },
+            "output_tokens": 723,
+            "service_tier": "standard",
+            "inference_geo": "global",
+            "speed": "standard"
+          },
+          "stop_reason": "tool_use"
+        },
+        {
+          "role": "worker",
+          "model": "claude-sonnet-4-6",
+          "usage": {
+            "input_tokens": 8118,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 0,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 0
+            },
+            "output_tokens": 386,
+            "service_tier": "standard",
+            "inference_geo": "global",
+            "speed": "standard"
+          },
+          "stop_reason": "tool_use"
+        },
+        {
+          "role": "worker",
+          "model": "claude-sonnet-4-6",
+          "usage": {
+            "input_tokens": 11055,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 0,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 0
+            },
+            "output_tokens": 386,
+            "service_tier": "standard",
+            "inference_geo": "global",
+            "speed": "standard"
+          },
+          "stop_reason": "tool_use"
+        },
+        {
+          "role": "worker",
+          "model": "claude-sonnet-4-6",
+          "usage": {
+            "input_tokens": 12482,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 0,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 0
+            },
+            "output_tokens": 476,
+            "service_tier": "standard",
+            "inference_geo": "global",
+            "speed": "standard"
+          },
+          "stop_reason": "tool_use"
+        },
+        {
+          "role": "worker",
+          "model": "claude-sonnet-4-6",
+          "usage": {
+            "input_tokens": 15761,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 0,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 0
+            },
+            "output_tokens": 402,
+            "service_tier": "standard",
+            "inference_geo": "global",
+            "speed": "standard"
+          },
+          "stop_reason": "tool_use"
+        },
+        {
+          "role": "review",
+          "model": "claude-haiku-4-5",
+          "usage": {
+            "input_tokens": 6418,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 0,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 0
+            },
+            "output_tokens": 926,
+            "service_tier": "standard",
+            "inference_geo": "not_available",
+            "speed": "standard"
+          },
+          "stop_reason": "tool_use"
+        }
+      ],
+      "head_sha": "783dd7407e9be80c37359167dac83484cc61f6b8",
+      "run_id": 39237344788,
+      "artifact_id": 12179257718,
+      "events": [
+        {
+          "at": "2026-10-19T10:25:48.893Z",
+          "kind": "phase_started",
+          "name": "diagnosis",
+          "limit": 4,
+          "calls": 0,
+          "inspections": 0
+        },
+        {
+          "at": "2026-10-19T10:25:51.258Z",
+          "kind": "worker_tool",
+          "phase": "diagnosis",
+          "name": "inspect",
+          "input": {
+            "path": "scripts/repair-agent/gait-why-contract.mjs"
+          }
+        },
+        {
+          "at": "2026-10-19T10:25:51.262Z",
+          "kind": "worker_tool",
+          "phase": "diagnosis",
+          "name": "inspect",
+          "input": {
+            "path": "api/engine/orchestrator.js",
+            "query": "buildWhyResponse"
+          }
+        },
+        {
+          "at": "2026-10-19T10:25:53.079Z",
+          "kind": "worker_tool",
+          "phase": "diagnosis",
+          "name": "inspect",
+          "input": {
+            "path": "api/engine/orchestrator.js",
+            "start": 1092,
+            "count": 80
+          }
+        },
+        {
+          "at": "2026-10-19T10:25:53.080Z",
+          "kind": "worker_tool",
+          "phase": "diagnosis",
+          "name": "inspect",
+          "input": {
+            "path": "scripts/repair-agent/gait-why-check.mjs"
+          }
+        },
+        {
+          "at": "2026-10-19T10:25:54.849Z",
+          "kind": "worker_tool",
+          "phase": "diagnosis",
+          "name": "inspect",
+          "input": {
+            "path": "api/engine/orchestrator.js",
+            "query": "whyEvidencePhrase",
+            "start": 140,
+            "count": 80
+          }
+        },
+        {
+          "at": "2026-10-19T10:26:10.138Z",
+          "kind": "diagnosis",
+          "value": {
+            "cause": "In `buildWhyResponse` (orchestrator.js:1154–1156), when `leverage.node_id === 'EXCESS_ADIPOSITY'` and a real gait report is present (`reported_gait_evidence.direct` contains `gait_instability_reported=true` or `gait_stability=false`), `whyEvidencePhrase(ctx)` returns `'Uvádíš nejistotu při chůzi.'` and the assembled text becomes:\n\n  \"Uvádíš nejistotu při chůzi. Vycházím ze zadané výšky a hmotnosti. Proto se dnes zaměřujeme na množství tělesného tuku. Cílem je podpořit tvůj aktuální zdravotní stav.\"\n\nThis text never contains any phrase matching the contract regex at gait-why-contract.mjs:7 (`neřeší|nevysvětluje|nenahrazuje|neposuzuje|příčin.*neznám` etc.), so `assertGaitScope` fails with \"Explicitly distinguish this focus from explaining/assessing the walking problem\".\n\nThe root cause: line 1155 concatenates the evidence phrase and focus phrase but never adds a sentence that explicitly separates the adiposity focus from explaining or assessing the cause of the walking problem. The contract requires such a distinguishing clause whenever the selected focus is `EXCESS_ADIPOSITY` (adiposity/tuk) AND a genuine gait report is present.",
+            "plan": "In `buildWhyResponse` at orchestrator.js line 1154–1156, after the string that names the `EXCESS_ADIPOSITY` focus is assembled (i.e. when `focus` is set, `evidencePhrase` is non-empty, and the gait evidence phrase carries real walking concern while `leverage.node_id === 'EXCESS_ADIPOSITY'`), append one short Czech sentence that explicitly states the adiposity focus does not explain/assess the cause of the walking instability — matching at least one alternative in the contract regex. Specifically: when `leverage.node_id === 'EXCESS_ADIPOSITY'` and `evidencePhrase` is truthy (meaning a gait concern was surfaced), add `\" Příčinu nejisté chůze tím neposuzuji.\"` after the focus sentence, keeping total text ≤ 400 characters. No other logic, safety rules, buttons, session writes, or engine behaviour are changed.",
+            "evidence_refs": [
+              "scripts/repair-agent/gait-why-contract.mjs:7",
+              "api/engine/orchestrator.js:1154-1156",
+              "api/engine/orchestrator.js:1118-1124",
+              "scripts/repair-agent/gait-why-check.mjs:11-15",
+              "scripts/repair-agent/gait-why-check.mjs:18-20"
+            ]
+          }
+        },
+        {
+          "at": "2026-10-19T10:26:10.138Z",
+          "kind": "phase_finished",
+          "name": "diagnosis",
+          "limit": 4,
+          "calls": 4,
+          "inspections": 5,
+          "completed": true,
+          "edits": 0
+        },
+        {
+          "at": "2026-10-19T10:26:10.147Z",
+          "kind": "phase_started",
+          "name": "implementation",
+          "limit": 3,
+          "calls": 0,
+          "inspections": 0
+        },
+        {
+          "at": "2026-10-19T10:26:17.302Z",
+          "kind": "worker_tool",
+          "phase": "implementation",
+          "name": "edit_lines",
+          "input": {
+            "path": "api/engine/orchestrator.js",
+            "expected_sha256": "482eff2e4297b8a42b91c7efbcb7bdb246feec1f3a3d8f450b9a80f28282e4a1",
+            "start": 1154,
+            "end": 1156,
+            "lines": "    const isRealGaitReport = evidencePhrase === 'Uvádíš nejistotu při chůzi.';\n    const adiposityGaitDisclaimer = (leverage.node_id === 'EXCESS_ADIPOSITY' && isRealGaitReport)\n      ? ' Příčinu nejisté chůze tím neposuzuji.' : '';\n    if (focus) parts.push(evidencePhrase\n      ? `${evidencePhrase} Proto se dnes zaměřujeme na ${inferredBalance ? 'rovnováhu' : focus}.${ctx.action_fallback?.status === 'SELECTED' ? '' : ` Cílem je podpořit ${goalPhrase}.`}${adiposityGaitDisclaimer}`\n      : `Podle dostupných údajů se teď zaměřujeme na ${focus}. Cílem je podpořit ${goalPhrase}.`);"
+          },
+          "result": {
+            "status": "EDITED",
+            "sha256": "127246a92204d88b8307558726057bca9bd41ab894b59a0f37e28b121c30e86b",
+            "edits": 1,
+            "current_state": {
+              "path": "api/engine/orchestrator.js",
+              "sha256": "127246a92204d88b8307558726057bca9bd41ab894b59a0f37e28b121c30e86b",
+              "current_excerpt": "1092: function buildWhyResponse(sessionState) {\n1093:   const ctx = sessionState.last_domain_response?.explanation_context;\n1094: \n1095:   if (!ctx) {\n1096:     return {\n1097:       mode:          'EXPLAIN',\n1098:       text:          'Nemám kontext předchozího doporučení. Zeptej se znovu po akci.',\n1099:       buttons:       [],\n1100:       expects_reply: false,\n1101:       session_updates: {},\n1102:       debug:         { source: 'no_cached_context' },\n1103:     };\n1104:   }\n1105: \n1106:   if (sessionState.last_daily_decision?.reason_code === 'HOLD_DONE_TODAY'\n1107:       && !sessionState.current_action_assignment) {\n1108:     const gait = ctx.reported_gait_evidence;\n1109:     const reported = [...(gait?.direct ?? []), ...(gait?.supporting ?? []), ...(gait?.inferred_from_nodes ?? [])]\n1110:       .some(f => f.question_id === 'gait_instability_reported' && f.value === true);\n1111:     return { mode: 'EXPLAIN',\n1112:       text: (reported ? 'Uvádíš nejistotu při chůzi. ' : '')\n1113:         + 'Dnešní akci už máš hotovou. Nové údaje beru v úvahu při dalším vyhodnocení; další cvik dnes nenabízím.',\n1114:       buttons: [], expects_reply: true, session_updates: {}, debug: { source: 'completed_day_explain' },\n1115:     };\n1116:   }\n1117: \n1118:   const parts = [];\n1119:   const gaitFacts = ctx.reported_gait_evidence;\n1120:   if ([...(gaitFacts?.direct ?? []), ...(gaitFacts?.supporting ?? []), ...(gaitFacts?.inferred_from_nodes ?? [])]\n1121:       .some(f => f.question_id === 'gait_instability_reported' && f.value === true)\n1122:       && whyEvidencePhrase(ctx) !== 'Uvádíš nejistotu při chůzi.') {\n1123:     parts.push('Uvádíš nejistotu při chůzi.');\n1124:   }\n1125:   if (ctx.action_fallback?.status === 'SELECTED') {\n1126:     const priority = WHY_FOCUS_CS[ctx.system_priority?.node_id];\n1127:     if (priority) parts.push(`Aktivita zaměřená na ${priority} teď nesplňuje bezpečnostní podmínky.`);\n1128:     else parts.push('Původní aktivita teď nesplňuje bezpečnostní podmínky.');\n1129:   }\n1130:   const leverage    = ctx.system_leverage;\n1131:   const constraint  = ctx.system_constraint;\n1132:   const action      = ctx.action_context?.selected;\n1133: \n1134:   // Read the selected engine nodes; never splice the instruction into WHY.\n1135:   const leverageSubject   = WHY_SUBJECT_CS[leverage?.node_id]   ?? NODE_LABEL_CS[leverage?.node_id]   ?? null;\n1136:   const constraintSubject = WHY_SUBJECT_CS[constraint?.node_id] ?? NODE_LABEL_CS[constraint?.node_id] ?? null;\n1137: \n1138:   // Use the action’s modeled goal branches without inventing a personal goal.\n1139:   if (leverageSubject) {\n1140:     const branches = (action?.goal_impact?.branches ?? []).filter(b => GOAL_BRANCH_CASUAL_CS[b]);\n1141:     let goalPhrase;\n1142:     if (branches.length === 0) {\n1143:       goalPhrase = 'tvůj aktuální zdravotní stav';\n1144:     } else if (branches.length === 1) {\n1145:       goalPhrase = GOAL_BRANCH_CASUAL_CS[branches[0]];\n1146:     } else {\n1147:       goalPhrase = GOAL_BRANCH_PAIR_CS[branches.join('+')]\n1148:         ?? branches.map(b => GOAL_BRANCH_CASUAL_CS[b]).join(' a ');\n1149:     }\n1150:     const focus = WHY_FOCUS_CS[leverage?.node_id];\n1151:     const evidencePhrase = whyEvidencePhrase(ctx);\n1152:     const inferredBalance = leverage.node_id === 'GAIT_INSTABILITY'\n1153:       && evidencePhrase?.includes('Samy nepotvrzují nejistotu při běžné chůzi.');\n1154:     const isRealGaitReport = evidencePhrase === 'Uvádíš nejistotu při chůzi.';\n1155:     const adiposityGaitDisclaimer = (leverage.node_id === 'EXCESS_ADIPOSITY' && isRealGaitReport)\n1156:       ? ' Příčinu nejisté chůze tím neposuzuji.' : '';\n1157:     if (focus) parts.push(evidencePhrase\n1158:       ? `${evidencePhrase} Proto se dnes zaměřujeme na ${inferredBalance ? 'rovnováhu' : focus}.${ctx.action_fallback?.status === 'SELECTED' ? '' : ` Cílem je podpořit ${goalPhrase}.`}${adiposityGaitDisclaimer}`\n1159:       : `Podle dostupných údajů se teď zaměřujeme na ${focus}. Cílem je podpořit ${goalPhrase}.`);\n1160:   }\n1161: \n1162:   // Optional: SYSTEM_CONSTRAINT — deeper WHY; shown only when different from leverage\n1163:   if (constraintSubject && constraintSubject !== leverageSubject\n1164:       && !(ctx.action_fallback?.status === 'SELECTED' && constraint?.node_id === ctx.system_priority?.node_id)) {\n1165:     parts.push(`Zároveň hraje roli ${constraintSubject}.`);\n1166:   }\n1167: \n1168:   if (sessionState.person_goal === 'WEIGHT_LOSS' && leverage?.node_id\n1169:       && leverage.node_id !== 'EXCESS_ADIPOSITY') {\n1170:     parts.push('Samotné hubnutí tento krok neřeší.');\n1171:   }\n1172: \n1173:   // Safety instructions belong to ACT, not to the reason for selecting it.\n1174:   const text = parts.length > 0\n1175:     ? parts.join(' ')\n1176:     : 'Zatím nemám dost podkladů pro konkrétní doporučení. Potřebuji doplnit další údaje.';\n1177: \n1178:   return {\n1179:     mode:          'EXPLAIN',\n1180:     text,\n1181:     buttons:       sessionState.current_action_assignment ? ['Hotovo', 'Přeskočit'] : [],\n1182:     expects_reply: false,\n1183:     session_updates: {},\n1184:     debug:         { source: 'explanation_context' },\n1185:   };\n1186: }\n1187: \n1188: ",
+              "patch": "--- a/api/engine/orchestrator.js\n+++ b/api/engine/orchestrator.js\n@@ -1151,8 +1151,11 @@\n     const evidencePhrase = whyEvidencePhrase(ctx);\n     const inferredBalance = leverage.node_id === 'GAIT_INSTABILITY'\n       && evidencePhrase?.includes('Samy nepotvrzují nejistotu při běžné chůzi.');\n+    const isRealGaitReport = evidencePhrase === 'Uvádíš nejistotu při chůzi.';\n+    const adiposityGaitDisclaimer = (leverage.node_id === 'EXCESS_ADIPOSITY' && isRealGaitReport)\n+      ? ' Příčinu nejisté chůze tím neposuzuji.' : '';\n     if (focus) parts.push(evidencePhrase\n-      ? `${evidencePhrase} Proto se dnes zaměřujeme na ${inferredBalance ? 'rovnováhu' : focus}.${ctx.action_fallback?.status === 'SELECTED' ? '' : ` Cílem je podpořit ${goalPhrase}.`}`\n+      ? `${evidencePhrase} Proto se dnes zaměřujeme na ${inferredBalance ? 'rovnováhu' : focus}.${ctx.action_fallback?.status === 'SELECTED' ? '' : ` Cílem je podpořit ${goalPhrase}.`}${adiposityGaitDisclaimer}`\n       : `Podle dostupných údajů se teď zaměřujeme na ${focus}. Cílem je podpořit ${goalPhrase}.`);\n   }\n \n"
+            }
+          }
+        },
+        {
+          "at": "2026-10-19T10:26:26.106Z",
+          "kind": "phase_finished",
+          "name": "implementation",
+          "limit": 3,
+          "calls": 2,
+          "inspections": 0,
+          "completed": true,
+          "edits": 1
+        },
+        {
+          "at": "2026-10-19T10:26:31.393Z",
+          "kind": "phase_started",
+          "name": "feedback",
+          "limit": 2,
+          "calls": 0,
+          "inspections": 0
+        },
+        {
+          "at": "2026-10-19T10:26:42.191Z",
+          "kind": "worker_tool",
+          "phase": "feedback",
+          "name": "edit_lines",
+          "input": {
+            "path": "api/engine/orchestrator.js",
+            "expected_sha256": "127246a92204d88b8307558726057bca9bd41ab894b59a0f37e28b121c30e86b",
+            "start": 1154,
+            "end": 1159,
+            "lines": "    const isRealGaitReport = [...(gaitFacts?.direct ?? []), ...(gaitFacts?.supporting ?? []), ...(gaitFacts?.inferred_from_nodes ?? [])]\n      .some(f => (f.question_id === 'gait_instability_reported' && f.value === true)\n              || (f.question_id === 'gait_stability' && (f.value === false || (typeof f.value === 'string' && f.value.trim().toLowerCase() === 'ne'))));\n    const adiposityGaitDisclaimer = (leverage.node_id === 'EXCESS_ADIPOSITY' && isRealGaitReport)\n      ? ' Příčinu nejisté chůze tím neposuzuji.' : '';\n    if (focus) parts.push(evidencePhrase\n      ? `${evidencePhrase} Proto se dnes zaměřujeme na ${inferredBalance ? 'rovnováhu' : focus}.${ctx.action_fallback?.status === 'SELECTED' ? '' : ` Cílem je podpořit ${goalPhrase}.`}${adiposityGaitDisclaimer}`\n      : `Podle dostupných údajů se teď zaměřujeme na ${focus}. Cílem je podpořit ${goalPhrase}.`);\n"
+          },
+          "result": {
+            "status": "EDITED",
+            "sha256": "9966a118630e8c7dc78844b0b19a4e3eb53d8a9d64370ca8e237f5ef4766e9b7",
+            "edits": 2,
+            "current_state": {
+              "path": "api/engine/orchestrator.js",
+              "sha256": "9966a118630e8c7dc78844b0b19a4e3eb53d8a9d64370ca8e237f5ef4766e9b7",
+              "current_excerpt": "1092: function buildWhyResponse(sessionState) {\n1093:   const ctx = sessionState.last_domain_response?.explanation_context;\n1094: \n1095:   if (!ctx) {\n1096:     return {\n1097:       mode:          'EXPLAIN',\n1098:       text:          'Nemám kontext předchozího doporučení. Zeptej se znovu po akci.',\n1099:       buttons:       [],\n1100:       expects_reply: false,\n1101:       session_updates: {},\n1102:       debug:         { source: 'no_cached_context' },\n1103:     };\n1104:   }\n1105: \n1106:   if (sessionState.last_daily_decision?.reason_code === 'HOLD_DONE_TODAY'\n1107:       && !sessionState.current_action_assignment) {\n1108:     const gait = ctx.reported_gait_evidence;\n1109:     const reported = [...(gait?.direct ?? []), ...(gait?.supporting ?? []), ...(gait?.inferred_from_nodes ?? [])]\n1110:       .some(f => f.question_id === 'gait_instability_reported' && f.value === true);\n1111:     return { mode: 'EXPLAIN',\n1112:       text: (reported ? 'Uvádíš nejistotu při chůzi. ' : '')\n1113:         + 'Dnešní akci už máš hotovou. Nové údaje beru v úvahu při dalším vyhodnocení; další cvik dnes nenabízím.',\n1114:       buttons: [], expects_reply: true, session_updates: {}, debug: { source: 'completed_day_explain' },\n1115:     };\n1116:   }\n1117: \n1118:   const parts = [];\n1119:   const gaitFacts = ctx.reported_gait_evidence;\n1120:   if ([...(gaitFacts?.direct ?? []), ...(gaitFacts?.supporting ?? []), ...(gaitFacts?.inferred_from_nodes ?? [])]\n1121:       .some(f => f.question_id === 'gait_instability_reported' && f.value === true)\n1122:       && whyEvidencePhrase(ctx) !== 'Uvádíš nejistotu při chůzi.') {\n1123:     parts.push('Uvádíš nejistotu při chůzi.');\n1124:   }\n1125:   if (ctx.action_fallback?.status === 'SELECTED') {\n1126:     const priority = WHY_FOCUS_CS[ctx.system_priority?.node_id];\n1127:     if (priority) parts.push(`Aktivita zaměřená na ${priority} teď nesplňuje bezpečnostní podmínky.`);\n1128:     else parts.push('Původní aktivita teď nesplňuje bezpečnostní podmínky.');\n1129:   }\n1130:   const leverage    = ctx.system_leverage;\n1131:   const constraint  = ctx.system_constraint;\n1132:   const action      = ctx.action_context?.selected;\n1133: \n1134:   // Read the selected engine nodes; never splice the instruction into WHY.\n1135:   const leverageSubject   = WHY_SUBJECT_CS[leverage?.node_id]   ?? NODE_LABEL_CS[leverage?.node_id]   ?? null;\n1136:   const constraintSubject = WHY_SUBJECT_CS[constraint?.node_id] ?? NODE_LABEL_CS[constraint?.node_id] ?? null;\n1137: \n1138:   // Use the action’s modeled goal branches without inventing a personal goal.\n1139:   if (leverageSubject) {\n1140:     const branches = (action?.goal_impact?.branches ?? []).filter(b => GOAL_BRANCH_CASUAL_CS[b]);\n1141:     let goalPhrase;\n1142:     if (branches.length === 0) {\n1143:       goalPhrase = 'tvůj aktuální zdravotní stav';\n1144:     } else if (branches.length === 1) {\n1145:       goalPhrase = GOAL_BRANCH_CASUAL_CS[branches[0]];\n1146:     } else {\n1147:       goalPhrase = GOAL_BRANCH_PAIR_CS[branches.join('+')]\n1148:         ?? branches.map(b => GOAL_BRANCH_CASUAL_CS[b]).join(' a ');\n1149:     }\n1150:     const focus = WHY_FOCUS_CS[leverage?.node_id];\n1151:     const evidencePhrase = whyEvidencePhrase(ctx);\n1152:     const inferredBalance = leverage.node_id === 'GAIT_INSTABILITY'\n1153:       && evidencePhrase?.includes('Samy nepotvrzují nejistotu při běžné chůzi.');\n1154:     const isRealGaitReport = [...(gaitFacts?.direct ?? []), ...(gaitFacts?.supporting ?? []), ...(gaitFacts?.inferred_from_nodes ?? [])]\n1155:       .some(f => (f.question_id === 'gait_instability_reported' && f.value === true)\n1156:               || (f.question_id === 'gait_stability' && (f.value === false || (typeof f.value === 'string' && f.value.trim().toLowerCase() === 'ne'))));\n1157:     const adiposityGaitDisclaimer = (leverage.node_id === 'EXCESS_ADIPOSITY' && isRealGaitReport)\n1158:       ? ' Příčinu nejisté chůze tím neposuzuji.' : '';\n1159:     if (focus) parts.push(evidencePhrase\n1160:       ? `${evidencePhrase} Proto se dnes zaměřujeme na ${inferredBalance ? 'rovnováhu' : focus}.${ctx.action_fallback?.status === 'SELECTED' ? '' : ` Cílem je podpořit ${goalPhrase}.`}${adiposityGaitDisclaimer}`\n1161:       : `Podle dostupných údajů se teď zaměřujeme na ${focus}. Cílem je podpořit ${goalPhrase}.`);\n1162: \n1163:   }\n1164: \n1165:   // Optional: SYSTEM_CONSTRAINT — deeper WHY; shown only when different from leverage\n1166:   if (constraintSubject && constraintSubject !== leverageSubject\n1167:       && !(ctx.action_fallback?.status === 'SELECTED' && constraint?.node_id === ctx.system_priority?.node_id)) {\n1168:     parts.push(`Zároveň hraje roli ${constraintSubject}.`);\n1169:   }\n1170: \n1171:   if (sessionState.person_goal === 'WEIGHT_LOSS' && leverage?.node_id\n1172:       && leverage.node_id !== 'EXCESS_ADIPOSITY') {\n1173:     parts.push('Samotné hubnutí tento krok neřeší.');\n1174:   }\n1175: \n1176:   // Safety instructions belong to ACT, not to the reason for selecting it.\n1177:   const text = parts.length > 0\n1178:     ? parts.join(' ')\n1179:     : 'Zatím nemám dost podkladů pro konkrétní doporučení. Potřebuji doplnit další údaje.';\n1180: \n1181:   return {\n1182:     mode:          'EXPLAIN',\n1183:     text,\n1184:     buttons:       sessionState.current_action_assignment ? ['Hotovo', 'Přeskočit'] : [],\n1185:     expects_reply: false,\n1186:     session_updates: {},\n1187:     debug:         { source: 'explanation_context' },\n1188:   };\n1189: }\n1190: \n1191: ",
+              "patch": "--- a/api/engine/orchestrator.js\n+++ b/api/engine/orchestrator.js\n@@ -1151,9 +1151,15 @@\n     const evidencePhrase = whyEvidencePhrase(ctx);\n     const inferredBalance = leverage.node_id === 'GAIT_INSTABILITY'\n       && evidencePhrase?.includes('Samy nepotvrzují nejistotu při běžné chůzi.');\n+    const isRealGaitReport = [...(gaitFacts?.direct ?? []), ...(gaitFacts?.supporting ?? []), ...(gaitFacts?.inferred_from_nodes ?? [])]\n+      .some(f => (f.question_id === 'gait_instability_reported' && f.value === true)\n+              || (f.question_id === 'gait_stability' && (f.value === false || (typeof f.value === 'string' && f.value.trim().toLowerCase() === 'ne'))));\n+    const adiposityGaitDisclaimer = (leverage.node_id === 'EXCESS_ADIPOSITY' && isRealGaitReport)\n+      ? ' Příčinu nejisté chůze tím neposuzuji.' : '';\n     if (focus) parts.push(evidencePhrase\n-      ? `${evidencePhrase} Proto se dnes zaměřujeme na ${inferredBalance ? 'rovnováhu' : focus}.${ctx.action_fallback?.status === 'SELECTED' ? '' : ` Cílem je podpořit ${goalPhrase}.`}`\n+      ? `${evidencePhrase} Proto se dnes zaměřujeme na ${inferredBalance ? 'rovnováhu' : focus}.${ctx.action_fallback?.status === 'SELECTED' ? '' : ` Cílem je podpořit ${goalPhrase}.`}${adiposityGaitDisclaimer}`\n       : `Podle dostupných údajů se teď zaměřujeme na ${focus}. Cílem je podpořit ${goalPhrase}.`);\n+\n   }\n \n   // Optional: SYSTEM_CONSTRAINT — deeper WHY; shown only when different from leverage\n"
+            }
+          }
+        },
+        {
+          "at": "2026-10-19T10:26:53.538Z",
+          "kind": "phase_finished",
+          "name": "feedback",
+          "limit": 2,
+          "calls": 2,
+          "inspections": 0,
+          "completed": true,
+          "edits": 1
+        },
+        {
+          "at": "2026-10-19T10:27:10.335Z",
+          "kind": "independent_review",
+          "verdict": "ACCEPT",
+          "reason": "Oprava je ohraničená a věcně správná.\n\n**Cíl**: Vylepšit srozumitelnost vysvětlení („Proč?\") v situaci, kdy uživatel uvede nejistotu při chůzi, ale engine vybere EXCESS_ADIPOSITY jako zaměření.\n\n**Co patch dělá**:\n1. Rozpozná přítomnost skutečné zprávy o nejistotě chůzi v existujících datech prostřednictvím `isRealGaitReport` – kontroluje přímé, podpůrné a odvozené údaje v `gaitFacts` (řádky 1154–1156)\n2. Pokud je fokus EXCESS_ADIPOSITY a uživatel skutečně hlásí nejistotu chůzi, připojí disclaimer: „Příčinu nejisté chůze tím neposuzuji.\" (řádky 1157–1158)\n3. Disclaimer se přidá na konec vysvětlení pouze v relevantní situaci (řádek 1160)\n\n**Validace věcné správnosti**:\n- **acceptance_probe** (struktura testu): Ověřuje, že disclaimer se připojí správně pro reporty nejistoty (`gait_instability_reported=true` a `gait_stability=false/ne`), ale NE pro absence nebo proxy údaje – dosahujeGaitScope(r.text) kontroluje přítomnost disclaimer textu\n- **gait-why-check.mjs**: 6 kontrolních případů se všechny projdou (PASS); výstupy obsahují očekávaný disclaimer „Příčinu nejisté chůze tím neposuzuji.\"\n- **gait-why-journey-check.mjs**: 25 Journey testů projdou (PASS); disclaimer se v toku zobrazuje správně bez porušení dialogu\n- **Ostatní testy** (navigation, action copy, medical scope, skip progression, launcher, AI matrix suite): všechny PASS – žádná vedlejší poškození\n\n**Respekt k požadavkům**:\n- ✓ Rozlišuje mezi uživatelskou nejistotou a zvoleným fokusem\n- ✓ Nevydává pořadí enginu za klinické potvrzení příčiny (disclaimer to výslovně odmítá)\n- ✓ Zachovává signalizovanou nejistotu („Uvádíš nejistotu při chůzi\")\n- ✓ Připojuje disclaimer pouze když je obojí: fokus ADIPOSITY + skutečná zpráva o chůzi\n- ✓ Změní jen textovou prezentaci, ne logiku enginu\n- ✓ Rozpoznává již přítomné doklady (question_id: `gait_instability_reported`, `gait_stability`)\n\n**Scope**: Limitovaný na `buildWhyResponse` (řádek 1151–1162), ostatní zdrojový kód zůstává beze změny.\n\n**Česká srozumitelnost**: Disclaimer text je jasný a právě opatrný – „Příčinu nejisté chůzi tím neposuzuji\" vzdělává uživatele, že tělesný tuk je pouze vybrané téma, nikoliv diagnosticky ověřená příčina.\n\nOprava je koherentní, ohraničená a řeší skutečný problém srozumitelnosti bez vymýšlení klinických pravidel."
+        }
+      ],
+      "rounds": [
+        {
+          "round": 1,
+          "validation": {
+            "status": "FAIL",
+            "results": [
+              {
+                "script": "scripts/repair-agent/gait-why-check.mjs",
+                "status": "FAIL",
+                "exit_code": 1,
+                "matrix": null,
+                "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+              },
+              {
+                "script": "scripts/repair-agent/gait-why-journey-check.mjs",
+                "status": "FAIL",
+                "exit_code": 1,
+                "matrix": null,
+                "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+              },
+              {
+                "script": "scripts/repair-agent/navigation-check.mjs",
+                "status": "PASS",
+                "exit_code": 0,
+                "matrix": {},
+                "stdout_sha256": "a8ae94b21ed337b4ad0a8b20d58c2879adc36480fe2116e80f32f4758b596c3c"
+              },
+              {
+                "script": "scripts/test-action-copy.mjs",
+                "status": "PASS",
+                "exit_code": 0,
+                "matrix": null,
+                "stdout_sha256": "ebba72298355de21d959dd2ea7e89103f732dc8f8f9c3174ab52863899038bb7"
+              },
+              {
+                "script": "scripts/test-medical-scope-session.mjs",
+                "status": "PASS",
+                "exit_code": 0,
+                "matrix": null,
+                "stdout_sha256": "154e7679086db4011e70f779ae106850cd41dca65cf5d3692ac7a390f5c283ef"
+              },
+              {
+                "script": "scripts/test-skip-progression.mjs",
+                "status": "PASS",
+                "exit_code": 0,
+                "matrix": null,
+                "stdout_sha256": "337545078858971736e81fd2d76f5a54cb1d0de3dc7e3b3ee1a0d273d67399bd"
+              },
+              {
+                "script": "scripts/test-skipped-exhaustion.mjs",
+                "status": "PASS",
+                "exit_code": 0,
+                "matrix": null,
+                "stdout_sha256": "30b6f198ed3a26b61c9463f71a22005f01ced2b4e40537740e31a69b2e460f3f"
+              },
+              {
+                "script": "scripts/test-launcher-hold-input.mjs",
+                "status": "PASS",
+                "exit_code": 0,
+                "matrix": null,
+                "stdout_sha256": "24b6a056268ad0cc2d25dc9ce08481b645c65e92b8a3e5c9450ed2a6489427b5"
+              },
+              {
+                "script": "scripts/ai-tester/run-gait-matrix.mjs",
+                "status": "PASS",
+                "exit_code": 0,
+                "matrix": {
+                  "suite": "gait",
+                  "mode": "injected_classifier_full_engine_public_catalog",
+                  "counts": {
+                    "PASS": 25,
+                    "FAIL": 0,
+                    "BLOCKED": 0
+                  },
+                  "case_count": 25
+                },
+                "stdout_sha256": "502e82013763f8564cf9aca3b3383bccaca67b84e489919a446a16fb42c98011"
+              },
+              {
+                "script": "scripts/ai-tester/run-gait-matrix.mjs",
+                "status": "PASS",
+                "exit_code": 0,
+                "matrix": {
+                  "suite": "weight_loss_endpoint",
+                  "mode": "injected_classifier_full_engine_public_catalog",
+                  "counts": {
+                    "PASS": 25,
+                    "FAIL": 0,
+                    "BLOCKED": 0
+                  },
+                  "case_count": 25
+                },
+                "stdout_sha256": "59aad4cd107a651a1f3e8c5aeb85023d223109ee8664f29584f06fa460833013"
+              },
+              {
+                "script": "scripts/ai-tester/run-gait-matrix.mjs",
+                "status": "PASS",
+                "exit_code": 0,
+                "matrix": {
+                  "suite": "conversation_changes_endpoint",
+                  "mode": "injected_classifier_full_engine_public_catalog",
+                  "counts": {
+                    "PASS": 10,
+                    "FAIL": 0,
+                    "BLOCKED": 0
+                  },
+                  "case_count": 10
+                },
+                "stdout_sha256": "7e5ca14fbbc0fb21426aef79e47be07827fa1542b2ec07ffd534329f6a8212c2"
+              },
+              {
+                "script": "scripts/ai-tester/run-gait-matrix.mjs",
+                "status": "PASS",
+                "exit_code": 0,
+                "matrix": {
+                  "suite": "classifier_outage_endpoint",
+                  "mode": "injected_classifier_full_engine_public_catalog",
+                  "counts": {
+                    "PASS": 6,
+                    "FAIL": 0,
+                    "BLOCKED": 0
+                  },
+                  "case_count": 6
+                },
+                "stdout_sha256": "5691357fef075f199137f78d1db6ac4a571170342a55c26deb28b15e45ed8ca7"
+              }
+            ],
+            "scope": "PASS",
+            "patch_sha256": "343f851db985f2267516b918c5c2b4e0a07dabde0168ad3dab74abb2984c002b"
+          },
+          "review": {
+            "verdict": "NOT_RUN",
+            "reason": "Sealed checks or scope failed"
+          }
+        },
+        {
+          "round": 2,
+          "validation": {
+            "status": "PASS",
+            "results": [
+              {
+                "script": "scripts/repair-agent/gait-why-check.mjs",
+                "status": "PASS",
+                "exit_code": 0,
+                "matrix": {},
+                "stdout_sha256": "cfd95b93b18b94a3b805663273edea88f37074c41c01e57cb3321990e074a4bd"
+              },
+              {
+                "script": "scripts/repair-agent/gait-why-journey-check.mjs",
+                "status": "PASS",
+                "exit_code": 0,
+                "matrix": {
+                  "counts": {
+                    "PASS": 25,
+                    "FAIL": 0,
+                    "BLOCKED": 0
+                  }
+                },
+                "stdout_sha256": "16e2013afa8467b452085b161497850d9987ea1480bbcc7ed77257c1ee90dc1c"
+              },
+              {
+                "script": "scripts/repair-agent/navigation-check.mjs",
+                "status": "PASS",
+                "exit_code": 0,
+                "matrix": {},
+                "stdout_sha256": "a8ae94b21ed337b4ad0a8b20d58c2879adc36480fe2116e80f32f4758b596c3c"
+              },
+              {
+                "script": "scripts/test-action-copy.mjs",
+                "status": "PASS",
+                "exit_code": 0,
+                "matrix": null,
+                "stdout_sha256": "ebba72298355de21d959dd2ea7e89103f732dc8f8f9c3174ab52863899038bb7"
+              },
+              {
+                "script": "scripts/test-medical-scope-session.mjs",
+                "status": "PASS",
+                "exit_code": 0,
+                "matrix": null,
+                "stdout_sha256": "154e7679086db4011e70f779ae106850cd41dca65cf5d3692ac7a390f5c283ef"
+              },
+              {
+                "script": "scripts/test-skip-progression.mjs",
+                "status": "PASS",
+                "exit_code": 0,
+                "matrix": null,
+                "stdout_sha256": "337545078858971736e81fd2d76f5a54cb1d0de3dc7e3b3ee1a0d273d67399bd"
+              },
+              {
+                "script": "scripts/test-skipped-exhaustion.mjs",
+                "status": "PASS",
+                "exit_code": 0,
+                "matrix": null,
+                "stdout_sha256": "30b6f198ed3a26b61c9463f71a22005f01ced2b4e40537740e31a69b2e460f3f"
+              },
+              {
+                "script": "scripts/test-launcher-hold-input.mjs",
+                "status": "PASS",
+                "exit_code": 0,
+                "matrix": null,
+                "stdout_sha256": "24b6a056268ad0cc2d25dc9ce08481b645c65e92b8a3e5c9450ed2a6489427b5"
+              },
+              {
+                "script": "scripts/ai-tester/run-gait-matrix.mjs",
+                "status": "PASS",
+                "exit_code": 0,
+                "matrix": {
+                  "suite": "gait",
+                  "mode": "injected_classifier_full_engine_public_catalog",
+                  "counts": {
+                    "PASS": 25,
+                    "FAIL": 0,
+                    "BLOCKED": 0
+                  },
+                  "case_count": 25
+                },
+                "stdout_sha256": "d16c9ee6e0f01138cee11ecd58338102f1e0879e178a97452b47a87af4fdf8ec"
+              },
+              {
+                "script": "scripts/ai-tester/run-gait-matrix.mjs",
+                "status": "PASS",
+                "exit_code": 0,
+                "matrix": {
+                  "suite": "weight_loss_endpoint",
+                  "mode": "injected_classifier_full_engine_public_catalog",
+                  "counts": {
+                    "PASS": 25,
+                    "FAIL": 0,
+                    "BLOCKED": 0
+                  },
+                  "case_count": 25
+                },
+                "stdout_sha256": "3e279a95f7011258e5ad5b7191feccc728fe522757c8bc27bf189ffb1a1eb486"
+              },
+              {
+                "script": "scripts/ai-tester/run-gait-matrix.mjs",
+                "status": "PASS",
+                "exit_code": 0,
+                "matrix": {
+                  "suite": "conversation_changes_endpoint",
+                  "mode": "injected_classifier_full_engine_public_catalog",
+                  "counts": {
+                    "PASS": 10,
+                    "FAIL": 0,
+                    "BLOCKED": 0
+                  },
+                  "case_count": 10
+                },
+                "stdout_sha256": "bd0d03bba1b642350f79b61a0587c234cc2c8c3728579f2a9dc0b4f21ee5eebb"
+              },
+              {
+                "script": "scripts/ai-tester/run-gait-matrix.mjs",
+                "status": "PASS",
+                "exit_code": 0,
+                "matrix": {
+                  "suite": "classifier_outage_endpoint",
+                  "mode": "injected_classifier_full_engine_public_catalog",
+                  "counts": {
+                    "PASS": 6,
+                    "FAIL": 0,
+                    "BLOCKED": 0
+                  },
+                  "case_count": 6
+                },
+                "stdout_sha256": "a02047c7bba0d8a8e46a5a99b0081ba45e0b4c1dd2cf681d85a52cc4fee56833"
+              }
+            ],
+            "scope": "PASS",
+            "patch_sha256": "ba4f78ebd1789ad47f9d6587667f82b587348cd7bbfe662cff105cb6ba377e82"
+          },
+          "review": {
+            "verdict": "ACCEPT",
+            "reason": "Oprava je ohraničená a věcně správná.\n\n**Cíl**: Vylepšit srozumitelnost vysvětlení („Proč?\") v situaci, kdy uživatel uvede nejistotu při chůzi, ale engine vybere EXCESS_ADIPOSITY jako zaměření.\n\n**Co patch dělá**:\n1. Rozpozná přítomnost skutečné zprávy o nejistotě chůzi v existujících datech prostřednictvím `isRealGaitReport` – kontroluje přímé, podpůrné a odvozené údaje v `gaitFacts` (řádky 1154–1156)\n2. Pokud je fokus EXCESS_ADIPOSITY a uživatel skutečně hlásí nejistotu chůzi, připojí disclaimer: „Příčinu nejisté chůze tím neposuzuji.\" (řádky 1157–1158)\n3. Disclaimer se přidá na konec vysvětlení pouze v relevantní situaci (řádek 1160)\n\n**Validace věcné správnosti**:\n- **acceptance_probe** (struktura testu): Ověřuje, že disclaimer se připojí správně pro reporty nejistoty (`gait_instability_reported=true` a `gait_stability=false/ne`), ale NE pro absence nebo proxy údaje – dosahujeGaitScope(r.text) kontroluje přítomnost disclaimer textu\n- **gait-why-check.mjs**: 6 kontrolních případů se všechny projdou (PASS); výstupy obsahují očekávaný disclaimer „Příčinu nejisté chůze tím neposuzuji.\"\n- **gait-why-journey-check.mjs**: 25 Journey testů projdou (PASS); disclaimer se v toku zobrazuje správně bez porušení dialogu\n- **Ostatní testy** (navigation, action copy, medical scope, skip progression, launcher, AI matrix suite): všechny PASS – žádná vedlejší poškození\n\n**Respekt k požadavkům**:\n- ✓ Rozlišuje mezi uživatelskou nejistotou a zvoleným fokusem\n- ✓ Nevydává pořadí enginu za klinické potvrzení příčiny (disclaimer to výslovně odmítá)\n- ✓ Zachovává signalizovanou nejistotu („Uvádíš nejistotu při chůzi\")\n- ✓ Připojuje disclaimer pouze když je obojí: fokus ADIPOSITY + skutečná zpráva o chůzi\n- ✓ Změní jen textovou prezentaci, ne logiku enginu\n- ✓ Rozpoznává již přítomné doklady (question_id: `gait_instability_reported`, `gait_stability`)\n\n**Scope**: Limitovaný na `buildWhyResponse` (řádek 1151–1162), ostatní zdrojový kód zůstává beze změny.\n\n**Česká srozumitelnost**: Disclaimer text je jasný a právě opatrný – „Příčinu nejisté chůzi tím neposuzuji\" vzdělává uživatele, že tělesný tuk je pouze vybrané téma, nikoliv diagnosticky ověřená příčina.\n\nOprava je koherentní, ohraničená a řeší skutečný problém srozumitelnosti bez vymýšlení klinických pravidel."
+          }
+        }
+      ]
+    }
+  ],
+  "note": "All profiles and writes are synthetic; no clinical approval; classifiers in regression matrices are injected."
+}

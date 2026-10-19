@@ -1,0 +1,19 @@
+--- a/api/engine/orchestrator.js
++++ b/api/engine/orchestrator.js
+@@ -1151,9 +1151,15 @@
+     const evidencePhrase = whyEvidencePhrase(ctx);
+     const inferredBalance = leverage.node_id === 'GAIT_INSTABILITY'
+       && evidencePhrase?.includes('Samy nepotvrzují nejistotu při běžné chůzi.');
++    const isRealGaitReport = [...(gaitFacts?.direct ?? []), ...(gaitFacts?.supporting ?? []), ...(gaitFacts?.inferred_from_nodes ?? [])]
++      .some(f => (f.question_id === 'gait_instability_reported' && f.value === true)
++              || (f.question_id === 'gait_stability' && (f.value === false || (typeof f.value === 'string' && f.value.trim().toLowerCase() === 'ne'))));
++    const adiposityGaitDisclaimer = (leverage.node_id === 'EXCESS_ADIPOSITY' && isRealGaitReport)
++      ? ' Příčinu nejisté chůze tím neposuzuji.' : '';
+     if (focus) parts.push(evidencePhrase
+-      ? `${evidencePhrase} Proto se dnes zaměřujeme na ${inferredBalance ? 'rovnováhu' : focus}.${ctx.action_fallback?.status === 'SELECTED' ? '' : ` Cílem je podpořit ${goalPhrase}.`}`
++      ? `${evidencePhrase} Proto se dnes zaměřujeme na ${inferredBalance ? 'rovnováhu' : focus}.${ctx.action_fallback?.status === 'SELECTED' ? '' : ` Cílem je podpořit ${goalPhrase}.`}${adiposityGaitDisclaimer}`
+       : `Podle dostupných údajů se teď zaměřujeme na ${focus}. Cílem je podpořit ${goalPhrase}.`);
++
+   }
+ 
+   // Optional: SYSTEM_CONSTRAINT — deeper WHY; shown only when different from leverage
