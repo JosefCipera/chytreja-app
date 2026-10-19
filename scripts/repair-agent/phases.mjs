@@ -64,13 +64,13 @@ export async function runPhasedRepair({task,request,tools,invoke,verify,review,s
             if(call.name==='inspect'){
               evidence.push({path:call.input.path,text:String(value)});
               for(const match of String(value).matchAll(/^(\d+): /gm))refs.add(call.input.path+':'+match[1]);
-            }else{edits++;await snapshot();}
+            }else{edits++;value={...value,current_state:await snapshot()};}
             emit('worker_tool',{phase:name,name:call.name,input:call.input,result:value});
           }
           outputs.push({type:'tool_result',tool_use_id:call.id,content:text(value)});
         }catch(error){
           emit('tool_rejected',{phase:name,name:call.name,input:call.input,reason:error.message});
-          outputs.push({type:'tool_result',tool_use_id:call.id,is_error:true,content:JSON.stringify({error:error.message})});
+          outputs.push({type:'tool_result',tool_use_id:call.id,is_error:true,content:JSON.stringify({error:error.message,...(name!=='diagnosis'?{current_state:await snapshot()}:{})})});
         }
       }
       messages.push({role:'user',content:outputs});

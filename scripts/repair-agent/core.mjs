@@ -45,3 +45,11 @@ export function replaceLines(root,args,task,state){
   const after=lines.join('\n');if(after===before)throw Error('Empty edit');
   fs.writeFileSync(file,after);state.edits++;return {status:'EDITED',sha256:sha(after),edits:state.edits};
 }
+
+// Data-only source excerpt with current absolute line numbers, including after
+// insertions. Models must never reuse historical line coordinates for a new hash.
+export function numberedExcerpt(source,body){
+ const start=source.indexOf(body);if(start<0||!body.length)throw Error('Excerpt not in current source');
+ const first=source.slice(0,start).split('\n').length;
+ return body.split('\n').map((line,i)=>`${first+i}: ${line}`).join('\n');
+}

@@ -27,3 +27,10 @@ Textový test je pouze sémantický filtr. Neurčuje jedinou povinnou větu a ne
 ## Výstup
 
 Skutečný patch, původní zdroj, otisky, pracovní kroky, původní/nové přepisy, nezávislé review a spotřeba. Při úspěchu lead ověří a uloží přesnou agentovu změnu jako reviewovatelný kandidát. Bez merge/deploy a bez dalších ručních kroků či účtů pro Josefa. D01 (vhodnost a dávka cviku) zůstává mimo tento programový balíček.
+
+
+## První skutečný běh
+
+39236188244 / 5268beb0 skončil NEEDS_REPAIR po 10 pracovních requestech a 4 editech, review se nespustilo. První a druhý kandidát opravily reprodukovaný celý gait journey, ale neřešily přímou zápornou odpověď o stabilitě; třetí kandidát ji přidal a současně poškodil syntaxi při dalším editu posunutých řádků. Hostitel ho odmítl. Žádná změna aplikace nebyla přijata.
+
+Rozhraní nyní vrací aktuální **číslované** řádky a hash nejen na začátku fáze, ale po každém editu a po zamítnutí. Jednotkové testy ověřují posun čísel po vložení a skutečný tool_result dalšího kroku téhož řadiče. Akceptační testy, skutečný úkol a limity se nemění. Všechny neúspěšné výstupy zůstávají dohledatelné v artefaktu.

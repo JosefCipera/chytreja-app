@@ -2,7 +2,7 @@
 // a read-only, networkless, credential-free Docker container, never on the host.
 import fs from 'node:fs';import path from 'node:path';import os from 'node:os';
 import {spawnSync} from 'node:child_process';
-import {sha,replaceUnique,replaceLines,inspectFile,validateVerdict} from './core.mjs';
+import {sha,replaceUnique,replaceLines,inspectFile,validateVerdict,numberedExcerpt} from './core.mjs';
 import {runPhasedRepair,PHASE_BUDGETS} from './phases.mjs';
 const opt=n=>process.argv.find(x=>x.startsWith(n+'='))?.slice(n.length+1);
 const repo=process.cwd(),out=path.resolve(opt('--out')??'/tmp/chj-gait-why-output');
@@ -101,7 +101,7 @@ try{
    fs.writeFileSync(path.join(out,'candidate.patch'),diff());
    state.final_source_sha256=sha(fs.readFileSync(file));save();
    const current=fs.readFileSync(file,'utf8');
-   return {path:task.editable[0],sha256:sha(current),current_excerpt:whyRegion(current).body,patch:diff()};
+   return {path:task.editable[0],sha256:sha(current),current_excerpt:numberedExcerpt(current,whyRegion(current).body),patch:diff()};
  };
  const result=await runPhasedRepair({
   task:{...task,initial_failure:reproduction},tools:workerTools,
