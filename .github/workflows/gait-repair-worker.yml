@@ -27,6 +27,7 @@ jobs:
       - name: Verify fixed tool permissions and acceptance probe
         run: |
           node scripts/repair-agent/test-core.mjs
+          node scripts/repair-agent/test-phases.mjs
           node --experimental-vm-modules scripts/repair-agent/navigation-check.mjs
       - name: Obtain public catalog through existing read-only synthetic runner
         env:

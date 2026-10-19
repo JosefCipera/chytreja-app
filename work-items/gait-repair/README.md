@@ -40,3 +40,16 @@ Běh 39151687747 (commit 9c5c82bf) skončil BLOCKED po 12 pracovních API volán
 Lead následně opravil nástrojový protokol: zdroj se vrací jako doslovný text místo další JSON escapované vrstvy, odmítnuté edity se ukládají, čtení poskytuje otisk souboru a přibyl edit řádků podmíněný shodou otisku. Worker dostává zbývající rozpočet a pokyn k cílenému hledání. Zadání aplikace, mutace, zapečetěné testy i limity zůstaly stejné. Opravný regex realizátorovi nedodáváme. Další běh je nový explicitně zaznamenaný pokus, ne skrytý retry API.
 
 Druhý běh 39151917627 (be72f96f) znovu BLOCKED: 12 pracovních volání, 0 edits, 0 review, spotřeba 88 536 / 805 tokenů. Haiku ani s opravenými nástroji v rozpočtu nedodal patch. Není vydáván za úspěšného realizátora. Pro třetí a poslední pokus tohoto experimentu je implementace svěřena Sonnetu 4.6 (pevné API ID ověřené v oficiální dokumentaci https://platform.claude.com/docs/en/models/sonnet-4-6/overview), levnější Haiku zůstává reviewerem. Limity, mutace a testy se nemění. Zároveň se opravil nedostatek sběru důkazů: artefakt uchovává celé stdout/stderr, ne pouze posledních 16 kB; review dostává i strukturované počty scénářů a otisky.
+
+## Řadič v2 — 19. 10. 2026
+
+Josef schválil pokračování po uzavřených třech pokusech v1. Stejný experiment, stejný úkol, mutace, zapečetěné testy, modely i celkový limit 12 pracovních API requestů. Mění se způsob řízení:
+
+1. Diagnóza: nejvýše 4 requesty / 6 inspekcí. Poslední request v této fázi povinně vrací příčinu a plán s odkazy `soubor:řádek`, které agent skutečně četl. Nemá editovací nástroj. Opakovaná totožná čtení se odmítají.
+2. Implementace: vlastní 3 requesty. Dostane své vysvětlení a pozorované zdroje; má jen edity a odevzdání. Nemůže dál spotřebovávat rozpočet čtením.
+3. Řadič automaticky spustí neměnné kontroly a ověří rozsah změny. Udělá to i tehdy, když model po reálném editu zapomene formálně odevzdat. Samotné tvrzení modelu nestačí.
+4. Při chybě jsou vyhrazené až dvě fáze zpětné vazby po 2 requestech. Agent dostává konkrétní selhání, ne předepsaný opravný diff. Při zelených kontrolách proběhne samostatné review stejně jako dříve.
+
+Rozpočet fází je nejvýše 4 + 3 + 2 + 2 = 11 z původních 12 requestů. Nezvyšuje se tedy celková povolená spotřeba. Změna modelu není součástí tohoto srovnání. Poslední stav kandidáta a diff se zachová i při chybě řadiče nebo vyčerpání rozpočtu.
+
+`test-phases.mjs` zkouší **stejnou funkci řadiče jako živý běh**: vyčerpané čtení, povinnou diagnózu, chybnou první změnu, rezervované opravení po FAIL, automatické testy, zákaz review nad chybou a blokaci/vrácení od review. Injektovaný test řadiče není vydáván za úspěch skutečného API realizátora. Ten musí být doložen novým živým během.
