@@ -25,7 +25,7 @@ export async function runPhasedRepair({task,request,tools,invoke,verify,review,s
     const phaseRecord={name,limit,calls:0,inspections:0};phases.push(phaseRecord);emit('phase_started',phaseRecord);
     const messages=[{role:'user',content:JSON.stringify(context)}];
     let completed=null,edits=0;
-    const allowed=name==='diagnosis'?['inspect','diagnose']:['replace','edit_lines','submit'];
+    const allowed=name==='diagnosis'?['inspect','diagnose']:['edit_lines','submit'];
     for(let n=0;n<limit&&!completed;n++){
       if(calls>=task.limits.worker_calls)throw Error('Overall worker call budget exhausted');
       const last=n===limit-1;
@@ -82,13 +82,14 @@ export async function runPhasedRepair({task,request,tools,invoke,verify,review,s
     if(!completed)throw Error(name==='diagnosis'?'Diagnosis budget exhausted without grounded diagnosis':'Implementation budget exhausted without an edit');
     return completed;
   }
-  const common={goal:task.goal,files:task.readable,editable:task.editable,prohibited:task.prohibited};
+  const common={goal:task.goal,acceptance:'Recognise full and short standalone questions about tomorrow, both accented and unaccented, with case/punctuation variation. Preserve existing present navigation. Compound medical facts or unsupported topics must not be swallowed by this shortcut.',files:task.readable,editable:task.editable,prohibited:task.prohibited};
   const diagnosis=await phase('diagnosis',PHASE_BUDGETS.diagnosis,{...common,initial_failure:task.initial_failure,instruction:'Find the concrete software cause using targeted literal searches, then call diagnose with cause, plan and path:line references or contiguous line ranges fully returned by inspect. Do not read the whole file. No patch is prescribed.'});
   const focused=evidence.filter(e=>diagnosis.evidence_refs.some(r=>r.startsWith(e.path+':')));
   let feedback=null;const rounds=[];
   for(let round=1;round<=task.limits.repair_rounds;round++){
     const name=round===1?'implementation':'feedback';
-    await phase(name,round===1?PHASE_BUDGETS.implementation:PHASE_BUDGETS.feedback,{...common,diagnosis,inspected_source:focused,feedback,round,instruction:'Implement your own repair from the supplied inspected source. Only navigation recognition may change. Available tools edit source or submit; no browsing or manual check. The controller tests automatically, and returns exact failures for a reserved feedback phase. Keep the declaration format intact.'});
+    const currentState=await snapshot();
+    await phase(name,round===1?PHASE_BUDGETS.implementation:PHASE_BUDGETS.feedback,{...common,diagnosis,inspected_source:focused,current_state:currentState,feedback,round,instruction:'Implement your own repair. current_state is authoritative for the latest code and file hash; inspected_source and diagnosis describe the historical starting state. Use edit_lines with the current hash. Only navigation recognition may change. Available tools edit source or submit; no browsing or manual check. The controller tests automatically, and returns exact failures for a reserved feedback phase. Keep the declaration format intact.'});
     await snapshot();
     const validation=await verify(round);let independent={verdict:'NOT_RUN',reason:'Sealed checks or scope failed'};
     if(validation.status==='PASS')independent=await review(validation,round);

@@ -26,11 +26,12 @@ async function experiment({reviewVerdict='ACCEPT',unfixable=false,wandering=fals
     if(!wandering&&n===1)return {content:[use('inspect',{path:'fixture.js'})]};
     return {content:[use('diagnose',diagnosis)]};
    }
-   if(p.phase==='implementation')return {content:[use('replace',{value:'wrong'})]};
-   return {content:[use('replace',{value:unfixable?'wrong':'fixed'}),use('submit',{explanation:'Candidate for controller verification'})]};
+   const context=JSON.parse(p.messages[0].content);
+   if(p.phase==='implementation')return {content:[use('edit_lines',{value:'wrong',expected:context.current_state.version})]};
+   return {content:[use('edit_lines',{value:unfixable?'wrong':'fixed',expected:context.current_state.version}),use('submit',{explanation:'Candidate for controller verification'})]};
   },
-  invoke:async(name,args)=>{if(name==='inspect'){inspects++;return 'FILE_SHA256 fixture\n1: fixture source';}patched=args.value;return {status:'EDITED'};},
-  snapshot:async()=>{snapshots++;},
+  invoke:async(name,args)=>{if(name==='inspect'){inspects++;return 'FILE_SHA256 fixture\n1: fixture source';}if(args.expected!==patched)throw Error('Stale fixture version');patched=args.value;return {status:'EDITED'};},
+  snapshot:async()=>{snapshots++;return {version:patched,source:'fixture-'+patched};},
   verify:async()=>{validation++;return {status:patched==='fixed'?'PASS':'FAIL',failure:patched==='fixed'?null:'Fixture still wrong'};},
   review:async()=>{reviews++;return {verdict:reviewVerdict,reason:'independent'};},
   log:(name,detail)=>events.push({name,...detail}),
@@ -45,7 +46,8 @@ assert.equal(a.result.rounds[0].validation.status,'FAIL');
 assert.equal(a.result.rounds[0].review.verdict,'NOT_RUN');
 assert.equal(a.reviews,1);assert.equal(a.validation,2);
 assert.ok(a.requests.some(x=>x.phase==='feedback'));
-assert.ok(a.requests.filter(x=>x.phase!=='diagnosis').every(x=>!x.tools.some(t=>['inspect','diagnose'].includes(t.name))));
+assert.equal(JSON.parse(a.requests.find(x=>x.phase==='feedback').messages[0].content).current_state.version,'wrong');
+assert.ok(a.requests.filter(x=>x.phase!=='diagnosis').every(x=>!x.tools.some(t=>['inspect','diagnose','replace'].includes(t.name))));
 assert.ok(a.result.calls<=12);assert.ok(a.snapshots>0);
 assert.equal((await experiment({unfixable:true})).result.status,'NEEDS_REPAIR');
 assert.equal((await experiment({reviewVerdict:'BLOCKED'})).result.status,'BLOCKED_REVIEW');

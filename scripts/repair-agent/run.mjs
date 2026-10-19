@@ -99,6 +99,9 @@ try{
    fs.copyFileSync(file,path.join(out,'candidate-orchestrator.js'));
    fs.writeFileSync(path.join(out,'candidate.patch'),diff());
    state.final_source_sha256=sha(fs.readFileSync(file));save();
+   const area=/export const DOMAIN_REQUEST_NAV_RE =\n  \/(?:\\.|[^/\\\n])+\/i;/;
+   const current=fs.readFileSync(file,'utf8');
+   return {path:task.editable[0],sha256:sha(current),current_excerpt:current.match(area)?.[0]??'Outside scoped declaration',patch:diff()};
  };
  const result=await runPhasedRepair({
   task:{...task,initial_failure:reproduction},tools:workerTools,
