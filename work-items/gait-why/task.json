@@ -1,0 +1,32 @@
+{
+  "id": "gait-why-context-1",
+  "goal": "Oprav srozumitelnost Proč? v existující aplikaci. Člověk uvádí aktuální nejistotu při chůzi, ale engine vybere EXCESS_ADIPOSITY a zatím se doptává. Vysvětlení musí pravdivě pojmenovat zvolený fokus a jeho dostupné podklady, zachovat sdělenou nejistotu a výslovně rozlišit, že zvolený fokus nevysvětluje ani nenahrazuje posouzení příčiny nejisté chůze. Nevydávej pořadí enginu za klinické potvrzení, že tuk nejistotu způsobil. Změna je pouze v textové prezentaci a rozpoznání již přítomných dokladů ve buildWhyResponse.",
+  "editable": [
+    "api/engine/orchestrator.js"
+  ],
+  "readable": [
+    "api/engine/orchestrator.js",
+    "scripts/repair-agent/gait-why-check.mjs",
+    "scripts/repair-agent/gait-why-contract.mjs",
+    "scripts/repair-agent/gait-why-journey-check.mjs"
+  ],
+  "limits": {
+    "worker_calls": 12,
+    "review_calls": 3,
+    "repair_rounds": 3,
+    "max_output_tokens": 2048,
+    "history_chars": 100000,
+    "total_input_chars": 600000,
+    "edits": 6,
+    "checks": 8
+  },
+  "prohibited": [
+    "Změna testů nebo zadání",
+    "Změna klinických pravidel nebo dávek",
+    "Síť a credentials při spouštění kandidáta",
+    "Merge, deploy nebo zápis do databáze"
+  ],
+  "experiment": "Skutečná doložená D02/G04 mezera z kontraktu gait-v1. Žádná úmyslná mutace. Pouze syntetické profily a izolovaný aktuální kód; žádný zásah do main/dev nebo soukromých účtů.",
+  "kind": "real_software_defect",
+  "acceptance": "Aktuální vlastní sdělení gait_instability_reported=true i přímá odpověď gait_stability=false jsou skutečný podklad pro sdělenou nejistotu. Samotné oči zavřené nejsou důkaz běžné nejisté chůze. Při EXCESS_ADIPOSITY a skutečném hlášení výslovně odděl zaměření na tuk od posouzení příčiny chůze. Bez skutečného hlášení ani při volbě GAIT_INSTABILITY, fallbacku, dokončeném dni či chybějícím kontextu nesmí přibýt falešné tvrzení nebo nové doporučení. Text do 400 znaků. Neměň engine, bezpečnost, akce, dávky, zápisy, režim ani tlačítka. Nezávislá obsahová kontrola a Josefovo převzetí zůstávají potřebné."
+}
