@@ -35,6 +35,9 @@ export function validateVerdict(input){
 }
 
 export function replaceLines(root,args,task,state){
+  // A literal multiline tool value is the same proposed source as an array of
+  // lines. Split verbatim; never repair escapes, source text or unknown paths.
+  if(typeof args.lines==='string')args={...args,lines:args.lines.split('\n')};
   const file=safeFile(root,args.path,task.editable),before=fs.readFileSync(file,'utf8');
   if(state.edits>=task.limits.edits)throw Error('Edit budget exhausted');
   if(args.expected_sha256!==sha(before))throw Error('Stale file hash; inspect current source');

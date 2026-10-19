@@ -28,6 +28,7 @@ jobs:
         run: |
           node scripts/repair-agent/test-core.mjs
           node scripts/repair-agent/test-phases.mjs
+          node scripts/repair-agent/test-gait-why-oracle.mjs
       - name: Snapshot public catalog without model credential
         env:
           AI_TESTER_CATALOG_OUT: /tmp/repair-catalog.json
