@@ -1,11 +1,21 @@
 // Phase controller: model output never controls budgets, tools or acceptance.
 export const PHASE_BUDGETS=Object.freeze({diagnosis:4,implementation:3,feedback:2});
 const text=value=>typeof value==='string'?value:JSON.stringify(value);
+export function inspectedReference(ref,refs){
+  if(typeof ref!=='string')return false;
+  if(refs.has(ref))return true;
+  const match=ref.match(/^(.+):(\d+)[-–](\d+)$/);
+  if(!match)return false;
+  const start=Number(match[2]),end=Number(match[3]);
+  if(!Number.isSafeInteger(start)||!Number.isSafeInteger(end)||start<1||end<start||end-start>=80)return false;
+  for(let line=start;line<=end;line++)if(!refs.has(match[1]+':'+line))return false;
+  return true;
+}
 export function validateDiagnosis(input,refs){
   if(!input||typeof input.cause!=='string'||input.cause.trim().length<15||input.cause.length>1800
       ||typeof input.plan!=='string'||input.plan.trim().length<15||input.plan.length>1800
       ||!Array.isArray(input.evidence_refs)||!input.evidence_refs.length||input.evidence_refs.length>6
-      ||input.evidence_refs.some(r=>!refs.has(r)))throw Error('Diagnosis must cite inspected source lines and include cause and repair plan');
+      ||input.evidence_refs.some(r=>!inspectedReference(r,refs)))throw Error('Diagnosis must cite inspected source lines and include cause and repair plan');
   return input;
 }
 export async function runPhasedRepair({task,request,tools,invoke,verify,review,snapshot,log}){
@@ -73,7 +83,7 @@ export async function runPhasedRepair({task,request,tools,invoke,verify,review,s
     return completed;
   }
   const common={goal:task.goal,files:task.readable,editable:task.editable,prohibited:task.prohibited};
-  const diagnosis=await phase('diagnosis',PHASE_BUDGETS.diagnosis,{...common,initial_failure:task.initial_failure,instruction:'Find the concrete software cause using targeted literal searches, then call diagnose with cause, plan and exact path:line references returned by inspect. Do not read the whole file. No patch is prescribed.'});
+  const diagnosis=await phase('diagnosis',PHASE_BUDGETS.diagnosis,{...common,initial_failure:task.initial_failure,instruction:'Find the concrete software cause using targeted literal searches, then call diagnose with cause, plan and path:line references or contiguous line ranges fully returned by inspect. Do not read the whole file. No patch is prescribed.'});
   const focused=evidence.filter(e=>diagnosis.evidence_refs.some(r=>r.startsWith(e.path+':')));
   let feedback=null;const rounds=[];
   for(let round=1;round<=task.limits.repair_rounds;round++){

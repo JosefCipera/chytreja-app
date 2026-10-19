@@ -2,12 +2,20 @@
 // Deliberately wrong implementation must get reserved feedback and cannot pass
 // by a model's submit/ACCEPT claim alone.
 import assert from 'node:assert/strict';
-import {runPhasedRepair,validateDiagnosis} from './phases.mjs';
+import {runPhasedRepair,validateDiagnosis,inspectedReference} from './phases.mjs';
 const task={goal:'repair fixture behaviour',readable:['fixture.js'],editable:['fixture.js'],prohibited:[],limits:{worker_calls:12,repair_rounds:3}};
 const tools=['inspect','diagnose','replace','edit_lines','submit'].map(name=>({name}));
 const use=(name,input={})=>({type:'tool_use',id:'tool-'+Math.random(),name,input});
 const diagnosis={cause:'The inspected fixture violates its requested behaviour.',plan:'Change the relevant expression, preserving unrelated behaviour.',evidence_refs:['fixture.js:1']};
 assert.throws(()=>validateDiagnosis({...diagnosis,evidence_refs:['unseen.js:1']},new Set(['fixture.js:1'])));
+const observed=new Set(['fixture.js:1','fixture.js:2','fixture.js:3']);
+assert.ok(inspectedReference('fixture.js:1-3',observed));
+assert.ok(inspectedReference('fixture.js:1–3',observed));
+assert.ok(!inspectedReference('fixture.js:1-4',observed));
+assert.ok(!inspectedReference('fixture.js:1-999999999',observed));
+assert.ok(!inspectedReference('unseen.js:1-3',observed));
+assert.ok(!inspectedReference('fixture.js:1-3',new Set(['fixture.js:1','fixture.js:3'])));
+assert.equal(validateDiagnosis({...diagnosis,evidence_refs:['fixture.js:1-3']},observed).cause,diagnosis.cause);
 async function experiment({reviewVerdict='ACCEPT',unfixable=false,wandering=false}={}){
  const requests=[],events=[];let patched='none',reviews=0,inspects=0,snapshots=0,validation=0;
  const result=await runPhasedRepair({task,tools,

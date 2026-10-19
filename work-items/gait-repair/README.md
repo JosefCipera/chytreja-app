@@ -53,3 +53,6 @@ Josef schválil pokračování po uzavřených třech pokusech v1. Stejný exper
 Rozpočet fází je nejvýše 4 + 3 + 2 + 2 = 11 z původních 12 requestů. Nezvyšuje se tedy celková povolená spotřeba. Změna modelu není součástí tohoto srovnání. Poslední stav kandidáta a diff se zachová i při chybě řadiče nebo vyčerpání rozpočtu.
 
 `test-phases.mjs` zkouší **stejnou funkci řadiče jako živý běh**: vyčerpané čtení, povinnou diagnózu, chybnou první změnu, rezervované opravení po FAIL, automatické testy, zákaz review nad chybou a blokaci/vrácení od review. Injektovaný test řadiče není vydáván za úspěch skutečného API realizátora. Ten musí být doložen novým živým během.
+
+
+První živý běh řadiče v2 (39220825558, commit 17e0e717) skončil BLOCKED po 4 requestech. Agent sám našel chybějící koncovou časovou část navigačního vzoru a předal diagnózu s odkazy na **skutečně čtené rozsahy řádků**. Řadič však uznával jen jednotlivé řádky; to je chyba ověření leadem, ne důkaz neschopnosti agenta. Oprava přijímá jednotlivý řádek i rozsah do 80 řádků, ale jen pokud **každý** jeho řádek byl předtím vrácen inspekcí. Testy odmítají rozsah s nečtenou mezerou, cizím souborem i neomezenou délkou. Zadání aplikace a podmínky jejího přijetí se nemění.
