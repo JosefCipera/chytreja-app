@@ -19,8 +19,8 @@ Stavy shody: **JISTÁ** (stejný identifikátor) · **PRAVDĚPODOBNÁ** (shoda p
 | `GAIT_INSTABILITY` | `GAIT_INSTABILITY` | JISTÁ | V CRT typ `junction` (AND-join), v enginu funkční stav. |
 | `FALL_RISK` | `FALL_RISK` | JISTÁ ID, **význam se liší** | CRT: „Riziko pádu se zlomeninou", engine: „Riziko pádu". |
 | `EXCESS_ADIPOSITY` | `OBESITY` | PRAVDĚPODOBNÁ | Engine pojmenovává tuk jako stav, CRT jako obezitu. |
-| `LOW_MUSCLE_STRENGTH` | `MUSCLE_WEAKNESS` | PRAVDĚPODOBNÁ | Role v řetězci se liší (viz oddíl 3). |
-| `PHYSICAL_INACTIVITY` | `INACTIVITY_ROOT` a `SEDENTARY_LIFESTYLE_ROOT` | PRAVDĚPODOBNÁ, **dvojí** | Jeden uzel enginu odpovídá dvěma kořenům CRT. |
+| `LOW_MUSCLE_STRENGTH` | `MUSCLE_WEAKNESS` | PRAVDĚPODOBNÁ (Josef: asi v pořádku) | Stejný pojem (úbytek svalové síly a hmoty). Role v řetězci se liší (oddíl 3). |
+| `PHYSICAL_INACTIVITY` | `INACTIVITY_ROOT` (hlavní), `SEDENTARY_LIFESTYLE_ROOT` (záložní) | PRAVDĚPODOBNÁ (Josef: spíše `INACTIVITY_ROOT`) | Generátor CRT je používá **střídavě**, viz oddíl 4. |
 | `REDUCED_FUNCTIONAL_RESERVE` | — | ŽÁDNÁ | `FUNCTIONAL_DECLINE` je výsledek (křehkost), ne rezerva. |
 | `LOSS_OF_FLOOR_RISE_ABILITY` | — | ŽÁDNÁ | Goal Gateway; blízko je `FUNCTIONAL_DECLINE` (viz oddíl 4). |
 | `CARDIOVASCULAR_DISEASE` | — | ŽÁDNÁ | Souhrnný cíl; v CRT jsou jednotlivé UDE (`STROKE_RISK`, `CARDIAC_FAILURE_RISK`, `ATRIAL_FIBRILLATION`). |
@@ -51,7 +51,11 @@ Důležité pro stabilitu: **CRT zná z funkčních cest jen neuropatii.** Cesta
 
 ## 4 Poznámky
 - Goal Gateway `LOSS_OF_FLOOR_RISE_ABILITY` má v `goalGateways.js` `pathway_threat: FRAILTY_FUNCTIONAL_DECLINE`. To je blízko UDE `FUNCTIONAL_DECLINE` (křehkost) v CRT. Navrhuji ho mapovat jako cíl větve, ne jako uzel (potvrdit).
-- Dva kořeny `INACTIVITY_ROOT` a `SEDENTARY_LIFESTYLE_ROOT` v CRT pokrývají jeden uzel enginu `PHYSICAL_INACTIVITY`. Je to duplicita v CRT, ne v enginu; sloučení by měnilo zlatá CRT, proto se nenavrhuje.
+- **Dva kořeny pro jeden uzel enginu.** V `crt-generate.js` se `INACTIVITY_ROOT` přidá jen jako záložní, když jsou jen údaje o nízké kondici a sedavý životní styl není aktivní. Pokud je aktivní `SEDENTARY_LIFESTYLE_ROOT` (klíčová slova „sedavé zaměstnání", `lifestyle.sedentary`), `INACTIVITY_ROOT` se odstraní. Nikdy tedy nejsou v jednom CRT zároveň.
+  - Podle názvu a významu (pohybová inaktivita, následek `PHYSICAL_DECONDITIONING`) odpovídá enginu `INACTIVITY_ROOT`; tak je veden jako hlavní protějšek.
+  - Podle toho, co kořen v CRT aktivuje a jaké má následky (sezení, lipidy, tuk, svaly), odpovídá enginu `SEDENTARY_LIFESTYLE_ROOT`.
+  - Odkaz do CRT musí proto brát **první aktivní** kořen z této dvojice, jinak se u člověka se sedavým způsobem života nic nezvýrazní (`crt.html` bere `?focus` jen pro aktivní stav).
+- `MUSCLE_WEAKNESS` je v CRT list kapacity (`CAPACITY_LEAF_NODES`) s následkem `LOW_VO2MAX`, aktivuje se mimo jiné odpovědí „nezvednu 20 kg" nebo kaskádou ze sedentismu. Pojem odpovídá enginu, jen jeho místo v řetězci je jiné.
 - Zlatá CRT Josefa a Kovářové se tímto dokumentem nemění.
 
 ## K potvrzení (Josef)
