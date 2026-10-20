@@ -79,9 +79,10 @@ export async function runTesterReset(userId, mode, sbClient) {
   // 5. user_profiles — clear Bootstrap-persisted fields; preserve row, mode, and all other fields.
   // birth_year is written by Bootstrap NBE v1 (upsertUserProfile) and must be cleared on Full Reset
   // so the next clean session starts from zero-knowledge Bootstrap state.
+  // onboarding_completed is reset to NULL (column default) so the wizard shows again.
   const { error: upErr } = await sb
     .from('user_profiles')
-    .update({ birth_year: null })
+    .update({ birth_year: null, onboarding_completed: null })
     .eq('user_id', userId);
   if (upErr) return { status: 500, body: { error: `user_profiles: ${upErr.message}` } };
 
@@ -98,6 +99,7 @@ export async function runTesterReset(userId, mode, sbClient) {
       deleted_mission_log:        mCount ?? 0,
       health_profile_cleared:     true,
       user_profiles_birth_year_cleared: true,
+      onboarding_reset:           true,
       local_session_cleared:      false, // caller must clear localStorage
     },
   };
