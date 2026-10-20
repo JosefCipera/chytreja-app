@@ -33,14 +33,14 @@ if (!window.CHJ_UNIVERSE_EXAMPLE) {
         const { initializeApp } = await import('https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js');
         const { getAuth, onAuthStateChanged, signOut } = await import('https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js');
 
-        const app = initializeApp({
+        const app = (window.chjFirebaseApp ?? initializeApp({
             apiKey: "AIzaSyAKREZsoBZkA1xOQ5ff3XDmiJ88nwSjeOk",
             authDomain: "chytre-ja-app.firebaseapp.com",
             projectId: "chytre-ja-app",
             storageBucket: "chytre-ja-app.firebasestorage.app",
             messagingSenderId: "65882611642",
             appId: "1:65882611642:web:53d82914aa07d6677d4783"
-        });
+        }));
         const auth = getAuth(app);
 
         // Auth guard + avatar update
@@ -388,7 +388,7 @@ if (!window.CHJ_UNIVERSE_EXAMPLE) {
             }
         }
     </style>
-</head>
+<style>html:not([data-chj-privacy-ready]) body{visibility:hidden}</style><script type="module" src="/app/js/universe/privacy-guard.js?v=1"></script></head>
 
 <body>
 <div class="example-toolbar" hidden id="example-toolbar"><span>Dlouhověkost · mapa oblastí bez osobních dat</span><a href="/crt.html?vzor=kovarova">CRT Kovářové</a><a href="/#ukazky" data-example-return>← Zpět na web</a></div>

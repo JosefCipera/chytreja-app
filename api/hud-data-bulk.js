@@ -1,10 +1,12 @@
+import { withPrivacy } from './lib/withPrivacy.js';
+import { privacyConsole as console } from './lib/privacyConsole.js';
 // GET /api/hud-data-bulk?userId=xxx&nodes=telo,mysl,zdravi,vyziva
 // Returns HUD data for multiple nodes in one request, sharing one Supabase connection.
 // Used by Universe prefetch so HUD panel can open instantly from cache.
 
 import dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' });
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from './lib/privacySupabase.js';
 import { requireAuth }  from './lib/requireAuth.js';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
@@ -905,7 +907,7 @@ async function fetchOneNode(sb, userId, nodeId, shared) {
 }
 
 // ── HANDLER ───────────────────────────────────────────
-export default async function handler(req, res) {
+async function handler(req, res) {
   // Always return JSON — never let Vercel's HTML error page reach the client
   res.setHeader('Content-Type', 'application/json');
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -1063,3 +1065,5 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Internal error', message: err.message, stack: err.stack });
   }
 }
+
+export default withPrivacy(handler,{scope:'health'});

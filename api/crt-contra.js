@@ -1,3 +1,5 @@
+import { withPrivacy } from './lib/withPrivacy.js';
+import { privacyConsole as console } from './lib/privacyConsole.js';
 import dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' });
 
@@ -6,7 +8,7 @@ dotenv.config({ path: '.env.local' });
 // Output: { interactions: [{ drug, reason }] }
 // Sonnet identifies ALL risky combinations itself — no static KB rules.
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
 
   const { user_meds = [], user_supps = [] } = req.body || {};
@@ -68,3 +70,5 @@ Odpověz POUZE tímto JSON polem (bez markdown, bez komentářů):
 
   return res.status(200).json({ interactions });
 }
+
+export default withPrivacy(handler,{scope:'health'});

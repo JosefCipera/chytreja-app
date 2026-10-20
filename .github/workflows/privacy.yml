@@ -1,0 +1,65 @@
+name: Privacy lifecycle
+on:
+  pull_request:
+    paths:
+      - 'api/**'
+      - 'app/**privacy**'
+      - 'app/js/universe/privacy*.js'
+      - 'app/soukromi.html'
+      - 'migrations/20261015_health_consent_and_erasure.sql'
+      - 'scripts/test-privacy*'
+      - 'scripts/privacy-recovery.mjs'
+      - '.github/workflows/privacy-recovery.yml'
+      - '.github/workflows/privacy.yml'
+permissions:
+  contents: read
+jobs:
+  privacy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: fixture-only
+          POSTGRES_DB: privacy_fixture
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d privacy_fixture"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: fixture-only
+      PGDATABASE: privacy_fixture
+      CHJ_PRIVACY_TEST_DATABASE: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Check server privacy contracts without real accounts
+        run: node scripts/test-privacy.mjs
+      - name: Execute migration and erasure against isolated PostgreSQL
+        run: python3 scripts/test-privacy-database.py
+
+      - name: Install isolated browser runner
+        if: always()
+        run: |
+          npm install --prefix /tmp/privacy-browser --no-audit --no-fund --ignore-scripts playwright@1.56.1
+          /tmp/privacy-browser/node_modules/.bin/playwright install --with-deps chromium
+      - name: Exercise actual consent and erasure UI offline
+        if: always()
+        env:
+          NODE_PATH: /tmp/privacy-browser/node_modules
+        run: node scripts/test-privacy-browser.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: privacy-browser-results
+          path: privacy-browser-results/
+          retention-days: 7

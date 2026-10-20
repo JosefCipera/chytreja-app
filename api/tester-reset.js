@@ -1,3 +1,5 @@
+import { withPrivacy } from './lib/withPrivacy.js';
+import { privacyConsole as console } from './lib/privacyConsole.js';
 // /api/tester-reset — dev/tester tooling only, not exposed in production UI
 // POST { userId, mode: 'session' | 'full' }
 //
@@ -9,7 +11,7 @@
 
 import dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' });
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from './lib/privacySupabase.js';
 
 // Explicit tester whitelist — only these UIDs may be full-reset.
 // Production and demo accounts are protected by not being listed here.
@@ -105,9 +107,11 @@ export async function runTesterReset(userId, mode, sbClient) {
   };
 }
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
   const { userId, mode } = req.body ?? {};
   const { status, body } = await runTesterReset(userId, mode);
   return res.status(status).json(body);
 }
+
+export default withPrivacy(handler,{scope:'health'});

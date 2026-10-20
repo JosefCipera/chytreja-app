@@ -55,7 +55,7 @@ export async function requireAuth(req, res, _hooks = {}) {
 
   let decoded;
   try {
-    const verifyFn = _hooks.verifyIdToken ?? (t => getAdminAuth().verifyIdToken(t));
+    const verifyFn = _hooks.verifyIdToken ?? (t => getAdminAuth().verifyIdToken(t,true));
     decoded = await verifyFn(token);
   } catch {
     res.status(401).json({ error: 'Invalid or expired Firebase ID token' });

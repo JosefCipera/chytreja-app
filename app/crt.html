@@ -359,7 +359,7 @@
       caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
     }
   </script>
-</head>
+<style>html:not([data-chj-privacy-ready]) body{visibility:hidden}</style><script type="module" src="/app/js/universe/privacy-guard.js?v=1"></script></head>
 <body>
 <div class="example-toolbar" hidden id="example-toolbar"><span>Vzor Kovářová · ukázková data</span><a href="/app/?vzor=dlouhovekost">Vesmír Dlouhověkosti</a><a href="/#ukazky" data-example-return>← Zpět na web</a></div>
 
@@ -2222,7 +2222,7 @@ const { initializeApp } = await import('https://www.gstatic.com/firebasejs/9.6.1
 const { getAuth, onAuthStateChanged, signOut } = await import('https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js');
 const { initUserDataPanel } = await import('/app/js/universe/user-data-panel.js');
 
-const _fbApp = initializeApp({ apiKey:"AIzaSyAKREZsoBZkA1xOQ5ff3XDmiJ88nwSjeOk", authDomain:"chytre-ja-app.firebaseapp.com", projectId:"chytre-ja-app", storageBucket:"chytre-ja-app.firebasestorage.app", messagingSenderId:"65882611642", appId:"1:65882611642:web:53d82914aa07d6677d4783" });
+const _fbApp = (window.chjFirebaseApp ?? initializeApp({ apiKey:"AIzaSyAKREZsoBZkA1xOQ5ff3XDmiJ88nwSjeOk", authDomain:"chytre-ja-app.firebaseapp.com", projectId:"chytre-ja-app", storageBucket:"chytre-ja-app.firebasestorage.app", messagingSenderId:"65882611642", appId:"1:65882611642:web:53d82914aa07d6677d4783" }));
 const _fbAuth = getAuth(_fbApp);
 window.firebaseAuth = _fbAuth;
 

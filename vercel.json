@@ -4,10 +4,26 @@
     "framework": null,
     "ignoreCommand": "[ \"$VERCEL_GIT_COMMIT_REF\" != \"${DEPLOY_BRANCH:-main}\" ]",
     "functions": {
-        "api/tools/parse.js":          { "maxDuration": 60 },
-        "api/hud-data-bulk.js":        { "includeFiles": "data/crt/**" },
-        "api/crt-generate.js":         { "includeFiles": "data/crt/**", "maxDuration": 120 },
-        "api/engine-v1.js":            { "includeFiles": "data/engine/**", "maxDuration": 30 }
+        "api/tools/parse.js": {
+            "maxDuration": 60
+        },
+        "api/hud-data-bulk.js": {
+            "includeFiles": "data/crt/**"
+        },
+        "api/crt-generate.js": {
+            "includeFiles": "data/crt/**",
+            "maxDuration": 120
+        },
+        "api/engine-v1.js": {
+            "includeFiles": "data/engine/**",
+            "maxDuration": 30
+        },
+        "api/privacy.js": {
+            "maxDuration": 120
+        },
+        "api/privacy-worker.js": {
+            "maxDuration": 120
+        }
     },
     "headers": [
         { "source": "/ukazka/:path*", "headers": [
@@ -16,97 +32,229 @@
         {
             "source": "/(.*\\.html)",
             "headers": [
-                { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate, s-maxage=0" },
-                { "key": "Pragma", "value": "no-cache" },
-                { "key": "Surrogate-Control", "value": "no-store" },
-                { "key": "CDN-Cache-Control", "value": "no-store" }
+                {
+                    "key": "Cache-Control",
+                    "value": "no-cache, no-store, must-revalidate, s-maxage=0"
+                },
+                {
+                    "key": "Pragma",
+                    "value": "no-cache"
+                },
+                {
+                    "key": "Surrogate-Control",
+                    "value": "no-store"
+                },
+                {
+                    "key": "CDN-Cache-Control",
+                    "value": "no-store"
+                }
             ]
         },
         {
             "source": "/app(/?)",
             "headers": [
-                { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate, s-maxage=0" },
-                { "key": "Pragma", "value": "no-cache" },
-                { "key": "Surrogate-Control", "value": "no-store" },
-                { "key": "CDN-Cache-Control", "value": "no-store" }
+                {
+                    "key": "Cache-Control",
+                    "value": "no-cache, no-store, must-revalidate, s-maxage=0"
+                },
+                {
+                    "key": "Pragma",
+                    "value": "no-cache"
+                },
+                {
+                    "key": "Surrogate-Control",
+                    "value": "no-store"
+                },
+                {
+                    "key": "CDN-Cache-Control",
+                    "value": "no-store"
+                }
             ]
         },
         {
             "source": "/service-worker.js",
             "headers": [
-                { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate, max-age=0" },
-                { "key": "Pragma", "value": "no-cache" }
+                {
+                    "key": "Cache-Control",
+                    "value": "no-cache, no-store, must-revalidate, max-age=0"
+                },
+                {
+                    "key": "Pragma",
+                    "value": "no-cache"
+                }
             ]
         },
         {
             "source": "/app/js/(.*)",
             "headers": [
-                { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate, max-age=0" },
-                { "key": "Pragma", "value": "no-cache" },
-                { "key": "Surrogate-Control", "value": "no-store" },
-                { "key": "CDN-Cache-Control", "value": "no-store" }
+                {
+                    "key": "Cache-Control",
+                    "value": "no-cache, no-store, must-revalidate, max-age=0"
+                },
+                {
+                    "key": "Pragma",
+                    "value": "no-cache"
+                },
+                {
+                    "key": "Surrogate-Control",
+                    "value": "no-store"
+                },
+                {
+                    "key": "CDN-Cache-Control",
+                    "value": "no-store"
+                }
             ]
         },
         {
             "source": "/app/css/(.*)",
             "headers": [
-                { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate, max-age=0" },
-                { "key": "Pragma", "value": "no-cache" },
-                { "key": "Surrogate-Control", "value": "no-store" },
-                { "key": "CDN-Cache-Control", "value": "no-store" }
+                {
+                    "key": "Cache-Control",
+                    "value": "no-cache, no-store, must-revalidate, max-age=0"
+                },
+                {
+                    "key": "Pragma",
+                    "value": "no-cache"
+                },
+                {
+                    "key": "Surrogate-Control",
+                    "value": "no-store"
+                },
+                {
+                    "key": "CDN-Cache-Control",
+                    "value": "no-store"
+                }
             ]
         },
         {
             "source": "/data/(.*\\.json)",
             "headers": [
-                { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate, max-age=0" },
-                { "key": "Pragma", "value": "no-cache" },
-                { "key": "CDN-Cache-Control", "value": "no-store" }
+                {
+                    "key": "Cache-Control",
+                    "value": "no-cache, no-store, must-revalidate, max-age=0"
+                },
+                {
+                    "key": "Pragma",
+                    "value": "no-cache"
+                },
+                {
+                    "key": "CDN-Cache-Control",
+                    "value": "no-store"
+                }
             ]
         },
         {
             "source": "/hud",
             "headers": [
-                { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate, s-maxage=0" },
-                { "key": "Pragma", "value": "no-cache" },
-                { "key": "Surrogate-Control", "value": "no-store" },
-                { "key": "CDN-Cache-Control", "value": "no-store" }
+                {
+                    "key": "Cache-Control",
+                    "value": "no-cache, no-store, must-revalidate, s-maxage=0"
+                },
+                {
+                    "key": "Pragma",
+                    "value": "no-cache"
+                },
+                {
+                    "key": "Surrogate-Control",
+                    "value": "no-store"
+                },
+                {
+                    "key": "CDN-Cache-Control",
+                    "value": "no-store"
+                }
             ]
         },
         {
             "source": "/landing",
             "headers": [
-                { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate, s-maxage=0" },
-                { "key": "Pragma", "value": "no-cache" },
-                { "key": "Surrogate-Control", "value": "no-store" },
-                { "key": "CDN-Cache-Control", "value": "no-store" }
+                {
+                    "key": "Cache-Control",
+                    "value": "no-cache, no-store, must-revalidate, s-maxage=0"
+                },
+                {
+                    "key": "Pragma",
+                    "value": "no-cache"
+                },
+                {
+                    "key": "Surrogate-Control",
+                    "value": "no-store"
+                },
+                {
+                    "key": "CDN-Cache-Control",
+                    "value": "no-store"
+                }
             ]
         },
         {
             "source": "/home-v2",
             "headers": [
-                { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate, s-maxage=0" },
-                { "key": "Pragma", "value": "no-cache" },
-                { "key": "Surrogate-Control", "value": "no-store" },
-                { "key": "CDN-Cache-Control", "value": "no-store" }
+                {
+                    "key": "Cache-Control",
+                    "value": "no-cache, no-store, must-revalidate, s-maxage=0"
+                },
+                {
+                    "key": "Pragma",
+                    "value": "no-cache"
+                },
+                {
+                    "key": "Surrogate-Control",
+                    "value": "no-store"
+                },
+                {
+                    "key": "CDN-Cache-Control",
+                    "value": "no-store"
+                }
             ]
         },
         {
             "source": "/zakladatele(/?)",
             "headers": [
-                { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate, s-maxage=0" },
-                { "key": "Pragma", "value": "no-cache" },
-                { "key": "Surrogate-Control", "value": "no-store" },
-                { "key": "CDN-Cache-Control", "value": "no-store" }
+                {
+                    "key": "Cache-Control",
+                    "value": "no-cache, no-store, must-revalidate, s-maxage=0"
+                },
+                {
+                    "key": "Pragma",
+                    "value": "no-cache"
+                },
+                {
+                    "key": "Surrogate-Control",
+                    "value": "no-store"
+                },
+                {
+                    "key": "CDN-Cache-Control",
+                    "value": "no-store"
+                }
             ]
         },
         {
             "source": "/",
             "headers": [
-                { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate, s-maxage=0" },
-                { "key": "Pragma", "value": "no-cache" },
-                { "key": "Surrogate-Control", "value": "no-store" },
-                { "key": "CDN-Cache-Control", "value": "no-store" }
+                {
+                    "key": "Cache-Control",
+                    "value": "no-cache, no-store, must-revalidate, s-maxage=0"
+                },
+                {
+                    "key": "Pragma",
+                    "value": "no-cache"
+                },
+                {
+                    "key": "Surrogate-Control",
+                    "value": "no-store"
+                },
+                {
+                    "key": "CDN-Cache-Control",
+                    "value": "no-store"
+                }
+            ]
+        },
+        {
+            "source": "/soukromi",
+            "headers": [
+                {
+                    "key": "Cache-Control",
+                    "value": "no-store"
+                }
             ]
         }
     ],
@@ -148,6 +296,10 @@
         {
             "source": "/zakladatele/",
             "destination": "/app/zakladatele.html"
+        },
+        {
+            "source": "/soukromi",
+            "destination": "/app/soukromi.html"
         },
         {
             "source": "/login",

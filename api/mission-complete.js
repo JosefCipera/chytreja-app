@@ -1,3 +1,5 @@
+import { withPrivacy } from './lib/withPrivacy.js';
+import { privacyConsole as console } from './lib/privacyConsole.js';
 // POST /api/mission-complete
 // New game loop logic:
 //   1 step/day = stabilize (stop decline)
@@ -10,7 +12,7 @@
 
 import dotenv from "dotenv";
 dotenv.config({ path: '.env.local' });
-import { createClient } from "@supabase/supabase-js";
+import { createClient } from "./lib/privacySupabase.js";
 import { requireAuth }  from './lib/requireAuth.js';
 
 // ── CONFIG ───────────────────────────────────────────
@@ -26,7 +28,7 @@ function indexToState(index) {
   return 'GREEN';
 }
 
-export default async function (req, res) {
+async function privacyEndpoint(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
   const supabase = createClient(
@@ -291,3 +293,5 @@ async function recalcParents(supabase, userId, nodeId) {
 
   return updates;
 }
+
+export default withPrivacy(privacyEndpoint,{scope:'health'});

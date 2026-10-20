@@ -6,7 +6,7 @@ import { readYesNo } from '../api/engine/evidenceResolution.js';
 const context=vm.createContext({console,process,Date,Set,Map,JSON});
 async function isolated(file,mocks){
  const m=new vm.SourceTextModule(fs.readFileSync(file,'utf8'),{context});
- await m.link(spec=>{const v=mocks[spec];assert.ok(v,spec);return new vm.SyntheticModule(Object.keys(v),function(){for(const [k,x]of Object.entries(v))this.setExport(k,x);},{context});});
+ await m.link(spec=>{const v=spec.endsWith('/withPrivacy.js')?{withPrivacy:fn=>fn}:spec.endsWith('/privacyConsole.js')?{privacyConsole:console}:mocks[spec.endsWith('/privacySupabase.js')?'@supabase/supabase-js':spec];assert.ok(v,spec);return new vm.SyntheticModule(Object.keys(v),function(){for(const [k,x]of Object.entries(v))this.setExport(k,x);},{context});});
  await m.evaluate();return m.namespace;
 }
 let writes=[],failWrite=false,engineCalls=0,profile={physical:{},goal_text:null,symptoms:['chci zhubnout']},captured;
