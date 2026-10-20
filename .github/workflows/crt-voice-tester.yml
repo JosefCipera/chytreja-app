@@ -14,6 +14,8 @@ on:
       - scripts/test-leverage-fallback.mjs
       - app/js/universe/onboarding-wizard.js
       - scripts/ai-tester/**
+      - scripts/work-agent/**
+      - work-items/gait-v1/**
       - scripts/test-why-control.mjs
       - scripts/test-skip-progression.mjs
       - scripts/test-skipped-exhaustion.mjs
@@ -45,6 +47,8 @@ on:
       - scripts/test-leverage-fallback.mjs
       - app/js/universe/onboarding-wizard.js
       - scripts/ai-tester/**
+      - scripts/work-agent/**
+      - work-items/gait-v1/**
       - api/orchestrate.js
       - scripts/test-adiposity-entry-intensity.mjs
       - scripts/reproduce-eyes-closed-gait.mjs
@@ -169,6 +173,20 @@ jobs:
         run: |
           node scripts/ai-tester/summarize-crt-combinations.mjs ai-tester-results/crt-combinations.json > ai-tester-results/crt-combinations-summary.md
           cat ai-tester-results/crt-combinations-summary.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Evaluate frozen gait pilot work item
+        if: always() && github.head_ref == 'agent/gait-v1-pilot'
+        run: |
+          node scripts/work-agent/run-gait-pilot.mjs --catalog=ai-tester-results/catalog-snapshot.json --reports=ai-tester-results --out=ai-tester-results/pilot-gait
+      - name: Independent bounded Claude review of gait pilot
+        if: always() && github.head_ref == 'agent/gait-v1-pilot'
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          node scripts/work-agent/review-gait-pilot.mjs --live --out=ai-tester-results/pilot-gait
+      - name: Publish gait pilot decision summary
+        if: always() && github.head_ref == 'agent/gait-v1-pilot'
+        run: |
+          if test -f ai-tester-results/pilot-gait/summary.md; then cat ai-tester-results/pilot-gait/summary.md >> "$GITHUB_STEP_SUMMARY"; fi
       - name: Save PASS, FAIL or BLOCKED report
         if: always()
         uses: actions/upload-artifact@v4

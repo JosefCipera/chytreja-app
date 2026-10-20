@@ -1,0 +1,25 @@
+{
+  "id": "gait-v1",
+  "version": 1,
+  "owner": "Josef Čipera",
+  "lead": "Codex: odpovědnost za zadání, opravy a předání",
+  "reviewer": "Claude přes existující Anthropic API: nezávislá kontrola důkazů, bez oprávnění měnit aplikaci",
+  "goal": "Člověk vlastními slovy popíše nejistou chůzi. CHJ odliší jeho sdělení od odhadu či cizího příběhu, podle relevantních podkladů se doptá nebo vybere krok, vysvětlí skutečný důvod a umožní pokračovat i po odmítnutí. Josef přebírá jednu kandidátní verzi, ne jednotlivé opravy.",
+  "causal_path": ["LOW_MUSCLE_STRENGTH / PERIPHERAL_NEUROPATHY", "GAIT_INSTABILITY", "FALL_RISK"],
+  "acceptance": [
+    {"id":"G01","requirement":"Vlastní aktuální sdělení a čisté hlasové formulace se rozpoznají; hypotéza, minulost, třetí osoba a proxy nejsou potvrzená nejistá chůze.","evidence":["gait","copy"]},
+    {"id":"G02","requirement":"Relevantní odpovědi a opravy se uchovají; chyba zápisu nevytváří úspěšnou změnu a ostatní fakta se neztrácejí.","evidence":["conversation","personal-goal","medical"]},
+    {"id":"G03","requirement":"Výběr drží skutečná pravidla enginu, nutnou evidenci a bezpečnost; přeskočení nezvyšuje náročnost.","evidence":["gait","weight","skip","exhaustion","fallback"]},
+    {"id":"G04","requirement":"Vysvětlení se opírá o skutečně zvolenou větev a údaje; nevymýšlí příčinu ani klinickou jistotu. Obsahová kvalita se posuzuje zvlášť od PASS.","evidence":["gait","conversation","copy","independent-review"]},
+    {"id":"G05","requirement":"Hotovo/Přeskočit, návrat stejného dne, nová relace a simulovaný další den mají správný stav, bez dvojího dokončení.","evidence":["gait","conversation","exhaustion"]},
+    {"id":"G06","requirement":"Nepodporovaná otázka neuzavírá rozhovor. Skutečně nahlášená zdravotní potíž se nepřepíše na povolení zátěže; samotná otázka není osobní nemoc.","evidence":["conversation","medical","outage"]},
+    {"id":"G07","requirement":"Ovládání, nápověda a vysvětlení fungují bez nepatřičných tlačítek; výpadek AI je odlišený od nepochopeného uživatele.","evidence":["launcher","onboarding","why","medical","outage"]}
+  ],
+  "scope_exclusions": ["obezita jako nový modul", "jiné zdravotní větve", "landing a Zakladatelé", "platby", "privacy audit #81", "přepis enginu", "nové dávky cviků nebo svévolné klinické schválení", "překlepy a skutečný hlasový přepis"],
+  "boundaries": {"isolated_branch":true,"auto_merge":false,"auto_deploy":false,"private_accounts":false,"max_repair_rounds":3,"review_api_calls":1,"review_max_output_tokens":3072},
+  "completion": "Technické PASS nestačí. Předání obsahuje nezávislou kontrolu, přiznané odborné mezery a přesně určený účel převzetí. Žádné tvrzení o klinické připravenosti bez rozhodnutí odborníka.",
+  "open_decisions": [
+    {"id":"D01","status":"OPEN","owner":"kvalifikovaný odborník","question":"Pro jaké vstupní profily je vhodný podporovaný stoj na jedné noze a jaká je dávka/opora/dohled/progrese? Dnešních 30 s není odborně uzavřeno.","evidence":"docs/FOUR-ENTRY-ACTIONS-CLINICAL-REVIEW-2026-10-14.md"},
+    {"id":"D02","status":"OPEN","owner":"nezávislá obsahová kontrola a následně Josef","question":"Je při nejisté chůzi a souběžné nadváze pochopitelné, proč model vybral jinou prioritu, zejména pokud zatím pouze klade otázku? Nezaměňovat stávající ranking za důkaz hodnoty odpovědi.","evidence":"gait:tester137-profile"}
+  ]
+}

@@ -1,0 +1,31 @@
+import assert from 'node:assert/strict';
+import {MATRIX,inspectMatrix,deliveryStatus,validateReview} from './pilot-core.mjs';
+const spec={suite:'fixture',minCases:1};
+const r={suite:'fixture',mode:'injected',counts:{PASS:1,FAIL:0,BLOCKED:0},results:[{id:'a',status:'PASS',checks:[{id:'fact',status:'PASS'}]}]};
+assert.equal(inspectMatrix(r,spec).status,'PASS');
+for(const patch of [{results:[]},{suite:'wrong'},{results:[...r.results,...r.results]}])assert.equal(inspectMatrix({...r,...patch},spec).status,'BLOCKED');
+assert.equal(inspectMatrix({...r,counts:{PASS:9,FAIL:0,BLOCKED:0}},spec).status,'FAIL');
+assert.equal(inspectMatrix({...r,results:[{id:'a',status:'PASS',checks:[]}]},spec).status,'FAIL');
+assert.equal(inspectMatrix({...r,results:[{id:'a',status:'PASS',checks:[{status:'FAIL'}]}]},spec).status,'FAIL');
+const input={checks:{one:{status:'PASS'}},live:{status:'PASS'},decisions:[],review:{verdict:'ACCEPT',findings:[]}};
+assert.equal(deliveryStatus(input),'CANDIDATE_FOR_JOSEF');
+assert.equal(deliveryStatus({...input,checks:{one:{status:'FAIL'}}}),'NEEDS_REPAIR');
+assert.equal(deliveryStatus({...input,live:{status:'BLOCKED'}}),'BLOCKED_EVIDENCE');
+assert.equal(deliveryStatus({...input,review:null}),'AWAITING_INDEPENDENT_REVIEW');
+assert.equal(deliveryStatus({...input,decisions:[{status:'OPEN'}]}),'NEEDS_DECISION');
+assert.equal(deliveryStatus({...input,review:{verdict:'RETURN',findings:[{resolution:'clinical_decision'}]}}),'NEEDS_DECISION');
+assert.equal(deliveryStatus({...input,review:{verdict:'RETURN',findings:[{resolution:'code_change'}]}}),'NEEDS_REPAIR');
+const rules={acceptanceIds:['G01'],evidenceRefs:['gait:one']};
+const good={verdict:'RETURN',summary:'konkrétní chyba',findings:[{severity:'MAJOR',resolution:'code_change',acceptance_id:'G01',evidence_ref:'gait:one',explanation:'rozpor s pozorovaným vstupem'}]};
+assert.equal(validateReview(good,rules).verdict,'RETURN');
+for(const bad of [{...good,verdict:'ACCEPT'},{...good,findings:[]},{...good,findings:[{...good.findings[0],evidence_ref:'invented'}]}])assert.throws(()=>validateReview(bad,rules));
+assert.equal(Object.keys(MATRIX).length,4);
+console.log('PASS: missing/forged/contradictory evidence cannot pass; live and independent review are separate; open decisions block delivery; unverifiable AI reviews rejected.');
+
+const clinicalAccept={...good,verdict:'ACCEPT',findings:[{...good.findings[0],resolution:'clinical_decision'}]};
+assert.equal(validateReview(clinicalAccept,rules).verdict,'ACCEPT');
+assert.equal(deliveryStatus({...input,review:clinicalAccept}),'NEEDS_DECISION','Technical review cannot approve a medical decision');
+
+assert.equal(validateReview({...good,findings:JSON.stringify(good.findings)},rules).verdict,'RETURN');
+assert.throws(()=>validateReview({...good,findings:'not JSON'},rules));
+assert.throws(()=>validateReview({...good,findings:JSON.stringify([{...good.findings[0],evidence_ref:'unseen-source'}])},rules));

@@ -23,7 +23,13 @@ for (const mode of ['ACT', 'HOLD', 'SAFETY']) {
 }
 assert.equal((await processInput('isolated-why', 'Proč?', {})).mode, 'EXPLAIN');
 const unsupported = await processInput('isolated-why', 'Proč?', { unsupported_request: { kind: 'medical' }, last_domain_response: { explanation_context } });
-assert.notEqual(unsupported.mode, 'EXPLAIN');
+assert.equal(unsupported.mode, 'EXPLAIN');
+assert.equal(unsupported.expects_reply, true);
+assert.ok(/zdravotní otázky/.test(unsupported.text));
+const reported = await processInput('isolated-why', 'Proč?', {reported_medical_limitation:true,unsupported_request:{kind:'medical'}});
+assert.equal(reported.mode, 'EXPLAIN');
+assert.ok(/zátěž/.test(reported.text));
+assert.ok(!reported.buttons.includes('Hotovo'));
 const medical = await processInput('isolated-why', 'Proč mám synkopu?', { last_domain_response: { explanation_context } });
 assert.notEqual(medical.mode, 'EXPLAIN');
 assert.equal(classifierCalls, 0);
