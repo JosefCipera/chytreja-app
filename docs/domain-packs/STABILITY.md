@@ -80,9 +80,12 @@ Josef projde jeden souvislý scénář: „nejistá chůze" → otázka na stabi
 1. Doplnit věkovou hranici a vstupní kritéria cílové populace (rozsah a tykání starším jsou schváleny).
 2. ~~Pravidlo pro kolizi „nadváha vs. nestabilita"~~ — rozhoduje model (viz krok 7), ne Josef. Otevřená zůstává jen otázka, zda pořadí podle počtu uzlů odpovídá cíli „4 killers → priorita".
 3. Zda se u balančních akcí mají opora a oči otevřené stát součástí pokynu vždy.
+4. Srozumitelnost „Proč?": formulace „množství tělesného tuku" není zřejmá jako nadváha a neříká, že téma zůstává důležité, jen dnes je na řadě jistota při chůzi (ruční test Testera 0, 20. 10. 2026). Jde o text v `orchestrator.js` (zamčený soubor, testy hlídají přesné věty), proto zatím neřešeno.
+5. „Kam směřuješ?" u nestability končí větou „může se ti zvyšovat riziko, že upadneš", protože `FALL_RISK` nemá odchozí hranu v modelu (viz bod 3 v seznamu návratů: hrana ke ztrátě soběstačnosti a zdroje).
 
 ## Otázky pro odborníka (fyzioterapeut)
 1. Doba držení, série a frekvence stoje na jedné noze pro vstupního uživatele s nestabilitou; přijatelnost bez dohledu.
 2. Počet a tempo vstávání ze židle, frekvence a progrese.
 3. Co je nutné zjistit, než se nabídne cvičení; kdy se posílá na posouzení.
 4. Hranice mezi „podporované cvičení" a „vyžaduje posouzení".
+5. Je 30 s stoje na jedné noze vhodná první akce pro člověka, který uvádí nejistou chůzi? Na kterou nohu, kolikrát a s jakou oporou? (Ručně pozorováno u Testera 0; Josef to doplní do společného seznamu pro fyzioterapeuta.)
