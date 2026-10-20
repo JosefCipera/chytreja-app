@@ -1,0 +1,11 @@
+--- a/api/engine/orchestrator.js
++++ b/api/engine/orchestrator.js
+@@ -438,7 +438,7 @@
+ // Anchored ^...[\s.,!?]*$: compound inputs ("co mám dělat, ale bolí mě...") are rejected
+ // because ", ale bolí..." cannot match [\s.,!?]*$ — COMPOUND_SIGNAL_RE not needed.
+ export const DOMAIN_REQUEST_NAV_RE =
+-  /^(?:co\s+(?:tedy\s+|teď\s+)?mám\s+(?:teď\s+)?u?dělat|co\s+(?:teď|ted|dál|dal|doporuč(?:uješ)?)|poraď(?:\s+mi)?)[\s.,!?]*$/i;
++  /^(?:co\s+(?:tedy\s+|teď\s+|zítra\s+|zitra\s+)?mám\s+(?:teď\s+|zítra\s+|zitra\s+)?u?dělat|co\s+(?:teď|ted|dál|dal|doporuč(?:uješ)?)|poraď(?:\s+mi)?)[\s.,!?]*$/i;
+ 
+ let client;
+ function getClient() {

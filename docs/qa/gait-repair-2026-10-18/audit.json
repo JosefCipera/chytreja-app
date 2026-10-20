@@ -1,0 +1,761 @@
+{
+  "status": "BLOCKED",
+  "accepted_candidate": false,
+  "attempts": [
+    {
+      "task": "gait-navigation-repair-1",
+      "models": null,
+      "status": "BLOCKED",
+      "commit": "599816143211392dc72c4c60175ee57ee9e5e8eb",
+      "worker_calls": 12,
+      "review_calls": 0,
+      "edits": 0,
+      "checks": 3,
+      "input_chars": 437033,
+      "catalog_sha256": "2f7effafdfb682138862e27d97f1a6a9a901d0ba641c0404228c545f3d157384",
+      "clean_source_sha256": "482eff2e4297b8a42b91c7efbcb7bdb246feec1f3a3d8f450b9a80f28282e4a1",
+      "mutant_source_sha256": "4c2616dfab059b94869ba6ab450c97320c3c29765797fd75adccf4a31b46cee6",
+      "pristine": "PASS",
+      "reproduction": "FAIL",
+      "blocker": {
+        "reason": "Worker call budget exhausted before submission",
+        "http_status": null
+      },
+      "rounds": [],
+      "head_sha": "9c5c82bf1611a0fd4f283d36bcbab210a8fd575c",
+      "run_id": 39151687747,
+      "artifact_id": 12145522115,
+      "input_tokens": 156201,
+      "output_tokens": 1575,
+      "tool_trace": [
+        {
+          "at": "2026-10-18T17:54:34.186Z",
+          "kind": "worker_tool",
+          "name": "inspect",
+          "input": {
+            "path": "api/engine/orchestrator.js"
+          }
+        },
+        {
+          "at": "2026-10-18T17:54:34.187Z",
+          "kind": "worker_tool",
+          "name": "inspect",
+          "input": {
+            "path": "api/engine/dailyDecision.js"
+          }
+        },
+        {
+          "at": "2026-10-18T17:54:34.187Z",
+          "kind": "worker_tool",
+          "name": "inspect",
+          "input": {
+            "path": "scripts/test-action-copy.mjs"
+          }
+        },
+        {
+          "at": "2026-10-18T17:54:34.188Z",
+          "kind": "worker_tool",
+          "name": "inspect",
+          "input": {
+            "path": "scripts/test-skipped-exhaustion.mjs"
+          }
+        },
+        {
+          "at": "2026-10-18T17:54:35.345Z",
+          "kind": "worker_tool",
+          "name": "inspect",
+          "input": {
+            "path": "api/engine/orchestrator.js",
+            "start": 60,
+            "count": 80
+          }
+        },
+        {
+          "at": "2026-10-18T17:54:36.485Z",
+          "kind": "worker_tool",
+          "name": "inspect",
+          "input": {
+            "path": "api/engine/orchestrator.js",
+            "query": "navigation"
+          }
+        },
+        {
+          "at": "2026-10-18T17:54:37.546Z",
+          "kind": "worker_tool",
+          "name": "inspect",
+          "input": {
+            "path": "api/engine/orchestrator.js",
+            "start": 430,
+            "count": 80
+          }
+        },
+        {
+          "at": "2026-10-18T17:54:38.738Z",
+          "kind": "worker_tool",
+          "name": "inspect",
+          "input": {
+            "path": "api/engine/orchestrator.js",
+            "start": 509,
+            "count": 80
+          }
+        },
+        {
+          "at": "2026-10-18T17:54:39.899Z",
+          "kind": "worker_tool",
+          "name": "inspect",
+          "input": {
+            "path": "api/engine/orchestrator.js",
+            "start": 1680,
+            "count": 80
+          }
+        },
+        {
+          "at": "2026-10-18T17:54:41.147Z",
+          "kind": "worker_tool",
+          "name": "inspect",
+          "input": {
+            "path": "api/engine/orchestrator.js",
+            "start": 1600,
+            "count": 80
+          }
+        },
+        {
+          "at": "2026-10-18T17:54:42.399Z",
+          "kind": "worker_tool",
+          "name": "inspect",
+          "input": {
+            "path": "api/engine/orchestrator.js",
+            "start": 1500,
+            "count": 80
+          }
+        },
+        {
+          "at": "2026-10-18T17:54:43.579Z",
+          "kind": "worker_tool",
+          "name": "inspect",
+          "input": {
+            "path": "api/engine/orchestrator.js",
+            "start": 430,
+            "count": 15
+          }
+        },
+        {
+          "at": "2026-10-18T17:54:44.734Z",
+          "kind": "worker_tool",
+          "name": "check",
+          "input": {}
+        },
+        {
+          "at": "2026-10-18T17:54:45.830Z",
+          "kind": "worker_tool",
+          "name": "inspect",
+          "input": {
+            "path": "scripts/test-action-copy.mjs",
+            "start": 1,
+            "count": 15
+          }
+        },
+        {
+          "at": "2026-10-18T17:54:53.351Z",
+          "kind": "tool_rejected",
+          "name": "replace",
+          "reason": "Old text must match exactly once"
+        }
+      ],
+      "checks_evidence": [
+        {
+          "at": "2026-10-18T17:54:32.014Z",
+          "kind": "checks",
+          "full": true,
+          "status": "PASS",
+          "results": [
+            {
+              "script": "scripts/repair-agent/navigation-check.mjs",
+              "status": "PASS",
+              "exit_code": 0
+            },
+            {
+              "script": "scripts/test-action-copy.mjs",
+              "status": "PASS",
+              "exit_code": 0
+            },
+            {
+              "script": "scripts/test-medical-scope-session.mjs",
+              "status": "PASS",
+              "exit_code": 0
+            },
+            {
+              "script": "scripts/test-skip-progression.mjs",
+              "status": "PASS",
+              "exit_code": 0
+            },
+            {
+              "script": "scripts/test-skipped-exhaustion.mjs",
+              "status": "PASS",
+              "exit_code": 0
+            },
+            {
+              "script": "scripts/test-launcher-hold-input.mjs",
+              "status": "PASS",
+              "exit_code": 0
+            },
+            {
+              "script": "scripts/ai-tester/run-gait-matrix.mjs",
+              "status": "PASS",
+              "exit_code": 0
+            },
+            {
+              "script": "scripts/ai-tester/run-gait-matrix.mjs",
+              "status": "PASS",
+              "exit_code": 0
+            },
+            {
+              "script": "scripts/ai-tester/run-gait-matrix.mjs",
+              "status": "PASS",
+              "exit_code": 0
+            }
+          ]
+        },
+        {
+          "at": "2026-10-18T17:54:32.188Z",
+          "kind": "checks",
+          "full": false,
+          "status": "FAIL",
+          "results": [
+            {
+              "script": "scripts/repair-agent/navigation-check.mjs",
+              "status": "FAIL",
+              "exit_code": 1
+            }
+          ]
+        },
+        {
+          "at": "2026-10-18T17:54:44.733Z",
+          "kind": "checks",
+          "full": false,
+          "status": "FAIL",
+          "results": [
+            {
+              "script": "scripts/repair-agent/navigation-check.mjs",
+              "status": "FAIL",
+              "exit_code": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "task": "gait-navigation-repair-1",
+      "models": null,
+      "status": "BLOCKED",
+      "commit": "42ae07d8d87aadb94bafa00ed47fd8a69393dd98",
+      "worker_calls": 12,
+      "review_calls": 0,
+      "edits": 0,
+      "checks": 3,
+      "input_chars": 226459,
+      "catalog_sha256": "2f7effafdfb682138862e27d97f1a6a9a901d0ba641c0404228c545f3d157384",
+      "clean_source_sha256": "482eff2e4297b8a42b91c7efbcb7bdb246feec1f3a3d8f450b9a80f28282e4a1",
+      "mutant_source_sha256": "4c2616dfab059b94869ba6ab450c97320c3c29765797fd75adccf4a31b46cee6",
+      "pristine": "PASS",
+      "reproduction": "FAIL",
+      "blocker": {
+        "reason": "Worker call budget exhausted before submission",
+        "http_status": null
+      },
+      "rounds": [],
+      "head_sha": "be72f96f7845198f993b064cee9590f0a126ef3a",
+      "run_id": 39151917627,
+      "artifact_id": 12145895680,
+      "input_tokens": 88536,
+      "output_tokens": 805,
+      "tool_trace": [
+        {
+          "at": "2026-10-18T17:57:38.144Z",
+          "kind": "worker_tool",
+          "name": "inspect",
+          "input": {
+            "path": "scripts/test-action-copy.mjs"
+          }
+        },
+        {
+          "at": "2026-10-18T17:57:38.145Z",
+          "kind": "worker_tool",
+          "name": "inspect",
+          "input": {
+            "path": "scripts/test-skipped-exhaustion.mjs"
+          }
+        },
+        {
+          "at": "2026-10-18T17:57:39.188Z",
+          "kind": "worker_tool",
+          "name": "inspect",
+          "input": {
+            "path": "api/engine/orchestrator.js",
+            "query": "Co mám dělat zítra"
+          }
+        },
+        {
+          "at": "2026-10-18T17:57:40.074Z",
+          "kind": "worker_tool",
+          "name": "inspect",
+          "input": {
+            "path": "api/engine/orchestrator.js",
+            "query": "navigation"
+          }
+        },
+        {
+          "at": "2026-10-18T17:57:41.110Z",
+          "kind": "worker_tool",
+          "name": "inspect",
+          "input": {
+            "path": "api/engine/orchestrator.js",
+            "start": 430,
+            "count": 80
+          }
+        },
+        {
+          "at": "2026-10-18T17:57:42.268Z",
+          "kind": "worker_tool",
+          "name": "inspect",
+          "input": {
+            "path": "api/engine/orchestrator.js",
+            "query": "DOMAIN_REQUEST_NAV_RE tomorrow zítra"
+          }
+        },
+        {
+          "at": "2026-10-18T17:57:43.161Z",
+          "kind": "worker_tool",
+          "name": "inspect",
+          "input": {
+            "path": "api/engine/orchestrator.js",
+            "query": "tomorrow"
+          }
+        },
+        {
+          "at": "2026-10-18T17:57:44.208Z",
+          "kind": "worker_tool",
+          "name": "inspect",
+          "input": {
+            "path": "api/engine/orchestrator.js",
+            "start": 1695,
+            "count": 80
+          }
+        },
+        {
+          "at": "2026-10-18T17:57:45.206Z",
+          "kind": "worker_tool",
+          "name": "inspect",
+          "input": {
+            "path": "api/engine/orchestrator.js",
+            "query": "zítra"
+          }
+        },
+        {
+          "at": "2026-10-18T17:57:46.245Z",
+          "kind": "worker_tool",
+          "name": "inspect",
+          "input": {
+            "path": "api/engine/orchestrator.js",
+            "start": 440,
+            "count": 10
+          }
+        },
+        {
+          "at": "2026-10-18T17:57:47.216Z",
+          "kind": "worker_tool",
+          "name": "inspect",
+          "input": {
+            "path": "api/engine/dailyDecision.js",
+            "query": "zítra tomorrow"
+          }
+        },
+        {
+          "at": "2026-10-18T17:57:47.983Z",
+          "kind": "worker_tool",
+          "name": "check",
+          "input": {}
+        },
+        {
+          "at": "2026-10-18T17:57:49.167Z",
+          "kind": "worker_tool",
+          "name": "inspect",
+          "input": {
+            "path": "api/engine/orchestrator.js",
+            "start": 433,
+            "count": 15
+          }
+        }
+      ],
+      "checks_evidence": [
+        {
+          "at": "2026-10-18T17:57:36.555Z",
+          "kind": "checks",
+          "full": true,
+          "status": "PASS",
+          "results": [
+            {
+              "script": "scripts/repair-agent/navigation-check.mjs",
+              "status": "PASS",
+              "exit_code": 0
+            },
+            {
+              "script": "scripts/test-action-copy.mjs",
+              "status": "PASS",
+              "exit_code": 0
+            },
+            {
+              "script": "scripts/test-medical-scope-session.mjs",
+              "status": "PASS",
+              "exit_code": 0
+            },
+            {
+              "script": "scripts/test-skip-progression.mjs",
+              "status": "PASS",
+              "exit_code": 0
+            },
+            {
+              "script": "scripts/test-skipped-exhaustion.mjs",
+              "status": "PASS",
+              "exit_code": 0
+            },
+            {
+              "script": "scripts/test-launcher-hold-input.mjs",
+              "status": "PASS",
+              "exit_code": 0
+            },
+            {
+              "script": "scripts/ai-tester/run-gait-matrix.mjs",
+              "status": "PASS",
+              "exit_code": 0
+            },
+            {
+              "script": "scripts/ai-tester/run-gait-matrix.mjs",
+              "status": "PASS",
+              "exit_code": 0
+            },
+            {
+              "script": "scripts/ai-tester/run-gait-matrix.mjs",
+              "status": "PASS",
+              "exit_code": 0
+            }
+          ]
+        },
+        {
+          "at": "2026-10-18T17:57:36.735Z",
+          "kind": "checks",
+          "full": false,
+          "status": "FAIL",
+          "results": [
+            {
+              "script": "scripts/repair-agent/navigation-check.mjs",
+              "status": "FAIL",
+              "exit_code": 1
+            }
+          ]
+        },
+        {
+          "at": "2026-10-18T17:57:47.982Z",
+          "kind": "checks",
+          "full": false,
+          "status": "FAIL",
+          "results": [
+            {
+              "script": "scripts/repair-agent/navigation-check.mjs",
+              "status": "FAIL",
+              "exit_code": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "task": "gait-navigation-repair-1",
+      "models": {
+        "worker": "claude-sonnet-4-6",
+        "review": "claude-haiku-4-5"
+      },
+      "status": "BLOCKED",
+      "commit": "0ed3c9cd454d14fbc8632d2dcd2e5945c0418efa",
+      "worker_calls": 12,
+      "review_calls": 0,
+      "edits": 1,
+      "checks": 3,
+      "input_chars": 156880,
+      "catalog_sha256": "2f7effafdfb682138862e27d97f1a6a9a901d0ba641c0404228c545f3d157384",
+      "clean_source_sha256": "482eff2e4297b8a42b91c7efbcb7bdb246feec1f3a3d8f450b9a80f28282e4a1",
+      "mutant_source_sha256": "4c2616dfab059b94869ba6ab450c97320c3c29765797fd75adccf4a31b46cee6",
+      "pristine": "PASS",
+      "reproduction": "FAIL",
+      "blocker": {
+        "reason": "Worker call budget exhausted before submission",
+        "http_status": null
+      },
+      "rounds": [],
+      "head_sha": "3a8f605d24bcc36c089247d6e3670e7a9e533688",
+      "run_id": 39152070480,
+      "artifact_id": 12145607544,
+      "input_tokens": 65646,
+      "output_tokens": 1104,
+      "tool_trace": [
+        {
+          "at": "2026-10-18T17:59:50.061Z",
+          "kind": "worker_tool",
+          "name": "inspect",
+          "input": {
+            "path": "api/engine/orchestrator.js",
+            "query": "navigation"
+          }
+        },
+        {
+          "at": "2026-10-18T17:59:50.061Z",
+          "kind": "worker_tool",
+          "name": "inspect",
+          "input": {
+            "path": "api/engine/dailyDecision.js",
+            "query": "navigation"
+          }
+        },
+        {
+          "at": "2026-10-18T17:59:51.603Z",
+          "kind": "worker_tool",
+          "name": "inspect",
+          "input": {
+            "path": "api/engine/orchestrator.js",
+            "start": 430,
+            "count": 80
+          }
+        },
+        {
+          "at": "2026-10-18T17:59:53.134Z",
+          "kind": "worker_tool",
+          "name": "inspect",
+          "input": {
+            "path": "api/engine/orchestrator.js",
+            "query": "zítra"
+          }
+        },
+        {
+          "at": "2026-10-18T17:59:54.681Z",
+          "kind": "worker_tool",
+          "name": "inspect",
+          "input": {
+            "path": "api/engine/orchestrator.js",
+            "query": "DOMAIN_REQUEST_NAV_RE"
+          }
+        },
+        {
+          "at": "2026-10-18T17:59:56.441Z",
+          "kind": "worker_tool",
+          "name": "inspect",
+          "input": {
+            "path": "api/engine/orchestrator.js",
+            "start": 1480,
+            "count": 30
+          }
+        },
+        {
+          "at": "2026-10-18T17:59:57.960Z",
+          "kind": "worker_tool",
+          "name": "inspect",
+          "input": {
+            "path": "api/engine/orchestrator.js",
+            "start": 440,
+            "count": 3
+          }
+        },
+        {
+          "at": "2026-10-18T17:59:59.858Z",
+          "kind": "worker_tool",
+          "name": "inspect",
+          "input": {
+            "path": "api/engine/orchestrator.js",
+            "query": "zítra",
+            "start": 430,
+            "count": 15
+          }
+        },
+        {
+          "at": "2026-10-18T18:00:01.648Z",
+          "kind": "worker_tool",
+          "name": "inspect",
+          "input": {
+            "path": "api/engine/orchestrator.js",
+            "query": "Tomorrow questions are navigation too"
+          }
+        },
+        {
+          "at": "2026-10-18T18:00:03.387Z",
+          "kind": "worker_tool",
+          "name": "inspect",
+          "input": {
+            "path": "api/engine/orchestrator.js",
+            "start": 433,
+            "count": 9
+          }
+        },
+        {
+          "at": "2026-10-18T18:00:05.129Z",
+          "kind": "worker_tool",
+          "name": "inspect",
+          "input": {
+            "path": "api/engine/orchestrator.js",
+            "query": "zítra mám dělat"
+          }
+        },
+        {
+          "at": "2026-10-18T18:00:09.254Z",
+          "kind": "worker_tool",
+          "name": "replace",
+          "input": {
+            "path": "api/engine/orchestrator.js",
+            "old": "export const DOMAIN_REQUEST_NAV_RE =\n  /^(?:co\\s+(?:tedy\\s+|teď\\s+)?mám\\s+(?:teď\\s+)?u?dělat|co\\s+(?:teď|ted|dál|dal|doporuč(?:uješ)?)|poraď(?:\\s+mi)?)[\\s.,!?]*$/i;",
+            "new": "export const DOMAIN_REQUEST_NAV_RE =\n  /^(?:co\\s+(?:tedy\\s+|teď\\s+|zítra\\s+|zitra\\s+)?mám\\s+(?:teď\\s+|zítra\\s+|zitra\\s+)?u?dělat|co\\s+(?:teď|ted|dál|dal|doporuč(?:uješ)?)|poraď(?:\\s+mi)?)[\\s.,!?]*$/i;"
+          }
+        },
+        {
+          "at": "2026-10-18T18:00:10.678Z",
+          "kind": "worker_tool",
+          "name": "check",
+          "input": {}
+        }
+      ],
+      "checks_evidence": [
+        {
+          "at": "2026-10-18T17:59:47.280Z",
+          "kind": "checks",
+          "full": true,
+          "status": "PASS",
+          "results": [
+            {
+              "script": "scripts/repair-agent/navigation-check.mjs",
+              "status": "PASS",
+              "exit_code": 0,
+              "matrix": {},
+              "stdout_sha256": "a8ae94b21ed337b4ad0a8b20d58c2879adc36480fe2116e80f32f4758b596c3c"
+            },
+            {
+              "script": "scripts/test-action-copy.mjs",
+              "status": "PASS",
+              "exit_code": 0,
+              "matrix": null,
+              "stdout_sha256": "ebba72298355de21d959dd2ea7e89103f732dc8f8f9c3174ab52863899038bb7"
+            },
+            {
+              "script": "scripts/test-medical-scope-session.mjs",
+              "status": "PASS",
+              "exit_code": 0,
+              "matrix": null,
+              "stdout_sha256": "154e7679086db4011e70f779ae106850cd41dca65cf5d3692ac7a390f5c283ef"
+            },
+            {
+              "script": "scripts/test-skip-progression.mjs",
+              "status": "PASS",
+              "exit_code": 0,
+              "matrix": null,
+              "stdout_sha256": "337545078858971736e81fd2d76f5a54cb1d0de3dc7e3b3ee1a0d273d67399bd"
+            },
+            {
+              "script": "scripts/test-skipped-exhaustion.mjs",
+              "status": "PASS",
+              "exit_code": 0,
+              "matrix": null,
+              "stdout_sha256": "30b6f198ed3a26b61c9463f71a22005f01ced2b4e40537740e31a69b2e460f3f"
+            },
+            {
+              "script": "scripts/test-launcher-hold-input.mjs",
+              "status": "PASS",
+              "exit_code": 0,
+              "matrix": null,
+              "stdout_sha256": "24b6a056268ad0cc2d25dc9ce08481b645c65e92b8a3e5c9450ed2a6489427b5"
+            },
+            {
+              "script": "scripts/ai-tester/run-gait-matrix.mjs",
+              "status": "PASS",
+              "exit_code": 0,
+              "matrix": {
+                "suite": "gait",
+                "mode": "injected_classifier_full_engine_public_catalog",
+                "counts": {
+                  "PASS": 25,
+                  "FAIL": 0,
+                  "BLOCKED": 0
+                },
+                "case_count": 25
+              },
+              "stdout_sha256": "445d5a83574690b63ba451d0730e2c9f56345019a21e987a4498c2cf0a285896"
+            },
+            {
+              "script": "scripts/ai-tester/run-gait-matrix.mjs",
+              "status": "PASS",
+              "exit_code": 0,
+              "matrix": {
+                "suite": "conversation_changes_endpoint",
+                "mode": "injected_classifier_full_engine_public_catalog",
+                "counts": {
+                  "PASS": 10,
+                  "FAIL": 0,
+                  "BLOCKED": 0
+                },
+                "case_count": 10
+              },
+              "stdout_sha256": "a81f7f19a5b44848e7ce722027cf20d3f291547f2c8fe2e5cd952ad122379bac"
+            },
+            {
+              "script": "scripts/ai-tester/run-gait-matrix.mjs",
+              "status": "PASS",
+              "exit_code": 0,
+              "matrix": {
+                "suite": "classifier_outage_endpoint",
+                "mode": "injected_classifier_full_engine_public_catalog",
+                "counts": {
+                  "PASS": 6,
+                  "FAIL": 0,
+                  "BLOCKED": 0
+                },
+                "case_count": 6
+              },
+              "stdout_sha256": "2c6883290f40d7985c1d5fc6ef9a5ed45a8ac4604d949cceb55d8a1b0efe31ee"
+            }
+          ]
+        },
+        {
+          "at": "2026-10-18T17:59:47.471Z",
+          "kind": "checks",
+          "full": false,
+          "status": "FAIL",
+          "results": [
+            {
+              "script": "scripts/repair-agent/navigation-check.mjs",
+              "status": "FAIL",
+              "exit_code": 1,
+              "matrix": null,
+              "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            }
+          ]
+        },
+        {
+          "at": "2026-10-18T18:00:10.678Z",
+          "kind": "checks",
+          "full": false,
+          "status": "FAIL",
+          "results": [
+            {
+              "script": "scripts/repair-agent/navigation-check.mjs",
+              "status": "FAIL",
+              "exit_code": 1,
+              "matrix": null,
+              "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "lead_validation": {
+    "patched_file_sha256": "279e744a3d872a9e1cdee9d0e6baac7e3491da4fb1bb935ffb1663f33ac1f9b0",
+    "probe_exit_code": 1,
+    "failure": "Navigation not recognised: Co mám dělat zítra?",
+    "patch_sha256": "67d8a7aa5092288798806f98ec35bbeaa67878747cad090fc5efab1ef197f1fe"
+  }
+}

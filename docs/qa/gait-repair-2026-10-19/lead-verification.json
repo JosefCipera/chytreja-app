@@ -1,0 +1,16 @@
+{
+  "status": "PASS",
+  "method": "RegExp constructed from statically extracted pattern data; candidate module not executed on host",
+  "positive": [
+    "Co mám udělat zítra!",
+    "co mam delat zitra.",
+    "CO ZÍTRA?",
+    "Co tedy mám udělat zítra?"
+  ],
+  "negative": [
+    "Co mám dělat zítra, mám arytmii.",
+    "Co zitra s diabetem?",
+    "Co mám udělat zítra? Bolí mě na hrudi.",
+    "Co mám dělat zítra s angličtinou?"
+  ]
+}

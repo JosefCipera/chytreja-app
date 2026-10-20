@@ -1,0 +1,24 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';import os from 'node:os';import path from 'node:path';
+import {replaceUnique,replaceLines,inspectFile,sha,safeFile,validateVerdict} from './core.mjs';
+const root=fs.mkdtempSync(path.join(os.tmpdir(),'repair-test-'));
+try{
+ fs.writeFileSync(path.join(root,'a.js'),'one\ntwo\n');fs.writeFileSync(path.join(root,'sealed.js'),'sealed');
+ const task={editable:['a.js'],readable:['a.js'],limits:{edits:1}},state={edits:0};
+ assert.throws(()=>safeFile(root,'../a.js',task.editable));
+ assert.throws(()=>replaceUnique(root,{path:'sealed.js',old:'sealed',new:'changed'},task,state));
+ assert.throws(()=>replaceUnique(root,{path:'a.js',old:'missing',new:'x'},task,state));
+ assert.equal(state.edits,0);
+ assert.match(inspectFile(root,{path:'a.js',query:'two'},task),/2: two/);
+ assert.throws(()=>inspectFile(root,{path:'a.js',count:81},task));
+ assert.throws(()=>replaceLines(root,{path:'a.js',expected_sha256:'stale',start:2,end:2,lines:['three']},task,state));
+ replaceLines(root,{path:'a.js',expected_sha256:sha(fs.readFileSync(path.join(root,'a.js'))),start:2,end:2,lines:['three']},task,state);
+ assert.match(fs.readFileSync(path.join(root,'a.js'),'utf8'),/three/);
+ assert.throws(()=>replaceUnique(root,{path:'a.js',old:'one',new:'changed'},task,state));
+ fs.symlinkSync(path.join(root,'sealed.js'),path.join(root,'link'));
+ assert.throws(()=>safeFile(root,'link',['link']));
+ assert.throws(()=>validateVerdict({verdict:'PASS',reason:'ok'}));
+ assert.throws(()=>validateVerdict({verdict:'ACCEPT',reason:''}));
+ assert.equal(validateVerdict({verdict:'RETURN',reason:'Specific defect'}).verdict,'RETURN');
+ console.log('PASS: immutable allowlists, unique edits, budgets, symlink rejection, range bounds and strict review verdict.');
+}finally{fs.rmSync(root,{recursive:true,force:true});}

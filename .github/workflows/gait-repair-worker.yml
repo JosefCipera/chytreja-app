@@ -1,0 +1,52 @@
+name: Isolated gait repair worker
+on:
+  pull_request:
+    paths:
+      - scripts/repair-agent/**
+      - work-items/gait-repair/**
+      - .github/workflows/gait-repair-worker.yml
+permissions:
+  contents: read
+concurrency:
+  group: gait-repair-${{ github.head_ref }}
+  cancel-in-progress: true
+jobs:
+  repair:
+    if: github.head_ref == 'agent/gait-repair-worker' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Verify fixed tool permissions and acceptance probe
+        run: |
+          node scripts/repair-agent/test-core.mjs
+          node scripts/repair-agent/test-phases.mjs
+          node --experimental-vm-modules scripts/repair-agent/navigation-check.mjs
+      - name: Obtain public catalog through existing read-only synthetic runner
+        env:
+          AI_TESTER_CATALOG_OUT: /tmp/repair-catalog.json
+        run: node --experimental-vm-modules scripts/ai-tester/run-gait-matrix.mjs --classifier-outage > /tmp/repair-outage-baseline.json
+      - name: Prepare networkless execution image before exposing model credential
+        run: docker pull node:22-bookworm-slim
+      - name: Autonomous diagnosis, patch, sealed regressions and independent review
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: node scripts/repair-agent/run.mjs --live --catalog=/tmp/repair-catalog.json --out=repair-results
+      - name: Publish experiment result
+        if: always()
+        run: |
+          if test -f repair-results/summary.md; then cat repair-results/summary.md >> "$GITHUB_STEP_SUMMARY"; fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: gait-repair-experiment
+          path: repair-results/
+          if-no-files-found: warn
+          retention-days: 14

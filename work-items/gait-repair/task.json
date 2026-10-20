@@ -1,0 +1,9 @@
+{
+  "id": "gait-navigation-repair-1",
+  "goal": "Oprav programovou regresi: samostatný dotaz Co mám dělat zítra? je někdy předán klasifikátoru a aplikace odpoví, že nerozumí. Samostatná navigace má používat existující denní pravidla; složené zdravotní a nepodporované dotazy musí zůstat mimo tuto zkratku. Zachovej bezpečnost, dokončení i přeskočení. Oprav obecné rozpoznání, nikoli jen jeden doslovný vstup.",
+  "editable": ["api/engine/orchestrator.js"],
+  "readable": ["api/engine/orchestrator.js", "api/engine/dailyDecision.js", "scripts/test-action-copy.mjs", "scripts/test-skipped-exhaustion.mjs"],
+  "limits": {"worker_calls": 12, "review_calls": 3, "repair_rounds": 3, "max_output_tokens": 2048, "history_chars": 100000, "total_input_chars": 600000, "edits": 6, "checks": 8},
+  "prohibited": ["Změna testů nebo zadání", "Změna klinických pravidel nebo dávek", "Síť a credentials při spouštění kandidáta", "Merge, deploy nebo zápis do databáze"],
+  "experiment": "Do dočasné kopie je vrácena historická regrese. Hlavní aplikace ani pracovní checkout se nepřepisují. Worker nedostává opravný diff ani čistou verzi. Úspěch zde neznamená hotovou oblast nejisté chůze."
+}
