@@ -12,7 +12,7 @@ Stav: **rozpracováno; technicky funkční, klinická vhodnost dávek a podmíne
 | 4 | Mapa intervencí | ČÁSTEČNĚ | 3 intervence; citace v `intervention-map.json` mají chyby (viz audit citací). |
 | 5 | Akce a bezpečnost | VYŽADUJE ODBORNÍKA | Brány existují; **zdroj dávku nestanovuje** u 30 s stoje, 5 vstání ani chůze. |
 | 6 | Slovník vysvětlení | ČÁSTEČNĚ | Tabulky pro uzly existují; přepsaný pokyn má jen židle. |
-| 7 | Automatické testy | ČÁSTEČNĚ | Matice a testy existují; kolize „nadváha vs. nestabilita" je označena k rozhodnutí. |
+| 7 | Automatické testy | ČÁSTEČNĚ | Matice (768/768) a testy existují; pořadí kolize určuje model, zůstává otázka počtu uzlů. |
 | 8 | Ruční ověření | OTEVŘENO | Čeká na odborné posouzení čtyř vstupních akcí a na Josefa. |
 
 ## 1 Rozsah (schváleno Josefem 20. 10. 2026, doplnit odborník)
@@ -70,14 +70,15 @@ Katalog: 1 funkční silová akce, 3 balanční, 7 stabilizačních, 4 asistivn�
 - `scripts/test-functional-strength-training.mjs` + `test-functional-strength-training-e2e.mjs`
 - `scripts/test-nba-kovarova.mjs` (referenční případ Kovářová)
 - `scripts/ai-tester/floor-rise.json`, `run-floor-rise.mjs`
-**Otevřeno:** kolize „nadváha + nejistá chůze" (kód ji označuje `GAIT_REQUEST_ADIPOSITY_PRIORITY` jako produktové rozhodnutí); chybí test, že balanční pokyn obsahuje oporu i mimo příznak nestability.
+**Kolize „nadváha + nejistá chůze":** pořadí určuje model (`systemLeverage.js`: vliv napříč oblastmi → dosah v kauzálním řetězci → změnitelnost), ne ruční rozhodnutí. Kód ji jen označuje `GAIT_REQUEST_ADIPOSITY_PRIORITY` ke kontrole. Ve všech 192 syntetických průbězích s nadváhou a nejistotou při chůzi text „Proč?" nejistotu při chůzi zmiňuje. Selhání `priority-explanation` v `run-gait --probe` vzniká tím, že probe režim údaj o chůzi neuloží, a nepovažuje se za chybu produktu.
+**Otevřeno:** pořadí je dnes dáno počtem uzlů (nadváha 6 navazujících uzlů, nestabilita 1) a nezohledňuje závažnost; to je otázka modelu, ne tohoto balíčku. Chybí test, že balanční pokyn obsahuje oporu i mimo příznak nestability.
 
 ## 8 Ruční ověření
 Josef projde jeden souvislý scénář: „nejistá chůze" → otázka na stabilitu → podporovaný krok → „Proč?" → „Kam směřuješ?" → „Co tím změníš?". Posoudí srozumitelnost a důvěru, ne klinickou správnost.
 
 ## Otevřená rozhodnutí (Josef)
 1. Doplnit věkovou hranici a vstupní kritéria cílové populace (rozsah a tykání starším jsou schváleny).
-2. Pravidlo pro kolizi „nadváha vs. nestabilita": co vede, jak se to řekne.
+2. ~~Pravidlo pro kolizi „nadváha vs. nestabilita"~~ — rozhoduje model (viz krok 7), ne Josef. Otevřená zůstává jen otázka, zda pořadí podle počtu uzlů odpovídá cíli „4 killers → priorita".
 3. Zda se u balančních akcí mají opora a oči otevřené stát součástí pokynu vždy.
 
 ## Otázky pro odborníka (fyzioterapeut)
