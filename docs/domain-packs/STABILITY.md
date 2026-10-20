@@ -6,7 +6,7 @@ Stav: **rozpracováno; technicky funkční, klinická vhodnost dávek a podmíne
 
 | # | Krok | Stav | Poznámka |
 |---|---|---|---|
-| 1 | Rozsah | ČÁSTEČNĚ | Návrh níže; Josef potvrdí. Cílová populace není definována. |
+| 1 | Rozsah | ČÁSTEČNĚ | Schválen Josefem (dlouhověkost podle CRT, starší lidé, tykání). Chybí věková hranice a potvrzení odborníka. |
 | 2 | Větev z master CRT | HOTOVO | Vazby ověřeny v `master.json`. |
 | 3 | Vstupy a aktivace | ČÁSTEČNĚ | Aktivace popsána; zdroj pro TUG a práh síly 2 chybí (`NEVÍME`). |
 | 4 | Mapa intervencí | ČÁSTEČNĚ | 3 intervence; citace v `intervention-map.json` mají chyby (viz audit citací). |
@@ -15,11 +15,11 @@ Stav: **rozpracováno; technicky funkční, klinická vhodnost dávek a podmíne
 | 7 | Automatické testy | ČÁSTEČNĚ | Matice a testy existují; kolize „nadváha vs. nestabilita" je označena k rozhodnutí. |
 | 8 | Ruční ověření | OTEVŘENO | Čeká na odborné posouzení čtyř vstupních akcí a na Josefa. |
 
-## 1 Rozsah (návrh ke schválení)
-**Řeší:** pocit nejistoty při chůzi, slabost nohou (vstávání ze židle a ze země), riziko pádu jako důsledek; podporované cvičení a pomůcky jako zdroj opory.
+## 1 Rozsah (schváleno Josefem 20. 10. 2026, doplnit odborník)
+**Řeší:** nejistotu při chůzi, slabost nohou (vstávání ze židle a ze země) a riziko pádu jako důsledek, vždy v rámci dlouhověkosti podle modelu CRT. Podporované cvičení a pomůcky jako zdroj opory.
 **Neřeší:** příčinu nejistoty (neurologické, ortostatické, zrakové, lékové), akutní stavy (závrať, ztráta vědomí, pád se zraněním), léčbu neuropatie, předepisování pomůcek.
-**Hranice:** při pádu, bolesti, závrati, zraněném pádu nebo neschopnosti vstát se doporučuje odborné posouzení; aplikace nediagnostikuje.
-**Cílová populace:** `NEVÍME` (není v kódu definována). Chybí rozhodnutí Josefa a odborníka.
+**Hranice:** při pádu, bolesti, závrati, zraněném pádu nebo neschopnosti vstát doporučí odborné posouzení; nediagnostikuje. Dotazy mimo tento rámec Chytré já **slušně odmítne** (že to neřeší).
+**Cílová populace:** starší lidé, referenční model Kovářová; oslovení tykáním. Přesná věková hranice a vstupní kritéria: `NEVÍME` (nejsou definována v kódu ani v rozhodnutí).
 
 ## 2 Větev z master CRT (ověřeno v `data/engine/master.json`)
 - `PERIPHERAL_NEUROPATHY` → `GAIT_INSTABILITY`
@@ -76,7 +76,7 @@ Katalog: 1 funkční silová akce, 3 balanční, 7 stabilizačních, 4 asistivn�
 Josef projde jeden souvislý scénář: „nejistá chůze" → otázka na stabilitu → podporovaný krok → „Proč?" → „Kam směřuješ?" → „Co tím změníš?". Posoudí srozumitelnost a důvěru, ne klinickou správnost.
 
 ## Otevřená rozhodnutí (Josef)
-1. Schválit rozsah a hranice (krok 1) a cílovou populaci.
+1. Doplnit věkovou hranici a vstupní kritéria cílové populace (rozsah a tykání starším jsou schváleny).
 2. Pravidlo pro kolizi „nadváha vs. nestabilita": co vede, jak se to řekne.
 3. Zda se u balančních akcí mají opora a oči otevřené stát součástí pokynu vždy.
 

@@ -2,6 +2,12 @@
 
 Nová oblast (stabilita, cukrovka, srdce, ...) se do Chytrého já přidává jako **balíček dat a pravidel**, ne jako nový agent. Engine, bezpečnostní brány a způsob vysvětlování zůstávají jedny. Jeden soubor `docs/domain-packs/<OBLAST>.md` vyplňuje tuto šablonu a je jediným místem, kde je vidět, v jakém stavu oblast je.
 
+## Hranice produktu (rozhodnutí Josefa, 20. 10. 2026)
+- Chytré já řeší **dlouhověkost a zdraví tak, jak je popisuje model CRT**: co člověku nejpravděpodobněji vezme roky života nebo soběstačnosti. Cukrovka, ED a další oblasti sem patří **jen v tomto rámci** (jako cesty v modelu, ne jako samostatné zdravotní agendy).
+- Cílová skupina jsou **starší lidé** (referenční model Kovářová); aplikace jim **tyká**.
+- Co do rámce nepatří, Chytré já **neřeší**. Pokud se někdo přesto zeptá, **slušně odpoví, že to neřeší**, bez diagnózy a bez improvizace. Chceme se vyhnout směru obecného zdravotního software.
+- Každý balíček proto musí mít v kroku 1 výslovně napsáno, co **řeší** a co **ne**.
+
 ## Pravidla (platí pro každý balíček)
 1. **Nevymýšlej příčinné vazby.** Vycházej z hotových cest v `data/engine/master.json`. Chybí-li významná cesta, je to samostatné rozhodnutí o rozšíření modelu s důkazem, ne součást balíčku.
 2. **Otázka vzniká jen tehdy, když její odpověď může změnit výběr, pořadí nebo ověření constraintu.** Zdravotní zajímavost nestačí.
