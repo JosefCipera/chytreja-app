@@ -129,6 +129,10 @@ AI nesmí svévolně změnit action, dávku, safety condition, evidence ani deci
 - Všechny DB zápisy přes serverless API endpointy — service_role klíč zůstává na serveru
 - Žádné inline duplikování dat, která existují v JSON souborech nebo DB
 - Migrace: SQL skripty v `/migrations/` — spouštět ručně v Supabase SQL Editoru; před spuštěním přečíst komentář
+- **Nová tabulka = grant ve stejné migraci** (Supabase od 30. 10. 2026 nedává nové tabulky v `public` automaticky do Data API):
+  - soukromá tabulka: `GRANT SELECT, INSERT, UPDATE, DELETE ON public.<tabulka> TO service_role;` a `REVOKE ALL ON public.<tabulka> FROM anon, authenticated;` (zachovává výsledek P2)
+  - veřejný obsah čtený prohlížečem: navíc `GRANT SELECT ON public.<tabulka> TO anon;` — a jen SELECT
+  - nikdy nedávat `anon`/`authenticated` zápisová práva na soukromé tabulky, ani když to ukazuje příklad z dokumentace nebo e-mailu
 
 ---
 
