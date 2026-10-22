@@ -73,10 +73,23 @@ Slouží jako **ověření vzorových kauzálních cest** (princip 2 z `CLAUDE.m
 - **Zlaté stavy kódu:** git tagy `v0.2-crt-gold-*`, `v0.3-crt-gold-*`.
 - Uložené ukázky jsou **starší snímky** (apex `THREATENED_HEALTHSPAN`, odstraněn ze slovníku stavů 9. 8. 2026; Kovářová bez `FALL_RISK`).
 
-## 6 Otevřená rozhodnutí
+## 6 Fáze a garant (rozhodnutí Josefa, 22. 10. 2026)
+**Pořadí:**
+1. **Diskutér** (konverzace, engine zdraví, model příčin): hlavní a jediná povinná aplikace.
+2. **CRT** později. Je hotové a funkční, ale hned ho nepotřebujeme.
+3. **Vesmír** zatím neřešíme. Odkaz z webu zůstává beze změny. Josef připraví, co s ním bude. Strom longevity a odkazy do Mediotéky slouží jako **pozdější vzdělávání** pro zájemce a případně i pro TOC a BMC.
+
+**Garant, že odpovědi vycházejí z příčinného modelu a constraintu:** engine zdraví s modelem příčin (`master.json`), nikoli AI a nikoli stránka CRT.
+- Rozhodnutí je deterministické (stav uzlů → páka a constraint → výběr akce → bezpečnostní brána → denní rozhodnutí).
+- AI v Diskutéru jen porozumí větě (vynucený strukturovaný výstup) a řekne rozhodnutí lidsky z tabulek.
+- Znalosti (uzly, hrany, intervence, akce, bezpečnostní pravidla, zdroje) se tvoří ručně a schvaluje je člověk nebo odborník; AI při tvorbě pomáhá, za běhu nerozhoduje.
+- Omezení: „TOC" v enginu je zjednodušené pořadí (dosah, změnitelnost), závažnost zatím nezohledňuje; model má 16 uzlů a akce u čtyř, co je mimo, se slušně odmítne.
+- Ke kontrole: hlasová vrstva `/api/tts` (režim, kdy AI z kontextu vytváří řeč) nesmí měnit smysl rozhodnutí.
+
+## 7 Otevřená rozhodnutí
 1. Potvrdit cílové schéma a pracovní názvy (Diskutér, Průvodce, Mapa příčin).
 2. Přejmenovat v kódu a dokumentaci „orchestrátor" na „Průvodce"? (zatím jen v diskusi)
-3. Co s Master Agentem a akcemi v HUBu Vesmíru (jediný rozhodovač akcí má být engine).
+3. Co s Master Agentem a akcemi v HUBu Vesmíru (jediný rozhodovač akcí má být engine). Zdravotní obsah psaný AI mimo engine (Vesmír, texty CRT, asistenti): odstranit, nebo omezit na přeformulování z tabulek.
 4. CRT: přejít na stav z enginu (stínový běh, ochrana zlatých CRT).
 5. Řazení podle závažnosti, hrana `FALL_RISK` → ztráta soběstačnosti a zdroje.
 6. Sjednotit identifikátory (engine, CRT, Vesmír, asistenti: `longevity` vs. `dlouhovekost`).
