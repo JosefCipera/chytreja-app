@@ -6,8 +6,8 @@ Stav: **rozpracováno; technicky funkční, klinická vhodnost dávek a podmíne
 
 | # | Krok | Stav | Poznámka |
 |---|---|---|---|
-| 1 | Rozsah | ČÁSTEČNĚ | Schválen Josefem (dlouhověkost podle CRT, starší lidé, tykání). Chybí věková hranice a potvrzení odborníka. |
-| 2 | Větev z master CRT | HOTOVO | Vazby ověřeny v `master.json`. |
+| 1 | Rozsah | ČÁSTEČNĚ | Schválen Josefem (dlouhověkost podle modelu příčin, starší lidé, tykání). Chybí věková hranice a potvrzení odborníka. |
+| 2 | Větev z modelu příčin | HOTOVO | Vazby ověřeny v `master.json`. |
 | 3 | Vstupy a aktivace | ČÁSTEČNĚ | Aktivace popsána; zdroj pro TUG a práh síly 2 chybí (`NEVÍME`). |
 | 4 | Mapa intervencí | ČÁSTEČNĚ | 3 intervence; citace v `intervention-map.json` mají chyby (viz audit citací). |
 | 5 | Akce a bezpečnost | VYŽADUJE ODBORNÍKA | Brány existují; **zdroj dávku nestanovuje** u 30 s stoje, 5 vstání ani chůze. |
@@ -21,7 +21,7 @@ Stav: **rozpracováno; technicky funkční, klinická vhodnost dávek a podmíne
 **Hranice:** při pádu, bolesti, závrati, zraněném pádu nebo neschopnosti vstát doporučí odborné posouzení; nediagnostikuje. Dotazy mimo tento rámec Chytré já **slušně odmítne** (že to neřeší).
 **Cílová populace:** starší lidé, referenční model Kovářová; oslovení tykáním. Přesná věková hranice a vstupní kritéria: `NEVÍME` (nejsou definována v kódu ani v rozhodnutí).
 
-## 2 Větev z master CRT (ověřeno v `data/engine/master.json`)
+## 2 Větev z modelu příčin (ověřeno v `data/engine/master.json`)
 - `PERIPHERAL_NEUROPATHY` → `GAIT_INSTABILITY`
 - `PHYSICAL_DECONDITIONING` → `LOW_MUSCLE_STRENGTH` → `GAIT_INSTABILITY`
 - `LOW_MUSCLE_STRENGTH` → `REDUCED_FUNCTIONAL_RESERVE`

@@ -3,7 +3,7 @@
 Nová oblast (stabilita, cukrovka, srdce, ...) se do Chytrého já přidává jako **balíček dat a pravidel**, ne jako nový agent. Engine, bezpečnostní brány a způsob vysvětlování zůstávají jedny. Jeden soubor `docs/domain-packs/<OBLAST>.md` vyplňuje tuto šablonu a je jediným místem, kde je vidět, v jakém stavu oblast je.
 
 ## Hranice produktu (rozhodnutí Josefa, 20. 10. 2026)
-- Chytré já řeší **dlouhověkost a zdraví tak, jak je popisuje model CRT**: co člověku nejpravděpodobněji vezme roky života nebo soběstačnosti. Cukrovka, ED a další oblasti sem patří **jen v tomto rámci** (jako cesty v modelu, ne jako samostatné zdravotní agendy).
+- Chytré já řeší **dlouhověkost a zdraví tak, jak je popisuje model příčin (`data/engine/master.json`)**: co člověku nejpravděpodobněji vezme roky života nebo soběstačnosti. Cukrovka, ED a další oblasti budou součástí dlouhověkosti a zdraví. Přidávají se postupně jako balíčky podle modelu příčin.
 - Cílová skupina jsou **starší lidé** (referenční model Kovářová); aplikace jim **tyká**.
 - Co do rámce nepatří, Chytré já **neřeší**. Pokud se někdo přesto zeptá, **slušně odpoví, že to neřeší**, bez diagnózy a bez improvizace. Chceme se vyhnout směru obecného zdravotního software.
 - Každý balíček proto musí mít v kroku 1 výslovně napsáno, co **řeší** a co **ne**.
@@ -26,7 +26,7 @@ Nová oblast (stabilita, cukrovka, srdce, ...) se do Chytrého já přidává ja
 | # | Krok | Výstup (co musí být napsáno) | Kdo |
 |---|---|---|---|
 | 1 | **Rozsah** | Co oblast řeší a co ne (diagnóza, akutní stav, léčba). Cílová populace. Hranice, kdy posílá k odborníkovi. | Josef + Claude |
-| 2 | **Větev z master CRT** | Uzly, vazby (odkazem na `master.json`), Goal Gateway, kterých se oblast dotýká. Žádné nové vazby. | Claude, kontrola Josef |
+| 2 | **Větev z modelu příčin** | Uzly, vazby (odkazem na `master.json`), Goal Gateway, kterých se oblast dotýká. Žádné nové vazby. | Claude, kontrola Josef |
 | 3 | **Vstupy a aktivace** | Které údaje oblast potřebuje, jak aktivují uzly (síla signálu, práh), které otázky mění rozhodnutí a které ne. | Claude |
 | 4 | **Mapa intervencí** | Pro každý vedoucí uzel: intervence, protokoly, mechanismy (`mechanism_targets`). | Claude |
 | 5 | **Akce a bezpečnost** | Pro každou akci: pokyn, vstupní náročnost, potřebná opora, podmínky zastavení, dávka a zdroj dávky. Bezpečnostní brány a jejich pravidla. | Claude navrhne, **odborník schválí** |
@@ -55,7 +55,7 @@ Stav: <shrnutí> · Datum · Verze main
 | Krok | Stav | Poznámka |
 
 ## 1 Rozsah
-## 2 Větev z master CRT
+## 2 Větev z modelu příčin
 ## 3 Vstupy a aktivace
 ## 4 Mapa intervencí
 ## 5 Akce a bezpečnost
