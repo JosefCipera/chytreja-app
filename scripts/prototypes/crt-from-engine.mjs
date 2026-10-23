@@ -62,6 +62,14 @@ for (const e of MASTER.edges) {
 }
 const ids = new Set([...Object.keys(stateOf), ...Object.keys(projOf), ...possible]);
 
+const BRANCH_BY_DOMAIN = { cardiovascular: 'RC', metabolic: 'C', lifestyle: 'C', functional: 'L', musculoskeletal: 'L', neurological: 'L' };
+const PANEL = {
+  CONFIRMED: 'Potvrzeno z tvých údajů.',
+  MEASURED: 'Vychází z naměřených údajů.',
+  PREDICTED_CURRENT: 'Předpoklad podle toho, co o tobě víme. Zatím nepotvrzeno.',
+  PROJECTED: 'Odhad rizika podle tvých údajů, ne diagnóza.',
+  POSSIBLE: 'Možný důsledek, ne potvrzený stav.',
+};
 const graphNodes = [...ids].map(id => {
   const n = nodes[id], s = stateOf[id], p = projOf[id];
   const isRoot = parents[id].length === 0;
@@ -69,10 +77,11 @@ const graphNodes = [...ids].map(id => {
   return {
     id, label: n.label_cs, label_layman: n.label_cs,
     type: isEnd ? 'ude' : isRoot ? 'golden_box' : 'cause',
-    level: depth[id], branch: null,
+    level: depth[id], branch: BRANCH_BY_DOMAIN[n.domain] ?? 'C',
     state: s ? s.current_state : p ? 'PROJECTED' : 'POSSIBLE',
     ...(s?.current_state === 'PREDICTED_CURRENT' ? { _inferred: true } : {}),
     ...(p ? { risk: p.risk } : {}),
+    panel_text: PANEL[s ? s.current_state : p ? 'PROJECTED' : 'POSSIBLE'],
   };
 }).sort((a, b) => a.level - b.level || a.id.localeCompare(b.id));
 
@@ -80,7 +89,13 @@ const graphEdges = MASTER.edges
   .filter(e => ids.has(e.from) && ids.has(e.to))
   .map(e => ({ from: e.from, to: e.to, relation: e.relation, strength: e.strength, evidence_quality: e.evidence_quality }));
 
-const graph = { title: 'Graf z modelu enginu (prototyp)', source: fixPath, nodes: graphNodes, edges: graphEdges };
+// Same top-level shape as app/assets/examples/crt-kovarova.json, so the existing renderer can show it.
+const graph = {
+  title: 'Graf z modelu enginu', subtitle: 'Prototyp: stav z enginu, ukázková data',
+  nodes: graphNodes, edges: graphEdges.map(e => ({ from: e.from, to: e.to, relation: e.relation })),
+  medications_map: [], interactions: [],
+  _source: { fixture: fixPath, generator: 'scripts/prototypes/crt-from-engine.mjs' },
+};
 
 // ── report ──
 console.log(`\nProfil: ${fixPath}  (${raw.join(', ') || 'bez diagnóz'})`);

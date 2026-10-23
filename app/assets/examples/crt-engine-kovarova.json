@@ -1,0 +1,123 @@
+{
+  "title": "Graf z modelu enginu",
+  "subtitle": "Prototyp: stav z enginu, ukázková data",
+  "nodes": [
+    {
+      "id": "PERIPHERAL_NEUROPATHY",
+      "label": "Periferní neuropatie",
+      "label_layman": "Periferní neuropatie",
+      "type": "golden_box",
+      "level": 0,
+      "branch": "L",
+      "state": "CONFIRMED",
+      "panel_text": "Potvrzeno z tvých údajů."
+    },
+    {
+      "id": "EXCESS_ADIPOSITY",
+      "label": "Nadměrný tuk",
+      "label_layman": "Nadměrný tuk",
+      "type": "cause",
+      "level": 1,
+      "branch": "C",
+      "state": "MEASURED",
+      "panel_text": "Vychází z naměřených údajů."
+    },
+    {
+      "id": "INSULIN_RESISTANCE",
+      "label": "Inzulínová rezistence",
+      "label_layman": "Inzulínová rezistence",
+      "type": "cause",
+      "level": 2,
+      "branch": "C",
+      "state": "PREDICTED_CURRENT",
+      "_inferred": true,
+      "panel_text": "Předpoklad podle toho, co o tobě víme. Zatím nepotvrzeno."
+    },
+    {
+      "id": "GAIT_INSTABILITY",
+      "label": "Nestabilita chůze",
+      "label_layman": "Nestabilita chůze",
+      "type": "cause",
+      "level": 3,
+      "branch": "L",
+      "state": "PREDICTED_CURRENT",
+      "_inferred": true,
+      "panel_text": "Předpoklad podle toho, co o tobě víme. Zatím nepotvrzeno."
+    },
+    {
+      "id": "HYPERTENSION",
+      "label": "Arteriální hypertenze",
+      "label_layman": "Arteriální hypertenze",
+      "type": "cause",
+      "level": 3,
+      "branch": "RC",
+      "state": "CONFIRMED",
+      "panel_text": "Potvrzeno z tvých údajů."
+    },
+    {
+      "id": "ENDOTHELIAL_DYSFUNCTION",
+      "label": "Endoteliální dysfunkce",
+      "label_layman": "Endoteliální dysfunkce",
+      "type": "cause",
+      "level": 4,
+      "branch": "RC",
+      "state": "PREDICTED_CURRENT",
+      "_inferred": true,
+      "panel_text": "Předpoklad podle toho, co o tobě víme. Zatím nepotvrzeno."
+    },
+    {
+      "id": "FALL_RISK",
+      "label": "Riziko pádu",
+      "label_layman": "Riziko pádu",
+      "type": "ude",
+      "level": 4,
+      "branch": "L",
+      "state": "POSSIBLE",
+      "panel_text": "Možný důsledek, ne potvrzený stav."
+    },
+    {
+      "id": "CARDIOVASCULAR_DISEASE",
+      "label": "Kardiovaskulární onemocnění",
+      "label_layman": "Kardiovaskulární onemocnění",
+      "type": "ude",
+      "level": 6,
+      "branch": "RC",
+      "state": "PROJECTED",
+      "risk": "elevated",
+      "panel_text": "Odhad rizika podle tvých údajů, ne diagnóza."
+    }
+  ],
+  "edges": [
+    {
+      "from": "EXCESS_ADIPOSITY",
+      "to": "INSULIN_RESISTANCE",
+      "relation": "CONTRIBUTES_TO"
+    },
+    {
+      "from": "INSULIN_RESISTANCE",
+      "to": "HYPERTENSION",
+      "relation": "CONTRIBUTES_TO"
+    },
+    {
+      "from": "HYPERTENSION",
+      "to": "ENDOTHELIAL_DYSFUNCTION",
+      "relation": "CONTRIBUTES_TO"
+    },
+    {
+      "from": "PERIPHERAL_NEUROPATHY",
+      "to": "GAIT_INSTABILITY",
+      "relation": "CONTRIBUTES_TO"
+    },
+    {
+      "from": "GAIT_INSTABILITY",
+      "to": "FALL_RISK",
+      "relation": "CONTRIBUTES_TO"
+    }
+  ],
+  "medications_map": [],
+  "interactions": [],
+  "_source": {
+    "fixture": "test/fixtures/kovarova.json",
+    "generator": "scripts/prototypes/crt-from-engine.mjs"
+  }
+}
