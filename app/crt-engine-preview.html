@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
   <title>PROTOTYP · Kauzální mapa zdraví</title>
-  <script>window.CHJ_CRT_EXAMPLE = true; window.CHJ_ENGINE_PROFILE = new URLSearchParams(location.search).get('profil') === 'josef' ? 'josef' : 'kovarova'; document.documentElement.classList.add('public-example');</script>
+  <script>window.CHJ_CRT_EXAMPLE = true; window.CHJ_ENGINE_PROFILE = (new URLSearchParams(location.search).get('profil') || 'kovarova').replace(/[^a-z0-9-]/g, '') || 'kovarova'; document.documentElement.classList.add('public-example');</script>
   <link rel="stylesheet" href="/app/assets/landing/original-examples.css?v=1">
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="icon" href="/app/favicon.svg" type="image/svg+xml">

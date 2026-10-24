@@ -1,0 +1,118 @@
+{
+  "title": "Strom příčin: Erektilní dysfunkce",
+  "subtitle": "Vzorová cesta z modelu enginu, bez osobních údajů",
+  "nodes": [
+    {
+      "id": "PHYSICAL_INACTIVITY",
+      "label": "Fyzická inaktivita",
+      "label_layman": "Fyzická inaktivita",
+      "type": "golden_box",
+      "level": 0,
+      "branch": "C",
+      "_inferred": true,
+      "panel_text": "Možná příčina podle modelu, u tebe zatím neznámá. Vztah k „Nadměrný tuk\": přispívá; síla moderate, kvalita důkazů strong, horizont months. Vztah k „Inzulínová rezistence\": přispívá; síla strong, kvalita důkazů strong, horizont years."
+    },
+    {
+      "id": "EXCESS_ADIPOSITY",
+      "label": "Nadměrný tuk",
+      "label_layman": "Nadměrný tuk",
+      "type": "cause",
+      "level": 1,
+      "branch": "C",
+      "_inferred": true,
+      "panel_text": "Možná příčina podle modelu, u tebe zatím neznámá. Vztah k „Inzulínová rezistence\": přispívá; síla strong, kvalita důkazů strong, horizont years."
+    },
+    {
+      "id": "INSULIN_RESISTANCE",
+      "label": "Inzulínová rezistence",
+      "label_layman": "Inzulínová rezistence",
+      "type": "cause",
+      "level": 2,
+      "branch": "C",
+      "_inferred": true,
+      "panel_text": "Možná příčina podle modelu, u tebe zatím neznámá. Vztah k „Arteriální hypertenze\": přispívá; síla moderate, kvalita důkazů moderate, horizont years."
+    },
+    {
+      "id": "HYPERTENSION",
+      "label": "Arteriální hypertenze",
+      "label_layman": "Arteriální hypertenze",
+      "type": "cause",
+      "level": 3,
+      "branch": "RC",
+      "_inferred": true,
+      "panel_text": "Možná příčina podle modelu, u tebe zatím neznámá. Vztah k „Endoteliální dysfunkce\": přispívá; síla strong, kvalita důkazů strong, horizont years."
+    },
+    {
+      "id": "ENDOTHELIAL_DYSFUNCTION",
+      "label": "Endoteliální dysfunkce",
+      "label_layman": "Endoteliální dysfunkce",
+      "type": "cause",
+      "level": 4,
+      "branch": "RC",
+      "_inferred": true,
+      "panel_text": "Možná příčina podle modelu, u tebe zatím neznámá. Vztah k „Erektilní dysfunkce\": přispívá; síla strong, kvalita důkazů strong, horizont years."
+    },
+    {
+      "id": "ERECTILE_DYSFUNCTION",
+      "label": "Erektilní dysfunkce",
+      "label_layman": "Erektilní dysfunkce",
+      "type": "ude",
+      "level": 5,
+      "branch": "RC",
+      "panel_text": "Potvrzeno z údajů. Cílový stav tohoto stromu."
+    },
+    {
+      "id": "CARDIOVASCULAR_DISEASE",
+      "label": "Kardiovaskulární onemocnění",
+      "label_layman": "Kardiovaskulární onemocnění",
+      "type": "ude",
+      "level": 6,
+      "branch": "RC",
+      "_inferred": true,
+      "panel_text": "Možná příčina podle modelu, u tebe zatím neznámá. Nejhlubší příčina v modelu pro tento strom."
+    }
+  ],
+  "edges": [
+    {
+      "from": "PHYSICAL_INACTIVITY",
+      "to": "EXCESS_ADIPOSITY",
+      "relation": "CONTRIBUTES_TO"
+    },
+    {
+      "from": "PHYSICAL_INACTIVITY",
+      "to": "INSULIN_RESISTANCE",
+      "relation": "CONTRIBUTES_TO"
+    },
+    {
+      "from": "EXCESS_ADIPOSITY",
+      "to": "INSULIN_RESISTANCE",
+      "relation": "CONTRIBUTES_TO"
+    },
+    {
+      "from": "INSULIN_RESISTANCE",
+      "to": "HYPERTENSION",
+      "relation": "CONTRIBUTES_TO"
+    },
+    {
+      "from": "HYPERTENSION",
+      "to": "ENDOTHELIAL_DYSFUNCTION",
+      "relation": "CONTRIBUTES_TO"
+    },
+    {
+      "from": "ENDOTHELIAL_DYSFUNCTION",
+      "to": "ERECTILE_DYSFUNCTION",
+      "relation": "CONTRIBUTES_TO"
+    },
+    {
+      "from": "ERECTILE_DYSFUNCTION",
+      "to": "CARDIOVASCULAR_DISEASE",
+      "relation": "RISK_MARKER_FOR"
+    }
+  ],
+  "medications_map": [],
+  "interactions": [],
+  "_source": {
+    "generator": "scripts/prototypes/crt-pattern-from-model.mjs",
+    "model": "data/engine/master.json"
+  }
+}
