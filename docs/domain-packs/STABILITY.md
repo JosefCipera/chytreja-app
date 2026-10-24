@@ -82,6 +82,8 @@ Josef projde jeden souvislý scénář: „nejistá chůze" → otázka na stabi
 3. Zda se u balančních akcí mají opora a oči otevřené stát součástí pokynu vždy.
 4. Srozumitelnost „Proč?": formulace „množství tělesného tuku" není zřejmá jako nadváha a neříká, že téma zůstává důležité, jen dnes je na řadě jistota při chůzi (ruční test Testera 0, 20. 10. 2026). Jde o text v `orchestrator.js` (zamčený soubor, testy hlídají přesné věty), proto zatím neřešeno.
 5. „Kam směřuješ?" u nestability končí větou „může se ti zvyšovat riziko, že upadneš", protože `FALL_RISK` nemá odchozí hranu v modelu (hrana ke ztrátě soběstačnosti a zdroje k ní jsou záměrně odložené).
+6. **Předpoklad neuropatie ze symptomu.** Popis potíží („trvale snížená citlivost v prstech u nohou, 1 rok") dnes engine ani generátor CRT nepoznají; neuropatie vzniká jen ze slova v diagnóze. Podle zásady „predikce před diagnózou" by symptom měl vytvořit uzel jako **předpoklad**, ne jako diagnózu. Chybí i pole pro délku potíží. Vyžaduje pravidlo aktivace a odbornou kontrolu (stejný příznak má víc příčin) a v textu jen doporučení probrat to s lékařem, bez diagnózy. Ověřeno na fixture Josefa 24. 10. 2026.
+7. **Hrana „obezita → neuropatie" v generátoru CRT.** Po diagnóze neuropatie generátor přidá hranu `OBESITY → PERIPHERAL_NEUROPATHY` z pomocné funkce „připoj uzel bez rodiče" (`connectSourceless`). Model enginu takový vztah nemá; jde o artefakt, ne o znalost. Opravit, nebo neukazovat.
 
 ## Otázky pro odborníka (fyzioterapeut)
 1. Doba držení, série a frekvence stoje na jedné noze pro vstupního uživatele s nestabilitou; přijatelnost bez dohledu.
