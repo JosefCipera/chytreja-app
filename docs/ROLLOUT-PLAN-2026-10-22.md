@@ -25,10 +25,30 @@ Pojem „Zakladatel zdarma" se nepoužívá, dokud není napsáno, co znamená p
 4. Přátelé jsou skutečné účty: **nikdy do `TESTER_UIDS`** a nikdy se na nich nepoužívá reset.
 5. Je určen způsob sběru zpětné vazby a kdo ji vyhodnocuje.
 6. Pozvánka neslibuje nic o CRT, Vesmíru ani Zakladatelské nabídce.
+7. Odborník prošel i **kauzální řezy**, které aplikace říká v „Proč?" a „Kam směřuješ?" (stabilita, kardiometabolický řetěz): hrana, zdroj, souhlasím / nesouhlasím / doplnit. Model psal jazykový model pod Josefovým vedením a nezávislou kontrolu zatím nikdo neprovedl.
 
 **Do fáze 2 (Zakladatelé):** výsledky fáze 1; napsaná nabídka a podmínky, včetně toho, co se stane po bezplatném období; stav TOC a BMC; rozhodnutí o Vesmíru.
 
 **Do fáze 3 (zákazníci):** platební a obchodní podmínky, podpora, a zbývající body z bezpečnostního programu z `CLAUDE.md` (mock cesta v `crt-generate.js`, zpřísnění `tester-reset.js`, úklid oprávnění, test obnovy zálohy databáze).
+
+## Kontrolní seznam: „slušně použitelné" (fáze 1)
+Slušně použitelné znamená **důvěryhodné, srozumitelné a bezpečné v tom, co aplikace říká**, ne že umí všechno. Další řetězce (cukrovka, štítná žláza, srdce) k tomu nepatří.
+
+| # | Co | Kdo | Závisí na |
+|---|---|---|---|
+| 1 | Posouzení dávek a podmínek zastavení čtyř vstupních akcí | fyzioterapeut | externí osoba; **nejdelší článek** |
+| 2 | Skutečný návrat další den po „Hotovo" | Josef | jeden cílený krok na stávajícím tester účtu |
+| 3 | Jedna diktovaná věta na telefonu (přepis, odpověď, návrat) | Josef | podporované zařízení |
+| 4 | Srozumitelnost „Proč?": „nadváha" místo „množství tělesného tuku" a věta, že téma zůstává důležité | Claude navrhne, Josef schválí | změna textu v zamčeném `orchestrator.js` a testech |
+| 5 | Srozumitelnost „Kam směřuješ?" u nestability (dnes končí „může se ti zvyšovat riziko, že upadneš") | Josef, pak Claude | rozhodnutí o hraně `FALL_RISK` → ztráta soběstačnosti a zdrojích |
+| 6 | Souhlas, zásady ochrany údajů, přehled zpracovatelů | Josef (právní kontrola) | |
+| 7 | Pozvánka s výslovným rozsahem („zatím pohyb, nadváha, síla a rovnováha") | Josef | |
+| 8 | Odborná kontrola kauzálních řezů, které aplikace říká | lékař, fyzioterapeut | viz podmínka 7 výše |
+| 9 | Počítadlo **odmítnutých témat**: ukládat jen kategorii, ne text ani osobní údaje | Claude navrhne, Josef schválí | zásady ochrany údajů; slouží k výběru dalšího řetězce |
+
+**Volitelně před skupinou s tlakem a cholesterolem:** dvě mezery v enginu. Dyslipidémie a inzulinová rezistence jsou uzly modelu, ale engine u nich z diagnózy stav nezaloží (viz prototyp v PR #119). Jde o změnu v zamčeném enginu; rozhodnutí je samostatné.
+
+**Další řetězec se vybírá podle toho, na co se lidé v prvním kole skutečně ptali a bylo odmítnuto**, ne podle domněnky.
 
 ## Pravidlo pro přidávání věcí mezi fázemi
 - Jedno kolo přináší **jednu viditelnou věc** (například srozumitelnější „Proč?" s nadváhou místo „tělesný tuk", cesta „pád → soběstačnost", další balíček).
