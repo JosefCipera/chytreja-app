@@ -1,0 +1,82 @@
+{
+  "title": "Graf z modelu enginu",
+  "subtitle": "Prototyp: stav z enginu, ukázková data",
+  "nodes": [
+    {
+      "id": "EXCESS_ADIPOSITY",
+      "label": "Nadměrný tuk",
+      "label_layman": "Nadměrný tuk",
+      "type": "cause",
+      "level": 1,
+      "branch": "C",
+      "state": "MEASURED",
+      "panel_text": "Vychází z naměřených údajů."
+    },
+    {
+      "id": "INSULIN_RESISTANCE",
+      "label": "Inzulínová rezistence",
+      "label_layman": "Inzulínová rezistence",
+      "type": "cause",
+      "level": 2,
+      "branch": "C",
+      "state": "PREDICTED_CURRENT",
+      "_inferred": true,
+      "panel_text": "Předpoklad podle toho, co o tobě víme. Zatím nepotvrzeno."
+    },
+    {
+      "id": "ENDOTHELIAL_DYSFUNCTION",
+      "label": "Endoteliální dysfunkce",
+      "label_layman": "Endoteliální dysfunkce",
+      "type": "cause",
+      "level": 4,
+      "branch": "RC",
+      "state": "PREDICTED_CURRENT",
+      "_inferred": true,
+      "panel_text": "Předpoklad podle toho, co o tobě víme. Zatím nepotvrzeno."
+    },
+    {
+      "id": "ERECTILE_DYSFUNCTION",
+      "label": "Erektilní dysfunkce",
+      "label_layman": "Erektilní dysfunkce",
+      "type": "ude",
+      "level": 5,
+      "branch": "RC",
+      "state": "CONFIRMED",
+      "panel_text": "Potvrzeno z tvých údajů."
+    },
+    {
+      "id": "CARDIOVASCULAR_DISEASE",
+      "label": "Kardiovaskulární onemocnění",
+      "label_layman": "Kardiovaskulární onemocnění",
+      "type": "ude",
+      "level": 6,
+      "branch": "RC",
+      "state": "PROJECTED",
+      "risk": "elevated",
+      "panel_text": "Odhad rizika podle tvých údajů, ne diagnóza."
+    }
+  ],
+  "edges": [
+    {
+      "from": "EXCESS_ADIPOSITY",
+      "to": "INSULIN_RESISTANCE",
+      "relation": "CONTRIBUTES_TO"
+    },
+    {
+      "from": "ENDOTHELIAL_DYSFUNCTION",
+      "to": "ERECTILE_DYSFUNCTION",
+      "relation": "CONTRIBUTES_TO"
+    },
+    {
+      "from": "ERECTILE_DYSFUNCTION",
+      "to": "CARDIOVASCULAR_DISEASE",
+      "relation": "RISK_MARKER_FOR"
+    }
+  ],
+  "medications_map": [],
+  "interactions": [],
+  "_source": {
+    "fixture": "test/fixtures/josef.json",
+    "generator": "scripts/prototypes/crt-from-engine.mjs"
+  }
+}
