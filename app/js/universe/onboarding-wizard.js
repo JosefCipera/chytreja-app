@@ -19,6 +19,10 @@ export async function checkAndShowOnboarding(userId) {
 }
 
 function _showWizard(userId) {
+  // The launcher's text/voice footer belongs to the conversation, not to this
+  // form. Leaving it visible behind the modal makes it look like an alternate
+  // onboarding input even though the overlay correctly intercepts all taps.
+  document.body.classList.add('onboarding-open');
   const overlay = document.createElement('div');
   overlay.id = 'onb-overlay';
   overlay.innerHTML = _html();
@@ -152,6 +156,7 @@ function _showWizard(userId) {
       return;
     }
     overlay.remove();
+    document.body.classList.remove('onboarding-open');
     if (typeof window.loadCRT === 'function') window.loadCRT(true);
     else window.location.reload();
   }
@@ -161,6 +166,7 @@ function _html() {
   return `
 <style>
 #onb-overlay{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem}
+body.onboarding-open footer{display:none!important}
 #onb-box{background:#0f1117;border:0.5px solid #1e293b;border-radius:14px;padding:2rem;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;color:#e2e8f0;font-family:inherit}
 .onb-home{display:inline-block;margin-bottom:1.2rem;padding:6px 0;font-size:13px;color:#94a3b8;text-decoration:none}
 .onb-home:hover{color:#e2e8f0}

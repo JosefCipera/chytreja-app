@@ -37,7 +37,15 @@ export async function runOnboardingFixture(physical, failAction = null, person =
     throw Error('Unknown onboarding selector: ' + selector);
   };
   overlay.remove = () => { removed = true; };
-  const ctx = vm.createContext({ document: { createElement: () => overlay, body: { appendChild() {} } },
+  const bodyClasses = new Set();
+  const ctx = vm.createContext({ document: { createElement: () => overlay, body: {
+    appendChild() {},
+    classList: {
+      add(...values) { values.forEach(value => bodyClasses.add(value)); },
+      remove(...values) { values.forEach(value => bodyClasses.delete(value)); },
+      contains(value) { return bodyClasses.has(value); },
+    },
+  } },
     window: { location: { reload() { reloaded = true; } } }, setTimeout() {},
     authFetch: async (url, options) => {
       if (url === '/api/user?action=full-profile') return { ok: true, json: async () => ({ profile: { onboarding_completed: false } }) };
@@ -60,5 +68,5 @@ export async function runOnboardingFixture(physical, failAction = null, person =
     pill.listeners.click();
   }
   await ids.get('onb-next').listeners.click();
-  return { profile: requests.find(r => r.body?.step === 1)?.body, physical: requests.find(r => r.body?.step === 3)?.body.physical, requests, removed, reloaded };
+  return { profile: requests.find(r => r.body?.step === 1)?.body, physical: requests.find(r => r.body?.step === 3)?.body.physical, requests, removed, reloaded, onboardingOpen: bodyClasses.has('onboarding-open') };
 }

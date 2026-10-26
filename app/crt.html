@@ -881,10 +881,16 @@ function renderTree(data) {
       bg = '#200808'; border = '#c04040'; textColor = '#f0a0a0'; bw = 6; borderStyle = 'dashed';
     } else if (isRoot) {
       bg = '#12100a'; border = '#c09a22'; textColor = '#d8a830'; bw = 6; borderStyle = 'solid';
-    } else if (n._inferred) {
+    } else if (n._state === 'GRAY' || n._inferred) {
       bg = '#1a1d26'; border = '#404560'; textColor = '#606888'; bw = 1.5; borderStyle = 'dashed';
+    } else if (n._state === 'RED') {
+      bg = '#3d1a1a'; border = '#e05252'; textColor = '#f5a0a0'; bw = 2; borderStyle = 'solid';
+    } else if (n._state === 'YELLOW') {
+      bg = '#3a2e0a'; border = '#d4a017'; textColor = '#f0d060'; bw = 2; borderStyle = 'solid';
+    } else if (n._state === 'GREEN') {
+      bg = '#0f2d1a'; border = '#3a9e5f'; textColor = '#6ddb99'; bw = 2; borderStyle = 'solid';
     } else {
-      bg = '#1a2d40'; border = '#2a4a60'; textColor = '#a7c7df'; bw = 1.5; borderStyle = 'solid';
+      bg = '#1a1d26'; border = '#404560'; textColor = '#606888'; bw = 1.5; borderStyle = 'solid';
     }
 
     cyElements.push({

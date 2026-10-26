@@ -198,7 +198,7 @@ const GOAL_BRANCH_PAIR_CS = {
 // ── "Proč?" wording table ───────────────────────────────────────────────────────
 // Nominative phrases for the optional constraint sentence.
 const WHY_SUBJECT_CS = {
-  EXCESS_ADIPOSITY:           'tvůj tuk',
+  EXCESS_ADIPOSITY:           'tvoje nadváha',
   LOW_MUSCLE_STRENGTH:        'tvoje svalová síla',
   PHYSICAL_INACTIVITY:        'tvůj nedostatek pohybu',
   PHYSICAL_DECONDITIONING:    'tvoje celková kondice',
@@ -210,7 +210,7 @@ const WHY_SUBJECT_CS = {
   HYPERTENSION:                'tvůj krevní tlak',
   ENDOTHELIAL_DYSFUNCTION:    'stav tvých cév',
   ERECTILE_DYSFUNCTION:       'tvoje schopnost erekce',
-  INSULIN_RESISTANCE:         'tvoje citlivost na inzulín',
+  INSULIN_RESISTANCE:         'to, jak tvoje tělo zpracovává cukr',
 };
 
 // ── "Kam směřuješ?" wording tables ───────────────────────────────────────────────
@@ -222,13 +222,13 @@ const WHY_SUBJECT_CS = {
 // intentionally absent — there is no further step to describe.
 // nextStep: verb + object, continuing "Může se ti <nextStep>...".
 const CAUSAL_STEP_CS = {
-  EXCESS_ADIPOSITY:           { nextStep: 'zhoršovat citlivost na inzulín' },
+  EXCESS_ADIPOSITY:           { nextStep: 'zhoršovat schopnost těla zpracovávat cukr' },
   // This node's causal step already names the concrete stake (floor-rise ability) in lay
   // terms, so the generic LOSS_OF_FLOOR_RISE_ABILITY gateway phrase would repeat "běžné
   // fyzické úkony" if appended on top — suppressGateway drops that one gateway's generic
   // append for this node only; a second, different gateway (if ever reached) still appends.
   LOW_MUSCLE_STRENGTH:        { nextStep: 'snižovat síla potřebná pro běžné fyzické úkony — například vstát ze země bez cizí pomoci', suppressGateway: 'LOSS_OF_FLOOR_RISE_ABILITY' },
-  PHYSICAL_INACTIVITY:        { nextStep: 'zvyšovat množství tělesného tuku' },
+  PHYSICAL_INACTIVITY:        { nextStep: 'zvyšovat nadváhu' },
   PHYSICAL_DECONDITIONING:    { nextStep: 'snižovat tvoje svalová síla' },
   REDUCED_FUNCTIONAL_RESERVE: { nextStep: 'ztěžovat základní pohyby, jako je vstávání' },
   GAIT_INSTABILITY:           { nextStep: 'zvyšovat riziko, že upadneš' },
@@ -249,7 +249,7 @@ const GOAL_GATEWAY_PHRASE_CS = {
 // ── "Co tím změníš?" wording tables ─────────────────────────────────────────────
 // Primary target: verb + direct object, used in "<action> ti při pravidelném opakování může pomoci <verb> <object>".
 const MECHANISM_PRIMARY_CS = {
-  EXCESS_ADIPOSITY:    { verb: 'snížit',  object: 'množství tuku' },
+  EXCESS_ADIPOSITY:    { verb: 'snížit',  object: 'nadváhu' },
   LOW_MUSCLE_STRENGTH: { verb: 'posílit', object: 'svalovou sílu' },
   PHYSICAL_INACTIVITY: { verb: 'zvýšit',  object: 'pohybovou aktivitu' },
   GAIT_INSTABILITY:    { verb: 'zlepšit', object: 'jistotu při chůzi' },
@@ -260,7 +260,7 @@ const MECHANISM_PRIMARY_CS = {
 const MECHANISM_TARGET_CS = {
   "EXCESS_ADIPOSITY": {
     "verb": "snížit",
-    "object": "množství tuku"
+    "object": "nadváhu"
   },
   "LOW_MUSCLE_STRENGTH": {
     "verb": "posílit",
@@ -272,11 +272,11 @@ const MECHANISM_TARGET_CS = {
   },
   "INSULIN_RESISTANCE": {
     "verb": "zlepšit",
-    "object": "citlivost na inzulín"
+    "object": "zpracování cukru v těle"
   },
   "HYPERTENSION": {
-    "verb": "snížit",
-    "object": "krevní tlak"
+    "verb": "podpořit",
+    "object": "zdravý krevní tlak"
   },
   "REDUCED_FUNCTIONAL_RESERVE": {
     "verb": "zlepšit",
@@ -1034,7 +1034,7 @@ function buildPathDiscoveryWhyResponse(_state) {
 
 // Accusative phrases for a focus, without asserting a confirmed diagnosis or ranking.
 const WHY_FOCUS_CS = {
-  "EXCESS_ADIPOSITY": "množství tělesného tuku",
+  "EXCESS_ADIPOSITY": "snižování nadváhy",
   "LOW_MUSCLE_STRENGTH": "tvoji svalovou sílu",
   "PHYSICAL_INACTIVITY": "pravidelný pohyb",
   "PHYSICAL_DECONDITIONING": "tvoji celkovou kondici",
@@ -1046,7 +1046,7 @@ const WHY_FOCUS_CS = {
   "HYPERTENSION": "tvůj krevní tlak",
   "ENDOTHELIAL_DYSFUNCTION": "stav tvých cév",
   "ERECTILE_DYSFUNCTION": "tvoji schopnost erekce",
-  "INSULIN_RESISTANCE": "tvoji citlivost na inzulín"
+  "INSULIN_RESISTANCE": "schopnost těla zpracovávat cukr"
 };
 
 // Explain only evidence attached to the selected leverage node; no clinical inference here.
@@ -1073,14 +1073,16 @@ function whyEvidencePhrase(ctx) {
     if (strength && balance && onlyProxies) return 'Údaje o síle a rovnováze naznačují možné omezení rovnováhy. Samy nepotvrzují nejistotu při běžné chůzi.';
   }
   const questions = {
-    rovnovaha_zavrene_oci: 'neudržíš stoj na jedné noze se zavřenýma očima',
-    balanc_jedna_noha: 'neudržíš stoj na jedné noze',
-    vstat_ze_zeme: 'nevstaneš ze země bez opory rukou',
-    vynest_nakup: 'nezvládneš vynést nákup bez zastavení',
-    zvednout_vnouce: 'nezvládneš zvednout malé dítě ze země',
+    recent_falls: 'V onboardingu je uveden nedávný pád.',
+    rovnovaha_zavrene_oci: 'Onboarding ukazuje omezení rovnováhy.',
+    balanc_jedna_noha: 'Onboarding ukazuje omezení rovnováhy.',
+    vstat_ze_zeme: 'Některé běžné pohyby jsou pro tebe obtížné.',
+    vynest_nakup: 'Některé běžné pohyby jsou pro tebe obtížné.',
+    zvednout_vnouce: 'Některé běžné pohyby jsou pro tebe obtížné.',
   };
-  const answer = facts.find(f => f.source === 'ONBOARDING' && questions[f.question_id] && no(f.value));
-  if (answer) return `Podle tvé odpovědi v onboardingu ${questions[answer.question_id]}.`;
+  const answer = facts.find(f => f.source === 'ONBOARDING' && questions[f.question_id]
+    && (f.question_id === 'recent_falls' ? f.value === true : no(f.value)));
+  if (answer) return questions[answer.question_id];
   const sitting = facts.find(f => f.obs_type === 'sedentary_hours_day' && typeof f.value === 'number' && Number.isFinite(f.value));
   if (sitting) return `Uvádíš, že běžně prosedíš ${sitting.value} hodin denně.`;
   if (facts.some(f => f.field === 'sedentary_work' && f.value === true)) return 'Uvádíš sedavou práci.';
@@ -1122,11 +1124,9 @@ function buildWhyResponse(sessionState) {
       && whyEvidencePhrase(ctx) !== 'Uvádíš nejistotu při chůzi.') {
     parts.push('Uvádíš nejistotu při chůzi.');
   }
-  if (ctx.action_fallback?.status === 'SELECTED') {
-    const priority = WHY_FOCUS_CS[ctx.system_priority?.node_id];
-    if (priority) parts.push(`Aktivita zaměřená na ${priority} teď nesplňuje bezpečnostní podmínky.`);
-    else parts.push('Původní aktivita teď nesplňuje bezpečnostní podmínky.');
-  }
+  // When the engine selected a checked alternative, explain that actual action
+  // branch only. Repeating the blocked global priority here made adiposity look
+  // like the purpose of a strength/balance action and obscured the useful reason.
   const leverage    = ctx.system_leverage;
   const constraint  = ctx.system_constraint;
   const action      = ctx.action_context?.selected;
@@ -1160,11 +1160,6 @@ function buildWhyResponse(sessionState) {
   if (constraintSubject && constraintSubject !== leverageSubject
       && !(ctx.action_fallback?.status === 'SELECTED' && constraint?.node_id === ctx.system_priority?.node_id)) {
     parts.push(`Zároveň hraje roli ${constraintSubject}.`);
-  }
-
-  if (sessionState.person_goal === 'WEIGHT_LOSS' && leverage?.node_id
-      && leverage.node_id !== 'EXCESS_ADIPOSITY') {
-    parts.push('Samotné hubnutí tento krok neřeší.');
   }
 
   // Safety instructions belong to ACT, not to the reason for selecting it.

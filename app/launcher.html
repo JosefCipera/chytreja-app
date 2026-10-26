@@ -869,9 +869,13 @@
     $input.placeholder = mode === 'ASK' ? 'Odpověz nebo napiš…' : 'Napiš nebo řekni…';
     if (mode === 'ASK') $input.focus();
 
-    // An action can end or be blocked without ending the conversation.
-    // Keep questions and voice available; only the existing critical terminal stays locked.
-    const isTerminal  = mode === 'SAFETY_CRITICAL' && !expects_reply && buttons.length === 0;
+    // A completed daily action closes this visit. Without this terminal state the
+    // user can submit a new goal against the cached explanation of the completed
+    // action, which makes later WHY controls describe stale context. A reload/new
+    // visit remains the explicit way to start another conversation.
+    const isCompletedToday = mode === 'HOLD' && dbg?.reason_code === 'HOLD_DONE_TODAY';
+    const isTerminal  = isCompletedToday
+      || (mode === 'SAFETY_CRITICAL' && !expects_reply && buttons.length === 0);
     _terminalState    = isTerminal;
     $input.disabled   = isTerminal;
     $sendBtn.disabled = isTerminal;

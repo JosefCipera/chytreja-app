@@ -575,7 +575,7 @@ current_action_assignment  { action_id, intervention_id, label } — přiřazen�
 
 **ACTION_COMPLETED → HOLD:** Pokud `event_type === 'ACTION_COMPLETED'` a engine vrátí `mode=HOLD`, orchestrátor vrátí potvrzení dokončení akce (`Hotovo. Pro dnešek stačí. Výsledek budeme hodnotit až po několika opakováních.`) — ne generický HOLD label akce. Text není přeformulací rozhodnutí, jen rozlišuje kontext eventu.
 
-**HOLD_DONE_TODAY (post 2026-09-27):** Při dalším vstupu téhož dne orchestrátor vrátí `Pro dnešek stačí. Zítra pokračujeme.` bez tlačítek (u zdravotního vstupu s potvrzením přijetí informace). Každý HOLD nastaví `session_updates.current_action_assignment = null` — i zastaralé přiřazení držené klientem se vynuluje, takže druhé „Hotovo“ téhož dne nelze zapsat. Další den engine vrátí běžný ACT — orchestrátor nastaví nový `current_action_assignment` a tlačítka Hotovo / Přeskočit.
+**HOLD_DONE_TODAY (post 2026-09-27):** Při dalším vstupu téhož dne orchestrátor vrátí `Pro dnešek stačí. Zítra pokračujeme.` bez tlačítek (u zdravotního vstupu s potvrzením přijetí informace). Launcher po tomto výsledku uzavře textový i hlasový vstup pro právě dokončenou návštěvu; nová návštěva po obnovení stránky se vyhodnotí znovu. Každý HOLD nastaví `session_updates.current_action_assignment = null` — i zastaralé přiřazení držené klientem se vynuluje, takže druhé „Hotovo“ téhož dne nelze zapsat. Další den engine vrátí běžný ACT — orchestrátor nastaví nový `current_action_assignment` a tlačítka Hotovo / Přeskočit.
 
 ### Hard boundaries orchestratoru
 

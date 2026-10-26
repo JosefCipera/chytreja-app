@@ -297,12 +297,12 @@ async function isolated(scenario, branch = null) {
     check('why-read-only', writes.length === before, writes.length - before);
     const leverage = initialEngine.system_leverage.selected?.node_id;
     if (scenario.id === 'tester136-shape' || (scenario.id.startsWith('journey-') && !branch?.startsWith('gait-'))) check('known-strength-priority', leverage === 'LOW_MUSCLE_STRENGTH' && selected?.action_id === 'sit_to_stand_supported', { leverage, action: selected?.action_id });
-    if (leverage && leverage !== 'EXCESS_ADIPOSITY' && response.mode !== 'SAFETY_BLOCKED') check('why-distinguishes-priority-from-weight-plan', /Samotné hubnutí tento krok neřeší/.test(why.text), why.text);
+    if (leverage && leverage !== 'EXCESS_ADIPOSITY' && response.mode !== 'SAFETY_BLOCKED') check('why-explains-selected-priority-only', !/tuku|nadváh|Samotné hubnutí/.test(why.text), why.text);
     if (scenario.id === 'normal-bmi') check('wish-not-adiposity-evidence', !initialEngine.node_states.some(n => n.node_id === 'EXCESS_ADIPOSITY' && ['MEASURED', 'CONFIRMED'].includes(n.current_state)), initialEngine.node_states.find(n => n.node_id === 'EXCESS_ADIPOSITY'));
     session = { ...session, person_goal: 'FORGED' };
     const reloadWhy = await turn('Proč?');
     check('why-independent-of-forged-client-goal', reloadWhy.text === why.text, reloadWhy.text);
-    if (leverage && leverage !== 'EXCESS_ADIPOSITY' && response.mode !== 'SAFETY_BLOCKED') check('server-goal-retains-weight-plan-boundary', /Samotné hubnutí tento krok neřeší/.test(reloadWhy.text), reloadWhy.text);
+    if (leverage && leverage !== 'EXCESS_ADIPOSITY' && response.mode !== 'SAFETY_BLOCKED') check('server-goal-retains-selected-priority', !/tuku|nadváh|Samotné hubnutí/.test(reloadWhy.text), reloadWhy.text);
   }
   check('engine-presentation-contract', response.mode !== 'ACT' || session.current_action_assignment?.action_id === selected?.action_id, { mode: response.mode, rendered: session.current_action_assignment?.action_id ?? null, engine: selected?.action_id ?? null });
   if (selected) {
@@ -355,7 +355,7 @@ async function isolated(scenario, branch = null) {
     const callsBefore = calls.length;
     const why = await turn('Proč?');
     check('blocked-why-read-only', writes.length === writesBefore && calls.length === callsBefore, { writes: writes.length - writesBefore, classifier_calls: calls.length - callsBefore });
-    check('why-explains-fallback-without-clearance', why.mode === 'EXPLAIN' && /Aktivita zaměřená na množství tělesného tuku teď nesplňuje bezpečnostní podmínky/.test(why.text) && /nejistot/.test(why.text) && Boolean(session.current_action_assignment), why.text);
+    check('why-explains-fallback-without-clearance', why.mode === 'EXPLAIN' && !/tuku|nadváh|bezpečnostní podmínky/.test(why.text) && /nejistot/.test(why.text) && Boolean(session.current_action_assignment), why.text);
     const next = await turn('Co dál?');
     check('follow-up-keeps-primary-block-and-alternative', safeFallback(next) && assignments.length === 0 && !session.pending_question, { mode: next.mode, assignments });
     if (scenario.medicalAfterFallback) {
@@ -471,7 +471,11 @@ async function isolated(scenario, branch = null) {
   for (const [i, t] of turns.entries()) {
     if (t.mode === 'ACT') check(`ui-${i}-no-unassessed-eye-closing`, !/Oči zavři/.test(t.text), t.text);
 
-    if (t.mode !== 'SAFETY_CRITICAL') check(`ui-${i}-conversation-open`, t.ui.input_enabled && t.ui.send_enabled && t.ui.microphone_enabled, { mode: t.mode, ui: t.ui });
+    const terminal = t.mode === 'SAFETY_CRITICAL' || (t.mode === 'HOLD' && t.debug?.reason_code === 'HOLD_DONE_TODAY');
+    check(`ui-${i}-${terminal ? 'conversation-closed' : 'conversation-open'}`,
+      terminal ? (!t.ui.input_enabled && !t.ui.send_enabled && !t.ui.microphone_enabled)
+        : (t.ui.input_enabled && t.ui.send_enabled && t.ui.microphone_enabled),
+      { mode: t.mode, reason_code: t.debug?.reason_code, ui: t.ui });
   }
   return { id: scenario.id, branch, status: checks.some(c => c.status === 'FAIL') ? 'FAIL' : checks.some(c => c.status === 'BLOCKED') ? 'BLOCKED' : 'PASS', matrix: scenario.matrix, product_review: productReview, profile, physical: initialPhysical, constraints, classification: initialClassification, leverage: initialEngine.system_leverage.selected, engine_action: selected, candidate_count: initialEngine.next_best_action.all_candidates?.length ?? 0, review_required: weightLoss && scenario.goal && /5 kg/.test(selected?.label ?? '') ? ['Catalog chooses a fixed-load overhead press selected for a weight-loss request; separate relevance/dose review is required'] : [], turns, assignments, checks };
 }
