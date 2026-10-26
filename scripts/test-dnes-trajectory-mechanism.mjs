@@ -109,7 +109,7 @@ sep('W1 — no explanation_context → graceful fallback, no crash');
 sep('W2 — leverage known, no goal branches → generic goal-state fallback');
 {
   const r = buildWhyResponse(ctxFor({ leverageNodeId: 'EXCESS_ADIPOSITY', action: { label: 'x', goal_impact: { branches: [] } } }));
-  check(r.text === 'Podle dostupných údajů se teď zaměřujeme na množství tělesného tuku. Cílem je podpořit tvůj aktuální zdravotní stav.',
+  check(r.text === 'Podle dostupných údajů se teď zaměřujeme na snižování nadváhy. Cílem je podpořit tvůj aktuální zdravotní stav.',
     'W2: exact fallback-goal text', `text: ${r.text}`);
 }
 
@@ -119,7 +119,7 @@ sep('W3 — leverage + single goal branch → one-sentence human form');
     leverageNodeId: 'EXCESS_ADIPOSITY',
     action: { label: 'x', goal_impact: { branches: ['SURVIVAL_HEALTHSPAN'] } },
   }));
-  check(r.text === 'Podle dostupných údajů se teď zaměřujeme na množství tělesného tuku. Cílem je podpořit tvoje zdraví.',
+  check(r.text === 'Podle dostupných údajů se teď zaměřujeme na snižování nadváhy. Cílem je podpořit tvoje zdraví.',
     'W3: exact single-branch text', `text: ${r.text}`);
 }
 
@@ -129,7 +129,7 @@ sep('W4 — leverage + both goal branches → joined with "a"');
     leverageNodeId: 'EXCESS_ADIPOSITY',
     action: { label: 'x', goal_impact: { branches: ['SURVIVAL_HEALTHSPAN', 'FUNCTIONAL_INDEPENDENCE'] } },
   }));
-  check(r.text === 'Podle dostupných údajů se teď zaměřujeme na množství tělesného tuku. Cílem je podpořit tvoje zdraví a tvoji soběstačnost.',
+  check(r.text === 'Podle dostupných údajů se teď zaměřujeme na snižování nadváhy. Cílem je podpořit tvoje zdraví a tvoji soběstačnost.',
     'W4: EXCESS_ADIPOSITY exact required text', `text: ${r.text}`);
 }
 
@@ -139,7 +139,7 @@ sep('W5 — constraint present and different from leverage → extra clause');
     leverageNodeId: 'EXCESS_ADIPOSITY', constraintNodeId: 'LOW_MUSCLE_STRENGTH',
     action: { label: 'x', goal_impact: { branches: ['SURVIVAL_HEALTHSPAN'] } },
   }));
-  check(r.text === 'Podle dostupných údajů se teď zaměřujeme na množství tělesného tuku. Cílem je podpořit tvoje zdraví. Zároveň hraje roli tvoje svalová síla.',
+  check(r.text === 'Podle dostupných údajů se teď zaměřujeme na snižování nadváhy. Cílem je podpořit tvoje zdraví. Zároveň hraje roli tvoje svalová síla.',
     'W5: exact constraint-clause text', `text: ${r.text}`);
 }
 
@@ -181,7 +181,7 @@ sep('W10 — the reverse branch order is NOT in GOAL_BRANCH_PAIR_CS — generic 
     leverageNodeId: 'EXCESS_ADIPOSITY',
     action: { label: 'x', goal_impact: { branches: ['SURVIVAL_HEALTHSPAN', 'FUNCTIONAL_INDEPENDENCE'] } },
   }));
-  check(r.text === 'Podle dostupných údajů se teď zaměřujeme na množství tělesného tuku. Cílem je podpořit tvoje zdraví a tvoji soběstačnost.',
+  check(r.text === 'Podle dostupných údajů se teď zaměřujeme na snižování nadváhy. Cílem je podpořit tvoje zdraví a tvoji soběstačnost.',
     'W10: EXCESS_ADIPOSITY branch order unaffected by the curated pair table', `text: ${r.text}`);
 }
 
@@ -217,7 +217,7 @@ sep('T2 — exactly one Goal Gateway reachable → single combined sentence');
   const r = buildTrajectoryResponse(ctxFor({
     leverageNodeId: 'EXCESS_ADIPOSITY', affected_nodes: ['INSULIN_RESISTANCE'], gateways: ['CARDIOVASCULAR_DISEASE'],
   }));
-  check(r.text === 'Může se ti zhoršovat citlivost na inzulín a zvyšovat riziko nemocí srdce a cév.',
+  check(r.text === 'Může se ti zhoršovat schopnost těla zpracovávat cukr a zvyšovat riziko nemocí srdce a cév.',
     'T2: EXCESS_ADIPOSITY exact required text', `text: ${r.text}`);
 }
 
@@ -226,7 +226,7 @@ sep('T3 — no Goal Gateway reachable → causal step only, no human-stake claus
   const r = buildTrajectoryResponse(ctxFor({
     leverageNodeId: 'EXCESS_ADIPOSITY', affected_nodes: ['INSULIN_RESISTANCE'], gateways: [],
   }));
-  check(r.text === 'Může se ti zhoršovat citlivost na inzulín.',
+  check(r.text === 'Může se ti zhoršovat schopnost těla zpracovávat cukr.',
     'T3: exact text — no gateway clause fabricated when none reachable', `text: ${r.text}`);
   check(!r.text.includes('riziku') && !r.text.includes('ohrozit') && !r.text.includes('ohrožovat'),
     'T3: no gateway wording leaked in', `text: ${r.text}`);
@@ -317,8 +317,8 @@ sep('M4 — 2-3 secondary targets, capped at 3');
       mechanism_targets: ['EXCESS_ADIPOSITY', 'PHYSICAL_INACTIVITY', 'HYPERTENSION', 'INSULIN_RESISTANCE', 'ENDOTHELIAL_DYSFUNCTION'],
     },
   }));
-  check(r.text === 'Svižná chůze nebo kolo — 20 minut (dá se mluvit) ti při pravidelném opakování může pomoci snížit množství tuku, ' +
-    'zvýšit pohybovou aktivitu, snížit krevní tlak a zlepšit citlivost na inzulín.',
+  check(r.text === 'Svižná chůze nebo kolo — 20 minut (dá se mluvit) ti při pravidelném opakování může pomoci snížit nadváhu, ' +
+    'zvýšit pohybovou aktivitu, podpořit zdravý krevní tlak a zlepšit zpracování cukru v těle.',
     'M4: exact capped-at-3 text (5 real mechanism_targets, 1 skipped, 1 would-be-4th never reached)', `text: ${r.text}`);
 }
 
@@ -423,13 +423,13 @@ sep('S1 — EXCESS_ADIPOSITY, exact required texts for all three views');
     leverageNodeId: 'EXCESS_ADIPOSITY',
     action: { label: 'Svižná chůze nebo kolo — 20 minut (dá se mluvit)', goal_impact: { branches: ['SURVIVAL_HEALTHSPAN', 'FUNCTIONAL_INDEPENDENCE'] } },
   });
-  check(buildWhyResponse(whyCtx).text === 'Podle dostupných údajů se teď zaměřujeme na množství tělesného tuku. Cílem je podpořit tvoje zdraví a tvoji soběstačnost.',
+  check(buildWhyResponse(whyCtx).text === 'Podle dostupných údajů se teď zaměřujeme na snižování nadváhy. Cílem je podpořit tvoje zdraví a tvoji soběstačnost.',
     'S1: Proč? — exact required text');
 
   const trajCtx = ctxFor({
     leverageNodeId: 'EXCESS_ADIPOSITY', affected_nodes: ['INSULIN_RESISTANCE'], gateways: ['CARDIOVASCULAR_DISEASE'],
   });
-  check(buildTrajectoryResponse(trajCtx).text === 'Může se ti zhoršovat citlivost na inzulín a zvyšovat riziko nemocí srdce a cév.',
+  check(buildTrajectoryResponse(trajCtx).text === 'Může se ti zhoršovat schopnost těla zpracovávat cukr a zvyšovat riziko nemocí srdce a cév.',
     'S1: Kam směřuješ? — exact required text');
 
   const mechCtx = ctxFor({
@@ -438,8 +438,8 @@ sep('S1 — EXCESS_ADIPOSITY, exact required texts for all three views');
       mechanism_targets: ['EXCESS_ADIPOSITY', 'PHYSICAL_INACTIVITY', 'HYPERTENSION', 'INSULIN_RESISTANCE', 'ENDOTHELIAL_DYSFUNCTION'],
     },
   });
-  check(buildMechanismResponse(mechCtx).text === 'Svižná chůze nebo kolo — 20 minut (dá se mluvit) ti při pravidelném opakování může pomoci snížit množství tuku, ' +
-    'zvýšit pohybovou aktivitu, snížit krevní tlak a zlepšit citlivost na inzulín.',
+  check(buildMechanismResponse(mechCtx).text === 'Svižná chůze nebo kolo — 20 minut (dá se mluvit) ti při pravidelném opakování může pomoci snížit nadváhu, ' +
+    'zvýšit pohybovou aktivitu, podpořit zdravý krevní tlak a zlepšit zpracování cukru v těle.',
     'S1: Co tím změníš? — exact required text');
 }
 
@@ -484,11 +484,11 @@ sep('G1/G2 — Guard F routes both chip texts deterministically, no AI classifie
   });
 
   const rTraj = await processInput('test-guard-f', 'Kam směřuješ?', sessionState);
-  check(rTraj.mode === 'EXPLAIN' && rTraj.text.includes('citlivost na inzulín'),
+  check(rTraj.mode === 'EXPLAIN' && rTraj.text.includes('zpracovávat cukr'),
     'G1: "Kam směřuješ?" routed to buildTrajectoryResponse via Guard F', `text: ${rTraj.text}`);
 
   const rMech = await processInput('test-guard-f', 'Co tím změníš?', sessionState);
-  check(rMech.mode === 'EXPLAIN' && rMech.text.includes('množství tuku'),
+  check(rMech.mode === 'EXPLAIN' && rMech.text.includes('snížit nadváhu'),
     'G2: "Co tím změníš?" routed to buildMechanismResponse via Guard F', `text: ${rMech.text}`);
 }
 

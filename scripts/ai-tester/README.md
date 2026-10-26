@@ -134,7 +134,7 @@ Software PASS is separate from product/clinical review: `REOPENED_DAY_AFTER_NEW_
 
 ## Approved completed-day policy (2026-10-13)
 
-Josef approved: after Hotovo, no additional exercise that day, including another intervention selected after new health input. New facts and corrections are still stored, blocking questions may still be asked, and safety/unsupported-medical rules remain higher priority. Daily decisions now use any recorded completed intervention for HOLD_DONE_TODAY, rather than only the newly selected intervention. The next day is evaluated normally using the existing UTC assignment-day convention.
+Josef approved: after Hotovo, no additional exercise that day, including another intervention selected after new health input. The launcher closes text and voice controls for the completed visit; a reload starts a newly evaluated visit. The server can still store new facts and corrections in a later visit, and safety/unsupported-medical rules remain higher priority. Daily decisions use any recorded completed intervention for HOLD_DONE_TODAY, rather than only the newly selected intervention. The next day is evaluated normally using the existing UTC assignment-day convention.
 
 The five-conversation suite now checks this policy, a restored stale assignment, empty client state, and a simulated next day with a controlled VM clock. Stale sequential completion requests do not write another completion. The read-before-write persistence guard is not an atomic database uniqueness guarantee for simultaneous requests. Real login/logout and clinical exercise suitability remain outside these software checks.
 

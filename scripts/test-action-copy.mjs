@@ -46,10 +46,9 @@ const proxyWhy = why(proxySession);
 assert.ok(/Údaje o síle a rovnováze/.test(proxyWhy.text));
 assert.ok(/Samy nepotvrzují nejistotu při běžné chůzi/.test(proxyWhy.text));
 assert.ok(!/Uvádíš nejistotu|Proto.*jistotu při chůzi/.test(proxyWhy.text));
-assert.match(proxyWhy.text, /Aktivita zaměřená na množství tělesného tuku teď nesplňuje bezpečnostní podmínky/);
+assert.doesNotMatch(proxyWhy.text, /tuku|nadváh|bezpečnostní podmínky/);
 assert.doesNotMatch(proxyWhy.text, /Chceš zhubnout|hlavní prioritu/);
-assert.ok(/Samotné hubnutí tento krok neřeší/.test(proxyWhy.text));
-assert.ok(proxyWhy.text.length < 350, 'Concise fallback preserves reason and scope');
+assert.ok(proxyWhy.text.length < 260, 'Concise fallback explains only the selected action and evidence');
 for (const report of [
   { question_id: 'gait_instability_reported', value: true },
   { question_id: 'gait_stability', value: ' NE ' },
@@ -158,13 +157,13 @@ console.log('PASS: SAFE advice visible once, locomotor examples relevant, mild/m
 const reported = structuredClone(proxySession);
 reported.last_domain_response.explanation_context.leverage_evidence = {direct:[{question_id:'gait_instability_reported',value:true}]};
 const reportedWhy = why(reported).text;
-assert.match(reportedWhy, /množství tělesného tuku/);
 assert.match(reportedWhy, /Uvádíš nejistotu při chůzi/);
-assert.match(reportedWhy, /Samotné hubnutí tento krok neřeší/);
+assert.doesNotMatch(reportedWhy, /tuku|nadváh|Samotné hubnutí|bezpečnostní podmínky/);
 const normalWeight = structuredClone(reported);
 normalWeight.last_domain_response.explanation_context.system_leverage = {node_id:'EXCESS_ADIPOSITY'};
 normalWeight.last_domain_response.explanation_context.action_fallback = null;
 assert.doesNotMatch(why(normalWeight).text, /Chceš zhubnout|bezpečnostní podmínky/);
+assert.match(why(normalWeight).text, /snižování nadváhy/);
 
 // Tomorrow navigation is deterministic, but compound health/unsupported inputs
 // must remain outside the exact navigation guard.
