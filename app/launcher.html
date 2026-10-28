@@ -537,7 +537,7 @@
         </svg>
       </button>
     </div>
-    <p class="input-hint">Můžeš mluvit nebo psát.</p>
+    <p id="input-hint" class="input-hint">Můžeš mluvit nebo psát.</p>
   </footer>
 </div>
 
@@ -607,6 +607,7 @@
   const $inputEcho = document.getElementById('input-echo');
   const $inputEchoLabel = document.getElementById('input-echo-label');
   const $inputEchoText = document.getElementById('input-echo-text');
+  const $inputHint = document.getElementById('input-hint');
   const $sendBtn  = document.getElementById('send-btn');
   const $micBtn   = document.getElementById('mic-btn');
   const $app      = document.getElementById('app');
@@ -763,6 +764,7 @@
     $input.disabled   = false;
     $sendBtn.disabled = false;
     $micBtn.disabled  = false;
+    $inputHint.classList.remove('hidden');
     $orb.classList.remove('hidden');
     $stageLabel.textContent = '';
     $stageLabel.className   = '';
@@ -880,6 +882,7 @@
     $input.disabled   = isTerminal;
     $sendBtn.disabled = isTerminal;
     $micBtn.disabled  = isTerminal;
+    $inputHint.classList.toggle('hidden', isTerminal);
 
     // Debug overlay
     if (_debugMode && $debug) {

@@ -17,6 +17,7 @@ for (const [response, expected] of [
 ]) {
   const state = ui.render({ text: 'Test', buttons: [], expects_reply: false, ...response });
   enabled(state, expected, response.mode);
+  assert.equal(state.hint_visible, expected, response.mode + ': input hint visibility follows availability');
   assert.equal(state.label, response.debug?.reason_code === 'HOLD_DONE_TODAY' ? '✓' : response.mode === 'ACT' ? 'DNES' : '');
   enabled(ui.loading(true), false, 'request in progress');
   enabled(ui.loading(false), expected, 'request finished');
@@ -24,6 +25,8 @@ for (const [response, expected] of [
 assert.equal(ui.render({ mode: 'SAFETY_BLOCKED', text: 'Test', buttons: ['Proč?'], expects_reply: true }).chips.includes('Proč?'), true);
 assert.equal(ui.click('Proč?'), 'Proč?');
 enabled(ui.render({ mode: 'SAFETY_CRITICAL', text: 'Test', buttons: [], expects_reply: false }), false, 'critical terminal unchanged');
+assert.equal(ui.state().hint_visible, false, 'critical terminal hides input hint');
 enabled(ui.render({ mode: 'SAFETY_BLOCKED', text: 'Restored', buttons: [], expects_reply: false }), true, 'restored legacy block unlocks terminal');
+assert.equal(ui.state().hint_visible, true, 'available input shows its hint');
 console.log('PASS: completed-today and critical visits stay closed; skipped, blocked, explain, noop, ask and act remain available; WHY chip submits.');
 
