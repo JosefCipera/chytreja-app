@@ -28,7 +28,7 @@ export function createLauncherHarness({ requestFlow = false, speech = false } = 
     Object.defineProperty(e, 'innerHTML', { set() { this.children = []; } });
     return e;
   };
-  const nodes = Object.fromEntries(['$orb', '$stageSub', '$stageLabel', '$stage', '$chips', '$input', '$sendBtn', '$micBtn', '$inputEcho', '$inputEchoLabel', '$inputEchoText'].map(k => [k, element()]));
+  const nodes = Object.fromEntries(['$orb', '$stageSub', '$stageLabel', '$stage', '$chips', '$input', '$sendBtn', '$micBtn', '$inputHint', '$inputEcho', '$inputEchoLabel', '$inputEchoText'].map(k => [k, element()]));
   const submitted = [];
   let storedSession = {}, storedResponse = null, nextResponse = null;
   const requests = [], recognizers = [];
@@ -48,7 +48,7 @@ export function createLauncherHarness({ requestFlow = false, speech = false } = 
   if (speech) vm.runInContext(html.slice(html.indexOf('  // ── Mic (Web Speech API)'), html.indexOf('  // ── Init')), ctx);
   const state = () => ({ input_enabled: !nodes.$input.disabled, send_enabled: !nodes.$sendBtn.disabled,
     microphone_enabled: !nodes.$micBtn.disabled, label: nodes.$stageLabel.textContent,
-    text: nodes.$stage.textContent, echo: nodes.$inputEchoText.textContent ?? '', echo_label: nodes.$inputEchoLabel.textContent ?? '', echo_visible: !nodes.$inputEcho.classList.contains('hidden'), draft: nodes.$input.value ?? '', chips: nodes.$chips.children.flatMap(g => g.children).map(b => b.textContent) });
+    text: nodes.$stage.textContent, echo: nodes.$inputEchoText.textContent ?? '', echo_label: nodes.$inputEchoLabel.textContent ?? '', echo_visible: !nodes.$inputEcho.classList.contains('hidden'), hint_visible: !nodes.$inputHint.classList.contains('hidden'), draft: nodes.$input.value ?? '', chips: nodes.$chips.children.flatMap(g => g.children).map(b => b.textContent) });
   return {
     configure({ session = storedSession, response } = {}) { storedSession = structuredClone(session); nextResponse = response; },
     async submit(text, source = 'text') { if (!requestFlow) throw Error('Request flow not enabled'); ctx.submittedText = text; ctx.inputSource = source; await vm.runInContext('orchestrate(submittedText, undefined, inputSource)', ctx); return state(); },
