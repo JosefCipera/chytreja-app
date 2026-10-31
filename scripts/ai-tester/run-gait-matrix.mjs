@@ -89,6 +89,10 @@ const weightScenarios = [
   { id: 'female-wish', text: 'Chtěla bych snížit váhu.', goal: true, profile: { gender: 'female', height: 165, weight: 91 }, lifestyle: { waist_cm: 104 } },
   { id: 'tester136-shape', text: 'Chci zhubnout.', goal: true, profile: { birth_year: 1958, gender: 'female', height: 165, weight: 71 }, lifestyle: { waist_cm: 81 }, physical: { vstat_ze_zeme: false, rovnovaha_zavrene_oci: false } },
   { id: 'weight-low-strength', text: 'Chci zhubnout.', goal: true, profile: { weight: 88 }, physical: { vstat_ze_zeme: false } },
+  { id: 'weight-three-strength-limitations', text: 'Chci mít větší sílu.', goal: false,
+    profile: { weight: 88 },
+    physical: { vstat_ze_zeme: false, zvednout_vnouce: false, vynest_nakup: false,
+      recent_falls: false, rovnovaha_zavrene_oci: true } },
   { id: 'weight-gait', text: 'Chci zhubnout.', goal: true, profile: { weight: 88 }, physical: { gait_instability_reported: true } },
   { id: 'weight-eyes-closed-only', text: 'Chci zhubnout.', goal: true, profile: { weight: 88 }, physical: { rovnovaha_zavrene_oci: false } },
   { id: 'weight-eyes-closed-stable', text: 'Chci zhubnout.', goal: true, profile: { weight: 88 }, physical: { rovnovaha_zavrene_oci: false, gait_stability: true } },
@@ -282,7 +286,8 @@ async function isolated(scenario, branch = null) {
       check('floor-proxy-inputs-retained', health.physical.vstat_ze_zeme === false && health.physical.rovnovaha_zavrene_oci === false && health.physical.recent_falls === false, health.physical);
       if (scenario.id.endsWith('-stable')) {
         check('stable-gait-reconciles-only-proxies', !gait && response.mode === 'ACT' && !session.pending_question, { gait: gait?.evidence, mode: response.mode });
-        check('stable-gait-moderate-entry', selected?.action_id === '380bb59c-6c0c-40e4-973d-20c5447ef4b2', selected?.action_id);
+        check('stable-gait-preserves-direct-strength-priority', initialEngine.action_leverage.selected?.node_id === 'LOW_MUSCLE_STRENGTH'
+          && selected?.action_id === 'sit_to_stand_supported', { action_leverage: initialEngine.action_leverage.selected, action: selected?.action_id });
       } else {
         check('unresolved-or-negative-gait-retains-inference', Boolean(gait), gait?.evidence);
         check('unresolved-asks-negative-uses-checked-fallback', scenario.id.endsWith('-unstable') ? safeFallback(response) : response.mode !== 'ACT' && !session.current_action_assignment, { mode: response.mode });
@@ -303,6 +308,20 @@ async function isolated(scenario, branch = null) {
     const reloadWhy = await turn('Proč?');
     check('why-independent-of-forged-client-goal', reloadWhy.text === why.text, reloadWhy.text);
     if (leverage && leverage !== 'EXCESS_ADIPOSITY' && response.mode !== 'SAFETY_BLOCKED') check('server-goal-retains-selected-priority', !/tuku|nadváh|Samotné hubnutí/.test(reloadWhy.text), reloadWhy.text);
+  }
+  if (scenario.id === 'overweight') {
+    check('adiposity-without-functional-limitation', initialEngine.action_leverage.selected?.node_id === 'EXCESS_ADIPOSITY'
+      && selected?.intervention_id === 'AEROBIC_TRAINING', { action_leverage: initialEngine.action_leverage.selected, selected });
+  }
+  if (['weight-low-strength', 'weight-three-strength-limitations'].includes(scenario.id)) {
+    check('direct-functional-limitation-selects-strength-action', initialEngine.system_leverage.selected?.node_id === 'EXCESS_ADIPOSITY'
+      && initialEngine.action_leverage.selected?.node_id === 'LOW_MUSCLE_STRENGTH'
+      && selected?.action_id === 'sit_to_stand_supported'
+      && selected?.intervention_id === 'FUNCTIONAL_STRENGTH_TRAINING', {
+        system_leverage: initialEngine.system_leverage.selected,
+        action_leverage: initialEngine.action_leverage.selected,
+        selected,
+      });
   }
   check('engine-presentation-contract', response.mode !== 'ACT' || session.current_action_assignment?.action_id === selected?.action_id, { mode: response.mode, rendered: session.current_action_assignment?.action_id ?? null, engine: selected?.action_id ?? null });
   if (selected) {
@@ -438,7 +457,7 @@ async function isolated(scenario, branch = null) {
         const nextItem = session.last_daily_decision?.primary_item;
         check('next-act-has-assignment', response.mode !== 'ACT' || session.current_action_assignment?.action_id === nextItem?.action_id, { mode: response.mode, engine: nextItem?.action_id, assignment: session.current_action_assignment });
         check('skipped-not-offered-again', session.current_action_assignment?.action_id !== assigned.action_id, { mode: response.mode, next: session.current_action_assignment?.action_id ?? null });
-        if (scenario.id === 'floor-proxy-skip') {
+        if (scenario.id === 'weight-walk-skip') {
           const previousRow = catalog.find(a => a.id === assigned.action_id);
           const nextRow = catalog.find(a => a.id === nextItem?.action_id);
           check('20-to-30-minutes-never-after-skip', response.mode !== 'ACT' || (nextRow?.type === 'timed' && Number.isFinite(nextRow.duration) && nextRow.duration <= previousRow.duration), { previous: previousRow?.duration, next: nextRow?.duration, mode: response.mode });
@@ -447,7 +466,7 @@ async function isolated(scenario, branch = null) {
         }
         const equivalents = new Set(['b3f9b408-47a5-4529-bfbb-906a2324813b', 'rovnovaha_stoj_1']);
         check('skipped-equivalent-not-offered-again', !(response.mode === 'ACT' && equivalents.has(assigned.action_id) && equivalents.has(nextItem?.action_id)), { skipped: assigned.action_id, offered: nextItem?.action_id ?? null, text: response.text });
-        if (scenario.id === 'floor-proxy-skip' && response.mode === 'ACT') {
+        if (scenario.id === 'weight-walk-skip' && response.mode === 'ACT') {
           const walkAliases = new Set(['chuze_20min', 'chůze_20min', 'telo_chůze']);
           check('walk-alias-journey-reached', walkAliases.has(session.current_action_assignment?.action_id), session.current_action_assignment?.action_id);
           const skippedWalk = structuredClone(session.current_action_assignment);
@@ -489,9 +508,9 @@ for (const branch of ((combinations || conversations || outages) ? [] : weightLo
   try { results.push(await isolated({ ...scenario, id: 'journey-' + branch }, branch)); } catch (error) { results.push({ id: 'journey-' + branch, status: 'BLOCKED', reason: error.message }); }
 }
 if (weightLoss && !combinations && !conversations && !outages) {
-  const fixture = scenarios.find(s => s.id === 'floor-proxy-gait-stable');
-  try { results.push(await isolated({ ...fixture, id: 'floor-proxy-skip' }, 'skip')); }
-  catch (error) { results.push({ id: 'floor-proxy-skip', status: 'BLOCKED', reason: error.message }); }
+  const fixture = scenarios.find(s => s.id === 'overweight');
+  try { results.push(await isolated({ ...fixture, id: 'weight-walk-skip' }, 'skip')); }
+  catch (error) { results.push({ id: 'weight-walk-skip', status: 'BLOCKED', reason: error.message }); }
 }
 const counts = Object.fromEntries(['PASS', 'FAIL', 'BLOCKED'].map(s => [s, results.filter(r => r.status === s).length]));
 console.log(JSON.stringify({ suite: outages ? 'classifier_outage_endpoint' : conversations ? 'conversation_changes_endpoint' : bloodPressure ? 'blood_pressure_endpoint' : clinicalDiscovery ? 'clinical_discovery_endpoint' : combinations ? 'crt_combinations_endpoint' : weightLoss ? 'weight_loss_endpoint' : 'gait', mode: live ? 'live_classifier_full_engine_public_catalog' : 'injected_classifier_full_engine_public_catalog', catalog: catalogMeta, counts, limitations: ['All user profiles and writes are synthetic and isolated in memory', 'No browser, authentication or microphone/audio transcription test', 'No clinical efficacy or exercise dose validation', ...(combinations ? [(clinicalDiscovery || bloodPressure) ? 'Explicit synthetic clinical/discovery answers; injected classification only' : '768 journeys over 64 profiles and two intents; some answer/outcome branches coincide when no question/action is reached', 'Product review flags are separate from software PASS; priority correctness is not assumed from engine output'] : []), ...(weightLoss ? ['Real endpoint hydration, but Firebase authentication is mocked', 'Exact weight wishes use the existing server parser and bypass Haiku; live mode exercises AI only for inputs reaching classification', 'Review-required catalog choices do not become clinically approved through PASS'] : []), 'BLOCKED journeys are not counted as passing'], results }, null, 2));

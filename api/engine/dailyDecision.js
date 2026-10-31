@@ -18,6 +18,8 @@
 // the repetitions that minimum_exposure_rule requires. Repetition is limited to one
 // completed action across interventions per day.
 
+import { readYesNo } from './evidenceResolution.js';
+
 // ── Internal helpers ──────────────────────────────────────────────────────────
 
 const URGENCY_RANK = { high: 0, medium: 1, low: 2 };
@@ -301,10 +303,75 @@ export function computeDailyDecision(engineResult, asOf = new Date()) {
 // Availability policy, not new clinical inference. Every alternative is evaluated
 // by the existing NBA and Daily Decision with the same person/safety/exposure data.
 const AVAILABLE_LEVERAGE_RANK = { none: 0, low: 1, medium: 2, high: 3 };
+
+const DIRECT_FUNCTIONAL_STRENGTH_QUESTIONS = new Set([
+  'vstat_ze_zeme',
+  'zvednout_vnouce',
+  'vynest_nakup',
+]);
+
+function hasDirectFunctionalStrengthLimitation(candidate) {
+  return (candidate?.evidence ?? []).some(evidence =>
+    DIRECT_FUNCTIONAL_STRENGTH_QUESTIONS.has(evidence?.question_id)
+      && readYesNo(evidence.value) === 'no'
+  );
+}
+
+function withActionLeverage(systemLeverage, candidate, explanation) {
+  return {
+    ...systemLeverage,
+    selected: {
+      node_id: candidate.node_id,
+      current_state: candidate.current_state,
+      confidence: candidate.confidence,
+    },
+    selection_basis: {
+      safety_override: false,
+      threat: candidate.threat,
+      time_sensitivity: candidate.time_sensitivity,
+      causal_reach: candidate.causal_reach,
+      cross_context_leverage: candidate.cross_context_leverage,
+      changeability: candidate.changeability,
+    },
+    affected_contexts: candidate.cross_context_leverage?.contexts ?? [],
+    explanation,
+  };
+}
+
 export async function findAvailableLeverage({ systemLeverage, primaryNba, decisionGate, responseEvaluations, interventionExposure, mappings, evaluate }) {
   const primaryDecision = computeDailyDecision({ decision_gate: decisionGate, next_best_action: primaryNba,
     response_evaluations: responseEvaluations, intervention_exposure: interventionExposure });
   const none = { actionLeverage: systemLeverage, nba: primaryNba, fallback: null };
+
+  // Product contract (Jana, 2026-08-22; locked endpoint journey, 2026-10-07):
+  // measured adiposity may remain the broad systemic leverage, but it must not erase a
+  // directly reported limitation of everyday strength from today's action. One direct
+  // functional limitation is sufficient; this is not a score or a count threshold.
+  // The strength alternative still passes through the unchanged NBA and Safety Gate.
+  const directStrength = (systemLeverage.candidates ?? []).find(candidate =>
+    candidate.node_id === 'LOW_MUSCLE_STRENGTH'
+      && ['CONFIRMED', 'MEASURED'].includes(candidate.current_state)
+      && hasDirectFunctionalStrengthLimitation(candidate)
+      && mappings[candidate.node_id]?.interventions?.length
+  );
+  if (primaryDecision.mode === 'ACT'
+      && systemLeverage.selected?.node_id === 'EXCESS_ADIPOSITY'
+      && directStrength) {
+    const nba = await evaluate(directStrength.node_id, mappings[directStrength.node_id]);
+    const decision = computeDailyDecision({ decision_gate: decisionGate, next_best_action: nba,
+      response_evaluations: responseEvaluations, intervention_exposure: interventionExposure });
+    const viable = ['SAFE', 'SAFE_WITH_MODIFICATION'].includes(nba.selected?.safety?.level);
+    if (((decision.mode === 'ACT' || decision.reason_code === 'HOLD_DONE_TODAY') && viable)
+        || decision.reason_code === 'HOLD_SKIPPED_TODAY') {
+      return {
+        actionLeverage: withActionLeverage(systemLeverage, directStrength,
+          `Today's action addresses a direct functional-strength limitation; systemic priority ${systemLeverage.selected.node_id} remains unchanged.`),
+        nba,
+        fallback: null,
+      };
+    }
+  }
+
   // Never reinterpret missing evidence, a crisis, an existing ACT, completion or skip as availability.
   if (primaryDecision.reason_code !== 'SAFETY_BLOCKED' || !systemLeverage.selected) return none;
   const primaryId = systemLeverage.selected.node_id;
@@ -325,12 +392,8 @@ export async function findAvailableLeverage({ systemLeverage, primaryNba, decisi
     if (!(dd.mode === 'ACT' && viable)
         && !(dd.reason_code === 'HOLD_DONE_TODAY' && viable)
         && dd.reason_code !== 'HOLD_SKIPPED_TODAY') continue;
-    const actionLeverage = { ...systemLeverage,
-      selected: { node_id: candidate.node_id, current_state: candidate.current_state, confidence: candidate.confidence },
-      selection_basis: { safety_override: false, threat: candidate.threat, time_sensitivity: candidate.time_sensitivity,
-        causal_reach: candidate.causal_reach, cross_context_leverage: candidate.cross_context_leverage, changeability: candidate.changeability },
-      affected_contexts: candidate.cross_context_leverage?.contexts ?? [],
-      explanation: `Available action branch ${candidate.node_id}; primary ${primaryId} remains assessment-blocked.` };
+    const actionLeverage = withActionLeverage(systemLeverage, candidate,
+      `Available action branch ${candidate.node_id}; primary ${primaryId} remains assessment-blocked.`);
     return { actionLeverage, nba, fallback: { status: 'SELECTED', primary_node_id: primaryId,
       selected_node_id: candidate.node_id, primary_decision: primaryDecision, attempts } };
   }

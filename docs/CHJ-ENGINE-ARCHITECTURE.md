@@ -452,6 +452,22 @@ nikdy nedostala (reprodukováno na chůzi, `BREAK_UP_SEDENTARY_TIME`).
 
 ---
 
+### Dnešní akce při souběhu nadváhy a přímého funkčního omezení — LOCK
+
+`SYSTEM_LEVERAGE` může ponechat `EXCESS_ADIPOSITY` jako širší dlouhodobou systémovou páku.
+Jestliže však přímá odpověď ukazuje, že člověk nezvládá alespoň jeden běžný silový úkon
+(`vstat_ze_zeme`, `zvednout_vnouce`, `vynest_nakup`), dnešní `action_leverage` přechází na
+`LOW_MUSCLE_STRENGTH` a jeho akce musí projít standardním NBA a Safety Gate.
+
+Toto pravidlo není skóre ani práh počtu negativních odpovědí: jedno doložené funkční omezení stačí.
+Nevztahuje se na pouhé přání zesílit bez evidence. Pokud primární akci blokuje nejistá chůze nebo
+jiné bezpečnostní pravidlo, zachovává se stávající bezpečnostní/fallback pořadí.
+
+Původ kontraktu: Jana (22. 8. 2026); endpoint scénář `known-strength-priority`
+(`5438bc8`, PR #45); dokumentovaný průchod `THREE-ENTRY-JOURNEYS-2026-10-14.md`.
+
+---
+
 ## 11. DAILY_DECISION Contract
 
 `computeDailyDecision()` je čistá orchestrační funkce — čte výstup `runEngine()`, vrací jedno rozhodnutí. Žádná nová klinická inference.
