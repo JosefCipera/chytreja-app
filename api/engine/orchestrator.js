@@ -440,6 +440,14 @@ const BP_FULL_RE = /^(?:(?:tlak\s+(?:mám|je|mívám|bývá)(?:\s+(?:asi|zhruba|
 export const DOMAIN_REQUEST_NAV_RE =
   /^(?:co\s+(?:tedy\s+|teď\s+)?mám\s+(?:teď\s+)?u?dělat|co\s+(?:teď|ted|dál|dal|doporuč(?:uješ)?)|co\s+(?:(?:mám|mam)\s+(?:u?dělat|u?delat)\s+)?(?:zítra|zitra)|poraď(?:\s+mi)?)[\s.,!?]*$/i;
 
+// A desired future ability is a navigation goal, never evidence that the
+// ability already exists. Keep this deterministic: Haiku previously turned
+// "Chci vstát sám bez opory rukou" into vstat_ze_zeme=true and overwrote the
+// opposite onboarding answer. Explicit present-tense reports still reach the
+// functional-fact classifier rules below.
+export const FLOOR_RISE_GOAL_RE =
+  /^(?:chci|cht[eě]l\s+bych|cht[eě]la\s+bych)\s+(?:um[eě]t\s+)?vst[aá]t\s+(?:s[aá]m|sama)?\s*(?:ze\s+zem[eě]\s+)?bez\s+(?:opory|pomoci)\s+rukou[\s.,!?]*$/i;
+
 let client;
 function getClient() {
   if (!client) client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -1715,6 +1723,13 @@ async function processInputCore(userId, userText, sessionState = {}) {
   // pending-answer guards above retain precedence; no engine decision is changed.
   if (!classified && state.explicit_goal_request === true) {
     classified = { event_type: 'GENERAL_HEALTH_REQUEST', payload: { text: userText } };
+  }
+
+  // A floor-rise wish asks the existing engine for today's action. It must not
+  // enter ANSWER_TO_EVIDENCE_QUESTION and therefore cannot mutate the stored
+  // onboarding fact. DOMAIN_REQUEST is the existing read-only engine route.
+  if (!classified && FLOOR_RISE_GOAL_RE.test(userText.trim())) {
+    classified = { event_type: 'DOMAIN_REQUEST', payload: {} };
   }
 
   // Fall through: AI classifier (Haiku). Called only when no guard fired above.
