@@ -4,8 +4,8 @@ import fs from 'node:fs';
 import url from 'node:url';
 import path from 'node:path';
 import crypto from 'node:crypto';
-let classification,events=[];
-class AI{messages={create:async()=>({content:[{type:'tool_use',input:classification}]})};}
+let classification,events=[],aiCalls=0;
+class AI{messages={create:async()=>{aiCalls++;return {content:[{type:'tool_use',input:classification}]};}};}
 const mocks={
  '@anthropic-ai/sdk':{default:AI},
  './healthEventAdapter.js':{applyHealthEvent:async(_uid,event)=>{events.push(event);return {persistence_status:'ok',warnings:[],domain_response:{daily_decision:{mode:'HOLD'},explanation_context:{}}};}},
@@ -34,4 +34,29 @@ const exhausted=await m.namespace.processInput('fixture','Špatně se mi vstáv�
 assert.equal(exhausted.mode,'HOLD');assert.equal(events.length,0);
 const medical=await m.namespace.processInput('fixture','Mám synkopu a špatně se mi vstává.',{});
 assert.equal(medical.debug.reason_code,'UNSUPPORTED_REQUEST');assert.equal(events.length,0);
+
+// A wish is not a present-tense ability fact. Even a hostile classifier result
+// must be bypassed so the stored onboarding false cannot be overwritten by true.
+for (const wish of [
+ 'Chci vstát sám bez opory rukou.',
+ 'Chci vstat sam bez opory rukou.',
+ 'Chci vstát ze země bez pomoci rukou.',
+ 'Chtěl bych umět vstát ze země bez opory rukou.',
+]) {
+ events=[];aiCalls=0;
+ classification={event_type:'ANSWER_TO_EVIDENCE_QUESTION',payload:{evidence_type:'vstat_ze_zeme',value:true}};
+ await m.namespace.processInput('fixture',wish,{});
+ assert.equal(aiCalls,0,`goal bypasses classifier: ${wish}`);
+ assert.equal(events.length,1);
+ assert.equal(events[0].event_type,'DOMAIN_REQUEST');
+ assert.equal(events[0].payload.evidence_type,undefined);
+}
+
+// Explicit current ability remains factual and still reaches the classifier.
+events=[];aiCalls=0;
+classification={event_type:'ANSWER_TO_EVIDENCE_QUESTION',payload:{evidence_type:'vstat_ze_zeme',value:true}};
+await m.namespace.processInput('fixture','Ze země vstanu bez opory rukou.',{});
+assert.equal(aiCalls,1);
+assert.equal(events[0].event_type,'ANSWER_TO_EVIDENCE_QUESTION');
+assert.equal(events[0].payload.value,true);
 console.log('PASS: ambiguity → chair/floor → explicit ability question → factual answer; no premature writes, stale action cleared, budget and medical scope preserved.');
