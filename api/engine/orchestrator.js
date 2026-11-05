@@ -2676,6 +2676,25 @@ async function processInputCore(userId, userText, sessionState = {}) {
     presentation.text = `${intro} ${presentation.text}`;
   }
 
+  // Acknowledge a wish to increase muscle mass without treating it as a
+  // diagnosis or a functional deficit. parseSupportedGoal (healthEventAdapter.js)
+  // never writes this to symptoms/diagnoses — only here, in presentation, do we
+  // state its relation to muscle/functional reserve. The selected action, dose
+  // and safety are unchanged; this only makes the engine's existing decision
+  // (ACT / no leverage yet) legible against the stated goal.
+  if (state.person_goal === 'MUSCLE_RESERVE') {
+    if (presentation.mode === 'ACT' && ctx?.system_leverage?.node_id) {
+      const focus = WHY_FOCUS_CS[ctx.system_leverage.node_id];
+      const intro = ctx.system_leverage.node_id !== 'LOW_MUSCLE_STRENGTH' && focus
+        ? `Chceš mít větší svaly. To souvisí se svalovou rezervou pro dlouhověkost. Dnes má přednost ${focus}.`
+        : 'Chceš mít větší svaly. To souvisí se svalovou rezervou pro dlouhověkost.';
+      presentation.text = `${intro} ${presentation.text}`;
+    } else if (!ctx?.system_leverage?.node_id) {
+      presentation.text =
+        `Chceš mít větší svaly. To souvisí se svalovou rezervou pro dlouhověkost, ne s diagnózou. ${presentation.text}`.trim();
+    }
+  }
+
   return presentation;
 }
 

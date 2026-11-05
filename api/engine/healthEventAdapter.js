@@ -596,11 +596,21 @@ function makeResult(persistence_status, engine_called, domain_response, warnings
 
 // Explicit supported intent, not a symptom or a clinical conclusion.
 // Full-string matching keeps negation, quoted wishes and mixed medical inputs out.
+//
+// MUSCLE_RESERVE: a wish to increase muscle mass/size. This is a goal, not a
+// reported deficit \u2014 it must never be read as LOW_MUSCLE_STRENGTH evidence
+// (that requires an actual functional test answer, see activation.js). The
+// relation to longevity goes through muscle/functional reserve; presentation
+// (orchestrator.js) states that relation explicitly rather than silently
+// substituting an unrelated action.
 export function parseSupportedGoal(text) {
   if (typeof text !== 'string') return null;
   const normalized = text.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[.!?]+$/, '').trim();
-  return /^(?:chci|chtel bych|chtela bych) (?:zhubnout|snizit (?:vahu|hmotnost))$/.test(normalized)
-    ? 'WEIGHT_LOSS' : null;
+  if (/^(?:chci|chtel bych|chtela bych) (?:zhubnout|snizit (?:vahu|hmotnost))$/.test(normalized))
+    return 'WEIGHT_LOSS';
+  if (/^(?:chci|chtel bych|chtela bych) (?:mit vetsi svaly|zvetsit svalovou hmotu|zvetsit svalovou hmotnost|nabrat svaly|nabrat svalovou hmotu)$/.test(normalized))
+    return 'MUSCLE_RESERVE';
+  return null;
 }
 
 // ── Main export ───────────────────────────────────────────────────────────────
