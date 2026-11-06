@@ -603,6 +603,15 @@ function makeResult(persistence_status, engine_called, domain_response, warnings
 // relation to longevity goes through muscle/functional reserve; presentation
 // (orchestrator.js) states that relation explicitly rather than silently
 // substituting an unrelated action.
+// LONGEVITY_INTENT: a direct statement of interest in long-term health, healthy
+// ageing or keeping functional capacity (self-sufficiency) \u2014 the CHJ mission
+// itself, not a tangential goal. Several phrasings are recognized (not one
+// fixed sentence), still full-string matched so a negated, quoted, third-person
+// or compound statement is excluded by the same anchoring as WEIGHT_LOSS/
+// MUSCLE_RESERVE. Must never create a constraint, deficit or action by itself
+// (orchestrator.js only prefixes the unchanged decision with an acknowledgment).
+const LONGEVITY_INTENT_RE = /^(?:chci|chtel bych|chtela bych) (?:(?:se )?dozit (?:\d{2,3} let )?ve zdravi(?: jako (?:japonci|japonky))?|(?:se )?dozit vysokeho veku ve zdravi|zit dlouho(?: a zdrave)?|dlouho zit(?: ve zdravi)?|zdrave (?:zestarnout|starnout)|zustat sobestacn[ya](?: co nejdele)?|byt (?:fit|zdravy|zdrava)(?: a fit)? i v \d{2,3} letech|se zamerit na dlouhovekost|resit dlouhovekost)$/;
+
 export function parseSupportedGoal(text) {
   if (typeof text !== 'string') return null;
   const normalized = text.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[.!?]+$/, '').trim();
@@ -610,6 +619,8 @@ export function parseSupportedGoal(text) {
     return 'WEIGHT_LOSS';
   if (/^(?:chci|chtel bych|chtela bych) (?:mit vetsi svaly|zvetsit svalovou hmotu|zvetsit svalovou hmotnost|nabrat svaly|nabrat svalovou hmotu)$/.test(normalized))
     return 'MUSCLE_RESERVE';
+  if (LONGEVITY_INTENT_RE.test(normalized))
+    return 'LONGEVITY_INTENT';
   return null;
 }
 

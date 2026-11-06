@@ -2695,6 +2695,16 @@ async function processInputCore(userId, userText, sessionState = {}) {
     }
   }
 
+  // Acknowledge a direct longevity/healthy-ageing wish as the CHJ mission
+  // itself, then continue with the engine's unchanged decision (ACT / ASK /
+  // HOLD, whatever DECISION_GATE already produced from available evidence).
+  // Every leverage node already serves longevity by construction, so unlike
+  // WEIGHT_LOSS/MUSCLE_RESERVE there is no competing-domain branch to justify —
+  // this never creates a constraint, deficit or action on its own.
+  if (state.person_goal === 'LONGEVITY_INTENT') {
+    presentation.text = `Přesně to je poslání Chytrého já. ${presentation.text}`.trim();
+  }
+
   return presentation;
 }
 

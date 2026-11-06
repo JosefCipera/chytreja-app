@@ -210,5 +210,26 @@ function report(id, label, ok, detail) {
   report('T7', 'response evaluation is a distinct, separately-labelled finding from raw completion count', responseEval === undefined || typeof responseEval?.result === 'string', JSON.stringify(responseEval));
 }
 
-console.log(`\n${failures === 0 ? 'ALL PASS' : failures + ' FAILED'} — ${7} audit scenarios (T1–T7), real engine pipeline, isolated DB/AI boundary.`);
+// ── T8: longevity-intent goal ("Chci se dožít 100 let ve zdraví.") ──────────
+// T8a: insufficient data (healthy, brand-new) — must still ask, never fabricate.
+{
+  const person = { person_id: 'audit-fixture', sex: null, birth_year: null, height_cm: null };
+  const ch = emptyClinicalHistory({ clinical_history_documented: false });
+  const engineResult = await runFixtureEngine({ person, clinicalHistory: ch, observations: [] });
+  const out = await presentFor(engineResult, { person_goal: 'LONGEVITY_INTENT' });
+  report('T8a', 'mission acknowledged even with zero evidence', out.text.startsWith('Přesně to je poslání Chytrého já.'), out.text);
+  report('T8a', 'insufficient data still asks (BOOTSTRAP), never fabricates an action', out.mode === 'ASK', out.mode);
+}
+// T8b: sufficient data already available (same profile as T2) — standard ACT proceeds.
+{
+  const person = basePerson;
+  const ch = emptyClinicalHistory({ onboarding_inputs: { recent_falls: false, vynest_nakup: true, zvednout_vnouce: true, vstat_ze_zeme: 'Ne.', rovnovaha_zavrene_oci: true } });
+  const engineResult = await runFixtureEngine({ person, clinicalHistory: ch, observations: [] });
+  const out = await presentFor(engineResult, { person_goal: 'LONGEVITY_INTENT' });
+  report('T8b', 'mission acknowledged alongside a concrete action', out.text.startsWith('Přesně to je poslání Chytrého já.'), out.text);
+  report('T8b', 'with enough evidence the standard decision (ACT) proceeds unchanged', out.mode === 'ACT', out.mode);
+  report('T8b', 'leverage/action selection itself is untouched by the goal (still LOW_MUSCLE_STRENGTH)', engineResult.system_leverage?.selected?.node_id === 'LOW_MUSCLE_STRENGTH', engineResult.system_leverage?.selected?.node_id);
+}
+
+console.log(`\n${failures === 0 ? 'ALL PASS' : failures + ' FAILED'} — ${9} audit scenarios (T1–T7, T8a/T8b), real engine pipeline, isolated DB/AI boundary.`);
 process.exitCode = failures === 0 ? 0 : 1;
