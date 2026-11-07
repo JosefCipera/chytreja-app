@@ -14,7 +14,7 @@ async function isolated(file,mocks){
 }
 let rows=[];
 const adapter=await isolated(new URL('../api/engine/healthEventAdapter.js',import.meta.url),{
- '@supabase/supabase-js':{createClient:()=>({from(table){assert.equal(table,'action_assignments');return {insert:async row=>{rows.push(row);return {error:null};}};}})},
+ '@supabase/supabase-js':{createClient:()=>({from(table){assert.equal(table,'action_assignments');const q={select(){return q;},eq(){return q;},limit(){return q;},maybeSingle:async()=>({data:null,error:null}),insert:async row=>{rows.push(row);return {error:null};}};return q;}})},
  './engine.js':{runEngine:async()=>({})},'./dailyDecision.js':{computeDailyDecision:()=>({mode:'HOLD',reason_code:'HOLD_DONE_TODAY'})},'./adapter.js':{mapDiagnosis:()=>null}, './evidenceResolution.js':{readYesNo},
 });
 class AI{messages={create(){throw Error('Completion chips must bypass AI');}};}
