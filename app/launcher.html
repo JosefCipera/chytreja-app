@@ -182,22 +182,22 @@
       display: flex; align-items: center; gap: 10px;
     }
     .avatar-large {
-      width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
+      width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;
       background: var(--surface); border: 1px solid rgba(58,203,216,0.42);
-      color: var(--cyan); font-size: 13px; font-weight: 500;
+      color: var(--cyan); font-size: 14px; font-weight: 500;
       display: flex; align-items: center; justify-content: center;
     }
     .dropdown-header-info { min-width: 0; }
     .dropdown-email {
-      font-size: 12px; color: var(--text); white-space: nowrap;
+      font-size: 13px; color: var(--text); white-space: nowrap;
       overflow: hidden; text-overflow: ellipsis;
     }
-    .status-row { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+    .status-row { display: flex; align-items: center; gap: 8px; margin-top: 5px; }
     .badge-free {
       background: rgba(58,203,216,0.12); color: var(--cyan);
-      padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: 600;
+      padding: 2px 9px; border-radius: 6px; font-size: 11px; font-weight: 600;
     }
-    .upgrade-link { color: var(--cyan); text-decoration: underline; font-size: 11px; }
+    .upgrade-link { color: var(--cyan); text-decoration: underline; font-size: 12px; }
 
     .dropdown-nav { list-style: none; padding: 6px 0; }
     .dropdown-nav li a,
@@ -540,7 +540,7 @@
             </div>
           </div>
           <ul class="dropdown-nav">
-            <li><a href="/crt.html" id="menu-profile-link">👤 Já</a></li>
+            <li><button id="menu-profile-btn">👤 Já</button></li>
             <li><a href="/app/medioteka.html">📚 Mediotéka</a></li>
             <li id="menu-tester-item" class="hidden">
               <button id="menu-tester-btn">Tester nástroje</button>
@@ -607,7 +607,7 @@
   import { initializeApp }                        from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js';
   import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js';
   import { authFetch }                            from '/app/js/universe/authFetch.js';
-  import { checkAndShowOnboarding }              from '/app/js/universe/onboarding-wizard.js';
+  import { checkAndShowOnboarding, showOnboarding } from '/app/js/universe/onboarding-wizard.js';
 
   const firebaseApp = initializeApp({
     apiKey:            'AIzaSyAKREZsoBZkA1xOQ5ff3XDmiJ88nwSjeOk',
@@ -1188,7 +1188,6 @@
 
     checkAndShowOnboarding(userId).catch(e => console.warn('[onboarding]', e));
     loadBatteryBar(userId);
-    document.getElementById('menu-profile-link').href = `/crt.html?userId=${encodeURIComponent(userId)}`;
 
     if (_isPostHandoff) {
       history.replaceState({}, '', '/launcher');
@@ -1242,6 +1241,12 @@
       }
     });
   }
+
+  // ── Menu: Já (reopen onboarding) ──────────────────────────────────────────────
+  document.getElementById('menu-profile-btn').addEventListener('click', () => {
+    $profileDrop.classList.remove('open');
+    showOnboarding(_uid ?? window.__chj_userId);
+  });
 
   // ── Logout ───────────────────────────────────────────────────────────────────
   document.getElementById('logout-btn').addEventListener('click', async () => {

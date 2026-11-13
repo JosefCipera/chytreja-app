@@ -18,6 +18,13 @@ export async function checkAndShowOnboarding(userId) {
   _showWizard(userId);
 }
 
+// Opens the wizard unconditionally, regardless of onboarding_completed —
+// used by the "Já" menu entry to let a user revisit/edit their profile data.
+export function showOnboarding(userId) {
+  if (!userId) return;
+  _showWizard(userId);
+}
+
 function _showWizard(userId) {
   // The launcher's text/voice footer belongs to the conversation, not to this
   // form. Leaving it visible behind the modal makes it look like an alternate
