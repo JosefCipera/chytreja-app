@@ -1208,12 +1208,14 @@
     if (last && last.mode !== 'ASK' && last.mode !== 'HOLD') {
       render(last);
     } else {
+      // No cached actionable response (first visit, or last one was ASK/HOLD):
+      // skip the "Co chceš řešit?" idle screen and go straight to today's action,
+      // same as the post-handoff path above.
       if (last?.mode === 'ASK') {
         localStorage.removeItem(_LRK(_uid));
         saveSession({ pending_question: null });
       }
-      renderIdle();
-      renderInputEcho(last?.input_echo);
+      orchestrate('Co mám dnes dělat?');
     }
   }
 
