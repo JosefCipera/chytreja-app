@@ -96,12 +96,26 @@
       position: absolute;
       left: 50%; bottom: calc(100% + 40px);
       transform: translateX(-50%);
-      display: flex; justify-content: center; align-items: center;
+      display: flex; flex-direction: column; justify-content: center; align-items: center;
     }
     .logo .chj-logo {
-      --fs: 32px;
+      --fs: 40px;
       display: flex; flex-direction: row; align-items: center; gap: 9px;
       color: #8abac8;
+    }
+    .logo-sub {
+      font-size: 12px; letter-spacing: 5px; color: #5ba8bc;
+      text-transform: uppercase; margin-top: 16px;
+      text-shadow: 0 0 18px rgba(91,168,188,0.5);
+    }
+    .logo-battery {
+      width: min(78vw, 220px); height: 6px; border-radius: 3px;
+      overflow: hidden; background: rgba(255,255,255,0.04);
+      margin-top: 18px;
+    }
+    .logo-battery__fill {
+      height: 100%; border-radius: 3px; width: 0%;
+      transition: width 1.2s cubic-bezier(0.25,0,0.1,1), box-shadow 1.2s ease;
     }
     .logo .chj-logo__cursor {
       flex-shrink: 0; width: 2px; height: calc(var(--fs) * 2);
@@ -506,6 +520,8 @@
             <span class="chj-logo__row2">j<span class="chj-logo__ac">a</span></span>
           </span>
         </span>
+        <div class="logo-sub">Medicína 3.0</div>
+        <div class="logo-battery"><div class="logo-battery__fill" id="logo-battery-fill"></div></div>
       </div>
       <div id="orb" class="hidden"></div>
     </div>
@@ -744,6 +760,31 @@
           if ($testerModalSt) $testerModalSt.textContent = '';
         }
       });
+    }
+  }
+
+  // ── Battery života (logo) ────────────────────────────────────────────────────
+  async function loadBatteryBar(userId) {
+    const $fill = document.getElementById('logo-battery-fill');
+    if (!$fill || !userId) return;
+    try {
+      const res = await authFetch(`/api/hud-data-bulk?nodes=dlouhovekost&userId=${userId}&universe=longevity`);
+      if (!res.ok) return;
+      const bulk = await res.json();
+      const data = bulk.dlouhovekost || {};
+      const rawPct = data.battery?.percent ?? 50;
+      const pct    = rawPct > 0 ? rawPct : 50;
+      const color  = pct > 70 ? '#22c55e' : pct > 40 ? '#eab308' : '#ef4444';
+      const gradient = pct > 70
+        ? 'linear-gradient(90deg, #0d3820, #22c55e)'
+        : pct > 40
+        ? 'linear-gradient(90deg, #2d1f00, #eab308)'
+        : 'linear-gradient(90deg, #2d0808, #ef4444)';
+      $fill.style.width      = pct + '%';
+      $fill.style.background = gradient;
+      $fill.style.boxShadow  = `0 0 20px ${color}, 0 0 8px ${color}`;
+    } catch (err) {
+      console.warn('[CHJ launcher] battery load failed:', err);
     }
   }
 
@@ -1094,6 +1135,7 @@
     $app.classList.remove('hidden');
 
     checkAndShowOnboarding(userId).catch(e => console.warn('[onboarding]', e));
+    loadBatteryBar(userId);
 
     if (_isPostHandoff) {
       history.replaceState({}, '', '/launcher');
