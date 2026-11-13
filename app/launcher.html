@@ -101,11 +101,11 @@
     .logo .chj-logo {
       --fs: 40px;
       display: flex; flex-direction: row; align-items: center; gap: 9px;
-      color: #8abac8;
+      color: #e2e8f0;
     }
     .logo-sub {
-      font-size: 12px; letter-spacing: 5px; color: #5ba8bc;
-      text-transform: uppercase; margin-top: 16px;
+      font-size: 12px; letter-spacing: 2px; color: #5ba8bc;
+      text-transform: uppercase; margin-top: 16px; text-align: center;
       text-shadow: 0 0 18px rgba(91,168,188,0.5);
     }
     .logo-battery {
@@ -134,8 +134,8 @@
     .logo .chj-logo__ac   { position: relative; display: inline-block; line-height: 1; }
     .logo .chj-logo__ac::after {
       content: ''; position: absolute;
-      top: 0.14em; left: 50%; transform: translateX(-50%);
-      width: 0.38em; height: 0.055em;
+      top: 0.1em; left: 50%; transform: translateX(-50%);
+      width: 0.42em; height: 0.07em; border-radius: 1px;
       background: currentColor;
     }
     .back-to-web{margin-right:auto;color:var(--text-dim);font-size:13px;text-decoration:none;padding:8px 0}
@@ -201,6 +201,7 @@
 
     /* ── Orb ── */
     #orb {
+      display: none;
       width: 150px; height: 150px; border-radius: 50%; flex-shrink: 0;
       background: radial-gradient(circle at 40% 35%,
         rgba(100,220,240,0.16) 0%,
