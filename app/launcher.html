@@ -159,13 +159,13 @@
     /* ── Avatar ── */
     .avatar-wrapper { position: relative; }
     .avatar-btn {
-      width: 34px; height: 34px; border-radius: 50%;
+      width: 34px; height: 34px; border-radius: 50%; padding: 0; overflow: hidden;
       background: var(--surface); border: 1px solid rgba(58,203,216,0.42);
-      color: var(--cyan); font-size: 13px; font-weight: 500;
       cursor: pointer; display: flex; align-items: center; justify-content: center;
       font-family: inherit; transition: border-color 0.2s, box-shadow 0.2s;
     }
     .avatar-btn:hover { border-color: var(--cyan); box-shadow: 0 0 12px var(--cyan-glow); }
+    .avatar-btn img, .avatar-large img { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 50%; }
 
     .profile-dropdown {
       position: absolute; top: calc(100% + 10px); right: 0;
@@ -530,10 +530,10 @@
     <a class="back-to-web" href="/#top">← Na web</a>
     <div class="header-right">
       <div class="avatar-wrapper">
-        <button class="avatar-btn" id="avatar-btn" aria-label="Menu">?</button>
+        <button class="avatar-btn" id="avatar-btn" aria-label="Menu"><img id="avatar-img" alt=""></button>
         <div class="profile-dropdown" id="profile-dropdown">
           <div class="dropdown-header">
-            <div class="avatar-large" id="avatar-large">?</div>
+            <div class="avatar-large"><img id="avatar-large-img" alt=""></div>
             <div class="dropdown-header-info">
               <div class="dropdown-email" id="dropdown-email"></div>
               <div class="status-row"><span class="badge-free">Free</span><a href="#upgrade" class="upgrade-link">upgrade</a></div>
@@ -1223,10 +1223,10 @@
   } else {
     onAuthStateChanged(auth, user => {
       if (user) {
-        const namePart = (user.displayName || user.email?.split('@')[0] || '?').replace(/[^a-zA-Z]/g, '');
-        const initials = (namePart.slice(0, 2) || '?').toUpperCase();
-        document.getElementById('avatar-btn').textContent = initials;
-        document.getElementById('avatar-large').textContent = initials;
+        const name = user.displayName || user.email?.split('@')[0] || 'U';
+        const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=0D8ABC&color=fff`;
+        document.getElementById('avatar-img').src = avatarUrl;
+        document.getElementById('avatar-large-img').src = avatarUrl;
         document.getElementById('dropdown-email').textContent = user.email || '';
         start(user.uid);
       } else {
