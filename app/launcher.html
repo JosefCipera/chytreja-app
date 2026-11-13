@@ -149,6 +149,7 @@
       font-size: 9px; letter-spacing: 2px; padding: 3px 8px;
       border: 1px solid #1e3050; border-radius: 20px; color: var(--text-dim);
       text-transform: uppercase; font-weight: 400; transition: all 0.4s;
+      width: 84px; text-align: center; box-sizing: border-box;
     }
     .mode-badge.act   { border-color: var(--cyan); color: var(--cyan); }
     .mode-badge.ask   { border-color: var(--gold); color: var(--gold); }
@@ -877,14 +878,14 @@
 
     // Hide orb and welcome subtitle; set stage label by mode
     $orb.classList.add('hidden');
-    if (_brandDismissed) {
-      $brandLogo.classList.add('logo-dormant');
-    } else {
-      _brandDismissed = true;
-    }
+    const isEntryScreen = !_brandDismissed;
+    _brandDismissed = true;
+    if (!isEntryScreen) $brandLogo.classList.add('logo-dormant');
     $stageSub.classList.add('hidden');
     $stageLabel.className = '';
-    if      (mode === 'ACT')  { $stageLabel.textContent = 'DNES'; }
+    // "DNES" would be redundant on the entry screen — the big logo/battery
+    // block already signals "this is today's state", so skip it there.
+    if      (mode === 'ACT' && !isEntryScreen) { $stageLabel.textContent = 'DNES'; }
     else if (mode === 'HOLD' && dbg?.reason_code === 'HOLD_DONE_TODAY') {
       $stageLabel.textContent = '✓'; $stageLabel.className = 'hold-mark';
     }
