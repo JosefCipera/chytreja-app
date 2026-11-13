@@ -91,7 +91,7 @@
       position: relative;
       display: flex; justify-content: center;
     }
-    .brand-orb-unit:has(#orb.hidden) .logo { visibility: hidden; }
+    .logo.logo-dormant { visibility: hidden; }
     .logo {
       position: absolute;
       left: 50%; bottom: calc(100% + 40px);
@@ -557,7 +557,7 @@
 
   <main>
     <div class="brand-orb-unit">
-      <div class="logo">
+      <div class="logo" id="brand-logo">
         <span class="chj-logo" aria-label="Chytré já">
           <span class="chj-logo__cursor" aria-hidden="true"></span>
           <span class="chj-logo__text">
@@ -677,6 +677,7 @@
 
   // ── New refs (facelift) ──────────────────────────────────────────────────────
   const $orb              = document.getElementById('orb');
+  const $brandLogo        = document.getElementById('brand-logo');
   const $stageLabel       = document.getElementById('stage-label');
   const $stageSub         = document.getElementById('stage-subtitle');
   const $testerModal      = document.getElementById('tester-modal');
@@ -835,6 +836,11 @@
 
   let busy           = false;
   let _terminalState = false;
+  // Keeps the big logo/Medicína 3.0/battery block visible on the very first
+  // response of this visit (today's action acts as the entry screen now that
+  // there's no separate "Co chceš řešit?" idle step) and hides it on every
+  // render after that, once the user has moved past the entry screen.
+  let _brandDismissed = false;
 
   // ── Render ───────────────────────────────────────────────────────────────────
   function renderInputEcho(echo) {
@@ -847,6 +853,8 @@
   function renderIdle() {
     renderInputEcho(null);
     _terminalState = false;
+    _brandDismissed = false;
+    $brandLogo.classList.remove('logo-dormant');
     $input.disabled   = false;
     $sendBtn.disabled = false;
     $micBtn.disabled  = false;
@@ -869,6 +877,11 @@
 
     // Hide orb and welcome subtitle; set stage label by mode
     $orb.classList.add('hidden');
+    if (_brandDismissed) {
+      $brandLogo.classList.add('logo-dormant');
+    } else {
+      _brandDismissed = true;
+    }
     $stageSub.classList.add('hidden');
     $stageLabel.className = '';
     if      (mode === 'ACT')  { $stageLabel.textContent = 'DNES'; }
