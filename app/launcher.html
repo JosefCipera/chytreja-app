@@ -170,12 +170,34 @@
     .profile-dropdown {
       position: absolute; top: calc(100% + 10px); right: 0;
       background: #07111f; border: 1px solid rgba(58,203,216,0.12);
-      border-radius: 10px; min-width: 176px;
+      border-radius: 10px; min-width: 210px;
       box-shadow: 0 8px 32px rgba(0,0,0,0.65);
       z-index: 50; opacity: 0; pointer-events: none;
       transform: translateY(-6px); transition: opacity 0.15s, transform 0.15s;
     }
     .profile-dropdown.open { opacity: 1; pointer-events: auto; transform: translateY(0); }
+
+    .dropdown-header {
+      padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,0.05);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .avatar-large {
+      width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
+      background: var(--surface); border: 1px solid rgba(58,203,216,0.42);
+      color: var(--cyan); font-size: 13px; font-weight: 500;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .dropdown-header-info { min-width: 0; }
+    .dropdown-email {
+      font-size: 12px; color: var(--text); white-space: nowrap;
+      overflow: hidden; text-overflow: ellipsis;
+    }
+    .status-row { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+    .badge-free {
+      background: rgba(58,203,216,0.12); color: var(--cyan);
+      padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: 600;
+    }
+    .upgrade-link { color: var(--cyan); text-decoration: underline; font-size: 11px; }
 
     .dropdown-nav { list-style: none; padding: 6px 0; }
     .dropdown-nav li a,
@@ -510,8 +532,15 @@
       <div class="avatar-wrapper">
         <button class="avatar-btn" id="avatar-btn" aria-label="Menu">?</button>
         <div class="profile-dropdown" id="profile-dropdown">
+          <div class="dropdown-header">
+            <div class="avatar-large" id="avatar-large">?</div>
+            <div class="dropdown-header-info">
+              <div class="dropdown-email" id="dropdown-email"></div>
+              <div class="status-row"><span class="badge-free">Free</span><a href="#upgrade" class="upgrade-link">upgrade</a></div>
+            </div>
+          </div>
           <ul class="dropdown-nav">
-            <li><a href="/crt.html">👤 Já</a></li>
+            <li><a href="/crt.html" id="menu-profile-link">👤 Já</a></li>
             <li><a href="/app/medioteka.html">📚 Mediotéka</a></li>
             <li id="menu-tester-item" class="hidden">
               <button id="menu-tester-btn">Tester nástroje</button>
@@ -903,7 +932,7 @@
         btn.className = 'chip' + (label === 'Přeskočit' ? ' secondary' : '');
         btn.textContent = label;
         if (label === 'Zdravotní profil') {
-          btn.addEventListener('click', () => { window.location.href = PROFILE_URL; });
+          btn.addEventListener('click', () => { window.location.href = `${PROFILE_URL}?userId=${encodeURIComponent(window.__chj_userId)}`; });
         } else {
           btn.addEventListener('click', () => orchestrate(label));
         }
@@ -1159,6 +1188,7 @@
 
     checkAndShowOnboarding(userId).catch(e => console.warn('[onboarding]', e));
     loadBatteryBar(userId);
+    document.getElementById('menu-profile-link').href = `/crt.html?userId=${encodeURIComponent(userId)}`;
 
     if (_isPostHandoff) {
       history.replaceState({}, '', '/launcher');
@@ -1194,8 +1224,11 @@
   } else {
     onAuthStateChanged(auth, user => {
       if (user) {
-        const initial = (user.displayName?.[0] || user.email?.[0] || '?').toUpperCase();
-        document.getElementById('avatar-btn').textContent = initial;
+        const namePart = (user.displayName || user.email?.split('@')[0] || '?').replace(/[^a-zA-Z]/g, '');
+        const initials = (namePart.slice(0, 2) || '?').toUpperCase();
+        document.getElementById('avatar-btn').textContent = initials;
+        document.getElementById('avatar-large').textContent = initials;
+        document.getElementById('dropdown-email').textContent = user.email || '';
         start(user.uid);
       } else {
         invalidateRequests();
