@@ -196,7 +196,7 @@
     .status-row { display: flex; align-items: center; gap: 8px; margin-top: 5px; }
     .badge-free {
       background: rgba(58,203,216,0.12); color: var(--cyan);
-      padding: 2px 9px; border-radius: 6px; font-size: 11px; font-weight: 600;
+      padding: 2px 9px; border-radius: 6px; font-size: 11px; font-weight: 400;
     }
     .upgrade-link { color: var(--cyan); text-decoration: underline; font-size: 12px; }
 
@@ -530,6 +530,7 @@
   <header>
     <a class="back-to-web" href="/#top">← Na web</a>
     <div class="header-right">
+      <span class="mode-badge" id="mode-badge">—</span>
       <div class="avatar-wrapper">
         <button class="avatar-btn" id="avatar-btn" aria-label="Menu"><img id="avatar-img" alt=""></button>
         <div class="profile-dropdown" id="profile-dropdown">
@@ -541,7 +542,7 @@
             </div>
           </div>
           <ul class="dropdown-nav">
-            <li><button id="menu-profile-btn">👤 Já</button></li>
+            <li><button id="menu-profile-btn">👤 Vstupní data</button></li>
             <li><a href="/app/medioteka.html">📚 Mediotéka</a></li>
             <li id="menu-tester-item" class="hidden">
               <button id="menu-tester-btn">Tester nástroje</button>
@@ -550,7 +551,6 @@
           </ul>
         </div>
       </div>
-      <span class="mode-badge" id="mode-badge">—</span>
     </div>
   </header>
 
