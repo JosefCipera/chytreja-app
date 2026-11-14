@@ -608,7 +608,7 @@
   import { initializeApp }                        from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js';
   import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js';
   import { authFetch }                            from '/app/js/universe/authFetch.js';
-  import { checkAndShowOnboarding, showOnboarding } from '/app/js/universe/onboarding-wizard.js';
+  import { openUserDataPanel, initUserDataPanel } from '/app/js/universe/user-data-panel.js';
 
   const firebaseApp = initializeApp({
     apiKey:            'AIzaSyAKREZsoBZkA1xOQ5ff3XDmiJ88nwSjeOk',
@@ -620,6 +620,36 @@
   });
   const auth = getAuth(firebaseApp);
   window.firebaseAuth = auth; // needed by authFetch.js
+
+  // ── Profil panel (sjednocený onboarding, sdílený s /app a /crt.html) ────────
+  initUserDataPanel();
+  let _onboardingPending = false;
+  const _udpModal = document.getElementById('userDataModal');
+  if (_udpModal) {
+    new MutationObserver(() => {
+      if (_onboardingPending && _udpModal.classList.contains('udp-hidden')) {
+        _onboardingPending = false;
+        authFetch('/api/user?action=wizard-complete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: _uid ?? window.__chj_userId }),
+        }).catch(() => {});
+      }
+    }).observe(_udpModal, { attributes: true, attributeFilter: ['class'] });
+  }
+
+  async function checkAndShowOnboarding(userId) {
+    if (!userId) return;
+    try {
+      const res = await authFetch('/api/user?action=full-profile');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.profile?.onboarding_completed === true) return;
+      }
+    } catch { /* fail-open below */ }
+    _onboardingPending = true;
+    openUserDataPanel();
+  }
 
   // ── Dev override: ?userId=xxx bypasses Firebase on localhost only ───────────
   const _isLocal = ['localhost', '127.0.0.1'].includes(location.hostname);
@@ -1258,10 +1288,10 @@
     });
   }
 
-  // ── Menu: Já (reopen onboarding) ──────────────────────────────────────────────
+  // ── Menu: Já (profil — stejný panel jako /app a /crt.html) ───────────────────
   document.getElementById('menu-profile-btn').addEventListener('click', () => {
     $profileDrop.classList.remove('open');
-    showOnboarding(_uid ?? window.__chj_userId);
+    openUserDataPanel();
   });
 
   // ── Logout ───────────────────────────────────────────────────────────────────

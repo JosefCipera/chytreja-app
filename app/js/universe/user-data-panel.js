@@ -49,7 +49,7 @@ async function loadAndRender() {
     supplements:    data.supplements    ?? [],
     doctor_notes:   data.doctor_notes   ?? '',
     lifestyle:      data.lifestyle      ?? {},
-    capacity:       data.capacity       ?? {},
+    physical:       data.physical       ?? {},
     labs:           data.labs           ?? {},
     medications:    data.medications    ?? [],
   };
@@ -266,19 +266,27 @@ async function saveZdravi() {
 // TAB: Kondice — Fyzický test + Omezení
 // ═══════════════════════════════════════════════════
 
-const CAPACITY_QUESTIONS = [
-  { key: 'climb_4_floors',  label: 'Vyjít 4 patra bez zadýchání?',          hint: 'přibližně 80 schodů'   },
-  { key: 'lift_20kg',       label: 'Zvednout a přenést 20 kg?',              hint: 'nákup, zavazadlo'      },
-  { key: 'rise_from_floor', label: 'Vstát ze země bez opory?',               hint: 'z lehu na zemi'        },
-  { key: 'stand_one_leg',   label: 'Stát na jedné noze 10 s (oči zavřené)?', hint: 'rovnováha'             },
-  { key: 'fast_walk_2km',   label: 'Ujít 2 km rychlou chůzí?',              hint: 'bez zastávky'          },
-  { key: 'breath_20s',      label: 'Zadržet dech 20 sekund?',                hint: 'vsedě, klidně'         },
+// 10 disciplín lidového decatlonu — zdroj: Dekatlon_lidovy.pdf.
+// Klíče se shodují s EVIDENCE_STORAGE_REGISTRY v api/engine/healthEventAdapter.js
+// tam, kde takový self-report test už engine zná (vstat_ze_zeme, vynest_nakup,
+// zvednout_vnouce, balanc_jedna_noha) — zbylé jsou nové, engine je zatím nečte.
+const DISCIPLINE_QUESTIONS = [
+  { key: 'vstat_ze_zeme',       label: 'Vstanete ze země bez opory rukou?',       hint: 'prevence pádů a závislosti — stabilita, síla středu těla' },
+  { key: 'vynest_nakup',        label: 'Unesete dvě tašky (5 kg) do schodů?',     hint: 'farmářská chůze (farmer\'s carry) — funkční síla' },
+  { key: 'zvednout_vnouce',     label: 'Zvednete 15 kg ze země do náruče?',       hint: 'mrtvý tah — síla zad a nohou' },
+  { key: 'kufr_do_police',      label: 'Zvednete 10–15 kg nad hlavu?',            hint: 'tlak nad hlavou — mobilita ramen' },
+  { key: 'vyjit_4_patra',       label: 'Vyjdete 4 patra bez zastavení a zadýchání?', hint: 'VO2 max — srdeční rezerva' },
+  { key: 'balanc_jedna_noha',   label: 'Vydržíte 30 s na jedné noze?',            hint: 'stabilita, rovnováha' },
+  { key: 'rychla_chuze',        label: 'Ujdete 1 km svižným tempem?',             hint: 'zóna 2 trénink — mobilita' },
+  { key: 'otevrit_zavarovacku', label: 'Otevřete tuhé víčko bez pomoci?',         hint: 'grip strength — koreluje s délkou života' },
+  { key: 'vstat_ze_zidle',      label: 'Uděláte dřep bez pomoci rukou?',          hint: 'síla dolních končetin' },
+  { key: 'skocit_dopadnout',    label: 'Seskočíte z 20 cm a ustojíte dopad?',     hint: 'plyometrie, hustota kostí' },
 ];
 
 function renderKondiceTab() {
-  const cap = cachedData.capacity ?? {};
+  const cap = cachedData.physical ?? {};
 
-  const questionsHtml = CAPACITY_QUESTIONS.map(q => {
+  const questionsHtml = DISCIPLINE_QUESTIONS.map(q => {
     const val = cap[q.key];
     const yes = val === true;
     const no  = val === false;
@@ -298,9 +306,9 @@ function renderKondiceTab() {
 
   return `
     <div class="udp-section">
-      <div class="udp-section-label">Fyzický test</div>
+      <div class="udp-section-label">Lidový decatlon — 10 disciplín</div>
       <p style="color:#64748b;font-size:13px;margin:0 0 4px;line-height:1.5;">
-        Odpovědi ovlivňují CRT graf — LOW_VO2MAX, MUSCLE_WEAKNESS, GAIT_INSTABILITY.
+        Reálné pohybové testy — odpovědi krmí engine (síla, rovnováha, pohyb) i CRT graf.
       </p>
       <div>${questionsHtml}</div>
     </div>
@@ -358,12 +366,13 @@ function bindKondiceEvents() {
 async function saveKondice() {
   setStatus('udp-status-kondice', 'saving');
 
-  // Capacity from Yes/No buttons
-  const capacity = {};
+  // Physical self-report from Yes/No buttons — merged into user_health_profile.physical,
+  // the column the live engine (healthEventAdapter.js) actually reads.
+  const physical = {};
   document.querySelectorAll('.udp-yn-row').forEach(row => {
     const key = row.dataset.key;
     const activeBtn = row.querySelector('.udp-yn-yes, .udp-yn-no');
-    if (activeBtn) capacity[key] = activeBtn.dataset.val === 'true';
+    if (activeBtn) physical[key] = activeBtn.dataset.val === 'true';
   });
 
   // Injuries
@@ -377,12 +386,12 @@ async function saveKondice() {
     const res = await authFetch('/api/user?action=save-kondice', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ capacity, injuries: rows }),
+      body: JSON.stringify({ physical, injuries: rows }),
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     cachedData.constraints = data.constraints ?? [];
-    cachedData.capacity = capacity;
+    cachedData.physical = { ...cachedData.physical, ...physical };
     setStatus('udp-status-kondice', 'ok');
   } catch (e) {
     console.error('saveKondice:', e?.message || e);
@@ -394,14 +403,17 @@ async function resetKondice() {
   if (!confirm('Smazat všechna data z fyzického testu?')) return;
   setStatus('udp-status-kondice', 'saving');
   try {
-    // Send only capacity — no injuries field so existing constraints are untouched (original behaviour).
+    // Explicit nulls for just our question keys — merge-clears them server-side
+    // without touching other fields (grip_strength, tug_test, …) living in the
+    // same user_health_profile.physical JSONB column.
+    const clear = Object.fromEntries(DISCIPLINE_QUESTIONS.map(q => [q.key, null]));
     const res = await authFetch('/api/user?action=save-kondice', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ capacity: {} }),
+      body: JSON.stringify({ physical: clear }),
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    cachedData.capacity = {};
+    cachedData.physical = { ...cachedData.physical, ...clear };
     document.querySelectorAll('.udp-yn-btn').forEach(b => b.classList.remove('udp-yn-yes', 'udp-yn-no'));
     setStatus('udp-status-kondice', 'ok');
   } catch (e) {

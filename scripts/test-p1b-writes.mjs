@@ -134,10 +134,10 @@ async function testWrongMethod(action) {
 
 // ── resetKondice regression: injuries untouched ───────────────────────────────
 async function testResetDoesNotDeleteInjuries() {
-  // resetKondice sends { capacity: {} } — no 'injuries' key.
+  // resetKondice sends { physical: {...nulls} } — no 'injuries' key.
   // handleSaveKondice should skip DELETE/INSERT constraints when injuries is absent.
-  const resetPayload = { capacity: {} };
-  const savePayload  = { capacity: {}, injuries: [{ location: 'knee', restriction: 'no running', severity: 'mild' }] };
+  const resetPayload = { physical: {} };
+  const savePayload  = { physical: {}, injuries: [{ location: 'knee', restriction: 'no running', severity: 'mild' }] };
 
   if (!('injuries' in resetPayload)) {
     ok('resetKondice payload: no "injuries" key → constraints DELETE skipped');
@@ -156,7 +156,7 @@ async function testResetDoesNotDeleteInjuries() {
   const req = {
     method: 'POST',
     query:  { action: 'save-kondice', userId: 'demo-user-123' },
-    body:   { userId: 'demo-user-123', capacity: {} }, // no injuries field
+    body:   { userId: 'demo-user-123', physical: {} }, // no injuries field
     headers: {},
   };
   const res = mockRes();
