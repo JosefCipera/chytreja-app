@@ -415,6 +415,26 @@ function evaluateSafetyGate(action, parsedConstraints, hasCvRiskRelevant, hasCli
     };
   }
 
+  // Walking-aid guard: a person who already relies on a walking aid (cane/crutches/
+  // walker) for ordinary gait needs individual assessment before an unsupported
+  // single-leg stand — a generic "lean on a wall" modification understates the risk.
+  // Does not block balance work outright: a non-single-leg balance action (e.g. the
+  // generic habit entry) is unaffected and remains the safe fallback (Variant A).
+  {
+    const NO_DEVICE_VALUES = new Set(['NONE', 'UNKNOWN', 'ŽÁDNÁ', 'ŽÁDNÝ', 'NO', 'NE']);
+    const deviceRaw = String(mobilityProfile?.current_device_in_use ?? 'UNKNOWN').trim().toUpperCase();
+    const usesWalkingAid = deviceRaw.length > 0 && !NO_DEVICE_VALUES.has(deviceRaw);
+    if (hasGaitInstability && usesWalkingAid
+        && (action.protocol_type === 'BALANCE_PROTOKOL' || action.protocol_type === 'STABILITY_PROTOKOL')
+        && /jedn[ée] noze|jedna noha|single.?leg/i.test(action.label ?? '')) {
+      return {
+        level: 'NEEDS_CLINICAL_CLEARANCE',
+        reason: 'Person currently relies on a walking aid for ordinary gait — unsupported single-leg balance requires individual assessment before prescribing.',
+        modifications_suggested: [],
+      };
+    }
+  }
+
   // 7. Balance/stability exercises require adequate gait capacity — SAFE_WITH_MODIFICATION when impaired.
   // Fall-prevention exercise evidence is not blanket treatment/clearance for every gait disorder.
   // This existing CHJ entry policy keeps supported basic tasks available; individual dose remains unvalidated.
