@@ -16,7 +16,7 @@ export function openUserDataPanel() {
   if (!userId) return;
   const modal = document.getElementById('userDataModal');
   if (!modal) return;
-  activeTab = 'zdravi';
+  activeTab = 'profile';
   modal.classList.remove('udp-hidden');
   loadAndRender();
 }
@@ -1207,9 +1207,9 @@ export function initUserDataPanel() {
         <button id="udp-close" class="udp-close-btn">✕</button>
       </div>
       <div class="udp-tabs">
-        <button class="udp-tab" data-tab="zdravi">Zdraví</button>
-        <button class="udp-tab" data-tab="kondice">Kondice</button>
         <button class="udp-tab" data-tab="profile">Profil</button>
+        <button class="udp-tab" data-tab="zdravi">Zdraví</button>
+        <button class="udp-tab" data-tab="kondice">Tělo</button>
         <button class="udp-tab" data-tab="aspirations">Sen</button>
         <button class="udp-tab" data-tab="data">Data</button>
       </div>
@@ -1217,7 +1217,7 @@ export function initUserDataPanel() {
     </div>`;
   document.body.appendChild(modal);
 
-  activeTab = 'zdravi';
+  activeTab = 'profile';
   setTimeout(() => switchTab(activeTab), 0);
 }
 
