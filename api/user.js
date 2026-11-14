@@ -952,7 +952,7 @@ async function handleWizardStep(req, res) {
 // ── POST ?action=wizard-complete ─────────────────────────────────
 // Marks onboarding as completed for the authenticated user.
 // Uses UPSERT so users who skipped Step 1 (no user_profiles row yet) are handled safely.
-// Called by onboarding-wizard.js _save() as the final operation before overlay removal.
+// Called once the unified onboarding panel (user-data-panel.js) is closed for the first time.
 async function handleWizardComplete(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
   const userId = req.body?.userId;
