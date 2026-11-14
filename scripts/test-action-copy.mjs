@@ -21,14 +21,18 @@ const action={label:'Stůj 30 sekund na jedné noze.',intervention_id:'BALANCE_T
 const r=act({primary_item:action},{},{},[]);
 assert.ok(r.text.startsWith(action.label+' '));
 assert.ok(!r.text.includes('..')&&!r.text.includes('Úprava:'));
-for(const m of mods)assert.ok(r.text.includes(localize(m)));
-assert.equal(r.text.split(localize(mods[0])).length,2);
+// Only the single highest-priority note is kept in the ACT line (a real-time
+// stop-condition outranks setup/context conditions) — concatenating all of them
+// broke the 1-sentence/15-word ACT budget in CLAUDE.md §8 whenever 2+ applied.
+assert.ok(r.text.includes(localize(mods[2])), 'Stop-condition note is the one shown');
+for (const other of [mods[0], mods[1], mods[3]]) assert.ok(!r.text.includes(localize(other)), 'Other modifications are not concatenated into ACT');
+assert.equal(r.text.split(localize(mods[2])).length,2);
 assert.ok(!/Oči zavři/.test(r.text), 'Entry balance instructions must not prescribe closing eyes');
 const legacy = act({ primary_item: { ...action, safety: { level: 'SAFE_WITH_MODIFICATION', modifications_suggested: ['Begin with eyes-open only; progress to eyes-closed only when stable'] } } }, {}, {}, []);
 assert.ok(!/Oči zavři/.test(legacy.text), 'Legacy cached instruction must not prescribe closing eyes');
 assert.ok(/oči otevřené/.test(legacy.text));
 assert.equal(r.mode,'ACT');assert.equal(r.buttons.join(','),'Hotovo,Přeskočit');
-assert.ok(r.text.length < 265, 'Mobile entry instruction retains four safety conditions concisely');
+assert.ok(r.text.length < 120, 'Mobile entry instruction keeps just the label plus one safety note');
 const session={current_action_assignment:{action_id:'test'},last_domain_response:{explanation_context:{system_leverage:{node_id:'GAIT_INSTABILITY'},action_context:{selected:action}}}};
 const reason=why(session);
 assert.ok(reason.text.includes('jistotu při chůzi'));

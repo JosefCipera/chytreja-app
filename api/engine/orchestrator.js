@@ -808,18 +808,27 @@ function buildSessionUpdates(eventType, classifiedPayload, result) {
 // Text is composed ONLY from structured DOMAIN_RESPONSE fields.
 // No free-form health reasoning or diagnosis in this layer.
 
+// Picks the single most important safety modification for an action, instead of
+// concatenating all of them (which breaks the 1-sentence/15-word ACT budget in
+// CLAUDE.md §8 whenever 2+ apply). A real-time stop-condition ("stop if dizzy…")
+// outranks setup/context conditions (support, supervision, eyes open) — knowing
+// when to stop matters more mid-exercise than how the session was set up.
+// Never drops safety info silently in the sense of "shows nothing": always shows
+// the single highest-priority note when any exist.
+function pickPrimarySafetyNote(action) {
+  if (!action || !['SAFE', 'SAFE_WITH_MODIFICATION'].includes(action.safety?.level)) return null;
+  const raw = (action.safety.modifications_suggested ?? []).filter(mod => typeof mod === 'string' && mod.trim());
+  if (!raw.length) return null;
+  const stopCondition = raw.find(mod => /^stop /i.test(mod.trim()));
+  return sentence(localizeMod(stopCondition ?? raw[0]));
+}
+
 function buildActResponse(dd, ctx, sessionUpdates, warnings) {
   const action = dd.primary_item;
   let text = action?.label ? sentence(action.label) : 'Tvá dnešní akce je připravena.';
 
-  // SAFE may carry advisory joint-load adjustments too; do not silently drop
-  // those already-computed instructions. Eligibility/level is unchanged.
-  if (['SAFE', 'SAFE_WITH_MODIFICATION'].includes(action?.safety?.level)) {
-    const modifications = [...new Set((action.safety.modifications_suggested ?? [])
-      .filter(mod => typeof mod === 'string' && mod.trim())
-      .map(mod => sentence(localizeMod(mod))))];
-    if (modifications.length) text += ` ${modifications.join(' ')}`;
-  }
+  const note = pickPrimarySafetyNote(action);
+  if (note) text += ` ${note}`;
 
   return {
     mode:          'ACT',
