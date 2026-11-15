@@ -16,6 +16,7 @@ import { createClient } from '@supabase/supabase-js';
 export const TESTER_UIDS = new Set([
   'u58iRWcMr9bbakFMJYGFGARpi9h1', // Tester 0
   'e0ZYA3auBYUh9TOOtqQPqbkIcrJ2', // Tester 1
+  'LGxqGekvgkXtyng3AK40yfb2fMk1', // Tester (t0@i.cz) — launcher dev testing
   // Add additional tester accounts here when needed
   // Josef (qE09cLyXXGRBRxOBCGNZqTM2XRW2) and Kovářová are PROTECTED — never add here
 ]);
