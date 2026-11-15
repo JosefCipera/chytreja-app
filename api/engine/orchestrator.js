@@ -2372,6 +2372,20 @@ async function processInputCore(userId, userText, sessionState = {}) {
   // Uses the effective skipped set: sessionUpdates may have added new types this turn
   // (e.g. clinical_context marked session-resolved after a negative "Ne." answer).
   const effectiveSkipped = sessionUpdates.skipped_bootstrap_types ?? state.skipped_bootstrap_types ?? [];
+  if (Array.isArray(effectiveSkipped) && effectiveSkipped.length > 0) {
+    // Always propagate the effective skip set to the client, even when the engine's
+    // own pick this turn doesn't collide with it below — otherwise a type marked
+    // session-resolved earlier in this same turn (e.g. clinical_context after a
+    // substantive answer) is silently dropped from session_updates whenever the
+    // engine's next pick happens to be a genuinely new, non-colliding candidate.
+    presentation = {
+      ...presentation,
+      session_updates: {
+        ...presentation.session_updates,
+        skipped_bootstrap_types: effectiveSkipped,
+      },
+    };
+  }
   if (presentation.mode === 'ASK'
       && Array.isArray(effectiveSkipped)
       && effectiveSkipped.length > 0) {
