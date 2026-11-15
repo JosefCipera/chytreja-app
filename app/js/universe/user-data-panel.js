@@ -110,7 +110,13 @@ const LAB_FIELDS = [
 ];
 
 function renderZdraviTab() {
-  const diagnoses  = (cachedData.diagnoses ?? []).join('\n');
+  // Diagnoses can be plain strings (saved from this textarea) or objects
+  // (engine's free-text extractor: { name, status, source, raw_text }) — never
+  // render an object's default toString() ("[object Object]") to the user.
+  const diagnoses  = (cachedData.diagnoses ?? [])
+    .map(d => typeof d === 'string' ? d : (d?.name ?? d?.raw_text ?? ''))
+    .filter(Boolean)
+    .join('\n');
   const symptoms   = (cachedData.symptoms  ?? []).join('\n');
   const familyHist = cachedData.family_history ?? '';
   const meds       = cachedData.medications ?? [];
@@ -179,9 +185,6 @@ function renderZdraviTab() {
 
     <div class="udp-section">
       <div class="udp-section-label">Laboratorní hodnoty</div>
-      <p style="color:#64748b;font-size:13px;margin:0 0 14px;line-height:1.5;">
-        Zadej poslední naměřené hodnoty. Ovlivňují predikce v CRT grafu.
-      </p>
       <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;">
         ${labsHtml}
       </div>
