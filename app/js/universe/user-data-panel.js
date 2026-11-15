@@ -471,11 +471,14 @@ function bindDelButtons() {
 // TAB: Profil — Demografika + BMI + Lifestyle
 // ═══════════════════════════════════════════════════
 
+// key must match what the engine actually reads (activation.js: lifestyle.sedentary_work).
+// smoker/alcohol/stress_job have no engine logic yet — kept in the UI (useful to collect),
+// but the description below must not claim they already influence anything.
 const LIFESTYLE_FLAGS = [
-  { key: 'sedentary',  label: 'Sedavý životní styl',    desc: 'Méně než 30 min pohybu denně' },
-  { key: 'smoker',     label: 'Kuřák',                  desc: 'Aktivní kuřák'                },
-  { key: 'alcohol',    label: 'Pravidelný alkohol',      desc: '3+ drinky týdně'              },
-  { key: 'stress_job', label: 'Vysoký pracovní stres',  desc: 'Chronický tlak v práci'       },
+  { key: 'sedentary_work', label: 'Sedavý životní styl',    desc: 'Méně než 30 min pohybu denně' },
+  { key: 'smoker',         label: 'Kuřák',                  desc: 'Aktivní kuřák'                },
+  { key: 'alcohol',        label: 'Pravidelný alkohol',      desc: '3+ drinky týdně'              },
+  { key: 'stress_job',     label: 'Vysoký pracovní stres',  desc: 'Chronický tlak v práci'       },
 ];
 
 function calcBmi(height, weight) {
@@ -560,7 +563,7 @@ function renderProfilTab() {
     <div class="udp-section">
       <div class="udp-section-label">Životní styl</div>
       <p style="color:#64748b;font-size:13px;margin:0 0 4px;line-height:1.5;">
-        Ovlivňuje SEDENTARY a CHRONIC_STRESS větve v CRT.
+        Sedavý životní styl ovlivňuje predikce v CRT. Ostatní zatím jen evidujeme pro budoucí rozšíření.
       </p>
       ${lifestyleHtml}
     </div>
