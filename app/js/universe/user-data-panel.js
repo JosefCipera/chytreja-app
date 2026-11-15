@@ -306,7 +306,7 @@ function renderKondiceTab() {
 
   return `
     <div class="udp-section">
-      <div class="udp-section-label">Lidový decatlon — 10 disciplín</div>
+      <div class="udp-section-label">Desetiboj dlouhověkosti</div>
       <div>${questionsHtml}</div>
     </div>
 
