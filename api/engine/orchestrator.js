@@ -1958,9 +1958,16 @@ async function processInputCore(userId, userText, sessionState = {}) {
         debug: { reason_code: 'PATH_DISCOVERY_HOLD', after: 'BOOTSTRAP_EXHAUSTED_AFTER_CLINICAL_NEGATIVE' },
       };
     }
-    // Substantive answer — route through existing free-text clinical extraction
+    // Substantive answer — route through existing free-text clinical extraction.
+    // Also mark clinical_context resolved here (mirrors the negative-answer branch
+    // above): its bootstrap-needs entry has no skip_if_known, so
+    // filterBootstrapCandidates has no way to drop it other than this explicit
+    // skip — without it, a real answer that the keyword extractor happens not to
+    // turn into a new diagnosis (Czech inflection, an unlisted drug name, …) left
+    // clinical_context eligible again next turn, repeating the same question.
     adapterType = 'GENERAL_HEALTH_REQUEST';
     _clinicalContextRouted = true;
+    state.skipped_bootstrap_types = [...(state.skipped_bootstrap_types ?? []), 'clinical_context'];
   }
 
   // ── Bootstrap skip/defer (narrow unlock) ─────────────────────────────────────
