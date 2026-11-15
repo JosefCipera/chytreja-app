@@ -271,16 +271,16 @@ async function saveZdravi() {
 // tam, kde takový self-report test už engine zná (vstat_ze_zeme, vynest_nakup,
 // zvednout_vnouce, balanc_jedna_noha) — zbylé jsou nové, engine je zatím nečte.
 const DISCIPLINE_QUESTIONS = [
-  { key: 'vstat_ze_zeme',       label: 'Vstanete ze země bez opory rukou?',       hint: 'prevence pádů a závislosti — stabilita, síla středu těla' },
-  { key: 'vynest_nakup',        label: 'Unesete dvě tašky (5 kg) do schodů?',     hint: 'farmářská chůze (farmer\'s carry) — funkční síla' },
-  { key: 'zvednout_vnouce',     label: 'Zvednete 15 kg ze země do náruče?',       hint: 'mrtvý tah — síla zad a nohou' },
-  { key: 'kufr_do_police',      label: 'Zvednete 10–15 kg nad hlavu?',            hint: 'tlak nad hlavou — mobilita ramen' },
-  { key: 'vyjit_4_patra',       label: 'Vyjdete 4 patra bez zastavení a zadýchání?', hint: 'VO2 max — srdeční rezerva' },
-  { key: 'balanc_jedna_noha',   label: 'Vydržíte 30 s na jedné noze?',            hint: 'stabilita, rovnováha' },
-  { key: 'rychla_chuze',        label: 'Ujdete 1 km svižným tempem?',             hint: 'zóna 2 trénink — mobilita' },
-  { key: 'otevrit_zavarovacku', label: 'Otevřete tuhé víčko bez pomoci?',         hint: 'grip strength — koreluje s délkou života' },
-  { key: 'vstat_ze_zidle',      label: 'Uděláte dřep bez pomoci rukou?',          hint: 'síla dolních končetin' },
-  { key: 'skocit_dopadnout',    label: 'Seskočíte z 20 cm a ustojíte dopad?',     hint: 'plyometrie, hustota kostí' },
+  { key: 'vstat_ze_zeme',       label: 'Vstaneš ze země bez opory rukou?',       hint: 'prevence pádů a závislosti — stabilita, síla středu těla' },
+  { key: 'vynest_nakup',        label: 'Uneseš dvě tašky (5 kg) do schodů?',     hint: 'farmářská chůze (farmer\'s carry) — funkční síla' },
+  { key: 'zvednout_vnouce',     label: 'Zvedneš 15 kg ze země do náruče?',       hint: 'mrtvý tah — síla zad a nohou' },
+  { key: 'kufr_do_police',      label: 'Zvedneš 10–15 kg nad hlavu?',            hint: 'tlak nad hlavou — mobilita ramen' },
+  { key: 'vyjit_4_patra',       label: 'Vyjdeš 4 patra bez zastavení a zadýchání?', hint: 'VO2 max — srdeční rezerva' },
+  { key: 'balanc_jedna_noha',   label: 'Vydržíš 30 s na jedné noze?',            hint: 'stabilita, rovnováha' },
+  { key: 'rychla_chuze',        label: 'Ujdeš 1 km svižným tempem?',             hint: 'zóna 2 trénink — mobilita' },
+  { key: 'otevrit_zavarovacku', label: 'Otevřeš tuhé víčko bez pomoci?',         hint: 'grip strength — koreluje s délkou života' },
+  { key: 'vstat_ze_zidle',      label: 'Uděláš dřep bez pomoci rukou?',          hint: 'síla dolních končetin' },
+  { key: 'skocit_dopadnout',    label: 'Seskočíš z 20 cm a ustojíš dopad?',     hint: 'plyometrie, hustota kostí' },
 ];
 
 function renderKondiceTab() {
@@ -307,9 +307,6 @@ function renderKondiceTab() {
   return `
     <div class="udp-section">
       <div class="udp-section-label">Lidový decatlon — 10 disciplín</div>
-      <p style="color:#64748b;font-size:13px;margin:0 0 4px;line-height:1.5;">
-        Reálné pohybové testy — odpovědi krmí engine (síla, rovnováha, pohyb) i CRT graf.
-      </p>
       <div>${questionsHtml}</div>
     </div>
 
