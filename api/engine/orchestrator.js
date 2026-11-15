@@ -71,13 +71,15 @@ export const GUIDED_NOW_TESTS = new Set(['chair_stand_30s']);
 // Single source of bootstrap candidate eligibility used by all continuation paths.
 // Mirrors the filter in synthesizeBootstrapGate (decisionGate.js) — both must stay in sync.
 //   birthYrKnown:    person_birth_year != null
+//   sexKnown:        person_sex != null
 //   age:             currentYear - person_birth_year (null if unknown)
 //   resolvedPhysical: Object.keys(physical) — keys already answered in a previous or same turn
 //   skippedSet:      Set of evidence_types refused/skipped this session
-function filterBootstrapCandidates(needs, { birthYrKnown, age = null, resolvedPhysical = [], skippedSet }) {
+function filterBootstrapCandidates(needs, { birthYrKnown, sexKnown = false, age = null, resolvedPhysical = [], skippedSet }) {
   return needs.filter(c => {
     if (c.skip_if_known === 'birth_year' && birthYrKnown)                                      return false;
-    if (c.skip_if_known && c.skip_if_known !== 'birth_year'
+    if (c.skip_if_known === 'person_sex' && sexKnown)                                           return false;
+    if (c.skip_if_known && c.skip_if_known !== 'birth_year' && c.skip_if_known !== 'person_sex'
         && resolvedPhysical.includes(c.skip_if_known))                                         return false;
     if (age !== null && c.urgency_floor_age_gte && age < c.urgency_floor_age_gte)              return false;
     return !skippedSet.has(c.evidence_type);
@@ -411,6 +413,11 @@ const B1_REASON_RE    = /\bkvůli\b|\bbolí/i;
 // ("1968" → age 1968 > 120) are intentionally excluded and fall through to the classifier.
 const BIRTH_YEAR_FULL_RE = /^\d{2,3}(?:\s+let[ao]?)?\s*[.,!?]*$/i;
 
+// person_sex: full-input anchored parser. Accepts "muž"/"žena" (and ASCII-folded
+// "muz"/"zena") optionally prefixed with "jsem". Mirrors BIRTH_YEAR_FULL_RE scope:
+// bare answers only, compound inputs fall through to the classifier.
+const GENDER_FULL_RE = /^(?:jsem\s+)?(?:muž|muz|žena|zena)\s*[.,!?]*$/i;
+
 // Bootstrap yes/no — anchored full-input parser.
 // Accepts "ne", "ano", "Ne, vůbec.", "neupadla jsem.", "zvládl jsem.", "Zvládnu to."
 // Rejects compound inputs (caught upstream by COMPOUND_SIGNAL_RE).
@@ -650,6 +657,7 @@ function bodyPartToEvidenceType(bodyPart) {
 const NBE_QUESTION_MAP = {
   // Bootstrap PROFILE evidence (narrow unlock)
   birth_year:       'Kolik ti je let?',
+  person_sex:       'Jsi muž, nebo žena?',
   // Bootstrap CLINICAL evidence (narrow unlock) — answer routes through GENERAL_HEALTH_REQUEST
   clinical_context: 'Léčíš se s něčím nebo bereš pravidelně nějaké léky?',
   // Vitals / anthropometrics
@@ -1564,6 +1572,7 @@ async function processInputCore(userId, userText, sessionState = {}) {
   // Routes the answer before the classifier for tightly constrained scalar types.
   // Fires ONLY when the ENTIRE input is safely interpretable as the expected scalar:
   //   birth_year       → full-input year expression (BIRTH_YEAR_FULL_RE)
+  //   person_sex       → full-input muž/žena expression (GENDER_FULL_RE)
   //   recent_falls     → full-input yes/no expression (BOOTSTRAP_YESNO_FULL_RE)
   //   vstat_ze_zeme    → full-input yes/no expression
   //   vynest_nakup     → full-input yes/no expression
@@ -1579,6 +1588,10 @@ async function processInputCore(userId, userText, sessionState = {}) {
     if (_ev === 'birth_year'
         && !COMPOUND_SIGNAL_RE.test(_trimmed)
         && BIRTH_YEAR_FULL_RE.test(_trimmed)) {
+      classified = { event_type: 'ANSWER_TO_EVIDENCE_QUESTION', payload: { evidence_type: _ev, value: _trimmed } };
+    } else if (_ev === 'person_sex'
+        && !COMPOUND_SIGNAL_RE.test(_trimmed)
+        && GENDER_FULL_RE.test(_trimmed)) {
       classified = { event_type: 'ANSWER_TO_EVIDENCE_QUESTION', payload: { evidence_type: _ev, value: _trimmed } };
     } else if ((_ev === 'recent_falls' || _ev === 'vstat_ze_zeme' || _ev === 'vynest_nakup')
                && !COMPOUND_SIGNAL_RE.test(_trimmed)
@@ -1888,6 +1901,7 @@ async function processInputCore(userId, userText, sessionState = {}) {
       const age          = state.person_birth_year ? (new Date().getFullYear() - state.person_birth_year) : null;
       const available    = filterBootstrapCandidates(_bootstrapNeeds, {
         birthYrKnown,
+        sexKnown: state.person_sex != null,
         age,
         resolvedPhysical: state.resolved_physical ?? [],
         skippedSet,
@@ -1985,6 +1999,7 @@ async function processInputCore(userId, userText, sessionState = {}) {
 
     const available = filterBootstrapCandidates(_bootstrapNeeds, {
       birthYrKnown,
+      sexKnown: state.person_sex != null,
       age,
       resolvedPhysical: state.resolved_physical ?? [],
       skippedSet,
@@ -2402,8 +2417,11 @@ async function processInputCore(userId, userText, sessionState = {}) {
       const justAnswered = (adapterType === 'ANSWER_TO_EVIDENCE_QUESTION' && event.payload.evidence_type)
         ? [event.payload.evidence_type]
         : [];
+      const sexKnown = state.person_sex != null
+        || (adapterType === 'ANSWER_TO_EVIDENCE_QUESTION' && event.payload.evidence_type === 'person_sex');
       const available    = filterBootstrapCandidates(_bootstrapNeeds, {
         birthYrKnown,
+        sexKnown,
         age,
         resolvedPhysical: [...(state.resolved_physical ?? []), ...justAnswered],
         skippedSet,
