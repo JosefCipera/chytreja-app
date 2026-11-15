@@ -288,14 +288,16 @@ function evaluateContextGate(ctx, nodeStates, projections, contextNeeds, engineV
 //   skipped_types:     evidence_types deferred by the user this session
 
 function synthesizeBootstrapGate(personContext, engineVersion) {
-  const { birth_year, resolved_physical = [], skipped_types = [] } = personContext;
+  const { birth_year, sex, resolved_physical = [], skipped_types = [] } = personContext;
   const age = birth_year ? (new Date().getFullYear() - birth_year) : null;
   const skippedSet = new Set(skipped_types);
 
   const candidates = getBootstrapNeeds()
     .filter(c => {
       if (c.skip_if_known === 'birth_year' && birth_year != null) return false;
-      if (c.skip_if_known !== 'birth_year' && resolved_physical.includes(c.skip_if_known)) return false;
+      if (c.skip_if_known === 'person_sex' && sex != null) return false;
+      if (c.skip_if_known !== 'birth_year' && c.skip_if_known !== 'person_sex'
+          && resolved_physical.includes(c.skip_if_known)) return false;
       if (age !== null && c.urgency_floor_age_gte && age < c.urgency_floor_age_gte) return false;
       return !skippedSet.has(c.evidence_type);
     })

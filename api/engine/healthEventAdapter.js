@@ -173,6 +173,8 @@ export const EVIDENCE_STORAGE_REGISTRY = {
   // write_if_null_only: true — never overwrite an existing birth_year.
   // transform: 'age_to_birth_year' — converts age answer (e.g. 58) → birth year (e.g. 1968).
   birth_year: { table: 'user_profiles', key: 'birth_year', write_if_null_only: true, transform: 'age_to_birth_year' },
+  // person_sex: narrow unlock mirroring birth_year — bootstrap question, writes user_profiles.gender.
+  person_sex: { table: 'user_profiles', key: 'gender', write_if_null_only: true, transform: 'parse_gender' },
 };
 
 // ── Body region normalization ─────────────────────────────────────────────────
@@ -478,7 +480,7 @@ async function routeAnswer(supabase, userId, payload) {
     case 'labs':        return upsertLab(supabase, userId, entry.key, value);
     case 'user_profiles': {
       // Narrow unlock: supports bootstrap evidence_types that write to user_profiles.
-      // Currently: birth_year only (transform: age_to_birth_year).
+      // Currently: birth_year (transform: age_to_birth_year), person_sex (transform: parse_gender).
       let finalValue = value;
       if (entry.transform === 'age_to_birth_year') {
         const age = parseInt(String(value ?? '').replace(',', '.').trim(), 10);
@@ -486,6 +488,12 @@ async function routeAnswer(supabase, userId, payload) {
           return `ANSWER: birth_year transform failed — invalid age '${value}'`;
         }
         finalValue = new Date().getFullYear() - age;
+      }
+      if (entry.transform === 'parse_gender') {
+        const raw = String(value ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+        if (/muz/.test(raw)) finalValue = 'male';
+        else if (/zena/.test(raw)) finalValue = 'female';
+        else return `ANSWER: person_sex transform failed — invalid value '${value}'`;
       }
       return upsertUserProfile(supabase, userId, entry.key, finalValue);
     }
