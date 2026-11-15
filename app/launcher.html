@@ -109,7 +109,9 @@
       padding-right: 6px; text-shadow: 0 0 18px rgba(91,168,188,0.5);
     }
     .logo-battery {
-      width: min(90vw, 520px); height: 6px; border-radius: 3px;
+      /* Matches the footer's fixed 20px side padding (input-row), not vw alone,
+         so the left edge lines up with the input on narrow/mobile screens too. */
+      width: min(calc(100vw - 40px), 520px); height: 6px; border-radius: 3px;
       overflow: hidden; background: transparent;
       margin-top: 18px;
     }
