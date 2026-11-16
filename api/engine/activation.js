@@ -110,11 +110,16 @@ export function activation(person, clinicalHistory, observations) {
   }
 
   // ── EXCESS_ADIPOSITY ─────────────────────────────────────────────────────
-  // MEASURED from latest reliable weight observation + person.height_cm → derived BMI
-  // BMI is a proxy for adiposity, not a direct measure of body fat.
-  // This node does NOT map to OBESITY. Adiposity categories require DataDictionary rules
-  // (waist_cm + body_fat_pct thresholds — not yet defined).
-  // Selection rule (Health Data Model v1):
+  // MEASURED from either: latest reliable weight observation + person.height_cm → derived
+  // BMI ≥ 25, OR waist_cm alone at/above WHO's sex-specific increased-risk cutoff (94 cm
+  // men / 80 cm women — defaults to the male cutoff when sex is unknown).
+  // BMI is a proxy for adiposity, not a direct measure of body fat, and misses "normal BMI,
+  // elevated visceral fat" (high waist, non-elevated BMI) entirely if BMI were the only
+  // trigger — waist_cm is the stronger direct marker, so it can activate this node on its
+  // own, not only as supporting evidence once BMI has already crossed 25.
+  // This node does NOT map to OBESITY. Categories beyond this single threshold require
+  // further DataDictionary rules (body_fat_pct thresholds — not yet defined).
+  // Selection rule (Health Data Model v1) for weight_kg:
   // 1. Dated observation always beats undated — regardless of confidence/source.
   // 2. Among dated: newest measured_at wins.
   // 3. Among undated (tie on date criterion): higher confidence/source quality wins.
@@ -130,18 +135,26 @@ export function activation(person, clinicalHistory, observations) {
       return 0;
     });
   const latestWeight = weightObs[0];
+  const bmi = (latestWeight && person.height_cm)
+    ? latestWeight.value / ((person.height_cm / 100) ** 2)
+    : null;
+  const bmiElevated = bmi != null && bmi >= 25;
 
-  if (latestWeight && person.height_cm) {
-    const bmi = latestWeight.value / ((person.height_cm / 100) ** 2);
-    if (bmi >= 25) {
-      const waistObs = observations.find(o => o.obs_type === 'waist_cm');
-      const bfObs    = observations.find(o => o.obs_type === 'body_fat_pct');
-      states.push({
-        node_id: 'EXCESS_ADIPOSITY',
-        current_state: 'MEASURED',
-        confidence: waistObs ? 'medium' : 'low',  // BMI alone is imprecise proxy
-        evidence: {
-          direct: [{
+  const waistObs = observations.find(o => o.obs_type === 'waist_cm');
+  const bfObs    = observations.find(o => o.obs_type === 'body_fat_pct');
+  const waistThreshold = person.sex === 'female' ? 80 : 94;
+  const waistElevated  = !!waistObs && waistObs.value >= waistThreshold;
+
+  if (bmiElevated || waistElevated) {
+    states.push({
+      node_id: 'EXCESS_ADIPOSITY',
+      current_state: 'MEASURED',
+      // waist_cm at/above threshold is itself a direct marker, not just a BMI confidence
+      // booster — medium whenever it is elevated, or when it corroborates an elevated BMI.
+      confidence: waistElevated || (bmiElevated && waistObs) ? 'medium' : 'low',
+      evidence: {
+        direct: [
+          ...(bmiElevated ? [{
             source: 'OBSERVATION',
             obs_type: 'weight_kg',
             value: latestWeight.value,
@@ -150,19 +163,26 @@ export function activation(person, clinicalHistory, observations) {
             derived_bmi: parseFloat(bmi.toFixed(1)),
             height_cm: person.height_cm,
             note: 'BMI = hrubý proxy adipozity. Nepotvrzen přesnějšími markery.',
-          }],
-          supporting: [
-            ...(waistObs ? [{ source: 'OBSERVATION', obs_type: 'waist_cm', value: waistObs.value, unit: 'cm' }] : []),
-            ...(bfObs    ? [{ source: 'OBSERVATION', obs_type: 'body_fat_pct', value: bfObs.value }] : []),
-          ],
-          inferred_from_nodes: [],
-        },
-        missing_evidence: [
-          ...(!waistObs ? [{ type: 'OBSERVATION', obs_type: 'waist_cm', note: 'Obvod pasu — silnější marker viscerální adipozity než BMI' }] : []),
-          ...(!bfObs    ? [{ type: 'OBSERVATION', obs_type: 'body_fat_pct', note: 'Podíl tělesného tuku (DEXA nebo bioimpedance)' }] : []),
+          }] : []),
+          ...(waistElevated ? [{
+            source: 'OBSERVATION',
+            obs_type: 'waist_cm',
+            value: waistObs.value,
+            unit: 'cm',
+            note: `Obvod pasu ≥ ${waistThreshold} cm (WHO práh zvýšeného rizika) — přímý marker viscerální adipozity, nezávislý na BMI.`,
+          }] : []),
         ],
-      });
-    }
+        supporting: [
+          ...(waistObs && !waistElevated ? [{ source: 'OBSERVATION', obs_type: 'waist_cm', value: waistObs.value, unit: 'cm' }] : []),
+          ...(bfObs    ? [{ source: 'OBSERVATION', obs_type: 'body_fat_pct', value: bfObs.value }] : []),
+        ],
+        inferred_from_nodes: [],
+      },
+      missing_evidence: [
+        ...(!waistObs ? [{ type: 'OBSERVATION', obs_type: 'waist_cm', note: 'Obvod pasu — silnější marker viscerální adipozity než BMI' }] : []),
+        ...(!bfObs    ? [{ type: 'OBSERVATION', obs_type: 'body_fat_pct', note: 'Podíl tělesného tuku (DEXA nebo bioimpedance)' }] : []),
+      ],
+    });
   }
 
   // ── PERIPHERAL_NEUROPATHY ────────────────────────────────────────────────
