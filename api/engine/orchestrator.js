@@ -312,8 +312,8 @@ const INTERVENTION_TYPE_LABEL_CS = {
 // Falls back to the generic tables when no override exists for the intervention_id.
 const MECHANISM_OVERRIDE_CS = {
   FUNCTIONAL_STRENGTH_TRAINING: {
-    primary:    { verb: 'zvýšit', object: 'svalovou sílu' },
-    secondary:  [{ verb: 'zlepšit', object: 'schopnost zvládat běžné fyzické úkony' }],
+    primary:    { verb: 'zvětšit', object: 'sílu' },
+    secondary:  [{ verb: 'lépe', object: 'zvládat běžné fyzické úkony' }],
   },
 };
 
@@ -1089,9 +1089,9 @@ function whyEvidencePhrase(ctx) {
     recent_falls: 'V onboardingu je uveden nedávný pád.',
     rovnovaha_zavrene_oci: 'Onboarding ukazuje omezení rovnováhy.',
     balanc_jedna_noha: 'Onboarding ukazuje omezení rovnováhy.',
-    vstat_ze_zeme: 'Některé běžné pohyby jsou pro tebe obtížné.',
-    vynest_nakup: 'Některé běžné pohyby jsou pro tebe obtížné.',
-    zvednout_vnouce: 'Některé běžné pohyby jsou pro tebe obtížné.',
+    vstat_ze_zeme: 'Nezvládáš vstát ze země bez opory rukou.',
+    vynest_nakup: 'Nezvládáš vynést těžší nákup bez zastavení.',
+    zvednout_vnouce: 'Nezvládáš zvednout těžší předmět ze země bez bolesti.',
   };
   const answer = facts.find(f => f.source === 'ONBOARDING' && questions[f.question_id]
     && (f.question_id === 'recent_falls' ? f.value === true : no(f.value)));
@@ -1280,7 +1280,7 @@ function buildMechanismResponse(sessionState) {
   const phrases = [primary, ...secondary].map(effect => `${effect.verb} ${effect.object}`);
   const joined = phrases.length === 1 ? phrases[0]
     : `${phrases.slice(0, -1).join(', ')} a ${phrases.at(-1)}`;
-  const text = `${subject} ti při pravidelném opakování může pomoci ${joined}.`;
+  const text = `${subject} ti při pravidelném opakování pomůže ${joined}.`;
 
   return {
     mode:          'EXPLAIN',

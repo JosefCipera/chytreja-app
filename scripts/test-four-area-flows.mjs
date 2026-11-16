@@ -38,10 +38,10 @@ const presentation=await isolated(new URL('../api/engine/orchestrator.js',import
 });
 const scenarios=[
  {node:'GAIT_INSTABILITY',input:'Jsem při chůzi nejistý.',physical:{vstat_ze_zeme:true,zvednout_vnouce:true,vynest_nakup:true,recent_falls:false,rovnovaha_zavrene_oci:false},observations:[{obs_type:'weight_kg',value:72}],type:'BALANCE_TRAINING',targets:['GAIT_INSTABILITY','FALL_RISK','LOW_MUSCLE_STRENGTH'],why:'neudržíš stoj na jedné noze se zavřenýma očima'},
- {node:'LOW_MUSCLE_STRENGTH',input:'Hůř vstávám ze země.',physical:{vstat_ze_zeme:false},observations:[{obs_type:'weight_kg',value:72}],type:'FUNCTIONAL_STRENGTH_TRAINING',targets:['LOW_MUSCLE_STRENGTH','REDUCED_FUNCTIONAL_RESERVE'],why:'nevstaneš ze země bez opory rukou'},
+ {node:'LOW_MUSCLE_STRENGTH',input:'Hůř vstávám ze země.',physical:{vstat_ze_zeme:false},observations:[{obs_type:'weight_kg',value:72}],type:'FUNCTIONAL_STRENGTH_TRAINING',targets:['LOW_MUSCLE_STRENGTH','REDUCED_FUNCTIONAL_RESERVE'],why:'ze země bez opory rukou'},
  {node:'PHYSICAL_INACTIVITY',input:'Celý den sedím.',physical:{sedentary_hours_day:9},observations:[{obs_type:'weight_kg',value:72},{obs_type:'sedentary_hours_day',value:9}],type:'BREAK_UP_SEDENTARY_TIME',targets:['PHYSICAL_INACTIVITY','INSULIN_RESISTANCE'],why:'prosedíš 9 hodin denně'},
  {node:'EXCESS_ADIPOSITY',input:'Přibral jsem.',physical:{},observations:[{obs_type:'weight_kg',value:95}],type:'AEROBIC_TRAINING',targets:['EXCESS_ADIPOSITY','PHYSICAL_INACTIVITY','HYPERTENSION','INSULIN_RESISTANCE'],why:'ze zadané výšky a hmotnosti'},
- {node:'LOW_MUSCLE_STRENGTH',input:'chci zhubnout',person:{birth_year:1958,sex:'female',height_cm:165},goal:'WEIGHT_LOSS',physical:{vstat_ze_zeme:false,zvednout_vnouce:true,vynest_nakup:true,rovnovaha_zavrene_oci:false},observations:[{obs_type:'weight_kg',value:71},{obs_type:'waist_cm',value:81}],type:'FUNCTIONAL_STRENGTH_TRAINING',targets:['LOW_MUSCLE_STRENGTH','REDUCED_FUNCTIONAL_RESERVE'],why:'nevstaneš ze země bez opory rukou'},
+ {node:'LOW_MUSCLE_STRENGTH',input:'chci zhubnout',person:{birth_year:1958,sex:'female',height_cm:165},goal:'WEIGHT_LOSS',physical:{vstat_ze_zeme:false,zvednout_vnouce:true,vynest_nakup:true,rovnovaha_zavrene_oci:false},observations:[{obs_type:'weight_kg',value:71},{obs_type:'waist_cm',value:81}],type:'FUNCTIONAL_STRENGTH_TRAINING',targets:['LOW_MUSCLE_STRENGTH','REDUCED_FUNCTIONAL_RESERVE'],why:'ze země bez opory rukou'},
 ];
 for(const f of scenarios){
  completed=false;
@@ -65,9 +65,9 @@ for(const f of scenarios){
  }
  assert.equal((await send('Kam směřuješ?')).mode,'EXPLAIN');
  const benefit=await send('Co tím změníš?');
- assert.ok(benefit.text.includes('při pravidelném opakování může pomoci'));
+ assert.ok(benefit.text.includes('při pravidelném opakování pomůže'));
  assert.doesNotMatch(benefit.text,/zlepšit riziko|zlepšit krevní tlak|podpořit několik oblastí/);
- if(f.node==='GAIT_INSTABILITY')assert.equal(benefit.text,'Cvičení rovnováhy ti při pravidelném opakování může pomoci zlepšit jistotu při chůzi, snížit riziko pádu a posílit svalovou sílu.');
+ if(f.node==='GAIT_INSTABILITY')assert.equal(benefit.text,'Cvičení rovnováhy ti při pravidelném opakování pomůže zlepšit jistotu při chůzi, snížit riziko pádu a posílit svalovou sílu.');
  const done=await send('Hotovo');assert.equal(done.mode,'HOLD');assert.equal(done.debug.reason_code,'HOLD_DONE_TODAY');
  for(const text of ['Co dál?','co dal?','Co teď?','co ted?']){
   const aiBefore=classifierCalls;

@@ -67,7 +67,7 @@ const confirmed = structuredClone(proxySession);
 confirmed.last_domain_response.explanation_context.leverage_evidence.direct.push({ obs_type: 'gait_assessment', value: 'abnormal' });
 assert.ok(!why(confirmed).text.includes('Samy nepotvrzují'), 'Direct gait assessment is not denied');
 console.log('PASS: inferred balance WHY exposes combined sources, remains conditional and concise, retains actual adverse reports and direct findings.');
-assert.ok(mechanism(session).text.includes('při pravidelném opakování může pomoci'));
+assert.ok(mechanism(session).text.includes('při pravidelném opakování pomůže'));
 assert.equal(localize('Avoid Valsalva (breath-holding during exertion)'),'Nezadržuj dech při cvičení');
 console.log('PASS: balance dose unchanged, all safety conditions once, no duplicate WHY instructions, conditional repeated benefit.');
 
@@ -79,7 +79,7 @@ const chairSession = label => ({
     mechanism_targets:['LOW_MUSCLE_STRENGTH','REDUCED_FUNCTIONAL_RESERVE'],
   }}}},
 });
-const expectedBenefit = 'Cvičení ti při pravidelném opakování může pomoci zvýšit svalovou sílu a zlepšit schopnost zvládat běžné fyzické úkony.';
+const expectedBenefit = 'Cvičení ti při pravidelném opakování pomůže zvětšit sílu a lépe zvládat běžné fyzické úkony.';
 for(const label of [chairCopy,'5× pomalu vstaň ze židle','Pomalu vstaň ze židle','Vstávání ze židle']){
   assert.equal(mechanism(chairSession(label)).text, expectedBenefit);
 }

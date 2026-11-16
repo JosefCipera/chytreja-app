@@ -279,13 +279,13 @@ sep('M1 — no mechanism_targets → graceful fallback, no crash');
 sep('M2 — 0 secondary targets → single-sentence form');
 {
   const r = buildMechanismResponse(ctxFor({ action: { label: 'Nějaká akce', mechanism_targets: ['LOW_MUSCLE_STRENGTH'] } }));
-  check(r.text === 'Nějaká akce ti při pravidelném opakování může pomoci posílit svalovou sílu.', 'M2: exact single-target text', `text: ${r.text}`);
+  check(r.text === 'Nějaká akce ti při pravidelném opakování pomůže posílit svalovou sílu.', 'M2: exact single-target text', `text: ${r.text}`);
 }
 
 sep('M3 — 1 secondary target → "...ale zároveň zlepšit i Y."');
 {
   const r = buildMechanismResponse(ctxFor({ action: { label: 'Nějaká akce', mechanism_targets: ['LOW_MUSCLE_STRENGTH', 'REDUCED_FUNCTIONAL_RESERVE'] } }));
-  check(r.text === 'Nějaká akce ti při pravidelném opakování může pomoci posílit svalovou sílu a zlepšit celkovou tělesnou odolnost.',
+  check(r.text === 'Nějaká akce ti při pravidelném opakování pomůže posílit svalovou sílu a zlepšit celkovou tělesnou odolnost.',
     'M3: exact one-secondary text', `text: ${r.text}`);
 }
 
@@ -297,7 +297,7 @@ sep('M4 — 2-3 secondary targets, capped at 3');
       mechanism_targets: ['EXCESS_ADIPOSITY', 'PHYSICAL_INACTIVITY', 'HYPERTENSION', 'INSULIN_RESISTANCE', 'ENDOTHELIAL_DYSFUNCTION'],
     },
   }));
-  check(r.text === 'Svižná chůze nebo kolo — 20 minut (dá se mluvit) ti při pravidelném opakování může pomoci snížit nadváhu, ' +
+  check(r.text === 'Svižná chůze nebo kolo — 20 minut (dá se mluvit) ti při pravidelném opakování pomůže snížit nadváhu, ' +
     'zvýšit pohybovou aktivitu, podpořit zdravý krevní tlak a zlepšit zpracování cukru v těle.',
     'M4: exact capped-at-3 text (5 real mechanism_targets, 1 skipped, 1 would-be-4th never reached)', `text: ${r.text}`);
 }
@@ -317,7 +317,7 @@ sep('M6 — a mechanism target with no plain-language phrase is skipped, not sho
 {
   const r = buildMechanismResponse(ctxFor({ action: { label: 'Nějaká akce', mechanism_targets: ['LOW_MUSCLE_STRENGTH', 'PERIPHERAL_NEUROPATHY'] } }));
   assertNoJargon(r.text, 'M6');
-  check(r.text === 'Nějaká akce ti při pravidelném opakování může pomoci posílit svalovou sílu.',
+  check(r.text === 'Nějaká akce ti při pravidelném opakování pomůže posílit svalovou sílu.',
     'M6: falls back to single-target form since the only secondary has no phrase', `text: ${r.text}`);
 }
 
@@ -326,7 +326,7 @@ sep('M7 — imperative action label falls back to "Tato akce" as subject');
   const r = buildMechanismResponse(ctxFor({
     action: { label: 'Jdi na procházku 20 minut', mechanism_targets: ['PHYSICAL_INACTIVITY'] },
   }));
-  check(r.text.startsWith('Tato akce ti při pravidelném opakování může pomoci'), 'M7: imperative label replaced by "Tato akce"', `text: ${r.text}`);
+  check(r.text.startsWith('Tato akce ti při pravidelném opakování pomůže'), 'M7: imperative label replaced by "Tato akce"', `text: ${r.text}`);
 }
 
 sep('M8 — non-imperative (noun-phrase) action label used as the real sentence subject');
@@ -334,7 +334,7 @@ sep('M8 — non-imperative (noun-phrase) action label used as the real sentence 
   const r = buildMechanismResponse(ctxFor({
     action: { label: 'Svižná chůze nebo kolo — 20 minut (dá se mluvit)', mechanism_targets: ['EXCESS_ADIPOSITY'] },
   }));
-  check(r.text.startsWith('Svižná chůze nebo kolo — 20 minut (dá se mluvit) ti při pravidelném opakování může pomoci'),
+  check(r.text.startsWith('Svižná chůze nebo kolo — 20 minut (dá se mluvit) ti při pravidelném opakování pomůže'),
     'M8: real action label used as subject', `text: ${r.text}`);
 }
 
@@ -347,7 +347,7 @@ sep('M9 — imperative label + known intervention_id → human type-name subject
       mechanism_targets: ['LOW_MUSCLE_STRENGTH'],
     },
   }));
-  check(r.text.startsWith('Cvičení ti při pravidelném opakování může pomoci'),
+  check(r.text.startsWith('Cvičení ti při pravidelném opakování pomůže'),
     'M9: intervention type-name used instead of "Tato akce" fallback', `text: ${r.text}`);
   check(!r.text.includes('Tato akce'), 'M9: no "Tato akce" fallback when intervention_id is known', `text: ${r.text}`);
 }
@@ -361,7 +361,7 @@ sep('M10 — intervention_id with no INTERVENTION_TYPE_LABEL_CS entry still fall
       mechanism_targets: ['PHYSICAL_INACTIVITY'],
     },
   }));
-  check(r.text.startsWith('Tato akce ti při pravidelném opakování může pomoci'), 'M10: unlisted intervention_id falls back to "Tato akce"', `text: ${r.text}`);
+  check(r.text.startsWith('Tato akce ti při pravidelném opakování pomůže'), 'M10: unlisted intervention_id falls back to "Tato akce"', `text: ${r.text}`);
 }
 
 sep('M11 — FUNCTIONAL_STRENGTH_TRAINING override: verb/secondary phrase and no "i" filler');
@@ -373,7 +373,7 @@ sep('M11 — FUNCTIONAL_STRENGTH_TRAINING override: verb/secondary phrase and no
       mechanism_targets: ['LOW_MUSCLE_STRENGTH', 'REDUCED_FUNCTIONAL_RESERVE'],
     },
   }));
-  check(r.text === 'Cvičení ti při pravidelném opakování může pomoci zvýšit svalovou sílu a zlepšit schopnost zvládat běžné fyzické úkony.',
+  check(r.text === 'Cvičení ti při pravidelném opakování pomůže zvětšit sílu a lépe zvládat běžné fyzické úkony.',
     'M11: override verb/object/secondary used, "i" dropped', `text: ${r.text}`);
 }
 
@@ -418,7 +418,7 @@ sep('S1 — EXCESS_ADIPOSITY, exact required texts for all three views');
       mechanism_targets: ['EXCESS_ADIPOSITY', 'PHYSICAL_INACTIVITY', 'HYPERTENSION', 'INSULIN_RESISTANCE', 'ENDOTHELIAL_DYSFUNCTION'],
     },
   });
-  check(buildMechanismResponse(mechCtx).text === 'Svižná chůze nebo kolo — 20 minut (dá se mluvit) ti při pravidelném opakování může pomoci snížit nadváhu, ' +
+  check(buildMechanismResponse(mechCtx).text === 'Svižná chůze nebo kolo — 20 minut (dá se mluvit) ti při pravidelném opakování pomůže snížit nadváhu, ' +
     'zvýšit pohybovou aktivitu, podpořit zdravý krevní tlak a zlepšit zpracování cukru v těle.',
     'S1: Co tím změníš? — exact required text');
 }
@@ -447,7 +447,7 @@ sep('S2 — LOW_MUSCLE_STRENGTH, texts for all three views');
     },
   });
   check(buildMechanismResponse(mechCtx).text ===
-    'Cvičení ti při pravidelném opakování může pomoci zvýšit svalovou sílu a zlepšit schopnost zvládat běžné fyzické úkony.',
+    'Cvičení ti při pravidelném opakování pomůže zvětšit sílu a lépe zvládat běžné fyzické úkony.',
     'S2: Co tím změníš? — exact text (imperative label → intervention type-name subject)');
 }
 
