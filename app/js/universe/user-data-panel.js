@@ -530,7 +530,7 @@ function buildBmiWaistHtml(height, weight, waist, gender) {
   const bmi = calcBmi(height, weight);
   if (!bmi && !waist) return '';
   const bmiPart = bmi ? `<span style="color:#64748b;font-size:13px;">BMI: </span>
-    <span style="font-size:18px;font-weight:700;color:#94a3b8;">${bmi.toFixed(1)}</span>` : '';
+    <span style="font-size:16px;font-weight:400;color:#94a3b8;">${bmi.toFixed(1)}</span>` : '';
   const [waistText, waistColor] = waist ? waistTier(waist, gender) : [null, null];
   const waistPart = waist ? `<span style="color:#64748b;font-size:13px;">Obvod pasu: </span>
     <span style="font-size:18px;font-weight:700;color:${waistColor};">${waist} cm</span>
