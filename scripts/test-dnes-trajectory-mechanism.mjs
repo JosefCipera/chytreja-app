@@ -109,7 +109,7 @@ sep('W1 — no explanation_context → graceful fallback, no crash');
 sep('W2 — leverage known, no goal branches → generic goal-state fallback');
 {
   const r = buildWhyResponse(ctxFor({ leverageNodeId: 'EXCESS_ADIPOSITY', action: { label: 'x', goal_impact: { branches: [] } } }));
-  check(r.text === 'Podle dostupných údajů se teď zaměřujeme na snižování nadváhy. Cílem je podpořit tvůj aktuální zdravotní stav.',
+  check(r.text === 'Podle dostupných údajů se teď zaměřujeme na snižování nadváhy.',
     'W2: exact fallback-goal text', `text: ${r.text}`);
 }
 
@@ -119,7 +119,7 @@ sep('W3 — leverage + single goal branch → one-sentence human form');
     leverageNodeId: 'EXCESS_ADIPOSITY',
     action: { label: 'x', goal_impact: { branches: ['SURVIVAL_HEALTHSPAN'] } },
   }));
-  check(r.text === 'Podle dostupných údajů se teď zaměřujeme na snižování nadváhy. Cílem je podpořit tvoje zdraví.',
+  check(r.text === 'Podle dostupných údajů se teď zaměřujeme na snižování nadváhy.',
     'W3: exact single-branch text', `text: ${r.text}`);
 }
 
@@ -129,7 +129,7 @@ sep('W4 — leverage + both goal branches → joined with "a"');
     leverageNodeId: 'EXCESS_ADIPOSITY',
     action: { label: 'x', goal_impact: { branches: ['SURVIVAL_HEALTHSPAN', 'FUNCTIONAL_INDEPENDENCE'] } },
   }));
-  check(r.text === 'Podle dostupných údajů se teď zaměřujeme na snižování nadváhy. Cílem je podpořit tvoje zdraví a tvoji soběstačnost.',
+  check(r.text === 'Podle dostupných údajů se teď zaměřujeme na snižování nadváhy.',
     'W4: EXCESS_ADIPOSITY exact required text', `text: ${r.text}`);
 }
 
@@ -139,7 +139,7 @@ sep('W5 — constraint present and different from leverage → extra clause');
     leverageNodeId: 'EXCESS_ADIPOSITY', constraintNodeId: 'LOW_MUSCLE_STRENGTH',
     action: { label: 'x', goal_impact: { branches: ['SURVIVAL_HEALTHSPAN'] } },
   }));
-  check(r.text === 'Podle dostupných údajů se teď zaměřujeme na snižování nadváhy. Cílem je podpořit tvoje zdraví. Zároveň hraje roli tvoje svalová síla.',
+  check(r.text === 'Podle dostupných údajů se teď zaměřujeme na snižování nadváhy. Zároveň hraje roli tvoje svalová síla.',
     'W5: exact constraint-clause text', `text: ${r.text}`);
 }
 
@@ -163,26 +163,6 @@ sep('W7 — SAFE_WITH_MODIFICATION → no repeated safety instructions in WHY');
   }));
   check(!r.text.includes('Přestaň') && !r.text.includes('Doporučená úprava:'),
     'W7: safety instructions stay in ACT, absent from WHY', `text: ${r.text}`);
-}
-
-sep('W9 — FUNCTIONAL_INDEPENDENCE+SURVIVAL_HEALTHSPAN pair drops the repeated possessive');
-{
-  const r = buildWhyResponse(ctxFor({
-    leverageNodeId: 'LOW_MUSCLE_STRENGTH',
-    action: { label: 'x', goal_impact: { branches: ['FUNCTIONAL_INDEPENDENCE', 'SURVIVAL_HEALTHSPAN'] } },
-  }));
-  check(r.text === 'Podle dostupných údajů se teď zaměřujeme na tvoji svalovou sílu. Cílem je podpořit tvoji soběstačnost a zdraví.',
-    'W9: curated pair phrase used, no "tvoje zdraví" repeat', `text: ${r.text}`);
-}
-
-sep('W10 — the reverse branch order is NOT in GOAL_BRANCH_PAIR_CS — generic join unaffected');
-{
-  const r = buildWhyResponse(ctxFor({
-    leverageNodeId: 'EXCESS_ADIPOSITY',
-    action: { label: 'x', goal_impact: { branches: ['SURVIVAL_HEALTHSPAN', 'FUNCTIONAL_INDEPENDENCE'] } },
-  }));
-  check(r.text === 'Podle dostupných údajů se teď zaměřujeme na snižování nadváhy. Cílem je podpořit tvoje zdraví a tvoji soběstačnost.',
-    'W10: EXCESS_ADIPOSITY branch order unaffected by the curated pair table', `text: ${r.text}`);
 }
 
 sep('W8 — no forbidden jargon in WHY text across all producible nodes');
@@ -423,7 +403,7 @@ sep('S1 — EXCESS_ADIPOSITY, exact required texts for all three views');
     leverageNodeId: 'EXCESS_ADIPOSITY',
     action: { label: 'Svižná chůze nebo kolo — 20 minut (dá se mluvit)', goal_impact: { branches: ['SURVIVAL_HEALTHSPAN', 'FUNCTIONAL_INDEPENDENCE'] } },
   });
-  check(buildWhyResponse(whyCtx).text === 'Podle dostupných údajů se teď zaměřujeme na snižování nadváhy. Cílem je podpořit tvoje zdraví a tvoji soběstačnost.',
+  check(buildWhyResponse(whyCtx).text === 'Podle dostupných údajů se teď zaměřujeme na snižování nadváhy.',
     'S1: Proč? — exact required text');
 
   const trajCtx = ctxFor({
@@ -449,7 +429,7 @@ sep('S2 — LOW_MUSCLE_STRENGTH, texts for all three views');
     leverageNodeId: 'LOW_MUSCLE_STRENGTH',
     action: { label: 'x', goal_impact: { branches: ['FUNCTIONAL_INDEPENDENCE', 'SURVIVAL_HEALTHSPAN'] } },
   });
-  check(buildWhyResponse(whyCtx).text === 'Podle dostupných údajů se teď zaměřujeme na tvoji svalovou sílu. Cílem je podpořit tvoji soběstačnost a zdraví.',
+  check(buildWhyResponse(whyCtx).text === 'Podle dostupných údajů se teď zaměřujeme na tvoji svalovou sílu.',
     'S2: Proč? — exact text');
 
   const trajCtx = ctxFor({

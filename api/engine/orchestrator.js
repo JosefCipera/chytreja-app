@@ -184,18 +184,6 @@ const GOAL_BRANCH_CS = {
   SURVIVAL_HEALTHSPAN:     'Zdravé přežití',
   FUNCTIONAL_INDEPENDENCE: 'Funkční samostatnost',
 };
-const GOAL_BRANCH_CASUAL_CS = {
-  SURVIVAL_HEALTHSPAN:     'tvoje zdraví',
-  FUNCTIONAL_INDEPENDENCE: 'tvoji soběstačnost',
-};
-// Hand-curated 2-branch joins where natural Czech drops the repeated possessive pronoun on
-// the second noun ("tvoji soběstačnost a zdraví", not "...a tvoje zdraví"). Keyed by
-// "branch1+branch2" in the exact order goal_impact.branches lists them. A pair with no entry
-// here falls back to the generic join (both possessives kept) — e.g. EXCESS_ADIPOSITY's
-// SURVIVAL_HEALTHSPAN+FUNCTIONAL_INDEPENDENCE order is intentionally NOT in this table.
-const GOAL_BRANCH_PAIR_CS = {
-  'FUNCTIONAL_INDEPENDENCE+SURVIVAL_HEALTHSPAN': 'tvoji soběstačnost a zdraví',
-};
 
 // ── "Proč?" wording table ───────────────────────────────────────────────────────
 // Nominative phrases for the optional constraint sentence.
@@ -1160,25 +1148,17 @@ function buildWhyResponse(sessionState) {
   const leverageSubject   = WHY_SUBJECT_CS[leverage?.node_id]   ?? NODE_LABEL_CS[leverage?.node_id]   ?? null;
   const constraintSubject = WHY_SUBJECT_CS[constraint?.node_id] ?? NODE_LABEL_CS[constraint?.node_id] ?? null;
 
-  // Use the action’s modeled goal branches without inventing a personal goal.
   if (leverageSubject) {
-    const branches = (action?.goal_impact?.branches ?? []).filter(b => GOAL_BRANCH_CASUAL_CS[b]);
-    let goalPhrase;
-    if (branches.length === 0) {
-      goalPhrase = 'tvůj aktuální zdravotní stav';
-    } else if (branches.length === 1) {
-      goalPhrase = GOAL_BRANCH_CASUAL_CS[branches[0]];
-    } else {
-      goalPhrase = GOAL_BRANCH_PAIR_CS[branches.join('+')]
-        ?? branches.map(b => GOAL_BRANCH_CASUAL_CS[b]).join(' a ');
-    }
     const focus = WHY_FOCUS_CS[leverage?.node_id];
     const evidencePhrase = whyEvidencePhrase(ctx);
     const inferredBalance = leverage.node_id === 'GAIT_INSTABILITY'
       && evidencePhrase?.includes('Samy nepotvrzují nejistotu při běžné chůzi.');
+    // A goal-phrase sentence ("Cílem je podpořit ...") used to be appended here on
+    // every WHY answer regardless of node — generic boilerplate that added a third
+    // sentence without node-specific information. Dropped.
     if (focus) parts.push(evidencePhrase
-      ? `${evidencePhrase} Proto se dnes zaměřujeme na ${inferredBalance ? 'rovnováhu' : focus}.${ctx.action_fallback?.status === 'SELECTED' ? '' : ` Cílem je podpořit ${goalPhrase}.`}`
-      : `Podle dostupných údajů se teď zaměřujeme na ${focus}. Cílem je podpořit ${goalPhrase}.`);
+      ? `${evidencePhrase} Proto se dnes zaměřujeme na ${inferredBalance ? 'rovnováhu' : focus}.`
+      : `Podle dostupných údajů se teď zaměřujeme na ${focus}.`);
   }
 
   // Optional: SYSTEM_CONSTRAINT — deeper WHY; shown only when different from leverage
