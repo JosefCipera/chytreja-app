@@ -505,11 +505,26 @@ function calcBmi(height, weight) {
   return weight / Math.pow(height / 100, 2);
 }
 
-function bmiLabel(bmi) {
-  if (bmi < 18.5) return ['Podváha',       '#64748b'];
-  if (bmi < 25)   return ['Normální váha', '#22c55e'];
-  if (bmi < 30)   return ['Nadváha',       '#eab308'];
-  return               ['Obezita',         '#ef4444'];
+// BMI is shown as a plain number only — no risk label/color. It doesn't
+// distinguish muscle from fat or where fat sits, so a category like
+// "Nadváha" can contradict the waist verdict below for no good reason.
+// Waist (its engine threshold is waist/height > 0.5) is the one metric
+// here that gets a risk verdict — it is the stronger adiposity marker
+// (see api/engine/activation.js's EXCESS_ADIPOSITY comment).
+function buildBmiWaistHtml(height, weight, waist) {
+  const bmi  = calcBmi(height, weight);
+  const whtr = (waist && height) ? (waist / height) : null;
+  if (!bmi && whtr == null) return '';
+  const bmiPart = bmi ? `<span style="color:#64748b;font-size:13px;">BMI: </span>
+    <span style="font-size:18px;font-weight:700;color:#94a3b8;">${bmi.toFixed(1)}</span>` : '';
+  const waistColor = whtr != null ? (whtr > 0.5 ? '#f59e0b' : '#22c55e') : null;
+  const waistPart = whtr != null ? `<span style="color:#64748b;font-size:13px;">Obvod pasu: </span>
+    <span style="font-size:18px;font-weight:700;color:${waistColor};">${waist} cm</span>
+    <span style="color:${waistColor};font-size:13px;margin-left:4px;">${whtr > 0.5 ? '⚠ Zvýšené riziko' : '✓ V pořádku'}</span>` : '';
+  return `<div id="udp-bmi-live" style="margin-top:12px;padding:10px 14px;border-radius:8px;
+    background:rgba(255,255,255,0.04);border:1px solid #1e293b;display:flex;align-items:center;flex-wrap:wrap;gap:4px;">
+    ${bmiPart}${bmiPart && waistPart ? ' &nbsp;·&nbsp; ' : ''}${waistPart}
+  </div>`;
 }
 
 function renderProfilTab() {
@@ -517,16 +532,7 @@ function renderProfilTab() {
   const ls = cachedData.lifestyle ?? {};
   const birthYear = p.birth_year ?? '';
   const calcAge   = birthYear ? (new Date().getFullYear() - birthYear) : '';
-  const bmi       = calcBmi(p.height, p.weight);
-  const [bmiText, bmiColor] = bmi ? bmiLabel(bmi) : ['', '#64748b'];
-
-  const bmiHtml = bmi ? `
-    <div style="margin-top:12px;padding:10px 14px;border-radius:8px;
-      background:rgba(255,255,255,0.04);border:1px solid #1e293b;">
-      <span style="color:#64748b;font-size:13px;">BMI: </span>
-      <span style="font-size:18px;font-weight:700;color:${bmiColor};">${bmi.toFixed(1)}</span>
-      <span style="color:${bmiColor};font-size:13px;margin-left:8px;">${bmiText}</span>
-    </div>` : '';
+  const bmiHtml   = buildBmiWaistHtml(p.height, p.weight, ls.waist_cm);
 
   const lifestyleHtml = LIFESTYLE_FLAGS.map(f => {
     const on = ls[f.key] === true;
@@ -616,22 +622,10 @@ function bindProfilEvents() {
 function updateBmiDisplay() {
   const h = parseFloat(document.getElementById('prof-height')?.value);
   const w = parseFloat(document.getElementById('prof-weight')?.value);
-  const bmi = calcBmi(h, w);
-  const existing = document.getElementById('udp-bmi-live');
-  if (!bmi) { if (existing) existing.remove(); return; }
-  const [text, color] = bmiLabel(bmi);
   const waist = parseFloat(document.getElementById('prof-waist')?.value);
-  const whrVal = (waist && h) ? (waist / h) : null;
-  const whrHtml = whrVal ? ` &nbsp;·&nbsp; <span style="color:#64748b;font-size:13px;">Pas/výška: </span>
-    <span style="font-size:16px;font-weight:600;color:${whrVal > 0.5 ? '#f59e0b' : '#22c55e'};">${whrVal.toFixed(2)}</span>
-    <span style="color:${whrVal > 0.5 ? '#f59e0b' : '#22c55e'};font-size:12px;margin-left:4px;">${whrVal > 0.5 ? '⚠ Riziko' : '✓ OK'}</span>` : '';
-  const html = `<div id="udp-bmi-live" style="margin-top:12px;padding:10px 14px;border-radius:8px;
-    background:rgba(255,255,255,0.04);border:1px solid #1e293b;display:flex;align-items:center;flex-wrap:wrap;gap:4px;">
-    <span style="color:#64748b;font-size:13px;">BMI: </span>
-    <span style="font-size:18px;font-weight:700;color:${color};">${bmi.toFixed(1)}</span>
-    <span style="color:${color};font-size:13px;margin-left:4px;">${text}</span>
-    ${whrHtml}
-  </div>`;
+  const existing = document.getElementById('udp-bmi-live');
+  const html = buildBmiWaistHtml(h, w, waist);
+  if (!html) { if (existing) existing.remove(); return; }
   if (existing) existing.outerHTML = html;
   else document.querySelector('.udp-row-4')?.insertAdjacentHTML('afterend', html);
 }
