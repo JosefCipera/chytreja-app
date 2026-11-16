@@ -505,22 +505,36 @@ function calcBmi(height, weight) {
   return weight / Math.pow(height / 100, 2);
 }
 
+// WHO waist-circumference risk tiers (absolute cm, sex-specific) — the standard
+// terminology is "increased"/"substantially increased" risk, not "obesity" (that's
+// a BMI term). Normal: <94 cm (men) / <80 cm (women).
+function waistTier(waist, gender) {
+  if (gender === 'female') {
+    if (waist >= 88) return ['⚠ Podstatně zvýšené riziko', '#ef4444'];
+    if (waist >= 80) return ['⚠ Zvýšené riziko',            '#f59e0b'];
+    return ['✓ V pořádku', '#22c55e'];
+  }
+  // 'male' or unknown gender — WHO's male thresholds are the commonly cited default.
+  if (waist >= 102) return ['⚠ Podstatně zvýšené riziko', '#ef4444'];
+  if (waist >= 94)  return ['⚠ Zvýšené riziko',            '#f59e0b'];
+  return ['✓ V pořádku', '#22c55e'];
+}
+
 // BMI is shown as a plain number only — no risk label/color. It doesn't
 // distinguish muscle from fat or where fat sits, so a category like
 // "Nadváha" can contradict the waist verdict below for no good reason.
-// Waist (its engine threshold is waist/height > 0.5) is the one metric
-// here that gets a risk verdict — it is the stronger adiposity marker
-// (see api/engine/activation.js's EXCESS_ADIPOSITY comment).
-function buildBmiWaistHtml(height, weight, waist) {
-  const bmi  = calcBmi(height, weight);
-  const whtr = (waist && height) ? (waist / height) : null;
-  if (!bmi && whtr == null) return '';
+// Waist is the one metric here that gets a risk verdict — it is the
+// stronger adiposity marker (see api/engine/activation.js's
+// EXCESS_ADIPOSITY comment), using WHO's absolute-cm thresholds above.
+function buildBmiWaistHtml(height, weight, waist, gender) {
+  const bmi = calcBmi(height, weight);
+  if (!bmi && !waist) return '';
   const bmiPart = bmi ? `<span style="color:#64748b;font-size:13px;">BMI: </span>
     <span style="font-size:18px;font-weight:700;color:#94a3b8;">${bmi.toFixed(1)}</span>` : '';
-  const waistColor = whtr != null ? (whtr > 0.5 ? '#f59e0b' : '#22c55e') : null;
-  const waistPart = whtr != null ? `<span style="color:#64748b;font-size:13px;">Obvod pasu: </span>
+  const [waistText, waistColor] = waist ? waistTier(waist, gender) : [null, null];
+  const waistPart = waist ? `<span style="color:#64748b;font-size:13px;">Obvod pasu: </span>
     <span style="font-size:18px;font-weight:700;color:${waistColor};">${waist} cm</span>
-    <span style="color:${waistColor};font-size:13px;margin-left:4px;">${whtr > 0.5 ? '⚠ Zvýšené riziko' : '✓ V pořádku'}</span>` : '';
+    <span style="color:${waistColor};font-size:13px;margin-left:4px;">${waistText}</span>` : '';
   return `<div id="udp-bmi-live" style="margin-top:12px;padding:10px 14px;border-radius:8px;
     background:rgba(255,255,255,0.04);border:1px solid #1e293b;display:flex;align-items:center;flex-wrap:wrap;gap:4px;">
     ${bmiPart}${bmiPart && waistPart ? ' &nbsp;·&nbsp; ' : ''}${waistPart}
@@ -532,7 +546,7 @@ function renderProfilTab() {
   const ls = cachedData.lifestyle ?? {};
   const birthYear = p.birth_year ?? '';
   const calcAge   = birthYear ? (new Date().getFullYear() - birthYear) : '';
-  const bmiHtml   = buildBmiWaistHtml(p.height, p.weight, ls.waist_cm);
+  const bmiHtml   = buildBmiWaistHtml(p.height, p.weight, ls.waist_cm, p.gender);
 
   const lifestyleHtml = LIFESTYLE_FLAGS.map(f => {
     const on = ls[f.key] === true;
@@ -604,6 +618,7 @@ function bindProfilEvents() {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.udp-gender-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
+      updateBmiDisplay();
     });
   });
 
@@ -623,8 +638,9 @@ function updateBmiDisplay() {
   const h = parseFloat(document.getElementById('prof-height')?.value);
   const w = parseFloat(document.getElementById('prof-weight')?.value);
   const waist = parseFloat(document.getElementById('prof-waist')?.value);
+  const gender = document.querySelector('.udp-gender-btn.active')?.dataset.gender;
   const existing = document.getElementById('udp-bmi-live');
-  const html = buildBmiWaistHtml(h, w, waist);
+  const html = buildBmiWaistHtml(h, w, waist, gender);
   if (!html) { if (existing) existing.remove(); return; }
   if (existing) existing.outerHTML = html;
   else document.querySelector('.udp-row-4')?.insertAdjacentHTML('afterend', html);
