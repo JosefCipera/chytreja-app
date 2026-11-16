@@ -109,12 +109,31 @@ const LAB_FIELDS = [
   { key: 'psa',             label: 'PSA',              unit: 'µg/L',   placeholder: '1.2',  group: 'Hormony & játra' },
 ];
 
+// Czech display names for the engine's internal diagnosis IDs (api/engine/adapter.js
+// DIAG_KEYWORDS). An object-shaped diagnosis entry's .name holds that uppercase ID —
+// show the Czech name here instead of the raw English identifier.
+const DIAGNOSIS_LABEL_CS = {
+  ATRIAL_FIBRILLATION:          'Fibrilace síní',
+  HYPERTENSION:                 'Hypertenze (vysoký krevní tlak)',
+  DYSLIPIDEMIA:                 'Porucha tuků v krvi',
+  HYPERURICEMIA:                'Zvýšená kyselina močová',
+  ERECTILE_DYSFUNCTION:         'Erektilní dysfunkce',
+  CHRONIC_STRESS:               'Chronický stres',
+  OBESITY:                      'Obezita',
+  OVERWEIGHT:                   'Nadváha',
+  INSULIN_RESISTANCE:           'Inzulinová rezistence',
+  BENIGN_PROSTATIC_HYPERPLASIA: 'Zvětšená prostata',
+  EXTRASYSTOLES:                'Extrasystoly',
+  AF_ABLATION:                  'Ablace fibrilace síní',
+  PERIPHERAL_NEUROPATHY:        'Periferní neuropatie',
+};
+
 function renderZdraviTab() {
   // Diagnoses can be plain strings (saved from this textarea) or objects
   // (engine's free-text extractor: { name, status, source, raw_text }) — never
   // render an object's default toString() ("[object Object]") to the user.
   const diagnoses  = (cachedData.diagnoses ?? [])
-    .map(d => typeof d === 'string' ? d : (d?.name ?? d?.raw_text ?? ''))
+    .map(d => typeof d === 'string' ? d : (DIAGNOSIS_LABEL_CS[d?.name] ?? d?.name ?? d?.raw_text ?? ''))
     .filter(Boolean)
     .join('\n');
   const symptoms   = (cachedData.symptoms  ?? []).join('\n');
