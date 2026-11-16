@@ -81,10 +81,14 @@ export async function runTesterReset(userId, mode, sbClient) {
   // birth_year is written by Bootstrap NBE v1 (upsertUserProfile) and must be cleared on Full Reset
   // so the next clean session starts from zero-knowledge Bootstrap state.
   // gender is written the same way by the person_sex bootstrap question — same reset reasoning.
+  // age is derived from birth_year and must be cleared alongside it.
+  // height/weight are manually entered via Vstupní data → Profil (api/user.js save-profil) —
+  // also feed the engine's BMI/EXCESS_ADIPOSITY activation, so a reset that keeps them is not
+  // a clean slate.
   // onboarding_completed is reset to NULL (column default) so the wizard shows again.
   const { error: upErr } = await sb
     .from('user_profiles')
-    .update({ birth_year: null, gender: null, onboarding_completed: null })
+    .update({ birth_year: null, age: null, gender: null, height: null, weight: null, onboarding_completed: null })
     .eq('user_id', userId);
   if (upErr) return { status: 500, body: { error: `user_profiles: ${upErr.message}` } };
 
