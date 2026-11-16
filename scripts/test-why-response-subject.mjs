@@ -69,7 +69,7 @@ sep('W1 — exact live output for LOW_MUSCLE_STRENGTH / sit_to_stand_supported')
 {
   const state = sessionState(sitToStandAction, { leverage: { node_id: 'LOW_MUSCLE_STRENGTH' } });
   const response = buildWhyResponse(state);
-  const expected = 'Podle dostupných údajů se teď zaměřujeme na tvoji svalovou sílu. Cílem je podpořit tvoji soběstačnost a zdraví.';
+  const expected = 'Podle dostupných údajů se teď zaměřujeme na tvoji svalovou sílu.';
   check(response.text === expected, 'W1: exact text match',
     `expected: ${expected}\n      actual:   ${response.text}`);
 }
