@@ -55,4 +55,4 @@ assert.equal(helpUI.chips.join('|'),helpButtons.join('|'),'Scope explanations mu
 assert.ok(helpUI.input_enabled && helpUI.send_enabled && helpUI.microphone_enabled);
 for(const label of helpButtons)assert.equal(ui.click(label),label);
 const actUI=ui.render({mode:'EXPLAIN',text:'action explanation',buttons:['Hotovo','Přeskočit'],expects_reply:false});
-assert.ok(actUI.chips.includes('Kam směřuješ?') && actUI.chips.includes('Hotovo'),'Action explanation navigation still works');
+assert.ok(actUI.chips.includes('Kam směřuji?') && actUI.chips.includes('Hotovo'),'Action explanation navigation still works');

@@ -63,8 +63,8 @@ for(const f of scenarios){
   assert.doesNotMatch(reason.text,/jsi uvedl/);
   assert.equal(session.current_action_assignment.intervention_id,'FUNCTIONAL_STRENGTH_TRAINING');
  }
- assert.equal((await send('Kam směřuješ?')).mode,'EXPLAIN');
- const benefit=await send('Co tím změníš?');
+ assert.equal((await send('Kam směřuji?')).mode,'EXPLAIN');
+ const benefit=await send('Co tím změním?');
  assert.ok(benefit.text.includes('při pravidelném opakování pomůže'));
  assert.doesNotMatch(benefit.text,/zlepšit riziko|zlepšit krevní tlak|podpořit několik oblastí/);
  if(f.node==='GAIT_INSTABILITY')assert.equal(benefit.text,'Cvičení rovnováhy ti při pravidelném opakování pomůže zlepšit jistotu při chůzi, snížit riziko pádu a posílit svalovou sílu.');

@@ -1742,9 +1742,9 @@ async function processInputCore(userId, userText, sessionState = {}) {
     const _trimmedF = userText.trim();
     if (/^(?:proč|proc)\??$/i.test(_trimmedF)) {
       classified = { event_type: 'WHY_REQUEST', payload: {} };
-    } else if (_trimmedF === 'Kam směřuješ?') {
+    } else if (_trimmedF === 'Kam směřuji?') {
       classified = { event_type: 'TRAJECTORY_REQUEST', payload: {} };
-    } else if (_trimmedF === 'Co tím změníš?') {
+    } else if (_trimmedF === 'Co tím změním?') {
       classified = { event_type: 'MECHANISM_REQUEST', payload: {} };
     }
   }

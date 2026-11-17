@@ -67,7 +67,7 @@ for(const text of ['Chci lépe spát.','Pomoz mi s výrobou.','Proč nespím?'])
   assert.doesNotMatch(r.text,/lékařem/);
   general=r.session_updates;
 }
-for(const text of ['Co dál?','Proč?','Hotovo','Kam směřuješ?','Co tím změníš?']){
+for(const text of ['Co dál?','Proč?','Hotovo','Kam směřuji?','Co tím změním?']){
   const before=calls, aiBefore=classifierCalls;
   const r=await processInput('isolated',text,general);
   assert.equal(calls,before);assert.equal(classifierCalls,aiBefore);
