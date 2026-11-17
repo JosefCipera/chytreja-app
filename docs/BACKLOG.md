@@ -44,6 +44,28 @@
   textového auditu 4 oblastí (nadváha/pohyb/síla/rovnováha), který proběhl.
   Zbytek appky (mimo těchto 4 oblastí) zatím neauditován.
 
+## Otevřené architektonické rozhodnutí — cross-context bezpečnostní blokace
+
+**Zjištěno 2026-11-17** (ne specifické pro pád — obecná vlastnost `decisionGate.js`):
+`DAILY_DECISION.mode = ACT`, jakmile je ALESPOŇ JEDEN kontext `EVIDENCE_SUFFICIENT`,
+bez ohledu na to, že JINÝ kontext může mít potvrzený nález s vlastní nevyřešenou
+`missing_evidence`, která se nikdy nepoužije (NBE se generuje jen pro kontexty
+`NEED_MORE_EVIDENCE` — jakmile je kontext `EVIDENCE_SUFFICIENT`, jeho vlastní
+`missing_evidence` se ignoruje).
+
+Konkrétní ověřený příklad: `FALL_RISK CONFIRMED` (kontext `FUNCTIONAL_MOBILITY`)
+je sám o sobě vyhodnocen jako `EVIDENCE_SUFFICIENT` → jeho `missing_evidence`
+(gait_stability, TUG test) se nikdy nezeptá → zároveň `LONGEVITY_FUNCTION`
+kontext (`PHYSICAL_INACTIVITY`) je taky sufficient → globální `ACT`. Jediná
+pojistka dnes je akčně-úrovňová bezpečnostní brána v `nextBestAction.js`,
+která ale reaguje jen na `GAIT_INSTABILITY`, ne na `FALL_RISK` samotné.
+
+**Otázka pro produktové rozhodnutí:** má potvrzený, ale ne plně prošetřený
+nález v JEDNOM kontextu (CRT) brzdit/gatovat akci v JINÉM kontextu, dokud se
+nedovyšetří? Dopad je široký (týká se obecně interakce mezi všemi CRT
+kontexty, ne jen `FALL_RISK` × `PHYSICAL_INACTIVITY`) — nejde o jednořádkovou
+opravu, potřebuje promyšlenou politiku dřív, než se implementuje.
+
 ## Bezpečnostní scénáře k dalšímu prozkoumání
 
 `scripts/test-safety-scenarios.mjs` — rostoucí sada, začátá 2026-11-17.
