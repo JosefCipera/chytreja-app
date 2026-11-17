@@ -147,20 +147,20 @@ export async function runCombinationJourney({ scenario, initialPhysical, initial
         && context.system_priority.node_id === currentEngine.system_leverage.selected.node_id && context.action_fallback.status === 'SELECTED', context.system_leverage);
       reviews.push({ code: 'CHECKED_ALTERNATIVE', primary: f.primary_node_id, action_branch: f.selected_node_id });
     }
-    for (const text of ['Proč?', 'Kam směřuješ?', 'Co tím změníš?']) {
+    for (const text of ['Proč?', 'Kam směřuji?', 'Co tím změním?']) {
       const r = await turn(text);
       check('explanation-mode-' + text, r.mode === 'EXPLAIN' && Boolean(r.text) && r.text.length > 10, { mode: r.mode, text: r.text });
       if (text === 'Proč?') {
         const claims = { vstat_ze_zeme: /nevstaneš ze země/, zvednout_vnouce: /nezvládneš zvednout malé dítě/, vynest_nakup: /nezvládneš vynést nákup/ };
         check('why-does-not-reverse-answers', Object.entries(claims).every(([key, claim]) => scenario.physical[key] !== true || !claim.test(r.text)), r.text);
       }
-      if (text === 'Kam směřuješ?') {
+      if (text === 'Kam směřuji?') {
         const meanings = { LOW_MUSCLE_STRENGTH: /síla|síly|sílu|vstát/, GAIT_INSTABILITY: /upadneš|pádu/, EXCESS_ADIPOSITY: /inzulín|srdce|cév/ };
         const meaning = meanings[getSession().last_domain_response?.explanation_context?.system_leverage?.node_id];
         check('trajectory-matches-selected-crt-branch', !meaning || meaning.test(r.text), r.text);
         check('trajectory-is-possibility', /může/i.test(r.text), r.text);
       }
-      if (text === 'Co tím změníš?' && /kolo/.test(assignment?.label ?? '')) check('cycling-benefit-not-walking-only', !/^Rychlá chůze/.test(r.text), r.text);
+      if (text === 'Co tím změním?' && /kolo/.test(assignment?.label ?? '')) check('cycling-benefit-not-walking-only', !/^Rychlá chůze/.test(r.text), r.text);
     }
     check('explanations-observational', getWrites().length === writeCount && getCalls().length === callCount && JSON.stringify(getHealth()) === JSON.stringify(healthBefore) && JSON.stringify(getSession().current_action_assignment) === JSON.stringify(assignment), { writes: getWrites().length - writeCount, classifier_calls: getCalls().length - callCount });
     if (scenario.matrix.outcome === 'done') {

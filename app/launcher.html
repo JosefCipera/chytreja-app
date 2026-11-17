@@ -1035,8 +1035,8 @@
     // buttons — visually subordinate so the screen doesn't read as "5 buttons".
     const NAV_CHIPS = [
       { label: 'Proč?',            sources: ['explanation_context'] },
-      { label: 'Kam směřuješ?',    sources: ['causal_context', 'causal_context_no_data'] },
-      { label: 'Co tím změníš?',   sources: ['mechanism_targets', 'mechanism_targets_no_data'] },
+      { label: 'Kam směřuji?',     sources: ['causal_context', 'causal_context_no_data'] },
+      { label: 'Co tím změním?',   sources: ['mechanism_targets', 'mechanism_targets_no_data'] },
     ];
     const hasActiveAction = mode === 'ACT'
       || (mode === 'EXPLAIN' && buttons.some(label => label === 'Hotovo' || label === 'Přeskočit'));
