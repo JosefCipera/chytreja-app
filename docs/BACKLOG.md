@@ -66,6 +66,19 @@ nedovyšetří? Dopad je široký (týká se obecně interakce mezi všemi CRT
 kontexty, ne jen `FALL_RISK` × `PHYSICAL_INACTIVITY`) — nejde o jednořádkovou
 opravu, potřebuje promyšlenou politiku dřív, než se implementuje.
 
+## Baterie života (logo na úvodní obrazovce) — jak má počítat hodnotu
+
+**Zjištěno 2026-11-17.** `api/hud-data-bulk.js` (`worstLeaf()` + `rawBatteryPercent`):
+baterie pro kořenový uzel ("dlouhověkost") se počítá jako hodnota **nejslabšího
+leaf uzlu** v celém stromu universe (rekurzivně přes všechny vnuky), ne jako
+průměr/vážený součet. Jediná úprava je následné promítnutí CRT barvy (RED≤40,
+YELLOW 41–70) přes `crtColorMap`. Doslova: jeden slabý vedlejší metrik stáhne
+baterii dolů bez ohledu na to, jak dobře je na tom všechno ostatní.
+
+Josef (2026-11-17): rozhodně ne takhle. Čeká se na návrh jiné logiky (vážený
+průměr? CRT system constraint hodnota? něco jiného?) — zatím nerozhodnuto,
+jen zapsáno jako otevřená otázka.
+
 ## Bezpečnostní scénáře k dalšímu prozkoumání
 
 `scripts/test-safety-scenarios.mjs` — rostoucí sada, začátá 2026-11-17.
