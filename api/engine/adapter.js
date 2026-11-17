@@ -114,7 +114,7 @@ export async function fetchHealthData(userId) {
     medications,
     supplements,
     lifestyle: {
-      sedentary_work: lifestyle.sedentary === true,
+      sedentary_work: lifestyle.sedentary_work === true,
       smoking_history: 'unknown',
       alcohol_history: 'unknown',
     },
