@@ -640,6 +640,10 @@
     }).observe(_udpModal, { attributes: true, attributeFilter: ['class'] });
   }
 
+  // Resolves once it's safe for the caller to start the conversation: either
+  // onboarding was already done, or the wizard was shown and the user has since
+  // closed it. Without this, the first (voiced) "Kolik ti je let?" turn used to
+  // fire underneath the still-open onboarding modal — racing instead of waiting.
   async function checkAndShowOnboarding(userId) {
     if (!userId) return;
     try {
@@ -651,6 +655,10 @@
     } catch { /* fail-open below */ }
     _onboardingPending = true;
     openUserDataPanel();
+    await new Promise(resolve => {
+      const check = () => { if (!_onboardingPending) resolve(); else setTimeout(check, 200); };
+      check();
+    });
   }
 
   // ── Dev override: ?userId=xxx bypasses Firebase on localhost only ───────────
@@ -1291,37 +1299,38 @@
     $authOver.classList.add('hidden');
     $app.classList.remove('hidden');
 
-    checkAndShowOnboarding(userId).catch(e => console.warn('[onboarding]', e));
     loadBatteryBar(userId);
 
-    if (_isPostHandoff) {
-      history.replaceState({}, '', '/launcher');
-      const budgetRaw = parseInt(sessionStorage.getItem('chj_qbudget') ?? '3', 10);
-      sessionStorage.removeItem('chj_qbudget');
-      const budgetRemaining = isNaN(budgetRaw) ? 3 : Math.max(0, Math.min(3, budgetRaw));
-      saveSession({ question_budget_remaining: budgetRemaining });
-      orchestrate('Co mám dnes dělat?');
-      return;
-    }
-
-    // Reset per-conversation session fields on every page load.
-    // session_skipped_evidence is intentionally conversation-scoped: deferred tests
-    // should become eligible again in the next conversation (F5/new visit).
-    saveSession({ session_skipped_evidence: [] });
-
-    const last = loadLastResponse();
-    if (last && last.mode !== 'ASK' && last.mode !== 'HOLD') {
-      render(last);
-    } else {
-      // No cached actionable response (first visit, or last one was ASK/HOLD):
-      // skip the "Co chceš řešit?" idle screen and go straight to today's action,
-      // same as the post-handoff path above.
-      if (last?.mode === 'ASK') {
-        localStorage.removeItem(_LRK(_uid));
-        saveSession({ pending_question: null });
+    checkAndShowOnboarding(userId).then(() => {
+      if (_isPostHandoff) {
+        history.replaceState({}, '', '/launcher');
+        const budgetRaw = parseInt(sessionStorage.getItem('chj_qbudget') ?? '3', 10);
+        sessionStorage.removeItem('chj_qbudget');
+        const budgetRemaining = isNaN(budgetRaw) ? 3 : Math.max(0, Math.min(3, budgetRaw));
+        saveSession({ question_budget_remaining: budgetRemaining });
+        orchestrate('Co mám dnes dělat?');
+        return;
       }
-      orchestrate('Co mám dnes dělat?');
-    }
+
+      // Reset per-conversation session fields on every page load.
+      // session_skipped_evidence is intentionally conversation-scoped: deferred tests
+      // should become eligible again in the next conversation (F5/new visit).
+      saveSession({ session_skipped_evidence: [] });
+
+      const last = loadLastResponse();
+      if (last && last.mode !== 'ASK' && last.mode !== 'HOLD') {
+        render(last);
+      } else {
+        // No cached actionable response (first visit, or last one was ASK/HOLD):
+        // skip the "Co chceš řešit?" idle screen and go straight to today's action,
+        // same as the post-handoff path above.
+        if (last?.mode === 'ASK') {
+          localStorage.removeItem(_LRK(_uid));
+          saveSession({ pending_question: null });
+        }
+        orchestrate('Co mám dnes dělat?');
+      }
+    }).catch(e => console.warn('[onboarding]', e));
   }
 
   // Auth gating
