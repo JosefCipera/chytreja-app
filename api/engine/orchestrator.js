@@ -2459,6 +2459,42 @@ async function processInputCore(userId, userText, sessionState = {}) {
           },
           debug: { ...presentation.debug, reason_code: 'BOOTSTRAP_SKIP_OVERRIDE' },
         };
+      } else {
+        // Bootstrap is genuinely exhausted — every other candidate is either known,
+        // resolved, or already skipped, so there is nothing left to substitute for
+        // the stale pick the engine keeps re-selecting (it has no way of knowing
+        // pendingEvType was already resolved this session). Falling through here
+        // would silently re-display that same already-skipped question forever.
+        // Mirrors the identical PATH Discovery fallback used by the early-return
+        // clinical_context branches above when their own bootstrap search is empty.
+        const _pdSignal = synthesizePathDiscovery(state.hp_physical ?? {});
+        const _pdBaseUpd = { ...presentation.session_updates, skipped_bootstrap_types: effectiveSkipped };
+        if (_pdSignal.type === 'ASK') {
+          presentation = {
+            mode: 'ASK', text: _pdSignal.question_cs, buttons: [], expects_reply: true,
+            session_updates: {
+              ..._pdBaseUpd,
+              pending_question: { text: _pdSignal.question_cs, evidence_type: _pdSignal.evidence_type, type: 'PATH_DISCOVERY' },
+            },
+            debug: { reason_code: 'PATH_DISCOVERY_QUESTION', after: 'BOOTSTRAP_EXHAUSTED_OVERRIDE' },
+          };
+        } else if (_pdSignal.type === 'CANDIDATE') {
+          const discoveryText = `Na základě toho, co víš, stojí za bližší pohled: ${_pdSignal.label_cs}.`;
+          presentation = {
+            mode: 'HOLD', text: discoveryText, buttons: [], expects_reply: true,
+            session_updates: {
+              ..._pdBaseUpd, pending_question: null,
+              last_daily_decision: { mode: 'HOLD', reason_code: 'PATH_DISCOVERY_HOLD_CANDIDATE', path_id: _pdSignal.path_id, discovery_text: discoveryText },
+            },
+            debug: { reason_code: 'PATH_DISCOVERY_CANDIDATE', path_id: _pdSignal.path_id },
+          };
+        } else {
+          presentation = {
+            mode: 'HOLD', text: _pdSignal.text, buttons: [], expects_reply: true,
+            session_updates: { ..._pdBaseUpd, pending_question: null, last_daily_decision: { mode: 'HOLD', reason_code: 'PATH_DISCOVERY_HOLD' } },
+            debug: { reason_code: 'PATH_DISCOVERY_HOLD', after: 'BOOTSTRAP_EXHAUSTED_OVERRIDE' },
+          };
+        }
       }
     }
   }

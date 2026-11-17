@@ -540,7 +540,7 @@ export default async function handler(req, res) {
           text: spokenText.slice(0, 500),
           model_id: MODEL_ID,
           voice_settings: {
-            stability: 0.55,       // klidnější, stabilnější přednes — pomocník, ne direktor
+            stability: 0.75,       // vyšší = konzistentnější přednes mezi voláními (méně "jiná žena")
             similarity_boost: 0.65,
             speed: 0.97,           // mírně pomalejší, méně naléhavé tempo
           },
