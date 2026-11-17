@@ -704,13 +704,41 @@ const NBE_METHOD_FALLBACK = {
   clinician:        'Tuto hodnotu je třeba změřit u lékaře. Máš aktuální výsledek?',
 };
 
-function buildEvidenceQuestion(nbe) {
+// Written "X/Y" gender-neutral shorthand (e.g. "Upadl/a") reads fine on screen
+// but sounds wrong read aloud by TTS ("upadl lomeno a"). Explicit per-phrase
+// forms, not a generic regex — Czech endings don't split uniformly ("Upadl/a"
+// is a suffix append, "sám/sama" is a whole alternate word). Falls back to the
+// written slash form when sex is unknown — same as before this existed.
+const GENDERED_TEXT_CS = {
+  'Upadl/a jsi během posledních 12 měsíců?': {
+    male:   'Upadl jsi během posledních 12 měsíců?',
+    female: 'Upadla jsi během posledních 12 měsíců?',
+  },
+  'Pokud je pro tebe bezpečné jít na zem, zkus si sednout na zem a vstát s co nejmenší oporou. Zvládneš vstát? Pokud si nejsi jistý/á stabilitou, test nedělej sám/sama.': {
+    male:   'Pokud je pro tebe bezpečné jít na zem, zkus si sednout na zem a vstát s co nejmenší oporou. Zvládneš vstát? Pokud si nejsi jistý stabilitou, test nedělej sám.',
+    female: 'Pokud je pro tebe bezpečné jít na zem, zkus si sednout na zem a vstát s co nejmenší oporou. Zvládneš vstát? Pokud si nejsi jistá stabilitou, test nedělej sama.',
+  },
+  'Zmínil/a jsi aktuální potíže, které potřebují víc kontextu. Jak se cítíš teď — lepší, stejně, nebo hůř?': {
+    male:   'Zmínil jsi aktuální potíže, které potřebují víc kontextu. Jak se cítíš teď — lepší, stejně, nebo hůř?',
+    female: 'Zmínila jsi aktuální potíže, které potřebují víc kontextu. Jak se cítíš teď — lepší, stejně, nebo hůř?',
+  },
+};
+function genderize(text, sex) {
+  const forms = GENDERED_TEXT_CS[text];
+  if (!forms) return text;
+  if (sex === 'male')   return forms.male;
+  if (sex === 'female') return forms.female;
+  return text;
+}
+
+function buildEvidenceQuestion(nbe, sex = null) {
   if (!nbe) return null;
-  return NBE_QUESTION_MAP[nbe.evidence_type]
+  const text = NBE_QUESTION_MAP[nbe.evidence_type]
     ?? NBE_METHOD_FALLBACK[nbe.acquisition_method]
     ?? (nbe.evidence_type
         ? `Potřebuji informaci o: ${nbe.evidence_type}. Máš ji k dispozici?`
         : 'Potřebuji jednu konkrétní informaci. Můžeš mi ji poskytnout?');
+  return genderize(text, sex);
 }
 
 // ── Session update builder ────────────────────────────────────────────────────
@@ -726,7 +754,7 @@ export function _buildActResponse_test(dd, ctx, sessionUpdates, warnings) {
 }
 
 
-function buildSessionUpdates(eventType, classifiedPayload, result) {
+function buildSessionUpdates(eventType, classifiedPayload, result, sex = null) {
   const dr = result.domain_response;
   const dd = dr?.daily_decision;
 
@@ -770,7 +798,7 @@ function buildSessionUpdates(eventType, classifiedPayload, result) {
       // For NEXT_BEST_EVIDENCE items the engine provides evidence_type/acquisition_method
       // but no question field. buildEvidenceQuestion is the single source of truth for
       // converting NBE metadata → Czech user-facing question text.
-      const questionText = item?.question ?? item?.question_text ?? buildEvidenceQuestion(item);
+      const questionText = item?.question ?? item?.question_text ?? buildEvidenceQuestion(item, sex);
 
       // Derive evidence_type: prefer explicit field, fallback to body_part from triggering event
       const evidenceType = item?.evidence_type
@@ -836,7 +864,7 @@ function buildActResponse(dd, ctx, sessionUpdates, warnings) {
   };
 }
 
-function buildAskResponse(dd, ctx, sessionUpdates, warnings, sedentaryHoursKnown = false) {
+function buildAskResponse(dd, ctx, sessionUpdates, warnings, sedentaryHoursKnown = false, sex = null) {
   // ASK_BLOCKING with null primary_item: engine ran but couldn't generate a specific question.
   // Two sub-cases based on whether we have any leverage context:
   if (!dd.primary_item && dd.reason_code === 'ASK_BLOCKING') {
@@ -886,7 +914,7 @@ function buildAskResponse(dd, ctx, sessionUpdates, warnings, sedentaryHoursKnown
   const question = sessionUpdates.pending_question?.text
     ?? dd.primary_item?.question
     ?? dd.primary_item?.question_text
-    ?? buildEvidenceQuestion(dd.primary_item)
+    ?? buildEvidenceQuestion(dd.primary_item, sex)
     ?? 'Potřebuji konkrétní informaci. Napiš mi ji.';
 
   return {
@@ -1299,7 +1327,7 @@ export function _buildMechanismResponse_test(sessionState) {
 
 // ── Presentation dispatcher ───────────────────────────────────────────────────
 
-function buildPresentation(eventType, classifiedPayload, result, sessionUpdates, isHoldFollowUp = false, sedentaryHoursKnown = false) {
+function buildPresentation(eventType, classifiedPayload, result, sessionUpdates, isHoldFollowUp = false, sedentaryHoursKnown = false, sex = null) {
   if (result.error) {
     return {
       mode:          'NOOP',
@@ -1319,7 +1347,7 @@ function buildPresentation(eventType, classifiedPayload, result, sessionUpdates,
 
   switch (dd.mode) {
     case 'ACT':             return buildActResponse(dd, ctx, sessionUpdates, warnings);
-    case 'ASK':             return buildAskResponse(dd, ctx, sessionUpdates, warnings, sedentaryHoursKnown);
+    case 'ASK':             return buildAskResponse(dd, ctx, sessionUpdates, warnings, sedentaryHoursKnown, sex);
     case 'HOLD':            return buildHoldResponse(dd, ctx, sessionUpdates, warnings, eventType, isHoldFollowUp);
     case 'SAFETY':          return buildSafetyBlockedResponse(dd, sessionUpdates, warnings);
     case 'SAFETY_CRITICAL': return buildSafetyCriticalResponse(dd, sessionUpdates, warnings);
@@ -1764,7 +1792,7 @@ async function processInputCore(userId, userText, sessionState = {}) {
       debug: { reason_code: 'FUNCTIONAL_CLARIFICATION_BUDGET' },
     };
     const text = isLocation ? 'Myslíš vstávání ze židle, nebo ze země?'
-      : buildEvidenceQuestion({ evidence_type: 'vstat_ze_zeme' });
+      : buildEvidenceQuestion({ evidence_type: 'vstat_ze_zeme' }, state.person_sex);
     return {
       mode: 'ASK', text, buttons: [], expects_reply: true,
       session_updates: {
@@ -1914,7 +1942,7 @@ async function processInputCore(userId, userText, sessionState = {}) {
           ? state.question_budget_remaining : 3,
       };
       if (next) {
-        const questionText = buildEvidenceQuestion(next);
+        const questionText = buildEvidenceQuestion(next, state.person_sex);
         return {
           mode:          'ASK',
           text:          questionText,
@@ -2009,7 +2037,7 @@ async function processInputCore(userId, userText, sessionState = {}) {
     };
 
     if (next) {
-      const questionText = buildEvidenceQuestion(next);
+      const questionText = buildEvidenceQuestion(next, state.person_sex);
       return {
         mode:          'ASK',
         text:          questionText,
@@ -2281,7 +2309,7 @@ async function processInputCore(userId, userText, sessionState = {}) {
 
     // F1b: formatting error or permanent-inability phrase — re-ask with preserved pending_question
     const _reaskText = state.pending_question?.text
-      ?? buildEvidenceQuestion({ evidence_type: _evType });
+      ?? buildEvidenceQuestion({ evidence_type: _evType }, state.person_sex);
     return {
       mode:          'ASK',
       text:          _reaskText,
@@ -2296,7 +2324,7 @@ async function processInputCore(userId, userText, sessionState = {}) {
   }
 
   // 6. Build session updates (use original classifier event_type for session logic)
-  const sessionUpdates = buildSessionUpdates(event_type, payload, result);
+  const sessionUpdates = buildSessionUpdates(event_type, payload, result, state.person_sex);
 
   // 7. Build presentation from DOMAIN_RESPONSE only
   // HOLD follow-up: user asked "what else?" while previous decision was also HOLD.
@@ -2310,7 +2338,7 @@ async function processInputCore(userId, userText, sessionState = {}) {
         && event.payload.evidence_type === 'sedentary_hours_day'
         && result.persistence_status === 'ok'
         && !(result.warnings ?? []).some(w => typeof w === 'string' && w.startsWith('ANSWER:')));
-  let presentation = buildPresentation(event_type, payload, result, sessionUpdates, isHoldFollowUp, sedentaryHoursKnown);
+  let presentation = buildPresentation(event_type, payload, result, sessionUpdates, isHoldFollowUp, sedentaryHoursKnown, state.person_sex);
 
   // ── PATH Discovery answer override ───────────────────────────────────────────
   // Fires after applyHealthEvent persisted the answer to a PATH_DISCOVERY question.
@@ -2420,7 +2448,7 @@ async function processInputCore(userId, userText, sessionState = {}) {
       });
       const next = selectNextBestEvidence(available, [], [], '1.0.0');
       if (next) {
-        const questionText = buildEvidenceQuestion(next);
+        const questionText = buildEvidenceQuestion(next, state.person_sex);
         presentation = {
           ...presentation,
           text: questionText,
@@ -2581,7 +2609,7 @@ async function processInputCore(userId, userText, sessionState = {}) {
     // Budget available: ask about the acute symptom (uses one budget slot).
     return {
       mode:          'ASK',
-      text:          'Zmínil/a jsi aktuální potíže, které potřebují víc kontextu. Jak se cítíš teď — lepší, stejně, nebo hůř?',
+      text:          genderize('Zmínil/a jsi aktuální potíže, které potřebují víc kontextu. Jak se cítíš teď — lepší, stejně, nebo hůř?', state.person_sex),
       buttons:       [],
       expects_reply: true,
       session_updates: {
@@ -2646,7 +2674,7 @@ async function processInputCore(userId, userText, sessionState = {}) {
               debug: { reason_code: 'EVIDENCE_SKIPPED_SUPPRESSION', evidence_type: _diagGuidedNow.evidence_type, _diag },
             };
           }
-          const gText = buildEvidenceQuestion(_diagGuidedNow);
+          const gText = buildEvidenceQuestion(_diagGuidedNow, state.person_sex);
           return {
             mode:          'ASK',
             text:          gText,
