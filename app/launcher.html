@@ -903,6 +903,14 @@
     }, charDelay);
   }
 
+  // Written shorthand that reads fine on screen but confuses TTS pronunciation
+  // ("5×" is read garbled, not as "pětkrát"). Display text is untouched — only
+  // the text sent to /api/tts is rewritten; the typewriter still types the
+  // original.
+  function _toSpokenText(text) {
+    return text.replace(/(\d+)\s*×\s*/g, '$1 krát ');
+  }
+
   // Speaks `text` via /api/tts (ElevenLabs — same endpoint app/js/universe/launcher.js
   // already uses) and types it into el in sync with playback start. Falls back to an
   // instant, untyped render on any TTS failure — voice is a presentation extra, never
@@ -916,7 +924,7 @@
       const res = await authFetch('/api/tts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({ text: _toSpokenText(text) }),
       });
       if (!res.ok) throw new Error(`TTS ${res.status}`);
       const url = URL.createObjectURL(await res.blob());
