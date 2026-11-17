@@ -54,6 +54,7 @@ async function loadAndRender() {
     medications:    data.medications    ?? [],
   };
 
+  highlightActiveTab(activeTab);
   renderTab(activeTab);
 }
 
@@ -63,13 +64,20 @@ function renderSkeleton() {
 }
 
 // ─── Tab switch ────────────────────────────────────
-function switchTab(tab) {
-  activeTab = tab;
+// Tab buttons live outside #udp-body (rendered once by initUserDataPanel), so
+// renderSkeleton()'s wipe of #udp-body never touches their highlight — it has
+// to be synced explicitly whenever activeTab changes, not just from a click.
+function highlightActiveTab(tab) {
   document.querySelectorAll('.udp-tab').forEach(t => {
     const active = t.dataset.tab === tab;
     t.style.borderBottom = active ? '2px solid #06b6d4' : '2px solid transparent';
     t.style.color         = active ? '#06b6d4' : '#64748b';
   });
+}
+
+function switchTab(tab) {
+  activeTab = tab;
+  highlightActiveTab(tab);
   renderTab(tab);
 }
 
