@@ -1855,6 +1855,20 @@ async function processInputCore(userId, userText, sessionState = {}) {
     adapterType = 'ANSWER_TO_EVIDENCE_QUESTION';
   }
 
+  // Mark clinical_context session-resolved whenever it was the pending question and the
+  // reply is an actual answer (not a refusal — that is marked by the generic bootstrap
+  // skip/defer block below instead). This must NOT depend on what adapterType the
+  // classifier assigns: clinical_context is the only bootstrap type with a free-text
+  // answer, so unlike the other types (guarded deterministically before the classifier
+  // ever runs), Haiku's non-deterministic output decides adapterType here, and a
+  // substantive reply can land as GENERAL_HEALTH_REQUEST directly, skipping the
+  // ANSWER_TO_EVIDENCE_QUESTION-gated block below entirely — which previously meant this
+  // resolution never happened and the question resurfaced later.
+  if (state.pending_question?.evidence_type === 'clinical_context'
+      && adapterType !== 'USER_PREFERENCE') {
+    state.skipped_bootstrap_types = [...(state.skipped_bootstrap_types ?? []), 'clinical_context'];
+  }
+
   // ── Bootstrap clinical_context answer routing (narrow unlock) ───────────────
   // clinical_context answers cannot flow through ANSWER_TO_EVIDENCE_QUESTION
   // (no EVIDENCE_STORAGE_REGISTRY entry).
@@ -1875,7 +1889,9 @@ async function processInputCore(userId, userText, sessionState = {}) {
     if (/^\s*(ne|nem[aá]m|nic|n[eě]beru|žádn[éý][^a-z]|žádná)\s*[.,!]?\s*$/i.test(userText.trim())
         || isCompoundClinicalNegative(userText)) {
       // EARLY RETURN — no applyHealthEvent call, no DB write.
-      const newSkipped   = [...(state.skipped_bootstrap_types ?? []), 'clinical_context'];
+      // state.skipped_bootstrap_types already has 'clinical_context' from the
+      // unconditional mark above; newSkipped is just that same array, named for clarity.
+      const newSkipped   = state.skipped_bootstrap_types;
       const skippedSet   = new Set(newSkipped);
       const birthYrKnown = state.person_birth_year != null;
       const age          = state.person_birth_year ? (new Date().getFullYear() - state.person_birth_year) : null;
@@ -1953,15 +1969,11 @@ async function processInputCore(userId, userText, sessionState = {}) {
       };
     }
     // Substantive answer — route through existing free-text clinical extraction.
-    // Also mark clinical_context resolved here (mirrors the negative-answer branch
-    // above): its bootstrap-needs entry has no skip_if_known, so
-    // filterBootstrapCandidates has no way to drop it other than this explicit
-    // skip — without it, a real answer that the keyword extractor happens not to
-    // turn into a new diagnosis (Czech inflection, an unlisted drug name, …) left
-    // clinical_context eligible again next turn, repeating the same question.
+    // clinical_context is already marked session-resolved by the unconditional mark
+    // above, regardless of this branch (its bootstrap-needs entry has no skip_if_known,
+    // so filterBootstrapCandidates has no way to drop it other than that explicit mark).
     adapterType = 'GENERAL_HEALTH_REQUEST';
     _clinicalContextRouted = true;
-    state.skipped_bootstrap_types = [...(state.skipped_bootstrap_types ?? []), 'clinical_context'];
   }
 
   // ── Bootstrap skip/defer (narrow unlock) ─────────────────────────────────────
