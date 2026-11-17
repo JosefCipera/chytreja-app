@@ -1155,6 +1155,80 @@ LOW_MUSCLE_STRENGTH → FUNCTIONAL_STRENGTH_TRAINING → bezpečná konkrétní 
 
 ---
 
+## Práce z 2026-11-17 (a předchozí launcher testovací session)
+
+> Mezi touto a předchozí DEVLOG položkou (28.–29. 9.) proběhlo značné množství
+> práce zachycené jen v git historii, ne tady — mj. Landing V2 / Alpha
+> onboarding flow, Person Model / Structured Fact Bridge / NBQ prototyp,
+> System Constraint Readiness. Pro detaily viz `git log --oneline`, commit
+> zprávy nesou plné zdůvodnění. Tahle položka shrnuje jen to, co bylo přímo
+> vidět a opravováno v nejnovější živé testovací session na `/launcher`.
+
+### Vizuální sjednocení `/launcher` s referenčním vzhledem `/app` — ✅ CLOSED
+Logo/battery rozměry, barva textu (jednotná tlumená `#8ba8b8` napříč ACT/ASK/
+HOLD/EXPLAIN místo více odstínů), zmenšený strop velikosti písma na desktopu,
+focus timing bug (`$input.focus()` volaný, dokud byl input ještě `disabled`
+od `setLoading(true)` — kurzor proto naskakoval jen při úplně prvním zobrazení,
+ne na další otázky).
+
+### Onboarding sjednocení — ✅ CLOSED
+`/launcher` a `/app` sdílí jeden `user-data-panel.js` (5 tabů), `.physical`
+nahradilo starý `.capacity` split.
+
+### Bootstrap NBE v2 — pohlaví, clinical_context repeat bug — ✅ CLOSED
+- Přidáno `person_sex` jako bootstrap otázka (priorita 2, hned po věku) —
+  engine CV riziko ≥65 let dřív nikdy nevidělo pohlaví, pokud uživatel
+  neotevřel Vstupní data ručně.
+- **`clinical_context` repeat bug** (otázka "Léčíš se s něčím…" se vracela i
+  po zodpovězení) — dvě vrstvy stejné chyby: (1) `skipped_bootstrap_types` se
+  do `session_updates` propagoval jen při kolizi s enginovým pickem, ne vždy;
+  (2) označení "vyřízeno" bylo schované za `adapterType === 'ANSWER_TO_EVIDENCE_QUESTION'`,
+  což je nedeterministické (klasifikátor může vrátit `GENERAL_HEALTH_REQUEST`
+  přímo) — opraveno přesunem označení mimo klasifikátor-závislou větev.
+- **Skutečný kořen posledního výskytu:** `api/engine/adapter.js` četl
+  `lifestyle.sedentary` (starý klíč), zatímco UI po dřívější opravě ukládá
+  `lifestyle.sedentary_work` — `PHYSICAL_INACTIVITY` se tak nikdy neaktivovala,
+  `nodeStates` zůstávaly prázdné, engine opakovaně syntetizoval bootstrap
+  otázky místo jednou postoupit k akci.
+
+### WHY/mechanismus texty — zkrácení a konkretizace — ✅ CLOSED
+- `buildWhyResponse` už nelepí univerzální "Cílem je podpořit…" větu na konec
+  každé odpovědi (beze změny obsahu, jen délky).
+- `vstat_ze_zeme`/`vynest_nakup`/`zvednout_vnouce` měly identickou generickou
+  evidence frázi — teď má každá vlastní konkrétní větu, takže návaznost na
+  nabízenou akci dává smysl.
+- "svalová síla" (odborný termín) → "síla" v mechanismus textu.
+
+### BMI/obvod pasu UI — pas jako jediný verdikt — ✅ CLOSED
+BMI a poměr pas/výška si mohly odporovat (BMI "Nadváha", pas "OK" u
+svalnatější postavy, nebo naopak) bez návodu, čemu věřit. BMI je teď čisté
+číslo bez štítku; obvod pasu má WHO 3stupňový verdikt (normální/zvýšené/
+podstatně zvýšené riziko, 94/102 cm muži, 80/88 cm ženy) jako jediný zdroj
+rizikového hodnocení v tomhle panelu.
+
+### `EXCESS_ADIPOSITY` aktivace na samotném obvodu pasu — ✅ CLOSED
+Dřív aktivovalo výhradně BMI ≥ 25; člověk s normálním BMI ale rizikovým
+pasem ("skinny fat") nikdy nedostal aktivaci vůbec. Teď aktivuje i obvod pasu
+samotný (stejné WHO prahy), nezávisle na BMI.
+
+### Bezpečnostní scénáře — test suite založena
+`scripts/test-safety-scenarios.mjs` — rostoucí sada (ne jednorázový test),
+začátá po otázce "co když má člověk omezení s chůzí a sedavost hned spustí
+akci?". Ověřeno proti reálnému enginu: samotný pád nerestricts chůzi (jen
++1 k prahu 2 pro `GAIT_INSTABILITY`), skutečný signál nestability chůze ano.
+
+### Full Reset — doplněny chybějící pole — ✅ CLOSED
+`gender`, `height`, `weight`, `age` (vedle `birth_year`) se dřív nemazaly —
+řádek v tabulce Open Issues níže "Full reset nemaže onboardingová data" je
+tímto vyřešen pro tyhle 4 sloupce.
+
+### Dokumentace — úklid
+`docs/` mělo 20+ jednorázových checkpoint/QA/legal souborů bez jasné role.
+Přesunuty do `docs/archive/`. Nový `docs/BACKLOG.md` — jedno místo pro
+otevřené produktové otázky místo dalších jednorázových souborů.
+
+---
+
 ## Open issues / Next
 
 | Priorita | Issue | Poznámka |
@@ -1163,13 +1237,13 @@ LOW_MUSCLE_STRENGTH → FUNCTIONAL_STRENGTH_TRAINING → bezpečná konkrétní 
 | 🔶 P1 IN PROGRESS | Scénář A — funkční omezení nevede k akci | C3 (2026-09-29): kód a migrace hotové — `LOW_MUSCLE_STRENGTH → FUNCTIONAL_STRENGTH_TRAINING` (`sit_to_stand_supported`, `20260929_functional_strength_training.sql`). Migrace ještě NENÍ spuštěná v Supabase, E2E test proto zatím 2/9 (NO_CANDIDATES — čeká na chybějící řádek). Nepovažovat za CLOSED, dokud: (1) migrace neproběhne v SQL Editoru, (2) `test-functional-strength-training-e2e.mjs` neprojde 9/9, (3) tok neověřen živě na `dev.iting.cz`. |
 | P1 Data quality | `action_assignments.selected_leverage_node` je v produkci vždy `'UNKNOWN'` | Nález z C3 analýzy (2026-09-29): `orchestrator.js:buildEvent`/`buildSessionUpdates` nikdy nepropaguje leverage node z `nextBestAction.js`/`dailyDecision.js` do event payloadu → `healthEventAdapter.js:persistActionAssignment` vždy spadne na literal `'UNKNOWN'`. Důsledek: `adherence.js:findIntervention` (globální, ne leverage-scoped lookup) + `computeInterventionExposure` (group by `intervention_id` bez `leverage_node_id`) už dnes tiše slučují Feedback Loop v0.1 tracking mezi leverage nodes, které sdílí stejné intervention id (`RESISTANCE_TRAINING`: `PHYSICAL_INACTIVITY` vs `EXCESS_ADIPOSITY`; `AEROBIC_TRAINING` stejně). Oprava vyžaduje propagaci `leverage_node_id` přes `nextBestAction.js` (LOCKED) → `dailyDecision.js` (LOCKED) → `orchestrator.js` (LOCKED) → `adherence.js`, tedy produktové rozhodnutí, ne C3-scope fix. `FUNCTIONAL_STRENGTH_TRAINING` (C3) tomu nepodléhá — má unikátní id, žádná kolize dnes nehrozí. |
 | P1 Safety/UX | Odpověď po potvrzeném pádu | FALL_RISK CONFIRMED → žádná leverage → „Zatím o tobě vím málo…“; vyžaduje produktové rozhodnutí |
-| P1 QA | Full reset nemaže onboardingová data + funguje jen pro `TESTER_UIDS` | `age`/`gender`/`height`/`weight` přežijí reset; nové testovací účty nelze resetovat — pro live testy zatím nové účty s přeskočeným onboardingem |
+| ✅ CLOSED (2026-11-17) | ~~Full reset nemaže onboardingová data~~ | `age`/`gender`/`height`/`weight` teď mažou na `null` (viz Práce z 2026-11-17). Zbývá: funguje jen pro `TESTER_UIDS` — nové testovací účty stále nelze resetovat. |
 | P2 | Scénář B — NBE nepředběhne lifestyle akci | rozpor Master Lock §13 B se zamčeným prioritním řetězcem DAILY_DECISION; produktové rozhodnutí |
 | P2 | Scénář C — léky se v enginu nečtou | `clinicalHistory.medications` nevyužity; nový mechanismus = produktové rozhodnutí |
 | P3 | Scénář D — pořadí akcí při úplné shodě kandidátů | `fetchActionPool` bez ORDER BY + NBA tie → `action_id` závisí na pořadí řádků DB (label zatím shodný) |
 | P1 UX | Tester tools v avatar menu bez `?tester=1` | Whitelistovaný tester by měl vidět Full reset automaticky po auth; potřeba `GET /api/tester-check` nebo inline UID check po Firebase auth |
 | P1 QA | Orchestrator FO2 failures (6/519 pre-existing, nondeterministická) | Race condition v DB cleanup; zdokumentovat a oddělit od funkčních regresí |
-| Tech debt | `README.md` zastaralý | Popisuje GPT-4o-mini + vis-network epoch (Q1 2026); určen k pozdější aktualizaci — neodráží současný stack |
+| ✅ CLOSED (2026-11-17) | ~~`README.md` zastaralý~~ | Přepsán — aktuální stack, prostředí, orientace na canonical docs. |
 | Tech debt | TRACE log v `api/engine/adapter.js` | `fetchActionAssignments` loguje diagnostic trace (`[ORCHESTRATE] loaded_action_assignments=...`) — bylo záměrné pro root-cause analýzu, může být odstraněno |
 | Budoucí | Orchestrator `USER_PREFERENCE` persistence | Zachyceno, ale session neukládá (záměr v0.1); v0.2 by mělo persistovat do DB |
 | Budoucí | Wearables integrace (Fáze 4) | Oura, Apple Health, Garmin — viz `docs/archive/roadmap.md` |
