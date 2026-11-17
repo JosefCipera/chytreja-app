@@ -874,6 +874,55 @@
   // for why render()'s own focus() call (while the input is still disabled
   // mid-request) cannot do this itself.
   let _lastMode      = null;
+  // Voice + typewriter: tracks the in-flight TTS audio and typing interval so a
+  // new response can cancel whatever the previous one started instead of the two
+  // overlapping (garbled text, two voices talking at once).
+  let _speakAudio       = null;
+  let _typewriterTimer  = null;
+
+  // Writes text into el one character at a time. Mirrors the proven pattern in
+  // app/js/universe/launcher.js's _typewriter() (the old /app voice UI) — same
+  // helper, ported rather than reinvented.
+  function _typewriter(el, text, charDelay = 30) {
+    if (_typewriterTimer) { clearInterval(_typewriterTimer); _typewriterTimer = null; }
+    if (!el) return;
+    el.textContent = '';
+    let i = 0;
+    _typewriterTimer = setInterval(() => {
+      if (i >= text.length) { clearInterval(_typewriterTimer); _typewriterTimer = null; return; }
+      el.textContent += text[i];
+      i++;
+    }, charDelay);
+  }
+
+  // Speaks `text` via /api/tts (ElevenLabs — same endpoint app/js/universe/launcher.js
+  // already uses) and types it into el in sync with playback start. Falls back to an
+  // instant, untyped render on any TTS failure — voice is a presentation extra, never
+  // a reason to delay or hide the response text itself.
+  async function _speakAndType(el, text) {
+    if (_speakAudio) { try { _speakAudio.pause(); } catch (_) {} _speakAudio = null; }
+    if (_typewriterTimer) { clearInterval(_typewriterTimer); _typewriterTimer = null; }
+    if (!el) return;
+    if (!text) { el.textContent = '…'; return; }
+    try {
+      const res = await authFetch('/api/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text }),
+      });
+      if (!res.ok) throw new Error(`TTS ${res.status}`);
+      const url = URL.createObjectURL(await res.blob());
+      const audio = new Audio(url);
+      _speakAudio = audio;
+      audio.onplay = () => { if (_speakAudio === audio) _typewriter(el, text); };
+      audio.onended = () => { URL.revokeObjectURL(url); if (_speakAudio === audio) _speakAudio = null; };
+      audio.onerror = () => { URL.revokeObjectURL(url); if (_speakAudio === audio) _speakAudio = null; el.textContent = text; };
+      await audio.play();
+    } catch (e) {
+      console.warn('[CHJ launcher] TTS failed, showing text without voice:', e?.message || e);
+      el.textContent = text;
+    }
+  }
   // Keeps the big logo/Medicína 3.0/battery block visible on the very first
   // response of this visit (today's action acts as the entry screen now that
   // there's no separate "Co chceš řešit?" idle step) and hides it on every
@@ -929,9 +978,9 @@
     }
     else                      { $stageLabel.textContent = ''; }
 
-    // Stage text
+    // Stage text — spoken + typed, same pattern as the old /app voice UI.
     $stage.className  = 'fade-in';
-    $stage.textContent = text || '…';
+    _speakAndType($stage, text);
 
     if (mode === 'HOLD')            { $stage.classList.add('dim'); $stage.classList.add('hold-glow'); }
     if (mode === 'SAFETY_CRITICAL') $stage.classList.add('danger');
