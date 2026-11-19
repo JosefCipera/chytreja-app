@@ -138,6 +138,65 @@ zatím nemusí být vysoká ("nemusi to byt super presne").
   **Status:** schváleno jako směr, implementace vědomě odložena — "jeste to
   nechame uzrat". Nezapočato.
 
+## Denní akce — "1 hlavní + 3 volné" místo jediné akce (koncept, nezapočato)
+
+**Projednáno 2026-11-19 (design/koncept, kód NENÍ napsán).** Vychází ze starého
+"vesmíru" (demo `dev.iting.cz/ukazka` — uzly Tělo/Mysl/Zdraví/Výživa, viz
+screenshot v konverzaci) a z potvrzení, že šlo o variantu, kde uživatel dostává
+víc než jednu akci a sám se rozhoduje, zda udělá jen hlavní, nebo si přibere
+další. Cíl: ne týdenní/jiné plány — jednoduchá denní volba.
+
+**Rozsah pro MVP:** vychází z decathlonu — **4 užší kritické oblasti**, co už
+tato session auditovala (nadváha/pohyb/svalová síla/rovnováha), NE ze
+širších "vesmírných" kategorií (Tělo/Mysl/Zdraví/Výživa) — na ty se přejde
+později při rozšiřování na celou "dlouhověkost". Nadváha je sama o sobě
+"rozsplracovaná" (viz jiná sekce) — ponechat zatím beze změny i v tomhle
+konceptu.
+
+**Mechanismus (žádné nové nezávislé leverage běhy pro vedlejší oblasti):**
+- **Hlavní akce** = beze změny — dnešní `system_constraint`/`NBA.selected`,
+  jeden globální běh přes celé CRT, stejný jako dnes.
+- **3 zbylé (nevybrané) oblasti** = NEhledá se pro ně nejlepší/optimální akce
+  rankingem (`buildCandidates`/`selectBestCandidate`). Místo toho se vezme
+  **tier-1 akce dané intervence** (stejná, jakou by engine použil jako
+  startovní bod) a pustí se přes **Safety Gate** (jen bezpečnostní kontrola
+  jedné konkrétní akce — ne celý ranking/candidate-building). Hard boundary
+  "Safety Gate se neobchází" zůstává nedotčená.
+- Modalita pomůcky (chůze bez/s berlou/holemi/chodítkem) se nevybírá nově —
+  recykluje se existující `DEVICE_FIT`/`mobilityProfile` logika.
+- Ověřeno v živém katalogu (`longevity_actions`): plavání v katalogu vůbec
+  není; chůze a kolo jsou už dnes svázané do jedné tier-1 položky ("Svižná
+  chůze nebo kolo — 20 minut") — žádný nový výběrový algoritmus mezi sporty
+  tedy není potřeba, katalog to řeší sám.
+
+**Progrese obtížnosti ve "volné" oblasti — rozhodnuto:**
+Zvažovali jsme streak counter ("3× v řadě → posun"), ale zjištění:
+1. Stará hodnota "streak ≥ 3" v `docs/archive/HANDBOOK-v0.3.0-2026-06-05.md`
+   je z úplně jiného, dnes nepoužívaného game-loop systému (index +5/-3,
+   `mission_log`) a sloužila jen k motivační hlášce, ne k posunu obtížnosti —
+   nedá se recyklovat jako ověřená hodnota.
+2. Web research (Otago program, ACSM) — žádný z nich nepoužívá pevný
+   počet opakování/dnů pro posun obtížnosti; profesionální programy to
+   posuzují podle reálného výkonu (instruktor/zpětná vazba), ne podle čísla.
+   Žádné "ověřené" číslo tedy není k dispozici.
+
+**Finální rozhodnutí (Josef, 2026-11-19):** žádné počítání/streak. Místo toho
+přímý dotaz uživateli, explicitně rozdělený na dvě možnosti (aby člověka
+neubíjelo "totéž, jen těžší"):
+- *"Chceš těžší variantu stejného cviku?"* → zkusí se next-tier stejné
+  intervence (přes Safety Gate; pokud neprojde nebo vyšší tier neexistuje,
+  padá se na druhou možnost).
+- *"Chceš jinou akci?"* → nabídne se tier-1 jiné intervence ze stejné oblasti.
+
+Žádný persistentní stav navíc není potřeba (jen případně "u téhle intervence
+je už dál", ne počet opakování).
+
+**Otevřeno, nezapočato:** samotná implementace (potřebuje nejdřív potvrzení,
+než se sáhne na `nextBestAction.js`/`dailyDecision.js`/`orchestrator.js` —
+LOCKED core soubory). Druhá, oddělená myšlenka z téhle debaty — "odvádění"
+(hlasové hlášení, co uživatel udělal) a jak to měřit pro motivaci k
+udržení/zlepšení — zatím vůbec neprobráno, čeká na samostatnou diskuzi.
+
 ## Bezpečnostní scénáře k dalšímu prozkoumání
 
 `scripts/test-safety-scenarios.mjs` — rostoucí sada, začátá 2026-11-17.
