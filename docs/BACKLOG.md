@@ -75,9 +75,68 @@ průměr/vážený součet. Jediná úprava je následné promítnutí CRT barvy
 YELLOW 41–70) přes `crtColorMap`. Doslova: jeden slabý vedlejší metrik stáhne
 baterii dolů bez ohledu na to, jak dobře je na tom všechno ostatní.
 
-Josef (2026-11-17): rozhodně ne takhle. Čeká se na návrh jiné logiky (vážený
-průměr? CRT system constraint hodnota? něco jiného?) — zatím nerozhodnuto,
-jen zapsáno jako otevřená otázka.
+Josef (2026-11-17): rozhodně ne takhle — "nejslabší uzel" odmítnuto.
+
+**Návrh projednaný 2026-11-19 (design/research, kód NENÍ napsán — odloženo,
+"jeste to nechame uzrat, pozdeji se k tomu vratime"):**
+
+Místo "nejslabší uzel" baterie zpočátku (MVP) vychází jen z **VO2max** —
+inspirace Attiiným desetibojem, kde VO2max je hlavní ukazatel. Přesnost
+zatím nemusí být vysoká ("nemusi to byt super presne").
+
+- **Vstup VO2max:** buď reálně naměřený (wearable, např. Oura prsten —
+  uživatel ho zadá/importuje), nebo odhadnutý z neexercise rovnice
+  (Jackson et al. 1990, BMI verze — koeficienty jen ze sekundárních zdrojů,
+  needověřeno proti originálnímu článku):
+  `VO2max = 56.363 + 1.921×PAR − 0.381×Age − 0.754×BMI + 10.987×Gender(muž=1,žena=0)`
+  kde PAR = aktivita 0–7 (NASA/JSC škála).
+  Jediný chybějící vstup oproti tomu, co už evidujeme (věk, výška, váha,
+  pohlaví): **aktivita/PAR** — tu zatím nikde nesbíráme.
+  Ověřeno na reálném vzorku: odhad vyšel o ~12–15 % výš než reálná hodnota
+  z prstenu (46–48 vs. 41–42 ml/kg/min) — rozdíl v rámci očekávané
+  nepřesnosti rovnice (R²≈0,6), ne nutně chyba výpočtu, ale koeficienty
+  stojí za ověření, než se bude brát jako finální.
+
+- **Referenční tabulka (norské populační průměry VO2max, ml/kg/min, zdroj:
+  NTNU "Norwegian Fitness Numbers" — populační průměry, NE zdravotní cíle):**
+  | Věk | Muž | Žena |
+  |---|---|---|
+  | 20–29 | 54 | 43 |
+  | 30–39 | 49 | 40 |
+  | 40–49 | 47 | 38 |
+  | 50–59 | 42 | 34 |
+  | 60–69 | 39 | 31 |
+  | 70+ | 34 | 27 |
+
+- **Baterie = rezerva mezi "dnem" a "cílem ve 100 letech", NE age-adjusted
+  porovnání s vrstevníky** (schválený princip: "pak by pro dlouhovek
+  stacilo muz/zeny a tecka" — bez závislosti na věku v cílové hodnotě):
+  - **Strop (100 %)** = hodnota 70+ z tabulky výše (34 muž / 27 žena) —
+    použita jako zástupný cíl "fit jako průměrný 70letý ve 100 letech",
+    protože dál extrapolovat bez dat by byla čistá spekulace.
+  - **Dno (0 %)** = 15 ml/kg/min (obě pohlaví) — geriatricky citovaná
+    hranice, pod kterou běžné ADL (chůze, schody, vstávání) jsou vážně
+    ohrožené; needověřeno proti primárnímu zdroji, ale konzervativní a
+    rozumné jako první aproximace.
+  - **Vzorec:** `baterie % = (aktuální VO2max − 15) / (cíl_pohlaví − 15) × 100`,
+    ořezáno na 0–100 %.
+  - **Pásma:** 🔴 0–33 % · 🟡 34–66 % · 🟢 67–100 %.
+
+  Ověřeno na 2 příkladech:
+  - Muž 30 let, 187 cm, 90 kg, aktivita 5–6, prsten 41–42 → baterie ≈100 %
+    (zelená).
+  - Muž 69 let, 180 cm, 97 kg, aktivita 3–4 (odhad VO2max 24–26) → baterie
+    ≈48–59 % (žlutá).
+
+- **Co chybí k implementaci:** (1) nová otázka na aktivitu/PAR (0–7, česká
+  stupnice) + místo k uložení (nová kolonka `user_profiles`, obdoba
+  `gender`); (2) výpočetní funkce BMI→Jackson→VO2max→baterie %; (3) náhrada
+  natvrdo žluté čáry v UI skutečnou vypočtenou hodnotou/barvou — zasahuje
+  `api/hud-data-bulk.js` a případně `universe-core.js`/`universe-init.js`
+  (⚠️ JÁDRO Vesmír, ne LOCKED, ale chráněné — potvrdit před zásahem).
+
+  **Status:** schváleno jako směr, implementace vědomě odložena — "jeste to
+  nechame uzrat". Nezapočato.
 
 ## Bezpečnostní scénáře k dalšímu prozkoumání
 
