@@ -197,6 +197,55 @@ LOCKED core soubory). Druhá, oddělená myšlenka z téhle debaty — "odvádě
 (hlasové hlášení, co uživatel udělal) a jak to měřit pro motivaci k
 udržení/zlepšení — zatím vůbec neprobráno, čeká na samostatnou diskuzi.
 
+### Vizuální koncept hlavní+druhá akce (zjištění ve starém HUDu)
+
+**Zjištěno 2026-11-19** v `app/js/universe/universe-panel.js` (~ř. 1290–1650,
+starý vesmírový HUD, dnes nepoužívaný): přesně tenhle vzor tam už existoval —
+hlavní akce (ikona+text, timer/counter, "▶ Začít" → "✓ Hotovo" → uložení +
+okamžitá zpětná vazba), pak podmíněná nabídka druhé akce s tlačítky
+**"Ano"/"Ne"**, která se po "Ano" inline rozbalí na stejný vzor (Začít/
+timer/Hotovo). "Ne" → "Dnes stačí. 👍". Vizuální návrh pro dnešní launcher
+(3 stavy: hlavní akce → nabídka po Hotovo → rozbalená druhá akce) je
+publikovaný jako artefakt (Design canvas, 3 artboardy), ve stylu dnešního
+launcheru, ne staré modré HUD barvy — kód není dotčen.
+
+### Ukládání a vyhodnocení dokončených akcí — není nutné nic nového navrhovat
+
+**Zjištěno 2026-11-19.** Dnes: klik na "Hotovo" pošle text jako chat zprávu,
+AI klasifikátor → `ACTION_COMPLETED` → `persistActionAssignment()` v
+`api/engine/healthEventAdapter.js` zapíše řádek do Supabase `action_assignments`
+(`user_id`, `action_id`, `intervention_id`, `status`, `completed_at`, datum).
+
+**Proč to ukládat — už existuje vyhodnocovací modul:** `api/engine/adherence.js`
+("Feedback Loop v0.1") z těchto záznamů počítá:
+1. `computeInterventionExposure()` — behaviorální fakt (kolik sezení dokončeno/
+   skipnuto, za jak dlouho) — žádné zdravotní tvrzení.
+2. `evaluateResponseEvaluations()` — porovná expozici s `expected_responses`
+   z `data/engine/intervention-map.json` (cílový ukazatel, očekávaný směr,
+   minimální expozice/dny, než se dá cokoliv usuzovat) → výsledek `TOO_EARLY` /
+   `INSUFFICIENT_EXPOSURE` / `CONSISTENT_WITH_EXPECTED_RESPONSE` /
+   `NO_RESPONSE_OBSERVED`. Nikdy netvrdí příčinnost (jen korelace), nikdy
+   neudělá negativní závěr bez splněného minima expozice.
+
+Výsledek ovlivňuje `nextBestAction.js` jen jako tiebreaker (krok 10 v
+řazení kandidátů) — nikdy nepřepisuje bezpečnost/páku.
+
+**Blokující zjištění pro tenhle koncept:** `persistActionAssignment()` má
+dnes tvrdý guard — **jen JEDNO `COMPLETED` za den se uloží** ("day already
+completed — no additional completion persisted"). Dokončení "volné" druhé
+akce by se dnes tiše zahodilo a nikdy by se nedostalo do
+`INTERVENTION_EXPOSURE` pro tu intervenci → vyhodnocení by pro ni nikdy
+neproběhlo. Guard je potřeba upravit na dedupe podle `action_id` (ne podle
+"je dnes vůbec něco hotovo"), aby šlo uložit hlavní i volnou akci zvlášť a
+pořád zabránit duplicitě téže akce.
+
+**Rozhodnutí o pořadí implementace (Josef, 2026-11-19):** nedělat všech
+4 oblasti najednou. Nejdřív ověřit celý mechanismus (guard fix + výchozí
+akce + Safety Gate + Ano/Ne nabídka + progresní dotaz "těžší/jiná") na
+**JEDNÉ** volné oblasti, naživo na `dev.iting.cz`. Teprve po ověření
+rozšířit na zbylé 2 (hlavní + 1 ze 3 volných oblastí pro MVP, nadváha
+zůstává rozpracovaná/beze změny).
+
 ## Bezpečnostní scénáře k dalšímu prozkoumání
 
 `scripts/test-safety-scenarios.mjs` — rostoucí sada, začátá 2026-11-17.
