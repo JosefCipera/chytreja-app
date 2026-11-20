@@ -1041,13 +1041,23 @@
     const hasActiveAction = mode === 'ACT'
       || (mode === 'EXPLAIN' && buttons.some(label => label === 'Hotovo' || label === 'Přeskočit'));
 
+    // Timed/reps actions get a Začít→timer/počítadlo control instead of an
+    // immediate "Hotovo" button — same mechanism as the "volná akce" slot,
+    // for consistency (docs/BACKLOG.md). "Hotovo" still means the same
+    // ACTION_COMPLETED event either way; this only changes WHEN it fires.
+    const doseType = mode === 'ACT' ? response.action_dose?.type : null;
+    const needsDoseControl = buttons.includes('Hotovo') && (doseType === 'timed' || doseType === 'reps');
+
     if (buttons.length > 0) {
       const btnGroup = document.createElement('div');
       btnGroup.className = 'chip-group';
+      let skipBtn = null;
       for (const label of buttons) {
+        if (label === 'Hotovo' && needsDoseControl) continue; // replaced below
         const btn = document.createElement('button');
         btn.className = 'chip' + (label === 'Přeskočit' ? ' secondary' : '');
         btn.textContent = label;
+        if (label === 'Přeskočit') skipBtn = btn;
         if (label === 'Zdravotní profil') {
           btn.addEventListener('click', () => { window.location.href = `${PROFILE_URL}?userId=${encodeURIComponent(window.__chj_userId)}`; });
         } else {
@@ -1056,6 +1066,13 @@
         btnGroup.appendChild(btn);
       }
       $chips.appendChild(btnGroup);
+
+      if (needsDoseControl) {
+        _renderDoseControls(btnGroup, response.action_dose, () => {
+          skipBtn?.remove(); // can't skip mid/after-exercise once it's running
+          orchestrate('Hotovo');
+        });
+      }
     }
 
     if (hasActiveAction) {
@@ -1185,58 +1202,66 @@
 
     yesBtn.addEventListener('click', () => {
       card.innerHTML = '';
-      _renderSecondaryActionControls(card, offer);
+      const label = document.createElement('div');
+      label.style.cssText = 'color:var(--text);font-size:16px;line-height:1.4;';
+      label.textContent = offer.label;
+      card.appendChild(label);
+      _renderDoseControls(card, offer.dose, (extra) => {
+        const done = document.createElement('div');
+        done.style.cssText = 'color:#7accaa;font-size:15px;text-align:center;';
+        done.textContent = '✔ Hotovo.';
+        card.appendChild(done);
+        _persistSecondaryCompletion(offer, extra);
+      });
     });
   }
 
-  function _renderSecondaryActionControls(card, offer) {
-    const label = document.createElement('div');
-    label.style.cssText = 'color:var(--text);font-size:16px;line-height:1.4;';
-    label.textContent = offer.label;
-    card.appendChild(label);
-
-    const type = offer.dose?.type;
+  // Shared Začít→timer/počítadlo→Hotovo control — used by both the primary
+  // ACT action and the "volná akce" secondary slot (docs/BACKLOG.md), so the
+  // interaction is consistent everywhere a timed/reps action is shown.
+  // container: element to append the control's own nodes to (and remove them
+  // from, once done — caller's other content in `container` is left alone).
+  // dose: { type, duration, reps } from the real catalog.
+  // onDone(extra): called once, with { actual_duration_seconds } or
+  // { actual_reps } or {} depending on type. Never calls onDone more than once.
+  function _renderDoseControls(container, dose, onDone) {
+    const type = dose?.type;
     const startBtn = document.createElement('button');
     startBtn.className = 'chip';
+    let timerEl = null;
 
     function finish(extra) {
       startBtn.remove();
       timerEl?.remove();
-      const done = document.createElement('div');
-      done.style.cssText = 'color:#7accaa;font-size:15px;text-align:center;';
-      done.textContent = '✔ Hotovo.';
-      card.appendChild(done);
-      _persistSecondaryCompletion(offer, extra);
+      onDone(extra);
     }
-
-    let timerEl = null;
 
     if (type === 'timed') {
       startBtn.textContent = 'Začít';
-      card.appendChild(startBtn);
+      container.appendChild(startBtn);
       startBtn.addEventListener('click', () => {
-        let remaining = offer.dose.duration ?? 30;
+        let remaining = dose.duration ?? 30;
         timerEl = document.createElement('div');
         timerEl.style.cssText = 'text-align:center;font-size:32px;font-weight:600;color:var(--text);font-variant-numeric:tabular-nums;';
         timerEl.textContent = _fmtSecTime(remaining);
-        card.insertBefore(timerEl, startBtn);
+        container.insertBefore(timerEl, startBtn);
         startBtn.textContent = '⏹ Zastavit';
         const interval = setInterval(() => {
           remaining--;
           timerEl.textContent = _fmtSecTime(remaining);
-          if (remaining <= 0) { clearInterval(interval); finish({ actual_duration_seconds: offer.dose.duration ?? 30 }); }
+          if (remaining <= 0) { clearInterval(interval); finish({ actual_duration_seconds: dose.duration ?? 30 }); }
         }, 1000);
-        startBtn.onclick = () => { clearInterval(interval); finish({ actual_duration_seconds: (offer.dose.duration ?? 30) - remaining }); };
+        startBtn.onclick = () => { clearInterval(interval); finish({ actual_duration_seconds: (dose.duration ?? 30) - remaining }); };
       });
     } else if (type === 'reps') {
       let count = 0;
-      const target = offer.dose?.reps ?? 10;
+      const target = dose?.reps ?? 10;
       timerEl = document.createElement('div');
       timerEl.style.cssText = 'text-align:center;font-size:32px;font-weight:600;color:var(--text);font-variant-numeric:tabular-nums;';
       timerEl.textContent = `0 / ${target}`;
-      card.appendChild(timerEl);
+      container.appendChild(timerEl);
       startBtn.textContent = '+1';
-      card.appendChild(startBtn);
+      container.appendChild(startBtn);
       startBtn.addEventListener('click', () => {
         count++;
         timerEl.textContent = `${count} / ${target}`;
@@ -1245,7 +1270,7 @@
     } else {
       // 'bool' / 'habit' — direct completion, no Začít step
       startBtn.textContent = '✓ Hotovo';
-      card.appendChild(startBtn);
+      container.appendChild(startBtn);
       startBtn.addEventListener('click', () => finish({}));
     }
   }
