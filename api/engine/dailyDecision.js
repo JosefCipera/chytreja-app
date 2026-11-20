@@ -291,6 +291,7 @@ export function computeDailyDecision(engineResult, asOf = new Date()) {
       goal_impact:     sel?.goal_impact,
       friction:        sel?.friction,
       time_to_feedback: sel?.time_to_feedback,
+      dose:            sel?.dose,
     },
     reason_code:      'ACT_READY',
     source:           'NBA.selected',
