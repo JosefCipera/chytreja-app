@@ -729,6 +729,57 @@ function buildCandidates(actionPool, interventions, parsedConstraints, hasCvRisk
   return candidates;
 }
 
+// ── Default safe action for a non-leverage ("volná") area ─────────────────────
+// For the "1 hlavní + N volné" daily-action concept (BACKLOG.md): a supplementary
+// area is NOT ranked by the 10-criteria ordinal selection above — it never
+// competes with the day's actual system_constraint/leverage pick. It only needs
+// a deterministic, already-known-safe starter action. This reuses buildCandidates()
+// in full (allowlists, intensity/tag filters, constraint exclusions, Safety Gate —
+// all unchanged) so no filtering logic is duplicated, then picks the lowest-tier
+// viable (SAFE / SAFE_WITH_MODIFICATION) candidate for the given intervention_id.
+// Ties broken by action_id for determinism. Returns null if no viable candidate
+// exists (e.g. every tier-1+ action for this intervention is contraindicated).
+export function pickDefaultSafeAction({
+  interventionId,
+  actionPool,
+  interventions,
+  personConstraints,
+  clinicalHistory,
+  node_states,
+  decisionGate,
+}) {
+  const parsedConstraints = parsePersonConstraints(personConstraints);
+  const hasClinicalHistory = Boolean(clinicalHistory?.clinical_history_documented);
+  const hasCvRiskRelevant = (decisionGate?.context_gates ?? []).some(g =>
+    g.decision_context?.id === 'CURRENT_CV_STATE' &&
+    (g.actionable_findings ?? []).some(f => f.actionability === 'RISK_RELEVANT')
+  );
+  const hasGaitInstability = (node_states ?? []).some(s =>
+    s.node_id === 'GAIT_INSTABILITY' &&
+    ['CONFIRMED', 'PREDICTED_CURRENT'].includes(s.current_state)
+  );
+  const mobilityProfile = computeMobilityProfile(node_states, clinicalHistory);
+
+  // leverageNodeId only feeds effect_on_leverage (a ranking-only field here) —
+  // passing null keeps that field 'low'/'UNKNOWN' without affecting candidate
+  // membership, allowlists, or the Safety Gate.
+  const candidates = buildCandidates(
+    actionPool, interventions, parsedConstraints, hasCvRiskRelevant,
+    hasClinicalHistory, null, hasGaitInstability, mobilityProfile,
+    new Set(), clinicalHistory,
+  );
+
+  const viable = candidates
+    .filter(c => c.intervention_id === interventionId)
+    .filter(c => VIABLE_SAFETY.has(c.safety.level));
+
+  if (viable.length === 0) return null;
+
+  return viable.slice().sort((a, b) =>
+    (a.tier ?? 99) - (b.tier ?? 99) || a.action_id.localeCompare(b.action_id)
+  )[0];
+}
+
 // ── Ordinal selection ─────────────────────────────────────────────────────────
 // Order: safety → MME → leverage_affinity → effect_on_leverage → goal_impact
 //        → feasibility → tier (asc) → time_to_feedback → friction
