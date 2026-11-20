@@ -401,7 +401,11 @@ async function upsertUserProfile(supabase, userId, key, value) {
 }
 
 // INSERT into action_assignments
-async function persistActionAssignment(supabase, userId, payload, status) {
+// Exported so a lighter caller (e.g. the "volná akce" secondary-action flow)
+// can persist a completion/skip WITHOUT applyHealthEvent's full runEngine()
+// re-evaluation — same dedupe guards, no side effect on the main day's
+// session state (current_action_assignment, pending_question, etc.).
+export async function persistActionAssignment(supabase, userId, payload, status) {
   if (!payload.action_id)        throw new Error('ACTION event: missing action_id');
   if (!payload.intervention_id)  throw new Error('ACTION event: missing intervention_id');
   // Retrying a request whose response was lost must not record the same skip twice.
