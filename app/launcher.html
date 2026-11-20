@@ -1078,6 +1078,10 @@
       $chips.appendChild(navGroup);
     }
 
+    // ── "Volná akce" nabídka (docs/BACKLOG.md) — jen pro HOLD_DONE_TODAY dnešní
+    // hlavní akce; samostatná karta pod chips, ne náhrada hlavní HOLD odpovědi.
+    if (response.secondary_offer) renderSecondaryOffer(response.secondary_offer);
+
     $input.placeholder = mode === 'ASK' ? 'Odpověz nebo napiš…' : 'Napiš nebo řekni…';
     if (mode === 'ASK') $input.focus();
 
@@ -1118,6 +1122,131 @@
         `latest:         ${tr.latest_assignment ? `${tr.latest_assignment.intervention_id} / ${tr.latest_assignment.status}` : 'none'}`,
       ];
       $debug.textContent = lines.join('\n');
+    }
+  }
+
+  // ── "Volná akce" — druhá, nepovinná denní akce (docs/BACKLOG.md) ────────────
+  // Nic z tohohle neprochází přes orchestrate()/dailyDecision — jen jedna
+  // odlehčená zápisová cesta (/api/secondary-action-complete), přesně podle
+  // dohodnutého návrhu. Žádný nový engine běh, žádný zásah do hlavní HOLD
+  // odpovědi.
+  function _fmtSecTime(sec) {
+    const m = Math.floor(sec / 60), s = sec % 60;
+    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  }
+
+  async function _persistSecondaryCompletion(offer, extra) {
+    try {
+      await authFetch('/api/secondary-action-complete', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ action_id: offer.action_id, intervention_id: offer.intervention_id, ...extra }),
+      });
+    } catch (e) {
+      console.warn('[CHJ] secondary action completion failed to persist:', e.message);
+    }
+  }
+
+  function renderSecondaryOffer(offer) {
+    const card = document.createElement('div');
+    card.className = 'chip-group';
+    card.style.cssText = 'flex-direction:column;align-items:stretch;gap:14px;background:rgba(58,203,216,0.05);border:1px solid rgba(58,203,216,0.18);border-radius:14px;padding:16px 18px;text-align:left;';
+
+    const offerText = document.createElement('div');
+    offerText.style.cssText = 'color:#8ba8b8;font-size:14px;';
+    offerText.textContent = 'Chceš jít dál?';
+
+    const actionText = document.createElement('div');
+    actionText.style.cssText = 'color:var(--text);font-size:16px;line-height:1.4;';
+    actionText.textContent = offer.label;
+
+    const btnRow = document.createElement('div');
+    btnRow.style.cssText = 'display:flex;gap:10px;';
+
+    const yesBtn = document.createElement('button');
+    yesBtn.className = 'chip';
+    yesBtn.textContent = 'Ano';
+
+    const noBtn = document.createElement('button');
+    noBtn.className = 'chip secondary';
+    noBtn.textContent = 'Ne';
+
+    btnRow.append(yesBtn, noBtn);
+    card.append(offerText, actionText, btnRow);
+    $chips.appendChild(card);
+
+    noBtn.addEventListener('click', () => {
+      card.innerHTML = '';
+      const done = document.createElement('div');
+      done.style.cssText = 'color:var(--text-dim);font-size:15px;text-align:center;';
+      done.textContent = 'Dnes stačí. 👍';
+      card.appendChild(done);
+    });
+
+    yesBtn.addEventListener('click', () => {
+      card.innerHTML = '';
+      _renderSecondaryActionControls(card, offer);
+    });
+  }
+
+  function _renderSecondaryActionControls(card, offer) {
+    const label = document.createElement('div');
+    label.style.cssText = 'color:var(--text);font-size:16px;line-height:1.4;';
+    label.textContent = offer.label;
+    card.appendChild(label);
+
+    const type = offer.dose?.type;
+    const startBtn = document.createElement('button');
+    startBtn.className = 'chip';
+
+    function finish(extra) {
+      startBtn.remove();
+      timerEl?.remove();
+      const done = document.createElement('div');
+      done.style.cssText = 'color:#7accaa;font-size:15px;text-align:center;';
+      done.textContent = '✔ Hotovo.';
+      card.appendChild(done);
+      _persistSecondaryCompletion(offer, extra);
+    }
+
+    let timerEl = null;
+
+    if (type === 'timed') {
+      startBtn.textContent = 'Začít';
+      card.appendChild(startBtn);
+      startBtn.addEventListener('click', () => {
+        let remaining = offer.dose.duration ?? 30;
+        timerEl = document.createElement('div');
+        timerEl.style.cssText = 'text-align:center;font-size:32px;font-weight:600;color:var(--text);font-variant-numeric:tabular-nums;';
+        timerEl.textContent = _fmtSecTime(remaining);
+        card.insertBefore(timerEl, startBtn);
+        startBtn.textContent = '⏹ Zastavit';
+        const interval = setInterval(() => {
+          remaining--;
+          timerEl.textContent = _fmtSecTime(remaining);
+          if (remaining <= 0) { clearInterval(interval); finish({ actual_duration_seconds: offer.dose.duration ?? 30 }); }
+        }, 1000);
+        startBtn.onclick = () => { clearInterval(interval); finish({ actual_duration_seconds: (offer.dose.duration ?? 30) - remaining }); };
+      });
+    } else if (type === 'reps') {
+      let count = 0;
+      const target = offer.dose?.reps ?? 10;
+      timerEl = document.createElement('div');
+      timerEl.style.cssText = 'text-align:center;font-size:32px;font-weight:600;color:var(--text);font-variant-numeric:tabular-nums;';
+      timerEl.textContent = `0 / ${target}`;
+      card.appendChild(timerEl);
+      startBtn.textContent = '+1';
+      card.appendChild(startBtn);
+      startBtn.addEventListener('click', () => {
+        count++;
+        timerEl.textContent = `${count} / ${target}`;
+        if (count >= target) finish({ actual_reps: count });
+      });
+    } else {
+      // 'bool' / 'habit' — direct completion, no Začít step
+      startBtn.textContent = '✓ Hotovo';
+      card.appendChild(startBtn);
+      startBtn.addEventListener('click', () => finish({}));
     }
   }
 
