@@ -412,13 +412,16 @@ async function persistActionAssignment(supabase, userId, payload, status) {
     if (readError) throw new Error(`read prior skip: ${readError.message}`);
     if (skipped) return 'ACTION_SKIPPED: action already skipped today — no additional skip persisted';
   }
-  // A restored/stale client assignment must not create a second completion today.
+  // A restored/stale client assignment must not create a second completion of the
+  // SAME action today. Scoped by action_id (like the SKIPPED guard above) so a
+  // genuinely different action (e.g. a secondary/supplementary one) can still be
+  // persisted and reach INTERVENTION_EXPOSURE for its own evaluation.
   if (status === 'COMPLETED') {
     const { data: completed, error: readError } = await supabase.from('action_assignments')
-      .select('id').eq('user_id', userId).eq('status', 'COMPLETED')
+      .select('id').eq('user_id', userId).eq('status', 'COMPLETED').eq('action_id', payload.action_id)
       .eq('assigned_date', new Date().toISOString().slice(0, 10)).limit(1).maybeSingle();
     if (readError) throw new Error(`read daily completion: ${readError.message}`);
-    if (completed) return 'ACTION_COMPLETED: day already completed — no additional completion persisted';
+    if (completed) return 'ACTION_COMPLETED: action already completed today — no additional completion persisted';
   }
 
 

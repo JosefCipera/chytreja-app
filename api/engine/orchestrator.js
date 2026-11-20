@@ -972,7 +972,7 @@ function buildHoldResponse(dd, _ctx, sessionUpdates, warnings, eventType, isFoll
     };
   }
 
-  if (warnings.some(w => String(w).startsWith('ACTION_COMPLETED: day already completed'))) {
+  if (warnings.some(w => String(w).startsWith('ACTION_COMPLETED: action already completed today'))) {
     return { mode: 'HOLD', text: 'Dnešní akci už máš potvrzenou. Pro dnešek stačí.',
       buttons: [], expects_reply: true, session_updates: { ...sessionUpdates, pending_question: null, current_action_assignment: null },
       debug: { reason_code: dd.reason_code, warnings },
