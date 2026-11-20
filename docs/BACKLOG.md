@@ -197,17 +197,45 @@ LOCKED core soubory). Druhá, oddělená myšlenka z téhle debaty — "odvádě
 (hlasové hlášení, co uživatel udělal) a jak to měřit pro motivaci k
 udržení/zlepšení — zatím vůbec neprobráno, čeká na samostatnou diskuzi.
 
-### Vizuální koncept hlavní+druhá akce (zjištění ve starém HUDu)
+### Vizuální koncept hlavní+druhá akce (ověřeno živě, 2026-11-20)
 
-**Zjištěno 2026-11-19** v `app/js/universe/universe-panel.js` (~ř. 1290–1650,
-starý vesmírový HUD, dnes nepoužívaný): přesně tenhle vzor tam už existoval —
-hlavní akce (ikona+text, timer/counter, "▶ Začít" → "✓ Hotovo" → uložení +
-okamžitá zpětná vazba), pak podmíněná nabídka druhé akce s tlačítky
-**"Ano"/"Ne"**, která se po "Ano" inline rozbalí na stejný vzor (Začít/
-timer/Hotovo). "Ne" → "Dnes stačí. 👍". Vizuální návrh pro dnešní launcher
-(3 stavy: hlavní akce → nabídka po Hotovo → rozbalená druhá akce) je
-publikovaný jako artefakt (Design canvas, 3 artboardy), ve stylu dnešního
-launcheru, ne staré modré HUD barvy — kód není dotčen.
+**Pozor — nahrazuje dřívější chybný zápis z 2026-11-19 níže.** Ten vycházel
+jen ze čtení kódu `app/js/universe/universe-panel.js` (vanilla JS HUD) a
+tvrdil, že box dokončené hlavní akce po "Hotovo" **zůstává nahoře** a
+nabídka druhé akce se jen přidá pod něj. To bylo ověřeno jako nesprávné.
+
+**Skutečný historický vzor je ve DRUHÉ, oddělené implementaci:**
+`src/lib/components/hud/*.svelte` (Svelte, `ActionProtocol.svelte` +
+`SecondAction.svelte`, orchestrováno v `src/App.svelte`/`HudPanel.svelte`,
+spouští se přes `npm run dev:hud` / `hud.html`). Vizuálně přesně odpovídá
+screenshotu z `dev.iting.cz/ukazka` (cyan terminálový styl, "KILLER:"/
+"ACTION:" štítky, "SYSTEM_ONLINE"/"CHJ_v0.2" patička) — to je ta verze,
+kterou si Josef pamatoval.
+
+**Ověřeno živě** (reálně spuštěný Vite+Svelte dev server, `hud.html?dev=1`,
+Playwright screenshoty — ne čtení kódu nazpaměť):
+1. Hlavní akce: "▶ START PROTOCOL" → běžící timer "00:59" + "⏹ STOP" →
+   "[COMPLETE]" / "✓ HOTOVO".
+2. **Celá karta akce (KILLER+ACTION box) se PO DOKONČENÍ NAHRADÍ** —
+   nezůstává nad nabídkou. Místo ní se objeví samostatný box "SECOND_ACTION"
+   / "Chceš jít dál?" / tlačítka **ANO** / **NE** (velká písmena).
+3. Po "ANO" appka reálně volá `/api/agents` pro čerstvou druhou akci
+   (`excludeActionId`, aby se neopakovala ta první) — tedy AI/agent vybíral
+   akci, ne pevný seznam. **Tohle chování ale vědomě nereplikujeme** — je to
+   z jiné, starší architektury, kde AI vybírala akci, což dnešní `CLAUDE.md`
+   hard boundary zakazuje ("Orchestrator nevyrábí vlastní zdravotní
+   rozhodnutí", "NBA vybírá action"). Zůstáváme u dřívější dohody:
+   deterministická výchozí tier-1 akce + Safety Gate, žádný AI agent na
+   výběr — to je bezpečnější i konzistentnější s dnešní architekturou než
+   tenhle starý prototyp.
+4. `shouldOfferSecond()` v `App.svelte` v TÉHLE verzi nabízí druhou akci
+   VŽDY (`offer: true` ve všech větvích) — mění se jen text, ne
+   pravděpodobnost. To je jiné než vanilla JS verze (50/50 v části případů).
+
+**Vizuální návrh pro dnešní launcher** (ve stylu dnešního launcheru, ne
+cyan terminálu — to je jiná vizuální identita) musí být přepracován na
+replace-vzor (karta akce zmizí, nahradí ji nabídka; po Ano se nahradí znovu
+kartou druhé akce) — artefakt (Design canvas) bude opraven ve stejném duchu.
 
 ### Ukládání a vyhodnocení dokončených akcí — není nutné nic nového navrhovat
 
