@@ -861,6 +861,11 @@ function buildActResponse(dd, ctx, sessionUpdates, warnings) {
     buttons:       ['Hotovo', 'Přeskočit'],
     expects_reply: false,
     session_updates: sessionUpdates,
+    // Additive — presentation-only. Lets the client show a Začít→timer/počítadlo
+    // control before "Hotovo" for timed/reps actions, consistent with the
+    // "volná akce" secondary slot. Never changes buttons/mode/text above;
+    // "Hotovo" still means the same ACTION_COMPLETED event either way.
+    action_dose:   action?.dose ?? null,
     debug:         { reason_code: dd.reason_code, warnings },
   };
 }
