@@ -24,6 +24,7 @@
 
 import Anthropic from '@anthropic-ai/sdk';
 import { applyHealthEvent } from './healthEventAdapter.js';
+import { computeSecondaryOffer } from './secondaryAction.js';
 import { selectNextBestEvidence } from './nextBestEvidence.js';
 import { synthesizePathDiscovery } from './decisionGate.js';
 import { readFileSync } from 'fs';
@@ -2339,6 +2340,23 @@ async function processInputCore(userId, userText, sessionState = {}) {
         && result.persistence_status === 'ok'
         && !(result.warnings ?? []).some(w => typeof w === 'string' && w.startsWith('ANSWER:')));
   let presentation = buildPresentation(event_type, payload, result, sessionUpdates, isHoldFollowUp, sedentaryHoursKnown, state.person_sex);
+
+  // ── "Volná akce" secondary offer (docs/BACKLOG.md, first live test = rovnováha) ──
+  // Fires only right after the main action's own completion acknowledgment for
+  // the day (never on any other HOLD reason, never for other event types).
+  // Entirely additive: never changes presentation.mode/text/buttons, no new
+  // leverage/candidate ranking, never runs for the just-completed intervention
+  // itself. A failure here must never break the primary HOLD response.
+  const SECONDARY_OFFER_INTERVENTION_ID = 'BALANCE_TRAINING'; // single hardcoded area for first live test
+  if (event_type === 'ACTION_COMPLETED'
+      && presentation.mode === 'HOLD'
+      && presentation.debug?.reason_code === 'HOLD_DONE_TODAY'
+      && result.domain_response?.daily_decision?.primary_item?.intervention_id !== SECONDARY_OFFER_INTERVENTION_ID) {
+    const secondaryOffer = await computeSecondaryOffer(userId, SECONDARY_OFFER_INTERVENTION_ID).catch(() => null);
+    if (secondaryOffer) {
+      presentation = { ...presentation, secondary_offer: secondaryOffer };
+    }
+  }
 
   // ── PATH Discovery answer override ───────────────────────────────────────────
   // Fires after applyHealthEvent persisted the answer to a PATH_DISCOVERY question.
