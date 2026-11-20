@@ -274,6 +274,29 @@ akce + Safety Gate + Ano/Ne nabídka + progresní dotaz "těžší/jiná") na
 rozšířit na zbylé 2 (hlavní + 1 ze 3 volných oblastí pro MVP, nadváha
 zůstává rozpracovaná/beze změny).
 
+### Implementační postup — stav k 2026-11-20
+
+1. ✅ **Guard fix hotový a pushnutý** (commit `ae363ada`) — dedupe v
+   `persistActionAssignment()` teď scoped podle `action_id`, ne podle "je
+   dnes vůbec něco hotovo". Ověřeno izolovaným testem s mock Supabase
+   klientem (esmock): retry téže akce stále zablokován, jiná akce ve
+   stejný den se uloží.
+
+2. **Rozhodnuto (Josef, 2026-11-20):** zápis dokončení "volné" akce
+   NEPŮJDE přes `applyHealthEvent()` (ten po uložení vždy znovu spustí
+   celý enginový pipeline — activation→inference→decisionGate→
+   systemLeverage→nextBestAction→dailyDecision — jen kvůli jednomu
+   zápisu do DB, a vrátil by novou ACT/HOLD odpověď o HLAVNÍ akci, kterou
+   bychom museli zahazovat, s rizikem nechtěného zásahu do session stavu
+   hlavní akce). Místo toho: **odlehčená cesta** — exportovat/zpřístupnit
+   existující `persistActionAssignment()` z `healthEventAdapter.js` a
+   volat ji přímo, bez re-run enginu. Čistě odděluje "zaznamenej
+   dokončení" od "rozhodni, co dál" — přesně v duchu rozhodnutí
+   needělat nový leverage běh pro volnou akci. Nezapočato.
+
+**Očekává se ještě třetí navazující krok** (zatím nespecifikovaný,
+Josef 2026-11-20) — bude upřesněn později.
+
 ## Bezpečnostní scénáře k dalšímu prozkoumání
 
 `scripts/test-safety-scenarios.mjs` — rostoucí sada, začátá 2026-11-17.
