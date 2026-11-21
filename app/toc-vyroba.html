@@ -1138,6 +1138,7 @@ async function load() {
     parametry = json.parametry || parametry;
     if (allData.length === 0) {
       document.getElementById('stats').innerHTML = `<div class="stat" style="color:#eab308">⚠ Žádné zakázky pro userId: ${userId}</div>`;
+      document.getElementById('main').innerHTML = `<div class="center">Zatím žádné zakázky. Nahraj je v Nastavení.</div>`;
       return;
     }
     render(allData);
