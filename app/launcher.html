@@ -389,6 +389,14 @@
       font-size: 11px; color: #a8c0cc; letter-spacing: 0.4px; font-weight: 300;
     }
 
+    /* Always-visible disclaimer — CHJ's recommendation is based on what the
+       user has told it so far, never a full medical picture. Deliberately
+       not hidden behind "Proč?" or any click — docs/BACKLOG.md. */
+    .data-basis-note {
+      font-size: 11px; color: #4a6672; letter-spacing: 0.2px; font-weight: 300;
+      margin-top: 6px; line-height: 1.5;
+    }
+
     /* ── Debug panel ── */
     #debug-panel {
       position: fixed; bottom: 120px; left: 12px; right: 12px;
@@ -602,6 +610,7 @@
       </button>
     </div>
     <p id="input-hint" class="input-hint">Můžeš mluvit nebo psát.</p>
+    <p class="data-basis-note">Doporučení vychází z toho, co jsi mi dosud o sobě řekl/a.</p>
   </footer>
 </div>
 
@@ -1253,6 +1262,13 @@
         }, 1000);
         startBtn.onclick = () => { clearInterval(interval); finish({ actual_duration_seconds: (dose.duration ?? 30) - remaining }); };
       });
+    } else if (type === 'reps' && dose?.no_count) {
+      // Hands are on support (chair/wall/floor) throughout — a tap-per-rep
+      // counter would mean letting go mid-exercise. One "Hotovo" for the
+      // whole set instead. See migrations/tag_no_count_reps_actions.sql.
+      startBtn.textContent = '✓ Hotovo';
+      container.appendChild(startBtn);
+      startBtn.addEventListener('click', () => finish({ actual_reps: dose?.reps ?? null }));
     } else if (type === 'reps') {
       let count = 0;
       const target = dose?.reps ?? 10;
