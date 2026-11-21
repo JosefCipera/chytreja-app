@@ -710,7 +710,10 @@ function buildCandidates(actionPool, interventions, parsedConstraints, hasCvRisk
       protocol_type:        action.protocol_type,
       label:                action.label,
       tier:                 action.tier,
-      dose:                 { type: action.type, duration: action.duration, reps: action.reps, intensity: action.intensity },
+      // no_count: 'reps' actions tagged 'bez_pocitani' need both hands on support
+      // (chair/wall/floor transfer) throughout — show one "Hotovo" after the
+      // whole set, never a tap-per-rep counter. See migrations/tag_no_count_reps_actions.sql.
+      dose:                 { type: action.type, duration: action.duration, reps: action.reps, intensity: action.intensity, no_count: (action.tags ?? []).includes('bez_pocitani') },
       safety,
       min_meaningful_effect,
       leverage_affinity,
