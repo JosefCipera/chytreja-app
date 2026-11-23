@@ -45,6 +45,28 @@
   která ze tří otázek sílu spustila. Neověřeno živě (odvozeno z kódu), ale
   stejný vzorec. Řešit ve stejné dávce.
 
+- **SCOPE_UNCLEAR recovery nefunguje — reprodukováno 4/4 scénářů**
+  (`scripts/test-four-area-flows.mjs`, oprava a běh 2026-11-23). Session uvízlá
+  ve stavu `SCOPE_UNCLEAR` (po nejasném vstupu) by se po "co dál?" měla vrátit
+  na `HOLD_DONE_TODAY` (dnešní akce je hotová), ale vrací `SCOPE_HELP`
+  (nápovědní smyčka "co Chytré já umí") místo toho — systematicky u všech 4
+  testovaných oblastí (GAIT_INSTABILITY, LOW_MUSCLE_STRENGTH,
+  PHYSICAL_INACTIVITY, EXCESS_ADIPOSITY), ne náhodná jedna. Místo v kódu zatím
+  nenalezeno — potřeba trasovat `processInput` cestu pro vstup s
+  `last_daily_decision.reason_code === 'SCOPE_UNCLEAR'` + `unsupported_request`
+  v session. LOCKED soubor (`orchestrator.js`) — vyšetřit a opravit ve stejné
+  dávce jako textové nesrovnalosti výše.
+
+- **"Chceš zhubnout" potvrzení cíle se nezobrazuje — NEOVĚŘENO, potřeba trasovat**
+  (`scripts/test-four-area-flows.mjs`, scénář `person_goal: 'WEIGHT_LOSS'` +
+  páka `LOW_MUSCLE_STRENGTH`). `orchestrator.js:2796` má podmínku
+  `presentation.mode === 'ACT' && state.person_goal === 'WEIGHT_LOSS'`, která by
+  měla přidat úvodní větu "Chceš zhubnout. Dnes začínáme krokem pro ...", ale
+  v testu se nezobrazila. Nejisté, jestli jde o chybu v testovací fixtuře
+  (jak `state.person_goal` vzniká z `session` napříč `processInput` — možná
+  vyžaduje jiný vstupní tvar než holé `session.person_goal`), nebo o skutečnou
+  regresi. Netvrdit jako potvrzený bug, dokud se netrasuje dál.
+
 - **Lifestyle flagy bez enginové logiky** — `smoker`, `alcohol`, `stress_job` se
   v UI (Vstupní data → Profil) ukládají, ale engine je nikdy nečte
   (`api/engine/adapter.js` má `smoking_history`/`alcohol_history` natvrdo
