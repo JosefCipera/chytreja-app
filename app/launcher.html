@@ -939,8 +939,12 @@
       const url = URL.createObjectURL(await res.blob());
       const audio = new Audio(url);
       _speakAudio = audio;
-      audio.onplay = () => { if (_speakAudio === audio) _typewriter(el, text, 30, onDone); };
-      audio.onended = () => { URL.revokeObjectURL(url); if (_speakAudio === audio) _speakAudio = null; };
+      // onDone fires only once BOTH the typed text and the spoken audio have
+      // finished — whichever of the two takes longer.
+      let typingDone = false, audioDone = false;
+      const maybeDone = () => { if (typingDone && audioDone) onDone?.(); };
+      audio.onplay = () => { if (_speakAudio === audio) _typewriter(el, text, 30, () => { typingDone = true; maybeDone(); }); };
+      audio.onended = () => { URL.revokeObjectURL(url); if (_speakAudio === audio) _speakAudio = null; audioDone = true; maybeDone(); };
       audio.onerror = () => { URL.revokeObjectURL(url); if (_speakAudio === audio) _speakAudio = null; el.textContent = text; onDone?.(); };
       await audio.play();
     } catch (e) {
