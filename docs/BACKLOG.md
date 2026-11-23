@@ -22,6 +22,21 @@
   je to 🔒 LOCKED soubor (`orchestrator.js`), takže počkat na dávku změn
   s regresní sadou, ne jednorázová úprava.
 
+- **`LOW_MUSCLE_STRENGTH` vysvětlení je navázané na uzel, ne na konkrétní evidenci
+  — stejná rodina jako bod výše** — `api/engine/orchestrator.js:221`
+  (`NEXT_STEP_CS.LOW_MUSCLE_STRENGTH.nextStep`) a `:237`
+  (`GOAL_GATEWAY_PHRASE_CS.LOSS_OF_FLOOR_RISE_ABILITY`) vždy citují "vstát ze
+  země bez cizí pomoci" jako příklad, bez ohledu na to, která ze tří otázek
+  (`vstat_ze_zeme`, `zvednout_vnouce`, `vynest_nakup`) uzel spustila — a bez
+  kontroly, jestli už existuje přímo opačná, potvrzená evidence. Reprodukováno
+  živě 2026-11-23 (Josef, `vstat_ze_zeme = Ano` explicitně, `zvednout_vnouce =
+  Ne` spustilo LOW_MUSCLE_STRENGTH → text přesto tvrdil, že jde o vstávání ze
+  země). Oprava pravděpodobně širší než jedna věta — potřeba rozhodnout, jestli
+  NEXT_STEP_CS/GOAL_GATEWAY_PHRASE_CS mají začít rozlišovat podle
+  question_id, ne jen podle node_id, a jestli/jak kontrolovat protichůdnou
+  evidenci před použitím generického textu. LOCKED soubor — řešit v dávce
+  spolu s bodem výše.
+
 - **Lifestyle flagy bez enginové logiky** — `smoker`, `alcohol`, `stress_job` se
   v UI (Vstupní data → Profil) ukládají, ale engine je nikdy nečte
   (`api/engine/adapter.js` má `smoking_history`/`alcohol_history` natvrdo
