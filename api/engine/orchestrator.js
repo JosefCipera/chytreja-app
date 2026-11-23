@@ -1125,7 +1125,7 @@ function whyEvidencePhrase(ctx) {
     balanc_jedna_noha: 'Onboarding ukazuje omezení rovnováhy.',
     vstat_ze_zeme: 'Nezvládáš vstát ze země bez opory rukou.',
     vynest_nakup: 'Nezvládáš vynést těžší nákup bez zastavení.',
-    zvednout_vnouce: 'Nezvládáš zvednout těžší předmět ze země bez bolesti.',
+    zvednout_vnouce: 'Nezvládáš zvednout těžší předmět ze země do náruče.',
   };
   const answer = facts.find(f => f.source === 'ONBOARDING' && questions[f.question_id]
     && (f.question_id === 'recent_falls' ? f.value === true : no(f.value)));

@@ -9,63 +9,55 @@
 
 ## Produktová rozhodnutí čekající na zadání
 
-- **"Proč" text pro `zvednout_vnouce` lže o bolesti** — `api/engine/orchestrator.js:1128`
-  (`questions` map pro "Proč" vysvětlení) má `zvednout_vnouce: 'Nezvládáš zvednout
-  těžší předmět ze země bez bolesti.'` — zděděno z konverzační formulace otázky na
-  řádku 667 (`'Zvládneš zvednout dítě nebo těžší předmět ze země bez bolesti?'`).
-  Ale Desetiboj formulář (`app/js/universe/user-data-panel.js:306`) pokládá na
-  stejný evidence klíč jinou, novější otázku bez zmínky o bolesti ("Zvedneš 15 kg
-  ze země do náruče?"). Výsledek: uživatel vidí "Proč: ... bez bolesti", i když se
-  ho nikdo na bolest neptal. Reprodukováno živě 2026-11-23 (Josef, reset účtu,
-  vyplnění Desetiboje → "Ne" na obě otázky → NBA dřepy [správně] + tenhle
-  mylný "Proč" text [bug]). Oprava: přeformulovat řádek 1128 bez "bez bolesti" —
-  je to 🔒 LOCKED soubor (`orchestrator.js`), takže počkat na dávku změn
-  s regresní sadou, ne jednorázová úprava.
+- ✅ **OPRAVENO 2026-11-23** — "Proč" text pro `zvednout_vnouce` lhal o bolesti.
+  `api/engine/orchestrator.js:1128` (`questions` map) měl `zvednout_vnouce:
+  'Nezvládáš zvednout těžší předmět ze země bez bolesti.'`, zděděno z konverzační
+  formulace otázky (řádek 667), ale Desetiboj formulář
+  (`app/js/universe/user-data-panel.js:306`) pokládá na stejný evidence klíč
+  jinou, novější otázku bez zmínky o bolesti ("Zvedneš 15 kg ze země do
+  náruče?"). Opraveno na `'Nezvládáš zvednout těžší předmět ze země do
+  náruče.'` — žádná jiná logika nezměněna. `test-functional-strength-training.mjs`
+  (18/18) a `test-four-area-flows.mjs` (4/4 hlavní tok) po opravě stále procházejí.
 
-- **`LOW_MUSCLE_STRENGTH` vysvětlení je navázané na uzel, ne na konkrétní evidenci
-  — stejná rodina jako bod výše** — `api/engine/orchestrator.js:221`
-  (`NEXT_STEP_CS.LOW_MUSCLE_STRENGTH.nextStep`) a `:237`
-  (`GOAL_GATEWAY_PHRASE_CS.LOSS_OF_FLOOR_RISE_ABILITY`) vždy citují "vstát ze
-  země bez cizí pomoci" jako příklad, bez ohledu na to, která ze tří otázek
-  (`vstat_ze_zeme`, `zvednout_vnouce`, `vynest_nakup`) uzel spustila — a bez
-  kontroly, jestli už existuje přímo opačná, potvrzená evidence. Reprodukováno
-  živě 2026-11-23 (Josef, `vstat_ze_zeme = Ano` explicitně, `zvednout_vnouce =
-  Ne` spustilo LOW_MUSCLE_STRENGTH → text přesto tvrdil, že jde o vstávání ze
-  země). Oprava pravděpodobně širší než jedna věta — potřeba rozhodnout, jestli
-  NEXT_STEP_CS/GOAL_GATEWAY_PHRASE_CS mají začít rozlišovat podle
-  question_id, ne jen podle node_id, a jestli/jak kontrolovat protichůdnou
-  evidenci před použitím generického textu. LOCKED soubor — řešit v dávce
-  spolu s bodem výše.
+- **PŘEŘAZENO — NENÍ bug, je to záměr.** `LOW_MUSCLE_STRENGTH`/
+  `REDUCED_FUNCTIONAL_RESERVE` texty o "vstát ze země" (`orchestrator.js:221,
+  224, 237` — `CAUSAL_STEP_CS`, ne `NEXT_STEP_CS` jak bylo dřív mylně napsáno
+  zde) jsou komentářem výslovně popsané jako ručně kurátorovaná "Kam
+  směřuješ?" odpověď podle uzlu v kauzálním modelu (`master.json`), ne tvrzení
+  o tom, na co byl uživatel ptán. Formulace je prospektivní ("může se ti...
+  snižovat"), ne tvrzení o současném stavu — proto to NELŽE, i když
+  `vstat_ze_zeme = Ano`. Česká gramatika/pádová shoda se podle komentáře nedá
+  generovat mechanicky, proto je to ručně psané per-uzel, ne per-otázka.
+  Ponecháno beze změny. Pokud bude chtít produkt přesto rozlišovat podle
+  otázky, je to nová funkce, ne oprava chyby.
 
-- **`REDUCED_FUNCTIONAL_RESERVE` dědí stejný problém** — `api/engine/inference.js:204-224`
-  odvozuje `REDUCED_FUNCTIONAL_RESERVE` čistě z `LOW_MUSCLE_STRENGTH` (bez vlastní
-  přímé evidence), takže `NEXT_STEP_CS.REDUCED_FUNCTIONAL_RESERVE.nextStep`
-  (`orchestrator.js:224`, `'ztěžovat základní pohyby, jako je vstávání'`) má
-  stejnou vadu jako bod výše — generický text o "vstávání" bez ohledu na to,
-  která ze tří otázek sílu spustila. Neověřeno živě (odvozeno z kódu), ale
-  stejný vzorec. Řešit ve stejné dávce.
+- **SCOPE_UNCLEAR recovery nefunguje — reprodukováno 4/4 scénářů, hlubší vyšetřování 2026-11-23.**
+  Session uvízlá ve stavu `SCOPE_UNCLEAR` (po nejasném vstupu) by se po "co
+  dál?" měla vrátit na `HOLD_DONE_TODAY`, ale vrací `SCOPE_HELP`. Trasování:
+  `processInputCore` řádek 1518 (`if (state.unsupported_request ||
+  medicalLimit) {...}`) sám o sobě "co dál?" nezachytí (žádný z vnitřních
+  regexů mu neodpovídá, kód propadá dál) — takže past není tady. `last_daily_decision.reason_code`
+  je navíc v scénáři přepsaný na `SCOPE_UNCLEAR`, ne `HOLD_DONE_TODAY`, takže
+  krátká cesta na řádku 1155 (`sessionState.last_daily_decision?.reason_code
+  === 'HOLD_DONE_TODAY'`) taky nesedí. Skutečné místo, kde vzniká `SCOPE_HELP`,
+  jsem nenašel — potřeba dál trasovat `processInput`/guardy A–? mezi řádky
+  1538+ a sledovat, kam "co dál?" se starým `unsupported_request` skutečně
+  spadne. Bezpečnostně citlivý kód (ovlivňuje, kdy appka považuje den za
+  hotový) — záměrně NEOPRAVENO narychlo, chce to soustředěnou session, ne
+  rychlou záplatu.
 
-- **SCOPE_UNCLEAR recovery nefunguje — reprodukováno 4/4 scénářů**
-  (`scripts/test-four-area-flows.mjs`, oprava a běh 2026-11-23). Session uvízlá
-  ve stavu `SCOPE_UNCLEAR` (po nejasném vstupu) by se po "co dál?" měla vrátit
-  na `HOLD_DONE_TODAY` (dnešní akce je hotová), ale vrací `SCOPE_HELP`
-  (nápovědní smyčka "co Chytré já umí") místo toho — systematicky u všech 4
-  testovaných oblastí (GAIT_INSTABILITY, LOW_MUSCLE_STRENGTH,
-  PHYSICAL_INACTIVITY, EXCESS_ADIPOSITY), ne náhodná jedna. Místo v kódu zatím
-  nenalezeno — potřeba trasovat `processInput` cestu pro vstup s
-  `last_daily_decision.reason_code === 'SCOPE_UNCLEAR'` + `unsupported_request`
-  v session. LOCKED soubor (`orchestrator.js`) — vyšetřit a opravit ve stejné
-  dávce jako textové nesrovnalosti výše.
-
-- **"Chceš zhubnout" potvrzení cíle se nezobrazuje — NEOVĚŘENO, potřeba trasovat**
-  (`scripts/test-four-area-flows.mjs`, scénář `person_goal: 'WEIGHT_LOSS'` +
-  páka `LOW_MUSCLE_STRENGTH`). `orchestrator.js:2796` má podmínku
-  `presentation.mode === 'ACT' && state.person_goal === 'WEIGHT_LOSS'`, která by
-  měla přidat úvodní větu "Chceš zhubnout. Dnes začínáme krokem pro ...", ale
-  v testu se nezobrazila. Nejisté, jestli jde o chybu v testovací fixtuře
-  (jak `state.person_goal` vzniká z `session` napříč `processInput` — možná
-  vyžaduje jiný vstupní tvar než holé `session.person_goal`), nebo o skutečnou
-  regresi. Netvrdit jako potvrzený bug, dokud se netrasuje dál.
+- **"Chceš zhubnout" potvrzení cíle se nezobrazuje — hlubší vyšetřování 2026-11-23, pořád neověřeno.**
+  `orchestrator.js:2796` (`presentation.mode === 'ACT' && state.person_goal
+  === 'WEIGHT_LOSS'`) by měl přidat "Chceš zhubnout. Dnes začínáme krokem pro
+  ...", ale ve `test-four-area-flows.mjs` scénáři se neobjevil. `state.person_goal`
+  se do `processInputCore` dostává prostým rozbalením `sessionState` (řádek
+  ~1500), což odpovídá tomu, jak to posílá test — takže to pravděpodobně NENÍ
+  jen chyba fixtury. Skutečný `presentation.text` v testu obsahoval jinou,
+  nesouvisející větu ("Proto se dnes zaměřujeme na tvoji svalovou sílu.") —
+  může jít o to, že se text mezi řádkem 2796 a koncem funkce ještě přepisuje
+  (ne jen doplňuje), čímž se prefix ztratí. Nedohledáno do konce — low-risk
+  (kosmetická věta, neovlivňuje bezpečnost ani vybranou akci), ale nechci
+  tvrdit příčinu bez jistoty.
 
 - **Lifestyle flagy bez enginové logiky** — `smoker`, `alcohol`, `stress_job` se
   v UI (Vstupní data → Profil) ukládají, ale engine je nikdy nečte
