@@ -9,6 +9,19 @@
 
 ## Produktová rozhodnutí čekající na zadání
 
+- **"Proč" text pro `zvednout_vnouce` lže o bolesti** — `api/engine/orchestrator.js:1128`
+  (`questions` map pro "Proč" vysvětlení) má `zvednout_vnouce: 'Nezvládáš zvednout
+  těžší předmět ze země bez bolesti.'` — zděděno z konverzační formulace otázky na
+  řádku 667 (`'Zvládneš zvednout dítě nebo těžší předmět ze země bez bolesti?'`).
+  Ale Desetiboj formulář (`app/js/universe/user-data-panel.js:306`) pokládá na
+  stejný evidence klíč jinou, novější otázku bez zmínky o bolesti ("Zvedneš 15 kg
+  ze země do náruče?"). Výsledek: uživatel vidí "Proč: ... bez bolesti", i když se
+  ho nikdo na bolest neptal. Reprodukováno živě 2026-11-23 (Josef, reset účtu,
+  vyplnění Desetiboje → "Ne" na obě otázky → NBA dřepy [správně] + tenhle
+  mylný "Proč" text [bug]). Oprava: přeformulovat řádek 1128 bez "bez bolesti" —
+  je to 🔒 LOCKED soubor (`orchestrator.js`), takže počkat na dávku změn
+  s regresní sadou, ne jednorázová úprava.
+
 - **Lifestyle flagy bez enginové logiky** — `smoker`, `alcohol`, `stress_job` se
   v UI (Vstupní data → Profil) ukládají, ale engine je nikdy nečte
   (`api/engine/adapter.js` má `smoking_history`/`alcohol_history` natvrdo
