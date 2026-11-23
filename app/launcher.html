@@ -900,13 +900,13 @@
   // Writes text into el one character at a time. Mirrors the proven pattern in
   // app/js/universe/launcher.js's _typewriter() (the old /app voice UI) — same
   // helper, ported rather than reinvented.
-  function _typewriter(el, text, charDelay = 30) {
+  function _typewriter(el, text, charDelay = 30, onDone) {
     if (_typewriterTimer) { clearInterval(_typewriterTimer); _typewriterTimer = null; }
     if (!el) return;
     el.textContent = '';
     let i = 0;
     _typewriterTimer = setInterval(() => {
-      if (i >= text.length) { clearInterval(_typewriterTimer); _typewriterTimer = null; return; }
+      if (i >= text.length) { clearInterval(_typewriterTimer); _typewriterTimer = null; onDone?.(); return; }
       el.textContent += text[i];
       i++;
     }, charDelay);
@@ -924,11 +924,11 @@
   // already uses) and types it into el in sync with playback start. Falls back to an
   // instant, untyped render on any TTS failure — voice is a presentation extra, never
   // a reason to delay or hide the response text itself.
-  async function _speakAndType(el, text, onStart) {
+  async function _speakAndType(el, text, onDone) {
     if (_speakAudio) { try { _speakAudio.pause(); } catch (_) {} _speakAudio = null; }
     if (_typewriterTimer) { clearInterval(_typewriterTimer); _typewriterTimer = null; }
     if (!el) return;
-    if (!text) { onStart?.(); el.textContent = '…'; return; }
+    if (!text) { el.textContent = '…'; onDone?.(); return; }
     try {
       const res = await authFetch('/api/tts', {
         method: 'POST',
@@ -939,14 +939,14 @@
       const url = URL.createObjectURL(await res.blob());
       const audio = new Audio(url);
       _speakAudio = audio;
-      audio.onplay = () => { if (_speakAudio === audio) { onStart?.(); _typewriter(el, text); } };
+      audio.onplay = () => { if (_speakAudio === audio) _typewriter(el, text, 30, onDone); };
       audio.onended = () => { URL.revokeObjectURL(url); if (_speakAudio === audio) _speakAudio = null; };
-      audio.onerror = () => { URL.revokeObjectURL(url); if (_speakAudio === audio) _speakAudio = null; onStart?.(); el.textContent = text; };
+      audio.onerror = () => { URL.revokeObjectURL(url); if (_speakAudio === audio) _speakAudio = null; el.textContent = text; onDone?.(); };
       await audio.play();
     } catch (e) {
       console.warn('[CHJ launcher] TTS failed, showing text without voice:', e?.message || e);
-      onStart?.();
       el.textContent = text;
+      onDone?.();
     }
   }
   // Keeps the big logo/Medicína 3.0/battery block visible on the very first
@@ -1006,8 +1006,8 @@
     else                      { $stageLabel.textContent = ''; }
 
     // Stage text — spoken + typed, same pattern as the old /app voice UI.
-    // Chips stay invisible until the text actually starts appearing (onStart),
-    // so the action text always reads before its buttons — not after.
+    // Chips stay invisible until the text has fully finished typing out,
+    // so the action text always reads completely before its buttons appear.
     $stage.className  = 'fade-in';
     $chips.style.visibility = 'hidden';
     _speakAndType($stage, text, () => { $chips.style.visibility = ''; });
