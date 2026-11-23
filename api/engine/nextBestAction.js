@@ -41,6 +41,9 @@ const PROTOCOL_BODY_LOAD = {
   VYTRVALOST_PROTOKOL:     new Set(['knee', 'ankle_foot']),
   SILOVY_PROTOKOL:         null, // per-action via tags — overhead press ≠ box jump
   FUNKCNI_SILOVY_PROTOKOL: null, // per-action via tags — same joint-load derivation as SILOVY_PROTOKOL
+  GRIP_SILOVY_PROTOKOL:    null, // per-action via tags — distinct protocol_type so assignIntervention's
+                                  // exact-match-by-protocol_type doesn't collide with FUNKCNI_SILOVY_PROTOKOL
+                                  // when both map to the same LOW_MUSCLE_STRENGTH node (see GRIP_STRENGTH_TRAINING)
   TRAINING_PROTOKOL:       null, // per-action via tags
   BALANCE_PROTOKOL:        new Set(['ankle_foot', 'knee']),
   STABILITY_PROTOKOL:      new Set(['ankle_foot', 'knee']),
@@ -51,7 +54,7 @@ const PROTOCOL_BODY_LOAD = {
 // (CV-risk modification eligibility, time-to-feedback) even though they are kept as distinct
 // protocol_type values so the NBA candidate pool for one leverage node's intervention cannot
 // silently absorb another leverage node's actions (see FUNKCNI_SILOVY_PROTOKOL / C3).
-const SILOVY_PROTOKOL_FAMILY = new Set(['SILOVY_PROTOKOL', 'FUNKCNI_SILOVY_PROTOKOL']);
+const SILOVY_PROTOKOL_FAMILY = new Set(['SILOVY_PROTOKOL', 'FUNKCNI_SILOVY_PROTOKOL', 'GRIP_SILOVY_PROTOKOL']);
 
 // TAG_BODY_LOAD: region sets per tag. 'sila' → lower_back only (NOT knee — strength
 // exercises vary widely; only explicitly leg/plyometric tags → knee).
@@ -68,6 +71,7 @@ const TAG_BODY_LOAD = {
   core:       new Set(['lower_back']),
   plank:      new Set(['lower_back', 'shoulder', 'elbow']),
   sila:       new Set(['lower_back']),   // generic strength → lower-back stabilizer, NOT knee
+  grip:       new Set(),                 // hand/forearm squeeze — no tracked major-joint region
 };
 
 // ── Person mobility profile ───────────────────────────────────────────────────
@@ -574,7 +578,7 @@ function evaluateMinMeaningfulEffect(action, _intervention) {
 // For TRAINING_PROTOKOL (shared across multiple interventions), disambiguation by tags.
 
 const CARDIO_TAGS  = new Set(['kardio', 'zona2', 'vo2max', 'beh', 'vytrvalost', 'sprint', 'interval', 'pohyb', 'aerobni']);
-const STRENGTH_TAGS = new Set(['sila', 'core', 'nohy', 'horni', 'kliky', 'drep', 'plank', 'stabilita', 'plyometrie']);
+const STRENGTH_TAGS = new Set(['sila', 'core', 'nohy', 'horni', 'kliky', 'drep', 'plank', 'stabilita', 'plyometrie', 'grip']);
 
 function assignIntervention(action, interventions) {
   const { protocol_type } = action;
@@ -658,8 +662,23 @@ function computeFeasibility(safety) {
 
 // ── Candidate builder ─────────────────────────────────────────────────────────
 
+// LOW_MUSCLE_STRENGTH onboarding questions split by movement pattern — lets an
+// intervention opt in/out of candidacy by which specific functional deficit is
+// actually present, instead of every LOW_MUSCLE_STRENGTH-mapped intervention
+// always competing together regardless of which test the person failed.
+const LEG_PATTERN_STRENGTH_QUESTIONS = ['vstat_ze_zeme', 'vynest_nakup', 'zvednout_vnouce'];
+const GRIP_PATTERN_STRENGTH_QUESTIONS = ['otevrit_zavarovacku'];
+function hasUpperBodyOnlyStrengthEvidence(clinicalHistory) {
+  const oi = clinicalHistory?.onboarding_inputs || {};
+  const isNeg = v => readYesNo(v) === 'no';
+  const hasGrip = GRIP_PATTERN_STRENGTH_QUESTIONS.some(k => isNeg(oi[k]));
+  const hasLeg  = LEG_PATTERN_STRENGTH_QUESTIONS.some(k => isNeg(oi[k]));
+  return hasGrip && !hasLeg;
+}
+
 function buildCandidates(actionPool, interventions, parsedConstraints, hasCvRiskRelevant, hasClinicalHistory, leverageNodeId, hasGaitInstability, mobilityProfile, skippedTodayActionIds, clinicalHistory) {
   const candidates = [];
+  const upperBodyOnly = hasUpperBodyOnlyStrengthEvidence(clinicalHistory);
   const unavailableActionIds = new Set(skippedTodayActionIds ?? []);
   for (const group of ACTION_EQUIVALENTS.skip_groups) {
     if (group.action_ids.some(id => unavailableActionIds.has(id))) {
@@ -673,6 +692,11 @@ function buildCandidates(actionPool, interventions, parsedConstraints, hasCvRisk
 
     const intervention = assignIntervention(action, interventions);
     if (!intervention) continue;
+
+    // Pattern-specific LOW_MUSCLE_STRENGTH interventions: only compete when the
+    // confirmed deficit actually matches the movement pattern they train.
+    if (intervention.only_when_upper_body_only_strength && !upperBodyOnly) continue;
+    if (intervention.skip_when_upper_body_only_strength && upperBodyOnly) continue;
 
     // Optional target-specific reviewed bridge. Empty means no reviewed actions;
     // absent preserves existing mapping. Never infer exercise suitability from

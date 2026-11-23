@@ -4,5 +4,11 @@
     "reps": 5,
     "source_label": "Vstaň 5× ze židle u zdi s oporou rukou; při bolesti, závrati či nejistotě skonči",
     "label": "5× pomalu vstaň ze židle a zase si sedni. Při bolesti, závrati nebo nejistotě přestaň."
+  },
+  "grip_squeeze_supported": {
+    "protocol_type": "GRIP_SILOVY_PROTOKOL",
+    "reps": 10,
+    "source_label": "10× v každé ruce pevně sevři pěst na 3 sekundy a povol; při bolesti skonči",
+    "label": "10× v každé ruce pevně sevři pěst na 3 sekundy a povol. Při bolesti přestaň."
   }
 }

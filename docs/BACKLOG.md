@@ -9,6 +9,30 @@
 
 ## Produktová rozhodnutí čekající na zadání
 
+- ✅ **OPRAVENO 2026-11-23** — "Jen vstávání ze židle na JAKOUKOLIV sílu, i ruce."
+  Zjištěno živě: `Otevřeš tuhé víčko?` (úchop) a `Zvedneš 10–15 kg nad hlavu?`
+  (ramena) — jediné dvě opravdu "ruční" otázky Desetiboje — engine vůbec nečetl
+  (`user-data-panel.js:302`). Zapojen `otevrit_zavarovacku` do
+  `api/engine/activation.js` (nové pole `upper_body_only` na `LOW_MUSCLE_STRENGTH`
+  stavu — true jen když je potvrzený čistě úchopový deficit, bez nohou/zad).
+  Nová intervence `GRIP_STRENGTH_TRAINING` v `data/engine/intervention-map.json`,
+  nová akce `grip_squeeze_supported` v `data/engine/action-instructions.json`,
+  gating v `api/engine/nextBestAction.js` (`only_when_upper_body_only_strength` /
+  `skip_when_upper_body_only_strength`). **Cesta našeho dnešního testu
+  (`vynest_nakup=Ne` + `zvednout_vnouce=Ne`, obojí nohy/záda) dál správně vede
+  na vstávání ze židle** — grip cvik nahradí židli jen když je deficit ČISTĚ
+  úchopový (jinak nic). Vlastní `protocol_type GRIP_SILOVY_PROTOKOL` (ne sdílený
+  s `FUNKCNI_SILOVY_PROTOKOL`) — `assignIntervention()` páruje akci na intervenci
+  přes přesnou shodu `protocol_type`, sdílená hodnota by způsobila, že grip akce
+  tiše spadne pod špatnou (židlovou) intervenci. Ověřeno samostatným skriptem
+  (4 scénáře: grip-only → grip cvik; smíšené/dnešní → židle; jen nohy → židle)
+  i plnou regresní sadou (`test-four-area-flows.mjs` 4/4, `test-functional-strength-training.mjs`
+  18/18, `test-safety-cv-joint-priority.mjs` stejný 1 pre-existující fail jako
+  před změnou). **Zbývá ruční krok** — samotná akce (`grip_squeeze_supported`)
+  žije v Supabase tabulce `longevity_actions`, ne v repu — je potřeba spustit
+  `migrations/20261123_grip_strength_training.sql` ručně v Supabase SQL
+  Editoru, jinak kód akci sice správně vybere, ale v DB nebude co najít.
+
 - ✅ **OPRAVENO 2026-11-23** — "Proč" text pro `zvednout_vnouce` lhal o bolesti.
   `api/engine/orchestrator.js:1128` (`questions` map) měl `zvednout_vnouce:
   'Nezvládáš zvednout těžší předmět ze země bez bolesti.'`, zděděno z konverzační

@@ -246,6 +246,11 @@ export function activation(person, clinicalHistory, observations) {
 
   const isNeg = v => readYesNo(v) === 'no';
 
+  const gripEvidence = [];
+  if (isNeg(oi['otevrit_zavarovacku']))
+    gripEvidence.push({ source: 'ONBOARDING', question_id: 'otevrit_zavarovacku', value: oi['otevrit_zavarovacku'],
+      note: 'Neschopnost otevřít tuhé víčko bez pomoci — funkční ukazatel síly úchopu' });
+
   const strengthEvidence = [];
   if (isNeg(oi['vynest_nakup']))
     strengthEvidence.push({ source: 'ONBOARDING', question_id: 'vynest_nakup', value: oi['vynest_nakup'],
@@ -257,13 +262,20 @@ export function activation(person, clinicalHistory, observations) {
     strengthEvidence.push({ source: 'ONBOARDING', question_id: 'vstat_ze_zeme', value: oi['vstat_ze_zeme'],
       note: 'Neschopnost vstát ze země bez opory — přímý funkční výsledek' });
 
-  if (strengthEvidence.length > 0) {
+  const allStrengthEvidence = [...strengthEvidence, ...gripEvidence];
+
+  if (allStrengthEvidence.length > 0) {
+    // upper_body_only: grip evidence present AND no leg/floor-rise evidence — lets
+    // the action layer offer a grip-appropriate exercise instead of the default
+    // leg-pattern entry exercise, without touching the (unrelated, leg-pattern)
+    // vynest_nakup/zvednout_vnouce/vstat_ze_zeme path when any of those also fired.
     states.push({
       node_id: 'LOW_MUSCLE_STRENGTH',
       current_state: 'MEASURED',
-      confidence: strengthEvidence.length >= 2 ? 'medium' : 'low',
+      confidence: allStrengthEvidence.length >= 2 ? 'medium' : 'low',
+      upper_body_only: gripEvidence.length > 0 && strengthEvidence.length === 0,
       evidence: {
-        direct: strengthEvidence,
+        direct: allStrengthEvidence,
         supporting: [],
         inferred_from_nodes: [],
       },

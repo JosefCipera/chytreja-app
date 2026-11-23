@@ -254,6 +254,23 @@
           },
           "protocol_types": ["FUNKCNI_SILOVY_PROTOKOL"],
           "tag_filter": ["sit_to_stand"],
+          "skip_when_upper_body_only_strength": true,
+          "goal_branches": ["FUNCTIONAL_INDEPENDENCE", "SURVIVAL_HEALTHSPAN"],
+          "mechanism_targets": ["LOW_MUSCLE_STRENGTH", "REDUCED_FUNCTIONAL_RESERVE"],
+          "expected_responses": []
+        },
+        {
+          "id": "GRIP_STRENGTH_TRAINING",
+          "target_leverage_node": "LOW_MUSCLE_STRENGTH",
+          "leverage_affinity": {
+            "level": "PRIMARY",
+            "rationale": "Nabídnuto pouze když je potvrzený deficit čistě úchopu (otevření víčka), bez potvrzeného deficitu nohou/zad — jinak zůstává vstupním cvikem vstávání ze židle. Síla úchopu je samostatně studovaný marker, ne proxy za nohy. Odpověď z onboardingu není potvrzená diagnóza.",
+            "evidence_quality": "moderate",
+            "evidence_refs": ["Leong et al., Lancet 2015 (PMID 25982160; grip strength and mortality, PURE study — observational marker, not a training-dose trial)"]
+          },
+          "protocol_types": ["GRIP_SILOVY_PROTOKOL"],
+          "tag_filter": ["grip"],
+          "only_when_upper_body_only_strength": true,
           "goal_branches": ["FUNCTIONAL_INDEPENDENCE", "SURVIVAL_HEALTHSPAN"],
           "mechanism_targets": ["LOW_MUSCLE_STRENGTH", "REDUCED_FUNCTIONAL_RESERVE"],
           "expected_responses": []
