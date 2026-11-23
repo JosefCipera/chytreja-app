@@ -94,7 +94,7 @@
     .logo.logo-dormant { visibility: hidden; }
     .logo {
       position: absolute;
-      left: 50%; bottom: calc(100% + 70px);
+      left: 50%; bottom: calc(100% + 36px);
       transform: translateX(-50%);
       display: flex; flex-direction: column; justify-content: center; align-items: center;
     }
@@ -113,7 +113,7 @@
          so the left edge lines up with the input on narrow/mobile screens too. */
       width: min(calc(100vw - 40px), 520px); height: 6px; border-radius: 3px;
       overflow: hidden; background: transparent;
-      margin-top: 18px;
+      margin-top: 10px;
     }
     .logo-battery__fill {
       height: 100%; border-radius: 3px; width: 0%;
@@ -221,7 +221,7 @@
     main {
       flex: 1; display: flex; flex-direction: column;
       align-items: center; justify-content: center;
-      padding: 24px 28px; gap: 24px; overflow: hidden;
+      padding: 24px 28px; gap: 14px; overflow: hidden;
     }
 
     /* ── Orb ── */
@@ -393,7 +393,7 @@
        user has told it so far, never a full medical picture. Deliberately
        not hidden behind "Proč?" or any click — docs/BACKLOG.md. */
     .data-basis-note {
-      font-size: 11px; color: #4a6672; letter-spacing: 0.2px; font-weight: 300;
+      font-size: 12px; color: var(--text-dim); letter-spacing: 0.2px; font-weight: 400;
       margin-top: 6px; line-height: 1.5;
     }
 
@@ -924,11 +924,11 @@
   // already uses) and types it into el in sync with playback start. Falls back to an
   // instant, untyped render on any TTS failure — voice is a presentation extra, never
   // a reason to delay or hide the response text itself.
-  async function _speakAndType(el, text) {
+  async function _speakAndType(el, text, onStart) {
     if (_speakAudio) { try { _speakAudio.pause(); } catch (_) {} _speakAudio = null; }
     if (_typewriterTimer) { clearInterval(_typewriterTimer); _typewriterTimer = null; }
     if (!el) return;
-    if (!text) { el.textContent = '…'; return; }
+    if (!text) { onStart?.(); el.textContent = '…'; return; }
     try {
       const res = await authFetch('/api/tts', {
         method: 'POST',
@@ -939,12 +939,13 @@
       const url = URL.createObjectURL(await res.blob());
       const audio = new Audio(url);
       _speakAudio = audio;
-      audio.onplay = () => { if (_speakAudio === audio) _typewriter(el, text); };
+      audio.onplay = () => { if (_speakAudio === audio) { onStart?.(); _typewriter(el, text); } };
       audio.onended = () => { URL.revokeObjectURL(url); if (_speakAudio === audio) _speakAudio = null; };
-      audio.onerror = () => { URL.revokeObjectURL(url); if (_speakAudio === audio) _speakAudio = null; el.textContent = text; };
+      audio.onerror = () => { URL.revokeObjectURL(url); if (_speakAudio === audio) _speakAudio = null; onStart?.(); el.textContent = text; };
       await audio.play();
     } catch (e) {
       console.warn('[CHJ launcher] TTS failed, showing text without voice:', e?.message || e);
+      onStart?.();
       el.textContent = text;
     }
   }
@@ -979,6 +980,7 @@
     $stageSub.classList.add('hidden');
     setBadge('—', 'mode-badge');
     $chips.innerHTML = '';
+    $chips.style.visibility = '';
     $input.placeholder = 'Napiš nebo řekni…';
   }
 
@@ -1004,8 +1006,11 @@
     else                      { $stageLabel.textContent = ''; }
 
     // Stage text — spoken + typed, same pattern as the old /app voice UI.
+    // Chips stay invisible until the text actually starts appearing (onStart),
+    // so the action text always reads before its buttons — not after.
     $stage.className  = 'fade-in';
-    _speakAndType($stage, text);
+    $chips.style.visibility = 'hidden';
+    _speakAndType($stage, text, () => { $chips.style.visibility = ''; });
 
     if (mode === 'HOLD')            { $stage.classList.add('dim'); $stage.classList.add('hold-glow'); }
     if (mode === 'SAFETY_CRITICAL') $stage.classList.add('danger');
