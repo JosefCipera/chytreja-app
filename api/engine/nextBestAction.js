@@ -666,8 +666,8 @@ function computeFeasibility(safety) {
 // intervention opt in/out of candidacy by which specific functional deficit is
 // actually present, instead of every LOW_MUSCLE_STRENGTH-mapped intervention
 // always competing together regardless of which test the person failed.
-const LEG_PATTERN_STRENGTH_QUESTIONS = ['vstat_ze_zeme', 'vynest_nakup', 'zvednout_vnouce'];
-const GRIP_PATTERN_STRENGTH_QUESTIONS = ['otevrit_zavarovacku'];
+const LEG_PATTERN_STRENGTH_QUESTIONS = ['vstat_ze_zeme', 'vynest_nakup', 'zvednout_vnouce', 'vstat_ze_zidle'];
+const GRIP_PATTERN_STRENGTH_QUESTIONS = ['otevrit_zavarovacku', 'kufr_do_police'];
 function hasUpperBodyOnlyStrengthEvidence(clinicalHistory) {
   const oi = clinicalHistory?.onboarding_inputs || {};
   const isNeg = v => readYesNo(v) === 'no';

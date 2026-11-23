@@ -297,9 +297,13 @@ async function saveZdravi() {
 // ═══════════════════════════════════════════════════
 
 // 10 disciplín lidového decatlonu — zdroj: Dekatlon_lidovy.pdf.
-// Klíče se shodují s EVIDENCE_STORAGE_REGISTRY v api/engine/healthEventAdapter.js
-// tam, kde takový self-report test už engine zná (vstat_ze_zeme, vynest_nakup,
-// zvednout_vnouce, balanc_jedna_noha) — zbylé jsou nové, engine je zatím nečte.
+// Klíče se shodují s EVIDENCE_STORAGE_REGISTRY v api/engine/healthEventAdapter.js.
+// Engine teď čte 9 z 10 (vstat_ze_zeme, vynest_nakup, zvednout_vnouce,
+// balanc_jedna_noha, otevrit_zavarovacku, kufr_do_police, vstat_ze_zidle,
+// vyjit_4_patra, rychla_chuze — 2026-11-23). skocit_dopadnout zůstává
+// vědomě nenapojený — negativní odpověď (nezvládneš bezpečně dopad) by
+// nemělo smysl "opravovat" doporučením skákacího cviku; potřebuje vlastní
+// produktové rozhodnutí, ne automatické zapojení.
 const DISCIPLINE_QUESTIONS = [
   { key: 'vstat_ze_zeme',       label: 'Vstaneš ze země bez opory rukou?',       hint: 'prevence pádů a závislosti — stabilita, síla středu těla' },
   { key: 'vynest_nakup',        label: 'Uneseš dvě tašky (5 kg) do schodů?',     hint: 'farmářská chůze (farmer\'s carry) — funkční síla' },

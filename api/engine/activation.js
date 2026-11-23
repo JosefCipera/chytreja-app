@@ -58,6 +58,11 @@ export function activation(person, clinicalHistory, observations) {
   // sedentary_work=true alone → supporting evidence only, not sufficient for MEASURED
   const activityObs = observations.filter(o => o.obs_type === 'activity_level' && o.source === 'daily_checkin');
   const sedHoursObs = observations.find(o => o.obs_type === 'sedentary_hours_day');
+  // Desetiboj functional cardio self-report (Dekatlon) — supporting-only, same
+  // epistemic tier as sedentary_work/sedentary_hours_day: a single self-reported
+  // "no" is not the validated multi-day check-in evidence MEASURED requires.
+  const earlyOi = clinicalHistory.onboarding_inputs || {};
+  const cardioNeg = readYesNo(earlyOi['vyjit_4_patra']) === 'no' || readYesNo(earlyOi['rychla_chuze']) === 'no';
   const lowDays = activityObs.filter(o => o.value === 'low').length;
   const totalDays = activityObs.length;
   const lowRatio = totalDays >= 5 ? lowDays / totalDays : null;
@@ -85,9 +90,10 @@ export function activation(person, clinicalHistory, observations) {
         ] : []),
       ],
     });
-  } else if (clinicalHistory.lifestyle.sedentary_work || (sedHoursObs && sedHoursObs.value >= 8)) {
-    // Sedentary work or hours known, but no check-in data → PREDICTED_CURRENT here
-    // (activation can produce PREDICTED_CURRENT if direct data is behavioral self-report)
+  } else if (clinicalHistory.lifestyle.sedentary_work || (sedHoursObs && sedHoursObs.value >= 8) || cardioNeg) {
+    // Sedentary work, hours, or a failed Desetiboj cardio self-report known, but no
+    // check-in data → PREDICTED_CURRENT here (activation can produce PREDICTED_CURRENT
+    // if direct data is behavioral/functional self-report)
     states.push({
       node_id: 'PHYSICAL_INACTIVITY',
       current_state: 'PREDICTED_CURRENT',
@@ -97,6 +103,8 @@ export function activation(person, clinicalHistory, observations) {
         supporting: [
           ...(clinicalHistory.lifestyle.sedentary_work ? [{ source: 'CLINICAL_HISTORY', type: 'LIFESTYLE', field: 'sedentary_work', value: true, note: 'Sedentary work alone is supporting, not direct evidence' }] : []),
           ...(sedHoursObs ? [{ source: 'OBSERVATION', obs_type: 'sedentary_hours_day', value: sedHoursObs.value }] : []),
+          ...(readYesNo(earlyOi['vyjit_4_patra']) === 'no' ? [{ source: 'ONBOARDING', question_id: 'vyjit_4_patra', value: earlyOi['vyjit_4_patra'], note: 'Nezvládneš 4 patra bez zastavení a zadýchání — funkční ukazatel kondice, ne validovaný VO2max test' }] : []),
+          ...(readYesNo(earlyOi['rychla_chuze']) === 'no' ? [{ source: 'ONBOARDING', question_id: 'rychla_chuze', value: earlyOi['rychla_chuze'], note: 'Nezvládneš 1 km svižným tempem — funkční ukazatel kondice' }] : []),
         ],
         inferred_from_nodes: [],
       },
@@ -250,6 +258,9 @@ export function activation(person, clinicalHistory, observations) {
   if (isNeg(oi['otevrit_zavarovacku']))
     gripEvidence.push({ source: 'ONBOARDING', question_id: 'otevrit_zavarovacku', value: oi['otevrit_zavarovacku'],
       note: 'Neschopnost otevřít tuhé víčko bez pomoci — funkční ukazatel síly úchopu' });
+  if (isNeg(oi['kufr_do_police']))
+    gripEvidence.push({ source: 'ONBOARDING', question_id: 'kufr_do_police', value: oi['kufr_do_police'],
+      note: 'Neschopnost zvednout 10–15 kg nad hlavu — funkční ukazatel síly ramen/paží' });
 
   const strengthEvidence = [];
   if (isNeg(oi['vynest_nakup']))
@@ -261,6 +272,9 @@ export function activation(person, clinicalHistory, observations) {
   if (isNeg(oi['vstat_ze_zeme']))
     strengthEvidence.push({ source: 'ONBOARDING', question_id: 'vstat_ze_zeme', value: oi['vstat_ze_zeme'],
       note: 'Neschopnost vstát ze země bez opory — přímý funkční výsledek' });
+  if (isNeg(oi['vstat_ze_zidle']))
+    strengthEvidence.push({ source: 'ONBOARDING', question_id: 'vstat_ze_zidle', value: oi['vstat_ze_zidle'],
+      note: 'Nezvládneš dřep bez pomoci rukou — funkční ukazatel síly dolních končetin' });
 
   const allStrengthEvidence = [...strengthEvidence, ...gripEvidence];
 
