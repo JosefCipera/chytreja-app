@@ -37,6 +37,14 @@
   evidenci před použitím generického textu. LOCKED soubor — řešit v dávce
   spolu s bodem výše.
 
+- **`REDUCED_FUNCTIONAL_RESERVE` dědí stejný problém** — `api/engine/inference.js:204-224`
+  odvozuje `REDUCED_FUNCTIONAL_RESERVE` čistě z `LOW_MUSCLE_STRENGTH` (bez vlastní
+  přímé evidence), takže `NEXT_STEP_CS.REDUCED_FUNCTIONAL_RESERVE.nextStep`
+  (`orchestrator.js:224`, `'ztěžovat základní pohyby, jako je vstávání'`) má
+  stejnou vadu jako bod výše — generický text o "vstávání" bez ohledu na to,
+  která ze tří otázek sílu spustila. Neověřeno živě (odvozeno z kódu), ale
+  stejný vzorec. Řešit ve stejné dávce.
+
 - **Lifestyle flagy bez enginové logiky** — `smoker`, `alcohol`, `stress_job` se
   v UI (Vstupní data → Profil) ukládají, ale engine je nikdy nečte
   (`api/engine/adapter.js` má `smoking_history`/`alcohol_history` natvrdo
