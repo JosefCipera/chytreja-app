@@ -1229,6 +1229,65 @@ otevřené produktové otázky místo dalších jednorázových souborů.
 
 ---
 
+## Práce z 2026-11-23/24
+
+### TOC Výroba — oživení, mojibake fix, přenos TOC/Launcher principů na novou doménu
+Opraven mojibake (dvojí kódování UTF-8→cp1250→UTF-8) v `app/toc-vyroba.html` a
+`app/toc-nastaveni.html`, který mimo jiné rozbíjel samotnou `<script>` syntaxi
+a appka se zasekávala na "NAČÍTÁM DATA…" natrvalo. Ověřeno proti reálným datům
+(`demo-user-123`). Drobné UI opravy v `app/launcher.html` (mezery logo/baterie,
+pořadí text→tlačítka po dokončení psaní i mluvení, viditelnost "Doporučení
+vychází z..." patičky).
+
+### Desetiboj — 9/10 → 10/10 otázek zapojeno do enginu
+`otevrit_zavarovacku` a `kufr_do_police` (ruce/rameno) nově spouští
+`GRIP_STRENGTH_TRAINING` namísto univerzálního vstávání ze židle — ale **jen
+když je deficit čistě rukou** (žádná nohy/záda evidence současně); jinak
+vyhrává nohy jako bezpečnostně důležitější. `vstat_ze_zidle` a
+`skocit_dopadnout` (dřep, seskok/dopad) přidány do stejné skupiny jako nohy.
+`vyjit_4_patra`/`rychla_chuze` (VO2max self-report) přidány jako podpůrná
+evidence do `PHYSICAL_INACTIVITY`. Nová DB akce `grip_squeeze_supported`
+vyžaduje ruční spuštění `migrations/20261123_grip_strength_training.sql`
+v Supabase SQL Editoru (hotovo 2026-11-23).
+
+Opraven i potvrzený bug: "Proč" text pro `zvednout_vnouce` tvrdil "bez
+bolesti", i když se na bolest nikdo neptal (`orchestrator.js:1128`) — viz
+`docs/BACKLOG.md` pro zbývající (neopravené) nálezy ze stejné session
+(SCOPE_UNCLEAR recovery → SCOPE_HELP, chybějící "Chceš zhubnout" potvrzení
+cíle).
+
+### `test` branch — obnovena ztracená návaznost na `main` (git history incident)
+**Nález:** `git merge-base origin/main origin/test` nevracel nic — `main`
+(64 commitů) a `test` (2734 commitů) neměly **žádného společného předka**,
+přestože obsahově vypadaly podobně (337 souborů v `app/`, stejný
+`CLAUDE.md`). Normální `git merge`/`git push origin test` by proto selhalo
+nebo vytvořilo nesmyslný diff.
+
+**Příčina:** `main` byl v nějakém okamžiku po 28. 8. 2026 skutečně přepsán
+(git history rewrite), aby se z historie odstranily commity s uniklým
+Supabase `service_role` JWT (`6b1e476`, `0956e76`, `462994b`, `e814e27`) —
+viz P0 incident výše ("Otevřené... Git history rewrite... deferred").
+Přepis proběhl později a nebyl zapsán do DEVLOGu (stejný vzorec jako jinde v
+tomhle souboru: "značné množství práce zachyceno jen v git historii").
+`test` nebyl přepisu podroben, takže zůstal viset na staré (teď jinde
+neexistující) historii — proto nulový merge-base.
+
+**Riziko:** nízké. Unikátní klíč byl rotován a legacy JWT deaktivován už
+28. 8. 2026 (viz výše) — stará historie na `test` neobsahovala živý secret,
+jen mrtvý.
+
+**Oprava (2026-11-24):** `git push origin main:test --force` — `test` teď
+ukazuje na identický commit jako `main` (`ea99833`). Ztratila se tím vlastní
+(stará, nesouvisející) historie `test`, což je žádoucí — byl to ostatně
+důvod, proč historie `main` byla přepsána.
+
+**Poučení pro příště:** pokud `git merge-base` mezi dvěma deploy-větvemi
+(main/test/production/demo) nic nevrátí, nejde o běžné rozejití — jde o
+pozůstatek historického přepisu. Neřešit mergem; ověřit, která větev má
+"čistou" (aktuální) historii, a tu druhou na ni force-updatovat, ne naopak.
+
+---
+
 ## Open issues / Next
 
 | Priorita | Issue | Poznámka |
