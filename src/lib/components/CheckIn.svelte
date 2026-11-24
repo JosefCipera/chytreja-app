@@ -13,7 +13,7 @@
     saving = true;
     error  = null;
     try {
-      const res = await fetch('/api/user?action=readiness', {
+      const res = await window.authFetch('/api/user?action=readiness', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({
