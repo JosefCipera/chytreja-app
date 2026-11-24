@@ -2,7 +2,7 @@
 
 Ahoj, prosím o přibližně 15 minut na vyzkoušení Chytrého já:
 
-https://test.iting.cz/launcher?tester=1
+https://test.iting.cz/launcher
 
 Zkoušíš testovací verzi, ne hotovou aplikaci. Dnes se zaměřuje na **čtyři oblasti: pohyb, svalovou sílu, rovnováhu a nadváhu**. Při přání zhubnout může nabídnout pohybovou aktivitu, nikoli celý plán hubnutí.
 
@@ -19,7 +19,7 @@ Vytvoř si testovací účet. Při úvodních otázkách použij tohoto **smyšl
 
 ## Desetiboj dlouhověkosti (Vstupní data → Tělo)
 
-Desetiboj se dá otevřít kdykoliv přes avatara vpravo nahoře → **Já** → záložka **Tělo**. **Ale pozor:** appka si jednou vybranou akci na dnešek pamatuje bez ohledu na to, že si pak odpovědi v Desetiboji změníš — prosté překlikání neudělá nové doporučení. Pro druhé kolo (viz níže) proto použij tlačítko **"Full reset"** (je vidět v appce díky `?tester=1` v adrese) — smaže úplně všechno (i věk, výšku, váhu) a appka tě pošle zpátky na úvodní otázky i celý Desetiboj od nuly.
+Desetiboj se dá otevřít kdykoliv přes avatara vpravo nahoře → **Já** → záložka **Tělo**. **Ale pozor:** appka si jednou vybranou akci na dnešek pamatuje bez ohledu na to, že si pak odpovědi v Desetiboji změníš — prosté překlikání neudělá nové doporučení. Pro druhé kolo (viz níže) si proto rovnou založ **druhý, nový účet** (jiný e-mail) — nový účet nemá nic přiřazené a dostaneš čerstvé doporučení podle toho, co zadáš.
 
 Tohle je nové oproti minulému testu — vyplň **všech 10 otázek Desetiboje** podle smyšleného profilu níže, přesně takhle (je to schválně namíchané, ať se otestuje víc kombinací najednou):
 
@@ -46,7 +46,7 @@ Klidně polož i vlastní otázku mimo dnešní podporovaná témata a pak se vr
 
 Cviky v tomto testu **neprováděj**. Tlačítka Hotovo nebo Přeskočit můžeš zkoušet jako ovládání na smyšleném účtu. Následně aplikaci zavři a znovu otevři a zkus napsat "co dál?" — zajímá nás, co se stane.
 
-**Druhé kolo:** klikni na "Full reset", projdi úvodní otázky znovu (stejný smyšlený profil jako výše), ale v Desetiboji tentokrát změň odpovědi na `Zvedneš 15 kg do náruče` = **Ano** a `Otevřeš tuhé víčko` = **Ne** (ostatní nech stejné). Podívej se, jestli dostaneš jiné doporučení než v prvním kole a jestli dává smysl.
+**Druhé kolo:** založ si nový účet s jiným e-mailem, projdi úvodní otázky znovu (stejný smyšlený profil jako výše), ale v Desetiboji tentokrát změň odpovědi na `Zvedneš 15 kg do náruče` = **Ano** a `Otevřeš tuhé víčko` = **Ne** (ostatní nech stejné). Podívej se, jestli dostaneš jiné doporučení než v prvním kole a jestli dává smysl.
 
 ## Co nám potom napsat
 
