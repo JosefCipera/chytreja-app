@@ -383,6 +383,7 @@ function initHeaderMic() {
 // =====================================================
 async function loadAndRenderModel(modelName, role) {
   window.CURRENT_MODEL = modelName;
+  window.applyAvatarForModel?.(modelName);
 
   console.log(`🔄 Loading model: ${modelName} (access: ${role})`);
 

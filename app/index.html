@@ -54,11 +54,16 @@ if (!window.CHJ_UNIVERSE_EXAMPLE) {
                 // Update avatar dynamically
                 const email = user.email || 'User';
                 const name = user.displayName || email.split('@')[0];
-                const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=0D8ABC&color=fff`;
+                window._defaultAvatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=0D8ABC&color=fff`;
 
-                document.querySelectorAll('.user-avatar, .avatar-large').forEach(img => {
-                    img.src = avatarUrl;
-                });
+                // Per-model avatar override (e.g. TOC) — falls back to the name-initials avatar
+                window.applyAvatarForModel = (modelName) => {
+                    const url = modelName === 'toc' ? '/app/assets/avatar-toc.svg' : window._defaultAvatarUrl;
+                    document.querySelectorAll('.user-avatar, .avatar-large').forEach(img => {
+                        img.src = url;
+                    });
+                };
+                window.applyAvatarForModel(window.CURRENT_MODEL || localStorage.getItem('currentModel'));
 
                 const emailEl = document.querySelector('.email');
                 if (emailEl) emailEl.textContent = email;
