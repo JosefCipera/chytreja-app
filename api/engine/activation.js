@@ -275,6 +275,14 @@ export function activation(person, clinicalHistory, observations) {
   if (isNeg(oi['vstat_ze_zidle']))
     strengthEvidence.push({ source: 'ONBOARDING', question_id: 'vstat_ze_zidle', value: oi['vstat_ze_zidle'],
       note: 'Nezvládneš dřep bez pomoci rukou — funkční ukazatel síly dolních končetin' });
+  // skocit_dopadnout: evidence of leg power/stability only — routes to the same
+  // safe chair-stand entry exercise as the rest of this group, never to a
+  // plyometric/jump-based action. A "no" here means landing a jump isn't safe
+  // for this person right now; the fix is building foundational leg strength
+  // first, not more jumping.
+  if (isNeg(oi['skocit_dopadnout']))
+    strengthEvidence.push({ source: 'ONBOARDING', question_id: 'skocit_dopadnout', value: oi['skocit_dopadnout'],
+      note: 'Neustojíš dopad ze skoku z 20 cm — funkční ukazatel výbušné síly a stability nohou' });
 
   const allStrengthEvidence = [...strengthEvidence, ...gripEvidence];
 

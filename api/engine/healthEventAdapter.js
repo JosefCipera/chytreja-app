@@ -59,6 +59,7 @@ export const EVIDENCE_STORAGE_REGISTRY = {
   otevrit_zavarovacku:   { table: 'physical', key: 'otevrit_zavarovacku' },
   kufr_do_police:        { table: 'physical', key: 'kufr_do_police' },
   vstat_ze_zidle:        { table: 'physical', key: 'vstat_ze_zidle' },
+  skocit_dopadnout:      { table: 'physical', key: 'skocit_dopadnout' },
   vyjit_4_patra:         { table: 'physical', key: 'vyjit_4_patra' },
   rychla_chuze:          { table: 'physical', key: 'rychla_chuze' },
   gait_stability:        { table: 'physical', key: 'gait_stability' },
