@@ -9,6 +9,19 @@
 
 ## Produktová rozhodnutí čekající na zadání
 
+- ✅ **OPRAVENO 2026-11-24** — Svelte HUD iframe (`app/hud.html`, `src/App.svelte`,
+  `CheckIn.svelte`) volal `api/user.js` (requireAuth-protected) čistým `fetch()`
+  bez Authorization hlavičky → 401 pro každý reálný (non-demo) účet, ne jen
+  pro testera. Ranní check-in (`POTVRDIT`) tím nikdy neuložil a `needsCheckIn`
+  se kvůli chybě vždy vyhodnotil jako `true` (modal se vracel pořád dokola).
+  Opraveno `src/lib/authFetch.js` — iframe čte `window.parent.firebaseAuth`
+  přímo (same-origin, stejný vzor jako už existující `window.parent._hudCache`),
+  použito v `checkReadiness()` a `CheckIn.svelte` submitu. **Nedotčeno (stejná
+  díra, nepotvrzeno živě, mimo dnešní scope):** `/api/orchestrator`,
+  `/api/agents`, `/api/mission-log`, `/api/mission-complete`,
+  `?action=lehkost-agent` v `src/App.svelte` volají `fetch()` stejně
+  neautentizovaně — pravděpodobně stejný bug, ověřit až se na to narazí živě.
+
 - ✅ **OPRAVENO 2026-11-23** — "Jen vstávání ze židle na JAKOUKOLIV sílu, i ruce."
   Zjištěno živě: `Otevřeš tuhé víčko?` (úchop) a `Zvedneš 10–15 kg nad hlavu?`
   (ramena) — jediné dvě opravdu "ruční" otázky Desetiboje — engine vůbec nečetl
