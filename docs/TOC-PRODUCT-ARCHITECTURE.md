@@ -102,11 +102,27 @@ CRM/"mafia offer" (princip 4, druhá věta) — odloženo, žádné rozpracován
 
 U Longevity řeší konverzační vrstvu `app/launcher.html` + `api/engine/orchestrator.js`: strukturované rozhodnutí enginu → přirozený jazyk, nikdy naopak.
 
-Pro TOC to znamená totéž, ale cílová osoba je jiná — mistr nebo plánovač, ne pacient. Otevřené otázky, které je potřeba vyřešit **předtím**, než se začne stavět:
+Pro TOC to znamená totéž, ale cílová osoba je jiná — mistr nebo plánovač, ne pacient. Bude víc rolí (majitel, plánovač, mistr dílny — liší se slovník i rozhodovací pravomoc), ale **začínáme jednou: plánovač výroby**, protože na tu roli už existuje reálný funkční základ (viz bod 5b).
 
-- Kdo je uživatel konverzace — majitel firmy? plánovač? mistr na dílně? (liší se slovník, liší se rozhodovací pravomoc)
-- Jaké jsou typické otázky/situace, na které má TOC Launcher reagovat (analogie k Desetiboji u Longevity)?
+Zbývající otevřené otázky:
+- Jaké jsou typické otázky/situace, na které má TOC Launcher plánovači reagovat (analogie k Desetiboji u Longevity)?
 - Jak vypadá "DOMAIN_DECISION" pro TOC v jazyce ACT/ASK/HOLD/SAFETY, nebo potřebuje vlastní sadu módů?
+
+### 5b. Existující základ pro roli plánovače výroby — odtud se začíná
+
+Nejde o prázdné místo. Už dnes existuje reálný (ne jen prezentační) výpočet:
+
+```
+app/toc-vyroba.html          — UI, JS funkce runKapacita() (anglický název, česká UI)
+  ↓ POST /api/toc?action=kapacita
+api/toc.js (action==='kapacita')
+  — vstup:  toc_zakazky (termín, průběžná doba, cas_pracoviste), toc_pracoviste (kapacita_hod)
+  — výstup: zatizeni[] — % vytížení každého pracoviště po dnech (Gantt-like řada)
+```
+
+Vesmír uzel "Výroba (DBR)" (viz `src/lib/toc-config.js` → `vyroba_toc`) má tlačítko **"Plán výroby"** s reálným `href: '/app/toc-vyroba.html'` — jediné tlačítko v celém TOC HUD configu, které vede na funkční nástroj, ne na `href: null` placeholder. "Hlavní plán" a "Plán kooperací" jsou zatím stuby.
+
+**Z toho plyne pořadí práce:** než se vymýšlí nový CRT algoritmus (bod 4) od nuly, nejdřív prozkoumat, co `action==='kapacita'` dělá, a navrhnout konverzační vrstvu nad *tímto* výstupem (vytížení pracovišť → kde je bottleneck → co plánovač má udělat) — ne nad hypotetickým modelem.
 
 ---
 
