@@ -6,6 +6,7 @@
   import ActOverlay from './lib/components/hud/ActOverlay.svelte';
   import { loadHudData, patchHudData, nodeData, rawData, loading, error } from './lib/stores/hudData.js';
   import { calcVitality } from './lib/utils/vitality.js';
+  import { authFetch } from './lib/authFetch.js';
 
   // ── URL PARAMS ─────────────────────────────────────────
   const params   = new URLSearchParams(window.location.search);
@@ -224,7 +225,7 @@
 
   async function checkReadiness() {
     try {
-      const res  = await fetch(`/api/user?action=readiness&userId=${encodeURIComponent(userId)}`);
+      const res  = await authFetch(`/api/user?action=readiness&userId=${encodeURIComponent(userId)}`);
       const json = await res.json();
       needsCheckIn = !json.exists;
     } catch {
