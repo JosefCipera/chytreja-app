@@ -1554,13 +1554,20 @@
   });
 
   // ── Menu: Vesmír / Kauzální mapa — real navigation, no voice command needed ──
+  //
+  // TEMPORARY wiring (2026-11-26): we don't yet have a per-user Vesmír/CRT
+  // story, so these point at fixed reference targets to unblock UX testing —
+  // Vesmír → obecný Longevity model, CRT → Josef's real account (reference
+  // case #1, CLAUDE.md §7). Revisit once per-user routing is decided.
+  const JOSEF_UID_FOR_CRT_PREVIEW = 'vPrm5PNzLWWWhi9sSwYVbkb9FaD3';
   document.getElementById('menu-vesmir-btn').addEventListener('click', () => {
     $profileDrop.classList.remove('open');
+    localStorage.setItem('currentModel', 'longevity');
     window.location.href = '/app';
   });
   document.getElementById('menu-crt-btn').addEventListener('click', () => {
     $profileDrop.classList.remove('open');
-    window.location.href = `${PROFILE_URL}?userId=${encodeURIComponent(window.__chj_userId ?? '')}`;
+    window.location.href = `${PROFILE_URL}?userId=${encodeURIComponent(JOSEF_UID_FOR_CRT_PREVIEW)}`;
   });
 
   // ── Logout ───────────────────────────────────────────────────────────────────
