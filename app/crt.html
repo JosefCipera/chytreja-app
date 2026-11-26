@@ -4,7 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
   <title>Kauzální mapa zdraví</title>
-  <script>window.CHJ_CRT_EXAMPLE = new URLSearchParams(location.search).get('vzor') === 'kovarova'; if (window.CHJ_CRT_EXAMPLE) document.documentElement.classList.add('public-example');</script>
+  <script>
+    window.CHJ_CRT_EXAMPLES = { kovarova: 'Vzor Kovářová', josef: 'Vzor Josef' };
+    window.CHJ_CRT_VZOR = new URLSearchParams(location.search).get('vzor');
+    window.CHJ_CRT_EXAMPLE = Object.prototype.hasOwnProperty.call(window.CHJ_CRT_EXAMPLES, window.CHJ_CRT_VZOR);
+    if (window.CHJ_CRT_EXAMPLE) document.documentElement.classList.add('public-example');
+  </script>
   <link rel="stylesheet" href="/app/assets/landing/original-examples.css?v=1">
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="icon" href="/app/favicon.svg" type="image/svg+xml">
@@ -361,7 +366,7 @@
   </script>
 </head>
 <body>
-<div class="example-toolbar" hidden id="example-toolbar"><span>Vzor Kovářová · ukázková data</span><a href="/app/?vzor=dlouhovekost">Vesmír Dlouhověkosti</a><a href="/#ukazky" data-example-return>← Zpět na web</a></div>
+<div class="example-toolbar" hidden id="example-toolbar"><span id="example-toolbar-label">ukázková data</span><a href="/app/?vzor=dlouhovekost">Vesmír Dlouhověkosti</a><a href="/#ukazky" data-example-return>← Zpět na web</a></div>
 
 <div class="crt-header">
   <div class="chj-logo">
@@ -656,8 +661,9 @@ const KB_FILES_V2 = [_KB_STORY_MAP.story];
 
 async function loadCRT() {
   if (isExample) {
-    const res = await fetch('/app/assets/examples/crt-kovarova.json');
-    if (!res.ok) throw new Error('Vzor Kovářové se nepodařilo načíst.');
+    const vzor = window.CHJ_CRT_VZOR;
+    const res = await fetch(`/app/assets/examples/crt-${vzor}.json`);
+    if (!res.ok) throw new Error('Vzor se nepodařilo načíst.');
     return res.json();
   }
   const forceRegen = new URLSearchParams(location.search).get('force') === '1';
@@ -2219,8 +2225,10 @@ if (screen.orientation) screen.orientation.addEventListener('change', _rerender)
 
 <script type="module">
 if (window.CHJ_CRT_EXAMPLE) {
+  const _vzorLabel = window.CHJ_CRT_EXAMPLES[window.CHJ_CRT_VZOR] ?? 'Vzor';
   document.getElementById('example-toolbar').hidden = false;
-  document.title = 'CRT Kovářové — Chytré já';
+  document.getElementById('example-toolbar-label').textContent = `${_vzorLabel} · ukázková data`;
+  document.title = `CRT — ${_vzorLabel} — Chytré já`;
   await import('/app/js/examples/example-return.js');
   window._crtBoot?.();
 } else {
