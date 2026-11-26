@@ -427,12 +427,12 @@ if (!window.CHJ_UNIVERSE_EXAMPLE) {
             </div>
         </div>
         <div class="user-profile-wrapper">
-            <button id="cmd-mic-btn" title="Hlasový příkaz" aria-label="Ĺekni příkaz">
-                <span id="cmd-mic-icon">đźŽ¤</span>
+            <button id="cmd-mic-btn" title="Hlasový příkaz" aria-label="Řekni příkaz">
+                <span id="cmd-mic-icon">🎤</span>
                 <span id="cmd-mic-label" style="font-size:12px;font-family:monospace;letter-spacing:0.05em;">CMD</span>
             </button>
             <button id="header-mic-btn" title="Přehrát odpověď" aria-label="TTS přehrávač">
-                <span class="header-mic-icon">đź”Š</span>
+                <span class="header-mic-icon">🔊</span>
             </button>
             <button id="profileBtn" class="avatar-button">
                 <img src="https://ui-avatars.com/api/?name=Cipera&background=0D8ABC&color=fff" alt="Profil"
@@ -452,14 +452,14 @@ if (!window.CHJ_UNIVERSE_EXAMPLE) {
                     </div>
                 </div>
                 <nav class="dropdown-nav">
-                    <a href="#" onclick="openUserDataPanel(); return false;"><i class="icon">đź‘¤</i> Já</a>
+                    <a href="#" onclick="openUserDataPanel(); return false;"><i class="icon">👤</i> Já</a>
                     <a href="#" onclick="openDailyCheckin(); return false;" id="checkin-menu-item"><i
-                            class="icon">đź“‹</i> Dnešní záznam</a>
-                    <a href="/app/medioteka.html"><i class="icon">đź“š</i> Mediotéka</a>
-                    <a href="#" onclick="openGuide(); return false;"><i class="icon">đź“–</i> Návod</a>
+                            class="icon">📋</i> Dnešní záznam</a>
+                    <a href="/app/medioteka.html"><i class="icon">📚</i> Mediotéka</a>
+                    <a href="#" onclick="openGuide(); return false;"><i class="icon">📖</i> Návod</a>
                     <div class="divider"></div>
                     <button onclick="handleLogout()" class="logout-action">
-                        <i class="icon">â­•</i> Odhlásit
+                        <i class="icon">⭕</i> Odhlásit
                     </button>
                 </nav>
             </div>
@@ -929,14 +929,14 @@ if (!window.CHJ_UNIVERSE_EXAMPLE) {
             if (isMdType) {
                 const btnStyle = 'background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);border-radius:6px;cursor:pointer;padding:5px 9px;-webkit-tap-highlight-color:transparent;flex-shrink:0;font-size:15px;line-height:1;color:#e2e8f0;margin-left:4px;min-width:44px;min-height:44px;';
                 const printBtn = document.createElement('button');
-                printBtn.textContent = 'đź–¨'; printBtn.title = 'Tisk'; printBtn.style.cssText = btnStyle;
+                printBtn.textContent = '🖨'; printBtn.title = 'Tisk'; printBtn.style.cssText = btnStyle;
                 const doPrint = () => { const el = document.querySelector('.md-il'); if (!el) return; const iframe = document.createElement('iframe'); iframe.style.cssText = 'position:fixed;width:0;height:0;border:none;top:-9999px;'; document.body.appendChild(iframe); const doc = iframe.contentDocument; doc.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${source.title || ''}</title><style>body{font-family:system-ui,sans-serif;padding:24px;max-width:780px;margin:0 auto;color:#1e293b;line-height:1.7;font-size:15px}</style></head><body>${el.innerHTML}</body></html>`); doc.close(); iframe.contentWindow.focus(); iframe.contentWindow.print(); setTimeout(() => document.body.removeChild(iframe), 1000); };
                 printBtn.addEventListener('click', doPrint);
                 printBtn.addEventListener('touchend', (e) => { e.preventDefault(); doPrint(); });
                 header.appendChild(printBtn);
 
                 const dlBtn = document.createElement('button');
-                dlBtn.textContent = 'đź“Ą'; dlBtn.title = 'Stáhnout'; dlBtn.style.cssText = btnStyle;
+                dlBtn.textContent = '📥'; dlBtn.title = 'Stáhnout'; dlBtn.style.cssText = btnStyle;
                 const doDownload = async () => {
                     let blob, fname;
                     if (source.script_cz) {
@@ -954,8 +954,8 @@ if (!window.CHJ_UNIVERSE_EXAMPLE) {
                 header.appendChild(dlBtn);
 
                 const ttsBtn = document.createElement('button');
-                ttsBtn.textContent = 'đź”Š'; ttsBtn.title = 'Přehrát'; ttsBtn.style.cssText = btnStyle;
-                const doTTS = () => { if (_mdTtsOn) { speechSynthesis.cancel(); _mdTtsOn = false; ttsBtn.textContent = 'đź”Š'; return; } const el = document.querySelector('.md-il'); if (!el) return; const txt = el.innerText.replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, '').trim(); if (!txt) return; _mdTtsOn = true; ttsBtn.textContent = 'âŹą'; speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(txt); u.lang = 'cs-CZ'; u.rate = 1.05; u.pitch = 1.1; const sv = () => { const cz = speechSynthesis.getVoices().find(v => /cs[-_]CZ/i.test(v.lang)); if (cz) u.voice = cz; }; sv(); if (!u.voice) speechSynthesis.addEventListener('voiceschanged', sv, { once: true }); u.onend = u.onerror = () => { _mdTtsOn = false; ttsBtn.textContent = 'đź”Š'; }; speechSynthesis.speak(u); };
+                ttsBtn.textContent = '🔊'; ttsBtn.title = 'Přehrát'; ttsBtn.style.cssText = btnStyle;
+                const doTTS = () => { if (_mdTtsOn) { speechSynthesis.cancel(); _mdTtsOn = false; ttsBtn.textContent = '🔊'; return; } const el = document.querySelector('.md-il'); if (!el) return; const txt = el.innerText.replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, '').trim(); if (!txt) return; _mdTtsOn = true; ttsBtn.textContent = 'âŹą'; speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(txt); u.lang = 'cs-CZ'; u.rate = 1.05; u.pitch = 1.1; const sv = () => { const cz = speechSynthesis.getVoices().find(v => /cs[-_]CZ/i.test(v.lang)); if (cz) u.voice = cz; }; sv(); if (!u.voice) speechSynthesis.addEventListener('voiceschanged', sv, { once: true }); u.onend = u.onerror = () => { _mdTtsOn = false; ttsBtn.textContent = '🔊'; }; speechSynthesis.speak(u); };
                 ttsBtn.addEventListener('click', doTTS);
                 ttsBtn.addEventListener('touchend', (e) => { e.preventDefault(); doTTS(); });
                 header.appendChild(ttsBtn);
