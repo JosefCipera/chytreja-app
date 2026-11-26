@@ -895,13 +895,13 @@ Authenticated user → 200 a token A + userId B → 403 nelze ověřit live bez 
 
 ### 6. Nový tester UID v TESTER_UIDS
 
-**Problém:** Nový tester account `e0ZYA3auBYUh9TOOtqQPqbkIcrJ2` (Tester 1) nebyl v `TESTER_UIDS` whitelist → Full Reset vracel `403` → orphan COMPLETED row přežil všechny UI resety → HOLD_TOO_EARLY při každém spuštění.
+**Problém:** Nový tester account Tester 1 nebyl v `TESTER_UIDS` whitelist → Full Reset vracel `403` → orphan COMPLETED row přežil všechny UI resety → HOLD_TOO_EARLY při každém spuštění.
 
 **Oprava:** Přidán do `TESTER_UIDS` jako Tester 1.
 
 **Commit:** `00f0ce1` · Soubor: `api/tester-reset.js`
 
-**Chráněné UID (nikdy nepřidat):** Josef `vPrm5PNzLWWWhi9sSwYVbkb9FaD3`, Kovářová (viz Supabase).
+**Chráněné účty (nikdy nepřidat):** Chráněný produkční účet Josef — nikdy nepřidávat do TESTER_UIDS a nikdy na něm nespouštět tester reset. Kovářová (viz Supabase).
 
 ---
 
@@ -997,13 +997,312 @@ S upstream evidence (PHYSICAL_DECONDITIONING aktivní): `evidence.length > 0` �
 
 ---
 
+## Práce z 2026-09-27
+
+### NBQ integration experiment — reverted
+
+#### Stav nasazení
+
+| Větev | Commit | Stav |
+|-------|--------|------|
+| `main` (live) | `b1b0682c` | ✅ Stabilní, nasazeno na `dev.iting.cz` |
+| Reverted | `b27e8692` | ❌ Revertováno — viz níže |
+| Izolovaný NBQ prototyp | `894497d5` | 📦 Zůstává v git historii — není nasazen, není v `main` |
+
+#### Co bylo otestováno
+
+Live TRACE (`dev.iting.cz`) potvrdil, že NBQ otázky se uživateli zobrazily a konverzace probíhala. Evidence extrahovaná z konverzace (`evidenceExtractor.js`) však **nikdy nevstoupila do Health Enginu**. Engine rozhodoval ze stavu před konverzací. Výsledná akce zůstala:
+
+```
+EXCESS_ADIPOSITY → RESISTANCE_TRAINING → Kontrolovaný sestup z bedny
+```
+
+#### Příčina revertu
+
+**Paralelní hypothesis model.** `hypothesisState.js` udržoval uzly `LOW_VO2MAX`, `OBESITY`, `SEDENTARY_LIFESTYLE_ROOT`, `INACTIVITY_ROOT` jako vlastní rozhodovací vrstvu mimo engine. `evidenceGate.js` hodnotil "dostatečnost evidence" nezávisle na engine `INFORMATION_NEEDS` a `fresh-decision` pipeline. Evidence extrahovaná z NBQ konverzace nikdy nepersistovala do DB → engine ji při `fetchHealthData()` nenašel.
+
+Porušené principy (viz `docs/CHJ-PRODUCT-ARCHITECTURE.md §0`):
+- **Princip 5:** Discovery hledá constraint v prostoru engine INFORMATION_NEEDS — NBQ hledal evidence v paralelním hypothesis prostoru
+- **Engine-first:** Jeden Health Engine jako jediný decision maker — NBQ byl druhý decision model
+- **Fresh decision:** Evidence musí vstoupit přes DB → engine — evidence zůstala v session/memory
+
+#### Testy — oprava tvrzení
+
+NBQ integrace (`b27e8692`) **nezpůsobila regresi** v orchestrator baseline. FO2 selhání (6 failed ze 519) jsou **pre-existing a nondeterministická** — způsobena race condition v DB cleanup při paralelním běhu testů; existovala před NBQ integrací i po revertu. Baseline `b1b0682c`: **513/519** (6 FO2 pre-existing).
+
+#### Co nebylo implementováno
+
+- **Variant 3** (engine-integrated NBQ bez paralelního modelu) nebyla schválena ani implementována — zůstala jako read-only architektonický návrh
+- **Alpha není připravena pro Tester #1** — dalším krokem je audit před jakýmkoliv nástrojem pro testující
+
+#### Další krok
+
+Read-only audit existujících engine `INFORMATION_NEEDS` (výstup `buildInformationNeeds()`) proti acceptance scénářům A–D. **Žádný nový mechanismus** dokud audit neprokáže konkrétní gap s MVP důkazem.
+
+### X5 — yes/no polarita při čtení evidence — ✅ CLOSED (`66c31b2`, PR #4, nasazeno `bfb3edd`)
+
+**Kontext:** Read-only audit acceptance scénářů A–D proti `docs/CHJ-MASTER-LOCK-2026-08-23.md` §13
+(dokumenty doplněny do repa v PR #3, `1136960`). X5 byla první reprodukovaná překážka scénáře A — Funkční síla.
+
+**Původní chyba (X5):**
+- Odpovědi na ano/ne otázky se ukládají do `user_health_profile.physical` buď kanonicky (`'yes'`, `'no'`, `true`…),
+  nebo jako surová odpověď uživatele — Guard C v orchestrátoru ukládá bootstrap odpověď doslovně (`"Ne."`, `"Ano."`).
+- `activation.js`, `inference.js` a `nextBestAction.js` porovnávaly pouze přesné kanonické tokeny.
+- Důsledky:
+  - `vstat_ze_zeme = "Ne."` neaktivovalo LOW_MUSCLE_STRENGTH,
+  - `recent_falls = "Ano."` neaktivovalo FALL_RISK; zároveň zmizel i FALL_RISK UNKNOWN, takže nahlášený pád se ztratil úplně.
+- Otázka se přitom považovala za zodpovězenou (`!= null`) a už se znovu nepoložila → evidence byla tiše ztracena.
+
+**Oprava:**
+- `api/engine/evidenceResolution.js`: nová čistá funkce `readYesNo(value)` → `'yes' | 'no' | null`. Úzká obecná polarita:
+  - `yes`: yes / ano / true / jo / boolean `true`,
+  - `no`: ne / false / 0 / nene / boolean `false` / číslo `0`,
+  - `no` jen jako přesný kanonický token; české „No.“ → `null`,
+  - tolerance velikosti písmen, okolních mezer a koncové interpunkce.
+- Volné věty se záměrně neinterpretují: „Upadla jsem“, „Nezvládnu“, „Nemůžu“, „Ano, ale jen s oporou“, „Spíš ne“, „Nevím“ → `null`.
+- Použito v:
+  - `activation.js`: `hasRecentFalls`, `isNeg` pro `vynest_nakup`, `zvednout_vnouce`, `vstat_ze_zeme`,
+  - `inference.js`: `isNeg` pro `balanc_jedna_noha`, `rovnovaha_zavrene_oci` a signál `recent_falls` pro GAIT_INSTABILITY,
+  - `nextBestAction.js`: `computeMobilityProfile().fall_history`.
+- Oprava je pouze na straně čtení: uložená data se nemigrují a opravené čtení pokryje i starší záznamy.
+- Beze změny zůstaly:
+  - model a priority: master slice, inferenční pravidla, intervention-map, pořadí NBA, DAILY_DECISION, Safety Gate,
+  - kontroly „zodpovězeno“ (`!= null`), `gait_stability` a zápisová cesta.
+- Žádný LOCKED soubor nebyl změněn.
+- Záměrný vedlejší efekt v NBA: uložené `'ne'`, `'0'` a `0` u `recent_falls` dávají nově `fall_history = NONE_REPORTED` (dříve `UNKNOWN`).
+
+**Commity / PR:**
+- `66c31b2` fix(engine): read yes/no evidence answers through one shared polarity reader (X5) — PR #4
+- merge do `main`: `bfb3edd`; Vercel `chytreja-app-develop` = „Deployment has completed“; debug overlay na `dev.iting.cz` potvrdil `commit: bfb3edd`
+
+**Testy:**
+- `scripts/test-yesno-polarity.mjs` (nový, bez DB): **70/70 PASS**; na původním kódu **39 FAIL**, což potvrzuje, že test chybu reprodukuje.
+  Pokrývá tabulku `readYesNo`, „Ne.“ → LOW_MUSCLE_STRENGTH MEASURED, „Ano.“ → FALL_RISK CONFIRMED, kanonické hodnoty beze změny,
+  volné a nejednoznačné věty → `null`, paritu celé pipeline (surová ≡ kanonická odpověď) a paritu NBA.
+- Regrese bez DB: gait-stability-resolution 29/29, system-constraint-readiness PASS, system-constraint-readiness-parity PASS,
+  domain-evidence-adapter 68/68, nbe-question-bridge 84/84, bridge-person-model-integration 132/132, person-model 86/86,
+  structured-fact-bridge 143/143.
+- Nespuštěno (chybí `.env.local` a `node_modules`): `test-health-event-adapter`, `test-orchestrator`, `test-nba-policy`, `test-nba-kovarova`.
+
+**Live test na `dev.iting.cz` (commit `bfb3edd`):**
+
+| Tok | Účet | Vstupy | Výsledek |
+|-----|------|--------|----------|
+| A — „Ne.“ na vstávání ze země | Tester 103 | úvodní věta → `72` → `Ne.` → `Ne.` → **`Ne.`** | **PASS** — aplikace: „Přibližně kolik hodin za běžný den prosedíš?“ (bootstrap nepokračoval na `vynest_nakup`). DB: `vstat_ze_zeme = "Ne."`, `recent_falls = "Ne."`, žádná neočekávaná data. Engine nad těmito daty: LOW_MUSCLE_STRENGTH MEASURED, REDUCED_FUNCTIONAL_RESERVE PREDICTED_CURRENT, constraint i leverage LOW_MUSCLE_STRENGTH, FALL_RISK žádný. |
+| B — „Ano.“ na nedávný pád | Tester 104 | úvodní věta → `72` → `Ne.` → **`Ano.`** | **PASS** — aplikace: „Zatím o tobě vím málo…“, otázka na vstávání ze země se neobjevila. DB: `recent_falls = "Ano."`. Engine nad těmito daty: FALL_RISK CONFIRMED (`evidence.direct` = `"Ano."`). |
+
+Stav uzlů u obou toků ověřen lokálním během čisté pipeline (kód shodný s `origin/main`) nad daty přečtenými z DB. `/api/engine-v1` na devu volán nebyl.
+
+**Co X5 NEUZAVÍRÁ:**
+- **Acceptance scénář A (Funkční síla) není hotový.** Funkční omezení nově mění model (constraint LOW_MUSCLE_STRENGTH), ale nevede ke konkrétní akci:
+  - LOW_MUSCLE_STRENGTH nemá mapování v `data/engine/intervention-map.json`,
+  - NBA proto skončí NOT_COMPUTED a DAILY_DECISION je ASK_BLOCKING bez otázky,
+  - otázku na hodiny sezení doplňuje orchestrátor jako fallback, ne engine z INFORMATION_NEEDS.
+- **Navazující mezera po potvrzeném pádu.** FALL_RISK CONFIRMED nemá v master slice navazující vazbu (CAUSES / CONTRIBUTES_TO),
+  takže nevznikne leverage ani NBA a uživatel po nahlášení pádu dostane obecné „Zatím o tobě vím málo…“.
+  Z pohledu bezpečnosti i UX je to slabé. Řešení vyžaduje produktové rozhodnutí; v rámci X5 se neřešilo.
+
+**Zjištění k testovacím účtům:**
+- **Full reset funguje jen pro UID v `TESTER_UIDS`** (`api/tester-reset.js`). Pro ostatní vrací 403 a nezapíše nic.
+  Seznam obsahuje Tester 0 a druhé UID. Druhé UID v allowlistu se nepodařilo přiřadit k dostupnému testovacímu účtu.
+  Tester 2 ani Tester 103 a 104 v seznamu nejsou.
+- **Full reset nemaže onboardingová data.**
+  - V `user_profiles` nuluje jen `birth_year`; `age`, `gender`, `height`, `weight` a `onboarding_completed` ponechá.
+  - Ponechá také `daily_checkin`, `doctor_notes`, `supplements`, `capacity` a `user_medications`.
+  - Vyplněný onboarding wizard (výška a váha) proto po resetu dál vytváří EXCESS_ADIPOSITY a bootstrap otázky se nespustí.
+    Reprodukováno na Testerovi 0: 165 cm / 86 kg → BMI 31,6 → okamžitě ACT.
+- **Spolehlivý čistý stav pro live test** = nový účet s celým onboardingem přeskočeným. Po přeskočení vznikne jen řádek profilu
+  s `onboarding_completed = true` bez demografie. Bez podpory Full resetu je nový účet použitelný jen pro jeden nezávislý testovací scénář.
+
+---
+
+## Práce z 28.–29. 9. 2026
+
+### PR #6 — mezidenní opakovací smyčka — ✅ CLOSED (`246bcd2c`, merge `79d76595`)
+
+**Oprava:** Po dokončení akce (Hotovo) vzniká `HOLD_DONE_TODAY` platný jen do konce dne, ne trvale.
+- Splnění akce se počítá po unikátních UTC dnech — engine tak rozlišuje "dnes hotovo" od "hotovo obecně".
+- Po `Hotovo` se `current_action_assignment` nastaví na `null` (`HOLD` stav ho neponechává), takže engine nezůstává zaseknutý na jedné dokončené instanci.
+- Následující UTC den se stejná intervence znovu nabídne jako `ACT` — opakovací smyčka pro pravidelné akce (např. denní procházka) tím funguje napříč dny, ne jen jednou.
+
+**Live test na `dev.iting.cz`:** Ověřeno tři dny po sobě (27., 28., 29. 9.) na stejném scénáři: „Jdi na procházku 20 minut" → Hotovo → aplikace bezprostředně zobrazí „Hotovo. Pro dnešek stačí. Výsledek budeme hodnotit až po několika opakováních." → při dalším dotazu tentýž den zobrazí „Pro dnešek stačí. Zítra pokračujeme." (bez tlačítek) → následující den znovu nabídne stejnou akci jako `ACT` s tlačítky → po opětovném Hotovo znovu správný `HOLD`. Mezidenní opakovací smyčka je LIVE PASS.
+
+### PR #7 — `waist_cm` datový kontrakt — ✅ CLOSED (`eab05bc4`, merge `a2d6bf0a`)
+
+**Chyba:** `daily_checkin.waist_cm` nikdy neexistoval jako sloupec (nikdy nemigrován), ale `api/engine/adapter.js` ho selektoval a `EVIDENCE_STORAGE_REGISTRY` do něj zapisoval. SELECT proto vracel Supabase 400, a protože se v `adapter.js` výsledek destrukturoval bez kontroly `error`, spadl tím beze stopy **celý** check-in dotaz — engine ztrácel váhu, aktivitu i stres, ne jen obvod pasu.
+
+**Oprava:**
+- `waist_cm` odstraněn ze SELECTu `daily_checkin` i z mrtvého per-řádkového mapování.
+- `waist_cm` se nově ukládá do existujícího `user_health_profile.lifestyle.waist_cm` (stejný JSONB klíč, který už zapisuje onboarding) — přidán `upsertLifestyle()` handler podle vzoru `upsertPhysical()`.
+- `adapter.js` už `lifestyle.waist_cm` četl do observation beze změny — engine tuto hodnotu vidí okamžitě po uložení, otázka na obvod pasu se po zodpovězení neopakuje.
+- Žádná migrace, žádná změna `user_biometrics`.
+
+**Testy:** nový cílený `scripts/test-waist-evidence-relocation.mjs` 28/28 PASS; regrese `test-onboarding-contract.mjs` 28/28, `test-domain-evidence-adapter.mjs` 68/68, `test-nbe-question-bridge.mjs` 84/84, `test-health-event-adapter.mjs` (live DB) 83/83.
+
+**Live log na `dev.iting.cz` (29. 9., Supabase edge_logs):** poslední skutečný (ne testovací) běh potvrdil dotaz
+```
+GET /rest/v1/daily_checkin?select=weight_kg,energy,sleep_hours,stress,movement_level,date&...
+```
+bez `waist_cm`, **HTTP 200**, následovaný úspěšnou celou orchestrate sekvencí (`user_profiles`, `user_health_profile`, `action_assignments`, `user_constraints` — vše `200`). Check-in data jsou enginu znovu dostupná.
+
+### Uzavřeno — další krok
+
+PR #6 i PR #7 jsou uzavřené nálezy, oba potvrzené živým provozem na `dev.iting.cz`. Dalším hlavním krokem není další bugfix v datovém kontraktu, ale Founder tok:
+
+```
+LOW_MUSCLE_STRENGTH → FUNCTIONAL_STRENGTH_TRAINING → bezpečná konkrétní akce → opakování → kontrolní měření
+```
+
+---
+
+## Práce z 2026-11-17 (a předchozí launcher testovací session)
+
+> Mezi touto a předchozí DEVLOG položkou (28.–29. 9.) proběhlo značné množství
+> práce zachycené jen v git historii, ne tady — mj. Landing V2 / Alpha
+> onboarding flow, Person Model / Structured Fact Bridge / NBQ prototyp,
+> System Constraint Readiness. Pro detaily viz `git log --oneline`, commit
+> zprávy nesou plné zdůvodnění. Tahle položka shrnuje jen to, co bylo přímo
+> vidět a opravováno v nejnovější živé testovací session na `/launcher`.
+
+### Vizuální sjednocení `/launcher` s referenčním vzhledem `/app` — ✅ CLOSED
+Logo/battery rozměry, barva textu (jednotná tlumená `#8ba8b8` napříč ACT/ASK/
+HOLD/EXPLAIN místo více odstínů), zmenšený strop velikosti písma na desktopu,
+focus timing bug (`$input.focus()` volaný, dokud byl input ještě `disabled`
+od `setLoading(true)` — kurzor proto naskakoval jen při úplně prvním zobrazení,
+ne na další otázky).
+
+### Onboarding sjednocení — ✅ CLOSED
+`/launcher` a `/app` sdílí jeden `user-data-panel.js` (5 tabů), `.physical`
+nahradilo starý `.capacity` split.
+
+### Bootstrap NBE v2 — pohlaví, clinical_context repeat bug — ✅ CLOSED
+- Přidáno `person_sex` jako bootstrap otázka (priorita 2, hned po věku) —
+  engine CV riziko ≥65 let dřív nikdy nevidělo pohlaví, pokud uživatel
+  neotevřel Vstupní data ručně.
+- **`clinical_context` repeat bug** (otázka "Léčíš se s něčím…" se vracela i
+  po zodpovězení) — dvě vrstvy stejné chyby: (1) `skipped_bootstrap_types` se
+  do `session_updates` propagoval jen při kolizi s enginovým pickem, ne vždy;
+  (2) označení "vyřízeno" bylo schované za `adapterType === 'ANSWER_TO_EVIDENCE_QUESTION'`,
+  což je nedeterministické (klasifikátor může vrátit `GENERAL_HEALTH_REQUEST`
+  přímo) — opraveno přesunem označení mimo klasifikátor-závislou větev.
+- **Skutečný kořen posledního výskytu:** `api/engine/adapter.js` četl
+  `lifestyle.sedentary` (starý klíč), zatímco UI po dřívější opravě ukládá
+  `lifestyle.sedentary_work` — `PHYSICAL_INACTIVITY` se tak nikdy neaktivovala,
+  `nodeStates` zůstávaly prázdné, engine opakovaně syntetizoval bootstrap
+  otázky místo jednou postoupit k akci.
+
+### WHY/mechanismus texty — zkrácení a konkretizace — ✅ CLOSED
+- `buildWhyResponse` už nelepí univerzální "Cílem je podpořit…" větu na konec
+  každé odpovědi (beze změny obsahu, jen délky).
+- `vstat_ze_zeme`/`vynest_nakup`/`zvednout_vnouce` měly identickou generickou
+  evidence frázi — teď má každá vlastní konkrétní větu, takže návaznost na
+  nabízenou akci dává smysl.
+- "svalová síla" (odborný termín) → "síla" v mechanismus textu.
+
+### BMI/obvod pasu UI — pas jako jediný verdikt — ✅ CLOSED
+BMI a poměr pas/výška si mohly odporovat (BMI "Nadváha", pas "OK" u
+svalnatější postavy, nebo naopak) bez návodu, čemu věřit. BMI je teď čisté
+číslo bez štítku; obvod pasu má WHO 3stupňový verdikt (normální/zvýšené/
+podstatně zvýšené riziko, 94/102 cm muži, 80/88 cm ženy) jako jediný zdroj
+rizikového hodnocení v tomhle panelu.
+
+### `EXCESS_ADIPOSITY` aktivace na samotném obvodu pasu — ✅ CLOSED
+Dřív aktivovalo výhradně BMI ≥ 25; člověk s normálním BMI ale rizikovým
+pasem ("skinny fat") nikdy nedostal aktivaci vůbec. Teď aktivuje i obvod pasu
+samotný (stejné WHO prahy), nezávisle na BMI.
+
+### Bezpečnostní scénáře — test suite založena
+`scripts/test-safety-scenarios.mjs` — rostoucí sada (ne jednorázový test),
+začátá po otázce "co když má člověk omezení s chůzí a sedavost hned spustí
+akci?". Ověřeno proti reálnému enginu: samotný pád nerestricts chůzi (jen
++1 k prahu 2 pro `GAIT_INSTABILITY`), skutečný signál nestability chůze ano.
+
+### Full Reset — doplněny chybějící pole — ✅ CLOSED
+`gender`, `height`, `weight`, `age` (vedle `birth_year`) se dřív nemazaly —
+řádek v tabulce Open Issues níže "Full reset nemaže onboardingová data" je
+tímto vyřešen pro tyhle 4 sloupce.
+
+### Dokumentace — úklid
+`docs/` mělo 20+ jednorázových checkpoint/QA/legal souborů bez jasné role.
+Přesunuty do `docs/archive/`. Nový `docs/BACKLOG.md` — jedno místo pro
+otevřené produktové otázky místo dalších jednorázových souborů.
+
+---
+
+## Práce z 2026-11-23/24
+
+### TOC Výroba — oživení, mojibake fix, přenos TOC/Launcher principů na novou doménu
+Opraven mojibake (dvojí kódování UTF-8→cp1250→UTF-8) v `app/toc-vyroba.html` a
+`app/toc-nastaveni.html`, který mimo jiné rozbíjel samotnou `<script>` syntaxi
+a appka se zasekávala na "NAČÍTÁM DATA…" natrvalo. Ověřeno proti reálným datům
+(`demo-user-123`). Drobné UI opravy v `app/launcher.html` (mezery logo/baterie,
+pořadí text→tlačítka po dokončení psaní i mluvení, viditelnost "Doporučení
+vychází z..." patičky).
+
+### Desetiboj — 9/10 → 10/10 otázek zapojeno do enginu
+`otevrit_zavarovacku` a `kufr_do_police` (ruce/rameno) nově spouští
+`GRIP_STRENGTH_TRAINING` namísto univerzálního vstávání ze židle — ale **jen
+když je deficit čistě rukou** (žádná nohy/záda evidence současně); jinak
+vyhrává nohy jako bezpečnostně důležitější. `vstat_ze_zidle` a
+`skocit_dopadnout` (dřep, seskok/dopad) přidány do stejné skupiny jako nohy.
+`vyjit_4_patra`/`rychla_chuze` (VO2max self-report) přidány jako podpůrná
+evidence do `PHYSICAL_INACTIVITY`. Nová DB akce `grip_squeeze_supported`
+vyžaduje ruční spuštění `migrations/20261123_grip_strength_training.sql`
+v Supabase SQL Editoru (hotovo 2026-11-23).
+
+Opraven i potvrzený bug: "Proč" text pro `zvednout_vnouce` tvrdil "bez
+bolesti", i když se na bolest nikdo neptal (`orchestrator.js:1128`) — viz
+`docs/BACKLOG.md` pro zbývající (neopravené) nálezy ze stejné session
+(SCOPE_UNCLEAR recovery → SCOPE_HELP, chybějící "Chceš zhubnout" potvrzení
+cíle).
+
+### `test` branch — obnovena ztracená návaznost na `main` (git history incident)
+**Nález:** `git merge-base origin/main origin/test` nevracel nic — `main`
+(64 commitů) a `test` (2734 commitů) neměly **žádného společného předka**,
+přestože obsahově vypadaly podobně (337 souborů v `app/`, stejný
+`CLAUDE.md`). Normální `git merge`/`git push origin test` by proto selhalo
+nebo vytvořilo nesmyslný diff.
+
+**Příčina:** `main` byl v nějakém okamžiku po 28. 8. 2026 skutečně přepsán
+(git history rewrite), aby se z historie odstranily commity s uniklým
+Supabase `service_role` JWT (`6b1e476`, `0956e76`, `462994b`, `e814e27`) —
+viz P0 incident výše ("Otevřené... Git history rewrite... deferred").
+Přepis proběhl později a nebyl zapsán do DEVLOGu (stejný vzorec jako jinde v
+tomhle souboru: "značné množství práce zachyceno jen v git historii").
+`test` nebyl přepisu podroben, takže zůstal viset na staré (teď jinde
+neexistující) historii — proto nulový merge-base.
+
+**Riziko:** nízké. Unikátní klíč byl rotován a legacy JWT deaktivován už
+28. 8. 2026 (viz výše) — stará historie na `test` neobsahovala živý secret,
+jen mrtvý.
+
+**Oprava (2026-11-24):** `git push origin main:test --force` — `test` teď
+ukazuje na identický commit jako `main` (`ea99833`). Ztratila se tím vlastní
+(stará, nesouvisející) historie `test`, což je žádoucí — byl to ostatně
+důvod, proč historie `main` byla přepsána.
+
+**Poučení pro příště:** pokud `git merge-base` mezi dvěma deploy-větvemi
+(main/test/production/demo) nic nevrátí, nejde o běžné rozejití — jde o
+pozůstatek historického přepisu. Neřešit mergem; ověřit, která větev má
+"čistou" (aktuální) historii, a tu druhou na ni force-updatovat, ne naopak.
+
+---
+
 ## Open issues / Next
 
 | Priorita | Issue | Poznámka |
 |----------|-------|----------|
+| P1 QA | Read-only audit engine INFORMATION_NEEDS vs. acceptance scénáře A–D | ✅ Proveden 2026-09-27 proti Master Lock §13; první překážka X5 opravena (PR #4) — zbývající nálezy viz řádky níže |
+| ✅ CLOSED (2026-11-17) | ~~Scénář A — funkční omezení nevede k akci~~ | Ověřeno přímo v produkční DB (`pionxzqtxcughvfbgadi`): řádek `sit_to_stand_supported` existuje v `longevity_actions`, `active=true`, přesně podle `20260929_functional_strength_training.sql`. Migrace tedy proběhla. `test-functional-strength-training-e2e.mjs` nelze spustit v tomhle prostředí (chybí `.env.local`/Supabase credentials) — živé chování na `dev.iting.cz` i dnešní live testy (sit-to-stand akce se reálně nabízela) toto ale nezávisle potvrzují. |
+| P1 Data quality | `action_assignments.selected_leverage_node` je v produkci vždy `'UNKNOWN'` | Nález z C3 analýzy (2026-09-29): `orchestrator.js:buildEvent`/`buildSessionUpdates` nikdy nepropaguje leverage node z `nextBestAction.js`/`dailyDecision.js` do event payloadu → `healthEventAdapter.js:persistActionAssignment` vždy spadne na literal `'UNKNOWN'`. Důsledek: `adherence.js:findIntervention` (globální, ne leverage-scoped lookup) + `computeInterventionExposure` (group by `intervention_id` bez `leverage_node_id`) už dnes tiše slučují Feedback Loop v0.1 tracking mezi leverage nodes, které sdílí stejné intervention id (`RESISTANCE_TRAINING`: `PHYSICAL_INACTIVITY` vs `EXCESS_ADIPOSITY`; `AEROBIC_TRAINING` stejně). Oprava vyžaduje propagaci `leverage_node_id` přes `nextBestAction.js` (LOCKED) → `dailyDecision.js` (LOCKED) → `orchestrator.js` (LOCKED) → `adherence.js`, tedy produktové rozhodnutí, ne C3-scope fix. `FUNCTIONAL_STRENGTH_TRAINING` (C3) tomu nepodléhá — má unikátní id, žádná kolize dnes nehrozí. |
+| P1 Safety/UX | Odpověď po potvrzeném pádu | FALL_RISK CONFIRMED → žádná leverage → „Zatím o tobě vím málo…“; vyžaduje produktové rozhodnutí |
+| ✅ CLOSED (2026-11-17) | ~~Full reset nemaže onboardingová data~~ | `age`/`gender`/`height`/`weight` teď mažou na `null` (viz Práce z 2026-11-17). Zbývá: funguje jen pro `TESTER_UIDS` — nové testovací účty stále nelze resetovat. |
+| P2 | Scénář B — NBE nepředběhne lifestyle akci | rozpor Master Lock §13 B se zamčeným prioritním řetězcem DAILY_DECISION; produktové rozhodnutí |
+| P2 | Scénář C — léky se v enginu nečtou | `clinicalHistory.medications` nevyužity; nový mechanismus = produktové rozhodnutí |
+| P3 | Scénář D — pořadí akcí při úplné shodě kandidátů | `fetchActionPool` bez ORDER BY + NBA tie → `action_id` závisí na pořadí řádků DB (label zatím shodný) |
 | P1 UX | Tester tools v avatar menu bez `?tester=1` | Whitelistovaný tester by měl vidět Full reset automaticky po auth; potřeba `GET /api/tester-check` nebo inline UID check po Firebase auth |
-| P1 QA | Orchestrator 15 known baseline failures (240/255) | Prověřit: jsou to skutečné N/O edge cases nebo latentní bugy? Zdokumentovat konkrétní scénáře. |
-| Tech debt | `README.md` zastaralý | Popisuje GPT-4o-mini + vis-network epoch (Q1 2026); určen k pozdější aktualizaci — neodráží současný stack |
+| P1 QA | Orchestrator FO2 failures (6/519 pre-existing, nondeterministická) | Race condition v DB cleanup; zdokumentovat a oddělit od funkčních regresí |
+| ✅ CLOSED (2026-11-17) | ~~`README.md` zastaralý~~ | Přepsán — aktuální stack, prostředí, orientace na canonical docs. |
 | Tech debt | TRACE log v `api/engine/adapter.js` | `fetchActionAssignments` loguje diagnostic trace (`[ORCHESTRATE] loaded_action_assignments=...`) — bylo záměrné pro root-cause analýzu, může být odstraněno |
 | Budoucí | Orchestrator `USER_PREFERENCE` persistence | Zachyceno, ale session neukládá (záměr v0.1); v0.2 by mělo persistovat do DB |
 | Budoucí | Wearables integrace (Fáze 4) | Oura, Apple Health, Garmin — viz `docs/archive/roadmap.md` |

@@ -110,3 +110,39 @@ export function isEvidenceResolved(obs_type, clinicalHistory) {
 
   return ea[obs_type] != null;
 }
+
+// ── Yes/no polarity read contract ─────────────────────────────────────────────
+// Answers to yes/no evidence questions (vstat_ze_zeme, recent_falls, …) reach
+// user_health_profile.physical either as canonical tokens ('yes', 'no', true …)
+// or as the raw user reply ("Ne.", "Ano") — both are persisted as-is.
+// readYesNo() gives activation / inference / NBA one shared reading of that value.
+//
+// Deliberately narrow: only generic polarity tokens are recognized.
+// Question-specific sentences ("Upadla jsem", "Nezvládnu", "Nemůžu") and
+// compound or hedged replies ("Ano, ale jen s oporou", "Spíš ne", "Nevím")
+// return null — the engine must not guess polarity from free text.
+//
+// "no" is accepted only as the exact canonical token (backward compatibility).
+// Czech "No." / "No!" / "No" usually means "yes" colloquially → null.
+
+const YES_TOKENS = new Set(['yes', 'ano', 'true', 'jo']);
+const NO_TOKENS  = new Set(['ne', 'false', '0', 'nene']);
+
+/**
+ * Returns 'yes' | 'no' | null for a stored yes/no evidence value.
+ * null = not a recognizable generic yes/no answer (no state is derived from it).
+ */
+export function readYesNo(value) {
+  if (value === true)  return 'yes';
+  if (value === false) return 'no';
+  if (value === 0)     return 'no';
+  if (typeof value !== 'string') return null;
+
+  const trimmed = value.trim();
+  if (trimmed === 'no') return 'no';
+
+  const token = trimmed.replace(/[.!?…]+$/, '').trim().toLowerCase();
+  if (YES_TOKENS.has(token)) return 'yes';
+  if (NO_TOKENS.has(token))  return 'no';
+  return null;
+}

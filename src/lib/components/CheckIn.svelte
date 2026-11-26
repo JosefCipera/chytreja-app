@@ -1,4 +1,6 @@
 <script>
+  import { authFetch } from '../authFetch.js';
+
   let { userId, onComplete = null } = $props();
 
   let energie   = $state(3);
@@ -13,7 +15,7 @@
     saving = true;
     error  = null;
     try {
-      const res = await fetch('/api/user?action=readiness', {
+      const res = await authFetch('/api/user?action=readiness', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({

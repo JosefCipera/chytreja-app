@@ -43,6 +43,7 @@ import { createClient } from '@supabase/supabase-js';
 import { runEngine }           from './engine.js';
 import { computeDailyDecision } from './dailyDecision.js';
 import { mapDiagnosis }         from './adapter.js';
+import { readYesNo }            from './evidenceResolution.js';
 
 // ── EVIDENCE_STORAGE_REGISTRY ─────────────────────────────────────────────────
 // Deklarativní mapping: evidence_type / obs_type → canonical DB target.
@@ -55,12 +56,27 @@ export const EVIDENCE_STORAGE_REGISTRY = {
   vynest_nakup:          { table: 'physical', key: 'vynest_nakup' },
   zvednout_vnouce:       { table: 'physical', key: 'zvednout_vnouce' },
   vstat_ze_zeme:         { table: 'physical', key: 'vstat_ze_zeme' },
+  otevrit_zavarovacku:   { table: 'physical', key: 'otevrit_zavarovacku' },
+  kufr_do_police:        { table: 'physical', key: 'kufr_do_police' },
+  vstat_ze_zidle:        { table: 'physical', key: 'vstat_ze_zidle' },
+  skocit_dopadnout:      { table: 'physical', key: 'skocit_dopadnout' },
+  vyjit_4_patra:         { table: 'physical', key: 'vyjit_4_patra' },
+  rychla_chuze:          { table: 'physical', key: 'rychla_chuze' },
   gait_stability:        { table: 'physical', key: 'gait_stability' },
+  gait_instability_reported: { table: 'physical', key: 'gait_instability_reported' },
   balanc_jedna_noha:     { table: 'physical', key: 'balanc_jedna_noha' },
   rovnovaha_zavrene_oci: { table: 'physical', key: 'rovnovaha_zavrene_oci' },
   sedentary_hours_day:   { table: 'physical', key: 'sedentary_hours_day' },
   fatigue_context:       { table: 'physical', key: 'fatigue_context' },
 
+  // Self-reported upper pressure; one reading does not confirm hypertension.
+  bp_systolic: { table: 'physical', key: 'bp_systolic', tracks_availability: true, evidence_kind: 'RAW_VALUE',
+    parse: value => {
+      const match = String(value).trim().match(/^(\d{2,3})(?:\s*\/\s*\d{2,3})?$/);
+      const n = match ? Number(match[1]) : NaN;
+      return Number.isFinite(n) && n >= 60 && n <= 250 ? n : null;
+    },
+  },
   // PATH Discovery evidence (TESTER 0.1) — raw scalars in user_health_profile.physical
   weekly_aerobic_activity_days: { table: 'physical', key: 'weekly_aerobic_activity_days' },
   exertional_dyspnea:           { table: 'physical', key: 'exertional_dyspnea' },
@@ -87,9 +103,14 @@ export const EVIDENCE_STORAGE_REGISTRY = {
   // UNIQUE (user_id, date, universe) — upsert merges into today's row
   activity_level:        { table: 'daily_checkin', key: 'movement_level' },
   weight_kg:             { table: 'daily_checkin', key: 'weight_kg' },
-  waist_cm:              { table: 'daily_checkin', key: 'waist_cm' },
   stress_1_5:            { table: 'daily_checkin', key: 'stress' },
   sleep_hours:           { table: 'daily_checkin', key: 'sleep_hours' },
+
+  // ── Waist → user_health_profile.lifestyle JSONB ────────────────────────────
+  // daily_checkin has no waist_cm column (never migrated) — canonical store is
+  // lifestyle, the same JSONB key onboarding already writes and adapter.js
+  // already reads (adapter.js: lifestyle.waist_cm → observation obs_type 'waist_cm').
+  waist_cm:              { table: 'lifestyle', key: 'waist_cm' },
 
   // ── Lab measurements → user_health_profile.labs JSONB ────────────────────
   lab_ldl:               { table: 'labs', key: 'ldl' },
@@ -158,6 +179,8 @@ export const EVIDENCE_STORAGE_REGISTRY = {
   // write_if_null_only: true — never overwrite an existing birth_year.
   // transform: 'age_to_birth_year' — converts age answer (e.g. 58) → birth year (e.g. 1968).
   birth_year: { table: 'user_profiles', key: 'birth_year', write_if_null_only: true, transform: 'age_to_birth_year' },
+  // person_sex: narrow unlock mirroring birth_year — bootstrap question, writes user_profiles.gender.
+  person_sex: { table: 'user_profiles', key: 'gender', write_if_null_only: true, transform: 'parse_gender' },
 };
 
 // ── Body region normalization ─────────────────────────────────────────────────
@@ -230,11 +253,41 @@ async function upsertPhysical(supabase, userId, key, value) {
   if (readErr) throw new Error(`upsertPhysical read: ${readErr.message}`);
 
   const merged = { ...(row?.physical || {}), [key]: value };
+  // An explicit current stable-walking statement (report=false) corrects an
+  // older negative walking answer too. A new adverse/intermittent report is
+  // not an answer to the ordinary-walking question, and a positive answer
+  // to that question alone never retracts the independent adverse report.
+  // Unknown answers are not clearance and do not erase existing facts.
+  if (key === 'gait_instability_reported' && readYesNo(value) === 'no') {
+    merged.gait_instability_reported = false;
+    merged.gait_stability = true;
+  }
   const { error } = await supabase
     .from('user_health_profile')
     .upsert({ user_id: userId, physical: merged }, { onConflict: 'user_id' });
 
   if (error) throw new Error(`upsertPhysical write: ${error.message}`);
+  return null;
+}
+
+// JSONB read-merge-write: user_health_profile.lifestyle
+// Mirrors upsertPhysical() — same table, different JSONB column. Canonical store
+// for waist_cm (onboarding already writes here; adapter.js already reads it).
+async function upsertLifestyle(supabase, userId, key, value) {
+  const { data: row, error: readErr } = await supabase
+    .from('user_health_profile')
+    .select('lifestyle')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (readErr) throw new Error(`upsertLifestyle read: ${readErr.message}`);
+
+  const merged = { ...(row?.lifestyle || {}), [key]: value };
+  const { error } = await supabase
+    .from('user_health_profile')
+    .upsert({ user_id: userId, lifestyle: merged }, { onConflict: 'user_id' });
+
+  if (error) throw new Error(`upsertLifestyle write: ${error.message}`);
   return null;
 }
 
@@ -354,9 +407,33 @@ async function upsertUserProfile(supabase, userId, key, value) {
 }
 
 // INSERT into action_assignments
-async function persistActionAssignment(supabase, userId, payload, status) {
+// Exported so a lighter caller (e.g. the "volná akce" secondary-action flow)
+// can persist a completion/skip WITHOUT applyHealthEvent's full runEngine()
+// re-evaluation — same dedupe guards, no side effect on the main day's
+// session state (current_action_assignment, pending_question, etc.).
+export async function persistActionAssignment(supabase, userId, payload, status) {
   if (!payload.action_id)        throw new Error('ACTION event: missing action_id');
   if (!payload.intervention_id)  throw new Error('ACTION event: missing intervention_id');
+  // Retrying a request whose response was lost must not record the same skip twice.
+  if (status === 'SKIPPED') {
+    const { data: skipped, error: readError } = await supabase.from('action_assignments')
+      .select('id').eq('user_id', userId).eq('status', 'SKIPPED').eq('action_id', payload.action_id)
+      .eq('assigned_date', new Date().toISOString().slice(0, 10)).limit(1).maybeSingle();
+    if (readError) throw new Error(`read prior skip: ${readError.message}`);
+    if (skipped) return 'ACTION_SKIPPED: action already skipped today — no additional skip persisted';
+  }
+  // A restored/stale client assignment must not create a second completion of the
+  // SAME action today. Scoped by action_id (like the SKIPPED guard above) so a
+  // genuinely different action (e.g. a secondary/supplementary one) can still be
+  // persisted and reach INTERVENTION_EXPOSURE for its own evaluation.
+  if (status === 'COMPLETED') {
+    const { data: completed, error: readError } = await supabase.from('action_assignments')
+      .select('id').eq('user_id', userId).eq('status', 'COMPLETED').eq('action_id', payload.action_id)
+      .eq('assigned_date', new Date().toISOString().slice(0, 10)).limit(1).maybeSingle();
+    if (readError) throw new Error(`read daily completion: ${readError.message}`);
+    if (completed) return 'ACTION_COMPLETED: action already completed today — no additional completion persisted';
+  }
+
 
   const { error } = await supabase
     .from('action_assignments')
@@ -412,10 +489,11 @@ async function routeAnswer(supabase, userId, payload) {
     }
     case 'constraints': return upsertConstraint(supabase, userId, entry.key, value, 'injury');
     case 'daily_checkin': return upsertDailyCheckin(supabase, userId, entry.key, value);
+    case 'lifestyle':   return upsertLifestyle(supabase, userId, entry.key, value);
     case 'labs':        return upsertLab(supabase, userId, entry.key, value);
     case 'user_profiles': {
       // Narrow unlock: supports bootstrap evidence_types that write to user_profiles.
-      // Currently: birth_year only (transform: age_to_birth_year).
+      // Currently: birth_year (transform: age_to_birth_year), person_sex (transform: parse_gender).
       let finalValue = value;
       if (entry.transform === 'age_to_birth_year') {
         const age = parseInt(String(value ?? '').replace(',', '.').trim(), 10);
@@ -423,6 +501,12 @@ async function routeAnswer(supabase, userId, payload) {
           return `ANSWER: birth_year transform failed — invalid age '${value}'`;
         }
         finalValue = new Date().getFullYear() - age;
+      }
+      if (entry.transform === 'parse_gender') {
+        const raw = String(value ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+        if (/muz/.test(raw)) finalValue = 'male';
+        else if (/zena/.test(raw)) finalValue = 'female';
+        else return `ANSWER: person_sex transform failed — invalid value '${value}'`;
       }
       return upsertUserProfile(supabase, userId, entry.key, finalValue);
     }
@@ -439,6 +523,7 @@ async function routeMeasurement(supabase, userId, payload) {
 
   switch (entry.table) {
     case 'daily_checkin': return upsertDailyCheckin(supabase, userId, entry.key, value);
+    case 'lifestyle':      return upsertLifestyle(supabase, userId, entry.key, value);
     case 'labs':          return upsertLab(supabase, userId, entry.key, value);
     default:
       return `NEW_MEASUREMENT: obs_type '${obs_type}' → table '${entry.table}' is not a time-series target`;
@@ -498,15 +583,66 @@ function buildDomainResponse(engineResult) {
     daily_decision,
     explanation_context: {
       system_constraint: engineResult.system_constraint?.selected ?? null,
-      system_leverage:   engineResult.system_leverage?.selected   ?? null,
+      system_leverage:   (engineResult.action_leverage ?? engineResult.system_leverage)?.selected ?? null,
+      system_priority:   engineResult.system_leverage?.selected ?? null,
+      action_fallback:   engineResult.action_fallback ?? null,
       action_context:    engineResult.next_best_action            ?? null,
       evidence_context:  (engineResult.information_needs ?? []).slice(0, 3),
+      // Read-only provenance for WHY, from the exact node selected by the engine.
+      reported_gait_evidence: (engineResult.node_states ?? [])
+        .find(node => node.node_id === 'GAIT_INSTABILITY')?.evidence ?? null,
+      leverage_evidence: (engineResult.node_states ?? [])
+        .find(node => node.node_id === (engineResult.action_leverage ?? engineResult.system_leverage)?.selected?.node_id)?.evidence ?? null,
+      // Additive, read-only exposure of already-computed causal reach — does not
+      // change system_leverage selection or any other decision. See buildWhyResponse's
+      // sibling builders (buildTrajectoryResponse / buildMechanismResponse) in orchestrator.js.
+      causal_context:    (engineResult.action_leverage ?? engineResult.system_leverage)?.selection_basis?.causal_reach ?? null,
+      // Additive, read-only: which of the two existing Goal Gateways (CARDIOVASCULAR_DISEASE /
+      // LOSS_OF_FLOOR_RISE_ABILITY — see api/engine/goalGateways.js) the leverage node's own
+      // causal path actually reaches. computeGoalImpact() in systemConstraint.js already
+      // computes this generically for every node_state candidate; this just reads the entry
+      // that matches the leverage node instead of only the system_constraint winner.
+      goal_gateway_context: (engineResult.system_constraint?.candidates ?? [])
+        .find(c => c.node_id === (engineResult.action_leverage ?? engineResult.system_leverage)?.selected?.node_id)
+        ?.goal_impact ?? null,
     },
   };
 }
 
+export { buildDomainResponse as _buildDomainResponse_test };
+
 function makeResult(persistence_status, engine_called, domain_response, warnings = [], error = null) {
   return { persistence_status, engine_called, domain_response: domain_response ?? null, warnings, error };
+}
+
+// Explicit supported intent, not a symptom or a clinical conclusion.
+// Full-string matching keeps negation, quoted wishes and mixed medical inputs out.
+//
+// MUSCLE_RESERVE: a wish to increase muscle mass/size. This is a goal, not a
+// reported deficit \u2014 it must never be read as LOW_MUSCLE_STRENGTH evidence
+// (that requires an actual functional test answer, see activation.js). The
+// relation to longevity goes through muscle/functional reserve; presentation
+// (orchestrator.js) states that relation explicitly rather than silently
+// substituting an unrelated action.
+// LONGEVITY_INTENT: a direct statement of interest in long-term health, healthy
+// ageing or keeping functional capacity (self-sufficiency) \u2014 the CHJ mission
+// itself, not a tangential goal. Several phrasings are recognized (not one
+// fixed sentence), still full-string matched so a negated, quoted, third-person
+// or compound statement is excluded by the same anchoring as WEIGHT_LOSS/
+// MUSCLE_RESERVE. Must never create a constraint, deficit or action by itself
+// (orchestrator.js only prefixes the unchanged decision with an acknowledgment).
+const LONGEVITY_INTENT_RE = /^(?:chci|chtel bych|chtela bych) (?:(?:se )?dozit (?:\d{2,3} let )?ve zdravi(?: jako (?:japonci|japonky))?|(?:se )?dozit vysokeho veku ve zdravi|zit dlouho(?: a zdrave)?|dlouho zit(?: ve zdravi)?|zdrave (?:zestarnout|starnout)|zustat sobestacn[ya](?: co nejdele)?|byt (?:fit|zdravy|zdrava)(?: a fit)? i v \d{2,3} letech|se zamerit na dlouhovekost|resit dlouhovekost)$/;
+
+export function parseSupportedGoal(text) {
+  if (typeof text !== 'string') return null;
+  const normalized = text.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[.!?]+$/, '').trim();
+  if (/^(?:chci|chtel bych|chtela bych) (?:zhubnout|snizit (?:vahu|hmotnost))$/.test(normalized))
+    return 'WEIGHT_LOSS';
+  if (/^(?:chci|chtel bych|chtela bych) (?:mit vetsi svaly|zvetsit svalovou hmotu|zvetsit svalovou hmotnost|nabrat svaly|nabrat svalovou hmotu)$/.test(normalized))
+    return 'MUSCLE_RESERVE';
+  if (LONGEVITY_INTENT_RE.test(normalized))
+    return 'LONGEVITY_INTENT';
+  return null;
 }
 
 // ── Main export ───────────────────────────────────────────────────────────────
@@ -537,11 +673,13 @@ export async function applyHealthEvent(userId, event) {
     let warning;
     switch (event_type) {
       case 'ACTION_COMPLETED':
-        await persistActionAssignment(supabase, userId, payload || {}, 'COMPLETED');
+        warning = await persistActionAssignment(supabase, userId, payload || {}, 'COMPLETED');
+        if (warning) warnings.push(warning);
         break;
 
       case 'ACTION_SKIPPED':
-        await persistActionAssignment(supabase, userId, payload || {}, 'SKIPPED');
+        warning = await persistActionAssignment(supabase, userId, payload || {}, 'SKIPPED');
+        if (warning) warnings.push(warning);
         break;
 
       case 'ANSWER_TO_EVIDENCE_QUESTION':
@@ -576,6 +714,13 @@ export async function applyHealthEvent(userId, event) {
       case 'GENERAL_HEALTH_REQUEST': {
         const text = payload?.text || '';
         if (!text) break;
+
+        if (parseSupportedGoal(text)) {
+          const { error } = await supabase.from('user_health_profile')
+            .upsert({ user_id: userId, goal_text: text }, { onConflict: 'user_id' });
+          if (error) throw new Error(`persist goal: ${error.message}`);
+          break;
+        }
 
         const { data: hpRow } = await supabase
           .from('user_health_profile')
@@ -642,3 +787,4 @@ export async function applyHealthEvent(userId, event) {
     return makeResult('error', false, null, warnings, err.message);
   }
 }
+

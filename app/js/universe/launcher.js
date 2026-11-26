@@ -1,3 +1,4 @@
+if (!window.CHJ_UNIVERSE_EXAMPLE) {
 /**
  * launcher.js — CHJ Shell
  * Injected immediately on page load (replaces splash.js).
@@ -1777,3 +1778,5 @@ window.chjLauncher = {
 window.hideSplash = () => {
   // Legacy alias — do nothing, launcher manages its own lifecycle
 };
+
+}

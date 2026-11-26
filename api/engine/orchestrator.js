@@ -24,6 +24,7 @@
 
 import Anthropic from '@anthropic-ai/sdk';
 import { applyHealthEvent } from './healthEventAdapter.js';
+import { computeSecondaryOffer } from './secondaryAction.js';
 import { selectNextBestEvidence } from './nextBestEvidence.js';
 import { synthesizePathDiscovery } from './decisionGate.js';
 import { readFileSync } from 'fs';
@@ -71,13 +72,15 @@ export const GUIDED_NOW_TESTS = new Set(['chair_stand_30s']);
 // Single source of bootstrap candidate eligibility used by all continuation paths.
 // Mirrors the filter in synthesizeBootstrapGate (decisionGate.js) — both must stay in sync.
 //   birthYrKnown:    person_birth_year != null
+//   sexKnown:        person_sex != null
 //   age:             currentYear - person_birth_year (null if unknown)
 //   resolvedPhysical: Object.keys(physical) — keys already answered in a previous or same turn
 //   skippedSet:      Set of evidence_types refused/skipped this session
-function filterBootstrapCandidates(needs, { birthYrKnown, age = null, resolvedPhysical = [], skippedSet }) {
+function filterBootstrapCandidates(needs, { birthYrKnown, sexKnown = false, age = null, resolvedPhysical = [], skippedSet }) {
   return needs.filter(c => {
     if (c.skip_if_known === 'birth_year' && birthYrKnown)                                      return false;
-    if (c.skip_if_known && c.skip_if_known !== 'birth_year'
+    if (c.skip_if_known === 'person_sex' && sexKnown)                                           return false;
+    if (c.skip_if_known && c.skip_if_known !== 'birth_year' && c.skip_if_known !== 'person_sex'
         && resolvedPhysical.includes(c.skip_if_known))                                         return false;
     if (age !== null && c.urgency_floor_age_gte && age < c.urgency_floor_age_gte)              return false;
     return !skippedSet.has(c.evidence_type);
@@ -108,9 +111,9 @@ const MODIFICATIONS_CS = {
   'Monitor blood pressure before and after':
     'Sleduj krevní tlak před cvičením i po něm',
   'Avoid Valsalva (breath-holding during exertion)':
-    'Nevydrž dech při cvičení',
+    'Nezadržuj dech při cvičení',
   'Stop if chest pain, severe dyspnea, or dizziness':
-    'Zastav při bolesti na hrudi, dušnosti nebo závratích',
+    'Přestaň při bolesti na hrudi, výrazné dušnosti nebo závratích',
   'Consult cardiologist or GP before beginning':
     'Nejprve se poraď s kardiologem nebo svým lékařem',
   'Start with LIGHT or MODERATE intensity first':
@@ -124,21 +127,218 @@ const MODIFICATIONS_CS = {
   'Clarify injury severity (mild / moderate / severe) before proceeding':
     'Upřesni závažnost zranění (mírné / střední / závažné)',
   'Use stable wall or chair support for all single-leg variants':
-    'Při cvičení na jedné noze drž stěnu nebo opěradlo',
+    'Přidržuj se stěny nebo stabilní židle',
   'Begin with eyes-open only; progress to eyes-closed only when stable':
-    'Začni jen s otevřenýma očima; na zavřené oči přejdi až budeš stabilní',
+    'Po celou dobu měj oči otevřené',
+  'Keep eyes open throughout':
+    'Po celou dobu měj oči otevřené',
+  'Stop if pain, dizziness, or loss of balance occurs':
+    'Při bolesti, závrati nebo ztrátě rovnováhy přestaň',
   'Supervised or near-support setting for first sessions':
-    'První cvičení s dohledem nebo v blízkosti opory',
+    'Zpočátku cvič s někým nebo u pevné opory',
+  'Obtain physician or physiotherapist clearance before any loading of this region':
+    'Před zátěží této oblasti potřebuješ souhlas lékaře nebo fyzioterapeuta',
+  'Obtain physiotherapist clearance before high-intensity loading':
+    'Před vysokou intenzitou potřebuješ souhlas fyzioterapeuta',
+  'Consider MODERATE intensity alternative':
+    'Zvaž variantu se střední intenzitou',
+  'Consult physiotherapist first':
+    'Nejprve se poraď s fyzioterapeutem',
+  'Avoid high-impact variants':
+    'Vyhni se cvičení s tvrdými dopady',
+  'Stop immediately if pain increases':
+    'Přestaň hned, pokud bolest zesílí',
+  'Prefer low-impact variant (e.g. cycling over running or uphill)':
+    'Zvol pohyb bez tvrdých dopadů, například jízdu na kole místo běhu nebo chůze do kopce',
+  'Reduce intensity if discomfort appears':
+    'Sniž intenzitu, pokud se objeví nepříjemný pocit',
+  'Stop if pain increases':
+    'Přestaň, pokud bolest zesílí',
+  'Prefer low-impact variant (e.g. cycling over running)':
+    'Zvol pohyb bez tvrdých dopadů, například jízdu na kole místo běhu',
+  'Prefer a lower-load variant of this activity':
+    'Zvol šetrnější variantu této aktivity',
+  'Stop if discomfort increases':
+    'Přestaň, pokud nepříjemný pocit zesílí',
+  'Clarify injury severity before proceeding':
+    'Upřesni závažnost zranění, než budeš pokračovat',
 };
+
+// Preserve instruction punctuation without adding a second full stop.
+function sentence(value) {
+  const text = value.trim();
+  return /[.!?…]$/.test(text) ? text : `${text}.`;
+}
 
 function localizeMod(s) {
   return MODIFICATIONS_CS[s] ?? s;
 }
 
+// Exported for unit testing only — not part of the public API.
+export function _localizeMod_test(s) {
+  return localizeMod(s);
+}
+
+// Goal branch, cautious/casual form — used in buildWhyResponse's primary sentence.
+// GOAL_BRANCH_CS (clinical) kept for any other existing reader of the old label.
 const GOAL_BRANCH_CS = {
   SURVIVAL_HEALTHSPAN:     'Zdravé přežití',
   FUNCTIONAL_INDEPENDENCE: 'Funkční samostatnost',
 };
+
+// ── "Proč?" wording table ───────────────────────────────────────────────────────
+// Nominative phrases for the optional constraint sentence.
+const WHY_SUBJECT_CS = {
+  EXCESS_ADIPOSITY:           'tvoje nadváha',
+  LOW_MUSCLE_STRENGTH:        'tvoje svalová síla',
+  PHYSICAL_INACTIVITY:        'tvůj nedostatek pohybu',
+  PHYSICAL_DECONDITIONING:    'tvoje celková kondice',
+  REDUCED_FUNCTIONAL_RESERVE: 'síla, kterou máš do zásoby',
+  LOSS_OF_FLOOR_RISE_ABILITY: 'to, jak zvládáš základní pohyby',
+  GAIT_INSTABILITY:           'tvoje jistota při chůzi',
+  FALL_RISK:                  'tvoje riziko pádu',
+  PERIPHERAL_NEUROPATHY:      'snížené čití v nohách',
+  HYPERTENSION:                'tvůj krevní tlak',
+  ENDOTHELIAL_DYSFUNCTION:    'stav tvých cév',
+  ERECTILE_DYSFUNCTION:       'tvoje schopnost erekce',
+  INSULIN_RESISTANCE:         'to, jak tvoje tělo zpracovává cukr',
+};
+
+// ── "Kam směřuješ?" wording tables ───────────────────────────────────────────────
+// Curated per leverage node — natural Czech verb/case agreement cannot be generated
+// mechanically from NODE_LABEL_CS, so each entry is hand-written, grounded in the real
+// first causal-step edge in master.json. A node with no entry here falls back to the
+// generic "not enough data" response rather than broken grammar. Terminal nodes with no
+// outgoing causal edge (LOSS_OF_FLOOR_RISE_ABILITY, FALL_RISK, ERECTILE_DYSFUNCTION) are
+// intentionally absent — there is no further step to describe.
+// nextStep: verb + object, continuing "Může se ti <nextStep>...".
+const CAUSAL_STEP_CS = {
+  EXCESS_ADIPOSITY:           { nextStep: 'zhoršovat schopnost těla zpracovávat cukr' },
+  // This node's causal step already names the concrete stake (floor-rise ability) in lay
+  // terms, so the generic LOSS_OF_FLOOR_RISE_ABILITY gateway phrase would repeat "běžné
+  // fyzické úkony" if appended on top — suppressGateway drops that one gateway's generic
+  // append for this node only; a second, different gateway (if ever reached) still appends.
+  LOW_MUSCLE_STRENGTH:        { nextStep: 'snižovat síla potřebná pro běžné fyzické úkony — například vstát ze země bez cizí pomoci', suppressGateway: 'LOSS_OF_FLOOR_RISE_ABILITY' },
+  PHYSICAL_INACTIVITY:        { nextStep: 'zvyšovat nadváhu' },
+  PHYSICAL_DECONDITIONING:    { nextStep: 'snižovat tvoje svalová síla' },
+  REDUCED_FUNCTIONAL_RESERVE: { nextStep: 'ztěžovat základní pohyby, jako je vstávání' },
+  GAIT_INSTABILITY:           { nextStep: 'zvyšovat riziko, že upadneš' },
+  PERIPHERAL_NEUROPATHY:      { nextStep: 'zhoršovat jistota tvé chůze' },
+  HYPERTENSION:               { nextStep: 'zatěžovat stěny tvých cév' },
+  ENDOTHELIAL_DYSFUNCTION:    { nextStep: 'zhoršovat prokrvení v těle' },
+  INSULIN_RESISTANCE:         { nextStep: 'zvyšovat tvůj krevní tlak' },
+};
+
+// Only two Goal Gateways exist in the model today (api/engine/goalGateways.js) — this table
+// is exhaustive over that closed set, not a per-scenario special case. One transitive
+// verb+object phrase per gateway, reused in both the single- and dual-gateway sentence forms.
+const GOAL_GATEWAY_PHRASE_CS = {
+  CARDIOVASCULAR_DISEASE:     'zvyšovat riziko nemocí srdce a cév',
+  LOSS_OF_FLOOR_RISE_ABILITY: 'ohrožovat schopnost zvládat běžné fyzické úkony — například vstát ze země bez cizí pomoci',
+};
+
+// ── "Co tím změníš?" wording tables ─────────────────────────────────────────────
+// Primary target: verb + direct object, used in "<action> ti při pravidelném opakování může pomoci <verb> <object>".
+const MECHANISM_PRIMARY_CS = {
+  EXCESS_ADIPOSITY:    { verb: 'snížit',  object: 'nadváhu' },
+  LOW_MUSCLE_STRENGTH: { verb: 'posílit', object: 'svalovou sílu' },
+  PHYSICAL_INACTIVITY: { verb: 'zvýšit',  object: 'pohybovou aktivitu' },
+  GAIT_INSTABILITY:    { verb: 'zlepšit', object: 'jistotu při chůzi' },
+};
+// Secondary targets carry their own verb + object; never apply one verb to all effects.
+// A mechanism_targets entry with no phrase here is skipped — it has no good lay equivalent,
+// never shown as raw clinical language.
+const MECHANISM_TARGET_CS = {
+  "EXCESS_ADIPOSITY": {
+    "verb": "snížit",
+    "object": "nadváhu"
+  },
+  "LOW_MUSCLE_STRENGTH": {
+    "verb": "posílit",
+    "object": "svalovou sílu"
+  },
+  "PHYSICAL_INACTIVITY": {
+    "verb": "zvýšit",
+    "object": "pohybovou aktivitu"
+  },
+  "INSULIN_RESISTANCE": {
+    "verb": "zlepšit",
+    "object": "zpracování cukru v těle"
+  },
+  "HYPERTENSION": {
+    "verb": "podpořit",
+    "object": "zdravý krevní tlak"
+  },
+  "REDUCED_FUNCTIONAL_RESERVE": {
+    "verb": "zlepšit",
+    "object": "celkovou tělesnou odolnost"
+  },
+  "ENDOTHELIAL_DYSFUNCTION": {
+    "verb": "zlepšit",
+    "object": "prokrvení a stav cév"
+  },
+  "FALL_RISK": {
+    "verb": "snížit",
+    "object": "riziko pádu"
+  },
+  "GAIT_INSTABILITY": {
+    "verb": "zlepšit",
+    "object": "jistotu při chůzi"
+  },
+  "PHYSICAL_DECONDITIONING": {
+    "verb": "zlepšit",
+    "object": "celkovou fyzickou kondici"
+  }
+};
+
+// Short human type-name per intervention_id (api/engine/intervention-map.json — a closed,
+// stable set of 7 ids today). Used as the "Co tím změníš?" sentence subject in place of the
+// raw action label, which is often an imperative instruction label unsafe as a subject (see
+// isSafeActionSubject below). This never changes the action itself — only how it is named in
+// this one sentence — and names the TYPE of intervention, not a new medical claim.
+const INTERVENTION_TYPE_LABEL_CS = {
+  FUNCTIONAL_STRENGTH_TRAINING: 'Cvičení',
+  AEROBIC_TRAINING:             'Tato aktivita',
+  BALANCE_TRAINING:             'Cvičení rovnováhy',
+  RESISTANCE_TRAINING:          'Posilovací cvičení',
+  DAILY_MOVEMENT:               'Pohyb během dne',
+  BREAK_UP_SEDENTARY_TIME:      'Pohybová přestávka',
+  SAFE_SUPPORTED_MOBILITY:      'Bezpečný pohyb s oporou',
+};
+
+// Per-intervention override for the "Co tím změníš?" primary verb/object and secondary
+// phrase(s) — used when the generic MECHANISM_PRIMARY_CS/MECHANISM_TARGET_CS wording needs an
+// intervention-specific tweak (verb choice, or a secondary phrase that already reads as a
+// capability clause rather than a plain noun, where the connective "i" would read redundant).
+// Falls back to the generic tables when no override exists for the intervention_id.
+const MECHANISM_OVERRIDE_CS = {
+  FUNCTIONAL_STRENGTH_TRAINING: {
+    primary:    { verb: 'zvětšit', object: 'sílu' },
+    secondary:  [{ verb: 'lépe', object: 'zvládat běžné fyzické úkony' }],
+  },
+};
+
+// Action labels in longevity_actions are imperative instructions ("Jdi na procházku…",
+// "Udělej dřepy…"), not noun-phrase titles — using one as a sentence subject ("Jdi na
+// procházku ti při pravidelném opakování může pomoci…") is broken Czech, the same problem the C4 cut fixed for "Proč?".
+// Known intervention types always use their type name. For unknown types, numeric
+// prefixes and sentence punctuation also disqualify a label as a subject.
+// Only remaining labels that do NOT start with a known imperative verb may be subjects;
+// everything else falls back to "Tato akce". Grounded in the real active action pool, not
+// exhaustive — a future action with an unlisted imperative verb will still read awkwardly
+// until added here.
+const IMPERATIVE_FIRST_WORDS = new Set([
+  'jdi', 'udělej', 'drž', 'vstaň', 'vstań', 'stůj', 'stoj', 'vypij', 'vezmi', 'nesněz',
+  'zapiš', 'napiš', 'medituj', 'protáhni', 'protahni', 'přidej', 'choď', 'sleduj',
+  'žádný', 'žádné', 'proveď', 'vypni', 'lehni', 'větrání', 'změř', 'pojmenuj', 'naplánuj',
+  'zkontroluj', 'vizualizuj', 'pozoruj', 'vstávej', 'vyjdi', 'zavři', 'přečti', 'běž',
+  'pracuj', 'nejez', 'vis', 'dýchej', 'spát', 'odpočinek',
+]);
+function isSafeActionSubject(label) {
+  if (!label || /^\s*\d/.test(label) || /[.!?;\n]/.test(label)) return false;
+  const first = label.trim().split(/\s+/)[0]?.toLowerCase().replace(/[.,!?;:]+$/, '');
+  return first ? !IMPERATIVE_FIRST_WORDS.has(first) : false;
+}
 
 // ── Fatigue standalone matcher ────────────────────────────────────────────────
 // Anchored ^...$ — compound statements ("Jsem unavený a bolí mě na hrudi")
@@ -202,6 +402,11 @@ const B1_REASON_RE    = /\bkvůli\b|\bbolí/i;
 // ("1968" → age 1968 > 120) are intentionally excluded and fall through to the classifier.
 const BIRTH_YEAR_FULL_RE = /^\d{2,3}(?:\s+let[ao]?)?\s*[.,!?]*$/i;
 
+// person_sex: full-input anchored parser. Accepts "muž"/"žena" (and ASCII-folded
+// "muz"/"zena") optionally prefixed with "jsem". Mirrors BIRTH_YEAR_FULL_RE scope:
+// bare answers only, compound inputs fall through to the classifier.
+const GENDER_FULL_RE = /^(?:jsem\s+)?(?:muž|muz|žena|zena)\s*[.,!?]*$/i;
+
 // Bootstrap yes/no — anchored full-input parser.
 // Accepts "ne", "ano", "Ne, vůbec.", "neupadla jsem.", "zvládl jsem.", "Zvládnu to."
 // Rejects compound inputs (caught upstream by COMPOUND_SIGNAL_RE).
@@ -219,15 +424,25 @@ const DYSPNEA_FULL_RE = /^(?:ano|jo|ne|nemám|nedochází|vůbec|trochu|někdy|o
 
 // PATH_DISCOVERY: blood pressure — anchored full-input parser.
 // Accepts "120/80", "140", "Tlak mám asi 120/80.", "nevím", "neznám", "Nepamatuju si."
-const BP_FULL_RE = /^(?:(?:tlak\s+(?:mám|je|mívám|bývá)(?:\s+(?:asi|zhruba|tak|přibližně))?\s+)|(?:asi|zhruba|tak|přibližně)\s+)?(?:\d{2,3}(?:\/\d{2,3})?|nevím|neznám|nezměřil[ao]?|nepamatuju(?:\s+si)?|nemám.*tlakoměr|nenapadá)\s*[.,!?]*$/i;
+const BP_FULL_RE = /^(?:(?:tlak\s+(?:mám|je|mívám|bývá)(?:\s+(?:asi|zhruba|tak|přibližně))?\s+)|(?:asi|zhruba|tak|přibližně)\s+)?(?:\d{2,3}(?:\/\d{2,3})?|nevím|neznám|nezměřil[ao]?|nepamatuju(?:\s+si)?|nemám\s+změřeno|nemám.*tlakoměr|nenapadá)\s*[.,!?]*$/i;
 
 // Guard E: explicit navigation / action-request phrases → DOMAIN_REQUEST.
+// Tomorrow questions are navigation too: bypass classification, then let the
+// persisted daily decision distinguish completed, skipped and available actions.
 // Haiku misclassifies "Co mám dělat?" as GENERAL_HEALTH_REQUEST when a pending_question
 // is in the session context (session context overrides rule 7 toward rule 9).
 // Anchored ^...[\s.,!?]*$: compound inputs ("co mám dělat, ale bolí mě...") are rejected
 // because ", ale bolí..." cannot match [\s.,!?]*$ — COMPOUND_SIGNAL_RE not needed.
 export const DOMAIN_REQUEST_NAV_RE =
-  /^(?:co\s+(?:tedy\s+|teď\s+)?mám\s+(?:teď\s+)?u?dělat|co\s+(?:teď|dál|doporuč(?:uješ)?)|poraď(?:\s+mi)?)[\s.,!?]*$/i;
+  /^(?:co\s+(?:tedy\s+|teď\s+)?mám\s+(?:teď\s+)?u?dělat|co\s+(?:teď|ted|dál|dal|doporuč(?:uješ)?)|co\s+(?:(?:mám|mam)\s+(?:u?dělat|u?delat)\s+)?(?:zítra|zitra)|poraď(?:\s+mi)?)[\s.,!?]*$/i;
+
+// A desired future ability is a navigation goal, never evidence that the
+// ability already exists. Keep this deterministic: Haiku previously turned
+// "Chci vstát sám bez opory rukou" into vstat_ze_zeme=true and overwrote the
+// opposite onboarding answer. Explicit present-tense reports still reach the
+// functional-fact classifier rules below.
+export const FLOOR_RISE_GOAL_RE =
+  /^(?:chci|cht[eě]l\s+bych|cht[eě]la\s+bych)\s+(?:um[eě]t\s+)?vst[aá]t\s+(?:s[aá]m|sama)?\s*(?:ze\s+zem[eě]\s+)?bez\s+(?:opory|pomoci)\s+rukou[\s.,!?]*$/i;
 
 let client;
 function getClient() {
@@ -254,6 +469,7 @@ const CLASSIFIER_TOOL = {
           'ACTION_COMPLETED', 'ACTION_SKIPPED', 'ANSWER_TO_EVIDENCE_QUESTION',
           'NEW_SYMPTOM', 'NEW_MEASUREMENT', 'NEW_CONSTRAINT',
           'WHY_REQUEST', 'DOMAIN_REQUEST', 'USER_PREFERENCE', 'GENERAL_HEALTH_REQUEST',
+          'UNSUPPORTED_REQUEST', 'SCOPE_CLARIFICATION', 'FUNCTIONAL_CLARIFICATION',
         ],
         description: 'Classified event type',
       },
@@ -264,11 +480,13 @@ const CLASSIFIER_TOOL = {
           body_part:      { type: 'string',  description: 'Czech body part name for NEW_SYMPTOM' },
           severity:       { type: 'string',  description: 'mild | moderate | severe (null for NEW_SYMPTOM)' },
           evidence_type:  { type: 'string',  description: 'From pending_question.evidence_type for ANSWER' },
-          value:          { description: 'Answer value (string or number)' },
+          value:          { description: 'Answer value (string, number or boolean); explicit floor-rise ability uses boolean' },
+          clarification_kind: { type: 'string', enum: ['chair_or_floor', 'floor_rise_ability'], description: 'Fixed functional clarification; no clinical inference' },
           obs_type:       { type: 'string',  description: 'Observation type for NEW_MEASUREMENT' },
           unit:           { type: 'string',  description: 'Unit for NEW_MEASUREMENT' },
           constraint_key: { type: 'string',  description: 'Body region in English for NEW_CONSTRAINT' },
           text:           { type: 'string',  description: 'Original text for GENERAL_HEALTH_REQUEST / USER_PREFERENCE' },
+          unsupported_kind: { type: 'string', enum: ['general', 'medical'], description: 'medical for an unsupported symptom/disease request; general for other unsupported topics' },
         },
         additionalProperties: false,
       },
@@ -280,7 +498,24 @@ const CLASSIFIER_TOOL = {
 const CLASSIFIER_SYSTEM = `You are a text classifier for CHJ (Chytré Já) health navigation system.
 Your ONLY job: classify Czech user input and extract payload. No health reasoning. No advice.
 
-RULES:
+SCOPE — check the user's requested help before applying intent rules:
+Supported: everyday movement / sitting less, excess body fat through movement, functional muscle strength, balance / gait stability.
+A request to diagnose, treat, explain or predict a different condition (including syncope, heart rhythm problems, sleep, mental health), prescribe a diet/medication, or solve business/other topics → UNSUPPORTED_REQUEST. payload.unsupported_kind = medical for symptoms/disease/medication, general otherwise.
+Examples: "Co s mou synkopou?" → UNSUPPORTED_REQUEST medical; "Proč mám arytmii?" → UNSUPPORTED_REQUEST medical; "Chci lépe spát" → UNSUPPORTED_REQUEST general; "Pomoz mi s výrobou" → UNSUPPORTED_REQUEST general.
+Do not use unrelated profile facts to substitute a supported goal. Supported facts used for risk context or answers to pending questions (blood pressure, diagnoses, medications, measurements) may continue through the existing evidence/safety path. A simple pain report remains NEW_SYMPTOM (a safety signal, never advice for treating pain).
+If the requested help is unclear or unrelated input cannot be interpreted, → SCOPE_CLARIFICATION. Never guess a supported request.
+Examples: "Chci zlepšit kondici" / "Přibral jsem" → GENERAL_HEALTH_REQUEST.
+User age/diagnosis/background without a requested treatment can be GENERAL_HEALTH_REQUEST; the engine determines relevance.
+
+FUNCTIONAL FACTS — interpretation only, take precedence over generic health declarations:
+- An explicit CURRENT FIRST-PERSON report of unsteady walking ("Jsem nejistý při chůzi.") → ANSWER_TO_EVIDENCE_QUESTION, evidence_type="gait_instability_reported", value=true. Interpret descriptions of swaying/staggering while walking, losing balance while walking, or drifting from a straight walking line as the same self-report, even if intermittent (sometimes/occasionally). Walking is NOT a body part: these statements are not NEW_SYMPTOM, which is reserved for pain in a body region. Explicit current stable walking → the same evidence_type, value=false. This is a self-report, never a diagnosis. Do not extract this fact from third-person, historical, hypothetical or uncertain statements. An uncertain feeling DURING actual walking is a current experience; uncertainty WHETHER a problem exists is not an established fact.
+- An explicit CURRENT FIRST-PERSON statement about rising FROM THE FLOOR WITHOUT HAND SUPPORT → ANSWER_TO_EVIDENCE_QUESTION, evidence_type="vstat_ze_zeme", value=true if able, false if unable. This also applies without a pending question. "Ze země bez pomoci rukou nevstanu." → false; "Ze země vstanu bez opory rukou." → true. Requiring hand support to rise from the floor → false.
+- Do not infer inability without hand support from general difficulty, chair statements, another person's report, past ability or an uncertain/hypothetical statement.
+- A current difficulty rising without a clear chair/floor context ("Špatně se mi vstává.") → FUNCTIONAL_CLARIFICATION, clarification_kind="chair_or_floor". Do not persist a functional fact.
+- pending_question.type=FUNCTIONAL_CONTEXT + user clarifies chair or floor → FUNCTIONAL_CLARIFICATION, clarification_kind="floor_rise_ability". This asks the existing ability question, never infers a yes/no fact from the location alone.
+- Explicit third-person or historical floor-rise statements stay GENERAL_HEALTH_REQUEST; do not translate them into the user's current physical facts.
+
+RULES (only for a supported request, evidence answer or existing app control):
 1. pending_question set + short answer (yes/no/word/number) → ANSWER_TO_EVIDENCE_QUESTION
 2. current_action set + "done/hotovo/splněno/udělal" → ACTION_COMPLETED
 3. current_action set + "přeskočím/nemůžu/dnes ne/vynechám" → ACTION_SKIPPED
@@ -289,7 +524,7 @@ RULES:
 6. Measurement number + unit → NEW_MEASUREMENT
 7. "co mám dělat / co teď / poraď / co dál" → DOMAIN_REQUEST
 8. Health declaration with diagnoses, age, medications, or multiple health facts ("mám X", "je mi X let", "trpím X", sentences combining age + diagnoses + pain) → GENERAL_HEALTH_REQUEST (payload.text = full input)
-9. Anything else → GENERAL_HEALTH_REQUEST (payload.text = full input)`;
+9. Other clearly supported statements → GENERAL_HEALTH_REQUEST (payload.text = full input); unclear input → SCOPE_CLARIFICATION`;
 
 async function classifyIntent(sessionState, userText) {
   const { pending_question, current_action_assignment } = sessionState;
@@ -318,10 +553,13 @@ async function classifyIntent(sessionState, userText) {
 
     const toolUse = response.content.find(c => c.type === 'tool_use');
     if (!toolUse) throw new Error('no tool_use block in response');
+    if (!CLASSIFIER_TOOL.input_schema.properties.event_type.enum.includes(toolUse.input?.event_type)) {
+      throw new Error('invalid classifier event');
+    }
     return { event_type: toolUse.input.event_type, payload: toolUse.input.payload ?? {} };
   } catch (err) {
-    console.warn('[orchestrator:classifier] fallback —', err?.message ?? err);
-    return { event_type: 'GENERAL_HEALTH_REQUEST', payload: { text: userText } };
+    console.warn('[orchestrator:classifier] unavailable', err?.status ?? 'transport_or_invalid_response');
+    return { event_type: 'CLASSIFIER_UNAVAILABLE', payload: {} };
   }
 }
 
@@ -342,6 +580,14 @@ export function buildEvent(classified, sessionState) {
     const a = sessionState.current_action_assignment;
     if (a?.action_id)       event.payload.action_id       = a.action_id;
     if (a?.intervention_id) event.payload.intervention_id = a.intervention_id;
+    // Preserve the leverage of the action actually offered, not a newly selected node.
+    // Older sessions lack assignment metadata; recover only from the matching cached action.
+    const ctx = sessionState.last_domain_response?.explanation_context;
+    const selected = ctx?.action_context?.selected;
+    const matches = a?.action_id && a?.intervention_id
+      && selected?.action_id === a.action_id && selected?.intervention_id === a.intervention_id;
+    event.payload.selected_leverage_node = a?.selected_leverage_node
+      ?? (matches ? ctx?.system_leverage?.node_id ?? null : null);
   }
 
   // Attach evidence_type from session for answer events.
@@ -400,6 +646,7 @@ function bodyPartToEvidenceType(bodyPart) {
 const NBE_QUESTION_MAP = {
   // Bootstrap PROFILE evidence (narrow unlock)
   birth_year:       'Kolik ti je let?',
+  person_sex:       'Jsi muž, nebo žena?',
   // Bootstrap CLINICAL evidence (narrow unlock) — answer routes through GENERAL_HEALTH_REQUEST
   clinical_context: 'Léčíš se s něčím nebo bereš pravidelně nějaké léky?',
   // Vitals / anthropometrics
@@ -458,13 +705,41 @@ const NBE_METHOD_FALLBACK = {
   clinician:        'Tuto hodnotu je třeba změřit u lékaře. Máš aktuální výsledek?',
 };
 
-function buildEvidenceQuestion(nbe) {
+// Written "X/Y" gender-neutral shorthand (e.g. "Upadl/a") reads fine on screen
+// but sounds wrong read aloud by TTS ("upadl lomeno a"). Explicit per-phrase
+// forms, not a generic regex — Czech endings don't split uniformly ("Upadl/a"
+// is a suffix append, "sám/sama" is a whole alternate word). Falls back to the
+// written slash form when sex is unknown — same as before this existed.
+const GENDERED_TEXT_CS = {
+  'Upadl/a jsi během posledních 12 měsíců?': {
+    male:   'Upadl jsi během posledních 12 měsíců?',
+    female: 'Upadla jsi během posledních 12 měsíců?',
+  },
+  'Pokud je pro tebe bezpečné jít na zem, zkus si sednout na zem a vstát s co nejmenší oporou. Zvládneš vstát? Pokud si nejsi jistý/á stabilitou, test nedělej sám/sama.': {
+    male:   'Pokud je pro tebe bezpečné jít na zem, zkus si sednout na zem a vstát s co nejmenší oporou. Zvládneš vstát? Pokud si nejsi jistý stabilitou, test nedělej sám.',
+    female: 'Pokud je pro tebe bezpečné jít na zem, zkus si sednout na zem a vstát s co nejmenší oporou. Zvládneš vstát? Pokud si nejsi jistá stabilitou, test nedělej sama.',
+  },
+  'Zmínil/a jsi aktuální potíže, které potřebují víc kontextu. Jak se cítíš teď — lepší, stejně, nebo hůř?': {
+    male:   'Zmínil jsi aktuální potíže, které potřebují víc kontextu. Jak se cítíš teď — lepší, stejně, nebo hůř?',
+    female: 'Zmínila jsi aktuální potíže, které potřebují víc kontextu. Jak se cítíš teď — lepší, stejně, nebo hůř?',
+  },
+};
+function genderize(text, sex) {
+  const forms = GENDERED_TEXT_CS[text];
+  if (!forms) return text;
+  if (sex === 'male')   return forms.male;
+  if (sex === 'female') return forms.female;
+  return text;
+}
+
+function buildEvidenceQuestion(nbe, sex = null) {
   if (!nbe) return null;
-  return NBE_QUESTION_MAP[nbe.evidence_type]
+  const text = NBE_QUESTION_MAP[nbe.evidence_type]
     ?? NBE_METHOD_FALLBACK[nbe.acquisition_method]
     ?? (nbe.evidence_type
         ? `Potřebuji informaci o: ${nbe.evidence_type}. Máš ji k dispozici?`
         : 'Potřebuji jednu konkrétní informaci. Můžeš mi ji poskytnout?');
+  return genderize(text, sex);
 }
 
 // ── Session update builder ────────────────────────────────────────────────────
@@ -474,14 +749,20 @@ export function _buildSessionUpdates_test(eventType, classifiedPayload, result) 
   return buildSessionUpdates(eventType, classifiedPayload, result);
 }
 
+// Exported for unit testing only — not part of the public API.
+export function _buildActResponse_test(dd, ctx, sessionUpdates, warnings) {
+  return buildActResponse(dd, ctx, sessionUpdates, warnings);
+}
 
-function buildSessionUpdates(eventType, classifiedPayload, result) {
+
+function buildSessionUpdates(eventType, classifiedPayload, result, sex = null) {
   const dr = result.domain_response;
   const dd = dr?.daily_decision;
 
   const updates = {
     last_daily_decision:  dd   ?? null,
     last_domain_response: dr   ?? null,
+    unsupported_request: null,
   };
 
   // ACT: set current_action_assignment, clear pending
@@ -491,9 +772,16 @@ function buildSessionUpdates(eventType, classifiedPayload, result) {
       action_id:       item.action_id,
       label:           item.label,
       intervention_id: item.intervention_id ?? null,
+      selected_leverage_node: dr?.explanation_context?.system_leverage?.node_id ?? null,
       assigned_at:     dd.evaluated_at,
     } : null;
     updates.pending_question = null;
+  }
+
+  // HOLD (HOLD_DONE_TODAY): nothing may be completed again today — drop any stale
+  // assignment still held by the client so a second "Hotovo" cannot be recorded.
+  if (dd?.mode === 'HOLD') {
+    updates.current_action_assignment = null;
   }
 
   // Clear pending when answered — runs BEFORE ASK so that if engine immediately
@@ -511,7 +799,7 @@ function buildSessionUpdates(eventType, classifiedPayload, result) {
       // For NEXT_BEST_EVIDENCE items the engine provides evidence_type/acquisition_method
       // but no question field. buildEvidenceQuestion is the single source of truth for
       // converting NBE metadata → Czech user-facing question text.
-      const questionText = item?.question ?? item?.question_text ?? buildEvidenceQuestion(item);
+      const questionText = item?.question ?? item?.question_text ?? buildEvidenceQuestion(item, sex);
 
       // Derive evidence_type: prefer explicit field, fallback to body_part from triggering event
       const evidenceType = item?.evidence_type
@@ -532,8 +820,9 @@ function buildSessionUpdates(eventType, classifiedPayload, result) {
     }
   }
 
-  // Clear assignment when completed/skipped
-  if (eventType === 'ACTION_COMPLETED' || eventType === 'ACTION_SKIPPED') {
+  // Consumed assignment must be cleared, but preserve a new NBA-selected ACT
+  // after a skip; its controls need the newly issued assignment to work.
+  if ((eventType === 'ACTION_COMPLETED' || eventType === 'ACTION_SKIPPED') && dd?.mode !== 'ACT') {
     updates.current_action_assignment = null;
   }
 
@@ -544,12 +833,27 @@ function buildSessionUpdates(eventType, classifiedPayload, result) {
 // Text is composed ONLY from structured DOMAIN_RESPONSE fields.
 // No free-form health reasoning or diagnosis in this layer.
 
+// Picks the single most important safety modification for an action, instead of
+// concatenating all of them (which breaks the 1-sentence/15-word ACT budget in
+// CLAUDE.md §8 whenever 2+ apply). A real-time stop-condition ("stop if dizzy…")
+// outranks setup/context conditions (support, supervision, eyes open) — knowing
+// when to stop matters more mid-exercise than how the session was set up.
+// Never drops safety info silently in the sense of "shows nothing": always shows
+// the single highest-priority note when any exist.
+function pickPrimarySafetyNote(action) {
+  if (!action || !['SAFE', 'SAFE_WITH_MODIFICATION'].includes(action.safety?.level)) return null;
+  const raw = (action.safety.modifications_suggested ?? []).filter(mod => typeof mod === 'string' && mod.trim());
+  if (!raw.length) return null;
+  const stopCondition = raw.find(mod => /^stop /i.test(mod.trim()));
+  return sentence(localizeMod(stopCondition ?? raw[0]));
+}
+
 function buildActResponse(dd, ctx, sessionUpdates, warnings) {
   const action = dd.primary_item;
-  let text = action?.label ? `${action.label}.` : 'Tvá dnešní akce je připravena.';
+  let text = action?.label ? sentence(action.label) : 'Tvá dnešní akce je připravena.';
 
-  const modification = action?.safety?.modifications_suggested?.[0];
-  if (modification) text += ` Úprava: ${localizeMod(modification)}.`;
+  const note = pickPrimarySafetyNote(action);
+  if (note) text += ` ${note}`;
 
   return {
     mode:          'ACT',
@@ -557,15 +861,31 @@ function buildActResponse(dd, ctx, sessionUpdates, warnings) {
     buttons:       ['Hotovo', 'Přeskočit'],
     expects_reply: false,
     session_updates: sessionUpdates,
+    // Additive — presentation-only. Lets the client show a Začít→timer/počítadlo
+    // control before "Hotovo" for timed/reps actions, consistent with the
+    // "volná akce" secondary slot. Never changes buttons/mode/text above;
+    // "Hotovo" still means the same ACTION_COMPLETED event either way.
+    action_dose:   action?.dose ?? null,
     debug:         { reason_code: dd.reason_code, warnings },
   };
 }
 
-function buildAskResponse(dd, ctx, sessionUpdates, warnings) {
+function buildAskResponse(dd, ctx, sessionUpdates, warnings, sedentaryHoursKnown = false, sex = null) {
   // ASK_BLOCKING with null primary_item: engine ran but couldn't generate a specific question.
   // Two sub-cases based on whether we have any leverage context:
   if (!dd.primary_item && dd.reason_code === 'ASK_BLOCKING') {
     const hasLeverageContext = Boolean(ctx?.system_leverage?.node_id);
+
+    if (hasLeverageContext && sedentaryHoursKnown) {
+      return {
+        mode:          'ASK',
+        text:          'Údaj o sezení už mám. Pro další konkrétní krok zatím nemám dost podkladů.',
+        buttons:       [],
+        expects_reply: true,
+        session_updates: { ...sessionUpdates, pending_question: null },
+        debug: { reason_code: dd.reason_code, warnings },
+      };
+    }
 
     if (hasLeverageContext) {
       // Data present but PHYSICAL_INACTIVITY not yet activated — ask for sedentary hours.
@@ -600,7 +920,7 @@ function buildAskResponse(dd, ctx, sessionUpdates, warnings) {
   const question = sessionUpdates.pending_question?.text
     ?? dd.primary_item?.question
     ?? dd.primary_item?.question_text
-    ?? buildEvidenceQuestion(dd.primary_item)
+    ?? buildEvidenceQuestion(dd.primary_item, sex)
     ?? 'Potřebuji konkrétní informaci. Napiš mi ji.';
 
   return {
@@ -618,6 +938,33 @@ const HEALTH_INPUT_TYPES = new Set([
 ]);
 
 function buildHoldResponse(dd, _ctx, sessionUpdates, warnings, eventType, isFollowUp = false) {
+  if (dd.reason_code === 'HOLD_SKIPPED_TODAY') {
+    return {
+      mode: 'HOLD',
+      text: 'Dnešní dostupné akce jsi přeskočil. Zítra je vyhodnotím znovu.',
+      buttons: [], expects_reply: false,
+      session_updates: { ...sessionUpdates, pending_question: null },
+      debug: { reason_code: dd.reason_code, warnings },
+    };
+  }
+
+  // HOLD_DONE_TODAY: an action was already completed today — no second exercise
+  // today; tomorrow the engine evaluates the available interventions again. ACTION_COMPLETED keeps its
+  // own acknowledgment below.
+  if (dd.reason_code === 'HOLD_DONE_TODAY' && eventType !== 'ACTION_COMPLETED') {
+    const ackText = HEALTH_INPUT_TYPES.has(eventType)
+      ? 'Nové údaje zohledním při dalším vyhodnocení. '
+      : '';
+    return {
+      mode:          'HOLD',
+      text:          ackText + 'Pro dnešek máš hotovo. Zítra otevři Chytré já a doporučení znovu vyhodnotíme.',
+      buttons:       [],
+      expects_reply: false,
+      session_updates: sessionUpdates,
+      debug:         { reason_code: dd.reason_code, warnings },
+    };
+  }
+
   // Follow-up "co místo toho?" while all candidates still in HOLD:
   // don't repeat the original action label — explain the system state instead.
   if (isFollowUp) {
@@ -628,6 +975,13 @@ function buildHoldResponse(dd, _ctx, sessionUpdates, warnings, eventType, isFoll
       expects_reply: false,
       session_updates: sessionUpdates,
       debug:         { reason_code: dd.reason_code, warnings },
+    };
+  }
+
+  if (warnings.some(w => String(w).startsWith('ACTION_COMPLETED: action already completed today'))) {
+    return { mode: 'HOLD', text: 'Dnešní akci už máš potvrzenou. Pro dnešek stačí.',
+      buttons: [], expects_reply: true, session_updates: { ...sessionUpdates, pending_question: null, current_action_assignment: null },
+      debug: { reason_code: dd.reason_code, warnings },
     };
   }
 
@@ -665,15 +1019,21 @@ function buildHoldResponse(dd, _ctx, sessionUpdates, warnings, eventType, isFoll
 
 function buildSafetyBlockedResponse(dd, sessionUpdates, warnings) {
   const worst = dd.primary_item?.worst_safety_level;
-  const text  = worst === 'CONTRAINDICATED'
-    ? 'Tato aktivita není s tvým aktuálním stavem vhodná. Konzultuj lékaře.'
-    : 'Před touto aktivitou je potřeba souhlas lékaře.';
+  const blocked = dd.primary_item?.blocked_candidates ?? [];
+  // Translate only the exact existing gate result; never invent a clinical cause.
+  const gaitOnly = blocked.length > 0 && blocked.every(c => c.reason ===
+    'Gait self-report has been answered, but the active instability finding remains. Individual assessment is required before prescribing unaided walking.');
+  const text = gaitOnly
+    ? 'Aktivity založené na chůzi bez opory ti teď nemohu doporučit kvůli údajům o nejistotě při chůzi. Vhodnou zátěž je potřeba nejprve posoudit s lékařem nebo fyzioterapeutem.'
+    : worst === 'CONTRAINDICATED'
+      ? 'Zvažované aktivity nejsou podle bezpečnostních pravidel aplikace s tvým aktuálním stavem vhodné. Poraď se s lékařem.'
+      : 'Zvažované aktivity teď nemohu doporučit bez posouzení lékařem. Můžeš se zeptat na důvod nebo napsat, co dalšího chceš řešit.';
 
   return {
     mode:          'SAFETY_BLOCKED',
     text,
-    buttons:       [],
-    expects_reply: false,
+    buttons:       ['Proč?'],
+    expects_reply: true,
     session_updates: sessionUpdates,
     debug:         { reason_code: dd.reason_code, warnings },
   };
@@ -707,7 +1067,7 @@ function buildFallbackResponse(result, sessionUpdates, warnings) {
 function buildPathDiscoveryWhyResponse(_state) {
   return {
     mode:          'EXPLAIN',
-    text:          DISCOVERY_HOLD_TEXT,
+    text:          _state.last_daily_decision?.discovery_text ?? DISCOVERY_HOLD_TEXT,
     buttons:       [],
     expects_reply: true,
     session_updates: {},
@@ -718,6 +1078,65 @@ function buildPathDiscoveryWhyResponse(_state) {
 // ── WHY response (no engine call) ─────────────────────────────────────────────
 // Uses only cached explanation_context from last_domain_response.
 // No new clinical inference, no new engine call.
+
+// Accusative phrases for a focus, without asserting a confirmed diagnosis or ranking.
+const WHY_FOCUS_CS = {
+  "EXCESS_ADIPOSITY": "snižování nadváhy",
+  "LOW_MUSCLE_STRENGTH": "tvoji svalovou sílu",
+  "PHYSICAL_INACTIVITY": "pravidelný pohyb",
+  "PHYSICAL_DECONDITIONING": "tvoji celkovou kondici",
+  "REDUCED_FUNCTIONAL_RESERVE": "sílu potřebnou pro běžné činnosti",
+  "LOSS_OF_FLOOR_RISE_ABILITY": "zvládání základních pohybů",
+  "GAIT_INSTABILITY": "jistotu při chůzi",
+  "FALL_RISK": "prevenci pádů",
+  "PERIPHERAL_NEUROPATHY": "snížené čití v nohách",
+  "HYPERTENSION": "tvůj krevní tlak",
+  "ENDOTHELIAL_DYSFUNCTION": "stav tvých cév",
+  "ERECTILE_DYSFUNCTION": "tvoji schopnost erekce",
+  "INSULIN_RESISTANCE": "schopnost těla zpracovávat cukr"
+};
+
+// Explain only evidence attached to the selected leverage node; no clinical inference here.
+function whyEvidencePhrase(ctx) {
+  const e = ctx.leverage_evidence;
+  const facts = [...(e?.direct ?? []), ...(e?.supporting ?? []), ...(e?.inferred_from_nodes ?? [])];
+  const no = value => value === false || value === 0
+    || (typeof value === 'string' && /^(ne|no|false|0)$/i.test(value.trim()));
+  if (ctx.system_leverage?.node_id === 'GAIT_INSTABILITY'
+      && facts.some(f => (f.question_id === 'gait_instability_reported' && f.value === true)
+        || (f.question_id === 'gait_stability' && no(f.value)))) {
+    return 'Uvádíš nejistotu při chůzi.';
+  }
+  // A modeled gait inference is not the user's report of unstable walking.
+  // Expose its combined sources instead of presenting the eyes-closed proxy
+  // alone as the reason. Do not alter inference, dose or safety in the UI.
+  if (ctx.system_leverage?.node_id === 'GAIT_INSTABILITY' && !e?.direct?.length
+      && !facts.some(f => f.question_id === 'gait_instability_reported' && f.value === true)
+      && !facts.some(f => f.question_id === 'gait_stability' && no(f.value))) {
+    const strength = facts.some(f => f.node_id === 'LOW_MUSCLE_STRENGTH');
+    const balance = facts.some(f => ['rovnovaha_zavrene_oci', 'balanc_jedna_noha'].includes(f.question_id));
+    const onlyProxies = facts.every(f => f.node_id === 'LOW_MUSCLE_STRENGTH'
+      || ['rovnovaha_zavrene_oci', 'balanc_jedna_noha'].includes(f.question_id));
+    if (strength && balance && onlyProxies) return 'Údaje o síle a rovnováze naznačují možné omezení rovnováhy. Samy nepotvrzují nejistotu při běžné chůzi.';
+  }
+  const questions = {
+    recent_falls: 'V onboardingu je uveden nedávný pád.',
+    rovnovaha_zavrene_oci: 'Onboarding ukazuje omezení rovnováhy.',
+    balanc_jedna_noha: 'Onboarding ukazuje omezení rovnováhy.',
+    vstat_ze_zeme: 'Nezvládáš vstát ze země bez opory rukou.',
+    vynest_nakup: 'Nezvládáš vynést těžší nákup bez zastavení.',
+    zvednout_vnouce: 'Nezvládáš zvednout těžší předmět ze země do náruče.',
+  };
+  const answer = facts.find(f => f.source === 'ONBOARDING' && questions[f.question_id]
+    && (f.question_id === 'recent_falls' ? f.value === true : no(f.value)));
+  if (answer) return questions[answer.question_id];
+  const sitting = facts.find(f => f.obs_type === 'sedentary_hours_day' && typeof f.value === 'number' && Number.isFinite(f.value));
+  if (sitting) return `Uvádíš, že běžně prosedíš ${sitting.value} hodin denně.`;
+  if (facts.some(f => f.field === 'sedentary_work' && f.value === true)) return 'Uvádíš sedavou práci.';
+  if (facts.some(f => f.obs_type === 'activity_level' && typeof f.summary === 'string')) return 'V denních záznamech opakovaně uvádíš málo pohybu.';
+  if (facts.some(f => f.obs_type === 'weight_kg' && typeof f.value === 'number' && typeof f.height_cm === 'number')) return 'Vycházím ze zadané výšky a hmotnosti.';
+  return null;
+}
 
 function buildWhyResponse(sessionState) {
   const ctx = sessionState.last_domain_response?.explanation_context;
@@ -733,54 +1152,59 @@ function buildWhyResponse(sessionState) {
     };
   }
 
+  if (sessionState.last_daily_decision?.reason_code === 'HOLD_DONE_TODAY'
+      && !sessionState.current_action_assignment) {
+    const gait = ctx.reported_gait_evidence;
+    const reported = [...(gait?.direct ?? []), ...(gait?.supporting ?? []), ...(gait?.inferred_from_nodes ?? [])]
+      .some(f => f.question_id === 'gait_instability_reported' && f.value === true);
+    return { mode: 'EXPLAIN',
+      text: (reported ? 'Uvádíš nejistotu při chůzi. ' : '')
+        + 'Dnešní akci už máš hotovou. Nové údaje beru v úvahu při dalším vyhodnocení; další cvik dnes nenabízím.',
+      buttons: [], expects_reply: true, session_updates: {}, debug: { source: 'completed_day_explain' },
+    };
+  }
+
   const parts = [];
+  const gaitFacts = ctx.reported_gait_evidence;
+  if ([...(gaitFacts?.direct ?? []), ...(gaitFacts?.supporting ?? []), ...(gaitFacts?.inferred_from_nodes ?? [])]
+      .some(f => f.question_id === 'gait_instability_reported' && f.value === true)
+      && whyEvidencePhrase(ctx) !== 'Uvádíš nejistotu při chůzi.') {
+    parts.push('Uvádíš nejistotu při chůzi.');
+  }
+  // When the engine selected a checked alternative, explain that actual action
+  // branch only. Repeating the blocked global priority here made adiposity look
+  // like the purpose of a strength/balance action and obscured the useful reason.
   const leverage    = ctx.system_leverage;
   const constraint  = ctx.system_constraint;
   const action      = ctx.action_context?.selected;
 
-  // Both selected objects have node_id (not label) — resolve from master.json
-  const leverageLabel   = NODE_LABEL_CS[leverage?.node_id]   ?? null;
-  const constraintLabel = NODE_LABEL_CS[constraint?.node_id] ?? null;
-  const actionLabel     = action?.label ?? null;
-  const affinity        = action?.leverage_affinity ?? null;
+  // Read the selected engine nodes; never splice the instruction into WHY.
+  const leverageSubject   = WHY_SUBJECT_CS[leverage?.node_id]   ?? NODE_LABEL_CS[leverage?.node_id]   ?? null;
+  const constraintSubject = WHY_SUBJECT_CS[constraint?.node_id] ?? NODE_LABEL_CS[constraint?.node_id] ?? null;
 
-  // Primary: SYSTEM_LEVERAGE — why this area
-  if (leverageLabel) {
-    parts.push(`Teď je největší páka v oblasti: ${leverageLabel}.`);
-  }
-
-  // Secondary: action + goal_impact — why this intervention, what it achieves
-  if (actionLabel) {
-    const branches = (action?.goal_impact?.branches ?? [])
-      .map(b => GOAL_BRANCH_CS[b]).filter(Boolean);
-    const verb     = affinity === 'high' ? 'přímo ovlivňuje' : 'ovlivňuje';
-    const goalPart = branches.length > 0
-      ? ` a podporuje ${branches.map(b => b.toLowerCase()).join(' a ')}`
-      : '';
-
-    if (leverageLabel) {
-      // "Svižná chůze ji přímo ovlivňuje a podporuje zdravé přežití."
-      parts.push(`${actionLabel} ji ${verb}${goalPart}.`);
-    } else if (branches.length > 0) {
-      // No leverage identified — neutral reference to goal
-      parts.push(`${actionLabel} cílí na ${branches.map(b => b.toLowerCase()).join(' a ')}.`);
-    }
+  if (leverageSubject) {
+    const focus = WHY_FOCUS_CS[leverage?.node_id];
+    const evidencePhrase = whyEvidencePhrase(ctx);
+    const inferredBalance = leverage.node_id === 'GAIT_INSTABILITY'
+      && evidencePhrase?.includes('Samy nepotvrzují nejistotu při běžné chůzi.');
+    // A goal-phrase sentence ("Cílem je podpořit ...") used to be appended here on
+    // every WHY answer regardless of node — generic boilerplate that added a third
+    // sentence without node-specific information. Dropped.
+    if (focus) parts.push(evidencePhrase
+      ? `${evidencePhrase} Proto se dnes zaměřujeme na ${inferredBalance ? 'rovnováhu' : focus}.`
+      : `Podle dostupných údajů se teď zaměřujeme na ${focus}.`);
   }
 
   // Optional: SYSTEM_CONSTRAINT — deeper WHY; shown only when different from leverage
-  if (constraintLabel && constraintLabel !== leverageLabel) {
-    parts.push(`Aktuální hlavní omezení: ${constraintLabel}.`);
+  if (constraintSubject && constraintSubject !== leverageSubject
+      && !(ctx.action_fallback?.status === 'SELECTED' && constraint?.node_id === ctx.system_priority?.node_id)) {
+    parts.push(`Zároveň hraje roli ${constraintSubject}.`);
   }
 
-  // Modification hint when action has safety condition
-  if (action?.safety?.level === 'SAFE_WITH_MODIFICATION') {
-    const mod = action?.safety?.modifications_suggested?.[0];
-    if (mod) parts.push(`Doporučená úprava: ${localizeMod(mod)}.`);
-  }
-
+  // Safety instructions belong to ACT, not to the reason for selecting it.
   const text = parts.length > 0
     ? parts.join(' ')
-    : 'Tato akce cílí na tvůj aktuální systémový bottleneck.';
+    : 'Zatím nemám dost podkladů pro konkrétní doporučení. Potřebuji doplnit další údaje.';
 
   return {
     mode:          'EXPLAIN',
@@ -792,9 +1216,124 @@ function buildWhyResponse(sessionState) {
   };
 }
 
+// Exported for unit testing only — not part of the public API.
+export function _buildWhyResponse_test(sessionState) {
+  return buildWhyResponse(sessionState);
+}
+
+// ── "Kam směřuješ?" response (no engine call) ───────────────────────────────────
+// Uses only cached causal_context + goal_gateway_context from last_domain_response (same
+// contract as buildWhyResponse — read-only exposure of already-computed engine output).
+// Narrative shape: leverage → first causal step → reachable Goal Gateway(s), using ONLY
+// goal_gateway_context.gateway_nodes_reached (computeGoalImpact in systemConstraint.js,
+// already computed generically per node). No gateway reachable → no human-stake clause at
+// all — never invented. Always "může" (never "stane se"); no separate disclaimer sentence —
+// "může" already carries the caution, so appending one restates it redundantly.
+function buildTrajectoryResponse(sessionState) {
+  const ctx = sessionState.last_domain_response?.explanation_context;
+  const cc  = ctx?.causal_context;
+  const leverageNodeId = ctx?.system_leverage?.node_id;
+  const step = leverageNodeId ? CAUSAL_STEP_CS[leverageNodeId] : null;
+
+  if (!cc || (cc.affected_nodes ?? []).length === 0 || !step) {
+    return {
+      mode:          'EXPLAIN',
+      text:          'Zatím nemám dost dat na to, kam by tato oblast mohla dál směřovat.',
+      buttons:       sessionState.current_action_assignment ? ['Hotovo', 'Přeskočit'] : [],
+      expects_reply: false,
+      session_updates: {},
+      debug:         { source: 'causal_context_no_data' },
+    };
+  }
+
+  const reached = (ctx?.goal_gateway_context?.gateway_nodes_reached ?? [])
+    .filter(id => GOAL_GATEWAY_PHRASE_CS[id])
+    .filter(id => id !== step.suppressGateway);
+
+  let text;
+  if (reached.length === 0) {
+    // No modeled Goal Gateway reachable from this node — show the causal step only.
+    text = `Může se ti ${step.nextStep}.`;
+  } else if (reached.length === 1) {
+    text = `Může se ti ${step.nextStep} a ${GOAL_GATEWAY_PHRASE_CS[reached[0]]}.`;
+  } else {
+    const [gw1, gw2] = reached.map(id => GOAL_GATEWAY_PHRASE_CS[id]);
+    text = `Může se ti ${step.nextStep}. Tím ti pak může zároveň ${gw1} a ${gw2}.`;
+  }
+
+  return {
+    mode:          'EXPLAIN',
+    text,
+    buttons:       sessionState.current_action_assignment ? ['Hotovo', 'Přeskočit'] : [],
+    expects_reply: false,
+    session_updates: {},
+    debug:         { source: 'causal_context', gateways_reached: reached },
+  };
+}
+
+// Exported for unit testing only — not part of the public API.
+export function _buildTrajectoryResponse_test(sessionState) {
+  return buildTrajectoryResponse(sessionState);
+}
+
+// ── "Co tím změníš?" response (no engine call) ──────────────────────────────────
+// Uses only cached action_context.selected.mechanism_targets from last_domain_response.
+// Effect is read from the intervention's own mechanism_targets — never derived from the
+// action's label text. Primary = mechanism_targets[0] (the leverage node itself, by
+// existing convention in every intervention-map.json entry). Secondary = up to 3 further
+// targets that have a plain-language phrase in MECHANISM_TARGET_CS — entries with no good
+// lay equivalent are skipped, not shown as clinical jargon. Subject is the action's own
+// label when it's safe to use as a sentence subject (see isSafeActionSubject); falls back
+// to "Tato akce" for imperative-instruction labels — the same splicing problem the C4 cut
+// fixed for "Proč?", now also guarded here.
+function buildMechanismResponse(sessionState) {
+  const ctx    = sessionState.last_domain_response?.explanation_context;
+  const action = ctx?.action_context?.selected;
+  const targets = action?.mechanism_targets ?? [];
+  const override = action?.intervention_id ? MECHANISM_OVERRIDE_CS[action.intervention_id] : null;
+  const primary = override?.primary ?? (targets.length > 0 ? MECHANISM_PRIMARY_CS[targets[0]] : null);
+
+  if (!action || targets.length === 0 || !primary) {
+    return {
+      mode:          'EXPLAIN',
+      text:          'Zatím nemám k této akci uložený konkrétní mechanismus účinku.',
+      buttons:       sessionState.current_action_assignment ? ['Hotovo', 'Přeskočit'] : [],
+      expects_reply: false,
+      session_updates: {},
+      debug:         { source: 'mechanism_targets_no_data' },
+    };
+  }
+
+  // Prefer the intervention name: instructions are not grammatical subjects.
+  // Only unknown intervention types may use a short noun-phrase label.
+  const subject = INTERVENTION_TYPE_LABEL_CS[action.intervention_id]
+    ?? (isSafeActionSubject(action.label) ? action.label : 'Tato akce');
+  const secondary = override?.secondary ?? [...new Set(targets.slice(1))]
+    .filter(id => id !== targets[0])
+    .map(id => MECHANISM_TARGET_CS[id]).filter(Boolean).slice(0, 3);
+  const phrases = [primary, ...secondary].map(effect => `${effect.verb} ${effect.object}`);
+  const joined = phrases.length === 1 ? phrases[0]
+    : `${phrases.slice(0, -1).join(', ')} a ${phrases.at(-1)}`;
+  const text = `${subject} ti při pravidelném opakování pomůže ${joined}.`;
+
+  return {
+    mode:          'EXPLAIN',
+    text,
+    buttons:       sessionState.current_action_assignment ? ['Hotovo', 'Přeskočit'] : [],
+    expects_reply: false,
+    session_updates: {},
+    debug:         { source: 'mechanism_targets', secondary_count: secondary.length },
+  };
+}
+
+// Exported for unit testing only — not part of the public API.
+export function _buildMechanismResponse_test(sessionState) {
+  return buildMechanismResponse(sessionState);
+}
+
 // ── Presentation dispatcher ───────────────────────────────────────────────────
 
-function buildPresentation(eventType, classifiedPayload, result, sessionUpdates, isHoldFollowUp = false) {
+function buildPresentation(eventType, classifiedPayload, result, sessionUpdates, isHoldFollowUp = false, sedentaryHoursKnown = false, sex = null) {
   if (result.error) {
     return {
       mode:          'NOOP',
@@ -814,7 +1353,7 @@ function buildPresentation(eventType, classifiedPayload, result, sessionUpdates,
 
   switch (dd.mode) {
     case 'ACT':             return buildActResponse(dd, ctx, sessionUpdates, warnings);
-    case 'ASK':             return buildAskResponse(dd, ctx, sessionUpdates, warnings);
+    case 'ASK':             return buildAskResponse(dd, ctx, sessionUpdates, warnings, sedentaryHoursKnown, sex);
     case 'HOLD':            return buildHoldResponse(dd, ctx, sessionUpdates, warnings, eventType, isHoldFollowUp);
     case 'SAFETY':          return buildSafetyBlockedResponse(dd, sessionUpdates, warnings);
     case 'SAFETY_CRITICAL': return buildSafetyCriticalResponse(dd, sessionUpdates, warnings);
@@ -830,10 +1369,132 @@ const ADAPTER_EVENT_TYPES = new Set([
   'USER_PREFERENCE', 'DOMAIN_REQUEST', 'GENERAL_HEALTH_REQUEST',
 ]);
 
+// Scope is an interpretation boundary, not a clinical decision. An unsupported
+// request must never fall through to an unrelated recommendation from old profile data.
+export function hasUnsupportedMedicalTopic(text) {
+  const normalized = text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  // These narrow, explicit denials do not constitute a positive medical report.
+  const positive = normalized
+    .replace(/\b(?:nemam|nemel jsem|neprodelal jsem)\s+(?:zadnou?\s+)?(?:synkop\w*|symkop\w*|arytmi\w*|fibrilac\w*)/g, '')
+    .replace(/\b(?:nikdy jsem neomdlel|nikdy jsem nebyl v bezvedomi)\b/g, '');
+  return /\b(?:synkop\w*|symkop\w*|syncope|bezvedom\w*|omdlel\w*|omdlev\w*|mdlob\w*|arytmi\w*|fibrilac\w*|kardiostimulator\w*)\b/.test(positive)
+    || /\b(?:ztrat\w*|ztrac\w*|vypad\w*)\s+(?:(?:jsem|mi|se mi|mu|ji)\s+)?vedomi\b/.test(positive)
+    || /\bbolest\w*\s+na\s+hrudi\b/.test(positive);
+}
+
+// A question about a condition is not a declaration that the user has it.
+// Persist only narrow explicit first-person reports, never hypotheses/third parties.
+export function hasReportedUnsupportedMedicalCondition(text) {
+  if (typeof text !== 'string' || !hasUnsupportedMedicalTopic(text)) return false;
+  const plain = text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  if (/\b(?:kdyby|co kdyz|pokud bych|kdybych)\b/.test(plain)) return false;
+  return plain.split(/(?<=[.!?;])\s*/).some(clause => {
+    if (/\?\s*$/.test(clause) || /^(?:co|proc|jak|muze|muzu|vysvetli)\b/.test(clause.trim())) return false;
+    return /(?:^|\ba\s+|\bale\s+)(?:mam|mel jsem|mela jsem|prodelal jsem|prodelala jsem|trpim|lecim se s)\s+(?:(?:diagnostikovanou|potvrzenou|opakovanou)\s+)?(?:synkop\w*|symkop\w*|arytmi\w*|fibrilac\w*|kardiostimulator\w*|mdlob\w*|bolest\w*\s+na\s+hrudi)\b/.test(clause.trim())
+      || /^(?:(?:dnes|vcera|nedavno)\s+)?(?:omdlel(?:a)?\s+jsem|jsem\s+omdlel(?:a)?|ztratil(?:a)?\s+jsem\s+vedomi)\b/.test(clause.trim());
+  });
+}
+
+const scopeText = text => text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().replace(/[.!?]+$/, '').trim();
+const SCOPE_HELP_TEXTS = new Set(['co chytre ja umi', 'co je chytre ja', 'co umis', 'co vsechno umis', 'co umis dalsiho', 's cim mi pomuzes', 's cim mi muzes pomoci', 'co muzu resit', 'na co se muzu ptat', 'jake dotazy muzu pokladat', 'muzu se zeptat na neco jineho', 'jak to funguje', 'jak funguje chytre ja', 'jak pokracovat']);
+const SCOPE_LIMIT_WHY_TEXTS = new Set(['proc nenabizis cviceni', 'proc mi nedoporucis cviceni']);
+
+function buildScopeHelp(state) {
+  return { mode: 'EXPLAIN', expects_reply: true, buttons: [],
+    session_updates: state.reported_medical_limitation === true
+      ? { current_action_assignment: null, pending_question: null, last_domain_response: null } : {},
+    text: 'Pomáhám s pohybem, nadváhou, svalovou silou a rovnováhou. Vybírám jeden konkrétní krok a vysvětluji proč.'
+      + (state.reported_medical_limitation === true
+        ? ' Po nahlášené zdravotní potíži ti tu zátěž neumím posoudit. Můžeš se dál ptát na fungování aplikace nebo důvod omezení.'
+        : ' Napiš, co chceš řešit.'),
+    debug: { reason_code: 'SCOPE_HELP' } };
+}
+
+function buildMedicalActivityLimit() {
+  const response = buildUnsupportedResponse('medical', false, true);
+  return { ...response,
+    text: 'Kvůli nahlášené zdravotní potíži ti vhodnou pohybovou aktivitu neumím bezpečně vybrat. Zátěž prober s lékařem. V rozhovoru ale můžeš pokračovat a ptát se na fungování Chytrého já.',
+    buttons: ['Co Chytré já umí?', 'Proč nenabízíš cvičení?'],
+    debug: { source: 'medical_activity_scope', reason_code: 'MEDICAL_ACTIVITY_LIMIT' } };
+}
+
+function buildUnsupportedResponse(kind = 'general', unclear = false, reportedMedical = false) {
+  const text = unclear
+    ? 'Zatím nerozumím, s čím chceš pomoci. Chceš řešit pohyb, nadváhu, svalovou sílu nebo rovnováhu?'
+    : 'S tímhle ti zatím neumím spolehlivě pomoci. Chytré já teď podporuje pohyb, nadváhu, svalovou sílu a rovnováhu.'
+      + (kind === 'medical' ? ' Zdravotní potíže řeš s lékařem; vhodnou zátěž ti tady neumím posoudit.' : '')
+      + ' Můžeš napsat jiný dotaz.';
+  return {
+    mode: 'HOLD', text, buttons: [], expects_reply: true,
+    session_updates: {
+      pending_question: null,
+      current_action_assignment: null,
+      last_domain_response: null,
+      last_daily_decision: { mode: 'HOLD', reason_code: unclear ? 'SCOPE_UNCLEAR' : 'UNSUPPORTED_REQUEST', primary_item: null },
+      ...(reportedMedical ? { reported_medical_limitation: true } : {}),
+      // This describes the last unsupported turn, not a lock on later questions.
+      unsupported_request: unclear ? null : { kind },
+      pending_ai_retry: null,
+    },
+    debug: { source: 'input_scope', reason_code: unclear ? 'SCOPE_UNCLEAR' : 'UNSUPPORTED_REQUEST' },
+  };
+}
+
 // ── Main export ───────────────────────────────────────────────────────────────
 // Stateless: caller owns session state and merges session_updates.
 
+function buildClassifierUnavailable(state, originalText, draftText = originalText, waiting = false) {
+  const previous = state.pending_ai_retry;
+  return {
+    mode: 'HOLD',
+    text: waiting ? 'Předchozí zpráva ještě čeká na zpracování. Nejprve klepni na „Zkusit znovu“. Nový text ti ponechám rozepsaný.'
+      : 'Zpracování zprávy je teď dočasně nedostupné. Zprávu mám připravenou k opakování. Klepni na „Zkusit znovu“.',
+    buttons: ['Zkusit znovu'], expects_reply: true, draft_text: draftText,
+    session_updates: {
+      pending_question: state.pending_question ?? null,
+      current_action_assignment: null, last_domain_response: null,
+      last_daily_decision: { mode: 'HOLD', reason_code: 'CLASSIFIER_UNAVAILABLE' },
+      pending_ai_retry: previous ?? { text: originalText, requested_at: new Date().toISOString(),
+        context: { pending_question: state.pending_question ?? null, current_action_assignment: state.current_action_assignment ?? null } },
+    },
+    debug: { reason_code: 'CLASSIFIER_UNAVAILABLE' },
+  };
+}
+
 export async function processInput(userId, userText, sessionState = {}) {
+  // A new medical topic preempts retry; saved activity limits are enforced in
+  // the health path below, including replayed requests. Unrelated retries work.
+  if (hasUnsupportedMedicalTopic(userText))
+    return processInputCore(userId, userText, sessionState);
+  const retry = sessionState.pending_ai_retry;
+  if (retry) {
+    const valid = typeof retry.text === 'string' && retry.text.trim() && retry.text.length <= 20000
+      && retry.text.trim().toLowerCase() !== 'zkusit znovu';
+    if (!valid) return { ...buildUnsupportedResponse('general', true),
+      text: 'Nemám zprávu připravenou k opakování. Napiš mi prosím, co chceš řešit.' };
+    if (userText.trim().toLowerCase() !== 'zkusit znovu')
+      return buildClassifierUnavailable(sessionState, retry.text, userText, true);
+    const actionReply = ACTION_COMPLETION_RE.test(retry.text.trim()) || ACTION_SKIP_RE.test(retry.text.trim());
+    const requested = Date.parse(retry.requested_at ?? '');
+    if (actionReply && (!Number.isFinite(requested) || new Date(requested).toISOString().slice(0, 10) !== new Date().toISOString().slice(0, 10))) {
+      return { mode: 'HOLD', text: 'Potvrzení staré akce znovu neodesílám. Klepni na „Co dál?“ pro aktuální doporučení.',
+        buttons: ['Co dál?'], expects_reply: true,
+        session_updates: { pending_ai_retry: null, pending_question: null, current_action_assignment: null, last_domain_response: null,
+          last_daily_decision: { mode: 'HOLD', reason_code: 'STALE_ACTION_RETRY' } }, debug: { reason_code: 'STALE_ACTION_RETRY' } };
+    }
+    const original = { ...sessionState, pending_question: retry.context?.pending_question ?? null,
+      current_action_assignment: retry.context?.current_action_assignment ?? null, pending_ai_retry: null };
+    const response = await processInputCore(userId, retry.text, original);
+    // A successful result clears the retained request; another outage keeps it intact.
+    if (response.debug?.reason_code === 'CLASSIFIER_UNAVAILABLE') {
+      response.session_updates.pending_ai_retry = retry;
+    } else response.session_updates = { ...response.session_updates, pending_ai_retry: null };
+    return response;
+  }
+  return processInputCore(userId, userText, sessionState);
+}
+
+async function processInputCore(userId, userText, sessionState = {}) {
   const state = {
     active_domain:            'health',
     pending_question:          null,
@@ -842,6 +1503,37 @@ export async function processInput(userId, userText, sessionState = {}) {
     last_domain_response:      null,
     ...sessionState,
   };
+
+  const medicalLimit = state.reported_medical_limitation === true;
+  if (hasUnsupportedMedicalTopic(userText)) {
+    return buildUnsupportedResponse('medical', false,
+      medicalLimit || hasReportedUnsupportedMedicalCondition(userText));
+  }
+  const normalizedScopeText = scopeText(userText);
+  if (SCOPE_HELP_TEXTS.has(normalizedScopeText)) return buildScopeHelp(state);
+  if (SCOPE_LIMIT_WHY_TEXTS.has(normalizedScopeText) && medicalLimit) {
+    return { ...buildMedicalActivityLimit(), mode: 'EXPLAIN',
+      text: 'Uvedl jsi zdravotní potíž, u které Chytré já zatím neumí posoudit vhodnou zátěž. Proto ti nevybírá cvičení; to prober s lékařem. Ostatní otázky můžeš dál pokládat.' };
+  }
+  if (state.unsupported_request || medicalLimit) {
+    if (DOMAIN_REQUEST_NAV_RE.test(userText.trim())) return buildScopeHelp(state);
+    if (/^(?:proc|proc ne)$/.test(normalizedScopeText)) {
+      if (state.unsupported_request?.kind === 'general') return {
+        ...buildScopeHelp(state), text: 'Tuto oblast Chytré já zatím nepodporuje. Můžeš napsat jiný dotaz nebo se zeptat, co už umí.' };
+      if (medicalLimit) return { ...buildMedicalActivityLimit(), mode: 'EXPLAIN',
+        text: 'Uvedl jsi zdravotní potíž. Chytré já zatím neumí posoudit vhodnou zátěž při těchto potížích; prober ji s lékařem. Rozhovor tím nekončí.' };
+      return { ...buildScopeHelp(state), text: 'Na takové zdravotní otázky zatím neumím spolehlivě odpovědět. Můžeš se zeptat na podporované oblasti nebo fungování aplikace.' };
+    }
+  }
+  if (medicalLimit) {
+    // A stale assignment/retry must not restore exercise, but unrelated questions
+    // still reach scope classification below. The report itself stays durable.
+    state.current_action_assignment = null;
+    state.pending_question = null;
+    state.last_domain_response = null;
+    if (ACTION_COMPLETION_RE.test(userText.trim()) || ACTION_SKIP_RE.test(userText.trim())
+        || normalizedScopeText === 'zkusit znovu') return buildMedicalActivityLimit();
+  }
 
   // 1. Classify intent
   // Pre-classifier guards run in priority order before calling Haiku.
@@ -894,6 +1586,7 @@ export async function processInput(userId, userText, sessionState = {}) {
   // Routes the answer before the classifier for tightly constrained scalar types.
   // Fires ONLY when the ENTIRE input is safely interpretable as the expected scalar:
   //   birth_year       → full-input year expression (BIRTH_YEAR_FULL_RE)
+  //   person_sex       → full-input muž/žena expression (GENDER_FULL_RE)
   //   recent_falls     → full-input yes/no expression (BOOTSTRAP_YESNO_FULL_RE)
   //   vstat_ze_zeme    → full-input yes/no expression
   //   vynest_nakup     → full-input yes/no expression
@@ -909,6 +1602,10 @@ export async function processInput(userId, userText, sessionState = {}) {
     if (_ev === 'birth_year'
         && !COMPOUND_SIGNAL_RE.test(_trimmed)
         && BIRTH_YEAR_FULL_RE.test(_trimmed)) {
+      classified = { event_type: 'ANSWER_TO_EVIDENCE_QUESTION', payload: { evidence_type: _ev, value: _trimmed } };
+    } else if (_ev === 'person_sex'
+        && !COMPOUND_SIGNAL_RE.test(_trimmed)
+        && GENDER_FULL_RE.test(_trimmed)) {
       classified = { event_type: 'ANSWER_TO_EVIDENCE_QUESTION', payload: { evidence_type: _ev, value: _trimmed } };
     } else if ((_ev === 'recent_falls' || _ev === 'vstat_ze_zeme' || _ev === 'vynest_nakup')
                && !COMPOUND_SIGNAL_RE.test(_trimmed)
@@ -942,6 +1639,18 @@ export async function processInput(userId, userText, sessionState = {}) {
     }
     if (_pdMatch) {
       classified = { event_type: 'ANSWER_TO_EVIDENCE_QUESTION', payload: { evidence_type: _ev, value: _trimmed } };
+    }
+  }
+
+  // Upper pressure: strict whole-input replies only; compound health facts stay on the normal route.
+  if (!classified && (state.pending_question?.type === 'GENERAL' && state.pending_question?.evidence_type === 'bp_systolic'
+        || state.last_daily_decision?.reason_code === 'BP_EVIDENCE_RECORDED')
+      && !COMPOUND_SIGNAL_RE.test(userText.trim())) {
+    const raw = userText.trim();
+    if (/^(?:\d{2,3}(?:\s*\/\s*\d{2,3})?|nevím|nemám\s+(?:změřeno|výsledek))\s*[.!?]*$/i.test(raw)) {
+      classified = { event_type: 'ANSWER_TO_EVIDENCE_QUESTION', payload: {
+        evidence_type: 'bp_systolic', value: raw.replace(/[.!?]+$/, ''),
+      } };
     }
   }
 
@@ -983,6 +1692,21 @@ export async function processInput(userId, userText, sessionState = {}) {
     }
   }
 
+  // Exact replies to a typed gait question are dialogue controls, not new
+  // symptoms. Preserve uncertainty as the raw answer; never turn it into false.
+  // Full-string matching leaves compound health/scope inputs to existing guards.
+  if (!classified && state.pending_question?.type === 'GENERAL'
+      && state.pending_question?.evidence_type === 'gait_stability') {
+    const answer = userText.trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase().replace(/[.!?]+$/, '').trim();
+    if (['ano', 'ne', 'nevim'].includes(answer)) {
+      classified = { event_type: 'ANSWER_TO_EVIDENCE_QUESTION', payload: {
+        evidence_type: 'gait_stability',
+        value: answer === 'ano' ? true : answer === 'ne' ? false : userText.trim(),
+      } };
+    }
+  }
+
   // Guard D.6: sedentary_hours_day scalar — pre-Haiku deterministic routing.
   // Root of STOP #6: "8 hodin" triggers Haiku Rule 6 (number + unit → NEW_MEASUREMENT).
   // routeMeasurement for table='physical' returns a warning and writes nothing, so
@@ -1017,6 +1741,33 @@ export async function processInput(userId, userText, sessionState = {}) {
     classified = { event_type: 'DOMAIN_REQUEST', payload: {} };
   }
 
+  // Guard F: fixed UI chips, including WHY — exact match only.
+  // These are deterministic, UI-generated button labels (app/launcher.html), never free user
+  // text — must not be classified by the LLM, same reasoning as Guard B for Hotovo/Přeskočit.
+  if (!classified) {
+    const _trimmedF = userText.trim();
+    if (/^(?:proč|proc)\??$/i.test(_trimmedF)) {
+      classified = { event_type: 'WHY_REQUEST', payload: {} };
+    } else if (_trimmedF === 'Kam směřuji?') {
+      classified = { event_type: 'TRAJECTORY_REQUEST', payload: {} };
+    } else if (_trimmedF === 'Co tím změním?') {
+      classified = { event_type: 'MECHANISM_REQUEST', payload: {} };
+    }
+  }
+
+  // Endpoint recognizes only a full explicit supported wish. Existing safety and
+  // pending-answer guards above retain precedence; no engine decision is changed.
+  if (!classified && state.explicit_goal_request === true) {
+    classified = { event_type: 'GENERAL_HEALTH_REQUEST', payload: { text: userText } };
+  }
+
+  // A floor-rise wish asks the existing engine for today's action. It must not
+  // enter ANSWER_TO_EVIDENCE_QUESTION and therefore cannot mutate the stored
+  // onboarding fact. DOMAIN_REQUEST is the existing read-only engine route.
+  if (!classified && FLOOR_RISE_GOAL_RE.test(userText.trim())) {
+    classified = { event_type: 'DOMAIN_REQUEST', payload: {} };
+  }
+
   // Fall through: AI classifier (Haiku). Called only when no guard fired above.
   if (!classified) {
     classified = await classifyIntent(state, userText);
@@ -1024,16 +1775,66 @@ export async function processInput(userId, userText, sessionState = {}) {
 
   const { event_type, payload } = classified;
 
+  if (event_type === 'CLASSIFIER_UNAVAILABLE') return buildClassifierUnavailable(state, userText);
+  if (event_type === 'UNSUPPORTED_REQUEST') {
+    return buildUnsupportedResponse(payload?.unsupported_kind === 'medical' ? 'medical' : 'general');
+  }
+  if (event_type === 'SCOPE_CLARIFICATION') return buildUnsupportedResponse('general', true);
+  // Unsupported questions can continue; only the health/action path is restricted.
+  if (medicalLimit) return buildMedicalActivityLimit();
+
+  // Fixed clarification for functional meaning, not an engine-generated clinical question.
+  if (event_type === 'FUNCTIONAL_CLARIFICATION') {
+    const kind = payload?.clarification_kind;
+    const isLocation = kind === 'chair_or_floor';
+    const isAbility = kind === 'floor_rise_ability' && state.pending_question?.type === 'FUNCTIONAL_CONTEXT';
+    if (!isLocation && !isAbility) return buildUnsupportedResponse('general', true);
+    const budget = typeof state.question_budget_remaining === 'number' ? state.question_budget_remaining : 3;
+    const updates = { current_action_assignment: null, last_domain_response: null, last_daily_decision: null };
+    if (budget <= 0) return {
+      mode: 'HOLD', text: 'Bez upřesnění vstávání zatím nemám podklad pro doporučení.',
+      buttons: [], expects_reply: true,
+      session_updates: { ...updates, pending_question: null, question_budget_remaining: 0 },
+      debug: { reason_code: 'FUNCTIONAL_CLARIFICATION_BUDGET' },
+    };
+    const text = isLocation ? 'Myslíš vstávání ze židle, nebo ze země?'
+      : buildEvidenceQuestion({ evidence_type: 'vstat_ze_zeme' }, state.person_sex);
+    return {
+      mode: 'ASK', text, buttons: [], expects_reply: true,
+      session_updates: {
+        ...updates, question_budget_remaining: budget - 1,
+        pending_question: isLocation
+          ? { text, type: 'FUNCTIONAL_CONTEXT', evidence_type: null }
+          : { text, type: 'GENERAL', evidence_type: 'vstat_ze_zeme' },
+      },
+      debug: { reason_code: 'FUNCTIONAL_CLARIFICATION', clarification_kind: kind },
+    };
+  }
+
   // 2. WHY: use only cached context, no engine call
   // Also catch WHY via raw text fallback in case classifier missed it
   const textLower = userText.toLowerCase();
   const isWhy = event_type === 'WHY_REQUEST'
     || (textLower.startsWith('proč') || textLower.startsWith('proc'));
   if (isWhy) {
+    // A blocked decision must explain its own safety result, not an older action.
+    if (state.last_daily_decision?.reason_code === 'SAFETY_BLOCKED') {
+      const response = buildSafetyBlockedResponse(state.last_daily_decision, {}, []);
+      return response;
+    }
     if (state.last_daily_decision?.reason_code?.startsWith('PATH_DISCOVERY_HOLD')) {
       return buildPathDiscoveryWhyResponse(state);
     }
     return buildWhyResponse(state);
+  }
+
+  // 2.5 "Kam směřuješ?" / "Co tím změníš?" — same no-engine-call contract as WHY.
+  // Reached only via Guard F (exact chip-text match) — never via the AI classifier.
+  if (event_type === 'TRAJECTORY_REQUEST') {
+    return buildTrajectoryResponse(state);
+  }
+  if (event_type === 'MECHANISM_REQUEST') {
+    return buildMechanismResponse(state);
   }
 
   // 3. Map classifier event type to adapter-supported type
@@ -1054,7 +1855,7 @@ export async function processInput(userId, userText, sessionState = {}) {
       && state.last_daily_decision?.reason_code?.startsWith('PATH_DISCOVERY_HOLD')) {
     return {
       mode:          'HOLD',
-      text:          'Dosavadní odpovědi neukázaly na prioritní longevitní cestu. Hlásíš-li novou diagnózu nebo symptomy, řekni mi.',
+      text:          state.last_daily_decision.discovery_text ?? 'Dosavadní odpovědi neukázaly na prioritní longevitní cestu. Hlásíš-li novou diagnózu nebo symptomy, řekni mi.',
       buttons:       [],
       expects_reply: true,
       session_updates: {
@@ -1088,6 +1889,20 @@ export async function processInput(userId, userText, sessionState = {}) {
     adapterType = 'ANSWER_TO_EVIDENCE_QUESTION';
   }
 
+  // Mark clinical_context session-resolved whenever it was the pending question and the
+  // reply is an actual answer (not a refusal — that is marked by the generic bootstrap
+  // skip/defer block below instead). This must NOT depend on what adapterType the
+  // classifier assigns: clinical_context is the only bootstrap type with a free-text
+  // answer, so unlike the other types (guarded deterministically before the classifier
+  // ever runs), Haiku's non-deterministic output decides adapterType here, and a
+  // substantive reply can land as GENERAL_HEALTH_REQUEST directly, skipping the
+  // ANSWER_TO_EVIDENCE_QUESTION-gated block below entirely — which previously meant this
+  // resolution never happened and the question resurfaced later.
+  if (state.pending_question?.evidence_type === 'clinical_context'
+      && adapterType !== 'USER_PREFERENCE') {
+    state.skipped_bootstrap_types = [...(state.skipped_bootstrap_types ?? []), 'clinical_context'];
+  }
+
   // ── Bootstrap clinical_context answer routing (narrow unlock) ───────────────
   // clinical_context answers cannot flow through ANSWER_TO_EVIDENCE_QUESTION
   // (no EVIDENCE_STORAGE_REGISTRY entry).
@@ -1108,12 +1923,15 @@ export async function processInput(userId, userText, sessionState = {}) {
     if (/^\s*(ne|nem[aá]m|nic|n[eě]beru|žádn[éý][^a-z]|žádná)\s*[.,!]?\s*$/i.test(userText.trim())
         || isCompoundClinicalNegative(userText)) {
       // EARLY RETURN — no applyHealthEvent call, no DB write.
-      const newSkipped   = [...(state.skipped_bootstrap_types ?? []), 'clinical_context'];
+      // state.skipped_bootstrap_types already has 'clinical_context' from the
+      // unconditional mark above; newSkipped is just that same array, named for clarity.
+      const newSkipped   = state.skipped_bootstrap_types;
       const skippedSet   = new Set(newSkipped);
       const birthYrKnown = state.person_birth_year != null;
       const age          = state.person_birth_year ? (new Date().getFullYear() - state.person_birth_year) : null;
       const available    = filterBootstrapCandidates(_bootstrapNeeds, {
         birthYrKnown,
+        sexKnown: state.person_sex != null,
         age,
         resolvedPhysical: state.resolved_physical ?? [],
         skippedSet,
@@ -1130,7 +1948,7 @@ export async function processInput(userId, userText, sessionState = {}) {
           ? state.question_budget_remaining : 3,
       };
       if (next) {
-        const questionText = buildEvidenceQuestion(next);
+        const questionText = buildEvidenceQuestion(next, state.person_sex);
         return {
           mode:          'ASK',
           text:          questionText,
@@ -1164,7 +1982,14 @@ export async function processInput(userId, userText, sessionState = {}) {
           text:          `Na základě toho, co víš, stojí za bližší pohled: ${_pdSignal1.label_cs}.`,
           buttons:       [],
           expects_reply: true,
-          session_updates: { ...baseUpdates, pending_question: null },
+          session_updates: {
+          ...baseUpdates, pending_question: null,
+          last_daily_decision: {
+            mode: 'HOLD', reason_code: 'PATH_DISCOVERY_HOLD_CANDIDATE',
+            path_id: _pdSignal1.path_id,
+            discovery_text: `Na základě toho, co víš, stojí za bližší pohled: ${_pdSignal1.label_cs}.`,
+          },
+        },
           debug: { reason_code: 'PATH_DISCOVERY_CANDIDATE', path_id: _pdSignal1.path_id },
         };
       }
@@ -1177,7 +2002,10 @@ export async function processInput(userId, userText, sessionState = {}) {
         debug: { reason_code: 'PATH_DISCOVERY_HOLD', after: 'BOOTSTRAP_EXHAUSTED_AFTER_CLINICAL_NEGATIVE' },
       };
     }
-    // Substantive answer — route through existing free-text clinical extraction
+    // Substantive answer — route through existing free-text clinical extraction.
+    // clinical_context is already marked session-resolved by the unconditional mark
+    // above, regardless of this branch (its bootstrap-needs entry has no skip_if_known,
+    // so filterBootstrapCandidates has no way to drop it other than that explicit mark).
     adapterType = 'GENERAL_HEALTH_REQUEST';
     _clinicalContextRouted = true;
   }
@@ -1197,6 +2025,7 @@ export async function processInput(userId, userText, sessionState = {}) {
 
     const available = filterBootstrapCandidates(_bootstrapNeeds, {
       birthYrKnown,
+      sexKnown: state.person_sex != null,
       age,
       resolvedPhysical: state.resolved_physical ?? [],
       skippedSet,
@@ -1214,7 +2043,7 @@ export async function processInput(userId, userText, sessionState = {}) {
     };
 
     if (next) {
-      const questionText = buildEvidenceQuestion(next);
+      const questionText = buildEvidenceQuestion(next, state.person_sex);
       return {
         mode:          'ASK',
         text:          questionText,
@@ -1248,7 +2077,14 @@ export async function processInput(userId, userText, sessionState = {}) {
         text:          `Na základě toho, co víš, stojí za bližší pohled: ${_pdSignal2.label_cs}.`,
         buttons:       [],
         expects_reply: true,
-        session_updates: { ...baseUpdates, pending_question: null },
+        session_updates: {
+          ...baseUpdates, pending_question: null,
+          last_daily_decision: {
+            mode: 'HOLD', reason_code: 'PATH_DISCOVERY_HOLD_CANDIDATE',
+            path_id: _pdSignal2.path_id,
+            discovery_text: `Na základě toho, co víš, stojí za bližší pohled: ${_pdSignal2.label_cs}.`,
+          },
+        },
         debug: { reason_code: 'PATH_DISCOVERY_CANDIDATE', path_id: _pdSignal2.path_id },
       };
     }
@@ -1304,7 +2140,7 @@ export async function processInput(userId, userText, sessionState = {}) {
       && event.payload.evidence_type === 'sedentary_hours_day') {
     const hasExplicitNumber = /\d/.test(userText);
     const numericValue = parseFloat(String(event.payload.value ?? '').replace(',', '.').trim());
-    const isValidHours  = hasExplicitNumber && !isNaN(numericValue) && numericValue > 0 && numericValue <= 24;
+    const isValidHours  = hasExplicitNumber && !isNaN(numericValue) && numericValue >= 0 && numericValue <= 24;
     if (!isValidHours) {
       return {
         mode:          'ASK',
@@ -1396,7 +2232,7 @@ export async function processInput(userId, userText, sessionState = {}) {
     }
 
     if (event.payload.evidence_type === 'known_blood_pressure_approx') {
-      const UNKNOWN_BP = /nevím|neznám|nezměřil|nepamatuju|nemám.*tlakoměr|nenapadá/i.test(rawPD);
+      const UNKNOWN_BP = /nevím|neznám|nezměřil|nepamatuju|nemám\s+změřeno|nemám.*tlakoměr|nenapadá/i.test(rawPD);
       if (UNKNOWN_BP) {
         // DEVLOG: known_blood_pressure_approx = 0 is an UNKNOWN sentinel, not a physiological measurement.
         // Must never be interpreted as NODE_EVIDENCE. Replace with explicit unknown/skip semantics later.
@@ -1479,7 +2315,7 @@ export async function processInput(userId, userText, sessionState = {}) {
 
     // F1b: formatting error or permanent-inability phrase — re-ask with preserved pending_question
     const _reaskText = state.pending_question?.text
-      ?? buildEvidenceQuestion({ evidence_type: _evType });
+      ?? buildEvidenceQuestion({ evidence_type: _evType }, state.person_sex);
     return {
       mode:          'ASK',
       text:          _reaskText,
@@ -1494,14 +2330,38 @@ export async function processInput(userId, userText, sessionState = {}) {
   }
 
   // 6. Build session updates (use original classifier event_type for session logic)
-  const sessionUpdates = buildSessionUpdates(event_type, payload, result);
+  const sessionUpdates = buildSessionUpdates(event_type, payload, result, state.person_sex);
 
   // 7. Build presentation from DOMAIN_RESPONSE only
   // HOLD follow-up: user asked "what else?" while previous decision was also HOLD.
   // Triggers explanatory text instead of repeating the original action label.
   const isHoldFollowUp = adapterType === 'DOMAIN_REQUEST'
     && state.last_daily_decision?.mode === 'HOLD';
-  let presentation = buildPresentation(event_type, payload, result, sessionUpdates, isHoldFollowUp);
+  // DB facts are injected by /api/orchestrate. Include this turn's successfully
+  // persisted answer because the injected snapshot predates applyHealthEvent.
+  const sedentaryHoursKnown = state.hp_physical?.sedentary_hours_day != null
+    || (adapterType === 'ANSWER_TO_EVIDENCE_QUESTION'
+        && event.payload.evidence_type === 'sedentary_hours_day'
+        && result.persistence_status === 'ok'
+        && !(result.warnings ?? []).some(w => typeof w === 'string' && w.startsWith('ANSWER:')));
+  let presentation = buildPresentation(event_type, payload, result, sessionUpdates, isHoldFollowUp, sedentaryHoursKnown, state.person_sex);
+
+  // ── "Volná akce" secondary offer (docs/BACKLOG.md, first live test = rovnováha) ──
+  // Fires only right after the main action's own completion acknowledgment for
+  // the day (never on any other HOLD reason, never for other event types).
+  // Entirely additive: never changes presentation.mode/text/buttons, no new
+  // leverage/candidate ranking, never runs for the just-completed intervention
+  // itself. A failure here must never break the primary HOLD response.
+  const SECONDARY_OFFER_INTERVENTION_ID = 'BALANCE_TRAINING'; // single hardcoded area for first live test
+  if (event_type === 'ACTION_COMPLETED'
+      && presentation.mode === 'HOLD'
+      && presentation.debug?.reason_code === 'HOLD_DONE_TODAY'
+      && result.domain_response?.daily_decision?.primary_item?.intervention_id !== SECONDARY_OFFER_INTERVENTION_ID) {
+    const secondaryOffer = await computeSecondaryOffer(userId, SECONDARY_OFFER_INTERVENTION_ID).catch(() => null);
+    if (secondaryOffer) {
+      presentation = { ...presentation, secondary_offer: secondaryOffer };
+    }
+  }
 
   // ── PATH Discovery answer override ───────────────────────────────────────────
   // Fires after applyHealthEvent persisted the answer to a PATH_DISCOVERY question.
@@ -1541,7 +2401,14 @@ export async function processInput(userId, userText, sessionState = {}) {
         text:          `Na základě toho, co víš, stojí za bližší pohled: ${_pdNext.label_cs}.`,
         buttons:       [],
         expects_reply: true,
-        session_updates: { ..._pdBaseUpd, pending_question: null },
+        session_updates: {
+          ..._pdBaseUpd, pending_question: null,
+          last_daily_decision: {
+            mode: 'HOLD', reason_code: 'PATH_DISCOVERY_HOLD_CANDIDATE',
+            path_id: _pdNext.path_id,
+            discovery_text: `Na základě toho, co víš, stojí za bližší pohled: ${_pdNext.label_cs}.`,
+          },
+        },
         debug: { reason_code: 'PATH_DISCOVERY_CANDIDATE', path_id: _pdNext.path_id },
       };
     }
@@ -1563,6 +2430,20 @@ export async function processInput(userId, userText, sessionState = {}) {
   // Uses the effective skipped set: sessionUpdates may have added new types this turn
   // (e.g. clinical_context marked session-resolved after a negative "Ne." answer).
   const effectiveSkipped = sessionUpdates.skipped_bootstrap_types ?? state.skipped_bootstrap_types ?? [];
+  if (Array.isArray(effectiveSkipped) && effectiveSkipped.length > 0) {
+    // Always propagate the effective skip set to the client, even when the engine's
+    // own pick this turn doesn't collide with it below — otherwise a type marked
+    // session-resolved earlier in this same turn (e.g. clinical_context after a
+    // substantive answer) is silently dropped from session_updates whenever the
+    // engine's next pick happens to be a genuinely new, non-colliding candidate.
+    presentation = {
+      ...presentation,
+      session_updates: {
+        ...presentation.session_updates,
+        skipped_bootstrap_types: effectiveSkipped,
+      },
+    };
+  }
   if (presentation.mode === 'ASK'
       && Array.isArray(effectiveSkipped)
       && effectiveSkipped.length > 0) {
@@ -1579,15 +2460,18 @@ export async function processInput(userId, userText, sessionState = {}) {
       const justAnswered = (adapterType === 'ANSWER_TO_EVIDENCE_QUESTION' && event.payload.evidence_type)
         ? [event.payload.evidence_type]
         : [];
+      const sexKnown = state.person_sex != null
+        || (adapterType === 'ANSWER_TO_EVIDENCE_QUESTION' && event.payload.evidence_type === 'person_sex');
       const available    = filterBootstrapCandidates(_bootstrapNeeds, {
         birthYrKnown,
+        sexKnown,
         age,
         resolvedPhysical: [...(state.resolved_physical ?? []), ...justAnswered],
         skippedSet,
       });
       const next = selectNextBestEvidence(available, [], [], '1.0.0');
       if (next) {
-        const questionText = buildEvidenceQuestion(next);
+        const questionText = buildEvidenceQuestion(next, state.person_sex);
         presentation = {
           ...presentation,
           text: questionText,
@@ -1598,6 +2482,42 @@ export async function processInput(userId, userText, sessionState = {}) {
           },
           debug: { ...presentation.debug, reason_code: 'BOOTSTRAP_SKIP_OVERRIDE' },
         };
+      } else {
+        // Bootstrap is genuinely exhausted — every other candidate is either known,
+        // resolved, or already skipped, so there is nothing left to substitute for
+        // the stale pick the engine keeps re-selecting (it has no way of knowing
+        // pendingEvType was already resolved this session). Falling through here
+        // would silently re-display that same already-skipped question forever.
+        // Mirrors the identical PATH Discovery fallback used by the early-return
+        // clinical_context branches above when their own bootstrap search is empty.
+        const _pdSignal = synthesizePathDiscovery(state.hp_physical ?? {});
+        const _pdBaseUpd = { ...presentation.session_updates, skipped_bootstrap_types: effectiveSkipped };
+        if (_pdSignal.type === 'ASK') {
+          presentation = {
+            mode: 'ASK', text: _pdSignal.question_cs, buttons: [], expects_reply: true,
+            session_updates: {
+              ..._pdBaseUpd,
+              pending_question: { text: _pdSignal.question_cs, evidence_type: _pdSignal.evidence_type, type: 'PATH_DISCOVERY' },
+            },
+            debug: { reason_code: 'PATH_DISCOVERY_QUESTION', after: 'BOOTSTRAP_EXHAUSTED_OVERRIDE' },
+          };
+        } else if (_pdSignal.type === 'CANDIDATE') {
+          const discoveryText = `Na základě toho, co víš, stojí za bližší pohled: ${_pdSignal.label_cs}.`;
+          presentation = {
+            mode: 'HOLD', text: discoveryText, buttons: [], expects_reply: true,
+            session_updates: {
+              ..._pdBaseUpd, pending_question: null,
+              last_daily_decision: { mode: 'HOLD', reason_code: 'PATH_DISCOVERY_HOLD_CANDIDATE', path_id: _pdSignal.path_id, discovery_text: discoveryText },
+            },
+            debug: { reason_code: 'PATH_DISCOVERY_CANDIDATE', path_id: _pdSignal.path_id },
+          };
+        } else {
+          presentation = {
+            mode: 'HOLD', text: _pdSignal.text, buttons: [], expects_reply: true,
+            session_updates: { ..._pdBaseUpd, pending_question: null, last_daily_decision: { mode: 'HOLD', reason_code: 'PATH_DISCOVERY_HOLD' } },
+            debug: { reason_code: 'PATH_DISCOVERY_HOLD', after: 'BOOTSTRAP_EXHAUSTED_OVERRIDE' },
+          };
+        }
       }
     }
   }
@@ -1615,7 +2535,8 @@ export async function processInput(userId, userText, sessionState = {}) {
       && state.last_daily_decision?.mode === 'ASK'
       && state.last_daily_decision?.reason_code === 'ASK_BLOCKING'
       && !state.last_daily_decision?.primary_item
-      && event_type !== 'ANSWER_TO_EVIDENCE_QUESTION') {
+      && event_type !== 'ANSWER_TO_EVIDENCE_QUESTION'
+      && !sedentaryHoursKnown) {
     const sed_text = 'Přibližně kolik hodin za běžný den prosedíš?';
     presentation = {
       mode:          'ASK',
@@ -1694,6 +2615,30 @@ export async function processInput(userId, userText, sessionState = {}) {
     }
   }
 
+  // The model may still need pressure context for a projected risk after recording a reply.
+  // Keep that unmet need; suppress only repeated dialogue, never grant exercise clearance.
+  if (presentation.mode === 'ASK'
+      && presentation.session_updates?.pending_question?.evidence_type === 'bp_systolic') {
+    const answeredNow = adapterType === 'ANSWER_TO_EVIDENCE_QUESTION'
+      && event.payload.evidence_type === 'bp_systolic'
+      && result.persistence_status === 'ok';
+    const availability = answeredNow
+      ? (/^(?:nevím|nemám)/i.test(String(event.payload.value)) ? 'NOT_AVAILABLE' : 'AVAILABLE')
+      : state.hp_physical?.evidence_availability?.bp_systolic;
+    const known = state.hp_physical?.bp_systolic != null;
+    if (answeredNow || known || availability === 'NOT_AVAILABLE') {
+      presentation.mode = 'HOLD';
+      presentation.text = availability === 'NOT_AVAILABLE'
+        ? 'Aktuální krevní tlak nemáš změřený. Bez tohoto údaje ti teď konkrétní doporučení nedám. Až budeš mít hodnotu, můžeš ji doplnit.'
+        : 'Hodnotu krevního tlaku mám uloženou. Pro konkrétní doporučení zatím nemám dost podkladů.';
+      presentation.buttons = [];
+      presentation.expects_reply = true;
+      presentation.session_updates.pending_question = null;
+      presentation.session_updates.current_action_assignment = null;
+      presentation.session_updates.last_daily_decision = { mode: 'HOLD', reason_code: 'BP_EVIDENCE_RECORDED' };
+    }
+  }
+
   // ── P0 Safety gates (post-presentation) ──────────────────────────────────────
   // These gates run after buildPresentation() so they can inspect the final mode.
   // They never modify health data or engine decisions — only gate presentation output.
@@ -1723,7 +2668,7 @@ export async function processInput(userId, userText, sessionState = {}) {
     // Budget available: ask about the acute symptom (uses one budget slot).
     return {
       mode:          'ASK',
-      text:          'Zmínil/a jsi aktuální potíže, které potřebují víc kontextu. Jak se cítíš teď — lepší, stejně, nebo hůř?',
+      text:          genderize('Zmínil/a jsi aktuální potíže, které potřebují víc kontextu. Jak se cítíš teď — lepší, stejně, nebo hůř?', state.person_sex),
       buttons:       [],
       expects_reply: true,
       session_updates: {
@@ -1788,7 +2733,7 @@ export async function processInput(userId, userText, sessionState = {}) {
               debug: { reason_code: 'EVIDENCE_SKIPPED_SUPPRESSION', evidence_type: _diagGuidedNow.evidence_type, _diag },
             };
           }
-          const gText = buildEvidenceQuestion(_diagGuidedNow);
+          const gText = buildEvidenceQuestion(_diagGuidedNow, state.person_sex);
           return {
             mode:          'ASK',
             text:          gText,
@@ -1847,5 +2792,47 @@ export async function processInput(userId, userText, sessionState = {}) {
       result.domain_response?.daily_decision?.primary_item?.intervention_id ?? null;
   }
 
+  // Acknowledge personal intent without modifying the selected action, dose or safety.
+  if (presentation.mode === 'ACT' && state.person_goal === 'WEIGHT_LOSS') {
+    const focus = WHY_FOCUS_CS[ctx?.system_leverage?.node_id];
+    const inferredBalance = ctx?.system_leverage?.node_id === 'GAIT_INSTABILITY'
+      && whyEvidencePhrase(ctx)?.includes('Samy nepotvrzují nejistotu při běžné chůzi.');
+    const intro = ctx?.system_leverage?.node_id !== 'EXCESS_ADIPOSITY' && focus
+      ? (inferredBalance ? 'Chceš zhubnout. Dnes začínáme rovnováhou.' : `Chceš zhubnout. Dnes začínáme krokem pro ${focus}.`)
+      : 'Chceš zhubnout.';
+    presentation.text = `${intro} ${presentation.text}`;
+  }
+
+  // Acknowledge a wish to increase muscle mass without treating it as a
+  // diagnosis or a functional deficit. parseSupportedGoal (healthEventAdapter.js)
+  // never writes this to symptoms/diagnoses — only here, in presentation, do we
+  // state its relation to muscle/functional reserve. The selected action, dose
+  // and safety are unchanged; this only makes the engine's existing decision
+  // (ACT / no leverage yet) legible against the stated goal.
+  if (state.person_goal === 'MUSCLE_RESERVE') {
+    if (presentation.mode === 'ACT' && ctx?.system_leverage?.node_id) {
+      const focus = WHY_FOCUS_CS[ctx.system_leverage.node_id];
+      const intro = ctx.system_leverage.node_id !== 'LOW_MUSCLE_STRENGTH' && focus
+        ? `Chceš mít větší svaly. To souvisí se svalovou rezervou pro dlouhověkost. Dnes má přednost ${focus}.`
+        : 'Chceš mít větší svaly. To souvisí se svalovou rezervou pro dlouhověkost.';
+      presentation.text = `${intro} ${presentation.text}`;
+    } else if (!ctx?.system_leverage?.node_id) {
+      presentation.text =
+        `Chceš mít větší svaly. To souvisí se svalovou rezervou pro dlouhověkost, ne s diagnózou. ${presentation.text}`.trim();
+    }
+  }
+
+  // Acknowledge a direct longevity/healthy-ageing wish as the CHJ mission
+  // itself, then continue with the engine's unchanged decision (ACT / ASK /
+  // HOLD, whatever DECISION_GATE already produced from available evidence).
+  // Every leverage node already serves longevity by construction, so unlike
+  // WEIGHT_LOSS/MUSCLE_RESERVE there is no competing-domain branch to justify —
+  // this never creates a constraint, deficit or action on its own.
+  if (state.person_goal === 'LONGEVITY_INTENT') {
+    presentation.text = `Přesně to je poslání Chytrého já. ${presentation.text}`.trim();
+  }
+
   return presentation;
 }
+
+

@@ -84,27 +84,43 @@
       display: flex;
       align-items: center;
       justify-content: flex-end;
-      padding: 20px 20px 0;
+      padding: 20px 12px 0 20px;
       flex-shrink: 0;
     }
     .brand-orb-unit {
       position: relative;
       display: flex; justify-content: center;
     }
-    .brand-orb-unit:has(#orb.hidden) .logo { visibility: hidden; }
+    .logo.logo-dormant { visibility: hidden; }
     .logo {
       position: absolute;
-      left: 50%; bottom: calc(100% + 40px);
+      left: 50%; bottom: calc(100% + 36px);
       transform: translateX(-50%);
-      display: flex; justify-content: center; align-items: center;
+      display: flex; flex-direction: column; justify-content: center; align-items: center;
     }
     .logo .chj-logo {
-      --fs: 32px;
-      display: flex; flex-direction: row; align-items: center; gap: 9px;
-      color: #8abac8;
+      --fs: 46px;
+      display: flex; flex-direction: row; align-items: center; gap: 10px;
+      color: #e2e8f0;
+    }
+    .logo-sub {
+      font-size: 12px; letter-spacing: 6px; color: #5ba8bc;
+      text-transform: uppercase; margin-top: 14px; margin-bottom: 4px; text-align: center;
+      padding-right: 6px; text-shadow: 0 0 18px rgba(91,168,188,0.5);
+    }
+    .logo-battery {
+      /* Matches the footer's fixed 20px side padding (input-row), not vw alone,
+         so the left edge lines up with the input on narrow/mobile screens too. */
+      width: min(calc(100vw - 40px), 520px); height: 6px; border-radius: 3px;
+      overflow: hidden; background: transparent;
+      margin-top: 16px;
+    }
+    .logo-battery__fill {
+      height: 100%; border-radius: 3px; width: 0%;
+      transition: width 1.2s cubic-bezier(0.25,0,0.1,1), box-shadow 1.2s ease;
     }
     .logo .chj-logo__cursor {
-      flex-shrink: 0; width: 2px; height: calc(var(--fs) * 2);
+      flex-shrink: 0; width: 2px; height: 74px;
       background: currentColor;
       animation: chj-blink 1.1s step-end infinite;
     }
@@ -113,17 +129,21 @@
       display: flex; flex-direction: column;
       font-family: 'Urbanist', sans-serif;
       font-size: var(--fs);
-      line-height: 0.85; letter-spacing: -0.5px;
+      line-height: 0.88; letter-spacing: 2.5px;
     }
     .logo .chj-logo__row1 { font-weight: 300; white-space: nowrap; }
     .logo .chj-logo__row2 { font-weight: 800; }
     .logo .chj-logo__ac   { position: relative; display: inline-block; line-height: 1; }
     .logo .chj-logo__ac::after {
       content: ''; position: absolute;
-      top: 0.14em; left: 50%; transform: translateX(-50%);
-      width: 0.38em; height: 0.055em;
+      top: 0.1em; left: 50%; transform: translateX(-50%);
+      width: 0.42em; height: 0.07em; border-radius: 1px;
       background: currentColor;
     }
+    .back-to-web{margin-right:auto;color:var(--text-dim);font-size:13px;text-decoration:none;padding:8px 0}
+    .back-to-web:hover{color:var(--text)}
+    .back-to-web:focus-visible{outline:2px solid var(--cyan);outline-offset:4px}
+    #auth-overlay a.auth-back{border:0;padding:8px;font-size:13px;letter-spacing:0}
     .header-right {
       display: flex; align-items: center; gap: 10px;
     }
@@ -131,6 +151,7 @@
       font-size: 9px; letter-spacing: 2px; padding: 3px 8px;
       border: 1px solid #1e3050; border-radius: 20px; color: var(--text-dim);
       text-transform: uppercase; font-weight: 400; transition: all 0.4s;
+      width: 84px; text-align: center; box-sizing: border-box;
     }
     .mode-badge.act   { border-color: var(--cyan); color: var(--cyan); }
     .mode-badge.ask   { border-color: var(--gold); color: var(--gold); }
@@ -141,23 +162,45 @@
     /* ── Avatar ── */
     .avatar-wrapper { position: relative; }
     .avatar-btn {
-      width: 34px; height: 34px; border-radius: 50%;
+      width: 34px; height: 34px; border-radius: 50%; padding: 0; overflow: hidden;
       background: var(--surface); border: 1px solid rgba(58,203,216,0.42);
-      color: var(--cyan); font-size: 13px; font-weight: 500;
       cursor: pointer; display: flex; align-items: center; justify-content: center;
       font-family: inherit; transition: border-color 0.2s, box-shadow 0.2s;
     }
     .avatar-btn:hover { border-color: var(--cyan); box-shadow: 0 0 12px var(--cyan-glow); }
+    .avatar-btn img, .avatar-large img { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 50%; }
 
     .profile-dropdown {
       position: absolute; top: calc(100% + 10px); right: 0;
       background: #07111f; border: 1px solid rgba(58,203,216,0.12);
-      border-radius: 10px; min-width: 176px;
+      border-radius: 10px; min-width: 210px;
       box-shadow: 0 8px 32px rgba(0,0,0,0.65);
       z-index: 50; opacity: 0; pointer-events: none;
       transform: translateY(-6px); transition: opacity 0.15s, transform 0.15s;
     }
     .profile-dropdown.open { opacity: 1; pointer-events: auto; transform: translateY(0); }
+
+    .dropdown-header {
+      padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,0.05);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .avatar-large {
+      width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;
+      background: var(--surface); border: 1px solid rgba(58,203,216,0.42);
+      color: var(--cyan); font-size: 14px; font-weight: 500;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .dropdown-header-info { min-width: 0; }
+    .dropdown-email {
+      font-size: 13px; color: var(--text); white-space: nowrap;
+      overflow: hidden; text-overflow: ellipsis;
+    }
+    .status-row { display: flex; align-items: center; gap: 8px; margin-top: 5px; }
+    .badge-free {
+      background: rgba(58,203,216,0.12); color: var(--cyan);
+      padding: 2px 9px; border-radius: 6px; font-size: 11px; font-weight: 400;
+    }
+    .upgrade-link { color: var(--cyan); text-decoration: underline; font-size: 12px; }
 
     .dropdown-nav { list-style: none; padding: 6px 0; }
     .dropdown-nav li a,
@@ -178,11 +221,12 @@
     main {
       flex: 1; display: flex; flex-direction: column;
       align-items: center; justify-content: center;
-      padding: 24px 28px; gap: 24px; overflow: hidden;
+      padding: 24px 28px; gap: 14px; overflow: hidden;
     }
 
     /* ── Orb ── */
     #orb {
+      display: none;
       width: 150px; height: 150px; border-radius: 50%; flex-shrink: 0;
       background: radial-gradient(circle at 40% 35%,
         rgba(100,220,240,0.16) 0%,
@@ -211,14 +255,15 @@
 
     /* ── Stage text ── */
     #stage-text {
-      font-size: clamp(18px,5vw,24px); font-weight: 300;
-      line-height: 1.65; text-align: center; color: var(--text);
+      min-height: 0; overflow-y: auto;
+      font-size: clamp(20px,5.5vw,22px); font-weight: 300;
+      line-height: 1.65; text-align: center; color: #8ba8b8;
       max-width: 520px; width: 100%;
       transition: opacity 0.4s, transform 0.4s;
     }
     #stage-text.welcome {
       font-size: clamp(26px,7vw,34px); font-weight: 300;
-      line-height: 1.45; color: var(--text);
+      line-height: 1.45; color: #8ba8b8;
     }
     #stage-subtitle {
       font-size: clamp(21px,5.6vw,27px); font-weight: 300;
@@ -229,12 +274,15 @@
     #stage-text.danger  { color: #d06060; }
     #stage-text.loading { color: var(--text-muted); }
     #stage-text.hold-glow { color: #7accaa; }
-    #stage-text.explain { color: var(--text); }
+    #stage-text.explain { color: #8ba8b8; }
 
     /* ── Chips ── */
     #chips {
-      display: flex; flex-wrap: wrap; gap: 12px; justify-content: center;
+      display: flex; flex-direction: column; align-items: center; gap: 20px;
       max-width: 520px; width: 100%;
+    }
+    .chip-group {
+      display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; width: 100%;
     }
     .chip {
       background: rgba(58,203,216,0.07);
@@ -260,22 +308,48 @@
     }
     .chip.secondary:hover { border-color: rgba(90,127,146,0.5); color: var(--text); }
     .chip.danger { border-color: var(--danger); color: #e08080; }
+    .chip.active {
+      background: rgba(58,203,216,0.12);
+      border-color: rgba(58,203,216,0.55);
+      color: var(--text);
+    }
+    .nav-links {
+      display: flex; align-items: center; justify-content: center;
+      gap: 10px; flex-wrap: wrap;
+    }
+    .nav-link {
+      background: none; border: none; cursor: pointer; font-family: inherit;
+      font-size: 12px; letter-spacing: 0.3px; color: var(--text-dim);
+      padding: 4px 0; transition: color 0.2s;
+    }
+    .nav-link:hover, .nav-link:focus-visible { color: var(--text); }
+    .nav-link.active { color: var(--cyan); }
+    .nav-dot { color: var(--text-dim); opacity: 0.4; font-size: 12px; }
 
     /* ── Footer / input ── */
     footer {
       flex-shrink: 0; padding: 14px 20px 24px;
       display: flex; flex-direction: column; align-items: center; gap: 10px;
     }
+    .input-echo {
+      width: 100%; max-width: 520px; flex-shrink: 0;
+      padding: 8px 12px; border-left: 2px solid rgba(58,203,216,0.35);
+      color: #a8c0cc; font-size: 14px; line-height: 1.5;
+      text-align: left; overflow-wrap: anywhere;
+    }
+    .input-echo__label { font-size: 11px; color: #a8c0cc; }
+    #input-echo-text { margin-top: 3px; max-height: 6em; overflow-y: auto; white-space: pre-wrap; }
     .input-row {
       display: flex; gap: 10px; align-items: center;
       width: 100%; max-width: 520px;
     }
     #text-input {
+      min-width: 0;
       flex: 1;
       background: rgba(12,24,48,0.85);
       border: 1px solid rgba(58,203,216,0.32);
       border-radius: 14px;
-      color: var(--text); font-size: 16px; padding: 14px 18px;
+      color: #a8c0cc; font-size: 16px; padding: 14px 18px;
       font-family: inherit; outline: none;
       transition: border-color 0.2s, box-shadow 0.2s;
       min-height: 52px;
@@ -311,7 +385,16 @@
     }
 
     .input-hint {
+      display: none;
       font-size: 11px; color: #a8c0cc; letter-spacing: 0.4px; font-weight: 300;
+    }
+
+    /* Always-visible disclaimer — CHJ's recommendation is based on what the
+       user has told it so far, never a full medical picture. Deliberately
+       not hidden behind "Proč?" or any click — docs/BACKLOG.md. */
+    .data-basis-note {
+      font-size: 12px; color: var(--text-dim); letter-spacing: 0.2px; font-weight: 400;
+      margin-top: 6px; line-height: 1.5;
     }
 
     /* ── Debug panel ── */
@@ -423,6 +506,7 @@
   <p class="auth-logo">Chytré já</p>
   <p>Přihlášení vyžadováno.</p>
   <a href="/login">Přihlásit se</a>
+  <a class="auth-back" href="/#top">← Na web</a>
 </div>
 
 <!-- Main app -->
@@ -454,11 +538,24 @@
   </div>
 
   <header>
+    <a class="back-to-web" href="/#top">← Na web</a>
     <div class="header-right">
+      <span class="mode-badge" id="mode-badge">—</span>
       <div class="avatar-wrapper">
-        <button class="avatar-btn" id="avatar-btn" aria-label="Menu">?</button>
+        <button class="avatar-btn" id="avatar-btn" aria-label="Menu"><img id="avatar-img" alt=""></button>
         <div class="profile-dropdown" id="profile-dropdown">
+          <div class="dropdown-header">
+            <div class="avatar-large"><img id="avatar-large-img" alt=""></div>
+            <div class="dropdown-header-info">
+              <div class="dropdown-email" id="dropdown-email"></div>
+              <div class="status-row"><span class="badge-free">Free</span><a href="#upgrade" class="upgrade-link">upgrade</a></div>
+            </div>
+          </div>
           <ul class="dropdown-nav">
+            <li><button id="menu-profile-btn">👤 Vstupní data</button></li>
+            <li><button id="menu-vesmir-btn">🌌 Vesmír</button></li>
+            <li><button id="menu-crt-btn">🕸️ Kauzální mapa</button></li>
+            <li><a href="/app/medioteka.html">📚 Mediotéka</a></li>
             <li id="menu-tester-item" class="hidden">
               <button id="menu-tester-btn">Tester nástroje</button>
             </li>
@@ -466,7 +563,6 @@
           </ul>
         </div>
       </div>
-      <span class="mode-badge" id="mode-badge">—</span>
     </div>
   </header>
 
@@ -474,7 +570,7 @@
 
   <main>
     <div class="brand-orb-unit">
-      <div class="logo">
+      <div class="logo" id="brand-logo">
         <span class="chj-logo" aria-label="Chytré já">
           <span class="chj-logo__cursor" aria-hidden="true"></span>
           <span class="chj-logo__text">
@@ -482,6 +578,8 @@
             <span class="chj-logo__row2">j<span class="chj-logo__ac">a</span></span>
           </span>
         </span>
+        <div class="logo-sub">Medicína 3.0</div>
+        <div class="logo-battery"><div class="logo-battery__fill" id="logo-battery-fill"></div></div>
       </div>
       <div id="orb" class="hidden"></div>
     </div>
@@ -492,6 +590,10 @@
   </main>
 
   <footer>
+    <div id="input-echo" class="input-echo hidden" role="status" aria-live="polite">
+      <div id="input-echo-label" class="input-echo__label"></div>
+      <p id="input-echo-text"></p>
+    </div>
     <div class="input-row">
       <button id="mic-btn" class="icon-btn" title="Mluvit" aria-label="Mikrofon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
@@ -509,7 +611,8 @@
         </svg>
       </button>
     </div>
-    <p class="input-hint">Můžeš mluvit nebo psát.</p>
+    <p id="input-hint" class="input-hint">Můžeš mluvit nebo psát.</p>
+    <p class="data-basis-note">Doporučení vychází z toho, co jsi mi dosud o sobě řekl/a.</p>
   </footer>
 </div>
 
@@ -518,7 +621,7 @@
   import { initializeApp }                        from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js';
   import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js';
   import { authFetch }                            from '/app/js/universe/authFetch.js';
-  import { checkAndShowOnboarding }              from '/app/js/universe/onboarding-wizard.js';
+  import { openUserDataPanel, initUserDataPanel } from '/app/js/universe/user-data-panel.js';
 
   const firebaseApp = initializeApp({
     apiKey:            'AIzaSyAKREZsoBZkA1xOQ5ff3XDmiJ88nwSjeOk',
@@ -530,6 +633,44 @@
   });
   const auth = getAuth(firebaseApp);
   window.firebaseAuth = auth; // needed by authFetch.js
+
+  // ── Profil panel (sjednocený onboarding, sdílený s /app a /crt.html) ────────
+  initUserDataPanel();
+  let _onboardingPending = false;
+  const _udpModal = document.getElementById('userDataModal');
+  if (_udpModal) {
+    new MutationObserver(() => {
+      if (_onboardingPending && _udpModal.classList.contains('udp-hidden')) {
+        _onboardingPending = false;
+        authFetch('/api/user?action=wizard-complete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: _uid ?? window.__chj_userId }),
+        }).catch(() => {});
+      }
+    }).observe(_udpModal, { attributes: true, attributeFilter: ['class'] });
+  }
+
+  // Resolves once it's safe for the caller to start the conversation: either
+  // onboarding was already done, or the wizard was shown and the user has since
+  // closed it. Without this, the first (voiced) "Kolik ti je let?" turn used to
+  // fire underneath the still-open onboarding modal — racing instead of waiting.
+  async function checkAndShowOnboarding(userId) {
+    if (!userId) return;
+    try {
+      const res = await authFetch('/api/user?action=full-profile');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.profile?.onboarding_completed === true) return;
+      }
+    } catch { /* fail-open below */ }
+    _onboardingPending = true;
+    openUserDataPanel();
+    await new Promise(resolve => {
+      const check = () => { if (!_onboardingPending) resolve(); else setTimeout(check, 200); };
+      check();
+    });
+  }
 
   // ── Dev override: ?userId=xxx bypasses Firebase on localhost only ───────────
   const _isLocal = ['localhost', '127.0.0.1'].includes(location.hostname);
@@ -553,6 +694,8 @@
     localStorage.setItem(_LRK(_uid), JSON.stringify({
       mode: r.mode, text: r.text, buttons: r.buttons, expects_reply: r.expects_reply,
       debug: r.debug ?? null,
+      input_echo: r.input_echo ?? null,
+      retry_input_echo: r.retry_input_echo ?? null,
     }));
   }
   function clearSession(userId = _uid) {
@@ -574,6 +717,10 @@
   const $chips    = document.getElementById('chips');
   const $badge    = document.getElementById('mode-badge');
   const $input    = document.getElementById('text-input');
+  const $inputEcho = document.getElementById('input-echo');
+  const $inputEchoLabel = document.getElementById('input-echo-label');
+  const $inputEchoText = document.getElementById('input-echo-text');
+  const $inputHint = document.getElementById('input-hint');
   const $sendBtn  = document.getElementById('send-btn');
   const $micBtn   = document.getElementById('mic-btn');
   const $app      = document.getElementById('app');
@@ -582,6 +729,7 @@
 
   // ── New refs (facelift) ──────────────────────────────────────────────────────
   const $orb              = document.getElementById('orb');
+  const $brandLogo        = document.getElementById('brand-logo');
   const $stageLabel       = document.getElementById('stage-label');
   const $stageSub         = document.getElementById('stage-subtitle');
   const $testerModal      = document.getElementById('tester-modal');
@@ -713,40 +861,162 @@
     }
   }
 
+  // ── Battery života (logo) ────────────────────────────────────────────────────
+  async function loadBatteryBar(userId) {
+    const $fill = document.getElementById('logo-battery-fill');
+    if (!$fill || !userId) return;
+    try {
+      const res = await authFetch(`/api/hud-data-bulk?nodes=dlouhovekost&userId=${userId}&universe=longevity`);
+      if (!res.ok) return;
+      const bulk = await res.json();
+      const data = bulk.dlouhovekost || {};
+      const rawPct = data.battery?.percent ?? 50;
+      const pct    = rawPct > 0 ? rawPct : 50;
+      const color  = pct > 70 ? '#22c55e' : pct > 40 ? '#eab308' : '#ef4444';
+      const gradient = pct > 70
+        ? 'linear-gradient(90deg, #0d3820, #22c55e)'
+        : pct > 40
+        ? 'linear-gradient(90deg, #2d1f00, #eab308)'
+        : 'linear-gradient(90deg, #2d0808, #ef4444)';
+      $fill.style.width      = pct + '%';
+      $fill.style.background = gradient;
+      $fill.style.boxShadow  = `0 0 20px ${color}, 0 0 8px ${color}`;
+    } catch (err) {
+      console.warn('[CHJ launcher] battery load failed:', err);
+    }
+  }
+
   let busy           = false;
   let _terminalState = false;
+  // Tracks the mode render() just applied so orchestrate()'s finally block can
+  // re-focus $input after setLoading(false) re-enables it — see that call site
+  // for why render()'s own focus() call (while the input is still disabled
+  // mid-request) cannot do this itself.
+  let _lastMode      = null;
+  // Voice + typewriter: tracks the in-flight TTS audio and typing interval so a
+  // new response can cancel whatever the previous one started instead of the two
+  // overlapping (garbled text, two voices talking at once).
+  let _speakAudio       = null;
+  let _typewriterTimer  = null;
+
+  // Writes text into el one character at a time. Mirrors the proven pattern in
+  // app/js/universe/launcher.js's _typewriter() (the old /app voice UI) — same
+  // helper, ported rather than reinvented.
+  function _typewriter(el, text, charDelay = 30, onDone) {
+    if (_typewriterTimer) { clearInterval(_typewriterTimer); _typewriterTimer = null; }
+    if (!el) return;
+    el.textContent = '';
+    let i = 0;
+    _typewriterTimer = setInterval(() => {
+      if (i >= text.length) { clearInterval(_typewriterTimer); _typewriterTimer = null; onDone?.(); return; }
+      el.textContent += text[i];
+      i++;
+    }, charDelay);
+  }
+
+  // Written shorthand that reads fine on screen but confuses TTS pronunciation
+  // ("5×" is read garbled, not as "pětkrát"). Display text is untouched — only
+  // the text sent to /api/tts is rewritten; the typewriter still types the
+  // original.
+  function _toSpokenText(text) {
+    return text.replace(/(\d+)\s*×\s*/g, '$1 krát ');
+  }
+
+  // Speaks `text` via /api/tts (ElevenLabs — same endpoint app/js/universe/launcher.js
+  // already uses) and types it into el in sync with playback start. Falls back to an
+  // instant, untyped render on any TTS failure — voice is a presentation extra, never
+  // a reason to delay or hide the response text itself.
+  async function _speakAndType(el, text, onDone) {
+    if (_speakAudio) { try { _speakAudio.pause(); } catch (_) {} _speakAudio = null; }
+    if (_typewriterTimer) { clearInterval(_typewriterTimer); _typewriterTimer = null; }
+    if (!el) return;
+    if (!text) { el.textContent = '…'; onDone?.(); return; }
+    try {
+      const res = await authFetch('/api/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: _toSpokenText(text) }),
+      });
+      if (!res.ok) throw new Error(`TTS ${res.status}`);
+      const url = URL.createObjectURL(await res.blob());
+      const audio = new Audio(url);
+      _speakAudio = audio;
+      // onDone fires only once BOTH the typed text and the spoken audio have
+      // finished — whichever of the two takes longer.
+      let typingDone = false, audioDone = false;
+      const maybeDone = () => { if (typingDone && audioDone) onDone?.(); };
+      audio.onplay = () => { if (_speakAudio === audio) _typewriter(el, text, 30, () => { typingDone = true; maybeDone(); }); };
+      audio.onended = () => { URL.revokeObjectURL(url); if (_speakAudio === audio) _speakAudio = null; audioDone = true; maybeDone(); };
+      audio.onerror = () => { URL.revokeObjectURL(url); if (_speakAudio === audio) _speakAudio = null; el.textContent = text; onDone?.(); };
+      await audio.play();
+    } catch (e) {
+      console.warn('[CHJ launcher] TTS failed, showing text without voice:', e?.message || e);
+      el.textContent = text;
+      onDone?.();
+    }
+  }
+  // Keeps the big logo/Medicína 3.0/battery block visible on the very first
+  // response of this visit (today's action acts as the entry screen now that
+  // there's no separate "Co chceš řešit?" idle step) and hides it on every
+  // render after that, once the user has moved past the entry screen.
+  let _brandDismissed = false;
 
   // ── Render ───────────────────────────────────────────────────────────────────
+  function renderInputEcho(echo) {
+    const text = typeof echo?.text === 'string' ? echo.text : '';
+    $inputEchoText.textContent = text;
+    $inputEchoLabel.textContent = echo?.source === 'voice' ? 'Přepis hlasu' : 'Tvoje zpráva';
+    $inputEcho.classList.toggle('hidden', !text.trim());
+  }
+
   function renderIdle() {
+    renderInputEcho(null);
     _terminalState = false;
+    _brandDismissed = false;
+    $brandLogo.classList.remove('logo-dormant');
     $input.disabled   = false;
     $sendBtn.disabled = false;
     $micBtn.disabled  = false;
+    $inputHint.classList.remove('hidden');
     $orb.classList.remove('hidden');
     $stageLabel.textContent = '';
     $stageLabel.className   = '';
-    $stage.className   = 'fade-in';
+    $stage.className   = 'fade-in welcome';
     $stage.textContent = 'Co chceš řešit?';
     $stageSub.classList.add('hidden');
     setBadge('—', 'mode-badge');
     $chips.innerHTML = '';
+    $chips.style.visibility = '';
     $input.placeholder = 'Napiš nebo řekni…';
   }
 
   function render(response) {
     const { mode, text, buttons = [], expects_reply, debug: dbg } = response;
+    _lastMode = mode;
+    renderInputEcho(response.input_echo);
+    if (typeof response.draft_text === 'string') $input.value = response.draft_text;
 
     // Hide orb and welcome subtitle; set stage label by mode
     $orb.classList.add('hidden');
+    const isEntryScreen = !_brandDismissed;
+    _brandDismissed = true;
+    if (!isEntryScreen) $brandLogo.classList.add('logo-dormant');
     $stageSub.classList.add('hidden');
     $stageLabel.className = '';
-    if      (mode === 'ACT')  { $stageLabel.textContent = 'DNES'; }
-    else if (mode === 'HOLD') { $stageLabel.textContent = '✓'; $stageLabel.className = 'hold-mark'; }
+    // "DNES" would be redundant on the entry screen — the big logo/battery
+    // block already signals "this is today's state", so skip it there.
+    if      (mode === 'ACT' && !isEntryScreen) { $stageLabel.textContent = 'DNES'; }
+    else if (mode === 'HOLD' && dbg?.reason_code === 'HOLD_DONE_TODAY') {
+      $stageLabel.textContent = '✓'; $stageLabel.className = 'hold-mark';
+    }
     else                      { $stageLabel.textContent = ''; }
 
-    // Stage text
+    // Stage text — spoken + typed, same pattern as the old /app voice UI.
+    // Chips stay invisible until the text has fully finished typing out,
+    // so the action text always reads completely before its buttons appear.
     $stage.className  = 'fade-in';
-    $stage.textContent = text || '…';
+    $chips.style.visibility = 'hidden';
+    _speakAndType($stage, text, () => { $chips.style.visibility = ''; });
 
     if (mode === 'HOLD')            { $stage.classList.add('dim'); $stage.classList.add('hold-glow'); }
     if (mode === 'SAFETY_CRITICAL') $stage.classList.add('danger');
@@ -776,34 +1046,94 @@
     // Chips
     $chips.innerHTML = '';
 
-    if (mode === 'ACT') {
-      const whyBtn = document.createElement('button');
-      whyBtn.className = 'chip secondary';
-      whyBtn.textContent = 'Proč?';
-      whyBtn.addEventListener('click', () => orchestrate('Proč?'));
-      $chips.appendChild(whyBtn);
+    // The three "Proč? / Kam směřuješ? / Co tím změníš?" nav links. Shown after an ACT
+    // response (first time) and again after any of the three EXPLAIN answers, so the user
+    // never has to use the browser Back button or retype a chip label to switch views.
+    // activeSource marks the currently-open view (derived from debug.source) — a visual
+    // marker only; all three stay clickable regardless of which one is active.
+    // Rendered as a quiet single-line row of links below the primary Hotovo/Přeskočit
+    // buttons — visually subordinate so the screen doesn't read as "5 buttons".
+    const NAV_CHIPS = [
+      { label: 'Proč?',            sources: ['explanation_context'] },
+      { label: 'Kam směřuji?',     sources: ['causal_context', 'causal_context_no_data'] },
+      { label: 'Co tím změním?',   sources: ['mechanism_targets', 'mechanism_targets_no_data'] },
+    ];
+    const hasActiveAction = mode === 'ACT'
+      || (mode === 'EXPLAIN' && buttons.some(label => label === 'Hotovo' || label === 'Přeskočit'));
+
+    // Timed/reps actions get a Začít→timer/počítadlo control instead of an
+    // immediate "Hotovo" button — same mechanism as the "volná akce" slot,
+    // for consistency (docs/BACKLOG.md). "Hotovo" still means the same
+    // ACTION_COMPLETED event either way; this only changes WHEN it fires.
+    const doseType = mode === 'ACT' ? response.action_dose?.type : null;
+    const needsDoseControl = buttons.includes('Hotovo') && (doseType === 'timed' || doseType === 'reps');
+
+    if (buttons.length > 0) {
+      const btnGroup = document.createElement('div');
+      btnGroup.className = 'chip-group';
+      let skipBtn = null;
+      for (const label of buttons) {
+        if (label === 'Hotovo' && needsDoseControl) continue; // replaced below
+        const btn = document.createElement('button');
+        btn.className = 'chip' + (label === 'Přeskočit' ? ' secondary' : '');
+        btn.textContent = label;
+        if (label === 'Přeskočit') skipBtn = btn;
+        if (label === 'Zdravotní profil') {
+          btn.addEventListener('click', () => { window.location.href = `${PROFILE_URL}?userId=${encodeURIComponent(window.__chj_userId)}`; });
+        } else {
+          btn.addEventListener('click', () => orchestrate(label));
+        }
+        btnGroup.appendChild(btn);
+      }
+      $chips.appendChild(btnGroup);
+
+      if (needsDoseControl) {
+        _renderDoseControls(btnGroup, response.action_dose, () => {
+          skipBtn?.remove(); // can't skip mid/after-exercise once it's running
+          orchestrate('Hotovo');
+        });
+      }
     }
 
-    for (const label of buttons) {
-      const btn = document.createElement('button');
-      btn.className = 'chip' + (label === 'Přeskočit' ? ' secondary' : '');
-      btn.textContent = label;
-      if (label === 'Zdravotní profil') {
-        btn.addEventListener('click', () => { window.location.href = PROFILE_URL; });
-      } else {
+    if (hasActiveAction) {
+      const navGroup = document.createElement('div');
+      navGroup.className = 'nav-links';
+      NAV_CHIPS.forEach(({ label, sources }, i) => {
+        if (i > 0) {
+          const dot = document.createElement('span');
+          dot.className = 'nav-dot';
+          dot.textContent = '·';
+          navGroup.appendChild(dot);
+        }
+        const btn = document.createElement('button');
+        const isActive = sources.includes(dbg?.source);
+        btn.className = 'nav-link' + (isActive ? ' active' : '');
+        btn.textContent = label;
         btn.addEventListener('click', () => orchestrate(label));
-      }
-      $chips.appendChild(btn);
+        navGroup.appendChild(btn);
+      });
+      $chips.appendChild(navGroup);
     }
+
+    // ── "Volná akce" nabídka (docs/BACKLOG.md) — jen pro HOLD_DONE_TODAY dnešní
+    // hlavní akce; samostatná karta pod chips, ne náhrada hlavní HOLD odpovědi.
+    if (response.secondary_offer) renderSecondaryOffer(response.secondary_offer);
 
     $input.placeholder = mode === 'ASK' ? 'Odpověz nebo napiš…' : 'Napiš nebo řekni…';
     if (mode === 'ASK') $input.focus();
 
-    const isTerminal  = !expects_reply && buttons.length === 0;
+    // A completed daily action closes this visit. Without this terminal state the
+    // user can submit a new goal against the cached explanation of the completed
+    // action, which makes later WHY controls describe stale context. A reload/new
+    // visit remains the explicit way to start another conversation.
+    const isCompletedToday = mode === 'HOLD' && dbg?.reason_code === 'HOLD_DONE_TODAY';
+    const isTerminal  = isCompletedToday
+      || (mode === 'SAFETY_CRITICAL' && !expects_reply && buttons.length === 0);
     _terminalState    = isTerminal;
     $input.disabled   = isTerminal;
     $sendBtn.disabled = isTerminal;
     $micBtn.disabled  = isTerminal;
+    $inputHint.classList.toggle('hidden', isTerminal);
 
     // Debug overlay
     if (_debugMode && $debug) {
@@ -832,15 +1162,164 @@
     }
   }
 
+  // ── "Volná akce" — druhá, nepovinná denní akce (docs/BACKLOG.md) ────────────
+  // Nic z tohohle neprochází přes orchestrate()/dailyDecision — jen jedna
+  // odlehčená zápisová cesta (/api/secondary-action-complete), přesně podle
+  // dohodnutého návrhu. Žádný nový engine běh, žádný zásah do hlavní HOLD
+  // odpovědi.
+  function _fmtSecTime(sec) {
+    const m = Math.floor(sec / 60), s = sec % 60;
+    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  }
+
+  async function _persistSecondaryCompletion(offer, extra) {
+    try {
+      await authFetch('/api/secondary-action-complete', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ action_id: offer.action_id, intervention_id: offer.intervention_id, ...extra }),
+      });
+    } catch (e) {
+      console.warn('[CHJ] secondary action completion failed to persist:', e.message);
+    }
+  }
+
+  function renderSecondaryOffer(offer) {
+    const card = document.createElement('div');
+    card.className = 'chip-group';
+    card.style.cssText = 'flex-direction:column;align-items:stretch;gap:14px;background:rgba(58,203,216,0.05);border:1px solid rgba(58,203,216,0.18);border-radius:14px;padding:16px 18px;text-align:left;';
+
+    const offerText = document.createElement('div');
+    offerText.style.cssText = 'color:#8ba8b8;font-size:14px;';
+    offerText.textContent = 'Chceš jít dál?';
+
+    const actionText = document.createElement('div');
+    actionText.style.cssText = 'color:var(--text);font-size:16px;line-height:1.4;';
+    actionText.textContent = offer.label;
+
+    const btnRow = document.createElement('div');
+    btnRow.style.cssText = 'display:flex;gap:10px;';
+
+    const yesBtn = document.createElement('button');
+    yesBtn.className = 'chip';
+    yesBtn.textContent = 'Ano';
+
+    const noBtn = document.createElement('button');
+    noBtn.className = 'chip secondary';
+    noBtn.textContent = 'Ne';
+
+    btnRow.append(yesBtn, noBtn);
+    card.append(offerText, actionText, btnRow);
+    $chips.appendChild(card);
+
+    noBtn.addEventListener('click', () => {
+      card.innerHTML = '';
+      const done = document.createElement('div');
+      done.style.cssText = 'color:var(--text-dim);font-size:15px;text-align:center;';
+      done.textContent = 'Dnes stačí. 👍';
+      card.appendChild(done);
+    });
+
+    yesBtn.addEventListener('click', () => {
+      card.innerHTML = '';
+      const label = document.createElement('div');
+      label.style.cssText = 'color:var(--text);font-size:16px;line-height:1.4;';
+      label.textContent = offer.label;
+      card.appendChild(label);
+      _renderDoseControls(card, offer.dose, (extra) => {
+        const done = document.createElement('div');
+        done.style.cssText = 'color:#7accaa;font-size:15px;text-align:center;';
+        done.textContent = '✔ Hotovo.';
+        card.appendChild(done);
+        _persistSecondaryCompletion(offer, extra);
+      });
+    });
+  }
+
+  // Shared Začít→timer/počítadlo→Hotovo control — used by both the primary
+  // ACT action and the "volná akce" secondary slot (docs/BACKLOG.md), so the
+  // interaction is consistent everywhere a timed/reps action is shown.
+  // container: element to append the control's own nodes to (and remove them
+  // from, once done — caller's other content in `container` is left alone).
+  // dose: { type, duration, reps } from the real catalog.
+  // onDone(extra): called once, with { actual_duration_seconds } or
+  // { actual_reps } or {} depending on type. Never calls onDone more than once.
+  function _renderDoseControls(container, dose, onDone) {
+    const type = dose?.type;
+    const startBtn = document.createElement('button');
+    startBtn.className = 'chip';
+    let timerEl = null;
+
+    function finish(extra) {
+      startBtn.remove();
+      timerEl?.remove();
+      onDone(extra);
+    }
+
+    if (type === 'timed') {
+      startBtn.textContent = 'Začít';
+      container.appendChild(startBtn);
+      startBtn.addEventListener('click', () => {
+        let remaining = dose.duration ?? 30;
+        timerEl = document.createElement('div');
+        timerEl.style.cssText = 'text-align:center;font-size:32px;font-weight:600;color:var(--text);font-variant-numeric:tabular-nums;';
+        timerEl.textContent = _fmtSecTime(remaining);
+        container.insertBefore(timerEl, startBtn);
+        startBtn.textContent = '⏹ Zastavit';
+        const interval = setInterval(() => {
+          remaining--;
+          timerEl.textContent = _fmtSecTime(remaining);
+          if (remaining <= 0) { clearInterval(interval); finish({ actual_duration_seconds: dose.duration ?? 30 }); }
+        }, 1000);
+        startBtn.onclick = () => { clearInterval(interval); finish({ actual_duration_seconds: (dose.duration ?? 30) - remaining }); };
+      });
+    } else if (type === 'reps' && dose?.no_count) {
+      // Hands are on support (chair/wall/floor) throughout — a tap-per-rep
+      // counter would mean letting go mid-exercise. One "Hotovo" for the
+      // whole set instead. See migrations/tag_no_count_reps_actions.sql.
+      startBtn.textContent = '✓ Hotovo';
+      container.appendChild(startBtn);
+      startBtn.addEventListener('click', () => finish({ actual_reps: dose?.reps ?? null }));
+    } else if (type === 'reps') {
+      let count = 0;
+      const target = dose?.reps ?? 10;
+      timerEl = document.createElement('div');
+      timerEl.style.cssText = 'text-align:center;font-size:32px;font-weight:600;color:var(--text);font-variant-numeric:tabular-nums;';
+      timerEl.textContent = `0 / ${target}`;
+      container.appendChild(timerEl);
+      startBtn.textContent = '+1';
+      container.appendChild(startBtn);
+      startBtn.addEventListener('click', () => {
+        count++;
+        timerEl.textContent = `${count} / ${target}`;
+        if (count >= target) finish({ actual_reps: count });
+      });
+    } else {
+      // 'bool' / 'habit' — direct completion, no Začít step
+      startBtn.textContent = '✓ Hotovo';
+      container.appendChild(startBtn);
+      startBtn.addEventListener('click', () => finish({}));
+    }
+  }
+
   // ── Orchestrate ──────────────────────────────────────────────────────────────
-  async function orchestrate(userText, userId) {
-    if (busy) return;
+  async function orchestrate(userText, userId, inputSource = null) {
+    const uid = userId ?? window.__chj_userId;
+    if (busy || !uid) return;
     busy = true;
     const myEpoch = requestEpoch;
     setLoading(true);
 
-    const uid = userId ?? window.__chj_userId;
     const session = loadSession();
+    // Only a direct typed/voice submission replaces the echo. Navigation and
+    // retry chips retain the original utterance; this metadata stays client-side.
+    const previousResponse = loadLastResponse();
+    const retryEcho = previousResponse?.retry_input_echo ?? (session.pending_ai_retry?.text
+      ? { text: session.pending_ai_retry.text, source: 'text' } : null);
+    const inputEcho = inputSource ? { text: userText, source: inputSource }
+      : (userText === 'Zkusit znovu' ? retryEcho : null) ?? previousResponse?.input_echo ?? null;
+    renderInputEcho(inputEcho);
+    let retainedInput = userText === 'Zkusit znovu' && $input.value && $input.value !== session.pending_ai_retry?.text ? $input.value : null;
     const _request_id = `c${Date.now().toString(36)}-e${myEpoch}`;
 
     if (_debugMode) {
@@ -884,6 +1363,12 @@
 
       if (myEpoch !== requestEpoch) return;
 
+      response.input_echo = inputEcho;
+      const pendingRetry = response.session_updates && 'pending_ai_retry' in response.session_updates
+        ? response.session_updates.pending_ai_retry : session.pending_ai_retry;
+      response.retry_input_echo = pendingRetry?.text
+        ? retryEcho ?? (inputEcho?.text === pendingRetry.text ? inputEcho : { text: pendingRetry.text, source: 'text' }) : null;
+      if (typeof response.draft_text === 'string') retainedInput = response.draft_text;
       if (response.session_updates) saveSession(response.session_updates);
       saveLastResponse(response);
 
@@ -891,20 +1376,28 @@
     } catch (err) {
       if (_debugMode) console.groupEnd();
       if (myEpoch !== requestEpoch) return;
-      $stage.textContent = 'Nastala chyba. Zkus to znovu.';
-      $stage.className = 'danger fade-in';
-      setBadge('ERR', 'mode-badge safe');
-      $chips.innerHTML = '';
-      const retryBtn = document.createElement('button');
-      retryBtn.className = 'chip secondary';
-      retryBtn.textContent = 'Zkusit znovu';
-      retryBtn.addEventListener('click', () => orchestrate('Co mám dnes dělat?'));
-      $chips.appendChild(retryBtn);
+      const retry = session.pending_ai_retry ?? { text: userText, requested_at: new Date().toISOString(),
+        context: { pending_question: session.pending_question ?? null, current_action_assignment: session.current_action_assignment ?? null } };
+      const failure = { mode: 'HOLD', input_echo: inputEcho,
+        retry_input_echo: retryEcho ?? (inputEcho?.text === retry.text ? inputEcho : { text: retry.text, source: 'text' }),
+        text: 'Spojení se nepodařilo. Zpráva je připravená k opakování.',
+        buttons: ['Zkusit znovu'], expects_reply: true, draft_text: retry.text,
+        session_updates: { pending_ai_retry: retry, pending_question: retry.context?.pending_question ?? null,
+          current_action_assignment: null, last_domain_response: null,
+          last_daily_decision: { mode: 'HOLD', reason_code: 'REQUEST_UNAVAILABLE' } } };
+      retainedInput = retry.text;
+      saveSession(failure.session_updates);
+      saveLastResponse(failure);
+      render(failure);
     } finally {
       if (myEpoch === requestEpoch) {
         busy = false;
         setLoading(false);
-        $input.value = '';
+        $input.value = retainedInput ?? '';
+        // render()'s own focus() call ran while $input was still disabled from
+        // setLoading(true) above — disabled elements cannot receive focus, so it
+        // silently did nothing. Re-focus now that setLoading(false) re-enabled it.
+        if (_lastMode === 'ASK' && !_terminalState) $input.focus();
       }
     }
   }
@@ -927,14 +1420,14 @@
   // ── Text input / send ────────────────────────────────────────────────────────
   $sendBtn.addEventListener('click', () => {
     const v = $input.value.trim();
-    if (v) orchestrate(v);
+    if (v) orchestrate(v, undefined, 'text');
   });
 
   $input.addEventListener('keydown', e => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       const v = $input.value.trim();
-      if (v) orchestrate(v);
+      if (v) orchestrate(v, undefined, 'text');
     }
   });
 
@@ -942,26 +1435,41 @@
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   let recognition = null;
 
+  function stopRecognition() {
+    const old = recognition;
+    recognition = null; // Ignore delayed callbacks before aborting the old instance.
+    $micBtn.classList.remove('active');
+    if (old) { try { old.abort(); } catch { /* Delayed callbacks are already invalidated. */ } }
+  }
+
   if (SpeechRecognition) {
-    recognition = new SpeechRecognition();
-    recognition.lang = 'cs-CZ';
-    recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
-
-    recognition.onresult = e => {
-      const transcript = e.results[0][0].transcript.trim();
-      if (transcript) orchestrate(transcript);
-    };
-    recognition.onend   = () => { $micBtn.classList.remove('active'); };
-    recognition.onerror = () => { $micBtn.classList.remove('active'); };
-
     $micBtn.addEventListener('click', () => {
-      if ($micBtn.classList.contains('active')) {
-        recognition.stop();
-      } else {
-        $micBtn.classList.add('active');
-        recognition.start();
-      }
+      if (!_uid || busy || _terminalState) return;
+      if (recognition) { recognition.stop(); return; }
+      const current = new SpeechRecognition();
+      recognition = current;
+      const owner = { uid: _uid, epoch: requestEpoch };
+      let submitted = false;
+      current.lang = 'cs-CZ';
+      current.interimResults = false;
+      current.maxAlternatives = 1;
+      current.onresult = e => {
+        if (current !== recognition || submitted || busy || _terminalState || owner.uid !== _uid || owner.epoch !== requestEpoch) return;
+        const transcript = e.results[0][0].transcript.trim();
+        if (transcript) {
+          submitted = true;
+          return orchestrate(transcript, undefined, 'voice');
+        }
+      };
+      const ended = () => {
+        if (current !== recognition) return;
+        recognition = null;
+        $micBtn.classList.remove('active');
+      };
+      current.onend = ended;
+      current.onerror = ended;
+      $micBtn.classList.add('active');
+      try { current.start(); } catch { ended(); }
     });
   } else {
     $micBtn.style.display = 'none';
@@ -969,38 +1477,49 @@
 
   // ── Init ─────────────────────────────────────────────────────────────────────
   function start(userId) {
+    if (_uid !== userId) {
+      invalidateRequests();
+      stopRecognition();
+      renderInputEcho(null);
+      $input.value = '';
+    }
     _uid = userId;
     window.__chj_userId = userId;
     $authOver.classList.add('hidden');
     $app.classList.remove('hidden');
 
-    checkAndShowOnboarding(userId).catch(e => console.warn('[onboarding]', e));
+    loadBatteryBar(userId);
 
-    if (_isPostHandoff) {
-      history.replaceState({}, '', '/launcher');
-      const budgetRaw = parseInt(sessionStorage.getItem('chj_qbudget') ?? '3', 10);
-      sessionStorage.removeItem('chj_qbudget');
-      const budgetRemaining = isNaN(budgetRaw) ? 3 : Math.max(0, Math.min(3, budgetRaw));
-      saveSession({ question_budget_remaining: budgetRemaining });
-      orchestrate('Co mám dnes dělat?');
-      return;
-    }
-
-    // Reset per-conversation session fields on every page load.
-    // session_skipped_evidence is intentionally conversation-scoped: deferred tests
-    // should become eligible again in the next conversation (F5/new visit).
-    saveSession({ session_skipped_evidence: [] });
-
-    const last = loadLastResponse();
-    if (last && last.mode !== 'ASK' && last.mode !== 'HOLD') {
-      render(last);
-    } else {
-      if (last?.mode === 'ASK') {
-        localStorage.removeItem(_LRK(_uid));
-        saveSession({ pending_question: null });
+    checkAndShowOnboarding(userId).then(() => {
+      if (_isPostHandoff) {
+        history.replaceState({}, '', '/launcher');
+        const budgetRaw = parseInt(sessionStorage.getItem('chj_qbudget') ?? '3', 10);
+        sessionStorage.removeItem('chj_qbudget');
+        const budgetRemaining = isNaN(budgetRaw) ? 3 : Math.max(0, Math.min(3, budgetRaw));
+        saveSession({ question_budget_remaining: budgetRemaining });
+        orchestrate('Co mám dnes dělat?');
+        return;
       }
-      renderIdle();
-    }
+
+      // Reset per-conversation session fields on every page load.
+      // session_skipped_evidence is intentionally conversation-scoped: deferred tests
+      // should become eligible again in the next conversation (F5/new visit).
+      saveSession({ session_skipped_evidence: [] });
+
+      const last = loadLastResponse();
+      if (last && last.mode !== 'ASK' && last.mode !== 'HOLD') {
+        render(last);
+      } else {
+        // No cached actionable response (first visit, or last one was ASK/HOLD):
+        // skip the "Co chceš řešit?" idle screen and go straight to today's action,
+        // same as the post-handoff path above.
+        if (last?.mode === 'ASK') {
+          localStorage.removeItem(_LRK(_uid));
+          saveSession({ pending_question: null });
+        }
+        orchestrate('Co mám dnes dělat?');
+      }
+    }).catch(e => console.warn('[onboarding]', e));
   }
 
   // Auth gating
@@ -1009,20 +1528,58 @@
   } else {
     onAuthStateChanged(auth, user => {
       if (user) {
-        const initial = (user.displayName?.[0] || user.email?.[0] || '?').toUpperCase();
-        document.getElementById('avatar-btn').textContent = initial;
+        const name = user.displayName || user.email?.split('@')[0] || 'U';
+        const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=0D8ABC&color=fff`;
+        document.getElementById('avatar-img').src = avatarUrl;
+        document.getElementById('avatar-large-img').src = avatarUrl;
+        document.getElementById('dropdown-email').textContent = user.email || '';
         start(user.uid);
       } else {
+        invalidateRequests();
+        stopRecognition();
+        renderInputEcho(null);
+        $input.value = '';
         _uid = null;
+        window.__chj_userId = null;
         $authOver.classList.remove('hidden');
         $app.classList.add('hidden');
       }
     });
   }
 
+  // ── Menu: Já (profil — stejný panel jako /app a /crt.html) ───────────────────
+  document.getElementById('menu-profile-btn').addEventListener('click', () => {
+    $profileDrop.classList.remove('open');
+    openUserDataPanel();
+  });
+
+  // ── Menu: Vesmír / Kauzální mapa — real navigation, no voice command needed ──
+  //
+  // TEMPORARY wiring (2026-11-26): we don't yet have a per-user Vesmír/CRT
+  // story, so these point at fixed reference targets to unblock UX testing —
+  // Vesmír → obecný Longevity model, CRT → Josef's real account (reference
+  // case #1, CLAUDE.md §7). Revisit once per-user routing is decided.
+  document.getElementById('menu-vesmir-btn').addEventListener('click', () => {
+    $profileDrop.classList.remove('open');
+    localStorage.setItem('currentModel', 'longevity');
+    // ?awake=1 — existing "return from Vesmír" bootstrap path (launcher.js:712):
+    // skips the sleeping/voice intro and calls routeToNode() immediately.
+    window.location.href = '/app?awake=1';
+  });
+  document.getElementById('menu-crt-btn').addEventListener('click', () => {
+    $profileDrop.classList.remove('open');
+    // ?vzor=kovarova — static example dataset (no real account, no auth 403s).
+    // A per-user userId link 403s here by design (requireAuth rejects a
+    // userId that doesn't match the logged-in account's token) — revisit
+    // once per-user CRT routing is decided.
+    window.location.href = `${PROFILE_URL}?vzor=kovarova`;
+  });
+
   // ── Logout ───────────────────────────────────────────────────────────────────
   document.getElementById('logout-btn').addEventListener('click', async () => {
     invalidateRequests();
+    stopRecognition();
+    renderInputEcho(null);
     clearSession(_uid ?? window.__chj_userId);
     sessionStorage.removeItem('chj_qbudget');
     if (urlUserId) {
@@ -1041,3 +1598,4 @@
 </script>
 </body>
 </html>
+

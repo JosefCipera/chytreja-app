@@ -2,7 +2,6 @@
     "buildCommand": "",
     "outputDirectory": ".",
     "framework": null,
-    "alias": ["dev.iting.cz"],
     "ignoreCommand": "[ \"$VERCEL_GIT_COMMIT_REF\" != \"${DEPLOY_BRANCH:-main}\" ]",
     "functions": {
         "api/tools/parse.js":          { "maxDuration": 60 },
@@ -11,6 +10,9 @@
         "api/engine-v1.js":            { "includeFiles": "data/engine/**", "maxDuration": 30 }
     },
     "headers": [
+        { "source": "/ukazka/:path*", "headers": [
+            { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
+        ] },
         {
             "source": "/(.*\\.html)",
             "headers": [
@@ -81,6 +83,24 @@
             ]
         },
         {
+            "source": "/home-v2",
+            "headers": [
+                { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate, s-maxage=0" },
+                { "key": "Pragma", "value": "no-cache" },
+                { "key": "Surrogate-Control", "value": "no-store" },
+                { "key": "CDN-Cache-Control", "value": "no-store" }
+            ]
+        },
+        {
+            "source": "/zakladatele(/?)",
+            "headers": [
+                { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate, s-maxage=0" },
+                { "key": "Pragma", "value": "no-cache" },
+                { "key": "Surrogate-Control", "value": "no-store" },
+                { "key": "CDN-Cache-Control", "value": "no-store" }
+            ]
+        },
+        {
             "source": "/",
             "headers": [
                 { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate, s-maxage=0" },
@@ -91,6 +111,8 @@
         }
     ],
     "rewrites": [
+        { "source": "/ukazka", "destination": "/app/ukazka/index.html" },
+        { "source": "/ukazka/", "destination": "/app/ukazka/index.html" },
         {
             "source": "/hud",
             "destination": "/app/hud.html"
@@ -109,11 +131,23 @@
         },
         {
             "source": "/",
-            "destination": "/app/landing.html"
+            "destination": "/app/home-v2.html"
         },
         {
             "source": "/landing",
             "destination": "/app/landing.html"
+        },
+        {
+            "source": "/home-v2",
+            "destination": "/app/home-v2.html"
+        },
+        {
+            "source": "/zakladatele",
+            "destination": "/app/zakladatele.html"
+        },
+        {
+            "source": "/zakladatele/",
+            "destination": "/app/zakladatele.html"
         },
         {
             "source": "/login",
@@ -130,6 +164,10 @@
         {
             "source": "/ochrana-osobnich-udaju",
             "destination": "/app/ochrana-osobnich-udaju.html"
+        },
+        {
+            "source": "/cookies",
+            "destination": "/app/cookies.html"
         },
         {
             "source": "/api/(.*)",

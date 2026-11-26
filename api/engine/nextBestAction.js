@@ -12,6 +12,10 @@
 // Safety gate: separate layer, does NOT replace decisionGate.actionability.
 // Candidate pool: ONLY from existing longevity_actions rows (not hand-crafted).
 
+import { readYesNo, isEvidenceResolved } from './evidenceResolution.js';
+import { readFileSync } from 'node:fs';
+const ACTION_EQUIVALENTS = JSON.parse(readFileSync(new URL('../../data/engine/action-equivalents.json', import.meta.url), 'utf8'));
+
 // ── Constraint keyword mapping ────────────────────────────────────────────────
 // Same categories as hud-data-bulk.js; normalized to canonical body-region keys.
 
@@ -33,13 +37,24 @@ const CONSTRAINT_KEYWORDS = {
 // SILOVY_PROTOKOL = null → derive from tags (shoulder press ≠ box jump in knee load).
 // TRAINING_PROTOKOL = null → derive from tags.
 const PROTOCOL_BODY_LOAD = {
-  KARDIO_PROTOKOL:     new Set(['knee', 'ankle_foot']),
-  VYTRVALOST_PROTOKOL: new Set(['knee', 'ankle_foot']),
-  SILOVY_PROTOKOL:     null, // per-action via tags — overhead press ≠ box jump
-  TRAINING_PROTOKOL:   null, // per-action via tags
-  BALANCE_PROTOKOL:    new Set(['ankle_foot', 'knee']),
-  PREVENTION_PROTOKOL: new Set(),
+  KARDIO_PROTOKOL:         new Set(['knee', 'ankle_foot']),
+  VYTRVALOST_PROTOKOL:     new Set(['knee', 'ankle_foot']),
+  SILOVY_PROTOKOL:         null, // per-action via tags — overhead press ≠ box jump
+  FUNKCNI_SILOVY_PROTOKOL: null, // per-action via tags — same joint-load derivation as SILOVY_PROTOKOL
+  GRIP_SILOVY_PROTOKOL:    null, // per-action via tags — distinct protocol_type so assignIntervention's
+                                  // exact-match-by-protocol_type doesn't collide with FUNKCNI_SILOVY_PROTOKOL
+                                  // when both map to the same LOW_MUSCLE_STRENGTH node (see GRIP_STRENGTH_TRAINING)
+  TRAINING_PROTOKOL:       null, // per-action via tags
+  BALANCE_PROTOKOL:        new Set(['ankle_foot', 'knee']),
+  STABILITY_PROTOKOL:      new Set(['ankle_foot', 'knee']),
+  PREVENTION_PROTOKOL:     new Set(),
 };
+
+// SILOVY_PROTOKOL_FAMILY: protocol types that are strength training for Safety Gate purposes
+// (CV-risk modification eligibility, time-to-feedback) even though they are kept as distinct
+// protocol_type values so the NBA candidate pool for one leverage node's intervention cannot
+// silently absorb another leverage node's actions (see FUNKCNI_SILOVY_PROTOKOL / C3).
+const SILOVY_PROTOKOL_FAMILY = new Set(['SILOVY_PROTOKOL', 'FUNKCNI_SILOVY_PROTOKOL', 'GRIP_SILOVY_PROTOKOL']);
 
 // TAG_BODY_LOAD: region sets per tag. 'sila' → lower_back only (NOT knee — strength
 // exercises vary widely; only explicitly leg/plyometric tags → knee).
@@ -56,6 +71,7 @@ const TAG_BODY_LOAD = {
   core:       new Set(['lower_back']),
   plank:      new Set(['lower_back', 'shoulder', 'elbow']),
   sila:       new Set(['lower_back']),   // generic strength → lower-back stabilizer, NOT knee
+  grip:       new Set(),                 // hand/forearm squeeze — no tracked major-joint region
 };
 
 // ── Person mobility profile ───────────────────────────────────────────────────
@@ -85,8 +101,9 @@ function computeMobilityProfile(nodeStates, clinicalHistory) {
   // Fall history from onboarding
   const rawFalls = oi['recent_falls'];
   let fall_history = 'UNKNOWN';
-  if (rawFalls === 'yes' || rawFalls === true || rawFalls === 'true') fall_history = 'RECENT';
-  else if (rawFalls === 'no' || rawFalls === false || rawFalls === 'false') fall_history = 'NONE_REPORTED';
+  const fallPolarity = readYesNo(rawFalls);
+  if (fallPolarity === 'yes') fall_history = 'RECENT';
+  else if (fallPolarity === 'no') fall_history = 'NONE_REPORTED';
 
   // Current device from onboarding
   const current_device_in_use = oi['current_assistive_device'] ?? 'UNKNOWN';
@@ -99,7 +116,7 @@ function computeMobilityProfile(nodeStates, clinicalHistory) {
 // Returns: GOOD | POOR | ACCEPTABLE | UNKNOWN | NEEDS_ASSESSMENT
 //
 // Rules:
-//   NEEDS_ASSESSMENT: recent fall history → multifactorial assessment required (NICE NG147)
+//   NEEDS_ASSESSMENT: recent fall history → CHJ conservatively requires device assessment
 //   UNKNOWN:          instability type or laterality unknown → cannot evaluate fit
 //   POOR:             bilateral deficit → unilateral device; OR upper body demand > capacity
 //                     POOR = model mismatch, NOT clinical contraindication → NEEDS_CLINICAL_CLEARANCE
@@ -110,11 +127,11 @@ function evaluateDeviceFit(action, profile, parsedConstraints) {
   const { instability_type, laterality, fall_history } = profile;
   const { modality, support_sides, upper_body_demand } = action;
 
-  // NEEDS_ASSESSMENT: recent falls → NICE NG147 mandates multifactorial assessment
+  // Internal conservative device-selection policy, not a NICE mandate after every fall.
   if (fall_history === 'RECENT') {
     return {
       level: 'NEEDS_ASSESSMENT',
-      reason: 'Recent fall history — NICE NG147: multifactorial falls assessment required before prescribing any assistive device.',
+      reason: 'Recent fall history — CHJ device-selection policy requires individual assessment before offering an assistive device.',
     };
   }
 
@@ -242,11 +259,11 @@ const UNAIDED_WALKING_PROTOCOLS = new Set(['KARDIO_PROTOKOL', 'VYTRVALOST_PROTOK
 //   5. ASSISTIVE_PROTOKOL → DEVICE_FIT evaluation
 //   6. Gait instability + unaided aerobic walking → NEEDS_MORE_EVIDENCE
 //   7. Balance/stability exercises + gait instability → SAFE_WITH_MODIFICATION (required_capabilities)
-//   8. CV risk + non-HIIT resistance → SAFE_WITH_MODIFICATION
+//   8. CV risk + non-HIIT resistance → SAFE_WITH_MODIFICATION (unless the grid result is stricter)
 //   9. Constraint × modality × intensity grid
 //  10. SAFE
 
-function evaluateSafetyGate(action, parsedConstraints, hasCvRiskRelevant, hasClinicalHistory, hasGaitInstability, mobilityProfile) {
+function evaluateSafetyGate(action, parsedConstraints, hasCvRiskRelevant, hasClinicalHistory, hasGaitInstability, mobilityProfile, clinicalHistory) {
   const intensity    = action.intensity ?? 'MODERATE';
   const isHighIntensity = intensity === 'VIGOROUS' || intensity === 'HIGH_INTENSITY_INTERVAL';
   const excludeList  = action.constraint_exclude ?? [];
@@ -293,6 +310,7 @@ function evaluateSafetyGate(action, parsedConstraints, hasCvRiskRelevant, hasCli
     if (c.severity === null && actionLoadsRegion(action, c.key)) {
       return {
         level: 'NEEDS_MORE_EVIDENCE',
+        blocking_evidence: { evidence_type: `${c.key}_severity`, question: `Jak závažné je omezení v oblasti: ${c.raw_location}? (lehké / střední / závažné)` },
         reason: `Constraint on "${c.key}" with unknown severity — cannot assess safe loading at ${intensity} intensity without more information.`,
         modifications_suggested: ['Clarify injury severity (mild / moderate / severe) before proceeding'],
       };
@@ -301,7 +319,7 @@ function evaluateSafetyGate(action, parsedConstraints, hasCvRiskRelevant, hasCli
 
   // 5. ASSISTIVE_PROTOKOL → DEVICE_FIT evaluation
   // DEVICE_FIT=POOR → NEEDS_CLINICAL_CLEARANCE (device mismatch, not clinical contraindication)
-  // DEVICE_FIT=NEEDS_ASSESSMENT → NEEDS_CLINICAL_CLEARANCE (NICE NG147 post-fall assessment)
+  // DEVICE_FIT=NEEDS_ASSESSMENT → NEEDS_CLINICAL_CLEARANCE (internal CHJ device-selection policy)
   // DEVICE_FIT=UNKNOWN → NEEDS_MORE_EVIDENCE (profile insufficient)
   // DEVICE_FIT=GOOD → continue to standard checks
   if (action.protocol_type === 'ASSISTIVE_PROTOKOL' && mobilityProfile) {
@@ -311,7 +329,7 @@ function evaluateSafetyGate(action, parsedConstraints, hasCvRiskRelevant, hasCli
         level: 'NEEDS_CLINICAL_CLEARANCE',
         reason: fit.reason,
         modifications_suggested: [
-          'Zajistit multifaktoriální assessment pádu dle NICE NG147',
+          'Zajistit odborné posouzení chůze, rovnováhy a vhodnosti pomůcky',
           'Zahrnout fyzioterapeutické hodnocení chůze a rovnováhy',
           'Pomůcku nezahájit bez výsledku assessmentu',
         ],
@@ -360,8 +378,16 @@ function evaluateSafetyGate(action, parsedConstraints, hasCvRiskRelevant, hasCli
       && (action.tags ?? []).some(t => ['kardio', 'pohyb', 'beh'].includes(t));
 
     if (isUnaidedWalkingProtocol || isWalkingTrainingAction) {
+      // An answered self-report resolves the dialogue, not clinical suitability.
+      // Persistent instability still blocks walking; do not re-ask or infer clearance.
+      if (isEvidenceResolved('gait_stability', clinicalHistory)) return {
+        level: 'NEEDS_CLINICAL_CLEARANCE',
+        reason: 'Gait self-report has been answered, but the active instability finding remains. Individual assessment is required before prescribing unaided walking.',
+        modifications_suggested: [],
+      };
       return {
         level: 'NEEDS_MORE_EVIDENCE',
+        blocking_evidence: { evidence_type: 'gait_stability', question: 'Cítíš se při běžné chůzi stabilně?' },
         reason: 'Predicted gait instability — unaided walking cannot be assumed safe without a gait/balance assessment. Assess stability first.',
         modifications_suggested: [
           'Zjistit: chodíte bez pomůcky bezpečně? (gait_stability)',
@@ -372,25 +398,75 @@ function evaluateSafetyGate(action, parsedConstraints, hasCvRiskRelevant, hasCli
     }
   }
 
-  // 7. Balance/stability exercises require adequate gait capacity — SAFE_WITH_MODIFICATION when impaired.
-  // Balance and stability exercises ARE the treatment for gait instability (Sherrington et al., Cochrane 2019),
-  // so they are not blocked. But predicted gait instability requires supervised or supported environment.
-  // This covers: single-leg stand, tandem walk, single-leg step-down, unstable surface exercises.
-  if (hasGaitInstability && (action.protocol_type === 'BALANCE_PROTOKOL' || action.protocol_type === 'STABILITY_PROTOKOL')) {
+  // Conservative eligibility guard: a single-leg descent is not interchangeable
+  // with supported balance practice. Require individual assessment when unstable.
+  if (hasGaitInstability && action.id === 'step_down') {
     return {
-      level: 'SAFE_WITH_MODIFICATION',
-      reason: 'Balance/stability exercise requires adequate gait capacity; gait instability predicted — therapeutic target, but supervised or wall-supported environment required.',
-      modifications_suggested: [
-        'Use stable wall or chair support for all single-leg variants',
-        'Begin with eyes-open only; progress to eyes-closed only when stable',
-        'Supervised or near-support setting for first sessions',
-      ],
+      level: 'NEEDS_CLINICAL_CLEARANCE',
+      reason: 'Single-leg step-down with gait instability requires an individual assessment of stability and suitable support.',
+      modifications_suggested: [],
     };
   }
 
+  // Advanced sensory/surface variants need individual assessment when gait is unstable.
+  // A generic support instruction cannot convert a closed-eye/unstable-surface task into an entry exercise.
+  if (hasGaitInstability && ['BALANCE_PROTOKOL', 'STABILITY_PROTOKOL'].includes(action.protocol_type)
+      && (['85b4146c-13ae-45ee-b7c7-0f0d253282cf', 'rovnovaha_stoj_2', '0a6f4105-4861-4250-b988-c148e8143513'].includes(action.id)
+        || /zavřen|zavren|eyes.?closed|closed.?eyes|nestabiln|unstable/i.test(action.label ?? ''))) {
+    return { level: 'NEEDS_CLINICAL_CLEARANCE',
+      reason: 'Closed-eye or unstable-surface balance with gait instability requires individual assessment.',
+      modifications_suggested: [],
+    };
+  }
+
+  // Walking-aid guard: a person who already relies on a walking aid (cane/crutches/
+  // walker) for ordinary gait needs individual assessment before an unsupported
+  // single-leg stand — a generic "lean on a wall" modification understates the risk.
+  // Does not block balance work outright: a non-single-leg balance action (e.g. the
+  // generic habit entry) is unaffected and remains the safe fallback (Variant A).
+  {
+    const NO_DEVICE_VALUES = new Set(['NONE', 'UNKNOWN', 'ŽÁDNÁ', 'ŽÁDNÝ', 'NO', 'NE']);
+    const deviceRaw = String(mobilityProfile?.current_device_in_use ?? 'UNKNOWN').trim().toUpperCase();
+    const usesWalkingAid = deviceRaw.length > 0 && !NO_DEVICE_VALUES.has(deviceRaw);
+    if (hasGaitInstability && usesWalkingAid
+        && (action.protocol_type === 'BALANCE_PROTOKOL' || action.protocol_type === 'STABILITY_PROTOKOL')
+        && /jedn[ée] noze|jedna noha|single.?leg/i.test(action.label ?? '')) {
+      return {
+        level: 'NEEDS_CLINICAL_CLEARANCE',
+        reason: 'Person currently relies on a walking aid for ordinary gait — unsupported single-leg balance requires individual assessment before prescribing.',
+        modifications_suggested: [],
+      };
+    }
+  }
+
+  // 7. Balance/stability exercises require adequate gait capacity — SAFE_WITH_MODIFICATION when impaired.
+  // Fall-prevention exercise evidence is not blanket treatment/clearance for every gait disorder.
+  // This existing CHJ entry policy keeps supported basic tasks available; individual dose remains unvalidated.
+  // This covers: single-leg stand, tandem walk, supported entry balance tasks; advanced sensory/surface tasks are gated above.
+  if (hasGaitInstability && (action.protocol_type === 'BALANCE_PROTOKOL' || action.protocol_type === 'STABILITY_PROTOKOL')) {
+    const balanceResult = {
+      level: 'SAFE_WITH_MODIFICATION',
+      reason: 'CHJ supported balance entry policy: modeled gait instability requires a supervised or supported setting; this is not individual clinical clearance or dose validation.',
+      modifications_suggested: [
+        'Use stable wall or chair support for all single-leg variants',
+        'Keep eyes open throughout',
+        'Stop if pain, dizziness, or loss of balance occurs',
+        'Supervised or near-support setting for first sessions',
+      ],
+    };
+    const jointResult = evaluateJointLoad(action, parsedConstraints, intensity, isHighIntensity);
+    if (jointResult && SAFETY_RANK[jointResult.level] < SAFETY_RANK[balanceResult.level]) return jointResult;
+    if (jointResult) balanceResult.modifications_suggested = [...new Set([
+      ...balanceResult.modifications_suggested, ...jointResult.modifications_suggested,
+    ])];
+    return balanceResult;
+  }
+
   // 8. CV risk + non-HIIT resistance (tier 1–2) → SAFE_WITH_MODIFICATION
-  if (hasCvRiskRelevant && action.protocol_type === 'SILOVY_PROTOKOL' && !isHighIntensity) {
-    return {
+  // A more restrictive joint-load result (e.g. severe constraint → NEEDS_CLINICAL_CLEARANCE)
+  // must not be masked by the CV modification; otherwise the CV result stays unchanged.
+  if (hasCvRiskRelevant && SILOVY_PROTOKOL_FAMILY.has(action.protocol_type) && !isHighIntensity) {
+    const cvResult = {
       level: 'SAFE_WITH_MODIFICATION',
       reason: 'Resistance training with confirmed cardiovascular risk. Safe with blood pressure monitoring and no Valsalva maneuver.',
       modifications_suggested: [
@@ -399,11 +475,37 @@ function evaluateSafetyGate(action, parsedConstraints, hasCvRiskRelevant, hasCli
         'Stop if chest pain, severe dyspnea, or dizziness',
       ],
     };
+    const jointResult = evaluateJointLoad(action, parsedConstraints, intensity, isHighIntensity);
+    if (jointResult && SAFETY_RANK[jointResult.level] < SAFETY_RANK[cvResult.level]) return jointResult;
+    return cvResult;
   }
 
-  // 8. Constraint × modality × intensity grid
-  // Severity (rows) × intensity level (cols) → safety outcome.
-  // Modality (which region is loaded) already handled by actionLoadsRegion().
+  // 9. Constraint × modality × intensity grid
+  const jointResult = evaluateJointLoad(action, parsedConstraints, intensity, isHighIntensity);
+  if (jointResult) return jointResult;
+
+  return {
+    level: 'SAFE',
+    reason: 'No relevant constraints or safety concerns identified.',
+    modifications_suggested: [],
+  };
+}
+
+// Constraint × modality × intensity grid.
+// Severity (rows) × intensity level (cols) → safety outcome per constraint whose region the
+// action loads. Returns the most restrictive outcome (SAFETY_RANK) so input order cannot lower
+// the safety level; on equal level the first outcome is kept (deterministic text priority).
+// null when no constraint region is loaded.
+// Modality (which region is loaded) already handled by actionLoadsRegion().
+function evaluateJointLoad(action, parsedConstraints, intensity, isHighIntensity) {
+  // Cycling is a relevant alternative to locomotor aerobic impact, not to
+  // chair rises, strength or balance tasks (even if they load the same joint).
+  const locomotorAerobic = ['KARDIO_PROTOKOL', 'VYTRVALOST_PROTOKOL', 'TRAINING_PROTOKOL'].includes(action.protocol_type)
+    && /(?:^|[^\p{L}])(?:chůz|chuz|procház|prochaz|běh|beh|walk|run|hiking|turistik|klus|sprint)/iu.test(action.label ?? '');
+  const lowerLoad = locomotorAerobic
+    ? (isHighIntensity ? 'Prefer low-impact variant (e.g. cycling over running or uphill)' : 'Prefer low-impact variant (e.g. cycling over running)')
+    : 'Prefer a lower-load variant of this activity';
+  let worst = null;
   for (const c of parsedConstraints) {
     if (!actionLoadsRegion(action, c.key)) continue;
 
@@ -423,26 +525,23 @@ function evaluateSafetyGate(action, parsedConstraints, hasCvRiskRelevant, hasCli
       // mild + MODERATE/LIGHT → proceed; low-impact variant preferred
       level = isHighIntensity ? 'SAFE_WITH_MODIFICATION' : 'SAFE';
       mods  = isHighIntensity
-        ? ['Prefer low-impact variant (e.g. cycling over running or uphill)', 'Reduce intensity if discomfort appears', 'Stop if pain increases']
-        : ['Prefer low-impact variant (e.g. cycling over running)', 'Stop if discomfort increases'];
+        ? [lowerLoad, 'Reduce intensity if discomfort appears', 'Stop if pain increases']
+        : [lowerLoad, 'Stop if discomfort increases'];
     } else {
       // null severity already caught by rule 4; shouldn't reach here
       level = 'NEEDS_MORE_EVIDENCE';
       mods  = ['Clarify injury severity before proceeding'];
     }
 
-    return {
+    const result = {
       level,
       reason: `${c.severity ?? 'unknown'} constraint on "${c.key}" — this modality loads the region at ${intensity} intensity.`,
       modifications_suggested: mods,
     };
+    if (!worst || SAFETY_RANK[result.level] < SAFETY_RANK[worst.level]) worst = result;
   }
 
-  return {
-    level: 'SAFE',
-    reason: 'No relevant constraints or safety concerns identified.',
-    modifications_suggested: [],
-  };
+  return worst;
 }
 
 // ── Minimum meaningful effect ─────────────────────────────────────────────────
@@ -479,7 +578,7 @@ function evaluateMinMeaningfulEffect(action, _intervention) {
 // For TRAINING_PROTOKOL (shared across multiple interventions), disambiguation by tags.
 
 const CARDIO_TAGS  = new Set(['kardio', 'zona2', 'vo2max', 'beh', 'vytrvalost', 'sprint', 'interval', 'pohyb', 'aerobni']);
-const STRENGTH_TAGS = new Set(['sila', 'core', 'nohy', 'horni', 'kliky', 'drep', 'plank', 'stabilita', 'plyometrie']);
+const STRENGTH_TAGS = new Set(['sila', 'core', 'nohy', 'horni', 'kliky', 'drep', 'plank', 'stabilita', 'plyometrie', 'grip']);
 
 function assignIntervention(action, interventions) {
   const { protocol_type } = action;
@@ -547,7 +646,7 @@ function computeFriction(action) {
 function computeTimeToFeedback(action) {
   const { protocol_type } = action;
   if (['KARDIO_PROTOKOL', 'VYTRVALOST_PROTOKOL'].includes(protocol_type)) return 'days_to_weeks';
-  if (protocol_type === 'SILOVY_PROTOKOL') return 'weeks';
+  if (SILOVY_PROTOKOL_FAMILY.has(protocol_type)) return 'weeks';
   const tags = action.tags ?? [];
   if (tags.some(t => CARDIO_TAGS.has(t))) return 'days';
   return 'days_to_weeks';
@@ -563,15 +662,52 @@ function computeFeasibility(safety) {
 
 // ── Candidate builder ─────────────────────────────────────────────────────────
 
-function buildCandidates(actionPool, interventions, parsedConstraints, hasCvRiskRelevant, hasClinicalHistory, leverageNodeId, hasGaitInstability, mobilityProfile, skippedTodayActionIds) {
+// LOW_MUSCLE_STRENGTH onboarding questions split by movement pattern — lets an
+// intervention opt in/out of candidacy by which specific functional deficit is
+// actually present, instead of every LOW_MUSCLE_STRENGTH-mapped intervention
+// always competing together regardless of which test the person failed.
+const LEG_PATTERN_STRENGTH_QUESTIONS = ['vstat_ze_zeme', 'vynest_nakup', 'zvednout_vnouce', 'vstat_ze_zidle', 'skocit_dopadnout'];
+const GRIP_PATTERN_STRENGTH_QUESTIONS = ['otevrit_zavarovacku', 'kufr_do_police'];
+function hasUpperBodyOnlyStrengthEvidence(clinicalHistory) {
+  const oi = clinicalHistory?.onboarding_inputs || {};
+  const isNeg = v => readYesNo(v) === 'no';
+  const hasGrip = GRIP_PATTERN_STRENGTH_QUESTIONS.some(k => isNeg(oi[k]));
+  const hasLeg  = LEG_PATTERN_STRENGTH_QUESTIONS.some(k => isNeg(oi[k]));
+  return hasGrip && !hasLeg;
+}
+
+function buildCandidates(actionPool, interventions, parsedConstraints, hasCvRiskRelevant, hasClinicalHistory, leverageNodeId, hasGaitInstability, mobilityProfile, skippedTodayActionIds, clinicalHistory) {
   const candidates = [];
+  const upperBodyOnly = hasUpperBodyOnlyStrengthEvidence(clinicalHistory);
+  const unavailableActionIds = new Set(skippedTodayActionIds ?? []);
+  for (const group of ACTION_EQUIVALENTS.skip_groups) {
+    if (group.action_ids.some(id => unavailableActionIds.has(id))) {
+      for (const id of group.action_ids) unavailableActionIds.add(id);
+    }
+  }
 
   for (const action of actionPool) {
     // action_ids skipped today are ineligible for the remainder of the day
-    if (skippedTodayActionIds?.has(action.id)) continue;
+    if (unavailableActionIds.has(action.id)) continue;
 
     const intervention = assignIntervention(action, interventions);
     if (!intervention) continue;
+
+    // Pattern-specific LOW_MUSCLE_STRENGTH interventions: only compete when the
+    // confirmed deficit actually matches the movement pattern they train.
+    if (intervention.only_when_upper_body_only_strength && !upperBodyOnly) continue;
+    if (intervention.skip_when_upper_body_only_strength && upperBodyOnly) continue;
+
+    // Optional target-specific reviewed bridge. Empty means no reviewed actions;
+    // absent preserves existing mapping. Never infer exercise suitability from
+    // a broad protocol when this intervention declares an explicit allowlist.
+    if (Array.isArray(intervention.allowed_action_ids)
+      && !intervention.allowed_action_ids.includes(action.id)) continue;
+
+    // Target-specific entry policy: a protocol or tier does not establish
+    // readiness for vigorous exercise. Missing intensity is not approval.
+    if (Array.isArray(intervention.allowed_intensities)
+      && !intervention.allowed_intensities.includes(action.intensity)) continue;
 
     // Apply tag_filter if intervention specifies one (BREAK_UP_SEDENTARY_TIME → only kardio-tagged actions)
     if (intervention.tag_filter?.length > 0) {
@@ -579,7 +715,7 @@ function buildCandidates(actionPool, interventions, parsedConstraints, hasCvRisk
       if (!tags.some(t => intervention.tag_filter.includes(t))) continue;
     }
 
-    const safety               = evaluateSafetyGate(action, parsedConstraints, hasCvRiskRelevant, hasClinicalHistory, hasGaitInstability, mobilityProfile);
+    const safety               = evaluateSafetyGate(action, parsedConstraints, hasCvRiskRelevant, hasClinicalHistory, hasGaitInstability, mobilityProfile, clinicalHistory);
     const min_meaningful_effect = evaluateMinMeaningfulEffect(action, intervention);
     const leverage_affinity    = computeLeverageAffinity(intervention);
     const effect_on_leverage   = computeEffectOnLeverage(intervention, leverageNodeId);
@@ -598,11 +734,16 @@ function buildCandidates(actionPool, interventions, parsedConstraints, hasCvRisk
       protocol_type:        action.protocol_type,
       label:                action.label,
       tier:                 action.tier,
+      // no_count: 'reps' actions tagged 'bez_pocitani' need both hands on support
+      // (chair/wall/floor transfer) throughout — show one "Hotovo" after the
+      // whole set, never a tap-per-rep counter. See migrations/tag_no_count_reps_actions.sql.
+      dose:                 { type: action.type, duration: action.duration, reps: action.reps, intensity: action.intensity, no_count: (action.tags ?? []).includes('bez_pocitani') },
       safety,
       min_meaningful_effect,
       leverage_affinity,
       effect_on_leverage,
       goal_impact,
+      mechanism_targets:    intervention.mechanism_targets ?? [],
       feasibility,
       friction,
       time_to_feedback,
@@ -613,6 +754,57 @@ function buildCandidates(actionPool, interventions, parsedConstraints, hasCvRisk
   }
 
   return candidates;
+}
+
+// ── Default safe action for a non-leverage ("volná") area ─────────────────────
+// For the "1 hlavní + N volné" daily-action concept (BACKLOG.md): a supplementary
+// area is NOT ranked by the 10-criteria ordinal selection above — it never
+// competes with the day's actual system_constraint/leverage pick. It only needs
+// a deterministic, already-known-safe starter action. This reuses buildCandidates()
+// in full (allowlists, intensity/tag filters, constraint exclusions, Safety Gate —
+// all unchanged) so no filtering logic is duplicated, then picks the lowest-tier
+// viable (SAFE / SAFE_WITH_MODIFICATION) candidate for the given intervention_id.
+// Ties broken by action_id for determinism. Returns null if no viable candidate
+// exists (e.g. every tier-1+ action for this intervention is contraindicated).
+export function pickDefaultSafeAction({
+  interventionId,
+  actionPool,
+  interventions,
+  personConstraints,
+  clinicalHistory,
+  node_states,
+  decisionGate,
+}) {
+  const parsedConstraints = parsePersonConstraints(personConstraints);
+  const hasClinicalHistory = Boolean(clinicalHistory?.clinical_history_documented);
+  const hasCvRiskRelevant = (decisionGate?.context_gates ?? []).some(g =>
+    g.decision_context?.id === 'CURRENT_CV_STATE' &&
+    (g.actionable_findings ?? []).some(f => f.actionability === 'RISK_RELEVANT')
+  );
+  const hasGaitInstability = (node_states ?? []).some(s =>
+    s.node_id === 'GAIT_INSTABILITY' &&
+    ['CONFIRMED', 'PREDICTED_CURRENT'].includes(s.current_state)
+  );
+  const mobilityProfile = computeMobilityProfile(node_states, clinicalHistory);
+
+  // leverageNodeId only feeds effect_on_leverage (a ranking-only field here) —
+  // passing null keeps that field 'low'/'UNKNOWN' without affecting candidate
+  // membership, allowlists, or the Safety Gate.
+  const candidates = buildCandidates(
+    actionPool, interventions, parsedConstraints, hasCvRiskRelevant,
+    hasClinicalHistory, null, hasGaitInstability, mobilityProfile,
+    new Set(), clinicalHistory,
+  );
+
+  const viable = candidates
+    .filter(c => c.intervention_id === interventionId)
+    .filter(c => VIABLE_SAFETY.has(c.safety.level));
+
+  if (viable.length === 0) return null;
+
+  return viable.slice().sort((a, b) =>
+    (a.tier ?? 99) - (b.tier ?? 99) || a.action_id.localeCompare(b.action_id)
+  )[0];
 }
 
 // ── Ordinal selection ─────────────────────────────────────────────────────────
@@ -721,7 +913,7 @@ export function computeNextBestAction({
   // Mobility profile for DEVICE_FIT evaluation (ASSISTIVE_PROTOKOL actions)
   const mobilityProfile = computeMobilityProfile(node_states, clinicalHistory);
 
-  const candidates = buildCandidates(
+  let candidates = buildCandidates(
     actionPool,
     interventions,
     parsedConstraints,
@@ -731,14 +923,60 @@ export function computeNextBestAction({
     hasGaitInstability,
     mobilityProfile,
     skippedTodayActionIds,
+    clinicalHistory,
   );
 
+  // Skipping is not evidence of capacity or readiness to progress. Derive the
+  // daily ceiling from the actual catalog rows skipped today, never client state.
+  // The same/lower-tier alternatives retain the unchanged safety/ranking policy.
+  const unskippedCandidates = skippedTodayActionIds?.size
+    ? buildCandidates(actionPool, interventions, parsedConstraints, hasCvRiskRelevant,
+        hasClinicalHistory, leverageNodeId, hasGaitInstability, mobilityProfile, new Set(), clinicalHistory)
+    : [];
+  const tierCeilings = new Map();
+  for (const reference of unskippedCandidates) {
+    if (!skippedTodayActionIds?.has(reference.action_id)) continue;
+    const tier = Number.isFinite(reference.tier) && reference.tier >= 1 ? reference.tier : 0;
+    tierCeilings.set(reference.intervention_id, Math.min(tierCeilings.get(reference.intervention_id) ?? Infinity, tier));
+  }
+  const skippedReferences = unskippedCandidates.filter(c => skippedTodayActionIds?.has(c.action_id));
+  const intensityOrder = { LIGHT: 1, MODERATE: 2, VIGOROUS: 3, HIGH_INTENSITY_INTERVAL: 4 };
+  function doseDoesNotIncrease(candidate, reference) {
+    const a = candidate.dose, b = reference.dose;
+    if (!a || !b) return false;
+    const ai = intensityOrder[a.intensity], bi = intensityOrder[b.intensity];
+    if (!ai || !bi || ai > bi) return false;
+    // Different or missing dose units cannot establish a non-increasing dose.
+    if (a.type !== b.type) return false;
+    if (b.type === 'timed') return Number.isFinite(a.duration) && a.duration > 0
+      && Number.isFinite(b.duration) && b.duration > 0 && a.duration <= b.duration;
+    if (b.type === 'reps') return Number.isFinite(a.reps) && a.reps > 0
+      && Number.isFinite(b.reps) && b.reps > 0 && a.reps <= b.reps;
+    // No numeric dose was prescribed for these catalog habit actions.
+    return a.type === 'habit' && a.duration == null && b.duration == null
+      && a.reps == null && b.reps == null;
+  }
+  const deferredProgression = candidates.filter(c => tierCeilings.has(c.intervention_id)
+    && (!(Number.isFinite(c.tier) && c.tier >= 1 && c.tier <= tierCeilings.get(c.intervention_id))
+      || skippedReferences.some(ref => ref.intervention_id === c.intervention_id
+        && !doseDoesNotIncrease(c, ref))));
+  candidates = candidates.filter(c => !deferredProgression.includes(c));
+  const progressionPolicy = {
+    tier_ceilings: Object.fromEntries(tierCeilings),
+    deferred_action_ids: deferredProgression.map(c => c.action_id),
+  };
+
   if (candidates.length === 0) {
+    // Distinguish an empty model/action pool from today's explicit skips.
+    // Reuse the same candidate builder and Safety Gate; never invent alternatives.
+    const skippedViable = unskippedCandidates.some(c => VIABLE_SAFETY.has(c.safety.level));
     return {
       status:         'NO_CANDIDATES',
+      reason_code:    skippedViable ? 'ALL_ACTIONS_SKIPPED_TODAY' : null,
       reason:         `No longevity_actions matched protocol_types for ${leverageNodeId} intervention map.`,
       selected:       null,
       all_candidates: [],
+      progression_policy: progressionPolicy,
       evaluated_at:   now,
       engine_version: engineVersion,
     };
@@ -748,16 +986,31 @@ export function computeNextBestAction({
   const viable       = candidates.filter(c => VIABLE_SAFETY.has(c.safety.level));
   const non_viable   = candidates.filter(c => !VIABLE_SAFETY.has(c.safety.level));
 
+  // Non-viable device/assessment candidates may remain after all eligible
+  // starter actions were skipped. They are not new same-day alternatives.
+  // Keep their safety outcomes visible: DAILY_DECISION still checks safety first.
+  if (viable.length === 0 && unskippedCandidates.some(c =>
+      skippedTodayActionIds?.has(c.action_id) && VIABLE_SAFETY.has(c.safety.level))) {
+    return {
+      status: 'NO_CANDIDATES', reason_code: 'ALL_ACTIONS_SKIPPED_TODAY',
+      reason: 'No eligible same-or-lower-tier action remains after today’s skips.',
+      selected: null, all_candidates: candidates, progression_policy: progressionPolicy,
+      evaluated_at: now, engine_version: engineVersion,
+    };
+  }
+
   // If all non-viable due to NEEDS_MORE_EVIDENCE → request evidence
   const allNeedEvidence = non_viable.length > 0 &&
     viable.length === 0 &&
     non_viable.every(c => c.safety.level === 'NEEDS_MORE_EVIDENCE');
 
   if (allNeedEvidence) {
+    const blockingEvidence = non_viable.find(c => c.safety.blocking_evidence)?.safety.blocking_evidence;
     return {
       status:          'NEED_MORE_EVIDENCE',
-      reason:          'All candidates blocked by unknown constraint severity. Clarify injury status to proceed.',
-      next_best_question: 'Jak závažné je tvé omezení pohybu? (lehké / střední / závažné)',
+      reason:          'No viable candidate; clarify the actual blocking evidence before proceeding.',
+      next_best_evidence_type: blockingEvidence?.evidence_type ?? null,
+      next_best_question: blockingEvidence?.question ?? 'Jak závažné je tvé omezení pohybu? (lehké / střední / závažné)',
       selected:        null,
       all_candidates:  candidates,
       evaluated_at:    now,
@@ -776,7 +1029,9 @@ export function computeNextBestAction({
     cv_risk_context:              hasCvRiskRelevant,
     clinical_history_documented:  hasClinicalHistory,
     all_candidates:               candidates,
+    progression_policy:           progressionPolicy,
     evaluated_at:                 now,
     engine_version:               engineVersion,
   };
 }
+

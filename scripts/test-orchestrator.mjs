@@ -542,7 +542,7 @@ async function scenarioG() {
 
   check(response.mode === 'EXPLAIN', 'mode = EXPLAIN');
 
-  const GENERIC_FALLBACK = 'Tato akce cílí na tvůj aktuální systémový bottleneck.';
+  const GENERIC_FALLBACK = 'Tahle doporučená akce teď nejvíc odpovídá tvému aktuálnímu zdravotnímu stavu.';
   const hasConstraint = engineResult.system_constraint?.selected?.node_id != null;
 
   const hasLeverage = engineResult.system_leverage?.selected?.node_id != null;
@@ -550,12 +550,12 @@ async function scenarioG() {
   if (hasLeverage) {
     check(
       response.text !== GENERIC_FALLBACK,
-      'WHY: concrete response — not generic fallback (leverage label resolved from master.json)',
+      'WHY: concrete response — not generic fallback (leverage subject resolved to human phrase)',
       `text: ${response.text?.slice(0, 120)}`
     );
     check(
-      (response.text ?? '').includes('páka') || (response.text ?? '').includes('cílí') || (response.text ?? '').includes('omezení'),
-      'WHY: text contains concrete engine data (leverage / action / constraint reference)',
+      (response.text ?? '').startsWith('Protože') && (response.text ?? '').includes('ovlivňuje'),
+      'WHY: text contains concrete engine data (human-phrased leverage sentence)',
       `text: ${response.text?.slice(0, 120)}`
     );
   } else {
@@ -642,28 +642,28 @@ async function scenarioI() {
   showResponse(response);
 
   const text            = response.text ?? '';
-  const leverageLabel   = 'Fyzická inaktivita';    // NODE_LABEL_CS['PHYSICAL_INACTIVITY']
-  const constraintLabel = 'Arteriální hypertenze'; // NODE_LABEL_CS['HYPERTENSION']
+  const leveragePhrase   = 'tvůj nedostatek pohybu'; // WHY_SUBJECT_CS['PHYSICAL_INACTIVITY']
+  const constraintPhrase = 'tvůj krevní tlak';        // WHY_SUBJECT_CS['HYPERTENSION']
 
   check(response.mode === 'EXPLAIN', 'mode = EXPLAIN');
 
-  // Leverage must appear with "páka" framing, not "omezení"
+  // Leverage drives the primary sentence ("Protože <leverage> ovlivňuje ...")
   check(
-    text.includes('páka') && text.includes(leverageLabel),
-    'WHY: leverage node framed as "páka" — not silently omitted',
+    text.startsWith('Protože') && text.includes(leveragePhrase),
+    'WHY: leverage node drives the primary sentence — not silently omitted',
     `text: ${text.slice(0, 160)}`
   );
   check(
-    !text.includes(`omezení: ${leverageLabel}`) && !text.includes(`omezení:${leverageLabel}`),
-    'WHY: leverage label not conflated with "omezení" (semantic correctness)',
+    !text.startsWith(`Protože ${constraintPhrase}`),
+    'WHY: leverage subject not conflated with constraint subject (semantic correctness)',
     `text: ${text.slice(0, 160)}`
   );
 
-  // If constraint appears it must carry "omezení" framing
-  if (text.includes(constraintLabel)) {
+  // If constraint appears it must carry its own "Zároveň hraje roli" clause, not be the primary subject
+  if (text.includes(constraintPhrase)) {
     check(
-      text.includes('omezení'),
-      'WHY: constraint node uses "omezení" framing — not confused with leverage',
+      text.includes(`Zároveň hraje roli ${constraintPhrase}`),
+      'WHY: constraint node uses "Zároveň hraje roli" framing — not confused with leverage',
       `text: ${text.slice(0, 160)}`
     );
   } else {
@@ -1322,8 +1322,8 @@ async function scenarioN() {
     const engineAfter = await runEngine(TESTER_0);
     const ddAfter     = computeDailyDecision(engineAfter);
     console.log(`  engine mode after full reset: ${ddAfter.mode} (${ddAfter.reason_code})`);
-    check(ddAfter.reason_code !== 'HOLD_TOO_EARLY',
-      'N4: engine NOT HOLD_TOO_EARLY after full reset',
+    check(ddAfter.mode !== 'HOLD',
+      'N4: engine NOT HOLD after full reset',
       `actual: ${ddAfter.reason_code}`);
 
     // N5 — start() _LRK contract: server signals caller must clear localStorage
@@ -1414,7 +1414,7 @@ async function scenarioO() {
 
   // O4: text contains "zítra" (return-tomorrow)
   check(
-    (r.text ?? '').includes('zítra'),
+    /zítra/i.test(r.text ?? ''),
     'O4: text contains "zítra" (return-tomorrow)',
     `actual: ${r.text?.slice(0, 120)}`
   );
@@ -2755,10 +2755,10 @@ async function scenarioAC() {
     console.log(`  sessions_comp  : ${r2.intervention_exposure?.find(e => e.intervention_id === nba.intervention_id)?.sessions_completed ?? 0}`);
 
     check(dd2.mode === 'HOLD',
-      'AC-setup: engine in HOLD after ACTION_COMPLETED (sessions_completed=1, TOO_EARLY)',
+      'AC-setup: engine in HOLD after ACTION_COMPLETED (completed today)',
       `actual: ${dd2.mode} (${dd2.reason_code})`);
-    check(dd2.reason_code === 'HOLD_TOO_EARLY',
-      'AC-setup: reason_code = HOLD_TOO_EARLY (horizon not elapsed)',
+    check(dd2.reason_code === 'HOLD_DONE_TODAY',
+      'AC-setup: reason_code = HOLD_DONE_TODAY (intervention completed today)',
       `actual: ${dd2.reason_code}`);
 
     if (dd2.mode !== 'HOLD' || !dd2.primary_item?.action_id || !dd2.primary_item?.intervention_id) {
@@ -2804,14 +2804,14 @@ async function scenarioAC() {
       `actual: [${(r.buttons ?? []).join(', ')}]`);
 
     // ── AC6 regression: DOMAIN_REQUEST in HOLD → label holdText, NOT 'Hotovo.' ─
-    // Still in HOLD (daysSinceFirst < 7) — DOMAIN_REQUEST must not trigger completion ack.
+    // Still in HOLD (completed today) — DOMAIN_REQUEST must not trigger completion ack.
     const r6 = await processInput(UID, 'Co mám dnes dělat?', {});
     console.log('\n  [AC6 — DOMAIN_REQUEST in HOLD: label holdText, NOT completion ack]');
     showResponse(r6);
 
     if (r6.mode === 'HOLD') {
       check(!(r6.text ?? '').startsWith('Hotovo.'),
-        'AC6: DOMAIN_REQUEST in HOLD → text does NOT start with "Hotovo." (general holdText preserved)',
+        'AC6: DOMAIN_REQUEST in HOLD → text does NOT start with "Hotovo." (HOLD_DONE_TODAY text)',
         `actual: "${r6.text?.slice(0, 80)}"`);
     } else {
       check(['ACT', 'ASK', 'SAFETY_BLOCKED', 'EXPLAIN'].includes(r6.mode),

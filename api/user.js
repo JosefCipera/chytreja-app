@@ -703,7 +703,7 @@ async function handleFullProfile(req, res) {
       .select('goal_key, label, target_age')
       .eq('user_id', userId).eq('active', true).maybeSingle(),
     db.from('user_health_profile')
-      .select('diagnoses, symptoms, family_history, supplements, doctor_notes, lifestyle, capacity, labs')
+      .select('diagnoses, symptoms, family_history, supplements, doctor_notes, lifestyle, physical, labs')
       .eq('user_id', userId).maybeSingle(),
     db.from('user_medications')
       .select('name, dose, active')
@@ -721,7 +721,7 @@ async function handleFullProfile(req, res) {
     supplements:    h.supplements    ?? [],
     doctor_notes:   h.doctor_notes   ?? '',
     lifestyle:      h.lifestyle      ?? {},
-    capacity:       h.capacity       ?? {},
+    physical:       h.physical       ?? {},
     labs:           h.labs           ?? {},
     medications:    medsRes.data     ?? [],
   });
@@ -785,23 +785,27 @@ async function handleSaveZdravi(req, res) {
 }
 
 // ── POST ?action=save-kondice ────────────────────────────────────
-// Replaces capacity; hard-deletes injury constraints then re-inserts.
-// Returns fresh constraints for client cache update.
+// Merges physical self-report into user_health_profile.physical — the column the
+// live engine (healthEventAdapter.js) reads — then hard-deletes/re-inserts injury
+// constraints. Returns fresh constraints for client cache update.
 async function handleSaveKondice(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
   const userId = req.body?.userId;
   if (!userId) return res.status(400).json({ error: 'userId required' });
 
-  const { capacity = {} } = req.body;
+  const { physical = {} } = req.body;
   // Only touch injury constraints when the caller explicitly sends the `injuries` array.
-  // resetKondice sends only { capacity: {} } → constraints untouched (original behaviour).
   const hasInjuries = 'injuries' in req.body;
   const injuries = hasInjuries ? (req.body.injuries || []) : [];
 
   const db = sb();
-  const { error: e1 } = await db.from('user_health_profile')
-    .upsert({ user_id: userId, capacity }, { onConflict: 'user_id' });
-  if (e1) return res.status(500).json({ error: e1.message });
+  if (Object.keys(physical).length) {
+    const { data: hp } = await db.from('user_health_profile').select('physical').eq('user_id', userId).maybeSingle();
+    const merged = { ...(hp?.physical || {}), ...physical };
+    const { error: e1 } = await db.from('user_health_profile')
+      .upsert({ user_id: userId, physical: merged }, { onConflict: 'user_id' });
+    if (e1) return res.status(500).json({ error: e1.message });
+  }
 
   if (hasInjuries) {
     await db.from('user_constraints').delete().eq('user_id', userId).eq('constraint_type', 'injury');
@@ -948,7 +952,7 @@ async function handleWizardStep(req, res) {
 // ── POST ?action=wizard-complete ─────────────────────────────────
 // Marks onboarding as completed for the authenticated user.
 // Uses UPSERT so users who skipped Step 1 (no user_profiles row yet) are handled safely.
-// Called by onboarding-wizard.js _save() as the final operation before overlay removal.
+// Called once the unified onboarding panel (user-data-panel.js) is closed for the first time.
 async function handleWizardComplete(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
   const userId = req.body?.userId;

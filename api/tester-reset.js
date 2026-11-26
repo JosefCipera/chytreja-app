@@ -16,6 +16,7 @@ import { createClient } from '@supabase/supabase-js';
 export const TESTER_UIDS = new Set([
   'u58iRWcMr9bbakFMJYGFGARpi9h1', // Tester 0
   'e0ZYA3auBYUh9TOOtqQPqbkIcrJ2', // Tester 1
+  'LGxqGekvgkXtyng3AK40yfb2fMk1', // Tester (t0@i.cz) — launcher dev testing
   // Add additional tester accounts here when needed
   // Josef (qE09cLyXXGRBRxOBCGNZqTM2XRW2) and Kovářová are PROTECTED — never add here
 ]);
@@ -71,7 +72,7 @@ export async function runTesterReset(userId, mode, sbClient) {
     .update({
       diagnoses: null, symptoms: null, medications: null, labs: null,
       physical: null, lifestyle: null, behavior_flags: null, crt_cache: null,
-      pending_clarifications: null,
+      pending_clarifications: null, goal_text: null,
     })
     .eq('user_id', userId);
   if (hErr) return { status: 500, body: { error: `user_health_profile: ${hErr.message}` } };
@@ -79,9 +80,15 @@ export async function runTesterReset(userId, mode, sbClient) {
   // 5. user_profiles — clear Bootstrap-persisted fields; preserve row, mode, and all other fields.
   // birth_year is written by Bootstrap NBE v1 (upsertUserProfile) and must be cleared on Full Reset
   // so the next clean session starts from zero-knowledge Bootstrap state.
+  // gender is written the same way by the person_sex bootstrap question — same reset reasoning.
+  // age is derived from birth_year and must be cleared alongside it.
+  // height/weight are manually entered via Vstupní data → Profil (api/user.js save-profil) —
+  // also feed the engine's BMI/EXCESS_ADIPOSITY activation, so a reset that keeps them is not
+  // a clean slate.
+  // onboarding_completed is reset to NULL (column default) so the wizard shows again.
   const { error: upErr } = await sb
     .from('user_profiles')
-    .update({ birth_year: null })
+    .update({ birth_year: null, age: null, gender: null, height: null, weight: null, onboarding_completed: null })
     .eq('user_id', userId);
   if (upErr) return { status: 500, body: { error: `user_profiles: ${upErr.message}` } };
 
@@ -98,6 +105,7 @@ export async function runTesterReset(userId, mode, sbClient) {
       deleted_mission_log:        mCount ?? 0,
       health_profile_cleared:     true,
       user_profiles_birth_year_cleared: true,
+      onboarding_reset:           true,
       local_session_cleared:      false, // caller must clear localStorage
     },
   };

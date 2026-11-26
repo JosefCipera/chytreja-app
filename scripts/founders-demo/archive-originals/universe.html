@@ -1,0 +1,946 @@
+﻿<!DOCTYPE html>
+<html lang="cs">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Chytré já</title>
+    <!-- build: 20260402a -->
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@200;300&display=swap" rel="stylesheet">
+
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <!-- Firebase Auth -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js';
+        import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js';
+
+        const app = initializeApp({
+            apiKey: "AIzaSyAKREZsoBZkA1xOQ5ff3XDmiJ88nwSjeOk",
+            authDomain: "chytre-ja-app.firebaseapp.com",
+            projectId: "chytre-ja-app",
+            storageBucket: "chytre-ja-app.firebasestorage.app",
+            messagingSenderId: "65882611642",
+            appId: "1:65882611642:web:53d82914aa07d6677d4783"
+        });
+        const auth = getAuth(app);
+
+        // Auth guard + avatar update
+        onAuthStateChanged(auth, (user) => {
+            if (!user) {
+                window.location.href = '/login';
+            } else {
+                // Always clear cached role on auth â€” getUserMode() reads fresh from DB each load
+                localStorage.removeItem('userRole');
+                localStorage.setItem('chj_uid', user.uid);
+                // Update avatar dynamically
+                const email = user.email || 'User';
+                const name = user.displayName || email.split('@')[0];
+                const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=0D8ABC&color=fff`;
+
+                document.querySelectorAll('.user-avatar, .avatar-large').forEach(img => {
+                    img.src = avatarUrl;
+                });
+
+                const emailEl = document.querySelector('.email');
+                if (emailEl) emailEl.textContent = email;
+
+                // Lehkost check-in: zobraz modal pokud dnes ještě neproběhl pro tohoto uživatele
+                const currentModel = localStorage.getItem('currentModel');
+                if (currentModel === 'lehkost') {
+                    const today = new Date().toISOString().slice(0, 10);
+                    const lsKey = `lh_checkin_date_${user.uid}`;
+                    if (localStorage.getItem(lsKey) !== today) {
+                        import('./js/universe/lehkost-checkin.js').then(({ showCheckinModal }) => {
+                            showCheckinModal(user.uid, (bf) => {
+                                if (!bf) return;
+                                console.log('đź’Ş BODY FLOW:', bf.score);
+                                // Invaliduj HUD cache pro lh_ uzly a re-render canvas
+                                const LH_IDS = ['lh_main','lh_vyziva','lh_pohyb','lh_mysl','lh_regenerace'];
+                                LH_IDS.forEach(id => {
+                                    if (window._hudCache) delete window._hudCache[id];
+                                });
+                                // Re-naÄŤti canvas â€” aktualizuje barvy uzlĹŻ z DB
+                                if (window.refreshUniverseData) {
+                                    window.refreshUniverseData();
+                                }
+                            });
+                        });
+                    }
+                }
+            }
+        });
+
+        // Global logout
+        window.handleLogout = () => {
+            signOut(auth).then(() => window.location.href = '/').catch(console.error);
+        };
+
+        // Contextual guide â€” opens the guide for the active universe
+        window.openGuide = () => {
+            const model = window.CURRENT_MODEL || 'longevity';
+            const guideMap = {
+                longevity:  '/app/guides/longevity.html',
+                decathlon:  '/app/guides/decathlon.html',
+                lehkost:    '/app/guides/lehkost.html',
+                toc:        '/app/guides/toc.html',
+            };
+            const url = guideMap[model] || guideMap.longevity;
+            window.open(url, '_blank');
+        };
+
+        // Daily check-in â€” triggers the right modal for the active universe
+        window.openDailyCheckin = async () => {
+            // Close dropdown first
+            document.getElementById('profileDropdown')?.classList.add('hidden');
+            const model = window.CURRENT_MODEL || 'longevity';
+            const userId = localStorage.getItem('chj_uid');
+            if (!userId) return;
+            if (model === 'longevity') {
+                const { showReadinessModal } = await import('/app/js/universe/longevity-checkin.js');
+                showReadinessModal(userId, null, true); // force=true â†’ show even if already done today
+            } else if (model === 'lehkost') {
+                const { showCheckinModal } = await import('/app/js/universe/lehkost-checkin.js');
+                showCheckinModal(userId, (bodyFlow) => {
+                    if (!bodyFlow) return;
+                    const LH_IDS = ['lh_main','lh_vyziva','lh_pohyb','lh_mysl','lh_regenerace'];
+                    LH_IDS.forEach(id => { if (window._hudCache) delete window._hudCache[id]; });
+                    if (window.refreshUniverseData) window.refreshUniverseData();
+                }, true); // force=true
+            }
+        };
+
+        // Expose auth for other scripts
+        window.firebaseAuth = auth;
+    </script>
+
+    <script type="module" src="./js/universe/onboarding.js?v=20260419b"></script>
+
+    <!-- Knihovny -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vis-network@9.1.9/dist/vis-network.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/vis-network@9.1.9/dist/vis-network.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+    <!-- Styly -->
+    <link rel="stylesheet" href="/app/css/universe-core.css?v=3">
+    <link rel="stylesheet" href="/app/css/universe-header.css?v=3">
+
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.webmanifest">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Chytré já">
+
+    <style>
+        .battery-section {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin: 32px 0;
+        }
+
+        .battery {
+            width: 30px;
+            height: 140px;
+            border: 2px solid #06b6d4;
+            border-radius: 6px;
+            background: rgba(6, 182, 212, 0.05);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.3);
+        }
+
+        .battery-fill {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 38%;
+            background: linear-gradient(180deg, #22d3ee, #06b6d4);
+            box-shadow: 0 0 30px rgba(6, 182, 212, 0.8);
+        }
+
+        .wave-section {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin: 24px 0;
+            height: 40px;
+            align-items: center;
+        }
+
+        .wave {
+            width: 4px;
+            background: linear-gradient(180deg, #06b6d4, #0891b2);
+            border-radius: 2px;
+        }
+
+        .sokrates-text {
+            text-align: center;
+            color: #06b6d4;
+            font-size: 0.85em;
+            margin: 8px 0 16px;
+        }
+        /* === Mic tlaÄŤĂ­tko === */
+        #voice-mic-btn {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: rgba(15, 23, 42, 0.92);
+            border: 1.5px solid rgba(80, 120, 200, 0.4);
+            box-shadow: 0 0 18px rgba(80, 120, 255, 0.2);
+            cursor: pointer;
+            z-index: 500;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.15s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+        }
+        #voice-mic-btn:hover {
+            transform: scale(1.08);
+            box-shadow: 0 0 28px rgba(80, 140, 255, 0.4);
+        }
+        #voice-mic-btn[data-state="listening"] {
+            border-color: rgba(239, 68, 68, 0.7);
+            box-shadow: 0 0 24px rgba(239, 68, 68, 0.35);
+            animation: mic-pulse 1s ease-in-out infinite;
+        }
+        #voice-mic-btn[data-state="thinking"] {
+            border-color: rgba(147, 197, 253, 0.5);
+            box-shadow: 0 0 24px rgba(147, 197, 253, 0.3);
+        }
+        #voice-mic-btn[data-state="speaking"] {
+            border-color: rgba(59, 130, 246, 0.8);
+            animation: mic-pulse-blue 1.1s ease-in-out infinite;
+        }
+        .mic-icon { font-size: 22px; line-height: 1; }
+        @keyframes mic-pulse {
+            0%, 100% { box-shadow: 0 0 24px rgba(239, 68, 68, 0.35); }
+            50%       { box-shadow: 0 0 38px rgba(239, 68, 68, 0.6); }
+        }
+        @keyframes mic-pulse-blue {
+            0%, 100% { box-shadow: 0 0 18px rgba(59, 130, 246, 0.3); }
+            50%       { box-shadow: 0 0 32px rgba(59, 130, 246, 0.7); }
+        }
+        /* CHJ bubliny â€“ fade-in + slide-up pro animovanĂ© 3-vÄ›tovĂ˝ briefing */
+        @keyframes chjFadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        /* Posunout mic btn nahoru kdyĹľ je panel otevĹ™enĂ˝ */
+        body.panel-open #voice-mic-btn {
+            bottom: 80px;
+        }
+        /* === Header mic tlaÄŤĂ­tko â€” TTS indikĂˇtor (speaking state) === */
+        #header-mic-btn {
+            height: 38px;
+            min-width: 38px;
+            padding: 0 8px;
+            border-radius: 9999px;
+            background: rgba(51, 65, 85, 0.65);
+            border: 2px solid #475569;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 15px;
+            white-space: nowrap;
+            transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+            flex-shrink: 0;
+        }
+        #header-mic-btn:hover {
+            background: rgba(71, 85, 105, 0.85);
+            border-color: #64748b;
+        }
+        /* SPEAKING â€“ modrĂˇ pulsujĂ­cĂ­ zĂˇĹ™e (TTS ÄŤte) */
+        #header-mic-btn[data-state="speaking"] {
+            border-color: rgba(59, 130, 246, 0.8);
+            animation: header-pulse-blue 1.1s ease-in-out infinite;
+        }
+
+        /* === Hlasový příkaz â€” novĂ© tlaÄŤĂ­tko === */
+        #cmd-mic-btn {
+            height: 38px;
+            min-width: 38px;
+            padding: 0 10px;
+            border-radius: 9999px;
+            background: rgba(15, 23, 42, 0.75);
+            border: 2px solid rgba(34, 197, 94, 0.35);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 15px;
+            color: #94a3b8;
+            white-space: nowrap;
+            transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+            flex-shrink: 0;
+        }
+        #cmd-mic-btn:hover {
+            background: rgba(34, 197, 94, 0.12);
+            border-color: rgba(34, 197, 94, 0.6);
+            color: #22c55e;
+        }
+        #cmd-mic-btn[data-state="listening"] {
+            border-color: rgba(34, 197, 94, 0.85);
+            color: #22c55e;
+            animation: header-pulse-green 1.1s ease-in-out infinite;
+        }
+        #cmd-mic-btn[data-state="speaking"] {
+            border-color: rgba(59, 130, 246, 0.8);
+            color: #60a5fa;
+            animation: header-pulse-blue 1.1s ease-in-out infinite;
+        }
+        #cmd-mic-btn[data-state="thinking"] {
+            border-color: rgba(147, 197, 253, 0.55);
+            color: #93c5fd;
+        }
+        @keyframes header-pulse-green {
+            0%, 100% { box-shadow: 0 0 8px rgba(34, 197, 94, 0.3); }
+            50%       { box-shadow: 0 0 20px rgba(34, 197, 94, 0.7); }
+        }
+        @keyframes header-pulse-blue {
+            0%, 100% { box-shadow: 0 0 8px rgba(59, 130, 246, 0.3); }
+            50%       { box-shadow: 0 0 20px rgba(59, 130, 246, 0.7); }
+        }
+    </style>
+</head>
+
+<body>
+    <script src="/app/js/universe/launcher.js?v=20260614b"></script>
+
+    <!-- Horní lišta -->
+    <header id="appHeader" class="app-header">
+        <div id="appTitle" class="chj-logo">
+            <div class="chj-logo__cursor"></div>
+            <div class="chj-logo__text">
+                <span class="chj-logo__row1">chytr<span class="chj-logo__ac">e</span></span>
+                <span class="chj-logo__row2">j<span class="chj-logo__ac">a</span></span>
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="header-controls" style="display:none;">
+                <label for="modelSelector">Vesmír:</label>
+                <select id="modelSelector"></select>
+                <label for="roleSelect">Produkt:</label>
+                <select id="roleSelect">
+                    <option value="demo">Demo</option>
+                    <option value="free">Free</option>
+                    <option value="pro">Pro</option>
+                    <option value="dekatlon">Dekatlon</option>
+                    <option value="lehkost">Hubnutí</option>
+                    <option value="user">User</option>
+                </select>
+                <label id="hideGrayLabel" style="display:none; align-items:center; gap:5px; cursor:pointer;">
+                    <input type="checkbox" id="hideGrayToggle"> Skrýt šedé
+                </label>
+            </div>
+        </div>
+        <div class="user-profile-wrapper">
+            <button id="cmd-mic-btn" title="Hlasový příkaz" aria-label="Ĺekni příkaz">
+                <span id="cmd-mic-icon">đźŽ¤</span>
+                <span id="cmd-mic-label" style="font-size:12px;font-family:monospace;letter-spacing:0.05em;">CMD</span>
+            </button>
+            <button id="header-mic-btn" title="Přehrát odpověď" aria-label="TTS přehrávač">
+                <span class="header-mic-icon">đź”Š</span>
+            </button>
+            <button id="profileBtn" class="avatar-button">
+                <img src="https://ui-avatars.com/api/?name=Cipera&background=0D8ABC&color=fff" alt="Profil"
+                    class="user-avatar">
+            </button>
+
+            <div id="profileDropdown" class="profile-dropdown hidden">
+                <div class="dropdown-header">
+                    <img src="https://ui-avatars.com/api/?name=Cipera&background=0D8ABC&color=fff" alt="User"
+                        class="avatar-large">
+                    <div class="user-meta">
+                        <span class="email">cipera@iting.cz</span>
+                        <div class="status-row">
+                            <span class="badge-free">Free</span>
+                            <a href="#upgrade" class="upgrade-link">upgrade</a>
+                        </div>
+                    </div>
+                </div>
+                <nav class="dropdown-nav">
+                    <a href="#" onclick="openUserDataPanel(); return false;"><i class="icon">đź‘¤</i> Já</a>
+                    <a href="#" onclick="openDailyCheckin(); return false;" id="checkin-menu-item"><i class="icon">đź“‹</i> Dnešní záznam</a>
+                    <a href="/app/medioteka.html"><i class="icon">đź“š</i> Mediotéka</a>
+                    <a href="#" onclick="openGuide(); return false;"><i class="icon">đź“–</i> Návod</a>
+                    <div class="divider"></div>
+                    <button onclick="handleLogout()" class="logout-action">
+                        <i class="icon">â­•</i> Odhlásit
+                    </button>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Plátno sítě -->
+    <div id="network"></div>
+
+    <!-- Postranní panel -->
+    <aside id="sidePanel">
+        <div class="panel-header">
+            <div class="panel-node-row">
+                <div id="nodeTitle" class="panel-node-title">
+                    <i class="fa-solid fa-circle-nodes"></i> Uzlový název
+                </div>
+                <button class="panel-close" id="closePanel">âś–</button>
+            </div>
+        </div>
+
+        <div class="panel-content">
+            <div class="ai-intelligence-zone">
+                <!-- <h3
+                    style="color:#83B0E3; font-size:18px; margin:0 0 15px 0; display:flex; align-items:center; gap:10px;">
+                    âšˇ Zeptejte se
+                </h3>
+               <h3 class="panel-section-title"><i class="fa-solid fa-brain"></i> Chytré já</h3> -->
+                <div id="ai-integrated-msgs" class="ai-prediction-text"></div>
+                <div id="aiPanelSection" style="display:flex; margin-top:20px;">
+                    <input id="aiPanelInput" type="text" placeholder="Zeptej se Chytrého já…" />
+                    <button id="ai-send"><i class="fa-solid fa-paper-plane"></i></button>
+                </div>
+            </div>
+            <!--
+            <hr class="panel-divider">
+
+            <div id="tasksSection" class="panel-section">
+                <h3 class="panel-section-title"><i class="fa-solid fa-bolt"></i> Akce</h3>
+                <ul id="tasksList" class="tasks-list"></ul>
+            </div>
+
+            <hr class="panel-divider">
+
+            <div id="resourcesSection" class="panel-section">
+                <h3 class="panel-section-title"><i class="fa-solid fa-file-lines"></i> Hodnoty</h3>
+                <ul id="resourcesList" class="resources-list"></ul>
+            </div>-->
+        </div>
+    </aside>
+
+    <script type="module">
+        import { supabase } from './js/universe/supabaseClient.js?v=20260401b';
+        import { updateRecommendations } from './js/universe/universe-panel.js?v=20260401b';
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            supabase.auth.onAuthStateChange((event, session) => {
+                if (session) {
+                    console.log("UĹľivatel pĹ™ihlĂˇĹˇen, aktualizuji doporuÄŤenĂ­...");
+                    updateRecommendations();
+                }
+            });
+        });
+    </script>
+
+    <script type="module" src="/app/js/universe/universe-viewers.js?v=20260401b"></script>
+    <script type="module" src="/app/js/universe/universe-access.js?v=20260401b"></script>
+    <script type="module" src="/app/js/universe/universe-core.js?v=20260401b"></script>
+    <script type="module" src="/app/js/universe/universe-init.js?v=20260605a"></script>
+    <script type="module" src="/app/js/universe/user-data-panel.js?v=20260614b"></script>
+    <script type="module" src="/app/js/universe/ai-assistant.js?v=20260401b"></script>
+    <script type="module" src="/app/js/universe/universe-panel.js?v=20260401b"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- Launcher (launcher.js) manages its own lifecycle â€” no splash fallback needed -->
+
+    <!-- Hide app header when any modal opens â€” works regardless of JS cache version -->
+    <script>
+        new MutationObserver(mutations => {
+            for (const m of mutations) {
+                for (const node of m.addedNodes) {
+                    if (node.id === 'viewerModal') {
+                        const h = document.getElementById('appHeader');
+                        if (h) h.style.display = 'none';
+                        const obs = new MutationObserver(() => {
+                            if (!document.getElementById('viewerModal')) {
+                                const h2 = document.getElementById('appHeader');
+                                if (h2) h2.style.display = '';
+                                obs.disconnect();
+                            }
+                        });
+                        obs.observe(document.body, { childList: true });
+                    }
+                }
+            }
+        }).observe(document.body, { childList: true });
+    </script>
+
+    <!-- Service Worker -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            // SW je doÄŤasnÄ› vypnutĂ˝ â€” odregistruj vĹˇe co ještě bÄ›ĹľĂ­
+            navigator.serviceWorker.getRegistrations().then(regs => {
+                regs.forEach(r => r.unregister());
+            });
+            caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+        }
+    </script>
+
+    <!-- Onboarding Modal -->
+
+    <!-- HUD fetch loader â€” thin bar at the right edge while data is being fetched -->
+    <style>
+        #hud-fetch-loader {
+            position: fixed;
+            top: 0; right: 0;
+            width: 3px;
+            height: 100%;
+            background: linear-gradient(180deg, #06b6d4 0%, #22c55e 60%, #06b6d4 100%);
+            background-size: 100% 200%;
+            opacity: 0;
+            z-index: 6000;
+            pointer-events: none;
+            transition: opacity 0.15s ease;
+        }
+        #hud-fetch-loader.active {
+            opacity: 1;
+            animation: hud-loader-pulse 0.8s ease-in-out infinite alternate;
+        }
+        @keyframes hud-loader-pulse {
+            from { opacity: 0.5; box-shadow: 0 0 6px rgba(6,182,212,0.4); }
+            to   { opacity: 1;   box-shadow: 0 0 14px rgba(6,182,212,0.9); }
+        }
+    </style>
+    <div id="hud-fetch-loader"></div>
+
+    <!-- HUD Overlay â€” Svelte HUD panel (same as index.html) -->
+    <div id="hud-overlay" style="
+        display: none; position: fixed; inset: 0; z-index: 5000;
+        background: transparent; align-items: stretch; justify-content: flex-end;
+        pointer-events: none;
+    ">
+        <div id="hud-panel-wrap" style="
+            width: 100%; max-width: 420px;
+            height: calc(100dvh - 84px - env(safe-area-inset-top, 0px));
+            margin-top: calc(56px + env(safe-area-inset-top, 0px) + 12px); margin-bottom: 16px; margin-right: 0;
+            transform: translateX(100%);
+            transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+            overflow: hidden; border-radius: 20px 0 0 20px; pointer-events: auto;
+        ">
+            <iframe id="hud-iframe" src="" style="width:100%; height:100%; border:none;" allow="microphone"></iframe>
+        </div>
+    </div>
+
+    <!-- Tool Overlay â€” full-screen iframe for TOC tool pages (toc-vyroba, etc.) -->
+    <div id="tool-overlay" style="display:none; position:fixed; inset:0; z-index:11000; background:#080e1a;">
+        <iframe id="tool-iframe" src="" style="width:100%; height:100%; border:none;"></iframe>
+    </div>
+
+    <!-- CRT Overlay — replaces canvas, opened via PROČ? button in HUD panel -->
+    <div id="crt-overlay" style="display:none; position:fixed; inset:0; z-index:6000; background:#0b0f1a;">
+        <iframe id="crt-iframe" src="" style="width:100%; height:100%; border:none;"></iframe>
+    </div>
+
+    <script>
+        // â”€â”€ HUD node data cache â€” prefetched on login â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        window._hudCache   = {};   // { nodeId: data }
+        window._hudPending = {};   // { nodeId: Promise } â€” in-flight fetches
+        window._hudOpen    = false;
+        window._hudUserId  = null;
+
+        // Prefetch data for a list of nodes into cache
+        window.prefetchHudNodes = async function(userId, nodeIds) {
+            if (!userId || !nodeIds.length) return;
+            window._hudUserId = userId;
+            const missing = nodeIds.filter(id => !window._hudCache[id] && !window._hudPending[id]);
+            if (!missing.length) return;
+            const _role = localStorage.getItem('userRole') || 'pro';
+            const _univ = window.CURRENT_MODEL || 'longevity';
+            const bulk = `/api/hud-data-bulk?userId=${encodeURIComponent(userId)}&nodes=${missing.join(',')}&role=${encodeURIComponent(_role)}&universe=${encodeURIComponent(_univ)}`;
+            const p = fetch(bulk).then(r => r.json()).then(data => {
+                // Apply local label overrides before caching
+                if (window.MAIN_UNIVERSE_DATA) {
+                    Object.keys(data).forEach(id => {
+                        const localNode = window.MAIN_UNIVERSE_DATA.find(n => n.id === id);
+                        if (localNode?.label && data[id]?.node) {
+                            data[id] = { ...data[id], node: { ...data[id].node, label: localNode.label } };
+                        }
+                    });
+                }
+                Object.assign(window._hudCache, data);
+                // Resolve individual pending promises
+                missing.forEach(id => { delete window._hudPending[id]; });
+                return data;
+            }).catch(err => {
+                console.warn('[CHJ] prefetch failed:', err);
+                missing.forEach(id => { delete window._hudPending[id]; });
+            });
+            // Store same promise for all missing nodes (dedup parallel calls)
+            missing.forEach(id => { window._hudPending[id] = p; });
+            return p;
+        };
+
+        // Prefetch children of a node one level down (lazy, on node open)
+        window.prefetchHudChildren = function(userId, parentNodeId) {
+            const CHILDREN = {
+                dlouhovekost: ['telo','mysl','zdravi','vyziva'],
+                telo:   ['sila','kardio','stabilita','vo2max','mobilita','vytrvalost','rovnovaha','plyometrie','dychani'],
+                zdravi: ['metabolicke','spanek','imunitni'],
+                mysl:   ['emoce','smysl','stres','kognitivni'],
+                vyziva: ['bilkoviny','glukoza_vyziva','hydratace'],
+            };
+            const children = CHILDREN[parentNodeId] || [];
+            if (children.length) window.prefetchHudNodes(userId, children);
+        };
+
+        window.openHudOverlay = async function(userId, nodeId) {
+            const overlay = document.getElementById('hud-overlay');
+            const wrap    = document.getElementById('hud-panel-wrap');
+            const iframe  = document.getElementById('hud-iframe');
+            const loader  = document.getElementById('hud-fetch-loader');
+
+            // Close vanilla panel if open (e.g. after clicking a gray node)
+            if (typeof window.closePanel === 'function') window.closePanel();
+
+            // Update header node label
+            const nodeData = window.MAIN_UNIVERSE_DATA?.find(n => n.id === nodeId);
+            if (window._setHeaderNodeLabel && nodeData?.label) {
+                window._setHeaderNodeLabel(nodeData.label);
+            }
+
+            // Lazy-prefetch children of this node in background
+            window.prefetchHudChildren(userId, nodeId);
+
+            if (!window._hudOpen) {
+                // â”€â”€ First open this session â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                // Iframe hasn't loaded yet â€” let Svelte read nodeId from URL.
+                // Also kick off a background prefetch so the cache is warm if user
+                // closes and reopens before the iframe fetches on its own.
+                const _role0 = localStorage.getItem('userRole') || 'pro';
+                const _univ0 = window.CURRENT_MODEL || 'longevity';
+                // Pass local label override so Svelte can fix API label (e.g. dekatlon vs demo)
+                const _localNode0 = window.MAIN_UNIVERSE_DATA?.find(n => n.id === nodeId);
+                const _labelParam = _localNode0?.label ? `&nodeLabel=${encodeURIComponent(_localNode0.label)}` : '';
+                iframe.src = `/app/hud.html?userId=${encodeURIComponent(userId)}&nodeId=${encodeURIComponent(nodeId)}&role=${encodeURIComponent(_role0)}&universe=${encodeURIComponent(_univ0)}${_labelParam}`;
+                window._hudOpen = true;
+                window.prefetchHudNodes(userId, [nodeId]); // warm cache in parallel
+
+            } else {
+                // â”€â”€ Subsequent opens â€” DATA FIRST, then show â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                // Check cache first (synchronous, zero latency)
+                let data = window._hudCache[nodeId] || null;
+
+                if (!data) {
+                    // Cache cold â€” show right-edge loader and fetch
+                    if (loader) loader.classList.add('active');
+                    try {
+                        const _r = localStorage.getItem('userRole') || 'pro';
+                        const _univ2 = window.CURRENT_MODEL || 'longevity';
+                        const url = `/api/hud-data-bulk?userId=${encodeURIComponent(userId)}&nodes=${encodeURIComponent(nodeId)}&role=${encodeURIComponent(_r)}&universe=${encodeURIComponent(_univ2)}`;
+                        const res  = await fetch(url);
+                        const bulk = await res.json();
+                        data = bulk[nodeId] || null;
+                        if (data) window._hudCache[nodeId] = data; // warm cache for next open
+                    } catch (e) {
+                        console.warn('[CHJ] openHudOverlay fetch failed:', e);
+                    }
+                    if (loader) loader.classList.remove('active');
+                }
+
+                // Override node label from local universe data (access model may rename it)
+                if (data?.node && window.MAIN_UNIVERSE_DATA) {
+                    const localNode = window.MAIN_UNIVERSE_DATA.find(n => n.id === nodeId);
+                    if (localNode?.label) data = { ...data, node: { ...data.node, label: localNode.label } };
+                }
+
+                // Send data to already-loaded iframe â€” it renders before panel is visible
+                iframe.contentWindow?.postMessage(
+                    { type: 'chj:navigate', nodeId, userId, data },
+                    '*'
+                );
+            }
+
+            // Open panel â€” on subsequent opens data is already in iframe, no flicker
+            window._hudOverlayOpen = true;
+            overlay.style.display = 'flex';
+            requestAnimationFrame(() => requestAnimationFrame(() => {
+                wrap.style.transform = 'translateX(0)';
+            }));
+        };
+
+        window._hudOverlayOpen = false;  // tracks Svelte HUD visibility for canvas click guard
+
+        window.closeHudOverlay = function() {
+            const overlay = document.getElementById('hud-overlay');
+            const wrap    = document.getElementById('hud-panel-wrap');
+            window._hudOverlayOpen = false;
+            wrap.style.transform = 'translateX(100%)';
+            // Keep iframe alive â€” just hide overlay; _hudOpen stays true so no reload on reopen
+            setTimeout(() => { overlay.style.display = 'none'; }, 360);
+        };
+        let _topTTS = null;
+        function _runTopTTS(text, lang) {
+            if (!('speechSynthesis' in window)) return;
+            window.speechSynthesis.cancel();
+            const utt = new SpeechSynthesisUtterance(text);
+            utt.lang = lang || 'cs-CZ'; utt.rate = 1.05; utt.pitch = 1.1;
+            const voices = speechSynthesis.getVoices();
+            const cz = voices.find(v => /cs[-_]CZ/i.test(v.lang)) || voices.find(v => /czech/i.test(v.lang));
+            if (cz) utt.voice = cz;
+            utt.onend = utt.onerror = () => {
+                document.querySelectorAll('iframe').forEach(f => f.contentWindow?.postMessage({ type: 'chj:tts:ended' }, '*'));
+            };
+            window.speechSynthesis.speak(utt);
+        }
+        window.openToolOverlay = function(url) {
+            const overlay = document.getElementById('tool-overlay');
+            const iframe  = document.getElementById('tool-iframe');
+            iframe.src = url;
+            overlay.style.display = 'block';
+        };
+        window.closeToolOverlay = function() {
+            const overlay = document.getElementById('tool-overlay');
+            const iframe  = document.getElementById('tool-iframe');
+            overlay.style.display = 'none';
+            iframe.src = '';
+        };
+
+        window.openCrtOverlay = function() {
+            window.closeHudOverlay();
+            const overlay = document.getElementById('crt-overlay');
+            const iframe  = document.getElementById('crt-iframe');
+            const userId  = window._hudUserId || '';
+            const hdr = document.getElementById('appHeader');
+            if (hdr) hdr.style.display = 'none';
+            overlay.style.display = 'block';
+            iframe.src = `/app/crt.html?userId=${encodeURIComponent(userId)}`;
+        };
+        window.closeCrtOverlay = function() {
+            const overlay = document.getElementById('crt-overlay');
+            const iframe  = document.getElementById('crt-iframe');
+            overlay.style.display = 'none';
+            iframe.src = '';
+            const hdr = document.getElementById('appHeader');
+            if (hdr) hdr.style.display = '';
+        };
+
+        window.addEventListener('message', function(e) {
+            if (e.data === 'chj:hud:close') window.closeHudOverlay();
+            if (e.data === 'chj:tool:close') window.closeToolOverlay();
+            if (e.data?.type === 'chj:tool:open') window.openToolOverlay(e.data.url);
+            if (e.data?.type === 'chj:navigate') window.location.href = e.data.url;
+            if (e.data?.type === 'chj:source:open') openSourceViewer(e.data.source);
+            if (e.data?.type === 'chj:tts:speak') _runTopTTS(e.data.text, e.data.lang);
+            if (e.data?.type === 'chj:tts:stop') { if ('speechSynthesis' in window) window.speechSynthesis.cancel(); }
+            if (e.data?.type === 'chj:crt:open')  window.openCrtOverlay();
+            if (e.data?.type === 'chj:crt:close') window.closeCrtOverlay();
+        });
+
+        // Hash-based deep links (e.g. from CRT avatar dropdown)
+        (function handleHashNav() {
+            const hash = window.location.hash;
+            if (!hash) return;
+            history.replaceState(null, '', window.location.pathname);
+            if (hash === '#checkin') setTimeout(() => window.openDailyCheckin?.(), 600);
+            if (hash === '#data')    setTimeout(() => window.openUserDataPanel?.(), 600);
+        })();
+
+        function mediaTypeOf(url) {
+            if (!url) return 'none';
+            const u = url.toLowerCase();
+            if (u.includes('youtube.com') || u.includes('youtu.be')) return 'youtube';
+            if (u.match(/\.(mp4|webm|mov)(\?|$)/)) return 'video';
+            if (u.match(/\.(mp3|ogg|wav|m4a)(\?|$)/)) return 'audio';
+            if (u.match(/\.pdf(\?|$)/)) return 'pdf';
+            if (u.match(/\.(md|markdown)(\?|$)/)) return 'md';
+            return 'iframe';
+        }
+        function youtubeEmbed(url) {
+            const m = url.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+            return m ? `https://www.youtube.com/embed/${m[1]}?autoplay=1` : url;
+        }
+        function pdfEmbed(url) {
+            return `https://docs.google.com/gviewer?embedded=true&url=${encodeURIComponent(url)}`;
+        }
+
+        function openSourceViewer(source) {
+            window.closeSourceViewer();
+            const _hdr = document.getElementById('appHeader');
+            if (_hdr) _hdr.style.display = 'none';
+            const urlType = source.url ? mediaTypeOf(source.url) : 'none';
+            // Use source.type as fallback when URL gives no hint (e.g. url='#')
+            const KNOWN = ['md','article','video','audio','pdf','image'];
+            const t = (urlType === 'iframe' && source.type && KNOWN.includes(source.type))
+                ? source.type : urlType;
+            if (t === 'iframe') { if (source.url && source.url !== '#') window.open(source.url, '_blank'); return; }
+            if (t === 'none') return;
+
+            const isMobile = window.innerWidth < 700;
+            const vw = window.innerWidth;
+            const vh = window.innerHeight;
+
+            const backdrop = document.createElement('div');
+            backdrop.id = 'source-backdrop';
+            backdrop.style.cssText = 'position:fixed;inset:0;z-index:25000;cursor:pointer;';
+            backdrop.onclick = () => window.closeSourceViewer();
+            backdrop.addEventListener('touchend', (e) => { e.preventDefault(); window.closeSourceViewer(); });
+            document.body.appendChild(backdrop);
+
+            const wrap = document.createElement('div');
+            wrap.id = 'source-viewer';
+
+            if (!isMobile) {
+                const isMdType = (t === 'md' || t === 'article');
+                let dims = {};
+                if (t === 'youtube' || t === 'video') {
+                    const w = Math.min(vw * 0.82, 960);
+                    const h = Math.min(Math.round(w * 9 / 16) + 48, vh * 0.9);
+                    dims = { w, h, top: '50%', openT: 'translateX(-50%) translateY(-50%)', closeT: 'translateX(-50%) translateY(calc(-50% + 10px))' };
+                } else if (t === 'audio') {
+                    dims = { w: Math.min(vw * 0.55, 520), h: 164, top: '50%', openT: 'translateX(-50%) translateY(-50%)', closeT: 'translateX(-50%) translateY(calc(-50% + 10px))' };
+                } else if (t === 'pdf') {
+                    dims = { w: Math.min(vw * 0.75, 920), h: Math.round(vh * 0.85), top: '7%', openT: 'translateX(-50%) translateY(0)', closeT: 'translateX(-50%) translateY(10px)' };
+                } else {
+                    dims = { w: Math.min(vw * 0.68, 760), h: Math.round(vh * 0.82), top: '7%', openT: 'translateX(-50%) translateY(0)', closeT: 'translateX(-50%) translateY(10px)' };
+                }
+                wrap._openT = dims.openT; wrap._closeT = dims.closeT;
+                wrap.style.cssText = `position:fixed;top:${dims.top};left:50%;transform:${dims.closeT};width:${dims.w}px;height:${dims.h}px;background:rgba(2,6,14,0.97);border:1px solid rgba(6,182,212,0.25);border-radius:16px;z-index:26000;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 0 40px rgba(6,182,212,0.1);opacity:0;transition:transform 0.28s cubic-bezier(0.32,0.72,0,1),opacity 0.28s;`;
+            } else {
+                wrap.style.cssText = 'position:fixed;inset:0;background:rgba(2,6,14,0.98);z-index:26000;display:flex;flex-direction:column;overflow:hidden;opacity:0;transition:opacity 0.22s;padding-top:max(env(safe-area-inset-top,0px),8px);padding-bottom:max(env(safe-area-inset-bottom,0px),8px);';
+            }
+
+            const shortId = id => { if (!id) return '???'; const s = String(id), d = s.indexOf('-'); return d > 0 ? s.slice(0,d).toUpperCase() : s; };
+            const isMdType = (t === 'md' || t === 'article');
+
+            if (isMdType && !document.getElementById('_chj-md-css')) {
+                const s = document.createElement('style');
+                s.id = '_chj-md-css';
+                s.textContent = `.md-il{color:#8b9fc4;font-size:15.5px;line-height:1.72;max-width:700px;margin:0 auto;padding:16px 20px 80px;box-sizing:border-box;}.md-il h1{color:#b8c8d8;font-size:1.65rem;line-height:1.25;margin:0 0 1rem;font-weight:600}.md-il h2{color:#7a9ab4;font-size:1.3rem;margin:2rem 0 .7rem;font-weight:500;border-bottom:1px solid rgba(6,182,212,.15);padding-bottom:4px}.md-il h3{color:#5c7a94;font-size:1.1rem;margin:1.4rem 0 .5rem;font-weight:500}.md-il p{margin:0 0 1.1rem}.md-il ul,.md-il ol{padding-left:1.4rem;margin:0 0 1.2rem}.md-il li{margin-bottom:.4rem}.md-il a{color:#7aa2ff;text-decoration:none;border-bottom:1px dashed rgba(122,162,255,.35)}.md-il strong{color:#c8d4df;font-weight:600}.md-il em{color:#94a3b8}.md-il code{background:rgba(6,182,212,.08);color:#7dd3fc;padding:2px 5px;border-radius:3px;font-size:.88em;font-family:monospace}.md-il pre{background:rgba(6,182,212,.05);border:1px solid rgba(6,182,212,.15);border-radius:6px;padding:12px 16px;overflow-x:auto;margin:0 0 1.2rem}.md-il pre code{background:none;padding:0}.md-il hr{border:none;height:1px;background:linear-gradient(to right,transparent,rgba(148,163,184,.4),transparent);margin:2rem 0}.md-il blockquote{border-left:2px solid rgba(6,182,212,.4);margin:0 0 1.2rem;padding:8px 16px;background:rgba(6,182,212,.04)}`;
+                document.head.appendChild(s);
+            }
+
+            // Header
+            const header = document.createElement('div');
+            header.style.cssText = 'padding:10px 14px;border-bottom:1px solid rgba(6,182,212,0.18);display:flex;align-items:center;gap:2px;flex-shrink:0;min-height:48px;background:rgba(2,6,14,0.97);position:sticky;top:0;z-index:1;';
+            const headerInfo = document.createElement('span');
+            headerInfo.style.cssText = 'font-family:monospace;font-size:11px;letter-spacing:0.08em;color:#64748b;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+            headerInfo.innerHTML = `[MED_ID:&nbsp;${shortId(source.med_id)}]&nbsp;&nbsp;Â·&nbsp;&nbsp;${source.journal || ''}, ${source.year || ''}`;
+            header.appendChild(headerInfo);
+
+            let _mdTtsOn = false;
+            if (isMdType) {
+                const btnStyle = 'background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);border-radius:6px;cursor:pointer;padding:5px 9px;-webkit-tap-highlight-color:transparent;flex-shrink:0;font-size:15px;line-height:1;color:#e2e8f0;margin-left:4px;min-width:44px;min-height:44px;';
+                const printBtn = document.createElement('button');
+                printBtn.textContent = 'đź–¨'; printBtn.title = 'Tisk'; printBtn.style.cssText = btnStyle;
+                const doPrint = () => { const el = document.querySelector('.md-il'); if (!el) return; const iframe = document.createElement('iframe'); iframe.style.cssText = 'position:fixed;width:0;height:0;border:none;top:-9999px;'; document.body.appendChild(iframe); const doc = iframe.contentDocument; doc.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${source.title||''}</title><style>body{font-family:system-ui,sans-serif;padding:24px;max-width:780px;margin:0 auto;color:#1e293b;line-height:1.7;font-size:15px}</style></head><body>${el.innerHTML}</body></html>`); doc.close(); iframe.contentWindow.focus(); iframe.contentWindow.print(); setTimeout(() => document.body.removeChild(iframe), 1000); };
+                printBtn.addEventListener('click', doPrint);
+                printBtn.addEventListener('touchend', (e) => { e.preventDefault(); doPrint(); });
+                header.appendChild(printBtn);
+
+                const dlBtn = document.createElement('button');
+                dlBtn.textContent = 'đź“Ą'; dlBtn.title = 'Stáhnout'; dlBtn.style.cssText = btnStyle;
+                const doDownload = async () => {
+                    let blob, fname;
+                    if (source.script_cz) {
+                        // Lehkost â€” obsah v DB, vytvoĹ™ soubor ze script_cz
+                        fname = (source.title || 'clanek').toLowerCase().replace(/[^a-z0-9]+/g,'-').slice(0,40) + '.md';
+                        blob = new Blob([source.script_cz], { type: 'text/markdown' });
+                    } else {
+                        fname = (source.url||'').split('/').pop() || 'dokument.md';
+                        blob = await fetch(source.url).then(r => r.blob());
+                    }
+                    const burl = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = burl; a.download = fname; a.click(); setTimeout(() => URL.revokeObjectURL(burl), 2000);
+                };
+                dlBtn.addEventListener('click', doDownload);
+                dlBtn.addEventListener('touchend', (e) => { e.preventDefault(); doDownload(); });
+                header.appendChild(dlBtn);
+
+                const ttsBtn = document.createElement('button');
+                ttsBtn.textContent = 'đź”Š'; ttsBtn.title = 'Přehrát'; ttsBtn.style.cssText = btnStyle;
+                const doTTS = () => { if (_mdTtsOn) { speechSynthesis.cancel(); _mdTtsOn = false; ttsBtn.textContent = 'đź”Š'; return; } const el = document.querySelector('.md-il'); if (!el) return; const txt = el.innerText.replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu,'').trim(); if (!txt) return; _mdTtsOn = true; ttsBtn.textContent = 'âŹą'; speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(txt); u.lang = 'cs-CZ'; u.rate = 1.05; u.pitch = 1.1; const sv = () => { const cz = speechSynthesis.getVoices().find(v => /cs[-_]CZ/i.test(v.lang)); if (cz) u.voice = cz; }; sv(); if (!u.voice) speechSynthesis.addEventListener('voiceschanged', sv, {once:true}); u.onend = u.onerror = () => { _mdTtsOn = false; ttsBtn.textContent = 'đź”Š'; }; speechSynthesis.speak(u); };
+                ttsBtn.addEventListener('click', doTTS);
+                ttsBtn.addEventListener('touchend', (e) => { e.preventDefault(); doTTS(); });
+                header.appendChild(ttsBtn);
+            }
+
+            const closeBtn = document.createElement('button');
+            closeBtn.textContent = 'âś•'; closeBtn.title = 'Zavřít';
+            closeBtn.style.cssText = 'color:#94a3b8;background:none;border:none;cursor:pointer;padding:8px 4px 8px 10px;font-size:20px;line-height:1;-webkit-tap-highlight-color:transparent;min-width:44px;min-height:44px;flex-shrink:0;';
+            closeBtn.addEventListener('click', () => window.closeSourceViewer());
+            closeBtn.addEventListener('touchend', (e) => { e.preventDefault(); e.stopPropagation(); window.closeSourceViewer(); });
+            header.appendChild(closeBtn);
+            wrap.appendChild(header);
+
+            const contentDiv = document.createElement('div');
+            // MD/article needs scroll; video/audio/iframe must not scroll (causes visible scrollbar)
+            contentDiv.style.cssText = isMdType
+                ? 'flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;min-height:0;'
+                : 'flex:1;overflow:hidden;min-height:0;display:flex;align-items:center;justify-content:center;';
+            if (!isMdType) {
+                if (t === 'youtube') contentDiv.innerHTML = `<iframe src="${youtubeEmbed(source.url)}" style="width:100%;height:100%;border:none;" allow="autoplay;encrypted-media" allowfullscreen></iframe>`;
+                else if (t === 'video') contentDiv.innerHTML = `<video src="${source.url}" controls autoplay style="width:100%;height:100%;background:#000;"></video>`;
+                else if (t === 'audio') contentDiv.innerHTML = `<audio controls autoplay style="width:90%;accent-color:#06b6d4;"><source src="${source.url}"></audio>`;
+                else if (t === 'pdf') contentDiv.innerHTML = `<iframe src="${pdfEmbed(source.url)}" style="width:100%;height:100%;border:none;" title="${source.title||''}"></iframe>`;
+            } else {
+                const noUrl = !source.url || source.url === '#';
+                const isFetchable = source.url && (
+                    !source.url.startsWith('http') ||                          // relativnĂ­ cesta
+                    source.url.includes('supabase.co') ||                      // nĂˇĹˇ Supabase storage
+                    source.url.toLowerCase().endsWith('.md')                   // markdown soubor
+                );
+                if (source.script_cz) {
+                    // MĂˇ ÄŤeskĂ˝ markdown obsah â€” zobrazit pĹ™Ă­mo, bez fetch
+                    const convert = window.CHJ_convertMd || (s => `<p>${s.replace(/\n/g,'<br>')}</p>`);
+                    contentDiv.innerHTML = `<div class="md-il">${convert(source.script_cz)}</div>`;
+                } else if (noUrl) {
+                    contentDiv.innerHTML = '<div style="color:#475569;padding:24px;text-align:center;font-size:13px;font-family:monospace;">OBSAH PĹIPRAVUJEME</div>';
+                } else if (isFetchable) {
+                    // FetchovatelnĂ˝ soubor (lokĂˇlnĂ­ nebo Supabase storage)
+                    contentDiv.innerHTML = '<div style="color:#475569;padding:24px;text-align:center;font-size:13px;font-family:monospace;">NAÄŚĂŤTĂMâ€¦</div>';
+                    (async () => {
+                        const res = await fetch(source.url);
+                        if (!res.ok) throw new Error(res.status);
+                        const md = await res.text();
+                        const convert = window.CHJ_convertMd || (s => `<p>${s.replace(/\n/g,'<br>')}</p>`);
+                        contentDiv.innerHTML = `<div class="md-il">${convert(md)}</div>`;
+                    })().catch(err => { contentDiv.innerHTML = `<div style="color:#f87171;padding:24px;font-family:monospace;font-size:13px;">CHYBA: ${err.message}</div>`; });
+                } else {
+                    // ExternĂ­ URL (pubmed, nature...) â€” otevĹ™i v novĂ©m tabu
+                    window.open(source.url, '_blank');
+                    window.closeSourceViewer();
+                }
+            }
+            wrap.appendChild(contentDiv);
+
+            // Hide app header on mobile so modal header (close btn, MED_ID) is visible
+            if (isMobile) {
+                const _hdr = document.getElementById('appHeader');
+                if (_hdr) _hdr.style.display = 'none';
+            }
+            document.body.appendChild(wrap);
+            requestAnimationFrame(() => requestAnimationFrame(() => {
+                if (!isMobile) wrap.style.transform = wrap._openT;
+                wrap.style.opacity = '1';
+            }));
+        }
+
+        window.closeSourceViewer = function() {
+            const v = document.getElementById('source-viewer');
+            if (!v) return;
+            const _hdr = document.getElementById('appHeader');
+            if (_hdr) _hdr.style.display = '';
+            if (v._closeT) v.style.transform = v._closeT;
+            v.style.opacity = '0';
+            document.getElementById('source-backdrop')?.remove();
+            setTimeout(() => v.remove(), 300);
+        };
+    </script>
+
+    <div id="mediaModal"
+        style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 10000; display: none; align-items: center; justify-content: center;">
+        <div id="modalContent"
+            style="background: #1e293b; padding: 40px; border-radius: 16px; max-width: 600px; width: 90%; color: #fff;">
+        </div>
+    </div>
+</body>
+
+</html>

@@ -1,6 +1,9 @@
 // === UNIVERSE-CORE.JS ===
 
-import { showPanel, closePanel } from "./universe-panel.js";
+// The public example uses the same graph and navigation, without account-backed panels.
+const { showPanel, closePanel } = await import(window.CHJ_UNIVERSE_EXAMPLE
+  ? "../examples/universe-example-panel.js"
+  : "./universe-panel.js");
 
 const el = {
   network: document.getElementById("network"),

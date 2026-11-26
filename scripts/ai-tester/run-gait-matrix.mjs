@@ -1,0 +1,519 @@
+// Full app pipeline; real public catalog; synthetic profiles and in-memory writes only.
+import vm from 'node:vm';
+import fs from 'node:fs';
+import url from 'node:url';
+import path from 'node:path';
+import crypto from 'node:crypto';
+import { outageScenarios, runOutageJourney } from './outage-journeys.mjs';
+import { conversationScenarios, runConversationJourney } from './conversation-journeys.mjs';
+import { createLauncherHarness } from './launcher-render-harness.mjs';
+import { runOnboardingFixture } from './onboarding-harness.mjs';
+import { combinationScenarios, clinicalDiscoveryScenarios, bloodPressureScenarios, runCombinationJourney } from './crt-combination-contracts.mjs';
+const outages = process.argv.includes('--classifier-outage');
+const conversations = process.argv.includes('--conversation-changes');
+const live = process.argv.includes('--live');
+const bloodPressure = process.argv.includes('--blood-pressure');
+const clinicalDiscovery = process.argv.includes('--clinical-discovery');
+const combinations = process.argv.includes('--crt-combinations') || clinicalDiscovery || bloodPressure;
+const weightLoss = process.argv.includes('--weight-loss') || combinations || conversations || outages;
+const catalogArg = process.argv.find(a => a.startsWith('--catalog='));
+const sourceRoot = new URL('../../', import.meta.url);
+let catalog, catalogMeta;
+try {
+  if ((combinations || outages) && live) throw Error('Combinations use deterministic intent injection; run the separate live language suites instead');
+  if (live && !process.env.ANTHROPIC_API_KEY) throw Error('ANTHROPIC_API_KEY unavailable');
+  if (catalogArg) {
+    catalog = JSON.parse(fs.readFileSync(catalogArg.slice(10), 'utf8'));
+    catalogMeta = { source: 'provided public catalog snapshot', captured_at: null };
+  } else {
+    // Public SELECT only, using the application's publishable browser key.
+    // No service-role credential, private table, or database write is involved.
+    const config = fs.readFileSync(new URL('app/js/universe/supabaseClient.js', sourceRoot), 'utf8');
+    const base = config.match(/const supabaseUrl\s*=\s*'([^']+)'/)?.[1];
+    const publishable = config.match(/const supabaseKey\s*=\s*'([^']+)'/)?.[1];
+    if (!base || !publishable) throw Error('Public catalog configuration unavailable');
+    const columns = 'id,node_id,label,protocol_type,type,duration,reps,tier,tags,constraint_exclude,intensity,modality,support_sides,stability_support,upper_body_demand,load_distribution,active';
+    catalog = [];
+    for (let offset = 0; ; offset += 500) {
+      const endpoint = new URL('/rest/v1/longevity_actions', base);
+      endpoint.search = new URLSearchParams({ select: columns, active: 'eq.true', order: 'id', limit: '500', offset: String(offset) });
+      const response = await fetch(endpoint, { headers: { apikey: publishable }, signal: AbortSignal.timeout(20000) });
+      if (!response.ok) throw Error(`Public catalog HTTP ${response.status}`);
+      const page = await response.json();
+      if (!Array.isArray(page)) throw Error('Catalog response is not an array');
+      catalog.push(...page);
+      if (page.length < 500) break;
+    }
+    catalogMeta = { source: 'public.longevity_actions, all active rows, paginated SELECT', captured_at: new Date().toISOString() };
+  }
+  if (!catalog.length || new Set(catalog.map(a => a.id)).size !== catalog.length) throw Error('Empty or duplicate catalog');
+  catalogMeta.rows = catalog.length;
+  catalogMeta.sha256 = crypto.createHash('sha256').update(JSON.stringify(catalog)).digest('hex');
+  if (process.env.AI_TESTER_CATALOG_OUT) fs.writeFileSync(process.env.AI_TESTER_CATALOG_OUT, JSON.stringify({ ...catalogMeta, actions: catalog }, null, 2));
+} catch (error) {
+  console.log(JSON.stringify({ status: 'BLOCKED', reason: error.message })); process.exit(2);
+}
+const ActualAI = live ? (await import('@anthropic-ai/sdk')).default : null;
+const baseProfile = { birth_year: 1959, gender: 'male', height: 178, weight: 72 };
+const baseHealth = { diagnoses: [], symptoms: [], medications: [], supplements: [], labs: {}, lifestyle: { waist_cm: 84 }, capacity: {}, physical: { recent_falls: false, vynest_nakup: true, vstat_ze_zeme: true, zvednout_vnouce: true, rovnovaha_zavrene_oci: true } };
+const variants = [
+  'Jsem nejistý při chůzi.',
+  'Při chůzi mám někdy pocit, že nejdu rovně.',
+  'Když jdu, občas zavrávorám.',
+  'Při chůzi ztrácím rovnováhu.',
+  'Chodím nejistě.',
+  'Při chůzi se někdy motám.',
+];
+const gaitScenarios = [
+  ...variants.map((text, i) => ({ id: `spoken-${i + 1}`, text, report: true })),
+  ...[1, 2].map(i => ({ id: `spoken-stagger-repeat-${i}`, text: variants[2], report: true })),
+  { id: 'stable', text: 'Chodím jistě a bez problémů.', report: false },
+  { id: 'negated', text: 'Nejsem při chůzi nejistý.', report: false },
+  { id: 'third-person', text: 'Můj otec je nejistý při chůzi.', report: null },
+  { id: 'historical', text: 'Před pěti lety jsem byl nejistý při chůzi.', report: null },
+  { id: 'hypothetical', text: 'Co kdybych byl někdy nejistý při chůzi?', report: null },
+  { id: 'uncertain', text: 'Nevím, jestli mám potíže s rovnováhou.', report: null },
+  { id: 'tester137-profile', text: variants[0], report: true, profile: { weight: 88 }, lifestyle: { waist_cm: 99 }, physical: { rovnovaha_zavrene_oci: false } },
+  { id: 'recent-fall', text: variants[0], report: true, physical: { recent_falls: true } },
+  { id: 'low-strength', text: variants[0], report: true, physical: { vstat_ze_zeme: false } },
+  { id: 'knee-unknown', text: variants[0], report: true, constraints: [{ constraint_type: 'physical', constraint_key: 'knee', constraint_value: 'koleno', severity: null }] },
+  { id: 'knee-moderate', text: variants[0], report: true, constraints: [{ constraint_type: 'physical', constraint_key: 'knee', constraint_value: 'koleno', severity: 'moderate' }] },
+  { id: 'knee-severe', text: variants[0], report: true, constraints: [{ constraint_type: 'physical', constraint_key: 'knee', constraint_value: 'koleno', severity: 'severe' }] },
+  { id: 'combined', text: variants[0], report: true, profile: { gender: 'female', height: 165, weight: 91 }, lifestyle: { waist_cm: 104 }, physical: { recent_falls: true, vstat_ze_zeme: false }, constraints: [{ constraint_type: 'physical', constraint_key: 'knee', constraint_value: 'koleno', severity: 'moderate' }] },
+  { id: 'unsupported-syncope', text: 'Mám synkopu a potřebuji poradit, jak cvičit.', report: null, unsupported: true },
+];
+
+const weightScenarios = [
+  { id: 'normal-bmi', text: 'Chci zhubnout.', goal: true },
+  { id: 'overweight', text: 'Chci zhubnout.', goal: true, profile: { weight: 88 }, lifestyle: { waist_cm: 99 } },
+  { id: 'female-wish', text: 'Chtěla bych snížit váhu.', goal: true, profile: { gender: 'female', height: 165, weight: 91 }, lifestyle: { waist_cm: 104 } },
+  { id: 'tester136-shape', text: 'Chci zhubnout.', goal: true, profile: { birth_year: 1958, gender: 'female', height: 165, weight: 71 }, lifestyle: { waist_cm: 81 }, physical: { vstat_ze_zeme: false, rovnovaha_zavrene_oci: false } },
+  { id: 'weight-low-strength', text: 'Chci zhubnout.', goal: true, profile: { weight: 88 }, physical: { vstat_ze_zeme: false } },
+  { id: 'weight-three-strength-limitations', text: 'Chci mít větší sílu.', goal: false,
+    profile: { weight: 88 },
+    physical: { vstat_ze_zeme: false, zvednout_vnouce: false, vynest_nakup: false,
+      recent_falls: false, rovnovaha_zavrene_oci: true } },
+  { id: 'weight-gait', text: 'Chci zhubnout.', goal: true, profile: { weight: 88 }, physical: { gait_instability_reported: true } },
+  { id: 'weight-eyes-closed-only', text: 'Chci zhubnout.', goal: true, profile: { weight: 88 }, physical: { rovnovaha_zavrene_oci: false } },
+  { id: 'weight-eyes-closed-stable', text: 'Chci zhubnout.', goal: true, profile: { weight: 88 }, physical: { rovnovaha_zavrene_oci: false, gait_stability: true } },
+  { id: 'weight-eyes-closed-unstable', text: 'Chci zhubnout.', goal: true, profile: { weight: 88 }, physical: { rovnovaha_zavrene_oci: false, gait_stability: false } },
+  ...[null, 'moderate', 'severe'].map(severity => ({ id: 'weight-knee-' + (severity ?? 'unknown'), text: 'Chci zhubnout.', goal: true, profile: { weight: 88 }, constraints: [{ constraint_type: 'physical', constraint_key: 'knee', constraint_value: 'koleno', severity }] })),
+  { id: 'weight-combined', text: 'Chci zhubnout.', goal: true, profile: { gender: 'female', height: 165, weight: 91 }, lifestyle: { waist_cm: 104 }, physical: { recent_falls: true, vstat_ze_zeme: false, gait_instability_reported: true }, constraints: [{ constraint_type: 'physical', constraint_key: 'knee', constraint_value: 'koleno', severity: 'moderate' }] },
+  { id: 'weight-syncope', text: 'Chci zhubnout a mám synkopu.', goal: false, report: null, unsupported: true },
+];
+const fullFloorProxyProfile = { birth_year: 1957, gender: 'male', height: 180, weight: 96 };
+for (const answer of [true, false, undefined]) weightScenarios.push({
+ id: 'floor-proxy-gait-' + (answer === true ? 'stable' : answer === false ? 'unstable' : 'unanswered'),
+ text: 'Chci zhubnout.', goal: true, profile: fullFloorProxyProfile, lifestyle: { waist_cm: 98 },
+ physical: { recent_falls: false, vynest_nakup: true, vstat_ze_zeme: false,
+  zvednout_vnouce: true, rovnovaha_zavrene_oci: false, gait_stability: answer },
+});
+const scenarios = outages ? outageScenarios() : conversations ? conversationScenarios() : bloodPressure ? bloodPressureScenarios() : clinicalDiscovery ? clinicalDiscoveryScenarios() : combinations ? combinationScenarios() : weightLoss ? weightScenarios : gaitScenarios;
+if (weightLoss && !combinations && !conversations && !outages) scenarios.push({ id: 'tester143-ui', text: variants[0], report: true,
+  profile: { weight: 88 }, lifestyle: { waist_cm: 99 },
+  physical: { recent_falls: false, vynest_nakup: true, vstat_ze_zeme: true,
+    zvednout_vnouce: true, rovnovaha_zavrene_oci: false }, uiJourney: true });
+
+if (weightLoss && !combinations && !conversations && !outages) {
+  const fixture = scenarios.find(s => s.id === 'tester143-ui');
+  scenarios.push({ ...fixture, id: 'tester143-medical-stop', medicalAfterFallback: true });
+}
+
+async function isolated(scenario, branch = null) {
+  const uid = `isolated-${scenario.id}${branch ? '-' + branch : ''}`;
+  const profile = { user_id: uid, ...baseProfile, ...scenario.profile };
+  let health = { ...structuredClone(baseHealth), user_id: uid, lifestyle: { ...baseHealth.lifestyle, ...scenario.lifestyle }, physical: { ...baseHealth.physical, ...scenario.physical } };
+  let onboarding = null;
+  if (scenario.uiJourney || scenario.comboJourney || scenario.conversationJourney) {
+    onboarding = await runOnboardingFixture(health.physical, null, { age: new Date().getUTCFullYear() - profile.birth_year,
+      height: profile.height, weight: profile.weight, gender: profile.gender, waist: health.lifestyle.waist_cm });
+    if (!onboarding.removed || !onboarding.reloaded || JSON.stringify(onboarding.physical) !== JSON.stringify(health.physical)) throw Error('Onboarding fixture did not save the expected answers');
+    if (onboarding.profile?.height !== profile.height || onboarding.profile.weight !== profile.weight
+        || onboarding.profile.gender !== profile.gender || onboarding.profile.waist !== health.lifestyle.waist_cm) throw Error('Wizard and engine profile fixtures differ');
+    health.physical = structuredClone(onboarding.physical);
+  }
+  const constraints = structuredClone(scenario.constraints ?? []);
+  const assignments = [];
+  const calls = [], writes = [], turns = [];
+  let constraintsReads = 0;
+  const tables = new Set(['user_profiles', 'user_health_profile', 'user_constraints', 'action_assignments', 'daily_checkin', 'longevity_actions']);
+  const db = { from(table) {
+    if (table === 'user_constraints') constraintsReads++;
+    if (!tables.has(table)) throw Error('Unexpected table: ' + table);
+    const filters = [];
+    let single = false;
+    const rows = () => table === 'user_profiles' ? [profile] : table === 'user_health_profile' ? [health] : table === 'user_constraints' ? constraints : table === 'action_assignments' ? assignments : table === 'longevity_actions' ? catalog : [];
+    const result = () => { const data = rows().filter(row => filters.every(f => f(row))); return { data: single ? data[0] ?? null : data, error: null }; };
+    const mutate = (method, row) => {
+      if (table === 'longevity_actions') throw Error('Catalog must remain read-only');
+      writes.push({ table, method, row: structuredClone(row) });
+      if (table === 'user_health_profile' && method === 'upsert') health = { ...health, ...row };
+      else if (table === 'action_assignments' && method === 'insert') assignments.push({ id: 'fixture-' + (assignments.length + 1), assigned_at: new Date().toISOString(), ...row });
+      else if (table === 'user_constraints' && method === 'upsert') {
+        const old = constraints.find(c => c.constraint_key === row.constraint_key); if (old) Object.assign(old, row); else constraints.push(row);
+      } else throw Error(`Unexpected fixture write: ${table}.${method}`);
+      return Promise.resolve({ data: null, error: null });
+    };
+    const q = { select() { return q; }, eq(key, value) { if (key !== 'user_id') filters.push(r => r[key] === value); return q; }, in(key, values) { filters.push(r => values.includes(r[key])); return q; }, gte(key, value) { filters.push(r => r[key] >= value); return q; }, order() { return q; }, limit() { return q; }, maybeSingle() { single = true; return Promise.resolve(result()); }, single() { single = true; return Promise.resolve(result()); }, upsert(row) { return mutate('upsert', row); }, insert(row) { return mutate('insert', row); }, then(resolve, reject) { return Promise.resolve(result()).then(resolve, reject); } };
+    return q;
+  } };
+  // Explicit synthetic prior-conversation facts are applied after wizard parity
+  // checks; never claim these fields came from onboarding controls.
+  if (scenario.conversationJourney && scenario.priorPhysical) {
+    health.physical = { ...health.physical, ...scenario.priorPhysical };
+  }
+  let classifierFailure = null, currentInput = null, injectedFault = null;
+  class AI { messages = { create: async args => {
+    const classifierText = outages ? args.messages.at(-1).content.split('[Input]\n').at(-1) : currentInput;
+    if (outages && injectedFault) {
+      calls.push({ injected_fault: injectedFault });
+      if (injectedFault === 'malformed') return { content: [] };
+      if (injectedFault === 'unclear') return { content: [{ type: 'tool_use', input: { event_type: 'SCOPE_CLARIFICATION', payload: {} } }] };
+      const error = new Error('Simulated classifier outage'); error.status = injectedFault === 'billing' ? 400 : injectedFault === 'server' ? 503 : undefined;
+      throw error;
+    }
+
+    if ((scenario.comboJourney || scenario.conversationJourney || scenario.outageJourney) && !live) {
+      const input = scenario.outageJourney && session.pending_question && classifierText === 'Občas se při chůzi musím přidržet.'
+        ? { event_type: 'ANSWER_TO_EVIDENCE_QUESTION', payload: { evidence_type: session.pending_question.evidence_type, value: classifierText } }
+        : (scenario.conversationJourney || scenario.outageJourney) && classifierText === 'Jsem nejistý při chůzi.'
+        ? { event_type: 'ANSWER_TO_EVIDENCE_QUESTION', payload: { evidence_type: 'gait_instability_reported', value: true } }
+        : scenario.conversationJourney && classifierText === 'Při běžné chůzi se cítím stabilně.'
+          ? { event_type: 'ANSWER_TO_EVIDENCE_QUESTION', payload: { evidence_type: 'gait_instability_reported', value: false } }
+        : scenario.conversationJourney && classifierText === 'Oprava: ze země vstanu bez opory rukou.'
+          ? { event_type: 'ANSWER_TO_EVIDENCE_QUESTION', payload: { evidence_type: 'vstat_ze_zeme', value: true } }
+        : session.pending_question && (['Ano', 'Ne', 'Nevím', 'Nemám výsledek', 'Nemám změřeno'].includes(classifierText) || session.pending_question.evidence_type === 'bp_systolic')
+        ? { event_type: 'ANSWER_TO_EVIDENCE_QUESTION', payload: { evidence_type: session.pending_question.evidence_type, value: classifierText === 'Ano' ? true : classifierText === 'Ne' ? false : classifierText } }
+        : classifierText === 'Chci se naučit anglicky.'
+          ? { event_type: 'UNSUPPORTED_REQUEST', payload: { unsupported_kind: 'general' } }
+        : classifierText === 'Co dál?'
+          ? { event_type: 'DOMAIN_REQUEST', payload: { domain: 'health' } }
+          : { event_type: scenario.report === true ? 'ANSWER_TO_EVIDENCE_QUESTION' : 'GENERAL_HEALTH_REQUEST', payload: scenario.report === true ? { evidence_type: 'gait_instability_reported', value: true } : { text: classifierText } };
+      calls.push(input); return { content: [{ type: 'tool_use', input }] };
+    }
+    if (!live && session.pending_question && (branch?.startsWith('gait-') || scenario.uiJourney)) {
+      const input = { event_type: 'ANSWER_TO_EVIDENCE_QUESTION', payload: { evidence_type: session.pending_question.evidence_type, value: classifierText === 'Ano' ? true : classifierText === 'Ne' ? false : classifierText } };
+      calls.push(input); return { content: [{ type: 'tool_use', input }] };
+    }
+    if (!live) {
+      const input = { event_type: scenario.report === null ? 'GENERAL_HEALTH_REQUEST' : 'ANSWER_TO_EVIDENCE_QUESTION', payload: scenario.report === null ? { text: scenario.text } : { evidence_type: 'gait_instability_reported', value: scenario.report } };
+      calls.push(input); return { content: [{ type: 'tool_use', input }] };
+    }
+    try {
+      const response = await new ActualAI({ maxRetries: 1, timeout: 30000 }).messages.create(args);
+      calls.push(response.content.find(c => c.type === 'tool_use')?.input ?? null);
+      return response;
+    } catch (error) { classifierFailure = error.message; throw error; }
+  } }; }
+  let fixtureClock = Date.now();
+  class FixtureDate extends Date { constructor(...args) { super(...(args.length ? args : [fixtureClock])); } static now() { return fixtureClock; } }
+  const context = vm.createContext({ console: { ...console, log: (...args) => console.error(...args) }, process, crypto, Date: conversations ? FixtureDate : Date, Set, Map, JSON, URL });
+  const cache = new Map();
+  const mocks = { '@anthropic-ai/sdk': { default: AI }, '@supabase/supabase-js': { createClient: () => db }, dotenv: { default: { config() {} } }, 'fixture-auth': { requireAuth: async () => ({ uid }) }, fs, url, path };
+  function moduleFor(file) { if (cache.has(file.href)) return cache.get(file.href); const m = new vm.SourceTextModule(fs.readFileSync(file, 'utf8'), { context, identifier: file.href, initializeImportMeta(meta) { meta.url = file.href; } }); cache.set(file.href, m); return m; }
+  function link(spec, ref) { const alias = spec === './lib/requireAuth.js' ? 'fixture-auth' : spec.replace(/^node:/, ''); if (mocks[alias]) { const key = 'mock:' + alias; if (!cache.has(key)) { const values = mocks[alias]; cache.set(key, new vm.SyntheticModule(Object.keys(values), function () { for (const [k, v] of Object.entries(values)) this.setExport(k, v); }, { context })); } return cache.get(key); } if (!spec.startsWith('.')) throw Error('Unexpected dependency: ' + spec); return moduleFor(new URL(spec, ref.identifier)); }
+  const entry = moduleFor(new URL(weightLoss ? 'api/orchestrate.js' : 'api/engine/orchestrator.js', sourceRoot)); await entry.link(link); await entry.evaluate();
+  const engine = cache.get(new URL('api/engine/engine.js', sourceRoot).href).namespace;
+  let session = {};
+  const ui = createLauncherHarness();
+  async function turn(text) {
+    currentInput = text;
+    const classifierCallsBeforeTurn = calls.length;
+    let r;
+    if (weightLoss) {
+      let status;
+      const res = { status(code) { status = code; return res; }, json(value) { r = value; return value; } };
+      await entry.namespace.default({ method: 'POST', body: { text, userId: 'forged-client-uid', session } }, res);
+      if (status !== 200) throw Error('Endpoint status ' + status + ': ' + JSON.stringify(r));
+    } else r = await entry.namespace.processInput(uid, text, session);
+    if (/^(?:Co mám dělat zítra\?|Co mam delat zitra\?|Co zítra\?|Co zitra\?)$/i.test(text) && calls.length !== classifierCallsBeforeTurn) throw Error('Tomorrow navigation unexpectedly called classifier: ' + text);
+    session = { ...session, ...r.session_updates }; turns.push({ ...(conversations ? { simulated_day: new FixtureDate().toISOString().slice(0, 10) } : {}), input: text, mode: r.mode, text: r.text, buttons: r.buttons, pending: session.pending_question, action: session.current_action_assignment, debug: r.debug, ui: ui.render(r) }); return r; }
+  let response = await turn(scenario.text);
+  const initialClassification = calls[0] ?? null;
+  const initialPhysical = structuredClone(health.physical);
+  const constraintsBefore = constraintsReads;
+  const initialEngine = await engine.runEngine(uid);
+  const initialConstraintReads = constraintsReads - constraintsBefore;
+  const checks = [];
+  function check(id, ok, actual) { checks.push({ id, status: ok ? 'PASS' : 'FAIL', actual }); }
+  check('one-constraint-snapshot-per-evaluation', initialConstraintReads <= 1, initialConstraintReads);
+  function safeFallback(r) {
+    const ctx = session.last_domain_response?.explanation_context;
+    const f = ctx?.action_fallback, action = ctx?.action_context?.selected;
+    const blocked = f?.primary_decision?.primary_item?.blocked_candidates ?? [];
+    return r.mode === 'ACT' && f?.status === 'SELECTED' && f.primary_decision.reason_code === 'SAFETY_BLOCKED'
+      && f.primary_node_id === initialEngine.system_leverage.selected?.node_id && f.selected_node_id !== f.primary_node_id
+      && f.selected_node_id === ctx.system_leverage?.node_id && blocked.length > 0
+      && blocked.every(c => ['CONTRAINDICATED', 'NEEDS_CLINICAL_CLEARANCE'].includes(c.safety_level))
+      && ['SAFE', 'SAFE_WITH_MODIFICATION'].includes(action?.safety?.level)
+      && action.action_id !== 'step_down' && action.action_id === session.current_action_assignment?.action_id;
+  }
+  if (classifierFailure) return { id: scenario.id, status: 'BLOCKED', reason: classifierFailure, turns, checks: [] };
+  const gait = initialEngine.node_states.find(n => n.node_id === 'GAIT_INSTABILITY');
+  const gaitFacts = [...(gait?.evidence?.direct ?? []), ...(gait?.evidence?.supporting ?? []), ...(gait?.evidence?.inferred_from_nodes ?? [])];
+  if (!weightLoss) check('report-polarity', scenario.report === null ? initialPhysical.gait_instability_reported === undefined : initialPhysical.gait_instability_reported === scenario.report, { expected: scenario.report, actual: initialPhysical.gait_instability_reported ?? null, classification: initialClassification });
+  if (!weightLoss && scenario.report === true) {
+    check('report-consumed', gaitFacts.some(f => f.question_id === 'gait_instability_reported' && f.value === true), gait?.evidence);
+    check('self-report-not-diagnosis', gait?.current_state !== 'CONFIRMED' && !health.diagnoses.length, { state: gait?.current_state, diagnoses: health.diagnoses });
+    const step = initialEngine.next_best_action.all_candidates?.find(a => a.action_id === 'step_down');
+    check('step-down-not-prescribed', initialEngine.next_best_action.selected?.action_id !== 'step_down' && (!step || !['SAFE', 'SAFE_WITH_MODIFICATION'].includes(step.safety.level)), step?.safety ?? 'Not a candidate for selected leverage');
+    const why = await turn('Proč?');
+    check('why-acknowledges-report', /nejist|chůz|chuz/i.test(why.text), why.text);
+    if (classifierFailure) return { id: scenario.id, status: 'BLOCKED', reason: classifierFailure, turns, checks };
+    // WHY is observational; it must not change the physical record or assignment.
+    response = { ...response };
+  }
+  const selected = initialEngine.next_best_action.selected;
+  if (weightLoss && scenario.goal && !conversations && !outages) {
+    if (initialEngine.system_leverage.selected?.node_id === 'EXCESS_ADIPOSITY') check('no-unreviewed-resistance-for-adiposity', !(initialEngine.next_best_action.all_candidates ?? []).some(c => c.intervention_id === 'RESISTANCE_TRAINING'), selected?.action_id);
+    if (initialEngine.system_leverage.selected?.node_id === 'EXCESS_ADIPOSITY') {
+      const chosen = catalog.find(a => a.id === selected?.action_id);
+      check('no-vigorous-adiposity-entry', !chosen || !['VIGOROUS', 'HIGH_INTENSITY_INTERVAL'].includes(chosen.intensity), { action: chosen?.id, intensity: chosen?.intensity });
+      if (scenario.id === 'overweight' || scenario.id === 'female-wish') check('moderate-entry-alternative', chosen?.id === '380bb59c-6c0c-40e4-973d-20c5447ef4b2' && chosen.intensity === 'MODERATE', chosen?.id);
+    }
+    if (['weight-eyes-closed-only', 'weight-eyes-closed-stable'].includes(scenario.id)) {
+      check('eyes-closed-not-gait-diagnosis', !gait, gait?.evidence ?? null);
+      check('eyes-closed-no-futile-question', response.mode === 'ACT' && !session.pending_question, { mode: response.mode, pending: session.pending_question });
+      check('eyes-closed-moderate-entry', selected?.action_id === '380bb59c-6c0c-40e4-973d-20c5447ef4b2', selected?.action_id);
+      check('eyes-closed-answer-preserved', health.physical.rovnovaha_zavrene_oci === false, health.physical);
+    }
+    if (scenario.id === 'weight-eyes-closed-unstable') {
+      check('negative-gait-answer-consumed', gaitFacts.some(f => f.question_id === 'gait_stability' && f.value === false), gait?.evidence);
+      check('negative-gait-primary-block-retained', safeFallback(response) && assignments.length === 0, { mode: response.mode, text: response.text });
+    }
+    if (scenario.id.startsWith('floor-proxy-gait-')) {
+      check('floor-proxy-strength-retained', initialEngine.node_states.some(n => n.node_id === 'LOW_MUSCLE_STRENGTH'), initialEngine.node_states.map(n => n.node_id));
+      check('floor-proxy-inputs-retained', health.physical.vstat_ze_zeme === false && health.physical.rovnovaha_zavrene_oci === false && health.physical.recent_falls === false, health.physical);
+      if (scenario.id.endsWith('-stable')) {
+        check('stable-gait-reconciles-only-proxies', !gait && response.mode === 'ACT' && !session.pending_question, { gait: gait?.evidence, mode: response.mode });
+        check('stable-gait-preserves-direct-strength-priority', initialEngine.action_leverage.selected?.node_id === 'LOW_MUSCLE_STRENGTH'
+          && selected?.action_id === 'sit_to_stand_supported', { action_leverage: initialEngine.action_leverage.selected, action: selected?.action_id });
+      } else {
+        check('unresolved-or-negative-gait-retains-inference', Boolean(gait), gait?.evidence);
+        check('unresolved-asks-negative-uses-checked-fallback', scenario.id.endsWith('-unstable') ? safeFallback(response) : response.mode !== 'ACT' && !session.current_action_assignment, { mode: response.mode });
+      }
+    }
+    check('goal-canonical-storage', health.goal_text === scenario.text, health.goal_text);
+    check('goal-not-diagnosis', !health.diagnoses.length && !health.symptoms.length, { diagnoses: health.diagnoses, symptoms: health.symptoms });
+    check('authoritative-uid', writes.every(w => w.row.user_id === uid), writes.map(w => w.row.user_id));
+    const before = writes.length;
+    const why = await turn('Proč?');
+    check('why-avoids-duplicate-goal', !/Chceš zhubnout/.test(why.text), why.text);
+    check('why-read-only', writes.length === before, writes.length - before);
+    const leverage = initialEngine.system_leverage.selected?.node_id;
+    if (scenario.id === 'tester136-shape' || (scenario.id.startsWith('journey-') && !branch?.startsWith('gait-'))) check('known-strength-priority', leverage === 'LOW_MUSCLE_STRENGTH' && selected?.action_id === 'sit_to_stand_supported', { leverage, action: selected?.action_id });
+    if (leverage && leverage !== 'EXCESS_ADIPOSITY' && response.mode !== 'SAFETY_BLOCKED') check('why-explains-selected-priority-only', !/tuku|nadváh|Samotné hubnutí/.test(why.text), why.text);
+    if (scenario.id === 'normal-bmi') check('wish-not-adiposity-evidence', !initialEngine.node_states.some(n => n.node_id === 'EXCESS_ADIPOSITY' && ['MEASURED', 'CONFIRMED'].includes(n.current_state)), initialEngine.node_states.find(n => n.node_id === 'EXCESS_ADIPOSITY'));
+    session = { ...session, person_goal: 'FORGED' };
+    const reloadWhy = await turn('Proč?');
+    check('why-independent-of-forged-client-goal', reloadWhy.text === why.text, reloadWhy.text);
+    if (leverage && leverage !== 'EXCESS_ADIPOSITY' && response.mode !== 'SAFETY_BLOCKED') check('server-goal-retains-selected-priority', !/tuku|nadváh|Samotné hubnutí/.test(reloadWhy.text), reloadWhy.text);
+  }
+  if (scenario.id === 'overweight') {
+    check('adiposity-without-functional-limitation', initialEngine.action_leverage.selected?.node_id === 'EXCESS_ADIPOSITY'
+      && selected?.intervention_id === 'AEROBIC_TRAINING', { action_leverage: initialEngine.action_leverage.selected, selected });
+  }
+  if (['weight-low-strength', 'weight-three-strength-limitations'].includes(scenario.id)) {
+    check('direct-functional-limitation-selects-strength-action', initialEngine.system_leverage.selected?.node_id === 'EXCESS_ADIPOSITY'
+      && initialEngine.action_leverage.selected?.node_id === 'LOW_MUSCLE_STRENGTH'
+      && selected?.action_id === 'sit_to_stand_supported'
+      && selected?.intervention_id === 'FUNCTIONAL_STRENGTH_TRAINING', {
+        system_leverage: initialEngine.system_leverage.selected,
+        action_leverage: initialEngine.action_leverage.selected,
+        selected,
+      });
+  }
+  check('engine-presentation-contract', response.mode !== 'ACT' || session.current_action_assignment?.action_id === selected?.action_id, { mode: response.mode, rendered: session.current_action_assignment?.action_id ?? null, engine: selected?.action_id ?? null });
+  if (selected) {
+    check('selected-safety', ['SAFE', 'SAFE_WITH_MODIFICATION'].includes(selected.safety.level), selected.safety);
+    const actionRow = catalog.find(a => a.id === selected.action_id);
+    check('selected-catalog-row', Boolean(actionRow), selected.action_id);
+    check('hard-exclusion', !(actionRow?.constraint_exclude ?? []).some(key => constraints.some(c => c.constraint_key === key)), selected.action_id);
+    const eyesConflict = /zavřen|zavren/i.test(selected.label ?? '') && selected.safety.modifications_suggested?.some(m => /eyes-open only/i.test(m));
+    check('instruction-consistency', !eyesConflict, { label: selected.label, modifications: selected.safety.modifications_suggested });
+    // Existing joint-load contract: balance practice loads the knee regardless
+    // of which balance/stability protocol a catalog row happens to use.
+    const knee = constraints.find(c => c.constraint_key === 'knee');
+    if (knee && ['BALANCE_PROTOKOL', 'STABILITY_PROTOKOL'].includes(actionRow?.protocol_type)) {
+      check('balance-knee-severity', knee.severity !== null && knee.severity !== 'severe', { severity: knee.severity, action: selected.action_id, safety: selected.safety });
+      if (knee.severity === 'moderate') check('balance-knee-modifications', selected.safety.modifications_suggested?.some(m => /pain increases/i.test(m)), selected.safety);
+    }
+  }
+  if (scenario.unsupported) {
+    check('unsupported-no-action', response.mode !== 'ACT' && !session.current_action_assignment && assignments.length === 0, { mode: response.mode, text: response.text, assignments });
+    check('unsupported-only-persists-original-report', weightLoss
+      ? writes.length === 1 && writes.every(w => w.table === 'user_health_profile' && w.method === 'upsert' && Object.keys(w.row).sort().join(',') === 'symptoms,user_id') && health.symptoms.includes(scenario.text) && health.diagnoses.length === 0
+      : writes.length === 0, writes);
+  }
+  let productReview = [];
+  if (scenario.outageJourney) response = await runOutageJourney({ scenario, turn, check, setFault: value => { injectedFault = value; }, getSession: () => session, getHealth: () => health, getWrites: () => writes, getCalls: () => calls, getAssignments: () => assignments, ui });
+  if (scenario.conversationJourney) {
+    response = await runConversationJourney({ scenario, response, turn, check, getSession: () => session, getHealth: () => health, getAssignments: () => assignments, getWrites: () => writes, catalog, getEngine: () => engine.runEngine(uid), resetSession: value => { session = structuredClone(value ?? {}); }, advanceDay: () => { fixtureClock += 86400000; } });
+  }
+  if (scenario.comboJourney) {
+    const result = await runCombinationJourney({ scenario, initialPhysical, initialEngine, onboarding,
+      getCurrentEngine: async () => {
+        const before = constraintsReads;
+        const current = await engine.runEngine(uid);
+        check('one-constraint-snapshot-after-clarification', constraintsReads - before <= 1, constraintsReads - before);
+        return current;
+      },
+      getObservations: async () => (await cache.get(new URL('api/engine/adapter.js', sourceRoot).href).namespace.fetchHealthData(uid)).observations,
+      getHealth: () => health, getSession: () => session, getWrites: () => writes,
+      getCalls: () => calls, getAssignments: () => assignments, turn, check, catalog, response });
+    response = result.response; productReview = result.reviews;
+  }
+  if (scenario.uiJourney) {
+    check('actual-onboarding-handlers', onboarding?.removed && onboarding?.reloaded, onboarding);
+    check('gait-question-before-block', response.mode === 'ASK' && session.pending_question?.evidence_type === 'gait_stability', { mode: response.mode, pending: session.pending_question });
+    response = await turn('Ne');
+    check('negative-answer-stored', health.physical.gait_stability === false, health.physical);
+    check('primary-block-alternative-checked', safeFallback(response) && assignments.length === 0 && health.physical.gait_stability === false, { mode: response.mode, assignments });
+    check('block-has-why-chip', ui.click('Proč?') === 'Proč?', turns.at(-1).ui);
+    const writesBefore = writes.length;
+    const callsBefore = calls.length;
+    const why = await turn('Proč?');
+    check('blocked-why-read-only', writes.length === writesBefore && calls.length === callsBefore, { writes: writes.length - writesBefore, classifier_calls: calls.length - callsBefore });
+    check('why-explains-fallback-without-clearance', why.mode === 'EXPLAIN' && !/tuku|nadváh|bezpečnostní podmínky/.test(why.text) && /nejistot/.test(why.text) && Boolean(session.current_action_assignment), why.text);
+    const next = await turn('Co dál?');
+    check('follow-up-keeps-primary-block-and-alternative', safeFallback(next) && assignments.length === 0 && !session.pending_question, { mode: next.mode, assignments });
+    if (scenario.medicalAfterFallback) {
+      const stopped = await turn('Mám synkopu.');
+      check('medical-report-stops-fallback', stopped.mode === 'HOLD' && session.reported_medical_limitation === true && !session.current_action_assignment && !session.last_domain_response, stopped.text);
+      const again = await turn('Chci zhubnout.');
+      check('medical-stop-cannot-be-bypassed-by-new-goal', again.mode === 'HOLD' && session.reported_medical_limitation === true && !session.current_action_assignment && assignments.length === 0, again.text);
+    }
+  }
+  if (branch?.startsWith('gait-')) {
+    check('gait-question-typed', response.mode === 'ASK' && session.pending_question?.evidence_type === 'gait_stability' && !/závažné/.test(response.text), { mode: response.mode, pending: session.pending_question });
+    const answer = branch === 'gait-yes' ? 'Ano' : branch === 'gait-no' ? 'Ne' : 'Nevím';
+    response = await turn(answer);
+    const snapshot = structuredClone(health);
+    check('gait-answer-polarity', branch === 'gait-yes' ? health.physical.gait_stability === true : branch === 'gait-no' ? health.physical.gait_stability === false : health.physical.gait_stability === 'Nevím', health.physical.gait_stability);
+    check('gait-answer-persisted', health.physical.gait_stability != null || health.physical.evidence_availability?.gait_stability != null, snapshot.physical);
+    check('gait-no-invented-clearance', safeFallback(response) && assignments.length === 0, { mode: response.mode, text: response.text });
+    const follow = await turn('Co dál?');
+    check('gait-no-repeat-after-answer', safeFallback(follow) && !session.pending_question, { mode: follow.mode, text: follow.text });
+    if (classifierFailure) return { id: scenario.id, branch, status: 'BLOCKED', reason: classifierFailure, turns, checks };
+  }
+  if (branch && !branch.startsWith('gait-')) {
+    // Only answer existing questions whose true fixture values are known. Never
+    // fabricate clearance or health evidence merely to force an ACT.
+    const answers = { recent_falls: health.physical.recent_falls ? 'Ano' : 'Ne', fall_history: health.physical.recent_falls ? 'Ano' : 'Ne', vstat_ze_zeme: health.physical.vstat_ze_zeme ? 'Ano' : 'Ne', gait_stability: 'Ne', current_assistive_device: 'Žádná', instability_laterality: 'Obě strany', knee_severity: constraints.find(c => c.constraint_key === 'knee')?.severity };
+    const seen = new Set();
+    for (let i = 0; response.mode === 'ASK' && i < 3; i++) {
+      const key = session.pending_question?.evidence_type;
+      if (!answers[key] || seen.has(key)) break;
+      seen.add(key); response = await turn(answers[key]);
+    }
+    if (response.mode !== 'ACT') checks.push({ id: branch + '-journey', status: 'BLOCKED', actual: { reason: 'No ACT reachable using known fixture evidence', mode: response.mode, pending: session.pending_question } });
+    else if (branch === 'repeat') {
+      const seen = new Set();
+      let ceiling = Infinity;
+      const group30 = new Set(['b3f9b408-47a5-4529-bfbb-906a2324813b', 'rovnovaha_stoj_1']);
+      for (let i = 0; response.mode === 'ACT' && i < 16; i++) {
+        const assigned = session.current_action_assignment;
+        const item = session.last_daily_decision?.primary_item;
+        const row = catalog.find(a => a.id === item?.action_id);
+        const exercise = group30.has(row?.id) ? 'single-leg-30s' : row?.id;
+        check(`repeat-${i}-assignment`, Boolean(assigned?.action_id) && assigned.action_id === item?.action_id, assigned);
+        check(`repeat-${i}-no-equivalent`, !seen.has(exercise), exercise);
+        check(`repeat-${i}-no-progression`, Number.isFinite(row?.tier) && row.tier <= ceiling, { tier: row?.tier, maximum_after_skip: Number.isFinite(ceiling) ? ceiling : null, label: row?.label });
+        seen.add(exercise); ceiling = Math.min(ceiling, row?.tier ?? Infinity);
+        response = await turn('Přeskočit');
+      }
+      check('repeat-stops-with-hold', response.mode === 'HOLD' && !session.current_action_assignment && !session.pending_question, { mode: response.mode, text: response.text });
+      check('repeat-skips-not-completed', assignments.length === seen.size && assignments.every(a => a.status === 'SKIPPED'), assignments);
+      check('repeat-clear-stop-message', /dnes|dnešní|dnešn|dne[sš]|zítra/i.test(response.text) && !/hotovo|splnil/i.test(response.text), response.text);
+      const count = assignments.length;
+      await turn('Hotovo');
+      const next = await turn('Co dál?');
+      check('repeat-no-false-completion', assignments.length === count, assignments.length);
+      check('repeat-same-day-return', next.mode === 'HOLD' && !session.current_action_assignment, { mode: next.mode, text: next.text });
+      for (const question of ['Co mám dělat zítra?', 'Co mam delat zitra?', 'Co zítra?', 'Co zitra?']) {
+        session = {};
+        const answer = await turn(question);
+        check('skipped-tomorrow-' + question, answer.debug?.reason_code === 'HOLD_SKIPPED_TODAY' && /přeskočil/.test(answer.text) && !/hotovo|nerozumím/.test(answer.text) && assignments.length === count && assignments.every(a => a.status === 'SKIPPED'), answer);
+      }
+
+      // Simulate records from yesterday in the isolated DB, not a live clock/DB edit.
+      const yesterday = new Date(); yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+      for (const record of assignments) record.assigned_date = yesterday.toISOString().slice(0, 10);
+      session = {};
+      const tomorrow = await turn('Co dál?');
+      check('previous-day-skips-expire', tomorrow.mode === 'ACT' && group30.has(session.current_action_assignment?.action_id), { mode: tomorrow.mode, action: session.current_action_assignment?.action_id });
+    } else {
+      const assigned = structuredClone(session.current_action_assignment);
+      response = await turn(branch === 'done' ? 'Hotovo' : 'Přeskočit');
+      const recorded = assignments[0];
+      check(branch + '-persisted', recorded?.action_id === assigned.action_id && recorded?.intervention_id === assigned.intervention_id && recorded?.status === (branch === 'done' ? 'COMPLETED' : 'SKIPPED') && recorded?.selected_leverage_node === assigned.selected_leverage_node && recorded?.selected_leverage_node !== 'UNKNOWN', recorded);
+      if (branch === 'done') {
+        check('done-clears-assignment', response.mode === 'HOLD' && !session.current_action_assignment, { mode: response.mode, action: session.current_action_assignment });
+        await turn('Hotovo');
+        check('no-duplicate-completion', assignments.length === 1, assignments.length);
+        const next = await turn('Co dál?');
+        check('same-day-return', next.mode === 'HOLD' && !session.current_action_assignment, { mode: next.mode, text: next.text });
+      } else {
+        const nextItem = session.last_daily_decision?.primary_item;
+        check('next-act-has-assignment', response.mode !== 'ACT' || session.current_action_assignment?.action_id === nextItem?.action_id, { mode: response.mode, engine: nextItem?.action_id, assignment: session.current_action_assignment });
+        check('skipped-not-offered-again', session.current_action_assignment?.action_id !== assigned.action_id, { mode: response.mode, next: session.current_action_assignment?.action_id ?? null });
+        if (scenario.id === 'weight-walk-skip') {
+          const previousRow = catalog.find(a => a.id === assigned.action_id);
+          const nextRow = catalog.find(a => a.id === nextItem?.action_id);
+          check('20-to-30-minutes-never-after-skip', response.mode !== 'ACT' || (nextRow?.type === 'timed' && Number.isFinite(nextRow.duration) && nextRow.duration <= previousRow.duration), { previous: previousRow?.duration, next: nextRow?.duration, mode: response.mode });
+          const ranks = { LIGHT: 1, MODERATE: 2, VIGOROUS: 3, HIGH_INTENSITY_INTERVAL: 4 };
+          check('skip-never-increases-intensity', response.mode !== 'ACT' || (ranks[nextRow?.intensity] > 0 && ranks[nextRow.intensity] <= ranks[previousRow?.intensity]), { previous: previousRow?.intensity, next: nextRow?.intensity });
+        }
+        const equivalents = new Set(['b3f9b408-47a5-4529-bfbb-906a2324813b', 'rovnovaha_stoj_1']);
+        check('skipped-equivalent-not-offered-again', !(response.mode === 'ACT' && equivalents.has(assigned.action_id) && equivalents.has(nextItem?.action_id)), { skipped: assigned.action_id, offered: nextItem?.action_id ?? null, text: response.text });
+        if (scenario.id === 'weight-walk-skip' && response.mode === 'ACT') {
+          const walkAliases = new Set(['chuze_20min', 'chůze_20min', 'telo_chůze']);
+          check('walk-alias-journey-reached', walkAliases.has(session.current_action_assignment?.action_id), session.current_action_assignment?.action_id);
+          const skippedWalk = structuredClone(session.current_action_assignment);
+          response = await turn('Přeskočit');
+          check('second-skip-persisted', assignments.length === 2 && assignments[1].action_id === skippedWalk.action_id && assignments[1].status === 'SKIPPED', assignments);
+          check('no-walk-alias-after-second-skip', response.mode !== 'ACT' || !walkAliases.has(session.current_action_assignment?.action_id), { mode: response.mode, assignment: session.current_action_assignment, text: response.text });
+          const follow = await turn('Co dál?');
+          response = follow;
+          check('no-walk-alias-on-return', follow.mode !== 'ACT' || !walkAliases.has(session.current_action_assignment?.action_id), { mode: follow.mode, assignment: session.current_action_assignment });
+        }
+        if (response.mode === 'ACT') {
+          const replacement = structuredClone(session.current_action_assignment);
+          const countBeforeComplete = assignments.length;
+          await turn('Hotovo');
+          check('replacement-can-be-completed', assignments.length === countBeforeComplete + 1 && assignments.at(-1).status === 'COMPLETED' && assignments.at(-1).action_id === replacement?.action_id, assignments);
+        }
+      }
+    }
+  }
+  if (classifierFailure) return { id: scenario.id, branch, status: 'BLOCKED', reason: classifierFailure, turns, checks };
+  for (const [i, t] of turns.entries()) {
+    if (t.mode === 'ACT') check(`ui-${i}-no-unassessed-eye-closing`, !/Oči zavři/.test(t.text), t.text);
+
+    const terminal = t.mode === 'SAFETY_CRITICAL' || (t.mode === 'HOLD' && t.debug?.reason_code === 'HOLD_DONE_TODAY');
+    check(`ui-${i}-${terminal ? 'conversation-closed' : 'conversation-open'}`,
+      terminal ? (!t.ui.input_enabled && !t.ui.send_enabled && !t.ui.microphone_enabled)
+        : (t.ui.input_enabled && t.ui.send_enabled && t.ui.microphone_enabled),
+      { mode: t.mode, reason_code: t.debug?.reason_code, ui: t.ui });
+  }
+  return { id: scenario.id, branch, status: checks.some(c => c.status === 'FAIL') ? 'FAIL' : checks.some(c => c.status === 'BLOCKED') ? 'BLOCKED' : 'PASS', matrix: scenario.matrix, product_review: productReview, profile, physical: initialPhysical, constraints, classification: initialClassification, leverage: initialEngine.system_leverage.selected, engine_action: selected, candidate_count: initialEngine.next_best_action.all_candidates?.length ?? 0, review_required: weightLoss && scenario.goal && /5 kg/.test(selected?.label ?? '') ? ['Catalog chooses a fixed-load overhead press selected for a weight-loss request; separate relevance/dose review is required'] : [], turns, assignments, checks };
+}
+const results = [];
+for (const scenario of scenarios) {
+  console.error('MATRIX', scenario.id);
+  try { results.push(structuredClone(await isolated(scenario))); } catch (error) { results.push({ id: scenario.id, status: 'BLOCKED', reason: error.message }); }
+}
+for (const branch of ((combinations || conversations || outages) ? [] : weightLoss ? ['done', 'skip', 'gait-yes', 'gait-no', 'gait-unknown'] : ['done', 'skip', 'repeat'])) {
+  const scenario = scenarios.find(s => s.id === (weightLoss ? (branch.startsWith('gait-') ? 'weight-gait' : 'tester136-shape') : 'spoken-1'));
+  try { results.push(await isolated({ ...scenario, id: 'journey-' + branch }, branch)); } catch (error) { results.push({ id: 'journey-' + branch, status: 'BLOCKED', reason: error.message }); }
+}
+if (weightLoss && !combinations && !conversations && !outages) {
+  const fixture = scenarios.find(s => s.id === 'overweight');
+  try { results.push(await isolated({ ...fixture, id: 'weight-walk-skip' }, 'skip')); }
+  catch (error) { results.push({ id: 'weight-walk-skip', status: 'BLOCKED', reason: error.message }); }
+}
+const counts = Object.fromEntries(['PASS', 'FAIL', 'BLOCKED'].map(s => [s, results.filter(r => r.status === s).length]));
+console.log(JSON.stringify({ suite: outages ? 'classifier_outage_endpoint' : conversations ? 'conversation_changes_endpoint' : bloodPressure ? 'blood_pressure_endpoint' : clinicalDiscovery ? 'clinical_discovery_endpoint' : combinations ? 'crt_combinations_endpoint' : weightLoss ? 'weight_loss_endpoint' : 'gait', mode: live ? 'live_classifier_full_engine_public_catalog' : 'injected_classifier_full_engine_public_catalog', catalog: catalogMeta, counts, limitations: ['All user profiles and writes are synthetic and isolated in memory', 'No browser, authentication or microphone/audio transcription test', 'No clinical efficacy or exercise dose validation', ...(combinations ? [(clinicalDiscovery || bloodPressure) ? 'Explicit synthetic clinical/discovery answers; injected classification only' : '768 journeys over 64 profiles and two intents; some answer/outcome branches coincide when no question/action is reached', 'Product review flags are separate from software PASS; priority correctness is not assumed from engine output'] : []), ...(weightLoss ? ['Real endpoint hydration, but Firebase authentication is mocked', 'Exact weight wishes use the existing server parser and bypass Haiku; live mode exercises AI only for inputs reaching classification', 'Review-required catalog choices do not become clinically approved through PASS'] : []), 'BLOCKED journeys are not counted as passing'], results }, null, 2));
+process.exitCode = counts.FAIL ? 1 : counts.BLOCKED ? 2 : 0;
+
+

@@ -16,7 +16,7 @@ export function openUserDataPanel() {
   if (!userId) return;
   const modal = document.getElementById('userDataModal');
   if (!modal) return;
-  activeTab = 'zdravi';
+  activeTab = 'profile';
   modal.classList.remove('udp-hidden');
   loadAndRender();
 }
@@ -49,11 +49,12 @@ async function loadAndRender() {
     supplements:    data.supplements    ?? [],
     doctor_notes:   data.doctor_notes   ?? '',
     lifestyle:      data.lifestyle      ?? {},
-    capacity:       data.capacity       ?? {},
+    physical:       data.physical       ?? {},
     labs:           data.labs           ?? {},
     medications:    data.medications    ?? [],
   };
 
+  highlightActiveTab(activeTab);
   renderTab(activeTab);
 }
 
@@ -63,13 +64,20 @@ function renderSkeleton() {
 }
 
 // ─── Tab switch ────────────────────────────────────
-function switchTab(tab) {
-  activeTab = tab;
+// Tab buttons live outside #udp-body (rendered once by initUserDataPanel), so
+// renderSkeleton()'s wipe of #udp-body never touches their highlight — it has
+// to be synced explicitly whenever activeTab changes, not just from a click.
+function highlightActiveTab(tab) {
   document.querySelectorAll('.udp-tab').forEach(t => {
     const active = t.dataset.tab === tab;
     t.style.borderBottom = active ? '2px solid #06b6d4' : '2px solid transparent';
     t.style.color         = active ? '#06b6d4' : '#64748b';
   });
+}
+
+function switchTab(tab) {
+  activeTab = tab;
+  highlightActiveTab(tab);
   renderTab(tab);
 }
 
@@ -109,8 +117,33 @@ const LAB_FIELDS = [
   { key: 'psa',             label: 'PSA',              unit: 'µg/L',   placeholder: '1.2',  group: 'Hormony & játra' },
 ];
 
+// Czech display names for the engine's internal diagnosis IDs (api/engine/adapter.js
+// DIAG_KEYWORDS). An object-shaped diagnosis entry's .name holds that uppercase ID —
+// show the Czech name here instead of the raw English identifier.
+const DIAGNOSIS_LABEL_CS = {
+  ATRIAL_FIBRILLATION:          'Fibrilace síní',
+  HYPERTENSION:                 'Hypertenze (vysoký krevní tlak)',
+  DYSLIPIDEMIA:                 'Porucha tuků v krvi',
+  HYPERURICEMIA:                'Zvýšená kyselina močová',
+  ERECTILE_DYSFUNCTION:         'Erektilní dysfunkce',
+  CHRONIC_STRESS:               'Chronický stres',
+  OBESITY:                      'Obezita',
+  OVERWEIGHT:                   'Nadváha',
+  INSULIN_RESISTANCE:           'Inzulinová rezistence',
+  BENIGN_PROSTATIC_HYPERPLASIA: 'Zvětšená prostata',
+  EXTRASYSTOLES:                'Extrasystoly',
+  AF_ABLATION:                  'Ablace fibrilace síní',
+  PERIPHERAL_NEUROPATHY:        'Periferní neuropatie',
+};
+
 function renderZdraviTab() {
-  const diagnoses  = (cachedData.diagnoses ?? []).join('\n');
+  // Diagnoses can be plain strings (saved from this textarea) or objects
+  // (engine's free-text extractor: { name, status, source, raw_text }) — never
+  // render an object's default toString() ("[object Object]") to the user.
+  const diagnoses  = (cachedData.diagnoses ?? [])
+    .map(d => typeof d === 'string' ? d : (DIAGNOSIS_LABEL_CS[d?.name] ?? d?.name ?? d?.raw_text ?? ''))
+    .filter(Boolean)
+    .join('\n');
   const symptoms   = (cachedData.symptoms  ?? []).join('\n');
   const familyHist = cachedData.family_history ?? '';
   const meds       = cachedData.medications ?? [];
@@ -179,9 +212,6 @@ function renderZdraviTab() {
 
     <div class="udp-section">
       <div class="udp-section-label">Laboratorní hodnoty</div>
-      <p style="color:#64748b;font-size:13px;margin:0 0 14px;line-height:1.5;">
-        Zadej poslední naměřené hodnoty. Ovlivňují predikce v CRT grafu.
-      </p>
       <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;">
         ${labsHtml}
       </div>
@@ -266,19 +296,31 @@ async function saveZdravi() {
 // TAB: Kondice — Fyzický test + Omezení
 // ═══════════════════════════════════════════════════
 
-const CAPACITY_QUESTIONS = [
-  { key: 'climb_4_floors',  label: 'Vyjít 4 patra bez zadýchání?',          hint: 'přibližně 80 schodů'   },
-  { key: 'lift_20kg',       label: 'Zvednout a přenést 20 kg?',              hint: 'nákup, zavazadlo'      },
-  { key: 'rise_from_floor', label: 'Vstát ze země bez opory?',               hint: 'z lehu na zemi'        },
-  { key: 'stand_one_leg',   label: 'Stát na jedné noze 10 s (oči zavřené)?', hint: 'rovnováha'             },
-  { key: 'fast_walk_2km',   label: 'Ujít 2 km rychlou chůzí?',              hint: 'bez zastávky'          },
-  { key: 'breath_20s',      label: 'Zadržet dech 20 sekund?',                hint: 'vsedě, klidně'         },
+// 10 disciplín lidového decatlonu — zdroj: Dekatlon_lidovy.pdf.
+// Klíče se shodují s EVIDENCE_STORAGE_REGISTRY v api/engine/healthEventAdapter.js.
+// Engine teď čte všech 10 (vstat_ze_zeme, vynest_nakup, zvednout_vnouce,
+// balanc_jedna_noha, otevrit_zavarovacku, kufr_do_police, vstat_ze_zidle,
+// vyjit_4_patra, rychla_chuze, skocit_dopadnout — 2026-11-23/24).
+// skocit_dopadnout je evidence výbušné síly nohou — vede na stejný bezpečný
+// vstupní cvik (vstávání ze židle) jako ostatní nohy-otázky, nikdy na vlastní
+// skákací/plyometrický cvik.
+const DISCIPLINE_QUESTIONS = [
+  { key: 'vstat_ze_zeme',       label: 'Vstaneš ze země bez opory rukou?',       hint: 'prevence pádů a závislosti — stabilita, síla středu těla' },
+  { key: 'vynest_nakup',        label: 'Uneseš dvě tašky (5 kg) do schodů?',     hint: 'farmářská chůze (farmer\'s carry) — funkční síla' },
+  { key: 'zvednout_vnouce',     label: 'Zvedneš 15 kg ze země do náruče?',       hint: 'mrtvý tah — síla zad a nohou' },
+  { key: 'kufr_do_police',      label: 'Zvedneš 10–15 kg nad hlavu?',            hint: 'tlak nad hlavou — mobilita ramen' },
+  { key: 'vyjit_4_patra',       label: 'Vyjdeš 4 patra bez zastavení a zadýchání?', hint: 'VO2 max — srdeční rezerva' },
+  { key: 'balanc_jedna_noha',   label: 'Vydržíš 30 s na jedné noze?',            hint: 'stabilita, rovnováha' },
+  { key: 'rychla_chuze',        label: 'Ujdeš 1 km svižným tempem?',             hint: 'zóna 2 trénink — mobilita' },
+  { key: 'otevrit_zavarovacku', label: 'Otevřeš tuhé víčko bez pomoci?',         hint: 'grip strength — koreluje s délkou života' },
+  { key: 'vstat_ze_zidle',      label: 'Uděláš dřep bez pomoci rukou?',          hint: 'síla dolních končetin' },
+  { key: 'skocit_dopadnout',    label: 'Seskočíš z 20 cm a ustojíš dopad?',     hint: 'plyometrie, hustota kostí' },
 ];
 
 function renderKondiceTab() {
-  const cap = cachedData.capacity ?? {};
+  const cap = cachedData.physical ?? {};
 
-  const questionsHtml = CAPACITY_QUESTIONS.map(q => {
+  const questionsHtml = DISCIPLINE_QUESTIONS.map(q => {
     const val = cap[q.key];
     const yes = val === true;
     const no  = val === false;
@@ -298,10 +340,7 @@ function renderKondiceTab() {
 
   return `
     <div class="udp-section">
-      <div class="udp-section-label">Fyzický test</div>
-      <p style="color:#64748b;font-size:13px;margin:0 0 4px;line-height:1.5;">
-        Odpovědi ovlivňují CRT graf — LOW_VO2MAX, MUSCLE_WEAKNESS, GAIT_INSTABILITY.
-      </p>
+      <div class="udp-section-label">Desetiboj dlouhověkosti</div>
       <div>${questionsHtml}</div>
     </div>
 
@@ -358,12 +397,13 @@ function bindKondiceEvents() {
 async function saveKondice() {
   setStatus('udp-status-kondice', 'saving');
 
-  // Capacity from Yes/No buttons
-  const capacity = {};
+  // Physical self-report from Yes/No buttons — merged into user_health_profile.physical,
+  // the column the live engine (healthEventAdapter.js) actually reads.
+  const physical = {};
   document.querySelectorAll('.udp-yn-row').forEach(row => {
     const key = row.dataset.key;
     const activeBtn = row.querySelector('.udp-yn-yes, .udp-yn-no');
-    if (activeBtn) capacity[key] = activeBtn.dataset.val === 'true';
+    if (activeBtn) physical[key] = activeBtn.dataset.val === 'true';
   });
 
   // Injuries
@@ -377,12 +417,12 @@ async function saveKondice() {
     const res = await authFetch('/api/user?action=save-kondice', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ capacity, injuries: rows }),
+      body: JSON.stringify({ physical, injuries: rows }),
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     cachedData.constraints = data.constraints ?? [];
-    cachedData.capacity = capacity;
+    cachedData.physical = { ...cachedData.physical, ...physical };
     setStatus('udp-status-kondice', 'ok');
   } catch (e) {
     console.error('saveKondice:', e?.message || e);
@@ -394,14 +434,17 @@ async function resetKondice() {
   if (!confirm('Smazat všechna data z fyzického testu?')) return;
   setStatus('udp-status-kondice', 'saving');
   try {
-    // Send only capacity — no injuries field so existing constraints are untouched (original behaviour).
+    // Explicit nulls for just our question keys — merge-clears them server-side
+    // without touching other fields (grip_strength, tug_test, …) living in the
+    // same user_health_profile.physical JSONB column.
+    const clear = Object.fromEntries(DISCIPLINE_QUESTIONS.map(q => [q.key, null]));
     const res = await authFetch('/api/user?action=save-kondice', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ capacity: {} }),
+      body: JSON.stringify({ physical: clear }),
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    cachedData.capacity = {};
+    cachedData.physical = { ...cachedData.physical, ...clear };
     document.querySelectorAll('.udp-yn-btn').forEach(b => b.classList.remove('udp-yn-yes', 'udp-yn-no'));
     setStatus('udp-status-kondice', 'ok');
   } catch (e) {
@@ -459,11 +502,14 @@ function bindDelButtons() {
 // TAB: Profil — Demografika + BMI + Lifestyle
 // ═══════════════════════════════════════════════════
 
+// key must match what the engine actually reads (activation.js: lifestyle.sedentary_work).
+// smoker/alcohol/stress_job have no engine logic yet — kept in the UI (useful to collect),
+// but the description below must not claim they already influence anything.
 const LIFESTYLE_FLAGS = [
-  { key: 'sedentary',  label: 'Sedavý životní styl',    desc: 'Méně než 30 min pohybu denně' },
-  { key: 'smoker',     label: 'Kuřák',                  desc: 'Aktivní kuřák'                },
-  { key: 'alcohol',    label: 'Pravidelný alkohol',      desc: '3+ drinky týdně'              },
-  { key: 'stress_job', label: 'Vysoký pracovní stres',  desc: 'Chronický tlak v práci'       },
+  { key: 'sedentary_work', label: 'Sedavý životní styl',    desc: 'Méně než 30 min pohybu denně' },
+  { key: 'smoker',         label: 'Kuřák',                  desc: 'Aktivní kuřák'                },
+  { key: 'alcohol',        label: 'Pravidelný alkohol',      desc: '3+ drinky týdně'              },
+  { key: 'stress_job',     label: 'Vysoký pracovní stres',  desc: 'Chronický tlak v práci'       },
 ];
 
 function calcBmi(height, weight) {
@@ -471,11 +517,40 @@ function calcBmi(height, weight) {
   return weight / Math.pow(height / 100, 2);
 }
 
-function bmiLabel(bmi) {
-  if (bmi < 18.5) return ['Podváha',       '#64748b'];
-  if (bmi < 25)   return ['Normální váha', '#22c55e'];
-  if (bmi < 30)   return ['Nadváha',       '#eab308'];
-  return               ['Obezita',         '#ef4444'];
+// WHO waist-circumference risk tiers (absolute cm, sex-specific) — the standard
+// terminology is "increased"/"substantially increased" risk, not "obesity" (that's
+// a BMI term). Normal: <94 cm (men) / <80 cm (women).
+function waistTier(waist, gender) {
+  if (gender === 'female') {
+    if (waist >= 88) return ['⚠ Podstatně zvýšené riziko', '#ef4444'];
+    if (waist >= 80) return ['⚠ Zvýšené riziko',            '#f59e0b'];
+    return ['✓ V pořádku', '#22c55e'];
+  }
+  // 'male' or unknown gender — WHO's male thresholds are the commonly cited default.
+  if (waist >= 102) return ['⚠ Podstatně zvýšené riziko', '#ef4444'];
+  if (waist >= 94)  return ['⚠ Zvýšené riziko',            '#f59e0b'];
+  return ['✓ V pořádku', '#22c55e'];
+}
+
+// BMI is shown as a plain number only — no risk label/color. It doesn't
+// distinguish muscle from fat or where fat sits, so a category like
+// "Nadváha" can contradict the waist verdict below for no good reason.
+// Waist is the one metric here that gets a risk verdict — it is the
+// stronger adiposity marker (see api/engine/activation.js's
+// EXCESS_ADIPOSITY comment), using WHO's absolute-cm thresholds above.
+function buildBmiWaistHtml(height, weight, waist, gender) {
+  const bmi = calcBmi(height, weight);
+  if (!bmi && !waist) return '';
+  const bmiPart = bmi ? `<span style="color:#64748b;font-size:13px;">BMI: </span>
+    <span style="font-size:16px;font-weight:400;color:#94a3b8;">${bmi.toFixed(1)}</span>` : '';
+  const [waistText, waistColor] = waist ? waistTier(waist, gender) : [null, null];
+  const waistPart = waist ? `<span style="color:#64748b;font-size:13px;">Obvod pasu: </span>
+    <span style="font-size:18px;font-weight:700;color:${waistColor};">${waist} cm</span>
+    <span style="color:${waistColor};font-size:13px;margin-left:4px;">${waistText}</span>` : '';
+  return `<div id="udp-bmi-live" style="margin-top:12px;padding:10px 14px;border-radius:8px;
+    background:rgba(255,255,255,0.04);border:1px solid #1e293b;display:flex;align-items:center;flex-wrap:wrap;gap:4px;">
+    ${bmiPart}${bmiPart && waistPart ? ' &nbsp;·&nbsp; ' : ''}${waistPart}
+  </div>`;
 }
 
 function renderProfilTab() {
@@ -483,16 +558,7 @@ function renderProfilTab() {
   const ls = cachedData.lifestyle ?? {};
   const birthYear = p.birth_year ?? '';
   const calcAge   = birthYear ? (new Date().getFullYear() - birthYear) : '';
-  const bmi       = calcBmi(p.height, p.weight);
-  const [bmiText, bmiColor] = bmi ? bmiLabel(bmi) : ['', '#64748b'];
-
-  const bmiHtml = bmi ? `
-    <div style="margin-top:12px;padding:10px 14px;border-radius:8px;
-      background:rgba(255,255,255,0.04);border:1px solid #1e293b;">
-      <span style="color:#64748b;font-size:13px;">BMI: </span>
-      <span style="font-size:18px;font-weight:700;color:${bmiColor};">${bmi.toFixed(1)}</span>
-      <span style="color:${bmiColor};font-size:13px;margin-left:8px;">${bmiText}</span>
-    </div>` : '';
+  const bmiHtml   = buildBmiWaistHtml(p.height, p.weight, ls.waist_cm, p.gender);
 
   const lifestyleHtml = LIFESTYLE_FLAGS.map(f => {
     const on = ls[f.key] === true;
@@ -548,7 +614,7 @@ function renderProfilTab() {
     <div class="udp-section">
       <div class="udp-section-label">Životní styl</div>
       <p style="color:#64748b;font-size:13px;margin:0 0 4px;line-height:1.5;">
-        Ovlivňuje SEDENTARY a CHRONIC_STRESS větve v CRT.
+        Sedavý životní styl ovlivňuje predikce v CRT. Ostatní zatím jen evidujeme pro budoucí rozšíření.
       </p>
       ${lifestyleHtml}
     </div>
@@ -564,6 +630,7 @@ function bindProfilEvents() {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.udp-gender-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
+      updateBmiDisplay();
     });
   });
 
@@ -582,22 +649,11 @@ function bindProfilEvents() {
 function updateBmiDisplay() {
   const h = parseFloat(document.getElementById('prof-height')?.value);
   const w = parseFloat(document.getElementById('prof-weight')?.value);
-  const bmi = calcBmi(h, w);
-  const existing = document.getElementById('udp-bmi-live');
-  if (!bmi) { if (existing) existing.remove(); return; }
-  const [text, color] = bmiLabel(bmi);
   const waist = parseFloat(document.getElementById('prof-waist')?.value);
-  const whrVal = (waist && h) ? (waist / h) : null;
-  const whrHtml = whrVal ? ` &nbsp;·&nbsp; <span style="color:#64748b;font-size:13px;">Pas/výška: </span>
-    <span style="font-size:16px;font-weight:600;color:${whrVal > 0.5 ? '#f59e0b' : '#22c55e'};">${whrVal.toFixed(2)}</span>
-    <span style="color:${whrVal > 0.5 ? '#f59e0b' : '#22c55e'};font-size:12px;margin-left:4px;">${whrVal > 0.5 ? '⚠ Riziko' : '✓ OK'}</span>` : '';
-  const html = `<div id="udp-bmi-live" style="margin-top:12px;padding:10px 14px;border-radius:8px;
-    background:rgba(255,255,255,0.04);border:1px solid #1e293b;display:flex;align-items:center;flex-wrap:wrap;gap:4px;">
-    <span style="color:#64748b;font-size:13px;">BMI: </span>
-    <span style="font-size:18px;font-weight:700;color:${color};">${bmi.toFixed(1)}</span>
-    <span style="color:${color};font-size:13px;margin-left:4px;">${text}</span>
-    ${whrHtml}
-  </div>`;
+  const gender = document.querySelector('.udp-gender-btn.active')?.dataset.gender;
+  const existing = document.getElementById('udp-bmi-live');
+  const html = buildBmiWaistHtml(h, w, waist, gender);
+  if (!html) { if (existing) existing.remove(); return; }
   if (existing) existing.outerHTML = html;
   else document.querySelector('.udp-row-4')?.insertAdjacentHTML('afterend', html);
 }
@@ -1195,9 +1251,9 @@ export function initUserDataPanel() {
         <button id="udp-close" class="udp-close-btn">✕</button>
       </div>
       <div class="udp-tabs">
-        <button class="udp-tab" data-tab="zdravi">Zdraví</button>
-        <button class="udp-tab" data-tab="kondice">Kondice</button>
         <button class="udp-tab" data-tab="profile">Profil</button>
+        <button class="udp-tab" data-tab="zdravi">Zdraví</button>
+        <button class="udp-tab" data-tab="kondice">Tělo</button>
         <button class="udp-tab" data-tab="aspirations">Sen</button>
         <button class="udp-tab" data-tab="data">Data</button>
       </div>
@@ -1205,7 +1261,7 @@ export function initUserDataPanel() {
     </div>`;
   document.body.appendChild(modal);
 
-  activeTab = 'zdravi';
+  activeTab = 'profile';
   setTimeout(() => switchTab(activeTab), 0);
 }
 

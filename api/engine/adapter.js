@@ -3,6 +3,7 @@
 // Does NOT change DB schema. Enforces canonical birth_year from user_profiles.
 
 import { createClient } from '@supabase/supabase-js';
+import { applyActionInstructions } from './actionInstructions.js';
 
 const DIAG_KEYWORDS = [
   { kws: ['fibrilace', 'fap', 'atrial fibrillation', 'arytmie'],                id: 'ATRIAL_FIBRILLATION' },
@@ -47,7 +48,7 @@ export async function fetchHealthData(userId) {
       .select('diagnoses, symptoms, medications, supplements, labs, lifestyle, capacity, physical, doctor_notes')
       .eq('user_id', userId).maybeSingle(),
     supabase.from('daily_checkin')
-      .select('weight_kg, waist_cm, energy, sleep_hours, stress, movement_level, date')
+      .select('weight_kg, energy, sleep_hours, stress, movement_level, date')
       .eq('user_id', userId)
       .order('date', { ascending: false })
       .limit(30),
@@ -113,7 +114,7 @@ export async function fetchHealthData(userId) {
     medications,
     supplements,
     lifestyle: {
-      sedentary_work: lifestyle.sedentary === true,
+      sedentary_work: lifestyle.sedentary_work === true,
       smoking_history: 'unknown',
       alcohol_history: 'unknown',
     },
@@ -142,8 +143,6 @@ export async function fetchHealthData(userId) {
   for (const c of (checkins || [])) {
     if (c.weight_kg != null)
       observations.push({ obs_type: 'weight_kg', value: c.weight_kg, unit: 'kg', measured_at: c.date, source: 'daily_checkin', confidence: 'confirmed' });
-    if (c.waist_cm != null)
-      observations.push({ obs_type: 'waist_cm', value: c.waist_cm, unit: 'cm', measured_at: c.date, source: 'daily_checkin', confidence: 'confirmed' });
     if (c.movement_level != null)
       observations.push({ obs_type: 'activity_level', value: c.movement_level, measured_at: c.date, source: 'daily_checkin', confidence: 'confirmed' });
     if (c.stress != null)
@@ -180,6 +179,12 @@ export async function fetchHealthData(userId) {
       observations.push({ obs_type: obsType, value: parseFloat(labs[key]), unit, measured_at: labs.date || null, source: 'lab_report', confidence: 'estimated' });
   }
 
+  // Current user-reported pressure, separate from approximate discovery answers.
+  const reportedBp = hp?.physical?.bp_systolic;
+  if (hp?.physical?.evidence_availability?.bp_systolic !== 'NOT_AVAILABLE'
+      && typeof reportedBp === 'number' && Number.isFinite(reportedBp) && reportedBp >= 60 && reportedBp <= 250)
+    observations.push({ obs_type: 'bp_systolic', value: reportedBp, unit: 'mmHg', measured_at: null, source: 'self_report', confidence: 'estimated' });
+
   // Sedentary hours from physical (written by Health Event Adapter ANSWER events)
   const sedHours = hp?.physical?.sedentary_hours_day;
   if (sedHours != null)
@@ -199,7 +204,7 @@ export async function fetchActionPool(protocolTypes) {
     .eq('active', true)
     .in('protocol_type', protocolTypes);
   if (error) throw new Error(`fetchActionPool: ${error.message}`);
-  return data ?? [];
+  return applyActionInstructions(data ?? []);
 }
 
 export async function fetchPersonConstraints(userId) {
@@ -236,3 +241,4 @@ export async function fetchActionAssignments(userId, days = 30) {
   console.log(`[ORCHESTRATE] uid=${userId} loaded_action_assignments=${rows.length}`, rows.length ? summary : '(clean)');
   return rows;
 }
+

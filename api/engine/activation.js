@@ -8,7 +8,7 @@
 //   Only these two states come from activation.
 //   PREDICTED_CURRENT and UNKNOWN are handled in inference.js.
 
-import { isEvidenceResolved } from './evidenceResolution.js';
+import { isEvidenceResolved, readYesNo } from './evidenceResolution.js';
 
 export function activation(person, clinicalHistory, observations) {
   const states = [];
@@ -58,6 +58,11 @@ export function activation(person, clinicalHistory, observations) {
   // sedentary_work=true alone → supporting evidence only, not sufficient for MEASURED
   const activityObs = observations.filter(o => o.obs_type === 'activity_level' && o.source === 'daily_checkin');
   const sedHoursObs = observations.find(o => o.obs_type === 'sedentary_hours_day');
+  // Desetiboj functional cardio self-report (Dekatlon) — supporting-only, same
+  // epistemic tier as sedentary_work/sedentary_hours_day: a single self-reported
+  // "no" is not the validated multi-day check-in evidence MEASURED requires.
+  const earlyOi = clinicalHistory.onboarding_inputs || {};
+  const cardioNeg = readYesNo(earlyOi['vyjit_4_patra']) === 'no' || readYesNo(earlyOi['rychla_chuze']) === 'no';
   const lowDays = activityObs.filter(o => o.value === 'low').length;
   const totalDays = activityObs.length;
   const lowRatio = totalDays >= 5 ? lowDays / totalDays : null;
@@ -85,9 +90,10 @@ export function activation(person, clinicalHistory, observations) {
         ] : []),
       ],
     });
-  } else if (clinicalHistory.lifestyle.sedentary_work || (sedHoursObs && sedHoursObs.value >= 8)) {
-    // Sedentary work or hours known, but no check-in data → PREDICTED_CURRENT here
-    // (activation can produce PREDICTED_CURRENT if direct data is behavioral self-report)
+  } else if (clinicalHistory.lifestyle.sedentary_work || (sedHoursObs && sedHoursObs.value >= 8) || cardioNeg) {
+    // Sedentary work, hours, or a failed Desetiboj cardio self-report known, but no
+    // check-in data → PREDICTED_CURRENT here (activation can produce PREDICTED_CURRENT
+    // if direct data is behavioral/functional self-report)
     states.push({
       node_id: 'PHYSICAL_INACTIVITY',
       current_state: 'PREDICTED_CURRENT',
@@ -97,6 +103,8 @@ export function activation(person, clinicalHistory, observations) {
         supporting: [
           ...(clinicalHistory.lifestyle.sedentary_work ? [{ source: 'CLINICAL_HISTORY', type: 'LIFESTYLE', field: 'sedentary_work', value: true, note: 'Sedentary work alone is supporting, not direct evidence' }] : []),
           ...(sedHoursObs ? [{ source: 'OBSERVATION', obs_type: 'sedentary_hours_day', value: sedHoursObs.value }] : []),
+          ...(readYesNo(earlyOi['vyjit_4_patra']) === 'no' ? [{ source: 'ONBOARDING', question_id: 'vyjit_4_patra', value: earlyOi['vyjit_4_patra'], note: 'Nezvládneš 4 patra bez zastavení a zadýchání — funkční ukazatel kondice, ne validovaný VO2max test' }] : []),
+          ...(readYesNo(earlyOi['rychla_chuze']) === 'no' ? [{ source: 'ONBOARDING', question_id: 'rychla_chuze', value: earlyOi['rychla_chuze'], note: 'Nezvládneš 1 km svižným tempem — funkční ukazatel kondice' }] : []),
         ],
         inferred_from_nodes: [],
       },
@@ -110,11 +118,16 @@ export function activation(person, clinicalHistory, observations) {
   }
 
   // ── EXCESS_ADIPOSITY ─────────────────────────────────────────────────────
-  // MEASURED from latest reliable weight observation + person.height_cm → derived BMI
-  // BMI is a proxy for adiposity, not a direct measure of body fat.
-  // This node does NOT map to OBESITY. Adiposity categories require DataDictionary rules
-  // (waist_cm + body_fat_pct thresholds — not yet defined).
-  // Selection rule (Health Data Model v1):
+  // MEASURED from either: latest reliable weight observation + person.height_cm → derived
+  // BMI ≥ 25, OR waist_cm alone at/above WHO's sex-specific increased-risk cutoff (94 cm
+  // men / 80 cm women — defaults to the male cutoff when sex is unknown).
+  // BMI is a proxy for adiposity, not a direct measure of body fat, and misses "normal BMI,
+  // elevated visceral fat" (high waist, non-elevated BMI) entirely if BMI were the only
+  // trigger — waist_cm is the stronger direct marker, so it can activate this node on its
+  // own, not only as supporting evidence once BMI has already crossed 25.
+  // This node does NOT map to OBESITY. Categories beyond this single threshold require
+  // further DataDictionary rules (body_fat_pct thresholds — not yet defined).
+  // Selection rule (Health Data Model v1) for weight_kg:
   // 1. Dated observation always beats undated — regardless of confidence/source.
   // 2. Among dated: newest measured_at wins.
   // 3. Among undated (tie on date criterion): higher confidence/source quality wins.
@@ -130,18 +143,26 @@ export function activation(person, clinicalHistory, observations) {
       return 0;
     });
   const latestWeight = weightObs[0];
+  const bmi = (latestWeight && person.height_cm)
+    ? latestWeight.value / ((person.height_cm / 100) ** 2)
+    : null;
+  const bmiElevated = bmi != null && bmi >= 25;
 
-  if (latestWeight && person.height_cm) {
-    const bmi = latestWeight.value / ((person.height_cm / 100) ** 2);
-    if (bmi >= 25) {
-      const waistObs = observations.find(o => o.obs_type === 'waist_cm');
-      const bfObs    = observations.find(o => o.obs_type === 'body_fat_pct');
-      states.push({
-        node_id: 'EXCESS_ADIPOSITY',
-        current_state: 'MEASURED',
-        confidence: waistObs ? 'medium' : 'low',  // BMI alone is imprecise proxy
-        evidence: {
-          direct: [{
+  const waistObs = observations.find(o => o.obs_type === 'waist_cm');
+  const bfObs    = observations.find(o => o.obs_type === 'body_fat_pct');
+  const waistThreshold = person.sex === 'female' ? 80 : 94;
+  const waistElevated  = !!waistObs && waistObs.value >= waistThreshold;
+
+  if (bmiElevated || waistElevated) {
+    states.push({
+      node_id: 'EXCESS_ADIPOSITY',
+      current_state: 'MEASURED',
+      // waist_cm at/above threshold is itself a direct marker, not just a BMI confidence
+      // booster — medium whenever it is elevated, or when it corroborates an elevated BMI.
+      confidence: waistElevated || (bmiElevated && waistObs) ? 'medium' : 'low',
+      evidence: {
+        direct: [
+          ...(bmiElevated ? [{
             source: 'OBSERVATION',
             obs_type: 'weight_kg',
             value: latestWeight.value,
@@ -150,19 +171,26 @@ export function activation(person, clinicalHistory, observations) {
             derived_bmi: parseFloat(bmi.toFixed(1)),
             height_cm: person.height_cm,
             note: 'BMI = hrubý proxy adipozity. Nepotvrzen přesnějšími markery.',
-          }],
-          supporting: [
-            ...(waistObs ? [{ source: 'OBSERVATION', obs_type: 'waist_cm', value: waistObs.value, unit: 'cm' }] : []),
-            ...(bfObs    ? [{ source: 'OBSERVATION', obs_type: 'body_fat_pct', value: bfObs.value }] : []),
-          ],
-          inferred_from_nodes: [],
-        },
-        missing_evidence: [
-          ...(!waistObs ? [{ type: 'OBSERVATION', obs_type: 'waist_cm', note: 'Obvod pasu — silnější marker viscerální adipozity než BMI' }] : []),
-          ...(!bfObs    ? [{ type: 'OBSERVATION', obs_type: 'body_fat_pct', note: 'Podíl tělesného tuku (DEXA nebo bioimpedance)' }] : []),
+          }] : []),
+          ...(waistElevated ? [{
+            source: 'OBSERVATION',
+            obs_type: 'waist_cm',
+            value: waistObs.value,
+            unit: 'cm',
+            note: `Obvod pasu ≥ ${waistThreshold} cm (WHO práh zvýšeného rizika) — přímý marker viscerální adipozity, nezávislý na BMI.`,
+          }] : []),
         ],
-      });
-    }
+        supporting: [
+          ...(waistObs && !waistElevated ? [{ source: 'OBSERVATION', obs_type: 'waist_cm', value: waistObs.value, unit: 'cm' }] : []),
+          ...(bfObs    ? [{ source: 'OBSERVATION', obs_type: 'body_fat_pct', value: bfObs.value }] : []),
+        ],
+        inferred_from_nodes: [],
+      },
+      missing_evidence: [
+        ...(!waistObs ? [{ type: 'OBSERVATION', obs_type: 'waist_cm', note: 'Obvod pasu — silnější marker viscerální adipozity než BMI' }] : []),
+        ...(!bfObs    ? [{ type: 'OBSERVATION', obs_type: 'body_fat_pct', note: 'Podíl tělesného tuku (DEXA nebo bioimpedance)' }] : []),
+      ],
+    });
   }
 
   // ── PERIPHERAL_NEUROPATHY ────────────────────────────────────────────────
@@ -181,7 +209,7 @@ export function activation(person, clinicalHistory, observations) {
         inferred_from_nodes: [],
       },
       missing_evidence: [
-        ...(!isEvidenceResolved('tug_test',        clinicalHistory) ? [{ type: 'OBSERVATION', obs_type: 'tug_test',        note: 'TUG test — klinicky validovaný marker mobility a fall risk (NICE NG147); určuje závažnost funkčního dopadu neuropatie' }] : []),
+        ...(!isEvidenceResolved('tug_test',        clinicalHistory) ? [{ type: 'OBSERVATION', obs_type: 'tug_test',        note: 'TUG — doplňující měření mobility; zdejší chybějící údaj není potvrzený nález' }] : []),
         ...(!isEvidenceResolved('gait_stability',  clinicalHistory) ? [{ type: 'OBSERVATION', obs_type: 'gait_stability',  note: 'Sebehodnocení bezpečnosti chůze — nejrychlejší funkční třídění' }] : []),
       ],
     });
@@ -193,8 +221,8 @@ export function activation(person, clinicalHistory, observations) {
   // risk modifier, not evidence of actual strength loss.
   //
   // Onboarding question IDs (Dekatlon / Longevity functional assessment):
-  //   vynest_nakup    = "Vynést nákup do 3. patra bez zastavení?"
-  //   zvednout_vnouce = "Zvednout vnouče / těžký předmět (10+ kg)?"
+  //   vynest_nakup    = "Vynést nákup (5 kg) do 2. patra bez zastavení?"
+  //   zvednout_vnouce = "Zvednout vnouče nebo malé dítě ze země?"
   //   vstat_ze_zeme   = "Vstát ze země bez opory?"
   //
   // Activation: at least one of these answered negatively ('no', 'false', '0', false)
@@ -202,11 +230,11 @@ export function activation(person, clinicalHistory, observations) {
 
   // ── FALL_RISK (direct activation) ────────────────────────────────────────
   // Source: recent_falls observation from onboarding_inputs or observations
-  // A documented fall in the last 12 months = CONFIRMED elevated fall risk (NICE NG147).
+  // CHJ internally marks a documented fall in the last 12 months as CONFIRMED fall risk; this is not a NICE definition.
   // Note: recent_falls is FALL_RISK direct evidence; it is NOT sufficient for
   //       GAIT_INSTABILITY CONFIRMED — that requires direct gait/balance assessment.
   const recentFalls = oi['recent_falls'];
-  const hasRecentFalls = recentFalls === 'yes' || recentFalls === true || recentFalls === 'true';
+  const hasRecentFalls = readYesNo(recentFalls) === 'yes';
   if (hasRecentFalls) {
     states.push({
       node_id: 'FALL_RISK',
@@ -218,33 +246,58 @@ export function activation(person, clinicalHistory, observations) {
         inferred_from_nodes: [],
       },
       missing_evidence: [
-        ...(!isEvidenceResolved('tug_test',        clinicalHistory) ? [{ type: 'OBSERVATION', obs_type: 'tug_test',        note: 'TUG test — klinická validace mobility a fall risk (NICE NG147 doporučuje multifaktoriální assessment po pádu)' }] : []),
+        ...(!isEvidenceResolved('tug_test',        clinicalHistory) ? [{ type: 'OBSERVATION', obs_type: 'tug_test',        note: 'TUG — doplňující měření mobility; pád je důvod k posouzení, jeho rozsah závisí na dalších okolnostech' }] : []),
         ...(!isEvidenceResolved('gait_stability',  clinicalHistory) ? [{ type: 'OBSERVATION', obs_type: 'gait_stability',  note: 'Bezpečnost chůze — základ multifaktoriálního hodnocení pádu' }] : []),
       ],
     });
   }
 
-  const negatives = ['no', 'false', '0', false, 0];
-  const isNeg = v => negatives.includes(v) || v === 'ne';
+  const isNeg = v => readYesNo(v) === 'no';
+
+  const gripEvidence = [];
+  if (isNeg(oi['otevrit_zavarovacku']))
+    gripEvidence.push({ source: 'ONBOARDING', question_id: 'otevrit_zavarovacku', value: oi['otevrit_zavarovacku'],
+      note: 'Neschopnost otevřít tuhé víčko bez pomoci — funkční ukazatel síly úchopu' });
+  if (isNeg(oi['kufr_do_police']))
+    gripEvidence.push({ source: 'ONBOARDING', question_id: 'kufr_do_police', value: oi['kufr_do_police'],
+      note: 'Neschopnost zvednout 10–15 kg nad hlavu — funkční ukazatel síly ramen/paží' });
 
   const strengthEvidence = [];
   if (isNeg(oi['vynest_nakup']))
     strengthEvidence.push({ source: 'ONBOARDING', question_id: 'vynest_nakup', value: oi['vynest_nakup'],
-      note: 'Neunesení nákupu do 3. patra — funkční ukazatel svalové kapacity' });
+      note: 'Neunesení nákupu (5 kg) do 2. patra bez zastavení — funkční ukazatel svalové kapacity' });
   if (isNeg(oi['zvednout_vnouce']))
     strengthEvidence.push({ source: 'ONBOARDING', question_id: 'zvednout_vnouce', value: oi['zvednout_vnouce'],
-      note: 'Neschopnost zvednout 10+ kg — funkční ukazatel svalové síly' });
+      note: 'Neschopnost zvednout vnouče nebo malé dítě ze země — funkční ukazatel svalové síly' });
   if (isNeg(oi['vstat_ze_zeme']))
     strengthEvidence.push({ source: 'ONBOARDING', question_id: 'vstat_ze_zeme', value: oi['vstat_ze_zeme'],
       note: 'Neschopnost vstát ze země bez opory — přímý funkční výsledek' });
+  if (isNeg(oi['vstat_ze_zidle']))
+    strengthEvidence.push({ source: 'ONBOARDING', question_id: 'vstat_ze_zidle', value: oi['vstat_ze_zidle'],
+      note: 'Nezvládneš dřep bez pomoci rukou — funkční ukazatel síly dolních končetin' });
+  // skocit_dopadnout: evidence of leg power/stability only — routes to the same
+  // safe chair-stand entry exercise as the rest of this group, never to a
+  // plyometric/jump-based action. A "no" here means landing a jump isn't safe
+  // for this person right now; the fix is building foundational leg strength
+  // first, not more jumping.
+  if (isNeg(oi['skocit_dopadnout']))
+    strengthEvidence.push({ source: 'ONBOARDING', question_id: 'skocit_dopadnout', value: oi['skocit_dopadnout'],
+      note: 'Neustojíš dopad ze skoku z 20 cm — funkční ukazatel výbušné síly a stability nohou' });
 
-  if (strengthEvidence.length > 0) {
+  const allStrengthEvidence = [...strengthEvidence, ...gripEvidence];
+
+  if (allStrengthEvidence.length > 0) {
+    // upper_body_only: grip evidence present AND no leg/floor-rise evidence — lets
+    // the action layer offer a grip-appropriate exercise instead of the default
+    // leg-pattern entry exercise, without touching the (unrelated, leg-pattern)
+    // vynest_nakup/zvednout_vnouce/vstat_ze_zeme path when any of those also fired.
     states.push({
       node_id: 'LOW_MUSCLE_STRENGTH',
       current_state: 'MEASURED',
-      confidence: strengthEvidence.length >= 2 ? 'medium' : 'low',
+      confidence: allStrengthEvidence.length >= 2 ? 'medium' : 'low',
+      upper_body_only: gripEvidence.length > 0 && strengthEvidence.length === 0,
       evidence: {
-        direct: strengthEvidence,
+        direct: allStrengthEvidence,
         supporting: [],
         inferred_from_nodes: [],
       },
@@ -257,3 +310,4 @@ export function activation(person, clinicalHistory, observations) {
 
   return states;
 }
+

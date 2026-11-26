@@ -34,7 +34,7 @@ section('T1 — landing.html: exists and has required content');
 check(landing.length > 100,                           'landing.html exists and is non-empty');
 check(landing.includes('Chytré já'),                  'contains "Chytré já"');
 check(landing.includes('Pro život, jaký chceš žít'),  'tagline present');
-check(landing.includes('Zdraví si přejeme všichni'),  'opening prompt present');
+check(landing.includes('Chci to vyzkoušet'),           'hero CTA button present');
 check(landing.includes('Chceš, abych si tě pamatoval'), 'auth CTA text present');
 check(landing.includes('Přihlásit'),                  '"Přihlásit" nav link present');
 check(landing.includes('Řekni mi'),                   'input placeholder present');
@@ -299,6 +299,368 @@ check(/\.chj-card-eyebrow\s*\{[^}]*font-size:\s*10px/.test(landing), '.chj-card-
 check(/\.step-num\s*\{[^}]*font-size:\s*11px/.test(landing),         '.step-num stays 11px (decorative)');
 check(/\.cenik-fine\s*\{[^}]*font-size:\s*12px/.test(landing),       '.cenik-fine stays 12px (fine print)');
 check(/\.btn-link-sm\s*\{[^}]*font-size:\s*13px/.test(landing),      '.btn-link-sm stays 13px (action link)');
+
+// ── T19: conversation mode — conv-mode CSS + JS contract ─────────────────────
+//
+// Contract:
+//   - CSS: html.conv-mode locks viewport, hides marketing sections
+//   - enterConv() adds conv-mode class and removes input-bar--out
+//   - IntersectionObserver has conv-mode early return (before focus guard)
+//   - AHA/SAFETY can still hide inputBar via hidden (html attribute — not CSS class)
+//   - Reload with history calls enterConv() → conv-mode activated
+
+section('T19 — conversation mode: conv-mode CSS + JS contract');
+
+// CSS: html.conv-mode viewport lock
+check(
+  landing.includes('html.conv-mode') && landing.includes('height: 100dvh'),
+  'CSS: html.conv-mode sets height: 100dvh'
+);
+check(
+  /html\.conv-mode\s+body\s*\{[^}]*overflow:\s*hidden/.test(landing) ||
+  /html\.conv-mode body\s*\{[^}]*overflow:\s*hidden/.test(landing),
+  'CSS: html.conv-mode body sets overflow: hidden'
+);
+check(
+  /html\.conv-mode body\s*\{[^}]*display:\s*flex/.test(landing) ||
+  /html\.conv-mode\s+body\s*\{[^}]*display:\s*flex/.test(landing),
+  'CSS: html.conv-mode body sets display: flex'
+);
+
+// CSS: marketing sections hidden in conv-mode
+const marketingSections = ['#jak-funguje', '#ze-zivota', '#priklad', '#co-ted', '#zakladatele', '#o-nas'];
+for (const id of marketingSections) {
+  check(
+    landing.includes(`html.conv-mode ${id}`) || landing.includes(`html.conv-mode\n    ${id}`),
+    `CSS: html.conv-mode hides ${id}`
+  );
+}
+
+// CSS: .scroll-body becomes scrollable container in conv-mode
+check(
+  /html\.conv-mode \.scroll-body\s*\{[^}]*overflow-y:\s*auto/.test(landing),
+  'CSS: html.conv-mode .scroll-body { overflow-y: auto }'
+);
+check(
+  /html\.conv-mode \.scroll-body\s*\{[^}]*min-height:\s*0/.test(landing),
+  'CSS: html.conv-mode .scroll-body { min-height: 0 } (prevents flex overflow)'
+);
+check(
+  /html\.conv-mode \.scroll-body\s*\{[^}]*flex:\s*1/.test(landing),
+  'CSS: html.conv-mode .scroll-body { flex: 1 }'
+);
+
+// CSS: #inputBar becomes a static flex item in conv-mode (not sticky)
+check(
+  /html\.conv-mode #inputBar\s*\{[^}]*position:\s*relative/.test(landing),
+  'CSS: html.conv-mode #inputBar { position: relative } (reset from sticky)'
+);
+check(
+  /html\.conv-mode #inputBar\s*\{[^}]*flex-shrink:\s*0/.test(landing),
+  'CSS: html.conv-mode #inputBar { flex-shrink: 0 }'
+);
+
+// JS: enterConv() adds conv-mode class to documentElement
+const enterConvBlock = landing.match(/function enterConv\(\)[\s\S]{0,400}/)?.[0] || '';
+check(
+  enterConvBlock.includes("classList.add('conv-mode')"),
+  "enterConv() adds 'conv-mode' to documentElement"
+);
+// JS: enterConv() removes input-bar--out (ensures inputBar visible on activation)
+check(
+  enterConvBlock.includes("classList.remove('input-bar--out')"),
+  "enterConv() removes 'input-bar--out' from inputBar"
+);
+
+// JS: IntersectionObserver has conv-mode guard BEFORE focus guard (order matters)
+const ioBlock = landing.match(/new IntersectionObserver[\s\S]{0,400}/)?.[0] || '';
+const convModeGuardIdx  = ioBlock.indexOf('conv-mode');
+const focusGuardIdx     = ioBlock.indexOf('inputBar.contains');
+check(
+  convModeGuardIdx !== -1 && focusGuardIdx !== -1 && convModeGuardIdx < focusGuardIdx,
+  'IO: conv-mode guard appears before focus guard (correct order)'
+);
+check(
+  /document\.documentElement\.classList\.contains\('conv-mode'\)/.test(ioBlock),
+  'IO: conv-mode guard checks documentElement.classList.contains("conv-mode")'
+);
+
+// JS: focus guard (f817c337) preserved unchanged
+check(
+  ioBlock.includes('inputBar.contains(document.activeElement)'),
+  'IO: f817c337 focus guard preserved'
+);
+
+// JS: AHA/SAFETY can still hide inputBar via .hidden (html attribute — independent of CSS class)
+check(
+  landing.includes('inputBar.hidden = true'),
+  'inputBar.hidden = true still present (AHA/SAFETY path, independent of CSS class)'
+);
+check(
+  /showHandoffPending[\s\S]{0,200}inputBar\.hidden\s*=\s*true/.test(landing) ||
+  /inputBar\.hidden\s*=\s*true[\s\S]{0,600}showHandoffPending/.test(landing),
+  'showHandoffPending() sets inputBar.hidden = true (AHA flow unaffected by conv-mode CSS)'
+);
+
+// JS: reload with history calls enterConv() → conv-mode activated
+const reloadBlock = landing.match(/history\.length > 0[\s\S]{0,300}/)?.[0] || '';
+check(
+  reloadBlock.includes('enterConv()'),
+  'reload with history > 0 calls enterConv() (conv-mode activated on resume)'
+);
+
+// JS: showMsg scrolls scroll-body to top in conv-mode
+const showMsgBlock = landing.match(/function showMsg\(text\)[\s\S]{0,600}/)?.[0] || '';
+check(
+  showMsgBlock.includes('conv-mode') && showMsgBlock.includes('scrollTop = 0'),
+  'showMsg() scrolls scrollBody to top in conv-mode'
+);
+check(
+  showMsgBlock.includes('conv-mode') && !showMsgBlock.includes('scrollTop = scrollHeight'),
+  'showMsg() uses scrollTop=0 (not scrollHeight — would skip message start for long answers)'
+);
+
+// CSS: overscroll-behavior: none prevents pull-to-refresh in conv-mode
+check(
+  /html\.conv-mode \.scroll-body\s*\{[^}]*overscroll-behavior:\s*none/.test(landing),
+  'CSS: html.conv-mode .scroll-body { overscroll-behavior: none } (blocks pull-to-refresh)'
+);
+
+// JS: ASK branch calls saveAnonSession() before re-enabling input
+// Must appear in: outcome === 'ASK' comment block before setInputEnabled(true)
+const askBlock2 = landing.match(/outcome === ['"]ASK['"][\s\S]{0,300}/)?.[0] || '';
+check(
+  askBlock2.includes('saveAnonSession()'),
+  'ASK branch calls saveAnonSession() (session persisted for reload recovery)'
+);
+// saveAnonSession on ASK must come BEFORE setInputEnabled(true) to guarantee persistence
+const askSaveIdx = askBlock2.indexOf('saveAnonSession()');
+const askEnableIdx = askBlock2.indexOf('setInputEnabled(true)');
+check(
+  askSaveIdx !== -1 && askEnableIdx !== -1 && askSaveIdx < askEnableIdx,
+  'ASK: saveAnonSession() called before setInputEnabled(true) (order correct)'
+);
+
+// JS: AHA branch still calls saveAnonSession() (not removed)
+const ahaBlock = landing.match(/outcome === ['"]AHA['"] \|\| outcome === ['"]NOT_ENOUGH_YET['"][\s\S]{0,300}/)?.[0] ||
+                 landing.match(/AHA[\s\S]{0,300}saveAnonSession[\s\S]{0,50}authCta/)?.[0] || '';
+check(
+  landing.match(/AHA[\s\S]{0,200}saveAnonSession\(\)/) !== null ||
+  landing.match(/saveAnonSession\(\)[\s\S]{0,200}authCta\.hidden\s*=\s*false/) !== null,
+  'AHA branch still calls saveAnonSession() (not removed by ASK fix)'
+);
+
+// JS: reload with ASK history restores via enterConv() (existing T14 assertion covers this,
+// but verify the restore block now has saveAnonSession in play via the history.length check)
+check(
+  landing.includes('history.length > 0') && landing.includes('enterConv()'),
+  'reload with history > 0 calls enterConv() (ASK-saved session enables this path)'
+);
+
+// ── T20: T0 Step 1 — hero CTA entry flow ─────────────────────────────────────
+//
+// Contract:
+//   - Hero has new protection question + description + two CTA buttons
+//   - #inputBar starts hidden via HTML attribute (not CSS class)
+//   - enterConv() sets inputBar.hidden = false before removing input-bar--out
+//   - tryBtn handler: enterConv() → showMsg('S čím ti mohu pomoci?') → NOT sent to pre-intake
+//   - "Jak mě chrání?" is a plain anchor to #jak-funguje — no conv mode trigger
+
+section('T20 — T0 Step 1: hero CTA entry flow');
+
+// Hero content
+check(
+  landing.includes('Chceš být pod ochranou Chytrého já?'),
+  'hero: protection question present'
+);
+check(
+  landing.includes('Chytré já vidí tvůj život jako celek'),
+  'hero: description text present'
+);
+check(
+  landing.includes('Chci to vyzkoušet'),
+  'hero: try button text present'
+);
+check(
+  landing.includes('Jak mě chrání?'),
+  'hero: learn more link text present'
+);
+check(
+  landing.includes('hero-cta-group'),
+  'hero: .hero-cta-group container present'
+);
+check(
+  landing.includes('class="btn-try"'),
+  'hero: btn-try class applied to button'
+);
+check(
+  landing.includes('class="btn-learn"'),
+  'hero: btn-learn class applied to link'
+);
+
+// "Jak mě chrání?" must be a plain anchor — no conv mode side effect
+check(
+  landing.includes('href="#jak-funguje"') && landing.includes('btn-learn'),
+  '"Jak mě chrání?" is an anchor to #jak-funguje (scroll only, no JS handler)'
+);
+
+// inputBar starts hidden
+check(
+  landing.includes('id="inputBar" hidden'),
+  '#inputBar has HTML hidden attribute (not visible on initial landing)'
+);
+
+// enterConv() unhides inputBar BEFORE removing class
+const enterConvT20 = landing.match(/function enterConv\(\)[\s\S]{0,500}/)?.[0] || '';
+check(
+  enterConvT20.includes('inputBar.hidden = false'),
+  'enterConv() sets inputBar.hidden = false'
+);
+const hiddenFalseIdx = enterConvT20.indexOf('inputBar.hidden = false');
+const removeOutIdx   = enterConvT20.indexOf("classList.remove('input-bar--out')");
+check(
+  hiddenFalseIdx !== -1 && removeOutIdx !== -1 && hiddenFalseIdx < removeOutIdx,
+  'enterConv(): inputBar.hidden = false before classList.remove (correct order)'
+);
+
+// tryBtn handler contract — match the addEventListener call, not the HTML element
+const tryBtnBlock = landing.match(/getElementById\('tryBtn'\)\.addEventListener[\s\S]{0,400}/)?.[0] || '';
+check(
+  tryBtnBlock.includes('enterConv()'),
+  'tryBtn handler calls enterConv()'
+);
+check(
+  tryBtnBlock.includes('showMsg('),
+  'tryBtn handler calls showMsg()'
+);
+check(
+  tryBtnBlock.includes("'S čím ti mohu pomoci?'") ||
+  tryBtnBlock.includes('"S čím ti mohu pomoci?"'),
+  "tryBtn shows 'S čím ti mohu pomoci?' as initial CHJ message"
+);
+// Initial greeting must NOT be pushed to history
+check(
+  !tryBtnBlock.includes('history.push'),
+  'tryBtn does NOT push to history (initial greeting never sent to pre-intake)'
+);
+// setInputEnabled(true) called after enterConv
+check(
+  tryBtnBlock.includes('setInputEnabled(true)'),
+  'tryBtn calls setInputEnabled(true) after enterConv()'
+);
+
+// CSS classes present
+check(
+  landing.includes('.hero-protection'),
+  'CSS: .hero-protection class defined'
+);
+check(
+  landing.includes('.hero-desc'),
+  'CSS: .hero-desc class defined'
+);
+check(
+  landing.includes('.btn-try'),
+  'CSS: .btn-try class defined'
+);
+check(
+  landing.includes('.btn-learn'),
+  'CSS: .btn-learn class defined'
+);
+
+// ── T21: T0 Step 2 — Jak mě chrání? + Ze života ──────────────────────────────
+
+section('T21 — T0 Step 2: Jak mě chrání? + Ze života');
+
+// #jak-funguje new content
+check(
+  landing.includes('class="jf-eyebrow">Jak mě chrání?'),
+  '#jak-funguje: eyebrow "Jak mě chrání?" present'
+);
+check(
+  landing.includes('Neřešíme jen to, co je vidět.'),
+  '#jak-funguje: heading present'
+);
+check(landing.includes('Vidím celek'),             '#jak-funguje: step 01 present');
+check(landing.includes('Hledám příčinu'),          '#jak-funguje: step 02 present');
+check(landing.includes('Dívám se dopředu'),        '#jak-funguje: step 03 present');
+check(landing.includes('Hlídám tvoje rozhodnutí'), '#jak-funguje: step 04 present');
+
+// #ze-zivota section
+check(landing.includes('id="ze-zivota"'),          '#ze-zivota section exists');
+check(landing.includes('>Ze života<'),             '#ze-zivota: eyebrow present');
+check(landing.includes('Bereš několik léků'),      '#ze-zivota: quote 1 (léky) present');
+check(landing.includes('Co by Chytré já řeklo tobě?'), '#ze-zivota: CTA heading present');
+check(landing.includes('id="secBtn"'),             '#ze-zivota: secBtn exists');
+check(landing.includes('Vyzkoušet na sobě'),       '#ze-zivota: button text present');
+
+// secBtn uses same conv entry as tryBtn — match the addEventListener call
+const secBtnBlock = landing.match(/getElementById\('secBtn'\)\.addEventListener[\s\S]{0,400}/)?.[0] || '';
+check(secBtnBlock.includes('enterConv()'),         'secBtn handler calls enterConv()');
+check(
+  secBtnBlock.includes('showMsg(') &&
+  (secBtnBlock.includes("'S čím ti mohu pomoci?'") || secBtnBlock.includes('"S čím ti mohu pomoci?"')),
+  'secBtn shows same initial CHJ message as tryBtn'
+);
+check(!secBtnBlock.includes('history.push'),       'secBtn does NOT push to history');
+
+// #ze-zivota must be hidden in conv-mode
+check(
+  landing.includes('html.conv-mode #ze-zivota'),
+  'CSS: #ze-zivota hidden in conv-mode'
+);
+
+// ── T22: T0 Step 3 — duplicate examples removed, flow retained ───────────────
+
+section('T22 — T0 Step 3: duplicate examples removed, Právě proto + flow retained');
+
+// A) Old duplicate headline removed
+check(
+  !landing.includes('Některé problémy nevidíš'),
+  'old duplicate headline "Některé problémy nevidíš" removed'
+);
+// B) Old four examples removed
+check(
+  !landing.includes('Zjistili mi arytmii'),
+  'old example (arytmie) removed'
+);
+check(
+  !landing.includes('Cukr mám trochu vyšší'),
+  'old example (cukr) removed'
+);
+check(
+  !landing.includes('Beru léky tak, jak mi je předepsali'),
+  'old example (léky) removed'
+);
+check(
+  !landing.includes('Začal jsem cvičit. Dělám něco pro své zdraví'),
+  'old example (cvičení) removed'
+);
+// C) "Právě proto" kept
+check(
+  landing.includes('Právě proto vzniklo Chytré já'),
+  '"Právě proto vzniklo Chytré já." retained'
+);
+// D) Flow schema kept
+check(
+  landing.includes('Poznám tě') && landing.includes('Vedu tě dál'),
+  'flow schema (Poznám tě → Vedu tě dál) retained'
+);
+check(
+  landing.includes('flow-schema'),
+  '.flow-schema element retained'
+);
+// E) Ze života section unchanged
+check(
+  landing.includes('id="ze-zivota"') && landing.includes('Bereš několik léků'),
+  '#ze-zivota from T0 Step 2 unchanged'
+);
+// Removed CSS classes must not appear in HTML (orphaned selectors still ok in CSS)
+check(
+  !landing.includes('class="priklad-wrap"') &&
+  !landing.includes('class="priklad-list"') &&
+  !landing.includes('class="priklad-item"'),
+  'removed HTML classes (priklad-wrap/list/item) no longer in HTML'
+);
 
 // ── Results ───────────────────────────────────────────────────────────────────
 

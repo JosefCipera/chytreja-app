@@ -12,7 +12,7 @@
 //   This is NOT "ED causes endothelial dysfunction."
 //   It IS "presence of ED + vascular risk factors makes endothelial dysfunction likely."
 
-import { isEvidenceResolved } from './evidenceResolution.js';
+import { isEvidenceResolved, readYesNo } from './evidenceResolution.js';
 
 export function inference(activatedStates, person, clinicalHistory, observations) {
   const states = [];
@@ -290,12 +290,11 @@ export function inference(activatedStates, person, clinicalHistory, observations
   // Material impact: this IS the projection target — its unknown state is the direct
   //   reason the TRAJECTORY_BASED projection carries risk=unknown.
   const oi = clinicalHistory.onboarding_inputs || {};
-  const negatives = ['no', 'false', '0', false, 0];
-  const isNeg = v => negatives.includes(v) || v === 'ne';
+  const isNeg = v => readYesNo(v) === 'no';
 
   // ── GAIT_INSTABILITY ─────────────────────────────────────────────────────
   // PREDICTED_CURRENT from upstream: PERIPHERAL_NEUROPATHY, LOW_MUSCLE_STRENGTH,
-  // and direct balance-test failures (balanc_jedna_noha, rovnovaha_zavrene_oci).
+  // direct balance-test failure (balanc_jedna_noha), and supporting eyes-closed evidence.
   //
   // Strength threshold: ≥ 2 required to trigger inference.
   // CONFIRMED requires direct gait/balance evidence in activation.js — not set here.
@@ -309,6 +308,22 @@ export function inference(activatedStates, person, clinicalHistory, observations
   if (!stateById['GAIT_INSTABILITY']) {
     const signals = [];
     let strength = 0;
+
+    // Current self-report is evidence of possible instability, not a diagnosis.
+    if (readYesNo(oi.gait_instability_reported) === 'yes') {
+      signals.push({ source: 'SELF_REPORT', question_id: 'gait_instability_reported',
+        value: true, role: 'Uživatel uvádí aktuální nejistotu při chůzi' });
+      strength += 2;
+    }
+
+    // A negative answer to the canonical ordinary-walking question is an
+    // independent current self-report. A positive answer is not clearance
+    // and never cancels another report or a confirmed finding.
+    if (readYesNo(oi.gait_stability) === 'no') {
+      signals.push({ source: 'SELF_REPORT', question_id: 'gait_stability',
+        value: oi.gait_stability, role: 'Uživatel se při běžné chůzi necítí stabilně' });
+      strength += 2;
+    }
 
     const pn = stateById['PERIPHERAL_NEUROPATHY'];
     if (pn?.current_state === 'CONFIRMED') {
@@ -335,32 +350,56 @@ export function inference(activatedStates, person, clinicalHistory, observations
       signals.push({
         source: 'ONBOARDING',
         question_id: 'balanc_jedna_noha',
+        value: oi['balanc_jedna_noha'],
         role: 'Selhání testu stoje na jedné noze — přímý marker deficitu rovnováhy a chůze',
       });
       strength += 2;
     }
 
+    // A self-reported eyes-closed task is not a direct assessment of ordinary
+    // gait and does not establish a proprioceptive/vestibular diagnosis.
+    // Keep it as supporting evidence (+1); it cannot activate gait instability
+    // alone. Independent gait reports, assessed findings and combined signals
+    // retain their existing safety path.
     if (isNeg(oi['rovnovaha_zavrene_oci'])) {
       signals.push({
         source: 'ONBOARDING',
         question_id: 'rovnovaha_zavrene_oci',
-        role: 'Selhání rovnováhy se zavřenýma očima — deficit propriocepce nebo vestibulárního systému',
+        value: oi['rovnovaha_zavrene_oci'],
+        role: 'Uživatel neuvádí zvládnutí rovnováhy se zavřenýma očima — podpůrný údaj, nikoli nález nestability běžné chůze',
       });
-      strength += 2;
+      strength += 1;
     }
 
     // recent_falls: supporting signal only (not sufficient alone)
     const recentFallsGait = oi['recent_falls'];
-    if (recentFallsGait === 'yes' || recentFallsGait === true || recentFallsGait === 'true') {
+    if (readYesNo(recentFallsGait) === 'yes') {
       signals.push({
         source: 'ONBOARDING',
         question_id: 'recent_falls',
+        value: oi['recent_falls'],
         role: 'Pád v posledních 12 měsících — přidruženou evidencí nestability chůze (ne přímá příčina)',
       });
       strength += 1;
     }
 
-    if (strength >= 2) {
+    // The floor-rise proxy concerns strength, and the eyes-closed task concerns
+    // a different balance condition. Do not turn only these two indirect
+    // signals into current gait instability against an explicit stable-gait
+    // answer and a negative recent-fall answer. Retain both source facts.
+    // Any independent gait/balance finding, fall, neuropathy or stronger
+    // strength evidence keeps the ordinary inference and safety path.
+    const floorRiseOnlyStrength = ms?.current_state === 'MEASURED'
+      && ms.confidence === 'low'
+      && (ms.evidence?.direct?.length ?? 0) > 0
+      && ms.evidence.direct.every(e => e.question_id === 'vstat_ze_zeme' && isNeg(e.value));
+    const stableGaitAgainstOnlyProxies = floorRiseOnlyStrength
+      && readYesNo(oi.gait_stability) === 'yes'
+      && readYesNo(oi.recent_falls) === 'no'
+      && signals.every(s => s.node_id === 'LOW_MUSCLE_STRENGTH'
+        || s.question_id === 'rovnovaha_zavrene_oci');
+
+    if (strength >= 2 && !stableGaitAgainstOnlyProxies) {
       states.push({
         node_id: 'GAIT_INSTABILITY',
         current_state: 'PREDICTED_CURRENT',
@@ -403,7 +442,7 @@ export function inference(activatedStates, person, clinicalHistory, observations
           {
             type:        'ONBOARDING',
             question_id: 'recent_falls',
-            note:        'Pád v posledních 12 měsících — přímý prediktor FALL_RISK CONFIRMED (NICE NG147 triage). ' +
+            note:        'Pád v posledních 12 měsících — CHJ jej interně označuje FALL_RISK CONFIRMED; nejde o definici či triáž předepsanou NICE. ' +
                          'Bez odpovědi: FALL_RISK neznámý, bezpečnostní třídění a výběr akce nejsou dokončeny.',
           },
         ],

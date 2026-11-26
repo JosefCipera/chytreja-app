@@ -1,0 +1,9 @@
+{
+  "scope": "Clean voice transcripts; interpretation and persistence only, not exercise selection",
+  "crt_target": "LOSS_OF_FLOOR_RISE_ABILITY",
+  "cases": [
+    {"id":"floor-rise-negative","input":"Ze země bez pomoci rukou nevstanu.","expected":{"physical":{"vstat_ze_zeme":false}}},
+    {"id":"floor-rise-positive","input":"Ze země vstanu bez opory rukou.","expected":{"physical":{"vstat_ze_zeme":true}}},
+    {"id":"floor-rise-ambiguous","input":"Špatně se mi vstává.","expected":{"clarify":"chair_or_floor","no_physical_write":true}}
+  ]
+}

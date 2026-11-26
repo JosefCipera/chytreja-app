@@ -168,12 +168,12 @@ computeSystemConstraint(node_states, projections, decision_gate, ENGINE_VERSION)
   → SYSTEM_CONSTRAINT { bottleneck_node_id, ... }
 
   ▼ ── Feedback Loop ──────────────────────────────────────────────────────────
-computeInterventionExposure(actionAssignments)
+computeInterventionExposure(actionAssignments, asOf?)
   → INTERVENTION_EXPOSURE[]
 
 skippedTodayActionIds = Set of action_ids with status=SKIPPED on assigned_date=today
 
-evaluateResponseEvaluations(exposure, INTERVENTION_MAP, observations, assignments)
+evaluateResponseEvaluations(exposure, INTERVENTION_MAP, observations, assignments, asOf?)
   → RESPONSE_EVALUATION[]
 
 buildResponseInformationNeeds(response_evaluations)
@@ -187,9 +187,12 @@ computeNextBestAction({ leverageNodeId, interventions, actionPool, personConstra
   → NEXT_BEST_ACTION { status, selected, all_candidates, ... }
 
   ▼ dailyDecision.js
-computeDailyDecision(engineOutput)
+computeDailyDecision(engineOutput, asOf?)
   → DAILY_DECISION { mode, primary_item, reason_code, source, reevaluate_after, evaluated_at }
 ```
+
+`asOf` = volitelný čas rozhodnutí (Date / ISO string). Produkce ho nepředává — default je aktuální čas;
+testy předávají pevný UTC čas, aby výsledek nezávisel na hodinách ani na přechodu přes půlnoc.
 
 ---
 
@@ -324,9 +327,59 @@ actual_reps             integer | null
 
 ### COMPLETED
 
-- Počítá se jako `sessions_completed` v INTERVENTION_EXPOSURE
+- Počítá se do `sessions_completed` v INTERVENTION_EXPOSURE — **po unikátních dokončených dnech**:
+  více COMPLETED řádků téže intervention v jednom dni = jedna session (`completed_days`)
+- Řádek s neplatným datem (ne platné `YYYY-MM-DD`) nebo s dnem pozdějším než čas rozhodnutí se do
+  expozice nezapočítá (ani do `sessions_assigned`, periody a `first_completed_at`)
 - Anchor pro Response Evaluation (`first_completed_at`)
-- Neaktivuje `HOLD` samotné — HOLD vyžaduje splněnou `minimum_exposure_rule`
+- Množina dokončených dnů (`completed_days`, UTC `assigned_date`, fallback datum `completed_at`) řídí
+  `HOLD_DONE_TODAY`: rozhoduje, zda obsahuje dnešní UTC den (ne lexikograficky poslední datum —
+  poškozený nebo budoucí řádek tak nemůže zamaskovat dnešní dokončení);
+  pro zbytek tohoto dne se tatáž intervention znovu nenabízí; další den ji NBA a Safety Gate
+  vyhodnotí znovu a vznikne běžný ACT — opakuje se, dokud se nesplní `minimum_exposure_rule`
+  a horizon, a Response Evaluation se tak vůbec může dostat k vyhodnocení
+
+### Target-specific catalog bridge
+
+An intervention may declare `allowed_action_ids`. Absence preserves its existing protocol/tag mapping; an explicit empty list admits no catalog actions for that target. This eligibility filter runs before Safety Gate/ranking; membership never overrides safety. Intervention-level evidence is not evidence that every exercise sharing its protocol has been reviewed for that target.
+
+For `EXCESS_ADIPOSITY → RESISTANCE_TRAINING`, the reviewed action list is currently empty: localized fixed-load overhead presses and step-downs must not become an automatic adiposity prescription solely from `SILOVY_PROTOKOL`. These are deferred catalog mappings, not clinical contraindications. Aerobic/other existing paths and functional-strength mappings are unchanged; if no viable alternative exists, normal DD ASK/SAFETY contracts apply. Adding an action requires a reviewed target-specific bridge; this change does not approve doses or establish clinical efficacy.
+
+The adiposity aerobic bridge additionally declares `allowed_intensities: ["LIGHT", "MODERATE"]`. A declared intensity list admits only explicit matching catalog metadata; missing/unrecognized intensity is deferred. This is an automatic-admission policy, not a clinical contraindication or individualized dose approval. It prevents a tier-1 vigorous uphill walk from being the default on this path; other targets, ordinal ranking and Safety Gate remain unchanged. Review findings: [2026-10-08 action review](QA-ACTION-REVIEW-2026-10-08.md).
+
+### Blocking evidence question contract
+
+Safety results may carry `blocking_evidence: {evidence_type, question}`. When NBA needs evidence, it forwards the actual blocking question/type as `next_best_question` and `next_best_evidence_type`; DD preserves this metadata in `NBA_QUESTION`. Orchestrator stores the typed pending question using its existing contract. Gait stability must not become a generic injury-severity question, and an unknown region severity retains its region-specific evidence key.
+
+For active gait instability and otherwise blocked unaided walking, unresolved `gait_stability` asks the existing canonical stability question. Once this evidence is resolved (including NOT_AVAILABLE), it is not asked again. An answer alone does not clear the active gait finding or prove walking suitability: those candidates retain `NEEDS_CLINICAL_CLEARANCE` pending individual assessment. Other viable candidates still follow normal NBA ranking; this is a conservative CHJ eligibility policy, not a clinical diagnosis or a universal medical rule.
+
+### Eyes-closed balance versus ordinary gait (2026-10-08)
+
+The onboarding self-report `rovnovaha_zavrene_oci=false` is a supporting signal (+1) for predicted gait instability, not a direct gait assessment or a proprioceptive/vestibular diagnosis. It cannot reach the existing inference threshold (2) alone. Its raw stored value is retained. Independent adverse signals and combinations (including muscle weakness or recent falls) keep the existing inference/safety path; confirmed gait findings are never removed.
+
+A canonical `gait_stability` answer interpreted as `no` is an independent current self-report (+2). A `yes` answer is not clinical clearance and does not cancel another adverse report or assessed finding. Unknown answers do not invent instability or clearance. In the synthetic weight-loss fixture with only the eyes-closed answer negative, NBA no longer asks a non-discriminating gait question and follows its ordinary action eligibility checks.
+
+This is an internal evidence-specificity correction, not a validated clinical scoring instrument or authorization for a particular person to exercise. CDC STEADI's [4-Stage Balance Test](https://www.cdc.gov/steadi/media/pdfs/STEADI-Assessment-4Stage-508.pdf) is an assessed static-balance protocol with eyes open; it is not interchangeable with this unsupervised onboarding answer. That source does not validate the CHJ +1/+2 scoring or a walking dose.
+
+Regression: `scripts/reproduce-eyes-closed-gait.mjs` now asserts corrected behavior and retained independent safety blockers; the full weight-loss endpoint matrix includes eyes-closed-only, stable and unstable ordinary-gait fixtures.
+
+### Stable ordinary gait and indirect functional proxies (2026-10-11)
+
+Reproduced on the reported synthetic profile (male 1957, 180 cm, 96 kg, waist 98): floor-rise=false, eyes-closed balance=false, ordinary gait stable=true, recent falls=false. The two indirect supporting signals previously still activated predicted gait instability and blocked every aerobic candidate.
+
+Inference now reconciles this narrow proxy-only combination with the explicit ordinary-gait and fall answers. Suppression requires LOW_MUSCLE_STRENGTH to be the low-confidence MEASURED floor-rise-only proxy, stable gait=yes, recent falls=no, and all inference signals to consist only of that strength proxy and the eyes-closed answer. Source values and the strength node remain unchanged. No session value substitutes for persistent evidence.
+
+Independent gait self-report, a negative gait-stability answer, one-leg balance findings, neuropathy, recent/unknown falls, unknown gait, other measured strength evidence and CONFIRMED gait retain their existing paths. NBA safety and action ranking are unchanged. This is an internal evidence-specificity policy, not validated clinical clearance or dose validation. A stable self-report is not a universal permission to exercise.
+
+Regression covers the full reported profile and negative/unanswered gait variants through the real endpoint with isolated database fixtures, plus independent findings and body-region safety in the pure inference/NBA suite.
+
+### Dose admission after a same-day skip (2026-10-11)
+
+Tier alone did not prevent a 20-minute aerobic action being replaced with a same-tier 30-minute action. Candidates now carry catalog dose metadata (`type`, `duration`, `reps`, `intensity`). For each skipped reference within the same intervention, an eligible replacement must retain the tier ceiling, have a known non-increasing intensity and comparable non-increasing dose: positive timed seconds or positive repetition count. Missing/unknown or different dose units do not authorize progression. Catalog habit-to-habit alternatives without a numeric dose remain comparable only at a known non-increasing intensity.
+
+The strictest applicable skipped reference applies for the rest of the current UTC day; the existing persisted skip set supplies references. Ceilings remain intervention-local. If no eligible action remains, existing exhausted-skip behavior applies. Dose admission is an internal non-progression policy, not clinical dose/effect validation; external load, sets and movement complexity are not proven equivalent by these fields.
+
+Regression includes the complete synthetic floor-rise/eyes-closed stable-gait profile: moderate 20-minute entry → skip must not yield 30 minutes or increased intensity; a permitted alternative can still be completed. Pure tests cover duration, repetitions, intensity, missing dose, exhaustion and tomorrow reset.
 
 ### NBA Ranking Policy (zamčeno — engine.js LOCKED)
 
@@ -352,9 +405,11 @@ Kandidáti jsou řazeni lexikograficky v tomto pořadí:
 - Nepočítá se jako `sessions_completed` — nepostupuje exposure
 - Počítá se jako `sessions_skipped` (informační)
 - **Exact `action_id` je pro zbytek aktuálního dne ineligible** (filtr v `buildCandidates` přes `skippedTodayActionIds`)
-- Sibling akce ve stejné intervention mohou zůstat eligible
+- Sibling akce ve stejné intervention mohou zůstat eligible, ale jen na stejném nebo nižším katalogovém `tier` než akce přeskočené dnes (policy od 2026-10-07). SKIPPED není evidence progrese ani lepší funkční kapacity.
+- Denní strop se odvozuje z persistentních dnešních SKIPPED `action_id` a jejich řádků katalogu, nikoli ze session. Platí per intervention; při více přeskočeních se použije nejnižší tier. Neznámý tier nedává oprávnění postoupit. Vyšší/neurčené varianty jsou odložené kandidáty (`progression_policy`), nikoli klinicky kontraindikované cviky.
+- Po vyčerpání dnešních eligible/viable alternativ vrátí NBA `NO_CANDIDATES` / `ALL_ACTIONS_SKIPPED_TODAY`; DD po standardní prioritní kontrole bezpečnosti vrátí `HOLD_SKIPPED_TODAY`. Přítomnost neviable kandidátů pro pomůcky sama neotevírá další assessment loop po odmítnutí dostupných cviků.
 - Zítra může být stejná akce znovu nabídnuta
-- **SKIPPED SAMO O SOBĚ NETRIGGERUJE HOLD** — `checkHold` vyžaduje `sessions_completed > 0`
+- **SKIPPED není COMPLETED.** Jedno přeskočení neznamená `HOLD_DONE_TODAY`; `HOLD_SKIPPED_TODAY` znamená vyčerpání dnešních eligible možností. Safety Gate, klinická priorita a nezbytná nová evidence zůstávají nad tímto ukončením nabídky.
 
 ---
 
@@ -367,7 +422,10 @@ ACTION_EXECUTION       — co bylo přiřazeno a provedeno (action_assignments)
   ↓
 INTERVENTION_EXPOSURE  — behaviorální agregát per intervention_id
   { sessions_completed, sessions_skipped, sessions_assigned,
-    calendar_days_in_period, total_actual_duration_s, first_completed_at }
+    calendar_days_in_period, total_actual_duration_s, first_completed_at,
+    completed_days, last_completed_date }
+  sessions_completed = počet unikátních platných dnů s COMPLETED (= completed_days.length);
+  jen řádky s platným dnem ≤ datum rozhodnutí (asOf)
   ↓
 RESPONSE_EVALUATION    — porovnání expected_response vs. actual HEALTH_OBSERVATION
   TOO_EARLY             — žádná completed session (first_completed_at = null)
@@ -381,10 +439,32 @@ RESPONSE_EVALUATION    — porovnání expected_response vs. actual HEALTH_OBSER
 `CONSISTENT_WITH_EXPECTED_RESPONSE` ovlivňuje NBA ranking pouze jako tiebreaker v rámci aktuálního leverage node.  
 AI Orchestrator nesmí přeformulovat toto jako „intervence způsobila změnu."
 
-### HOLD_TOO_EARLY — přesná sémantika
+### HOLD_DONE_TODAY — přesná sémantika (od 2026-09-27)
 
-`HOLD_TOO_EARLY` znamená, že **aktuální intervention** čeká na dostatek času nebo dat.  
-**Není** globální zákaz jiné činnosti. Pokud existuje jiná eligible akce pro jiný leverage node nebo jiný kontext, engine ji může vybrat.
+`HOLD_DONE_TODAY` znamená, že **aktuálně vybraná intervention** už byla dnes dokončena — druhé
+splnění téže intervention ve stejný den se nenabízí. `reevaluate_after` = zítřek.
+**Není** globální zákaz jiné činnosti: pokud NBA po nové evidenci vybere jinou intervention, vznikne ACT.
+
+`TOO_EARLY` a `INSUFFICIENT_EXPOSURE` zůstávají výsledky RESPONSE_EVALUATION, ale **neblokují ACT**.
+Dříve z nich vznikal `HOLD_TOO_EARLY` / `HOLD_INSUF_EXPOSURE`, jenže HOLD nenesl akci ani tlačítka
+Hotovo/Přeskočit — opakování požadovaná `minimum_exposure_rule` nešla zapsat a smyčka se k vyhodnocení
+nikdy nedostala (reprodukováno na chůzi, `BREAK_UP_SEDENTARY_TIME`).
+
+---
+
+### Dnešní akce při souběhu nadváhy a přímého funkčního omezení — LOCK
+
+`SYSTEM_LEVERAGE` může ponechat `EXCESS_ADIPOSITY` jako širší dlouhodobou systémovou páku.
+Jestliže však přímá odpověď ukazuje, že člověk nezvládá alespoň jeden běžný silový úkon
+(`vstat_ze_zeme`, `zvednout_vnouce`, `vynest_nakup`), dnešní `action_leverage` přechází na
+`LOW_MUSCLE_STRENGTH` a jeho akce musí projít standardním NBA a Safety Gate.
+
+Toto pravidlo není skóre ani práh počtu negativních odpovědí: jedno doložené funkční omezení stačí.
+Nevztahuje se na pouhé přání zesílit bez evidence. Pokud primární akci blokuje nejistá chůze nebo
+jiné bezpečnostní pravidlo, zachovává se stávající bezpečnostní/fallback pořadí.
+
+Původ kontraktu: Jana (22. 8. 2026); endpoint scénář `known-strength-priority`
+(`5438bc8`, PR #45); dokumentovaný průchod `THREE-ENTRY-JOURNEYS-2026-10-14.md`.
 
 ---
 
@@ -409,7 +489,7 @@ DAILY_DECISION {
 SAFETY_CRITICAL   [mode=SAFETY]  — person-state signal, přebíjí celý loop    ✅ v0.1
   > SAFETY_BLOCKED  [mode=SAFETY]  — všichni kandidáti CONTRAINDICATED/CLINICAL_CLEARANCE
   > ASK_BLOCKING    [mode=ASK]     — NBA.status ∈ {NEED_MORE_EVIDENCE, NO_CANDIDATES, NOT_COMPUTED}
-  > HOLD            [mode=HOLD]    — HOLD_TOO_EARLY nebo HOLD_INSUF_EXPOSURE
+  > HOLD            [mode=HOLD]    — HOLD_DONE_TODAY (vybraná intervention dnes dokončena)
   > ACT             [mode=ACT]     — NBA selected viable action
 ```
 
@@ -420,8 +500,9 @@ SAFETY_CRITICAL   [mode=SAFETY]  — person-state signal, přebíjí celý loop 
 | `SAFETY_CRITICAL` | SAFETY | SAFETY_CRITICAL actionability v decision_gate — v1 zatím netriggerováno |
 | `SAFETY_BLOCKED` | SAFETY | Všichni kandidáti CONTRAINDICATED nebo NEEDS_CLINICAL_CLEARANCE |
 | `ASK_BLOCKING` | ASK | NBA.status ∈ {NEED_MORE_EVIDENCE, NO_CANDIDATES, NOT_COMPUTED} |
-| `HOLD_TOO_EARLY` | HOLD | horizon_min_days neuplynul od první completed session |
-| `HOLD_INSUF_EXPOSURE` | HOLD | Horizon uplynul, minimum_exposure_rule nesplněna |
+| `HOLD_DONE_TODAY` | HOLD | Vybraná intervention má dnes COMPLETED session; `reevaluate_after` = zítřek |
+| ~~`HOLD_TOO_EARLY`~~ | — | Od 2026-09-27 se nevydává (TOO_EARLY je jen výsledek RESPONSE_EVALUATION) |
+| ~~`HOLD_INSUF_EXPOSURE`~~ | — | Od 2026-09-27 se nevydává (INSUFFICIENT_EXPOSURE je jen výsledek RESPONSE_EVALUATION) |
 | `ACT_READY` | ACT | NBA selected viable action |
 
 **DAILY_DECISION prezentuje pouze `NBA.selected` — nikdy `all_candidates`.**
@@ -509,6 +590,8 @@ current_action_assignment  { action_id, intervention_id, label } — přiřazen�
 **ZERO_DATA_FOLLOWUP guard:** Pokud uživatelův vstup neobsahuje žádná zdravotní data interpretovatelná jako event, orchestrátor nevolá engine — vrátí cílené ASK na konkrétní pending evidence question místo opakovaného generic loopu. Zabraňuje nekonečné zero-data ASK smyčce.
 
 **ACTION_COMPLETED → HOLD:** Pokud `event_type === 'ACTION_COMPLETED'` a engine vrátí `mode=HOLD`, orchestrátor vrátí potvrzení dokončení akce (`Hotovo. Pro dnešek stačí. Výsledek budeme hodnotit až po několika opakováních.`) — ne generický HOLD label akce. Text není přeformulací rozhodnutí, jen rozlišuje kontext eventu.
+
+**HOLD_DONE_TODAY (post 2026-09-27):** Při dalším vstupu téhož dne orchestrátor vrátí `Pro dnešek stačí. Zítra pokračujeme.` bez tlačítek (u zdravotního vstupu s potvrzením přijetí informace). Launcher po tomto výsledku uzavře textový i hlasový vstup pro právě dokončenou návštěvu; nová návštěva po obnovení stránky se vyhodnotí znovu. Každý HOLD nastaví `session_updates.current_action_assignment = null` — i zastaralé přiřazení držené klientem se vynuluje, takže druhé „Hotovo“ téhož dne nelze zapsat. Další den engine vrátí běžný ACT — orchestrátor nastaví nový `current_action_assignment` a tlačítka Hotovo / Přeskočit.
 
 ### Hard boundaries orchestratoru
 
@@ -643,7 +726,7 @@ Health Engine je **feature-frozen**:
 
 | Oblast | Popis | Kdy opravit |
 |--------|-------|-------------|
-| **`computeReevaluateAfter`** | Parsuje `horizon_min_days` regexem z reason stringu; pokud se změní formát stringu, parsing tiše selže. Správně by mělo být strukturované pole z `evaluateSingleResponse`. | Před v0.4.0 |
+| ~~`computeReevaluateAfter`~~ | ✅ Odstraněno 2026-09-27 — `reevaluate_after` pro `HOLD_DONE_TODAY` je vždy zítřek, regex parsing reason stringu už neexistuje. | — |
 | **ATRIAL_FIBRILLATION** | FaP je v Josefově profilu diagnostikována, ale aktuálně netransformuje na aktivní uzel — chybí v Master slice | v0.3.x |
 | **CV projekce kalibrace** | `calibrated=false` — numerické vstupy (ApoB, LP(a), CAC) nejsou zapojeny do risk kvantifikace | v0.4.0 |
 | **Věkové / pohlavní auto_if** | Age ≥ 60 + sex-specific risk factors nejsou v Engine v1 implementovány | v0.4.0 |

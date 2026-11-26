@@ -10,7 +10,8 @@ import dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' });
 
 import { createClient } from '@supabase/supabase-js';
-import { processInput } from './engine/orchestrator.js';
+import { parseSupportedGoal } from './engine/healthEventAdapter.js';
+import { processInput, hasReportedUnsupportedMedicalCondition } from './engine/orchestrator.js';
 import { requireAuth }  from './lib/requireAuth.js';
 
 export const config = { maxDuration: 30 };
@@ -53,10 +54,10 @@ export default async function handler(req, res) {
     // Fetch pending_clarifications server-side so the orchestrator can apply safety gates
     // (e.g. acute symptom ACT gate) without trusting client-provided session state.
     // Client session is the authority for temporal session fields; DB is authority for health facts.
-    const [{ data: profileRow }, { data: personRow }] = await Promise.all([
+    const [{ data: profileRow, error: healthReadError }, { data: personRow }] = await Promise.all([
       getSb()
         .from('user_health_profile')
-        .select('pending_clarifications, physical')
+        .select('pending_clarifications, physical, goal_text, symptoms')
         .eq('user_id', userId)
         .maybeSingle(),
       // Narrow unlock: inject birth_year/sex so orchestrator bootstrap skip/defer handler
@@ -67,6 +68,27 @@ export default async function handler(req, res) {
         .eq('user_id', userId)
         .maybeSingle(),
     ]);
+    // Reported medical scope is a durable health fact, not client session state.
+    // Keep the user's wording in the existing symptoms field; do not diagnose or
+    // interpret it as clearance. A failed read/write must not become permission
+    // to resume exercise recommendations.
+    if (healthReadError) {
+      return res.status(503).json({ error: 'Health context unavailable; retry required' });
+    }
+    const symptoms = Array.isArray(profileRow?.symptoms) ? [...profileRow.symptoms] : [];
+    const incomingMedicalReport = hasReportedUnsupportedMedicalCondition(text);
+    if (incomingMedicalReport && !symptoms.includes(text.trim())) {
+      symptoms.push(text.trim());
+      const { error: medicalWriteError } = await getSb()
+        .from('user_health_profile')
+        .upsert({ user_id: userId, symptoms }, { onConflict: 'user_id' });
+      if (medicalWriteError) {
+        return res.status(503).json({ error: 'Health report not saved; retry required' });
+      }
+    }
+    const storedMedicalReport = symptoms.some(value =>
+      typeof value === 'string' && hasReportedUnsupportedMedicalCondition(value));
+
     const pendingClarifications = Array.isArray(profileRow?.pending_clarifications)
       ? profileRow.pending_clarifications
       : [];
@@ -74,10 +96,20 @@ export default async function handler(req, res) {
 
     const sessionWithPending = {
       ...session,
+      // A caller cannot clear a saved medical report by changing the session.
+      reported_medical_limitation: storedMedicalReport,
       pending_clarifications: pendingClarifications,
       fatigue_context:        fatigueContext,
       person_birth_year:      personRow?.birth_year ?? null,
       person_sex:             personRow?.gender     ?? null,
+      explicit_goal_request:  parseSupportedGoal(text) !== null,
+      // Server-owned personal intent for communication only, never an engine override.
+      // Legacy fallback reads old explicit wishes stored in symptoms without migrating data.
+      person_goal: parseSupportedGoal(text)
+        ?? parseSupportedGoal(profileRow?.goal_text)
+        ?? (profileRow?.goal_text == null && Array.isArray(profileRow?.symptoms)
+          ? [...profileRow.symptoms].reverse().map(parseSupportedGoal).find(Boolean) ?? null
+          : null),
       // Narrow unlock: keys already present in physical → bootstrap candidate eligibility filter.
       // physical is already fetched above; no extra DB round-trip.
       resolved_physical:      Object.keys(profileRow?.physical ?? {}),

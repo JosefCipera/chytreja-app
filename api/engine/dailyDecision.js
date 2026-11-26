@@ -10,9 +10,15 @@
 //   SAFETY_CRITICAL      — SAFETY_CRITICAL actionability in decision_gate (person state signal)
 //   SAFETY_BLOCKED       — all action candidates non-viable due to safety gate (not a crisis)
 //   ASK_BLOCKING         — NBA cannot select any action; evidence would unblock
-//   HOLD_TOO_EARLY       — active intervention, horizon not yet elapsed
-//   HOLD_INSUF_EXPOSURE  — horizon elapsed but minimum exposure rule not met
+//   HOLD_DONE_TODAY      — an action already completed today; evaluate again tomorrow
 //   ACT_READY            — NBA selected a viable action
+//
+// HOLD_TOO_EARLY / HOLD_INSUF_EXPOSURE are no longer emitted: TOO_EARLY and
+// INSUFFICIENT_EXPOSURE remain RESPONSE_EVALUATION results, but they must not block
+// the repetitions that minimum_exposure_rule requires. Repetition is limited to one
+// completed action across interventions per day.
+
+import { readYesNo } from './evidenceResolution.js';
 
 // ── Internal helpers ──────────────────────────────────────────────────────────
 
@@ -116,6 +122,7 @@ function checkAskBlocking(next_best_action, decision_gate) {
       primary_item: {
         type:     'NBA_QUESTION',
         question: next_best_action.next_best_question,
+        evidence_type: next_best_action.next_best_evidence_type ?? null,
       },
       nba_status: nbaStatus,
     };
@@ -141,77 +148,43 @@ function checkAskBlocking(next_best_action, decision_gate) {
   };
 }
 
-// HOLD: NBA selected an action AND that same intervention has active exposure
-// AND all response_evals for it are TOO_EARLY or INSUFFICIENT_EXPOSURE.
+// HOLD: NBA selected an action AND any intervention already has a COMPLETED
+// session today (UTC date). The hold lasts only for the rest of the day — the next day
+// NBA and the Safety Gate run again and the intervention is offered as a normal ACT,
+// until minimum_exposure_rule and the response horizon are reached.
 // Returns hold context or null.
-function checkHold(next_best_action, response_evaluations, intervention_exposure) {
+function checkHold(next_best_action, response_evaluations, intervention_exposure, now) {
   if (next_best_action?.status !== 'SELECTED') return null;
   const selectedInterventionId = next_best_action.selected?.intervention_id;
   if (!selectedInterventionId) return null;
 
-  // Must have active exposure for the selected intervention
-  const activeExposure = (intervention_exposure ?? []).find(
-    e => e.intervention_id === selectedInterventionId && e.sessions_completed > 0
+  const today = now.slice(0, 10);
+  // Membership in the set of valid completed days — not the lexicographically last date,
+  // so a corrupted or future-dated row cannot mask today's completion.
+  const exposure = (intervention_exposure ?? []).find(
+    e => (e.completed_days ?? [e.last_completed_date]).includes(today)
   );
-  if (!activeExposure) return null;
+  if (!exposure) return null;
 
-  // All response_evals for this intervention must be in the holdable set
-  const HOLDABLE = new Set(['TOO_EARLY', 'INSUFFICIENT_EXPOSURE']);
-  const evalsForIntervention = (response_evaluations ?? []).filter(
-    r => r.intervention_id === selectedInterventionId
+  const evals = (response_evaluations ?? []).filter(
+    r => r.intervention_id === exposure.intervention_id
   );
-  if (evalsForIntervention.length === 0) return null;
-  if (!evalsForIntervention.every(r => HOLDABLE.has(r.result))) return null;
 
-  // TOO_EARLY takes priority when both are present (earlier temporal signal)
-  const holdResult = evalsForIntervention.some(r => r.result === 'TOO_EARLY')
-    ? 'TOO_EARLY'
-    : 'INSUFFICIENT_EXPOSURE';
-
-  const holdEval = evalsForIntervention.find(r => r.result === holdResult);
-  const reevaluate_after = computeReevaluateAfter(holdResult, holdEval, activeExposure);
+  const tomorrow = new Date(`${today}T00:00:00Z`);
+  tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
 
   return {
-    hold_result:    holdResult,
-    evals:          evalsForIntervention,
-    exposure:       activeExposure,
-    reevaluate_after,
+    evals,
+    exposure,
+    reevaluate_after: tomorrow.toISOString().slice(0, 10),
   };
-}
-
-// Computes reevaluate_after date for HOLD.
-// TOO_EARLY:          parse horizon_min_days from reason string + add to first_completed_at
-// INSUFFICIENT_EXPOSURE: use exposure_detail.min_calendar_days_required to estimate
-function computeReevaluateAfter(holdResult, holdEval, activeExposure) {
-  if (holdResult === 'TOO_EARLY' && activeExposure?.first_completed_at) {
-    // reason: "X of Y minimum days elapsed since first completed session."
-    const match = holdEval?.reason?.match(/of (\d+) minimum days/);
-    if (match) {
-      const horizonDays = parseInt(match[1], 10);
-      const base = new Date(activeExposure.first_completed_at);
-      base.setDate(base.getDate() + horizonDays);
-      return base.toISOString().slice(0, 10);
-    }
-  }
-
-  if (holdResult === 'INSUFFICIENT_EXPOSURE') {
-    const detail = holdEval?.exposure_detail;
-    if (detail) {
-      const daysRemaining = Math.max(0,
-        detail.min_calendar_days_required - detail.calendar_days
-      );
-      const today = new Date();
-      today.setDate(today.getDate() + daysRemaining + 1);
-      return today.toISOString().slice(0, 10);
-    }
-  }
-
-  return null;
 }
 
 // ── Main export ───────────────────────────────────────────────────────────────
 
-export function computeDailyDecision(engineResult) {
+// asOf (optional): decision time as Date or ISO string — defaults to the current time.
+// Tests pass a fixed UTC time; production callers omit it.
+export function computeDailyDecision(engineResult, asOf = new Date()) {
   const {
     decision_gate,
     next_best_action,
@@ -219,7 +192,7 @@ export function computeDailyDecision(engineResult) {
     intervention_exposure,
   } = engineResult;
 
-  const now = new Date().toISOString();
+  const now = new Date(asOf).toISOString();
 
   // ── 1. SAFETY_CRITICAL ────────────────────────────────────────────────────────
   const safetyCritical = checkSafetyCritical(decision_gate);
@@ -247,6 +220,19 @@ export function computeDailyDecision(engineResult) {
     };
   }
 
+  // No evidence can restore an action explicitly skipped for today.
+  // This is not completion; only the exhausted daily candidate pool triggers HOLD.
+  if (next_best_action?.status === 'NO_CANDIDATES'
+      && next_best_action.reason_code === 'ALL_ACTIONS_SKIPPED_TODAY') {
+    const tomorrow = new Date(now);
+    tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+    return {
+      mode: 'HOLD', primary_item: null, reason_code: 'HOLD_SKIPPED_TODAY',
+      source: 'NBA.skippedTodayActionIds',
+      reevaluate_after: tomorrow.toISOString().slice(0, 10), evaluated_at: now,
+    };
+  }
+
   // ── 3. ASK_BLOCKING ───────────────────────────────────────────────────────────
   const askBlocking = checkAskBlocking(next_best_action, decision_gate);
   if (askBlocking) {
@@ -265,7 +251,7 @@ export function computeDailyDecision(engineResult) {
   // From here: NBA.status === 'SELECTED' with a non-null selected action
 
   // ── 4. HOLD ───────────────────────────────────────────────────────────────────
-  const hold = checkHold(next_best_action, response_evaluations, intervention_exposure);
+  const hold = checkHold(next_best_action, response_evaluations, intervention_exposure, now);
   if (hold) {
     const sel = next_best_action.selected;
     return {
@@ -276,16 +262,16 @@ export function computeDailyDecision(engineResult) {
         protocol_type:   sel?.protocol_type,
         intervention_id: sel?.intervention_id,
         safety:          sel?.safety,
-        response_result: hold.hold_result,
+        response_result: hold.evals[0]?.result ?? null,
         exposure_summary: {
-          sessions_completed: hold.exposure.sessions_completed,
-          first_completed_at: hold.exposure.first_completed_at,
+          completed_intervention_id: hold.exposure.intervention_id,
+          sessions_completed:  hold.exposure.sessions_completed,
+          first_completed_at:  hold.exposure.first_completed_at,
+          last_completed_date: hold.exposure.last_completed_date,
         },
       },
-      reason_code:      hold.hold_result === 'TOO_EARLY'
-        ? 'HOLD_TOO_EARLY'
-        : 'HOLD_INSUF_EXPOSURE',
-      source:           'RESPONSE_EVALUATION + NBA.selected',
+      reason_code:      'HOLD_DONE_TODAY',
+      source:           'INTERVENTION_EXPOSURE + NBA.selected',
       reevaluate_after: hold.reevaluate_after,
       evaluated_at:     now,
     };
@@ -305,6 +291,7 @@ export function computeDailyDecision(engineResult) {
       goal_impact:     sel?.goal_impact,
       friction:        sel?.friction,
       time_to_feedback: sel?.time_to_feedback,
+      dose:            sel?.dose,
     },
     reason_code:      'ACT_READY',
     source:           'NBA.selected',
@@ -312,3 +299,106 @@ export function computeDailyDecision(engineResult) {
     evaluated_at:     now,
   };
 }
+
+
+// Availability policy, not new clinical inference. Every alternative is evaluated
+// by the existing NBA and Daily Decision with the same person/safety/exposure data.
+const AVAILABLE_LEVERAGE_RANK = { none: 0, low: 1, medium: 2, high: 3 };
+
+const DIRECT_FUNCTIONAL_STRENGTH_QUESTIONS = new Set([
+  'vstat_ze_zeme',
+  'zvednout_vnouce',
+  'vynest_nakup',
+]);
+
+function hasDirectFunctionalStrengthLimitation(candidate) {
+  return (candidate?.evidence ?? []).some(evidence =>
+    DIRECT_FUNCTIONAL_STRENGTH_QUESTIONS.has(evidence?.question_id)
+      && readYesNo(evidence.value) === 'no'
+  );
+}
+
+function withActionLeverage(systemLeverage, candidate, explanation) {
+  return {
+    ...systemLeverage,
+    selected: {
+      node_id: candidate.node_id,
+      current_state: candidate.current_state,
+      confidence: candidate.confidence,
+    },
+    selection_basis: {
+      safety_override: false,
+      threat: candidate.threat,
+      time_sensitivity: candidate.time_sensitivity,
+      causal_reach: candidate.causal_reach,
+      cross_context_leverage: candidate.cross_context_leverage,
+      changeability: candidate.changeability,
+    },
+    affected_contexts: candidate.cross_context_leverage?.contexts ?? [],
+    explanation,
+  };
+}
+
+export async function findAvailableLeverage({ systemLeverage, primaryNba, decisionGate, responseEvaluations, interventionExposure, mappings, evaluate }) {
+  const primaryDecision = computeDailyDecision({ decision_gate: decisionGate, next_best_action: primaryNba,
+    response_evaluations: responseEvaluations, intervention_exposure: interventionExposure });
+  const none = { actionLeverage: systemLeverage, nba: primaryNba, fallback: null };
+
+  // Product contract (Jana, 2026-08-22; locked endpoint journey, 2026-10-07):
+  // measured adiposity may remain the broad systemic leverage, but it must not erase a
+  // directly reported limitation of everyday strength from today's action. One direct
+  // functional limitation is sufficient; this is not a score or a count threshold.
+  // The strength alternative still passes through the unchanged NBA and Safety Gate.
+  const directStrength = (systemLeverage.candidates ?? []).find(candidate =>
+    candidate.node_id === 'LOW_MUSCLE_STRENGTH'
+      && ['CONFIRMED', 'MEASURED'].includes(candidate.current_state)
+      && hasDirectFunctionalStrengthLimitation(candidate)
+      && mappings[candidate.node_id]?.interventions?.length
+  );
+  if (primaryDecision.mode === 'ACT'
+      && systemLeverage.selected?.node_id === 'EXCESS_ADIPOSITY'
+      && directStrength) {
+    const nba = await evaluate(directStrength.node_id, mappings[directStrength.node_id]);
+    const decision = computeDailyDecision({ decision_gate: decisionGate, next_best_action: nba,
+      response_evaluations: responseEvaluations, intervention_exposure: interventionExposure });
+    const viable = ['SAFE', 'SAFE_WITH_MODIFICATION'].includes(nba.selected?.safety?.level);
+    if (((decision.mode === 'ACT' || decision.reason_code === 'HOLD_DONE_TODAY') && viable)
+        || decision.reason_code === 'HOLD_SKIPPED_TODAY') {
+      return {
+        actionLeverage: withActionLeverage(systemLeverage, directStrength,
+          `Today's action addresses a direct functional-strength limitation; systemic priority ${systemLeverage.selected.node_id} remains unchanged.`),
+        nba,
+        fallback: null,
+      };
+    }
+  }
+
+  // Never reinterpret missing evidence, a crisis, an existing ACT, completion or skip as availability.
+  if (primaryDecision.reason_code !== 'SAFETY_BLOCKED' || !systemLeverage.selected) return none;
+  const primaryId = systemLeverage.selected.node_id;
+  const candidates = (systemLeverage.candidates ?? []).filter(c => c.node_id !== primaryId
+    && ['CONFIRMED', 'MEASURED', 'PREDICTED_CURRENT'].includes(c.current_state)
+    && ['low', 'medium', 'high'].includes(c.causal_reach?.level) && mappings[c.node_id]?.interventions?.length)
+    .sort((a, b) => (AVAILABLE_LEVERAGE_RANK[b.cross_context_leverage?.level] ?? 0) - (AVAILABLE_LEVERAGE_RANK[a.cross_context_leverage?.level] ?? 0)
+      || (AVAILABLE_LEVERAGE_RANK[b.causal_reach?.level] ?? 0) - (AVAILABLE_LEVERAGE_RANK[a.causal_reach?.level] ?? 0)
+      || (AVAILABLE_LEVERAGE_RANK[b.changeability] ?? 0) - (AVAILABLE_LEVERAGE_RANK[a.changeability] ?? 0));
+  const attempts = [];
+  for (const candidate of candidates) {
+    const nba = await evaluate(candidate.node_id, mappings[candidate.node_id]);
+    const dd = computeDailyDecision({ decision_gate: decisionGate, next_best_action: nba,
+      response_evaluations: responseEvaluations, intervention_exposure: interventionExposure });
+    attempts.push({ node_id: candidate.node_id, mode: dd.mode, reason_code: dd.reason_code, action_id: nba.selected?.action_id ?? null });
+    // A completed/skipped alternative ends today's offer; do not hop to another branch.
+    const viable = ['SAFE', 'SAFE_WITH_MODIFICATION'].includes(nba.selected?.safety?.level);
+    if (!(dd.mode === 'ACT' && viable)
+        && !(dd.reason_code === 'HOLD_DONE_TODAY' && viable)
+        && dd.reason_code !== 'HOLD_SKIPPED_TODAY') continue;
+    const actionLeverage = withActionLeverage(systemLeverage, candidate,
+      `Available action branch ${candidate.node_id}; primary ${primaryId} remains assessment-blocked.`);
+    return { actionLeverage, nba, fallback: { status: 'SELECTED', primary_node_id: primaryId,
+      selected_node_id: candidate.node_id, primary_decision: primaryDecision, attempts } };
+  }
+  return { ...none, fallback: { status: 'UNAVAILABLE', primary_node_id: primaryId,
+    selected_node_id: null, primary_decision: primaryDecision, attempts } };
+}
+
