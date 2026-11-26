@@ -1563,7 +1563,9 @@
   document.getElementById('menu-vesmir-btn').addEventListener('click', () => {
     $profileDrop.classList.remove('open');
     localStorage.setItem('currentModel', 'longevity');
-    window.location.href = '/app';
+    // ?awake=1 — existing "return from Vesmír" bootstrap path (launcher.js:712):
+    // skips the sleeping/voice intro and calls routeToNode() immediately.
+    window.location.href = '/app?awake=1';
   });
   document.getElementById('menu-crt-btn').addEventListener('click', () => {
     $profileDrop.classList.remove('open');
