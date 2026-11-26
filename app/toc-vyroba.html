@@ -429,7 +429,11 @@
 
 <script>
 const params  = new URLSearchParams(location.search);
-const userId  = params.get('userId') || 'qE09cLyXXGRBRxOBCGNZqTM2XRW2';
+// TEMPORARY (2026-11-26): fixed reference account with real seeded data,
+// regardless of who is logged in — same wiring decision as CRT's Kovářová/
+// Josef examples (docs/TOC-PRODUCT-ARCHITECTURE.md). Revisit once per-user
+// TOC data routing is decided; ignores ?userId= on purpose for now.
+const userId  = 'qE09cLyXXGRBRxOBCGNZqTM2XRW2';
 const today   = new Date().toISOString().slice(0, 10);
 
 // ── Auth-aware fetch — this page runs in a same-origin #tool-iframe, so it
