@@ -691,7 +691,14 @@ async function runPlan() {
     document.querySelector('.header').insertAdjacentElement('afterend', banner);
 
   } catch (e) {
-    alert('Plán selhal: ' + e.message);
+    // TEMPORARY (2026-11-26): same reference-account limit as load() above —
+    // "Vytvořit plán"/"Kapacitní plán" run a real server-side DBR computation
+    // (no client-side equivalent exists, unlike the zakázky list), so there's
+    // no meaningful demo fallback here — just say plainly why it can't run.
+    const isMismatch = /userId mismatch/i.test(e.message);
+    alert(isMismatch
+      ? 'Živé plánování zatím funguje jen pod referenčním účtem — zobrazená tabulka je ukázková data, naplánovat se nedá.'
+      : 'Plán selhal: ' + e.message);
   } finally {
     btn.disabled = false;
     btn.textContent = '▶ Vytvořit plán';
@@ -743,8 +750,10 @@ async function runKapacita(limit) {
 
     renderKapacita(json);
   } catch (e) {
-    document.getElementById('kap-wrap').innerHTML =
-      `<div class="center" style="color:#ef4444">Chyba: ${e.message}</div>`;
+    const isMismatch = /userId mismatch/i.test(e.message);
+    document.getElementById('kap-wrap').innerHTML = isMismatch
+      ? `<div class="center" style="color:#eab308">Živé plánování zatím funguje jen pod referenčním účtem.</div>`
+      : `<div class="center" style="color:#ef4444">Chyba: ${e.message}</div>`;
   } finally {
     const planBtn = document.getElementById('btn-plan');
     if (planBtn) { planBtn.disabled = false; planBtn.textContent = '📊 Kapacitní plán'; }
