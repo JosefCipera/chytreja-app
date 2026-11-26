@@ -1559,7 +1559,6 @@
   // story, so these point at fixed reference targets to unblock UX testing —
   // Vesmír → obecný Longevity model, CRT → Josef's real account (reference
   // case #1, CLAUDE.md §7). Revisit once per-user routing is decided.
-  const JOSEF_UID_FOR_CRT_PREVIEW = 'vPrm5PNzLWWWhi9sSwYVbkb9FaD3';
   document.getElementById('menu-vesmir-btn').addEventListener('click', () => {
     $profileDrop.classList.remove('open');
     localStorage.setItem('currentModel', 'longevity');
@@ -1569,7 +1568,11 @@
   });
   document.getElementById('menu-crt-btn').addEventListener('click', () => {
     $profileDrop.classList.remove('open');
-    window.location.href = `${PROFILE_URL}?userId=${encodeURIComponent(JOSEF_UID_FOR_CRT_PREVIEW)}`;
+    // ?vzor=kovarova — static example dataset (no real account, no auth 403s).
+    // A per-user userId link 403s here by design (requireAuth rejects a
+    // userId that doesn't match the logged-in account's token) — revisit
+    // once per-user CRT routing is decided.
+    window.location.href = `${PROFILE_URL}?vzor=kovarova`;
   });
 
   // ── Logout ───────────────────────────────────────────────────────────────────
