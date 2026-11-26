@@ -99,6 +99,19 @@ if (!window.CHJ_UNIVERSE_EXAMPLE) {
             signOut(auth).then(() => window.location.href = '/').catch(console.error);
         };
 
+        // Avatar menu: Vesmír / Kauzální mapa — same targets as the Launcher menu
+        // (app/launcher.html). TEMPORARY wiring (2026-11-26, see launcher.html
+        // comment): no per-user Vesmír/CRT routing yet, so CRT uses the static
+        // Kovářová example dataset — a per-user link 403s by design
+        // (requireAuth rejects a userId that doesn't match the logged-in token).
+        window.goToVesmir = () => {
+            localStorage.setItem('currentModel', 'longevity');
+            window.location.href = '/app?awake=1';
+        };
+        window.goToKauzalniMapa = () => {
+            window.location.href = '/crt.html?vzor=kovarova';
+        };
+
         // Contextual guide â€” opens the guide for the active universe
         window.openGuide = () => {
             const model = window.CURRENT_MODEL || 'longevity';
@@ -452,11 +465,10 @@ if (!window.CHJ_UNIVERSE_EXAMPLE) {
                     </div>
                 </div>
                 <nav class="dropdown-nav">
-                    <a href="#" onclick="openUserDataPanel(); return false;"><i class="icon">👤</i> Já</a>
-                    <a href="#" onclick="openDailyCheckin(); return false;" id="checkin-menu-item"><i
-                            class="icon">📋</i> Dnešní záznam</a>
+                    <a href="#" onclick="openUserDataPanel(); return false;"><i class="icon">👤</i> Vstupní data</a>
+                    <a href="#" onclick="goToVesmir(); return false;"><i class="icon">🌌</i> Vesmír</a>
+                    <a href="#" onclick="goToKauzalniMapa(); return false;"><i class="icon">🕸️</i> Kauzální mapa</a>
                     <a href="/app/medioteka.html"><i class="icon">📚</i> Mediotéka</a>
-                    <a href="#" onclick="openGuide(); return false;"><i class="icon">📖</i> Návod</a>
                     <div class="divider"></div>
                     <button onclick="handleLogout()" class="logout-action">
                         <i class="icon">⭕</i> Odhlásit
