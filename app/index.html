@@ -668,7 +668,7 @@ if (!window.CHJ_UNIVERSE_EXAMPLE) {
             const _role = localStorage.getItem('userRole') || 'pro';
             const _univ = window.CURRENT_MODEL || 'longevity';
             const bulk = `/api/hud-data-bulk?userId=${encodeURIComponent(userId)}&nodes=${missing.join(',')}&role=${encodeURIComponent(_role)}&universe=${encodeURIComponent(_univ)}`;
-            const p = fetch(bulk).then(r => r.json()).then(data => {
+            const p = (window.authFetch || fetch)(bulk).then(r => r.json()).then(data => {
                 // Apply local label overrides before caching
                 if (window.MAIN_UNIVERSE_DATA) {
                     Object.keys(data).forEach(id => {
@@ -748,7 +748,7 @@ if (!window.CHJ_UNIVERSE_EXAMPLE) {
                         const _r = localStorage.getItem('userRole') || 'pro';
                         const _univ2 = window.CURRENT_MODEL || 'longevity';
                         const url = `/api/hud-data-bulk?userId=${encodeURIComponent(userId)}&nodes=${encodeURIComponent(nodeId)}&role=${encodeURIComponent(_r)}&universe=${encodeURIComponent(_univ2)}`;
-                        const res = await fetch(url);
+                        const res = await (window.authFetch || fetch)(url);
                         const bulk = await res.json();
                         data = bulk[nodeId] || null;
                         if (data) window._hudCache[nodeId] = data; // warm cache for next open
