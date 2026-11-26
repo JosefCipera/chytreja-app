@@ -553,6 +553,8 @@
           </div>
           <ul class="dropdown-nav">
             <li><button id="menu-profile-btn">👤 Vstupní data</button></li>
+            <li><button id="menu-vesmir-btn">🌌 Vesmír</button></li>
+            <li><button id="menu-crt-btn">🕸️ Kauzální mapa</button></li>
             <li><a href="/app/medioteka.html">📚 Mediotéka</a></li>
             <li id="menu-tester-item" class="hidden">
               <button id="menu-tester-btn">Tester nástroje</button>
@@ -1549,6 +1551,16 @@
   document.getElementById('menu-profile-btn').addEventListener('click', () => {
     $profileDrop.classList.remove('open');
     openUserDataPanel();
+  });
+
+  // ── Menu: Vesmír / Kauzální mapa — real navigation, no voice command needed ──
+  document.getElementById('menu-vesmir-btn').addEventListener('click', () => {
+    $profileDrop.classList.remove('open');
+    window.location.href = '/app';
+  });
+  document.getElementById('menu-crt-btn').addEventListener('click', () => {
+    $profileDrop.classList.remove('open');
+    window.location.href = `${PROFILE_URL}?userId=${encodeURIComponent(window.__chj_userId ?? '')}`;
   });
 
   // ── Logout ───────────────────────────────────────────────────────────────────
