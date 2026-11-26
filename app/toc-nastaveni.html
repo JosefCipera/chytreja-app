@@ -219,6 +219,21 @@ const userId = params.get('userId') || 'qE09cLyXXGRBRxOBCGNZqTM2XRW2';
 const LOCAL_DEV = location.port === '5500' || location.port === '5501';
 const API_BASE  = LOCAL_DEV ? 'https://dev.iting.cz' : '';
 
+// ── Auth-aware fetch — this page runs in a same-origin #tool-iframe, so it
+// can read the parent window's Firebase session directly (same pattern as
+// src/lib/authFetch.js for the Svelte HUD iframe). /api/toc is requireAuth-
+// protected; a plain fetch() 401s for any real (non-demo) account.
+async function authFetch(url, options = {}) {
+  try {
+    const user = window.parent?.firebaseAuth?.currentUser;
+    if (user) {
+      const token = await user.getIdToken(false);
+      return fetch(url, { ...options, headers: { ...options.headers, Authorization: `Bearer ${token}` } });
+    }
+  } catch { /* cross-origin guard or token fetch failure — fall through */ }
+  return fetch(url, options);
+}
+
 let activeTab = 'zakazky';
 
 // ── Tab switch ────────────────────────────────────────────────────────────────
@@ -297,7 +312,7 @@ async function handleUpload(input, type) {
 
   try {
     const csv = await file.text();
-    const res  = await fetch(`${API_BASE}/api/toc?route=import`, {
+    const res  = await authFetch(`${API_BASE}/api/toc?route=import`, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify({ type, userId, csv }),
@@ -323,7 +338,7 @@ async function handleUpload(input, type) {
     if (type === 'zakazky') {
       statusEl.textContent += ' · ⚙ Kontroluji…';
       try {
-        const kRes  = await fetch(`${API_BASE}/api/toc?route=plan`, {
+        const kRes  = await authFetch(`${API_BASE}/api/toc?route=plan`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: 'kontrola', userId }),
         });
@@ -352,7 +367,7 @@ async function loadZakazkyTable() {
   if (!wrap) return;
   wrap.innerHTML = `<div style="color:#475569;font-family:monospace;font-size:12px;padding:8px 0;">↻ Načítám…</div>`;
   try {
-    const res  = await fetch(`${API_BASE}/api/toc?route=zakazky&userId=${encodeURIComponent(userId)}`);
+    const res  = await authFetch(`${API_BASE}/api/toc?route=zakazky&userId=${encodeURIComponent(userId)}`);
     const json = await res.json();
     zData = json.zakazky || [];
     zSortCol = 'kontrola_dat'; zSortDir = 1;
