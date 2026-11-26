@@ -1163,10 +1163,17 @@ async function load() {
     render(allData);
   } catch (e) {
     clearTimeout(timer);
-    const msg = e.name === 'AbortError'
-      ? 'Časový limit vypršel (10 s) — server neodpověděl'
-      : `ERR: ${e.message}`;
-    showErr(msg, url);
+    // TEMPORARY (2026-11-26): no per-user TOC data routing yet — the fixed
+    // reference account (userId above) 403s under requireAuth unless you're
+    // actually logged in as it. Fall back to client-side demo data instead
+    // of a hard error, same spirit as CRT's static Kovářová/Josef examples.
+    console.warn('[TOC] live zakázky fetch failed, falling back to demo data:', e);
+    allData = buildDemo();
+    render(allData);
+    const banner = document.createElement('div');
+    banner.style.cssText = 'padding:8px 16px;background:rgba(234,179,8,0.1);color:#eab308;font-family:monospace;font-size:12px;';
+    banner.textContent = '⚠ Ukázková data (živá data nejsou pro přihlášený účet dostupná)';
+    document.getElementById('main')?.insertAdjacentElement('beforebegin', banner);
   }
 }
 
