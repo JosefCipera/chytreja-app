@@ -137,7 +137,7 @@ AI nesmí svévolně změnit action, dávku, safety condition, evidence ani deci
 `TESTER_UIDS` v `api/tester-reset.js` smí obsahovat pouze skutečné disposable tester účty.
 
 **Permanentně chráněné — nikdy nepřidat do `TESTER_UIDS`:**
-- Josef: `vPrm5PNzLWWWhi9sSwYVbkb9FaD3`
+- Josef: `qE09cLyXXGRBRxOBCGNZqTM2XRW2` (jediné platné UID — `vPrm5PNzLWWWhi9sSwYVbkb9FaD3` bylo zastaralé, opraveno 2026-11-26)
 - Kovářová: viz Supabase (není disposable tester)
 
 Nikdy nezaměnit produkční nebo protected účet za disposable Tester účet.
