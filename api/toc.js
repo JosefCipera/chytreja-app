@@ -116,6 +116,45 @@ async function handlePlan(req, res) {
 
     const db = sb();
 
+    if (action === 'update') {
+      const { id_zakazky, fields } = req.body || {};
+      if (!id_zakazky) return res.status(400).json({ error: 'id_zakazky required' });
+      if (!fields || typeof fields !== 'object') return res.status(400).json({ error: 'fields required' });
+
+      // Whitelist — only these fields are editable from the online table.
+      const EDITABLE_FIELDS = ['vyrobit_ks', 'odvedeno_ks', 'termin_dodani', 'stav'];
+      const update = {};
+      for (const k of EDITABLE_FIELDS) if (k in fields) update[k] = fields[k];
+      if (!Object.keys(update).length) return res.status(400).json({ error: 'no editable fields in payload' });
+      update.updated_at = new Date().toISOString();
+
+      const { error: updErr } = await db.from('toc_zakazky').update(update)
+        .eq('user_id', userId).eq('id_zakazky', id_zakazky);
+      if (updErr) throw updErr;
+
+      // Re-validate just this row (same rules as 'kontrola') so kontrola_dat
+      // stays accurate after an inline edit, without a full re-check.
+      const { data: z, error: fetchErr } = await db.from('toc_zakazky')
+        .select('id_zakazky, prubeznа_doba, stav, termin_dodani, vyrobit_ks')
+        .eq('user_id', userId).eq('id_zakazky', id_zakazky).maybeSingle();
+      if (fetchErr) throw fetchErr;
+      if (!z) return res.status(404).json({ error: 'zakázka not found after update' });
+
+      const chyby = [];
+      if (!z.id_zakazky || z.id_zakazky === 'null')       chyby.push('ID zakázky');
+      if (!z.prubeznа_doba || z.prubeznа_doba <= 0)       chyby.push('průběžná doba');
+      if (!z.stav || z.stav === 'null')                    chyby.push('stav zakázky');
+      if (!z.termin_dodani || z.termin_dodani === 'null')  chyby.push('termín dodání');
+      if (!z.vyrobit_ks || z.vyrobit_ks <= 0)             chyby.push('vyrobit kusů');
+      const kontrola_dat = chyby.length ? chyby.join(', ') : 'ok';
+
+      const { error: kErr } = await db.from('toc_zakazky').update({ kontrola_dat })
+        .eq('user_id', userId).eq('id_zakazky', id_zakazky);
+      if (kErr) throw kErr;
+
+      return res.json({ ok: true, id_zakazky, kontrola_dat });
+    }
+
     if (action === 'kontrola') {
       const { data: zakazky, error: fetchErr } = await db.from('toc_zakazky')
         .select('id_zakazky, nazev_zakazky, prubeznа_doba, stav, termin_dodani, vyrobit_ks')

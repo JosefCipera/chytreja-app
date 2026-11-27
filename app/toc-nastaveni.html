@@ -402,6 +402,7 @@ function renderZakazkyTable() {
     { key: 'prubeznа_doba', label: 'PRŮB.' },
     { key: 'vyrobit_ks',    label: 'VYROBIT' },
     { key: 'odvedeno_ks',   label: 'ODVEDENO' },
+    { key: 'stav',          label: 'STAV' },
     { key: 'kontrola_dat',  label: 'KONTROLA' },
   ];
 
@@ -411,18 +412,28 @@ function renderZakazkyTable() {
     `<th style="cursor:pointer" onclick="zSort('${c.key}')">${c.label}${arrow(c)}</th>`
   ).join('')}</tr>`;
 
+  const inputStyle = 'width:100%;background:transparent;border:1px solid transparent;color:inherit;font:inherit;padding:2px 4px;border-radius:4px;';
+  const STAV_OPTIONS = ['plánovaná', 'rozpracovaná', 'dokončená', 'zrušená'];
+
   const tbody = sorted.map(z => {
     const nok = z.kontrola_dat && z.kontrola_dat !== 'ok';
     const rowStyle = nok ? 'background:rgba(239,68,68,0.06);' : '';
     const kTxt = z.kontrola_dat === 'ok' ? '✔ ok' : z.kontrola_dat ? `✕ ${z.kontrola_dat}` : '—';
     const kCls = z.kontrola_dat === 'ok' ? 'ok' : z.kontrola_dat ? 'err' : '';
-    return `<tr style="${rowStyle}">
+    const stavOpts = STAV_OPTIONS.map(s =>
+      `<option value="${s}" ${s === z.stav ? 'selected' : ''}>${s}</option>`).join('');
+    return `<tr style="${rowStyle}" data-id="${z.id_zakazky}">
       <td>${z.id_zakazky}</td>
-      <td>${fmt(z.termin_dodani)}</td>
+      <td><input type="date" value="${z.termin_dodani || ''}" style="${inputStyle}"
+            onchange="saveZakazkaField('${z.id_zakazky}', 'termin_dodani', this.value, this)"></td>
       <td>${z.prubeznа_doba ?? '—'} d</td>
-      <td>${z.vyrobit_ks}</td>
-      <td>${z.odvedeno_ks}</td>
-      <td class="${kCls}">${kTxt}</td>
+      <td><input type="number" min="0" value="${z.vyrobit_ks}" style="${inputStyle}"
+            onchange="saveZakazkaField('${z.id_zakazky}', 'vyrobit_ks', Number(this.value), this)"></td>
+      <td><input type="number" min="0" value="${z.odvedeno_ks}" style="${inputStyle}"
+            onchange="saveZakazkaField('${z.id_zakazky}', 'odvedeno_ks', Number(this.value), this)"></td>
+      <td><select style="${inputStyle}"
+            onchange="saveZakazkaField('${z.id_zakazky}', 'stav', this.value, this)">${stavOpts}</select></td>
+      <td class="${kCls}" data-kontrola>${kTxt}</td>
     </tr>`;
   }).join('');
 
@@ -436,6 +447,42 @@ function renderZakazkyTable() {
       <thead>${thead}</thead>
       <tbody>${tbody}</tbody>
     </table></div>`;
+}
+
+// ── Inline edit — saves one field of one zakázka, no full re-render ────────
+async function saveZakazkaField(id_zakazky, field, value, el) {
+  el.disabled = true;
+  el.style.borderColor = 'rgba(234,179,8,0.5)'; // saving…
+  try {
+    const res = await authFetch(`${API_BASE}/api/toc?route=plan`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'update', userId, id_zakazky, fields: { [field]: value } }),
+    });
+    const json = await res.json();
+    if (!res.ok || json.error) throw new Error(json.error || `HTTP ${res.status}`);
+
+    // Keep the local cache (zData) in sync so re-sorting/re-rendering stays correct.
+    const row = zData.find(z => z.id_zakazky === id_zakazky);
+    if (row) { row[field] = value; row.kontrola_dat = json.kontrola_dat; }
+
+    el.style.borderColor = 'rgba(34,197,94,0.5)'; // saved
+    setTimeout(() => { el.style.borderColor = 'transparent'; }, 1200);
+
+    const tr = el.closest('tr');
+    const kCell = tr?.querySelector('[data-kontrola]');
+    if (kCell) {
+      const ok = json.kontrola_dat === 'ok';
+      kCell.textContent = ok ? '✔ ok' : `✕ ${json.kontrola_dat}`;
+      kCell.className = ok ? 'ok' : 'err';
+      tr.style.background = ok ? '' : 'rgba(239,68,68,0.06)';
+    }
+  } catch (e) {
+    el.style.borderColor = 'rgba(239,68,68,0.7)'; // error — value not saved
+    alert('Uložení selhalo: ' + e.message);
+  } finally {
+    el.disabled = false;
+  }
 }
 
 function zSort(col) {
