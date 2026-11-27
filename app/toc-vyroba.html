@@ -720,8 +720,12 @@ function switchTab(tab) {
   document.getElementById('kap-legend').style.display = tab === 'kapacita' ? 'flex' : 'none';
   document.getElementById('gantt-view').style.display = tab === 'gantt' ? 'block' : 'none';
   document.getElementById('hp-view').style.display    = tab === 'hp' ? 'flex' : 'none';
-  if (tab === 'gantt') renderGantt();
-  if (tab === 'hp')    renderHlavniPlan();
+  // Recompute on every open — data may have changed (edited in Nastavení)
+  // since the last time this tab's plan was shown; nothing here is cached
+  // server-side, so a stale view would otherwise just keep showing old load.
+  if (tab === 'kapacita') runKapacita();
+  if (tab === 'gantt')    renderGantt();
+  if (tab === 'hp')       renderHlavniPlan();
 }
 
 // ── Kapacitní plán ─────────────────────────────────────────────────────────
