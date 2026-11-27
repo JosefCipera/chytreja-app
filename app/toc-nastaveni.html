@@ -248,6 +248,7 @@ function switchTab(tab) {
     document.getElementById('tab-' + t).classList.toggle('active', t === tab);
   });
   renderTab(tab);
+  if (tab === 'zakazky') loadZakazkyTable();
 }
 
 // ── Render tab obsahu ─────────────────────────────────────────────────────────
@@ -509,6 +510,7 @@ function exportCsv(type) {
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 renderTab('zakazky');
+loadZakazkyTable();
 </script>
 </body>
 </html>
