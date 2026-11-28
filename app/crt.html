@@ -366,7 +366,7 @@
   </script>
 </head>
 <body>
-<div class="example-toolbar" hidden id="example-toolbar"><span id="example-toolbar-label">ukázková data</span><a href="/app/?vzor=dlouhovekost">Vesmír Dlouhověkosti</a><a href="/#ukazky" data-example-return>← Zpět na web</a></div>
+<div class="example-toolbar" hidden id="example-toolbar"><a href="/app/?vzor=dlouhovekost">Vesmír Dlouhověkosti</a><a href="/#ukazky" data-example-return>← Zpět na web</a></div>
 
 <div class="crt-header">
   <div class="chj-logo">
@@ -407,10 +407,9 @@
         </div>
       </div>
       <nav class="dropdown-nav">
-        <a href="#" onclick="openUserDataPanel(); return false;"><span class="icon">👤</span> Já</a>
-        <a href="#" onclick="openDailyCheckin(); return false;"><span class="icon">📋</span> Dnešní záznam</a>
+        <a href="#" onclick="openUserDataPanel(); return false;"><span class="icon">👤</span> Vstupní data</a>
+        <a href="#" onclick="goToVesmir(); return false;"><span class="icon">🌌</span> Vesmír</a>
         <a href="/app/medioteka.html"><span class="icon">📚</span> Mediotéka</a>
-        <a href="#" onclick="openGuide(); return false;"><span class="icon">📖</span> Návod</a>
         <div class="divider"></div>
         <button class="logout-action" onclick="handleLogout()"><span class="icon">⭕</span> Odhlásit</button>
       </nav>
@@ -2224,13 +2223,43 @@ if (screen.orientation) screen.orientation.addEventListener('change', _rerender)
 </script>
 
 <script type="module">
+// Avatar menu: Vesmír — same target as Launcher/Vesmír menus (app/launcher.html,
+// app/index.html). Available in both example and real-session branches below.
+window.goToVesmir = () => {
+  localStorage.setItem('currentModel', 'longevity');
+  window.location.href = '/app?awake=1';
+};
+
 if (window.CHJ_CRT_EXAMPLE) {
   const _vzorLabel = window.CHJ_CRT_EXAMPLES[window.CHJ_CRT_VZOR] ?? 'Vzor';
   document.getElementById('example-toolbar').hidden = false;
-  document.getElementById('example-toolbar-label').textContent = `${_vzorLabel} · ukázková data`;
   document.title = `CRT — ${_vzorLabel} — Chytré já`;
   await import('/app/js/examples/example-return.js');
   window._crtBoot?.();
+
+  // Best-effort avatar: this is a full-page navigation (not an iframe), so
+  // there's no parent window to read a session from — but Firebase persists
+  // its session in this browser profile regardless of page, so a real signed-
+  // in viewer still gets their own avatar even while looking at example data.
+  // No session → leave the generic placeholder; never redirect to /login here,
+  // example pages must stay viewable without one.
+  try {
+    const { initializeApp } = await import('https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js');
+    const { getAuth, onAuthStateChanged, signOut } = await import('https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js');
+    const _fbApp = initializeApp({ apiKey:"AIzaSyAKREZsoBZkA1xOQ5ff3XDmiJ88nwSjeOk", authDomain:"chytre-ja-app.firebaseapp.com", projectId:"chytre-ja-app", storageBucket:"chytre-ja-app.firebasestorage.app", messagingSenderId:"65882611642", appId:"1:65882611642:web:53d82914aa07d6677d4783" });
+    const _fbAuth = getAuth(_fbApp);
+    window.firebaseAuth = _fbAuth;
+    window.handleLogout = () => signOut(_fbAuth).then(() => window.location.href = '/').catch(console.error);
+    onAuthStateChanged(_fbAuth, user => {
+      if (!user) return;
+      window._chjUserId = user.uid;
+      const name = user.displayName || user.email?.split('@')[0] || 'U';
+      const url = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=0D8ABC&color=fff`;
+      document.querySelectorAll('.user-avatar, .avatar-large').forEach(img => img.src = url);
+      const emailEl = document.querySelector('.email');
+      if (emailEl) emailEl.textContent = user.email || '';
+    });
+  } catch (e) { console.warn('[CRT example] avatar session check failed:', e); }
 } else {
 const { initializeApp } = await import('https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js');
 const { getAuth, onAuthStateChanged, signOut } = await import('https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js');
