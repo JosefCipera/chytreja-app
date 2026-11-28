@@ -56,14 +56,15 @@ if (!window.CHJ_UNIVERSE_EXAMPLE) {
                 const name = user.displayName || email.split('@')[0];
                 window._defaultAvatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=0D8ABC&color=fff`;
 
-                // Per-model avatar override (e.g. TOC) — falls back to the name-initials avatar
-                window.applyAvatarForModel = (modelName) => {
-                    const url = modelName === 'toc' ? '/app/assets/avatar-toc.svg' : window._defaultAvatarUrl;
+                // Avatar is always the name-initials image, same as Launcher/CRT —
+                // no per-model (e.g. TOC) override. Kept as a function since
+                // universe-init.js still calls it on every model switch.
+                window.applyAvatarForModel = () => {
                     document.querySelectorAll('.user-avatar, .avatar-large').forEach(img => {
-                        img.src = url;
+                        img.src = window._defaultAvatarUrl;
                     });
                 };
-                window.applyAvatarForModel(window.CURRENT_MODEL || localStorage.getItem('currentModel'));
+                window.applyAvatarForModel();
 
                 const emailEl = document.querySelector('.email');
                 if (emailEl) emailEl.textContent = email;
@@ -624,8 +625,8 @@ if (!window.CHJ_UNIVERSE_EXAMPLE) {
     ">
         <div id="hud-panel-wrap" style="
             width: 100%; max-width: 420px;
-            height: calc(100dvh - 84px - env(safe-area-inset-top, 0px));
-            margin-top: calc(56px + env(safe-area-inset-top, 0px) + 12px); margin-bottom: 16px; margin-right: 0;
+            height: calc(100dvh - 114px - env(safe-area-inset-top, 0px));
+            margin-top: calc(56px + env(safe-area-inset-top, 0px) + 42px); margin-bottom: 16px; margin-right: 0;
             transform: translateX(100%);
             transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1);
             overflow: hidden; border-radius: 20px 0 0 20px; pointer-events: auto;
