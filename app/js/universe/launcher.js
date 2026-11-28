@@ -1144,29 +1144,6 @@ function routeToNode(nodeId) {
     launcher.classList.add('fade-out'); // fallback
     setTimeout(() => {
       launcher.style.display = 'none';
-      // Injektuj plovoucí ← tlačítko zpět
-      if (!document.getElementById('chj-back-btn')) {
-        const btn = document.createElement('button');
-        btn.id = 'chj-back-btn';
-        btn.textContent = '← Zpět';
-        btn.onclick = () => {
-          btn.remove();
-          launcher.style.display = 'flex';
-          launcher.classList.remove('fade-out', 'sleeping', 'listening');
-          launcher.style.opacity = '1';
-          // Znovu skryj header
-          if (!document.getElementById('chj-hide-header')) {
-            const s = document.createElement('style');
-            s.id = 'chj-hide-header';
-            s.textContent = '#appHeader { display: none !important; } body { background: #010406 !important; }';
-            document.head.appendChild(s);
-          }
-          // Vrať awake stav s chipy — ne sleep
-          showAwake();
-          showNavChips();
-        };
-        document.body.appendChild(btn);
-      }
     }, 650);
   }, 150);
 }
