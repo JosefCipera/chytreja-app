@@ -366,8 +366,6 @@
   </script>
 </head>
 <body>
-<div class="example-toolbar" hidden id="example-toolbar"><a href="/app/?vzor=dlouhovekost">Vesmír Dlouhověkosti</a><a href="/#ukazky" data-example-return>← Zpět na web</a></div>
-
 <div class="crt-header">
   <div class="chj-logo">
     <div class="chj-logo__cursor"></div>
@@ -2232,7 +2230,6 @@ window.goToVesmir = () => {
 
 if (window.CHJ_CRT_EXAMPLE) {
   const _vzorLabel = window.CHJ_CRT_EXAMPLES[window.CHJ_CRT_VZOR] ?? 'Vzor';
-  document.getElementById('example-toolbar').hidden = false;
   document.title = `CRT — ${_vzorLabel} — Chytré já`;
   await import('/app/js/examples/example-return.js');
   window._crtBoot?.();
