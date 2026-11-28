@@ -56,14 +56,15 @@ if (!window.CHJ_UNIVERSE_EXAMPLE) {
                 const name = user.displayName || email.split('@')[0];
                 window._defaultAvatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=0D8ABC&color=fff`;
 
-                // Per-model avatar override (e.g. TOC) — falls back to the name-initials avatar
-                window.applyAvatarForModel = (modelName) => {
-                    const url = modelName === 'toc' ? '/app/assets/avatar-toc.svg' : window._defaultAvatarUrl;
+                // Avatar is always the name-initials image, same as Launcher/CRT —
+                // no per-model (e.g. TOC) override. Kept as a function since
+                // universe-init.js still calls it on every model switch.
+                window.applyAvatarForModel = () => {
                     document.querySelectorAll('.user-avatar, .avatar-large').forEach(img => {
-                        img.src = url;
+                        img.src = window._defaultAvatarUrl;
                     });
                 };
-                window.applyAvatarForModel(window.CURRENT_MODEL || localStorage.getItem('currentModel'));
+                window.applyAvatarForModel();
 
                 const emailEl = document.querySelector('.email');
                 if (emailEl) emailEl.textContent = email;
